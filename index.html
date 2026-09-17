@@ -1,0 +1,3244 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<title>GroupTodo</title>
+<style>
+/* ============================================================
+   00_TOKENS
+   ============================================================ */
+:root{
+  --bg:#0f1115; --bg2:#161920; --bg3:#1d212b; --bg4:#252a36;
+  --fg:#e6e9ef; --fg2:#a4acbd; --fg3:#6d7689;
+  --border:#252a36; --border2:#333a4a;
+  --accent:#6aa3ff; --accent2:#2f6fd0; --accent-fg:#06101f;
+  --todo:#6aa3ff; --doing:#c792ea; --wait:#e0b050; --done:#4fbf7b; --cancel:#6d7689;
+  --late:#ff6b6b; --today:#e0b050; --ok:#4fbf7b; --warn:#e0b050; --danger:#ff6b6b;
+  --ctx:#5ecfc0; --proj:#ff9f6b; --zet:#c792ea;
+  --radius:10px; --radius-sm:6px;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --shadow:0 8px 32px rgba(0,0,0,.45);
+}
+:root[data-theme="light"]{
+  --bg:#fbfbfd; --bg2:#ffffff; --bg3:#f1f3f7; --bg4:#e6e9f0;
+  --fg:#1b1f27; --fg2:#525b6d; --fg3:#858ea0;
+  --border:#e2e6ee; --border2:#cfd5e1;
+  --accent:#2f6fd0; --accent2:#2f6fd0; --accent-fg:#ffffff;
+  --todo:#2f6fd0; --doing:#8b5cd6; --wait:#b57f12; --done:#1f9254; --cancel:#858ea0;
+  --late:#d33; --today:#b57f12;
+  --ctx:#0f8d7d; --proj:#c25b1e; --zet:#8b5cd6;
+  --shadow:0 8px 32px rgba(20,30,60,.14);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:var(--sans); font-size:15px; line-height:1.5;
+  -webkit-text-size-adjust:100%; overflow:hidden;
+}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none;padding:0}
+a{color:var(--accent);text-decoration:none}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:6px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ============================================================
+   05_LAYOUT
+   ============================================================ */
+#app{display:grid;grid-template-columns:248px 1fr;height:100dvh;overflow:hidden}
+#sidebar{
+  background:var(--bg2);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+#main{display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#content{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 0 96px}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px}
+
+/* ---------- sidebar ---------- */
+.brand{
+  display:flex;align-items:center;gap:9px;padding:14px 16px 10px;
+  font-weight:650;letter-spacing:-.2px;
+}
+.brand .logo{
+  width:24px;height:24px;border-radius:7px;background:linear-gradient(140deg,var(--accent),var(--zet));
+  display:grid;place-items:center;font-size:13px;color:#fff;flex:none;
+}
+.brand small{display:block;font-weight:400;font-size:11px;color:var(--fg3);letter-spacing:0}
+.nav{flex:1;overflow-y:auto;padding:4px 8px 12px}
+.nav-group{margin-top:10px}
+.nav-group>h3{
+  margin:0;padding:6px 8px 4px;font-size:10.5px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.9px;color:var(--fg3);
+}
+.nav-item{
+  display:flex;align-items:center;gap:9px;width:100%;padding:6px 9px;
+  border-radius:var(--radius-sm);color:var(--fg2);font-size:13.5px;text-align:left;
+}
+.nav-item:hover{background:var(--bg3);color:var(--fg)}
+.nav-item.active{background:var(--bg4);color:var(--fg);font-weight:550}
+.nav-item .ic{width:17px;text-align:center;flex:none;font-size:13px;opacity:.95}
+.nav-item .lbl{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-item .cnt{
+  font-size:11px;font-variant-numeric:tabular-nums;color:var(--fg3);
+  background:var(--bg3);border-radius:20px;padding:1px 6px;min-width:20px;text-align:center;
+}
+.nav-item.active .cnt{background:var(--bg2)}
+.nav-item .cnt.hot{background:rgba(255,107,107,.18);color:var(--late)}
+.nav-item .key{font-family:var(--mono);font-size:10px;color:var(--fg3);opacity:.6}
+.vaultbar{border-top:1px solid var(--border);padding:8px;display:flex;flex-direction:column;gap:6px}
+.vaultbar .row{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--fg3);padding:0 4px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--fg3);flex:none}
+.dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.err{background:var(--danger)}
+.dot.sync{background:var(--accent);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.25}}
+
+/* ---------- header ---------- */
+header.top{
+  display:flex;align-items:center;gap:10px;padding:12px 20px 10px;
+  border-bottom:1px solid var(--border);background:var(--bg);flex:none;
+}
+header.top .burger{display:none}
+.h-title{font-size:19px;font-weight:650;letter-spacing:-.3px;display:flex;align-items:center;gap:9px;min-width:0}
+.h-title .sub{font-size:12px;font-weight:400;color:var(--fg3)}
+.h-sp{flex:1}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:var(--radius-sm);
+  background:var(--bg3);color:var(--fg2);font-size:13px;border:1px solid transparent;white-space:nowrap;
+}
+.btn:hover{background:var(--bg4);color:var(--fg)}
+.btn.primary{background:var(--accent);color:var(--accent-fg);font-weight:550}
+.btn.primary:hover{background:var(--accent2);color:#fff}
+.btn.ghost{background:none;border:1px solid var(--border2)}
+.btn.sm{padding:3px 8px;font-size:12px}
+.btn kbd{font-family:var(--mono);font-size:10px;opacity:.6}
+
+/* ============================================================
+   10_NUDGES
+   ============================================================ */
+.nudgebar{display:flex;gap:8px;flex-wrap:wrap;padding:12px 0 4px}
+.nudge{
+  display:flex;align-items:center;gap:8px;padding:7px 11px;border-radius:20px;
+  background:var(--bg3);border:1px solid var(--border);font-size:12.5px;color:var(--fg2);
+}
+.nudge:hover{border-color:var(--border2);color:var(--fg)}
+.nudge b{font-variant-numeric:tabular-nums;color:var(--fg)}
+.nudge.warn{background:rgba(224,176,80,.12);border-color:rgba(224,176,80,.3);color:var(--warn)}
+.nudge.warn b{color:var(--warn)}
+.nudge.danger{background:rgba(255,107,107,.12);border-color:rgba(255,107,107,.32);color:var(--late)}
+.nudge.danger b{color:var(--late)}
+.nudge.ok{background:rgba(79,191,123,.1);border-color:rgba(79,191,123,.28);color:var(--ok)}
+
+.hero{
+  margin:14px 0 6px;padding:16px 18px;border-radius:14px;
+  background:linear-gradient(135deg,var(--bg3),var(--bg2));border:1px solid var(--border);
+}
+.hero h2{margin:0 0 3px;font-size:14px;letter-spacing:.3px;text-transform:uppercase;color:var(--fg3);font-weight:600}
+.hero p{margin:0 0 12px;color:var(--fg2);font-size:13.5px}
+.hero .acts{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ============================================================
+   15_TASK ROWS
+   ============================================================ */
+.section{margin:20px 0 0}
+.section>h3{
+  display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:0 2px;
+  font-size:12px;font-weight:650;letter-spacing:.7px;text-transform:uppercase;color:var(--fg3);
+}
+.section>h3 .n{background:var(--bg3);border-radius:20px;padding:0 7px;font-size:11px;color:var(--fg2)}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.empty{padding:16px;color:var(--fg3);font-size:13px;text-align:center}
+
+.task{
+  display:flex;align-items:flex-start;gap:10px;padding:9px 12px;
+  border-bottom:1px solid var(--border);position:relative;
+}
+.task:last-child{border-bottom:none}
+.task:hover{background:var(--bg3)}
+.task.sel{background:var(--bg4)}
+.chk{
+  width:19px;height:19px;border-radius:50%;border:1.6px solid var(--fg3);flex:none;margin-top:1px;
+  display:grid;place-items:center;font-size:11px;color:transparent;transition:.12s;
+}
+.chk:hover{border-color:var(--done);color:var(--fg3)}
+.task[data-state="DONE"] .chk{background:var(--done);border-color:var(--done);color:#06210f}
+.task[data-state="CANCELLED"] .chk{background:var(--cancel);border-color:var(--cancel);color:#fff}
+.task[data-state="WAIT"] .chk{border-color:var(--wait);color:var(--wait)}
+.task[data-state="DOING"] .chk{border-color:var(--doing);color:var(--doing)}
+.t-body{flex:1;min-width:0}
+.t-title{font-size:14px;word-wrap:break-word;overflow-wrap:anywhere}
+.task[data-state="DONE"] .t-title,.task[data-state="CANCELLED"] .t-title{color:var(--fg3);text-decoration:line-through}
+.t-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;align-items:center}
+.chip{
+  display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:1px 7px;border-radius:20px;
+  background:var(--bg3);color:var(--fg3);border:1px solid transparent;white-space:nowrap;
+}
+.chip.ctx{color:var(--ctx);background:rgba(94,207,192,.11)}
+.chip.proj{color:var(--proj);background:rgba(255,159,107,.11)}
+.chip.late{color:var(--late);background:rgba(255,107,107,.13)}
+.chip.today{color:var(--today);background:rgba(224,176,80,.13)}
+.chip.miss{color:var(--warn);background:rgba(224,176,80,.1);border-color:rgba(224,176,80,.3)}
+.chip.age{font-family:var(--mono);font-size:10.5px}
+.chip.st{font-family:var(--mono);font-size:10px;letter-spacing:.5px}
+.chip.b{cursor:pointer}
+.chip.b:hover{border-color:var(--border2);color:var(--fg2)}
+.t-act{display:flex;gap:2px;opacity:0;flex:none;transition:.12s}
+.task:hover .t-act,.task.sel .t-act{opacity:1}
+.iconbtn{
+  width:26px;height:26px;border-radius:var(--radius-sm);display:grid;place-items:center;
+  color:var(--fg3);font-size:13px;
+}
+.iconbtn:hover{background:var(--bg4);color:var(--fg)}
+@media (hover:none){.t-act{opacity:1}}
+
+/* ---------- outliner ---------- */
+.outline{padding:10px 12px}
+.blk{padding-left:18px;position:relative}
+.blk>.line{display:flex;align-items:flex-start;gap:7px;padding:2px 0;border-radius:4px}
+.blk>.line:hover{background:var(--bg3)}
+.bullet{
+  position:absolute;left:4px;top:9px;width:7px;height:7px;border-radius:50%;
+  background:var(--fg3);flex:none;cursor:pointer;
+}
+.blk.has-kids>.bullet{box-shadow:0 0 0 3.5px var(--bg4)}
+.blk.collapsed>.bullet{box-shadow:0 0 0 3.5px var(--bg4)}
+.blk .txt{flex:1;min-width:0;word-wrap:break-word;overflow-wrap:anywhere;font-size:14px;padding:1px 0}
+.blk .txt[contenteditable]{outline:none}
+.blk .props{font-family:var(--mono);font-size:11px;color:var(--fg3);padding-left:0;margin:1px 0 2px}
+.blk .bodyline{font-size:13px;color:var(--fg2);white-space:pre-wrap}
+.state{
+  font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.6px;
+  padding:1px 5px;border-radius:4px;flex:none;margin-top:2px;cursor:pointer;
+}
+.state.TODO{background:rgba(106,163,255,.16);color:var(--todo)}
+.state.DOING{background:rgba(199,146,234,.16);color:var(--doing)}
+.state.WAIT{background:rgba(224,176,80,.16);color:var(--wait)}
+.state.DONE{background:rgba(79,191,123,.14);color:var(--done)}
+.state.CANCELLED{background:var(--bg4);color:var(--cancel)}
+.tag{color:var(--ctx);cursor:pointer}
+.tag:hover{text-decoration:underline}
+.wikilink{color:var(--accent);cursor:pointer}
+.wikilink:hover{text-decoration:underline}
+.wikilink.ctx{color:var(--ctx)} .wikilink.zet{color:var(--zet)} .wikilink.proj{color:var(--proj)}
+code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4px;border-radius:4px}
+
+/* ---------- project/page list ---------- */
+.prow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border)}
+.prow:last-child{border-bottom:none}
+.prow:hover{background:var(--bg3)}
+.prow .st{
+  width:22px;height:22px;border-radius:6px;display:grid;place-items:center;flex:none;
+  font-family:var(--mono);font-size:11px;font-weight:700;
+}
+.st-1{background:rgba(106,163,255,.16);color:var(--todo)}
+.st-3{background:rgba(224,176,80,.16);color:var(--wait)}
+.st-2{background:var(--bg4);color:var(--fg3)}
+.st-0{background:rgba(79,191,123,.14);color:var(--done)}
+.st-_{background:var(--bg4);color:var(--cancel)}
+.prow .nm{flex:1;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prow .sub{font-size:11.5px;color:var(--fg3)}
+
+/* ============================================================
+   20_MODALS
+   ============================================================ */
+.scrim{
+  position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;
+  display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(3px);
+}
+.scrim.center{align-items:center}
+.modal{
+  background:var(--bg2);border:1px solid var(--border2);border-radius:14px 14px 0 0;
+  width:min(640px,100%);max-height:86dvh;display:flex;flex-direction:column;
+  box-shadow:var(--shadow);overflow:hidden;
+}
+.scrim.center .modal{border-radius:14px}
+.modal header{
+  display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--border);flex:none;
+}
+.modal header h2{margin:0;font-size:15px;font-weight:650}
+.modal header .hint{font-size:11.5px;color:var(--fg3);font-family:var(--mono)}
+.modal .body{overflow-y:auto;padding:10px 0;flex:1}
+.modal .foot{padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;flex:none}
+.pick{
+  display:flex;align-items:center;gap:11px;width:100%;padding:9px 16px;text-align:left;font-size:14px;color:var(--fg2);
+}
+.pick:hover,.pick.cur{background:var(--bg3);color:var(--fg)}
+.pick .k{
+  font-family:var(--mono);font-size:11px;width:20px;height:20px;border-radius:5px;flex:none;
+  background:var(--bg4);color:var(--fg3);display:grid;place-items:center;
+}
+.pick:hover .k,.pick.cur .k{background:var(--accent);color:var(--accent-fg)}
+.pick .d{margin-left:auto;font-size:11.5px;color:var(--fg3)}
+.filterbox{padding:0 16px 8px}
+.filterbox input,.field input,.field textarea,.field select{
+  width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);
+  padding:9px 11px;font-size:14px;outline:none;
+}
+.filterbox input:focus,.field input:focus,.field textarea:focus{border-color:var(--accent)}
+.field{padding:8px 16px}
+.field>label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--fg3);margin-bottom:5px}
+.field textarea{resize:vertical;min-height:70px;font-family:inherit}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{
+  padding:6px 11px;border-radius:var(--radius-sm);background:var(--bg3);font-size:12.5px;
+  font-family:var(--mono);color:var(--fg3);border:1px solid transparent;
+}
+.seg button.on{background:var(--accent);color:var(--accent-fg);font-weight:650}
+.seg button:hover{border-color:var(--border2)}
+
+/* review / dashboards */
+.dash-sec{border-bottom:1px solid var(--border)}
+.dash-sec:last-child{border-bottom:none}
+.dash-sec>h4{
+  margin:0;padding:11px 16px 5px;font-size:12.5px;font-weight:650;display:flex;gap:8px;align-items:center;
+}
+.dash-sec>h4 .n{font-size:11px;background:var(--bg4);border-radius:20px;padding:0 7px;color:var(--fg3)}
+.dash-sec>h4 .n.z{background:rgba(79,191,123,.15);color:var(--ok)}
+.dash-item{display:flex;gap:9px;align-items:flex-start;padding:6px 16px;font-size:13px;color:var(--fg2);width:100%;text-align:left}
+.dash-item:hover{background:var(--bg3);color:var(--fg)}
+.dash-item .p{font-size:11px;color:var(--fg3);font-family:var(--mono)}
+.dash-item .fix{margin-left:auto;font-size:11px;color:var(--accent);flex:none}
+.checkline{display:flex;gap:10px;align-items:center;padding:8px 16px;font-size:13.5px}
+.checkline input{width:17px;height:17px;accent-color:var(--accent)}
+
+/* toast */
+#toasts{position:fixed;left:50%;transform:translateX(-50%);top:14px;z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:min(560px,94vw)}
+.toast{
+  background:var(--bg4);border:1px solid var(--border2);border-radius:10px;padding:10px 14px;
+  font-size:13px;box-shadow:var(--shadow);pointer-events:auto;display:flex;gap:10px;align-items:center;width:100%;
+}
+.toast.warn{border-color:rgba(224,176,80,.5)} .toast.err{border-color:rgba(255,107,107,.5)}
+.toast .x{margin-left:auto;color:var(--fg3)}
+
+/* keyboard chord hud */
+#chord{
+  position:fixed;left:12px;bottom:12px;z-index:210;background:var(--bg4);border:1px solid var(--border2);
+  border-radius:8px;padding:5px 10px;font-family:var(--mono);font-size:12px;box-shadow:var(--shadow);
+}
+
+/* ============================================================
+   25_RESPONSIVE
+   ============================================================ */
+@media (max-width:820px){
+  #app{grid-template-columns:1fr}
+  #sidebar{
+    position:fixed;inset:0 auto 0 0;width:270px;z-index:70;transform:translateX(-100%);
+    transition:transform .18s ease;box-shadow:var(--shadow);
+  }
+  body.nav-open #sidebar{transform:none}
+  body.nav-open::after{content:"";position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:65}
+  header.top .burger{display:grid}
+  .wrap{padding:0 14px}
+  .modal{max-height:92dvh}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="brand">
+      <div class="logo">&#9715;</div>
+      <div><div>GroupTodo</div><small id="vaultName">no vault</small></div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="vaultbar">
+      <div class="row"><span class="dot" id="syncDot"></span><span id="syncTxt">local only</span></div>
+      <button class="btn sm" id="btnVault">&#9187; Vault &amp; sync</button>
+    </div>
+  </aside>
+
+  <div id="main">
+    <header class="top">
+      <button class="iconbtn burger" id="burger">&#9776;</button>
+      <div class="h-title"><span id="hTitle">Today</span><span class="sub" id="hSub"></span></div>
+      <div class="h-sp"></div>
+      <button class="btn sm ghost" id="btnSearch" title="Search (/)">&#8981;</button>
+      <button class="btn sm ghost" id="btnTheme" title="Theme">&#9689;</button>
+      <button class="btn primary sm" id="btnCapture">&#65291; Capture <kbd>c</kbd></button>
+    </header>
+    <div id="content"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<div id="modalRoot"></div>
+<script>
+"use strict";
+/* ============================================================
+   00_BOOTSTRAP -- utilities
+   Port of: init.lua 00_BOOTSTRAP
+   ============================================================ */
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const el = (tag, attrs={}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === "class") n.className = v;
+    else if (k === "html") n.innerHTML = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if (k === "data") for (const [dk,dv] of Object.entries(v)) n.dataset[dk] = dv;
+    else n.setAttribute(k, v);
+  }
+  for (const kid of kids.flat()) {
+    if (kid == null || kid === false) continue;
+    n.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+  }
+  return n;
+};
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const trim = s => String(s ?? "").replace(/^\s+|\s+$/g, "");
+const join = (...p) => p.filter(Boolean).join("/").replace(/\/{2,}/g, "/");
+const uid = () => Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+
+function notify(msg, level="info") {
+  const t = el("div", {class:"toast " + (level==="warn"?"warn":level==="error"?"err":"")},
+    el("span", {}, msg),
+    el("button", {class:"x", onclick:e=>e.target.closest(".toast").remove()}, "✕"));
+  $("#toasts").append(t);
+  setTimeout(() => t.remove(), level === "info" ? 3800 : 9000);
+}
+
+/* ---------- dates ---------- */
+const pad2 = n => String(n).padStart(2, "0");
+const isoOf = d => d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate());
+const todayISO = () => isoOf(new Date());
+const parseISO = s => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || "");
+  return m ? new Date(+m[1], +m[2]-1, +m[3], 12) : null;
+};
+const shiftISO = (iso, days) => { const d = parseISO(iso) || new Date(); d.setDate(d.getDate()+days); return isoOf(d); };
+function dateDiffDays(d1, d2) {           // d2 - d1, in days
+  const a = parseISO(d1), b = parseISO(d2);
+  if (!a || !b) return null;
+  return Math.round((b - a) / 86400000);
+}
+function humanDate(iso) {
+  const d = parseISO(iso); if (!d) return iso || "";
+  const t = todayISO();
+  if (iso === t) return "Today";
+  if (iso === shiftISO(t, 1)) return "Tomorrow";
+  if (iso === shiftISO(t, -1)) return "Yesterday";
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleDateString(undefined,
+    {weekday:"short", day:"numeric", month:"short", year: sameYear ? undefined : "numeric"});
+}
+function isoWeek(iso) {
+  const d = parseISO(iso); if (!d) return null;
+  const t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  t.setDate(t.getDate() + 3 - ((t.getDay() + 6) % 7));
+  const week1 = new Date(t.getFullYear(), 0, 4);
+  const w = 1 + Math.round(((t - week1) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
+  return [w, t.getFullYear()];
+}
+
+/* ============================================================
+   05_CONFIG_SCHEMA
+   Port of: init.lua 05_CONFIG_SCHEMA
+   Same vault shape as the Neovim config, with .md instead of .org:
+     journals/YYYY-MM-DD.md
+     pages/{_,0,1,2,3}/   project status directories
+     pages/{c,p,o,z}/     contexts, people, orgs, zettel
+     pages/{templates,verbs}/
+   ============================================================ */
+const JOURNALS = "journals";
+const PAGES    = "pages";
+const DIRS = {
+  journals : JOURNALS,
+  pages    : PAGES,
+  cancelled: join(PAGES, "_"),
+  completed: join(PAGES, "0"),
+  active   : join(PAGES, "1"),
+  someday  : join(PAGES, "2"),
+  waiting  : join(PAGES, "3"),
+  orgs     : join(PAGES, "o"),
+  people   : join(PAGES, "p"),
+  contexts : join(PAGES, "c"),
+  templates: join(PAGES, "templates"),
+  verbs    : join(PAGES, "verbs"),
+  zettel   : join(PAGES, "z"),
+};
+const TODO_STATES  = ["TODO", "DOING", "WAIT", "DONE", "CANCELLED"];
+const OPEN_STATES  = {TODO:true, DOING:true, WAIT:true};
+const STATE_ALIAS  = {WAITING:"WAIT", CANCELED:"CANCELLED", NOW:"DOING", LATER:"TODO"};
+const STATUS_DIRS  = {"_":DIRS.cancelled, "0":DIRS.completed, "1":DIRS.active, "2":DIRS.someday, "3":DIRS.waiting};
+const STATUS_TEXT  = {
+  "_": "_ = cancelled",
+  "0": "0 = completed",
+  "1": "1 = active",
+  "2": "2 = someday maybe",
+  "3": "3 = waiting for 3rd party",
+};
+const STATUS_LABEL = {"_":"Cancelled", "0":"Completed", "1":"Active", "2":"Someday/Maybe", "3":"Waiting for"};
+const PREFIX_DIR   = {p:DIRS.people, c:DIRS.contexts, o:DIRS.orgs, z:DIRS.zettel};
+
+/* Tunables -- the GTD nudge thresholds (inline constants in init.lua). */
+const CFG = {
+  surfaceCount     : 3,      // oldest TODOs surfaced per context
+  weedCount        : 3,      // stalest projects in morning weeding
+  staleProjectDays : 180,    // "older than 6 months" warning
+  reviewEveryDays  : 7,      // weekly review cadence
+  waitFollowUpDays : 14,     // nudge to chase a WAIT item
+  idleNudgeMinutes : 30,     // 30+ min idle -> nudge
+  agendaDays       : 14,
+  journalScanDays  : 365,
+  contextPrompts   : [[12, 0, "lunchtime"], [17, 0, "after work"]],
+};
+
+const journalPath = (date) => join(JOURNALS, (date || todayISO()) + ".md");
+const todayStamp  = () => "[[" + todayISO() + "]]";
+
+function slugify(title) {
+  const s = trim(title || "Untitled")
+    .replace(/[\u0000-\u001f/\\:*?"<>|]/g, "-")
+    .replace(/\s+/g, " ");
+  return s === "" ? "Untitled" : s;
+}
+
+/* ============================================================
+   10_MARKDOWN -- parse / serialize
+   The org outline (*, **, ***) becomes a markdown bullet outline.
+   Org "#+key: value"  ->  "key:: value" page properties.
+   Org "Added: [[d]]"  ->  "Added:: [[d]]" block property.
+   ============================================================ */
+const PROP_RE   = /^([A-Za-z][\w-]*)::\s*(.*)$/;
+const BULLET_RE = /^(\s*)[-*+]\s+(.*)$/;
+
+function indentLevel(ws) {
+  let n = 0;
+  for (const ch of ws) n += ch === "\t" ? 2 : 1;
+  return Math.floor(n / 2);
+}
+
+function splitState(text) {
+  const m = /^([A-Z]{3,9})(\s+|$)/.exec(text || "");
+  if (!m) return [null, text || ""];
+  const raw = m[1];
+  const st = STATE_ALIAS[raw] || (TODO_STATES.includes(raw) ? raw : null);
+  if (!st) return [null, text || ""];
+  return [st, (text || "").slice(m[0].length)];
+}
+
+function newBlock(patch = {}) {
+  return Object.assign({
+    id: uid(), state: null, title: "", props: {}, body: [],
+    children: [], collapsed: false,
+  }, patch);
+}
+
+/* Parse a markdown page into {props, blocks}. */
+function parsePage(text) {
+  const lines = String(text || "").split(/\r?\n/);
+  const page = {props: {}, blocks: []};
+  const root = {level: -1, children: page.blocks};
+  const stack = [root];
+  let cur = null, curIndent = 0, seenBullet = false;
+
+  for (const line of lines) {
+    const bm = BULLET_RE.exec(line);
+    if (bm) {
+      seenBullet = true;
+      const level = indentLevel(bm[1]);
+      const [state, title] = splitState(bm[2]);
+      const blk = newBlock({state, title: trim(title)});
+      while (stack.length > 1 && stack[stack.length-1].level >= level) stack.pop();
+      const parent = stack[stack.length-1];
+      (parent.children || (parent.children = [])).push(blk);
+      blk.level = level;
+      stack.push(blk);
+      cur = blk; curIndent = bm[1].length;
+      continue;
+    }
+    if (!seenBullet) {
+      const pm = PROP_RE.exec(trim(line));
+      if (pm) { page.props[pm[1].toLowerCase()] = trim(pm[2]); continue; }
+      if (trim(line) === "") continue;
+      // Stray prose before the first bullet: keep it as a leading block.
+      const blk = newBlock({title: trim(line)});
+      page.blocks.push(blk); blk.level = 0;
+      stack.length = 1; stack.push(blk); cur = blk; curIndent = 0; seenBullet = true;
+      continue;
+    }
+    if (!cur) continue;
+    if (trim(line) === "") { if (cur.body.length) cur.body.push(""); continue; }
+    const pm = PROP_RE.exec(trim(line));
+    if (pm) { cur.props[pm[1]] = trim(pm[2]); continue; }
+    const lead = /^\s*/.exec(line)[0].length;
+    cur.body.push(line.slice(Math.min(lead, curIndent + 2)).replace(/\s+$/, ""));
+  }
+  // drop trailing blank body lines
+  walkBlocks(page.blocks, b => { while (b.body.length && trim(b.body[b.body.length-1]) === "") b.body.pop(); });
+  return page;
+}
+
+function serializePage(page) {
+  const out = [];
+  const props = page.props || {};
+  const keys = Object.keys(props);
+  if (keys.length) {
+    for (const k of keys) out.push(k + ":: " + props[k]);
+    out.push("");
+  }
+  const emit = (blocks, level) => {
+    for (const b of blocks) {
+      const pad = "  ".repeat(level);
+      out.push((pad + "- " + (b.state ? b.state + " " : "") + b.title).replace(/\s+$/, ""));
+      for (const [k, v] of Object.entries(b.props || {})) out.push(pad + "  " + k + ":: " + v);
+      for (const l of b.body || []) out.push(l === "" ? "" : pad + "  " + l);
+      if (b.children && b.children.length) emit(b.children, level + 1);
+    }
+  };
+  emit(page.blocks || [], 0);
+  return out.join("\n").replace(/\n+$/, "") + "\n";
+}
+
+function walkBlocks(blocks, fn, parent = null) {
+  for (const b of blocks || []) {
+    if (fn(b, parent) === false) continue;
+    walkBlocks(b.children, fn, b);
+  }
+}
+function flattenBlocks(blocks, out = [], parent = null, depth = 0) {
+  for (const b of blocks || []) {
+    b._parent = parent; b._depth = depth;
+    out.push(b);
+    flattenBlocks(b.children, out, b, depth + 1);
+  }
+  return out;
+}
+</script>
+<script>
+/* ============================================================
+   15_STORAGE -- three interchangeable backends
+     fs   : File System Access API, writes real .md files (desktop Chrome/Edge)
+     http : tiny PUT/GET server (serve.py) -- for Termux / phone / any device
+     idb  : IndexedDB, browser-local, with markdown bundle export/import
+   Port of: init.lua read_file/write_file/append_file + autosave timer
+   ============================================================ */
+const IDB = (() => {
+  let dbp = null;
+  const open = () => dbp || (dbp = new Promise((res, rej) => {
+    const r = indexedDB.open("grouptodo", 1);
+    r.onupgradeneeded = () => {
+      const db = r.result;
+      if (!db.objectStoreNames.contains("files")) db.createObjectStore("files");
+      if (!db.objectStoreNames.contains("kv"))    db.createObjectStore("kv");
+    };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  }));
+  const tx = async (store, mode, fn) => {
+    const db = await open();
+    return new Promise((res, rej) => {
+      const t = db.transaction(store, mode);
+      const rq = fn(t.objectStore(store));
+      t.oncomplete = () => res(rq && rq.result);
+      t.onerror = () => rej(t.error);
+    });
+  };
+  return {
+    get : (s, k)    => tx(s, "readonly",  st => st.get(k)),
+    set : (s, k, v) => tx(s, "readwrite", st => st.put(v, k)),
+    del : (s, k)    => tx(s, "readwrite", st => st.delete(k)),
+    keys: (s)       => tx(s, "readonly",  st => st.getAllKeys()),
+    all : (s)       => tx(s, "readonly",  st => st.getAll()),
+  };
+})();
+
+const Backends = {
+  /* ---------- IndexedDB (always available) ---------- */
+  idb() {
+    return {
+      kind: "idb", label: "browser storage", writable: true,
+      async list() {
+        const keys = await IDB.keys("files"), vals = await IDB.all("files");
+        const out = new Map();
+        keys.forEach((k, i) => out.set(k, vals[i]));
+        return out;
+      },
+      async write(path, text) { await IDB.set("files", path, text); },
+      async remove(path)      { await IDB.del("files", path); },
+    };
+  },
+
+  /* ---------- File System Access API ---------- */
+  fs(rootHandle) {
+    const dirCache = new Map([["", rootHandle]]);
+    async function dirFor(path, create=false) {
+      if (dirCache.has(path)) return dirCache.get(path);
+      const parts = path.split("/").filter(Boolean);
+      let h = rootHandle, sofar = "";
+      for (const p of parts) {
+        sofar = sofar ? sofar + "/" + p : p;
+        if (dirCache.has(sofar)) { h = dirCache.get(sofar); continue; }
+        h = await h.getDirectoryHandle(p, {create});
+        dirCache.set(sofar, h);
+      }
+      return h;
+    }
+    return {
+      kind: "fs", label: rootHandle.name, writable: true, handle: rootHandle,
+      async list() {
+        const out = new Map();
+        const walk = async (dir, prefix) => {
+          for await (const [name, h] of dir.entries()) {
+            if (name.startsWith(".")) continue;
+            const p = prefix ? prefix + "/" + name : name;
+            if (h.kind === "directory") { dirCache.set(p, h); await walk(h, p); }
+            else if (/\.(md|org)$/i.test(name)) out.set(p, await (await h.getFile()).text());
+          }
+        };
+        await walk(rootHandle, "");
+        return out;
+      },
+      async write(path, text) {
+        const dir = await dirFor(path.split("/").slice(0, -1).join("/"), true);
+        const fh = await dir.getFileHandle(path.split("/").pop(), {create: true});
+        const w = await fh.createWritable();
+        await w.write(text); await w.close();
+      },
+      async remove(path) {
+        const dir = await dirFor(path.split("/").slice(0, -1).join("/"));
+        await dir.removeEntry(path.split("/").pop());
+      },
+    };
+  },
+
+  /* ---------- HTTP sync server (serve.py) ---------- */
+  http(base) {
+    const u = (p, q) => base.replace(/\/$/, "") + p + (q ? "?path=" + encodeURIComponent(q) : "");
+    return {
+      kind: "http", label: base.replace(/^https?:\/\//, "") || "server", writable: true,
+      async list() {
+        const r = await fetch(u("/api/list"));
+        if (!r.ok) throw new Error("list failed: " + r.status);
+        const paths = await r.json();
+        const out = new Map();
+        await Promise.all(paths.map(async p => {
+          const f = await fetch(u("/api/file", p));
+          if (f.ok) out.set(p, await f.text());
+        }));
+        return out;
+      },
+      async write(path, text) {
+        const r = await fetch(u("/api/file", path), {
+          method: "PUT", headers: {"Content-Type": "text/plain; charset=utf-8"}, body: text,
+        });
+        if (!r.ok) throw new Error("write failed: " + r.status);
+      },
+      async remove(path) { await fetch(u("/api/file", path), {method: "DELETE"}); },
+    };
+  },
+};
+
+/* ============================================================
+   20_VAULT -- in-memory model over the backend
+   ============================================================ */
+const V = {
+  backend : null,
+  pages   : new Map(),   // path -> {props, blocks}
+  raw     : new Map(),   // path -> original text (for .org files kept verbatim)
+  dirty   : new Set(),
+  removed : new Set(),
+  loaded  : false,
+  syncing : false,
+  error   : null,
+};
+
+function setSync(state, text) {
+  const dot = $("#syncDot"), txt = $("#syncTxt");
+  if (!dot) return;
+  dot.className = "dot " + state;
+  txt.textContent = text;
+}
+
+function pagePaths() { return Array.from(V.pages.keys()); }
+function getPage(path) { return V.pages.get(path); }
+
+function putPage(path, page, {silent = false} = {}) {
+  V.pages.set(path, page);
+  V.removed.delete(path);
+  if (!silent) { V.dirty.add(path); scheduleFlush(); }
+  return page;
+}
+function touch(path) { V.dirty.add(path); scheduleFlush(); }
+
+function removePage(path) {
+  V.pages.delete(path);
+  V.dirty.delete(path);
+  V.removed.add(path);
+  scheduleFlush();
+}
+
+let flushTimer = null;
+function scheduleFlush() {
+  clearTimeout(flushTimer);
+  setSync("warn", "unsaved");
+  flushTimer = setTimeout(flush, 450);
+}
+
+async function flush() {
+  if (!V.backend || V.syncing) return;
+  if (!V.dirty.size && !V.removed.size) { setSync("ok", V.backend.label); return; }
+  V.syncing = true;
+  setSync("sync", "saving...");
+  const dirty = Array.from(V.dirty); V.dirty.clear();
+  const gone  = Array.from(V.removed); V.removed.clear();
+  try {
+    for (const p of dirty) {
+      const page = V.pages.get(p);
+      if (page) await V.backend.write(p, serializePage(page));
+    }
+    for (const p of gone) await V.backend.remove(p).catch(() => {});
+    setSync("ok", V.backend.label);
+    V.error = null;
+  } catch (e) {
+    dirty.forEach(p => V.dirty.add(p));
+    V.error = e;
+    setSync("err", "save failed");
+    notify("Save failed: " + e.message, "error");
+  } finally {
+    V.syncing = false;
+    if (V.dirty.size || V.removed.size) scheduleFlush();
+  }
+}
+window.addEventListener("beforeunload", e => {
+  if (V.dirty.size) { flush(); e.preventDefault(); e.returnValue = ""; }
+});
+
+async function loadFromBackend(backend) {
+  setSync("sync", "loading...");
+  const files = await backend.list();
+  V.backend = backend;
+  V.pages.clear(); V.raw.clear(); V.dirty.clear(); V.removed.clear();
+  for (const [path, text] of files) {
+    if (/\.org$/i.test(path)) { V.raw.set(path, text); continue; }
+    V.pages.set(path, parsePage(text));
+  }
+  V.loaded = true;
+  $("#vaultName").textContent = backend.label;
+  setSync("ok", backend.label);
+  if (V.raw.size) {
+    notify(V.raw.size + " .org files found -- open Vault → Import .org to convert them.", "warn");
+  }
+}
+
+/* ============================================================
+   25_PAGE_CLASSIFY
+   Port of: init.lua 35_NODE_CLASSIFY
+   ============================================================ */
+const isJournalPath = p => p.startsWith(JOURNALS + "/");
+const isPagePath    = p => p.startsWith(PAGES + "/");
+
+function statusDirOf(path) {
+  const m = new RegExp("^" + PAGES + "/([_0123])/").exec(path || "");
+  return m ? m[1] : null;
+}
+function pageKind(path) {
+  if (isJournalPath(path)) return "journal";
+  if (statusDirOf(path)) return "project";
+  if (path.startsWith(DIRS.contexts  + "/")) return "context";
+  if (path.startsWith(DIRS.people    + "/")) return "person";
+  if (path.startsWith(DIRS.orgs      + "/")) return "org";
+  if (path.startsWith(DIRS.zettel    + "/")) return "zettel";
+  if (path.startsWith(DIRS.templates + "/")) return "template";
+  if (path.startsWith(DIRS.verbs     + "/")) return "verb";
+  return "page";
+}
+const baseName  = p => (p || "").split("/").pop().replace(/\.md$/i, "");
+const pageTitle = p => (getPage(p)?.props?.title) || baseName(p);
+
+/* Short reference used in links: "1/Fix sink", "c/phone", "2026-09-17" */
+function pageRef(path) {
+  const sd = statusDirOf(path);
+  if (sd) return sd + "/" + baseName(path);
+  for (const [pfx, dir] of Object.entries(PREFIX_DIR)) {
+    if (path.startsWith(dir + "/")) return pfx + "/" + baseName(path);
+  }
+  if (isJournalPath(path)) return baseName(path);
+  return baseName(path);
+}
+
+function allPages(filter) {
+  const out = [];
+  for (const path of V.pages.keys()) if (!filter || filter(path)) out.push(path);
+  return out.sort();
+}
+const projectsIn = code => allPages(p => statusDirOf(p) === code);
+
+/* Journal files from the last N days that actually exist. */
+function recentJournals(days = CFG.journalScanDays) {
+  const out = [];
+  for (let i = 0; i < days; i++) {
+    const p = journalPath(shiftISO(todayISO(), -i));
+    if (V.pages.has(p)) out.push(p);
+  }
+  return out;
+}
+
+/* ============================================================
+   30_LINKS
+   Port of: init.lua 110_WIKI_LINK_OVERRIDE
+   ============================================================ */
+const LINK_RE = /\[\[([^\]]+)\]\]/g;
+
+function linksIn(text) {
+  const out = []; let m;
+  LINK_RE.lastIndex = 0;
+  while ((m = LINK_RE.exec(text || ""))) out.push(trim(m[1]));
+  return out;
+}
+const contextOf = text => {
+  const m = /\[\[c\/([^\]]+)\]\]/.exec(text || "");
+  return m ? trim(m[1]) : null;
+};
+const hasContextLink = text => /\[\[c\/[^\]]+\]\]/.test(text || "");
+
+/* target -> vault path (creating nothing) */
+function resolveWikiPath(target) {
+  target = trim(target).replace(/\.md$/i, "");
+  if (/^\d{4}-\d{2}-\d{2}$/.test(target)) return journalPath(target);
+  const m = /^([^/]+)\/(.+)$/.exec(target);
+  if (m) {
+    const [, pfx, rest] = m;
+    if (STATUS_DIRS[pfx]) return join(STATUS_DIRS[pfx], rest + ".md");
+    if (PREFIX_DIR[pfx])  return join(PREFIX_DIR[pfx], rest + ".md");
+  }
+  return join(PAGES, target + ".md");
+}
+
+/* Find an existing page for a link target, searching every root like init.lua did. */
+function findExistingPage(target) {
+  target = trim(target).replace(/\.md$/i, "");
+  const direct = resolveWikiPath(target);
+  if (V.pages.has(direct)) return direct;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(target)) return null;
+  const slug = slugify(target.includes("/") ? target.split("/").pop() : target);
+  const roots = [PAGES, DIRS.active, DIRS.someday, DIRS.waiting, DIRS.completed,
+                 DIRS.cancelled, DIRS.people, DIRS.contexts, DIRS.orgs, DIRS.zettel];
+  for (const r of roots) {
+    const p = join(r, slug + ".md");
+    if (V.pages.has(p)) return p;
+  }
+  return null;
+}
+
+/* ============================================================
+   35_TEMPLATES
+   Port of: init.lua 20_TEMPLATE_RESOLVER -- date cascade lookup:
+   2026-09-17 > 2026-W38 > 2026-Q3 > 2026-H2 > 2026-09 > 09-17 > 2026 > 09 > kind
+   ============================================================ */
+function templateCandidates(date, kind) {
+  const list = [];
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date || "");
+  if (m) {
+    const [, y, mo, d] = m;
+    const w = isoWeek(date);
+    list.push(date);
+    if (w) list.push(`${w[1]}-W${pad2(w[0])}`);
+    list.push(`${y}-Q${Math.ceil(+mo / 3)}`, `${y}-H${+mo <= 6 ? 1 : 2}`, `${y}-${mo}`, `${mo}-${d}`, y, mo);
+  }
+  if (kind) list.push(kind);
+  return list;
+}
+function readTemplate(name) {
+  const p = join(DIRS.templates, name + ".md");
+  return V.pages.has(p) ? p : null;
+}
+function resolveTemplate({date, kind}) {
+  const cands = templateCandidates(date, kind);
+  if (kind === "journals" || (date && !kind)) cands.push("journals");
+  if (kind && kind !== "journals") cands.push(kind, "pages");
+  for (const name of cands) {
+    const p = readTemplate(name);
+    if (p) return {path: p, name};
+  }
+  return null;
+}
+function expandVars(text, vars) {
+  return String(text).replace(/%(\w+)%/g, (all, k) => (k in vars ? vars[k] : all));
+}
+/* Deep-copy a template page, expanding %vars%. */
+function instantiateTemplate(tplPath, vars) {
+  const src = getPage(tplPath);
+  const clone = {props: {}, blocks: []};
+  for (const [k, v] of Object.entries(src.props || {})) clone.props[k] = expandVars(v, vars);
+  const copy = bs => (bs || []).map(b => newBlock({
+    state: b.state,
+    title: expandVars(b.title, vars),
+    props: Object.fromEntries(Object.entries(b.props || {}).map(([k, v]) => [k, expandVars(v, vars)])),
+    body : (b.body || []).map(l => expandVars(l, vars)),
+    children: copy(b.children),
+  }));
+  clone.blocks = copy(src.blocks);
+  return clone;
+}
+
+/* ============================================================
+   40_VERBS -- the Phys-Viz rule
+   Port of: init.lua 50_VERB_SYSTEM
+   pages/verbs/<lang>/<canonical>.md holds lines "synonym = canonical".
+   A next action must START with a physical, visible verb.
+   ============================================================ */
+let VERB_LOOKUP = {};      // synonym -> canonical
+let VERB_CANON  = {};      // canonical -> {lang, path, synonyms[]}
+
+function scanVerbs() {
+  VERB_LOOKUP = {}; VERB_CANON = {};
+  for (const path of V.pages.keys()) {
+    if (!path.startsWith(DIRS.verbs + "/")) continue;
+    const rest = path.slice(DIRS.verbs.length + 1).split("/");
+    if (rest.length < 2) continue;
+    const lang = rest[0];
+    const canonical = baseName(path).toLowerCase();
+    const synonyms = [];
+    const page = getPage(path);
+    const scan = txt => {
+      const m = /^\s*([\p{L}\p{M}\-_ ]+?)\s*=\s*([\p{L}\p{M}\-_ ]+?)\s*$/u.exec(txt || "");
+      if (!m) return;
+      const syn = m[1].toLowerCase();
+      synonyms.push(syn);
+      VERB_LOOKUP[syn] = canonical;
+    };
+    walkBlocks(page.blocks, b => { scan(b.title); (b.body || []).forEach(scan); });
+    VERB_LOOKUP[canonical] = canonical;
+    VERB_CANON[canonical] = {lang, path, synonyms};
+  }
+}
+
+function startsWithVerb(title) {
+  const m = /^\s*([\p{L}\p{M}\-]+)/u.exec(title || "");
+  if (!m) return false;
+  return !!VERB_LOOKUP[m[1].toLowerCase()];
+}
+function verbList() {
+  return Object.keys(VERB_CANON).sort().map(c => ({canonical: c, lang: VERB_CANON[c].lang}));
+}
+
+/* ============================================================
+   45_ORG_IMPORT -- convert an existing .org vault to markdown
+   ============================================================ */
+function orgToPage(text) {
+  const lines = String(text || "").split(/\r?\n/);
+  const page = {props: {}, blocks: []};
+  const stack = [{level: 0, children: page.blocks}];
+  let cur = null, inProps = false;
+
+  for (const line of lines) {
+    let m = /^#\+([\w-]+):\s*(.*)$/.exec(line);
+    if (m && !cur) { page.props[m[1].toLowerCase()] = trim(m[2]); continue; }
+    m = /^(\*+)\s+(.*)$/.exec(line);
+    if (m) {
+      const level = m[1].length;
+      const [state, title] = splitState(m[2]);
+      const blk = newBlock({state, title: trim(title)});
+      while (stack.length > 1 && stack[stack.length-1].level >= level) stack.pop();
+      stack[stack.length-1].children.push(blk);
+      blk.level = level; blk.children = blk.children || [];
+      stack.push(blk);
+      cur = blk; inProps = false;
+      continue;
+    }
+    if (!cur) continue;
+    if (/^\s*:PROPERTIES:\s*$/.test(line)) { inProps = true; continue; }
+    if (/^\s*:END:\s*$/.test(line))        { inProps = false; continue; }
+    if (inProps) {
+      const pm = /^\s*:([\w-]+):\s*(.*)$/.exec(line);
+      if (pm) cur.props[pm[1].toLowerCase()] = trim(pm[2]);
+      continue;
+    }
+    // "Added: [[2026-09-15]] - [[2026-09-17]] = 2 days"  ->  property
+    const am = /^\s*(Added|CLOSED|SCHEDULED|DEADLINE):\s*(.*)$/i.exec(line);
+    if (am) { cur.props[am[1].replace(/^./, c => c.toUpperCase())] = trim(am[2]); continue; }
+    if (trim(line) === "") { if (cur.body.length) cur.body.push(""); continue; }
+    cur.body.push(trim(line));
+  }
+  walkBlocks(page.blocks, b => { while (b.body.length && trim(b.body[b.body.length-1]) === "") b.body.pop(); });
+  return page;
+}
+
+function importOrgFiles() {
+  let n = 0;
+  for (const [path, text] of Array.from(V.raw)) {
+    const mdPath = path.replace(/\.org$/i, ".md");
+    if (V.pages.has(mdPath)) continue;
+    putPage(mdPath, orgToPage(text));
+    V.raw.delete(path);
+    n++;
+  }
+  scanVerbs();
+  notify(n ? `Converted ${n} .org files to markdown (originals untouched).` : "Nothing to import.");
+  render();
+}
+</script>
+<script>
+/* ============================================================
+   50_BLOCK_HELPERS
+   ============================================================ */
+const dateIn = s => (/(\d{4}-\d{2}-\d{2})/.exec(s || "") || [])[1] || null;
+
+function blockProp(b, key) {
+  if (!b || !b.props) return null;
+  const k = Object.keys(b.props).find(x => x.toLowerCase() === key.toLowerCase());
+  return k ? b.props[k] : null;
+}
+function setBlockProp(b, key, val) {
+  const k = Object.keys(b.props).find(x => x.toLowerCase() === key.toLowerCase());
+  b.props[k || key] = val;
+}
+const addedDate = b => dateIn(blockProp(b, "Added"));
+const blockAge  = b => { const a = addedDate(b); return a ? dateDiffDays(a, todayISO()) : null; };
+function dueDate(b) {
+  return dateIn(blockProp(b, "SCHEDULED")) || dateIn(blockProp(b, "DEADLINE")) || dateIn(blockProp(b, "due"));
+}
+/* Locate a block anywhere in the vault by id. */
+function findBlock(id) {
+  for (const [path, page] of V.pages) {
+    let found = null;
+    walkBlocks(page.blocks, b => { if (b.id === id) found = b; });
+    if (found) return {path, page, block: found};
+  }
+  return null;
+}
+function blockPagePath(block) {
+  for (const [path, page] of V.pages) {
+    let hit = false;
+    walkBlocks(page.blocks, b => { if (b === block) hit = true; });
+    if (hit) return path;
+  }
+  return null;
+}
+function removeBlockFrom(page, block) {
+  const rec = list => {
+    const i = list.indexOf(block);
+    if (i >= 0) { list.splice(i, 1); return true; }
+    return list.some(b => rec(b.children || []));
+  };
+  return rec(page.blocks);
+}
+function hasOpenDescendant(block) {
+  let open = false;
+  walkBlocks(block.children, b => { if (OPEN_STATES[b.state]) open = true; });
+  return open;
+}
+
+/* ============================================================
+   55_JOURNAL_LIFECYCLE
+   Port of: init.lua 45_JOURNAL_LIFECYCLE
+   ============================================================ */
+function ensureJournal(date) {
+  date = date || todayISO();
+  const path = journalPath(date);
+  if (V.pages.has(path)) return path;
+  const tpl = resolveTemplate({date, kind: "journals"});
+  const page = tpl
+    ? instantiateTemplate(tpl.path, {title: date, date, created: "[[" + date + "]]"})
+    : {props: {title: date, created: "[[" + date + "]]"}, blocks: []};
+  putPage(path, page);
+  if (tpl) notify("Journal created from template: " + tpl.name);
+  return path;
+}
+
+/* ============================================================
+   60_STATE_MACHINE
+   Port of: init.lua set_org_state
+     -> TODO : stamp "Added", then nudge for a context if missing
+     -> DONE : close out the Added line with an end date + elapsed days,
+               then check whether the project just ran out of next actions
+   ============================================================ */
+function setBlockState(path, block, state, opts = {}) {
+  const prev = block.state;
+  block.state = state;
+
+  if (state === "TODO" || state === "DOING") {
+    if (path !== journalPath() && !addedDate(block)) {
+      setBlockProp(block, "Added", "[[" + todayISO() + "]]");
+    }
+  } else if (state === "DONE" || state === "CANCELLED") {
+    const added = addedDate(block);
+    const end = todayISO();
+    if (added) {
+      const raw = blockProp(block, "Added") || "";
+      if (!/\]\]\s*-\s*\[\[/.test(raw)) {
+        const days = dateDiffDays(added, end) ?? 0;
+        setBlockProp(block, "Added", raw + " - [[" + end + "]] = " + days + " days");
+      }
+    } else if (!blockProp(block, "CLOSED")) {
+      setBlockProp(block, "CLOSED", "[[" + end + "]]");
+    }
+  }
+  touch(path);
+
+  if ((state === "TODO" || state === "DOING") && !opts.skipContext && !hasContextLink(block.title)) {
+    promptAndInsertContext(path, block);
+    return;
+  }
+  if (state === "DONE" || state === "CANCELLED") {
+    if (prev !== state) noteTodoTouched();
+    checkProjectCompletion(path);
+  }
+  render();
+}
+
+function cycleState(path, block) {
+  const order = ["TODO", "DOING", "WAIT", "DONE"];
+  const i = order.indexOf(block.state);
+  setBlockState(path, block, order[(i + 1) % order.length]);
+}
+
+/* ============================================================
+   65_GTD_SCANNERS
+   Port of: init.lua 55_GTD_SCANNERS + 57_STALENESS_SCAN
+   ============================================================ */
+const GROUPS = ["LATE", "TODAY", "PROJECT", "LINKED", "WAITING", "JOURNAL"];
+const GROUP_META = {
+  LATE   : {label: "Overdue",         cls: "late"},
+  TODAY  : {label: "Due today",       cls: "today"},
+  PROJECT: {label: "Project actions", cls: "proj"},
+  LINKED  : {label: "Journal, linked to a project", cls: "ctx"},
+  WAITING: {label: "Waiting for",     cls: "wait"},
+  JOURNAL: {label: "Loose journal actions", cls: ""},
+};
+
+/* The block itself, or its nearest ancestor, linking to a project page: [[1/Fix sink]] */
+function nearestProjectAncestor(block) {
+  let p = block;
+  while (p) {
+    const m = /\[\[([_0123])\/([^\]]+)\]\]/.exec(p.title || "");
+    if (m) return {statusDir: m[1], title: trim(m[2]), ref: m[1] + "/" + trim(m[2])};
+    p = p._parent;
+  }
+  return null;
+}
+
+/* Open leaf actions: an open item with no open children is the actionable one. */
+function leafActions() {
+  const out = [];
+  const paths = [...projectsIn("1"), ...projectsIn("3"), ...recentJournals()];
+  for (const path of paths) {
+    const page = getPage(path); if (!page) continue;
+    const journal = isJournalPath(path);
+    const flat = flattenBlocks(page.blocks);
+    for (const b of flat) {
+      if (!OPEN_STATES[b.state] || hasOpenDescendant(b)) continue;
+      const linked = journal ? nearestProjectAncestor(b) : null;
+      let group = "JOURNAL", project = null, projectStatusDir = null, projectPath = null;
+      if (!journal) {
+        group = b.state === "WAIT" ? "WAITING" : "PROJECT";
+        project = pageTitle(path);
+        projectStatusDir = statusDirOf(path);
+        projectPath = path;
+      } else if (linked) {
+        group = b.state === "WAIT" ? "WAITING" : "LINKED";
+        project = linked.title;
+        projectStatusDir = linked.statusDir;
+        projectPath = findExistingPage(linked.ref);
+      } else if (b.state === "WAIT") {
+        group = "WAITING";
+      }
+      const due = dueDate(b);
+      if (due) {
+        if (due < todayISO()) group = "LATE";
+        else if (due === todayISO()) group = "TODAY";
+      }
+      out.push({
+        path, block: b, state: b.state, title: b.title,
+        project, projectPath, projectStatusDir, group, due,
+        context: contextOf(b.title),
+        missingContext: !hasContextLink(b.title),
+        missingVerb: !startsWithVerb(b.title),
+        // Journal items carry no Added:: stamp (the filename is the date),
+        // so fall back to the journal's own date to keep "oldest first" honest.
+        added: addedDate(b) || (journal ? baseName(path) : null),
+        age: blockAge(b) ?? (journal ? dateDiffDays(baseName(path), todayISO()) : null),
+      });
+    }
+  }
+  return out;
+}
+
+/* Active projects with nothing actionable left -- the classic GTD trap. */
+function stuckActiveProjects() {
+  const linkedFromJournal = new Set();
+  for (const a of leafActions()) {
+    if (a.group === "LINKED" && a.project) linkedFromJournal.add(a.project.toLowerCase());
+  }
+  const stuck = [];
+  for (const path of projectsIn("1")) {
+    const page = getPage(path);
+    const flat = flattenBlocks(page.blocks);
+    let leafTodo = false, waiting = false, parentTodos = false;
+    for (const b of flat) {
+      if (b.state === "TODO" || b.state === "DOING") {
+        if (hasOpenDescendant(b)) parentTodos = true; else leafTodo = true;
+      } else if (b.state === "WAIT" && !hasOpenDescendant(b)) waiting = true;
+    }
+    const fromJournal = linkedFromJournal.has(pageTitle(path).toLowerCase())
+                     || linkedFromJournal.has(baseName(path).toLowerCase());
+    if (!leafTodo && !waiting && !fromJournal) {
+      stuck.push({path, reason: parentTodos ? "Has parent TODOs but no actionable task" : "No next action"});
+    }
+  }
+  return stuck;
+}
+
+/* Stalest active projects. Missing context beats missing verb beats plain age. */
+function stalestActiveProjects(n = CFG.weedCount) {
+  const rows = [];
+  for (const path of projectsIn("1")) {
+    const page = getPage(path);
+    const todos = [];
+    let noContext = false, noVerb = false, anyTodo = false;
+    for (const b of flattenBlocks(page.blocks)) {
+      if (!OPEN_STATES[b.state]) continue;
+      anyTodo = true;
+      const ctx = contextOf(b.title);
+      const missingVerb = !startsWithVerb(b.title);
+      if (!ctx) noContext = true;
+      if (missingVerb) noVerb = true;
+      todos.push({path, block: b, state: b.state, title: b.title,
+                  context: ctx, missingContext: !ctx, missingVerb});
+    }
+    const createdDate = dateIn(page.props?.created);
+    const reviewedDate = dateIn(page.props?.reviewed);
+    const ageDays = createdDate ? dateDiffDays(createdDate, todayISO()) : null;
+    const idleDays = reviewedDate ? dateDiffDays(reviewedDate, todayISO())
+                   : (ageDays ?? 3650);
+    let bias = 0;
+    if (!anyTodo)  bias += 1500;
+    if (noContext) bias += 1000;
+    if (noVerb)    bias += 500;
+    rows.push({path, title: pageTitle(path), todos, anyTodo, noContext, noVerb,
+               ageDays, createdDate, reviewedDate, idleDays, score: bias + (idleDays || 0)});
+  }
+  rows.sort((a, b) => b.score - a.score);
+  return rows.slice(0, n);
+}
+
+/* The heart of the nudge loop: 3 oldest open actions in the chosen context. */
+function oldestTodosForContext(context, n = CFG.surfaceCount) {
+  const matches = leafActions().filter(a => {
+    if (a.context !== context) return false;
+    if (!OPEN_STATES[a.state]) return false;
+    // standalone, or under an active / waiting project -- never 0, 2 or _
+    return a.projectStatusDir == null || a.projectStatusDir === "1" || a.projectStatusDir === "3";
+  });
+  matches.sort((x, y) => (x.added || "9999-99-99").localeCompare(y.added || "9999-99-99"));
+  return matches.slice(0, n);
+}
+
+function contextList() {
+  const set = new Set();
+  for (const path of allPages(p => p.startsWith(DIRS.contexts + "/"))) {
+    set.add(path.slice(DIRS.contexts.length + 1).replace(/\.md$/i, ""));
+  }
+  for (const a of leafActions()) if (a.context) set.add(a.context);
+  return Array.from(set).sort();
+}
+
+function agendaScan(days = CFG.agendaDays) {
+  const cutoff = shiftISO(todayISO(), days);
+  const byDate = new Map();
+  for (const a of leafActions()) {
+    if (!a.due || a.due > cutoff) continue;
+    if (!byDate.has(a.due)) byDate.set(a.due, []);
+    byDate.get(a.due).push(a);
+  }
+  return Array.from(byDate.entries()).sort((x, y) => x[0].localeCompare(y[0]));
+}
+
+/* Port of: init.lua 70_HEALTH_CHECKS */
+function healthScan() {
+  const issues = [];
+  for (const path of [...projectsIn("1"), ...projectsIn("2"), ...projectsIn("3")]) {
+    const page = getPage(path);
+    if (!page.props?.title) issues.push({path, type: "missing-title", text: "No title:: property"});
+    if (statusDirOf(path) === "3" && !(page.props?.waiting_since || page.props?.["waiting-since"]))
+      issues.push({path, type: "missing-waiting_since", text: "Waiting project without waiting_since"});
+  }
+  for (const [path, page] of V.pages) {
+    if (pageKind(path) === "template") continue;
+    const check = (text, blk) => {
+      for (const target of linksIn(text)) {
+        const t = target.split("][")[0];
+        if (/^\d{4}-\d{2}-\d{2}$/.test(t)) continue;
+        if (!/^[_0123pcoz]\//.test(t)) continue;
+        if (!findExistingPage(t)) issues.push({path, block: blk, type: "broken-link", text: "Broken link: [[" + t + "]]"});
+      }
+    };
+    walkBlocks(page.blocks, b => { check(b.title, b); (b.body || []).forEach(l => check(l, b)); });
+  }
+  return issues;
+}
+
+/* Port of: init.lua 60_GRAPH_QUERIES */
+function backlinksTo(path) {
+  const ref = pageRef(path).toLowerCase();
+  const name = baseName(path).toLowerCase();
+  const hits = [];
+  for (const [p, page] of V.pages) {
+    if (p === path) continue;
+    walkBlocks(page.blocks, b => {
+      const text = [b.title, ...(b.body || [])].join("\n");
+      for (const target of linksIn(text)) {
+        const t = target.split("][")[0].toLowerCase().replace(/\.md$/, "");
+        if (t === ref || t === name) { hits.push({path: p, block: b}); return; }
+      }
+    });
+  }
+  return hits;
+}
+
+/* Port of: init.lua find_duplicate_projects */
+function duplicateProjects() {
+  const bySlug = new Map();
+  for (const path of allPages(p => statusDirOf(p))) {
+    const slug = baseName(path).toLowerCase();
+    if (!bySlug.has(slug)) bySlug.set(slug, []);
+    bySlug.get(slug).push(path);
+  }
+  return Array.from(bySlug.entries())
+    .filter(([, l]) => l.length > 1)
+    .map(([slug, paths]) => ({slug, paths: paths.sort()}))
+    .sort((a, b) => b.paths.length - a.paths.length || a.slug.localeCompare(b.slug));
+}
+
+function openTodoCount(path) {
+  const page = getPage(path); if (!page) return 0;
+  return flattenBlocks(page.blocks).filter(b => OPEN_STATES[b.state]).length;
+}
+
+/* ============================================================
+   70_PAGE_MUTATIONS
+   Port of: init.lua 65_PROJECT_STATUS_MOVE + 75_REFILE_AND_TELEPORT
+   ============================================================ */
+function rewriteLinksEverywhere(oldRef, newRef) {
+  if (oldRef === newRef) return 0;
+  let changed = 0;
+  const re = new RegExp("\\[\\[" + oldRef.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(\\]\\]|\\]\\[)", "g");
+  for (const [path, page] of V.pages) {
+    let hit = false;
+    const fix = s => { const n = s.replace(re, "[[" + newRef + "$1"); if (n !== s) hit = true; return n; };
+    walkBlocks(page.blocks, b => {
+      b.title = fix(b.title);
+      b.body = (b.body || []).map(fix);
+      for (const k of Object.keys(b.props || {})) b.props[k] = fix(b.props[k]);
+    });
+    for (const k of Object.keys(page.props || {})) page.props[k] = fix(page.props[k]);
+    if (hit) { touch(path); changed++; }
+  }
+  return changed;
+}
+
+function moveFile(oldPath, newPath) {
+  if (oldPath === newPath) return true;
+  if (V.pages.has(newPath)) { notify("Target already exists: " + newPath, "error"); return false; }
+  const page = getPage(oldPath);
+  const oldRef = pageRef(oldPath), oldBase = baseName(oldPath);
+  V.pages.delete(oldPath);
+  V.dirty.delete(oldPath);
+  V.removed.add(oldPath);
+  putPage(newPath, page);
+  const newRef = pageRef(newPath);
+  let n = rewriteLinksEverywhere(oldRef, newRef);
+  if (oldBase !== baseName(newPath) || oldRef !== oldBase) n += rewriteLinksEverywhere(oldBase, newRef);
+  if (n) notify("Link update: " + n + " pages updated.");
+  return true;
+}
+
+function setProjectStatus(path, code) {
+  if (!STATUS_DIRS[code]) return;
+  const page = getPage(path);
+  page.props.status = STATUS_TEXT[code];
+  page.props.reviewed = todayStamp();
+  if (code === "0") page.props.completed = todayStamp();
+  if (code === "_") page.props.cancelled = todayStamp();
+  if (code === "3") page.props.waiting_since = todayStamp();
+  const newPath = join(STATUS_DIRS[code], baseName(path) + ".md");
+  touch(path);
+  if (newPath !== path && moveFile(path, newPath)) {
+    notify("Moved to " + STATUS_TEXT[code]);
+    if (state.view === "page" && state.pagePath === path) state.pagePath = newPath;
+  } else {
+    notify("Status: " + STATUS_TEXT[code]);
+  }
+  render();
+}
+
+function projectTemplateLines(title, code = "1") {
+  const st = code === "3" ? "WAIT" : code === "0" ? "DONE" : code === "_" ? "CANCELLED" : "TODO";
+  const tpl = resolveTemplate({kind: code});
+  if (tpl) {
+    return instantiateTemplate(tpl.path, {
+      title, status: STATUS_TEXT[code], created: todayStamp(), reviewed: todayStamp(), state: st,
+    });
+  }
+  const props = {title, status: STATUS_TEXT[code], created: todayStamp(), reviewed: todayStamp()};
+  if (code === "3") { props.waiting_for = ""; props.waiting_since = todayStamp(); }
+  if (code === "0") props.completed = todayStamp();
+  if (code === "_") props.cancelled = todayStamp();
+  return {props, blocks: [newBlock({state: st, title, props: {Added: todayStamp()}})]};
+}
+
+function createProjectPage(title, blocks) {
+  const clean = slugify(title);
+  const path = join(DIRS.active, clean + ".md");
+  if (V.pages.has(path)) return path;
+  const page = projectTemplateLines(clean, "1");
+  if (blocks && blocks.length) page.blocks = blocks;
+  putPage(path, page);
+  return path;
+}
+
+function zettelTemplate(title) {
+  return {
+    props: {title, created: todayStamp()},
+    blocks: [
+      newBlock({title}),
+      newBlock({title: "Relates to"}),
+      newBlock({title: "Contradicts"}),
+      newBlock({title: "Informs"}),
+    ],
+  };
+}
+function createZettel(title) {
+  const clean = slugify(title);
+  const path = join(DIRS.zettel, clean + ".md");
+  if (!V.pages.has(path)) putPage(path, zettelTemplate(clean));
+  return path;
+}
+
+function pageTemplateFor(kind, title) {
+  if (kind === "z") return zettelTemplate(title);
+  if (STATUS_DIRS[kind]) return projectTemplateLines(title, kind);
+  const tpl = resolveTemplate({kind});
+  if (tpl) return instantiateTemplate(tpl.path, {title, created: todayStamp(), kind});
+  const props = {title, created: todayStamp()};
+  if (["p", "c", "o"].includes(kind)) props.type = {p: "person", c: "context", o: "org"}[kind];
+  return {props, blocks: [newBlock({title: ""})]};
+}
+
+/* Follow [[target]] -- creating the page if it does not exist yet. */
+function followLink(target) {
+  target = trim(target).split("][")[0];
+  if (/^\d{4}-\d{2}-\d{2}$/.test(target)) { openPage(ensureJournal(target)); return; }
+  const existing = findExistingPage(target);
+  if (existing) { openPage(existing); return; }
+  const path = resolveWikiPath(target);
+  const m = /^([^/]+)\/(.+)$/.exec(target);
+  const kind = m && (STATUS_DIRS[m[1]] || PREFIX_DIR[m[1]]) ? m[1] : "page";
+  const title = m && (STATUS_DIRS[m[1]] || PREFIX_DIR[m[1]]) ? m[2] : target;
+  putPage(path, pageTemplateFor(kind, title));
+  notify("Created page: " + path);
+  scanVerbs();
+  openPage(path);
+}
+
+/* Port of: init.lua refile_current_task -- move a subtree to a project,
+   leaving a DONE breadcrumb behind when it came from a journal. */
+function refileBlock(fromPath, block, toPath) {
+  const from = getPage(fromPath), to = getPage(toPath);
+  if (!from || !to) return;
+  removeBlockFrom(from, block);
+  to.blocks.push(block);
+  if (isJournalPath(fromPath)) {
+    from.blocks.push(newBlock({
+      state: "DONE",
+      title: "Refiled: " + block.title + " -> [[" + pageRef(toPath) + "]]",
+      props: {CLOSED: todayStamp()},
+    }));
+  }
+  touch(fromPath); touch(toPath);
+  notify("Refiled to " + pageTitle(toPath));
+  render();
+}
+
+function addNextActionTo(path, text) {
+  const page = getPage(path); if (!page) return null;
+  const blk = newBlock({state: "TODO", title: text, props: {Added: "[[" + todayISO() + "]]"}});
+  page.blocks.push(blk);
+  touch(path);
+  return blk;
+}
+
+function updateReviewed(path) {
+  const page = getPage(path); if (!page) return;
+  page.props.reviewed = todayStamp();
+  touch(path);
+  notify("Reviewed date updated");
+}
+
+function mergePages(sourcePath, targetPath) {
+  const src = getPage(sourcePath), tgt = getPage(targetPath);
+  if (!src || !tgt) return;
+  tgt.blocks.push(...src.blocks);
+  touch(targetPath);
+  removePage(sourcePath);
+  notify("Merged " + baseName(sourcePath) + " into " + baseName(targetPath));
+}
+</script>
+<script>
+/* ============================================================
+   75_SETTINGS -- kept in markdown too (pages/GTD.md)
+   ============================================================ */
+const SETTINGS_PATH = join(PAGES, "GTD.md");
+function settingsPage() {
+  if (!V.pages.has(SETTINGS_PATH)) {
+    putPage(SETTINGS_PATH, {
+      props: {title: "GTD", type: "settings", created: todayStamp()},
+      blocks: [newBlock({title: "System settings for GroupTodo. Safe to edit by hand."})],
+    });
+  }
+  return getPage(SETTINGS_PATH);
+}
+const getSetting = k => settingsPage().props[k] || null;
+function setSetting(k, v) { settingsPage().props[k] = v; touch(SETTINGS_PATH); }
+
+/* ============================================================
+   80_NUDGE_ENGINE
+   Every GTD nudge the Neovim config fired, as a always-visible strip.
+   ============================================================ */
+function computeNudges() {
+  const acts = leafActions();
+  const n = [];
+  const push = (id, level, label, count, act) => { if (count > 0) n.push({id, level, label, count, act}); };
+
+  const overdue = acts.filter(a => a.group === "LATE");
+  push("late", "danger", "overdue", overdue.length, () => go("agenda"));
+
+  const stuck = stuckActiveProjects();
+  push("stuck", "danger", "projects with no next action", stuck.length, () => openReview(0));
+
+  const loose = acts.filter(a => a.group === "JOURNAL");
+  push("loose", "warn", "journal actions not tied to a project", loose.length, () => openReview(1));
+
+  const noVerb = acts.filter(a => a.state === "TODO" && a.missingVerb);
+  push("verb", "warn", "actions without a physical verb", noVerb.length, () => openReview(2));
+
+  const noCtx = acts.filter(a => a.state === "TODO" && a.missingContext);
+  push("ctx", "warn", "actions without a context", noCtx.length, () => openReview(3));
+
+  const oldWait = acts.filter(a => a.state === "WAIT" && (a.age ?? 0) >= CFG.waitFollowUpDays);
+  push("wait", "warn", "waiting items to chase", oldWait.length, () => go("next"));
+
+  const stale = stalestActiveProjects(99).filter(p => (p.ageDays ?? 0) > CFG.staleProjectDays);
+  push("stale", "", "projects older than 6 months", stale.length, () => openWeeding());
+
+  const last = dateIn(getSetting("last_review"));
+  const since = last ? dateDiffDays(last, todayISO()) : null;
+  if (since == null || since >= CFG.reviewEveryDays) {
+    n.push({
+      id: "review", level: since == null || since > CFG.reviewEveryDays * 2 ? "danger" : "warn",
+      label: last ? `weekly review, ${since} days since last` : "no weekly review yet",
+      count: null, act: () => openReview(0),
+    });
+  }
+  if (!n.length) n.push({id: "clean", level: "ok", label: "system is clean — go do the work", count: null, act: null});
+  return n;
+}
+
+/* The single most useful thing to do right now. */
+function nextBestAction() {
+  const acts = leafActions();
+  const pick = (title, body, cta, act) => ({title, body, cta, act});
+  const overdue = acts.filter(a => a.group === "LATE");
+  if (overdue.length) return pick("Overdue", `${overdue.length} action(s) are past their date. Renegotiate or do them.`, "Open agenda", () => go("agenda"));
+  const last = dateIn(getSetting("last_review"));
+  if (!last || dateDiffDays(last, todayISO()) >= CFG.reviewEveryDays)
+    return pick("Weekly review is due", "The review is what makes the rest of the system trustworthy.", "Start review", () => openReview(0));
+  if (!state.context) return pick("Where are you right now?", "Pick a context and GroupTodo surfaces the three oldest actions you can actually do here.", "Pick context", () => openContextPicker("Where are you now?", ctx => surfaceContext(ctx)));
+  const stuck = stuckActiveProjects();
+  if (stuck.length) return pick("A project has stalled", `${stuck.length} active project(s) have no next action. Define one or park the project.`, "Unstick", () => openReview(0));
+  const surf = oldestTodosForContext(state.context);
+  if (surf.length) return pick("Oldest in " + state.context, surf[0].title, "Surface all three", () => surfaceContext(state.context));
+  return pick("Nothing is nagging", "Inbox to the journal, or weed the stalest projects.", "Weed projects", () => openWeeding());
+}
+
+/* ============================================================
+   85_INLINE_RENDER
+   ============================================================ */
+function renderInline(text) {
+  let h = esc(text || "");
+  h = h.replace(/\[\[([^\]]+)\]\]/g, (all, t) => {
+    const raw = trim(t.split("][")[0]);
+    const target = esc(raw);
+    const pfx = (/^([^/]+)\//.exec(raw) || [])[1];
+    const known = pfx === "c" || pfx === "z" || pfx === "p" || pfx === "o" || (pfx && STATUS_DIRS[pfx]);
+    let label = trim(t.includes("][") ? t.split("][")[1] : (known ? raw.slice(pfx.length + 1) : raw));
+    if (pfx === "c") label = "@" + label;
+    const cls = pfx === "c" ? " ctx" : pfx === "z" ? " zet" : (pfx && STATUS_DIRS[pfx]) ? " proj" : "";
+    return `<span class="wikilink${cls}" data-link="${target}">${esc(label)}</span>`;
+  });
+  h = h.replace(/(^|\s)#([\p{L}\p{N}_\-/]+)/gu, (all, sp, t) =>
+    `${sp}<span class="tag" data-link="${esc(t)}">#${esc(t)}</span>`);
+  h = h.replace(/`([^`]+)`/g, "<code>$1</code>");
+  h = h.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+  h = h.replace(/(^|[\s(])\*([^*\s][^*]*)\*/g, "$1<i>$2</i>");
+  h = h.replace(/\bhttps?:\/\/[^\s<]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+  return h;
+}
+
+/* ============================================================
+   90_VIEW_STATE
+   ============================================================ */
+const state = {
+  view: "today",
+  pagePath: null,
+  context: null,        // CURRENT_CONTEXT from init.lua
+  statusCode: "1",
+  query: "",
+  selected: null,       // block id
+  surfaced: [],         // ids of the 3 surfaced actions
+  lastTodoTouch: Date.now(),
+  lastMeetingTouch: Date.now(),
+};
+
+function go(view, opts = {}) {
+  state.view = view;
+  Object.assign(state, opts);
+  document.body.classList.remove("nav-open");
+  render();
+  $("#content").scrollTop = 0;
+}
+function openPage(path) { go("page", {pagePath: path}); }
+const noteTodoTouched = () => { state.lastTodoTouch = Date.now(); };
+
+/* ============================================================
+   95_RENDER -- sidebar
+   ============================================================ */
+const NAV = [
+  {group: null, items: [
+    {id: "today",  icon: "☀", label: "Today",        key: "f t"},
+    {id: "next",   icon: "▸", label: "Next actions", key: "g n"},
+    {id: "context",icon: "⌘", label: "Context",      key: "g x"},
+    {id: "agenda", icon: "☷", label: "Agenda",       key: "g a"},
+  ]},
+  {group: "Projects", items: [
+    {id: "proj-1", icon: "1", label: "Active",        status: "1"},
+    {id: "proj-3", icon: "3", label: "Waiting for",   status: "3"},
+    {id: "proj-2", icon: "2", label: "Someday/Maybe", status: "2"},
+    {id: "proj-0", icon: "0", label: "Completed",     status: "0"},
+    {id: "proj-_", icon: "_", label: "Cancelled",     status: "_"},
+  ]},
+  {group: "Knowledge", items: [
+    {id: "zettel", icon: "◈", label: "Zettel",   key: "z n"},
+    {id: "pages",  icon: "☰", label: "All pages"},
+    {id: "journal-list", icon: "▤", label: "Journals"},
+  ]},
+  {group: "Keep fresh", items: [
+    {id: "weeding", icon: "✂", label: "Morning weeding", key: "g w"},
+    {id: "review",  icon: "✓", label: "Weekly review",   key: "g r"},
+    {id: "health",  icon: "⚕", label: "Health check",    key: "h c"},
+  ]},
+];
+
+function navCount(id) {
+  switch (id) {
+    case "today":   return openTodoCount(journalPath());
+    case "next":    return leafActions().filter(a => a.state !== "WAIT").length;
+    case "context": return state.context ? oldestTodosForContext(state.context).length : contextList().length;
+    case "agenda":  return agendaScan().reduce((n, [, l]) => n + l.length, 0);
+    case "health":  return healthScan().length;
+    case "review":  return stuckActiveProjects().length;
+    default: {
+      const m = /^proj-(.)$/.exec(id);
+      if (m) return projectsIn(m[1]).length;
+      return null;
+    }
+  }
+}
+
+function renderNav() {
+  const nav = $("#nav");
+  nav.textContent = "";
+  for (const sec of NAV) {
+    const box = el("div", {class: "nav-group"});
+    if (sec.group) box.append(el("h3", {}, sec.group));
+    for (const it of sec.items) {
+      const active = it.status ? (state.view === "projects" && state.statusCode === it.status)
+                               : state.view === it.id;
+      const count = navCount(it.id);
+      const hot = (it.id === "health" || it.id === "review") && count > 0;
+      box.append(el("button", {
+        class: "nav-item" + (active ? " active" : ""),
+        onclick: () => it.status ? go("projects", {statusCode: it.status}) : go(it.id),
+      },
+        el("span", {class: "ic"}, it.icon),
+        el("span", {class: "lbl"}, it.label),
+        count ? el("span", {class: "cnt" + (hot ? " hot" : "")}, String(count))
+              : (it.key ? el("span", {class: "key"}, it.key) : null)
+      ));
+    }
+    nav.append(box);
+  }
+}
+
+/* ============================================================
+   100_RENDER -- shared pieces
+   ============================================================ */
+function nudgeBar() {
+  const bar = el("div", {class: "nudgebar"});
+  for (const nd of computeNudges()) {
+    bar.append(el("button", {
+      class: "nudge " + (nd.level || ""),
+      onclick: nd.act || (() => {}),
+    }, nd.count != null ? el("b", {}, String(nd.count)) : null, nd.label));
+  }
+  return bar;
+}
+
+function heroCard() {
+  const nb = nextBestAction();
+  return el("div", {class: "hero"},
+    el("h2", {}, "Next best move"),
+    el("div", {style: "font-size:16px;font-weight:600;margin-bottom:2px"}, nb.title),
+    el("p", {html: renderInline(nb.body)}),
+    el("div", {class: "acts"},
+      el("button", {class: "btn primary", onclick: nb.act}, nb.cta),
+      el("button", {class: "btn ghost", onclick: () => openCapture()}, "Capture something"),
+      el("button", {class: "btn ghost", onclick: () => openContextPicker("Where are you now?", ctx => surfaceContext(ctx))},
+        state.context ? "Context: " + state.context : "Set context")
+    ));
+}
+
+function stateChip(st) {
+  return el("span", {class: "state " + (st || "")}, st || "");
+}
+
+function chipsFor(a) {
+  const out = [];
+  if (a.context) out.push(el("span", {class: "chip ctx b", onclick: e => {e.stopPropagation(); surfaceContext(a.context);}}, "@" + a.context));
+  if (a.project) out.push(el("span", {class: "chip proj b", onclick: e => {e.stopPropagation(); a.projectPath && openPage(a.projectPath);}}, a.project));
+  if (a.due) {
+    const cls = a.due < todayISO() ? "late" : a.due === todayISO() ? "today" : "";
+    out.push(el("span", {class: "chip " + cls}, humanDate(a.due)));
+  }
+  if (a.age != null && a.age > 0) out.push(el("span", {class: "chip age"}, a.age + "d"));
+  if (a.missingVerb && a.state === "TODO")
+    out.push(el("span", {class: "chip miss b", onclick: e => {e.stopPropagation(); openVerbPicker(a.path, a.block);}}, "no verb"));
+  if (a.missingContext && a.state !== "WAIT")
+    out.push(el("span", {class: "chip miss b", onclick: e => {e.stopPropagation(); promptAndInsertContext(a.path, a.block);}}, "no context"));
+  return out;
+}
+
+/* Context and project links are already chips on the row, so hide them
+   from the title text. The outline view still shows them Logseq-style. */
+function titleForRow(title) {
+  return trim(String(title || "")
+    .replace(/\[\[[_0123c]\/[^\]]+\]\]/g, "")
+    .replace(/\s{2,}/g, " "));
+}
+
+function taskRow(a) {
+  const row = el("div", {
+    class: "task" + (state.selected === a.block.id ? " sel" : ""),
+    data: {state: a.state || ""},
+    onclick: () => openTaskDetail(a.path, a.block),
+  },
+    el("button", {
+      class: "chk", title: "Toggle done",
+      onclick: e => { e.stopPropagation(); setBlockState(a.path, a.block, a.state === "DONE" ? "TODO" : "DONE"); },
+    }, "✓"),
+    el("div", {class: "t-body"},
+      el("div", {class: "t-title", html: renderInline(titleForRow(a.title))}),
+      el("div", {class: "t-meta"}, stateChip(a.state), ...chipsFor(a))),
+    el("div", {class: "t-act"},
+      el("button", {class: "iconbtn", title: "Waiting for", onclick: e => {e.stopPropagation(); setBlockState(a.path, a.block, "WAIT");}}, "⏸"),
+      el("button", {class: "iconbtn", title: "Refile to a project", onclick: e => {e.stopPropagation(); openRefile(a.path, a.block);}}, "↪"),
+      el("button", {class: "iconbtn", title: "Open page", onclick: e => {e.stopPropagation(); openPage(a.path);}}, "↗"))
+  );
+  return row;
+}
+
+function taskCard(actions, emptyText) {
+  const card = el("div", {class: "card"});
+  if (!actions.length) card.append(el("div", {class: "empty"}, emptyText || "Nothing here."));
+  else actions.forEach(a => card.append(taskRow(a)));
+  return card;
+}
+
+function section(title, count, node, extra) {
+  return el("div", {class: "section"},
+    el("h3", {}, title, count != null ? el("span", {class: "n"}, String(count)) : null, extra || null),
+    node);
+}
+</script>
+<script>
+/* ============================================================
+   105_OUTLINER -- the Logseq half of the app
+   Keys: Enter new block, Tab/Shift-Tab indent, Ctrl-Enter cycle state,
+         Backspace on an empty block deletes it.
+   ============================================================ */
+function siblingsOf(page, block) {
+  let found = null;
+  const rec = list => {
+    if (list.includes(block)) { found = list; return; }
+    list.forEach(b => rec(b.children || []));
+  };
+  rec(page.blocks);
+  return found || page.blocks;
+}
+function parentOf(page, block) {
+  let par = null;
+  walkBlocks(page.blocks, (b, p) => { if (b === block) par = p; });
+  return par;
+}
+
+function focusBlock(id, atEnd = true) {
+  requestAnimationFrame(() => {
+    const node = $(`.blk[data-id="${id}"] .txt`);
+    if (!node) return;
+    node.focus();
+    const r = document.createRange(), s = getSelection();
+    r.selectNodeContents(node); r.collapse(!atEnd);
+    s.removeAllRanges(); s.addRange(r);
+  });
+}
+
+function outlineBlock(path, page, b) {
+  const kids = b.children || [];
+  const node = el("div", {class: "blk" + (kids.length ? " has-kids" : "") + (b.collapsed ? " collapsed" : ""), data: {id: b.id}});
+  const line = el("div", {class: "line"});
+
+  line.append(el("span", {
+    class: "bullet", title: kids.length ? "Collapse / expand" : "",
+    onclick: () => { if (kids.length) { b.collapsed = !b.collapsed; render(); } },
+  }));
+  if (b.state) {
+    line.append(el("button", {
+      class: "state " + b.state, title: "Cycle state",
+      onclick: () => cycleState(path, b),
+    }, b.state));
+  }
+
+  const txt = el("div", {
+    class: "txt", contenteditable: "true", spellcheck: "false",
+    html: renderInline(b.title),
+  });
+  txt.addEventListener("focus", () => { txt.textContent = b.title; });
+  txt.addEventListener("blur", () => {
+    const val = txt.textContent.replace(/\n/g, " ");
+    if (val !== b.title) {
+      const [st, rest] = splitState(val);
+      if (st) { b.state = st; b.title = rest; } else { b.title = val; }
+      touch(path); noteTodoTouched();
+      renderNav();
+    }
+    txt.innerHTML = renderInline(b.title);
+  });
+  txt.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault(); txt.blur();
+      const sibs = siblingsOf(page, b);
+      const nb = newBlock({state: b.state && OPEN_STATES[b.state] ? "TODO" : null});
+      if (nb.state) nb.props.Added = "[[" + todayISO() + "]]";
+      sibs.splice(sibs.indexOf(b) + 1, 0, nb);
+      touch(path); render(); focusBlock(nb.id);
+    } else if (e.key === "Tab") {
+      e.preventDefault(); txt.blur();
+      const sibs = siblingsOf(page, b), i = sibs.indexOf(b);
+      if (e.shiftKey) {
+        const par = parentOf(page, b);
+        if (par) {
+          const gsibs = siblingsOf(page, par);
+          sibs.splice(i, 1);
+          gsibs.splice(gsibs.indexOf(par) + 1, 0, b);
+          touch(path); render(); focusBlock(b.id);
+        }
+      } else if (i > 0) {
+        const prev = sibs[i - 1];
+        sibs.splice(i, 1);
+        (prev.children || (prev.children = [])).push(b);
+        prev.collapsed = false;
+        touch(path); render(); focusBlock(b.id);
+      }
+    } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault(); txt.blur(); cycleState(path, b);
+    } else if (e.key === "Backspace" && txt.textContent === "" && !(b.children || []).length) {
+      e.preventDefault();
+      const sibs = siblingsOf(page, b), i = sibs.indexOf(b);
+      const prev = i > 0 ? sibs[i - 1] : null;
+      sibs.splice(i, 1);
+      touch(path); render();
+      if (prev) focusBlock(prev.id);
+    } else if (e.key === "Escape") {
+      txt.blur();
+    }
+  });
+  line.append(txt);
+  line.append(el("button", {
+    class: "iconbtn", title: "Task actions",
+    onclick: () => openTaskDetail(path, b),
+  }, "⋯"));
+  node.append(line);
+
+  const props = Object.entries(b.props || {}).filter(([k]) => k.toLowerCase() !== "id");
+  if (props.length) {
+    node.append(el("div", {class: "props", html: props.map(([k, v]) => esc(k) + ":: " + renderInline(v)).join("  ·  ")}));
+  }
+  for (const l of b.body || []) if (trim(l)) node.append(el("div", {class: "bodyline", html: renderInline(l)}));
+
+  if (!b.collapsed) for (const k of kids) node.append(outlineBlock(path, page, k));
+  return node;
+}
+
+function outlineFor(path) {
+  const page = getPage(path);
+  const box = el("div", {class: "card"});
+  const outline = el("div", {class: "outline"});
+  if (!page.blocks.length) page.blocks.push(newBlock({title: ""}));
+  for (const b of page.blocks) outline.append(outlineBlock(path, page, b));
+  box.append(outline);
+  box.append(el("button", {
+    class: "dash-item", onclick: () => {
+      const nb = newBlock({title: ""});
+      page.blocks.push(nb); touch(path); render(); focusBlock(nb.id);
+    },
+  }, "+ new block"));
+  return box;
+}
+
+/* ============================================================
+   110_VIEWS
+   ============================================================ */
+function viewToday() {
+  const path = ensureJournal(todayISO());
+  const page = getPage(path);
+  const acts = leafActions();
+  const c = el("div", {class: "wrap"});
+  c.append(nudgeBar(), heroCard());
+
+  const surfaced = state.context ? oldestTodosForContext(state.context) : [];
+  if (state.context) {
+    c.append(section(
+      "Oldest in @" + state.context, surfaced.length,
+      taskCard(surfaced, "No open actions in this context — pick another or capture one."),
+      el("button", {class: "btn sm ghost", style: "margin-left:auto", onclick: () => openContextPicker("Switch context", ctx => surfaceContext(ctx))}, "switch")
+    ));
+  }
+
+  const due = acts.filter(a => a.group === "LATE" || a.group === "TODAY");
+  if (due.length) c.append(section("Due", due.length, taskCard(due)));
+
+  c.append(section("Today's journal", null, outlineFor(path),
+    el("span", {style: "margin-left:auto;font-weight:400;text-transform:none;letter-spacing:0"}, humanDate(todayISO()))));
+
+  const prev = journalPath(shiftISO(todayISO(), -1));
+  c.append(el("div", {class: "section", style: "display:flex;gap:8px"},
+    el("button", {class: "btn sm ghost", onclick: () => openPage(ensureJournal(shiftISO(todayISO(), -1)))}, "← yesterday"),
+    V.pages.has(prev) ? null : null,
+    el("button", {class: "btn sm ghost", onclick: () => openPage(ensureJournal(shiftISO(todayISO(), 1)))}, "tomorrow →")));
+  return c;
+}
+
+function viewNext() {
+  const acts = leafActions();
+  const c = el("div", {class: "wrap"});
+  c.append(nudgeBar());
+  for (const g of GROUPS) {
+    const items = acts.filter(a => a.group === g);
+    if (!items.length) continue;
+    items.sort((x, y) => (x.added || "9999").localeCompare(y.added || "9999"));
+    c.append(section(GROUP_META[g].label, items.length, taskCard(items)));
+  }
+  if (!acts.length) c.append(section("Next actions", 0, taskCard([], "No open actions. Capture something, or check your projects.")));
+  return c;
+}
+
+function viewContext() {
+  const c = el("div", {class: "wrap"});
+  c.append(nudgeBar());
+  const ctxs = contextList();
+  if (state.context) {
+    const items = oldestTodosForContext(state.context, 99);
+    c.append(section("@" + state.context, items.length,
+      taskCard(items.slice(0, CFG.surfaceCount), "Nothing open here."),
+      el("button", {class: "btn sm ghost", style: "margin-left:auto", onclick: () => { state.context = null; render(); }}, "clear")));
+    if (items.length > CFG.surfaceCount) {
+      c.append(section("Rest of @" + state.context, items.length - CFG.surfaceCount, taskCard(items.slice(CFG.surfaceCount))));
+    }
+  }
+  const card = el("div", {class: "card"});
+  if (!ctxs.length) card.append(el("div", {class: "empty"}, "No contexts yet. Create pages under pages/c/ — e.g. c/phone, c/errand, c/computer."));
+  for (const ctx of ctxs) {
+    const open = leafActions().filter(a => a.context === ctx && OPEN_STATES[a.state]);
+    card.append(el("button", {class: "prow", onclick: () => surfaceContext(ctx)},
+      el("span", {class: "st st-1"}, "@"),
+      el("span", {class: "nm"}, ctx),
+      el("span", {class: "sub"}, open.length + " open")));
+  }
+  c.append(section("All contexts", ctxs.length, card,
+    el("button", {class: "btn sm ghost", style: "margin-left:auto", onclick: () => newContextPrompt()}, "+ new")));
+  return c;
+}
+
+function viewAgenda() {
+  const c = el("div", {class: "wrap"});
+  c.append(nudgeBar());
+  const days = agendaScan();
+  if (!days.length) {
+    c.append(section("Next " + CFG.agendaDays + " days", 0,
+      taskCard([], "Nothing scheduled. Add SCHEDULED:: [[date]] or DEADLINE:: [[date]] to an action.")));
+  }
+  for (const [date, items] of days) {
+    const label = date === todayISO() ? date + "  (today)" : date < todayISO() ? date + "  (overdue)" : date;
+    c.append(section(label + " · " + humanDate(date), items.length, taskCard(items)));
+  }
+  return c;
+}
+
+function viewProjects() {
+  const code = state.statusCode;
+  const c = el("div", {class: "wrap"});
+  c.append(nudgeBar());
+  const paths = projectsIn(code);
+  const stuck = new Set(stuckActiveProjects().map(s => s.path));
+  const card = el("div", {class: "card"});
+  if (!paths.length) card.append(el("div", {class: "empty"}, "No " + STATUS_LABEL[code].toLowerCase() + " projects."));
+  for (const p of paths.sort((a, b) => pageTitle(a).localeCompare(pageTitle(b)))) {
+    const open = openTodoCount(p);
+    const page = getPage(p);
+    const reviewed = dateIn(page.props?.reviewed);
+    const idle = reviewed ? dateDiffDays(reviewed, todayISO()) : null;
+    card.append(el("div", {class: "prow"},
+      el("button", {class: "st st-" + code, title: STATUS_TEXT[code], onclick: () => openStatusPicker(p)}, code),
+      el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(p)}, pageTitle(p)),
+      stuck.has(p) ? el("span", {class: "chip miss b", onclick: () => openAddNextAction(p)}, "no next action") : null,
+      open ? el("span", {class: "chip"}, open + " open") : null,
+      idle != null ? el("span", {class: "chip age"}, "reviewed " + idle + "d ago") : null,
+      el("button", {class: "iconbtn", title: "Change status", onclick: () => openStatusPicker(p)}, "⇄")));
+  }
+  c.append(section(STATUS_LABEL[code] + " projects", paths.length, card,
+    el("button", {class: "btn sm ghost", style: "margin-left:auto", onclick: () => newProjectPrompt()}, "+ new project")));
+  return c;
+}
+
+function viewPages(filterFn, title, mkNew) {
+  const c = el("div", {class: "wrap"});
+  const paths = allPages(filterFn).sort((a, b) => pageTitle(a).localeCompare(pageTitle(b)));
+  const card = el("div", {class: "card"});
+  if (!paths.length) card.append(el("div", {class: "empty"}, "Nothing here yet."));
+  for (const p of paths) {
+    card.append(el("button", {class: "prow", onclick: () => openPage(p)},
+      el("span", {class: "st st-2"}, pageRef(p).split("/")[0].slice(0, 1)),
+      el("span", {class: "nm"}, pageTitle(p)),
+      el("span", {class: "sub"}, p)));
+  }
+  c.append(section(title, paths.length, card,
+    mkNew ? el("button", {class: "btn sm ghost", style: "margin-left:auto", onclick: mkNew}, "+ new") : null));
+  return c;
+}
+
+function viewHealth() {
+  const issues = healthScan();
+  const c = el("div", {class: "wrap"});
+  c.append(nudgeBar());
+  const byType = new Map();
+  for (const i of issues) { if (!byType.has(i.type)) byType.set(i.type, []); byType.get(i.type).push(i); }
+  if (!issues.length) c.append(section("Health", 0, el("div", {class: "card"}, el("div", {class: "empty"}, "System healthy."))));
+  for (const [type, items] of byType) {
+    const card = el("div", {class: "card"});
+    for (const i of items) {
+      card.append(el("button", {class: "dash-item", onclick: () => openPage(i.path)},
+        el("span", {}, i.text), el("span", {class: "p"}, i.path)));
+    }
+    c.append(section(type.replace(/-/g, " "), items.length, card));
+  }
+  const dupes = duplicateProjects();
+  if (dupes.length) {
+    const card = el("div", {class: "card"});
+    for (const d of dupes) {
+      card.append(el("div", {class: "dash-item"}, el("b", {}, d.slug), el("span", {class: "p"}, d.paths.length + " copies")));
+      for (const p of d.paths) {
+        card.append(el("div", {class: "prow"},
+          el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(p)}, p),
+          el("span", {class: "sub"}, openTodoCount(p) + " open"),
+          el("button", {class: "btn sm ghost", onclick: () => {
+            d.paths.filter(x => x !== p).forEach(x => mergePages(x, p));
+            render();
+          }}, "keep this, merge rest")));
+      }
+    }
+    c.append(section("duplicate projects", dupes.length, card));
+  }
+  return c;
+}
+
+function viewPage() {
+  const path = state.pagePath;
+  if (!path || !V.pages.has(path)) { state.view = "today"; return viewToday(); }
+  const page = getPage(path);
+  const c = el("div", {class: "wrap"});
+  const code = statusDirOf(path);
+
+  const meta = el("div", {class: "nudgebar"});
+  if (code) meta.append(el("button", {class: "nudge", onclick: () => openStatusPicker(path)}, el("b", {}, code), STATUS_LABEL[code]));
+  for (const [k, v] of Object.entries(page.props || {})) {
+    if (k === "title") continue;
+    meta.append(el("span", {class: "nudge", html: esc(k) + ":: " + renderInline(v)}));
+  }
+  meta.append(el("button", {class: "nudge", onclick: () => { updateReviewed(path); render(); }}, "mark reviewed"));
+  if (code) meta.append(el("button", {class: "nudge", onclick: () => openAddNextAction(path)}, "+ next action"));
+  c.append(meta);
+  c.append(el("div", {class: "section"}, outlineFor(path)));
+
+  const back = backlinksTo(path);
+  const card = el("div", {class: "card"});
+  if (!back.length) card.append(el("div", {class: "empty"}, "No backlinks."));
+  for (const h of back) {
+    card.append(el("button", {class: "dash-item", onclick: () => openPage(h.path)},
+      el("span", {html: renderInline(h.block.title || "(block)")}), el("span", {class: "p"}, h.path)));
+  }
+  c.append(section("Linked references", back.length, card));
+
+  c.append(el("div", {class: "section", style: "display:flex;gap:8px;flex-wrap:wrap"},
+    el("button", {class: "btn sm ghost", onclick: () => renamePrompt(path)}, "rename"),
+    el("button", {class: "btn sm ghost", onclick: () => movePrompt(path)}, "move"),
+    el("button", {class: "btn sm ghost", onclick: () => deletePrompt(path)}, "delete")));
+  return c;
+}
+
+function viewSearch() {
+  const q = trim(state.query).toLowerCase();
+  const c = el("div", {class: "wrap"});
+  const box = el("div", {class: "filterbox", style: "padding:14px 0"},
+    el("input", {
+      placeholder: "Search every block and page...", value: state.query,
+      oninput: e => { state.query = e.target.value; clearTimeout(window.__sq); window.__sq = setTimeout(render, 160); },
+    }));
+  c.append(box);
+  if (!q) { c.append(el("div", {class: "empty"}, "Type to search.")); return c; }
+  const hits = [];
+  for (const [path, page] of V.pages) {
+    if (pageTitle(path).toLowerCase().includes(q)) hits.push({path, block: null});
+    walkBlocks(page.blocks, b => {
+      const text = [b.title, ...(b.body || [])].join(" ").toLowerCase();
+      if (text.includes(q)) hits.push({path, block: b});
+    });
+  }
+  const card = el("div", {class: "card"});
+  if (!hits.length) card.append(el("div", {class: "empty"}, "No matches."));
+  for (const h of hits.slice(0, 300)) {
+    card.append(el("button", {class: "dash-item", onclick: () => h.block ? openTaskDetail(h.path, h.block) : openPage(h.path)},
+      h.block ? stateChip(h.block.state) : null,
+      el("span", {html: renderInline(h.block ? h.block.title : pageTitle(h.path))}),
+      el("span", {class: "p"}, h.path)));
+  }
+  c.append(section("Results", hits.length, card));
+  return c;
+}
+
+/* ============================================================
+   115_RENDER dispatcher
+   ============================================================ */
+const VIEW_TITLE = {
+  today: "Today", next: "Next actions", context: "Context", agenda: "Agenda",
+  projects: "Projects", zettel: "Zettel", pages: "All pages", "journal-list": "Journals",
+  health: "Health check", search: "Search", page: "Page",
+};
+
+function render() {
+  if (!V.loaded) return;
+  renderNav();
+  const c = $("#content");
+  c.textContent = "";
+  let node;
+  switch (state.view) {
+    case "today":   node = viewToday(); break;
+    case "next":    node = viewNext(); break;
+    case "context": node = viewContext(); break;
+    case "agenda":  node = viewAgenda(); break;
+    case "projects":node = viewProjects(); break;
+    case "health":  node = viewHealth(); break;
+    case "search":  node = viewSearch(); break;
+    case "page":    node = viewPage(); break;
+    case "zettel":  node = viewPages(p => p.startsWith(DIRS.zettel + "/"), "Zettel notes", () => newZettelPrompt()); break;
+    case "journal-list": node = viewPages(p => isJournalPath(p), "Journals"); break;
+    case "pages":   node = viewPages(p => !isJournalPath(p) && pageKind(p) !== "verb", "All pages"); break;
+    case "review":  node = viewToday(); openReview(0); break;
+    case "weeding": node = viewToday(); openWeeding(); break;
+    default:        node = viewToday();
+  }
+  c.append(node);
+  $("#hTitle").textContent = state.view === "page" ? pageTitle(state.pagePath)
+    : state.view === "projects" ? STATUS_LABEL[state.statusCode] + " projects"
+    : (VIEW_TITLE[state.view] || "Today");
+  $("#hSub").textContent = state.view === "page" ? state.pagePath
+    : state.context && ["today", "context", "next"].includes(state.view) ? "@" + state.context : "";
+}
+
+/* wiki links are delegated */
+$("#content").addEventListener("click", e => {
+  const link = e.target.closest("[data-link]");
+  if (link) { e.stopPropagation(); followLink(link.dataset.link); }
+});
+</script>
+<script>
+/* ============================================================
+   120_MODALS
+   Port of: init.lua 80_RENDER_ENGINE (open_scratch + letter keys)
+   The bottom-split scratch buffers become bottom sheets; the a-z
+   selection keys from open_context_picker are kept exactly.
+   ============================================================ */
+let MODAL_KEYS = null;
+
+function modal({title, hint, body, foot, center = false, onKey = null}) {
+  closeModal();
+  const sheet = el("div", {class: "modal"},
+    el("header", {}, el("h2", {}, title), el("div", {style: "flex:1"}),
+      hint ? el("span", {class: "hint"}, hint) : null,
+      el("button", {class: "iconbtn", onclick: closeModal}, "✕")),
+    el("div", {class: "body"}, body),
+    foot ? el("div", {class: "foot"}, foot) : null);
+  const scrim = el("div", {class: "scrim" + (center ? " center" : ""), onclick: e => { if (e.target === scrim) closeModal(); }}, sheet);
+  $("#modalRoot").append(scrim);
+  MODAL_KEYS = onKey;
+  return {close: closeModal, root: sheet};
+}
+function closeModal() {
+  $("#modalRoot").textContent = "";
+  MODAL_KEYS = null;
+}
+function pickRow(key, label, detail, onclick) {
+  return el("button", {class: "pick", onclick},
+    el("span", {class: "k"}, key), el("span", {}, label),
+    detail ? el("span", {class: "d"}, detail) : null);
+}
+
+/* Generic list picker with a-z single-key selection. */
+function listPicker({title, hint, items, label, detail, onPick, footer}) {
+  const letters = "abcdefghijklmnopqrstuvwxyz";
+  let filtered = items.slice();
+  const body = el("div", {});
+  const list = el("div", {});
+  const input = el("input", {
+    placeholder: "filter...",
+    oninput: e => { const q = e.target.value.toLowerCase();
+      filtered = items.filter(i => label(i).toLowerCase().includes(q)); draw(); },
+  });
+  body.append(el("div", {class: "filterbox"}, input), list);
+  function draw() {
+    list.textContent = "";
+    if (!filtered.length) list.append(el("div", {class: "empty"}, "No matches."));
+    filtered.forEach((it, i) => {
+      const key = i < 26 ? letters[i] : String(i + 1);
+      list.append(pickRow(key, label(it), detail ? detail(it) : null, () => { closeModal(); onPick(it); }));
+    });
+  }
+  draw();
+  modal({
+    title, hint: hint || "letter selects · esc cancels", body,
+    foot: footer,
+    onKey: e => {
+      if (document.activeElement === input && e.key.length === 1) return false;
+      const i = letters.indexOf(e.key);
+      if (i >= 0 && i < filtered.length) { closeModal(); onPick(filtered[i]); return true; }
+      return false;
+    },
+  });
+  // Deliberately NOT focused: a-z must select a row, exactly like the
+  // letter-key context picker in the Neovim config. Tap the box to filter.
+}
+
+function promptInput({title, label, value = "", placeholder = "", multiline = false, cta = "Save", onSave}) {
+  const input = multiline
+    ? el("textarea", {placeholder})
+    : el("input", {placeholder, value});
+  if (multiline) input.value = value;
+  const save = () => { const v = trim(input.value); closeModal(); if (v) onSave(v); };
+  modal({
+    center: true, title,
+    body: el("div", {class: "field"}, el("label", {}, label), input),
+    foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+           el("button", {class: "btn primary", onclick: save}, cta)],
+    onKey: e => {
+      if (e.key === "Enter" && (!multiline || e.ctrlKey || e.metaKey)) { save(); return true; }
+      return false;
+    },
+  });
+  setTimeout(() => input.focus(), 30);
+}
+
+/* ============================================================
+   125_CONTEXT_SYSTEM
+   Port of: init.lua 52_CONTEXT_SYSTEM
+   ============================================================ */
+function seedContexts() {
+  for (const c of SEED_CONTEXTS) {
+    const p = join(DIRS.contexts, c + ".md");
+    if (!V.pages.has(p)) putPage(p, pageTemplateFor("c", c));
+  }
+  notify("Installed " + SEED_CONTEXTS.length + " contexts under pages/c/.");
+}
+
+function offerStarterContexts(onPick) {
+  modal({
+    center: true, title: "No contexts yet",
+    body: el("div", {class: "field"},
+      el("label", {}, "Contexts are where work can happen"),
+      el("div", {style: "color:var(--fg2);font-size:13.5px"},
+        "An action tagged [[c/phone]] can only be done with a phone in hand. " +
+        "Picking a context is what lets GroupTodo surface the three oldest things " +
+        "you can actually do right now.")),
+    foot: [
+      el("button", {class: "btn ghost", onclick: () => { closeModal(); newContextPrompt(onPick); }}, "Name my own"),
+      el("button", {class: "btn primary", onclick: () => {
+        closeModal(); seedContexts(); render();
+        openContextPicker("Where are you now?", onPick);
+      }}, "Install starter contexts"),
+    ],
+  });
+}
+
+function openContextPicker(title, onPick) {
+  const items = contextList();
+  if (!items.length) { offerStarterContexts(onPick); return; }
+  listPicker({
+    title: title || "Pick context", items,
+    label: c => "@" + c,
+    detail: c => leafActions().filter(a => a.context === c && OPEN_STATES[a.state]).length + " open",
+    onPick,
+    footer: el("button", {class: "btn ghost", onclick: () => { closeModal(); newContextPrompt(onPick); }}, "+ new context"),
+  });
+}
+
+function newContextPrompt(onPick) {
+  promptInput({
+    title: "New context", label: "Name (no @, e.g. phone, errand, deep-work)",
+    cta: "Create",
+    onSave: name => {
+      const clean = slugify(name.replace(/^@/, ""));
+      const path = join(DIRS.contexts, clean + ".md");
+      if (!V.pages.has(path)) putPage(path, pageTemplateFor("c", clean));
+      notify("Context created: @" + clean);
+      render();
+      if (onPick) onPick(clean);
+    },
+  });
+}
+
+function insertContextLink(path, block, ctx) {
+  if (hasContextLink(block.title)) { notify("Already has a context"); return; }
+  block.title = trim(block.title) + " [[c/" + ctx + "]]";
+  touch(path);
+  render();
+}
+
+function promptAndInsertContext(path, block) {
+  openContextPicker("Pick a context for this action", ctx => {
+    insertContextLink(path, block, ctx);
+    checkProjectCompletion(path);
+  });
+}
+
+/* Surface the 3 oldest actions in a context -- the core nudge loop. */
+function surfaceContext(ctx) {
+  state.context = ctx;
+  state.lastTodoTouch = Date.now();
+  const items = oldestTodosForContext(ctx);
+  state.surfaced = items.map(a => a.block.id);
+  setSetting("current_context", ctx);
+  go("today");
+  notify(items.length
+    ? `@${ctx}: ${items.length} oldest action(s) surfaced.`
+    : `@${ctx}: nothing open here. Capture one?`);
+}
+
+/* ============================================================
+   130_VERB_PICKER
+   Port of: init.lua suggest_phys_viz_verb
+   ============================================================ */
+function seedVerbs() {
+  for (const [lang, verbs] of Object.entries(SEED_VERBS)) {
+    for (const [canonical, syns] of Object.entries(verbs)) {
+      const p = join(DIRS.verbs, lang, canonical + ".md");
+      if (V.pages.has(p)) continue;
+      putPage(p, {
+        props: {title: canonical, type: "verb", lang},
+        blocks: [newBlock({title: canonical + " = " + canonical}),
+                 ...syns.map(x => newBlock({title: x + " = " + canonical}))],
+      });
+    }
+  }
+  scanVerbs();
+  notify("Installed " + Object.keys(VERB_CANON).length + " verbs under pages/verbs/.");
+}
+
+function openVerbPicker(path, block) {
+  const verbs = verbList();
+  if (!verbs.length) {
+    modal({
+      center: true, title: "No verb lexicon yet",
+      body: el("div", {class: "field"},
+        el("label", {}, "The Phys-Viz rule"),
+        el("div", {style: "color:var(--fg2);font-size:13.5px"},
+          "A next action should start with a verb a camera could film: Call, Draft, Buy. " +
+          "Verbs live in pages/verbs/<lang>/<verb>.md, one \u201Csynonym = verb\u201D per line.")),
+      foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Not now"),
+             el("button", {class: "btn primary", onclick: () => { closeModal(); seedVerbs(); openVerbPicker(path, block); }},
+               "Install starter verbs")],
+    });
+    return;
+  }
+  listPicker({
+    title: "Make it physical and visible",
+    hint: "what would a camera see you doing?",
+    items: verbs,
+    label: v => v.canonical.charAt(0).toUpperCase() + v.canonical.slice(1),
+    detail: v => v.lang,
+    onPick: v => {
+      const verb = v.canonical.charAt(0).toUpperCase() + v.canonical.slice(1);
+      if (!startsWithVerb(block.title)) block.title = verb + " " + block.title;
+      if (!block.state) block.state = "TODO";
+      touch(path); render();
+    },
+  });
+}
+
+/* Clarify: make it a TODO, give it a verb, give it a context. */
+function clarifyBlock(path, block) {
+  if (!block.state) setBlockState(path, block, "TODO", {skipContext: true});
+  if (!startsWithVerb(block.title)) { openVerbPicker(path, block); return; }
+  if (!hasContextLink(block.title)) { promptAndInsertContext(path, block); return; }
+  notify("Looks executable: physical verb + context.");
+}
+
+/* ============================================================
+   135_CAPTURE / REFILE / DETAIL
+   ============================================================ */
+function openCapture() {
+  const path = ensureJournal(todayISO());
+  const input = el("textarea", {placeholder: "What just landed? One line per item."});
+  let asTodo = true, ctx = state.context;
+  const ctxBtn = el("button", {class: "btn ghost sm", onclick: () => {
+    openContextPicker("Context for capture", c => { ctx = c; openCaptureWith(input.value, asTodo, c); });
+  }}, ctx ? "@" + ctx : "no context");
+  const todoBtn = el("button", {class: "btn ghost sm", onclick: () => {
+    asTodo = !asTodo; todoBtn.textContent = asTodo ? "TODO" : "note";
+    todoBtn.classList.toggle("primary", asTodo);
+  }}, "TODO");
+  todoBtn.classList.add("primary");
+
+  const save = () => {
+    const lines = input.value.split("\n").map(trim).filter(Boolean);
+    closeModal();
+    if (!lines.length) return;
+    const page = getPage(path);
+    for (const line of lines) {
+      const [st, rest] = splitState(line);
+      const title = (st ? rest : line) + (asTodo && ctx && !hasContextLink(line) ? " [[c/" + ctx + "]]" : "");
+      const blk = newBlock({state: st || (asTodo ? "TODO" : null), title});
+      if (blk.state) blk.props.Added = "[[" + todayISO() + "]]";
+      page.blocks.push(blk);
+    }
+    touch(path); noteTodoTouched();
+    notify(lines.length + " captured to today's journal.");
+    go("today");
+  };
+  modal({
+    center: true, title: "Capture", hint: "ctrl+enter saves",
+    body: el("div", {},
+      el("div", {class: "field"}, el("label", {}, "Into " + journalPath()), input),
+      el("div", {class: "field"}, el("label", {}, "Capture as"), el("div", {class: "seg"}, todoBtn, ctxBtn))),
+    foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+           el("button", {class: "btn primary", onclick: save}, "Capture")],
+    onKey: e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { save(); return true; } return false; },
+  });
+  setTimeout(() => input.focus(), 30);
+}
+function openCaptureWith(text, asTodo, ctx) { state.context = ctx; openCapture(); }
+
+function openRefile(fromPath, block) {
+  const targets = [...projectsIn("1"), ...projectsIn("3"), ...projectsIn("2")];
+  listPicker({
+    title: "Refile to project",
+    items: targets,
+    label: p => pageTitle(p),
+    detail: p => pageRef(p),
+    onPick: p => refileBlock(fromPath, block, p),
+    footer: el("button", {class: "btn ghost", onclick: () => { closeModal(); newProjectPrompt(p => refileBlock(fromPath, block, p)); }}, "+ new project"),
+  });
+}
+
+function openTaskDetail(path, block) {
+  state.selected = block.id;
+  const a = {
+    path, block, state: block.state, title: block.title,
+    context: contextOf(block.title), due: dueDate(block),
+    age: blockAge(block), added: addedDate(block),
+  };
+  const titleInput = el("textarea", {}); titleInput.value = block.title;
+  const notes = el("textarea", {placeholder: "Notes"}); notes.value = (block.body || []).join("\n");
+  const sched = el("input", {type: "date", value: dateIn(blockProp(block, "SCHEDULED")) || ""});
+  const dead  = el("input", {type: "date", value: dateIn(blockProp(block, "DEADLINE")) || ""});
+
+  const seg = el("div", {class: "seg"});
+  for (const st of TODO_STATES) {
+    seg.append(el("button", {
+      class: block.state === st ? "on" : "",
+      onclick: () => { closeModal(); setBlockState(path, block, st); },
+    }, st));
+  }
+
+  const save = () => {
+    const val = trim(titleInput.value).replace(/\n/g, " ");
+    const [st, rest] = splitState(val);
+    if (st) { block.state = st; block.title = rest; } else { block.title = val; }
+    block.body = notes.value.split("\n");
+    while (block.body.length && !trim(block.body[block.body.length - 1])) block.body.pop();
+    if (sched.value) setBlockProp(block, "SCHEDULED", "[[" + sched.value + "]]");
+    else if (blockProp(block, "SCHEDULED")) delete block.props[Object.keys(block.props).find(k => k.toLowerCase() === "scheduled")];
+    if (dead.value) setBlockProp(block, "DEADLINE", "[[" + dead.value + "]]");
+    else if (blockProp(block, "DEADLINE")) delete block.props[Object.keys(block.props).find(k => k.toLowerCase() === "deadline")];
+    touch(path); noteTodoTouched(); closeModal(); render();
+  };
+
+  modal({
+    title: "Action", hint: a.age != null ? "on your list " + a.age + " days" : "",
+    body: el("div", {},
+      el("div", {class: "field"}, el("label", {}, "Title"), titleInput),
+      el("div", {class: "field"}, el("label", {}, "State"), seg),
+      el("div", {class: "field"}, el("label", {}, "GTD hygiene"), el("div", {class: "seg"},
+        el("button", {onclick: () => { closeModal(); promptAndInsertContext(path, block); }},
+          a.context ? "@" + a.context : "add context"),
+        el("button", {onclick: () => { closeModal(); openVerbPicker(path, block); }},
+          startsWithVerb(block.title) ? "verb ok" : "add physical verb"),
+        el("button", {onclick: () => { closeModal(); openRefile(path, block); }}, "refile"),
+      )),
+      el("div", {class: "grid2"},
+        el("div", {class: "field"}, el("label", {}, "Scheduled"), sched),
+        el("div", {class: "field"}, el("label", {}, "Deadline"), dead)),
+      el("div", {class: "field"}, el("label", {}, "Notes"), notes),
+      el("div", {class: "field"}, el("label", {}, "Source"),
+        el("button", {class: "btn ghost sm", onclick: () => { closeModal(); openPage(path); }}, path))),
+    foot: [
+      el("button", {class: "btn ghost", onclick: () => {
+        const page = getPage(path);
+        removeBlockFrom(page, block); touch(path); closeModal(); render();
+      }}, "Delete"),
+      el("div", {style: "flex:1"}),
+      el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+      el("button", {class: "btn primary", onclick: save}, "Save"),
+    ],
+    onKey: e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { save(); return true; } return false; },
+  });
+}
+
+/* ============================================================
+   140_PROJECT LIFECYCLE
+   Port of: init.lua 65_PROJECT_STATUS_MOVE + project_completion_prompt
+   ============================================================ */
+function openStatusPicker(path) {
+  const codes = ["1", "3", "2", "0", "_"];
+  listPicker({
+    title: "Project status — " + pageTitle(path),
+    hint: "moves the file into pages/<code>/",
+    items: codes,
+    label: c => STATUS_TEXT[c],
+    detail: c => statusDirOf(path) === c ? "current" : "",
+    onPick: c => setProjectStatus(path, c),
+  });
+}
+
+function newProjectPrompt(then) {
+  promptInput({
+    title: "New project", label: "Project name", cta: "Create",
+    onSave: name => {
+      const p = createProjectPage(name);
+      notify("Project created: " + pageTitle(p));
+      if (then) then(p); else openPage(p);
+      render();
+    },
+  });
+}
+function newZettelPrompt() {
+  promptInput({
+    title: "New zettel", label: "Note title", cta: "Create",
+    onSave: t => { const p = createZettel(t); notify("Zettel: " + pageTitle(p)); openPage(p); },
+  });
+}
+function openAddNextAction(path) {
+  promptInput({
+    title: "Next action", label: "What is the very next physical action?",
+    value: "Call ", cta: "Add",
+    onSave: text => {
+      const blk = addNextActionTo(path, text);
+      render();
+      if (!startsWithVerb(text)) { openVerbPicker(path, blk); return; }
+      if (!hasContextLink(text)) promptAndInsertContext(path, blk);
+    },
+  });
+}
+
+/* When the last open action in an active/waiting project closes. */
+function checkProjectCompletion(path) {
+  const code = statusDirOf(path);
+  if (code !== "1" && code !== "3") return;
+  const page = getPage(path); if (!page) return;
+  if (flattenBlocks(page.blocks).some(b => OPEN_STATES[b.state])) return;
+  projectCompletionPrompt(path);
+}
+
+function projectCompletionPrompt(path) {
+  const body = el("div", {},
+    el("div", {class: "field"}, el("label", {}, "All actions are closed"),
+      el("div", {style: "color:var(--fg2);font-size:13.5px"},
+        "A project with no next action is invisible work. Decide now:")),
+    pickRow("n", "Add a new next action", "keep it active", () => { closeModal(); openAddNextAction(path); }),
+    pickRow("d", "Move to 0 — completed", "it is done", () => { closeModal(); setProjectStatus(path, "0"); }),
+    pickRow("s", "Move to 2 — someday/maybe", "not now", () => { closeModal(); setProjectStatus(path, "2"); }),
+    pickRow("c", "Move to _ — cancelled", "never", () => { closeModal(); setProjectStatus(path, "_"); }));
+  modal({
+    center: true, title: "Project complete: " + pageTitle(path), hint: "n / d / s / c",
+    body,
+    onKey: e => {
+      const map = {n: () => openAddNextAction(path), d: () => setProjectStatus(path, "0"),
+                   s: () => setProjectStatus(path, "2"), c: () => setProjectStatus(path, "_")};
+      if (map[e.key]) { closeModal(); map[e.key](); return true; }
+      return false;
+    },
+  });
+}
+
+function renamePrompt(path) {
+  promptInput({
+    title: "Rename page", label: "New name", value: pageTitle(path), cta: "Rename",
+    onSave: name => {
+      if (isJournalPath(path)) { notify("Journals are date-keyed and cannot be renamed.", "warn"); return; }
+      const page = getPage(path);
+      page.props.title = name;
+      const newPath = join(path.split("/").slice(0, -1).join("/"), slugify(name) + ".md");
+      if (moveFile(path, newPath)) { state.pagePath = newPath; render(); }
+    },
+  });
+}
+function movePrompt(path) {
+  const targets = [
+    {label: "Contexts (c/)",        dir: DIRS.contexts},
+    {label: "Zettel (z/)",          dir: DIRS.zettel},
+    {label: "People (p/)",          dir: DIRS.people},
+    {label: "Orgs (o/)",            dir: DIRS.orgs},
+    {label: "Pages root",           dir: DIRS.pages},
+    {label: "Active project (1/)",  dir: DIRS.active},
+  ];
+  listPicker({
+    title: "Move page", items: targets, label: t => t.label,
+    onPick: t => {
+      const newPath = join(t.dir, baseName(path) + ".md");
+      if (moveFile(path, newPath)) { state.pagePath = newPath; render(); }
+    },
+  });
+}
+function deletePrompt(path) {
+  promptInput({
+    title: "Delete " + pageTitle(path), label: 'Type YES to confirm', cta: "Delete",
+    onSave: ans => {
+      if (ans !== "YES") { notify("Delete cancelled"); return; }
+      removePage(path);
+      notify("Deleted " + path);
+      go("today");
+    },
+  });
+}
+
+/* ============================================================
+   145_WEEDING + REVIEW dashboards
+   Port of: init.lua 92_MORNING_ROUTINE + weekly_review_dashboard
+   ============================================================ */
+function openWeeding(next) {
+  const stalest = stalestActiveProjects(CFG.weedCount);
+  const body = el("div", {});
+  if (!stalest.length) body.append(el("div", {class: "empty"}, "No active projects. Create one, or capture into today."));
+  stalest.forEach((p, i) => {
+    const sec = el("div", {class: "dash-sec"});
+    const flags = [];
+    if (!p.anyTodo)  flags.push("no next action");
+    if (p.noContext) flags.push("no context");
+    if (p.noVerb)    flags.push("no verb");
+    sec.append(el("h4", {},
+      el("span", {}, (i + 1) + ". " + p.title),
+      p.ageDays != null ? el("span", {class: "n"}, p.ageDays + "d old") : null,
+      p.idleDays != null ? el("span", {class: "n"}, "idle " + p.idleDays + "d") : null,
+      ...flags.map(f => el("span", {class: "chip miss"}, f))));
+    if (p.ageDays != null && p.ageDays > CFG.staleProjectDays) {
+      sec.append(el("div", {class: "dash-item", style: "color:var(--warn)"},
+        el("span", {}, "Older than 6 months. Still real? Park it in 2/ or kill it in _/."),
+        el("button", {class: "fix", onclick: () => openStatusPicker(p.path)}, "change status")));
+    }
+    for (const t of p.todos) {
+      sec.append(el("button", {class: "dash-item", onclick: () => { closeModal(); openTaskDetail(p.path, t.block); }},
+        stateChip(t.state), el("span", {html: renderInline(t.title)}),
+        t.missingContext ? el("span", {class: "chip miss"}, "ctx") : null,
+        t.missingVerb ? el("span", {class: "chip miss"}, "verb") : null));
+    }
+    sec.append(el("div", {style: "display:flex;gap:6px;padding:6px 16px 10px;flex-wrap:wrap"},
+      el("button", {class: "btn sm ghost", onclick: () => { closeModal(); openPage(p.path); }}, "open"),
+      el("button", {class: "btn sm ghost", onclick: () => { closeModal(); openAddNextAction(p.path); }}, "+ next action"),
+      el("button", {class: "btn sm ghost", onclick: () => { closeModal(); openStatusPicker(p.path); }}, "status"),
+      el("button", {class: "btn sm ghost", onclick: () => { updateReviewed(p.path); closeModal(); openWeeding(next); }}, "mark reviewed")));
+    body.append(sec);
+  });
+  modal({
+    title: "Morning weeding", hint: "5 minutes · w continues",
+    body,
+    foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Skip"),
+           el("button", {class: "btn primary", onclick: () => { closeModal(); (next || (() => openContextPicker("Where are you now?", surfaceContext)))(); }}, "Continue → context")],
+    onKey: e => { if (e.key === "w") { closeModal(); (next || (() => openContextPicker("Where are you now?", surfaceContext)))(); return true; } return false; },
+  });
+}
+
+function reviewSections() {
+  const acts = leafActions();
+  return [
+    {title: "Stuck active projects", hint: "no next action — define one or park it",
+     items: stuckActiveProjects().map(s => ({text: pageTitle(s.path), sub: s.reason, path: s.path,
+       fix: "+ next action", act: () => { closeModal(); openAddNextAction(s.path); }}))},
+    {title: "Journal actions without a project", hint: "refile or let them go",
+     items: acts.filter(a => a.group === "JOURNAL").map(a => ({text: a.title, sub: a.path, path: a.path, block: a.block,
+       fix: "refile", act: () => { closeModal(); openRefile(a.path, a.block); }}))},
+    {title: "Actions without a physical verb", hint: "what would a camera see?",
+     items: acts.filter(a => a.state === "TODO" && a.missingVerb).map(a => ({text: a.title, sub: a.path, path: a.path, block: a.block,
+       fix: "add verb", act: () => { closeModal(); openVerbPicker(a.path, a.block); }}))},
+    {title: "Actions without a context", hint: "where can this be done?",
+     items: acts.filter(a => a.state === "TODO" && a.missingContext).map(a => ({text: a.title, sub: a.path, path: a.path, block: a.block,
+       fix: "add context", act: () => { closeModal(); promptAndInsertContext(a.path, a.block); }}))},
+    {title: "Active projects not reviewed lately", hint: "touch them or move them",
+     items: projectsIn("1").map(p => {
+        const r = dateIn(getPage(p).props?.reviewed);
+        const d = r ? dateDiffDays(r, todayISO()) : null;
+        return {p, d, r};
+      }).filter(x => x.d == null || x.d >= CFG.reviewEveryDays)
+        .sort((a, b) => (b.d ?? 9999) - (a.d ?? 9999))
+        .map(x => ({text: pageTitle(x.p), sub: x.r ? "reviewed " + x.d + "d ago" : "never reviewed", path: x.p,
+          fix: "mark reviewed", act: () => { updateReviewed(x.p); openReview(4); }}))},
+    {title: "Waiting for", hint: "chase anything older than " + CFG.waitFollowUpDays + " days",
+     items: acts.filter(a => a.state === "WAIT").map(a => ({text: a.title, sub: (a.age != null ? a.age + "d" : "") + " · " + a.path,
+       path: a.path, block: a.block, fix: "open", act: () => { closeModal(); openTaskDetail(a.path, a.block); }}))},
+    {title: "Someday / maybe", hint: "anything ready to become active?",
+     items: projectsIn("2").map(p => ({text: pageTitle(p), sub: openTodoCount(p) + " actions", path: p,
+       fix: "activate", act: () => { setProjectStatus(p, "1"); openReview(6); }}))},
+  ];
+}
+
+function openReview(focusIdx = 0) {
+  const secs = reviewSections();
+  const body = el("div", {});
+  secs.forEach((s, i) => {
+    const sec = el("div", {class: "dash-sec", data: {idx: i}});
+    sec.append(el("h4", {},
+      el("span", {}, (i + 1) + ". " + s.title),
+      el("span", {class: "n" + (s.items.length ? "" : " z")}, String(s.items.length)),
+      el("span", {style: "font-weight:400;color:var(--fg3);font-size:11.5px"}, s.hint)));
+    if (!s.items.length) sec.append(el("div", {class: "dash-item", style: "color:var(--ok)"}, "clear"));
+    for (const it of s.items.slice(0, 40)) {
+      sec.append(el("button", {class: "dash-item", onclick: () => { closeModal(); it.block ? openTaskDetail(it.path, it.block) : openPage(it.path); }},
+        el("span", {html: renderInline(it.text)}),
+        el("span", {class: "p"}, it.sub || ""),
+        el("span", {class: "fix", onclick: e => { e.stopPropagation(); it.act(); }}, it.fix)));
+    }
+    body.append(sec);
+  });
+  modal({
+    title: "Weekly review", hint: "the habit that keeps the system trustworthy",
+    body,
+    foot: [
+      el("button", {class: "btn ghost", onclick: closeModal}, "Later"),
+      el("button", {class: "btn primary", onclick: () => {
+        setSetting("last_review", todayStamp());
+        closeModal(); notify("Weekly review logged for " + todayISO()); render();
+      }}, "Mark review done"),
+    ],
+  });
+  requestAnimationFrame(() => {
+    const t = $(`.dash-sec[data-idx="${focusIdx}"]`);
+    if (t) t.scrollIntoView({block: "start"});
+  });
+}
+
+/* ============================================================
+   150_VAULT DIALOG -- connect a folder, a server, or export markdown
+   ============================================================ */
+function bundleMarkdown() {
+  const out = [];
+  for (const path of Array.from(V.pages.keys()).sort()) {
+    out.push("<!-- gtd:file " + path + " -->");
+    out.push(serializePage(getPage(path)).replace(/\n$/, ""));
+    out.push("<!-- gtd:endfile -->", "");
+  }
+  return out.join("\n");
+}
+function parseBundle(text) {
+  const files = new Map();
+  const re = /<!--\s*gtd:file\s+(.+?)\s*-->\n([\s\S]*?)\n?<!--\s*gtd:endfile\s*-->/g;
+  let m;
+  while ((m = re.exec(text))) files.set(trim(m[1]), m[2]);
+  return files;
+}
+function download(name, text) {
+  const a = el("a", {href: URL.createObjectURL(new Blob([text], {type: "text/markdown"})), download: name});
+  document.body.append(a); a.click(); a.remove();
+}
+
+async function connectFolder() {
+  if (!window.showDirectoryPicker) {
+    notify("This browser has no folder access. Use the sync server (serve.py) instead.", "warn");
+    return;
+  }
+  try {
+    const handle = await window.showDirectoryPicker({mode: "readwrite", id: "grouptodo-vault"});
+    await IDB.set("kv", "dirHandle", handle);
+    await loadFromBackend(Backends.fs(handle));
+    await seedIfEmpty();
+    scanVerbs(); closeModal(); render();
+    notify("Vault connected: " + handle.name);
+  } catch (e) {
+    if (e.name !== "AbortError") notify("Could not open folder: " + e.message, "error");
+  }
+}
+
+async function connectServer(base) {
+  try {
+    const b = Backends.http(base);
+    await loadFromBackend(b);
+    localStorage.setItem("gtd.server", base);
+    await seedIfEmpty();
+    scanVerbs(); closeModal(); render();
+    notify("Synced with " + b.label);
+  } catch (e) {
+    notify("Server not reachable: " + e.message, "error");
+  }
+}
+
+function openVaultDialog() {
+  const serverInput = el("input", {placeholder: "http://127.0.0.1:8777", value: localStorage.getItem("gtd.server") || location.origin});
+  const fileInput = el("input", {type: "file", accept: ".md,.org,text/markdown", multiple: true, style: "display:none",
+    onchange: async e => {
+      let n = 0;
+      for (const f of e.target.files) {
+        const text = await f.text();
+        const rel = f.webkitRelativePath || f.name;
+        const path = rel.replace(/^[^/]*\//, "");
+        if (/\.org$/i.test(f.name)) { putPage(path.replace(/\.org$/i, ".md"), orgToPage(text)); n++; }
+        else if (parseBundle(text).size) {
+          for (const [p, t] of parseBundle(text)) { putPage(p, parsePage(t)); n++; }
+        } else { putPage(path, parsePage(text)); n++; }
+      }
+      scanVerbs(); notify("Imported " + n + " files."); closeModal(); render();
+    }});
+
+  modal({
+    center: true, title: "Vault & sync",
+    body: el("div", {},
+      el("div", {class: "field"}, el("label", {}, "Current backend"),
+        el("div", {style: "color:var(--fg2)"},
+          V.backend ? `${V.backend.kind} — ${V.backend.label} · ${V.pages.size} markdown files` : "none")),
+      el("div", {class: "field"}, el("label", {}, "A. Local folder (Chrome / Edge on desktop)"),
+        el("button", {class: "btn primary", onclick: connectFolder}, "Choose vault folder"),
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          "Writes real .md files into journals/ and pages/. Reconnects automatically next time.")),
+      el("div", {class: "field"}, el("label", {}, "B. Sync server (phone, Termux, anywhere)"),
+        serverInput,
+        el("div", {style: "display:flex;gap:8px;margin-top:8px"},
+          el("button", {class: "btn", onclick: () => connectServer(trim(serverInput.value))}, "Connect"),
+          el("button", {class: "btn ghost", onclick: () => { localStorage.removeItem("gtd.server"); notify("Server forgotten."); }}, "Forget")),
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          "Run serve.py next to your vault, then point this at it. Same .md files, editable in Neovim.")),
+      el("div", {class: "field"}, el("label", {}, "C. Import / export markdown"),
+        el("div", {style: "display:flex;gap:8px;flex-wrap:wrap"},
+          el("button", {class: "btn ghost", onclick: () => download("grouptodo-vault-" + todayISO() + ".md", bundleMarkdown())}, "Export bundle"),
+          el("button", {class: "btn ghost", onclick: () => fileInput.click()}, "Import files"),
+          V.raw.size ? el("button", {class: "btn ghost", onclick: () => { importOrgFiles(); closeModal(); }}, "Convert " + V.raw.size + " .org files") : null),
+        fileInput)),
+    foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Close")],
+  });
+}
+
+/* ============================================================
+   155_SEED -- a working vault on first run
+   ============================================================ */
+const SEED_VERBS = {
+  en: {
+    call:    ["phone", "ring", "dial"],
+    email:   ["mail", "write to"],
+    draft:   ["write", "compose", "outline"],
+    buy:     ["order", "purchase"],
+    find:    ["look up", "search for", "locate"],
+    ask:     ["check with", "clarify with"],
+    print:   ["print out"],
+    send:    ["post", "ship", "submit"],
+    book:    ["schedule", "reserve"],
+    read:    ["review", "go through"],
+    fix:     ["repair", "mend"],
+    clean:   ["tidy", "clear"],
+    pack:    ["gather", "collect"],
+    install: ["set up", "configure"],
+    measure: ["weigh", "count"],
+    pay:     ["transfer", "settle"],
+    sign:    ["initial"],
+    scan:    ["photograph", "photo"],
+    talk:    ["speak to", "meet"],
+    upload:  ["publish", "push"],
+  },
+  no: {
+    ring:    ["telefoner", "slå på tråden"],
+    send:    ["post", "lever"],
+    skriv:   ["forfatt", "noter"],
+    "kjøp":  ["bestill", "handle"],
+    finn:    ["let opp", "slå opp"],
+    "spør":  ["avklar med", "sjekk med"],
+    hent:    ["plukk opp"],
+    betal:   ["overfør"],
+    rydd:    ["vask", "sorter"],
+    fiks:    ["reparer"],
+    les:     ["gjennomgå"],
+    "møt":   ["snakk med", "treff"],
+    print:   ["skriv ut"],
+    signer:  ["underskriv"],
+    pakk:    ["samle"],
+  },
+};
+const SEED_CONTEXTS = ["phone", "computer", "errand", "home", "office", "anywhere", "deep-work"];
+
+async function seedIfEmpty() {
+  if (V.pages.size > 0) return;
+
+  for (const [lang, verbs] of Object.entries(SEED_VERBS)) {
+    for (const [canonical, syns] of Object.entries(verbs)) {
+      putPage(join(DIRS.verbs, lang, canonical + ".md"), {
+        props: {title: canonical, type: "verb", lang},
+        blocks: [
+          newBlock({title: canonical + " = " + canonical}),
+          ...syns.map(s => newBlock({title: s + " = " + canonical})),
+        ],
+      });
+    }
+  }
+  for (const c of SEED_CONTEXTS) {
+    putPage(join(DIRS.contexts, c + ".md"), {
+      props: {title: c, type: "context", created: todayStamp()},
+      blocks: [newBlock({title: "Actions you can only do @" + c + "."})],
+    });
+  }
+  putPage(join(DIRS.templates, "journals.md"), {
+    props: {title: "%date%", created: "[[%date%]]"},
+    blocks: [newBlock({title: "Captured"}), newBlock({title: "Done today"})],
+  });
+  putPage(join(DIRS.templates, "1.md"), {
+    props: {title: "%title%", status: "%status%", created: "%created%", reviewed: "%reviewed%"},
+    blocks: [
+      newBlock({title: "Outcome: what does done look like?"}),
+      newBlock({state: "TODO", title: "%title%"}),
+    ],
+  });
+
+  settingsPage();
+  setSetting("last_review", "");
+
+  const proj = join(DIRS.active, "Set up GroupTodo.md");
+  putPage(proj, {
+    props: {title: "Set up GroupTodo", status: STATUS_TEXT["1"], created: todayStamp(), reviewed: todayStamp()},
+    blocks: [
+      newBlock({title: "Outcome: a vault I trust, synced to real .md files."}),
+      newBlock({state: "TODO", title: "Call it a system: pick a context for each action [[c/computer]]",
+                props: {Added: todayStamp()}}),
+      newBlock({state: "TODO", title: "Find your vault folder and connect it [[c/computer]]",
+                props: {Added: todayStamp()}}),
+      newBlock({state: "TODO", title: "Read the GTD page to see how the nudges work [[c/anywhere]]",
+                props: {Added: todayStamp()}}),
+    ],
+  });
+
+  const j = journalPath();
+  putPage(j, {
+    props: {title: todayISO(), created: todayStamp()},
+    blocks: [
+      newBlock({title: "Welcome. Capture anything here with the + button, then clarify it."}),
+      newBlock({state: "TODO", title: "Draft the three things that would make today good [[c/anywhere]] [[1/Set up GroupTodo]]",
+                props: {Added: todayStamp()}}),
+    ],
+  });
+  scanVerbs();
+}
+
+/* ============================================================
+   160_KEYMAPS -- leader chords, same shape as the Neovim config
+   ============================================================ */
+const CHORDS = {
+  "g x": () => openContextPicker("Where are you now?", surfaceContext),
+  "g d": () => state.context ? surfaceContext(state.context) : openContextPicker("Where are you now?", surfaceContext),
+  "g w": () => openWeeding(),
+  "g M": () => morningRoutine(),
+  "g r": () => openReview(0),
+  "g a": () => go("agenda"),
+  "g n": () => go("next"),
+  "g m": () => state.view === "page" && statusDirOf(state.pagePath) && openStatusPicker(state.pagePath),
+  "g C": () => notify("Open an action and use “add context”.", "warn"),
+  "f t": () => openPage(ensureJournal(todayISO())),
+  "f p": () => openPage(ensureJournal(shiftISO(todayISO(), -1))),
+  "f n": () => openPage(ensureJournal(shiftISO(todayISO(), 1))),
+  "f d": () => state.view === "page" && deletePrompt(state.pagePath),
+  "f r": () => state.view === "page" && renamePrompt(state.pagePath),
+  "z n": () => newZettelPrompt(),
+  "h c": () => go("health"),
+  "w u": () => state.view === "page" && (updateReviewed(state.pagePath), render()),
+  "w p": () => go("projects", {statusCode: "1"}),
+  "w w": () => go("projects", {statusCode: "3"}),
+  "w m": () => go("projects", {statusCode: "2"}),
+};
+let chordBuf = "";
+let chordTimer = null;
+function showChord(txt) {
+  let hud = $("#chord");
+  if (!txt) { hud && hud.remove(); return; }
+  if (!hud) { hud = el("div", {id: "chord"}); document.body.append(hud); }
+  hud.textContent = txt;
+}
+function resetChord() { chordBuf = ""; showChord(""); clearTimeout(chordTimer); }
+
+document.addEventListener("keydown", e => {
+  if (MODAL_KEYS && MODAL_KEYS(e)) { e.preventDefault(); return; }
+  if (e.key === "Escape") { resetChord(); closeModal(); return; }
+  const typing = /^(INPUT|TEXTAREA)$/.test(e.target.tagName) || e.target.isContentEditable;
+  if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+  if ($("#modalRoot").firstChild) return;
+
+  if (chordBuf) {
+    const key = chordBuf + " " + e.key;
+    resetChord();
+    if (CHORDS[key]) { e.preventDefault(); CHORDS[key](); }
+    return;
+  }
+  if ("gfzhw".includes(e.key)) {
+    chordBuf = e.key; showChord(e.key + " ...");
+    chordTimer = setTimeout(resetChord, 1500);
+    e.preventDefault(); return;
+  }
+  const single = {
+    c: () => openCapture(),
+    "/": () => go("search"),
+    "?": () => openHelp(),
+    t: () => go("today"),
+  };
+  if (single[e.key]) { e.preventDefault(); single[e.key](); }
+});
+
+function openHelp() {
+  const rows = Object.entries(CHORDS).map(([k, _]) => k);
+  modal({
+    center: true, title: "Keys",
+    body: el("div", {},
+      el("div", {class: "field"}, el("label", {}, "Anywhere"),
+        el("div", {style: "font-family:var(--mono);font-size:12.5px;line-height:1.9;color:var(--fg2)"},
+          "c  capture", el("br"), "/  search", el("br"), "t  today", el("br"), "esc  close")),
+      el("div", {class: "field"}, el("label", {}, "Leader chords (same as the Neovim config)"),
+        el("div", {style: "font-family:var(--mono);font-size:12.5px;line-height:1.9;color:var(--fg2)"},
+          rows.join("   "))),
+      el("div", {class: "field"}, el("label", {}, "In the outline"),
+        el("div", {style: "font-family:var(--mono);font-size:12.5px;line-height:1.9;color:var(--fg2)"},
+          "enter  new block", el("br"), "tab / shift-tab  indent", el("br"),
+          "ctrl-enter  cycle TODO state", el("br"), "backspace on empty  delete"))),
+    foot: [el("button", {class: "btn primary", onclick: closeModal}, "Got it")],
+  });
+}
+
+/* ============================================================
+   165_TIMERS
+   Port of: init.lua nudge_check + schedule_context_reprompt + VimEnter
+   ============================================================ */
+function morningRoutine() {
+  openWeeding(() => openContextPicker("What context are you in this morning?", surfaceContext));
+}
+
+function nudgeCheck() {
+  if (!state.context) return;
+  const idle = (Date.now() - state.lastTodoTouch) / 60000;
+  const meetIdle = (Date.now() - state.lastMeetingTouch) / 60000;
+  if (idle > CFG.idleNudgeMinutes && meetIdle > CFG.idleNudgeMinutes) {
+    notify(`${CFG.idleNudgeMinutes}+ min idle. Pick one of the oldest @${state.context} actions.`, "warn");
+    state.lastTodoTouch = Date.now();
+  }
+}
+
+function scheduleContextPrompts() {
+  for (const [h, m, label] of CFG.contextPrompts) {
+    const tick = () => {
+      const now = new Date();
+      const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0);
+      let delay = target - now;
+      if (delay <= 0) delay += 86400000;
+      setTimeout(() => {
+        openContextPicker("What context are you in now? (" + label + ")", surfaceContext);
+        tick();
+      }, delay);
+    };
+    tick();
+  }
+}
+
+/* ============================================================
+   170_INIT
+   ============================================================ */
+$("#btnCapture").onclick = () => openCapture();
+$("#btnSearch").onclick  = () => go("search");
+$("#btnVault").onclick   = () => openVaultDialog();
+$("#burger").onclick     = () => document.body.classList.toggle("nav-open");
+$("#btnTheme").onclick   = () => {
+  const cur = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+  document.documentElement.dataset.theme = cur;
+  localStorage.setItem("gtd.theme", cur);
+};
+if (localStorage.getItem("gtd.theme")) document.documentElement.dataset.theme = localStorage.getItem("gtd.theme");
+
+async function pickBackend() {
+  const server = localStorage.getItem("gtd.server");
+  if (server) {
+    try { const b = Backends.http(server); await b.list(); return b; } catch (_) {}
+  }
+  if (location.protocol.startsWith("http")) {
+    try {
+      const r = await fetch("./api/ping", {cache: "no-store"});
+      if (r.ok) return Backends.http(location.origin + location.pathname.replace(/\/[^/]*$/, ""));
+    } catch (_) {}
+  }
+  const handle = await IDB.get("kv", "dirHandle").catch(() => null);
+  if (handle) {
+    try {
+      const perm = await handle.queryPermission({mode: "readwrite"});
+      if (perm === "granted") return Backends.fs(handle);
+    } catch (_) {}
+  }
+  return Backends.idb();
+}
+
+(async function init() {
+  try {
+    await loadFromBackend(await pickBackend());
+  } catch (e) {
+    notify("Falling back to browser storage: " + e.message, "warn");
+    await loadFromBackend(Backends.idb());
+  }
+  await seedIfEmpty();
+  scanVerbs();
+  ensureJournal(todayISO());
+  state.context = getSetting("current_context") || null;
+
+  render();
+
+  setInterval(nudgeCheck, 60000);
+  scheduleContextPrompts();
+
+  const last = getSetting("last_morning");
+  if (last !== todayISO()) {
+    setSetting("last_morning", todayISO());
+    setTimeout(morningRoutine, 1200);
+  }
+  notify("Keep fresh: g M morning · g x context · g d re-surface · g r review · ? keys");
+})();
+</script>
+</body>
+</html>
