@@ -500,7 +500,8 @@ const DIRS = {
   templates: join(PAGES, "templates"),
   verbs    : join(PAGES, "verbs"),
   zettel   : join(PAGES, "z"),
-  areas    : join(PAGES, "a"),   // areas of focus: the standing responsibilities
+  areas    : join(PAGES, "a"),   // H2: areas of focus, the standing responsibilities
+  goals    : join(PAGES, "g"),   // H3: goals and objectives, 1-2 years
   lists    : join(PAGES, "k"),   // reusable checklists
 };
 const TODO_STATES  = ["TODO", "DOING", "WAIT", "DONE", "CANCELLED"];
@@ -516,7 +517,7 @@ const STATUS_TEXT  = {
 };
 const STATUS_LABEL = {"_":"Cancelled", "0":"Completed", "1":"Active", "2":"Someday/Maybe", "3":"Waiting for"};
 const PREFIX_DIR   = {p:DIRS.people, c:DIRS.contexts, o:DIRS.orgs, z:DIRS.zettel,
-                      a:DIRS.areas, k:DIRS.lists};
+                      a:DIRS.areas, g:DIRS.goals, k:DIRS.lists};
 
 /* Tunables -- the GTD nudge thresholds (inline constants in init.lua). */
 const CFG = {
@@ -966,6 +967,7 @@ function pageKind(path) {
   if (path.startsWith(DIRS.orgs      + "/")) return "org";
   if (path.startsWith(DIRS.zettel    + "/")) return "zettel";
   if (path.startsWith(DIRS.areas     + "/")) return "area";
+  if (path.startsWith(DIRS.goals     + "/")) return "goal";
   if (path.startsWith(DIRS.lists     + "/")) return "checklist";
   if (path.startsWith(DIRS.templates + "/")) return "template";
   if (path.startsWith(DIRS.verbs     + "/")) return "verb";
@@ -1593,6 +1595,7 @@ function setProjectStatus(path, code) {
 
 function projectTemplateLines(title, code = "1") {
   const st = code === "3" ? "WAIT" : code === "0" ? "DONE" : code === "_" ? "CANCELLED" : "TODO";
+  void st;
   const tpl = resolveTemplate({kind: code});
   if (tpl) {
     return instantiateTemplate(tpl.path, {
@@ -1603,7 +1606,7 @@ function projectTemplateLines(title, code = "1") {
   if (code === "3") { props.waiting_for = ""; props.waiting_since = todayStamp(); }
   if (code === "0") props.completed = todayStamp();
   if (code === "_") props.cancelled = todayStamp();
-  return {props, blocks: [newBlock({state: st, title, props: {Added: todayStamp()}})]};
+  return {props, blocks: []};
 }
 
 function createProjectPage(title, blocks) {
@@ -1632,6 +1635,143 @@ function createZettel(title) {
   const path = join(DIRS.zettel, clean + ".md");
   if (!V.pages.has(path)) putPage(path, zettelTemplate(clean));
   return path;
+}
+
+/* ============================================================
+   71_HORIZONS_OF_FOCUS
+   David Allen's six altitudes. Control (what's on your plate) is only half
+   the model; perspective is the other half, and it is the half every todo
+   app drops. Nothing here is invented for you -- the app ships with no
+   areas, no goals and no contexts, because borrowed ones are worse than none.
+
+     Horizon 5  50,000 ft   Purpose and principles   why you are here
+     Horizon 4  40,000 ft   Vision                   3-5 years out
+     Horizon 3  30,000 ft   Goals and objectives     1-2 years
+     Horizon 2  20,000 ft   Areas of focus           ongoing, never "done"
+     Horizon 1  10,000 ft   Projects                 outcomes inside a year
+     Ground      runway     Next actions             the very next physical move
+   ============================================================ */
+const HORIZONS_PATH = join(PAGES, "Horizons.md");
+
+const HORIZONS = [
+  {key: "purpose", h: "Horizon 5", alt: "50,000 ft", name: "Purpose & principles",
+   ask: "Why does this life or this work exist? What standards do you hold yourself to?"},
+  {key: "vision",  h: "Horizon 4", alt: "40,000 ft", name: "Vision",
+   ask: "Three to five years out, what does wild success look like?"},
+  {key: "goals",   h: "Horizon 3", alt: "30,000 ft", name: "Goals & objectives",
+   ask: "What do you want to be true in the next one to two years?"},
+  {key: "areas",   h: "Horizon 2", alt: "20,000 ft", name: "Areas of focus",
+   ask: "Which parts of your life and work must stay healthy? These never finish."},
+  {key: "projects",h: "Horizon 1", alt: "10,000 ft", name: "Projects",
+   ask: "What outcomes are you committed to finishing within a year?"},
+  {key: "ground",  h: "Ground",    alt: "runway",    name: "Next actions",
+   ask: "What is the very next physical, visible move?"},
+];
+
+function horizonsPage() {
+  if (!V.pages.has(HORIZONS_PATH)) {
+    putPage(HORIZONS_PATH, {
+      props: {title: "Horizons", type: "horizons", created: todayStamp()},
+      blocks: [],
+    });
+  }
+  return getPage(HORIZONS_PATH);
+}
+const HORIZON_HEADING = {purpose: "Purpose & principles", vision: "Vision (3-5 years)"};
+
+function getHorizon(key) {
+  const head = HORIZON_HEADING[key];
+  const blk = horizonsPage().blocks.find(b => trim(b.title) === head);
+  return blk ? (blk.children || []).map(c => c.title).filter(t => trim(t)) : [];
+}
+function setHorizon(key, lines) {
+  const head = HORIZON_HEADING[key];
+  const page = horizonsPage();
+  let blk = page.blocks.find(b => trim(b.title) === head);
+  if (!blk) { blk = newBlock({title: head}); page.blocks.push(blk); }
+  blk.children = lines.filter(l => trim(l)).map(l => newBlock({title: trim(l)}));
+  touch(HORIZONS_PATH);
+}
+
+/* ---------- H3 goals ---------- */
+function goalTemplate(title) {
+  return {
+    props: {title, type: "goal", horizon: "3", created: todayStamp()},
+    blocks: [newBlock({title: "What has to be true for this to count as achieved?"})],
+  };
+}
+function createGoal(title, area) {
+  const clean = slugify(title);
+  const path = join(DIRS.goals, clean + ".md");
+  if (!V.pages.has(path)) putPage(path, goalTemplate(clean));
+  if (area) { getPage(path).props.area = "[[a/" + area + "]]"; touch(path); }
+  return path;
+}
+const goalList = () => allPages(p => pageKind(p) === "goal");
+
+function areaOfGoal(path) {
+  const m = /\[\[a\/([^\]]+)\]\]/.exec(getPage(path)?.props?.area || "");
+  return m ? trim(m[1]) : null;
+}
+function setAreaOfGoal(path, area) {
+  const page = getPage(path); if (!page) return;
+  if (area) page.props.area = "[[a/" + area + "]]"; else delete page.props.area;
+  touch(path);
+}
+function goalOfProject(path) {
+  const m = /\[\[g\/([^\]]+)\]\]/.exec(getPage(path)?.props?.goal || "");
+  return m ? trim(m[1]) : null;
+}
+function setGoalOfProject(path, goal) {
+  const page = getPage(path); if (!page) return;
+  if (goal) page.props.goal = "[[g/" + goal + "]]"; else delete page.props.goal;
+  touch(path);
+}
+const projectsForGoal = goal =>
+  allPages(p => statusDirOf(p)).filter(p => goalOfProject(p) === goal);
+
+/* Goals nobody is actually working on: the classic H3 failure. */
+const goalsWithoutProjects = () =>
+  goalList().filter(g => !projectsForGoal(baseName(g)).some(p => ["1", "3"].includes(statusDirOf(p))));
+
+/* ============================================================
+   74_PROJECT_OUTCOME
+   "What would done look like?" A project named Website is a noun nobody
+   can finish. A project named Website live and taking bookings is a
+   finish line. Stored as outcome:: so it stays greppable markdown.
+   ============================================================ */
+const OUTCOME_PLACEHOLDER = /what does done look like|what has to be true/i;
+
+function outcomeOf(path) {
+  const page = getPage(path); if (!page) return null;
+  const prop = trim(page.props?.outcome || "");
+  if (prop && !OUTCOME_PLACEHOLDER.test(prop)) return prop;
+  // older pages wrote it as a leading "Outcome: ..." block
+  for (const b of page.blocks || []) {
+    const m = /^outcome:\s*(.+)$/i.exec(trim(b.title));
+    if (m && !OUTCOME_PLACEHOLDER.test(m[1])) return trim(m[1]);
+  }
+  return null;
+}
+function setOutcome(path, text) {
+  const page = getPage(path); if (!page) return;
+  page.props.outcome = trim(text);
+  // drop a stale placeholder block so the page does not say it twice
+  page.blocks = (page.blocks || []).filter(b => !(/^outcome:/i.test(trim(b.title)) && OUTCOME_PLACEHOLDER.test(b.title)));
+  touch(path);
+}
+/* Active and waiting projects with no finish line stated. */
+const projectsWithoutOutcome = () =>
+  allPages(p => ["1", "3"].includes(statusDirOf(p))).filter(p => !outcomeOf(p));
+
+function openOutcomePrompt(path, then) {
+  promptInput({
+    title: "What does done look like?",
+    label: 'Write it as if it already happened — "Sink repaired, no drip"',
+    value: outcomeOf(path) || "",
+    cta: "Save outcome",
+    onSave: text => { setOutcome(path, text); render(); if (then) then(); },
+  });
 }
 
 /* ============================================================
@@ -1716,6 +1856,7 @@ function runChecklist(listPath, targetPath, context) {
 function pageTemplateFor(kind, title) {
   if (kind === "z") return zettelTemplate(title);
   if (kind === "a") return areaTemplate(title);
+  if (kind === "g") return goalTemplate(title);
   if (kind === "k") return checklistTemplate(title);
   if (STATUS_DIRS[kind]) return projectTemplateLines(title, kind);
   const tpl = resolveTemplate({kind});
@@ -1827,6 +1968,16 @@ function computeNudges() {
 
   const oldWait = acts.filter(a => a.state === "WAIT" && (a.age ?? 0) >= CFG.waitFollowUpDays);
   push("wait", "warn", "waiting items to chase", oldWait.length, () => go("next"));
+
+  const noOutcome = projectsWithoutOutcome();
+  push("outcome", "warn", "projects with no stated outcome", noOutcome.length,
+       () => noOutcome.length && openOutcomePrompt(noOutcome[0]));
+
+  const orphanProjects = unassignedProjects();
+  push("area", "", "projects in no area of focus", orphanProjects.length, () => go("horizons"));
+
+  const idleGoals = goalsWithoutProjects();
+  push("goal", "", "goals with no project", idleGoals.length, () => go("horizons"));
 
   const stale = stalestActiveProjects(99).filter(p => (p.ageDays ?? 0) > CFG.staleProjectDays);
   push("stale", "", "projects older than 6 months", stale.length, () => openWeeding());
@@ -1945,7 +2096,7 @@ const NAV_SIMPLE = [
     {id: "agenda",     icon: "☷", label: "Planned",        key: "g a"},
   ]},
   {group: "Structure", items: [
-    {id: "areas",      icon: "◉", label: "Areas of focus"},
+    {id: "horizons",   icon: "◉", label: "Horizons"},
     {id: "proj-1",     icon: "1", label: "Projects",       status: "1"},
     {id: "checklists", icon: "☑", label: "Checklists"},
   ]},
@@ -1968,7 +2119,7 @@ const NAV_ADVANCED = [
     {id: "agenda",  icon: "☷", label: "Agenda",       key: "g a"},
   ]},
   {group: "Structure", items: [
-    {id: "areas",      icon: "◉", label: "Areas of focus"},
+    {id: "horizons",   icon: "◉", label: "Horizons"},
     {id: "proj-1", icon: "1", label: "Active",        status: "1"},
     {id: "proj-3", icon: "3", label: "Waiting for",   status: "3"},
     {id: "proj-2", icon: "2", label: "Someday/Maybe", status: "2"},
@@ -2027,70 +2178,346 @@ function quickAdd(targetPath, opts = {}) {
 /* ============================================================
    114_SIMPLE VIEWS
    ============================================================ */
-function viewAreas() {
+/* ============================================================
+   143_HORIZONS_WIZARD
+   Runs on the first visit to Horizons. Climbs from the most concrete
+   altitude to the most abstract, which is the order people can actually
+   answer in -- Allen's own advice is to implement bottom-up even though
+   you review top-down. Every step is skippable and nothing is written
+   until the last one.
+   ============================================================ */
+const AREA_EXAMPLES = [
+  "Health", "Finances", "Family", "Home", "Career", "Team",
+  "Clients", "Learning", "Friendships", "Admin",
+];
+
+const WIZ = {step: 0, areas: "", goals: "", vision: "", purpose: ""};
+
+function wizField(key, placeholder, rows = 6) {
+  const ta = el("textarea", {placeholder, style: "min-height:" + (rows * 22) + "px"});
+  ta.value = WIZ[key];
+  ta.addEventListener("input", () => { WIZ[key] = ta.value; });
+  return ta;
+}
+
+function wizChips(key, options) {
+  const box = el("div", {class: "seg", style: "margin-top:8px"});
+  for (const o of options) {
+    box.append(el("button", {
+      onclick: e => {
+        const lines = WIZ[key].split("\n").map(trim).filter(Boolean);
+        const i = lines.indexOf(o);
+        if (i >= 0) lines.splice(i, 1); else lines.push(o);
+        WIZ[key] = lines.join("\n");
+        e.target.classList.toggle("on");
+        const ta = $(".modal textarea");
+        if (ta) ta.value = WIZ[key];
+      },
+      class: WIZ[key].split("\n").map(trim).includes(o) ? "on" : "",
+    }, o));
+  }
+  return box;
+}
+
+const WIZ_STEPS = [
+  {
+    title: "Horizons of focus",
+    render: () => el("div", {class: "field"},
+      el("label", {}, "Six altitudes"),
+      el("div", {style: "color:var(--fg2);font-size:13.5px;line-height:1.75"},
+        "Todo apps live on the runway. GTD says the runway only makes sense if you " +
+        "can see what it serves. This takes a few minutes and you can skip any step."),
+      el("div", {style: "font-family:var(--mono);font-size:12px;line-height:2;color:var(--fg3);margin-top:10px"},
+        HORIZONS.map(h => el("div", {},
+          el("span", {style: "color:var(--accent)"}, h.alt.padEnd(11)),
+          h.h + " · " + h.name)))),
+    cta: "Start",
+  },
+  {
+    key: "areas",
+    title: "Horizon 2 · Areas of focus",
+    render: () => el("div", {class: "field"},
+      el("label", {}, "Which parts of your life and work must stay healthy?"),
+      el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
+        "These never get finished — you just keep them in good shape. Most people " +
+        "land on somewhere between four and twelve. One per line, in your own words."),
+      wizField("areas", "Health\nFinances\nTeam\nHome"),
+      el("div", {style: "color:var(--fg3);font-size:12px;margin-top:8px"}, "Tap any that fit:"),
+      wizChips("areas", AREA_EXAMPLES)),
+  },
+  {
+    key: "goals",
+    title: "Horizon 3 · Goals & objectives",
+    render: () => el("div", {class: "field"},
+      el("label", {}, "What do you want to be true in one to two years?"),
+      el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
+        "Concrete enough to know when you got there. One per line. You can hang each " +
+        "one under an area afterwards."),
+      wizField("goals", "Debt cleared\nShipped the new product\nRunning a half marathon")),
+  },
+  {
+    key: "vision",
+    title: "Horizon 4 · Vision",
+    render: () => el("div", {class: "field"},
+      el("label", {}, "Three to five years out, what does wild success look like?"),
+      el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
+        "Prose is fine. Write it in the present tense, as though you are already there."),
+      wizField("vision", "The work funds the life, not the other way round...")),
+  },
+  {
+    key: "purpose",
+    title: "Horizon 5 · Purpose & principles",
+    render: () => el("div", {class: "field"},
+      el("label", {}, "Why are you doing any of this, and what will you not trade away?"),
+      el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
+        "Purpose is the why. Principles are the standards that hold even when it costs you."),
+      wizField("purpose", "I am here to...\nI will not...")),
+  },
+];
+
+function applyWizard() {
+  const lines = v => v.split("\n").map(trim).filter(Boolean);
+  const areas = lines(WIZ.areas);
+  const goals = lines(WIZ.goals);
+  for (const a of areas) createArea(a);
+  for (const g of goals) createGoal(g);
+  if (trim(WIZ.vision))  setHorizon("vision",  lines(WIZ.vision));
+  if (trim(WIZ.purpose)) setHorizon("purpose", lines(WIZ.purpose));
+  setSetting("horizons_done", todayISO());
+  const made = [];
+  if (areas.length) made.push(areas.length + " areas");
+  if (goals.length) made.push(goals.length + " goals");
+  if (trim(WIZ.vision)) made.push("a vision");
+  if (trim(WIZ.purpose)) made.push("a purpose");
+  notify(made.length ? "Created " + made.join(", ") + "." : "Nothing created — run it again any time.");
+  render();
+}
+
+function openHorizonsWizard(step = 0) {
+  setSetting("horizons_seen", todayISO());
+  WIZ.step = Math.max(0, Math.min(step, WIZ_STEPS.length));
+  if (WIZ.step === WIZ_STEPS.length) { closeModal(); applyWizard(); return; }
+  const s = WIZ_STEPS[WIZ.step];
+  const last = WIZ.step === WIZ_STEPS.length - 1;
+  modal({
+    center: true,
+    title: s.title,
+    hint: WIZ.step ? "step " + WIZ.step + " of " + (WIZ_STEPS.length - 1) : "",
+    body: s.render(),
+    foot: [
+      WIZ.step > 0 ? el("button", {class: "btn ghost", onclick: () => openHorizonsWizard(WIZ.step - 1)}, "Back") : null,
+      el("div", {style: "flex:1"}),
+      el("button", {class: "btn ghost", onclick: () => { closeModal(); setSetting("horizons_seen", todayISO()); }}, "Later"),
+      s.key ? el("button", {class: "btn ghost", onclick: () => openHorizonsWizard(WIZ.step + 1)}, "Skip") : null,
+      el("button", {class: "btn primary", onclick: () => openHorizonsWizard(WIZ.step + 1)},
+        s.cta || (last ? "Finish" : "Next")),
+    ],
+  });
+}
+
+/* ============================================================
+   144_CONTEXTS_WIZARD
+   Same principle: your contexts, not mine. Examples are offered as
+   suggestions you tap, never written behind your back.
+   ============================================================ */
+const CONTEXT_EXAMPLES = [
+  "phone", "computer", "errand", "home", "office", "anywhere",
+  "deep-work", "waiting", "agenda", "offline",
+];
+const CTXWIZ = {picked: ""};
+
+function openContextsWizard(onDone) {
+  CTXWIZ.picked = "";
+  const ta = el("textarea", {placeholder: "phone\ncomputer\nerrand", style: "min-height:110px"});
+  ta.addEventListener("input", () => { CTXWIZ.picked = ta.value; });
+  const chips = el("div", {class: "seg", style: "margin-top:8px"});
+  for (const o of CONTEXT_EXAMPLES) {
+    chips.append(el("button", {
+      onclick: e => {
+        const lines = CTXWIZ.picked.split("\n").map(trim).filter(Boolean);
+        const i = lines.indexOf(o);
+        if (i >= 0) lines.splice(i, 1); else lines.push(o);
+        CTXWIZ.picked = lines.join("\n");
+        ta.value = CTXWIZ.picked;
+        e.target.classList.toggle("on");
+      },
+    }, "@" + o));
+  }
+  modal({
+    center: true, title: "Set up your contexts",
+    body: el("div", {class: "field"},
+      el("label", {}, "Where, or with what, can work actually happen?"),
+      el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
+        "A context is the thing an action needs: a phone in your hand, a shop you are " +
+        "standing in, two uninterrupted hours. Picking one is what lets GroupTodo show " +
+        "the three oldest things you could do right now. Yours should match your real life — " +
+        "these are only suggestions."),
+      ta, chips),
+    foot: [
+      el("button", {class: "btn ghost", onclick: closeModal}, "Later"),
+      el("button", {class: "btn primary", onclick: () => {
+        const names = CTXWIZ.picked.split("\n").map(trim).filter(Boolean);
+        closeModal();
+        for (const n of names) {
+          const clean = slugify(n.replace(/^@/, ""));
+          const p = join(DIRS.contexts, clean + ".md");
+          if (!V.pages.has(p)) putPage(p, pageTemplateFor("c", clean));
+        }
+        setSetting("contexts_done", todayISO());
+        notify(names.length ? "Created " + names.length + " contexts." : "No contexts created.");
+        render();
+        if (onDone && names.length) onDone(slugify(names[0].replace(/^@/, "")));
+      }}, "Create"),
+    ],
+  });
+}
+
+/* ============================================================
+   145_HORIZONS_VIEW
+   ============================================================ */
+function horizonRow(h, body, action) {
+  return el("div", {class: "section"},
+    el("h3", {},
+      el("span", {style: "color:var(--accent);font-family:var(--mono);font-size:11px"}, h.alt),
+      el("span", {}, h.h + " · " + h.name),
+      action ? el("span", {style: "margin-left:auto"}, action) : null),
+    body);
+}
+
+function textHorizonCard(key, h) {
+  const lines = getHorizon(key);
+  const card = el("div", {class: "card"});
+  if (!lines.length) {
+    card.append(el("div", {class: "empty"}, h.ask));
+  } else {
+    for (const l of lines) card.append(el("div", {class: "dash-item", html: renderInline(l)}));
+  }
+  return card;
+}
+
+function editHorizonText(key, h) {
+  const ta = el("textarea", {placeholder: h.ask, style: "min-height:130px"});
+  ta.value = getHorizon(key).join("\n");
+  modal({
+    center: true, title: h.h + " · " + h.name,
+    body: el("div", {class: "field"}, el("label", {}, h.ask), ta),
+    foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+           el("button", {class: "btn primary", onclick: () => {
+             setHorizon(key, ta.value.split("\n")); closeModal(); render();
+           }}, "Save")],
+  });
+}
+
+function viewHorizons() {
   const c = el("div", {class: "wrap"});
   c.append(nudgeBar());
-  const areas = areaList();
-  const orphans = unassignedProjects();
 
-  if (!areas.length) {
+  const areas = areaList(), goals = goalList();
+  const nothing = !areas.length && !goals.length && !getHorizon("vision").length && !getHorizon("purpose").length;
+
+  if (nothing) {
     c.append(el("div", {class: "hero"},
-      el("h2", {}, "Areas of focus"),
-      el("div", {style: "font-size:16px;font-weight:600;margin-bottom:2px"}, "The parts of your life that never finish"),
-      el("p", {}, "Health, Finances, Team, Home. Projects finish and go away; areas do not. " +
-                  "Hang every project under one and nothing drifts unowned."),
+      el("h2", {}, "Horizons of focus"),
+      el("div", {style: "font-size:16px;font-weight:600;margin-bottom:2px"}, "Altitude, not just a list"),
+      el("p", {}, "Purpose, vision, goals and areas are what make your projects mean something. " +
+                  "Nothing is created for you — the wizard asks, you answer."),
       el("div", {class: "acts"},
-        el("button", {class: "btn primary", onclick: () => newAreaPrompt()}, "Create first area"),
-        el("button", {class: "btn ghost", onclick: () => seedAreas()}, "Use a starter set"))));
+        el("button", {class: "btn primary", onclick: () => openHorizonsWizard(0)}, "Run the setup wizard"))));
   }
 
-  const empties = [];
-  for (const a of areas) {
-    const name = baseName(a);
-    const projects = projectsInArea(name);
-    const open = projects.reduce((n, p) => n + openTodoCount(p), 0);
-    if (!projects.length) { empties.push([a, name]); continue; }
-    const card = el("div", {class: "card"});
-    for (const p of projects.sort((x, y) => pageTitle(x).localeCompare(pageTitle(y)))) {
-      const code = statusDirOf(p);
-      card.append(el("div", {class: "prow"},
-        el("span", {class: "st st-" + code, title: STATUS_TEXT[code]}, code),
-        el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(p)}, pageTitle(p)),
-        el("span", {class: "chip"}, openTodoCount(p) + " open")));
+  for (const h of HORIZONS) {
+    if (h.key === "purpose" || h.key === "vision") {
+      c.append(horizonRow(h, textHorizonCard(h.key, h),
+        el("button", {class: "btn sm ghost", onclick: () => editHorizonText(h.key, h)},
+          getHorizon(h.key).length ? "edit" : "define")));
+    } else if (h.key === "goals") {
+      const card = el("div", {class: "card"});
+      if (!goals.length) card.append(el("div", {class: "empty"}, h.ask));
+      for (const g of goals) {
+        const name = baseName(g);
+        const live = projectsForGoal(name).filter(p => ["1", "3"].includes(statusDirOf(p)));
+        card.append(el("div", {class: "prow"},
+          el("span", {class: "st st-1"}, "3"),
+          el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(g)}, pageTitle(g)),
+          el("button", {class: "chip b", onclick: () => openAreaPickerFor(g)},
+            areaOfGoal(g) ? areaOfGoal(g) : "no area"),
+          live.length ? el("span", {class: "chip"}, live.length + " projects")
+                      : el("span", {class: "chip miss b", onclick: () => newProjectPrompt(np => { setGoalOfProject(np, name); openPage(np); })},
+                          "no project")));
+      }
+      c.append(horizonRow(h, card,
+        el("button", {class: "btn sm ghost", onclick: () => newGoalPrompt()}, "+ goal")));
+    } else if (h.key === "areas") {
+      const card = el("div", {class: "card"});
+      if (!areas.length) card.append(el("div", {class: "empty"}, h.ask));
+      for (const a of areas) {
+        const name = baseName(a);
+        const projects = projectsInArea(name);
+        const open = projects.reduce((n, p) => n + openTodoCount(p), 0);
+        card.append(el("div", {class: "prow"},
+          el("span", {class: "st st-2"}, "2"),
+          el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(a)}, name),
+          el("span", {class: "sub"}, projects.length + " projects"),
+          open ? el("span", {class: "chip"}, open + " open") : null,
+          el("button", {class: "btn sm ghost", onclick: () => newProjectPrompt(np => { setAreaOfProject(np, name); openPage(np); })},
+            "+ project")));
+      }
+      const orphans = unassignedProjects();
+      if (orphans.length) {
+        card.append(el("div", {class: "dash-item", style: "color:var(--warn)"},
+          el("span", {}, orphans.length + " project(s) belong to no area"),
+          el("span", {class: "fix", onclick: () => openAreaPicker(orphans[0])}, "assign")));
+      }
+      c.append(horizonRow(h, card,
+        el("button", {class: "btn sm ghost", onclick: () => newAreaPrompt()}, "+ area")));
+    } else if (h.key === "projects") {
+      const card = el("div", {class: "card"});
+      for (const code of ["1", "3", "2"]) {
+        card.append(el("button", {class: "prow", onclick: () => go("projects", {statusCode: code})},
+          el("span", {class: "st st-" + code}, code),
+          el("span", {class: "nm"}, STATUS_LABEL[code]),
+          el("span", {class: "sub"}, projectsIn(code).length + "")));
+      }
+      const noOutcome = projectsWithoutOutcome();
+      if (noOutcome.length) {
+        card.append(el("div", {class: "dash-item", style: "color:var(--warn)"},
+          el("span", {}, noOutcome.length + " project(s) with no stated outcome"),
+          el("span", {class: "fix", onclick: () => openOutcomePrompt(noOutcome[0])}, "define")));
+      }
+      c.append(horizonRow(h, card));
+    } else {
+      const open = leafActions().filter(a => OPEN_STATES[a.state]);
+      const card = el("div", {class: "card"},
+        el("button", {class: "prow", onclick: () => go(isSimple() ? "todos" : "next")},
+          el("span", {class: "st st-1"}, "▸"),
+          el("span", {class: "nm"}, "Open next actions"),
+          el("span", {class: "sub"}, open.length + "")));
+      c.append(horizonRow(h, card));
     }
-    card.append(el("button", {class: "dash-item", onclick: () => newProjectPrompt(np => { setAreaOfProject(np, name); openPage(np); })},
-      "+ project in " + name));
-    c.append(section(name, open, card,
-      el("button", {class: "btn sm ghost", style: "margin-left:auto", onclick: () => openPage(a)}, "open area")));
   }
 
-  if (orphans.length) {
-    const card = el("div", {class: "card"});
-    for (const p of orphans) {
-      card.append(el("div", {class: "prow"},
-        el("span", {class: "st st-" + statusDirOf(p)}, statusDirOf(p)),
-        el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(p)}, pageTitle(p)),
-        el("button", {class: "btn sm ghost", onclick: () => openAreaPicker(p)}, "assign area")));
-    }
-    c.append(section("No area yet", orphans.length, card));
-  }
-
-  if (empties.length) {
-    const card = el("div", {class: "card"});
-    for (const [path, name] of empties) {
-      card.append(el("div", {class: "prow"},
-        el("span", {class: "st st-2"}, "\u25C9"),
-        el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(path)}, name),
-        el("button", {class: "btn sm ghost", onclick: () => newProjectPrompt(np => { setAreaOfProject(np, name); openPage(np); })},
-          "+ project")));
-    }
-    c.append(section("Areas with nothing in them", empties.length, card));
-  }
-  if (areas.length) {
-    c.append(el("div", {class: "section"},
-      el("button", {class: "btn ghost", onclick: () => newAreaPrompt()}, "+ new area")));
-  }
+  c.append(el("div", {class: "section"},
+    el("button", {class: "btn ghost", onclick: () => openHorizonsWizard(0)}, "Run the horizons wizard")));
   return c;
+}
+
+function newGoalPrompt() {
+  promptInput({
+    title: "New goal", label: "What do you want true in one to two years?", cta: "Create",
+    onSave: t => { const p = createGoal(t); render(); openPage(p); },
+  });
+}
+
+/* Area picker that works for a goal page as well as a project page. */
+function openAreaPickerFor(goalPath) {
+  const areas = areaList().map(baseName);
+  if (!areas.length) { newAreaPrompt(a => { setAreaOfGoal(goalPath, baseName(a)); render(); }); return; }
+  listPicker({
+    title: "Area for " + pageTitle(goalPath),
+    items: areas.concat(["(none)"]),
+    label: a => a,
+    onPick: a => { setAreaOfGoal(goalPath, a === "(none)" ? null : a); render(); },
+  });
 }
 
 function viewChecklists() {
@@ -2167,7 +2594,7 @@ function viewMyDay() {
 
 function navCount(id) {
   switch (id) {
-    case "areas":      return areaList().length || null;
+    case "horizons":   return areaList().length || null;
     case "checklists": return checklistPages().length || null;
     case "todos":      return leafActions().filter(a => OPEN_STATES[a.state]).length;
     case "today":   return openTodoCount(journalPath());
@@ -2618,6 +3045,9 @@ function viewPage() {
     meta.append(el("span", {class: "nudge", html: esc(k) + ":: " + renderInline(v)}));
   }
   meta.append(el("button", {class: "nudge", onclick: () => { updateReviewed(path); render(); }}, "mark reviewed"));
+  if (code) meta.append(el("button", {class: "nudge" + (outcomeOf(path) ? "" : " warn"),
+    onclick: () => openOutcomePrompt(path)},
+    outcomeOf(path) ? "outcome: " + outcomeOf(path) : "no outcome stated"));
   if (code) meta.append(el("button", {class: "nudge", onclick: () => openAreaPicker(path)},
     areaOfProject(path) ? "area: " + areaOfProject(path) : "no area"));
   if (code) meta.append(el("button", {class: "nudge", onclick: () => openAddNextAction(path)}, "+ next action"));
@@ -2696,7 +3126,7 @@ function viewSearch() {
    ============================================================ */
 const VIEW_TITLE = {
   today: "Today", next: "Next actions", context: "Context", agenda: "Agenda",
-  todos: "Todos", areas: "Areas of focus", checklists: "Checklists",
+  todos: "Todos", horizons: "Horizons of focus", checklists: "Checklists",
   projects: "Projects", zettel: "Zettel", pages: "All pages", "journal-list": "Journals",
   health: "Health check", search: "Search", page: "Page",
 };
@@ -2710,7 +3140,10 @@ function render() {
   switch (state.view) {
     case "today":   node = isSimple() ? viewMyDay() : viewToday(); break;
     case "todos":   node = viewTodos(); break;
-    case "areas":   node = viewAreas(); break;
+    case "horizons":
+      node = viewHorizons();
+      if (!getSetting("horizons_seen")) setTimeout(() => openHorizonsWizard(0), 180);
+      break;
     case "checklists": node = viewChecklists(); break;
     case "next":    node = viewNext(); break;
     case "context": node = viewContext(); break;
@@ -2832,36 +3265,9 @@ function promptInput({title, label, value = "", placeholder = "", multiline = fa
    125_CONTEXT_SYSTEM
    Port of: init.lua 52_CONTEXT_SYSTEM
    ============================================================ */
-function seedContexts() {
-  for (const c of SEED_CONTEXTS) {
-    const p = join(DIRS.contexts, c + ".md");
-    if (!V.pages.has(p)) putPage(p, pageTemplateFor("c", c));
-  }
-  notify("Installed " + SEED_CONTEXTS.length + " contexts under pages/c/.");
-}
-
-function offerStarterContexts(onPick) {
-  modal({
-    center: true, title: "No contexts yet",
-    body: el("div", {class: "field"},
-      el("label", {}, "Contexts are where work can happen"),
-      el("div", {style: "color:var(--fg2);font-size:13.5px"},
-        "An action tagged [[c/phone]] can only be done with a phone in hand. " +
-        "Picking a context is what lets GroupTodo surface the three oldest things " +
-        "you can actually do right now.")),
-    foot: [
-      el("button", {class: "btn ghost", onclick: () => { closeModal(); newContextPrompt(onPick); }}, "Name my own"),
-      el("button", {class: "btn primary", onclick: () => {
-        closeModal(); seedContexts(); render();
-        openContextPicker("Where are you now?", onPick);
-      }}, "Install starter contexts"),
-    ],
-  });
-}
-
 function openContextPicker(title, onPick) {
   const items = contextList();
-  if (!items.length) { offerStarterContexts(onPick); return; }
+  if (!items.length) { openContextsWizard(onPick); return; }
   listPicker({
     title: title || "Pick context", items,
     label: c => "@" + c,
@@ -3111,12 +3517,23 @@ function openStatusPicker(path) {
 
 function newProjectPrompt(then) {
   promptInput({
-    title: "New project", label: "Project name", cta: "Create",
+    title: "New project", label: "Project name", cta: "Next",
     onSave: name => {
       const p = createProjectPage(name);
-      notify("Project created: " + pageTitle(p));
-      if (then) then(p); else openPage(p);
-      render();
+      // A project without a finish line is a wish. Ask straight away.
+      promptInput({
+        title: "What does done look like?",
+        label: 'State it as if it already happened \u2014 "Sink repaired, no drip"',
+        value: "", cta: "Create project",
+        onSave: outcome => {
+          if (trim(outcome)) setOutcome(p, outcome);
+          notify("Project created: " + pageTitle(p));
+          if (then) then(p); else openPage(p);
+          render();
+          // A project with an outcome but no next action is still stalled.
+          setTimeout(() => openAddNextAction(p), 120);
+        },
+      });
     },
   });
 }
@@ -3222,6 +3639,7 @@ function openWeeding(next) {
     const sec = el("div", {class: "dash-sec"});
     const flags = [];
     if (!p.anyTodo)  flags.push("no next action");
+    if (!outcomeOf(p.path)) flags.push("no outcome");
     if (p.noContext) flags.push("no context");
     if (p.noVerb)    flags.push("no verb");
     sec.append(el("h4", {},
@@ -3243,6 +3661,7 @@ function openWeeding(next) {
     sec.append(el("div", {style: "display:flex;gap:6px;padding:6px 16px 10px;flex-wrap:wrap"},
       el("button", {class: "btn sm ghost", onclick: () => { closeModal(); openPage(p.path); }}, "open"),
       el("button", {class: "btn sm ghost", onclick: () => { closeModal(); openAddNextAction(p.path); }}, "+ next action"),
+      el("button", {class: "btn sm ghost", onclick: () => { closeModal(); openOutcomePrompt(p.path); }}, "outcome"),
       el("button", {class: "btn sm ghost", onclick: () => { closeModal(); openStatusPicker(p.path); }}, "status"),
       el("button", {class: "btn sm ghost", onclick: () => { updateReviewed(p.path); closeModal(); openWeeding(next); }}, "mark reviewed")));
     body.append(sec);
@@ -3262,6 +3681,9 @@ function reviewSections() {
     {title: "Stuck active projects", hint: "no next action — define one or park it",
      items: stuckActiveProjects().map(s => ({text: pageTitle(s.path), sub: s.reason, path: s.path,
        fix: "+ next action", act: () => { closeModal(); openAddNextAction(s.path); }}))},
+    {title: "Projects not stated as an outcome", hint: "what would done look like?",
+     items: projectsWithoutOutcome().map(p => ({text: pageTitle(p), sub: "no outcome:: yet", path: p,
+       fix: "state outcome", act: () => { closeModal(); openOutcomePrompt(p, () => openReview(1)); }}))},
     {title: "Journal actions without a project", hint: "refile or let them go",
      items: acts.filter(a => a.group === "JOURNAL").map(a => ({text: a.title, sub: a.path, path: a.path, block: a.block,
        fix: "refile", act: () => { closeModal(); openRefile(a.path, a.block); }}))},
@@ -3641,14 +4063,6 @@ async function connectServer(base) {
 /* ============================================================
    141_AREA + CHECKLIST dialogs
    ============================================================ */
-const SEED_AREAS = ["Health", "Finances", "Home", "Work", "Relationships", "Learning"];
-
-function seedAreas() {
-  for (const a of SEED_AREAS) createArea(a);
-  notify("Created " + SEED_AREAS.length + " areas. Rename or delete any that are not yours.");
-  render();
-}
-
 function newAreaPrompt(then) {
   promptInput({
     title: "New area of focus", label: "Something ongoing, not a task (Health, Team, Home)",
@@ -3866,7 +4280,6 @@ const SEED_VERBS = {
     pakk:    ["samle"],
   },
 };
-const SEED_CONTEXTS = ["phone", "computer", "errand", "home", "office", "anywhere", "deep-work"];
 
 async function seedIfEmpty() {
   if (V.pages.size > 0) return;
@@ -3882,28 +4295,19 @@ async function seedIfEmpty() {
       });
     }
   }
-  for (const c of SEED_CONTEXTS) {
-    putPage(join(DIRS.contexts, c + ".md"), {
-      props: {title: c, type: "context", created: todayStamp()},
-      blocks: [newBlock({title: "Actions you can only do @" + c + "."})],
-    });
-  }
   putPage(join(DIRS.templates, "journals.md"), {
     props: {title: "%date%", created: "[[%date%]]"},
     blocks: [newBlock({title: "Captured"}), newBlock({title: "Done today"})],
   });
   putPage(join(DIRS.templates, "1.md"), {
-    props: {title: "%title%", status: "%status%", created: "%created%", reviewed: "%reviewed%"},
-    blocks: [
-      newBlock({title: "Outcome: what does done look like?"}),
-      newBlock({state: "TODO", title: "%title%"}),
-    ],
+    props: {title: "%title%", status: "%status%", outcome: "",
+            created: "%created%", reviewed: "%reviewed%"},
+    blocks: [],
   });
 
   settingsPage();
   setSetting("last_review", "");
 
-  for (const a of SEED_AREAS) createArea(a);
   putPage(join(DIRS.lists, "Weekly review.md"), {
     props: {title: "Weekly review", type: "checklist", created: todayStamp()},
     blocks: [
@@ -3917,16 +4321,13 @@ async function seedIfEmpty() {
 
   const proj = join(DIRS.active, "Set up GroupTodo.md");
   putPage(proj, {
-    props: {title: "Set up GroupTodo", status: STATUS_TEXT["1"], area: "[[a/Work]]",
+    props: {title: "Set up GroupTodo", status: STATUS_TEXT["1"],
+            outcome: "GroupTodo set up with my own horizons, contexts and a vault that syncs",
             created: todayStamp(), reviewed: todayStamp()},
     blocks: [
-      newBlock({title: "Outcome: a vault I trust, synced to real .md files."}),
-      newBlock({state: "TODO", title: "Call it a system: pick a context for each action [[c/computer]]",
-                props: {Added: todayStamp()}}),
-      newBlock({state: "TODO", title: "Find your vault folder and connect it [[c/computer]]",
-                props: {Added: todayStamp()}}),
-      newBlock({state: "TODO", title: "Read the GTD page to see how the nudges work [[c/anywhere]]",
-                props: {Added: todayStamp()}}),
+      newBlock({state: "TODO", title: "Define my horizons of focus", props: {Added: todayStamp()}}),
+      newBlock({state: "TODO", title: "Set up my own contexts", props: {Added: todayStamp()}}),
+      newBlock({state: "TODO", title: "Connect a vault folder or a synced vault file", props: {Added: todayStamp()}}),
     ],
   });
 
@@ -3935,7 +4336,7 @@ async function seedIfEmpty() {
     props: {title: todayISO(), created: todayStamp()},
     blocks: [
       newBlock({title: "Welcome. Capture anything here with the + button, then clarify it."}),
-      newBlock({state: "TODO", title: "Draft the three things that would make today good [[c/anywhere]] [[1/Set up GroupTodo]]",
+      newBlock({state: "TODO", title: "Draft the three things that would make today good [[1/Set up GroupTodo]]",
                 props: {Added: todayStamp()}}),
     ],
   });

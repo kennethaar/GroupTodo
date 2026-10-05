@@ -5,8 +5,8 @@ install, no account, no server, no network access of any kind.
 
 Two front doors over the same files:
 
-- **Simple** — areas of focus, projects, todos, contexts, checklists. Reads like
-  Microsoft To Do.
+- **Simple** — horizons of focus, projects, todos, contexts, checklists. Reads
+  like Microsoft To Do.
 - **Advanced** — daily journals, outliner, `[[links]]`, backlinks, zettel. Reads
   like Logseq.
 
@@ -121,12 +121,14 @@ the network.
 journals/2026-10-05.md      one file per day
 pages/
   _/  0/  1/  2/  3/        project status: cancelled, completed, active, someday, waiting
-  a/                        areas of focus   -> [[a/Health]]
+  a/                        areas of focus   -> [[a/Health]]     (H2)
+  g/                        goals            -> [[g/Debt cleared]] (H3)
   c/                        contexts         -> [[c/phone]]
   k/                        checklists       -> [[k/Weekly review]]
   p/  o/                    people, organisations
   z/                        zettel notes
   templates/  verbs/        templates, Phys-Viz verb lexicon
+  Horizons.md               purpose and vision (H5, H4)
   GTD.md                    settings: mode, last review, tombstones
 ```
 
@@ -136,6 +138,7 @@ rewrites every `[[1/Fix sink]]` link in the vault to `[[0/Fix sink]]`.
 ```markdown
 title:: Fix the sink
 status:: 1 = active
+outcome:: Sink repaired, no drip
 area:: [[a/Home]]
 updated:: 2026-10-05T09:12:00Z
 
@@ -161,8 +164,41 @@ untouched.
 
 The point is that vague work is not allowed to sit quietly.
 
-**Areas of focus.** Projects finish; areas do not. A project with no area is a
-project nobody owns, and the Areas view says so.
+**Nothing is invented for you.** No areas, no contexts, no goals are created
+behind your back. Borrowed structure is worse than none, so the app ships empty
+and asks.
+
+**Horizons of focus.** David Allen's six altitudes, set up by a wizard the first
+time you open Horizons:
+
+| | | |
+|---|---|---|
+| Horizon 5 | 50,000 ft | Purpose and principles |
+| Horizon 4 | 40,000 ft | Vision, three to five years |
+| Horizon 3 | 30,000 ft | Goals and objectives, one to two years |
+| Horizon 2 | 20,000 ft | Areas of focus — ongoing, never "done" |
+| Horizon 1 | 10,000 ft | Projects — outcomes inside a year |
+| Ground | runway | Next actions |
+
+The wizard climbs from the concrete to the abstract, because that is the order
+people can actually answer in — Allen implements bottom-up even though you review
+top-down. Every step is skippable, suggestions are tap-to-add, and nothing is
+written until you finish. Re-run it any time from the Horizons view.
+
+Projects hang under areas and goals under areas, so two failures become visible:
+**projects in no area** (work nobody owns) and **goals with no project** (wishes).
+
+**Contexts are yours too.** The first time you need one, a wizard asks where work
+actually happens for you, offering common ones as suggestions you tap. Nothing is
+created unless you pick it.
+
+**Projects stated as outcomes.** A project called *Website* is a noun nobody can
+finish; *Website live and taking bookings* is a finish line. Creating a project
+asks name, then "what does done look like?", then the next action — the whole
+clarify sequence in order. Projects with no stated `outcome::` are flagged in the
+nudge bar, in weeding and in the weekly review. New projects start with no
+actions at all, so the "no next action" nudge asks you for a real one rather than
+inventing a verb-less placeholder from the title.
 
 **Phys-Viz verbs.** A next action must start with a verb a camera could film —
 *Call*, *Draft*, *Buy*, *Ring*, *Kjøp*. Anything else is flagged and a picker
@@ -186,7 +222,7 @@ next action, then missing context, then missing verb, then idle time.
 **Project completion.** Close the last action in a project and it will not let it
 go quiet: add a next action, or move it to `0`, `2`, or `_`.
 
-**Weekly review.** Seven sections, each with a one-click fix. Marking it done
+**Weekly review.** Eight sections, each with a one-click fix. Marking it done
 writes `last_review` into `pages/GTD.md`.
 
 **Health check.** Missing titles, waiting projects with no `waiting_since`,
