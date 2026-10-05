@@ -84,6 +84,34 @@ Set them up in the wizard on first run, or add one any time from the space
 switcher at the top of the sidebar. Give each space its own folder in
 **Vault & sync**; until you do, it lives in browser storage.
 
+### Sharing one project
+
+**share** on a project page exports that project alone as a markdown file. The
+dialog lists every page going into the file, with block counts, before it writes
+anything — you see the manifest rather than trusting it.
+
+- **Project page only** by default. Pages it links to (context, area, goal,
+  source template) are an opt-in tick. **Journals are never included**, even when
+  they reference the project: a day's page is mixed content and would carry
+  everything else in it.
+- **Remove who did what** strips `by::`, `done_by::` and `updated_by::` from the
+  copy you send. Off by default.
+- **GroupTodo file** merges into the recipient's vault through *Open vault file*,
+  so they can edit and send it back. **Plain markdown** is readable in any editor
+  but does not round-trip.
+
+It is a copy, not a permission: once sent, they keep it. No revoke, no expiry.
+
+### Recording nothing
+
+A space can be set to **record no attribution at all** — Vault & sync → *Do not
+record who did what in this space*. No `by::`, `done_by::` or `updated_by::` is
+written there whatever name you have set. It lives in that space's own settings,
+so it holds for everyone sharing it, not just your device. Turning it on also
+offers to strip the stamps already in the space.
+
+Use it where a signed, timestamped record of who did what is itself the risk.
+
 ### What GroupTodo does not do
 
 It has **no accounts and no permissions of its own**. Whoever can open the folder

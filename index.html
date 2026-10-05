@@ -984,8 +984,9 @@ function touch(path) {
   if (page) {
     const props = page.props || (page.props = {});
     props.updated = nowStamp();
-    const me = whoAmI();
+    const me = stampName();
     if (me) props.updated_by = me;
+    else delete props.updated_by;
   }
   V.dirty.add(path);
   scheduleFlush();
@@ -1869,7 +1870,7 @@ function setBlockState(path, block, state, opts = {}) {
       stampAuthor(block);
     }
   } else if (state === "DONE" || state === "CANCELLED") {
-    const me = whoAmI();
+    const me = stampName();
     if (me) setBlockProp(block, "done_by", me + " " + nowStamp());
     const added = addedDate(block);
     const end = todayISO();
@@ -2636,7 +2637,7 @@ function setIdentity(name, space) {
 
 /* Stamp authorship on something the person just created. */
 function stampAuthor(block) {
-  const me = whoAmI();
+  const me = stampName();
   if (me && block && block.props && !block.props.by) block.props.by = me;
   return block;
 }
@@ -3867,6 +3868,8 @@ function viewPage() {
   if (!isSimple()) c.append(section("Linked references", back.length, card));
 
   c.append(el("div", {class: "section", style: "display:flex;gap:8px;flex-wrap:wrap"},
+    isJournalPath(path) ? null
+      : el("button", {class: "btn sm ghost", onclick: () => openExportPage(path)}, "share"),
     el("button", {class: "btn sm ghost", onclick: () => renamePrompt(path)}, "rename"),
     el("button", {class: "btn sm ghost", onclick: () => movePrompt(path)}, "move"),
     el("button", {class: "btn sm ghost", onclick: () => deletePrompt(path)}, "delete")));
@@ -4618,6 +4621,192 @@ async function finishSpaceSetup(names) {
 }
 
 /* ============================================================
+   149_EXPORT_ONE_PROJECT
+   Handing a single project to somebody, without handing them the space it
+   lives in. The file is a copy, not a permission: once sent they have it
+   for good. What it must never do is quietly carry more than you chose,
+   so the dialog lists every page going out before it writes anything.
+   ============================================================ */
+
+/* Pages to include. Journals are never pulled in, even when referenced:
+   a day's page is mixed content and would leak everything else in it. */
+function collectExport(rootPath, {includeRefs = false} = {}) {
+  const out = [rootPath];
+  if (!includeRefs) return out;
+  const page = getPage(rootPath);
+  if (!page) return out;
+
+  const texts = Object.values(page.props || {}).map(String);
+  walkBlocks(page.blocks, b => {
+    texts.push(b.title);
+    (b.body || []).forEach(l => texts.push(l));
+    for (const v of Object.values(b.props || {})) texts.push(String(v));
+  });
+
+  for (const text of texts) {
+    for (const target of linksIn(text)) {
+      const t = trim(target.split("][")[0]);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(t)) continue;          // a date link is a journal
+      const p = findExistingPage(t);
+      if (p && !isJournalPath(p) && !out.includes(p)) out.push(p);
+    }
+  }
+  return out;
+}
+
+/* A copy with every trace of who did what removed. */
+function stripAttributionFrom(page) {
+  const props = Object.assign({}, page.props || {});
+  delete props.updated_by;
+  const copy = blocks => (blocks || []).map(b => {
+    const bp = Object.assign({}, b.props || {});
+    delete bp.by;
+    delete bp.done_by;
+    return newBlock({
+      state: b.state, title: b.title, props: bp,
+      body: (b.body || []).slice(), children: copy(b.children),
+    });
+  });
+  return {props, blocks: copy(page.blocks)};
+}
+
+function exportMarkdown(paths, {strip = false, fenced = true} = {}) {
+  const out = [];
+  if (fenced) {
+    out.push("<!-- GroupTodo export. Open it with Vault & sync → Open vault file. -->",
+             "<!-- gtd:bundle v1 " + nowStamp() + " -->", "");
+  }
+  for (const path of paths) {
+    const page = strip ? stripAttributionFrom(getPage(path)) : getPage(path);
+    const text = serializePage(page).replace(/\n$/, "");
+    if (fenced) out.push("<!-- gtd:file " + path + " -->", text, "<!-- gtd:endfile -->", "");
+    else out.push("## " + pageTitle(path), "", text, "");
+  }
+  return out.join("\n");
+}
+
+function openExportPage(rootPath) {
+  const opts = {includeRefs: false, strip: false, fenced: true};
+  const manifest = el("div", {});
+  const summary = el("div", {style: "color:var(--fg3);font-size:12px;margin-top:8px"});
+
+  const refresh = () => {
+    const paths = collectExport(rootPath, opts);
+    manifest.textContent = "";
+    for (const p of paths) {
+      const blocks = flattenBlocks(getPage(p).blocks).length;
+      manifest.append(el("div", {class: "dash-item", style: "cursor:default"},
+        el("span", {}, pageTitle(p)),
+        el("span", {class: "p"}, p),
+        el("span", {class: "chip"}, blocks + (blocks === 1 ? " block" : " blocks"))));
+    }
+    const bytes = exportMarkdown(paths, opts).length;
+    summary.textContent = paths.length + (paths.length === 1 ? " page, " : " pages, ") +
+      (bytes < 1024 ? bytes + " bytes" : Math.round(bytes / 1024) + " KB") +
+      (opts.strip ? ", attribution removed" : "");
+  };
+
+  const toggle = (key, label, hint) => {
+    const box = el("button", {class: "spacetoggle" + (opts[key] ? " on" : ""),
+      onclick: () => { opts[key] = !opts[key]; box.classList.toggle("on", opts[key]); refresh(); }},
+      opts[key] ? "✓" : "");
+    return el("div", {style: "display:flex;gap:10px;align-items:flex-start;margin:6px 0"},
+      box, el("div", {}, el("div", {}, label),
+        el("div", {style: "color:var(--fg3);font-size:12px"}, hint)));
+  };
+
+  const shapes = el("div", {class: "seg"});
+  for (const [k, label] of [[true, "GroupTodo file"], [false, "Plain markdown"]]) {
+    const btn = el("button", {class: k === opts.fenced ? "on" : "", onclick: () => {
+      opts.fenced = k;
+      for (const x of shapes.children) x.classList.toggle("on", (x.dataset.k === "1") === k);
+      refresh();
+    }}, label);
+    btn.dataset.k = k ? "1" : "0";
+    shapes.append(btn);
+  }
+
+  refresh();
+
+  modal({
+    center: true, title: "Share " + pageTitle(rootPath),
+    body: el("div", {},
+      el("div", {class: "field"},
+        el("label", {}, "What goes in the file"),
+        manifest, summary),
+      el("div", {class: "field"},
+        el("label", {}, "Include"),
+        toggle("includeRefs", "Pages this one links to",
+               "its context, area, goal and source template. Journals are never included."),
+        toggle("strip", "Remove who did what",
+               "drops by::, done_by:: and updated_by:: from the copy you send.")),
+      el("div", {class: "field"},
+        el("label", {}, "Shape"), shapes,
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          opts.fenced
+            ? "They open it with Vault & sync → Open vault file, and it merges into their vault."
+            : "Readable in any editor. Does not merge back.")),
+      el("div", {class: "field"},
+        el("div", {style: "color:var(--fg3);font-size:12.5px"},
+          "A copy, not a permission. Once they have the file they keep it, and GroupTodo " +
+          "cannot take it back or expire it."))),
+    foot: [
+      el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+      el("button", {class: "btn primary", onclick: () => {
+        const paths = collectExport(rootPath, opts);
+        const text = exportMarkdown(paths, opts);
+        const name = "grouptodo-project-" +
+          baseName(rootPath).toLowerCase().replace(/[^\w-]+/g, "-") + ".md";
+        const url = URL.createObjectURL(new Blob([text], {type: "text/markdown"}));
+        const a = el("a", {href: url, download: name});
+        document.body.append(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        closeModal();
+        notify("Exported " + paths.length + " page" + (paths.length === 1 ? "" : "s") + " as " + name + ".");
+      }}, "Export"),
+    ],
+  });
+}
+
+/* ============================================================
+   149b_SPACE_ATTRIBUTION SWITCH
+   Some spaces should not record who did what at all -- and that has to hold
+   for everyone sharing them, so it lives in the space's own settings rather
+   than on one device.
+   ============================================================ */
+const attributionOff = () => trim(getSetting("no_attribution") || "") === "true";
+
+/* The name to stamp with: empty when the space says not to. */
+const stampName = () => (attributionOff() ? "" : whoAmI());
+
+function countStamps() {
+  let n = 0;
+  for (const [, page] of V.pages) {
+    if (page.props && page.props.updated_by) n++;
+    walkBlocks(page.blocks, b => { if (b.props && (b.props.by || b.props.done_by)) n++; });
+  }
+  return n;
+}
+
+function clearExistingStamps() {
+  let n = 0;
+  for (const [path, page] of V.pages) {
+    let hit = false;
+    if (page.props && page.props.updated_by) { delete page.props.updated_by; hit = true; n++; }
+    walkBlocks(page.blocks, b => {
+      if (!b.props) return;
+      if (b.props.by)      { delete b.props.by; hit = true; n++; }
+      if (b.props.done_by) { delete b.props.done_by; hit = true; n++; }
+    });
+    if (hit) touch(path);
+  }
+  notify(n ? "Removed " + n + " attribution stamp(s) from " + Spaces.active + "."
+           : "No stamps to remove.");
+  render();
+  return n;
+}
+
+/* ============================================================
    150_VAULT DIALOG -- connect a folder, a server, or export markdown
    ============================================================ */
 /* ============================================================
@@ -5198,7 +5387,36 @@ function openVaultDialog() {
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
           "Written into the markdown as by:: and done_by:: so everyone sharing this space " +
           "can see who added what and who closed it. Leave empty when you work alone and " +
-          "nothing is stamped. Stored on this device only, and can differ per space.")),
+          "nothing is stamped. Stored on this device only, and can differ per space." +
+          (attributionOff() ? " This space is set to record nothing, so the name is unused here." : ""))),
+
+      el("div", {class: "field"},
+        el("label", {}, "Attribution in " + (Spaces.active || "this space")),
+        (() => {
+          const off = attributionOff();
+          const box = el("button", {class: "spacetoggle" + (off ? " on" : ""),
+            onclick: () => {
+              setSetting("no_attribution", off ? "" : "true");
+              notify(off ? "Changes in " + Spaces.active + " will be signed again."
+                         : "Nothing in " + Spaces.active + " will record who did what.");
+              closeModal(); render(); openVaultDialog();
+            }}, off ? "\u2713" : "");
+          return el("div", {},
+            el("div", {style: "display:flex;gap:10px;align-items:flex-start"},
+              box,
+              el("div", {},
+                el("div", {}, "Do not record who did what in this space"),
+                el("div", {style: "color:var(--fg3);font-size:12px"},
+                  "No by::, done_by:: or updated_by:: is written here, whatever name you set. " +
+                  "Stored in the space's own settings, so it holds for everyone sharing it."))),
+            off && countStamps() ? el("button", {class: "btn sm ghost", style: "margin-top:8px",
+              onclick: () => {
+                if (!confirm("Remove " + countStamps() + " existing attribution stamp(s) from " +
+                             Spaces.active + "? This rewrites those files and cannot be undone."))
+                  return;
+                clearExistingStamps(); closeModal(); openVaultDialog();
+              }}, "Also remove the " + countStamps() + " stamps already here") : null);
+        })()),
 
       el("div", {class: "field"},
         el("label", {}, "Your timezone"),
