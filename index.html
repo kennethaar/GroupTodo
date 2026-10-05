@@ -1131,12 +1131,20 @@ const Spaces = {
    The active space is where new things land; any number of others can be
    shown alongside it. Toggling is per device, never written into a space,
    so nothing about your other lives travels inside a shared folder. */
-function visibleSpaces() {
+/* Which spaces are on screen is entirely your choice -- including hiding the
+   one you are capturing into. The only rule is that at least one is shown, and
+   that the active space is always one of the shown ones (untick it and the
+   active role moves to another visible space). */
+function storedVisible() {
   let names = [];
   try { names = JSON.parse(PREF.get("visibleSpaces") || "[]"); } catch (_) {}
-  names = names.filter(n => Spaces.get(n));
-  if (Spaces.active && !names.includes(Spaces.active)) names.unshift(Spaces.active);
-  return names.length ? names : (Spaces.active ? [Spaces.active] : []);
+  return names.filter(n => Spaces.get(n));
+}
+function visibleSpaces() {
+  const names = storedVisible();
+  if (names.length) return names;
+  if (Spaces.active) return [Spaces.active];
+  return Spaces.list.length ? [Spaces.list[0].name] : [];
 }
 function setVisibleSpaces(names) {
   PREF.set("visibleSpaces", JSON.stringify(Array.from(new Set(names))));
@@ -1202,6 +1210,12 @@ async function openSpace(name) {
 
   Spaces.active = name;
   PREF.set("activeSpace", name);
+  // Opening a space always shows it. If you were looking at a single space,
+  // switching replaces it; if you were looking at several, it joins them.
+  const shownNow = storedVisible();
+  if (shownNow.length && !shownNow.includes(name)) {
+    setVisibleSpaces(shownNow.length === 1 ? [name] : shownNow.concat([name]));
+  }
   LINKED = null;                                  // the linked vault file is per space
   try { LINKED = (await IDB.get("kv", "bundle:" + name)) || null; } catch (_) {}
 
@@ -1293,9 +1307,11 @@ function openSpaceSwitcher() {
   body.append(el("div", {class: "field", style: "padding-bottom:4px"},
     el("label", {}, "Shown together"),
     el("div", {style: "color:var(--fg2);font-size:12.5px"},
-      "Tick the spaces you want on screen at once. The highlighted one is where " +
-      "new captures land. Ticking more mixes their actions in one list \u2014 handy alone, " +
-      "not when someone is looking over your shoulder.")));
+      "Tick the spaces you want on screen \u2014 any combination, including hiding " +
+      "the one you are in. Tap a name to make it the space new captures land in; " +
+      "that one is highlighted. Your choice sticks until you change it."),
+    el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+      "Untick a space and it is gone from every list until you tick it back.")));
 
   for (const sp of Spaces.list) {
     const on = visible.has(sp.name);
@@ -1305,11 +1321,17 @@ function openSpaceSwitcher() {
       title: on ? "Hide " + sp.name : "Show " + sp.name,
       onclick: async e => {
         e.stopPropagation();
-        if (active && on) { notify("The active space is always shown."); return; }
         const next = new Set(visibleSpaces());
-        if (on) next.delete(sp.name); else next.add(sp.name);
+        if (on) {
+          if (next.size === 1) { notify("At least one space has to be shown."); return; }
+          next.delete(sp.name);
+        } else {
+          next.add(sp.name);
+        }
         setVisibleSpaces(Array.from(next));
         await ensureVisibleLoaded();
+        // Hiding the space you were capturing into hands that role to a visible one.
+        if (!next.has(Spaces.active)) await openSpace(Array.from(next)[0]);
         closeModal(); render(); openSpaceSwitcher();
       },
     }, on ? "\u2713" : "");
@@ -1336,7 +1358,7 @@ function openSpaceSwitcher() {
     body,
     foot: [
       el("button", {class: "btn ghost", onclick: () => { closeModal(); openShareSpace(); }}, "Share current"),
-      visible.size > 1 ? el("button", {class: "btn ghost", onclick: async () => {
+      visible.size > 1 ? el("button", {class: "btn ghost", onclick: () => {
         setVisibleSpaces([Spaces.active]);
         closeModal(); render();
         notify("Showing " + Spaces.active + " only.");
@@ -5149,7 +5171,9 @@ function afterFirstRun() {
   installManifest();
   await initSpaces();
 
-  const wanted = PREF.get("activeSpace");
+  const shown = storedVisible();
+  let wanted = PREF.get("activeSpace");
+  if (shown.length && (!wanted || !shown.includes(wanted))) wanted = shown[0];
   const start = (wanted && Spaces.get(wanted)) ? wanted : Spaces.list[0].name;
   try {
     await openSpace(start);

@@ -93,10 +93,15 @@ the Private one. Revoking means unsharing the folder.
 
 ### Showing one space, or several
 
-By default you see one space at a time. In the space switcher, tick any others to
-show them **together** in one list — useful when you are alone and want the whole
-inventory, and off by default so nothing from Work appears while someone is
-looking over your shoulder.
+By default you see one space at a time. In the space switcher, tick exactly the
+spaces you want on screen — **any combination, including hiding the one you are
+in**. Untick Work and it is gone from every list until you tick it back; the
+choice is remembered across restarts.
+
+If you hide the space you were capturing into, that role moves to a space that is
+still shown. At least one space is always visible. Tapping a name makes it the
+capture target: in single-space mode switching replaces what you were looking at,
+in multi-space mode it joins the set.
 
 When several are shown, every row carries a coloured badge saying which space it
 came from, and an edit is written back to **that** space's own files — ticking off
