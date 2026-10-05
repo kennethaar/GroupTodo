@@ -1045,10 +1045,7 @@ function migrateVault() {
     rewriteChecklistLinks();
     notify("Moved " + moved + " checklist(s) to pages/8/.");
   }
-  if (!V.pages.has(HORIZONS_PATH) && V.pages.has(HORIZONS_LEGACY)) {
-    putPage(HORIZONS_PATH, getPage(HORIZONS_LEGACY));
-    removePage(HORIZONS_LEGACY);
-  }
+  migrateHorizons();
   return moved;
 }
 
@@ -1510,6 +1507,7 @@ function statusDirOf(path) {
 }
 function pageKind(path) {
   if (isJournalPath(path)) return "journal";
+  if (isHorizonPage(path)) return "horizon";
   if (statusDirOf(path)) return "project";
   if (path.startsWith(DIRS.contexts  + "/")) return "context";
   if (path.startsWith(DIRS.people    + "/")) return "person";
@@ -1541,7 +1539,7 @@ function allPages(filter) {
   for (const path of V.pages.keys()) if (!filter || filter(path)) out.push(path);
   return out.sort();
 }
-const projectsIn = code => allPages(p => statusDirOf(p) === code);
+const projectsIn = code => allPages(p => statusDirOf(p) === code && !isHorizonPage(p));
 /* Same list, but across every visible space and carrying which space each is in. */
 const projectsInVisible = code =>
   acrossSpaces(() => projectsIn(code).map(path => ({path, space: V.space})));
@@ -2080,7 +2078,7 @@ function backlinksTo(path) {
 /* Port of: init.lua find_duplicate_projects */
 function duplicateProjects() {
   const bySlug = new Map();
-  for (const path of allPages(p => statusDirOf(p))) {
+  for (const path of allPages(p => statusDirOf(p) && !isHorizonPage(p))) {
     const slug = baseName(path).toLowerCase();
     if (!bySlug.has(slug)) bySlug.set(slug, []);
     bySlug.get(slug).push(path);
@@ -2213,13 +2211,21 @@ function createZettel(title) {
    ============================================================ */
 /* Underscore-prefixed so it sorts to the top of pages/ next to the other
    system pages, rather than mixing in with real content. */
-const HORIZONS_PATH   = join(PAGES, "_horizon.md");
-const HORIZONS_LEGACY = join(PAGES, "Horizons.md");
+/* Each horizon is its own page under pages/_/ -- pages/_/Purpose.md,
+   pages/_/Vision.md -- so they read and link like anything else: [[_/Purpose]].
+
+   Note that pages/_/ is also where cancelled projects go. A horizon page is
+   marked type:: horizon, and every project listing filters those out, so the
+   two never mix in the UI even though they share a drawer. */
+const DIR_HORIZONS    = join(PAGES, "_");
+const HORIZONS_LEGACY = [join(PAGES, "_horizon.md"), join(PAGES, "Horizons.md")];
 
 const HORIZONS = [
   {key: "purpose", h: "Horizon 5", alt: "50,000 ft", name: "Purpose & principles",
+   page: "Purpose", level: "5",
    ask: "Why does this life or this work exist? What standards do you hold yourself to?"},
   {key: "vision",  h: "Horizon 4", alt: "40,000 ft", name: "Vision",
+   page: "Vision", level: "4",
    ask: "Three to five years out, what does wild success look like?"},
   {key: "goals",   h: "Horizon 3", alt: "30,000 ft", name: "Goals & objectives",
    ask: "What do you want to be true in the next one to two years?"},
@@ -2230,35 +2236,50 @@ const HORIZONS = [
   {key: "ground",  h: "Ground",    alt: "runway",    name: "Next actions",
    ask: "What is the very next physical, visible move?"},
 ];
+const HORIZON_BY_KEY = Object.fromEntries(HORIZONS.map(h => [h.key, h]));
 
-function horizonsPage() {
-  // Carry an older vault over to the new name.
-  if (!V.pages.has(HORIZONS_PATH) && V.pages.has(HORIZONS_LEGACY)) {
-    putPage(HORIZONS_PATH, getPage(HORIZONS_LEGACY));
-    removePage(HORIZONS_LEGACY);
-  }
-  if (!V.pages.has(HORIZONS_PATH)) {
-    putPage(HORIZONS_PATH, {
-      props: {title: "_horizon", type: "horizons", created: todayStamp()},
+const horizonPath = key => join(DIR_HORIZONS, (HORIZON_BY_KEY[key]?.page || key) + ".md");
+const isHorizonPage = path =>
+  path.startsWith(DIR_HORIZONS + "/") && trim(getPage(path)?.props?.type || "") === "horizon";
+
+function horizonPage(key, create) {
+  const path = horizonPath(key);
+  if (!V.pages.has(path) && create) {
+    const h = HORIZON_BY_KEY[key];
+    putPage(path, {
+      props: {title: h?.page || key, type: "horizon", horizon: h?.level || "",
+              created: todayStamp()},
       blocks: [],
     });
   }
-  return getPage(HORIZONS_PATH);
+  return V.pages.has(path) ? getPage(path) : null;
 }
-const HORIZON_HEADING = {purpose: "Purpose & principles", vision: "Vision (3-5 years)"};
 
 function getHorizon(key) {
-  const head = HORIZON_HEADING[key];
-  const blk = horizonsPage().blocks.find(b => trim(b.title) === head);
-  return blk ? (blk.children || []).map(c => c.title).filter(t => trim(t)) : [];
+  const page = horizonPage(key, false);
+  if (!page) return [];
+  return (page.blocks || []).map(b => b.title).filter(t => trim(t));
 }
+
 function setHorizon(key, lines) {
-  const head = HORIZON_HEADING[key];
-  const page = horizonsPage();
-  let blk = page.blocks.find(b => trim(b.title) === head);
-  if (!blk) { blk = newBlock({title: head}); page.blocks.push(blk); }
-  blk.children = lines.filter(l => trim(l)).map(l => newBlock({title: trim(l)}));
-  touch(HORIZONS_PATH);
+  const page = horizonPage(key, true);
+  page.blocks = lines.filter(l => trim(l)).map(l => newBlock({title: trim(l)}));
+  touch(horizonPath(key));
+}
+
+/* An older vault kept purpose and vision as sections of one page. Split them. */
+function migrateHorizons() {
+  for (const legacy of HORIZONS_LEGACY) {
+    if (!V.pages.has(legacy)) continue;
+    const page = getPage(legacy);
+    const headings = {purpose: "Purpose & principles", vision: "Vision (3-5 years)"};
+    for (const [key, head] of Object.entries(headings)) {
+      const blk = (page.blocks || []).find(b => trim(b.title) === head);
+      const lines = blk ? (blk.children || []).map(c => c.title).filter(t => trim(t)) : [];
+      if (lines.length && !getHorizon(key).length) setHorizon(key, lines);
+    }
+    removePage(legacy);
+  }
 }
 
 /* ---------- H3 goals ---------- */
@@ -2296,7 +2317,7 @@ function setGoalOfProject(path, goal) {
   touch(path);
 }
 const projectsForGoal = goal =>
-  allPages(p => statusDirOf(p)).filter(p => goalOfProject(p) === goal);
+  allPages(p => statusDirOf(p) && !isHorizonPage(p)).filter(p => goalOfProject(p) === goal);
 
 /* Goals nobody is actually working on: the classic H3 failure. */
 const goalsWithoutProjects = () =>
@@ -2373,7 +2394,7 @@ function setAreaOfProject(path, area) {
   touch(path);
 }
 function projectsInArea(area) {
-  return allPages(p => statusDirOf(p)).filter(p => areaOfProject(p) === area);
+  return allPages(p => statusDirOf(p) && !isHorizonPage(p)).filter(p => areaOfProject(p) === area);
 }
 const unassignedProjects = () =>
   allPages(p => ["1", "3"].includes(statusDirOf(p))).filter(p => !areaOfProject(p));
@@ -3086,8 +3107,13 @@ function viewHorizons() {
   for (const h of HORIZONS) {
     if (h.key === "purpose" || h.key === "vision") {
       c.append(horizonRow(h, textHorizonCard(h.key, h),
-        el("button", {class: "btn sm ghost", onclick: () => editHorizonText(h.key, h)},
-          getHorizon(h.key).length ? "edit" : "define")));
+        el("span", {},
+          getHorizon(h.key).length
+            ? el("button", {class: "btn sm ghost", style: "margin-right:6px",
+                onclick: () => openPage(horizonPath(h.key))}, "open")
+            : null,
+          el("button", {class: "btn sm ghost", onclick: () => editHorizonText(h.key, h)},
+            getHorizon(h.key).length ? "edit" : "define"))));
     } else if (h.key === "goals") {
       const card = el("div", {class: "card"});
       if (!goals.length) card.append(el("div", {class: "empty"}, h.ask));
@@ -3740,9 +3766,15 @@ function viewPage() {
   if (!path || !V.pages.has(path)) { state.view = "today"; return viewToday(); }
   const page = getPage(path);
   const c = el("div", {class: "wrap"});
-  const code = statusDirOf(path);
+  const horizon = isHorizonPage(path);
+  const code = horizon ? null : statusDirOf(path);
 
   const meta = el("div", {class: "nudgebar"});
+  if (horizon) {
+    const h = HORIZONS.find(x => x.page === baseName(path));
+    meta.append(el("button", {class: "nudge", onclick: () => go("horizons")},
+      el("b", {}, h ? h.alt : "horizon"), h ? h.h + " \u00B7 " + h.name : "horizon"));
+  }
   if (code) meta.append(el("button", {class: "nudge", onclick: () => openStatusPicker(path)}, el("b", {}, code), STATUS_LABEL[code]));
   for (const [k, v] of Object.entries(page.props || {})) {
     if (k === "title") continue;

@@ -184,7 +184,9 @@ Each space is a vault with this shape, in its own folder:
 ```
 journals/2026-10-05.md      one file per day
 pages/
-  _/  0/  1/  2/  3/        project status: cancelled, completed, active, someday, waiting
+  _/                        cancelled projects, and the horizon pages:
+                              _/Purpose.md  (H5)   _/Vision.md  (H4)
+  0/  1/  2/  3/            project status: completed, active, someday, waiting
   8/                        checklists       -> [[8/Onboard new customer]]
   a/                        areas of focus   -> [[a/Health]]       (H2)
   g/                        goals            -> [[g/Debt cleared]] (H3)
@@ -192,11 +194,15 @@ pages/
   p/  o/                    people, organisations
   z/                        zettel notes
   templates/  verbs/        templates, Phys-Viz verb lexicon
-  _horizon.md               purpose and vision (H5, H4)
   GTD.md                    settings: mode, last review, tombstones
 ```
 
 Everything is listed in the vault's own order: `_`, `0`, `1`, `2`, `3`, then `8`.
+
+Purpose and vision are ordinary pages — `pages/_/Purpose.md`, `pages/_/Vision.md`
+— so they link like anything else: `[[_/Purpose]]`. They share the `_` drawer with
+cancelled projects but carry `type:: horizon`, and every project listing filters
+them out, so the two never mix in the app.
 
 A project's **status is its directory**. Changing status moves the file and
 rewrites every `[[1/Fix sink]]` link in the vault to `[[0/Fix sink]]`.
