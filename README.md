@@ -91,10 +91,26 @@ or the file can read and change everything in that space. The sharing controls
 are your cloud drive's — share the Work folder with colleagues, and do not share
 the Private one. Revoking means unsharing the folder.
 
-One space is active at a time, so there is no combined cross-space view. That is
-deliberate: a merged view is exactly what leaks Work onto the screen while your
-wife is looking. The space switcher shows each space's open and overdue counts so
-you still see the whole picture without mixing the contents.
+### Showing one space, or several
+
+By default you see one space at a time. In the space switcher, tick any others to
+show them **together** in one list — useful when you are alone and want the whole
+inventory, and off by default so nothing from Work appears while someone is
+looking over your shoulder.
+
+When several are shown, every row carries a coloured badge saying which space it
+came from, and an edit is written back to **that** space's own files — ticking off
+a Work task while Private is active updates Work, never Private. Opening a page
+switches to its space, so the outliner and backlinks work where the page lives.
+"Show only <space>" puts the wall straight back up.
+
+Actions, projects and search merge across the ticked spaces. Horizons, the weekly
+review and the health check stay scoped to the active space, because those
+describe one life each — merging someone's work purpose with their family purpose
+would be nonsense.
+
+The toggle is stored per device, never inside a space, so it does not travel in a
+shared folder.
 
 ---
 
@@ -306,5 +322,6 @@ state, `backspace` on an empty block deletes it.
 - **The sync server has no authentication.** Localhost only unless you add one.
 - **Spaces are separated, not secured.** Anyone who can open a space's folder or
   file sees all of it. There is no password, and nothing is encrypted.
-- **No cross-space view.** One space at a time, by design.
+- **Merged view is opt-in and per device.** Structure views (horizons, review,
+  health) stay on the active space even when several are shown.
 - **Safari and Firefox are untested by me** (see the table above).

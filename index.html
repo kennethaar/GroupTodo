@@ -206,6 +206,13 @@ header.top .burger{display:none}
 .chip.miss{color:var(--warn);background:rgba(224,176,80,.1);border-color:rgba(224,176,80,.3)}
 .chip.age{font-family:var(--mono);font-size:10.5px}
 .chip.st{font-family:var(--mono);font-size:10px;letter-spacing:.5px}
+.chip.spacechip{border-style:solid;border-width:1px;background:transparent;font-weight:600}
+.spacetoggle{
+  width:19px;height:19px;border-radius:5px;border:1.6px solid var(--border2);flex:none;
+  display:grid;place-items:center;font-size:11px;color:transparent;margin-right:2px;
+}
+.spacetoggle.on{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.spacetoggle:hover{border-color:var(--accent)}
 .chip.b{cursor:pointer}
 .chip.b:hover{border-color:var(--border2);color:var(--fg2)}
 .t-act{display:flex;gap:2px;opacity:0;flex:none;transition:.12s}
@@ -873,6 +880,11 @@ const Backends = {
 /* ============================================================
    20_VAULT -- in-memory model over the backend
    ============================================================ */
+/* Every space keeps its own record. V points at the active one and shares the
+   very same Map and Set objects, so all the single-space code below works
+   untouched while saves stay routed to the right backend. */
+const LOADED = new Map();   // space name -> {name, backend, pages, raw, dirty, removed}
+
 const V = {
   backend : null,
   pages   : new Map(),   // path -> {props, blocks}
@@ -882,7 +894,31 @@ const V = {
   loaded  : false,
   syncing : false,
   error   : null,
+  space   : null,
 };
+
+function newRecord(name, backend) {
+  return {name, backend, pages: new Map(), raw: new Map(), dirty: new Set(), removed: new Set()};
+}
+function bindActive(name) {
+  const r = LOADED.get(name);
+  if (!r) return;
+  V.backend = r.backend; V.pages = r.pages; V.raw = r.raw;
+  V.dirty = r.dirty; V.removed = r.removed; V.space = name;
+  V.loaded = true;
+}
+
+/* Run fn with V pointing at another loaded space, then put it back. Used both
+   to read across spaces and to route an edit to the space that owns it. */
+function inSpace(name, fn) {
+  if (!name || name === V.space || !LOADED.has(name)) return fn();
+  const save = {backend: V.backend, pages: V.pages, raw: V.raw,
+                dirty: V.dirty, removed: V.removed, space: V.space};
+  const r = LOADED.get(name);
+  V.backend = r.backend; V.pages = r.pages; V.raw = r.raw;
+  V.dirty = r.dirty; V.removed = r.removed; V.space = name;
+  try { return fn(); } finally { Object.assign(V, save); }
+}
 
 function setSync(state, text) {
   const dot = $("#syncDot"), txt = $("#syncTxt");
@@ -936,52 +972,69 @@ function flush() {
 }
 
 async function doFlush() {
-  if (!V.backend) return;
-  if (!V.dirty.size && !V.removed.size) { setSync("ok", V.backend.label); return; }
-
-  const backend = V.backend;          // snapshot: V may point elsewhere by the time we finish
-  const pages   = V.pages;
-  const space   = Spaces.active;
-  const dirty = Array.from(V.dirty); V.dirty.clear();
-  const gone  = Array.from(V.removed); V.removed.clear();
-
-  V.syncing = true;
-  setSync("sync", "saving...");
-  try {
-    for (const p of dirty) {
-      const page = pages.get(p);
-      if (page) await backend.write(p, serializePage(page));
-    }
-    for (const p of gone) await backend.remove(p).catch(() => {});
-    if (Spaces.active === space) { setSync("ok", backend.label); V.error = null; }
-    Spaces.writeSummary().catch(() => {});
-  } catch (e) {
-    if (Spaces.active === space) {
-      dirty.forEach(p => V.dirty.add(p));
+  let wrote = false;
+  for (const rec of Array.from(LOADED.values())) {
+    if (!rec.backend || (!rec.dirty.size && !rec.removed.size)) continue;
+    const dirty = Array.from(rec.dirty); rec.dirty.clear();
+    const gone  = Array.from(rec.removed); rec.removed.clear();
+    wrote = true;
+    V.syncing = true;
+    setSync("sync", "saving...");
+    try {
+      for (const p of dirty) {
+        const page = rec.pages.get(p);
+        if (page) await rec.backend.write(p, serializePage(page));
+      }
+      for (const p of gone) await rec.backend.remove(p).catch(() => {});
+      V.error = null;
+    } catch (e) {
+      dirty.forEach(p => rec.dirty.add(p));
       V.error = e;
       setSync("err", "save failed");
+      notify(`Save failed in ${rec.name}: ` + e.message, "error");
+      V.syncing = false;
+      return;
     }
-    notify("Save failed: " + e.message, "error");
-  } finally {
-    V.syncing = false;
-    if (Spaces.active === space && (V.dirty.size || V.removed.size)) scheduleFlush();
   }
+  V.syncing = false;
+  if (V.backend) setSync("ok", V.backend.label);
+  if (wrote) Spaces.writeSummary().catch(() => {});
+  for (const rec of LOADED.values()) if (rec.dirty.size || rec.removed.size) { scheduleFlush(); break; }
 }
 
 window.addEventListener("beforeunload", e => {
   if (V.dirty.size) { flush(); e.preventDefault(); e.returnValue = ""; }
 });
 
+async function readInto(record) {
+  const files = await record.backend.list();
+  record.pages.clear(); record.raw.clear();
+  for (const [path, text] of files) {
+    if (/\.org$/i.test(path)) { record.raw.set(path, text); continue; }
+    record.pages.set(path, parsePage(text));
+  }
+  return record;
+}
+
+/* Load a space's files without making it the active one. */
+async function loadSpaceRecord(name) {
+  const sp = Spaces.get(name);
+  if (!sp) return null;
+  const rec = LOADED.get(name) || newRecord(name, null);
+  rec.backend = await spaceBackend(sp);
+  await readInto(rec);
+  LOADED.set(name, rec);
+  return rec;
+}
+
 async function loadFromBackend(backend) {
   setSync("sync", "loading...");
-  const files = await backend.list();
-  V.backend = backend;
-  V.pages.clear(); V.raw.clear(); V.dirty.clear(); V.removed.clear();
-  for (const [path, text] of files) {
-    if (/\.org$/i.test(path)) { V.raw.set(path, text); continue; }
-    V.pages.set(path, parsePage(text));
-  }
-  V.loaded = true;
+  const name = Spaces.active || "Personal";
+  const rec = LOADED.get(name) || newRecord(name, backend);
+  rec.backend = backend;
+  await readInto(rec);
+  LOADED.set(name, rec);
+  bindActive(name);
   $("#vaultName").textContent = backend.label;
   setSync("ok", backend.label);
   if (V.raw.size) {
@@ -1074,6 +1127,48 @@ const Spaces = {
   },
 };
 
+/* ---------- which spaces are on screen right now ----------
+   The active space is where new things land; any number of others can be
+   shown alongside it. Toggling is per device, never written into a space,
+   so nothing about your other lives travels inside a shared folder. */
+function visibleSpaces() {
+  let names = [];
+  try { names = JSON.parse(PREF.get("visibleSpaces") || "[]"); } catch (_) {}
+  names = names.filter(n => Spaces.get(n));
+  if (Spaces.active && !names.includes(Spaces.active)) names.unshift(Spaces.active);
+  return names.length ? names : (Spaces.active ? [Spaces.active] : []);
+}
+function setVisibleSpaces(names) {
+  PREF.set("visibleSpaces", JSON.stringify(Array.from(new Set(names))));
+}
+const multiSpace = () => visibleSpaces().length > 1;
+
+async function ensureVisibleLoaded() {
+  for (const n of visibleSpaces()) {
+    if (!LOADED.has(n)) { try { await loadSpaceRecord(n); } catch (_) {} }
+  }
+}
+
+/* Run a scanner once per visible space and tag each result with its space. */
+let ACROSS = 0;
+function acrossSpaces(fn) {
+  const names = visibleSpaces();
+  if (names.length <= 1 || ACROSS > 0) return fn();
+  const out = [];
+  ACROSS++;
+  try {
+    for (const n of names) {
+      if (!LOADED.has(n)) continue;
+      const res = inSpace(n, fn);
+      if (Array.isArray(res)) for (const item of res) {
+        if (item && typeof item === "object") item.space = n;
+        out.push(item);
+      }
+    }
+  } finally { ACROSS--; }
+  return out;
+}
+
 async function ensureHandlePerm(h, mode = "readwrite") {
   try {
     if ((await h.queryPermission({mode})) === "granted") return true;
@@ -1116,8 +1211,9 @@ async function openSpace(name) {
   scanVerbs();
   ensureJournal(todayISO());
   state.context = getSetting("current_context") || null;
-  state.view = isSimple() ? "today" : "today";
+  state.view = "today";
   state.pagePath = null;
+  await ensureVisibleLoaded();
   render();
   await Spaces.writeSummary().catch(() => {});
 }
@@ -1192,26 +1288,59 @@ function newSpacePrompt(then) {
 }
 
 function openSpaceSwitcher() {
+  const visible = new Set(visibleSpaces());
   const body = el("div", {});
+  body.append(el("div", {class: "field", style: "padding-bottom:4px"},
+    el("label", {}, "Shown together"),
+    el("div", {style: "color:var(--fg2);font-size:12.5px"},
+      "Tick the spaces you want on screen at once. The highlighted one is where " +
+      "new captures land. Ticking more mixes their actions in one list \u2014 handy alone, " +
+      "not when someone is looking over your shoulder.")));
+
   for (const sp of Spaces.list) {
-    const row = el("button", {class: "pick" + (sp.name === Spaces.active ? " cur" : ""),
-      onclick: () => { closeModal(); if (sp.name !== Spaces.active) openSpace(sp.name); }},
-      el("span", {class: "k", style: "background:" + sp.color + ";color:#06101f"}, sp.name[0].toUpperCase()),
-      el("span", {}, sp.name),
-      el("span", {class: "d"}, sp.kind === "fs" ? (sp.label || "folder")
+    const on = visible.has(sp.name);
+    const active = sp.name === Spaces.active;
+    const box = el("button", {
+      class: "spacetoggle" + (on ? " on" : ""),
+      title: on ? "Hide " + sp.name : "Show " + sp.name,
+      onclick: async e => {
+        e.stopPropagation();
+        if (active && on) { notify("The active space is always shown."); return; }
+        const next = new Set(visibleSpaces());
+        if (on) next.delete(sp.name); else next.add(sp.name);
+        setVisibleSpaces(Array.from(next));
+        await ensureVisibleLoaded();
+        closeModal(); render(); openSpaceSwitcher();
+      },
+    }, on ? "\u2713" : "");
+    const row = el("div", {class: "pick" + (active ? " cur" : "")},
+      box,
+      el("button", {class: "k", style: "background:" + sp.color + ";color:#06101f;border:none",
+        onclick: () => { closeModal(); if (!active) openSpace(sp.name); }}, sp.name[0].toUpperCase()),
+      el("button", {style: "flex:1;text-align:left;background:none",
+        onclick: () => { closeModal(); if (!active) openSpace(sp.name); }},
+        sp.name, active ? el("span", {class: "d", style: "margin-left:8px"}, "active") : null),
+      el("span", {class: "d meta"}, sp.kind === "fs" ? (sp.label || "folder")
                              : sp.kind === "http" ? "server" : "this browser"));
     body.append(row);
-    Spaces.summary(sp.name).then(s => {
-      if (s) row.querySelector(".d").textContent =
-        s.open + " open" + (s.late ? " · " + s.late + " late" : "");
+    Spaces.summary(sp.name).then(sm => {
+      if (sm) row.querySelector(".d.meta").textContent =
+        sm.open + " open" + (sm.late ? " \u00B7 " + sm.late + " late" : "");
     });
   }
   if (!Spaces.list.length) body.append(el("div", {class: "empty"}, "No spaces yet."));
+
   modal({
-    center: true, title: "Spaces", hint: "each one is a separate vault",
+    center: true, title: "Spaces",
+    hint: visible.size > 1 ? visible.size + " shown together" : "one space at a time",
     body,
     foot: [
       el("button", {class: "btn ghost", onclick: () => { closeModal(); openShareSpace(); }}, "Share current"),
+      visible.size > 1 ? el("button", {class: "btn ghost", onclick: async () => {
+        setVisibleSpaces([Spaces.active]);
+        closeModal(); render();
+        notify("Showing " + Spaces.active + " only.");
+      }}, "Show only " + Spaces.active) : null,
       el("div", {style: "flex:1"}),
       el("button", {class: "btn primary", onclick: () => { closeModal(); newSpacePrompt(); }}, "+ New space"),
     ],
@@ -1326,6 +1455,9 @@ function allPages(filter) {
   return out.sort();
 }
 const projectsIn = code => allPages(p => statusDirOf(p) === code);
+/* Same list, but across every visible space and carrying which space each is in. */
+const projectsInVisible = code =>
+  acrossSpaces(() => projectsIn(code).map(path => ({path, space: V.space})));
 
 /* Journal files from the last N days that actually exist. */
 function recentJournals(days = CFG.journalScanDays) {
@@ -1672,8 +1804,11 @@ function nearestProjectAncestor(block) {
   return null;
 }
 
-/* Open leaf actions: an open item with no open children is the actionable one. */
-function leafActions() {
+/* Open leaf actions: an open item with no open children is the actionable one.
+   With several spaces shown, this runs once per space and tags each result. */
+function leafActions() { return acrossSpaces(leafActionsHere); }
+
+function leafActionsHere() {
   const out = [];
   const paths = [...projectsIn("1"), ...projectsIn("3"), ...recentJournals()];
   for (const path of paths) {
@@ -3015,7 +3150,7 @@ function stateChip(st) {
 function chipsFor(a) {
   const out = [];
   if (a.context) out.push(el("span", {class: "chip ctx b", onclick: e => {e.stopPropagation(); surfaceContext(a.context);}}, "@" + a.context));
-  if (a.project) out.push(el("span", {class: "chip proj b", onclick: e => {e.stopPropagation(); a.projectPath && openPage(a.projectPath);}}, a.project));
+  if (a.project) out.push(el("span", {class: "chip proj b", onclick: e => {e.stopPropagation(); a.projectPath && openPageIn(a.space, a.projectPath);}}, a.project));
   if (a.due) {
     const cls = a.due < todayISO() ? "late" : a.due === todayISO() ? "today" : "";
     out.push(el("span", {class: "chip " + cls}, humanDate(a.due)));
@@ -3036,25 +3171,46 @@ function titleForRow(title) {
     .replace(/\s{2,}/g, " "));
 }
 
+function spaceBadge(name) {
+  const sp = Spaces.get(name);
+  if (!sp) return null;
+  return el("span", {class: "chip spacechip",
+    style: "color:" + sp.color + ";border-color:" + sp.color + "55"}, name);
+}
+
 function taskRow(a) {
+  // An action shown from another space must be edited IN that space, or the
+  // change would be written through the active space's backend.
   const row = el("div", {
     class: "task" + (state.selected === a.block.id ? " sel" : ""),
     data: {state: a.state || ""},
-    onclick: () => openTaskDetail(a.path, a.block),
+    onclick: () => inSpace(a.space, () => openTaskDetail(a.path, a.block, a.space)),
   },
     el("button", {
       class: "chk", title: "Toggle done",
-      onclick: e => { e.stopPropagation(); setBlockState(a.path, a.block, a.state === "DONE" ? "TODO" : "DONE"); },
-    }, "✓"),
+      onclick: e => { e.stopPropagation();
+        inSpace(a.space, () => setBlockState(a.path, a.block, a.state === "DONE" ? "TODO" : "DONE")); },
+    }, "\u2713"),
     el("div", {class: "t-body"},
       el("div", {class: "t-title", html: renderInline(titleForRow(a.title))}),
-      el("div", {class: "t-meta"}, stateChip(a.state), ...chipsFor(a))),
+      el("div", {class: "t-meta"}, stateChip(a.state),
+        multiSpace() && a.space ? spaceBadge(a.space) : null, ...chipsFor(a))),
     el("div", {class: "t-act"},
-      el("button", {class: "iconbtn", title: "Waiting for", onclick: e => {e.stopPropagation(); setBlockState(a.path, a.block, "WAIT");}}, "⏸"),
-      el("button", {class: "iconbtn", title: "Refile to a project", onclick: e => {e.stopPropagation(); openRefile(a.path, a.block);}}, "↪"),
-      el("button", {class: "iconbtn", title: "Open page", onclick: e => {e.stopPropagation(); openPage(a.path);}}, "↗"))
+      el("button", {class: "iconbtn", title: "Waiting for",
+        onclick: e => {e.stopPropagation(); inSpace(a.space, () => setBlockState(a.path, a.block, "WAIT"));}}, "\u23F8"),
+      el("button", {class: "iconbtn", title: "Refile to a project",
+        onclick: e => {e.stopPropagation(); inSpace(a.space, () => openRefile(a.path, a.block));}}, "\u21AA"),
+      el("button", {class: "iconbtn", title: "Open page",
+        onclick: e => {e.stopPropagation(); openPageIn(a.space, a.path);}}, "\u2197"))
   );
   return row;
+}
+
+/* Opening a page from another space switches to it, so the outliner, saves
+   and backlinks all operate where that page actually lives. */
+function openPageIn(space, path) {
+  if (space && space !== Spaces.active) { openSpace(space).then(() => openPage(path)); return; }
+  openPage(path);
 }
 
 function taskCard(actions, emptyText) {
@@ -3121,6 +3277,12 @@ function outlineBlock(path, page, b) {
   const txt = el("div", {
     class: "txt", contenteditable: "true", spellcheck: "false",
     html: renderInline(b.title),
+  });
+  // Clicking a [[link]] must follow it, not drop into the editor. Focus would
+  // replace this line with its raw text and destroy the span mid-click, so
+  // refuse focus for that one gesture and let the delegated handler navigate.
+  txt.addEventListener("mousedown", e => {
+    if (e.target.closest("[data-link]")) e.preventDefault();
   });
   txt.addEventListener("focus", () => { txt.textContent = b.title; });
   txt.addEventListener("blur", () => {
@@ -3298,24 +3460,31 @@ function viewProjects() {
   const code = state.statusCode;
   const c = el("div", {class: "wrap"});
   c.append(nudgeBar());
-  const paths = projectsIn(code);
-  const stuck = new Set(stuckActiveProjects().map(s => s.path));
+  const rows = projectsInVisible(code);
+  const stuck = new Set(stuckActiveProjects().map(x => x.path));
   const card = el("div", {class: "card"});
-  if (!paths.length) card.append(el("div", {class: "empty"}, "No " + STATUS_LABEL[code].toLowerCase() + " projects."));
-  for (const p of paths.sort((a, b) => pageTitle(a).localeCompare(pageTitle(b)))) {
-    const open = openTodoCount(p);
-    const page = getPage(p);
-    const reviewed = dateIn(page.props?.reviewed);
-    const idle = reviewed ? dateDiffDays(reviewed, todayISO()) : null;
+  if (!rows.length) card.append(el("div", {class: "empty"}, "No " + STATUS_LABEL[code].toLowerCase() + " projects."));
+  const titleOf = r => inSpace(r.space, () => pageTitle(r.path));
+  rows.sort((x, y) => titleOf(x).localeCompare(titleOf(y)));
+  for (const {path: p, space} of rows) {
+    const info = inSpace(space, () => ({
+      title: pageTitle(p), open: openTodoCount(p),
+      reviewed: dateIn(getPage(p)?.props?.reviewed),
+    }));
+    const idle = info.reviewed ? dateDiffDays(info.reviewed, todayISO()) : null;
     card.append(el("div", {class: "prow"},
-      el("button", {class: "st st-" + code, title: STATUS_TEXT[code], onclick: () => openStatusPicker(p)}, code),
-      el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(p)}, pageTitle(p)),
-      stuck.has(p) ? el("span", {class: "chip miss b", onclick: () => openAddNextAction(p)}, "no next action") : null,
-      open ? el("span", {class: "chip"}, open + " open") : null,
+      el("button", {class: "st st-" + code, title: STATUS_TEXT[code],
+        onclick: () => inSpace(space, () => openStatusPicker(p))}, code),
+      el("button", {class: "nm", style: "text-align:left", onclick: () => openPageIn(space, p)}, info.title),
+      multiSpace() ? spaceBadge(space) : null,
+      (stuck.has(p) && space === Spaces.active)
+        ? el("span", {class: "chip miss b", onclick: () => openAddNextAction(p)}, "no next action") : null,
+      info.open ? el("span", {class: "chip"}, info.open + " open") : null,
       idle != null ? el("span", {class: "chip age"}, "reviewed " + idle + "d ago") : null,
-      el("button", {class: "iconbtn", title: "Change status", onclick: () => openStatusPicker(p)}, "⇄")));
+      el("button", {class: "iconbtn", title: "Change status",
+        onclick: () => inSpace(space, () => openStatusPicker(p))}, "⇄")));
   }
-  c.append(section(STATUS_LABEL[code] + " projects", paths.length, card,
+  c.append(section(STATUS_LABEL[code] + " projects", rows.length, card,
     el("button", {class: "btn sm ghost", style: "margin-left:auto", onclick: () => newProjectPrompt()}, "+ new project")));
   return c;
 }
@@ -3441,20 +3610,27 @@ function viewSearch() {
     }));
   c.append(box);
   if (!q) { c.append(el("div", {class: "empty"}, "Type to search.")); return c; }
-  const hits = [];
-  for (const [path, page] of V.pages) {
-    if (pageTitle(path).toLowerCase().includes(q)) hits.push({path, block: null});
-    walkBlocks(page.blocks, b => {
-      const text = [b.title, ...(b.body || [])].join(" ").toLowerCase();
-      if (text.includes(q)) hits.push({path, block: b});
-    });
-  }
+  const hits = acrossSpaces(() => {
+    const found = [];
+    for (const [path, page] of V.pages) {
+      if (pageTitle(path).toLowerCase().includes(q)) found.push({path, block: null});
+      walkBlocks(page.blocks, b => {
+        const text = [b.title, ...(b.body || [])].join(" ").toLowerCase();
+        if (text.includes(q)) found.push({path, block: b});
+      });
+    }
+    return found;
+  });
   const card = el("div", {class: "card"});
   if (!hits.length) card.append(el("div", {class: "empty"}, "No matches."));
   for (const h of hits.slice(0, 300)) {
-    card.append(el("button", {class: "dash-item", onclick: () => h.block ? openTaskDetail(h.path, h.block) : openPage(h.path)},
+    const label = inSpace(h.space, () => h.block ? h.block.title : pageTitle(h.path));
+    card.append(el("button", {class: "dash-item",
+      onclick: () => h.block ? inSpace(h.space, () => openTaskDetail(h.path, h.block, h.space))
+                             : openPageIn(h.space, h.path)},
       h.block ? stateChip(h.block.state) : null,
-      el("span", {html: renderInline(h.block ? h.block.title : pageTitle(h.path))}),
+      el("span", {html: renderInline(label)}),
+      multiSpace() && h.space ? spaceBadge(h.space) : null,
       el("span", {class: "p"}, h.path)));
   }
   c.append(section("Results", hits.length, card));
@@ -3505,7 +3681,9 @@ function render() {
   $("#hTitle").textContent = state.view === "page" ? pageTitle(state.pagePath)
     : state.view === "projects" ? STATUS_LABEL[state.statusCode] + " projects"
     : (VIEW_TITLE[state.view] || "Today");
-  $("#hSub").textContent = state.view === "page" ? state.pagePath
+  const vis = visibleSpaces();
+  $("#hSub").textContent = vis.length > 1 ? vis.join(" + ")
+    : state.view === "page" ? state.pagePath
     : state.context && ["today", "context", "next"].includes(state.view) ? "@" + state.context : "";
 }
 
@@ -3775,7 +3953,7 @@ function openRefile(fromPath, block) {
   });
 }
 
-function openTaskDetail(path, block) {
+function openTaskDetail(path, block, space) {
   state.selected = block.id;
   const a = {
     path, block, state: block.state, title: block.title,
@@ -4983,6 +5161,7 @@ function afterFirstRun() {
   await seedIfEmpty();
   scanVerbs();
   ensureJournal(todayISO());
+  await ensureVisibleLoaded();
   render();
 
   if (CAP.persist === "memory") {
