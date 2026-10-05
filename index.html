@@ -4,6 +4,26 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark light">
+<!-- No external resources, ever. This policy is the proof: the page cannot
+     load a script, font or image from anywhere, and cannot send data to any
+     host but the optional sync server on this machine. Safe to drop onto a
+     corporate file share, intranet or managed laptop. -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'none';
+  script-src 'unsafe-inline';
+  style-src 'unsafe-inline';
+  img-src data: blob:;
+  media-src data: blob:;
+  connect-src 'self' http://127.0.0.1:* http://localhost:*;
+  manifest-src blob:;
+  form-action 'none';
+  base-uri 'none'">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GroupTodo">
+<meta name="theme-color" content="#0f1115">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236aa3ff'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11.5' stroke='%2306101f' stroke-width='3.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <title>GroupTodo</title>
 <style>
 /* ============================================================
@@ -305,8 +325,21 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4p
 .checkline{display:flex;gap:10px;align-items:center;padding:8px 16px;font-size:13.5px}
 .checkline input{width:17px;height:17px;accent-color:var(--accent)}
 
+.quickadd{
+  display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);padding:10px 13px;
+}
+.quickadd:focus-within{border-color:var(--accent)}
+.quickadd>span{color:var(--accent);font-size:17px;flex:none}
+.quickadd input{flex:1;background:none;border:none;outline:none;font-size:14.5px}
+.modeswitch{display:flex;gap:4px;background:var(--bg3);border-radius:var(--radius-sm);padding:3px}
+.modeswitch button{
+  flex:1;padding:4px 8px;border-radius:4px;font-size:11.5px;color:var(--fg3);text-align:center;
+}
+.modeswitch button.on{background:var(--bg2);color:var(--fg);font-weight:600}
+
 /* toast */
-#toasts{position:fixed;left:50%;transform:translateX(-50%);top:14px;z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:min(560px,94vw)}
+#toasts{position:fixed;right:14px;top:60px;z-index:200;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none;width:min(420px,calc(100vw - 28px))}
 .toast{
   background:var(--bg4);border:1px solid var(--border2);border-radius:10px;padding:10px 14px;
   font-size:13px;box-shadow:var(--shadow);pointer-events:auto;display:flex;gap:10px;align-items:center;width:100%;
@@ -334,6 +367,7 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4p
   header.top .burger{display:grid}
   .wrap{padding:0 14px}
   .modal{max-height:92dvh}
+  #toasts{left:14px;right:14px;width:auto;align-items:stretch}
 }
 </style>
 </head>
@@ -346,6 +380,10 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4p
     </div>
     <nav class="nav" id="nav"></nav>
     <div class="vaultbar">
+      <div class="modeswitch" id="modeSwitch">
+        <button data-mode="simple">Simple</button>
+        <button data-mode="advanced">Advanced</button>
+      </div>
       <div class="row"><span class="dot" id="syncDot"></span><span id="syncTxt">local only</span></div>
       <button class="btn sm" id="btnVault">&#9187; Vault &amp; sync</button>
     </div>
@@ -462,6 +500,8 @@ const DIRS = {
   templates: join(PAGES, "templates"),
   verbs    : join(PAGES, "verbs"),
   zettel   : join(PAGES, "z"),
+  areas    : join(PAGES, "a"),   // areas of focus: the standing responsibilities
+  lists    : join(PAGES, "k"),   // reusable checklists
 };
 const TODO_STATES  = ["TODO", "DOING", "WAIT", "DONE", "CANCELLED"];
 const OPEN_STATES  = {TODO:true, DOING:true, WAIT:true};
@@ -475,7 +515,8 @@ const STATUS_TEXT  = {
   "3": "3 = waiting for 3rd party",
 };
 const STATUS_LABEL = {"_":"Cancelled", "0":"Completed", "1":"Active", "2":"Someday/Maybe", "3":"Waiting for"};
-const PREFIX_DIR   = {p:DIRS.people, c:DIRS.contexts, o:DIRS.orgs, z:DIRS.zettel};
+const PREFIX_DIR   = {p:DIRS.people, c:DIRS.contexts, o:DIRS.orgs, z:DIRS.zettel,
+                      a:DIRS.areas, k:DIRS.lists};
 
 /* Tunables -- the GTD nudge thresholds (inline constants in init.lua). */
 const CFG = {
@@ -620,6 +661,52 @@ function flattenBlocks(blocks, out = [], parent = null, depth = 0) {
      idb  : IndexedDB, browser-local, with markdown bundle export/import
    Port of: init.lua read_file/write_file/append_file + autosave timer
    ============================================================ */
+/* ---------- what can this device actually do? ----------
+   iOS Safari, locked-down corporate browsers and pages opened straight from
+   disk all differ in what they allow. Probe rather than assume, and tell the
+   user plainly in the Vault dialog. */
+const CAP = {
+  served    : location.protocol === "http:" || location.protocol === "https:",
+  fromFile  : location.protocol === "file:",
+  dirPicker : typeof window.showDirectoryPicker === "function",
+  openPicker: typeof window.showOpenFilePicker === "function",
+  savePicker: typeof window.showSaveFilePicker === "function",
+  idb       : false,     // filled in by probeStorage()
+  ls        : false,
+  persist   : "memory",  // idb | ls | memory
+};
+
+async function probeStorage() {
+  try {
+    localStorage.setItem("gtd.probe", "1");
+    CAP.ls = localStorage.getItem("gtd.probe") === "1";
+    localStorage.removeItem("gtd.probe");
+  } catch (_) { CAP.ls = false; }
+  try {
+    await IDB.set("kv", "probe", Date.now());
+    CAP.idb = (await IDB.get("kv", "probe")) != null;
+  } catch (_) { CAP.idb = false; }
+  CAP.persist = CAP.idb ? "idb" : CAP.ls ? "ls" : "memory";
+  return CAP;
+}
+
+/* localStorage and in-memory stand-ins, so a browser that blocks IndexedDB
+   (iOS Safari on a file:// page, some managed profiles) still runs. */
+const LS = {
+  k: p => "gtd.file:" + p,
+  all() {
+    const out = new Map();
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("gtd.file:")) out.set(key.slice(9), localStorage.getItem(key));
+    }
+    return out;
+  },
+  set(p, t) { localStorage.setItem(LS.k(p), t); },
+  del(p)    { localStorage.removeItem(LS.k(p)); },
+};
+const MEM = new Map();
+
 const IDB = (() => {
   let dbp = null;
   const open = () => dbp || (dbp = new Promise((res, rej) => {
@@ -663,6 +750,28 @@ const Backends = {
       },
       async write(path, text) { await IDB.set("files", path, text); },
       async remove(path)      { await IDB.del("files", path); },
+    };
+  },
+
+  /* ---------- localStorage fallback (IndexedDB blocked) ---------- */
+  ls() {
+    return {
+      kind: "ls", label: "browser storage", writable: true,
+      async list() { return LS.all(); },
+      async write(path, text) { LS.set(path, text); },
+      async remove(path) { LS.del(path); },
+    };
+  },
+
+  /* ---------- memory only (everything blocked) ----------
+     Still fully usable for a session; the Vault dialog shouts about it and
+     file sync is the only durable home. */
+  memory() {
+    return {
+      kind: "memory", label: "memory only", writable: true, ephemeral: true,
+      async list() { return new Map(MEM); },
+      async write(path, text) { MEM.set(path, text); },
+      async remove(path) { MEM.delete(path); },
     };
   },
 
@@ -766,12 +875,22 @@ function putPage(path, page, {silent = false} = {}) {
   if (!silent) { V.dirty.add(path); scheduleFlush(); }
   return page;
 }
-function touch(path) { V.dirty.add(path); scheduleFlush(); }
+/* Stamp every edit. This single property is what lets two devices merge a
+   vault through a cloud drive with no server in the middle. */
+const nowStamp = () => new Date().toISOString().replace(/\.\d+Z$/, "Z");
+
+function touch(path) {
+  const page = V.pages.get(path);
+  if (page) (page.props || (page.props = {})).updated = nowStamp();
+  V.dirty.add(path);
+  scheduleFlush();
+}
 
 function removePage(path) {
   V.pages.delete(path);
   V.dirty.delete(path);
   V.removed.add(path);
+  addTombstone(path);
   scheduleFlush();
 }
 
@@ -846,6 +965,8 @@ function pageKind(path) {
   if (path.startsWith(DIRS.people    + "/")) return "person";
   if (path.startsWith(DIRS.orgs      + "/")) return "org";
   if (path.startsWith(DIRS.zettel    + "/")) return "zettel";
+  if (path.startsWith(DIRS.areas     + "/")) return "area";
+  if (path.startsWith(DIRS.lists     + "/")) return "checklist";
   if (path.startsWith(DIRS.templates + "/")) return "template";
   if (path.startsWith(DIRS.verbs     + "/")) return "verb";
   return "page";
@@ -1513,8 +1634,89 @@ function createZettel(title) {
   return path;
 }
 
+/* ============================================================
+   72_AREAS -- GTD horizon 2: the responsibilities that never finish.
+   Projects finish; areas do not. A project with no area is a project
+   nobody owns, which is exactly what the review should surface.
+   ============================================================ */
+function areaTemplate(title) {
+  return {
+    props: {title, type: "area", created: todayStamp()},
+    blocks: [newBlock({title: "What does keeping this area healthy look like?"})],
+  };
+}
+function createArea(title) {
+  const clean = slugify(title);
+  const path = join(DIRS.areas, clean + ".md");
+  if (!V.pages.has(path)) putPage(path, areaTemplate(clean));
+  return path;
+}
+const areaList = () => allPages(p => pageKind(p) === "area");
+
+/* A project declares its area with  area:: [[a/Health]] */
+function areaOfProject(path) {
+  const m = /\[\[a\/([^\]]+)\]\]/.exec(getPage(path)?.props?.area || "");
+  return m ? trim(m[1]) : null;
+}
+function setAreaOfProject(path, area) {
+  const page = getPage(path); if (!page) return;
+  if (area) page.props.area = "[[a/" + area + "]]";
+  else delete page.props.area;
+  touch(path);
+}
+function projectsInArea(area) {
+  return allPages(p => statusDirOf(p)).filter(p => areaOfProject(p) === area);
+}
+const unassignedProjects = () =>
+  allPages(p => ["1", "3"].includes(statusDirOf(p))).filter(p => !areaOfProject(p));
+
+/* ============================================================
+   73_CHECKLISTS -- the MS To Do half: a reusable list you run again
+   and again (weekly shop, trip packing, release steps).
+   ============================================================ */
+function checklistTemplate(title) {
+  return {
+    props: {title, type: "checklist", created: todayStamp()},
+    blocks: [newBlock({title: "First step"})],
+  };
+}
+function createChecklist(title) {
+  const clean = slugify(title);
+  const path = join(DIRS.lists, clean + ".md");
+  if (!V.pages.has(path)) putPage(path, checklistTemplate(clean));
+  return path;
+}
+const checklistPages = () => allPages(p => pageKind(p) === "checklist");
+
+/* Copy a checklist's items into a target page as fresh open actions. */
+function runChecklist(listPath, targetPath, context) {
+  const list = getPage(listPath), target = getPage(targetPath);
+  if (!list || !target) return 0;
+  const ctx = context || state.context;
+  let n = 0;
+  const parent = newBlock({
+    title: pageTitle(listPath) + " [[k/" + baseName(listPath) + "]]",
+    props: {Added: "[[" + todayISO() + "]]"},
+  });
+  const copy = blocks => (blocks || []).map(b => {
+    n++;
+    return newBlock({
+      state: "TODO",
+      title: b.title + (ctx && !hasContextLink(b.title) ? " [[c/" + ctx + "]]" : ""),
+      props: {Added: "[[" + todayISO() + "]]"},
+      children: copy(b.children),
+    });
+  });
+  parent.children = copy(list.blocks);
+  target.blocks.push(parent);
+  touch(targetPath);
+  return n;
+}
+
 function pageTemplateFor(kind, title) {
   if (kind === "z") return zettelTemplate(title);
+  if (kind === "a") return areaTemplate(title);
+  if (kind === "k") return checklistTemplate(title);
   if (STATUS_DIRS[kind]) return projectTemplateLines(title, kind);
   const tpl = resolveTemplate({kind});
   if (tpl) return instantiateTemplate(tpl.path, {title, created: todayStamp(), kind});
@@ -1711,19 +1913,68 @@ const noteTodoTouched = () => { state.lastTodoTouch = Date.now(); };
 /* ============================================================
    95_RENDER -- sidebar
    ============================================================ */
-const NAV = [
+/* ============================================================
+   112_MODES
+   One vault, two front doors.
+
+   simple   : Areas of focus > Projects > Todos, plus Contexts and
+              Checklists. Rows with round checkboxes, a quick-add box,
+              no outline, no [[syntax]] on screen. Reads like MS To Do.
+   advanced : journals, the outliner, links, backlinks, zettel, health.
+              Reads like Logseq.
+
+   The markdown on disk is identical either way, so switching is free and
+   nothing is hidden permanently -- only out of the way.
+   ============================================================ */
+const isSimple = () => (getSetting("mode") || "simple") === "simple";
+
+function setMode(mode) {
+  setSetting("mode", mode);
+  state.view = mode === "simple" ? "today" : "today";
+  notify(mode === "simple"
+    ? "Simple mode: areas, projects, todos, contexts, checklists."
+    : "Advanced mode: journals, outliner, links and backlinks are back.");
+  render();
+}
+
+const NAV_SIMPLE = [
   {group: null, items: [
-    {id: "today",  icon: "☀", label: "Today",        key: "f t"},
-    {id: "next",   icon: "▸", label: "Next actions", key: "g n"},
-    {id: "context",icon: "⌘", label: "Context",      key: "g x"},
-    {id: "agenda", icon: "☷", label: "Agenda",       key: "g a"},
+    {id: "today",      icon: "☀", label: "My day",         key: "f t"},
+    {id: "todos",      icon: "✓", label: "Todos",          key: "g n"},
+    {id: "context",    icon: "⌘", label: "Contexts",       key: "g x"},
+    {id: "agenda",     icon: "☷", label: "Planned",        key: "g a"},
   ]},
-  {group: "Projects", items: [
+  {group: "Structure", items: [
+    {id: "areas",      icon: "◉", label: "Areas of focus"},
+    {id: "proj-1",     icon: "1", label: "Projects",       status: "1"},
+    {id: "checklists", icon: "☑", label: "Checklists"},
+  ]},
+  {group: "Later", items: [
+    {id: "proj-3", icon: "3", label: "Waiting for",   status: "3"},
+    {id: "proj-2", icon: "2", label: "Someday/Maybe", status: "2"},
+    {id: "proj-0", icon: "0", label: "Done",          status: "0"},
+  ]},
+  {group: "Keep fresh", items: [
+    {id: "weeding", icon: "✂", label: "Morning weeding", key: "g w"},
+    {id: "review",  icon: "✓", label: "Weekly review",   key: "g r"},
+  ]},
+];
+
+const NAV_ADVANCED = [
+  {group: null, items: [
+    {id: "today",   icon: "☀", label: "Today",        key: "f t"},
+    {id: "next",    icon: "▸", label: "Next actions", key: "g n"},
+    {id: "context", icon: "⌘", label: "Context",      key: "g x"},
+    {id: "agenda",  icon: "☷", label: "Agenda",       key: "g a"},
+  ]},
+  {group: "Structure", items: [
+    {id: "areas",      icon: "◉", label: "Areas of focus"},
     {id: "proj-1", icon: "1", label: "Active",        status: "1"},
     {id: "proj-3", icon: "3", label: "Waiting for",   status: "3"},
     {id: "proj-2", icon: "2", label: "Someday/Maybe", status: "2"},
     {id: "proj-0", icon: "0", label: "Completed",     status: "0"},
     {id: "proj-_", icon: "_", label: "Cancelled",     status: "_"},
+    {id: "checklists", icon: "☑", label: "Checklists"},
   ]},
   {group: "Knowledge", items: [
     {id: "zettel", icon: "◈", label: "Zettel",   key: "z n"},
@@ -1737,8 +1988,188 @@ const NAV = [
   ]},
 ];
 
+const NAV = () => (isSimple() ? NAV_SIMPLE : NAV_ADVANCED);
+
+/* ============================================================
+   113_QUICK_ADD -- the MS To Do "+ Add a task" row
+   ============================================================ */
+function quickAdd(targetPath, opts = {}) {
+  const input = el("input", {
+    placeholder: opts.placeholder || "Add a task",
+    onkeydown: e => {
+      if (e.key !== "Enter") return;
+      const text = trim(input.value);
+      if (!text) return;
+      input.value = "";
+      const page = getPage(targetPath);
+      if (!page) return;
+      const ctx = opts.context || state.context;
+      const blk = newBlock({
+        state: "TODO",
+        title: text + (ctx && !hasContextLink(text) ? " [[c/" + ctx + "]]" : ""),
+        props: {Added: "[[" + todayISO() + "]]"},
+      });
+      page.blocks.push(blk);
+      touch(targetPath);
+      noteTodoTouched();
+      render();
+      // keep typing: re-focus the box that replaced this one
+      requestAnimationFrame(() => {
+        const next = $(".quickadd input");
+        if (next) next.focus();
+      });
+      if (!startsWithVerb(text)) notify("Tip: start with a verb you could film — Call, Draft, Buy.", "warn");
+    },
+  });
+  return el("div", {class: "quickadd"}, el("span", {}, "+"), input);
+}
+
+/* ============================================================
+   114_SIMPLE VIEWS
+   ============================================================ */
+function viewAreas() {
+  const c = el("div", {class: "wrap"});
+  c.append(nudgeBar());
+  const areas = areaList();
+  const orphans = unassignedProjects();
+
+  if (!areas.length) {
+    c.append(el("div", {class: "hero"},
+      el("h2", {}, "Areas of focus"),
+      el("div", {style: "font-size:16px;font-weight:600;margin-bottom:2px"}, "The parts of your life that never finish"),
+      el("p", {}, "Health, Finances, Team, Home. Projects finish and go away; areas do not. " +
+                  "Hang every project under one and nothing drifts unowned."),
+      el("div", {class: "acts"},
+        el("button", {class: "btn primary", onclick: () => newAreaPrompt()}, "Create first area"),
+        el("button", {class: "btn ghost", onclick: () => seedAreas()}, "Use a starter set"))));
+  }
+
+  const empties = [];
+  for (const a of areas) {
+    const name = baseName(a);
+    const projects = projectsInArea(name);
+    const open = projects.reduce((n, p) => n + openTodoCount(p), 0);
+    if (!projects.length) { empties.push([a, name]); continue; }
+    const card = el("div", {class: "card"});
+    for (const p of projects.sort((x, y) => pageTitle(x).localeCompare(pageTitle(y)))) {
+      const code = statusDirOf(p);
+      card.append(el("div", {class: "prow"},
+        el("span", {class: "st st-" + code, title: STATUS_TEXT[code]}, code),
+        el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(p)}, pageTitle(p)),
+        el("span", {class: "chip"}, openTodoCount(p) + " open")));
+    }
+    card.append(el("button", {class: "dash-item", onclick: () => newProjectPrompt(np => { setAreaOfProject(np, name); openPage(np); })},
+      "+ project in " + name));
+    c.append(section(name, open, card,
+      el("button", {class: "btn sm ghost", style: "margin-left:auto", onclick: () => openPage(a)}, "open area")));
+  }
+
+  if (orphans.length) {
+    const card = el("div", {class: "card"});
+    for (const p of orphans) {
+      card.append(el("div", {class: "prow"},
+        el("span", {class: "st st-" + statusDirOf(p)}, statusDirOf(p)),
+        el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(p)}, pageTitle(p)),
+        el("button", {class: "btn sm ghost", onclick: () => openAreaPicker(p)}, "assign area")));
+    }
+    c.append(section("No area yet", orphans.length, card));
+  }
+
+  if (empties.length) {
+    const card = el("div", {class: "card"});
+    for (const [path, name] of empties) {
+      card.append(el("div", {class: "prow"},
+        el("span", {class: "st st-2"}, "\u25C9"),
+        el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(path)}, name),
+        el("button", {class: "btn sm ghost", onclick: () => newProjectPrompt(np => { setAreaOfProject(np, name); openPage(np); })},
+          "+ project")));
+    }
+    c.append(section("Areas with nothing in them", empties.length, card));
+  }
+  if (areas.length) {
+    c.append(el("div", {class: "section"},
+      el("button", {class: "btn ghost", onclick: () => newAreaPrompt()}, "+ new area")));
+  }
+  return c;
+}
+
+function viewChecklists() {
+  const c = el("div", {class: "wrap"});
+  const lists = checklistPages();
+  const card = el("div", {class: "card"});
+  if (!lists.length) {
+    card.append(el("div", {class: "empty"},
+      "A checklist is a list you run again and again — weekly shop, trip packing, release steps. " +
+      "Running it copies fresh todos into today or into a project."));
+  }
+  for (const p of lists) {
+    const items = flattenBlocks(getPage(p).blocks).length;
+    card.append(el("div", {class: "prow"},
+      el("span", {class: "st st-2"}, "☑"),
+      el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(p)}, pageTitle(p)),
+      el("span", {class: "sub"}, items + " steps"),
+      el("button", {class: "btn sm primary", onclick: () => openRunChecklist(p)}, "Run")));
+  }
+  c.append(section("Checklists", lists.length, card,
+    el("button", {class: "btn sm ghost", style: "margin-left:auto", onclick: () => newChecklistPrompt()}, "+ new")));
+  return c;
+}
+
+/* Flat todo list, grouped by project -- the simple-mode workhorse. */
+function viewTodos() {
+  const c = el("div", {class: "wrap"});
+  c.append(nudgeBar());
+  const acts = leafActions().filter(a => OPEN_STATES[a.state]);
+  c.append(el("div", {class: "section"}, quickAdd(ensureJournal(todayISO()), {placeholder: "Add a task to today"})));
+
+  const byProject = new Map();
+  for (const a of acts) {
+    const key = a.project || "No project";
+    if (!byProject.has(key)) byProject.set(key, []);
+    byProject.get(key).push(a);
+  }
+  if (!acts.length) c.append(section("Todos", 0, taskCard([], "Nothing open. Add one above.")));
+  for (const [name, items] of Array.from(byProject.entries()).sort((x, y) => x[0].localeCompare(y[0]))) {
+    items.sort((x, y) => (x.added || "9999").localeCompare(y.added || "9999"));
+    c.append(section(name, items.length, taskCard(items)));
+  }
+  return c;
+}
+
+/* My day: what is actually on the hook today. */
+function viewMyDay() {
+  const c = el("div", {class: "wrap"});
+  const path = ensureJournal(todayISO());
+  c.append(nudgeBar(), heroCard());
+  c.append(el("div", {class: "section"}, quickAdd(path, {placeholder: "Add a task for today"})));
+
+  const acts = leafActions();
+  const due = acts.filter(a => a.group === "LATE" || a.group === "TODAY");
+  if (due.length) c.append(section("Due", due.length, taskCard(due)));
+
+  if (state.context) {
+    const surfaced = oldestTodosForContext(state.context);
+    c.append(section("Oldest in @" + state.context, surfaced.length,
+      taskCard(surfaced, "Nothing open in this context."),
+      el("button", {class: "btn sm ghost", style: "margin-left:auto",
+                    onclick: () => openContextPicker("Switch context", surfaceContext)}, "switch")));
+  }
+
+  const today = flattenBlocks(getPage(path).blocks)
+    .filter(b => OPEN_STATES[b.state])
+    .map(b => ({path, block: b, state: b.state, title: b.title, context: contextOf(b.title),
+                due: dueDate(b), age: blockAge(b), added: addedDate(b),
+                missingVerb: !startsWithVerb(b.title), missingContext: !hasContextLink(b.title)}));
+  c.append(section("Captured today", today.length, taskCard(today, "Nothing captured yet today.")));
+  return c;
+}
+
+
 function navCount(id) {
   switch (id) {
+    case "areas":      return areaList().length || null;
+    case "checklists": return checklistPages().length || null;
+    case "todos":      return leafActions().filter(a => OPEN_STATES[a.state]).length;
     case "today":   return openTodoCount(journalPath());
     case "next":    return leafActions().filter(a => a.state !== "WAIT").length;
     case "context": return state.context ? oldestTodosForContext(state.context).length : contextList().length;
@@ -1754,9 +2185,13 @@ function navCount(id) {
 }
 
 function renderNav() {
+  for (const b of $$("#modeSwitch button")) {
+    b.classList.toggle("on", (b.dataset.mode === "simple") === isSimple());
+    b.onclick = () => setMode(b.dataset.mode);
+  }
   const nav = $("#nav");
   nav.textContent = "";
-  for (const sec of NAV) {
+  for (const sec of NAV()) {
     const box = el("div", {class: "nav-group"});
     if (sec.group) box.append(el("h3", {}, sec.group));
     for (const it of sec.items) {
@@ -2183,18 +2618,41 @@ function viewPage() {
     meta.append(el("span", {class: "nudge", html: esc(k) + ":: " + renderInline(v)}));
   }
   meta.append(el("button", {class: "nudge", onclick: () => { updateReviewed(path); render(); }}, "mark reviewed"));
+  if (code) meta.append(el("button", {class: "nudge", onclick: () => openAreaPicker(path)},
+    areaOfProject(path) ? "area: " + areaOfProject(path) : "no area"));
   if (code) meta.append(el("button", {class: "nudge", onclick: () => openAddNextAction(path)}, "+ next action"));
   c.append(meta);
-  c.append(el("div", {class: "section"}, outlineFor(path)));
 
-  const back = backlinksTo(path);
+  if (isSimple() && pageKind(path) !== "journal") {
+    // Rows and a quick-add box, rather than the outliner.
+    c.append(el("div", {class: "section"}, quickAdd(path)));
+    const rows = flattenBlocks(page.blocks)
+      .filter(b => b.state)
+      .map(b => ({path, block: b, state: b.state, title: b.title, context: contextOf(b.title),
+                  due: dueDate(b), age: blockAge(b), added: addedDate(b),
+                  missingVerb: !startsWithVerb(b.title), missingContext: !hasContextLink(b.title)}));
+    const open = rows.filter(r => OPEN_STATES[r.state]);
+    const done = rows.filter(r => !OPEN_STATES[r.state]);
+    c.append(section("To do", open.length, taskCard(open, "No open steps. Add one above.")));
+    if (done.length) c.append(section("Done", done.length, taskCard(done)));
+    const notes = page.blocks.filter(b => !b.state && trim(b.title));
+    if (notes.length) {
+      const card = el("div", {class: "card"});
+      for (const b of notes) card.append(el("div", {class: "dash-item", html: renderInline(b.title)}));
+      c.append(section("Notes", notes.length, card));
+    }
+  } else {
+    c.append(el("div", {class: "section"}, outlineFor(path)));
+  }
+
+  const back = isSimple() ? [] : backlinksTo(path);
   const card = el("div", {class: "card"});
   if (!back.length) card.append(el("div", {class: "empty"}, "No backlinks."));
   for (const h of back) {
     card.append(el("button", {class: "dash-item", onclick: () => openPage(h.path)},
       el("span", {html: renderInline(h.block.title || "(block)")}), el("span", {class: "p"}, h.path)));
   }
-  c.append(section("Linked references", back.length, card));
+  if (!isSimple()) c.append(section("Linked references", back.length, card));
 
   c.append(el("div", {class: "section", style: "display:flex;gap:8px;flex-wrap:wrap"},
     el("button", {class: "btn sm ghost", onclick: () => renamePrompt(path)}, "rename"),
@@ -2238,6 +2696,7 @@ function viewSearch() {
    ============================================================ */
 const VIEW_TITLE = {
   today: "Today", next: "Next actions", context: "Context", agenda: "Agenda",
+  todos: "Todos", areas: "Areas of focus", checklists: "Checklists",
   projects: "Projects", zettel: "Zettel", pages: "All pages", "journal-list": "Journals",
   health: "Health check", search: "Search", page: "Page",
 };
@@ -2249,7 +2708,10 @@ function render() {
   c.textContent = "";
   let node;
   switch (state.view) {
-    case "today":   node = viewToday(); break;
+    case "today":   node = isSimple() ? viewMyDay() : viewToday(); break;
+    case "todos":   node = viewTodos(); break;
+    case "areas":   node = viewAreas(); break;
+    case "checklists": node = viewChecklists(); break;
     case "next":    node = viewNext(); break;
     case "context": node = viewContext(); break;
     case "agenda":  node = viewAgenda(); break;
@@ -2260,11 +2722,13 @@ function render() {
     case "zettel":  node = viewPages(p => p.startsWith(DIRS.zettel + "/"), "Zettel notes", () => newZettelPrompt()); break;
     case "journal-list": node = viewPages(p => isJournalPath(p), "Journals"); break;
     case "pages":   node = viewPages(p => !isJournalPath(p) && pageKind(p) !== "verb", "All pages"); break;
-    case "review":  node = viewToday(); openReview(0); break;
-    case "weeding": node = viewToday(); openWeeding(); break;
-    default:        node = viewToday();
+    case "review":  node = isSimple() ? viewMyDay() : viewToday(); openReview(0); break;
+    case "weeding": node = isSimple() ? viewMyDay() : viewToday(); openWeeding(); break;
+    default:        node = isSimple() ? viewMyDay() : viewToday();
   }
   c.append(node);
+  if (isSimple() && state.view === "today") VIEW_TITLE.today = "My day";
+  else VIEW_TITLE.today = "Today";
   $("#hTitle").textContent = state.view === "page" ? pageTitle(state.pagePath)
     : state.view === "projects" ? STATUS_LABEL[state.statusCode] + " projects"
     : (VIEW_TITLE[state.view] || "Today");
@@ -2863,8 +3327,56 @@ function openReview(focusIdx = 0) {
 /* ============================================================
    150_VAULT DIALOG -- connect a folder, a server, or export markdown
    ============================================================ */
+/* ============================================================
+   148_SERVERLESS_SYNC
+   Multi-device sync with no server and no account: the whole vault travels
+   as ONE markdown file that you keep in iCloud Drive, OneDrive, Dropbox,
+   Google Drive, Syncthing -- whatever already syncs on your devices.
+
+   Each page carries updated:: so a merge can pick the newer side per page
+   instead of overwriting the vault wholesale. Deletes travel as tombstones.
+   A page edited on both sides since the last sync is never silently lost:
+   the loser is kept beside it as a conflict copy.
+
+   Desktop Chrome/Edge can link the file once and re-sync with one click.
+   Everywhere else -- iOS Safari included -- the same file round-trips
+   through the ordinary Save / Open dialogs, which every browser has.
+   ============================================================ */
+
+const BUNDLE_NAME = "grouptodo-vault.md";
+
+/* ---------- tombstones (deletes that survive a merge) ---------- */
+function tombstones() {
+  const raw = getSetting("deleted") || "";
+  const out = new Map();
+  for (const part of raw.split(";")) {
+    const [p, t] = part.split("@");
+    if (p && t) out.set(trim(p), trim(t));
+  }
+  return out;
+}
+function writeTombstones(map) {
+  const parts = Array.from(map.entries()).map(([p, t]) => p + "@" + t);
+  settingsPage().props.deleted = parts.join(";");
+  V.dirty.add(SETTINGS_PATH);
+  scheduleFlush();
+}
+function addTombstone(path) {
+  if (path === SETTINGS_PATH) return;
+  const t = tombstones();
+  t.set(path, nowStamp());
+  writeTombstones(t);
+}
+
+/* ---------- bundle format ---------- */
 function bundleMarkdown() {
-  const out = [];
+  const out = [
+    "<!-- GroupTodo vault bundle. Plain markdown: every page is fenced below,",
+    "     and you can edit it in any text editor. Keep this file in a folder",
+    "     your devices already sync. -->",
+    "<!-- gtd:bundle v1 " + nowStamp() + " -->",
+    "",
+  ];
   for (const path of Array.from(V.pages.keys()).sort()) {
     out.push("<!-- gtd:file " + path + " -->");
     out.push(serializePage(getPage(path)).replace(/\n$/, ""));
@@ -2872,6 +3384,7 @@ function bundleMarkdown() {
   }
   return out.join("\n");
 }
+
 function parseBundle(text) {
   const files = new Map();
   const re = /<!--\s*gtd:file\s+(.+?)\s*-->\n([\s\S]*?)\n?<!--\s*gtd:endfile\s*-->/g;
@@ -2879,9 +3392,220 @@ function parseBundle(text) {
   while ((m = re.exec(text))) files.set(trim(m[1]), m[2]);
   return files;
 }
-function download(name, text) {
-  const a = el("a", {href: URL.createObjectURL(new Blob([text], {type: "text/markdown"})), download: name});
-  document.body.append(a); a.click(); a.remove();
+
+/* ---------- the merge ---------- */
+function conflictPath(path) {
+  const stamp = todayISO() + "-" + String(Date.now()).slice(-4);
+  return path.replace(/\.md$/i, "") + " (conflict " + stamp + ").md";
+}
+
+/* Settings must union rather than overwrite, or each sync would drop the
+   other device's tombstones and we would resurrect deleted pages. */
+function mergeSettings(incoming) {
+  const mine = tombstones();
+  const theirs = new Map();
+  for (const part of (incoming.props?.deleted || "").split(";")) {
+    const [p, t] = part.split("@");
+    if (p && t) theirs.set(trim(p), trim(t));
+  }
+  for (const [p, t] of theirs) if (!mine.has(p) || mine.get(p) < t) mine.set(p, t);
+  const local = settingsPage();
+  for (const [k, v] of Object.entries(incoming.props || {})) {
+    if (k === "deleted" || k === "updated") continue;
+    if ((incoming.props.updated || "") > (local.props.updated || "")) local.props[k] = v;
+  }
+  writeTombstones(mine);
+}
+
+/* ---------- block-level merge ----------
+   Whole-page last-write-wins loses work: two devices appending to the same
+   day's journal is the normal case, not an edge case. So when a page changed
+   on BOTH sides since the last sync, merge its blocks instead of picking a
+   winner. Blocks are matched on their text, so an append on either side
+   survives and a checked-off task propagates. */
+const blockSig = b => trim(b.title || "").toLowerCase();
+
+function mergeBlockLists(local, incoming, preferIncoming) {
+  const pool = new Map();
+  for (const b of incoming) {
+    const k = blockSig(b);
+    if (!pool.has(k)) pool.set(k, []);
+    pool.get(k).push(b);
+  }
+  const taken = new Set();
+  const out = [];
+  for (const lb of local) {
+    const bucket = pool.get(blockSig(lb));
+    const ib = bucket && bucket.length ? bucket.shift() : null;
+    if (!ib) { out.push(lb); continue; }
+    taken.add(ib);
+    const winner = preferIncoming ? ib : lb;
+    const loser  = preferIncoming ? lb : ib;
+    winner.props = Object.assign({}, loser.props || {}, winner.props || {});
+    winner.children = mergeBlockLists(lb.children || [], ib.children || [], preferIncoming);
+    out.push(winner);
+  }
+  for (const ib of incoming) if (!taken.has(ib)) out.push(ib);
+  return out;
+}
+
+function mergePageContents(local, incoming, preferIncoming) {
+  const props = preferIncoming
+    ? Object.assign({}, local.props || {}, incoming.props || {})
+    : Object.assign({}, incoming.props || {}, local.props || {});
+  return {props, blocks: mergeBlockLists(local.blocks || [], incoming.blocks || [], preferIncoming)};
+}
+
+function mergeBundle(files) {
+  const lastSync = getSetting("last_sync") || "";
+  const tomb = tombstones();
+  const report = {added: 0, updated: 0, merged: 0, kept: 0, conflicts: 0, deleted: 0};
+
+  for (const [path, text] of files) {
+    const incoming = parsePage(text);
+
+    if (path === SETTINGS_PATH) { mergeSettings(incoming); continue; }
+
+    // A delete on this device beats an older copy arriving from the other one.
+    const tombAt = tomb.get(path);
+    if (tombAt && tombAt >= (incoming.props?.updated || "")) { report.deleted++; continue; }
+
+    const local = V.pages.get(path);
+    if (!local) { putPage(path, incoming); report.added++; continue; }
+
+    const li = local.props?.updated || "";
+    const ii = incoming.props?.updated || "";
+    const localChanged    = !lastSync || li > lastSync;
+    const incomingChanged = !lastSync || ii > lastSync;
+
+    if (ii <= li && !incomingChanged) { report.kept++; continue; }
+
+    if (localChanged && incomingChanged && serializePage(local) !== serializePage(incoming)) {
+      putPage(path, mergePageContents(local, incoming, ii > li));
+      report.merged++;
+    } else if (ii > li) {
+      putPage(path, incoming);
+      report.updated++;
+    } else {
+      report.kept++;
+    }
+  }
+
+  // Tombstones from the other device remove pages still present here.
+  for (const [path, at] of tombstones()) {
+    const local = V.pages.get(path);
+    if (local && (local.props?.updated || "") <= at) {
+      V.pages.delete(path);
+      V.dirty.delete(path);
+      V.removed.add(path);
+      report.deleted++;
+    }
+  }
+
+  setSetting("last_sync", nowStamp());
+  scanVerbs();
+  return report;
+}
+
+function syncSummary(r) {
+  const bits = [];
+  if (r.added)     bits.push(r.added + " new");
+  if (r.updated)   bits.push(r.updated + " updated");
+  if (r.merged)    bits.push(r.merged + " merged");
+  if (r.deleted)   bits.push(r.deleted + " removed");
+  if (r.conflicts) bits.push(r.conflicts + " conflict copies kept");
+  if (!bits.length) return "Already up to date.";
+  return "Synced: " + bits.join(", ") + ".";
+}
+
+/* ---------- moving the bundle in and out ---------- */
+function saveBundleAsDownload() {
+  const blob = new Blob([bundleMarkdown()], {type: "text/markdown"});
+  const url = URL.createObjectURL(blob);
+  const a = el("a", {href: url, download: BUNDLE_NAME});
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  setSetting("last_sync", nowStamp());
+  notify("Saved " + BUNDLE_NAME + ". Put it in your synced folder (iCloud, OneDrive, Dropbox).");
+}
+
+function openBundleFromFile(onDone) {
+  const input = el("input", {
+    type: "file", accept: ".md,.markdown,text/markdown,text/plain", style: "display:none",
+    onchange: async e => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const text = await f.text();
+      const files = parseBundle(text);
+      if (!files.size) { notify("That file has no GroupTodo pages in it.", "error"); return; }
+      const report = mergeBundle(files);
+      notify(syncSummary(report));
+      render();
+      if (onDone) onDone(report);
+      input.remove();
+    },
+  });
+  document.body.append(input);
+  input.click();
+}
+
+/* ---------- linked vault file (desktop one-click) ---------- */
+let LINKED = null;             // FileSystemFileHandle
+
+async function linkedHandle() {
+  if (LINKED) return LINKED;
+  try {
+    const h = await IDB.get("kv", "bundleHandle");
+    if (h && (await h.queryPermission({mode: "readwrite"})) === "granted") return (LINKED = h);
+  } catch (_) {}
+  return null;
+}
+
+async function linkVaultFile() {
+  if (!CAP.savePicker) { notify("This browser cannot link a file. Use Save / Open instead.", "warn"); return; }
+  try {
+    const h = await window.showSaveFilePicker({
+      suggestedName: BUNDLE_NAME,
+      types: [{description: "Markdown", accept: {"text/markdown": [".md"]}}],
+    });
+    LINKED = h;
+    await IDB.set("kv", "bundleHandle", h).catch(() => {});
+    await syncLinked();
+  } catch (e) {
+    if (e.name !== "AbortError") notify("Could not link file: " + e.message, "error");
+  }
+}
+
+/* Read the file, merge what is new, write the merged vault back. */
+async function syncLinked() {
+  const h = await linkedHandle();
+  if (!h) { notify("No linked vault file yet.", "warn"); return; }
+  try {
+    if ((await h.queryPermission({mode: "readwrite"})) !== "granted") {
+      if ((await h.requestPermission({mode: "readwrite"})) !== "granted") {
+        notify("Permission to the vault file was declined.", "warn");
+        return;
+      }
+    }
+    setSync("sync", "syncing...");
+    const existing = await (await h.getFile()).text().catch(() => "");
+    const incoming = parseBundle(existing);
+    const report = incoming.size ? mergeBundle(incoming)
+                                 : {added: 0, updated: 0, merged: 0, kept: 0, conflicts: 0, deleted: 0};
+    await flush();
+    const w = await h.createWritable();
+    await w.write(bundleMarkdown());
+    await w.close();
+    setSetting("last_sync", nowStamp());
+    setSync("ok", V.backend ? V.backend.label : "synced");
+    notify(syncSummary(report) + " Vault file written.");
+    render();
+  } catch (e) {
+    setSync("err", "sync failed");
+    notify("Sync failed: " + e.message, "error");
+  }
 }
 
 async function connectFolder() {
@@ -2914,45 +3638,185 @@ async function connectServer(base) {
   }
 }
 
+/* ============================================================
+   141_AREA + CHECKLIST dialogs
+   ============================================================ */
+const SEED_AREAS = ["Health", "Finances", "Home", "Work", "Relationships", "Learning"];
+
+function seedAreas() {
+  for (const a of SEED_AREAS) createArea(a);
+  notify("Created " + SEED_AREAS.length + " areas. Rename or delete any that are not yours.");
+  render();
+}
+
+function newAreaPrompt(then) {
+  promptInput({
+    title: "New area of focus", label: "Something ongoing, not a task (Health, Team, Home)",
+    cta: "Create",
+    onSave: name => { const p = createArea(name); render(); then ? then(p) : openPage(p); },
+  });
+}
+
+function openAreaPicker(projectPath) {
+  const areas = areaList().map(baseName);
+  if (!areas.length) { newAreaPrompt(a => { setAreaOfProject(projectPath, baseName(a)); render(); }); return; }
+  listPicker({
+    title: "Area for " + pageTitle(projectPath),
+    items: areas.concat(["(none)"]),
+    label: a => a,
+    detail: a => a === areaOfProject(projectPath) ? "current" : "",
+    onPick: a => { setAreaOfProject(projectPath, a === "(none)" ? null : a); render(); },
+    footer: el("button", {class: "btn ghost", onclick: () => { closeModal(); newAreaPrompt(np => { setAreaOfProject(projectPath, baseName(np)); render(); }); }}, "+ new area"),
+  });
+}
+
+function newChecklistPrompt() {
+  promptInput({
+    title: "New checklist", label: "A list you will run more than once", cta: "Create",
+    onSave: t => { const p = createChecklist(t); openPage(p); },
+  });
+}
+
+function openRunChecklist(listPath) {
+  const targets = [{label: "Today", path: ensureJournal(todayISO())}]
+    .concat([...projectsIn("1"), ...projectsIn("3")].map(p => ({label: pageTitle(p), path: p})));
+  listPicker({
+    title: "Run " + pageTitle(listPath) + " into",
+    items: targets,
+    label: t => t.label,
+    onPick: t => {
+      const n = runChecklist(listPath, t.path);
+      notify(n + " steps added to " + t.label + ".");
+      render();
+    },
+  });
+}
+
+/* ============================================================
+   142_ONBOARDING -- pick a front door on first run
+   ============================================================ */
+function openOnboarding() {
+  const choose = mode => { closeModal(); setSetting("onboarded", todayISO()); setMode(mode); };
+  modal({
+    center: true, title: "Welcome to GroupTodo",
+    body: el("div", {},
+      el("div", {class: "field"},
+        el("label", {}, "Everything is markdown"),
+        el("div", {style: "color:var(--fg2);font-size:13.5px"},
+          "Your tasks are plain .md files you own. Pick how you want to see them — " +
+          "you can switch any time, and the files never change shape.")),
+      el("button", {class: "pick", onclick: () => choose("simple")},
+        el("span", {class: "k"}, "1"),
+        el("span", {}, el("b", {}, "Simple"), el("br"),
+          el("span", {style: "color:var(--fg3);font-size:12.5px"},
+            "Areas of focus, projects, todos, contexts, checklists. Like MS To Do."))),
+      el("button", {class: "pick", onclick: () => choose("advanced")},
+        el("span", {class: "k"}, "2"),
+        el("span", {}, el("b", {}, "Advanced"), el("br"),
+          el("span", {style: "color:var(--fg3);font-size:12.5px"},
+            "Daily journals, outliner, [[links]], backlinks, zettel. Like Logseq.")))),
+    onKey: e => {
+      if (e.key === "1") { choose("simple"); return true; }
+      if (e.key === "2") { choose("advanced"); return true; }
+      return false;
+    },
+  });
+}
+
+/* ============================================================
+   150_VAULT DIALOG -- storage, and serverless sync
+   ============================================================ */
+function capLine(ok, text) {
+  return el("div", {style: "display:flex;gap:8px;align-items:flex-start;font-size:12.5px;margin:3px 0;color:var(--fg2)"},
+    el("span", {style: "color:" + (ok ? "var(--ok)" : "var(--fg3)") + ";flex:none"}, ok ? "✓" : "—"),
+    el("span", {}, text));
+}
+
 function openVaultDialog() {
-  const serverInput = el("input", {placeholder: "http://127.0.0.1:8777", value: localStorage.getItem("gtd.server") || location.origin});
-  const fileInput = el("input", {type: "file", accept: ".md,.org,text/markdown", multiple: true, style: "display:none",
+  const lastSync = getSetting("last_sync");
+  const linkedKnown = !!LINKED;
+
+  const storageBox = el("div", {class: "field"},
+    el("label", {}, "This device"),
+    capLine(V.backend?.kind === "fs" || V.backend?.kind === "http",
+      V.backend?.kind === "fs" ? "Writing real .md files into " + V.backend.label
+      : V.backend?.kind === "http" ? "Synced with the server at " + V.backend.label
+      : "Working inside the browser (" + (V.backend?.label || "memory") + ")"),
+    capLine(CAP.persist !== "memory",
+      CAP.persist === "idb" ? "Changes persist here between visits"
+      : CAP.persist === "ls" ? "Changes persist (IndexedDB blocked, using localStorage)"
+      : "This browser blocks local storage for this page — your work lives in memory only, so save the vault file before closing"),
+    capLine(CAP.dirPicker, CAP.dirPicker ? "Can open a vault folder directly" : "Cannot open folders (normal on iOS, Android and Firefox)"),
+    capLine(CAP.savePicker, CAP.savePicker ? "Can link a vault file for one-click sync" : "No file linking — use Save / Open below"));
+
+  const serverInput = el("input", {
+    placeholder: "http://127.0.0.1:8777",
+    value: localStorage.getItem?.call?.(localStorage, "gtd.server") || (CAP.served ? location.origin : "http://127.0.0.1:8777"),
+  });
+
+  const fileInput = el("input", {
+    type: "file", accept: ".md,.org,text/markdown", multiple: true, style: "display:none",
     onchange: async e => {
       let n = 0;
       for (const f of e.target.files) {
         const text = await f.text();
-        const rel = f.webkitRelativePath || f.name;
-        const path = rel.replace(/^[^/]*\//, "");
-        if (/\.org$/i.test(f.name)) { putPage(path.replace(/\.org$/i, ".md"), orgToPage(text)); n++; }
-        else if (parseBundle(text).size) {
-          for (const [p, t] of parseBundle(text)) { putPage(p, parsePage(t)); n++; }
-        } else { putPage(path, parsePage(text)); n++; }
+        const bundle = parseBundle(text);
+        if (bundle.size) { const r = mergeBundle(bundle); notify(syncSummary(r)); n += bundle.size; continue; }
+        const rel = (f.webkitRelativePath || f.name).replace(/^[^/]*\//, "");
+        if (/\.org$/i.test(f.name)) putPage(rel.replace(/\.org$/i, ".md"), orgToPage(text));
+        else putPage(rel, parsePage(text));
+        n++;
       }
-      scanVerbs(); notify("Imported " + n + " files."); closeModal(); render();
-    }});
+      scanVerbs();
+      notify("Imported " + n + " file(s).");
+      closeModal(); render();
+    },
+  });
 
   modal({
     center: true, title: "Vault & sync",
     body: el("div", {},
-      el("div", {class: "field"}, el("label", {}, "Current backend"),
-        el("div", {style: "color:var(--fg2)"},
-          V.backend ? `${V.backend.kind} — ${V.backend.label} · ${V.pages.size} markdown files` : "none")),
-      el("div", {class: "field"}, el("label", {}, "A. Local folder (Chrome / Edge on desktop)"),
-        el("button", {class: "btn primary", onclick: connectFolder}, "Choose vault folder"),
+      storageBox,
+
+      el("div", {class: "field"},
+        el("label", {}, "Sync across devices — no server, no account"),
+        el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
+          "Your whole vault travels as one markdown file. Keep it in a folder your devices " +
+          "already sync — iCloud Drive, OneDrive, Dropbox, Google Drive, Syncthing — and " +
+          "sync on each device. Edits merge per page; nothing is overwritten blindly."),
+        el("div", {style: "display:flex;gap:8px;flex-wrap:wrap"},
+          CAP.savePicker
+            ? el("button", {class: "btn primary", onclick: () => linkedKnown ? syncLinked() : linkVaultFile()},
+                linkedKnown ? "Sync now" : "Link vault file")
+            : null,
+          el("button", {class: "btn" + (CAP.savePicker ? " ghost" : " primary"), onclick: () => saveBundleAsDownload()}, "Save vault file"),
+          el("button", {class: "btn ghost", onclick: () => openBundleFromFile()}, "Open vault file"),
+          CAP.savePicker && linkedKnown
+            ? el("button", {class: "btn ghost", onclick: () => linkVaultFile()}, "Re-link")
+            : null),
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          "Writes real .md files into journals/ and pages/. Reconnects automatically next time.")),
-      el("div", {class: "field"}, el("label", {}, "B. Sync server (phone, Termux, anywhere)"),
+          lastSync ? "Last sync: " + lastSync.replace("T", " ").replace("Z", " UTC") : "Not synced yet.")),
+
+      CAP.dirPicker ? el("div", {class: "field"},
+        el("label", {}, "Or: live folder (Chrome / Edge on desktop)"),
+        el("button", {class: "btn ghost", onclick: connectFolder}, "Choose vault folder"),
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          "Writes journals/ and pages/ as separate .md files, saved as you type. " +
+          "Point it at a folder inside your cloud drive and sync is automatic.")) : null,
+
+      el("div", {class: "field"},
+        el("label", {}, "Or: sync server (Termux, Raspberry Pi, any always-on box)"),
         serverInput,
         el("div", {style: "display:flex;gap:8px;margin-top:8px"},
-          el("button", {class: "btn", onclick: () => connectServer(trim(serverInput.value))}, "Connect"),
-          el("button", {class: "btn ghost", onclick: () => { localStorage.removeItem("gtd.server"); notify("Server forgotten."); }}, "Forget")),
-        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          "Run serve.py next to your vault, then point this at it. Same .md files, editable in Neovim.")),
-      el("div", {class: "field"}, el("label", {}, "C. Import / export markdown"),
+          el("button", {class: "btn ghost", onclick: () => connectServer(trim(serverInput.value))}, "Connect"),
+          el("button", {class: "btn ghost", onclick: () => { try { localStorage.removeItem("gtd.server"); } catch (_) {} notify("Server forgotten."); }}, "Forget"))),
+
+      el("div", {class: "field"},
+        el("label", {}, "Import"),
         el("div", {style: "display:flex;gap:8px;flex-wrap:wrap"},
-          el("button", {class: "btn ghost", onclick: () => download("grouptodo-vault-" + todayISO() + ".md", bundleMarkdown())}, "Export bundle"),
-          el("button", {class: "btn ghost", onclick: () => fileInput.click()}, "Import files"),
-          V.raw.size ? el("button", {class: "btn ghost", onclick: () => { importOrgFiles(); closeModal(); }}, "Convert " + V.raw.size + " .org files") : null),
+          el("button", {class: "btn ghost", onclick: () => fileInput.click()}, "Import .md / .org files"),
+          V.raw.size ? el("button", {class: "btn ghost", onclick: () => { importOrgFiles(); closeModal(); }},
+            "Convert " + V.raw.size + " .org files") : null),
         fileInput)),
     foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Close")],
   });
@@ -3039,9 +3903,22 @@ async function seedIfEmpty() {
   settingsPage();
   setSetting("last_review", "");
 
+  for (const a of SEED_AREAS) createArea(a);
+  putPage(join(DIRS.lists, "Weekly review.md"), {
+    props: {title: "Weekly review", type: "checklist", created: todayStamp()},
+    blocks: [
+      newBlock({title: "Empty the inbox"}),
+      newBlock({title: "Review every project for a next action"}),
+      newBlock({title: "Chase anything waiting on someone else"}),
+      newBlock({title: "Scan the calendar two weeks out"}),
+      newBlock({title: "Reread someday/maybe"}),
+    ],
+  });
+
   const proj = join(DIRS.active, "Set up GroupTodo.md");
   putPage(proj, {
-    props: {title: "Set up GroupTodo", status: STATUS_TEXT["1"], created: todayStamp(), reviewed: todayStamp()},
+    props: {title: "Set up GroupTodo", status: STATUS_TEXT["1"], area: "[[a/Work]]",
+            created: todayStamp(), reviewed: todayStamp()},
     blocks: [
       newBlock({title: "Outcome: a vault I trust, synced to real .md files."}),
       newBlock({state: "TODO", title: "Call it a system: pick a context for each action [[c/computer]]",
@@ -3190,38 +4067,69 @@ $("#burger").onclick     = () => document.body.classList.toggle("nav-open");
 $("#btnTheme").onclick   = () => {
   const cur = document.documentElement.dataset.theme === "light" ? "dark" : "light";
   document.documentElement.dataset.theme = cur;
-  localStorage.setItem("gtd.theme", cur);
+  try { localStorage.setItem("gtd.theme", cur); } catch (_) {}
 };
-if (localStorage.getItem("gtd.theme")) document.documentElement.dataset.theme = localStorage.getItem("gtd.theme");
+try {
+  const t = localStorage.getItem("gtd.theme");
+  if (t) document.documentElement.dataset.theme = t;
+} catch (_) {}
 
+/* Installable as an app where the browser allows it. The manifest is built
+   at runtime so the page stays a single file with nothing to fetch. */
+function installManifest() {
+  try {
+    const icon = "data:image/svg+xml," + encodeURIComponent(
+      "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'>" +
+      "<rect width='192' height='192' rx='44' fill='#6aa3ff'/>" +
+      "<path d='M54 99l27 27 57-57' stroke='#06101f' stroke-width='19' fill='none' " +
+      "stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    const manifest = {
+      name: "GroupTodo", short_name: "GroupTodo", start_url: ".", scope: ".",
+      display: "standalone", background_color: "#0f1115", theme_color: "#0f1115",
+      icons: [{src: icon, sizes: "192x192", type: "image/svg+xml", purpose: "any maskable"}],
+    };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type: "application/manifest+json"}));
+    document.head.append(el("link", {rel: "manifest", href: url}));
+  } catch (_) { /* a browser without Blob URLs still runs fine, just not installable */ }
+}
+
+/* Pick the best storage this device actually allows. */
 async function pickBackend() {
-  const server = localStorage.getItem("gtd.server");
+  let server = null;
+  try { server = localStorage.getItem("gtd.server"); } catch (_) {}
   if (server) {
     try { const b = Backends.http(server); await b.list(); return b; } catch (_) {}
   }
-  if (location.protocol.startsWith("http")) {
+  if (CAP.served) {
     try {
       const r = await fetch("./api/ping", {cache: "no-store"});
       if (r.ok) return Backends.http(location.origin + location.pathname.replace(/\/[^/]*$/, ""));
     } catch (_) {}
   }
-  const handle = await IDB.get("kv", "dirHandle").catch(() => null);
-  if (handle) {
-    try {
-      const perm = await handle.queryPermission({mode: "readwrite"});
-      if (perm === "granted") return Backends.fs(handle);
-    } catch (_) {}
+  if (CAP.dirPicker) {
+    const handle = await IDB.get("kv", "dirHandle").catch(() => null);
+    if (handle) {
+      try {
+        if ((await handle.queryPermission({mode: "readwrite"})) === "granted") return Backends.fs(handle);
+      } catch (_) {}
+    }
   }
-  return Backends.idb();
+  if (CAP.idb) return Backends.idb();
+  if (CAP.ls)  return Backends.ls();
+  return Backends.memory();
 }
 
 (async function init() {
+  await probeStorage();
+  installManifest();
+
   try {
     await loadFromBackend(await pickBackend());
   } catch (e) {
     notify("Falling back to browser storage: " + e.message, "warn");
-    await loadFromBackend(Backends.idb());
+    await loadFromBackend(CAP.idb ? Backends.idb() : CAP.ls ? Backends.ls() : Backends.memory());
   }
+  await linkedHandle();            // restore a linked vault file if we have one
   await seedIfEmpty();
   scanVerbs();
   ensureJournal(todayISO());
@@ -3229,15 +4137,27 @@ async function pickBackend() {
 
   render();
 
+  if (CAP.persist === "memory") {
+    notify("This browser will not store anything for this page. Use Vault & sync \u2192 " +
+           "Save vault file before you close the tab.", "error");
+  }
+
   setInterval(nudgeCheck, 60000);
   scheduleContextPrompts();
+
+  if (!getSetting("onboarded")) {
+    openOnboarding();
+    return;                        // no morning weeding on the very first run
+  }
 
   const last = getSetting("last_morning");
   if (last !== todayISO()) {
     setSetting("last_morning", todayISO());
     setTimeout(morningRoutine, 1200);
   }
-  notify("Keep fresh: g M morning · g x context · g d re-surface · g r review · ? keys");
+  notify(isSimple()
+    ? "Tip: press c to capture, / to search, ? for keys."
+    : "Keep fresh: g M morning \u00B7 g x context \u00B7 g d re-surface \u00B7 g r review \u00B7 ? keys");
 })();
 </script>
 </body>

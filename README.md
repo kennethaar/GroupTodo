@@ -1,163 +1,228 @@
 # GroupTodo
 
-A Logseq / Microsoft To Do hybrid with explicit GTD nudges, in **one HTML file**, storing
-everything as **plain markdown**.
+A GTD system that is **one HTML file** and **plain markdown**. No build, no
+install, no account, no server, no network access of any kind.
 
-This is a port of a Neovim + org-mode + org-roam GTD config. The vault shape, the
-status directories, the Phys-Viz verb rule, the context links, the age tracking and
-the morning/weekly rituals all survive the move — only the editor and the file
-extension changed.
+Two front doors over the same files:
+
+- **Simple** — areas of focus, projects, todos, contexts, checklists. Reads like
+  Microsoft To Do.
+- **Advanced** — daily journals, outliner, `[[links]]`, backlinks, zettel. Reads
+  like Logseq.
+
+Switch any time from the sidebar. The markdown on disk is identical either way.
+
+It began as a Neovim + org-mode + org-roam config; the status directories, the
+Phys-Viz verb rule, the context links, the age tracking and the morning/weekly
+rituals all survive the move.
 
 ```
-index.html   the whole app: no build step, no dependencies, no network calls
-serve.py     optional sync server, so phones and Termux can write the same .md files
+index.html   the entire app
+serve.py     optional always-on sync server (Termux, Pi, NAS)
 ```
 
 ---
 
-## Run it
+## Running it
 
-**Desktop (Chrome / Edge).** Open `index.html`, click **Vault & sync → Choose vault
-folder**, point it at your notes directory. It writes real `.md` files and reconnects
-to the same folder next time.
+Open `index.html`. That is the whole install. It works from a file on disk, a
+USB stick, a network share, or any static web host.
 
-**Phone, Termux, or any other browser.** Those browsers cannot write to a folder on
-their own, so run the sync server next to your vault:
+Serving it (`python3 -m http.server`, an intranet path, GitHub Pages) adds two
+things: the browser will offer to **install it as an app**, and storage is more
+reliably durable. Everything else is identical.
+
+### What each platform can do
+
+Capabilities are **probed at runtime**, not assumed — open **Vault & sync** and
+the top panel tells you exactly what this device allows. The short version:
+
+| | Runs standalone | Stores locally | Live folder of `.md` | Serverless sync |
+|---|---|---|---|---|
+| Windows / macOS / Linux, Chrome or Edge | yes | yes | yes | one-click |
+| Windows / macOS / Linux, Firefox | yes | yes | no | Save / Open |
+| Android, Chrome | yes | yes | no | Save / Open |
+| iOS / iPadOS, Safari | yes | see note | no | Save / Open |
+
+**iOS note.** Safari restricts storage for pages opened directly from the Files
+app. If it does, GroupTodo says so in plain words at startup and in Vault &
+sync, and keeps working in memory for the session — you just need to save the
+vault file before closing the tab. Serving the file from any URL removes the
+restriction entirely, so on iPhone and iPad **serving it is the better path**.
+
+I verified the Chromium behaviours on this list directly. **Safari and Firefox I
+could not test** — no engine available in my environment — so those rows come
+from documented behaviour, and the app's own runtime probe is the authority on
+your actual device.
+
+---
+
+## Serverless sync
+
+No server, no account, no third party. Your whole vault travels as **one
+markdown file** that you keep in a folder your devices already sync — iCloud
+Drive, OneDrive, Dropbox, Google Drive, Syncthing, a network share.
+
+- **Desktop Chrome / Edge**: *Link vault file* once, then *Sync now* reads,
+  merges and writes back in a single click.
+- **Everywhere else, iOS included**: *Save vault file* and *Open vault file* use
+  the ordinary browser Save and Open dialogs, which reach iCloud Drive and the
+  Files app like any other document.
+
+**It merges rather than overwrites.** Every page carries an `updated::` stamp.
+When a page changed on only one device, the newer side wins. When it changed on
+**both** — two phones appending to the same day — the blocks are merged, matched
+on their text, so every addition from both sides survives and a task you
+checked off propagates instead of duplicating. Deletes travel as tombstones so a
+deleted page does not come back on the next sync. Re-syncing the same file
+changes nothing.
+
+Tested: concurrent appends on two devices, check-off propagation, repeated
+syncs, and deletions. All verified in headless Chromium.
+
+### Alternative: a live folder
+
+Desktop Chrome/Edge can open a real folder and write `journals/` and `pages/`
+as separate `.md` files as you type. Point it at a folder inside your cloud
+drive and sync is automatic and continuous. This is the nicest setup if your
+main machine is a desktop.
+
+### Alternative: a sync server
+
+For an always-on box (Termux on Android, a Pi, a NAS):
 
 ```sh
 python3 serve.py --vault ~/storage/shared/Documents/OrgMode
 # open http://127.0.0.1:8777/
 ```
 
-The app then reads and writes the same files Neovim opens. No auth: keep it on
-`127.0.0.1` unless you trust the network.
+Same `.md` files Neovim opens. No auth — keep it on `127.0.0.1` unless you trust
+the network.
 
-**Anywhere else.** It falls back to browser storage and still works offline; use
-**Vault & sync → Export bundle** to get your markdown out.
+---
+
+## Corporate environments
+
+- **One file, no dependencies.** Nothing to install, nothing to approve, no CDN,
+  no fonts, no analytics, no telemetry.
+- **It cannot phone home, and that is enforced, not promised.** The page ships a
+  Content-Security-Policy that permits no outbound connection except to
+  `localhost` for the optional sync server. Grep it yourself: the only `fetch`
+  calls in the file target that server.
+- **No service worker, no install required** — email it, drop it on a share,
+  open it from disk.
+- **Your data stays yours**: markdown you can read, diff and keep in git.
 
 ---
 
 ## The vault
 
-Identical layout to the org config, with `.md` instead of `.org`:
-
 ```
-journals/2026-09-17.md      one file per day
+journals/2026-10-05.md      one file per day
 pages/
   _/  0/  1/  2/  3/        project status: cancelled, completed, active, someday, waiting
-  c/                        contexts   -> [[c/phone]]
+  a/                        areas of focus   -> [[a/Health]]
+  c/                        contexts         -> [[c/phone]]
+  k/                        checklists       -> [[k/Weekly review]]
   p/  o/                    people, organisations
   z/                        zettel notes
-  templates/                journal + project templates, date-cascade resolved
-  verbs/<lang>/<verb>.md    the Phys-Viz verb lexicon
-  GTD.md                    system settings (last review, current context)
+  templates/  verbs/        templates, Phys-Viz verb lexicon
+  GTD.md                    settings: mode, last review, tombstones
 ```
 
-A project's **status is its directory**. Changing status moves the file and rewrites
-every `[[1/Fix sink]]` link in the vault to `[[0/Fix sink]]`.
-
-## The markdown
-
-Org headings become a bullet outline; `#+key: value` becomes `key:: value`.
+A project's **status is its directory**. Changing status moves the file and
+rewrites every `[[1/Fix sink]]` link in the vault to `[[0/Fix sink]]`.
 
 ```markdown
 title:: Fix the sink
 status:: 1 = active
-created:: [[2026-09-15]]
-reviewed:: [[2026-09-17]]
+area:: [[a/Home]]
+updated:: 2026-10-05T09:12:00Z
 
 - Outcome: water goes down, no drip.
 - TODO Call the plumber about the leak [[c/phone]]
-  Added:: [[2026-09-15]]
-  SCHEDULED:: [[2026-09-20]]
-  - A child block is a sub-action; a parent with open children is not itself actionable.
+  Added:: [[2026-10-01]]
+  SCHEDULED:: [[2026-10-08]]
 - DONE Buy pipe tape [[c/errand]]
   Added:: [[2026-09-10]] - [[2026-09-12]] = 2 days
 ```
 
-States are `TODO`, `DOING`, `WAIT`, `DONE`, `CANCELLED` (`WAITING`/`CANCELED`/`NOW`/`LATER`
-are read as aliases). Open states are TODO, DOING and WAIT.
+States: `TODO`, `DOING`, `WAIT`, `DONE`, `CANCELLED` (`WAITING`/`CANCELED`/`NOW`/
+`LATER` read as aliases). `Added::` is stamped when something becomes a TODO and
+closed out with an end date and elapsed days when finished — that number drives
+"oldest first" everywhere.
 
-`Added::` is stamped when an item becomes a TODO and closed out with an end date and
-an elapsed-day count when it is finished — the same lifecycle the org config wrote
-onto its `Added:` line. That number is what drives "oldest first" everywhere.
-
-Already have an `.org` vault? The app lists the `.org` files it finds and offers
-**Vault & sync → Convert .org files**. Originals are left untouched.
+Already have an `.org` vault? It is detected and converted on request; originals
+untouched.
 
 ---
 
 ## The GTD nudges
 
-The point of the system is that it does not let vague work sit quietly.
+The point is that vague work is not allowed to sit quietly.
+
+**Areas of focus.** Projects finish; areas do not. A project with no area is a
+project nobody owns, and the Areas view says so.
 
 **Phys-Viz verbs.** A next action must start with a verb a camera could film —
-*Call*, *Draft*, *Buy*, *Ring*, *Kjøp*. Anything else is flagged `no verb` and a picker
-offers to rewrite it. The lexicon is markdown you own: `pages/verbs/en/call.md`
-holds `phone = call`, `ring = call`, one synonym per line. English and Norwegian
+*Call*, *Draft*, *Buy*, *Ring*, *Kjøp*. Anything else is flagged and a picker
+offers to rewrite it. The lexicon is markdown you own; English and Norwegian
 starter sets install on request.
 
-**Contexts.** Every action wants a `[[c/...]]` link. Setting an item to TODO without
-one opens the context picker immediately — single letters `a`–`z` select, like the
-letter-key picker in the Neovim config.
+**Contexts.** Every action wants a `[[c/...]]` link. Setting something to TODO
+without one opens the context picker, where single letters `a`–`z` select.
 
-**The surfacing loop.** Pick where you are (`g x`) and GroupTodo shows the **three
-oldest** open actions in that context, across every active and waiting project plus
-loose journal items. Never the newest, never all of them.
+**The surfacing loop.** Pick where you are and GroupTodo shows the **three
+oldest** open actions you could actually do there. Never the newest.
 
-**Morning weeding.** Once per day it opens the three stalest active projects, ranked
-by: no next action, then missing context, then missing verb, then idle time. Projects
-older than six months get told so. Then it asks for your context.
+**Checklists.** Reusable lists — weekly shop, trip packing, release steps.
+Running one copies fresh todos into today or into a project.
 
-**Idle nudge.** 30 minutes without touching a surfaced action or a meeting, and it
-says so.
+**Morning weeding.** Once a day, the three stalest active projects, ranked by: no
+next action, then missing context, then missing verb, then idle time.
 
-**Context re-prompts.** At 12:00 and 17:00 it asks where you are now.
+**Idle nudge** at 30 minutes. **Context re-prompts** at 12:00 and 17:00.
 
-**Project completion.** Close the last open action in an active project and it
-refuses to let the project go quiet: add a next action, or move it to `0`, `2`, or `_`.
+**Project completion.** Close the last action in a project and it will not let it
+go quiet: add a next action, or move it to `0`, `2`, or `_`.
 
-**Weekly review.** Seven sections, each with a one-click fix: stuck projects, journal
-actions with no project, missing verbs, missing contexts, projects not reviewed
-lately, waiting-for items older than 14 days, someday/maybe. Marking it done writes
-`last_review` into `pages/GTD.md`.
+**Weekly review.** Seven sections, each with a one-click fix. Marking it done
+writes `last_review` into `pages/GTD.md`.
 
-**Health check.** Missing titles, waiting projects with no `waiting_since`, broken
-`[[links]]`, duplicate project files with a merge action.
+**Health check.** Missing titles, waiting projects with no `waiting_since`,
+broken links, duplicate projects with a merge action.
 
-All thresholds live in the `CFG` object near the top of the script.
+Thresholds live in the `CFG` object near the top of the script.
 
 ---
 
 ## Keys
 
-The leader chords match the Neovim config.
+Advanced mode keeps the leader chords from the Neovim config.
 
 | | |
 |---|---|
-| `c` | capture |
-| `/` | search |
-| `t` | today |
-| `?` | key list |
+| `c` · `/` · `t` · `?` | capture · search · today · key list |
 | `g x` / `g d` | pick context / re-surface the oldest three |
 | `g w` / `g M` | morning weeding / full morning routine |
 | `g r` / `g a` / `g n` | weekly review / agenda / next actions |
 | `g m` | change project status |
 | `f t` / `f p` / `f n` | today's / previous / next journal |
 | `f r` / `f d` | rename / delete page |
-| `z n` | new zettel |
-| `h c` | health check |
+| `z n` · `h c` | new zettel · health check |
 | `w p` / `w w` / `w m` / `w u` | active / waiting / someday projects, mark reviewed |
 
-In the outline: `enter` new block, `tab`/`shift-tab` indent, `ctrl-enter` cycle state,
-`backspace` on an empty block deletes it.
+In the outline: `enter` new block, `tab`/`shift-tab` indent, `ctrl-enter` cycle
+state, `backspace` on an empty block deletes it.
 
 ---
 
-## What did not come across
+## Known limits
 
-`init.lua` features that belong to the editor rather than the system: lazy.nvim
-bootstrapping, OSC-52 clipboard, telescope pickers, org-roam's node database and
-id: links, orgmode's own agenda and capture commands, and the buffer-local insert-mode
-editing helpers. Their user-facing jobs — link insertion, backlinks, agenda, capture,
-refile, teleport-to-page — are all present as app features instead.
+- **Block merge matches on text.** Rewording a task on one device while the other
+  edits the same page reads as a delete plus an add, so you may see both. Visible
+  and fixable, never silent data loss.
+- **Deleting a single task does not propagate** — only whole-page deletes carry
+  tombstones. A task deleted on one device can return from another.
+- **The sync server has no authentication.** Localhost only unless you add one.
+- **Safari and Firefox are untested by me** (see the table above).
