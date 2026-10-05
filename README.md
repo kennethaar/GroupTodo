@@ -185,16 +185,18 @@ Each space is a vault with this shape, in its own folder:
 journals/2026-10-05.md      one file per day
 pages/
   _/  0/  1/  2/  3/        project status: cancelled, completed, active, someday, waiting
-  a/                        areas of focus   -> [[a/Health]]     (H2)
+  8/                        checklists       -> [[8/Onboard new customer]]
+  a/                        areas of focus   -> [[a/Health]]       (H2)
   g/                        goals            -> [[g/Debt cleared]] (H3)
   c/                        contexts         -> [[c/phone]]
-  k/                        checklists       -> [[k/Weekly review]]
   p/  o/                    people, organisations
   z/                        zettel notes
   templates/  verbs/        templates, Phys-Viz verb lexicon
-  Horizons.md               purpose and vision (H5, H4)
+  _horizon.md               purpose and vision (H5, H4)
   GTD.md                    settings: mode, last review, tombstones
 ```
+
+Everything is listed in the vault's own order: `_`, `0`, `1`, `2`, `3`, then `8`.
 
 A project's **status is its directory**. Changing status moves the file and
 rewrites every `[[1/Fix sink]]` link in the vault to `[[0/Fix sink]]`.
@@ -275,8 +277,15 @@ without one opens the context picker, where single letters `a`–`z` select.
 **The surfacing loop.** Pick where you are and GroupTodo shows the **three
 oldest** open actions you could actually do there. Never the newest.
 
-**Checklists.** Reusable lists — weekly shop, trip packing, release steps.
-Running one copies fresh todos into today or into a project.
+**Checklists** live under `8/` — eternity, because you run them forever. Two kinds:
+
+- A **simple checklist** drops its steps into today or into an existing project.
+- A **project template** spins up a whole new project on every run. "Onboard new
+  insurance customer" run once per customer gives you one project each, with the
+  same choreography. Write `%name%` in any step and you are asked for it per run,
+  so *Call %name% to welcome them* becomes *Call Acme Ltd to welcome them*. The
+  template's `outcome::` is carried over and expanded the same way, and the new
+  project records `from:: [[8/...]]` so you can see where it came from.
 
 **Morning weeding.** Once a day, the three stalest active projects, ranked by: no
 next action, then missing context, then missing verb, then idle time.
@@ -287,7 +296,25 @@ next action, then missing context, then missing verb, then idle time.
 go quiet: add a next action, or move it to `0`, `2`, or `_`.
 
 **Weekly review.** Eight sections, each with a one-click fix. Marking it done
-writes `last_review` into `pages/GTD.md`.
+writes `last_review` into `pages/GTD.md`. It only starts asking once a week of
+actual use has passed, counted from `started::` — day one does not open with a
+red chip about a review you could not possibly have done yet.
+
+**Who did what.** A shared space means several people editing the same markdown,
+so changes carry a name and a time, written into the files themselves:
+
+```markdown
+- DONE Call Acme Ltd to welcome them
+  Added:: [[2026-10-01]] - [[2026-10-05]] = 4 days
+  by:: Kenneth
+  done_by:: Ingrid 2026-10-05T18:43:38Z
+```
+
+Pages also carry `updated::` and `updated_by::`. Set your name in **Vault &
+sync**; it is stored on this device, can differ per space (your full name at
+work, something shorter at home), and with no name set **nothing is stamped**, so
+a vault you use alone stays clean. Other people's names show as a chip on the
+row; your own is not repeated back at you.
 
 **Health check.** Missing titles, waiting projects with no `waiting_since`,
 broken links, duplicate projects with a merge action.

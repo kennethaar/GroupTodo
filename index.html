@@ -205,6 +205,7 @@ header.top .burger{display:none}
 .chip.today{color:var(--today);background:rgba(224,176,80,.13)}
 .chip.miss{color:var(--warn);background:rgba(224,176,80,.1);border-color:rgba(224,176,80,.3)}
 .chip.age{font-family:var(--mono);font-size:10.5px}
+.chip.who{color:var(--zet);background:rgba(199,146,234,.12)}
 .chip.st{font-family:var(--mono);font-size:10px;letter-spacing:.5px}
 .chip.spacechip{border-style:solid;border-width:1px;background:transparent;font-weight:600}
 .spacetoggle{
@@ -516,7 +517,7 @@ const DIRS = {
   zettel   : join(PAGES, "z"),
   areas    : join(PAGES, "a"),   // H2: areas of focus, the standing responsibilities
   goals    : join(PAGES, "g"),   // H3: goals and objectives, 1-2 years
-  lists    : join(PAGES, "k"),   // reusable checklists
+  lists    : join(PAGES, "8"),   // 8 = eternity: checklists you run again and again
 };
 const TODO_STATES  = ["TODO", "DOING", "WAIT", "DONE", "CANCELLED"];
 const OPEN_STATES  = {TODO:true, DOING:true, WAIT:true};
@@ -530,8 +531,12 @@ const STATUS_TEXT  = {
   "3": "3 = waiting for 3rd party",
 };
 const STATUS_LABEL = {"_":"Cancelled", "0":"Completed", "1":"Active", "2":"Someday/Maybe", "3":"Waiting for"};
-const PREFIX_DIR   = {p:DIRS.people, c:DIRS.contexts, o:DIRS.orgs, z:DIRS.zettel,
-                      a:DIRS.areas, g:DIRS.goals, k:DIRS.lists};
+/* The vault's own order: _ 0 1 2 3, then 8 for the checklists. */
+const STATUS_ORDER = ["_", "0", "1", "2", "3"];
+const PREFIX_DIR   = {"8":DIRS.lists,            // integer-like key, so pageRef finds it first
+                      p:DIRS.people, c:DIRS.contexts, o:DIRS.orgs, z:DIRS.zettel,
+                      a:DIRS.areas, g:DIRS.goals,
+                      k:DIRS.lists};                // legacy: old [[k/...]] links still resolve
 
 /* Tunables -- the GTD nudge thresholds (inline constants in init.lua). */
 const CFG = {
@@ -942,7 +947,12 @@ const nowStamp = () => new Date().toISOString().replace(/\.\d+Z$/, "Z");
 
 function touch(path) {
   const page = V.pages.get(path);
-  if (page) (page.props || (page.props = {})).updated = nowStamp();
+  if (page) {
+    const props = page.props || (page.props = {});
+    props.updated = nowStamp();
+    const me = whoAmI();
+    if (me) props.updated_by = me;
+  }
   V.dirty.add(path);
   scheduleFlush();
 }
@@ -1017,6 +1027,46 @@ async function readInto(record) {
 }
 
 /* Load a space's files without making it the active one. */
+/* Rename things an older vault still spells the old way. Cheap, idempotent,
+   and it keeps links working rather than leaving dangling [[k/...]] behind. */
+function migrateVault() {
+  let moved = 0;
+  const legacyLists = join(PAGES, "k");
+  for (const path of Array.from(V.pages.keys())) {
+    if (!path.startsWith(legacyLists + "/")) continue;
+    const target = join(DIRS.lists, path.slice(legacyLists.length + 1));
+    if (!V.pages.has(target)) {
+      putPage(target, getPage(path));
+      removePage(path);
+      moved++;
+    }
+  }
+  if (moved) {
+    rewriteChecklistLinks();
+    notify("Moved " + moved + " checklist(s) to pages/8/.");
+  }
+  if (!V.pages.has(HORIZONS_PATH) && V.pages.has(HORIZONS_LEGACY)) {
+    putPage(HORIZONS_PATH, getPage(HORIZONS_LEGACY));
+    removePage(HORIZONS_LEGACY);
+  }
+  return moved;
+}
+
+function rewriteChecklistLinks() {
+  const re = /\[\[k\/([^\]]+)\]\]/g;
+  for (const [path, page] of V.pages) {
+    let hit = false;
+    const fix = str => { const n = String(str).replace(re, "[[8/$1]]"); if (n !== str) hit = true; return n; };
+    walkBlocks(page.blocks, b => {
+      b.title = fix(b.title);
+      b.body = (b.body || []).map(fix);
+      for (const k of Object.keys(b.props || {})) b.props[k] = fix(b.props[k]);
+    });
+    for (const k of Object.keys(page.props || {})) page.props[k] = fix(page.props[k]);
+    if (hit) touch(path);
+  }
+}
+
 async function loadSpaceRecord(name) {
   const sp = Spaces.get(name);
   if (!sp) return null;
@@ -1221,10 +1271,12 @@ async function openSpace(name) {
 
   await loadFromBackend(await spaceBackend(sp));
   V.space = name;
+  migrateVault();
   await seedIfEmpty();             // a brand new space still needs verbs and templates
   scanVerbs();
   ensureJournal(todayISO());
   state.context = getSetting("current_context") || null;
+  if (!getSetting("started")) setSetting("started", todayISO());
   state.view = "today";
   state.pagePath = null;
   await ensureVisibleLoaded();
@@ -1400,6 +1452,19 @@ function openShareSpace() {
           "Edits merge back when you swap files again."),
         el("button", {class: "btn primary", onclick: () => { closeModal(); saveBundleAsDownload(); }},
           "Export " + (sp?.name || "space") + " as one file")),
+      whoAmI() ? null : el("div", {class: "field"},
+        el("label", {}, "Sign your changes first"),
+        (() => {
+          const input = el("input", {placeholder: "Your name"});
+          input.addEventListener("change", () => {
+            setIdentity(input.value, Spaces.active);
+            notify("Changes will be signed " + trim(input.value) + ".");
+          });
+          return input;
+        })(),
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          "Once more than one person edits these files, every change wants a name against it.")),
+
       el("div", {class: "field"},
         el("label", {}, "Careful"),
         el("div", {style: "color:var(--fg3);font-size:12.5px"},
@@ -1496,6 +1561,7 @@ function recentJournals(days = CFG.journalScanDays) {
    Port of: init.lua 110_WIKI_LINK_OVERRIDE
    ============================================================ */
 const LINK_RE = /\[\[([^\]]+)\]\]/g;
+const LINK_PREFIXES = new Set(Object.keys(STATUS_DIRS).concat(Object.keys(PREFIX_DIR)));
 
 function linksIn(text) {
   const out = []; let m;
@@ -1768,8 +1834,11 @@ function setBlockState(path, block, state, opts = {}) {
   if (state === "TODO" || state === "DOING") {
     if (path !== journalPath() && !addedDate(block)) {
       setBlockProp(block, "Added", "[[" + todayISO() + "]]");
+      stampAuthor(block);
     }
   } else if (state === "DONE" || state === "CANCELLED") {
+    const me = whoAmI();
+    if (me) setBlockProp(block, "done_by", me + " " + nowStamp());
     const added = addedDate(block);
     const end = todayISO();
     if (added) {
@@ -1867,6 +1936,7 @@ function leafActionsHere() {
         missingVerb: !startsWithVerb(b.title),
         // Journal items carry no Added:: stamp (the filename is the date),
         // so fall back to the journal's own date to keep "oldest first" honest.
+        by: blockProp(b, "by"), doneBy: blockProp(b, "done_by"),
         added: addedDate(b) || (journal ? baseName(path) : null),
         age: blockAge(b) ?? (journal ? dateDiffDays(baseName(path), todayISO()) : null),
       });
@@ -1980,7 +2050,7 @@ function healthScan() {
       for (const target of linksIn(text)) {
         const t = target.split("][")[0];
         if (/^\d{4}-\d{2}-\d{2}$/.test(t)) continue;
-        if (!/^[_0123pcoz]\//.test(t)) continue;
+        if (!LINK_PREFIXES.has((/^([^/]+)\//.exec(t) || [])[1])) continue;
         if (!findExistingPage(t)) issues.push({path, block: blk, type: "broken-link", text: "Broken link: [[" + t + "]]"});
       }
     };
@@ -2141,7 +2211,10 @@ function createZettel(title) {
      Horizon 1  10,000 ft   Projects                 outcomes inside a year
      Ground      runway     Next actions             the very next physical move
    ============================================================ */
-const HORIZONS_PATH = join(PAGES, "Horizons.md");
+/* Underscore-prefixed so it sorts to the top of pages/ next to the other
+   system pages, rather than mixing in with real content. */
+const HORIZONS_PATH   = join(PAGES, "_horizon.md");
+const HORIZONS_LEGACY = join(PAGES, "Horizons.md");
 
 const HORIZONS = [
   {key: "purpose", h: "Horizon 5", alt: "50,000 ft", name: "Purpose & principles",
@@ -2159,9 +2232,14 @@ const HORIZONS = [
 ];
 
 function horizonsPage() {
+  // Carry an older vault over to the new name.
+  if (!V.pages.has(HORIZONS_PATH) && V.pages.has(HORIZONS_LEGACY)) {
+    putPage(HORIZONS_PATH, getPage(HORIZONS_LEGACY));
+    removePage(HORIZONS_LEGACY);
+  }
   if (!V.pages.has(HORIZONS_PATH)) {
     putPage(HORIZONS_PATH, {
-      props: {title: "Horizons", type: "horizons", created: todayStamp()},
+      props: {title: "_horizon", type: "horizons", created: todayStamp()},
       blocks: [],
     });
   }
@@ -2304,16 +2382,69 @@ const unassignedProjects = () =>
    73_CHECKLISTS -- the MS To Do half: a reusable list you run again
    and again (weekly shop, trip packing, release steps).
    ============================================================ */
-function checklistTemplate(title) {
+function checklistTemplate(title, kind) {
+  const props = {title, type: "checklist", created: todayStamp()};
+  if (kind === "project") {
+    props.kind = "project";
+    props.outcome = "%name% complete";
+  }
   return {
-    props: {title, type: "checklist", created: todayStamp()},
-    blocks: [newBlock({title: "First step"})],
+    props,
+    blocks: kind === "project"
+      ? [newBlock({title: "First step for %name%"})]
+      : [newBlock({title: "First step"})],
   };
 }
-function createChecklist(title) {
+
+/* A checklist marked kind:: project is a PROJECT TEMPLATE: running it spins up
+   a whole new project with these steps as its actions. "Onboard new insurance
+   customer" run twice gives two independent projects, each with the same
+   choreography. %name% in a step or in the outcome is replaced by the name you
+   give that run. */
+const isProjectTemplate = path => trim(getPage(path)?.props?.kind || "") === "project";
+
+function setChecklistKind(path, kind) {
+  const page = getPage(path); if (!page) return;
+  if (kind === "project") page.props.kind = "project"; else delete page.props.kind;
+  touch(path);
+}
+
+function runChecklistAsProject(listPath, name, opts = {}) {
+  const list = getPage(listPath); if (!list) return null;
+  const vars = {name, project: name, date: todayISO()};
+  const projectPath = createProjectPage(name);
+
+  const outcomeTpl = trim(list.props?.outcome || "");
+  const outcome = trim(opts.outcome || (outcomeTpl ? expandVars(outcomeTpl, vars) : ""));
+  if (outcome) setOutcome(projectPath, outcome);
+
+  const areaM = /\[\[a\/([^\]]+)\]\]/.exec(list.props?.area || "");
+  if (areaM) setAreaOfProject(projectPath, trim(areaM[1]));
+  const goalM = /\[\[g\/([^\]]+)\]\]/.exec(list.props?.goal || "");
+  if (goalM) setGoalOfProject(projectPath, trim(goalM[1]));
+
+  const page = getPage(projectPath);
+  page.props.from = "[[8/" + baseName(listPath) + "]]";
+  const ctx = opts.context || state.context;
+  let n = 0;
+  const copy = blocks => (blocks || []).map(b => {
+    n++;
+    const title = expandVars(b.title, vars);
+    return stampAuthor(newBlock({
+      state: "TODO",
+      title: title + (ctx && !hasContextLink(title) ? " [[c/" + ctx + "]]" : ""),
+      props: {Added: "[[" + todayISO() + "]]"},
+      children: copy(b.children),
+    }));
+  });
+  page.blocks.push(...copy(list.blocks));
+  touch(projectPath);
+  return {path: projectPath, steps: n};
+}
+function createChecklist(title, kind) {
   const clean = slugify(title);
   const path = join(DIRS.lists, clean + ".md");
-  if (!V.pages.has(path)) putPage(path, checklistTemplate(clean));
+  if (!V.pages.has(path)) putPage(path, checklistTemplate(clean, kind));
   return path;
 }
 const checklistPages = () => allPages(p => pageKind(p) === "checklist");
@@ -2325,17 +2456,17 @@ function runChecklist(listPath, targetPath, context) {
   const ctx = context || state.context;
   let n = 0;
   const parent = newBlock({
-    title: pageTitle(listPath) + " [[k/" + baseName(listPath) + "]]",
+    title: pageTitle(listPath) + " [[8/" + baseName(listPath) + "]]",
     props: {Added: "[[" + todayISO() + "]]"},
   });
   const copy = blocks => (blocks || []).map(b => {
     n++;
-    return newBlock({
+    return stampAuthor(newBlock({
       state: "TODO",
       title: b.title + (ctx && !hasContextLink(b.title) ? " [[c/" + ctx + "]]" : ""),
       props: {Added: "[[" + todayISO() + "]]"},
       children: copy(b.children),
-    });
+    }));
   });
   parent.children = copy(list.blocks);
   target.blocks.push(parent);
@@ -2393,7 +2524,7 @@ function refileBlock(fromPath, block, toPath) {
 
 function addNextActionTo(path, text) {
   const page = getPage(path); if (!page) return null;
-  const blk = newBlock({state: "TODO", title: text, props: {Added: "[[" + todayISO() + "]]"}});
+  const blk = stampAuthor(newBlock({state: "TODO", title: text, props: {Added: "[[" + todayISO() + "]]"}}));
   page.blocks.push(blk);
   touch(path);
   return blk;
@@ -2423,13 +2554,50 @@ const SETTINGS_PATH = join(PAGES, "GTD.md");
 function settingsPage() {
   if (!V.pages.has(SETTINGS_PATH)) {
     putPage(SETTINGS_PATH, {
-      props: {title: "GTD", type: "settings", created: todayStamp()},
+      props: {title: "GTD", type: "settings", created: todayStamp(), started: todayISO()},
       blocks: [newBlock({title: "System settings for GroupTodo. Safe to edit by hand."})],
     });
   }
   return getPage(SETTINGS_PATH);
 }
+/* ============================================================
+   76_IDENTITY
+   A shared space means several people editing the same markdown. Changes
+   therefore carry a name and a time, written into the files themselves so
+   they survive sync, git and any editor -- not held in some private database.
+
+   The name lives on this device (and can differ per space: your full name at
+   work, something shorter at home). With no name set, nothing is stamped, so
+   a vault you use alone stays clean.
+   ============================================================ */
+function whoAmI() {
+  return trim(PREF.get("identity:" + (Spaces.active || ""), "") || PREF.get("identity", "") || "");
+}
+function setIdentity(name, space) {
+  const clean = trim(name).slice(0, 60);
+  if (space) PREF.set("identity:" + space, clean);
+  else PREF.set("identity", clean);
+}
+
+/* Stamp authorship on something the person just created. */
+function stampAuthor(block) {
+  const me = whoAmI();
+  if (me && block && block.props && !block.props.by) block.props.by = me;
+  return block;
+}
+
 const getSetting = k => settingsPage().props[k] || null;
+
+/* The weekly review is only "due" once a week of actually using the thing has
+   passed. Day one should not open with a red chip about a review you could not
+   possibly have done yet. */
+function reviewBaseline() {
+  const last = dateIn(getSetting("last_review"));
+  if (last) return last;
+  return dateIn(getSetting("started")) || todayISO();
+}
+const daysSinceReview = () => dateDiffDays(reviewBaseline(), todayISO()) ?? 0;
+const reviewDue = () => daysSinceReview() >= CFG.reviewEveryDays;
 function setSetting(k, v) { settingsPage().props[k] = v; touch(SETTINGS_PATH); }
 
 /* ============================================================
@@ -2472,12 +2640,13 @@ function computeNudges() {
   const stale = stalestActiveProjects(99).filter(p => (p.ageDays ?? 0) > CFG.staleProjectDays);
   push("stale", "", "projects older than 6 months", stale.length, () => openWeeding());
 
-  const last = dateIn(getSetting("last_review"));
-  const since = last ? dateDiffDays(last, todayISO()) : null;
-  if (since == null || since >= CFG.reviewEveryDays) {
+  if (reviewDue()) {
+    const last = dateIn(getSetting("last_review"));
+    const since = daysSinceReview();
     n.push({
-      id: "review", level: since == null || since > CFG.reviewEveryDays * 2 ? "danger" : "warn",
-      label: last ? `weekly review, ${since} days since last` : "no weekly review yet",
+      id: "review", level: since > CFG.reviewEveryDays * 2 ? "danger" : "warn",
+      label: last ? `weekly review, ${since} days since last`
+                  : `first weekly review is due \u2014 ${since} days in`,
       count: null, act: () => openReview(0),
     });
   }
@@ -2491,9 +2660,9 @@ function nextBestAction() {
   const pick = (title, body, cta, act) => ({title, body, cta, act});
   const overdue = acts.filter(a => a.group === "LATE");
   if (overdue.length) return pick("Overdue", `${overdue.length} action(s) are past their date. Renegotiate or do them.`, "Open agenda", () => go("agenda"));
-  const last = dateIn(getSetting("last_review"));
-  if (!last || dateDiffDays(last, todayISO()) >= CFG.reviewEveryDays)
-    return pick("Weekly review is due", "The review is what makes the rest of the system trustworthy.", "Start review", () => openReview(0));
+  if (reviewDue())
+    return pick("Weekly review is due", "The review is what makes the rest of the system trustworthy.",
+                "Start review", () => openReview(0));
   if (!state.context) return pick("Where are you right now?", "Pick a context and GroupTodo surfaces the three oldest actions you can actually do here.", "Pick context", () => openContextPicker("Where are you now?", ctx => surfaceContext(ctx)));
   const stuck = stuckActiveProjects();
   if (stuck.length) return pick("A project has stalled", `${stuck.length} active project(s) have no next action. Define one or park the project.`, "Unstick", () => openReview(0));
@@ -2580,20 +2749,19 @@ function setMode(mode) {
 
 const NAV_SIMPLE = [
   {group: null, items: [
-    {id: "today",      icon: "☀", label: "My day",         key: "f t"},
-    {id: "todos",      icon: "✓", label: "Todos",          key: "g n"},
-    {id: "context",    icon: "⌘", label: "Contexts",       key: "g x"},
-    {id: "agenda",     icon: "☷", label: "Planned",        key: "g a"},
+    {id: "today",      icon: "☀", label: "My day",   key: "f t"},
+    {id: "todos",      icon: "✓", label: "Todos",    key: "g n"},
+    {id: "context",    icon: "⌘", label: "Contexts", key: "g x"},
+    {id: "agenda",     icon: "☷", label: "Planned",  key: "g a"},
   ]},
   {group: "Structure", items: [
     {id: "horizons",   icon: "◉", label: "Horizons"},
-    {id: "proj-1",     icon: "1", label: "Projects",       status: "1"},
-    {id: "checklists", icon: "☑", label: "Checklists"},
-  ]},
-  {group: "Later", items: [
-    {id: "proj-3", icon: "3", label: "Waiting for",   status: "3"},
-    {id: "proj-2", icon: "2", label: "Someday/Maybe", status: "2"},
-    {id: "proj-0", icon: "0", label: "Done",          status: "0"},
+    {id: "proj-_",     icon: "_", label: "Cancelled",     status: "_"},
+    {id: "proj-0",     icon: "0", label: "Done",          status: "0"},
+    {id: "proj-1",     icon: "1", label: "Active",        status: "1"},
+    {id: "proj-2",     icon: "2", label: "Someday/Maybe", status: "2"},
+    {id: "proj-3",     icon: "3", label: "Waiting for",   status: "3"},
+    {id: "checklists", icon: "8", label: "Checklists"},
   ]},
   {group: "Keep fresh", items: [
     {id: "weeding", icon: "✂", label: "Morning weeding", key: "g w"},
@@ -2610,12 +2778,12 @@ const NAV_ADVANCED = [
   ]},
   {group: "Structure", items: [
     {id: "horizons",   icon: "◉", label: "Horizons"},
-    {id: "proj-1", icon: "1", label: "Active",        status: "1"},
-    {id: "proj-3", icon: "3", label: "Waiting for",   status: "3"},
-    {id: "proj-2", icon: "2", label: "Someday/Maybe", status: "2"},
-    {id: "proj-0", icon: "0", label: "Completed",     status: "0"},
-    {id: "proj-_", icon: "_", label: "Cancelled",     status: "_"},
-    {id: "checklists", icon: "☑", label: "Checklists"},
+    {id: "proj-_",     icon: "_", label: "Cancelled",     status: "_"},
+    {id: "proj-0",     icon: "0", label: "Completed",     status: "0"},
+    {id: "proj-1",     icon: "1", label: "Active",        status: "1"},
+    {id: "proj-2",     icon: "2", label: "Someday/Maybe", status: "2"},
+    {id: "proj-3",     icon: "3", label: "Waiting for",   status: "3"},
+    {id: "checklists", icon: "8", label: "Checklists"},
   ]},
   {group: "Knowledge", items: [
     {id: "zettel", icon: "◈", label: "Zettel",   key: "z n"},
@@ -2645,11 +2813,11 @@ function quickAdd(targetPath, opts = {}) {
       const page = getPage(targetPath);
       if (!page) return;
       const ctx = opts.context || state.context;
-      const blk = newBlock({
+      const blk = stampAuthor(newBlock({
         state: "TODO",
         title: text + (ctx && !hasContextLink(text) ? " [[c/" + ctx + "]]" : ""),
         props: {Added: "[[" + todayISO() + "]]"},
-      });
+      }));
       page.blocks.push(blk);
       touch(targetPath);
       noteTodoTouched();
@@ -2962,7 +3130,7 @@ function viewHorizons() {
         el("button", {class: "btn sm ghost", onclick: () => newAreaPrompt()}, "+ area")));
     } else if (h.key === "projects") {
       const card = el("div", {class: "card"});
-      for (const code of ["1", "3", "2"]) {
+      for (const code of STATUS_ORDER) {
         card.append(el("button", {class: "prow", onclick: () => go("projects", {statusCode: code})},
           el("span", {class: "st st-" + code}, code),
           el("span", {class: "nm"}, STATUS_LABEL[code]),
@@ -3016,16 +3184,20 @@ function viewChecklists() {
   const card = el("div", {class: "card"});
   if (!lists.length) {
     card.append(el("div", {class: "empty"},
-      "A checklist is a list you run again and again — weekly shop, trip packing, release steps. " +
-      "Running it copies fresh todos into today or into a project."));
+      "A checklist is a list you run again and again. A project template goes further: " +
+      "every run spins up a whole new project — \"Onboard new insurance customer\" once per " +
+      "customer, each with the same steps."));
   }
   for (const p of lists) {
     const items = flattenBlocks(getPage(p).blocks).length;
+    const tpl = isProjectTemplate(p);
     card.append(el("div", {class: "prow"},
-      el("span", {class: "st st-2"}, "☑"),
+      el("span", {class: "st " + (tpl ? "st-1" : "st-2")}, tpl ? "∞" : "☑"),
       el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(p)}, pageTitle(p)),
+      tpl ? el("span", {class: "chip proj"}, "project template") : null,
       el("span", {class: "sub"}, items + " steps"),
-      el("button", {class: "btn sm primary", onclick: () => openRunChecklist(p)}, "Run")));
+      el("button", {class: "btn sm primary", onclick: () => openRunChecklist(p)},
+        tpl ? "New project" : "Run")));
   }
   c.append(section("Checklists", lists.length, card,
     el("button", {class: "btn sm ghost", style: "margin-left:auto", onclick: () => newChecklistPrompt()}, "+ new")));
@@ -3178,6 +3350,7 @@ function chipsFor(a) {
     out.push(el("span", {class: "chip " + cls}, humanDate(a.due)));
   }
   if (a.age != null && a.age > 0) out.push(el("span", {class: "chip age"}, a.age + "d"));
+  if (a.by && a.by !== whoAmI()) out.push(el("span", {class: "chip who"}, a.by));
   if (a.missingVerb && a.state === "TODO")
     out.push(el("span", {class: "chip miss b", onclick: e => {e.stopPropagation(); openVerbPicker(a.path, a.block);}}, "no verb"));
   if (a.missingContext && a.state !== "WAIT")
@@ -3322,7 +3495,7 @@ function outlineBlock(path, page, b) {
       e.preventDefault(); txt.blur();
       const sibs = siblingsOf(page, b);
       const nb = newBlock({state: b.state && OPEN_STATES[b.state] ? "TODO" : null});
-      if (nb.state) nb.props.Added = "[[" + todayISO() + "]]";
+      if (nb.state) { nb.props.Added = "[[" + todayISO() + "]]"; stampAuthor(nb); }
       sibs.splice(sibs.indexOf(b) + 1, 0, nb);
       touch(path); render(); focusBlock(nb.id);
     } else if (e.key === "Tab") {
@@ -3574,6 +3747,14 @@ function viewPage() {
   for (const [k, v] of Object.entries(page.props || {})) {
     if (k === "title") continue;
     meta.append(el("span", {class: "nudge", html: esc(k) + ":: " + renderInline(v)}));
+  }
+  if (pageKind(path) === "checklist") {
+    const tpl = isProjectTemplate(path);
+    meta.append(el("button", {class: "nudge" + (tpl ? " ok" : ""),
+      onclick: () => { setChecklistKind(path, tpl ? null : "project"); render(); }},
+      tpl ? "project template" : "simple checklist"));
+    meta.append(el("button", {class: "nudge", onclick: () => openRunChecklist(path)},
+      tpl ? "new project from this" : "run this"));
   }
   meta.append(el("button", {class: "nudge", onclick: () => { updateReviewed(path); render(); }}, "mark reviewed"));
   if (code) meta.append(el("button", {class: "nudge" + (outcomeOf(path) ? "" : " warn"),
@@ -3943,7 +4124,7 @@ function openCapture() {
       const [st, rest] = splitState(line);
       const title = (st ? rest : line) + (asTodo && ctx && !hasContextLink(line) ? " [[c/" + ctx + "]]" : "");
       const blk = newBlock({state: st || (asTodo ? "TODO" : null), title});
-      if (blk.state) blk.props.Added = "[[" + todayISO() + "]]";
+      if (blk.state) { blk.props.Added = "[[" + todayISO() + "]]"; stampAuthor(blk); }
       page.blocks.push(blk);
     }
     touch(path); noteTodoTouched();
@@ -4024,6 +4205,12 @@ function openTaskDetail(path, block, space) {
         el("div", {class: "field"}, el("label", {}, "Scheduled"), sched),
         el("div", {class: "field"}, el("label", {}, "Deadline"), dead)),
       el("div", {class: "field"}, el("label", {}, "Notes"), notes),
+      el("div", {class: "field"}, el("label", {}, "Trail"),
+        el("div", {style: "color:var(--fg2);font-size:12.5px;line-height:1.8"},
+          (blockProp(block, "by") ? "Added by " + blockProp(block, "by") : "Added") +
+            (addedDate(block) ? " on " + addedDate(block) : "") +
+            (a.age != null ? " \u00B7 " + a.age + " days ago" : ""),
+          blockProp(block, "done_by") ? el("div", {}, "Closed by " + blockProp(block, "done_by")) : null)),
       el("div", {class: "field"}, el("label", {}, "Source"),
         el("button", {class: "btn ghost sm", onclick: () => { closeModal(); openPage(path); }}, path))),
     foot: [
@@ -4044,7 +4231,7 @@ function openTaskDetail(path, block, space) {
    Port of: init.lua 65_PROJECT_STATUS_MOVE + project_completion_prompt
    ============================================================ */
 function openStatusPicker(path) {
-  const codes = ["1", "3", "2", "0", "_"];
+  const codes = STATUS_ORDER;
   listPicker({
     title: "Project status — " + pageTitle(path),
     hint: "moves the file into pages/<code>/",
@@ -4704,13 +4891,83 @@ function openAreaPicker(projectPath) {
 }
 
 function newChecklistPrompt() {
-  promptInput({
-    title: "New checklist", label: "A list you will run more than once", cta: "Create",
-    onSave: t => { const p = createChecklist(t); openPage(p); },
+  const nameInput = el("input", {placeholder: "Onboard new insurance customer"});
+  let kind = "project";
+  const hints = {
+    project: "every run creates a new project with these steps",
+    plain: "steps drop into today or into an existing project",
+  };
+  const seg = el("div", {class: "seg"});
+  for (const [k, label] of [["project", "Project template"], ["plain", "Simple checklist"]]) {
+    const btn = el("button", {class: k === kind ? "on" : "", onclick: () => {
+      kind = k;
+      for (const x of seg.children) x.classList.toggle("on", x.dataset.k === k);
+      const h = $("#ckHint"); if (h) h.textContent = hints[k];
+    }}, label);
+    btn.dataset.k = k;
+    seg.append(btn);
+  }
+  modal({
+    center: true, title: "New checklist",
+    body: el("div", {},
+      el("div", {class: "field"}, el("label", {}, "Name"), nameInput),
+      el("div", {class: "field"}, el("label", {}, "What is it for"), seg,
+        el("div", {id: "ckHint", style: "color:var(--fg3);font-size:12px;margin-top:6px"}, hints.project)),
+      el("div", {class: "field"},
+        el("div", {style: "color:var(--fg2);font-size:12.5px"},
+          "In a project template, write %name% wherever the thing you are onboarding should " +
+          "appear \u2014 \"Call %name% to welcome them\". You are asked for it on every run."))),
+    foot: [
+      el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+      el("button", {class: "btn primary", onclick: () => {
+        const t = trim(nameInput.value);
+        if (!t) return;
+        closeModal();
+        openPage(createChecklist(t, kind === "project" ? "project" : null));
+      }}, "Create"),
+    ],
   });
+  setTimeout(() => nameInput.focus(), 30);
+}
+
+/* Running a project template: name it, confirm the outcome, get a real project. */
+function runTemplateAsProject(listPath) {
+  const tpl = getPage(listPath);
+  const steps = flattenBlocks(tpl.blocks).length;
+  const nameInput = el("input", {placeholder: "Acme Ltd"});
+  const outcomeInput = el("input", {});
+  const sync = () => {
+    const n = trim(nameInput.value) || "%name%";
+    outcomeInput.value = expandVars(trim(tpl.props?.outcome || "%name% complete"), {name: n, project: n});
+  };
+  nameInput.addEventListener("input", sync);
+  sync();
+  modal({
+    center: true, title: "New project from " + pageTitle(listPath), hint: steps + " steps",
+    body: el("div", {},
+      el("div", {class: "field"},
+        el("label", {}, "Project name"), nameInput,
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          "Replaces %name% in every step.")),
+      el("div", {class: "field"}, el("label", {}, "What does done look like?"), outcomeInput)),
+    foot: [
+      el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+      el("button", {class: "btn primary", onclick: () => {
+        const name = trim(nameInput.value);
+        if (!name) return;
+        closeModal();
+        const made = runChecklistAsProject(listPath, name, {outcome: outcomeInput.value});
+        if (!made) return;
+        notify("Project created with " + made.steps + " steps.");
+        openPage(made.path);
+      }}, "Create project"),
+    ],
+  });
+  setTimeout(() => nameInput.focus(), 30);
 }
 
 function openRunChecklist(listPath) {
+  if (isProjectTemplate(listPath)) { runTemplateAsProject(listPath); return; }
   const targets = [{label: "Today", path: ensureJournal(todayISO())}]
     .concat([...projectsIn("1"), ...projectsIn("3")].map(p => ({label: pageTitle(p), path: p})));
   listPicker({
@@ -4849,6 +5106,24 @@ function openVaultDialog() {
         el("div", {style: "display:flex;gap:8px;margin-top:8px"},
           el("button", {class: "btn ghost", onclick: () => connectServer(trim(serverInput.value))}, "Connect"),
           el("button", {class: "btn ghost", onclick: () => { try { localStorage.removeItem("gtd.server"); } catch (_) {} notify("Server forgotten."); }}, "Forget"))),
+
+      el("div", {class: "field"},
+        el("label", {}, "Your name on changes in " + (Spaces.active || "this space")),
+        (() => {
+          const input = el("input", {placeholder: "Kenneth", value: whoAmI()});
+          input.addEventListener("change", () => {
+            setIdentity(input.value, Spaces.active);
+            notify(trim(input.value)
+              ? "Changes in " + Spaces.active + " will be signed " + trim(input.value) + "."
+              : "Name cleared \u2014 changes will not be signed.");
+            render();
+          });
+          return input;
+        })(),
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          "Written into the markdown as by:: and done_by:: so everyone sharing this space " +
+          "can see who added what and who closed it. Leave empty when you work alone and " +
+          "nothing is stamped. Stored on this device only, and can differ per space.")),
 
       el("div", {class: "field"},
         el("label", {}, "Import"),
