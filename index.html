@@ -460,7 +460,41 @@ function notify(msg, level="info") {
 /* ---------- dates ---------- */
 const pad2 = n => String(n).padStart(2, "0");
 const isoOf = d => d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate());
-const todayISO = () => isoOf(new Date());
+
+/* Timestamps are written to the files in UTC so two people in different
+   offices compare cleanly. Everything shown on screen is converted to the
+   timezone set on this device -- including which day "today" is, so a journal
+   written while travelling still lands on the day you think you are in. */
+function userTZ() {
+  const set = (typeof PREF !== "undefined") ? PREF.get("timezone", "") : "";
+  if (set) return set;
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; }
+  catch (_) { return "UTC"; }
+}
+function todayISO() {
+  const tz = (typeof PREF !== "undefined") ? PREF.get("timezone", "") : "";
+  if (!tz) return isoOf(new Date());
+  try {
+    return new Intl.DateTimeFormat("en-CA", {timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit"})
+      .format(new Date());
+  } catch (_) { return isoOf(new Date()); }
+}
+
+/* "2026-10-05T18:43:38Z" -> "5 Oct 2026, 20:43" in the chosen zone. */
+function formatStamp(iso, opts = {}) {
+  const d = new Date(iso);
+  if (!iso || isNaN(d.getTime())) return iso || "";
+  try {
+    return new Intl.DateTimeFormat(undefined, Object.assign({
+      dateStyle: "medium", timeStyle: "short", timeZone: userTZ(),
+    }, opts)).format(d);
+  } catch (_) { return String(iso); }
+}
+/* A stamp like "Kenneth 2026-10-05T18:43:38Z" splits into who and when. */
+function splitStamp(value) {
+  const m = /^(.*?)\s*(\d{4}-\d{2}-\d{2}T[\d:.]+Z)\s*$/.exec(trim(value || ""));
+  return m ? {who: trim(m[1]), iso: m[2]} : {who: trim(value || ""), iso: null};
+}
 const parseISO = s => {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || "");
   return m ? new Date(+m[1], +m[2]-1, +m[3], 12) : null;
@@ -3778,6 +3812,10 @@ function viewPage() {
   if (code) meta.append(el("button", {class: "nudge", onclick: () => openStatusPicker(path)}, el("b", {}, code), STATUS_LABEL[code]));
   for (const [k, v] of Object.entries(page.props || {})) {
     if (k === "title") continue;
+    if (k === "updated") {
+      meta.append(el("span", {class: "nudge"}, "changed " + formatStamp(v)));
+      continue;
+    }
     meta.append(el("span", {class: "nudge", html: esc(k) + ":: " + renderInline(v)}));
   }
   if (pageKind(path) === "checklist") {
@@ -4242,7 +4280,12 @@ function openTaskDetail(path, block, space) {
           (blockProp(block, "by") ? "Added by " + blockProp(block, "by") : "Added") +
             (addedDate(block) ? " on " + addedDate(block) : "") +
             (a.age != null ? " \u00B7 " + a.age + " days ago" : ""),
-          blockProp(block, "done_by") ? el("div", {}, "Closed by " + blockProp(block, "done_by")) : null)),
+          (() => {
+            const raw = blockProp(block, "done_by");
+            if (!raw) return null;
+            const {who, iso} = splitStamp(raw);
+            return el("div", {}, "Closed by " + (who || "someone") + (iso ? " \u00B7 " + formatStamp(iso) : ""));
+          })())),
       el("div", {class: "field"}, el("label", {}, "Source"),
         el("button", {class: "btn ghost sm", onclick: () => { closeModal(); openPage(path); }}, path))),
     foot: [
@@ -5122,7 +5165,7 @@ function openVaultDialog() {
             ? el("button", {class: "btn ghost", onclick: () => linkVaultFile()}, "Re-link")
             : null),
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          lastSync ? "Last sync: " + lastSync.replace("T", " ").replace("Z", " UTC") : "Not synced yet.")),
+          lastSync ? "Last sync: " + formatStamp(lastSync) : "Not synced yet.")),
 
       CAP.dirPicker ? el("div", {class: "field"},
         el("label", {}, "Or: live folder for this space (Chrome / Edge on desktop)"),
@@ -5156,6 +5199,34 @@ function openVaultDialog() {
           "Written into the markdown as by:: and done_by:: so everyone sharing this space " +
           "can see who added what and who closed it. Leave empty when you work alone and " +
           "nothing is stamped. Stored on this device only, and can differ per space.")),
+
+      el("div", {class: "field"},
+        el("label", {}, "Your timezone"),
+        (() => {
+          const sel = el("select", {});
+          let zones = [];
+          try { zones = Intl.supportedValuesOf("timeZone") || []; } catch (_) {}
+          if (!zones.length) {
+            zones = ["UTC", "Europe/Oslo", "Europe/London", "Europe/Berlin", "America/New_York",
+                     "America/Los_Angeles", "Asia/Singapore", "Asia/Tokyo", "Australia/Sydney"];
+          }
+          let detected = "UTC";
+          try { detected = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch (_) {}
+          if (!zones.includes(detected)) zones.unshift(detected);
+          sel.append(el("option", {value: ""}, "Use this device (" + detected + ")"));
+          for (const z of zones) sel.append(el("option", {value: z}, z));
+          sel.value = PREF.get("timezone", "") || "";
+          sel.addEventListener("change", () => {
+            PREF.set("timezone", sel.value);
+            notify("Times shown in " + (sel.value || detected) + ". Files stay in UTC.");
+            render();
+          });
+          return sel;
+        })(),
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          "Timestamps are written to the files in UTC so colleagues in different offices " +
+          "compare cleanly. This only changes what you see \u2014 including which day counts " +
+          "as today. Set on this device, for you.")),
 
       el("div", {class: "field"},
         el("label", {}, "Import"),

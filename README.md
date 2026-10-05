@@ -316,7 +316,16 @@ so changes carry a name and a time, written into the files themselves:
   done_by:: Ingrid 2026-10-05T18:43:38Z
 ```
 
-Pages also carry `updated::` and `updated_by::`. Set your name in **Vault &
+Pages also carry `updated::` and `updated_by::`. Creation records the day and the
+name only — no clock on a todo, because for GTD "this has sat for 14 days" is the
+useful fact, not the minute it was typed.
+
+**Timestamps are written in UTC** so colleagues in different offices compare
+cleanly, and shown in **your** timezone, set per device in Vault & sync. That
+setting also decides which day counts as today, so a journal written while
+travelling lands on the day you think you are in.
+
+Set your name in **Vault &
 sync**; it is stored on this device, can differ per space (your full name at
 work, something shorter at home), and with no name set **nothing is stamped**, so
 a vault you use alone stays clean. Other people's names show as a chip on the
