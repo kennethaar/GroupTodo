@@ -3,6 +3,9 @@
 A GTD system that is **one HTML file** and **plain markdown**. No build, no
 install, no account, no server, no network access of any kind.
 
+**Spaces** keep the parts of your life apart: Work, Private, Volunteer. Each is a
+complete separate vault, so colleagues who get Work never see Private.
+
 Two front doors over the same files:
 
 - **Simple** — horizons of focus, projects, todos, contexts, checklists. Reads
@@ -54,6 +57,44 @@ I verified the Chromium behaviours on this list directly. **Safari and Firefox I
 could not test** — no engine available in my environment — so those rows come
 from documented behaviour, and the app's own runtime probe is the authority on
 your actual device.
+
+---
+
+## Spaces — keeping work, private and volunteer apart
+
+A space is a **complete, self-contained vault**: its own journals, projects,
+contexts, checklists and its own horizons, right up to its own purpose and
+vision. Your Work space has Work's areas of focus; your Private space has its
+own.
+
+That matters for sharing. **The unit you hand over is a whole space** — a folder
+you share in OneDrive or Dropbox, or one exported markdown file. Nothing from any
+other space is inside it:
+
+- Each space stores its files in its own place, chosen separately. Work can live
+  in the company OneDrive while Private lives in iCloud and never touches it.
+- Each space exports to its own file: `grouptodo-work.md`, `grouptodo-private.md`.
+- Browser storage is namespaced per space.
+
+The separation is a folder and file boundary, not a filter in the UI that someone
+could switch off. Verified by test: an export of Work contains no Private content
+and vice versa.
+
+Set them up in the wizard on first run, or add one any time from the space
+switcher at the top of the sidebar. Give each space its own folder in
+**Vault & sync**; until you do, it lives in browser storage.
+
+### What GroupTodo does not do
+
+It has **no accounts and no permissions of its own**. Whoever can open the folder
+or the file can read and change everything in that space. The sharing controls
+are your cloud drive's — share the Work folder with colleagues, and do not share
+the Private one. Revoking means unsharing the folder.
+
+One space is active at a time, so there is no combined cross-space view. That is
+deliberate: a merged view is exactly what leaks Work onto the screen while your
+wife is looking. The space switcher shows each space's open and overdue counts so
+you still see the whole picture without mixing the contents.
 
 ---
 
@@ -116,6 +157,8 @@ the network.
 ---
 
 ## The vault
+
+Each space is a vault with this shape, in its own folder:
 
 ```
 journals/2026-10-05.md      one file per day
@@ -261,4 +304,7 @@ state, `backspace` on an empty block deletes it.
 - **Deleting a single task does not propagate** — only whole-page deletes carry
   tombstones. A task deleted on one device can return from another.
 - **The sync server has no authentication.** Localhost only unless you add one.
+- **Spaces are separated, not secured.** Anyone who can open a space's folder or
+  file sees all of it. There is no password, and nothing is encrypted.
+- **No cross-space view.** One space at a time, by design.
 - **Safari and Firefox are untested by me** (see the table above).
