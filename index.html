@@ -303,6 +303,11 @@ header.top .burger{display:none}
   padding:0 4px;transition:opacity .12s;
 }
 .blk>.line:hover .state.none,.state.none:focus{opacity:1}
+/* The badge is a control wherever it is clickable, and it keeps the focus ring
+   after the redraw so the next space bar cycles it again. */
+.state.btn{padding:2px 6px}   /* a thumb-sized target: on a list row the badge is the control */
+.state.btn:hover{box-shadow:inset 0 0 0 1px currentColor}
+.state:focus-visible{outline:1.5px solid var(--accent);outline-offset:1px}
 .tag{color:var(--ctx);cursor:pointer}
 .tag:hover{text-decoration:underline}
 .wikilink{color:var(--accent);cursor:pointer}
@@ -516,6 +521,28 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c =>
 const trim = s => String(s ?? "").replace(/^\s+|\s+$/g, "");
 const join = (...p) => p.filter(Boolean).join("/").replace(/\/{2,}/g, "/");
 const uid = () => Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+
+/* ---------- keeping your place across a redraw ----------
+   Any change redraws the whole screen, so whatever had focus -- the state badge
+   just clicked, the line being typed in -- went with it, and cycling a state
+   meant selecting the todo again before every single step. Name the control just
+   before the change that redraws, and focus lands back on the rebuilt one, so
+   the next click or keypress carries straight on. */
+let REFOCUS = null;
+function keepFocus(selector, node) {
+  REFOCUS = {selector, nth: node ? Math.max(0, $$(selector).indexOf(node)) : 0};
+}
+function applyRefocus() {
+  const want = REFOCUS; REFOCUS = null;
+  if (!want) return;
+  requestAnimationFrame(() => {
+    if ($("#modalRoot").firstChild) return;   // a picker opened on the way; it owns the keys
+    const all = $$(want.selector);
+    const node = all[want.nth] || all[0];     // the row may have left one list on the way
+    if (node) node.focus({preventScroll: true});
+  });
+}
+const idSel = (cls, id, part) => cls + '[data-id="' + CSS.escape(String(id)) + '"] ' + part;
 
 function notify(msg, level="info") {
   const t = el("div", {class:"toast " + (level==="warn"?"warn":level==="error"?"err":"")},
@@ -2409,11 +2436,14 @@ function setBlockState(path, block, state, opts = {}) {
   render();
 }
 
-/* The cycle comes back round to "not a task at all", so anything made a todo by
-   accident -- or a line that stopped being one -- can be turned back into an
-   ordinary note without retyping it. */
-function cycleState(path, block) {
-  const order = ["TODO", "DOING", "WAIT", "DONE", null];
+/* In the outliner the cycle comes back round to "not a task at all", so anything
+   made a todo by accident -- or a line that stopped being one -- can be turned
+   back into an ordinary note without retyping it. On a to-do list row there is
+   nowhere for a plain note to live, so {keepTask} stops at DONE and wraps to
+   TODO; the action panel still has the explicit way out. */
+function cycleState(path, block, opts = {}) {
+  const order = opts.keepTask ? ["TODO", "DOING", "WAIT", "DONE"]
+                              : ["TODO", "DOING", "WAIT", "DONE", null];
   const i = order.indexOf(block.state ?? null);
   setBlockState(path, block, order[(i + 1) % order.length]);
 }
@@ -4037,9 +4067,15 @@ function heroCard() {
     ));
 }
 
-function stateChip(st) {
+/* With onCycle the badge is the control: one click per step, in place, instead of
+   opening the action panel again for every state. */
+function stateChip(st, onCycle) {
   if (!st) return null;              // a plain note carries no badge
-  return el("span", {class: "state " + st}, st);
+  if (!onCycle) return el("span", {class: "state " + st}, st);
+  return el("button", {
+    class: "state btn " + st, title: "Cycle: TODO \u2192 DOING \u2192 WAIT \u2192 DONE",
+    onclick: e => { e.stopPropagation(); onCycle(e.currentTarget); },
+  }, st);
 }
 
 function chipsFor(a) {
@@ -4081,7 +4117,7 @@ function taskRow(a) {
   // change would be written through the active space's backend.
   const row = el("div", {
     class: "task" + (state.selected === a.block.id ? " sel" : ""),
-    data: {state: a.state || ""},
+    data: {state: a.state || "", id: a.block.id},
     onclick: () => inSpace(a.space, () => openTaskDetail(a.path, a.block, a.space)),
   },
     el("button", {
@@ -4091,7 +4127,10 @@ function taskRow(a) {
     }, "\u2713"),
     el("div", {class: "t-body"},
       el("div", {class: "t-title", html: renderInline(titleForRow(a.title))}),
-      el("div", {class: "t-meta"}, stateChip(a.state),
+      el("div", {class: "t-meta"}, stateChip(a.state, node => {
+        keepFocus(idSel(".task", a.block.id, ".state"), node);
+        inSpace(a.space, () => cycleState(a.path, a.block, {keepTask: true}));
+      }),
         multiSpace() && a.space ? spaceBadge(a.space) : null, ...chipsFor(a))),
     el("div", {class: "t-act"},
       el("button", {class: "iconbtn", title: "Waiting for",
@@ -4147,6 +4186,7 @@ function parentOf(page, block) {
 
 function focusBlock(id, atEnd = true) {
   requestAnimationFrame(() => {
+    if ($("#modalRoot").firstChild) return;   // a picker opened on the way; it owns the keys
     const node = $(`.blk[data-id="${id}"] .txt`);
     if (!node) return;
     node.focus();
@@ -4170,7 +4210,10 @@ function outlineBlock(path, page, b) {
   line.append(el("button", {
     class: "state " + (b.state || "none"),
     title: b.state ? "Cycle state, then back to a plain note" : "Make this a task",
-    onclick: () => cycleState(path, b),
+    onclick: e => {
+      keepFocus(idSel(".blk", b.id, ".state"), e.currentTarget);
+      cycleState(path, b);
+    },
   }, b.state || "\u00B7"));
 
   const txt = el("div", {
@@ -4221,7 +4264,8 @@ function outlineBlock(path, page, b) {
         touch(path); render(); focusBlock(b.id);
       }
     } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault(); txt.blur(); cycleState(path, b);
+      // Back into the same line afterwards, so ctrl-enter twice means two steps.
+      e.preventDefault(); txt.blur(); cycleState(path, b); focusBlock(b.id);
     } else if (e.key === "Backspace" && txt.textContent === "" && !(b.children || []).length) {
       e.preventDefault();
       const sibs = siblingsOf(page, b), i = sibs.indexOf(b);
@@ -4608,6 +4652,7 @@ function render() {
   $("#hSub").textContent = vis.length > 1 ? vis.join(" + ")
     : state.view === "page" ? state.pagePath
     : state.context && ["today", "context", "next"].includes(state.view) ? "@" + state.context : "";
+  applyRefocus();
 }
 
 /* wiki links are delegated */
@@ -4888,19 +4933,44 @@ function openTaskDetail(path, block, space) {
   const sched = el("input", {type: "date", value: dateIn(blockProp(block, "SCHEDULED")) || ""});
   const dead  = el("input", {type: "date", value: dateIn(blockProp(block, "DEADLINE")) || ""});
 
+  // Picking a state leaves the panel open: moving TODO -> DOING -> WAIT used to
+  // cost one trip through the panel per step, because the first pick closed it.
+  // The last entry is the way back out: stop being a task, keep the words.
   const seg = el("div", {class: "seg"});
-  for (const st of TODO_STATES) {
-    seg.append(el("button", {
-      class: block.state === st ? "on" : "",
-      onclick: () => { closeModal(); setBlockState(path, block, st); },
-    }, st));
+  const stateBtns = [];
+  for (const st of [...TODO_STATES, null]) {
+    const btn = el("button", {
+      title: st ? null : "Keep the text as a plain note",
+      onclick: () => {
+        if ((block.state ?? null) === st) return;
+        setBlockState(path, block, st);
+        syncPanel();                 // the panel outlives the redraw; its badges must keep up
+      },
+    }, st || "Not a task");
+    stateBtns.push([st, btn]);
+    seg.append(btn);
   }
-  // The way back out: stop being a task, keep the words.
-  seg.append(el("button", {
-    class: block.state ? "" : "on",
-    title: "Keep the text as a plain note",
-    onclick: () => { closeModal(); setBlockState(path, block, null); },
-  }, "Not a task"));
+
+  // The trail is the one part of the panel a state change rewrites, so it is
+  // built as a function rather than once.
+  const trail = el("div", {style: "color:var(--fg2);font-size:12.5px;line-height:1.8"});
+  const fillTrail = () => {
+    trail.textContent = "";
+    const age = blockAge(block);
+    trail.append((blockProp(block, "by") ? "Added by " + blockProp(block, "by") : "Added") +
+      (addedDate(block) ? " on " + addedDate(block) : "") +
+      (age != null ? " \u00B7 " + age + " days ago" : ""));
+    const raw = blockProp(block, "done_by");
+    if (raw) {
+      const {who, iso} = splitStamp(raw);
+      trail.append(el("div", {}, "Closed by " + (who || "someone") + (iso ? " \u00B7 " + formatStamp(iso) : "")));
+    }
+  };
+  const syncPanel = () => {
+    for (const [st, btn] of stateBtns) btn.className = (block.state ?? null) === st ? "on" : "";
+    fillTrail();
+  };
+  syncPanel();
 
   const save = () => {
     const val = trim(titleInput.value).replace(/\n/g, " ");
@@ -4931,17 +5001,7 @@ function openTaskDetail(path, block, space) {
         el("div", {class: "field"}, el("label", {}, "Scheduled"), sched),
         el("div", {class: "field"}, el("label", {}, "Deadline"), dead)),
       el("div", {class: "field"}, el("label", {}, "Notes"), notes),
-      el("div", {class: "field"}, el("label", {}, "Trail"),
-        el("div", {style: "color:var(--fg2);font-size:12.5px;line-height:1.8"},
-          (blockProp(block, "by") ? "Added by " + blockProp(block, "by") : "Added") +
-            (addedDate(block) ? " on " + addedDate(block) : "") +
-            (a.age != null ? " \u00B7 " + a.age + " days ago" : ""),
-          (() => {
-            const raw = blockProp(block, "done_by");
-            if (!raw) return null;
-            const {who, iso} = splitStamp(raw);
-            return el("div", {}, "Closed by " + (who || "someone") + (iso ? " \u00B7 " + formatStamp(iso) : ""));
-          })())),
+      el("div", {class: "field"}, el("label", {}, "Trail"), trail),
       el("div", {class: "field"}, el("label", {}, "Source"),
         el("button", {class: "btn ghost sm", onclick: () => { closeModal(); openPage(path); }}, path))),
     foot: [

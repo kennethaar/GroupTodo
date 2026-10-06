@@ -343,6 +343,14 @@ also drops the task-only bookkeeping — `Added::`, `SCHEDULED::`, `DEADLINE::`,
 closed out with an end date and elapsed days when finished — that number drives
 "oldest first" everywhere.
 
+**One step per click, from wherever you are.** The badge on a to-do row is the
+same control: clicking it moves the task on in place — `TODO → DOING → WAIT →
+DONE → TODO`, staying a task, since a list has nowhere to keep a plain note. It
+keeps the keyboard focus afterwards, so `space` repeats the step, and `ctrl-enter`
+in the outline does the same without losing the caret. The action panel no longer
+closes when you choose a state either, so three steps are three clicks rather
+than three trips through the panel.
+
 Already have an `.org` vault? It is detected and converted on request; originals
 untouched.
 
