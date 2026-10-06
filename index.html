@@ -1004,7 +1004,12 @@ function setSync(state, text) {
   const dot = $("#syncDot"), txt = $("#syncTxt");
   if (!dot) return;
   dot.className = "dot " + state;
-  txt.textContent = text;
+  // "browser storage" reads like a destination. It is not a folder, and people
+  // go looking for files that were never written, so say so outright.
+  const onDisk = V.backend && (V.backend.kind === "fs" || V.backend.kind === "http");
+  txt.textContent = (state === "ok" && !onDisk) ? "browser only \u2014 no files" : text;
+  txt.title = onDisk ? "Saving to " + (V.backend.label || "")
+                     : "Nothing in this space is written to disk";
 }
 
 function pagePaths() { return Array.from(V.pages.keys()); }
@@ -1465,7 +1470,10 @@ function openSpaceStorageSetup({firstRun = false} = {}) {
       el("div", {style: "color:var(--fg2);font-size:13px"},
         "A space is a folder you can share on its own. Two spaces can never share a " +
         "folder, and one can never sit inside another — either would put them in the " +
-        "same place, and sharing one would share both. GroupTodo refuses those choices.")));
+        "same place, and sharing one would share both. GroupTodo refuses those choices."),
+      el("div", {style: "color:var(--warn);font-size:12.5px;margin-top:8px"},
+        "Until a space has a folder it lives in this browser only, and nothing it " +
+        "holds appears in your file explorer.")));
 
     const list = el("div", {});
     const draw = () => {
@@ -1477,7 +1485,12 @@ function openSpaceStorageSetup({firstRun = false} = {}) {
             sp.name[0].toUpperCase()),
           el("span", {style: "flex:1"}, sp.name),
           el("span", {class: "d"}, placed ? (sp.label || "folder")
-                                 : sp.kind === "http" ? "server" : "this browser"),
+                                 : sp.kind === "http" ? "server"
+                                 : el("span", {style: "color:var(--warn)"}, "not on disk")),
+          (SERVER_BASE && sp.kind !== "http" && sp.name === Spaces.active)
+            ? el("button", {class: "btn sm ghost", onclick: async () => {
+                closeModal(); await connectServer(SERVER_BASE);
+              }}, "Use this server") : null,
           el("button", {class: "btn sm " + (placed ? "ghost" : "primary"),
             onclick: async () => { if (await assignSpaceFolder(sp.name)) draw(); }},
             placed ? "Change" : "Choose folder")));
@@ -1945,8 +1958,25 @@ function openShareSpace() {
 }
 
 /* ---------- first run and migration ---------- */
+/* Is this page being served by serve.py? If so, that is where files belong, and
+   a space sitting in browser storage instead would mean nothing the person
+   creates ever appears in their folder. */
+let SERVER_BASE = null;
+async function detectServer() {
+  if (SERVER_BASE !== null) return SERVER_BASE;
+  SERVER_BASE = "";
+  if (CAP.served) {
+    try {
+      const r = await fetch("./api/ping", {cache: "no-store"});
+      if (r.ok) SERVER_BASE = location.origin + location.pathname.replace(/\/[^/]*$/, "");
+    } catch (_) {}
+  }
+  return SERVER_BASE;
+}
+
 async function initSpaces() {
   await Spaces.load();
+  await detectServer();
   if (Spaces.list.length) return;
 
   // An existing single vault from before spaces existed becomes one space.
@@ -1954,6 +1984,7 @@ async function initSpaces() {
   try { legacy = await IDB.get("kv", "dirHandle"); } catch (_) {}
   let server = null;
   try { server = localStorage.getItem("gtd.server"); } catch (_) {}
+  if (!server) server = SERVER_BASE;        // served by serve.py: that is the vault
 
   if (legacy) {
     await IDB.set("kv", "dir:Personal", legacy).catch(() => {});

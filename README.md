@@ -103,6 +103,12 @@ behind in browser storage. Browsers without folder access (Safari, Firefox,
 mobile) are told so once and keep each space in its own browser storage, synced
 through its own vault file.
 
+**A space with no folder writes no files.** The sidebar says `browser only - no
+files` rather than something that sounds like a destination, so you are never
+hunting a file explorer for pages that were never written. When the page is
+served by `serve.py`, the first space uses that server automatically and its
+files land in the vault folder straight away.
+
 ### Giving each space its own colour
 
 A space's colour is how you tell its rows apart when several are on screen at
