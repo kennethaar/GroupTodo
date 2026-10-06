@@ -377,6 +377,20 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4p
 .checkline{display:flex;gap:10px;align-items:center;padding:8px 16px;font-size:13.5px}
 .checkline input{width:17px;height:17px;accent-color:var(--accent)}
 
+.coach{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:12px 14px;margin:14px 0 4px;
+}
+.coach-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px}
+.coach-head .iconbtn{margin-left:auto}
+.coach-step{display:flex;align-items:flex-start;gap:10px;padding:5px 0;font-size:13.5px}
+.coach-step.done{color:var(--fg3)}
+.coach-step.done>div>div:first-child{text-decoration:line-through}
+.coach-dot{
+  width:18px;height:18px;border-radius:50%;border:1.6px solid var(--border2);flex:none;
+  display:grid;place-items:center;font-size:11px;color:transparent;margin-top:1px;
+}
+.coach-step.done .coach-dot{background:var(--ok);border-color:var(--ok);color:#06210f}
 .quickadd{
   display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border);
   border-radius:var(--radius);padding:10px 13px;
@@ -2317,7 +2331,7 @@ function ensureJournal(date) {
     ? instantiateTemplate(tpl.path, {title: date, date, created: "[[" + date + "]]"})
     : {props: {title: date, created: "[[" + date + "]]"}, blocks: []};
   putPage(path, page);
-  if (tpl) notify("Journal created from template: " + tpl.name);
+  if (tpl && !isSimple()) notify("Journal created from template: " + tpl.name);
   return path;
 }
 
@@ -2338,6 +2352,7 @@ function setBlockState(path, block, state, opts = {}) {
       stampAuthor(block);
     }
   } else if (state === "DONE" || state === "CANCELLED") {
+    coachMark("tick");
     const me = stampName();
     if (me) setBlockProp(block, "done_by", me + " " + nowStamp());
     const added = addedDate(block);
@@ -3128,10 +3143,33 @@ function setSetting(k, v) { settingsPage().props[k] = v; touch(SETTINGS_PATH); }
    80_NUDGE_ENGINE
    Every GTD nudge the Neovim config fired, as a always-visible strip.
    ============================================================ */
+/* GTD's own vocabulary is the steepest thing here. In simple mode the nudges
+   say what they mean, and the method-purist ones stay quiet until there is
+   enough on the list for them to be about something. */
+const NUDGE_PLAIN = {
+  stuck  : "projects with nothing to do next",
+  loose  : "tasks not attached to anything",
+  verb   : "tasks that don't say what to actually do",
+  ctx    : "tasks with no place to do them",
+  outcome: "projects with no finish line",
+  area   : "projects not under an area",
+  goal   : "goals nobody is working on",
+  wait   : "people to chase",
+  late   : "overdue",
+  stale  : "projects older than 6 months",
+};
+const DEEP_NUDGES = ["verb", "ctx", "area", "goal", "loose", "outcome"];
+
 function computeNudges() {
   const acts = leafActions();
   const n = [];
-  const push = (id, level, label, count, act) => { if (count > 0) n.push({id, level, label, count, act}); };
+  // Below this, a newcomer is being told off about a list they have barely started.
+  const quiet = isSimple() && acts.filter(a => OPEN_STATES[a.state]).length < 6;
+  const push = (id, level, label, count, act) => {
+    if (count <= 0) return;
+    if (quiet && DEEP_NUDGES.includes(id)) return;
+    n.push({id, level, label: isSimple() ? (NUDGE_PLAIN[id] || label) : label, count, act});
+  };
 
   const overdue = acts.filter(a => a.group === "LATE");
   push("late", "danger", "overdue", overdue.length, () => go("agenda"));
@@ -3265,9 +3303,11 @@ const isSimple = () => (PREF.get("mode", "simple")) === "simple";
 function setMode(mode) {
   PREF.set("mode", mode);
   state.view = mode === "simple" ? "today" : "today";
-  notify(mode === "simple"
-    ? "Simple mode: areas, projects, todos, contexts, checklists."
-    : "Advanced mode: journals, outliner, links and backlinks are back.");
+  if (!coachOn()) {
+    notify(mode === "simple"
+      ? "Simple: lists and tasks."
+      : "Advanced: journals, outliner, links and backlinks are back.");
+  }
   render();
 }
 
@@ -3279,7 +3319,7 @@ const NAV_SIMPLE = [
     {id: "agenda",     icon: "☷", label: "Planned",  key: "g a"},
   ]},
   {group: "Structure", items: [
-    {id: "horizons",   icon: "◉", label: "Horizons"},
+    {id: "horizons",   icon: "◉", label: "Big picture"},
     {id: "proj-_",     icon: "_", label: "Cancelled",     status: "_"},
     {id: "proj-0",     icon: "0", label: "Done",          status: "0"},
     {id: "proj-1",     icon: "1", label: "Active",        status: "1"},
@@ -3345,6 +3385,7 @@ function quickAdd(targetPath, opts = {}) {
       page.blocks.push(blk);
       touch(targetPath);
       noteTodoTouched();
+      coachMark("add");
       render();
       // keep typing: re-focus the box that replaced this one
       requestAnimationFrame(() => {
@@ -3355,6 +3396,49 @@ function quickAdd(targetPath, opts = {}) {
     },
   });
   return el("div", {class: "quickadd"}, el("span", {}, "+"), input);
+}
+
+/* ============================================================
+   113b_FIRST_RUN COACH
+   Three steps that tick themselves off as you do them, in the page rather
+   than in front of it. Teaching by doing beats a wall of modals, and it
+   disappears for good once the third one is done.
+   ============================================================ */
+const coachOn = () => PREF.get("coach", "") === "1";
+function coachMark(step) {
+  if (!coachOn()) return;
+  PREF.set("coach." + step, "1");
+}
+const coachDone = step => PREF.get("coach." + step, "") === "1";
+
+function coachStrip() {
+  if (!coachOn()) return null;
+  const onDisk = V.backend && (V.backend.kind === "fs" || V.backend.kind === "http");
+  const steps = [
+    {k: "add",  done: coachDone("add"),  label: "Add your first task",
+     hint: "type it in the box above and press enter"},
+    {k: "tick", done: coachDone("tick"), label: "Tick it off",
+     hint: "click the circle on the left"},
+    {k: "home", done: onDisk,            label: "Give your tasks a home",
+     hint: onDisk ? "" : "right now they live in this browser only",
+     act: () => openSpaceStorageSetup()},
+  ];
+  if (steps.every(x => x.done)) { PREF.set("coach", "0"); return null; }
+
+  const box = el("div", {class: "coach"});
+  box.append(el("div", {class: "coach-head"},
+    el("b", {}, "Getting started"),
+    el("button", {class: "iconbtn", title: "Hide", onclick: () => { PREF.set("coach", "0"); render(); }}, "\u2715")));
+  for (const st of steps) {
+    box.append(el("div", {class: "coach-step" + (st.done ? " done" : "")},
+      el("span", {class: "coach-dot"}, st.done ? "\u2713" : ""),
+      el("div", {},
+        el("div", {}, st.label),
+        st.hint ? el("div", {style: "color:var(--fg3);font-size:12px"}, st.hint) : null),
+      (!st.done && st.act) ? el("button", {class: "btn sm ghost", style: "margin-left:auto",
+        onclick: st.act}, "Choose") : null));
+  }
+  return box;
 }
 
 /* ============================================================
@@ -3758,8 +3842,10 @@ function viewTodos() {
 function viewMyDay() {
   const c = el("div", {class: "wrap"});
   const path = ensureJournal(todayISO());
-  c.append(nudgeBar(), heroCard());
+  const coach = coachStrip();
+  if (coach) c.append(coach);
   c.append(el("div", {class: "section"}, quickAdd(path, {placeholder: "Add a task for today"})));
+  if (!coach) c.append(nudgeBar(), heroCard());
 
   const acts = leafActions();
   const due = acts.filter(a => a.group === "LATE" || a.group === "TODAY");
@@ -3802,6 +3888,15 @@ function navCount(id) {
   }
 }
 
+/* During the first run the sidebar shows four things. The rest appears as soon
+   as the coach is finished, rather than presenting a stranger with a filing
+   system they have not filled in yet. */
+const STARTER_NAV = ["today", "todos", "proj-1", "proj-0"];
+function navVisible(item) {
+  if (!coachOn() || !isSimple()) return true;
+  return STARTER_NAV.includes(item.id);
+}
+
 function renderNav() {
   const sp = Spaces.get(Spaces.active);
   if (sp) {
@@ -3822,6 +3917,7 @@ function renderNav() {
     const box = el("div", {class: "nav-group"});
     if (sec.group) box.append(el("h3", {}, sec.group));
     for (const it of sec.items) {
+      if (!navVisible(it)) continue;
       const active = it.status ? (state.view === "projects" && state.statusCode === it.status)
                                : state.view === it.id;
       const count = navCount(it.id);
@@ -3836,7 +3932,7 @@ function renderNav() {
               : (it.key ? el("span", {class: "key"}, it.key) : null)
       ));
     }
-    nav.append(box);
+    if (box.children.length > (sec.group ? 1 : 0)) nav.append(box);
   }
 }
 
@@ -3882,9 +3978,10 @@ function chipsFor(a) {
   }
   if (a.age != null && a.age > 0) out.push(el("span", {class: "chip age"}, a.age + "d"));
   if (a.by && a.by !== whoAmI()) out.push(el("span", {class: "chip who"}, a.by));
-  if (a.missingVerb && a.state === "TODO")
+  const quietChips = isSimple() && leafActions().filter(x => OPEN_STATES[x.state]).length < 6;
+  if (a.missingVerb && a.state === "TODO" && !quietChips)
     out.push(el("span", {class: "chip miss b", onclick: e => {e.stopPropagation(); openVerbPicker(a.path, a.block);}}, "no verb"));
-  if (a.missingContext && a.state !== "WAIT")
+  if (a.missingContext && a.state !== "WAIT" && !quietChips)
     out.push(el("span", {class: "chip miss b", onclick: e => {e.stopPropagation(); promptAndInsertContext(a.path, a.block);}}, "no context"));
   return out;
 }
@@ -5159,6 +5256,7 @@ function exportMarkdown(paths, {strip = false, fenced = true} = {}) {
 }
 
 function openExportPage(rootPath) {
+  if (!V.pages.has(rootPath)) { notify("That page is not in this space.", "error"); return; }
   const opts = {includeRefs: false, strip: false, fenced: true};
   const manifest = el("div", {});
   const summary = el("div", {style: "color:var(--fg3);font-size:12px;margin-top:8px"});
@@ -5716,36 +5814,83 @@ function openRunChecklist(listPath) {
 /* ============================================================
    142_ONBOARDING -- pick a front door on first run
    ============================================================ */
+/* One screen, then the app. Everything else -- spaces, folders, horizons,
+   contexts -- arrives when it is actually needed. A colleague who just wants a
+   todo list should be typing one within seconds of opening the file. */
 function openOnboarding() {
-  const choose = mode => {
-    closeModal();
+  const begin = (mode, after) => {
     PREF.set("onboarded", todayISO());
     PREF.set("mode", mode);
-    openSpacesWizard();            // separate the parts of your life before anything else
+    PREF.set("coach", "1");
+    for (const sp of Spaces.list) sp.askedStorage = true;   // asked later, in context
+    Spaces.save();
+    closeModal();
+    setMode(mode);
+    if (after) after();
+    else requestAnimationFrame(() => { const i = $(".quickadd input"); if (i) i.focus(); });
   };
+
   modal({
-    center: true, title: "Welcome to GroupTodo",
+    center: true, title: "GroupTodo",
     body: el("div", {},
       el("div", {class: "field"},
-        el("label", {}, "Everything is markdown"),
         el("div", {style: "color:var(--fg2);font-size:13.5px"},
-          "Your tasks are plain .md files you own. Pick how you want to see them — " +
-          "you can switch any time, and the files never change shape.")),
-      el("button", {class: "pick", onclick: () => choose("simple")},
-        el("span", {class: "k"}, "1"),
-        el("span", {}, el("b", {}, "Simple"), el("br"),
+          "A to-do list that is really just plain text files you own. " +
+          "Nothing to sign up for, nothing leaves this device.")),
+      el("button", {class: "pick", onclick: () => begin("simple")},
+        el("span", {class: "k"}, "\u2713"),
+        el("span", {}, el("b", {}, "Start a new list"), el("br"),
           el("span", {style: "color:var(--fg3);font-size:12.5px"},
-            "Areas of focus, projects, todos, contexts, checklists. Like MS To Do."))),
-      el("button", {class: "pick", onclick: () => choose("advanced")},
-        el("span", {class: "k"}, "2"),
-        el("span", {}, el("b", {}, "Advanced"), el("br"),
+            "Straight in. Add your first task."))),
+      el("button", {class: "pick", onclick: () => { closeModal(); openReceiveVault(); }},
+        el("span", {class: "k"}, "\u2193"),
+        el("span", {}, el("b", {}, "Open one I was sent"), el("br"),
           el("span", {style: "color:var(--fg3);font-size:12.5px"},
-            "Daily journals, outliner, [[links]], backlinks, zettel. Like Logseq.")))),
+            "A shared folder, or a vault file from a colleague.")))),
+    foot: [
+      el("button", {class: "btn ghost", onclick: () => begin("advanced", () => openSpacesWizard())},
+        "I use Logseq or org-mode"),
+    ],
     onKey: e => {
-      if (e.key === "1") { choose("simple"); return true; }
-      if (e.key === "2") { choose("advanced"); return true; }
+      if (e.key === "1" || e.key === "Enter") { begin("simple"); return true; }
+      if (e.key === "2") { closeModal(); openReceiveVault(); return true; }
       return false;
     },
+  });
+}
+
+/* The colleague's door: they were handed a folder or a file, not a blank app. */
+function openReceiveVault() {
+  const done = () => {
+    PREF.set("onboarded", todayISO());
+    PREF.set("mode", "simple");
+    for (const sp of Spaces.list) sp.askedStorage = true;
+    Spaces.save();
+  };
+  modal({
+    center: true, title: "Open a vault you were sent",
+    body: el("div", {},
+      el("div", {class: "field"},
+        el("div", {style: "color:var(--fg2);font-size:13.5px"},
+          "Whoever sent it either shared a folder with you, or sent a single " +
+          "markdown file. Either works.")),
+      CAP.dirPicker ? el("button", {class: "pick", onclick: async () => {
+        done(); closeModal();
+        await assignSpaceFolder(Spaces.active);
+      }},
+        el("span", {class: "k"}, "\u25A1"),
+        el("span", {}, el("b", {}, "A shared folder"), el("br"),
+          el("span", {style: "color:var(--fg3);font-size:12.5px"},
+            "From OneDrive, Dropbox or a network drive."))) : null,
+      el("button", {class: "pick", onclick: () => {
+        done(); closeModal();
+        openBundleFromFile(() => { render(); notify("Opened. Everything in it is yours now too."); });
+      }},
+        el("span", {class: "k"}, "\u2193"),
+        el("span", {}, el("b", {}, "A vault file"), el("br"),
+          el("span", {style: "color:var(--fg3);font-size:12.5px"},
+            "The .md file they sent you.")))),
+    foot: [el("button", {class: "btn ghost", onclick: () => { closeModal(); openOnboarding(); }}, "Back")],
   });
 }
 
@@ -6033,27 +6178,8 @@ async function seedIfEmpty() {
   if (PREF.get("welcomed")) { scanVerbs(); return; }
   PREF.set("welcomed", todayISO());
 
-  const proj = join(DIRS.active, "Set up GroupTodo.md");
-  putPage(proj, {
-    props: {title: "Set up GroupTodo", status: STATUS_TEXT["1"],
-            outcome: "GroupTodo set up with my own horizons, contexts and a vault that syncs",
-            created: todayStamp(), reviewed: todayStamp()},
-    blocks: [
-      newBlock({state: "TODO", title: "Define my horizons of focus", props: {Added: todayStamp()}}),
-      newBlock({state: "TODO", title: "Set up my own contexts", props: {Added: todayStamp()}}),
-      newBlock({state: "TODO", title: "Connect a vault folder or a synced vault file", props: {Added: todayStamp()}}),
-    ],
-  });
-
-  const j = journalPath();
-  putPage(j, {
-    props: {title: todayISO(), created: todayStamp()},
-    blocks: [
-      newBlock({title: "Welcome. Capture anything here with the + button, then clarify it."}),
-      newBlock({state: "TODO", title: "Draft the three things that would make today good [[1/Set up GroupTodo]]",
-                props: {Added: todayStamp()}}),
-    ],
-  });
+  // No demo project and no demo journal: the first-run coach teaches this now,
+  // and an empty list is less work to understand than someone else's tasks.
   scanVerbs();
 }
 
@@ -6236,14 +6362,19 @@ async function pickBackend() {
 }
 
 function afterFirstRun() {
+  // Day one should not open with a dashboard of things to weed.
+  const started = dateIn(getSetting("started"));
+  const fresh = !started || started === todayISO();
   const last = getSetting("last_morning");
-  if (last !== todayISO()) {
+  if (!fresh && last !== todayISO()) {
     setSetting("last_morning", todayISO());
     setTimeout(morningRoutine, 1200);
   }
-  notify(isSimple()
-    ? "Tip: press c to capture, / to search, ? for keys."
-    : "Keep fresh: g M morning \u00B7 g x context \u00B7 g d re-surface \u00B7 g r review \u00B7 ? keys");
+  if (!isSimple()) {
+    notify("Keep fresh: g M morning \u00B7 g x context \u00B7 g d re-surface \u00B7 g r review \u00B7 ? keys");
+  } else if (!coachOn()) {
+    notify("Tip: press c to capture, / to search, ? for keys.");
+  }
 }
 
 (async function init() {

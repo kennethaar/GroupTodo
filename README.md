@@ -15,6 +15,14 @@ Two front doors over the same files:
 
 Switch any time from the sidebar. The markdown on disk is identical either way.
 
+**First run is one screen.** *Start a new list* puts you straight in with the
+task box focused; *Open one I was sent* takes a colleague's shared folder or
+vault file. A three-step strip in the page — add a task, tick it off, give your
+tasks a home — ticks itself off as you do each one and then disappears. While it
+is running the sidebar shows four entries, not thirteen, and GTD's own
+vocabulary stays quiet until there are at least six open tasks for it to be
+about. Nothing is seeded: no demo project, no demo tasks.
+
 It began as a Neovim + org-mode + org-roam config; the status directories, the
 Phys-Viz verb rule, the context links, the age tracking and the morning/weekly
 rituals all survive the move.
