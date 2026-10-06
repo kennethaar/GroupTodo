@@ -172,6 +172,14 @@ header.top .burger{display:none}
   font-size:12px;font-weight:650;letter-spacing:.7px;text-transform:uppercase;color:var(--fg3);
 }
 .section>h3 .n{background:var(--bg3);border-radius:20px;padding:0 7px;font-size:11px;color:var(--fg2)}
+
+/* Quiet sections: background material. They are here when you go looking for
+   them, and they stay out of the way of the thing you are meant to act on. */
+.section.quiet{margin-top:28px;opacity:.55;transition:opacity .15s ease}
+.section.quiet:hover,.section.quiet:focus-within{opacity:1}
+.section.quiet>h3{font-weight:550;letter-spacing:.6px;color:var(--fg3)}
+.section.quiet>h3 .n{background:transparent;padding:0 2px;color:var(--fg3)}
+.section.quiet>.card{background:transparent;border-style:dashed}
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
 .empty{padding:16px;color:var(--fg3);font-size:13px;text-align:center}
 
@@ -3881,21 +3889,6 @@ function viewMyDay() {
   const due = acts.filter(a => a.group === "LATE" || a.group === "TODAY");
   if (due.length) c.append(section("Due", due.length, taskCard(due)));
 
-  if (state.context) {
-    const surfaced = oldestTodosForContext(state.context);
-    c.append(section("Oldest in @" + state.context, surfaced.length,
-      taskCard(surfaced, "Nothing open in this context."),
-      el("button", {class: "btn sm ghost", style: "margin-left:auto",
-                    onclick: () => openContextPicker("Switch context", surfaceContext)}, "switch")));
-  }
-
-  const today = flattenBlocks(getPage(path).blocks)
-    .filter(b => OPEN_STATES[b.state])
-    .map(b => ({path, block: b, state: b.state, title: b.title, context: contextOf(b.title),
-                due: dueDate(b), age: blockAge(b), added: addedDate(b),
-                missingVerb: !startsWithVerb(b.title), missingContext: !hasContextLink(b.title)}));
-  c.append(section("Captured today", today.length, taskCard(today, "Nothing captured yet today.")));
-
   // A ticked task should not simply vanish: leave it here so the person can see
   // what they got done, and un-tick it if they were too quick.
   const closed = flattenBlocks(getPage(path).blocks)
@@ -3905,6 +3898,26 @@ function viewMyDay() {
                 by: blockProp(b, "by"), doneBy: blockProp(b, "done_by"),
                 missingVerb: !startsWithVerb(b.title), missingContext: !hasContextLink(b.title)}));
   if (closed.length) c.append(section("Done today", closed.length, taskCard(closed)));
+
+  // Below the fold: reference material, not the day's work. Both sections are
+  // dropped entirely when there is nothing in them -- an empty box on the main
+  // screen reads as a chore you have not done.
+  const surfaced = state.context ? oldestTodosForContext(state.context) : [];
+  if (surfaced.length) {
+    c.append(section("Oldest in @" + state.context, surfaced.length, taskCard(surfaced),
+      el("button", {class: "btn sm ghost", style: "margin-left:auto",
+                    onclick: () => openContextPicker("Switch context", surfaceContext)}, "switch"),
+      "quiet"));
+  }
+
+  const today = flattenBlocks(getPage(path).blocks)
+    .filter(b => OPEN_STATES[b.state])
+    .map(b => ({path, block: b, state: b.state, title: b.title, context: contextOf(b.title),
+                due: dueDate(b), age: blockAge(b), added: addedDate(b),
+                missingVerb: !startsWithVerb(b.title), missingContext: !hasContextLink(b.title)}));
+  // While the coach is up this is the only thing on screen and the step it is
+  // asking for, so it keeps its full weight until the newcomer is through.
+  if (today.length) c.append(section("Captured today", today.length, taskCard(today), null, coach ? null : "quiet"));
   return c;
 }
 
@@ -4085,8 +4098,8 @@ function taskCard(actions, emptyText) {
   return card;
 }
 
-function section(title, count, node, extra) {
-  return el("div", {class: "section"},
+function section(title, count, node, extra, cls) {
+  return el("div", {class: cls ? "section " + cls : "section"},
     el("h3", {}, title, count != null ? el("span", {class: "n"}, String(count)) : null, extra || null),
     node);
 }
@@ -4242,20 +4255,20 @@ function viewToday() {
   const c = el("div", {class: "wrap"});
   c.append(nudgeBar(), heroCard());
 
-  const surfaced = state.context ? oldestTodosForContext(state.context) : [];
-  if (state.context) {
-    c.append(section(
-      "Oldest in @" + state.context, surfaced.length,
-      taskCard(surfaced, "No open actions in this context — pick another or capture one."),
-      el("button", {class: "btn sm ghost", style: "margin-left:auto", onclick: () => openContextPicker("Switch context", ctx => surfaceContext(ctx))}, "switch")
-    ));
-  }
-
   const due = acts.filter(a => a.group === "LATE" || a.group === "TODAY");
   if (due.length) c.append(section("Due", due.length, taskCard(due)));
 
   c.append(section("Today's journal", null, outlineFor(path),
     el("span", {style: "margin-left:auto;font-weight:400;text-transform:none;letter-spacing:0"}, humanDate(todayISO()))));
+
+  // The journal is the point of this screen. The context surface sits under it,
+  // faded, and only when it actually has something to offer.
+  const surfaced = state.context ? oldestTodosForContext(state.context) : [];
+  if (surfaced.length) {
+    c.append(section("Oldest in @" + state.context, surfaced.length, taskCard(surfaced),
+      el("button", {class: "btn sm ghost", style: "margin-left:auto", onclick: () => openContextPicker("Switch context", ctx => surfaceContext(ctx))}, "switch"),
+      "quiet"));
+  }
 
   const prev = journalPath(shiftISO(todayISO(), -1));
   c.append(el("div", {class: "section", style: "display:flex;gap:8px"},
