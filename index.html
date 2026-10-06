@@ -1136,12 +1136,15 @@ async function doFlush() {
         if (page) await rec.backend.write(p, serializePage(page));
       }
       for (const p of gone) await rec.backend.remove(p).catch(() => {});
+      await clearPending(rec, dirty);
       V.error = null;
     } catch (e) {
       dirty.forEach(p => rec.dirty.add(p));
+      await stashPending(rec, dirty);          // keep it, even if the tab closes
       V.error = e;
-      setSync("err", "save failed");
-      notify(`Save failed in ${rec.name}: ` + e.message, "error");
+      setSync("warn", "saved on device");
+      notify(`Cannot reach ${rec.name}'s storage, so this is saved on this device ` +
+             `and will sync when it is back.`, "warn");
       V.syncing = false;
       return;
     }
@@ -1156,12 +1159,63 @@ window.addEventListener("beforeunload", e => {
   if (V.dirty.size) { flush(); e.preventDefault(); e.returnValue = ""; }
 });
 
+/* Write-behind safety net. If the backend refuses a save -- the sync server
+   stopped, which on Android means Android killed Termux -- the page is also
+   written into this device's own storage under a pending: key. It is read back
+   on the next load and re-queued, so closing the tab while the server is down
+   does not lose the work. */
+const pendingKey = (space, path) => "pending:" + space + "|" + path;
+
+async function stashPending(rec, paths) {
+  try {
+    for (const path of paths) {
+      const page = rec.pages.get(path);
+      if (page) await IDB.set("files", pendingKey(rec.name, path), serializePage(page));
+    }
+  } catch (_) { /* nothing left to fall back to */ }
+}
+
+async function clearPending(rec, paths) {
+  try {
+    for (const path of paths) await IDB.del("files", pendingKey(rec.name, path));
+  } catch (_) {}
+}
+
+async function applyPending(rec) {
+  let n = 0;
+  try {
+    const pre = pendingKey(rec.name, "");
+    for (const key of await IDB.keys("files")) {
+      const k = String(key);
+      if (!k.startsWith(pre)) continue;
+      const path = k.slice(pre.length);
+      const text = await IDB.get("files", k);
+      if (!text) continue;
+      const page = parsePage(text);
+      const local = rec.pages.get(path);
+      // The stash only exists because it never reached the backend, so it is
+      // at least as new as whatever the backend has.
+      if (!local || (page.props?.updated || "") >= (local.props?.updated || "")) {
+        rec.pages.set(path, page);
+        rec.dirty.add(path);
+        n++;
+      }
+    }
+  } catch (_) {}
+  return n;
+}
+
 async function readInto(record) {
   const files = await record.backend.list();
   record.pages.clear(); record.raw.clear();
   for (const [path, text] of files) {
     if (/\.org$/i.test(path)) { record.raw.set(path, text); continue; }
     record.pages.set(path, parsePage(text));
+  }
+  const recovered = await applyPending(record);
+  if (recovered) {
+    notify(recovered + " unsaved change(s) recovered from this device.", "warn");
+    scheduleFlush();
   }
   return record;
 }

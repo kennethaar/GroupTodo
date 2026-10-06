@@ -269,6 +269,35 @@ python3 serve.py --vault ~/storage/shared/Documents/OrgMode
 Same `.md` files Neovim opens. No auth — keep it on `127.0.0.1` unless you trust
 the network.
 
+**On Android, in full:**
+
+```sh
+# Termux from F-Droid, NOT the Play Store version (that one is abandoned)
+pkg update && pkg install python git
+termux-setup-storage                 # once: grants ~/storage/shared
+git clone https://github.com/kennethaar/GroupTodo ~/GroupTodo
+cd ~/GroupTodo
+termux-wake-lock                     # stop Android suspending the server
+python3 serve.py --vault ~/storage/shared/Documents/OrgMode
+```
+
+Then open Chrome at `http://127.0.0.1:8777/` and *Add to Home screen*.
+
+`serve.py` and `index.html` must sit in the same folder — the server serves the
+page from its own directory. The vault is separate and can be anywhere.
+
+Android kills background apps, and if Termux dies the server goes with it. Two
+consequences, one harmless and one worth knowing:
+
+- **Your work is safe.** A save that cannot reach the server is written into the
+  browser's own storage instead, the status line says `saved on device`, and it
+  is replayed to the vault the next time the server answers. Verified by killing
+  the server mid-edit: nothing reached disk, the change survived, and it landed
+  in `journals/` once the server came back.
+- **You cannot open the app while Termux is down**, because Termux is what serves
+  the page. `termux-wake-lock` and exempting Termux from battery optimisation are
+  worth doing.
+
 ---
 
 ## Corporate environments
