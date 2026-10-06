@@ -1327,6 +1327,186 @@ const Spaces = {
   },
 };
 
+/* ============================================================
+   23_SPACE_FOLDERS
+   Every space gets its own folder, and that is enforced rather than
+   advised. Two spaces in one folder would put Work and Private in the
+   same place -- share that folder and you share both. One space nested
+   inside another is worse still: the outer space walks its whole tree, so
+   it would read and sync the inner space's files as if they were its own.
+
+   The File System Access API gives no paths, so identity is tested with
+   isSameEntry() and containment with resolve(), which returns the path
+   segments when a handle really is a descendant.
+   ============================================================ */
+async function storedHandle(spaceName) {
+  try { return (await IDB.get("kv", "dir:" + spaceName)) || null; } catch (_) { return null; }
+}
+
+/* Returns {space, how} when this folder cannot be used, else null. */
+async function folderConflict(handle, exceptSpace) {
+  for (const sp of Spaces.list) {
+    if (sp.name === exceptSpace) continue;
+    if (sp.kind !== "fs") continue;
+    const other = await storedHandle(sp.name);
+    if (!other) continue;
+    try {
+      if (await other.isSameEntry(handle)) return {space: sp.name, how: "same"};
+      if (await other.resolve(handle))     return {space: sp.name, how: "inside"};
+      if (await handle.resolve(other))     return {space: sp.name, how: "contains"};
+    } catch (_) { /* an unreadable handle cannot be proven safe, but nor is it a conflict */ }
+  }
+  return null;
+}
+
+function conflictMessage(name, c) {
+  if (c.how === "same")
+    return `That folder already holds ${c.space}. Two spaces in one folder would put them in the same place — share it and you share both. Pick a different folder for ${name}.`;
+  if (c.how === "inside")
+    return `That folder is inside ${c.space}'s folder. ${c.space} reads everything beneath it, so it would swallow ${name}. Pick a folder outside it.`;
+  return `That folder contains ${c.space}'s folder. ${name} would read and sync ${c.space}'s files as its own. Pick a folder that does not contain it.`;
+}
+
+/* Pick a folder for one space, refusing anything that collides. */
+async function assignSpaceFolder(name) {
+  if (!CAP.dirPicker) {
+    notify("This browser cannot open folders.", "warn");
+    return false;
+  }
+  const sp = Spaces.get(name);
+  if (!sp) return false;
+  let handle;
+  try {
+    handle = await window.showDirectoryPicker({mode: "readwrite", id: "gtd-space-" + name});
+  } catch (e) {
+    if (e.name !== "AbortError") notify("Could not open that folder: " + e.message, "error");
+    return false;
+  }
+  const clash = await folderConflict(handle, name);
+  if (clash) { notify(conflictMessage(name, clash), "error"); return false; }
+
+  // Whatever the space already holds has to come with it, or moving a space
+  // into a folder would look exactly like losing everything in it.
+  let carried = new Map();
+  try {
+    const prev = LOADED.get(name) || await loadSpaceRecord(name);
+    if (prev) carried = new Map(prev.pages);
+  } catch (_) {}
+
+  await IDB.set("kv", "dir:" + name, handle);
+  sp.kind = "fs"; sp.label = handle.name;
+  delete sp.legacyFlat; delete sp.placeholder;
+  sp.askedStorage = true;
+  await Spaces.save();
+
+  const rec = newRecord(name, Backends.fs(handle));
+  await readInto(rec);                              // what the folder already has wins
+  let moved = 0;
+  for (const [path, page] of carried) {
+    if (rec.pages.has(path)) continue;
+    rec.pages.set(path, page);
+    rec.dirty.add(path);
+    moved++;
+  }
+  LOADED.set(name, rec);
+
+  if (name === Spaces.active) {
+    bindActive(name);
+    migrateVault();
+    await seedIfEmpty();
+    scanVerbs();
+    $("#vaultName").textContent = handle.name;
+  }
+  await flush();
+  notify(name + " now lives in \u201C" + handle.name + "\u201D" +
+         (moved ? ", with " + moved + " page" + (moved === 1 ? "" : "s") + " moved in." : "."));
+  render();
+  return true;
+}
+
+/* Warn if an older setup already has two spaces sharing or nesting. */
+async function checkFolderConflicts() {
+  const fs = Spaces.list.filter(s => s.kind === "fs");
+  for (let i = 0; i < fs.length; i++) {
+    const a = await storedHandle(fs[i].name);
+    if (!a) continue;
+    for (let j = i + 1; j < fs.length; j++) {
+      const b = await storedHandle(fs[j].name);
+      if (!b) continue;
+      try {
+        if (await a.isSameEntry(b))
+          notify(`${fs[i].name} and ${fs[j].name} share one folder. Give one of them its own.`, "error");
+        else if (await a.resolve(b) || await b.resolve(a))
+          notify(`${fs[i].name} and ${fs[j].name} are nested folders. One is reading the other's files.`, "error");
+      } catch (_) {}
+    }
+  }
+}
+
+/* ---------- the startup question ---------- */
+function spacesNeedingStorage() {
+  return Spaces.list.filter(sp => sp.kind === "local" && !sp.askedStorage);
+}
+
+function openSpaceStorageSetup({firstRun = false} = {}) {
+  const body = el("div", {});
+
+  if (!CAP.dirPicker) {
+    body.append(el("div", {class: "field"},
+      el("label", {}, "This browser cannot open folders"),
+      el("div", {style: "color:var(--fg2);font-size:13px"},
+        "Safari, Firefox and the mobile browsers have no folder access, so each space " +
+        "lives in this browser's own storage. They are still completely separate from " +
+        "each other, and each one syncs through its own vault file — Vault & sync → " +
+        "Save vault file. On desktop Chrome or Edge you can give each space a real folder.")));
+  } else {
+    body.append(el("div", {class: "field"},
+      el("label", {}, "One folder each"),
+      el("div", {style: "color:var(--fg2);font-size:13px"},
+        "A space is a folder you can share on its own. Two spaces can never share a " +
+        "folder, and one can never sit inside another — either would put them in the " +
+        "same place, and sharing one would share both. GroupTodo refuses those choices.")));
+
+    const list = el("div", {});
+    const draw = () => {
+      list.textContent = "";
+      for (const sp of Spaces.list) {
+        const placed = sp.kind === "fs";
+        list.append(el("div", {class: "pick", style: "cursor:default"},
+          el("span", {class: "k", style: "background:" + sp.color + ";color:#06101f"},
+            sp.name[0].toUpperCase()),
+          el("span", {style: "flex:1"}, sp.name),
+          el("span", {class: "d"}, placed ? (sp.label || "folder")
+                                 : sp.kind === "http" ? "server" : "this browser"),
+          el("button", {class: "btn sm " + (placed ? "ghost" : "primary"),
+            onclick: async () => { if (await assignSpaceFolder(sp.name)) draw(); }},
+            placed ? "Change" : "Choose folder")));
+      }
+    };
+    draw();
+    body.append(list);
+  }
+
+  // Whichever way this closes, the day's routine still has to start.
+  const done = async () => {
+    for (const sp of Spaces.list) sp.askedStorage = true;
+    await Spaces.save();
+    closeModal();
+    afterFirstRun();
+  };
+
+  modal({
+    center: true,
+    title: firstRun ? "Where does each space live?" : "Space folders",
+    body,
+    foot: [
+      el("button", {class: "btn ghost", onclick: () => done()}, CAP.dirPicker ? "Not now" : "OK"),
+      el("div", {style: "flex:1"}),
+      el("button", {class: "btn primary", onclick: () => done()}, "Done"),
+    ],
+  });
+}
+
 /* ---------- which spaces are on screen right now ----------
    The active space is where new things land; any number of others can be
    shown alongside it. Toggling is per device, never written into a space,
@@ -1445,8 +1625,11 @@ async function createSpace(name, kind, color) {
     else {
       try {
         const h = await window.showDirectoryPicker({mode: "readwrite", id: "gtd-space-" + clean});
+        const clash = await folderConflict(h, clean);
+        if (clash) { notify(conflictMessage(clean, clash), "error"); return null; }
         await IDB.set("kv", "dir:" + clean, h);
         sp.label = h.name;
+        sp.askedStorage = true;
       } catch (e) {
         if (e.name === "AbortError") return null;
         notify("Could not open that folder: " + e.message, "error");
@@ -1694,6 +1877,7 @@ function openSpaceSwitcher() {
     hint: visible.size > 1 ? visible.size + " shown together" : "one space at a time",
     body,
     foot: [
+      el("button", {class: "btn ghost", onclick: () => { closeModal(); openSpaceStorageSetup(); }}, "Folders"),
       el("button", {class: "btn ghost", onclick: () => { closeModal(); openShareSpace(); }}, "Share current"),
       visible.size > 1 ? el("button", {class: "btn ghost", onclick: () => {
         setVisibleSpaces([Spaces.active]);
@@ -4869,11 +5053,13 @@ async function finishSpaceSetup(names) {
     }
     for (const n of names) await createSpace(n, "local");
     await openSpace(Spaces.list[0].name);
-    notify("Created " + names.length + " space" + (names.length > 1 ? "s" : "") +
-           ". Give each one its own folder in Vault & sync.");
+    notify("Created " + names.length + " space" + (names.length > 1 ? "s" : "") + ".");
+    render();
+    openSpaceStorageSetup({firstRun: true});     // one folder each, asked straight away
+    return;
   }
   render();
-  afterFirstRun();
+  openSpaceStorageSetup({firstRun: true});
 }
 
 /* ============================================================
@@ -5356,23 +5542,17 @@ async function connectFolder() {
     notify("This browser has no folder access. Use a vault file or the sync server instead.", "warn");
     return;
   }
-  const sp = Spaces.get(Spaces.active);
-  try {
-    const handle = await window.showDirectoryPicker({mode: "readwrite", id: "gtd-space-" + Spaces.active});
-    await IDB.set("kv", "dir:" + Spaces.active, handle);
-    sp.kind = "fs"; sp.label = handle.name; delete sp.legacyFlat; delete sp.placeholder;
-    await Spaces.save();
-    await loadFromBackend(Backends.fs(handle));
-    await seedIfEmpty();
-    scanVerbs(); closeModal(); render();
-    notify(sp.name + " now lives in the folder \"" + handle.name + "\".");
-  } catch (e) {
-    if (e.name !== "AbortError") notify("Could not open folder: " + e.message, "error");
-  }
+  closeModal();
+  await assignSpaceFolder(Spaces.active);
 }
 
 async function connectServer(base) {
   const sp = Spaces.get(Spaces.active);
+  const taken = Spaces.list.find(x => x.name !== Spaces.active && x.kind === "http" && x.server === trim(base));
+  if (taken) {
+    notify(`That server already holds ${taken.name}. Give ${sp.name} its own.`, "error");
+    return;
+  }
   try {
     const b = Backends.http(base);
     await loadFromBackend(b);
@@ -6066,6 +6246,9 @@ function afterFirstRun() {
   scheduleContextPrompts();
 
   if (!PREF.get("onboarded")) { openOnboarding(); return; }
+
+  checkFolderConflicts();
+  if (spacesNeedingStorage().length) { openSpaceStorageSetup({firstRun: false}); return; }
   afterFirstRun();
 })();
 </script>

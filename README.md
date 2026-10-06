@@ -80,9 +80,28 @@ The separation is a folder and file boundary, not a filter in the UI that someon
 could switch off. Verified by test: an export of Work contains no Private content
 and vice versa.
 
-Set them up in the wizard on first run, or add one any time from the space
-switcher at the top of the sidebar. Give each space its own folder in
-**Vault & sync**; until you do, it lives in browser storage.
+Set them up in the wizard on first run. GroupTodo then asks straight away **where
+each space lives**, and asks again at startup for any space that still has no
+folder. Reachable later from the space switcher → *Folders*.
+
+**One folder each, enforced.** Two spaces can never share a folder, and one can
+never sit inside another. Both are refused with an explanation, not a warning you
+can click past:
+
+- the same folder would put Work and Private in one place — share it and you
+  share both;
+- a nested folder is worse, because the outer space walks its whole tree and
+  would read and sync the inner space's files as its own.
+
+Identity and containment are tested with the File System Access API's
+`isSameEntry()` and `resolve()`, so it holds even though the browser never
+reveals a path. A vault that already has an overlapping pair is reported at
+startup. Two spaces also cannot point at the same sync server.
+
+Giving a space a folder **moves what it already holds into it**; nothing is left
+behind in browser storage. Browsers without folder access (Safari, Firefox,
+mobile) are told so once and keep each space in its own browser storage, synced
+through its own vault file.
 
 ### Giving each space its own colour
 
