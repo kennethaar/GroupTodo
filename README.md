@@ -331,7 +331,15 @@ updated:: 2026-10-05T09:12:00Z
 ```
 
 States: `TODO`, `DOING`, `WAIT`, `DONE`, `CANCELLED` (`WAITING`/`CANCELED`/`NOW`/
-`LATER` read as aliases). `Added::` is stamped when something becomes a TODO and
+`LATER` read as aliases), or **no state at all** — an ordinary note.
+
+Nothing is one-way. The state badge in the outline cycles
+`TODO → DOING → WAIT → DONE → note → TODO`, so a line made a task by accident
+goes back to being a note without retyping it, and a note becomes a task by
+clicking the same spot. In simple mode the action detail has a **Not a task**
+button, and a note on a project page opens the same panel. Dropping the state
+also drops the task-only bookkeeping — `Added::`, `SCHEDULED::`, `DEADLINE::`,
+`CLOSED::`, `done_by::` — so the markdown reads as the plain note it now is. `Added::` is stamped when something becomes a TODO and
 closed out with an end date and elapsed days when finished — that number drives
 "oldest first" everywhere.
 

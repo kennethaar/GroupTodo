@@ -298,6 +298,11 @@ header.top .burger{display:none}
 .state.WAIT{background:rgba(224,176,80,.16);color:var(--wait)}
 .state.DONE{background:rgba(79,191,123,.14);color:var(--done)}
 .state.CANCELLED{background:var(--bg4);color:var(--cancel)}
+.state.none{
+  background:transparent;color:var(--fg3);opacity:0;border:1px dashed var(--border2);
+  padding:0 4px;transition:opacity .12s;
+}
+.blk>.line:hover .state.none,.state.none:focus{opacity:1}
 .tag{color:var(--ctx);cursor:pointer}
 .tag:hover{text-decoration:underline}
 .wikilink{color:var(--accent);cursor:pointer}
@@ -2358,6 +2363,17 @@ function setBlockState(path, block, state, opts = {}) {
   const prev = block.state;
   block.state = state;
 
+  if (!state) {
+    // No longer a task: drop the bookkeeping that only a task has, so the
+    // markdown reads as the plain note it now is.
+    for (const k of Object.keys(block.props || {})) {
+      if (/^(added|closed|done_by|scheduled|deadline)$/i.test(k)) delete block.props[k];
+    }
+    touch(path);
+    render();
+    return;
+  }
+
   if (state === "TODO" || state === "DOING") {
     if (path !== journalPath() && !addedDate(block)) {
       setBlockProp(block, "Added", "[[" + todayISO() + "]]");
@@ -2393,9 +2409,12 @@ function setBlockState(path, block, state, opts = {}) {
   render();
 }
 
+/* The cycle comes back round to "not a task at all", so anything made a todo by
+   accident -- or a line that stopped being one -- can be turned back into an
+   ordinary note without retyping it. */
 function cycleState(path, block) {
-  const order = ["TODO", "DOING", "WAIT", "DONE"];
-  const i = order.indexOf(block.state);
+  const order = ["TODO", "DOING", "WAIT", "DONE", null];
+  const i = order.indexOf(block.state ?? null);
   setBlockState(path, block, order[(i + 1) % order.length]);
 }
 
@@ -4019,7 +4038,8 @@ function heroCard() {
 }
 
 function stateChip(st) {
-  return el("span", {class: "state " + (st || "")}, st || "");
+  if (!st) return null;              // a plain note carries no badge
+  return el("span", {class: "state " + st}, st);
 }
 
 function chipsFor(a) {
@@ -4145,12 +4165,13 @@ function outlineBlock(path, page, b) {
     class: "bullet", title: kids.length ? "Collapse / expand" : "",
     onclick: () => { if (kids.length) { b.collapsed = !b.collapsed; render(); } },
   }));
-  if (b.state) {
-    line.append(el("button", {
-      class: "state " + b.state, title: "Cycle state",
-      onclick: () => cycleState(path, b),
-    }, b.state));
-  }
+  // Always a target here, so a plain note can become a task and a task can stop
+  // being one, both by clicking the same place.
+  line.append(el("button", {
+    class: "state " + (b.state || "none"),
+    title: b.state ? "Cycle state, then back to a plain note" : "Make this a task",
+    onclick: () => cycleState(path, b),
+  }, b.state || "\u00B7"));
 
   const txt = el("div", {
     class: "txt", contenteditable: "true", spellcheck: "false",
@@ -4473,7 +4494,10 @@ function viewPage() {
     const notes = page.blocks.filter(b => !b.state && trim(b.title));
     if (notes.length) {
       const card = el("div", {class: "card"});
-      for (const b of notes) card.append(el("div", {class: "dash-item", html: renderInline(b.title)}));
+      for (const b of notes) {
+        card.append(el("button", {class: "dash-item", title: "Open \u2014 you can make this a task",
+          onclick: () => openTaskDetail(path, b)}, el("span", {html: renderInline(b.title)})));
+      }
       c.append(section("Notes", notes.length, card));
     }
   } else {
@@ -4871,6 +4895,12 @@ function openTaskDetail(path, block, space) {
       onclick: () => { closeModal(); setBlockState(path, block, st); },
     }, st));
   }
+  // The way back out: stop being a task, keep the words.
+  seg.append(el("button", {
+    class: block.state ? "" : "on",
+    title: "Keep the text as a plain note",
+    onclick: () => { closeModal(); setBlockState(path, block, null); },
+  }, "Not a task"));
 
   const save = () => {
     const val = trim(titleInput.value).replace(/\n/g, " ");
