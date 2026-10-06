@@ -676,6 +676,7 @@ const CFG = {
   waitFollowUpDays : 14,     // nudge to chase a WAIT item
   idleNudgeMinutes : 30,     // 30+ min idle -> nudge
   quietUntilTasks  : 6,      // simple mode: no GTD hygiene talk below this
+  undoStateMinutes : 5,      // grace period to cycle back without losing the dates
   weedMinProjects  : 5,      // weeding is for a garden, not a window box
   weedMinTodos     : 20,
   agendaDays       : 14,
@@ -2386,19 +2387,58 @@ function ensureJournal(date) {
      -> DONE : close out the Added line with an end date + elapsed days,
                then check whether the project just ran out of next actions
    ============================================================ */
+/* Dropping the state strips the task's dates out of the markdown, which is right
+   for a note but unforgiving if the cycle went one click too far. The stripped
+   properties are held here, in memory only, long enough to click back. */
+const DEMOTED = new WeakMap();
+const TASK_PROPS = /^(added|closed|done_by|scheduled|deadline)$/i;
+const CLOSED_PROPS = /^(closed|done_by)$/i;
+
 function setBlockState(path, block, state, opts = {}) {
   const prev = block.state;
   block.state = state;
 
   if (!state) {
     // No longer a task: drop the bookkeeping that only a task has, so the
-    // markdown reads as the plain note it now is.
+    // markdown reads as the plain note it now is -- but remember it briefly.
+    const kept = {};
     for (const k of Object.keys(block.props || {})) {
-      if (/^(added|closed|done_by|scheduled|deadline)$/i.test(k)) delete block.props[k];
+      if (TASK_PROPS.test(k)) { kept[k] = block.props[k]; delete block.props[k]; }
     }
+    if (Object.keys(kept).length) DEMOTED.set(block, {props: kept, at: Date.now()});
     touch(path);
     render();
     return;
+  }
+
+  if (!prev) {
+    // Becoming a task again. If that happened within the grace period, put the
+    // original dates back rather than stamping today's.
+    const stash = DEMOTED.get(block);
+    if (stash && Date.now() - stash.at < CFG.undoStateMinutes * 60000) {
+      const closing = state === "DONE" || state === "CANCELLED";
+      let restored = 0;
+      for (const [k, v] of Object.entries(stash.props)) {
+        if (!closing && CLOSED_PROPS.test(k)) continue;   // a TODO has not been closed by anyone
+        if (block.props[k] == null) { block.props[k] = v; restored++; }
+      }
+      DEMOTED.delete(block);
+      if (restored) notify("Back to a task, with its original dates.");
+    }
+  }
+
+  if (OPEN_STATES[state]) {
+    // Re-opening something: it is no longer closed, so the closing stamps go.
+    // (This also catches a plain un-tick, which used to leave a TODO claiming
+    // it had been finished.)
+    const raw = blockProp(block, "Added");
+    if (raw) {
+      const reopened = raw.replace(/\s*-\s*\[\[\d{4}-\d{2}-\d{2}\]\]\s*=\s*-?\d+\s*days?\s*$/, "");
+      if (reopened !== raw) setBlockProp(block, "Added", trim(reopened));
+    }
+    for (const k of Object.keys(block.props || {})) {
+      if (CLOSED_PROPS.test(k)) delete block.props[k];
+    }
   }
 
   if (state === "TODO" || state === "DOING") {

@@ -339,7 +339,15 @@ goes back to being a note without retyping it, and a note becomes a task by
 clicking the same spot. In simple mode the action detail has a **Not a task**
 button, and a note on a project page opens the same panel. Dropping the state
 also drops the task-only bookkeeping — `Added::`, `SCHEDULED::`, `DEADLINE::`,
-`CLOSED::`, `done_by::` — so the markdown reads as the plain note it now is. `Added::` is stamped when something becomes a TODO and
+`CLOSED::`, `done_by::` — so the markdown reads as the plain note it now is.
+
+Cycle one click too far and nothing is lost: those properties are held in memory
+for `CFG.undoStateMinutes` (5) and put back if the block becomes a task again
+inside that window, with its original dates rather than today's. After the window
+it starts fresh. The stash never reaches the files.
+
+Re-opening a finished task also clears the closing stamps, so a `TODO` never
+carries `- [[end]] = 35 days` or a `done_by::` claiming someone completed it. `Added::` is stamped when something becomes a TODO and
 closed out with an end date and elapsed days when finished — that number drives
 "oldest first" everywhere.
 
