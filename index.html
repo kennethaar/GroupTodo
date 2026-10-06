@@ -635,6 +635,7 @@ const CFG = {
   reviewEveryDays  : 7,      // weekly review cadence
   waitFollowUpDays : 14,     // nudge to chase a WAIT item
   idleNudgeMinutes : 30,     // 30+ min idle -> nudge
+  quietUntilTasks  : 6,      // simple mode: no GTD hygiene talk below this
   agendaDays       : 14,
   journalScanDays  : 365,
   contextPrompts   : [[12, 0, "lunchtime"], [17, 0, "after work"]],
@@ -1040,6 +1041,7 @@ function putPage(path, page, {silent = false} = {}) {
 const nowStamp = () => new Date().toISOString().replace(/\.\d+Z$/, "Z");
 
 function touch(path) {
+  QUIET_CACHE = null;
   const page = V.pages.get(path);
   if (page) {
     const props = page.props || (page.props = {});
@@ -2369,7 +2371,8 @@ function setBlockState(path, block, state, opts = {}) {
   }
   touch(path);
 
-  if ((state === "TODO" || state === "DOING") && !opts.skipContext && !hasContextLink(block.title)) {
+  if ((state === "TODO" || state === "DOING") && !opts.skipContext
+      && !gtdQuiet() && !hasContextLink(block.title)) {
     promptAndInsertContext(path, block);
     return;
   }
@@ -3146,6 +3149,17 @@ function setSetting(k, v) { settingsPage().props[k] = v; touch(SETTINGS_PATH); }
 /* GTD's own vocabulary is the steepest thing here. In simple mode the nudges
    say what they mean, and the method-purist ones stay quiet until there is
    enough on the list for them to be about something. */
+/* One rule, used by the nudge bar, the row chips and the context prompt: a
+   newcomer with a handful of tasks is not told off about method. */
+let QUIET_CACHE = null;
+function gtdQuiet() {
+  if (!isSimple()) return false;
+  if (QUIET_CACHE === null) {
+    QUIET_CACHE = leafActions().filter(a => OPEN_STATES[a.state]).length < CFG.quietUntilTasks;
+  }
+  return QUIET_CACHE;
+}
+
 const NUDGE_PLAIN = {
   stuck  : "projects with nothing to do next",
   loose  : "tasks not attached to anything",
@@ -3164,7 +3178,7 @@ function computeNudges() {
   const acts = leafActions();
   const n = [];
   // Below this, a newcomer is being told off about a list they have barely started.
-  const quiet = isSimple() && acts.filter(a => OPEN_STATES[a.state]).length < 6;
+  const quiet = gtdQuiet();
   const push = (id, level, label, count, act) => {
     if (count <= 0) return;
     if (quiet && DEEP_NUDGES.includes(id)) return;
@@ -3865,6 +3879,16 @@ function viewMyDay() {
                 due: dueDate(b), age: blockAge(b), added: addedDate(b),
                 missingVerb: !startsWithVerb(b.title), missingContext: !hasContextLink(b.title)}));
   c.append(section("Captured today", today.length, taskCard(today, "Nothing captured yet today.")));
+
+  // A ticked task should not simply vanish: leave it here so the person can see
+  // what they got done, and un-tick it if they were too quick.
+  const closed = flattenBlocks(getPage(path).blocks)
+    .filter(b => b.state && !OPEN_STATES[b.state])
+    .map(b => ({path, block: b, state: b.state, title: b.title, context: contextOf(b.title),
+                due: dueDate(b), age: blockAge(b), added: addedDate(b),
+                by: blockProp(b, "by"), doneBy: blockProp(b, "done_by"),
+                missingVerb: !startsWithVerb(b.title), missingContext: !hasContextLink(b.title)}));
+  if (closed.length) c.append(section("Done today", closed.length, taskCard(closed)));
   return c;
 }
 
@@ -3978,7 +4002,7 @@ function chipsFor(a) {
   }
   if (a.age != null && a.age > 0) out.push(el("span", {class: "chip age"}, a.age + "d"));
   if (a.by && a.by !== whoAmI()) out.push(el("span", {class: "chip who"}, a.by));
-  const quietChips = isSimple() && leafActions().filter(x => OPEN_STATES[x.state]).length < 6;
+  const quietChips = gtdQuiet();
   if (a.missingVerb && a.state === "TODO" && !quietChips)
     out.push(el("span", {class: "chip miss b", onclick: e => {e.stopPropagation(); openVerbPicker(a.path, a.block);}}, "no verb"));
   if (a.missingContext && a.state !== "WAIT" && !quietChips)
@@ -4493,6 +4517,7 @@ const VIEW_TITLE = {
 
 function render() {
   if (!V.loaded) return;
+  QUIET_CACHE = null;
   renderNav();
   const c = $("#content");
   c.textContent = "";

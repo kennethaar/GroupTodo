@@ -1,27 +1,21 @@
 # GroupTodo
 
 A GTD system that is **one HTML file** and **plain markdown**. No build, no
-install, no account, no server, no network access of any kind.
+install, no account, and no connection to anything on the internet — enforced by
+a Content-Security-Policy, not just promised. The only network call it can make
+at all is to an optional sync server on your own machine.
 
 **Spaces** keep the parts of your life apart: Work, Private, Volunteer. Each is a
 complete separate vault, so colleagues who get Work never see Private.
 
 Two front doors over the same files:
 
-- **Simple** — horizons of focus, projects, todos, contexts, checklists. Reads
-  like Microsoft To Do.
+- **Simple** — a to-do list. My day, todos, projects, contexts, checklists, and
+  a *Big picture* view if you ever want it. Reads like Microsoft To Do.
 - **Advanced** — daily journals, outliner, `[[links]]`, backlinks, zettel. Reads
   like Logseq.
 
 Switch any time from the sidebar. The markdown on disk is identical either way.
-
-**First run is one screen.** *Start a new list* puts you straight in with the
-task box focused; *Open one I was sent* takes a colleague's shared folder or
-vault file. A three-step strip in the page — add a task, tick it off, give your
-tasks a home — ticks itself off as you do each one and then disappears. While it
-is running the sidebar shows four entries, not thirteen, and GTD's own
-vocabulary stays quiet until there are at least six open tasks for it to be
-about. Nothing is seeded: no demo project, no demo tasks.
 
 It began as a Neovim + org-mode + org-roam config; the status directories, the
 Phys-Viz verb rule, the context links, the age tracking and the morning/weekly
@@ -31,6 +25,35 @@ rituals all survive the move.
 index.html   the entire app
 serve.py     optional always-on sync server (Termux, Pi, NAS)
 ```
+
+---
+
+## First run
+
+**One screen, two doors.**
+
+- **Start a new list** — straight in, with the task box already focused.
+- **Open one I was sent** — a colleague's shared folder, or the vault file they
+  sent you. This is the door to use when somebody hands you their work.
+
+A quiet third option at the bottom, *I use Logseq or org-mode*, switches to
+advanced and runs the fuller setup: spaces, then a folder for each.
+
+**The teaching is in the page, not in front of it.** A three-step strip — add a
+task, tick it off, give your tasks a home — ticks itself off as you actually do
+each one, then disappears for good. While it is running the sidebar shows four
+entries rather than thirteen; the rest appears once you are through it.
+
+**Nothing is seeded.** No demo project, no demo tasks, no areas, no contexts. An
+empty list is less to understand than somebody else's.
+
+**GTD's vocabulary stays quiet until it is about something.** Below six open
+tasks, simple mode shows no hygiene nudges, no *no verb* / *no context* chips on
+rows, and no context picker when you re-open a task. Past that the method wakes
+up, and in plain words: *tasks that don't say what to actually do* rather than
+*actions without a physical verb*. The threshold is `CFG.quietUntilTasks`.
+
+Day one has no morning weeding and no weekly-review nag.
 
 ---
 
@@ -88,9 +111,15 @@ The separation is a folder and file boundary, not a filter in the UI that someon
 could switch off. Verified by test: an export of Work contains no Private content
 and vice versa.
 
-Set them up in the wizard on first run. GroupTodo then asks straight away **where
-each space lives**, and asks again at startup for any space that still has no
-folder. Reachable later from the space switcher → *Folders*.
+Spaces are a power feature, so a plain **Start a new list** never mentions them:
+you get one space and a task box. They are set up by the wizard behind *I use
+Logseq or org-mode*, or added any time from the space switcher at the top of the
+sidebar.
+
+Once there is more than one, GroupTodo asks **where each space lives**, and asks
+again at startup for any space that still has no folder. Reachable later from the
+space switcher → *Folders*. On the simple path the same question is the third
+step of the getting-started strip instead of a dialog.
 
 **One folder each, enforced.** Two spaces can never share a folder, and one can
 never sit inside another. Both are refused with an explanation, not a warning you
@@ -273,7 +302,8 @@ pages/
   p/  o/                    people, organisations
   z/                        zettel notes
   templates/  verbs/        templates, Phys-Viz verb lexicon
-  GTD.md                    settings: mode, last review, tombstones
+  GTD.md                    per-vault settings: started, last review,
+                              tombstones, no_attribution
 ```
 
 Everything is listed in the vault's own order: `_`, `0`, `1`, `2`, `3`, then `8`.
@@ -293,7 +323,6 @@ outcome:: Sink repaired, no drip
 area:: [[a/Home]]
 updated:: 2026-10-05T09:12:00Z
 
-- Outcome: water goes down, no drip.
 - TODO Call the plumber about the leak [[c/phone]]
   Added:: [[2026-10-01]]
   SCHEDULED:: [[2026-10-08]]
@@ -319,8 +348,8 @@ The point is that vague work is not allowed to sit quietly.
 behind your back. Borrowed structure is worse than none, so the app ships empty
 and asks.
 
-**Horizons of focus.** David Allen's six altitudes, set up by a wizard the first
-time you open Horizons:
+**Horizons of focus** — called *Big picture* in simple mode. David Allen's six
+altitudes, set up by a wizard the first time you open it:
 
 | | | |
 |---|---|---|
@@ -339,10 +368,6 @@ written until you finish. Re-run it any time from the Horizons view.
 Projects hang under areas and goals under areas, so two failures become visible:
 **projects in no area** (work nobody owns) and **goals with no project** (wishes).
 
-**Contexts are yours too.** The first time you need one, a wizard asks where work
-actually happens for you, offering common ones as suggestions you tap. Nothing is
-created unless you pick it.
-
 **Projects stated as outcomes.** A project called *Website* is a noun nobody can
 finish; *Website live and taking bookings* is a finish line. Creating a project
 asks name, then "what does done look like?", then the next action — the whole
@@ -356,8 +381,12 @@ inventing a verb-less placeholder from the title.
 offers to rewrite it. The lexicon is markdown you own; English and Norwegian
 starter sets install on request.
 
-**Contexts.** Every action wants a `[[c/...]]` link. Setting something to TODO
-without one opens the context picker, where single letters `a`–`z` select.
+**Contexts are yours too.** Every action wants a `[[c/...]]` link saying where it
+can be done. The first time you need one, a wizard asks where work actually
+happens for you, offering common ones as suggestions you tap — nothing is created
+unless you pick it. After that, setting something to TODO without a context opens
+the picker, where single letters `a`–`z` select. In simple mode none of this
+appears until you are past the quiet threshold.
 
 **The surfacing loop.** Pick where you are and GroupTodo shows the **three
 oldest** open actions you could actually do there. Never the newest.
@@ -415,6 +444,13 @@ broken links, duplicate projects with a merge action.
 
 Thresholds live in the `CFG` object near the top of the script.
 
+**Where settings live.** Anything that belongs to the vault — when you started,
+your last review, tombstones, whether the space records attribution — is written
+into that space's `pages/GTD.md`, so it travels with a shared folder. Anything
+that belongs to you and this device — simple or advanced, theme, timezone, your
+name, which spaces are shown and their colours — stays in browser preferences and
+never travels inside a space.
+
 ---
 
 ## Keys
@@ -448,6 +484,8 @@ state, `backspace` on an empty block deletes it.
 - **The sync server has no authentication.** Localhost only unless you add one.
 - **Spaces are separated, not secured.** Anyone who can open a space's folder or
   file sees all of it. There is no password, and nothing is encrypted.
+- **Simple mode holds the GTD nudges back** until six open tasks, so a new list
+  looks emptier of advice than it will later. `CFG.quietUntilTasks` changes it.
 - **Merged view is opt-in and per device.** Structure views (horizons, review,
   health) stay on the active space even when several are shown.
 - **Safari and Firefox are untested by me** (see the table above).
