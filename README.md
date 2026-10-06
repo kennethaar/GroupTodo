@@ -404,6 +404,12 @@ oldest** open actions you could actually do there. Never the newest.
 **Morning weeding.** Once a day, the three stalest active projects, ranked by: no
 next action, then missing context, then missing verb, then idle time.
 
+It is only ever *suggested* once there is something to rank: at least
+`CFG.weedMinProjects` (5) active projects **and** `CFG.weedMinTodos` (20) open
+tasks. Below either, it does not open by itself, does not appear in the sidebar,
+and is not offered as the next best move. `g w` still opens it whenever you want,
+and says why it is holding back.
+
 **Idle nudge** at 30 minutes. **Context re-prompts** at 12:00 and 17:00.
 
 **Project completion.** Close the last action in a project and it will not let it
@@ -486,6 +492,8 @@ state, `backspace` on an empty block deletes it.
   file sees all of it. There is no password, and nothing is encrypted.
 - **Simple mode holds the GTD nudges back** until six open tasks, so a new list
   looks emptier of advice than it will later. `CFG.quietUntilTasks` changes it.
+- **Morning weeding stays hidden** under 5 active projects or 20 open tasks, in
+  both modes. `g w` opens it anyway.
 - **Merged view is opt-in and per device.** Structure views (horizons, review,
   health) stay on the active space even when several are shown.
 - **Safari and Firefox are untested by me** (see the table above).

@@ -636,6 +636,8 @@ const CFG = {
   waitFollowUpDays : 14,     // nudge to chase a WAIT item
   idleNudgeMinutes : 30,     // 30+ min idle -> nudge
   quietUntilTasks  : 6,      // simple mode: no GTD hygiene talk below this
+  weedMinProjects  : 5,      // weeding is for a garden, not a window box
+  weedMinTodos     : 20,
   agendaDays       : 14,
   journalScanDays  : 365,
   contextPrompts   : [[12, 0, "lunchtime"], [17, 0, "after work"]],
@@ -3152,6 +3154,15 @@ function setSetting(k, v) { settingsPage().props[k] = v; touch(SETTINGS_PATH); }
 /* One rule, used by the nudge bar, the row chips and the context prompt: a
    newcomer with a handful of tasks is not told off about method. */
 let QUIET_CACHE = null;
+/* Weeding ranks the stalest of many projects. With a handful of each it has
+   nothing to say, so it is never suggested -- though g w still opens it for
+   anyone who wants to look. */
+function weedingWorthIt() {
+  const projects = projectsIn("1").length;
+  if (projects < CFG.weedMinProjects) return false;
+  return leafActions().filter(a => OPEN_STATES[a.state]).length >= CFG.weedMinTodos;
+}
+
 function gtdQuiet() {
   if (!isSimple()) return false;
   if (QUIET_CACHE === null) {
@@ -3213,7 +3224,8 @@ function computeNudges() {
   const idleGoals = goalsWithoutProjects();
   push("goal", "", "goals with no project", idleGoals.length, () => go("horizons"));
 
-  const stale = stalestActiveProjects(99).filter(p => (p.ageDays ?? 0) > CFG.staleProjectDays);
+  const stale = weedingWorthIt()
+    ? stalestActiveProjects(99).filter(p => (p.ageDays ?? 0) > CFG.staleProjectDays) : [];
   push("stale", "", "projects older than 6 months", stale.length, () => openWeeding());
 
   if (reviewDue()) {
@@ -3244,7 +3256,11 @@ function nextBestAction() {
   if (stuck.length) return pick("A project has stalled", `${stuck.length} active project(s) have no next action. Define one or park the project.`, "Unstick", () => openReview(0));
   const surf = oldestTodosForContext(state.context);
   if (surf.length) return pick("Oldest in " + state.context, surf[0].title, "Surface all three", () => surfaceContext(state.context));
-  return pick("Nothing is nagging", "Inbox to the journal, or weed the stalest projects.", "Weed projects", () => openWeeding());
+  if (weedingWorthIt())
+    return pick("Nothing is nagging", "Inbox to the journal, or weed the stalest projects.",
+                "Weed projects", () => openWeeding());
+  return pick("Nothing is nagging", "Nothing is overdue and nothing is stuck. Add what is on your mind, or stop.",
+              "Capture something", () => openCapture());
 }
 
 /* ============================================================
@@ -3917,6 +3933,7 @@ function navCount(id) {
    system they have not filled in yet. */
 const STARTER_NAV = ["today", "todos", "proj-1", "proj-0"];
 function navVisible(item) {
+  if (item.id === "weeding" && !weedingWorthIt()) return false;
   if (!coachOn() || !isSimple()) return true;
   return STARTER_NAV.includes(item.id);
 }
@@ -5032,6 +5049,14 @@ function deletePrompt(path) {
 function openWeeding(next) {
   const stalest = stalestActiveProjects(CFG.weedCount);
   const body = el("div", {});
+  if (!weedingWorthIt()) {
+    body.append(el("div", {class: "field"},
+      el("div", {style: "color:var(--fg2);font-size:13px"},
+        `Weeding ranks the stalest of many projects. With ${projectsIn("1").length} active ` +
+        `and ${leafActions().filter(a => OPEN_STATES[a.state]).length} open tasks there is little to rank, ` +
+        `so GroupTodo will not bring this up by itself until there are ` +
+        `${CFG.weedMinProjects} projects and ${CFG.weedMinTodos} tasks.`)));
+  }
   if (!stalest.length) body.append(el("div", {class: "empty"}, "No active projects. Create one, or capture into today."));
   stalest.forEach((p, i) => {
     const sec = el("div", {class: "dash-sec"});
@@ -6391,7 +6416,7 @@ function afterFirstRun() {
   const started = dateIn(getSetting("started"));
   const fresh = !started || started === todayISO();
   const last = getSetting("last_morning");
-  if (!fresh && last !== todayISO()) {
+  if (!fresh && last !== todayISO() && weedingWorthIt()) {
     setSetting("last_morning", todayISO());
     setTimeout(morningRoutine, 1200);
   }
