@@ -84,6 +84,24 @@ Set them up in the wizard on first run, or add one any time from the space
 switcher at the top of the sidebar. Give each space its own folder in
 **Vault & sync**; until you do, it lives in browser storage.
 
+### Giving each space its own colour
+
+A space's colour is how you tell its rows apart when several are on screen at
+once, so it is worth choosing rather than accepting. Pick one when you create the
+space, from the dot on the right of its row in the space switcher, or in
+**Vault & sync → Colour of <space>**. Twelve swatches, or any hex at all through
+the colour well or by typing it.
+
+A preview shows the two places the colour is actually used — the sidebar avatar
+and the badge rows carry when spaces share the screen — and warns you when a
+colour is too close to the page behind it to read, following whichever of the
+light and dark themes you are in. The letter in the avatar flips between dark and
+light ink by measured contrast, so a near-black colour stays legible.
+
+New spaces still get a colour without being asked: the first six cycle as you
+create them. Like the visibility toggles, colours are stored per device and never
+inside a space, so they do not travel in a folder or a file you share.
+
 ### Sharing one project
 
 **share** on a project page exports that project alone as a markdown file. The
@@ -131,8 +149,8 @@ still shown. At least one space is always visible. Tapping a name makes it the
 capture target: in single-space mode switching replaces what you were looking at,
 in multi-space mode it joins the set.
 
-When several are shown, every row carries a coloured badge saying which space it
-came from, and an edit is written back to **that** space's own files — ticking off
+When several are shown, every row carries a badge in that space's colour saying
+which space it came from, and an edit is written back to **that** space's own files — ticking off
 a Work task while Private is active updates Work, never Private. Opening a page
 switches to its space, so the outliner and backlinks work where the page lives.
 "Show only <space>" puts the wall straight back up.
@@ -143,7 +161,7 @@ describe one life each — merging someone's work purpose with their family purp
 would be nonsense.
 
 The toggle is stored per device, never inside a space, so it does not travel in a
-shared folder.
+shared folder. The same goes for the colours.
 
 ---
 
