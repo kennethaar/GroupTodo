@@ -162,7 +162,57 @@ class Handler(BaseHTTPRequestHandler):
         return self._json(200, {"ok": True})
 
     # ---------- the app itself ----------
+    # A service worker so the app can open itself when this server is not
+    # running -- on Android that is whenever the OS decides Termux has had
+    # enough. It is generated here rather than shipped as a file, so index.html
+    # stays a single standalone document.
+    SERVICE_WORKER = """
+const SHELL = "grouptodo-shell-v1";
+
+self.addEventListener("install", e => {
+  e.waitUntil(caches.open(SHELL)
+    .then(c => c.addAll(["./", "./index.html"]))
+    .then(() => self.skipWaiting()));
+});
+
+self.addEventListener("activate", e => {
+  e.waitUntil(caches.keys()
+    .then(ks => Promise.all(ks.filter(k => k !== SHELL).map(k => caches.delete(k))))
+    .then(() => self.clients.claim()));
+});
+
+self.addEventListener("fetch", e => {
+  const url = new URL(e.request.url);
+  // The vault is never cached: a stale page is fine, stale tasks are not.
+  if (url.pathname.indexOf("/api/") === 0) return;
+  if (e.request.mode !== "navigate" &&
+      url.pathname !== "/" && !/index\\.html$/.test(url.pathname)) return;
+  // Network first, so a newer index.html is picked up whenever the server is up.
+  e.respondWith(
+    fetch(e.request)
+      .then(r => {
+        const copy = r.clone();
+        caches.open(SHELL).then(c => c.put(e.request, copy)).catch(() => {});
+        return r;
+      })
+      .catch(() => caches.match(e.request).then(m => m || caches.match("./index.html")))
+  );
+});
+"""
+
     def _static(self, route):
+        if route == "/sw.js":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/javascript; charset=utf-8")
+            self.send_header("Service-Worker-Allowed", "/")
+            self.send_header("Cache-Control", "no-cache")
+            body = self.SERVICE_WORKER.encode("utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            if self.command != "HEAD":
+                self.wfile.write(body)
+            return
+
         name = "index.html" if route in ("/", "") else os.path.basename(route)
         if not re.fullmatch(r"[\w.-]+", name or ""):
             return self._send(404, "not found")

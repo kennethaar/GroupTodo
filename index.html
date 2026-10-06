@@ -15,6 +15,7 @@
   img-src data: blob:;
   media-src data: blob:;
   connect-src 'self' http://127.0.0.1:* http://localhost:*;
+  worker-src 'self';
   manifest-src blob:;
   form-action 'none';
   base-uri 'none'">
@@ -1130,21 +1131,23 @@ async function doFlush() {
     wrote = true;
     V.syncing = true;
     setSync("sync", "saving...");
+    // The mirror goes first: after this line the work cannot be lost, whatever
+    // the real backend does next.
+    await writeMirror(rec, dirty);
+    await removeMirror(rec, gone);
     try {
       for (const p of dirty) {
         const page = rec.pages.get(p);
         if (page) await rec.backend.write(p, serializePage(page));
       }
       for (const p of gone) await rec.backend.remove(p).catch(() => {});
-      await clearPending(rec, dirty);
       V.error = null;
     } catch (e) {
       dirty.forEach(p => rec.dirty.add(p));
-      await stashPending(rec, dirty);          // keep it, even if the tab closes
       V.error = e;
       setSync("warn", "saved on device");
-      notify(`Cannot reach ${rec.name}'s storage, so this is saved on this device ` +
-             `and will sync when it is back.`, "warn");
+      notify(`Cannot reach ${rec.name}'s storage. Saved on this device and it ` +
+             `will go up when the connection is back.`, "warn");
       V.syncing = false;
       return;
     }
@@ -1159,50 +1162,52 @@ window.addEventListener("beforeunload", e => {
   if (V.dirty.size) { flush(); e.preventDefault(); e.returnValue = ""; }
 });
 
-/* Write-behind safety net. If the backend refuses a save -- the sync server
-   stopped, which on Android means Android killed Termux -- the page is also
-   written into this device's own storage under a pending: key. It is read back
-   on the next load and re-queued, so closing the tab while the server is down
-   does not lose the work. */
-const pendingKey = (space, path) => "pending:" + space + "|" + path;
+/* Local mirror.
 
-async function stashPending(rec, paths) {
-  try {
-    for (const path of paths) {
-      const page = rec.pages.get(path);
-      if (page) await IDB.set("files", pendingKey(rec.name, path), serializePage(page));
-    }
-  } catch (_) { /* nothing left to fall back to */ }
+   A space backed by a server or a folder also keeps a copy of every page in
+   this device's own storage. That copy is written BEFORE the real backend, so
+   a save can never be lost to an unreachable server -- and because it is a
+   full mirror rather than a queue of failures, the app still has the whole
+   vault when the backend is gone entirely. On Android that is the difference
+   between opening to your tasks and opening to an empty list.
+
+   On the way back in, the mirror is merged by updated:: and anything newer
+   locally is re-queued upstream. */
+const mirrorFor = rec => Backends.idb(rec.name);
+const mirrored  = rec => rec.backend && rec.backend.kind !== "idb" && rec.backend.kind !== "memory";
+
+async function writeMirror(rec, paths) {
+  if (!mirrored(rec)) return;
+  const m = mirrorFor(rec);
+  for (const path of paths) {
+    const page = rec.pages.get(path);
+    try { if (page) await m.write(path, serializePage(page)); } catch (_) {}
+  }
 }
 
-async function clearPending(rec, paths) {
-  try {
-    for (const path of paths) await IDB.del("files", pendingKey(rec.name, path));
-  } catch (_) {}
+async function removeMirror(rec, paths) {
+  if (!mirrored(rec)) return;
+  const m = mirrorFor(rec);
+  for (const path of paths) { try { await m.remove(path); } catch (_) {} }
 }
 
-async function applyPending(rec) {
-  let n = 0;
+async function mergeMirror(rec) {
+  if (!mirrored(rec)) return 0;
+  let newer = 0;
   try {
-    const pre = pendingKey(rec.name, "");
-    for (const key of await IDB.keys("files")) {
-      const k = String(key);
-      if (!k.startsWith(pre)) continue;
-      const path = k.slice(pre.length);
-      const text = await IDB.get("files", k);
-      if (!text) continue;
-      const page = parsePage(text);
-      const local = rec.pages.get(path);
-      // The stash only exists because it never reached the backend, so it is
-      // at least as new as whatever the backend has.
-      if (!local || (page.props?.updated || "") >= (local.props?.updated || "")) {
-        rec.pages.set(path, page);
-        rec.dirty.add(path);
-        n++;
+    for (const [path, text] of await mirrorFor(rec).list()) {
+      const local = parsePage(text);
+      const fromBackend = rec.pages.get(path);
+      const a = local.props?.updated || "";
+      const b = fromBackend?.props?.updated || "";
+      if (!fromBackend || a > b) {
+        rec.pages.set(path, local);
+        rec.dirty.add(path);          // the backend has not seen this yet
+        newer++;
       }
     }
   } catch (_) {}
-  return n;
+  return newer;
 }
 
 async function readInto(record) {
@@ -1212,9 +1217,9 @@ async function readInto(record) {
     if (/\.org$/i.test(path)) { record.raw.set(path, text); continue; }
     record.pages.set(path, parsePage(text));
   }
-  const recovered = await applyPending(record);
-  if (recovered) {
-    notify(recovered + " unsaved change(s) recovered from this device.", "warn");
+  const newer = await mergeMirror(record);
+  if (newer) {
+    notify(newer + " change(s) made on this device are being sent up now.", "warn");
     scheduleFlush();
   }
   return record;
@@ -6624,9 +6629,19 @@ function afterFirstRun() {
   }
 }
 
+/* When a sync server is serving this page, let it install a service worker so
+   the app can still be opened if that server goes away -- which on Android is
+   every time the OS reclaims Termux. Nothing happens from a file:// page, and
+   the vault itself is never cached. */
+function installServiceWorker() {
+  if (!CAP.served || !("serviceWorker" in navigator)) return;
+  navigator.serviceWorker.register("./sw.js").catch(() => {});
+}
+
 (async function init() {
   await probeStorage();
   installManifest();
+  installServiceWorker();
   await initSpaces();
 
   const shown = storedVisible();

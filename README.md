@@ -286,17 +286,26 @@ Then open Chrome at `http://127.0.0.1:8777/` and *Add to Home screen*.
 `serve.py` and `index.html` must sit in the same folder — the server serves the
 page from its own directory. The vault is separate and can be anywhere.
 
-Android kills background apps, and if Termux dies the server goes with it. Two
-consequences, one harmless and one worth knowing:
+Android kills background apps, and if Termux dies the server goes with it. The
+app is built to shrug that off:
 
-- **Your work is safe.** A save that cannot reach the server is written into the
-  browser's own storage instead, the status line says `saved on device`, and it
-  is replayed to the vault the next time the server answers. Verified by killing
-  the server mid-edit: nothing reached disk, the change survived, and it landed
-  in `journals/` once the server came back.
-- **You cannot open the app while Termux is down**, because Termux is what serves
-  the page. `termux-wake-lock` and exempting Termux from battery optimisation are
-  worth doing.
+- **It still opens.** The server installs a service worker the first time you
+  visit, so the page afterwards comes from the browser's own cache.
+  `http://127.0.0.1` counts as a secure origin, which is what makes this legal.
+- **Your vault is still there.** A server- or folder-backed space keeps a full
+  mirror of every page in this device's storage, written *before* the real
+  backend, so a save can never be lost to something unreachable.
+- **You can keep working.** Edits made while the server is down are saved locally
+  — the status line says `saved on device` — and are sent up, merged by
+  `updated::`, the next time it answers.
+
+Verified end to end in headless Chromium against a real `serve.py` vault: killed
+the server, closed the tab, reopened the app with nothing running, found the
+tasks still there, added another, restarted the server, and watched that new task
+land in `journals/`.
+
+`termux-wake-lock` and exempting Termux from battery optimisation are still worth
+doing — the above is a safety net, not a reason to let the server die.
 
 ---
 
