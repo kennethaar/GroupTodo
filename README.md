@@ -491,9 +491,17 @@ app is built to shrug that off:
 - **It still opens.** The server installs a service worker the first time you
   visit, so the page afterwards comes from the browser's own cache.
   `http://127.0.0.1` counts as a secure origin, which is what makes this legal.
-- **Your vault is still there.** A server- or folder-backed space keeps a full
-  mirror of every page in this device's storage, written *before* the real
-  backend, so a save can never be lost to something unreachable.
+- **Your vault is still there.** A server-backed space keeps a full mirror of
+  every page in this device's storage, written *before* the server, so a save
+  can never be lost to something unreachable — and so the app has a whole vault
+  to open when the server is gone entirely.
+
+A folder-backed space mirrors differently: only writes the folder has not
+confirmed yet. It needs no second copy, since the folder is already the local
+one, and a full mirror there would put back anything you deleted in Neovim or
+Explorer — to a full mirror a page missing from the folder looks like a page the
+folder has never seen. Unconfirmed-only means external deletes stick, while work
+still survives a folder that loses permission or gets unplugged mid-session.
 - **You can keep working.** Edits made while the server is down are saved locally
   — the status line says `saved on device` — and are sent up, merged by
   `updated::`, the next time it answers.
@@ -764,6 +772,9 @@ state, `backspace` on an empty block deletes it.
   one, so offline-open, home-screen install and the share sheet all need route B.
 - **Share-target and file-opening are Chromium features.** iOS can share out but
   not in; use *Open vault file* there.
+- **Two writes per save on a folder vault, briefly.** Each page goes to this
+  device's storage first and to the folder second; the local copy is dropped as
+  soon as the folder confirms. A server vault keeps its full copy on purpose.
 - **A vault file in the vault folder is skipped, not merged.** GroupTodo spots it
   and warns, but it will not be read as a page. Keep couriers outside.
 - **Auto-sync is desktop only.** It needs a file handle that survives restarts,

@@ -1142,6 +1142,7 @@ async function doFlush() {
         if (page) await rec.backend.write(p, serializePage(page));
       }
       for (const p of gone) await rec.backend.remove(p).catch(() => {});
+      await confirmMirror(rec, dirty);
       V.error = null;
     } catch (e) {
       dirty.forEach(p => rec.dirty.add(p));
@@ -1163,22 +1164,34 @@ window.addEventListener("beforeunload", e => {
   if (V.dirty.size) { flush(); e.preventDefault(); e.returnValue = ""; }
 });
 
-/* Local mirror.
+/* Local mirror. Always written BEFORE the real backend, so a save cannot be
+   lost to storage that turns out to be unreachable. How much it keeps depends
+   on what the backend is, because the two cases need opposite things.
 
-   A space backed by a server or a folder also keeps a copy of every page in
-   this device's own storage. That copy is written BEFORE the real backend, so
-   a save can never be lost to an unreachable server -- and because it is a
-   full mirror rather than a queue of failures, the app still has the whole
-   vault when the backend is gone entirely. On Android that is the difference
-   between opening to your tasks and opening to an empty list.
+   A SERVER-backed space keeps a FULL copy. The vault lives on the server, so
+   when the server is gone the mirror is the only thing the app can open at
+   all. On Android that is the difference between opening to your tasks and
+   opening to an empty list.
+
+   A FOLDER-backed space keeps only what the folder has not confirmed yet. It
+   needs no second copy -- the folder IS the local one -- and a full copy there
+   would actively do harm: a page you deleted in Neovim or Explorer is simply
+   missing from the folder, which to a full mirror looks like a page the folder
+   has never seen, so the next load would put it back. Holding only
+   unconfirmed writes means nothing is resurrected, and work still survives a
+   folder that loses permission or gets unplugged mid-session.
 
    On the way back in, the mirror is merged by updated:: and anything newer
    locally is re-queued upstream. */
 const mirrorFor = rec => Backends.idb(rec.name);
-const mirrored  = rec => rec.backend && rec.backend.kind !== "idb" && rec.backend.kind !== "memory";
+const mirrorMode = rec =>
+  !rec.backend                  ? "off"
+  : rec.backend.kind === "http" ? "full"
+  : rec.backend.kind === "fs"   ? "pending"
+  : "off";
 
 async function writeMirror(rec, paths) {
-  if (!mirrored(rec)) return;
+  if (mirrorMode(rec) === "off") return;
   const m = mirrorFor(rec);
   for (const path of paths) {
     const page = rec.pages.get(path);
@@ -1187,13 +1200,20 @@ async function writeMirror(rec, paths) {
 }
 
 async function removeMirror(rec, paths) {
-  if (!mirrored(rec)) return;
+  if (mirrorMode(rec) === "off") return;
+  const m = mirrorFor(rec);
+  for (const path of paths) { try { await m.remove(path); } catch (_) {} }
+}
+
+/* The backend took these, so a "pending" mirror has no further use for them. */
+async function confirmMirror(rec, paths) {
+  if (mirrorMode(rec) !== "pending") return;
   const m = mirrorFor(rec);
   for (const path of paths) { try { await m.remove(path); } catch (_) {} }
 }
 
 async function mergeMirror(rec) {
-  if (!mirrored(rec)) return 0;
+  if (mirrorMode(rec) === "off") return 0;
   let newer = 0;
   try {
     for (const [path, text] of await mirrorFor(rec).list()) {
