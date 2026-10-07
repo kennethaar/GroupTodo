@@ -367,6 +367,21 @@ that turns out to be unreachable. How much it keeps depends on the backend:
   already the local copy, and a full mirror there would put back anything you
   deleted in Neovim or Explorer.
 
+### Starting over
+
+**Vault & sync → Start afresh** empties this browser's copy of GroupTodo: every
+space held in browser storage, the list of spaces, your name, colours and
+timezone, the linked file and server address, and the offline copy. It deletes
+the `grouptodo` IndexedDB database, removes the `gtd.*` keys from
+localStorage, drops the service worker's caches, unregisters the service
+worker, and reloads — so the next load is the very first run again, not a stale
+shell served from cache. It asks you to type *start afresh* first.
+
+It is local only. A vault folder on disk keeps its `.md` files, a saved vault
+file keeps its contents, and a sync server keeps everything — but the browser
+forgets which folder it was writing into, so reconnect it afterwards. If another
+tab still holds the database open, nothing is deleted and it says so.
+
 ## Corporate environments
 
 No build step, no dependencies, no CDN, no telemetry. A Content-Security-Policy

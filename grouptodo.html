@@ -137,6 +137,10 @@ header.top .burger{display:none}
 .btn.primary{background:var(--accent);color:var(--accent-fg);font-weight:550}
 .btn.primary:hover{background:var(--accent2);color:#fff}
 .btn.ghost{background:none;border:1px solid var(--border2)}
+.btn.danger{background:none;border:1px solid rgba(255,107,107,.42);color:var(--late)}
+.btn.danger:hover{background:rgba(255,107,107,.14);color:var(--late)}
+.btn.danger:disabled{opacity:.45;cursor:not-allowed}
+.btn.danger:disabled:hover{background:none}
 .btn.sm{padding:3px 8px;font-size:12px}
 .btn kbd{font-family:var(--mono);font-size:10px;opacity:.6}
 
@@ -978,6 +982,14 @@ const IDB = (() => {
     });
   };
   return {
+    /* Deleting the database blocks for as long as any connection to it is
+       open, and this module holds one for the life of the page. Start afresh
+       lets go of it first. */
+    close: () => {
+      const p = dbp;
+      dbp = null;
+      if (p) p.then(db => { try { db.close(); } catch (_) {} }, () => {});
+    },
     get : (s, k)    => tx(s, "readonly",  st => st.get(k)),
     set : (s, k, v) => tx(s, "readwrite", st => st.put(v, k)),
     del : (s, k)    => tx(s, "readwrite", st => st.delete(k)),
@@ -1224,12 +1236,20 @@ function retryFlush() {
    and page map it started with. Without that, switching space mid-save wrote
    one space's pages through another space's backend. */
 let flushChain = Promise.resolve();
+
+/* Set by Start afresh, between the wipe and the reload. Without it a focus
+   event or a pending debounce could write the vault straight back into the
+   storage we just emptied, and beforeunload below would argue with the
+   reload. See 151_START AFRESH. */
+let WIPING = false;
+
 function flush() {
   flushChain = flushChain.then(doFlush, doFlush);
   return flushChain;
 }
 
 async function doFlush() {
+  if (WIPING) return;
   let wrote = false;
   for (const rec of Array.from(LOADED.values())) {
     if (!rec.backend || (!rec.dirty.size && !rec.removed.size)) continue;
@@ -1269,6 +1289,7 @@ async function doFlush() {
 }
 
 window.addEventListener("beforeunload", e => {
+  if (WIPING) return;
   if (V.dirty.size) { flush(); e.preventDefault(); e.returnValue = ""; }
 });
 
@@ -8113,13 +8134,175 @@ function openVaultDialog() {
           el("button", {class: "btn ghost", onclick: () => fileInput.click()}, "Import .md / .org files"),
           V.raw.size ? el("button", {class: "btn ghost", onclick: () => { importOrgFiles(); closeModal(); }},
             "Convert " + V.raw.size + " .org files") : null),
-        fileInput)),
+        fileInput),
+
+      /* Last in the dialog, on purpose: you scroll past every way of keeping
+         your work before you reach the way of losing it. */
+      el("div", {class: "field"},
+        el("label", {}, "Start afresh"),
+        el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
+          "Empties this browser\u2019s copy of GroupTodo \u2014 every space, its settings, " +
+          "your name, the offline copy \u2014 and reloads as if you had never opened it. " +
+          "Useful when you want to see onboarding again, or to hand the browser on. " +
+          (onFolder
+            ? "Your .md files in \u201C" + (V.backend.label || "the folder") + "\u201D are NOT " +
+              "touched \u2014 but this browser forgets the folder, so reconnect it afterwards " +
+              "to get the space back."
+            : "Save the vault file first if you want any of it back \u2014 this cannot be undone.")),
+        el("button", {class: "btn danger", onclick: () => openStartAfreshDialog()},
+          "Start afresh\u2026")),
+    ),
     foot: [
       el("button", {class: "btn ghost", onclick: () => { closeModal(); openShareSpaceInvite(); }}, "Invite somebody"),
       el("div", {style: "flex:1"}),
       el("button", {class: "btn ghost", onclick: closeModal}, "Close"),
     ],
   });
+}
+
+/* ============================================================
+   151_START AFRESH -- empty this browser and reload
+   ============================================================ */
+/* Everything this app keeps in a browser lives in exactly three places: the
+   gtd.* keys in localStorage, the "grouptodo" IndexedDB database, and the
+   caches the service worker fills. Wiping all three and reloading used to be
+   a DevTools console errand, done from memory and usually half done -- the
+   service worker left registered, so the next load came back out of the old
+   cache and looked like the wipe had failed. This does the whole sequence in
+   the right order, from a button, behind a typed phrase.
+
+   It is deliberately local: a vault FOLDER on disk is the real vault and is
+   never touched, nor is a linked vault file, nor a sync server. */
+
+/* indexedDB.deleteDatabase blocks silently while any connection is open --
+   including one in another tab of the same app. Resolves true when the
+   database is gone, false when something else is still holding it. */
+function deleteDatabase(name) {
+  return new Promise(res => {
+    let done = false;
+    const settle = v => { if (!done) { done = true; res(v); } };
+    let r;
+    try { r = indexedDB.deleteDatabase(name); } catch (_) { return settle(false); }
+    r.onsuccess = () => settle(true);
+    r.onerror   = () => settle(false);
+    r.onblocked = () => settle(false);
+    setTimeout(() => settle(false), 4000);   // no event at all: do not hang
+  });
+}
+
+async function wipeLocalState() {
+  const notes = [];
+
+  /* The database goes first because it is the only step that can refuse. A
+     half-wipe -- settings gone, pages still here -- is worse than no wipe, so
+     nothing else is touched until this one has actually happened. */
+  try { IDB.close(); } catch (_) {}
+  if (!(await deleteDatabase("grouptodo"))) {
+    notes.push("the pages are still held open by another tab \u2014 close GroupTodo\u2019s " +
+               "other tabs and try again. Nothing has been deleted");
+    return notes;
+  }
+
+  /* Every key we own is prefixed, so the scan is exact and anything else on
+     the same origin is left alone. Collect first, then delete: removing
+     while iterating renumbers localStorage underneath you. */
+  try {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith("gtd.")) keys.push(k);
+    }
+    keys.forEach(k => safeLS.del(k));
+  } catch (_) {}
+
+  // The offline shell, and the one-item mailbox shared files land in.
+  if ("caches" in window) {
+    try {
+      const names = await caches.keys();
+      await Promise.all(names.filter(n => /^grouptodo/.test(n)).map(n => caches.delete(n)));
+    } catch (_) {}
+  }
+
+  /* Unregistered last: while it lives it can answer the reload out of a
+     cache we have just deleted anyway, and unregistering first would leave
+     the caches orphaned if a later step threw. */
+  if ("serviceWorker" in navigator) {
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    } catch (_) {}
+  }
+  return notes;
+}
+
+function openStartAfreshDialog() {
+  const PHRASE = "start afresh";
+  const spaces = (Spaces.list || []).length;
+  const folders = (Spaces.list || []).filter(x => x.kind === "fs").length;
+
+  const go = el("button", {class: "btn danger", onclick: () => run()},
+    "Empty this browser and reload");
+  go.disabled = true;
+
+  const input = el("input", {
+    placeholder: PHRASE, autocapitalize: "none", autocorrect: "off", spellcheck: "false",
+    oninput: e => { go.disabled = trim(e.target.value).toLowerCase() !== PHRASE; },
+  });
+
+  let running = false;
+  async function run() {
+    if (running || go.disabled) return;
+    running = true;
+    go.disabled = true;
+    go.textContent = "Emptying…";
+    WIPING = true;                      // nothing may write after this line
+    const notes = await wipeLocalState();
+    if (notes.length) {
+      WIPING = false;
+      running = false;
+      go.textContent = "Empty this browser and reload";
+      go.disabled = trim(input.value).toLowerCase() !== PHRASE;
+      notify(notes.join("; ") + ".", "warn");
+      return;
+    }
+    location.reload();
+  }
+
+  modal({
+    center: true, title: "Start afresh",
+    hint: "cannot be undone",
+    body: el("div", {},
+      /* Not the .nudge pill: that one is a one-line chip for the nudge bar.
+         Same palette, laid out as a paragraph. */
+      el("div", {style: "background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.32);" +
+                        "border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12.5px;" +
+                        "color:var(--late);line-height:1.5"},
+        el("div", {style: "font-weight:600"}, "This empties GroupTodo in this browser."),
+        el("div", {style: "margin-top:4px;color:var(--fg2)"},
+          (spaces === 1 ? "Your space" : "All " + spaces + " spaces") + ", every page and journal " +
+          "kept here, your name, your colours and timezone, the list of spaces, the linked " +
+          "vault file and server address, and the offline copy. Then the page reloads and " +
+          "GroupTodo starts as it did the very first time.")),
+      el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:10px"},
+        "Not touched: the .md files in any vault folder on disk, any vault file you have " +
+        "saved or sent, and anything already on a sync server. " +
+        (folders
+          ? "This browser does forget " + (folders === 1 ? "the folder it was writing into"
+              : "the " + folders + " folders it was writing into") + ", so reconnect " +
+            (folders === 1 ? "it" : "them") + " in Vault & sync afterwards to get those " +
+            "space" + (folders === 1 ? "" : "s") + " back."
+          : "If this browser is the only place your work lives, save the vault file first — " +
+            "there is no undo and no copy left behind.")),
+      el("div", {class: "field"},
+        el("label", {}, "Type " + PHRASE + " to confirm"),
+        input)),
+    foot: [
+      el("button", {class: "btn ghost", onclick: () => { closeModal(); openVaultDialog(); }}, "Cancel"),
+      el("div", {style: "flex:1"}),
+      go,
+    ],
+  });
+  setTimeout(() => input.focus(), 30);
 }
 
 /* ============================================================
