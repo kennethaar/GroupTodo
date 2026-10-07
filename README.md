@@ -31,6 +31,16 @@ Step 4 is what turns it from a list into a team list: you get your own day
 pages, your name goes on what you take on, and your colleagues can see you
 exist.
 
+**Your first project is the tour.** The first space starts with one project,
+*Find your way round GroupTodo*, and every step in it is a door: an ordinary
+task whose text links straight to the part of the app it is about — Todos,
+Planned, Contexts, People, Routines & lists, the weekly review, Search, and the
+folder your files live in. Press the link and you are there. Come back and
+GroupTodo offers to tick off the steps whose destination you have now seen — it
+asks, because only you know whether looking was enough, and it never ticks one
+for you. They are tasks like any others, so reword them, reorder them or delete
+the lot; when the last one closes, the project files itself away like any other.
+
 To bring somebody in, use **Spaces → Invite somebody** (below). Failing that:
 send them `grouptodo.html`, the name of the shared folder, and
 `docs/setup-sheet.html` — the same four steps, written for somebody who does not
@@ -417,6 +427,16 @@ it a `WAIT`.
 
 States: `TODO`, `DOING`, `WAIT`, `DONE`, `CANCELLED` (`WAITING`/`CANCELED`/`NOW`/
 `LATER` read as aliases), or **no state at all** — an ordinary note.
+
+One link does not point at a page: `[[go/todos]]` opens that part of the app
+itself, with `[[go/todos][Todos]]` to label it. The doors are `todos`, `agenda`,
+`context`, `people`, `projects`, `checklists`, `horizons`, `search`, `today`,
+`vault`, `capture`, `review` and `keys`. The first project is written with them,
+and you can use them in any task of your own; which ones you have opened is kept
+per device, like "last seen", and never written to the shared files. A project
+page carrying `tour:: 1` is that first project: its steps are exempt from the
+verb and context nudges and are not counted as your own work, because they are
+the app's scaffolding rather than your list.
 
 Nothing is one-way. The state badge cycles `TODO → DOING → WAIT → DONE → note →
 TODO`, so a line made a task by accident goes back to being a note. Dropping the

@@ -331,6 +331,13 @@ header.top .burger{display:none}
 .wikilink{color:var(--accent);cursor:pointer}
 .wikilink:hover{text-decoration:underline}
 .wikilink.ctx{color:var(--ctx)} .wikilink.zet{color:var(--zet)} .wikilink.proj{color:var(--proj)}
+/* A door into the app rather than a page: [[go/todos]]. Drawn as something to
+   press, because that is what it is. */
+.wikilink.go{
+  display:inline-flex;align-items:center;gap:3px;font-size:12px;padding:1px 8px;border-radius:20px;
+  background:var(--bg3);border:1px solid var(--border2);white-space:nowrap;
+}
+.wikilink.go:hover{background:var(--bg4);text-decoration:none}
 code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4px;border-radius:4px}
 
 /* ---------- project/page list ---------- */
@@ -2821,13 +2828,18 @@ function leafActionsHere() {
         if (due < todayISO()) group = "LATE";
         else if (due === todayISO()) group = "TODAY";
       }
+      /* A step of the tour is a door, not a next action: telling somebody on
+         their first morning that "Find everything you have open" lacks a
+         context is the method talking to itself. */
+      const tourStep = !!tourDestOf(b.title);
       out.push({
         path, block: b, state: b.state, title: b.title,
         project, projectPath, projectStatusDir, group, due,
         assignee, mine, owner: journalOwnerOf(path) || null,
+        tourStep,
         context: contextOf(b.title),
-        missingContext: !hasContextLink(b.title),
-        missingVerb: !startsWithVerb(b.title),
+        missingContext: !tourStep && !hasContextLink(b.title),
+        missingVerb: !tourStep && !startsWithVerb(b.title),
         // Journal items carry no Added:: stamp (the filename is the date),
         // so fall back to the journal's own date to keep "oldest first" honest.
         by: blockProp(b, "by"), doneBy: blockProp(b, "done_by"),
@@ -3430,6 +3442,9 @@ function pageTemplateFor(kind, title) {
 /* Follow [[target]] -- creating the page if it does not exist yet. */
 function followLink(target) {
   target = trim(target).split("][")[0];
+  /* A go/ link goes somewhere in the app, so it never creates a page. */
+  const door = /^go\/(.+)$/.exec(target);
+  if (door) { goTour(trim(door[1])); return; }
   if (/^\d{4}-\d{2}-\d{2}$/.test(target)) { openPage(ensureJournal(target)); return; }
   const existing = findExistingPage(target);
   if (existing) { openPage(existing); return; }
@@ -3694,7 +3709,10 @@ function weedingWorthIt() {
 function gtdQuiet() {
   if (!isSimple()) return false;
   if (QUIET_CACHE === null) {
-    QUIET_CACHE = leafActions().filter(a => OPEN_STATES[a.state]).length < CFG.quietUntilTasks;
+    // The tour's own steps do not count: eight of them would otherwise switch
+    // the method nudges on before the newcomer has written a single task.
+    QUIET_CACHE = leafActions().filter(a => OPEN_STATES[a.state] && !a.tourStep).length
+                  < CFG.quietUntilTasks;
   }
   return QUIET_CACHE;
 }
@@ -3866,6 +3884,16 @@ function renderInline(text) {
     const raw = trim(t.split("][")[0]);
     const target = esc(raw);
     const pfx = (/^([^/]+)\//.exec(raw) || [])[1];
+    /* [[go/todos]] is not a page but a door into the app itself. That is what
+       lets the first project be a tour you click through rather than a leaflet
+       about one, and it stays a plain readable line in the markdown. */
+    if (pfx === "go") {
+      const id = raw.slice(3);
+      // The text reached here already escaped, so a label written in the task
+      // stands as it is and only a label of our own needs escaping.
+      const shown = t.includes("][") ? trim(t.split("][")[1]) : esc(tourLabel(id));
+      return `<span class="wikilink go" data-link="${target}">${shown} ↗</span>`;
+    }
     const known = pfx === "c" || pfx === "z" || pfx === "p" || pfx === "o" || (pfx && STATUS_DIRS[pfx]);
     let label = trim(t.includes("][") ? t.split("][")[1] : (known ? raw.slice(pfx.length + 1) : raw));
     if (pfx === "c") label = "@" + label;
@@ -3898,11 +3926,16 @@ const state = {
 
 function go(view, opts = {}) {
   if (opts.person != null) state.person = opts.person;
+  // Worked out before this arrival is counted, so the tour asks about the
+  // places you have left rather than the one you are standing in.
+  const leaving = tourPending();
+  tourNoteView(view, opts);
   state.view = view;
   Object.assign(state, opts);
   document.body.classList.remove("nav-open");
   render();
   $("#content").scrollTop = 0;
+  if (leaving.length) maybeAskTourCheckoff(leaving);
 }
 function openPage(path) { go("page", {pagePath: path}); }
 const noteTodoTouched = () => { state.lastTodoTouch = Date.now(); };
@@ -4054,13 +4087,30 @@ function coachSteps() {
      Handing somebody a filing system while their screen is still empty is how
      every other to-do app loses them inside a minute. */
   if (coachDone("add") && coachDone("tick")) {
-    steps.push({k: "project", done: projectsIn("1").length > 0, optional: true,
+    // The tour project was put there by the app, so it cannot stand in for one
+    // of your own -- this step is about filing a job of your own.
+    const own = projectsIn("1").filter(p => !isTourProject(p));
+    steps.push({k: "project", done: own.length > 0, optional: true,
       label: "Give a bigger job a project", cta: "Make one",
       hint: "anything that needs more than one step",
       why: "A task is one move; a project is the handful of moves that finish something, " +
            "with a line saying what done looks like. Keeping them apart is what stops " +
            "\u201cmove house\u201d sitting on the same list as \u201cbuy milk\u201d and making both feel heavy.",
       act: () => newProjectPrompt()});
+  }
+  /* The one pointer at the tour. Without it the first project sits in Active
+     where a newcomer has no reason to look, and the half of the app behind the
+     sidebar stays undiscovered -- which is the whole problem it solves. */
+  const tourPath = tourProjectPath();
+  const tourLeft = tourPath ? tourSteps(tourPath).filter(s => s.open).length : 0;
+  if (tourPath && coachDone("add")) {
+    steps.push({k: "tour", done: tourLeft === 0, optional: true,
+      label: "Find your way round the rest of it", cta: "Open",
+      hint: tourLeft ? tourLeft + " short steps, each one a link to the part it is about" : "",
+      why: "Half of what is here is behind one more click — contexts, planned dates, " +
+           "people, routines, the folder your files live in. The steps are on your list " +
+           "like anything else, so ignore them, reorder them or delete the lot.",
+      act: () => openPage(tourPath)});
   }
   steps.push({k: "home", done: onDisk, label: "Give your tasks a home", cta: "Choose",
     hint: onDisk ? "" : "right now they live in this browser only",
@@ -4104,6 +4154,243 @@ function coachStrip() {
 }
 
 /* ============================================================
+   113d_FIRST PROJECT -- the tour, as an actual project
+
+   The coach above teaches the two moves the app is for: write one down, tick
+   it off. Everything else -- contexts, planned dates, people, routines, the
+   folder your files live in -- is a part of the interface nobody finds by
+   being told it exists.
+
+   So the first space gets one project, and its steps are doors: each one is a
+   real TODO whose text carries a [[go/...]] link straight to the part of the
+   app it is about. Pressing it takes you there. It is not a modal tour laid
+   over the app, because a tour you cannot leave is a tour you resent, and it
+   is not a help page either: it is on your list, it can be reordered,
+   reworded, ignored, or ticked off unread like anything else, and when the
+   last step closes the ordinary project-completion prompt files it away.
+
+   The one thing added on top: going somewhere is remembered, and a step whose
+   destination you have now seen is one the app offers to tick off for you --
+   asked, never done behind your back, because the only person who knows
+   whether you actually did it is you.
+   ============================================================ */
+const TOUR_PROP  = "tour";                  // tour:: 1  on the project page
+const TOUR_TITLE = "Find your way round GroupTodo";
+
+/* label: what the link reads as. go: where it actually goes. Nothing here is
+   special-cased UI -- every destination is a thing the sidebar or a dialog can
+   already reach, so the tour cannot drift away from the real app. */
+const TOUR_DESTS = {
+  todos:      {label: "Todos",             go: () => go("todos")},
+  agenda:     {label: "Planned",           go: () => go("agenda")},
+  context:    {label: "Contexts",          go: () => go("context")},
+  people:     {label: "People",            go: () => go("people")},
+  projects:   {label: "Active projects",   go: () => go("projects", {statusCode: "1"})},
+  checklists: {label: "Routines & lists",  go: () => go("checklists")},
+  horizons:   {label: "Big picture",       go: () => go("horizons")},
+  search:     {label: "Search",            go: () => go("search")},
+  today:      {label: "My day",            go: () => go("today")},
+  vault:      {label: "Vault & sync",      go: () => openVaultDialog()},
+  capture:    {label: "Capture",           go: () => openCapture()},
+  review:     {label: "Weekly review",     go: () => openReview(0)},
+  keys:       {label: "Keys",              go: () => openHelp()},
+};
+
+const TOUR_LINK_RE = /\[\[go\/([A-Za-z0-9_-]+)(?:\]\[[^\]]*)?\]\]/;
+function tourDestOf(title) {
+  const m = TOUR_LINK_RE.exec(title || "");
+  return m && TOUR_DESTS[m[1]] ? m[1] : null;
+}
+function tourLabel(id) { return (TOUR_DESTS[id] || {}).label || id; }
+
+/* The same line with the door written out in words. Links are followed from the
+   page, and a link inside a dialog that cannot be followed is a lie. */
+function tourPlainTitle(title) {
+  return trim(String(title || "").replace(/\[\[go\/([A-Za-z0-9_-]+)(?:\]\[([^\]]*))?\]\]/g,
+    (all, id, label) => trim(label || tourLabel(id))));
+}
+
+/* Seen is per device and per person, like "last seen" for notifications: it is
+   about what you have looked at, so it has no business in the shared files. */
+function tourMarkSeen(id) { if (TOUR_DESTS[id]) PREF.set("tour.seen." + id, "1"); }
+function tourSeen(id) { return PREF.get("tour.seen." + id, "") === "1"; }
+
+function goTour(id) {
+  const dest = TOUR_DESTS[id];
+  if (!dest) { notify("That link points at a part of the app that is not here.", "warn"); return; }
+  tourMarkSeen(id);
+  dest.go();
+}
+
+/* Arriving any other way counts too -- somebody who finds Planned in the
+   sidebar on their own should not be asked to go again through the link. */
+function tourNoteView(view, opts = {}) {
+  if (view === "projects") { if (opts.statusCode === "1" || state.statusCode === "1") tourMarkSeen("projects"); return; }
+  if (TOUR_DESTS[view]) tourMarkSeen(view);
+}
+
+/* Worked out once per draw, like QUIET_CACHE: this is asked by the coach, the
+   suggestions and every project row, and scanning the vault for each of them
+   is a lot of walking for one answer. */
+let TOUR_PATH_CACHE;                                    // undefined = not yet this draw
+function tourProjectPath() {
+  if (TOUR_PATH_CACHE !== undefined) return TOUR_PATH_CACHE;
+  if (!V || !V.pages) return null;                      // called before a space is open
+  let found = null;
+  for (const path of V.pages.keys()) {
+    if (!statusDirOf(path)) continue;
+    if (trim(getPage(path)?.props?.[TOUR_PROP] || "")) { found = path; break; }
+  }
+  return (TOUR_PATH_CACHE = found);
+}
+const isTourProject = path => !!path && path === tourProjectPath();
+
+/* Every step of the tour, open or closed, with the door it points at. */
+function tourSteps(path) {
+  const p = path || tourProjectPath();
+  const page = p && getPage(p);
+  if (!page) return [];
+  return flattenBlocks(page.blocks)
+    .filter(b => b.state && tourDestOf(b.title))
+    .map(b => ({path: p, block: b, dest: tourDestOf(b.title),
+                open: !!OPEN_STATES[b.state], seen: tourSeen(tourDestOf(b.title))}));
+}
+/* Still on the list, but you have been where it sends you. */
+const tourPending = () => tourSteps().filter(s => s.open && s.seen);
+
+/* ---------- the ask ----------
+   One prompt, and only when the answer has changed since the last time: a
+   newcomer who says "not yet" to three steps must not be asked a fourth time
+   about the same three. */
+const tourAskKey = steps => steps.map(s => s.dest).sort().join(",");
+
+function askTourCheckoff(steps) {
+  const list = steps || tourPending();
+  if (!list.length) return;
+  PREF.set("tour.asked", tourAskKey(list));
+
+  const picked = new Set(list.map(s => s.dest));
+  const body = el("div", {},
+    el("div", {class: "field"},
+      el("div", {style: "color:var(--fg2);font-size:13.5px;line-height:1.55"},
+        list.length === 1 ? "You have been to " + tourLabel(list[0].dest) +
+          ". Tick the step off if you are done with it — nothing is closed unless you say so."
+          : "You have been to " + list.length + " of the places on " + TOUR_TITLE.toLowerCase() +
+            ". Tick off the ones you are done with. Nothing is closed unless you say so.")));
+  for (const s of list) {
+    const row = el("label", {class: "coach-step", style: "cursor:pointer"});
+    const box = el("input", {type: "checkbox"});
+    box.checked = true;
+    box.addEventListener("change", () => { if (box.checked) picked.add(s.dest); else picked.delete(s.dest); });
+    row.append(box, el("div", {},
+      el("div", {}, tourPlainTitle(s.block.title)),
+      el("div", {style: "color:var(--fg3);font-size:12px"}, "you opened " + tourLabel(s.dest))));
+    body.append(row);
+  }
+
+  modal({
+    center: true, title: "Tick off what you have done", hint: "your call",
+    body,
+    foot: [
+      el("button", {class: "btn ghost", onclick: () => { closeModal(); render(); }}, "Not yet"),
+      el("div", {style: "flex:1"}),
+      el("button", {class: "btn primary", onclick: () => {
+        closeModal();
+        const chosen = list.filter(s => picked.has(s.dest));
+        if (!chosen.length) { render(); return; }
+        // The last one closed may finish the project, and that prompt is the
+        // ordinary one -- the tour earns its ending the same way any project does.
+        for (const s of chosen) setBlockState(s.path, s.block, "DONE");
+        notify(chosen.length === 1 ? "Ticked off." : chosen.length + " ticked off.");
+      }}, "Tick these off"),
+    ],
+  });
+}
+
+/* Asked on the way back rather than the moment you arrive: being asked whether
+   you are finished with a screen you have only just opened is worse than not
+   being asked at all. */
+let TOUR_ASK_TIMER = null;
+function maybeAskTourCheckoff(list) {
+  clearTimeout(TOUR_ASK_TIMER);
+  if (!PREF.get("tour.ask", "1")) return;               // turned off from the card
+  const steps = (list || tourPending()).filter(s => s.open);
+  if (!steps.length) return;
+  if (tourAskKey(steps) === PREF.get("tour.asked", "")) return;
+  TOUR_ASK_TIMER = setTimeout(() => {
+    if ($("#modalRoot").firstChild) return;             // something else is talking
+    const live = steps.filter(s => OPEN_STATES[s.block.state]);
+    if (live.length) askTourCheckoff(live);
+  }, 600);
+}
+
+/* On the project page itself: the same offer, standing, for anybody who said
+   "not yet" or turned the asking off. */
+function tourCard(path) {
+  const steps = tourSteps(path);
+  if (!steps.length) return null;
+  const pending = steps.filter(s => s.open && s.seen);
+  const left = steps.filter(s => s.open);
+  const box = el("div", {class: "coach tip"});
+  box.append(el("div", {class: "coach-head"},
+    el("b", {}, pending.length ? "You have been to " + pending.length +
+                 " of these" : "Every step is a door"),
+    el("span", {style: "color:var(--fg3);font-size:12px"},
+      (steps.length - left.length) + " of " + steps.length)));
+  box.append(el("div", {style: "font-size:13.5px;color:var(--fg2);line-height:1.55"},
+    pending.length
+      ? "Tick off what you are actually done with. The app can see that you opened them; " +
+        "it cannot see whether that was enough, so it asks."
+      : "Press the link in a step to go straight to the part of the app it is about. " +
+        "Come back and tick it off when you are done with it."));
+  const acts = el("div", {style: "display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"});
+  if (pending.length)
+    acts.append(el("button", {class: "btn sm primary", onclick: () => askTourCheckoff(pending)},
+      "Check off " + pending.length));
+  if (PREF.get("tour.ask", "1"))
+    acts.append(el("button", {class: "btn sm ghost", onclick: () => {
+      PREF.set("tour.ask", ""); notify("GroupTodo will stop asking. The button here stays.");
+      render();
+    }}, "stop asking me"));
+  else
+    acts.append(el("button", {class: "btn sm ghost", onclick: () => {
+      PREF.set("tour.ask", "1"); PREF.set("tour.asked", ""); render();
+    }}, "ask me again"));
+  box.append(acts);
+  return box;
+}
+
+/* ---------- the project itself ----------
+   Written as ordinary markdown a stranger could have typed: a TODO, a verb, a
+   link. Opening this file in Notepad shows a list of steps and where each one
+   goes, which is the whole promise of keeping tasks as text. */
+function seedTourProject() {
+  const path = join(DIRS.active, slugify(TOUR_TITLE) + ".md");
+  if (V.pages.has(path)) return path;
+  const page = projectTemplateLines(slugify(TOUR_TITLE), "1");
+  page.props[TOUR_PROP] = "1";
+  page.props.outcome = "I have seen every part of GroupTodo and know where my files live";
+  const step = title => stampAuthor(newBlock({
+    state: "TODO", title, props: {Added: todayStamp()},
+  }));
+  /* Written without a label -- [[go/todos]] rather than [[go/todos][Todos]] --
+     because the link reads out its own destination, so the day one of these
+     screens is renamed the task does not go on claiming the old name. */
+  page.blocks = [
+    step("Find everything you have open in one list — [[go/todos]]"),
+    step("Send something to a day instead of today — [[go/agenda]]"),
+    step("Say where you are, and see what you can do there — [[go/context]]"),
+    step("Give your files a folder, and put your name on your changes — [[go/vault]]"),
+    step("Find out who else is here and what they are carrying — [[go/people]]"),
+    step("Park a job that comes round again rather than finishing — [[go/checklists]]"),
+    step("Read the one screen that keeps the rest trustworthy — [[go/review]]"),
+    step("Find anything by typing part of it — [[go/search]]"),
+  ];
+  putPage(path, page);
+  return path;
+}
+
+/* ============================================================
    113c_SUGGESTIONS
    One card at a time, only once the list itself has earned it, and every one of
    them dismissible for good. These are the things a person standing behind you
@@ -4118,8 +4405,10 @@ function tipQuiet(id) {
 }
 
 function tipList() {
-  const open = leafActions().filter(a => OPEN_STATES[a.state]);
-  const projects = projectsIn("1");
+  // Same rule as the coach: the tour and its steps are the app's scaffolding,
+  // not your list, so no suggestion is ever about them.
+  const open = leafActions().filter(a => OPEN_STATES[a.state] && !a.tourStep);
+  const projects = projectsIn("1").filter(p => !isTourProject(p));
   const perProject = new Map();
   for (const a of open) {
     if (!a.projectPath) continue;
@@ -5357,7 +5646,13 @@ function taskRow(a) {
   const row = el("div", {
     class: "task" + (state.selected === a.block.id ? " sel" : ""),
     data: {state: a.state || "", id: a.block.id},
-    onclick: () => inSpace(a.space, () => openTaskDetail(a.path, a.block, a.space)),
+    // A link inside the title is the link's click, not the row's: pressing
+    // [[go/todos]] has to go to Todos rather than open the action panel on top
+    // of it. The delegated handler on #content does the following.
+    onclick: e => {
+      if (e.target.closest("[data-link]")) return;
+      inSpace(a.space, () => openTaskDetail(a.path, a.block, a.space));
+    },
   },
     el("button", {
       class: "chk", title: "Toggle done",
@@ -5803,6 +6098,13 @@ function viewPage() {
   if (code) meta.append(el("button", {class: "nudge", onclick: () => openAddNextAction(path)}, "+ next action"));
   c.append(meta);
 
+  // The tour explains itself on its own page and nowhere else, so the rest of
+  // the app is never carrying an explanation of the app around with it.
+  if (isTourProject(path)) {
+    const tc = tourCard(path);
+    if (tc) c.append(tc);
+  }
+
   if (isSimple() && pageKind(path) !== "journal") {
     // Rows and a quick-add box, rather than the outliner.
     c.append(el("div", {class: "section"}, quickAdd(path)));
@@ -5891,6 +6193,7 @@ function viewSearch() {
 const VIEW_TITLE = {
   today: "Today", next: "Next actions", context: "Context", agenda: "Agenda",
   todos: "Todos", horizons: "Horizons of focus", checklists: "Routines & lists",
+  people: "People",                     // or the header read "Today" on People
   projects: "Projects", zettel: "Zettel", pages: "All pages", "journal-list": "Journals",
   health: "Health check", search: "Search", page: "Page",
 };
@@ -5898,6 +6201,7 @@ const VIEW_TITLE = {
 function render() {
   if (!V.loaded) return;
   QUIET_CACHE = null;
+  TOUR_PATH_CACHE = undefined;
   renderNav();
   renderContextChip();
   const c = $("#content");
@@ -5932,6 +6236,7 @@ function render() {
   else VIEW_TITLE.today = "Today";
   $("#hTitle").textContent = state.view === "page" ? pageTitle(state.pagePath)
     : state.view === "projects" ? STATUS_LABEL[state.statusCode] + " projects"
+    : state.view === "person" ? (state.person || whoAmI() || "Person")
     : (VIEW_TITLE[state.view] || "Today");
   const vis = visibleSpaces();
   $("#hSub").textContent = vis.length > 1 ? vis.join(" + ")
@@ -5971,6 +6276,10 @@ function modal({title, hint, body, foot, center = false, onKey = null}) {
 function closeModal() {
   $("#modalRoot").textContent = "";
   MODAL_KEYS = null;
+  /* Four of the tour's doors are dialogs rather than screens, so closing one is
+     the moment that counts as coming back. Nothing happens unless a step is
+     waiting, and the check stands down if anything else opens meanwhile. */
+  if (typeof maybeAskTourCheckoff === "function") maybeAskTourCheckoff();
 }
 function pickRow(key, label, detail, onclick) {
   return el("button", {class: "pick", onclick},
@@ -6176,6 +6485,7 @@ function clarifyBlock(path, block) {
    135_CAPTURE / REFILE / DETAIL
    ============================================================ */
 function openCapture() {
+  tourMarkSeen("capture");
   const path = ensureJournal(todayISO());
   const input = el("textarea", {placeholder: "What just landed? One line per item."});
   let asTodo = true, ctx = state.context;
@@ -6602,6 +6912,7 @@ function reviewSections() {
 }
 
 function openReview(focusIdx = 0) {
+  tourMarkSeen("review");
   const secs = reviewSections();
   const body = el("div", {});
   secs.forEach((s, i) => {
@@ -7581,6 +7892,7 @@ function capLine(ok, text) {
 }
 
 function openVaultDialog() {
+  tourMarkSeen("vault");
   const lastSync = getSetting("last_sync");
   const linkedKnown = !!LINKED;
   const onFolder = V.backend && V.backend.kind === "fs";
@@ -7896,13 +8208,17 @@ async function seedIfEmpty() {
     ],
   });
 
-  // Verbs, templates and settings belong to every space. The welcome project
-  // only makes sense in the first one.
+  // Verbs, templates and settings belong to every space. The first project
+  // only makes sense in the first one -- a second space is somebody who has
+  // already met the app.
   if (PREF.get("welcomed")) { scanVerbs(); return; }
   PREF.set("welcomed", todayISO());
 
-  // No demo project and no demo journal: the first-run coach teaches this now,
-  // and an empty list is less work to understand than someone else's tasks.
+  // No demo tasks and no demo journal: nobody wants to start by deleting a
+  // stranger's shopping list. The one thing seeded is the tour, and it is a
+  // real project whose steps are doors into the parts of the app you would
+  // otherwise never find -- see 113d.
+  seedTourProject();
   scanVerbs();
 }
 
@@ -7969,6 +8285,7 @@ document.addEventListener("keydown", e => {
 });
 
 function openHelp() {
+  tourMarkSeen("keys");
   const rows = Object.entries(CHORDS).map(([k, _]) => k);
   modal({
     center: true, title: "Keys",
