@@ -311,6 +311,83 @@ header.top .burger{display:none}
 .ctxnow .x:hover{color:var(--fg)}
 @media (max-width:560px){.ctxnow{max-width:9rem;overflow:hidden;text-overflow:ellipsis}}
 .chip.st{font-family:var(--mono);font-size:10px;letter-spacing:.5px}
+
+/* ---------- board, calendar, graph ----------
+   Three more ways to look at exactly the same blocks. Nothing here holds its
+   own copy of anything: a card, a calendar entry and a dot are all the same
+   line in the same markdown file, seen from a different angle. */
+.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px;
+  align-items:start}
+.bcol{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  min-height:120px;display:flex;flex-direction:column;overflow:hidden}
+.bcol.over{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.bcol-head{display:flex;gap:8px;align-items:center;padding:10px 12px;
+  border-bottom:1px solid var(--border);background:var(--bg3)}
+.bcol-head .n{margin-left:auto;font-size:11px;color:var(--fg3);font-family:var(--mono)}
+.bcol-body{display:flex;flex-direction:column;gap:8px;padding:10px;overflow:auto;
+  max-height:min(68vh,760px)}
+.bcol-more{font-size:11.5px;color:var(--accent);padding:5px 2px;text-align:left;cursor:pointer}
+.bcol-more:hover{text-decoration:underline}
+.bcard{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:9px 10px;cursor:pointer;text-align:left;width:100%;display:block}
+.bcard:hover{border-color:var(--border2);background:var(--bg4)}
+.bcard-title{font-size:13px;color:var(--fg);line-height:1.35;overflow-wrap:anywhere}
+.bcard-meta{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.bcard-meta:empty{display:none}
+.bcard.dragging{opacity:.4}
+@media (max-width:860px){
+  /* Four columns on a phone is four slivers. One column each, stacked, and the
+     state buttons in the detail panel do the moving -- dragging on a touch
+     screen fights the scroll. */
+  .board{grid-template-columns:1fr}
+  .bcol-body{max-height:none}
+}
+
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;margin-top:4px;
+  background:var(--border);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden}
+.cal-dow{background:var(--bg3);color:var(--fg3);font-size:11px;letter-spacing:.5px;
+  text-transform:uppercase;padding:6px 8px;text-align:center}
+.cal-day{background:var(--bg2);min-height:92px;padding:5px 5px 7px;display:flex;
+  flex-direction:column;gap:3px;width:100%;text-align:left;cursor:pointer}
+.cal-day:hover{background:var(--bg3)}
+.cal-day.out{background:var(--bg);opacity:.5}
+.cal-day.today{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.cal-day.picked{background:var(--bg4)}
+.cal-num{font-size:11px;color:var(--fg3);font-family:var(--mono);text-align:right}
+.cal-day.today .cal-num{color:var(--accent);font-weight:700}
+.cal-items{display:flex;flex-direction:column;gap:3px;min-width:0}
+.cal-item{display:block;font-size:11.5px;line-height:1.25;
+  padding:3px 5px;border-radius:5px;background:var(--bg3);color:var(--fg2);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal-item.late{color:var(--late);background:rgba(255,107,107,.12)}
+.cal-more{font-size:10.5px;color:var(--fg3);padding-left:5px}
+@media (max-width:700px){
+  /* Seven columns of readable titles do not fit on a phone, and a line of text
+     shrunk until it fits is not readable either. The squares become dots --
+     how many, and whether any are late -- and tapping a day lists it below. */
+  .cal-day{min-height:54px;gap:4px}
+  .cal-items{flex-direction:row;flex-wrap:wrap;gap:3px;justify-content:flex-end}
+  .cal-item{font-size:0;width:7px;height:7px;padding:0;border-radius:50%;
+    background:var(--todo)}
+  .cal-item.late{background:var(--late)}
+  .cal-more{font-size:9.5px;padding:0}
+}
+
+.graph{margin-top:14px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);height:min(66vh,620px);overflow:hidden}
+.graphcv{display:block;width:100%;height:100%}
+.graph-legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:9px;
+  font-size:11.5px;color:var(--fg3)}
+.glg{display:inline-flex;gap:5px;align-items:center}
+.glg i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.glg.quiet{margin-left:auto}
+.pagelist{display:flex;flex-direction:column;margin-top:6px;
+  border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.pagelist .nm{flex:1;overflow-wrap:anywhere}
+details>summary{cursor:pointer;font-size:12.5px;color:var(--fg3);padding:2px 0}
+details>summary:hover{color:var(--fg2)}
+@media (max-width:700px){.graph{height:min(52vh,430px)}.glg.quiet{margin-left:0}}
 .chip.spacechip{border-style:solid;border-width:1px;background:transparent;font-weight:600}
 .spacetoggle{
   width:19px;height:19px;border-radius:5px;border:1.6px solid var(--border2);flex:none;
@@ -803,8 +880,11 @@ const CFG = {
   weedMinProjects  : 5,      // weeding is for a garden, not a window box
   weedMinTodos     : 20,
   agendaDays       : 14,
-  rowsPerPage      : 60,     // drawn at once; the rest wait behind "show more"
-  groupsPerPage    : 25,     // project sections drawn at once
+  rowsPerPage      : 100,    // drawn at once; the rest wait behind "show more"
+  groupsPerPage    : 100,    // project sections drawn at once
+  boardPerColumn   : 100,    // cards in one board column
+  boardPerPhone    : 12,     // and on a phone, where the columns are stacked
+  graphNodes       : 200,    // pages drawn in the graph before it stops being readable
   journalScanDays  : 365,
   contextPrompts   : [[12, 0, "lunchtime"], [17, 0, "after work"]],
 };
@@ -4102,6 +4182,11 @@ const NAV_SIMPLE = [
     {id: "people",     icon: "◍", label: "People",   key: "g p"},
     {id: "chat",       icon: "○", label: "Chat",     key: "g c"},
   ]},
+  {group: "Views", items: [
+    {id: "board",    icon: "▦", label: "Board",    key: "v b"},
+    {id: "calendar", icon: "▣", label: "Calendar", key: "v c"},
+    {id: "graph",    icon: "⁂", label: "Graph",    key: "v g"},
+  ]},
   {group: "Projects", items: [
     {id: "horizons",   icon: "◉", label: "Big picture"},
     {id: "proj-_",     icon: "_", label: "Cancelled",     status: "_"},
@@ -4125,6 +4210,11 @@ const NAV_ADVANCED = [
     {id: "agenda",  icon: "☷", label: "Agenda",       key: "g a"},
     {id: "people",  icon: "◍", label: "People",       key: "g p"},
     {id: "chat",    icon: "○", label: "Chat",         key: "g c"},
+  ]},
+  {group: "Views", items: [
+    {id: "board",    icon: "▦", label: "Board",    key: "v b"},
+    {id: "calendar", icon: "▣", label: "Calendar", key: "v c"},
+    {id: "graph",    icon: "⁂", label: "Graph",    key: "v g"},
   ]},
   {group: "Projects", items: [
     {id: "horizons",   icon: "◉", label: "Horizons"},
@@ -5700,6 +5790,625 @@ function threadPanel(path, block) {
   return wrap;
 }
 
+/* ============================================================
+   OTHER WAYS TO LOOK AT THE SAME TASKS
+   A list is the right default and the wrong shape for some questions. Three
+   more, all reading the very same blocks -- nothing here is a second copy or a
+   separate mode, and anything you change in one is changed everywhere.
+
+   Board     where is everything up to
+   Calendar  what lands on which day
+   Graph     what is connected to what
+   ============================================================ */
+
+/* ---------- board ---------- */
+const BOARD_COLUMNS = [
+  ["TODO",  "To do"],
+  ["DOING", "Doing"],
+  ["WAIT",  "Waiting for"],
+  ["DONE",  "Done"],
+];
+
+function boardCard(a) {
+  // A button, not a div: a card you cannot reach with Tab is a card half the
+  // people here cannot open. Dragging works on a button just the same.
+  const card = el("button", {
+    class: "bcard", draggable: "true",
+    data: {id: a.block.id},
+    // A link inside the title is the link's click, not the card's -- the same
+    // rule the list rows follow, so [[go/todos]] goes to Todos.
+    onclick: e => {
+      if (e.target.closest("[data-link]")) return;
+      inSpace(a.space, () => openTaskDetail(a.path, a.block, a.space));
+    },
+  },
+    el("div", {class: "bcard-title", html: renderInline(titleForRow(a.title))}),
+    el("div", {class: "bcard-meta"},
+      multiSpace() && a.space ? spaceBadge(a.space) : null,
+      a.project ? el("span", {class: "chip proj"}, a.project) : null,
+      a.context ? el("span", {class: "chip ctx"}, "@" + a.context) : null,
+      a.due ? el("span", {class: "chip " + (a.due < todayISO() ? "late" : a.due === todayISO() ? "today" : "")},
+        humanDate(a.due)) : null,
+      a.assignee ? el("span", {class: "chip who"}, "\u2192 " + a.assignee) : null,
+      messagesOf(a.block).length ? el("span", {class: "chip msg"}, "\u25CB " + messagesOf(a.block).length) : null));
+  card.addEventListener("dragstart", e => {
+    DRAGGED = a;
+    card.classList.add("dragging");
+    try { e.dataTransfer.setData("text/plain", a.block.id); e.dataTransfer.effectAllowed = "move"; } catch (_) {}
+  });
+  card.addEventListener("dragend", () => { card.classList.remove("dragging"); DRAGGED = null; });
+  return card;
+}
+
+let DRAGGED = null;
+
+function viewBoard() {
+  const c = el("div", {class: "wrap"});
+  const all = leafActions();
+  const done = doneToday();
+  c.append(el("div", {class: "section"},
+    quickAdd(ensureJournal(todayISO()), {placeholder: "Add a task"})));
+
+  const board = el("div", {class: "board"});
+  for (const [stateKey, label] of BOARD_COLUMNS) {
+    const items = stateKey === "DONE" ? done : all.filter(a => a.state === stateKey);
+    const col = el("div", {class: "bcol"},
+      el("div", {class: "bcol-head"},
+        el("span", {class: "state " + stateKey}, label),
+        el("span", {class: "n"}, String(items.length))));
+    const body = el("div", {class: "bcol-body"});
+    /* On a phone the columns are stacked, so a hundred cards in the first one
+       means scrolling past all of them to reach the second. */
+    const step = window.innerWidth < 860 ? CFG.boardPerPhone : CFG.boardPerColumn;
+    const shown = (state.boardMore || {})[stateKey] || step;
+    items.slice(0, shown).forEach(a => body.append(boardCard(a)));
+    if (items.length > shown)
+      body.append(el("button", {class: "bcol-more", onclick: () => {
+        const more = Object.assign({}, state.boardMore);
+        more[stateKey] = shown + step;
+        go("board", {boardMore: more});
+      }}, "Show " + Math.min(step, items.length - shown) + " more \u00B7 " +
+          (items.length - shown) + " below"));
+    if (!items.length) body.append(el("div", {class: "empty", style: "font-size:12px"}, "Nothing here."));
+
+    // Dropping on a column is the same call the state chip makes.
+    col.addEventListener("dragover", e => { e.preventDefault(); col.classList.add("over"); });
+    col.addEventListener("dragleave", () => col.classList.remove("over"));
+    col.addEventListener("drop", e => {
+      e.preventDefault();
+      col.classList.remove("over");
+      const a = DRAGGED;
+      DRAGGED = null;
+      if (!a || a.state === stateKey) return;
+      inSpace(a.space, () => setBlockState(a.path, a.block, stateKey));
+    });
+    col.append(body);
+    board.append(col);
+  }
+  c.append(board);
+  c.append(el("div", {class: "section quiet"},
+    el("div", {style: "color:var(--fg3);font-size:12px"},
+      "Drag a card to move it, or open one and use the state buttons \u2014 which is " +
+      "what you want on a phone, where dragging is a fight.")));
+  return c;
+}
+
+/* Everything closed today, from any page, so the board's last column is not
+   permanently empty. */
+function doneTodayHere() {
+  const out = [];
+  const today = todayISO();
+  for (const [path, page] of V.pages) {
+    walkBlocks(page.blocks, b => {
+      if (b.state !== "DONE" || isMessage(b)) return;
+      const raw = trim(blockProp(b, "done_by") || "");
+      const when = (raw.match(/\d{4}-\d{2}-\d{2}/) || [])[0] || closedDate(b);
+      if (when !== today) return;
+      out.push({path, block: b, state: "DONE", title: b.title, context: contextOf(b.title),
+                due: dueDate(b), assignee: assigneeOf(b), project: isJournalPath(path) ? null : pageTitle(path),
+                projectPath: isJournalPath(path) ? null : path});
+    });
+  }
+  return out;
+}
+const doneToday = () => memo("doneToday", () => acrossSpaces(doneTodayHere));
+const closedDate = b => dateIn(blockProp(b, "CLOSED")) ||
+  ((trim(blockProp(b, "Added") || "").match(/\]\]\s*-\s*\[\[(\d{4}-\d{2}-\d{2})/) || [])[1] || "");
+
+/* ---------- calendar ---------- */
+function monthGrid(anchor) {
+  const [y, m] = anchor.split("-").map(Number);
+  const first = new Date(Date.UTC(y, m - 1, 1));
+  const start = new Date(first);
+  start.setUTCDate(1 - ((first.getUTCDay() + 6) % 7));        // weeks begin on Monday
+  const days = [];
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(start);
+    d.setUTCDate(start.getUTCDate() + i);
+    days.push(d.toISOString().slice(0, 10));
+  }
+  return days;
+}
+
+function viewCalendar() {
+  const c = el("div", {class: "wrap"});
+  const anchor = state.calMonth || todayISO().slice(0, 7);
+  const picked = state.calDay && state.calDay.slice(0, 7) === anchor ? state.calDay
+               : (todayISO().slice(0, 7) === anchor ? todayISO() : anchor + "-01");
+  const byDay = new Map();
+  for (const a of leafActions().filter(a => a.due)) {
+    if (!byDay.has(a.due)) byDay.set(a.due, []);
+    byDay.get(a.due).push(a);
+  }
+
+  const shift = n => {
+    const [y, m] = anchor.split("-").map(Number);
+    const d = new Date(Date.UTC(y, m - 1 + n, 1));
+    go("calendar", {calMonth: d.toISOString().slice(0, 7), calDay: null});
+  };
+  const title = new Date(anchor + "-01T00:00:00Z")
+    .toLocaleDateString(undefined, {month: "long", year: "numeric", timeZone: "UTC"});
+  c.append(el("div", {class: "section", style: "display:flex;gap:8px;align-items:center"},
+    el("button", {class: "btn sm ghost", title: "Previous month", onclick: () => shift(-1)}, "\u2039"),
+    el("h2", {style: "margin:0;flex:1"}, title),
+    el("button", {class: "btn sm ghost",
+      onclick: () => go("calendar", {calMonth: todayISO().slice(0, 7), calDay: todayISO()})}, "Today"),
+    el("button", {class: "btn sm ghost", title: "Next month", onclick: () => shift(1)}, "\u203A")));
+
+  const grid = el("div", {class: "cal"});
+  for (const name of ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"])
+    grid.append(el("div", {class: "cal-dow"}, name));
+  for (const day of monthGrid(anchor)) {
+    const items = byDay.get(day) || [];
+    const outside = day.slice(0, 7) !== anchor;
+    const late = a => a.due < todayISO() && OPEN_STATES[a.state];
+    // The whole square is the control: on a phone, picking a day is the gesture,
+    // and the day's tasks are listed underneath where there is room to read them.
+    const cell = el("button", {
+      class: "cal-day" + (outside ? " out" : "") + (day === todayISO() ? " today" : "") +
+             (day === picked ? " picked" : ""),
+      onclick: () => go("calendar", {calMonth: day.slice(0, 7), calDay: day}),
+    }, el("div", {class: "cal-num"}, String(Number(day.slice(8)))));
+    const box = el("div", {class: "cal-items"});
+    for (const a of items.slice(0, 4))
+      box.append(el("span", {class: "cal-item" + (late(a) ? " late" : ""),
+        title: plainTitle(a.title)}, plainTitle(a.title)));
+    if (items.length > 4) box.append(el("span", {class: "cal-more"}, "+" + (items.length - 4)));
+    cell.append(box);
+    grid.append(cell);
+  }
+  c.append(grid);
+
+  const dayItems = (byDay.get(picked) || []);
+  // humanDate already says "Today", so do not say it twice.
+  c.append(section(humanDate(picked), dayItems.length,
+    taskCard(dayItems, "Nothing due on this day.")));
+
+  if (!byDay.size) c.append(el("div", {class: "section quiet"},
+    el("div", {style: "color:var(--fg3);font-size:12.5px"},
+      "Nothing has a date yet. Give a task a scheduled day or a deadline and it lands here.")));
+  return c;
+}
+
+/* ---------- graph ----------
+   Every page, and the [[links]] between them. The shape is worked out by
+   pushing all the pages apart and pulling linked ones together until it stops
+   moving, which is why clusters appear: the things you write about together
+   end up near each other without anybody filing them.
+
+   It is a canvas and not a pile of divs because a few hundred dots and a few
+   thousand lines as DOM elements is a slideshow, and because this is the one
+   screen in the app that is a picture rather than a document. */
+const GRAPH_KIND_VAR = {
+  project: "--proj", journal: "--fg3", person: "--zet", context: "--ctx",
+  zettel: "--zet", area: "--accent", goal: "--accent", horizon: "--accent",
+  checklist: "--done", org: "--wait",
+};
+
+/* Positions survive a redraw, so ticking something off in the detail panel does
+   not reshuffle the whole picture under your cursor. */
+const GRAPH_POS = new Map();
+
+function graphData() {
+  return memo("graphData", () => {
+    const nodes = [], edges = [], index = new Map();
+    const keyOf = (space, path) => (space || "") + "\u0000" + path;
+    const skip = k => k === "template" || k === "verb";
+    const add = (space, path) => {
+      const k = keyOf(space, path);
+      let i = index.get(k);
+      if (i == null) {
+        i = nodes.length;
+        index.set(k, i);
+        const kind = pageKind(path);
+        nodes.push({key: k, space, path, kind,
+                    // A context reads as @phone everywhere else in the app.
+                    label: kind === "context" ? "@" + pageTitle(path) : pageTitle(path), deg: 0});
+      }
+      return i;
+    };
+    /* A link to a page nobody has opened yet is still a link: [[c/phone]] is
+       written in fifty tasks long before anything creates pages/c/phone.md.
+       Leaving those out would hide most of the structure, so they are drawn
+       hollow, and clicking one creates the page exactly as clicking the link
+       in a task does. */
+    const ghostKind = {c: "context", p: "person", o: "org", z: "zettel"};
+    const addGhost = (space, ref) => {
+      const k = keyOf(space, "\u0000ghost\u0000" + ref.toLowerCase());
+      let i = index.get(k);
+      if (i == null) {
+        const pfx = (/^([^/]+)\//.exec(ref) || [])[1];
+        const known = ghostKind[pfx] || (pfx && STATUS_DIRS[pfx] ? "project" : null);
+        const bare = known ? ref.slice(pfx.length + 1) : ref;
+        i = nodes.length;
+        index.set(k, i);
+        nodes.push({key: k, space, ref, ghost: true, kind: known || "page",
+                    label: pfx === "c" ? "@" + bare : bare, deg: 0});
+      }
+      return i;
+    };
+    const names = visibleSpaces().filter(n => LOADED.has(n));
+    for (const name of (names.length ? names : [null])) {
+      inSpace(name, () => {
+        const space = name;
+        const pairs = new Set();
+        for (const [path, page] of V.pages) {
+          if (skip(pageKind(path))) continue;
+          const from = add(space, path);
+          walkBlocks(page.blocks, b => {
+            if (isMessage(b)) return;
+            const text = [b.title, ...(b.body || [])].join("\n");
+            for (const raw of linksIn(text)) {
+              const target = raw.split("][")[0];
+              if (/^go\//.test(target)) continue;            // tour doors are not pages
+              const tp = findExistingPage(target);
+              if (tp && (tp === path || skip(pageKind(tp)))) continue;
+              if (!tp && /^\d{4}-\d{2}-\d{2}$/.test(target)) continue;   // a day nobody wrote in
+              const to = tp ? add(space, tp) : addGhost(space, target);
+              const pk = from < to ? from + ":" + to : to + ":" + from;
+              if (pairs.has(pk)) continue;
+              pairs.add(pk);
+              edges.push([from, to]);
+              nodes[from].deg++; nodes[to].deg++;
+            }
+          });
+        }
+      });
+    }
+
+    /* Past a couple of hundred dots the picture stops being readable and starts
+       being wallpaper, so keep the best-connected ones and say how many were
+       left out rather than drawing a grey cloud. */
+    let dropped = 0;
+    let out = {nodes, edges, dropped};
+    if (nodes.length > CFG.graphNodes) {
+      const keep = nodes.slice()
+        .sort((a, b) => b.deg - a.deg || a.label.localeCompare(b.label))
+        .slice(0, CFG.graphNodes);
+      const kept = new Map();
+      keep.forEach((nd, i) => kept.set(nodes.indexOf(nd), i));
+      dropped = nodes.length - keep.length;
+      out = {
+        nodes: keep,
+        edges: edges.filter(([a, b]) => kept.has(a) && kept.has(b))
+                    .map(([a, b]) => [kept.get(a), kept.get(b)]),
+        dropped,
+      };
+    }
+    /* Labels: at 200 dots, naming them all is a wall of text with a graph
+       somewhere behind it. Name the hubs, and the one under the cursor. */
+    const ranked = out.nodes.slice().sort((a, b) => b.deg - a.deg);
+    ranked.slice(0, 14).forEach(nd => { if (nd.deg > 0) nd.hub = true; });
+    return out;
+  });
+}
+
+/* A deterministic start, so the same vault always settles into the same shape
+   and you can recognise your own graph tomorrow. Coordinates here are the
+   graph's own, not the screen's -- the picture is fitted to the box afterwards,
+   which is what keeps the dots off the frame however many there are. */
+function graphSeed(g) {
+  const n = g.nodes.length;
+  const r0 = 30 + n * 6;
+  g.nodes.forEach((nd, i) => {
+    const had = GRAPH_POS.get(nd.key);
+    if (had) { nd.x = had.x; nd.y = had.y; return; }
+    const ang = (i / Math.max(1, n)) * Math.PI * 2;
+    const jitter = 0.45 + ((i * 2654435761) % 997) / 997 * 0.55;
+    nd.x = Math.cos(ang) * r0 * jitter;
+    nd.y = Math.sin(ang) * r0 * jitter;
+  });
+}
+
+/* One round of Fruchterman-Reingold: everything repels everything, linked
+   things pull back, and a weak pull to the middle stops a page nobody links to
+   from drifting out of the picture. Forces are applied as directions, so a pair
+   settles at roughly k apart whatever the numbers happen to be.
+   O(n^2), which at 200 nodes is 20k pairs and costs well under a millisecond. */
+function graphStep(g, temp) {
+  const n = g.nodes.length;
+  if (!n) return;
+  const k = 62;                              // how far apart two linked pages sit
+  for (const a of g.nodes) { a.dx = 0; a.dy = 0; }
+  for (let i = 0; i < n; i++) {
+    const a = g.nodes[i];
+    for (let j = i + 1; j < n; j++) {
+      const b = g.nodes[j];
+      let ddx = a.x - b.x, ddy = a.y - b.y;
+      let d = Math.sqrt(ddx * ddx + ddy * ddy);
+      if (d < 0.01) { ddx = 0.3 + (i % 7) * 0.05; ddy = 0.3 - (j % 5) * 0.05; d = Math.sqrt(ddx * ddx + ddy * ddy); }
+      const f = (k * k) / (d * d);           // unit vector * k^2/d
+      a.dx += ddx * f; a.dy += ddy * f;
+      b.dx -= ddx * f; b.dy -= ddy * f;
+    }
+  }
+  for (const [i, j] of g.edges) {
+    const a = g.nodes[i], b = g.nodes[j];
+    const ddx = a.x - b.x, ddy = a.y - b.y;
+    const d = Math.sqrt(ddx * ddx + ddy * ddy) || 0.01;
+    const f = d / k;                         // unit vector * d^2/k
+    a.dx -= ddx * f; a.dy -= ddy * f;
+    b.dx += ddx * f; b.dy += ddy * f;
+  }
+  let cx = 0, cy = 0;
+  for (const a of g.nodes) { cx += a.x; cy += a.y; }
+  cx /= n; cy /= n;
+  for (const a of g.nodes) {
+    /* Gravity grows with distance. A fixed pull loses to repulsion, and pages
+       nobody links to end up twenty times further out than a linked pair is
+       wide -- which, once the picture is fitted to the box, squashes the part
+       you came to look at into a dot in the middle. */
+    a.dx += (cx - a.x) * 1.2;
+    a.dy += (cy - a.y) * 1.2;
+    const d = Math.sqrt(a.dx * a.dx + a.dy * a.dy) || 1;
+    const step = Math.min(d, temp);
+    a.x += (a.dx / d) * step;
+    a.y += (a.dy / d) * step;
+    GRAPH_POS.set(a.key, {x: a.x, y: a.y});
+  }
+}
+
+/* Fit whatever shape came out to the box on screen, so the drawing fills it
+   without anything pressed against the frame. Dots and labels keep their size:
+   a graph you cannot read is not a smaller graph, it is a smudge. */
+function graphFit(g, w, h) {
+  let minx = Infinity, maxx = -Infinity, miny = Infinity, maxy = -Infinity;
+  for (const n of g.nodes) {
+    if (n.x < minx) minx = n.x;
+    if (n.x > maxx) maxx = n.x;
+    if (n.y < miny) miny = n.y;
+    if (n.y > maxy) maxy = n.y;
+  }
+  if (!Number.isFinite(minx)) { g.view = {scale: 1, ox: w / 2, oy: h / 2}; return; }
+  const pad = 42;
+  const scale = Math.min((w - pad * 2) / Math.max(1, maxx - minx),
+                         (h - pad * 2) / Math.max(1, maxy - miny), 2.4);
+  g.view = {scale,
+            ox: w / 2 - ((minx + maxx) / 2) * scale,
+            oy: h / 2 - ((miny + maxy) / 2) * scale};
+}
+const gX = (g, n) => n.x * g.view.scale + g.view.ox;
+const gY = (g, n) => n.y * g.view.scale + g.view.oy;
+
+const graphRadius = nd => 3.4 + Math.min(nd.deg, 16) * 0.55;
+
+function graphDraw(cv, g, hoverIdx) {
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h) return;
+  const dpr = window.devicePixelRatio || 1;
+  const pw = Math.round(w * dpr), ph = Math.round(h * dpr);
+  if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+  const x = cv.getContext("2d");
+  if (!x) return;
+  x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  x.clearRect(0, 0, w, h);
+
+  // Read the theme rather than hard-coding, so the graph follows light mode.
+  const css = getComputedStyle(document.documentElement);
+  const v = (name, fallback) => trim(css.getPropertyValue(name)) || fallback;
+  const line = v("--border2", "#333a4a"), fg = v("--fg", "#e6e9ef"), fg2 = v("--fg2", "#a4acbd");
+  graphFit(g, w, h);
+  const hov = hoverIdx >= 0 ? g.nodes[hoverIdx] : null;
+  const near = new Set();
+  if (hov) {
+    near.add(hoverIdx);
+    for (const [a, b] of g.edges) {
+      if (a === hoverIdx) near.add(b);
+      else if (b === hoverIdx) near.add(a);
+    }
+  }
+
+  /* A thousand lines at the alpha that suits ten is a grey sheet with dots on
+     it, so the more there are, the fainter each one gets. */
+  const edgeAlpha = Math.max(0.1, Math.min(0.62, 8 / Math.sqrt(g.edges.length || 1)));
+  x.lineWidth = 1;
+  for (const [a, b] of g.edges) {
+    const n1 = g.nodes[a], n2 = g.nodes[b];
+    const lit = hov && (a === hoverIdx || b === hoverIdx);
+    // Faint enough to stay behind the dots, solid enough to actually see:
+    // at 0.4 on a dark background the links read as nothing at all.
+    x.globalAlpha = hov ? (lit ? 0.95 : edgeAlpha * 0.25) : edgeAlpha;
+    x.strokeStyle = lit ? v("--accent", "#6aa3ff") : v("--fg3", "#6d7689");
+    x.beginPath();
+    x.moveTo(gX(g, n1), gY(g, n1));
+    x.lineTo(gX(g, n2), gY(g, n2));
+    x.stroke();
+  }
+
+  const labelAll = g.nodes.length <= 70;
+  x.font = "11px " + v("--sans", "sans-serif");
+  x.textAlign = "center";
+  x.textBaseline = "top";
+  /* Two names written on top of each other are worse than one name: where hubs
+     sit close together, the first one drawn keeps the space and the rest go
+     unlabelled until you hover them. */
+  const taken = [];
+  const roomFor = (cx, cy, tw, force) => {
+    const box = [cx - tw / 2 - 2, cy - 1, cx + tw / 2 + 2, cy + 13];
+    if (!force) {
+      for (const t of taken)
+        if (box[0] < t[2] && box[2] > t[0] && box[1] < t[3] && box[3] > t[1]) return false;
+    }
+    taken.push(box);
+    return true;
+  };
+  for (let i = 0; i < g.nodes.length; i++) {
+    const nd = g.nodes[i];
+    const r = graphRadius(nd), px = gX(g, nd), py = gY(g, nd);
+    const dim = hov && !near.has(i);
+    x.globalAlpha = dim ? 0.2 : 1;
+    const colour = v(GRAPH_KIND_VAR[nd.kind] || "--fg2", "#a4acbd");
+    x.beginPath();
+    x.arc(px, py, i === hoverIdx ? r + 2 : r, 0, Math.PI * 2);
+    if (nd.ghost) {
+      // Hollow: something links here, but there is no page behind it yet.
+      x.fillStyle = v("--bg2", "#161920");
+      x.fill();
+      x.strokeStyle = colour;
+      x.lineWidth = 1.4;
+      x.stroke();
+    } else {
+      x.fillStyle = colour;
+      x.fill();
+      // A hairline in the background colour, so two dots that overlap still
+      // read as two dots rather than one blob.
+      x.strokeStyle = v("--bg2", "#161920");
+      x.lineWidth = 1;
+      x.stroke();
+    }
+    if (i === hoverIdx) {
+      x.globalAlpha = 1;
+      x.strokeStyle = v("--fg", "#e6e9ef");
+      x.lineWidth = 1.5;
+      x.stroke();
+      x.lineWidth = 1;
+    }
+    if (i === hoverIdx || labelAll || nd.hub) {
+      x.globalAlpha = dim ? 0.2 : (i === hoverIdx ? 1 : 0.8);
+      x.fillStyle = i === hoverIdx ? fg : fg2;
+      const text = nd.label.length > 26 ? nd.label.slice(0, 25) + "…" : nd.label;
+      if (roomFor(px, py + r + 3, x.measureText(text).width, i === hoverIdx))
+        x.fillText(text, px, py + r + 3);
+    }
+  }
+  x.globalAlpha = 1;
+}
+
+function viewGraph() {
+  const c = el("div", {class: "wrap"});
+  const g = graphData();
+  const cv = el("canvas", {class: "graphcv"});
+  const stage = el("div", {class: "graph"}, cv);
+  const legendKinds = [["project", "Projects"], ["journal", "Days"], ["person", "People"],
+                       ["context", "Contexts"], ["zettel", "Notes"]];
+
+  const ghosts = g.nodes.filter(n => n.ghost).length;
+  const real = g.nodes.length - ghosts;
+  c.append(el("div", {class: "section", style: "display:flex;gap:10px;align-items:center;flex-wrap:wrap"},
+    el("h2", {style: "margin:0;flex:1"},
+      real + " page" + (real === 1 ? "" : "s") +
+      (ghosts ? " \u00B7 " + ghosts + " not made yet" : "") + " \u00B7 " +
+      g.edges.length + " link" + (g.edges.length === 1 ? "" : "s")),
+    el("button", {class: "btn sm ghost", onclick: () => { GRAPH_POS.clear(); render(); }}, "Re-lay out")));
+
+  c.append(stage);
+
+  const legend = el("div", {class: "graph-legend"});
+  for (const [kind, label] of legendKinds)
+    legend.append(el("span", {class: "glg"},
+      el("i", {style: "background:var(" + (GRAPH_KIND_VAR[kind] || "--fg2") + ")"}), label));
+  legend.append(el("span", {class: "glg"},
+    el("i", {style: "background:transparent;box-shadow:inset 0 0 0 1.4px var(--fg3)"}), "No page yet"));
+  legend.append(el("span", {class: "glg quiet"}, "Bigger dot = more links. Click one to open it."));
+  c.append(legend);
+
+  if (g.dropped) c.append(el("div", {class: "section quiet"},
+    el("div", {style: "color:var(--fg3);font-size:12.5px"},
+      "Showing the " + CFG.graphNodes + " best-connected pages. " + g.dropped +
+      " more are in the vault — they are not drawn because past this many dots " +
+      "the picture stops telling you anything.")));
+
+  if (!g.nodes.length) {
+    c.append(el("div", {class: "section quiet"}, el("div", {style: "color:var(--fg3)"},
+      "Nothing to draw yet. Pages join the graph as soon as something links to them.")));
+    return c;
+  }
+  if (!g.edges.length) c.append(el("div", {class: "section quiet"},
+    el("div", {style: "color:var(--fg3);font-size:12.5px"},
+      "No links yet, so the pages float on their own. Type [[ in any line to link one " +
+      "page to another, and the graph starts pulling them together.")));
+
+  /* Settle over a handful of frames rather than in one blocking pass: the
+     picture is visibly finding its shape, and the main thread stays answerable
+     to clicks while it does. */
+  let hover = -1;
+  let frames = 0;
+  // Stale keys from deleted pages make a count meaningless; ask whether every
+  // dot on screen already has a place, so one new page still settles properly.
+  const maxFrames = g.nodes.every(n => GRAPH_POS.has(n.key)) ? 14 : 90;
+  let temp = 26;                               // graph units, cooling each frame
+  const tick = () => {
+    if (!cv.isConnected) return;                 // the screen moved on
+    const w = cv.clientWidth, h = cv.clientHeight;
+    if (w && h) {
+      if (frames === 0) graphSeed(g);
+      graphStep(g, temp);
+      graphDraw(cv, g, hover);
+    }
+    temp *= 0.93;
+    if (++frames < maxFrames) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+
+  const at = e => {
+    const r = cv.getBoundingClientRect();
+    const px = e.clientX - r.left, py = e.clientY - r.top;
+    let best = -1, bestD = Infinity;
+    for (let i = 0; i < g.nodes.length; i++) {
+      const nd = g.nodes[i];
+      if (nd.x == null || !g.view) continue;
+      const sx = gX(g, nd) - px, sy = gY(g, nd) - py;
+      const d = sx * sx + sy * sy;
+      const reach = graphRadius(nd) + 9;      // a 4px dot needs a thumb-sized target
+      if (d <= reach * reach && d < bestD) { best = i; bestD = d; }
+    }
+    return best;
+  };
+  cv.addEventListener("mousemove", e => {
+    const i = at(e);
+    if (i === hover) return;
+    hover = i;
+    cv.style.cursor = i >= 0 ? "pointer" : "default";
+    cv.title = i < 0 ? ""
+      : g.nodes[i].label + "  ·  " + (g.nodes[i].ghost ? "no page yet" : g.nodes[i].path);
+    graphDraw(cv, g, hover);
+  });
+  cv.addEventListener("mouseleave", () => { hover = -1; cv.title = ""; graphDraw(cv, g, -1); });
+  const openNode = nd => {
+    if (!nd.ghost) { openPageIn(nd.space, nd.path); return; }
+    inSpace(nd.space, () => followLink(nd.ref));
+  };
+  cv.addEventListener("click", e => {
+    const i = at(e);
+    if (i >= 0) openNode(g.nodes[i]);
+  });
+  // A canvas is invisible to a keyboard and a screen reader, so the same pages
+  // are reachable as a plain list underneath. Not a fallback -- the real thing,
+  // in the shape a reader can use.
+  const list = el("details", {class: "section"},
+    el("summary", {}, "The same pages as a list"));
+  const ul = el("div", {class: "pagelist"});
+  g.nodes.slice().sort((a, b) => b.deg - a.deg || a.label.localeCompare(b.label))
+    .slice(0, CFG.rowsPerPage)
+    .forEach(nd => ul.append(el("button", {class: "dash-item", onclick: () => openNode(nd)},
+      el("span", {class: "nm"}, nd.label),
+      nd.ghost ? el("span", {class: "chip"}, "no page yet") : null,
+      el("span", {class: "chip"}, nd.deg + " link" + (nd.deg === 1 ? "" : "s")))));
+  list.append(ul);
+  c.append(list);
+  return c;
+}
+
 /* ---------- every conversation, everywhere ----------
    A thread is only useful if you can find it again. This gathers them from
    every space you have shown, every project and every day page, newest first,
@@ -6877,6 +7586,21 @@ function titleForRow(title) {
     .replace(/\s{2,}/g, " "));
 }
 
+/* The same title with the link syntax read out rather than shown. A calendar
+   cell has no room for a chip, and a link nested inside a button is both bad
+   markup and two things to press in one. */
+function plainTitle(title) {
+  return trim(titleForRow(title).replace(/\[\[([^\]]+)\]\]/g, (all, t) => {
+    if (t.includes("][")) return trim(t.split("][")[1]);
+    const raw = trim(t);
+    const pfx = (/^([^/]+)\//.exec(raw) || [])[1];
+    if (pfx === "go") return tourLabel(raw.slice(3));
+    const known = pfx === "c" || pfx === "z" || pfx === "p" || pfx === "o" || (pfx && STATUS_DIRS[pfx]);
+    const label = known ? raw.slice(pfx.length + 1) : raw;
+    return pfx === "c" ? "@" + label : label;
+  }).replace(/\s{2,}/g, " "));
+}
+
 function spaceBadge(name) {
   const sp = Spaces.get(name);
   if (!sp) return null;
@@ -7471,6 +8195,7 @@ const VIEW_TITLE = {
   todos: "Todos", horizons: "Horizons of focus", checklists: "Routines & lists",
   people: "People",                     // or the header read "Today" on People
   chat: "Chat", flagged: "Flagged",     // same trap, same fix
+  board: "Board", calendar: "Calendar", graph: "Graph",   // and again, for the three new ones
   projects: "Projects", zettel: "Zettel", pages: "All pages", "journal-list": "Journals",
   health: "Health check", search: "Search", page: "Page",
 };
@@ -7491,6 +8216,9 @@ function render() {
     case "people":  node = viewPeople(); break;
     case "chat":    node = viewChat(); break;
     case "flagged": node = viewFlagged(); break;
+    case "board":   node = viewBoard(); break;
+    case "calendar":node = viewCalendar(); break;
+    case "graph":   node = viewGraph(); break;
     case "person":  node = viewPerson(state.person || whoAmI()); break;
     case "horizons":
       node = viewHorizons();
@@ -9787,6 +10515,9 @@ const CHORDS = {
   "w p": () => go("projects", {statusCode: "1"}),
   "w w": () => go("projects", {statusCode: "3"}),
   "w m": () => go("projects", {statusCode: "2"}),
+  "v b": () => go("board"),
+  "v c": () => go("calendar"),
+  "v g": () => go("graph"),
 };
 let chordBuf = "";
 let chordTimer = null;
@@ -9816,7 +10547,7 @@ document.addEventListener("keydown", e => {
     if (CHORDS[key]) { e.preventDefault(); CHORDS[key](); }
     return;
   }
-  if ("gfzhw".includes(e.key)) {
+  if ("gfzhwv".includes(e.key)) {
     chordBuf = e.key; showChord(e.key + " ...");
     chordTimer = setTimeout(resetChord, 1500);
     e.preventDefault(); return;

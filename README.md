@@ -94,6 +94,33 @@ finished. Click one to go straight to it. "Last seen" is per device and never
 written to the shared files, so marking your own news read does not mark it read
 for everybody.
 
+### Four ways to look at the same list
+
+A list answers "what next" and nothing else. Three more screens read the very
+same blocks from the same markdown — none of them is a separate mode, and
+anything you change in one is changed everywhere.
+
+**Board** — four columns, To do, Doing, Waiting for and Done, with everything
+closed today in the last one so it is not permanently empty. Drag a card between
+columns to change its state; on a phone the columns stack and you open a card
+and use its state buttons instead, because dragging on a touch screen fights the
+scroll.
+
+**Calendar** — a month at a time, Monday first. Everything with a scheduled day
+or a deadline lands on its day, late ones in red. Pick a day and its tasks are
+listed underneath in full. On a phone the squares show coloured dots rather than
+shrunken titles, and the list below is where you read them.
+
+**Graph** — every page as a dot, every `[[link]]` as a line, pushed apart and
+pulled together until it settles, so what you write about together ends up near
+each other without anybody filing it. A bigger dot has more links. A hollow dot
+is a link to a page nobody has made yet — `[[c/phone]]` written in fifty tasks
+long before `pages/c/phone.md` exists — and clicking one makes it, exactly as
+clicking the link in a task does. Under the picture, the same pages as an
+ordinary list, because a canvas means nothing to a keyboard or a screen reader.
+
+All three are in **Views** in the sidebar, or `v b`, `v c` and `v g`.
+
 ### Linking to a task from anywhere else
 
 "Did you correct the colours on the rollup?" is a sentence somebody types in
@@ -633,7 +660,8 @@ The markdown is identical either way.
 
 `c` capture · `/` search · `?` all keys · `f t` today · `g n` todos ·
 `g x` context · `g a` planned · `g p` people · `g c` chat · `g w` weeding ·
-`g r` review · `ctrl-z` undo a delete · **Copy link** on any task or page ·
+`g r` review · `v b` board · `v c` calendar · `v g` graph ·
+`ctrl-z` undo a delete · **Copy link** on any task or page ·
 `g d` re-surface. In the outline: `Enter` new block, `Tab`/`Shift-Tab` indent,
 `Ctrl-Enter` cycle state.
 
@@ -649,9 +677,13 @@ element was created, no inline handler survived.
 
 **Lists are rationed, not unbounded.** Drawing every open task used to take
 3.7 seconds at five thousand of them and 10.7 at twenty thousand, with a
-quarter of a million DOM nodes. Rows are drawn 60 at a time and project
-sections 25 at a time, with the rest one click away and the headings still
-showing true totals: 120ms and 3,400 nodes at the same twenty thousand.
+quarter of a million DOM nodes. Rows are drawn 100 at a time and project
+sections 100 at a time, with the rest one click away and the headings still
+showing true totals: 160ms and 3,400 nodes at the same twenty thousand. The
+board draws 100 cards a column (12 on a phone, where they are stacked and you
+would otherwise scroll past the first column to reach the second), and the graph
+draws the 200 best-connected pages and says how many it left out — past that it
+stops being a picture of anything.
 
 **The whole-vault questions are asked once per render.** What is open, who is
 here, where the conversations are — the sidebar alone used to ask three of them
@@ -675,6 +707,8 @@ per item, which cost 146ms a draw on a big vault. Now 6.7ms.
 - **Auto-sync of the courier file is desktop only** (it needs a durable handle).
 - **Recurrence is offered, never scheduled.** Nothing appears until you tick the
   current one off and say yes, so a repeat you forget about simply stops.
+- **Dragging a board card is mouse only.** Touch browsers do not fire HTML5
+  drag events, so on a phone the card's state buttons are the way to move it.
 - **A link is only as stable as where the app lives.** Move the app to a
   different address and old links stop resolving; rename a page and a link to it
   breaks, because the path is the address.
