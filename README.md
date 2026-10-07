@@ -22,9 +22,15 @@ Phys-Viz verb rule, the context links, the age tracking and the morning/weekly
 rituals all survive the move.
 
 ```
-index.html   the entire app
-serve.py     optional always-on sync server (Termux, Pi, NAS)
+index.html             the entire app -- open it and it runs
+sw.js                  offline + share-sheet support when it is served from a URL
+manifest.webmanifest   home-screen icon, own window, "open .md with GroupTodo"
+icon.svg               that icon
+serve.py               optional always-on sync server (Termux, Pi, NAS)
 ```
+
+`index.html` on its own is the whole app. The other three turn it into something
+a phone keeps on its home screen; see **Running it** below.
 
 ---
 
@@ -59,24 +65,94 @@ Day one has no morning weeding and no weekly-review nag.
 
 ## Running it
 
-Open `index.html`. That is the whole install. It works from a file on disk, a
-USB stick, a network share, or any static web host.
+There are two ways, and the difference matters more on a phone than on a desktop.
 
-Serving it (`python3 -m http.server`, an intranet path, GitHub Pages) adds two
-things: the browser will offer to **install it as an app**, and storage is more
-reliably durable. Everything else is identical.
+### A. One downloaded file
+
+Open `index.html`. That is the whole install. It works from a file on disk, a USB
+stick, a network share — double-click and go. Nothing else is needed, and nothing
+can phone home.
+
+What a `file://` page is not allowed to do: register a service worker, appear in
+the system share sheet, or be installed to a home screen. So on a phone this
+route means saving the vault file through the browser's own download UI, which is
+clumsy but works.
+
+### B. From a URL — the no-install app
+
+Put all four files (`index.html`, `sw.js`, `manifest.webmanifest`, `icon.svg`) on
+any static host and open the URL. There is nothing to install, on any platform:
+
+```bash
+# locally, to see what it does
+cd GroupTodo && python3 -m http.server 8000
+# then open http://127.0.0.1:8000/
+```
+
+Any of these will do, because nothing server-side is required — no PHP, no Node,
+no database, no build step:
+
+- GitHub Pages, Netlify, Cloudflare Pages, a `~/public_html`
+- a company intranet path, an IIS folder, a SharePoint document library served
+  as a site, a file server over HTTP
+- `serve.py` on your own phone or Raspberry Pi
+- localhost, for a desktop
+
+What the URL buys you, on every platform:
+
+- **Add to Home Screen** gives it an icon and its own window — no app store, no
+  APK, no `.dmg`, no MDM approval. It is a web page the OS treats as an app.
+- **It opens with no network at all.** After the first visit the service worker
+  keeps the page; the vault was never on the network in the first place. Plane
+  mode, dead server, Android having reclaimed Termux — it still opens with your
+  data in it.
+- **The share sheet carries the vault file.** *Vault & sync → Send vault file*
+  hands the markdown straight to Dropbox, Drive, OneDrive, Nextcloud, Syncthing,
+  Signal or mail — whichever you already have. Those apps are the sync GroupTodo
+  deliberately does not have.
+- **Markdown opens in GroupTodo.** Share a `.md` into it from another app, or
+  open one with it from a file manager, and it merges into your vault.
+- **Storage is durable**, where a `file://` page's often is not (see the iOS note).
+
+Updating is a refresh: replace `index.html` on the host and every device picks it
+up next time it has a connection.
+
+**It is still not a service.** The page comes from a URL; the data never does.
+The Content-Security-Policy permits no outbound connection except to localhost,
+so whoever hosts the file sees that you fetched a page, and nothing else — no
+tasks, no projects, no account, because there is no account.
+
+### Why not a "real" app?
+
+Because every other way of shipping this is an install. Flutter, React Native,
+Tauri, Electron, a Go binary, a terminal app: each means a per-platform build, an
+app store or a signed binary, and in a corporate environment a conversation with
+whoever controls MDM. A browser is the only runtime already present and already
+permitted on iOS, Android, Windows, macOS and Linux at once. So route B *is* the
+cross-platform no-install app — HTML is the delivery mechanism for that, not a
+constraint for its own sake.
+
+The honest cost: no phone browser can write into a folder you choose. On desktop
+Chrome and Edge GroupTodo writes your `.md` files live into a real folder; on
+iOS and Android the vault lives in the app's own storage and travels as one
+markdown file through the share sheet. That is a browser limit, and a native app
+would be the only way around it — at the price of being an install.
 
 ### What each platform can do
 
 Capabilities are **probed at runtime**, not assumed — open **Vault & sync** and
 the top panel tells you exactly what this device allows. The short version:
 
-| | Runs standalone | Stores locally | Live folder of `.md` | Serverless sync |
-|---|---|---|---|---|
-| Windows / macOS / Linux, Chrome or Edge | yes | yes | yes | one-click |
-| Windows / macOS / Linux, Firefox | yes | yes | no | Save / Open |
-| Android, Chrome | yes | yes | no | Save / Open |
-| iOS / iPadOS, Safari | yes | see note | no | Save / Open |
+| | Runs standalone | Stores locally | Live folder of `.md` | Vault file out | Home screen | Opens offline |
+|---|---|---|---|---|---|---|
+| Windows / macOS / Linux, Chrome or Edge | yes | yes | yes | one-click link | yes (served) | yes (served) |
+| Windows / macOS / Linux, Firefox | yes | yes | no | Save / Open | no | yes (served) |
+| Android, Chrome | yes | yes | no | share sheet | yes (served) | yes (served) |
+| iOS / iPadOS, Safari | yes | see note | no | share sheet | yes (served) | yes (served) |
+
+"Served" means route B above — opened from a URL rather than as a downloaded
+file. Everything in the last two columns needs it, because a `file://` page may
+not register a service worker.
 
 **iOS note.** Safari restricts storage for pages opened directly from the Files
 app. If it does, GroupTodo says so in plain words at startup and in Vault &
@@ -84,10 +160,13 @@ sync, and keeps working in memory for the session — you just need to save the
 vault file before closing the tab. Serving the file from any URL removes the
 restriction entirely, so on iPhone and iPad **serving it is the better path**.
 
-I verified the Chromium behaviours on this list directly. **Safari and Firefox I
-could not test** — no engine available in my environment — so those rows come
-from documented behaviour, and the app's own runtime probe is the authority on
-your actual device.
+I verified the Chromium behaviours on this list directly, including the
+service-worker offline cycle and the shared-file merge against a plain
+`python3 -m http.server`. **Safari and Firefox I could not test** — no engine
+available in my environment — so those rows come from documented behaviour, and
+the app's own runtime probe is the authority on your actual device. The share
+sheet in particular is reported by the browser (`navigator.canShare`) rather than
+assumed: where it is missing, the button says *Save vault file* and downloads.
 
 ---
 
@@ -235,6 +314,12 @@ Drive, OneDrive, Dropbox, Google Drive, Syncthing, a network share.
 
 - **Desktop Chrome / Edge**: *Link vault file* once, then *Sync now* reads,
   merges and writes back in a single click.
+- **Phones, served from a URL**: *Send vault file* opens the system share sheet,
+  so the markdown goes straight into Dropbox, Drive, OneDrive, Nextcloud,
+  Syncthing, Signal or mail. Coming back the other way, share a `.md` **into**
+  GroupTodo from those same apps, or open one with it from a file manager — it
+  merges on arrival. (Share-target and file-opening are Android and desktop
+  Chrome; on iOS, share out, then *Open vault file* to bring one in.)
 - **Everywhere else, iOS included**: *Save vault file* and *Open vault file* use
   the ordinary browser Save and Open dialogs, which reach iCloud Drive and the
   Files app like any other document.
@@ -558,4 +643,11 @@ state, `backspace` on an empty block deletes it.
   both modes. `g w` opens it anyway.
 - **Merged view is opt-in and per device.** Structure views (horizons, review,
   health) stay on the active space even when several are shown.
+- **No phone browser can write into a folder you choose.** Live `.md` folders are
+  desktop Chrome/Edge only; on iOS and Android the vault lives in the app's own
+  storage and leaves as one file. Only a native install would change that.
+- **The service worker needs a URL.** A downloaded `file://` page cannot register
+  one, so offline-open, home-screen install and the share sheet all need route B.
+- **Share-target and file-opening are Chromium features.** iOS can share out but
+  not in; use *Open vault file* there.
 - **Safari and Firefox are untested by me** (see the table above).

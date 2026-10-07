@@ -12,11 +12,11 @@
   default-src 'none';
   script-src 'unsafe-inline';
   style-src 'unsafe-inline';
-  img-src data: blob:;
+  img-src 'self' data: blob:;
   media-src data: blob:;
   connect-src 'self' http://127.0.0.1:* http://localhost:*;
   worker-src 'self';
-  manifest-src blob:;
+  manifest-src 'self' blob:;
   form-action 'none';
   base-uri 'none'">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -5580,12 +5580,12 @@ function openExportPage(rootPath) {
         const text = exportMarkdown(paths, opts);
         const name = "grouptodo-project-" +
           baseName(rootPath).toLowerCase().replace(/[^\w-]+/g, "-") + ".md";
-        const url = URL.createObjectURL(new Blob([text], {type: "text/markdown"}));
-        const a = el("a", {href: url, download: name});
-        document.body.append(a); a.click(); a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
         closeModal();
-        notify("Exported " + paths.length + " page" + (paths.length === 1 ? "" : "s") + " as " + name + ".");
+        sendMarkdownOut(name, text, {title: pageTitle(rootPath)}).then(how => {
+          if (how === "cancelled") return;
+          notify((how === "shared" ? "Sent " : "Exported ") + paths.length +
+                 " page" + (paths.length === 1 ? "" : "s") + " as " + name + ".");
+        });
       }}, "Export"),
     ],
   });
@@ -5827,16 +5827,15 @@ function syncSummary(r) {
 }
 
 /* ---------- moving the bundle in and out ---------- */
-function saveBundleAsDownload() {
-  const blob = new Blob([bundleMarkdown()], {type: "text/markdown"});
-  const url = URL.createObjectURL(blob);
-  const a = el("a", {href: url, download: bundleName()});
-  document.body.append(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
+async function saveBundleAsDownload() {
+  const name = bundleName();
+  const how = await sendMarkdownOut(name, bundleMarkdown(),
+    {title: (Spaces.active || "GroupTodo") + " vault"});
+  if (how === "cancelled") return;
   setSetting("last_sync", nowStamp());
-  notify("Saved " + bundleName() + ". Put it in a folder you share with the right people.");
+  notify(how === "shared"
+    ? "Sent " + name + ". Dropping it in a synced folder is what keeps your devices together."
+    : "Saved " + name + ". Put it in a folder you share with the right people.");
 }
 
 function openBundleFromFile(onDone) {
@@ -6170,7 +6169,13 @@ function openVaultDialog() {
       : CAP.persist === "ls" ? "Changes persist (IndexedDB blocked, using localStorage)"
       : "This browser blocks local storage for this page — your work lives in memory only, so save the vault file before closing"),
     capLine(CAP.dirPicker, CAP.dirPicker ? "Can open a vault folder directly" : "Cannot open folders (normal on iOS, Android and Firefox)"),
-    capLine(CAP.savePicker, CAP.savePicker ? "Can link a vault file for one-click sync" : "No file linking — use Save / Open below"));
+    capLine(CAP.savePicker, CAP.savePicker ? "Can link a vault file for one-click sync" : "No file linking — use Save / Open below"),
+    capLine(SW_READY, SW_READY ? "Opens without a network, and installs to your home screen"
+      : CAP.fromFile ? "Opened as a file, so: no offline open, no home screen, no share sheet — open it from a URL instead"
+      : "No offline copy yet (sw.js missing from the host, or still installing)"),
+    capLine(canShareFiles(), canShareFiles()
+      ? "Can hand the vault file to your other apps through the share sheet"
+      : "No share sheet here — the vault file downloads instead"));
 
   const serverInput = el("input", {
     placeholder: "http://127.0.0.1:8777",
@@ -6206,13 +6211,18 @@ function openVaultDialog() {
         el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
           "Your whole vault travels as one markdown file. Keep it in a folder your devices " +
           "already sync — iCloud Drive, OneDrive, Dropbox, Google Drive, Syncthing — and " +
-          "sync on each device. Edits merge per page; nothing is overwritten blindly."),
+          "sync on each device. Edits merge per page; nothing is overwritten blindly." +
+          (canShareFiles()
+            ? " On this device the file leaves through the share sheet, so you can hand it " +
+              "straight to whichever of those apps you already have."
+            : "")),
         el("div", {style: "display:flex;gap:8px;flex-wrap:wrap"},
           CAP.savePicker
             ? el("button", {class: "btn primary", onclick: () => linkedKnown ? syncLinked() : linkVaultFile()},
                 linkedKnown ? "Sync now" : "Link vault file")
             : null,
-          el("button", {class: "btn" + (CAP.savePicker ? " ghost" : " primary"), onclick: () => saveBundleAsDownload()}, "Save vault file"),
+          el("button", {class: "btn" + (CAP.savePicker ? " ghost" : " primary"), onclick: () => saveBundleAsDownload()},
+            canShareFiles() ? "Send vault file" : "Save vault file"),
           el("button", {class: "btn ghost", onclick: () => openBundleFromFile()}, "Open vault file"),
           CAP.savePicker && linkedKnown
             ? el("button", {class: "btn ghost", onclick: () => linkVaultFile()}, "Re-link")
@@ -6568,9 +6578,28 @@ try {
   if (t) document.documentElement.dataset.theme = t;
 } catch (_) {}
 
-/* Installable as an app where the browser allows it. The manifest is built
-   at runtime so the page stays a single file with nothing to fetch. */
+/* ============================================================
+   INSTALLABLE WITHOUT INSTALLING
+   Opened from a URL, this is an app: the manifest gives it a home-screen
+   icon and its own window, the service worker lets it open with no network,
+   and the share sheet carries the vault file to whichever cloud app the
+   phone already has. Nothing is installed from a store and no account exists.
+
+   Opened as a downloaded file:// page it is still the same app, minus the
+   three things a file:// page is not allowed: a real manifest, a service
+   worker, and the share sheet. Those degrade to a blob manifest and plain
+   downloads.
+   ============================================================ */
+
+/* A manifest from the server when there is one -- only a real URL may declare
+   share_target and file_handlers -- and a blob otherwise, so a file:// page
+   stays a single document with nothing to fetch. */
 function installManifest() {
+  if (CAP.served) {
+    document.head.append(el("link", {rel: "manifest", href: "./manifest.webmanifest"}));
+    document.head.append(el("link", {rel: "icon", href: "./icon.svg", type: "image/svg+xml"}));
+    return;
+  }
   try {
     const icon = "data:image/svg+xml," + encodeURIComponent(
       "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'>" +
@@ -6584,7 +6613,85 @@ function installManifest() {
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type: "application/manifest+json"}));
     document.head.append(el("link", {rel: "manifest", href: url}));
+    document.head.append(el("link", {rel: "icon", href: icon, type: "image/svg+xml"}));
   } catch (_) { /* a browser without Blob URLs still runs fine, just not installable */ }
+}
+
+/* ---------- handing a markdown file to the rest of the phone ---------- */
+/* No phone browser can write into a folder, so the file has to leave through
+   the OS: the share sheet hands it straight to Dropbox, Drive, Nextcloud,
+   Syncthing, Signal or mail, which are the sync that GroupTodo does not have.
+   Desktops get a download, which is what they wanted anyway. */
+const canShareFiles = () => {
+  try { return !!(navigator.canShare && navigator.share &&
+                  navigator.canShare({files: [new File(["x"], "x.md", {type: "text/markdown"})]})); }
+  catch (_) { return false; }
+};
+
+function downloadText(name, text) {
+  const url = URL.createObjectURL(new Blob([text], {type: "text/markdown"}));
+  const a = el("a", {href: url, download: name});
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+/* Returns "shared" | "saved". Never throws: a refused share becomes a save. */
+async function sendMarkdownOut(name, text, {title = name} = {}) {
+  if (canShareFiles()) {
+    try {
+      await navigator.share({files: [new File([text], name, {type: "text/markdown"})], title});
+      return "shared";
+    } catch (e) {
+      if (e && e.name === "AbortError") return "cancelled";
+      // Some Android builds reject files from a non-user gesture; fall back.
+    }
+  }
+  downloadText(name, text);
+  return "saved";
+}
+
+/* ---------- taking a markdown file in from the rest of the phone ---------- */
+async function mergeIncomingText(text, label) {
+  const files = parseBundle(text);
+  if (!files.size) {
+    notify((label || "That file") + " has no GroupTodo pages in it.", "error");
+    return false;
+  }
+  notify(syncSummary(mergeBundle(files)));
+  render();
+  return true;
+}
+
+/* Shared from another app: the service worker caught the POST and left the
+   file in a one-item mailbox for us. */
+async function collectSharedFile() {
+  if (!CAP.served || !("caches" in window)) return;
+  if (!/[?&]shared=1/.test(location.search)) return;
+  try {
+    const c = await caches.open("grouptodo-inbox");
+    const r = await c.match("./shared-vault.md");
+    if (r) {
+      await mergeIncomingText(await r.text(), "The file you shared");
+      await c.delete("./shared-vault.md");
+    }
+  } catch (_) {}
+  try { history.replaceState(null, "", location.pathname); } catch (_) {}
+}
+
+/* Opened with GroupTodo from a file manager (manifest file_handlers). */
+function installFileHandler() {
+  if (!("launchQueue" in window) || typeof LaunchParams === "undefined") return;
+  if (!("files" in LaunchParams.prototype)) return;
+  window.launchQueue.setConsumer(async params => {
+    for (const handle of params.files || []) {
+      try {
+        const f = await handle.getFile();
+        await mergeIncomingText(await f.text(), f.name);
+      } catch (_) {}
+    }
+  });
 }
 
 /* Pick the best storage this device actually allows. */
@@ -6629,19 +6736,25 @@ function afterFirstRun() {
   }
 }
 
-/* When a sync server is serving this page, let it install a service worker so
-   the app can still be opened if that server goes away -- which on Android is
-   every time the OS reclaims Termux. Nothing happens from a file:// page, and
-   the vault itself is never cached. */
+/* Register the service worker whenever this page came from a host -- a static
+   site, a company intranet, or serve.py on the phone itself. After the first
+   visit the app opens with no network at all: no server running, plane mode,
+   or Android having reclaimed Termux. Nothing happens from a file:// page,
+   where service workers are not allowed, and the vault is never cached. */
+let SW_READY = false;
 function installServiceWorker() {
   if (!CAP.served || !("serviceWorker" in navigator)) return;
-  navigator.serviceWorker.register("./sw.js").catch(() => {});
+  navigator.serviceWorker.register("./sw.js")
+    .then(() => navigator.serviceWorker.ready)
+    .then(() => { SW_READY = true; })
+    .catch(() => { /* a host without sw.js: everything else still works */ });
 }
 
 (async function init() {
   await probeStorage();
   installManifest();
   installServiceWorker();
+  installFileHandler();
   await initSpaces();
 
   const shown = storedVisible();
@@ -6660,6 +6773,7 @@ function installServiceWorker() {
   ensureJournal(todayISO());
   await ensureVisibleLoaded();
   render();
+  await collectSharedFile();
 
   if (CAP.persist === "memory") {
     notify("This browser will not store anything for this page. Use Vault & sync \u2192 " +
