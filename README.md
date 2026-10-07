@@ -312,8 +312,11 @@ No server, no account, no third party. Your whole vault travels as **one
 markdown file** that you keep in a folder your devices already sync — iCloud
 Drive, OneDrive, Dropbox, Google Drive, Syncthing, a network share.
 
-- **Desktop Chrome / Edge**: *Link vault file* once, then *Sync now* reads,
-  merges and writes back in a single click.
+- **Desktop Chrome / Edge**: *Link vault file* once and the clicking is over.
+  It merges when the space opens, merges again when you come back to the tab,
+  and writes back about a minute after you stop typing — never mid-edit, and
+  quietly unless it actually brought something in. *Sync now* still forces it,
+  and *Sync by itself* turns it off.
 - **Phones, served from a URL**: *Send vault file* opens the system share sheet,
   so the markdown goes straight into Dropbox, Drive, OneDrive, Nextcloud,
   Syncthing, Signal or mail. Coming back the other way, share a `.md` **into**
@@ -334,6 +337,57 @@ changes nothing.
 
 Tested: concurrent appends on two devices, check-off propagation, repeated
 syncs, and deletions. All verified in headless Chromium.
+
+### Worked example: PC in Edge, phone in Edge, through OneDrive
+
+The asymmetry to know up front: **desktop Edge can write into a folder you
+choose; Edge on Android cannot.** No Android browser can — there is no folder
+picker on the platform. So the PC half is automatic and the phone half is a file
+you hand over. Here is the whole loop.
+
+**Once, on the PC**
+
+1. Put the four files on a URL both devices can reach (GitHub Pages, an intranet
+   path, anything static). Open it in Edge.
+2. **Vault & sync → Link vault file**, and save it as
+   `OneDrive\GroupTodo\work-vault.md`. Edge remembers the file across restarts.
+3. Leave **Sync by itself** on (it is on by default).
+
+**Once, on the phone**
+
+4. Open the same URL in Edge for Android. Menu → **Add to phone**. You now have
+   an icon; after that first visit it opens with no network.
+
+**Every day**
+
+| You do | What happens |
+|---|---|
+| Type on the PC | Saved locally at once. About a minute after you stop, the vault file in OneDrive is rewritten. OneDrive uploads it. |
+| Pick up the phone, open the app | Your own copy, as you left it. |
+| **Vault & sync → Open vault file** → OneDrive → `work-vault.md` | The PC's day merges in. One toast says what arrived. |
+| Edit on the phone | Saved on the phone. |
+| **Vault & sync → Send vault file** → share to OneDrive | The phone's version goes up. |
+| Sit back down at the PC, click into the tab | It merges the phone's edits on its own — no button. |
+
+So the PC end is hands-off and the phone end is two deliberate gestures, in and
+out. That is the honest shape of it, and the reason is the folder picker, not the
+sync.
+
+**Three things worth knowing**
+
+- **Merges, never overwrites.** Both sides can edit the same day and both sets of
+  tasks survive; a task you ticked on the phone arrives ticked. Re-syncing the
+  same file changes nothing, so an extra sync is never a risk.
+- **OneDrive's share sheet may save `work-vault (1).md`** instead of replacing the
+  file. Harmless — merging is by content, not filename — but tidy up
+  occasionally, and on the PC open the newest one if you see several.
+- **Sync before you switch devices, not after.** Nothing is lost either way; you
+  just will not see the other side's work until a file has made the trip.
+
+**If the two gestures on the phone annoy you**, the only ways to remove them are
+an always-on `serve.py` plus a folder sync that actually keeps a local folder on
+Android (Syncthing does; OneDrive and Drive do not), or a native app. Both are
+installs, which is the thing you asked to avoid.
 
 ### Alternative: a live folder
 
@@ -650,4 +704,7 @@ state, `backspace` on an empty block deletes it.
   one, so offline-open, home-screen install and the share sheet all need route B.
 - **Share-target and file-opening are Chromium features.** iOS can share out but
   not in; use *Open vault file* there.
+- **Auto-sync is desktop only.** It needs a file handle that survives restarts,
+  which is `showSaveFilePicker` — Chrome and Edge on desktop. On a phone the
+  vault file goes in and out by hand.
 - **Safari and Firefox are untested by me** (see the table above).

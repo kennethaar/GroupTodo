@@ -1096,6 +1096,7 @@ function touch(path) {
   }
   V.dirty.add(path);
   scheduleFlush();
+  scheduleAutoSync();
 }
 
 function removePage(path) {
@@ -1743,6 +1744,8 @@ async function openSpace(name) {
   await ensureVisibleLoaded();
   render();
   await Spaces.writeSummary().catch(() => {});
+  AUTOSYNC_AT = 0;                  // arriving in a space is worth one merge
+  autoSyncLinked();
 }
 
 /* ---------- creating and sharing ---------- */
@@ -5886,11 +5889,12 @@ async function linkVaultFile() {
 }
 
 /* Read the file, merge what is new, write the merged vault back. */
-async function syncLinked() {
+async function syncLinked({quiet = false} = {}) {
   const h = await linkedHandle();
-  if (!h) { notify("No linked vault file yet.", "warn"); return; }
+  if (!h) { if (!quiet) notify("No linked vault file yet.", "warn"); return; }
   try {
     if ((await h.queryPermission({mode: "readwrite"})) !== "granted") {
+      if (quiet) return;                 // asking needs a click; wait for one
       if ((await h.requestPermission({mode: "readwrite"})) !== "granted") {
         notify("Permission to the vault file was declined.", "warn");
         return;
@@ -5907,12 +5911,61 @@ async function syncLinked() {
     await w.close();
     setSetting("last_sync", nowStamp());
     setSync("ok", V.backend ? V.backend.label : "synced");
-    notify(syncSummary(report) + " Vault file written.");
+    const changed = report.added + report.updated + report.merged + report.deleted;
+    if (!quiet) notify(syncSummary(report) + " Vault file written.");
+    else if (changed) notify(syncSummary(report));     // silent unless it brought something in
     render();
   } catch (e) {
     setSync("err", "sync failed");
-    notify("Sync failed: " + e.message, "error");
+    if (!quiet) notify("Sync failed: " + e.message, "error");
   }
+}
+
+/* ---------- keeping the linked file current without being asked ----------
+   The two-device loop is only as good as the moment you remember to press
+   Sync, and the press is the part people forget. On a desktop the file handle
+   survives restarts, so it can be dropped: merge when the space opens, merge
+   when you come back to the tab, and write back once you have stopped typing.
+
+   Three rules keep it from being a nuisance: only when permission is already
+   granted -- asking for it needs a click -- never over an edit in progress,
+   and quiet unless it actually brought something in from the other device. */
+let AUTOSYNC_AT = 0;
+let AUTOSYNC_TIMER = null;
+const autoSyncOn = () => PREF.get("autosync", "1") === "1";
+
+function busyEditing() {
+  if (document.querySelector(".modal")) return true;
+  const a = document.activeElement;
+  return !!(a && (a.isContentEditable || a.tagName === "INPUT" || a.tagName === "TEXTAREA"));
+}
+
+async function autoSyncLinked() {
+  if (!autoSyncOn() || !CAP.savePicker) return;
+  if (busyEditing()) return;
+  if (Date.now() - AUTOSYNC_AT < 20000) return;        // never hammer the disk
+  let h = null;
+  try { h = await linkedHandle(); } catch (_) {}
+  if (!h) return;
+  try { if ((await h.queryPermission({mode: "readwrite"})) !== "granted") return; }
+  catch (_) { return; }
+  AUTOSYNC_AT = Date.now();
+  await syncLinked({quiet: true});
+}
+
+/* Called from touch(): write back a little after the typing stops. */
+function scheduleAutoSync() {
+  if (!autoSyncOn() || !CAP.savePicker) return;
+  clearTimeout(AUTOSYNC_TIMER);
+  AUTOSYNC_TIMER = setTimeout(() => autoSyncLinked(), 45000);
+}
+
+function installAutoSync() {
+  if (!CAP.savePicker) return;
+  window.addEventListener("focus", () => autoSyncLinked());
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) autoSyncLinked();
+  });
 }
 
 /* Folders and servers belong to ONE space, which is what keeps Work out of
@@ -6227,6 +6280,22 @@ function openVaultDialog() {
           CAP.savePicker && linkedKnown
             ? el("button", {class: "btn ghost", onclick: () => linkVaultFile()}, "Re-link")
             : null),
+        CAP.savePicker && linkedKnown ? el("div", {style: "display:flex;gap:10px;align-items:flex-start;margin-top:10px"},
+          (() => {
+            const box = el("button", {class: "spacetoggle" + (autoSyncOn() ? " on" : ""), onclick: () => {
+              const on = !autoSyncOn();
+              PREF.set("autosync", on ? "1" : "0");
+              box.classList.toggle("on", on);
+              box.textContent = on ? "\u2713" : "";
+              notify(on ? "Syncing the linked file on its own." : "Sync only when you press it.");
+            }}, autoSyncOn() ? "\u2713" : "");
+            return box;
+          })(),
+          el("div", {},
+            el("div", {}, "Sync by itself"),
+            el("div", {style: "color:var(--fg3);font-size:12px"},
+              "Merges when this space opens and when you come back to the tab, and writes " +
+              "back about a minute after you stop typing. Never while you are editing."))) : null,
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
           lastSync ? "Last sync: " + formatStamp(lastSync) : "Not synced yet.")),
 
@@ -6755,6 +6824,7 @@ function installServiceWorker() {
   installManifest();
   installServiceWorker();
   installFileHandler();
+  installAutoSync();
   await initSpaces();
 
   const shown = storedVisible();
