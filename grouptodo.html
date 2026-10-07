@@ -1949,6 +1949,7 @@ async function openSpace(name) {
   AUTOSYNC_AT = 0;                  // arriving in a space is worth one merge
   autoSyncLinked();
   checkNews();
+  checkClaimable();
 }
 
 /* ---------- creating and sharing ---------- */
@@ -5018,6 +5019,258 @@ async function movePageToSpace(path, target) {
   openPage(path);
 }
 
+/* ============================================================
+   PUTTING A DATED TASK IN A CALENDAR
+   Two routes, and the difference matters.
+
+   A .ics file is made here and downloaded. Nothing is sent anywhere, it works
+   with every calendar there is, and it is the only route that works offline.
+
+   A deeplink opens the calendar's own "new event" screen with the fields
+   filled in. One click instead of download-then-import -- but the title and
+   the date travel to Microsoft or Google in the URL, because that is how the
+   link works. That is a per-click disclosure you can see happening, which is
+   a different thing from subscribing a feed, and it is why there is no feed
+   here: a subscription would hand over the whole list, forever, to a URL whose
+   only protection is that nobody has guessed it.
+
+   Navigation is not connect-src, so the CSP does not block these and does not
+   need widening.
+   ============================================================ */
+const CAL_PREF_KEY = "calendar";
+const calendarChoice = () => PREF.get(CAL_PREF_KEY, "");
+
+const icsDate = iso => String(iso).replace(/-/g, "");
+const icsEsc = t => String(t || "")
+  .replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+/* RFC 5545 wants lines folded at 75 octets; a long task title otherwise makes
+   a file some calendars quietly refuse. */
+const icsFold = line => {
+  const out = [];
+  let rest = line;
+  while (rest.length > 73) { out.push((out.length ? " " : "") + rest.slice(0, 73)); rest = rest.slice(73); }
+  out.push((out.length ? " " : "") + rest);
+  return out.join("\r\n");
+};
+
+function icsFor(items) {
+  const now = nowStamp().replace(/[-:]/g, "");
+  const out = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//GroupTodo//EN", "CALSCALE:GREGORIAN"];
+  items.forEach((a, i) => {
+    const day = a.due;
+    if (!day) return;
+    out.push("BEGIN:VEVENT");
+    out.push(icsFold("UID:" + (a.block.id || ("gtd-" + i)) + "@grouptodo"));
+    out.push("DTSTAMP:" + now);
+    // All-day: DTEND is exclusive, so a one-day task ends the next morning.
+    out.push("DTSTART;VALUE=DATE:" + icsDate(day));
+    out.push("DTEND;VALUE=DATE:" + icsDate(shiftISO(day, 1)));
+    out.push(icsFold("SUMMARY:" + icsEsc(titleForRow(a.title))));
+    const notes = [a.project ? "Project: " + a.project : null,
+                   a.context ? "Context: @" + a.context : null,
+                   a.assignee ? "For: " + a.assignee : null].filter(Boolean).join("\n");
+    if (notes) out.push(icsFold("DESCRIPTION:" + icsEsc(notes)));
+    out.push("TRANSP:TRANSPARENT");          // a to-do should not show you as busy
+    out.push("END:VEVENT");
+  });
+  out.push("END:VCALENDAR");
+  return out.join("\r\n") + "\r\n";
+}
+
+/* Deeplinks. Outlook on the web -- "new Outlook" included, which is the web
+   app in a window -- takes a compose URL; Google takes a template URL. */
+function calendarLink(kind, a) {
+  const title = titleForRow(a.title);
+  const start = a.due, end = shiftISO(a.due, 1);
+  const body = [a.project ? "Project: " + a.project : null,
+                a.context ? "Context: @" + a.context : null].filter(Boolean).join("\n");
+  if (kind === "outlook" || kind === "outlook-personal") {
+    const host = kind === "outlook" ? "https://outlook.office.com" : "https://outlook.live.com";
+    return host + "/calendar/0/deeplink/compose?" + new URLSearchParams({
+      path: "/calendar/action/compose", rru: "addevent", allday: "true",
+      subject: title, startdt: start, enddt: end, body,
+    }).toString();
+  }
+  if (kind === "google") {
+    return "https://calendar.google.com/calendar/render?" + new URLSearchParams({
+      action: "TEMPLATE", text: title,
+      dates: icsDate(start) + "/" + icsDate(end), details: body,
+    }).toString();
+  }
+  return null;
+}
+
+const CALENDARS = [
+  ["outlook",          "Outlook (work or school)"],
+  ["outlook-personal", "Outlook.com"],
+  ["google",           "Google Calendar"],
+  ["ics",              "Download a file (any calendar)"],
+];
+
+function sendToCalendar(kind, items) {
+  if (kind === "ics" || !items.every(a => a.due)) {
+    const name = items.length === 1
+      ? "task-" + slugify(titleForRow(items[0].title)).toLowerCase().replace(/[^\w-]+/g, "-") + ".ics"
+      : "grouptodo-dates.ics";
+    downloadText(name, icsFor(items));
+    notify("Saved " + name + ". Open it and your calendar will offer to add " +
+           (items.length === 1 ? "it." : "them."));
+    return;
+  }
+  if (items.length > 1) {           // no deeplink takes a batch; the file does
+    downloadText("grouptodo-dates.ics", icsFor(items));
+    notify("That calendar takes one event per link, so here are all " + items.length +
+           " as a file instead.");
+    return;
+  }
+  const url = calendarLink(kind, items[0]);
+  if (!url) return;
+  window.open(url, "_blank", "noopener");
+}
+
+/* One picker, remembered, so the second time is a single click. */
+function openCalendarPicker(items) {
+  const dated = items.filter(a => a.due);
+  if (!dated.length) { notify("Nothing here has a date yet.", "warn"); return; }
+  const body = el("div", {});
+  body.append(el("div", {class: "field"},
+    el("div", {style: "font-size:13.5px"},
+      dated.length === 1 ? "\u201C" + titleForRow(dated[0].title) + "\u201D on " + humanDate(dated[0].due) + "."
+        : dated.length + " dated tasks."),
+    el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+      "A file is made here and goes nowhere. The links open your calendar's own new-event " +
+      "screen, which means the title and date travel in the web address \u2014 fine for a " +
+      "meeting, worth a thought for anything private.")));
+  const list = el("div", {});
+  for (const [kind, label] of CALENDARS) {
+    list.append(el("button", {class: "pick", onclick: () => {
+      PREF.set(CAL_PREF_KEY, kind);
+      closeModal();
+      sendToCalendar(kind, dated);
+    }},
+      el("span", {class: "k"}, kind === "ics" ? "\u2193" : "\u2197"),
+      el("span", {style: "flex:1"}, label),
+      calendarChoice() === kind ? el("span", {class: "d"}, "last used") : null));
+  }
+  body.append(el("div", {class: "field"}, el("label", {}, "Send it to"), list));
+  modal({center: true, title: "Add to calendar", body,
+         foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Cancel")]});
+}
+
+/* The button itself: straight to the remembered calendar, long-press-free. */
+function addToCalendar(items) {
+  const dated = items.filter(a => a.due);
+  if (!dated.length) { notify("Give it a date first \u2014 SCHEDULED or a deadline.", "warn"); return; }
+  const chosen = calendarChoice();
+  if (!chosen) return openCalendarPicker(dated);
+  sendToCalendar(chosen, dated);
+}
+
+/* ---------- claiming what was waiting for you ----------
+   Before you existed here, a colleague could only name you: "assigned:: Kenneth"
+   on somebody who was not a member became a WAIT, because nobody in the space
+   could tick it off. The moment you arrive that stops being true, so the app
+   offers you the pile.
+
+   Claiming does not take anything away from them. The row is the same row --
+   they wrote it, so it stays in their Waiting for -- it just becomes a live
+   task in your name rather than a note that they are waiting on an outsider. */
+function nameMatches(assigned, me) {
+  if (samePerson(assigned, me)) return true;
+  const a = slugPerson(assigned).toLowerCase().split(/\s+/).filter(Boolean);
+  const m = slugPerson(me).toLowerCase().split(/\s+/).filter(Boolean);
+  if (!a.length || !m.length) return false;
+  // "Kenneth" matches "Kenneth Aar"; "Kenneth Berg" does not.
+  return a.every(t => m.includes(t));
+}
+
+function claimableFor(me) {
+  if (!me) return [];
+  const out = [];
+  const mine = m => samePerson(m, me);
+  for (const [path, page] of V.pages) {
+    walkBlocks(page.blocks, b => {
+      const who = assigneeOf(b);
+      if (!who || !OPEN_STATES[b.state]) return;
+      if (!nameMatches(who, me)) return;
+      // Somebody else of that name is already here; it is theirs, not yours.
+      if (isMember(who) && !mine(who)) return;
+      // Written with your exact name before you arrived, it is already "yours"
+      // -- but it was filed as a WAIT because nobody here could act on it, and
+      // nothing flips that back on its own. Those need claiming too.
+      if (mine(who) && b.state !== "WAIT") return;
+      out.push({path, block: b, named: who, by: trim(blockProp(b, "by") || "")});
+    });
+  }
+  return out;
+}
+
+function claimThese(items, me) {
+  for (const it of items) {
+    setBlockProp(it.block, ASSIGN_PROP, me);
+    if (it.block.state === "WAIT") it.block.state = "TODO";   // you can act on it now
+    touch(it.path);
+  }
+  render();
+  notify(items.length + (items.length === 1 ? " task is" : " tasks are") +
+         " yours now. Still in their Waiting for \u2014 they wrote it, you own it.");
+}
+
+function openClaimPrompt(items, me) {
+  const picked = new Set(items.map((_, i) => i));
+  const card = el("div", {class: "card"});
+  items.forEach((it, i) => {
+    const box = el("button", {class: "spacetoggle on", onclick: () => {
+      if (picked.has(i)) { picked.delete(i); box.classList.remove("on"); box.textContent = ""; }
+      else { picked.add(i); box.classList.add("on"); box.textContent = "\u2713"; }
+    }}, "\u2713");
+    card.append(el("div", {class: "dash-item", style: "cursor:default;gap:10px"},
+      box,
+      el("span", {style: "flex:1"}, it.block.title),
+      el("span", {class: "chip"}, (it.by ? it.by : "somebody") + " \u2192 " + it.named)));
+  });
+
+  modal({
+    center: true,
+    title: items.length === 1 ? "Somebody is waiting on you" : items.length + " things are waiting on you",
+    hint: "written before you joined",
+    body: el("div", {},
+      el("div", {class: "field"},
+        el("div", {style: "font-size:13.5px"},
+          "These were put down with your name on them while you were not here yet, so " +
+          "they count as something your colleagues are waiting for. Take them on and they " +
+          "become your tasks."),
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          "They stay in your colleagues' Waiting for either way \u2014 they wrote them, " +
+          "so they keep watching them.")),
+      el("div", {class: "field"}, card)),
+    foot: [
+      el("button", {class: "btn ghost", onclick: closeModal}, "Not mine"),
+      el("div", {style: "flex:1"}),
+      el("button", {class: "btn primary", onclick: () => {
+        const take = items.filter((_, i) => picked.has(i));
+        closeModal();
+        if (take.length) claimThese(take, me);
+      }}, "Take them on"),
+    ],
+  });
+}
+
+/* Called once a name is known and a space is loaded. */
+function checkClaimable() {
+  const me = whoAmI();
+  if (!me) return;
+  const items = claimableFor(me);
+  if (!items.length) return;
+  let waited = 0;
+  const show = () => {
+    if (!$("#modalRoot").firstChild && !busyEditing()) return openClaimPrompt(items, me);
+    if ((waited += 1500) > 60000) return;
+    setTimeout(show, 1500);
+  };
+  setTimeout(show, 700);
+}
+
 /* Hand it to somebody who is not in the space: a name, and nothing more to it,
    because there is nobody on the other end to notify. */
 function openAssignOther(path, block) {
@@ -5984,6 +6237,15 @@ function viewAgenda() {
   const c = el("div", {class: "wrap"});
   c.append(nudgeBar());
   const days = agendaScan();
+  const dated = days.flatMap(([, items]) => items).filter(a => a.due);
+  if (dated.length) {
+    c.append(el("div", {class: "section", style: "display:flex;gap:8px;flex-wrap:wrap;align-items:center"},
+      el("button", {class: "btn sm", onclick: () => addToCalendar(dated)},
+        "\u25F7 Add " + dated.length + " to calendar"),
+      el("button", {class: "btn sm ghost", onclick: () => openCalendarPicker(dated)}, "Choose where"),
+      el("span", {style: "color:var(--fg3);font-size:12px"},
+        "A file, or your calendar's new-event screen. Nothing is subscribed.")));
+  }
   if (!days.length) {
     c.append(section("Next " + CFG.agendaDays + " days", 0,
       taskCard([], "Nothing scheduled. Add SCHEDULED:: [[date]] or DEADLINE:: [[date]] to an action.")));
@@ -6660,6 +6922,22 @@ function openTaskDetail(path, block, space) {
       el("div", {class: "grid2"},
         el("div", {class: "field"}, el("label", {}, "Scheduled"), sched),
         el("div", {class: "field"}, el("label", {}, "Deadline"), dead)),
+      el("div", {class: "field"},
+        el("label", {}, "Calendar"),
+        el("div", {style: "display:flex;gap:8px;flex-wrap:wrap"},
+          el("button", {class: "btn ghost sm", onclick: () => {
+            const when = trim(sched.value) || trim(dead.value) || dueDate(block);
+            if (!when) { notify("Give it a date first.", "warn"); return; }
+            addToCalendar([Object.assign({}, a, {due: when, title: block.title, block})]);
+          }}, "Add to calendar"),
+          el("button", {class: "btn ghost sm", onclick: () => {
+            const when = trim(sched.value) || trim(dead.value) || dueDate(block);
+            if (!when) { notify("Give it a date first.", "warn"); return; }
+            openCalendarPicker([Object.assign({}, a, {due: when, title: block.title, block})]);
+          }}, "Choose where")),
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          "The file route sends nothing anywhere. A link opens your calendar with the " +
+          "title and date in the web address.")),
       el("div", {class: "field"}, el("label", {}, "Notes"), notes),
       el("div", {class: "field"}, el("label", {}, "Trail"), trail),
       el("div", {class: "field"}, el("label", {}, "Source"),
@@ -7790,8 +8068,28 @@ function openOnboarding() {
      one field -- asking on the day two people collide costs the collision. There is
      deliberately nothing else to register: no account, no email and no password,
      because there is nowhere for them to be sent. */
-  const nameInput = el("input", {placeholder: "Kenneth", value: whoAmI(), maxlength: "60"});
+  const nameInput = el("input", {placeholder: "Kenneth Aar", value: whoAmI(), maxlength: "60"});
   const keepName = () => setIdentity(nameInput.value);   // blank is a real answer
+  const whereLine = el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px;line-height:1.5"});
+  const whereBtn = el("button", {class: "btn ghost sm"});
+  const drawWhere = () => {
+    const sp = Spaces.get(Spaces.active) || {};
+    const placed = sp.kind === "fs";
+    whereBtn.textContent = placed ? "Change folder" : "Choose folder";
+    whereBtn.className = placed ? "btn ghost sm" : "btn sm";
+    whereLine.textContent = placed
+      ? "Writing into \u201C" + (sp.label || sp.name) + "\u201D. Share that folder and you have shared the list."
+      : CAP.dirPicker
+        ? "A folder you already share \u2014 OneDrive, Dropbox, a network drive. Skip it and everything stays in this browser until you decide."
+        : "This browser cannot open folders, so it keeps the list itself. On a computer you can give it a real folder.";
+  };
+  whereBtn.onclick = async () => {
+    keepName();                          // the folder picker needs a gesture; keep what is typed
+    if (!CAP.dirPicker) { notify("This browser cannot open folders.", "warn"); return; }
+    await assignSpaceFolder(Spaces.active);
+    drawWhere();
+  };
+  drawWhere();
   const begin = (mode, after) => {
     keepName();
     PREF.set("onboarded", todayISO());
@@ -7818,13 +8116,22 @@ function openOnboarding() {
           "Other task apps keep your tasks on their servers, which is why sharing one " +
           "means everybody needs an account. There is no server here and nothing to be a " +
           "member of \u2014 share the folder and you have shared the list.")),
+      /* Who, then where, then what. Each answer makes the next question make
+         sense: a name is what the folder will be shared under, and a folder is
+         what the first task gets written into. */
       el("div", {class: "field"},
-        el("label", {}, "Your name, if you like"),
+        el("label", {}, "1 \u00B7 Who are you"),
         nameInput,
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px;line-height:1.5"},
-          "Goes beside what you add, so a list you share later can show who did what. " +
-          "Leave it empty and nothing is signed \u2014 there is no account and no password " +
-          "either way.")),
+          "First and last name. Colleagues see it beside what you add, and two people " +
+          "called Kenneth is exactly the day you will wish you had put the surname in. " +
+          "Leave it empty and nothing is signed.")),
+      el("div", {class: "field"},
+        el("label", {}, "2 \u00B7 Where the files live"),
+        whereBtn,
+        whereLine),
+      el("div", {class: "field", style: "margin-bottom:4px"},
+        el("label", {}, "3 \u00B7 Start")),
       el("button", {class: "pick", onclick: () => begin("simple")},
         el("span", {class: "k"}, "\u2713"),
         el("span", {}, el("b", {}, "Start a new list"), el("br"),

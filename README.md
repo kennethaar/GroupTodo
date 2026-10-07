@@ -20,16 +20,28 @@ It also means the list outlives the tool. Every file opens in Notepad.
 
 On a computer, in Edge or Chrome:
 
-1. **Open `grouptodo.html`.** Double-click it. Nothing installs.
-2. **Choose *Start a new list*** and type a task. The box is already waiting.
-3. **⇄ Vault & sync → Choose folder.** Pick a folder in OneDrive, Dropbox,
-   Google Drive, a network share — anywhere your files already live. Your tasks
-   become files in there, saved as you type.
-4. **Put your first name in *Your name*,** same panel.
+Double-click `grouptodo.html` — nothing installs — and it asks three questions,
+in this order:
 
-Step 4 is what turns it from a list into a team list: you get your own day
-pages, your name goes on what you take on, and your colleagues can see you
-exist.
+1. **Who.** Your first and last name. Colleagues see it beside what you add, and
+   the surname is what saves you the day there are two of you called the same
+   thing.
+2. **Where.** *Choose folder* — OneDrive, Dropbox, Google Drive, a network
+   share, anywhere your files already live. Your tasks become files in there,
+   saved as you type. Skip it and everything stays in this browser until you
+   decide.
+3. **What.** *Start a new list*, and type your first task.
+
+Each answer makes the next question make sense: a name is what the folder gets
+shared under, and a folder is what the first task gets written into. The name is
+also what turns this from a list into a team list — your own day pages, your name
+on what you take on, and you visible to everybody else.
+
+**If people were already waiting on you,** the app spots it. A colleague who put
+your name on something before you arrived could only file it as a waiting-for,
+because nobody here could tick it off. When you give your name, GroupTodo offers
+you that pile — take them on and they become your tasks, while staying in your
+colleagues' *Waiting for*, because they wrote them.
 
 **Your first project is the tour.** The first space starts with one project,
 *Find your way round GroupTodo*, and every step in it is a door: an ordinary
@@ -43,7 +55,7 @@ the lot; when the last one closes, the project files itself away like any other.
 
 To bring somebody in, use **Spaces → Invite somebody** (below). Failing that:
 send them `grouptodo.html`, the name of the shared folder, and
-`docs/setup-sheet.html` — the same four steps, written for somebody who does not
+`docs/setup-sheet.html` — the same three steps, written for somebody who does not
 want to know how any of it works.
 
 ---
@@ -81,6 +93,23 @@ last did — work somebody handed you, and work you handed over that is now
 finished. Click one to go straight to it. "Last seen" is per device and never
 written to the shared files, so marking your own news read does not mark it read
 for everybody.
+
+### Dates in your calendar
+
+Anything with a date gets **Add to calendar**, and **Planned** sends the whole
+window at once. Two routes, deliberately different:
+
+- **A file** (`.ics`) is built on your machine and goes nowhere. Works with every
+  calendar, including desktop Outlook and Apple, and works offline.
+- **A link** opens Outlook's or Google's own new-event screen with the fields
+  filled in — one click instead of download-then-import, at the cost of the title
+  and date travelling in the web address. Fine for a meeting; worth a thought for
+  anything private.
+
+Your choice is remembered, per device. **Nothing is ever subscribed**: a live
+feed is fetched by Microsoft's and Google's servers, so it would mean the whole
+list sitting at a publicly reachable URL protected by nothing but obscurity. The
+app has no such thing and no way to make one.
 
 ### Sharing, and not sharing
 
@@ -508,6 +537,9 @@ The markdown is identical either way.
 - **The service worker needs a URL**; a downloaded file cannot register one.
 - **A document library cannot host the app** — see above.
 - **Auto-sync of the courier file is desktop only** (it needs a durable handle).
+- **No live calendar feed**, by choice — see above. Calendar entries are a
+  snapshot taken when you press the button; changing the date later does not
+  update anything already in your calendar.
 - **Notifications arrive on opening the space**, not while it is closed. There is
   no server to push one, and nothing is emailed.
 - **An invite cannot carry a folder.** Browsers forbid transferring a directory
