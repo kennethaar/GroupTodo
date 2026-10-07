@@ -5304,6 +5304,109 @@ function flaggedMessages() {
 }
 
 /* ============================================================
+   LINKS IN FROM EVERYWHERE ELSE
+   "Did you correct the colours on the rollup?" is a sentence somebody types in
+   Teams, in an email, in a text. It should be able to carry the task with it.
+
+   A link is the page's own address plus which space, which file and which
+   block -- so pasting it anywhere gives a colleague a way back to the exact
+   thing. Block ids are regenerated on every parse, so copying a link stamps a
+   durable id:: on that block; it is the only moment we need one, and it goes
+   into the markdown like everything else.
+
+   Links are worth most when the app is served from a URL, since then everybody
+   has the same address. From a downloaded file the link still works for anyone
+   whose copy sits at the same path, and the dialog says so rather than
+   pretending.
+   ============================================================ */
+const LINK_TAG = "gt";
+
+function ensureBlockId(path, block) {
+  let id = trim(blockProp(block, "id") || "");
+  if (!id) {
+    id = Math.random().toString(36).slice(2, 10);
+    setBlockProp(block, "id", id);
+    touch(path);
+  }
+  return id;
+}
+
+function deepLink(path, block) {
+  const q = new URLSearchParams();
+  if (Spaces.active) q.set("s", Spaces.active);
+  q.set("p", path);
+  if (block) q.set("b", ensureBlockId(path, block));
+  return location.href.replace(/#.*$/, "") + "#" + LINK_TAG + "&" + q.toString();
+}
+
+function parseDeepLink(hash) {
+  const h = String(hash || "").replace(/^#/, "");
+  if (h.slice(0, LINK_TAG.length) !== LINK_TAG) return null;
+  const q = new URLSearchParams(h.slice(LINK_TAG.length).replace(/^&/, ""));
+  const path = q.get("p");
+  return path ? {space: q.get("s") || "", path, block: q.get("b") || ""} : null;
+}
+
+async function followDeepLink(link) {
+  if (link.space && link.space !== Spaces.active) {
+    if (Spaces.get(link.space)) await openSpace(link.space);
+    else { notify("That link is for a space called \u201C" + link.space + "\u201D, which is not on this device.", "warn"); return false; }
+  }
+  if (!V.pages.has(link.path)) {
+    notify("That link points at a page this vault does not have: " + link.path, "warn");
+    return false;
+  }
+  if (link.block) {
+    let found = null;
+    walkBlocks(getPage(link.path).blocks, b => {
+      if (!found && trim(blockProp(b, "id") || "") === link.block) found = b;
+    });
+    if (found) {
+      openPage(link.path);
+      state.selected = found.id;
+      setTimeout(() => openTaskDetail(link.path, found), 120);
+      return true;
+    }
+    notify("The page is here, but that particular item has gone.", "warn");
+  }
+  openPage(link.path);
+  return true;
+}
+
+/* Clipboard where it is allowed, a selectable box where it is not. */
+async function copyLinkTo(url, what) {
+  try {
+    await navigator.clipboard.writeText(url);
+    notify("Link to " + what + " copied." +
+      (CAP.served ? "" : " It only opens for somebody whose copy of the app sits at the same path."));
+    return true;
+  } catch (_) {}
+  const box = el("input", {value: url, readonly: "readonly", style: "font-family:var(--mono);font-size:12px"});
+  modal({
+    center: true, title: "Link to " + what,
+    body: el("div", {}, el("div", {class: "field"}, box,
+      el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+        CAP.served ? "Paste it anywhere \u2014 chat, email, a document."
+          : "This app is open as a file, so the link only works for somebody whose copy " +
+            "sits at the same path. Serve it from a web address and the link works for everybody."))),
+    foot: [el("button", {class: "btn primary", onclick: closeModal}, "Done")],
+  });
+  setTimeout(() => { box.focus(); box.select(); }, 40);
+  return false;
+}
+
+/* Arriving on a link, whether the app was already open or not. */
+let LAST_HASH = "";
+async function handleHash() {
+  const h = location.hash;
+  if (h === LAST_HASH) return;
+  LAST_HASH = h;
+  const link = parseDeepLink(h);
+  if (!link) return;
+  await followDeepLink(link);
+}
+
+/* ============================================================
    FACES AND LAST SEEN
    A picture lives in the person's own page as a data: URI, so it travels in
    the vault like everything else -- no uploads, no server, no second place for
@@ -7239,6 +7342,8 @@ function viewPage() {
   c.append(el("div", {class: "section", style: "display:flex;gap:8px;flex-wrap:wrap"},
     isJournalPath(path) ? null
       : el("button", {class: "btn sm ghost", onclick: () => openExportPage(path)}, "share"),
+    el("button", {class: "btn sm ghost", title: "A link you can paste into chat or email",
+      onclick: () => copyLinkTo(deepLink(path), pageTitle(path))}, "copy link"),
     el("button", {class: "btn sm ghost", onclick: () => renamePrompt(path)}, "rename"),
     el("button", {class: "btn sm ghost", onclick: () => movePrompt(path)}, "move"),
     isJournalPath(path) ? null
@@ -7789,7 +7894,10 @@ function openTaskDetail(path, block, space) {
       el("div", {class: "field"}, el("label", {}, "Notes"), notes),
       el("div", {class: "field"}, el("label", {}, "Trail"), trail),
       el("div", {class: "field"}, el("label", {}, "Source"),
-        el("button", {class: "btn ghost sm", onclick: () => { closeModal(); openPage(path); }}, path))),
+        el("div", {style: "display:flex;gap:8px;flex-wrap:wrap;align-items:center"},
+          el("button", {class: "btn ghost sm", onclick: () => { closeModal(); openPage(path); }}, path),
+          el("button", {class: "btn ghost sm", title: "A link you can paste into chat or email",
+            onclick: () => copyLinkTo(deepLink(path, block), "this task")}, "\u{1F517} Copy link")))),
     foot: [
       el("button", {class: "btn ghost", onclick: () => {
         closeModal();
@@ -9221,11 +9329,13 @@ function openVaultDialog() {
           return input;
         })(),
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          "Your name is written into the markdown as by:: and done_by:: so everyone sharing " +
-          "this space can see who added what and who closed it; it is stored on this device " +
-          "and can differ per space. A photo goes into your own page in the vault, shrunk to " +
-          "about a kilobyte of text \u2014 it never leaves the folder, because there is nowhere " +
-          "for it to go. Leave both empty and nothing is stamped." +
+          "Both belong to " + (Spaces.active || "this space") + " alone: the name is kept on " +
+          "this device and the photo in your own page inside this vault, so Work and Private " +
+          "can show different ones and neither follows you between them. The name is written " +
+          "into the markdown as by:: and done_by:: so everyone sharing this space can see who " +
+          "added what; the photo is shrunk to about a kilobyte of text and never leaves the " +
+          "folder, because there is nowhere for it to go. Leave both empty and nothing is " +
+          "stamped." +
           (attributionOff() ? " This space is set to record nothing, so the name is unused here." : ""))),
 
       el("div", {class: "field"},
@@ -9934,6 +10044,8 @@ function installServiceWorker() {
   await ensureVisibleLoaded();
   render();
   await collectSharedFile();
+  window.addEventListener("hashchange", () => handleHash());
+  await handleHash();
 
   if (CAP.sandboxed) {
     // SharePoint and Teams will happily let you upload the app and then show

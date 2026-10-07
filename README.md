@@ -94,7 +94,33 @@ finished. Click one to go straight to it. "Last seen" is per device and never
 written to the shared files, so marking your own news read does not mark it read
 for everybody.
 
+### Linking to a task from anywhere else
+
+"Did you correct the colours on the rollup?" is a sentence somebody types in
+Teams, in an email, in a text. **Copy link** — on a task, or on any page — gives
+them a way back to the exact thing.
+
+```
+https://your-host/grouptodo.html#gt&s=Work&p=pages%2F1%2FRollup.md&b=4bnggdod
+```
+
+Space, file and block. Opening it switches space if it needs to, opens the page
+and pops the task itself. A link to something this vault does not have says so
+rather than landing you nowhere.
+
+Block ids are regenerated every time a file is parsed, so copying a link is the
+one moment a durable one is needed: it stamps `id::` on that block, in the
+markdown like everything else.
+
+Links work best when the app is served from a URL, since then everybody has the
+same address. From a downloaded file the link still works for anyone whose copy
+sits at the same path, and the dialog says so rather than pretending.
+
 ### Faces, and who has been here
+
+**One name and one photo per space.** Both belong to that space alone: the name
+is kept on this device, the photo in your own page inside that vault, so Work and
+Private can show different ones and neither follows you between them.
 
 **Add a photo of yourself** in **Vault & sync**, beside your name — or click
 your own face in People. It opens the ordinary file picker, which on a phone
@@ -607,7 +633,7 @@ The markdown is identical either way.
 
 `c` capture · `/` search · `?` all keys · `f t` today · `g n` todos ·
 `g x` context · `g a` planned · `g p` people · `g c` chat · `g w` weeding ·
-`g r` review · `ctrl-z` undo a delete ·
+`g r` review · `ctrl-z` undo a delete · **Copy link** on any task or page ·
 `g d` re-surface. In the outline: `Enter` new block, `Tab`/`Shift-Tab` indent,
 `Ctrl-Enter` cycle state.
 
@@ -629,6 +655,9 @@ The markdown is identical either way.
 - **Auto-sync of the courier file is desktop only** (it needs a durable handle).
 - **Recurrence is offered, never scheduled.** Nothing appears until you tick the
   current one off and say yes, so a repeat you forget about simply stops.
+- **A link is only as stable as where the app lives.** Move the app to a
+  different address and old links stop resolving; rename a page and a link to it
+  breaks, because the path is the address.
 - **A profile picture is bytes in the vault.** 24KB of base64 per person, in
   plain sight in the markdown. Small, but not nothing on a big team.
 - **Last seen has an hour's resolution** and only updates when somebody opens
