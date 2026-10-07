@@ -122,6 +122,37 @@ The Content-Security-Policy permits no outbound connection except to localhost,
 so whoever hosts the file sees that you fetched a page, and nothing else — no
 tasks, no projects, no account, because there is no account.
 
+### Where to host it, and what the host can see
+
+Hosting does not put your tasks anywhere. The link serves the **empty app**; the
+vault is written to your folder or kept in your own browser. The whole codebase
+makes six network calls, all of them to `./api/*` on the optional local sync
+server, and `connect-src 'self' http://127.0.0.1:* http://localhost:*` blocks
+every other destination — a host you typed by hand included, unless it is
+localhost. There is no analytics, no error reporting, no remote font or script.
+
+What a host **does** see is the ordinary web-server trail: your IP address, the
+time, your browser, and that you requested `index.html`, `sw.js`,
+`manifest.webmanifest`, `icon.svg` and `api/ping` (which 404s away from
+`serve.py`). Not a single task. That trail is harmless for a work to-do list and
+is not nothing if the point is that nobody knows you use this at all.
+
+So pick by who should not know:
+
+| Host | Public? | Good for |
+|---|---|---|
+| Company intranet, SharePoint site, internal web folder | no — authenticated, inside the company | work |
+| Cloudflare Pages + Cloudflare Access, or any static host behind a login | no — gated by email or SSO | private, volunteer, anything sensitive |
+| A Pi or NAS on your own network, reached over Tailscale or the LAN | no — never leaves your network | full control |
+| `serve.py` in Termux on the phone itself | no — nothing leaves the device | one phone, maximum paranoia |
+| GitHub Pages, Netlify, Cloudflare Pages (open) | the app is, your data is not | convenience, nothing sensitive |
+
+**And remember the PC needs no host at all.** A downloaded `index.html` opened from
+disk gives desktop Chrome and Edge the full experience, the live folder of `.md`
+files included. Hosting exists for phones, which cannot open folders and cannot
+keep storage for a `file://` page. If a public link bothers you, host it somewhere
+private for the phones and keep the file on disk for the desktops.
+
 ### Why not a "real" app?
 
 Because every other way of shipping this is an install. Flutter, React Native,
