@@ -122,6 +122,26 @@ The Content-Security-Policy permits no outbound connection except to localhost,
 so whoever hosts the file sees that you fetched a page, and nothing else — no
 tasks, no projects, no account, because there is no account.
 
+### SharePoint and Teams are file storage, not a web host
+
+Worth settling before you try it: uploading `index.html` to a Teams channel or a
+SharePoint document library does **not** give you a hosted app. Those render an
+uploaded HTML file inside `<iframe sandbox srcdoc>` with no `allow-same-origin`,
+which means an opaque origin — reading `window.localStorage` *throws* rather than
+returning empty, there is no IndexedDB, no folder picker, and not even a
+download. The page runs, so it looks like it worked, and then nothing you type
+survives the tab.
+
+GroupTodo detects that frame and says so on the first screen instead of letting
+you fill a list that cannot be saved. Reproduced and verified in headless
+Chromium against a real sandboxed `srcdoc` frame.
+
+The useful part of Teams is the other tab: a channel's **Files** folder is a
+SharePoint folder, and channel membership is the permission model. Hit **Sync**
+on it and it becomes a real folder in File Explorer — point a space at that and
+every member of the channel shares the vault, with no IT ticket and nothing
+public. Storage solved, hosting still separate.
+
 ### Where to host it, and what the host can see
 
 Hosting does not put your tasks anywhere. The link serves the **empty app**; the
@@ -807,6 +827,9 @@ state, `backspace` on an empty block deletes it.
 - **No phone browser can write into a folder you choose.** Live `.md` folders are
   desktop Chrome/Edge only; on iOS and Android the vault lives in the app's own
   storage and leaves as one file. Only a native install would change that.
+- **A document library cannot host the app.** SharePoint and Teams open an
+  uploaded `.html` in a sandboxed frame with no storage; the app says so rather
+  than pretending. Use the Files folder for the vault, not for the app.
 - **The service worker needs a URL.** A downloaded `file://` page cannot register
   one, so offline-open, home-screen install and the share sheet all need route B.
 - **Share-target and file-opening are Chromium features.** iOS can share out but

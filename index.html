@@ -819,8 +819,34 @@ function flattenBlocks(blocks, out = [], parent = null, depth = 0) {
    iOS Safari, locked-down corporate browsers and pages opened straight from
    disk all differ in what they allow. Probe rather than assume, and tell the
    user plainly in the Vault dialog. */
+/* Reading window.localStorage THROWS -- it does not return null -- when the
+   page has an opaque origin. SharePoint and Teams render an uploaded .html
+   inside <iframe sandbox srcdoc> with no allow-same-origin, which is exactly
+   that: no localStorage, no IndexedDB, no folder access, nothing. Every
+   access goes through here so a locked-down frame degrades to memory rather
+   than killing the script on the way past. */
+const safeLS = {
+  get(k, d = null) {
+    try { const v = window.localStorage.getItem(k); return v === null ? d : v; }
+    catch (_) { return d; }
+  },
+  set(k, v) { try { window.localStorage.setItem(k, v); return true; } catch (_) { return false; } },
+  del(k)    { try { window.localStorage.removeItem(k); return true; } catch (_) { return false; } },
+};
+
 const CAP = {
   served    : location.protocol === "http:" || location.protocol === "https:",
+  /* A sandboxed frame with no allow-same-origin: storage ACCESS throws, not
+     just storage reads. Tested by behaviour rather than by origin, because a
+     plain file:// page also reports an origin of "null" and is perfectly
+     usable -- checking the origin alone condemned every downloaded copy. Both
+     halves are needed: in a frame, and storage unreachable. */
+  sandboxed : (() => {
+    const framed = (() => { try { return window.top !== window.self; } catch (_) { return true; } })();
+    let blocked = false;
+    try { void window.localStorage; } catch (_) { blocked = true; }
+    return framed && blocked;
+  })(),
   fromFile  : location.protocol === "file:",
   dirPicker : typeof window.showDirectoryPicker === "function",
   openPicker: typeof window.showOpenFilePicker === "function",
@@ -1465,12 +1491,11 @@ const SPACE_EXAMPLES = ["Work", "Private", "Volunteer", "Family", "Studies", "Si
    not re-ask how you like the app, and so a shared space carries none of it. */
 const PREF = {
   get(k, d = null) {
-    try { const v = localStorage.getItem("gtd.pref." + k); return v === null ? d : v; }
-    catch (_) { return PREF._mem?.[k] ?? d; }
+    const v = safeLS.get("gtd.pref." + k);
+    return v === null ? (PREF._mem?.[k] ?? d) : v;
   },
   set(k, v) {
-    try { localStorage.setItem("gtd.pref." + k, v); }
-    catch (_) { (PREF._mem || (PREF._mem = {}))[k] = v; }
+    if (!safeLS.set("gtd.pref." + k, v)) (PREF._mem || (PREF._mem = {}))[k] = v;
   },
   _mem: null,
 };
@@ -2190,7 +2215,7 @@ async function initSpaces() {
   let legacy = null;
   try { legacy = await IDB.get("kv", "dirHandle"); } catch (_) {}
   let server = null;
-  try { server = localStorage.getItem("gtd.server"); } catch (_) {}
+  server = safeLS.get("gtd.server");
   if (!server) server = SERVER_BASE;        // served by serve.py: that is the vault
 
   if (legacy) {
@@ -6358,7 +6383,8 @@ function openVaultDialog() {
       : V.backend?.kind === "http" ? "Synced with the server at " + V.backend.label
       : "Working inside the browser (" + (V.backend?.label || "memory") + ")"),
     capLine(CAP.persist !== "memory",
-      CAP.persist === "idb" ? "Changes persist here between visits"
+      CAP.sandboxed ? "Running in a locked preview frame (SharePoint or Teams) — no storage at all"
+      : CAP.persist === "idb" ? "Changes persist here between visits"
       : CAP.persist === "ls" ? "Changes persist (IndexedDB blocked, using localStorage)"
       : "This browser blocks local storage for this page — your work lives in memory only, so save the vault file before closing"),
     capLine(CAP.dirPicker, CAP.dirPicker ? "Can open a vault folder directly" : "Cannot open folders (normal on iOS, Android and Firefox)"),
@@ -6372,7 +6398,7 @@ function openVaultDialog() {
 
   const serverInput = el("input", {
     placeholder: "http://127.0.0.1:8777",
-    value: localStorage.getItem?.call?.(localStorage, "gtd.server") || (CAP.served ? location.origin : "http://127.0.0.1:8777"),
+    value: safeLS.get("gtd.server") || (CAP.served ? location.origin : "http://127.0.0.1:8777"),
   });
 
   const fileInput = el("input", {
@@ -6466,7 +6492,7 @@ function openVaultDialog() {
         serverInput,
         el("div", {style: "display:flex;gap:8px;margin-top:8px"},
           el("button", {class: "btn ghost", onclick: () => connectServer(trim(serverInput.value))}, "Connect"),
-          el("button", {class: "btn ghost", onclick: () => { try { localStorage.removeItem("gtd.server"); } catch (_) {} notify("Server forgotten."); }}, "Forget"))),
+          el("button", {class: "btn ghost", onclick: () => { safeLS.del("gtd.server"); notify("Server forgotten."); }}, "Forget"))),
 
       el("div", {class: "field"},
         el("label", {}, "Your name on changes in " + (Spaces.active || "this space")),
@@ -6794,12 +6820,10 @@ $("#burger").onclick     = () => document.body.classList.toggle("nav-open");
 $("#btnTheme").onclick   = () => {
   const cur = document.documentElement.dataset.theme === "light" ? "dark" : "light";
   document.documentElement.dataset.theme = cur;
-  try { localStorage.setItem("gtd.theme", cur); } catch (_) {}
+  safeLS.set("gtd.theme", cur);
 };
-try {
-  const t = localStorage.getItem("gtd.theme");
-  if (t) document.documentElement.dataset.theme = t;
-} catch (_) {}
+const storedTheme = safeLS.get("gtd.theme");
+if (storedTheme) document.documentElement.dataset.theme = storedTheme;
 
 /* ============================================================
    INSTALLABLE WITHOUT INSTALLING
@@ -6920,7 +6944,7 @@ function installFileHandler() {
 /* Pick the best storage this device actually allows. */
 async function pickBackend() {
   let server = null;
-  try { server = localStorage.getItem("gtd.server"); } catch (_) {}
+  server = safeLS.get("gtd.server");
   if (server) {
     try { const b = Backends.http(server); await b.list(); return b; } catch (_) {}
   }
@@ -6999,6 +7023,35 @@ function installServiceWorker() {
   render();
   await collectSharedFile();
 
+  if (CAP.sandboxed) {
+    // SharePoint and Teams will happily let you upload index.html and then show
+    // it inside <iframe sandbox srcdoc> with no allow-same-origin. The page
+    // runs, so it looks like it worked, but it has an opaque origin: no
+    // storage, no folder, not even a download. Nothing typed here survives,
+    // so say so before any of it is typed.
+    modal({
+      center: true,
+      title: "Nothing can be saved here",
+      body: el("div", {},
+        el("div", {class: "field"},
+          el("div", {style: "font-size:13.5px"},
+            "This page is running inside a locked preview frame, which is what SharePoint " +
+            "and Teams do with an uploaded .html file. It has no storage of its own, cannot " +
+            "open a folder, and cannot even save a file \u2014 so anything you type here is " +
+            "gone the moment you close it.")),
+        el("div", {class: "field"},
+          el("label", {}, "Either of these works instead"),
+          el("div", {style: "font-size:13px;color:var(--fg2)"},
+            "\u2022 Download index.html and open it from your own computer. On Chrome or Edge " +
+            "that gives you the full app and a real folder of .md files."),
+          el("div", {style: "font-size:13px;color:var(--fg2);margin-top:6px"},
+            "\u2022 Or put it on a web address and open that. A document library is file " +
+            "storage, not a web host.")),
+      ),
+      foot: [el("button", {class: "btn primary", onclick: closeModal}, "I understand")],
+    });
+    return;                 // no onboarding: there is nothing here to onboard into
+  }
   if (CAP.persist === "memory") {
     notify("This browser will not store anything for this page. Use Vault & sync \u2192 " +
            "Save vault file before you close the tab.", "error");
