@@ -476,11 +476,21 @@ an always-on `serve.py` plus a folder sync that actually keeps a local folder on
 Android (Syncthing does; OneDrive and Drive do not), or a native app. Both are
 installs, which is the thing you asked to avoid.
 
-### Your own always-on machine, for you and your colleagues
+### Your own always-on machine, for phones
 
-One machine you control serves everybody. No cloud account, no third party
-holding your tasks, no IT ticket, and for your colleagues nothing to install —
-they open a link.
+**Only worth doing if phones are in the mix.** If everybody works on a PC in
+Chrome or Edge, the folder of files above is already the answer: each person
+points *Vault & sync → Choose folder* at the same shared folder in the cloud
+drive, and the drive does the syncing. No machine to keep on, no server, no
+password, nothing that stops working when you close a laptop. What a server adds
+— genuinely live, no drive in the middle — is not worth a machine you have to
+keep alive for desktops alone. It earns its keep once a phone is involved,
+because no phone browser can open a folder, so a phone needs something to talk
+to.
+
+With phones in it, one machine you control serves everybody. No cloud account, no
+third party holding your tasks, no IT ticket, and for your colleagues nothing to
+install — they open a link.
 
 **The server needs a password before it faces anything but localhost.** It now
 refuses to start otherwise rather than warning and carrying on:
@@ -508,6 +518,47 @@ For somebody who does not want to hand their data to a CDN, Funnel is worth
 understanding: it routes by TLS server name without terminating the connection,
 so Tailscale moves bytes it cannot read. That is a genuinely different trust
 position from a service that decrypts your traffic to serve it.
+
+**If you pick Funnel, three one-time things.**
+
+- **Turn it on for the tailnet first.** Funnel needs HTTPS certificates enabled
+  and the `funnel` node attribute in your tailnet policy. The first
+  `tailscale funnel` run refuses and prints a link to the admin console that
+  grants both — click it, run the command again, and `tailscale funnel status`
+  will show the URL.
+- **The `8777` in that command is the local port, not the public one.** Funnel
+  serves on 443, 8443 or 10000 only; `--bg 8777` means *proxy public 443 to
+  `localhost:8777`*. Reading it the other way round is the usual first
+  confusion.
+- **The hostname is not a secret.** A real certificate for
+  `yourbox.your-tailnet.ts.net` means that name is published in certificate
+  transparency logs, so “anyone with the URL” is nearer to “anyone” than it
+  sounds. That is why the password is refused-without rather than recommended.
+
+**Make it survive a reboot.** `--bg` is stored in Tailscale's own config and
+comes back by itself; `serve.py` does not. A systemd user unit closes that gap
+and keeps the password out of `ps`:
+
+```ini
+# ~/.config/systemd/user/grouptodo.service
+[Unit]
+Description=GroupTodo sync server
+
+[Service]
+# one line, GTD_PASSWORD=..., chmod 600
+EnvironmentFile=%h/.config/grouptodo.env
+ExecStart=/usr/bin/python3 %h/GroupTodo/serve.py --vault %h/vaults/work
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+```
+
+```sh
+chmod 600 ~/.config/grouptodo.env
+systemctl --user enable --now grouptodo
+loginctl enable-linger "$USER"        # keep it running while you are logged out
+```
 
 **What this buys everyone:** one link that works on a PC and a phone, real
 `.md` files on your machine, edits sent as you make them and re-read when anyone
