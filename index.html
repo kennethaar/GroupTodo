@@ -1211,12 +1211,26 @@ async function mergeMirror(rec) {
   return newer;
 }
 
+/* A vault bundle is itself a .md file, and people quite reasonably keep one in
+   the folder they are syncing. Read as a page it would turn the whole vault
+   into a single blob of text -- exactly the thing that is not wanted -- so it
+   is recognised and left alone. */
+const looksLikeBundle = text =>
+  /<!--\s*gtd:(bundle|file)\b/.test(text.slice(0, 4000));
+
 async function readInto(record) {
   const files = await record.backend.list();
   record.pages.clear(); record.raw.clear();
+  let couriers = 0;
   for (const [path, text] of files) {
     if (/\.org$/i.test(path)) { record.raw.set(path, text); continue; }
+    if (looksLikeBundle(text)) { couriers++; continue; }
     record.pages.set(path, parsePage(text));
+  }
+  if (couriers) {
+    notify(couriers + (couriers === 1 ? " exported vault file is" : " exported vault files are") +
+           " in this folder. Left as they are \u2014 they are copies for sending, not pages. " +
+           "Keeping them outside the folder avoids the confusion.", "warn");
   }
   const newer = await mergeMirror(record);
   if (newer) {
@@ -6210,6 +6224,7 @@ function capLine(ok, text) {
 function openVaultDialog() {
   const lastSync = getSetting("last_sync");
   const linkedKnown = !!LINKED;
+  const onFolder = V.backend && V.backend.kind === "fs";
 
   const storageBox = el("div", {class: "field"},
     el("label", {}, "This device"),
@@ -6259,12 +6274,34 @@ function openVaultDialog() {
     body: el("div", {},
       storageBox,
 
+      /* Where the files live comes first, because it is the answer to "where are
+         my markdown files" -- and because the vault file below is a courier,
+         not a place. Putting the courier first once misled even me. */
+      CAP.dirPicker ? el("div", {class: "field"},
+        el("label", {}, "Where the files live \u2014 a folder of .md files (Chrome / Edge on desktop)"),
+        el("button", {class: onFolder ? "btn ghost" : "btn primary", onclick: connectFolder},
+          onFolder ? "Change folder for " + Spaces.active : "Choose folder for " + Spaces.active),
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          "One file per day in journals/, one file per page in pages/, written as you type \u2014 " +
+          "the same files Neovim, Obsidian and Logseq open. Only this space goes here, so share " +
+          "that folder with the people who should see this space \u2014 and no one else." +
+          (onFolder ? "" : " Until you pick one, this space lives in the browser and writes no files.")),
+        onFolder ? el("div", {style: "color:var(--fg3);font-size:12px;margin-top:4px"},
+          "Now writing into \u201C" + (V.backend.label || "") + "\u201D.") : null) : null,
+
       el("div", {class: "field"},
-        el("label", {}, "Sync across devices — no server, no account"),
+        el("label", {}, (onFolder ? "Carrying changes to a phone" : "Sync across devices") +
+          " — no server, no account"),
         el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
-          "Your whole vault travels as one markdown file. Keep it in a folder your devices " +
-          "already sync — iCloud Drive, OneDrive, Dropbox, Google Drive, Syncthing — and " +
-          "sync on each device. Edits merge per page; nothing is overwritten blindly." +
+          (onFolder
+            ? "Phones cannot open folders, so the way to reach one is a single markdown file " +
+              "that carries this space there and back. It is a courier, not a second home: " +
+              "your files stay as they are above, and anything the phone sends back becomes " +
+              "its own .md file in the folder. Keep the courier file OUTSIDE the folder."
+            : "Your whole vault travels as one markdown file. Keep it in a folder your devices " +
+              "already sync — iCloud Drive, OneDrive, Dropbox, Google Drive, Syncthing — and " +
+              "sync on each device.") +
+          " Edits merge per page; nothing is overwritten blindly." +
           (canShareFiles()
             ? " On this device the file leaves through the share sheet, so you can hand it " +
               "straight to whichever of those apps you already have."
@@ -6298,14 +6335,6 @@ function openVaultDialog() {
               "back about a minute after you stop typing. Never while you are editing."))) : null,
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
           lastSync ? "Last sync: " + formatStamp(lastSync) : "Not synced yet.")),
-
-      CAP.dirPicker ? el("div", {class: "field"},
-        el("label", {}, "Or: live folder for this space (Chrome / Edge on desktop)"),
-        el("button", {class: "btn ghost", onclick: connectFolder}, "Choose folder for " + Spaces.active),
-        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          "Writes journals/ and pages/ as separate .md files, saved as you type. Only this " +
-          "space goes here, so share that folder with the people who should see this space \u2014 " +
-          "and no one else.")) : null,
 
       el("div", {class: "field"},
         el("label", {}, "Or: sync server (Termux, Raspberry Pi, any always-on box)"),

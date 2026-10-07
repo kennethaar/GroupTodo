@@ -306,11 +306,39 @@ shared folder. The same goes for the colours.
 
 ---
 
-## Serverless sync
+## Storage and sync — two different things
 
-No server, no account, no third party. Your whole vault travels as **one
-markdown file** that you keep in a folder your devices already sync — iCloud
-Drive, OneDrive, Dropbox, Google Drive, Syncthing, a network share.
+These get confused easily, so plainly:
+
+**Storage is a folder of markdown files.** One file per day in `journals/`, one
+file per page in `pages/` — projects, areas, contexts, checklists, horizons,
+people, zettel. Exactly what Neovim, Obsidian and Logseq open. Desktop Chrome and
+Edge write them live, as you type.
+
+**The vault file is a courier, not a home.** It is one markdown file holding a
+copy of the whole space, used only to get changes to and from a device that
+cannot open a folder — which means every phone. Linking one does not change where
+your files live, and a page the phone sends back lands as **its own `.md` file**
+in the folder like any other.
+
+Keep the courier **outside** the vault folder. If one ends up inside, GroupTodo
+recognises it, refuses to read it as a page, and says so — but a stray copy of
+your vault inside your vault is still confusing.
+
+### The folder of files
+
+**Vault & sync → Choose folder for *space*** (desktop Chrome / Edge). Point it at
+a folder inside your cloud drive and that is the whole setup: saved as you type,
+synced by the drive, readable by every other markdown tool. One space per folder,
+so the folder you share is exactly what you meant to share.
+
+Without a folder — any phone, Firefox, iOS — the space lives in the browser's own
+storage and writes no files at all. The sidebar says *browser only — no files* so
+you are never hunting for files that were never written.
+
+### The courier file
+
+No server, no account, no third party.
 
 - **Desktop Chrome / Edge**: *Link vault file* once and the clicking is over.
   It merges when the space opens, merges again when you come back to the tab,
@@ -342,36 +370,37 @@ syncs, and deletions. All verified in headless Chromium.
 
 The asymmetry to know up front: **desktop Edge can write into a folder you
 choose; Edge on Android cannot.** No Android browser can — there is no folder
-picker on the platform. So the PC half is automatic and the phone half is a file
-you hand over. Here is the whole loop.
+picker on the platform. So the PC keeps the real files and the phone gets the
+courier.
 
 **Once, on the PC**
 
 1. Put the four files on a URL both devices can reach (GitHub Pages, an intranet
    path, anything static). Open it in Edge.
-2. **Vault & sync → Link vault file**, and save it as
-   `OneDrive\GroupTodo\work-vault.md`. Edge remembers the file across restarts.
-3. Leave **Sync by itself** on (it is on by default).
+2. **Vault & sync → Choose folder for Work** → `OneDrive\GroupTodo\Work`.
+   This is your storage: separate `.md` files from here on.
+3. **Vault & sync → Link vault file** → save it as `OneDrive\GroupTodo\work-vault.md`
+   — beside the Work folder, **not inside it**. This is only the phone's courier.
+4. Leave **Sync by itself** on (it is on by default).
 
 **Once, on the phone**
 
-4. Open the same URL in Edge for Android. Menu → **Add to phone**. You now have
+5. Open the same URL in Edge for Android. Menu → **Add to phone**. You now have
    an icon; after that first visit it opens with no network.
 
 **Every day**
 
 | You do | What happens |
 |---|---|
-| Type on the PC | Saved locally at once. About a minute after you stop, the vault file in OneDrive is rewritten. OneDrive uploads it. |
+| Type on the PC | `journals/2026-10-07.md` and the pages you touched are rewritten at once. OneDrive uploads them. A minute after you stop, the courier is refreshed too. |
 | Pick up the phone, open the app | Your own copy, as you left it. |
 | **Vault & sync → Open vault file** → OneDrive → `work-vault.md` | The PC's day merges in. One toast says what arrived. |
 | Edit on the phone | Saved on the phone. |
 | **Vault & sync → Send vault file** → share to OneDrive | The phone's version goes up. |
-| Sit back down at the PC, click into the tab | It merges the phone's edits on its own — no button. |
+| Sit back down at the PC, click into the tab | The phone's edits merge on their own — no button — and each new page appears in the folder as its own `.md` file. |
 
-So the PC end is hands-off and the phone end is two deliberate gestures, in and
-out. That is the honest shape of it, and the reason is the folder picker, not the
-sync.
+So the PC end is hands-off and keeps the file-per-page layout; the phone end is
+two deliberate gestures, in and out. The reason is the folder picker, not the sync.
 
 **Three things worth knowing**
 
@@ -388,13 +417,6 @@ sync.
 an always-on `serve.py` plus a folder sync that actually keeps a local folder on
 Android (Syncthing does; OneDrive and Drive do not), or a native app. Both are
 installs, which is the thing you asked to avoid.
-
-### Alternative: a live folder
-
-Desktop Chrome/Edge can open a real folder and write `journals/` and `pages/`
-as separate `.md` files as you type. Point it at a folder inside your cloud
-drive and sync is automatic and continuous. This is the nicest setup if your
-main machine is a desktop.
 
 ### Alternative: a sync server
 
@@ -704,6 +726,8 @@ state, `backspace` on an empty block deletes it.
   one, so offline-open, home-screen install and the share sheet all need route B.
 - **Share-target and file-opening are Chromium features.** iOS can share out but
   not in; use *Open vault file* there.
+- **A vault file in the vault folder is skipped, not merged.** GroupTodo spots it
+  and warns, but it will not be read as a page. Keep couriers outside.
 - **Auto-sync is desktop only.** It needs a file handle that survives restarts,
   which is `showSaveFilePicker` — Chrome and Edge on desktop. On a phone the
   vault file goes in and out by hand.
