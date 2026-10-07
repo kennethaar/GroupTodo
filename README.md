@@ -476,7 +476,63 @@ an always-on `serve.py` plus a folder sync that actually keeps a local folder on
 Android (Syncthing does; OneDrive and Drive do not), or a native app. Both are
 installs, which is the thing you asked to avoid.
 
-### The best setup there is: one server, reached over Tailscale
+### Your own always-on machine, for you and your colleagues
+
+One machine you control serves everybody. No cloud account, no third party
+holding your tasks, no IT ticket, and for your colleagues nothing to install —
+they open a link.
+
+**The server needs a password before it faces anything but localhost.** It now
+refuses to start otherwise rather than warning and carrying on:
+
+```sh
+# put the vault somewhere that gets backed up -- OneDrive is fine, it is only
+# a folder, and this way the vault survives the laptop
+export GTD_PASSWORD="$(head -c 24 /dev/urandom | base64)"   # or --password-file
+python3 serve.py --vault ~/OneDrive/GroupTodo/Work          # stays on localhost
+```
+
+Then put TLS and a reachable name in front of it. Two shapes, depending on
+whether your colleagues will install anything:
+
+| | Colleagues install | Who can reach it |
+|---|---|---|
+| `tailscale serve --bg 8777` | Tailscale, and join your tailnet | only your devices |
+| `tailscale funnel --bg 8777` | **nothing — just open the link** | anyone with the URL, so the password is the only thing in front of it |
+
+Both give `https://yourbox.your-tailnet.ts.net`, with a real certificate, no port
+forwarded and no router touched. HTTPS matters for more than privacy: it is what
+makes phones treat the app as installable and able to open offline.
+
+For somebody who does not want to hand their data to a CDN, Funnel is worth
+understanding: it routes by TLS server name without terminating the connection,
+so Tailscale moves bytes it cannot read. That is a genuinely different trust
+position from a service that decrypts your traffic to serve it.
+
+**What this buys everyone:** one link that works on a PC and a phone, real
+`.md` files on your machine, edits sent as you make them and re-read when anyone
+comes back to the app, no courier file, nothing manual.
+
+**Five things to know before you rely on it.**
+
+- **Is it your work laptop?** Running a service reachable from outside is likely
+  against your acceptable-use policy, and endpoint security may block the
+  listener regardless. Technically fine, organisationally not your call. A
+  personal machine or a cheap always-on box avoids the question.
+- **Sleep kills it.** A laptop that suspends on a closed lid is offline. Set it
+  never to sleep while plugged in, and expect to leave it open.
+- **When you travel, you are the single point of failure.** Everyone keeps
+  working — the app holds its own copy, retries on a widening interval, and
+  merges per page when you are back — but nobody sees anybody else's work until
+  then. One cheap always-on box is the fix if that matters.
+- **Basic auth is one shared password**, not accounts. Everyone who has it can
+  read and rewrite the whole space, and changing it means telling everyone. It is
+  a door, not a permission system.
+- **Back up the vault.** It is one folder on one machine. Keeping it inside a
+  synced folder costs nothing and means a dead laptop is an inconvenience rather
+  than a loss.
+
+### Also fine: Tailscale with no public URL at all
 
 If you have a machine that is usually on — a Linux box, a Pi, a NAS — this beats
 every other arrangement here, and it is the only one that is genuinely live.
@@ -815,7 +871,10 @@ state, `backspace` on an empty block deletes it.
   and fixable, never silent data loss.
 - **Deleting a single task does not propagate** — only whole-page deletes carry
   tombstones. A task deleted on one device can return from another.
-- **The sync server has no authentication.** Localhost only unless you add one.
+- **The sync server is one shared password, not accounts.** Everyone who has it
+  can read and rewrite the whole space, and there is no per-person access and no
+  audit of who did what beyond the `by::` stamps. Binding it anywhere but
+  localhost without a password is refused.
 - **Spaces are separated, not secured.** Anyone who can open a space's folder or
   file sees all of it. There is no password, and nothing is encrypted.
 - **Simple mode holds the GTD nudges back** until six open tasks, so a new list

@@ -8,6 +8,7 @@ a markdown vault so the app reads and writes the very same .md files that Neovim
 Logseq or Obsidian open.
 
     python3 serve.py [--vault DIR] [--port 8777] [--host 127.0.0.1]
+                     [--password-file FILE] [--insecure]
 
 Defaults to the vault path used by the original Neovim config:
     ~/storage/shared/Documents/OrgMode
@@ -20,16 +21,34 @@ API
     DELETE /api/file?path=REL   -> deletes the file
 
 Every path is confined to the vault; traversal outside it is refused.
-Binds to localhost by default. Pass --host 0.0.0.0 only on a network you trust:
-there is no authentication, so anyone who can reach the port can read and edit
-your vault.
+
+Binds to localhost by default and serves openly there. Reaching it from
+anywhere else needs a password, set through GTD_PASSWORD or --password-file:
+binding a non-loopback address without one is refused outright rather than
+warned about. The password is checked with HTTP Basic, so the browser prompts
+for it once and then attaches it to everything -- the page, the service worker
+and the API alike.
+
+Basic encodes rather than encrypts, so it is only private over HTTPS. The
+intended shape is this server on localhost with TLS terminated in front of it:
+
+    python3 serve.py --vault ~/vaults/work        # localhost, open
+    tailscale serve --bg 8777                     # HTTPS, your devices only
+
+    GTD_PASSWORD=... python3 serve.py --vault ~/vaults/work
+    tailscale funnel --bg 8777                    # HTTPS, anyone with the URL
+                                                  # -- hence the password
 """
 
 import argparse
+import base64
+import hmac
 import json
 import os
 import posixpath
 import re
+import sys
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
@@ -91,6 +110,8 @@ class Vault:
 class Handler(BaseHTTPRequestHandler):
     server_version = "GroupTodo/1.0"
     vault = None
+    password = None        # None = open; anything else = HTTP Basic required
+    realm = "GroupTodo"
 
     # ---------- helpers ----------
     def _send(self, code, body=b"", ctype="text/plain; charset=utf-8"):
@@ -99,9 +120,13 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, PUT, DELETE, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        if not self.password:
+            # Only an unprotected local server invites other origins in. Once a
+            # password is set the app is served from this origin anyway, and a
+            # wildcard would only widen what a hostile page could attempt.
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Methods", "GET, PUT, DELETE, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         if self.command != "HEAD":
@@ -115,6 +140,42 @@ class Handler(BaseHTTPRequestHandler):
         vals = q.get("path") or []
         return vals[0] if vals else ""
 
+    # ---------- the gate ----------
+    # HTTP Basic rather than a token the app would have to carry: the browser
+    # prompts natively, remembers it per origin, and attaches it to EVERY
+    # request -- index.html, sw.js and the API alike. A token in a header would
+    # protect the API and leave the page itself open, and would need a login
+    # screen inside the app that the service worker then had to reason about.
+    #
+    # Basic sends the password reversibly encoded, so it is only private over
+    # HTTPS. Terminate TLS in front of this (tailscale serve / funnel, or a
+    # reverse proxy) and leave this bound to localhost.
+    def authorised(self):
+        if not self.password:
+            return True
+        header = self.headers.get("Authorization") or ""
+        if not header.startswith("Basic "):
+            return False
+        try:
+            raw = base64.b64decode(header[6:].strip(), validate=True).decode("utf-8")
+        except Exception:
+            return False
+        _, _, supplied = raw.partition(":")
+        # compare_digest so a wrong guess takes the same time as a near miss
+        return hmac.compare_digest(supplied, self.password)
+
+    def demand_password(self):
+        time.sleep(0.5)                 # make a guessing run expensive
+        body = b"GroupTodo: password required.\n"
+        self.send_response(401)
+        self.send_header("WWW-Authenticate", 'Basic realm="%s", charset="UTF-8"' % self.realm)
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(body)
+
     def log_message(self, fmt, *args):
         if self.path.startswith("/api/file") and self.command == "GET":
             return                      # loading a vault is hundreds of reads; stay quiet
@@ -125,6 +186,8 @@ class Handler(BaseHTTPRequestHandler):
         self._send(204)
 
     def do_GET(self):
+        if not self.authorised():
+            return self.demand_password()
         route = urlparse(self.path).path
         if route == "/api/ping":
             return self._json(200, {"ok": True, "vault": self.vault.root, "files": len(self.vault.list())})
@@ -143,6 +206,8 @@ class Handler(BaseHTTPRequestHandler):
     do_HEAD = do_GET
 
     def do_PUT(self):
+        if not self.authorised():
+            return self.demand_password()
         if urlparse(self.path).path != "/api/file":
             return self._send(404, "not found")
         length = int(self.headers.get("Content-Length") or 0)
@@ -156,6 +221,8 @@ class Handler(BaseHTTPRequestHandler):
         return self._json(200, {"ok": True})
 
     def do_DELETE(self):
+        if not self.authorised():
+            return self.demand_password()
         if urlparse(self.path).path != "/api/file":
             return self._send(404, "not found")
         try:
@@ -257,19 +324,67 @@ self.addEventListener("fetch", e => {
         return self._file(full, ctype)
 
 
+LOOPBACK = ("127.0.0.1", "localhost", "::1")
+
+
+def read_password(args):
+    """Prefer a file, then the environment, then the command line.
+
+    argv is the worst of the three: it shows up in `ps` for every other user on
+    the machine and in your shell history. It stays available because it is the
+    one that works in a one-line service definition, but it says so."""
+    if args.password_file:
+        with open(os.path.expanduser(args.password_file), "r", encoding="utf-8") as fh:
+            return fh.read().strip()
+    if os.environ.get("GTD_PASSWORD"):
+        return os.environ["GTD_PASSWORD"].strip()
+    if args.password:
+        print("note: --password is visible in `ps`; prefer GTD_PASSWORD or --password-file")
+        return args.password.strip()
+    return None
+
+
 def main():
     ap = argparse.ArgumentParser(description="Serve GroupTodo over a markdown vault.")
     ap.add_argument("--vault", default=os.environ.get("GTD_VAULT", DEFAULT_VAULT))
     ap.add_argument("--port", type=int, default=int(os.environ.get("GTD_PORT", 8777)))
     ap.add_argument("--host", default=os.environ.get("GTD_HOST", "127.0.0.1"))
+    ap.add_argument("--password", help="shared password (see --password-file)")
+    ap.add_argument("--password-file", help="file whose contents are the password")
+    ap.add_argument("--insecure", action="store_true",
+                    help="allow a non-loopback bind with no password (don't)")
     args = ap.parse_args()
 
+    password = read_password(args)
+    exposed = args.host not in LOOPBACK
+
+    # Refuse by default rather than warn. The old build printed a warning and
+    # served the vault anyway, which is the wrong way round for something
+    # holding somebody's work.
+    if exposed and not password and not args.insecure:
+        sys.exit(
+            "refusing to bind %s with no password.\n"
+            "  Anyone who can reach that address could read and rewrite the vault.\n"
+            "  Either:\n"
+            "    GTD_PASSWORD=... python3 serve.py --host %s      (set a password)\n"
+            "    python3 serve.py                                  (localhost only, then\n"
+            "      put tailscale serve / a reverse proxy in front for TLS)\n"
+            "    python3 serve.py --host %s --insecure            (a network you fully trust)"
+            % (args.host, args.host, args.host))
+
+    if password and len(password) < 10:
+        sys.exit("password too short: use at least 10 characters, it is reachable from a browser")
+
     Handler.vault = Vault(args.vault)
+    Handler.password = password
     count = len(Handler.vault.list())
     print(f"vault : {Handler.vault.root}  ({count} markdown files)")
     print(f"open  : http://{args.host}:{args.port}/")
-    if args.host not in ("127.0.0.1", "localhost"):
-        print("warning: no authentication -- anyone who can reach this port can edit the vault")
+    print("auth  : " + ("password required" if password else "open (localhost only)"))
+    if exposed and password:
+        print("note  : HTTP Basic is only private over HTTPS -- terminate TLS in front of this")
+    if exposed and not password:
+        print("WARNING: --insecure, no password; anyone who can reach this port owns the vault")
     ThreadingHTTPServer((args.host, args.port), Handler).serve_forever()
 
 
