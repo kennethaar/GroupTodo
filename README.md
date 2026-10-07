@@ -94,6 +94,18 @@ finished. Click one to go straight to it. "Last seen" is per device and never
 written to the shared files, so marking your own news read does not mark it read
 for everybody.
 
+### Undo
+
+Deleting was one click and permanent. Now a delete offers **Undo** in the toast
+for twelve seconds, `ctrl-z` works for five minutes, and both put the thing back
+where it was — a task into its old position with its thread intact, a page with
+its tombstone lifted so the next sync does not quietly delete it again
+everywhere else.
+
+What is kept is the removed thing itself, not a snapshot of the page: restoring
+a whole page would discard anything else that changed on it meanwhile, which is
+a worse bug than the one being fixed.
+
 ### Things that come back
 
 A task can carry `repeat:: weekly` — or `monthly`, `every 2 weeks`, `every
@@ -131,14 +143,24 @@ A message is an ordinary child block, so it nests under the task in Neovim and
 the block-level merge means two people posting at the same moment both survive.
 It carries no state, so it is not a task and never shows up in a to-do list.
 
+**The thread reads as a conversation**, not as more task rows: an initialled
+circle per speaker, a run of messages from one person under one name, day
+separators, times you can use (`8:30 AM`, `Yesterday 2:02 PM`, `Mon`), and one
+`New` line where the unread starts rather than tinting everything.
+
 **Read is per device and never written to the vault** — you reading something
 must not mark it read for everybody. Rows show `○ 2 new` while anything is
 unread.
 
 **A flag is the opposite.** `flagged_by::` carries your name in the file, so what
-you flagged follows you between devices, your colleagues can see you have picked
-it up, and **Flagged** collects them all. The nav entry appears only once you
-have flagged something.
+you flagged follows you between devices and your colleagues can see you have
+picked it up.
+
+**Chat** gathers every thread you have — across every space you are showing,
+every project and every day page — newest first, with the task it belongs to,
+who spoke last and what they said. Filter it by *All*, *Unread* or *Flagged*;
+click a row and you land on the task itself, switching space if it lives in
+another one. The nav entry appears once there is a conversation to find.
 
 New messages on tasks you are part of also turn up in the arrival notice.
 
@@ -565,8 +587,8 @@ The markdown is identical either way.
 ## Keys
 
 `c` capture · `/` search · `?` all keys · `f t` today · `g n` todos ·
-`g x` context · `g a` planned · `g p` people · `g f` flagged · `g w` weeding ·
-`g r` review ·
+`g x` context · `g a` planned · `g p` people · `g c` chat · `g w` weeding ·
+`g r` review · `ctrl-z` undo a delete ·
 `g d` re-surface. In the outline: `Enter` new block, `Tab`/`Shift-Tab` indent,
 `Ctrl-Enter` cycle state.
 
@@ -588,6 +610,8 @@ The markdown is identical either way.
 - **Auto-sync of the courier file is desktop only** (it needs a durable handle).
 - **Recurrence is offered, never scheduled.** Nothing appears until you tick the
   current one off and say yes, so a repeat you forget about simply stops.
+- **Undo is this device, this session.** It is a five-minute grace period, not
+  history: reload the page and the stack is gone.
 - **Chat read state is per device.** A new device shows the whole thread as
   unread; flags, which live in the file, follow you.
 - **No live calendar feed**, by choice — see above. Calendar entries are a

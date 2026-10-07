@@ -231,21 +231,55 @@ header.top .burger{display:none}
    to get rid of it. */
 /* A thread reads as a conversation, not as more task rows: no checkboxes, the
    author and the time on top, and unread marked on the edge so a glance finds it. */
-.thread{display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto}
-.msg{background:var(--bg3);border-radius:8px;padding:8px 10px;border-left:2px solid transparent}
-.msg.mine{background:var(--bg2)}
-.msg.unread{border-left-color:var(--accent)}
-.msg-head{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--fg3);margin-bottom:3px}
-.msg-head .who{font-weight:600;color:var(--fg2)}
-.msg-head .when{flex:1}
-.msg-body{font-size:13.5px;color:var(--fg);white-space:pre-wrap;overflow-wrap:anywhere}
-.msg-flags{font-size:11px;color:var(--warn);margin-top:4px}
-.flagbtn{background:none;border:0;cursor:pointer;color:var(--fg3);font-size:13px;padding:0 2px}
-.flagbtn:hover{color:var(--warn)}
+.thread{display:flex;flex-direction:column;gap:2px;max-height:300px;overflow-y:auto;padding-right:4px}
+.msg{display:flex;gap:9px;align-items:flex-start;padding:4px 2px;border-radius:7px}
+.msg:hover{background:var(--bg3)}
+.msg.cont{margin-top:-2px}
+.msg-main{flex:1;min-width:0}
+.msg-head{display:flex;align-items:baseline;gap:8px;font-size:11.5px;color:var(--fg3);margin-bottom:1px}
+.msg-head .who{font-weight:600;color:var(--fg2);font-size:12.5px}
+.msg-body{font-size:13.5px;color:var(--fg);line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;
+  max-width:62ch}
+.msg-flags{font-size:11px;color:var(--warn);margin-top:3px}
+/* One initialled circle per speaker; a run of messages from the same person
+   leaves the space but drops the repeat. */
+.avatar{width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-size:10.5px;font-weight:700;color:#06101f;letter-spacing:.02em}
+.avatar.ghost{background:none}
+/* A day line and an unread line, both rules with a word sitting on them. */
+.msg-day,.msg-new{display:flex;align-items:center;gap:10px;margin:10px 0 4px;
+  font-size:10.5px;letter-spacing:.08em;text-transform:uppercase}
+.msg-day{color:var(--fg3)}
+.msg-new{color:var(--accent)}
+.msg-day::before,.msg-day::after,.msg-new::before,.msg-new::after{
+  content:"";flex:1;height:1px;background:var(--border)}
+.msg-new::before,.msg-new::after{background:var(--accent);opacity:.45}
+.flagbtn{background:none;border:0;cursor:pointer;color:transparent;font-size:13px;padding:2px 3px;
+  flex:none;border-radius:5px}
+.msg:hover .flagbtn{color:var(--fg3)}
+.flagbtn:hover{color:var(--warn);background:var(--bg2)}
 .flagbtn.on{color:var(--warn)}
+/* The all-conversations list. */
+.chatrow{display:flex;gap:11px;align-items:flex-start;width:100%;text-align:left;cursor:pointer;
+  padding:11px 12px;background:none;border:0;border-top:1px solid var(--border);color:inherit}
+.chatrow:first-child{border-top:0}
+.chatrow:hover{background:var(--bg3)}
+.chatrow-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.chatrow-top{display:flex;align-items:baseline;gap:8px}
+.chatrow-top .task{font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chatrow-top .when{margin-left:auto;font-size:11px;color:var(--fg3);flex:none}
+.chatrow-last{font-size:12.5px;color:var(--fg2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chatrow-last .who{color:var(--fg3)}
+.chatrow-where{font-size:11px;color:var(--fg3)}
+.chatrow.unread .chatrow-last{color:var(--fg)}
+.chatrow-marks{display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex:none}
+@media (max-width:560px){.chatrow-where{display:none}}
 .chip.msg{color:var(--fg3)}
 .chip.msg.unread{color:var(--accent);background:rgba(106,163,255,.14)}
 .chip.flagged{color:var(--warn);background:rgba(224,176,80,.13)}
+.toast .act{background:none;border:1px solid var(--border2);color:var(--accent);
+  border-radius:6px;padding:2px 10px;font-size:12px;cursor:pointer;margin-left:8px}
+.toast .act:hover{background:var(--bg3)}
 .ctxnow{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 10px;
   border-radius:20px;cursor:pointer;white-space:nowrap;
   color:var(--ctx);background:rgba(94,207,192,.12);border:1px solid rgba(94,207,192,.35)}
@@ -600,12 +634,16 @@ function applyRefocus() {
 }
 const idSel = (cls, id, part) => cls + '[data-id="' + CSS.escape(String(id)) + '"] ' + part;
 
-function notify(msg, level="info") {
+function notify(msg, level="info", action=null) {
   const t = el("div", {class:"toast " + (level==="warn"?"warn":level==="error"?"err":"")},
     el("span", {}, msg),
+    action ? el("button", {class:"act", onclick:e=>{
+      e.target.closest(".toast").remove(); action.run();
+    }}, action.label) : null,
     el("button", {class:"x", onclick:e=>e.target.closest(".toast").remove()}, "✕"));
   $("#toasts").append(t);
-  setTimeout(() => t.remove(), level === "info" ? 3800 : 9000);
+  // An offer to undo has to outlast the moment you realise you need it.
+  setTimeout(() => t.remove(), action ? 12000 : level === "info" ? 3800 : 9000);
 }
 
 /* ---------- dates ---------- */
@@ -4021,7 +4059,7 @@ const NAV_SIMPLE = [
     {id: "context",    icon: "⌘", label: "Contexts", key: "g x"},
     {id: "agenda",     icon: "☷", label: "Planned",  key: "g a"},
     {id: "people",     icon: "◍", label: "People",   key: "g p"},
-    {id: "flagged",    icon: "⚑", label: "Flagged",  key: "g f"},
+    {id: "chat",       icon: "○", label: "Chat",     key: "g c"},
   ]},
   {group: "Projects", items: [
     {id: "horizons",   icon: "◉", label: "Big picture"},
@@ -4045,7 +4083,7 @@ const NAV_ADVANCED = [
     {id: "context", icon: "⌘", label: "Context",      key: "g x"},
     {id: "agenda",  icon: "☷", label: "Agenda",       key: "g a"},
     {id: "people",  icon: "◍", label: "People",       key: "g p"},
-    {id: "flagged", icon: "⚑", label: "Flagged",      key: "g f"},
+    {id: "chat",    icon: "○", label: "Chat",         key: "g c"},
   ]},
   {group: "Projects", items: [
     {id: "horizons",   icon: "◉", label: "Horizons"},
@@ -5045,6 +5083,122 @@ async function movePageToSpace(path, target) {
 }
 
 /* ============================================================
+   UNDO FOR DELETES
+   Deleting was one click and permanent, which is the only genuinely scary
+   thing left in the app. It is now one click and reversible for a while.
+
+   What is kept is the removed thing itself, not a snapshot of the page --
+   putting a whole page back would quietly discard anything else that changed
+   on it in the meantime, which is a worse bug than the one being fixed. A
+   block remembers its parent and where it sat; if the shape has moved on by
+   the time you undo, it goes back to the end of that parent rather than
+   refusing.
+   ============================================================ */
+const UNDO = [];
+const UNDO_KEEP = 20;
+/* Blocks carry a _parent back-reference for the outliner, so a structured
+   clone has to be explicit: JSON.stringify walks straight into the cycle.
+   Internal keys begin with an underscore and are rebuilt, never copied. */
+function cloneBlock(b) {
+  const out = newBlock({
+    state: b.state ?? null,
+    title: b.title || "",
+    props: Object.assign({}, b.props || {}),
+    body: (b.body || []).slice(),
+    collapsed: !!b.collapsed,
+  });
+  out.children = (b.children || []).map(cloneBlock);
+  return out;
+}
+function clonePage(page) {
+  return {
+    props: Object.assign({}, page.props || {}),
+    blocks: (page.blocks || []).map(cloneBlock),
+  };
+}
+
+function pushUndo(entry) {
+  UNDO.push(Object.assign({at: Date.now()}, entry));
+  while (UNDO.length > UNDO_KEEP) UNDO.shift();
+}
+
+/* Within the same window a demoted task keeps its dates for. */
+const undoFresh = e => (Date.now() - e.at) < CFG.undoStateMinutes * 60000;
+
+function undoLast() {
+  while (UNDO.length) {
+    const e = UNDO.pop();
+    if (!undoFresh(e)) continue;                 // too old to be what you meant
+    if (e.run()) return true;
+  }
+  notify("Nothing recent to undo.", "warn");
+  return false;
+}
+
+/* Remove a block, remembering enough to put it back. */
+function deleteBlockWithUndo(path, block, label) {
+  const page = getPage(path);
+  if (!page) return;
+  const parent = parentOf(page, block);
+  const sibs = parent ? (parent.children || []) : page.blocks;
+  const index = sibs.indexOf(block);
+  const copy = cloneBlock(block);
+  const parentTitle = parent ? parent.title : null;
+  const space = Spaces.active;
+
+  removeBlockFrom(page, block);
+  touch(path);
+  render();
+
+  const restore = () => {
+    let ok = false;
+    inSpace(space, () => {
+      const pg = getPage(path);
+      if (!pg) return;
+      let list = pg.blocks;
+      if (parentTitle != null) {
+        let found = null;
+        walkBlocks(pg.blocks, b => { if (!found && b.title === parentTitle) found = b; });
+        if (found) list = found.children || (found.children = []);
+      }
+      const at = index >= 0 && index <= list.length ? index : list.length;
+      list.splice(at, 0, cloneBlock(copy));
+      touch(path);
+      ok = true;
+    });
+    if (ok) { render(); notify("Put back."); }
+    return ok;
+  };
+  pushUndo({run: restore, label});
+  notify((label || "Deleted") + ".", "info", {label: "Undo", run: restore});
+}
+
+/* Remove a whole page, remembering it. */
+function deletePageWithUndo(path) {
+  const page = getPage(path);
+  if (!page) return;
+  const copy = clonePage(page);
+  const space = Spaces.active;
+  removePage(path);
+  render();
+
+  const restore = () => {
+    let ok = false;
+    inSpace(space, () => {
+      if (V.pages.has(path)) { notify("That page is back already.", "warn"); return; }
+      V.removed.delete(path);
+      dropTombstone(path);
+      putPage(path, clonePage(copy));
+      ok = true;
+    });
+    if (ok) { render(); notify("Put “" + pageTitle(path) + "” back."); }
+    return ok;
+  };
+  pushUndo({run: restore, label: "Deleted " + pageTitle(path)});
+  notify("Deleted " + pageTitle(path) + ".", "info", {label: "Undo", run: restore});
+}
+
+/* ============================================================
    TALKING ON A TASK
    "Done except the VAT bit" had nowhere to go: you could only edit somebody
    else's words, which loses who said what and when. A message is an ordinary
@@ -5136,6 +5290,63 @@ function flaggedMessages() {
   return out.sort((a, b) => msgAt(b.msg).localeCompare(msgAt(a.msg)));
 }
 
+/* ---------- reading a conversation ----------
+   The ordinary rules for making a thread scannable rather than a wall: group
+   what one person said in one go instead of repeating their name, separate the
+   days, show a time you can actually use, and put one line where the unread
+   starts rather than tinting every message. */
+const initialsOf = name => trim(name).split(/\s+/).filter(Boolean)
+  .slice(0, 2).map(w => w[0].toUpperCase()).join("") || "?";
+
+/* A colour per person, stable, so the same face is the same colour everywhere. */
+function personTint(name) {
+  const key = slugPerson(name).toLowerCase();
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) % 360;
+  return "hsl(" + h + " 55% 55%)";
+}
+
+/* "14:32" today, "Yesterday 14:32", "Mon 14:32" this week, else a date.
+   The clock is asked for as a time, not sliced out of a formatted datetime:
+   pulling /\d+:\d+/ out of "6 Oct 2026, 2:02 pm" gives "2:02" and loses the
+   afternoon, which is the kind of wrong that gets somebody to a meeting late. */
+function chatTime(stamp) {
+  const day = dateIn(stamp);
+  const t = formatStamp(stamp);
+  const clock = formatStamp(stamp, {dateStyle: undefined, timeStyle: "short"});
+  if (!day) return t;
+  if (day === todayISO()) return clock || t;
+  if (day === shiftISO(todayISO(), -1)) return "Yesterday" + (clock ? " " + clock : "");
+  if (day > shiftISO(todayISO(), -7)) {
+    const wd = new Date(day + "T00:00:00Z").getUTCDay();
+    return WEEKDAYS[wd].slice(0, 3).replace(/^./, c => c.toUpperCase()) + (clock ? " " + clock : "");
+  }
+  return humanDate(day) + (clock ? " " + clock : "");
+}
+
+function chatDayLabel(day) {
+  if (day === todayISO()) return "Today";
+  if (day === shiftISO(todayISO(), -1)) return "Yesterday";
+  return humanDate(day);
+}
+
+/* Messages -> rows, with the grouping decisions already made. */
+function threadRows(msgs) {
+  const rows = [];
+  let lastDay = null, lastWho = null, lastAt = 0, firstUnread = true;
+  for (const m of msgs) {
+    const day = dateIn(msgAt(m)) || todayISO();
+    if (day !== lastDay) { rows.push({sep: chatDayLabel(day)}); lastDay = day; lastWho = null; }
+    if (isUnread(m) && firstUnread) { rows.push({newHere: true}); firstUnread = false; }
+    const at = Date.parse(msgAt(m)) || 0;
+    // Same person, within five minutes: one speech, not two.
+    const grouped = msgAuthor(m) === lastWho && (at - lastAt) < 5 * 60000;
+    rows.push({msg: m, grouped});
+    lastWho = msgAuthor(m); lastAt = at;
+  }
+  return rows;
+}
+
 /* ---------- the thread, as it appears under a task ---------- */
 function threadPanel(path, block) {
   const wrap = el("div", {});
@@ -5149,21 +5360,31 @@ function threadPanel(path, block) {
       list.append(el("div", {class: "empty", style: "font-size:12.5px"},
         "Nothing said yet. Useful for \u201Cdone except the VAT bit\u201D."));
     }
-    for (const m of msgs) {
-      const mine = samePerson(msgAuthor(m), whoAmI());
-      const row = el("div", {class: "msg" + (isUnread(m) ? " unread" : "") + (mine ? " mine" : "")},
-        el("div", {class: "msg-head"},
-          el("span", {class: "who"}, msgAuthor(m) || "Someone"),
-          el("span", {class: "when"}, formatStamp(msgAt(m))),
-          el("button", {class: "flagbtn" + (flaggedByMe(m) ? " on" : ""),
-            title: flaggedByMe(m) ? "You flagged this to come back to" : "Flag to come back to",
-            onclick: () => { toggleMsgFlag(path, m); draw(); }}, "\u2691")),
-        el("div", {class: "msg-body"}, m.title));
-      const others = msgFlags(m).filter(n => !samePerson(n, whoAmI()));
-      if (others.length) row.append(el("div", {class: "msg-flags"}, "flagged by " + others.join(", ")));
-      list.append(row);
+    for (const row of threadRows(msgs)) {
+      if (row.sep)     { list.append(el("div", {class: "msg-day"}, el("span", {}, row.sep))); continue; }
+      if (row.newHere) { list.append(el("div", {class: "msg-new"}, el("span", {}, "New"))); continue; }
+      const m = row.msg;
+      const who = msgAuthor(m) || "Someone";
+      const mine = samePerson(who, whoAmI());
+      const node = el("div", {class: "msg" + (mine ? " mine" : "") + (row.grouped ? " cont" : "")},
+        row.grouped ? el("div", {class: "avatar ghost"})
+          : el("div", {class: "avatar", style: "background:" + personTint(who)}, initialsOf(who)),
+        el("div", {class: "msg-main"},
+          row.grouped ? null : el("div", {class: "msg-head"},
+            el("span", {class: "who"}, mine ? "You" : who),
+            el("span", {class: "when"}, chatTime(msgAt(m)))),
+          el("div", {class: "msg-body"}, m.title),
+          (() => {
+            const others = msgFlags(m).filter(n => !samePerson(n, whoAmI()));
+            return others.length ? el("div", {class: "msg-flags"}, "\u2691 " + others.join(", ")) : null;
+          })()),
+        el("button", {class: "flagbtn" + (flaggedByMe(m) ? " on" : ""),
+          title: flaggedByMe(m) ? "Flagged \u2014 click to clear" : "Flag to come back to",
+          onclick: () => { toggleMsgFlag(path, m); draw(); }}, "\u2691"));
+      list.append(node);
     }
     markThreadRead(block);
+    requestAnimationFrame(() => { list.scrollTop = list.scrollHeight; });
   };
   draw();
 
@@ -5180,6 +5401,90 @@ function threadPanel(path, block) {
   wrap.append(list, el("div", {style: "display:flex;gap:8px;align-items:flex-end;margin-top:8px"},
     input, el("button", {class: "btn sm primary", onclick: send}, "Send")));
   return wrap;
+}
+
+/* ---------- every conversation, everywhere ----------
+   A thread is only useful if you can find it again. This gathers them from
+   every space you have shown, every project and every day page, newest first,
+   so "where was that said" is one screen rather than a hunt. */
+function allThreadsHere() {
+  const out = [];
+  for (const [path, page] of V.pages) {
+    walkBlocks(page.blocks, b => {
+      if (isMessage(b)) return;
+      const msgs = messagesOf(b);
+      if (!msgs.length) return;
+      const last = msgs[msgs.length - 1];
+      out.push({
+        path, block: b, msgs,
+        last, at: msgAt(last),
+        unread: unreadCount(b),
+        flagged: msgs.filter(flaggedByMe).length,
+        // A journal is a day, so say which day rather than printing a raw date.
+        where: isJournalPath(path) ? chatDayLabel(baseName(path)) : pageTitle(path),
+      });
+    });
+  }
+  return out;
+}
+const allThreads = () => acrossSpaces(allThreadsHere)
+  .sort((a, b) => String(b.at).localeCompare(String(a.at)));
+
+const CHAT_FILTERS = [["all", "All"], ["unread", "Unread"], ["flagged", "Flagged"]];
+
+function viewChat() {
+  const c = el("div", {class: "wrap"});
+  const threads = allThreads();
+  const mode = state.chatFilter || "all";
+  const shown = threads.filter(t =>
+    mode === "unread" ? t.unread : mode === "flagged" ? t.flagged : true);
+
+  const bar = el("div", {class: "statefilter"});
+  for (const [key, label] of CHAT_FILTERS) {
+    const n = key === "unread" ? threads.filter(t => t.unread).length
+            : key === "flagged" ? threads.filter(t => t.flagged).length
+            : threads.length;
+    bar.append(el("button", {class: "chip filter" + (mode === key ? " on" : ""),
+      onclick: () => go("chat", {chatFilter: key})},
+      (mode === key ? "\u2713 " : "") + label + " " + n));
+  }
+  c.append(el("div", {class: "section"}, bar));
+
+  if (!shown.length) {
+    c.append(section("Chat", 0, el("div", {class: "card"}, el("div", {class: "empty"},
+      mode === "flagged" ? "Nothing flagged. The \u2691 on a message keeps it here."
+      : mode === "unread" ? "Nothing unread."
+      : "No conversations yet. Open a task and say something \u2014 everyone in that space sees it."))));
+    return c;
+  }
+
+  const card = el("div", {class: "card"});
+  for (const t of shown) {
+    card.append(el("button", {class: "chatrow" + (t.unread ? " unread" : ""),
+      onclick: () => openPageIn(t.space, t.path) && null},
+      el("div", {class: "avatar", style: "background:" + personTint(msgAuthor(t.last))},
+        initialsOf(msgAuthor(t.last))),
+      el("div", {class: "chatrow-main"},
+        el("div", {class: "chatrow-top"},
+          el("span", {class: "task"}, titleForRow(t.block.title)),
+          multiSpace() && t.space ? spaceBadge(t.space) : null,
+          el("span", {class: "when"}, chatTime(t.at))),
+        el("div", {class: "chatrow-last"},
+          el("span", {class: "who"}, (samePerson(msgAuthor(t.last), whoAmI()) ? "You" : msgAuthor(t.last)) + ": "),
+          t.last.title),
+        el("div", {class: "chatrow-where"}, t.where)),
+      el("div", {class: "chatrow-marks"},
+        t.unread ? el("span", {class: "chip msg b unread"}, t.unread + " new") : null,
+        t.flagged ? el("span", {class: "chip flagged"}, "\u2691 " + t.flagged) : null)));
+  }
+  // Clicking a row should land on the task, not merely the page it sits in.
+  card.querySelectorAll(".chatrow").forEach((node, i) => {
+    const t = shown[i];
+    node.onclick = () => inSpace(t.space, () => openTaskDetail(t.path, t.block, t.space));
+  });
+  c.append(section(mode === "all" ? "Conversations" : CHAT_FILTERS.find(f => f[0] === mode)[1],
+                   shown.length, card));
+  return c;
 }
 
 /* ---------- a place to find what you flagged ---------- */
@@ -6060,7 +6365,8 @@ function navVisible(item) {
   // Nothing to see while you are the only person here.
   if (item.id === "people" && members().length < 2 &&
       !leafActions().some(a => a.assignee)) return false;
-  if (item.id === "flagged" && !flaggedMessages().length) return false;
+  // Chat shows up once there is one, and stays once you are using it.
+  if (item.id === "chat" && !allThreads().length) return false;
   if (!coachOn() || !isSimple()) return true;
   // Making a routine mid-coach is allowed, and a place you were just sent to has
   // to be reachable afterwards.
@@ -6824,6 +7130,7 @@ const VIEW_TITLE = {
   today: "Today", next: "Next actions", context: "Context", agenda: "Agenda",
   todos: "Todos", horizons: "Horizons of focus", checklists: "Routines & lists",
   people: "People",                     // or the header read "Today" on People
+  chat: "Chat", flagged: "Flagged",     // same trap, same fix
   projects: "Projects", zettel: "Zettel", pages: "All pages", "journal-list": "Journals",
   health: "Health check", search: "Search", page: "Page",
 };
@@ -6841,6 +7148,7 @@ function render() {
     case "today":   node = isSimple() ? viewMyDay() : viewToday(); break;
     case "todos":   node = viewTodos(); break;
     case "people":  node = viewPeople(); break;
+    case "chat":    node = viewChat(); break;
     case "flagged": node = viewFlagged(); break;
     case "person":  node = viewPerson(state.person || whoAmI()); break;
     case "horizons":
@@ -7260,6 +7568,13 @@ function openTaskDetail(path, block, space) {
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
           "Somebody in this space gets it as their task, and you get it in your " +
           "Waiting for. Anybody else is only a waiting-for \u2014 they cannot see this.")),
+      el("div", {class: "field"},
+        el("label", {}, "Chat" + (messagesOf(block).length ? " \u00B7 " + messagesOf(block).length : "")),
+        threadPanel(path, block),
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          "Everyone in this space sees it, with who said it and when. Flag one with " +
+          "\u2691 to come back to it \u2014 that carries your name, so it follows you between " +
+          "devices. Read is per device and stays out of the files.")),
       el("div", {class: "field"}, el("label", {}, "GTD hygiene"), el("div", {class: "seg"},
         el("button", {onclick: () => { closeModal(); promptAndInsertContext(path, block); }},
           a.context ? "@" + a.context : "add context"),
@@ -7311,20 +7626,13 @@ function openTaskDetail(path, block, space) {
           "The file route sends nothing anywhere. A link opens your calendar with the " +
           "title and date in the web address.")),
       el("div", {class: "field"}, el("label", {}, "Notes"), notes),
-      el("div", {class: "field"},
-        el("label", {}, "Chat" + (messagesOf(block).length ? " \u00B7 " + messagesOf(block).length : "")),
-        threadPanel(path, block),
-        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          "Everyone in this space sees it, with who said it and when. Flag one with " +
-          "\u2691 to come back to it \u2014 that carries your name, so it follows you between " +
-          "devices. Read is per device and stays out of the files.")),
       el("div", {class: "field"}, el("label", {}, "Trail"), trail),
       el("div", {class: "field"}, el("label", {}, "Source"),
         el("button", {class: "btn ghost sm", onclick: () => { closeModal(); openPage(path); }}, path))),
     foot: [
       el("button", {class: "btn ghost", onclick: () => {
-        const page = getPage(path);
-        removeBlockFrom(page, block); touch(path); closeModal(); render();
+        closeModal();
+        deleteBlockWithUndo(path, block, "Deleted \u201C" + titleForRow(block.title) + "\u201D");
       }}, "Delete"),
       el("div", {style: "flex:1"}),
       el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
@@ -7490,8 +7798,7 @@ function deletePrompt(path) {
     title: "Delete " + pageTitle(path), label: 'Type YES to confirm', cta: "Delete",
     onSave: ans => {
       if (ans !== "YES") { notify("Delete cancelled"); return; }
-      removePage(path);
-      notify("Deleted " + path);
+      deletePageWithUndo(path);
       go("today");
     },
   });
@@ -7928,6 +8235,14 @@ function addTombstone(path) {
   const t = tombstones();
   t.set(path, nowStamp());
   writeTombstones(t);
+}
+/* Undoing a delete has to lift the headstone too, or the next sync would
+   dutifully delete the page again on every other device. */
+function dropTombstone(path) {
+  const t = tombstones();
+  if (!t.delete(path)) return false;
+  writeTombstones(t);
+  return true;
 }
 
 /* ---------- bundle format ---------- */
@@ -9114,6 +9429,11 @@ document.addEventListener("keydown", e => {
   if (MODAL_KEYS && MODAL_KEYS(e)) { e.preventDefault(); return; }
   if (e.key === "Escape") { resetChord(); closeModal(); return; }
   const typing = /^(INPUT|TEXTAREA)$/.test(e.target.tagName) || e.target.isContentEditable;
+  // Ctrl-Z outside a text box is the app's undo; inside one it is the
+  // browser's, which is what anybody typing actually wants.
+  if (!typing && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !e.shiftKey) {
+    e.preventDefault(); undoLast(); return;
+  }
   if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
   if ($("#modalRoot").firstChild) return;
 
