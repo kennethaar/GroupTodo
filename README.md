@@ -94,6 +94,54 @@ finished. Click one to go straight to it. "Last seen" is per device and never
 written to the shared files, so marking your own news read does not mark it read
 for everybody.
 
+### Things that come back
+
+A task can carry `repeat:: weekly` — or `monthly`, `every 2 weeks`, `every
+monday`, whatever you write in the file. **Nothing is created until you tick the
+current one off, and even then you are asked.**
+
+That is the whole design. A scheduler fills your list while you are away and
+hands you a wall of overdue chores on the Monday; this does not. Skip a week and
+you have skipped a week — there is no backlog of imaginary Mondays. Ticking one
+off late still puts the next one in the future, never in the past, and a monthly
+job on the 31st lands on the 28th in February rather than rolling into March.
+
+The next one carries the title, the repeat and who it is assigned to, and leaves
+behind what belonged to that one doing of it — the dates, the done stamp.
+
+### Talking on a task
+
+"Done except the VAT bit" used to have nowhere to go: you could only edit
+somebody else's words, which loses who said it and when. Every task now has a
+thread.
+
+```markdown
+- TODO Draft the welcome letter
+  assigned:: Alice Berg
+  - Numbers are in the shared sheet
+    msg:: Kenneth Aar
+    at:: 2026-10-07T19:05:39Z
+    flagged_by:: Alice Berg
+  - Found them, VAT line is missing though
+    msg:: Alice Berg
+    at:: 2026-10-07T19:05:44Z
+```
+
+A message is an ordinary child block, so it nests under the task in Neovim and
+the block-level merge means two people posting at the same moment both survive.
+It carries no state, so it is not a task and never shows up in a to-do list.
+
+**Read is per device and never written to the vault** — you reading something
+must not mark it read for everybody. Rows show `○ 2 new` while anything is
+unread.
+
+**A flag is the opposite.** `flagged_by::` carries your name in the file, so what
+you flagged follows you between devices, your colleagues can see you have picked
+it up, and **Flagged** collects them all. The nav entry appears only once you
+have flagged something.
+
+New messages on tasks you are part of also turn up in the arrival notice.
+
 ### Dates in your calendar
 
 Anything with a date gets **Add to calendar**, and **Planned** sends the whole
@@ -517,7 +565,8 @@ The markdown is identical either way.
 ## Keys
 
 `c` capture · `/` search · `?` all keys · `f t` today · `g n` todos ·
-`g x` context · `g a` planned · `g p` people · `g w` weeding · `g r` review ·
+`g x` context · `g a` planned · `g p` people · `g f` flagged · `g w` weeding ·
+`g r` review ·
 `g d` re-surface. In the outline: `Enter` new block, `Tab`/`Shift-Tab` indent,
 `Ctrl-Enter` cycle state.
 
@@ -537,6 +586,10 @@ The markdown is identical either way.
 - **The service worker needs a URL**; a downloaded file cannot register one.
 - **A document library cannot host the app** — see above.
 - **Auto-sync of the courier file is desktop only** (it needs a durable handle).
+- **Recurrence is offered, never scheduled.** Nothing appears until you tick the
+  current one off and say yes, so a repeat you forget about simply stops.
+- **Chat read state is per device.** A new device shows the whole thread as
+  unread; flags, which live in the file, follow you.
 - **No live calendar feed**, by choice — see above. Calendar entries are a
   snapshot taken when you press the button; changing the date later does not
   update anything already in your calendar.

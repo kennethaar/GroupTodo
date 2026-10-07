@@ -229,6 +229,23 @@ header.top .burger{display:none}
 /* Where you are, kept on screen. Picking a context changed what the app showed
    and then said nothing about it, so it was impossible to tell you had one or
    to get rid of it. */
+/* A thread reads as a conversation, not as more task rows: no checkboxes, the
+   author and the time on top, and unread marked on the edge so a glance finds it. */
+.thread{display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto}
+.msg{background:var(--bg3);border-radius:8px;padding:8px 10px;border-left:2px solid transparent}
+.msg.mine{background:var(--bg2)}
+.msg.unread{border-left-color:var(--accent)}
+.msg-head{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--fg3);margin-bottom:3px}
+.msg-head .who{font-weight:600;color:var(--fg2)}
+.msg-head .when{flex:1}
+.msg-body{font-size:13.5px;color:var(--fg);white-space:pre-wrap;overflow-wrap:anywhere}
+.msg-flags{font-size:11px;color:var(--warn);margin-top:4px}
+.flagbtn{background:none;border:0;cursor:pointer;color:var(--fg3);font-size:13px;padding:0 2px}
+.flagbtn:hover{color:var(--warn)}
+.flagbtn.on{color:var(--warn)}
+.chip.msg{color:var(--fg3)}
+.chip.msg.unread{color:var(--accent);background:rgba(106,163,255,.14)}
+.chip.flagged{color:var(--warn);background:rgba(224,176,80,.13)}
 .ctxnow{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 10px;
   border-radius:20px;cursor:pointer;white-space:nowrap;
   color:var(--ctx);background:rgba(94,207,192,.12);border:1px solid rgba(94,207,192,.35)}
@@ -2769,6 +2786,12 @@ function setBlockState(path, block, state, opts = {}) {
   }
   if (state === "DONE" || state === "CANCELLED") {
     if (prev !== state) noteTodoTouched();
+    // Asked, never assumed, and only on the tick that actually finished it.
+    if (state === "DONE" && prev !== "DONE" && repeatOf(block) && !opts.skipRepeat) {
+      render();
+      offerNextOccurrence(path, block);
+      return;
+    }
     checkProjectCompletion(path);
   }
   render();
@@ -3998,6 +4021,7 @@ const NAV_SIMPLE = [
     {id: "context",    icon: "⌘", label: "Contexts", key: "g x"},
     {id: "agenda",     icon: "☷", label: "Planned",  key: "g a"},
     {id: "people",     icon: "◍", label: "People",   key: "g p"},
+    {id: "flagged",    icon: "⚑", label: "Flagged",  key: "g f"},
   ]},
   {group: "Projects", items: [
     {id: "horizons",   icon: "◉", label: "Big picture"},
@@ -4021,6 +4045,7 @@ const NAV_ADVANCED = [
     {id: "context", icon: "⌘", label: "Context",      key: "g x"},
     {id: "agenda",  icon: "☷", label: "Agenda",       key: "g a"},
     {id: "people",  icon: "◍", label: "People",       key: "g p"},
+    {id: "flagged", icon: "⚑", label: "Flagged",      key: "g f"},
   ]},
   {group: "Projects", items: [
     {id: "horizons",   icon: "◉", label: "Horizons"},
@@ -5020,6 +5045,298 @@ async function movePageToSpace(path, target) {
 }
 
 /* ============================================================
+   TALKING ON A TASK
+   "Done except the VAT bit" had nowhere to go: you could only edit somebody
+   else's words, which loses who said what and when. A message is an ordinary
+   child block carrying who wrote it and when -- so it is plain markdown, it
+   nests under the task in Neovim, and because the sync merges blocks by text
+   two people posting at the same moment both survive.
+
+   A message has no state, so it is not a task: it cannot make its parent look
+   unfinished and it never appears in a to-do list.
+
+   Read is per device and never written to the vault: you reading something
+   must not mark it read for everybody. A FLAG is the opposite -- it carries
+   your name in the file, so it follows you between devices and your colleagues
+   can see you have picked it up.
+   ============================================================ */
+const MSG_PROP = "msg", MSG_AT = "at", MSG_FLAG = "flagged_by";
+
+const isMessage = b => !!trim(blockProp(b, MSG_PROP) || "");
+const msgAuthor = b => trim(blockProp(b, MSG_PROP) || "");
+const msgAt     = b => trim(blockProp(b, MSG_AT) || "");
+const msgKey    = b => slugPerson(msgAuthor(b)) + "|" + msgAt(b);
+
+const msgFlags = b => (trim(blockProp(b, MSG_FLAG) || "")
+  .split(",").map(trim).filter(Boolean));
+const flaggedByMe = b => msgFlags(b).some(n => samePerson(n, whoAmI()));
+
+function messagesOf(block) {
+  return (block.children || []).filter(isMessage)
+    .sort((a, b) => msgAt(a).localeCompare(msgAt(b)));
+}
+
+function postMessage(path, block, text) {
+  const body = trim(text);
+  if (!body) return null;
+  const m = newBlock({state: null, title: body});
+  setBlockProp(m, MSG_PROP, whoAmI() || "Someone");
+  setBlockProp(m, MSG_AT, nowStamp());
+  (block.children || (block.children = [])).push(m);
+  touch(path);
+  markThreadRead(block);            // your own words are not news to you
+  return m;
+}
+
+function toggleMsgFlag(path, m) {
+  const me = whoAmI();
+  if (!me) { notify("Put your name in first \u2014 a flag is a name.", "warn"); return; }
+  const now = msgFlags(m).filter(n => !samePerson(n, me));
+  if (now.length === msgFlags(m).length) now.push(me);
+  if (now.length) setBlockProp(m, MSG_FLAG, now.join(", "));
+  else for (const k of Object.keys(m.props)) if (k.toLowerCase() === MSG_FLAG) delete m.props[k];
+  touch(path);
+  render();
+}
+
+/* ---------- read, per device ---------- */
+const readKey = () => "readmsg:" + (Spaces.active || "");
+function readSet() {
+  try { return new Set(JSON.parse(PREF.get(readKey(), "[]"))); }
+  catch (_) { return new Set(); }
+}
+function saveReadSet(set) {
+  // Keep it from growing without limit; the oldest keys are the least useful.
+  const keys = Array.from(set).slice(-800);
+  PREF.set(readKey(), JSON.stringify(keys));
+}
+const isUnread = m => !samePerson(msgAuthor(m), whoAmI()) && !readSet().has(msgKey(m));
+
+function markThreadRead(block) {
+  const set = readSet();
+  let hit = false;
+  for (const m of messagesOf(block)) if (!set.has(msgKey(m))) { set.add(msgKey(m)); hit = true; }
+  if (hit) saveReadSet(set);
+}
+
+function unreadCount(block) {
+  const set = readSet();
+  const me = whoAmI();
+  return messagesOf(block).filter(m => !samePerson(msgAuthor(m), me) && !set.has(msgKey(m))).length;
+}
+
+/* Everything flagged by me, anywhere in this space. */
+function flaggedMessages() {
+  const out = [];
+  for (const [path, page] of V.pages) {
+    walkBlocks(page.blocks, (b, parent) => {
+      if (isMessage(b) && flaggedByMe(b)) out.push({path, msg: b, task: parent});
+    });
+  }
+  return out.sort((a, b) => msgAt(b.msg).localeCompare(msgAt(a.msg)));
+}
+
+/* ---------- the thread, as it appears under a task ---------- */
+function threadPanel(path, block) {
+  const wrap = el("div", {});
+  const list = el("div", {class: "thread"});
+  const input = el("textarea", {rows: "2", placeholder: "Say something about this\u2026"});
+
+  const draw = () => {
+    list.textContent = "";
+    const msgs = messagesOf(block);
+    if (!msgs.length) {
+      list.append(el("div", {class: "empty", style: "font-size:12.5px"},
+        "Nothing said yet. Useful for \u201Cdone except the VAT bit\u201D."));
+    }
+    for (const m of msgs) {
+      const mine = samePerson(msgAuthor(m), whoAmI());
+      const row = el("div", {class: "msg" + (isUnread(m) ? " unread" : "") + (mine ? " mine" : "")},
+        el("div", {class: "msg-head"},
+          el("span", {class: "who"}, msgAuthor(m) || "Someone"),
+          el("span", {class: "when"}, formatStamp(msgAt(m))),
+          el("button", {class: "flagbtn" + (flaggedByMe(m) ? " on" : ""),
+            title: flaggedByMe(m) ? "You flagged this to come back to" : "Flag to come back to",
+            onclick: () => { toggleMsgFlag(path, m); draw(); }}, "\u2691")),
+        el("div", {class: "msg-body"}, m.title));
+      const others = msgFlags(m).filter(n => !samePerson(n, whoAmI()));
+      if (others.length) row.append(el("div", {class: "msg-flags"}, "flagged by " + others.join(", ")));
+      list.append(row);
+    }
+    markThreadRead(block);
+  };
+  draw();
+
+  const send = () => {
+    if (!trim(input.value)) return;
+    postMessage(path, block, input.value);
+    input.value = "";
+    draw();
+  };
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); send(); }
+  });
+
+  wrap.append(list, el("div", {style: "display:flex;gap:8px;align-items:flex-end;margin-top:8px"},
+    input, el("button", {class: "btn sm primary", onclick: send}, "Send")));
+  return wrap;
+}
+
+/* ---------- a place to find what you flagged ---------- */
+function viewFlagged() {
+  const c = el("div", {class: "wrap"});
+  const items = flaggedMessages();
+  if (!items.length) {
+    c.append(section("Flagged", 0, el("div", {class: "card"},
+      el("div", {class: "empty"},
+        "Nothing flagged. The flag on a message is for things you want to come back to."))));
+    return c;
+  }
+  const card = el("div", {class: "card"});
+  for (const it of items) {
+    card.append(el("button", {class: "dash-item", onclick: () => {
+      if (it.task) openTaskDetail(it.path, it.task);
+      else openPage(it.path);
+    }},
+      el("span", {}, it.msg.title),
+      el("span", {class: "p"}, (it.task ? titleForRow(it.task.title) : pageTitle(it.path))),
+      el("span", {class: "chip"}, msgAuthor(it.msg))));
+  }
+  c.append(section("Flagged", items.length, card));
+  return c;
+}
+
+/* ============================================================
+   RECURRENCE, OFFERED RATHER THAN SCHEDULED
+   A scheduler fills your list while you are on holiday and hands you a wall of
+   overdue chores on the Monday. That is the thing people flee, and this app
+   already says so about nudges, so recurrence works the other way round:
+   NOTHING is created until you tick the last one off, and even then you are
+   asked. Miss a week and you have missed a week -- there is no backlog of
+   imaginary Mondays waiting for you.
+
+   The spec lives in the file as plain words -- repeat:: every 2 weeks -- so it
+   reads the same in Neovim as it does here.
+   ============================================================ */
+const REPEAT_PROP = "repeat";
+const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+/* "weekly", "every 2 weeks", "monthly", "every monday" -> a step, or null. */
+function parseRepeat(spec) {
+  const t = trim(String(spec || "")).toLowerCase().replace(/^every\s+/, "");
+  if (!t) return null;
+  const named = {
+    day: ["day", 1], daily: ["day", 1],
+    week: ["day", 7], weekly: ["day", 7],
+    fortnight: ["day", 14], fortnightly: ["day", 14], biweekly: ["day", 14],
+    month: ["month", 1], monthly: ["month", 1],
+    quarter: ["month", 3], quarterly: ["month", 3],
+    year: ["month", 12], yearly: ["month", 12], annually: ["month", 12], annual: ["month", 12],
+  }[t];
+  if (named) return {unit: named[0], n: named[1]};
+
+  const wd = WEEKDAYS.indexOf(t.replace(/s$/, ""));
+  if (wd >= 0) return {unit: "weekday", n: wd};
+
+  const m = /^(\d{1,3})\s*(day|week|month|year)s?$/.exec(t);
+  if (m) {
+    const n = Number(m[1]);
+    if (!n) return null;
+    if (m[2] === "day")   return {unit: "day",   n};
+    if (m[2] === "week")  return {unit: "day",   n: n * 7};
+    if (m[2] === "month") return {unit: "month", n};
+    return {unit: "month", n: n * 12};
+  }
+  return null;
+}
+
+/* Add months without rolling over: 31 Jan + 1 month is 28 Feb, not 3 March. */
+function addMonths(iso, n) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const target = new Date(Date.UTC(y, m - 1 + n, 1));
+  const last = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
+  target.setUTCDate(Math.min(d, last));
+  return target.toISOString().slice(0, 10);
+}
+
+/* The next one after `from`, always strictly later: ticking a chore off late
+   should still put the next one in the future, not in the past. */
+function nextRepeatDate(spec, from) {
+  const step = parseRepeat(spec);
+  if (!step) return null;
+  const base = dateIn(from) || todayISO();
+  if (step.unit === "weekday") {
+    const cur = new Date(base + "T00:00:00Z").getUTCDay();
+    let ahead = (step.n - cur + 7) % 7;
+    if (ahead === 0) ahead = 7;
+    return shiftISO(base, ahead);
+  }
+  let next = step.unit === "month" ? addMonths(base, step.n) : shiftISO(base, step.n);
+  // A monthly chore ticked three months late should land next month, not in May.
+  let guard = 0;
+  while (next <= todayISO() && guard++ < 60)
+    next = step.unit === "month" ? addMonths(next, step.n) : shiftISO(next, step.n);
+  return next;
+}
+
+const repeatOf = b => trim(blockProp(b, REPEAT_PROP) || "");
+const REPEAT_CHOICES = ["", "daily", "weekly", "fortnightly", "monthly", "quarterly", "yearly"];
+
+/* Build the next occurrence beside the one just finished. */
+function makeNextOccurrence(path, block, when) {
+  const page = getPage(path);
+  if (!page) return null;
+  const copy = newBlock({
+    state: "TODO",
+    title: block.title,
+    body: (block.body || []).slice(),
+    props: {},
+  });
+  // Carry what describes the job; leave behind what described that one doing of it.
+  for (const [k, v] of Object.entries(block.props || {})) {
+    if (/^(added|closed|done_by|scheduled|deadline|assigned_at)$/i.test(k)) continue;
+    copy.props[k] = v;
+  }
+  setBlockProp(copy, "SCHEDULED", "[[" + when + "]]");
+  setBlockProp(copy, "Added", "[[" + todayISO() + "]]");
+  stampAuthor(copy);
+
+  const sibs = siblingsOf(page, block);
+  const at = sibs.indexOf(block);
+  sibs.splice(at < 0 ? sibs.length : at + 1, 0, copy);
+  touch(path);
+  return copy;
+}
+
+function offerNextOccurrence(path, block) {
+  const spec = repeatOf(block);
+  const when = nextRepeatDate(spec, dueDate(block) || todayISO());
+  if (!when) return;
+  modal({
+    center: true, title: "Again?",
+    body: el("div", {},
+      el("div", {class: "field"},
+        el("div", {style: "font-size:13.5px"},
+          "\u201C" + titleForRow(block.title) + "\u201D repeats " + spec + "."),
+        el("div", {style: "color:var(--fg2);font-size:13px;margin-top:6px"},
+          "Put the next one on " + humanDate(when) + "?"),
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:8px"},
+          "Nothing is created until you say so, so a week you skipped stays skipped. " +
+          "You will never come back to a pile of chores you were not there for."))),
+    foot: [
+      el("button", {class: "btn ghost", onclick: () => { closeModal(); render(); }}, "Leave it"),
+      el("div", {style: "flex:1"}),
+      el("button", {class: "btn primary", onclick: () => {
+        closeModal();
+        makeNextOccurrence(path, block, when);
+        render();
+        notify("Next one on " + humanDate(when) + ".");
+      }}, "Yes, " + humanDate(when)),
+    ],
+  });
+}
+
+/* ============================================================
    PUTTING A DATED TASK IN A CALENDAR
    Two routes, and the difference matters.
 
@@ -5498,6 +5815,21 @@ function newsSince(since) {
       if (who && samePerson(who, me) && at && at > since && !samePerson(by, me) &&
           OPEN_STATES[b.state])
         out.push({kind: "given", path, block: b, at, who: by || "somebody"});
+      // Somebody said something on a task I am part of -- mine, or one I wrote.
+      if (isMessage(b)) return;
+      for (const m of messagesOf(b)) {
+        if (samePerson(msgAuthor(m), me)) continue;
+        if (msgAt(m) <= since) continue;
+        // "Mine" is wider than by::, which is only stamped on a state change:
+        // a task you simply typed carries no author at all. It is yours if it
+        // is on your day page, if you wrote it, if it is assigned to you, or
+        // if you have already said something in the thread.
+        const involved = samePerson(assigneeOf(b), me) || samePerson(by, me) ||
+                         (isJournalPath(path) && myJournal(path)) ||
+                         messagesOf(b).some(x => samePerson(msgAuthor(x), me));
+        if (!involved) continue;
+        out.push({kind: "said", path, block: b, at: msgAt(m), who: msgAuthor(m), text: m.title});
+      }
       // Something I handed over, now done by them.
       const raw = trim(blockProp(b, "done_by") || "");
       if (raw && samePerson(by, me) && !samePerson(raw.split(/\s+/)[0], me)) {
@@ -5514,10 +5846,15 @@ function openNews(items) {
   const card = el("div", {class: "card"});
   for (const n of items) {
     card.append(el("button", {class: "dash-item", onclick: () => {
-      closeModal(); markSeen(); openPage(n.path);
+      closeModal(); markSeen();
+      if (n.kind === "said") openTaskDetail(n.path, n.block); else openPage(n.path);
     }},
-      el("span", {}, (n.kind === "given" ? "\u2192 " : "\u2713 ") + n.block.title),
-      el("span", {class: "chip"}, n.kind === "given" ? "from " + n.who : n.who + " finished it")));
+      el("span", {}, (n.kind === "given" ? "\u2192 " : n.kind === "said" ? "\u25CB " : "\u2713 ") +
+        (n.kind === "said" ? n.text : n.block.title)),
+      el("span", {class: "chip"},
+        n.kind === "given"    ? "from " + n.who
+        : n.kind === "said"   ? n.who + " on " + titleForRow(n.block.title)
+        : n.who + " finished it")));
   }
   modal({
     center: true,
@@ -5723,6 +6060,7 @@ function navVisible(item) {
   // Nothing to see while you are the only person here.
   if (item.id === "people" && members().length < 2 &&
       !leafActions().some(a => a.assignee)) return false;
+  if (item.id === "flagged" && !flaggedMessages().length) return false;
   if (!coachOn() || !isSimple()) return true;
   // Making a routine mid-coach is allowed, and a place you were just sent to has
   // to be reachable afterwards.
@@ -5886,6 +6224,15 @@ function chipsFor(a) {
     out.push(el("span", {class: "chip " + cls}, humanDate(a.due)));
   }
   if (a.age != null && a.age > 0) out.push(el("span", {class: "chip age"}, a.age + "d"));
+  const msgs = messagesOf(a.block).length;
+  if (msgs) {
+    const un = unreadCount(a.block);
+    out.push(el("span", {class: "chip msg" + (un ? " b unread" : ""),
+      title: un ? un + " you have not read" : msgs + " message(s)"},
+      "\u25CB " + (un ? un + " new" : String(msgs))));
+  }
+  if (messagesOf(a.block).some(flaggedByMe))
+    out.push(el("span", {class: "chip flagged"}, "\u2691"));
   if (a.assignee) out.push(el("span", {class: "chip who b", title: "Assigned to " + a.assignee,
     onclick: e => {e.stopPropagation(); go("person", {person: a.assignee});}}, "\u2192 " + a.assignee));
   if (a.by && a.by !== whoAmI() && !samePerson(a.by, a.assignee))
@@ -6494,6 +6841,7 @@ function render() {
     case "today":   node = isSimple() ? viewMyDay() : viewToday(); break;
     case "todos":   node = viewTodos(); break;
     case "people":  node = viewPeople(); break;
+    case "flagged": node = viewFlagged(); break;
     case "person":  node = viewPerson(state.person || whoAmI()); break;
     case "horizons":
       node = viewHorizons();
@@ -6923,6 +7271,30 @@ function openTaskDetail(path, block, space) {
         el("div", {class: "field"}, el("label", {}, "Scheduled"), sched),
         el("div", {class: "field"}, el("label", {}, "Deadline"), dead)),
       el("div", {class: "field"},
+        el("label", {}, "Repeats"),
+        (() => {
+          const row = el("div", {class: "seg"});
+          const cur = repeatOf(block);
+          for (const choice of REPEAT_CHOICES) {
+            const on = trim(cur).toLowerCase() === choice;
+            row.append(el("button", {class: on ? "on" : "", onclick: () => {
+              if (choice) setBlockProp(block, REPEAT_PROP, choice);
+              else for (const k of Object.keys(block.props)) if (k.toLowerCase() === REPEAT_PROP) delete block.props[k];
+              touch(path);
+              closeModal(); render();
+              notify(choice ? "Repeats " + choice + ". You will be asked when you tick it off."
+                            : "No longer repeats.");
+            }}, choice || "never"));
+          }
+          return row;
+        })(),
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          repeatOf(block)
+            ? "Nothing is created until you tick this one off, and you are asked first. " +
+              "Skip a " + repeatOf(block).replace(/ly$/, "") + " and it stays skipped."
+            : "Any of these, or write your own in the file \u2014 repeat:: every 2 weeks, " +
+              "repeat:: every monday.")),
+      el("div", {class: "field"},
         el("label", {}, "Calendar"),
         el("div", {style: "display:flex;gap:8px;flex-wrap:wrap"},
           el("button", {class: "btn ghost sm", onclick: () => {
@@ -6939,6 +7311,13 @@ function openTaskDetail(path, block, space) {
           "The file route sends nothing anywhere. A link opens your calendar with the " +
           "title and date in the web address.")),
       el("div", {class: "field"}, el("label", {}, "Notes"), notes),
+      el("div", {class: "field"},
+        el("label", {}, "Chat" + (messagesOf(block).length ? " \u00B7 " + messagesOf(block).length : "")),
+        threadPanel(path, block),
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          "Everyone in this space sees it, with who said it and when. Flag one with " +
+          "\u2691 to come back to it \u2014 that carries your name, so it follows you between " +
+          "devices. Read is per device and stays out of the files.")),
       el("div", {class: "field"}, el("label", {}, "Trail"), trail),
       el("div", {class: "field"}, el("label", {}, "Source"),
         el("button", {class: "btn ghost sm", onclick: () => { closeModal(); openPage(path); }}, path))),
