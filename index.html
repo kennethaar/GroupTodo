@@ -215,6 +215,13 @@ header.top .burger{display:none}
 .chip.miss{color:var(--warn);background:rgba(224,176,80,.1);border-color:rgba(224,176,80,.3)}
 .chip.age{font-family:var(--mono);font-size:10.5px}
 .chip.who{color:var(--zet);background:rgba(199,146,234,.12)}
+/* State filters: checkboxes, so several can be on at once. Off is legible
+   rather than invisible -- a filter you cannot see is a bug report later. */
+.statefilter{display:flex;gap:8px;flex-wrap:wrap}
+.chip.filter{cursor:pointer;font-size:12px;padding:5px 11px;border:1px solid var(--border);
+  background:transparent;color:var(--fg3);user-select:none}
+.chip.filter:hover{color:var(--fg2)}
+.chip.filter.on{color:var(--fg);background:var(--bg3);border-color:var(--accent)}
 .chip.st{font-family:var(--mono);font-size:10px;letter-spacing:.5px}
 .chip.spacechip{border-style:solid;border-width:1px;background:transparent;font-weight:600}
 .spacetoggle{
@@ -700,7 +707,28 @@ const CFG = {
   contextPrompts   : [[12, 0, "lunchtime"], [17, 0, "after work"]],
 };
 
-const journalPath = (date) => join(JOURNALS, (date || todayISO()) + ".md");
+/* A journal belongs to one person. It is the one page everybody writes to
+   every single day, so sharing it is the fastest way to make a vault
+   confusing: two people appending to the same day, each wondering which lines
+   are theirs. Each person gets a folder instead, and what they put in it is
+   still visible to everyone in the space.
+
+   Before a name is set there is no folder to use, so the old flat path stays
+   valid and migrateJournals() moves those files in once a name exists. */
+const slugPerson = n => slugify(trim(n || "")).slice(0, 40);
+const journalOwner = () => slugPerson(whoAmI());
+const journalPath = (date, owner) => {
+  const who = owner === undefined ? journalOwner() : slugPerson(owner);
+  const day = (date || todayISO()) + ".md";
+  return who ? join(JOURNALS, who, day) : join(JOURNALS, day);
+};
+/* "" for an un-owned journal from before a name was set. */
+const journalOwnerOf = path => {
+  const rest = String(path).slice(JOURNALS.length + 1);
+  const cut = rest.lastIndexOf("/");
+  return cut === -1 ? "" : rest.slice(0, cut);
+};
+const myJournal = path => journalOwnerOf(path) === journalOwner();
 const todayStamp  = () => "[[" + todayISO() + "]]";
 
 function slugify(title) {
@@ -1373,6 +1401,7 @@ function migrateVault() {
     notify("Moved " + moved + " checklist(s) to pages/8/.");
   }
   migrateHorizons();
+  migrateJournals();
   return moved;
 }
 
@@ -2280,7 +2309,10 @@ function pageRef(path) {
   for (const [pfx, dir] of Object.entries(PREFIX_DIR)) {
     if (path.startsWith(dir + "/")) return pfx + "/" + baseName(path);
   }
-  if (isJournalPath(path)) return baseName(path);
+  if (isJournalPath(path)) {
+    const who = journalOwnerOf(path);
+    return (who && who !== journalOwner()) ? baseName(path) + " \u00B7 " + who : baseName(path);
+  }
   return baseName(path);
 }
 
@@ -2294,14 +2326,38 @@ const projectsIn = code => allPages(p => statusDirOf(p) === code && !isHorizonPa
 const projectsInVisible = code =>
   acrossSpaces(() => projectsIn(code).map(path => ({path, space: V.space})));
 
-/* Journal files from the last N days that actually exist. */
+/* Journal files from the last N days that actually exist -- EVERYONE's, not
+   just mine. A task somebody wrote in their own day page is still the team's
+   task, so it belongs in the shared lists; whose page it came from is carried
+   along for display. */
 function recentJournals(days = CFG.journalScanDays) {
+  const from = shiftISO(todayISO(), -(days - 1));
   const out = [];
-  for (let i = 0; i < days; i++) {
-    const p = journalPath(shiftISO(todayISO(), -i));
-    if (V.pages.has(p)) out.push(p);
+  for (const path of V.pages.keys()) {
+    if (!isJournalPath(path)) continue;
+    const date = baseName(path);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < from) continue;
+    out.push(path);
   }
-  return out;
+  // Mine first, then the rest, newest first within each.
+  return out.sort((a, b) => (myJournal(b) - myJournal(a)) || baseName(b).localeCompare(baseName(a)));
+}
+
+/* Move pre-name journals into this person's folder, once there is a name. */
+function migrateJournals() {
+  const who = journalOwner();
+  if (!who) return 0;
+  let moved = 0;
+  for (const path of Array.from(V.pages.keys())) {
+    if (!isJournalPath(path) || journalOwnerOf(path)) continue;
+    const target = join(JOURNALS, who, baseName(path) + ".md");
+    if (V.pages.has(target)) continue;
+    putPage(target, getPage(path));
+    removePage(path);
+    moved++;
+  }
+  if (moved) notify("Moved " + moved + " journal day(s) into your own folder.");
+  return moved;
 }
 
 /* ============================================================
@@ -2729,6 +2785,12 @@ function leafActionsHere() {
       } else if (b.state === "WAIT") {
         group = "WAITING";
       }
+      // Handed to somebody else: the same row, seen from your side. No copy is
+      // made, so ticking it off once is enough for both of you.
+      const assignee = assigneeOf(b);
+      const mine = assignedToMe(b);
+      if (!mine) group = "WAITING";
+
       const due = dueDate(b);
       if (due) {
         if (due < todayISO()) group = "LATE";
@@ -2737,6 +2799,7 @@ function leafActionsHere() {
       out.push({
         path, block: b, state: b.state, title: b.title,
         project, projectPath, projectStatusDir, group, due,
+        assignee, mine, owner: journalOwnerOf(path) || null,
         context: contextOf(b.title),
         missingContext: !hasContextLink(b.title),
         missingVerb: !startsWithVerb(b.title),
@@ -3429,6 +3492,7 @@ function setIdentity(name, space) {
   const clean = trim(name).slice(0, 60);
   if (space) PREF.set("identity:" + space, clean);
   else PREF.set("identity", clean);
+  if (clean && V.pages) { migrateJournals(); ensureMemberPage(); }
 }
 
 /* Stamp authorship on something the person just created. */
@@ -3436,6 +3500,87 @@ function stampAuthor(block) {
   const me = stampName();
   if (me && block && block.props && !block.props.by) block.props.by = me;
   return block;
+}
+
+/* ============================================================
+   WHO IS IT FOR
+   Every task belongs to somebody, and by default that is you. The interesting
+   case is handing one over, and there are two quite different handovers:
+
+     to someone in this space   they own it now. It stays a live task, in
+                                their name, and because you wrote it the item
+                                turns up in your Waiting for -- the same row,
+                                seen from your side, not a copy.
+
+     to anyone else             they cannot see it and cannot tick it off, so
+                                calling it a task would be a lie. It becomes a
+                                WAIT: something you are waiting on a person for.
+
+   A "member" is simply a person page marked member:: true. Naming yourself
+   creates yours; opening a space somebody shared shows theirs.
+   ============================================================ */
+const ASSIGN_PROP = "assigned";
+const samePerson = (a, b) => !!a && !!b && slugPerson(a) === slugPerson(b);
+
+const personPath = name => join(DIRS.people, trim(name).replace(/[\/]/g, "-") + ".md");
+const personName = path => baseName(path);
+
+function allPeople() {
+  return allPages(p => p.startsWith(DIRS.people + "/")).sort((a, b) =>
+    personName(a).localeCompare(personName(b)));
+}
+const isMemberPage = path => trim(String(getPage(path)?.props?.member || "")) === "true";
+function members() {
+  return allPeople().filter(isMemberPage).map(path => ({
+    path, name: personName(path), me: samePerson(personName(path), whoAmI()),
+  }));
+}
+const isMember = name =>
+  !!name && members().some(m => samePerson(m.name, name));
+
+/* Your own person page, so everybody else in the space can see you exist. */
+function ensureMemberPage() {
+  const me = whoAmI();
+  if (!me) return null;
+  const path = personPath(me);
+  const page = V.pages.has(path) ? getPage(path) : {props: {title: me}, blocks: []};
+  if (trim(String(page.props.member || "")) !== "true") {
+    page.props.member = "true";
+    putPage(path, page);
+  }
+  return path;
+}
+
+const assigneeOf = b => trim(blockProp(b, ASSIGN_PROP) || "");
+/* Unassigned means mine: the common case should need no ceremony. */
+const assignedToMe = b => { const a = assigneeOf(b); return !a || samePerson(a, whoAmI()); };
+
+/* Returns "mine" | "member" | "outside". */
+function assignKind(name) {
+  if (!trim(name) || samePerson(name, whoAmI())) return "mine";
+  return isMember(name) ? "member" : "outside";
+}
+
+function assignBlock(path, block, name) {
+  const kind = assignKind(name);
+  if (kind === "mine") {
+    delete block.props[ASSIGN_PROP];
+    if (block.state === "WAIT") block.state = "TODO";
+  } else {
+    setBlockProp(block, ASSIGN_PROP, trim(name));
+    if (kind === "outside") {
+      // Nobody here can act on it, so for this vault it is a waiting-for.
+      if (OPEN_STATES[block.state]) block.state = "WAIT";
+    } else if (block.state === "WAIT") {
+      block.state = "TODO";                 // a member can actually do it
+    }
+  }
+  if (!blockProp(block, "by")) stampAuthor(block);
+  touch(path);
+  render();
+  notify(kind === "mine" ? "Back to you."
+       : kind === "member" ? trim(name) + " has it. It is in your Waiting for."
+       : "Waiting on " + trim(name) + ".");
 }
 
 const getSetting = k => settingsPage().props[k] || null;
@@ -3677,6 +3822,7 @@ const state = {
 };
 
 function go(view, opts = {}) {
+  if (opts.person != null) state.person = opts.person;
   state.view = view;
   Object.assign(state, opts);
   document.body.classList.remove("nav-open");
@@ -3721,8 +3867,9 @@ const NAV_SIMPLE = [
     {id: "todos",      icon: "✓", label: "Todos",    key: "g n"},
     {id: "context",    icon: "⌘", label: "Contexts", key: "g x"},
     {id: "agenda",     icon: "☷", label: "Planned",  key: "g a"},
+    {id: "people",     icon: "◍", label: "People",   key: "g p"},
   ]},
-  {group: "Structure", items: [
+  {group: "Projects", items: [
     {id: "horizons",   icon: "◉", label: "Big picture"},
     {id: "proj-_",     icon: "_", label: "Cancelled",     status: "_"},
     {id: "proj-0",     icon: "0", label: "Done",          status: "0"},
@@ -3743,8 +3890,9 @@ const NAV_ADVANCED = [
     {id: "next",    icon: "▸", label: "Next actions", key: "g n"},
     {id: "context", icon: "⌘", label: "Context",      key: "g x"},
     {id: "agenda",  icon: "☷", label: "Agenda",       key: "g a"},
+    {id: "people",  icon: "◍", label: "People",       key: "g p"},
   ]},
-  {group: "Structure", items: [
+  {group: "Projects", items: [
     {id: "horizons",   icon: "◉", label: "Horizons"},
     {id: "proj-_",     icon: "_", label: "Cancelled",     status: "_"},
     {id: "proj-0",     icon: "0", label: "Completed",     status: "0"},
@@ -4411,21 +4559,182 @@ function viewChecklists() {
 function viewTodos() {
   const c = el("div", {class: "wrap"});
   c.append(nudgeBar());
-  const acts = leafActions().filter(a => OPEN_STATES[a.state]);
+  const all = leafActions().filter(a => OPEN_STATES[a.state]);
   c.append(el("div", {class: "section"}, quickAdd(ensureJournal(todayISO()), {placeholder: "Add a task to today"})));
+  const bar = stateFilterBar(all);
+  if (bar) c.append(el("div", {class: "section"}, bar));
   const tip = tipCard();
   if (tip) c.append(tip);
 
+  const acts = visibleStates(all);
   const byProject = new Map();
   for (const a of acts) {
     const key = a.project || "No project";
     if (!byProject.has(key)) byProject.set(key, []);
     byProject.get(key).push(a);
   }
-  if (!acts.length) c.append(section("Todos", 0, taskCard([], "Nothing open. Add one above.")));
+  if (!acts.length) c.append(section("Todos", 0, taskCard([],
+    all.length ? "Nothing in the states you have shown." : "Nothing open. Add one above.")));
   for (const [name, items] of Array.from(byProject.entries()).sort((x, y) => x[0].localeCompare(y[0]))) {
     items.sort((x, y) => (x.added || "9999").localeCompare(y.added || "9999"));
     c.append(section(name, items.length, taskCard(items)));
+  }
+  return c;
+}
+
+/* ---------- taking something back out of a shared space ----------
+   "Private" is not a flag on a page: anyone with the folder can read the
+   folder. The only thing that actually makes a page private is moving it to a
+   folder the others cannot open -- so that is the question this asks, rather
+   than offering a checkbox that would be a lie. */
+function makePrivatePrompt(path) {
+  const title = pageTitle(path);
+  const others = Spaces.list.filter(sp => sp.name !== Spaces.active);
+  const body = el("div", {},
+    el("div", {class: "field"},
+      el("div", {style: "font-size:13.5px"},
+        "\u201C" + title + "\u201D is in " + Spaces.active + ", and everybody who can open " +
+        "that folder can read it. Making it private means putting it somewhere they cannot, " +
+        "so pick where it should live."),
+      el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+        "The page moves with its tasks and its notes. Links from pages left behind will " +
+        "point at nothing \u2014 that is the cost of taking it out.")));
+
+  const list = el("div", {});
+  for (const sp of others) {
+    list.append(el("button", {class: "pick", onclick: () => { closeModal(); movePageToSpace(path, sp.name); }},
+      el("span", {class: "k", style: "background:" + sp.color + ";color:#06101f"}, sp.name[0].toUpperCase()),
+      el("span", {style: "flex:1"}, sp.name),
+      el("span", {class: "d"}, sp.kind === "fs" ? (sp.label || "folder")
+                             : sp.kind === "http" ? "server" : "this browser")));
+  }
+  list.append(el("button", {class: "pick", onclick: () => { closeModal(); newSpacePrompt(sp => movePageToSpace(path, sp.name)); }},
+    el("span", {class: "k"}, "+"),
+    el("span", {style: "flex:1"}, "A new private space"),
+    el("span", {class: "d"}, "its own folder")));
+  body.append(el("div", {class: "field"}, el("label", {}, "Move it to"), list));
+
+  modal({center: true, title: "Make \u201C" + title + "\u201D private", body,
+         foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Leave it here")]});
+}
+
+/* Carry a page across the folder boundary: write it there, remove it here. */
+async function movePageToSpace(path, target) {
+  const page = getPage(path);
+  if (!page) return;
+  const copy = parsePage(serializePage(page));       // detach from this space
+  const from = Spaces.active;
+  removePage(path);
+  await flush();
+  await openSpace(target);
+  putPage(path, copy);
+  await flush();
+  notify("\u201C" + pageTitle(path) + "\u201D now lives in " + target + ", out of " + from + ".");
+  openPage(path);
+}
+
+/* Hand it to somebody who is not in the space: a name, and nothing more to it,
+   because there is nobody on the other end to notify. */
+function openAssignOther(path, block) {
+  const input = el("input", {placeholder: "Name", value: assigneeOf(block)});
+  modal({
+    center: true, title: "Waiting on somebody",
+    body: el("div", {},
+      el("div", {class: "field"}, el("label", {}, "Who"), input,
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          "They are not in this space, so this becomes something you are waiting " +
+          "for rather than a task anybody here can tick off."))),
+    foot: [
+      el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+      el("button", {class: "btn primary", onclick: () => {
+        const name = trim(input.value);
+        closeModal();
+        if (name) assignBlock(path, block, name);
+      }}, "Waiting on them"),
+    ],
+  });
+  setTimeout(() => input.focus(), 30);
+}
+
+/* ---------- people ----------
+   Waiting for answers "what have I handed over". It does not answer "what is
+   everyone actually doing", and on a shared space that is the more useful
+   question: work you are NOT waiting on is invisible otherwise. So: everybody
+   in the space, and what each of them is carrying. */
+function workOf(name) {
+  const acts = leafActions().filter(a => OPEN_STATES[a.state]);
+  const theirs = acts.filter(a => samePerson(a.assignee || whoAmI(), name));
+  const projects = allPages(p => statusDirOf(p) === "1")
+    .filter(p => {
+      const page = getPage(p);
+      if (samePerson(trim(page.props?.[ASSIGN_PROP] || ""), name)) return true;
+      if (page.props?.[ASSIGN_PROP]) return false;
+      return samePerson(trim(page.props?.by || ""), name);
+    });
+  return {acts: theirs, projects};
+}
+
+function viewPeople() {
+  const c = el("div", {class: "wrap"});
+  const roster = members();
+  const me = whoAmI();
+  if (!me) {
+    c.append(section("People", null, el("div", {class: "card"},
+      el("div", {class: "empty"}, "Tell the app your name first, in Vault & sync, and you will show up here."))));
+    return c;
+  }
+  if (!roster.some(m => m.me)) ensureMemberPage();
+
+  const card = el("div", {class: "card"});
+  for (const m of members()) {
+    const w = workOf(m.name);
+    card.append(el("button", {class: "pick", onclick: () => go("person", {person: m.name})},
+      el("span", {class: "k"}, m.name[0].toUpperCase()),
+      el("span", {style: "flex:1"}, m.name + (m.me ? " (you)" : "")),
+      el("span", {class: "d"},
+        w.projects.length + (w.projects.length === 1 ? " project" : " projects") +
+        " \u00B7 " + w.acts.length + " open")));
+  }
+  c.append(section("In this space", members().length, card));
+
+  // Anybody named on a task who is not using the app: those are waiting-fors.
+  const outside = new Set();
+  for (const a of leafActions()) if (a.assignee && !isMember(a.assignee)) outside.add(a.assignee);
+  if (outside.size) {
+    const oc = el("div", {class: "card"});
+    for (const name of Array.from(outside).sort())
+      oc.append(el("button", {class: "pick", onclick: () => go("person", {person: name})},
+        el("span", {class: "k"}, name[0].toUpperCase()),
+        el("span", {style: "flex:1"}, name),
+        el("span", {class: "d"}, "waiting on them")));
+    c.append(section("Not in this space", outside.size, oc, null, "quiet"));
+  }
+  return c;
+}
+
+function viewPerson(name) {
+  const c = el("div", {class: "wrap"});
+  const w = workOf(name);
+  const mine = samePerson(name, whoAmI());
+  c.append(el("div", {class: "section"},
+    el("h2", {}, name + (mine ? " (you)" : "")),
+    el("div", {style: "color:var(--fg3);font-size:13px"},
+      mine ? "Everything that is yours."
+      : isMember(name) ? "In this space, so these are live tasks in their name."
+      : name + " is not using this space, so everything here is something you are waiting for.")));
+
+  const bar = stateFilterBar(w.acts);
+  if (bar) c.append(el("div", {class: "section"}, bar));
+  const shown = visibleStates(w.acts);
+  c.append(section("Open", shown.length, taskCard(shown, "Nothing open.")));
+
+  if (w.projects.length) {
+    const pc = el("div", {class: "card"});
+    for (const path of w.projects)
+      pc.append(el("div", {class: "dash-item", onclick: () => openPage(path)},
+        el("span", {}, pageTitle(path)),
+        el("span", {class: "chip"}, openTodoCount(path) + " open")));
+    c.append(section("Projects", w.projects.length, pc));
   }
   return c;
 }
@@ -4503,6 +4812,9 @@ function navCount(id) {
 const STARTER_NAV = ["today", "todos", "proj-1", "proj-0"];
 function navVisible(item) {
   if (item.id === "weeding" && !weedingWorthIt()) return false;
+  // Nothing to see while you are the only person here.
+  if (item.id === "people" && members().length < 2 &&
+      !leafActions().some(a => a.assignee)) return false;
   if (!coachOn() || !isSimple()) return true;
   // Making a routine mid-coach is allowed, and a place you were just sent to has
   // to be reachable afterwards.
@@ -4663,7 +4975,10 @@ function chipsFor(a) {
     out.push(el("span", {class: "chip " + cls}, humanDate(a.due)));
   }
   if (a.age != null && a.age > 0) out.push(el("span", {class: "chip age"}, a.age + "d"));
-  if (a.by && a.by !== whoAmI()) out.push(el("span", {class: "chip who"}, a.by));
+  if (a.assignee) out.push(el("span", {class: "chip who b", title: "Assigned to " + a.assignee,
+    onclick: e => {e.stopPropagation(); go("person", {person: a.assignee});}}, "\u2192 " + a.assignee));
+  if (a.by && a.by !== whoAmI() && !samePerson(a.by, a.assignee))
+    out.push(el("span", {class: "chip who"}, a.by));
   const quietChips = gtdQuiet();
   if (a.missingVerb && a.state === "TODO" && !quietChips)
     out.push(el("span", {class: "chip miss b", onclick: e => {e.stopPropagation(); openVerbPicker(a.path, a.block);}}, "no verb"));
@@ -4724,6 +5039,47 @@ function taskRow(a) {
 function openPageIn(space, path) {
   if (space && space !== Spaces.active) { openSpace(space).then(() => openPage(path)); return; }
   openPage(path);
+}
+
+/* ---------- state filters ----------
+   Checkboxes rather than one-of, so Active and Waiting for can share a list
+   when that is what you want. A state only appears once something is in it:
+   a list with nothing waiting has no reason to mention waiting. */
+const STATE_FILTER_ORDER = ["TODO", "DOING", "WAIT"];
+const STATE_FILTER_LABEL = {TODO: "To do", DOING: "Doing", WAIT: "Waiting for"};
+
+function hiddenStates() {
+  try { return new Set(JSON.parse(PREF.get("hideStates:" + (Spaces.active || ""), "[]"))); }
+  catch (_) { return new Set(); }
+}
+function setHiddenStates(set) {
+  PREF.set("hideStates:" + (Spaces.active || ""), JSON.stringify(Array.from(set)));
+}
+const visibleStates = acts => {
+  const hidden = hiddenStates();
+  return acts.filter(a => !hidden.has(a.state));
+};
+
+function stateFilterBar(acts) {
+  const present = STATE_FILTER_ORDER.filter(st => acts.some(a => a.state === st));
+  if (present.length < 2) return null;          // nothing to choose between
+  const hidden = hiddenStates();
+  const bar = el("div", {class: "statefilter"});
+  for (const st of present) {
+    const on = !hidden.has(st);
+    const n = acts.filter(a => a.state === st).length;
+    bar.append(el("button", {
+      class: "chip filter" + (on ? " on" : ""),
+      onclick: () => {
+        const next = hiddenStates();
+        if (next.has(st)) next.delete(st); else next.add(st);
+        if (next.size >= present.length) next.delete(st);   // never hide everything
+        setHiddenStates(next);
+        render();
+      },
+    }, (on ? "\u2713 " : "") + STATE_FILTER_LABEL[st] + " " + n));
+  }
+  return bar;
 }
 
 function taskCard(actions, emptyText) {
@@ -5138,6 +5494,8 @@ function viewPage() {
       : el("button", {class: "btn sm ghost", onclick: () => openExportPage(path)}, "share"),
     el("button", {class: "btn sm ghost", onclick: () => renamePrompt(path)}, "rename"),
     el("button", {class: "btn sm ghost", onclick: () => movePrompt(path)}, "move"),
+    isJournalPath(path) ? null
+      : el("button", {class: "btn sm ghost", onclick: () => makePrivatePrompt(path)}, "make private"),
     el("button", {class: "btn sm ghost", onclick: () => deletePrompt(path)}, "delete")));
   return c;
 }
@@ -5199,6 +5557,8 @@ function render() {
   switch (state.view) {
     case "today":   node = isSimple() ? viewMyDay() : viewToday(); break;
     case "todos":   node = viewTodos(); break;
+    case "people":  node = viewPeople(); break;
+    case "person":  node = viewPerson(state.person || whoAmI()); break;
     case "horizons":
       node = viewHorizons();
       if (!getSetting("horizons_seen")) setTimeout(() => openHorizonsWizard(0), 180);
@@ -5566,6 +5926,27 @@ function openTaskDetail(path, block, space) {
     body: el("div", {},
       el("div", {class: "field"}, el("label", {}, "Title"), titleInput),
       el("div", {class: "field"}, el("label", {}, "State"), seg),
+      el("div", {class: "field"},
+        el("label", {}, "Who is doing it"),
+        (() => {
+          const row = el("div", {class: "seg"});
+          const current = assigneeOf(block);
+          const choices = [["", "Me"]].concat(
+            members().filter(m => !m.me).map(m => [m.name, m.name]));
+          for (const [val, label] of choices) {
+            const on = val ? samePerson(val, current) : !current;
+            row.append(el("button", {class: on ? "on" : "", onclick: () => {
+              closeModal(); assignBlock(path, block, val);
+            }}, label));
+          }
+          row.append(el("button", {onclick: () => {
+            closeModal(); openAssignOther(path, block);
+          }}, current && !isMember(current) ? current : "someone else\u2026"));
+          return row;
+        })(),
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          "Somebody in this space gets it as their task, and you get it in your " +
+          "Waiting for. Anybody else is only a waiting-for \u2014 they cannot see this.")),
       el("div", {class: "field"}, el("label", {}, "GTD hygiene"), el("div", {class: "seg"},
         el("button", {onclick: () => { closeModal(); promptAndInsertContext(path, block); }},
           a.context ? "@" + a.context : "add context"),
