@@ -1111,7 +1111,18 @@ let flushTimer = null;
 function scheduleFlush() {
   clearTimeout(flushTimer);
   setSync("warn", "unsaved");
+  retryWait = 0;
   flushTimer = setTimeout(flush, 450);
+}
+
+/* Storage that was unreachable usually comes back -- a laptop lid, a sleeping
+   Pi, a phone off wifi -- so keep trying on a widening interval rather than
+   waiting for the next keystroke, which is what used to re-arm the timer. */
+let retryWait = 0;
+function retryFlush() {
+  retryWait = retryWait ? Math.min(retryWait * 2, 60000) : 3000;
+  clearTimeout(flushTimer);
+  flushTimer = setTimeout(flush, retryWait);
 }
 
 /* Saves are serialised through one chain and each one captures the backend
@@ -1135,6 +1146,7 @@ async function doFlush() {
     // The mirror goes first: after this line the work cannot be lost, whatever
     // the real backend does next.
     await writeMirror(rec, dirty);
+    await markUnconfirmed(rec, dirty);
     await removeMirror(rec, gone);
     try {
       for (const p of dirty) {
@@ -1151,6 +1163,7 @@ async function doFlush() {
       notify(`Cannot reach ${rec.name}'s storage. Saved on this device and it ` +
              `will go up when the connection is back.`, "warn");
       V.syncing = false;
+      retryFlush();                 // a sleeping box must not need a keystroke
       return;
     }
   }
@@ -1205,20 +1218,58 @@ async function removeMirror(rec, paths) {
   for (const path of paths) { try { await m.remove(path); } catch (_) {} }
 }
 
-/* The backend took these, so a "pending" mirror has no further use for them. */
+/* The backend took these, so a "pending" mirror has no further use for them. A
+   "full" mirror keeps the page but stops calling it unconfirmed. */
 async function confirmMirror(rec, paths) {
-  if (mirrorMode(rec) !== "pending") return;
-  const m = mirrorFor(rec);
-  for (const path of paths) { try { await m.remove(path); } catch (_) {} }
+  const mode = mirrorMode(rec);
+  if (mode === "off") return;
+  if (mode === "pending") {
+    const m = mirrorFor(rec);
+    for (const path of paths) { try { await m.remove(path); } catch (_) {} }
+    return;
+  }
+  const open = await unconfirmed(rec);
+  let changed = false;
+  for (const path of paths) if (open.delete(path)) changed = true;
+  if (changed) await setUnconfirmed(rec, open);
+}
+
+/* Paths a full mirror holds that the server has not acknowledged. Without this
+   the mirror cannot tell a page another device deleted from a page whose own
+   upload failed, and guessing either way is wrong: guess "deleted" and unsent
+   work vanishes, guess "unsent" and deletions come back forever. */
+const unconfirmedKey = rec => "unconfirmed:" + rec.name;
+async function unconfirmed(rec) {
+  try { return new Set((await IDB.get("kv", unconfirmedKey(rec))) || []); }
+  catch (_) { return new Set(); }
+}
+async function setUnconfirmed(rec, set) {
+  try { await IDB.set("kv", unconfirmedKey(rec), Array.from(set)); } catch (_) {}
+}
+async function markUnconfirmed(rec, paths) {
+  if (mirrorMode(rec) !== "full" || !paths.length) return;
+  const open = await unconfirmed(rec);
+  paths.forEach(p => open.add(p));
+  await setUnconfirmed(rec, open);
 }
 
 async function mergeMirror(rec) {
-  if (mirrorMode(rec) === "off") return 0;
+  const mode = mirrorMode(rec);
+  if (mode === "off") return 0;
   let newer = 0;
   try {
-    for (const [path, text] of await mirrorFor(rec).list()) {
+    const m = mirrorFor(rec);
+    const open = mode === "full" ? await unconfirmed(rec) : null;
+    let pruned = false;
+    for (const [path, text] of await m.list()) {
       const local = parsePage(text);
       const fromBackend = rec.pages.get(path);
+      if (!fromBackend && mode === "full" && !open.has(path)) {
+        // The backend answered and does not have this page, and we never failed
+        // to send it: somebody else deleted it. Let the deletion stand.
+        try { await m.remove(path); pruned = true; } catch (_) {}
+        continue;
+      }
       const a = local.props?.updated || "";
       const b = fromBackend?.props?.updated || "";
       if (!fromBackend || a > b) {
@@ -1227,6 +1278,7 @@ async function mergeMirror(rec) {
         newer++;
       }
     }
+    if (pruned && mode === "full") await setUnconfirmed(rec, open);
   } catch (_) {}
   return newer;
 }
@@ -5968,14 +6020,21 @@ let AUTOSYNC_AT = 0;
 let AUTOSYNC_TIMER = null;
 const autoSyncOn = () => PREF.get("autosync", "1") === "1";
 
+/* True only when there is real work in progress to protect. The quickadd box
+   holds focus for most of a session, so treating any focused field as an edit
+   blocked nearly every background sync; what matters is whether anything has
+   been typed into it. */
 function busyEditing() {
   if (document.querySelector(".modal")) return true;
   const a = document.activeElement;
-  return !!(a && (a.isContentEditable || a.tagName === "INPUT" || a.tagName === "TEXTAREA"));
+  if (!a) return false;
+  if (a.isContentEditable) return true;
+  if (a.tagName === "INPUT" || a.tagName === "TEXTAREA") return !!trim(a.value || "");
+  return false;
 }
 
 async function autoSyncLinked() {
-  if (!autoSyncOn() || !CAP.savePicker) return;
+  if (!autoSyncOn() || !CAP.savePicker) return;   // no durable handle, nothing to sync
   if (busyEditing()) return;
   if (Date.now() - AUTOSYNC_AT < 20000) return;        // never hammer the disk
   let h = null;
@@ -5994,11 +6053,57 @@ function scheduleAutoSync() {
   AUTOSYNC_TIMER = setTimeout(() => autoSyncLinked(), 45000);
 }
 
+/* ---------- a server space is shared, so it has to be re-read ----------
+   Two devices on one serve.py write to the same vault, but nothing told either
+   of them to look again, so each sat on the copy it loaded and the other's work
+   only turned up after a reload. Coming back to the app is the moment to check.
+
+   Order matters: send ours up first, and only re-read if that succeeded. The
+   server is then authoritative for everything, deletions included, so a plain
+   re-read is safe. If the send failed the server is behind us, and overwriting
+   our pages with its older ones would be the one unforgivable move -- so we
+   leave well alone and try again next time. */
+let SERVER_READ_AT = 0;
+
+async function refreshFromServer() {
+  const rec = LOADED.get(Spaces.active);
+  if (!rec || !rec.backend || rec.backend.kind !== "http") return;
+  if (busyEditing() || V.syncing) return;
+  if (Date.now() - SERVER_READ_AT < 10000) return;
+  SERVER_READ_AT = Date.now();
+
+  if (rec.dirty.size || rec.removed.size) {
+    await flush();
+    if (V.error) return;                        // server unreachable; keep ours
+  }
+  try {
+    const before = pageSignature(rec);
+    await readInto(rec);
+    bindActive(rec.name);
+    if (pageSignature(rec) !== before) {
+      scanVerbs();
+      ensureJournal(todayISO());
+      render();
+      notify("Updated from " + rec.backend.label + ".");
+    }
+  } catch (_) {
+    setSync("warn", "offline");                 // nothing lost: ours is intact
+  }
+}
+
+/* Cheap "did anything change" check, so a quiet re-read stays quiet. */
+function pageSignature(rec) {
+  const parts = [];
+  for (const path of Array.from(rec.pages.keys()).sort())
+    parts.push(path + "@" + (rec.pages.get(path).props?.updated || ""));
+  return parts.join("|");
+}
+
 function installAutoSync() {
-  if (!CAP.savePicker) return;
-  window.addEventListener("focus", () => autoSyncLinked());
+  const onReturn = () => { autoSyncLinked(); refreshFromServer(); };
+  window.addEventListener("focus", onReturn);
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) autoSyncLinked();
+    if (!document.hidden) onReturn();
   });
 }
 

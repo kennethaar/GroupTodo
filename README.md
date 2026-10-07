@@ -456,6 +456,45 @@ an always-on `serve.py` plus a folder sync that actually keeps a local folder on
 Android (Syncthing does; OneDrive and Drive do not), or a native app. Both are
 installs, which is the thing you asked to avoid.
 
+### The best setup there is: one server, reached over Tailscale
+
+If you have a machine that is usually on — a Linux box, a Pi, a NAS — this beats
+every other arrangement here, and it is the only one that is genuinely live.
+
+```sh
+# on the Linux box
+python3 serve.py --vault ~/vaults/work           # stays on 127.0.0.1
+tailscale serve --bg 8777                        # https://box.your-tailnet.ts.net/
+```
+
+Then open that HTTPS address on the PC and on the phone. Both talk to the same
+vault, so there is no courier file and nothing to remember:
+
+- **Real `.md` files, one per day and one per page**, on the box — the same files
+  Neovim opens there.
+- **Live both ways.** Each device sends its edits as you make them, and re-reads
+  the vault whenever you come back to the app, so the other device's work is
+  there when you look. A page deleted on one device stays deleted on the other.
+- **Phones get everything**: home-screen icon, opens with no network, durable
+  storage. That needs a secure origin, which is exactly what `tailscale serve`
+  provides and a bare `http://100.x.y.z:8777` does not.
+- **Nothing public.** Only your tailnet can reach it. No cloud account, no
+  third party, no port forwarded.
+- **`serve.py` stays bound to `127.0.0.1`** — Tailscale proxies to it, so you
+  never need `--host 0.0.0.0` and the no-authentication warning never applies.
+
+Two things to know. The app must be served by the *same* `serve.py` that holds
+the vault: `connect-src` permits `'self'` and localhost only, so the app loaded
+from one address cannot be pointed at a server on another. And everyone on your
+tailnet can read and write the vault — `serve.py` has no login of its own, so
+share the node, not the tailnet.
+
+**On a corporate phone**, Tailscale is an ordinary app-store install, so it
+usually passes where Termux does not. Watch for two blockers: Android runs one
+VPN at a time, so a company always-on VPN will shut Tailscale out, and a work
+profile does not share the personal profile's VPN — the browser and Tailscale
+have to live in the same profile.
+
 ### Alternative: a sync server
 
 For an always-on box (Termux on Android, a Pi, a NAS):
@@ -772,6 +811,9 @@ state, `backspace` on an empty block deletes it.
   one, so offline-open, home-screen install and the share sheet all need route B.
 - **Share-target and file-opening are Chromium features.** iOS can share out but
   not in; use *Open vault file* there.
+- **A server space re-reads on return, not continuously.** Another device's
+  work appears when you come back to the app, not while you watch. There is no
+  polling and no push.
 - **Two writes per save on a folder vault, briefly.** Each page goes to this
   device's storage first and to the folder second; the local copy is dropped as
   soon as the folder confirms. A server vault keeps its full copy on purpose.
