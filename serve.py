@@ -2,8 +2,8 @@
 """
 GroupTodo sync server.
 
-index.html is standalone, but browsers outside desktop Chrome/Edge cannot write
-to a folder on their own. This serves index.html and exposes a tiny REST API over
+grouptodo.html is standalone, but browsers outside desktop Chrome/Edge cannot
+write to a folder on their own. This serves it and exposes a tiny REST API over
 a markdown vault so the app reads and writes the very same .md files that Neovim,
 Logseq or Obsidian open.
 
@@ -143,7 +143,7 @@ class Handler(BaseHTTPRequestHandler):
     # ---------- the gate ----------
     # HTTP Basic rather than a token the app would have to carry: the browser
     # prompts natively, remembers it per origin, and attaches it to EVERY
-    # request -- index.html, sw.js and the API alike. A token in a header would
+    # request -- the page, sw.js and the API alike. A token in a header would
     # protect the API and leave the page itself open, and would need a login
     # screen inside the app that the service worker then had to reason about.
     #
@@ -232,16 +232,16 @@ class Handler(BaseHTTPRequestHandler):
         return self._json(200, {"ok": True})
 
     # ---------- the app itself ----------
-    # Served from the script's own folder. index.html alone is enough to run
+    # Served from the script's own folder. grouptodo.html alone is enough to run
     # the app; sw.js, manifest.webmanifest and icon.svg are what turn it into
     # something a phone will keep on its home screen and open with no server.
-    # When sw.js is missing -- someone copied out index.html and serve.py only
+    # When sw.js is missing -- someone copied out grouptodo.html and serve.py only
     # -- a built-in copy is served instead, so offline still works.
     FALLBACK_SW = """
 const SHELL = "grouptodo-shell-v3";
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(SHELL)
-    .then(c => Promise.all(["./", "./index.html"].map(f => c.add(f).catch(() => {}))))
+    .then(c => Promise.all(["./", "./grouptodo.html"].map(f => c.add(f).catch(() => {}))))
     .then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", e => {
@@ -255,7 +255,7 @@ self.addEventListener("fetch", e => {
   // The vault is never cached: a stale page is fine, stale tasks are not.
   if (url.pathname.indexOf("/api/") !== -1) return;
   if (e.request.mode !== "navigate" &&
-      url.pathname !== "/" && !/index\\.html$/.test(url.pathname)) return;
+      url.pathname !== "/" && !/grouptodo\\.html$/.test(url.pathname)) return;
   e.respondWith(
     fetch(e.request)
       .then(r => {
@@ -266,7 +266,7 @@ self.addEventListener("fetch", e => {
         return r;
       })
       .catch(() => caches.match(e.request, {ignoreSearch: true})
-        .then(m => m || caches.match("./index.html", {ignoreSearch: true})))
+        .then(m => m || caches.match("./grouptodo.html", {ignoreSearch: true})))
   );
 });
 """
@@ -296,7 +296,8 @@ self.addEventListener("fetch", e => {
             self.wfile.write(body)
 
     def _static(self, route):
-        name = "index.html" if route in ("/", "") else os.path.basename(route)
+        # "/" is the app itself, not the redirect stub that exists for static hosts.
+        name = "grouptodo.html" if route in ("/", "") else os.path.basename(route)
         if not re.fullmatch(r"[\w.-]+", name or ""):
             return self._send(404, "not found")
         full = os.path.join(SCRIPT_DIR, name)

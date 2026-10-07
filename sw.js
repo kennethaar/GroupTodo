@@ -12,12 +12,12 @@
       which no static host would understand, so it is caught here, stashed,
       and handed to the page on the redirect that follows.
 
-   Used by both index.html served from any static host and by serve.py, which
+   Used by both grouptodo.html served from any static host and by serve.py, which
    serves this same file.
 */
 const SHELL   = "grouptodo-shell-v3";
 const INBOX   = "grouptodo-inbox";
-const SHELL_FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg"];
+const SHELL_FILES = ["./", "./grouptodo.html", "./manifest.webmanifest", "./icon.svg"];
 
 self.addEventListener("install", e => {
   e.waitUntil((async () => {
@@ -70,10 +70,10 @@ self.addEventListener("fetch", e => {
 
   const isShell = e.request.mode === "navigate" ||
                   url.pathname === here ||
-                  /\/(index\.html|manifest\.webmanifest|icon\.svg|sw\.js)$/.test(url.pathname);
+                  /\/(grouptodo\.html|index\.html|manifest\.webmanifest|icon\.svg|sw\.js)$/.test(url.pathname);
   if (!isShell) return;
 
-  // Network first, so a newer index.html is picked up whenever a host answers.
+  // Network first, so a newer grouptodo.html is picked up whenever a host answers.
   e.respondWith(
     fetch(e.request)
       .then(r => {
@@ -85,7 +85,7 @@ self.addEventListener("fetch", e => {
       })
       .catch(async () => {
         const hit = await caches.match(e.request, {ignoreSearch: true});
-        return hit || (await caches.match("./index.html", {ignoreSearch: true})) ||
+        return hit || (await caches.match("./grouptodo.html", {ignoreSearch: true})) ||
                new Response("Offline and nothing cached yet.", {status: 503});
       })
   );

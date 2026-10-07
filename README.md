@@ -20,7 +20,7 @@ It also means the list outlives the tool. Every file opens in Notepad.
 
 On a computer, in Edge or Chrome:
 
-1. **Open `index.html`.** Double-click it. Nothing installs.
+1. **Open `grouptodo.html`.** Double-click it. Nothing installs.
 2. **Choose *Start a new list*** and type a task. The box is already waiting.
 3. **⇄ Vault & sync → Choose folder.** Pick a folder in OneDrive, Dropbox,
    Google Drive, a network share — anywhere your files already live. Your tasks
@@ -31,7 +31,8 @@ Step 4 is what turns it from a list into a team list: you get your own day
 pages, your name goes on what you take on, and your colleagues can see you
 exist.
 
-To bring somebody in, send them `index.html`, the name of the shared folder, and
+To bring somebody in, use **Spaces → Invite somebody** (below). Failing that:
+send them `grouptodo.html`, the name of the shared folder, and
 `docs/setup-sheet.html` — the same four steps, written for somebody who does not
 want to know how any of it works.
 
@@ -64,6 +65,13 @@ their projects and open work.
 independently, so you can read them together or one at a time. A state nothing
 is in is never mentioned.
 
+**You are told what you missed.** There is no server to push a notification, so
+the app looks for itself: open a space and it tells you what happened since you
+last did — work somebody handed you, and work you handed over that is now
+finished. Click one to go straight to it. "Last seen" is per device and never
+written to the shared files, so marking your own news read does not mark it read
+for everybody.
+
 ### Sharing, and not sharing
 
 Everything in the folder is shared. That is the whole permission model — there
@@ -72,6 +80,23 @@ are no per-task rules, because the folder *is* the rule.
 If something should not be seen, open the page and use **make private**. It asks
 which other folder to move it to, because moving it is the only thing that
 actually makes it private. A checkbox would be a lie.
+
+### Inviting somebody
+
+**Spaces → Invite somebody.** Two shapes:
+
+- **Invite file** (`join-work.md`) — the space already set up, its name and
+  colour and server address, plus everything in it. They open it with *Open one
+  I was sent* and they are in. Needs `grouptodo.html` at their end.
+- **One file: app + space** — when you opened GroupTodo from a web address it
+  can bake itself and the space into a single `.html`. They open that one file
+  and nothing else, and it offers to put them straight in.
+
+The one thing an invite cannot carry is the folder: a browser will not let a
+directory handle be serialised or transferred, by design. So for a folder-backed
+space the invite *names* the folder and leaves them one button to press — and
+they do need the folder shared with them separately. A server-backed space needs
+nothing at all, because the address travels in the file.
 
 Separate parts of life get separate folders, called **spaces** — Work, Home,
 Volunteering. Two spaces can never share a folder and one can never sit inside
@@ -95,16 +120,19 @@ Everything past here is for whoever sets it up.
 ## What's in the box
 
 ```
-index.html             the entire app -- open it and it runs
+grouptodo.html         the entire app -- open it and it runs
 sw.js                  offline + Share button, when it is served from a URL
 manifest.webmanifest   home-screen icon, own window, "open .md with GroupTodo"
 icon.svg               that icon
+index.html             two lines, so a hosted copy answers at https://host/
 serve.py               optional sync server (a laptop, a Pi, a NAS, Termux)
 docs/setup-sheet.html  the two-minute sheet to hand to colleagues
 ```
 
-`index.html` alone is the whole app. The next three turn it into something a
-phone keeps on its home screen.
+`grouptodo.html` alone is the whole app — named so it still means something in a
+Downloads folder. `sw.js`, the manifest and the icon turn it into something a
+phone keeps on its home screen; `index.html` only redirects, and `serve.py`
+skips it and serves the app directly.
 
 It began as a Neovim + org-mode + org-roam config; the status directories, the
 Phys-Viz verb rule, the context links, the age tracking and the morning and
@@ -112,12 +140,12 @@ weekly rituals all survive the move.
 
 ## Running it
 
-**As a downloaded file.** Double-click `index.html`. Works from disk, a USB
+**As a downloaded file.** Double-click `grouptodo.html`. Works from disk, a USB
 stick or a network share. On desktop Chrome and Edge this is the full app,
 live folder of `.md` files included. A `file://` page may not register a service
 worker, so it has no offline-open, no home-screen install and no Share button.
 
-**From a URL.** Put all four files on any static host. Nothing server-side is
+**From a URL.** Put the files on any static host. Nothing server-side is
 required — no PHP, no Node, no database, no build:
 
 ```bash
@@ -126,7 +154,8 @@ cd GroupTodo && python3 -m http.server 8000     # then http://127.0.0.1:8000/
 
 That buys *Add to Home Screen*, opening with no network at all after the first
 visit, the system Share button for moving the vault file, and durable storage.
-Updating is a refresh.
+`https://host/` and `https://host/grouptodo.html` both work. Updating is a
+refresh.
 
 ### What each platform can do
 
@@ -156,7 +185,7 @@ documented behaviour, and the runtime probe is the authority on your device.
 
 ### A document library is not a web host
 
-Uploading `index.html` to a Teams channel or a SharePoint document library does
+Uploading the app to a Teams channel or a SharePoint document library does
 **not** give you a hosted app. Those render it inside `<iframe sandbox srcdoc>`
 with no `allow-same-origin`, so the page has an opaque origin: reading
 `window.localStorage` *throws*, there is no IndexedDB, no folder picker and not
@@ -177,7 +206,7 @@ unless it is localhost. No analytics, no error reporting, no remote font or
 script.
 
 A host does see the ordinary web-server trail: your IP, the time, your browser,
-and which of the four files you asked for. Not one task. Harmless for a work
+and which files you asked for. Not one task. Harmless for a work
 list; not nothing if the point is that nobody knows you use this.
 
 | Host | Public? | Good for |
@@ -310,7 +339,7 @@ python3 serve.py --vault ~/storage/shared/Documents/GroupTodo
 ```
 
 Then open `http://127.0.0.1:8777/` and *Add to Home screen*. `serve.py` and
-`index.html` must sit in the same folder; the vault is separate.
+`grouptodo.html` must sit in the same folder; the vault is separate.
 
 If Termux dies, the app still opens (service worker), the vault is still there
 (local mirror) and edits are saved locally and sent up when it answers. Verified
@@ -441,6 +470,9 @@ The markdown is identical either way.
 - **The service worker needs a URL**; a downloaded file cannot register one.
 - **A document library cannot host the app** — see above.
 - **Auto-sync of the courier file is desktop only** (it needs a durable handle).
-- **Assignment has no notifications.** The other person sees it when they next
-  open the space.
+- **Notifications arrive on opening the space**, not while it is closed. There is
+  no server to push one, and nothing is emailed.
+- **An invite cannot carry a folder.** Browsers forbid transferring a directory
+  handle, so a folder-backed space needs the folder shared separately and one
+  button pressed at the other end.
 - **Safari and Firefox are untested by me** (see the table above).

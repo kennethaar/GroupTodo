@@ -99,8 +99,8 @@ a { color: var(--accent); }
 <header>
   <span class="eyebrow">Two minutes, on a computer</span>
   <h1>Setting up GroupTodo</h1>
-  <p class="lede">A shared to-do list that keeps everything as ordinary text files in your own
-  OneDrive. Nothing to install, no account, no password. Two minutes and you and your
+  <p class="lede">A shared to-do list that keeps everything as ordinary text files in a folder
+  you already have. Nothing to install, no account, no password. Two minutes and you and your
   colleagues are working on the same list.</p>
 </header>
 
@@ -122,20 +122,16 @@ a { color: var(--accent); }
 
 <section>
   <span class="eyebrow">Do this now</span>
-  <h2>The whole setup</h2>
+  <h2>Three steps, and you are set up</h2>
   <ol class="steps">
     <li><div class="body">
-      <span class="what">Open <code>index.html</code></span>
-      <span class="note">Double-click it. Use Edge or Chrome. Nothing installs.</span>
-    </div></li>
-    <li><div class="body">
       <span class="what">Choose <strong>Start a new list</strong> and type your first task</span>
-      <span class="note">The box is already waiting for you. Press Enter.</span>
+      <span class="note">The box is already waiting for you. Press Enter. Use Edge or Chrome.</span>
     </div></li>
     <li><div class="body">
       <span class="what">Click <strong>&#8646; Vault &amp; sync</strong>, then <strong>Choose folder</strong></span>
-      <span class="note">Pick the shared folder in OneDrive. Say yes when Edge asks to let the
-      page edit it. Your tasks are now files in there, saved as you type.</span>
+      <span class="note">Pick the shared folder. Say yes when the browser asks to let the page
+      edit it. Your tasks are now files in there, saved as you type.</span>
     </div></li>
     <li><div class="body">
       <span class="what">Put your first name in <strong>Your name</strong>, same panel</span>
@@ -143,8 +139,8 @@ a { color: var(--accent); }
       pages, your name on what you take on, and you show up for everybody else.</span>
     </div></li>
   </ol>
-  <p>That is it. Send your colleagues this sheet, the <code>index.html</code> file and the
-  name of the shared folder, and they do the same four steps.</p>
+  <p>That is it. To bring somebody in, use <strong>Spaces &rarr; Invite somebody</strong> — it
+  makes one file that arrives with the space already set up.</p>
 </section>
 
 <section>
@@ -204,12 +200,12 @@ a { color: var(--accent); }
       <strong>web address</strong>, and it keeps its own copy that you carry back and forth as a
       single file.</p>
       <div class="flag">
-        <span class="title">Do not tap index.html in the OneDrive app</span>
+        <span class="title">Do not tap the app file in your cloud app</span>
         <p>It opens, looks fine, saves nothing, and loses what you typed when you close it.
         GroupTodo will warn you. Use the link.</p>
       </div>
       <ol class="steps">
-        <li><div class="body"><span class="what">Somebody puts the four files on a web address</span>
+        <li><div class="body"><span class="what">Somebody puts the files on a web address</span>
           <span class="note">Once, for everyone. Your intranet or a SharePoint-hosted site is
           tidiest at work. A document library will <em>not</em> work — that is file storage, not
           a web host.</span></div></li>
@@ -249,6 +245,11 @@ a { color: var(--accent); }
     <summary>If it is not behaving <span class="sub">the three things that actually go wrong</span></summary>
     <div class="inner">
       <dl class="habits">
+        <div>
+          <dt>Nobody was told I gave them a task</dt>
+          <dd>Correct — there is no server to send anything. They are told when they next open
+          the space, and so are you when something of yours is finished.</dd>
+        </div>
         <div>
           <dt>A warning that nothing can be saved</dt>
           <dd>You opened it inside something that will not let it store anything — usually a

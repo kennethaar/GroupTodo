@@ -2,7 +2,7 @@
   "name": "GroupTodo",
   "short_name": "GroupTodo",
   "description": "GTD outliner over plain markdown files you keep yourself.",
-  "start_url": ".",
+  "start_url": "grouptodo.html",
   "scope": ".",
   "id": "grouptodo",
   "display": "standalone",
@@ -16,7 +16,7 @@
   ],
   "file_handlers": [
     {
-      "action": ".",
+      "action": "grouptodo.html",
       "name": "GroupTodo vault file",
       "accept": { "text/markdown": [".md", ".markdown"] }
     }
@@ -32,7 +32,7 @@
     }
   },
   "shortcuts": [
-    { "name": "Today", "url": "./#today" },
-    { "name": "Capture", "url": "./#capture" }
+    { "name": "Today", "url": "./grouptodo.html#today" },
+    { "name": "Capture", "url": "./grouptodo.html#capture" }
   ]
 }
