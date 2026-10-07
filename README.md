@@ -366,6 +366,13 @@ changes nothing.
 Tested: concurrent appends on two devices, check-off propagation, repeated
 syncs, and deletions. All verified in headless Chromium.
 
+### A sheet to hand to colleagues
+
+`docs/setup-sheet.html` is the whole of this written for somebody who does not want to
+know how it works: the one picture, the five steps on a computer, the four on a
+phone, and the four things that actually go wrong. Open it in a browser, or put it
+on the same web address as the app.
+
 ### Worked example: PC in Edge, phone in Edge, through OneDrive
 
 The asymmetry to know up front: **desktop Edge can write into a folder you

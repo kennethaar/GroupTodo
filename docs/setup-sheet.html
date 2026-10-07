@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Setting Up GroupTodo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one narrow reading column; the two devices sit side by side as
+   mirrored cards and stack on a phone. Slab headings + humanist body so it
+   reads like a workshop manual rather than a landing page. */
+:root {
+  --paper:      #f7f8f9;
+  --card:       #ffffff;
+  --ink:        #15202b;
+  --ink-soft:   #51606e;
+  --ink-faint:  #8696a4;
+  --rule:       #dde3e8;
+  --accent:     #1f6fd0;
+  --accent-soft:#e8f1fc;
+  --flag:       #9a6100;
+  --flag-soft:  #fdf2dd;
+  --display: "Bitter", Georgia, "Times New Roman", serif;
+  --body:    "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono:    "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #11161b; --card: #1a2128; --ink: #e8eef3; --ink-soft: #a8b7c4;
+    --ink-faint: #76858f; --rule: #2b353f; --accent: #76b2f5; --accent-soft: #16293d;
+    --flag: #e8b253; --flag-soft: #2d2311; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #11161b; --card: #1a2128; --ink: #e8eef3; --ink-soft: #a8b7c4;
+  --ink-faint: #76858f; --rule: #2b353f; --accent: #76b2f5; --accent-soft: #16293d;
+  --flag: #e8b253; --flag-soft: #2d2311; color-scheme: dark;
+}
+
+body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 16.5px; line-height: 1.6; }
+.wrap { max-width: 56rem; margin: 0 auto; padding-inline: 20px; padding-block: 40px 72px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(1.85rem, 1.3rem + 2.2vw, 2.6rem); line-height: 1.15; }
+h2 { font-size: 1.3rem; }
+h3 { font-size: 1.05rem; font-weight: 500; }
+p { margin: 0; max-width: 62ch; }
+code, .path { font-family: var(--mono); font-size: 0.88em; background: var(--accent-soft); color: var(--ink);
+  padding: 1px 5px; border-radius: 3px; overflow-wrap: anywhere; }
+.eyebrow { font-family: var(--body); font-size: 0.74rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--ink-faint); }
+.lede { font-size: 1.1rem; color: var(--ink-soft); max-width: 58ch; }
+
+header { display: flex; flex-direction: column; gap: 12px; padding-bottom: 28px; border-bottom: 2px solid var(--ink); }
+section { padding-block: 36px; border-bottom: 1px solid var(--rule); display: flex; flex-direction: column; gap: 20px; }
+section:last-of-type { border-bottom: 0; }
+
+/* the picture */
+.flow { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: stretch; }
+@media (max-width: 620px) { .flow { grid-template-columns: 1fr; } }
+.box { background: var(--card); border: 1px solid var(--rule); border-radius: 8px; padding: 16px 18px;
+  display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.box .what { font-weight: 600; }
+.box .detail { font-size: 0.9rem; color: var(--ink-soft); }
+.box .files { font-family: var(--mono); font-size: 0.78rem; color: var(--ink-faint); line-height: 1.8;
+  overflow-wrap: anywhere; }
+.carrier { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  text-align: center; color: var(--accent); min-width: 7.5rem; }
+.carrier .arrows { font-family: var(--mono); font-size: 1.35rem; letter-spacing: 0.1em; }
+.carrier .name { font-family: var(--mono); font-size: 0.78rem; color: var(--ink-soft); }
+.carrier .role { font-size: 0.78rem; color: var(--ink-faint); }
+
+/* step lists */
+ol.steps { list-style: none; margin: 0; padding: 0; counter-reset: s; display: flex; flex-direction: column; gap: 16px; }
+ol.steps > li { counter-increment: s; display: grid; grid-template-columns: 1.9rem 1fr; gap: 14px; align-items: start; }
+ol.steps > li::before { content: counter(s); font-family: var(--mono); font-size: 0.82rem; font-weight: 500;
+  color: var(--accent); background: var(--accent-soft); border-radius: 50%;
+  width: 1.9rem; height: 1.9rem; display: grid; place-items: center; }
+ol.steps .body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+ol.steps .note { font-size: 0.92rem; color: var(--ink-soft); }
+
+.devices { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 20px; }
+.device { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 22px;
+  display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.device header { border: 0; padding: 0; gap: 4px; }
+.device .who { font-size: 0.9rem; color: var(--ink-soft); }
+
+.loop { display: flex; flex-direction: column; gap: 0; }
+.loop > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 16px;
+  padding-block: 12px; border-top: 1px solid var(--rule); align-items: baseline; }
+.loop > div:first-child { border-top: 0; }
+.loop .act { font-weight: 600; min-width: 0; }
+.loop .res { font-size: 0.93rem; color: var(--ink-soft); min-width: 0; }
+@media (max-width: 560px) { .loop > div { grid-template-columns: 1fr; gap: 4px; } }
+
+.flag { background: var(--flag-soft); border-left: 3px solid var(--flag); border-radius: 0 6px 6px 0;
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 5px; }
+.flag .title { font-weight: 600; color: var(--flag); }
+.flag p { font-size: 0.93rem; }
+
+dl.fix { margin: 0; display: flex; flex-direction: column; gap: 18px; }
+dl.fix dt { font-weight: 600; }
+dl.fix dd { margin: 4px 0 0; color: var(--ink-soft); font-size: 0.95rem; max-width: 62ch; }
+
+footer { padding-top: 32px; color: var(--ink-faint); font-size: 0.88rem; display: flex; flex-direction: column; gap: 6px; }
+a { color: var(--accent); }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">One-page setup</span>
+  <h1>Setting up GroupTodo</h1>
+  <p class="lede">A shared to-do list that keeps everything as ordinary text files in your own
+  OneDrive. Nothing to install, no account, no password. This sheet gets you running on a
+  computer and a phone in about ten minutes.</p>
+</header>
+
+<section>
+  <span class="eyebrow">The idea, in one picture</span>
+  <h2>Your computer keeps the files. Your phone keeps a copy.</h2>
+  <p>This is the only part worth understanding. A computer can write real files into a
+  OneDrive folder. A phone cannot &mdash; phones do not let web pages touch folders. So the
+  phone holds its own copy of the list, and one small file carries changes between the two.</p>
+
+  <div class="flow">
+    <div class="box">
+      <span class="what">Computer</span>
+      <span class="detail">Writes the real files, as you type.</span>
+      <span class="files">GroupTodo\Work\<br>&nbsp;&nbsp;journals\2026-10-07.md<br>&nbsp;&nbsp;pages\1\New customer.md<br>&nbsp;&nbsp;pages\c\phone.md</span>
+    </div>
+    <div class="carrier">
+      <span class="arrows">&#8646;</span>
+      <span class="name">work-vault.md</span>
+      <span class="role">one file, carries the list back and forth</span>
+    </div>
+    <div class="box">
+      <span class="what">Phone</span>
+      <span class="detail">Keeps its own copy, works offline.</span>
+      <span class="files">stored inside the browser &mdash;<br>no folder, no files</span>
+    </div>
+  </div>
+
+  <div class="flag">
+    <span class="title">Do not open the app from OneDrive on your phone</span>
+    <p>If you tap the <code>index.html</code> file in the OneDrive app, the page opens but the
+    phone gives it nowhere to save. It shows a red warning, and everything you type is lost
+    when you close the tab. On a phone, always open the <strong>web link</strong> below instead.</p>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Done once, by one person</span>
+  <h2>Put the app on a web link</h2>
+  <p>Everyone else just opens a link, so somebody has to make one. The app is four files and
+  needs no server, no database and no software &mdash; any place that can show a web page will do.</p>
+  <ol class="steps">
+    <li><div class="body">
+      <h3>Pick somewhere to put it</h3>
+      <span class="note">Your company intranet or a SharePoint site is the tidiest answer at work &mdash;
+      ask IT for a folder that serves web pages. GitHub Pages works free in two minutes if you
+      would rather not wait. Either way the link only hands out the <em>app</em>; nobody&rsquo;s tasks
+      ever go there.</span>
+    </div></li>
+    <li><div class="body">
+      <h3>Upload all four files together</h3>
+      <span class="note"><code>index.html</code>, <code>sw.js</code>,
+      <code>manifest.webmanifest</code>, <code>icon.svg</code>. The first one is the app; the
+      other three are what let a phone keep it on the home screen and open it without signal.</span>
+    </div></li>
+    <li><div class="body">
+      <h3>Send the link round</h3>
+      <span class="note">Along with the name of the shared OneDrive folder the team will use.</span>
+    </div></li>
+  </ol>
+</section>
+
+<section>
+  <span class="eyebrow">Everyone, about five minutes each</span>
+  <h2>Your turn</h2>
+
+  <div class="devices">
+    <div class="device">
+      <header>
+        <h3 style="font-weight:700;font-size:1.15rem">On your computer</h3>
+        <span class="who">Use Edge or Chrome. This is where the real files live.</span>
+      </header>
+      <ol class="steps">
+        <li><div class="body"><span>Open the link.</span></div></li>
+        <li><div class="body"><span>Choose <strong>Start a new list</strong>.</span>
+          <span class="note">The task box is already waiting. Type something and press Enter.</span></div></li>
+        <li><div class="body"><span>Click <strong>&#8646; Vault &amp; sync</strong> at the top.</span></div></li>
+        <li><div class="body"><span>Click <strong>Choose folder</strong> and pick your OneDrive folder.</span>
+          <span class="note">Say yes when Edge asks to let the page edit it. From now on every
+          day and every project is its own file in there, and OneDrive backs them up.</span></div></li>
+        <li><div class="body"><span>Click <strong>Link vault file</strong> and save it as
+          <span class="path">work-vault.md</span>.</span>
+          <span class="note">Put it <strong>next to</strong> the folder, not inside it. This is the
+          file your phone will read. After this the computer looks after it on its own.</span></div></li>
+      </ol>
+    </div>
+
+    <div class="device">
+      <header>
+        <h3 style="font-weight:700;font-size:1.15rem">On your phone</h3>
+        <span class="who">Any phone, any browser. No app store, no download.</span>
+      </header>
+      <ol class="steps">
+        <li><div class="body"><span>Open the same link in your phone&rsquo;s browser.</span>
+          <span class="note">The link &mdash; not the file in OneDrive.</span></div></li>
+        <li><div class="body"><span>Open the browser menu and tap
+          <strong>Add to phone</strong> or <strong>Add to Home Screen</strong>.</span>
+          <span class="note">You get an icon like any other app. From then on it opens even with
+          no signal.</span></div></li>
+        <li><div class="body"><span>Tap the icon, then <strong>&#8646; Vault &amp; sync</strong>.</span></div></li>
+        <li><div class="body"><span>Tap <strong>Open vault file</strong> and pick
+          <span class="path">work-vault.md</span> from OneDrive.</span>
+          <span class="note">Your list appears. You now have it in your pocket.</span></div></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Day to day</span>
+  <h2>Moving work between the two</h2>
+  <p>Two taps on the phone, nothing on the computer. Think of it as posting a letter: one to
+  send, one to collect.</p>
+
+  <div class="loop">
+    <div><span class="act">You type on the computer</span>
+      <span class="res">Saved into the OneDrive folder straight away. A minute after you stop,
+      <span class="path">work-vault.md</span> is refreshed too.</span></div>
+    <div><span class="act">Phone: <strong>Vault &amp; sync &rarr; Open vault file</strong></span>
+      <span class="res">Collects everything from the computer. A short message says what arrived.</span></div>
+    <div><span class="act">You type on the phone</span>
+      <span class="res">Saved on the phone.</span></div>
+    <div><span class="act">Phone: <strong>Vault &amp; sync &rarr; Send vault file</strong>,
+      then share to OneDrive</span>
+      <span class="res">Posts your changes back.</span></div>
+    <div><span class="act">You sit back down and click into the tab</span>
+      <span class="res">The phone&rsquo;s changes appear by themselves, and anything new becomes its own
+      file in the folder.</span></div>
+  </div>
+
+  <p><strong>Nothing gets overwritten.</strong> If you and a colleague both added tasks to the
+  same day, both sets turn up. Ticking something off on the phone keeps it ticked off on the
+  computer. Collecting the same file twice changes nothing, so an extra tap is never a risk.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Working together</span>
+  <h2>Sharing with colleagues</h2>
+  <p>Share the OneDrive folder itself, in OneDrive, with the people who should see it. They point
+  their copy of GroupTodo at that folder and you are working on the same list.</p>
+  <p>Keep separate parts of life in separate folders &mdash; one for work, one for home. GroupTodo
+  calls these <strong>spaces</strong> and will not let two of them share a folder, so the folder
+  you share is exactly what you meant to share and nothing more. It works best when you each
+  look after different projects; two people rewriting the same page in the same minute is the one
+  thing that gets untidy.</p>
+  <div class="flag">
+    <span class="title">Who can see what is decided by OneDrive, not by GroupTodo</span>
+    <p>There are no accounts and no passwords here. Anyone who can open the folder can read and
+    change everything in it. That is the same as a shared folder of Word documents &mdash; treat it
+    the same way.</p>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">If something looks wrong</span>
+  <h2>The four things that actually go wrong</h2>
+  <dl class="fix">
+    <dt>A red warning about nothing being stored</dt>
+    <dd>You opened the file instead of the link. Close it, open the web link, and on a phone add
+    it to your home screen.</dd>
+
+    <dt>It says &ldquo;browser only &mdash; no files&rdquo; next to the tick at the top</dt>
+    <dd>No folder has been chosen yet, so nothing is being written. Go to
+    <strong>Vault &amp; sync &rarr; Choose folder</strong>. On a phone this is normal and expected
+    &mdash; phones never write files.</dd>
+
+    <dt>You cannot find your markdown files</dt>
+    <dd>Only a computer writes them, and only after you have chosen a folder. Look inside the
+    folder you picked: <code>journals\</code> holds one file per day,
+    <code>pages\</code> one file per project, list and person.</dd>
+
+    <dt>OneDrive saved <span class="path">work-vault (1).md</span></dt>
+    <dd>Some phones add a number instead of replacing the file. Harmless &mdash; open the newest one
+    on the computer, then delete the spares when you next tidy up.</dd>
+  </dl>
+</section>
+
+<footer>
+  <span>GroupTodo keeps your tasks as plain markdown files you own. It cannot send them anywhere:
+  the page is blocked from reaching the internet at all, which is also why there is nothing to
+  log in to.</span>
+  <span>Stuck on a step? Ask whoever sent you the link.</span>
+</footer>
+
+</div>
+</body>
+</html>
