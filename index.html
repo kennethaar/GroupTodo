@@ -410,6 +410,15 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4p
   display:grid;place-items:center;font-size:11px;color:transparent;margin-top:1px;
 }
 .coach-step.done .coach-dot{background:var(--ok);border-color:var(--ok);color:#06210f}
+/* The one reason, for the one step you are on. Set apart so it reads as an aside
+   and not as another instruction. */
+.coach-why{
+  color:var(--fg3);font-size:12.5px;line-height:1.55;margin-top:7px;
+  border-left:2px solid var(--border2);padding-left:9px;
+}
+.coach.tip .coach-head b{font-size:13.5px}
+.nudge.quieter{color:var(--fg3);border-style:dashed}
+.listblurb{color:var(--fg3);font-size:12.5px;line-height:1.5;padding:10px 16px 2px}
 .quickadd{
   display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border);
   border-radius:var(--radius);padding:10px 13px;
@@ -677,6 +686,12 @@ const CFG = {
   waitFollowUpDays : 14,     // nudge to chase a WAIT item
   idleNudgeMinutes : 30,     // 30+ min idle -> nudge
   quietUntilTasks  : 6,      // simple mode: no GTD hygiene talk below this
+  nudgeMax         : 4,      // chips on screen at once; the rest wait behind "more"
+  nudgeSnoozeDays  : 7,      // a nudge you quieten stays quiet this long
+  tipMinTasks      : 3,      // enough on the list for "some of these belong together"
+  tipSnoozeDays    : 5,      // "not now" on a suggestion
+  busyTasks        : 40,     // past this the length of the list is the problem
+  busyProjectTodos : 12,     // one project carrying this much is really several
   undoStateMinutes : 5,      // grace period to cycle back without losing the dates
   weedMinProjects  : 5,      // weeding is for a garden, not a window box
   weedMinTodos     : 20,
@@ -3196,12 +3211,16 @@ const unassignedProjects = () =>
    73_CHECKLISTS -- the MS To Do half: a reusable list you run again
    and again (weekly shop, trip packing, release steps).
    ============================================================ */
-function checklistTemplate(title, kind) {
+function checklistTemplate(title, kind, cadence) {
   const props = {title, type: "checklist", created: todayStamp()};
   if (kind === "project") {
     props.kind = "project";
     props.outcome = "%name% complete";
   }
+  /* cadence:: is what separates a routine from a plain checklist. It is a word,
+     not a schedule -- nothing fires on a timer here, and a to-do app that nags
+     you about a recurrence you set months ago is the thing people flee. */
+  if (kind === "routine") props.cadence = cadence || "as needed";
   return {
     props,
     blocks: kind === "project"
@@ -3255,13 +3274,32 @@ function runChecklistAsProject(listPath, name, opts = {}) {
   touch(projectPath);
   return {path: projectPath, steps: n};
 }
-function createChecklist(title, kind) {
+function createChecklist(title, kind, cadence) {
   const clean = slugify(title);
   const path = join(DIRS.lists, clean + ".md");
-  if (!V.pages.has(path)) putPage(path, checklistTemplate(clean, kind));
+  if (!V.pages.has(path)) putPage(path, checklistTemplate(clean, kind, cadence));
   return path;
 }
 const checklistPages = () => allPages(p => pageKind(p) === "checklist");
+const isRoutine = path => !!trim(getPage(path)?.props?.cadence || "");
+const cadenceOf = path => trim(getPage(path)?.props?.cadence || "");
+
+/* Three things live in this folder and they are not the same thing:
+
+     a project   finishes  -- "Move house", ticked off once and gone
+     a routine   returns   -- "Weekly accounts", never finished, only due again
+     a template  breeds    -- "Onboard customer", one new project per run
+
+   Filing a routine as a project is the commonest way a GTD list goes bad: it
+   sits in Active looking undone forever, and everything around it starts to
+   feel undone too. So the words are asked for at the moment of naming, where
+   changing your mind is free. */
+const ROUTINE_WORDS = /\b(daily|weekly|fortnightly|monthly|quarterly|yearly|annual(?:ly)?|routine|recurring|upkeep|maintenance|housekeeping|habit|stand-?up|check-?ins?|every (?:day|week|month|morning|evening|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|each (?:day|week|month|morning))\b/i;
+function cadenceFrom(name) {
+  const m = /\b(daily|weekly|fortnightly|monthly|quarterly|yearly|annual(?:ly)?)\b/i.exec(name || "");
+  if (!m) return "as needed";
+  return m[1].toLowerCase().replace(/^annually$/, "annual");
+}
 
 /* Copy a checklist's items into a target page as fresh open actions. */
 function runChecklist(listPath, targetPath, context) {
@@ -3455,6 +3493,71 @@ const NUDGE_PLAIN = {
 };
 const DEEP_NUDGES = ["verb", "ctx", "area", "goal", "loose", "outcome"];
 
+/* Why each one is here, in the person's own interest rather than the method's.
+   Kept out of the way -- a chip says what is true, this says why anyone should
+   care, and only when asked. Where the research is strong it is named; where it
+   is folklore it is written as an opinion, because a nudge that oversells itself
+   is just advertising. */
+const NUDGE_WHY = {
+  late:
+    "A date you sail past teaches you to stop believing your own list, and a list you " +
+    "do not believe stops getting opened. Moving the date on purpose keeps it honest; " +
+    "letting it rot does not.",
+  stuck:
+    "A project with no next step is the one thing your head refuses to let go of, " +
+    "because there is nothing to let go of it to. One concrete next action is what " +
+    "makes it quiet.",
+  loose:
+    "A task with no home survives a day and rots over a month: nothing brings it back " +
+    "to you at the moment it would have mattered.",
+  verb:
+    "\u201cSort out the insurance\u201d is a decision you have to make again every time you " +
+    "read it. \u201cCall Storebrand\u201d is something your hands can start. This is the " +
+    "best-evidenced habit in the whole system: people who write down the specific " +
+    "action, and when and where they will do it, follow through markedly more often " +
+    "than people who only intend to \u2014 psychologists call them implementation intentions.",
+  ctx:
+    "Most of what blocks a task is being in the wrong place, without the thing you " +
+    "need in your hand. A context is what lets the list answer the only question you " +
+    "ever really ask it: what can I actually do, here, now?",
+  outcome:
+    "Written as though it already happened \u2014 \u201cSink repaired, no drip\u201d \u2014 a project " +
+    "gives you something you can recognise when you get there. Without it projects do " +
+    "not finish, they only get older.",
+  area:
+    "A project under no part of your life is usually one you took on without ever " +
+    "deciding to.",
+  goal:
+    "A goal nobody is working on is a wish. Give it a project or let it go \u2014 both are " +
+    "honest; leaving it to sit there is the one option that costs you something.",
+  wait:
+    "Anything you handed to someone else is invisible by definition. Keeping the list " +
+    "is what makes chasing it feel like admin rather than nagging.",
+  stale:
+    "Old projects do not sit there harmlessly. They make the whole list feel heavy, " +
+    "and a heavy list gets avoided.",
+  review:
+    "The weekly look is what makes everything else trustworthy. Capture, contexts and " +
+    "projects are bookkeeping if nobody ever reads them back.",
+};
+
+/* A nudge you have quietened. Deliberately per-nudge and time-boxed rather than a
+   global off switch: "not now" is almost always what someone means, and a nudge that
+   can never come back is a nudge that has to shout the first time. */
+const nudgeQuietUntil = id => PREF.get("nudge.quiet." + id, "");
+function nudgeQuiet(id) {
+  const until = nudgeQuietUntil(id);
+  return !!until && todayISO() < until;
+}
+function quietNudge(id, days) {
+  PREF.set("nudge.quiet." + id, shiftISO(todayISO(), days == null ? CFG.nudgeSnoozeDays : days));
+}
+function unquietAllNudges() {
+  for (const id of Object.keys(NUDGE_PLAIN).concat(["review"])) PREF.set("nudge.quiet." + id, "");
+}
+const anyNudgeQuiet = () =>
+  Object.keys(NUDGE_PLAIN).concat(["review"]).some(id => nudgeQuiet(id));
+
 function computeNudges() {
   const acts = leafActions();
   const n = [];
@@ -3463,6 +3566,7 @@ function computeNudges() {
   const push = (id, level, label, count, act) => {
     if (count <= 0) return;
     if (quiet && DEEP_NUDGES.includes(id)) return;
+    if (nudgeQuiet(id)) return;
     n.push({id, level, label: isSimple() ? (NUDGE_PLAIN[id] || label) : label, count, act});
   };
 
@@ -3473,13 +3577,13 @@ function computeNudges() {
   push("stuck", "danger", "projects with no next action", stuck.length, () => openReview(0));
 
   const loose = acts.filter(a => a.group === "JOURNAL");
-  push("loose", "warn", "journal actions not tied to a project", loose.length, () => openReview(1));
+  push("loose", "warn", "journal actions not tied to a project", loose.length, () => openReview(2));
 
   const noVerb = acts.filter(a => a.state === "TODO" && a.missingVerb);
-  push("verb", "warn", "actions without a physical verb", noVerb.length, () => openReview(2));
+  push("verb", "warn", "actions without a physical verb", noVerb.length, () => openReview(3));
 
   const noCtx = acts.filter(a => a.state === "TODO" && a.missingContext);
-  push("ctx", "warn", "actions without a context", noCtx.length, () => openReview(3));
+  push("ctx", "warn", "actions without a context", noCtx.length, () => openReview(4));
 
   const oldWait = acts.filter(a => a.state === "WAIT" && (a.age ?? 0) >= CFG.waitFollowUpDays);
   push("wait", "warn", "waiting items to chase", oldWait.length, () => go("next"));
@@ -3498,7 +3602,7 @@ function computeNudges() {
     ? stalestActiveProjects(99).filter(p => (p.ageDays ?? 0) > CFG.staleProjectDays) : [];
   push("stale", "", "projects older than 6 months", stale.length, () => openWeeding());
 
-  if (reviewDue()) {
+  if (reviewDue() && !nudgeQuiet("review")) {
     const last = dateIn(getSetting("last_review"));
     const since = daysSinceReview();
     n.push({
@@ -3625,7 +3729,7 @@ const NAV_SIMPLE = [
     {id: "proj-1",     icon: "1", label: "Active",        status: "1"},
     {id: "proj-2",     icon: "2", label: "Someday/Maybe", status: "2"},
     {id: "proj-3",     icon: "3", label: "Waiting for",   status: "3"},
-    {id: "checklists", icon: "8", label: "Checklists"},
+    {id: "checklists", icon: "8", label: "Routines & lists"},
   ]},
   {group: "Keep fresh", items: [
     {id: "weeding", icon: "✂", label: "Morning weeding", key: "g w"},
@@ -3647,7 +3751,7 @@ const NAV_ADVANCED = [
     {id: "proj-1",     icon: "1", label: "Active",        status: "1"},
     {id: "proj-2",     icon: "2", label: "Someday/Maybe", status: "2"},
     {id: "proj-3",     icon: "3", label: "Waiting for",   status: "3"},
-    {id: "checklists", icon: "8", label: "Checklists"},
+    {id: "checklists", icon: "8", label: "Routines & lists"},
   ]},
   {group: "Knowledge", items: [
     {id: "zettel", icon: "◈", label: "Zettel",   key: "z n"},
@@ -3711,33 +3815,187 @@ function coachMark(step) {
 }
 const coachDone = step => PREF.get("coach." + step, "") === "1";
 
-function coachStrip() {
-  if (!coachOn()) return null;
+function coachSteps() {
   const onDisk = V.backend && (V.backend.kind === "fs" || V.backend.kind === "http");
   const steps = [
     {k: "add",  done: coachDone("add"),  label: "Add your first task",
-     hint: "type it in the box above and press enter"},
+     hint: "type it in the box above and press enter",
+     why: "Getting it out of your head and into something you trust is the whole point. " +
+          "Nothing else here is worth anything until that part is dull."},
     {k: "tick", done: coachDone("tick"), label: "Tick it off",
-     hint: "click the circle on the left"},
-    {k: "home", done: onDisk,            label: "Give your tasks a home",
-     hint: onDisk ? "" : "right now they live in this browser only",
-     act: () => openSpaceStorageSetup()},
+     hint: "click the circle on the left",
+     why: "One thing crossed off proves the list answers back. A list that never visibly " +
+          "moves is one you quietly stop opening."},
   ];
-  if (steps.every(x => x.done)) { PREF.set("coach", "0"); return null; }
+  /* The project step waits until something has actually been added and closed.
+     Handing somebody a filing system while their screen is still empty is how
+     every other to-do app loses them inside a minute. */
+  if (coachDone("add") && coachDone("tick")) {
+    steps.push({k: "project", done: projectsIn("1").length > 0, optional: true,
+      label: "Give a bigger job a project", cta: "Make one",
+      hint: "anything that needs more than one step",
+      why: "A task is one move; a project is the handful of moves that finish something, " +
+           "with a line saying what done looks like. Keeping them apart is what stops " +
+           "\u201cmove house\u201d sitting on the same list as \u201cbuy milk\u201d and making both feel heavy.",
+      act: () => newProjectPrompt()});
+  }
+  steps.push({k: "home", done: onDisk, label: "Give your tasks a home", cta: "Choose",
+    hint: onDisk ? "" : "right now they live in this browser only",
+    why: "A folder of plain .md files you picked yourself means nothing can hold your work " +
+         "hostage \u2014 not this app, not a company, not a browser clearing its storage.",
+    act: () => openSpaceStorageSetup()});
+  return steps;
+}
+
+function coachStrip() {
+  if (!coachOn()) return null;
+  const steps = coachSteps();
+  const needed = steps.filter(st => !st.optional);
+  /* Finished when the three that matter are done. The project step is an
+     invitation and never a gate -- somebody whose life genuinely is a flat list
+     of errands should not be held in onboarding for declining to file them. */
+  if (needed.every(st => st.done)) { PREF.set("coach", "0"); return null; }
 
   const box = el("div", {class: "coach"});
   box.append(el("div", {class: "coach-head"},
     el("b", {}, "Getting started"),
-    el("button", {class: "iconbtn", title: "Hide", onclick: () => { PREF.set("coach", "0"); render(); }}, "\u2715")));
+    el("span", {style: "color:var(--fg3);font-size:12px"},
+      needed.filter(st => st.done).length + " of " + needed.length),
+    el("button", {class: "iconbtn", title: "Hide this for good",
+      onclick: () => { PREF.set("coach", "0"); render(); }}, "\u2715")));
+  // Only the step you are actually on explains itself. Three reasons at once is
+  // a leaflet, and nobody reads the leaflet.
+  const current = steps.find(st => !st.done);
   for (const st of steps) {
     box.append(el("div", {class: "coach-step" + (st.done ? " done" : "")},
       el("span", {class: "coach-dot"}, st.done ? "\u2713" : ""),
       el("div", {},
-        el("div", {}, st.label),
-        st.hint ? el("div", {style: "color:var(--fg3);font-size:12px"}, st.hint) : null),
+        el("div", {}, st.label,
+          st.optional ? el("span", {class: "chip", style: "margin-left:6px"}, "optional") : null),
+        st.hint ? el("div", {style: "color:var(--fg3);font-size:12px"}, st.hint) : null,
+        (st === current && st.why) ? el("div", {class: "coach-why"}, st.why) : null),
       (!st.done && st.act) ? el("button", {class: "btn sm ghost", style: "margin-left:auto",
-        onclick: st.act}, "Choose") : null));
+        onclick: st.act}, st.cta || "Choose") : null));
   }
+  return box;
+}
+
+/* ============================================================
+   113c_SUGGESTIONS
+   One card at a time, only once the list itself has earned it, and every one of
+   them dismissible for good. These are the things a person standing behind you
+   would say -- "that is a lot of tasks, want to thin them out?" -- rather than
+   anything the method demands. Simple mode only: the advanced door is for people
+   who came here already knowing how they want to work.
+   ============================================================ */
+const tipOff = id => PREF.get("tip.off." + id, "") === "1";
+function tipQuiet(id) {
+  const until = PREF.get("tip.quiet." + id, "");
+  return !!until && todayISO() < until;
+}
+
+function tipList() {
+  const open = leafActions().filter(a => OPEN_STATES[a.state]);
+  const projects = projectsIn("1");
+  const perProject = new Map();
+  for (const a of open) {
+    if (!a.projectPath) continue;
+    perProject.set(a.projectPath, (perProject.get(a.projectPath) || 0) + 1);
+  }
+  let fattest = null;
+  for (const [path, n] of perProject) if (!fattest || n > fattest.n) fattest = {path, n};
+  const onDisk = V.backend && (V.backend.kind === "fs" || V.backend.kind === "http");
+
+  return [
+    {
+      id: "project",
+      live: open.length >= CFG.tipMinTasks && !projects.length,
+      title: "Some of these belong together",
+      body: open.length + " open tasks and no project yet. A project is just a page holding " +
+            "the steps for one job, with a line saying what done looks like.",
+      why: "Your head keeps bringing back anything unfinished that has no agreed next step. " +
+           "Writing the steps down once, somewhere you will actually look again, is what stops " +
+           "the reminding \u2014 and it is the single habit the rest of this hangs on.",
+      cta: "Make a project", act: () => newProjectPrompt(),
+    },
+    {
+      // Only when weeding has something to rank. Offering to weed five projects
+      // and then opening a screen that says there is nothing to weed is worse
+      // than saying nothing at all.
+      id: "weed",
+      live: open.length >= CFG.busyTasks && weedingWorthIt(),
+      title: "That is a lot on the list",
+      body: open.length + " open tasks across " + projects.length + " active project" +
+            (projects.length === 1 ? "" : "s") + ". Weeding takes the stalest few and asks one " +
+            "question of each: is this still real? Five minutes, and nothing goes without you.",
+      why: "A list long enough to read as a wall stops being a tool and becomes a thing to " +
+           "avoid. Making it shorter is usually worth more than working harder down it.",
+      cta: "Weed the stalest", act: () => openWeeding(),
+    },
+    {
+      // The same pile, but flat: plenty of tasks and barely any projects, so
+      // there is nothing to rank and the useful move is grouping, not pruning.
+      id: "pile",
+      live: open.length >= CFG.busyTasks && !weedingWorthIt(),
+      title: "That is a lot on one pile",
+      body: open.length + " open tasks, " + open.filter(a => a.group === "JOURNAL").length +
+            " of them sitting loose in your days rather than under anything. Going through " +
+            "them once and grouping the ones that belong together is usually an hour you " +
+            "get back later.",
+      why: "A flat list has no shape, so every time you look for the next thing you pay for " +
+           "the whole list. Grouping is not filing for its own sake \u2014 it is what lets you " +
+           "look at a tenth of it and still be sure.",
+      cta: "Sort the loose ones", act: () => openReview(2),
+    },
+    {
+      id: "split",
+      live: !!fattest && fattest.n >= CFG.busyProjectTodos,
+      title: fattest ? pageTitle(fattest.path) + " is carrying " + fattest.n + " tasks" : "",
+      body: "That is usually two or three jobs wearing one name. Split it and each half gets a " +
+            "finish line it can actually reach.",
+      why: "A project that never empties reads as a chore list with your name on it. Two that " +
+           "can be finished give you somewhere to stop.",
+      cta: "Open it", act: () => fattest && openPage(fattest.path),
+    },
+    {
+      id: "name",
+      live: onDisk && !whoAmI(),
+      title: "Put your name on your changes",
+      body: "This space lives somewhere another person can open. With a name set, what you add " +
+            "is stamped by:: you and what you close done_by:: you.",
+      why: "In a shared list, unsigned work slides into being nobody's work: two people redo the " +
+           "same thing, and neither can tell who already asked.",
+      cta: "Set a name",
+      act: () => promptInput({
+        title: "Your name", value: whoAmI(), cta: "Save",
+        label: "Shown beside what you add in " + (Spaces.active || "this space"),
+        onSave: n => {
+          setIdentity(n, Spaces.active);
+          notify("Changes here will be signed " + trim(n) + ".");
+          render();
+        },
+      }),
+    },
+  ];
+}
+
+function tipCard() {
+  if (coachOn()) return null;             // one teacher at a time
+  const tip = tipList().find(t => t.live && !tipOff(t.id) && !tipQuiet(t.id));
+  if (!tip) return null;
+  const box = el("div", {class: "coach tip"});
+  box.append(el("div", {class: "coach-head"},
+    el("b", {}, tip.title),
+    el("button", {class: "iconbtn", title: "Do not suggest this again",
+      onclick: () => { PREF.set("tip.off." + tip.id, "1"); render(); }}, "\u2715")));
+  box.append(el("div", {style: "font-size:13.5px;color:var(--fg2);line-height:1.55"}, tip.body));
+  box.append(el("div", {class: "coach-why"}, tip.why));
+  box.append(el("div", {style: "display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"},
+    el("button", {class: "btn sm primary", onclick: tip.act}, tip.cta),
+    el("button", {class: "btn sm ghost", onclick: () => {
+      PREF.set("tip.quiet." + tip.id, shiftISO(todayISO(), CFG.tipSnoozeDays));
+      render();
+    }}, "not now")));
   return box;
 }
 
@@ -4091,29 +4349,61 @@ function openAreaPickerFor(goalPath) {
   });
 }
 
+/* Kept in three named groups rather than one undifferentiated pile, because the
+   difference between them is the one piece of filing that actually earns its
+   keep: a routine sitting in the project list makes the project list look
+   permanently unfinished. */
 function viewChecklists() {
   const c = el("div", {class: "wrap"});
   const lists = checklistPages();
-  const card = el("div", {class: "card"});
+  const GROUPS = [
+    {label: "Routines", icon: "\u21bb", cta: "Run",
+     test: pth => isRoutine(pth) && !isProjectTemplate(pth),
+     blurb: "Comes back and never finishes \u2014 the weekly accounts, the monthly report, " +
+            "everything you pack before a trip. Not a project, because there is nothing to tick off."},
+    {label: "Checklists", icon: "\u2611", cta: "Run",
+     test: pth => !isRoutine(pth) && !isProjectTemplate(pth),
+     blurb: "Steps you would rather not think through twice. Run one into today, or into a " +
+            "project you already have."},
+    {label: "Project templates", icon: "\u221e", cta: "New project",
+     test: pth => isProjectTemplate(pth),
+     blurb: "Every run spins up a whole new project \u2014 \"Onboard new insurance customer\", " +
+            "once per customer, the same steps each time."},
+  ];
+  const head = el("button", {class: "btn sm ghost", style: "margin-left:auto",
+    onclick: () => newChecklistPrompt()}, "+ new");
+
+  // Empty, the three descriptions ARE the content: this is the one screen where
+  // the difference between them is worth a paragraph.
   if (!lists.length) {
-    card.append(el("div", {class: "empty"},
-      "A checklist is a list you run again and again. A project template goes further: " +
-      "every run spins up a whole new project — \"Onboard new insurance customer\" once per " +
-      "customer, each with the same steps."));
+    const card = el("div", {class: "card"});
+    card.append(el("div", {class: "empty", style: "text-align:left"},
+      el("div", {style: "font-size:13.5px;color:var(--fg2);margin-bottom:10px"}, "A project finishes. A routine comes back. A template makes projects."),
+      ...GROUPS.map(g => el("div", {style: "margin:8px 0"},
+        el("div", {}, g.icon + "  " + g.label),
+        el("div", {style: "color:var(--fg3);font-size:12.5px;line-height:1.5"}, g.blurb)))));
+    c.append(section("Routines & lists", null, card, head));
+    return c;
   }
-  for (const p of lists) {
-    const items = flattenBlocks(getPage(p).blocks).length;
-    const tpl = isProjectTemplate(p);
-    card.append(el("div", {class: "prow"},
-      el("span", {class: "st " + (tpl ? "st-1" : "st-2")}, tpl ? "∞" : "☑"),
-      el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(p)}, pageTitle(p)),
-      tpl ? el("span", {class: "chip proj"}, "project template") : null,
-      el("span", {class: "sub"}, items + " steps"),
-      el("button", {class: "btn sm primary", onclick: () => openRunChecklist(p)},
-        tpl ? "New project" : "Run")));
+
+  let first = true;
+  for (const g of GROUPS) {
+    const mine = lists.filter(g.test);
+    if (!mine.length) continue;
+    const card = el("div", {class: "card"});
+    card.append(el("div", {class: "listblurb"}, g.blurb));
+    for (const pth of mine) {
+      const items = flattenBlocks(getPage(pth).blocks).length;
+      card.append(el("div", {class: "prow"},
+        el("span", {class: "st " + (isProjectTemplate(pth) ? "st-1" : "st-2")}, g.icon),
+        el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(pth)}, pageTitle(pth)),
+        isRoutine(pth) ? el("span", {class: "chip"}, cadenceOf(pth)) : null,
+        el("span", {class: "sub"}, items + (items === 1 ? " step" : " steps")),
+        el("button", {class: "btn sm primary", onclick: () => openRunChecklist(pth)}, g.cta)));
+    }
+    c.append(section(g.label, mine.length, card, first ? head : null));
+    first = false;
   }
-  c.append(section("Checklists", lists.length, card,
-    el("button", {class: "btn sm ghost", style: "margin-left:auto", onclick: () => newChecklistPrompt()}, "+ new")));
   return c;
 }
 
@@ -4123,6 +4413,8 @@ function viewTodos() {
   c.append(nudgeBar());
   const acts = leafActions().filter(a => OPEN_STATES[a.state]);
   c.append(el("div", {class: "section"}, quickAdd(ensureJournal(todayISO()), {placeholder: "Add a task to today"})));
+  const tip = tipCard();
+  if (tip) c.append(tip);
 
   const byProject = new Map();
   for (const a of acts) {
@@ -4145,7 +4437,9 @@ function viewMyDay() {
   const coach = coachStrip();
   if (coach) c.append(coach);
   c.append(el("div", {class: "section"}, quickAdd(path, {placeholder: "Add a task for today"})));
-  if (!coach) c.append(nudgeBar(), heroCard());
+  // A suggestion, when there is one, takes the place of the hero card rather than
+  // stacking on top of it: two things competing to be the next thing is neither.
+  if (!coach) c.append(nudgeBar(), tipCard() || heroCard());
 
   const acts = leafActions();
   const due = acts.filter(a => a.group === "LATE" || a.group === "TODAY");
@@ -4210,6 +4504,9 @@ const STARTER_NAV = ["today", "todos", "proj-1", "proj-0"];
 function navVisible(item) {
   if (item.id === "weeding" && !weedingWorthIt()) return false;
   if (!coachOn() || !isSimple()) return true;
+  // Making a routine mid-coach is allowed, and a place you were just sent to has
+  // to be reachable afterwards.
+  if (item.id === "checklists" && PREF.get("madeRoutine", "")) return true;
   return STARTER_NAV.includes(item.id);
 }
 
@@ -4255,15 +4552,81 @@ function renderNav() {
 /* ============================================================
    100_RENDER -- shared pieces
    ============================================================ */
+const NUDGE_RANK = {danger: 0, warn: 1, "": 2, ok: 3};
+
+/* Everything that is true at once is not a to-do list, it is a telling-off. The
+   few that matter stay on screen and the rest wait behind one chip, so a long
+   list of small sins can never turn the top of the page into a wall of red. */
 function nudgeBar() {
   const bar = el("div", {class: "nudgebar"});
-  for (const nd of computeNudges()) {
+  const all = computeNudges();
+  const shown = all.slice()
+    .sort((a, b) => (NUDGE_RANK[a.level || ""] ?? 2) - (NUDGE_RANK[b.level || ""] ?? 2))
+    .slice(0, CFG.nudgeMax);
+  for (const nd of shown) {
     bar.append(el("button", {
       class: "nudge " + (nd.level || ""),
       onclick: nd.act || (() => {}),
     }, nd.count != null ? el("b", {}, String(nd.count)) : null, nd.label));
   }
+  const hidden = all.length - shown.length;
+  const onlyClean = all.length === 1 && all[0].id === "clean";
+  if (all.length && !onlyClean) {
+    bar.append(el("button", {
+      class: "nudge quieter",
+      title: "What these are, why they are here, and how to quieten them",
+      onclick: () => openNudgeExplainer(),
+    }, hidden > 0 ? "+" + hidden + " more" : "why these?"));
+  }
   return bar;
+}
+
+/* The nudges, explained and quietenable in the same breath. A prompt you cannot
+   interrogate or turn down is a nag; the only convincing way to show this is not
+   one is to put the off switch directly beside the reason. */
+function openNudgeExplainer() {
+  const all = computeNudges().filter(nd => nd.id !== "clean");
+  const body = el("div", {});
+  body.append(el("div", {class: "field"},
+    el("div", {style: "color:var(--fg2);font-size:13px;line-height:1.55"},
+      all.length
+        ? "Each of these is your own list telling you something. Open one, or quieten it \u2014 " +
+          "it comes back after " + CFG.nudgeSnoozeDays + " days, and only if it is still true."
+        : "Nothing is nagging. This is the whole of what GroupTodo will ever bring up.")));
+  for (const nd of all) {
+    const sec = el("div", {class: "dash-sec"});
+    sec.append(el("h4", {},
+      el("span", {}, (nd.count != null ? nd.count + " " : "") + nd.label),
+      el("span", {class: "n"}, nd.level === "danger" ? "worth doing now"
+        : nd.level === "warn" ? "worth a look" : "whenever")));
+    if (NUDGE_WHY[nd.id]) {
+      sec.append(el("div", {style: "padding:2px 16px 4px;color:var(--fg2);font-size:13px;line-height:1.55"},
+        NUDGE_WHY[nd.id]));
+    }
+    sec.append(el("div", {style: "display:flex;gap:6px;padding:6px 16px 10px;flex-wrap:wrap"},
+      nd.act ? el("button", {class: "btn sm ghost", onclick: () => { closeModal(); nd.act(); }}, "open") : null,
+      el("button", {class: "btn sm ghost", onclick: () => {
+        quietNudge(nd.id);
+        closeModal(); render(); openNudgeExplainer();
+      }}, "quiet for " + CFG.nudgeSnoozeDays + " days")));
+    body.append(sec);
+  }
+  body.append(el("div", {class: "field"},
+    el("div", {style: "color:var(--fg3);font-size:12px;line-height:1.5"},
+      "Under " + CFG.quietUntilTasks + " open tasks the method ones stay away entirely, at " +
+      "most " + CFG.nudgeMax + " are ever on screen, and the first day has no weeding and no " +
+      "review nag. None of this is counted, scored or sent anywhere \u2014 there is nowhere for " +
+      "it to be sent.")));
+  modal({
+    title: "Why these are here", hint: "nudges, not nags",
+    body,
+    foot: [
+      anyNudgeQuiet() ? el("button", {class: "btn ghost", onclick: () => {
+        unquietAllNudges(); closeModal(); render(); notify("All nudges are back.");
+      }}, "Bring back the quietened") : null,
+      el("button", {class: "btn primary", onclick: closeModal}, "Done"),
+    ].filter(Boolean),
+  });
 }
 
 function heroCard() {
@@ -4821,7 +5184,7 @@ function viewSearch() {
    ============================================================ */
 const VIEW_TITLE = {
   today: "Today", next: "Next actions", context: "Context", agenda: "Agenda",
-  todos: "Todos", horizons: "Horizons of focus", checklists: "Checklists",
+  todos: "Todos", horizons: "Horizons of focus", checklists: "Routines & lists",
   projects: "Projects", zettel: "Zettel", pages: "All pages", "journal-list": "Journals",
   health: "Health check", search: "Search", page: "Page",
 };
@@ -5250,21 +5613,56 @@ function newProjectPrompt(then) {
   promptInput({
     title: "New project", label: "Project name", cta: "Next",
     onSave: name => {
-      const p = createProjectPage(name);
-      // A project without a finish line is a wish. Ask straight away.
-      promptInput({
-        title: "What does done look like?",
-        label: 'State it as if it already happened \u2014 "Sink repaired, no drip"',
-        value: "", cta: "Create project",
-        onSave: outcome => {
-          if (trim(outcome)) setOutcome(p, outcome);
-          notify("Project created: " + pageTitle(p));
-          if (then) then(p); else openPage(p);
-          render();
-          // A project with an outcome but no next action is still stalled.
-          setTimeout(() => openAddNextAction(p), 120);
-        },
-      });
+      if (ROUTINE_WORDS.test(name)) routineFork(name, then);
+      else createProjectFlow(name, then);
+    },
+  });
+}
+
+/* Asked once, in passing, and never overridden: if somebody says it really is a
+   project, it is a project. A guess that insists is worse than no guess. */
+function routineFork(name, then) {
+  const asRoutine = () => {
+    closeModal();
+    const path = createChecklist(name, "routine", cadenceFrom(name));
+    PREF.set("madeRoutine", "1");
+    notify("Routine created: " + pageTitle(path) + ". Run it whenever it comes round.");
+    openPage(path);
+  };
+  const asProject = () => { closeModal(); createProjectFlow(name, then); };
+  modal({
+    center: true, title: "That sounds like a routine", hint: "r / p",
+    body: el("div", {},
+      el("div", {class: "field"},
+        el("div", {style: "color:var(--fg2);font-size:13.5px;line-height:1.55"},
+          "A project has a finish line \u2014 something you tick off once and never think " +
+          "about again. This one reads like something that comes back instead, and those " +
+          "live as routines under Routines & lists, so your project list stays a list of " +
+          "things that can actually end.")),
+      pickRow("r", "Make it a routine", "comes back \u2014 run it when it is due", asRoutine),
+      pickRow("p", "Keep it a project", "it really does finish", asProject)),
+    onKey: e => {
+      if (e.key === "r") { asRoutine(); return true; }
+      if (e.key === "p") { asProject(); return true; }
+      return false;
+    },
+  });
+}
+
+function createProjectFlow(name, then) {
+  const p = createProjectPage(name);
+  // A project without a finish line is a wish. Ask straight away.
+  promptInput({
+    title: "What does done look like?",
+    label: 'State it as if it already happened \u2014 "Sink repaired, no drip"',
+    value: "", cta: "Create project",
+    onSave: outcome => {
+      if (trim(outcome)) setOutcome(p, outcome);
+      notify("Project created: " + pageTitle(p));
+      if (then) then(p); else openPage(p);
+      render();
+      // A project with an outcome but no next action is still stalled.
+      setTimeout(() => openAddNextAction(p), 120);
     },
   });
 }
@@ -6188,42 +6586,56 @@ function openAreaPicker(projectPath) {
 }
 
 function newChecklistPrompt() {
-  const nameInput = el("input", {placeholder: "Onboard new insurance customer"});
-  let kind = "project";
+  const nameInput = el("input", {placeholder: "Weekly accounts"});
+  const cadenceInput = el("input", {value: "weekly", placeholder: "weekly, monthly, every trip"});
+  const cadenceField = el("div", {class: "field"},
+    el("label", {}, "How often does it come round?"), cadenceInput,
+    el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+      "A word, not an alarm. Nothing here fires on a timer or turns red because a " +
+      "Tuesday went by \u2014 it is there so you can see what is due when you look."));
+  const tplNote = el("div", {class: "field"},
+    el("div", {style: "color:var(--fg2);font-size:12.5px;line-height:1.5"},
+      "Write %name% wherever the thing you are onboarding should appear \u2014 " +
+      "\"Call %name% to welcome them\". You are asked for it on every run."));
   const hints = {
-    project: "every run creates a new project with these steps",
-    plain: "steps drop into today or into an existing project",
+    routine: "comes back and never finishes \u2014 run it when it is due",
+    plain: "steps you would rather not think through twice; run them into today or a project",
+    project: "every run spins up a whole new project with these steps",
   };
+  let kind = "plain";
   const seg = el("div", {class: "seg"});
-  for (const [k, label] of [["project", "Project template"], ["plain", "Simple checklist"]]) {
-    const btn = el("button", {class: k === kind ? "on" : "", onclick: () => {
-      kind = k;
-      for (const x of seg.children) x.classList.toggle("on", x.dataset.k === k);
-      const h = $("#ckHint"); if (h) h.textContent = hints[k];
-    }}, label);
+  const sync = () => {
+    for (const x of seg.children) x.classList.toggle("on", x.dataset.k === kind);
+    const h = $("#ckHint"); if (h) h.textContent = hints[kind];
+    cadenceField.style.display = kind === "routine" ? "" : "none";
+    tplNote.style.display = kind === "project" ? "" : "none";
+  };
+  for (const [k, label] of [["routine", "Routine"], ["plain", "Checklist"], ["project", "Project template"]]) {
+    const btn = el("button", {onclick: () => { kind = k; sync(); }}, label);
     btn.dataset.k = k;
     seg.append(btn);
   }
   modal({
-    center: true, title: "New checklist",
+    center: true, title: "Something you do again",
     body: el("div", {},
-      el("div", {class: "field"}, el("label", {}, "Name"), nameInput),
-      el("div", {class: "field"}, el("label", {}, "What is it for"), seg,
-        el("div", {id: "ckHint", style: "color:var(--fg3);font-size:12px;margin-top:6px"}, hints.project)),
       el("div", {class: "field"},
-        el("div", {style: "color:var(--fg2);font-size:12.5px"},
-          "In a project template, write %name% wherever the thing you are onboarding should " +
-          "appear \u2014 \"Call %name% to welcome them\". You are asked for it on every run."))),
+        el("div", {style: "color:var(--fg2);font-size:13px"}, "A project finishes. A routine comes back. A template makes projects.")),
+      el("div", {class: "field"}, el("label", {}, "Name"), nameInput),
+      el("div", {class: "field"}, el("label", {}, "Which of the three"), seg,
+        el("div", {id: "ckHint", style: "color:var(--fg3);font-size:12px;margin-top:6px"}, hints.plain)),
+      cadenceField, tplNote),
     foot: [
       el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
       el("button", {class: "btn primary", onclick: () => {
         const t = trim(nameInput.value);
         if (!t) return;
         closeModal();
-        openPage(createChecklist(t, kind === "project" ? "project" : null));
+        if (kind === "routine") PREF.set("madeRoutine", "1");
+        openPage(createChecklist(t, kind === "plain" ? null : kind, trim(cadenceInput.value)));
       }}, "Create"),
     ],
   });
+  sync();
   setTimeout(() => nameInput.focus(), 30);
 }
 
@@ -6286,7 +6698,15 @@ function openRunChecklist(listPath) {
    contexts -- arrives when it is actually needed. A colleague who just wants a
    todo list should be typing one within seconds of opening the file. */
 function openOnboarding() {
+  /* The only thing asked for up front, and it is optional. A name is what makes a
+     list legible to anybody you later share it with, and asking at the start costs
+     one field -- asking on the day two people collide costs the collision. There is
+     deliberately nothing else to register: no account, no email and no password,
+     because there is nowhere for them to be sent. */
+  const nameInput = el("input", {placeholder: "Kenneth", value: whoAmI(), maxlength: "60"});
+  const keepName = () => setIdentity(nameInput.value);   // blank is a real answer
   const begin = (mode, after) => {
+    keepName();
     PREF.set("onboarded", todayISO());
     PREF.set("mode", mode);
     PREF.set("coach", "1");
@@ -6302,15 +6722,22 @@ function openOnboarding() {
     center: true, title: "GroupTodo",
     body: el("div", {},
       el("div", {class: "field"},
-        el("div", {style: "color:var(--fg2);font-size:13.5px"},
+        el("div", {style: "color:var(--fg2);font-size:13.5px;line-height:1.55"},
           "A to-do list that is really just plain text files you own. " +
           "Nothing to sign up for, nothing leaves this device.")),
+      el("div", {class: "field"},
+        el("label", {}, "Your name, if you like"),
+        nameInput,
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px;line-height:1.5"},
+          "Goes beside what you add, so a list you share later can show who did what. " +
+          "Leave it empty and nothing is signed \u2014 there is no account and no password " +
+          "either way.")),
       el("button", {class: "pick", onclick: () => begin("simple")},
         el("span", {class: "k"}, "\u2713"),
         el("span", {}, el("b", {}, "Start a new list"), el("br"),
           el("span", {style: "color:var(--fg3);font-size:12.5px"},
             "Straight in. Add your first task."))),
-      el("button", {class: "pick", onclick: () => { closeModal(); openReceiveVault(); }},
+      el("button", {class: "pick", onclick: () => { keepName(); closeModal(); openReceiveVault(); }},
         el("span", {class: "k"}, "\u2193"),
         el("span", {}, el("b", {}, "Open one I was sent"), el("br"),
           el("span", {style: "color:var(--fg3);font-size:12.5px"},
@@ -6319,9 +6746,14 @@ function openOnboarding() {
       el("button", {class: "btn ghost", onclick: () => begin("advanced", () => openSpacesWizard())},
         "I use Logseq or org-mode"),
     ],
+    // The name box can hold the focus, so plain keys have to belong to it first --
+    // otherwise typing a name called Kenneth 1 would pick a door.
     onKey: e => {
-      if (e.key === "1" || e.key === "Enter") { begin("simple"); return true; }
-      if (e.key === "2") { closeModal(); openReceiveVault(); return true; }
+      if (e.key === "Enter") { begin("simple"); return true; }
+      const field = n => /^(INPUT|TEXTAREA)$/.test(n || "");
+      if (field(e.target.tagName) || field(document.activeElement?.tagName)) return false;
+      if (e.key === "1") { begin("simple"); return true; }
+      if (e.key === "2") { keepName(); closeModal(); openReceiveVault(); return true; }
       return false;
     },
   });
@@ -6673,8 +7105,11 @@ async function seedIfEmpty() {
   settingsPage();
   setSetting("last_review", "");
 
+  // cadence:: makes this a routine rather than a plain checklist, which is what
+  // it actually is -- it comes round again every week and never finishes. It also
+  // means the one list everybody starts with demonstrates the distinction.
   putPage(join(DIRS.lists, "Weekly review.md"), {
-    props: {title: "Weekly review", type: "checklist", created: todayStamp()},
+    props: {title: "Weekly review", type: "checklist", cadence: "weekly", created: todayStamp()},
     blocks: [
       newBlock({title: "Empty the inbox"}),
       newBlock({title: "Review every project for a next action"}),

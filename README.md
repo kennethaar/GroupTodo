@@ -10,7 +10,7 @@ complete separate vault, so colleagues who get Work never see Private.
 
 Two front doors over the same files:
 
-- **Simple** — a to-do list. My day, todos, projects, contexts, checklists, and
+- **Simple** — a to-do list. My day, todos, projects, contexts, routines, and
   a *Big picture* view if you ever want it. Reads like Microsoft To Do.
 - **Advanced** — daily journals, outliner, `[[links]]`, backlinks, zettel. Reads
   like Logseq.
@@ -36,22 +36,42 @@ a phone keeps on its home screen; see **Running it** below.
 
 ## First run
 
-**One screen, two doors.**
+**One screen: your name, then two doors.**
 
-- **Start a new list** — straight in, with the task box already focused.
+- **Your name, if you like** — one optional field. It goes beside what you add,
+  so a list you share later can show who did what. Leave it empty and nothing is
+  signed. **There is nothing else to register**: no account, no email, no
+  password, because there is nowhere for them to be sent. (The one password in
+  this whole system belongs to `serve.py`, if you ever run it, and your browser
+  asks for it when you connect.) You can change or clear the name later under
+  **Vault & sync**, and it can differ per space.
+- **Start a new list** — straight in, with the task box already focused. `Enter`
+  does the same, so the name and the first door are one gesture.
 - **Open one I was sent** — a colleague's shared folder, or the vault file they
-  sent you. This is the door to use when somebody hands you their work.
+  sent you. This is the door to use when somebody hands you their work; your name
+  comes with you through it.
 
 A quiet third option at the bottom, *I use Logseq or org-mode*, switches to
 advanced and runs the fuller setup: spaces, then a folder for each.
 
-**The teaching is in the page, not in front of it.** A three-step strip — add a
+**The teaching is in the page, not in front of it.** A strip of three — add a
 task, tick it off, give your tasks a home — ticks itself off as you actually do
-each one, then disappears for good. While it is running the sidebar shows four
+each one, shows `1 of 3` as you go, and disappears for good at the end. Only the
+step you are *on* explains itself, in one sentence; three reasons at once is a
+leaflet, and nobody reads the leaflet. While it is running the sidebar shows four
 entries rather than thirteen; the rest appears once you are through it.
 
+**Then, and only then, a project is suggested.** Once a task has been added and
+ticked off, a fourth step appears, marked *optional*: give a bigger job a
+project. It never blocks the strip from finishing — somebody whose life really
+is a flat list of errands should not be held in onboarding for declining to file
+them — and if it is skipped, the suggestion comes back later as a card, once
+there are actually three or four tasks worth grouping.
+
 **Nothing is seeded.** No demo project, no demo tasks, no areas, no contexts. An
-empty list is less to understand than somebody else's.
+empty list is less to understand than somebody else's. The one exception is a
+*Weekly review* routine, because it is also the clearest example of what a
+routine is.
 
 **GTD's vocabulary stays quiet until it is about something.** Below six open
 tasks, simple mode shows no hygiene nudges, no *no verb* / *no context* chips on
@@ -59,7 +79,9 @@ rows, and no context picker when you re-open a task. Past that the method wakes
 up, and in plain words: *tasks that don't say what to actually do* rather than
 *actions without a physical verb*. The threshold is `CFG.quietUntilTasks`.
 
-Day one has no morning weeding and no weekly-review nag.
+Day one has no morning weeding and no weekly-review nag. What the nudges are,
+why each one is there and how to quieten any of them is under
+[Nudging, not nagging](#nudging-not-nagging).
 
 ---
 
@@ -706,7 +728,7 @@ pages/
   _/                        cancelled projects, and the horizon pages:
                               _/Purpose.md  (H5)   _/Vision.md  (H4)
   0/  1/  2/  3/            project status: completed, active, someday, waiting
-  8/                        checklists       -> [[8/Onboard new customer]]
+  8/                        routines, lists  -> [[8/Onboard new customer]]
   a/                        areas of focus   -> [[a/Health]]       (H2)
   g/                        goals            -> [[g/Debt cleared]] (H3)
   c/                        contexts         -> [[c/phone]]
@@ -779,6 +801,91 @@ untouched.
 
 The point is that vague work is not allowed to sit quietly.
 
+### Nudging, not nagging
+
+An app that tells you off is an app you stop opening, and then it has achieved
+nothing at all. So every prompt here is rate-limited, explains itself, and can be
+turned off without turning the system off.
+
+- **Nothing until it is about something.** In simple mode, below
+  `CFG.quietUntilTasks` (6) open tasks, there is no method talk whatsoever — no
+  hygiene chips on rows, no context picker, no vocabulary. Day one also has no
+  morning weeding and no weekly-review nag.
+- **At most four on screen.** `CFG.nudgeMax` (4), most serious first. Everything
+  else waits behind a single chip reading `+3 more`. Ten true-but-small
+  observations are not a to-do list, they are a telling-off.
+- **Each one explains itself, next to its own off switch.** That chip opens
+  *Why these are here*: the plain-language nudge, a sentence or two on why anyone
+  should care, and **quiet for 7 days** (`CFG.nudgeSnoozeDays`) beside it.
+  Per-nudge and time-boxed on purpose — "not now" is nearly always what somebody
+  means, and a prompt that can never come back has to shout the first time.
+  *Bring back the quietened* undoes the lot.
+- **Suggestions are one card, never a queue.** At most one is ever on screen, it
+  takes the place of the hero card rather than stacking on top of it, and it
+  carries both exits: **not now** (back in `CFG.tipSnoozeDays`, 5 days) and
+  **✕** (never again). Simple mode only — the advanced door is for people who
+  arrived already knowing how they want to work.
+- **Nothing is timed.** No alarms, no notifications, no due date going red
+  because a Tuesday went past. A routine's cadence is a *word*, not a schedule.
+- **No streaks, scores, points, badges or rings.** Nothing is counted about you,
+  and there is nowhere to send it if it were. The only progress counter in the
+  app is `1 of 3` on the first-run strip, and it deletes itself.
+
+The suggestions, in full — this is all of them:
+
+| When | What it offers |
+|---|---|
+| `CFG.tipMinTasks` (3) open tasks and still no project | *Some of these belong together* — make one |
+| `CFG.busyTasks` (40) open tasks, and enough projects for weeding to rank | *That is a lot on the list* — weed the stalest few |
+| `CFG.busyTasks` (40) open tasks sitting flat, with little to rank | *That is a lot on one pile* — group the loose ones |
+| one project holding `CFG.busyProjectTodos` (12) open tasks | *… is carrying 14 tasks* — that is usually two projects |
+| the space lives in a folder or on a server, and no name is set | *Put your name on your changes* |
+
+### Why these ones, and how much to trust the reasoning
+
+Taking somebody's attention is a cost, so it is worth being straight about which
+of these rest on good evidence and which are just opinions that have worked.
+
+| The nudge | The idea | How solid |
+|---|---|---|
+| A verb and a context — *Call Storebrand* `[[c/phone]]` | **Implementation intentions**: committing to the specific action, and where and when, rather than to the goal | **Strong.** Meta-analysis across ~90 studies finds a medium-to-large effect (Gollwitzer & Sheeran, 2006). If you adopt one habit from this app, adopt this one |
+| Writing it down at all; one next action per project | **Cognitive offloading**: an external store you actually trust frees the attention that was holding the thing | **Reasonable.** Offloading measurably improves what you manage next. The *Zeigarnik effect* usually cited for GTD's "open loops" has a poor replication record, so nothing here leans on it |
+| `1 of 3` on the first-run strip | **Endowed progress**: a bar that has already started gets finished more often than one at zero | **Suggestive.** One well-known line of work (Nunes & Drèze, 2006), not a mountain of it |
+| Weekly review; morning weeding | **Fresh-start effect**: people act on intentions at temporal landmarks — a Monday, a new month | **Suggestive.** A real effect in large datasets, modest in size |
+| Weeding a long list | A list long enough to read as a wall stops being a tool and becomes a thing to avoid | **Experience, not science.** The tempting citation is choice overload, and the meta-analyses put that near zero. Treated here as a design opinion, and labelled as one |
+| The cap, the snooze, the absent streaks | **Reactance** and warning fatigue: prompts you cannot refuse get ignored, then resented | **Well established as a phenomenon**, though mostly from security and health messaging rather than to-do lists |
+
+Where the evidence is thin, the design answer is the same either way: make it
+quiet, make it optional, and let the person switch it off for good.
+
+### A project finishes. A routine comes back. A template makes projects.
+
+Three things live side by side and they are not the same thing. Mixing them up is
+the commonest way a GTD list goes bad.
+
+| | Lives in | Marked by | Finishes? |
+|---|---|---|---|
+| **Project** | `1/`, `2/`, `3/`, `0/`, `_/` | `status::`, `outcome::` | yes — that is the point |
+| **Routine** | `8/` | `cadence:: weekly` | never. It is only ever due again |
+| **Project template** | `8/` | `kind:: project` | n/a — each run makes a project that does |
+
+A routine filed as a project sits in Active looking permanently unfinished, drags
+the credibility of the whole project list down with it, and quietly poisons the
+*projects with no next action* nudge — of course there is no next action; it is
+not that kind of thing.
+
+So the question is asked **once, at naming, where changing your mind is free**:
+type a project called *Weekly accounts*, *monthly report*, *standup*, *check-in*
+or *every Friday …* and GroupTodo says it sounds like a routine and offers to
+make it one instead. Answer *keep it a project* and it never asks again — a guess
+that insists is worse than no guess. If it does become a routine, the cadence is
+read off the name you already typed.
+
+The sidebar entry is **Routines & lists**, and inside, the three are kept in
+separate groups, each with a line saying what it is for. With nothing in it yet,
+those three descriptions *are* the screen — it is the one place where the
+difference is worth a paragraph.
+
 **Nothing is invented for you.** No areas, no contexts, no goals are created
 behind your back. Borrowed structure is worse than none, so the app ships empty
 and asks.
@@ -826,9 +933,15 @@ appears until you are past the quiet threshold.
 **The surfacing loop.** Pick where you are and GroupTodo shows the **three
 oldest** open actions you could actually do there. Never the newest.
 
-**Checklists** live under `8/` — eternity, because you run them forever. Two kinds:
+**Routines, checklists and templates** all live under `8/` — eternity, because
+you run them forever. Three kinds, told apart by their properties:
 
-- A **simple checklist** drops its steps into today or into an existing project.
+- A **routine** carries `cadence::` (a word: *weekly*, *monthly*, *every trip*).
+  It never finishes, which is exactly why it is not a project. Nothing fires on a
+  timer and nothing turns red when the cadence passes — it is there so you can
+  see what is due when you look. The *Weekly review* you start with is one.
+- A **simple checklist** has no cadence: steps you would rather not think through
+  twice. It drops them into today or into an existing project.
 - A **project template** spins up a whole new project on every run. "Onboard new
   insurance customer" run once per customer gives you one project each, with the
   same choreography. Write `%name%` in any step and you are asked for it per run,
