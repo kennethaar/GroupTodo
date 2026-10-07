@@ -272,6 +272,14 @@ header.top .burger{display:none}
 .flagbtn:hover{color:var(--warn)}
 .flagbtn.on,.msg.mine .flagbtn.on{color:var(--warn)}
 /* The all-conversations list. */
+/* Anybody who has asked their system for less movement gets less movement. */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;scroll-behavior:auto !important}
+}
+.showmore{display:block;width:100%;text-align:center;background:none;border:0;cursor:pointer;
+  border-top:1px solid var(--border);color:var(--accent);font-size:12.5px;padding:10px}
+.showmore:hover{background:var(--bg3)}
 .chatrow{display:flex;gap:11px;align-items:flex-start;width:100%;text-align:left;cursor:pointer;
   padding:11px 12px;background:none;border:0;border-top:1px solid var(--border);color:inherit}
 .chatrow:first-child{border-top:0}
@@ -292,6 +300,9 @@ header.top .burger{display:none}
 .toast .act{background:none;border:1px solid var(--border2);color:var(--accent);
   border-radius:6px;padding:2px 10px;font-size:12px;cursor:pointer;margin-left:8px}
 .toast .act:hover{background:var(--bg3)}
+/* display on a class beats the user agent's [hidden]{display:none}, so without
+   this the chip sat in the header as an empty 22px pill you could click. */
+.ctxnow[hidden]{display:none}
 .ctxnow{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 10px;
   border-radius:20px;cursor:pointer;white-space:nowrap;
   color:var(--ctx);background:rgba(94,207,192,.12);border:1px solid rgba(94,207,192,.35)}
@@ -792,6 +803,8 @@ const CFG = {
   weedMinProjects  : 5,      // weeding is for a garden, not a window box
   weedMinTodos     : 20,
   agendaDays       : 14,
+  rowsPerPage      : 60,     // drawn at once; the rest wait behind "show more"
+  groupsPerPage    : 25,     // project sections drawn at once
   journalScanDays  : 365,
   contextPrompts   : [[12, 0, "lunchtime"], [17, 0, "after work"]],
 };
@@ -1259,6 +1272,7 @@ function putPage(path, page, {silent = false} = {}) {
 const nowStamp = () => new Date().toISOString().replace(/\.\d+Z$/, "Z");
 
 function touch(path) {
+  clearMemo();
   QUIET_CACHE = null;
   const page = V.pages.get(path);
   if (page) {
@@ -2887,7 +2901,7 @@ function nearestProjectAncestor(block) {
 
 /* Open leaf actions: an open item with no open children is the actionable one.
    With several spaces shown, this runs once per space and tags each result. */
-function leafActions() { return acrossSpaces(leafActionsHere); }
+function leafActions() { return memo("leafActions", () => acrossSpaces(leafActionsHere)); }
 
 function leafActionsHere() {
   const out = [];
@@ -3714,7 +3728,8 @@ function allPeople() {
     personName(a).localeCompare(personName(b)));
 }
 const isMemberPage = path => trim(String(getPage(path)?.props?.member || "")) === "true";
-function members() {
+function members() { return memo("members", membersNow); }
+function membersNow() {
   return allPeople().filter(isMemberPage).map(path => ({
     path, name: personName(path), me: samePerson(personName(path), whoAmI()),
   }));
@@ -3792,6 +3807,19 @@ function setSetting(k, v) { settingsPage().props[k] = v; touch(SETTINGS_PATH); }
    enough on the list for them to be about something. */
 /* One rule, used by the nudge bar, the row chips and the context prompt: a
    newcomer with a handful of tasks is not told off about method. */
+/* Several of the whole-vault questions -- what is open, who is here, where the
+   conversations are -- get asked many times in one render: navVisible alone
+   asks three of them per item. Each is cheap on a small vault and 20ms on a
+   big one, which is how a sidebar ends up costing 150ms to draw. They are
+   answered once per render instead, and the memo is dropped whenever anything
+   is touched so nothing can read a stale answer. */
+const MEMO = new Map();
+const memo = (key, fn) => {
+  if (!MEMO.has(key)) MEMO.set(key, fn());
+  return MEMO.get(key);
+};
+const clearMemo = () => MEMO.clear();
+
 let QUIET_CACHE = null;
 /* Weeding ranks the stalest of many projects. With a handful of each it has
    nothing to say, so it is never suggested -- though g w still opens it for
@@ -5037,11 +5065,33 @@ function viewTodos() {
   }
   if (!acts.length) c.append(section("Todos", 0, taskCard([],
     all.length ? "Nothing in the states you have shown." : "Nothing open. Add one above.")));
-  for (const [name, items] of Array.from(byProject.entries()).sort((x, y) => x[0].localeCompare(y[0]))) {
+
+  /* The groups need rationing as much as the rows do: capping each project at
+     sixty tasks does nothing when the cost is two thousand projects. */
+  const groups = Array.from(byProject.entries()).sort((x, y) => x[0].localeCompare(y[0]));
+  for (const [, items] of groups)
     items.sort((x, y) => (x.added || "9999").localeCompare(y.added || "9999"));
-    c.append(section(name, items.length, taskCard(items)));
-  }
+  appendPaged(c, groups, ([name, items]) => section(name, items.length, taskCard(items)),
+              n => n + " more project" + (n === 1 ? "" : "s"));
   return c;
+}
+
+/* Draw the first page of anything, with the rest a click away. */
+function appendPaged(parent, items, make, label) {
+  const more = el("button", {class: "showmore"});
+  let drawn = 0;
+  const draw = () => {
+    const upto = Math.min(items.length, drawn + CFG.groupsPerPage);
+    for (let i = drawn; i < upto; i++) parent.insertBefore(make(items[i]), more);
+    drawn = upto;
+    const left = items.length - drawn;
+    if (!left) { more.remove(); return; }
+    more.textContent = "Show " + (label ? label(left) : left + " more");
+  };
+  more.onclick = e => { e.stopPropagation(); draw(); };
+  parent.append(more);
+  draw();
+  return parent;
 }
 
 /* ---------- taking something back out of a shared space ----------
@@ -5269,13 +5319,16 @@ function toggleMsgFlag(path, m) {
 /* ---------- read, per device ---------- */
 const readKey = () => "readmsg:" + (Spaces.active || "");
 function readSet() {
-  try { return new Set(JSON.parse(PREF.get(readKey(), "[]"))); }
-  catch (_) { return new Set(); }
+  return memo("readSet:" + readKey(), () => {
+    try { return new Set(JSON.parse(PREF.get(readKey(), "[]"))); }
+    catch (_) { return new Set(); }
+  });
 }
 function saveReadSet(set) {
   // Keep it from growing without limit; the oldest keys are the least useful.
   const keys = Array.from(set).slice(-800);
   PREF.set(readKey(), JSON.stringify(keys));
+  MEMO.delete("readSet:" + readKey());
 }
 const isUnread = m => !samePerson(msgAuthor(m), whoAmI()) && !readSet().has(msgKey(m));
 
@@ -5293,7 +5346,8 @@ function unreadCount(block) {
 }
 
 /* Everything flagged by me, anywhere in this space. */
-function flaggedMessages() {
+function flaggedMessages() { return memo("flagged", flaggedMessagesNow); }
+function flaggedMessagesNow() {
   const out = [];
   for (const [path, page] of V.pages) {
     walkBlocks(page.blocks, (b, parent) => {
@@ -5670,8 +5724,8 @@ function allThreadsHere() {
   }
   return out;
 }
-const allThreads = () => acrossSpaces(allThreadsHere)
-  .sort((a, b) => String(b.at).localeCompare(String(a.at)));
+const allThreads = () => memo("allThreads", () => acrossSpaces(allThreadsHere)
+  .sort((a, b) => String(b.at).localeCompare(String(a.at))));
 
 const CHAT_FILTERS = [["all", "All"], ["unread", "Unread"], ["flagged", "Flagged"]];
 
@@ -6916,10 +6970,30 @@ function stateFilterBar(acts) {
   return bar;
 }
 
+/* A list draws what you can actually look at, and offers the rest.
+   Rendering every open task was 3.7 seconds at five thousand of them and ten
+   at twenty thousand -- a to-do list that takes ten seconds to appear is
+   broken, however correct the contents. The counts in the headings are still
+   the true totals; only the rows are rationed. */
 function taskCard(actions, emptyText) {
   const card = el("div", {class: "card"});
-  if (!actions.length) card.append(el("div", {class: "empty"}, emptyText || "Nothing here."));
-  else actions.forEach(a => card.append(taskRow(a)));
+  if (!actions.length) {
+    card.append(el("div", {class: "empty"}, emptyText || "Nothing here."));
+    return card;
+  }
+  let drawn = 0;
+  const more = el("button", {class: "showmore"});
+  const draw = () => {
+    const upto = Math.min(actions.length, drawn + CFG.rowsPerPage);
+    for (let i = drawn; i < upto; i++) card.insertBefore(taskRow(actions[i]), more);
+    drawn = upto;
+    const left = actions.length - drawn;
+    if (!left) { more.remove(); return; }
+    more.textContent = "Show " + Math.min(left, CFG.rowsPerPage) + " more \u00B7 " + left + " below";
+  };
+  more.onclick = e => { e.stopPropagation(); draw(); };
+  card.append(more);
+  draw();
   return card;
 }
 
@@ -7403,6 +7477,7 @@ const VIEW_TITLE = {
 
 function render() {
   if (!V.loaded) return;
+  clearMemo();
   QUIET_CACHE = null;
   TOUR_PATH_CACHE = undefined;
   renderNav();

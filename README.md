@@ -637,6 +637,26 @@ The markdown is identical either way.
 `g d` re-surface. In the outline: `Enter` new block, `Tab`/`Shift-Tab` indent,
 `Ctrl-Enter` cycle state.
 
+## What it does about the obvious risks
+
+**Nothing a person types is ever treated as markup.** Every title, message,
+property and label goes through one escaping function before it reaches the
+page; the twelve places that set HTML all read from it. Tested by actually
+injecting `<img onerror>`, `<svg onload>`, `<script>`, an `<iframe>` and a
+quote-breakout through task titles, message bodies, block properties, page
+properties and wiki links, then walking every view: nothing executed, no
+element was created, no inline handler survived.
+
+**Lists are rationed, not unbounded.** Drawing every open task used to take
+3.7 seconds at five thousand of them and 10.7 at twenty thousand, with a
+quarter of a million DOM nodes. Rows are drawn 60 at a time and project
+sections 25 at a time, with the rest one click away and the headings still
+showing true totals: 120ms and 3,400 nodes at the same twenty thousand.
+
+**The whole-vault questions are asked once per render.** What is open, who is
+here, where the conversations are — the sidebar alone used to ask three of them
+per item, which cost 146ms a draw on a big vault. Now 6.7ms.
+
 ## Known limits
 
 - **Block merge matches on text.** Rewording a task on one device while the other
