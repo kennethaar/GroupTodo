@@ -6239,11 +6239,11 @@ function openVaultDialog() {
     capLine(CAP.dirPicker, CAP.dirPicker ? "Can open a vault folder directly" : "Cannot open folders (normal on iOS, Android and Firefox)"),
     capLine(CAP.savePicker, CAP.savePicker ? "Can link a vault file for one-click sync" : "No file linking — use Save / Open below"),
     capLine(SW_READY, SW_READY ? "Opens without a network, and installs to your home screen"
-      : CAP.fromFile ? "Opened as a file, so: no offline open, no home screen, no share sheet — open it from a URL instead"
+      : CAP.fromFile ? "Opened as a file, so: no offline open, no home screen, no Share button — open it from a URL instead"
       : "No offline copy yet (sw.js missing from the host, or still installing)"),
     capLine(canShareFiles(), canShareFiles()
-      ? "Can hand the vault file to your other apps through the share sheet"
-      : "No share sheet here — the vault file downloads instead"));
+      ? "Can hand the vault file to your other apps with the Share button"
+      : "No Share button here — the vault file downloads instead"));
 
   const serverInput = el("input", {
     placeholder: "http://127.0.0.1:8777",
@@ -6303,8 +6303,8 @@ function openVaultDialog() {
               "sync on each device.") +
           " Edits merge per page; nothing is overwritten blindly." +
           (canShareFiles()
-            ? " On this device the file leaves through the share sheet, so you can hand it " +
-              "straight to whichever of those apps you already have."
+            ? " On this device Send uses your phone\u2019s own Share panel, so you can hand the " +
+              "file straight to whichever of those apps you already have."
             : "")),
         el("div", {style: "display:flex;gap:8px;flex-wrap:wrap"},
           CAP.savePicker

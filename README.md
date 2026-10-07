@@ -106,7 +106,7 @@ What the URL buys you, on every platform:
   keeps the page; the vault was never on the network in the first place. Plane
   mode, dead server, Android having reclaimed Termux — it still opens with your
   data in it.
-- **The share sheet carries the vault file.** *Vault & sync → Send vault file*
+- **The phone's own Share panel carries the vault file** (the "share sheet"). *Vault & sync → Send vault file*
   hands the markdown straight to Dropbox, Drive, OneDrive, Nextcloud, Syncthing,
   Signal or mail — whichever you already have. Those apps are the sync GroupTodo
   deliberately does not have.
