@@ -94,6 +94,20 @@ finished. Click one to go straight to it. "Last seen" is per device and never
 written to the shared files, so marking your own news read does not mark it read
 for everybody.
 
+### Faces, and who has been here
+
+**A picture lives in your own person page** as a `data:` URI, so it travels in
+the vault like everything else — no uploads, no server, nowhere else for it to
+go missing. *People → your name → Add a picture*. The image is redrawn at 96px
+and squeezed until it fits a hard 24KB ceiling, so a 4MB photo becomes about
+1KB of text. No picture means initials in a colour derived from your name,
+which is stable everywhere.
+
+**`last_seen::`** on the same page answers "has anybody even opened this
+lately". It is written at most once an hour, so it does not churn the file, and
+shows up in People (*last seen 3 hours ago*, *here now*) and beside a name in
+chat. A space with `no_attribution:: true` records this too — same promise.
+
 ### Undo
 
 Deleting was one click and permanent. Now a delete offers **Undo** in the toast
@@ -143,10 +157,12 @@ A message is an ordinary child block, so it nests under the task in Neovim and
 the block-level merge means two people posting at the same moment both survive.
 It carries no state, so it is not a task and never shows up in a to-do list.
 
-**The thread reads as a conversation**, not as more task rows: an initialled
-circle per speaker, a run of messages from one person under one name, day
-separators, times you can use (`8:30 AM`, `Yesterday 2:02 PM`, `Mon`), and one
-`New` line where the unread starts rather than tinting everything.
+**The thread reads as a conversation.** Bubbles — yours on the right, theirs on
+the left — with the name, the time and *last seen* sitting **outside** the
+bubble, because a bubble holds what was said. A face per speaker, a run of
+messages from one person under one name, day separators, times you can use
+(`8:30 AM`, `Yesterday 2:02 PM`, `Mon`), and one `New` line where the unread
+starts rather than tinting everything.
 
 **Read is per device and never written to the vault** — you reading something
 must not mark it read for everybody. Rows show `○ 2 new` while anything is
@@ -610,6 +626,10 @@ The markdown is identical either way.
 - **Auto-sync of the courier file is desktop only** (it needs a durable handle).
 - **Recurrence is offered, never scheduled.** Nothing appears until you tick the
   current one off and say yes, so a repeat you forget about simply stops.
+- **A profile picture is bytes in the vault.** 24KB of base64 per person, in
+  plain sight in the markdown. Small, but not nothing on a big team.
+- **Last seen has an hour's resolution** and only updates when somebody opens
+  the space, so it says "has this person been around", not "are they online".
 - **Undo is this device, this session.** It is a five-minute grace period, not
   history: reload the page and the stack is gone.
 - **Chat read state is per device.** A new device shows the whole thread as
