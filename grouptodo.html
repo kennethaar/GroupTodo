@@ -8080,7 +8080,7 @@ function openOnboarding() {
     whereLine.textContent = placed
       ? "Writing into \u201C" + (sp.label || sp.name) + "\u201D. Share that folder and you have shared the list."
       : CAP.dirPicker
-        ? "A folder you already share \u2014 OneDrive, Dropbox, a network drive. Skip it and everything stays in this browser until you decide."
+        ? "One you already share \u2014 OneDrive, Dropbox, a network drive. Skip it and it stays in this browser."
         : "This browser cannot open folders, so it keeps the list itself. On a computer you can give it a real folder.";
   };
   whereBtn.onclick = async () => {
@@ -8113,9 +8113,9 @@ function openOnboarding() {
         el("div", {style: "color:var(--fg2);font-size:13.5px;line-height:1.55"},
           "A shared to-do list that is really just text files in a folder you already have."),
         el("div", {style: "color:var(--fg3);font-size:12.5px;line-height:1.55;margin-top:6px"},
-          "Other task apps keep your tasks on their servers, which is why sharing one " +
-          "means everybody needs an account. There is no server here and nothing to be a " +
-          "member of \u2014 share the folder and you have shared the list.")),
+          "Other task apps keep them on their servers, which is why sharing one means " +
+          "everybody needs an account. There is no server here \u2014 share the folder and " +
+          "you have shared the list.")),
       /* Who, then where, then what. Each answer makes the next question make
          sense: a name is what the folder will be shared under, and a folder is
          what the first task gets written into. */
@@ -8123,9 +8123,8 @@ function openOnboarding() {
         el("label", {}, "1 \u00B7 Who are you"),
         nameInput,
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px;line-height:1.5"},
-          "First and last name. Colleagues see it beside what you add, and two people " +
-          "called Kenneth is exactly the day you will wish you had put the surname in. " +
-          "Leave it empty and nothing is signed.")),
+          "Colleagues see it beside what you add, and two people called Kenneth is " +
+          "the day you wish you had typed the surname.")),
       el("div", {class: "field"},
         el("label", {}, "2 \u00B7 Where the files live"),
         whereBtn,
@@ -8142,22 +8141,7 @@ function openOnboarding() {
         el("span", {}, el("b", {}, "Open one I was sent"), el("br"),
           el("span", {style: "color:var(--fg3);font-size:12.5px"},
             "A shared folder, an invite, or a vault file from a colleague."))),
-      /* Four lines on how a shared list behaves, because those are the four
-         things that surprise somebody who has only used a personal one. Not
-         instructions: there is nothing here to do. */
-      el("div", {class: "field", style: "margin-top:4px"},
-        el("label", {}, "How it goes once there are two of you"),
-        (() => {
-          const box = el("div", {style: "display:flex;flex-direction:column;gap:5px;" +
-                                        "color:var(--fg3);font-size:12.5px;line-height:1.5"});
-          for (const line of [
-            ["Your day page is yours", "nobody types over you, but the team sees what is on it"],
-            ["A task you write is yours", "no assigning, no ceremony"],
-            ["Hand one over", "it becomes theirs and lands in your Waiting for \u2014 one task, not two"],
-            ["Everything in the folder is shared", "that is the whole permission model"],
-          ]) box.append(el("div", {}, el("b", {style: "color:var(--fg2)"}, line[0]), " \u2014 " + line[1]));
-          return box;
-        })())),
+      ),
     foot: [
       el("button", {class: "btn ghost", onclick: () => begin("advanced", () => openSpacesWizard())},
         "I use Logseq or org-mode"),
