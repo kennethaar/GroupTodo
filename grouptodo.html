@@ -222,6 +222,16 @@ header.top .burger{display:none}
   background:transparent;color:var(--fg3);user-select:none}
 .chip.filter:hover{color:var(--fg2)}
 .chip.filter.on{color:var(--fg);background:var(--bg3);border-color:var(--accent)}
+/* Where you are, kept on screen. Picking a context changed what the app showed
+   and then said nothing about it, so it was impossible to tell you had one or
+   to get rid of it. */
+.ctxnow{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 10px;
+  border-radius:20px;cursor:pointer;white-space:nowrap;
+  color:var(--ctx);background:rgba(94,207,192,.12);border:1px solid rgba(94,207,192,.35)}
+.ctxnow:hover{background:rgba(94,207,192,.2)}
+.ctxnow .x{color:var(--fg3);font-size:13px;line-height:1}
+.ctxnow .x:hover{color:var(--fg)}
+@media (max-width:560px){.ctxnow{max-width:9rem;overflow:hidden;text-overflow:ellipsis}}
 .chip.st{font-family:var(--mono);font-size:10px;letter-spacing:.5px}
 .chip.spacechip{border-style:solid;border-width:1px;background:transparent;font-weight:600}
 .spacetoggle{
@@ -499,6 +509,7 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4p
       <button class="iconbtn burger" id="burger">&#9776;</button>
       <div class="h-title"><span id="hTitle">Today</span><span class="sub" id="hSub"></span></div>
       <div class="h-sp"></div>
+      <button class="ctxnow" id="btnContext" hidden></button>
       <button class="btn sm ghost" id="btnSearch" title="Search (/)">&#8981;</button>
       <button class="btn sm ghost" id="btnTheme" title="Theme">&#9689;</button>
       <button class="btn primary sm" id="btnCapture">&#65291; Capture <kbd>c</kbd></button>
@@ -715,7 +726,15 @@ const CFG = {
 
    Before a name is set there is no folder to use, so the old flat path stays
    valid and migrateJournals() moves those files in once a name exists. */
-const slugPerson = n => slugify(trim(n || "")).slice(0, 40);
+/* Not slugify(): that falls back to "Untitled" for an empty string, which is
+   right for a page with no title and wrong here -- it gave somebody who had
+   not named themselves a journal folder called Untitled, which then never
+   migrated because it looked like it already had an owner. No name must mean
+   no folder. */
+const slugPerson = n => trim(n || "")
+  .replace(/[\u0000-\u001f/\\:*?"<>|]/g, "-")
+  .replace(/\s+/g, " ")
+  .slice(0, 40);
 const journalOwner = () => slugPerson(whoAmI());
 const journalPath = (date, owner) => {
   const who = owner === undefined ? journalOwner() : slugPerson(owner);
@@ -2350,9 +2369,14 @@ function migrateJournals() {
   if (!who) return 0;
   let moved = 0;
   for (const path of Array.from(V.pages.keys())) {
-    if (!isJournalPath(path) || journalOwnerOf(path)) continue;
+    if (!isJournalPath(path)) continue;
+    const owner = journalOwnerOf(path);
+    // "Untitled" is not a person: an earlier build wrote it for anybody who had
+    // not named themselves yet. Claim those days along with the flat ones.
+    if (owner && owner !== "Untitled") continue;
+    if (owner === who) continue;
     const target = join(JOURNALS, who, baseName(path) + ".md");
-    if (V.pages.has(target)) continue;
+    if (V.pages.has(target)) { removePage(path); continue; }
     putPage(target, getPage(path));
     removePage(path);
     moved++;
@@ -3491,9 +3515,57 @@ function whoAmI() {
 }
 function setIdentity(name, space) {
   const clean = trim(name).slice(0, 60);
+  const was = whoAmI();
   if (space) PREF.set("identity:" + space, clean);
   else PREF.set("identity", clean);
-  if (clean && V.pages) { migrateJournals(); ensureMemberPage(); }
+  if (!clean || !V.pages) return;
+  if (was && !samePerson(was, clean)) renameIdentity(was, clean);
+  migrateJournals();
+  ensureMemberPage();
+}
+
+/* Changing your name has to take your things with it, or you end up listed
+   twice in People, with yesterday's journal filed under somebody who no longer
+   exists and tasks assigned to a name nobody answers to.
+
+   by:: and done_by:: are deliberately left alone: they are a record of who did
+   something at the time, not a pointer to a person. */
+function renameIdentity(was, now) {
+  const from = personPath(was), to = personPath(now);
+  if (V.pages.has(from)) {
+    const page = getPage(from);
+    if (!V.pages.has(to)) {
+      page.props = Object.assign({}, page.props, {title: now, member: "true"});
+      putPage(to, page);
+    }
+    removePage(from);
+  }
+
+  // Journal days move wholesale: journals/<was>/2026-10-05.md -> <now>/...
+  const oldDir = join(JOURNALS, slugPerson(was));
+  const newDir = join(JOURNALS, slugPerson(now));
+  let days = 0;
+  for (const path of Array.from(V.pages.keys())) {
+    if (!path.startsWith(oldDir + "/")) continue;
+    const target = join(newDir, baseName(path) + ".md");
+    if (!V.pages.has(target)) { putPage(target, getPage(path)); days++; }
+    removePage(path);
+  }
+
+  // Live assignments must follow; history must not.
+  let handed = 0;
+  for (const [path, page] of V.pages) {
+    let hit = false;
+    walkBlocks(page.blocks, bl => {
+      if (samePerson(assigneeOf(bl), was)) { setBlockProp(bl, ASSIGN_PROP, now); hit = true; handed++; }
+    });
+    if (hit) touch(path);
+  }
+  // The old identity's own read-marker is meaningless now.
+  notify("You are " + now + " here now" +
+    (days ? ", with " + days + " journal day(s)" : "") +
+    (handed ? " and " + handed + " assigned task(s)" : "") + " moved across.");
+  return {days, handed};
 }
 
 /* Stamp authorship on something the person just created. */
@@ -5016,8 +5088,15 @@ function viewMyDay() {
   // stacking on top of it: two things competing to be the next thing is neither.
   if (!coach) c.append(nudgeBar(), tipCard() || heroCard());
 
+  // One task, one row. The sections below are different questions about the
+  // same journal, so without this a task captured today that also has a date
+  // appeared under Due AND under Captured today.
+  const shown = new Set();
+  const unseen = list => list.filter(a => !shown.has(a.block.id));
+  const claim = list => { list.forEach(a => shown.add(a.block.id)); return list; };
+
   const acts = leafActions();
-  const due = acts.filter(a => a.group === "LATE" || a.group === "TODAY");
+  const due = claim(acts.filter(a => a.group === "LATE" || a.group === "TODAY"));
   if (due.length) c.append(section("Due", due.length, taskCard(due)));
 
   // A ticked task should not simply vanish: leave it here so the person can see
@@ -5033,7 +5112,7 @@ function viewMyDay() {
   // Below the fold: reference material, not the day's work. Both sections are
   // dropped entirely when there is nothing in them -- an empty box on the main
   // screen reads as a chore you have not done.
-  const surfaced = state.context ? oldestTodosForContext(state.context) : [];
+  const surfaced = claim(unseen(state.context ? oldestTodosForContext(state.context) : []));
   if (surfaced.length) {
     c.append(section("Oldest in @" + state.context, surfaced.length, taskCard(surfaced),
       el("button", {class: "btn sm ghost", style: "margin-left:auto",
@@ -5041,11 +5120,11 @@ function viewMyDay() {
       "quiet"));
   }
 
-  const today = flattenBlocks(getPage(path).blocks)
+  const today = unseen(flattenBlocks(getPage(path).blocks)
     .filter(b => OPEN_STATES[b.state])
     .map(b => ({path, block: b, state: b.state, title: b.title, context: contextOf(b.title),
                 due: dueDate(b), age: blockAge(b), added: addedDate(b),
-                missingVerb: !startsWithVerb(b.title), missingContext: !hasContextLink(b.title)}));
+                missingVerb: !startsWithVerb(b.title), missingContext: !hasContextLink(b.title)})));
   // While the coach is up this is the only thing on screen and the step it is
   // asking for, so it keeps its full weight until the newcomer is through.
   if (today.length) c.append(section("Captured today", today.length, taskCard(today), null, coach ? null : "quiet"));
@@ -5213,11 +5292,14 @@ function heroCard() {
     el("h2", {}, "Next best move"),
     el("div", {style: "font-size:16px;font-weight:600;margin-bottom:2px"}, nb.title),
     el("p", {html: renderInline(nb.body)}),
+    // The alternatives are alternatives. When the best move already IS capture,
+    // offering "Capture something" again beside it just looked broken.
     el("div", {class: "acts"},
       el("button", {class: "btn primary", onclick: nb.act}, nb.cta),
-      el("button", {class: "btn ghost", onclick: () => openCapture()}, "Capture something"),
+      nb.cta === "Capture something" ? null
+        : el("button", {class: "btn ghost", onclick: () => openCapture()}, "Capture something"),
       el("button", {class: "btn ghost", onclick: () => openContextPicker("Where are you now?", ctx => surfaceContext(ctx))},
-        state.context ? "Context: " + state.context : "Set context")
+        state.context ? "Change context" : "Set context")
     ));
 }
 
@@ -5817,6 +5899,7 @@ function render() {
   if (!V.loaded) return;
   QUIET_CACHE = null;
   renderNav();
+  renderContextChip();
   const c = $("#content");
   c.textContent = "";
   let node;
@@ -5995,12 +6078,35 @@ function promptAndInsertContext(path, block) {
 }
 
 /* Surface the 3 oldest actions in a context -- the core nudge loop. */
+function renderContextChip() {
+  const btn = $("#btnContext");
+  if (!btn) return;
+  btn.textContent = "";
+  if (!state.context) { btn.hidden = true; return; }
+  btn.hidden = false;
+  btn.title = "You are in @" + state.context + " \u2014 click to change";
+  btn.onclick = () => openContextPicker("Where are you now?", ctx => surfaceContext(ctx));
+  btn.append(el("span", {}, "@" + state.context));
+  btn.append(el("span", {class: "x", title: "Leave this context",
+    onclick: e => { e.stopPropagation(); clearContext(); }}, "\u00D7"));
+}
+
+function clearContext() {
+  state.context = null;
+  state.surfaced = [];
+  setSetting("current_context", "");
+  renderContextChip();
+  render();
+  notify("No context. Showing everything again.");
+}
+
 function surfaceContext(ctx) {
   state.context = ctx;
   state.lastTodoTouch = Date.now();
   const items = oldestTodosForContext(ctx);
   state.surfaced = items.map(a => a.block.id);
   setSetting("current_context", ctx);
+  renderContextChip();
   go("today");
   notify(items.length
     ? `@${ctx}: ${items.length} oldest action(s) surfaced.`

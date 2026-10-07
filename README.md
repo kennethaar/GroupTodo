@@ -386,8 +386,11 @@ pages/
 
 Listed in the vault's own order: `_`, `0`, `1`, `2`, `3`, then `8`.
 
-A person page with `member:: true` is somebody using this space. Naming yourself
-creates yours.
+Naming yourself creates `pages/p/<Your Name>.md` with `member:: true`, which is
+what tells everybody else in the space that you exist. Changing your name later
+takes your things with it: the person page, your journal folder and any tasks
+assigned to you all move across, while `by::` and `done_by::` stay as written —
+those record who did something at the time, not who to chase now.
 
 A project's **status is its directory**. Changing status moves the file and
 rewrites every `[[1/Fix sink]]` link to `[[0/Fix sink]]`.
