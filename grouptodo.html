@@ -6371,8 +6371,15 @@ function viewPeople() {
   for (const m of members()) {
     const w = workOf(m.name);
     const seen = lastSeenOf(m.name);
+    const face = avatarNode(m.name, 30);
+    if (m.me) {
+      // Your own face is the fastest place to change it from.
+      face.title = avatarOf(m.name) ? "Change your photo" : "Add a photo of yourself";
+      face.style.cursor = "pointer";
+      face.addEventListener("click", e => { e.stopPropagation(); pickAvatar(m.name, () => render()); });
+    }
     card.append(el("button", {class: "pick", onclick: () => go("person", {person: m.name})},
-      avatarNode(m.name, 30),
+      face,
       el("span", {style: "flex:1"},
         el("div", {}, m.name + (m.me ? " (you)" : "")),
         el("div", {style: "color:var(--fg3);font-size:11.5px"},
@@ -9176,9 +9183,34 @@ function openVaultDialog() {
           el("button", {class: "btn ghost", onclick: () => { safeLS.del("gtd.server"); notify("Server forgotten."); }}, "Forget"))),
 
       el("div", {class: "field"},
-        el("label", {}, "Your name on changes in " + (Spaces.active || "this space")),
+        el("label", {}, "You in " + (Spaces.active || "this space")),
         (() => {
-          const input = el("input", {placeholder: "Kenneth", value: whoAmI()});
+          /* The picture belongs next to the name: one is who you are called and
+             the other is what you look like, and hiding the second a page deeper
+             meant nobody found it. */
+          const me = whoAmI();
+          const row = el("div", {style: "display:flex;gap:12px;align-items:center;margin-bottom:8px"});
+          const draw = () => {
+            row.textContent = "";
+            const who = whoAmI();
+            if (!who) {
+              row.append(el("div", {style: "color:var(--fg3);font-size:12px"},
+                "Put a name in below and you can add a photo of yourself."));
+              return;
+            }
+            row.append(avatarNode(who, 44));
+            row.append(el("div", {style: "display:flex;gap:6px;flex-wrap:wrap"},
+              el("button", {class: "btn sm ghost", onclick: () => pickAvatar(who, draw)},
+                avatarOf(who) ? "Change photo" : "Add a photo"),
+              avatarOf(who)
+                ? el("button", {class: "btn sm ghost", onclick: () => { clearAvatar(who); draw(); }}, "Remove")
+                : null));
+          };
+          draw();
+          return row;
+        })(),
+        (() => {
+          const input = el("input", {placeholder: "Kenneth Aar", value: whoAmI()});
           input.addEventListener("change", () => {
             setIdentity(input.value, Spaces.active);
             notify(trim(input.value)
@@ -9189,9 +9221,11 @@ function openVaultDialog() {
           return input;
         })(),
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          "Written into the markdown as by:: and done_by:: so everyone sharing this space " +
-          "can see who added what and who closed it. Leave empty when you work alone and " +
-          "nothing is stamped. Stored on this device only, and can differ per space." +
+          "Your name is written into the markdown as by:: and done_by:: so everyone sharing " +
+          "this space can see who added what and who closed it; it is stored on this device " +
+          "and can differ per space. A photo goes into your own page in the vault, shrunk to " +
+          "about a kilobyte of text \u2014 it never leaves the folder, because there is nowhere " +
+          "for it to go. Leave both empty and nothing is stamped." +
           (attributionOff() ? " This space is set to record nothing, so the name is unused here." : ""))),
 
       el("div", {class: "field"},

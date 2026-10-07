@@ -96,12 +96,15 @@ for everybody.
 
 ### Faces, and who has been here
 
-**A picture lives in your own person page** as a `data:` URI, so it travels in
-the vault like everything else — no uploads, no server, nowhere else for it to
-go missing. *People → your name → Add a picture*. The image is redrawn at 96px
-and squeezed until it fits a hard 24KB ceiling, so a 4MB photo becomes about
-1KB of text. No picture means initials in a colour derived from your name,
-which is stable everywhere.
+**Add a photo of yourself** in **Vault & sync**, beside your name — or click
+your own face in People. It opens the ordinary file picker, which on a phone
+offers the camera or your photo library.
+
+The picture lives in your own person page as a `data:` URI, so it travels in the
+vault like everything else: no upload, no server, nowhere else for it to go
+missing. It is redrawn at 96px and the quality stepped down until it fits a hard
+24KB ceiling — a 470KB, 1200×900 photo comes out at about 2KB of text. No
+picture means initials in a colour derived from your name, stable everywhere.
 
 **`last_seen::`** on the same page answers "has anybody even opened this
 lately". It is written at most once an hour, so it does not churn the file, and
