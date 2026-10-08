@@ -277,9 +277,23 @@ header.top .burger{display:none}
   *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
     transition-duration:.01ms !important;scroll-behavior:auto !important}
 }
+/* display on a class beats the user agent's [hidden]{display:none}, so without
+   this a hidden "show all" stays in the row as an empty strip you can press --
+   the same trap the context chip fell into. */
+.showmore[hidden]{display:none}
 .showmore{display:block;width:100%;text-align:center;background:none;border:0;cursor:pointer;
   border-top:1px solid var(--border);color:var(--accent);font-size:12.5px;padding:10px}
 .showmore:hover{background:var(--bg3)}
+/* One more page, or the lot. Two buttons side by side rather than one that
+   changes meaning, so neither press is a surprise. */
+.showmorerow{display:flex;width:100%;border-top:1px solid var(--border)}
+/* width:100% from .showmore would make both buttons claim the whole row, so
+   the first one ends up a one-word-wide column. Inside the row, width is the
+   flex box's business. */
+.showmorerow .showmore{border-top:0;width:auto;min-width:0;flex:1 1 auto}
+.showmorerow .showmore.all{flex:0 0 auto;padding-left:18px;padding-right:18px;color:var(--fg3);
+  border-left:1px solid var(--border);white-space:nowrap}
+.showmorerow .showmore.all:hover{color:var(--accent)}
 .chatrow{display:flex;gap:11px;align-items:flex-start;width:100%;text-align:left;cursor:pointer;
   padding:11px 12px;background:none;border:0;border-top:1px solid var(--border);color:inherit}
 .chatrow:first-child{border-top:0}
@@ -326,8 +340,10 @@ header.top .burger{display:none}
 .bcol-head .n{margin-left:auto;font-size:11px;color:var(--fg3);font-family:var(--mono)}
 .bcol-body{display:flex;flex-direction:column;gap:8px;padding:10px;overflow:auto;
   max-height:min(68vh,760px)}
-.bcol-more{font-size:11.5px;color:var(--accent);padding:5px 2px;text-align:left;cursor:pointer}
-.bcol-more:hover{text-decoration:underline}
+/* Inside a board column the row sits among the cards, so it keeps the padding
+   but loses the divider that separates it from a card list. */
+.bcol-body .showmorerow{border-top:0}
+.bcol-body .showmore{font-size:11.5px;padding:6px 4px}
 .bcard{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
   padding:9px 10px;cursor:pointer;text-align:left;width:100%;display:block}
 .bcard:hover{border-color:var(--border2);background:var(--bg4)}
@@ -5166,21 +5182,39 @@ function viewTodos() {
   return c;
 }
 
+/* The row under a rationed list: one more page, or all of it.
+   A cap exists because drawing twenty thousand rows took ten seconds, but
+   somebody who actually wants the whole list should not have to press "show
+   more" eleven times to get it. `step` draws another page, `all` draws the
+   rest; the second button only appears when it would do something the first
+   one does not. */
+function moreRow(step, all) {
+  const stepBtn = el("button", {class: "showmore", onclick: e => { e.stopPropagation(); step(); }});
+  const allBtn  = el("button", {class: "showmore all", onclick: e => { e.stopPropagation(); all(); }});
+  const row = el("div", {class: "showmorerow"}, stepBtn, allBtn);
+  row.set = (stepText, allText) => {
+    stepBtn.textContent = stepText;
+    allBtn.textContent = allText || "";
+    allBtn.hidden = !allText;
+  };
+  return row;
+}
+
 /* Draw the first page of anything, with the rest a click away. */
 function appendPaged(parent, items, make, label) {
-  const more = el("button", {class: "showmore"});
   let drawn = 0;
-  const draw = () => {
-    const upto = Math.min(items.length, drawn + CFG.groupsPerPage);
+  const drawTo = upto => {
     for (let i = drawn; i < upto; i++) parent.insertBefore(make(items[i]), more);
     drawn = upto;
     const left = items.length - drawn;
     if (!left) { more.remove(); return; }
-    more.textContent = "Show " + (label ? label(left) : left + " more");
+    more.set("Show " + (label ? label(Math.min(left, CFG.groupsPerPage)) : Math.min(left, CFG.groupsPerPage) + " more"),
+             left > CFG.groupsPerPage ? "Show all " + items.length : "");
   };
-  more.onclick = e => { e.stopPropagation(); draw(); };
+  const more = moreRow(() => drawTo(Math.min(items.length, drawn + CFG.groupsPerPage)),
+                       () => drawTo(items.length));
   parent.append(more);
-  draw();
+  drawTo(Math.min(items.length, CFG.groupsPerPage));
   return parent;
 }
 
@@ -5862,13 +5896,18 @@ function viewBoard() {
     const step = window.innerWidth < 860 ? CFG.boardPerPhone : CFG.boardPerColumn;
     const shown = (state.boardMore || {})[stateKey] || step;
     items.slice(0, shown).forEach(a => body.append(boardCard(a)));
-    if (items.length > shown)
-      body.append(el("button", {class: "bcol-more", onclick: () => {
+    if (items.length > shown) {
+      const left = items.length - shown;
+      const setTo = n => {
         const more = Object.assign({}, state.boardMore);
-        more[stateKey] = shown + step;
+        more[stateKey] = n;
         go("board", {boardMore: more});
-      }}, "Show " + Math.min(step, items.length - shown) + " more \u00B7 " +
-          (items.length - shown) + " below"));
+      };
+      const row = moreRow(() => setTo(shown + step), () => setTo(items.length));
+      row.set("Show " + Math.min(step, left) + " more \u00B7 " + left + " below",
+              left > step ? "Show all " + items.length : "");
+      body.append(row);
+    }
     if (!items.length) body.append(el("div", {class: "empty", style: "font-size:12px"}, "Nothing here."));
 
     // Dropping on a column is the same call the state chip makes.
@@ -6397,13 +6436,12 @@ function viewGraph() {
   // in the shape a reader can use.
   const list = el("details", {class: "section"},
     el("summary", {}, "The same pages as a list"));
-  const ul = el("div", {class: "pagelist"});
-  g.nodes.slice().sort((a, b) => b.deg - a.deg || a.label.localeCompare(b.label))
-    .slice(0, CFG.rowsPerPage)
-    .forEach(nd => ul.append(el("button", {class: "dash-item", onclick: () => openNode(nd)},
-      el("span", {class: "nm"}, nd.label),
-      nd.ghost ? el("span", {class: "chip"}, "no page yet") : null,
-      el("span", {class: "chip"}, nd.deg + " link" + (nd.deg === 1 ? "" : "s")))));
+  const ranked = g.nodes.slice().sort((a, b) => b.deg - a.deg || a.label.localeCompare(b.label));
+  const ul = pagedCard(ranked, nd => el("button", {class: "dash-item", onclick: () => openNode(nd)},
+    el("span", {class: "nm"}, nd.label),
+    nd.ghost ? el("span", {class: "chip"}, "no page yet") : null,
+    el("span", {class: "chip"}, nd.deg + " link" + (nd.deg === 1 ? "" : "s"))));
+  ul.className = "pagelist";
   list.append(ul);
   c.append(list);
   return c;
@@ -6464,10 +6502,9 @@ function viewChat() {
     return c;
   }
 
-  const card = el("div", {class: "card"});
-  for (const t of shown) {
-    card.append(el("button", {class: "chatrow" + (t.unread ? " unread" : ""),
-      onclick: () => openPageIn(t.space, t.path) && null},
+  // Clicking a row lands on the task, not merely the page it sits in.
+  const chatRow = t => el("button", {class: "chatrow" + (t.unread ? " unread" : ""),
+      onclick: () => inSpace(t.space, () => openTaskDetail(t.path, t.block, t.space))},
       avatarNode(msgAuthor(t.last), 34),
       el("div", {class: "chatrow-main"},
         el("div", {class: "chatrow-top"},
@@ -6480,15 +6517,9 @@ function viewChat() {
         el("div", {class: "chatrow-where"}, t.where)),
       el("div", {class: "chatrow-marks"},
         t.unread ? el("span", {class: "chip msg b unread"}, t.unread + " new") : null,
-        t.flagged ? el("span", {class: "chip flagged"}, "\u2691 " + t.flagged) : null)));
-  }
-  // Clicking a row should land on the task, not merely the page it sits in.
-  card.querySelectorAll(".chatrow").forEach((node, i) => {
-    const t = shown[i];
-    node.onclick = () => inSpace(t.space, () => openTaskDetail(t.path, t.block, t.space));
-  });
+        t.flagged ? el("span", {class: "chip flagged"}, "\u2691 " + t.flagged) : null));
   c.append(section(mode === "all" ? "Conversations" : CHAT_FILTERS.find(f => f[0] === mode)[1],
-                   shown.length, card));
+                   shown.length, pagedCard(shown, chatRow)));
   return c;
 }
 
@@ -7700,24 +7731,32 @@ function stateFilterBar(acts) {
    broken, however correct the contents. The counts in the headings are still
    the true totals; only the rows are rationed. */
 function taskCard(actions, emptyText) {
+  return pagedCard(actions, taskRow, emptyText);
+}
+
+/* The same rationing, for a list of anything that is not a task: pages,
+   conversations, health findings. Everything that draws a long list goes
+   through here, so "show all" means the same thing wherever you press it. */
+function pagedCard(items, makeRow, emptyText, step) {
   const card = el("div", {class: "card"});
-  if (!actions.length) {
+  if (!items.length) {
     card.append(el("div", {class: "empty"}, emptyText || "Nothing here."));
     return card;
   }
+  const n = step || CFG.rowsPerPage;
   let drawn = 0;
-  const more = el("button", {class: "showmore"});
-  const draw = () => {
-    const upto = Math.min(actions.length, drawn + CFG.rowsPerPage);
-    for (let i = drawn; i < upto; i++) card.insertBefore(taskRow(actions[i]), more);
+  const drawTo = upto => {
+    for (let i = drawn; i < upto; i++) card.insertBefore(makeRow(items[i], i), more);
     drawn = upto;
-    const left = actions.length - drawn;
+    const left = items.length - drawn;
     if (!left) { more.remove(); return; }
-    more.textContent = "Show " + Math.min(left, CFG.rowsPerPage) + " more \u00B7 " + left + " below";
+    more.set("Show " + Math.min(left, n) + " more \u00B7 " + left + " below",
+             left > n ? "Show all " + items.length : "");
   };
-  more.onclick = e => { e.stopPropagation(); draw(); };
+  const more = moreRow(() => drawTo(Math.min(items.length, drawn + n)),
+                       () => drawTo(items.length));
   card.append(more);
-  draw();
+  drawTo(Math.min(items.length, n));
   return card;
 }
 
@@ -8008,14 +8047,10 @@ function viewProjects() {
 function viewPages(filterFn, title, mkNew) {
   const c = el("div", {class: "wrap"});
   const paths = allPages(filterFn).sort((a, b) => pageTitle(a).localeCompare(pageTitle(b)));
-  const card = el("div", {class: "card"});
-  if (!paths.length) card.append(el("div", {class: "empty"}, "Nothing here yet."));
-  for (const p of paths) {
-    card.append(el("button", {class: "prow", onclick: () => openPage(p)},
-      el("span", {class: "st st-2"}, pageRef(p).split("/")[0].slice(0, 1)),
-      el("span", {class: "nm"}, pageTitle(p)),
-      el("span", {class: "sub"}, p)));
-  }
+  const card = pagedCard(paths, p => el("button", {class: "prow", onclick: () => openPage(p)},
+    el("span", {class: "st st-2"}, pageRef(p).split("/")[0].slice(0, 1)),
+    el("span", {class: "nm"}, pageTitle(p)),
+    el("span", {class: "sub"}, p)), "Nothing here yet.");
   c.append(section(title, paths.length, card,
     mkNew ? el("button", {class: "btn sm ghost", style: "margin-left:auto", onclick: mkNew}, "+ new") : null));
   return c;
@@ -8029,12 +8064,9 @@ function viewHealth() {
   for (const i of issues) { if (!byType.has(i.type)) byType.set(i.type, []); byType.get(i.type).push(i); }
   if (!issues.length) c.append(section("Health", 0, el("div", {class: "card"}, el("div", {class: "empty"}, "System healthy."))));
   for (const [type, items] of byType) {
-    const card = el("div", {class: "card"});
-    for (const i of items) {
-      card.append(el("button", {class: "dash-item", onclick: () => openPage(i.path)},
-        el("span", {}, i.text), el("span", {class: "p"}, i.path)));
-    }
-    c.append(section(type.replace(/-/g, " "), items.length, card));
+    c.append(section(type.replace(/-/g, " "), items.length,
+      pagedCard(items, i => el("button", {class: "dash-item", onclick: () => openPage(i.path)},
+        el("span", {}, i.text), el("span", {class: "p"}, i.path)))));
   }
   const dupes = duplicateProjects();
   if (dupes.length) {

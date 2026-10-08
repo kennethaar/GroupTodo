@@ -678,12 +678,19 @@ element was created, no inline handler survived.
 **Lists are rationed, not unbounded.** Drawing every open task used to take
 3.7 seconds at five thousand of them and 10.7 at twenty thousand, with a
 quarter of a million DOM nodes. Rows are drawn 100 at a time and project
-sections 100 at a time, with the rest one click away and the headings still
-showing true totals: 160ms and 3,400 nodes at the same twenty thousand. The
-board draws 100 cards a column (12 on a phone, where they are stacked and you
-would otherwise scroll past the first column to reach the second), and the graph
-draws the 200 best-connected pages and says how many it left out — past that it
-stops being a picture of anything.
+sections 100 at a time, with the headings still showing true totals: 160ms and
+3,400 nodes at the same twenty thousand. The board draws 100 cards a column (12
+on a phone, where they are stacked and you would otherwise scroll past the first
+column to reach the second), and the graph draws the 200 best-connected pages
+and says how many it left out — past that it stops being a picture of anything.
+
+Every rationed list ends in the same two buttons: **Show 100 more · 400 below**,
+and **Show all 500**. The cap is there because drawing everything was slow, not
+because you are not allowed to see it, so wanting the whole list costs one
+press rather than five. The second button only appears when it would do
+something the first one would not. Tasks, project sections, board columns,
+conversations, pages, health findings and the list under the graph all go
+through the same code, so it means the same thing wherever you press it.
 
 **The whole-vault questions are asked once per render.** What is open, who is
 here, where the conversations are — the sidebar alone used to ask three of them
