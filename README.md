@@ -129,6 +129,18 @@ do not have to open it to find out. A task with no date at all gets no bar: it
 is counted underneath instead, because an invented span reads exactly like a
 real one.
 
+**Bars move.** Drag one along to reschedule it, drag either end to change when
+it starts or when it is due, and drag a *project* bar to take the whole project
+with it — every open, dated task inside keeps its shape and shifts together.
+The dates follow the pointer while you drag, and nothing is written until you
+let go, so a drag across three months is one edit to the file rather than
+ninety. A drag only ever writes `SCHEDULED::` and `DEADLINE::`, which is where
+the plan already lived; `Added::` is history and is never rewritten, so a task
+captured in March that you push to May still says it was captured in March.
+Closed tasks have no handles: their end is the day somebody ticked them off,
+and dragging that would be editing the past. On a keyboard, focus a row and use
+`Alt+←` / `Alt+→` to move it a day, with `Shift` for a week.
+
 **Report** — what actually got finished, over the last month, quarter, two
 quarters or year, filterable by person. It reads `done_by::`, which is stamped
 on the tick, so nothing new is recorded to make this work; the rows are grouped
@@ -140,6 +152,92 @@ dropped.
 
 All six are in **Views** in the sidebar, or `v b`, `v c`, `v g`, `v t` and
 `v r`.
+
+### Projects that have to happen in order
+
+The survey comes before the drawings, the drawings before the quote. Until you
+write that down it lives in somebody's head, and a project sits at the top of
+*Active* looking perfectly startable while the thing it actually waits on has
+not been touched.
+
+On any project page: **nothing comes first** (or **after …**, once there is
+something) opens a list of your other projects. Tick what has to finish first.
+It is saved as one line of ordinary markdown —
+
+```
+depends_on:: [[1/site-survey]], [[1/planning-permission]]
+```
+
+— so the order travels with the files and reads fine in Notepad. A project
+that would end up depending on itself, however long the way round, is not
+offered; the cycle check runs before the list is drawn rather than after you
+have saved.
+
+What it then buys you:
+
+- The project page says **blocked by Site survey** while a prerequisite still
+  has anything open, and **N projects waiting on this** on the other side of
+  the arrow.
+- On the **Timeline**, prerequisites are joined to what they gate with an
+  elbowed arrow, and a marker sits on the track at the first day the chain
+  allows the project to start. If the bar starts before that marker, the
+  overlapping part is hatched and the arrow turns red — it is scheduled to
+  happen during something it is supposed to be waiting for.
+- Drag a project bar and anything downstream that no longer fits offers to
+  move with it: *"2 projects downstream now start too early — push them
+  along"*. Offered, never done quietly. Moving your own project is your
+  decision; moving four more is a different decision.
+- The **starts N days too early** button on the project page pushes just that
+  one project clear of what it waits on.
+
+A prerequisite counts as cleared when it has nothing open left, or once it is
+filed as completed or cancelled. *Someday/maybe* does **not** clear it — a
+project waiting on something nobody intends to start is exactly what you want
+told about.
+
+### Waiting for an update from somebody who does not use this
+
+Half of a shared list is work other people owe you, and most of those people
+are not in your folder and are not going to be. *Waiting for* already knew what
+they owed; what it could not do was ask. So you wrote the same mail by hand
+every fortnight, pasted four task titles into it, and typed the answers back in
+one task at a time.
+
+One file does the round trip now. There is [a mockup of the whole
+exchange](docs/check-in-sheet-mockup.html) — open it in a browser and tap the
+rows.
+
+1. **Ask.** **People** → the person → **Ask … for an update**. Everything open
+   with their name on it is already listed and already ticked. Untick anything
+   you would rather not raise, and press **Make the sheet**.
+2. **Send.** You get `grouptodo-check-in-mia-halvorsen.html` — one
+   self-contained page, no network, no libraries, no fonts to fetch. Email it,
+   Teams it, drop it in a share. Nothing is uploaded anywhere.
+3. **They tick.** They double-click it and it opens in whatever browser they
+   have. One tap per thing they finished, a note where a note is worth typing,
+   then one button. That writes a small markdown file — readable in any editor,
+   so it survives being pasted into the body of an email. Their ticks are kept
+   in their browser, so closing it halfway through costs nothing.
+4. **Import.** Open their file here — **Vault & sync → Open vault file**, or
+   **Import their reply** on their page. You get a review listing exactly what
+   will change, with every row droppable, before anything is applied.
+
+Applying it closes the tasks they ticked, stamped `done_by:: Mia Halvorsen`,
+and files their notes as ordinary comments on the tasks **in their name**, so
+the thread reads like they said it — because they did. Anything they left
+unticked is left alone.
+
+**The sheet is not a copy of your vault.** It carries the lines you chose and
+nothing else: no project names, no colleagues, no other tasks, no files.
+Somebody forwarding it leaks four sentences, not a space. It also never needs
+an account, a login or a server — the same bargain as the rest of GroupTodo.
+
+Sending one stamps `asked:: <your name> <when>` on each task, so *People* can
+tell you *"3 things owing · asked 11d ago"* rather than making you remember,
+and the nudge **people to send a check-in to** counts anybody who has gone
+quiet past the two-week mark. The stamp is dropped the moment they answer:
+"asked and heard nothing" is the thing worth measuring, and once they have
+replied there is nothing outstanding to measure.
 
 ### Linking to a task from anywhere else
 
@@ -328,6 +426,8 @@ icon.svg               that icon
 index.html             two lines, so a hosted copy answers at https://host/
 serve.py               optional sync server (a laptop, a Pi, a NAS, Termux)
 docs/setup-sheet.html  the two-minute sheet to hand to colleagues
+docs/check-in-sheet-mockup.html
+                       a working mockup of the waiting-for-updates exchange
 ```
 
 `grouptodo.html` alone is the whole app — named so it still means something in a
@@ -616,13 +716,16 @@ title:: Fix the sink
 status:: 1 = active
 outcome:: Sink repaired, no drip
 area:: [[a/Home]]
+depends_on:: [[1/Survey the bathroom]]
 updated:: 2026-10-05T09:12:00Z
 
 - TODO Call the plumber about the leak [[c/phone]]
   Added:: [[2026-10-01]]
   SCHEDULED:: [[2026-10-08]]
+  DEADLINE:: [[2026-10-15]]
 - TODO Chase the quote [[c/phone]]
   assigned:: Alice
+  asked:: Kenneth Aar 2026-10-02T08:30:00Z
 - DONE Buy pipe tape [[c/errand]]
   Added:: [[2026-09-10]] - [[2026-09-12]] = 2 days
 ```
@@ -630,6 +733,17 @@ updated:: 2026-10-05T09:12:00Z
 `assigned::` is who is doing it; absent means you. Somebody in the space keeps it
 a live task in their name and puts it in your *Waiting for*; anybody else makes
 it a `WAIT`.
+
+`depends_on::` on a project page is the order projects have to happen in: a
+comma-separated list of ordinary wiki links to the projects that must finish
+first. The links resolve by slug across every status directory, so moving a
+prerequisite from `1/` to `0/` does not break the chain.
+
+`asked::` records that you sent somebody a check-in sheet about this task, and
+is dropped the moment they reply.
+
+`SCHEDULED::` is when it starts, `DEADLINE::` when it is due, and those two are
+the only properties dragging a bar on the **Timeline** ever writes.
 
 States: `TODO`, `DOING`, `WAIT`, `DONE`, `CANCELLED` (`WAITING`/`CANCELED`/`NOW`/
 `LATER` read as aliases), or **no state at all** — an ordinary note.
@@ -671,6 +785,12 @@ tasks, simple mode shows no hygiene nudges at all.
 - **Weekly review** only becomes due once a week of actual use has passed.
 - **Stuck projects**: active, with nothing actionable left. The classic trap.
 - **Waiting too long**: a `WAIT` older than `CFG.waitFollowUpDays` (14).
+- **People to send a check-in to**: somebody outside the space owes you
+  something you have never asked about, or asked about more than
+  `CFG.waitFollowUpDays` ago. Clicking it opens the sheet for them.
+- **Blocked projects**: a project whose `depends_on::` prerequisite is still
+  open says so on its own page, and the Timeline hatches a bar that is
+  scheduled to run during something it is waiting for.
 
 Two front doors over the same files: **Simple** reads like a to-do app,
 **Advanced** like an outliner with journals, `[[links]]`, backlinks and zettel.

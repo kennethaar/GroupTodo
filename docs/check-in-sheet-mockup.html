@@ -1,0 +1,343 @@
+<title>Check-in Sheet</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one narrow column. Three stacked panes — the flow, the colleague's
+   sheet, your import review — each a device-framed slab so it is obvious which
+   side of the exchange you are looking at. Same faces as docs/setup-sheet.html
+   so the two reading cards look like one family. */
+:root{
+  --paper:#f7f8f9; --card:#fff; --sunk:#eef1f4;
+  --ink:#15202b; --ink-soft:#51606e; --ink-faint:#8696a4; --rule:#dde3e8;
+  --accent:#1f6fd0; --accent-soft:#e8f1fc; --accent-fg:#fff;
+  --good:#1a7f4f; --good-soft:#e4f4ec;
+  --flag:#9a6100; --flag-soft:#fdf2dd;
+  --display:"Bitter",Georgia,"Times New Roman",serif;
+  --body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono","Cascadia Mono",Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#11161b; --card:#1a2128; --sunk:#141a20;
+  --ink:#e8eef3; --ink-soft:#a8b7c4; --ink-faint:#76858f; --rule:#2b353f;
+  --accent:#76b2f5; --accent-soft:#16293d; --accent-fg:#0d1319;
+  --good:#5cc08c; --good-soft:#142a1f; --flag:#e0b050; --flag-soft:#2b2312;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --paper:#11161b; --card:#1a2128; --sunk:#141a20;
+  --ink:#e8eef3; --ink-soft:#a8b7c4; --ink-faint:#76858f; --rule:#2b353f;
+  --accent:#76b2f5; --accent-soft:#16293d; --accent-fg:#0d1319;
+  --good:#5cc08c; --good-soft:#142a1f; --flag:#e0b050; --flag-soft:#2b2312;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);
+  font-size:16px;line-height:1.55;margin:0}
+.page{max-width:720px;margin:0 auto;padding-block:34px 70px;padding-left:18px;padding-right:18px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,5.4vw,36px);
+  line-height:1.15;margin:0 0 8px;text-wrap:balance;letter-spacing:-.01em}
+h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 4px;text-wrap:balance}
+.lede{color:var(--ink-soft);font-size:17px;margin:0 0 6px;max-width:60ch}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-faint);margin:0 0 10px}
+.sec{margin-top:40px}
+.sec > p{color:var(--ink-soft);max-width:62ch}
+hr{border:0;border-top:1px solid var(--rule);margin:40px 0 0}
+
+/* --- the four steps: a real sequence, so it is numbered --- */
+.flow{display:grid;gap:10px;margin:18px 0 0;padding:0;list-style:none;counter-reset:f}
+.flow li{counter-increment:f;display:grid;grid-template-columns:28px 1fr;gap:12px;
+  align-items:start;background:var(--card);border:1px solid var(--rule);
+  border-radius:9px;padding:12px 14px}
+.flow li::before{content:counter(f);font-family:var(--mono);font-size:12px;font-weight:500;
+  display:grid;place-items:center;width:26px;height:26px;border-radius:50%;
+  background:var(--accent-soft);color:var(--accent)}
+.flow b{display:block;font-weight:600}
+.flow small{color:var(--ink-faint);font-size:13.5px;display:block}
+.who{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-faint)}
+
+/* --- device frame --- */
+.frame{margin-top:18px;border:1px solid var(--rule);border-radius:13px;overflow:hidden;
+  background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.05),0 8px 26px -18px rgba(0,0,0,.35)}
+.chrome{display:flex;align-items:center;gap:7px;padding:9px 12px;background:var(--sunk);
+  border-bottom:1px solid var(--rule)}
+.chrome i{width:9px;height:9px;border-radius:50%;background:var(--rule);flex:none}
+.chrome span{font-family:var(--mono);font-size:11px;color:var(--ink-faint);
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pane{padding:20px 18px}
+
+/* --- the sheet the colleague sees --- */
+.sheet-head{border-bottom:1px solid var(--rule);padding-bottom:14px;margin-bottom:4px}
+.sheet-head h3{font-family:var(--display);font-size:21px;margin:0 0 4px}
+.sheet-head p{margin:0;color:var(--ink-soft);font-size:15px}
+.rows{list-style:none;margin:0;padding:0}
+.row{border-bottom:1px solid var(--rule)}
+.hit{display:grid;grid-template-columns:26px 1fr;gap:12px;align-items:start;width:100%;
+  text-align:left;background:none;border:0;padding:14px 2px;cursor:pointer;
+  color:inherit;font:inherit;font-size:15.5px}
+.hit:hover{background:var(--accent-soft)}
+.hit:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:6px}
+.box{width:23px;height:23px;border-radius:6px;border:1.6px solid var(--ink-faint);
+  display:grid;place-items:center;font-size:14px;color:transparent;margin-top:1px;
+  transition:background .12s,border-color .12s}
+.row.done .box{background:var(--good);border-color:var(--good);color:#fff}
+.ttl{min-width:0}
+.row.done .ttl > span:first-child{text-decoration:line-through;color:var(--ink-faint)}
+.meta{display:block;color:var(--ink-faint);font-size:12.5px;font-family:var(--mono);margin-top:2px}
+.noteline{padding:0 2px 14px 40px}
+.notebtn{background:none;border:0;padding:0;font:inherit;font-size:13px;color:var(--accent);
+  cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.noteline textarea{width:100%;margin-top:6px;font:inherit;font-size:14.5px;padding:9px 10px;
+  border:1px solid var(--rule);border-radius:7px;background:var(--paper);color:var(--ink);
+  resize:vertical;min-height:62px}
+.noteline textarea:focus-visible{outline:2px solid var(--accent);outline-offset:-1px}
+.sheet-foot{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding-top:16px}
+.btn{font:inherit;font-size:15px;font-weight:600;padding:11px 18px;border-radius:8px;
+  border:1px solid var(--rule);background:var(--card);color:var(--ink);cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.count{color:var(--ink-faint);font-size:13.5px;font-family:var(--mono);margin-left:auto}
+.sent{margin:14px 0 0;padding:12px 14px;border-radius:8px;background:var(--good-soft);
+  color:var(--good);font-size:14.5px;border:1px solid currentColor}
+
+/* --- your import review --- */
+.imp{list-style:none;margin:0;padding:0}
+.imp li{display:grid;grid-template-columns:1fr auto;gap:10px 14px;align-items:center;
+  padding:12px 0;border-bottom:1px solid var(--rule)}
+.imp .t{min-width:0;font-size:15px}
+.imp .q{display:block;color:var(--ink-soft);font-size:13.5px;font-style:italic;margin-top:3px}
+.pill{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  padding:4px 9px;border-radius:999px;white-space:nowrap;flex:none}
+.pill.done{background:var(--good-soft);color:var(--good)}
+.pill.open{background:var(--flag-soft);color:var(--flag)}
+.note{background:var(--accent-soft);border-left:3px solid var(--accent);padding:12px 14px;
+  border-radius:0 8px 8px 0;margin-top:18px;font-size:14.5px;color:var(--ink-soft)}
+.note b{color:var(--ink)}
+code{font-family:var(--mono);font-size:.88em;background:var(--sunk);padding:1px 5px;
+  border-radius:4px;border:1px solid var(--rule)}
+pre{font-family:var(--mono);font-size:12.5px;background:var(--sunk);border:1px solid var(--rule);
+  border-radius:8px;padding:13px 14px;overflow-x:auto;margin:14px 0 0;color:var(--ink-soft)}
+.clicks{display:grid;gap:8px;margin:16px 0 0;padding:0;list-style:none}
+.clicks li{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:baseline;
+  font-size:15px;padding-bottom:8px;border-bottom:1px dotted var(--rule)}
+.clicks em{font-family:var(--mono);font-style:normal;font-size:12.5px;color:var(--accent);
+  font-weight:500;white-space:nowrap}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="page">
+
+<p class="eyebrow">GroupTodo · mockup</p>
+<h1>Waiting for updates</h1>
+<p class="lede">You are waiting on four things from Mia in Finance. Mia does not use
+GroupTodo and is not going to start today. So you send her one file, she ticks
+what she has done, and her answers come back into your list.</p>
+<p class="lede" style="font-size:15px;color:var(--ink-faint)">No account, no invite, no server — the
+same bargain as the rest of GroupTodo. The file <em>is</em> the round trip.</p>
+
+<div class="sec">
+  <p class="eyebrow">The exchange</p>
+  <h2>Four steps, two of them yours</h2>
+  <ol class="flow">
+    <li><b>Ask <span class="who">· you</span></b>
+      <small>People → Mia Halvorsen → <em>Ask for an update</em>. The four things you are
+      waiting on are already listed and already ticked to include. Press Send.</small></li>
+    <li><b>Send <span class="who">· you</span></b>
+      <small>GroupTodo writes <code>check-in-mia-halvorsen.html</code> — one self-contained
+      file. Email it, Teams it, drop it in a share. Nothing is uploaded anywhere.</small></li>
+    <li><b>Tick <span class="who">· Mia</span></b>
+      <small>She double-clicks the file. It opens in whatever browser she has. She taps the
+      two she finished, types one note, presses <em>Send back</em>. That is it.</small></li>
+    <li><b>Import <span class="who">· you</span></b>
+      <small>Her reply file lands in your inbox. Open it in GroupTodo and you get this
+      review: two tasks to close, one comment to file. Press Apply.</small></li>
+  </ol>
+</div>
+
+<hr>
+
+<div class="sec">
+  <p class="eyebrow">Step 3 · what Mia opens</p>
+  <h2>The check-in sheet</h2>
+  <p>Working mockup — tap the rows. One tap per finished task, nothing to read, nothing to
+  sign up for. The sheet remembers her ticks if she closes it halfway through.</p>
+
+  <div class="frame">
+    <div class="chrome"><i></i><i></i><i></i><span>file:///C:/Users/mia/Downloads/check-in-mia-halvorsen.html</span></div>
+    <div class="pane">
+      <div class="sheet-head">
+        <h3>Hei Mia 👋</h3>
+        <p><b>Kenneth Aar</b> is waiting on <b>4 things</b> from you. Tick what is done.
+        Everything else he will assume is still coming.</p>
+      </div>
+      <ul class="rows" id="rows"></ul>
+      <div class="sheet-foot">
+        <button class="btn primary" id="send">Send back to Kenneth</button>
+        <button class="btn" id="copy">Copy as text</button>
+        <span class="count" id="count"></span>
+      </div>
+      <p class="sent" id="sent" hidden></p>
+    </div>
+  </div>
+</div>
+
+<div class="sec">
+  <p class="eyebrow">Step 4 · what you open</p>
+  <h2>The import review</h2>
+  <p>Her answers are never applied behind your back. You see exactly what will change,
+  and you can drop any row before it lands.</p>
+
+  <div class="frame">
+    <div class="chrome"><i></i><i></i><i></i><span>GroupTodo — Mia Halvorsen replied · 2026-10-08</span></div>
+    <div class="pane">
+      <ul class="imp">
+        <li><div class="t">Send Q3 VAT figures to the accountant
+          <span class="q">“Sent Monday, she has them.”</span></div>
+          <span class="pill done">close it</span></li>
+        <li><div class="t">Approve the Bergen travel claim</div>
+          <span class="pill done">close it</span></li>
+        <li><div class="t">Confirm the supplier bank details
+          <span class="q">“Waiting on the bank, probably Friday.”</span></div>
+          <span class="pill open">comment only</span></li>
+        <li><div class="t">Sign the lease addendum</div>
+          <span class="pill open">no answer</span></li>
+      </ul>
+      <div class="sheet-foot">
+        <button class="btn primary">Apply 2 closes, 2 comments</button>
+        <button class="btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="note"><b>What Apply writes.</b> The two finished tasks go to <code>DONE</code>
+  with <code>done_by:: Mia Halvorsen</code>. Both of her notes are posted as ordinary
+  comments on their tasks, authored by her, so the thread reads like she said it —
+  because she did. The task she did not answer is left alone, and its
+  <code>asked::</code> stamp stays, so <em>Waiting for</em> can tell you it has been
+  eleven days since you asked.</div>
+
+  <pre>- WAIT Confirm the supplier bank details
+  waiting_on:: Mia Halvorsen
+  asked:: Mia Halvorsen 2026-09-27T09:12:00Z
+  - Waiting on the bank, probably Friday.
+    msg:: Mia Halvorsen
+    at:: 2026-10-08T07:41:00Z</pre>
+</div>
+
+<hr>
+
+<div class="sec">
+  <p class="eyebrow">The point</p>
+  <h2>The click count</h2>
+  <ul class="clicks">
+    <li><em>3 clicks</em> <span>for you to ask — person, <em>Ask for an update</em>, Send.</span></li>
+    <li><em>1 click</em> <span>per thing Mia finished. Unfinished things cost her nothing.</span></li>
+    <li><em>1 click</em> <span>for Mia to send it back.</span></li>
+    <li><em>2 clicks</em> <span>for you to import — open the file, Apply.</span></li>
+    <li><em>0 accounts</em> <span>created, on either side, ever.</span></li>
+  </ul>
+</div>
+
+</div>
+
+<script>
+var TASKS = [
+  {id:"t1", title:"Send Q3 VAT figures to the accountant", asked:"asked 11 days ago", note:"Sent Monday, she has them.", done:true},
+  {id:"t2", title:"Approve the Bergen travel claim",       asked:"asked 4 days ago",  note:"", done:true},
+  {id:"t3", title:"Confirm the supplier bank details",     asked:"asked 11 days ago", note:"Waiting on the bank, probably Friday.", done:false},
+  {id:"t4", title:"Sign the lease addendum",               asked:"asked 2 days ago",  note:"", done:false}
+];
+var KEY = "gtd-mockup-sheet";
+try{
+  var saved = JSON.parse(localStorage.getItem(KEY) || "null");
+  if (saved) TASKS.forEach(function(t){ if (saved[t.id]) { t.done = !!saved[t.id].done; t.note = saved[t.id].note || ""; } });
+}catch(e){}
+function save(){
+  try{
+    var o = {};
+    TASKS.forEach(function(t){ o[t.id] = {done:t.done, note:t.note}; });
+    localStorage.setItem(KEY, JSON.stringify(o));
+  }catch(e){}
+}
+var rows = document.getElementById("rows");
+var countEl = document.getElementById("count");
+var sentEl = document.getElementById("sent");
+
+function count(){
+  var n = TASKS.filter(function(t){ return t.done; }).length;
+  countEl.textContent = n + " of " + TASKS.length + " done";
+}
+function draw(){
+  rows.textContent = "";
+  TASKS.forEach(function(t){
+    var li = document.createElement("li");
+    li.className = "row" + (t.done ? " done" : "");
+
+    var hit = document.createElement("button");
+    hit.className = "hit";
+    hit.type = "button";
+    hit.setAttribute("aria-pressed", String(t.done));
+    var box = document.createElement("span");
+    box.className = "box"; box.textContent = "\u2713"; box.setAttribute("aria-hidden","true");
+    var ttl = document.createElement("span");
+    ttl.className = "ttl";
+    var name = document.createElement("span"); name.textContent = t.title;
+    var meta = document.createElement("span"); meta.className = "meta"; meta.textContent = t.asked;
+    ttl.appendChild(name); ttl.appendChild(meta);
+    hit.appendChild(box); hit.appendChild(ttl);
+    hit.addEventListener("click", function(){ t.done = !t.done; save(); draw(); count(); });
+    li.appendChild(hit);
+
+    var nl = document.createElement("div");
+    nl.className = "noteline";
+    if (t.note || t.open) {
+      var ta = document.createElement("textarea");
+      ta.value = t.note;
+      ta.placeholder = "Anything Kenneth should know (optional)";
+      ta.setAttribute("aria-label", "Note on: " + t.title);
+      ta.addEventListener("input", function(){ t.note = ta.value; save(); });
+      nl.appendChild(ta);
+    } else {
+      var b = document.createElement("button");
+      b.className = "notebtn"; b.type = "button"; b.textContent = "Add a note";
+      b.addEventListener("click", function(){ t.open = true; draw(); });
+      nl.appendChild(b);
+    }
+    li.appendChild(nl);
+    rows.appendChild(li);
+  });
+}
+function replyText(){
+  var lines = ["Reply from Mia Halvorsen - " + new Date().toISOString().slice(0,10), ""];
+  TASKS.forEach(function(t){
+    lines.push((t.done ? "[x] " : "[ ] ") + t.title + (t.note ? "  -- " + t.note : ""));
+  });
+  lines.push("", "<!-- gtd:reply v1 -->", JSON.stringify({
+    from:"Mia Halvorsen",
+    at:new Date().toISOString().replace(/\.\d+Z$/,"Z"),
+    items:TASKS.map(function(t){ return {id:t.id, done:t.done, note:t.note}; })
+  }, null, 1));
+  return lines.join("\n");
+}
+document.getElementById("send").addEventListener("click", function(){
+  sentEl.hidden = false;
+  var n = TASKS.filter(function(t){ return t.done; }).length;
+  sentEl.textContent = "In the real sheet this saves reply-mia-halvorsen.md — "
+    + n + " ticked, " + TASKS.filter(function(t){ return !!t.note; }).length
+    + " noted — and opens your mail app with it ready to attach.";
+});
+document.getElementById("copy").addEventListener("click", function(){
+  var txt = replyText();
+  var btn = document.getElementById("copy");
+  var done = function(){ btn.textContent = "Copied"; setTimeout(function(){ btn.textContent = "Copy as text"; }, 1600); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(done, function(){ showFallback(txt); });
+  } else showFallback(txt);
+});
+function showFallback(txt){
+  sentEl.hidden = false;
+  sentEl.textContent = "Copying was refused here. The reply is plain text — select it from the pre block above in the real sheet.";
+}
+draw(); count();
+</script>

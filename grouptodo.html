@@ -429,8 +429,47 @@ header.top .burger{display:none}
 .gbar.CANCELLED{background:var(--cancel);opacity:.5}
 .gbar.late{background:var(--late)}
 .glabelin{font-size:10.5px;color:var(--accent-fg);padding:0 6px;white-space:nowrap;
-  overflow:hidden;text-overflow:ellipsis}
+  min-width:0;overflow:hidden;text-overflow:ellipsis}
 .grow.group .gbar{height:11px;top:9px;border-radius:3px;opacity:.85}
+/* ---------- dragging a bar, and the chain between projects ----------
+   A bar you can move has to look like one before it is touched: the grab
+   cursor and the two end handles are the whole affordance. touch-action is
+   what stops a drag on a phone from scrolling the page instead. */
+.gbar.movable{cursor:grab;touch-action:none}
+.gbar.movable:active,.gbar.dragging{cursor:grabbing}
+.gbar.dragging{box-shadow:0 0 0 2px var(--accent);z-index:4;opacity:.95}
+.grow.movable:focus-visible .gbar{box-shadow:0 0 0 2px var(--accent)}
+.ghandle{position:absolute;top:0;bottom:0;width:9px;cursor:ew-resize;
+  touch-action:none;opacity:0;background:var(--accent)}
+.ghandle.l{left:0}
+.ghandle.r{right:0}
+.gbar.movable:hover .ghandle,.gbar.dragging .ghandle{opacity:.55}
+.ghandle:hover{opacity:.95!important}
+/* The dates follow the pointer while the bar moves, because a bar halfway
+   between two month ticks does not tell you which day you have landed on. It
+   is fixed to the window rather than parented to the bar: .gtrack clips, so a
+   label sitting above a bar would be sliced off at the row boundary. */
+.gtip{position:fixed;z-index:80;transform:translate(-50%,-150%);
+  font-family:var(--mono);font-size:11px;white-space:nowrap;padding:3px 7px;
+  border-radius:5px;background:var(--fg);color:var(--bg);pointer-events:none;
+  box-shadow:0 2px 8px rgba(0,0,0,.3)}
+/* The part of a bar standing to the left of its gate: it is scheduled during
+   something it is supposed to be waiting for. */
+.gbar.clash{background-image:repeating-linear-gradient(135deg,
+  rgba(0,0,0,0) 0 5px, rgba(255,255,255,.38) 5px 10px)}
+.ggate{position:absolute;top:2px;bottom:2px;width:2px;background:var(--fg3);opacity:.7}
+.ggate::after{content:"";position:absolute;top:0;left:-3px;border-left:4px solid transparent;
+  border-right:4px solid transparent;border-top:5px solid var(--fg3)}
+.ggate.bad,.ggate.bad::after{background:var(--late);border-top-color:var(--late)}
+.gdep{color:var(--fg3);font-size:11px;flex:none;cursor:help}
+.glinks{position:absolute;inset:0;pointer-events:none;z-index:3}
+.gbody{position:relative}
+.garrows{position:absolute;top:0;left:0;overflow:visible}
+.garrow{fill:none;stroke:var(--fg3);stroke-width:1.2;opacity:.75}
+.garrow.bad{stroke:var(--late);opacity:.95}
+.garrowhead{fill:var(--fg3);opacity:.75}
+.garrowhead.bad{fill:var(--late);opacity:.95}
+
 @media (max-width:700px){
   /* A 230px label beside a track leaves no track. Half the width, smaller type. */
   .gantt{--glabelw:118px}
@@ -438,6 +477,9 @@ header.top .burger{display:none}
   .glabel.sub{padding-left:14px}
   .glabel .n{display:none}
   .glabelin{display:none}
+  /* Fingers, not a mouse: the handles stay out but the bar itself is the
+     target, and 11px of grab area either side of a 16px bar is a trap. */
+  .ghandle{display:none}
 }
 
 /* ---------- report ---------- */
@@ -618,6 +660,10 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4p
   display:flex;align-items:center;gap:11px;width:100%;padding:9px 16px;text-align:left;font-size:14px;color:var(--fg2);
 }
 .pick:hover,.pick.cur{background:var(--bg3);color:var(--fg)}
+/* A row that holds its own buttons cannot itself be one, so the name inside it
+   carries the link instead -- same hit area, same look, one fewer nested button. */
+.linky{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;min-width:0}
+.linky:hover{color:var(--accent)}
 .pick .k{
   font-family:var(--mono);font-size:11px;width:20px;height:20px;border-radius:5px;flex:none;
   background:var(--bg4);color:var(--fg3);display:grid;place-items:center;
@@ -3544,6 +3590,157 @@ function openOutcomePrompt(path, then) {
 }
 
 /* ============================================================
+   74b_PROJECT_CHAINS -- "this one cannot start until that one is finished"
+   A plan is rarely a flat list of projects. The survey comes before the
+   drawings, the drawings before the quote, the quote before the work. Until
+   now that order lived in somebody's head, so a project could sit at the top
+   of Active looking perfectly startable while the thing it actually waits on
+   had not been touched.
+
+   Stored as depends_on:: on the page, as ordinary wiki links -- the same shape
+   outcome:: and area:: already use -- so the order is greppable markdown and
+   survives the app. The links go through findExistingPage, which falls back to
+   the slug across every status directory, so moving a prerequisite from 1/ to
+   0/ does not break the chain.
+   ============================================================ */
+const DEPENDS_PROP = "depends_on";
+
+/* The prerequisites of one project, as paths. Links that no longer resolve are
+   dropped rather than reported: a page somebody deleted is not a blocker. */
+function dependsOn(path) {
+  const page = getPage(path); if (!page) return [];
+  const raw = trim(page.props?.[DEPENDS_PROP] || "");
+  if (!raw) return [];
+  const out = [];
+  for (const target of linksIn(raw)) {
+    const p = findExistingPage(trim(target.split("][")[0]));
+    if (p && p !== path && !out.includes(p)) out.push(p);
+  }
+  return out;
+}
+
+function writeDependsOn(path, paths) {
+  const page = getPage(path); if (!page) return;
+  const links = paths.map(p => "[[" + pageRef(p) + "]]");
+  if (links.length) page.props[DEPENDS_PROP] = links.join(", ");
+  else for (const k of Object.keys(page.props)) if (k.toLowerCase() === DEPENDS_PROP) delete page.props[k];
+  touch(path);
+}
+
+/* Everything that waits on this project. Only within the space: a chain that
+   crossed spaces would be a chain you cannot see both ends of. */
+const dependentsOf = path => memo("dependents:" + path, () =>
+  allPages(p => statusDirOf(p) && dependsOn(p).includes(path)));
+
+/* A -> B -> A would make "when can this start" unanswerable, and the honest
+   place to refuse it is the moment somebody draws the second arrow. */
+function wouldCycle(path, candidate) {
+  if (candidate === path) return true;
+  const seen = new Set();
+  const walk = p => {
+    if (p === path) return true;
+    if (seen.has(p)) return false;
+    seen.add(p);
+    return dependsOn(p).some(walk);
+  };
+  return walk(candidate);
+}
+
+/* A prerequisite is cleared when it has no open task left, or when it has been
+   filed as completed or cancelled. 2/ -- someday -- is NOT cleared: a project
+   waiting on something nobody intends to start is exactly what you want told. */
+function projectCleared(path) {
+  const code = statusDirOf(path);
+  if (code === "0" || code === "_") return true;
+  const page = getPage(path);
+  if (!page) return true;
+  return !flattenBlocks(page.blocks).some(b => OPEN_STATES[b.state] && !isMessage(b));
+}
+
+/* The prerequisites of this project that are not finished yet. */
+const blockersOf = path => dependsOn(path).filter(p => !projectCleared(p));
+
+/* The day this project is free to start: the day after its last prerequisite
+   ends. Null when nothing comes first. Uses the same span the timeline draws,
+   so the number on the page and the bar on the chart cannot disagree. */
+function earliestStart(path) {
+  let latest = null;
+  for (const p of dependsOn(path)) {
+    const end = projectEnd(p);
+    if (end && (!latest || end > latest)) latest = end;
+  }
+  return latest ? shiftISO(latest, 1) : null;
+}
+
+/* ---------- the picker ---------- */
+function openDependsPicker(path) {
+  const current = dependsOn(path);
+  const choices = allPages(p => statusDirOf(p) && p !== path && !isHorizonPage(p))
+    .filter(p => current.includes(p) || !wouldCycle(path, p))
+    .sort((a, b) => (statusDirOf(a) + pageTitle(a)).localeCompare(statusDirOf(b) + pageTitle(b)));
+
+  const pick = new Set(current);
+  const card = el("div", {style: "max-height:46vh;overflow:auto"});
+  const summary = el("div", {style: "color:var(--fg3);font-size:12.5px;margin-top:8px"});
+
+  const refresh = () => {
+    summary.textContent = pick.size
+      ? pageTitle(path) + " starts after " + Array.from(pick).map(pageTitle).join(", ")
+      : "Nothing comes first — this project can start whenever you like.";
+  };
+
+  if (!choices.length) card.append(el("div", {class: "empty"},
+    "No other project could come first. Make one and it will show up here."));
+  for (const p of choices) {
+    const on = () => pick.has(p);
+    const box = el("button", {class: "spacetoggle" + (on() ? " on" : ""), onclick: () => {
+      if (on()) pick.delete(p); else pick.add(p);
+      box.className = "spacetoggle" + (on() ? " on" : "");
+      box.textContent = on() ? "✓" : "";
+      refresh();
+    }}, on() ? "✓" : "");
+    card.append(el("div", {style: "display:flex;gap:10px;align-items:center;margin:6px 0"},
+      box,
+      el("div", {style: "min-width:0;flex:1"},
+        el("div", {}, pageTitle(p)),
+        el("div", {style: "color:var(--fg3);font-size:12px"},
+          STATUS_LABEL[statusDirOf(p)] +
+          (projectCleared(p) ? " · finished" : " · still open") +
+          (projectEnd(p) ? " · ends " + projectEnd(p) : "")))));
+  }
+  refresh();
+
+  modal({
+    center: true, title: "What has to finish first?",
+    hint: pageTitle(path),
+    body: el("div", {},
+      el("div", {class: "field"},
+        el("label", {}, "Prerequisites"),
+        card, summary),
+      el("div", {class: "field"},
+        el("div", {style: "color:var(--fg3);font-size:12.5px"},
+          "Saved as depends_on:: on the page — one line of markdown, so the order " +
+          "travels with the files. A project that would depend on itself, however long " +
+          "the way round, is not offered."))),
+    foot: [
+      el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+      el("button", {class: "btn primary", onclick: () => {
+        writeDependsOn(path, Array.from(pick));
+        closeModal();
+        const late = earliestStart(path);
+        const start = projectStart(path);
+        if (late && start && start < late)
+          notify(pageTitle(path) + " now starts before what it waits on. Drag its bar on the " +
+                 "Timeline, or let the chain push it.", "warn",
+                 {label: "Push it", run: () => { pushProjectTo(path, late); render(); }});
+        else notify(pick.size ? "Chain saved." : "Chain cleared.");
+        render();
+      }}, "Save chain"),
+    ],
+  });
+}
+
+/* ============================================================
    72_AREAS -- GTD horizon 2: the responsibilities that never finish.
    Projects finish; areas do not. A project with no area is a project
    nobody owns, which is exactly what the review should surface.
@@ -4012,6 +4209,7 @@ const NUDGE_PLAIN = {
   area   : "projects not under an area",
   goal   : "goals nobody is working on",
   wait   : "people to chase",
+  ask    : "people to send a check-in to",
   late   : "overdue",
   stale  : "projects older than 6 months",
 };
@@ -4111,6 +4309,12 @@ function computeNudges() {
 
   const oldWait = acts.filter(a => a.state === "WAIT" && (a.age ?? 0) >= CFG.waitFollowUpDays);
   push("wait", "warn", "waiting items to chase", oldWait.length, () => go("next"));
+
+  /* Chasing somebody who is not in the space has an answer now, so the nudge
+     can point at the thing that actually moves it rather than at a list. */
+  const toAsk = updatesWorthAsking();
+  push("ask", "warn", "people outside the space to ask for an update", toAsk.length,
+       () => toAsk.length === 1 ? openAskForUpdate(toAsk[0].name) : go("people"));
 
   const noOutcome = projectsWithoutOutcome();
   push("outcome", "warn", "projects with no stated outcome", noOutcome.length,
@@ -6539,10 +6743,18 @@ function viewGraph() {
 }
 
 /* ============================================================
-   GANTT -- the plan laid out in time
+   GANTT -- the plan laid out in time, and movable
    The same tasks again, placed on a calendar line instead of in a list, so
-   overlap and drift are visible rather than inferred. Nothing new is stored:
-   a bar is drawn from what the file already carries.
+   overlap and drift are visible rather than inferred. Reading was all it did
+   at first, which made it the one view where seeing the problem did not let
+   you fix it: you spotted the clash here and went somewhere else to move the
+   date. Now a bar is a handle -- drag it along to reschedule, drag an end to
+   stretch it -- and a project bar drags its whole project with it.
+
+   Nothing is invented by the drag. It writes SCHEDULED:: and DEADLINE:: on the
+   task, which is where the plan already lived; Added:: is history and is never
+   rewritten, so a task captured in March that you push to May still says it
+   was captured in March.
    ============================================================ */
 
 /* A bar needs two ends, and the file does not always have both:
@@ -6564,6 +6776,140 @@ function spanOf(b, journalDay) {
   return {start, end, open};
 }
 
+/* ---------- moving a bar ----------
+   Only an open task can be dragged. A done task's end is the day somebody
+   ticked it off, and dragging that would be editing the past. */
+const canMoveTask = b => !!OPEN_STATES[b.state];
+
+const dropProp = (b, key) => {
+  const k = Object.keys(b.props || {}).find(x => x.toLowerCase() === key.toLowerCase());
+  if (k) delete b.props[k];
+};
+const writeDay = (b, key, iso) => setBlockProp(b, key, "[[" + iso + "]]");
+
+/* Move both ends by the same number of days, writing only the properties the
+   task already had -- plus a SCHEDULED:: when the bar's start was coming from
+   Added::, because that is the one case where there is nothing to shift. */
+function shiftTaskBy(path, b, days) {
+  if (!days || !canMoveTask(b)) return false;
+  const span = spanOf(b, isJournalPath(path) ? baseName(path) : null);
+  if (!span) return false;
+  writeDay(b, "SCHEDULED", shiftISO(span.start, days));
+  if (dateIn(blockProp(b, "DEADLINE"))) writeDay(b, "DEADLINE", shiftISO(span.end, days));
+  return true;
+}
+
+/* Dragging the left edge is "start it later", which is SCHEDULED:: and nothing
+   else. Dragging the right edge is "it has to be finished by", which is a
+   DEADLINE:: -- and a task that had no deadline before now has one, which is
+   the honest reading of somebody pulling its end to a date. */
+function setTaskStart(path, b, iso) {
+  if (!canMoveTask(b)) return false;
+  const span = spanOf(b, isJournalPath(path) ? baseName(path) : null);
+  if (!span) return false;
+  if (iso > span.end) iso = span.end;
+  writeDay(b, "SCHEDULED", iso);
+  return true;
+}
+function setTaskEnd(path, b, iso) {
+  if (!canMoveTask(b)) return false;
+  const span = spanOf(b, isJournalPath(path) ? baseName(path) : null);
+  if (!span) return false;
+  if (iso < span.start) iso = span.start;
+  // An end date on a task whose start was only ever implied would make the bar
+  // jump the moment it is redrawn, so pin the start it is being stretched from.
+  if (!dateIn(blockProp(b, "SCHEDULED"))) writeDay(b, "SCHEDULED", span.start);
+  writeDay(b, "DEADLINE", iso);
+  return true;
+}
+
+/* ---------- a project's own span, and moving all of it ---------- */
+function projectSpan(path) {
+  const page = getPage(path);
+  if (!page) return null;
+  let start = null, end = null;
+  walkBlocks(page.blocks, b => {
+    if (!b.state || isMessage(b)) return;
+    const s = spanOf(b, null);
+    if (!s) return;
+    if (!start || s.start < start) start = s.start;
+    if (!end   || s.end   > end)   end   = s.end;
+  });
+  return start ? {start, end} : null;
+}
+const projectStart = path => (projectSpan(path) || {}).start || null;
+const projectEnd   = path => (projectSpan(path) || {}).end   || null;
+
+/* Everything open and dated in the project moves together, so the shape of the
+   plan inside it survives the move. Closed tasks stay where they happened. */
+function shiftProjectBy(path, days) {
+  if (!days) return 0;
+  const page = getPage(path);
+  if (!page) return 0;
+  let n = 0;
+  walkBlocks(page.blocks, b => {
+    if (!b.state || isMessage(b) || !canMoveTask(b)) return;
+    if (shiftTaskBy(path, b, days)) n++;
+  });
+  if (n) touch(path);
+  return n;
+}
+function pushProjectTo(path, iso) {
+  const start = projectStart(path);
+  if (!start) return 0;
+  const days = dateDiffDays(start, iso);
+  return days > 0 ? shiftProjectBy(path, days) : 0;
+}
+
+/* ---------- the chain, applied to the chart ----------
+   A project that starts before the thing it waits on has finished is the whole
+   reason to record the order, so it is drawn rather than described: the gate
+   marker sits where the prerequisite ends, and the part of the bar standing
+   to the left of it is hatched. */
+function chainTrouble(path) {
+  const need = earliestStart(path);
+  const start = projectStart(path);
+  if (!need || !start || start >= need) return null;
+  return {need, start, days: dateDiffDays(start, need)};
+}
+
+/* Push this project's dependents clear of it, and theirs clear of them. Each
+   pass can only move a project later, so the walk terminates; the cap is there
+   for a chain somebody has managed to make longer than any real plan. */
+function cascadePush(path) {
+  const moved = [];
+  const queue = [path];
+  const seen = new Set();
+  for (let guard = 0; queue.length && guard < 200; guard++) {
+    const from = queue.shift();
+    for (const d of dependentsOf(from)) {
+      const t = chainTrouble(d);
+      if (!t) continue;
+      if (pushProjectTo(d, t.need)) {
+        if (!seen.has(d)) { seen.add(d); moved.push(d); }
+        queue.push(d);
+      }
+    }
+  }
+  return moved;
+}
+
+/* Offered, never done behind your back: moving one project is your decision,
+   and moving four more of somebody else's is a different decision. */
+function offerCascade(space, path) {
+  const waiting = inSpace(space, () =>
+    dependentsOf(path).filter(d => chainTrouble(d)).length);
+  if (!waiting) return;
+  notify(waiting + " project" + (waiting === 1 ? "" : "s") + " downstream now start" +
+         (waiting === 1 ? "s" : "") + " too early.", "warn",
+    {label: "Push them along", run: () => {
+      const moved = inSpace(space, () => cascadePush(path));
+      notify(moved.length ? "Moved " + moved.map(p => inSpace(space, () => pageTitle(p))).join(", ") + "."
+                          : "Nothing needed moving after all.");
+      render();
+    }});
+}
+
 function ganttRowsHere() {
   const out = [];
   for (const [path, page] of V.pages) {
@@ -6579,7 +6925,11 @@ function ganttRowsHere() {
                   assignee: assigneeOf(b), project: journal ? null : pageTitle(path)});
     });
     if (!tasks.length) continue;
-    out.push({path, journal, label: journal ? chatDayLabel(day) : pageTitle(path), tasks});
+    out.push({path, journal, label: journal ? chatDayLabel(day) : pageTitle(path), tasks,
+              project: !!statusDirOf(path),
+              deps: statusDirOf(path) ? dependsOn(path) : [],
+              blockers: statusDirOf(path) ? blockersOf(path) : [],
+              trouble: statusDirOf(path) ? chainTrouble(path) : null});
   }
   return out;
 }
@@ -6593,11 +6943,17 @@ const ganttRows = () => memo("ganttRows", () => {
 
 const GANTT_SPANS = [["3", "3 months", 3], ["6", "6 months", 6], ["12", "A year", 12], ["fit", "Fit", 0]];
 
+/* The window the chart is currently drawn in. A drag has to turn pixels back
+   into days, and it is the same arithmetic the bars were placed with, so it is
+   kept rather than recomputed from the DOM. */
+let GWIN = null;
+
 function viewGantt() {
   const c = el("div", {class: "wrap"});
   const groups = ganttRows();
   const key = state.ganttSpan || "3";
   const months = (GANTT_SPANS.find(s => s[0] === key) || GANTT_SPANS[0])[2];
+  const chains = state.ganttChains !== false;
 
   /* Every bar, so the window can be worked out before anything is drawn. */
   const all = [];
@@ -6623,11 +6979,15 @@ function viewGantt() {
   const total = Math.max(1, dateDiffDays(from, to));
   const pct = iso => Math.max(0, Math.min(100, (dateDiffDays(from, iso) / total) * 100));
   const inWindow = s => s.end >= from && s.start <= to;
+  GWIN = {from, to, total, pct};
 
   const bar = el("div", {class: "statefilter"});
   for (const [k, label] of GANTT_SPANS)
     bar.append(el("button", {class: "chip filter" + (key === k ? " on" : ""),
       onclick: () => go("gantt", {ganttSpan: k})}, (key === k ? "✓ " : "") + label));
+  bar.append(el("button", {class: "chip filter" + (chains ? " on" : ""),
+    title: "Draw the order projects have to happen in",
+    onclick: () => go("gantt", {ganttChains: !chains})}, (chains ? "✓ " : "") + "Chains"));
   c.append(el("div", {class: "section"}, bar));
 
   /* Only the groups with something inside the window, and only their dated
@@ -6669,6 +7029,10 @@ function viewGantt() {
     (todayISO() >= from && todayISO() <= to) ? pct(todayISO()) + "%" : "-10%");
 
   const body = el("div", {class: "gbody"});
+  /* The arrows between project bars cannot live in any one row, so they are one
+     overlay drawn on top of the rows once the browser has laid them out. */
+  const links = el("div", {class: "glinks"});
+  body.append(links);
 
   let drawn = 0;
   const drawTo = upto => {
@@ -6680,9 +7044,10 @@ function viewGantt() {
     }
     drawn = upto;
     const left = shown.length - drawn;
-    if (!left) { more.remove(); return; }
-    more.set("Show " + Math.min(left, CFG.rowsPerPage) + " more · " + left + " below",
-             left > CFG.rowsPerPage ? "Show all " + shown.length : "");
+    if (!left) { more.remove(); }
+    else more.set("Show " + Math.min(left, CFG.rowsPerPage) + " more · " + left + " below",
+                  left > CFG.rowsPerPage ? "Show all " + shown.length : "");
+    if (chains) drawChainArrows(body, links, shown.slice(0, drawn));
   };
   const more = moreRow(() => drawTo(Math.min(shown.length, drawn + CFG.rowsPerPage)),
                        () => drawTo(shown.length));
@@ -6697,12 +7062,17 @@ function viewGantt() {
     el("span", {class: "glg"}, el("i", {style: "background:var(--wait)"}), "Waiting for"),
     el("span", {class: "glg"}, el("i", {style: "background:var(--done)"}), "Done"),
     el("span", {class: "glg"}, el("i", {style: "background:var(--late)"}), "Late"),
-    el("span", {class: "glg quiet"}, "Click a row to open its tasks.")));
+    el("span", {class: "glg quiet"},
+      "Drag a bar to move it, an end to stretch it. A project bar takes its tasks with it. " +
+      "Click a row to open it. On a keyboard: Alt+← / Alt+→ by a day, with Shift by a week.")));
 
   const notes = [];
   if (hiddenRows) notes.push(hiddenRows + " project(s) sit entirely outside this window.");
   if (undated) notes.push(undated + " task(s) have no date at all, so they have no bar — " +
     "a span invented for them would read exactly like a real one.");
+  const troubled = shown.filter(r => r.group.trouble);
+  if (troubled.length) notes.push(troubled.length + " project(s) start before what they wait " +
+    "on has finished — the hatched part of the bar is the overlap.");
   if (notes.length) c.append(el("div", {class: "section quiet"},
     el("div", {style: "color:var(--fg3);font-size:12.5px"}, notes.join(" "))));
   return c;
@@ -6729,36 +7099,279 @@ function ganttHeader(from, to, pct) {
 const ganttBarClass = (stateKey, end) =>
   "gbar " + (OPEN_STATES[stateKey] && end < todayISO() ? "late" : stateKey);
 
+/* ---------- the drag ----------
+   One pointer handler for both kinds of row. It never writes while the pointer
+   is down: it moves the bar it was given and keeps the day offset, and the
+   commit happens once, on release. So a drag across three months is one edit to
+   the file, not ninety. */
+let GSUPPRESS = 0;
+const swallowedDrag = () => Date.now() - GSUPPRESS < 400;
+
+function dragLabel() {
+  const tip = el("div", {class: "gtip"});
+  document.body.append(tip);
+  return tip;
+}
+
+/* mode: "move" | "start" | "end"; commit(days|iso) does the writing. */
+function makeDraggable(barEl, {from, to, mode, commit}) {
+  if (!GWIN) return;
+  const grab = e => {
+    if (e.button != null && e.button !== 0) return;
+    const track = barEl.closest(".gtrack");
+    if (!track) return;
+    const width = track.getBoundingClientRect().width;
+    if (!width) return;
+    const perDay = width / GWIN.total;
+    if (perDay <= 0) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    const x0 = e.clientX;
+    const left0 = parseFloat(barEl.style.left) || 0;
+    const w0 = parseFloat(barEl.style.width) || 0;
+    const tip = dragLabel();
+    const follow = ev => { tip.style.left = ev.clientX + "px"; tip.style.top = ev.clientY + "px"; };
+    follow(e);
+    let days = 0, moved = false;
+
+    try { barEl.setPointerCapture(e.pointerId); } catch (_) {}
+    barEl.classList.add("dragging");
+
+    // A bar cannot be dragged through its own far end, so an end drag is held
+    // at the day the other end sits on rather than inverting the span.
+    const barDays = Math.max(0, dateDiffDays(from, to));
+    const clamp = () => mode === "start" ? Math.min(days, barDays)
+                      : mode === "end"   ? Math.max(days, -barDays)
+                      : days;
+    const paint = () => {
+      const d = clamp();
+      const dPct = (d * perDay / width) * 100;
+      if (mode === "move") barEl.style.left = (left0 + dPct) + "%";
+      else if (mode === "start") {
+        barEl.style.left = (left0 + dPct) + "%";
+        barEl.style.width = Math.max(0.6, w0 - dPct) + "%";
+      } else {
+        barEl.style.width = Math.max(0.6, w0 + dPct) + "%";
+      }
+      const s = mode === "end"   ? from : shiftISO(from, d);
+      const e = mode === "start" ? to   : shiftISO(to, d);
+      tip.textContent = mode === "end"   ? "\u2192 " + e
+                      : mode === "start" ? s + " \u2192"
+                      : s + " \u2192 " + e;
+    };
+
+    const move = ev => {
+      follow(ev);
+      const next = Math.round((ev.clientX - x0) / perDay);
+      if (next === days) return;
+      days = next;
+      if (days) moved = true;
+      paint();
+    };
+    const up = () => {
+      barEl.removeEventListener("pointermove", move);
+      barEl.removeEventListener("pointerup", up);
+      barEl.removeEventListener("pointercancel", up);
+      barEl.classList.remove("dragging");
+      tip.remove();
+      const d = clamp();
+      if (!moved || !d) { barEl.style.left = left0 + "%"; barEl.style.width = w0 + "%"; return; }
+      GSUPPRESS = Date.now();
+      commit(d);
+    };
+    barEl.addEventListener("pointermove", move);
+    barEl.addEventListener("pointerup", up);
+    barEl.addEventListener("pointercancel", up);
+  };
+  barEl.addEventListener("pointerdown", grab);
+}
+
+/* Alt+arrows, so the chart is not drag-only. A plan you can only edit with a
+   mouse is a plan half the people here cannot edit. */
+function nudgeKeys(rowEl, shift) {
+  rowEl.addEventListener("keydown", e => {
+    if (!e.altKey || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return;
+    e.preventDefault();
+    const step = (e.shiftKey ? 7 : 1) * (e.key === "ArrowLeft" ? -1 : 1);
+    shift(step);
+  });
+}
+
 function ganttGroupRow(row, pct) {
-  const open = state.ganttOpen === row.group.path;
+  const g = row.group;
+  const open = state.ganttOpen === g.path;
   const left = pct(row.start), right = pct(row.end);
-  return el("button", {class: "grow group" + (open ? " open" : ""),
-    onclick: () => go("gantt", {ganttOpen: open ? null : row.group.path}),
+  const movable = row.openN > 0;
+
+  const shift = days => {
+    const n = inSpace(g.space, () => shiftProjectBy(g.path, days));
+    if (!n) { notify("Nothing open and dated in there to move.", "warn"); return; }
+    notify("Moved " + g.label + " " + Math.abs(days) + " day" + (Math.abs(days) === 1 ? "" : "s") +
+           (days > 0 ? " later" : " earlier") + " · " + n + " task" + (n === 1 ? "" : "s") + ".");
+    if (g.project) offerCascade(g.space, g.path);
+    render();
+  };
+
+  const barEl = el("span", {class: ganttBarClass(row.openN ? "TODO" : "DONE",
+                                                 row.late ? "0000-00-00" : row.end) +
+                             (movable ? " movable" : "") + (g.trouble ? " clash" : ""),
+    data: {proj: g.project ? g.path : ""},
+    style: "left:" + left + "%;width:" + Math.max(0.6, right - left) + "%",
+    title: row.start + " → " + row.end +
+           (movable ? "  ·  drag to move the whole project" : "")});
+  if (movable) makeDraggable(barEl, {from: row.start, to: row.end, mode: "move", commit: shift});
+
+  const track = el("span", {class: "gtrack"}, barEl);
+  /* Where the chain says this project is free to start. Drawn even when the bar
+     is clear of it, because "it only just fits" is worth seeing too. */
+  if (g.deps && g.deps.length) {
+    const need = inSpace(g.space, () => earliestStart(g.path));
+    if (need && need >= GWIN.from && need <= GWIN.to)
+      track.append(el("span", {class: "ggate" + (g.trouble ? " bad" : ""),
+        style: "left:" + pct(need) + "%",
+        title: "Cannot start before " + need + " — waiting on " +
+               inSpace(g.space, () => g.deps.map(pageTitle).join(", "))}));
+  }
+
+  const rowEl = el("button", {class: "grow group" + (open ? " open" : "") + (movable ? " movable" : ""),
+    data: {row: g.path},
+    onclick: () => {
+      if (swallowedDrag()) return;
+      go("gantt", {ganttOpen: open ? null : g.path});
+    },
   },
     el("span", {class: "glabel"},
       el("span", {class: "caret"}, open ? "▾" : "▸"),
       // The name is what gets shortened when the column is narrow, never the
       // count beside it: "Project 0  8 o" tells you nothing.
-      el("span", {class: "nm", title: row.group.label}, row.group.label),
+      el("span", {class: "nm", title: g.label +
+        (g.deps && g.deps.length
+          ? " — after " + inSpace(g.space, () => g.deps.map(pageTitle).join(", "))
+          : "")}, g.label),
+      g.blockers && g.blockers.length
+        ? el("span", {class: "gdep", title: "Waiting on " +
+            inSpace(g.space, () => g.blockers.map(pageTitle).join(", "))}, "⇠") : null,
       el("span", {class: "n"}, row.late ? "late" : row.openN ? row.openN + " open" : "done")),
-    el("span", {class: "gtrack"},
-      el("span", {class: ganttBarClass(row.openN ? "TODO" : "DONE",
-                                       row.late ? "0000-00-00" : row.end),
-        style: "left:" + left + "%;width:" + Math.max(0.6, right - left) + "%",
-        title: row.start + " → " + row.end})));
+    track);
+  if (movable) nudgeKeys(rowEl, shift);
+  return rowEl;
 }
 
 function ganttTaskRow(t, pct) {
   const left = pct(t.span.start), right = pct(t.span.end);
-  return el("button", {class: "grow task",
-    onclick: () => inSpace(t.space, () => openTaskDetail(t.path, t.block, t.space))},
+  const movable = canMoveTask(t.block);
+
+  const after = (what, msg) => () => {
+    touch(t.path);
+    GSUPPRESS = Date.now();
+    notify(msg);
+    render();
+  };
+  const commitMove = days => inSpace(t.space, () => {
+    if (!shiftTaskBy(t.path, t.block, days)) return;
+    const s = spanOf(t.block, null);
+    after(null, "Moved to " + s.start + " → " + s.end + ".")();
+  });
+  const commitStart = days => inSpace(t.space, () => {
+    if (!setTaskStart(t.path, t.block, shiftISO(t.span.start, days))) return;
+    after(null, "Starts " + dateIn(blockProp(t.block, "SCHEDULED")) + ".")();
+  });
+  const commitEnd = days => inSpace(t.space, () => {
+    if (!setTaskEnd(t.path, t.block, shiftISO(t.span.end, days))) return;
+    after(null, "Due " + dateIn(blockProp(t.block, "DEADLINE")) + ".")();
+  });
+
+  const barEl = el("span", {class: ganttBarClass(t.state, t.span.end) + (movable ? " movable" : ""),
+    style: "left:" + left + "%;width:" + Math.max(0.6, right - left) + "%",
+    title: t.span.start + " → " + t.span.end + "  ·  " + t.state +
+           (movable ? "  ·  drag to move, drag an end to stretch" : "  ·  closed, so it stays put")},
+    el("span", {class: "glabelin"}, plainTitle(t.title)));
+  if (movable) {
+    makeDraggable(barEl, {from: t.span.start, to: t.span.end, mode: "move", commit: commitMove});
+    /* Grips only on a bar wide enough to still leave something in the middle:
+       two of them on a one-day bar ARE the bar, and it could then only be
+       stretched, never moved. A narrow bar keeps the Alt+arrow keys and the
+       two date fields in its own panel. */
+    if (right - left >= 2.2) {
+      const lh = el("span", {class: "ghandle l", title: "Drag to change when it starts"});
+      const rh = el("span", {class: "ghandle r", title: "Drag to change when it is due"});
+      barEl.append(lh, rh);
+      makeDraggable(lh, {from: t.span.start, to: t.span.end, mode: "start", commit: commitStart});
+      makeDraggable(rh, {from: t.span.start, to: t.span.end, mode: "end",   commit: commitEnd});
+    }
+  }
+
+  const rowEl = el("button", {class: "grow task" + (movable ? " movable" : ""),
+    onclick: () => {
+      if (swallowedDrag()) return;
+      inSpace(t.space, () => openTaskDetail(t.path, t.block, t.space));
+    }},
     el("span", {class: "glabel sub"},
       el("span", {class: "nm", title: plainTitle(t.title)}, plainTitle(t.title))),
-    el("span", {class: "gtrack"},
-      el("span", {class: ganttBarClass(t.state, t.span.end),
-        style: "left:" + left + "%;width:" + Math.max(0.6, right - left) + "%",
-        title: t.span.start + " → " + t.span.end + "  ·  " + t.state},
-        el("span", {class: "glabelin"}, plainTitle(t.title)))));
+    el("span", {class: "gtrack"}, barEl));
+  if (movable) nudgeKeys(rowEl, commitMove);
+  return rowEl;
+}
+
+/* ---------- the arrows ----------
+   Drawn from the DOM rather than from the percentages, because the label column
+   is a fixed width and the tracks are what is left: only the browser knows how
+   many pixels that turned out to be. Rows that are not on screen yet get no
+   arrow, which is the right answer -- an arrow to nothing is noise. */
+function drawChainArrows(body, links, rows) {
+  links.textContent = "";
+  const byPath = new Map();
+  for (const r of rows) if (r.group.project) byPath.set(r.group.path, r);
+  if (!byPath.size) return;
+
+  const paint = () => {
+    links.textContent = "";
+    let base;
+    try { base = body.getBoundingClientRect(); } catch (_) { return; }
+    if (!base.width) return;
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "garrows");
+    svg.setAttribute("width", String(base.width));
+    svg.setAttribute("height", String(base.height));
+    svg.setAttribute("viewBox", "0 0 " + base.width + " " + base.height);
+    let any = false;
+
+    for (const [path, row] of byPath) {
+      for (const dep of (row.group.deps || [])) {
+        const src = byPath.get(dep);
+        if (!src) continue;
+        const a = body.querySelector('.grow.group[data-row="' + CSS.escape(dep) + '"] .gbar');
+        const b = body.querySelector('.grow.group[data-row="' + CSS.escape(path) + '"] .gbar');
+        if (!a || !b) continue;
+        let ra, rb;
+        try { ra = a.getBoundingClientRect(); rb = b.getBoundingClientRect(); } catch (_) { continue; }
+        const x1 = ra.right - base.left, y1 = ra.top - base.top + ra.height / 2;
+        const x2 = rb.left  - base.left, y2 = rb.top - base.top + rb.height / 2;
+        // An elbow, not a curve: the vertical leg says "and then", and a bezier
+        // across six rows is a decoration you have to decode.
+        const mid = x2 > x1 + 14 ? x1 + Math.min(18, (x2 - x1) / 2) : x1 + 12;
+        const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        p.setAttribute("d", "M" + x1 + "," + y1 + " H" + mid + " V" + y2 + " H" + x2);
+        p.setAttribute("class", "garrow" + (row.group.trouble ? " bad" : ""));
+        svg.append(p);
+        const head = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        head.setAttribute("d", "M" + x2 + "," + y2 + " l-5,-3.2 v6.4 z");
+        head.setAttribute("class", "garrowhead" + (row.group.trouble ? " bad" : ""));
+        svg.append(head);
+        any = true;
+      }
+    }
+    if (any) links.append(svg);
+  };
+
+  requestAnimationFrame(paint);
+  // The label column halves on a narrow screen, so every arrow is in the wrong
+  // place after a rotate. The observer dies with the chart it is watching.
+  if (typeof ResizeObserver === "function" && !links.__ro) {
+    links.__ro = new ResizeObserver(() => requestAnimationFrame(paint));
+    try { links.__ro.observe(body); } catch (_) {}
+  }
 }
 
 /* ============================================================
@@ -7705,6 +8318,574 @@ function checkNews() {
   setTimeout(show, 600);
 }
 
+/* ============================================================
+   ASKING SOMEBODY OUTSIDE FOR AN UPDATE
+   Half of a shared list is work other people owe you, and the people who owe
+   it to you are mostly not in your list. Waiting for already knows what they
+   owe; what it could not do was ask. So you ended up writing the same email
+   by hand every fortnight, pasting four task titles into it, and typing their
+   reply back in one task at a time.
+
+   One file does the round trip instead. You send them a self-contained HTML
+   page -- no account, no invite, no server, the same bargain as the rest of
+   GroupTodo. They double-click it, tick what they finished, type a note where
+   a note is worth typing, and press one button. That writes a small markdown
+   file. You open that file here and it lands on the right tasks.
+
+   The check-in sheet is NOT a copy of your vault. It carries the titles you
+   chose and nothing else: no project names, no colleagues, no other tasks,
+   no files. Somebody forwarding it leaks four sentences, not a space.
+   ============================================================ */
+
+/* When you last asked, and who you asked. Dropped the moment they answer:
+   "asked and heard nothing" is the thing worth measuring, and once they have
+   replied there is nothing outstanding to measure. */
+const ASKED_PROP = "asked";
+const askedAt   = b => (trim(blockProp(b, ASKED_PROP) || "").match(/\d{4}-\d{2}-\d{2}/) || [])[0] || null;
+const askedDays = b => { const d = askedAt(b); return d ? dateDiffDays(d, todayISO()) : null; };
+
+/* What this person owes you: anything open with their name on it. WAIT is the
+   usual shape, but a TODO somebody handed to a name the app does not know is
+   the same debt wearing different clothes. */
+function waitingOnFrom(name) {
+  if (!name) return [];
+  return leafActions().filter(a =>
+    OPEN_STATES[a.state] && a.assignee && samePerson(a.assignee, name) &&
+    !samePerson(name, whoAmI()));
+}
+
+/* People with open work who are not in the space -- the ones a sheet is for.
+   A colleague who IS in the space does not need one: they can see the list. */
+function outsidersOwingMe() {
+  const by = new Map();
+  for (const a of leafActions()) {
+    if (!OPEN_STATES[a.state] || !a.assignee) continue;
+    if (isMember(a.assignee) || samePerson(a.assignee, whoAmI())) continue;
+    const k = slugPerson(a.assignee);
+    if (!by.has(k)) by.set(k, {name: a.assignee, items: []});
+    by.get(k).items.push(a);
+  }
+  return Array.from(by.values()).sort((x, y) => x.name.localeCompare(y.name));
+}
+
+/* Anybody owing you something you have never asked about, or asked about long
+   enough ago that it has gone quiet. */
+function updatesWorthAsking() {
+  return outsidersOwingMe().filter(p => p.items.some(a => {
+    const d = askedDays(a.block);
+    return d == null ? (a.age ?? 0) >= CFG.waitFollowUpDays : d >= CFG.waitFollowUpDays;
+  }));
+}
+
+/* ---------- the sheet ---------- */
+const firstNameOf = n => trim(String(n || "").split(/\s+/)[0] || "there");
+const jsonForScript = o => JSON.stringify(o).replace(/</g, "\\u003c");
+
+/* One HTML file, no network, no libraries, no fonts to fetch: it has to open
+   on a laptop in a meeting room with the wifi down, four years from now. */
+function checkinSheetHtml({to, from, items, replyTo}) {
+  const data = jsonForScript({
+    v: 1, to, from, replyTo: replyTo || "",
+    at: nowStamp(),
+    items: items.map(it => ({
+      k: it.key, t: plainTitle(it.title),
+      asked: it.askedLabel || "",
+    })),
+  });
+  const title = "Update for " + from;
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>${esc(title)}</title>
+<style>
+:root{--paper:#f7f8f9;--card:#fff;--sunk:#eef1f4;--ink:#15202b;--soft:#51606e;
+  --faint:#8696a4;--rule:#dde3e8;--accent:#1f6fd0;--accent-soft:#e8f1fc;
+  --good:#1a7f4f;--good-soft:#e4f4ec;color-scheme:light;
+  --body:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+  --mono:"Cascadia Mono",Consolas,ui-monospace,monospace}
+@media (prefers-color-scheme:dark){:root{--paper:#11161b;--card:#1a2128;--sunk:#141a20;
+  --ink:#e8eef3;--soft:#a8b7c4;--faint:#76858f;--rule:#2b353f;--accent:#76b2f5;
+  --accent-soft:#16293d;--good:#5cc08c;--good-soft:#142a1f;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);
+  font-size:16px;line-height:1.55}
+.wrap{max-width:640px;margin:0 auto;padding:28px 18px 60px}
+h1{font-size:25px;margin:0 0 8px;line-height:1.2}
+.lede{color:var(--soft);margin:0 0 22px}
+.lede b{color:var(--ink)}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+.row{border-bottom:1px solid var(--rule)}
+.row:last-child{border-bottom:0}
+.hit{display:grid;grid-template-columns:26px 1fr;gap:12px;align-items:start;width:100%;
+  text-align:left;background:none;border:0;padding:15px 16px;cursor:pointer;color:inherit;
+  font:inherit;font-size:16px}
+.hit:hover{background:var(--accent-soft)}
+.hit:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.box{width:23px;height:23px;border-radius:6px;border:1.7px solid var(--faint);display:grid;
+  place-items:center;font-size:14px;color:transparent;margin-top:1px}
+.row.done .box{background:var(--good);border-color:var(--good);color:#fff}
+.t{min-width:0}
+.row.done .t>span:first-child{text-decoration:line-through;color:var(--faint)}
+.meta{display:block;color:var(--faint);font-size:12.5px;font-family:var(--mono);margin-top:3px}
+.note{padding:0 16px 15px 54px}
+.notebtn{background:none;border:0;padding:0;font:inherit;font-size:13.5px;color:var(--accent);
+  cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+textarea{width:100%;margin-top:4px;font:inherit;font-size:15px;padding:9px 10px;
+  border:1px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink);
+  resize:vertical;min-height:58px}
+.foot{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:20px}
+button.b{font:inherit;font-size:16px;font-weight:600;padding:12px 20px;border-radius:9px;
+  border:1px solid var(--rule);background:var(--card);color:var(--ink);cursor:pointer}
+button.b.go{background:var(--accent);border-color:var(--accent);color:#fff}
+button.b:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.count{margin-left:auto;color:var(--faint);font-size:13.5px;font-family:var(--mono)}
+.said{margin-top:16px;padding:13px 15px;border-radius:9px;background:var(--good-soft);
+  color:var(--good);border:1px solid currentColor;font-size:15px}
+.said a{color:inherit;font-weight:600}
+.fall{margin-top:14px}
+.fall textarea{font-family:var(--mono);font-size:12.5px;min-height:150px}
+.tail{color:var(--faint);font-size:13px;margin-top:30px;border-top:1px solid var(--rule);
+  padding-top:14px}
+@media (max-width:420px){.note{padding-left:16px}}
+</style></head><body>
+<div class="wrap">
+<h1>Hei ${esc(firstNameOf(to))} \u{1F44B}</h1>
+<p class="lede"><b>${esc(from)}</b> is waiting on <b id="n">${items.length}</b>
+${items.length === 1 ? "thing" : "things"} from you. Tick whatever is done.
+Anything you leave unticked, ${esc(firstNameOf(from))} will take as still coming.</p>
+<div class="card" id="rows"></div>
+<div class="foot">
+  <button class="b go" id="send">Send back to ${esc(firstNameOf(from))}</button>
+  <button class="b" id="copy">Copy as text</button>
+  <span class="count" id="count"></span>
+</div>
+<div id="said"></div>
+<p class="tail">This page is the whole thing — no account, nothing uploaded, nothing
+tracked. It only knows the ${items.length === 1 ? "line" : "lines"} above. Your ticks are
+kept in this browser, so you can close it and come back.</p>
+</div>
+<script type="application/json" id="gtd-data">${data}<\/script>
+<script>
+(function(){
+var D = JSON.parse(document.getElementById("gtd-data").textContent);
+var S = {};
+var KEY = "gtd-checkin:" + D.at;
+try { S = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch(e) { S = {}; }
+function keep(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+function st(k){ return S[k] || (S[k] = {done:false, note:"", open:false}); }
+
+var rows = document.getElementById("rows");
+var countEl = document.getElementById("count");
+
+function count(){
+  var n = 0;
+  D.items.forEach(function(it){ if (st(it.k).done) n++; });
+  countEl.textContent = n + " of " + D.items.length + " done";
+}
+function draw(){
+  rows.textContent = "";
+  D.items.forEach(function(it){
+    var s = st(it.k);
+    var row = document.createElement("div");
+    row.className = "row" + (s.done ? " done" : "");
+
+    var hit = document.createElement("button");
+    hit.type = "button"; hit.className = "hit";
+    hit.setAttribute("aria-pressed", String(!!s.done));
+    var box = document.createElement("span");
+    box.className = "box"; box.textContent = "✓"; box.setAttribute("aria-hidden", "true");
+    var t = document.createElement("span"); t.className = "t";
+    var name = document.createElement("span"); name.textContent = it.t;
+    t.appendChild(name);
+    if (it.asked) { var m = document.createElement("span"); m.className = "meta"; m.textContent = it.asked; t.appendChild(m); }
+    hit.appendChild(box); hit.appendChild(t);
+    hit.addEventListener("click", function(){ s.done = !s.done; keep(); draw(); count(); });
+    row.appendChild(hit);
+
+    var nd = document.createElement("div"); nd.className = "note";
+    if (s.open || s.note) {
+      var ta = document.createElement("textarea");
+      ta.value = s.note || "";
+      ta.placeholder = "Anything " + D.from.split(" ")[0] + " should know (optional)";
+      ta.setAttribute("aria-label", "Note on: " + it.t);
+      ta.addEventListener("input", function(){ s.note = ta.value; keep(); });
+      nd.appendChild(ta);
+    } else {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "notebtn"; b.textContent = "Add a note";
+      b.addEventListener("click", function(){ s.open = true; keep(); draw(); });
+      nd.appendChild(b);
+    }
+    row.appendChild(nd);
+    rows.appendChild(row);
+  });
+}
+function stamp(){ return new Date().toISOString().replace(/\\.\\d+Z$/, "Z"); }
+function reply(){
+  var at = stamp();
+  var out = [];
+  out.push("<" + "!-- GroupTodo update. Open it with Vault & sync → Open vault file. --" + ">");
+  out.push("<" + "!-- gtd:reply v1 --" + ">");
+  out.push("");
+  out.push("From: " + D.to);
+  out.push("For: " + D.from);
+  out.push("At: " + at);
+  out.push("");
+  var items = [];
+  D.items.forEach(function(it){
+    var s = st(it.k);
+    out.push("- [" + (s.done ? "x" : " ") + "] " + it.t);
+    var note = (s.note || "").replace(/\\s+$/, "");
+    if (note) note.split(/\\r?\\n/).forEach(function(l){ out.push("  " + l); });
+    items.push({k: it.k, done: !!s.done, note: note});
+  });
+  out.push("");
+  out.push("<" + "!-- gtd:replydata");
+  out.push(JSON.stringify({v: 1, from: D.to, "for": D.from, at: at, items: items}));
+  out.push("gtd:endreplydata --" + ">");
+  out.push("");
+  return out.join("\\n");
+}
+function fileName(){
+  return "grouptodo-update-" + D.to.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".md";
+}
+function say(node){
+  var box = document.getElementById("said");
+  box.textContent = "";
+  box.appendChild(node);
+}
+document.getElementById("send").addEventListener("click", function(){
+  var text = reply(), name = fileName();
+  var saved = false;
+  try {
+    var url = URL.createObjectURL(new Blob([text], {type: "text/markdown"}));
+    var a = document.createElement("a");
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 10000);
+    saved = true;
+  } catch(e) {}
+  var p = document.createElement("p");
+  p.className = "said";
+  if (saved) {
+    p.appendChild(document.createTextNode("Saved " + name + " — look in your Downloads. "
+      + "Send that file back to " + D.from + " and you are done. "));
+    if (D.replyTo) {
+      var a2 = document.createElement("a");
+      a2.href = "mailto:" + D.replyTo + "?subject=" + encodeURIComponent("Update for " + D.from)
+        + "&body=" + encodeURIComponent("Here is my update — the file is attached.\\n\\n" + text);
+      a2.textContent = "Open an email to " + D.replyTo;
+      p.appendChild(a2);
+      p.appendChild(document.createTextNode(" (attach the file, or just send it as it is)."));
+    }
+    say(p);
+  } else {
+    p.textContent = "This browser would not save the file. Copy the text below into an email instead.";
+    say(p);
+    showText(text);
+  }
+});
+document.getElementById("copy").addEventListener("click", function(){
+  var text = reply(), btn = this;
+  var ok = function(){ btn.textContent = "Copied"; setTimeout(function(){ btn.textContent = "Copy as text"; }, 1800); };
+  if (navigator.clipboard && navigator.clipboard.writeText)
+    navigator.clipboard.writeText(text).then(ok, function(){ showText(text); });
+  else showText(text);
+});
+function showText(text){
+  var box = document.getElementById("said");
+  var d = document.createElement("div"); d.className = "fall";
+  var ta = document.createElement("textarea");
+  ta.readOnly = true; ta.value = text;
+  ta.setAttribute("aria-label", "Your reply, as text to copy");
+  d.appendChild(ta);
+  box.appendChild(d);
+  ta.focus(); ta.select();
+}
+draw(); count();
+})();
+<\/script>
+</body></html>
+`;
+}
+
+/* ---------- asking ---------- */
+function openAskForUpdate(name) {
+  const me = whoAmI();
+  if (!me) { notify("Put your name in first — the sheet has to say who is asking.", "warn"); return; }
+  const found = waitingOnFrom(name);
+  if (!found.length) {
+    notify("Nothing open with " + name + "'s name on it.", "warn");
+    return;
+  }
+
+  const pick = new Set(found.map((_, i) => i));
+  const email = el("input", {type: "email", placeholder: "you@example.com (optional)",
+    value: PREF.get("myEmail", "")});
+  const card = el("div", {style: "max-height:40vh;overflow:auto"});
+  const summary = el("div", {style: "color:var(--fg3);font-size:12.5px;margin-top:8px"});
+  const refresh = () => {
+    summary.textContent = pick.size
+      ? pick.size + (pick.size === 1 ? " line" : " lines") + " go to " + name +
+        ". Nothing else about your vault goes with them."
+      : "Nothing selected — the sheet would be empty.";
+  };
+
+  found.forEach((a, i) => {
+    const on = () => pick.has(i);
+    const box = el("button", {class: "spacetoggle on", onclick: () => {
+      if (on()) pick.delete(i); else pick.add(i);
+      box.className = "spacetoggle" + (on() ? " on" : "");
+      box.textContent = on() ? "✓" : "";
+      refresh();
+    }}, "✓");
+    const d = askedDays(a.block);
+    card.append(el("div", {style: "display:flex;gap:10px;align-items:flex-start;margin:7px 0"},
+      box,
+      el("div", {style: "min-width:0;flex:1"},
+        el("div", {}, plainTitle(a.title)),
+        el("div", {style: "color:var(--fg3);font-size:12px"},
+          [a.project || baseName(a.path),
+           a.age != null ? "open " + a.age + "d" : null,
+           d != null ? "asked " + d + "d ago" : "never asked"
+          ].filter(Boolean).join(" · ")))));
+  });
+  refresh();
+
+  modal({
+    center: true, title: "Ask " + name + " for an update",
+    hint: found.length + " open",
+    body: el("div", {},
+      el("div", {class: "field"},
+        el("label", {}, "What to ask about"),
+        card, summary),
+      el("div", {class: "field"},
+        el("label", {}, "Your email, so the sheet can offer a reply button"),
+        email,
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          "Optional, and it goes only into this one file. Leave it blank and they " +
+          "just send the file back the way they got it.")),
+      el("div", {class: "field"},
+        el("div", {style: "color:var(--fg3);font-size:12.5px"},
+          "One HTML file. They double-click it, tick what is done, press one button, and " +
+          "send you back the small file it writes. Nothing is uploaded and " + name +
+          " never needs an account."))),
+    foot: [
+      el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+      el("button", {class: "btn ghost", onclick: () => { closeModal(); importUpdateFromFile(); }},
+        "Import a reply"),
+      el("button", {class: "btn primary", onclick: () => {
+        const chosen = found.filter((_, i) => pick.has(i));
+        if (!chosen.length) { notify("Pick at least one thing to ask about.", "warn"); return; }
+        const replyTo = trim(email.value);
+        if (replyTo) PREF.set("myEmail", replyTo);
+
+        /* A durable id on each line, so their answer can find its way home even
+           after the file has been re-read and every in-memory id regenerated. */
+        const items = chosen.map(a => inSpace(a.space, () => {
+          const id = ensureBlockId(a.path, a.block);
+          setBlockProp(a.block, ASKED_PROP, me + " " + nowStamp());
+          touch(a.path);
+          const d = a.age;
+          return {
+            key: [a.space || "", a.path, id].join("\u0001"),
+            title: a.title,
+            askedLabel: d != null && d > 0 ? "on " + name + "'s plate " + d + " days" : "",
+          };
+        }));
+
+        const file = "grouptodo-check-in-" +
+          slugPerson(name).toLowerCase().replace(/[^\w-]+/g, "-") + ".html";
+        closeModal();
+        sendFileOut(file, checkinSheetHtml({to: name, from: me, items, replyTo}),
+                    "text/html", {title: "Update for " + me}).then(how => {
+          if (how === "cancelled") return;
+          notify((how === "shared" ? "Sent " : "Saved ") + file + " — " + items.length +
+                 " line" + (items.length === 1 ? "" : "s") + " for " + name +
+                 ". When the reply comes back, open it here.");
+          render();
+        });
+      }}, "Make the sheet"),
+    ],
+  });
+}
+
+/* ---------- their reply, coming back ---------- */
+function parseUpdateReply(text) {
+  const m = /<!--\s*gtd:replydata\s*([\s\S]*?)\s*gtd:endreplydata\s*-->/.exec(String(text || ""));
+  if (!m) return null;
+  let data;
+  try { data = JSON.parse(m[1]); } catch (_) { return null; }
+  if (!data || !Array.isArray(data.items)) return null;
+  return data;
+}
+
+/* Their answer has to land on the exact block it came from. The key carries the
+   space and the page, and the id:: is what survives a reparse; the whole-vault
+   sweep is the fallback for a task somebody has since moved to another page. */
+function resolveReplyItem(item) {
+  const [space, path, id] = String(item.k || "").split("\u0001");
+  if (!id) return null;
+  const look = () => {
+    let hit = null;
+    const page = getPage(path);
+    if (page) walkBlocks(page.blocks, b => {
+      if (!hit && trim(blockProp(b, "id") || "") === id) hit = {path, block: b};
+    });
+    if (hit) return hit;
+    for (const [p, pg] of V.pages) {
+      walkBlocks(pg.blocks, b => {
+        if (!hit && trim(blockProp(b, "id") || "") === id) hit = {path: p, block: b};
+      });
+      if (hit) return hit;
+    }
+    return null;
+  };
+  const found = space && LOADED.has(space) ? inSpace(space, look) : look();
+  return found ? Object.assign({space: space || null}, found) : null;
+}
+
+/* Closed by somebody who is not here. Same three stamps the tick writes, so a
+   task finished by a colleague outside the app reads identically to one
+   finished inside it -- which it is. */
+function closeOnTheirWord(path, block, who, at) {
+  block.state = "DONE";
+  setBlockProp(block, "done_by", who + " " + at);
+  const end = dateIn(at) || todayISO();
+  const added = addedDate(block);
+  const raw = blockProp(block, "Added") || "";
+  if (added && !/\]\]\s*-\s*\[\[/.test(raw)) {
+    setBlockProp(block, "Added", raw + " - [[" + end + "]] = " + (dateDiffDays(added, end) ?? 0) + " days");
+  } else if (!added && !blockProp(block, "CLOSED")) {
+    setBlockProp(block, "CLOSED", "[[" + end + "]]");
+  }
+}
+
+function postMessageAs(path, block, text, who, at) {
+  const body = trim(text);
+  if (!body) return null;
+  const m = newBlock({state: null, title: body.replace(/\n+/g, " ")});
+  setBlockProp(m, MSG_PROP, who);
+  setBlockProp(m, MSG_AT, at);
+  (block.children || (block.children = [])).push(m);
+  return m;
+}
+
+function openUpdateArrived(data) {
+  const who = trim(data.from) || "They";
+  const at  = trim(data.at) || nowStamp();
+
+  const rows = [];
+  let gone = 0;
+  for (const item of data.items) {
+    const hit = resolveReplyItem(item);
+    if (!hit) { gone++; continue; }
+    const note = trim(item.note || "");
+    if (!item.done && !note) continue;                  // no answer is not news
+    const closed = inSpace(hit.space, () => !OPEN_STATES[hit.block.state]);
+    rows.push({hit, done: !!item.done, note, closed, take: true});
+  }
+
+  if (!rows.length) {
+    modal({center: true, title: who + " replied", body: el("div", {},
+      el("div", {class: "field"}, el("div", {style: "color:var(--fg2);font-size:13.5px;line-height:1.6"},
+        gone ? "Nothing in the reply matches a task that is still here. " +
+               gone + " of the lines point at tasks that have since been deleted or renamed past recognition."
+             : "They sent it back without ticking anything or writing a note. " +
+               "Everything is still open, which is itself an answer."))),
+      foot: [el("button", {class: "btn primary", onclick: closeModal}, "Close")]});
+    return;
+  }
+
+  const list = el("div", {style: "max-height:46vh;overflow:auto"});
+  const counts = el("div", {style: "color:var(--fg3);font-size:12.5px;margin-top:8px"});
+  const refresh = () => {
+    const taken = rows.filter(r => r.take);
+    const closes = taken.filter(r => r.done && !r.closed).length;
+    const notes  = taken.filter(r => r.note).length;
+    counts.textContent = closes + (closes === 1 ? " task closes, " : " tasks close, ") +
+      notes + (notes === 1 ? " comment filed." : " comments filed.");
+    apply.textContent = taken.length ? "Apply " + taken.length : "Apply nothing";
+  };
+
+  for (const r of rows) {
+    const title = inSpace(r.hit.space, () => plainTitle(r.hit.block.title));
+    const box = el("button", {class: "spacetoggle on", onclick: () => {
+      r.take = !r.take;
+      box.className = "spacetoggle" + (r.take ? " on" : "");
+      box.textContent = r.take ? "✓" : "";
+      refresh();
+    }}, "✓");
+    list.append(el("div", {style: "display:flex;gap:10px;align-items:flex-start;margin:9px 0"},
+      box,
+      el("div", {style: "min-width:0;flex:1"},
+        el("div", {}, title),
+        r.note ? el("div", {style: "color:var(--fg2);font-size:12.5px;font-style:italic;margin-top:2px"},
+          "“" + r.note + "”") : null,
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:2px"},
+          (r.done ? (r.closed ? "they say done · already closed here" : "they say done → close it")
+                  : "comment only · stays open") +
+          " · " + r.hit.path)),
+      el("span", {class: "state " + (r.done ? "DONE" : "WAIT")}, r.done ? "done" : "open")));
+  }
+
+  const apply = el("button", {class: "btn primary", onclick: () => {
+    let closed = 0, noted = 0;
+    for (const r of rows) {
+      if (!r.take) continue;
+      inSpace(r.hit.space, () => {
+        if (r.done && !r.closed) { closeOnTheirWord(r.hit.path, r.hit.block, who, at); closed++; }
+        if (r.note && postMessageAs(r.hit.path, r.hit.block, r.note, who, at)) noted++;
+        // They answered, so there is no longer an unanswered question to chase.
+        dropProp(r.hit.block, ASKED_PROP);
+        touch(r.hit.path);
+      });
+    }
+    closeModal();
+    notify(who + "'s update is in: " + closed + " closed, " + noted +
+           (noted === 1 ? " comment." : " comments."));
+    render();
+  }});
+  refresh();
+
+  modal({
+    center: true, title: who + " replied",
+    hint: formatStamp(at),
+    body: el("div", {},
+      el("div", {class: "field"},
+        el("label", {}, "What this will change"),
+        list, counts),
+      gone ? el("div", {class: "field"},
+        el("div", {style: "color:var(--fg3);font-size:12.5px"},
+          gone + (gone === 1 ? " line" : " lines") + " in the reply point at tasks that are " +
+          "no longer here, so there is nothing to apply them to.")) : null,
+      el("div", {class: "field"},
+        el("div", {style: "color:var(--fg3);font-size:12.5px"},
+          "Their notes are filed as comments on the tasks, in their name — so the thread " +
+          "reads like they said it, because they did."))),
+    foot: [
+      el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+      apply,
+    ],
+  });
+}
+
+function importUpdateFromFile() {
+  const input = el("input", {type: "file", accept: ".md,.markdown,.txt,text/markdown,text/plain",
+    style: "display:none",
+    onchange: async e => {
+      const f = e.target.files && e.target.files[0];
+      input.remove();
+      if (!f) return;
+      const text = await f.text();
+      const data = parseUpdateReply(text);
+      if (!data) { notify("That file is not a GroupTodo update.", "error"); return; }
+      openUpdateArrived(data);
+    }});
+  document.body.append(input);
+  input.click();
+}
+
 /* ---------- people ----------
    Waiting for answers "what have I handed over". It does not answer "what is
    everyone actually doing", and on a shared space that is the more useful
@@ -7757,18 +8938,33 @@ function viewPeople() {
   }
   c.append(section("In this space", members().length, card));
 
-  // Anybody named on a task who is not using the app: those are waiting-fors.
-  const outside = new Set();
-  for (const a of leafActions()) if (a.assignee && !isMember(a.assignee)) outside.add(a.assignee);
-  if (outside.size) {
+  /* Anybody named on a task who is not using the app: those are waiting-fors,
+     and the only ones a check-in sheet is for. Somebody in the space can read
+     the list themselves. */
+  const outside = outsidersOwingMe();
+  if (outside.length) {
     const oc = el("div", {class: "card"});
-    for (const name of Array.from(outside).sort())
-      oc.append(el("button", {class: "pick", onclick: () => go("person", {person: name})},
-        el("span", {class: "k"}, name[0].toUpperCase()),
-        el("span", {style: "flex:1"}, name),
-        el("span", {class: "d"}, "waiting on them")));
-    c.append(section("Not in this space", outside.size, oc, null, "quiet"));
+    for (const o of outside) {
+      const asked = o.items.map(a => askedDays(a.block)).filter(d => d != null);
+      const quietest = asked.length === o.items.length ? Math.min(...asked) : null;
+      oc.append(el("div", {class: "pick", style: "cursor:default"},
+        el("span", {class: "k"}, o.name[0].toUpperCase()),
+        el("button", {class: "linky", style: "flex:1;text-align:left",
+          onclick: () => go("person", {person: o.name})},
+          el("div", {}, o.name),
+          el("div", {style: "color:var(--fg3);font-size:11.5px"},
+            o.items.length + (o.items.length === 1 ? " thing" : " things") + " owing" +
+            (quietest == null ? " \u00B7 never asked"
+                              : quietest >= CFG.waitFollowUpDays ? " \u00B7 asked " + quietest + "d ago"
+                              : " \u00B7 asked recently"))),
+        el("button", {class: "btn sm ghost", title: "One file they tick off and send back",
+          onclick: () => openAskForUpdate(o.name)}, "ask for an update")));
+    }
+    c.append(section("Not in this space", outside.length, oc, null, "quiet"));
   }
+  c.append(el("div", {class: "section", style: "display:flex;gap:8px;flex-wrap:wrap"},
+    el("button", {class: "btn sm ghost", title: "A reply file a colleague sent back",
+      onclick: () => importUpdateFromFile()}, "import an update")));
   return c;
 }
 
@@ -7793,6 +8989,26 @@ function viewPerson(name) {
       mine ? "Everything that is yours."
       : isMember(name) ? "In this space, so these are live tasks in their name."
       : name + " is not using this space, so everything here is something you are waiting for.")));
+
+  /* Somebody outside the space cannot tick anything off, so the only way their
+     list ever gets shorter is you asking. That belongs here, next to the pile. */
+  if (!mine && !isMember(name)) {
+    const owing = waitingOnFrom(name);
+    const asked = owing.map(a => askedDays(a.block)).filter(d => d != null);
+    c.append(el("div", {class: "section", style: "display:flex;gap:8px;flex-wrap:wrap;align-items:center"},
+      el("button", {class: "btn sm" + (owing.length ? " primary" : " ghost"),
+        onclick: () => openAskForUpdate(name)},
+        "Ask " + firstNameOf(name) + " for an update"),
+      el("button", {class: "btn sm ghost", onclick: () => importUpdateFromFile()},
+        "Import their reply"),
+      el("span", {style: "color:var(--fg3);font-size:12.5px"},
+        !owing.length ? "Nothing open with their name on it."
+        : !asked.length ? "You have never asked about " +
+            (owing.length === 1 ? "it" : "any of these " + owing.length) + "."
+        : "Last asked " + Math.min(...asked) + " days ago" +
+          (asked.length < owing.length
+            ? ", and " + (owing.length - asked.length) + " never asked about." : "."))));
+  }
 
   const bar = stateFilterBar(w.acts);
   if (bar) c.append(el("div", {class: "section"}, bar));
@@ -8575,6 +9791,7 @@ function viewPage() {
   if (code) meta.append(el("button", {class: "nudge", onclick: () => openStatusPicker(path)}, el("b", {}, code), STATUS_LABEL[code]));
   for (const [k, v] of Object.entries(page.props || {})) {
     if (k === "title") continue;
+    if (k === DEPENDS_PROP) continue;      // it has a control of its own below
     if (k === "updated") {
       meta.append(el("span", {class: "nudge"}, "changed " + formatStamp(v)));
       continue;
@@ -8595,6 +9812,30 @@ function viewPage() {
     outcomeOf(path) ? "outcome: " + outcomeOf(path) : "no outcome stated"));
   if (code) meta.append(el("button", {class: "nudge", onclick: () => openAreaPicker(path)},
     areaOfProject(path) ? "area: " + areaOfProject(path) : "no area"));
+  /* The order this project sits in. A blocked project says so here rather than
+     in a list somewhere else, because this is the page you open when you are
+     about to start it. */
+  if (code) {
+    const deps = dependsOn(path);
+    const blocked = blockersOf(path);
+    meta.append(el("button", {class: "nudge" + (blocked.length ? " warn" : deps.length ? " ok" : ""),
+      title: deps.length ? "Starts after " + deps.map(pageTitle).join(", ") : "Nothing has to finish first",
+      onclick: () => openDependsPicker(path)},
+      deps.length
+        ? (blocked.length ? "blocked by " + blocked.map(pageTitle).join(", ")
+                          : "after " + deps.map(pageTitle).join(", "))
+        : "nothing comes first"));
+    const t = chainTrouble(path);
+    if (t) meta.append(el("button", {class: "nudge warn",
+      title: "Push this project so it starts on " + t.need,
+      onclick: () => { if (pushProjectTo(path, t.need)) { notify("Moved to start " + t.need + "."); render(); } }},
+      "starts " + t.days + " day" + (t.days === 1 ? "" : "s") + " too early"));
+    const waiting = dependentsOf(path);
+    if (waiting.length) meta.append(el("button", {class: "nudge",
+      title: waiting.map(pageTitle).join(", "),
+      onclick: () => openPage(waiting[0])},
+      waiting.length + " project" + (waiting.length === 1 ? "" : "s") + " waiting on this"));
+  }
   if (code) meta.append(el("button", {class: "nudge", onclick: () => openAddNextAction(path)}, "+ next action"));
   c.append(meta);
 
@@ -11188,8 +12429,8 @@ const canShareFiles = () => {
   catch (_) { return false; }
 };
 
-function downloadText(name, text) {
-  const url = URL.createObjectURL(new Blob([text], {type: "text/markdown"}));
+function downloadText(name, text, type = "text/markdown") {
+  const url = URL.createObjectURL(new Blob([text], {type}));
   const a = el("a", {href: url, download: name});
   document.body.append(a);
   a.click();
@@ -11197,28 +12438,36 @@ function downloadText(name, text) {
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
-/* Returns "shared" | "saved". Never throws: a refused share becomes a save. */
-async function sendMarkdownOut(name, text, {title = name} = {}) {
+/* Returns "shared" | "saved" | "cancelled". Never throws: a refused share
+   becomes a save. The type matters -- a check-in sheet handed to the phone as
+   text/markdown opens in a notes app instead of a browser. */
+async function sendFileOut(name, text, type = "text/markdown", {title = name} = {}) {
   if (canShareFiles()) {
     try {
-      await navigator.share({files: [new File([text], name, {type: "text/markdown"})], title});
+      await navigator.share({files: [new File([text], name, {type})], title});
       return "shared";
     } catch (e) {
       if (e && e.name === "AbortError") return "cancelled";
       // Some Android builds reject files from a non-user gesture; fall back.
     }
   }
-  downloadText(name, text);
+  downloadText(name, text, type);
   return "saved";
 }
+const sendMarkdownOut = (name, text, opts = {}) =>
+  sendFileOut(name, text, "text/markdown", opts);
 
 /* ---------- taking a markdown file in from the rest of the phone ---------- */
 async function mergeIncomingText(text, label) {
   const invite = parseInvite(text);
   if (invite) { openInviteArrived(invite, text); return true; }
+  // A colleague's check-in reply comes in through the same door as everything
+  // else, because asking people to find the right button is how files get lost.
+  const update = parseUpdateReply(text);
+  if (update) { openUpdateArrived(update); return true; }
   const files = parseBundle(text);
   if (!files.size) {
-    notify((label || "That file") + " has no GroupTodo pages in it.", "error");
+    notify((label || "That file") + " has no GroupTodo pages or updates in it.", "error");
     return false;
   }
   notify(syncSummary(mergeBundle(files)));
