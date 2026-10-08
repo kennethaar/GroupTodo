@@ -175,7 +175,16 @@ cannot pick out of a row of six. The brackets go; the words stay.
 
 `Esc` hands the panel over to the grid. The arrows then walk from node to node
 and `Enter` centres on the one you land on, so the whole of it is reachable
-without the mouse. Movement is geometric, the nearest node in the direction you
+without the mouse. The middle is a node too, and `Enter` there is the one thing
+moving cannot do: it adds a step under whatever you are looking at, and centres
+on the new one so you can keep going. Two presses, two meanings, and neither is
+a key to remember separately. On a project, the same press adds the next action.
+
+The traversal is animated. One ring slides from node to node rather than
+teleporting, so the arrows read as movement through a place, and a re-centre
+measures where every node was, puts it back there and releases it, so the grid
+visibly rearranges itself around your choice instead of cutting to a new
+layout. Both stand down under `prefers-reduced-motion`. Movement is geometric, the nearest node in the direction you
 pressed, which is why it still works on a phone where the same cells stack into
 one column. A second `Esc` closes the panel as it always did, so select mode
 costs one extra press and takes nothing away.
@@ -1022,7 +1031,7 @@ The markdown is identical either way.
 `Ctrl-Enter` cycle state, `[[` a list of pages, `↑`/`↓` between blocks,
 `Alt-Shift-↑`/`↓` move the line among its siblings, children and all. In the
 grid under a todo or a project: `Esc` walks it with the arrows, `Enter` centres
-on a node. A long title wraps, so the
+on a node, and `Enter` on the middle adds a step under it. A long title wraps, so the
 arrows walk the lines inside a block first and only leave it from the top or
 the bottom line - which is what they do in every other outliner, and what your
 hands expect.

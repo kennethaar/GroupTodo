@@ -577,6 +577,20 @@ body.adv .chk{border-radius:2px}
   border-color:var(--accent);color:var(--fg);
   box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent)}
 .ahint{font-size:11.5px;color:var(--fg3);margin-top:6px}
+.around{position:relative}
+/* One ring that travels, rather than a highlight that teleports. */
+.aring{position:absolute;left:0;top:0;pointer-events:none;opacity:0;border-radius:7px;
+  border:1.5px solid var(--accent);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  transition:transform .16s cubic-bezier(.2,.8,.3,1), width .16s, height .16s, opacity .12s}
+.aring.on{opacity:1}
+.achip{transition:transform .22s cubic-bezier(.2,.8,.3,1)}
+.achip.aself{font-size:13.5px;font-weight:600;color:var(--fg);white-space:normal;
+  overflow-wrap:anywhere;text-overflow:clip;background:transparent;border:none;padding:0}
+.achip.aself:hover{border:none}
+@media (prefers-reduced-motion: reduce){
+  .aring,.achip{transition:none}
+}
 .aself{font-size:13.5px;font-weight:600;color:var(--fg);overflow-wrap:anywhere}
 .anone{font-size:12px;color:var(--fg3)}
 /* On a phone the three columns are a row of slivers, so the same cells stack in
@@ -11389,7 +11403,7 @@ function viewPage() {
   if (code && !isSimple()) c.append(el("div", {class: "section"},
     el("label", {class: "alab", style: "display:block;margin-bottom:5px"}, "Where it sits"),
     projectGrid(path),
-    el("div", {class: "ahint"}, "esc walks it with the arrows, enter centres on what you land on")));
+    el("div", {class: "ahint"}, "esc walks it with the arrows, enter centres; enter on the middle adds a step under it")));
 
   // The tour explains itself on its own page and nowhere else, so the rest of
   // the app is never carrying an explanation of the app around with it.
@@ -12002,6 +12016,70 @@ function openRefile(fromPath, block) {
    of rules to write or get wrong. */
 function aroundNodes(grid) { return [...grid.querySelectorAll(".achip")]; }
 
+/* ---------- the travelling ring ----------
+   A selection that teleports makes you find it again on every press. One ring
+   that slides from node to node is cheap and tells you where you came from, so
+   the arrows read as movement through a place rather than as a cursor jumping
+   about. The first placement does not slide, because sliding in from a corner
+   you were never at is a lie about where you were. */
+function aroundRing(grid) {
+  let ring = grid.querySelector(".aring");
+  if (!ring) { ring = el("div", {class: "aring"}); grid.append(ring); }
+  return ring;
+}
+function aroundRingTo(grid, node) {
+  const ring = aroundRing(grid);
+  if (!node) { ring.classList.remove("on"); return; }
+  const g = grid.getBoundingClientRect(), r = node.getBoundingClientRect();
+  const first = !ring.classList.contains("on");
+  if (first) ring.style.transition = "none";
+  ring.style.width = r.width + "px";
+  ring.style.height = r.height + "px";
+  ring.style.transform = "translate(" + (r.left - g.left) + "px," + (r.top - g.top) + "px)";
+  ring.classList.add("on");
+  if (first) requestAnimationFrame(() => { ring.style.transition = ""; });
+}
+
+/* ---------- carrying the old positions over a re-centre ----------
+   Centring on a node rebuilds the grid, and a rebuild is a cut: the thing you
+   pressed Enter on is suddenly in the middle with no account of how it got
+   there. So the positions are measured before the rebuild and every node that
+   survives it is put back where it was and then released, which plays as the
+   grid rearranging itself around your choice. FLIP, in other words, and the
+   whole of the animation: no library, no timers, one transition. */
+let AROUND_FLIP = null;
+function aroundCapture(grid) {
+  if (!grid) return;
+  AROUND_FLIP = new Map();
+  for (const n of [...aroundNodes(grid), ...grid.querySelectorAll(".aself")]) {
+    const k = n.dataset.node;
+    if (k) AROUND_FLIP.set(k, n.getBoundingClientRect());
+  }
+}
+function aroundPlay(grid) {
+  const was = AROUND_FLIP;
+  AROUND_FLIP = null;
+  if (!was || !was.size) return;
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  requestAnimationFrame(() => {
+    const moved = [];
+    for (const n of [...aroundNodes(grid), ...grid.querySelectorAll(".aself")]) {
+      const from = was.get(n.dataset.node);
+      if (!from) continue;
+      const to = n.getBoundingClientRect();
+      const dx = from.left - to.left, dy = from.top - to.top;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
+      n.style.transition = "none";
+      n.style.transform = "translate(" + dx + "px," + dy + "px)";
+      moved.push(n);
+    }
+    if (!moved.length) return;
+    requestAnimationFrame(() => {
+      for (const n of moved) { n.style.transition = ""; n.style.transform = ""; }
+    });
+  });
+}
+
 function aroundSelect(grid, on = true) {
   if (!grid) return false;
   const nodes = aroundNodes(grid);
@@ -12070,9 +12148,19 @@ function aroundNavKeys(grid) {
     e.preventDefault(); e.stopPropagation();
     if (best) best.focus();
   });
-  grid.addEventListener("focusout", e => {
-    if (!grid.contains(e.relatedTarget)) grid.classList.remove("picking");
+  grid.addEventListener("focusin", e => {
+    if (e.target.classList.contains("achip")) aroundRingTo(grid, e.target);
   });
+  grid.addEventListener("focusout", e => {
+    if (grid.contains(e.relatedTarget)) return;
+    grid.classList.remove("picking");
+    aroundRingTo(grid, null);
+  });
+  /* Whatever you press, the grid is about to be rebuilt around it, so the old
+     positions are taken now. */
+  grid.addEventListener("click", e => {
+    if (e.target.closest(".achip, .aself")) aroundCapture(grid);
+  }, true);
 }
 
 /* ---------- where this todo sits ----------
@@ -12107,17 +12195,40 @@ function projectRefNear(page, block) {
   return null;
 }
 
+/* Enter on the middle: a new step under the thing you are looking at. It asks
+   for words rather than dropping a blank row in, because a nameless line in
+   somebody's plan is litter, and because the same box is what every other way
+   of adding a todo here uses. */
+function addChildTodo(path, block, space) {
+  promptInput({
+    title: "A step under this one",
+    label: linkWords(block.title) || "This todo",
+    cta: "Add",
+    onSave: text => inSpace(space, () => {
+      const kid = stampAuthor(newBlock({state: "TODO", title: text,
+                                        props: {Added: "[[" + todayISO() + "]]"}}));
+      createLinkedPages(kid.title);
+      (block.children || (block.children = [])).push(kid);
+      touch(path); noteTodoTouched();
+      render();
+      openTaskDetail(path, kid, space);
+    }),
+  });
+}
+
 function surroundingsGrid(path, block, space) {
   const page = getPage(path);
   const grid = el("div", {class: "around", tabindex: "-1"});
   aroundNavKeys(grid);
+  aroundPlay(grid);
   const cell = (where, label, kids) => {
     const box = el("div", {class: "acell " + where}, el("span", {class: "alab"}, label));
     for (const k of [].concat(kids)) if (k) box.append(k);
     return box;
   };
-  const chip = (text, title, onclick, cls) =>
-    el("button", {class: "achip " + (cls || ""), title: title || text, onclick}, text);
+  const chip = (text, title, onclick, cls, key) =>
+    el("button", {class: "achip " + (cls || ""), title: title || text, onclick,
+                  data: key ? {node: key} : {}}, text);
   const toTask = b => () => { closeModal(); openTaskDetail(path, b, space); };
   /* The links are read out, not taken out. They have a column of their own, but
      a todo is often mostly links, and the words left over once you remove them
@@ -12142,10 +12253,12 @@ function surroundingsGrid(path, block, space) {
     const to = findExistingPage(near);
     grid.append(cell("a-project", "Project",
       chip(near.replace(/^[^/]+\//, ""), near,
-        () => { closeModal(); if (to) openPageIn(space, to); else inSpace(space, () => followLink(near)); })));
+        () => { closeModal(); if (to) openPageIn(space, to); else inSpace(space, () => followLink(near)); },
+        "", "p:" + near)));
   } else {
     grid.append(cell("a-project", kind === "project" ? "Project" : LINK_KIND_WORD[kind] || "Page",
-      chip(pageTitle(path), path, () => { closeModal(); openPageIn(space, path); })));
+      chip(pageTitle(path), path, () => { closeModal(); openPageIn(space, path); },
+        "", "p:" + path)));
   }
 
   /* The line above, unless the line above is nothing but the project link that
@@ -12156,11 +12269,18 @@ function surroundingsGrid(path, block, space) {
   if (par && near && !trim(linkWords(par.title).replace(near.replace(/^[^/]+\//, ""), "")))
     par = parentOf(page, par);
   grid.append(cell("a-parent", "Parent",
-    par ? chip(words(par.title), par.title, toTask(par))
+    par ? chip(words(par.title), par.title, toTask(par), "", "b:" + par.id)
         : quiet("none, it sits at the top")));
 
+  /* The middle is a node like any other, so the arrows can land on it, and
+     Enter there is the one thing the grid cannot do by moving: make something
+     new under what you are looking at. Two presses, two meanings, and neither
+     is a key to remember separately. Enter on a node you have walked to centres
+     it; Enter on the one already in the middle grows it. */
   grid.append(cell("a-self", "This todo",
-    el("span", {class: "aself"},
+    el("button", {class: "achip aself", data: {node: "b:" + block.id},
+      title: "Enter adds a step under this one",
+      onclick: () => addChildTodo(path, block, space)},
       (block.state ? block.state + " " : "") + words(block.title))));
 
   /* The tags are the links in the title, and the context goes first because it
@@ -12175,7 +12295,7 @@ function surroundingsGrid(path, block, space) {
   for (const r of ctx.concat(rest))
     tagBox.push(chip(/^c\//i.test(r) ? "@" + r.slice(2) : r, r,
       () => { closeModal(); inSpace(space, () => followLink(r)); },
-      /^c\//i.test(r) ? "ctx" : ""));
+      /^c\//i.test(r) ? "ctx" : "", "p:" + r));
   if (!ctx.length) tagBox.unshift(chip("add context", "A todo with no context cannot be filtered to where you are",
     () => { closeModal(); promptAndInsertContext(path, block); }, "want"));
   grid.append(cell("a-tags", "Tags", tagBox));
@@ -12183,13 +12303,13 @@ function surroundingsGrid(path, block, space) {
   const sibs = (page ? siblingsOf(page, block) : []).filter(b => b !== block && !isMessage(b));
   grid.append(cell("a-sibs", "Siblings" + (sibs.length > 6 ? " · " + sibs.length : ""),
     sibs.length ? sibs.slice(0, 6).map(b => chip(words(b.title), b.title, toTask(b),
-                    OPEN_STATES[b.state] ? "" : "done"))
+                    OPEN_STATES[b.state] ? "" : "done", "b:" + b.id))
                 : quiet("nothing beside it")));
 
   const kids = (block.children || []).filter(b => !isMessage(b));
   grid.append(cell("a-kids", "Children",
     kids.length ? kids.map(b => chip(words(b.title), b.title, toTask(b),
-                    OPEN_STATES[b.state] ? "" : "done"))
+                    OPEN_STATES[b.state] ? "" : "done", "b:" + b.id))
                 : quiet("nothing under it")));
   return grid;
 }
@@ -12205,19 +12325,21 @@ function surroundingsGrid(path, block, space) {
 function projectGrid(path) {
   const grid = el("div", {class: "around", tabindex: "-1"});
   aroundNavKeys(grid);
+  aroundPlay(grid);
   const page = getPage(path);
   const cell = (where, label, kids) => {
     const box = el("div", {class: "acell " + where}, el("span", {class: "alab"}, label));
     for (const k of [].concat(kids)) if (k) box.append(k);
     return box;
   };
-  const chip = (text, title, onclick, cls) =>
-    el("button", {class: "achip " + (cls || ""), title: title || text, onclick}, text);
+  const chip = (text, title, onclick, cls, key) =>
+    el("button", {class: "achip " + (cls || ""), title: title || text, onclick,
+                  data: key ? {node: key} : {}}, text);
   const quiet = text => el("span", {class: "anone"}, text);
 
   const area = areaOfProject(path);
   grid.append(cell("a-project", "Area",
-    area ? chip(area, "a/" + area, () => followLink("a/" + area))
+    area ? chip(area, "a/" + area, () => followLink("a/" + area), "", "p:a/" + area)
          : chip("no area", "A project nothing serves is a project nobody misses",
              () => openAreaPicker(path), "want")));
 
@@ -12227,8 +12349,11 @@ function projectGrid(path) {
       "Move it to another shelf",
       () => openStatusPicker(path))));
 
+  /* Same bargain as a todo: Enter on the middle makes the next step in it. */
   grid.append(cell("a-self", "This project",
-    el("span", {class: "aself"}, pageTitle(path))));
+    el("button", {class: "achip aself", data: {node: "p:" + path},
+      title: "Enter adds the next action",
+      onclick: () => openAddNextAction(path)}, pageTitle(path))));
 
   /* The tags of a project are the links on its page that are not other
      projects or days: the context it is done in, the people in it, the orgs.
@@ -12245,13 +12370,13 @@ function projectGrid(path) {
   const ctx = refs.filter(r => /^c\//i.test(r)), rest = refs.filter(r => !/^c\//i.test(r));
   const tags = ctx.concat(rest).slice(0, 12)
     .map(r => chip(/^c\//i.test(r) ? "@" + r.slice(2) : r, r, () => followLink(r),
-      /^c\//i.test(r) ? "ctx" : ""));
+      /^c\//i.test(r) ? "ctx" : "", "p:" + r));
   grid.append(cell("a-tags", "Tags", tags.length ? tags : quiet("nothing linked yet")));
 
   const sibs = (area ? projectsInArea(area) : projectsIn(code))
     .filter(p => p !== path);
   grid.append(cell("a-sibs", "Beside it" + (sibs.length > 6 ? " · " + sibs.length : ""),
-    sibs.length ? sibs.slice(0, 6).map(p => chip(pageTitle(p), p, () => openPage(p)))
+    sibs.length ? sibs.slice(0, 6).map(p => chip(pageTitle(p), p, () => openPage(p), "", "p:" + p))
                 : quiet(area ? "the only project in this area" : "nothing else on this shelf")));
 
   const todos = page ? flattenBlocks(page.blocks).filter(b => b.state && !isMessage(b)) : [];
@@ -12260,7 +12385,7 @@ function projectGrid(path) {
   grid.append(cell("a-kids", "Todos" + (open.length > 8 ? " · " + open.length + " open" : ""),
     shown.length ? shown.map(b => chip(linkWords(b.title) || "(untitled)",
                       b.title, () => openTaskDetail(path, b),
-                      OPEN_STATES[b.state] ? "" : "done"))
+                      OPEN_STATES[b.state] ? "" : "done", "b:" + b.id))
                  : quiet("no steps yet")));
   return grid;
 }
@@ -12336,7 +12461,7 @@ function openTaskDetail(path, block, space) {
       el("div", {class: "field"},
         el("label", {}, "Where it sits"),
         surroundingsGrid(path, block, space),
-        el("div", {class: "ahint"}, "esc walks it with the arrows, enter centres on what you land on")),
+        el("div", {class: "ahint"}, "esc walks it with the arrows, enter centres; enter on the middle adds a step under it")),
       el("div", {class: "field"}, el("label", {}, "Title"), titleInput),
       el("div", {class: "field"}, el("label", {}, "State"), seg),
       el("div", {class: "field"},
@@ -14332,7 +14457,7 @@ function openHelp() {
           "ctrl-enter  cycle TODO state", el("br"), "backspace on empty  delete", el("br"),
           "\u2191 / \u2193  previous / next block, once the line runs out", el("br"),
           "alt-shift-\u2191 / \u2193  move the line, children and all", el("br"),
-          "esc  walk the grid; enter centres on a node", el("br"),
+          "esc  walk the grid; enter centres, enter on the middle adds a step", el("br"),
           "[[  a list of pages; [[c/ contexts, [[p/ people"))),
     foot: [el("button", {class: "btn primary", onclick: closeModal}, "Got it")],
   });
