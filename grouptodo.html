@@ -571,6 +571,12 @@ body.adv .chk{border-radius:2px}
 .achip.ctx{color:var(--ctx);border-color:color-mix(in srgb, var(--ctx) 45%, var(--border))}
 .achip.want{color:var(--fg3);border-style:dashed}
 .achip.done{opacity:.55;text-decoration:line-through}
+.around:focus{outline:none}
+.around.picking{box-shadow:0 0 0 1px var(--accent) inset;border-radius:var(--radius)}
+.achip:focus-visible,.around.picking .achip:focus{outline:none;
+  border-color:var(--accent);color:var(--fg);
+  box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent)}
+.ahint{font-size:11.5px;color:var(--fg3);margin-top:6px}
 .aself{font-size:13.5px;font-weight:600;color:var(--fg);overflow-wrap:anywhere}
 .anone{font-size:12px;color:var(--fg3)}
 /* On a phone the three columns are a row of slivers, so the same cells stack in
@@ -11373,6 +11379,13 @@ function viewPage() {
   if (code) meta.append(el("button", {class: "nudge", onclick: () => openAddNextAction(path)}, "+ next action"));
   c.append(meta);
 
+  /* A project gets the same grid a todo gets: what it serves, what shelf it is
+     on, what is beside it, what is in it. Escape walks it with the arrows. */
+  if (code && !isSimple()) c.append(el("div", {class: "section"},
+    el("label", {class: "alab", style: "display:block;margin-bottom:5px"}, "Where it sits"),
+    projectGrid(path),
+    el("div", {class: "ahint"}, "esc walks it with the arrows, enter centres on what you land on")));
+
   // The tour explains itself on its own page and nowhere else, so the rest of
   // the app is never carrying an explanation of the app around with it.
   if (isTourProject(path)) {
@@ -11969,6 +11982,94 @@ function openRefile(fromPath, block) {
 }
 
 
+
+/* ---------- moving around the grid without the mouse ----------
+   Escape puts the grid into select mode: the arrows walk from node to node and
+   Enter centres on the one you land on. It is Escape because that is the key
+   you already press to get your hands off the text, and because in select mode
+   the arrows are free -- nothing is being typed into.
+
+   Selection is real DOM focus rather than a class of our own, so Enter already
+   does the right thing, a screen reader says what is selected, and nothing has
+   to be kept in step by hand. Movement is geometric: the nearest node in the
+   direction you pressed, measured from the middle of each. That survives the
+   phone layout, where the same cells stack into one column, with no second set
+   of rules to write or get wrong. */
+function aroundNodes(grid) { return [...grid.querySelectorAll(".achip")]; }
+
+function aroundSelect(grid, on = true) {
+  if (!grid) return false;
+  const nodes = aroundNodes(grid);
+  if (!nodes.length) return false;
+  if (!on) { grid.classList.remove("picking"); grid.blur(); return true; }
+  grid.classList.add("picking");
+  // Start beside the thing in the middle rather than at the top left: the
+  // nearest node to what you are looking at is the one you probably want.
+  const self = grid.querySelector(".a-self");
+  const from = self ? self.getBoundingClientRect() : grid.getBoundingClientRect();
+  const cx = from.left + from.width / 2, cy = from.top + from.height / 2;
+  let best = nodes[0], bestD = Infinity;
+  for (const n of nodes) {
+    const r = n.getBoundingClientRect();
+    const d = Math.hypot(r.left + r.width / 2 - cx, r.top + r.height / 2 - cy);
+    if (d < bestD) { bestD = d; best = n; }
+  }
+  best.focus();
+  return true;
+}
+
+/* The grid on screen that select mode should act on. */
+function aroundOnScreen() {
+  const inModal = $("#modalRoot") && $("#modalRoot").querySelector(".around");
+  return inModal || $(".around");
+}
+
+function aroundNavKeys(grid) {
+  grid.addEventListener("keydown", e => {
+    const picking = grid.classList.contains("picking");
+    if (e.key === "Escape" && picking) {
+      /* In a panel, the second Escape closes it, which is what Escape has
+         always done there: select mode costs one extra press and takes nothing
+         away. On a page there is nothing to close, so Escape just puts the
+         arrows back. */
+      aroundSelect(grid, false);
+      /* The same keypress goes on to the panel, which must not read it as a
+         fresh request to start selecting again: one Escape, one meaning. */
+      e.aroundLeft = true;
+      if (!grid.closest(".modal")) { e.preventDefault(); e.stopPropagation(); }
+      return;
+    }
+    if (!/^Arrow(Up|Down|Left|Right)$/.test(e.key)) return;
+    if (!picking) return;
+    const here = document.activeElement;
+    if (!here || !here.classList.contains("achip")) return;
+    const r = here.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const want = e.key.slice(5).toLowerCase();
+    let best = null, bestScore = Infinity;
+    for (const n of aroundNodes(grid)) {
+      if (n === here) continue;
+      const q = n.getBoundingClientRect();
+      const dx = q.left + q.width / 2 - cx, dy = q.top + q.height / 2 - cy;
+      const along = want === "up" ? -dy : want === "down" ? dy : want === "left" ? -dx : dx;
+      if (along <= 1) continue;                       // not that way
+      const across = Math.abs(want === "up" || want === "down" ? dx : dy);
+      /* A cone, not a half plane. Without it the last node in a row answers
+         Right by jumping to a different row, because something is always
+         further right if you look far enough up. At the end of a row the end
+         of the row is the honest answer. */
+      if (across > along) continue;
+      const score = along + across * 2.4;
+      if (score < bestScore) { bestScore = score; best = n; }
+    }
+    e.preventDefault(); e.stopPropagation();
+    if (best) best.focus();
+  });
+  grid.addEventListener("focusout", e => {
+    if (!grid.contains(e.relatedTarget)) grid.classList.remove("picking");
+  });
+}
+
 /* ---------- where this todo sits ----------
    A todo in a list is a line with no surroundings: you cannot see what it
    belongs to, what comes with it, or what hangs off it without leaving and
@@ -11986,7 +12087,8 @@ function openRefile(fromPath, block) {
    title. */
 function surroundingsGrid(path, block, space) {
   const page = getPage(path);
-  const grid = el("div", {class: "around"});
+  const grid = el("div", {class: "around", tabindex: "-1"});
+  aroundNavKeys(grid);
   const cell = (where, label, kids) => {
     const box = el("div", {class: "acell " + where}, el("span", {class: "alab"}, label));
     for (const k of [].concat(kids)) if (k) box.append(k);
@@ -12047,6 +12149,78 @@ function surroundingsGrid(path, block, space) {
     kids.length ? kids.map(b => chip(words(b.title), b.title, toTask(b),
                     OPEN_STATES[b.state] ? "" : "done"))
                 : quiet("nothing under it")));
+  return grid;
+}
+
+
+/* ---------- where a project sits ----------
+   The same grid one storey up. A project has the same surroundings a todo has,
+   they are just called different things: the area it serves instead of the page
+   it lives on, its status instead of its parent line, its own todos instead of
+   its children, the other projects on the same shelf instead of its siblings.
+   Same three columns, same four rows, same keys, so there is one thing to learn
+   and not two. */
+function projectGrid(path) {
+  const grid = el("div", {class: "around", tabindex: "-1"});
+  aroundNavKeys(grid);
+  const page = getPage(path);
+  const cell = (where, label, kids) => {
+    const box = el("div", {class: "acell " + where}, el("span", {class: "alab"}, label));
+    for (const k of [].concat(kids)) if (k) box.append(k);
+    return box;
+  };
+  const chip = (text, title, onclick, cls) =>
+    el("button", {class: "achip " + (cls || ""), title: title || text, onclick}, text);
+  const quiet = text => el("span", {class: "anone"}, text);
+
+  const area = areaOfProject(path);
+  grid.append(cell("a-project", "Area",
+    area ? chip(area, "a/" + area, () => followLink("a/" + area))
+         : chip("no area", "A project nothing serves is a project nobody misses",
+             () => openAreaPicker(path), "want")));
+
+  const code = statusDirOf(path);
+  grid.append(cell("a-parent", "Status",
+    chip(trim(String(STATUS_TEXT[code] || "no status").replace(/^[_0-9]\s*=\s*/, "")),
+      "Move it to another shelf",
+      () => openStatusPicker(path))));
+
+  grid.append(cell("a-self", "This project",
+    el("span", {class: "aself"}, pageTitle(path))));
+
+  /* The tags of a project are the links on its page that are not other
+     projects or days: the context it is done in, the people in it, the orgs.
+     Context first, same as a todo. */
+  const refs = [];
+  if (page) walkBlocks(page.blocks, b => {
+    if (isMessage(b)) return;
+    for (const raw of linksIn([b.title, ...(b.body || [])].join("\n"))) {
+      const r = trim(raw.split("][")[0]);
+      if (!/^[cpoz]\//i.test(r) || refs.includes(r)) continue;
+      refs.push(r);
+    }
+  });
+  const ctx = refs.filter(r => /^c\//i.test(r)), rest = refs.filter(r => !/^c\//i.test(r));
+  const tags = ctx.concat(rest).slice(0, 12)
+    .map(r => chip(/^c\//i.test(r) ? "@" + r.slice(2) : r, r, () => followLink(r),
+      /^c\//i.test(r) ? "ctx" : ""));
+  grid.append(cell("a-tags", "Tags", tags.length ? tags : quiet("nothing linked yet")));
+
+  const sibs = (area ? projectsInArea(area) : projectsIn(code))
+    .filter(p => p !== path);
+  grid.append(cell("a-sibs", "Beside it" + (sibs.length > 6 ? " · " + sibs.length : ""),
+    sibs.length ? sibs.slice(0, 6).map(p => chip(pageTitle(p), p, () => openPage(p)))
+                : quiet(area ? "the only project in this area" : "nothing else on this shelf")));
+
+  const todos = page ? flattenBlocks(page.blocks).filter(b => b.state && !isMessage(b)) : [];
+  const open = todos.filter(b => OPEN_STATES[b.state]);
+  const shown = (open.length ? open : todos).slice(0, 8);
+  grid.append(cell("a-kids", "Todos" + (open.length > 8 ? " · " + open.length + " open" : ""),
+    shown.length ? shown.map(b => chip(trim(String(b.title).replace(/\[\[[^\]]+\]\]/g, "")
+                      .replace(/\s{2,}/g, " ")) || plainTitle(b.title) || "(untitled)",
+                      b.title, () => openTaskDetail(path, b),
+                      OPEN_STATES[b.state] ? "" : "done"))
+                 : quiet("no steps yet")));
   return grid;
 }
 
@@ -12118,8 +12292,10 @@ function openTaskDetail(path, block, space) {
   modal({
     title: "Action", hint: a.age != null ? "on your list " + a.age + " days" : "",
     body: el("div", {},
-      el("div", {class: "field"}, el("label", {}, "Where it sits"),
-        surroundingsGrid(path, block, space)),
+      el("div", {class: "field"},
+        el("label", {}, "Where it sits"),
+        surroundingsGrid(path, block, space),
+        el("div", {class: "ahint"}, "esc walks it with the arrows, enter centres on what you land on")),
       el("div", {class: "field"}, el("label", {}, "Title"), titleInput),
       el("div", {class: "field"}, el("label", {}, "State"), seg),
       el("div", {class: "field"},
@@ -12216,7 +12392,17 @@ function openTaskDetail(path, block, space) {
       el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
       el("button", {class: "btn primary", onclick: save}, "Save"),
     ],
-    onKey: e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { save(); return true; } return false; },
+    onKey: e => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { save(); return true; }
+      /* Escape hands the panel over to the grid rather than closing it. Once
+         the grid has it, the grid's own Escape hands it back, and the one after
+         that closes the panel as it always did, so nothing is taken away. */
+      if (e.key === "Escape" && !e.aroundLeft) {
+        const grid = $("#modalRoot") && $("#modalRoot").querySelector(".around");
+        if (grid && !grid.classList.contains("picking")) return aroundSelect(grid);
+      }
+      return false;
+    },
   });
 }
 
@@ -14051,6 +14237,10 @@ document.addEventListener("keydown", e => {
   if (e.key === "Escape") {
     resetChord();
     if (!$("#modalRoot").firstChild && focusOn()) { setFocus(false); return; }
+    if (!$("#modalRoot").firstChild && !e.aroundLeft) {
+      const grid = $(".around");
+      if (grid && !grid.classList.contains("picking") && aroundSelect(grid)) return;
+    }
     closeModal();
     return;
   }
@@ -14101,6 +14291,7 @@ function openHelp() {
           "ctrl-enter  cycle TODO state", el("br"), "backspace on empty  delete", el("br"),
           "\u2191 / \u2193  previous / next block, once the line runs out", el("br"),
           "alt-shift-\u2191 / \u2193  move the line, children and all", el("br"),
+          "esc  walk the grid; enter centres on a node", el("br"),
           "[[  a list of pages; [[c/ contexts, [[p/ people"))),
     foot: [el("button", {class: "btn primary", onclick: closeModal}, "Got it")],
   });

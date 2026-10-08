@@ -152,7 +152,19 @@ the one that decides whether you can do the thing where you are standing.  Last
 column, level with the todo, its siblings.
 
 Every cell is a way in: a sibling or a child opens in the same panel, the
-project opens its page, a tag follows the link. Nothing in it is computed or
+project opens its page, a tag follows the link.
+
+`Esc` hands the panel over to the grid. The arrows then walk from node to node
+and `Enter` centres on the one you land on, so the whole of it is reachable
+without the mouse. Movement is geometric, the nearest node in the direction you
+pressed, which is why it still works on a phone where the same cells stack into
+one column. A second `Esc` closes the panel as it always did, so select mode
+costs one extra press and takes nothing away.
+
+A project gets the same grid one storey up: the area it serves above its status
+above the project, its own todos along the bottom, the tags it links to in the
+first column, and the other projects in its area beside it. Same three columns,
+same four rows, same keys, so there is one thing to learn and not two. Nothing in it is computed or
 stored. The project is the page the line lives on, the parent and siblings and
 children are the indentation, and the tags are the `[[links]]` in the title, so
 a line with nothing around it says so rather than showing an empty box.
@@ -989,7 +1001,9 @@ The markdown is identical either way.
 `g d` re-surface. In the outline: `Enter` splits the line where the caret is,
 `Tab`/`Shift-Tab` indent,
 `Ctrl-Enter` cycle state, `[[` a list of pages, `↑`/`↓` between blocks,
-`Alt-Shift-↑`/`↓` move the line among its siblings, children and all. A long title wraps, so the
+`Alt-Shift-↑`/`↓` move the line among its siblings, children and all. In the
+grid under a todo or a project: `Esc` walks it with the arrows, `Enter` centres
+on a node. A long title wraps, so the
 arrows walk the lines inside a block first and only leave it from the top or
 the bottom line - which is what they do in every other outliner, and what your
 hands expect.
