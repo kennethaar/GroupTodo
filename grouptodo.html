@@ -10463,8 +10463,12 @@ function titleForRow(title) {
 /* The same title with the link syntax read out rather than shown. A calendar
    cell has no room for a chip, and a link nested inside a button is both bad
    markup and two things to press in one. */
-function plainTitle(title) {
-  return trim(titleForRow(title).replace(/\[\[([^\]]+)\]\]/g, (all, t) => {
+/* Every [[link]] read out as the words it stands for, dropping nothing. The
+   grid uses this rather than stripping the links: a title is often mostly
+   links, and "Ring about the quote" with the person and the org taken out of it
+   is a line you cannot identify in a list of six. */
+function linkWords(text) {
+  return trim(String(text || "").replace(/\[\[([^\]]+)\]\]/g, (all, t) => {
     if (t.includes("][")) return trim(t.split("][")[1]);
     const raw = trim(t);
     const pfx = (/^([^/]+)\//.exec(raw) || [])[1];
@@ -10474,6 +10478,7 @@ function plainTitle(title) {
     return pfx === "c" ? "@" + label : label;
   }).replace(/\s{2,}/g, " "));
 }
+function plainTitle(title) { return linkWords(titleForRow(title)); }
 
 function spaceBadge(name) {
   const sp = Spaces.get(name);
@@ -12085,6 +12090,23 @@ function aroundNavKeys(grid) {
    stored: the project is the page the line lives on, the parent and siblings
    and children are the indentation, and the tags are the [[links]] in the
    title. */
+/* The nearest project link: this line, then its parent, then its grandparent.
+   Three levels because that is as far as a capture ever nests before the line
+   belongs to something else, and walking the whole way up would make a todo
+   claim a project it only shares a page with. */
+function projectRefNear(page, block) {
+  let b = block;
+  for (let up = 0; up < 3 && b; up++) {
+    for (const raw of linksIn(b.title)) {
+      const r = trim(String(raw).split("][")[0]);
+      const pfx = (/^([^/]+)\//.exec(r) || [])[1];
+      if (pfx && STATUS_DIRS[pfx]) return r;
+    }
+    b = parentOf(page, b);
+  }
+  return null;
+}
+
 function surroundingsGrid(path, block, space) {
   const page = getPage(path);
   const grid = el("div", {class: "around", tabindex: "-1"});
@@ -12097,24 +12119,42 @@ function surroundingsGrid(path, block, space) {
   const chip = (text, title, onclick, cls) =>
     el("button", {class: "achip " + (cls || ""), title: title || text, onclick}, text);
   const toTask = b => () => { closeModal(); openTaskDetail(path, b, space); };
-  /* The tags have their own column, so they are taken out of the words rather
-     than printed twice, once as a chip and once as [[syntax]] in a title. A
-     line that was nothing but links keeps them read out, because a chip with
-     no text in it is not a chip. */
-  const words = s => {
-    const bare = trim(String(s || "").replace(/\[\[[^\]]+\]\]/g, "").replace(/\s{2,}/g, " "));
-    return bare || plainTitle(s) || "(untitled)";
-  };
+  /* The links are read out, not taken out. They have a column of their own, but
+     a todo is often mostly links, and the words left over once you remove them
+     are frequently not a sentence anybody could identify. The brackets go; the
+     words stay. */
+  const words = s => linkWords(s) || "(untitled)";
   const quiet = text => el("span", {class: "anone"}, text);
 
-  /* The project: the page the line lives on, when that page is one. A todo
-     written in a journal belongs to the day, and saying so is more honest than
-     leaving the cell empty. */
-  const kind = pageKind(path);
-  grid.append(cell("a-project", kind === "project" ? "Project" : LINK_KIND_WORD[kind] || "Page",
-    chip(pageTitle(path), path, () => { closeModal(); openPageIn(space, path); })));
+  /* The project is whichever the line says it is. A link to a project on the
+     todo itself wins, then one on the line above it, then the line above that:
+     writing
 
-  const par = page ? parentOf(page, block) : null;
+       - [[1/Rewire the workshop]]
+         - TODO Pull the cable
+
+     in today's page is how most of them get captured, and the project is the
+     point of writing it that way. Only when no line says otherwise does the
+     page the todo lives on answer, which for a journal capture is the day. */
+  const kind = pageKind(path);
+  const near = page ? projectRefNear(page, block) : null;
+  if (near) {
+    const to = findExistingPage(near);
+    grid.append(cell("a-project", "Project",
+      chip(near.replace(/^[^/]+\//, ""), near,
+        () => { closeModal(); if (to) openPageIn(space, to); else inSpace(space, () => followLink(near)); })));
+  } else {
+    grid.append(cell("a-project", kind === "project" ? "Project" : LINK_KIND_WORD[kind] || "Page",
+      chip(pageTitle(path), path, () => { closeModal(); openPageIn(space, path); })));
+  }
+
+  /* The line above, unless the line above is nothing but the project link that
+     already answered the cell above it. A heading written only to hang todos
+     under is scaffolding, not a parent, and printing it twice says nothing the
+     first printing did not. */
+  let par = page ? parentOf(page, block) : null;
+  if (par && near && !trim(linkWords(par.title).replace(near.replace(/^[^/]+\//, ""), "")))
+    par = parentOf(page, par);
   grid.append(cell("a-parent", "Parent",
     par ? chip(words(par.title), par.title, toTask(par))
         : quiet("none, it sits at the top")));
@@ -12126,7 +12166,9 @@ function surroundingsGrid(path, block, space) {
   /* The tags are the links in the title, and the context goes first because it
      is the one that decides whether you can do the thing where you are. */
   const refs = linksIn(block.title).map(r => trim(r.split("][")[0]))
-    .filter(r => r && !/^\d{4}-\d{2}-\d{2}$/.test(r) && !/^go\//i.test(r));
+    .filter(r => r && !/^\d{4}-\d{2}-\d{2}$/.test(r) && !/^go\//i.test(r))
+    // the project has a cell of its own; it is not also a tag
+    .filter(r => r !== near);
   const ctx = refs.filter(r => /^c\//i.test(r));
   const rest = refs.filter(r => !/^c\//i.test(r));
   const tagBox = [];
@@ -12216,8 +12258,7 @@ function projectGrid(path) {
   const open = todos.filter(b => OPEN_STATES[b.state]);
   const shown = (open.length ? open : todos).slice(0, 8);
   grid.append(cell("a-kids", "Todos" + (open.length > 8 ? " · " + open.length + " open" : ""),
-    shown.length ? shown.map(b => chip(trim(String(b.title).replace(/\[\[[^\]]+\]\]/g, "")
-                      .replace(/\s{2,}/g, " ")) || plainTitle(b.title) || "(untitled)",
+    shown.length ? shown.map(b => chip(linkWords(b.title) || "(untitled)",
                       b.title, () => openTaskDetail(path, b),
                       OPEN_STATES[b.state] ? "" : "done"))
                  : quiet("no steps yet")));

@@ -154,6 +154,25 @@ column, level with the todo, its siblings.
 Every cell is a way in: a sibling or a child opens in the same panel, the
 project opens its page, a tag follows the link.
 
+The project is whichever the line says it is: a `[[1/project]]` link on the todo
+wins, then one on the line above it, then the line above that. Writing
+
+```markdown
+- [[1/Rewire the workshop]]
+  - TODO Pull the cable
+```
+
+in today's page is how most todos get captured, and the project is the point of
+writing it that way. Only when no line says otherwise does the page the todo
+lives on answer, which for a journal capture is the day. Three levels and no
+further, so a todo does not claim a project it only shares a page with. A line
+written as nothing but the project link is scaffolding rather than a parent, so
+it is not printed twice.
+
+The links in a title are read out, not taken out. A todo is often mostly links,
+and "Ring about the quote" with the person and the org removed is a line you
+cannot pick out of a row of six. The brackets go; the words stay.
+
 `Esc` hands the panel over to the grid. The arrows then walk from node to node
 and `Enter` centres on the one you land on, so the whole of it is reachable
 without the mouse. Movement is geometric, the nearest node in the direction you
