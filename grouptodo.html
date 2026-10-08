@@ -10375,6 +10375,13 @@ function outlineBlock(path, page, b) {
       // under it is not spare like that, so there the list goes after it.
       txt.blur();
       sibs.splice(sibs.indexOf(b), 1, ...roots);
+    } else if (trim(before) === "") {
+      /* At the very start of a line that has words on it, the list goes above
+         and the line keeps them. Emptying it and rebuilding it underneath
+         leaves a blank block where the caret used to be, which is the same
+         debris Enter-at-the-start already takes care to avoid. */
+      txt.blur();
+      sibs.splice(sibs.indexOf(b), 0, ...roots);
     } else {
       txt.textContent = before;
       txt.blur();
