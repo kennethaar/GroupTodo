@@ -2045,7 +2045,12 @@ async function assignSpaceFolder(name) {
   if (!sp) return false;
   let handle;
   try {
-    handle = await window.showDirectoryPicker({mode: "readwrite", id: "gtd-space-" + name});
+    const opts = {mode: "readwrite", id: "gtd-space-" + name};
+    // startIn makes the picker open on the folder this space last used, so
+    // even a real re-pick starts where it ended rather than at Documents.
+    const prev = PENDING_GRANT.get(name) || await storedHandle(name);
+    if (prev) opts.startIn = prev;
+    handle = await window.showDirectoryPicker(opts);
   } catch (e) {
     if (e.name !== "AbortError") notify("Could not open that folder: " + e.message, "error");
     return false;
@@ -2233,11 +2238,74 @@ function acrossSpaces(fn) {
   return out;
 }
 
-async function ensureHandlePerm(h, mode = "readwrite") {
-  try {
-    if ((await h.queryPermission({mode})) === "granted") return true;
-    return (await h.requestPermission({mode})) === "granted";
-  } catch (_) { return false; }
+/* ---------- a remembered folder whose permission lapsed ----------
+   Downloading grouptodo.html again gives you the same app in a new file, and
+   the handles it stored are still there -- but a file:// page keeps no
+   permission between visits, so the folder reads as "prompt" again. The old
+   behaviour fell back to browser storage with a note telling you to reconnect
+   it in Vault & sync, which meant walking the folder picker to a folder the
+   app already knew. These keep the handle and ask for the click instead. */
+const PENDING_GRANT = new Map();        // space name -> FileSystemDirectoryHandle
+let INIT_DONE = false;
+
+async function grantSpaceFolder(name) {
+  const h = PENDING_GRANT.get(name);
+  if (!h) return false;
+  let ok = false;
+  try { ok = (await h.requestPermission({mode: "readwrite"})) === "granted"; } catch (_) {}
+  if (!ok) {
+    notify("Permission to " + (h.name || "the folder") + " was declined. " +
+           (Spaces.get(name) ? Spaces.get(name).name : name) + " stays in browser storage.", "warn");
+    return false;
+  }
+  PENDING_GRANT.delete(name);
+  if (Spaces.active === name) await openSpace(name);   // re-read, now from the folder
+  else LOADED.delete(name);                            // next open picks the folder up
+  notify((Spaces.get(name) ? Spaces.get(name).name : name) + " is back on " + h.name + ".");
+  return true;
+}
+
+/* One button, no picker: requestPermission() on a handle we already hold names
+   the folder itself, so the whole job is saying yes. */
+function offerFolderReconnect(name) {
+  const h = PENDING_GRANT.get(name);
+  if (!h) return;
+  const sp = Spaces.get(name);
+  const label = sp ? sp.name : name;
+  const where = h.name || (sp && sp.label) || "its folder";
+  const others = Array.from(PENDING_GRANT.keys()).filter(n => n !== name);
+  modal({
+    center: true,
+    title: "Reconnect " + label,
+    body: el("div", {},
+      el("div", {class: "field"},
+        el("div", {style: "font-size:13.5px"},
+          "The folder " + label + " writes into \u2014 \u201C" + where + "\u201D \u2014 is still " +
+          "remembered. Opening the app from a fresh download only drops the browser's " +
+          "permission to it, and that comes back with one click: nothing to find, " +
+          "no folder to pick.")),
+      el("div", {class: "field"},
+        el("div", {style: "font-size:13px;color:var(--fg2)"},
+          "Until then " + label + " reads and writes browser storage, and the .md files in " +
+          where + " are left exactly as they are.")),
+      others.length
+        ? el("div", {class: "field"},
+            el("div", {style: "font-size:12.5px;color:var(--fg3)"},
+              "Waiting the same way: " + others.join(", ") + "."))
+        : null),
+    foot: [
+      el("button", {class: "btn primary", onclick: async () => {
+        closeModal();
+        const ok = await grantSpaceFolder(name);
+        const next = Array.from(PENDING_GRANT.keys())[0];
+        if (ok && next) offerFolderReconnect(next);
+      }}, "Allow access to " + where),
+      el("button", {class: "btn ghost", onclick: () => {
+        closeModal();
+        notify("Reconnect it any time from Vault & sync \u2192 Connect folder.", "warn");
+      }}, "Not now"),
+    ],
+  });
 }
 
 /* Build the storage this space asked for, degrading loudly rather than
@@ -2250,8 +2318,18 @@ async function spaceBackend(sp) {
   if (sp.kind === "fs") {
     try {
       const h = await IDB.get("kv", "dir:" + sp.name);
-      if (h && await ensureHandlePerm(h)) return Backends.fs(h);
-      if (h) notify(`"${sp.name}" needs folder permission again - reconnect it in Vault & sync.`, "warn");
+      if (h) {
+        if ((await h.queryPermission({mode: "readwrite"})) === "granted") {
+          PENDING_GRANT.delete(sp.name);
+          return Backends.fs(h);
+        }
+        /* The handle is still here: the folder IS remembered. Only the
+           permission lapsed, which is what every browser does to a page
+           opened fresh from a download. Granting it again needs a click, so
+           park the handle and let offerFolderReconnect() ask for that one
+           click -- there is nothing for anyone to go looking for. */
+        PENDING_GRANT.set(sp.name, h);
+      }
     } catch (_) {}
   }
   const ns = sp.legacyFlat ? "" : sp.name;
@@ -2293,6 +2371,8 @@ async function openSpace(name) {
   autoSyncLinked();
   checkNews();
   checkClaimable();
+  // At startup init() does this once, after everything else it opens.
+  if (INIT_DONE && PENDING_GRANT.has(name)) offerFolderReconnect(name);
 }
 
 /* ---------- creating and sharing ---------- */
@@ -2305,7 +2385,10 @@ async function createSpace(name, kind, color) {
     if (!CAP.dirPicker) { notify("This browser cannot open folders; using browser storage.", "warn"); sp.kind = "local"; }
     else {
       try {
-        const h = await window.showDirectoryPicker({mode: "readwrite", id: "gtd-space-" + clean});
+        const opts = {mode: "readwrite", id: "gtd-space-" + clean};
+        const near = await storedHandle(Spaces.active).catch(() => null);
+        if (near) opts.startIn = near;        // spaces usually live side by side
+        const h = await window.showDirectoryPicker(opts);
         const clash = await folderConflict(h, clean);
         if (clash) { notify(conflictMessage(clean, clash), "error"); return null; }
         await IDB.set("kv", "dir:" + clean, h);
@@ -12048,8 +12131,12 @@ let LINKED = null;             // FileSystemFileHandle
 async function linkedHandle() {
   if (LINKED) return LINKED;
   try {
+    /* Permission, not the handle, is what a fresh download loses. Hand the
+       handle back either way: syncLinked() asks for permission on the click
+       that called it, and autoSyncLinked() checks for itself before it writes,
+       so neither of them needs the file chosen a second time. */
     const h = await IDB.get("kv", "bundle:" + Spaces.active);
-    if (h && (await h.queryPermission({mode: "readwrite"})) === "granted") return (LINKED = h);
+    if (h) return (LINKED = h);
   } catch (_) {}
   return null;
 }
@@ -12057,10 +12144,14 @@ async function linkedHandle() {
 async function linkVaultFile() {
   if (!CAP.savePicker) { notify("This browser cannot link a file. Use Save / Open instead.", "warn"); return; }
   try {
-    const h = await window.showSaveFilePicker({
+    const opts = {
       suggestedName: bundleName(),
+      id: "gtd-vault-" + Spaces.active,
       types: [{description: "Markdown", accept: {"text/markdown": [".md"]}}],
-    });
+    };
+    const near = LINKED || await storedHandle(Spaces.active).catch(() => null);
+    if (near) opts.startIn = near;     // the save dialog opens where it was last
+    const h = await window.showSaveFilePicker(opts);
     LINKED = h;
     await IDB.set("kv", "bundle:" + Spaces.active, h).catch(() => {});
     await syncLinked();
@@ -13453,10 +13544,18 @@ function installServiceWorker() {
   // A file somebody baked for you answers every question onboarding would ask.
   if (await useBakedInvite()) { PREF.set("onboarded", todayISO()); return; }
 
+  INIT_DONE = true;
   if (!PREF.get("onboarded")) { openOnboarding(); return; }
 
   checkFolderConflicts();
   if (spacesNeedingStorage().length) { openSpaceStorageSetup({firstRun: false}); return; }
+  // A remembered folder that only needs permission again: ask here, where it
+  // is one click, instead of leaving a picker to be found in Vault & sync.
+  if (PENDING_GRANT.size) {
+    offerFolderReconnect(PENDING_GRANT.has(Spaces.active)
+      ? Spaces.active : Array.from(PENDING_GRANT.keys())[0]);
+    return;
+  }
   afterFirstRun();
 })();
 </script>

@@ -532,6 +532,20 @@ app says so at startup and keeps working in memory for the session. Serving it
 from a URL removes the restriction, so on iPhone and iPad that is the better
 path.
 
+### Opening a fresh download
+
+A page opened from a downloaded file keeps no folder permission between visits,
+so every new copy of `grouptodo.html` starts out without access - even though
+the folder itself is still remembered. GroupTodo asks for it back on the way in:
+one dialog, one button naming the folder, no picker to walk. Say *Allow* and the
+space re-reads its `.md` files; say *Not now* and it works in browser storage
+until you reconnect it from **Vault & sync**. The linked vault file is the same -
+the file stays linked, and **Sync** asks for permission on the click you were
+making anyway.
+
+When a folder really does have to be chosen again, the picker opens on the one
+the space last used rather than at Documents.
+
 I verified the Chromium behaviours directly, including the service-worker
 offline cycle, the shared-file merge and a real sandboxed frame. **Safari and
 Firefox I could not test** - no engine available - so those rows come from
