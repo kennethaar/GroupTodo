@@ -6807,7 +6807,12 @@ function setTaskStart(path, b, iso) {
   if (!canMoveTask(b)) return false;
   const span = spanOf(b, isJournalPath(path) ? baseName(path) : null);
   if (!span) return false;
-  if (iso > span.end) iso = span.end;
+  /* Only a real deadline is an end to clamp a start against. For an open task
+     without one, spanOf's "end" is today standing in for "still running", so
+     clamping against it silently refused to schedule anything for next week --
+     which is most tasks, and the most ordinary thing to want. */
+  const hardEnd = dateIn(blockProp(b, "DEADLINE"));
+  if (hardEnd && iso > hardEnd) iso = hardEnd;
   writeDay(b, "SCHEDULED", iso);
   return true;
 }

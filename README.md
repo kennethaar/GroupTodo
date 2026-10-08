@@ -211,8 +211,15 @@ rows.
    with their name on it is already listed and already ticked. Untick anything
    you would rather not raise, and press **Make the sheet**.
 2. **Send.** You get `grouptodo-check-in-mia-halvorsen.html` — one
-   self-contained page, no network, no libraries, no fonts to fetch. Email it,
-   Teams it, drop it in a share. Nothing is uploaded anywhere.
+   self-contained page, no network, no libraries, no fonts to fetch — and a
+   covering note to send it with, in your own voice, ready in your email or in
+   Teams. You attach the file yourself; no link of any kind can do that for
+   you. The note names the actual things you are waiting on, because a stranger
+   could not have known them, and that is what tells the person the mail is
+   really from you — an HTML attachment from somebody is shaped exactly like a
+   phishing mail. It also says outright that they can ignore the attachment and
+   just reply in words. A request nobody is allowed to refuse is a request
+   people learn to ignore.
 3. **They tick.** They double-click it and it opens in whatever browser they
    have. One tap per thing they finished, a note where a note is worth typing,
    then one button. That writes a small markdown file — readable in any editor,

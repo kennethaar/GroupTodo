@@ -140,6 +140,16 @@ pre{font-family:var(--mono);font-size:12.5px;background:var(--sunk);border:1px s
   white-space:nowrap}
 .howto .alt{margin:8px 0 0;font-size:12.5px;color:var(--ink-faint);font-weight:400}
 
+/* --- the covering note: a message pane, so it reads as mail not as markup --- */
+.mailhead{display:grid;gap:5px;padding:0 0 11px;border-bottom:1px solid var(--rule);margin:0 0 12px}
+.mailhead > div{display:grid;grid-template-columns:62px 1fr;gap:10px;align-items:baseline;
+  font-size:13.5px}
+.mailhead span{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-faint)}
+.mailhead b{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.mailhead .attach{font-family:var(--mono);font-size:12.5px;font-weight:500;color:var(--accent)}
+.mailbody{font-family:var(--body);font-size:14.5px;line-height:1.6;white-space:pre-wrap;
+  margin:0 0 14px;color:var(--ink-soft);overflow-wrap:anywhere}
 .clicks{display:grid;gap:8px;margin:16px 0 0;padding:0;list-style:none}
 .clicks li{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:baseline;
   font-size:15px;padding-bottom:8px;border-bottom:1px dotted var(--rule)}
@@ -176,6 +186,48 @@ same bargain as the rest of GroupTodo. The file <em>is</em> the round trip.</p>
       <small>Her answers land in your inbox as a few plain lines. Paste them into GroupTodo
       and you get this review: two tasks to close, one comment to file. Press Apply.</small></li>
   </ol>
+</div>
+
+<hr>
+
+<div class="sec">
+  <p class="eyebrow">Step 2 · what you send</p>
+  <h2>The covering note</h2>
+  <p>Mia is about to get an HTML attachment from somebody. That is exactly what a phishing
+  mail looks like, so the note it arrives with has to do the one thing a phishing mail never
+  does: name the actual work, in your voice, and tell her she is free to ignore the
+  attachment entirely.</p>
+
+  <div class="frame">
+    <div class="chrome"><i></i><i></i><i></i><span>New message — to mia.halvorsen@example.com</span></div>
+    <div class="pane">
+      <div class="mailhead">
+        <div><span>To</span><b id="mailTo">mia.halvorsen@example.com</b></div>
+        <div><span>Subject</span><b id="mailSubj"></b></div>
+        <div><span>Attach</span><b class="attach" id="mailAttach"></b></div>
+      </div>
+      <pre class="mailbody" id="mailBody"></pre>
+      <div class="sheet-foot">
+        <a class="btn primary" id="openMail" href="#">Open in email</a>
+        <a class="btn" id="openTeams" href="#" target="_blank" rel="noopener">Send in Teams</a>
+        <button class="btn" id="copyNote">Copy the note</button>
+      </div>
+      <p class="sent" id="noteSent" hidden></p>
+    </div>
+  </div>
+
+  <div class="note"><b>Why each line is there.</b> The four items are named, because a
+  stranger could not have known them — that is what tells Mia this is really from you. The
+  file is described in plain words, not as "the attached form". And the last line gives her
+  a way out that costs you almost nothing: if she would rather just reply in words, the
+  answers still arrive, and you type them in. A request nobody is allowed to refuse is a
+  request people learn to ignore.</div>
+
+  <div class="note" style="margin-top:12px"><b>You attach it yourself.</b> The same
+  <code>mailto:</code> limit applies going out, so the button fills in the address, the
+  subject and the whole note, and you drag <code>check-in-mia-halvorsen.html</code> in before
+  you press Send — one drag, once. In Teams there is nothing to attach at all: the message
+  goes in the chat and you drop the file in the same window.</div>
 </div>
 
 <hr>
@@ -221,36 +273,12 @@ same bargain as the rest of GroupTodo. The file <em>is</em> the round trip.</p>
 <div class="sec">
   <p class="eyebrow">Step 3b · the way back</p>
   <h2>No attachment, on purpose</h2>
-  <p>The obvious design is a <em>Send back</em> that opens her email with the reply file
-  already attached. That cannot be built, by anyone: a <code>mailto:</code> link carries
-  <code>to</code>, <code>subject</code>, <code>cc</code>, <code>bcc</code> and
-  <code>body</code> and nothing else. The non-standard <code>attach=</code> that one or two
-  old desktop clients once honoured is ignored by every browser now — a web page that could
-  pre-attach a file off your disk is a web page that could mail your disk to a stranger.</p>
-
-  <p>So the reply does not travel as an attachment. It travels <b>as the body of the
-  email</b>, which is better anyway: nothing to save, nothing to find again in Downloads,
-  nothing to forget to attach. Mia presses one button and presses Send.</p>
-
-  <div class="note"><b>Where that stops working.</b> A <code>mailto:</code> is a URL, and
-  Outlook truncates one around two thousand characters. The four tasks on this page, with
-  two notes, make a link of <b>982</b> — comfortable, but not as comfortable as it looks,
-  because a dozen tasks or one long paragraph would clear two thousand easily. So the sheet
-  measures the encoded link every time she ticks or types: under budget the button opens her
-  email, over budget it changes to <em>Save the reply and attach it</em> and says why.
-  Quietly sending a truncated reply would be worse than either.</div>
-
-  <div class="note" style="margin-top:12px"><b>What that budget bought.</b> The machine-readable
-  marker at the bottom of the reply was being pretty-printed, which spent four hundred
-  characters — a fifth of the whole allowance — indenting something no human ever reads. On
-  one line the same reply is 982 instead of 1,270. Worth knowing before this is built: in a
-  design where the transport is a URL, whitespace is a budget line.</div>
-
-  <p style="margin-top:14px">And whatever route she takes — email body, attached file,
-  pasted into Teams, read out over the phone and typed in by you — the import takes the
-  same few lines. The text is the protocol. It is deliberately short enough that a person
-  could retype it, because the one thing a round trip through other people's email cannot
-  assume is that any particular route will work.</p>
+  <p>A <code>mailto:</code> link carries <code>to</code>, <code>subject</code> and
+  <code>body</code> and nothing else — a page that could pre-attach a file off your disk
+  could mail your disk to a stranger. So Mia's reply travels <b>as the body of the email</b>,
+  which needs nothing of her but pressing Send. The sheet measures the link as she ticks;
+  past the two thousand characters Outlook truncates at, the button changes to
+  <em>Save the reply and attach it</em> rather than quietly sending half an answer.</p>
 </div>
 
 <div class="sec">
@@ -457,4 +485,90 @@ function showFallback(txt){
   sentEl.textContent = "Copying was refused here. The reply is plain text — select it from the pre block above in the real sheet.";
 }
 draw(); count(); refreshSend();
+
+/* ============================================================
+   STEP 2 -- the note that carries the sheet
+   An HTML attachment from a colleague is shaped exactly like a phishing mail,
+   so the covering note has to earn the open. Three things do that, and none of
+   them is a logo: the four items are named, because a stranger could not have
+   known them; the file is described in plain words; and she is told outright
+   that she can ignore the attachment and just reply. A request nobody is
+   allowed to refuse is a request people learn to ignore.
+   ============================================================ */
+var ASK = {
+  to:"mia.halvorsen@example.com", toName:"Mia", from:"Kenneth Aar",
+  file:"check-in-mia-halvorsen.html"
+};
+
+function noteSubject(){
+  var n = TASKS.length;
+  // Not "Update request" and not the app's name: a subject a person would type.
+  return "Four things I'm waiting on \u2014 2 minutes if you have them".replace("Four",
+    ["Nothing","One thing","Two things","Three things","Four things","Five things"][n] || (n + " things"))
+    .replace("things I'm", n === 1 ? "I'm" : "I'm");
+}
+
+function noteBody(){
+  var items = TASKS.map(function(t){
+    return "  \u00b7 " + t.title + (t.asked ? "  (" + t.asked + ")" : "");
+  }).join("\n");
+  return [
+    "Hei " + ASK.toName + ",",
+    "",
+    "I'm chasing a few things and I'd rather not ping you about them one at a time,",
+    "so I've put them in the attached file:",
+    "",
+    items,
+    "",
+    "It is a page that opens in your browser \u2014 no login, no account, nothing to",
+    "install. Tick what's done, and the button at the bottom opens your email back",
+    "to me with the answers already written in.",
+    "",
+    "If you'd rather not open an attachment \u2014 fair enough, I wouldn't either \u2014 just",
+    "reply to this and tell me which ones are done. That works just as well.",
+    "",
+    "Thanks,",
+    ASK.from
+  ].join("\n");
+}
+
+(function drawNote(){
+  var subj = noteSubject(), body = noteBody();
+  document.getElementById("mailTo").textContent = ASK.to;
+  document.getElementById("mailSubj").textContent = subj;
+  document.getElementById("mailAttach").textContent = ASK.file;
+  document.getElementById("mailBody").textContent = body;
+
+  var mail = "mailto:" + encodeURIComponent(ASK.to)
+    + "?subject=" + encodeURIComponent(subj)
+    + "&body=" + encodeURIComponent(body);
+  var mailBtn = document.getElementById("openMail");
+  mailBtn.href = mail;
+  mailBtn.title = "Opens your email with the note written; attach the file before you send";
+
+  /* Teams takes a deep link to a chat with the message pre-typed. Nothing can
+     attach there either, so the file goes in the same window by hand. */
+  document.getElementById("openTeams").href =
+    "https://teams.microsoft.com/l/chat/0/0?users=" + encodeURIComponent(ASK.to)
+    + "&message=" + encodeURIComponent(body);
+
+  var sent = document.getElementById("noteSent");
+  mailBtn.addEventListener("click", function(){
+    sent.hidden = false;
+    sent.textContent = "Your email is opening with the note in it. Drag "
+      + ASK.file + " in, then press Send \u2014 the one step a mailto: link cannot do for you.";
+  });
+  document.getElementById("openTeams").addEventListener("click", function(){
+    sent.hidden = false;
+    sent.textContent = "Teams opens on a chat with " + ASK.toName
+      + ", message ready. Drop the file into the same window before you send.";
+  });
+  document.getElementById("copyNote").addEventListener("click", function(){
+    var btn = document.getElementById("copyNote");
+    var txt = subj + "\n\n" + body;
+    var ok = function(){ btn.textContent = "Copied"; setTimeout(function(){ btn.textContent = "Copy the note"; }, 1600); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, ok);
+    else ok();
+  });
+})();
 </script>
