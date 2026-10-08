@@ -280,6 +280,48 @@ header.top .burger{display:none}
 /* display on a class beats the user agent's [hidden]{display:none}, so without
    this a hidden "show all" stays in the row as an empty strip you can press --
    the same trap the context chip fell into. */
+/* ---------- focus ----------
+   Not a different screen: the same screen with everything that is not the work
+   taken away. The sidebar, the chips, the nudges and the counts all go, the
+   column narrows to a readable measure, and what is left is the list and the
+   box you type into. Escape, or the button again, brings it all back. */
+/* #app is a two column grid, so hiding the sidebar alone drops #content into
+   the 248px column it vacated. The column has to go with it. */
+body.focus #app{grid-template-columns:1fr}
+body.focus #sidebar{display:none}
+body.focus .burger{display:none}
+body.focus .h-title .sub{display:none}
+body.focus #btnTheme,body.focus #btnSearch{display:none}
+body.focus .wrap{max-width:46rem;margin-inline:auto}
+body.focus .nudgebar,body.focus .coach,body.focus .hero{display:none}
+body.focus .section.quiet{display:none}
+body.focus .t-act{opacity:0;transition:opacity .12s ease}
+body.focus .task:hover .t-act,body.focus .task:focus-within .t-act{opacity:1}
+body.focus .chip.miss,body.focus .chip.age{display:none}
+body.focus #btnFocus{color:var(--accent);border-color:var(--accent)}
+body.focus .statefilter{display:none}
+@media (min-width:900px){ body.focus #content{padding-top:8px} }
+
+/* ---------- advanced reads as text ----------
+   Advanced is the outliner half, and an outliner is a text file you can see.
+   Chrome that is useful in Simple -- rounded cards, filled state pills, hover
+   lifts -- fights that, so in Advanced the rows flatten to lines, the badges
+   become the words they stand for, and the type goes monospace where the file
+   itself would be. */
+body.adv .card{background:transparent;border-color:transparent;border-radius:0}
+body.adv .task{border-radius:0;padding-block:5px}
+body.adv .task:hover{background:var(--bg2)}
+body.adv .t-title{font-family:var(--mono);font-size:12.5px;line-height:1.5}
+body.adv .state{background:transparent;padding:0 2px;font-family:var(--mono);font-size:11px;
+  letter-spacing:.5px;border-radius:0}
+body.adv .state.btn:hover{box-shadow:none;text-decoration:underline}
+body.adv .chip{background:transparent;border-color:transparent;font-family:var(--mono);
+  font-size:11px;padding:0 3px}
+body.adv .chip.proj::before{content:"@@"}
+body.adv .chip.ctx{opacity:.85}
+body.adv .prow,body.adv .dash-item{font-family:var(--mono);font-size:12.5px}
+body.adv .section>h3{font-family:var(--mono);font-size:11px;letter-spacing:.14em}
+body.adv .chk{border-radius:2px}
 .showmore[hidden]{display:none}
 .showmore{display:block;width:100%;text-align:center;background:none;border:0;cursor:pointer;
   border-top:1px solid var(--border);color:var(--accent);font-size:12.5px;padding:10px}
@@ -800,6 +842,7 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4p
       <div class="h-title"><span id="hTitle">Today</span><span class="sub" id="hSub"></span></div>
       <div class="h-sp"></div>
       <button class="ctxnow" id="btnContext" hidden></button>
+      <button class="btn sm ghost" id="btnFocus" title="Focus (f f)">&#9678;</button>
       <button class="btn sm ghost" id="btnSearch" title="Search (/)">&#8981;</button>
       <button class="btn sm ghost" id="btnTheme" title="Theme">&#9689;</button>
       <button class="btn primary sm" id="btnCapture">&#65291; Capture <kbd>c</kbd></button>
@@ -1976,7 +2019,7 @@ async function folderConflict(handle, exceptSpace) {
 
 function conflictMessage(name, c) {
   if (c.how === "same")
-    return `That folder already holds ${c.space}. Two spaces in one folder would put them in the same place — share it and you share both. Pick a different folder for ${name}.`;
+    return `That folder already holds ${c.space}. Two spaces in one folder would put them in the same place - share it and you share both. Pick a different folder for ${name}.`;
   if (c.how === "inside")
     return `That folder is inside ${c.space}'s folder. ${c.space} reads everything beneath it, so it would swallow ${name}. Pick a folder outside it.`;
   return `That folder contains ${c.space}'s folder. ${name} would read and sync ${c.space}'s files as its own. Pick a folder that does not contain it.`;
@@ -2072,14 +2115,14 @@ function openSpaceStorageSetup({firstRun = false} = {}) {
       el("div", {style: "color:var(--fg2);font-size:13px"},
         "Safari, Firefox and the mobile browsers have no folder access, so each space " +
         "lives in this browser's own storage. They are still completely separate from " +
-        "each other, and each one syncs through its own vault file — Vault & sync → " +
+        "each other, and each one syncs through its own vault file - Vault & sync → " +
         "Save vault file. On desktop Chrome or Edge you can give each space a real folder.")));
   } else {
     body.append(el("div", {class: "field"},
       el("label", {}, "One folder each"),
       el("div", {style: "color:var(--fg2);font-size:13px"},
         "A space is a folder you can share on its own. Two spaces can never share a " +
-        "folder, and one can never sit inside another — either would put them in the " +
+        "folder, and one can never sit inside another - either would put them in the " +
         "same place, and sharing one would share both. GroupTodo refuses those choices."),
       el("div", {style: "color:var(--warn);font-size:12.5px;margin-top:8px"},
         "Until a space has a folder it lives in this browser only, and nothing it " +
@@ -2198,7 +2241,7 @@ async function spaceBackend(sp) {
     try {
       const h = await IDB.get("kv", "dir:" + sp.name);
       if (h && await ensureHandlePerm(h)) return Backends.fs(h);
-      if (h) notify(`"${sp.name}" needs folder permission again — reconnect it in Vault & sync.`, "warn");
+      if (h) notify(`"${sp.name}" needs folder permission again - reconnect it in Vault & sync.`, "warn");
     } catch (_) {}
   }
   const ns = sp.legacyFlat ? "" : sp.name;
@@ -2393,7 +2436,7 @@ function newSpacePrompt(then) {
   nameInput.addEventListener("input", () => preview.paint());
   const seg = el("div", {class: "seg"});
   const opts = [
-    CAP.dirPicker ? ["fs", "Its own folder", "pick a folder — share that folder with the people who should see it"] : null,
+    CAP.dirPicker ? ["fs", "Its own folder", "pick a folder - share that folder with the people who should see it"] : null,
     ["local", "In this browser", "share it later as a single markdown file"],
   ].filter(Boolean);
   for (const [k, label] of opts) {
@@ -3582,7 +3625,7 @@ const projectsWithoutOutcome = () =>
 function openOutcomePrompt(path, then) {
   promptInput({
     title: "What does done look like?",
-    label: 'Write it as if it already happened — "Sink repaired, no drip"',
+    label: 'Write it as if it already happened - "Sink repaired, no drip"',
     value: outcomeOf(path) || "",
     cta: "Save outcome",
     onSave: text => { setOutcome(path, text); render(); if (then) then(); },
@@ -3686,7 +3729,7 @@ function openDependsPicker(path) {
   const refresh = () => {
     summary.textContent = pick.size
       ? pageTitle(path) + " starts after " + Array.from(pick).map(pageTitle).join(", ")
-      : "Nothing comes first — this project can start whenever you like.";
+      : "Nothing comes first - this project can start whenever you like.";
   };
 
   if (!choices.length) card.append(el("div", {class: "empty"},
@@ -3719,7 +3762,7 @@ function openDependsPicker(path) {
         card, summary),
       el("div", {class: "field"},
         el("div", {style: "color:var(--fg3);font-size:12.5px"},
-          "Saved as depends_on:: on the page — one line of markdown, so the order " +
+          "Saved as depends_on:: on the page - one line of markdown, so the order " +
           "travels with the files. A project that would depend on itself, however long " +
           "the way round, is not offered."))),
     foot: [
@@ -4340,7 +4383,7 @@ function computeNudges() {
       count: null, act: () => openReview(0),
     });
   }
-  if (!n.length) n.push({id: "clean", level: "ok", label: "system is clean — go do the work", count: null, act: null});
+  if (!n.length) n.push({id: "clean", level: "ok", label: "system is clean - go do the work", count: null, act: null});
   return n;
 }
 
@@ -4447,6 +4490,23 @@ const noteTodoTouched = () => { state.lastTodoTouch = Date.now(); };
    nothing is hidden permanently -- only out of the way.
    ============================================================ */
 const isSimple = () => (PREF.get("mode", "simple")) === "simple";
+
+/* ---------- focus ----------
+   A mode in the sense that a quiet room is a mode: nothing is hidden that you
+   cannot get back by pressing the same button, nothing is saved differently,
+   and the files do not know about it. It is per device, like the theme, because
+   wanting a quiet screen is about where you are sitting, not about the work. */
+const focusOn = () => PREF.get("focus", "") === "1";
+function setFocus(on) {
+  PREF.set("focus", on ? "1" : "");
+  applyChrome();
+  if (on) notify("Focus. Escape, or the button again, brings the rest back.");
+}
+/* Both body classes in one place, so a redraw cannot leave one of them behind. */
+function applyChrome() {
+  document.body.classList.toggle("focus", focusOn());
+  document.body.classList.toggle("adv", !isSimple());
+}
 
 function setMode(mode) {
   PREF.set("mode", mode);
@@ -4558,7 +4618,7 @@ function quickAdd(targetPath, opts = {}) {
         const next = $(".quickadd input");
         if (next) next.focus();
       });
-      if (!startsWithVerb(text)) notify("Tip: start with a verb you could film — Call, Draft, Buy.", "warn");
+      if (!startsWithVerb(text)) notify("Tip: start with a verb you could film - Call, Draft, Buy.", "warn");
     },
   });
   return el("div", {class: "quickadd"}, el("span", {}, "+"), input);
@@ -4613,7 +4673,7 @@ function coachSteps() {
     steps.push({k: "tour", done: tourLeft === 0, optional: true,
       label: "Find your way round the rest of it", cta: "Open",
       hint: tourLeft ? tourLeft + " short steps, each one a link to the part it is about" : "",
-      why: "Half of what is here is behind one more click — contexts, planned dates, " +
+      why: "Half of what is here is behind one more click - contexts, planned dates, " +
            "people, routines, the folder your files live in. The steps are on your list " +
            "like anything else, so ignore them, reorder them or delete the lot.",
       act: () => openPage(tourPath)});
@@ -4780,7 +4840,7 @@ function askTourCheckoff(steps) {
     el("div", {class: "field"},
       el("div", {style: "color:var(--fg2);font-size:13.5px;line-height:1.55"},
         list.length === 1 ? "You have been to " + tourLabel(list[0].dest) +
-          ". Tick the step off if you are done with it — nothing is closed unless you say so."
+          ". Tick the step off if you are done with it - nothing is closed unless you say so."
           : "You have been to " + list.length + " of the places on " + TOUR_TITLE.toLowerCase() +
             ". Tick off the ones you are done with. Nothing is closed unless you say so.")));
   for (const s of list) {
@@ -4883,14 +4943,14 @@ function seedTourProject() {
      because the link reads out its own destination, so the day one of these
      screens is renamed the task does not go on claiming the old name. */
   page.blocks = [
-    step("Find everything you have open in one list — [[go/todos]]"),
-    step("Send something to a day instead of today — [[go/agenda]]"),
-    step("Say where you are, and see what you can do there — [[go/context]]"),
-    step("Give your files a folder, and put your name on your changes — [[go/vault]]"),
-    step("Find out who else is here and what they are carrying — [[go/people]]"),
-    step("Park a job that comes round again rather than finishing — [[go/checklists]]"),
-    step("Read the one screen that keeps the rest trustworthy — [[go/review]]"),
-    step("Find anything by typing part of it — [[go/search]]"),
+    step("Find everything you have open in one list - [[go/todos]]"),
+    step("Send something to a day instead of today - [[go/agenda]]"),
+    step("Say where you are, and see what you can do there - [[go/context]]"),
+    step("Give your files a folder, and put your name on your changes - [[go/vault]]"),
+    step("Find out who else is here and what they are carrying - [[go/people]]"),
+    step("Park a job that comes round again rather than finishing - [[go/checklists]]"),
+    step("Read the one screen that keeps the rest trustworthy - [[go/review]]"),
+    step("Find anything by typing part of it - [[go/search]]"),
   ];
   putPage(path, page);
   return path;
@@ -5081,7 +5141,7 @@ const WIZ_STEPS = [
     render: () => el("div", {class: "field"},
       el("label", {}, "Which parts of your life and work must stay healthy?"),
       el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
-        "These never get finished — you just keep them in good shape. Most people " +
+        "These never get finished - you just keep them in good shape. Most people " +
         "land on somewhere between four and twelve. One per line, in your own words."),
       wizField("areas", "Health\nFinances\nTeam\nHome"),
       el("div", {style: "color:var(--fg3);font-size:12px;margin-top:8px"}, "Tap any that fit:"),
@@ -5131,7 +5191,7 @@ function applyWizard() {
   if (goals.length) made.push(goals.length + " goals");
   if (trim(WIZ.vision)) made.push("a vision");
   if (trim(WIZ.purpose)) made.push("a purpose");
-  notify(made.length ? "Created " + made.join(", ") + "." : "Nothing created — run it again any time.");
+  notify(made.length ? "Created " + made.join(", ") + "." : "Nothing created - run it again any time.");
   render();
 }
 
@@ -5192,7 +5252,7 @@ function openContextsWizard(onDone) {
       el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
         "A context is the thing an action needs: a phone in your hand, a shop you are " +
         "standing in, two uninterrupted hours. Picking one is what lets GroupTodo show " +
-        "the three oldest things you could do right now. Yours should match your real life — " +
+        "the three oldest things you could do right now. Yours should match your real life - " +
         "these are only suggestions."),
       ta, chips),
     foot: [
@@ -5262,7 +5322,7 @@ function viewHorizons() {
       el("h2", {}, "Horizons of focus"),
       el("div", {style: "font-size:16px;font-weight:600;margin-bottom:2px"}, "Altitude, not just a list"),
       el("p", {}, "Purpose, vision, goals and areas are what make your projects mean something. " +
-                  "Nothing is created for you — the wizard asks, you answer."),
+                  "Nothing is created for you - the wizard asks, you answer."),
       el("div", {class: "acts"},
         el("button", {class: "btn primary", onclick: () => openHorizonsWizard(0)}, "Run the setup wizard"))));
   }
@@ -6659,7 +6719,7 @@ function viewGraph() {
   if (g.dropped) c.append(el("div", {class: "section quiet"},
     el("div", {style: "color:var(--fg3);font-size:12.5px"},
       "Showing the " + CFG.graphNodes + " best-connected pages. " + g.dropped +
-      " more are in the vault — they are not drawn because past this many dots " +
+      " more are in the vault - they are not drawn because past this many dots " +
       "the picture stops telling you anything.")));
 
   if (!g.nodes.length) {
@@ -7073,11 +7133,11 @@ function viewGantt() {
 
   const notes = [];
   if (hiddenRows) notes.push(hiddenRows + " project(s) sit entirely outside this window.");
-  if (undated) notes.push(undated + " task(s) have no date at all, so they have no bar — " +
+  if (undated) notes.push(undated + " task(s) have no date at all, so they have no bar - " +
     "a span invented for them would read exactly like a real one.");
   const troubled = shown.filter(r => r.group.trouble);
   if (troubled.length) notes.push(troubled.length + " project(s) start before what they wait " +
-    "on has finished — the hatched part of the bar is the overlap.");
+    "on has finished - the hatched part of the bar is the overlap.");
   if (notes.length) c.append(el("div", {class: "section quiet"},
     el("div", {style: "color:var(--fg3);font-size:12.5px"}, notes.join(" "))));
   return c;
@@ -7235,7 +7295,7 @@ function ganttGroupRow(row, pct) {
     if (need && need >= GWIN.from && need <= GWIN.to)
       track.append(el("span", {class: "ggate" + (g.trouble ? " bad" : ""),
         style: "left:" + pct(need) + "%",
-        title: "Cannot start before " + need + " — waiting on " +
+        title: "Cannot start before " + need + " - waiting on " +
                inSpace(g.space, () => g.deps.map(pageTitle).join(", "))}));
   }
 
@@ -7252,7 +7312,7 @@ function ganttGroupRow(row, pct) {
       // count beside it: "Project 0  8 o" tells you nothing.
       el("span", {class: "nm", title: g.label +
         (g.deps && g.deps.length
-          ? " — after " + inSpace(g.space, () => g.deps.map(pageTitle).join(", "))
+          ? " - after " + inSpace(g.space, () => g.deps.map(pageTitle).join(", "))
           : "")}, g.label),
       g.blockers && g.blockers.length
         ? el("span", {class: "gdep", title: "Waiting on " +
@@ -7529,7 +7589,7 @@ function copyReport(rows, since, who) {
   for (const [name, items] of Array.from(byProject.entries()).sort((a, b) => b[1].length - a[1].length)) {
     lines.push("## " + name + " (" + items.length + ")");
     for (const r of items)
-      lines.push("- " + plainTitle(r.title) + "  — " + r.when + (r.who && !who ? ", " + r.who : ""));
+      lines.push("- " + plainTitle(r.title) + "  - " + r.when + (r.who && !who ? ", " + r.who : ""));
     lines.push("");
   }
   copyText(lines.join("\n"), rows.length + " finished task(s) copied.");
@@ -8465,7 +8525,7 @@ Anything you leave unticked, ${esc(firstNameOf(from))} will take as still coming
   <span class="count" id="count"></span>
 </div>
 <div id="said"></div>
-<p class="tail">This page is the whole thing — no account, nothing uploaded, nothing
+<p class="tail">This page is the whole thing - no account, nothing uploaded, nothing
 tracked. It only knows the ${items.length === 1 ? "line" : "lines"} above. Your ticks are
 kept in this browser, so you can close it and come back.</p>
 </div>
@@ -8573,12 +8633,12 @@ document.getElementById("send").addEventListener("click", function(){
   var p = document.createElement("p");
   p.className = "said";
   if (saved) {
-    p.appendChild(document.createTextNode("Saved " + name + " — look in your Downloads. "
+    p.appendChild(document.createTextNode("Saved " + name + " - look in your Downloads. "
       + "Send that file back to " + D.from + " and you are done. "));
     if (D.replyTo) {
       var a2 = document.createElement("a");
       a2.href = "mailto:" + D.replyTo + "?subject=" + encodeURIComponent("Update for " + D.from)
-        + "&body=" + encodeURIComponent("Here is my update — the file is attached.\\n\\n" + text);
+        + "&body=" + encodeURIComponent("Here is my update - the file is attached.\\n\\n" + text);
       a2.textContent = "Open an email to " + D.replyTo;
       p.appendChild(a2);
       p.appendChild(document.createTextNode(" (attach the file, or just send it as it is)."));
@@ -8617,7 +8677,7 @@ draw(); count();
 /* ---------- asking ---------- */
 function openAskForUpdate(name) {
   const me = whoAmI();
-  if (!me) { notify("Put your name in first — the sheet has to say who is asking.", "warn"); return; }
+  if (!me) { notify("Put your name in first - the sheet has to say who is asking.", "warn"); return; }
   const found = waitingOnFrom(name);
   if (!found.length) {
     notify("Nothing open with " + name + "'s name on it.", "warn");
@@ -8633,7 +8693,7 @@ function openAskForUpdate(name) {
     summary.textContent = pick.size
       ? pick.size + (pick.size === 1 ? " line" : " lines") + " go to " + name +
         ". Nothing else about your vault goes with them."
-      : "Nothing selected — the sheet would be empty.";
+      : "Nothing selected - the sheet would be empty.";
   };
 
   found.forEach((a, i) => {
@@ -8677,8 +8737,10 @@ function openAskForUpdate(name) {
           " never needs an account."))),
     foot: [
       el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+      el("button", {class: "btn ghost", onclick: () => { closeModal(); importUpdatePasted(); }},
+        "Paste a reply"),
       el("button", {class: "btn ghost", onclick: () => { closeModal(); importUpdateFromFile(); }},
-        "Import a reply"),
+        "Import a file"),
       el("button", {class: "btn primary", onclick: () => {
         const chosen = found.filter((_, i) => pick.has(i));
         if (!chosen.length) { notify("Pick at least one thing to ask about.", "warn"); return; }
@@ -8705,12 +8767,146 @@ function openAskForUpdate(name) {
         sendFileOut(file, checkinSheetHtml({to: name, from: me, items, replyTo}),
                     "text/html", {title: "Update for " + me}).then(how => {
           if (how === "cancelled") return;
-          notify((how === "shared" ? "Sent " : "Saved ") + file + " — " + items.length +
+          notify((how === "shared" ? "Sent " : "Saved ") + file + " - " + items.length +
                  " line" + (items.length === 1 ? "" : "s") + " for " + name +
                  ". When the reply comes back, open it here.");
           render();
+          // Saving the file is half the job; it still has to reach them with
+          // something that reads like you wrote it.
+          if (how !== "shared") setTimeout(() => openAskNote(name, items, file), 250);
         });
       }}, "Make the sheet"),
+    ],
+  });
+}
+
+/* ---------- the note that carries the sheet ----------
+   They are about to get an HTML attachment from somebody, which is the shape of
+   a phishing mail. The note has to earn the open, and a logo will not do it.
+   Two things will: the items are named, because a stranger could not have known
+   them, and they are told outright that they can ignore the attachment and just
+   reply. A request nobody is allowed to refuse is a request people learn to
+   ignore.
+
+   No em dashes in here. It lands in somebody's mail client, where a dash that
+   is not on the keyboard reads as something a machine wrote, and the whole job
+   of this note is to read as though a person wrote it. */
+const ASK_NOTE = {
+  en: {
+    subject: (n) => (["No","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten"][n] || n)
+      + (n === 1 ? " thing" : " things") + " I'm waiting for - 2 minute check-in",
+    body: (them, me, items, file) => [
+      "Hei " + them + ",",
+      "",
+      "I'm chasing a few things and I'd rather not ping you about them one at a time,",
+      "so I've put them in " + file + ", attached:",
+      "",
+      items,
+      "",
+      "It is a page that opens in your browser. No login, no account, nothing to",
+      "install. Tick what's done, and the button at the bottom sends the answers",
+      "back to me.",
+      "",
+      "If you'd rather not open an attachment, just reply to this and tell me which",
+      "ones are done. That works just as well.",
+      "",
+      "Thanks,",
+      me,
+    ].join("\n"),
+  },
+  no: {
+    subject: (n) => (["Ingen","\u00c9n","To","Tre","Fire","Fem","Seks","Sju","\u00c5tte","Ni","Ti"][n] || n)
+      + " ting jeg venter p\u00e5 - 2 minutters sjekk",
+    body: (them, me, items, file) => [
+      "Hei " + them + ",",
+      "",
+      "Jeg venter p\u00e5 noen ting, og vil helst slippe \u00e5 mase om dem \u00e9n av gangen,",
+      "s\u00e5 jeg har samlet dem i " + file + ", som ligger ved:",
+      "",
+      items,
+      "",
+      "Det er en side som \u00e5pner seg i nettleseren din. Ingen innlogging, ingen konto,",
+      "ingenting \u00e5 installere. Huk av det som er gjort, s\u00e5 sender knappen nederst",
+      "svarene tilbake til meg.",
+      "",
+      "Vil du heller ikke \u00e5pne et vedlegg, er det bare \u00e5 svare p\u00e5 denne og si hvilke",
+      "som er gjort. Det funker like bra.",
+      "",
+      "Takk,",
+      me,
+    ].join("\n"),
+  },
+};
+const askLang = () => (PREF.get("askLang", "") === "no" ? "no" : "en");
+
+function askNote(name, items, file) {
+  const t = ASK_NOTE[askLang()];
+  const lines = items.map(i => "  \u00b7 " + plainTitle(i.title)
+    + (i.askedLabel ? "  (" + i.askedLabel + ")" : "")).join("\n");
+  return {subject: t.subject(items.length),
+          body: t.body(name.split(" ")[0], whoAmI() || "", lines, file)};
+}
+
+/* mailto: carries to, subject and body and nothing else, so the file is
+   attached by hand either way. Teams takes a chat deep link with the message
+   pre-typed; same bargain, the file goes in the same window. */
+function openAskNote(name, items, file) {
+  const note = askNote(name, items, file);
+  const to = el("input", {type: "email", placeholder: "them@example.com",
+    value: PREF.get("askTo:" + slugPerson(name), "")});
+  const box = el("textarea", {rows: 14, style: "font-size:12.5px;line-height:1.5"});
+  box.value = note.subject + "\n\n" + note.body;
+
+  const remember = () => { if (trim(to.value)) PREF.set("askTo:" + slugPerson(name), trim(to.value)); };
+  const bodyNow = () => box.value.split("\n").slice(2).join("\n");
+  const subjNow = () => box.value.split("\n")[0];
+
+  modal({
+    center: true, title: "Send it to " + name,
+    hint: file,
+    body: el("div", {},
+      el("div", {class: "field"},
+        el("label", {}, "Their address, for the email and the Teams chat"),
+        to),
+      el("div", {class: "field"},
+        el("label", {}, "The note (first line is the subject). Edit it freely."),
+        box,
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          "You attach " + file + " yourself: no link of any kind can do that for you. " +
+          "The note names what you are waiting on, because that is what tells them it is " +
+          "really from you.")),
+      el("div", {class: "field"},
+        el("label", {}, "Language"),
+        el("div", {class: "statefilter"},
+          ...[["en", "English"], ["no", "Norsk"]].map(([code, label]) =>
+            el("button", {class: "chip filter" + (askLang() === code ? " on" : ""),
+              onclick: () => { PREF.set("askLang", code); closeModal(); openAskNote(name, items, file); }},
+              (askLang() === code ? "\u2713 " : "") + label))))),
+    foot: [
+      el("button", {class: "btn ghost", onclick: closeModal}, "Close"),
+      el("button", {class: "btn ghost", onclick: () => {
+        copyText(box.value, "Note copied. Paste it wherever you like.");
+      }}, "Copy"),
+      el("button", {class: "btn ghost", onclick: () => {
+        remember();
+        const addr = trim(to.value);
+        if (!addr) { notify("Put their address in first \u2014 Teams needs it to open the chat.", "warn"); return; }
+        window.open("https://teams.microsoft.com/l/chat/0/0?users=" + encodeURIComponent(addr) +
+          "&message=" + encodeURIComponent(bodyNow()), "_blank", "noopener");
+        notify("Teams opens with the message ready. Drop " + file + " into the same window.");
+      }}, "Send in Teams"),
+      el("button", {class: "btn primary", onclick: () => {
+        remember();
+        const url = "mailto:" + encodeURIComponent(trim(to.value)) +
+          "?subject=" + encodeURIComponent(subjNow()) +
+          "&body=" + encodeURIComponent(bodyNow());
+        if (url.length > 1800) {
+          notify("That note is too long for an email link. Use Copy and paste it instead.", "warn");
+          return;
+        }
+        location.href = url;
+        notify("Your email is opening. Attach " + file + ", then send.");
+      }}, "Open in email"),
     ],
   });
 }
@@ -8866,13 +9062,54 @@ function openUpdateArrived(data) {
           "no longer here, so there is nothing to apply them to.")) : null,
       el("div", {class: "field"},
         el("div", {style: "color:var(--fg3);font-size:12.5px"},
-          "Their notes are filed as comments on the tasks, in their name — so the thread " +
+          "Their notes are filed as comments on the tasks, in their name - so the thread " +
           "reads like they said it, because they did."))),
     foot: [
       el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
       apply,
     ],
   });
+}
+
+/* The reply usually arrives as the body of an email, not as a file: that is the
+   whole point of the sheet sending it that way. Making somebody save the mail
+   to disk first, so there is a file to import, would undo it. So the ordinary
+   route is to select the message, copy it, and drop it in here. */
+function importUpdatePasted() {
+  const box = el("textarea", {rows: 12, placeholder:
+    "Paste their reply here. The whole email is fine, extra lines and all.",
+    style: "font-size:12.5px;font-family:var(--mono)"});
+  const said = el("div", {style: "color:var(--fg3);font-size:12.5px;margin-top:6px"});
+  const check = () => {
+    const data = parseUpdateReply(box.value);
+    said.textContent = !trim(box.value) ? ""
+      : data ? "Found a reply from " + (data.from || "somebody") + ": " + data.items.length +
+               " answer" + (data.items.length === 1 ? "" : "s") + "."
+             : "No GroupTodo answers in that yet. Paste the whole message, including the " +
+               "lines at the bottom that look like machine noise: that is the part that says " +
+               "which task is which.";
+    said.style.color = data ? "var(--ok)" : "var(--fg3)";
+  };
+  box.addEventListener("input", check);
+
+  modal({
+    center: true, title: "Paste a reply",
+    body: el("div", {}, el("div", {class: "field"}, box, said)),
+    foot: [
+      el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+      el("button", {class: "btn ghost", onclick: async () => {
+        try { box.value = await navigator.clipboard.readText(); check(); }
+        catch (_) { notify("This browser would not let the app read the clipboard. Paste into the box.", "warn"); }
+      }}, "Paste from clipboard"),
+      el("button", {class: "btn primary", onclick: () => {
+        const data = parseUpdateReply(box.value);
+        if (!data) { notify("No GroupTodo answers in that text.", "error"); return; }
+        closeModal();
+        openUpdateArrived(data);
+      }}, "Read it"),
+    ],
+  });
+  setTimeout(() => box.focus(), 50);
 }
 
 function importUpdateFromFile() {
@@ -9005,7 +9242,9 @@ function viewPerson(name) {
         onclick: () => openAskForUpdate(name)},
         "Ask " + firstNameOf(name) + " for an update"),
       el("button", {class: "btn sm ghost", onclick: () => importUpdateFromFile()},
-        "Import their reply"),
+        "Import a file"),
+      el("button", {class: "btn sm ghost", onclick: () => importUpdatePasted()},
+        "Paste their reply"),
       el("span", {style: "color:var(--fg3);font-size:12.5px"},
         !owing.length ? "Nothing open with their name on it."
         : !asked.length ? "You have never asked about " +
@@ -9109,13 +9348,63 @@ function navCount(id) {
    as the coach is finished, rather than presenting a stranger with a filing
    system they have not filled in yet. */
 const STARTER_NAV = ["today", "todos", "proj-1", "proj-0"];
+/* ---------- does this vault actually have one of those? ----------
+   A menu of twenty screens, eighteen of which say "nothing here yet", is a
+   menu that teaches you to ignore it. Every entry below earns its place from
+   the files: no dated task, no Timeline; no links, no Graph; nothing finished,
+   no Report. Each probe stops at the first hit rather than counting, and the
+   answers are memoised for the render, because this runs once per item per
+   draw and a vault can be large.
+
+   An entry you are standing on never disappears underneath you, or leaving the
+   last dated task would strand you on a screen with no way back to it. */
+const anyDated = () => memo("anyDated", () =>
+  leafActions().some(a => a.due) ||
+  acrossSpaces(() => {
+    for (const [path, page] of V.pages) {
+      if (pageKind(path) === "template") continue;
+      let hit = false;
+      walkBlocks(page.blocks, b => {
+        if (hit || !b.state || isMessage(b)) return;
+        if (dateIn(blockProp(b, "SCHEDULED")) || dateIn(blockProp(b, "DEADLINE"))) hit = true;
+      });
+      if (hit) return [true];
+    }
+    return [];
+  }).length > 0);
+
+const anyLinked = () => memo("anyLinked", () => graphData().edges.length > 0);
+const anyFinished = () => memo("anyFinished", () =>
+  completedSince(addMonths(todayISO(), -12)).some(r => !r.undated));
+const anyOpenTask = () => memo("anyOpenTask", () =>
+  leafActions().some(a => OPEN_STATES[a.state]));
+
 function navVisible(item) {
+  // Where you are now always stays reachable, whatever the files say.
+  const here = item.status ? (state.view === "projects" && state.statusCode === item.status)
+                           : state.view === item.id;
+  if (here) return true;
   if (item.id === "weeding" && !weedingWorthIt()) return false;
   // Nothing to see while you are the only person here.
   if (item.id === "people" && members().length < 2 &&
       !leafActions().some(a => a.assignee)) return false;
   // Chat shows up once there is one, and stays once you are using it.
   if (item.id === "chat" && !allThreads().length) return false;
+
+  /* The five screens that need something in the files to be about. */
+  if (item.id === "board"    && !anyOpenTask())  return false;
+  if (item.id === "calendar" && !anyDated())     return false;
+  if (item.id === "gantt"    && !anyDated())     return false;
+  if (item.id === "graph"    && !anyLinked())    return false;
+  if (item.id === "report"   && !anyFinished())  return false;
+  if (item.id === "checklists" && !checklistPages().length
+      && !PREF.get("madeRoutine", "")) return false;
+  if (item.id === "zettel"   && !allPages(p => pageKind(p) === "zettel").length) return false;
+  if (item.id === "horizons" && !areaList().length && !goalList().length
+      && !getSetting("horizons_seen")) return false;
+  // An empty status folder is a filing cabinet drawer nobody has used.
+  if (item.status && !projectsIn(item.status).length) return false;
+
   if (!coachOn() || !isSimple()) return true;
   // Making a routine mid-coach is allowed, and a place you were just sent to has
   // to be reachable afterwards.
@@ -9665,7 +9954,7 @@ function viewContext() {
     }
   }
   const card = el("div", {class: "card"});
-  if (!ctxs.length) card.append(el("div", {class: "empty"}, "No contexts yet. Create pages under pages/c/ — e.g. c/phone, c/errand, c/computer."));
+  if (!ctxs.length) card.append(el("div", {class: "empty"}, "No contexts yet. Create pages under pages/c/ - e.g. c/phone, c/errand, c/computer."));
   for (const ctx of ctxs) {
     const open = leafActions().filter(a => a.context === ctx && OPEN_STATES[a.state]);
     card.append(el("button", {class: "prow", onclick: () => surfaceContext(ctx)},
@@ -9951,6 +10240,7 @@ const VIEW_TITLE = {
 
 function render() {
   if (!V.loaded) return;
+  applyChrome();
   clearMemo();
   QUIET_CACHE = null;
   TOUR_PATH_CACHE = undefined;
@@ -10472,7 +10762,7 @@ function openTaskDetail(path, block, space) {
 function openStatusPicker(path) {
   const codes = STATUS_ORDER;
   listPicker({
-    title: "Project status — " + pageTitle(path),
+    title: "Project status: " + pageTitle(path),
     hint: "moves the file into pages/<code>/",
     items: codes,
     label: c => STATUS_TEXT[c],
@@ -10572,9 +10862,9 @@ function projectCompletionPrompt(path) {
       el("div", {style: "color:var(--fg2);font-size:13.5px"},
         "A project with no next action is invisible work. Decide now:")),
     pickRow("n", "Add a new next action", "keep it active", () => { closeModal(); openAddNextAction(path); }),
-    pickRow("d", "Move to 0 — completed", "it is done", () => { closeModal(); setProjectStatus(path, "0"); }),
-    pickRow("s", "Move to 2 — someday/maybe", "not now", () => { closeModal(); setProjectStatus(path, "2"); }),
-    pickRow("c", "Move to _ — cancelled", "never", () => { closeModal(); setProjectStatus(path, "_"); }));
+    pickRow("d", "Move to 0, completed", "it is done", () => { closeModal(); setProjectStatus(path, "0"); }),
+    pickRow("s", "Move to 2, someday/maybe", "not now", () => { closeModal(); setProjectStatus(path, "2"); }),
+    pickRow("c", "Move to _, cancelled", "never", () => { closeModal(); setProjectStatus(path, "_"); }));
   modal({
     center: true, title: "Project complete: " + pageTitle(path), hint: "n / d / s / c",
     body,
@@ -10686,7 +10976,7 @@ function openWeeding(next) {
 function reviewSections() {
   const acts = leafActions();
   return [
-    {title: "Stuck active projects", hint: "no next action — define one or park it",
+    {title: "Stuck active projects", hint: "no next action - define one or park it",
      items: stuckActiveProjects().map(s => ({text: pageTitle(s.path), sub: s.reason, path: s.path,
        fix: "+ next action", act: () => { closeModal(); openAddNextAction(s.path); }}))},
     {title: "Projects not stated as an outcome", hint: "what would done look like?",
@@ -11716,7 +12006,7 @@ function openReceiveVault() {
    ============================================================ */
 function capLine(ok, text) {
   return el("div", {style: "display:flex;gap:8px;align-items:flex-start;font-size:12.5px;margin:3px 0;color:var(--fg2)"},
-    el("span", {style: "color:" + (ok ? "var(--ok)" : "var(--fg3)") + ";flex:none"}, ok ? "✓" : "—"),
+    el("span", {style: "color:" + (ok ? "var(--ok)" : "var(--fg3)") + ";flex:none"}, ok ? "✓" : "✕"),
     el("span", {}, text));
 }
 
@@ -11733,18 +12023,18 @@ function openVaultDialog() {
       : V.backend?.kind === "http" ? "Synced with the server at " + V.backend.label
       : "Working inside the browser (" + (V.backend?.label || "memory") + ")"),
     capLine(CAP.persist !== "memory",
-      CAP.sandboxed ? "Running in a locked preview frame (SharePoint or Teams) — no storage at all"
+      CAP.sandboxed ? "Running in a locked preview frame (SharePoint or Teams) - no storage at all"
       : CAP.persist === "idb" ? "Changes persist here between visits"
       : CAP.persist === "ls" ? "Changes persist (IndexedDB blocked, using localStorage)"
-      : "This browser blocks local storage for this page — your work lives in memory only, so save the vault file before closing"),
+      : "This browser blocks local storage for this page - your work lives in memory only, so save the vault file before closing"),
     capLine(CAP.dirPicker, CAP.dirPicker ? "Can open a vault folder directly" : "Cannot open folders (normal on iOS, Android and Firefox)"),
-    capLine(CAP.savePicker, CAP.savePicker ? "Can link a vault file for one-click sync" : "No file linking — use Save / Open below"),
+    capLine(CAP.savePicker, CAP.savePicker ? "Can link a vault file for one-click sync" : "No file linking - use Save / Open below"),
     capLine(SW_READY, SW_READY ? "Opens without a network, and installs to your home screen"
-      : CAP.fromFile ? "Opened as a file, so: no offline open, no home screen, no Share button — open it from a URL instead"
+      : CAP.fromFile ? "Opened as a file, so: no offline open, no home screen, no Share button - open it from a URL instead"
       : "No offline copy yet (sw.js missing from the host, or still installing)"),
     capLine(canShareFiles(), canShareFiles()
       ? "Can hand the vault file to your other apps with the Share button"
-      : "No Share button here — the vault file downloads instead"));
+      : "No Share button here - the vault file downloads instead"));
 
   const serverInput = el("input", {
     placeholder: "http://127.0.0.1:8777",
@@ -11792,7 +12082,7 @@ function openVaultDialog() {
 
       el("div", {class: "field"},
         el("label", {}, (onFolder ? "Carrying changes to a phone" : "Sync across devices") +
-          " — no server, no account"),
+          " - no server, no account"),
         el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
           (onFolder
             ? "Phones cannot open folders, so the way to reach one is a single markdown file " +
@@ -11800,7 +12090,7 @@ function openVaultDialog() {
               "your files stay as they are above, and anything the phone sends back becomes " +
               "its own .md file in the folder. Keep the courier file OUTSIDE the folder."
             : "Your whole vault travels as one markdown file. Keep it in a folder your devices " +
-              "already sync — iCloud Drive, OneDrive, Dropbox, Google Drive, Syncthing — and " +
+              "already sync - iCloud Drive, OneDrive, Dropbox, Google Drive, Syncthing - and " +
               "sync on each device.") +
           " Edits merge per page; nothing is overwritten blindly." +
           (canShareFiles()
@@ -12128,7 +12418,7 @@ function openStartAfreshDialog() {
               : "the " + folders + " folders it was writing into") + ", so reconnect " +
             (folders === 1 ? "it" : "them") + " in Vault & sync afterwards to get those " +
             "space" + (folders === 1 ? "" : "s") + " back."
-          : "If this browser is the only place your work lives, save the vault file first — " +
+          : "If this browser is the only place your work lives, save the vault file first - " +
             "there is no undo and no copy left behind.")),
       el("div", {class: "field"},
         el("label", {}, "Type " + PHRASE + " to confirm"),
@@ -12255,6 +12545,7 @@ const CHORDS = {
   "g n": () => go("next"),
   "g m": () => state.view === "page" && statusDirOf(state.pagePath) && openStatusPicker(state.pagePath),
   "g C": () => notify("Open an action and use “add context”.", "warn"),
+  "f f": () => setFocus(!focusOn()),
   "f t": () => openPage(ensureJournal(todayISO())),
   "f p": () => openPage(ensureJournal(shiftISO(todayISO(), -1))),
   "f n": () => openPage(ensureJournal(shiftISO(todayISO(), 1))),
@@ -12284,7 +12575,12 @@ function resetChord() { chordBuf = ""; showChord(""); clearTimeout(chordTimer); 
 
 document.addEventListener("keydown", e => {
   if (MODAL_KEYS && MODAL_KEYS(e)) { e.preventDefault(); return; }
-  if (e.key === "Escape") { resetChord(); closeModal(); return; }
+  if (e.key === "Escape") {
+    resetChord();
+    if (!$("#modalRoot").firstChild && focusOn()) { setFocus(false); return; }
+    closeModal();
+    return;
+  }
   const typing = /^(INPUT|TEXTAREA)$/.test(e.target.tagName) || e.target.isContentEditable;
   // Ctrl-Z outside a text box is the app's undo; inside one it is the
   // browser's, which is what anybody typing actually wants.
@@ -12373,6 +12669,7 @@ function scheduleContextPrompts() {
    ============================================================ */
 $("#btnCapture").onclick = () => openCapture();
 $("#btnSearch").onclick  = () => go("search");
+$("#btnFocus").onclick   = () => setFocus(!focusOn());
 $("#btnVault").onclick   = () => openVaultDialog();
 $("#spaceBtn").onclick   = () => openSpaceSwitcher();
 $("#burger").onclick     = () => document.body.classList.toggle("nav-open");
