@@ -167,6 +167,19 @@ The one exception is the screen you are standing on: it never disappears from
 under you, or ticking off your last dated task would strand you on a Timeline
 with no way back to it.
 
+### `[[` opens a list of pages
+
+The prefix in a link is the folder the page lives in, so `[[c/` can only mean a
+context and `[[p/` can only mean a person. That is knowledge the app already has
+and you should not have to carry: typing `[[` lists everything, typing a prefix
+narrows it to that kind, and typing more narrows it further. Arrows move,
+`Enter` or `Tab` accepts, `Escape` closes and leaves your text alone.
+
+It writes nothing by itself. Accepting a row inserts exactly the `[[ref]]` you
+could have typed by hand, and a name no page has yet is offered last, as **Make
+c/loftet** - the page is created the same way it always was, when the line is
+saved. The list works in the outliner, in the add-a-task box and in Capture.
+
 ### Focus
 
 The button beside Capture, or `f f`. The same screen with everything that is
@@ -868,7 +881,7 @@ The markdown is identical either way.
 `v t` timeline · `v r` report · `f f` focus ·
 `ctrl-z` undo a delete · **Copy link** on any task or page ·
 `g d` re-surface. In the outline: `Enter` new block, `Tab`/`Shift-Tab` indent,
-`Ctrl-Enter` cycle state, `↑`/`↓` between blocks. A long title wraps, so the
+`Ctrl-Enter` cycle state, `[[` a list of pages, `↑`/`↓` between blocks. A long title wraps, so the
 arrows walk the lines inside a block first and only leave it from the top or
 the bottom line - which is what they do in every other outliner, and what your
 hands expect.

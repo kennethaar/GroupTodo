@@ -712,6 +712,16 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4p
 }
 .pick:hover .k,.pick.cur .k{background:var(--accent);color:var(--accent-fg)}
 .pick .d{margin-left:auto;font-size:11.5px;color:var(--fg3)}
+/* The [[ list. Fixed rather than absolute so it is positioned against the
+   caret's own viewport rectangle, and above everything, because it hangs over
+   whatever line you are typing on. */
+.linkpop{
+  position:fixed;z-index:240;min-width:230px;max-width:330px;max-height:244px;overflow-y:auto;
+  background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-sm);
+  box-shadow:var(--shadow);padding:4px 0;
+}
+.linkpop .pick{padding:6px 11px;font-size:13px}
+.linkpop .pick .k{width:22px;height:18px;font-size:10px}
 .filterbox{padding:0 16px 8px}
 .filterbox input,.field input,.field textarea,.field select{
   width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);
@@ -4671,6 +4681,7 @@ function quickAdd(targetPath, opts = {}) {
   const input = el("input", {
     placeholder: opts.placeholder || "Add a task",
     onkeydown: e => {
+      if (linkPopKey(e)) return;
       if (e.key !== "Enter") return;
       const text = trim(input.value);
       if (!text) return;
@@ -4697,6 +4708,7 @@ function quickAdd(targetPath, opts = {}) {
       if (!startsWithVerb(text)) notify("Tip: start with a verb you could film - Call, Draft, Buy.", "warn");
     },
   });
+  attachLinkAutocomplete(input);
   return el("div", {class: "quickadd"}, el("span", {}, "+"), input);
 }
 
@@ -9856,6 +9868,201 @@ function focusBlock(id, atEnd = true) {
   });
 }
 
+/* ============================================================
+   [[ OPENS A LIST OF PAGES
+   The prefix in a link is the folder it lives in, so [[c/ can only mean a
+   context and [[p/ can only mean a person. That is knowledge the app already
+   has and the person typing should not have to carry: having to remember which
+   letter goes with which folder, and then whether you spelled the page the same
+   way as last time, is exactly the work a list on screen exists to take away.
+
+   It writes nothing by itself. Accepting a row inserts the same [[ref]] you
+   could have typed, and the page it points at is created on blur by the same
+   createLinkedPages the outliner already ran, so a link to something that does
+   not exist yet still works the way it always did.
+   ============================================================ */
+let LINKPOP = null;
+
+/* Where the caret is on screen, for hanging the list under it. A collapsed
+   caret at a text boundary has no rectangle in Chrome, so fall back to the
+   field itself rather than putting the list in the corner. */
+function caretScreenRect(host) {
+  const sel = getSelection();
+  if (host.isContentEditable && sel && sel.rangeCount && host.contains(sel.anchorNode)) {
+    const r = sel.getRangeAt(0).getClientRects()[0];
+    if (r && (r.width || r.height || r.top)) return r;
+  }
+  return host.getBoundingClientRect();
+}
+
+/* The text between the start of the field and the caret. */
+function textBeforeCaret(host) {
+  if (!host.isContentEditable) return host.value.slice(0, host.selectionStart ?? 0);
+  const sel = getSelection();
+  if (!sel || !sel.rangeCount || !host.contains(sel.anchorNode)) return null;
+  const r = document.createRange();
+  r.selectNodeContents(host);
+  r.setEnd(sel.anchorNode, sel.anchorOffset);
+  return r.toString();
+}
+
+const hostText = host => host.isContentEditable ? host.textContent : host.value;
+
+function setHostText(host, text, caret) {
+  if (!host.isContentEditable) {
+    host.value = text;
+    host.setSelectionRange(caret, caret);
+    return;
+  }
+  host.textContent = text;
+  const tn = host.firstChild;
+  const r = document.createRange();
+  if (tn && tn.nodeType === 3) { r.setStart(tn, Math.min(caret, tn.length)); r.collapse(true); }
+  else { r.selectNodeContents(host); r.collapse(false); }
+  const sel = getSelection();
+  sel.removeAllRanges(); sel.addRange(r);
+}
+
+/* An unclosed [[ immediately before the caret, and whatever has been typed
+   since. A second [ or a closing ]] means this one is finished with. */
+function openLinkAt(before) {
+  if (before == null) return null;
+  const at = before.lastIndexOf("[[");
+  if (at < 0) return null;
+  const q = before.slice(at + 2);
+  if (/[\[\]\n]/.test(q)) return null;
+  return {at, query: q};
+}
+
+/* The folders a prefix can mean, in the order the vault itself uses them. */
+const linkDirFor = pfx => PREFIX_DIR[pfx] || STATUS_DIRS[pfx] || null;
+const LINK_KIND_WORD = {context: "context", person: "person", org: "org", zettel: "note",
+  area: "area", goal: "goal", checklist: "routine", project: "project", journal: "day",
+  horizon: "horizon", page: "page"};
+
+function linkCandidates(query) {
+  const m = /^([^/]*)\/(.*)$/.exec(query);
+  const pfx = m ? m[1] : null;
+  const rest = trim(m ? m[2] : query).toLowerCase();
+  const dir = pfx != null ? linkDirFor(pfx) : null;
+
+  let paths;
+  if (pfx != null && dir) paths = allPages(q => q.startsWith(dir + "/"));
+  else if (pfx != null) paths = [];            // a prefix of its own invention
+  else paths = allPages(q => !["template", "verb"].includes(pageKind(q)));
+
+  const rows = paths.map(path => ({
+    path, ref: pageRef(path), title: pageTitle(path), kind: pageKind(path),
+  })).filter(r => {
+    if (!rest) return true;
+    return r.title.toLowerCase().includes(rest) || r.ref.toLowerCase().includes(rest);
+  });
+
+  // What you typed the start of beats what merely contains it somewhere.
+  const score = r => (r.title.toLowerCase().startsWith(rest) ? 2 : 0) +
+                     (r.ref.toLowerCase().startsWith(rest) ? 1 : 0);
+  rows.sort((a, b) => score(b) - score(a) || a.title.localeCompare(b.title));
+  const out = rows.slice(0, 10);
+
+  /* Nothing that matches exactly is still a usable link: typing it makes the
+     page. Offered last, so it never steals the Enter from a real page, and only
+     once there is a name to make - "Make c/" would be a page called nothing. */
+  const typed = trim(query);
+  const named = trim(m ? m[2] : query);
+  if (typed && named && !out.some(r => r.ref.toLowerCase() === typed.toLowerCase()
+                                    || r.title.toLowerCase() === typed.toLowerCase())) {
+    out.push({ref: typed, title: typed, kind: null, isNew: true});
+  }
+  return out;
+}
+
+function linkPopClose() {
+  if (!LINKPOP) return;
+  LINKPOP.box.remove();
+  LINKPOP = null;
+}
+
+function linkPopDraw() {
+  const {box, rows, i} = LINKPOP;
+  box.textContent = "";
+  rows.forEach((r, n) => {
+    const row = el("button", {
+      class: "pick" + (n === i ? " cur" : ""),
+      onmousedown: e => e.preventDefault(),          // keep the caret where it is
+      onclick: () => linkPopAccept(n),
+    },
+      el("span", {class: "k"}, r.isNew ? "+" : (r.ref.split("/")[0] || "\u00b7").slice(0, 2)),
+      el("span", {style: "min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"},
+        r.isNew ? "Make " + r.ref : r.title),
+      el("span", {class: "d"}, r.isNew ? "new page" : (LINK_KIND_WORD[r.kind] || r.kind || "")));
+    box.append(row);
+  });
+  const cur = box.children[i];
+  if (cur) cur.scrollIntoView({block: "nearest"});
+}
+
+function linkPopAccept(n) {
+  if (!LINKPOP) return;
+  const {host, at, rows} = LINKPOP;
+  const r = rows[n == null ? LINKPOP.i : n];
+  if (!r) { linkPopClose(); return; }
+  const text = hostText(host);
+  const before = textBeforeCaret(host) || "";
+  const insert = "[[" + r.ref + "]]";
+  const next = text.slice(0, at) + insert + text.slice(before.length);
+  linkPopClose();
+  setHostText(host, next, at + insert.length);
+  host.dispatchEvent(new Event("input", {bubbles: true}));
+}
+
+/* True when the key belonged to the list rather than to the text. */
+function linkPopKey(e) {
+  if (!LINKPOP || LINKPOP.host !== e.target) return false;
+  const n = LINKPOP.rows.length;
+  if (e.key === "ArrowDown") { LINKPOP.i = (LINKPOP.i + 1) % n; linkPopDraw(); e.preventDefault(); return true; }
+  if (e.key === "ArrowUp")   { LINKPOP.i = (LINKPOP.i - 1 + n) % n; linkPopDraw(); e.preventDefault(); return true; }
+  if (e.key === "Enter" || e.key === "Tab") { linkPopAccept(); e.preventDefault(); return true; }
+  if (e.key === "Escape")    { linkPopClose(); e.preventDefault(); return true; }
+  return false;
+}
+
+function linkPopSync(host) {
+  const found = openLinkAt(textBeforeCaret(host));
+  if (!found) { linkPopClose(); return; }
+  const rows = linkCandidates(found.query);
+  if (!rows.length) { linkPopClose(); return; }
+
+  if (!LINKPOP || LINKPOP.host !== host) {
+    linkPopClose();
+    const box = el("div", {class: "linkpop"});
+    document.body.append(box);
+    LINKPOP = {host, box, rows, i: 0, at: found.at};
+  } else {
+    Object.assign(LINKPOP, {rows, at: found.at});
+    if (LINKPOP.i >= rows.length) LINKPOP.i = 0;
+  }
+  linkPopDraw();
+
+  const r = caretScreenRect(host);
+  const box = LINKPOP.box;
+  box.style.left = Math.min(r.left, window.innerWidth - 300) + "px";
+  // Above the line when there is no room under it.
+  const below = window.innerHeight - r.bottom;
+  if (below < 200 && r.top > 200) {
+    box.style.top = "auto";
+    box.style.bottom = (window.innerHeight - r.top + 4) + "px";
+  } else {
+    box.style.bottom = "auto";
+    box.style.top = (r.bottom + 4) + "px";
+  }
+}
+
+function attachLinkAutocomplete(host) {
+  host.addEventListener("input", () => linkPopSync(host));
+  host.addEventListener("click", () => linkPopSync(host));
+  host.addEventListener("blur", () => { if (LINKPOP && LINKPOP.host === host) linkPopClose(); });
+}
+
 /* ---------- which visual line the caret is on ----------
    A title wraps, so "at the top of the block" is not "at character zero": a
    long line that has wrapped three times should let Up walk through all three
@@ -9959,7 +10166,10 @@ function outlineBlock(path, page, b) {
     }
     txt.innerHTML = renderInline(b.title);
   });
+  attachLinkAutocomplete(txt);
   txt.addEventListener("keydown", e => {
+    // While the [[ list is up it owns the arrows, Enter, Tab and Escape.
+    if (linkPopKey(e)) return;
     if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
       e.preventDefault(); txt.blur();
       const sibs = siblingsOf(page, b);
@@ -10690,7 +10900,9 @@ function clarifyBlock(path, block) {
 function openCapture() {
   tourMarkSeen("capture");
   const path = ensureJournal(todayISO());
-  const input = el("textarea", {placeholder: "What just landed? One line per item."});
+  const input = el("textarea", {placeholder: "What just landed? One line per item.",
+    onkeydown: e => { linkPopKey(e); }});
+  attachLinkAutocomplete(input);
   let asTodo = true, ctx = state.context;
   const ctxBtn = el("button", {class: "btn ghost sm", onclick: () => {
     openContextPicker("Context for capture", c => { ctx = c; openCaptureWith(input.value, asTodo, c); });
@@ -12782,7 +12994,8 @@ function openHelp() {
         el("div", {style: "font-family:var(--mono);font-size:12.5px;line-height:1.9;color:var(--fg2)"},
           "enter  new block", el("br"), "tab / shift-tab  indent", el("br"),
           "ctrl-enter  cycle TODO state", el("br"), "backspace on empty  delete", el("br"),
-          "\u2191 / \u2193  previous / next block, once the line runs out"))),
+          "\u2191 / \u2193  previous / next block, once the line runs out", el("br"),
+          "[[  a list of pages; [[c/ contexts, [[p/ people"))),
     foot: [el("button", {class: "btn primary", onclick: closeModal}, "Got it")],
   });
 }
