@@ -119,6 +119,27 @@ long before `pages/c/phone.md` exists - and clicking one makes it, exactly as
 clicking the link in a task does. Under the picture, the same pages as an
 ordinary list, because a canvas means nothing to a keyboard or a screen reader.
 
+**Mindmap** - the same links read the other way round. The map answers "what
+does all of this look like"; it is bad at "what is around *this*", because the
+page you care about is wherever the physics left it and everything else is drawn
+at the same weight. So the mindmap puts one page in the middle, what points at
+it above, what it points at below, and what shares a parent out to the sides.
+Their own neighbours form a small faint outer ring, which is the whole of the
+2.5D: size and opacity standing in for distance, with everything gliding instead
+of jumping so you can see where a thing went when the middle changes. A click
+moves the middle. A double-click opens a card about that page without leaving
+the picture, which is the point of the thing: you keep your place while you look
+around.
+
+**Edit** turns the mindmap into somewhere you can build. Drag one dot onto
+another and they are linked. Drag a dot out into empty space, or double-click
+empty space, and you name a new page which is born linked to the one in the
+middle, so it is never an orphan nobody can find again. A relation is a
+`[[link]]` under a `Related` block in the markdown and nothing else: no second
+copy, no database, and it reads as a list of links in any editor. **Unlink** in
+the list underneath takes one out again, and a link inside a sentence loses the
+brackets rather than the sentence.
+
 **Timeline** - a Gantt: every project as a bar from the day its first task
 starts to the day its last one ends, with its tasks underneath when you open
 it. A bar is drawn from what the file already carries - `SCHEDULED::` or the
@@ -950,7 +971,8 @@ The markdown is identical either way.
 `ctrl-z` undo a delete · **Copy link** on any task or page ·
 `g d` re-surface. In the outline: `Enter` splits the line where the caret is,
 `Tab`/`Shift-Tab` indent,
-`Ctrl-Enter` cycle state, `[[` a list of pages, `↑`/`↓` between blocks. A long title wraps, so the
+`Ctrl-Enter` cycle state, `[[` a list of pages, `↑`/`↓` between blocks,
+`Alt-Shift-↑`/`↓` move the line among its siblings, children and all. A long title wraps, so the
 arrows walk the lines inside a block first and only leave it from the top or
 the bottom line - which is what they do in every other outliner, and what your
 hands expect.

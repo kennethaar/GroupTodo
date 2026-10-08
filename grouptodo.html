@@ -543,6 +543,13 @@ body.adv .chk{border-radius:2px}
 .graph{margin-top:14px;background:var(--bg2);border:1px solid var(--border);
   border-radius:var(--radius);height:min(66vh,620px);overflow:hidden}
 .graphcv{display:block;width:100%;height:100%}
+/* The plex leans on depth rather than on a legend: a light middle and dark
+   edges, so the dots that are small and faint read as further away instead of
+   just smaller. */
+.graph.plex{background:
+  radial-gradient(ellipse at 50% 50%, color-mix(in srgb, var(--bg2) 72%, var(--fg) 6%) 0%,
+                  var(--bg2) 58%, color-mix(in srgb, var(--bg2) 86%, #000 14%) 100%)}
+.graph.plex .graphcv{user-select:none}
 .graph-legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:9px;
   font-size:11.5px;color:var(--fg3)}
 .glg{display:inline-flex;gap:5px;align-items:center}
@@ -1567,7 +1574,7 @@ function setSync(state, text) {
   // "browser storage" reads like a destination. It is not a folder, and people
   // go looking for files that were never written, so say so outright.
   const onDisk = V.backend && (V.backend.kind === "fs" || V.backend.kind === "http");
-  txt.textContent = (state === "ok" && !onDisk) ? "browser only \u2014 no files" : text;
+  txt.textContent = (state === "ok" && !onDisk) ? "browser only - no files" : text;
   txt.title = onDisk ? "Saving to " + (V.backend.label || "")
                      : "Nothing in this space is written to disk";
 }
@@ -1812,7 +1819,7 @@ async function readInto(record) {
   }
   if (couriers) {
     notify(couriers + (couriers === 1 ? " exported vault file is" : " exported vault files are") +
-           " in this folder. Left as they are \u2014 they are copies for sending, not pages. " +
+           " in this folder. Left as they are - they are copies for sending, not pages. " +
            "Keeping them outside the folder avoids the confusion.", "warn");
   }
   const newer = await mergeMirror(record);
@@ -2333,7 +2340,7 @@ function offerFolderReconnect(name) {
     body: el("div", {},
       el("div", {class: "field"},
         el("div", {style: "font-size:13.5px"},
-          "The folder " + label + " writes into \u2014 \u201C" + where + "\u201D \u2014 is still " +
+          "The folder " + label + " writes into - \u201C" + where + "\u201D - is still " +
           "remembered. Opening the app from a fresh download only drops the browser's " +
           "permission to it, and that comes back with one click: nothing to find, " +
           "no folder to pick.")),
@@ -2529,7 +2536,7 @@ function colorPreview(name, hex) {
     // disappears. Say so here rather than let it be found in a crowded list.
     if (contrast(cur, themeSurface()) < 3) {
       box.append(el("span", {style: "color:var(--warn);font-size:11.5px"},
-        "\u2014 too close to the page behind it to read"));
+        "- too close to the page behind it to read"));
     }
   };
   paint(cur);
@@ -2636,7 +2643,7 @@ function openSpaceSwitcher() {
   body.append(el("div", {class: "field", style: "padding-bottom:4px"},
     el("label", {}, "Shown together"),
     el("div", {style: "color:var(--fg2);font-size:12.5px"},
-      "Tick the spaces you want on screen \u2014 any combination, including hiding " +
+      "Tick the spaces you want on screen - any combination, including hiding " +
       "the one you are in. Tap a name to make it the space new captures land in; " +
       "that one is highlighted. Your choice sticks until you change it."),
     el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
@@ -4501,20 +4508,20 @@ const NUDGE_WHY = {
     "read it. \u201cCall Storebrand\u201d is something your hands can start. This is the " +
     "best-evidenced habit in the whole system: people who write down the specific " +
     "action, and when and where they will do it, follow through markedly more often " +
-    "than people who only intend to \u2014 psychologists call them implementation intentions.",
+    "than people who only intend to - psychologists call them implementation intentions.",
   ctx:
     "Most of what blocks a task is being in the wrong place, without the thing you " +
     "need in your hand. A context is what lets the list answer the only question you " +
     "ever really ask it: what can I actually do, here, now?",
   outcome:
-    "Written as though it already happened \u2014 \u201cSink repaired, no drip\u201d \u2014 a project " +
+    "Written as though it already happened - \u201cSink repaired, no drip\u201d - a project " +
     "gives you something you can recognise when you get there. Without it projects do " +
     "not finish, they only get older.",
   area:
     "A project under no part of your life is usually one you took on without ever " +
     "deciding to.",
   goal:
-    "A goal nobody is working on is a wish. Give it a project or let it go \u2014 both are " +
+    "A goal nobody is working on is a wish. Give it a project or let it go - both are " +
     "honest; leaving it to sit there is the one option that costs you something.",
   wait:
     "Anything you handed to someone else is invisible by definition. Keeping the list " +
@@ -4600,7 +4607,7 @@ function computeNudges() {
     n.push({
       id: "review", level: since > CFG.reviewEveryDays * 2 ? "danger" : "warn",
       label: last ? `weekly review, ${since} days since last`
-                  : `first weekly review is due \u2014 ${since} days in`,
+                  : `first weekly review is due - ${since} days in`,
       count: null, act: () => openReview(0),
     });
   }
@@ -4674,6 +4681,9 @@ const state = {
   query: "",
   selected: null,       // block id
   surfaced: [],         // ids of the 3 surfaced actions
+  graphMode: "map",     // "map" the whole vault, "plex" one page and its neighbours
+  graphFocus: null,     // the page in the middle of the plex
+  graphEdit: false,     // whether a drag in the plex writes a link
   lastTodoTouch: Date.now(),
   lastMeetingTouch: Date.now(),
 };
@@ -4923,7 +4933,7 @@ function coachSteps() {
   steps.push({k: "home", done: onDisk, label: "Give your tasks a home", cta: "Choose",
     hint: onDisk ? "" : "right now they live in this browser only",
     why: "A folder of plain .md files you picked yourself means nothing can hold your work " +
-         "hostage \u2014 not this app, not a company, not a browser clearing its storage.",
+         "hostage - not this app, not a company, not a browser clearing its storage.",
     act: () => openSpaceStorageSetup()});
   return steps;
 }
@@ -5235,7 +5245,7 @@ function tipList() {
             "the steps for one job, with a line saying what done looks like.",
       why: "Your head keeps bringing back anything unfinished that has no agreed next step. " +
            "Writing the steps down once, somewhere you will actually look again, is what stops " +
-           "the reminding \u2014 and it is the single habit the rest of this hangs on.",
+           "the reminding - and it is the single habit the rest of this hangs on.",
       cta: "Make a project", act: () => newProjectPrompt(),
     },
     {
@@ -5263,7 +5273,7 @@ function tipList() {
             "them once and grouping the ones that belong together is usually an hour you " +
             "get back later.",
       why: "A flat list has no shape, so every time you look for the next thing you pay for " +
-           "the whole list. Grouping is not filing for its own sake \u2014 it is what lets you " +
+           "the whole list. Grouping is not filing for its own sake - it is what lets you " +
            "look at a tenth of it and still be sure.",
       cta: "Sort the loose ones", act: () => openReview(2),
     },
@@ -5679,7 +5689,7 @@ function viewChecklists() {
   const GROUPS = [
     {label: "Routines", icon: "\u21bb", cta: "Run",
      test: pth => isRoutine(pth) && !isProjectTemplate(pth),
-     blurb: "Comes back and never finishes \u2014 the weekly accounts, the monthly report, " +
+     blurb: "Comes back and never finishes - the weekly accounts, the monthly report, " +
             "everything you pack before a trip. Not a project, because there is nothing to tick off."},
     {label: "Checklists", icon: "\u2611", cta: "Run",
      test: pth => !isRoutine(pth) && !isProjectTemplate(pth),
@@ -5687,7 +5697,7 @@ function viewChecklists() {
             "project you already have."},
     {label: "Project templates", icon: "\u221e", cta: "New project",
      test: pth => isProjectTemplate(pth),
-     blurb: "Every run spins up a whole new project \u2014 \"Onboard new insurance customer\", " +
+     blurb: "Every run spins up a whole new project - \"Onboard new insurance customer\", " +
             "once per customer, the same steps each time."},
   ];
   const head = el("button", {class: "btn sm ghost", style: "margin-left:auto",
@@ -5810,7 +5820,7 @@ function makePrivatePrompt(path) {
         "so pick where it should live."),
       el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
         "The page moves with its tasks and its notes. Links from pages left behind will " +
-        "point at nothing \u2014 that is the cost of taking it out.")));
+        "point at nothing - that is the cost of taking it out.")));
 
   const list = el("div", {});
   for (const sp of others) {
@@ -6007,7 +6017,7 @@ function postMessage(path, block, text) {
 
 function toggleMsgFlag(path, m) {
   const me = whoAmI();
-  if (!me) { notify("Put your name in first \u2014 a flag is a name.", "warn"); return; }
+  if (!me) { notify("Put your name in first - a flag is a name.", "warn"); return; }
   const now = msgFlags(m).filter(n => !samePerson(n, me));
   if (now.length === msgFlags(m).length) now.push(me);
   if (now.length) setBlockProp(m, MSG_FLAG, now.join(", "));
@@ -6140,7 +6150,7 @@ async function copyLinkTo(url, what) {
     center: true, title: "Link to " + what,
     body: el("div", {}, el("div", {class: "field"}, box,
       el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-        CAP.served ? "Paste it anywhere \u2014 chat, email, a document."
+        CAP.served ? "Paste it anywhere - chat, email, a document."
           : "This app is open as a file, so the link only works for somebody whose copy " +
             "sits at the same path. Serve it from a web address and the link works for everybody."))),
     foot: [el("button", {class: "btn primary", onclick: closeModal}, "Done")],
@@ -6257,7 +6267,7 @@ function pickAvatar(name, then) {
         const page = V.pages.has(path) ? getPage(path) : {props: {title: name}, blocks: []};
         page.props[AVATAR_PROP] = data;
         putPage(path, page);
-        notify("Picture set \u2014 " + Math.round(data.length / 1024) + "KB in your page.");
+        notify("Picture set - " + Math.round(data.length / 1024) + "KB in your page.");
         render();
         if (then) then();
       } catch (_) { notify("That file did not read as an image.", "error"); }
@@ -6398,7 +6408,7 @@ function threadPanel(path, block) {
           el("div", {class: "bubble"},
             el("div", {class: "msg-body"}, m.title),
             el("button", {class: "flagbtn" + (flaggedByMe(m) ? " on" : ""),
-              title: flaggedByMe(m) ? "Flagged \u2014 click to clear" : "Flag to come back to",
+              title: flaggedByMe(m) ? "Flagged - click to clear" : "Flag to come back to",
               onclick: () => { toggleMsgFlag(path, m); draw(); }}, "\u2691")),
           others.length ? el("div", {class: "msg-flags"}, "\u2691 " + others.join(", ")) : null));
       list.append(node);
@@ -6526,7 +6536,7 @@ function viewBoard() {
   c.append(board);
   c.append(el("div", {class: "section quiet"},
     el("div", {style: "color:var(--fg3);font-size:12px"},
-      "Drag a card to move it, or open one and use the state buttons \u2014 which is " +
+      "Drag a card to move it, or open one and use the state buttons - which is " +
       "what you want on a phone, where dragging is a fight.")));
   return c;
 }
@@ -6930,7 +6940,569 @@ function graphDraw(cv, g, hoverIdx) {
   x.globalAlpha = 1;
 }
 
+/* ============================================================
+   THE PLEX -- one thought in the middle, its relatives around it
+   The force-directed map answers "what does all of this look like". It is bad
+   at the other question, "what is around THIS", because the thing you care
+   about is wherever the physics happened to leave it and everything else is
+   drawn at the same weight.
+
+   So: TheBrain's arrangement. The page you are on sits in the middle, what
+   links TO it stands above, what it links to hangs below, and what shares a
+   parent with it sits out to the sides. Their own relatives form a fainter,
+   smaller outer ring: that is the whole of the 2.5D, size and opacity standing
+   in for distance, with everything gliding rather than jumping so you can see
+   where a thing went when the middle changes.
+
+   Nothing here is a second copy of anything. A relation is a [[link]] in the
+   markdown, which is what it already was.
+   ============================================================ */
+const PLEX = {
+  anim: null,            // the running rAF, so a redraw cannot leave two
+  pos: new Map(),        // key -> {x, y, r, a} where things are NOW
+  drag: null,            // {from, x, y} while pulling a link out of a node
+};
+
+const plexFocus = () => state.graphFocus || null;
+
+/* Edges are directed: [from, to] means the page `from` has a link in it that
+   points at `to`. That is the whole of the hierarchy, and it is already in the
+   files. */
+function plexRelatives(g, key) {
+  const i = g.nodes.findIndex(n => n.key === key);
+  const parents = [], children = [], jumps = [];
+  if (i < 0) return {i: -1, parents, children, jumps};
+  for (const [a, b] of g.edges) {
+    if (a === i && !children.includes(b)) children.push(b);
+    else if (b === i && !parents.includes(a)) parents.push(a);
+  }
+  // A sibling is anything that hangs off one of your parents besides you.
+  for (const pi of parents)
+    for (const [a, b] of g.edges)
+      if (a === pi && b !== i && !jumps.includes(b) && !children.includes(b)) jumps.push(b);
+  return {i, parents, children, jumps};
+}
+
+/* Where everything wants to be. Returns key -> {x,y,r,a,ring}; anything absent
+   is off the plex and is not drawn. */
+function plexTargets(g, key, w, h) {
+  const out = new Map();
+  const {i, parents, children, jumps} = plexRelatives(g, key);
+  if (i < 0) return out;
+  const cx = w / 2, cy = h / 2;
+  const R = Math.min(w, h) * 0.3;
+
+  out.set(g.nodes[i].key, {x: cx, y: cy, r: 13, a: 1, ring: 0, idx: i});
+
+  /* An arc rather than a ring: parents overhead, children underfoot, jumps on
+     the horizon. A fan keeps them apart without a simulation. */
+  const fan = (list, centreAngle, spread, radius, r, a, ring) => {
+    const n = list.length;
+    list.forEach((idx, k) => {
+      const t = n === 1 ? 0 : (k / (n - 1)) - 0.5;
+      const ang = centreAngle + t * Math.min(spread, 0.42 * n);
+      out.set(g.nodes[idx].key, {
+        x: cx + Math.cos(ang) * radius,
+        y: cy + Math.sin(ang) * radius,
+        r, a, ring, idx,
+      });
+    });
+  };
+  const UP = -Math.PI / 2, DOWN = Math.PI / 2;
+  fan(parents,  UP,   2.0, R,        9, 1,   1);
+  fan(children, DOWN, 2.0, R,        9, 1,   1);
+  fan(jumps.slice(0, 8), 0, 1.5, R * 1.08, 7, .9, 1);
+  // the left-hand half of the jumps, so they are not all stacked on one side
+  jumps.slice(0, 8).forEach((idx, k) => {
+    if (k % 2 === 0) return;
+    const t = out.get(g.nodes[idx].key);
+    if (t) t.x = cx - (t.x - cx);
+  });
+
+  /* The outer ring: the relatives of your relatives, small and faint. This is
+     the depth cue, and the reason the middle feels like a place rather than a
+     list. */
+  const near = new Set([i, ...parents, ...children, ...jumps]);
+  const ringTwo = [];
+  for (const idx of [...parents, ...children]) {
+    for (const [a, b] of g.edges) {
+      const other = a === idx ? b : b === idx ? a : -1;
+      if (other < 0 || near.has(other) || ringTwo.includes(other)) continue;
+      ringTwo.push(other);
+      if (ringTwo.length >= 14) break;
+    }
+    if (ringTwo.length >= 14) break;
+  }
+  ringTwo.forEach((idx, k) => {
+    const ang = (k / Math.max(1, ringTwo.length)) * Math.PI * 2 - Math.PI / 2;
+    out.set(g.nodes[idx].key, {
+      x: cx + Math.cos(ang) * R * 1.85,
+      y: cy + Math.sin(ang) * R * 1.85,
+      r: 4.5, a: .42, ring: 2, idx,
+    });
+  });
+  return out;
+}
+
+function plexDraw(cv, g, targets, hoverKey) {
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h) return;
+  const dpr = window.devicePixelRatio || 1;
+  if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const x = cv.getContext("2d");
+  if (!x) return;
+  x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  x.clearRect(0, 0, w, h);
+
+  const css = getComputedStyle(document.documentElement);
+  const v = (n, f) => trim(css.getPropertyValue(n)) || f;
+  const accent = v("--accent", "#6aa3ff"), fg = v("--fg", "#e6e9ef"), fg2 = v("--fg2", "#a4acbd");
+  const here = PLEX.pos.get(plexFocus());
+
+  /* Links first, as curves through the middle: a straight line between two
+     dots says "these two", a curve that bends toward the centre says "both of
+     these belong to the one in the middle", which is the thing being shown. */
+  x.lineWidth = 1.4;
+  for (const [a, b] of g.edges) {
+    const ka = g.nodes[a].key, kb = g.nodes[b].key;
+    const pa = PLEX.pos.get(ka), pb = PLEX.pos.get(kb);
+    if (!pa || !pb) continue;
+    const lit = ka === plexFocus() || kb === plexFocus();
+    x.globalAlpha = Math.min(pa.a, pb.a) * (lit ? 0.85 : 0.22);
+    x.strokeStyle = lit ? accent : fg2;
+    x.beginPath();
+    x.moveTo(pa.x, pa.y);
+    if (here) x.quadraticCurveTo((pa.x + pb.x) / 2 * 0.6 + here.x * 0.4,
+                                 (pa.y + pb.y) / 2 * 0.6 + here.y * 0.4, pb.x, pb.y);
+    else x.lineTo(pb.x, pb.y);
+    x.stroke();
+  }
+
+  if (PLEX.drag) {
+    const from = PLEX.pos.get(PLEX.drag.from);
+    if (from) {
+      x.globalAlpha = .9; x.strokeStyle = accent; x.setLineDash([5, 4]);
+      x.beginPath(); x.moveTo(from.x, from.y); x.lineTo(PLEX.drag.x, PLEX.drag.y); x.stroke();
+      x.setLineDash([]);
+    }
+  }
+
+  x.textAlign = "center";
+  x.textBaseline = "top";
+  const taken = [];
+  const room = (cx2, cy2, tw) => {
+    const box = [cx2 - tw / 2 - 3, cy2 - 1, cx2 + tw / 2 + 3, cy2 + 14];
+    for (const t of taken)
+      if (box[0] < t[2] && box[2] > t[0] && box[1] < t[3] && box[3] > t[1]) return false;
+    taken.push(box); return true;
+  };
+
+  // Nearest last, so the middle is never drawn under something behind it.
+  const drawn = [...PLEX.pos.entries()]
+    .filter(([k]) => targets.has(k))
+    .sort((p, q) => (targets.get(q[0]).ring) - (targets.get(p[0]).ring));
+
+  for (const [k, pos] of drawn) {
+    const t = targets.get(k);
+    const nd = g.nodes[t.idx];
+    const focused = k === plexFocus();
+    const hot = k === hoverKey;
+    x.globalAlpha = pos.a;
+    const colour = v(GRAPH_KIND_VAR[nd.kind] || "--fg2", "#a4acbd");
+    x.beginPath();
+    x.arc(pos.x, pos.y, pos.r + (hot ? 2 : 0), 0, Math.PI * 2);
+    if (nd.ghost) { x.fillStyle = v("--bg2", "#161920"); x.fill(); x.strokeStyle = colour; x.lineWidth = 1.6; x.stroke(); }
+    else { x.fillStyle = colour; x.fill(); x.strokeStyle = v("--bg2", "#161920"); x.lineWidth = 1; x.stroke(); }
+    if (focused) {
+      x.strokeStyle = accent; x.lineWidth = 2;
+      x.beginPath(); x.arc(pos.x, pos.y, pos.r + 5, 0, Math.PI * 2); x.stroke();
+    }
+    // Ring two is the depth cue, so it carries no words unless you point at it.
+    if (t.ring === 2 && !hot) continue;
+    x.font = (focused ? "600 13px " : "11.5px ") + v("--sans", "sans-serif");
+    const text = nd.label.length > 28 ? nd.label.slice(0, 27) + "…" : nd.label;
+    const tw = x.measureText(text).width;
+    if (room(pos.x, pos.y + pos.r + 4, tw) || focused || hot) {
+      x.globalAlpha = pos.a;
+      x.fillStyle = focused || hot ? fg : fg2;
+      x.fillText(text, pos.x, pos.y + pos.r + 4);
+    }
+  }
+  x.globalAlpha = 1;
+}
+
+/* One animation for the whole plex: every dot eases toward where it belongs,
+   which is what makes a change of focus readable instead of a cut. */
+function plexAnimate(cv, g, getTargets, getHover) {
+  if (PLEX.anim) cancelAnimationFrame(PLEX.anim);
+  const step = () => {
+    PLEX.anim = null;
+    if (!cv.isConnected) return;
+    const w = cv.clientWidth, h = cv.clientHeight;
+    const targets = getTargets(w, h);
+    let moving = false;
+    for (const [k, t] of targets) {
+      let p = PLEX.pos.get(k);
+      if (!p) {
+        // Arriving from where the middle is, so new relatives fly outward.
+        const from = PLEX.pos.get(plexFocus());
+        p = {x: from ? from.x : w / 2, y: from ? from.y : h / 2, r: 1, a: 0};
+        PLEX.pos.set(k, p);
+      }
+      for (const f of ["x", "y", "r", "a"]) {
+        const d = t[f] - p[f];
+        if (Math.abs(d) > (f === "a" ? 0.004 : 0.4)) moving = true;
+        p[f] += d * 0.22;
+      }
+    }
+    for (const k of [...PLEX.pos.keys()]) {
+      if (targets.has(k)) continue;
+      const p = PLEX.pos.get(k);
+      p.a += (0 - p.a) * 0.3;
+      if (p.a < 0.02) PLEX.pos.delete(k); else moving = true;
+    }
+    plexDraw(cv, g, targets, getHover());
+    if (moving || PLEX.drag) PLEX.anim = requestAnimationFrame(step);
+  };
+  PLEX.anim = requestAnimationFrame(step);
+}
+
+
+/* ---------- editing the plex ----------
+   A relation is a [[link]] in the markdown and nothing else, so making one here
+   writes the same line you would have typed. They are gathered under a block
+   called Related, which reads as a list of links in any editor and parses back
+   as exactly what it looks like. */
+const RELATED_BLOCK = "Related";
+
+function relatedBlockOf(page) {
+  let b = (page.blocks || []).find(x => trim(x.title) === RELATED_BLOCK);
+  if (!b) { b = newBlock({title: RELATED_BLOCK}); page.blocks.push(b); }
+  if (!b.children) b.children = [];
+  return b;
+}
+
+/* True when the link was added; false when it was already there. */
+function linkPages(fromNode, toRef) {
+  if (!fromNode || fromNode.ghost || !toRef) return false;
+  return inSpace(fromNode.space, () => {
+    const page = getPage(fromNode.path);
+    if (!page) return false;
+    const want = "[[" + toRef + "]]";
+    let found = false;
+    walkBlocks(page.blocks, x => {
+      if (linksIn([x.title, ...(x.body || [])].join("\n"))
+          .some(t => trim(t.split("][")[0]).toLowerCase() === toRef.toLowerCase())) found = true;
+    });
+    if (found) return false;
+    relatedBlockOf(page).children.push(newBlock({title: want}));
+    createLinkedPages(want);
+    touch(fromNode.path);
+    return true;
+  });
+}
+
+function unlinkPages(fromNode, toRef) {
+  if (!fromNode || fromNode.ghost) return false;
+  return inSpace(fromNode.space, () => {
+    const page = getPage(fromNode.path);
+    if (!page) return false;
+    let cut = 0;
+    const strip = list => {
+      for (let i = list.length - 1; i >= 0; i--) {
+        const x = list[i];
+        if (x.children) strip(x.children);
+        const hits = linksIn(x.title)
+          .some(t => trim(t.split("][")[0]).toLowerCase() === toRef.toLowerCase());
+        if (!hits) continue;
+        // A line that is only the link goes; a sentence that mentions it keeps
+        // its words and loses the link, because the words are not ours to bin.
+        if (trim(x.title.replace(/\[\[[^\]]+\]\]/g, "")) === "" && !(x.children || []).length) {
+          list.splice(i, 1);
+        } else {
+          x.title = trim(x.title.replace(new RegExp("\\[\\[" +
+            toRef.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(\\]\\[[^\\]]*)?\\]\\]", "gi"), ""))
+            .replace(/\s{2,}/g, " ");
+        }
+        cut++;
+      }
+    };
+    strip(page.blocks);
+    if (cut) touch(fromNode.path);
+    return cut > 0;
+  });
+}
+
+/* Double-click opens the page here rather than leaving: the whole point of a
+   plex is that you keep your place while you look around. */
+function openPlexNode(g, nd) {
+  const {parents, children} = plexRelatives(g, nd.key);
+  const open = nd.ghost ? 0 : inSpace(nd.space, () => {
+    const page = getPage(nd.path);
+    if (!page) return 0;
+    let n = 0;
+    walkBlocks(page.blocks, b => { if (OPEN_STATES[b.state] && !isMessage(b)) n++; });
+    return n;
+  });
+
+  const listOf = (idxs, dir) => {
+    if (!idxs.length) return el("div", {style: "color:var(--fg3);font-size:12.5px"},
+      dir === "in" ? "Nothing points here yet." : "This points at nothing yet.");
+    const box = el("div", {style: "display:flex;gap:6px;flex-wrap:wrap"});
+    for (const i of idxs) {
+      const other = g.nodes[i];
+      box.append(el("button", {class: "chip filter", title: "Go there",
+        onclick: () => { closeModal(); go("graph", {graphFocus: other.key}); }}, other.label));
+    }
+    return box;
+  };
+
+  modal({
+    center: true,
+    title: nd.label,
+    hint: nd.ghost ? "no page yet" : (LINK_KIND_WORD[nd.kind] || nd.kind || "page"),
+    body: el("div", {},
+      nd.ghost ? el("div", {class: "field"},
+        el("div", {style: "font-size:13.5px;color:var(--fg2)"},
+          "Something links here, but no page has been made yet. Opening it makes one.")) : null,
+      !nd.ghost && open ? el("div", {class: "field"},
+        el("div", {style: "font-size:13.5px"}, open + " open task" + (open === 1 ? "" : "s") + " on this page.")) : null,
+      el("div", {class: "field"}, el("label", {}, "Points here"), listOf(parents, "in")),
+      el("div", {class: "field"}, el("label", {}, "Points at"), listOf(children, "out"))),
+    foot: [
+      el("button", {class: "btn ghost", onclick: closeModal}, "Stay here"),
+      el("button", {class: "btn ghost", onclick: () => { closeModal(); go("graph", {graphFocus: nd.key}); }},
+        "Centre on it"),
+      el("button", {class: "btn primary", onclick: () => {
+        closeModal();
+        if (nd.ghost) inSpace(nd.space, () => followLink(nd.ref));
+        else openPageIn(nd.space, nd.path);
+      }}, "Open the page"),
+    ],
+  });
+}
+
+/* A page made from the graph is a page like any other: a file with a title.
+   It is linked to whatever you dragged it out of, so it is never born an
+   orphan nobody can find again. */
+function createNodeFrom(fromNode, name) {
+  const title = trim(name);
+  if (!title) return null;
+  return inSpace(fromNode ? fromNode.space : null, () => {
+    const path = findExistingPage(title) || (() => {
+      const p = resolveWikiPath(title);
+      putPage(p, pageTemplateFor(/^([^/]+)\//.test(title) ? title.split("/")[0] : "page",
+                                 title.includes("/") ? title.split("/").slice(1).join("/") : title));
+      return p;
+    })();
+    if (fromNode) linkPages(fromNode, pageRef(path));
+    scanVerbs();
+    return path;
+  });
+}
+
+
+/* ---------- the plex screen ----------
+   Two ways of looking at the same links, and the toggle says which: the map is
+   the whole vault at once, the plex is one page and its neighbours. Neither is
+   a different file format. */
+const plexDefaultFocus = g => {
+  if (state.graphFocus && g.nodes.some(n => n.key === state.graphFocus)) return state.graphFocus;
+  const best = g.nodes.slice().sort((a, b) => b.deg - a.deg || a.label.localeCompare(b.label))[0];
+  return best ? best.key : null;
+};
+
+/* Naming a new page is a line of text, so it is a line of text and not a form.
+   The page is made in the space the node you dragged from lives in, which is
+   the only space it could sensibly belong to. */
+function plexNameModal(fromNode, after) {
+  const input = el("input", {placeholder: "c/phone, p/Niclas, or just a name"});
+  const done = () => {
+    const name = trim(input.value);
+    if (!name) { closeModal(); return; }
+    closeModal();
+    const path = createNodeFrom(fromNode, name);
+    if (!path) return;
+    notify("Made " + name + (fromNode ? " and linked it to " + fromNode.label : ""));
+    after(path);
+  };
+  modal({
+    center: true,
+    title: "New page here",
+    hint: fromNode ? "linked to " + fromNode.label : "",
+    body: el("div", {},
+      el("div", {class: "field"}, el("label", {}, "Name"), input),
+      el("div", {style: "font-size:12.5px;color:var(--fg3)"},
+        "A prefix files it: c/ a context, p/ a person, o/ an org, z/ a note. " +
+        "Without one it is a plain page.")),
+    foot: [
+      el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+      el("button", {class: "btn primary", onclick: done}, "Make it"),
+    ],
+  });
+  setTimeout(() => { input.focus(); input.onkeydown = e => { if (e.key === "Enter") done(); }; }, 0);
+}
+
+function viewPlex() {
+  const c = el("div", {class: "wrap"});
+  const g = graphData();
+  const focusKey = plexDefaultFocus(g);
+  state.graphFocus = focusKey;
+  const cv = el("canvas", {class: "graphcv"});
+  const stage = el("div", {class: "graph plex"}, cv);
+  const edit = () => !!state.graphEdit;
+
+  const head = el("div", {class: "section", style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap"},
+    el("h2", {style: "margin:0;flex:1"},
+      focusKey ? (g.nodes.find(n => n.key === focusKey) || {}).label : "Nothing linked yet"),
+    el("button", {class: "btn sm ghost", onclick: () => go("graph", {graphMode: "map"})}, "Whole map"),
+    el("button", {class: "btn sm " + (edit() ? "primary" : "ghost"),
+      onclick: () => { state.graphEdit = !state.graphEdit; render(); }},
+      edit() ? "Editing" : "Edit"));
+  c.append(head, stage);
+
+  if (!g.nodes.length) {
+    c.append(el("div", {class: "section quiet"}, el("div", {style: "color:var(--fg3)"},
+      "Nothing to draw yet. Pages join the plex as soon as something links to them.")));
+    return c;
+  }
+
+  c.append(el("div", {class: "graph-legend"},
+    el("span", {class: "glg"}, "Above: what points here. Below: what this points at. Sides: shares a parent."),
+    el("span", {class: "glg quiet"}, edit()
+      ? "Drag one dot onto another to link them. Drag into space, or double-click space, to make a page."
+      : "Click a dot to move the middle. Double-click it to look at it without leaving.")));
+
+  let hover = null;
+  const targets = (w, h) => plexTargets(g, state.graphFocus, w, h);
+  const kick = () => plexAnimate(cv, g, targets, () => hover);
+  requestAnimationFrame(kick);
+
+  const nodeAt = (e) => {
+    const r = cv.getBoundingClientRect();
+    const px = e.clientX - r.left, py = e.clientY - r.top;
+    let best = null, bestD = Infinity;
+    for (const [k, p] of PLEX.pos) {
+      const dx = p.x - px, dy = p.y - py, d = dx * dx + dy * dy;
+      const reach = p.r + 10;
+      if (d <= reach * reach && d < bestD) { best = k; bestD = d; }
+    }
+    return best;
+  };
+  const nodeOf = key => {
+    const t = plexTargets(g, state.graphFocus, cv.clientWidth, cv.clientHeight).get(key);
+    return t ? g.nodes[t.idx] : null;
+  };
+
+  cv.addEventListener("mousemove", e => {
+    if (PLEX.drag) {
+      const r = cv.getBoundingClientRect();
+      PLEX.drag.x = e.clientX - r.left;
+      PLEX.drag.y = e.clientY - r.top;
+      kick();
+    }
+    const k = nodeAt(e);
+    if (k === hover && !PLEX.drag) return;
+    hover = k;
+    cv.style.cursor = k ? (edit() ? "grab" : "pointer") : "default";
+    const nd = k ? nodeOf(k) : null;
+    cv.title = nd ? nd.label + "  · " + (nd.ghost ? "no page yet" : nd.path) : "";
+    kick();
+  });
+  cv.addEventListener("mouseleave", () => { hover = null; PLEX.drag = null; kick(); });
+
+  cv.addEventListener("mousedown", e => {
+    if (!edit()) return;
+    const k = nodeAt(e);
+    if (!k) return;
+    const r = cv.getBoundingClientRect();
+    PLEX.drag = {from: k, x: e.clientX - r.left, y: e.clientY - r.top};
+    e.preventDefault();
+    kick();
+  });
+  cv.addEventListener("mouseup", e => {
+    const d = PLEX.drag;
+    PLEX.drag = null;
+    if (!d) return;
+    const onto = nodeAt(e);
+    const fromNode = nodeOf(d.from);
+    if (!fromNode) { kick(); return; }
+    if (onto && onto !== d.from) {
+      const toNode = nodeOf(onto);
+      const ref = toNode.ghost ? toNode.ref : inSpace(toNode.space, () => pageRef(toNode.path));
+      if (fromNode.ghost) { notify("Make " + fromNode.label + " a page first, then it can link out.", "warn"); kick(); return; }
+      if (linkPages(fromNode, ref)) { notify(fromNode.label + " now links to " + toNode.label); render(); }
+      else { notify("That link is already there."); kick(); }
+      return;
+    }
+    // Dragged out into nothing: that is a new page, born linked.
+    if (fromNode.ghost) { notify("Make " + fromNode.label + " a page first.", "warn"); kick(); return; }
+    plexNameModal(fromNode, () => render());
+  });
+
+  /* A single click moves the middle and a double click opens the modal, so the
+     single one waits long enough to find out which it was. Neither leaves the
+     graph: looking around is the whole job of this screen. */
+  let pending = null;
+  cv.addEventListener("click", e => {
+    const k = nodeAt(e);
+    if (pending) { clearTimeout(pending); pending = null; }
+    if (!k) return;
+    pending = setTimeout(() => {
+      pending = null;
+      state.graphFocus = k;
+      head.querySelector("h2").textContent = (nodeOf(k) || {}).label || "";
+      kick();
+    }, 200);
+  });
+  cv.addEventListener("dblclick", e => {
+    if (pending) { clearTimeout(pending); pending = null; }
+    const k = nodeAt(e);
+    if (k) { const nd = nodeOf(k); if (nd) openPlexNode(g, nd); return; }
+    if (edit()) plexNameModal(nodeOf(state.graphFocus), () => render());
+  });
+
+  /* The same relatives as buttons, because a canvas is invisible to a keyboard
+     and to a screen reader, and because unlinking wants a list and not a drag. */
+  const rel = plexRelatives(g, state.graphFocus);
+  const here = g.nodes[rel.i];
+  const sideList = (idxs, dir) => {
+    const box = el("div", {class: "pagelist"});
+    if (!idxs.length) {
+      box.append(el("div", {class: "dash-item", style: "color:var(--fg3)"},
+        dir === "in" ? "Nothing points here yet." : "This points at nothing yet."));
+      return box;
+    }
+    for (const i of idxs) {
+      const other = g.nodes[i];
+      const row = el("div", {class: "dash-item"},
+        el("button", {class: "nm", style: "all:unset;flex:1;cursor:pointer",
+          onclick: () => go("graph", {graphFocus: other.key})}, other.label));
+      if (edit() && here && !here.ghost && dir === "out")
+        row.append(el("button", {class: "btn sm ghost", onclick: () => {
+          const ref = other.ghost ? other.ref : inSpace(other.space, () => pageRef(other.path));
+          if (unlinkPages(here, ref)) { notify("Unlinked " + other.label); render(); }
+        }}, "Unlink"));
+      box.append(row);
+    }
+    return box;
+  };
+  const panel = el("details", {class: "section", open: edit() ? "" : null},
+    el("summary", {}, "The same relatives as a list"),
+    el("div", {class: "field"}, el("label", {}, "Points here"), sideList(rel.parents, "in")),
+    el("div", {class: "field"}, el("label", {}, "Points at"), sideList(rel.children, "out")));
+  if (edit() && here && !here.ghost)
+    panel.append(el("button", {class: "btn sm ghost", onclick: () => plexNameModal(here, () => render())},
+      "Add a page linked to this one"));
+  c.append(panel);
+  return c;
+}
+
 function viewGraph() {
+  /* Two readings of the same links. The plex is the one you steer; the map is
+     the one you survey. The toggle is remembered in the view state, so coming
+     back to the graph brings you back to the one you were using. */
+  if (state.graphMode === "plex") return viewPlex();
   const c = el("div", {class: "wrap"});
   const g = graphData();
   const cv = el("canvas", {class: "graphcv"});
@@ -6945,6 +7517,7 @@ function viewGraph() {
       real + " page" + (real === 1 ? "" : "s") +
       (ghosts ? " \u00B7 " + ghosts + " not made yet" : "") + " \u00B7 " +
       g.edges.length + " link" + (g.edges.length === 1 ? "" : "s")),
+    el("button", {class: "btn sm ghost", onclick: () => go("graph", {graphMode: "plex"})}, "Mindmap"),
     el("button", {class: "btn sm ghost", onclick: () => { GRAPH_POS.clear(); render(); }}, "Re-lay out")));
 
   c.append(stage);
@@ -7888,7 +8461,7 @@ function viewChat() {
     c.append(section("Chat", 0, el("div", {class: "card"}, el("div", {class: "empty"},
       mode === "flagged" ? "Nothing flagged. The \u2691 on a message keeps it here."
       : mode === "unread" ? "Nothing unread."
-      : "No conversations yet. Open a task and say something \u2014 everyone in that space sees it."))));
+      : "No conversations yet. Open a task and say something - everyone in that space sees it."))));
     return c;
   }
 
@@ -8187,7 +8760,7 @@ function openCalendarPicker(items) {
         : dated.length + " dated tasks."),
     el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
       "A file is made here and goes nowhere. The links open your calendar's own new-event " +
-      "screen, which means the title and date travel in the web address \u2014 fine for a " +
+      "screen, which means the title and date travel in the web address - fine for a " +
       "meeting, worth a thought for anything private.")));
   const list = el("div", {});
   for (const [kind, label] of CALENDARS) {
@@ -8208,7 +8781,7 @@ function openCalendarPicker(items) {
 /* The button itself: straight to the remembered calendar, long-press-free. */
 function addToCalendar(items) {
   const dated = items.filter(a => a.due);
-  if (!dated.length) { notify("Give it a date first \u2014 SCHEDULED or a deadline.", "warn"); return; }
+  if (!dated.length) { notify("Give it a date first - SCHEDULED or a deadline.", "warn"); return; }
   const chosen = calendarChoice();
   if (!chosen) return openCalendarPicker(dated);
   sendToCalendar(chosen, dated);
@@ -8261,7 +8834,7 @@ function claimThese(items, me) {
   }
   render();
   notify(items.length + (items.length === 1 ? " task is" : " tasks are") +
-         " yours now. Still in their Waiting for \u2014 they wrote it, you own it.");
+         " yours now. Still in their Waiting for - they wrote it, you own it.");
 }
 
 function openClaimPrompt(items, me) {
@@ -8289,7 +8862,7 @@ function openClaimPrompt(items, me) {
           "they count as something your colleagues are waiting for. Take them on and they " +
           "become your tasks."),
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          "They stay in your colleagues' Waiting for either way \u2014 they wrote them, " +
+          "They stay in your colleagues' Waiting for either way - they wrote them, " +
           "so they keep watching them.")),
       el("div", {class: "field"}, card)),
     foot: [
@@ -8404,7 +8977,7 @@ function openInviteArrived(cfg, text) {
     body: el("div", {},
       el("div", {class: "field"},
         el("div", {style: "font-size:13.5px"},
-          "Everything in that space is in this file. Open it and it is yours too \u2014 " +
+          "Everything in that space is in this file. Open it and it is yours too - " +
           "the same projects, the same lists, the same people.")),
       cfg.kind === "fs" ? el("div", {class: "field"},
         el("label", {}, "One thing to do afterwards"),
@@ -8473,15 +9046,15 @@ function openShareSpaceInvite() {
       el("div", {class: "field"},
         el("label", {}, "What they get"),
         el("div", {style: "color:var(--fg2);font-size:13.5px"},
-          "The space already set up \u2014 its name, its colour" +
+          "The space already set up - its name, its colour" +
           (sp.kind === "http" ? ", the server address" : "") +
-          " \u2014 and everything in it: " + counts.pages + " pages, " +
+          " - and everything in it: " + counts.pages + " pages, " +
           counts.projects + " projects, " + counts.actions + " open. They open it " +
           "and they are in."),
         sp.kind === "fs" ? el("div", {style: "color:var(--warn);font-size:12.5px;margin-top:8px"},
           "Share the folder \u201C" + (sp.label || sp.name) + "\u201D with them as well. A " +
           "browser will not let a folder travel in a file, so they press one button to " +
-          "point at it \u2014 the invite tells them which folder to look for.") : null),
+          "point at it - the invite tells them which folder to look for.") : null),
       el("div", {class: "field"},
         el("label", {}, "Send them"),
         el("div", {style: "display:flex;gap:8px;flex-wrap:wrap"},
@@ -8593,7 +9166,7 @@ function openNews(items) {
     hint: "since you last opened " + (Spaces.active || "this space"),
     body: el("div", {}, el("div", {class: "field"}, card),
       el("div", {style: "color:var(--fg3);font-size:12px"},
-        "Nobody was notified when this happened \u2014 there is no server to do it. " +
+        "Nobody was notified when this happened - there is no server to do it. " +
         "The app checks for you when you open the space.")),
     foot: [
       el("button", {class: "btn ghost", onclick: () => { markSeen(); closeModal(); }}, "Later"),
@@ -9132,7 +9705,7 @@ function openAskNote(name, items, file) {
       el("button", {class: "btn ghost", onclick: () => {
         remember();
         const addr = trim(to.value);
-        if (!addr) { notify("Put their address in first \u2014 Teams needs it to open the chat.", "warn"); return; }
+        if (!addr) { notify("Put their address in first - Teams needs it to open the chat.", "warn"); return; }
         window.open("https://teams.microsoft.com/l/chat/0/0?users=" + encodeURIComponent(addr) +
           "&message=" + encodeURIComponent(bodyNow()), "_blank", "noopener");
         notify("Teams opens with the message ready. Drop " + file + " into the same window.");
@@ -9734,7 +10307,7 @@ function openNudgeExplainer() {
   body.append(el("div", {class: "field"},
     el("div", {style: "color:var(--fg2);font-size:13px;line-height:1.55"},
       all.length
-        ? "Each of these is your own list telling you something. Open one, or quieten it \u2014 " +
+        ? "Each of these is your own list telling you something. Open one, or quieten it - " +
           "it comes back after " + CFG.nudgeSnoozeDays + " days, and only if it is still true."
         : "Nothing is nagging. This is the whole of what GroupTodo will ever bring up.")));
   for (const nd of all) {
@@ -9759,7 +10332,7 @@ function openNudgeExplainer() {
     el("div", {style: "color:var(--fg3);font-size:12px;line-height:1.5"},
       "Under " + CFG.quietUntilTasks + " open tasks the method ones stay away entirely, at " +
       "most " + CFG.nudgeMax + " are ever on screen, and the first day has no weeding and no " +
-      "review nag. None of this is counted, scored or sent anywhere \u2014 there is nowhere for " +
+      "review nag. None of this is counted, scored or sent anywhere - there is nowhere for " +
       "it to be sent.")));
   modal({
     title: "Why these are here", hint: "nudges, not nags",
@@ -10451,6 +11024,20 @@ function outlineBlock(path, page, b) {
         prev.collapsed = false;
         touch(path); render(); focusBlock(b.id);
       }
+    } else if (e.altKey && e.shiftKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+      /* Move the line among its own siblings, children and all, the way every
+         outliner does it. Alt-shift rather than plain alt: the arrows alone
+         already walk the blocks, and a key that both moves the caret and
+         rearranges the document depending on a modifier you forgot you were
+         holding is how a plan gets reordered by accident. */
+      e.preventDefault();
+      const sibs = siblingsOf(page, b), i = sibs.indexOf(b);
+      const to = i + (e.key === "ArrowUp" ? -1 : 1);
+      if (to < 0 || to >= sibs.length) return;     // the ends are the ends
+      txt.blur();
+      sibs.splice(i, 1);
+      sibs.splice(to, 0, b);
+      touch(path); noteTodoTouched(); render(); focusBlock(b.id);
     } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       // Back into the same line afterwards, so ctrl-enter twice means two steps.
       e.preventDefault(); txt.blur(); cycleState(path, b); focusBlock(b.id);
@@ -10769,7 +11356,7 @@ function viewPage() {
     if (notes.length) {
       const card = el("div", {class: "card"});
       for (const b of notes) {
-        card.append(el("button", {class: "dash-item", title: "Open \u2014 you can make this a task",
+        card.append(el("button", {class: "dash-item", title: "Open - you can make this a task",
           onclick: () => openTaskDetail(path, b)}, el("span", {html: renderInline(b.title)})));
       }
       c.append(section("Notes", notes.length, card));
@@ -11062,7 +11649,7 @@ function renderContextChip() {
   btn.textContent = "";
   if (!state.context) { btn.hidden = true; return; }
   btn.hidden = false;
-  btn.title = "You are in @" + state.context + " \u2014 click to change";
+  btn.title = "You are in @" + state.context + " - click to change";
   btn.onclick = () => openContextPicker("Where are you now?", ctx => surfaceContext(ctx));
   btn.append(el("span", {}, "@" + state.context));
   btn.append(el("span", {class: "x", title: "Leave this context",
@@ -11429,13 +12016,13 @@ function openTaskDetail(path, block, space) {
         })(),
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
           "Somebody in this space gets it as their task, and you get it in your " +
-          "Waiting for. Anybody else is only a waiting-for \u2014 they cannot see this.")),
+          "Waiting for. Anybody else is only a waiting-for - they cannot see this.")),
       el("div", {class: "field"},
         el("label", {}, "Chat" + (messagesOf(block).length ? " \u00B7 " + messagesOf(block).length : "")),
         threadPanel(path, block),
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
           "Everyone in this space sees it, with who said it and when. Flag one with " +
-          "\u2691 to come back to it \u2014 that carries your name, so it follows you between " +
+          "\u2691 to come back to it - that carries your name, so it follows you between " +
           "devices. Read is per device and stays out of the files.")),
       el("div", {class: "field"}, el("label", {}, "GTD hygiene"), el("div", {class: "seg"},
         el("button", {onclick: () => { closeModal(); promptAndInsertContext(path, block); }},
@@ -11469,7 +12056,7 @@ function openTaskDetail(path, block, space) {
           repeatOf(block)
             ? "Nothing is created until you tick this one off, and you are asked first. " +
               "Skip a " + repeatOf(block).replace(/ly$/, "") + " and it stays skipped."
-            : "Any of these, or write your own in the file \u2014 repeat:: every 2 weeks, " +
+            : "Any of these, or write your own in the file - repeat:: every 2 weeks, " +
               "repeat:: every monday.")),
       el("div", {class: "field"},
         el("label", {}, "Calendar"),
@@ -11549,11 +12136,11 @@ function routineFork(name, then) {
     body: el("div", {},
       el("div", {class: "field"},
         el("div", {style: "color:var(--fg2);font-size:13.5px;line-height:1.55"},
-          "A project has a finish line \u2014 something you tick off once and never think " +
+          "A project has a finish line - something you tick off once and never think " +
           "about again. This one reads like something that comes back instead, and those " +
           "live as routines under Routines & lists, so your project list stays a list of " +
           "things that can actually end.")),
-      pickRow("r", "Make it a routine", "comes back \u2014 run it when it is due", asRoutine),
+      pickRow("r", "Make it a routine", "comes back - run it when it is due", asRoutine),
       pickRow("p", "Keep it a project", "it really does finish", asProject)),
     onKey: e => {
       if (e.key === "r") { asRoutine(); return true; }
@@ -11568,7 +12155,7 @@ function createProjectFlow(name, then) {
   // A project without a finish line is a wish. Ask straight away.
   promptInput({
     title: "What does done look like?",
-    label: 'State it as if it already happened \u2014 "Sink repaired, no drip"',
+    label: 'State it as if it already happened - "Sink repaired, no drip"',
     value: "", cta: "Create project",
     onSave: outcome => {
       if (trim(outcome)) setOutcome(p, outcome);
@@ -11823,7 +12410,7 @@ function openSpacesWizard() {
       el("label", {}, "Which parts of your life should never see each other?"),
       el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
         "Each one becomes a separate vault in its own folder, with its own projects, " +
-        "contexts and horizons. You share a whole space with the people it belongs to \u2014 " +
+        "contexts and horizons. You share a whole space with the people it belongs to - " +
         "colleagues get Work and never see Private. Skip this and you get a single space " +
         "called Personal; you can add more any time."),
       ta, chips,
@@ -12524,13 +13111,13 @@ function newChecklistPrompt() {
     el("label", {}, "How often does it come round?"), cadenceInput,
     el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
       "A word, not an alarm. Nothing here fires on a timer or turns red because a " +
-      "Tuesday went by \u2014 it is there so you can see what is due when you look."));
+      "Tuesday went by - it is there so you can see what is due when you look."));
   const tplNote = el("div", {class: "field"},
     el("div", {style: "color:var(--fg2);font-size:12.5px;line-height:1.5"},
-      "Write %name% wherever the thing you are onboarding should appear \u2014 " +
+      "Write %name% wherever the thing you are onboarding should appear - " +
       "\"Call %name% to welcome them\". You are asked for it on every run."));
   const hints = {
-    routine: "comes back and never finishes \u2014 run it when it is due",
+    routine: "comes back and never finishes - run it when it is due",
     plain: "steps you would rather not think through twice; run them into today or a project",
     project: "every run spins up a whole new project with these steps",
   };
@@ -12647,7 +13234,7 @@ function openOnboarding() {
     whereLine.textContent = placed
       ? "Writing into \u201C" + (sp.label || sp.name) + "\u201D. Share that folder and you have shared the list."
       : CAP.dirPicker
-        ? "One you already share \u2014 OneDrive, Dropbox, a network drive. Skip it and it stays in this browser."
+        ? "One you already share - OneDrive, Dropbox, a network drive. Skip it and it stays in this browser."
         : "This browser cannot open folders, so it keeps the list itself. On a computer you can give it a real folder.";
   };
   whereBtn.onclick = async () => {
@@ -12681,7 +13268,7 @@ function openOnboarding() {
           "A shared to-do list that is really just text files in a folder you already have."),
         el("div", {style: "color:var(--fg3);font-size:12.5px;line-height:1.55;margin-top:6px"},
           "Other task apps keep them on their servers, which is why sharing one means " +
-          "everybody needs an account. There is no server here \u2014 share the folder and " +
+          "everybody needs an account. There is no server here - share the folder and " +
           "you have shared the list.")),
       /* Who, then where, then what. Each answer makes the next question make
          sense: a name is what the folder will be shared under, and a folder is
@@ -12821,7 +13408,7 @@ function openVaultDialog() {
   });
 
   modal({
-    center: true, title: "Vault & sync \u2014 " + (Spaces.active || "space"),
+    center: true, title: "Vault & sync - " + (Spaces.active || "space"),
     body: el("div", {},
       storageBox,
 
@@ -12829,13 +13416,13 @@ function openVaultDialog() {
          my markdown files" -- and because the vault file below is a courier,
          not a place. Putting the courier first once misled even me. */
       CAP.dirPicker ? el("div", {class: "field"},
-        el("label", {}, "Where the files live \u2014 a folder of .md files (Chrome / Edge on desktop)"),
+        el("label", {}, "Where the files live - a folder of .md files (Chrome / Edge on desktop)"),
         el("button", {class: onFolder ? "btn ghost" : "btn primary", onclick: connectFolder},
           onFolder ? "Change folder for " + Spaces.active : "Choose folder for " + Spaces.active),
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          "One file per day in journals/, one file per page in pages/, written as you type \u2014 " +
+          "One file per day in journals/, one file per page in pages/, written as you type - " +
           "the same files Neovim, Obsidian and Logseq open. Only this space goes here, so share " +
-          "that folder with the people who should see this space \u2014 and no one else." +
+          "that folder with the people who should see this space - and no one else." +
           (onFolder ? "" : " Until you pick one, this space lives in the browser and writes no files.")),
         onFolder ? el("div", {style: "color:var(--fg3);font-size:12px;margin-top:4px"},
           "Now writing into \u201C" + (V.backend.label || "") + "\u201D.") : null) : null,
@@ -12927,7 +13514,7 @@ function openVaultDialog() {
             setIdentity(input.value, Spaces.active);
             notify(trim(input.value)
               ? "Changes in " + Spaces.active + " will be signed " + trim(input.value) + "."
-              : "Name cleared \u2014 changes will not be signed.");
+              : "Name cleared - changes will not be signed.");
             render();
           });
           return input;
@@ -12984,7 +13571,7 @@ function openVaultDialog() {
             el("div", {style: "color:var(--fg3);font-size:12px;margin-top:10px"},
               "Used for this space in the sidebar and on the badge its rows carry when it " +
               "shares the screen with another space. Stored on this device, next to the list " +
-              "of spaces \u2014 not in the files, so sharing the space keeps your colours yours."));
+              "of spaces - not in the files, so sharing the space keeps your colours yours."));
         })()),
 
       el("div", {class: "field"},
@@ -13012,7 +13599,7 @@ function openVaultDialog() {
         })(),
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
           "Timestamps are written to the files in UTC so colleagues in different offices " +
-          "compare cleanly. This only changes what you see \u2014 including which day counts " +
+          "compare cleanly. This only changes what you see - including which day counts " +
           "as today. Set on this device, for you.")),
 
       el("div", {class: "field"},
@@ -13028,14 +13615,14 @@ function openVaultDialog() {
       el("div", {class: "field"},
         el("label", {}, "Start afresh"),
         el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
-          "Empties this browser\u2019s copy of GroupTodo \u2014 every space, its settings, " +
-          "your name, the offline copy \u2014 and reloads as if you had never opened it. " +
+          "Empties this browser\u2019s copy of GroupTodo - every space, its settings, " +
+          "your name, the offline copy - and reloads as if you had never opened it. " +
           "Useful when you want to see onboarding again, or to hand the browser on. " +
           (onFolder
             ? "Your .md files in \u201C" + (V.backend.label || "the folder") + "\u201D are NOT " +
-              "touched \u2014 but this browser forgets the folder, so reconnect it afterwards " +
+              "touched - but this browser forgets the folder, so reconnect it afterwards " +
               "to get the space back."
-            : "Save the vault file first if you want any of it back \u2014 this cannot be undone.")),
+            : "Save the vault file first if you want any of it back - this cannot be undone.")),
         el("button", {class: "btn danger", onclick: () => openStartAfreshDialog()},
           "Start afresh\u2026")),
     ),
@@ -13085,7 +13672,7 @@ async function wipeLocalState() {
      nothing else is touched until this one has actually happened. */
   try { IDB.close(); } catch (_) {}
   if (!(await deleteDatabase("grouptodo"))) {
-    notes.push("the pages are still held open by another tab \u2014 close GroupTodo\u2019s " +
+    notes.push("the pages are still held open by another tab - close GroupTodo\u2019s " +
                "other tabs and try again. Nothing has been deleted");
     return notes;
   }
@@ -13387,6 +13974,7 @@ function openHelp() {
           "enter  new block", el("br"), "tab / shift-tab  indent", el("br"),
           "ctrl-enter  cycle TODO state", el("br"), "backspace on empty  delete", el("br"),
           "\u2191 / \u2193  previous / next block, once the line runs out", el("br"),
+          "alt-shift-\u2191 / \u2193  move the line, children and all", el("br"),
           "[[  a list of pages; [[c/ contexts, [[p/ people"))),
     foot: [el("button", {class: "btn primary", onclick: closeModal}, "Got it")],
   });
@@ -13687,7 +14275,7 @@ function installServiceWorker() {
           el("div", {style: "font-size:13.5px"},
             "This page is running inside a locked preview frame, which is what SharePoint " +
             "and Teams do with an uploaded .html file. It has no storage of its own, cannot " +
-            "open a folder, and cannot even save a file \u2014 so anything you type here is " +
+            "open a folder, and cannot even save a file - so anything you type here is " +
             "gone the moment you close it.")),
         el("div", {class: "field"},
           el("label", {}, "Either of these works instead"),
