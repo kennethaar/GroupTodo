@@ -163,11 +163,30 @@ wins, then one on the line above it, then the line above that. Writing
 ```
 
 in today's page is how most todos get captured, and the project is the point of
-writing it that way. Only when no line says otherwise does the page the todo
-lives on answer, which for a journal capture is the day. Three levels and no
-further, so a todo does not claim a project it only shares a page with. A line
-written as nothing but the project link is scaffolding rather than a parent, so
-it is not printed twice.
+writing it that way. Indentation is inheritance, however deep it goes, so a line
+five levels down still belongs to the project it was written under. Only when no
+line above says otherwise does the page the todo lives on answer, which for a
+journal capture is the day.
+
+A project link indented under another project link is a milestone inside it,
+which is how a plan with stages gets written in a file that has no idea what a
+stage is:
+
+```markdown
+- [[1/Rewire the workshop]]
+  - [[1/First fix]]
+    - TODO Pull the cable
+  - [[1/Second fix]]
+    - TODO Dress the board
+```
+
+The nearest link answers "what is this part of" and the ones above it are the
+plan it is part of, so the cell reads outermost first and the project column
+reads downward the way the plan nests: the project, its milestone, the line
+above this one, this one. The outer ones are drawn quieter, because the setting
+is not the thing. A line written as nothing but a project link is scaffolding
+rather than a parent, so the parent cell skips past it instead of printing what
+the cell above it just printed.
 
 The links in a title are read out, not taken out. A todo is often mostly links,
 and "Ring about the quote" with the person and the org removed is a line you

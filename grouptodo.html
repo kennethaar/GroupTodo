@@ -568,6 +568,9 @@ body.adv .chk{border-radius:2px}
   white-space:nowrap;cursor:pointer}
 .achip:hover{color:var(--fg);border-color:var(--border2)}
 .acell.a-kids .achip{display:inline-block;width:auto}
+/* A project further up the chain is the setting, not the thing: quieter, so the
+   one this todo actually sits in is the one you read first. */
+.achip.up{color:var(--fg3);font-size:11.5px}
 .achip.ctx{color:var(--ctx);border-color:color-mix(in srgb, var(--ctx) 45%, var(--border))}
 .achip.want{color:var(--fg3);border-style:dashed}
 .achip.done{opacity:.55;text-decoration:line-through}
@@ -12178,22 +12181,36 @@ function aroundNavKeys(grid) {
    stored: the project is the page the line lives on, the parent and siblings
    and children are the indentation, and the tags are the [[links]] in the
    title. */
-/* The nearest project link: this line, then its parent, then its grandparent.
-   Three levels because that is as far as a capture ever nests before the line
-   belongs to something else, and walking the whole way up would make a todo
-   claim a project it only shares a page with. */
-function projectRefNear(page, block) {
+/* Every project link above a todo, nearest first, all the way to the top of
+   the page. Indentation is inheritance here: a line under a project link
+   belongs to that project however deep it sits, and a project link indented
+   under another project link is a milestone inside it, which is how a plan with
+   stages gets written in a file that has no idea what a stage is:
+
+     - [[1/Rewire the workshop]]
+       - [[1/First fix]]
+         - TODO Pull the cable
+       - [[1/Second fix]]
+         - TODO Dress the board
+
+   So the nearest one answers "what is this part of", and the ones above it are
+   the plan it is part of. Both are kept, in that order. */
+function projectChainOf(page, block) {
+  const chain = [], seen = new Set();
   let b = block;
-  for (let up = 0; up < 3 && b; up++) {
+  while (b) {
     for (const raw of linksIn(b.title)) {
       const r = trim(String(raw).split("][")[0]);
       const pfx = (/^([^/]+)\//.exec(r) || [])[1];
-      if (pfx && STATUS_DIRS[pfx]) return r;
+      if (!pfx || !STATUS_DIRS[pfx] || seen.has(r.toLowerCase())) continue;
+      seen.add(r.toLowerCase());
+      chain.push(r);
     }
     b = parentOf(page, b);
   }
-  return null;
+  return chain;
 }
+const projectRefNear = (page, block) => projectChainOf(page, block)[0] || null;
 
 /* Enter on the middle: a new step under the thing you are looking at. It asks
    for words rather than dropping a blank row in, because a nameless line in
@@ -12248,13 +12265,18 @@ function surroundingsGrid(path, block, space) {
      point of writing it that way. Only when no line says otherwise does the
      page the todo lives on answer, which for a journal capture is the day. */
   const kind = pageKind(path);
-  const near = page ? projectRefNear(page, block) : null;
+  const chain = page ? projectChainOf(page, block) : [];
+  const near = chain[0] || null;
   if (near) {
-    const to = findExistingPage(near);
-    grid.append(cell("a-project", "Project",
-      chip(near.replace(/^[^/]+\//, ""), near,
-        () => { closeModal(); if (to) openPageIn(space, to); else inSpace(space, () => followLink(near)); },
-        "", "p:" + near)));
+    /* Outermost first, so the column reads downward the way the plan nests:
+       the project, its milestone, the line above this one, this one. */
+    grid.append(cell("a-project", chain.length > 1 ? "Project and milestone" : "Project",
+      chain.slice().reverse().map((ref, i, all) => {
+        const to = findExistingPage(ref);
+        return chip(ref.replace(/^[^/]+\//, ""), ref,
+          () => { closeModal(); if (to) openPageIn(space, to); else inSpace(space, () => followLink(ref)); },
+          i === all.length - 1 ? "" : "up", "p:" + ref);
+      })));
   } else {
     grid.append(cell("a-project", kind === "project" ? "Project" : LINK_KIND_WORD[kind] || "Page",
       chip(pageTitle(path), path, () => { closeModal(); openPageIn(space, path); },
@@ -12266,8 +12288,13 @@ function surroundingsGrid(path, block, space) {
      under is scaffolding, not a parent, and printing it twice says nothing the
      first printing did not. */
   let par = page ? parentOf(page, block) : null;
-  if (par && near && !trim(linkWords(par.title).replace(near.replace(/^[^/]+\//, ""), "")))
-    par = parentOf(page, par);
+  const scaffold = b => {
+    if (!b || !chain.length) return false;
+    let left = linkWords(b.title);
+    for (const ref of chain) left = left.replace(ref.replace(/^[^/]+\//, ""), "");
+    return !trim(left);
+  };
+  while (scaffold(par)) par = parentOf(page, par);
   grid.append(cell("a-parent", "Parent",
     par ? chip(words(par.title), par.title, toTask(par), "", "b:" + par.id)
         : quiet("none, it sits at the top")));
@@ -12287,8 +12314,8 @@ function surroundingsGrid(path, block, space) {
      is the one that decides whether you can do the thing where you are. */
   const refs = linksIn(block.title).map(r => trim(r.split("][")[0]))
     .filter(r => r && !/^\d{4}-\d{2}-\d{2}$/.test(r) && !/^go\//i.test(r))
-    // the project has a cell of its own; it is not also a tag
-    .filter(r => r !== near);
+    // the projects have a cell of their own; they are not also tags
+    .filter(r => !chain.includes(r));
   const ctx = refs.filter(r => /^c\//i.test(r));
   const rest = refs.filter(r => !/^c\//i.test(r));
   const tagBox = [];
