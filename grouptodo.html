@@ -3150,6 +3150,52 @@ function nearestProjectAncestor(block) {
   return null;
 }
 
+/* Journal lines that name a project. The line lives in somebody's day page,
+   but the project is what it belongs to -- so a project started by writing
+   [[1/Userflow]] in a task reads as having that task, rather than looking
+   empty. Indexed under both the link's own ref and its bare title, which is how
+   nearestProjectAncestor finds them written. */
+function journalActionsIndex() {
+  return memo("journalActionsIndex", () => {
+    const by = new Map();
+    const add = (key, row) => {
+      if (!key) return;
+      const list = by.get(key) || [];
+      if (!list.includes(row)) list.push(row);
+      by.set(key, list);
+    };
+    for (const path of recentJournals()) {
+      const page = getPage(path); if (!page) continue;
+      for (const b of flattenBlocks(page.blocks)) {
+        if (!b.state || hasOpenDescendant(b)) continue;
+        const link = nearestProjectAncestor(b); if (!link) continue;
+        const row = {path, block: b, state: b.state, title: b.title,
+                     context: contextOf(b.title), due: dueDate(b),
+                     age: blockAge(b) ?? dateDiffDays(baseName(path), todayISO()),
+                     added: addedDate(b) || baseName(path),
+                     assignee: assigneeOf(b), by: blockProp(b, "by"),
+                     owner: journalOwnerOf(path) || null,
+                     missingVerb: !startsWithVerb(b.title),
+                     missingContext: !hasContextLink(b.title)};
+        add(link.ref.toLowerCase(), row);
+        add(link.title.toLowerCase(), row);
+      }
+    }
+    return by;
+  });
+}
+
+function journalActionsFor(projectPath) {
+  const by = journalActionsIndex();
+  const out = [];
+  for (const key of [pageRef(projectPath), baseName(projectPath), pageTitle(projectPath)]) {
+    for (const row of by.get(String(key || "").toLowerCase()) || []) {
+      if (!out.includes(row)) out.push(row);
+    }
+  }
+  return out;
+}
+
 /* Open leaf actions: an open item with no open children is the actionable one.
    With several spaces shown, this runs once per space and tags each result. */
 function leafActions() { return memo("leafActions", () => acrossSpaces(leafActionsHere)); }
@@ -3970,6 +4016,34 @@ function followLink(target) {
   openPage(path);
 }
 
+/* A link you type is a page you meant. Writing
+   "Chase the quote [[1/Userflow]] [[p/Niclas]] [[c/computer]]" is how a
+   project, a person and a context get started here, so the pages behind a line
+   are made as the line is written -- rather than left as broken links for the
+   health check to find weeks later. Dates and [[go/...]] doors are not pages,
+   and anything already there is left exactly as it is. */
+function createLinkedPages(text) {
+  const made = [];
+  for (const raw of linksIn(text)) {
+    const target = trim(String(raw).split("][")[0]);
+    if (!target || /^go\//i.test(target)) continue;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(target)) continue;
+    const m = /^([^/]+)\/(.+)$/.exec(target);
+    if (!m || !LINK_PREFIXES.has(m[1])) continue;   // a bare [[note]] is not filed anywhere
+    if (findExistingPage(target)) continue;
+    const path = resolveWikiPath(target);
+    putPage(path, pageTemplateFor(m[1], trim(m[2])));
+    made.push(path);
+  }
+  if (!made.length) return made;
+  scanVerbs();
+  const name = p => (statusDirOf(p) ? "project " : "") + pageTitle(p);
+  notify(made.length === 1
+    ? "Started " + name(made[0])
+    : "Started " + made.length + " pages: " + made.map(pageTitle).join(", "));
+  return made;
+}
+
 /* Port of: init.lua refile_current_task -- move a subtree to a project,
    leaving a DONE breadcrumb behind when it came from a journal. */
 function refileBlock(fromPath, block, toPath) {
@@ -3992,6 +4066,7 @@ function refileBlock(fromPath, block, toPath) {
 function addNextActionTo(path, text) {
   const page = getPage(path); if (!page) return null;
   const blk = stampAuthor(newBlock({state: "TODO", title: text, props: {Added: "[[" + todayISO() + "]]"}}));
+  createLinkedPages(blk.title);
   page.blocks.push(blk);
   touch(path);
   return blk;
@@ -4608,6 +4683,7 @@ function quickAdd(targetPath, opts = {}) {
         title: text + (ctx && !hasContextLink(text) ? " [[c/" + ctx + "]]" : ""),
         props: {Added: "[[" + todayISO() + "]]"},
       }));
+      createLinkedPages(blk.title);
       page.blocks.push(blk);
       touch(targetPath);
       noteTodoTouched();
@@ -9815,6 +9891,7 @@ function outlineBlock(path, page, b) {
     if (val !== b.title) {
       const [st, rest] = splitState(val);
       if (st) { b.state = st; b.title = rest; } else { b.title = val; }
+      createLinkedPages(b.title);
       touch(path); noteTodoTouched();
       renderNav();
     }
@@ -10003,7 +10080,8 @@ function viewProjects() {
   rows.sort((x, y) => titleOf(x).localeCompare(titleOf(y)));
   for (const {path: p, space} of rows) {
     const info = inSpace(space, () => ({
-      title: pageTitle(p), open: openTodoCount(p),
+      title: pageTitle(p),
+      open: openTodoCount(p) + journalActionsFor(p).filter(r => OPEN_STATES[r.state]).length,
       reviewed: dateIn(getPage(p)?.props?.reviewed),
     }));
     const idle = info.reviewed ? dateDiffDays(info.reviewed, todayISO()) : null;
@@ -10148,6 +10226,8 @@ function viewPage() {
       .map(b => ({path, block: b, state: b.state, title: b.title, context: contextOf(b.title),
                   due: dueDate(b), age: blockAge(b), added: addedDate(b),
                   missingVerb: !startsWithVerb(b.title), missingContext: !hasContextLink(b.title)}));
+    // A task written in a day page with [[1/this project]] belongs here too.
+    if (statusDirOf(path)) rows.push(...journalActionsFor(path));
     const open = rows.filter(r => OPEN_STATES[r.state]);
     const done = rows.filter(r => !OPEN_STATES[r.state]);
     c.append(section("To do", open.length, taskCard(open, "No open steps. Add one above.")));
@@ -10163,6 +10243,13 @@ function viewPage() {
     }
   } else {
     c.append(el("div", {class: "section"}, outlineFor(path)));
+    /* The outliner shows this page's own lines. A task written in a day page
+       with [[1/this project]] is this project's too, so it gets its own
+       section -- edited where it lives, which is what the arrow opens. */
+    if (statusDirOf(path)) {
+      const fromDays = journalActionsFor(path);
+      if (fromDays.length) c.append(section("From the day pages", fromDays.length, taskCard(fromDays)));
+    }
   }
 
   const back = isSimple() ? [] : backlinksTo(path);
@@ -10557,6 +10644,7 @@ function openCapture() {
       const title = (st ? rest : line) + (asTodo && ctx && !hasContextLink(line) ? " [[c/" + ctx + "]]" : "");
       const blk = newBlock({state: st || (asTodo ? "TODO" : null), title});
       if (blk.state) { blk.props.Added = "[[" + todayISO() + "]]"; stampAuthor(blk); }
+      createLinkedPages(title);
       page.blocks.push(blk);
     }
     touch(path); noteTodoTouched();
@@ -10643,6 +10731,7 @@ function openTaskDetail(path, block, space) {
     const val = trim(titleInput.value).replace(/\n/g, " ");
     const [st, rest] = splitState(val);
     if (st) { block.state = st; block.title = rest; } else { block.title = val; }
+    createLinkedPages(block.title);
     block.body = notes.value.split("\n");
     while (block.body.length && !trim(block.body[block.body.length - 1])) block.body.pop();
     if (sched.value) setBlockProp(block, "SCHEDULED", "[[" + sched.value + "]]");

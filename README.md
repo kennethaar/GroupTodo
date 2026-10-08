@@ -790,6 +790,28 @@ the only properties dragging a bar on the **Timeline** ever writes.
 States: `TODO`, `DOING`, `WAIT`, `DONE`, `CANCELLED` (`WAITING`/`CANCELED`/`NOW`/
 `LATER` read as aliases), or **no state at all** - an ordinary note.
 
+**A link you type is a page you meant.** Write
+
+```
+TODO Answer the calculation decision [[c/computer]] [[p/Niclas Ojebrandt]] [[1/Userflow - low hanging fruit]]
+```
+
+in a quick-add box, in Capture, in the outliner or in an action's Title, and the
+pages behind it are made as the line is saved - `pages/1/Userflow - low hanging
+fruit.md` as an active project, `pages/p/Niclas Ojebrandt.md` as a person,
+`pages/c/computer.md` as a context - from your templates if you have them. It
+says which ones it started. The line itself is left exactly as you typed it and
+stays in the day page you wrote it in, while the project now carries it: it
+shows on the project page, counts towards the project's *N open* in **Projects**,
+and is why the project is not nagged at for having no next action. So a project
+starts the moment you need one, in the middle of a sentence, and nothing is left
+behind as a broken link for the health check to find weeks later. Only the
+prefixed links make pages - `[[1/...]]`, `[[2/...]]`, `[[3/...]]`, `[[0/...]]`,
+`[[_/...]]`, `[[8/...]]`, `[[p/...]]`, `[[o/...]]`, `[[c/...]]`, `[[a/...]]`,
+`[[g/...]]`, `[[z/...]]` - and a date link or a plain `[[note]]` makes nothing,
+because neither says where it would live. Anything already there is opened, not
+replaced.
+
 One link does not point at a page: `[[go/todos]]` opens that part of the app
 itself, with `[[go/todos][Todos]]` to label it. The doors are `todos`, `agenda`,
 `context`, `people`, `projects`, `checklists`, `horizons`, `search`, `today`,
