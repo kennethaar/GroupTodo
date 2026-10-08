@@ -180,6 +180,47 @@ could have typed by hand, and a name no page has yet is offered last, as **Make
 c/loftet** - the page is created the same way it always was, when the line is
 saved. The list works in the outliner, in the add-a-task box and in Capture.
 
+### A list you paste stays a list
+
+A list of tasks hardly ever starts life here. It arrives in a mail, in the
+minutes of a meeting, in a message from somebody who writes them down the way
+they think of them - and the only thing standing between that and your list is
+retyping it. So paste it. The second line is what gives it away: one line is
+still text going in where the caret is, and from two lines up it is a list, and
+every line of it becomes a task of its own.
+
+```
+- TODO #pri1 [[o/CAB MEPS]] Verifisere MEPS data update
+- TODO #pri4 [[o/CAB MEPS]] [[o/CAB DigiCare]] Verifisere PDF- og beslutningsopplasting
+- TODO #pri2 [[o/CAB MEPS]] Tilgjengelig organisasjonsnummer
+```
+
+Three tasks, not three lines in one. The marks in front of the words are the
+list's own and not part of the task: a leading `-` is a bullet, indentation is
+nesting, a leading `TODO` or `DONE` is the state, and an indented `key:: value`
+line belongs to the task above it - so a block copied out of GroupTodo, dates
+and names and all, pastes back whole. The `[[o/CAB MEPS]]` in there is an
+ordinary link, so the org pages it names are created on the way in, exactly as
+if you had typed them.
+
+A line that says nothing about its own state becomes whatever the place it
+lands in says an unmarked line is: a task in the add-a-task box and in Capture,
+and in the outliner whatever the block you pasted into was. That is the rule
+that lets a bare list of five lines with no `TODO` in sight still become five
+tasks, without a paste into the middle of a note turning the note into one.
+
+It works in the outliner, in the add-a-task box - which is a one-line field, so
+without this the line breaks would simply be thrown away - and in Capture.
+
+### Enter splits a line
+
+Pressing `Enter` in the outliner cuts the line at the caret: what is behind it
+stays where it is and what is in front of it goes down into the new block. At
+the end of a line, which is where `Enter` usually gets pressed, that is the
+same empty new block it always was. At the very start of a line it opens an
+empty block above and leaves the line alone, rather than emptying it and
+carrying its words down.
+
 ### Focus
 
 The button beside Capture, or `f f`. The same screen with everything that is
@@ -907,7 +948,8 @@ The markdown is identical either way.
 `g r` review · `v b` board · `v c` calendar · `v g` graph ·
 `v t` timeline · `v r` report · `f f` focus ·
 `ctrl-z` undo a delete · **Copy link** on any task or page ·
-`g d` re-surface. In the outline: `Enter` new block, `Tab`/`Shift-Tab` indent,
+`g d` re-surface. In the outline: `Enter` splits the line where the caret is,
+`Tab`/`Shift-Tab` indent,
 `Ctrl-Enter` cycle state, `[[` a list of pages, `↑`/`↓` between blocks. A long title wraps, so the
 arrows walk the lines inside a block first and only leave it from the top or
 the bottom line - which is what they do in every other outliner, and what your

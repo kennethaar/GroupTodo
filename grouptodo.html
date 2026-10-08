@@ -1185,6 +1185,59 @@ function parsePage(text) {
   return page;
 }
 
+/* ---------- loose text into blocks ----------
+   Text that arrives from somewhere else -- pasted out of an email, a chat, a
+   meeting's minutes -- is already a list. Every line of it is one task, and
+   the little marks in front of the words are the list's, not the task's: a
+   leading "-" is a bullet, indentation is nesting, and a leading TODO is a
+   state. Reading them here is what lets a paste become ten tasks rather than
+   one line with ten dashes in it.
+
+   A "key:: value" line belongs to the line above it, so a block copied out of
+   the app -- Added, by, assigned and all -- pastes back whole.
+
+   State is left alone when a line does not carry one: only the caller knows
+   whether an unmarked line is a task or a note. */
+function parseOutlineText(text) {
+  const roots = [];
+  const stack = [];                       // {level, block}, outermost first
+  for (const raw of String(text || "").replace(/\r\n?/g, "\n").split("\n")) {
+    if (trim(raw) === "") continue;
+    const bm = BULLET_RE.exec(raw);
+    const level = indentLevel(bm ? bm[1] : /^[ \t]*/.exec(raw)[0]);
+    const rest = trim(bm ? bm[2] : raw);
+    if (rest === "") continue;
+    const cur = stack.length ? stack[stack.length - 1].block : null;
+    const pm = PROP_RE.exec(rest);
+    if (pm && cur) { cur.props[pm[1]] = trim(pm[2]); continue; }
+    const [state, title] = splitState(rest);
+    const blk = newBlock({state, title: trim(title)});
+    while (stack.length && stack[stack.length - 1].level >= level) stack.pop();
+    if (stack.length) stack[stack.length - 1].block.children.push(blk);
+    else roots.push(blk);
+    stack.push({level, block: blk});
+  }
+  return roots;
+}
+
+/* The parsed lines, ready to go into a page: a line that carries no state of
+   its own becomes whatever the place it is going says an unmarked line is, a
+   task gets today's date, your name and the context in force, and the pages
+   its [[links]] point at come into being. The helpers it leans on are defined
+   further down; nothing calls this before they are.  */
+function readyPastedBlocks(roots, opts = {}) {
+  let n = 0;
+  walkBlocks(roots, b => {
+    n++;
+    if (!b.state && opts.defaultState) b.state = opts.defaultState;
+    if (b.state && opts.context && !hasContextLink(b.title))
+      b.title = trim(b.title + " [[c/" + opts.context + "]]");
+    if (b.state) { b.props.Added = b.props.Added || todayStamp(); stampAuthor(b); }
+    if (b.title) createLinkedPages(b.title);
+  });
+  return n;
+}
+
 function serializePage(page) {
   const out = [];
   const props = page.props || {};
@@ -4790,6 +4843,24 @@ function quickAdd(targetPath, opts = {}) {
       });
       if (!startsWithVerb(text)) notify("Tip: start with a verb you could film - Call, Draft, Buy.", "warn");
     },
+  });
+  /* A list pasted into a one-line box is still a list. The box itself would
+     throw the line breaks away and leave one long task, so catch the paste and
+     make the tasks it describes instead. */
+  input.addEventListener("paste", e => {
+    const raw = e.clipboardData && e.clipboardData.getData("text/plain");
+    if (raw == null) return;
+    if (raw.replace(/\r\n?/g, "\n").split("\n").filter(l => trim(l) !== "").length < 2) return;
+    const roots = parseOutlineText(raw);
+    if (!roots.length) return;
+    e.preventDefault();
+    const page = getPage(targetPath);
+    if (!page) return;
+    const n = readyPastedBlocks(roots, {defaultState: "TODO", context: opts.context || state.context});
+    for (const blk of roots) page.blocks.push(blk);
+    input.value = "";
+    touch(targetPath); noteTodoTouched(); coachMark("add"); render();
+    notify(n + " tasks added from what you pasted.");
   });
   attachLinkAutocomplete(input);
   return el("div", {class: "quickadd"}, el("span", {}, "+"), input);
@@ -10006,6 +10077,24 @@ function setHostText(host, text, caret) {
   sel.removeAllRanges(); sel.addRange(r);
 }
 
+/* Where the caret sits in the field, counted in characters of its plain text,
+   so a line can be cut in two at exactly that point. A selection gives back
+   both of its ends, and what lies between them is what a paste replaces. */
+function caretOffsets(host) {
+  const text = hostText(host);
+  if (!host.isContentEditable)
+    return [host.selectionStart ?? text.length, host.selectionEnd ?? text.length];
+  const sel = getSelection();
+  if (!sel || !sel.rangeCount || !host.contains(sel.anchorNode)) return [text.length, text.length];
+  const r = sel.getRangeAt(0), pre = document.createRange();
+  pre.selectNodeContents(host);
+  pre.setEnd(r.startContainer, r.startOffset);
+  const start = pre.toString().length;
+  if (!host.contains(r.endContainer)) return [start, start];
+  pre.setEnd(r.endContainer, r.endOffset);
+  return [start, pre.toString().length];
+}
+
 /* An unclosed [[ immediately before the caret, and whatever has been typed
    since. A second [ or a closing ]] means this one is finished with. */
 function openLinkAt(before) {
@@ -10249,17 +10338,94 @@ function outlineBlock(path, page, b) {
     }
     txt.innerHTML = renderInline(b.title);
   });
+  /* ---------- pasting a list ----------
+     A list that arrives from somewhere else is a list of tasks, so it becomes
+     one block per line instead of one block with the whole thing in it. One
+     line is still just text at the caret: pasting a word into the middle of a
+     sentence has to keep working, and it is the second line that tells us a
+     paste was a list. Plain text either way, so a copy out of a web page does
+     not bring its fonts and colours with it. */
+  txt.addEventListener("paste", e => {
+    const raw = e.clipboardData && e.clipboardData.getData("text/plain");
+    if (raw == null) return;
+    e.preventDefault();
+    if (LINKPOP && LINKPOP.host === txt) linkPopClose();
+    const whole = txt.textContent.replace(/\n/g, " ");
+    const [from, to] = caretOffsets(txt);
+    const before = whole.slice(0, from), after = whole.slice(to);
+
+    const lines = raw.replace(/\r\n?/g, "\n").split("\n").filter(l => trim(l) !== "");
+    if (lines.length < 2) {
+      const one = raw.replace(/[\r\n]+/g, " ");
+      setHostText(txt, before + one + after, before.length + one.length);
+      linkPopSync(txt);
+      return;
+    }
+
+    const roots = parseOutlineText(raw);
+    if (!roots.length) return;
+    const inherit = b.state && OPEN_STATES[b.state] ? "TODO" : null;
+    const n = readyPastedBlocks(roots, {defaultState: inherit});
+
+    const sibs = siblingsOf(page, b);
+    let tail = null;
+    if (trim(whole) === "" && !(b.children || []).length) {
+      // Pasted into the empty block you just opened: the list takes its place
+      // rather than leaving a blank line above itself. A block with children
+      // under it is not spare like that, so there the list goes after it.
+      txt.blur();
+      sibs.splice(sibs.indexOf(b), 1, ...roots);
+    } else {
+      txt.textContent = before;
+      txt.blur();
+      if (trim(after) !== "") {
+        const [st, rest] = splitState(after);
+        tail = newBlock({state: st || inherit, title: trim(st ? rest : after)});
+        if (tail.state) { tail.props.Added = todayStamp(); stampAuthor(tail); }
+      }
+      sibs.splice(sibs.indexOf(b) + 1, 0, ...roots, ...(tail ? [tail] : []));
+    }
+    touch(path); noteTodoTouched(); render();
+    notify(n + " lines pasted, one block each.");
+    focusBlock((tail || roots[roots.length - 1]).id);
+  });
   attachLinkAutocomplete(txt);
   txt.addEventListener("keydown", e => {
     // While the [[ list is up it owns the arrows, Enter, Tab and Escape.
     if (linkPopKey(e)) return;
     if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-      e.preventDefault(); txt.blur();
+      /* Enter cuts the line where the caret is: what is behind the caret stays
+         here and what is in front of it goes to the new block. At the end of a
+         line -- where Enter usually gets pressed -- that is the same empty new
+         block as before, so the familiar case is untouched and the middle of a
+         sentence now works too. */
+      e.preventDefault();
       const sibs = siblingsOf(page, b);
-      const nb = newBlock({state: b.state && OPEN_STATES[b.state] ? "TODO" : null});
-      if (nb.state) { nb.props.Added = "[[" + todayISO() + "]]"; stampAuthor(nb); }
+      const whole = txt.textContent.replace(/\n/g, " ");
+      const [from, to] = caretOffsets(txt);
+      const before = whole.slice(0, from), after = whole.slice(to);
+      const inherit = b.state && OPEN_STATES[b.state] ? "TODO" : null;
+      if (from === 0 && to === 0 && trim(whole) !== "") {
+        // At the very start: open a line above and leave this one as it is,
+        // rather than emptying it and carrying its words down.
+        txt.blur();
+        const nb = newBlock({state: inherit});
+        if (nb.state) { nb.props.Added = todayStamp(); stampAuthor(nb); }
+        sibs.splice(sibs.indexOf(b), 0, nb);
+        touch(path); render(); focusBlock(nb.id);
+        return;
+      }
+      // Blur is what writes a block's text back, so hand it the half that stays.
+      txt.textContent = before;
+      txt.blur();
+      const [st, rest] = splitState(after);
+      const nb = newBlock({state: st || inherit, title: trim(st ? rest : after)});
+      if (nb.state) { nb.props.Added = todayStamp(); stampAuthor(nb); }
+      if (nb.title) createLinkedPages(nb.title);
       sibs.splice(sibs.indexOf(b) + 1, 0, nb);
-      touch(path); render(); focusBlock(nb.id);
+      touch(path); render();
+      // Caret where the cut was, which is the start of what moved down.
+      focusBlock(nb.id, false);
     } else if (e.key === "Tab") {
       e.preventDefault(); txt.blur();
       const sibs = siblingsOf(page, b), i = sibs.indexOf(b);
@@ -11128,21 +11294,17 @@ function openCapture() {
   }}, "TODO");
   todoBtn.classList.add("primary");
 
+  /* One line per item, and a pasted list reads the same whether or not it
+     arrived with dashes and indentation in front of the words. */
   const save = () => {
-    const lines = input.value.split("\n").map(trim).filter(Boolean);
+    const roots = parseOutlineText(input.value);
     closeModal();
-    if (!lines.length) return;
+    if (!roots.length) return;
     const page = getPage(path);
-    for (const line of lines) {
-      const [st, rest] = splitState(line);
-      const title = (st ? rest : line) + (asTodo && ctx && !hasContextLink(line) ? " [[c/" + ctx + "]]" : "");
-      const blk = newBlock({state: st || (asTodo ? "TODO" : null), title});
-      if (blk.state) { blk.props.Added = "[[" + todayISO() + "]]"; stampAuthor(blk); }
-      createLinkedPages(title);
-      page.blocks.push(blk);
-    }
+    const n = readyPastedBlocks(roots, {defaultState: asTodo ? "TODO" : null, context: asTodo ? ctx : null});
+    for (const blk of roots) page.blocks.push(blk);
     touch(path); noteTodoTouched();
-    notify(lines.length + " captured to today's journal.");
+    notify(n + " captured to today's journal.");
     go("today");
   };
   modal({
