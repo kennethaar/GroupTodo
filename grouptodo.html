@@ -540,6 +540,48 @@ body.adv .chk{border-radius:2px}
   .reprow .when{flex:0 0 100%}
   .reprow .what{flex:0 0 100%}
 }
+/* The surroundings grid: three columns, four rows, the todo in the middle of
+   the middle. Each cell is a hit area and not a decoration, so the whole thing
+   is the navigation as well as the picture. */
+.around{display:grid;gap:6px;
+  grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1fr);
+  grid-template-rows:auto auto auto auto;
+  grid-template-areas:
+    "tags project sibs"
+    "tags parent  sibs"
+    "tags self    sibs"
+    "kids kids    kids"}
+.acell{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:6px 8px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.acell.a-project{grid-area:project}
+.acell.a-parent{grid-area:parent}
+.acell.a-self{grid-area:self;border-color:var(--accent);
+  background:color-mix(in srgb, var(--bg2) 88%, var(--accent) 12%)}
+.acell.a-tags{grid-area:tags}
+.acell.a-sibs{grid-area:sibs;justify-content:center}
+.acell.a-kids{grid-area:kids;flex-direction:row;flex-wrap:wrap;align-items:center}
+.acell.a-kids .alab{flex:0 0 100%}
+.alab{font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--fg3)}
+.achip{display:block;text-align:left;font-size:12.5px;color:var(--fg2);
+  background:var(--bg);border:1px solid var(--border);border-radius:6px;
+  padding:3px 7px;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;cursor:pointer}
+.achip:hover{color:var(--fg);border-color:var(--border2)}
+.acell.a-kids .achip{display:inline-block;width:auto}
+.achip.ctx{color:var(--ctx);border-color:color-mix(in srgb, var(--ctx) 45%, var(--border))}
+.achip.want{color:var(--fg3);border-style:dashed}
+.achip.done{opacity:.55;text-decoration:line-through}
+.aself{font-size:13.5px;font-weight:600;color:var(--fg);overflow-wrap:anywhere}
+.anone{font-size:12px;color:var(--fg3)}
+/* On a phone the three columns are a row of slivers, so the same cells stack in
+   reading order instead: what it belongs to, what it is, what is around it. */
+@media (max-width:620px){
+  .around{grid-template-columns:1fr;
+    grid-template-areas:"project" "parent" "self" "tags" "sibs" "kids"}
+  .acell.a-tags,.acell.a-sibs,.acell.a-kids{flex-direction:row;flex-wrap:wrap;align-items:center}
+  .acell.a-tags .alab,.acell.a-sibs .alab,.acell.a-kids .alab{flex:0 0 100%}
+  .achip{display:inline-block;width:auto}
+}
 .graph{margin-top:14px;background:var(--bg2);border:1px solid var(--border);
   border-radius:var(--radius);height:min(66vh,620px);overflow:hidden}
 .graphcv{display:block;width:100%;height:100%}
@@ -11926,6 +11968,88 @@ function openRefile(fromPath, block) {
   });
 }
 
+
+/* ---------- where this todo sits ----------
+   A todo in a list is a line with no surroundings: you cannot see what it
+   belongs to, what comes with it, or what hangs off it without leaving and
+   coming back. This is the same few facts the file already holds, placed rather
+   than listed, so the shape is read in one look:
+
+       tags          project
+       (context       parent
+        first)        THE TODO        siblings
+                    children
+
+   Three columns, four rows, every cell a way in. Nothing here is computed or
+   stored: the project is the page the line lives on, the parent and siblings
+   and children are the indentation, and the tags are the [[links]] in the
+   title. */
+function surroundingsGrid(path, block, space) {
+  const page = getPage(path);
+  const grid = el("div", {class: "around"});
+  const cell = (where, label, kids) => {
+    const box = el("div", {class: "acell " + where}, el("span", {class: "alab"}, label));
+    for (const k of [].concat(kids)) if (k) box.append(k);
+    return box;
+  };
+  const chip = (text, title, onclick, cls) =>
+    el("button", {class: "achip " + (cls || ""), title: title || text, onclick}, text);
+  const toTask = b => () => { closeModal(); openTaskDetail(path, b, space); };
+  /* The tags have their own column, so they are taken out of the words rather
+     than printed twice, once as a chip and once as [[syntax]] in a title. A
+     line that was nothing but links keeps them read out, because a chip with
+     no text in it is not a chip. */
+  const words = s => {
+    const bare = trim(String(s || "").replace(/\[\[[^\]]+\]\]/g, "").replace(/\s{2,}/g, " "));
+    return bare || plainTitle(s) || "(untitled)";
+  };
+  const quiet = text => el("span", {class: "anone"}, text);
+
+  /* The project: the page the line lives on, when that page is one. A todo
+     written in a journal belongs to the day, and saying so is more honest than
+     leaving the cell empty. */
+  const kind = pageKind(path);
+  grid.append(cell("a-project", kind === "project" ? "Project" : LINK_KIND_WORD[kind] || "Page",
+    chip(pageTitle(path), path, () => { closeModal(); openPageIn(space, path); })));
+
+  const par = page ? parentOf(page, block) : null;
+  grid.append(cell("a-parent", "Parent",
+    par ? chip(words(par.title), par.title, toTask(par))
+        : quiet("none, it sits at the top")));
+
+  grid.append(cell("a-self", "This todo",
+    el("span", {class: "aself"},
+      (block.state ? block.state + " " : "") + words(block.title))));
+
+  /* The tags are the links in the title, and the context goes first because it
+     is the one that decides whether you can do the thing where you are. */
+  const refs = linksIn(block.title).map(r => trim(r.split("][")[0]))
+    .filter(r => r && !/^\d{4}-\d{2}-\d{2}$/.test(r) && !/^go\//i.test(r));
+  const ctx = refs.filter(r => /^c\//i.test(r));
+  const rest = refs.filter(r => !/^c\//i.test(r));
+  const tagBox = [];
+  for (const r of ctx.concat(rest))
+    tagBox.push(chip(/^c\//i.test(r) ? "@" + r.slice(2) : r, r,
+      () => { closeModal(); inSpace(space, () => followLink(r)); },
+      /^c\//i.test(r) ? "ctx" : ""));
+  if (!ctx.length) tagBox.unshift(chip("add context", "A todo with no context cannot be filtered to where you are",
+    () => { closeModal(); promptAndInsertContext(path, block); }, "want"));
+  grid.append(cell("a-tags", "Tags", tagBox));
+
+  const sibs = (page ? siblingsOf(page, block) : []).filter(b => b !== block && !isMessage(b));
+  grid.append(cell("a-sibs", "Siblings" + (sibs.length > 6 ? " · " + sibs.length : ""),
+    sibs.length ? sibs.slice(0, 6).map(b => chip(words(b.title), b.title, toTask(b),
+                    OPEN_STATES[b.state] ? "" : "done"))
+                : quiet("nothing beside it")));
+
+  const kids = (block.children || []).filter(b => !isMessage(b));
+  grid.append(cell("a-kids", "Children",
+    kids.length ? kids.map(b => chip(words(b.title), b.title, toTask(b),
+                    OPEN_STATES[b.state] ? "" : "done"))
+                : quiet("nothing under it")));
+  return grid;
+}
+
 function openTaskDetail(path, block, space) {
   state.selected = block.id;
   const a = {
@@ -11994,6 +12118,8 @@ function openTaskDetail(path, block, space) {
   modal({
     title: "Action", hint: a.age != null ? "on your list " + a.age + " days" : "",
     body: el("div", {},
+      el("div", {class: "field"}, el("label", {}, "Where it sits"),
+        surroundingsGrid(path, block, space)),
       el("div", {class: "field"}, el("label", {}, "Title"), titleInput),
       el("div", {class: "field"}, el("label", {}, "State"), seg),
       el("div", {class: "field"},

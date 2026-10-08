@@ -140,6 +140,23 @@ copy, no database, and it reads as a list of links in any editor. **Unlink** in
 the list underneath takes one out again, and a link inside a sentence loses the
 brackets rather than the sentence.
 
+
+### Where a todo sits
+
+Open any todo and the first thing in the panel is its surroundings: three
+columns and four rows, the same few facts the file already holds, placed rather
+than listed so the shape reads in one look. Down the middle, the project it
+belongs to, its parent line, and the todo itself. Along the bottom, its
+children. First column, its tags, with the context at the top because that is
+the one that decides whether you can do the thing where you are standing.  Last
+column, level with the todo, its siblings.
+
+Every cell is a way in: a sibling or a child opens in the same panel, the
+project opens its page, a tag follows the link. Nothing in it is computed or
+stored. The project is the page the line lives on, the parent and siblings and
+children are the indentation, and the tags are the `[[links]]` in the title, so
+a line with nothing around it says so rather than showing an empty box.
+
 **Timeline** - a Gantt: every project as a bar from the day its first task
 starts to the day its last one ends, with its tasks underneath when you open
 it. A bar is drawn from what the file already carries - `SCHEDULED::` or the
