@@ -141,6 +141,13 @@ pre{font-family:var(--mono);font-size:12.5px;background:var(--sunk);border:1px s
 .howto .alt{margin:8px 0 0;font-size:12.5px;color:var(--ink-faint);font-weight:400}
 
 /* --- the covering note: a message pane, so it reads as mail not as markup --- */
+.langpick{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:14px 0 0}
+.langpick > span{font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-faint)}
+.lang{font:inherit;font-size:13.5px;padding:5px 13px;border-radius:20px;cursor:pointer;
+  border:1px solid var(--rule);background:var(--card);color:var(--ink-soft)}
+.lang.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+.langpick small{color:var(--ink-faint);font-size:12.5px;flex-basis:100%}
 .mailhead{display:grid;gap:5px;padding:0 0 11px;border-bottom:1px solid var(--rule);margin:0 0 12px}
 .mailhead > div{display:grid;grid-template-columns:62px 1fr;gap:10px;align-items:baseline;
   font-size:13.5px}
@@ -193,6 +200,12 @@ same bargain as the rest of GroupTodo. The file <em>is</em> the round trip.</p>
 <div class="sec">
   <p class="eyebrow">Step 2 · what you send</p>
   <h2>The covering note</h2>
+  <div class="langpick">
+    <span>Language</span>
+    <button class="lang" data-lang="en" type="button">English</button>
+    <button class="lang" data-lang="no" type="button">Norsk</button>
+    <small>Sets the language of the note and of the sheet she opens, together.</small>
+  </div>
   <p>Mia is about to get an HTML attachment from somebody. That is exactly what a phishing
   mail looks like, so the note it arrives with has to do the one thing a phishing mail never
   does: name the actual work, in your voice, and tell her she is free to ignore the
@@ -242,27 +255,19 @@ same bargain as the rest of GroupTodo. The file <em>is</em> the round trip.</p>
     <div class="chrome"><i></i><i></i><i></i><span>file:///C:/Users/mia/Downloads/check-in-mia-halvorsen.html</span></div>
     <div class="pane">
       <div class="sheet-head">
-        <h3>Hei Mia 👋</h3>
-        <p><b>Kenneth Aar</b> is waiting on <b>4 things</b> from you. Tick what is done.
-        Everything else he will assume is still coming.</p>
+        <h3 id="sHi"></h3>
+        <p id="sLede"></p>
       </div>
       <ul class="rows" id="rows"></ul>
       <div class="howto">
-        <p>When you are done — three taps, no account</p>
-        <ol>
-          <li><span>Tick everything you have finished. Add a note where it helps.</span></li>
-          <li><span>Press <em>Send back to Kenneth</em>. Your email opens, already addressed,
-            with your answers written into the message.</span></li>
-          <li><span>Press Send in your email. Nothing to attach, nothing to save.</span></li>
-        </ol>
-        <p class="alt">Email not set up on this machine? <em>Copy as text</em> puts the same
-          few lines on your clipboard — paste them into Teams, Slack or a reply. Any route
-          back works; it is the text that matters.</p>
+        <p id="sHowTitle"></p>
+        <ol id="sSteps"></ol>
+        <p class="alt" id="sAlt"></p>
       </div>
 
       <div class="sheet-foot">
-        <a class="btn primary" id="send" href="#">Send back to Kenneth</a>
-        <button class="btn" id="copy">Copy as text</button>
+        <a class="btn primary" id="send" href="#"></a>
+        <button class="btn" id="copy"></button>
         <span class="count" id="count"></span>
       </div>
       <p class="sent" id="sent" hidden></p>
@@ -341,11 +346,141 @@ same bargain as the rest of GroupTodo. The file <em>is</em> the round trip.</p>
 </div>
 
 <script>
+/* ============================================================
+   TWO LANGUAGES
+   The note and the sheet are the only things a person outside the space ever
+   reads, and half the people this is for do not work in English. Both come out
+   of one table, picked once: a Norwegian note arriving with an English sheet
+   would undo the point of writing it in Norwegian.
+
+   No em dashes in any of these strings. They land in somebody's mail client,
+   where a dash that is not on the keyboard reads as something a machine wrote,
+   and the whole job of this note is to read as though a person wrote it.
+   ============================================================ */
+var LANG = (function(){ try { return localStorage.getItem("gtd-mockup-lang") || "en"; } catch(e){ return "en"; } })();
+var WHO = {me:"Kenneth Aar", first:"Kenneth", them:"Mia", themFull:"Mia Halvorsen",
+           mail:"mia.halvorsen@example.com", file:"check-in-mia-halvorsen.html"};
+
+function numWord(lang, n){
+  var t = lang === "no"
+    ? ["Ingen","Én","To","Tre","Fire","Fem","Seks","Sju","Åtte","Ni","Ti"]
+    : ["No","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten"];
+  return t[n] || String(n);
+}
+
+var STR = {
+  en: {
+    count:   function(n,t){ return n + " of " + t + " done"; },
+    asked:   function(d){ return "asked " + d + (d === 1 ? " day ago" : " days ago"); },
+    hi:      function(){ return "Hei " + WHO.them + " 👋"; },
+    lede:    function(n){ return "<b>" + WHO.me + "</b> is waiting for <b>" + n + " things</b> from you. "
+               + "Tick what is done. Everything else he will assume is still coming."; },
+    howTitle:"When you are done. Three taps, no account.",
+    steps:   ["Tick everything you have finished. Add a note where it helps.",
+              "Press <em>Send back to " + "{WHO}" + "</em>. Your email opens, already addressed, with your answers written into the message.",
+              "Press Send in your email. Nothing to attach, nothing to save."],
+    alt:     "Email not set up on this machine? <em>Copy as text</em> puts the same few lines on "
+             + "your clipboard. Paste them into Teams, Slack or a reply. Any route back works; it "
+             + "is the text that matters.",
+    sendBtn:  function(){ return "Send back to " + WHO.first; },
+    attachBtn:"Save the reply and attach it",
+    copyBtn:  "Copy as text",
+    copied:   "Copied",
+    sending:  function(n,noted){ return "Your email is opening. " + n + " ticked, " + noted
+                + " noted, written into the message. Press Send there and you are done."; },
+    tooLong:  function(len){ return "This reply is " + len + " characters once encoded, past what "
+                + "an email link carries, so the real sheet saves it as a file and asks you to "
+                + "attach it. One extra step, and only for a long reply."; },
+    notePh:   function(){ return "Anything " + WHO.first + " should know (optional)"; },
+    addNote:  "Add a note",
+    replyHead:function(d){ return "Reply from " + WHO.themFull + ", " + d; },
+    subject:  function(n){ return numWord("en", n) + " things I'm waiting for - 2 minute check-in"; },
+    body:     function(items){ return [
+      "Hei " + WHO.them + ",",
+      "",
+      "I'm chasing a few things and I'd rather not ping you about them one at a time,",
+      "so I've put them in the attached file:",
+      "",
+      items,
+      "",
+      "It is a page that opens in your browser. No login, no account, nothing to",
+      "install. Tick what's done, and the button at the bottom opens your email back",
+      "to me with the answers already written in.",
+      "",
+      "If you'd rather not open an attachment, just reply to this and tell me which",
+      "ones are done. That works just as well.",
+      "",
+      "Thanks,",
+      WHO.me
+    ].join("\n"); },
+    openMail: "Open in email",
+    openTeams:"Send in Teams",
+    copyNote: "Copy the note",
+    mailSaid: function(f){ return "Your email is opening with the note in it. Drag " + f
+                + " in, then press Send. The one step a mailto: link cannot do for you."; },
+    teamsSaid:function(){ return "Teams opens on a chat with " + WHO.them
+                + ", message ready. Drop the file into the same window before you send."; }
+  },
+  no: {
+    count:   function(n,t){ return n + " av " + t + " gjort"; },
+    asked:   function(d){ return "spurte for " + d + (d === 1 ? " dag siden" : " dager siden"); },
+    hi:      function(){ return "Hei " + WHO.them + " 👋"; },
+    lede:    function(n){ return "<b>" + WHO.me + "</b> venter på <b>" + n + " ting</b> fra deg. "
+               + "Huk av det som er gjort. Resten regner han med fortsatt kommer."; },
+    howTitle:"Når du er ferdig. Tre trykk, ingen konto.",
+    steps:   ["Huk av alt du har gjort. Skriv en kommentar der det trengs.",
+              "Trykk <em>Send tilbake til " + "{WHO}" + "</em>. E-posten din åpner seg, ferdig adressert, med svarene skrevet inn i meldingen.",
+              "Trykk Send i e-posten. Ingenting å legge ved, ingenting å lagre."],
+    alt:     "Ikke e-post satt opp på denne maskinen? <em>Kopier som tekst</em> legger de samme "
+             + "linjene på utklippstavlen. Lim dem inn i Teams, Slack eller et svar. Alle veier "
+             + "tilbake funker; det er teksten som teller.",
+    sendBtn:  function(){ return "Send tilbake til " + WHO.first; },
+    attachBtn:"Lagre svaret og legg det ved",
+    copyBtn:  "Kopier som tekst",
+    copied:   "Kopiert",
+    sending:  function(n,noted){ return "E-posten din åpner seg. " + n + " avhuket, " + noted
+                + " kommentert, skrevet inn i meldingen. Trykk Send der, så er du ferdig."; },
+    tooLong:  function(len){ return "Dette svaret er " + len + " tegn når det kodes, mer enn en "
+                + "e-postlenke bærer, så det ekte arket lagrer det som en fil og ber deg legge den "
+                + "ved. Ett ekstra steg, og bare for et langt svar."; },
+    notePh:   function(){ return "Noe " + WHO.first + " bør vite (valgfritt)"; },
+    addNote:  "Skriv en kommentar",
+    replyHead:function(d){ return "Svar fra " + WHO.themFull + ", " + d; },
+    subject:  function(n){ return numWord("no", n) + " ting jeg venter på - 2 minutters sjekk"; },
+    body:     function(items){ return [
+      "Hei " + WHO.them + ",",
+      "",
+      "Jeg venter på noen ting, og vil helst slippe å mase om dem én av gangen,",
+      "så jeg har samlet dem i filen som ligger ved:",
+      "",
+      items,
+      "",
+      "Det er en side som åpner seg i nettleseren din. Ingen innlogging, ingen konto,",
+      "ingenting å installere. Huk av det som er gjort, så åpner knappen nederst",
+      "e-posten tilbake til meg med svarene ferdig utfylt.",
+      "",
+      "Vil du heller ikke åpne et vedlegg, er det bare å svare på denne og si hvilke",
+      "som er gjort. Det funker like bra.",
+      "",
+      "Takk,",
+      WHO.me
+    ].join("\n"); },
+    openMail: "Åpne i e-post",
+    openTeams:"Send i Teams",
+    copyNote: "Kopier notatet",
+    mailSaid: function(f){ return "E-posten din åpner seg med notatet i. Dra " + f
+                + " inn, og trykk Send. Det ene steget en mailto:-lenke ikke kan gjøre for deg."; },
+    teamsSaid:function(){ return "Teams åpner en samtale med " + WHO.them
+                + ", melding klar. Slipp filen i det samme vinduet før du sender."; }
+  }
+};
+var L = function(){ return STR[LANG] || STR.en; };
+
 var TASKS = [
-  {id:"t1", title:"Send Q3 VAT figures to the accountant", asked:"asked 11 days ago", note:"Sent Monday, she has them.", done:true},
-  {id:"t2", title:"Approve the Bergen travel claim",       asked:"asked 4 days ago",  note:"", done:true},
-  {id:"t3", title:"Confirm the supplier bank details",     asked:"asked 11 days ago", note:"Waiting on the bank, probably Friday.", done:false},
-  {id:"t4", title:"Sign the lease addendum",               asked:"asked 2 days ago",  note:"", done:false}
+  {id:"t1", title:"Send Q3 VAT figures to the accountant", days:11, note:"Sent Monday, she has them.", done:true},
+  {id:"t2", title:"Approve the Bergen travel claim",       days:4,  note:"", done:true},
+  {id:"t3", title:"Confirm the supplier bank details",     days:11, note:"Waiting on the bank, probably Friday.", done:false},
+  {id:"t4", title:"Sign the lease addendum",               days:2,  note:"", done:false}
 ];
 var KEY = "gtd-mockup-sheet";
 try{
@@ -365,7 +500,7 @@ var sentEl = document.getElementById("sent");
 
 function count(){
   var n = TASKS.filter(function(t){ return t.done; }).length;
-  countEl.textContent = n + " of " + TASKS.length + " done";
+  countEl.textContent = L().count(n, TASKS.length);
 }
 function draw(){
   rows.textContent = "";
@@ -382,7 +517,7 @@ function draw(){
     var ttl = document.createElement("span");
     ttl.className = "ttl";
     var name = document.createElement("span"); name.textContent = t.title;
-    var meta = document.createElement("span"); meta.className = "meta"; meta.textContent = t.asked;
+    var meta = document.createElement("span"); meta.className = "meta"; meta.textContent = L().asked(t.days);
     ttl.appendChild(name); ttl.appendChild(meta);
     hit.appendChild(box); hit.appendChild(ttl);
     hit.addEventListener("click", function(){ t.done = !t.done; save(); draw(); count(); refreshSend(); });
@@ -393,13 +528,13 @@ function draw(){
     if (t.note || t.open) {
       var ta = document.createElement("textarea");
       ta.value = t.note;
-      ta.placeholder = "Anything Kenneth should know (optional)";
+      ta.placeholder = L().notePh();
       ta.setAttribute("aria-label", "Note on: " + t.title);
       ta.addEventListener("input", function(){ t.note = ta.value; save(); refreshSend(); });
       nl.appendChild(ta);
     } else {
       var b = document.createElement("button");
-      b.className = "notebtn"; b.type = "button"; b.textContent = "Add a note";
+      b.className = "notebtn"; b.type = "button"; b.textContent = L().addNote;
       b.addEventListener("click", function(){ t.open = true; draw(); });
       nl.appendChild(b);
     }
@@ -408,7 +543,7 @@ function draw(){
   });
 }
 function replyText(){
-  var lines = ["Reply from Mia Halvorsen - " + new Date().toISOString().slice(0,10), ""];
+  var lines = [L().replyHead(new Date().toISOString().slice(0,10)), ""];
   TASKS.forEach(function(t){
     lines.push((t.done ? "[x] " : "[ ] ") + t.title + (t.note ? "  -- " + t.note : ""));
   });
@@ -439,7 +574,7 @@ function replyText(){
 var MAILTO_BUDGET = 1800;
 
 function mailtoLink(){
-  var subject = "Re: your check-in — Mia Halvorsen";
+  var subject = L().replyHead(new Date().toISOString().slice(0,10));
   var body = replyText();
   var url = "mailto:kenneth.aar@example.com"
     + "?subject=" + encodeURIComponent(subject)
@@ -451,9 +586,9 @@ var sendEl = document.getElementById("send");
 function refreshSend(){
   var m = mailtoLink();
   sendEl.href = m.fits ? m.url : "#";
-  sendEl.textContent = m.fits ? "Send back to Kenneth" : "Save the reply and attach it";
-  sendEl.title = m.fits ? "Opens your email with the answers already written in"
-                        : "This reply is too long to carry in an email link";
+  sendEl.textContent = m.fits ? L().sendBtn() : L().attachBtn;
+  sendEl.title = sendEl.textContent;
+  document.getElementById("copy").textContent = L().copyBtn;
 }
 sendEl.addEventListener("click", function(e){
   var m = mailtoLink();
@@ -462,113 +597,101 @@ sendEl.addEventListener("click", function(e){
   sentEl.hidden = false;
   if (m.fits) {
     // The link is real: the mail app opens, addressed, with the answers in it.
-    sentEl.textContent = "Your email is opening — " + n + " ticked, " + noted
-      + " noted, written into the message. Press Send there and you are done. "
-      + "(In the real sheet the address is Kenneth's, not example.com.)";
+    sentEl.textContent = L().sending(n, noted);
     return;
   }
   e.preventDefault();
-  sentEl.textContent = "This reply is " + m.len + " characters once encoded, past what an "
-    + "email link carries, so the real sheet saves reply-mia-halvorsen.md instead and asks "
-    + "you to attach it — one extra step, and only for a long reply.";
+  sentEl.textContent = L().tooLong(m.len);
 });
 document.getElementById("copy").addEventListener("click", function(){
   var txt = replyText();
   var btn = document.getElementById("copy");
-  var done = function(){ btn.textContent = "Copied"; setTimeout(function(){ btn.textContent = "Copy as text"; }, 1600); };
+  var done = function(){ btn.textContent = L().copied;
+    setTimeout(function(){ btn.textContent = L().copyBtn; }, 1600); };
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(txt).then(done, function(){ showFallback(txt); });
-  } else showFallback(txt);
+    navigator.clipboard.writeText(txt).then(done, done);
+  } else done();
 });
-function showFallback(txt){
-  sentEl.hidden = false;
-  sentEl.textContent = "Copying was refused here. The reply is plain text — select it from the pre block above in the real sheet.";
-}
 draw(); count(); refreshSend();
-
-/* ============================================================
-   STEP 2 -- the note that carries the sheet
+/* ---------- step 2: the note that carries the sheet ----------
    An HTML attachment from a colleague is shaped exactly like a phishing mail,
-   so the covering note has to earn the open. Three things do that, and none of
-   them is a logo: the four items are named, because a stranger could not have
-   known them; the file is described in plain words; and she is told outright
-   that she can ignore the attachment and just reply. A request nobody is
-   allowed to refuse is a request people learn to ignore.
-   ============================================================ */
-var ASK = {
-  to:"mia.halvorsen@example.com", toName:"Mia", from:"Kenneth Aar",
-  file:"check-in-mia-halvorsen.html"
-};
-
-function noteSubject(){
-  var n = TASKS.length;
-  // Not "Update request" and not the app's name: a subject a person would type.
-  return "Four things I'm waiting on \u2014 2 minutes if you have them".replace("Four",
-    ["Nothing","One thing","Two things","Three things","Four things","Five things"][n] || (n + " things"))
-    .replace("things I'm", n === 1 ? "I'm" : "I'm");
-}
-
+   so the covering note has to earn the open, and a logo will not do it. Two
+   things will: the items are named, because a stranger could not have known
+   them, and she is told she can ignore the attachment and just reply. */
+function noteSubject(){ return L().subject(TASKS.length); }
 function noteBody(){
   var items = TASKS.map(function(t){
-    return "  \u00b7 " + t.title + (t.asked ? "  (" + t.asked + ")" : "");
+    return "  · " + t.title + "  (" + L().asked(t.days) + ")";
   }).join("\n");
-  return [
-    "Hei " + ASK.toName + ",",
-    "",
-    "I'm chasing a few things and I'd rather not ping you about them one at a time,",
-    "so I've put them in the attached file:",
-    "",
-    items,
-    "",
-    "It is a page that opens in your browser \u2014 no login, no account, nothing to",
-    "install. Tick what's done, and the button at the bottom opens your email back",
-    "to me with the answers already written in.",
-    "",
-    "If you'd rather not open an attachment \u2014 fair enough, I wouldn't either \u2014 just",
-    "reply to this and tell me which ones are done. That works just as well.",
-    "",
-    "Thanks,",
-    ASK.from
-  ].join("\n");
+  return L().body(items);
 }
+var noteSent = document.getElementById("noteSent");
 
-(function drawNote(){
+function drawNote(){
   var subj = noteSubject(), body = noteBody();
-  document.getElementById("mailTo").textContent = ASK.to;
+  document.getElementById("mailTo").textContent = WHO.mail;
   document.getElementById("mailSubj").textContent = subj;
-  document.getElementById("mailAttach").textContent = ASK.file;
+  document.getElementById("mailAttach").textContent = WHO.file;
   document.getElementById("mailBody").textContent = body;
 
-  var mail = "mailto:" + encodeURIComponent(ASK.to)
-    + "?subject=" + encodeURIComponent(subj)
-    + "&body=" + encodeURIComponent(body);
   var mailBtn = document.getElementById("openMail");
-  mailBtn.href = mail;
-  mailBtn.title = "Opens your email with the note written; attach the file before you send";
+  mailBtn.href = "mailto:" + encodeURIComponent(WHO.mail)
+    + "?subject=" + encodeURIComponent(subj) + "&body=" + encodeURIComponent(body);
+  mailBtn.textContent = L().openMail;
 
   /* Teams takes a deep link to a chat with the message pre-typed. Nothing can
      attach there either, so the file goes in the same window by hand. */
-  document.getElementById("openTeams").href =
-    "https://teams.microsoft.com/l/chat/0/0?users=" + encodeURIComponent(ASK.to)
+  var teamsBtn = document.getElementById("openTeams");
+  teamsBtn.href = "https://teams.microsoft.com/l/chat/0/0?users=" + encodeURIComponent(WHO.mail)
     + "&message=" + encodeURIComponent(body);
+  teamsBtn.textContent = L().openTeams;
+  document.getElementById("copyNote").textContent = L().copyNote;
+}
 
-  var sent = document.getElementById("noteSent");
-  mailBtn.addEventListener("click", function(){
-    sent.hidden = false;
-    sent.textContent = "Your email is opening with the note in it. Drag "
-      + ASK.file + " in, then press Send \u2014 the one step a mailto: link cannot do for you.";
+document.getElementById("openMail").addEventListener("click", function(){
+  noteSent.hidden = false; noteSent.textContent = L().mailSaid(WHO.file);
+});
+document.getElementById("openTeams").addEventListener("click", function(){
+  noteSent.hidden = false; noteSent.textContent = L().teamsSaid();
+});
+document.getElementById("copyNote").addEventListener("click", function(){
+  var btn = document.getElementById("copyNote");
+  var txt = noteSubject() + "\n\n" + noteBody();
+  var ok = function(){ btn.textContent = L().copied;
+    setTimeout(function(){ btn.textContent = L().copyNote; }, 1600); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, ok);
+  else ok();
+});
+
+/* Everything on the sheet that is words rather than her answers. */
+function drawSheetText(){
+  document.getElementById("sHi").textContent = L().hi();
+  document.getElementById("sLede").innerHTML = L().lede(TASKS.length);
+  document.getElementById("sHowTitle").textContent = L().howTitle;
+  var ol = document.getElementById("sSteps");
+  ol.textContent = "";
+  L().steps.forEach(function(step){
+    var li = document.createElement("li"), sp = document.createElement("span");
+    sp.innerHTML = step.replace("{WHO}", WHO.first);
+    li.appendChild(sp); ol.appendChild(li);
   });
-  document.getElementById("openTeams").addEventListener("click", function(){
-    sent.hidden = false;
-    sent.textContent = "Teams opens on a chat with " + ASK.toName
-      + ", message ready. Drop the file into the same window before you send.";
+  document.getElementById("sAlt").innerHTML = L().alt;
+}
+
+/* One switch, both halves of the exchange. */
+function setLang(code){
+  LANG = (code === "no") ? "no" : "en";
+  try { localStorage.setItem("gtd-mockup-lang", LANG); } catch(e){}
+  [].forEach.call(document.querySelectorAll(".lang"), function(b){
+    var on = b.getAttribute("data-lang") === LANG;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", String(on));
   });
-  document.getElementById("copyNote").addEventListener("click", function(){
-    var btn = document.getElementById("copyNote");
-    var txt = subj + "\n\n" + body;
-    var ok = function(){ btn.textContent = "Copied"; setTimeout(function(){ btn.textContent = "Copy the note"; }, 1600); };
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, ok);
-    else ok();
-  });
-})();
+  drawNote(); drawSheetText(); draw(); count(); refreshSend();
+  noteSent.hidden = true; sentEl.hidden = true;
+}
+[].forEach.call(document.querySelectorAll(".lang"), function(b){
+  b.addEventListener("click", function(){ setLang(b.getAttribute("data-lang")); });
+});
+setLang(LANG);
 </script>
