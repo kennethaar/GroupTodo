@@ -93,8 +93,12 @@ hr{border:0;border-top:1px solid var(--rule);margin:40px 0 0}
   resize:vertical;min-height:62px}
 .noteline textarea:focus-visible{outline:2px solid var(--accent);outline-offset:-1px}
 .sheet-foot{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding-top:16px}
+/* Send back is an <a href="mailto:"> rather than a button, because handing the
+   link to the browser is what opens the mail app -- so it needs the anchor
+   defaults turned off to sit beside a real button. */
 .btn{font:inherit;font-size:15px;font-weight:600;padding:11px 18px;border-radius:8px;
-  border:1px solid var(--rule);background:var(--card);color:var(--ink);cursor:pointer}
+  border:1px solid var(--rule);background:var(--card);color:var(--ink);cursor:pointer;
+  text-decoration:none;display:inline-block;line-height:normal}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .count{color:var(--ink-faint);font-size:13.5px;font-family:var(--mono);margin-left:auto}
@@ -118,6 +122,24 @@ code{font-family:var(--mono);font-size:.88em;background:var(--sunk);padding:1px 
   border-radius:4px;border:1px solid var(--rule)}
 pre{font-family:var(--mono);font-size:12.5px;background:var(--sunk);border:1px solid var(--rule);
   border-radius:8px;padding:13px 14px;overflow-x:auto;margin:14px 0 0;color:var(--ink-soft)}
+/* --- "how to send this back", inside the sheet where she is standing --- */
+.howto{margin:14px 0 0;padding:12px 14px;background:var(--sunk);border:1px solid var(--rule);
+  border-radius:9px}
+.howto p{margin:0 0 7px;font-size:13px;font-weight:600;color:var(--ink)}
+.howto ol{margin:0;padding-left:0;list-style:none;counter-reset:h;display:grid;gap:5px}
+/* The number and ONE text box: every child of a grid container is a grid item,
+   so without the span the bare text and the <em> beside it get dealt into the
+   two columns a phrase at a time. */
+.howto li{counter-increment:h;display:grid;grid-template-columns:19px 1fr;gap:9px;
+  align-items:baseline;font-size:13px;color:var(--ink-soft)}
+.howto li > span{min-width:0}
+.howto li::before{content:counter(h);font-family:var(--mono);font-size:10.5px;
+  display:grid;place-items:center;width:17px;height:17px;border-radius:50%;
+  background:var(--card);border:1px solid var(--rule);color:var(--ink-faint)}
+.howto em{font-family:var(--mono);font-style:normal;font-size:12px;color:var(--accent);
+  white-space:nowrap}
+.howto .alt{margin:8px 0 0;font-size:12.5px;color:var(--ink-faint);font-weight:400}
+
 .clicks{display:grid;gap:8px;margin:16px 0 0;padding:0;list-style:none}
 .clicks li{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:baseline;
   font-size:15px;padding-bottom:8px;border-bottom:1px dotted var(--rule)}
@@ -148,10 +170,11 @@ same bargain as the rest of GroupTodo. The file <em>is</em> the round trip.</p>
       file. Email it, Teams it, drop it in a share. Nothing is uploaded anywhere.</small></li>
     <li><b>Tick <span class="who">· Mia</span></b>
       <small>She double-clicks the file. It opens in whatever browser she has. She taps the
-      two she finished, types one note, presses <em>Send back</em>. That is it.</small></li>
+      two she finished, types one note, presses <em>Send back</em> — her email opens with the
+      answers already in it, and she presses Send. Nothing to attach.</small></li>
     <li><b>Import <span class="who">· you</span></b>
-      <small>Her reply file lands in your inbox. Open it in GroupTodo and you get this
-      review: two tasks to close, one comment to file. Press Apply.</small></li>
+      <small>Her answers land in your inbox as a few plain lines. Paste them into GroupTodo
+      and you get this review: two tasks to close, one comment to file. Press Apply.</small></li>
   </ol>
 </div>
 
@@ -172,14 +195,62 @@ same bargain as the rest of GroupTodo. The file <em>is</em> the round trip.</p>
         Everything else he will assume is still coming.</p>
       </div>
       <ul class="rows" id="rows"></ul>
+      <div class="howto">
+        <p>When you are done — three taps, no account</p>
+        <ol>
+          <li><span>Tick everything you have finished. Add a note where it helps.</span></li>
+          <li><span>Press <em>Send back to Kenneth</em>. Your email opens, already addressed,
+            with your answers written into the message.</span></li>
+          <li><span>Press Send in your email. Nothing to attach, nothing to save.</span></li>
+        </ol>
+        <p class="alt">Email not set up on this machine? <em>Copy as text</em> puts the same
+          few lines on your clipboard — paste them into Teams, Slack or a reply. Any route
+          back works; it is the text that matters.</p>
+      </div>
+
       <div class="sheet-foot">
-        <button class="btn primary" id="send">Send back to Kenneth</button>
+        <a class="btn primary" id="send" href="#">Send back to Kenneth</a>
         <button class="btn" id="copy">Copy as text</button>
         <span class="count" id="count"></span>
       </div>
       <p class="sent" id="sent" hidden></p>
     </div>
   </div>
+</div>
+
+<div class="sec">
+  <p class="eyebrow">Step 3b · the way back</p>
+  <h2>No attachment, on purpose</h2>
+  <p>The obvious design is a <em>Send back</em> that opens her email with the reply file
+  already attached. That cannot be built, by anyone: a <code>mailto:</code> link carries
+  <code>to</code>, <code>subject</code>, <code>cc</code>, <code>bcc</code> and
+  <code>body</code> and nothing else. The non-standard <code>attach=</code> that one or two
+  old desktop clients once honoured is ignored by every browser now — a web page that could
+  pre-attach a file off your disk is a web page that could mail your disk to a stranger.</p>
+
+  <p>So the reply does not travel as an attachment. It travels <b>as the body of the
+  email</b>, which is better anyway: nothing to save, nothing to find again in Downloads,
+  nothing to forget to attach. Mia presses one button and presses Send.</p>
+
+  <div class="note"><b>Where that stops working.</b> A <code>mailto:</code> is a URL, and
+  Outlook truncates one around two thousand characters. The four tasks on this page, with
+  two notes, make a link of <b>982</b> — comfortable, but not as comfortable as it looks,
+  because a dozen tasks or one long paragraph would clear two thousand easily. So the sheet
+  measures the encoded link every time she ticks or types: under budget the button opens her
+  email, over budget it changes to <em>Save the reply and attach it</em> and says why.
+  Quietly sending a truncated reply would be worse than either.</div>
+
+  <div class="note" style="margin-top:12px"><b>What that budget bought.</b> The machine-readable
+  marker at the bottom of the reply was being pretty-printed, which spent four hundred
+  characters — a fifth of the whole allowance — indenting something no human ever reads. On
+  one line the same reply is 982 instead of 1,270. Worth knowing before this is built: in a
+  design where the transport is a URL, whitespace is a budget line.</div>
+
+  <p style="margin-top:14px">And whatever route she takes — email body, attached file,
+  pasted into Teams, read out over the phone and typed in by you — the import takes the
+  same few lines. The text is the protocol. It is deliberately short enough that a person
+  could retype it, because the one thing a round trip through other people's email cannot
+  assume is that any particular route will work.</p>
 </div>
 
 <div class="sec">
@@ -286,7 +357,7 @@ function draw(){
     var meta = document.createElement("span"); meta.className = "meta"; meta.textContent = t.asked;
     ttl.appendChild(name); ttl.appendChild(meta);
     hit.appendChild(box); hit.appendChild(ttl);
-    hit.addEventListener("click", function(){ t.done = !t.done; save(); draw(); count(); });
+    hit.addEventListener("click", function(){ t.done = !t.done; save(); draw(); count(); refreshSend(); });
     li.appendChild(hit);
 
     var nl = document.createElement("div");
@@ -296,7 +367,7 @@ function draw(){
       ta.value = t.note;
       ta.placeholder = "Anything Kenneth should know (optional)";
       ta.setAttribute("aria-label", "Note on: " + t.title);
-      ta.addEventListener("input", function(){ t.note = ta.value; save(); });
+      ta.addEventListener("input", function(){ t.note = ta.value; save(); refreshSend(); });
       nl.appendChild(ta);
     } else {
       var b = document.createElement("button");
@@ -313,19 +384,65 @@ function replyText(){
   TASKS.forEach(function(t){
     lines.push((t.done ? "[x] " : "[ ] ") + t.title + (t.note ? "  -- " + t.note : ""));
   });
+  /* The ticked lines above are the protocol and a person could retype them. The
+     marker below is the same answers with stable ids, so importing matches the
+     task that was asked about rather than a task whose title merely still looks
+     the same. It is written on one line: pretty-printing it cost four hundred
+     characters of an email link's budget to indent something nobody reads. */
   lines.push("", "<!-- gtd:reply v1 -->", JSON.stringify({
     from:"Mia Halvorsen",
     at:new Date().toISOString().replace(/\.\d+Z$/,"Z"),
     items:TASKS.map(function(t){ return {id:t.id, done:t.done, note:t.note}; })
-  }, null, 1));
+  }));
   return lines.join("\n");
 }
-document.getElementById("send").addEventListener("click", function(){
-  sentEl.hidden = false;
+/* mailto: cannot attach a file. RFC 6068 defines to, cc, bcc, subject and body
+   and nothing else; the non-standard attach= that a couple of old desktop
+   clients honoured is ignored by every browser, because handing a web page the
+   power to pre-attach a local file is how you exfiltrate one. So the reply does
+   not travel as an attachment -- it travels as the body of the mail, which
+   needs nothing of Mia but pressing Send.
+
+   The cost is length. Outlook truncates a mailto around two thousand
+   characters and the browsers hand the OS a bounded URL too, so the sheet
+   measures the encoded link and, when a long reply would not survive it, says
+   so and falls back to a file she attaches herself. Silently sending half a
+   reply would be the worst of the three outcomes. */
+var MAILTO_BUDGET = 1800;
+
+function mailtoLink(){
+  var subject = "Re: your check-in — Mia Halvorsen";
+  var body = replyText();
+  var url = "mailto:kenneth.aar@example.com"
+    + "?subject=" + encodeURIComponent(subject)
+    + "&body=" + encodeURIComponent(body);
+  return {url: url, body: body, fits: url.length <= MAILTO_BUDGET, len: url.length};
+}
+
+var sendEl = document.getElementById("send");
+function refreshSend(){
+  var m = mailtoLink();
+  sendEl.href = m.fits ? m.url : "#";
+  sendEl.textContent = m.fits ? "Send back to Kenneth" : "Save the reply and attach it";
+  sendEl.title = m.fits ? "Opens your email with the answers already written in"
+                        : "This reply is too long to carry in an email link";
+}
+sendEl.addEventListener("click", function(e){
+  var m = mailtoLink();
   var n = TASKS.filter(function(t){ return t.done; }).length;
-  sentEl.textContent = "In the real sheet this saves reply-mia-halvorsen.md — "
-    + n + " ticked, " + TASKS.filter(function(t){ return !!t.note; }).length
-    + " noted — and opens your mail app with it ready to attach.";
+  var noted = TASKS.filter(function(t){ return !!t.note; }).length;
+  sentEl.hidden = false;
+  if (m.fits) {
+    // The link is real: the mail app opens, addressed, with the answers in it.
+    sentEl.textContent = "Your email is opening — " + n + " ticked, " + noted
+      + " noted, written into the message. Press Send there and you are done. "
+      + "(In the real sheet the address is Kenneth's, not example.com.)";
+    return;
+  }
+  e.preventDefault();
+  sentEl.textContent = "This reply is " + m.len + " characters once encoded, past what an "
+    + "email link carries, so the real sheet saves reply-mia-halvorsen.md instead and asks "
+    + "you to attach it — one extra step, and only for a long reply.";
 });
 document.getElementById("copy").addEventListener("click", function(){
   var txt = replyText();
@@ -339,5 +456,5 @@ function showFallback(txt){
   sentEl.hidden = false;
   sentEl.textContent = "Copying was refused here. The reply is plain text — select it from the pre block above in the real sheet.";
 }
-draw(); count();
+draw(); count(); refreshSend();
 </script>
