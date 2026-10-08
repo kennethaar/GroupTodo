@@ -10855,34 +10855,166 @@ function seedVerbs() {
   notify("Installed " + Object.keys(VERB_CANON).length + " verbs under pages/verbs/.");
 }
 
-function openVerbPicker(path, block) {
-  const verbs = verbList();
-  if (!verbs.length) {
-    modal({
-      center: true, title: "No verb lexicon yet",
-      body: el("div", {class: "field"},
-        el("label", {}, "The Phys-Viz rule"),
-        el("div", {style: "color:var(--fg2);font-size:13.5px"},
-          "A next action should start with a verb a camera could film: Call, Draft, Buy. " +
-          "Verbs live in pages/verbs/<lang>/<verb>.md, one \u201Csynonym = verb\u201D per line.")),
-      foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Not now"),
-             el("button", {class: "btn primary", onclick: () => { closeModal(); seedVerbs(); openVerbPicker(path, block); }},
-               "Install starter verbs")],
-    });
-    return;
+/* ---------- the verb lexicon, in whichever language you think in ----------
+   The Phys-Viz rule is about the first word of the line, so the lexicon has to
+   hold the words you actually write. Half the people this is for write their
+   tasks in Norwegian, and a lexicon that only knows English would quietly mark
+   every one of their lines as verbless. */
+const VERB_LANG_NAME = {en: "English", no: "Norsk"};
+const verbLang = () => {
+  const want = PREF.get("verbLang", "");
+  return VERB_LANG_NAME[want] ? want : "en";
+};
+
+/* The languages worth offering: the ones the vault has verbs in, plus the two
+   we can seed, so an empty vault still shows both tabs. */
+function verbLangs() {
+  const have = new Set(Object.values(VERB_CANON).map(v => v.lang));
+  for (const k of Object.keys(SEED_VERBS)) have.add(k);
+  return Array.from(have).sort((a, b) => (a === "en" ? -1 : b === "en" ? 1 : a.localeCompare(b)));
+}
+
+/* Teach the lexicon a word. One file, the same shape scanVerbs already reads:
+   pages/verbs/<lang>/<word>.md with "word = word" inside it. */
+function teachVerb(word, lang) {
+  const canonical = trim(word).toLowerCase();
+  if (!canonical || /[^\p{L}\p{M}\- ]/u.test(canonical)) return null;
+  const path = join(DIRS.verbs, lang, canonical + ".md");
+  if (!V.pages.has(path)) {
+    putPage(path, {props: {title: canonical, type: "verb", lang},
+                   blocks: [newBlock({title: canonical + " = " + canonical})]});
   }
-  listPicker({
+  scanVerbs();
+  return path;
+}
+
+const capitalise = w => w.charAt(0).toUpperCase() + w.slice(1);
+
+/* The words of the task that could be the action, minus the ones the lexicon
+   already knows and the scaffolding that is never a verb. */
+function verbCandidatesIn(title) {
+  const plain = plainTitle(title || "");
+  const seen = new Set();
+  const out = [];
+  for (const raw of plain.split(/[^\p{L}\p{M}\-]+/u)) {
+    const w = trim(raw);
+    /* Three letters and up. Teaching "om" or "av" as a verb would make every
+       line that happens to start with a preposition pass the check, which is
+       worse than leaving the handful of two letter verbs ("be", "se") to the
+       add box below. */
+    if (w.length < 3) continue;
+    const low = w.toLowerCase();
+    if (seen.has(low) || VERB_LOOKUP[low]) continue;
+    seen.add(low);
+    out.push(w);
+  }
+  return out.slice(0, 8);
+}
+
+function openVerbPicker(path, block) {
+  const lang = verbLang();
+  const all = verbList();
+  const mine = all.filter(v => v.lang === lang);
+
+  const useVerb = word => {
+    const verb = capitalise(trim(word));
+    if (!startsWithVerb(block.title)) block.title = verb + " " + block.title;
+    if (!block.state) block.state = "TODO";
+    touch(path); render();
+  };
+
+  /* Teaching a word that is already the first word clears the flag and rewrites
+     nothing, which is the common case: the verb was there all along, the
+     lexicon had simply never heard it.
+
+     A word from the middle is taught just the same, but the line still does not
+     start with it. Shuffling the word to the front would turn "Kabelen ma
+     trekkes gjennom roret" into "Trekkes Kabelen ma gjennom roret", which is
+     mechanically correct and not a sentence. Rewriting a line so it still reads
+     is a person's job, so this says what is wrong and opens the line for
+     editing rather than pretending a regex can write Norwegian. */
+  const teachFromTitle = word => {
+    if (!teachVerb(word, lang)) { notify("A verb is one word of letters.", "warn"); return; }
+    closeModal();
+    const starts = plainTitle(block.title).toLowerCase().startsWith(trim(word).toLowerCase());
+    touch(path); render();
+    if (starts) { notify("\u201C" + word + "\u201D is a verb now, in " + VERB_LANG_NAME[lang] + "."); return; }
+    notify("\u201C" + word + "\u201D is a verb now, but this line does not start with it.",
+      "warn", {label: "Reword the line", run: () => openTaskDetail(path, block)});
+  };
+
+  const body = el("div", {});
+
+  // --- language tabs
+  const tabs = el("div", {class: "statefilter"});
+  for (const code of verbLangs()) {
+    tabs.append(el("button", {class: "chip filter" + (code === lang ? " on" : ""),
+      onclick: () => { PREF.set("verbLang", code); closeModal(); openVerbPicker(path, block); }},
+      (code === lang ? "\u2713 " : "") + (VERB_LANG_NAME[code] || code)));
+  }
+  body.append(el("div", {class: "field"}, el("label", {}, "Language"), tabs));
+
+  // --- the words already in the task
+  const cands = verbCandidatesIn(block.title);
+  if (cands.length) {
+    const row = el("div", {class: "statefilter"});
+    for (const w of cands)
+      row.append(el("button", {class: "chip filter", title: "Teach the lexicon this word",
+        onclick: () => teachFromTitle(w)}, w));
+    body.append(el("div", {class: "field"},
+      el("label", {}, "A word in this task is the action"),
+      row,
+      el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+        "Press one and the lexicon learns it, so this line and every line like it " +
+        "counts from now on. Nothing is rewritten unless you say so.")));
+  }
+
+  // --- pick one from the lexicon
+  const list = el("div", {style: "max-height:34vh;overflow:auto"});
+  const draw = q => {
+    list.textContent = "";
+    const hits = mine.filter(v => !q || v.canonical.includes(q));
+    if (!hits.length) {
+      list.append(el("div", {class: "empty"},
+        mine.length ? "No matches." : "No verbs in " + (VERB_LANG_NAME[lang] || lang) + " yet."));
+      return;
+    }
+    hits.forEach(v => list.append(pickRow("\u00b7", capitalise(v.canonical),
+      (VERB_CANON[v.canonical]?.synonyms || []).filter(x => x !== v.canonical).slice(0, 3).join(", "),
+      () => { closeModal(); useVerb(v.canonical); })));
+  };
+  const filter = el("input", {placeholder: "filter...",
+    oninput: e => draw(trim(e.target.value).toLowerCase())});
+  draw("");
+  body.append(el("div", {class: "field"},
+    el("label", {}, "Or start the line with one of these"), filter, list));
+
+  // --- a verb the lexicon has never heard of
+  const own = el("input", {placeholder: "a verb a camera could film",
+    onkeydown: e => { if (e.key === "Enter") { e.preventDefault(); addOwn(); } }});
+  const addOwn = () => {
+    const w = trim(own.value);
+    if (!w) return;
+    if (!teachVerb(w, lang)) { notify("A verb is one word of letters.", "warn"); return; }
+    closeModal(); useVerb(w);
+  };
+  body.append(el("div", {class: "field"},
+    el("label", {}, "Add one of your own, in " + (VERB_LANG_NAME[lang] || lang)),
+    el("div", {style: "display:flex;gap:8px"}, own,
+      el("button", {class: "btn ghost", onclick: addOwn}, "Add"))));
+
+  modal({
+    center: true,
     title: "Make it physical and visible",
     hint: "what would a camera see you doing?",
-    items: verbs,
-    label: v => v.canonical.charAt(0).toUpperCase() + v.canonical.slice(1),
-    detail: v => v.lang,
-    onPick: v => {
-      const verb = v.canonical.charAt(0).toUpperCase() + v.canonical.slice(1);
-      if (!startsWithVerb(block.title)) block.title = verb + " " + block.title;
-      if (!block.state) block.state = "TODO";
-      touch(path); render();
-    },
+    body,
+    foot: [
+      el("button", {class: "btn ghost", onclick: closeModal}, "Not now"),
+      mine.length ? null
+        : el("button", {class: "btn primary", onclick: () => {
+            closeModal(); seedVerbs(); openVerbPicker(path, block);
+          }}, "Install starter verbs"),
+    ].filter(Boolean),
   });
 }
 

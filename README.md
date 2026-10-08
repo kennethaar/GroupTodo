@@ -853,7 +853,20 @@ The method is in the app, kept quiet until it is about something. Below six open
 tasks, simple mode shows no hygiene nudges at all.
 
 - **Next actions must start with a filmable verb.** "Call", "draft", "buy" - not
-  "think about". The lexicon is markdown in `pages/verbs/`, with synonyms.
+  "think about". The lexicon is markdown in `pages/verbs/<lang>/`, with
+  synonyms, and it ships in **English and Norwegian**: half the people this is
+  for write their tasks in Norwegian, and a lexicon that only knew English would
+  quietly mark every one of their lines as verbless. The picker has a tab for
+  each, English first, and remembers which one you work in.
+
+  It also learns. The picker lists **the words already in the task** and
+  teaching it one is a press: *Grav* becomes a verb, that line counts, and so
+  does every line like it from then on. Nothing is rewritten. When the word you
+  pick is not the first word, it is still learned and the line is handed back to
+  you to reword, because shuffling a word to the front turns "Kabelen må
+  trekkes gjennom røret" into "Trekkes Kabelen må gjennom røret", which is
+  mechanically correct and not a sentence. There is a box for a verb that is not
+  in the task either.
 - **Projects are outcomes**, not topics: `outcome::` asks what *done* looks like.
 - **Contexts** `[[c/phone]]`, picked with a letter key.
 - **Age** is tracked from `Added::` and drives "oldest first" everywhere.
