@@ -865,10 +865,13 @@ The markdown is identical either way.
 `c` capture · `/` search · `?` all keys · `f t` today · `g n` todos ·
 `g x` context · `g a` planned · `g p` people · `g c` chat · `g w` weeding ·
 `g r` review · `v b` board · `v c` calendar · `v g` graph ·
-`v t` timeline · `v r` report ·
+`v t` timeline · `v r` report · `f f` focus ·
 `ctrl-z` undo a delete · **Copy link** on any task or page ·
 `g d` re-surface. In the outline: `Enter` new block, `Tab`/`Shift-Tab` indent,
-`Ctrl-Enter` cycle state.
+`Ctrl-Enter` cycle state, `↑`/`↓` between blocks. A long title wraps, so the
+arrows walk the lines inside a block first and only leave it from the top or
+the bottom line - which is what they do in every other outliner, and what your
+hands expect.
 
 ## What it does about the obvious risks
 
