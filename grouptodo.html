@@ -390,6 +390,72 @@ header.top .burger{display:none}
   .cal-more{font-size:9.5px;padding:0}
 }
 
+/* ---------- gantt ----------
+   A label column and a track, with the bar placed by percentage across the
+   track. Today is a CSS variable rather than one overlay, so each row draws its
+   own slice of the same line and it lands in the right place. */
+.gantt{--glabelw:230px;margin-top:14px;border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--bg2);overflow:hidden}
+.ghead{display:flex;align-items:stretch;height:30px;border-bottom:1px solid var(--border);
+  background:var(--bg3)}
+.gbody{display:flex;flex-direction:column}
+.grow{display:flex;align-items:stretch;width:100%;text-align:left;background:none;border:0;
+  border-top:1px solid var(--border);cursor:pointer;color:inherit;padding:0;min-height:30px}
+.gbody .grow:first-child{border-top:0}
+.grow:hover{background:var(--bg3)}
+.glabel{flex:0 0 var(--glabelw);min-width:0;display:flex;gap:6px;align-items:center;
+  padding:5px 10px;font-size:12.5px;color:var(--fg);overflow:hidden}
+/* text-overflow does nothing on a flex container, so the name needs a box of
+   its own to be clipped in. */
+.glabel .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.glabel .caret{color:var(--fg3);font-size:10px;flex:none}
+.glabel .n{margin-left:auto;font-size:10.5px;color:var(--fg3);font-family:var(--mono);flex:none;
+  padding-left:6px}
+.glabel.sub{padding-left:28px;color:var(--fg2);font-size:12px}
+/* overflow:hidden so the last month label does not hang off the right edge;
+   every bar is already clamped to 0-100%, so nothing real is cut. */
+.gtrack{position:relative;flex:1 1 auto;min-width:0;overflow:hidden}
+.gtrack::before{content:"";position:absolute;top:0;bottom:0;left:var(--gnow,-10%);width:1px;
+  background:var(--accent);opacity:.45}
+.gtick{position:absolute;top:0;bottom:0;width:1px;background:var(--border)}
+.gmon{position:absolute;top:7px;font-size:10.5px;color:var(--fg3);padding-left:5px;
+  white-space:nowrap;letter-spacing:.3px}
+.gbar{position:absolute;top:7px;height:16px;border-radius:4px;background:var(--fg3);
+  overflow:hidden;display:flex;align-items:center}
+.gbar.TODO{background:var(--todo)}
+.gbar.DOING{background:var(--doing)}
+.gbar.WAIT{background:var(--wait)}
+.gbar.DONE{background:var(--done);opacity:.65}
+.gbar.CANCELLED{background:var(--cancel);opacity:.5}
+.gbar.late{background:var(--late)}
+.glabelin{font-size:10.5px;color:var(--accent-fg);padding:0 6px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.grow.group .gbar{height:11px;top:9px;border-radius:3px;opacity:.85}
+@media (max-width:700px){
+  /* A 230px label beside a track leaves no track. Half the width, smaller type. */
+  .gantt{--glabelw:118px}
+  .glabel{font-size:11.5px;padding:5px 6px}
+  .glabel.sub{padding-left:14px}
+  .glabel .n{display:none}
+  .glabelin{display:none}
+}
+
+/* ---------- report ---------- */
+.reportsum{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--fg2);
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:11px 14px}
+.reportsum b{color:var(--fg);font-size:17px}
+.reprow{display:flex;gap:10px;align-items:baseline;width:100%;text-align:left;background:none;
+  border:0;border-top:1px solid var(--border);padding:8px 12px;cursor:pointer;color:inherit}
+.reprow:first-child{border-top:0}
+.reprow:hover{background:var(--bg3)}
+.reprow .when{flex:0 0 92px;font-size:11px;color:var(--fg3);font-family:var(--mono)}
+.reprow .what{flex:1 1 auto;min-width:0;font-size:13px;color:var(--fg2);overflow-wrap:anywhere}
+.reprow .marks{flex:0 0 auto;display:flex;gap:5px;flex-wrap:wrap}
+@media (max-width:700px){
+  .reprow{flex-wrap:wrap;gap:4px}
+  .reprow .when{flex:0 0 100%}
+  .reprow .what{flex:0 0 100%}
+}
 .graph{margin-top:14px;background:var(--bg2);border:1px solid var(--border);
   border-radius:var(--radius);height:min(66vh,620px);overflow:hidden}
 .graphcv{display:block;width:100%;height:100%}
@@ -4202,6 +4268,8 @@ const NAV_SIMPLE = [
     {id: "board",    icon: "▦", label: "Board",    key: "v b"},
     {id: "calendar", icon: "▣", label: "Calendar", key: "v c"},
     {id: "graph",    icon: "⁂", label: "Graph",    key: "v g"},
+    {id: "gantt",    icon: "▤", label: "Timeline", key: "v t"},
+    {id: "report",   icon: "⎙", label: "Report",   key: "v r"},
   ]},
   {group: "Projects", items: [
     {id: "horizons",   icon: "◉", label: "Big picture"},
@@ -4231,6 +4299,8 @@ const NAV_ADVANCED = [
     {id: "board",    icon: "▦", label: "Board",    key: "v b"},
     {id: "calendar", icon: "▣", label: "Calendar", key: "v c"},
     {id: "graph",    icon: "⁂", label: "Graph",    key: "v g"},
+    {id: "gantt",    icon: "▤", label: "Timeline", key: "v t"},
+    {id: "report",   icon: "⎙", label: "Report",   key: "v r"},
   ]},
   {group: "Projects", items: [
     {id: "horizons",   icon: "◉", label: "Horizons"},
@@ -5573,6 +5643,29 @@ async function copyLinkTo(url, what) {
   return false;
 }
 
+/* The same bargain for a block of text: the clipboard where the browser allows
+   it, and a box you can select where it does not -- a report exists to be
+   pasted somewhere else, so "it is on screen" is not finished. */
+async function copyText(text, okMsg, title) {
+  try {
+    await navigator.clipboard.writeText(text);
+    notify(okMsg || "Copied.");
+    return true;
+  } catch (_) {}
+  const box = el("textarea", {readonly: "readonly",
+    style: "width:100%;min-height:260px;font-family:var(--mono);font-size:12px"});
+  box.value = text;
+  modal({
+    center: true, title: title || "Copy this",
+    body: el("div", {}, el("div", {class: "field"}, box,
+      el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+        "This browser would not let the app reach the clipboard, so select it and copy."))),
+    foot: [el("button", {class: "btn primary", onclick: closeModal}, "Done")],
+  });
+  setTimeout(() => { box.focus(); box.select(); }, 40);
+  return false;
+}
+
 /* Arriving on a link, whether the app was already open or not. */
 let LAST_HASH = "";
 async function handleHash() {
@@ -5940,9 +6033,7 @@ function doneTodayHere() {
   for (const [path, page] of V.pages) {
     walkBlocks(page.blocks, b => {
       if (b.state !== "DONE" || isMessage(b)) return;
-      const raw = trim(blockProp(b, "done_by") || "");
-      const when = (raw.match(/\d{4}-\d{2}-\d{2}/) || [])[0] || closedDate(b);
-      if (when !== today) return;
+      if (closedOn(b) !== today) return;
       out.push({path, block: b, state: "DONE", title: b.title, context: contextOf(b.title),
                 due: dueDate(b), assignee: assigneeOf(b), project: isJournalPath(path) ? null : pageTitle(path),
                 projectPath: isJournalPath(path) ? null : path});
@@ -6445,6 +6536,385 @@ function viewGraph() {
   list.append(ul);
   c.append(list);
   return c;
+}
+
+/* ============================================================
+   GANTT -- the plan laid out in time
+   The same tasks again, placed on a calendar line instead of in a list, so
+   overlap and drift are visible rather than inferred. Nothing new is stored:
+   a bar is drawn from what the file already carries.
+   ============================================================ */
+
+/* A bar needs two ends, and the file does not always have both:
+     start  SCHEDULED, else the day it was captured, else its deadline
+     end    DEADLINE, else the day it was ticked off, else today -- still running
+   A task with none of those gets no bar. It is counted and named underneath
+   rather than given an invented span, because a made-up bar is a lie about
+   the plan and reads exactly like a real one. */
+function spanOf(b, journalDay) {
+  const sched  = dateIn(blockProp(b, "SCHEDULED"));
+  const dead   = dateIn(blockProp(b, "DEADLINE"));
+  const added  = addedDate(b) || journalDay || null;
+  const closed = closedOn(b);
+  const open   = !!OPEN_STATES[b.state];
+  let start = sched || added || dead || closed;
+  if (!start) return null;
+  let end = dead || (open ? null : closed) || (open ? todayISO() : start);
+  if (end < start) end = start;
+  return {start, end, open};
+}
+
+function ganttRowsHere() {
+  const out = [];
+  for (const [path, page] of V.pages) {
+    const kind = pageKind(path);
+    if (kind === "template" || kind === "verb") continue;
+    const journal = isJournalPath(path);
+    const day = journal ? baseName(path) : null;
+    const tasks = [];
+    walkBlocks(page.blocks, b => {
+      if (!b.state || isMessage(b)) return;
+      const span = spanOf(b, day);
+      tasks.push({path, block: b, title: b.title, state: b.state, span,
+                  assignee: assigneeOf(b), project: journal ? null : pageTitle(path)});
+    });
+    if (!tasks.length) continue;
+    out.push({path, journal, label: journal ? chatDayLabel(day) : pageTitle(path), tasks});
+  }
+  return out;
+}
+const ganttRows = () => memo("ganttRows", () => {
+  const groups = acrossSpaces(ganttRowsHere);
+  // acrossSpaces tags the groups; the tasks inside them need the same stamp,
+  // or a click would edit the row through the wrong space's backend.
+  for (const g of groups) for (const t of g.tasks) t.space = g.space;
+  return groups;
+});
+
+const GANTT_SPANS = [["3", "3 months", 3], ["6", "6 months", 6], ["12", "A year", 12], ["fit", "Fit", 0]];
+
+function viewGantt() {
+  const c = el("div", {class: "wrap"});
+  const groups = ganttRows();
+  const key = state.ganttSpan || "3";
+  const months = (GANTT_SPANS.find(s => s[0] === key) || GANTT_SPANS[0])[2];
+
+  /* Every bar, so the window can be worked out before anything is drawn. */
+  const all = [];
+  let undated = 0;
+  for (const g of groups) for (const t of g.tasks) {
+    if (t.span) all.push(t.span); else undated++;
+  }
+
+  let from, to;
+  if (months) {
+    // A plan is mostly about what is ahead, with just enough behind to see drift.
+    from = addMonths(todayISO(), -Math.max(1, Math.round(months / 3)));
+    to   = addMonths(from, months);
+  } else if (all.length) {
+    from = all.reduce((a, s) => s.start < a ? s.start : a, all[0].start);
+    to   = all.reduce((a, s) => s.end   > a ? s.end   : a, all[0].end);
+    from = shiftISO(from, -3);
+    to   = shiftISO(to, 3);
+  } else {
+    from = addMonths(todayISO(), -1);
+    to   = addMonths(todayISO(), 2);
+  }
+  const total = Math.max(1, dateDiffDays(from, to));
+  const pct = iso => Math.max(0, Math.min(100, (dateDiffDays(from, iso) / total) * 100));
+  const inWindow = s => s.end >= from && s.start <= to;
+
+  const bar = el("div", {class: "statefilter"});
+  for (const [k, label] of GANTT_SPANS)
+    bar.append(el("button", {class: "chip filter" + (key === k ? " on" : ""),
+      onclick: () => go("gantt", {ganttSpan: k})}, (key === k ? "✓ " : "") + label));
+  c.append(el("div", {class: "section"}, bar));
+
+  /* Only the groups with something inside the window, and only their dated
+     tasks: a row with no bar is a row of nothing. */
+  const shown = [];
+  let hiddenRows = 0;
+  for (const g of groups) {
+    const tasks = g.tasks.filter(t => t.span && inWindow(t.span));
+    if (!tasks.length) { if (g.tasks.some(t => t.span)) hiddenRows++; continue; }
+    const start = tasks.reduce((a, t) => t.span.start < a ? t.span.start : a, tasks[0].span.start);
+    const end   = tasks.reduce((a, t) => t.span.end   > a ? t.span.end   : a, tasks[0].span.end);
+    const openN = tasks.filter(t => OPEN_STATES[t.state]).length;
+    /* A project whose last task ends next month is not "on time" if something
+       inside it was due a fortnight ago, so the group bar goes red when any
+       open task in it has run past its end. The whole point of the row is to
+       show that without opening it. */
+    const late = tasks.some(t => OPEN_STATES[t.state] && t.span.end < todayISO());
+    shown.push({group: g, tasks, start, end, openN, late});
+  }
+  shown.sort((a, b) => a.start.localeCompare(b.start) || a.group.label.localeCompare(b.group.label));
+
+  if (!shown.length) {
+    c.append(section("Timeline", 0, el("div", {class: "card"}, el("div", {class: "empty"},
+      all.length ? "Nothing falls in this window. Try a longer one, or Fit."
+                 : "Nothing has a date yet. Give a task a SCHEDULED day or a deadline " +
+                   "and it gets a bar here."))));
+    return c;
+  }
+
+  const chart = el("div", {class: "gantt"});
+  chart.append(ganttHeader(from, to, pct));
+
+  /* Today is the line everything is read against. It is a percentage of the
+     track, not of the row, so it is handed to the CSS as a variable and each
+     track draws its own slice of the same line -- the alternative is one
+     absolute overlay whose 100% includes the label column, which would put the
+     line in the wrong place. */
+  chart.style.setProperty("--gnow",
+    (todayISO() >= from && todayISO() <= to) ? pct(todayISO()) + "%" : "-10%");
+
+  const body = el("div", {class: "gbody"});
+
+  let drawn = 0;
+  const drawTo = upto => {
+    for (let i = drawn; i < upto; i++) {
+      const row = shown[i];
+      body.insertBefore(ganttGroupRow(row, pct), more);
+      if (state.ganttOpen === row.group.path)
+        for (const t of row.tasks) body.insertBefore(ganttTaskRow(t, pct), more);
+    }
+    drawn = upto;
+    const left = shown.length - drawn;
+    if (!left) { more.remove(); return; }
+    more.set("Show " + Math.min(left, CFG.rowsPerPage) + " more · " + left + " below",
+             left > CFG.rowsPerPage ? "Show all " + shown.length : "");
+  };
+  const more = moreRow(() => drawTo(Math.min(shown.length, drawn + CFG.rowsPerPage)),
+                       () => drawTo(shown.length));
+  body.append(more);
+  drawTo(Math.min(shown.length, CFG.rowsPerPage));
+  chart.append(body);
+  c.append(chart);
+
+  c.append(el("div", {class: "graph-legend"},
+    el("span", {class: "glg"}, el("i", {style: "background:var(--todo)"}), "To do"),
+    el("span", {class: "glg"}, el("i", {style: "background:var(--doing)"}), "Doing"),
+    el("span", {class: "glg"}, el("i", {style: "background:var(--wait)"}), "Waiting for"),
+    el("span", {class: "glg"}, el("i", {style: "background:var(--done)"}), "Done"),
+    el("span", {class: "glg"}, el("i", {style: "background:var(--late)"}), "Late"),
+    el("span", {class: "glg quiet"}, "Click a row to open its tasks.")));
+
+  const notes = [];
+  if (hiddenRows) notes.push(hiddenRows + " project(s) sit entirely outside this window.");
+  if (undated) notes.push(undated + " task(s) have no date at all, so they have no bar — " +
+    "a span invented for them would read exactly like a real one.");
+  if (notes.length) c.append(el("div", {class: "section quiet"},
+    el("div", {style: "color:var(--fg3);font-size:12.5px"}, notes.join(" "))));
+  return c;
+}
+
+/* Month columns across the top, and the faint lines under them that make a bar
+   readable as "ends in March" rather than "ends somewhere over there". */
+function ganttHeader(from, to, pct) {
+  const head = el("div", {class: "ghead"}, el("div", {class: "glabel"}, ""));
+  const track = el("div", {class: "gtrack"});
+  let m = from.slice(0, 7) + "-01";
+  if (m < from) m = addMonths(m, 1);
+  for (; m <= to; m = addMonths(m, 1)) {
+    const left = pct(m);
+    track.append(el("div", {class: "gtick", style: "left:" + left + "%"}));
+    track.append(el("div", {class: "gmon", style: "left:" + left + "%"},
+      new Date(m + "T00:00:00Z").toLocaleDateString(undefined,
+        {month: "short", year: m.slice(5, 7) === "01" ? "2-digit" : undefined, timeZone: "UTC"})));
+  }
+  head.append(track);
+  return head;
+}
+
+const ganttBarClass = (stateKey, end) =>
+  "gbar " + (OPEN_STATES[stateKey] && end < todayISO() ? "late" : stateKey);
+
+function ganttGroupRow(row, pct) {
+  const open = state.ganttOpen === row.group.path;
+  const left = pct(row.start), right = pct(row.end);
+  return el("button", {class: "grow group" + (open ? " open" : ""),
+    onclick: () => go("gantt", {ganttOpen: open ? null : row.group.path}),
+  },
+    el("span", {class: "glabel"},
+      el("span", {class: "caret"}, open ? "▾" : "▸"),
+      // The name is what gets shortened when the column is narrow, never the
+      // count beside it: "Project 0  8 o" tells you nothing.
+      el("span", {class: "nm", title: row.group.label}, row.group.label),
+      el("span", {class: "n"}, row.late ? "late" : row.openN ? row.openN + " open" : "done")),
+    el("span", {class: "gtrack"},
+      el("span", {class: ganttBarClass(row.openN ? "TODO" : "DONE",
+                                       row.late ? "0000-00-00" : row.end),
+        style: "left:" + left + "%;width:" + Math.max(0.6, right - left) + "%",
+        title: row.start + " → " + row.end})));
+}
+
+function ganttTaskRow(t, pct) {
+  const left = pct(t.span.start), right = pct(t.span.end);
+  return el("button", {class: "grow task",
+    onclick: () => inSpace(t.space, () => openTaskDetail(t.path, t.block, t.space))},
+    el("span", {class: "glabel sub"},
+      el("span", {class: "nm", title: plainTitle(t.title)}, plainTitle(t.title))),
+    el("span", {class: "gtrack"},
+      el("span", {class: ganttBarClass(t.state, t.span.end),
+        style: "left:" + left + "%;width:" + Math.max(0.6, right - left) + "%",
+        title: t.span.start + " → " + t.span.end + "  ·  " + t.state},
+        el("span", {class: "glabelin"}, plainTitle(t.title)))));
+}
+
+/* ============================================================
+   WHAT GOT DONE, AND WHEN
+   A report is a different question from a to-do list: not "what is left" but
+   "what did we actually finish". The answer is already in the files -- done_by::
+   is stamped on the tick, and CLOSED:: or the "- [[end]]" half of Added:: is
+   what older entries and hand-edited files carry -- so this reads, it does not
+   record.
+   ============================================================ */
+
+/* Who ticked it off, without the timestamp that follows the name. */
+const closedBy = b => trim(trim(blockProp(b, "done_by") || "")
+  .replace(/\s*\d{4}-\d{2}-\d{2}T[\d:]{5,8}Z?\s*$/, ""));
+
+/* The day it was ticked off, from whichever of the three the file has. */
+const closedOn = b => (trim(blockProp(b, "done_by") || "").match(/\d{4}-\d{2}-\d{2}/) || [])[0]
+  || closedDate(b) || null;
+
+function completedSinceHere(from) {
+  const out = [];
+  for (const [path, page] of V.pages) {
+    if (pageKind(path) === "template") continue;
+    walkBlocks(page.blocks, b => {
+      if (b.state !== "DONE" || isMessage(b)) return;
+      const when = closedOn(b);
+      const journal = isJournalPath(path);
+      out.push({
+        path, block: b, state: "DONE", title: b.title,
+        when, undated: !when,
+        who: closedBy(b) || journalOwnerOf(path) || "",
+        context: contextOf(b.title), due: dueDate(b), assignee: assigneeOf(b),
+        project: journal ? null : pageTitle(path),
+        projectPath: journal ? null : path,
+      });
+    });
+  }
+  return out.filter(r => r.undated || r.when >= from);
+}
+const completedSince = from =>
+  memo("completed:" + from, () => acrossSpaces(() => completedSinceHere(from)));
+
+const REPORT_RANGES = [
+  ["month",   "Last month",      1],
+  ["quarter", "Last quarter",    3],
+  ["half",    "Last 2 quarters", 6],
+  ["year",    "Last year",      12],
+];
+
+function viewReport() {
+  const c = el("div", {class: "wrap"});
+  const key = state.reportRange || "month";
+  const months = (REPORT_RANGES.find(r => r[0] === key) || REPORT_RANGES[0])[2];
+  const from = addMonths(todayISO(), -months);
+  const all = completedSince(from);
+  const dated = all.filter(r => !r.undated);
+  const undated = all.length - dated.length;
+
+  const bar = el("div", {class: "statefilter"});
+  for (const [k, label] of REPORT_RANGES)
+    bar.append(el("button", {class: "chip filter" + (key === k ? " on" : ""),
+      onclick: () => go("report", {reportRange: k, reportWho: state.reportWho})},
+      (key === k ? "✓ " : "") + label));
+  c.append(el("div", {class: "section"}, bar));
+
+  /* Who ticked things off, in this window. Names come from the files rather
+     than from the member list, so somebody who has since left still shows up
+     against the work they did. */
+  const byWho = new Map();
+  for (const r of dated) {
+    const name = r.who || "Nobody named";
+    byWho.set(name, (byWho.get(name) || 0) + 1);
+  }
+  const who = state.reportWho || "";
+  if (byWho.size > 1) {
+    const wbar = el("div", {class: "statefilter"});
+    wbar.append(el("button", {class: "chip filter" + (!who ? " on" : ""),
+      onclick: () => go("report", {reportRange: key, reportWho: ""})},
+      (!who ? "✓ " : "") + "Everyone " + dated.length));
+    for (const [name, n] of Array.from(byWho.entries()).sort((a, b) => b[1] - a[1]))
+      wbar.append(el("button", {class: "chip filter" + (who === name ? " on" : ""),
+        onclick: () => go("report", {reportRange: key, reportWho: name})},
+        (who === name ? "✓ " : "") + name + " " + n));
+    c.append(el("div", {class: "section"}, wbar));
+  }
+
+  const rows = (who ? dated.filter(r => (r.who || "Nobody named") === who) : dated)
+    .sort((a, b) => String(b.when).localeCompare(String(a.when)));
+
+  const since = humanDate(from);
+  c.append(el("div", {class: "section"},
+    el("div", {class: "reportsum"},
+      el("b", {}, String(rows.length)),
+      " finished since " + since +
+      (who ? " by " + who : "") +
+      " · " + new Set(rows.map(r => r.project || "No project")).size + " project(s)" +
+      (who ? "" : " · " + byWho.size + " person(s)"),
+      el("button", {class: "btn sm ghost", style: "margin-left:auto",
+        onclick: () => copyReport(rows, since, who)}, "Copy as text"))));
+
+  if (!rows.length) {
+    c.append(section("Finished", 0, el("div", {class: "card"}, el("div", {class: "empty"},
+      "Nothing ticked off in this window. Tick a task and it lands here."))));
+  } else {
+    /* Grouped by month, because that is the shape a report is read in: what
+       happened in September, then in August. */
+    const byMonth = new Map();
+    for (const r of rows) {
+      const m = r.when.slice(0, 7);
+      if (!byMonth.has(m)) byMonth.set(m, []);
+      byMonth.get(m).push(r);
+    }
+    for (const [m, items] of byMonth) {
+      const label = new Date(m + "-01T00:00:00Z")
+        .toLocaleDateString(undefined, {month: "long", year: "numeric", timeZone: "UTC"});
+      c.append(section(label, items.length, pagedCard(items, reportRow)));
+    }
+  }
+
+  // Never quietly drop work: say what has no date and why it cannot be placed.
+  if (undated) c.append(el("div", {class: "section quiet"},
+    el("div", {style: "color:var(--fg3);font-size:12.5px"},
+      undated + " finished task(s) carry no date, so they are not counted above. " +
+      "A task ticked off in the app is stamped done_by:: with the day; one marked " +
+      "DONE by hand in the file is not, and nothing can tell when that happened.")));
+  return c;
+}
+
+function reportRow(r) {
+  return el("button", {class: "reprow",
+    onclick: () => inSpace(r.space, () => openTaskDetail(r.path, r.block, r.space))},
+    el("span", {class: "when"}, humanDate(r.when)),
+    el("span", {class: "what", html: renderInline(titleForRow(r.title))}),
+    el("span", {class: "marks"},
+      r.project ? el("span", {class: "chip proj"}, r.project) : null,
+      r.who ? el("span", {class: "chip who"}, r.who) : null));
+}
+
+/* A report is written to be pasted somewhere else -- an email, a status
+   update, a stand-up note -- so it leaves as plain text rather than only
+   living on this screen. */
+function copyReport(rows, since, who) {
+  const lines = ["Finished since " + since + (who ? " by " + who : "") + " (" + rows.length + ")", ""];
+  const byProject = new Map();
+  for (const r of rows) {
+    const k = r.project || "No project";
+    if (!byProject.has(k)) byProject.set(k, []);
+    byProject.get(k).push(r);
+  }
+  for (const [name, items] of Array.from(byProject.entries()).sort((a, b) => b[1].length - a[1].length)) {
+    lines.push("## " + name + " (" + items.length + ")");
+    for (const r of items)
+      lines.push("- " + plainTitle(r.title) + "  — " + r.when + (r.who && !who ? ", " + r.who : ""));
+    lines.push("");
+  }
+  copyText(lines.join("\n"), rows.length + " finished task(s) copied.");
 }
 
 /* ---------- every conversation, everywhere ----------
@@ -8228,6 +8698,7 @@ const VIEW_TITLE = {
   people: "People",                     // or the header read "Today" on People
   chat: "Chat", flagged: "Flagged",     // same trap, same fix
   board: "Board", calendar: "Calendar", graph: "Graph",   // and again, for the three new ones
+  gantt: "Timeline", report: "Report",
   projects: "Projects", zettel: "Zettel", pages: "All pages", "journal-list": "Journals",
   health: "Health check", search: "Search", page: "Page",
 };
@@ -8251,6 +8722,8 @@ function render() {
     case "board":   node = viewBoard(); break;
     case "calendar":node = viewCalendar(); break;
     case "graph":   node = viewGraph(); break;
+    case "gantt":   node = viewGantt(); break;
+    case "report":  node = viewReport(); break;
     case "person":  node = viewPerson(state.person || whoAmI()); break;
     case "horizons":
       node = viewHorizons();
@@ -10550,6 +11023,8 @@ const CHORDS = {
   "v b": () => go("board"),
   "v c": () => go("calendar"),
   "v g": () => go("graph"),
+  "v t": () => go("gantt"),
+  "v r": () => go("report"),
 };
 let chordBuf = "";
 let chordTimer = null;

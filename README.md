@@ -94,9 +94,9 @@ finished. Click one to go straight to it. "Last seen" is per device and never
 written to the shared files, so marking your own news read does not mark it read
 for everybody.
 
-### Four ways to look at the same list
+### Six ways to look at the same list
 
-A list answers "what next" and nothing else. Three more screens read the very
+A list answers "what next" and nothing else. Five more screens read the very
 same blocks from the same markdown — none of them is a separate mode, and
 anything you change in one is changed everywhere.
 
@@ -119,7 +119,27 @@ long before `pages/c/phone.md` exists — and clicking one makes it, exactly as
 clicking the link in a task does. Under the picture, the same pages as an
 ordinary list, because a canvas means nothing to a keyboard or a screen reader.
 
-All three are in **Views** in the sidebar, or `v b`, `v c` and `v g`.
+**Timeline** — a Gantt: every project as a bar from the day its first task
+starts to the day its last one ends, with its tasks underneath when you open
+it. A bar is drawn from what the file already carries — `SCHEDULED::` or the
+day it was captured for the start, `DEADLINE::` or the day it was ticked off
+for the end, and today for anything still running. A project goes red, and
+says *late*, as soon as anything open inside it has run past its end, so you
+do not have to open it to find out. A task with no date at all gets no bar: it
+is counted underneath instead, because an invented span reads exactly like a
+real one.
+
+**Report** — what actually got finished, over the last month, quarter, two
+quarters or year, filterable by person. It reads `done_by::`, which is stamped
+on the tick, so nothing new is recorded to make this work; the rows are grouped
+by month, because that is the shape a report is read in. **Copy as text** puts
+it on the clipboard grouped by project, ready to paste into a status mail or a
+stand-up note. Tasks marked DONE by hand in the file carry no date, so they
+cannot be placed in a window — the count of those is shown rather than quietly
+dropped.
+
+All six are in **Views** in the sidebar, or `v b`, `v c`, `v g`, `v t` and
+`v r`.
 
 ### Linking to a task from anywhere else
 
@@ -661,6 +681,7 @@ The markdown is identical either way.
 `c` capture · `/` search · `?` all keys · `f t` today · `g n` todos ·
 `g x` context · `g a` planned · `g p` people · `g c` chat · `g w` weeding ·
 `g r` review · `v b` board · `v c` calendar · `v g` graph ·
+`v t` timeline · `v r` report ·
 `ctrl-z` undo a delete · **Copy link** on any task or page ·
 `g d` re-surface. In the outline: `Enter` new block, `Tab`/`Shift-Tab` indent,
 `Ctrl-Enter` cycle state.
@@ -714,6 +735,13 @@ per item, which cost 146ms a draw on a big vault. Now 6.7ms.
 - **Auto-sync of the courier file is desktop only** (it needs a durable handle).
 - **Recurrence is offered, never scheduled.** Nothing appears until you tick the
   current one off and say yes, so a repeat you forget about simply stops.
+- **A Gantt bar is read, never dragged.** The dates live in the markdown as
+  `SCHEDULED::` and `DEADLINE::`; the timeline shows them, and you change them
+  by opening the task. Dragging a bar to reschedule would be a nice trick and
+  is not built.
+- **The report can only count what carries a date.** A task ticked off in the
+  app is stamped `done_by::` with the day; one marked DONE by hand in the file
+  is not, and nothing can tell when that happened.
 - **Dragging a board card is mouse only.** Touch browsers do not fire HTML5
   drag events, so on a phone the card's state buttons are the way to move it.
 - **A link is only as stable as where the app lives.** Move the app to a
