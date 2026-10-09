@@ -1076,7 +1076,15 @@ tasks, simple mode shows no hygiene nudges at all.
   trekkes gjennom røret" into "Trekkes Kabelen må gjennom røret", which is
   mechanically correct and not a sentence. There is a box for a verb that is not
   in the task either.
-- **Projects are outcomes**, not topics: `outcome::` asks what *done* looks like.
+- **Projects are outcomes**, not topics: `outcome::` asks what *done* looks
+  like. The dialog that asks says which project it means, because asked out of
+  the weekly review it arrives on its own with nothing on screen to say. When
+  the page is empty it also shows where the project came from: a project that
+  is nothing but a title exists because somebody wrote `[[1/Something]]` in a
+  line somewhere, and that line is the only record of what they meant, so the
+  lines are shown whole, with the page each came from, and clicking one goes
+  there. When there is genuinely nothing to go on it says so rather than
+  implying there is. The same applies to the next-action prompt.
 - **Contexts** `[[c/phone]]`, and `@@` opens the picker from anywhere. Twice,
   because a single key that does nothing most of the time is a key that
   swallows a keystroke the one time the caret was not where you thought. The

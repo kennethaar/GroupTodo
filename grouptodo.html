@@ -579,6 +579,17 @@ body.adv .chk{border-radius:2px}
 .achip:focus-visible,.around.picking .achip:focus{outline:none;
   border-color:var(--accent);color:var(--fg);
   box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent)}
+/* What the question is about, above the box you answer it in. */
+.prov{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:9px 11px;margin-bottom:12px}
+.provhead{display:flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:13.5px;color:var(--fg)}
+.provnote{font-size:12.5px;color:var(--fg3);margin-top:6px}
+.provlist{display:flex;flex-direction:column;gap:3px;margin-top:7px}
+.provrow{display:flex;gap:9px;align-items:baseline;text-align:left;width:100%;
+  padding:4px 7px;border-radius:6px;font-size:12.5px;color:var(--fg2);cursor:pointer}
+.provrow:hover{background:var(--bg3);color:var(--fg)}
+.provrow .nm{flex:1;overflow-wrap:anywhere}
+.provrow .p{color:var(--fg3);font-size:11.5px;white-space:nowrap}
 .ahint{font-size:11.5px;color:var(--fg3);margin-top:6px}
 .around{position:relative}
 /* One ring that travels, rather than a highlight that teleports. */
@@ -3918,9 +3929,63 @@ function setOutcome(path, text) {
 const projectsWithoutOutcome = () =>
   allPages(p => ["1", "3"].includes(statusDirOf(p))).filter(p => !outcomeOf(p));
 
+/* ---------- what the question is about ----------
+   This dialog used to ask what done looks like without saying what for. Asked
+   out of the weekly review it arrives on its own, with nothing on screen to
+   say which project it means, and you cannot state an outcome for a project
+   you cannot name.
+
+   So it names it. And when the page is empty, naming it is not enough either:
+   a project that is nothing but a title exists because somebody wrote
+   [[1/Something]] in a line somewhere, and that line is the only record of
+   what they meant. So the empty case shows where it came from - the area it
+   sits under, and the lines that started it, in full. */
+function projectProvenance(path) {
+  const page = getPage(path);
+  const open = openTodoCount(path);
+  const body = (page ? flattenBlocks(page.blocks) : [])
+    .filter(b => trim(b.title) && !isMessage(b)).length;
+  const area = areaOfProject(path);
+  const box = el("div", {class: "prov"});
+  box.append(el("div", {class: "provhead"},
+    el("span", {class: "chip"}, STATUS_TEXT[statusDirOf(path)] ?
+      trim(String(STATUS_TEXT[statusDirOf(path)]).replace(/^[_0-9]\s*=\s*/, "")) : "project"),
+    el("b", {}, pageTitle(path)),
+    area ? el("span", {class: "chip"}, area) : null));
+
+  if (body) {
+    box.append(el("div", {class: "provnote"},
+      open + " open step" + (open === 1 ? "" : "s") + " on this page."));
+    return box;
+  }
+
+  /* Nothing on the page, so the question has to be answered from whatever
+     started it. */
+  const from = backlinksTo(path).slice(0, 5);
+  if (!from.length) {
+    box.append(el("div", {class: "provnote"},
+      "Nothing on this page yet, and nothing links to it. The name is all there is " +
+      "to go on."));
+    return box;
+  }
+  box.append(el("div", {class: "provnote"}, "Nothing on this page yet. It was started here:"));
+  const list = el("div", {class: "provlist"});
+  for (const h of from) {
+    const row = el("button", {class: "provrow", title: "Open " + h.path,
+      onclick: () => { closeModal(); openPage(h.path); }},
+      el("span", {class: "nm"}, linkWords(h.block.title) || "(a line with no words)"),
+      el("span", {class: "p"}, pageTitle(h.path)));
+    list.append(row);
+  }
+  box.append(list);
+  return box;
+}
+
 function openOutcomePrompt(path, then) {
   promptInput({
     title: "What does done look like?",
+    hint: pageTitle(path),
+    note: projectProvenance(path),
     label: 'Write it as if it already happened - "Sink repaired, no drip"',
     value: outcomeOf(path) || "",
     cta: "Save outcome",
@@ -11759,15 +11824,18 @@ function listPicker({title, hint, items, label, detail, onPick, footer, typeahea
      name. */
 }
 
-function promptInput({title, label, value = "", placeholder = "", multiline = false, cta = "Save", onSave}) {
+function promptInput({title, label, value = "", placeholder = "", multiline = false,
+                     cta = "Save", onSave, hint = "", note = null}) {
   const input = multiline
     ? el("textarea", {placeholder})
     : el("input", {placeholder, value});
   if (multiline) input.value = value;
   const save = () => { const v = trim(input.value); closeModal(); if (v) onSave(v); };
   modal({
-    center: true, title,
-    body: el("div", {class: "field"}, el("label", {}, label), input),
+    center: true, title, hint,
+    body: el("div", {},
+      note,
+      el("div", {class: "field"}, el("label", {}, label), input)),
     foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
            el("button", {class: "btn primary", onclick: save}, cta)],
     onKey: e => {
@@ -12765,6 +12833,7 @@ function createProjectFlow(name, then) {
   // A project without a finish line is a wish. Ask straight away.
   promptInput({
     title: "What does done look like?",
+    hint: pageTitle(p),
     label: 'State it as if it already happened - "Sink repaired, no drip"',
     value: "", cta: "Create project",
     onSave: outcome => {
@@ -12785,7 +12854,10 @@ function newZettelPrompt() {
 }
 function openAddNextAction(path) {
   promptInput({
-    title: "Next action", label: "What is the very next physical action?",
+    title: "Next action",
+    hint: pageTitle(path),
+    note: projectProvenance(path),
+    label: "What is the very next physical action?",
     value: "Call ", cta: "Add",
     onSave: text => {
       const blk = addNextActionTo(path, text);
