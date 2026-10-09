@@ -399,6 +399,17 @@ body.adv .chk{border-radius:2px}
 @media (min-width:1100px){ .wrap.wide{padding:0 28px} }
 .board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px;
   align-items:start}
+/* Space tabs: which vaults are on screen, and where a project is dropped to
+   move it into one. */
+.btabs{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.btab{display:inline-flex;gap:6px;align-items:center;background:var(--bg3);
+  border:1px solid var(--border);border-radius:999px;padding:4px 11px;font-size:12px;
+  color:var(--fg2);cursor:pointer}
+.btab:hover{border-color:var(--border2);color:var(--fg)}
+.btab.on{background:var(--bg4);border-color:var(--accent);color:var(--fg)}
+.btab.over{border-color:var(--accent);border-style:dashed;color:var(--fg);
+  background:color-mix(in srgb,var(--accent) 18%,var(--bg3))}
+.btab-dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
 /* Holds the board and the rubber band drawn over it. */
 .boardwrap{position:relative}
 .bmarquee{position:absolute;z-index:5;pointer-events:none;border:1px solid var(--accent);
@@ -7380,6 +7391,140 @@ function boardPickClick(e, kind, id) {
   return true;
 }
 
+/* ---------- the space tabs ----------
+   A space is a separate vault: its own folder, its own permissions, its own
+   people. Which of them are on screen was only ever a dialog away, which is
+   fine for a thing you set once but wrong for a board, where "show me only
+   work" is a glance. The tabs are that choice, and they are the same choice
+   the space switcher makes -- there is no second idea of what is on screen.
+
+   They are also where a project goes to change vault: drop a card on a tab and
+   the file is written into that space and removed from this one. That is a real
+   move between folders, not a label, so it is said plainly and ctrl-z takes it
+   back. */
+
+/* A free name in whichever space is current -- called inside inSpace(target).
+   Two vaults can each hold "Move house", and the one arriving must not land on
+   top of the one already there. */
+function freeProjectPath(path) {
+  if (!V.pages.has(path)) return path;
+  const dot = path.lastIndexOf(".");
+  const stem = dot < 0 ? path : path.slice(0, dot);
+  const ext  = dot < 0 ? "" : path.slice(dot);
+  for (let i = 2; i < 500; i++) if (!V.pages.has(stem + " " + i + ext)) return stem + " " + i + ext;
+  return stem + " " + uid() + ext;
+}
+
+/* Carry one project page across the boundary: write it there, remove it here.
+   The page travels as text and comes back as a fresh page, because a page object
+   belongs to the vault it was parsed in. Returns where it landed. */
+function moveOneProject(path, from, to) {
+  let copy = null;
+  inSpace(from, () => { const pg = getPage(path); if (pg) copy = parsePage(serializePage(pg)); });
+  if (!copy) return null;
+  let landed = path;
+  inSpace(to, () => {
+    landed = freeProjectPath(path);
+    putPage(landed, copy);
+    touch(landed);
+  });
+  inSpace(from, () => removePage(path));
+  return landed;
+}
+
+/* Everything dropped on a tab, moved, saved, and put on the undo stack as the
+   one thing it looked like. */
+async function dropProjectsOnSpace(list, target) {
+  if (!LOADED.has(target)) {
+    try { await loadSpaceRecord(target); }
+    catch (_) { notify("Cannot open " + target + " right now, so nothing moved.", "error"); return; }
+  }
+  const moved = [];
+  for (const x of list) {
+    const landed = moveOneProject(x.path, x.from, target);
+    if (landed) moved.push({path: landed, home: x.from, was: x.path});
+  }
+  await flush();
+  render();
+  if (!moved.length) { notify("Nothing moved.", "warn"); return; }
+  const one = moved.length === 1;
+  notify((one
+    ? "\u201C" + inSpace(target, () => pageTitle(moved[0].path)) + "\u201D now lives in " + target
+    : moved.length + " projects now live in " + target) +
+    ". Links from the space " + (one ? "it" : "they") + " left point at nothing now.");
+  pushUndo({run: () => {
+    (async () => {
+      for (const m of moved) moveOneProject(m.path, target, m.home);
+      await flush();
+      render();
+      notify(moved.length === 1 ? "Moved back out of " + target + "."
+                                : "Moved " + moved.length + " projects back out of " + target + ".");
+    })();
+    return true;
+  }});
+}
+
+/* The row itself. One tab per space plus All, the current choice highlighted,
+   and every named tab a place a project card can be dropped. */
+function boardSpaceTabs() {
+  if (Spaces.list.length < 2) return null;         // nothing to choose between
+  const all = Spaces.list.map(sp => sp.name);
+  const vis = new Set(visibleSpaces());
+  const showingAll = all.every(n => vis.has(n));
+
+  const show = async names => {
+    const mode = state.boardMode;
+    setVisibleSpaces(names);
+    await ensureVisibleLoaded();
+    // Whatever captures land in has to be one of the spaces on screen. Opening a
+    // space lands on Today, which is right when you asked for the space and
+    // wrong when you asked for a tab, so the board is where this comes back to.
+    if (!names.includes(Spaces.active)) await openSpace(names[0]);
+    go("board", {boardMode: mode, boardMore: {}});
+  };
+
+  const row = el("div", {class: "btabs"});
+  row.append(el("button", {
+    class: "btab" + (showingAll ? " on" : ""), onclick: () => show(all),
+    title: "Every space at once",
+  }, "All"));
+
+  for (const sp of Spaces.list) {
+    const on = !showingAll && vis.has(sp.name);
+    const tab = el("button", {
+      class: "btab" + (on ? " on" : ""), onclick: () => show([sp.name]),
+      title: "Only " + sp.name + " \u2014 or drop a project here to move it into " + sp.name,
+    },
+      el("span", {class: "btab-dot", style: "background:" + spaceColor(sp.name)}),
+      sp.name);
+
+    // A project dropped here changes vault. A task cannot: a task is a line in
+    // a day page, and the day page is not what is being dragged.
+    const takes = d => !!d && d.kind === "project" &&
+      d.items.some(x => (x.project.space || V.space) !== sp.name);
+    tab.addEventListener("dragover", e => {
+      if (!takes(DRAGGED)) return;
+      e.preventDefault();
+      tab.classList.add("over");
+    });
+    tab.addEventListener("dragleave", () => tab.classList.remove("over"));
+    tab.addEventListener("drop", e => {
+      e.preventDefault();
+      tab.classList.remove("over");
+      const d = DRAGGED;
+      DRAGGED = null;
+      if (!takes(d)) return;
+      const list = d.items
+        .map(x => ({path: x.project.path, from: x.project.space || V.space}))
+        .filter(x => x.from !== sp.name);
+      boardSelClear();
+      dropProjectsOnSpace(list, sp.name);
+    });
+    row.append(tab);
+  }
+  return row;
+}
+
 function boardCard(a) {
   // A button, not a div: a card you cannot reach with Tab is a card half the
   // people here cannot open. Dragging works on a button just the same.
@@ -7425,7 +7570,7 @@ function boardProjectCard(r, stuck) {
     class: "bcard", draggable: "true",
     data: {path},
     onclick: e => {
-      if (boardPickClick(e, "project", path)) return;
+      if (boardPickClick(e, "project", space + "|" + path)) return;
       if (e.target.closest("[data-link]")) return;
       openPageIn(space, path);
     },
@@ -7442,7 +7587,9 @@ function boardProjectCard(r, stuck) {
       info.blockers.length ? el("span", {class: "chip late"}, "blocked by " + info.blockers.join(", ")) : null,
       info.outcome ? null : el("span", {class: "chip miss"}, "no outcome"),
       idle != null ? el("span", {class: "chip age"}, "reviewed " + idle + "d ago") : null));
-  return makeCardDraggable(card, "project", {project: r}, path);
+  // Two spaces can hold the same path, so what makes a project card itself is
+  // the space it is in as well as the file it is.
+  return makeCardDraggable(card, "project", {project: r}, space + "|" + path);
 }
 
 /* Which board, remembered, because somebody who works in projects does not want
@@ -7500,6 +7647,7 @@ function viewTaskBoard() {
   c.append(el("div", {class: "section"},
     quickAdd(ensureJournal(todayISO()), {placeholder: "Add a task"}),
     boardModeToggle(),
+    boardSpaceTabs(),
     boardSelHost()));
 
   const board = el("div", {class: "board"});
@@ -7552,6 +7700,7 @@ function viewProjectBoard() {
       boardModeToggle(),
       el("button", {class: "btn sm ghost", style: "margin-left:auto",
         onclick: () => newProjectPrompt()}, "+ new project")),
+    boardSpaceTabs(),
     boardSelHost()));
 
   const board = el("div", {class: "board five"});
@@ -7587,7 +7736,11 @@ function viewProjectBoard() {
       "Drag a project into a column to change its status - the file moves into " +
       "pages/<code>/ and every link to it is rewritten, exactly as the status " +
       "picker does it, and ctrl-z moves the file back. Ctrl-click (cmd-click on a " +
-      "Mac) several projects, or drag a box across them, to move them together. On a phone, open the project and use its status button.")));
+      "Mac) several projects, or drag a box across them, to move them together. " +
+      "The tabs at the top choose which spaces are on screen, and dropping a " +
+      "project on one moves the file into that space - a different folder with " +
+      "different people in it, so links to it from the space it left will point " +
+      "at nothing. On a phone, open the project and use its status button.")));
   return c;
 }
 

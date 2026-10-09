@@ -113,6 +113,18 @@ and every link to it is rewritten - and `Ctrl-Z` moves it back. Picking several
 works here too, so a review that parks five projects at once is one drag and one
 undo.
 
+Above the columns is a row of space tabs - **All**, then one per space. They
+choose which spaces are on screen, which is the same choice the space switcher
+makes, so there is no second idea of what you are looking at. They are also
+where a project goes to change vault: drop a card on a tab and the page is
+written into that space and removed from this one, keeping its status folder. A
+space is a separate folder with separate people in it, so that is a real move,
+not a label - links to the project from the space it left will point at nothing,
+the toast says so, and `Ctrl-Z` moves it back. A project arriving where that
+name is taken lands beside the one already there rather than on top of it. Task
+cards cannot be dropped on a tab: a task is a line in a day page, and the day
+page is not what you are dragging.
+
 **Calendar** - a month at a time, Monday first. Everything with a scheduled day
 or a deadline lands on its day, late ones in red. Pick a day and its tasks are
 listed underneath in full. On a phone the squares show coloured dots rather than
