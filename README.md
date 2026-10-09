@@ -123,6 +123,27 @@ moves the middle. A double-click opens a card about that page without leaving
 the picture, which is the point of the thing: you keep your place while you look
 around.
 
+**The tasks are on it too.** The map is about pages, so pages are all it draws;
+the mindmap is about getting somewhere, and the place you are usually getting
+to is a task. So it hangs the tasks off the pages: a page's tasks below the
+page, a task's sub-tasks below the task. A round dot is a page, a square dot is
+a task coloured by its state, and a closed task is drawn hollow rather than
+dropped, because a branch that empties as you finish it reads as the work
+vanishing instead of as progress. Zooming into a project is therefore the same
+gesture as every other move on the screen: put it in the middle and its actions
+are the fan underneath, put one of those in the middle and its sub-actions are.
+Past a dozen children on one dot the rest are counted in the label rather than
+drawn.
+
+**The keyboard drives it.** Arrow keys walk to the nearest dot in that
+direction - down from a project walks into its actions, the sides are its
+siblings, up is what points at it. **Enter** centres on the dot you are on, and
+**Enter** again, now that you are on the middle, adds a step under it: a
+sub-action under a task, a next action under a project, a new linked page under
+anything else. **Backspace** goes back up to what points here, and **o** or
+**space** opens the page or task you are on. The dot the keyboard is pointing at
+carries a dashed ring, so it is never a guess which one **Enter** will take.
+
 **Edit** turns the mindmap into somewhere you can build. Drag one dot onto
 another and they are linked. Drag a dot out into empty space, or double-click
 empty space, and you name a new page which is born linked to the one in the
@@ -1125,6 +1146,9 @@ tasks, simple mode shows no hygiene nudges at all.
 - **Morning weeding** surfaces the stalest active projects - hidden under 5
   active projects or 20 open tasks, both modes. `g w` opens it anyway.
 - **Weekly review** only becomes due once a week of actual use has passed.
+  It lists only the checks that are asking for something; the clear ones are
+  counted in one line at the top, because a heading with nothing under it is
+  eight screens of congratulation between you and the two that need doing.
 - **Stuck projects**: active, with nothing actionable left. The classic trap.
 - **Waiting too long**: a `WAIT` older than `CFG.waitFollowUpDays` (14).
 - **People to send a check-in to**: somebody outside the space owes you
@@ -1216,7 +1240,12 @@ body, headings and buttons, so one cannot creep back in.
   off, and dragging that would be editing the past. Open bars drag; closed ones
   are a record.
 - **Linking two pages in the mindmap is a drag, so it is mouse only.** The
-  keyboard route is the list under the picture, which also carries **Unlink**.
+  keyboard walks, centres and adds, but joining two existing pages is a drag;
+  the keyboard route is the list under the picture, which also carries
+  **Unlink**.
+- **A task cannot be dragged onto another dot in the mindmap.** A link is a
+  `[[link]]` in a page, and a task is a line inside one, so there is nowhere to
+  write it. Moving a task is refiling, which lives in the task itself.
 - **The report can only count what carries a date.** A task ticked off in the
   app is stamped `done_by::` with the day; one marked DONE by hand in the file
   is not, and nothing can tell when that happened.

@@ -1163,6 +1163,7 @@ const CFG = {
   boardPerColumn   : 100,    // cards in one board column
   boardPerPhone    : 12,     // and on a phone, where the columns are stacked
   graphNodes       : 200,    // pages drawn in the graph before it stops being readable
+  plexTaskFan      : 12,     // todos hung off one page or todo in the mindmap
   journalScanDays  : 365,
   contextPrompts   : [[12, 0, "lunchtime"], [17, 0, "after work"]],
 };
@@ -7035,6 +7036,8 @@ const GRAPH_KIND_VAR = {
   project: "--proj", journal: "--fg3", person: "--zet", context: "--ctx",
   zettel: "--zet", area: "--accent", goal: "--accent", horizon: "--accent",
   checklist: "--done", org: "--wait",
+  // the mindmap hangs the tasks themselves off their page, coloured by state
+  TODO: "--todo", DOING: "--doing", WAIT: "--wait", DONE: "--done", CANCELLED: "--cancel",
 };
 
 /* Positions survive a redraw, so ticking something off in the detail panel does
@@ -7132,6 +7135,64 @@ function graphData() {
     const ranked = out.nodes.slice().sort((a, b) => b.deg - a.deg);
     ranked.slice(0, 14).forEach(nd => { if (nd.deg > 0) nd.hub = true; });
     return out;
+  });
+}
+
+/* ---------- the mindmap's own graph ----------
+   The map is about pages, so pages are all it draws. The mindmap is about
+   getting somewhere, and the place you are usually getting to is a task: a
+   project whose actions are invisible is a dot with a name on it, which is
+   exactly the complaint. So the mindmap takes the page graph and hangs the
+   tasks off it -- a page's tasks below the page, a task's sub-tasks below the
+   task -- which makes "zoom in to a project" the same gesture as every other
+   move on this screen.
+
+   Done and cancelled tasks are drawn too, faintly: a project you are reviewing
+   is partly a record of what you already did, and a branch that empties as you
+   finish it reads as the work vanishing rather than as progress. */
+function plexGraph() {
+  return memo("plexGraph", () => {
+    const base = graphData();
+    // Copies, because degree is counted again here and the map must not see it.
+    const nodes = base.nodes.map(n => Object.assign({}, n));
+    const edges = base.edges.slice();
+    const index = new Map();
+    nodes.forEach((n, i) => index.set(n.key, i));
+
+    const names = visibleSpaces().filter(n => LOADED.has(n));
+    for (const name of (names.length ? names : [null])) {
+      inSpace(name, () => {
+        const space = name;
+        const hang = (blocks, parentIdx) => {
+          let n = 0;
+          for (const b of blocks || []) {
+            // A message is a conversation, not an action, and an untitled
+            // bullet is a blank line somebody left behind.
+            if (!b.state || isMessage(b)) { hang(b.children, parentIdx); continue; }
+            if (++n > CFG.plexTaskFan) {
+              nodes[parentIdx].more = (nodes[parentIdx].more || 0) + 1;
+              continue;
+            }
+            const path = nodes[parentIdx].path;
+            const key = (space || "") + "\u0000" + path + "\u0000#" + b.id;
+            const idx = nodes.length;
+            index.set(key, idx);
+            nodes.push({key, space, path, block: b, blockId: b.id, task: true,
+                        kind: b.state, state: b.state,
+                        label: plainTitle(b.title) || "(untitled)", deg: 0});
+            edges.push([parentIdx, idx]);
+            nodes[parentIdx].deg++; nodes[idx].deg++;
+            hang(b.children, idx);
+          }
+        };
+        for (const [path, page] of V.pages) {
+          const pi = index.get((space || "") + "\u0000" + path);
+          if (pi == null) continue;            // not drawn: capped, or a kind we skip
+          hang(page.blocks, pi);
+        }
+      });
+    }
+    return {nodes, edges, dropped: base.dropped};
   });
 }
 
@@ -7347,6 +7408,8 @@ const PLEX = {
   anim: null,            // the running rAF, so a redraw cannot leave two
   pos: new Map(),        // key -> {x, y, r, a} where things are NOW
   drag: null,            // {from, x, y} while pulling a link out of a node
+  cursor: null,          // key the keyboard is pointing at, which is not the middle
+  key: null,             // the keydown listener this screen has in place
 };
 
 const plexFocus = () => state.graphFocus || null;
@@ -7493,24 +7556,44 @@ function plexDraw(cv, g, targets, hoverKey) {
     const nd = g.nodes[t.idx];
     const focused = k === plexFocus();
     const hot = k === hoverKey;
-    x.globalAlpha = pos.a;
+    x.globalAlpha = pos.a * (nd.task && !OPEN_STATES[nd.state] ? 0.55 : 1);
     const colour = v(GRAPH_KIND_VAR[nd.kind] || "--fg2", "#a4acbd");
+    const rad = pos.r + (hot ? 2 : 0);
     x.beginPath();
-    x.arc(pos.x, pos.y, pos.r + (hot ? 2 : 0), 0, Math.PI * 2);
-    if (nd.ghost) { x.fillStyle = v("--bg2", "#161920"); x.fill(); x.strokeStyle = colour; x.lineWidth = 1.6; x.stroke(); }
+    /* A task is a square dot and a page is a round one. Shape rather than
+       colour alone, because colour here already means state. */
+    if (nd.task) {
+      const q = rad * 0.92;
+      if (x.roundRect) x.roundRect(pos.x - q, pos.y - q, q * 2, q * 2, Math.max(2, q * 0.35));
+      else x.rect(pos.x - q, pos.y - q, q * 2, q * 2);
+    } else x.arc(pos.x, pos.y, rad, 0, Math.PI * 2);
+    const hollow = nd.ghost || (nd.task && !OPEN_STATES[nd.state]);
+    if (hollow) { x.fillStyle = v("--bg2", "#161920"); x.fill(); x.strokeStyle = colour; x.lineWidth = 1.6; x.stroke(); }
     else { x.fillStyle = colour; x.fill(); x.strokeStyle = v("--bg2", "#161920"); x.lineWidth = 1; x.stroke(); }
     if (focused) {
+      x.globalAlpha = pos.a;
       x.strokeStyle = accent; x.lineWidth = 2;
       x.beginPath(); x.arc(pos.x, pos.y, pos.r + 5, 0, Math.PI * 2); x.stroke();
     }
+    /* Where the keyboard is. Dashed, so it reads as "about to be chosen"
+       rather than as "chosen", which is what the solid ring in the middle
+       already says. */
+    if (k === PLEX.cursor && !focused) {
+      x.globalAlpha = 1;
+      x.strokeStyle = accent; x.lineWidth = 1.8; x.setLineDash([4, 3]);
+      x.beginPath(); x.arc(pos.x, pos.y, pos.r + 6, 0, Math.PI * 2); x.stroke();
+      x.setLineDash([]);
+    }
     // Ring two is the depth cue, so it carries no words unless you point at it.
-    if (t.ring === 2 && !hot) continue;
+    const marked = focused || hot || k === PLEX.cursor;
+    if (t.ring === 2 && !marked) continue;
     x.font = (focused ? "600 13px " : "11.5px ") + v("--sans", "sans-serif");
-    const text = nd.label.length > 28 ? nd.label.slice(0, 27) + "…" : nd.label;
+    const name = nd.label + (nd.more ? " (+" + nd.more + " more)" : "");
+    const text = name.length > 28 ? name.slice(0, 27) + "…" : name;
     const tw = x.measureText(text).width;
-    if (room(pos.x, pos.y + pos.r + 4, tw) || focused || hot) {
+    if (room(pos.x, pos.y + pos.r + 4, tw) || marked) {
       x.globalAlpha = pos.a;
-      x.fillStyle = focused || hot ? fg : fg2;
+      x.fillStyle = marked ? fg : fg2;
       x.fillText(text, pos.x, pos.y + pos.r + 4);
     }
   }
@@ -7622,6 +7705,14 @@ function unlinkPages(fromNode, toRef) {
 /* Double-click opens the page here rather than leaving: the whole point of a
    plex is that you keep your place while you look around. */
 function openPlexNode(g, nd) {
+  /* A task node is a task. Opening it is the task panel the rest of the app
+     uses, not a page dialog about a page it does not have. */
+  if (nd.task) {
+    const hit = inSpace(nd.space, () => findBlock(nd.blockId));
+    if (hit) { openTaskDetail(hit.path, hit.block, nd.space); return; }
+    notify("That task is no longer there.", "warn");
+    return;
+  }
   const {parents, children} = plexRelatives(g, nd.key);
   const open = nd.ghost ? 0 : inSpace(nd.space, () => {
     const page = getPage(nd.path);
@@ -7688,6 +7779,59 @@ function createNodeFrom(fromNode, name) {
 }
 
 
+/* ---------- growing the mindmap downward ----------
+   Enter on the middle makes a child, which on a mindmap means one of two
+   things depending on what the middle is. Under a task, or under a project,
+   the child is the next action -- the thing a mindmap of a project is for.
+   Under any other page it is another page, linked, which is what dragging a
+   dot out into space already does. */
+function addSubActionTo(path, block, text) {
+  const blk = stampAuthor(newBlock({state: "TODO", title: text, props: {Added: todayStamp()}}));
+  createLinkedPages(blk.title);
+  (block.children || (block.children = [])).push(blk);
+  touch(path);
+  return blk;
+}
+
+function plexAddChild(nd, after) {
+  after = after || (() => render());
+  if (!nd) return;
+  if (nd.ghost) { notify("Make " + nd.label + " a page first, then it can have children.", "warn"); return; }
+  if (nd.task) {
+    const hit = inSpace(nd.space, () => findBlock(nd.blockId));
+    if (!hit) { notify("That task is no longer there.", "warn"); return; }
+    promptInput({
+      title: "Sub-action", hint: nd.label,
+      label: "What is the next step inside this one?",
+      value: "", cta: "Add",
+      onSave: text => {
+        if (!trim(text)) return;
+        const blk = inSpace(nd.space, () => addSubActionTo(hit.path, hit.block, trim(text)));
+        PLEX.cursor = (nd.space || "") + "\u0000" + hit.path + "\u0000#" + blk.id;
+        notify("Added under " + nd.label);
+        after();
+      },
+    });
+    return;
+  }
+  if (inSpace(nd.space, () => statusDirOf(nd.path))) {
+    promptInput({
+      title: "Next action", hint: nd.label,
+      label: "What is the very next physical action?",
+      value: "Call ", cta: "Add",
+      onSave: text => {
+        if (!trim(text)) return;
+        const blk = inSpace(nd.space, () => addNextActionTo(nd.path, trim(text)));
+        if (blk) PLEX.cursor = (nd.space || "") + "\u0000" + nd.path + "\u0000#" + blk.id;
+        notify("Added to " + nd.label);
+        after();
+      },
+    });
+    return;
+  }
+  plexNameModal(nd, () => after());
+}
+
 /* ---------- the plex screen ----------
    Two ways of looking at the same links, and the toggle says which: the map is
    the whole vault at once, the plex is one page and its neighbours. Neither is
@@ -7731,9 +7875,11 @@ function plexNameModal(fromNode, after) {
 
 function viewPlex() {
   const c = el("div", {class: "wrap"});
-  const g = graphData();
+  const g = plexGraph();
   const focusKey = plexDefaultFocus(g);
   state.graphFocus = focusKey;
+  // The keyboard points at the middle until an arrow key moves it off.
+  if (!PLEX.cursor || !g.nodes.some(n => n.key === PLEX.cursor)) PLEX.cursor = focusKey;
   const cv = el("canvas", {class: "graphcv"});
   const stage = el("div", {class: "graph plex"}, cv);
   const edit = () => !!state.graphEdit;
@@ -7753,8 +7899,11 @@ function viewPlex() {
     return c;
   }
 
+  const keyline = el("span", {class: "glg"});
   c.append(el("div", {class: "graph-legend"},
     el("span", {class: "glg"}, "Above: what points here. Below: what this points at. Sides: shares a parent."),
+    el("span", {class: "glg"}, "Round dot: a page. Square dot: a task, coloured by its state, hollow once it is closed."),
+    keyline,
     el("span", {class: "glg quiet"}, edit()
       ? "Drag one dot onto another to link them. Drag into space, or double-click space, to make a page."
       : "Click a dot to move the middle. Double-click it to look at it without leaving.")));
@@ -7779,6 +7928,85 @@ function viewPlex() {
     const t = plexTargets(g, state.graphFocus, cv.clientWidth, cv.clientHeight).get(key);
     return t ? g.nodes[t.idx] : null;
   };
+  const byKey = key => g.nodes.find(n => n.key === key) || null;
+
+  /* Moving the middle redraws the whole screen rather than only the canvas:
+     the relatives list below it is the same information, and a list that
+     disagrees with the picture above it is worse than no list. The dots animate
+     across anyway, because their positions outlive the redraw. */
+  const recentre = key => {
+    if (!key) return;
+    state.graphFocus = key;
+    PLEX.cursor = key;
+    render();
+  };
+
+  const syncKeyline = () => {
+    const cur = byKey(PLEX.cursor);
+    const mid = PLEX.cursor === state.graphFocus;
+    keyline.textContent = "Keys: arrows walk the dots, enter centres the one you are on"
+      + ", enter on the middle adds a step under it, backspace goes back up."
+      + (cur ? "  On: " + cur.label + (mid ? " (the middle)" : "") : "");
+  };
+  syncKeyline();
+
+  /* Arrow keys pick the nearest dot in the direction pressed, measured on the
+     picture itself rather than along a list: the plex is a map, and up on a map
+     means up. Straight ahead beats near, so pressing down from a project walks
+     into its tasks instead of sideways into its siblings. */
+  const step = (dx, dy) => {
+    const w = cv.clientWidth, h = cv.clientHeight;
+    const ts = targets(w, h);
+    const fromKey = ts.has(PLEX.cursor) ? PLEX.cursor : state.graphFocus;
+    const from = ts.get(fromKey);
+    if (!from) return;
+    let best = null, bestScore = Infinity;
+    for (const [k, t] of ts) {
+      if (k === fromKey) continue;
+      const vx = t.x - from.x, vy = t.y - from.y;
+      const along = vx * dx + vy * dy;
+      if (along <= 8) continue;
+      const across = Math.abs(vx * -dy + vy * dx);
+      if (across > along * 2.6 + 40) continue;
+      const score = along + across * 2.2;
+      if (score < bestScore) { bestScore = score; best = k; }
+    }
+    if (!best) return;
+    PLEX.cursor = best;
+    syncKeyline();
+    kick();
+  };
+
+  const onKey = e => {
+    if (!cv.isConnected) { document.removeEventListener("keydown", onKey); return; }
+    if ($("#modalRoot").firstChild) return;
+    if (/^(INPUT|TEXTAREA)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const arrows = {ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0]};
+    if (arrows[e.key]) { e.preventDefault(); step(arrows[e.key][0], arrows[e.key][1]); return; }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (PLEX.cursor && PLEX.cursor !== state.graphFocus) { recentre(PLEX.cursor); return; }
+      plexAddChild(byKey(state.graphFocus), () => render());
+      return;
+    }
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      const rel = plexRelatives(g, state.graphFocus);
+      if (rel.parents.length) recentre(g.nodes[rel.parents[0]].key);
+      else notify("Nothing points at this one, so there is no way back up.");
+      return;
+    }
+    if (e.key === "o" || e.key === " ") {
+      e.preventDefault();
+      const nd = byKey(PLEX.cursor) || byKey(state.graphFocus);
+      if (nd) openPlexNode(g, nd);
+    }
+  };
+  // One listener at a time, however many times this screen is drawn.
+  if (PLEX.key) document.removeEventListener("keydown", PLEX.key);
+  PLEX.key = onKey;
+  document.addEventListener("keydown", onKey);
 
   cv.addEventListener("mousemove", e => {
     if (PLEX.drag) {
@@ -7792,7 +8020,8 @@ function viewPlex() {
     hover = k;
     cv.style.cursor = k ? (edit() ? "grab" : "pointer") : "default";
     const nd = k ? nodeOf(k) : null;
-    cv.title = nd ? nd.label + "  · " + (nd.ghost ? "no page yet" : nd.path) : "";
+    cv.title = nd ? nd.label + "  · " +
+      (nd.task ? nd.state + " on " + pageTitle(nd.path) : nd.ghost ? "no page yet" : nd.path) : "";
     kick();
   });
   cv.addEventListener("mouseleave", () => { hover = null; PLEX.drag = null; kick(); });
@@ -7815,15 +8044,19 @@ function viewPlex() {
     if (!fromNode) { kick(); return; }
     if (onto && onto !== d.from) {
       const toNode = nodeOf(onto);
+      if (fromNode.task || toNode.task) {
+        notify("Links join pages. To move a task, open it and refile it.", "warn");
+        kick(); return;
+      }
       const ref = toNode.ghost ? toNode.ref : inSpace(toNode.space, () => pageRef(toNode.path));
       if (fromNode.ghost) { notify("Make " + fromNode.label + " a page first, then it can link out.", "warn"); kick(); return; }
       if (linkPages(fromNode, ref)) { notify(fromNode.label + " now links to " + toNode.label); render(); }
       else { notify("That link is already there."); kick(); }
       return;
     }
-    // Dragged out into nothing: that is a new page, born linked.
+    // Dragged out into nothing: a new child, born attached to what it came from.
     if (fromNode.ghost) { notify("Make " + fromNode.label + " a page first.", "warn"); kick(); return; }
-    plexNameModal(fromNode, () => render());
+    plexAddChild(fromNode, () => render());
   });
 
   /* A single click moves the middle and a double click opens the modal, so the
@@ -7836,9 +8069,7 @@ function viewPlex() {
     if (!k) return;
     pending = setTimeout(() => {
       pending = null;
-      state.graphFocus = k;
-      head.querySelector("h2").textContent = (nodeOf(k) || {}).label || "";
-      kick();
+      recentre(k);
     }, 200);
   });
   cv.addEventListener("dblclick", e => {
@@ -7864,7 +8095,7 @@ function viewPlex() {
       const row = el("div", {class: "dash-item"},
         el("button", {class: "nm", style: "all:unset;flex:1;cursor:pointer",
           onclick: () => go("graph", {graphFocus: other.key})}, other.label));
-      if (edit() && here && !here.ghost && dir === "out")
+      if (edit() && here && !here.ghost && !here.task && !other.task && dir === "out")
         row.append(el("button", {class: "btn sm ghost", onclick: () => {
           const ref = other.ghost ? other.ref : inSpace(other.space, () => pageRef(other.path));
           if (unlinkPages(here, ref)) { notify("Unlinked " + other.label); render(); }
@@ -7878,8 +8109,9 @@ function viewPlex() {
     el("div", {class: "field"}, el("label", {}, "Points here"), sideList(rel.parents, "in")),
     el("div", {class: "field"}, el("label", {}, "Points at"), sideList(rel.children, "out")));
   if (edit() && here && !here.ghost)
-    panel.append(el("button", {class: "btn sm ghost", onclick: () => plexNameModal(here, () => render())},
-      "Add a page linked to this one"));
+    panel.append(el("button", {class: "btn sm ghost", onclick: () => plexAddChild(here, () => render())},
+      here.task || inSpace(here.space, () => statusDirOf(here.path))
+        ? "Add a step under this one" : "Add a page linked to this one"));
   c.append(panel);
   return c;
 }
@@ -13259,13 +13491,26 @@ function openReview(focusIdx = 0) {
   tourMarkSeen("review");
   const secs = reviewSections();
   const body = el("div", {});
+  /* A review is a list of what needs doing, and a heading with nothing under it
+     needs nothing done. The clear ones are counted in one line at the top
+     instead -- you still get the credit for them, without eight headings of it
+     between you and the two that are actually asking for something. */
+  const clear = secs.filter(s => !s.items.length);
+  if (clear.length) body.append(el("div", {class: "dash-sec"},
+    el("div", {style: "padding:10px 16px;color:var(--ok);font-size:13.5px"},
+      clear.length === secs.length
+        ? "All " + secs.length + " checks are clear. Nothing is asking for anything."
+        : clear.length + " of " + secs.length + " checks are clear"),
+    clear.length === secs.length ? null
+      : el("div", {style: "padding:0 16px 10px;color:var(--fg3);font-size:12px"},
+          clear.map(s => s.title.toLowerCase()).join(" · "))));
   secs.forEach((s, i) => {
+    if (!s.items.length) return;
     const sec = el("div", {class: "dash-sec", data: {idx: i}});
     sec.append(el("h4", {},
       el("span", {}, (i + 1) + ". " + s.title),
-      el("span", {class: "n" + (s.items.length ? "" : " z")}, String(s.items.length)),
+      el("span", {class: "n"}, String(s.items.length)),
       el("span", {style: "font-weight:400;color:var(--fg3);font-size:11.5px"}, s.hint)));
-    if (!s.items.length) sec.append(el("div", {class: "dash-item", style: "color:var(--ok)"}, "clear"));
     for (const it of s.items.slice(0, 40)) {
       sec.append(el("button", {class: "dash-item", onclick: () => { closeModal(); it.block ? openTaskDetail(it.path, it.block) : openPage(it.path); }},
         el("span", {html: renderInline(it.text)}),
@@ -14928,6 +15173,13 @@ function openHelp() {
       el("div", {class: "field"}, el("label", {}, "Leader chords (same as the Neovim config)"),
         el("div", {style: "font-family:var(--mono);font-size:12.5px;line-height:1.9;color:var(--fg2)"},
           rows.join("   "))),
+      el("div", {class: "field"}, el("label", {}, "In the mindmap (v g, then Mindmap)"),
+        el("div", {style: "font-family:var(--mono);font-size:12.5px;line-height:1.9;color:var(--fg2)"},
+          "\u2190 \u2191 \u2192 \u2193  walk to the nearest dot that way", el("br"),
+          "enter  centre on the dot you are on", el("br"),
+          "enter on the middle  add a step under it", el("br"),
+          "backspace  back up to what points here", el("br"),
+          "o / space  open the page or task you are on")),
       el("div", {class: "field"}, el("label", {}, "In the outline"),
         el("div", {style: "font-family:var(--mono);font-size:12.5px;line-height:1.9;color:var(--fg2)"},
           "enter  new block", el("br"), "tab / shift-tab  indent", el("br"),
