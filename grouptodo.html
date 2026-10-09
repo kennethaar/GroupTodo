@@ -3355,13 +3355,14 @@ function cycleState(path, block, opts = {}) {
    65_GTD_SCANNERS
    Port of: init.lua 55_GTD_SCANNERS + 57_STALENESS_SCAN
    ============================================================ */
-const GROUPS = ["LATE", "TODAY", "PROJECT", "LINKED", "WAITING", "JOURNAL"];
+const GROUPS = ["LATE", "TODAY", "PROJECT", "LINKED", "WAITING", "CHECKLIST", "JOURNAL"];
 const GROUP_META = {
   LATE   : {label: "Overdue",         cls: "late"},
   TODAY  : {label: "Due today",       cls: "today"},
   PROJECT: {label: "Project actions", cls: "proj"},
   LINKED  : {label: "Journal, linked to a project", cls: "ctx"},
   WAITING: {label: "Waiting for",     cls: "wait"},
+  CHECKLIST: {label: "Checklist run",  cls: "proj"},
   JOURNAL: {label: "Loose journal actions", cls: ""},
 };
 
@@ -3371,6 +3372,22 @@ function nearestProjectAncestor(block) {
   while (p) {
     const m = /\[\[([_0123])\/([^\]]+)\]\]/.exec(p.title || "");
     if (m) return {statusDir: m[1], title: trim(m[2]), ref: m[1] + "/" + trim(m[2])};
+    p = p._parent;
+  }
+  return null;
+}
+
+/* The checklist a line came from. Running a list into a day drops its steps
+   under one parent carrying [[8/<list>]], so the ancestor walk finds it from any
+   step. A copy of a list is not loose thinking somebody failed to file: it was
+   filed once, in the list, and it gets ticked off and forgotten. So these count
+   as actions you can do, but never as journal actions to refile -- only applying
+   a list to a project makes its steps project actions. */
+function nearestChecklistAncestor(block) {
+  let p = block;
+  while (p) {
+    const m = /\[\[8\/([^\]]+)\]\]/.exec(p.title || "");
+    if (m) return {title: trim(m[1]), ref: "8/" + trim(m[1])};
     p = p._parent;
   }
   return null;
@@ -3436,6 +3453,7 @@ function leafActionsHere() {
     for (const b of flat) {
       if (!OPEN_STATES[b.state] || hasOpenDescendant(b)) continue;
       const linked = journal ? nearestProjectAncestor(b) : null;
+      const fromList = journal && !linked ? nearestChecklistAncestor(b) : null;
       let group = "JOURNAL", project = null, projectStatusDir = null, projectPath = null;
       if (!journal) {
         group = b.state === "WAIT" ? "WAITING" : "PROJECT";
@@ -3447,6 +3465,8 @@ function leafActionsHere() {
         project = linked.title;
         projectStatusDir = linked.statusDir;
         projectPath = findExistingPage(linked.ref);
+      } else if (fromList) {
+        group = b.state === "WAIT" ? "WAITING" : "CHECKLIST";
       } else if (b.state === "WAIT") {
         group = "WAITING";
       }
@@ -3465,14 +3485,18 @@ function leafActionsHere() {
          their first morning that "Find everything you have open" lacks a
          context is the method talking to itself. */
       const tourStep = !!tourDestOf(b.title);
+      /* The same applies to the wording nudges: a step was phrased once, in the
+         list, and asking for a verb again on every run is the method talking to
+         itself. Fix the list, not the copy. */
+      const authored = tourStep || !!fromList;
       out.push({
         path, block: b, state: b.state, title: b.title,
         project, projectPath, projectStatusDir, group, due,
         assignee, mine, owner: journalOwnerOf(path) || null,
-        tourStep,
+        tourStep, checklist: fromList ? fromList.title : null,
         context: contextOf(b.title),
-        missingContext: !tourStep && !hasContextLink(b.title),
-        missingVerb: !tourStep && !startsWithVerb(b.title),
+        missingContext: !authored && !hasContextLink(b.title),
+        missingVerb: !authored && !startsWithVerb(b.title),
         // Journal items carry no Added:: stamp (the filename is the date),
         // so fall back to the journal's own date to keep "oldest first" honest.
         by: blockProp(b, "by"), doneBy: blockProp(b, "done_by"),
