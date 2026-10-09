@@ -414,6 +414,17 @@ body.adv .chk{border-radius:2px}
 .bcard-meta{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
 .bcard-meta:empty{display:none}
 .bcard.dragging{opacity:.4}
+/* Ctrl-click (cmd on a Mac) picks cards out without opening them, so several
+   can travel in one drag. A picked card says so plainly enough to count at a
+   glance, and every card going along with the drag fades like the one under the
+   cursor -- otherwise a four-card drag looks like a one-card drag. */
+.bcard.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);
+  background:var(--bg4)}
+.bcard.sel:hover{border-color:var(--accent)}
+.bcard.dragging-with{opacity:.4}
+/* The count of what is picked, with the way to let go of it. */
+.bsel{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;
+  color:var(--fg2);margin-top:8px}
 /* A project card carries its status letter, so the card still says where it is
    once it has been dragged somewhere. */
 .bcard-top{display:flex;gap:6px;align-items:flex-start}
@@ -1038,7 +1049,13 @@ function applyRefocus() {
 }
 const idSel = (cls, id, part) => cls + '[data-id="' + CSS.escape(String(id)) + '"] ' + part;
 
+/* A drop that moves eight cards is one piece of news, not eight. Code doing a
+   batch of ordinary single moves mutes the per-item toasts and says the one
+   thing itself. Warnings and errors still get through -- a failure in the
+   middle of a batch is exactly what you need to hear about. */
+let NOTIFY_MUTE = 0;
 function notify(msg, level="info", action=null) {
+  if (NOTIFY_MUTE && level === "info" && !action) return;
   const t = el("div", {class:"toast " + (level==="warn"?"warn":level==="error"?"err":"")},
     el("span", {}, msg),
     action ? el("button", {class:"act", onclick:e=>{
@@ -7101,18 +7118,76 @@ const BOARD_COLUMNS = [
    happen to sort in: parked, running, stalled, finished, dropped. */
 const BOARD_STATUS_COLUMNS = ["2", "1", "3", "0", "-"];
 
-/* What is being dragged, and which kind of thing it is. A drop has to know,
-   because a task's state is a word on its line and a project's status is the
-   folder it lives in. */
+/* What is being dragged: the kind of thing, and every item travelling with it.
+   A drop has to know the kind, because a task's state is a word on its line and
+   a project's status is the folder it lives in; it has to know the items,
+   because a drag can carry a whole handful of cards picked out with ctrl-click
+   rather than only the one under the cursor. */
 let DRAGGED = null;
+
+/* What is picked out right now. One kind at a time -- a task and a project do
+   not move to the same place, so a selection that mixed them could not be
+   dropped anywhere -- and ids only, because the cards themselves are rebuilt on
+   every redraw. For a task the id is the block id; for a project, its path. */
+const BOARD_SEL = {kind: null, mode: null, ids: new Set()};
+
+/* The cards on screen, so a drag can turn the picked ids back into the things
+   they stand for. Rebuilt by each board render, which also means a card scrolled
+   away behind "show more" is simply not part of the drag. */
+let BOARD_ITEMS = new Map();
+const boardKey = (kind, id) => kind + ":" + id;
+
+function boardSelClear() { BOARD_SEL.kind = null; BOARD_SEL.ids.clear(); }
+
+/* Picking a card of one kind lets go of anything picked of the other. */
+function boardSelToggle(kind, id) {
+  if (BOARD_SEL.kind !== kind) { BOARD_SEL.kind = kind; BOARD_SEL.ids.clear(); }
+  if (BOARD_SEL.ids.has(String(id))) BOARD_SEL.ids.delete(String(id));
+  else BOARD_SEL.ids.add(String(id));
+  if (!BOARD_SEL.ids.size) BOARD_SEL.kind = null;
+  render();
+}
+
+const boardSelHas = (kind, id) =>
+  BOARD_SEL.kind === kind && BOARD_SEL.ids.has(String(id));
+
+/* The items a drag is actually carrying. Dragging a card that is picked carries
+   the whole selection; dragging one that is not carries just itself, and lets go
+   of the selection -- the same bargain a file manager makes. */
+function boardDragItems(kind, id) {
+  if (boardSelHas(kind, id)) {
+    const out = [];
+    for (const sid of BOARD_SEL.ids) {
+      const it = BOARD_ITEMS.get(boardKey(kind, sid));
+      if (it) out.push(it);
+    }
+    if (out.length) return out;
+  }
+  const one = BOARD_ITEMS.get(boardKey(kind, id));
+  return one ? [one] : [];
+}
+
+/* Says the count and offers the way out, so a selection can never be a thing
+   you are stuck in without knowing it. */
+function boardSelBar() {
+  if (!BOARD_SEL.ids.size) return null;
+  const n = BOARD_SEL.ids.size;
+  return el("div", {class: "bsel"},
+    el("span", {}, n + (n === 1 ? " card picked" : " cards picked") +
+      " \u00B7 drag any one of them to move them all"),
+    el("button", {class: "btn sm ghost", onclick: () => { boardSelClear(); render(); }},
+      "Clear"));
+}
 
 /* The shell every column shares: the head, the drop target, and the rule about
    what it will take. A task card dropped on a status column is a no-op rather
-   than a surprise. */
+   than a surprise, and so is the part of a mixed handful that is already where
+   it is being dropped -- the rest still moves. */
 function boardColumn(head, accepts, onDrop) {
   const col = el("div", {class: "bcol"}, head);
+  const takes = d => !!d && !!d.items && d.items.some(x => accepts(d.kind, x));
   col.addEventListener("dragover", e => {
-    if (!accepts(DRAGGED)) return;
+    if (!takes(DRAGGED)) return;
     e.preventDefault();
     col.classList.add("over");
   });
@@ -7122,20 +7197,54 @@ function boardColumn(head, accepts, onDrop) {
     col.classList.remove("over");
     const d = DRAGGED;
     DRAGGED = null;
-    if (d && accepts(d)) onDrop(d);
+    if (!takes(d)) return;
+    const moving = d.items.filter(x => accepts(d.kind, x));
+    boardSelClear();
+    // One redraw and one piece of news for the whole handful.
+    holdRender(() => {
+      NOTIFY_MUTE += moving.length > 1 ? 1 : 0;
+      try { moving.forEach(x => onDrop(x)); }
+      finally { if (moving.length > 1) NOTIFY_MUTE--; }
+    });
+    if (moving.length > 1) notify("Moved " + moving.length + " cards.");
   });
   return col;
 }
 
-/* Marks a card as the thing being dragged, whatever it is a card of. */
-function makeCardDraggable(card, payload, id) {
+/* Marks a card as a thing that can be dragged and a thing that can be picked.
+   Ctrl-click -- cmd-click on a Mac -- adds it to the handful instead of opening
+   it; the opening is the plain click, handled by the card itself. */
+function makeCardDraggable(card, kind, item, id) {
+  BOARD_ITEMS.set(boardKey(kind, id), item);
+  if (boardSelHas(kind, id)) card.classList.add("sel");
   card.addEventListener("dragstart", e => {
-    DRAGGED = payload;
+    const items = boardDragItems(kind, id);
+    DRAGGED = {kind, items};
     card.classList.add("dragging");
-    try { e.dataTransfer.setData("text/plain", id); e.dataTransfer.effectAllowed = "move"; } catch (_) {}
+    // Everything coming along fades too, so the drag looks like its own size.
+    if (items.length > 1) $$(".bcard.sel").forEach(c => c.classList.add("dragging-with"));
+    try {
+      e.dataTransfer.setData("text/plain", items.length > 1 ? items.length + " cards" : String(id));
+      e.dataTransfer.effectAllowed = "move";
+    } catch (_) {}
   });
-  card.addEventListener("dragend", () => { card.classList.remove("dragging"); DRAGGED = null; });
+  card.addEventListener("dragend", () => {
+    card.classList.remove("dragging");
+    $$(".bcard.dragging-with").forEach(c => c.classList.remove("dragging-with"));
+    DRAGGED = null;
+  });
   return card;
+}
+
+/* True when the click was the pick-this-out click rather than the open-it
+   click. Ctrl everywhere, cmd as well on a Mac, where ctrl-click is the
+   context menu. */
+function boardPickClick(e, kind, id) {
+  if (!(e.ctrlKey || e.metaKey)) return false;
+  e.preventDefault();
+  e.stopPropagation();
+  boardSelToggle(kind, id);
+  return true;
 }
 
 function boardCard(a) {
@@ -7147,6 +7256,7 @@ function boardCard(a) {
     // A link inside the title is the link's click, not the card's -- the same
     // rule the list rows follow, so [[go/todos]] goes to Todos.
     onclick: e => {
+      if (boardPickClick(e, "task", a.block.id)) return;
       if (e.target.closest("[data-link]")) return;
       inSpace(a.space, () => openTaskDetail(a.path, a.block, a.space));
     },
@@ -7160,7 +7270,7 @@ function boardCard(a) {
         humanDate(a.due)) : null,
       a.assignee ? el("span", {class: "chip who"}, "\u2192 " + a.assignee) : null,
       messagesOf(a.block).length ? el("span", {class: "chip msg"}, "\u25CB " + messagesOf(a.block).length) : null));
-  return makeCardDraggable(card, {kind: "task", action: a}, a.block.id);
+  return makeCardDraggable(card, "task", {action: a}, a.block.id);
 }
 
 /* A project card says the things you need in order to decide where it belongs:
@@ -7182,6 +7292,7 @@ function boardProjectCard(r, stuck) {
     class: "bcard", draggable: "true",
     data: {path},
     onclick: e => {
+      if (boardPickClick(e, "project", path)) return;
       if (e.target.closest("[data-link]")) return;
       openPageIn(space, path);
     },
@@ -7198,7 +7309,7 @@ function boardProjectCard(r, stuck) {
       info.blockers.length ? el("span", {class: "chip late"}, "blocked by " + info.blockers.join(", ")) : null,
       info.outcome ? null : el("span", {class: "chip miss"}, "no outcome"),
       idle != null ? el("span", {class: "chip age"}, "reviewed " + idle + "d ago") : null));
-  return makeCardDraggable(card, {kind: "project", project: r}, path);
+  return makeCardDraggable(card, "project", {project: r}, path);
 }
 
 /* Which board, remembered, because somebody who works in projects does not want
@@ -7218,6 +7329,10 @@ function viewBoard() {
   // However you got here -- the switch, the sidebar, v b / v p -- the board you
   // were last on is the one you come back to.
   PREF.set("boardMode", state.boardMode);
+  // The cards are about to be rebuilt, so the register of them starts empty.
+  BOARD_ITEMS = new Map();
+  // A handful picked on the task board is not a handful on the project board.
+  if (BOARD_SEL.mode !== state.boardMode) { boardSelClear(); BOARD_SEL.mode = state.boardMode; }
   return state.boardMode === "projects" ? viewProjectBoard() : viewTaskBoard();
 }
 
@@ -7251,7 +7366,8 @@ function viewTaskBoard() {
   const done = doneToday();
   c.append(el("div", {class: "section"},
     quickAdd(ensureJournal(todayISO()), {placeholder: "Add a task"}),
-    boardModeToggle()));
+    boardModeToggle(),
+    boardSelBar()));
 
   const board = el("div", {class: "board"});
   for (const [stateKey, label] of BOARD_COLUMNS) {
@@ -7261,16 +7377,18 @@ function viewTaskBoard() {
       el("div", {class: "bcol-head"},
         el("span", {class: "state " + stateKey}, label),
         el("span", {class: "n"}, String(items.length))),
-      d => !!d && d.kind === "task" && d.action.state !== stateKey,
-      d => inSpace(d.action.space, () => setBlockState(d.action.path, d.action.block, stateKey)));
+      (kind, x) => kind === "task" && x.action.state !== stateKey,
+      x => inSpace(x.action.space, () => setBlockState(x.action.path, x.action.block, stateKey)));
     col.append(fillBoardColumn(el("div", {class: "bcol-body"}), items, stateKey, boardCard));
     board.append(col);
   }
   c.append(board);
   c.append(el("div", {class: "section quiet"},
     el("div", {style: "color:var(--fg3);font-size:12px"},
-      "Drag a card to move it, or open one and use the state buttons - which is " +
-      "what you want on a phone, where dragging is a fight.")));
+      "Drag a card to move it, or ctrl-click (cmd-click on a Mac) several cards " +
+      "and drag any one of them to move the whole handful at once. Or open a card " +
+      "and use the state buttons - which is what you want on a phone, where " +
+      "dragging is a fight.")));
   return c;
 }
 
@@ -7285,7 +7403,8 @@ function viewProjectBoard() {
     el("div", {style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap"},
       boardModeToggle(),
       el("button", {class: "btn sm ghost", style: "margin-left:auto",
-        onclick: () => newProjectPrompt()}, "+ new project"))));
+        onclick: () => newProjectPrompt()}, "+ new project")),
+    boardSelBar()));
 
   const board = el("div", {class: "board five"});
   for (const code of BOARD_STATUS_COLUMNS) {
@@ -7298,8 +7417,8 @@ function viewProjectBoard() {
         el("span", {class: "state", style: "border:0;background:transparent;padding:0"},
           STATUS_LABEL[code]),
         el("span", {class: "n"}, String(items.length))),
-      d => !!d && d.kind === "project" && statusDirOf(d.project.path) !== code,
-      d => inSpace(d.project.space, () => setProjectStatus(d.project.path, code)));
+      (kind, x) => kind === "project" && statusDirOf(x.project.path) !== code,
+      x => inSpace(x.project.space, () => setProjectStatus(x.project.path, code)));
     col.append(fillBoardColumn(el("div", {class: "bcol-body"}), items, "p:" + code,
       r => boardProjectCard(r, stuck)));
     board.append(col);
@@ -7309,7 +7428,8 @@ function viewProjectBoard() {
     el("div", {style: "color:var(--fg3);font-size:12px"},
       "Drag a project into a column to change its status - the file moves into " +
       "pages/<code>/ and every link to it is rewritten, exactly as the status " +
-      "picker does it. On a phone, open the project and use its status button.")));
+      "picker does it. Ctrl-click (cmd-click on a Mac) several projects to move " +
+      "them together. On a phone, open the project and use its status button.")));
   return c;
 }
 
@@ -12786,7 +12906,20 @@ const VIEW_TITLE = {
   health: "Health check", search: "Search", page: "Page",
 };
 
+/* Held while a batch of changes runs, each of which would otherwise redraw the
+   whole screen on its way past. The redraw happens once, at the end. */
+let RENDER_HOLD = 0;
+let RENDER_MISSED = false;
+function holdRender(fn) {
+  RENDER_HOLD++;
+  try { fn(); } finally {
+    RENDER_HOLD--;
+    if (!RENDER_HOLD && RENDER_MISSED) { RENDER_MISSED = false; render(); }
+  }
+}
+
 function render() {
+  if (RENDER_HOLD) { RENDER_MISSED = true; return; }
   if (!V.loaded) return;
   applyChrome();
   clearMemo();
