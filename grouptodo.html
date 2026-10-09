@@ -5199,6 +5199,14 @@ async function attachFilesToBlock(path, b, files, txt) {
     const before = whole.slice(0, from), after = whole.slice(to);
     b.title = before + (before && !/\s$/.test(before) ? " " : "") + addition +
               (after && !/^\s/.test(after) ? " " : "") + after;
+    /* The line on screen is handed the same text before the redraw takes it
+       away. Losing the focused element fires blur on the way out, and that
+       handler saves what the line still said -- the text as it was before the
+       paste -- which put the old line straight back over the one just
+       written, so a pasted screenshot landed in assets/ and left no trace.
+       Focus is asked back afterwards, because a paste comes mid-sentence. */
+    txt.textContent = b.title;
+    keepFocus(".txt", txt);
   } else {
     const cur = trim(b.title);
     b.title = cur ? cur + " " + addition : addition;
@@ -11927,7 +11935,11 @@ function outlineBlock(path, page, b) {
       touch(path); noteTodoTouched();
       renderNav();
     }
+    /* A line with a dropped picture in it comes back as a path, not a URL, so
+       the same pass the redraw runs has to run over the line it just rebuilt --
+       otherwise editing a line emptied the picture that was already in it. */
     txt.innerHTML = renderInline(b.title);
+    resolveAssets(txt);
   });
   /* ---------- pasting a list ----------
      A list that arrives from somewhere else is a list of tasks, so it becomes
