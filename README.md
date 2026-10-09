@@ -115,6 +115,27 @@ for that one). Picking several
 works here too, so a review that parks five projects at once is one drag and one
 undo.
 
+**A handful of cards can be told things, not just moved.** While cards are
+picked, the bar at the top of the board carries buttons as well as the count.
+On the task board: **+ person** hands all of them to somebody, **+ context**
+puts them all in `@phone`, **+ project** makes them all steps in one project.
+On the project board: **+ organisation** (whose work this is), **+ person**,
+**+ context**, and **+ parent project** for the bigger piece of work they belong
+to. Each button writes exactly what the single-card controls write - a
+`[[c/phone]]` on the line, an `assigned::` on the block, an `org:: [[o/Acme]]`
+on the page - so nothing here is a second way of recording the same fact, and
+one `Ctrl-Z` takes the whole handful back. A card that already said so is
+skipped and counted rather than written twice.
+
+**Directory** - the third board (`v d`, or Directory in the sidebar): the orgs,
+the people and the contexts side by side as cards. They had pages and they had
+lists, but nothing you could take a handful of and put somewhere. Drag a card
+into another column and the page changes kind - the file moves into `pages/o/`,
+`pages/p/` or `pages/c/` and every link to it is rewritten, which is what the
+move dialog always did, and `Ctrl-Z` moves it back. Each card says what it is
+called, its reference, and how much of the vault actually mentions it, which is
+the honest answer to "can I let go of this one".
+
 Above the columns is a row of space tabs - **All**, then one per space. They
 choose which spaces are on screen, which is the same choice the space switcher
 makes, so there is no second idea of what you are looking at. They are also
@@ -127,6 +148,14 @@ name is taken **merges** into the one already there - see *Two files, one
 project*. Task
 cards cannot be dropped on a tab: a task is a line in a day page, and the day
 page is not what you are dragging.
+
+Hold `Ctrl` - `Cmd` on a Mac - while you drop and the page is **copied** into
+that space instead of moved, leaving this one where it is: the tab says `+ copy`
+while you hover so it is never a guess which one is about to happen. That is
+how a list of contexts, or a person, comes to exist in two spaces without being
+typed twice - and they are two separate files from then on, because the spaces
+are two separate folders. The directory board's cards move and copy between
+spaces the same way the project board's do.
 
 **Calendar** - a month at a time, Monday first. Everything with a scheduled day
 or a deadline lands on its day, late ones in red. Pick a day and its tasks are
@@ -406,6 +435,47 @@ the end of a line, which is where `Enter` usually gets pressed, that is the
 same empty new block it always was. At the very start of a line it opens an
 empty block above and leaves the line alone, rather than emptying it and
 carrying its words down.
+
+### Several lines at once
+
+Every line in the outline is its own editable box, which is what lets it keep
+its links, its state button and its raw text while you are in it. The price used
+to be that a browser will not run a text selection across two of them: dragging
+down the page selected inside the first line and stopped there, so moving five
+lines somewhere else meant five trips.
+
+So the drag means what it looks like it means. Press on a line, drag onto
+another, and every line between them is picked - a line's children travel with
+it, because a line and what hangs under it is one thing. A bar appears at the
+bottom with the count and four buttons, and the keys do the same:
+
+* `Ctrl-C` copies them **as markdown** - the same text the file holds, `- TODO`
+  and indentation and all, so what you paste into a mail, a chat or another
+  outliner is what you took.
+* `Ctrl-X` cuts them.
+* `Delete` throws them away.
+* `Ctrl-V` puts what is in the clipboard in their place, parsed back into blocks
+  the same way pasting a list into one line already is.
+* `Esc`, or a click anywhere else, lets go.
+
+`Ctrl-Z` takes any of it back in one go, lines landing where they came from. A
+press that does not leave the line it started on is left entirely alone, so
+clicking into a line and selecting a word inside it works exactly as it did.
+
+### Searching
+
+The search box waits for `Enter`. Searching as you type answered questions
+nobody had asked yet - three letters in, the screen was full of matches for a
+half-typed word - and on a big vault every keystroke walked every block in every
+space, so the box itself went sticky. Type the whole thing, press `Enter`, and
+that is the search.
+
+Under the box are three buttons: **Everything**, **Projects**, **Todos**. A
+search is almost never for anything at all, and where you were when you pressed
+`/` says what it is for: from Todos, Today, Contexts, Planned or the task board
+it opens on **Todos**; from the project board, the project lists or a project
+page it opens on **Projects**; from anywhere else, on **Everything**. Changing
+the filter re-reads the search you already ran rather than asking for it again.
 
 ### Focus
 
@@ -1294,13 +1364,16 @@ The markdown is identical either way.
 
 `c` capture · `/` search · `@@` context · `?` all keys · `f t` today · `g n` todos ·
 `g x` context · `g a` planned · `g p` people · `g c` chat · `g w` weeding ·
-`g r` review · `v b` board · `v c` calendar · `v g` graph ·
+`g r` review · `v b` board · `v p` project board · `v d` directory ·
+`v c` calendar · `v g` graph ·
 `v t` timeline · `v r` report · `f f` focus ·
 `ctrl-z` undo a delete · **Copy link** on any task or page ·
 `g d` re-surface. In the outline: `Enter` splits the line where the caret is,
 `Tab`/`Shift-Tab` indent,
 `Ctrl-Enter` cycle state, `[[` a list of pages, `↑`/`↓` between blocks,
-`Alt-Shift-↑`/`↓` move the line among its siblings, children and all. In the
+`Alt-Shift-↑`/`↓` move the line among its siblings, children and all; drag the
+mouse from one line onto another to pick several, then `Ctrl-C` / `Ctrl-X` /
+`Ctrl-V` / `Delete` / `Esc`. In the
 grid under a todo or a project: `Esc` walks it with the arrows, `Enter` centres
 on a node, and `Enter` on the middle adds a step under it. A long title wraps, so the
 arrows walk the lines inside a block first and only leave it from the top or

@@ -409,6 +409,9 @@ body.adv .chk{border-radius:2px}
 .btab.on{background:var(--bg4);border-color:var(--accent);color:var(--fg)}
 .btab.over{border-color:var(--accent);border-style:dashed;color:var(--fg);
   background:color-mix(in srgb,var(--accent) 18%,var(--bg3))}
+/* A copy is a different promise from a move, so it does not look the same. */
+.btab.over.copying{border-style:solid;box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent)}
+.btab.over.copying::after{content:"+ copy";font-size:10px;opacity:.8}
 .btab-dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
 /* Holds the board and the rubber band drawn over it. */
 .boardwrap{position:relative}
@@ -420,6 +423,8 @@ body.marquee{user-select:none;-webkit-user-select:none}
 body.marquee .bcard{cursor:default}
 /* The project board has one column per status, and there are five of those. */
 .board.five{grid-template-columns:repeat(5,minmax(0,1fr))}
+/* The directory board has three: orgs, people, contexts. */
+.board.three{grid-template-columns:repeat(3,minmax(0,1fr))}
 .bcol{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
   min-height:120px;display:flex;flex-direction:column;overflow:hidden}
 .bcol.over{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
@@ -778,6 +783,18 @@ details>summary:hover{color:var(--fg2)}
 .blk .txt.dropping{outline:2px dashed var(--accent,#2563eb);outline-offset:2px;border-radius:4px}
 .blk .txt[contenteditable]{outline:none}
 .blk .props{font-family:var(--mono);font-size:11px;color:var(--fg3);padding-left:0;margin:1px 0 2px}
+/* ---------- several lines picked with the mouse ----------
+   The whole line lights up, children included, because a line and what hangs
+   under it travel together. */
+.blk.lsel .line{background:color-mix(in srgb,var(--accent) 22%,var(--bg3))}
+.blk.lsel .bodyline,.blk.lsel .props{background:color-mix(in srgb,var(--accent) 12%,var(--bg3))}
+/* While the drag is on, nothing else on the page should be selecting text. */
+body.lselecting,body.lselecting *{user-select:none;-webkit-user-select:none;cursor:default}
+#lselHud{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:70;
+  display:flex;gap:7px;align-items:center;background:var(--bg2);color:var(--fg);
+  border:1px solid var(--accent);border-radius:999px;padding:6px 12px;font-size:12.5px;
+  box-shadow:0 8px 28px rgba(0,0,0,.35);max-width:94vw;flex-wrap:wrap}
+#lselHud .k{color:var(--fg3);font-family:var(--mono);font-size:11px}
 .blk .bodyline{font-size:13px;color:var(--fg2);white-space:pre-wrap;min-height:1.3em;
   padding:1px 3px;border-radius:4px;cursor:text}
 .blk .bodyline[contenteditable]{outline:none}
@@ -920,6 +937,9 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4p
 .linkpop .pick{padding:6px 11px;font-size:13px}
 .linkpop .pick .k{width:22px;height:18px;font-size:10px}
 .filterbox{padding:0 16px 8px}
+/* The search box and its Enter button, side by side, the box taking the room. */
+.filterbox{display:flex;gap:8px;align-items:center}
+.filterbox input{flex:1 1 auto;min-width:0}
 .filterbox input,.field input,.field textarea,.field select{
   width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);
   padding:9px 11px;font-size:14px;outline:none;
@@ -1456,18 +1476,26 @@ function serializePage(page) {
     for (const k of keys) out.push(k + ":: " + props[k]);
     out.push("");
   }
-  const emit = (blocks, level) => {
-    for (const b of blocks) {
-      const pad = "  ".repeat(level);
-      out.push((pad + "- " + (b.state ? b.state + " " : "") + b.title).replace(/\s+$/, ""));
-      for (const [k, v] of Object.entries(b.props || {})) out.push(pad + "  " + k + ":: " + v);
-      for (const l of b.body || []) out.push(l === "" ? "" : pad + "  " + l);
-      if (b.children && b.children.length) emit(b.children, level + 1);
-    }
-  };
-  emit(page.blocks || [], 0);
+  out.push(...serializeBlockLines(page.blocks || [], 0));
   return out.join("\n").replace(/\n+$/, "") + "\n";
 }
+
+/* The markdown for a run of blocks, children and all. Pulled out of
+   serializePage because it is also what a handful of lines copied to the
+   clipboard has to be: the same text the file holds, so what is pasted back --
+   here, or into any other outliner -- is what was taken. */
+function serializeBlockLines(blocks, level = 0) {
+  const out = [];
+  for (const b of blocks || []) {
+    const pad = "  ".repeat(level);
+    out.push((pad + "- " + (b.state ? b.state + " " : "") + b.title).replace(/\s+$/, ""));
+    for (const [k, v] of Object.entries(b.props || {})) out.push(pad + "  " + k + ":: " + v);
+    for (const l of b.body || []) out.push(l === "" ? "" : pad + "  " + l);
+    if (b.children && b.children.length) out.push(...serializeBlockLines(b.children, level + 1));
+  }
+  return out;
+}
+const serializeBlocks = blocks => serializeBlockLines(blocks, 0).join("\n");
 
 function walkBlocks(blocks, fn, parent = null) {
   for (const b of blocks || []) {
@@ -3889,8 +3917,19 @@ function backlinksTo(path) {
   const ref = pageRef(path).toLowerCase();
   const name = baseName(path).toLowerCase();
   const hits = [];
+  const points = text => linksIn(text || "").some(target => {
+    const t = target.split("][")[0].toLowerCase().replace(/\.md$/, "");
+    return t === ref || t === name;
+  });
   for (const [p, page] of V.pages) {
     if (p === path) continue;
+    /* A page's own key:: value lines are links like any other -- org:: [[o/Acme]]
+       is the project saying whose work it is, and the org deserves to hear
+       about it. The hit carries a block that is not in the page, because what
+       is being shown is the line, and the line is the property. */
+    for (const [k, v] of Object.entries(page.props || {})) {
+      if (points(v)) hits.push({path: p, block: {id: null, title: k + ":: " + v, props: {}, body: []}});
+    }
     walkBlocks(page.blocks, b => {
       const text = [b.title, ...(b.body || [])].join("\n");
       for (const target of linksIn(text)) {
@@ -5463,11 +5502,14 @@ function renderInline(text) {
 const state = {
   view: "today",
   // the board shows task states, or project statuses; the choice sticks
-  boardMode: PREF.get("boardMode", "tasks") === "projects" ? "projects" : "tasks",
+  boardMode: ["projects", "dir"].includes(PREF.get("boardMode", "tasks"))
+    ? PREF.get("boardMode", "tasks") : "tasks",
   pagePath: null,
   context: null,        // CURRENT_CONTEXT from init.lua
   statusCode: "1",
-  query: "",
+  query: "",         // what the results on screen are for -- only Enter changes it
+  searchDraft: "",   // what is in the box, which is not a search until you say so
+  searchFilter: "all",
   selected: null,       // block id
   surfaced: [],         // ids of the 3 surfaced actions
   graphMode: "map",     // "map" the whole vault, "plex" one page and its neighbours
@@ -5551,6 +5593,7 @@ const NAV_SIMPLE = [
   {group: "Views", items: [
     {id: "board",    icon: "▦", label: "Board",    key: "v b"},
     {id: "board-p",  icon: "▧", label: "Project board", key: "v p", boardMode: "projects"},
+    {id: "board-d",  icon: "▨", label: "Directory",     key: "v d", boardMode: "dir"},
     {id: "calendar", icon: "▣", label: "Calendar", key: "v c"},
     {id: "graph",    icon: "⁂", label: "Graph",    key: "v g"},
     {id: "gantt",    icon: "▤", label: "Timeline", key: "v t"},
@@ -5583,6 +5626,7 @@ const NAV_ADVANCED = [
   {group: "Views", items: [
     {id: "board",    icon: "▦", label: "Board",    key: "v b"},
     {id: "board-p",  icon: "▧", label: "Project board", key: "v p", boardMode: "projects"},
+    {id: "board-d",  icon: "▨", label: "Directory",     key: "v d", boardMode: "dir"},
     {id: "calendar", icon: "▣", label: "Calendar", key: "v c"},
     {id: "graph",    icon: "⁂", label: "Graph",    key: "v g"},
     {id: "gantt",    icon: "▤", label: "Timeline", key: "v t"},
@@ -5797,7 +5841,7 @@ const TOUR_DESTS = {
   projects:   {label: "Active projects",   go: () => go("projects", {statusCode: "1"})},
   checklists: {label: "Routines & lists",  go: () => go("checklists")},
   horizons:   {label: "Big picture",       go: () => go("horizons")},
-  search:     {label: "Search",            go: () => go("search")},
+  search:     {label: "Search",            go: () => goSearch()},
   today:      {label: "My day",            go: () => go("today")},
   vault:      {label: "Vault & sync",      go: () => openVaultDialog()},
   capture:    {label: "Capture",           go: () => openCapture()},
@@ -7346,16 +7390,230 @@ function boardDragItems(kind, id) {
   return one ? [one] : [];
 }
 
+/* True when the gesture is a copy rather than a move: ctrl, or cmd on a Mac,
+   held at the moment of the drop. The same bargain a file manager makes, so
+   nothing new has to be learned to take a copy of a page into another space. */
+const copyDrag = e => !!(e && (e.ctrlKey || e.metaKey));
+
+/* The pages a drag is carrying, whatever kind of card they came from, as
+   {path, space} -- which is all a cross-space move needs to know. A task drag
+   carries no pages: a task is a line inside somebody else's file. */
+function boardPageItems(d) {
+  if (!d || !d.items) return null;
+  if (d.kind === "project") return d.items.map(x => ({path: x.project.path, space: x.project.space || V.space}));
+  if (d.kind === "dirpage") return d.items.map(x => ({path: x.page.path, space: x.page.space || V.space}));
+  return null;
+}
+
 /* Says the count and offers the way out, so a selection can never be a thing
    you are stuck in without knowing it. */
 function boardSelBar() {
   if (!BOARD_SEL.ids.size) return null;
   const n = BOARD_SEL.ids.size;
-  return el("div", {class: "bsel"},
+  const bar = el("div", {class: "bsel"},
     el("span", {}, n + (n === 1 ? " card picked" : " cards picked") +
-      " \u00B7 drag any one of them to move them all"),
-    el("button", {class: "btn sm ghost", onclick: () => { boardSelClear(); paintBoardSel(); }},
-      "Clear"));
+      " \u00B7 drag any one of them to move them all"));
+  for (const a of boardSelActions()) {
+    bar.append(el("button", {class: "btn sm ghost", title: a.hint, onclick: a.run}, a.label));
+  }
+  bar.append(el("button", {class: "btn sm ghost", style: "margin-left:auto",
+    onclick: () => { boardSelClear(); paintBoardSel(); }}, "Clear"));
+  return bar;
+}
+
+/* ---------- what a handful of cards can be told ----------
+   A drag answers one question -- which column does this belong in -- and that
+   was the only question the board could answer about several cards at once.
+   But the reason you pick out eight cards is usually not the column: it is
+   that they are all for the same person, all part of the same org, all done in
+   the same place. Saying that eight times, one panel at a time, is the work
+   this takes away.
+
+   Every button here writes exactly what the single-card controls write -- a
+   [[c/...]] on the line, an assigned:: on the block, an org:: on the page --
+   so nothing on this bar is a second way of recording the same fact, and one
+   ctrl-z takes the whole handful back. */
+function boardSelItems() {
+  const out = [];
+  for (const id of BOARD_SEL.ids) {
+    const it = BOARD_ITEMS.get(boardKey(BOARD_SEL.kind, id));
+    if (it) out.push(it);
+  }
+  return out;
+}
+
+/* One pass over the handful, one piece of news, one undo. */
+function boardSelApply(items, word, step) {
+  if (!items.length) { notify("Those cards are not on screen any more.", "warn"); return; }
+  const back = [];
+  let done = 0;
+  boardSelClear();
+  holdRender(() => {
+    NOTIFY_MUTE++;
+    try {
+      for (const x of items) {
+        const u = step(x);
+        if (u) { back.push(u); done++; }
+      }
+    } finally { NOTIFY_MUTE--; }
+  });
+  if (!done) { notify("Nothing to change - they all said that already.", "warn"); return; }
+  notify(word + " \u00B7 " + done + (done === 1 ? " card" : " cards") +
+    (done < items.length ? " (" + (items.length - done) + " already said so)" : "") + ".");
+  pushUndo({run: () => {
+    holdRender(() => {
+      NOTIFY_MUTE++;
+      try { back.slice().reverse().forEach(u => u()); }
+      finally { NOTIFY_MUTE--; }
+    });
+    notify(back.length === 1 ? "Put it back." : "Put " + back.length + " cards back.");
+    return true;
+  }});
+}
+
+/* The names on offer are every name in every space on screen, because the
+   handful can span spaces -- and a name is all that is written, so the page it
+   stands for is made in whichever space the card itself lives in. */
+const acrossNames = fn => {
+  const set = new Set();
+  acrossSpaces(() => { fn().forEach(n => set.add(n)); return []; });
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
+};
+const allOrgNames     = () => acrossNames(() => allPages(q => pageKind(q) === "org").map(baseName));
+const allPersonNames  = () => acrossNames(() => allPeople().map(personName));
+const allContextNames = () => acrossNames(() => contextList());
+
+/* Pick a name, or type one that does not exist yet: a tag you cannot add
+   because the page for it has not been made is a dead end for no reason. */
+function pickName({title, items, prefix, onPick}) {
+  const newOne = () => promptInput({
+    title: "New " + title.toLowerCase(), label: "Name", cta: "Use it",
+    onSave: v => onPick(prefix === "c" ? slugify(v.replace(/^@/, "")) : trim(v)),
+  });
+  if (!items.length) { newOne(); return; }
+  listPicker({
+    title, items, typeahead: true,
+    label: n => (prefix === "c" ? "@" : "") + n,
+    onPick,
+    footer: el("button", {class: "btn ghost", onclick: () => { closeModal(); newOne(); }}, "+ new"),
+  });
+}
+
+/* A project to hang things under. Paths, not names: a parent is a particular
+   file, and a card in another space cannot point at it. */
+function pickProject({title, onPick, exclude = []}) {
+  const items = acrossSpaces(() => allPages(q => statusDirOf(q) && !isHorizonPage(q))
+    .map(path => ({path, space: V.space})))
+    .filter(r => !exclude.some(e => e.path === r.path && e.space === r.space));
+  if (!items.length) { notify("No projects to hang these under yet.", "warn"); return; }
+  listPicker({
+    title, items, typeahead: true,
+    label: r => inSpace(r.space, () => pageTitle(r.path)),
+    detail: r => (multiSpace() ? r.space + " \u00B7 " : "") + pageRef(r.path),
+    onPick,
+  });
+}
+
+/* Appends a [[link]] to one of a page's own key:: value lines -- which is
+   where the page's facts already live, and so where the pill for it turns up
+   without anything else being taught about it. */
+function pageLinkPropAdd(path, key, ref, opts = {}) {
+  const page = getPage(path);
+  if (!page) return null;
+  const prev = page.props[key];
+  const have = linksIn(prev || "").map(t => trim(String(t).split("][")[0]).toLowerCase());
+  if (have.includes(ref.toLowerCase())) return null;
+  page.props[key] = (opts.single || !trim(prev || "")) ? "[[" + ref + "]]"
+                                                       : trim(prev) + ", [[" + ref + "]]";
+  createLinkedPages("[[" + ref + "]]");
+  touch(path);
+  return () => {
+    const pg = getPage(path);
+    if (!pg) return;
+    if (prev == null) delete pg.props[key]; else pg.props[key] = prev;
+    touch(path);
+  };
+}
+
+/* Appends a [[link]] to a task's own line, which is where a task keeps its
+   context and its project -- the same text the outliner would have typed. */
+function blockLinkAdd(a, ref) {
+  return inSpace(a.space, () => {
+    const prev = a.block.title;
+    const have = linksIn(prev).map(t => trim(String(t).split("][")[0]).toLowerCase());
+    if (have.includes(ref.toLowerCase())) return null;
+    a.block.title = trim(prev) + " [[" + ref + "]]";
+    createLinkedPages(a.block.title);
+    touch(a.path);
+    noteTodoTouched();
+    return () => inSpace(a.space, () => { a.block.title = prev; touch(a.path); });
+  });
+}
+
+function boardSelActions() {
+  const items = boardSelItems();
+  if (!items.length) return [];
+
+  if (BOARD_SEL.kind === "task") return [
+    {label: "+ person", hint: "Hand all of them to somebody",
+      run: () => pickName({title: "Hand these to", items: allPersonNames(), prefix: "p",
+        onPick: who => boardSelApply(items, "Handed to " + who, x => {
+          const a = x.action;
+          return inSpace(a.space, () => {
+            const prev = assigneeOf(a.block);
+            if (samePerson(prev, who)) return null;
+            assignBlock(a.path, a.block, who);
+            return () => inSpace(a.space, () => assignBlock(a.path, a.block, prev || whoAmI()));
+          });
+        })})},
+    {label: "+ context", hint: "The place or tool all of them need",
+      run: () => pickName({title: "Context for these", items: allContextNames(), prefix: "c",
+        onPick: ctx => boardSelApply(items, "Put in @" + ctx, x => {
+          const a = x.action;
+          if (inSpace(a.space, () => hasContextLink(a.block.title))) return null;
+          return blockLinkAdd(a, "c/" + ctx);
+        })})},
+    {label: "+ project", hint: "Make all of them steps in one project",
+      run: () => pickProject({title: "Put these under", onPick: r => {
+        const mine = items.filter(x => (x.action.space || V.space) === r.space);
+        if (mine.length < items.length) {
+          notify((items.length - mine.length) + " of them live in another space, so they " +
+                 "cannot point at that project.", "warn");
+        }
+        boardSelApply(mine, "Filed under " + inSpace(r.space, () => pageTitle(r.path)),
+          x => blockLinkAdd(x.action, pageRef(r.path)));
+      }})},
+  ];
+
+  if (BOARD_SEL.kind === "project") return [
+    {label: "+ organisation", hint: "Whose work this is - a client, an employer, a club",
+      run: () => pickName({title: "Organisation", items: allOrgNames(), prefix: "o",
+        onPick: org => boardSelApply(items, "Filed under " + org, x => inSpace(x.project.space,
+          () => pageLinkPropAdd(x.project.path, "org", "o/" + trim(org), {single: true})))})},
+    {label: "+ person", hint: "Somebody who is in all of them",
+      run: () => pickName({title: "Person", items: allPersonNames(), prefix: "p",
+        onPick: who => boardSelApply(items, who + " added", x => inSpace(x.project.space,
+          () => pageLinkPropAdd(x.project.path, "with", "p/" + trim(who))))})},
+    {label: "+ context", hint: "Where this work gets done",
+      run: () => pickName({title: "Context", items: allContextNames(), prefix: "c",
+        onPick: ctx => boardSelApply(items, "Put in @" + ctx, x => inSpace(x.project.space,
+          () => pageLinkPropAdd(x.project.path, "context", "c/" + ctx, {single: true})))})},
+    {label: "+ parent project", hint: "The bigger piece of work all of them belong to",
+      run: () => pickProject({title: "Parent project",
+        exclude: items.map(x => ({path: x.project.path, space: x.project.space})),
+        onPick: r => {
+          const mine = items.filter(x => (x.project.space || V.space) === r.space);
+          if (mine.length < items.length) {
+            notify((items.length - mine.length) + " of them live in another space, so they " +
+                   "cannot point at that project.", "warn");
+          }
+          boardSelApply(mine, "Under " + inSpace(r.space, () => pageTitle(r.path)),
+            x => inSpace(x.project.space,
+              () => pageLinkPropAdd(x.project.path, "parent", pageRef(r.path), {single: true})));
+        }})},
+  ];
+
+  return [];
 }
 
 /* The slot the count lives in. Always there, usually empty: that way the count
@@ -7428,7 +7686,9 @@ function makeCardDraggable(card, kind, item, id) {
     if (items.length > 1) $$(".bcard.sel").forEach(c => c.classList.add("dragging-with"));
     try {
       e.dataTransfer.setData("text/plain", items.length > 1 ? items.length + " cards" : String(id));
-      e.dataTransfer.effectAllowed = "move";
+      // A page dropped on a space tab can be copied instead of moved, so the
+      // drag has to allow both and let the drop decide.
+      e.dataTransfer.effectAllowed = "copyMove";
     } catch (_) {}
   });
   card.addEventListener("dragend", () => {
@@ -7539,10 +7799,15 @@ function boardPickClick(e, kind, id) {
    move between folders, not a label, so it is said plainly and ctrl-z takes it
    back. */
 
-/* Carry one project page across the boundary: write it there, remove it here.
-   The page travels as text and comes back as a fresh page, because a page object
-   belongs to the vault it was parsed in. Returns where it landed. */
-function moveOneProject(path, from, to) {
+/* Carry one page across the boundary: write it there, and remove it here
+   unless the drag said copy. The page travels as text and comes back as a fresh
+   page, because a page object belongs to the vault it was parsed in. Returns
+   where it landed.
+
+   A project, a person, an org, a context -- the same thing happens to all of
+   them, because a page is a file and a space is a folder, and nothing here
+   depends on which folder inside it the file sits in. */
+function moveOnePage(path, from, to, opts = {}) {
   let copy = null;
   inSpace(from, () => { const pg = getPage(path); if (pg) copy = parsePage(serializePage(pg)); });
   if (!copy) return null;
@@ -7562,42 +7827,54 @@ function moveOneProject(path, from, to) {
       touch(path);
     }
   });
-  inSpace(from, () => removePage(path));
+  if (!opts.copy) inSpace(from, () => removePage(path));
   return {path, merged};
 }
 
-/* Everything dropped on a tab, moved, saved, and put on the undo stack as the
-   one thing it looked like. */
-async function dropProjectsOnSpace(list, target) {
+/* Everything dropped on a tab, moved -- or copied, when ctrl was held -- saved,
+   and put on the undo stack as the one thing it looked like. */
+async function dropPagesOnSpace(list, target, opts = {}) {
+  const copy = !!opts.copy;
   if (!LOADED.has(target)) {
     try { await loadSpaceRecord(target); }
     catch (_) { notify("Cannot open " + target + " right now, so nothing moved.", "error"); return; }
   }
   const moved = [];
   for (const x of list) {
-    const r = moveOneProject(x.path, x.from, target);
+    const r = moveOnePage(x.path, x.from, target, {copy});
     if (r) moved.push({path: r.path, home: x.from, was: x.path, merged: r.merged});
   }
   await flush();
   render();
-  if (!moved.length) { notify("Nothing moved.", "warn"); return; }
+  if (!moved.length) { notify(copy ? "Nothing copied." : "Nothing moved.", "warn"); return; }
   const one = moved.length === 1;
-  notify((one
-    ? "\u201C" + inSpace(target, () => pageTitle(moved[0].path)) + "\u201D now lives in " + target
-    : moved.length + " projects now live in " + target) +
-    ". Links from the space " + (one ? "it" : "they") + " left point at nothing now.");
+  const what = one ? "\u201C" + inSpace(target, () => pageTitle(moved[0].path)) + "\u201D"
+                   : moved.length + " pages";
+  notify(copy
+    ? what + (one ? " is" : " are") + " in " + target + " as well now. The two are " +
+      "separate files from here on - changing one does not change the other."
+    : what + (one ? " now lives" : " now live") + " in " + target +
+      ". Links from the space " + (one ? "it" : "they") + " left point at nothing now.");
   pushUndo({run: () => {
     (async () => {
-      /* A project that merged into one already in that space cannot be
-         pulled back out by moving the file: the survivor is both projects
-         now, and carrying it back would take the other one with it. */
+      /* A page that merged into one already in that space cannot be pulled
+         back out by moving the file: the survivor is both pages now, and
+         carrying it back would take the other one with it. */
       const back = moved.filter(m => !m.merged);
-      for (const m of back) moveOneProject(m.path, target, m.home);
+      if (copy) {
+        for (const m of back) inSpace(target, () => removePage(m.path));
+        await flush();
+        render();
+        notify(back.length === 1 ? "Copy removed from " + target + "."
+                                 : back.length + " copies removed from " + target + ".");
+        return;
+      }
+      for (const m of back) moveOnePage(m.path, target, m.home);
       await flush();
       render();
-      if (!back.length) notify("That one merged into the project already in " + target + ", so there is no file to move back.", "warn");
+      if (!back.length) notify("That one merged into the page already in " + target + ", so there is no file to move back.", "warn");
       else notify(back.length === 1 ? "Moved back out of " + target + "."
-                                    : "Moved " + back.length + " projects back out of " + target + ".");
+                                    : "Moved " + back.length + " pages back out of " + target + ".");
     })();
     return true;
   }});
@@ -7632,32 +7909,38 @@ function boardSpaceTabs() {
     const on = !showingAll && vis.has(sp.name);
     const tab = el("button", {
       class: "btab" + (on ? " on" : ""), onclick: () => show([sp.name]),
-      title: "Only " + sp.name + " \u2014 or drop a project here to move it into " + sp.name,
+      title: "Only " + sp.name + " \u2014 or drop a page here to move it into " + sp.name +
+             " (hold ctrl to copy it instead)",
     },
       el("span", {class: "btab-dot", style: "background:" + spaceColor(sp.name)}),
       sp.name);
 
-    // A project dropped here changes vault. A task cannot: a task is a line in
-    // a day page, and the day page is not what is being dragged.
-    const takes = d => !!d && d.kind === "project" &&
-      d.items.some(x => (x.project.space || V.space) !== sp.name);
+    /* A project, a person, an org or a context dropped here changes vault -- a
+       page is a file, and a space is a folder. A task cannot: a task is a line
+       in a day page, and the day page is not what is being dragged. */
+    const takes = d => !!d && !!boardPageItems(d) &&
+      boardPageItems(d).some(x => x.space !== sp.name);
     tab.addEventListener("dragover", e => {
       if (!takes(DRAGGED)) return;
       e.preventDefault();
+      // Ctrl -- cmd on a Mac -- copies, the way it does in a file manager, and
+      // the pointer says which one is about to happen.
+      try { e.dataTransfer.dropEffect = copyDrag(e) ? "copy" : "move"; } catch (_) {}
+      tab.classList.toggle("copying", copyDrag(e));
       tab.classList.add("over");
     });
-    tab.addEventListener("dragleave", () => tab.classList.remove("over"));
+    tab.addEventListener("dragleave", () => tab.classList.remove("over", "copying"));
     tab.addEventListener("drop", e => {
       e.preventDefault();
-      tab.classList.remove("over");
+      tab.classList.remove("over", "copying");
       const d = DRAGGED;
       DRAGGED = null;
       if (!takes(d)) return;
-      const list = d.items
-        .map(x => ({path: x.project.path, from: x.project.space || V.space}))
-        .filter(x => x.from !== sp.name);
+      const list = boardPageItems(d)
+        .filter(x => x.space !== sp.name)
+        .map(x => ({path: x.path, from: x.space}));
       boardSelClear();
-      dropProjectsOnSpace(list, sp.name);
+      dropPagesOnSpace(list, sp.name, {copy: copyDrag(e)});
     });
     row.append(tab);
   }
@@ -7735,7 +8018,7 @@ function boardProjectCard(r, stuck) {
    to re-pick it every time they come back. */
 function boardModeToggle() {
   const seg = el("div", {class: "seg", style: "margin-top:4px"});
-  for (const [mode, label] of [["tasks", "Tasks"], ["projects", "Projects"]]) {
+  for (const [mode, label] of [["tasks", "Tasks"], ["projects", "Projects"], ["dir", "Directory"]]) {
     seg.append(el("button", {
       class: "btn sm" + (state.boardMode === mode ? " primary" : " ghost"),
       onclick: () => go("board", {boardMode: mode, boardMore: {}}),
@@ -7752,7 +8035,9 @@ function viewBoard() {
   BOARD_ITEMS = new Map();
   // A handful picked on the task board is not a handful on the project board.
   if (BOARD_SEL.mode !== state.boardMode) { boardSelClear(); BOARD_SEL.mode = state.boardMode; }
-  return state.boardMode === "projects" ? viewProjectBoard() : viewTaskBoard();
+  return state.boardMode === "projects" ? viewProjectBoard()
+       : state.boardMode === "dir"      ? viewDirBoard()
+                                        : viewTaskBoard();
 }
 
 /* Fills a column body with cards, a card at a time, and keeps the "show more"
@@ -7884,9 +8169,110 @@ function viewProjectBoard() {
       "The tabs at the top choose which spaces are on screen, and dropping a " +
       "project on one moves the file into that space - a different folder with " +
       "different people in it, so links to it from the space it left will point " +
-      "at nothing. A project dropped where that name is taken merges into the " +
+      "at nothing. Hold ctrl (cmd on a Mac) as you drop and the project is " +
+      "copied into that space instead, leaving this one where it is. A project " +
+      "dropped where that name is taken merges into the " +
       "one already there - the toast has the undo for it. On a phone, open " +
       "the project and use its status button.")));
+  return c;
+}
+
+/* ---------- the directory board ----------
+   The orgs, the people and the contexts, side by side, as cards you can take
+   hold of. They had pages and they had lists, but nothing you could pick a
+   handful of and put somewhere -- and when a second space arrives, moving the
+   people into it was a page-at-a-time job through the move dialog.
+
+   The columns are the three kinds, so a drag between them is the one thing the
+   move dialog did: the file goes into pages/o/, pages/p/ or pages/c/ and every
+   link to it is rewritten. The space tabs do the other thing: a card dropped on
+   one moves the page into that space, or copies it there when ctrl is held --
+   which is how a shared list of contexts comes to exist in two places without
+   either of them having to be typed twice. */
+const BOARD_DIR_COLUMNS = [
+  ["org",     "Organisations", "o"],
+  ["person",  "People",        "p"],
+  ["context", "Contexts",      "c"],
+];
+const DIR_OF_KIND = {org: DIRS.orgs, person: DIRS.people, context: DIRS.contexts};
+
+const dirPagesInVisible = kind =>
+  acrossSpaces(() => allPages(q => pageKind(q) === kind).map(path => ({path, space: V.space})));
+
+/* What a card of this kind is worth knowing: what it is called, and how much of
+   the vault actually mentions it -- which is the honest answer to "can I let go
+   of this one". */
+function boardDirCard(r) {
+  const {path, space} = r;
+  const info = inSpace(space, () => ({
+    title: pageTitle(path),
+    ref: pageRef(path),
+    links: backlinksTo(path).length,
+    member: pageKind(path) === "person" && isMemberPage(path),
+    open: pageKind(path) === "context"
+      ? leafActions().filter(a => a.context === baseName(path) && OPEN_STATES[a.state]).length
+      : 0,
+  }));
+  const card = el("button", {
+    class: "bcard", draggable: "true", data: {path},
+    onclick: e => {
+      if (boardPickClick(e, "dirpage", space + "|" + path)) return;
+      if (e.target.closest("[data-link]")) return;
+      openPageIn(space, path);
+    },
+  },
+    el("div", {class: "bcard-title"}, info.title),
+    el("div", {class: "bcard-meta"},
+      multiSpace() ? spaceBadge(space) : null,
+      el("span", {class: "chip"}, info.ref),
+      info.member ? el("span", {class: "chip who"}, "in this space") : null,
+      info.open ? el("span", {class: "chip"}, info.open + " open") : null,
+      el("span", {class: "chip age"}, info.links + (info.links === 1 ? " mention" : " mentions"))));
+  return makeCardDraggable(card, "dirpage", {page: r}, space + "|" + path);
+}
+
+function viewDirBoard() {
+  const c = el("div", {class: "wrap wide"});
+  c.append(el("div", {class: "section"},
+    el("div", {style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap"}, boardModeToggle()),
+    boardSpaceTabs(),
+    boardSelHost()));
+
+  const board = el("div", {class: "board three"});
+  for (const [kind, label, prefix] of BOARD_DIR_COLUMNS) {
+    const items = dirPagesInVisible(kind)
+      .sort((x, y) => inSpace(x.space, () => pageTitle(x.path))
+        .localeCompare(inSpace(y.space, () => pageTitle(y.path))));
+    const col = boardColumn(
+      el("div", {class: "bcol-head"},
+        el("span", {class: "st st-2"}, prefix),
+        el("span", {class: "state", style: "border:0;background:transparent;padding:0"}, label),
+        el("span", {class: "n"}, String(items.length))),
+      (dkind, x) => dkind === "dirpage" && inSpace(x.page.space, () => pageKind(x.page.path)) !== kind,
+      x => {
+        const {path, space} = x.page;
+        const was = inSpace(space, () => pageKind(path));
+        const landed = join(DIR_OF_KIND[kind], baseName(path) + ".md");
+        const onto = inSpace(space, () => V.pages.has(landed));
+        inSpace(space, () => moveFile(path, landed));
+        return () => inSpace(space, () => {
+          if (onto) { notify("That one merged into the page already there, so there is no file to move back.", "warn"); return; }
+          if (DIR_OF_KIND[was]) moveFile(landed, join(DIR_OF_KIND[was], baseName(path) + ".md"));
+        });
+      });
+    col.append(fillBoardColumn(el("div", {class: "bcol-body"}), items, "d:" + kind, boardDirCard));
+    board.append(col);
+  }
+  c.append(boardMarquee(el("div", {class: "boardwrap"}, board), "dirpage"));
+  c.append(el("div", {class: "section quiet"},
+    el("div", {style: "color:var(--fg3);font-size:12px"},
+      "Drag a card into another column and the page changes kind - the file " +
+      "moves into pages/o/, pages/p/ or pages/c/ and every link to it is " +
+      "rewritten, exactly as the move dialog does it, and ctrl-z moves it back. " +
+      "Drop a card on a space tab and the page moves into that space; hold ctrl " +
+      "(cmd on a Mac) while you drop and it is copied there instead, leaving " +
+      "this one where it is. Ctrl-click several cards, or drag a box across " +
+      "them, to take a handful at once.")));
   return c;
 }
 
@@ -11974,6 +12360,8 @@ function navVisible(item) {
   if (item.id === "board"    && !anyOpenTask())  return false;
   // The project board is about projects, so it needs one to be about.
   if (item.id === "board-p" && !STATUS_ORDER.some(c => projectsIn(c).length)) return false;
+  // The directory board is about orgs, people and contexts, so it needs one.
+  if (item.id === "board-d" && !allPages(q => ["org", "person", "context"].includes(pageKind(q))).length) return false;
   if (item.id === "calendar" && !anyDated())     return false;
   if (item.id === "gantt"    && !anyDated())     return false;
   if (item.id === "graph"    && !anyLinked())    return false;
@@ -12016,7 +12404,7 @@ function renderNav() {
       if (!navVisible(it)) continue;
       const active = it.status ? (state.view === "projects" && state.statusCode === it.status)
                  : it.boardMode ? (state.view === "board" && state.boardMode === it.boardMode)
-                                : state.view === it.id && !(it.id === "board" && state.boardMode === "projects");
+                                : state.view === it.id && !(it.id === "board" && state.boardMode !== "tasks");
       const count = navCount(it.id);
       const hot = (it.id === "health" || it.id === "review") && count > 0;
       box.append(el("button", {
@@ -13052,6 +13440,261 @@ function outlineBlock(path, page, b) {
   return node;
 }
 
+/* ============================================================
+   105b_LINE_SELECTION -- several lines at once, with the mouse
+   ------------------------------------------------------------
+   Every line in the outline is its own contenteditable, which is what lets a
+   line keep its own links, its own state button and its own raw text while you
+   are in it. The price was that a browser will not run a text selection across
+   two of them: dragging down the page selected inside the first line and
+   stopped there, so moving five lines somewhere else meant five trips, and
+   there was no way at all to copy a piece of a page out to anywhere.
+
+   So the drag means what it looks like it means: pick the lines. Press on a
+   line, drag onto another, and every line between them is picked -- children
+   travelling with their parent, because a line and what hangs under it is one
+   thing. Then ctrl-c copies them as markdown, ctrl-x cuts them, delete throws
+   them away, ctrl-v puts what is in the clipboard in their place, and ctrl-z
+   takes any of it back.
+
+   A press that does not leave the line it started on is left alone entirely,
+   so clicking into a line and selecting a word inside it works as it always
+   did.
+   ============================================================ */
+const LINE_SEL = {path: null, ids: []};
+
+function lineSelClear(paint = true) {
+  const had = LINE_SEL.ids.length;
+  LINE_SEL.path = null;
+  LINE_SEL.ids = [];
+  // The bar goes whatever happens: the lines it was about are no longer picked,
+  // and a bar offering to cut nothing is worse than no bar.
+  lineSelHud();
+  if (paint && had) for (const n of $$(".blk.lsel")) n.classList.remove("lsel");
+  return !!had;
+}
+
+/* Like the board's selection, this is painted onto the lines already on screen
+   rather than redrawn: a redraw would take the caret and the scroll with it. */
+function paintLineSel() {
+  for (const n of $$(".blk.lsel")) n.classList.remove("lsel");
+  for (const id of LINE_SEL.ids) {
+    const n = $('.blk[data-id="' + id + '"]');
+    if (n) n.classList.add("lsel");
+  }
+  lineSelHud();
+}
+
+function lineSelHud() {
+  const n = LINE_SEL.ids.length;
+  let hud = $("#lselHud");
+  if (!n) { if (hud) hud.remove(); return; }
+  if (!hud) { hud = el("div", {id: "lselHud"}); document.body.append(hud); }
+  hud.textContent = "";
+  hud.append(el("span", {}, n + (n === 1 ? " line picked" : " lines picked")));
+  hud.append(el("button", {class: "btn sm ghost", onclick: () => lineSelCopy()}, "Copy"));
+  hud.append(el("button", {class: "btn sm ghost", onclick: () => lineSelCut()}, "Cut"));
+  hud.append(el("button", {class: "btn sm ghost", onclick: () => lineSelDelete()}, "Delete"));
+  hud.append(el("button", {class: "btn sm ghost", onclick: () => lineSelClear()}, "Let go"));
+  hud.append(el("span", {class: "k"}, "ctrl-c · ctrl-x · ctrl-v · del · esc"));
+}
+
+/* The lines the box touched, as the outermost ones only: a line inside another
+   picked line is already coming along, and counting it twice would cut it out
+   of a parent that is itself being cut. */
+function blksBetween(outline, a, b) {
+  const all = $$(".blk", outline);
+  let i = all.indexOf(a), j = all.indexOf(b);
+  if (i < 0 || j < 0) return [];
+  if (i > j) { const t = i; i = j; j = t; }
+  const span = all.slice(i, j + 1);
+  return span.filter(n => !span.some(m => m !== n && m.contains(n)));
+}
+
+/* The blocks themselves, in the order they are on screen. A redraw can have
+   happened since the pick, so they are looked up by id every time. */
+function lineSelBlocks() {
+  const page = LINE_SEL.path ? getPage(LINE_SEL.path) : null;
+  if (!page) return null;
+  const blocks = [];
+  for (const id of LINE_SEL.ids) {
+    let hit = null;
+    walkBlocks(page.blocks, b => { if (b.id === id) hit = b; });
+    if (hit) blocks.push(hit);
+  }
+  return blocks.length ? {page, blocks} : null;
+}
+
+const lineSelText = () => {
+  const got = lineSelBlocks();
+  return got ? serializeBlocks(got.blocks) : "";
+};
+
+function lineSelCopy() {
+  const text = lineSelText();
+  if (!text) return;
+  const n = LINE_SEL.ids.length;
+  copyText(text, n + (n === 1 ? " line copied." : " lines copied."), "Copy these lines");
+  lineSelClear();
+}
+
+/* Take the picked lines out, remembering exactly where each of them was so one
+   ctrl-z puts the whole handful back where it came from. */
+function lineSelRemove(word) {
+  const got = lineSelBlocks();
+  if (!got) { lineSelClear(); return null; }
+  const path = LINE_SEL.path;
+  const {page, blocks} = got;
+  const spots = blocks.map(b => { const sibs = siblingsOf(page, b); return {sibs, i: sibs.indexOf(b), b}; });
+  // Last first, so an earlier line's index is still the index it was.
+  spots.slice().reverse().forEach(s => { if (s.i >= 0) s.sibs.splice(s.i, 1); });
+  let filler = null;
+  if (!page.blocks.length) { filler = newBlock({title: ""}); page.blocks.push(filler); }
+  touch(path); noteTodoTouched();
+  lineSelClear();
+  render();
+  if (word) notify(spots.length + (spots.length === 1 ? " line " : " lines ") + word + ".");
+  pushUndo({run: () => {
+    if (filler) { const i = page.blocks.indexOf(filler); if (i >= 0) page.blocks.splice(i, 1); }
+    spots.forEach(s => { if (s.i >= 0) s.sibs.splice(s.i, 0, s.b); });
+    touch(path); render();
+    notify(spots.length === 1 ? "Line put back." : spots.length + " lines put back.");
+    return true;
+  }});
+  return {spots, page, path};
+}
+
+function lineSelCut() {
+  const text = lineSelText();
+  if (!text) { lineSelClear(); return; }
+  const n = LINE_SEL.ids.length;
+  copyText(text, n + (n === 1 ? " line cut." : " lines cut."), "Copy these lines");
+  lineSelRemove(null);
+}
+
+const lineSelDelete = () => { lineSelRemove("deleted"); };
+
+/* What is in the clipboard takes the picked lines' place -- same parsing the
+   paste into a single line already does, so an indented list arrives
+   indented. */
+function lineSelPaste(raw) {
+  const got = lineSelBlocks();
+  if (!got) { lineSelClear(); return; }
+  const roots = parseOutlineText(raw);
+  if (!roots.length) return;
+  const path = LINE_SEL.path;
+  const {page, blocks} = got;
+  const first = blocks[0];
+  const sibs = siblingsOf(page, first);
+  const at = sibs.indexOf(first);
+  const n = readyPastedBlocks(roots, {});
+  const spots = blocks.map(b => { const list = siblingsOf(page, b); return {list, i: list.indexOf(b), b}; });
+  spots.slice().reverse().forEach(s => { if (s.i >= 0) s.list.splice(s.i, 1); });
+  sibs.splice(Math.max(0, Math.min(at, sibs.length)), 0, ...roots);
+  touch(path); noteTodoTouched();
+  lineSelClear();
+  render();
+  notify(n + (n === 1 ? " line pasted" : " lines pasted") + " over " + spots.length +
+    (spots.length === 1 ? " line." : " lines."));
+  pushUndo({run: () => {
+    roots.forEach(r => { const i = sibs.indexOf(r); if (i >= 0) sibs.splice(i, 1); });
+    spots.forEach(s => { if (s.i >= 0) s.list.splice(s.i, 0, s.b); });
+    touch(path); render();
+    notify("Put back.");
+    return true;
+  }});
+}
+
+/* The drag itself. Nothing happens until the pointer has actually left the
+   line it started on, so this is invisible until it is wanted. */
+function attachLineSelect(outline, path) {
+  outline.addEventListener("mousedown", e => {
+    if (e.button !== 0) return;
+    const start = e.target.closest(".blk");
+    if (!start || !outline.contains(start)) return;
+    // A press on a control, a link or the bullet is that thing's press.
+    if (e.target.closest("button, a, input, textarea, select, [data-link], .bullet, .pfacts")) return;
+
+    const y0 = e.clientY;
+    let live = false;
+
+    const move = ev => {
+      const node = document.elementFromPoint(ev.clientX, ev.clientY);
+      const blk = node && node.closest ? node.closest(".blk") : null;
+      if (!live) {
+        if (!blk || blk === start || !outline.contains(blk)) return;
+        if (Math.abs(ev.clientY - y0) < 6) return;
+        live = true;
+        document.body.classList.add("lselecting");
+        // The line the press landed in had started a caret selection of its
+        // own; it is not what is being asked for any more.
+        if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+        LINE_SEL.path = path;
+      }
+      ev.preventDefault();
+      const sel = getSelection();
+      if (sel) sel.removeAllRanges();
+      const end = blk && outline.contains(blk) ? blk : start;
+      LINE_SEL.ids = blksBetween(outline, start, end).map(n => n.dataset.id).filter(Boolean);
+      paintLineSel();
+    };
+
+    const up = () => {
+      document.removeEventListener("mousemove", move);
+      document.removeEventListener("mouseup", up);
+      document.body.classList.remove("lselecting");
+      if (!live) return;
+      // The click that follows this mouseup would drop the caret into a line
+      // and let the picked lines go, so it is swallowed once.
+      const eat = ev => { ev.preventDefault(); ev.stopPropagation(); };
+      document.addEventListener("click", eat, {capture: true, once: true});
+    };
+    document.addEventListener("mousemove", move);
+    document.addEventListener("mouseup", up);
+  });
+  return outline;
+}
+
+/* The keys, in the capture phase: the app's own single-letter shortcuts are on
+   the document too, and while lines are picked these come first. */
+document.addEventListener("keydown", e => {
+  if (!LINE_SEL.ids.length) return;
+  if ($("#modalRoot").firstChild) return;              // a dialog owns the keys
+  /* Somebody typing in a box is typing in a box, whatever is picked behind
+     them -- and what they are typing is not a command about these lines. */
+  if (/^(INPUT|TEXTAREA)$/.test(e.target.tagName) || e.target.isContentEditable) {
+    lineSelClear();
+    return;
+  }
+  const mod = e.ctrlKey || e.metaKey;
+  const stop = () => { e.preventDefault(); e.stopPropagation(); };
+  if (e.key === "Escape") { stop(); lineSelClear(); return; }
+  if (mod && (e.key === "c" || e.key === "C")) { stop(); lineSelCopy(); return; }
+  if (mod && (e.key === "x" || e.key === "X")) { stop(); lineSelCut(); return; }
+  if (e.key === "Delete" || e.key === "Backspace") { stop(); lineSelDelete(); return; }
+  if (mod && (e.key === "v" || e.key === "V")) return;  // the paste event does it
+  if (mod && (e.key === "z" || e.key === "Z")) { lineSelClear(); return; }
+  // Anything else means the handful was not what you were after.
+  if (e.key.length === 1 || e.key === "Enter" || e.key === "Tab") lineSelClear();
+}, true);
+
+document.addEventListener("paste", e => {
+  if (!LINE_SEL.ids.length || $("#modalRoot").firstChild) return;
+  if (/^(INPUT|TEXTAREA)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+  const raw = e.clipboardData && e.clipboardData.getData("text/plain");
+  if (raw == null) return;
+  e.preventDefault();
+  lineSelPaste(raw);
+});
+
+/* Pressing anywhere else lets the handful go -- except on the bar that is
+   there to act on it. */
+document.addEventListener("mousedown", e => {
+  if (!LINE_SEL.ids.length) return;
+  if (e.target.closest("#lselHud")) return;
+  lineSelClear();
+});
+
 function outlineFor(path, opts = {}) {
   const page = getPage(path);
   const box = el("div", {class: "card"});
@@ -13061,7 +13704,11 @@ function outlineFor(path, opts = {}) {
   if (opts.facts) outline.append(pageFactsBlock(path));
   if (!page.blocks.length) page.blocks.push(newBlock({title: ""}));
   for (const b of page.blocks) outline.append(outlineBlock(path, page, b));
-  box.append(outline);
+  box.append(attachLineSelect(outline, path));
+  /* A pick belongs to the outline that made it, and this one has just been
+     rebuilt, so anything picked in another page's outline is let go of. */
+  if (LINE_SEL.ids.length && LINE_SEL.path !== path) lineSelClear(false);
+  if (LINE_SEL.ids.length) requestAnimationFrame(paintLineSel);
   box.append(el("button", {
     class: "dash-item", onclick: () => {
       const nb = newBlock({title: ""});
@@ -13671,29 +14318,111 @@ function viewPage() {
   return c;
 }
 
-function viewSearch() {
-  const q = trim(state.query).toLowerCase();
-  const c = el("div", {class: "wrap"});
-  const box = el("div", {class: "filterbox", style: "padding:14px 0"},
-    el("input", {
-      placeholder: "Search every block and page...", value: state.query,
-      oninput: e => { state.query = e.target.value; clearTimeout(window.__sq); window.__sq = setTimeout(render, 160); },
-    }));
-  c.append(box);
-  if (!q) { c.append(el("div", {class: "empty"}, "Type to search.")); return c; }
-  const hits = acrossSpaces(() => {
+/* ---------- search ----------
+   Two things were wrong with searching as you typed. It answered questions
+   nobody had asked yet -- three letters in, the screen was full of matches for
+   a word half typed -- and on a big vault every keystroke walked every block in
+   every space, so the box itself went sticky. So the box is a box now: you type
+   the whole thing and press Enter, and that is the search.
+
+   And a search is almost never for "anything". Somebody on Todos is looking
+   for a task; somebody on the project board is looking for a project. That is
+   knowledge the app has the moment the search opens, so the filter arrives
+   already set to it -- and it is three buttons, so being wrong about it costs
+   one click. */
+const SEARCH_FILTERS = [["all", "Everything"], ["projects", "Projects"], ["todos", "Todos"]];
+
+/* Where the search was opened from, read as what it is probably for. */
+function searchFilterForNow() {
+  if (["todos", "next", "today", "context", "agenda", "flagged", "weeding"].includes(state.view)) return "todos";
+  if (state.view === "board") return state.boardMode === "projects" ? "projects" : "todos";
+  if (state.view === "projects") return "projects";
+  if (state.view === "page" && state.pagePath && pageKind(state.pagePath) === "project") return "projects";
+  return "all";
+}
+
+/* The one door into the search screen, so every way in -- the button, the "/"
+   key, the tour -- arrives with the filter already set and an empty box. */
+function goSearch() {
+  go("search", {searchFilter: searchFilterForNow(), query: "", searchDraft: ""});
+}
+
+/* Everything the vault has that matches, with enough on each hit to filter it
+   afterwards without walking the pages a second time. */
+function searchHits(q) {
+  return acrossSpaces(() => {
     const found = [];
     for (const [path, page] of V.pages) {
-      if (pageTitle(path).toLowerCase().includes(q)) found.push({path, block: null});
+      const kind = pageKind(path);
+      if (pageTitle(path).toLowerCase().includes(q)) found.push({path, block: null, kind});
       walkBlocks(page.blocks, b => {
         const text = [b.title, ...(b.body || [])].join(" ").toLowerCase();
-        if (text.includes(q)) found.push({path, block: b});
+        if (text.includes(q)) found.push({path, block: b, kind, todo: !!b.state});
       });
     }
     return found;
   });
+}
+
+const SEARCH_KEEP = {
+  all:      () => true,
+  projects: h => !h.block && h.kind === "project",
+  todos:    h => !!h.todo,
+};
+
+function viewSearch() {
+  const c = el("div", {class: "wrap"});
+  const run = () => {
+    state.query = trim(state.searchDraft);
+    render();
+  };
+  const input = el("input", {
+    placeholder: "Search every block and page, then press Enter...",
+    value: state.searchDraft,
+    oninput: e => { state.searchDraft = e.target.value; },
+    onkeydown: e => {
+      if (e.key === "Enter") { e.preventDefault(); run(); }
+      else if (e.key === "Escape") { e.target.blur(); }
+    },
+  });
+  c.append(el("div", {class: "filterbox", style: "padding:14px 0"}, input,
+    el("button", {class: "btn sm primary", onclick: run}, "Search")));
+  /* The box keeps the keys. Pressing Enter rebuilds the screen, and a search
+     box you have to click back into before you can correct a word is a box
+     that has thrown your place away. */
+  requestAnimationFrame(() => {
+    if ($("#modalRoot").firstChild) return;
+    input.focus();
+    const n = input.value.length;
+    try { input.setSelectionRange(n, n); } catch (_) {}
+  });
+
+  // The filter is a choice about the results, so changing it re-reads the
+  // search you already ran rather than asking you to run it again.
+  const seg = el("div", {class: "seg", style: "margin-bottom:10px"});
+  for (const [id, label] of SEARCH_FILTERS) {
+    seg.append(el("button", {
+      class: "btn sm" + (state.searchFilter === id ? " primary" : " ghost"),
+      onclick: () => { state.searchFilter = id; render(); },
+    }, label));
+  }
+  c.append(seg);
+
+  const q = trim(state.query).toLowerCase();
+  if (!q) {
+    c.append(el("div", {class: "empty"},
+      "Type what you are looking for and press Enter."));
+    return c;
+  }
+  const keep = SEARCH_KEEP[state.searchFilter] || SEARCH_KEEP.all;
+  const hits = searchHits(q).filter(keep);
   const card = el("div", {class: "card"});
-  if (!hits.length) card.append(el("div", {class: "empty"}, "No matches."));
+  if (!hits.length) {
+    card.append(el("div", {class: "empty"}, state.searchFilter === "all"
+      ? "No matches."
+      : "No matches among " + (state.searchFilter === "todos" ? "todos" : "projects") +
+        ". Try Everything."));
+  }
   for (const h of hits.slice(0, 300)) {
     const label = inSpace(h.space, () => h.block ? h.block.title : pageTitle(h.path));
     card.append(el("button", {class: "dash-item",
@@ -16765,6 +17494,7 @@ const CHORDS = {
   "w m": () => go("projects", {statusCode: "2"}),
   "v b": () => go("board", {boardMode: "tasks", boardMore: {}}),
   "v p": () => go("board", {boardMode: "projects", boardMore: {}}),
+  "v d": () => go("board", {boardMode: "dir", boardMore: {}}),
   "v c": () => go("calendar"),
   "v g": () => go("graph"),
   "v t": () => go("gantt"),
@@ -16835,7 +17565,7 @@ document.addEventListener("keydown", e => {
   }
   const single = {
     c: () => openCapture(),
-    "/": () => go("search"),
+    "/": () => goSearch(),
     "?": () => openHelp(),
     t: () => go("today"),
   };
@@ -16870,7 +17600,9 @@ function openHelp() {
           "\u2191 / \u2193  previous / next block, once the line runs out", el("br"),
           "alt-shift-\u2191 / \u2193  move the line, children and all", el("br"),
           "esc  walk the grid; enter centres, enter on the middle adds a step", el("br"),
-          "[[  a list of pages; [[c/ contexts, [[p/ people"))),
+          "[[  a list of pages; [[c/ contexts, [[p/ people", el("br"),
+          "drag from one line onto another  pick several lines", el("br"),
+          "ctrl-c / ctrl-x / ctrl-v / del  copy, cut, paste over, delete them"))),
     foot: [el("button", {class: "btn primary", onclick: closeModal}, "Got it")],
   });
 }
@@ -16927,7 +17659,7 @@ function scheduleContextPrompts() {
    170_INIT
    ============================================================ */
 $("#btnCapture").onclick = () => openCapture();
-$("#btnSearch").onclick  = () => go("search");
+$("#btnSearch").onclick  = () => goSearch();
 $("#btnFocus").onclick   = () => setFocus(!focusOn());
 $("#btnVault").onclick   = () => openVaultDialog();
 $("#spaceBtn").onclick   = () => openSpaceSwitcher();
