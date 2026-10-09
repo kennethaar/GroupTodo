@@ -1077,16 +1077,29 @@ tasks, simple mode shows no hygiene nudges at all.
   mechanically correct and not a sentence. There is a box for a verb that is not
   in the task either.
 - **Projects are outcomes**, not topics: `outcome::` asks what *done* looks like.
-- **Contexts** `[[c/phone]]`, picked with a letter key, and `x` opens the
-  picker from anywhere.
+- **Contexts** `[[c/phone]]`, and `@@` opens the picker from anywhere. Twice,
+  because a single key that does nothing most of the time is a key that
+  swallows a keystroke the one time the caret was not where you thought. The
+  first `@` arms the same chord indicator `g` and `v` use, so it is visible
+  rather than silent, and anything but a second `@` calls it off. On a
+  Norwegian or German keyboard `@` is AltGr+2, which arrives as ctrl+alt, and
+  that is handled: a shortcut most of Europe cannot press is not a shortcut.
+
+  In the picker you **type the name**: `p` goes to the first context starting
+  with p, `p` again cycles to the next one that does, `ph` narrows to phone,
+  and Enter switches. A letter that cannot continue the word starts a new one,
+  so changing your mind from `w` to `p` works rather than hunting for "wp".
+  Every other picker in the app keeps its lettered rows, because the two rules
+  cannot share a list: with `computer, errand, phone` the letter c means phone
+  to one of them and computer to the other.
 - **The context nudge is a toast, not a dialog.** At lunchtime and at the end of
-  the day the app wonders whether you have moved, and it says so the way a
+  the day the app wonders whether you have moved, and says so the way a
   colleague would: a line in the corner reading *after work: still @workshop?
-  Press x to change*, with a button if you would rather click. It never takes
+  Press @@ to change*, with a button if you would rather click. It never takes
   the keyboard and never covers what you were doing, and ignoring it is a
   complete answer, because it leaves on its own. It used to open the picker
-  outright, which is a dialog over your work, on a timer, because the clock said
-  five.
+  outright, which is a dialog over your work, on a timer, because the clock
+  said five.
 - **Age** is tracked from `Added::` and drives "oldest first" everywhere.
 - **Morning weeding** surfaces the stalest active projects - hidden under 5
   active projects or 20 open tasks, both modes. `g w` opens it anyway.
@@ -1106,7 +1119,7 @@ The markdown is identical either way.
 
 ## Keys
 
-`c` capture · `/` search · `x` context · `?` all keys · `f t` today · `g n` todos ·
+`c` capture · `/` search · `@@` context · `?` all keys · `f t` today · `g n` todos ·
 `g x` context · `g a` planned · `g p` people · `g c` chat · `g w` weeding ·
 `g r` review · `v b` board · `v c` calendar · `v g` graph ·
 `v t` timeline · `v r` report · `f f` focus ·

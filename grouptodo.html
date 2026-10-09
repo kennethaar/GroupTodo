@@ -774,6 +774,10 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4p
   display:flex;align-items:center;gap:11px;width:100%;padding:9px 16px;text-align:left;font-size:14px;color:var(--fg2);
 }
 .pick:hover,.pick.cur{background:var(--bg3);color:var(--fg)}
+/* The row the keys are pointing at. A list you type into has to show you where
+   it thinks you are, or Enter is a guess. */
+.pick.on{background:var(--bg3);color:var(--fg);box-shadow:inset 2px 0 0 var(--accent)}
+.pick.on .k{color:var(--accent)}
 /* A row that holds its own buttons cannot itself be one, so the name inside it
    carries the link instead -- same hit area, same look, one fewer nested button. */
 .linky{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;min-width:0}
@@ -783,6 +787,10 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4p
   background:var(--bg4);color:var(--fg3);display:grid;place-items:center;
 }
 .pick:hover .k,.pick.cur .k{background:var(--accent);color:var(--accent-fg)}
+/* In a list you type the name into, the rows have no letters, so the badge
+   keeps the gutter and stops being a thing: an empty box in every row reads as
+   a checkbox nobody ticked. */
+.pick .k:empty{background:transparent;box-shadow:none}
 .pick .d{margin-left:auto;font-size:11.5px;color:var(--fg3)}
 /* The [[ list. Fixed rather than absolute so it is positioned against the
    caret's own viewport rectangle, and above everything, because it hangs over
@@ -11621,38 +11629,110 @@ function pickRow(key, label, detail, onclick) {
 }
 
 /* Generic list picker with a-z single-key selection. */
-function listPicker({title, hint, items, label, detail, onPick, footer}) {
+/* A picker, in one of two shapes.
+
+   Positional, the default: the rows are lettered a, b, c down the page and the
+   letter is the choice, exactly like the picker in the Neovim config this grew
+   out of.
+
+   Typeahead, when `typeahead` is set: you type the name instead. The first
+   item starting with what you typed is selected, the same letter again cycles
+   through the others starting with it, and Enter takes the selected one. The
+   two shapes cannot be mixed in one list: with `computer, errand, phone` the
+   letter c means "phone" to one rule and "computer" to the other, and a picker
+   you cannot predict is worse than either rule alone. A list whose names you
+   know wants typeahead; a list of unfamiliar things wants the letters. */
+function listPicker({title, hint, items, label, detail, onPick, footer, typeahead = false}) {
   const letters = "abcdefghijklmnopqrstuvwxyz";
   let filtered = items.slice();
+  let sel = 0, buf = "", bufAt = 0;
   const body = el("div", {});
   const list = el("div", {});
   const input = el("input", {
     placeholder: "filter...",
     oninput: e => { const q = e.target.value.toLowerCase();
-      filtered = items.filter(i => label(i).toLowerCase().includes(q)); draw(); },
+      filtered = items.filter(i => label(i).toLowerCase().includes(q)); sel = 0; draw(); },
   });
   body.append(el("div", {class: "filterbox"}, input), list);
+  const plain = it => trim(String(label(it))).toLowerCase().replace(/^@/, "");
   function draw() {
     list.textContent = "";
     if (!filtered.length) list.append(el("div", {class: "empty"}, "No matches."));
     filtered.forEach((it, i) => {
-      const key = i < 26 ? letters[i] : String(i + 1);
-      list.append(pickRow(key, label(it), detail ? detail(it) : null, () => { closeModal(); onPick(it); }));
+      const key = typeahead ? (i === sel ? "›" : "") : (i < 26 ? letters[i] : String(i + 1));
+      const row = pickRow(key, label(it), detail ? detail(it) : null,
+                          () => { closeModal(); onPick(it); });
+      if (typeahead && i === sel) {
+        row.classList.add("on");
+        requestAnimationFrame(() => row.scrollIntoView({block: "nearest"}));
+      }
+      list.append(row);
     });
+  }
+  const starts = () => filtered.map((it, i) => [i, plain(it)])
+    .filter(([, name]) => name.startsWith(buf)).map(([i]) => i);
+  function match() {
+    const hit = buf ? starts() : [];
+    sel = buf ? (hit.length ? hit[0] : sel) : 0;
+    draw();
+  }
+  function cycle(ch) {
+    buf = ch;
+    const hit = starts();
+    if (!hit.length) return;
+    sel = hit[(hit.indexOf(sel) + 1) % hit.length];
+    draw();
   }
   draw();
   modal({
-    title, hint: hint || "letter selects · esc cancels", body,
+    title,
+    hint: hint || (typeahead ? "type the name · enter switches · esc cancels"
+                             : "letter selects · esc cancels"),
+    body,
     foot: footer,
     onKey: e => {
       if (document.activeElement === input && e.key.length === 1) return false;
-      const i = letters.indexOf(e.key);
-      if (i >= 0 && i < filtered.length) { closeModal(); onPick(filtered[i]); return true; }
-      return false;
+      if (!typeahead) {
+        const i = letters.indexOf(e.key);
+        if (i >= 0 && i < filtered.length) { closeModal(); onPick(filtered[i]); return true; }
+        return false;
+      }
+      if (e.key === "Enter") {
+        if (!filtered[sel]) return false;
+        closeModal(); onPick(filtered[sel]); return true;
+      }
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        if (!filtered.length) return true;
+        sel = (sel + (e.key === "ArrowDown" ? 1 : -1) + filtered.length) % filtered.length;
+        buf = ""; draw(); return true;
+      }
+      if (e.key === "Backspace") { buf = buf.slice(0, -1); bufAt = Date.now(); match(); return true; }
+      if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return false;
+      /* A letter typed again straight away is part of the same word; left for a
+         moment it starts a new one. The rule every list box has used for thirty
+         years, and the reason pressing p twice cycles the two contexts starting
+         with p rather than looking for "pp". */
+      const ch = e.key.toLowerCase();
+      const stale = Date.now() - bufAt > 1200;
+      const again = !stale && buf.length === 1 && buf === ch;
+      bufAt = Date.now();
+      if (again) { cycle(buf); return true; }
+      /* Carrying on the word is the first reading, but if nothing in the list
+         starts with what that makes, the letter is taken as the start of a new
+         one instead. Otherwise typing w and then changing your mind to p
+         leaves you staring at an unchanged list for a second and a bit, with
+         no way to know the picker heard you: it is hunting for "wp". */
+      const was = buf;
+      buf = (stale ? "" : buf) + ch;
+      if (!starts().length) buf = ch;
+      if (!starts().length && was && !stale) buf = was;   // neither matched: keep the word
+      match();
+      return true;
     },
   });
-  // Deliberately NOT focused: a-z must select a row, exactly like the
-  // letter-key context picker in the Neovim config. Tap the box to filter.
+  /* The box is not focused. Where the name is the thing you know, the keys
+     belong to the list, and the box is there for a word from the middle of a
+     name. */
 }
 
 function promptInput({title, label, value = "", placeholder = "", multiline = false, cta = "Save", onSave}) {
@@ -11683,6 +11763,7 @@ function openContextPicker(title, onPick) {
   if (!items.length) { openContextsWizard(onPick); return; }
   listPicker({
     title: title || "Pick context", items,
+    typeahead: true,
     label: c => "@" + c,
     detail: c => leafActions().filter(a => a.context === c && OPEN_STATES[a.state]).length + " open",
     onPick,
@@ -14443,6 +14524,27 @@ document.addEventListener("keydown", e => {
   if (!typing && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !e.shiftKey) {
     e.preventDefault(); undoLast(); return;
   }
+  /* @@ opens the context picker. @ because a context reads as @phone
+     everywhere else in this app, and twice because once is a key that does
+     nothing most of the time and then swallows a keystroke the one time the
+     caret was not quite where you thought it was. The first press arms the
+     same chord HUD that g and v use, so it is visible rather than silent, and
+     anything other than a second @ calls it off.
+
+     Taken before the modifier bail-out below: on Norwegian, German and most
+     other European layouts @ is AltGr+2, and AltGr arrives as ctrl+alt, so
+     bailing out on those modifiers first would mean this never worked at all
+     for the people it is written for. */
+  if (!typing && e.key === "@" && !e.metaKey && !$("#modalRoot").firstChild) {
+    e.preventDefault();
+    const armed = chordBuf === "@";
+    resetChord();
+    if (armed) { openContextPicker("Where are you now?", surfaceContext); return; }
+    chordBuf = "@";
+    showChord("@ ... again for context");
+    chordTimer = setTimeout(resetChord, 1500);
+    return;
+  }
   if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
   if ($("#modalRoot").firstChild) return;
 
@@ -14462,8 +14564,6 @@ document.addEventListener("keydown", e => {
     "/": () => go("search"),
     "?": () => openHelp(),
     t: () => go("today"),
-    // Named in the context toast, so it has to be one key and not a chord.
-    x: () => openContextPicker("Where are you now?", surfaceContext),
   };
   if (single[e.key]) { e.preventDefault(); single[e.key](); }
 });
@@ -14477,7 +14577,7 @@ function openHelp() {
       el("div", {class: "field"}, el("label", {}, "Anywhere"),
         el("div", {style: "font-family:var(--mono);font-size:12.5px;line-height:1.9;color:var(--fg2)"},
           "c  capture", el("br"), "/  search", el("br"), "t  today", el("br"),
-          "x  change context", el("br"), "esc  close")),
+          "@@  change context", el("br"), "esc  close")),
       el("div", {class: "field"}, el("label", {}, "Leader chords (same as the Neovim config)"),
         el("div", {style: "font-family:var(--mono);font-size:12.5px;line-height:1.9;color:var(--fg2)"},
           rows.join("   "))),
@@ -14507,7 +14607,7 @@ function openHelp() {
    letting itself in. */
 function offerContextChange(label) {
   const now = state.context ? "@" + state.context : "no context set";
-  notify((label ? label + ": " : "") + "still " + now + "? Press x to change.",
+  notify((label ? label + ": " : "") + "still " + now + "? Press @@ to change.",
     "info", {label: "Change", run: () => openContextPicker("Where are you now?", surfaceContext)});
 }
 
