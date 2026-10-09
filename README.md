@@ -1,18 +1,22 @@
 # GroupTodo
 
-A shared to-do list that keeps everything as ordinary text files in a folder you
+A to-do list that keeps everything as ordinary text files in a folder you
 already have. Nothing to install, no account, no password, and no server.
 
-**Why this one can actually be shared.** Most task apps keep your tasks on their
-servers, which is why sharing one is such a nuisance: everybody needs an account
-on the same thing, somebody pays for the seats, and adding a colleague means
-asking whoever administers it. GroupTodo has nothing to be a member of. Your
-tasks are plain files in a folder - so share the folder the way you already
-share folders and you are done. The sharing is your company's, not ours. Nobody
-is invited to anything, and when somebody leaves you remove them from the
-folder.
+**It is your own list first.** Almost everything anybody writes down is one
+person's: you write it, you do it, you tick it off. So that is what the app is
+out of the box, and nothing about working with other people is in the way until
+you want it.
 
-It also means the list outlives the tool. Every file opens in Notepad.
+**And then it shares, which is the part other apps make hard.** Most task apps
+keep your tasks on their servers, which is why sharing one is such a nuisance:
+everybody needs an account on the same thing, somebody pays for the seats, and
+adding a colleague means asking whoever administers it. GroupTodo has nothing to
+be a member of. Your tasks are plain files in a folder, so you share the folder
+the way you already share folders and you are done. The sharing is your
+company's, not ours. See **Unlock next level collaboration**.
+
+Either way the list outlives the tool. Every file opens in Notepad.
 
 ---
 
@@ -23,21 +27,22 @@ On a computer, in Edge or Chrome:
 Double-click `grouptodo.html` - nothing installs - and it asks three questions,
 in this order:
 
-1. **Who.** Your first and last name. Colleagues see it beside what you add, and
-   the surname is what saves you the day there are two of you called the same
-   thing.
+1. **Who.** Your first and last name. It stamps what you write, which is worth
+   nothing on your own and is the whole game the day somebody else is in the
+   folder - the surname being what saves you when there are two of you called
+   the same thing.
 2. **Where.** *Choose folder* - OneDrive, Dropbox, Google Drive, a network
    share, anywhere your files already live. Your tasks become files in there,
    saved as you type. Skip it and everything stays in this browser until you
    decide.
 3. **What.** *Start a new list*, and type your first task.
 
-Each answer makes the next question make sense: a name is what the folder gets
-shared under, and a folder is what the first task gets written into. The name is
-also what turns this from a list into a team list - your own day pages, your name
-on what you take on, and you visible to everybody else.
+Each answer makes the next question make sense: a name is what your writing
+gets stamped with, and a folder is what the first task gets written into. That
+is the whole setup. Nothing asks you about people, because there are none yet.
 
-**If people were already waiting on you,** the app spots it. A colleague who put
+**If you are joining a folder people already use,** the app spots what they
+left for you. A colleague who put
 your name on something before you arrived could only file it as a waiting-for,
 because nobody here could tick it off. When you give your name, GroupTodo offers
 you that pile - take them on and they become your tasks, while staying in your
@@ -53,10 +58,12 @@ asks, because only you know whether looking was enough, and it never ticks one
 for you. They are tasks like any others, so reword them, reorder them or delete
 the lot; when the last one closes, the project files itself away like any other.
 
-To bring somebody in, use **Spaces → Invite somebody** (below). Failing that:
-send them `grouptodo.html`, the name of the shared folder, and
-`docs/setup-sheet.html` - the same three steps, written for somebody who does not
-want to know how any of it works.
+That is you set up, and on your own that is all there is to it. When you do
+want somebody else in, **Unlock next level collaboration** is the chapter for
+it; the short version is **Spaces → Invite somebody**, or send them
+`grouptodo.html`, the name of the shared folder, and `docs/setup-sheet.html` -
+the same three steps, written for somebody who does not want to know how any of
+it works.
 
 ---
 
@@ -65,34 +72,16 @@ want to know how any of it works.
 Nothing is hidden, but nothing appears before it is about something. The app
 teaches itself as you use it.
 
-**Your day page is yours.** Each person gets their own, so nobody types over
-anybody. What you put on it is still visible to everyone.
+**Your day page is yours.** Today's page is where things land when you capture
+them, and it is per person, so the day two of you are in the same folder nobody
+is typing over anybody.
 
 **A task you write is yours.** No assigning, no ceremony. That is the common
 case, so it costs nothing.
 
-**Hand one over and it tracks itself.** Give a task to somebody in the space and
-it becomes theirs - and appears in your *Waiting for*. One task, two points of
-view, never two copies, so ticking it off once is enough for both of you.
-
-**Name somebody outside the space** and it becomes a plain waiting-for instead,
-because they cannot see it and cannot tick it off. Calling that a task would be
-a lie.
-
-**People** appears once there is more than you. *Waiting for* only tells you what
-you handed over; this tells you what everyone is carrying. Click a name to see
-their projects and open work.
-
 **States are checkboxes.** To do, Doing and Waiting for tick on and off
 independently, so you can read them together or one at a time. A state nothing
 is in is never mentioned.
-
-**You are told what you missed.** There is no server to push a notification, so
-the app looks for itself: open a space and it tells you what happened since you
-last did - work somebody handed you, and work you handed over that is now
-finished. Click one to go straight to it. "Last seen" is per device and never
-written to the shared files, so marking your own news read does not mark it read
-for everybody.
 
 ### Six ways to look at the same list
 
@@ -383,6 +372,142 @@ filed as completed or cancelled. *Someday/maybe* does **not** clear it - a
 project waiting on something nobody intends to start is exactly what you want
 told about.
 
+### Linking to a task from anywhere else
+
+"Did you correct the colours on the rollup?" is a sentence somebody types in
+Teams, in an email, in a text. **Copy link** - on a task, or on any page - gives
+them a way back to the exact thing.
+
+```
+https://your-host/grouptodo.html#gt&s=Work&p=pages%2F1%2FRollup.md&b=4bnggdod
+```
+
+Space, file and block. Opening it switches space if it needs to, opens the page
+and pops the task itself. A link to something this vault does not have says so
+rather than landing you nowhere.
+
+Block ids are regenerated every time a file is parsed, so copying a link is the
+one moment a durable one is needed: it stamps `id::` on that block, in the
+markdown like everything else.
+
+Links work best when the app is served from a URL, since then everybody has the
+same address. From a downloaded file the link still works for anyone whose copy
+sits at the same path, and the dialog says so rather than pretending.
+
+### Undo
+
+Deleting was one click and permanent. Now a delete offers **Undo** in the toast
+for twelve seconds, `ctrl-z` works for five minutes, and both put the thing back
+where it was - a task into its old position with its thread intact, a page with
+its tombstone lifted so the next sync does not quietly delete it again
+everywhere else.
+
+What is kept is the removed thing itself, not a snapshot of the page: restoring
+a whole page would discard anything else that changed on it meanwhile, which is
+a worse bug than the one being fixed.
+
+### Things that come back
+
+A task can carry `repeat:: weekly` - or `monthly`, `every 2 weeks`, `every
+monday`, whatever you write in the file. **Nothing is created until you tick the
+current one off, and even then you are asked.**
+
+That is the whole design. A scheduler fills your list while you are away and
+hands you a wall of overdue chores on the Monday; this does not. Skip a week and
+you have skipped a week - there is no backlog of imaginary Mondays. Ticking one
+off late still puts the next one in the future, never in the past, and a monthly
+job on the 31st lands on the 28th in February rather than rolling into March.
+
+The next one carries the title, the repeat and who it is assigned to, and leaves
+behind what belonged to that one doing of it - the dates, the done stamp.
+
+### Dates in your calendar
+
+Anything with a date gets **Add to calendar**, and **Planned** sends the whole
+window at once. Two routes, deliberately different:
+
+- **A file** (`.ics`) is built on your machine and goes nowhere. Works with every
+  calendar, including desktop Outlook and Apple, and works offline.
+- **A link** opens Outlook's or Google's own new-event screen with the fields
+  filled in - one click instead of download-then-import, at the cost of the title
+  and date travelling in the web address. Fine for a meeting; worth a thought for
+  anything private.
+
+Your choice is remembered, per device. **Nothing is ever subscribed**: a live
+feed is fetched by Microsoft's and Google's servers, so it would mean the whole
+list sitting at a publicly reachable URL protected by nothing but obscurity. The
+app has no such thing and no way to make one.
+
+### Phones
+
+A phone can run GroupTodo, but not from a file: phones give a page opened as a
+file nowhere to save, and cannot open folders at all. So a phone needs the app
+at a **web address**, and it keeps its own copy that travels as one file you
+carry back and forth. See **Hosting** and **Storage and sync** below.
+
+---
+
+## Unlock next level collaboration
+
+**Almost every task is one person's.** You write it, you do it, you tick it off,
+and nobody else is involved, which is true of practically everything on
+practically everybody's list. So none of what follows is in your way until you
+want it: no assigning, no inbox, no permissions, and no second person implied by
+a screen sitting there empty. A list with one person in it looks like a list for
+one person.
+
+When a second person does arrive, this is what opens up.
+
+### One task, two points of view
+
+The whole of the model is this: **a task you hand over becomes their todo and
+stays your waiting-for.** Not a copy you both keep up to date, and not a message
+you then have to chase. One line, in one file, read from two ends.
+
+- On **their** side it is an ordinary task on their list, in their contexts,
+  with their name on it. They tick it off the way they tick anything off.
+- On **your** side it leaves your list and appears in **Waiting for**, which is
+  the honest place for it: it is no longer something you do, it is something you
+  are owed.
+- When they tick it, it is done for both of you. There is no second tick, no
+  status to reconcile and no way for the two views to disagree, because there is
+  only ever the one line.
+
+**Hand one over and it tracks itself.** Give a task to somebody in the space and
+it becomes theirs - and appears in your *Waiting for*. One task, two points of
+view, never two copies, so ticking it off once is enough for both of you.
+
+**Name somebody outside the space** and it becomes a plain waiting-for instead,
+because they cannot see it and cannot tick it off. Calling that a task would be
+a lie.
+
+**People** appears once there is more than you. *Waiting for* only tells you what
+you handed over; this tells you what everyone is carrying. Click a name to see
+their projects and open work.
+
+### And then you can talk about it
+
+A task carries its own thread, so the conversation about a thing lives on the
+thing instead of in a chat window where neither of you will find it again in
+March. It is the same markdown underneath: a reply is an indented line with a
+`msg::` and a timestamp, which reads as a conversation in any editor. **Talking
+on a task**, below, is the detail.
+
+**You are told what you missed.** There is no server to push a notification, so
+the app looks for itself: open a space and it tells you what happened since you
+last did - work somebody handed you, and work you handed over that is now
+finished. Click one to go straight to it. "Last seen" is per device and never
+written to the shared files, so marking your own news read does not mark it read
+for everybody.
+
+### What you have to set up for any of this
+
+Nothing in the app. The sharing is your company's: put the folder somewhere two
+people can both reach, which is exactly what OneDrive, a network share or
+Dropbox already do. There is no server here to be a member of, so there is
+nobody to invite, nobody to pay a seat for, and nothing to be removed from
+except the folder.
+
 ### Waiting for an update from somebody who does not use this
 
 Half of a shared list is work other people owe you, and most of those people
@@ -437,28 +562,6 @@ quiet past the two-week mark. The stamp is dropped the moment they answer:
 "asked and heard nothing" is the thing worth measuring, and once they have
 replied there is nothing outstanding to measure.
 
-### Linking to a task from anywhere else
-
-"Did you correct the colours on the rollup?" is a sentence somebody types in
-Teams, in an email, in a text. **Copy link** - on a task, or on any page - gives
-them a way back to the exact thing.
-
-```
-https://your-host/grouptodo.html#gt&s=Work&p=pages%2F1%2FRollup.md&b=4bnggdod
-```
-
-Space, file and block. Opening it switches space if it needs to, opens the page
-and pops the task itself. A link to something this vault does not have says so
-rather than landing you nowhere.
-
-Block ids are regenerated every time a file is parsed, so copying a link is the
-one moment a durable one is needed: it stamps `id::` on that block, in the
-markdown like everything else.
-
-Links work best when the app is served from a URL, since then everybody has the
-same address. From a downloaded file the link still works for anyone whose copy
-sits at the same path, and the dialog says so rather than pretending.
-
 ### Faces, and who has been here
 
 **One name and one photo per space.** Both belong to that space alone: the name
@@ -479,33 +582,6 @@ picture means initials in a colour derived from your name, stable everywhere.
 lately". It is written at most once an hour, so it does not churn the file, and
 shows up in People (*last seen 3 hours ago*, *here now*) and beside a name in
 chat. A space with `no_attribution:: true` records this too - same promise.
-
-### Undo
-
-Deleting was one click and permanent. Now a delete offers **Undo** in the toast
-for twelve seconds, `ctrl-z` works for five minutes, and both put the thing back
-where it was - a task into its old position with its thread intact, a page with
-its tombstone lifted so the next sync does not quietly delete it again
-everywhere else.
-
-What is kept is the removed thing itself, not a snapshot of the page: restoring
-a whole page would discard anything else that changed on it meanwhile, which is
-a worse bug than the one being fixed.
-
-### Things that come back
-
-A task can carry `repeat:: weekly` - or `monthly`, `every 2 weeks`, `every
-monday`, whatever you write in the file. **Nothing is created until you tick the
-current one off, and even then you are asked.**
-
-That is the whole design. A scheduler fills your list while you are away and
-hands you a wall of overdue chores on the Monday; this does not. Skip a week and
-you have skipped a week - there is no backlog of imaginary Mondays. Ticking one
-off late still puts the next one in the future, never in the past, and a monthly
-job on the 31st lands on the 28th in February rather than rolling into March.
-
-The next one carries the title, the repeat and who it is assigned to, and leaves
-behind what belonged to that one doing of it - the dates, the done stamp.
 
 ### Talking on a task
 
@@ -552,23 +628,6 @@ another one. The nav entry appears once there is a conversation to find.
 
 New messages on tasks you are part of also turn up in the arrival notice.
 
-### Dates in your calendar
-
-Anything with a date gets **Add to calendar**, and **Planned** sends the whole
-window at once. Two routes, deliberately different:
-
-- **A file** (`.ics`) is built on your machine and goes nowhere. Works with every
-  calendar, including desktop Outlook and Apple, and works offline.
-- **A link** opens Outlook's or Google's own new-event screen with the fields
-  filled in - one click instead of download-then-import, at the cost of the title
-  and date travelling in the web address. Fine for a meeting; worth a thought for
-  anything private.
-
-Your choice is remembered, per device. **Nothing is ever subscribed**: a live
-feed is fetched by Microsoft's and Google's servers, so it would mean the whole
-list sitting at a publicly reachable URL protected by nothing but obscurity. The
-app has no such thing and no way to make one.
-
 ### Sharing, and not sharing
 
 Everything in the folder is shared. That is the whole permission model - there
@@ -600,14 +659,6 @@ Volunteering. Two spaces can never share a folder and one can never sit inside
 another, so the folder you share is exactly what you meant to share. Colleagues
 who get Work cannot see Home because it is not in there.
 
-### Phones
-
-A phone can run GroupTodo, but not from a file: phones give a page opened as a
-file nowhere to save, and cannot open folders at all. So a phone needs the app
-at a **web address**, and it keeps its own copy that travels as one file you
-carry back and forth. See **Hosting** and **Storage and sync** below.
-
----
 ---
 
 # Technical details
