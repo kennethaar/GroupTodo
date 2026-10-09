@@ -659,6 +659,15 @@ Volunteering. Two spaces can never share a folder and one can never sit inside
 another, so the folder you share is exactly what you meant to share. Colleagues
 who get Work cannot see Home because it is not in there.
 
+A new space is asked one question: what it is for. A whole life runs all six
+altitudes, purpose and vision included. A job runs the same six, but the top two
+are the organisation's mission and its strategy - written down rather than
+invented, and never nagged about, because a job is not the thing that decides
+why you are here. One project or a volunteer role stops at goals and borrows the
+rest from the life it sits in. It is a per-space answer, kept in that space's own
+`GTD.md`, changeable any time in Vault & sync, and nothing is ever deleted by
+changing it: an altitude a space does not run is simply not shown.
+
 ---
 
 # Technical details
@@ -951,8 +960,9 @@ Each space is a vault with this shape, in its own folder:
 ```
 journals/kenneth/2026-10-05.md   one file per person per day
 pages/
-  _/                        cancelled projects, and the horizon pages:
+  _/                        the horizon pages:
                               _/Purpose.md  (H5)   _/Vision.md  (H4)
+  -/                        cancelled projects
   0/  1/  2/  3/            project status: completed, active, someday, waiting
   8/                        routines, lists  -> [[8/Onboard new customer]]
   a/                        areas of focus   -> [[a/Health]]       (H2)
@@ -961,10 +971,13 @@ pages/
   p/  o/                    people, organisations
   z/                        zettel notes
   templates/  verbs/        templates, Phys-Viz verb lexicon
-  GTD.md                    per-vault settings
+  GTD.md                    per-vault settings, including horizon_profile
 ```
 
-Listed in the vault's own order: `_`, `0`, `1`, `2`, `3`, then `8`.
+Listed in the vault's own order: `-`, `0`, `1`, `2`, `3`, then `8`. Horizons sit
+in `_/` on their own; cancelled is `-`, struck out, so your purpose and a project
+you gave up on no longer share a drawer. A vault written before that moves itself
+on first open.
 
 Naming yourself creates `pages/p/<Your Name>.md` with `member:: true`, which is
 what tells everybody else in the space that you exist. Changing your name later
@@ -1029,7 +1042,7 @@ and is why the project is not nagged at for having no next action. So a project
 starts the moment you need one, in the middle of a sentence, and nothing is left
 behind as a broken link for the health check to find weeks later. Only the
 prefixed links make pages - `[[1/...]]`, `[[2/...]]`, `[[3/...]]`, `[[0/...]]`,
-`[[_/...]]`, `[[8/...]]`, `[[p/...]]`, `[[o/...]]`, `[[c/...]]`, `[[a/...]]`,
+`[[-/...]]`, `[[_/...]]`, `[[8/...]]`, `[[p/...]]`, `[[o/...]]`, `[[c/...]]`, `[[a/...]]`,
 `[[g/...]]`, `[[z/...]]` - and a date link or a plain `[[note]]` makes nothing,
 because neither says where it would live. Anything already there is opened, not
 replaced.

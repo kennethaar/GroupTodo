@@ -756,7 +756,7 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4p
 .st-3{background:rgba(224,176,80,.16);color:var(--wait)}
 .st-2{background:var(--bg4);color:var(--fg3)}
 .st-0{background:rgba(79,191,123,.14);color:var(--done)}
-.st-_{background:var(--bg4);color:var(--cancel)}
+.st--{background:var(--bg4);color:var(--cancel)}
 .prow .nm{flex:1;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .prow .sub{font-size:11.5px;color:var(--fg3)}
 
@@ -1099,7 +1099,12 @@ const PAGES    = "pages";
 const DIRS = {
   journals : JOURNALS,
   pages    : PAGES,
-  cancelled: join(PAGES, "_"),
+  /* Cancelled used to live in pages/_/, which is also where the horizon pages
+     live, so every project query had to filter horizons back out by hand and a
+     cancelled project and your purpose shared one drawer. Cancelled is "-" now:
+     struck out, and it keeps the rule that the folder name IS the status code.
+     pages/_/ is horizons alone. migrateCancelled() moves old vaults. */
+  cancelled: join(PAGES, "-"),
   completed: join(PAGES, "0"),
   active   : join(PAGES, "1"),
   someday  : join(PAGES, "2"),
@@ -1117,20 +1122,21 @@ const DIRS = {
 const TODO_STATES  = ["TODO", "DOING", "WAIT", "DONE", "CANCELLED"];
 const OPEN_STATES  = {TODO:true, DOING:true, WAIT:true};
 const STATE_ALIAS  = {WAITING:"WAIT", CANCELED:"CANCELLED", NOW:"DOING", LATER:"TODO"};
-const STATUS_DIRS  = {"_":DIRS.cancelled, "0":DIRS.completed, "1":DIRS.active, "2":DIRS.someday, "3":DIRS.waiting};
+const STATUS_DIRS  = {"-":DIRS.cancelled, "0":DIRS.completed, "1":DIRS.active, "2":DIRS.someday, "3":DIRS.waiting};
 const STATUS_TEXT  = {
-  "_": "_ = cancelled",
+  "-": "- = cancelled",
   "0": "0 = completed",
   "1": "1 = active",
   "2": "2 = someday maybe",
   "3": "3 = waiting for 3rd party",
 };
-const STATUS_LABEL = {"_":"Cancelled", "0":"Completed", "1":"Active", "2":"Someday/Maybe", "3":"Waiting for"};
-/* The vault's own order: _ 0 1 2 3, then 8 for the checklists. */
-const STATUS_ORDER = ["_", "0", "1", "2", "3"];
+const STATUS_LABEL = {"-":"Cancelled", "0":"Completed", "1":"Active", "2":"Someday/Maybe", "3":"Waiting for"};
+/* The vault's own order: - 0 1 2 3, then 8 for the checklists. */
+const STATUS_ORDER = ["-", "0", "1", "2", "3"];
 const PREFIX_DIR   = {"8":DIRS.lists,            // integer-like key, so pageRef finds it first
                       p:DIRS.people, c:DIRS.contexts, o:DIRS.orgs, z:DIRS.zettel,
                       a:DIRS.areas, g:DIRS.goals,
+                      _:join(PAGES, "_"),           // horizons: [[_/Purpose]], [[_/Vision]]
                       k:DIRS.lists};                // legacy: old [[k/...]] links still resolve
 
 /* Tunables -- the GTD nudge thresholds (inline constants in init.lua). */
@@ -1934,8 +1940,64 @@ function migrateVault() {
     notify("Moved " + moved + " checklist(s) to pages/8/.");
   }
   migrateHorizons();
+  migrateCancelled();
   migrateJournals();
   return moved;
+}
+
+/* Cancelled projects used to share pages/_/ with the horizon pages. Move them to
+   pages/-/ so the underscore drawer is horizons alone. A horizon page is left
+   where it is, and so is anything the type property says is a horizon, because
+   that is the only thing that ever told the two apart. */
+function migrateCancelled() {
+  const old = join(PAGES, "_");
+  let moved = 0;
+  for (const path of Array.from(V.pages.keys())) {
+    if (!path.startsWith(old + "/")) continue;
+    if (isHorizonPage(path)) continue;
+    const rest = path.slice(old.length + 1);
+    // A horizon page an older build wrote without the type property.
+    if (HORIZONS.some(h => h.page && h.page + ".md" === rest)) continue;
+    const target = join(DIRS.cancelled, rest);
+    if (V.pages.has(target)) { removePage(path); continue; }
+    const page = getPage(path);
+    // The status line says the directory it is in, and the directory changed.
+    if (page.props && page.props.status) page.props.status = STATUS_TEXT["-"];
+    putPage(target, page);
+    removePage(path);
+    moved++;
+  }
+  if (moved) {
+    rewriteCancelledLinks();
+    notify("Moved " + moved + " cancelled project(s) to pages/-/.");
+  }
+  return moved;
+}
+
+/* [[_/Old idea]] now means a horizon, so point the ones that were projects at
+   pages/-/. A link to a page still sitting in pages/_/ is left alone: that is
+   either a horizon or something this vault never cancelled. */
+function rewriteCancelledLinks() {
+  const re = /\[\[_\/([^\]]+)\]\]/g;
+  const moved = name => V.pages.has(join(DIRS.cancelled, trim(name).replace(/\.md$/i, "") + ".md"));
+  for (const [path, page] of V.pages) {
+    let hit = false;
+    const fix = str => {
+      const n = String(str).replace(re, (m, name) => {
+        if (!moved(name)) return m;
+        hit = true;
+        return "[[-/" + name + "]]";
+      });
+      return n;
+    };
+    walkBlocks(page.blocks, b => {
+      b.title = fix(b.title);
+      b.body = (b.body || []).map(fix);
+      for (const k of Object.keys(b.props || {})) b.props[k] = fix(b.props[k]);
+    });
+    for (const k of Object.keys(page.props || {})) page.props[k] = fix(page.props[k]);
+    if (hit) touch(path);
+  }
 }
 
 function rewriteChecklistLinks() {
@@ -2505,6 +2567,13 @@ async function openSpace(name) {
   ensureJournal(todayISO());
   state.context = getSetting("current_context") || null;
   if (!getSetting("started")) setSetting("started", todayISO());
+  /* Answered in New space, before this vault existed to write it to. Never
+     overwrites a profile the vault already carries. */
+  if (PENDING_PROFILE.has(name)) {
+    const want = PENDING_PROFILE.get(name);
+    PENDING_PROFILE.delete(name);
+    if (!getSetting("horizon_profile") && HORIZON_PROFILES[want]) setSetting("horizon_profile", want);
+  }
   state.view = "today";
   state.pagePath = null;
   await ensureVisibleLoaded();
@@ -2664,9 +2733,16 @@ function openSpaceColor(name, back) {
   });
 }
 
+/* A space's profile is vault content, written to its own GTD.md, and a brand new
+   space has no vault yet -- it is created here but not loaded until openSpace.
+   So the answer waits here by name and openSpace writes it once the pages are
+   in hand. */
+const PENDING_PROFILE = new Map();
+
 function newSpacePrompt(then) {
   const nameInput = el("input", {placeholder: "Work"});
   let kind = CAP.dirPicker ? "fs" : "local";
+  let profile = DEFAULT_HORIZON_PROFILE;
   let color = nextSpaceColor();
   const preview = colorPreview(() => nameInput.value, color);
   const picker = colorPicker(color, c => { color = c; preview.paint(c); });
@@ -2684,6 +2760,24 @@ function newSpacePrompt(then) {
     btn.dataset.k = k;
     seg.append(btn);
   }
+
+  /* What the space is for, asked once and only here. It decides which
+     altitudes this vault runs and how they are worded -- a job is not asked
+     why it is here and what it will not trade away. Changeable later, and it
+     only ever changes what is shown, never what is stored. */
+  const profSeg = el("div", {class: "seg", style: "flex-wrap:wrap"});
+  const profWhy = el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+    HORIZON_PROFILES[profile].blurb);
+  for (const p of Object.values(HORIZON_PROFILES)) {
+    const btn = el("button", {class: p.key === profile ? "on" : "", onclick: () => {
+      profile = p.key;
+      for (const b of profSeg.children) b.classList.toggle("on", b.dataset.p === profile);
+      profWhy.textContent = p.blurb;
+    }}, p.label);
+    btn.dataset.p = p.key;
+    profSeg.append(btn);
+  }
+
   modal({
     center: true, title: "New space",
     body: el("div", {},
@@ -2693,6 +2787,8 @@ function newSpacePrompt(then) {
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
           "A whole separate vault: its own projects, contexts and horizons. " +
           "Nothing leaks between spaces.")),
+      el("div", {class: "field"},
+        el("label", {}, "What is it for"), profSeg, profWhy),
       el("div", {class: "field"},
         el("label", {}, "Where it lives"), seg,
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
@@ -2712,6 +2808,7 @@ function newSpacePrompt(then) {
         closeModal();
         const sp = await createSpace(name, kind, color);
         if (!sp) return;
+        PENDING_PROFILE.set(sp.name, profile);
         notify("Space created: " + sp.name);
         if (then) then(sp); else await openSpace(sp.name);
         renderNav();
@@ -2900,7 +2997,7 @@ const isJournalPath = p => p.startsWith(JOURNALS + "/");
 const isPagePath    = p => p.startsWith(PAGES + "/");
 
 function statusDirOf(path) {
-  const m = new RegExp("^" + PAGES + "/([_0123])/").exec(path || "");
+  const m = new RegExp("^" + PAGES + "/([-0123])/").exec(path || "");
   return m ? m[1] : null;
 }
 function pageKind(path) {
@@ -3714,7 +3811,7 @@ function setProjectStatus(path, code) {
   page.props.status = STATUS_TEXT[code];
   page.props.reviewed = todayStamp();
   if (code === "0") page.props.completed = todayStamp();
-  if (code === "_") page.props.cancelled = todayStamp();
+  if (code === "-") page.props.cancelled = todayStamp();
   if (code === "3") page.props.waiting_since = todayStamp();
   const newPath = join(STATUS_DIRS[code], baseName(path) + ".md");
   touch(path);
@@ -3728,7 +3825,7 @@ function setProjectStatus(path, code) {
 }
 
 function projectTemplateLines(title, code = "1") {
-  const st = code === "3" ? "WAIT" : code === "0" ? "DONE" : code === "_" ? "CANCELLED" : "TODO";
+  const st = code === "3" ? "WAIT" : code === "0" ? "DONE" : code === "-" ? "CANCELLED" : "TODO";
   void st;
   const tpl = resolveTemplate({kind: code});
   if (tpl) {
@@ -3739,7 +3836,7 @@ function projectTemplateLines(title, code = "1") {
   const props = {title, status: STATUS_TEXT[code], created: todayStamp(), reviewed: todayStamp()};
   if (code === "3") { props.waiting_for = ""; props.waiting_since = todayStamp(); }
   if (code === "0") props.completed = todayStamp();
-  if (code === "_") props.cancelled = todayStamp();
+  if (code === "-") props.cancelled = todayStamp();
   return {props, blocks: []};
 }
 
@@ -3790,29 +3887,140 @@ function createZettel(title) {
 /* Each horizon is its own page under pages/_/ -- pages/_/Purpose.md,
    pages/_/Vision.md -- so they read and link like anything else: [[_/Purpose]].
 
-   Note that pages/_/ is also where cancelled projects go. A horizon page is
-   marked type:: horizon, and every project listing filters those out, so the
-   two never mix in the UI even though they share a drawer. */
+   pages/_/ is horizons and nothing else. Cancelled projects used to share it,
+   which is why a horizon page is still marked type:: horizon and why the
+   project listings still filter horizons out -- a belt as well as braces for a
+   vault that was written before cancelled moved to pages/-/. */
 const DIR_HORIZONS    = join(PAGES, "_");
 const HORIZONS_LEGACY = [join(PAGES, "_horizon.md"), join(PAGES, "Horizons.md")];
 
+/* Each row carries the wording for a space that is somebody's whole life, and
+   `by` holds what changes when the space is something narrower. Only wording
+   changes: key, page, level and alt are the same in every profile, so the files
+   on disk are identical whatever a space is for and switching profile never
+   moves or rewrites anything. */
 const HORIZONS = [
   {key: "purpose", h: "Horizon 5", alt: "50,000 ft", name: "Purpose & principles",
    page: "Purpose", level: "5",
-   ask: "Why does this life or this work exist? What standards do you hold yourself to?"},
+   ask: "Why does this life or this work exist? What standards do you hold yourself to?",
+   wiz: {label: "Why are you doing any of this, and what will you not trade away?",
+         help: "Purpose is the why. Principles are the standards that hold even when it costs you.",
+         placeholder: "I am here to...\nI will not..."},
+   by: {work: {
+     name: "Mission & mandate", inherited: true,
+     ask: "What does this organisation exist to do, and what are you accountable for inside it?",
+     wiz: {label: "What is the organisation for, and what is your part in it?",
+           help: "You are not inventing this one - you are writing down what already exists, " +
+                 "so the work below it has something to answer to. The mission in your own " +
+                 "words, then the handful of things you are actually accountable for.",
+           placeholder: "We exist to...\nI am accountable for..."}}}},
   {key: "vision",  h: "Horizon 4", alt: "40,000 ft", name: "Vision",
    page: "Vision", level: "4",
-   ask: "Three to five years out, what does wild success look like?"},
+   ask: "Three to five years out, what does wild success look like?",
+   wiz: {label: "Three to five years out, what does wild success look like?",
+         help: "Prose is fine. Write it in the present tense, as though you are already there.",
+         placeholder: "The work funds the life, not the other way round..."},
+   by: {work: {
+     name: "Strategy", inherited: true,
+     ask: "Where is the team or the company headed over the next three years?",
+     wiz: {label: "Where is the team or the company headed over the next three years?",
+           help: "Their direction, not yours - the strategy your goals have to serve. " +
+                 "Whatever you can say plainly is enough.",
+           placeholder: "The team is moving towards..."}}}},
   {key: "goals",   h: "Horizon 3", alt: "30,000 ft", name: "Goals & objectives",
-   ask: "What do you want to be true in the next one to two years?"},
+   ask: "What do you want to be true in the next one to two years?",
+   wiz: {label: "What do you want to be true in one to two years?",
+         help: "Concrete enough to know when you got there. One per line. You can hang each " +
+               "one under an area afterwards.",
+         placeholder: "Debt cleared\nShipped the new product\nRunning a half marathon"},
+   by: {work: {
+     ask: "What has to be true in the next year or two for your part of this to be working?",
+     wiz: {label: "What has to be true in the next year or two?",
+           help: "The outcomes you are on the hook for, in your words rather than the " +
+                 "performance-review ones. One per line.",
+           placeholder: "Shipped the new product\nHiring no longer the bottleneck\nOn-call is quiet"}}}},
   {key: "areas",   h: "Horizon 2", alt: "20,000 ft", name: "Areas of focus",
-   ask: "Which parts of your life and work must stay healthy? These never finish."},
+   ask: "Which parts of your life and work must stay healthy? These never finish.",
+   wiz: {label: "Which parts of your life and work must stay healthy?",
+         help: "These never get finished - you just keep them in good shape. Most people " +
+               "land on somewhere between four and twelve. One per line, in your own words.",
+         placeholder: "Health\nFinances\nTeam\nHome"},
+   by: {work: {
+     name: "Areas of focus & accountability",
+     ask: "Which parts of the job must stay healthy? These never finish.",
+     wiz: {label: "Which parts of the job must stay healthy?",
+           help: "This is the job description in your own words: the handful of things that " +
+                 "are never done, only kept in good shape. One per line.",
+           placeholder: "Team\nClients\nHiring\nBudget"},
+     chips: "work"}}},
   {key: "projects",h: "Horizon 1", alt: "10,000 ft", name: "Projects",
    ask: "What outcomes are you committed to finishing within a year?"},
   {key: "ground",  h: "Ground",    alt: "runway",    name: "Next actions",
    ask: "What is the very next physical, visible move?"},
 ];
 const HORIZON_BY_KEY = Object.fromEntries(HORIZONS.map(h => [h.key, h]));
+
+/* ---------- what a space is for ----------
+   Spaces were always separate vaults with separate horizons, but the ladder
+   itself was the same six questions everywhere, so a Work space got asked why
+   it is here and what it will not trade away. Those are questions about a life,
+   not about a job: at work the top two altitudes exist but you inherit them --
+   the organisation's mission and its strategy -- and what is yours is the
+   mandate inside them. A space declares what it is for, and that decides which
+   altitudes it runs and how they are worded.
+
+   Nothing is ever deleted by a profile. An altitude a profile leaves out simply
+   stops being shown and stops being nudged about; the page stays on disk, and
+   switching back shows it again untouched. */
+const HORIZON_KEYS = HORIZONS.map(h => h.key);
+
+const HORIZON_PROFILES = {
+  life: {
+    key: "life", label: "A whole life",
+    blurb: "All six altitudes, purpose and vision included. The right answer for the " +
+           "space that holds everything, or for your own life outside work.",
+    active: HORIZON_KEYS,
+    chips: "life",
+  },
+  work: {
+    key: "work", label: "A job",
+    blurb: "The same six, but the top two are the organisation's mission and strategy - " +
+           "written down rather than invented, and never nagged about.",
+    active: HORIZON_KEYS,
+    chips: "work",
+  },
+  project: {
+    key: "project", label: "One project, or a volunteer role",
+    blurb: "Goals down to next actions. No purpose and no vision, because something " +
+           "this size borrows them from the life it sits in.",
+    active: HORIZON_KEYS.filter(k => k !== "purpose" && k !== "vision"),
+    chips: "life",
+  },
+};
+const DEFAULT_HORIZON_PROFILE = "life";
+
+/* Falls back to the full ladder rather than to nothing, so a hand-edited or
+   half-synced GTD.md can never leave somebody looking at an empty Horizons. */
+function horizonProfile() {
+  return HORIZON_PROFILES[trim(getSetting("horizon_profile") || "")]
+      || HORIZON_PROFILES[DEFAULT_HORIZON_PROFILE];
+}
+const activeHorizons = () => {
+  const on = horizonProfile().active;
+  return HORIZONS.filter(h => on.includes(h.key));
+};
+const horizonActive = key => horizonProfile().active.includes(key);
+
+/* The one accessor every surface asks for a horizon's wording: the base row with
+   this space's profile laid over it, `wiz` merged rather than replaced so an
+   override only has to say the parts that differ. */
+function horizonMeta(key) {
+  const base = HORIZON_BY_KEY[key];
+  if (!base) return null;
+  const over = base.by?.[horizonProfile().key];
+  if (!over) return base;
+  return Object.assign({}, base, over, {wiz: Object.assign({}, base.wiz, over.wiz)});
+}
 
 const horizonPath = key => join(DIR_HORIZONS, (HORIZON_BY_KEY[key]?.page || key) + ".md");
 const isHorizonPage = path =>
@@ -3949,7 +4157,7 @@ function projectProvenance(path) {
   const box = el("div", {class: "prov"});
   box.append(el("div", {class: "provhead"},
     el("span", {class: "chip"}, STATUS_TEXT[statusDirOf(path)] ?
-      trim(String(STATUS_TEXT[statusDirOf(path)]).replace(/^[_0-9]\s*=\s*/, "")) : "project"),
+      trim(String(STATUS_TEXT[statusDirOf(path)]).replace(/^[-0-9]\s*=\s*/, "")) : "project"),
     el("b", {}, pageTitle(path)),
     area ? el("span", {class: "chip"}, area) : null));
 
@@ -4055,7 +4263,7 @@ function wouldCycle(path, candidate) {
    waiting on something nobody intends to start is exactly what you want told. */
 function projectCleared(path) {
   const code = statusDirOf(path);
-  if (code === "0" || code === "_") return true;
+  if (code === "0" || code === "-") return true;
   const page = getPage(path);
   if (!page) return true;
   return !flattenBlocks(page.blocks).some(b => OPEN_STATES[b.state] && !isMessage(b));
@@ -4930,7 +5138,7 @@ const NAV_SIMPLE = [
   ]},
   {group: "Projects", items: [
     {id: "horizons",   icon: "◉", label: "Big picture"},
-    {id: "proj-_",     icon: "_", label: "Cancelled",     status: "_"},
+    {id: "proj--",     icon: "-", label: "Cancelled",     status: "-"},
     {id: "proj-0",     icon: "0", label: "Done",          status: "0"},
     {id: "proj-1",     icon: "1", label: "Active",        status: "1"},
     {id: "proj-2",     icon: "2", label: "Someday/Maybe", status: "2"},
@@ -4961,7 +5169,7 @@ const NAV_ADVANCED = [
   ]},
   {group: "Projects", items: [
     {id: "horizons",   icon: "◉", label: "Horizons"},
-    {id: "proj-_",     icon: "_", label: "Cancelled",     status: "_"},
+    {id: "proj--",     icon: "-", label: "Cancelled",     status: "-"},
     {id: "proj-0",     icon: "0", label: "Completed",     status: "0"},
     {id: "proj-1",     icon: "1", label: "Active",        status: "1"},
     {id: "proj-2",     icon: "2", label: "Someday/Maybe", status: "2"},
@@ -5501,11 +5709,17 @@ function tipCard() {
    answer in -- Allen's own advice is to implement bottom-up even though
    you review top-down. Every step is skippable and nothing is written
    until the last one.
+
+   Which steps there are, and what each one asks, come from the space's own
+   profile -- a job is not asked what it will not trade away.
    ============================================================ */
-const AREA_EXAMPLES = [
-  "Health", "Finances", "Family", "Home", "Career", "Team",
-  "Clients", "Learning", "Friendships", "Admin",
-];
+const AREA_EXAMPLES = {
+  life: ["Health", "Finances", "Family", "Home", "Career", "Team",
+         "Clients", "Learning", "Friendships", "Admin"],
+  work: ["Team", "Clients", "Hiring", "Budget", "Reporting", "Quality",
+         "Roadmap", "On-call", "Vendors", "Admin"],
+};
+const areaChips = () => AREA_EXAMPLES[horizonProfile().chips] || AREA_EXAMPLES.life;
 
 const WIZ = {step: 0, areas: "", goals: "", vision: "", purpose: ""};
 
@@ -5535,90 +5749,92 @@ function wizChips(key, options) {
   return box;
 }
 
-const WIZ_STEPS = [
-  {
+/* Bottom-up: areas, then goals, then the two above them. In a work space those
+   top two are the ones you inherit rather than invent, and they come last for
+   the same reason -- they are the hardest to sit down and answer cold. */
+const WIZ_ORDER = ["areas", "goals", "vision", "purpose"];
+
+function wizSteps() {
+  const profile = horizonProfile();
+  const ladder = activeHorizons();
+  const intro = {
     title: "Horizons of focus",
     render: () => el("div", {class: "field"},
-      el("label", {}, "Six altitudes"),
+      el("label", {}, ladder.length + " altitudes"),
       el("div", {style: "color:var(--fg2);font-size:13.5px;line-height:1.75"},
         "Todo apps live on the runway. GTD says the runway only makes sense if you " +
         "can see what it serves. This takes a few minutes and you can skip any step."),
       el("div", {style: "font-family:var(--mono);font-size:12px;line-height:2;color:var(--fg3);margin-top:10px"},
-        HORIZONS.map(h => el("div", {},
-          el("span", {style: "color:var(--accent)"}, h.alt.padEnd(11)),
-          h.h + " · " + h.name)))),
+        ladder.map(h => {
+          const m = horizonMeta(h.key);
+          return el("div", {},
+            el("span", {style: "color:var(--accent)"}, m.alt.padEnd(11)),
+            m.h + " · " + m.name);
+        })),
+      profile.key === "life" ? null
+        : el("div", {style: "color:var(--fg3);font-size:12px;margin-top:10px"}, profile.blurb)),
     cta: "Start",
-  },
-  {
-    key: "areas",
-    title: "Horizon 2 · Areas of focus",
-    render: () => el("div", {class: "field"},
-      el("label", {}, "Which parts of your life and work must stay healthy?"),
-      el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
-        "These never get finished - you just keep them in good shape. Most people " +
-        "land on somewhere between four and twelve. One per line, in your own words."),
-      wizField("areas", "Health\nFinances\nTeam\nHome"),
-      el("div", {style: "color:var(--fg3);font-size:12px;margin-top:8px"}, "Tap any that fit:"),
-      wizChips("areas", AREA_EXAMPLES)),
-  },
-  {
-    key: "goals",
-    title: "Horizon 3 · Goals & objectives",
-    render: () => el("div", {class: "field"},
-      el("label", {}, "What do you want to be true in one to two years?"),
-      el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
-        "Concrete enough to know when you got there. One per line. You can hang each " +
-        "one under an area afterwards."),
-      wizField("goals", "Debt cleared\nShipped the new product\nRunning a half marathon")),
-  },
-  {
-    key: "vision",
-    title: "Horizon 4 · Vision",
-    render: () => el("div", {class: "field"},
-      el("label", {}, "Three to five years out, what does wild success look like?"),
-      el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
-        "Prose is fine. Write it in the present tense, as though you are already there."),
-      wizField("vision", "The work funds the life, not the other way round...")),
-  },
-  {
-    key: "purpose",
-    title: "Horizon 5 · Purpose & principles",
-    render: () => el("div", {class: "field"},
-      el("label", {}, "Why are you doing any of this, and what will you not trade away?"),
-      el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
-        "Purpose is the why. Principles are the standards that hold even when it costs you."),
-      wizField("purpose", "I am here to...\nI will not...")),
-  },
-];
+  };
+
+  const steps = [intro];
+  for (const key of WIZ_ORDER) {
+    if (!horizonActive(key)) continue;
+    const m = horizonMeta(key);
+    steps.push({
+      key,
+      title: m.h + " · " + m.name,
+      inherited: !!m.inherited,
+      render: () => el("div", {class: "field"},
+        el("label", {}, m.wiz.label),
+        el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"}, m.wiz.help),
+        wizField(key, m.wiz.placeholder),
+        key === "areas"
+          ? el("div", {},
+              el("div", {style: "color:var(--fg3);font-size:12px;margin-top:8px"}, "Tap any that fit:"),
+              wizChips("areas", areaChips()))
+          : null),
+    });
+  }
+  return steps;
+}
 
 function applyWizard() {
   const lines = v => v.split("\n").map(trim).filter(Boolean);
   const areas = lines(WIZ.areas);
   const goals = lines(WIZ.goals);
+  /* A step the profile left out was never shown, so whatever an earlier run of
+     the wizard left in WIZ for it is not an answer about this space. */
   for (const a of areas) createArea(a);
   for (const g of goals) createGoal(g);
-  if (trim(WIZ.vision))  setHorizon("vision",  lines(WIZ.vision));
-  if (trim(WIZ.purpose)) setHorizon("purpose", lines(WIZ.purpose));
+  const wrote = {};
+  for (const key of ["vision", "purpose"]) {
+    if (!horizonActive(key) || !trim(WIZ[key])) continue;
+    setHorizon(key, lines(WIZ[key]));
+    wrote[key] = true;
+  }
   setSetting("horizons_done", todayISO());
   const made = [];
-  if (areas.length) made.push(areas.length + " areas");
+  if (areas.length) made.push(areas.length + " " + (horizonMeta("areas").inherited ? "" : "") + "areas");
   if (goals.length) made.push(goals.length + " goals");
-  if (trim(WIZ.vision)) made.push("a vision");
-  if (trim(WIZ.purpose)) made.push("a purpose");
+  for (const key of ["vision", "purpose"]) {
+    if (wrote[key]) made.push("a " + horizonMeta(key).name.toLowerCase());
+  }
   notify(made.length ? "Created " + made.join(", ") + "." : "Nothing created - run it again any time.");
   render();
 }
 
 function openHorizonsWizard(step = 0) {
   setSetting("horizons_seen", todayISO());
-  WIZ.step = Math.max(0, Math.min(step, WIZ_STEPS.length));
-  if (WIZ.step === WIZ_STEPS.length) { closeModal(); applyWizard(); return; }
-  const s = WIZ_STEPS[WIZ.step];
-  const last = WIZ.step === WIZ_STEPS.length - 1;
+  const steps = wizSteps();
+  WIZ.step = Math.max(0, Math.min(step, steps.length));
+  if (WIZ.step === steps.length) { closeModal(); applyWizard(); return; }
+  const s = steps[WIZ.step];
+  const last = WIZ.step === steps.length - 1;
   modal({
     center: true,
     title: s.title,
-    hint: WIZ.step ? "step " + WIZ.step + " of " + (WIZ_STEPS.length - 1) : "",
+    hint: WIZ.step ? "step " + WIZ.step + " of " + (steps.length - 1)
+                     + (s.inherited ? " · optional" : "") : "",
     body: s.render(),
     foot: [
       WIZ.step > 0 ? el("button", {class: "btn ghost", onclick: () => openHorizonsWizard(WIZ.step - 1)}, "Back") : null,
@@ -5729,28 +5945,36 @@ function viewHorizons() {
   c.append(nudgeBar());
 
   const areas = areaList(), goals = goalList();
-  const nothing = !areas.length && !goals.length && !getHorizon("vision").length && !getHorizon("purpose").length;
+  /* Only what this space actually runs counts as empty, or a space with no
+     purpose by design would sit under the hero for ever. */
+  const texts = ["vision", "purpose"].filter(horizonActive);
+  const nothing = !areas.length && !goals.length && !texts.some(k => getHorizon(k).length);
 
   if (nothing) {
     c.append(el("div", {class: "hero"},
       el("h2", {}, "Horizons of focus"),
       el("div", {style: "font-size:16px;font-weight:600;margin-bottom:2px"}, "Altitude, not just a list"),
-      el("p", {}, "Purpose, vision, goals and areas are what make your projects mean something. " +
+      el("p", {}, (texts.length ? "Purpose, vision, goals and areas are" : "Goals and areas are") +
+                  " what make your projects mean something. " +
                   "Nothing is created for you - the wizard asks, you answer."),
       el("div", {class: "acts"},
         el("button", {class: "btn primary", onclick: () => openHorizonsWizard(0)}, "Run the setup wizard"))));
   }
 
-  for (const h of HORIZONS) {
+  for (const row of activeHorizons()) {
+    const h = horizonMeta(row.key);
     if (h.key === "purpose" || h.key === "vision") {
+      const has = getHorizon(h.key).length;
       c.append(horizonRow(h, textHorizonCard(h.key, h),
         el("span", {},
-          getHorizon(h.key).length
+          has
             ? el("button", {class: "btn sm ghost", style: "margin-right:6px",
                 onclick: () => openPage(horizonPath(h.key))}, "open")
             : null,
           el("button", {class: "btn sm ghost", onclick: () => editHorizonText(h.key, h)},
-            getHorizon(h.key).length ? "edit" : "define"))));
+            /* An inherited horizon is not yours to define - you are writing
+               down something that already exists somewhere else. */
+            has ? "edit" : h.inherited ? "record" : "define"))));
     } else if (h.key === "goals") {
       const card = el("div", {class: "card"});
       if (!goals.length) card.append(el("div", {class: "empty"}, h.ask));
@@ -11443,7 +11667,8 @@ function viewPage() {
 
   const meta = el("div", {class: "nudgebar"});
   if (horizon) {
-    const h = HORIZONS.find(x => x.page === baseName(path));
+    const base = HORIZONS.find(x => x.page === baseName(path));
+    const h = base ? horizonMeta(base.key) : null;
     meta.append(el("button", {class: "nudge", onclick: () => go("horizons")},
       el("b", {}, h ? h.alt : "horizon"), h ? h.h + " \u00B7 " + h.name : "horizon"));
   }
@@ -12545,7 +12770,7 @@ function projectGrid(path) {
 
   const code = statusDirOf(path);
   grid.append(cell("a-parent", "Status",
-    chip(trim(String(STATUS_TEXT[code] || "no status").replace(/^[_0-9]\s*=\s*/, "")),
+    chip(trim(String(STATUS_TEXT[code] || "no status").replace(/^[-0-9]\s*=\s*/, "")),
       "Move it to another shelf",
       () => openStatusPicker(path))));
 
@@ -12885,13 +13110,13 @@ function projectCompletionPrompt(path) {
     pickRow("n", "Add a new next action", "keep it active", () => { closeModal(); openAddNextAction(path); }),
     pickRow("d", "Move to 0, completed", "it is done", () => { closeModal(); setProjectStatus(path, "0"); }),
     pickRow("s", "Move to 2, someday/maybe", "not now", () => { closeModal(); setProjectStatus(path, "2"); }),
-    pickRow("c", "Move to _, cancelled", "never", () => { closeModal(); setProjectStatus(path, "_"); }));
+    pickRow("c", "Move to -, cancelled", "never", () => { closeModal(); setProjectStatus(path, "-"); }));
   modal({
     center: true, title: "Project complete: " + pageTitle(path), hint: "n / d / s / c",
     body,
     onKey: e => {
       const map = {n: () => openAddNextAction(path), d: () => setProjectStatus(path, "0"),
-                   s: () => setProjectStatus(path, "2"), c: () => setProjectStatus(path, "_")};
+                   s: () => setProjectStatus(path, "2"), c: () => setProjectStatus(path, "-")};
       if (map[e.key]) { closeModal(); map[e.key](); return true; }
       return false;
     },
@@ -14065,6 +14290,31 @@ function openVaultDialog() {
       ? "Can hand the vault file to your other apps with the Share button"
       : "No Share button here - the vault file downloads instead"));
 
+  /* The same question New space asks, for a space whose answer has changed --
+     a side project that grew into the job, a job that is now the whole life.
+     It only changes which altitudes are shown and how they read; every page
+     already written stays exactly where it is. */
+  const profileBox = el("div", {class: "field"},
+    el("label", {}, "What this space is for"));
+  const profSeg = el("div", {class: "seg", style: "flex-wrap:wrap"});
+  const profWhy = el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+    horizonProfile().blurb);
+  for (const p of Object.values(HORIZON_PROFILES)) {
+    const btn = el("button", {class: p.key === horizonProfile().key ? "on" : "", onclick: () => {
+      setSetting("horizon_profile", p.key);
+      for (const b of profSeg.children) b.classList.toggle("on", b.dataset.p === p.key);
+      profWhy.textContent = p.blurb;
+      notify(Spaces.active + " runs " + p.active.length + " altitudes now.");
+      render();
+    }}, p.label);
+    btn.dataset.p = p.key;
+    profSeg.append(btn);
+  }
+  profileBox.append(profSeg, profWhy,
+    el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+      "Nothing is deleted by changing this. An altitude a space does not run is " +
+      "just not shown and not nudged about; switch back and it is there untouched."));
+
   const serverInput = el("input", {
     placeholder: "http://127.0.0.1:8777",
     value: safeLS.get("gtd.server") || (CAP.served ? location.origin : "http://127.0.0.1:8777"),
@@ -14093,6 +14343,7 @@ function openVaultDialog() {
     center: true, title: "Vault & sync - " + (Spaces.active || "space"),
     body: el("div", {},
       storageBox,
+      profileBox,
 
       /* Where the files live comes first, because it is the answer to "where are
          my markdown files" -- and because the vault file below is a courier,
