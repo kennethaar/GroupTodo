@@ -779,6 +779,41 @@ details>summary:hover{color:var(--fg2)}
 .blk .txt[contenteditable]{outline:none}
 .blk .props{font-family:var(--mono);font-size:11px;color:var(--fg3);padding-left:0;margin:1px 0 2px}
 .blk .bodyline{font-size:13px;color:var(--fg2);white-space:pre-wrap}
+
+/* ---------- a page's values, in its document ----------
+   One line per key:: value, at the top of the outline. The pill is the
+   control; the space around it is the line, and clicking there puts the raw
+   "area:: [[a/Health]]" under the caret. Dashed underneath, so it reads as the
+   page's own frontmatter rather than as another bullet. */
+.pfacts{margin:0 0 8px;padding:0 0 7px;border-bottom:1px dashed var(--line,var(--border))}
+.pfact{display:flex;align-items:flex-start;border-radius:4px}
+.pfact:hover{background:var(--bg3)}
+.ftxt{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px;
+  padding:3px 4px;font-size:13px;line-height:1.5;cursor:text;
+  font-family:var(--mono);color:var(--fg2);word-wrap:break-word;overflow-wrap:anywhere}
+.ftxt[contenteditable]{outline:none}
+.ftxt:focus{background:var(--bg3);box-shadow:inset 0 0 0 1px var(--border2)}
+.ftxt.ro{cursor:default}
+.fkey{color:var(--fg3);font-size:11.5px;letter-spacing:.3px;min-width:74px;flex:none}
+.ftxt.new .fkey{min-width:0;opacity:.55}
+.fpill{
+  display:inline-flex;align-items:center;gap:4px;max-width:100%;
+  font-family:var(--sans,inherit);font-size:12px;padding:1px 9px;border-radius:20px;
+  background:var(--bg3);color:var(--fg2);border:1px solid var(--border);white-space:normal;
+}
+.fpill.b{cursor:pointer}
+.fpill.b:hover{border-color:var(--border2);color:var(--fg)}
+.fpill.fquiet{color:var(--fg3);background:transparent}
+.fpill.fout{color:var(--fg);background:rgba(79,191,123,.1);border-color:rgba(79,191,123,.28)}
+.fpill.farea{color:var(--zet);background:rgba(199,146,234,.12);border-color:rgba(199,146,234,.26)}
+.fpill.fdep{color:var(--proj);background:rgba(255,159,107,.11);border-color:rgba(255,159,107,.26)}
+.fpill.fok{color:var(--ok);background:rgba(79,191,123,.1);border-color:rgba(79,191,123,.28)}
+.fpill.fwant,.fpill.fbad{color:var(--warn);background:rgba(224,176,80,.12);border-color:rgba(224,176,80,.3)}
+.fpill.fst{font-weight:600;color:var(--fg);background:var(--bg4)}
+.fpill.fst.s1{color:var(--todo);background:rgba(106,163,255,.14);border-color:rgba(106,163,255,.3)}
+.fpill.fst.s3{color:var(--wait);background:rgba(224,176,80,.13);border-color:rgba(224,176,80,.3)}
+.fpill.fst.s0{color:var(--done);background:rgba(79,191,123,.12);border-color:rgba(79,191,123,.28)}
+.fpill.fst.sx,.fpill.fst.s2{color:var(--fg3)}
 .state{
   font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.6px;
   padding:1px 5px;border-radius:4px;flex:none;margin-top:2px;cursor:pointer;
@@ -3905,9 +3940,91 @@ function rewriteLinksEverywhere(oldRef, newRef) {
   return changed;
 }
 
+/* ---------- two files, one project ----------
+   Moving a project onto a shelf, into a folder or across to another space
+   where a project of that name already lives used to be refused outright
+   ("target already exists") -- and across spaces it silently overwrote what
+   was there, which was worse. Neither is what the move meant: it is the same
+   project written down twice, so the two files become one.
+
+   The page that was already there is the one that stays: it keeps its own
+   values and gains only what the arriving page stated and it did not, the
+   chain becomes the union of both, and the arriving lines land underneath
+   minus any that are already on it word for word. Links that pointed at the
+   page that went away point at the survivor.
+
+   Reversible while the toast is up, and precisely: only the lines that came
+   across go away again and only the values the merge added are dropped, so
+   anything else you changed in the meantime survives the undo. The links are
+   not un-rewritten -- a blind reverse pass would also catch the links that
+   pointed at the survivor all along. */
+const mergeLineKey = b => (b.state || "") + "\u0000" + trim(b.title);
+
+function mergePageInto(sourcePath, targetPath, {links = true, temp = false, undo = true} = {}) {
+  const src = getPage(sourcePath), tgt = getPage(targetPath);
+  if (!src || !tgt || sourcePath === targetPath) return false;
+  const srcCopy = clonePage(src);
+  tgt.props = tgt.props || {};
+
+  const added = [];
+  for (const [k, v] of Object.entries(src.props || {})) {
+    const key = k.toLowerCase();
+    if (key === "title" || key === "updated" || key === "updated_by") continue;
+    if (key === DEPENDS_PROP) continue;                 // unioned, not overwritten
+    if (trim(tgt.props[k] || "")) continue;             // the survivor's own value stands
+    tgt.props[k] = v; added.push(k);
+  }
+  const prevChain = tgt.props[DEPENDS_PROP] ?? null;
+  const chain = [];
+  for (const raw of linksIn([prevChain || "", src.props?.[DEPENDS_PROP] || ""].join(", "))) {
+    const link = "[[" + trim(String(raw).split("][")[0]) + "]]";
+    if (!chain.includes(link)) chain.push(link);
+  }
+  if (chain.length) tgt.props[DEPENDS_PROP] = chain.join(", ");
+
+  const have = new Set();
+  walkBlocks(tgt.blocks, b => { have.add(mergeLineKey(b)); });
+  const brought = (src.blocks || [])
+    .filter(b => trim(b.title) || (b.children || []).length || (b.body || []).length)
+    .filter(b => (b.children || []).length || !have.has(mergeLineKey(b)))
+    .map(cloneBlock);
+  tgt.blocks.push(...brought);
+
+  const oldRef = pageRef(sourcePath), oldBase = baseName(sourcePath), newRef = pageRef(targetPath);
+  if (temp) { V.pages.delete(sourcePath); V.dirty.delete(sourcePath); }
+  else removePage(sourcePath);
+  touch(targetPath);
+  if (links) {
+    let n = rewriteLinksEverywhere(oldRef, newRef);
+    if (oldBase !== baseName(targetPath) || oldRef !== oldBase) n += rewriteLinksEverywhere(oldBase, newRef);
+    if (n) notify("Link update: " + n + " pages updated.");
+  }
+
+  const back = () => {
+    const t = getPage(targetPath);
+    if (t) {
+      t.blocks = (t.blocks || []).filter(b => !brought.includes(b));
+      for (const k of added) delete t.props[k];
+      if (prevChain == null) delete t.props[DEPENDS_PROP]; else t.props[DEPENDS_PROP] = prevChain;
+      touch(targetPath);
+    }
+    if (!V.pages.has(sourcePath)) {
+      V.removed.delete(sourcePath); dropTombstone(sourcePath);
+      putPage(sourcePath, clonePage(srcCopy));
+    }
+    render();
+    notify("Split back out. The links still point at " + pageTitle(targetPath) + ".");
+  };
+  const word = brought.length === 1 ? "1 line" : brought.length + " lines";
+  notify(pageTitle(targetPath) + " was already there, so the two are one page now - " +
+         word + " came across.", "info", temp || !undo ? null : {label: "Undo", run: back});
+  return "merged";
+}
+
 function moveFile(oldPath, newPath) {
   if (oldPath === newPath) return true;
-  if (V.pages.has(newPath)) { notify("Target already exists: " + newPath, "error"); return false; }
+  // The same project on both sides is a merge, not a collision.
+  if (V.pages.has(newPath)) return mergePageInto(oldPath, newPath);
   const page = getPage(oldPath);
   const oldRef = pageRef(oldPath), oldBase = baseName(oldPath);
   V.pages.delete(oldPath);
@@ -3923,20 +4040,26 @@ function moveFile(oldPath, newPath) {
 
 function setProjectStatus(path, code) {
   if (!STATUS_DIRS[code]) return;
-  const page = getPage(path);
-  page.props.status = STATUS_TEXT[code];
-  page.props.reviewed = todayStamp();
-  if (code === "0") page.props.completed = todayStamp();
-  if (code === "-") page.props.cancelled = todayStamp();
-  if (code === "3") page.props.waiting_since = todayStamp();
   const newPath = join(STATUS_DIRS[code], baseName(path) + ".md");
-  touch(path);
-  if (newPath !== path && moveFile(path, newPath)) {
-    notify("Moved to " + STATUS_TEXT[code]);
-    if (state.view === "page" && state.pagePath === path) state.pagePath = newPath;
-  } else {
-    notify("Status: " + STATUS_TEXT[code]);
+  /* Move first, stamp second. The page that is still there afterwards is the
+     one to write the new status on -- and when the move merged into a project
+     that was already on that shelf, the survivor already says so, and
+     stamping the mover's dates over it would backdate what was finished
+     there. */
+  const moved = newPath !== path ? moveFile(path, newPath) : false;
+  if (moved !== "merged") {
+    const live = moved ? newPath : path;
+    const page = getPage(live);
+    if (!page) return;
+    page.props.status = STATUS_TEXT[code];
+    page.props.reviewed = todayStamp();
+    if (code === "0") page.props.completed = todayStamp();
+    if (code === "-") page.props.cancelled = todayStamp();
+    if (code === "3") page.props.waiting_since = todayStamp();
+    touch(live);
+    notify(moved ? "Moved to " + STATUS_TEXT[code] : "Status: " + STATUS_TEXT[code]);
   }
+  if (moved && state.view === "page" && state.pagePath === path) state.pagePath = newPath;
   render();
 }
 
@@ -6530,7 +6653,17 @@ async function movePageToSpace(path, target) {
   removePage(path);
   await flush();
   await openSpace(target);
-  putPage(path, copy);
+  if (V.pages.has(path)) {
+    /* That project is in the target space already. Park the arriving copy
+       beside it for a moment so the same merge runs here as anywhere else --
+       the parked path is never written, so it leaves no file and no
+       tombstone behind. */
+    const tmp = path.replace(/\.md$/i, ".arriving-" + Date.now() + ".md");
+    putPage(tmp, copy, {silent: true});
+    mergePageInto(tmp, path, {links: false, temp: true});
+  } else {
+    putPage(path, copy);
+  }
   await flush();
   notify("\u201C" + pageTitle(path) + "\u201D now lives in " + target + ", out of " + from + ".");
   openPage(path);
@@ -7403,18 +7536,6 @@ function boardPickClick(e, kind, id) {
    move between folders, not a label, so it is said plainly and ctrl-z takes it
    back. */
 
-/* A free name in whichever space is current -- called inside inSpace(target).
-   Two vaults can each hold "Move house", and the one arriving must not land on
-   top of the one already there. */
-function freeProjectPath(path) {
-  if (!V.pages.has(path)) return path;
-  const dot = path.lastIndexOf(".");
-  const stem = dot < 0 ? path : path.slice(0, dot);
-  const ext  = dot < 0 ? "" : path.slice(dot);
-  for (let i = 2; i < 500; i++) if (!V.pages.has(stem + " " + i + ext)) return stem + " " + i + ext;
-  return stem + " " + uid() + ext;
-}
-
 /* Carry one project page across the boundary: write it there, remove it here.
    The page travels as text and comes back as a fresh page, because a page object
    belongs to the vault it was parsed in. Returns where it landed. */
@@ -7422,14 +7543,24 @@ function moveOneProject(path, from, to) {
   let copy = null;
   inSpace(from, () => { const pg = getPage(path); if (pg) copy = parsePage(serializePage(pg)); });
   if (!copy) return null;
-  let landed = path;
+  let merged = false;
   inSpace(to, () => {
-    landed = freeProjectPath(path);
-    putPage(landed, copy);
-    touch(landed);
+    if (V.pages.has(path)) {
+      /* That project is in the target space already. It is the same project,
+         so the two files become one there, rather than the arriving one
+         landing beside it as "Move house 2". The arriving copy is parked at a
+         path that is never written, so the merge that runs everywhere else
+         runs here too and leaves no file behind. */
+      const tmp = path.replace(/\.md$/i, ".arriving-" + Date.now() + ".md");
+      putPage(tmp, copy, {silent: true});
+      merged = mergePageInto(tmp, path, {links: false, temp: true}) === "merged";
+    } else {
+      putPage(path, copy);
+      touch(path);
+    }
   });
   inSpace(from, () => removePage(path));
-  return landed;
+  return {path, merged};
 }
 
 /* Everything dropped on a tab, moved, saved, and put on the undo stack as the
@@ -7441,8 +7572,8 @@ async function dropProjectsOnSpace(list, target) {
   }
   const moved = [];
   for (const x of list) {
-    const landed = moveOneProject(x.path, x.from, target);
-    if (landed) moved.push({path: landed, home: x.from, was: x.path});
+    const r = moveOneProject(x.path, x.from, target);
+    if (r) moved.push({path: r.path, home: x.from, was: x.path, merged: r.merged});
   }
   await flush();
   render();
@@ -7454,11 +7585,16 @@ async function dropProjectsOnSpace(list, target) {
     ". Links from the space " + (one ? "it" : "they") + " left point at nothing now.");
   pushUndo({run: () => {
     (async () => {
-      for (const m of moved) moveOneProject(m.path, target, m.home);
+      /* A project that merged into one already in that space cannot be
+         pulled back out by moving the file: the survivor is both projects
+         now, and carrying it back would take the other one with it. */
+      const back = moved.filter(m => !m.merged);
+      for (const m of back) moveOneProject(m.path, target, m.home);
       await flush();
       render();
-      notify(moved.length === 1 ? "Moved back out of " + target + "."
-                                : "Moved " + moved.length + " projects back out of " + target + ".");
+      if (!back.length) notify("That one merged into the project already in " + target + ", so there is no file to move back.", "warn");
+      else notify(back.length === 1 ? "Moved back out of " + target + "."
+                                    : "Moved " + back.length + " projects back out of " + target + ".");
     })();
     return true;
   }});
@@ -7718,10 +7854,15 @@ function viewProjectBoard() {
       x => {
         const {path, space} = x.project;
         const prev = inSpace(space, () => statusDirOf(path));
-        inSpace(space, () => setProjectStatus(path, code));
-        // The file moved, so putting it back starts from where it landed.
         const landed = join(STATUS_DIRS[code], baseName(path) + ".md");
+        // A project of that name on the shelf already means the drop merges
+        // the two, and a merge is not undone by moving the file back: that
+        // would carry the other project off with it. The toast the merge puts
+        // up has the undo for it.
+        const onto = inSpace(space, () => V.pages.has(landed));
+        inSpace(space, () => setProjectStatus(path, code));
         return () => inSpace(space, () => {
+          if (onto) { notify("That one merged into the project already there, so there is no file to move back.", "warn"); return; }
           const from = V.pages.has(landed) ? landed : path;
           if (prev && STATUS_DIRS[prev]) setProjectStatus(from, prev);
         });
@@ -7740,7 +7881,9 @@ function viewProjectBoard() {
       "The tabs at the top choose which spaces are on screen, and dropping a " +
       "project on one moves the file into that space - a different folder with " +
       "different people in it, so links to it from the space it left will point " +
-      "at nothing. On a phone, open the project and use its status button.")));
+      "at nothing. A project dropped where that name is taken merges into the " +
+      "one already there - the toast has the undo for it. On a phone, open " +
+      "the project and use its status button.")));
   return c;
 }
 
@@ -12838,10 +12981,13 @@ function outlineBlock(path, page, b) {
   return node;
 }
 
-function outlineFor(path) {
+function outlineFor(path, opts = {}) {
   const page = getPage(path);
   const box = el("div", {class: "card"});
   const outline = el("div", {class: "outline"});
+  // A page's own key:: value lines belong at the top of its document, which is
+  // where the markdown file keeps them too.
+  if (opts.facts) outline.append(pageFactsBlock(path));
   if (!page.blocks.length) page.blocks.push(newBlock({title: ""}));
   for (const b of page.blocks) outline.append(outlineBlock(path, page, b));
   box.append(outline);
@@ -13030,6 +13176,336 @@ function viewHealth() {
   return c;
 }
 
+/* ============================================================
+   109b_PAGE_FACTS -- a page's own values, in the document
+   ------------------------------------------------------------
+   The status, the outcome, the area, the chain and every other key:: value
+   used to sit in a bar of pills above the page. That bar was a second place to
+   look: the values were nowhere near the words they were about, and the only
+   way to correct one was to find its pill among eight others.
+
+   They live in the document now, at the top of the outline, one line each --
+   which is exactly where they sit in the markdown file. Every line is two
+   things at once:
+
+     * the pill is the control. Click it and you get the three things a value
+       can offer -- go to it, change it, take it off -- the same a/b/c menu a
+       pill on a todo row opens.
+     * the rest of the line is text. Click beside the pill and the line turns
+       into the raw "area:: [[a/Health]]" and you type it, the way you type any
+       other line here. Enter saves, escape puts it back.
+   ============================================================ */
+
+/* A pill inside an editable line. contenteditable=false keeps the caret out of
+   it, and refusing the mousedown keeps the click from turning the line into
+   text underneath the menu that is opening. */
+function factPill(text, cls, title, open) {
+  return el("span", {
+    class: "fpill" + (cls ? " " + cls : "") + (open ? " b" : ""),
+    contenteditable: "false", title: title || "",
+    onmousedown: e => { if (open) e.preventDefault(); },
+    onclick: open ? (e => { e.stopPropagation(); open(); }) : null,
+  }, text);
+}
+
+/* The value a prop points at, when it points at a page. Lets "go to it" be the
+   first row of the menu for area:: and for anything else somebody linked. */
+function factLinkTarget(v) {
+  const first = linksIn(String(v || ""))[0];
+  if (!first) return null;
+  return trim(String(first).split("][")[0]) || null;
+}
+
+/* key:: value, as the file writes it. Typed back in, it is read the same way --
+   so renaming the key renames the property and emptying the value takes it
+   off, both without leaving the line. */
+function saveRawProp(path, key, text) {
+  const page = getPage(path); if (!page) return;
+  const s = trim(text);
+  const m = /^([A-Za-z0-9_-]+)\s*::\s*([\s\S]*)$/.exec(s);
+  const drop = k => { for (const old of Object.keys(page.props)) if (old.toLowerCase() === k) delete page.props[old]; };
+  if (!s || (m && !trim(m[2]))) {
+    if (!key) return;
+    drop(key.toLowerCase()); touch(path);
+    notify(key + " taken off.");
+    return;
+  }
+  if (!m) {                           // just the value, key left alone
+    if (!key) { notify("A property is written  key:: value.", "warn"); return; }
+    page.props[key] = s; touch(path);
+    return;
+  }
+  const k = m[1].toLowerCase(), v = trim(m[2]);
+  if (key && k !== key.toLowerCase()) drop(key.toLowerCase());
+  page.props[k] = v;
+  createLinkedPages(v);
+  touch(path);
+}
+
+/* The a/b/c of a menu are the rows it actually has, so a value with nowhere to
+   go still answers to a for its first row. */
+function lettered(rows) {
+  return rows.filter(Boolean).map((r, i) => [String.fromCharCode(97 + i), ...r]);
+}
+
+/* ---------- the facts themselves ----------
+   One descriptor per line: the dim key, the pills, the raw text and what to do
+   with it when the typing stops. No save means the line is a reading, not a
+   value: there is nothing to type there. */
+function statusCodeFromValue(v) {
+  const s = trim(String(v || "")).toLowerCase();
+  for (const c of STATUS_ORDER)
+    if (s === c || s === STATUS_LABEL[c].toLowerCase() || s === STATUS_TEXT[c]) return c;
+  for (const c of STATUS_ORDER) if (s.length > 2 && STATUS_TEXT[c].includes(s)) return c;
+  return null;
+}
+
+function statusFact(path, code) {
+  return {
+    key: "status", raw: "status:: " + STATUS_LABEL[code].toLowerCase(),
+    save: v => {
+      const m = /::\s*([\s\S]*)$/.exec(v);
+      const want = statusCodeFromValue(m ? m[1] : v);
+      if (!want) { notify("Status is one of: " + STATUS_ORDER.map(c => STATUS_LABEL[c]).join(", "), "warn"); return; }
+      if (want !== code) setProjectStatus(path, want);
+    },
+    pills: () => [factPill(STATUS_LABEL[code], "fst s" + (code === "-" ? "x" : code),
+      "the shelf this project is on", () => chipMenu(STATUS_LABEL[code], "the shelf this project is on", [
+        ["a", "Go to " + STATUS_LABEL[code], "everything on that shelf", () => go("projects", {statusCode: code})],
+        ["b", "Move it to another shelf", "moves the file into pages/<code>/", () => openStatusPicker(path)],
+      ]))],
+  };
+}
+
+function outcomeFact(path) {
+  const out = outcomeOf(path);
+  return {
+    key: "outcome", raw: "outcome:: " + (out || ""),
+    save: v => {
+      const m = /::\s*([\s\S]*)$/.exec(v);
+      const text = trim(m ? m[1] : v);
+      if (text) setOutcome(path, text);
+      else { const p = getPage(path); delete p.props.outcome; touch(path); notify("Outcome taken off."); }
+    },
+    pills: () => [out
+      ? factPill(out, "fout", "what done looks like", () => chipMenu("Outcome", "what done looks like", [
+          ["a", "Change it", null, () => openOutcomePrompt(path)],
+          ["b", "Take it off", "the project keeps its steps", () => {
+            const p = getPage(path); delete p.props.outcome; touch(path); render(); notify("Outcome taken off.");
+          }],
+        ]))
+      : factPill("none stated", "fwant", "A project without a finish line is a wish",
+          () => openOutcomePrompt(path))],
+  };
+}
+
+function areaFact(path) {
+  const area = areaOfProject(path);
+  return {
+    key: "area", raw: "area:: " + (area ? "[[a/" + area + "]]" : ""),
+    save: v => {
+      const m = /::\s*([\s\S]*)$/.exec(v);
+      const text = trim(m ? m[1] : v);
+      const link = factLinkTarget(text);
+      const name = link ? trim(link.replace(/^a\//, "")) : text;
+      if (!name) { setAreaOfProject(path, null); notify("Area taken off."); return; }
+      setAreaOfProject(path, baseName(createArea(name)));
+    },
+    pills: () => [area
+      ? factPill(area, "farea", "the area of life this serves", () => chipMenu(area, "the area of life this serves", [
+          ["a", "Go to " + area, "the area page", () => followLink("a/" + area)],
+          ["b", "Change the area", null, () => openAreaPicker(path)],
+          ["c", "Take it off", "the project stays where it is", () => { setAreaOfProject(path, null); render(); notify("Area taken off."); }],
+        ]))
+      : factPill("no area", "fwant", "A project nothing serves is a project nobody misses",
+          () => openAreaPicker(path))],
+  };
+}
+
+function dependsFact(path) {
+  const deps = dependsOn(path);
+  const blocked = blockersOf(path);
+  const waiting = dependentsOf(path);
+  const trouble = chainTrouble(path);
+  return {
+    key: "depends on",
+    raw: DEPENDS_PROP + ":: " + deps.map(p => "[[" + pageRef(p) + "]]").join(", "),
+    save: v => {
+      const m = /::\s*([\s\S]*)$/.exec(v);
+      const text = trim(m ? m[1] : v);
+      const out = [];
+      for (const raw of linksIn(text)) {
+        const p = findExistingPage(trim(String(raw).split("][")[0]));
+        if (p && p !== path && !out.includes(p) && !wouldCycle(path, p)) out.push(p);
+      }
+      writeDependsOn(path, out);
+      notify(out.length ? "Chain saved." : "Chain cleared.");
+    },
+    pills: () => {
+      const out = [];
+      for (const p of deps) {
+        const late = blocked.includes(p);
+        out.push(factPill(pageTitle(p), "fdep" + (late ? " fbad" : ""),
+          late ? "not finished yet" : "finished",
+          () => chipMenu(pageTitle(p), late ? "has to finish first - it has not" : "comes first - it is done", [
+            ["a", "Go to " + pageTitle(p), pageRef(p), () => openPage(p)],
+            ["b", "Change what comes first", null, () => openDependsPicker(path)],
+            ["c", "Take this one off the chain", "the project stays", () => {
+              writeDependsOn(path, deps.filter(x => x !== p)); render(); notify("Off the chain.");
+            }],
+          ])));
+      }
+      if (!deps.length) out.push(factPill("nothing comes first", "fquiet",
+        "this project can start whenever you like", () => openDependsPicker(path)));
+      if (trouble) out.push(factPill("starts " + trouble.days + " day" + (trouble.days === 1 ? "" : "s") + " too early",
+        "fbad", "Push this project so it starts on " + trouble.need,
+        () => chipMenu("Too early", "it starts before what it waits on", [
+          ["a", "Push it to " + trouble.need, null, () => { if (pushProjectTo(path, trouble.need)) { notify("Moved to start " + trouble.need + "."); render(); } }],
+          ["b", "Change what comes first", null, () => openDependsPicker(path)],
+        ])));
+      if (waiting.length) out.push(factPill(waiting.length + " waiting on this", "fquiet",
+        waiting.map(pageTitle).join(", "),
+        () => chipMenu("Waiting on this", waiting.map(pageTitle).join(", "),
+          waiting.slice(0, 20).map((p, i) => [String.fromCharCode(97 + i), "Go to " + pageTitle(p), pageRef(p), () => openPage(p)]))));
+      return out;
+    },
+  };
+}
+
+function checklistKindFact(path) {
+  const tpl = isProjectTemplate(path);
+  return {
+    key: "kind", raw: "kind:: " + (tpl ? "project" : ""),
+    save: v => {
+      const m = /::\s*([\s\S]*)$/.exec(v);
+      const text = trim(m ? m[1] : v).toLowerCase();
+      setChecklistKind(path, text === "project" ? "project" : null);
+    },
+    pills: () => [factPill(tpl ? "project template" : "simple checklist", tpl ? "fok" : "fquiet",
+      tpl ? "every run spins up a whole project" : "steps you tick off in place",
+      () => chipMenu(tpl ? "Project template" : "Simple checklist", "what running this does", [
+        ["a", tpl ? "Run it into a new project" : "Run this list", null, () => openRunChecklist(path)],
+        ["b", tpl ? "Make it a simple checklist" : "Make it a project template", null,
+          () => { setChecklistKind(path, tpl ? null : "project"); render(); }],
+      ]))],
+  };
+}
+
+function horizonFact(path) {
+  const base = HORIZONS.find(x => x.page === baseName(path));
+  const h = base ? horizonMeta(base.key) : null;
+  return {
+    key: "horizon", raw: null,
+    pills: () => [factPill(h ? h.h + " · " + h.name : "horizon", "fquiet",
+      h ? h.alt : "one of the horizons", () => chipMenu(h ? h.name : "Horizon", h ? h.alt : "", [
+        ["a", "Go to the horizons", "all six, top down", () => go("horizons")],
+      ]))],
+  };
+}
+
+/* Everything else the file carries. The value reads as words and keeps its
+   links clickable through the menu rather than inside the pill: a link nested
+   in a control is two things to press in one. */
+function propFact(path, k, v) {
+  const link = factLinkTarget(v);
+  const shown = k === "updated" || k === "created" || k === "reviewed"
+    ? formatStamp(v) : (linkWords(v) || v);
+  return {
+    key: k, raw: k + ":: " + v,
+    save: text => saveRawProp(path, k, text),
+    pills: () => [factPill(shown, "fquiet", k + ":: " + v, () => chipMenu(k, "a value on this page", lettered([
+      link ? ["Go to " + linkWords("[[" + link + "]]"), link, () => followLink(link)] : null,
+      ["Change it", null, () => promptInput({
+        title: "Change " + k, hint: pageTitle(path), label: k + "::", value: v, cta: "Save",
+        onSave: nv => { saveRawProp(path, k, k + ":: " + nv); render(); },
+      })],
+      ["Take it off", "the rest of the page stays", () => { saveRawProp(path, k, ""); render(); }],
+    ])))],
+  };
+}
+
+const FACT_OWN = ["title", "status", "outcome", "area", "kind", DEPENDS_PROP];
+
+function pageFacts(path) {
+  const page = getPage(path) || {props: {}};
+  const props = page.props || {};
+  const horizon = isHorizonPage(path);
+  const code = horizon ? null : statusDirOf(path);
+  const facts = [];
+  if (horizon) facts.push(horizonFact(path));
+  if (code) facts.push(statusFact(path, code), outcomeFact(path), areaFact(path), dependsFact(path));
+  if (pageKind(path) === "checklist") facts.push(checklistKindFact(path));
+  for (const [k, v] of Object.entries(props)) {
+    const own = FACT_OWN.includes(k.toLowerCase());
+    if (own && (code || k.toLowerCase() === "title")) continue;
+    if (own && pageKind(path) === "checklist" && k.toLowerCase() === "kind") continue;
+    facts.push(propFact(path, k, v));
+  }
+  return facts;
+}
+
+/* ---------- one fact, as a line of the document ----------
+   Focus swaps the pills for the raw text and blur swaps them back, which is
+   exactly how a block's own line already behaves. */
+function factLine(path, f) {
+  const line = el("div", {class: "pfact"});
+  const txt = el("div", {
+    class: "ftxt" + (f.save ? "" : " ro"),
+    contenteditable: f.save ? "true" : "false", spellcheck: "false",
+    title: f.save ? "Click a pill for what to do with it, or beside it to type the line" : "",
+  });
+  const paint = () => {
+    txt.textContent = "";
+    txt.append(el("span", {class: "fkey", contenteditable: "false"}, f.key));
+    for (const p of f.pills()) txt.append(p);
+  };
+  paint();
+  if (f.save) {
+    txt.addEventListener("focus", () => setHostText(txt, f.raw, f.raw.length));
+    txt.addEventListener("blur", () => {
+      const val = txt.textContent.replace(/\n/g, " ");
+      if (trim(val) !== trim(f.raw)) { f.save(val); render(); return; }
+      paint();
+    });
+    txt.addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); txt.blur(); }
+      else if (e.key === "Escape") { e.preventDefault(); setHostText(txt, f.raw, f.raw.length); txt.blur(); }
+    });
+  }
+  line.append(txt);
+  return line;
+}
+
+/* The line that is not a value yet. Same gesture as the rest: click it and you
+   are typing "key:: value". */
+function newFactLine(path) {
+  const line = el("div", {class: "pfact"});
+  const txt = el("div", {class: "ftxt new", contenteditable: "true", spellcheck: "false",
+    title: "Type  key:: value"});
+  const paint = () => { txt.textContent = ""; txt.append(el("span", {class: "fkey", contenteditable: "false"}, "+ value")); };
+  paint();
+  txt.addEventListener("focus", () => setHostText(txt, "", 0));
+  txt.addEventListener("blur", () => {
+    const val = trim(txt.textContent.replace(/\n/g, " "));
+    if (!val) { paint(); return; }
+    saveRawProp(path, "", val); render();
+  });
+  txt.addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); txt.blur(); }
+    else if (e.key === "Escape") { e.preventDefault(); setHostText(txt, "", 0); txt.blur(); }
+  });
+  line.append(txt);
+  return line;
+}
+
+function pageFactsBlock(path) {
+  const facts = pageFacts(path);
+  const box = el("div", {class: "pfacts"});
+  for (const f of facts) box.append(factLine(path, f));
+  box.append(newFactLine(path));
+  return box;
+}
+
 function viewPage() {
   const path = state.pagePath;
   if (!path || !V.pages.has(path)) { state.view = "today"; return viewToday(); }
@@ -13038,63 +13514,18 @@ function viewPage() {
   const horizon = isHorizonPage(path);
   const code = horizon ? null : statusDirOf(path);
 
-  const meta = el("div", {class: "nudgebar"});
-  if (horizon) {
-    const base = HORIZONS.find(x => x.page === baseName(path));
-    const h = base ? horizonMeta(base.key) : null;
-    meta.append(el("button", {class: "nudge", onclick: () => go("horizons")},
-      el("b", {}, h ? h.alt : "horizon"), h ? h.h + " \u00B7 " + h.name : "horizon"));
-  }
-  if (code) meta.append(el("button", {class: "nudge", onclick: () => openStatusPicker(path)}, el("b", {}, code), STATUS_LABEL[code]));
-  for (const [k, v] of Object.entries(page.props || {})) {
-    if (k === "title") continue;
-    if (k === DEPENDS_PROP) continue;      // it has a control of its own below
-    if (k === "updated") {
-      meta.append(el("span", {class: "nudge"}, "changed " + formatStamp(v)));
-      continue;
-    }
-    meta.append(el("span", {class: "nudge", html: esc(k) + ":: " + renderInline(v)}));
-  }
-  if (pageKind(path) === "checklist") {
-    const tpl = isProjectTemplate(path);
-    meta.append(el("button", {class: "nudge" + (tpl ? " ok" : ""),
-      onclick: () => { setChecklistKind(path, tpl ? null : "project"); render(); }},
-      tpl ? "project template" : "simple checklist"));
-    meta.append(el("button", {class: "nudge", onclick: () => openRunChecklist(path)},
-      tpl ? "new project from this" : "run this"));
-  }
-  meta.append(el("button", {class: "nudge", onclick: () => { updateReviewed(path); render(); }}, "mark reviewed"));
-  if (code) meta.append(el("button", {class: "nudge" + (outcomeOf(path) ? "" : " warn"),
-    onclick: () => openOutcomePrompt(path)},
-    outcomeOf(path) ? "outcome: " + outcomeOf(path) : "no outcome stated"));
-  if (code) meta.append(el("button", {class: "nudge", onclick: () => openAreaPicker(path)},
-    areaOfProject(path) ? "area: " + areaOfProject(path) : "no area"));
-  /* The order this project sits in. A blocked project says so here rather than
-     in a list somewhere else, because this is the page you open when you are
-     about to start it. */
-  if (code) {
-    const deps = dependsOn(path);
-    const blocked = blockersOf(path);
-    meta.append(el("button", {class: "nudge" + (blocked.length ? " warn" : deps.length ? " ok" : ""),
-      title: deps.length ? "Starts after " + deps.map(pageTitle).join(", ") : "Nothing has to finish first",
-      onclick: () => openDependsPicker(path)},
-      deps.length
-        ? (blocked.length ? "blocked by " + blocked.map(pageTitle).join(", ")
-                          : "after " + deps.map(pageTitle).join(", "))
-        : "nothing comes first"));
-    const t = chainTrouble(path);
-    if (t) meta.append(el("button", {class: "nudge warn",
-      title: "Push this project so it starts on " + t.need,
-      onclick: () => { if (pushProjectTo(path, t.need)) { notify("Moved to start " + t.need + "."); render(); } }},
-      "starts " + t.days + " day" + (t.days === 1 ? "" : "s") + " too early"));
-    const waiting = dependentsOf(path);
-    if (waiting.length) meta.append(el("button", {class: "nudge",
-      title: waiting.map(pageTitle).join(", "),
-      onclick: () => openPage(waiting[0])},
-      waiting.length + " project" + (waiting.length === 1 ? "" : "s") + " waiting on this"));
-  }
-  if (code) meta.append(el("button", {class: "nudge", onclick: () => openAddNextAction(path)}, "+ next action"));
-  c.append(meta);
+  /* The values of this page -- its status, its outcome, its area, its chain
+     and every other key:: value -- are in the document now, one line each at
+     the top of the outline, rather than in a bar of pills above it. See
+     109b_PAGE_FACTS. What is left here is the handful of things that were
+     never values but actions, and they sit with the rest of the page's
+     buttons underneath the document. */
+  const acts = [];
+  if (pageKind(path) === "checklist")
+    acts.push(el("button", {class: "btn sm ghost", onclick: () => openRunChecklist(path)},
+      isProjectTemplate(path) ? "new project from this" : "run this"));
+  if (code) acts.push(el("button", {class: "btn sm ghost", onclick: () => openAddNextAction(path)}, "+ next action"));
+  acts.push(el("button", {class: "btn sm ghost", onclick: () => { updateReviewed(path); render(); }}, "mark reviewed"));
 
   /* A project gets the same grid a todo gets: what it serves, what shelf it is
      on, what is beside it, what is in it. Escape walks it with the arrows. */
@@ -13111,7 +13542,9 @@ function viewPage() {
   }
 
   if (isSimple() && pageKind(path) !== "journal") {
-    // Rows and a quick-add box, rather than the outliner.
+    // Rows and a quick-add box, rather than the outliner. The page's own
+    // values still come first, because that is where they are in the file.
+    c.append(el("div", {class: "section"}, el("div", {class: "card"}, pageFactsBlock(path))));
     c.append(el("div", {class: "section"}, quickAdd(path)));
     const rows = flattenBlocks(page.blocks)
       .filter(b => b.state)
@@ -13134,7 +13567,7 @@ function viewPage() {
       c.append(section("Notes", notes.length, card));
     }
   } else {
-    c.append(el("div", {class: "section"}, outlineFor(path)));
+    c.append(el("div", {class: "section"}, outlineFor(path, {facts: true})));
     /* The outliner shows this page's own lines. A task written in a day page
        with [[1/this project]] is this project's too, so it gets its own
        section -- edited where it lives, which is what the arrow opens. */
@@ -13154,6 +13587,7 @@ function viewPage() {
   if (!isSimple()) c.append(section("Linked references", back.length, card));
 
   c.append(el("div", {class: "section", style: "display:flex;gap:8px;flex-wrap:wrap"},
+    ...acts,
     isJournalPath(path) ? null
       : el("button", {class: "btn sm ghost", onclick: () => openExportPage(path)}, "share"),
     el("button", {class: "btn sm ghost", title: "A link you can paste into chat or email",

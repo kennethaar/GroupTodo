@@ -109,7 +109,9 @@ statuses - Someday/Maybe, Active, Waiting for, Completed, Cancelled. Each card
 is a project, with what is open in it, whether it has a next action, what it is
 blocked by and how long since it was reviewed. Dragging one into another column
 does exactly what the status picker does: the file moves into `pages/<code>/`
-and every link to it is rewritten - and `Ctrl-Z` moves it back. Picking several
+and every link to it is rewritten - and `Ctrl-Z` moves it back (unless the drop
+merged into a project of that name already on that shelf; the toast has the undo
+for that one). Picking several
 works here too, so a review that parks five projects at once is one drag and one
 undo.
 
@@ -121,7 +123,8 @@ written into that space and removed from this one, keeping its status folder. A
 space is a separate folder with separate people in it, so that is a real move,
 not a label - links to the project from the space it left will point at nothing,
 the toast says so, and `Ctrl-Z` moves it back. A project arriving where that
-name is taken lands beside the one already there rather than on top of it. Task
+name is taken **merges** into the one already there - see *Two files, one
+project*. Task
 cards cannot be dropped on a tab: a task is a line in a day page, and the day
 page is not what you are dragging.
 
@@ -420,6 +423,60 @@ the chrome that helps in Simple gets out of the way: rows flatten to lines, the
 cards lose their boxes, state badges become the bare words `TODO` and `DOING`,
 and the type goes monospace where the file itself would be. Same data, same
 files, one keypress apart.
+
+### A page's values are in the page
+
+The status of a project, its outcome, its area, what has to finish first and
+every other `key:: value` the file carries used to sit in a bar of pills above
+the page. That bar was a second place to look: the values were nowhere near the
+words they were about, and correcting one meant finding its pill among eight
+others.
+
+They are in the document now, one line each at the top of the outline - which
+is exactly where the markdown file keeps them. Every line is two things at
+once:
+
+- **Click the pill** and you get the three things a value can offer: *go to
+  it*, *change it*, *take it off*, under the same `a` / `b` / `c` letters every
+  other picker uses. The area pill opens the area, the prerequisite opens that
+  project, the status pill opens that shelf.
+- **Click beside the pill** and the line turns into the raw text -
+  `area:: [[a/Health]]` - and you type it, the way you type any other line
+  here. `Enter` saves it, `Escape` puts it back. Rename the key and you rename
+  the property; empty the value and the property is gone.
+
+The last line is `+ value`: click it and type `energy:: low`, and the page has
+a property nothing in the app had to know about in advance.
+
+What was left on top were the things that were never values but actions - *+
+next action*, *mark reviewed*, *run this* - and those sit with *share*,
+*rename* and *delete* underneath the document.
+
+### Two files, one project
+
+Move a project onto a shelf, into a folder or across to another space where a
+project of that name already lives, and the two files become one. It used to be
+refused outright - *target already exists* - and, across spaces, the arriving
+page either landed beside the other as *Kitchen tap 2* or, through the page
+menu, quietly wrote over it. None of those is what the move meant: it is the
+same project, written down twice.
+
+So the merge runs wherever the move comes from - the status picker, a drag
+between columns on the project board, a drop on a space tab, *rename*, *move*:
+
+- The page that was **already there** is the one that stays. It keeps its own
+  values and gains only what the arriving page stated and it did not.
+- `depends_on::` becomes the **union** of both chains.
+- The arriving lines land underneath, minus any that are already on the page
+  word for word - so a project merged twice does not grow three copies of *Ring
+  the plumber*.
+- Links that pointed at the page that went away now point at the survivor.
+
+The toast says what happened and carries an **Undo**: the lines that came
+across go away again, the values the merge added are dropped, and the other
+file comes back. Only those - anything else you changed in the meantime
+survives the undo. The links are not un-rewritten, because a blind reverse pass
+would also catch the links that pointed at the survivor all along.
 
 ### Projects that have to happen in order
 
