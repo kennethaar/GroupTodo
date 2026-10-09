@@ -8048,7 +8048,7 @@ function boardSpaceTabs() {
     const on = !showingAll && vis.has(sp.name);
     const tab = el("button", {
       class: "btab" + (on ? " on" : ""), onclick: () => show([sp.name]),
-      title: "Only " + sp.name + " \u2014 or drop a page here to move it into " + sp.name +
+      title: "Only " + sp.name + ", or drop a page here to move it into " + sp.name +
              " (hold ctrl to copy it instead)",
     },
       el("span", {class: "btab-dot", style: "background:" + spaceColor(sp.name)}),
