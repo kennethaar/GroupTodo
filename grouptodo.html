@@ -12535,7 +12535,7 @@ function viewPage() {
     const rows = flattenBlocks(page.blocks)
       .filter(b => b.state)
       .map(b => ({path, block: b, state: b.state, title: b.title, context: contextOf(b.title),
-                  due: dueDate(b), age: blockAge(b), added: addedDate(b),
+                  due: dueDate(b), age: blockAge(b), added: addedDate(b), assignee: assigneeOf(b),
                   missingVerb: !startsWithVerb(b.title), missingContext: !hasContextLink(b.title)}));
     // A task written in a day page with [[1/this project]] belongs here too.
     if (statusDirOf(path)) rows.push(...journalActionsFor(path));
