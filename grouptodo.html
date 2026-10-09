@@ -185,6 +185,25 @@ header.top .burger{display:none}
 .section.quiet>h3{font-weight:550;letter-spacing:.6px;color:var(--fg3)}
 .section.quiet>h3 .n{background:transparent;padding:0 2px;color:var(--fg3)}
 .section.quiet>.card{background:transparent;border-style:dashed}
+
+/* Folded sections: a record rather than the day's work. The heading is the
+   disclosure, so "done today" and "captured today" are one line each until you
+   actually want to look, instead of two full lists competing with what is open. */
+.section.fold>summary{
+  display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:2px;cursor:pointer;
+  font-size:12px;font-weight:550;letter-spacing:.6px;text-transform:uppercase;color:var(--fg3);
+  list-style:none;
+}
+.section.fold>summary::-webkit-details-marker{display:none}
+.section.fold>summary::before{
+  content:"\203A";display:inline-block;font-size:13px;line-height:1;
+  transition:transform .12s ease;color:var(--fg3);
+}
+.section.fold[open]>summary::before{transform:rotate(90deg)}
+.section.fold>summary:hover{color:var(--fg2)}
+.section.fold>summary .n{padding:0 2px;font-size:11px;color:var(--fg3)}
+/* Opened on purpose, so it is no longer background material. */
+.section.fold[open]{opacity:1}
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
 .empty{padding:16px;color:var(--fg3);font-size:13px;text-align:center}
 
@@ -7438,34 +7457,58 @@ function plexTargets(g, key, w, h) {
   const out = new Map();
   const {i, parents, children, jumps} = plexRelatives(g, key);
   if (i < 0) return out;
-  const cx = w / 2, cy = h / 2;
+  const cx = w / 2;
+  /* The middle is only in the middle when there is something on both sides of
+     it. A page nothing points at, fanning ten tasks downward, should not leave
+     the top half of the box empty and crowd everything into the bottom. */
+  const lean = (parents.length ? 1 : 0) - (children.length ? 1 : 0);
+  const cy = h / 2 + lean * h * 0.13;
   const R = Math.min(w, h) * 0.3;
 
-  out.set(g.nodes[i].key, {x: cx, y: cy, r: 13, a: 1, ring: 0, idx: i});
+  out.set(g.nodes[i].key, {x: cx, y: cy, r: 13, a: 1, ring: 0, idx: i, rank: 0});
 
   /* An arc rather than a ring: parents overhead, children underfoot, jumps on
-     the horizon. A fan keeps them apart without a simulation. */
-  const fan = (list, centreAngle, spread, radius, r, a, ring) => {
-    const n = list.length;
-    list.forEach((idx, k) => {
-      const t = n === 1 ? 0 : (k / (n - 1)) - 0.5;
-      const ang = centreAngle + t * Math.min(spread, 0.42 * n);
-      out.set(g.nodes[idx].key, {
-        x: cx + Math.cos(ang) * radius,
-        y: cy + Math.sin(ang) * radius,
-        r, a, ring, idx,
+     the horizon. A fan keeps them apart without a simulation.
+
+     Past about six on one side, one arc at one distance puts the dots -- and,
+     long before the dots, their names -- on top of each other. So a long side
+     is dealt out into two arcs at different distances, taking every other item
+     so neighbours in the list never share a row. `label` says which way the
+     name hangs off the dot, which is the other half of not overlapping:
+     overhead for the parents, underfoot for the children. */
+  const fan = (list, centreAngle, spread, radius, r, a, ring, label, rank) => {
+    const rows = list.length > 6
+      ? [list.filter((_, k) => k % 2 === 0), list.filter((_, k) => k % 2 === 1)]
+      : [list];
+    rows.forEach((row, ri) => {
+      // Capped, so the outer arc stays inside the box with room for its names.
+      const rad = Math.min(radius * (ri ? 1.52 : 1), Math.min(w, h) * 0.41);
+      const n = row.length;
+      row.forEach((idx, k) => {
+        const t = n === 1 ? 0 : (k / (n - 1)) - 0.5;
+        const ang = centreAngle + t * Math.min(spread, 0.5 * n);
+        out.set(g.nodes[idx].key, {
+          x: cx + Math.cos(ang) * rad,
+          y: cy + Math.sin(ang) * rad,
+          r: ri ? r * 0.88 : r, a, ring, idx, label, rank,
+        });
       });
     });
   };
   const UP = -Math.PI / 2, DOWN = Math.PI / 2;
-  fan(parents,  UP,   2.0, R,        9, 1,   1);
-  fan(children, DOWN, 2.0, R,        9, 1,   1);
-  fan(jumps.slice(0, 8), 0, 1.5, R * 1.08, 7, .9, 1);
+  /* rank is who gets the space when two names want it: what this is made of
+     before what merely sits beside it, and both before the outer ring. */
+  fan(parents,  UP,   2.0, R, 9, 1, 1, "above", 1);
+  fan(children, DOWN, 2.0, R, 9, 1, 1, "below", 1);
+  /* The jumps sit out to the sides, where there is room along the x axis but
+     none along the y, so their names go beside them rather than underneath. */
+  const side = jumps.slice(0, 8);
+  fan(side, 0, 1.5, R * 1.08, 7, .9, 1, "right", 2);
   // the left-hand half of the jumps, so they are not all stacked on one side
-  jumps.slice(0, 8).forEach((idx, k) => {
+  side.forEach((idx, k) => {
     if (k % 2 === 0) return;
     const t = out.get(g.nodes[idx].key);
-    if (t) t.x = cx - (t.x - cx);
+    if (t) { t.x = cx - (t.x - cx); t.label = "left"; }
   });
 
   /* The outer ring: the relatives of your relatives, small and faint. This is
@@ -7478,16 +7521,16 @@ function plexTargets(g, key, w, h) {
       const other = a === idx ? b : b === idx ? a : -1;
       if (other < 0 || near.has(other) || ringTwo.includes(other)) continue;
       ringTwo.push(other);
-      if (ringTwo.length >= 14) break;
+      if (ringTwo.length >= 10) break;
     }
-    if (ringTwo.length >= 14) break;
+    if (ringTwo.length >= 10) break;
   }
   ringTwo.forEach((idx, k) => {
     const ang = (k / Math.max(1, ringTwo.length)) * Math.PI * 2 - Math.PI / 2;
     out.set(g.nodes[idx].key, {
       x: cx + Math.cos(ang) * R * 1.85,
       y: cy + Math.sin(ang) * R * 1.85,
-      r: 4.5, a: .42, ring: 2, idx,
+      r: 4.5, a: .42, ring: 2, idx, label: Math.cos(ang) < 0 ? "left" : "right", rank: 3,
     });
   });
   return out;
@@ -7536,15 +7579,19 @@ function plexDraw(cv, g, targets, hoverKey) {
     }
   }
 
-  x.textAlign = "center";
   x.textBaseline = "top";
+  /* Two names written on top of each other are worse than one name, and a name
+     written across a dot is worse than both. So every dot reserves its own
+     patch first, the names are drawn afterwards in a pass of their own, and a
+     name that cannot find space is simply left out -- walking onto the dot, or
+     pointing at it, is how you read that one. */
   const taken = [];
-  const room = (cx2, cy2, tw) => {
-    const box = [cx2 - tw / 2 - 3, cy2 - 1, cx2 + tw / 2 + 3, cy2 + 14];
+  const free = box => {
     for (const t of taken)
       if (box[0] < t[2] && box[2] > t[0] && box[1] < t[3] && box[3] > t[1]) return false;
-    taken.push(box); return true;
+    return true;
   };
+  const jobs = [];
 
   // Nearest last, so the middle is never drawn under something behind it.
   const drawn = [...PLEX.pos.entries()]
@@ -7584,18 +7631,56 @@ function plexDraw(cv, g, targets, hoverKey) {
       x.beginPath(); x.arc(pos.x, pos.y, pos.r + 6, 0, Math.PI * 2); x.stroke();
       x.setLineDash([]);
     }
+    // The dot keeps its own space, so no name is ever written across it.
+    taken.push([pos.x - rad - 2, pos.y - rad - 2, pos.x + rad + 2, pos.y + rad + 2]);
     // Ring two is the depth cue, so it carries no words unless you point at it.
     const marked = focused || hot || k === PLEX.cursor;
     if (t.ring === 2 && !marked) continue;
-    x.font = (focused ? "600 13px " : "11.5px ") + v("--sans", "sans-serif");
     const name = nd.label + (nd.more ? " (+" + nd.more + " more)" : "");
-    const text = name.length > 28 ? name.slice(0, 27) + "…" : name;
-    const tw = x.measureText(text).width;
-    if (room(pos.x, pos.y + pos.r + 4, tw) || marked) {
-      x.globalAlpha = pos.a;
-      x.fillStyle = marked ? fg : fg2;
-      x.fillText(text, pos.x, pos.y + pos.r + 4);
+    /* Shorter the further out it sits. A ring of thirty-character names is a
+       wall of text with a map somewhere behind it. */
+    const cap = marked ? 34 : t.ring === 2 ? 18 : 24;
+    jobs.push({pos, t, marked, focused, text: name.length > cap ? name.slice(0, cap - 1) + "…" : name});
+  }
+
+  /* Names last, and the ones that matter first: whatever is marked wins its
+     space outright -- it is the answer to "what am I on" -- and gets a patch of
+     background behind it so it stays readable where it has to overlap. */
+  x.textAlign = "center";
+  jobs.sort((p, q) => (q.marked - p.marked) || ((p.t.rank || 0) - (q.t.rank || 0)));
+  for (const job of jobs) {
+    const {pos, t} = job;
+    x.font = (job.focused ? "600 13px " : "11.5px ") + v("--sans", "sans-serif");
+    const tw = x.measureText(job.text).width;
+    /* Which way the name hangs off its dot. Overhead for what points here,
+       underfoot for what this points at, beside it out on the flanks -- so the
+       names fan out the way the dots do instead of all queueing downward. The
+       second spot is where it goes when the first one is already spoken for,
+       which is most of what saves a name from being dropped. */
+    const under = [pos.x, pos.y + pos.r + 6], over = [pos.x, pos.y - pos.r - 17];
+    const spots = t.label === "above" ? [over, under]
+                : t.label === "left"  ? [[pos.x - pos.r - 6 - tw / 2, pos.y - 6], under, over]
+                : t.label === "right" ? [[pos.x + pos.r + 6 + tw / 2, pos.y - 6], under, over]
+                : [under, over];
+    let box = null, tx = 0, ty = 0;
+    for (const [sx, sy] of spots) {
+      // A name half off the canvas is not a name.
+      tx = Math.max(tw / 2 + 4, Math.min(w - tw / 2 - 4, sx));
+      ty = Math.max(2, Math.min(h - 16, sy));
+      const cand = [tx - tw / 2 - 3, ty - 2, tx + tw / 2 + 3, ty + 15];
+      if (free(cand) || job.marked) { box = cand; break; }
     }
+    if (!box) continue;
+    taken.push(box);
+    if (job.marked) {
+      x.globalAlpha = pos.a * 0.88;
+      x.fillStyle = v("--bg", "#0f1115");
+      if (x.roundRect) { x.beginPath(); x.roundRect(box[0], box[1], box[2] - box[0], box[3] - box[1], 4); x.fill(); }
+      else x.fillRect(box[0], box[1], box[2] - box[0], box[3] - box[1]);
+    }
+    x.globalAlpha = pos.a;
+    x.fillStyle = job.marked ? fg : fg2;
+    x.fillText(job.text, tx, ty);
   }
   x.globalAlpha = 1;
 }
@@ -7793,6 +7878,64 @@ function addSubActionTo(path, block, text) {
   return blk;
 }
 
+/* ---------- the context a new node lands in ----------
+   You are standing in @phone when you hang a step off a project, so the step
+   is a phone call: filing it anywhere else would be a lie, and asking every
+   time turns a mindmap into a form. So it is filed where you are standing and
+   the toast says so, with one button for the times it does not belong there.
+   Ignore the toast and nothing happens, which is the point. */
+function fileInCurrentContext(space, path, block, said) {
+  if (!state.context || !block || hasContextLink(block.title)) return false;
+  const ctx = state.context;
+  const setTo = pick => inSpace(space, () => {
+    block.title = trim(trim(block.title).replace(/\s*\[\[c\/[^\]]+\]\]/g, "")) + " [[c/" + pick + "]]";
+    createLinkedPages(block.title);
+    touch(path);
+  });
+  setTo(ctx);
+  // One toast, not two: the thing that happened, and the one correction to it.
+  notify((said ? said + ", " : "") + "filed under @" + ctx, "info", {
+    label: "Not @" + ctx + "?",
+    run: () => openContextPicker("Which context does this belong to?", pick => {
+      if (pick === ctx) return;
+      setTo(pick);
+      notify("Moved to @" + pick);
+      render();
+    }),
+  });
+  return true;
+}
+
+/* ---------- editing a node where it sits ----------
+   Space on a dot edits the thing the dot is: a task's line, a page's name.
+   The mindmap is where you think, and a thought you cannot correct without
+   leaving the picture is a thought you leave wrong. */
+function plexEditNode(nd, after) {
+  after = after || (() => render());
+  if (!nd) return;
+  if (nd.ghost) { notify("Make " + nd.label + " a page first, then there is something to edit.", "warn"); return; }
+  if (nd.task) {
+    const hit = inSpace(nd.space, () => findBlock(nd.blockId));
+    if (!hit) { notify("That task is no longer there.", "warn"); return; }
+    promptInput({
+      title: "Edit this step", hint: inSpace(nd.space, () => pageTitle(hit.path)),
+      label: "The line itself, links and all",
+      value: hit.block.title, cta: "Save",
+      onSave: text => {
+        if (!trim(text)) { notify("A task with no words is not a task.", "warn"); return; }
+        inSpace(nd.space, () => {
+          hit.block.title = trim(text);
+          createLinkedPages(hit.block.title);
+          touch(hit.path);
+        });
+        after();
+      },
+    });
+    return;
+  }
+  inSpace(nd.space, () => renamePrompt(nd.path));
+}
+
 function plexAddChild(nd, after) {
   after = after || (() => render());
   if (!nd) return;
@@ -7808,7 +7951,8 @@ function plexAddChild(nd, after) {
         if (!trim(text)) return;
         const blk = inSpace(nd.space, () => addSubActionTo(hit.path, hit.block, trim(text)));
         PLEX.cursor = (nd.space || "") + "\u0000" + hit.path + "\u0000#" + blk.id;
-        notify("Added under " + nd.label);
+        if (!fileInCurrentContext(nd.space, hit.path, blk, "Added under " + nd.label))
+          notify("Added under " + nd.label);
         after();
       },
     });
@@ -7823,7 +7967,8 @@ function plexAddChild(nd, after) {
         if (!trim(text)) return;
         const blk = inSpace(nd.space, () => addNextActionTo(nd.path, trim(text)));
         if (blk) PLEX.cursor = (nd.space || "") + "\u0000" + nd.path + "\u0000#" + blk.id;
-        notify("Added to " + nd.label);
+        if (!fileInCurrentContext(nd.space, nd.path, blk, "Added to " + nd.label))
+          notify("Added to " + nd.label);
         after();
       },
     });
@@ -7906,7 +8051,7 @@ function viewPlex() {
     keyline,
     el("span", {class: "glg quiet"}, edit()
       ? "Drag one dot onto another to link them. Drag into space, or double-click space, to make a page."
-      : "Click a dot to move the middle. Double-click it to look at it without leaving.")));
+      : "Click a dot to move the middle. Double-click it to look at it without leaving. Space edits it.")));
 
   let hover = null;
   const targets = (w, h) => plexTargets(g, state.graphFocus, w, h);
@@ -7945,7 +8090,8 @@ function viewPlex() {
     const cur = byKey(PLEX.cursor);
     const mid = PLEX.cursor === state.graphFocus;
     keyline.textContent = "Keys: arrows walk the dots, enter centres the one you are on"
-      + ", enter on the middle adds a step under it, backspace goes back up."
+      + ", enter on the middle adds a step under it, space edits it, o opens it"
+      + ", backspace goes back up."
       + (cur ? "  On: " + cur.label + (mid ? " (the middle)" : "") : "");
   };
   syncKeyline();
@@ -7997,7 +8143,15 @@ function viewPlex() {
       else notify("Nothing points at this one, so there is no way back up.");
       return;
     }
-    if (e.key === "o" || e.key === " ") {
+    /* Space edits what the dot is; o opens it. Editing is the thing you reach
+       for in the middle of thinking, so it gets the big key. */
+    if (e.key === " ") {
+      e.preventDefault();
+      const nd = byKey(PLEX.cursor) || byKey(state.graphFocus);
+      if (nd) plexEditNode(nd, () => render());
+      return;
+    }
+    if (e.key === "o") {
       e.preventDefault();
       const nd = byKey(PLEX.cursor) || byKey(state.graphFocus);
       if (nd) openPlexNode(g, nd);
@@ -10733,7 +10887,10 @@ function viewMyDay() {
                 due: dueDate(b), age: blockAge(b), added: addedDate(b),
                 by: blockProp(b, "by"), doneBy: blockProp(b, "done_by"),
                 missingVerb: !startsWithVerb(b.title), missingContext: !hasContextLink(b.title)}));
-  if (closed.length) c.append(section("Done today", closed.length, taskCard(closed)));
+  /* What is done is a record, not the day's work, so it folds away under a
+     single line. It is still here -- and still un-tickable -- for anyone who
+     wants to see what they got through. */
+  if (closed.length) c.append(foldSection("Done today", closed.length, taskCard(closed)));
 
   // Below the fold: reference material, not the day's work. Both sections are
   // dropped entirely when there is nothing in them -- an empty box on the main
@@ -10753,7 +10910,14 @@ function viewMyDay() {
                 missingVerb: !startsWithVerb(b.title), missingContext: !hasContextLink(b.title)})));
   // While the coach is up this is the only thing on screen and the step it is
   // asking for, so it keeps its full weight until the newcomer is through.
-  if (today.length) c.append(section("Captured today", today.length, taskCard(today), null, coach ? null : "quiet"));
+  /* Captured is an inbox, not an agenda: anything in it that is actually due
+     has already been shown under Due above. It folds too -- except during the
+     first run, when it is the step the coach is asking for. */
+  if (today.length) {
+    c.append(coach
+      ? section("Captured today", today.length, taskCard(today))
+      : foldSection("Captured today", today.length, taskCard(today)));
+  }
   return c;
 }
 
@@ -11182,6 +11346,22 @@ function section(title, count, node, extra, cls) {
   return el("div", {class: cls ? "section " + cls : "section"},
     el("h3", {}, title, count != null ? el("span", {class: "n"}, String(count)) : null, extra || null),
     node);
+}
+
+/* The same section, folded away. For the parts of a screen that are a record
+   of what already happened rather than something to act on: they are one line
+   until you open them, and they stay open for the rest of the session once you
+   have, because somebody who looked once is usually looking again. */
+const FOLD_OPEN = new Set();
+function foldSection(title, count, node, {open = false, cls = "quiet", extra = null} = {}) {
+  const id = "fold:" + title;
+  const shown = open || FOLD_OPEN.has(id);
+  const d = el("details", {class: "section fold" + (cls ? " " + cls : ""), open: shown ? "" : null},
+    el("summary", {}, title,
+      count != null ? el("span", {class: "n"}, String(count)) : null, extra || null),
+    node);
+  d.addEventListener("toggle", () => { if (d.open) FOLD_OPEN.add(id); else FOLD_OPEN.delete(id); });
+  return d;
 }
 </script>
 <script>
@@ -15179,7 +15359,8 @@ function openHelp() {
           "enter  centre on the dot you are on", el("br"),
           "enter on the middle  add a step under it", el("br"),
           "backspace  back up to what points here", el("br"),
-          "o / space  open the page or task you are on")),
+          "space  edit the dot you are on -- a task's line, a page's name", el("br"),
+          "o  open the page or task you are on")),
       el("div", {class: "field"}, el("label", {}, "In the outline"),
         el("div", {style: "font-family:var(--mono);font-size:12.5px;line-height:1.9;color:var(--fg2)"},
           "enter  new block", el("br"), "tab / shift-tab  indent", el("br"),

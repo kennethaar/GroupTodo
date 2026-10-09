@@ -140,9 +140,25 @@ direction - down from a project walks into its actions, the sides are its
 siblings, up is what points at it. **Enter** centres on the dot you are on, and
 **Enter** again, now that you are on the middle, adds a step under it: a
 sub-action under a task, a next action under a project, a new linked page under
-anything else. **Backspace** goes back up to what points here, and **o** or
-**space** opens the page or task you are on. The dot the keyboard is pointing at
-carries a dashed ring, so it is never a guess which one **Enter** will take.
+anything else. **Backspace** goes back up to what points here. **Space** edits
+the dot you are on - a task's line, links and all, or a page's name - because
+the mindmap is where you think and a thought you cannot correct without leaving
+the picture is a thought you leave wrong; **o** opens the page or task instead.
+The dot the keyboard is pointing at carries a dashed ring, so it is never a
+guess which one **Enter** will take.
+
+A step added here is filed in the context you are standing in: say you are in
+`@phone` and the next action you hang off a project is a phone call, so it is
+written `[[c/phone]]` without being asked. The toast says so and carries one
+button for the times it does not belong there. Ignore it and nothing happens,
+which is the point of saying it in a toast rather than a dialog.
+
+Names are drawn so they do not collide: every dot reserves its own space first,
+a name hangs overhead for what points here and underfoot for what this points
+at, and one that still cannot find room is left out rather than written across
+its neighbour - walking onto that dot, or pointing at it, shows it. A side with
+more than six dots on it is dealt into two arcs at different distances for the
+same reason.
 
 **Edit** turns the mindmap into somewhere you can build. Drag one dot onto
 another and they are linked. Drag a dot out into empty space, or double-click
