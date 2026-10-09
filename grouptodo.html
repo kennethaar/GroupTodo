@@ -393,6 +393,8 @@ body.adv .chk{border-radius:2px}
    line in the same markdown file, seen from a different angle. */
 .board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px;
   align-items:start}
+/* The project board has one column per status, and there are five of those. */
+.board.five{grid-template-columns:repeat(5,minmax(0,1fr))}
 .bcol{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
   min-height:120px;display:flex;flex-direction:column;overflow:hidden}
 .bcol.over{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
@@ -412,6 +414,10 @@ body.adv .chk{border-radius:2px}
 .bcard-meta{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
 .bcard-meta:empty{display:none}
 .bcard.dragging{opacity:.4}
+/* A project card carries its status letter, so the card still says where it is
+   once it has been dragged somewhere. */
+.bcard-top{display:flex;gap:6px;align-items:flex-start}
+.bcard-top .bcard-title{flex:1 1 auto}
 @media (max-width:860px){
   /* Four columns on a phone is four slivers. One column each, stacked, and the
      state buttons in the detail panel do the moving -- dragging on a touch
@@ -5288,6 +5294,8 @@ function renderInline(text) {
    ============================================================ */
 const state = {
   view: "today",
+  // the board shows task states, or project statuses; the choice sticks
+  boardMode: PREF.get("boardMode", "tasks") === "projects" ? "projects" : "tasks",
   pagePath: null,
   context: null,        // CURRENT_CONTEXT from init.lua
   statusCode: "1",
@@ -5374,6 +5382,7 @@ const NAV_SIMPLE = [
   ]},
   {group: "Views", items: [
     {id: "board",    icon: "▦", label: "Board",    key: "v b"},
+    {id: "board-p",  icon: "▧", label: "Project board", key: "v p", boardMode: "projects"},
     {id: "calendar", icon: "▣", label: "Calendar", key: "v c"},
     {id: "graph",    icon: "⁂", label: "Graph",    key: "v g"},
     {id: "gantt",    icon: "▤", label: "Timeline", key: "v t"},
@@ -5405,6 +5414,7 @@ const NAV_ADVANCED = [
   ]},
   {group: "Views", items: [
     {id: "board",    icon: "▦", label: "Board",    key: "v b"},
+    {id: "board-p",  icon: "▧", label: "Project board", key: "v p", boardMode: "projects"},
     {id: "calendar", icon: "▣", label: "Calendar", key: "v c"},
     {id: "graph",    icon: "⁂", label: "Graph",    key: "v g"},
     {id: "gantt",    icon: "▤", label: "Timeline", key: "v t"},
@@ -7073,13 +7083,60 @@ function threadPanel(path, block) {
    Graph     what is connected to what
    ============================================================ */
 
-/* ---------- board ---------- */
+/* ---------- board ----------
+   Two boards, one view. The task board's columns are the states a line can be
+   in; the project board's columns are the five status folders a project can
+   live in. Both move things the same way: drag a card into a column and the
+   drop makes exactly the call the buttons elsewhere make -- setBlockState for a
+   task, setProjectStatus for a project -- so nothing here is a second way of
+   recording the same fact. */
 const BOARD_COLUMNS = [
   ["TODO",  "To do"],
   ["DOING", "Doing"],
   ["WAIT",  "Waiting for"],
   ["DONE",  "Done"],
 ];
+
+/* The order a project actually travels in, which is not the order the folders
+   happen to sort in: parked, running, stalled, finished, dropped. */
+const BOARD_STATUS_COLUMNS = ["2", "1", "3", "0", "-"];
+
+/* What is being dragged, and which kind of thing it is. A drop has to know,
+   because a task's state is a word on its line and a project's status is the
+   folder it lives in. */
+let DRAGGED = null;
+
+/* The shell every column shares: the head, the drop target, and the rule about
+   what it will take. A task card dropped on a status column is a no-op rather
+   than a surprise. */
+function boardColumn(head, accepts, onDrop) {
+  const col = el("div", {class: "bcol"}, head);
+  col.addEventListener("dragover", e => {
+    if (!accepts(DRAGGED)) return;
+    e.preventDefault();
+    col.classList.add("over");
+  });
+  col.addEventListener("dragleave", () => col.classList.remove("over"));
+  col.addEventListener("drop", e => {
+    e.preventDefault();
+    col.classList.remove("over");
+    const d = DRAGGED;
+    DRAGGED = null;
+    if (d && accepts(d)) onDrop(d);
+  });
+  return col;
+}
+
+/* Marks a card as the thing being dragged, whatever it is a card of. */
+function makeCardDraggable(card, payload, id) {
+  card.addEventListener("dragstart", e => {
+    DRAGGED = payload;
+    card.classList.add("dragging");
+    try { e.dataTransfer.setData("text/plain", id); e.dataTransfer.effectAllowed = "move"; } catch (_) {}
+  });
+  card.addEventListener("dragend", () => { card.classList.remove("dragging"); DRAGGED = null; });
+  return card;
+}
 
 function boardCard(a) {
   // A button, not a div: a card you cannot reach with Tab is a card half the
@@ -7103,63 +7160,110 @@ function boardCard(a) {
         humanDate(a.due)) : null,
       a.assignee ? el("span", {class: "chip who"}, "\u2192 " + a.assignee) : null,
       messagesOf(a.block).length ? el("span", {class: "chip msg"}, "\u25CB " + messagesOf(a.block).length) : null));
-  card.addEventListener("dragstart", e => {
-    DRAGGED = a;
-    card.classList.add("dragging");
-    try { e.dataTransfer.setData("text/plain", a.block.id); e.dataTransfer.effectAllowed = "move"; } catch (_) {}
-  });
-  card.addEventListener("dragend", () => { card.classList.remove("dragging"); DRAGGED = null; });
-  return card;
+  return makeCardDraggable(card, {kind: "task", action: a}, a.block.id);
 }
 
-let DRAGGED = null;
+/* A project card says the things you need in order to decide where it belongs:
+   how much is open in it, whether anything can actually be started, what it is
+   waiting on, and how long since anybody looked at it. */
+function boardProjectCard(r, stuck) {
+  const {path, space} = r;
+  const info = inSpace(space, () => ({
+    title: pageTitle(path),
+    open: openTodoCount(path) + journalActionsFor(path).filter(x => OPEN_STATES[x.state]).length,
+    reviewed: dateIn(getPage(path)?.props?.reviewed),
+    blockers: blockersOf(path).map(pageTitle),
+    area: areaOfProject(path),
+    outcome: outcomeOf(path),
+  }));
+  const idle = info.reviewed ? dateDiffDays(info.reviewed, todayISO()) : null;
+  const code = statusDirOf(path);
+  const card = el("button", {
+    class: "bcard", draggable: "true",
+    data: {path},
+    onclick: e => {
+      if (e.target.closest("[data-link]")) return;
+      openPageIn(space, path);
+    },
+  },
+    el("div", {class: "bcard-top"},
+      el("span", {class: "st st-" + code, title: STATUS_TEXT[code]}, code),
+      el("div", {class: "bcard-title"}, info.title)),
+    el("div", {class: "bcard-meta"},
+      multiSpace() ? spaceBadge(space) : null,
+      info.area ? el("span", {class: "chip proj"}, info.area) : null,
+      info.open ? el("span", {class: "chip"}, info.open + " open") : null,
+      (stuck.has(path) && space === Spaces.active)
+        ? el("span", {class: "chip miss b"}, "no next action") : null,
+      info.blockers.length ? el("span", {class: "chip late"}, "blocked by " + info.blockers.join(", ")) : null,
+      info.outcome ? null : el("span", {class: "chip miss"}, "no outcome"),
+      idle != null ? el("span", {class: "chip age"}, "reviewed " + idle + "d ago") : null));
+  return makeCardDraggable(card, {kind: "project", project: r}, path);
+}
+
+/* Which board, remembered, because somebody who works in projects does not want
+   to re-pick it every time they come back. */
+function boardModeToggle() {
+  const seg = el("div", {class: "seg", style: "margin-top:4px"});
+  for (const [mode, label] of [["tasks", "Tasks"], ["projects", "Projects"]]) {
+    seg.append(el("button", {
+      class: "btn sm" + (state.boardMode === mode ? " primary" : " ghost"),
+      onclick: () => go("board", {boardMode: mode, boardMore: {}}),
+    }, label));
+  }
+  return seg;
+}
 
 function viewBoard() {
+  // However you got here -- the switch, the sidebar, v b / v p -- the board you
+  // were last on is the one you come back to.
+  PREF.set("boardMode", state.boardMode);
+  return state.boardMode === "projects" ? viewProjectBoard() : viewTaskBoard();
+}
+
+/* Fills a column body with cards, a card at a time, and keeps the "show more"
+   row the lists use so one busy column cannot bury the rest. */
+function fillBoardColumn(body, items, key, mkCard) {
+  /* On a phone the columns are stacked, so a hundred cards in the first one
+     means scrolling past all of them to reach the second. */
+  const step = window.innerWidth < 860 ? CFG.boardPerPhone : CFG.boardPerColumn;
+  const shown = (state.boardMore || {})[key] || step;
+  items.slice(0, shown).forEach(x => body.append(mkCard(x)));
+  if (items.length > shown) {
+    const left = items.length - shown;
+    const setTo = n => {
+      const more = Object.assign({}, state.boardMore);
+      more[key] = n;
+      go("board", {boardMore: more});
+    };
+    const row = moreRow(() => setTo(shown + step), () => setTo(items.length));
+    row.set("Show " + Math.min(step, left) + " more \u00B7 " + left + " below",
+            left > step ? "Show all " + items.length : "");
+    body.append(row);
+  }
+  if (!items.length) body.append(el("div", {class: "empty", style: "font-size:12px"}, "Nothing here."));
+  return body;
+}
+
+function viewTaskBoard() {
   const c = el("div", {class: "wrap"});
   const all = leafActions();
   const done = doneToday();
   c.append(el("div", {class: "section"},
-    quickAdd(ensureJournal(todayISO()), {placeholder: "Add a task"})));
+    quickAdd(ensureJournal(todayISO()), {placeholder: "Add a task"}),
+    boardModeToggle()));
 
   const board = el("div", {class: "board"});
   for (const [stateKey, label] of BOARD_COLUMNS) {
     const items = stateKey === "DONE" ? done : all.filter(a => a.state === stateKey);
-    const col = el("div", {class: "bcol"},
+    // Dropping on a column is the same call the state chip makes.
+    const col = boardColumn(
       el("div", {class: "bcol-head"},
         el("span", {class: "state " + stateKey}, label),
-        el("span", {class: "n"}, String(items.length))));
-    const body = el("div", {class: "bcol-body"});
-    /* On a phone the columns are stacked, so a hundred cards in the first one
-       means scrolling past all of them to reach the second. */
-    const step = window.innerWidth < 860 ? CFG.boardPerPhone : CFG.boardPerColumn;
-    const shown = (state.boardMore || {})[stateKey] || step;
-    items.slice(0, shown).forEach(a => body.append(boardCard(a)));
-    if (items.length > shown) {
-      const left = items.length - shown;
-      const setTo = n => {
-        const more = Object.assign({}, state.boardMore);
-        more[stateKey] = n;
-        go("board", {boardMore: more});
-      };
-      const row = moreRow(() => setTo(shown + step), () => setTo(items.length));
-      row.set("Show " + Math.min(step, left) + " more \u00B7 " + left + " below",
-              left > step ? "Show all " + items.length : "");
-      body.append(row);
-    }
-    if (!items.length) body.append(el("div", {class: "empty", style: "font-size:12px"}, "Nothing here."));
-
-    // Dropping on a column is the same call the state chip makes.
-    col.addEventListener("dragover", e => { e.preventDefault(); col.classList.add("over"); });
-    col.addEventListener("dragleave", () => col.classList.remove("over"));
-    col.addEventListener("drop", e => {
-      e.preventDefault();
-      col.classList.remove("over");
-      const a = DRAGGED;
-      DRAGGED = null;
-      if (!a || a.state === stateKey) return;
-      inSpace(a.space, () => setBlockState(a.path, a.block, stateKey));
-    });
-    col.append(body);
+        el("span", {class: "n"}, String(items.length))),
+      d => !!d && d.kind === "task" && d.action.state !== stateKey,
+      d => inSpace(d.action.space, () => setBlockState(d.action.path, d.action.block, stateKey)));
+    col.append(fillBoardColumn(el("div", {class: "bcol-body"}), items, stateKey, boardCard));
     board.append(col);
   }
   c.append(board);
@@ -7167,6 +7271,45 @@ function viewBoard() {
     el("div", {style: "color:var(--fg3);font-size:12px"},
       "Drag a card to move it, or open one and use the state buttons - which is " +
       "what you want on a phone, where dragging is a fight.")));
+  return c;
+}
+
+/* The same board, one level up: every project, in the status it is in, and a
+   drag moves the file into the other status folder. The columns are the five
+   the sidebar lists, so what you see here is what Projects shows one status at
+   a time. */
+function viewProjectBoard() {
+  const c = el("div", {class: "wrap"});
+  const stuck = new Set(stuckActiveProjects().map(x => x.path));
+  c.append(el("div", {class: "section"},
+    el("div", {style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap"},
+      boardModeToggle(),
+      el("button", {class: "btn sm ghost", style: "margin-left:auto",
+        onclick: () => newProjectPrompt()}, "+ new project"))));
+
+  const board = el("div", {class: "board five"});
+  for (const code of BOARD_STATUS_COLUMNS) {
+    const items = projectsInVisible(code)
+      .sort((x, y) => inSpace(x.space, () => pageTitle(x.path))
+        .localeCompare(inSpace(y.space, () => pageTitle(y.path))));
+    const col = boardColumn(
+      el("div", {class: "bcol-head"},
+        el("span", {class: "st st-" + code, title: STATUS_TEXT[code]}, code),
+        el("span", {class: "state", style: "border:0;background:transparent;padding:0"},
+          STATUS_LABEL[code]),
+        el("span", {class: "n"}, String(items.length))),
+      d => !!d && d.kind === "project" && statusDirOf(d.project.path) !== code,
+      d => inSpace(d.project.space, () => setProjectStatus(d.project.path, code)));
+    col.append(fillBoardColumn(el("div", {class: "bcol-body"}), items, "p:" + code,
+      r => boardProjectCard(r, stuck)));
+    board.append(col);
+  }
+  c.append(board);
+  c.append(el("div", {class: "section quiet"},
+    el("div", {style: "color:var(--fg3);font-size:12px"},
+      "Drag a project into a column to change its status - the file moves into " +
+      "pages/<code>/ and every link to it is rewritten, exactly as the status " +
+      "picker does it. On a phone, open the project and use its status button.")));
   return c;
 }
 
@@ -11240,7 +11383,8 @@ const anyOpenTask = () => memo("anyOpenTask", () =>
 function navVisible(item) {
   // Where you are now always stays reachable, whatever the files say.
   const here = item.status ? (state.view === "projects" && state.statusCode === item.status)
-                           : state.view === item.id;
+           : item.boardMode ? (state.view === "board" && state.boardMode === item.boardMode)
+                            : state.view === item.id;
   if (here) return true;
   if (item.id === "weeding" && !weedingWorthIt()) return false;
   // Nothing to see while you are the only person here.
@@ -11251,6 +11395,8 @@ function navVisible(item) {
 
   /* The five screens that need something in the files to be about. */
   if (item.id === "board"    && !anyOpenTask())  return false;
+  // The project board is about projects, so it needs one to be about.
+  if (item.id === "board-p" && !STATUS_ORDER.some(c => projectsIn(c).length)) return false;
   if (item.id === "calendar" && !anyDated())     return false;
   if (item.id === "gantt"    && !anyDated())     return false;
   if (item.id === "graph"    && !anyLinked())    return false;
@@ -11292,12 +11438,16 @@ function renderNav() {
     for (const it of sec.items) {
       if (!navVisible(it)) continue;
       const active = it.status ? (state.view === "projects" && state.statusCode === it.status)
-                               : state.view === it.id;
+                 : it.boardMode ? (state.view === "board" && state.boardMode === it.boardMode)
+                                : state.view === it.id && !(it.id === "board" && state.boardMode === "projects");
       const count = navCount(it.id);
       const hot = (it.id === "health" || it.id === "review") && count > 0;
       box.append(el("button", {
         class: "nav-item" + (active ? " active" : ""),
-        onclick: () => it.status ? go("projects", {statusCode: it.status}) : go(it.id),
+        onclick: () => it.status ? go("projects", {statusCode: it.status})
+                 : it.boardMode ? go("board", {boardMode: it.boardMode, boardMore: {}})
+                 : it.id === "board" ? go("board", {boardMode: "tasks", boardMore: {}})
+                 : go(it.id),
       },
         el("span", {class: "ic"}, it.icon),
         el("span", {class: "lbl"}, it.label),
@@ -15648,7 +15798,8 @@ const CHORDS = {
   "w p": () => go("projects", {statusCode: "1"}),
   "w w": () => go("projects", {statusCode: "3"}),
   "w m": () => go("projects", {statusCode: "2"}),
-  "v b": () => go("board"),
+  "v b": () => go("board", {boardMode: "tasks", boardMore: {}}),
+  "v p": () => go("board", {boardMode: "projects", boardMore: {}}),
   "v c": () => go("calendar"),
   "v g": () => go("graph"),
   "v t": () => go("gantt"),

@@ -95,6 +95,14 @@ columns to change its state; on a phone the columns stack and you open a card
 and use its state buttons instead, because dragging on a touch screen fights the
 scroll.
 
+The same board, one level up: the Tasks / Projects switch at the top (`v p`, or
+Project board in the sidebar) swaps the four state columns for the five project
+statuses - Someday/Maybe, Active, Waiting for, Completed, Cancelled. Each card
+is a project, with what is open in it, whether it has a next action, what it is
+blocked by and how long since it was reviewed. Dragging one into another column
+does exactly what the status picker does: the file moves into `pages/<code>/`
+and every link to it is rewritten.
+
 **Calendar** - a month at a time, Monday first. Everything with a scheduled day
 or a deadline lands on its day, late ones in red. Pick a day and its tasks are
 listed underneath in full. On a phone the squares show coloured dots rather than
