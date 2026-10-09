@@ -119,7 +119,10 @@ long before `pages/c/phone.md` exists - and clicking one makes it, exactly as
 clicking the link in a task does. Under the picture, the same pages as an
 ordinary list, because a canvas means nothing to a keyboard or a screen reader.
 
-**Mindmap** - the same links read the other way round. The map answers "what
+**Mindmap** - a second reading of the graph rather than a sixth screen: the
+**Mindmap** button on the graph swaps to it and **Whole map** swaps back, and
+the graph remembers which you were last using. It is the same links read the
+other way round. The map answers "what
 does all of this look like"; it is bad at "what is around *this*", because the
 page you care about is wherever the physics left it and everything else is drawn
 at the same weight. So the mindmap puts one page in the middle, what points at
@@ -247,8 +250,10 @@ stand-up note. Tasks marked DONE by hand in the file carry no date, so they
 cannot be placed in a window - the count of those is shown rather than quietly
 dropped.
 
-All six are in **Views** in the sidebar, or `v b`, `v c`, `v g`, `v t` and
-`v r` - but only once there is something for them to be about. See below.
+The five screens are in **Views** in the sidebar, or `v b`, `v c`, `v g`,
+`v t` and `v r` - but only once there is something for them to be about. See
+below. The mindmap is not a sixth entry: it is a button on the graph screen,
+and the graph remembers which of the two you were last using.
 
 ### The menu only shows what your files actually have
 
@@ -620,7 +625,8 @@ index.html             two lines, so a hosted copy answers at https://host/
 serve.py               optional sync server (a laptop, a Pi, a NAS, Termux)
 docs/setup-sheet.html  the two-minute sheet to hand to colleagues
 docs/check-in-sheet-mockup.html
-                       a working mockup of the waiting-for-updates exchange
+                       the waiting-for-updates exchange, end to end, with the
+                       real check-in sheet running in the page
 ```
 
 `grouptodo.html` alone is the whole app - named so it still means something in a
@@ -1112,10 +1118,11 @@ body, headings and buttons, so one cannot creep back in.
 - **Auto-sync of the courier file is desktop only** (it needs a durable handle).
 - **Recurrence is offered, never scheduled.** Nothing appears until you tick the
   current one off and say yes, so a repeat you forget about simply stops.
-- **A Gantt bar is read, never dragged.** The dates live in the markdown as
-  `SCHEDULED::` and `DEADLINE::`; the timeline shows them, and you change them
-  by opening the task. Dragging a bar to reschedule would be a nice trick and
-  is not built.
+- **A closed task's bar has no handles.** Its end is the day somebody ticked it
+  off, and dragging that would be editing the past. Open bars drag; closed ones
+  are a record.
+- **Linking two pages in the mindmap is a drag, so it is mouse only.** The
+  keyboard route is the list under the picture, which also carries **Unlink**.
 - **The report can only count what carries a date.** A task ticked off in the
   app is stamped `done_by::` with the day; one marked DONE by hand in the file
   is not, and nothing can tell when that happened.

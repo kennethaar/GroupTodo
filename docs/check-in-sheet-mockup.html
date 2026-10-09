@@ -167,7 +167,7 @@ pre{font-family:var(--mono);font-size:12.5px;background:var(--sunk);border:1px s
 
 <div class="page">
 
-<p class="eyebrow">GroupTodo · mockup</p>
+<p class="eyebrow">GroupTodo · how the exchange works</p>
 <h1>Waiting for updates</h1>
 <p class="lede">You are waiting on four things from Mia in Finance. Mia does not use
 GroupTodo and is not going to start today. So you send her one file, she ticks
@@ -181,17 +181,20 @@ same bargain as the rest of GroupTodo. The file <em>is</em> the round trip.</p>
   <ol class="flow">
     <li><b>Ask <span class="who">· you</span></b>
       <small>People → Mia Halvorsen → <em>Ask for an update</em>. The four things you are
-      waiting on are already listed and already ticked to include. Press Send.</small></li>
+      waiting on are already listed and already ticked to include. Press
+      <em>Make the sheet</em>.</small></li>
     <li><b>Send <span class="who">· you</span></b>
-      <small>GroupTodo writes <code>check-in-mia-halvorsen.html</code> - one self-contained
+      <small>GroupTodo writes <code>grouptodo-check-in-mia-halvorsen.html</code> - one self-contained
       file. Email it, Teams it, drop it in a share. Nothing is uploaded anywhere.</small></li>
     <li><b>Tick <span class="who">· Mia</span></b>
       <small>She double-clicks the file. It opens in whatever browser she has. She taps the
       two she finished, types one note, presses <em>Send back</em> - her email opens with the
       answers already in it, and she presses Send. Nothing to attach.</small></li>
     <li><b>Import <span class="who">· you</span></b>
-      <small>Her answers land in your inbox as a few plain lines. Paste them into GroupTodo
-      and you get this review: two tasks to close, one comment to file. Press Apply.</small></li>
+      <small>Her answers come back as the small file the sheet wrote, or as a few plain
+      lines if she replied in words. <em>Import a file</em> or <em>Paste a reply</em>, both on
+      the same dialog you asked from, and you get this review: two tasks to close, one comment
+      to file. Press Apply.</small></li>
   </ol>
 </div>
 
@@ -238,7 +241,7 @@ same bargain as the rest of GroupTodo. The file <em>is</em> the round trip.</p>
 
   <div class="note" style="margin-top:12px"><b>You attach it yourself.</b> The same
   <code>mailto:</code> limit applies going out, so the button fills in the address, the
-  subject and the whole note, and you drag <code>check-in-mia-halvorsen.html</code> in before
+  subject and the whole note, and you drag <code>grouptodo-check-in-mia-halvorsen.html</code> in before
   you press Send - one drag, once. In Teams there is nothing to attach at all: the message
   goes in the chat and you drop the file in the same window.</div>
 </div>
@@ -248,11 +251,12 @@ same bargain as the rest of GroupTodo. The file <em>is</em> the round trip.</p>
 <div class="sec">
   <p class="eyebrow">Step 3 · what Mia opens</p>
   <h2>The check-in sheet</h2>
-  <p>Working mockup - tap the rows. One tap per finished task, nothing to read, nothing to
-  sign up for. The sheet remembers her ticks if she closes it halfway through.</p>
+  <p>The sheet below is the real thing, running here so you can tap the rows. One tap per
+  finished task, nothing to read, nothing to sign up for. It remembers her ticks if she closes
+  it halfway through.</p>
 
   <div class="frame">
-    <div class="chrome"><i></i><i></i><i></i><span>file:///C:/Users/mia/Downloads/check-in-mia-halvorsen.html</span></div>
+    <div class="chrome"><i></i><i></i><i></i><span>file:///C:/Users/mia/Downloads/grouptodo-check-in-mia-halvorsen.html</span></div>
     <div class="pane">
       <div class="sheet-head">
         <h3 id="sHi"></h3>
@@ -338,7 +342,8 @@ same bargain as the rest of GroupTodo. The file <em>is</em> the round trip.</p>
     <li><em>3 clicks</em> <span>for you to ask - person, <em>Ask for an update</em>, Send.</span></li>
     <li><em>1 click</em> <span>per thing Mia finished. Unfinished things cost her nothing.</span></li>
     <li><em>1 click</em> <span>for Mia to send it back.</span></li>
-    <li><em>2 clicks</em> <span>for you to import - open the file, Apply.</span></li>
+    <li><em>2 clicks</em> <span>for you to import - <em>Import a file</em> or
+      <em>Paste a reply</em>, then Apply.</span></li>
     <li><em>0 accounts</em> <span>created, on either side, ever.</span></li>
   </ul>
 </div>
@@ -359,7 +364,7 @@ same bargain as the rest of GroupTodo. The file <em>is</em> the round trip.</p>
    ============================================================ */
 var LANG = (function(){ try { return localStorage.getItem("gtd-mockup-lang") || "en"; } catch(e){ return "en"; } })();
 var WHO = {me:"Kenneth Aar", first:"Kenneth", them:"Mia", themFull:"Mia Halvorsen",
-           mail:"mia.halvorsen@example.com", file:"check-in-mia-halvorsen.html"};
+           mail:"mia.halvorsen@example.com", file:"grouptodo-check-in-mia-halvorsen.html"};
 
 function numWord(lang, n){
   var t = lang === "no"

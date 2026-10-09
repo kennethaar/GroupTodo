@@ -73,6 +73,9 @@ dl.habits > div { min-width: 0; }
 dl.habits dt { font-weight: 600; margin-bottom: 3px; }
 dl.habits dd { margin: 0; font-size: 0.93rem; color: var(--ink-soft); }
 
+kbd { font: 500 0.78rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--sunk); border: 1px solid var(--rule); border-bottom-width: 2px;
+  border-radius: 4px; padding: 1px 5px; }
 .flag { background: var(--flag-soft); border-left: 3px solid var(--flag); border-radius: 0 6px 6px 0;
   padding: 14px 16px; display: flex; flex-direction: column; gap: 5px; }
 .flag .title { font-weight: 600; color: var(--flag); }
@@ -125,32 +128,32 @@ a { color: var(--accent); }
   <h2>Who, where, what</h2>
   <ol class="steps">
     <li><div class="body">
-      <span class="what">Who &mdash; type your first and last name</span>
+      <span class="what">Who - type your first and last name</span>
       <span class="note">It is the first thing the app asks. Colleagues see it beside what
       you add, and the surname is what saves you the day there are two of you called the
       same thing.</span>
     </div></li>
     <li><div class="body">
-      <span class="what">Where &mdash; <strong>Choose folder</strong>, and pick the shared one</span>
+      <span class="what">Where - <strong>Choose folder</strong>, and pick the shared one</span>
       <span class="note">Say yes when the browser asks to let the page edit it. From here on
       your tasks are files in that folder, saved as you type. Skip it and everything stays in
       this browser until you decide.</span>
     </div></li>
     <li><div class="body">
-      <span class="what">What &mdash; <strong>Start a new list</strong> and type your first task</span>
+      <span class="what">What - <strong>Start a new list</strong> and type your first task</span>
       <span class="note">The box is already waiting. Press Enter. Use Edge or Chrome.</span>
     </div></li>
   </ol>
   <p>That is it. To bring somebody in, use <strong>Spaces &rarr; Invite somebody</strong> - it
   makes one file that arrives with the space already set up.</p>
   <p>If colleagues already put your name on things while you were getting set up, the app
-  spots them and offers you the pile. Take them on and they become your tasks &mdash; and
+  spots them and offers you the pile. Take them on and they become your tasks - and
   stay in your colleagues&rsquo; <em>Waiting&nbsp;for</em>, because they wrote them.</p>
 </section>
 
 <section>
   <span class="eyebrow">Learn it by using it</span>
-  <h2>Four things, and nothing else to read</h2>
+  <h2>A few habits, and nothing else to read</h2>
   <p>Nothing is hidden, but nothing shows up before it is about something. Options appear as
   you start needing them.</p>
   <dl class="habits">
@@ -172,6 +175,12 @@ a { color: var(--accent); }
       <dt>Name somebody outside</dt>
       <dd>Somebody who is not on the folder cannot tick anything off, so it becomes a plain
       waiting-for instead of pretending to be their task.</dd>
+    </div>
+    <div>
+      <dt>Open a task and you see where it sits</dt>
+      <dd>The project it belongs to, the line above it, what is beside it and what is under
+      it, laid out around it. Every box is a way in, so you can follow a plan without going
+      back to a list. Press <kbd>Esc</kbd> and the arrow keys walk it.</dd>
     </div>
     <div>
       <dt>People</dt>
@@ -214,9 +223,10 @@ a { color: var(--accent); }
           <span class="note">Once, for everyone. Your intranet or a SharePoint-hosted site is
           tidiest at work. A document library will <em>not</em> work - that is file storage, not
           a web host.</span></div></li>
-        <li><div class="body"><span class="what">Open that address on the phone, then <strong>Add to phone</strong></span>
-          <span class="note">You get an icon, and after the first visit it opens with no
-          signal.</span></div></li>
+        <li><div class="body"><span class="what">Open that address on the phone, then add it to your home screen</span>
+          <span class="note">That one is your browser's own menu, not ours: <em>Add to Home
+          Screen</em> on an iPhone, <em>Install app</em> on Android. You get an icon, and after
+          the first visit it opens with no signal.</span></div></li>
         <li><div class="body"><span class="what">On the computer: <strong>Link vault file</strong>, saved beside the folder</span>
           <span class="note">Call it <span class="path">work-vault.md</span>. Next to the folder,
           not inside it. The computer then keeps it up to date on its own.</span></div></li>
@@ -234,6 +244,33 @@ a { color: var(--accent); }
       computers and phones, live both ways, no vault file to carry. It needs a password and ten
       minutes of setup by whoever owns the machine. Ask them to read
       <code>README.md</code>.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Chasing somebody who does not use this <span class="sub">one file, no account for them</span></summary>
+    <div class="inner">
+      <p>Open <strong>People</strong>, pick them, then <strong>Ask for an update</strong>. Tick
+      the things you are waiting on and press <strong>Make the sheet</strong>. You get one
+      self-contained page to email or drop in a chat; they tick what is done and press one
+      button, and what comes back goes in with <strong>Import a file</strong>, or
+      <strong>Paste a reply</strong> if they just replied in words. They never sign up for
+      anything.</p>
+      <p>GroupTodo also writes the covering note for you, in English or Norwegian, naming the
+      things you are asking about so it reads like a person rather than a system. You attach
+      the file yourself: a mail link is not allowed to attach anything, which is a browser
+      rule and not a missing feature.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Other ways to look at the same list <span class="sub">board, calendar, timeline, report, map</span></summary>
+    <div class="inner">
+      <p>Under <strong>Views</strong>: a board you drag cards across, a month calendar, a
+      timeline whose bars you drag to reschedule, a report of what was finished over the last
+      month or quarter, and a map of how everything links together.</p>
+      <p>None of them appears before your files have something for it to show. An empty
+      calendar is not a feature, so nothing with no dates in it has a calendar.</p>
     </div>
   </details>
 
@@ -275,7 +312,7 @@ a { color: var(--accent); }
           preview in a document library. Download the file and open it from your computer.</dd>
         </div>
         <div>
-          <dt>&ldquo;browser only &mdash; no files&rdquo; at the top</dt>
+          <dt>&ldquo;browser only - no files&rdquo; at the top</dt>
           <dd>No folder chosen yet, so nothing is being written. Vault &amp; sync &rarr; Choose
           folder. On a phone this is normal and expected.</dd>
         </div>
