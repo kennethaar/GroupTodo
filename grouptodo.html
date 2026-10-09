@@ -160,14 +160,6 @@ header.top .burger{display:none}
 .nudge.danger b{color:var(--late)}
 .nudge.ok{background:rgba(79,191,123,.1);border-color:rgba(79,191,123,.28);color:var(--ok)}
 
-.hero{
-  margin:14px 0 6px;padding:16px 18px;border-radius:14px;
-  background:linear-gradient(135deg,var(--bg3),var(--bg2));border:1px solid var(--border);
-}
-.hero h2{margin:0 0 3px;font-size:14px;letter-spacing:.3px;text-transform:uppercase;color:var(--fg3);font-weight:600}
-.hero p{margin:0 0 12px;color:var(--fg2);font-size:13.5px}
-.hero .acts{display:flex;gap:8px;flex-wrap:wrap}
-
 /* ============================================================
    15_TASK ROWS
    ============================================================ */
@@ -312,7 +304,7 @@ body.focus .burger{display:none}
 body.focus .h-title .sub{display:none}
 body.focus #btnTheme,body.focus #btnSearch{display:none}
 body.focus .wrap{max-width:46rem;margin-inline:auto}
-body.focus .nudgebar,body.focus .coach,body.focus .hero{display:none}
+body.focus .nudgebar,body.focus .coach{display:none}
 body.focus .section.quiet{display:none}
 body.focus .t-act{opacity:0;transition:opacity .12s ease}
 body.focus .task:hover .t-act,body.focus .task:focus-within .t-act{opacity:1}
@@ -782,7 +774,19 @@ details>summary:hover{color:var(--fg2)}
 .asset-missing{color:var(--warn,#b45309);font-size:12px;word-break:break-all}
 .blk .txt.dropping{outline:2px dashed var(--accent,#2563eb);outline-offset:2px;border-radius:4px}
 .blk .txt[contenteditable]{outline:none}
-.blk .props{font-family:var(--mono);font-size:11px;color:var(--fg3);padding-left:0;margin:1px 0 2px}
+.blk .props{font-family:var(--mono);font-size:11px;color:var(--fg3);padding-left:0;margin:1px 0 2px 53px}
+/* ---------- one text column per depth ----------
+   The state badge sits at the start of the line, where a plain note has only
+   its dot, so a TODO used to push its own words further right than the words
+   of the note above it -- and a todo indented under a note began to the LEFT
+   of that note's text, which reads as less indented rather than more. The
+   badge gets a column of its own instead, the same width whatever it says, so
+   every line at a depth starts its words in the same place. The badge is still
+   in the line, not in the gutter: it is the first thing on it.
+   53px = the 46px column plus the 7px the line puts between its parts, which
+   is what the body lines and the key:: value line under a block line up on. */
+.blk>.line>.state{min-width:46px;display:inline-flex;align-items:center;justify-content:center}
+.blk .bodyline{margin-left:53px}
 /* ---------- several lines picked with the mouse ----------
    The whole line lights up, children included, because a line and what hangs
    under it travel together. */
@@ -1016,6 +1020,18 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4p
 }
 .toast.warn{border-color:rgba(224,176,80,.5)} .toast.err{border-color:rgba(255,107,107,.5)}
 .toast .x{margin-left:auto;color:var(--fg3)}
+/* ---------- the next best move ----------
+   It used to be a card nailed to the top of the day. A suggestion you had
+   read and decided against was still sitting there the next time you looked,
+   with no way to say no to it -- which is a nag, and the one thing the nudges
+   are written not to be. It is a toast now: it arrives, it offers the move,
+   and it goes. */
+.toast.move{flex-direction:column;align-items:stretch;gap:5px}
+.toast.move .h{display:flex;align-items:center;font-size:11px;letter-spacing:.5px;
+  text-transform:uppercase;color:var(--fg3);font-weight:600}
+.toast.move .t{font-weight:600;font-size:14px}
+.toast.move .b{color:var(--fg2);font-size:12.5px;line-height:1.45}
+.toast.move .acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:3px}
 
 /* keyboard chord hud */
 #chord{
@@ -1244,6 +1260,12 @@ const DIRS = {
   orgs     : join(PAGES, "o"),
   people   : join(PAGES, "p"),
   contexts : join(PAGES, "c"),
+  /* Templates used to be a folder of their own, beside the checklists. They
+     were never a different thing: both are a page you keep in order to pour it
+     into another page later, and having two of them meant two places to look,
+     two ways to make one, and a rule nobody could state about which to use.
+     There is one folder now -- pages/8/, the lists -- and this is only the old
+     address, kept so migrateTemplates() can find what is still at it. */
   templates: join(PAGES, "templates"),
   verbs    : join(PAGES, "verbs"),
   zettel   : join(PAGES, "z"),
@@ -2124,6 +2146,33 @@ function migrateVault() {
   migrateHorizons();
   migrateCancelled();
   migrateJournals();
+  migrateTemplates();
+  return moved;
+}
+
+/* ---------- one folder for the stencils ----------
+   pages/templates/ and pages/8/ held the same kind of page: one you keep in
+   order to pour it into another page later. The template folder's pages were
+   poured when a page was created, the lists when you ran them, and that was
+   the whole difference -- a difference in when, dressed up as a difference in
+   kind. So the templates move in with the lists, keeping their names, because
+   the names are what the date cascade looks them up by: "journals", "1",
+   "2026-W38". A name already taken in pages/8/ keeps its "-template" suffix
+   rather than overwriting somebody's list. */
+function migrateTemplates() {
+  let moved = 0;
+  const old = DIRS.templates;
+  for (const path of Array.from(V.pages.keys())) {
+    if (!path.startsWith(old + "/")) continue;
+    const rest = path.slice(old.length + 1);
+    let target = join(DIRS.lists, rest);
+    if (V.pages.has(target)) target = join(DIRS.lists, rest.replace(/\.md$/i, "") + "-template.md");
+    if (V.pages.has(target)) { removePage(path); continue; }
+    putPage(target, getPage(path));
+    removePage(path);
+    moved++;
+  }
+  if (moved) notify("Moved " + moved + " template(s) into pages/8/, with the lists.");
   return moved;
 }
 
@@ -3192,13 +3241,31 @@ function pageKind(path) {
   if (path.startsWith(DIRS.zettel    + "/")) return "zettel";
   if (path.startsWith(DIRS.areas     + "/")) return "area";
   if (path.startsWith(DIRS.goals     + "/")) return "goal";
+  // Both folders answer "checklist": the old one empties on load, and until it
+  // has, what is in it is a list like any other rather than a second species.
   if (path.startsWith(DIRS.lists     + "/")) return "checklist";
-  if (path.startsWith(DIRS.templates + "/")) return "template";
+  if (path.startsWith(DIRS.templates + "/")) return "checklist";
   if (path.startsWith(DIRS.verbs     + "/")) return "verb";
   return "page";
 }
+/* ---------- a stencil is not work ----------
+   A list is kept in order to be poured into a page later, so its own lines are
+   what you WILL do, over and over, and never what anybody did. The screens
+   that answer "what is happening" -- the report, the chart, the dated audit --
+   would otherwise count the stencil alongside the copies taken from it, which
+   is the same week of work reported twice. Verbs are not work either: they are
+   the vocabulary. Both stay perfectly findable in search and on the map; they
+   are only kept out of the counting. */
+const isStencilPath = path => ["checklist", "verb"].includes(pageKind(path));
+
 const baseName  = p => (p || "").split("/").pop().replace(/\.md$/i, "");
-const pageTitle = p => (getPage(p)?.props?.title) || baseName(p);
+/* A stencil's title:: is a hole to be filled -- "%date%", "%title%" -- and not
+   a name, so it is never shown as one: the file name is what it is called
+   until something pours it into a page and fills the hole in. */
+const pageTitle = p => {
+  const t = getPage(p)?.props?.title;
+  return (t && !/%\w+%/.test(t)) ? t : baseName(p);
+};
 
 /* Short reference used in links: "1/Fix sink", "c/phone", "2026-09-17" */
 function pageRef(path) {
@@ -3330,8 +3397,13 @@ function templateCandidates(date, kind) {
   return list;
 }
 function readTemplate(name) {
-  const p = join(DIRS.templates, name + ".md");
-  return V.pages.has(p) ? p : null;
+  // pages/8/ first, which is where everything ends up; the old folder second,
+  // so a vault that has not been written to since the merge still works.
+  for (const dir of [DIRS.lists, DIRS.templates]) {
+    const p = join(dir, name + ".md");
+    if (V.pages.has(p)) return p;
+  }
+  return null;
 }
 function resolveTemplate({date, kind}) {
   const cands = templateCandidates(date, kind);
@@ -3898,7 +3970,7 @@ function healthScan() {
       issues.push({path, type: "missing-waiting_since", text: "Waiting project without waiting_since"});
   }
   for (const [path, page] of V.pages) {
-    if (pageKind(path) === "template") continue;
+    if (isStencilPath(path)) continue;
     const check = (text, blk) => {
       for (const target of linksIn(text)) {
         const t = target.split("][")[0];
@@ -4763,29 +4835,81 @@ function cadenceFrom(name) {
   return m[1].toLowerCase().replace(/^annually$/, "annual");
 }
 
-/* Copy a checklist's items into a target page as fresh open actions. */
-function runChecklist(listPath, targetPath, context) {
+/* ---------- pouring a list into a page ----------
+   One gesture, whatever the page was kept for: its fields, its lines and its
+   todos all arrive on the page you pick. Which of the three you get is the
+   list's business, not a setting -- it is what the list has.
+
+     fields  the key:: value lines at its top become values of the target page,
+             %vars% expanded. A value the page already has is left alone: the
+             stencil is a starting point, never a correction.
+     todos   a checklist's steps arrive as open actions, under one bullet
+             naming the list so they can be told apart later and ticked off as
+             a run of it.
+     lines   a stencil that is not a checklist -- the ones that used to live in
+             pages/templates/ -- arrives as it is written, headings and blank
+             lines included, at the end of the document. A journal template is
+             not a pile of things to do; it is the shape of the day.
+
+   A step that already carries a state keeps it either way, so a list can hold
+   a line that is a note rather than a task. */
+const STENCIL_OWN_PROPS = new Set(["title", "type", "kind", "cadence", "created", "id", "outcome"]);
+
+/* Steps or lines? What the file says: a list filed as a checklist is a list of
+   things to do, and anything else is a page to copy out. */
+const stencilMakesTodos = path => {
+  const page = getPage(path); if (!page) return false;
+  if (trim(page.props?.type || "").toLowerCase() === "checklist") return true;
+  let any = false;
+  walkBlocks(page.blocks, b => { if (b.state) any = true; });
+  return any;
+};
+
+function applyStencil(listPath, targetPath, context) {
   const list = getPage(listPath), target = getPage(targetPath);
-  if (!list || !target) return 0;
+  if (!list || !target) return {lines: 0, fields: 0};
   const ctx = context || state.context;
+  const vars = {name: pageTitle(targetPath), title: pageTitle(targetPath), project: pageTitle(targetPath),
+                date: todayISO(), created: "[[" + todayISO() + "]]"};
+  const todos = stencilMakesTodos(listPath);
+
+  let fields = 0;
+  for (const [k, v] of Object.entries(list.props || {})) {
+    if (STENCIL_OWN_PROPS.has(k.toLowerCase())) continue;
+    if (Object.keys(target.props || {}).some(have => have.toLowerCase() === k.toLowerCase())) continue;
+    target.props[k] = expandVars(v, vars);
+    createLinkedPages(target.props[k]);
+    fields++;
+  }
+
   let n = 0;
-  const parent = newBlock({
-    title: pageTitle(listPath) + " [[8/" + baseName(listPath) + "]]",
-    props: {Added: "[[" + todayISO() + "]]"},
-  });
   const copy = blocks => (blocks || []).map(b => {
     n++;
+    const title = expandVars(b.title, vars);
+    const state_ = b.state || (todos ? "TODO" : null);
     return stampAuthor(newBlock({
-      state: "TODO",
-      title: b.title + (ctx && !hasContextLink(b.title) ? " [[c/" + ctx + "]]" : ""),
-      props: {Added: "[[" + todayISO() + "]]"},
+      state: state_,
+      // A context belongs on something you are going to do, not on a heading.
+      title: title + (state_ && ctx && !hasContextLink(title) ? " [[c/" + ctx + "]]" : ""),
+      props: state_ ? {Added: "[[" + todayISO() + "]]"} : {},
+      body: (b.body || []).map(l => expandVars(l, vars)),
       children: copy(b.children),
     }));
   });
-  parent.children = copy(list.blocks);
-  target.blocks.push(parent);
+  const copied = copy(list.blocks);
+
+  if (todos) {
+    const parent = newBlock({
+      title: pageTitle(listPath) + " [[8/" + baseName(listPath) + "]]",
+      props: {Added: "[[" + todayISO() + "]]"},
+    });
+    parent.children = copied;
+    target.blocks.push(parent);
+  } else {
+    target.blocks.push(...copied);
+  }
   touch(targetPath);
-  return n;
+  return {lines: n, fields};
 }
 
 function pageTemplateFor(kind, title) {
@@ -5512,7 +5636,7 @@ const state = {
   searchFilter: "all",
   selected: null,       // block id
   surfaced: [],         // ids of the 3 surfaced actions
-  graphMode: "map",     // "map" the whole vault, "plex" one page and its neighbours
+  graphMode: "plex",    // "plex" one page and its neighbours, "map" the whole vault
   graphFocus: null,     // the page in the middle of the plex
   graphEdit: false,     // whether a drag in the plex writes a link
   lastTodoTouch: Date.now(),
@@ -5520,6 +5644,21 @@ const state = {
 };
 
 function go(view, opts = {}) {
+  /* ---------- arriving at the graph ----------
+     Two things were wrong with the way you got here. The whole-vault map
+     opened first, which is a picture of everything and so a picture of
+     nothing; and the mindmap centred whatever had the most links in the vault,
+     which is never what you were just looking at. So the graph opens as the
+     mindmap every time you arrive from somewhere else -- the toggle inside it
+     still works, it is only the arrival that is decided -- and if you arrived
+     from a page, that page is the middle. */
+  if (view === "graph" && state.view !== "graph") {
+    const patch = {};
+    if (opts.graphMode == null) patch.graphMode = "plex";
+    if (opts.graphFocus == null && state.view === "page" && state.pagePath)
+      patch.graphFocus = (V.space || "") + "\u0000" + state.pagePath;
+    opts = Object.assign(patch, opts);
+  }
   if (opts.person != null) state.person = opts.person;
   // Worked out before this arrival is counted, so the tour asks about the
   // places you have left rather than the one you are standing in.
@@ -8396,7 +8535,7 @@ function graphData() {
   return memo("graphData", () => {
     const nodes = [], edges = [], index = new Map();
     const keyOf = (space, path) => (space || "") + "\u0000" + path;
-    const skip = k => k === "template" || k === "verb";
+    const skip = k => k === "verb";
     const add = (space, path) => {
       const k = keyOf(space, path);
       let i = index.get(k);
@@ -8465,8 +8604,13 @@ function graphData() {
     let dropped = 0;
     let out = {nodes, edges, dropped};
     if (nodes.length > CFG.graphNodes) {
+      /* The page you came in from is kept whatever its degree: the mindmap is
+         about to centre on it, and a middle that was pruned for being quiet is
+         how "show me this project" ends up showing something else. */
+      const centre = state.graphFocus || null;
       const keep = nodes.slice()
-        .sort((a, b) => b.deg - a.deg || a.label.localeCompare(b.label))
+        .sort((a, b) => (b.key === centre) - (a.key === centre)
+                     || b.deg - a.deg || a.label.localeCompare(b.label))
         .slice(0, CFG.graphNodes);
       const kept = new Map();
       keep.forEach((nd, i) => kept.set(nodes.indexOf(nd), i));
@@ -9932,8 +10076,7 @@ function offerCascade(space, path) {
 function ganttRowsHere() {
   const out = [];
   for (const [path, page] of V.pages) {
-    const kind = pageKind(path);
-    if (kind === "template" || kind === "verb") continue;
+    if (isStencilPath(path)) continue;
     const journal = isJournalPath(path);
     const day = journal ? baseName(path) : null;
     const tasks = [];
@@ -10410,23 +10553,53 @@ const closedBy = b => trim(trim(blockProp(b, "done_by") || "")
 const closedOn = b => (trim(blockProp(b, "done_by") || "").match(/\d{4}-\d{2}-\d{2}/) || [])[0]
   || closedDate(b) || null;
 
+/* ---------- who the work was for ----------
+   There is no customer field, and there does not need to be one: an org is a
+   page like any other -- pages/o/Acme -- so "this was for Acme" is already
+   written as a link to it. This reads that link out of wherever somebody
+   naturally put it: on the task, on a bullet above it, on the page the task
+   lives on, or on the project the task belongs to. */
+const ORG_LINK = /\[\[o\/([^\]]+)\]\]/;
+const orgIn = text => { const m = ORG_LINK.exec(text || ""); return m ? trim(m[1]) : ""; };
+function orgOfPage(path) {
+  const page = path && getPage(path);
+  if (!page) return "";
+  for (const v of Object.values(page.props || {})) {
+    const o = orgIn(String(v || ""));
+    if (o) return o;
+  }
+  return orgIn(pageTitle(path));
+}
+function orgOfBlock(path, block, projectPath) {
+  for (let b = block; b; b = b._parent) {
+    const o = orgIn([b.title, ...(b.body || [])].join("\n"));
+    if (o) return o;
+  }
+  return orgOfPage(path) || orgOfPage(projectPath) || "";
+}
+
 function completedSinceHere(from) {
   const out = [];
   for (const [path, page] of V.pages) {
-    if (pageKind(path) === "template") continue;
-    walkBlocks(page.blocks, b => {
-      if (b.state !== "DONE" || isMessage(b)) return;
+    if (isStencilPath(path)) continue;
+    // Flattened rather than walked, because the customer is looked for up the
+    // bullets above a task and that needs each block's parent.
+    for (const b of flattenBlocks(page.blocks)) {
+      if (b.state !== "DONE" || isMessage(b)) continue;
       const when = closedOn(b);
       const journal = isJournalPath(path);
+      const linked = journal ? nearestProjectAncestor(b) : null;
+      const projectPath = journal ? (linked ? findExistingPage(linked.ref) : null) : path;
       out.push({
         path, block: b, state: "DONE", title: b.title,
         when, undated: !when,
         who: closedBy(b) || journalOwnerOf(path) || "",
         context: contextOf(b.title), due: dueDate(b), assignee: assigneeOf(b),
-        project: journal ? null : pageTitle(path),
-        projectPath: journal ? null : path,
+        org: orgOfBlock(path, b, projectPath),
+        project: journal ? (linked ? linked.title : null) : pageTitle(path),
+        projectPath,
       });
-    });
+    }
   }
   return out.filter(r => r.undated || r.when >= from);
 }
@@ -10434,33 +10607,126 @@ const completedSince = from =>
   memo("completed:" + from, () => acrossSpaces(() => completedSinceHere(from)));
 
 const REPORT_RANGES = [
+  ["week",    "This week",       0],
   ["month",   "Last month",      1],
   ["quarter", "Last quarter",    3],
   ["half",    "Last 2 quarters", 6],
   ["year",    "Last year",      12],
 ];
 
+/* Monday, because that is where a week of work starts. */
+const weekStartISO = iso => shiftISO(iso, -(((parseISO(iso) || new Date()).getDay() + 6) % 7));
+
+/* The window the report is about: one of the named ranges, or the two dates
+   you typed. Both ends are inclusive and both are plain ISO days, which is
+   what the files carry, so nothing has to be parsed to compare them. */
+function reportWindow() {
+  const today = todayISO();
+  if (state.reportRange === "custom") {
+    const from = state.reportFrom || weekStartISO(today);
+    const to   = state.reportTo   || today;
+    // Typed the other way round is still a window, so it is read as one.
+    return from <= to ? {from, to, custom: true} : {from: to, to: from, custom: true};
+  }
+  const key = state.reportRange || "week";
+  const months = (REPORT_RANGES.find(r => r[0] === key) || REPORT_RANGES[0])[2];
+  return {from: months ? addMonths(today, -months) : weekStartISO(today), to: today};
+}
+
+/* Four questions about the same finished work. A status update is read by
+   customer, a stand-up by project, a one-to-one by person, and a year is read
+   month by month -- so the grouping is a switch rather than a decision taken
+   once in the code. */
+const REPORT_GROUPS = [
+  ["customer", "Customer"],
+  ["project",  "Project"],
+  ["person",   "Person"],
+  ["month",    "Month"],
+];
+function reportGroupKey(r, by) {
+  if (by === "project") return r.project || "No project";
+  if (by === "person")  return r.who || "Nobody named";
+  if (by === "month")   return String(r.when).slice(0, 7);
+  return r.org || "No customer";
+}
+function reportGroupLabel(key, by) {
+  if (by !== "month") return key;
+  return new Date(key + "-01T00:00:00Z")
+    .toLocaleDateString(undefined, {month: "long", year: "numeric", timeZone: "UTC"});
+}
+/* Months read newest first, because that is the order a report is read in.
+   The rest read biggest first: the customer you did most for is the headline. */
+function reportGroups(rows, by) {
+  const g = new Map();
+  for (const r of rows) {
+    const k = reportGroupKey(r, by);
+    if (!g.has(k)) g.set(k, []);
+    g.get(k).push(r);
+  }
+  const pairs = Array.from(g.entries());
+  return by === "month"
+    ? pairs.sort((a, b) => b[0].localeCompare(a[0]))
+    : pairs.sort((a, b) => b[1].length - a[1].length || String(a[0]).localeCompare(String(b[0])));
+}
+
 function viewReport() {
   const c = el("div", {class: "wrap"});
-  const key = state.reportRange || "month";
-  const months = (REPORT_RANGES.find(r => r[0] === key) || REPORT_RANGES[0])[2];
-  const from = addMonths(todayISO(), -months);
-  const all = completedSince(from);
-  const dated = all.filter(r => !r.undated);
-  const undated = all.length - dated.length;
+  const key = state.reportRange || "week";
+  const win = reportWindow();
+  const by = state.reportBy || "customer";
+  const all = completedSince(win.from);
+  const dated = all.filter(r => !r.undated && r.when >= win.from && r.when <= win.to);
+  const undated = all.filter(r => r.undated).length;
+
+  const goReport = patch => go("report", Object.assign(
+    {reportRange: key, reportWho: state.reportWho, reportSpace: state.reportSpace, reportBy: by}, patch));
 
   const bar = el("div", {class: "statefilter"});
   for (const [k, label] of REPORT_RANGES)
     bar.append(el("button", {class: "chip filter" + (key === k ? " on" : ""),
-      onclick: () => go("report", {reportRange: k, reportWho: state.reportWho})},
+      onclick: () => goReport({reportRange: k})},
       (key === k ? "✓ " : "") + label));
+  bar.append(el("button", {class: "chip filter" + (key === "custom" ? " on" : ""),
+    onclick: () => goReport({reportRange: "custom"})},
+    (key === "custom" ? "✓ " : "") + "Pick dates"));
   c.append(el("div", {class: "section"}, bar));
+
+  /* Typed dates are a window of your own: the quarter that matters to you
+     rarely starts where the calendar's does. Changing either end redraws at
+     once -- there is nothing to submit, because there is nothing to get
+     wrong. */
+  if (key === "custom") {
+    const from = el("input", {type: "date", value: win.from, max: todayISO()});
+    const to   = el("input", {type: "date", value: win.to,   max: todayISO()});
+    from.onchange = () => goReport({reportRange: "custom", reportFrom: from.value || win.from, reportTo: to.value || win.to});
+    to.onchange   = () => goReport({reportRange: "custom", reportFrom: from.value || win.from, reportTo: to.value || win.to});
+    c.append(el("div", {class: "section", style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap"},
+      el("span", {class: "alab"}, "From"), from,
+      el("span", {class: "alab"}, "to"), to));
+  }
+
+  /* Spaces are separate folders -- work and private are not one report, and
+     adding them up is how a status update to a customer ends up with somebody's
+     weekend on it. So they are split, and "All spaces" stays a choice. */
+  const spaces = visibleSpaces();
+  const space = state.reportSpace || "";
+  if (spaces.length > 1) {
+    const sbar = el("div", {class: "statefilter"});
+    const count = n => dated.filter(r => !n || (r.space || "") === n).length;
+    sbar.append(el("button", {class: "chip filter" + (!space ? " on" : ""),
+      onclick: () => goReport({reportSpace: ""})}, (!space ? "✓ " : "") + "All spaces " + count("")));
+    for (const n of spaces)
+      sbar.append(el("button", {class: "chip filter" + (space === n ? " on" : ""),
+        onclick: () => goReport({reportSpace: n})}, (space === n ? "✓ " : "") + n + " " + count(n)));
+    c.append(el("div", {class: "section"}, sbar));
+  }
+  const inSpaceRows = space ? dated.filter(r => (r.space || "") === space) : dated;
 
   /* Who ticked things off, in this window. Names come from the files rather
      than from the member list, so somebody who has since left still shows up
      against the work they did. */
   const byWho = new Map();
-  for (const r of dated) {
+  for (const r of inSpaceRows) {
     const name = r.who || "Nobody named";
     byWho.set(name, (byWho.get(name) || 0) + 1);
   }
@@ -10468,46 +10734,44 @@ function viewReport() {
   if (byWho.size > 1) {
     const wbar = el("div", {class: "statefilter"});
     wbar.append(el("button", {class: "chip filter" + (!who ? " on" : ""),
-      onclick: () => go("report", {reportRange: key, reportWho: ""})},
-      (!who ? "✓ " : "") + "Everyone " + dated.length));
+      onclick: () => goReport({reportWho: ""})},
+      (!who ? "✓ " : "") + "Everyone " + inSpaceRows.length));
     for (const [name, n] of Array.from(byWho.entries()).sort((a, b) => b[1] - a[1]))
       wbar.append(el("button", {class: "chip filter" + (who === name ? " on" : ""),
-        onclick: () => go("report", {reportRange: key, reportWho: name})},
+        onclick: () => goReport({reportWho: name})},
         (who === name ? "✓ " : "") + name + " " + n));
     c.append(el("div", {class: "section"}, wbar));
   }
 
-  const rows = (who ? dated.filter(r => (r.who || "Nobody named") === who) : dated)
+  const rows = (who ? inSpaceRows.filter(r => (r.who || "Nobody named") === who) : inSpaceRows)
     .sort((a, b) => String(b.when).localeCompare(String(a.when)));
 
-  const since = humanDate(from);
+  const gbar = el("div", {class: "statefilter"});
+  gbar.append(el("span", {class: "alab", style: "align-self:center"}, "Group by"));
+  for (const [k, label] of REPORT_GROUPS)
+    gbar.append(el("button", {class: "chip filter" + (by === k ? " on" : ""),
+      onclick: () => goReport({reportBy: k})}, (by === k ? "✓ " : "") + label));
+  c.append(el("div", {class: "section"}, gbar));
+
+  const window_ = humanDate(win.from) + " to " + humanDate(win.to);
   c.append(el("div", {class: "section"},
     el("div", {class: "reportsum"},
       el("b", {}, String(rows.length)),
-      " finished since " + since +
-      (who ? " by " + who : "") +
+      " finished, " + window_ +
+      (who ? ", by " + who : "") +
+      (space ? ", in " + space : "") +
+      " · " + new Set(rows.map(r => r.org || "No customer")).size + " customer(s)" +
       " · " + new Set(rows.map(r => r.project || "No project")).size + " project(s)" +
       (who ? "" : " · " + byWho.size + " person(s)"),
       el("button", {class: "btn sm ghost", style: "margin-left:auto",
-        onclick: () => copyReport(rows, since, who)}, "Copy as text"))));
+        onclick: () => copyReport(rows, window_, who, by)}, "Copy as text"))));
 
   if (!rows.length) {
     c.append(section("Finished", 0, el("div", {class: "card"}, el("div", {class: "empty"},
       "Nothing ticked off in this window. Tick a task and it lands here."))));
   } else {
-    /* Grouped by month, because that is the shape a report is read in: what
-       happened in September, then in August. */
-    const byMonth = new Map();
-    for (const r of rows) {
-      const m = r.when.slice(0, 7);
-      if (!byMonth.has(m)) byMonth.set(m, []);
-      byMonth.get(m).push(r);
-    }
-    for (const [m, items] of byMonth) {
-      const label = new Date(m + "-01T00:00:00Z")
-        .toLocaleDateString(undefined, {month: "long", year: "numeric", timeZone: "UTC"});
-      c.append(section(label, items.length, pagedCard(items, reportRow)));
-    }
+    for (const [k, items] of reportGroups(rows, by))
+      c.append(section(reportGroupLabel(k, by), items.length, pagedCard(items, reportRow)));
   }
 
   // Never quietly drop work: say what has no date and why it cannot be placed.
@@ -10525,23 +10789,18 @@ function reportRow(r) {
     el("span", {class: "when"}, humanDate(r.when)),
     el("span", {class: "what", html: renderInline(titleForRow(r.title))}),
     el("span", {class: "marks"},
+      r.org ? el("span", {class: "chip"}, r.org) : null,
       r.project ? el("span", {class: "chip proj"}, r.project) : null,
       r.who ? el("span", {class: "chip who"}, r.who) : null));
 }
 
 /* A report is written to be pasted somewhere else -- an email, a status
    update, a stand-up note -- so it leaves as plain text rather than only
-   living on this screen. */
-function copyReport(rows, since, who) {
-  const lines = ["Finished since " + since + (who ? " by " + who : "") + " (" + rows.length + ")", ""];
-  const byProject = new Map();
-  for (const r of rows) {
-    const k = r.project || "No project";
-    if (!byProject.has(k)) byProject.set(k, []);
-    byProject.get(k).push(r);
-  }
-  for (const [name, items] of Array.from(byProject.entries()).sort((a, b) => b[1].length - a[1].length)) {
-    lines.push("## " + name + " (" + items.length + ")");
+   living on this screen, grouped the way the screen is grouped. */
+function copyReport(rows, window_, who, by) {
+  const lines = ["Finished " + window_ + (who ? " by " + who : "") + " (" + rows.length + ")", ""];
+  for (const [k, items] of reportGroups(rows, by || "customer")) {
+    lines.push("## " + reportGroupLabel(k, by || "customer") + " (" + items.length + ")");
     for (const r of items)
       lines.push("- " + plainTitle(r.title) + "  - " + r.when + (r.who && !who ? ", " + r.who : ""));
     lines.push("");
@@ -12233,7 +12492,13 @@ function viewMyDay() {
   c.append(el("div", {class: "section"}, quickAdd(path, {placeholder: "Add a task for today"})));
   // A suggestion, when there is one, takes the place of the hero card rather than
   // stacking on top of it: two things competing to be the next thing is neither.
-  if (!coach) c.append(nudgeBar(), tipCard() || heroCard());
+  if (!coach) {
+    // A tip is about the screen you are on, so it stays on it; the next best
+    // move is about the whole system and is offered as a toast instead.
+    const tip = tipCard();
+    c.append(nudgeBar());
+    if (tip) c.append(tip); else offerNextBestMove();
+  }
 
   // One task, one row. The sections below are different questions about the
   // same journal, so without this a task captured today that also has a date
@@ -12326,7 +12591,7 @@ const anyDated = () => memo("anyDated", () =>
   leafActions().some(a => a.due) ||
   acrossSpaces(() => {
     for (const [path, page] of V.pages) {
-      if (pageKind(path) === "template") continue;
+      if (isStencilPath(path)) continue;
       let hit = false;
       walkBlocks(page.blocks, b => {
         if (hit || !b.state || isMessage(b)) return;
@@ -12504,21 +12769,41 @@ function openNudgeExplainer() {
   });
 }
 
-function heroCard() {
+/* ---------- the next best move, offered rather than posted ----------
+   This was a card at the top of the day, which made a suggestion into a
+   fixture: once you had read "Where are you right now?" and decided you did
+   not want to pick a context, it was still there, every day, with no way to
+   say no to it. So it is a toast. It arrives, it offers the move and the two
+   alternatives, and it fades.
+
+   It is not repeated for nothing: the same advice is said once and not again
+   until the advice itself changes, so a redraw of the day -- and there are
+   many -- is silent. */
+let MOVE_SAID = "";
+function offerNextBestMove(force = false) {
+  // Focus mode is the screen with everything taken away. A toast is something.
+  if (document.body.classList.contains("focus")) return;
   const nb = nextBestAction();
-  return el("div", {class: "hero"},
-    el("h2", {}, "Next best move"),
-    el("div", {style: "font-size:16px;font-weight:600;margin-bottom:2px"}, nb.title),
-    el("p", {html: renderInline(nb.body)}),
+  const said = nb.title + "\u0000" + nb.body;
+  if (!force && said === MOVE_SAID) return;
+  MOVE_SAID = said;
+  const shut = e => e.target.closest(".toast").remove();
+  const act = (cls, label, run) => el("button", {class: "btn sm " + cls,
+    onclick: e => { shut(e); run(); }}, label);
+  const t = el("div", {class: "toast move"},
+    el("div", {class: "h"}, "Next best move",
+      el("button", {class: "x", onclick: shut}, "\u2715")),
+    el("div", {class: "t"}, nb.title),
+    el("div", {class: "b", html: renderInline(nb.body)}),
     // The alternatives are alternatives. When the best move already IS capture,
     // offering "Capture something" again beside it just looked broken.
     el("div", {class: "acts"},
-      el("button", {class: "btn primary", onclick: nb.act}, nb.cta),
-      nb.cta === "Capture something" ? null
-        : el("button", {class: "btn ghost", onclick: () => openCapture()}, "Capture something"),
-      el("button", {class: "btn ghost", onclick: () => openContextPicker("Where are you now?", ctx => surfaceContext(ctx))},
-        state.context ? "Change context" : "Set context")
-    ));
+      act("primary", nb.cta, nb.act),
+      nb.cta === "Capture something" ? null : act("ghost", "Capture something", () => openCapture()),
+      act("ghost", state.context ? "Change context" : "Set context",
+          () => openContextPicker("Where are you now?", ctx => surfaceContext(ctx)))));
+  $("#toasts").append(t);
+  setTimeout(() => t.remove(), 9000);
 }
 
 /* With onCycle the badge is the control: one click per step, in place, instead of
@@ -12974,7 +13259,7 @@ function linkCandidates(query) {
   let paths;
   if (pfx != null && dir) paths = allPages(q => q.startsWith(dir + "/"));
   else if (pfx != null) paths = [];            // a prefix of its own invention
-  else paths = allPages(q => !["template", "verb"].includes(pageKind(q)));
+  else paths = allPages(q => pageKind(q) !== "verb");
 
   const rows = paths.map(path => ({
     path, ref: pageRef(path), title: pageTitle(path), kind: pageKind(path),
@@ -13726,7 +14011,8 @@ function viewToday() {
   const page = getPage(path);
   const acts = leafActions();
   const c = el("div", {class: "wrap"});
-  c.append(nudgeBar(), heroCard());
+  c.append(nudgeBar());
+  offerNextBestMove();
 
   const due = acts.filter(a => a.group === "LATE" || a.group === "TODAY");
   if (due.length) c.append(section("Due", due.length, taskCard(due)));
@@ -14102,7 +14388,7 @@ function checklistKindFact(path) {
     pills: () => [factPill(tpl ? "project template" : "simple checklist", tpl ? "fok" : "fquiet",
       tpl ? "every run spins up a whole project" : "steps you tick off in place",
       () => chipMenu(tpl ? "Project template" : "Simple checklist", "what running this does", [
-        ["a", tpl ? "Run it into a new project" : "Run this list", null, () => openRunChecklist(path)],
+        ["a", tpl ? "Run it into a new project" : "Add it to a page", null, () => openRunChecklist(path)],
         ["b", tpl ? "Make it a simple checklist" : "Make it a project template", null,
           () => { setChecklistKind(path, tpl ? null : "project"); render(); }],
       ]))],
@@ -14241,7 +14527,7 @@ function viewPage() {
   const acts = [];
   if (pageKind(path) === "checklist")
     acts.push(el("button", {class: "btn sm ghost", onclick: () => openRunChecklist(path)},
-      isProjectTemplate(path) ? "new project from this" : "run this"));
+      isProjectTemplate(path) ? "new project from this" : "add this to a page"));
   if (code) acts.push(el("button", {class: "btn sm ghost", onclick: () => openAddNextAction(path)}, "+ next action"));
   acts.push(el("button", {class: "btn sm ghost", onclick: () => { updateReviewed(path); render(); }}, "mark reviewed"));
 
@@ -16756,17 +17042,34 @@ function runTemplateAsProject(listPath) {
   setTimeout(() => nameInput.focus(), 30);
 }
 
+/* Any page can be poured into any page, so the picker offers every page there
+   is rather than today and the live projects alone -- a template for a person
+   page or an org page was impossible to use before, which is most of why the
+   two folders stayed separate. Today stays first, because it usually is. */
 function openRunChecklist(listPath) {
   if (isProjectTemplate(listPath)) { runTemplateAsProject(listPath); return; }
-  const targets = [{label: "Today", path: ensureJournal(todayISO())}]
-    .concat([...projectsIn("1"), ...projectsIn("3")].map(p => ({label: pageTitle(p), path: p})));
+  const todos = stencilMakesTodos(listPath);
+  const today = ensureJournal(todayISO());
+  const seen = new Set([today, listPath]);
+  const targets = [{label: "Today", path: today}];
+  const offer = (path, label) => {
+    if (seen.has(path)) return;
+    seen.add(path);
+    targets.push({label, path});
+  };
+  for (const pth of [...projectsIn("1"), ...projectsIn("3")]) offer(pth, pageTitle(pth));
+  for (const pth of allPages(q => !isStencilPath(q))) offer(pth, pageRef(pth) + "  \u00b7  " + pageTitle(pth));
   listPicker({
-    title: "Run " + pageTitle(listPath) + " into",
+    title: "Add " + pageTitle(listPath) + " to",
     items: targets,
     label: t => t.label,
     onPick: t => {
-      const n = runChecklist(listPath, t.path);
-      notify(n + " steps added to " + t.label + ".");
+      const got = applyStencil(listPath, t.path);
+      const bits = [];
+      if (got.lines) bits.push(got.lines + " " + (todos ? "step" : "line") + (got.lines === 1 ? "" : "s"));
+      if (got.fields) bits.push(got.fields + " field" + (got.fields === 1 ? "" : "s"));
+      notify(bits.length ? bits.join(" and ") + " added to " + t.label + "."
+                         : pageTitle(listPath) + " had nothing left to add to " + t.label + ".");
       render();
     },
   });
@@ -17426,11 +17729,13 @@ async function seedIfEmpty() {
       });
     }
   }
-  putPage(join(DIRS.templates, "journals.md"), {
+  /* The page stencils live with the lists now, in pages/8/, and are looked up
+     by name: "journals" shapes a day page, "1" shapes a new active project. */
+  putPage(join(DIRS.lists, "journals.md"), {
     props: {title: "%date%", created: "[[%date%]]"},
     blocks: [newBlock({title: "Captured"}), newBlock({title: "Done today"})],
   });
-  putPage(join(DIRS.templates, "1.md"), {
+  putPage(join(DIRS.lists, "1.md"), {
     props: {title: "%title%", status: "%status%", outcome: "",
             created: "%created%", reviewed: "%reviewed%"},
     blocks: [],

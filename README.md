@@ -329,19 +329,76 @@ Closed tasks have no handles: their end is the day somebody ticked them off,
 and dragging that would be editing the past. On a keyboard, focus a row and use
 `Alt+←` / `Alt+→` to move it a day, with `Shift` for a week.
 
-**Report** - what actually got finished, over the last month, quarter, two
-quarters or year, filterable by person. It reads `done_by::`, which is stamped
-on the tick, so nothing new is recorded to make this work; the rows are grouped
-by month, because that is the shape a report is read in. **Copy as text** puts
-it on the clipboard grouped by project, ready to paste into a status mail or a
-stand-up note. Tasks marked DONE by hand in the file carry no date, so they
-cannot be placed in a window - the count of those is shown rather than quietly
-dropped.
+**Report** - what actually got finished. It opens on **this week**, and the
+window is yours: last month, quarter, two quarters or year, or **Pick dates**
+and type a from and a to. It reads `done_by::`, which is stamped on the tick,
+so nothing new is recorded to make this work.
+
+Four ways to group it, because a report is read differently depending on who
+is reading it: by **Customer**, by **Project**, by **Person** or by **Month**.
+The customer is not a new field to fill in - an org is a page like any other,
+`pages/o/Acme`, so "this was for Acme" is the `[[o/Acme]]` you already wrote,
+on the task, on a bullet above it, or on the project's own `customer::` line.
+Work with no org against it is grouped under *No customer* rather than hidden.
+
+With more than one space open, the spaces are kept apart: a bar of them sits
+above the report and **All spaces** stays a choice, so a status update for a
+customer never arrives with somebody's weekend on it. You can still filter by
+person on top of any of it. **Copy as text** puts the whole thing on the
+clipboard, grouped the way the screen is grouped, ready to paste into a status
+mail or a stand-up note. Tasks marked DONE by hand in the file carry no date,
+so they cannot be placed in a window - the count of those is shown rather than
+quietly dropped.
 
 The five screens are in **Views** in the sidebar, or `v b`, `v c`, `v g`,
 `v t` and `v r` - but only once there is something for them to be about. See
-below. The mindmap is not a sixth entry: it is a button on the graph screen,
-and the graph remembers which of the two you were last using.
+below. The mindmap is not a sixth entry: it is what the graph screen opens as,
+every time you arrive on it. Standing on a project when you press `v g` puts
+that project in the middle, which is almost always the one you wanted; the
+whole-vault map is a button away and the toggle holds while you are in there.
+
+### Lists and templates are one thing
+
+A list and a template were always the same page: one you keep in order to pour
+it into another page later. The only difference was *when* it got poured - a
+template when a page was created, a list when you ran it - and that is a
+difference in timing wearing the costume of a difference in kind. It cost two
+folders, two ways to make one, and a rule nobody could state about which to
+use. So there is one folder now, `pages/8/`, **Routines & lists** in the
+sidebar, and a vault written before this moves its templates in on first open,
+keeping their names.
+
+Open any of them and **add this to a page** asks which page, and the page gets
+what the list has:
+
+- its **fields** - the `key:: value` lines at its top become values of that
+  page, with `%vars%` filled in. A value the page already has is left alone: a
+  stencil is a starting point, never a correction.
+- its **todos** - a checklist's steps arrive as open actions under one bullet
+  naming the list, so a run of it can be told apart later and ticked off.
+- its **lines** - anything that is not a checklist arrives written as it is,
+  headings and all. A day-page template is the shape of a day, not a pile of
+  things to do, so it is not turned into one.
+
+Which of the three you get is the list's business and not a setting: a page
+filed as `type:: checklist` is a list of things to do, anything else is a page
+to copy out, and a line that already carries a state keeps it either way. The
+page you pour it into is any page there is - a project, a person, an org, today
+- which is the other half of why the two folders could never merge before.
+
+A list marked `kind:: project` is still the third thing, and still finishes
+somewhere else: running it spins up a whole new project with the steps as its
+actions.
+
+### Nothing on screen nags
+
+A suggestion you have read and decided against should go away. The **next best
+move** - the one most useful thing to do right now - used to be a card nailed
+to the top of the day, so "Where are you right now?" was still there the next
+morning, and the morning after, with no way to say no to it. It is a toast now:
+it arrives with the move and the alternatives, you take it or you do not, and
+it fades. The same advice is offered once and not again until the advice itself
+changes, so the many redraws of a day page are silent.
 
 ### The menu only shows what your files actually have
 
@@ -1183,13 +1240,14 @@ pages/
                               _/Purpose.md  (H5)   _/Vision.md  (H4)
   -/                        cancelled projects
   0/  1/  2/  3/            project status: completed, active, someday, waiting
-  8/                        routines, lists  -> [[8/Onboard new customer]]
+  8/                        routines, lists, templates
+                              -> [[8/Onboard new customer]]
   a/                        areas of focus   -> [[a/Health]]       (H2)
   g/                        goals            -> [[g/Debt cleared]] (H3)
   c/                        contexts         -> [[c/phone]]
   p/  o/                    people, organisations
   z/                        zettel notes
-  templates/  verbs/        templates, Phys-Viz verb lexicon
+  verbs/                    Phys-Viz verb lexicon
   GTD.md                    per-vault settings, including horizon_profile
 ```
 
