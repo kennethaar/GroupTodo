@@ -778,7 +778,10 @@ details>summary:hover{color:var(--fg2)}
 .blk .txt.dropping{outline:2px dashed var(--accent,#2563eb);outline-offset:2px;border-radius:4px}
 .blk .txt[contenteditable]{outline:none}
 .blk .props{font-family:var(--mono);font-size:11px;color:var(--fg3);padding-left:0;margin:1px 0 2px}
-.blk .bodyline{font-size:13px;color:var(--fg2);white-space:pre-wrap}
+.blk .bodyline{font-size:13px;color:var(--fg2);white-space:pre-wrap;min-height:1.3em;
+  padding:1px 3px;border-radius:4px;cursor:text}
+.blk .bodyline[contenteditable]{outline:none}
+.blk .bodyline:focus{background:var(--bg3);box-shadow:inset 0 0 0 1px var(--border2)}
 
 /* ---------- a page's values, in its document ----------
    One line per key:: value, at the top of the outline. The pill is the
@@ -12459,6 +12462,19 @@ function parentOf(page, block) {
   return par;
 }
 
+/* The same, for one of a block's body lines. */
+function focusBodyLine(id, i, atEnd = true) {
+  requestAnimationFrame(() => {
+    if ($("#modalRoot").firstChild) return;
+    const node = $(`.blk[data-id="${id}"] > .bodyline[data-bi="${i}"]`);
+    if (!node) return;
+    node.focus();
+    const r = document.createRange(), s = getSelection();
+    r.selectNodeContents(node); r.collapse(!atEnd);
+    s.removeAllRanges(); s.addRange(r);
+  });
+}
+
 function focusBlock(id, atEnd = true) {
   requestAnimationFrame(() => {
     if ($("#modalRoot").firstChild) return;   // a picker opened on the way; it owns the keys
@@ -12745,6 +12761,61 @@ function moveToBlock(txt, dir) {
   return true;
 }
 
+/* ---------- a block's body lines ----------
+   Everything under a bullet that is not itself a bullet -- a markdown heading
+   like "## Purpose:", a quote, a wrapped paragraph -- is kept as that block's
+   body. It is still the person's own writing, so it is edited in place like
+   any other line: before this, a line that happened to arrive without a dash
+   in front of it could only be changed by opening the file.
+
+   Enter keeps you in the body rather than cutting a bullet out of half a
+   paragraph, and backspacing an empty one away lands you on the line above. */
+function bodyLineEl(path, b, i) {
+  const txt = el("div", {
+    class: "bodyline", contenteditable: "true", spellcheck: "false",
+    data: {bi: String(i)}, html: renderInline(b.body[i]),
+  });
+  // Same bargain as a bullet's own line: a click on a [[link]] follows it
+  // instead of dropping the caret into the raw text behind it.
+  txt.addEventListener("mousedown", e => {
+    if (e.target.closest("[data-link]")) e.preventDefault();
+  });
+  txt.addEventListener("focus", () => { txt.textContent = b.body[i]; });
+  txt.addEventListener("blur", () => {
+    const val = txt.textContent.replace(/\n/g, " ");
+    if (val !== b.body[i]) {
+      b.body[i] = val;
+      createLinkedPages(val);
+      touch(path); noteTodoTouched();
+    }
+    txt.innerHTML = renderInline(b.body[i]);
+    resolveAssets(txt);
+  });
+  attachLinkAutocomplete(txt);
+  txt.addEventListener("keydown", e => {
+    if (linkPopKey(e)) return;
+    if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      const whole = txt.textContent.replace(/\n/g, " ");
+      const [from, to] = caretOffsets(txt);
+      // Blur is what writes the line back, so hand it the half that stays.
+      txt.textContent = whole.slice(0, from);
+      txt.blur();
+      b.body.splice(i + 1, 0, whole.slice(to));
+      touch(path); render(); focusBodyLine(b.id, i + 1, false);
+    } else if (e.key === "Backspace" && txt.textContent === "") {
+      e.preventDefault();
+      txt.blur();
+      b.body.splice(i, 1);
+      touch(path); render();
+      if (i > 0) focusBodyLine(b.id, i - 1); else focusBlock(b.id);
+    } else if (e.key === "Escape") {
+      txt.blur();
+    }
+  });
+  return txt;
+}
+
 function outlineBlock(path, page, b) {
   const kids = b.children || [];
   const node = el("div", {class: "blk" + (kids.length ? " has-kids" : "") + (b.collapsed ? " collapsed" : ""), data: {id: b.id}});
@@ -12975,7 +13046,7 @@ function outlineBlock(path, page, b) {
   if (props.length) {
     node.append(el("div", {class: "props", html: props.map(([k, v]) => esc(k) + ":: " + renderInline(v)).join("  ·  ")}));
   }
-  for (const l of b.body || []) if (trim(l)) node.append(el("div", {class: "bodyline", html: renderInline(l)}));
+  (b.body || []).forEach((l, i) => node.append(bodyLineEl(path, b, i)));
 
   if (!b.collapsed) for (const k of kids) node.append(outlineBlock(path, page, k));
   return node;
