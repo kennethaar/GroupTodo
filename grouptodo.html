@@ -727,6 +727,13 @@ details>summary:hover{color:var(--fg2)}
 .blk.has-kids>.bullet{box-shadow:0 0 0 3.5px var(--bg4)}
 .blk.collapsed>.bullet{box-shadow:0 0 0 3.5px var(--bg4)}
 .blk .txt{flex:1;min-width:0;word-wrap:break-word;overflow-wrap:anywhere;font-size:14px;padding:1px 0}
+/* A dropped picture shows at a size you can read a line around, and clicking
+   it opens the file itself. */
+.txt img.asset,.note img.asset{display:block;max-width:min(100%,520px);max-height:360px;
+  margin:6px 0;border:1px solid var(--line);border-radius:8px;background:var(--card);cursor:zoom-in}
+.asset-file{display:inline-flex;align-items:center;gap:4px;max-width:100%}
+.asset-missing{color:var(--warn,#b45309);font-size:12px;word-break:break-all}
+.blk .txt.dropping{outline:2px dashed var(--accent,#2563eb);outline-offset:2px;border-radius:4px}
 .blk .txt[contenteditable]{outline:none}
 .blk .props{font-family:var(--mono);font-size:11px;color:var(--fg3);padding-left:0;margin:1px 0 2px}
 .blk .bodyline{font-size:13px;color:var(--fg2);white-space:pre-wrap}
@@ -1470,15 +1477,21 @@ const LS = {
   del(p)    { localStorage.removeItem(LS.k(p)); },
 };
 const MEM = new Map();
+/* Dropped files for backends with nowhere to put them (localStorage is far
+   too small, memory has no disk at all). Session-long, like MEM. */
+const ASSET_MEM = new Map();
 
 const IDB = (() => {
   let dbp = null;
   const open = () => dbp || (dbp = new Promise((res, rej) => {
-    const r = indexedDB.open("grouptodo", 1);
+    const r = indexedDB.open("grouptodo", 2);
     r.onupgradeneeded = () => {
       const db = r.result;
       if (!db.objectStoreNames.contains("files")) db.createObjectStore("files");
       if (!db.objectStoreNames.contains("kv"))    db.createObjectStore("kv");
+      /* Dropped-in pictures and documents. A store of their own, so a walk
+         over the pages never has to step over a blob that is not markdown. */
+      if (!db.objectStoreNames.contains("assets")) db.createObjectStore("assets");
     };
     r.onsuccess = () => res(r.result);
     r.onerror = () => rej(r.error);
@@ -1526,6 +1539,8 @@ const Backends = {
       },
       async write(path, text) { await IDB.set("files", pre + path, text); },
       async remove(path)      { await IDB.del("files", pre + path); },
+      async putAsset(path, blob) { await IDB.set("assets", pre + path, blob); },
+      async getAsset(path)       { return (await IDB.get("assets", pre + path)) || null; },
     };
   },
 
@@ -1544,6 +1559,11 @@ const Backends = {
       },
       async write(path, text) { LS.set(pre + path, text); },
       async remove(path) { LS.del(pre + path); },
+      /* No room in localStorage for a photograph, so a dropped file lives for
+         this session only and the drop says so. Choose a folder and it becomes
+         a real file like everything else. */
+      async putAsset(path, blob) { ASSET_MEM.set(pre + path, blob); },
+      async getAsset(path)       { return ASSET_MEM.get(pre + path) || null; },
     };
   },
 
@@ -1561,6 +1581,8 @@ const Backends = {
       },
       async write(path, text) { MEM.set(pre + path, text); },
       async remove(path) { MEM.delete(pre + path); },
+      async putAsset(path, blob) { ASSET_MEM.set(pre + path, blob); },
+      async getAsset(path)       { return ASSET_MEM.get(pre + path) || null; },
     };
   },
 
@@ -1604,6 +1626,22 @@ const Backends = {
         const dir = await dirFor(path.split("/").slice(0, -1).join("/"));
         await dir.removeEntry(path.split("/").pop());
       },
+      /* A picture is a file in the folder, next to the markdown that mentions
+         it, so the folder you share carries the whole note and not just its
+         words. */
+      async putAsset(path, blob) {
+        const dir = await dirFor(path.split("/").slice(0, -1).join("/"), true);
+        const fh = await dir.getFileHandle(path.split("/").pop(), {create: true});
+        const w = await fh.createWritable();
+        await w.write(blob); await w.close();
+      },
+      async getAsset(path) {
+        try {
+          const dir = await dirFor(path.split("/").slice(0, -1).join("/"));
+          const fh = await dir.getFileHandle(path.split("/").pop());
+          return await fh.getFile();
+        } catch (_) { return null; }
+      },
     };
   },
 
@@ -1630,6 +1668,16 @@ const Backends = {
         if (!r.ok) throw new Error("write failed: " + r.status);
       },
       async remove(path) { await fetch(u("/api/file", path), {method: "DELETE"}); },
+      async putAsset(path, blob) {
+        const r = await fetch(u("/api/asset", path), {
+          method: "PUT", headers: {"Content-Type": blob.type || "application/octet-stream"}, body: blob,
+        });
+        if (!r.ok) throw new Error("asset write failed: " + r.status);
+      },
+      async getAsset(path) {
+        const r = await fetch(u("/api/asset", path));
+        return r.ok ? await r.blob() : null;
+      },
     };
   },
 };
@@ -5027,10 +5075,177 @@ function nextBestAction() {
 }
 
 /* ============================================================
+   84_ASSETS -- the files you drag in
+   A note is not always words. Drop a screenshot on a line, or paste one out of
+   the clipboard, and the file is written into assets/ inside the very folder
+   the markdown lives in -- where Logseq and Obsidian keep theirs -- and the
+   line gets an ordinary markdown link to it. Nothing is uploaded anywhere, and
+   the folder you share now carries the picture along with the task.
+   ============================================================ */
+const ASSET_DIR = "assets";
+const ASSET_URLS = new Map();          // space|path -> object URL, for this page's life
+const ASSET_IMAGE_RE = /\.(png|jpe?g|gif|webp|avif|bmp|svg|ico|heic)$/i;
+const assetMax = () => (V.backend && V.backend.kind === "http" ? 8 : 20) * 1024 * 1024;
+const isAssetPath = path => /^assets\//i.test(String(path || ""));
+const canKeepFiles = () => !!(V.backend && typeof V.backend.putAsset === "function");
+
+function assetStamp() {
+  const d = new Date(), pad = n => String(n).padStart(2, "0");
+  return "" + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) +
+         "-" + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
+}
+
+/* The name the file gets in the folder: what it was called, tidied into
+   something every filesystem accepts, and stamped so a second screenshot
+   called "image.png" does not land on top of the first. */
+function assetFileName(file) {
+  const raw = String((file && file.name) || "");
+  const dot = raw.lastIndexOf(".");
+  const dotted = dot > 0 && /^\.[A-Za-z0-9]{1,8}$/.test(raw.slice(dot));
+  const ext = dotted ? raw.slice(dot).toLowerCase()
+    : "." + (String((file && file.type) || "").split("/")[1] || "bin").replace(/[^a-z0-9]/g, "").slice(0, 8);
+  const stem = (dotted ? raw.slice(0, dot) : raw) || "pasted";
+  const slug = stem.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48) || "file";
+  return slug + "-" + assetStamp() + ext;
+}
+
+async function saveAsset(file) {
+  const be = V.backend;
+  if (!be || typeof be.putAsset !== "function") throw new Error("this space has nowhere to keep files");
+  let path = join(ASSET_DIR, assetFileName(file));
+  // Two drops in the same second with the same name: keep both.
+  if (await be.getAsset(path)) {
+    const dot = path.lastIndexOf(".");
+    path = path.slice(0, dot) + "-" + Math.random().toString(36).slice(2, 6) + path.slice(dot);
+  }
+  await be.putAsset(path, file);
+  const key = (V.space || "") + "|" + path;
+  const old = ASSET_URLS.get(key);
+  if (old) { try { URL.revokeObjectURL(old); } catch (_) {} ASSET_URLS.delete(key); }
+  return path;
+}
+
+/* What a dropped file becomes in the line: a picture shows itself, anything
+   else is a link you can click. Plain markdown either way, so the note still
+   reads in Notepad and in every other editor that opens the folder. */
+const assetMarkdown = (file, path) =>
+  ((ASSET_IMAGE_RE.test(path) || /^image\//.test((file && file.type) || "")) ? "!" : "") +
+  "[" + String((file && file.name) || "file").replace(/[\[\]()]/g, "") + "](" + path + ")";
+
+async function assetURL(path, space) {
+  const key = (space || V.space || "") + "|" + path;
+  if (ASSET_URLS.has(key)) return ASSET_URLS.get(key);
+  const rec = space ? LOADED.get(space) : null;
+  const be = space ? (rec && rec.backend) : V.backend;
+  if (!be || typeof be.getAsset !== "function") return null;
+  const blob = await be.getAsset(path);
+  if (!blob) return null;
+  const url = URL.createObjectURL(blob);
+  ASSET_URLS.set(key, url);
+  return url;
+}
+
+/* A rendered line carries the path, not a URL: the file has to be read back out
+   of the folder first, and that cannot happen while the HTML is still a string.
+   One pass after every redraw fills them in. */
+function resolveAssets(root) {
+  for (const node of $$("[data-asset]", root || document)) {
+    if (node.dataset.assetDone) continue;
+    node.dataset.assetDone = "1";
+    const path = node.dataset.asset;
+    assetURL(path).then(url => {
+      if (!url) {
+        // The line says what is missing rather than showing a broken picture:
+        // the file may simply not have synced to this machine yet.
+        node.replaceWith(el("span", {class: "asset-missing", title: "Not in this folder: " + path},
+                            "\u2298 " + path.split("/").pop()));
+        return;
+      }
+      if (node.tagName === "IMG") node.src = url;
+      else {
+        node.href = url; node.target = "_blank"; node.rel = "noopener";
+        node.download = path.split("/").pop();
+      }
+    }).catch(() => {});
+  }
+}
+
+/* Saving the files, then putting them in the line -- at the caret when you are
+   typing in it, at the end of the line when you dropped them on it. */
+async function attachFilesToBlock(path, b, files, txt) {
+  const list = Array.from(files || []).filter(f => f && (f.size || f.type));
+  if (!list.length) return false;
+  if (!canKeepFiles()) { notify("This space has nowhere to keep files.", "warn"); return true; }
+
+  const marks = [];
+  for (const f of list) {
+    if (f.size > assetMax()) {
+      notify("\u201C" + (f.name || "That file") + "\u201D is bigger than " +
+             Math.round(assetMax() / 1024 / 1024) + " MB, so it stays where it is.", "warn");
+      continue;
+    }
+    try { marks.push(assetMarkdown(f, await saveAsset(f))); }
+    catch (e) { notify("Could not save " + (f.name || "that file") + ": " + (e.message || e), "warn"); }
+  }
+  if (!marks.length) return true;
+  const addition = marks.join(" ");
+
+  /* Written straight into the line rather than left on screen for the blur
+     handler to pick up: a drop does not necessarily come with the caret in the
+     line, and the redraw below would throw an unsaved edit away. */
+  if (txt && document.activeElement === txt) {
+    const whole = txt.textContent.replace(/\n/g, " ");
+    const [from, to] = caretOffsets(txt);
+    const before = whole.slice(0, from), after = whole.slice(to);
+    b.title = before + (before && !/\s$/.test(before) ? " " : "") + addition +
+              (after && !/^\s/.test(after) ? " " : "") + after;
+  } else {
+    const cur = trim(b.title);
+    b.title = cur ? cur + " " + addition : addition;
+  }
+  touch(path); noteTodoTouched();
+  render();
+  const where = V.backend.kind === "fs" || V.backend.kind === "http"
+    ? "saved in " + ASSET_DIR + "/"
+    : "kept in this browser only \u2014 choose a folder to make them real files";
+  notify(marks.length + (marks.length === 1 ? " file " : " files ") + where + ".");
+  return true;
+}
+
+/* The line is the target, so a file let go anywhere else would otherwise make
+   the browser leave the app and open it. Say where it should have gone. */
+window.addEventListener("dragover", e => {
+  if (Array.from((e.dataTransfer && e.dataTransfer.types) || []).includes("Files")) e.preventDefault();
+});
+window.addEventListener("drop", e => {
+  const files = e.dataTransfer && e.dataTransfer.files;
+  if (!files || !files.length) return;
+  e.preventDefault();
+  notify("Drop a file onto a line to attach it to it.", "warn");
+});
+
+/* ============================================================
    85_INLINE_RENDER
    ============================================================ */
 function renderInline(text) {
   let h = esc(text || "");
+  /* ![name](assets/x.png) and [name](assets/x.pdf) -- the markdown a dropped
+     file leaves behind. First, because the target is a path into the folder
+     and not a page in the vault, and set aside rather than left in the string:
+     the rules below are looking for words, and an anchor they walked into
+     would come out with its own href linked all over again. */
+  const held = [];
+  const hold = html => "\u0000" + (held.push(html) - 1) + "\u0000";
+  h = h.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (all, alt, src) =>
+    isAssetPath(src) || /^(blob|data|https?):/.test(src)
+      ? hold(`<img class="asset" alt="${alt}" title="${alt}" ${isAssetPath(src) ? `data-asset="${src}"` : `src="${src}"`}>`)
+      : all);
+  h = h.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (all, label, href) =>
+    isAssetPath(href)
+      ? hold(`<a class="asset-file" data-asset="${href}" href="#">\u{1F4CE} ${label}</a>`)
+      : /^https?:/.test(href)
+        ? hold(`<a class="asset-file" href="${href}" target="_blank" rel="noopener">${label}</a>`)
+        : all);
   h = h.replace(/\[\[([^\]]+)\]\]/g, (all, t) => {
     const raw = trim(t.split("][")[0]);
     const target = esc(raw);
@@ -5057,7 +5272,7 @@ function renderInline(text) {
   h = h.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
   h = h.replace(/(^|[\s(])\*([^*\s][^*]*)\*/g, "$1<i>$2</i>");
   h = h.replace(/\bhttps?:\/\/[^\s<]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
-  return h;
+  return h.replace(/\u0000(\d+)\u0000/g, (all, i) => held[i]);
 }
 
 /* ============================================================
@@ -11721,8 +11936,35 @@ function outlineBlock(path, page, b) {
      sentence has to keep working, and it is the second line that tells us a
      paste was a list. Plain text either way, so a copy out of a web page does
      not bring its fonts and colours with it. */
+  /* ---------- dropping a file on a line ----------
+     The line is the target, so where the file ends up needs no dialog: it goes
+     in assets/ and the line it was dropped on gets the link. */
+  txt.addEventListener("dragover", e => {
+    if (!Array.from((e.dataTransfer && e.dataTransfer.types) || []).includes("Files")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    txt.classList.add("dropping");
+  });
+  txt.addEventListener("dragleave", () => txt.classList.remove("dropping"));
+  txt.addEventListener("drop", e => {
+    const files = e.dataTransfer && e.dataTransfer.files;
+    txt.classList.remove("dropping");
+    if (!files || !files.length) return;
+    e.preventDefault();
+    e.stopPropagation();
+    attachFilesToBlock(path, b, files, txt);
+  });
   txt.addEventListener("paste", e => {
+    /* A screenshot in the clipboard arrives as a file, not as text. Words win
+       when there are words: a copy out of a spreadsheet carries a picture of
+       itself as well, and it is the text that was meant. */
     const raw = e.clipboardData && e.clipboardData.getData("text/plain");
+    const files = e.clipboardData ? Array.from(e.clipboardData.files || []) : [];
+    if (files.length && !trim(raw || "")) {
+      e.preventDefault();
+      attachFilesToBlock(path, b, files, txt);
+      return;
+    }
     if (raw == null) return;
     e.preventDefault();
     if (LINKPOP && LINKPOP.host === txt) linkPopClose();
@@ -12309,11 +12551,16 @@ function render() {
   $("#hSub").textContent = vis.length > 1 ? vis.join(" + ")
     : state.view === "page" ? state.pagePath
     : state.context && ["today", "context", "next"].includes(state.view) ? "@" + state.context : "";
+  resolveAssets(c);
   applyRefocus();
 }
 
 /* wiki links are delegated */
 $("#content").addEventListener("click", e => {
+  // A dropped picture opens full size in a tab of its own, and clicking it
+  // must not drop the caret into the line behind it.
+  const img = e.target.closest("img.asset");
+  if (img && img.src) { e.preventDefault(); e.stopPropagation(); window.open(img.src, "_blank", "noopener"); return; }
   const link = e.target.closest("[data-link]");
   if (link) { e.stopPropagation(); followLink(link.dataset.link); }
 });
@@ -12337,6 +12584,7 @@ function modal({title, hint, body, foot, center = false, onKey = null}) {
     foot ? el("div", {class: "foot"}, foot) : null);
   const scrim = el("div", {class: "scrim" + (center ? " center" : ""), onclick: e => { if (e.target === scrim) closeModal(); }}, sheet);
   $("#modalRoot").append(scrim);
+  resolveAssets(sheet);
   MODAL_KEYS = onKey;
   return {close: closeModal, root: sheet};
 }

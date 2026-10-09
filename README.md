@@ -340,6 +340,31 @@ tasks, without a paste into the middle of a note turning the note into one.
 It works in the outliner, in the add-a-task box - which is a one-line field, so
 without this the line breaks would simply be thrown away - and in Capture.
 
+### Pictures and files you drop on a line
+
+A note is not always words. Drag a screenshot, a photograph, a PDF or anything
+else onto a line in the outliner - or copy a picture and paste it there - and
+the file is written into an `assets` folder inside the very folder your tasks
+live in, the way Logseq and Obsidian do it. The line gets an ordinary markdown
+link to it:
+
+```
+- TODO Fix the boiler ![boiler.jpg](assets/boiler-20261009-142233.jpg)
+- Quote from the plumber [quote.pdf](assets/quote-20261009-142305.pdf)
+```
+
+A picture shows itself in the line and opens full size when you click it;
+anything else is a link that opens the file. The name is kept, tidied, and
+stamped with the moment it arrived, so a second `image.png` never lands on top
+of the first. Nothing is uploaded anywhere: the file sits next to the markdown
+that mentions it, so the folder you share carries the picture along with the
+task, and both halves still read in any other editor that opens the folder.
+
+If the space has no folder yet - everything still in the browser - the file is
+kept in the browser alongside the tasks and the app says so, which is enough to
+go on with but is not a file anybody else can open. Choose a folder and dropped
+files become real files in `assets` like everything else.
+
 ### Enter splits a line
 
 Pressing `Enter` in the outliner cuts the line at the caret: what is behind it

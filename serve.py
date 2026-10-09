@@ -15,6 +15,8 @@ Defaults to the vault path used by the original Neovim config:
 
 API
     GET    /api/ping            -> {"ok": true, ...}
+    GET    /api/asset?path=assets/x.png  -> the bytes of a dropped file
+    PUT    /api/asset?path=assets/x.png  -> write one (body is the bytes)
     GET    /api/list            -> ["journals/2026-09-17.md", "pages/1/Foo.md", ...]
     GET    /api/file?path=REL   -> raw file contents
     PUT    /api/file?path=REL   -> writes the body (creates parent dirs)
@@ -55,6 +57,10 @@ from urllib.parse import urlparse, parse_qs
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_VAULT = os.path.expanduser("~/storage/shared/Documents/OrgMode")
 ALLOWED_EXT = (".md", ".org")
+# Files dragged onto a line: pictures and documents, kept beside the markdown
+# that mentions them, in one folder of their own so a vault walk never meets
+# them. Anything outside it stays off limits whatever its name.
+ASSET_DIR = "assets"
 SKIP_DIRS = {".git", ".obsidian", ".trash", "node_modules", "logseq"}
 MAX_BODY = 8 * 1024 * 1024
 
@@ -77,6 +83,35 @@ class Vault:
         if full != self.root and not full.startswith(self.root + os.sep):
             raise ValueError("path escapes the vault")
         return full
+
+    def resolve_asset(self, rel):
+        """Map a client path to a file inside the vault's assets/ folder."""
+        if not rel:
+            raise ValueError("empty path")
+        rel = posixpath.normpath(rel.replace("\\", "/")).lstrip("/")
+        if rel.startswith("..") or os.path.isabs(rel):
+            raise ValueError("path escapes the vault")
+        parts = rel.split("/")
+        if parts[0] != ASSET_DIR or len(parts) < 2 or any(p in ("", ".", "..") for p in parts):
+            raise ValueError("only files under %s/ are served" % ASSET_DIR)
+        if parts[-1].endswith(ALLOWED_EXT):
+            raise ValueError("pages are served from /api/file")
+        full = os.path.abspath(os.path.join(self.root, rel))
+        if not full.startswith(os.path.join(self.root, ASSET_DIR) + os.sep):
+            raise ValueError("path escapes the vault")
+        return full
+
+    def read_asset(self, rel):
+        with open(self.resolve_asset(rel), "rb") as fh:
+            return fh.read()
+
+    def write_asset(self, rel, data):
+        full = self.resolve_asset(rel)
+        os.makedirs(os.path.dirname(full), exist_ok=True)
+        tmp = full + ".tmp"
+        with open(tmp, "wb") as fh:
+            fh.write(data)
+        os.replace(tmp, full)
 
     def list(self):
         out = []
@@ -200,6 +235,16 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(400, str(exc))
             except FileNotFoundError:
                 return self._send(404, "not found")
+        if route == "/api/asset":
+            rel = self._rel()
+            try:
+                body = self.vault.read_asset(rel)
+            except (ValueError, KeyError) as exc:
+                return self._send(400, str(exc))
+            except (FileNotFoundError, IsADirectoryError):
+                return self._send(404, "not found")
+            ext = os.path.splitext(rel)[1].lower()
+            return self._send(200, body, self.CTYPES.get(ext, "application/octet-stream"))
         return self._static(route)
 
     # The static and API handlers already suppress bodies for HEAD.
@@ -208,14 +253,18 @@ class Handler(BaseHTTPRequestHandler):
     def do_PUT(self):
         if not self.authorised():
             return self.demand_password()
-        if urlparse(self.path).path != "/api/file":
+        route = urlparse(self.path).path
+        if route not in ("/api/file", "/api/asset"):
             return self._send(404, "not found")
         length = int(self.headers.get("Content-Length") or 0)
         if length > MAX_BODY:
             return self._send(413, "too large")
-        body = self.rfile.read(length).decode("utf-8")
+        raw = self.rfile.read(length)
         try:
-            self.vault.write(self._rel(), body)
+            if route == "/api/asset":
+                self.vault.write_asset(self._rel(), raw)
+            else:
+                self.vault.write(self._rel(), raw.decode("utf-8"))
         except ValueError as exc:
             return self._send(400, str(exc))
         return self._json(200, {"ok": True})
@@ -280,6 +329,17 @@ self.addEventListener("fetch", e => {
         ".css": "text/css; charset=utf-8",
         ".png": "image/png",
         ".md": "text/markdown; charset=utf-8",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+        ".avif": "image/avif",
+        ".bmp": "image/bmp",
+        ".ico": "image/x-icon",
+        ".pdf": "application/pdf",
+        ".txt": "text/plain; charset=utf-8",
+        ".csv": "text/csv; charset=utf-8",
+        ".zip": "application/zip",
     }
 
     def _file(self, full, ctype, extra=()):
