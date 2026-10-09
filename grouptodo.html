@@ -14462,6 +14462,8 @@ document.addEventListener("keydown", e => {
     "/": () => go("search"),
     "?": () => openHelp(),
     t: () => go("today"),
+    // Named in the context toast, so it has to be one key and not a chord.
+    x: () => openContextPicker("Where are you now?", surfaceContext),
   };
   if (single[e.key]) { e.preventDefault(); single[e.key](); }
 });
@@ -14474,7 +14476,8 @@ function openHelp() {
     body: el("div", {},
       el("div", {class: "field"}, el("label", {}, "Anywhere"),
         el("div", {style: "font-family:var(--mono);font-size:12.5px;line-height:1.9;color:var(--fg2)"},
-          "c  capture", el("br"), "/  search", el("br"), "t  today", el("br"), "esc  close")),
+          "c  capture", el("br"), "/  search", el("br"), "t  today", el("br"),
+          "x  change context", el("br"), "esc  close")),
       el("div", {class: "field"}, el("label", {}, "Leader chords (same as the Neovim config)"),
         el("div", {style: "font-family:var(--mono);font-size:12.5px;line-height:1.9;color:var(--fg2)"},
           rows.join("   "))),
@@ -14494,8 +14497,22 @@ function openHelp() {
    165_TIMERS
    Port of: init.lua nudge_check + schedule_context_reprompt + VimEnter
    ============================================================ */
+/* ---------- the context nudge ----------
+   This used to open the picker on a timer: a dialog over whatever you were in
+   the middle of, with the keyboard taken off you, because the clock said five.
+   A prompt nobody asked for has no business doing either. So it is a toast
+   now. It says where it thinks you are and which key changes it, it leaves on
+   its own, and ignoring it is a complete answer rather than a thing to
+   dismiss. The picker itself is unchanged and one key away: this only stops it
+   letting itself in. */
+function offerContextChange(label) {
+  const now = state.context ? "@" + state.context : "no context set";
+  notify((label ? label + ": " : "") + "still " + now + "? Press x to change.",
+    "info", {label: "Change", run: () => openContextPicker("Where are you now?", surfaceContext)});
+}
+
 function morningRoutine() {
-  openWeeding(() => openContextPicker("What context are you in this morning?", surfaceContext));
+  openWeeding(() => offerContextChange("morning"));
 }
 
 function nudgeCheck() {
@@ -14516,7 +14533,7 @@ function scheduleContextPrompts() {
       let delay = target - now;
       if (delay <= 0) delay += 86400000;
       setTimeout(() => {
-        openContextPicker("What context are you in now? (" + label + ")", surfaceContext);
+        offerContextChange(label);
         tick();
       }, delay);
     };

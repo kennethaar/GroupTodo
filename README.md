@@ -1077,7 +1077,16 @@ tasks, simple mode shows no hygiene nudges at all.
   mechanically correct and not a sentence. There is a box for a verb that is not
   in the task either.
 - **Projects are outcomes**, not topics: `outcome::` asks what *done* looks like.
-- **Contexts** `[[c/phone]]`, picked with a letter key.
+- **Contexts** `[[c/phone]]`, picked with a letter key, and `x` opens the
+  picker from anywhere.
+- **The context nudge is a toast, not a dialog.** At lunchtime and at the end of
+  the day the app wonders whether you have moved, and it says so the way a
+  colleague would: a line in the corner reading *after work: still @workshop?
+  Press x to change*, with a button if you would rather click. It never takes
+  the keyboard and never covers what you were doing, and ignoring it is a
+  complete answer, because it leaves on its own. It used to open the picker
+  outright, which is a dialog over your work, on a timer, because the clock said
+  five.
 - **Age** is tracked from `Added::` and drives "oldest first" everywhere.
 - **Morning weeding** surfaces the stalest active projects - hidden under 5
   active projects or 20 open tasks, both modes. `g w` opens it anyway.
@@ -1097,7 +1106,7 @@ The markdown is identical either way.
 
 ## Keys
 
-`c` capture · `/` search · `?` all keys · `f t` today · `g n` todos ·
+`c` capture · `/` search · `x` context · `?` all keys · `f t` today · `g n` todos ·
 `g x` context · `g a` planned · `g p` people · `g c` chat · `g w` weeding ·
 `g r` review · `v b` board · `v c` calendar · `v g` graph ·
 `v t` timeline · `v r` report · `f f` focus ·
