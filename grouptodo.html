@@ -5215,7 +5215,7 @@ async function attachFilesToBlock(path, b, files, txt) {
   render();
   const where = V.backend.kind === "fs" || V.backend.kind === "http"
     ? "saved in " + ASSET_DIR + "/"
-    : "kept in this browser only \u2014 choose a folder to make them real files";
+    : "kept in this browser only - choose a folder to make them real files";
   notify(marks.length + (marks.length === 1 ? " file " : " files ") + where + ".");
   return true;
 }
