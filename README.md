@@ -91,11 +91,17 @@ anything you change in one is changed everywhere.
 
 **Board** - four columns, To do, Doing, Waiting for and Done, with everything
 closed today in the last one so it is not permanently empty. Drag a card between
-columns to change its state. Ctrl-click - cmd-click on a Mac - picks cards out
-without opening them, and dragging any one of the picked cards moves the whole
-handful in one go; the count and a Clear button sit at the top of the board while
-anything is picked. On a phone the columns stack and you open a card and use its
-state buttons instead, because dragging on a touch screen fights the scroll.
+columns to change its state, and `Ctrl-Z` puts it back where it was. Ctrl-click -
+cmd-click on a Mac - picks cards out without opening them, and so does dragging a
+box across them from the board's background; dragging any one of the picked cards
+moves the whole handful in one go, and one `Ctrl-Z` takes the whole move back.
+The count and a Clear button sit at the top of the board while anything is
+picked, and picking cards never redraws the board, so you can scroll a column and
+keep picking. The board uses the full width of the window rather than the 900px
+the reading screens are held to - columns are only worth having side by side if
+the cards in them are wide enough to read. On a phone the columns stack and you
+open a card and use its state buttons instead, because dragging on a touch screen
+fights the scroll.
 
 The same board, one level up: the Tasks / Projects switch at the top (`v p`, or
 Project board in the sidebar) swaps the four state columns for the five project
@@ -103,8 +109,9 @@ statuses - Someday/Maybe, Active, Waiting for, Completed, Cancelled. Each card
 is a project, with what is open in it, whether it has a next action, what it is
 blocked by and how long since it was reviewed. Dragging one into another column
 does exactly what the status picker does: the file moves into `pages/<code>/`
-and every link to it is rewritten - and ctrl-click works here too, so a review
-that parks five projects at once is one drag.
+and every link to it is rewritten - and `Ctrl-Z` moves it back. Picking several
+works here too, so a review that parks five projects at once is one drag and one
+undo.
 
 **Calendar** - a month at a time, Monday first. Everything with a scheduled day
 or a deadline lands on its day, late ones in red. Pick a day and its tasks are

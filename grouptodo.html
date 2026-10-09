@@ -391,8 +391,22 @@ body.adv .chk{border-radius:2px}
    Three more ways to look at exactly the same blocks. Nothing here holds its
    own copy of anything: a card, a calendar entry and a dot are all the same
    line in the same markdown file, seen from a different angle. */
+/* A board is columns side by side, so it is the one screen that wants all the
+   width there is: 900px of it means four slivers with the titles wrapped to
+   three lines on a monitor with room for twice that. The board wrap grows with
+   the window and stops where a card would get wider than it is worth reading. */
+.wrap.wide{max-width:min(1800px,100%)}
+@media (min-width:1100px){ .wrap.wide{padding:0 28px} }
 .board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px;
   align-items:start}
+/* Holds the board and the rubber band drawn over it. */
+.boardwrap{position:relative}
+.bmarquee{position:absolute;z-index:5;pointer-events:none;border:1px solid var(--accent);
+  background:color-mix(in srgb,var(--accent) 14%,transparent);border-radius:3px}
+/* While a band is being drawn, nothing on the way should turn into selected
+   text under the cursor. */
+body.marquee{user-select:none;-webkit-user-select:none}
+body.marquee .bcard{cursor:default}
 /* The project board has one column per status, and there are five of those. */
 .board.five{grid-template-columns:repeat(5,minmax(0,1fr))}
 .bcol{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
@@ -7145,7 +7159,25 @@ function boardSelToggle(kind, id) {
   if (BOARD_SEL.ids.has(String(id))) BOARD_SEL.ids.delete(String(id));
   else BOARD_SEL.ids.add(String(id));
   if (!BOARD_SEL.ids.size) BOARD_SEL.kind = null;
-  render();
+  paintBoardSel();
+}
+
+/* Picking cards is the one thing on the board that must NOT redraw the screen.
+   A redraw rebuilds every column, which puts the scroll back to the top of each
+   one -- and picking out eight cards means scrolling, so a redraw per pick made
+   the whole thing useless. Nothing on disk changed, so nothing needs rebuilding:
+   the outline goes on and off the cards that are already there, and the count at
+   the top is rewritten in place. */
+function paintBoardSel() {
+  for (const card of $$(".bcard[data-selid]")) {
+    card.classList.toggle("sel", boardSelHas(card.dataset.selkind, card.dataset.selid));
+  }
+  const host = $("#bselHost");
+  if (host) {
+    host.textContent = "";
+    const bar = boardSelBar();
+    if (bar) host.append(bar);
+  }
 }
 
 const boardSelHas = (kind, id) =>
@@ -7175,9 +7207,13 @@ function boardSelBar() {
   return el("div", {class: "bsel"},
     el("span", {}, n + (n === 1 ? " card picked" : " cards picked") +
       " \u00B7 drag any one of them to move them all"),
-    el("button", {class: "btn sm ghost", onclick: () => { boardSelClear(); render(); }},
+    el("button", {class: "btn sm ghost", onclick: () => { boardSelClear(); paintBoardSel(); }},
       "Clear"));
 }
+
+/* The slot the count lives in. Always there, usually empty: that way the count
+   can appear and go without the board being rebuilt around it. */
+const boardSelHost = () => el("div", {id: "bselHost"}, boardSelBar());
 
 /* The shell every column shares: the head, the drop target, and the rule about
    what it will take. A task card dropped on a status column is a no-op rather
@@ -7199,14 +7235,30 @@ function boardColumn(head, accepts, onDrop) {
     DRAGGED = null;
     if (!takes(d)) return;
     const moving = d.items.filter(x => accepts(d.kind, x));
+    const many = moving.length > 1;
     boardSelClear();
-    // One redraw and one piece of news for the whole handful.
+    /* One redraw and one piece of news for the whole handful, and one ctrl-z:
+       what a drag did in one go, undo takes back in one go. Each move hands
+       back the way to reverse it -- a state to put back, a folder to move a
+       file home to -- and they are run in reverse, so the board ends up where
+       it started. */
+    const back = [];
     holdRender(() => {
-      NOTIFY_MUTE += moving.length > 1 ? 1 : 0;
-      try { moving.forEach(x => onDrop(x)); }
-      finally { if (moving.length > 1) NOTIFY_MUTE--; }
+      NOTIFY_MUTE += many ? 1 : 0;
+      try { moving.forEach(x => { const u = onDrop(x, many); if (u) back.push(u); }); }
+      finally { if (many) NOTIFY_MUTE--; }
     });
-    if (moving.length > 1) notify("Moved " + moving.length + " cards.");
+    if (many) notify("Moved " + moving.length + " cards.");
+    if (!back.length) return;
+    pushUndo({run: () => {
+      holdRender(() => {
+        NOTIFY_MUTE++;
+        try { back.slice().reverse().forEach(u => u()); }
+        finally { NOTIFY_MUTE--; }
+      });
+      notify(back.length > 1 ? "Put " + back.length + " cards back." : "Put it back.");
+      return true;
+    }});
   });
   return col;
 }
@@ -7216,6 +7268,10 @@ function boardColumn(head, accepts, onDrop) {
    it; the opening is the plain click, handled by the card itself. */
 function makeCardDraggable(card, kind, item, id) {
   BOARD_ITEMS.set(boardKey(kind, id), item);
+  // What the card stands for, written on the card, so picking cards out can be
+  // done to the cards already on screen instead of by redrawing them.
+  card.dataset.selkind = kind;
+  card.dataset.selid = String(id);
   if (boardSelHas(kind, id)) card.classList.add("sel");
   card.addEventListener("dragstart", e => {
     const items = boardDragItems(kind, id);
@@ -7234,6 +7290,83 @@ function makeCardDraggable(card, kind, item, id) {
     DRAGGED = null;
   });
   return card;
+}
+
+/* Dragging a box over the cards picks out everything the box touches -- the way
+   a file manager does it, and the quickest way to take a run of cards in one
+   column. The box starts on the board's own background (the gap between the
+   columns, the space under the last card) because a drag that starts on a card
+   is that card being dragged somewhere. Hold shift and the box starts anywhere,
+   cards included, for a column so full there is no background left to grab.
+
+   Holding ctrl, cmd or shift adds what the box touches to what is already
+   picked; without a modifier the box replaces the selection, and a click on the
+   background with no drag in it lets everything go. */
+function boardMarquee(host, kind) {
+  host.addEventListener("mousedown", e => {
+    if (e.button !== 0) return;
+    const add = e.ctrlKey || e.metaKey || e.shiftKey;
+    const onCard = !!e.target.closest(".bcard");
+    // A plain press on a card is the card's drag; a press on a control -- show
+    // more, the mode switch, Clear -- is that control's click.
+    if (!e.shiftKey && (onCard || e.target.closest("button, a, input, textarea, select"))) return;
+    // Stops the press from starting a native drag or a text selection instead.
+    e.preventDefault();
+
+    const x0 = e.clientX, y0 = e.clientY;
+    const base = (add && BOARD_SEL.kind === kind) ? new Set(BOARD_SEL.ids) : new Set();
+    const box = el("div", {class: "bmarquee"});
+    let live = false;
+
+    const cards = () => $$('.bcard[data-selkind="' + kind + '"]');
+    const place = (x, y) => {
+      const r = host.getBoundingClientRect();
+      const l = Math.min(x0, x), t = Math.min(y0, y);
+      box.style.left   = (l - r.left) + "px";
+      box.style.top    = (t - r.top) + "px";
+      box.style.width  = Math.abs(x - x0) + "px";
+      box.style.height = Math.abs(y - y0) + "px";
+      return {left: l, top: t, right: Math.max(x0, x), bottom: Math.max(y0, y)};
+    };
+
+    const move = ev => {
+      const sel = place(ev.clientX, ev.clientY);
+      if (!live && Math.abs(ev.clientX - x0) + Math.abs(ev.clientY - y0) < 5) return;
+      if (!live) {
+        live = true;
+        host.append(box);
+        document.body.classList.add("marquee");
+      }
+      const ids = new Set(base);
+      for (const card of cards()) {
+        const r = card.getBoundingClientRect();
+        if (r.right < sel.left || r.left > sel.right || r.bottom < sel.top || r.top > sel.bottom) continue;
+        // A card scrolled out of sight inside its column is not under the box,
+        // whatever its coordinates say.
+        const body = card.closest(".bcol-body");
+        if (body) {
+          const b = body.getBoundingClientRect();
+          if (r.bottom < b.top || r.top > b.bottom) continue;
+        }
+        ids.add(card.dataset.selid);
+      }
+      BOARD_SEL.kind = ids.size ? kind : null;
+      BOARD_SEL.ids = ids;
+      paintBoardSel();
+    };
+
+    const up = () => {
+      document.removeEventListener("mousemove", move);
+      document.removeEventListener("mouseup", up);
+      document.body.classList.remove("marquee");
+      box.remove();
+      // A click on the background, with no box drawn, is "never mind".
+      if (!live && !add) { boardSelClear(); paintBoardSel(); }
+    };
+    document.addEventListener("mousemove", move);
+    document.addEventListener("mouseup", up);
+  });
+  return host;
 }
 
 /* True when the click was the pick-this-out click rather than the open-it
@@ -7361,13 +7494,13 @@ function fillBoardColumn(body, items, key, mkCard) {
 }
 
 function viewTaskBoard() {
-  const c = el("div", {class: "wrap"});
+  const c = el("div", {class: "wrap wide"});
   const all = leafActions();
   const done = doneToday();
   c.append(el("div", {class: "section"},
     quickAdd(ensureJournal(todayISO()), {placeholder: "Add a task"}),
     boardModeToggle(),
-    boardSelBar()));
+    boardSelHost()));
 
   const board = el("div", {class: "board"});
   for (const [stateKey, label] of BOARD_COLUMNS) {
@@ -7378,15 +7511,30 @@ function viewTaskBoard() {
         el("span", {class: "state " + stateKey}, label),
         el("span", {class: "n"}, String(items.length))),
       (kind, x) => kind === "task" && x.action.state !== stateKey,
-      x => inSpace(x.action.space, () => setBlockState(x.action.path, x.action.block, stateKey)));
+      (x, many) => {
+        const {path, block, space} = x.action;
+        const prev = block.state;
+        /* A handful being moved is not the moment to ask about a context for
+           each card, and "Again?" for a repeating task has to be asked one
+           dialog at a time or only the last would be seen -- so a batch asks
+           afterwards, in turn. */
+        inSpace(space, () => setBlockState(path, block, stateKey,
+          many ? {skipContext: true, skipRepeat: true} : {}));
+        if (many && stateKey === "DONE" && inSpace(space, () => repeatOf(block))) {
+          askAfterModal(() => inSpace(space, () => offerNextOccurrence(path, block)));
+        }
+        return () => inSpace(space, () => setBlockState(path, block, prev,
+          {skipContext: true, skipRepeat: true}));
+      });
     col.append(fillBoardColumn(el("div", {class: "bcol-body"}), items, stateKey, boardCard));
     board.append(col);
   }
-  c.append(board);
+  c.append(boardMarquee(el("div", {class: "boardwrap"}, board), "task"));
   c.append(el("div", {class: "section quiet"},
     el("div", {style: "color:var(--fg3);font-size:12px"},
-      "Drag a card to move it, or ctrl-click (cmd-click on a Mac) several cards " +
-      "and drag any one of them to move the whole handful at once. Or open a card " +
+      "Drag a card to move it, and ctrl-z puts it back. Ctrl-click (cmd-click on " +
+      "a Mac) several cards, or drag a box across them from the background, and " +
+      "dragging any one of them moves the whole handful at once. Or open a card " +
       "and use the state buttons - which is what you want on a phone, where " +
       "dragging is a fight.")));
   return c;
@@ -7397,14 +7545,14 @@ function viewTaskBoard() {
    the sidebar lists, so what you see here is what Projects shows one status at
    a time. */
 function viewProjectBoard() {
-  const c = el("div", {class: "wrap"});
+  const c = el("div", {class: "wrap wide"});
   const stuck = new Set(stuckActiveProjects().map(x => x.path));
   c.append(el("div", {class: "section"},
     el("div", {style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap"},
       boardModeToggle(),
       el("button", {class: "btn sm ghost", style: "margin-left:auto",
         onclick: () => newProjectPrompt()}, "+ new project")),
-    boardSelBar()));
+    boardSelHost()));
 
   const board = el("div", {class: "board five"});
   for (const code of BOARD_STATUS_COLUMNS) {
@@ -7418,18 +7566,28 @@ function viewProjectBoard() {
           STATUS_LABEL[code]),
         el("span", {class: "n"}, String(items.length))),
       (kind, x) => kind === "project" && statusDirOf(x.project.path) !== code,
-      x => inSpace(x.project.space, () => setProjectStatus(x.project.path, code)));
+      x => {
+        const {path, space} = x.project;
+        const prev = inSpace(space, () => statusDirOf(path));
+        inSpace(space, () => setProjectStatus(path, code));
+        // The file moved, so putting it back starts from where it landed.
+        const landed = join(STATUS_DIRS[code], baseName(path) + ".md");
+        return () => inSpace(space, () => {
+          const from = V.pages.has(landed) ? landed : path;
+          if (prev && STATUS_DIRS[prev]) setProjectStatus(from, prev);
+        });
+      });
     col.append(fillBoardColumn(el("div", {class: "bcol-body"}), items, "p:" + code,
       r => boardProjectCard(r, stuck)));
     board.append(col);
   }
-  c.append(board);
+  c.append(boardMarquee(el("div", {class: "boardwrap"}, board), "project"));
   c.append(el("div", {class: "section quiet"},
     el("div", {style: "color:var(--fg3);font-size:12px"},
       "Drag a project into a column to change its status - the file moves into " +
       "pages/<code>/ and every link to it is rewritten, exactly as the status " +
-      "picker does it. Ctrl-click (cmd-click on a Mac) several projects to move " +
-      "them together. On a phone, open the project and use its status button.")));
+      "picker does it, and ctrl-z moves the file back. Ctrl-click (cmd-click on a " +
+      "Mac) several projects, or drag a box across them, to move them together. On a phone, open the project and use its status button.")));
   return c;
 }
 
@@ -12995,8 +13153,19 @@ $("#content").addEventListener("click", e => {
    ============================================================ */
 let MODAL_KEYS = null;
 
+/* Something to ask once the dialog on screen has been dealt with. One dialog
+   replaces another, so a run of questions -- eight tasks ticked at once, three
+   of them repeating -- has to be asked one at a time or all but the last are
+   thrown away unanswered. */
+let MODAL_AFTER = null;
+function askAfterModal(fn) {
+  if ($("#modalRoot").textContent === "" && !$("#modalRoot").firstChild) fn();
+  else MODAL_AFTER = fn;
+}
+
 function modal({title, hint, body, foot, center = false, onKey = null}) {
-  closeModal();
+  // Replacing a dialog is not answering it, so the queue stays put.
+  closeModal({keepQueue: true});
   const sheet = el("div", {class: "modal"},
     el("header", {}, el("h2", {}, title), el("div", {style: "flex:1"}),
       hint ? el("span", {class: "hint"}, hint) : null,
@@ -13009,9 +13178,14 @@ function modal({title, hint, body, foot, center = false, onKey = null}) {
   MODAL_KEYS = onKey;
   return {close: closeModal, root: sheet};
 }
-function closeModal() {
+function closeModal(opts = {}) {
   $("#modalRoot").textContent = "";
   MODAL_KEYS = null;
+  if (!opts.keepQueue) {
+    const after = MODAL_AFTER;
+    MODAL_AFTER = null;
+    if (after) setTimeout(after, 0);
+  }
   /* Four of the tour's doors are dialogs rather than screens, so closing one is
      the moment that counts as coming back. Nothing happens unless a step is
      waiting, and the check stands down if anything else opens meanwhile. */
