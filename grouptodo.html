@@ -8366,6 +8366,84 @@ function boardProjectCard(r, stuck) {
   return makeCardDraggable(card, "project", {project: r}, space + "|" + path);
 }
 
+/* ---------- board filters ----------
+   The columns answer "what state is this in". These answer the other two
+   questions a board gets asked: on the task board, which of these are filed
+   under a project and which are still loose, and which have a context to do
+   them in; on the project board, which projects have anything to do in them
+   at all. Both lists of each pair are worth having -- the tasks with no
+   context are the ones to clarify, the ones with a context are the ones to
+   get on with -- so each pair is a pair of checkboxes rather than a choice.
+
+   The same shape as the state filters, and for the same reasons: both on is
+   the whole board, so the filters cost nothing until you use them; a pair
+   whose answer is unanimous is not drawn, because a question with one answer
+   is not a question; and turning off the last one on would leave an empty
+   board, so it turns the other one back on instead. */
+const BOARD_FILTERS = {
+  tasks: [
+    {key: "proj", yes: "In a project", no: "Loose",         test: a => !!a.project},
+    {key: "ctx",  yes: "Has a context", no: "No context",   test: a => !!a.context},
+  ],
+  projects: [
+    {key: "todos", yes: "With tasks", no: "Nothing to do",  test: r => projOpenCount(r) > 0},
+  ],
+};
+
+/* How much is open in a project, counted the way its card counts it -- the
+   tasks on the page, plus the ones written in a day page under a link to it.
+   Memoised, because the bar counts every project and then each column counts
+   its own again. */
+function projOpenCount(r) {
+  return memo("projOpen:" + (r.space || "") + "|" + r.path, () => inSpace(r.space, () =>
+    openTodoCount(r.path) + journalActionsFor(r.path).filter(x => OPEN_STATES[x.state]).length));
+}
+
+const boardFilterKey = mode => "boardFilter:" + mode + ":" + (Spaces.active || "");
+function boardHidden(mode) {
+  try { return new Set(JSON.parse(PREF.get(boardFilterKey(mode), "[]"))); }
+  catch (_) { return new Set(); }
+}
+const setBoardHidden = (mode, set) =>
+  PREF.set(boardFilterKey(mode), JSON.stringify(Array.from(set)));
+
+/* Does this card survive the filters that are on? A card is dropped when the
+   side it falls on -- yes or no -- has been switched off. */
+function boardFilterKeep(mode, x) {
+  const hidden = boardHidden(mode);
+  if (!hidden.size) return true;
+  return (BOARD_FILTERS[mode] || [])
+    .every(f => !hidden.has(f.key + (f.test(x) ? ":yes" : ":no")));
+}
+
+function boardFilterBar(mode, items) {
+  const hidden = boardHidden(mode);
+  const bar = el("div", {class: "statefilter", style: "margin-top:2px"});
+  let any = false;
+  for (const f of BOARD_FILTERS[mode] || []) {
+    const yes = items.filter(x => f.test(x)).length;
+    const no = items.length - yes;
+    if (!yes || !no) continue;
+    any = true;
+    for (const [side, label, n] of [["yes", f.yes, yes], ["no", f.no, no]]) {
+      const id = f.key + ":" + side;
+      const other = f.key + ":" + (side === "yes" ? "no" : "yes");
+      const on = !hidden.has(id);
+      bar.append(el("button", {
+        class: "chip filter" + (on ? " on" : ""),
+        onclick: () => {
+          const next = boardHidden(mode);
+          if (next.has(id)) next.delete(id);
+          else { next.add(id); next.delete(other); }
+          setBoardHidden(mode, next);
+          render();
+        },
+      }, (on ? "\u2713 " : "") + label + " " + n));
+    }
+  }
+  return any ? bar : null;
+}
+
 /* Which board, remembered, because somebody who works in projects does not want
    to re-pick it every time they come back. */
 function boardModeToggle() {
@@ -8424,11 +8502,13 @@ function viewTaskBoard() {
     quickAdd(ensureJournal(todayISO()), {placeholder: "Add a task"}),
     boardModeToggle(),
     boardSpaceTabs(),
+    boardFilterBar("tasks", all.concat(done)),
     boardSelHost()));
 
   const board = el("div", {class: "board"});
   for (const [stateKey, label] of BOARD_COLUMNS) {
-    const items = stateKey === "DONE" ? done : all.filter(a => a.state === stateKey);
+    const items = (stateKey === "DONE" ? done : all.filter(a => a.state === stateKey))
+      .filter(a => boardFilterKeep("tasks", a));
     // Dropping on a column is the same call the state chip makes.
     const col = boardColumn(
       el("div", {class: "bcol-head"},
@@ -8462,7 +8542,9 @@ function viewTaskBoard() {
       "a Mac) several cards, or drag a box across them from the background, and " +
       "dragging any one of them moves the whole handful at once. Or open a card " +
       "and use the state buttons - which is what you want on a phone, where " +
-      "dragging is a fight.")));
+      "dragging is a fight. The chips above narrow the whole board: the loose " +
+      "tasks on their own are the ones to file, and the ones with no context " +
+      "are the ones to clarify.")));
   return c;
 }
 
@@ -8473,17 +8555,20 @@ function viewTaskBoard() {
 function viewProjectBoard() {
   const c = el("div", {class: "wrap wide"});
   const stuck = new Set(stuckActiveProjects().map(x => x.path));
+  const everyProject = BOARD_STATUS_COLUMNS.flatMap(code => projectsInVisible(code));
   c.append(el("div", {class: "section"},
     el("div", {style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap"},
       boardModeToggle(),
       el("button", {class: "btn sm ghost", style: "margin-left:auto",
         onclick: () => newProjectPrompt()}, "+ new project")),
     boardSpaceTabs(),
+    boardFilterBar("projects", everyProject),
     boardSelHost()));
 
   const board = el("div", {class: "board five"});
   for (const code of BOARD_STATUS_COLUMNS) {
     const items = projectsInVisible(code)
+      .filter(r => boardFilterKeep("projects", r))
       .sort((x, y) => inSpace(x.space, () => pageTitle(x.path))
         .localeCompare(inSpace(y.space, () => pageTitle(y.path))));
     const col = boardColumn(
@@ -8527,8 +8612,10 @@ function viewProjectBoard() {
       "at nothing. Hold ctrl (cmd on a Mac) as you drop and the project is " +
       "copied into that space instead, leaving this one where it is. A project " +
       "dropped where that name is taken merges into the " +
-      "one already there - the toast has the undo for it. On a phone, open " +
-      "the project and use its status button.")));
+      "one already there - the toast has the undo for it. The chips above narrow " +
+      "the board to the projects with something to do in them, or to the ones " +
+      "with nothing - which is the list to finish, drop or write a next action " +
+      "for. On a phone, open the project and use its status button.")));
   return c;
 }
 
