@@ -129,6 +129,13 @@ header.top .burger{display:none}
 .h-title{font-size:19px;font-weight:650;letter-spacing:-.3px;display:flex;align-items:center;gap:9px;min-width:0}
 .h-title .sub{font-size:12px;font-weight:400;color:var(--fg3)}
 .h-sp{flex:1}
+/* The two arrows sit left of the title, where a browser keeps them, and a
+   dead one stays in place greyed rather than disappearing: a control that
+   comes and goes moves everything beside it. */
+.h-hist{display:flex;gap:2px;flex:none}
+.h-hist .iconbtn{font-size:15px}
+.h-hist .iconbtn:disabled{opacity:.3;cursor:default}
+.h-hist .iconbtn:disabled:hover{background:transparent;color:var(--fg3)}
 .btn{
   display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:var(--radius-sm);
   background:var(--bg3);color:var(--fg2);font-size:13px;border:1px solid transparent;white-space:nowrap;
@@ -1082,6 +1089,12 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4p
   <div id="main">
     <header class="top">
       <button class="iconbtn burger" id="burger">&#9776;</button>
+      <!-- Installed as an app there is no browser chrome, so the two arrows
+           everybody reaches for first have to live here. -->
+      <div class="h-hist">
+        <button class="iconbtn" id="btnBack" title="Back (alt+←)" disabled>&#8592;</button>
+        <button class="iconbtn" id="btnFwd" title="Forward (alt+→)" disabled>&#8594;</button>
+      </div>
       <div class="h-title"><span id="hTitle">Today</span><span class="sub" id="hSub"></span></div>
       <div class="h-sp"></div>
       <button class="ctxnow" id="btnContext" hidden></button>
@@ -2809,6 +2822,7 @@ async function openSpace(name) {
   state.pagePath = null;
   await ensureVisibleLoaded();
   render();
+  navRecord();
   await Spaces.writeSummary().catch(() => {});
   touchLastSeen();
   AUTOSYNC_AT = 0;                  // arriving in a space is worth one merge
@@ -5703,9 +5717,88 @@ function go(view, opts = {}) {
   document.body.classList.remove("nav-open");
   render();
   $("#content").scrollTop = 0;
+  navRecord();
   if (leaving.length) maybeAskTourCheckoff(leaving);
 }
 function openPage(path) { go("page", {pagePath: path}); }
+
+/* ---------- back and forward ----------
+   Installed to a home screen this app has no browser bar, and in a tab the
+   browser's own arrows leave the app entirely: every screen here is one URL,
+   so Back went to whatever site you were on before. The places you have been
+   are therefore kept here, and the two arrows in the header walk them.
+
+   A place is the handful of state fields a view is drawn from, plus the space
+   it was in -- so coming back to a page in another vault switches vaults on
+   the way, the same as clicking the link did. */
+const NAV_FIELDS = ["view", "pagePath", "context", "statusCode", "person",
+                    "query", "searchFilter", "boardMode", "graphMode", "graphFocus"];
+let NAV_HIST = [], NAV_AT = -1, NAV_JUMPING = false;
+
+function navSnapshot() {
+  const snap = {space: (typeof Spaces === "object" && Spaces) ? Spaces.active : null};
+  for (const k of NAV_FIELDS) snap[k] = state[k] ?? null;
+  return snap;
+}
+const navSame = (a, b) => !!a && !!b && a.space === b.space
+  && NAV_FIELDS.every(k => (a[k] ?? null) === (b[k] ?? null));
+
+/* Arriving somewhere by walking the history is not a new place, so a jump
+   records nothing -- otherwise Back would push the thing you just left and
+   the trail would never end. */
+function navRecord() {
+  if (NAV_JUMPING) return;
+  const now = navSnapshot();
+  if (navSame(NAV_HIST[NAV_AT], now)) return;
+  NAV_HIST = NAV_HIST.slice(0, NAV_AT + 1);
+  NAV_HIST.push(now);
+  if (NAV_HIST.length > 80) NAV_HIST.shift();
+  NAV_AT = NAV_HIST.length - 1;
+  syncNavArrows();
+}
+
+function navApply(snap) {
+  NAV_JUMPING = true;
+  const land = () => {
+    for (const k of NAV_FIELDS) state[k] = snap[k];
+    document.body.classList.remove("nav-open");
+    render();
+    $("#content").scrollTop = 0;
+    NAV_JUMPING = false;
+    syncNavArrows();
+  };
+  if (snap.space && Spaces.active && snap.space !== Spaces.active) {
+    openSpace(snap.space).then(land, () => { NAV_JUMPING = false; syncNavArrows(); });
+    return;
+  }
+  land();
+}
+function navGo(delta) {
+  const to = NAV_AT + delta;
+  if (to < 0 || to >= NAV_HIST.length) { notify(delta < 0 ? "Nowhere further back." : "Nowhere further forward."); return; }
+  NAV_AT = to;
+  navApply(NAV_HIST[to]);
+}
+/* An arrow that cannot do anything says so by being grey rather than by doing
+   nothing when pressed. The first redraw seeds the trail with wherever the app
+   opened, so the first Back has something to come back from. */
+function syncNavArrows() {
+  if (!NAV_HIST.length && !NAV_JUMPING) { NAV_HIST = [navSnapshot()]; NAV_AT = 0; }
+  const b = $("#btnBack"), f = $("#btnFwd");
+  if (!b || !f) return;
+  b.disabled = NAV_AT <= 0;
+  f.disabled = NAV_AT >= NAV_HIST.length - 1;
+  b.title = "Back (alt+←)" + (b.disabled ? "" : " · " + navWhere(NAV_HIST[NAV_AT - 1]));
+  f.title = "Forward (alt+→)" + (f.disabled ? "" : " · " + navWhere(NAV_HIST[NAV_AT + 1]));
+}
+/* The name of a place, for the arrow that goes there. */
+function navWhere(snap) {
+  if (!snap) return "";
+  if (snap.view === "page" && snap.pagePath) return pageTitle(snap.pagePath);
+  if (snap.view === "person") return snap.person || "Person";
+  return VIEW_TITLE[snap.view] || snap.view || "Today";
+}
+
 const noteTodoTouched = () => { state.lastTodoTouch = Date.now(); };
 
 /* ============================================================
@@ -14936,6 +15029,7 @@ function render() {
     : state.view === "page" ? state.pagePath
     : state.context && ["today", "context", "next"].includes(state.view) ? "@" + state.context : "";
   resolveAssets(c);
+  syncNavArrows();
   applyRefocus();
 }
 
@@ -15016,17 +15110,31 @@ const MENU_KEYS = "abcdefghijklmnopqrstuvwxyz";
 
 function openLinkMenu(node, ref) {
   const a = blockBehind(node);
+  linkMenu(ref, a, a && a.space);
+}
+
+/* The same menu from somewhere that already knows which line it is on -- the
+   surroundings grid, a dialog -- so a pill there offers what a pill in the
+   outline offers instead of being the one place that still jumps straight to
+   the page. The line is handed in rather than looked up, because a chip in a
+   grid is not rendered inside the line it came from.
+
+   A space is handed in with it: the alternatives and the page behind the link
+   are that vault's, not the one on screen. */
+function linkMenu(ref, a, space) {
+  const inIt = fn => (space ? inSpace(space, fn) : fn());
   const kind = linkKindOf(ref);
   const label = ref.replace(/^[^/]+\//, "");
   const shownNow = kind === "context" ? "@" + label : label;
   let i = 0;
-  const rows = [[MENU_KEYS[i++], "Go to " + shownNow, "the page itself", () => followLink(ref)]];
+  const rows = [[MENU_KEYS[i++], "Go to " + shownNow, "the page itself",
+    () => inIt(() => followLink(ref))]];
 
   /* No line behind it means nothing to change or remove: a pill in a heading
      is just a link. */
   if (a && kind) {
     let first = true;
-    for (const [r, shown] of linkAlternatives(kind)) {
+    for (const [r, shown] of inIt(() => linkAlternatives(kind))) {
       if (r.toLowerCase() === ref.toLowerCase()) continue;
       rows.push([MENU_KEYS[i++] || "", shown, first ? "change it to this" : null,
         () => { if (swapLinkIn(a, ref, r)) { notify("Now " + shown + "."); render(); } }]);
@@ -15038,15 +15146,24 @@ function openLinkMenu(node, ref) {
   chipMenu(shownNow, kind ? "the " + kind + " on this line" : "this link", rows);
 }
 
-/* wiki links are delegated */
-$("#content").addEventListener("click", e => {
+/* ---------- wiki links are delegated, everywhere ----------
+   On #content this caught the outline and the lists and nothing else, so the
+   same pill drawn in a dialog, in the next-best-move nudge or in the
+   surroundings grid either did nothing or jumped straight to the page. The
+   document is the one container all of them are in. */
+document.addEventListener("click", e => {
   // A dropped picture opens full size in a tab of its own, and clicking it
   // must not drop the caret into the line behind it.
   const img = e.target.closest("img.asset");
   if (img && img.src) { e.preventDefault(); e.stopPropagation(); window.open(img.src, "_blank", "noopener"); return; }
   const link = e.target.closest("[data-link]");
   if (!link) return;
+  /* Taken on the way down and kept: a pill sitting inside a row that opens
+     something -- a search hit, a board card, a line in the weeding list -- used
+     to do both, because the row's own handler had already run by the time this
+     one saw the click. The pill is the click. */
   e.stopPropagation();
+  e.preventDefault();
   const ref = link.dataset.link;
   /* A door into the app is not a pill: [[go/todos]] has one meaning and a menu
      over it would be three ways of asking the same question. The same goes for
@@ -15056,7 +15173,7 @@ $("#content").addEventListener("click", e => {
     return;
   }
   openLinkMenu(link, ref);
-});
+}, true);
 </script>
 <script>
 /* ============================================================
@@ -15886,9 +16003,11 @@ function surroundingsGrid(path, block, space) {
   const ctx = refs.filter(r => /^c\//i.test(r));
   const rest = refs.filter(r => !/^c\//i.test(r));
   const tagBox = [];
+  /* A tag here is the same handle it is in the line: going there is one of the
+     things it offers, and not the one you want most often. */
   for (const r of ctx.concat(rest))
     tagBox.push(chip(/^c\//i.test(r) ? "@" + r.slice(2) : r, r,
-      () => { closeModal(); inSpace(space, () => followLink(r)); },
+      () => linkMenu(r, {path, block, space}, space),
       /^c\//i.test(r) ? "ctx" : "", "p:" + r));
   if (!ctx.length) tagBox.unshift(chip("add context", "A todo with no context cannot be filtered to where you are",
     () => { closeModal(); promptAndInsertContext(path, block); }, "want"));
@@ -15933,7 +16052,10 @@ function projectGrid(path) {
 
   const area = areaOfProject(path);
   grid.append(cell("a-project", "Area",
-    area ? chip(area, "a/" + area, () => followLink("a/" + area), "", "p:a/" + area)
+    area ? chip(area, "a/" + area, () => chipMenu(area, "the area this project serves", [
+             ["a", "Go to " + area, "the area page", () => followLink("a/" + area)],
+             ["b", "Serve another area", "move it", () => openAreaPicker(path)],
+           ]), "", "p:a/" + area)
          : chip("no area", "A project nothing serves is a project nobody misses",
              () => openAreaPicker(path), "want")));
 
@@ -15953,17 +16075,20 @@ function projectGrid(path) {
      projects or days: the context it is done in, the people in it, the orgs.
      Context first, same as a todo. */
   const refs = [];
+  const lineOf = new Map();          // the block to rewrite when one is swapped
   if (page) walkBlocks(page.blocks, b => {
     if (isMessage(b)) return;
     for (const raw of linksIn([b.title, ...(b.body || [])].join("\n"))) {
       const r = trim(raw.split("][")[0]);
       if (!/^[cpoz]\//i.test(r) || refs.includes(r)) continue;
       refs.push(r);
+      if (linksIn(b.title).some(x => trim(x.split("][")[0]) === r)) lineOf.set(r, b);
     }
   });
   const ctx = refs.filter(r => /^c\//i.test(r)), rest = refs.filter(r => !/^c\//i.test(r));
   const tags = ctx.concat(rest).slice(0, 12)
-    .map(r => chip(/^c\//i.test(r) ? "@" + r.slice(2) : r, r, () => followLink(r),
+    .map(r => chip(/^c\//i.test(r) ? "@" + r.slice(2) : r, r,
+      () => linkMenu(r, lineOf.has(r) ? {path, block: lineOf.get(r), space: V.space} : null, V.space),
       /^c\//i.test(r) ? "ctx" : "", "p:" + r));
   grid.append(cell("a-tags", "Tags", tags.length ? tags : quiet("nothing linked yet")));
 
@@ -18072,6 +18197,12 @@ document.addEventListener("keydown", e => {
   if (!typing && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !e.shiftKey) {
     e.preventDefault(); undoLast(); return;
   }
+  /* alt and an arrow is what the browser itself uses, so it is the one pair of
+     keys nobody has to be told. It works while typing too: the caret being in
+     a line is no reason for Back to stop meaning back. */
+  if ((e.altKey || e.metaKey) && !e.ctrlKey && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+    e.preventDefault(); navGo(e.key === "ArrowLeft" ? -1 : 1); return;
+  }
   /* @@ opens the context picker. @ because a context reads as @phone
      everywhere else in this app, and twice because once is a key that does
      nothing most of the time and then swallows a keystroke the one time the
@@ -18208,6 +18339,8 @@ $("#btnFocus").onclick   = () => setFocus(!focusOn());
 $("#btnVault").onclick   = () => openVaultDialog();
 $("#spaceBtn").onclick   = () => openSpaceSwitcher();
 $("#burger").onclick     = () => document.body.classList.toggle("nav-open");
+$("#btnBack").onclick    = () => navGo(-1);
+$("#btnFwd").onclick     = () => navGo(1);
 $("#btnTheme").onclick   = () => {
   const cur = document.documentElement.dataset.theme === "light" ? "dark" : "light";
   document.documentElement.dataset.theme = cur;
