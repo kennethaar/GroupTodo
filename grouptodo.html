@@ -992,6 +992,8 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4p
 .coach-step{display:flex;align-items:flex-start;gap:10px;padding:5px 0;font-size:13.5px}
 .coach-step.done{color:var(--fg3)}
 .coach-step.done>div>div:first-child{text-decoration:line-through}
+.coach-dot.can{cursor:pointer}
+.coach-dot.can:hover{border-color:var(--ok);color:var(--ok)}
 .coach-dot{
   width:18px;height:18px;border-radius:50%;border:1.6px solid var(--border2);flex:none;
   display:grid;place-items:center;font-size:11px;color:transparent;margin-top:1px;
@@ -3767,7 +3769,6 @@ function setBlockState(path, block, state, opts = {}) {
       stampAuthor(block);
     }
   } else if (state === "DONE" || state === "CANCELLED") {
-    coachMark("tick");
     const me = stampName();
     if (me) setBlockProp(block, "done_by", me + " " + nowStamp());
     const added = addedDate(block);
@@ -5459,7 +5460,8 @@ function computeNudges() {
     if (count <= 0) return;
     if (quiet && DEEP_NUDGES.includes(id)) return;
     if (nudgeQuiet(id)) return;
-    n.push({id, level, label: isSimple() ? (NUDGE_PLAIN[id] || label) : label, count, act});
+    // The same words in both modes: a shorter name was never an easier idea.
+    n.push({id, level, label: NUDGE_PLAIN[id] || label, count, act});
   };
 
   const overdue = acts.filter(a => a.group === "LATE");
@@ -5904,7 +5906,7 @@ const focusOn = () => PREF.get("focus", "") === "1";
 function setFocus(on) {
   PREF.set("focus", on ? "1" : "");
   applyChrome();
-  if (on) notify("Focus. Escape, or the button again, brings the rest back.");
+  if (on) notify("Focus. Escape brings the rest back.");
 }
 /* Both body classes in one place, so a redraw cannot leave one of them behind. */
 function applyChrome() {
@@ -5918,7 +5920,7 @@ function setMode(mode) {
   if (!coachOn()) {
     notify(mode === "simple"
       ? "Simple: lists and tasks."
-      : "Advanced: journals, outliner, links and backlinks are back.");
+      : "Advanced: everything shown, pages as written.");
   }
   render();
 }
@@ -5958,12 +5960,12 @@ const NAV_SIMPLE = [
 
 const NAV_ADVANCED = [
   {group: null, items: [
-    {id: "today",   icon: "☀", label: "Today",        key: "f t"},
-    {id: "next",    icon: "▸", label: "Next actions", key: "g n"},
-    {id: "context", icon: "⌘", label: "Context",      key: "g x"},
-    {id: "agenda",  icon: "☷", label: "Agenda",       key: "g a"},
-    {id: "people",  icon: "◍", label: "People",       key: "g p"},
-    {id: "chat",    icon: "○", label: "Chat",         key: "g c"},
+    {id: "today",   icon: "☀", label: "My day",   key: "f t"},
+    {id: "next",    icon: "▸", label: "Todos",    key: "g n"},
+    {id: "context", icon: "⌘", label: "Contexts", key: "g x"},
+    {id: "agenda",  icon: "☷", label: "Planned",  key: "g a"},
+    {id: "people",  icon: "◍", label: "People",   key: "g p"},
+    {id: "chat",    icon: "○", label: "Chat",     key: "g c"},
   ]},
   {group: "Views", items: [
     {id: "board",    icon: "▦", label: "Board",    key: "v b"},
@@ -5975,9 +5977,9 @@ const NAV_ADVANCED = [
     {id: "report",   icon: "⎙", label: "Report",   key: "v r"},
   ]},
   {group: "Projects", items: [
-    {id: "horizons",   icon: "◉", label: "Horizons"},
+    {id: "horizons",   icon: "◉", label: "Big picture"},
     {id: "proj--",     icon: "-", label: "Cancelled",     status: "-"},
-    {id: "proj-0",     icon: "0", label: "Completed",     status: "0"},
+    {id: "proj-0",     icon: "0", label: "Done",          status: "0"},
     {id: "proj-1",     icon: "1", label: "Active",        status: "1"},
     {id: "proj-2",     icon: "2", label: "Someday/Maybe", status: "2"},
     {id: "proj-3",     icon: "3", label: "Waiting for",   status: "3"},
@@ -5996,6 +5998,18 @@ const NAV_ADVANCED = [
 ];
 
 const NAV = () => (isSimple() ? NAV_SIMPLE : NAV_ADVANCED);
+
+/* ---------- pinned views ----------
+   Board, Project board and Directory are three readings of one view. The
+   sidebar carries one entry for it; pin another reading from the view itself
+   and it gets its own row. Per device, like the theme. */
+const navPinned = id => PREF.get("navpin." + id, "") === "1";
+function toggleNavPin(id, label) {
+  const on = navPinned(id);
+  PREF.set("navpin." + id, on ? "" : "1");
+  notify(on ? label + " off the sidebar." : label + " pinned.");
+  render();
+}
 
 /* ============================================================
    113_QUICK_ADD -- the MS To Do "+ Add a task" row
@@ -6028,7 +6042,7 @@ function quickAdd(targetPath, opts = {}) {
         const next = $(".quickadd input");
         if (next) next.focus();
       });
-      if (!startsWithVerb(text)) notify("Tip: start with a verb you could film - Call, Draft, Buy.", "warn");
+      if (!startsWithVerb(text)) notify("Start with a verb you could film: Call, Draft, Buy.", "warn");
     },
   });
   /* A list pasted into a one-line box is still a list. The box itself would
@@ -6065,53 +6079,59 @@ function coachMark(step) {
   PREF.set("coach." + step, "1");
 }
 const coachDone = step => PREF.get("coach." + step, "") === "1";
+/* A surname is what makes a shared list readable, so the first step asks for
+   one -- but the step can still be crossed off by hand like any other. */
+const hasFullName = n => trim(n || "").split(/\s+/).filter(Boolean).length >= 2;
 
 function coachSteps() {
   const onDisk = V.backend && (V.backend.kind === "fs" || V.backend.kind === "http");
+  /* Who, then where, then what -- the same three questions the welcome screen
+     asks, in the same order, so coming back to one of them is not a new idea.
+     Crossing something off your own list is not a lesson anybody needs taught,
+     so the third step ends at "added" and the strip itself is what gets ticked. */
   const steps = [
-    {k: "add",  done: coachDone("add"),  label: "Add your first task",
-     hint: "type it in the box above and press enter",
-     why: "Getting it out of your head and into something you trust is the whole point. " +
-          "Nothing else here is worth anything until that part is dull."},
-    {k: "tick", done: coachDone("tick"), label: "Tick it off",
-     hint: "click the circle on the left",
-     why: "One thing crossed off proves the list answers back. A list that never visibly " +
-          "moves is one you quietly stop opening."},
+    {k: "who", done: coachDone("who") || hasFullName(whoAmI()),
+     label: "Who are you", cta: "Add name",
+     hint: hasFullName(whoAmI()) ? "" : "your full name",
+     why: "Your name goes on what you add and what you close. Two people called Kenneth is " +
+          "the day you wish you had typed the surname.",
+     act: () => promptInput({
+       title: "Your name", value: whoAmI(), cta: "Save", label: "Full name",
+       onSave: n => { setIdentity(n, Spaces.active); coachMark("who"); render(); },
+     })},
+    {k: "where", done: coachDone("where") || onDisk,
+     label: "Where the files live", cta: "Choose folder",
+     hint: onDisk ? "" : "right now they live in this browser only",
+     why: "Plain .md files in a folder you picked. Share the folder and you have shared the list.",
+     act: () => openSpaceStorageSetup()},
+    {k: "add", done: coachDone("add"), label: "Add your first task",
+     hint: "type it in the box below and press enter",
+     why: "Getting it out of your head and into GroupTodo. The system will grow with your needs."},
   ];
-  /* The project step waits until something has actually been added and closed.
-     Handing somebody a filing system while their screen is still empty is how
-     every other to-do app loses them inside a minute. */
-  if (coachDone("add") && coachDone("tick")) {
+  /* Filing waits until there is something to file. */
+  if (coachDone("add")) {
     // The tour project was put there by the app, so it cannot stand in for one
     // of your own -- this step is about filing a job of your own.
     const own = projectsIn("1").filter(p => !isTourProject(p));
-    steps.push({k: "project", done: own.length > 0, optional: true,
+    steps.push({k: "project", done: own.length > 0 || coachDone("project"), optional: true,
       label: "Give a bigger job a project", cta: "Make one",
       hint: "anything that needs more than one step",
-      why: "A task is one move; a project is the handful of moves that finish something, " +
-           "with a line saying what done looks like. Keeping them apart is what stops " +
-           "\u201cmove house\u201d sitting on the same list as \u201cbuy milk\u201d and making both feel heavy.",
+      why: "A task is one move. A project is the moves that finish something, plus a line " +
+           "saying what done looks like.",
       act: () => newProjectPrompt()});
   }
   /* The one pointer at the tour. Without it the first project sits in Active
-     where a newcomer has no reason to look, and the half of the app behind the
-     sidebar stays undiscovered -- which is the whole problem it solves. */
+     where a newcomer has no reason to look. */
   const tourPath = tourProjectPath();
   const tourLeft = tourPath ? tourSteps(tourPath).filter(s => s.open).length : 0;
   if (tourPath && coachDone("add")) {
-    steps.push({k: "tour", done: tourLeft === 0, optional: true,
+    steps.push({k: "tour", done: tourLeft === 0 || coachDone("tour"), optional: true,
       label: "Find your way round the rest of it", cta: "Open",
-      hint: tourLeft ? tourLeft + " short steps, each one a link to the part it is about" : "",
-      why: "Half of what is here is behind one more click - contexts, planned dates, " +
-           "people, routines, the folder your files live in. The steps are on your list " +
-           "like anything else, so ignore them, reorder them or delete the lot.",
+      hint: tourLeft ? tourLeft + " steps, each a link to the part it is about" : "",
+      why: "Contexts, dates, people, routines, your folder. Each step is a task on your list: " +
+           "reorder it, reword it or delete the lot.",
       act: () => openPage(tourPath)});
   }
-  steps.push({k: "home", done: onDisk, label: "Give your tasks a home", cta: "Choose",
-    hint: onDisk ? "" : "right now they live in this browser only",
-    why: "A folder of plain .md files you picked yourself means nothing can hold your work " +
-         "hostage - not this app, not a company, not a browser clearing its storage.",
-    act: () => openSpaceStorageSetup()});
   return steps;
 }
 
@@ -6119,9 +6139,8 @@ function coachStrip() {
   if (!coachOn()) return null;
   const steps = coachSteps();
   const needed = steps.filter(st => !st.optional);
-  /* Finished when the three that matter are done. The project step is an
-     invitation and never a gate -- somebody whose life genuinely is a flat list
-     of errands should not be held in onboarding for declining to file them. */
+  /* Finished when the three that matter are done. The optional steps are
+     invitations and never gates. */
   if (needed.every(st => st.done)) { PREF.set("coach", "0"); return null; }
 
   const box = el("div", {class: "coach"});
@@ -6135,8 +6154,13 @@ function coachStrip() {
   // a leaflet, and nobody reads the leaflet.
   const current = steps.find(st => !st.done);
   for (const st of steps) {
+    /* The dot is a checkbox, not a bullet: a step you did your own way, or do
+       not want, is yours to cross off. */
     box.append(el("div", {class: "coach-step" + (st.done ? " done" : "")},
-      el("span", {class: "coach-dot"}, st.done ? "\u2713" : ""),
+      el("span", {class: "coach-dot" + (st.done ? "" : " can"),
+        title: st.done ? "" : "Cross it off",
+        onclick: st.done ? null : () => { PREF.set("coach." + st.k, "1"); render(); }},
+        st.done ? "\u2713" : ""),
       el("div", {},
         el("div", {}, st.label,
           st.optional ? el("span", {class: "chip", style: "margin-left:6px"}, "optional") : null),
@@ -6477,20 +6501,20 @@ function tipList() {
       id: "split",
       live: !!fattest && fattest.n >= CFG.busyProjectTodos,
       title: fattest ? pageTitle(fattest.path) + " is carrying " + fattest.n + " tasks" : "",
-      body: "That is usually two or three jobs wearing one name. Split it and each half gets a " +
-            "finish line it can actually reach.",
-      why: "A project that never empties reads as a chore list with your name on it. Two that " +
-           "can be finished give you somewhere to stop.",
+      body: "Usually two or three jobs wearing one name. Split it and each half gets a finish " +
+            "line it can reach.",
+      why: "A project that never empties is a chore list with your name on it. Two that can be " +
+           "finished give you somewhere to stop.",
       cta: "Open it", act: () => fattest && openPage(fattest.path),
     },
     {
       id: "name",
       live: onDisk && !whoAmI(),
       title: "Put your name on your changes",
-      body: "This space lives somewhere another person can open. With a name set, what you add " +
-            "is stamped by:: you and what you close done_by:: you.",
-      why: "In a shared list, unsigned work slides into being nobody's work: two people redo the " +
-           "same thing, and neither can tell who already asked.",
+      body: "Another person can open this space. With a name set, what you add is stamped " +
+            "by:: you and what you close done_by:: you.",
+      why: "Unsigned work becomes nobody's work: two people redo the same thing and neither " +
+           "can tell who asked.",
       cta: "Set a name",
       act: () => promptInput({
         title: "Your name", value: whoAmI(), cta: "Save",
@@ -6584,7 +6608,7 @@ function wizSteps() {
   const profile = horizonProfile();
   const ladder = activeHorizons();
   const intro = {
-    title: "Horizons of focus",
+    title: "Big picture",
     render: () => el("div", {class: "field"},
       el("label", {}, ladder.length + " altitudes"),
       el("div", {style: "color:var(--fg2);font-size:13.5px;line-height:1.75"},
@@ -6778,7 +6802,7 @@ function viewHorizons() {
 
   if (nothing) {
     c.append(el("div", {class: "hero"},
-      el("h2", {}, "Horizons of focus"),
+      el("h2", {}, "Big picture"),
       el("div", {style: "font-size:16px;font-weight:600;margin-bottom:2px"}, "Altitude, not just a list"),
       el("p", {}, (texts.length ? "Purpose, vision, goals and areas are" : "Goals and areas are") +
                   " what make your projects mean something. " +
@@ -8531,6 +8555,9 @@ function boardFilterBar(mode, items) {
 
 /* Which board, remembered, because somebody who works in projects does not want
    to re-pick it every time they come back. */
+const BOARD_NAV_ID = {projects: "board-p", dir: "board-d"};
+const BOARD_NAV_LABEL = {projects: "Project board", dir: "Directory"};
+
 function boardModeToggle() {
   const seg = el("div", {class: "seg", style: "margin-top:4px"});
   for (const [mode, label] of [["tasks", "Tasks"], ["projects", "Projects"], ["dir", "Directory"]]) {
@@ -8539,7 +8566,16 @@ function boardModeToggle() {
       onclick: () => go("board", {boardMode: mode, boardMore: {}}),
     }, label));
   }
-  return seg;
+  /* Three readings of one view, so the sidebar carries one row for it. Somebody
+     who lives in the Directory can have a row of their own by saying so. */
+  const id = BOARD_NAV_ID[state.boardMode];
+  if (!id) return seg;
+  const on = navPinned(id);
+  const row = el("div", {style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap"}, seg,
+    el("button", {class: "btn sm ghost", title: "A row of its own in the sidebar",
+      onclick: () => toggleNavPin(id, BOARD_NAV_LABEL[state.boardMode])},
+      (on ? "\u2605 Pinned" : "\u2606 Pin")));
+  return row;
 }
 
 function viewBoard() {
@@ -11124,6 +11160,8 @@ function reportGroups(rows, by) {
 }
 
 function viewReport() {
+  // First time in, four lines on what it is for.
+  if (PREF.get("report.seen", "") !== "1") setTimeout(openReportWalkthrough, 60);
   const c = el("div", {class: "wrap"});
   const key = state.reportRange || "week";
   const win = reportWindow();
@@ -13071,8 +13109,43 @@ const anyDated = () => memo("anyDated", () =>
   }).length > 0);
 
 const anyLinked = () => memo("anyLinked", () => graphData().edges.length > 0);
-const anyFinished = () => memo("anyFinished", () =>
-  completedSince(addMonths(todayISO(), -12)).some(r => !r.undated));
+/* ---------- reporting, once there is something to report ----------
+   A report of three tour steps teaches nothing and reads as an empty feature,
+   so the row stays away until real work has gone through: five tasks closed or
+   two projects finished. Demo and tour steps do not count. Once earned it is
+   earned for good -- a quiet week does not take a feature away. */
+const REPORT_MIN_TASKS = 5;
+const REPORT_MIN_PROJECTS = 2;
+function reportEarned() {
+  if (PREF.get("report.unlocked", "") === "1") return true;
+  return memo("reportEarned", () => {
+    const mine = r => !isTourProject(r.path) && !isTourProject(r.projectPath) && !tourDestOf(r.title);
+    const tasks = completedSince(addMonths(todayISO(), -24)).filter(r => !r.undated && mine(r)).length;
+    const projects = projectsIn("0").filter(q => !isTourProject(q)).length;
+    if (tasks < REPORT_MIN_TASKS && projects < REPORT_MIN_PROJECTS) return false;
+    PREF.set("report.unlocked", "1");
+    notify("Reporting unlocked!", "info",
+      {label: "Show me", run: () => { go("report"); openReportWalkthrough(); }});
+    return true;
+  });
+}
+
+/* What the report is for, in four lines, the first time you open it. */
+function openReportWalkthrough() {
+  PREF.set("report.seen", "1");
+  const line = (head, body) => el("div", {class: "field"},
+    el("label", {}, head),
+    el("div", {style: "color:var(--fg2);font-size:13px;line-height:1.55"}, body));
+  modal({
+    center: true, title: "Reporting",
+    body: el("div", {},
+      line("What it shows", "Everything closed in a window of time."),
+      line("The window", "This week, last quarter, or dates you type."),
+      line("Grouped", "By customer to invoice, by person to review, by project to catch up."),
+      line("Out", "Copy it, or print it.")),
+    foot: [el("button", {class: "btn primary", onclick: () => closeModal()}, "Got it")],
+  });
+}
 const anyOpenTask = () => memo("anyOpenTask", () =>
   leafActions().some(a => OPEN_STATES[a.state]));
 
@@ -13082,6 +13155,15 @@ function navVisible(item) {
            : item.boardMode ? (state.view === "board" && state.boardMode === item.boardMode)
                             : state.view === item.id;
   if (here) return true;
+  // One row for one view. The other readings of it arrive when you pin them.
+  if (item.boardMode && !navPinned(item.id)) return false;
+  // Earned in both modes, because an empty report is a bad first impression.
+  if (item.id === "report" && !reportEarned()) return false;
+
+  /* Advanced is the mode that asked for all of it, so it gets all of it.
+     Simple keeps a row away while there is nothing behind it to see. */
+  if (!isSimple()) return true;
+
   if (item.id === "weeding" && !weedingWorthIt()) return false;
   // Nothing to see while you are the only person here.
   if (item.id === "people" && members().length < 2 &&
@@ -13089,25 +13171,20 @@ function navVisible(item) {
   // Chat shows up once there is one, and stays once you are using it.
   if (item.id === "chat" && !allThreads().length) return false;
 
-  /* The five screens that need something in the files to be about. */
+  /* The screens that need something in the files to be about. */
   if (item.id === "board"    && !anyOpenTask())  return false;
-  // The project board is about projects, so it needs one to be about.
-  if (item.id === "board-p" && !STATUS_ORDER.some(c => projectsIn(c).length)) return false;
-  // The directory board is about orgs, people and contexts, so it needs one.
-  if (item.id === "board-d" && !allPages(q => ["org", "person", "context"].includes(pageKind(q))).length) return false;
   if (item.id === "calendar" && !anyDated())     return false;
   if (item.id === "gantt"    && !anyDated())     return false;
   if (item.id === "graph"    && !anyLinked())    return false;
-  if (item.id === "report"   && !anyFinished())  return false;
   if (item.id === "checklists" && !checklistPages().length
       && !PREF.get("madeRoutine", "")) return false;
-  if (item.id === "zettel"   && !allPages(p => pageKind(p) === "zettel").length) return false;
+  if (item.id === "zettel"   && !allPages(q => pageKind(q) === "zettel").length) return false;
   if (item.id === "horizons" && !areaList().length && !goalList().length
       && !getSetting("horizons_seen")) return false;
   // An empty status folder is a filing cabinet drawer nobody has used.
   if (item.status && !projectsIn(item.status).length) return false;
 
-  if (!coachOn() || !isSimple()) return true;
+  if (!coachOn()) return true;
   // Making a routine mid-coach is allowed, and a place you were just sent to has
   // to be reachable afterwards.
   if (item.id === "checklists" && PREF.get("madeRoutine", "")) return true;
@@ -14934,17 +15011,25 @@ function pageFacts(path) {
 }
 
 /* ---------- one fact, as a line of the document ----------
-   Focus swaps the pills for the raw text and blur swaps them back, which is
-   exactly how a block's own line already behaves. */
+   Focus swaps the decoration for the raw text and blur swaps it back, which is
+   exactly how a block's own line already behaves.
+
+   Simple draws the value as a pill: a control that says what to do with it.
+   Advanced draws the line as it is written in the file, links and all, because
+   somebody who chose Advanced wants to see the markdown they will later edit in
+   an editor -- the pill hides the very thing they came for. */
 function factLine(path, f) {
   const line = el("div", {class: "pfact"});
+  const raw = !isSimple();
   const txt = el("div", {
     class: "ftxt" + (f.save ? "" : " ro"),
     contenteditable: f.save ? "true" : "false", spellcheck: "false",
-    title: f.save ? "Click a pill for what to do with it, or beside it to type the line" : "",
+    title: f.save ? (raw ? "Click a link to follow it, or beside it to type the line"
+                         : "Click a pill for what to do with it, or beside it to type the line") : "",
   });
   const paint = () => {
     txt.textContent = "";
+    if (raw) { txt.innerHTML = renderInline(f.raw); return; }
     txt.append(el("span", {class: "fkey", contenteditable: "false"}, f.key));
     for (const p of f.pills()) txt.append(p);
   };
@@ -15228,8 +15313,8 @@ function viewSearch() {
    115_RENDER dispatcher
    ============================================================ */
 const VIEW_TITLE = {
-  today: "Today", next: "Next actions", context: "Context", agenda: "Agenda",
-  todos: "Todos", horizons: "Horizons of focus", checklists: "Routines & lists",
+  today: "My day", next: "Todos", context: "Contexts", agenda: "Planned",
+  todos: "Todos", horizons: "Big picture", checklists: "Routines & lists",
   people: "People",                     // or the header read "Today" on People
   chat: "Chat", flagged: "Flagged",     // same trap, same fix
   board: "Board", calendar: "Calendar", graph: "Graph",   // and again, for the three new ones
@@ -15333,8 +15418,6 @@ function render() {
   }
   c.append(node);
   restoreScroll();
-  if (isSimple() && state.view === "today") VIEW_TITLE.today = "My day";
-  else VIEW_TITLE.today = "Today";
   $("#hTitle").textContent = state.view === "page" ? pageTitle(state.pagePath)
     : state.view === "projects" ? STATUS_LABEL[shelfCode()] + " projects"
     : state.view === "person" ? (state.person || whoAmI() || "Person")
@@ -17761,11 +17844,9 @@ function openRunChecklist(listPath) {
    contexts -- arrives when it is actually needed. A colleague who just wants a
    todo list should be typing one within seconds of opening the file. */
 function openOnboarding() {
-  /* The only thing asked for up front, and it is optional. A name is what makes a
-     list legible to anybody you later share it with, and asking at the start costs
-     one field -- asking on the day two people collide costs the collision. There is
-     deliberately nothing else to register: no account, no email and no password,
-     because there is nowhere for them to be sent. */
+  /* The only thing asked up front, and it is optional. A name is what makes the
+     list legible to anybody you share it with later. Nothing else to register:
+     no account, no email, no password, because there is nowhere to send them. */
   const nameInput = el("input", {placeholder: "Kenneth Aar", value: whoAmI(), maxlength: "60"});
   const keepName = () => setIdentity(nameInput.value);   // blank is a real answer
   const whereLine = el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px;line-height:1.5"});
@@ -17776,10 +17857,10 @@ function openOnboarding() {
     whereBtn.textContent = placed ? "Change folder" : "Choose folder";
     whereBtn.className = placed ? "btn ghost sm" : "btn sm";
     whereLine.textContent = placed
-      ? "Writing into \u201C" + (sp.label || sp.name) + "\u201D. Share that folder and you have shared the list."
+      ? "Writing into \u201C" + (sp.label || sp.name) + "\u201D. Share it and you have shared the list."
       : CAP.dirPicker
         ? "One you already share - OneDrive, Dropbox, a network drive. Skip it and it stays in this browser."
-        : "This browser cannot open folders, so it keeps the list itself. On a computer you can give it a real folder.";
+        : "This browser cannot open folders, so it keeps the list. On a computer you can pick one.";
   };
   whereBtn.onclick = async () => {
     keepName();                          // the folder picker needs a gesture; keep what is typed
@@ -17804,25 +17885,21 @@ function openOnboarding() {
   modal({
     center: true, title: "Welcome to GroupTodo",
     body: el("div", {},
-      /* Why it can be shared, in two sentences, because that is the thing that
-         makes somebody stay. Not how it works -- they find that out by using
-         it -- and not what to do with the file, which they have already done. */
+      /* Why it can be shared, in two lines. How it works, they find out by
+         using it. */
       el("div", {class: "field"},
         el("div", {style: "color:var(--fg2);font-size:13.5px;line-height:1.55"},
           "A shared to-do list that is really just text files in a folder you already have."),
         el("div", {style: "color:var(--fg3);font-size:12.5px;line-height:1.55;margin-top:6px"},
-          "Other task apps keep them on their servers, which is why sharing one means " +
-          "everybody needs an account. There is no server here - share the folder and " +
-          "you have shared the list.")),
-      /* Who, then where, then what. Each answer makes the next question make
-         sense: a name is what the folder will be shared under, and a folder is
-         what the first task gets written into. */
+          "No server, no accounts. Share the folder and you have shared the list.")),
+      /* Who, then where, then what. Each answer sets up the next: the name the
+         folder is shared under, then the folder the first task lands in. */
       el("div", {class: "field"},
         el("label", {}, "1 \u00B7 Who are you"),
         nameInput,
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px;line-height:1.5"},
-          "Colleagues see it beside what you add, and two people called Kenneth is " +
-          "the day you wish you had typed the surname.")),
+          "Full name. Two people called Kenneth is the day you wish you had typed " +
+          "the surname.")),
       el("div", {class: "field"},
         el("label", {}, "2 \u00B7 Where the files live"),
         whereBtn,
@@ -17833,7 +17910,7 @@ function openOnboarding() {
         el("span", {class: "k"}, "\u2713"),
         el("span", {}, el("b", {}, "Start a new list"), el("br"),
           el("span", {style: "color:var(--fg3);font-size:12.5px"},
-            "Straight in. Pick a folder when you are ready to share it."))),
+            "Straight in. Pick a folder when you want to share."))),
       el("button", {class: "pick", onclick: () => { keepName(); closeModal(); openReceiveVault(); }},
         el("span", {class: "k"}, "\u2193"),
         el("span", {}, el("b", {}, "Open one I was sent"), el("br"),
@@ -17870,8 +17947,7 @@ function openReceiveVault() {
     body: el("div", {},
       el("div", {class: "field"},
         el("div", {style: "color:var(--fg2);font-size:13.5px"},
-          "Whoever sent it either shared a folder with you, or sent a single " +
-          "markdown file. Either works.")),
+          "A shared folder or a single markdown file. Either works.")),
       CAP.dirPicker ? el("button", {class: "pick", onclick: async () => {
         done(); closeModal();
         await assignSpaceFolder(Spaces.active);
@@ -18864,9 +18940,9 @@ function afterFirstRun() {
     setTimeout(morningRoutine, 1200);
   }
   if (!isSimple()) {
-    notify("Keep fresh: g M morning \u00B7 g x context \u00B7 g d re-surface \u00B7 g r review \u00B7 ? keys");
+    notify("g M morning \u00B7 g x context \u00B7 g d re-surface \u00B7 g r review \u00B7 ? keys");
   } else if (!coachOn()) {
-    notify("Tip: press c to capture, / to search, ? for keys.");
+    notify("c capture \u00B7 / search \u00B7 ? keys");
   }
 }
 
