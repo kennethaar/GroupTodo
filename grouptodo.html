@@ -946,6 +946,10 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4p
   box-shadow:var(--shadow);padding:4px 0;
 }
 .linkpop .pick{padding:6px 11px;font-size:13px}
+/* The same list, hung off the "..." at the end of a line rather than the caret. */
+.nodemenu{min-width:252px}
+.nodemenu .k{font-family:var(--mono);letter-spacing:0;width:auto;min-width:26px;padding:0 5px}
+.nodemenu .sep{height:1px;background:var(--border);margin:4px 0}
 .linkpop .pick .k{width:22px;height:18px;font-size:10px}
 .filterbox{padding:0 16px 8px}
 /* The search box and its Enter button, side by side, the box taking the room. */
@@ -6601,7 +6605,11 @@ function meetingNotesCard(path) {
     el("div", {}, el("b", {}, "Tab"), " indents it, and indentation is what says things belong together; " +
       "shift-tab moves it back out."),
     el("div", {}, "Write ", el("b", {}, "[[1/Some name]]"), " in a line and that is a project, " +
-      "started from the words you were already typing.")));
+      "started from the words you were already typing."),
+    el("div", {}, "Or let the line name it for you: ", el("b", {}, altKeyLabel("p")), " project, ",
+      el("b", {}, altKeyLabel("o")), " person, ", el("b", {}, altKeyLabel("g")), " org, ",
+      el("b", {}, altKeyLabel("c")), " context, ", el("b", {}, altKeyLabel("t")), " task. " +
+      "The same five are on the \u22EF at the end of the line.")));
 
   box.append(lab("A meeting, typed as it ran:"));
   box.append(ex([
@@ -14305,6 +14313,16 @@ function outlineBlock(path, page, b) {
       touch(path); render();
       // Caret where the cut was, which is the start of what moved down.
       focusBlock(nb.id, false);
+    } else if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey &&
+               MAKE_BY_ALT[String(e.key).toLowerCase()]) {
+      /* alt-t task, alt-p project, alt-o person, alt-g org, alt-c context.
+         Blur first: it is what writes the typing back, and these all read the
+         line's own words. */
+      e.preventDefault();
+      const what = MAKE_BY_ALT[String(e.key).toLowerCase()];
+      txt.blur();
+      makeFromLine(path, b, what);
+      if (what === "task") focusBlock(b.id);
     } else if (e.key === "Tab") {
       e.preventDefault(); txt.blur();
       const sibs = siblingsOf(page, b), i = sibs.indexOf(b);
@@ -14358,8 +14376,8 @@ function outlineBlock(path, page, b) {
   });
   line.append(txt);
   line.append(el("button", {
-    class: "iconbtn", title: "Task actions",
-    onclick: () => openTaskDetail(path, b),
+    class: "iconbtn", title: "What is this line - task, project, person, org, context",
+    onclick: e => { e.stopPropagation(); openNodeMenu(e.currentTarget, path, b); },
   }, "⋯"));
   node.append(line);
 
@@ -15476,6 +15494,7 @@ function restoreScroll() {
 function render() {
   if (RENDER_HOLD) { RENDER_MISSED = true; return; }
   if (!V.loaded) return;
+  closeNodeMenu();           // it hangs off a button this redraw is about to replace
   captureScroll();
   applyChrome();
   clearMemo();
@@ -15900,6 +15919,196 @@ function promptAndInsertContext(path, block) {
     insertContextLink(path, block, ctx);
     checkProjectCompletion(path);
   });
+}
+
+/* ---------- turning a line into something ----------
+   The day page is written first and sorted afterwards, and that only works if
+   sorting one line costs one gesture. A line is already the name of the thing
+   it is about -- "we have to get ISO certified" is the project, "ring Ada at
+   Nordea" has the person and the org in it -- so these take the words that are
+   there rather than asking for them again, and leave the line where it was
+   written with a link in it. Nothing moves, so the day still reads as the day.
+
+   Five of them, one key each with alt held: alt-t task, alt-p project,
+   alt-o person, alt-g org, alt-c context. The same five are on the "..." at
+   the end of every line, with the keys printed beside them, because that is
+   where somebody who does not know the keys goes looking. */
+const MAKE_ORDER = ["task", "project", "person", "org", "context"];
+const MAKE_KINDS = {
+  task:    {alt: "t", label: "Make it a task",       detail: "TODO"},
+  project: {alt: "p", label: "Make it a project",    detail: "[[1/…]]", kind: "project", noun: "project"},
+  person:  {alt: "o", label: "Link a person",        detail: "[[p/…]]", kind: "person",  noun: "person"},
+  org:     {alt: "g", label: "Link an organisation", detail: "[[o/…]]", kind: "org",     noun: "organisation"},
+  context: {alt: "c", label: "Give it a context",    detail: "[[c/…]]", kind: "context"},
+};
+const MAKE_BY_ALT = Object.fromEntries(MAKE_ORDER.map(k => [MAKE_KINDS[k].alt, k]));
+/* The key is the same key; what it is called is not. A Mac keyboard has the
+   symbol printed on it, every other keyboard has the word. */
+const IS_MAC = /mac/i.test(navigator.platform || navigator.userAgent || "");
+const altKeyLabel = letter => IS_MAC ? "\u2325" + letter : "alt-" + letter;
+const KIND_PREFIX = {project: "1/", person: "p/", org: "o/", context: "c/"};
+
+/* The line with its markup taken off: no state word, no links it already
+   carries, no leading dash somebody typed out of habit. What is left is what
+   the line is called, and it is what a new page gets named. */
+function bareLineName(block) {
+  let t = String(block.title || "");
+  t = t.replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, "$2").replace(/\[\[[^\]]*\]\]/g, " ");
+  t = splitState(t)[1];
+  t = t.replace(/^[-*•]\s+/, "").replace(/\s+/g, " ");
+  return trim(t).replace(/[.,;:!?]+$/, "");
+}
+
+function makeTask(path, block) {
+  if (block.state) {
+    notify("Already a task. ctrl-enter walks it through TODO, DOING, WAIT, DONE.");
+    return;
+  }
+  setBlockState(path, block, "TODO");
+  noteTodoTouched();
+  coachMark("add");
+  notify("TODO. ctrl-enter again for DOING, WAIT, DONE.");
+}
+
+/* One link, added to the line rather than replacing it -- except when the line
+   says nothing but the name, where a line and a link to itself would be the
+   same words twice. The page behind the link is made by createLinkedPages,
+   which is the same thing that happens when somebody types the link by hand. */
+function insertMakeLink(path, block, ref) {
+  const already = linksIn(block.title).some(l => trim(l).toLowerCase() === ref.toLowerCase());
+  if (already) { notify("That link is already on this line."); return; }
+  const link = "[[" + ref + "]]";
+  const name = ref.split("/").slice(1).join("/");
+  const bare = bareLineName(block);
+  const only = bare && bare.toLowerCase() === trim(name).toLowerCase();
+  if (only) {
+    const [st] = splitState(block.title);
+    block.title = trim((st ? st + " " : "") + link);
+  } else {
+    block.title = trim(block.title) + " " + link;
+  }
+  createLinkedPages(block.title);
+  touch(path);
+  render();
+}
+
+/* Pick what it belongs to, or make it out of the words already on the line.
+   The line's own name comes first in the list, because nine times in ten that
+   is the answer -- and it is the one choice that needs no typing at all. */
+function openMakeLinkPicker(path, block, kindKey) {
+  const spec = MAKE_KINDS[kindKey];
+  const pfx = KIND_PREFIX[kindKey];
+  const bare = bareLineName(block);
+  const existing = linkAlternatives(spec.kind)
+    .map(([ref, label]) => ({ref, label}))
+    .filter(r => r.ref.toLowerCase() !== (pfx + bare).toLowerCase());
+  const fresh = name => ({ref: pfx + slugify(name), label: name, isNew: true});
+  const items = (bare ? [fresh(bare)] : []).concat(existing);
+  const run = it => {
+    if (it.isNew && kindKey === "project") {
+      /* A project is the one of the five that is more than a page: it wants an
+         outcome and a next action, and that is createProjectFlow's job. */
+      createProjectFlow(it.label, p => insertMakeLink(path, block, pageRef(p)));
+      return;
+    }
+    insertMakeLink(path, block, it.ref);
+  };
+  if (!items.length) { promptNewMake(path, block, kindKey); return; }
+  listPicker({
+    title: spec.label,
+    hint: bare ? "“" + bare + "”" : "",
+    items, typeahead: true,
+    label: it => (it.isNew ? "Make " + (spec.noun || "page") + " “" + it.label + "”" : it.label),
+    detail: it => (it.isNew ? "from this line" : it.ref),
+    onPick: run,
+    footer: el("button", {class: "btn ghost",
+      onclick: () => { closeModal(); promptNewMake(path, block, kindKey); }}, "+ another name"),
+  });
+}
+
+function promptNewMake(path, block, kindKey) {
+  const spec = MAKE_KINDS[kindKey];
+  promptInput({
+    title: spec.label, label: "Name", value: bareLineName(block), cta: "Link it",
+    onSave: name => {
+      if (kindKey === "project") {
+        createProjectFlow(name, p => insertMakeLink(path, block, pageRef(p)));
+        return;
+      }
+      insertMakeLink(path, block, KIND_PREFIX[kindKey] + slugify(name));
+    },
+  });
+}
+
+/* The one door all five go through, so the key and the menu row cannot drift
+   apart. Contexts keep their own picker: a context is phone or errand, never
+   the sentence somebody just typed, so offering the line as a name would be
+   offering a mistake. */
+function makeFromLine(path, block, kindKey) {
+  if (kindKey === "task") { makeTask(path, block); return; }
+  if (kindKey === "context") {
+    if (hasContextLink(block.title)) { notify("Already has a context."); return; }
+    promptAndInsertContext(path, block);
+    return;
+  }
+  openMakeLinkPicker(path, block, kindKey);
+}
+
+/* ---------- the menu on the "..." ----------
+   It used to open the Action panel, which is the whole truth about a task and
+   far too much to say when the question is "what is this line". So the five
+   conversions come first, one click each, and the panel is the last row --
+   still one key away, and still everything it ever was. */
+let NODEMENU = null;
+function closeNodeMenu() {
+  if (!NODEMENU) return;
+  NODEMENU.box.remove();
+  document.removeEventListener("mousedown", NODEMENU.away, true);
+  document.removeEventListener("keydown", NODEMENU.key, true);
+  NODEMENU = null;
+}
+
+function openNodeMenu(anchor, path, block) {
+  const open = NODEMENU && NODEMENU.anchor === anchor;
+  closeNodeMenu();
+  if (open) return;                       // a second press on the same "..." shuts it
+  const box = el("div", {class: "linkpop nodemenu"});
+  const row = (key, label, detail, fn) => box.append(el("button", {
+    class: "pick",
+    onmousedown: e => e.preventDefault(),
+    onclick: () => { closeNodeMenu(); fn(); },
+  },
+    el("span", {class: "k"}, key),
+    el("span", {style: "min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"}, label),
+    el("span", {class: "d"}, detail)));
+
+  for (const k of MAKE_ORDER) {
+    const spec = MAKE_KINDS[k];
+    const done = k === "task" ? !!block.state
+               : k === "context" ? hasContextLink(block.title)
+               : false;
+    row(altKeyLabel(spec.alt), spec.label, done && k === "task" ? block.state : spec.detail,
+        () => makeFromLine(path, block, k));
+  }
+  box.append(el("div", {class: "sep"}));
+  row("⋯", "Open the full panel", "everything else", () => openTaskDetail(path, block));
+
+  document.body.append(box);
+  const r = anchor.getBoundingClientRect();
+  const w = box.offsetWidth || 260, h = box.offsetHeight || 200;
+  box.style.left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8)) + "px";
+  box.style.top = (r.bottom + h + 8 > window.innerHeight && r.top > h
+    ? r.top - h - 4 : r.bottom + 4) + "px";
+
+  const away = e => { if (!box.contains(e.target) && e.target !== anchor) closeNodeMenu(); };
+  const key = e => {
+    if (e.key === "Escape") { closeNodeMenu(); e.preventDefault(); return; }
+    const hit = e.altKey ? MAKE_BY_ALT[String(e.key).toLowerCase()] : null;
+    if (hit) { closeNodeMenu(); e.preventDefault(); makeFromLine(path, block, hit); }
+  };
+  document.addEventListener("mousedown", away, true);
+  document.addEventListener("keydown", key, true);
+  NODEMENU = {box, anchor, away, key};
 }
 
 /* Surface the 3 oldest actions in a context -- the core nudge loop. */
