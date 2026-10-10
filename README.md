@@ -799,12 +799,17 @@ rows.
 1. **Ask.** **People** → the person → **Ask … for an update**. Everything open
    with their name on it is already listed and already ticked. Untick anything
    you would rather not raise, and press **Make the sheet**.
-2. **Send.** You get `grouptodo-check-in-mia-halvorsen.html` - one
-   self-contained page, no network, no libraries, no fonts to fetch - and a
-   covering note to send it with, in your own voice, ready in your email or in
+2. **Send.** You get `grouptodo-check-in-mia-halvorsen.html` in your downloads
+   folder - one self-contained page, no network, no libraries, no fonts to
+   fetch - and a covering note to send it with, in your own voice, ready in your email or in
    Teams - **Open in email**, **Send in Teams**, or **Copy**, in English or
    Norwegian. You attach the file yourself; no link of any kind can do that for
-   you. The note names the actual things you are waiting on, because a stranger
+   you, and **Save the file again** on the note is there for when the browser's
+   download bar has already gone. On a machine with a share sheet the file goes
+   out through that instead; closing the share sheet saves it to your downloads
+   rather than abandoning the check-in, because pressing a button and getting
+   nothing is not an outcome. The note names the actual things you are waiting
+   on, because a stranger
    could not have known them, and that is what tells the person the mail is
    really from you - an HTML attachment from somebody is shaped exactly like a
    phishing mail. It also says outright that they can ignore the attachment and
