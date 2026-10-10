@@ -38,7 +38,9 @@ were going to send anyway. They double-click it, tap the things they finished,
 type a note where a note is worth typing, and send it back. You paste their
 reply in and your tasks close, with their words filed as comments in their name.
 Nothing to install at their end, no account, no login, no link to click.
-→ **Waiting for an update from somebody who does not use this**
+→ **Waiting for an update from somebody who does not use this**, and
+`docs/setup-sheet-personal.html` is the two-minute sheet for this way of
+working.
 
 **2. An ad-hoc group around one project.** You and four other people are doing a
 thing together. Make a folder, share it the way you already share folders, put
@@ -46,7 +48,8 @@ GroupTodo in it, and send everybody the app and the folder name. Now all of you
 see the same tasks, who is carrying what, and which parts of the project are
 waiting on which others. It lasts as long as the project does, and when it is
 over the folder is still readable in Notepad. Nobody had to be given an account,
-and nobody had to ask IT. → **An ad-hoc group around one project**
+and nobody had to ask IT. → **An ad-hoc group around one project**, and
+`docs/setup-sheet-group.html` is the sheet to send the others.
 
 **3. A team that works together all the time.** The same folder, but permanent:
 colleagues handing each other tasks, talking on them, and being told what moved
@@ -97,9 +100,11 @@ the lot; when the last one closes, the project files itself away like any other.
 That is you set up, and on your own that is all there is to it. When you do
 want somebody else in, **Unlock next level collaboration** is the chapter for
 it; the short version is **Spaces → Invite somebody**, or send them
-`grouptodo.html`, the name of the shared folder, and `docs/setup-sheet.html` -
-the same three steps, written for somebody who does not want to know how any of
-it works.
+`grouptodo.html`, the name of the shared folder, and
+`docs/setup-sheet-group.html` - the same three steps, written for somebody who
+does not want to know how any of it works. There is a lone-use sheet too,
+`docs/setup-sheet-personal.html`, for somebody who is never going to share
+anything.
 
 ---
 
@@ -926,8 +931,8 @@ The whole setup is a folder:
    Dropbox folder, a Teams channel's files, a network share.
 2. Put `grouptodo.html` in it, open it, and point the app at that folder.
 3. Send the others the same two things: the file and the name of the folder.
-   `docs/setup-sheet.html` says it for you, written for somebody who does not
-   want to know how any of it works. **Spaces → Invite somebody** makes them a
+   `docs/setup-sheet-group.html` says it for you, written for somebody who does
+   not want to know how any of it works. **Spaces → Invite somebody** makes them a
    `join-….md` instead, which carries the space's name, colour and contents -
    everything except the folder itself, which browsers will not let a file
    carry.
@@ -1116,7 +1121,12 @@ manifest.webmanifest   home-screen icon, own window, "open .md with GroupTodo"
 icon.svg               that icon
 index.html             two lines, so a hosted copy answers at https://host/
 serve.py               optional sync server (a laptop, a Pi, a NAS, Termux)
-docs/setup-sheet.html  the two-minute sheet to hand to colleagues
+docs/setup-sheet-personal.html
+                       the two-minute sheet for using it on your own, with
+                       check-in sheets as the part worth the setup
+docs/setup-sheet-group.html
+                       the same two minutes for a group: the shared folder,
+                       what everybody sees, and what waits on what
 docs/check-in-sheet-mockup.html
                        the waiting-for-updates exchange, end to end, with the
                        real check-in sheet running in the page
