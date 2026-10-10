@@ -11563,9 +11563,8 @@ function openShareSpaceInvite() {
             closeModal();
             const how = await sendMarkdownOut(name, inviteMarkdown(),
               {title: "Join " + sp.name + " in GroupTodo"});
-            if (how !== "cancelled")
-              notify((how === "shared" ? "Sent " : "Saved ") + name +
-                     ". They open it with \u201COpen one I was sent\u201D.");
+            notify((how === "shared" ? "Sent " : "Saved ") + name +
+                   ". They open it with \u201COpen one I was sent\u201D.");
           }}, "Invite file"),
           CAP.served ? el("button", {class: "btn ghost", onclick: async () => {
             closeModal();
@@ -12081,13 +12080,8 @@ function openAskForUpdate(name) {
         const html = checkinSheetHtml({to: name, from: me, items, replyTo});
         closeModal();
         sendFileOut(file, html, "text/html", {title: "Update for " + me}).then(how => {
-          /* Closing the operating system's share sheet is not a decision to
-             abandon the check-in: it is usually somebody who expected a file in
-             their downloads. It used to throw the whole thing away without a
-             word, so you pressed Make the sheet and got nothing at all: no
-             file, no note, no message. Now a cancelled share just means the
-             other way of handing it over. */
-          if (how === "cancelled") { downloadText(file, html, "text/html"); how = "saved"; }
+          /* sendFileOut never comes back empty handed now, so there is no
+             cancelled case to rescue here: the file exists either way. */
           notify(how === "shared"
                    ? "Sent " + file + " - " + items.length + " line" +
                      (items.length === 1 ? "" : "s") + " for " + name + "."
@@ -16573,7 +16567,6 @@ function openExportPage(rootPath) {
           baseName(rootPath).toLowerCase().replace(/[^\w-]+/g, "-") + ".md";
         closeModal();
         sendMarkdownOut(name, text, {title: pageTitle(rootPath)}).then(how => {
-          if (how === "cancelled") return;
           notify((how === "shared" ? "Sent " : "Exported ") + paths.length +
                  " page" + (paths.length === 1 ? "" : "s") + " as " + name + ".");
         });
@@ -16830,7 +16823,6 @@ async function saveBundleAsDownload() {
   const name = bundleName();
   const how = await sendMarkdownOut(name, bundleMarkdown(),
     {title: (Spaces.active || "GroupTodo") + " vault"});
-  if (how === "cancelled") return;
   setSetting("last_sync", nowStamp());
   notify(how === "shared"
     ? "Sent " + name + ". Dropping it in a synced folder is what keeps your devices together."
@@ -18166,17 +18158,27 @@ function downloadText(name, text, type = "text/markdown") {
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
-/* Returns "shared" | "saved" | "cancelled". Never throws: a refused share
-   becomes a save. The type matters -- a check-in sheet handed to the phone as
-   text/markdown opens in a notes app instead of a browser. */
+/* Returns "shared" | "saved". Never throws, and never comes back empty handed:
+   whatever happens to the share sheet, the file is written. The type matters:
+   a check-in sheet handed to the phone as text/markdown opens in a notes app
+   instead of a browser.
+
+   Closing the operating system's share dialog used to return "cancelled", and
+   every caller read that as "say nothing, do nothing". So pressing Export, or
+   Invite file, or Make the sheet on any machine with a share sheet, which is
+   Chrome on Windows and every phone, could produce no file, no message and no
+   sign that anything had been asked for. Somebody closing that dialog is
+   almost always somebody who expected a file in their downloads, and even when
+   they are not, an unwanted file in Downloads is a smaller harm than a button
+   that silently does nothing. */
 async function sendFileOut(name, text, type = "text/markdown", {title = name} = {}) {
   if (canShareFiles()) {
     try {
       await navigator.share({files: [new File([text], name, {type})], title});
       return "shared";
-    } catch (e) {
-      if (e && e.name === "AbortError") return "cancelled";
-      // Some Android builds reject files from a non-user gesture; fall back.
+    } catch (_) {
+      /* Cancelled, or an Android build that refuses files outside a user
+         gesture. Either way the file still has to exist. */
     }
   }
   downloadText(name, text, type);
