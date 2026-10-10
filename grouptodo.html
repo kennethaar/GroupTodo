@@ -14320,8 +14320,11 @@ function outlineBlock(path, page, b) {
          line's own words. */
       e.preventDefault();
       const what = MAKE_BY_ALT[String(e.key).toLowerCase()];
+      // Where the caret is has to be read while it still exists -- blur is
+      // what writes the line back, and it takes the selection with it.
+      const at = what === "context" ? wordBeforeCaret(txt) : null;
       txt.blur();
-      makeFromLine(path, b, what);
+      makeFromLine(path, b, what, at);
       if (what === "task") focusBlock(b.id);
     } else if (e.key === "Tab") {
       e.preventDefault(); txt.blur();
@@ -16040,17 +16043,67 @@ function promptNewMake(path, block, kindKey) {
   });
 }
 
+/* The word the caret is sitting after, with where it is in the line. A context
+   is one word -- phone, errand, deep-work -- so the word under the hand is the
+   whole answer, and taking it from there means a line can say "ring the
+   plumber phone" and come out reading like a sentence with a context on it
+   rather than a sentence with a word left over. */
+function wordBeforeCaret(host) {
+  const before = host ? textBeforeCaret(host) : null;
+  if (before == null) return null;
+  const m = /([\p{L}\p{N}][\p{L}\p{N}'\u2019._-]*)(\s*)$/u.exec(before);
+  if (!m) return null;
+  const end = before.length - m[2].length;
+  const start = end - m[1].length;
+  // Not a word that is already inside a [[link]]: that is markup, not a word.
+  const head = before.slice(0, start);
+  if (head.lastIndexOf("[[") > head.lastIndexOf("]]")) return null;
+  return {word: m[1], start, end};
+}
+
+/* alt-c, and the menu row. Three ways it can go, in this order:
+
+   A line of one word is that word -- somebody typed "errand" on its own and
+   meant the context, and there is nothing else it could have meant, so the
+   line becomes the link.
+
+   Otherwise the word the caret is after becomes the context, in place, where
+   it was typed. Nothing is appended and nothing is retyped.
+
+   And with neither -- the "..." menu on a long line, a caret sitting on
+   punctuation -- the context picker, which is where this always went.
+
+   The first two write without asking, because asking about one word costs
+   more than the mistake does; the toast carries the way back. */
+function makeContextFromLine(path, block, at) {
+  if (hasContextLink(block.title)) { notify("Already has a context."); return; }
+  const bare = bareLineName(block);
+  const oneWord = !!bare && !/\s/.test(bare);
+  const word = oneWord ? bare : (at && at.word);
+  if (!word) { promptAndInsertContext(path, block); return; }
+
+  const known = contextList().some(c => c.toLowerCase() === word.toLowerCase());
+  const was = block.title;
+  const ctx = slugify(word);
+  if (oneWord) {
+    insertMakeLink(path, block, "c/" + ctx);             // the line becomes the link
+  } else {
+    block.title = block.title.slice(0, at.start) + "[[c/" + ctx + "]]" + block.title.slice(at.end);
+    createLinkedPages(block.title);
+    touch(path);
+    render();
+  }
+  notify("@" + ctx + (known ? "" : " \u00B7 a new context"), "info",
+    {label: "undo", run: () => { block.title = was; touch(path); render(); }});
+}
+
 /* The one door all five go through, so the key and the menu row cannot drift
    apart. Contexts keep their own picker: a context is phone or errand, never
    the sentence somebody just typed, so offering the line as a name would be
    offering a mistake. */
-function makeFromLine(path, block, kindKey) {
+function makeFromLine(path, block, kindKey, at) {
   if (kindKey === "task") { makeTask(path, block); return; }
-  if (kindKey === "context") {
-    if (hasContextLink(block.title)) { notify("Already has a context."); return; }
-    promptAndInsertContext(path, block);
-    return;
-  }
+  if (kindKey === "context") { makeContextFromLine(path, block, at); return; }
   openMakeLinkPicker(path, block, kindKey);
 }
 
@@ -16082,13 +16135,18 @@ function openNodeMenu(anchor, path, block) {
     el("span", {style: "min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"}, label),
     el("span", {class: "d"}, detail)));
 
+  const bare = bareLineName(block);
+  const oneWord = !!bare && !/\s/.test(bare);
   for (const k of MAKE_ORDER) {
     const spec = MAKE_KINDS[k];
-    const done = k === "task" ? !!block.state
-               : k === "context" ? hasContextLink(block.title)
-               : false;
-    row(altKeyLabel(spec.alt), spec.label, done && k === "task" ? block.state : spec.detail,
-        () => makeFromLine(path, block, k));
+    /* Say what it will actually do to this line rather than what it does in
+       general: on a one-word line the context is already decided, and on a
+       task the state it is in is the more useful thing to read. */
+    const detail = k === "task" && block.state ? block.state
+                 : k === "context" && hasContextLink(block.title) ? "@" + contextOf(block.title)
+                 : k === "context" && oneWord ? "@" + slugify(bare)
+                 : spec.detail;
+    row(altKeyLabel(spec.alt), spec.label, detail, () => makeFromLine(path, block, k));
   }
   box.append(el("div", {class: "sep"}));
   row("⋯", "Open the full panel", "everything else", () => openTaskDetail(path, block));
