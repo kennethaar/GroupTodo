@@ -414,6 +414,22 @@ The one exception is the screen you are standing on: it never disappears from
 under you, or ticking off your last dated task would strand you on a Timeline
 with no way back to it.
 
+### A pill is a handle, not only a door
+
+Clicking a context, a project or a person in a line used to go there, full
+stop. Going there is the thing you want least often: usually it is the wrong
+context, or it belongs to another project, or that is not the person you are
+waiting on. So a pill opens a short menu instead, with **the alternatives
+already in it** rather than behind a *change* you have to press first. A menu
+whose only item is another menu is a wasted click.
+
+Go to it, swap it for any of the others, or take it off the line and keep the
+words. Letter keys down the side, Escape to leave. Swapping rewrites that one
+`[[link]]` in the markdown and touches nothing else in the sentence. The chips
+on a task row open the same menu, so there is one thing to learn. A
+`[[go/...]]` door and a `#tag` still just go, because they have nothing to swap
+for.
+
 ### `[[` opens a list of pages
 
 The prefix in a link is the folder the page lives in, so `[[c/` can only mean a

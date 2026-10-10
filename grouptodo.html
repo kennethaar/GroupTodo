@@ -12977,13 +12977,21 @@ function unfileFromProject(path, block) {
 }
 
 function openContextChipMenu(a) {
-  chipMenu("@" + a.context, "the context on this action", [
-    ["a", "Go to @" + a.context, "the oldest few, surfaced", () => surfaceContext(a.context)],
-    ["b", "Change the context", null,
-      () => openContextPicker("Pick a context for this action",
-        ctx => inSpace(a.space, () => replaceContextLink(a.path, a.block, ctx)))],
-    ["c", "Take the context off", "the words stay", () => inSpace(a.space, () => removeContextLink(a.path, a.block))],
-  ]);
+  /* The other contexts are listed here rather than behind a "change the
+     context" that opens a picker: you already know which one you want, and
+     making you ask for the list first is a click that buys nothing. */
+  let i = 0, first = true;
+  const rows = [[MENU_KEYS[i++], "Go to @" + a.context, "the oldest few, surfaced",
+                 () => surfaceContext(a.context)]];
+  for (const ctx of contextList()) {
+    if (ctx === a.context) continue;
+    rows.push([MENU_KEYS[i++] || "", "@" + ctx, first ? "change it to this" : null,
+      () => inSpace(a.space, () => replaceContextLink(a.path, a.block, ctx))]);
+    first = false;
+  }
+  rows.push([MENU_KEYS[i++] || "", "Take the context off", "the words stay",
+    () => inSpace(a.space, () => removeContextLink(a.path, a.block))]);
+  chipMenu("@" + a.context, "the context on this action", rows);
 }
 
 function openProjectChipMenu(a) {
@@ -14931,6 +14939,105 @@ function render() {
   applyRefocus();
 }
 
+/* ---------- a pill is a handle, not only a door ----------
+   Clicking a context or a project or a person in a line used to go there, full
+   stop. But the thing you usually want from a pill is to change it: wrong
+   context, belongs to another project, that is not the person waiting. Going
+   there was the only thing it offered and the thing you wanted least often.
+
+   So a pill opens the same menu a chip opens, with the alternatives listed in
+   it rather than behind a "change" you press first. A menu whose only item is
+   another menu is a wasted click. */
+function linkKindOf(ref) {
+  const pfx = (/^([^/]+)\//.exec(trim(ref)) || [])[1];
+  if (pfx === "c") return "context";
+  if (pfx === "p") return "person";
+  if (pfx === "o") return "org";
+  if (pfx === "z") return "note";
+  if (pfx && STATUS_DIRS[pfx]) return "project";
+  return null;
+}
+
+/* Every alternative of the same kind, so the swap list is the list you would
+   have been shown anyway, one click earlier. */
+function linkAlternatives(kind) {
+  if (kind === "context") return contextList().map(c => ["c/" + c, "@" + c]);
+  if (kind === "project")
+    return [...projectsIn("1"), ...projectsIn("3"), ...projectsIn("2")]
+      .map(p => [pageRef(p), pageTitle(p)]);
+  const dir = kind === "person" ? DIRS.people : kind === "org" ? DIRS.orgs : DIRS.zettel;
+  const pfx = kind === "person" ? "p/" : kind === "org" ? "o/" : "z/";
+  const names = allPages(p => p.startsWith(dir + "/")).map(baseName);
+  if (kind === "person") for (const m of members()) if (!names.includes(m.name)) names.push(m.name);
+  return names.sort((a, b) => a.localeCompare(b)).map(n => [pfx + n, n]);
+}
+
+/* The line a pill was rendered from, wherever on screen it is. */
+function blockBehind(node) {
+  const host = node.closest("[data-id]");
+  if (!host) return null;
+  const id = host.dataset.id;
+  for (const a of leafActions()) if (a.block.id === id) return a;
+  let found = null;
+  for (const name of (visibleSpaces().filter(n => LOADED.has(n)).length
+                        ? visibleSpaces().filter(n => LOADED.has(n)) : [null])) {
+    inSpace(name, () => {
+      for (const [path, page] of V.pages) {
+        walkBlocks(page.blocks, b => {
+          if (b.id === id && !found) found = {path, block: b, space: name, title: b.title};
+        });
+        if (found) return;
+      }
+    });
+    if (found) break;
+  }
+  return found;
+}
+
+/* Rewriting one link in a line, in the markdown, leaving every other word
+   alone. A link can carry [[ref][label]], so the whole bracket goes and what
+   replaces it is a plain link to the new target. */
+function swapLinkIn(a, from, to) {
+  const quoted = String(from).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp("\\[\\[" + quoted + "(\\]\\[[^\\]]*)?\\]\\]", "i");
+  return inSpace(a.space, () => {
+    if (!re.test(a.block.title)) return false;
+    a.block.title = trim(a.block.title.replace(re, to ? "[[" + to + "]]" : ""))
+      .replace(/\s{2,}/g, " ");
+    if (to) createLinkedPages(a.block.title);
+    touch(a.path); noteTodoTouched();
+    return true;
+  });
+}
+
+/* Letters are handed out in the order the rows appear, so the keys read down
+   the menu. Reserving one for the last row puts a c between a b and a d. */
+const MENU_KEYS = "abcdefghijklmnopqrstuvwxyz";
+
+function openLinkMenu(node, ref) {
+  const a = blockBehind(node);
+  const kind = linkKindOf(ref);
+  const label = ref.replace(/^[^/]+\//, "");
+  const shownNow = kind === "context" ? "@" + label : label;
+  let i = 0;
+  const rows = [[MENU_KEYS[i++], "Go to " + shownNow, "the page itself", () => followLink(ref)]];
+
+  /* No line behind it means nothing to change or remove: a pill in a heading
+     is just a link. */
+  if (a && kind) {
+    let first = true;
+    for (const [r, shown] of linkAlternatives(kind)) {
+      if (r.toLowerCase() === ref.toLowerCase()) continue;
+      rows.push([MENU_KEYS[i++] || "", shown, first ? "change it to this" : null,
+        () => { if (swapLinkIn(a, ref, r)) { notify("Now " + shown + "."); render(); } }]);
+      first = false;
+    }
+    rows.push([MENU_KEYS[i++] || "", "Take it off the line", "the words stay",
+      () => { if (swapLinkIn(a, ref, null)) { notify("Took " + shownNow + " off."); render(); } }]);
+  }
+  chipMenu(shownNow, kind ? "the " + kind + " on this line" : "this link", rows);
+}
+
 /* wiki links are delegated */
 $("#content").addEventListener("click", e => {
   // A dropped picture opens full size in a tab of its own, and clicking it
@@ -14938,7 +15045,17 @@ $("#content").addEventListener("click", e => {
   const img = e.target.closest("img.asset");
   if (img && img.src) { e.preventDefault(); e.stopPropagation(); window.open(img.src, "_blank", "noopener"); return; }
   const link = e.target.closest("[data-link]");
-  if (link) { e.stopPropagation(); followLink(link.dataset.link); }
+  if (!link) return;
+  e.stopPropagation();
+  const ref = link.dataset.link;
+  /* A door into the app is not a pill: [[go/todos]] has one meaning and a menu
+     over it would be three ways of asking the same question. The same goes for
+     a tag and a bare page link, which have nothing to swap for. */
+  if (/^go\//.test(ref) || link.classList.contains("tag") || !linkKindOf(ref)) {
+    followLink(ref);
+    return;
+  }
+  openLinkMenu(link, ref);
 });
 </script>
 <script>
