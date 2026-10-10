@@ -8527,6 +8527,82 @@ const GRAPH_KIND_VAR = {
   TODO: "--todo", DOING: "--doing", WAIT: "--wait", DONE: "--done", CANCELLED: "--cancel",
 };
 
+/* ---------- what each kind of thing looks like ----------
+   Colour here already means state, so what a dot IS has to be said by its
+   silhouette instead: a todo is a lightning bolt, a person a bust, an org a
+   square house with a roof, a project a flag, and a context the @ it is
+   written as everywhere else in the app. Everything else stays a plain dot,
+   which is what makes the five named shapes findable at a glance. */
+const GRAPH_SHAPE = {person: "bust", org: "house", project: "flag", context: "at"};
+const graphShape = nd => nd && nd.task ? "bolt" : (nd && GRAPH_SHAPE[nd.kind]) || "dot";
+
+/* Unit outlines in a box around the node, y downward, scaled by the radius the
+   dot would have had. The thin shapes carry a bigger multiplier so a bolt and
+   a circle read as the same weight rather than the bolt reading as smaller. */
+const GRAPH_OUTLINE = {
+  bolt : {k: 1.5,  poly: [[[.18, -1], [-.62, .14], [-.1, .14], [-.32, 1], [.62, -.2], [.08, -.2]]]},
+  house: {k: 1.22, poly: [[[0, -1], [1, -.3], [.74, -.3], [.74, .92], [-.74, .92], [-.74, -.3], [-1, -.3]]]},
+  flag : {k: 1.4,  poly: [[[-.6, -1], [-.34, -1], [-.34, 1], [-.6, 1]],
+                          [[-.28, -.92], [.86, -.5], [-.28, -.08]]]},
+};
+
+/* Lays the shape into the current path, so the caller keeps deciding whether
+   it is filled (there is a page, the todo is open) or hollow (there is not). */
+function graphShapePath(x, shape, cx, cy, r) {
+  if (shape === "bust") {
+    const k = 1.3 * r, X = u => cx + u * k, Y = u => cy + u * k;
+    x.moveTo(X(-.86), Y(1));                                        // shoulders
+    x.bezierCurveTo(X(-.86), Y(.04), X(.86), Y(.04), X(.86), Y(1));
+    x.closePath();
+    x.moveTo(X(.45), Y(-.42));                                      // head
+    x.arc(X(0), Y(-.42), .45 * k, 0, Math.PI * 2);
+    return;
+  }
+  const spec = GRAPH_OUTLINE[shape];
+  if (!spec) { x.arc(cx, cy, r, 0, Math.PI * 2); return; }
+  const k = spec.k * r;
+  for (const poly of spec.poly) {
+    for (let i = 0; i < poly.length; i++) {
+      const px = cx + poly[i][0] * k, py = cy + poly[i][1] * k;
+      if (i) x.lineTo(px, py); else x.moveTo(px, py);
+    }
+    x.closePath();
+  }
+}
+
+/* One call paints a node, because a context is a letter rather than an outline
+   and nothing else in the drawing code should have to know that. */
+function graphFace(x, nd, cx, cy, r, o) {
+  const shape = graphShape(nd);
+  if (shape === "at") {
+    x.save();
+    x.font = "700 " + (r * 3).toFixed(1) + "px " + o.sans;
+    x.textAlign = "center";
+    x.textBaseline = "middle";
+    x.lineWidth = o.hollow ? 1.4 : 2.2;
+    if (o.hollow) { x.strokeStyle = o.colour; x.strokeText("@", cx, cy); }
+    else {
+      // Outlined in the background first, so the letter survives a line or a
+      // neighbouring dot passing behind it.
+      x.strokeStyle = o.bg; x.strokeText("@", cx, cy);
+      x.fillStyle = o.colour; x.fillText("@", cx, cy);
+    }
+    x.restore();
+    return;
+  }
+  x.beginPath();
+  graphShapePath(x, shape, cx, cy, r);
+  if (o.hollow) {
+    x.fillStyle = o.bg; x.fill();
+    x.strokeStyle = o.colour; x.lineWidth = 1.5; x.stroke();
+  } else {
+    x.fillStyle = o.colour; x.fill();
+    // A hairline in the background colour, so two shapes that overlap still
+    // read as two shapes rather than one blob.
+    x.strokeStyle = o.bg; x.lineWidth = 1; x.stroke();
+  }
+}
+
 /* Positions survive a redraw, so ticking something off in the detail panel does
    not reshuffle the whole picture under your cursor. */
 const GRAPH_POS = new Map();
@@ -8859,7 +8935,8 @@ function graphDraw(cv, g, hoverIdx) {
   }
 
   const labelAll = g.nodes.length <= 70;
-  x.font = "11px " + v("--sans", "sans-serif");
+  const sans = v("--sans", "sans-serif");
+  x.font = "11px " + sans;
   x.textAlign = "center";
   x.textBaseline = "top";
   /* Two names written on top of each other are worse than one name: where hubs
@@ -8877,32 +8954,24 @@ function graphDraw(cv, g, hoverIdx) {
   };
   for (let i = 0; i < g.nodes.length; i++) {
     const nd = g.nodes[i];
-    const r = graphRadius(nd), px = gX(g, nd), py = gY(g, nd);
+    /* A dot stays a dot at any size, but a bolt or a bust at three pixels is a
+       smudge, so a shaped node never shrinks below the size it reads at. */
+    const r = Math.max(graphRadius(nd), graphShape(nd) === "dot" ? 0 : 6.5);
+    const px = gX(g, nd), py = gY(g, nd);
     const dim = hov && !near.has(i);
     x.globalAlpha = dim ? 0.2 : 1;
     const colour = v(GRAPH_KIND_VAR[nd.kind] || "--fg2", "#a4acbd");
-    x.beginPath();
-    x.arc(px, py, i === hoverIdx ? r + 2 : r, 0, Math.PI * 2);
-    if (nd.ghost) {
-      // Hollow: something links here, but there is no page behind it yet.
-      x.fillStyle = v("--bg2", "#161920");
-      x.fill();
-      x.strokeStyle = colour;
-      x.lineWidth = 1.4;
-      x.stroke();
-    } else {
-      x.fillStyle = colour;
-      x.fill();
-      // A hairline in the background colour, so two dots that overlap still
-      // read as two dots rather than one blob.
-      x.strokeStyle = v("--bg2", "#161920");
-      x.lineWidth = 1;
-      x.stroke();
-    }
+    // Hollow means something links here but there is no page behind it yet.
+    graphFace(x, nd, px, py, i === hoverIdx ? r + 2 : r,
+              {colour, bg: v("--bg2", "#161920"), hollow: !!nd.ghost, sans: sans});
     if (i === hoverIdx) {
+      // A ring rather than another pass over the outline: it has to read the
+      // same whether the shape under it is a bolt, a bust or a letter.
       x.globalAlpha = 1;
       x.strokeStyle = v("--fg", "#e6e9ef");
       x.lineWidth = 1.5;
+      x.beginPath();
+      x.arc(px, py, r + 4, 0, Math.PI * 2);
       x.stroke();
       x.lineWidth = 1;
     }
@@ -9060,6 +9129,7 @@ function plexDraw(cv, g, targets, hoverKey) {
   const css = getComputedStyle(document.documentElement);
   const v = (n, f) => trim(css.getPropertyValue(n)) || f;
   const accent = v("--accent", "#6aa3ff"), fg = v("--fg", "#e6e9ef"), fg2 = v("--fg2", "#a4acbd");
+  const sans = v("--sans", "sans-serif");
   const here = PLEX.pos.get(plexFocus());
 
   /* Links first, as curves through the middle: a straight line between two
@@ -9117,17 +9187,12 @@ function plexDraw(cv, g, targets, hoverKey) {
     x.globalAlpha = pos.a * (nd.task && !OPEN_STATES[nd.state] ? 0.55 : 1);
     const colour = v(GRAPH_KIND_VAR[nd.kind] || "--fg2", "#a4acbd");
     const rad = pos.r + (hot ? 2 : 0);
-    x.beginPath();
-    /* A task is a square dot and a page is a round one. Shape rather than
-       colour alone, because colour here already means state. */
-    if (nd.task) {
-      const q = rad * 0.92;
-      if (x.roundRect) x.roundRect(pos.x - q, pos.y - q, q * 2, q * 2, Math.max(2, q * 0.35));
-      else x.rect(pos.x - q, pos.y - q, q * 2, q * 2);
-    } else x.arc(pos.x, pos.y, rad, 0, Math.PI * 2);
+    /* The silhouette says what the thing is -- bolt, bust, house, flag, @ --
+       and the colour is left to say what state it is in. A closed todo is
+       drawn hollow, like a page nobody has made yet. */
     const hollow = nd.ghost || (nd.task && !OPEN_STATES[nd.state]);
-    if (hollow) { x.fillStyle = v("--bg2", "#161920"); x.fill(); x.strokeStyle = colour; x.lineWidth = 1.6; x.stroke(); }
-    else { x.fillStyle = colour; x.fill(); x.strokeStyle = v("--bg2", "#161920"); x.lineWidth = 1; x.stroke(); }
+    graphFace(x, nd, pos.x, pos.y, rad,
+              {colour, bg: v("--bg2", "#161920"), hollow, sans: sans});
     if (focused) {
       x.globalAlpha = pos.a;
       x.strokeStyle = accent; x.lineWidth = 2;
@@ -9558,7 +9623,8 @@ function viewPlex() {
   const keyline = el("span", {class: "glg"});
   c.append(el("div", {class: "graph-legend"},
     el("span", {class: "glg"}, "Above: what points here. Below: what this points at. Sides: shares a parent."),
-    el("span", {class: "glg"}, "Round dot: a page. Square dot: a task, coloured by its state, hollow once it is closed."),
+    el("span", {class: "glg"}, "Bolt: a todo, coloured by its state, hollow once it is closed. " +
+      "Bust: a person. House: an org. Flag: a project. @: a context. Dot: any other page."),
     keyline,
     el("span", {class: "glg quiet"}, edit()
       ? "Drag one dot onto another to link them. Drag into space, or double-click space, to make a page."
@@ -9811,7 +9877,9 @@ function viewGraph() {
       el("i", {style: "background:var(" + (GRAPH_KIND_VAR[kind] || "--fg2") + ")"}), label));
   legend.append(el("span", {class: "glg"},
     el("i", {style: "background:transparent;box-shadow:inset 0 0 0 1.4px var(--fg3)"}), "No page yet"));
-  legend.append(el("span", {class: "glg quiet"}, "Bigger dot = more links. Click one to open it."));
+  legend.append(el("span", {class: "glg"},
+    "Bust: a person. House: an org. Flag: a project. @: a context."));
+  legend.append(el("span", {class: "glg quiet"}, "Bigger shape = more links. Click one to open it."));
   c.append(legend);
 
   if (g.dropped) c.append(el("div", {class: "section quiet"},
