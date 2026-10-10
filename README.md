@@ -430,6 +430,21 @@ on a task row open the same menu, so there is one thing to learn. A
 `[[go/...]]` door and a `#tag` still just go, because they have nothing to swap
 for.
 
+### A pill is a handle, not only a door
+
+Clicking a context, a project or a person, whether it is a chip on a row or a
+`[[link]]` inside the words, opens a small menu rather than going there. Going
+there is the first item; under it are **all the others of the same kind**, so
+swapping a context for another is one click and not two; and under those,
+**take it off the line**, which removes the link and leaves the words. The
+alternatives are listed straight away because a menu whose only item is another
+menu is a wasted click, and because changing a pill is what you usually want
+from one, while going to it is what you want least often.
+
+The swap rewrites that one link in the markdown and touches nothing else in the
+line. A `[[go/...]]` door, a `#tag` and a plain page link have nothing to swap
+for, so those still just go.
+
 ### `[[` opens a list of pages
 
 The prefix in a link is the folder the page lives in, so `[[c/` can only mean a
