@@ -5280,6 +5280,16 @@ function membersNow() {
 const isMember = name =>
   !!name && members().some(m => samePerson(m.name, name));
 
+/* Is there anybody else at all? True once any one space has a second member --
+   the moment a conversation has somebody on the other end of it. */
+function anySpaceShared() {
+  return memo("anySpaceShared", () => {
+    const names = visibleSpaces();
+    if (names.length <= 1) return membersNow().length > 1;
+    return names.some(n => LOADED.has(n) && inSpace(n, membersNow).length > 1);
+  });
+}
+
 /* Your own person page, so everybody else in the space can see you exist. */
 function ensureMemberPage() {
   const me = whoAmI();
@@ -13262,6 +13272,10 @@ function navVisible(item) {
   // Earned in both modes, because an empty report is a bad first impression.
   if (item.id === "report" && !reportEarned()) return false;
 
+  /* Talking to yourself is not a feature: Chat waits for somebody else to be
+     in one of your spaces, in either mode, and stays once there are threads. */
+  if (item.id === "chat" && !anySpaceShared() && !allThreads().length) return false;
+
   /* Advanced is the mode that asked for all of it, so it gets all of it.
      Simple keeps a row away while there is nothing behind it to see. */
   if (!isSimple()) return true;
@@ -13270,8 +13284,6 @@ function navVisible(item) {
   // Nothing to see while you are the only person here.
   if (item.id === "people" && members().length < 2 &&
       !leafActions().some(a => a.assignee)) return false;
-  // Chat shows up once there is one, and stays once you are using it.
-  if (item.id === "chat" && !allThreads().length) return false;
 
   /* The screens that need something in the files to be about. */
   if (item.id === "board"    && !anyOpenTask())  return false;
@@ -18227,7 +18239,7 @@ function openOnboarding() {
     whereLine.textContent = placed
       ? "Writing into \u201C" + (sp.label || sp.name) + "\u201D. Share it and you have shared the list."
       : CAP.dirPicker
-        ? "One you already share - OneDrive, Dropbox, a network drive. Skip it and it stays in this browser."
+        ? "One you already share, or one a colleague shared with you - OneDrive, Dropbox, a network drive. Skip it and it stays in this browser."
         : "This browser cannot open folders, so it keeps the list. On a computer you can pick one.";
   };
   whereBtn.onclick = async () => {
@@ -18272,67 +18284,28 @@ function openOnboarding() {
         el("label", {}, "2 \u00B7 Where the files live"),
         whereBtn,
         whereLine),
-      el("div", {class: "field", style: "margin-bottom:4px"},
-        el("label", {}, "3 \u00B7 Start")),
+      /* No "new list or one I was sent" fork here: an invite answers that
+         question before this screen ever opens, and somebody handed a shared
+         folder picks it in step 2. Either way the only thing left is to go. */
       el("button", {class: "pick", onclick: () => begin("simple")},
         el("span", {class: "k"}, "\u2713"),
-        el("span", {}, el("b", {}, "Start a new list"), el("br"),
+        el("span", {}, el("b", {}, "Start"), el("br"),
           el("span", {style: "color:var(--fg3);font-size:12.5px"},
-            "Straight in. Pick a folder when you want to share."))),
-      el("button", {class: "pick", onclick: () => { keepName(); closeModal(); openReceiveVault(); }},
-        el("span", {class: "k"}, "\u2193"),
-        el("span", {}, el("b", {}, "Open one I was sent"), el("br"),
-          el("span", {style: "color:var(--fg3);font-size:12.5px"},
-            "A shared folder, an invite, or a vault file from a colleague."))),
+            "Straight in. A folder, a vault file or an invite can arrive later."))),
       ),
     foot: [
       el("button", {class: "btn ghost", onclick: () => begin("advanced", () => openSpacesWizard())},
         "I use Logseq or org-mode"),
     ],
     // The name box can hold the focus, so plain keys have to belong to it first --
-    // otherwise typing a name called Kenneth 1 would pick a door.
+    // otherwise typing a name called Kenneth 1 would start the app.
     onKey: e => {
       if (e.key === "Enter") { begin("simple"); return true; }
       const field = n => /^(INPUT|TEXTAREA)$/.test(n || "");
       if (field(e.target.tagName) || field(document.activeElement?.tagName)) return false;
       if (e.key === "1") { begin("simple"); return true; }
-      if (e.key === "2") { keepName(); closeModal(); openReceiveVault(); return true; }
       return false;
     },
-  });
-}
-
-/* The colleague's door: they were handed a folder or a file, not a blank app. */
-function openReceiveVault() {
-  const done = () => {
-    PREF.set("onboarded", todayISO());
-    PREF.set("mode", "simple");
-    for (const sp of Spaces.list) sp.askedStorage = true;
-    Spaces.save();
-  };
-  modal({
-    center: true, title: "Open a vault you were sent",
-    body: el("div", {},
-      el("div", {class: "field"},
-        el("div", {style: "color:var(--fg2);font-size:13.5px"},
-          "A shared folder or a single markdown file. Either works.")),
-      CAP.dirPicker ? el("button", {class: "pick", onclick: async () => {
-        done(); closeModal();
-        await assignSpaceFolder(Spaces.active);
-      }},
-        el("span", {class: "k"}, "\u25A1"),
-        el("span", {}, el("b", {}, "A shared folder"), el("br"),
-          el("span", {style: "color:var(--fg3);font-size:12.5px"},
-            "From OneDrive, Dropbox or a network drive."))) : null,
-      el("button", {class: "pick", onclick: () => {
-        done(); closeModal();
-        openBundleFromFile(() => { render(); notify("Opened. Everything in it is yours now too."); });
-      }},
-        el("span", {class: "k"}, "\u2193"),
-        el("span", {}, el("b", {}, "A vault file"), el("br"),
-          el("span", {style: "color:var(--fg3);font-size:12.5px"},
-            "The .md file they sent you.")))),
-    foot: [el("button", {class: "btn ghost", onclick: () => { closeModal(); openOnboarding(); }}, "Back")],
   });
 }
 
