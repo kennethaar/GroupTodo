@@ -8450,7 +8450,9 @@ function viewTaskBoard() {
         return () => inSpace(space, () => setBlockState(path, block, prev,
           {skipContext: true, skipRepeat: true}));
       });
-    col.append(fillBoardColumn(el("div", {class: "bcol-body"}), items, stateKey, boardCard));
+    col.append(fillBoardColumn(
+      el("div", {class: "bcol-body", data: {keepScroll: "board:" + stateKey}}),
+      items, stateKey, boardCard));
     board.append(col);
   }
   c.append(boardMarquee(el("div", {class: "boardwrap"}, board), "task"));
@@ -8507,7 +8509,8 @@ function viewProjectBoard() {
           if (prev && STATUS_DIRS[prev]) setProjectStatus(from, prev);
         });
       });
-    col.append(fillBoardColumn(el("div", {class: "bcol-body"}), items, "p:" + code,
+    col.append(fillBoardColumn(
+      el("div", {class: "bcol-body", data: {keepScroll: "projboard:" + code}}), items, "p:" + code,
       r => boardProjectCard(r, stuck)));
     board.append(col);
   }
@@ -15076,9 +15079,47 @@ function holdRender(fn) {
   }
 }
 
+/* ---------- staying where you were ----------
+   Any change rebuilds the whole screen, which means every scrollable thing in
+   it starts again at the top. On the board that is the difference between
+   moving a card and losing your place: you drag one card out of a column you
+   had scrolled halfway down, and the column jumps back to the first card, so
+   the next one you wanted is now somewhere off screen.
+
+   So the scroll positions are read before the rebuild and put back after it.
+   Keyed by a name rather than by position in the DOM, because the column that
+   was third may be second by the time it comes back. A view that changed is
+   left alone: arriving somewhere new should start at the top, and go() still
+   says so itself. */
+let SCROLL_KEEP = null;
+function captureScroll() {
+  const c = $("#content");
+  if (!c) return;
+  const at = new Map();
+  for (const n of c.querySelectorAll("[data-keep-scroll]"))
+    if (n.scrollTop) at.set(n.dataset.keepScroll, n.scrollTop);
+  SCROLL_KEEP = {view: state.view, page: state.pagePath, top: c.scrollTop, at};
+}
+function restoreScroll() {
+  const want = SCROLL_KEEP;
+  SCROLL_KEEP = null;
+  if (!want || want.view !== state.view || want.page !== state.pagePath) return;
+  const c = $("#content");
+  if (!c) return;
+  /* Assigning past the end is clamped by the browser, which is what should
+     happen when the list is shorter than it was. */
+  if (want.top) c.scrollTop = want.top;
+  if (!want.at.size) return;
+  for (const n of c.querySelectorAll("[data-keep-scroll]")) {
+    const was = want.at.get(n.dataset.keepScroll);
+    if (was) n.scrollTop = was;
+  }
+}
+
 function render() {
   if (RENDER_HOLD) { RENDER_MISSED = true; return; }
   if (!V.loaded) return;
+  captureScroll();
   applyChrome();
   clearMemo();
   QUIET_CACHE = null;
@@ -15120,6 +15161,7 @@ function render() {
     default:        node = isSimple() ? viewMyDay() : viewToday();
   }
   c.append(node);
+  restoreScroll();
   if (isSimple() && state.view === "today") VIEW_TITLE.today = "My day";
   else VIEW_TITLE.today = "Today";
   $("#hTitle").textContent = state.view === "page" ? pageTitle(state.pagePath)
