@@ -11976,17 +11976,27 @@ function openAskForUpdate(name) {
 
         const file = "grouptodo-check-in-" +
           slugPerson(name).toLowerCase().replace(/[^\w-]+/g, "-") + ".html";
+        const html = checkinSheetHtml({to: name, from: me, items, replyTo});
         closeModal();
-        sendFileOut(file, checkinSheetHtml({to: name, from: me, items, replyTo}),
-                    "text/html", {title: "Update for " + me}).then(how => {
-          if (how === "cancelled") return;
-          notify((how === "shared" ? "Sent " : "Saved ") + file + " - " + items.length +
-                 " line" + (items.length === 1 ? "" : "s") + " for " + name +
-                 ". When the reply comes back, open it here.");
+        sendFileOut(file, html, "text/html", {title: "Update for " + me}).then(how => {
+          /* Closing the operating system's share sheet is not a decision to
+             abandon the check-in: it is usually somebody who expected a file in
+             their downloads. It used to throw the whole thing away without a
+             word, so you pressed Make the sheet and got nothing at all: no
+             file, no note, no message. Now a cancelled share just means the
+             other way of handing it over. */
+          if (how === "cancelled") { downloadText(file, html, "text/html"); how = "saved"; }
+          notify(how === "shared"
+                   ? "Sent " + file + " - " + items.length + " line" +
+                     (items.length === 1 ? "" : "s") + " for " + name + "."
+                   : "Saved " + file + " to your downloads - " + items.length + " line" +
+                     (items.length === 1 ? "" : "s") + " for " + name + ".",
+                 "info", {label: "Save it again", run: () => downloadText(file, html, "text/html")});
           render();
-          // Saving the file is half the job; it still has to reach them with
-          // something that reads like you wrote it.
-          if (how !== "shared") setTimeout(() => openAskNote(name, items, file), 250);
+          /* The file is half the job either way. It still has to reach them
+             with something that reads as though a person sent it, and that is
+             as true of a share sheet as of a download. */
+          openAskNote(name, items, file, html);
         });
       }}, "Make the sheet"),
     ],
@@ -12063,7 +12073,7 @@ function askNote(name, items, file) {
 /* mailto: carries to, subject and body and nothing else, so the file is
    attached by hand either way. Teams takes a chat deep link with the message
    pre-typed; same bargain, the file goes in the same window. */
-function openAskNote(name, items, file) {
+function openAskNote(name, items, file, html = null) {
   const note = askNote(name, items, file);
   const to = el("input", {type: "email", placeholder: "them@example.com",
     value: PREF.get("askTo:" + slugPerson(name), "")});
@@ -12087,7 +12097,17 @@ function openAskNote(name, items, file) {
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
           "You attach " + file + " yourself: no link of any kind can do that for you. " +
           "The note names what you are waiting on, because that is what tells them it is " +
-          "really from you.")),
+          "really from you."),
+        /* Where the file went, and a way to get it back. A browser puts it
+           wherever it puts downloads and says so in its own bar, which is gone
+           by the time you are writing the note. */
+        html ? el("div", {style: "margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"},
+          el("button", {class: "btn sm ghost", onclick: () => {
+            downloadText(file, html, "text/html");
+            notify("Saved " + file + " to your downloads again.");
+          }}, "Save the file again"),
+          el("span", {style: "color:var(--fg3);font-size:12px"},
+            "It is in your downloads folder.")) : null),
       el("div", {class: "field"},
         el("label", {}, "Language"),
         el("div", {class: "statefilter"},
