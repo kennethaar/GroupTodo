@@ -14,9 +14,45 @@ everybody needs an account on the same thing, somebody pays for the seats, and
 adding a colleague means asking whoever administers it. GroupTodo has nothing to
 be a member of. Your tasks are plain files in a folder, so you share the folder
 the way you already share folders and you are done. The sharing is your
-company's, not ours. See **Unlock next level collaboration**.
+company's, not ours. And the commonest kind of sharing needs nothing of the
+other person at all: they answer a file you send them and never see the app.
+See **What people use it for** next, and **Unlock next level collaboration**
+for the detail.
 
 Either way the list outlives the tool. Every file opens in Notepad.
+
+---
+
+## What people use it for
+
+Three uses, in the order people actually arrive at them. Each one is the whole
+app; none of them is a mode you switch into.
+
+**1. Your own list, with answers from people who will never use this.** The
+common case, and the one most task apps have no answer for. Half of what is on
+your list is work other people owe you, and those people are not going to adopt
+your system - not your supplier, not the architect, not your manager, not your
+brother-in-law. So the app asks them for you: pick a person, press **Ask … for
+an update**, and you get one self-contained HTML file to attach to a mail you
+were going to send anyway. They double-click it, tap the things they finished,
+type a note where a note is worth typing, and send it back. You paste their
+reply in and your tasks close, with their words filed as comments in their name.
+Nothing to install at their end, no account, no login, no link to click.
+→ **Waiting for an update from somebody who does not use this**
+
+**2. An ad-hoc group around one project.** You and four other people are doing a
+thing together. Make a folder, share it the way you already share folders, put
+GroupTodo in it, and send everybody the app and the folder name. Now all of you
+see the same tasks, who is carrying what, and which parts of the project are
+waiting on which others. It lasts as long as the project does, and when it is
+over the folder is still readable in Notepad. Nobody had to be given an account,
+and nobody had to ask IT. → **An ad-hoc group around one project**
+
+**3. A team that works together all the time.** The same folder, but permanent:
+colleagues handing each other tasks, talking on them, and being told what moved
+since they last looked. This is what the setup documents in `docs/` are written
+for, and what most of the detail below describes. → **One task, two points of
+view** and **Talking on a task**
 
 ---
 
@@ -805,57 +841,9 @@ want it: no assigning, no inbox, no permissions, and no second person implied by
 a screen sitting there empty. A list with one person in it looks like a list for
 one person.
 
-When a second person does arrive, this is what opens up.
-
-### One task, two points of view
-
-The whole of the model is this: **a task you hand over becomes their todo and
-stays your waiting-for.** Not a copy you both keep up to date, and not a message
-you then have to chase. One line, in one file, read from two ends.
-
-- On **their** side it is an ordinary task on their list, in their contexts,
-  with their name on it. They tick it off the way they tick anything off.
-- On **your** side it leaves your list and appears in **Waiting for**, which is
-  the honest place for it: it is no longer something you do, it is something you
-  are owed.
-- When they tick it, it is done for both of you. There is no second tick, no
-  status to reconcile and no way for the two views to disagree, because there is
-  only ever the one line.
-
-**Hand one over and it tracks itself.** Give a task to somebody in the space and
-it becomes theirs - and appears in your *Waiting for*. One task, two points of
-view, never two copies, so ticking it off once is enough for both of you.
-
-**Name somebody outside the space** and it becomes a plain waiting-for instead,
-because they cannot see it and cannot tick it off. Calling that a task would be
-a lie.
-
-**People** appears once there is more than you. *Waiting for* only tells you what
-you handed over; this tells you what everyone is carrying. Click a name to see
-their projects and open work.
-
-### And then you can talk about it
-
-A task carries its own thread, so the conversation about a thing lives on the
-thing instead of in a chat window where neither of you will find it again in
-March. It is the same markdown underneath: a reply is an indented line with a
-`msg::` and a timestamp, which reads as a conversation in any editor. **Talking
-on a task**, below, is the detail.
-
-**You are told what you missed.** There is no server to push a notification, so
-the app looks for itself: open a space and it tells you what happened since you
-last did - work somebody handed you, and work you handed over that is now
-finished. Click one to go straight to it. "Last seen" is per device and never
-written to the shared files, so marking your own news read does not mark it read
-for everybody.
-
-### What you have to set up for any of this
-
-Nothing in the app. The sharing is your company's: put the folder somewhere two
-people can both reach, which is exactly what OneDrive, a network share or
-Dropbox already do. There is no server here to be a member of, so there is
-nobody to invite, nobody to pay a seat for, and nothing to be removed from
-except the folder.
+When other people do arrive they arrive in three shapes, and this chapter is in
+that order: people who owe you something and will never use this app, a group
+thrown together for one project, and colleagues you work with every day.
 
 ### Waiting for an update from somebody who does not use this
 
@@ -915,6 +903,97 @@ and the nudge **people to send a check-in to** counts anybody who has gone
 quiet past the two-week mark. The stamp is dropped the moment they answer:
 "asked and heard nothing" is the thing worth measuring, and once they have
 replied there is nothing outstanding to measure.
+
+### What sharing costs: nothing in the app
+
+Both of the shapes that follow - a group around one project, and colleagues you
+work with every day - are the same folder with a different lifespan, and neither
+needs anything set up in GroupTodo. The sharing is your company's: put the
+folder somewhere two people can both reach, which is exactly what OneDrive, a
+network share or Dropbox already do. There is no server here to be a member of,
+so there is nobody to invite, nobody to pay a seat for, and nothing to be
+removed from except the folder.
+
+### An ad-hoc group around one project
+
+Five people, one job, a few months. A wedding, a move, a tender, a rebuild of
+the shop floor - the sort of thing that has never justified anybody buying
+software for it, so it ends up in a mail thread and a spreadsheet nobody owns.
+
+The whole setup is a folder:
+
+1. Make a folder where all of you can already reach it - a shared OneDrive or
+   Dropbox folder, a Teams channel's files, a network share.
+2. Put `grouptodo.html` in it, open it, and point the app at that folder.
+3. Send the others the same two things: the file and the name of the folder.
+   `docs/setup-sheet.html` says it for you, written for somebody who does not
+   want to know how any of it works. **Spaces → Invite somebody** makes them a
+   `join-….md` instead, which carries the space's name, colour and contents -
+   everything except the folder itself, which browsers will not let a file
+   carry.
+
+What the group gets for that:
+
+- **One list everybody sees.** Tasks, projects, day pages, the lot - the folder
+  is the permission model, so there is nothing to grant and nothing to be
+  removed from except the folder.
+- **Who is carrying what.** **People** appears the moment there is more than
+  you, and a name shows that person's projects and open work.
+- **What is waiting on what.** On a project page, **nothing comes first** opens
+  a list of your other projects; tick the ones that have to finish first and the
+  order travels with the files. A project then says **blocked by Site survey**
+  while anything in it is still open, the **Timeline** draws the chain, and
+  moving one project offers to push what is downstream of it along. See
+  **Projects that have to happen in order**.
+- **An end.** When the project is done the folder is a readable record of it, in
+  Notepad, with no account to close and no export to run. Delete it, archive it,
+  or leave it where it is.
+
+Nobody involved needs an account, a licence or a word with IT, which is usually
+the difference between a group doing this and a group not bothering.
+
+### One task, two points of view
+
+The everyday shape: the same folder as above, but permanent, and the people in
+it hand each other work. The whole of the model is this: **a task you hand over becomes their todo and
+stays your waiting-for.** Not a copy you both keep up to date, and not a message
+you then have to chase. One line, in one file, read from two ends.
+
+- On **their** side it is an ordinary task on their list, in their contexts,
+  with their name on it. They tick it off the way they tick anything off.
+- On **your** side it leaves your list and appears in **Waiting for**, which is
+  the honest place for it: it is no longer something you do, it is something you
+  are owed.
+- When they tick it, it is done for both of you. There is no second tick, no
+  status to reconcile and no way for the two views to disagree, because there is
+  only ever the one line.
+
+**Hand one over and it tracks itself.** Give a task to somebody in the space and
+it becomes theirs - and appears in your *Waiting for*. One task, two points of
+view, never two copies, so ticking it off once is enough for both of you.
+
+**Name somebody outside the space** and it becomes a plain waiting-for instead,
+because they cannot see it and cannot tick it off. Calling that a task would be
+a lie.
+
+**People** appears once there is more than you. *Waiting for* only tells you what
+you handed over; this tells you what everyone is carrying. Click a name to see
+their projects and open work.
+
+### And then you can talk about it
+
+A task carries its own thread, so the conversation about a thing lives on the
+thing instead of in a chat window where neither of you will find it again in
+March. It is the same markdown underneath: a reply is an indented line with a
+`msg::` and a timestamp, which reads as a conversation in any editor. **Talking
+on a task**, below, is the detail.
+
+**You are told what you missed.** There is no server to push a notification, so
+the app looks for itself: open a space and it tells you what happened since you
+last did - work somebody handed you, and work you handed over that is now
+finished. Click one to go straight to it. "Last seen" is per device and never
+written to the shared files, so marking your own news read does not mark it read
+for everybody.
 
 ### Faces, and who has been here
 
