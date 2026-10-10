@@ -2602,7 +2602,11 @@ async function assignSpaceFolder(name) {
 
   await IDB.set("kv", "dir:" + name, handle);
   sp.kind = "fs"; sp.label = handle.name;
-  delete sp.legacyFlat; delete sp.placeholder;
+  /* placeholder is kept: a folder is a home, not a history. The spaces wizard
+     reads that flag to tell auto-seeded scaffolding from a space somebody
+     actually asked for, and a folder chosen on the welcome screen is carried
+     over rather than making the two answers contradict each other. */
+  delete sp.legacyFlat;
   sp.askedStorage = true;
   await Spaces.save();
 
@@ -5178,13 +5182,21 @@ function settingsPage() {
    work, something shorter at home). With no name set, nothing is stamped, so
    a vault you use alone stays clean.
    ============================================================ */
+/* The welcome screen answers this once for the device; Vault & sync and the
+   coach answer it per space. Emptying a space's own field therefore has to say
+   something stronger than "unanswered", or the device name comes straight back
+   as a fallback and the app goes on stamping a name it just said it had
+   cleared. This is that stronger answer, and it is never shown. */
+const NO_NAME = "\u2014";
 function whoAmI() {
-  return trim(PREF.get("identity:" + (Spaces.active || ""), "") || PREF.get("identity", "") || "");
+  const mine = trim(PREF.get("identity:" + (Spaces.active || ""), ""));
+  if (mine === NO_NAME) return "";
+  return mine || trim(PREF.get("identity", "") || "");
 }
 function setIdentity(name, space) {
   const clean = trim(name).slice(0, 60);
   const was = whoAmI();
-  if (space) PREF.set("identity:" + space, clean);
+  if (space) PREF.set("identity:" + space, clean || NO_NAME);
   else PREF.set("identity", clean);
   if (!clean || !V.pages) return;
   if (was && !samePerson(was, clean)) renameIdentity(was, clean);
@@ -5406,6 +5418,7 @@ const NUDGE_PLAIN = {
   ask    : "people to send a check-in to",
   late   : "overdue",
   stale  : "projects older than 6 months",
+  nofolder: "this space is not in a folder yet",
 };
 const DEEP_NUDGES = ["verb", "ctx", "area", "goal", "loose", "outcome"];
 
@@ -5455,6 +5468,11 @@ const NUDGE_WHY = {
   review:
     "The weekly look is what makes everything else trustworthy. Capture, contexts and " +
     "projects are bookkeeping if nobody ever reads them back.",
+  nofolder:
+    "Until this space has a folder it exists in one browser on one machine: no .md " +
+    "files to open in Neovim or Obsidian, nothing to share with anybody, and nothing " +
+    "left if this browser is cleared. Choosing one moves everything already here into " +
+    "it. Asked once your list is worth something, not on the first day.",
 };
 
 /* A nudge you have quietened. Deliberately per-nudge and time-boxed rather than a
@@ -5524,6 +5542,20 @@ function computeNudges() {
   const stale = weedingWorthIt()
     ? stalestActiveProjects(99).filter(p => (p.ageDays ?? 0) > CFG.staleProjectDays) : [];
   push("stale", "", "projects older than 6 months", stale.length, () => openWeeding());
+
+  /* The one re-ask about storage. The welcome screen offers a folder and the
+     getting-started strip offers it again, but both can be walked past -- and a
+     list that only exists in one browser is the one loss nothing can undo. So it
+     comes back here, once there is enough on the list to be worth keeping, and
+     it is as quietenable as any other nudge. */
+  const ownWork = acts.filter(a => OPEN_STATES[a.state] && !a.tourStep).length;
+  if (CAP.dirPicker && ownWork >= CFG.quietUntilTasks && !nudgeQuiet("nofolder") &&
+      V.backend && V.backend.kind !== "fs" && V.backend.kind !== "http") {
+    n.push({
+      id: "nofolder", level: "warn", label: NUDGE_PLAIN.nofolder,
+      count: null, act: () => openSpaceStorageSetup(),
+    });
+  }
 
   if (reviewDue() && !nudgeQuiet("review")) {
     const last = dateIn(getSetting("last_review"));
@@ -11972,9 +12004,17 @@ async function applyInvite(cfg, text) {
   return {name, report, cfg};
 }
 
+/* Resolves true only if they actually joined. The two flags that say "this
+   invite is spent" belong to the Join button alone: Not now has to leave both
+   the invite and the welcome screen still waiting, or a misclick strands
+   somebody in an app that never asked them anything. */
 function openInviteArrived(cfg, text) {
   const who = cfg.from ? cfg.from : "A colleague";
+  return new Promise(resolve => {
+  let settled = false;
+  const done = joined => { if (!settled) { settled = true; resolve(joined); } };
   modal({
+    onClose: () => done(false),
     center: true, title: who + " shared \u201C" + cfg.space + "\u201D with you",
     body: el("div", {},
       el("div", {class: "field"},
@@ -11997,15 +12037,45 @@ function openInviteArrived(cfg, text) {
       el("button", {class: "btn ghost", onclick: closeModal}, "Not now"),
       el("div", {style: "flex:1"}),
       el("button", {class: "btn primary", onclick: async () => {
+        // Answered before the dialog goes: closing it is itself what reports a
+        // decline, so the answer has to be in before the close fires.
+        done(true);
         closeModal();
         const r = await applyInvite(cfg, text);
         notify("You are in " + r.name + ". " + syncSummary(r.report));
-        if (r.cfg.kind === "fs" && CAP.dirPicker) {
-          setTimeout(() => openSpaceStorageSetup({firstRun: false}), 800);
-        }
+        /* A space shared with you is the one place an unsigned change is worth
+           nothing: everything here already carries somebody else's name. So the
+           question onboarding would have asked gets asked here instead, and the
+           getting-started strip is turned on to carry the rest. */
+        PREF.set("coach", "1");
+        askJoinerName(r.name, cfg.from, () => {
+          if (r.cfg.kind === "fs" && CAP.dirPicker) openSpaceStorageSetup({firstRun: false});
+        });
       }}, "Join " + cfg.space),
     ],
   });
+  });
+}
+
+/* Asked once, right after joining, and skippable like any other prompt -- the
+   coach strip keeps asking if it is left blank. */
+function askJoinerName(space, from, after) {
+  const ask = () => promptInput({
+    title: "Who are you in " + space + "?",
+    label: "Full name",
+    value: whoAmI(),
+    placeholder: "Kenneth Aar",
+    cta: "Save",
+    note: el("div", {class: "field"},
+      el("div", {style: "color:var(--fg2);font-size:13px"},
+        "Written into the files as by:: and done_by::, so " + (from || "everyone else here") +
+        " can see what you added and what you closed. Two people called Kenneth is the day " +
+        "you wish you had typed the surname. Leave it blank and nothing is stamped.")),
+    onSave: n => { setIdentity(n, space); coachMark("who"); render(); },
+  });
+  // One dialog replaces another, so the folder question has to wait its turn.
+  if (after) askAfterModal(() => { ask(); askAfterModal(after); });
+  else ask();
 }
 
 /* ---------- making one ---------- */
@@ -15722,12 +15792,16 @@ let MODAL_KEYS = null;
    of them repeating -- has to be asked one at a time or all but the last are
    thrown away unanswered. */
 let MODAL_AFTER = null;
+/* A dialog can also be left rather than answered -- the X, the scrim, or another
+   dialog taking its place. Anything that has to know which of the two happened
+   hands modal() an onClose; it fires exactly once, after the dialog is gone. */
+let MODAL_CLOSE = null;
 function askAfterModal(fn) {
   if ($("#modalRoot").textContent === "" && !$("#modalRoot").firstChild) fn();
   else MODAL_AFTER = fn;
 }
 
-function modal({title, hint, body, foot, center = false, onKey = null}) {
+function modal({title, hint, body, foot, center = false, onKey = null, onClose = null}) {
   // Replacing a dialog is not answering it, so the queue stays put.
   closeModal({keepQueue: true});
   const sheet = el("div", {class: "modal"},
@@ -15740,11 +15814,16 @@ function modal({title, hint, body, foot, center = false, onKey = null}) {
   $("#modalRoot").append(scrim);
   resolveAssets(sheet);
   MODAL_KEYS = onKey;
+  MODAL_CLOSE = onClose;
   return {close: closeModal, root: sheet};
 }
 function closeModal(opts = {}) {
   $("#modalRoot").textContent = "";
   MODAL_KEYS = null;
+  // Cleared before it runs: a dialog opened from inside the callback sets its own.
+  const closer = MODAL_CLOSE;
+  MODAL_CLOSE = null;
+  if (closer) closer();
   if (!opts.keepQueue) {
     const after = MODAL_AFTER;
     MODAL_AFTER = null;
@@ -17431,13 +17510,34 @@ async function clearFlatStorage() {
 async function finishSpaceSetup(names) {
   if (names.length) {
     const ph = Spaces.get("Personal");
+    /* Step 2 of the welcome screen may already have given the placeholder a
+       folder or a server. Naming your spaces afterwards must not throw that
+       answer away or leave the placeholder behind holding it, so the home is
+       carried to the first space named here -- whichever order the two
+       questions were answered in. */
+    let carryDir = null, carryServer = null;
     if (ph && ph.placeholder) {
+      if (ph.kind === "fs") carryDir = await storedHandle("Personal");
+      if (ph.kind === "http") carryServer = ph.server;
       await Spaces.remove("Personal");
       await clearFlatStorage();
       PREF.set("welcomed", "");      // the first real space gets the welcome content
     }
-    for (const n of names) await createSpace(n, "local");
-    await openSpace(Spaces.list[0].name);
+    const made = [];
+    for (const n of names) { const sp = await createSpace(n, "local"); if (sp) made.push(sp); }
+    // The one named first, not whatever sits at the top of the list: an older
+    // install can have spaces of its own, and none of them asked for this folder.
+    const first = made[0];
+    if (first && carryDir) {
+      await IDB.set("kv", "dir:" + first.name, carryDir);
+      first.kind = "fs"; first.label = carryDir.name; first.askedStorage = true;
+      await Spaces.save();
+      notify(first.name + " keeps the folder you chose, \u201C" + carryDir.name + "\u201D.");
+    } else if (first && carryServer) {
+      first.kind = "http"; first.server = carryServer; first.askedStorage = true;
+      await Spaces.save();
+    }
+    await openSpace((first || Spaces.list[0]).name);
     notify("Created " + names.length + " space" + (names.length > 1 ? "s" : "") + ".");
     render();
     openSpaceStorageSetup({firstRun: true});     // one folder each, asked straight away
@@ -18060,7 +18160,7 @@ async function connectServer(base) {
   try {
     const b = Backends.http(base);
     await loadFromBackend(b);
-    sp.kind = "http"; sp.server = base; delete sp.legacyFlat; delete sp.placeholder;
+    sp.kind = "http"; sp.server = base; delete sp.legacyFlat;
     await Spaces.save();
     await seedIfEmpty();
     scanVerbs(); closeModal(); render();
@@ -18229,6 +18329,9 @@ function openOnboarding() {
      no account, no email, no password, because there is nowhere to send them. */
   const nameInput = el("input", {placeholder: "Kenneth Aar", value: whoAmI(), maxlength: "60"});
   const keepName = () => setIdentity(nameInput.value);   // blank is a real answer
+  /* Typed, then dismissed with the X or a click outside, is still typed: this
+     screen comes back next time, and it should come back already knowing. */
+  nameInput.addEventListener("change", keepName);
   const whereLine = el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px;line-height:1.5"});
   const whereBtn = el("button", {class: "btn ghost sm"});
   const drawWhere = () => {
@@ -18249,13 +18352,19 @@ function openOnboarding() {
     drawWhere();
   };
   drawWhere();
-  const begin = (mode, after) => {
+  const begin = async (mode, after) => {
     keepName();
     PREF.set("onboarded", todayISO());
     PREF.set("mode", mode);
     PREF.set("coach", "1");
-    for (const sp of Spaces.list) sp.askedStorage = true;   // asked later, in context
-    Spaces.save();
+    /* Only the space this screen is about: a space left over from an earlier
+       install has its own answer coming, in context. And awaited, because a tab
+       closed in the next moment would otherwise lose the flag and open the
+       folder dialog on the second run -- the one dialog this screen exists to
+       spare a newcomer. */
+    const here = Spaces.get(Spaces.active);
+    if (here) here.askedStorage = true;
+    await Spaces.save();
     closeModal();
     setMode(mode);
     if (after) after();
@@ -18271,7 +18380,14 @@ function openOnboarding() {
         el("div", {style: "color:var(--fg2);font-size:13.5px;line-height:1.55"},
           "A shared to-do list that is really just text files in a folder you already have."),
         el("div", {style: "color:var(--fg3);font-size:12.5px;line-height:1.55;margin-top:6px"},
-          "No server, no accounts. Share the folder and you have shared the list.")),
+          "No server, no accounts. Share the folder and you have shared the list."),
+        /* Said here rather than in a notify this very dialog covers -- and with
+           no storage the answers below cannot be remembered either, so this
+           screen is what every reload opens on until the file is saved. */
+        CAP.persist === "memory" ? el("div", {style: "color:var(--warn);font-size:12.5px;line-height:1.55;margin-top:8px"},
+          "This browser stores nothing for this page, so none of it survives closing " +
+          "the tab - this screen included. Use Vault & sync \u2192 Save vault file before " +
+          "you go.") : null),
       /* Who, then where, then what. Each answer sets up the next: the name the
          folder is shared under, then the folder the first task lands in. */
       el("div", {class: "field"},
@@ -18287,25 +18403,29 @@ function openOnboarding() {
       /* No "new list or one I was sent" fork here: an invite answers that
          question before this screen ever opens, and somebody handed a shared
          folder picks it in step 2. Either way the only thing left is to go. */
-      el("button", {class: "pick", onclick: () => begin("simple")},
+      el("button", {class: "pick", onclick: () => { begin("simple"); }},
         el("span", {class: "k"}, "\u2713"),
         el("span", {}, el("b", {}, "Start"), el("br"),
           el("span", {style: "color:var(--fg3);font-size:12.5px"},
             "Straight in. A folder, a vault file or an invite can arrive later."))),
       ),
     foot: [
-      el("button", {class: "btn ghost", onclick: () => begin("advanced", () => openSpacesWizard())},
+      el("button", {class: "btn ghost", onclick: () => { begin("advanced", () => openSpacesWizard()); }},
         "I use Logseq or org-mode"),
     ],
     // The name box can hold the focus, so plain keys have to belong to it first --
     // otherwise typing a name called Kenneth 1 would start the app.
     onKey: e => {
-      if (e.key === "Enter") { begin("simple"); return true; }
+      /* Every plain key belongs to the name box first -- Enter included, which
+         is how a browser's own autocomplete suggestion is accepted. The box
+         keeps what it holds on change, so nothing is lost by not starting here. */
       const field = n => /^(INPUT|TEXTAREA)$/.test(n || "");
       if (field(e.target.tagName) || field(document.activeElement?.tagName)) return false;
-      if (e.key === "1") { begin("simple"); return true; }
+      if (e.key === "Enter" || e.key === "1") { begin("simple"); return true; }
       return false;
     },
+    // Walking away from this screen is allowed; walking away from the name is not.
+    onClose: keepName,
   });
 }
 
@@ -19227,8 +19347,10 @@ async function useBakedInvite() {
   const baked = bakedInvite();
   if (!baked) return false;
   if (PREF.get("baked:" + baked.cfg.space, "")) return false;   // already joined
+  // Marked spent only by the answer, so "Not now" can be a misclick rather
+  // than a decision nobody can undo.
+  if (!await openInviteArrived(baked.cfg, baked.vault)) return false;
   PREF.set("baked:" + baked.cfg.space, todayISO());
-  openInviteArrived(baked.cfg, baked.vault);
   return true;
 }
 
@@ -19272,6 +19394,11 @@ async function pickBackend() {
 }
 
 function afterFirstRun() {
+  /* Reached from the space-folder dialog as well as from startup, and that
+     dialog is also how the coach strip asks its "where" question weeks later --
+     so the hints below are once a day, not once per dialog. */
+  if (PREF.get("hinted") === todayISO()) return;
+  PREF.set("hinted", todayISO());
   // Day one should not open with a dashboard of things to weed.
   const started = dateIn(getSetting("started"));
   const fresh = !started || started === todayISO();
@@ -19329,6 +19456,15 @@ function installServiceWorker() {
   window.addEventListener("hashchange", () => handleHash());
   await handleHash();
 
+  /* Set before any of the early returns below, and before the first dialog:
+     the folder-reconnect offer in openSpace is gated on it, and somebody who
+     arrives by invite switches spaces within seconds of opening the file. */
+  INIT_DONE = true;
+  /* Two spaces sharing or nesting one folder means one is reading the other's
+     files, and joining a space is exactly when a second folder appears -- so
+     this runs on every path, not only the one that reaches the bottom. */
+  checkFolderConflicts();
+
   if (CAP.sandboxed) {
     // SharePoint and Teams will happily let you upload the app and then show
     // it inside <iframe sandbox srcdoc> with no allow-same-origin. The page
@@ -19358,7 +19494,10 @@ function installServiceWorker() {
     });
     return;                 // no onboarding: there is nothing here to onboard into
   }
-  if (CAP.persist === "memory") {
+  /* Not a notify when there is a dialog about to cover it: with no storage the
+     onboarded flag cannot be written either, so the welcome screen comes back
+     every reload and has to say why itself. */
+  if (CAP.persist === "memory" && PREF.get("onboarded")) {
     notify("This browser will not store anything for this page. Use Vault & sync \u2192 " +
            "Save vault file before you close the tab.", "error");
   }
@@ -19366,13 +19505,13 @@ function installServiceWorker() {
   setInterval(nudgeCheck, 60000);
   scheduleContextPrompts();
 
-  // A file somebody baked for you answers every question onboarding would ask.
+  /* A file somebody baked for you answers every question onboarding would ask --
+     but only once they have said yes. Turned down, the invite and the welcome
+     screen are both still waiting. */
   if (await useBakedInvite()) { PREF.set("onboarded", todayISO()); return; }
 
-  INIT_DONE = true;
   if (!PREF.get("onboarded")) { openOnboarding(); return; }
 
-  checkFolderConflicts();
   if (spacesNeedingStorage().length) { openSpaceStorageSetup({firstRun: false}); return; }
   // A remembered folder that only needs permission again: ask here, where it
   // is one click, instead of leaving a picker to be found in Vault & sync.
