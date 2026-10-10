@@ -1862,7 +1862,8 @@ const V = {
 };
 
 function newRecord(name, backend) {
-  return {name, backend, pages: new Map(), raw: new Map(), dirty: new Set(), removed: new Set()};
+  return {name, backend, pages: new Map(), raw: new Map(), dirty: new Set(), removed: new Set(),
+          offline: null};
 }
 function bindActive(name) {
   const r = LOADED.get(name);
@@ -1933,6 +1934,60 @@ function removePage(path) {
   scheduleFlush();
 }
 
+/* ---------- when storage will not take a write ----------
+   The retry below widens from three seconds to a minute, and the thing that is
+   unreachable -- a closed laptop, a sleeping Pi, a server nobody started, a
+   folder whose permission lapsed -- stays unreachable for minutes or hours. So
+   one notice per outage, and one when it comes back; the old code said the
+   same sentence on every attempt, which is how something true turns into
+   something you stop reading.
+
+   And it says WHY. "Cannot reach the storage" covers a lapsed folder
+   permission, a server that is not running, a folder that has been moved and a
+   disk with no room left, and there is nothing in common between what you
+   would do about them. A lapsed permission gets more than a sentence: the
+   folder handle is still here, so granting it again is one click, and the
+   notice carries the button that asks for it. */
+const spaceLabel = name => {
+  try { const sp = Spaces.get(name); if (sp && sp.name) return sp.name; } catch (_) {}
+  return name;
+};
+
+function storageReason(e) {
+  const name = (e && e.name) || "";
+  const msg  = trim(String((e && e.message) || ""));
+  if (name === "NotAllowedError" || name === "SecurityError")
+    return "the browser's permission to the folder has lapsed";
+  if (name === "NotFoundError")
+    return "the folder or file is not where it was";
+  if (name === "NoModificationAllowedError")
+    return "something else is holding the file open";
+  if (name === "QuotaExceededError")
+    return "there is no room left";
+  if (/failed to fetch|networkerror|load failed|err_connection/i.test(msg))
+    return "the server is not answering";
+  return msg || name || "no reason given";
+}
+
+const permissionLapsed = e =>
+  !!e && (e.name === "NotAllowedError" || e.name === "SecurityError");
+
+function reportStorageTrouble(rec, e) {
+  const key = (e && e.name) || "error";
+  if (rec.offline === key) return;        // the same trouble, already said once
+  rec.offline = key;
+  const label = spaceLabel(rec.name);
+  if (permissionLapsed(e) && rec.backend && rec.backend.kind === "fs" && rec.backend.handle) {
+    PENDING_GRANT.set(rec.name, rec.backend.handle);
+    notify(label + " needs permission to its folder again. Nothing is lost - the work is " +
+           "on this device and goes up the moment you allow it.", "warn",
+           {label: "Reconnect", run: () => offerFolderReconnect(rec.name)});
+    return;
+  }
+  notify("Cannot reach " + label + "'s storage - " + storageReason(e) + ". Saved on this " +
+         "device and it will go up when the connection is back.", "warn");
+}
+
 let flushTimer = null;
 function scheduleFlush() {
   clearTimeout(flushTimer);
@@ -1990,12 +2045,16 @@ async function doFlush() {
       for (const p of gone) await rec.backend.remove(p).catch(() => {});
       await confirmMirror(rec, dirty);
       V.error = null;
+      if (rec.offline) {            // it came back; say so once and stop warning
+        rec.offline = null;
+        notify(spaceLabel(rec.name) + " is saving to its own storage again. " +
+               "Everything written while it was away has gone up.");
+      }
     } catch (e) {
       dirty.forEach(p => rec.dirty.add(p));
       V.error = e;
       setSync("warn", "saved on device");
-      notify(`Cannot reach ${rec.name}'s storage. Saved on this device and it ` +
-             `will go up when the connection is back.`, "warn");
+      reportStorageTrouble(rec, e);
       V.syncing = false;
       retryFlush();                 // a sleeping box must not need a keystroke
       return;
@@ -3644,7 +3703,7 @@ function ensureJournal(date) {
 /* ============================================================
    60_STATE_MACHINE
    Port of: init.lua set_org_state
-     -> TODO : stamp "Added", then nudge for a context if missing
+     -> TODO : stamp "Added" (no context nudge: see below)
      -> DONE : close out the Added line with an end date + elapsed days,
                then check whether the project just ran out of next actions
    ============================================================ */
@@ -3725,11 +3784,18 @@ function setBlockState(path, block, state, opts = {}) {
   }
   touch(path);
 
-  if ((state === "TODO" || state === "DOING") && !opts.skipContext
-      && !gtdQuiet() && !hasContextLink(block.title)) {
-    promptAndInsertContext(path, block);
-    return;
-  }
+  /* No context prompt here. A state change is you handling a task you are
+     already looking at: starting it, parking it, un-ticking one you ticked by
+     mistake. A context is for the opposite moment -- deciding, later, out of
+     everything on the list, which few things you could do where you are. Being
+     stopped and asked "where would you do this?" while your hand is literally
+     on the task answers a question nobody asked, and it cost a dialog per
+     click of the state pill.
+
+     It is still asked where it belongs: Clarify walks verb then context, the
+     "no context" chip on the row adds one in a click, capture asks as the line
+     is written, and the weekly review lists every action that has none. Only
+     the interruption is gone. See 160_CLARIFY and chipsFor(). */
   if (state === "DONE" || state === "CANCELLED") {
     if (prev !== state) noteTodoTouched();
     // Asked, never assumed, and only on the tick that actually finished it.
@@ -6187,6 +6253,21 @@ function tourSteps(path) {
 /* Still on the list, but you have been where it sends you. */
 const tourPending = () => tourSteps().filter(s => s.open && s.seen);
 
+/* The tour destination you are standing in, if any -- the same reading of the
+   view that tourNoteView() makes when it counts an arrival.
+
+   This is what keeps the ask the right way round. Pressing a step marks it seen
+   BEFORE the door opens, because the door may be a dialog that never comes
+   back through go(); so the step is already "seen" by the time the screen it
+   sends you to draws, and the ask would land on top of the feature you had not
+   looked at yet -- tick this off, before you have seen the thing. A step you
+   are inside is therefore never asked about. You are asked on the way out. */
+function tourDestHere() {
+  const v = state.view;
+  if (v === "projects") return state.statusCode === "1" ? "projects" : null;
+  return TOUR_DESTS[v] ? v : null;
+}
+
 /* ---------- the ask ----------
    One prompt, and only when the answer has changed since the last time: a
    newcomer who says "not yet" to three steps must not be asked a fourth time
@@ -6243,12 +6324,16 @@ let TOUR_ASK_TIMER = null;
 function maybeAskTourCheckoff(list) {
   clearTimeout(TOUR_ASK_TIMER);
   if (!PREF.get("tour.ask", "1")) return;               // turned off from the card
-  const steps = (list || tourPending()).filter(s => s.open);
+  const here = tourDestHere();
+  const steps = (list || tourPending()).filter(s => s.open && s.dest !== here);
   if (!steps.length) return;
   if (tourAskKey(steps) === PREF.get("tour.asked", "")) return;
   TOUR_ASK_TIMER = setTimeout(() => {
     if ($("#modalRoot").firstChild) return;             // something else is talking
-    const live = steps.filter(s => OPEN_STATES[s.block.state]);
+    // Read again: the view can have changed in the meantime, and the step you
+    // have just walked into is still not one to be asked about.
+    const now = tourDestHere();
+    const live = steps.filter(s => OPEN_STATES[s.block.state] && s.dest !== now);
     if (live.length) askTourCheckoff(live);
   }, 600);
 }
@@ -8518,17 +8603,15 @@ function viewTaskBoard() {
       (x, many) => {
         const {path, block, space} = x.action;
         const prev = block.state;
-        /* A handful being moved is not the moment to ask about a context for
-           each card, and "Again?" for a repeating task has to be asked one
-           dialog at a time or only the last would be seen -- so a batch asks
-           afterwards, in turn. */
+        /* "Again?" for a repeating task has to be asked one dialog at a time or
+           only the last would be seen, so a batch asks afterwards, in turn. */
         inSpace(space, () => setBlockState(path, block, stateKey,
-          many ? {skipContext: true, skipRepeat: true} : {}));
+          many ? {skipRepeat: true} : {}));
         if (many && stateKey === "DONE" && inSpace(space, () => repeatOf(block))) {
           askAfterModal(() => inSpace(space, () => offerNextOccurrence(path, block)));
         }
         return () => inSpace(space, () => setBlockState(path, block, prev,
-          {skipContext: true, skipRepeat: true}));
+          {skipRepeat: true}));
       });
     col.append(fillBoardColumn(
       el("div", {class: "bcol-body", data: {keepScroll: "board:" + stateKey}}),
@@ -13324,7 +13407,8 @@ function chipsFor(a) {
   if (a.missingVerb && a.state === "TODO" && !quietChips)
     out.push(el("span", {class: "chip miss b", onclick: e => {e.stopPropagation(); openVerbPicker(a.path, a.block);}}, "no verb"));
   if (a.missingContext && a.state !== "WAIT" && !quietChips)
-    out.push(el("span", {class: "chip miss b", onclick: e => {e.stopPropagation(); promptAndInsertContext(a.path, a.block);}}, "no context"));
+    out.push(el("span", {class: "chip miss b", title: "Where would you do this? Click to say - nothing else asks you.",
+      onclick: e => {e.stopPropagation(); promptAndInsertContext(a.path, a.block);}}, "no context"));
   return out;
 }
 
@@ -15855,7 +15939,7 @@ function openVerbPicker(path, block) {
 
 /* Clarify: make it a TODO, give it a verb, give it a context. */
 function clarifyBlock(path, block) {
-  if (!block.state) setBlockState(path, block, "TODO", {skipContext: true});
+  if (!block.state) setBlockState(path, block, "TODO");
   if (!startsWithVerb(block.title)) { openVerbPicker(path, block); return; }
   if (!hasContextLink(block.title)) { promptAndInsertContext(path, block); return; }
   notify("Looks executable: physical verb + context.");
@@ -18326,9 +18410,17 @@ async function seedIfEmpty() {
   }
   /* The page stencils live with the lists now, in pages/8/, and are looked up
      by name: "journals" shapes a day page, "1" shapes a new active project. */
+  /* No headings in it. "Captured" and "Done today" were two empty bullets on
+     every day page, and neither earned the line: capture writes to the page
+     itself, ticking something off leaves it where it is, and the Today screen
+     already shows both groupings from the tasks rather than from where they sit
+     in the file. What they actually did was put two bullets you had to read
+     past at the top of every new day, and indent anything you typed under the
+     wrong one. The stencil stays -- its title:: and created:: still shape the
+     day, and anybody who does want a shape for their day can write it here. */
   putPage(join(DIRS.lists, "journals.md"), {
     props: {title: "%date%", created: "[[%date%]]"},
-    blocks: [newBlock({title: "Captured"}), newBlock({title: "Done today"})],
+    blocks: [],
   });
   putPage(join(DIRS.lists, "1.md"), {
     props: {title: "%title%", status: "%status%", outcome: "",
