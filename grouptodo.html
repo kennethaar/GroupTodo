@@ -1006,6 +1006,15 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4p
   border-left:2px solid var(--border2);padding-left:9px;
 }
 .coach.tip .coach-head b{font-size:13.5px}
+/* A worked example, written the way it is written in the day page -- the
+   indentation is half of what it is teaching, so it has to survive. */
+.coach-ex{
+  font-family:var(--mono);font-size:12px;line-height:1.6;white-space:pre;
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);
+  padding:9px 11px;margin:7px 0 0;overflow-x:auto;color:var(--fg2);
+}
+.coach-ex b{color:var(--fg);font-weight:600}
+.coach-exlab{color:var(--fg3);font-size:12px;margin-top:9px}
 .nudge.quieter{color:var(--fg3);border-style:dashed}
 .listblurb{color:var(--fg3);font-size:12.5px;line-height:1.5;padding:10px 16px 2px}
 .quickadd{
@@ -6546,6 +6555,82 @@ function tipCard() {
       PREF.set("tip.quiet." + tip.id, shiftISO(todayISO(), CFG.tipSnoozeDays));
       render();
     }}, "not now")));
+  return box;
+}
+
+/* ---------- the day page, during a meeting ----------
+   The hard part of a meeting is not the notes, it is the twenty minutes
+   afterwards that nobody has, where the notes were supposed to become tasks.
+   So the day page is built to be typed into while people are talking: write
+   the line, and decide later -- or decide with two keys, in the room.
+
+   Which means the only two things worth teaching here are the two that cost
+   nothing in the moment: ctrl-enter, which makes a line a task, and Tab, which
+   says what a line belongs to. Everything else can wait for the weekly review.
+
+   Shown on day pages, with the examples written the way they are written in
+   the page, because the indentation is half of what it is saying. Closed for
+   good with the X: somebody who has taken notes in here twice does not need
+   to be told a third time. */
+const meetingTipOff = () => PREF.get("tip.off.meeting", "") === "1";
+
+function meetingNotesCard(path) {
+  if (!isJournalPath(path) || !myJournal(path) || meetingTipOff()) return null;
+
+  const ex = lines => el("div", {class: "coach-ex", html: lines.join("\n")});
+  const lab = text => el("div", {class: "coach-exlab"}, text);
+  const line = text => el("div", {style: "font-size:13.5px;color:var(--fg2);line-height:1.55;margin-top:8px"},
+    el("span", {html: text}));
+
+  const box = el("div", {class: "coach tip"});
+  box.append(el("div", {class: "coach-head"},
+    el("b", {}, "Type the meeting in here, while it happens"),
+    el("button", {class: "iconbtn", title: "Do not show this again",
+      onclick: () => { PREF.set("tip.off.meeting", "1"); render(); }}, "✕")));
+
+  box.append(el("div", {style: "font-size:13.5px;color:var(--fg2);line-height:1.55"},
+    "Every line, as it is said. Nothing here has to be a task yet, and nothing " +
+    "gets lost by not being one - this page is the record of the day, and the " +
+    "lists read it."));
+
+  box.append(el("div", {class: "coach-why"},
+    el("div", {}, el("b", {}, "ctrl-enter"), " on a line makes it a task - TODO, then DOING, WAIT, DONE."),
+    el("div", {}, el("b", {}, "Tab"), " indents it, and indentation is what says things belong together; " +
+      "shift-tab moves it back out."),
+    el("div", {}, "Write ", el("b", {}, "[[1/Some name]]"), " in a line and that is a project, " +
+      "started from the words you were already typing.")));
+
+  box.append(lab("A meeting, typed as it ran:"));
+  box.append(ex([
+    "Weekly sync · product",
+    "  Relaunch the website <b>[[1/Relaunch the website]]</b>",
+    "    <b>TODO</b> Write the new pricing copy [[c/computer]]",
+    "    <b>TODO</b> Ask Ada for the logo files",
+    "      she is out until Thursday",
+    "  The printer on 3 is dead again",
+  ]));
+  box.append(line(
+    "The two tasks are indented under the project line, so they are that " +
+    "project's tasks - they show up on its page, and in your lists, although " +
+    "they live here in today's notes. The plain line under the second one is a " +
+    "note on that task, not a task of its own. The printer stays a note until " +
+    "somebody makes it something."));
+
+  box.append(lab("And a line that turns out to be bigger than a task:"));
+  box.append(ex([
+    "Kenneth: we have to get ISO certified this year",
+    "  <b>[[1/ISO 27001 certification]]</b>",
+    "    <b>TODO</b> Find out which standard the client actually means",
+    "    <b>TODO</b> Half an hour with Ada on scope [[c/agenda]]",
+  ]));
+  box.append(line(
+    "Writing the link starts the project page there and then. The two steps " +
+    "under it are its first steps, and the sentence that caused all of it is " +
+    "still on top, in the words the person used."));
+
+  box.append(el("div", {style: "display:flex;gap:8px;margin-top:11px;flex-wrap:wrap"},
+    el("button", {class: "btn sm ghost", onclick: () => { PREF.set("tip.off.meeting", "1"); render(); }},
+      "got it")));
   return box;
 }
 
@@ -15113,6 +15198,13 @@ function viewPage() {
   if (isTourProject(path)) {
     const tc = tourCard(path);
     if (tc) c.append(tc);
+  }
+
+  /* A day page is where a meeting gets written down, so the one explanation
+     the app offers about writing lines lives where the writing happens. */
+  if (pageKind(path) === "journal") {
+    const mc = meetingNotesCard(path);
+    if (mc) c.append(mc);
   }
 
   if (isSimple() && pageKind(path) !== "journal") {
