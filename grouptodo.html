@@ -3308,6 +3308,24 @@ function recentJournals(days = CFG.journalScanDays) {
   return out.sort((a, b) => (myJournal(b) - myJournal(a)) || baseName(b).localeCompare(baseName(a)));
 }
 
+/* Every journal there is, however old. The day window above is right for
+   "what has been going on lately"; it is wrong for "what is still open",
+   because a task written fourteen months ago is the one most worth seeing,
+   not the one to drop off the list. */
+const allJournals = () => recentJournals(100000);
+
+/* Pages that are neither a project nor a day, but can still hold a task:
+   a person, an org, a context, a note, an area, a goal, a horizon. Nothing
+   stops you typing a TODO on one -- the app puts the outliner on every page --
+   so the task lists have to look there too, or the task is only ever visible
+   on the page you happened to write it on.
+
+   The checklists in pages/8/ are left out on purpose: those are the list, not
+   a run of it. Their steps become tasks when the list is poured into a day or
+   a project. */
+const looseTodoPages = () => allPages(p =>
+  isPagePath(p) && !statusDirOf(p) && !p.startsWith(DIRS.lists + "/"));
+
 /* Move pre-name journals into this person's folder, once there is a name. */
 function migrateJournals() {
   const who = journalOwner();
@@ -3717,7 +3735,7 @@ function cycleState(path, block, opts = {}) {
    65_GTD_SCANNERS
    Port of: init.lua 55_GTD_SCANNERS + 57_STALENESS_SCAN
    ============================================================ */
-const GROUPS = ["LATE", "TODAY", "PROJECT", "LINKED", "WAITING", "CHECKLIST", "JOURNAL"];
+const GROUPS = ["LATE", "TODAY", "PROJECT", "LINKED", "WAITING", "CHECKLIST", "PAGE", "JOURNAL"];
 const GROUP_META = {
   LATE   : {label: "Overdue",         cls: "late"},
   TODAY  : {label: "Due today",       cls: "today"},
@@ -3725,6 +3743,7 @@ const GROUP_META = {
   LINKED  : {label: "Journal, linked to a project", cls: "ctx"},
   WAITING: {label: "Waiting for",     cls: "wait"},
   CHECKLIST: {label: "Checklist run",  cls: "proj"},
+  PAGE   : {label: "On other pages",   cls: ""},
   JOURNAL: {label: "Loose journal actions", cls: ""},
 };
 
@@ -3769,10 +3788,10 @@ function journalActionsIndex() {
       if (!list.includes(row)) list.push(row);
       by.set(key, list);
     };
-    for (const path of recentJournals()) {
+    for (const path of allJournals()) {
       const page = getPage(path); if (!page) continue;
       for (const b of flattenBlocks(page.blocks)) {
-        if (!b.state || hasOpenDescendant(b)) continue;
+        if (!b.state || isMessage(b) || hasOpenDescendant(b)) continue;
         const link = nearestProjectAncestor(b); if (!link) continue;
         const row = {path, block: b, state: b.state, title: b.title,
                      context: contextOf(b.title), due: dueDate(b),
@@ -3807,17 +3826,32 @@ function leafActions() { return memo("leafActions", () => acrossSpaces(leafActio
 
 function leafActionsHere() {
   const out = [];
-  const paths = [...projectsIn("1"), ...projectsIn("3"), ...recentJournals()];
+  /* Everywhere a task you can still do is written: the active and waiting
+     projects, every day page (not just the recent ones -- an old task is the
+     one you most need to see), and the loose pages, so a TODO typed on a
+     person or a note is not invisible to every list in the app. Completed,
+     cancelled and someday/maybe projects stay out: that is what filing a
+     project there means. */
+  const paths = [...projectsIn("1"), ...projectsIn("3"), ...allJournals(), ...looseTodoPages()];
   for (const path of paths) {
     const page = getPage(path); if (!page) continue;
     const journal = isJournalPath(path);
+    const statusDir = statusDirOf(path);
     const flat = flattenBlocks(page.blocks);
     for (const b of flat) {
       if (!OPEN_STATES[b.state] || hasOpenDescendant(b)) continue;
+      // A line in a conversation is somebody talking, not a task of yours.
+      if (isMessage(b)) continue;
       const linked = journal ? nearestProjectAncestor(b) : null;
       const fromList = journal && !linked ? nearestChecklistAncestor(b) : null;
       let group = "JOURNAL", project = null, projectStatusDir = null, projectPath = null;
-      if (!journal) {
+      if (!journal && !statusDir) {
+        // A page that is not a project: it is still where the task lives, so
+        // it groups under its own name wherever tasks group by project.
+        group = b.state === "WAIT" ? "WAITING" : "PAGE";
+        project = pageTitle(path);
+        projectPath = path;
+      } else if (!journal) {
         group = b.state === "WAIT" ? "WAITING" : "PROJECT";
         project = pageTitle(path);
         projectStatusDir = statusDirOf(path);
