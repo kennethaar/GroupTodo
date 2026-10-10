@@ -14224,8 +14224,16 @@ function viewAgenda() {
   return c;
 }
 
+/* The shelf being looked at. A code that is not one of the five shelves --
+   pages/_/ is the horizons, and a stale link or a typed-in view can still ask
+   for it -- used to take the label from a map that has no entry for it, and
+   the whole screen died on the empty list's "No undefined projects.". An
+   unknown shelf reads as the active one, which is what the sidebar means by
+   "Projects" anyway. */
+const shelfCode = () => STATUS_DIRS[state.statusCode] ? state.statusCode : "1";
+
 function viewProjects() {
-  const code = state.statusCode;
+  const code = shelfCode();
   const c = el("div", {class: "wrap"});
   c.append(nudgeBar());
   const rows = projectsInVisible(code);
@@ -14918,7 +14926,7 @@ function render() {
   if (isSimple() && state.view === "today") VIEW_TITLE.today = "My day";
   else VIEW_TITLE.today = "Today";
   $("#hTitle").textContent = state.view === "page" ? pageTitle(state.pagePath)
-    : state.view === "projects" ? STATUS_LABEL[state.statusCode] + " projects"
+    : state.view === "projects" ? STATUS_LABEL[shelfCode()] + " projects"
     : state.view === "person" ? (state.person || whoAmI() || "Person")
     : (VIEW_TITLE[state.view] || "Today");
   const vis = visibleSpaces();
