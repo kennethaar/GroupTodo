@@ -9,6 +9,7 @@ Logseq or Obsidian open.
 
     python3 serve.py [--vault DIR] [--port 8777] [--host 127.0.0.1]
                      [--password-file FILE] [--insecure]
+                     [--open-in-editor [--open-with CMD]]
 
 Defaults to the vault path used by the original Neovim config:
     ~/storage/shared/Documents/OrgMode
@@ -21,8 +22,18 @@ API
     GET    /api/file?path=REL   -> raw file contents
     PUT    /api/file?path=REL   -> writes the body (creates parent dirs)
     DELETE /api/file?path=REL   -> deletes the file
+    POST   /api/open?path=REL   -> opens that file in an editor ON THIS MACHINE,
+                                   and only with --open-in-editor; 403 otherwise
 
 Every path is confined to the vault; traversal outside it is refused.
+
+--open-in-editor lets the app ask for a page to be opened in an editor -- the
+"open file" button beside "copy path". The editor runs here, on the machine with
+the vault on it, so it is off by default and the flag is the whole consent: with
+a password and a tunnel in front, anybody holding that password can make this
+process launch an editor on your desktop. Harmless as such things go (it is one
+of your own .md files, in a text editor) but it is yours to choose. --open-with
+names the command when the system default is not what you want.
 
 Binds to localhost by default and serves openly there. Reaching it from
 anywhere else needs a password, set through GTD_PASSWORD or --password-file:
@@ -49,6 +60,8 @@ import json
 import os
 import posixpath
 import re
+import shlex
+import subprocess
 import sys
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -142,11 +155,39 @@ class Vault:
             os.remove(full)
 
 
+def open_in_editor(full, command=None):
+    """Open one file in an editor on THIS machine. Returns what was used.
+
+    A browser cannot launch a program, which is right, so the only process in a
+    position to do this is the one already holding the vault. An explicit
+    command wins; otherwise the system's own idea of who owns a .md file, which
+    on Windows is Notepad on a stock install, and the Notepad fallback is there
+    for the machine where nothing is registered for the extension at all."""
+    if command:
+        argv = shlex.split(command) + [full]
+        subprocess.Popen(argv)
+        return os.path.basename(argv[0])
+    if sys.platform.startswith("win"):
+        try:
+            os.startfile(full)             # noqa: S606 - the default handler
+            return "the default editor"
+        except OSError:
+            subprocess.Popen(["notepad.exe", full])
+            return "Notepad"
+    if sys.platform == "darwin":
+        subprocess.Popen(["open", "-t", full])
+        return "the default editor"
+    subprocess.Popen(["xdg-open", full])
+    return "the default editor"
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "GroupTodo/1.0"
     vault = None
     password = None        # None = open; anything else = HTTP Basic required
     realm = "GroupTodo"
+    allow_open = False     # --open-in-editor: may launch an editor on this box
+    open_with = None       # --open-with: the command to launch, if not the default
 
     # ---------- helpers ----------
     def _send(self, code, body=b"", ctype="text/plain; charset=utf-8"):
@@ -160,7 +201,7 @@ class Handler(BaseHTTPRequestHandler):
             # password is set the app is served from this origin anyway, and a
             # wildcard would only widen what a hostile page could attempt.
             self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Access-Control-Allow-Methods", "GET, PUT, DELETE, OPTIONS")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
             self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
@@ -225,7 +266,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.demand_password()
         route = urlparse(self.path).path
         if route == "/api/ping":
-            return self._json(200, {"ok": True, "vault": self.vault.root, "files": len(self.vault.list())})
+            return self._json(200, {"ok": True, "vault": self.vault.root,
+                                    "files": len(self.vault.list()),
+                                    "open_in_editor": bool(self.allow_open)})
         if route == "/api/list":
             return self._json(200, self.vault.list())
         if route == "/api/file":
@@ -249,6 +292,33 @@ class Handler(BaseHTTPRequestHandler):
 
     # The static and API handlers already suppress bodies for HEAD.
     do_HEAD = do_GET
+
+    def do_POST(self):
+        if not self.authorised():
+            return self.demand_password()
+        if urlparse(self.path).path != "/api/open":
+            return self._send(404, "not found")
+        if not self.allow_open:
+            return self._send(403, "This server was not started with --open-in-editor, "
+                                   "so it will not launch anything.")
+        # A plain cross-origin POST needs no preflight, so any page in the
+        # browser could otherwise poke an open server into launching an editor.
+        # Demanding a header that is not on the Allow-Headers list forces a
+        # preflight the browser then refuses -- the app's own fetch, same
+        # origin, is unaffected.
+        if (self.headers.get("X-GroupTodo") or "") != "open":
+            return self._send(403, "This endpoint is for the app itself.")
+        try:
+            full = self.vault.resolve(self._rel())
+        except ValueError as exc:
+            return self._send(400, str(exc))
+        if not os.path.isfile(full):
+            return self._send(404, "There is no such file in the vault yet.")
+        try:
+            used = open_in_editor(full, self.open_with)
+        except Exception as exc:          # no editor, no display, a bad --open-with
+            return self._send(500, "Could not open an editor here: %s" % exc)
+        return self._json(200, {"ok": True, "with": used})
 
     def do_PUT(self):
         if not self.authorised():
@@ -414,6 +484,11 @@ def main():
     ap.add_argument("--password-file", help="file whose contents are the password")
     ap.add_argument("--insecure", action="store_true",
                     help="allow a non-loopback bind with no password (don't)")
+    ap.add_argument("--open-in-editor", action="store_true",
+                    default=bool(os.environ.get("GTD_OPEN_IN_EDITOR")),
+                    help="let the app open a page in an editor on THIS machine")
+    ap.add_argument("--open-with", default=os.environ.get("GTD_OPEN_WITH"),
+                    help="the command --open-in-editor runs (default: the system's own)")
     args = ap.parse_args()
 
     password = read_password(args)
@@ -436,12 +511,20 @@ def main():
     if password and len(password) < 10:
         sys.exit("password too short: use at least 10 characters, it is reachable from a browser")
 
+    if args.open_with and not args.open_in_editor:
+        sys.exit("--open-with does nothing without --open-in-editor")
+
     Handler.vault = Vault(args.vault)
     Handler.password = password
+    Handler.allow_open = args.open_in_editor
+    Handler.open_with = args.open_with
     count = len(Handler.vault.list())
     print(f"vault : {Handler.vault.root}  ({count} markdown files)")
     print(f"open  : http://{args.host}:{args.port}/")
     print("auth  : " + ("password required" if password else "open (localhost only)"))
+    if args.open_in_editor:
+        print("editor: " + (args.open_with or "the system default") +
+              "  -- the app can open pages in it, here on this machine")
     if exposed and password:
         print("note  : HTTP Basic is only private over HTTPS -- terminate TLS in front of this")
     if exposed and not password:

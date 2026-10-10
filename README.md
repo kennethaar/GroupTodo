@@ -701,6 +701,48 @@ Links work best when the app is served from a URL, since then everybody has the
 same address. From a downloaded file the link still works for anyone whose copy
 sits at the same path, and the dialog says so rather than pretending.
 
+### Copy path, when you share a folder and not an address
+
+Two people on a shared folder - Syncthing, a network drive, a NAS, the same
+vault on two phones - have no URL in common, so a link is the wrong thing to
+paste. What they do have is the file. **Copy path**, next to *copy link* on any
+page, copies exactly that:
+
+```
+pages/1/Rollup.md
+```
+
+Paste it into the other person's **search box** and it opens that page instead
+of being searched for as words - the path is an address, and the app reads it as
+one, in whichever space actually has the file. A path pointing at a page nobody
+here has says so and falls back to searching for it.
+
+The same string is what Neovim, Logseq and Obsidian open, because it is just
+the file inside the vault.
+
+### Open file
+
+**Open file**, beside *copy path*, opens the page's markdown in the editor on
+the machine holding the vault - Notepad on a stock Windows box, whatever owns
+`.md` elsewhere. For fixing a line quickly, for seeing what the app is really
+writing, for running a page past a tool this app has never heard of.
+
+A browser cannot launch a program, which is right, so the one process in a
+position to do it is `serve.py` - the button therefore appears only on a server
+space, and the server must have been started for it:
+
+```sh
+python3 serve.py --vault ~/vaults/work --open-in-editor
+python3 serve.py --vault ~/vaults/work --open-in-editor --open-with "code -r"
+```
+
+Off by default, and the flag is the whole consent: with a password and a tunnel
+in front, anybody holding that password can make the server launch an editor on
+your desktop. As such things go it is harmless - one of your own `.md` files, in
+a text editor, nothing else reachable, paths confined to the vault exactly like
+every other endpoint - but it is yours to choose. Without the flag the button
+says what is missing rather than failing silently.
+
 ### Undo
 
 Deleting was one click and permanent. Now a delete offers **Undo** in the toast

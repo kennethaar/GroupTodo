@@ -1817,6 +1817,16 @@ const Backends = {
         if (!r.ok) throw new Error("write failed: " + r.status);
       },
       async remove(path) { await fetch(u("/api/file", path), {method: "DELETE"}); },
+      /* Ask the server to open the markdown in the editor on its own machine.
+         Refused unless serve.py was started with --open-in-editor, and it says
+         so in words meant to be shown to somebody. */
+      async openFile(path) {
+        const r = await fetch(u("/api/open", path),
+          {method: "POST", headers: {"X-GroupTodo": "open"}});
+        const body = await r.text().catch(() => "");
+        if (!r.ok) throw new Error(body || ("The server would not open it (" + r.status + ")."));
+        try { return JSON.parse(body); } catch (_) { return {ok: true}; }
+      },
       async putAsset(path, blob) {
         const r = await fetch(u("/api/asset", path), {
           method: "PUT", headers: {"Content-Type": blob.type || "application/octet-stream"}, body: blob,
@@ -7264,26 +7274,102 @@ async function followDeepLink(link) {
   return true;
 }
 
-/* Clipboard where it is allowed, a selectable box where it is not. */
-async function copyLinkTo(url, what) {
+/* One line somebody has to get out of the app and into a chat window: the
+   clipboard where the browser allows it, and a box you can select where it
+   does not. */
+async function copyOneLine(text, say) {
   try {
-    await navigator.clipboard.writeText(url);
-    notify("Link to " + what + " copied." +
-      (CAP.served ? "" : " It only opens for somebody whose copy of the app sits at the same path."));
+    await navigator.clipboard.writeText(text);
+    notify(say.ok);
     return true;
   } catch (_) {}
-  const box = el("input", {value: url, readonly: "readonly", style: "font-family:var(--mono);font-size:12px"});
+  const box = el("input", {value: text, readonly: "readonly", style: "font-family:var(--mono);font-size:12px"});
   modal({
-    center: true, title: "Link to " + what,
+    center: true, title: say.title,
     body: el("div", {}, el("div", {class: "field"}, box,
-      el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-        CAP.served ? "Paste it anywhere - chat, email, a document."
-          : "This app is open as a file, so the link only works for somebody whose copy " +
-            "sits at the same path. Serve it from a web address and the link works for everybody."))),
+      el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"}, say.hint))),
     foot: [el("button", {class: "btn primary", onclick: closeModal}, "Done")],
   });
   setTimeout(() => { box.focus(); box.select(); }, 40);
   return false;
+}
+
+async function copyLinkTo(url, what) {
+  return copyOneLine(url, {
+    title: "Link to " + what,
+    ok: "Link to " + what + " copied." +
+      (CAP.served ? "" : " It only opens for somebody whose copy of the app sits at the same path."),
+    hint: CAP.served ? "Paste it anywhere - chat, email, a document."
+      : "This app is open as a file, so the link only works for somebody whose copy " +
+        "sits at the same path. Serve it from a web address and the link works for everybody.",
+  });
+}
+
+/* ---------- the path, for people who share the vault and not a URL ----------
+   A link carries the app's own address, which is the right thing to paste when
+   everybody opens the same one. Two people on a shared folder -- Syncthing, a
+   network drive, a NAS, the same vault on two phones -- have no address in
+   common. What they do have is the file: pages/1/Rollup.md names the same page
+   on both machines, and in Neovim, Logseq and Obsidian as well.
+
+   So "copy path" copies that, and a path pasted into the search box opens the
+   page it names rather than being searched for as words. */
+async function copyPathTo(path) {
+  return copyOneLine(path, {
+    title: "Path to " + pageTitle(path),
+    ok: "Path copied. Anyone with the same vault can paste it into their search box.",
+    hint: "This is the file inside the vault. Paste it to somebody who shares the " +
+          "folder and it opens the same page for them - or type it into Neovim, " +
+          "Logseq or Obsidian, which open the very same file.",
+  });
+}
+
+/* A pasted path, tidied of the quotes and bullets a chat window adds, and the
+   space that actually has that file -- there may be more than one open. */
+function pathHit(text) {
+  let p = trim(String(text || ""))
+    .replace(/^[-*>\s]+/, "")
+    .replace(/^[`"'<(]+|[`"')>,.]+$/g, "")
+    .replace(/\\/g, "/")
+    .replace(/^\.?\//, "");
+  if (!/\.(md|org)$/i.test(p) || /\s/.test(p)) return null;
+  /* Exact first, then ignoring case: one of the two vaults may have been
+     through Windows or a Mac on its way here, and a path that differs only in
+     capitals is still the page they meant. */
+  const find = () => {
+    if (V.pages.has(p)) return [{path: p}];
+    const low = p.toLowerCase();
+    for (const key of V.pages.keys()) if (key.toLowerCase() === low) return [{path: key}];
+    return [];
+  };
+  const hits = acrossSpaces(find);
+  return (Array.isArray(hits) ? hits : [hits]).filter(Boolean)[0] || {path: p, missing: true};
+}
+
+/* ---------- the file itself, in the editor on the machine holding it ----------
+   The vault is markdown, and a page is one file, so "open the file" is a thing
+   somebody genuinely wants: to fix something quickly in Notepad, to see what
+   the app is actually writing, to run it past a tool the app has never heard
+   of. A browser cannot launch a program -- but when the vault is served by
+   serve.py, that process can, on its own machine, and only when it was started
+   with --open-in-editor. */
+async function openSourceFile(path) {
+  const b = V.backend;
+  if (!b || !b.openFile) {
+    notify("Opening the file needs the vault served by serve.py - that is the only " +
+           "part of this that sits on a machine with an editor on it.", "warn");
+    return false;
+  }
+  try {
+    const r = await b.openFile(path);
+    notify(r && r.with
+      ? "Opened " + path + " in " + r.with + " on the machine running the server."
+      : "Opened " + path + " on the machine running the server.");
+    return true;
+  } catch (e) {
+    notify(String((e && e.message) || e), "warn");
+    return false;
+  }
 }
 
 /* The same bargain for a block of text: the clipboard where the browser allows
@@ -14821,6 +14907,14 @@ function viewPage() {
       : el("button", {class: "btn sm ghost", onclick: () => openExportPage(path)}, "share"),
     el("button", {class: "btn sm ghost", title: "A link you can paste into chat or email",
       onclick: () => copyLinkTo(deepLink(path), pageTitle(path))}, "copy link"),
+    el("button", {class: "btn sm ghost",
+      title: "The file inside the vault - for somebody who shares the folder rather than the address",
+      onclick: () => copyPathTo(path)}, "copy path"),
+    V.backend && V.backend.openFile
+      ? el("button", {class: "btn sm ghost",
+          title: "Open this file in the editor on the machine running the server",
+          onclick: () => openSourceFile(path)}, "open file")
+      : null,
     el("button", {class: "btn sm ghost", onclick: () => renamePrompt(path)}, "rename"),
     el("button", {class: "btn sm ghost", onclick: () => movePrompt(path)}, "move"),
     isJournalPath(path) ? null
@@ -14884,7 +14978,15 @@ const SEARCH_KEEP = {
 function viewSearch() {
   const c = el("div", {class: "wrap"});
   const run = () => {
-    state.query = trim(state.searchDraft);
+    const draft = trim(state.searchDraft);
+    /* A path is an address, not a phrase: somebody has pasted what another
+       person's "copy path" gave them, and they mean open it. pathHit decides
+       -- anything that is not path-shaped comes back null and is searched. */
+    const hit = pathHit(draft);
+    if (hit && !hit.missing) { openPageIn(hit.space, hit.path); return; }
+    if (hit) notify("No page at " + hit.path + " in any space open here. " +
+                    "Searching for it as words instead.", "warn");
+    state.query = draft;
     render();
   };
   const input = el("input", {
