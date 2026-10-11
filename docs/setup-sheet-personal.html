@@ -6,9 +6,11 @@
 <title>Setting Up GroupTodo For Yourself</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* Same card as the group sheet, same two-minute path, with the group half
-   taken out and the one thing a lone user actually needs - getting an answer
-   out of somebody who will never open this app - moved up to where it belongs.
+/* Same card as the group sheet, same two-minute path. The point of this one is
+   not solitude - it is one person coordinating a large, scattered set of people
+   who will never install anything: two minutes to set up, two minutes to get an
+   answer out of everybody you are waiting on. Then it grows, because the people
+   who ask how you are doing it can be handed a folder.
    Layout: one narrow reading column; anything that is not the setup steps is
    pushed below a rule and marked as such. */
 :root {
@@ -102,27 +104,34 @@ a { color: var(--accent); }
 <div class="wrap">
 
 <header>
-  <span class="eyebrow">Two minutes, on a computer</span>
+  <span class="eyebrow">Two minutes to set up, two minutes to ask everybody</span>
   <h1>Setting up GroupTodo for yourself</h1>
-  <p class="lede">A to-do list that keeps everything as ordinary text files in a folder you
-  already have. Nothing to install, no account, no password, and nobody else involved. Two
-  minutes and you have your own list.</p>
-  <p class="lede" style="font-size:0.95rem">Doing something with other people? There is a
-  companion sheet, <em>Setting up GroupTodo for a group</em>. You do not need it to start.</p>
+  <p class="lede">For the person in the middle. Half of what you are waiting on is owed by
+  people who are never going to install a to-do app - suppliers, the architect, your manager,
+  two sub-contractors, a colleague in another department, your brother-in-law. This is a list
+  that chases them anyway: two minutes to set up, and about two minutes to get an answer out
+  of every one of them.</p>
+  <p class="lede" style="font-size:0.95rem">Nothing to install, no account, no password, and
+  nobody to sign up but you. If a few of you end up working in one folder there is a companion
+  sheet, <em>Setting up GroupTodo for a group</em> - you do not need it to start, and you do
+  not need it to work with other people.</p>
 </header>
 
 <section>
   <span class="eyebrow">What this is</span>
   <div class="why">
-    <p class="pull">Almost everything you write down is yours alone. So that is what this is.</p>
-    <p>You write a task, you do it, you tick it off. No assigning, no inbox, no permissions, no
-    team to set up, and nothing on screen implying a colleague who is not there. A list with one
-    person in it looks like a list for one person.</p>
-    <p><strong>What it does have is the other half of your list: the things other people owe
-    you.</strong> The supplier, the architect, your manager, your brother-in-law. None of them
-    is going to adopt your to-do app, so the app asks them for you, with one file and no
-    sign-up at their end. That is <em>Getting an answer out of somebody</em>, below.</p>
-    <p>And the list outlives the tool. The files open in Notepad.</p>
+    <p class="pull">You are the only one who has to adopt anything.</p>
+    <p>The reason group task apps fail is that they need the group. Everybody gets an account on
+    the same thing, somebody pays for the seats, and the one person whose answer you actually
+    need is the one who never logs in. So you give up and go back to writing the same email by
+    hand every fortnight.</p>
+    <p><strong>GroupTodo has no server and nothing to be a member of.</strong> Your tasks are
+    plain text files in a folder you already have. Put somebody's name on a thing and it leaves
+    your list and lands in <em>Waiting&nbsp;for</em> - the honest place for it, because it is no
+    longer something you do, it is something you are owed. Then the app asks them for you: one
+    self-contained file, no account at their end, and what comes back files itself.</p>
+    <p>None of it depends on them adopting a thing. And the list outlives the tool - the files
+    open in Notepad.</p>
   </div>
 </section>
 
@@ -132,15 +141,16 @@ a { color: var(--accent); }
   <ol class="steps">
     <li><div class="body">
       <span class="what">Who - type your first and last name</span>
-      <span class="note">It is the first thing the app asks. On your own it mostly stamps your
-      own writing, which costs nothing; it is also the name that goes on the check-in notes you
-      send out, so it is worth typing properly.</span>
+      <span class="note">It is the first thing the app asks. It stamps your own writing, which
+      costs nothing; more to the point it is the name that goes on every check-in note you send
+      out, so it is worth typing properly.</span>
     </div></li>
     <li><div class="body">
       <span class="what">Where - <strong>Choose folder</strong>, and pick one</span>
       <span class="note">Say yes when the browser asks to let the page edit it. From here on
       your tasks are files in that folder, saved as you type - put it in OneDrive, Dropbox or
-      wherever your files already live and it is backed up like everything else. Skip it and
+      wherever your files already live and it is backed up like everything else. A private
+      folder is the sensible default; nothing stops you sharing one later. Skip the step and
       everything stays in this browser until you decide.</span>
     </div></li>
     <li><div class="body">
@@ -148,66 +158,27 @@ a { color: var(--accent); }
       <span class="note">The box is already waiting. Press Enter. Use Edge or Chrome.</span>
     </div></li>
   </ol>
-  <p>That is the whole of it. Any folder will do; a private one is the sensible default, and
-  nothing about this stops you sharing a different folder later.</p>
-  <p>Your first list is a short tour: one project whose every step links straight to the part
-  of the app it is about. Press a link and you are there. They are ordinary tasks, so reword
-  them, reorder them or delete the lot.</p>
-</section>
-
-<section>
-  <span class="eyebrow">Learn it by using it</span>
-  <h2>A few habits, and nothing else to read</h2>
-  <p>Nothing is hidden, but nothing shows up before it is about something. Options appear as
-  you start needing them, so the screen stays about as complicated as your list is.</p>
-  <dl class="habits">
-    <div>
-      <dt>Today is where things land</dt>
-      <dd>Your day page takes whatever turns up, in whatever order. Tidying it into projects is
-      something you do later, or never.</dd>
-    </div>
-    <div>
-      <dt>A task is yours by default</dt>
-      <dd>Write it, it is yours. No assigning, no ceremony, no second screen to keep in step.</dd>
-    </div>
-    <div>
-      <dt>Open a task and you see where it sits</dt>
-      <dd>The project it belongs to, the line above it, what is beside it and what is under
-      it, laid out around it. Every box is a way in, so you can follow a plan without going
-      back to a list. Press <kbd>Esc</kbd> and the arrow keys walk it.</dd>
-    </div>
-    <div>
-      <dt>Tick the states you want to see</dt>
-      <dd>To do, Doing and Waiting for are checkboxes, so you can read them together or one at
-      a time. A state you have never used is never mentioned.</dd>
-    </div>
-    <div>
-      <dt>Waiting for is not a to-do list</dt>
-      <dd>Put somebody's name on a thing and it leaves your list and lands in
-      <em>Waiting&nbsp;for</em>, which is the honest place for it: it is no longer something you
-      do, it is something you are owed.</dd>
-    </div>
-    <div>
-      <dt>Nothing nags</dt>
-      <dd>No badges, no streaks, no mail. The app tells you what changed when you open it and
-      is otherwise silent.</dd>
-    </div>
-  </dl>
+  <p>That is the whole of the setup. Your first list is a short tour: one project whose every
+  step links straight to the part of the app it is about. Press a link and you are there. They
+  are ordinary tasks, so reword them, reorder them or delete the lot.</p>
+  <p>Now put other people's names on things as you write them. That is all the preparation the
+  next section needs.</p>
 </section>
 
 <section>
   <span class="eyebrow">The part that is worth the setup</span>
-  <h2>Getting an answer out of somebody</h2>
-  <p class="lede" style="font-size:1rem">Everything you are waiting on is owed by somebody, and
-  most of those people are never going to use this app. <em>Waiting&nbsp;for</em> already knew
-  what they owed you. What it could not do was ask.</p>
+  <h2>Two minutes to hear back from everybody</h2>
+  <p class="lede" style="font-size:1rem">A dozen open things owed by nine people across five
+  organisations, and not one of them uses this app. <em>Waiting&nbsp;for</em> already knew who
+  owed what. What it could not do was ask.</p>
 
   <div class="why">
-    <p class="pull">One file does the round trip, and the other person needs no account, no
-    login and no app.</p>
-    <p>You used to write the same mail by hand every fortnight, paste four task titles into it,
-    and type the answers back in one at a time. Now the app writes it, and what comes back goes
-    in by itself.</p>
+    <p class="pull">One file does the round trip. The other person needs no account, no login,
+    no app and no explanation.</p>
+    <p>You used to write that mail by hand, paste four task titles into it, and type the answers
+    back in one at a time - per person, per fortnight. Now the app writes it, and what comes
+    back goes in by itself. Per person it is about twenty seconds, which is why the whole round
+    takes a couple of minutes.</p>
   </div>
 
   <ol class="steps">
@@ -215,7 +186,10 @@ a { color: var(--accent); }
       <span class="what">Ask - <strong>People</strong>, pick the person, <strong>Ask … for an
       update</strong></span>
       <span class="note">Everything open with their name on it is already listed and already
-      ticked. Untick anything you would rather not raise, then <strong>Make the sheet</strong>.</span>
+      ticked. Untick anything you would rather not raise, then <strong>Make the sheet</strong>.
+      <strong>People</strong> is the whole list of who owes you what, so you work down it:
+      <em>&ldquo;3 things owing &middot; asked 11d ago&rdquo;</em> tells you who is worth asking
+      again and who you only chased on Tuesday.</span>
     </div></li>
     <li><div class="body">
       <span class="what">Send - one file, and a covering note in your own voice</span>
@@ -228,10 +202,11 @@ a { color: var(--accent); }
     </div></li>
     <li><div class="body">
       <span class="what">They tick - one tap per thing they finished</span>
-      <span class="note">They double-click it and it opens in whatever browser they have. A
-      note where a note is worth typing, then one button. Their ticks are kept in their own
-      browser, so closing it halfway through costs them nothing - and the note says outright
-      that they can ignore the attachment and just reply in words.</span>
+      <span class="note">They double-click the attachment and it opens in whatever browser they
+      have. A note where a note is worth typing, then one button. Nothing to install, nothing to
+      join, nothing to remember next time. Their ticks are kept in their own browser, so closing
+      it halfway through costs them nothing - and the note says outright that they can ignore
+      the attachment and just reply in words.</span>
     </div></li>
     <li><div class="body">
       <span class="what">Import - <strong>Paste a reply</strong>, or <strong>Import a
@@ -245,15 +220,108 @@ a { color: var(--accent); }
 
   <div class="flag">
     <span class="title">The sheet is not a copy of your list.</span>
-    <p>It carries the lines you chose and nothing else: no projects, no other tasks, no other
-    people, no files. Somebody forwarding it leaks four sentences, not your vault.</p>
+    <p>It carries the lines you chose for that one person and nothing else: no projects, no
+    other tasks, no other people, no files. The architect forwarding it to his office leaks four
+    sentences, not your vault - which is the reason you can send one to anybody without thinking
+    about it first.</p>
   </div>
 
-  <p>Sending one stamps the task with who asked and when, so <strong>People</strong> can tell
-  you <em>"3 things owing &middot; asked 11d ago"</em> rather than making you remember, and the
-  stamp is dropped the moment they answer. There is <strong>a mockup of the whole exchange</strong>
-  in <span class="path">docs/check-in-sheet-mockup.html</span> - open it in a browser and tap
-  the rows.</p>
+  <p>Sending one stamps the task with who asked and when, and the stamp is dropped the moment
+  they answer, so the app keeps the score instead of you. There is <strong>a mockup of the whole
+  exchange</strong> in <span class="path">docs/check-in-sheet-mockup.html</span> - open it in a
+  browser and tap the rows.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Where it goes next</span>
+  <h2>A system that grows with you</h2>
+  <p class="lede" style="font-size:1rem">Sooner or later somebody on the receiving end asks how
+  you are doing this. That is the moment the thing grows, and it grows by one folder - not by a
+  rollout, a licence or a decision from anybody above you.</p>
+  <dl class="habits">
+    <div>
+      <dt>Hand them a folder, not an invitation to a product</dt>
+      <dd>Share a folder with them the way you already share folders - OneDrive, Dropbox, the
+      files behind a Teams channel - and put <span class="path">grouptodo.html</span> in it.
+      That is the entire membership mechanism. <strong>Spaces &rarr; Invite somebody</strong>
+      makes a <span class="path">join-….md</span> that arrives with the list already set up;
+      send it along with the folder and their setup is the same two minutes yours was.</dd>
+    </div>
+    <div>
+      <dt>One folder per circle</dt>
+      <dd>Each folder is a <strong>space</strong>: Work, the tender, the house, the board you
+      sit on. Switched between in one click, each with its own name and colour. Two spaces can
+      never share a folder and one can never sit inside another, so the people you let into the
+      tender see the tender and nothing else.</dd>
+    </div>
+    <div>
+      <dt>Once they are in, the asking stops being needed</dt>
+      <dd>Hand a task to somebody in the folder and it becomes <em>their todo</em> while staying
+      <em>your waiting-for</em> - one line read from two ends, not a copy either of you keeps up
+      to date. When they tick it, it is done for both of you. No check-in sheet required for
+      that person any more.</dd>
+    </div>
+    <div>
+      <dt>Nobody is upgraded against their will</dt>
+      <dd>The people who never join carry on exactly as they were: an email with an attachment,
+      one tap, done. A space with three people in it and nine outside it is the normal shape of
+      this, not a half-finished rollout.</dd>
+    </div>
+    <div>
+      <dt>Nothing to undo if it stalls</dt>
+      <dd>No seats, no licence, nobody to cancel with. If a circle goes quiet you stop opening
+      that folder, and the folder is still a readable record of what happened.</dd>
+    </div>
+  </dl>
+  <div class="flag">
+    <span class="title">Everything in a shared folder is shared. That is the only rule.</span>
+    <p>There are no per-task permissions, because the folder is the permission. If something in
+    a space you have shared should not be seen, open the page and use <strong>make
+    private</strong> - it asks which other folder to move it to, because moving it is the only
+    thing that actually makes it private.</p>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Learn it by using it</span>
+  <h2>A few habits, and nothing else to read</h2>
+  <p>Nothing is hidden, but nothing shows up before it is about something. Options appear as
+  you start needing them, so the screen stays about as complicated as your list is - and the
+  group half of it stays out of sight until there is a group.</p>
+  <dl class="habits">
+    <div>
+      <dt>Today is where things land</dt>
+      <dd>Your day page takes whatever turns up, in whatever order. Tidying it into projects is
+      something you do later, or never.</dd>
+    </div>
+    <div>
+      <dt>A task is yours by default</dt>
+      <dd>Write it, it is yours. Put a name on it and it is theirs. No assigning screen, no
+      ceremony, no second list to keep in step.</dd>
+    </div>
+    <div>
+      <dt>Open a task and you see where it sits</dt>
+      <dd>The project it belongs to, the line above it, what is beside it and what is under
+      it, laid out around it. Every box is a way in, so you can follow a plan without going
+      back to a list. Press <kbd>Esc</kbd> and the arrow keys walk it.</dd>
+    </div>
+    <div>
+      <dt>Talk about it where it is</dt>
+      <dd>Every task has its own thread, so what somebody told you about a thing sits on the
+      thing - including the notes that come back on a check-in sheet - instead of in a chat
+      window where neither of you finds it again in March.</dd>
+    </div>
+    <div>
+      <dt>Tick the states you want to see</dt>
+      <dd>To do, Doing and Waiting for are checkboxes, so you can read them together or one at
+      a time. A state you have never used is never mentioned.</dd>
+    </div>
+    <div>
+      <dt>Nothing nags</dt>
+      <dd>No badges, no streaks, no mail going out behind your back. The app tells you what
+      changed when you open it and is otherwise silent.</dd>
+    </div>
+  </dl>
 </section>
 
 <section>
@@ -294,8 +362,9 @@ a { color: var(--accent); }
     <summary>Everything in sync, no file passing <span class="sub">one always-on machine</span></summary>
     <div class="inner">
       <p>If you have a machine that is always on - a spare PC, a Pi, a NAS - it can serve the
-      list to your own computer and phone, live both ways, with no vault file to carry. It needs
-      a password and ten minutes of setup. <code>README.md</code> has the commands.</p>
+      list to your own computer and phone, and to anybody you have shared a space with, live
+      both ways, with no vault file to carry. It needs a password and ten minutes of setup.
+      <code>README.md</code> has the commands.</p>
     </div>
   </details>
 
@@ -308,6 +377,17 @@ a { color: var(--accent); }
       month or quarter, and a map of how everything links together.</p>
       <p>None of them appears before your files have something for it to show. An empty
       calendar is not a feature, so nothing with no dates in it has a calendar.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What waits on what <span class="sub">when one person's answer holds up three projects</span></summary>
+    <div class="inner">
+      <p>On a project page, <strong>nothing comes first</strong> opens a list of your other
+      projects: tick the ones that have to finish first. The project then says <em>blocked by
+      Site survey</em> while anything in it is open, the timeline draws the chain, and moving
+      one project offers to push what is downstream along. The order lives in the file, so it
+      travels with the folder.</p>
     </div>
   </details>
 
@@ -326,24 +406,19 @@ a { color: var(--accent); }
   </details>
 
   <details>
-    <summary>Separate parts of your life <span class="sub">work, home, volunteering</span></summary>
-    <div class="inner">
-      <p>Each one is its own folder, called a <strong>space</strong>. Work, Home, Volunteering:
-      separate lists, switched between in one click, each with its own name and colour. Two
-      spaces can never share a folder and one can never sit inside another, so if you ever do
-      share one of them, what you shared is exactly what you meant to share.</p>
-    </div>
-  </details>
-
-  <details>
-    <summary>If it is not behaving <span class="sub">the three things that actually go wrong</span></summary>
+    <summary>If it is not behaving <span class="sub">the things that actually go wrong</span></summary>
     <div class="inner">
       <dl class="habits">
         <div>
           <dt>I sent a check-in and heard nothing</dt>
-          <dd>Nothing in the app chases it, by design. <strong>People</strong> shows
-          <em>asked 11d ago</em> so you can see who has gone quiet, and sending another sheet
-          is the same three clicks.</dd>
+          <dd>Nothing in the app chases it, by design - it sends no mail of its own.
+          <strong>People</strong> shows <em>asked 11d ago</em> so you can see who has gone
+          quiet, and sending another sheet is the same three clicks.</dd>
+        </div>
+        <div>
+          <dt>They replied in words and ignored the attachment</dt>
+          <dd>Expected, and handled: <strong>Paste a reply</strong> takes the body of the email
+          and shows you what it proposes to change before anything happens.</dd>
         </div>
         <div>
           <dt>A warning that nothing can be saved</dt>
@@ -370,8 +445,8 @@ a { color: var(--accent); }
   <span>Your tasks stay in your folder. The app cannot send them anywhere - it is blocked from
   reaching the internet at all, which is also why there is nothing to log in to. A check-in
   sheet is a file you attach yourself, to a mail you send yourself.</span>
-  <span>Companion sheet: <em>Setting up GroupTodo for a group</em>, for when a few of you are
-  doing one thing together.</span>
+  <span>Companion sheet: <em>Setting up GroupTodo for a group</em>, for the day several of you
+  are working in one folder.</span>
 </footer>
 
 </div>
