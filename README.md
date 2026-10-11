@@ -39,8 +39,9 @@ type a note where a note is worth typing, and send it back. You paste their
 reply in and your tasks close, with their words filed as comments in their name.
 Nothing to install at their end, no account, no login, no link to click.
 → **Waiting for an update from somebody who does not use this**, and
-`docs/setup-sheet-personal.html` is the two-minute sheet for this way of
-working.
+`docs/setup-sheet-personal.html` is the sheet for this way of working: one
+person running several groups of people, most of whom will never adopt
+anything.
 
 **2. An ad-hoc group around one project.** You and four other people are doing a
 thing together. Make a folder, share it the way you already share folders, put
@@ -102,9 +103,10 @@ want somebody else in, **Unlock next level collaboration** is the chapter for
 it; the short version is **Spaces → Invite somebody**, or send them
 `grouptodo.html`, the name of the shared folder, and
 `docs/setup-sheet-group.html` - the same three steps, written for somebody who
-does not want to know how any of it works. There is a lone-use sheet too,
-`docs/setup-sheet-personal.html`, for somebody who is never going to share
-anything.
+does not want to know how any of it works. There is a sheet for the other
+shape too, `docs/setup-sheet-personal.html`: one person administering several
+groups, where most of the people stay outside the folder and get check-in
+sheets instead.
 
 ---
 
@@ -1122,8 +1124,9 @@ icon.svg               that icon
 index.html             two lines, so a hosted copy answers at https://host/
 serve.py               optional sync server (a laptop, a Pi, a NAS, Termux)
 docs/setup-sheet-personal.html
-                       the two-minute sheet for using it on your own, with
-                       check-in sheets as the part worth the setup
+                       for the person in the middle: one capture list, several
+                       groups, and check-in sheets for everybody who will
+                       never adopt it
 docs/setup-sheet-group.html
                        the same two minutes for a group: the shared folder,
                        what everybody sees, and what waits on what
