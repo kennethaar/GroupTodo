@@ -1,0 +1,2061 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GroupTodo Lean UI</title>
+<style>
+:root{
+  --bg:#f6f6f3; --panel:#ffffff; --ink:#1d1d1b; --muted:#6b6b66; --line:#e4e3de;
+  --accent:#2f6fde; --accent-soft:#e7effc; --late:#c4402f; --late-soft:#fbeae7;
+  --ok:#2e8a57; --ok-soft:#e3f3ea; --wait:#a8710f; --wait-soft:#fbf1dc; --shadow:0 8px 30px rgba(0,0,0,.08);
+  --note:#fff8d6; --note-ink:#5c4a00;
+  --k-project:#2f6fde; --k-person:#b8508a; --k-org:#6b5bd1; --k-context:#2e8a57;
+  --k-area:#a8710f; --k-note:#7a7a74; --k-list:#1f8a8a; --k-journal:#4b6584; --k-root:#1d1d1b;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#161615; --panel:#1f1f1d; --ink:#ecebe6; --muted:#9a9993; --line:#33332f;
+    --accent:#6c9cf0; --accent-soft:#1f2b40; --late:#ec7a68; --late-soft:#3a201c;
+    --ok:#5fc08a; --ok-soft:#1b3326; --wait:#e0aa45; --wait-soft:#3a2f18; --shadow:0 8px 30px rgba(0,0,0,.5);
+    --note:#2f2a12; --note-ink:#ecdc95;
+    --k-project:#6c9cf0; --k-person:#e07ab5; --k-org:#9d90f0; --k-context:#5fc08a;
+    --k-area:#e0aa45; --k-note:#a5a59e; --k-list:#4fc4c4; --k-journal:#8aa4c4; --k-root:#ecebe6;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161615; --panel:#1f1f1d; --ink:#ecebe6; --muted:#9a9993; --line:#33332f;
+  --accent:#6c9cf0; --accent-soft:#1f2b40; --late:#ec7a68; --late-soft:#3a201c;
+  --ok:#5fc08a; --ok-soft:#1b3326; --wait:#e0aa45; --wait-soft:#3a2f18; --shadow:0 8px 30px rgba(0,0,0,.5);
+  --note:#2f2a12; --note-ink:#ecdc95;
+  --k-project:#6c9cf0; --k-person:#e07ab5; --k-org:#9d90f0; --k-context:#5fc08a;
+  --k-area:#e0aa45; --k-note:#a5a59e; --k-list:#4fc4c4; --k-journal:#8aa4c4; --k-root:#ecebe6;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.35;cursor:default}
+
+.app{display:grid;grid-template-columns:220px 1fr;height:100vh}
+.app.noside{grid-template-columns:1fr}
+.app.noside .side{display:none}
+/* Sidebar */
+.side{border-right:1px solid var(--line);padding:14px 10px;display:flex;flex-direction:column;gap:2px;background:var(--panel);overflow:auto}
+.sidehead{display:flex;align-items:flex-start;gap:4px;margin-bottom:8px}
+.brand{display:flex;align-items:center;gap:8px;padding:6px 8px;font-weight:700;border:0;background:none;border-radius:8px;text-align:left;flex:1;min-width:0}
+.brand:hover{background:var(--bg)}
+.brand[aria-current="true"]{background:var(--accent-soft)}
+.hideside{border:0;background:none;color:var(--muted);border-radius:6px;width:28px;height:28px;margin-top:6px;flex:none}
+.hideside:hover{background:var(--bg);color:var(--ink)}
+.brand .logo{width:22px;height:22px;border-radius:6px;background:var(--ink);color:var(--panel);display:grid;place-items:center;font-size:12px}
+.brand small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;border:0;background:none;text-align:left;width:100%;color:var(--ink)}
+.nav-item:hover{background:var(--bg)}
+.nav-item[aria-current="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.nav-item .ic{width:18px;text-align:center;opacity:.8}
+.nav-item .n{margin-left:auto;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.nav-item .n.hot{color:#fff;background:var(--late);border-radius:10px;padding:0 6px}
+.sep{height:1px;background:var(--line);margin:8px 6px}
+.side .grow{flex:1;min-height:12px}
+.sync{font-size:12px;color:var(--muted);padding:8px 10px;display:flex;gap:6px;align-items:center}
+.sync i{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block}
+
+/* Main */
+.main{display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.top{display:flex;gap:8px;align-items:center;padding:12px 22px;border-bottom:1px solid var(--line);background:var(--panel);position:relative}
+.burger{display:none}
+.histbtns{display:flex;gap:4px}
+.capture{flex:1;display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:0 12px;margin-left:4px;min-width:0}
+.capture:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.capture input{flex:1;min-width:0;border:0;background:none;padding:9px 0;outline:none}
+kbd{font:12px ui-monospace,monospace;border:1px solid var(--line);border-radius:4px;padding:0 5px;color:var(--muted)}
+.iconbtn{border:1px solid var(--line);background:var(--panel);border-radius:8px;width:36px;height:36px;flex:none}
+.help-btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:0 12px;height:36px;font-size:13px;font-weight:600;flex:none}
+.app.noside .burger{display:block}
+
+/* Spaces, top right */
+.spacesbtn{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--panel);border-radius:8px;height:36px;padding:0 10px 0 14px;font-size:13px;flex:none}
+.spacesbtn .sqs{display:flex}
+.sq{width:20px;height:20px;border-radius:5px;color:#fff;font-size:10px;display:grid;place-items:center;font-weight:700;margin-left:-5px;border:2px solid var(--panel)}
+.spop{position:absolute;right:22px;top:58px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:8px;width:320px;max-width:calc(100vw - 32px);z-index:12;display:none}
+.spop.on{display:block}
+.spop h4{margin:4px 8px 6px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.sprow{display:flex;gap:10px;align-items:center;padding:8px;border-radius:8px;cursor:pointer}
+.sprow:hover{background:var(--bg)}
+.sprow .sq{margin:0;width:26px;height:26px;font-size:12px;border:0}
+.sprow small{display:block;color:var(--muted);font-size:12px}
+.sprow input{margin-left:auto;width:18px;height:18px;accent-color:var(--accent)}
+.spop .foot{font-size:12px;color:var(--muted);padding:6px 8px 2px;border-top:1px solid var(--line);margin-top:4px}
+/* Which space a thing lives in */
+.sp{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:1px 8px 1px 6px;border-radius:10px;background:color-mix(in srgb,var(--sc) 15%,transparent);color:var(--sc);font-weight:600;white-space:nowrap}
+.sp::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--sc)}
+.sp{flex:none}
+.sp.sp-lg{font-size:13px;padding:3px 10px 3px 8px}
+
+.content{flex:1;overflow:auto;padding:22px 22px 80px}
+.wrap{max-width:780px;margin:0 auto}
+.wrap.wide{max-width:1180px}
+.head{display:flex;align-items:baseline;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.head h1{font-size:22px;margin:0}
+.head .sub{color:var(--muted);font-size:13px}
+.seg{margin-left:auto;display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel);align-self:center}
+.seg button{border:0;background:none;padding:5px 12px;font-size:13px;color:var(--muted);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.head select{margin-left:auto;align-self:center;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:4px 8px;font-size:13px}
+
+/* Filter row: one quiet line under the heading */
+.chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 14px}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:2px 11px;font-size:13px;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--panel)}
+.chip small{opacity:.7;margin-left:3px;font-variant-numeric:tabular-nums}
+.chips .gap{width:10px}
+.chips select{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:2px 8px;font-size:13px;color:var(--muted)}
+.chips .right{margin-left:auto}
+.chips .say{font-size:13px;color:var(--muted)}
+.textbtn{border:0;background:none;color:var(--accent);font-size:13px;padding:2px 4px}
+
+.news{display:flex;gap:10px;align-items:flex-start;background:var(--accent-soft);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:14px}
+.news b{color:var(--accent)}
+.news ul{margin:4px 0 0;padding-left:18px}
+.news button{margin-left:auto;border:0;background:none;color:var(--muted)}
+.news a{color:inherit}
+
+.group{margin:18px 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.group.late{color:var(--late)}
+.group .textbtn{text-transform:none;letter-spacing:0;font-weight:600;margin-left:auto}
+.group .plain,.group .sp{text-transform:none;letter-spacing:0}
+.group .plain{font-weight:400}
+.list{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line);cursor:pointer}
+.row:first-child{border-top:0}
+.row:hover{background:var(--bg)}
+.row.done .t{text-decoration:line-through;color:var(--muted)}
+.chk{width:20px;height:20px;border-radius:50%;border:2px solid var(--muted);background:none;flex:none;display:grid;place-items:center;padding:0}
+.row.done .chk{background:var(--ok);border-color:var(--ok);color:#fff}
+.row.done .chk::after{content:"✓";font-size:12px}
+.t{flex:1;min-width:0}
+.meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:2px;font-size:12px;color:var(--muted)}
+.tag{padding:1px 7px;border-radius:10px;background:var(--bg);border:1px solid var(--line)}
+.tag.late{color:var(--late);background:var(--late-soft);border-color:transparent}
+.tag.wait{color:var(--wait);background:var(--wait-soft);border-color:transparent}
+.tag.doing{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+.tag.ok{color:var(--ok);background:var(--ok-soft);border-color:transparent}
+.av{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:600;flex:none;background-size:cover;background-position:center}
+.avs{display:flex}
+.avs .av{margin-left:-6px;border:2px solid var(--panel)}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+.right-num{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.wl{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-soft);cursor:pointer}
+.wl.missing{color:var(--muted);border-bottom:1px dashed var(--muted)}
+
+/* Today and every page: an outline you edit in place */
+.journal{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 0}
+.jl{display:flex;gap:8px;align-items:flex-start;padding:5px 14px 5px calc(26px + var(--i,0) * 26px);border-radius:6px;position:relative}
+.jl .fold{width:16px;flex:none;border:0;background:none;color:var(--muted);padding:0;font-size:11px;line-height:1.9;margin-left:-20px;opacity:0}
+.jl:hover .fold,.jl.folded .fold{opacity:1}
+.jl .bul{width:18px;flex:none;text-align:center;color:var(--muted);line-height:1.45;border:0;background:none;padding:0;font-size:15px}
+.jl button.bul{cursor:zoom-in}
+.jl button.bul:hover{color:var(--accent)}
+.jl.folded .bul{color:var(--ink)}
+.jl .t{cursor:text}
+.jl .ph{color:var(--muted)}
+.jl.editing{background:var(--bg);box-shadow:inset 3px 0 var(--accent);z-index:6}
+.ein{width:100%;border:0;background:none;outline:none;padding:0;font:inherit;color:inherit}
+.ein::placeholder{color:var(--muted)}
+.jnew{cursor:text}
+.crumbz{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:0 0 8px}
+.crumbz b{color:var(--ink)}
+/* Focus: zoomed into a section or a line, the trail is all that stays above it */
+.crumbz.focus{font-size:14px;margin:2px 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.crumbz.focus b{font-size:17px}
+.sectog{border:0;background:none;padding:0;font:inherit;color:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer}
+.secbul{border:0;background:none;padding:0 2px;font-size:15px;line-height:1;color:var(--muted);cursor:zoom-in}
+.secbul:hover{color:var(--accent)}
+/* The line menu opens right under the line you are editing, lined up with its text */
+.fly{position:absolute;left:calc(52px + var(--i,0) * 26px);top:calc(100% - 2px);width:min(340px,calc(100% - 60px - var(--i,0) * 26px));min-width:240px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:6px;z-index:20;transform-origin:top left;animation:flyin .14s ease-out}
+.jl.task .fly{left:calc(80px + var(--i,0) * 26px)}
+@keyframes flyin{from{opacity:0;transform:translateY(-6px) scale(.98)}}
+.frow{border-radius:8px}
+.fhead{display:flex;width:100%;align-items:center;gap:8px;border:0;background:none;padding:5px 8px;border-radius:8px;text-align:left;font-size:13px}
+.fhead:hover,.frow.open .fhead{background:var(--bg)}
+.frow.lit .fhead{background:var(--accent-soft);color:var(--accent);animation:lit .5s ease-out}
+.frow.lit .fhead kbd{border-color:var(--accent);color:var(--accent)}
+@keyframes lit{from{box-shadow:0 0 0 0 var(--accent)}to{box-shadow:0 0 0 7px transparent}}
+/* Today and your own page on a wide screen: one column per space, side by side */
+.jgrid{display:grid;gap:0 20px}
+.jcol{min-width:0}
+@media (min-width:1100px){
+  .wrap.jwide{max-width:1600px}
+  .jwide .jgrid{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+}
+/* Your page */
+.mehead{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.mehead .av{width:72px;height:72px;font-size:24px}
+.mehead h1{margin:0;font-size:26px}
+.mehead .sub{color:var(--muted);font-size:13px}
+.mehead .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.mehead .acts button,.mehead .acts label{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:5px 10px;font-size:13px;cursor:pointer}
+.mehead .acts input{display:none}
+.colhead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:18px 0 2px}
+.colhead .path{font:12px ui-monospace,monospace;color:var(--muted)}
+.jzoom{border:0;background:none;padding:0;font:inherit;color:inherit;letter-spacing:inherit;text-transform:inherit;cursor:zoom-in;display:inline-flex;gap:8px;align-items:center}
+.jzoom:hover{color:var(--accent)}
+.fic{width:18px;text-align:center;flex:none}
+.fl{font-weight:600;flex:none}
+.fv{color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.fhead kbd{flex:none}
+.fopts{display:flex;flex-wrap:wrap;gap:5px;padding:4px 8px 8px 34px}
+.fopts .chip{font-size:12px;padding:2px 9px}
+.fopts .chip.hi{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.fhint{font-size:11px;color:var(--muted);padding:4px 8px}
+.jl.task{cursor:pointer}
+.jl.task:hover{background:var(--bg)}
+.jl.done .t{text-decoration:line-through;color:var(--muted)}
+.jl.done .chk{background:var(--ok);border-color:var(--ok);color:#fff}
+.jl.done .chk::after{content:"✓";font-size:12px}
+.jl .chk{margin-top:1px}
+.jadd{display:flex;gap:10px;padding:6px 14px;border-top:1px solid var(--line);margin-top:4px}
+.jadd .bul{width:20px;text-align:center;color:var(--muted);padding-top:5px}
+.jadd input{flex:1;border:0;background:none;outline:none;padding:5px 0}
+.readonly{padding:8px 14px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);margin-top:4px}
+
+/* Boards */
+.boardscroll{overflow-x:auto;padding-bottom:6px}
+.board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(172px,1fr);gap:10px}
+.col{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;min-height:220px;transition:background .12s}
+.col h3{margin:2px 4px 10px;font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:baseline}
+.col h3 .dir{font:11px ui-monospace,monospace;opacity:.7}
+.col h3 .cnt{margin-left:auto}
+.col h3 .textbtn{font-size:12px;margin-left:auto}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:9px 10px;margin-bottom:8px;font-size:14px;cursor:pointer;user-select:none}
+.card:hover{border-color:var(--accent)}
+.colhint{font-size:12px;color:var(--muted);text-align:center;padding:10px 4px}
+.board .col.pin{position:sticky;left:0;z-index:2;box-shadow:8px 0 14px -10px rgba(0,0,0,.45)}
+/* Things you drag onto other things: people and organisations */
+.tray{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:12px;position:sticky;top:-22px;z-index:3}
+.tray .say{font-size:13px;color:var(--muted);margin-right:4px}
+.pchip{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:16px;padding:3px 11px 3px 3px;font-size:13px;cursor:grab;touch-action:none;user-select:none}
+.pchip:hover{border-color:var(--accent)}
+.pchip .av{width:22px;height:22px;font-size:10px}
+.pchip .odot{width:22px;height:22px;border-radius:50%;background:var(--k-org);color:#fff;display:grid;place-items:center;font-size:10px;font-weight:700}
+.stakes{display:flex;gap:4px;flex-wrap:wrap;margin:0 4px 10px}
+.stake{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:12px;padding:1px 4px 1px 2px;font-size:12px;background:var(--panel)}
+.stake .av{width:18px;height:18px;font-size:9px}
+.stake button{border:0;background:none;color:var(--muted);padding:0 2px;font-size:13px;line-height:1}
+.pcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.pcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;min-height:110px;transition:background .12s}
+.pcard h4{margin:0 0 4px;font-size:15px;cursor:pointer}
+.pcard .stakes{margin:8px 0 0}
+
+/* Drag and drop */
+.ghost{position:fixed;pointer-events:none;z-index:30;box-shadow:var(--shadow);margin:0;opacity:.96}
+/* The solitaire card shrinks to a tenth of its size under the pointer, so the options stay readable */
+.ghost.mini{opacity:.45;transition:opacity .1s}
+.dragging{opacity:.3}
+body.is-dragging{user-select:none;cursor:grabbing}
+[data-drop].over{outline:2px dashed var(--accent);outline-offset:-2px;background:var(--accent-soft)}
+
+/* Projects */
+.bar{width:110px;height:6px;border-radius:3px;background:var(--line);overflow:hidden;flex:none}
+.bar i{display:block;height:100%;background:var(--ok)}
+.blocked{color:var(--late)}
+
+/* Timeline */
+.tl{padding:14px}
+.tl-axis{display:flex;margin-left:168px;font-size:11px;color:var(--muted);justify-content:space-between;margin-bottom:6px}
+.tl-row{display:flex;align-items:center;gap:6px;margin:6px 0;font-size:13px}
+.tl-row .tog{border:0;background:none;width:20px;padding:0;color:var(--muted);flex:none;font-size:12px}
+.tl-row .nm{width:140px;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.tl-row.sub{margin:3px 0}
+.tl-row.sub .nm{font-size:12px;color:var(--muted);padding-left:12px}
+.tl-track{flex:1;position:relative;height:18px;background:var(--bg);border-radius:4px}
+.tl-row.sub .tl-track{height:12px;background:none;border-bottom:1px dashed var(--line);border-radius:0}
+.tl-now{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--accent)}
+.tl-bar{position:absolute;top:3px;bottom:3px;border-radius:4px;background:var(--ok);cursor:grab}
+.tl-row.sub .tl-bar{top:2px;bottom:2px;opacity:.85}
+.tl-bar.late{background:var(--late)}
+.tl-bar.wait{background:var(--wait)}
+.tl-bar.doing{background:var(--accent)}
+.tl-bar.blocked{background:repeating-linear-gradient(45deg,var(--late) 0 4px,transparent 4px 8px);border:1px solid var(--late)}
+.nodate{position:absolute;left:4px;top:-2px;font-size:11px;color:var(--muted)}
+
+/* Report */
+.stat{display:flex;gap:22px;margin:4px 0 6px;flex-wrap:wrap}
+.stat div{font-size:13px;color:var(--muted)}
+.stat b{display:block;font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums}
+.ricon{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:none;background:var(--bg);color:var(--muted)}
+.ricon.done{background:var(--ok);color:#fff}
+.ricon.status{background:var(--accent-soft);color:var(--accent)}
+
+/* Cards (people, contexts) */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.cardbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;cursor:pointer;text-align:left}
+.cardbox:hover{border-color:var(--accent)}
+.cardbox .av{width:36px;height:36px;font-size:13px}
+.cardbox h4{margin:8px 0 2px;font-size:15px}
+.cardbox p{margin:0;color:var(--muted);font-size:13px}
+.cardbox .act{margin-top:10px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:5px 10px;font-size:13px}
+.big{font-size:24px;line-height:1;display:inline-grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--bg)}
+.big.fallback{font-size:18px;color:var(--muted);font-weight:700}
+
+/* Pages */
+.kdot{width:10px;height:10px;border-radius:50%;flex:none;display:inline-block}
+.kdot.hollow{background:none!important;border:2px solid var(--muted)}
+.svgbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.svgbox svg{display:block;width:100%;height:auto;max-height:72vh}
+.svgbox text{font:12px system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink)}
+.svgbox .node{cursor:pointer}
+.svgbox .node:hover circle,.svgbox .node:hover rect{stroke:var(--accent);stroke-width:2}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:10px}
+.legend span{display:flex;gap:5px;align-items:center}
+
+/* Full page view */
+.crumbs{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-bottom:6px}
+.crumbs .path{font:12px ui-monospace,monospace}
+.pagehead{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px}
+.pagehead h1{margin:0;font-size:26px;flex:1;min-width:200px}
+.pagehead .acts{display:flex;gap:6px}
+.pagehead .acts button{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:5px 10px;font-size:13px}
+.props{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:8px}
+.body{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 0}
+.refs{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.ref{padding:10px 14px;border-top:1px solid var(--line)}
+.ref:first-child{border-top:0}
+.ref .from{display:flex;gap:8px;align-items:center;font-size:13px;font-weight:600;cursor:pointer}
+.ref ul{margin:4px 0 0;padding-left:28px;font-size:14px}
+.ref .via{font:12px ui-monospace,monospace;color:var(--muted);margin:4px 0 0 18px}
+
+/* Solitaire */
+.sol{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:900px;margin:0 auto}
+.slot{border:2px dashed var(--line);border-radius:12px;padding:12px;min-height:118px;background:var(--panel);display:flex;flex-direction:column;gap:7px;transition:background .12s;cursor:pointer}
+.slot:focus{outline:2px solid var(--accent);outline-offset:2px}
+.slot .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.slot .lbl .sp{text-transform:none;letter-spacing:0;font-size:11px}
+.slot .newopt{display:flex;gap:4px}
+.slot .newopt input{flex:none;width:150px;border:1px dashed var(--line);border-radius:14px;padding:1px 9px;font-size:12px;background:var(--panel)}
+.slot .val{font-size:14px}
+.slot.filled{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+.slot.filled .lbl::after{content:"✓";color:var(--ok)}
+.slot.focus{border-style:solid;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.slot .opts{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.slot .opts .chip{font-size:12px;padding:2px 9px;background:var(--panel)}
+.slot .opts .chip[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.slot .opts .chip.now{border-color:var(--accent);color:var(--accent)}
+.slot form{display:flex;gap:6px}
+.slot form input{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:5px 8px;background:var(--panel);font-size:13px}
+.slot .mini{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:3px 10px;font-size:12px}
+.datepick{position:relative;display:inline-flex}
+.datepick button{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:1px 9px;font-size:13px}
+.datepick input{position:absolute;inset:0;opacity:0;pointer-events:none;width:100%}
+.solcard{background:var(--panel);border:2px solid var(--ink);border-radius:14px;padding:14px;box-shadow:var(--shadow);cursor:grab;touch-action:none;user-select:none;display:flex;flex-direction:column;gap:6px;min-height:118px}
+.solcard h3{margin:0;font-size:17px}
+.solcard .meta{margin:0}
+.solcard .prog{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:auto}
+.solcard .prog i{display:block;height:100%;background:var(--ok);transition:width .2s}
+.solcard.won{border-color:var(--ok);cursor:default}
+.solcard .primary{border:0;background:var(--ok);color:#fff;border-radius:8px;padding:6px 12px;font-weight:600}
+.solbar{display:flex;gap:10px;align-items:center;max-width:900px;margin:0 auto 14px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.solbar .textbtn{margin-left:auto}
+
+/* Drawer */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:.2s;z-index:6}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,100%);background:var(--panel);box-shadow:var(--shadow);transform:translateX(105%);transition:.22s;padding:20px;overflow:auto;display:flex;flex-direction:column;gap:14px;z-index:7}
+.drawer.on{transform:none}
+.drawer h2{margin:0;font-size:19px;padding-right:30px}
+.drawer .path{font:12px ui-monospace,monospace;color:var(--muted)}
+.dtop{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-right:30px}
+.fullbtn{margin-left:auto;border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent);border-radius:8px;padding:4px 10px;font-size:13px;font-weight:600}
+.field{display:grid;grid-template-columns:110px 1fr;gap:8px;font-size:14px;align-items:center}
+.field>span{color:var(--muted)}
+.prop{font:13px ui-monospace,monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.prop b{color:var(--muted);font-weight:400}
+.states{display:flex;gap:6px;flex-wrap:wrap}
+.states button{border:1px solid var(--line);background:var(--bg);border-radius:16px;padding:4px 12px;font-size:13px}
+.states button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.linkchips{display:flex;gap:6px;flex-wrap:wrap}
+.linkchips button{display:flex;gap:6px;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:14px;padding:2px 10px;font-size:13px}
+.linkchips .av{width:18px;height:18px;font-size:9px}
+.dnotes{margin:0;padding-left:18px;font-size:14px}
+.dnotes li{margin-bottom:4px}
+.thread{border-top:1px solid var(--line);padding-top:12px}
+.msg{display:flex;gap:10px;margin-bottom:10px;font-size:14px}
+.msg small{color:var(--muted)}
+.reply{display:flex;gap:8px}
+.reply input{flex:1;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--bg)}
+.dact{display:flex;gap:8px;margin-top:auto;flex-wrap:wrap}
+.dact button{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 12px;font-size:13px}
+.x{position:absolute;top:14px;right:14px;border:0;background:none;font-size:20px;color:var(--muted)}
+
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(90px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;display:flex;gap:14px;align-items:center;transition:.2s;font-size:14px;z-index:40;max-width:calc(100% - 32px)}
+.toast.on{transform:translateX(-50%)}
+.toast button{border:0;background:none;color:var(--accent);font-weight:700}
+
+/* Help */
+.helppanel{position:fixed;top:0;left:0;bottom:0;width:min(500px,100%);background:var(--panel);box-shadow:var(--shadow);transform:translateX(-105%);transition:.22s;overflow:auto;padding:22px 22px 40px;z-index:8}
+.helppanel.on{transform:none}
+.helppanel h2{margin:0 0 6px;font-size:19px}
+.helppanel h3{margin:22px 0 6px;font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.helppanel p,.helppanel li{font-size:14px}
+.helppanel ul{padding-left:18px;margin:6px 0}
+.helppanel li{margin-bottom:6px}
+.helppanel table{border-collapse:collapse;width:100%;font-size:13px}
+.helppanel td,.helppanel th{border-top:1px solid var(--line);padding:6px 4px;text-align:left;vertical-align:top}
+.helppanel th{color:var(--muted);font-weight:600}
+.helppanel td:first-child{white-space:nowrap;padding-right:10px}
+.hint{color:var(--muted);font-size:12px;margin-top:16px;text-align:center}
+
+@media (max-width:760px){
+  .app{grid-template-columns:1fr}
+  .side{position:fixed;inset:0 auto 0 0;width:240px;z-index:5;transform:translateX(-105%);transition:.2s;box-shadow:var(--shadow)}
+  .side.on{transform:none}
+  .burger{display:block}
+  .top{padding:10px 16px;gap:6px}
+  .content{padding:16px 16px 80px}
+  .app.noside .side{display:flex}
+  .capture kbd,.help-btn .long,#theme,#search,.spacesbtn .lab{display:none}
+  .spop{right:16px}
+  .board{grid-auto-flow:row;grid-auto-columns:auto;grid-template-columns:1fr}
+  .bar{width:56px}
+  .tl-axis{margin-left:118px}
+  .tl-row .nm{width:90px}
+  .seg{margin-left:0;max-width:100%;overflow-x:auto}
+  .head select{margin-left:0}
+  .sol{grid-template-columns:1fr 1fr;gap:8px}
+  .sol .solcard{grid-column:1 / -1;order:-1}
+  .slot{min-height:96px;padding:10px}
+  .fly,.jl.task .fly{left:8px;right:8px;width:auto;min-width:0}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="side">
+    <div class="sidehead">
+      <button class="brand" id="brand" title="Your page: picture, notes and everything that links to you"><span class="logo">G</span><span>GroupTodo<small>Kenneth Aar</small></span></button>
+      <button class="hideside" id="hideSide" title="Hide the sidebar (\)" aria-label="Hide the sidebar">⇤</button>
+    </div>
+    <button class="nav-item" data-v="today"><span class="ic">☀</span>Today<span class="n" data-c="today"></span></button>
+    <button class="nav-item" data-v="next"><span class="ic">→</span>Next<span class="n" data-c="next"></span></button>
+    <button class="nav-item" data-v="waiting"><span class="ic">⏳</span>Waiting for<span class="n" data-c="waiting"></span></button>
+    <div class="sep"></div>
+    <button class="nav-item" data-v="projects"><span class="ic">▤</span>Projects<span class="n" data-c="projects"></span></button>
+    <button class="nav-item" data-v="people"><span class="ic">☺</span>People<span class="n" data-c="people"></span></button>
+    <button class="nav-item" data-v="orgs"><span class="ic">▣</span>Organisations<span class="n" data-c="orgs"></span></button>
+    <button class="nav-item" data-v="contexts"><span class="ic">@</span>Contexts<span class="n" data-c="contexts"></span></button>
+    <button class="nav-item" data-v="pages"><span class="ic">❏</span>Pages<span class="n" data-c="pages"></span></button>
+    <div class="grow"></div>
+    <button class="nav-item" data-v="review"><span class="ic">↻</span>Weekly review</button>
+    <div class="sync" id="sync"></div>
+  </aside>
+
+  <main class="main">
+    <div class="top">
+      <button class="iconbtn burger" id="burger" title="Show the sidebar (\)" aria-label="Show the sidebar">☰</button>
+      <div class="histbtns">
+        <button class="iconbtn" id="back" title="Back (Alt+←)" aria-label="Back" disabled>←</button>
+        <button class="iconbtn" id="fwd" title="Forward (Alt+→)" aria-label="Forward" disabled>→</button>
+      </div>
+      <label class="capture">
+        <span aria-hidden="true">＋</span>
+        <input id="cap" placeholder="Add a task. Try: Call Mia about VAT @mia #rollup friday" autocomplete="off">
+        <kbd>N</kbd>
+      </label>
+      <button class="iconbtn" id="search" title="Search (/)">⌕</button>
+      <button class="iconbtn" id="theme" title="Theme">◐</button>
+      <button class="help-btn" id="helpBtn" title="Help (?)">?<span class="long"> Help</span></button>
+      <button class="spacesbtn" id="spacesBtn" aria-haspopup="true" aria-expanded="false" title="Which spaces to show"></button>
+      <div class="spop" id="spop" role="dialog" aria-label="Spaces"></div>
+    </div>
+    <div class="content" id="content"><div id="view"></div></div>
+  </main>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Details"></aside>
+<div class="toast" id="toast"><span id="toastMsg"></span><button id="undo">Undo</button></div>
+
+<aside class="helppanel" id="help" aria-label="Help">
+  <button class="x" id="helpX" aria-label="Close">×</button>
+  <h2>Help</h2>
+  <p>GroupTodo keeps your tasks, projects and notes as plain files in folders you already own. Everything you see here is read from those files, and everything you change is written straight back to them.</p>
+
+  <h3>Getting around</h3>
+  <ul>
+    <li><b>The sidebar</b> lists the places you go every day. Hide it with ⇤ at its top, or press \. Bring it back with ☰.</li>
+    <li><b>Your page</b> opens when you click GroupTodo at the top left. Set your picture there, keep notes about yourself, and see everything in every space that links to you.</li>
+    <li><b>Back and forward</b> work everywhere, including after you open a full page. Use ← and → at the top, or Alt+← and Alt+→.</li>
+    <li><b>The capture box</b> adds a task from anywhere. Press N to jump to it. Write @name for a person, @@place for a context, #project for a project and a day like friday for the due date.</li>
+    <li><b>Search</b> finds tasks, pages, people and commands such as Raw text.</li>
+  </ul>
+
+  <h3>Spaces</h3>
+  <ul>
+    <li>Each space is its own folder, shared with the people in it. The squares at the top right show which spaces are on.</li>
+    <li>Tick any combination. Every view then shows exactly those spaces, and each item carries a coloured tag for its space while more than one is showing.</li>
+    <li>Every page always says which space it lives in.</li>
+  </ul>
+
+  <h3>Today</h3>
+  <ul>
+    <li>At the top is what is due today or late, then the next seven days, then your journal for each space, such as Your Work journal.</li>
+    <li>Click a section's title or its arrow to fold it away. Click again to open it.</li>
+    <li>Click the bullet in front of a section, or in front of any line, to focus on it. Everything else leaves the screen and only the trail above it stays. Click a step in the trail to go back out.</li>
+    <li>On a wide screen the journals sit side by side, one column per space.</li>
+    <li>History, next to the date, scrolls back through everything that happened, day by day. Dismissing “Since you were last here” loses nothing.</li>
+  </ul>
+
+  <h3>Writing on a line</h3>
+  <ul>
+    <li>On Today and on every page, click a line and type. A menu opens right under the line to set its state, due date, context, person, project and repeat. Each item shows its key.</li>
+    <li>Typing @, @@ or # opens people, contexts or projects and filters them as you type.</li>
+    <li>When a line becomes Waiting, the menu asks who you are waiting on. Waiting is always on somebody else.</li>
+    <li>Tab and Shift+Tab indent and outdent. The arrow on the left of a line folds its children.</li>
+  </ul>
+
+  <h3>Keys on a line</h3>
+  <table>
+    <tr><th>Key</th><th>Does</th></tr>
+    <tr><td>Alt+T</td><td>Make it a task, or back to a note</td></tr>
+    <tr><td>Alt+1</td><td>Make it a project, and link the line to it</td></tr>
+    <tr><td>Ctrl+Enter</td><td>Next state: to do, doing, waiting (then asks on whom), done, note</td></tr>
+    <tr><td>Alt+D · C · P · J · R</td><td>Due, context, person, project, repeat</td></tr>
+    <tr><td>↑ ↓ · Enter · Esc</td><td>With a menu item open: choose, pick, close it</td></tr>
+    <tr><td>@ · @@ · #</td><td>Person, context, project, filtered as you type</td></tr>
+    <tr><td>Enter · Tab · Shift+Tab</td><td>New line, indent, outdent</td></tr>
+    <tr><td>↑ ↓ · Esc</td><td>Move between lines, stop editing</td></tr>
+  </table>
+
+  <h3>Other keys</h3>
+  <table>
+    <tr><th>Key</th><th>Does</th></tr>
+    <tr><td>N</td><td>Add a task</td></tr>
+    <tr><td>\</td><td>Hide or show the sidebar</td></tr>
+    <tr><td>?</td><td>Open this help</td></tr>
+    <tr><td>Alt+← · Alt+→</td><td>Back, forward</td></tr>
+    <tr><td>Esc</td><td>Close a drawer, menu or this help</td></tr>
+  </table>
+
+  <h3>Projects</h3>
+  <ul>
+    <li>A project's status is the folder its file sits in: _ Cancelled, 1 Active, 2 Someday/Maybe, 3 Waiting for and 0 Completed. Drag a card on the board to move it, and every link to it follows.</li>
+    <li>A project whose open next actions are all waiting on somebody shows as Waiting for, marked “auto”.</li>
+    <li>The timeline shows the plan ahead. ▸ unfolds a project into its next actions, and dragging a bar reschedules it.</li>
+    <li>The report shows what got done. Pick a week, month, quarter, half year, year or your own dates from the list, then Copy as text for a status mail.</li>
+  </ul>
+
+  <h3>People and organisations</h3>
+  <ul>
+    <li>On the People board, drop a person on a project to involve them, or on a next action to hand it over. It then shows in your Waiting for. Drop yourself on it to take it back.</li>
+    <li>Organisations work the same way, on projects only.</li>
+    <li>People outside the space get a check-in sheet when you ask them for an update.</li>
+  </ul>
+
+  <h3>Pages</h3>
+  <ul>
+    <li>Clicking a page opens a preview with its properties, notes and links. Open full page shows everything, with each linked reference quoted in context.</li>
+    <li>Write [[a title]] to link to a page. A dashed link points to a page nobody has made yet. Click it to make it.</li>
+    <li>Pages has four views: List, Board, Mind map and Graph.</li>
+  </ul>
+
+  <h3>Weekly review</h3>
+  <ul>
+    <li>Five steps, about fifteen minutes. The projects step is played as solitaire: one project at a time, stalest first.</li>
+    <li>Every field shows its options, taken from the project's own space. Click one, or drag the card onto it. Add a missing area or organisation straight from the field.</li>
+  </ul>
+
+  <h3>Views</h3>
+  <table>
+    <tr><th>Section</th><th>Views</th><th>Filters</th></tr>
+    <tr><td>Today</td><td>Day page</td><td>Whose page</td></tr>
+    <tr><td>Next</td><td>List, Board by context</td><td>To do · Doing · context · sort</td></tr>
+    <tr><td>Waiting for</td><td>List, Board by person</td><td>Overdue · not asked yet</td></tr>
+    <tr><td>Projects</td><td>List, Board, Timeline, Report</td><td>Status · organisation · period</td></tr>
+    <tr><td>People</td><td>List, Cards, Board by project</td><td>In the space · outside it</td></tr>
+    <tr><td>Organisations</td><td>List, Board by project</td><td></td></tr>
+    <tr><td>Pages</td><td>List, Board, Mind map, Graph</td><td>Kind · sort</td></tr>
+  </table>
+</aside>
+
+<script>
+/* ================= sample data ================= */
+/* Each space is its own vault folder. Show any combination of them at once. */
+const SPACES = {
+  work:{name:"Work",ini:"W",col:"#2f6fde",on:true,folder:"OneDrive/GroupTodo/Work",members:3},
+  home:{name:"Private",ini:"P",col:"#2e8a57",on:true,folder:"OneDrive/Private",members:1},
+  club:{name:"Running club",ini:"R",col:"#c0662b",on:false,folder:"Dropbox/Running club",members:8}
+};
+const PEOPLE = {
+  me:{name:"Kenneth Aar",ini:"KA",col:"#2f6fde",member:true,seen:"here now",space:null},
+  mia:{name:"Mia Halvorsen",ini:"MH",col:"#b8508a",member:false,seen:"outside the space",asked:11,space:"work"},
+  per:{name:"Per Dahl",ini:"PD",col:"#6b5bd1",member:false,seen:"outside the space",space:"work"},
+  ola:{name:"Ola Nordmann",ini:"ON",col:"#2e8a57",member:true,seen:"last seen 3 hours ago",space:"work"},
+  sara:{name:"Sara Lie",ini:"SL",col:"#a8710f",member:true,seen:"last seen yesterday",space:"work"},
+  eva:{name:"Eva Berg",ini:"EB",col:"#c0662b",member:true,seen:"last seen 2 days ago",space:"club"}
+};
+const ORGS = {
+  hq:{name:"Head office",what:"Employer",space:"work"},
+  nordlys:{name:"Nordlys AS",what:"Client",space:"work"},
+  broker:{name:"Fjord Insurance",what:"Supplier",space:"work"},
+  club:{name:"Running club",what:"Club",space:"club"}
+};
+/* Each area is a page in its own space's folder, so every space has its own set. */
+const AREAS = {
+  fin:{name:"Finance",space:"work"}, fac:{name:"Facilities",space:"work"}, ppl:{name:"People & hiring",space:"work"},
+  cli:{name:"Clients",space:"work"},
+  life:{name:"House",space:"home"}, health:{name:"Health",space:"home"}, money:{name:"Money & papers",space:"home"}, family:{name:"Family",space:"home"},
+  race:{name:"Races",space:"club"}, train:{name:"Training",space:"club"}, kit:{name:"Kit",space:"club"}, memb:{name:"Membership",space:"club"}
+};
+/* Each context is a page. Its icon is whatever icon:: says on that page. */
+const CONTEXTS = {
+  office:{name:"office",props:{icon:"🏢"},space:"work"},
+  phone:{name:"phone",props:{icon:"📞"},space:"work"},
+  computer:{name:"computer",props:{icon:"💻"},space:"work"},
+  errands:{name:"errands",props:{icon:"🛒"},space:"work"},
+  home:{name:"home",props:{},space:"home"}
+};
+const STATUS_ORDER = ["cancelled","active","someday","waiting","done"];
+const STATUS = {
+  cancelled:{dir:"_",label:"Cancelled"}, active:{dir:"1",label:"Active"},
+  someday:{dir:"2",label:"Someday/Maybe"}, waiting:{dir:"3",label:"Waiting for"},
+  done:{dir:"0",label:"Completed"}
+};
+/* touched: days since anything happened. deadline: days from today. body: the notes on the page. */
+const PROJECTS = {
+  rollup:{name:"Q4 rollup",space:"work",status:"active",orgs:["hq"],people:["ola","mia"],area:"fin",outcome:"The board has signed off the Q4 numbers",deadline:20,touched:1,
+    body:["Board meets 4 November. The draft goes out a week before.","Follow the [[Board pack checklist]]."]},
+  survey:{name:"Site survey",space:"work",status:"active",orgs:["hq"],people:["ola"],area:"fac",outcome:"We know which floor fits",deadline:7,touched:3,
+    body:["Two floors to compare: 3rd and 5th."]},
+  office:{name:"Office move",space:"work",status:"active",orgs:["hq"],people:["sara"],area:"fac",blockedBy:"survey",outcome:"Everyone works from the new floor",touched:12,
+    body:["Landlord prefers a five year lease. See [[Lease notes]].","Movers can do two weekends in January."]},
+  onboard:{name:"Onboard new hires",space:"work",status:"active",orgs:["hq"],people:["sara"],area:"ppl",outcome:"Both hires productive in week one",deadline:14,touched:2,
+    body:["Start dates 2 and 9 November."]},
+  web:{name:"Nordlys website",space:"work",status:"active",orgs:["nordlys"],people:["per"],area:"cli",outcome:"New site live before Christmas",deadline:60,touched:6,
+    body:["Per needs the sitemap before he can quote."]},
+  insure:{name:"Insurance renewal",space:"work",status:"active",orgs:["broker"],people:[],area:null,outcome:"",touched:21,body:[]},
+  policy:{name:"Hybrid work policy",space:"work",status:"waiting",orgs:["hq"],people:[],area:"ppl",outcome:"",touched:18,statusAgo:18,
+    body:["Waiting for the management group to read the draft.","Background in [[Hybrid work thoughts]]."]},
+  kitchen:{name:"Paint the kitchen",space:"home",status:"active",orgs:[],people:[],area:"life",outcome:"Walls done before Christmas",touched:9,
+    body:["Something warmer than the hall."]},
+  relay:{name:"Spring relay",space:"club",status:"someday",orgs:["club"],people:["eva"],area:null,outcome:"A team of eight on the start line",touched:30,body:[]},
+  q3:{name:"Q3 rollup",space:"work",status:"done",orgs:["hq"],people:["ola"],area:"fin",outcome:"Q3 numbers signed off",touched:36,statusAgo:36,body:["Signed off 10 September."]},
+  xmas:{name:"Christmas party venue",space:"work",status:"cancelled",orgs:[],people:["sara"],area:"ppl",outcome:"",touched:60,statusAgo:60,body:["Moved to the office instead."]}
+};
+for(const k in PROJECTS) PROJECTS[k].ans = {};
+
+/* due: days from today. age: days since added. ago: days since done. A task without a project says its space. */
+const ALLT = [
+  {id:1,t:"Send rollup draft to the board",p:"rollup",who:"me",state:"doing",due:-1,ctx:"computer",age:9},
+  {id:2,t:"Correct the colours on the rollup chart",p:"rollup",who:"me",state:"todo",due:0,ctx:"computer",age:3},
+  {id:3,t:"Book the meeting room for Thursday",p:null,space:"work",who:"me",state:"todo",due:0,repeat:"weekly",ctx:"phone",age:1},
+  {id:4,t:"VAT figures for September",p:"rollup",who:"mia",state:"waiting",due:2,by:"me",age:12},
+  {id:5,t:"Floor plan from the landlord",p:"survey",who:"mia",state:"waiting",due:-3,by:"me",age:20},
+  {id:6,t:"Measure the server room",p:"survey",who:"ola",state:"doing",due:1,by:"me",age:4,ctx:"office"},
+  {id:7,t:"Order desks",p:"office",who:"me",state:"todo",due:9,ctx:"computer",age:15},
+  {id:19,t:"Book the movers",p:"office",who:"me",state:"todo",ctx:"phone",age:6},
+  {id:8,t:"Write the welcome mail",p:"onboard",who:"sara",state:"todo",due:0,by:"me",age:2},
+  {id:9,t:"Laptops for the new hires",p:"onboard",who:"me",state:"todo",due:6,ctx:"phone",age:8},
+  {id:14,t:"Pick up access cards",p:"onboard",who:"me",state:"todo",ctx:"errands",age:5},
+  {id:15,t:"Draft sitemap for Nordlys",p:"web",who:"me",state:"todo",due:3,ctx:"computer",age:7},
+  {id:13,t:"Quote for the new homepage",p:"web",who:"per",state:"waiting",due:5,by:"me",age:6},
+  {id:16,t:"Ask who wants to run the relay",p:"relay",who:"me",state:"todo",age:30},
+  {id:17,t:"New offer from the broker",p:"insure",who:"per",state:"waiting",due:-2,by:"me",age:21},
+  {id:18,t:"Fix the bike light",p:null,space:"home",who:"me",state:"todo",ctx:"home",age:2},
+  {id:30,t:"Buy paint samples",p:"kitchen",who:"me",state:"todo",due:2,age:3},
+  {id:31,t:"Renew passport",p:null,space:"home",who:"me",state:"todo",due:5,age:6},
+  {id:10,t:"Ask IT about guest Wi‑Fi",p:null,space:"work",who:"me",state:"todo",age:0},
+  {id:12,t:"Collect parking cards",p:"office",who:"sara",state:"done",ago:0,doneBy:"sara"},
+  {id:20,t:"Survey brief agreed with the landlord",p:"survey",who:"me",state:"done",ago:4,doneBy:"me"},
+  {id:21,t:"Kick-off with Nordlys",p:"web",who:"me",state:"done",ago:9,doneBy:"me"},
+  {id:22,t:"Job ads posted",p:"onboard",who:"sara",state:"done",ago:16,doneBy:"sara"},
+  {id:23,t:"Collect Q4 input from teams",p:"rollup",who:"ola",state:"done",ago:22,doneBy:"ola"},
+  {id:24,t:"Q3 board pack sent",p:"q3",who:"me",state:"done",ago:38,doneBy:"me"},
+  {id:25,t:"Q3 numbers checked",p:"q3",who:"ola",state:"done",ago:45,doneBy:"ola"},
+  {id:26,t:"Q3 VAT reconciled",p:"q3",who:"mia",state:"done",ago:52,doneBy:"mia"},
+  {id:27,t:"Budget template updated",p:"rollup",who:"me",state:"done",ago:120,doneBy:"me"},
+  {id:28,t:"Club kit ordered",p:"relay",who:"me",state:"done",ago:210,doneBy:"me"}
+];
+let thread = {
+  1:[{who:"ola",txt:"Done except the VAT bit, waiting on Mia.",ago:0}],
+  6:[{who:"ola",txt:"4 by 6 metres, two racks. Photos on my page.",ago:1}],
+  13:[{who:"me",txt:"Per says the quote needs the sitemap first.",ago:3}]
+};
+/* Day pages: blocks in the order they were written. n = note, t = task id, i = indent. */
+const JOURNALS = {
+  me:[
+    {n:"08:10 Standup with Ola and Sara",i:0},
+    {n:"Ola is on the server room today",i:1},
+    {n:"Sara needs the welcome text from me by lunch",i:1},
+    {t:10,i:0},
+    {n:"Idea: a shared calendar for the team",i:0},
+    {n:"Call with Per about the [[Nordlys website]]",i:0},
+    {n:"He wants the sitemap before he can quote. See [[VAT rules for clients]] too.",i:1},
+    {n:"Movers can do the [[Office move]] in January",i:0},
+    {n:"Ask the landlord about [[Lease terms]]",i:0},
+    {n:"Dentist at 16:00",i:0,space:"home"},
+    {t:31,i:0,space:"home"},
+    {n:"Eva wants the [[Spring relay]] team list by March",i:0,space:"club"}
+  ],
+  ola:[{n:"Server room: 4 × 6 m, two racks",i:0},{t:6,i:0}],
+  sara:[{n:"Parking cards collected, all 12",i:0},{t:8,i:0}]
+};
+const NOTES = [
+  {key:"hybrid",space:"work",title:"Hybrid work thoughts",links:["o:hq"],edited:5,
+    body:["Three office days feels right for most teams.","Ties into the [[Office move]] and the [[Hybrid work policy]]."]},
+  {key:"vat",space:"work",title:"VAT rules for clients",links:["a:fin"],edited:14,
+    body:["[[Mia Halvorsen]] checks every quarter.","Applies to [[Nordlys AS]] from January."]},
+  {key:"lease",space:"work",title:"Lease notes",links:[],edited:20,
+    body:["Five years, break clause after three.","Still need the [[Lease terms]] in writing for the [[Office move]].","[[Kenneth Aar]] signs for the company."]},
+  {key:"paint",space:"home",title:"Kitchen colours",links:["a:life"],edited:4,
+    body:["Warm grey or sand for the [[Paint the kitchen]] job.","[[Kenneth Aar]] gets the final say."]},
+  {key:"relayteam",space:"club",title:"Relay team list",links:["a:race"],edited:12,
+    body:["Leg 1: [[Eva Berg]]","Leg 3: [[Kenneth Aar]], if the knee holds.","Four places still open for the [[Spring relay]]."]}
+];
+const LISTS = [
+  {key:"boardpack",space:"work",title:"Board pack checklist",links:["a:fin"],edited:40,
+    body:["Numbers checked by Ola","VAT figures from Mia","Send a week before the meeting. Used by [[Q4 rollup]]."]},
+  {key:"newhire",space:"work",title:"New hire checklist",links:["a:ppl","c:computer"],edited:9,
+    body:["Laptop and access card","Welcome mail. Used by [[Onboard new hires]].","Buddy for week one: [[Kenneth Aar]]"]}
+];
+/* Your own page has one copy in every space, each with its own notes. */
+const MYNOTES = {
+  work:["Best reached before 10:00. Afternoons are for focus work.","Stands in for [[Sara Lie]] on hiring while she is away."],
+  home:["Dentist every six months. Next one is in the journal."],
+  club:["Runs leg 3 in the [[Spring relay]].","Has the key to the club shed."]
+};
+
+/* Page text is an outline too: blocks with an indent, exactly like the journal. */
+const toBlocks = a => a.map(n=>({n,i:0}));
+for(const k in PROJECTS) PROJECTS[k].body = toBlocks(PROJECTS[k].body);
+NOTES.forEach(n=>n.body=toBlocks(n.body)); LISTS.forEach(n=>n.body=toBlocks(n.body));
+PROJECTS.office.body.push({n:"Weekend 1: desks and screens",i:1},{n:"Weekend 2: servers, once the [[Site survey]] is done",i:1});
+const BODY = {};
+for(const s in MYNOTES) BODY["me:"+s]=toBlocks(MYNOTES[s]);
+const lines = blocks => blocks.filter(b=>b.n!=null).map(b=>b.n);
+function getBody(id){
+  if(id.startsWith("p:")) return PROJECTS[id.slice(2)].body;
+  const n=[...NOTES,...LISTS].find(x=>"z:"+x.key===id||"l:"+x.key===id); if(n) return n.body;
+  return BODY[id]||(BODY[id]=[]);
+}
+
+/* ================= state ================= */
+const TODAY = new Date(2026,9,15);
+const F = {
+  today:{who:"me"},
+  next:{todo:true,doing:true,ctx:null,sort:"date"},
+  waiting:{overdue:false,notAsked:false},
+  projects:{status:"active",org:"",scale:"weeks"},
+  report:{period:"quarter",who:"",from:"2026-09-15",to:"2026-10-15"},
+  people:{kind:"all"},
+  pages:{kind:"",sort:"edited"}
+};
+const DEFAULT_SUB = {next:"list",waiting:"list",projects:"list",people:"list",orgs:"list",pages:"list",review:"steps"};
+const lastSub = {...DEFAULT_SUB};
+let loc = {view:"today",sub:"list"};
+let past = [], future = [];
+let newsOpen = true, lastTick = null;
+let sol = {order:null,i:0,focus:null};
+let tlOpen = new Set(["office"]);
+let tasks = [];
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const open = t => t.state!=="done";
+const first = k => PEOPLE[k].name.split(" ")[0];
+const plural = (n,w) => `${n} ${n===1?w:w+"s"}`;
+const dayLabel = d => d==null?"":d<0?(d===-1?"Yesterday":(-d)+" days late"):d===0?"Today":d===1?"Tomorrow":"In "+d+" days";
+const dateOf = d => {const x=new Date(TODAY);x.setDate(x.getDate()+d);return x;};
+const fmt = d => dateOf(d).toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+const iso = d => {const x=dateOf(d);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`;};
+const av = k => PEOPLE[k].pic
+  ? `<span class="av" style="background-image:url('${PEOPLE[k].pic}')" title="${esc(PEOPLE[k].name)}"></span>`
+  : `<span class="av" style="background:${PEOPLE[k].col}" title="${esc(PEOPLE[k].name)}">${PEOPLE[k].ini}</span>`;
+const chip = (label,on,data) => `<button class="chip" ${data} aria-pressed="${!!on}">${label}</button>`;
+const seg = (opts,cur,attr) => `<div class="seg">${opts.map(([k,l])=>`<button ${attr}="${k}" aria-pressed="${cur===k}">${l}</button>`).join("")}</div>`;
+
+/* ---------- spaces ---------- */
+const vis = s => !s || SPACES[s].on;
+const shown = () => Object.keys(SPACES).filter(k=>SPACES[k].on);
+const multi = () => shown().length>1;
+const spaceOfTask = t => t.space || (t.p ? PROJECTS[t.p].space : "work");
+const spBadge = (s,big) => s?`<span class="sp ${big?"sp-lg":""}" style="--sc:${SPACES[s].col}" title="Lives in the ${esc(SPACES[s].name)} space">${esc(SPACES[s].name)}</span>`:"";
+const spTag = s => multi()?spBadge(s):"";
+const PK = () => Object.keys(PROJECTS).filter(k=>vis(PROJECTS[k].space));
+const OK_ = () => Object.keys(ORGS).filter(k=>vis(ORGS[k].space));
+const CK = () => Object.keys(CONTEXTS).filter(k=>vis(CONTEXTS[k].space));
+const PPL = () => Object.keys(PEOPLE).filter(k=>k==="me"||vis(PEOPLE[k].space));
+const addTask = t => { ALLT.push(t); tasks = ALLT.filter(x=>vis(spaceOfTask(x))); };
+const firstSpace = () => shown()[0];
+
+const ctxIcon = k => CONTEXTS[k].props.icon || "";
+const ctxLabel = k => `${ctxIcon(k)?ctxIcon(k)+" ":"@"}${CONTEXTS[k].name}`;
+const projOpen = k => tasks.filter(t=>t.p===k&&open(t));
+const isBlocked = k => { const b=PROJECTS[k].blockedBy; return !!b && projOpen(b).length>0; };
+/* A project whose open next actions are all waiting is Waiting for, whatever folder it is in. */
+const autoWait = k => PROJECTS[k].status==="active" && projOpen(k).length>0 && projOpen(k).every(t=>t.state==="waiting");
+const eff = k => autoWait(k) ? "waiting" : PROJECTS[k].status;
+const orgNames = p => p.orgs.map(o=>ORGS[o].name).join(", ");
+const handed = t => t.who!=="me" && t.by==="me";
+
+/* ================= navigation with history ================= */
+function go(next){
+  const n = Object.assign({}, loc, next);
+  if(JSON.stringify(n)===JSON.stringify(loc)) return;
+  /* focus on a line belongs to the screen it was on */
+  if(n.view!==loc.view||n.page!==loc.page) for(const k in zoomMap) delete zoomMap[k];
+  past.push(loc); future = []; loc = n; if(n.sub) lastSub[n.view] = n.sub;
+  closeDrawer(); render(); $("#content").scrollTop = 0;
+}
+function back(){ if(!past.length) return; future.push(loc); loc = past.pop(); closeDrawer(); render(); }
+function fwd(){ if(!future.length) return; past.push(loc); loc = future.pop(); closeDrawer(); render(); }
+const fullPage = id => id==="u:me" ? go({view:"me",page:null,jz:null}) : go({view:"page",page:id});
+
+/* ================= lists ================= */
+const lists = {
+  dueNow: who => tasks.filter(t=>open(t)&&t.who===who&&t.due!=null&&t.due<=0).sort((a,b)=>a.due-b.due),
+  week: who => tasks.filter(t=>open(t)&&t.who===who&&t.due>0&&t.due<=7).sort((a,b)=>a.due-b.due),
+  next: () => tasks.filter(t=>open(t)&&t.who==="me"&&(t.state==="todo"||t.state==="doing")&&(!t.p||PROJECTS[t.p].status==="active")),
+  waiting: () => tasks.filter(t=>open(t)&&handed(t))
+};
+
+function counts(){
+  const now = lists.dueNow("me");
+  const c = {today:now.length,next:lists.next().length,waiting:lists.waiting().length,
+    projects:PK().filter(k=>eff(k)==="active").length,
+    people:PPL().length,orgs:OK_().length,contexts:CK().length,
+    pages:Object.values(allPages().pages).filter(p=>!p.missing).length};
+  document.querySelectorAll("[data-c]").forEach(el=>{
+    const k=el.dataset.c; el.textContent=c[k]||"";
+    el.classList.toggle("hot", k==="today" && now.some(t=>t.due<0));
+  });
+  document.querySelectorAll(".nav-item").forEach(b=>b.setAttribute("aria-current", b.dataset.v===loc.view));
+  $("#brand").setAttribute("aria-current", loc.view==="me");
+  $("#back").disabled = !past.length; $("#fwd").disabled = !future.length;
+  const on=shown();
+  $("#spacesBtn").innerHTML=`<span class="sqs">${on.map(k=>`<span class="sq" style="background:${SPACES[k].col}">${SPACES[k].ini}</span>`).join("")}</span><span class="lab">${on.length===1?SPACES[on[0]].name:on.length+" spaces"}</span><span aria-hidden="true">▾</span>`;
+  $("#sync").innerHTML=`<i></i>${on.length===1?"Saved":plural(on.length,"space")+" saved"}, 1 min ago`;
+}
+function spacesMenu(){
+  $("#spop").innerHTML=`<h4>Show these spaces</h4>`+Object.entries(SPACES).map(([k,s])=>{
+    const n=ALLT.filter(t=>open(t)&&spaceOfTask(t)===k).length;
+    return `<label class="sprow"><span class="sq" style="background:${s.col}">${s.ini}</span><span>${esc(s.name)}<small>${esc(s.folder)} · ${plural(n,"open task")} · ${plural(s.members,"member")}</small></span><input type="checkbox" data-space="${k}" ${s.on?"checked":""}></label>`;
+  }).join("")+`<div class="foot">Every view shows only the spaces ticked here. Each item is tagged with its space while more than one is showing.</div>`;
+}
+
+function tags(t,opt={}){
+  const g=[];
+  if(t.state==="doing") g.push(`<span class="tag doing">Doing</span>`);
+  if((t.state==="waiting"||handed(t)) && !opt.noWho) g.push(`<span class="tag wait">Waiting on ${first(t.who)}</span>`);
+  if(t.due!=null && open(t)) g.push(`<span class="tag ${t.due<0?"late":""}">${dayLabel(t.due)}</span>`);
+  if(t.p && !opt.noProj) g.push(`<span>#${esc(PROJECTS[t.p].name)}</span>`);
+  if(t.ctx) g.push(`<span>${ctxLabel(t.ctx)}</span>`);
+  if(t.repeat) g.push(`<span>↻ ${t.repeat}</span>`);
+  if(thread[t.id]) g.push(`<span>💬 ${thread[t.id].length}</span>`);
+  if(!opt.noSpace) g.push(spTag(spaceOfTask(t)));
+  return g.join("");
+}
+function row(t,opt={}){
+  const g=tags(t,opt);
+  return `<div class="row ${t.state==="done"?"done":""}" data-id="${t.id}">
+    <button class="chk" data-tick="${t.id}" aria-label="Tick off"></button>
+    <div class="t">${esc(t.t)}${g?`<div class="meta">${g}</div>`:""}</div>
+    ${t.who!=="me"&&!opt.noWho?av(t.who):""}
+  </div>`;
+}
+const listHTML = (arr,opt={}) => `<div class="list">${arr.length?arr.map(t=>row(t,opt)).join(""):`<div class="empty">${opt.empty||"Nothing here."}</div>`}</div>`;
+const stateOK = (f,t) => t.state==="doing"?f.doing:f.todo;
+function card(t,drag,opt={}){
+  return `<div class="card" data-id="${t.id}" ${drag?`data-drag="${drag}"`:""} ${opt.drop?`data-drop="${opt.drop}"`:""}>${esc(t.t)}<div class="meta">${tags(t,{noWho:true,noProj:opt.noProj,noSpace:opt.noProj})}${t.who!=="me"?av(t.who):""}</div></div>`;
+}
+
+/* Wiki links in page text: a page that exists, or a dashed one nobody has made yet. */
+function wiki(s){
+  const pages=allPages().pages;
+  return esc(s).replace(/\[\[([^\]]+)\]\]/g,(m,title)=>{
+    const p=Object.values(pages).find(x=>x.title.toLowerCase()===title.toLowerCase());
+    return p&&!p.missing?`<a class="wl" data-wl="${p.id}">${title}</a>`:`<a class="wl missing" data-wl="x:${title}" title="No page yet. Click to make it.">${title}</a>`;
+  });
+}
+const wikiTitles = s => (s.match(/\[\[([^\]]+)\]\]/g)||[]).map(m=>m.slice(2,-2));
+const blockSpace = b => { if(b.space) return b.space; const t=b.t!=null&&ALLT.find(x=>x.id===b.t); return t?spaceOfTask(t):"work"; };
+
+/* ================= pages model ================= */
+function allPages(){
+  const all={};
+  const add=(id,kind,title,path,edited,space,links=[],extra={})=>all[id]={id,kind,title,path,edited,space,links:[...links],body:[],...extra};
+  for(const k in PROJECTS){ const p=PROJECTS[k];
+    const ctxs=[...new Set(ALLT.filter(t=>t.p===k&&t.ctx).map(t=>"c:"+t.ctx))];
+    add("p:"+k,"project",p.name,`pages/${STATUS[p.status].dir}/${p.name}.md`,p.touched,p.space,
+      [...p.orgs.map(o=>"o:"+o),...p.people.map(u=>"u:"+u),...(p.area?["a:"+p.area]:[]),...(p.blockedBy?["p:"+p.blockedBy]:[]),...ctxs],{body:lines(p.body)});
+  }
+  for(const k in PEOPLE) add("u:"+k,"person",PEOPLE[k].name,`pages/p/${PEOPLE[k].name}.md`,k==="me"?0:3,PEOPLE[k].space||firstSpace());
+  for(const k in ORGS) add("o:"+k,"org",ORGS[k].name,`pages/o/${ORGS[k].name}.md`,8,ORGS[k].space,[],{props:{type:"org",what:ORGS[k].what}});
+  for(const k in CONTEXTS) add("c:"+k,"context",CONTEXTS[k].name,`pages/c/${CONTEXTS[k].name}.md`,25,CONTEXTS[k].space,[],{props:CONTEXTS[k].props});
+  for(const k in AREAS) add("a:"+k,"area",AREAS[k].name,`pages/a/${AREAS[k].name}.md`,30,AREAS[k].space);
+  NOTES.forEach(n=>add("z:"+n.key,"note",n.title,`pages/z/${n.title}.md`,n.edited,n.space,n.links,{body:lines(n.body)}));
+  LISTS.forEach(n=>add("l:"+n.key,"list",n.title,`pages/8/${n.title}.md`,n.edited,n.space,n.links,{body:lines(n.body)}));
+  for(const s in SPACES){
+    const lines=JOURNALS.me.filter(b=>b.n!=null&&blockSpace(b)===s).map(b=>b.n);
+    if(lines.length) add("j:"+s,"journal","15 October 2026",`journals/kenneth/2026-10-15.md`,0,s,[],{body:lines});
+  }
+  Object.values(all).forEach(p=>{ if(BODY[p.id]) p.body=p.body.concat(lines(BODY[p.id])); });
+  all["u:me"].body=all["u:me"].body.concat(...shown().map(s=>lines(BODY["me:"+s]||[])));
+  /* links written in the text of a page count too */
+  const byTitle=t=>Object.values(all).find(x=>x.title.toLowerCase()===t.toLowerCase());
+  Object.values(all).forEach(p=>p.body.forEach(line=>wikiTitles(line).forEach(t=>{const q=byTitle(t);p.links.push(q?q.id:"x:"+t);})));
+  /* keep only the spaces that are showing */
+  const pages={};
+  Object.values(all).forEach(p=>{ if(vis(p.space)) pages[p.id]=p; });
+  Object.values(pages).forEach(p=>{
+    p.links=[...new Set(p.links)].filter(l=>pages[l]||l.startsWith("x:")||!all[l]);
+    p.links.forEach(l=>{ if(!pages[l]) pages[l]={id:l,kind:"missing",title:l.slice(2),path:`pages/${l.slice(2)}.md (not made yet)`,edited:null,space:p.space,links:[],body:[],missing:true}; });
+  });
+  const edges=[], seen=new Set();
+  Object.values(pages).forEach(p=>p.links.forEach(l=>{ const key=[p.id,l].sort().join("|"); if(!seen.has(key)){seen.add(key);edges.push([p.id,l]);} }));
+  const deg={}; edges.forEach(([a,b])=>{deg[a]=(deg[a]||0)+1;deg[b]=(deg[b]||0)+1;});
+  Object.values(pages).forEach(p=>p.deg=deg[p.id]||0);
+  return {pages,edges};
+}
+const KINDS = {project:"Projects",person:"People",org:"Organisations",context:"Contexts",area:"Areas",note:"Notes",list:"Routines & lists",journal:"Journals",missing:"Not made yet"};
+const KIND1 = {project:"Project",person:"Person",org:"Organisation",context:"Context",area:"Area",note:"Note",list:"Routine or list",journal:"Day page",missing:"Not made yet"};
+const kcol = k => `var(--k-${k==="missing"?"note":k})`;
+const neighbours = (id,edges) => edges.filter(e=>e.includes(id)).map(e=>e[0]===id?e[1]:e[0]);
+/* Every page that links here, with the lines that mention it, or the property that does. */
+function refsTo(id,pages){
+  const me=pages[id]; if(!me) return [];
+  const PROPNAME={org:"organisations",person:"people",area:"area",project:"comes_after",context:"context"};
+  return Object.values(pages).filter(q=>q.links.includes(id)).map(q=>{
+    const lines=q.body.filter(l=>wikiTitles(l).some(t=>t.toLowerCase()===me.title.toLowerCase()));
+    return {from:q, lines, via: lines.length?null:`${PROPNAME[me.kind]||"links"}:: ${me.title}`};
+  });
+}
+
+/* ================= views ================= */
+const V = {};
+
+V.today = () => {
+  const who=F.today.who, mine=who==="me", nm=mine?"Your":first(who)+"'s";
+  const now=lists.dueNow(who), week=lists.week(who);
+  let h=`<div class="head"><h1>Today</h1><span class="sub">Thursday 15 October</span>
+    <select data-sel="today.who" aria-label="Whose day page">${["me","ola","sara"].filter(k=>k==="me"||vis(PEOPLE[k].space)).map(k=>`<option value="${k}" ${who===k?"selected":""}>${k==="me"?"Your page":first(k)+"'s page"}</option>`).join("")}</select>
+    <button class="textbtn" data-history title="Everything that happened, newest first">🕘 History</button></div>`;
+  /* one day page per space, because each space is its own vault */
+  const spacesHere = mine ? shown() : ["work"];
+  const jTitle = s => `${nm} ${SPACES[s].name} journal`;
+  const TODAY_GO = {root:"Today",rootGo:{jz:null}};
+  const secs = [
+    {id:"due",title:"Due today and late",late:now.some(t=>t.due<0),n:now.length,
+      body:()=>outlineHTML({key:"q:due"+who,rows:now.map(t=>qb(t.id)),readonly:!mine,title:"Due today and late",...TODAY_GO,empty:"Nothing due. Nothing late."})},
+    {id:"week",title:"Next 7 days",n:week.length,
+      body:()=>outlineHTML({key:"q:week"+who,rows:week.map(t=>qb(t.id)),readonly:!mine,title:"Next 7 days",...TODAY_GO,empty:"Nothing in the next seven days."})},
+    ...spacesHere.map(s=>({id:"j:"+s,title:jTitle(s),space:s,
+      lines:JOURNALS[who].filter(b=>blockSpace(b)===s).length,
+      body:()=>outlineHTML({key:"j:"+who+":"+s,arr:JOURNALS[who],filter:b=>blockSpace(b)===s,space:s,readonly:!mine,ph:PH_DAY,
+          title:jTitle(s),...TODAY_GO,parentGo:{jz:"j:"+s},noSpace:true,empty:`${first(who)}'s page is empty.`})
+        +(mine?"":`<p class="hint" style="margin-top:6px">${first(who)}'s page. You can read it, fold it and focus on a line. Only ${first(who)} writes on it.</p>`)}))
+  ];
+  /* focus on one section: the trail back to Today is all that stays above it */
+  const z = loc.jz && secs.find(x=>x.id===loc.jz);
+  if(z) return `<div class="crumbz focus"><button class="textbtn" data-go='{"jz":null}'>⤺ Today</button><span>›</span>${z.space?spBadge(z.space):""}<b>${esc(z.title)}</b></div>`+z.body();
+  if(newsOpen&&mine&&vis("work")) h+=`<div class="news"><span>●</span><div><b>Since you were last here</b><ul>
+    <li>Ola commented on <a href="#" data-open="1">Send rollup draft to the board</a></li>
+    <li>Sara finished <a href="#" data-open="12">Collect parking cards</a></li></ul></div>
+    <button id="newsX" aria-label="Dismiss">×</button></div>`;
+  /* every section works like a line in the outline: the arrow or the title folds it, the bullet focuses on it */
+  const section = x => { const f=secFold.has(x.id);
+    const say = x.n!=null ? x.n : f ? plural(x.lines,"line") : "click a line to edit, a bullet to focus";
+    return `<div class="group ${x.late?"late":""}"><button class="sectog" data-sec="${x.id}" aria-expanded="${!f}" aria-label="${f?"Show":"Fold away"} ${esc(x.title)}">${f?"▸":"▾"}</button>
+      <button class="secbul" data-go='{"jz":"${x.id}"}' title="Focus on ${esc(x.title)}" aria-label="Focus on ${esc(x.title)}">•</button>
+      <button class="sectog" data-sec="${x.id}" title="${f?"Show":"Fold away"}">${esc(x.title)}</button>${x.space?spBadge(x.space):""}<span class="plain">· ${say}</span></div>`+(f?"":x.body());
+  };
+  h+=secs.filter(x=>!x.space).map(section).join("");
+  /* side by side on a wide screen, one under the other otherwise */
+  return h+`<div class="jgrid">${secs.filter(x=>x.space).map(x=>`<section class="jcol">${section(x)}</section>`).join("")}</div>`;
+};
+
+/* Your page. Every space keeps its own copy, so they sit side by side like the journals,
+   each with its notes and every page in that space that links to you. */
+V.me = () => {
+  const me=PEOPLE.me, {pages}=allPages(), refs=refsTo("u:me",pages);
+  const mineOpen=tasks.filter(t=>open(t)&&t.who==="me").length, owed=lists.waiting().length;
+  const h=`<div class="mehead">${av("me")}<div><h1>${esc(me.name)}</h1>
+    <div class="sub">In ${plural(Object.keys(SPACES).length,"space")} · ${mineOpen} open · ${owed} owed to you · ${plural(refs.length,"page")} link here</div>
+    <div class="acts"><label>📷 ${me.pic?"Change picture":"Add a picture"}<input type="file" accept="image/*" data-pic></label>${me.pic?`<button data-unpic>Remove picture</button>`:""}<button data-copy>Copy link</button></div></div></div>`;
+  return h+`<div class="jgrid">`+shown().map(s=>`<section class="jcol">
+      <div class="colhead">${spBadge(s,true)}<span class="path">pages/p/${esc(me.name)}.md</span></div>
+      <div class="group">Notes <span class="plain">· click a line to edit, a bullet to focus</span></div>`+
+      outlineHTML({key:"b:me:"+s,arr:getBody("me:"+s),space:s,title:`Your notes in ${SPACES[s].name}`,root:"Your page",ph:`Write something about yourself for ${SPACES[s].name}.`,noSpace:true})+
+      refsHTML(refs.filter(r=>r.from.space===s))+`</section>`).join("")+`</div>`;
+};
+
+/* Everything that happened, newest first, grouped by day. What came in since your last visit is marked. */
+function historyDrawer(){
+  const rows=activity(3650,"",null).sort((a,b)=>a.ago-b.ago), byDay=[];
+  rows.forEach(r=>{ const last=byDay[byDay.length-1]; if(last&&last.ago===r.ago) last.rows.push(r); else byDay.push({ago:r.ago,rows:[r]}); });
+  const dayName=a=>a===0?"Today":a===1?"Yesterday":dateOf(-a).toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:dateOf(-a).getFullYear()===TODAY.getFullYear()?undefined:"numeric"});
+  $("#drawer").innerHTML=`<button class="x" id="dx" aria-label="Close">×</button>
+    <h2>History</h2>
+    <p style="margin:0;color:var(--muted);font-size:14px">Everything that happened in the spaces you are showing, newest first. Scroll down to go further back.</p>`+
+    (byDay.length?byDay.map(d=>`<div><div class="group" style="margin-top:4px">${dayName(d.ago)}<span class="plain">· ${d.rows.length}</span></div><div class="list">`+
+      d.rows.map(r=>`<div class="row" ${r.id?`data-id="${r.id}"`:`data-proj="${r.p}"`}><span class="ricon ${r.kind}">${RICON[r.kind]}</span>
+        <div class="t">${esc(r.text)}<div class="meta">${r.ago===0&&r.who!=="me"?`<span class="tag doing">Since you were last here</span>`:""}${r.p?`<span>#${esc(PROJECTS[r.p].name)}</span>`:""}${r.p?spTag(PROJECTS[r.p].space):""}</div></div>${av(r.who)}</div>`).join("")+`</div></div>`).join("")
+    :`<div class="list"><div class="empty">Nothing has happened yet.</div></div>`);
+  showDrawer();
+}
+
+V.next = () => {
+  const f=F.next, board=loc.sub==="board";
+  let arr=lists.next().filter(t=>stateOK(f,t)&&(board||!f.ctx||t.ctx===f.ctx));
+  arr.sort(f.sort==="date"?(a,b)=>(a.due??99)-(b.due??99):(a,b)=>b.age-a.age);
+  let h=`<div class="head"><h1>Next</h1><span class="sub">Everything on your plate</span>${seg([["list","List"],["board","Board"]],loc.sub,"data-sub")}</div>
+  <div class="chips">
+    ${chip("To do",f.todo,'data-t="next.todo"')}${chip("Doing",f.doing,'data-t="next.doing"')}
+    ${board?"":`<span class="gap"></span>${chip("Anywhere",!f.ctx,'data-f="next.ctx="')}${CK().map(k=>chip(ctxLabel(k),f.ctx===k,`data-f="next.ctx=${k}"`)).join("")}`}
+    <select class="right" data-sel="next.sort" aria-label="Sort"><option value="date" ${f.sort==="date"?"selected":""}>By date</option><option value="age" ${f.sort==="age"?"selected":""}>Oldest first</option></select>
+  </div>`;
+  if(!board) return h+listHTML(arr,{empty:f.ctx?`Nothing to do at ${ctxLabel(f.ctx)}.`:"Nothing here."});
+  /* tasks without a context come first, on the left, so they get sorted */
+  const used=[...new Set(arr.filter(t=>t.ctx).map(t=>t.ctx))];
+  const cols=["none",...new Set([...CK(),...used])];
+  return h+`<div class="boardscroll"><div class="board">`+cols.map(c=>{
+    const ts=arr.filter(t=>(t.ctx||"none")===c);
+    return `<div class="col ${c==="none"?"pin":""}" data-drop="ctx:${c}"><h3>${c==="none"?"No context yet":ctxLabel(c)}<span class="cnt">${ts.length}</span></h3>${ts.map(t=>card(t,"next:"+t.id)).join("")||`<div class="colhint">${c==="none"?"Everything has a context":"Drag a task here"}</div>`}</div>`;
+  }).join("")+`</div></div><p class="hint">Drag a card to another column to change where it can be done.</p>`;
+};
+
+V.waiting = () => {
+  const f=F.waiting, board=loc.sub==="board";
+  let w=lists.waiting().filter(t=>(!f.overdue||t.due<0)&&(!f.notAsked||!PEOPLE[t.who].asked));
+  let h=`<div class="head"><h1>Waiting for</h1><span class="sub">What you handed over and are owed back</span>${seg([["list","List"],["board","Board"]],loc.sub,"data-sub")}</div>
+  <div class="chips">${chip("Overdue",f.overdue,'data-t="waiting.overdue"')}${chip("Not asked yet",f.notAsked,'data-t="waiting.notAsked"')}</div>`;
+  const by={}; w.forEach(t=>(by[t.who]=by[t.who]||[]).push(t));
+  const askLabel = k => PEOPLE[k].member?"Nudge":"Ask for an update";
+  const sub = k => PEOPLE[k].asked?`asked ${PEOPLE[k].asked}d ago`:PEOPLE[k].member?"in the space":"never asked";
+  if(board){
+    const cols=PPL().filter(k=>k!=="me");
+    return h+`<div class="boardscroll"><div class="board">`+cols.map(k=>`<div class="col" data-drop="who:${k}">
+      <h3>${av(k)} ${first(k)}<span class="cnt">${(by[k]||[]).length}</span></h3>
+      <div class="meta" style="margin:-4px 4px 10px">${sub(k)}<button class="textbtn" data-ask="${k}">${askLabel(k)}</button></div>
+      ${(by[k]||[]).map(t=>card(t,"wait:"+t.id)).join("")||`<div class="colhint">Nothing owed</div>`}</div>`).join("")+
+      `</div></div><p class="hint">Drag a card to another person to hand it to them instead.</p>`;
+  }
+  if(!w.length) h+=listHTML([], {empty:"Nobody owes you anything that matches."});
+  for(const k in by) h+=`<div class="group">${av(k)} ${PEOPLE[k].name} · ${sub(k)}<button class="textbtn" data-ask="${k}">${askLabel(k)}</button></div>`+listHTML(by[k],{noWho:true});
+  return h;
+};
+
+function projTags(k,noSpace){
+  const p=PROJECTS[k], o=projOpen(k);
+  const g=[];
+  if(o.some(t=>t.due<0)) g.push(`<span class="tag late">late</span>`);
+  if(isBlocked(k)) g.push(`<span class="tag late">Blocked by ${esc(PROJECTS[p.blockedBy].name)}</span>`);
+  if(autoWait(k)) g.push(`<span class="tag wait" title="Every open next action is waiting on somebody">Waiting for · auto</span>`);
+  if(["active","waiting"].includes(p.status)&&!o.length) g.push(`<span class="tag wait">No next step</span>`);
+  if(!noSpace) g.push(spTag(p.space));
+  return g.join("");
+}
+
+V.projects = () => {
+  const sub=loc.sub, f=F.projects;
+  let h=`<div class="head"><h1>Projects</h1>${loc.org?`<span class="sub">${ORGS[loc.org].name} <button class="textbtn" data-go='{"org":null}'>× clear</button></span>`:""}
+    ${seg([["list","List"],["board","Board"],["timeline","Timeline"],["report","Report"]],sub,"data-sub")}</div>`;
+  const org = loc.org || f.org;
+  const orgSel = `<select data-sel="projects.org" aria-label="Organisation" ${loc.org?"disabled":""}><option value="">All organisations</option>${OK_().map(k=>`<option value="${k}" ${org===k?"selected":""}>${ORGS[k].name}</option>`).join("")}</select>`;
+  const inOrg = k => !org || PROJECTS[k].orgs.includes(org);
+  const keys = PK().filter(inOrg);
+
+  if(sub==="report") return h+V.report(org, orgSel);
+
+  if(sub==="list"){
+    h+=`<div class="chips">${STATUS_ORDER.map(s=>chip(`${STATUS[s].label}<small>${keys.filter(k=>eff(k)===s).length}</small>`,f.status===s,`data-f="projects.status=${s}"`)).join("")}
+      <span class="right">${orgSel}</span></div>`;
+    const ps=keys.filter(k=>eff(k)===f.status);
+    if(!ps.length) return h+listHTML([],{empty:"No projects here."});
+    return h+`<div class="list">`+ps.map(k=>{
+      const p=PROJECTS[k], ts=tasks.filter(t=>t.p===k), d=ts.filter(t=>!open(t)).length, o=ts.length-d;
+      const who=[...new Set(ts.filter(open).map(t=>t.who))];
+      return `<div class="row" data-proj="${k}"><div class="t"><b>${esc(p.name)}</b><div class="meta">
+        ${p.orgs.length?`<span>${esc(orgNames(p))}</span>`:""}${p.area?`<span>${AREAS[p.area].name}</span>`:""}<span>${o} open</span>${projTags(k)}
+        </div></div><div class="avs">${who.map(av).join("")}</div>
+        <div class="bar" title="${d} of ${ts.length} done"><i style="width:${ts.length?Math.round(d/ts.length*100):0}%"></i></div></div>`;
+    }).join("")+`</div>`;
+  }
+
+  if(sub==="board"){
+    h+=`<div class="chips"><span class="say">One column per status folder</span><span class="right">${orgSel}</span></div>`;
+    return h+`<div class="boardscroll"><div class="board">`+STATUS_ORDER.map(s=>{
+      const ps=keys.filter(k=>eff(k)===s);
+      return `<div class="col" data-drop="status:${s}"><h3><span class="dir">${STATUS[s].dir}/</span>${STATUS[s].label}<span class="cnt">${ps.length}</span></h3>${ps.map(k=>{
+        const p=PROJECTS[k], o=projOpen(k);
+        return `<div class="card" data-proj="${k}" data-drag="proj:${k}"><b>${esc(p.name)}</b><div class="meta">${p.orgs.length?`<span>${esc(orgNames(p))}</span>`:""}<span>${o.length} open</span>${projTags(k)}</div></div>`;
+      }).join("")||`<div class="colhint">Drag a project here</div>`}</div>`;
+    }).join("")+`</div></div><p class="hint">Dragging a project moves its file to that folder, and every link to it follows.</p>`;
+  }
+
+  if(sub==="timeline"){
+    const sc=f.scale, span=sc==="weeks"?20:80, start=-span/4;
+    const ks=keys.filter(k=>["active","waiting"].includes(eff(k)));
+    const allOpen=ks.every(k=>tlOpen.has(k));
+    h+=`<div class="chips">${chip("Weeks",sc==="weeks",'data-f="projects.scale=weeks"')}${chip("Months",sc==="months",'data-f="projects.scale=months"')}
+      <button class="textbtn" data-tlall="${allOpen?"fold":"unfold"}">${allOpen?"▾ Fold all":"▸ Unfold all"}</button><span class="right">${orgSel}</span></div>`;
+    const pct=d=>Math.min(100,Math.max(0,(d-start)/span*100));
+    const bar=(a,b,cls,title)=>`<div class="tl-bar ${cls}" style="left:${pct(a)}%;width:${Math.max(2,pct(b+1)-pct(a))}%" title="${esc(title)}"></div>`;
+    let rows="";
+    ks.forEach(k=>{
+      const p=PROJECTS[k], ot=projOpen(k), ds=ot.filter(t=>t.due!=null).map(t=>t.due), isOpen=tlOpen.has(k);
+      const cls=isBlocked(k)?"blocked":ds.some(d=>d<0)?"late":eff(k)==="waiting"?"wait":"";
+      const a=Math.min(...ds,0), b=Math.max(...ds,p.deadline??-99,0);
+      rows+=`<div class="tl-row"><button class="tog" data-tl="${k}" aria-expanded="${isOpen}" aria-label="${isOpen?"Fold":"Unfold"} ${esc(p.name)}">${ot.length?(isOpen?"▾":"▸"):""}</button>
+        <span class="nm" data-proj="${k}" title="${esc(p.name)}">${esc(p.name)}</span><div class="tl-track"><div class="tl-now" style="left:${pct(0)}%" title="Today"></div>
+        ${ds.length||p.deadline!=null?bar(a,b,cls,`${fmt(a)} to ${fmt(b)}${cls==="blocked"?". Blocked by "+PROJECTS[p.blockedBy].name:""}`):`<span class="nodate">no dates yet</span>`}</div></div>`;
+      if(isOpen) ot.slice().sort((x,y)=>(x.due??999)-(y.due??999)).forEach(t=>{
+        const tc=t.due!=null&&t.due<0?"late":(t.state==="waiting"||handed(t))?"wait":t.state==="doing"?"doing":"";
+        const s=t.due!=null?Math.max(t.due-Math.min(3,t.age??3),-(t.age??0)):null;
+        rows+=`<div class="tl-row sub"><span class="tog"></span><span class="nm" data-id="${t.id}" title="${esc(t.t)}">${esc(t.t)}</span><div class="tl-track">
+          ${t.due!=null?bar(s,t.due,tc,`${t.t}: due ${fmt(t.due)}${handed(t)?", waiting on "+first(t.who):""}`):`<span class="nodate">no date</span>`}</div></div>`;
+      });
+    });
+    return h+`<div class="list tl"><div class="tl-axis"><span>${fmt(start)}</span><span>Today</span><span>${fmt(start+span/2)}</span><span>${fmt(start+span)}</span></div>${rows}
+      <p class="hint">▸ unfolds a project into its next actions. Drag a bar to reschedule. Hatched means planned during something it waits for. Amber means waiting on somebody.</p></div>`;
+  }
+};
+
+/* Everything that happened in a window: finished, added, discussed, or moved between folders. */
+function activity(days, who, org, newest=0){
+  const rows=[];
+  tasks.forEach(t=>{
+    if(t.state==="done"&&t.ago!=null&&t.ago<=days) rows.push({p:t.p,ago:t.ago,kind:"done",who:t.doneBy,text:t.t,id:t.id});
+    if(t.age!=null&&t.age<=days) rows.push({p:t.p,ago:t.age,kind:"added",who:t.by||t.who,text:t.t,id:t.id});
+  });
+  for(const id in thread){ const t=tasks.find(x=>x.id==id); if(!t) continue;
+    thread[id].forEach(m=>{ if(m.ago<=days) rows.push({p:t.p,ago:m.ago,kind:"comment",who:m.who,text:`${first(m.who)} on “${t.t}”: ${m.txt}`,id:t.id}); }); }
+  PK().forEach(k=>{ const p=PROJECTS[k];
+    if(p.statusAgo!=null&&p.statusAgo<=days) rows.push({p:k,ago:p.statusAgo,kind:"status",who:"me",text:`Moved to ${STATUS[p.status].dir}/ ${STATUS[p.status].label}`}); });
+  return rows.filter(r=>r.ago>=newest&&(!who||r.who===who)&&(!org||(r.p&&PROJECTS[r.p].orgs.includes(org))));
+}
+const RICON = {done:"✓",added:"+",comment:"💬",status:"⇄"};
+const PERIODS = [["week","Week",7],["month","Month",30],["quarter","Quarter",91],["half","Half year",182],["year","Year",365],["custom","Custom dates…"]];
+/* The report's window as [oldest, newest], in days before today */
+function reportWindow(){
+  const f=F.report, p=PERIODS.find(x=>x[0]===f.period);
+  if(f.period!=="custom") return [p[2],0];
+  const ago=s=>Math.round((TODAY-new Date(s+"T00:00"))/864e5);
+  const a=ago(f.from), b=ago(f.to);
+  return [Math.max(a,b),Math.max(0,Math.min(a,b))];
+}
+V.report = (org, orgSel) => {
+  const f=F.report, [days,newest]=reportWindow();
+  const rows=activity(days,f.who,org,newest);
+  const by={}; rows.forEach(r=>(by[r.p||"_none"]=by[r.p||"_none"]||[]).push(r));
+  const keys=Object.keys(by).sort((a,b)=>by[b].length-by[a].length);
+  const n=k=>rows.filter(r=>r.kind===k).length;
+  const completed=keys.filter(k=>k!=="_none"&&PROJECTS[k].status==="done").length;
+  let h=`<div class="chips"><select data-sel="report.period" aria-label="Period">${PERIODS.map(([k,l])=>`<option value="${k}" ${f.period===k?"selected":""}>${l}</option>`).join("")}</select>
+    ${f.period==="custom"?`<input type="date" class="chip" data-rdate="from" value="${f.from}" max="${iso(0)}" aria-label="From"><span class="say">to</span><input type="date" class="chip" data-rdate="to" value="${f.to}" max="${iso(0)}" aria-label="To">`:""}
+    <span class="gap"></span><select data-sel="report.who" aria-label="Person"><option value="">Everyone</option>${PPL().map(k=>`<option value="${k}" ${f.who===k?"selected":""}>${PEOPLE[k].name}</option>`).join("")}</select>
+    ${orgSel}<button class="textbtn right" id="copyReport">Copy as text</button></div>
+    <div class="stat"><div><b>${keys.filter(k=>k!=="_none").length}</b>projects with activity</div><div><b>${n("done")}</b>finished</div><div><b>${n("added")}</b>added</div><div><b>${n("comment")}</b>comments</div><div><b>${completed}</b>projects completed</div></div>`;
+  if(!rows.length) return h+listHTML([],{empty:"Nothing happened in this window."});
+  keys.forEach(k=>{
+    const rs=by[k].sort((a,b)=>a.ago-b.ago), p=PROJECTS[k];
+    const cnt=["done","added","comment"].map(x=>{const c=rs.filter(r=>r.kind===x).length;return c?`${c} ${x==="comment"?(c===1?"comment":"comments"):x}`:""}).filter(Boolean).join(" · ");
+    h+=`<div class="group">${k==="_none"?"No project":`<a class="wl" data-proj="${k}" style="text-transform:none;letter-spacing:0;font-size:14px">${esc(p.name)}</a><span class="tag ${p.status==="done"?"ok":eff(k)==="waiting"?"wait":""}" style="text-transform:none;letter-spacing:0">${STATUS[eff(k)].label}</span>${spTag(p.space)}`}<span class="plain">${cnt}</span></div>
+      <div class="list">`+rs.map(r=>`<div class="row" ${r.id?`data-id="${r.id}"`:`data-proj="${r.p}"`}><span class="ricon ${r.kind}">${RICON[r.kind]}</span>
+        <div class="t">${esc(r.text)}</div>${av(r.who)}<span class="right-num">${fmt(-r.ago)}</span></div>`).join("")+`</div>`;
+  });
+  return h+`<p class="hint">2 tasks marked done by hand carry no date, so they are not in any window.</p>`;
+};
+function reportText(){
+  const f=F.report, [days,newest]=reportWindow();
+  const rows=activity(days,f.who,loc.org||F.projects.org,newest), by={};
+  rows.forEach(r=>(by[r.p||"_none"]=by[r.p||"_none"]||[]).push(r));
+  return Object.entries(by).map(([k,rs])=>`${k==="_none"?"No project":PROJECTS[k].name} (${k==="_none"?"":STATUS[eff(k)].label})\n`+
+    rs.map(r=>`  ${RICON[r.kind]} ${r.text}, ${fmt(-r.ago)}`).join("\n")).join("\n\n");
+}
+
+/* ---------- People and organisations: cards, plus a board you drag onto ---------- */
+const boardProjects = () => PK().filter(k=>["active","waiting","someday"].includes(eff(k)));
+V.people = () => {
+  const f=F.people;
+  let h=`<div class="head"><h1>People</h1><span class="sub">Who is carrying what</span>${seg([["list","List"],["cards","Cards"],["board","Board"]],loc.sub,"data-sub")}</div>`;
+  if(loc.sub==="board"){
+    h+=`<div class="tray"><span class="say">Drag a person onto a project to involve them, or onto a next action to hand it over.</span>${PPL().map(k=>`<span class="pchip" data-drag="person:${k}">${av(k)}${k==="me"?"Me":first(k)}</span>`).join("")}</div>`;
+    return h+`<div class="boardscroll"><div class="board">`+boardProjects().map(k=>{
+      const p=PROJECTS[k], ot=projOpen(k);
+      return `<div class="col" data-drop="pproj:${k}"><h3 style="cursor:pointer" data-proj="${k}">${esc(p.name)}<span class="cnt">${ot.length}</span></h3>
+        <div class="stakes">${p.people.map(u=>`<span class="stake">${av(u)}${first(u)}<button data-unstake="${k}:${u}" aria-label="Remove ${esc(PEOPLE[u].name)}">×</button></span>`).join("")||`<span class="meta">No one else involved</span>`}${spTag(p.space)}</div>
+        ${ot.map(t=>card(t,null,{drop:"ptask:"+t.id,noProj:true})).join("")||`<div class="colhint">No next actions</div>`}</div>`;
+    }).join("")+`</div></div><p class="hint">Hand a next action to somebody and it lands in your Waiting for. Drag yourself onto it to take it back.</p>`;
+  }
+  h+=`<div class="chips">${chip("Everyone",f.kind==="all",'data-f="people.kind=all"')}${chip("In the space",f.kind==="in",'data-f="people.kind=in"')}${chip("Outside it",f.kind==="out",'data-f="people.kind=out"')}</div>`;
+  const keep=k=>!(f.kind==="in"&&!PEOPLE[k].member||f.kind==="out"&&PEOPLE[k].member);
+  if(loc.sub==="list"){
+    return h+`<div class="list">`+PPL().filter(keep).map(k=>{
+      const p=PEOPLE[k], n=tasks.filter(t=>open(t)&&t.who===k).length, late=tasks.filter(t=>open(t)&&t.who===k&&t.due<0).length;
+      const owes=lists.waiting().filter(t=>t.who===k).length, projs=PK().filter(x=>PROJECTS[x].people.includes(k)&&["active","waiting"].includes(eff(x))).length;
+      return `<div class="row" data-full="u:${k}">${av(k)}<div class="t"><b>${p.name}${k==="me"?" (you)":""}</b><div class="meta">
+        <span class="tag ${p.member?"":"wait"}">${p.member?"In the space":"Outside the space"}</span><span>${p.seen}</span>${projs?`<span>${plural(projs,"project")}</span>`:""}${spTag(p.space)}</div></div>
+        <span class="right-num">${n} open${late?` · <span class="blocked">${late} late</span>`:""}${owes?` · owes you ${owes}`:""}</span>
+        ${k!=="me"?`<button class="textbtn" data-ask="${k}">${p.member?"Hand over":"Ask for an update"}</button>`:`<span style="width:96px"></span>`}</div>`;
+    }).join("")+`</div>`;
+  }
+  h+=`<div class="grid">`;
+  PPL().forEach(k=>{
+    const p=PEOPLE[k];
+    if(!keep(k)) return;
+    const n=tasks.filter(t=>open(t)&&t.who===k).length;
+    const late=tasks.filter(t=>open(t)&&t.who===k&&t.due<0).length;
+    h+=`<div class="cardbox" data-page="u:${k}">${av(k)}<h4>${p.name}${k==="me"?" (you)":""}</h4>
+      <p>${n} open${late?` · <span class="blocked">${late} late</span>`:""} · ${p.seen}</p>
+      ${k!=="me"?`<button class="act" data-ask="${k}">${p.member?"Hand over a task":"Ask for an update"}</button>`:""}</div>`;
+  });
+  return h+`</div>`;
+};
+
+V.orgs = () => {
+  let h=`<div class="head"><h1>Organisations</h1><span class="sub">Whose work it is</span>${seg([["list","List"],["board","Board"]],loc.sub,"data-sub")}</div>`;
+  if(loc.sub==="board"){
+    h+=`<div class="tray"><span class="say">Drag an organisation onto a project.</span>${OK_().map(k=>`<span class="pchip" data-drag="org:${k}"><span class="odot">${ORGS[k].name[0]}</span>${esc(ORGS[k].name)}</span>`).join("")}</div>`;
+    const groups=["active","waiting","someday"];
+    groups.forEach(s=>{
+      const ks=boardProjects().filter(k=>eff(k)===s); if(!ks.length) return;
+      h+=`<div class="group">${STATUS[s].dir}/ ${STATUS[s].label}</div><div class="pcards">`+ks.map(k=>{
+        const p=PROJECTS[k];
+        return `<div class="pcard" data-drop="oproj:${k}"><h4 data-proj="${k}">${esc(p.name)}</h4><div class="meta"><span>${plural(projOpen(k).length,"open task")}</span>${spTag(p.space)}</div>
+          <div class="stakes">${p.orgs.map(o=>`<span class="stake"><span class="kdot" style="background:var(--k-org);margin-left:4px"></span>${esc(ORGS[o].name)}<button data-unorg="${k}:${o}" aria-label="Remove ${esc(ORGS[o].name)}">×</button></span>`).join("")||`<span class="meta">No organisation yet. Drag one here.</span>`}</div></div>`;
+      }).join("")+`</div>`;
+    });
+    return h;
+  }
+  h+=`<div class="list">`;
+  OK_().forEach(k=>{
+    const o=ORGS[k], ps=PK().filter(p=>PROJECTS[p].orgs.includes(k)&&["active","waiting"].includes(eff(p)));
+    const ts=tasks.filter(t=>t.p&&PROJECTS[t.p].orgs.includes(k)&&open(t));
+    const who=[...new Set(ts.map(t=>t.who))];
+    h+=`<div class="row" data-go='{"view":"projects","sub":"list","org":"${k}"}'><span class="av" style="background:var(--k-org)">${o.name[0]}</span>
+      <div class="t"><b>${o.name}</b><div class="meta"><span class="tag">${o.what}</span><span>${plural(ps.length,"active project")}</span><span>${plural(ts.length,"open task")}</span>${spTag(o.space)}</div></div>
+      <div class="avs">${who.map(av).join("")}</div><span class="right-num">›</span></div>`;
+  });
+  return h+`</div><p class="hint">Open one to see its projects. Use the board to add organisations to projects by dragging.</p>`;
+};
+
+V.contexts = () => {
+  let h=`<div class="head"><h1>Contexts</h1><span class="sub">Where are you? See what you can do there.</span></div><div class="grid">`;
+  CK().forEach(k=>{
+    const c=CONTEXTS[k], ts=lists.next().filter(t=>t.ctx===k), ic=ctxIcon(k);
+    h+=`<button class="cardbox" data-go='{"view":"next","sub":"list","ctx":"${k}"}'>
+      <span class="big ${ic?"":"fallback"}" title="${ic?"From icon:: on the page":"No icon:: on this page yet"}">${ic||"@"}</span>
+      <h4>@${c.name} ${spTag(c.space)}</h4>
+      <p>${plural(ts.length,"thing")} you can do at @${c.name}${ts.some(t=>t.due<0)?` · <span class="blocked">late</span>`:""}</p></button>`;
+  });
+  const none=lists.next().filter(t=>!t.ctx).length;
+  return h+`</div><p class="hint">The icon is read from <code>icon::</code> on each context page.${none?` ${plural(none,"task")} have no context yet.`:""}</p>`;
+};
+
+/* ---------- Pages: list, board, mind map, graph ---------- */
+V.pages = () => {
+  const f=F.pages, sub=loc.sub, {pages,edges}=allPages();
+  let h=`<div class="head"><h1>Pages</h1><span class="sub">Everything in ${multi()?"the spaces you are showing":"the "+SPACES[firstSpace()].name+" space"}</span>${seg([["list","List"],["board","Board"],["mindmap","Mind map"],["graph","Graph"]],sub,"data-sub")}</div>`;
+  const kindSel=`<select data-sel="pages.kind" aria-label="Kind"><option value="">All kinds</option>${Object.entries(KINDS).map(([k,l])=>`<option value="${k}" ${f.kind===k?"selected":""}>${l}</option>`).join("")}</select>`;
+  const sortSel=`<select data-sel="pages.sort" aria-label="Sort"><option value="edited" ${f.sort==="edited"?"selected":""}>Recently edited</option><option value="linked" ${f.sort==="linked"?"selected":""}>Most linked</option><option value="az" ${f.sort==="az"?"selected":""}>A to Z</option></select>`;
+  let ps=Object.values(pages).filter(p=>!f.kind||p.kind===f.kind);
+  const dot=p=>`<span class="kdot ${p.missing?"hollow":""}" style="background:${kcol(p.kind)}"></span>`;
+  const meta=p=>`<span>${KIND1[p.kind]}</span><span>${plural(p.deg,"link")}</span>${p.edited!=null?`<span>edited ${p.edited?p.edited+"d ago":"today"}</span>`:""}${spTag(p.space)}`;
+  const sorter={edited:(a,b)=>(a.edited??999)-(b.edited??999),az:(a,b)=>a.title.localeCompare(b.title),linked:(a,b)=>b.deg-a.deg}[f.sort];
+
+  if(sub==="list"){
+    h+=`<div class="chips">${kindSel}${sortSel}</div>`;
+    return h+`<div class="list">`+ps.sort(sorter).map(p=>`<div class="row" data-page="${p.id}">${dot(p)}<div class="t">${esc(p.title)}<div class="meta">${meta(p)}</div></div><span class="right-num">›</span></div>`).join("")+`</div>`;
+  }
+  if(sub==="board"){
+    h+=`<div class="chips">${sortSel}</div>`;
+    return h+`<div class="boardscroll"><div class="board">`+Object.keys(KINDS).map(k=>{
+      const col=Object.values(pages).filter(p=>p.kind===k).sort(sorter);
+      if(!col.length) return "";
+      return `<div class="col"><h3>${dot({kind:k,missing:k==="missing"})} ${KINDS[k]}<span class="cnt">${col.length}</span></h3>${col.map(p=>`<div class="card" data-page="${p.id}">${esc(p.title)}<div class="meta"><span>${plural(p.deg,"link")}</span>${spTag(p.space)}</div></div>`).join("")}</div>`;
+    }).join("")+`</div></div>`;
+  }
+  const legend=`<div class="legend">${Object.entries(KINDS).map(([k,l])=>`<span>${dot({kind:k,missing:k==="missing"})}${l}</span>`).join("")}</div>`;
+  if(sub==="mindmap"){
+    const centre=loc.center&&pages[loc.center]?loc.center:"root";
+    h+=`<div class="chips"><select data-centre aria-label="Centre on"><option value="root">Centre on: ${esc(shown().map(s=>SPACES[s].name).join(" + "))}</option>${Object.values(pages).filter(p=>!p.missing).sort((a,b)=>a.title.localeCompare(b.title)).map(p=>`<option value="${p.id}" ${centre===p.id?"selected":""}>Centre on: ${esc(p.title)}</option>`).join("")}</select>
+      <span class="say">Click a branch to centre on it. Click the middle to open it.</span></div>`;
+    return h+`<div class="svgbox">${mindmap(centre,pages,edges)}</div>`+legend;
+  }
+  h+=`<div class="chips"><span class="say">Every page is a dot and every link a line. Bigger dots have more links. Hollow ones are links to pages nobody has made yet.</span></div>`;
+  return h+`<div class="svgbox">${graph(pages,edges)}</div>`+legend;
+};
+
+function mindmap(centre,pages,edges){
+  let rootTitle, l1;
+  const areaKids = a => PK().filter(k=>PROJECTS[k].area===a).map(k=>"p:"+k);
+  const kids = id => { let n=neighbours(id,edges); if(id.startsWith("a:")) n=[...new Set([...n,...areaKids(id.slice(2))])]; return n.filter(x=>pages[x]); };
+  if(centre==="root"){ rootTitle=shown().map(s=>SPACES[s].name).join(" + "); l1=[...Object.keys(AREAS).filter(a=>vis(AREAS[a].space)).map(a=>"a:"+a), ...PK().filter(k=>!PROJECTS[k].area).map(k=>"p:"+k)]; }
+  else { rootTitle=pages[centre].title; l1=kids(centre); }
+  const placed=new Set([centre,...l1]);
+  /* Each branch gets its own arc, sized by how many children it has, so labels never pile up. */
+  const fam=l1.map(id=>{const c=kids(id).filter(x=>!placed.has(x)).slice(0,4); c.forEach(x=>placed.add(x)); return {id,c};});
+  const slots=fam.reduce((s,f)=>s+Math.max(f.c.length,1),0)||1;
+  const W=460,H=340; let lines="", nodes="", at=0;
+  const pill=(id,x,y,title,kind,big,missing)=>{
+    const t=title.length>22?title.slice(0,21)+"…":title, w=t.length*6.8+(big?34:22), hh=big?34:24;
+    return `<g class="node" data-mm="${id}" transform="translate(${x},${y})"><rect x="${-w/2}" y="${-hh/2}" width="${w}" height="${hh}" rx="${hh/2}" fill="var(--panel)" stroke="${kcol(kind)}" stroke-width="${big?2.5:1.5}" ${missing?'stroke-dasharray="4 3"':""}/>
+      <circle cx="${-w/2+11}" cy="0" r="4" fill="${missing?"none":kcol(kind)}" stroke="${kcol(kind)}"/><text x="${-w/2+20}" y="4" ${big?'style="font-weight:700;font-size:14px"':""}>${esc(t)}</text></g>`;
+  };
+  const ang = s => (s/slots)*Math.PI*2-Math.PI/2;
+  fam.forEach(({id,c})=>{
+    const n=Math.max(c.length,1), a=ang(at+n/2), x=Math.cos(a)*205, y=Math.sin(a)*140;
+    lines+=`<path d="M0,0 Q${x*.5},${y*.1} ${x},${y}" fill="none" stroke="var(--line)" stroke-width="2"/>`;
+    c.forEach((cid,j)=>{
+      const b=ang(at+j+.5), rr=j%2?1.08:1, cx=Math.cos(b)*395*rr, cy=Math.sin(b)*285*rr, p=pages[cid];
+      lines+=`<path d="M${x},${y} Q${(x+cx)/2},${(y+cy)/2+(cy-y)*.15} ${cx},${cy}" fill="none" stroke="var(--line)" stroke-width="1.2"/>`;
+      nodes+=pill(cid,cx,cy,p.title,p.kind,false,p.missing);
+    });
+    at+=n;
+    const p=pages[id]; nodes+=pill(id,x,y,p.title,p.kind,false,p.missing);
+  });
+  nodes+=pill(centre,0,0,rootTitle,centre==="root"?"root":pages[centre].kind,true,false);
+  return `<svg viewBox="${-W-60} ${-H-20} ${2*W+120} ${2*H+40}" role="img" aria-label="Mind map centred on ${esc(rootTitle)}">${lines}${nodes}</svg>`;
+}
+
+let graphCache=null;
+function graph(pages,edges){
+  const ids=Object.keys(pages), sig=ids.join()+edges.length;
+  if(!graphCache||graphCache.sig!==sig){
+    let s=7; const rnd=()=>(s=(s*16807)%2147483647)/2147483647;
+    const P={}; ids.forEach(id=>P[id]={x:rnd()*400-200,y:rnd()*300-150,vx:0,vy:0});
+    for(let it=0;it<380;it++){
+      const temp=1-it/380;
+      for(let i=0;i<ids.length;i++) for(let j=i+1;j<ids.length;j++){
+        const a=P[ids[i]],b=P[ids[j]]; let dx=a.x-b.x,dy=a.y-b.y,d2=Math.max(dx*dx+dy*dy,30),f=2600/d2,d=Math.sqrt(d2);
+        a.vx+=dx/d*f;a.vy+=dy/d*f;b.vx-=dx/d*f;b.vy-=dy/d*f;
+      }
+      edges.forEach(([x,y])=>{const a=P[x],b=P[y];const dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy)||1,f=(d-70)*0.04;
+        a.vx+=dx/d*f;a.vy+=dy/d*f;b.vx-=dx/d*f;b.vy-=dy/d*f;});
+      ids.forEach(id=>{const p=P[id];p.vx-=p.x*0.012;p.vy-=p.y*0.016;
+        const m=Math.min(12*temp+1,Math.hypot(p.vx,p.vy))/(Math.hypot(p.vx,p.vy)||1);p.x+=p.vx*m;p.y+=p.vy*m;p.vx*=.5;p.vy*=.5;});
+    }
+    graphCache={sig,P};
+  }
+  const P=graphCache.P, xs=ids.map(i=>P[i].x), ys=ids.map(i=>P[i].y);
+  const x0=Math.min(...xs)-90,x1=Math.max(...xs)+90,y0=Math.min(...ys)-40,y1=Math.max(...ys)+40;
+  const lines=edges.map(([a,b])=>`<line x1="${P[a].x}" y1="${P[a].y}" x2="${P[b].x}" y2="${P[b].y}" stroke="var(--line)" stroke-width="1.3"/>`).join("");
+  const nodes=ids.map(id=>{const p=pages[id],r=4+Math.sqrt(p.deg)*2.6,lab=p.deg>=3||p.missing;
+    return `<g class="node" data-page="${id}"><title>${esc(p.title)} · ${esc(SPACES[p.space].name)}</title><circle cx="${P[id].x}" cy="${P[id].y}" r="${r}" fill="${p.missing?"var(--panel)":kcol(p.kind)}" stroke="${kcol(p.kind)}" stroke-width="${p.missing?2:1}" ${p.missing?'stroke-dasharray="3 2"':""}/>
+      ${lab?`<text x="${P[id].x+r+4}" y="${P[id].y+4}">${esc(p.title.length>20?p.title.slice(0,19)+"…":p.title)}</text>`:""}</g>`;}).join("");
+  return `<svg viewBox="${x0} ${y0} ${x1-x0} ${y1-y0}" role="img" aria-label="Graph of every page and link">${lines}${nodes}</svg>`;
+}
+
+/* ---------- Full page view ---------- */
+V.page = () => {
+  const {pages}=allPages(), id=loc.page, p=pages[id];
+  if(!p) return `<div class="list"><div class="empty">This page is in a space you are not showing. Turn the space on at the top right.</div></div>`;
+  const refs=refsTo(id,pages);
+  let h=`<div class="crumbs">${spBadge(p.space,true)}<span>${KIND1[p.kind]}</span><span class="path">${esc(p.path)}</span></div>
+    <div class="pagehead"><h1>${p.kind==="context"&&p.props.icon?p.props.icon+" ":""}${esc(p.title)}</h1>
+    <div class="acts"><button data-copy>Copy link</button>${p.kind!=="journal"&&!p.missing?`<button data-go='{"view":"pages","sub":"mindmap","center":"${id}"}'>Mind map</button>`:""}</div></div>`;
+  if(p.missing) return h+`<div class="list"><div class="empty">Nobody has made this page yet. It is linked from ${plural(refs.length,"page")}.<br><br><button class="textbtn" data-make="${esc(p.title)}">Make the page</button></div></div>`+refsHTML(refs);
+  if(p.kind==="project"){
+    const k=id.slice(2), q=PROJECTS[k], inBody=t=>q.body.some(b=>b.t===t.id);
+    const done=tasks.filter(t=>t.p===k&&!open(t)&&!inBody(t));
+    h+=`<div class="props">${projFields(k)}</div>`;
+    h+=`<div class="group">Next actions</div>`+outlineHTML({key:"q:pna"+k,rows:projOpen(k).filter(t=>!inBody(t)).map(t=>qb(t.id)),proj:k,noSpace:true,empty:"No open tasks. Write one under Notes and press Alt+T."});
+    h+=`<div class="group">Notes <span class="plain">· click a line to edit, a bullet to focus</span></div>`+outlineHTML({key:"b:"+id,arr:q.body,proj:k,root:q.name,title:"Notes",noSpace:true});
+    if(done.length) h+=`<div class="group">Done <span class="plain">· ${done.length}</span></div>`+outlineHTML({key:"q:pd"+k,rows:done.map(t=>qb(t.id)),proj:k,noSpace:true});
+  } else {
+    if(p.props&&Object.keys(p.props).length) h+=`<div class="prop">${Object.entries(p.props).map(([a,b])=>`<b>${a}::</b> ${esc(b)}`).join("<br>")}</div>`;
+    else if(p.kind==="context") h+=`<div class="prop"><b>icon::</b> <span style="color:var(--muted)">not set yet</span></div>`;
+    const key=id.slice(2);
+    if(p.kind==="person") h+=`<div class="group">Open tasks</div>`+outlineHTML({key:"q:u"+key,rows:tasks.filter(t=>open(t)&&t.who===key).map(t=>qb(t.id)),empty:"Nothing open."});
+    if(p.kind==="context") h+=`<div class="group">Things you can do here</div>`+outlineHTML({key:"q:c"+key,rows:lists.next().filter(t=>t.ctx===key).map(t=>qb(t.id)),empty:"Nothing."});
+    if(p.kind==="org"||p.kind==="area"){
+      const ps=PK().filter(k=>p.kind==="org"?PROJECTS[k].orgs.includes(key):PROJECTS[k].area===key);
+      h+=`<div class="group">Projects</div><div class="list">${ps.map(k=>`<div class="row" data-full="p:${k}"><div class="t"><b>${esc(PROJECTS[k].name)}</b><div class="meta"><span>${STATUS[eff(k)].label}</span>${projTags(k)}</div></div><span class="right-num">›</span></div>`).join("")||`<div class="empty">None yet.</div>`}</div>`;
+    }
+    const isJ=p.kind==="journal";
+    h+=`<div class="group">${isJ?`Your ${esc(SPACES[p.space].name)} journal`:"Notes"} <span class="plain">· click a line to edit, a bullet to focus</span></div>`+
+      outlineHTML({key:"b:"+id,arr:isJ?JOURNALS.me:getBody(id),filter:isJ?(b=>blockSpace(b)===p.space):null,space:p.space,root:p.title,title:isJ?`Your ${SPACES[p.space].name} journal`:"Notes",ph:isJ?PH_DAY:PH_PAGE,noSpace:true});
+  }
+  return h+refsHTML(refs);
+};
+function refsHTML(refs){
+  return `<div class="group">Linked references <span class="plain">· ${refs.length}</span></div>`+(refs.length?`<div class="refs">${refs.map(r=>`<div class="ref">
+    <div class="from" data-page="${r.from.id}"><span class="kdot" style="background:${kcol(r.from.kind)}"></span>${esc(r.from.title)}<span class="meta" style="margin:0">${KIND1[r.from.kind]}</span>${spTag(r.from.space)}</div>
+    ${r.lines.length?`<ul>${r.lines.map(l=>`<li>${wiki(l)}</li>`).join("")}</ul>`:`<div class="via">${esc(r.via)}</div>`}</div>`).join("")}</div>`:`<div class="list"><div class="empty">Nothing links here yet.</div></div>`);
+}
+
+/* ---------- Weekly review, with the solitaire for projects ---------- */
+V.review = () => {
+  if(loc.sub==="projects") return V.reviewProjects();
+  const late=lists.dueNow("me").filter(t=>t.due<0).length;
+  const missing=solOrder().filter(k=>FIELDS.some(f=>f.k!=="status"&&!f.filled(PROJECTS[k],k))).length;
+  const steps=[
+    ["Empty your head onto today's page","Anything still in your head goes in the journal",'{"view":"today"}'],
+    ["Look at what is late",plural(late,"thing")+" late",'{"view":"today"}'],
+    ["Chase what you are waiting for","Mia asked 11 days ago. Per never asked.",'{"view":"waiting","sub":"board"}'],
+    ["Review every project",`${plural(missing,"project")} with gaps. Play it as solitaire, stalest first.`,'{"view":"review","sub":"projects"}'],
+    ["See what moved","Opens the report. Copy as text for the status mail.",'{"view":"projects","sub":"report"}']
+  ];
+  return `<div class="head"><h1>Weekly review</h1><span class="sub">Fifteen minutes, five steps</span></div><div class="list">`+
+    steps.map(([a,b,g],i)=>`<div class="row" data-go='${g}'><span class="av" style="background:var(--muted)">${i+1}</span><div class="t">${a}<div class="meta">${b}</div></div><span class="right-num">›</span></div>`).join("")+`</div>`;
+};
+
+const solOrder = () => PK().filter(k=>["active","someday","waiting"].includes(PROJECTS[k].status)).sort((a,b)=>PROJECTS[b].touched-PROJECTS[a].touched);
+/* Organisations, people, areas and projects are pages in a space's own folder, so a card only offers its own space's */
+const sameSpace = (map,k) => Object.keys(map).filter(x=>map[x].space===PROJECTS[k].space);
+const FIELDS = [
+  {k:"orgs",label:"Organisations",type:"multi",none:"None",inSpace:true,add:"New organisation",opts:k=>sameSpace(ORGS,k).map(o=>[o,ORGS[o].name]),
+    val:p=>p.orgs.length?orgNames(p):(p.ans.orgs?"None":""),filled:p=>p.orgs.length>0||!!p.ans.orgs},
+  {k:"people",label:"People",type:"multi",none:"Just me",inSpace:true,opts:k=>Object.keys(PEOPLE).filter(u=>u!=="me"&&PEOPLE[u].space===PROJECTS[k].space).map(u=>[u,PEOPLE[u].name]),
+    val:p=>p.people.length?p.people.map(k=>PEOPLE[k].name).join(", "):(p.ans.people?"Just me":""),filled:p=>p.people.length>0||!!p.ans.people},
+  {k:"area",label:"Area",type:"one",inSpace:true,add:"New area",opts:k=>sameSpace(AREAS,k).map(a=>[a,AREAS[a].name]),cur:p=>p.area,
+    val:p=>p.area?AREAS[p.area].name:"",filled:p=>!!p.area},
+  {k:"next",label:"Next action",type:"text",ph:"Add the very next thing to do",
+    val:(p,k)=>{const t=projOpen(k)[0];return t?t.t+(handed(t)?` (waiting on ${first(t.who)})`:""):""},filled:(p,k)=>projOpen(k).length>0},
+  {k:"outcome",label:"Done when",type:"text",ph:"What does done look like?",val:p=>p.outcome,filled:p=>!!p.outcome},
+  {k:"deadline",label:"Deadline",type:"date",opts:()=>[["7","This week"],["30","This month"],["90","This quarter"],["none","No deadline"]],
+    cur:p=>p.deadline==null?(p.ans.deadline?"none":null):String(p.deadline),
+    val:p=>p.deadline!=null?fmt(p.deadline)+" "+dateOf(p.deadline).getFullYear():(p.ans.deadline?"No deadline":""),filled:p=>p.deadline!=null||!!p.ans.deadline},
+  {k:"after",label:"Comes after",type:"one",inSpace:true,opts:k=>[["none","Nothing comes first"],...PK().filter(x=>x!==k&&PROJECTS[x].space===PROJECTS[k].space&&["active","waiting"].includes(PROJECTS[x].status)).map(x=>[x,PROJECTS[x].name])],
+    cur:p=>p.blockedBy||(p.ans.after?"none":null),
+    val:p=>p.blockedBy?PROJECTS[p.blockedBy].name:(p.ans.after?"Nothing comes first":""),filled:p=>!!p.blockedBy||!!p.ans.after},
+  {k:"status",label:"Still the right status?",type:"one",opts:()=>STATUS_ORDER.map(s=>[s,STATUS[s].label]),cur:p=>p.ans.status?p.status:null,
+    val:p=>p.ans.status?STATUS[p.status].label:"",filled:p=>!!p.ans.status}
+];
+const FIELD = Object.fromEntries(FIELDS.map(f=>[f.k,f]));
+const GRID = ["orgs","people","area","next","CARD","outcome","deadline","after","status"];
+
+V.reviewProjects = () => {
+  if(!sol.order) sol.order=solOrder();
+  const rv=loc.rv||"solitaire";
+  let h=`<div class="head"><h1>Review projects</h1><button class="textbtn" data-go='{"sub":"steps"}'>‹ All steps</button>${seg([["solitaire","Solitaire"],["list","List"]],rv,"data-rv")}</div>`;
+  if(rv==="list"){
+    return h+`<div class="list">`+solOrder().map(k=>{const p=PROJECTS[k], gaps=FIELDS.filter(f=>!f.filled(p,k)&&f.k!=="status");
+      return `<div class="row" data-proj="${k}"><div class="t"><b>${esc(p.name)}</b><div class="meta"><span>untouched ${p.touched}d</span>${gaps.map(f=>`<span class="tag wait">No ${f.label.toLowerCase()}</span>`).join("")||`<span class="tag ok">Complete</span>`}${spTag(p.space)}</div></div></div>`;}).join("")+`</div>`;
+  }
+  sol.order=sol.order.filter(k=>vis(PROJECTS[k].space));
+  if(sol.i>=sol.order.length){
+    return h+`<div class="list"><div class="empty"><div style="font-size:34px">🂡</div><b>Every project reviewed.</b><br>Each one now carries reviewed:: 2026-10-15.<br><br><button class="textbtn" data-solrestart>Deal again</button></div></div>`;
+  }
+  const k=sol.order[sol.i], p=PROJECTS[k];
+  const done=FIELDS.filter(f=>f.filled(p,k)).length, won=done===FIELDS.length;
+  h+=`<div class="solbar"><span>Card ${sol.i+1} of ${sol.order.length} · stalest first</span><span>Drag the card straight onto an option, or click one.</span><button class="textbtn" data-solskip>Skip this one ›</button></div><div class="sol">`;
+  GRID.forEach(g=>{
+    if(g==="CARD"){
+      h+= won
+        ? `<div class="solcard won"><h3>${esc(p.name)}</h3><div class="meta"><span class="tag ok">Reviewed</span>${spBadge(p.space)}</div><p style="margin:0;font-size:13px;color:var(--muted)">All ${FIELDS.length} fields are filled.</p><button class="primary" data-solnext>Next card ›</button></div>`
+        : `<div class="solcard" data-drag="sol:${k}" aria-label="Project card. Drag onto a field."><h3>${esc(p.name)}</h3>
+            <div class="meta">${spBadge(p.space)}<span class="tag">${STATUS[p.status].dir}/ ${STATUS[p.status].label}</span></div>
+            <div class="meta"><span>untouched for ${p.touched} days</span><span>${plural(projOpen(k).length,"open task")}</span></div>
+            <div class="meta">${projTags(k,true)}</div>
+            <div class="prog" title="${done} of ${FIELDS.length} filled"><i style="width:${done/FIELDS.length*100}%"></i></div></div>`;
+      return;
+    }
+    const f=FIELD[g], filled=f.filled(p,k);
+    h+=`<div class="slot ${filled?"filled":""} ${sol.focus===g?"focus":""}" data-drop="field:${g}" data-slot="${g}" tabindex="0"><div class="lbl">${f.label}${f.inSpace?spBadge(p.space):""}</div>`;
+    if(filled && (f.type==="text"||f.type==="date"||f.type==="multi")) h+=`<div class="val">${esc(f.val(p,k))}</div>`;
+    h+=picker(f,p,k)+`</div>`;
+  });
+  return h+`</div>`;
+};
+/* Every option is always on show, so a click on it is enough. */
+function picker(f,p,k){
+  /* a missing area or organisation can be made right here, as a page in the card's own space */
+  const addNew = f.add ? `<form class="newopt" data-padd="${f.k}"><input placeholder="＋ ${f.add}" aria-label="${f.add} in ${esc(SPACES[p.space].name)}"></form>` : "";
+  if(f.type==="text") return `<form data-ptext="${f.k}"><input placeholder="${f.ph}" value="${f.k==="outcome"?esc(p.outcome):""}" aria-label="${f.label}"><button class="mini">${f.k==="outcome"&&p.outcome?"Save":"Add"}</button></form>`;
+  if(f.type==="multi"){
+    const cur=p[f.k];
+    return `<div class="opts">${f.opts(k).map(([v,l])=>`<button class="chip" data-mtog="${f.k}=${v}" data-drop="opt:${f.k}~${v}~mtog" aria-pressed="${cur.includes(v)}">${esc(l)}</button>`).join("")}
+      <button class="chip" data-mnone="${f.k}" data-drop="opt:${f.k}~none~mnone" aria-pressed="${!cur.length&&!!p.ans[f.k]}">${f.none}</button>${addNew}</div>`;
+  }
+  const cur=f.cur?f.cur(p):null;
+  const nowMark = v => f.k==="status"&&!p.ans.status&&v===p.status?" now":"";
+  let h=`<div class="opts">${f.opts(k).map(([v,l])=>`<button class="chip${nowMark(v)}" data-pick="${f.k}=${v}" data-drop="opt:${f.k}~${v}~pick" aria-pressed="${cur===v}">${esc(l)}${nowMark(v)?" (now)":""}</button>`).join("")}`;
+  h+=addNew;
+  if(f.type==="date") h+=`<span class="datepick"><button data-datepick data-drop="opt:${f.k}~date~date" title="Pick a specific date" aria-label="Pick a specific date">📅 Pick a date</button><input type="date" data-date="${k}" min="${iso(0)}" value="${p.deadline!=null?iso(p.deadline):""}" tabindex="-1" aria-hidden="true"></span>`;
+  return h+`</div>`;
+}
+function dependsOn(a,b){ let x=a, n=0; while(x&&n++<20){ if(x===b) return true; x=PROJECTS[x].blockedBy; } return false; }
+function solApply(field,value){
+  const k=sol.order[sol.i], p=PROJECTS[k];
+  if(field==="area") p.area=value;
+  if(field==="deadline"){ if(value==="none"){p.deadline=null;p.ans.deadline=true;} else p.deadline=+value; }
+  if(field==="after"){
+    if(value==="none"){p.blockedBy=null;p.ans.after=true;}
+    else if(dependsOn(value,k)){ toast(`${PROJECTS[value].name} already waits on this one. That would be a loop.`,false); return; }
+    else p.blockedBy=value;
+  }
+  if(field==="status"){ p.status=value; p.ans.status=true; }
+  if(field==="outcome") p.outcome=value;
+  if(field==="next") addTask({id:Date.now(),t:value,p:k,who:"me",state:"todo",age:0});
+  solAfter(field);
+}
+function solAfter(field){
+  const k=sol.order[sol.i], p=PROJECTS[k];
+  sol.focus=field;
+  if(FIELDS.every(f=>f.filled(p,k))&&!p.reviewedNow){ p.reviewedNow=true; p.touched=0; toast(`${p.name} reviewed. reviewed:: 2026-10-15 written to its page.`,false); }
+  render();
+}
+
+function render(){
+  tasks = ALLT.filter(t=>vis(spaceOfTask(t)));
+  REG=[]; CTX=[]; FOCUS=null;
+  if(edit && edit.blk.t!=null && !ALLT.some(x=>x.id===edit.blk.t)) edit=null;
+  if(loc.view==="next") F.next.ctx = loc.ctx || null;
+  counts();
+  const wide = (loc.sub==="board") || (loc.view==="projects"&&loc.sub==="timeline") || (loc.view==="pages"&&["mindmap","graph"].includes(loc.sub)) || (loc.view==="review"&&loc.sub==="projects");
+  let html=V[loc.view]();
+  /* focus mode: zoomed into a line, only its trail and its outline stay */
+  if(FOCUS) html=FOCUS;
+  const jwide = !FOCUS && multi() && (loc.view==="me" || (loc.view==="today" && F.today.who==="me" && !loc.jz));
+  $("#view").innerHTML=`<div class="wrap ${wide?"wide":""} ${jwide?"jwide":""}">${html}</div>`;
+  const ein=document.querySelector(".ein[data-edit]");
+  if(ein){ ein.focus(); const L=ein.value.length; ein.setSelectionRange(L,L); }
+  if(sol.focus && loc.view==="review"){ const el=document.querySelector(`.slot[data-slot="${sol.focus}"] input:not([type=date])`); if(el&&sol.justDropped) el.focus(); sol.justDropped=false; }
+}
+
+/* ================= outliner: journal and page text, edited in place ================= */
+const PH_DAY = "Write on today's page. Press Alt+T to make it a task or Alt+1 to make it a project.";
+const PH_PAGE = "Write on this page. Press Alt+T to make it a task or Alt+1 to make it a project.";
+let edit = null;             // {ctx, blk, draft, open, q, trig, hi, lit}
+const zoomMap = {};          // outline key -> the block you zoomed into
+const folded = new Set();    // blocks whose children are hidden
+const secFold = new Set();   // folded sections on Today
+let REG = [], CTX = [];      // what each rendered line and outline stands for
+let FOCUS = null;            // the outline you focused on, when you did
+const QB = {};               // one stable block per task, for lists that are not outlines
+const qb = id => QB[id] || (QB[id] = {t:id,i:0});
+const taskOf = b => b.t!=null ? ALLT.find(x=>x.id===b.t) : null;
+const viewOf = ctx => ctx.arr ? ctx.arr.filter(ctx.filter||(()=>true)) : ctx.rows;
+const kidsOf = (view,b) => { const i=view.indexOf(b), out=[]; for(let j=i+1;j<view.length&&view[j].i>b.i;j++) out.push(view[j]); return out; };
+
+function lineHTML(ctx,b,depth,hasKids){
+  const t=taskOf(b);
+  if(b.t!=null && !t) return "";
+  const n=REG.push({ctx,b})-1;
+  if(edit && edit.blk===b) return editHTML(ctx,b,depth,t,n);
+  const isF=hasKids&&folded.has(b);
+  const g = t ? tags(t,{noSpace:ctx.noSpace,noProj:!!ctx.proj&&t.p===ctx.proj}) : "";
+  return `<div class="jl ${t?"task":""} ${t&&t.state==="done"?"done":""} ${isF?"folded":""}" style="--i:${depth}">
+    <button class="fold" data-fold="${n}" tabindex="-1" aria-label="${isF?"Unfold":"Fold"}">${hasKids?(isF?"▸":"▾"):""}</button>
+    ${ctx.arr?`<button class="bul" data-zoom="${n}" title="Focus on this line" aria-label="Focus on this line">${isF?"◉":"•"}</button>`:`<span class="bul">•</span>`}
+    ${t?`<button class="chk" data-tick="${t.id}" aria-label="Tick off"></button>`:""}
+    <div class="t" data-editln="${n}">${t?esc(t.t):(b.n?wiki(b.n):`<span class="ph">Empty line</span>`)}${g?`<div class="meta">${g}</div>`:""}</div>
+    ${t&&t.who!=="me"?av(t.who):""}</div>`;
+}
+function editHTML(ctx,b,depth,t,n){
+  return `<div class="jl editing ${t?"task":""}" style="--i:${depth}">
+    <span class="fold"></span><span class="bul">•</span>
+    ${t?`<button class="chk" data-tick="${t.id}" aria-label="Tick off"></button>`:""}
+    <div class="t"><input class="ein" data-edit value="${esc(edit.draft)}" placeholder="${esc(ctx.ph||PH_PAGE)}" aria-label="Edit line" autocomplete="off">
+      ${t?`<div class="meta">${tags(t,{noSpace:true})}</div>`:""}</div>
+    <div class="fly" id="fly" role="menu" aria-label="Line options">${flyHTML()}</div></div>`;
+}
+function outlineHTML(ctx){
+  const ci=CTX.push(ctx)-1, all=viewOf(ctx);
+  let view=all, base=0, crumbs="";
+  const z=zoomMap[ctx.key];
+  if(z && all.includes(z)){
+    view=[z,...kidsOf(all,z)]; base=z.i;
+    const anc=[]; let lvl=z.i; for(let j=all.indexOf(z)-1;j>=0&&lvl>0;j--) if(all[j].i<lvl){anc.unshift(all[j]);lvl=all[j].i;}
+    const label=b=>{const t=taskOf(b);return esc((t?t.t:(b.n||"…")).replace(/\[\[|\]\]/g,"").slice(0,40));};
+    const root=ctx.root||ctx.title||"Page", mid=ctx.title&&ctx.title!==root;
+    crumbs=`<div class="crumbz focus"><button class="textbtn" data-unzoom="${ci}" data-to="root">⤺ ${esc(root)}</button>`+
+      (mid?`<span>›</span>${ctx.parentGo&&ctx.space?spBadge(ctx.space):""}<button class="textbtn" data-unzoom="${ci}" data-to="parent">${esc(ctx.title)}</button>`:"")+
+      `${anc.map(a=>`<span>›</span><button class="textbtn" data-zoomto="${ci}:${all.indexOf(a)}">${label(a)}</button>`).join("")}<span>›</span><b>${label(z)}</b></div>`;
+  }
+  let h="";
+  for(let j=0;j<view.length;j++){
+    const b=view[j], kids=kidsOf(view,b);
+    h+=lineHTML(ctx,b,b.i-base,kids.length>0);
+    if(kids.length&&folded.has(b)) j+=kids.length;
+  }
+  if(!ctx.readonly && ctx.arr) h+=`<div class="jl jnew" style="--i:${z?1:0}"><span class="fold"></span><span class="bul">•</span><input class="ein" data-newline="${ci}" placeholder="${esc(ctx.ph||PH_PAGE)}" aria-label="New line"></div>`;
+  else if(!view.length) h+=`<div class="empty" style="padding:14px">${ctx.empty||"Nothing here."}</div>`;
+  const out=crumbs+`<div class="journal">${h}</div>`;
+  /* focused on a line: this outline is all the main column shows */
+  if(crumbs) FOCUS=out;
+  return out;
+}
+
+const DUE_OPTS=[["0","Today"],["1","Tomorrow"],["4","Monday"],["7","Next week"],["none","No date"]];
+const REP_OPTS=[["weekly","Weekly"],["every 2 weeks","Every 2 weeks"],["monthly","Monthly"],["none","No repeat"]];
+const FLYKEYS={KeyD:"due",KeyC:"ctx",KeyP:"who",KeyJ:"proj",KeyR:"rep"};
+/* Waiting is always on somebody else, so a waiting line with nobody named asks who. */
+const needsWho = t => !!t && t.state==="waiting" && t.who==="me";
+function flyRows(){
+  const t=taskOf(edit.blk), canProject=!!edit.ctx.arr, waiting=!!t&&t.state==="waiting";
+  return [
+    {k:"kind",ic:t?"•":"☐",label:t?"Make it a note":"Make it a task",kbd:"Alt+T"},
+    ...(canProject?[{k:"mkproj",ic:"▤",label:"Make it a project",kbd:"Alt+1"}]:[]),
+    {k:"state",ic:"◐",label:"State",val:t?STATES[t.state]:"Note",kbd:"Ctrl+Enter",opts:Object.entries(STATES)},
+    {k:"due",ic:"📅",label:"Due",val:t&&t.due!=null?dayLabel(t.due):"None",kbd:"Alt+D",opts:DUE_OPTS,date:true},
+    {k:"ctx",ic:"@",label:"Context",val:t&&t.ctx?ctxLabel(t.ctx):"None",kbd:"@@ · Alt+C",opts:[...CK().map(c=>[c,ctxLabel(c)]),["none","No context"]]},
+    {k:"who",ic:"☺",label:waiting?"Waiting on":"Person",val:needsWho(t)?"Pick someone":t?PEOPLE[t.who].name:"Me",kbd:"@ · Alt+P",
+      opts:PPL().filter(u=>!(waiting&&u==="me")).map(u=>[u,u==="me"?"Me":PEOPLE[u].name])},
+    {k:"proj",ic:"#",label:"Project",val:t&&t.p?PROJECTS[t.p].name:"None",kbd:"# · Alt+J",opts:[...PK().filter(k=>["active","waiting","someday"].includes(PROJECTS[k].status)).map(k=>[k,PROJECTS[k].name]),["none","No project"]]},
+    {k:"rep",ic:"↻",label:"Repeat",val:t&&t.repeat?t.repeat:"No",kbd:"Alt+R",opts:REP_OPTS}
+  ];
+}
+const flyOpts = r => { const q=(edit.q||"").toLowerCase(); return r.opts.filter(([v,l])=>!q||l.toLowerCase().includes(q)||String(v).toLowerCase().startsWith(q)); };
+function flyHTML(){
+  const t=taskOf(edit.blk);
+  return `<div class="fhint">${needsWho(t)?"<b>Waiting on whom?</b> Pick the person below":`${t?"Task":"Note"} · setting any of these makes the line a task`}</div>`+flyRows().map(r=>{
+    const isOpen=edit.open===r.k, os=r.opts&&isOpen?flyOpts(r):[], hi=Math.min(edit.hi||0,os.length-1);
+    return `<div class="frow ${isOpen?"open":""} ${edit.lit===r.k?"lit":""}"><button class="fhead" data-fopen="${r.k}"><span class="fic">${r.ic}</span><span class="fl">${r.label}</span><span class="fv">${r.val!=null?esc(r.val):""}</span><kbd>${r.kbd}</kbd></button>
+      ${isOpen&&r.opts?`<div class="fopts">${os.map(([v,l],i)=>`<button class="chip ${i===hi?"hi":""}" data-fpick="${r.k}=${esc(v)}">${esc(l)}</button>`).join("")||`<span class="fv">No match for “${esc(edit.q)}”</span>`}
+        ${r.date?`<span class="datepick"><button class="chip" data-fdate>📅 Pick a date</button><input type="date" data-edate min="${iso(0)}" tabindex="-1" aria-hidden="true"></span>`:""}</div>`:""}</div>`;
+  }).join("")+`<div class="fhint">${edit.open?"↑ ↓ choose · Enter picks · Esc closes it":"Enter new line · Tab indent · Shift+Tab outdent · Esc done"}</div>`;
+}
+function refreshFly(){ const f=$("#fly"); if(!f) return; f.innerHTML=flyHTML(); }
+/* Light up the item a key reached, so the menu answers the key press, then let it dim again. */
+let litT;
+function light(k){ edit.lit=k; clearTimeout(litT); litT=setTimeout(()=>{ if(edit&&edit.lit===k){ edit.lit=null; refreshFly(); } },900); }
+function openRow(k){ edit.open=k; edit.hi=0; if(k) light(k); }
+
+function startEdit(ctx,b){
+  if(edit && edit.blk===b) return;
+  commitEdit();
+  const t=taskOf(b);
+  edit={ctx,blk:b,draft:t?t.t:(b.n||""),open:null,q:"",trig:0};
+  render();
+}
+function commitEdit(){
+  if(!edit) return;
+  const b=edit.blk, t=taskOf(b), v=edit.draft.trim();
+  if(t){ if(v) t.t=v; }
+  else if(edit.ctx.arr){ const a=edit.ctx.arr; if(!v){ if(a.includes(b)) a.splice(a.indexOf(b),1); } else b.n=edit.draft; }
+  graphCache=null;
+}
+function ensureTask(){
+  const b=edit.blk; if(b.t!=null) return taskOf(b);
+  const c=edit.ctx, id=Date.now()+Math.floor(Math.random()*1000);
+  const t={id,t:edit.draft.trim()||"New task",p:c.proj||null,who:"me",state:"todo",age:0};
+  if(!c.proj) t.space=c.space||firstSpace();
+  addTask(t); delete b.n; b.t=id; return t;
+}
+function toNote(){
+  const b=edit.blk, t=taskOf(b); if(!t||!edit.ctx.arr) return;
+  b.n=edit.draft; delete b.t; ALLT.splice(ALLT.indexOf(t),1); tasks=ALLT.filter(x=>vis(spaceOfTask(x)));
+}
+function stripTrig(){ if(edit.trig){ edit.draft=edit.draft.slice(0,edit.draft.length-edit.trig).replace(/\s+$/,""); edit.trig=0; edit.q=""; } }
+function flyPick(k,v){
+  stripTrig();
+  const t=ensureTask(); if(edit.draft.trim()) t.t=edit.draft.trim();
+  if(k==="state"){ t.state=v; if(v==="done"){t.ago=0;t.doneBy="me";} }
+  if(k==="due"){ if(v==="none") delete t.due; else t.due=+v; }
+  if(k==="ctx"){ if(v==="none") delete t.ctx; else t.ctx=v; }
+  if(k==="who"){ t.who=v; if(v==="me"){ delete t.by; if(t.state==="waiting") t.state="todo"; } else { t.by="me"; if(!PEOPLE[v].member) t.state="waiting"; } }
+  if(k==="proj"){ if(v==="none"){ t.p=null; t.space=t.space||edit.ctx.space||firstSpace(); } else t.p=v; }
+  if(k==="rep"){ if(v==="none") delete t.repeat; else t.repeat=v; }
+  if(needsWho(t)) openRow("who"); else { edit.open=null; light(k); }
+  edit.draft=t.t; render();
+}
+function cycleState(){
+  const t=taskOf(edit.blk);
+  light("state");
+  if(!t){ ensureTask(); render(); return; }
+  const order=["todo","doing","waiting","done"], i=order.indexOf(t.state);
+  if(i===order.length-1){ if(edit.ctx.arr) toNote(); else t.state="todo"; }
+  else { t.state=order[i+1]; if(t.state==="done"){t.ago=0;t.doneBy="me";} }
+  if(needsWho(t)) openRow("who"); else edit.open=null;
+  render();
+}
+function makeProject(){
+  const name=edit.draft.trim().replace(/\[\[|\]\]/g,"");
+  if(!name){ toast("Write the project's name first, then press Alt+1.",false); return; }
+  const c=edit.ctx, space=c.proj?PROJECTS[c.proj].space:(c.space||firstSpace()), key="n"+Date.now();
+  PROJECTS[key]={name,space,status:"active",orgs:[],people:[],area:null,outcome:"",touched:0,body:[],ans:{}};
+  const b=edit.blk, t=taskOf(b); if(t){ ALLT.splice(ALLT.indexOf(t),1); delete b.t; }
+  b.n=`[[${name}]]`; edit=null; graphCache=null; sol.order=null; render();
+  toast(`Project “${name}” made in 1/ Active. The line now links to it.`,false);
+}
+function indent(d){
+  const view=viewOf(edit.ctx), b=edit.blk, i=view.indexOf(b), kids=kidsOf(view,b);
+  if(d>0){ const prev=view[i-1]; if(!prev||b.i>prev.i){ render(); return; } }
+  else if(b.i===0){ render(); return; }
+  [b,...kids].forEach(x=>x.i+=d); render();
+}
+function moveEdit(dir){
+  const key=edit.ctx.key, lines=REG.filter(r=>r.ctx.key===key), i=lines.findIndex(r=>r.b===edit.blk), to=lines[i+dir];
+  if(to) startEdit(to.ctx,to.b); else render();
+}
+function editKey(e){
+  const c=edit.ctx, b=edit.blk, arr=c.arr, code=e.code;
+  edit.draft=e.target.value;
+  if(e.altKey&&code==="KeyT"){ e.preventDefault(); light("kind"); if(taskOf(b)) toNote(); else ensureTask(); render(); return; }
+  if(e.altKey&&code==="Digit1"){ e.preventDefault(); if(arr) makeProject(); return; }
+  if(e.altKey&&FLYKEYS[code]){ e.preventDefault(); const k=FLYKEYS[code]; edit.trig=0; edit.q=""; if(edit.open===k){ edit.open=null; light(k); } else openRow(k); refreshFly(); return; }
+  if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){ e.preventDefault(); cycleState(); return; }
+  /* with a menu item open, the arrows choose, Enter picks and Esc closes it */
+  const openOpts=()=>{ const r=edit.open&&flyRows().find(r=>r.k===edit.open); return r&&r.opts?flyOpts(r):[]; };
+  if(edit.open&&(e.key==="ArrowUp"||e.key==="ArrowDown")){ e.preventDefault(); const n=openOpts().length;
+    if(n){ edit.hi=(Math.min(edit.hi||0,n-1)+(e.key==="ArrowUp"?-1:1)+n)%n; refreshFly(); } return; }
+  if(edit.open&&e.key==="Escape"){ e.preventDefault(); light(edit.open); edit.open=null; edit.trig=0; edit.q=""; refreshFly(); return; }
+  if(e.key==="Enter"){ e.preventDefault();
+    if(edit.open){ const os=openOpts(); if(os.length){ flyPick(edit.open,os[Math.min(edit.hi||0,os.length-1)][0]); return; } }
+    if(!arr){ commitEdit(); edit=null; render(); return; }
+    if(!edit.draft.trim()&&!taskOf(b)){ if(b.i>0){ indent(-1); } else { commitEdit(); edit=null; render(); } return; }
+    commitEdit();
+    const view=viewOf(c), kids=kidsOf(view,b), openKids=kids.length&&!folded.has(b);
+    const nb={n:"",i:openKids?b.i+1:b.i}; if(c.space) nb.space=c.space;
+    const after=openKids?b:(kids.length?kids[kids.length-1]:b);
+    arr.splice(arr.indexOf(after)+1,0,nb);
+    edit={ctx:c,blk:nb,draft:"",open:null,q:"",trig:0}; render(); return; }
+  if(e.key==="Escape"){ e.preventDefault(); commitEdit(); edit=null; render(); return; }
+  if(e.key==="Tab"&&arr){ e.preventDefault(); indent(e.shiftKey?-1:1); return; }
+  if((e.key==="ArrowUp"||e.key==="ArrowDown")&&!e.altKey&&!e.shiftKey&&!edit.open){ e.preventDefault(); moveEdit(e.key==="ArrowUp"?-1:1); return; }
+  if(e.key==="Backspace"&&!e.target.value&&arr){ e.preventDefault();
+    const view=viewOf(c), prev=view[view.indexOf(b)-1], t=taskOf(b);
+    if(t) ALLT.splice(ALLT.indexOf(t),1);
+    arr.splice(arr.indexOf(b),1); edit=null;
+    if(prev) startEdit(c,prev); else render(); return; }
+}
+
+/* ================= drawers ================= */
+const STATES={todo:"To do",doing:"Doing",waiting:"Waiting",done:"Done"};
+function drawer(id){
+  const t=tasks.find(x=>x.id===id); if(!t) return;
+  const th=thread[id]||[];
+  $("#drawer").innerHTML=`<button class="x" id="dx" aria-label="Close">×</button>
+    <div class="dtop">${spBadge(spaceOfTask(t))}<span class="meta" style="margin:0">Task</span></div>
+    <h2>${esc(t.t)}</h2>
+    <div class="states">${Object.keys(STATES).map(s=>`<button data-st="${s}" aria-pressed="${t.state===s}">${STATES[s]}</button>`).join("")}</div>
+    <div class="field"><span>Who</span><div style="display:flex;gap:8px;align-items:center">${av(t.who)}${PEOPLE[t.who].name}${handed(t)?` <span class="tag wait">in your Waiting for</span>`:""}</div></div>
+    <div class="field"><span>When</span><div>${t.due!=null?dayLabel(t.due):"No date"}</div></div>
+    <div class="field"><span>Project</span><div>${t.p?`<button class="textbtn" data-proj="${t.p}" style="padding:0">${esc(PROJECTS[t.p].name)}</button>`:"None"}</div></div>
+    <div class="field"><span>Context</span><div>${t.ctx?ctxLabel(t.ctx):"None"}</div></div>
+    <div class="field"><span>Repeats</span><div>${t.repeat||"No"}</div></div>
+    <div class="thread"><div class="group" style="margin-top:0">Thread</div>
+      ${th.map(m=>`<div class="msg">${av(m.who)}<div>${esc(m.txt)}<br><small>${PEOPLE[m.who].name} · ${m.ago?m.ago+"d ago":"today"}</small></div></div>`).join("")||`<p class="hint" style="text-align:left;margin:0 0 10px">No comments yet.</p>`}
+      <form class="reply" id="reply"><input placeholder="Write a comment"><button class="iconbtn" aria-label="Send">↵</button></form></div>
+    <div class="dact"><button data-copy>Copy link</button><button>Hand over</button><button>Delete</button></div>`;
+  showDrawer();
+  $("#drawer").querySelectorAll("[data-st]").forEach(b=>b.onclick=()=>{t.state=b.dataset.st;if(t.state==="done"){t.ago=0;t.doneBy="me"}render();drawer(id)});
+  $("#reply").onsubmit=e=>{e.preventDefault();const i=e.target.querySelector("input");if(!i.value.trim())return;(thread[id]=thread[id]||[]).push({who:"me",txt:i.value,ago:0});render();drawer(id)};
+}
+function projFields(k){
+  const p=PROJECTS[k], waitsOnThis=PK().filter(x=>PROJECTS[x].blockedBy===k);
+  return `<div class="field"><span>Done when</span><div>${p.outcome?esc(p.outcome):`<span class="blocked">Not written yet</span>`}</div></div>
+    <div class="field"><span>Status</span><div class="states">${STATUS_ORDER.map(s=>`<button data-pst="${k}:${s}" aria-pressed="${p.status===s}">${STATUS[s].label}</button>`).join("")}</div></div>
+    ${autoWait(k)?`<div class="field"><span></span><div><span class="tag wait">Shown as Waiting for. Every open next action is waiting.</span></div></div>`:""}
+    <div class="field"><span>Organisations</span><div class="linkchips">${p.orgs.map(o=>`<button data-page="o:${o}"><span class="kdot" style="background:var(--k-org)"></span>${ORGS[o].name}</button>`).join("")||"None"}</div></div>
+    <div class="field"><span>People</span><div class="linkchips">${p.people.map(u=>`<button data-page="u:${u}">${av(u)}${first(u)}</button>`).join("")||"Just you"}</div></div>
+    <div class="field"><span>Area</span><div>${p.area?`<button class="textbtn" style="padding:0" data-page="a:${p.area}">${AREAS[p.area].name}</button>`:"None"}</div></div>
+    <div class="field"><span>Deadline</span><div>${p.deadline!=null?fmt(p.deadline):"None"}</div></div>
+    <div class="field"><span>Comes after</span><div>${p.blockedBy?`<span class="${isBlocked(k)?"blocked":""}">${esc(PROJECTS[p.blockedBy].name)}${isBlocked(k)?" · still open":" · cleared"}</span>`:"Nothing comes first"}</div></div>
+    ${waitsOnThis.length?`<div class="field"><span>Waits on this</span><div>${waitsOnThis.map(x=>esc(PROJECTS[x].name)).join(", ")}</div></div>`:""}`;
+}
+function backlinkChips(refs){
+  return refs.length?`<div class="linkchips">${refs.map(r=>`<button data-page="${r.from.id}"><span class="kdot" style="background:${kcol(r.from.kind)}"></span>${esc(r.from.title)}</button>`).join("")}</div>`:`<span style="color:var(--muted);font-size:14px">Nothing links here yet.</span>`;
+}
+function projDrawer(k){
+  const p=PROJECTS[k], ts=projOpen(k), {pages}=allPages(), refs=refsTo("p:"+k,pages);
+  const quoted=refs.filter(r=>r.lines.length);
+  $("#drawer").innerHTML=`<button class="x" id="dx" aria-label="Close">×</button>
+    <div class="dtop">${spBadge(p.space)}<span class="path">pages/${STATUS[p.status].dir}/${esc(p.name)}.md</span></div>
+    <div class="dtop"><h2 style="padding:0">${esc(p.name)}</h2><button class="fullbtn" data-full="p:${k}">⤢ Open full page</button></div>
+    ${projFields(k)}
+    <div><div class="group" style="margin-top:4px">Next actions</div>${listHTML(ts,{noProj:true,noSpace:true,empty:"No open tasks. Add the next step."})}</div>
+    <div><div class="group" style="margin-top:4px">Notes <span class="plain">· ${lines(p.body).length} on the page${quoted.length?`, ${quoted.reduce((n,r)=>n+r.lines.length,0)} elsewhere`:""}</span></div>
+      ${lines(p.body).length?`<ul class="dnotes">${lines(p.body).map(l=>`<li>${wiki(l)}</li>`).join("")}</ul>`:`<span style="color:var(--muted);font-size:14px">No notes yet.</span>`}
+      ${quoted.length?`<ul class="dnotes" style="margin-top:6px">${quoted.map(r=>r.lines.map(l=>`<li><span class="meta" style="display:inline">${esc(r.from.title)}:</span> ${wiki(l)}</li>`).join("")).join("")}</ul>`:""}</div>
+    <div><div class="group" style="margin-top:4px">Linked from <span class="plain">· ${refs.length}</span></div>${backlinkChips(refs)}</div>
+    <div class="dact"><button data-copy>Copy link</button><button data-full="p:${k}">Open full page</button></div>`;
+  showDrawer();
+}
+function pageDrawer(id){
+  if(id.startsWith("p:")) return projDrawer(id.slice(2));
+  const {pages}=allPages(), p=pages[id];
+  if(!p||p.missing){
+    const title=p?p.title:id.slice(2);
+    $("#drawer").innerHTML=`<button class="x" id="dx" aria-label="Close">×</button>${p?`<div class="dtop">${spBadge(p.space)}<span class="meta" style="margin:0">Not made yet</span></div>`:""}<h2>${esc(title)}</h2>
+      <p style="margin:0;color:var(--muted)">Nobody has made this page yet. It is linked from ${plural(p?p.deg:1,"page")}.</p>
+      <div class="dact" style="margin-top:0"><button data-make="${esc(title)}">Make the page</button>${p?`<button data-full="${esc(id)}">Open full page</button>`:""}</div>`;
+    showDrawer(); return;
+  }
+  const refs=refsTo(id,pages);
+  const props=p.props&&Object.keys(p.props).length?`<div class="prop">${Object.entries(p.props).map(([a,b])=>`<b>${a}::</b> ${esc(b)}`).join("<br>")}</div>`:(p.kind==="context"?`<div class="prop"><b>icon::</b> <span style="color:var(--muted)">not set. Add one and it shows everywhere this context does.</span></div>`:"");
+  $("#drawer").innerHTML=`<button class="x" id="dx" aria-label="Close">×</button>
+    <div class="dtop">${spBadge(p.space)}<span class="meta" style="margin:0">${KIND1[p.kind]}</span><span class="path">${esc(p.path)}</span></div>
+    <div class="dtop"><h2 style="padding:0">${p.kind==="context"&&p.props.icon?p.props.icon+" ":""}${esc(p.title)}</h2><button class="fullbtn" data-full="${id}">⤢ Open full page</button></div>${props}
+    ${p.body.length?`<div><div class="group" style="margin-top:4px">Notes</div><ul class="dnotes">${p.body.map(l=>`<li>${wiki(l)}</li>`).join("")}</ul></div>`:""}
+    <div><div class="group" style="margin-top:4px">Links to</div>${p.links.length?`<div class="linkchips">${p.links.map(i=>`<button data-page="${i}"><span class="kdot ${pages[i].missing?"hollow":""}" style="background:${kcol(pages[i].kind)}"></span>${esc(pages[i].title)}</button>`).join("")}</div>`:`<span style="color:var(--muted);font-size:14px">None</span>`}</div>
+    <div><div class="group">Linked from <span class="plain">· ${refs.length}</span></div>${backlinkChips(refs)}</div>
+    <div class="dact"><button data-copy>Copy link</button><button data-full="${id}">Open full page</button></div>`;
+  showDrawer();
+}
+function showDrawer(){ $("#drawer").classList.add("on"); $("#scrim").classList.add("on"); $("#dx").onclick=closeDrawer; }
+function closeDrawer(){ $("#drawer").classList.remove("on"); $("#scrim").classList.remove("on"); }
+function moveProject(k,s){
+  const p=PROJECTS[k];
+  if(p.status===s){ if(autoWait(k)&&s==="active") toast(`${p.name} stays under Waiting for while all its next actions are waiting.`,false); return; }
+  p.status=s; p.statusAgo=0; p.touched=0; render();
+  toast(`${p.name} moved to ${STATUS[s].dir}/ ${STATUS[s].label}. Every link to it follows.`,false);
+}
+
+let tt;
+function toast(msg,undo=true){
+  $("#toastMsg").textContent=msg; $("#undo").style.display=undo?"":"none";
+  $("#toast").classList.add("on"); clearTimeout(tt); tt=setTimeout(()=>$("#toast").classList.remove("on"),5000);
+}
+
+/* ================= drag and drop (pointer events, so it works with touch too) ================= */
+let drag=null, suppressClick=false;
+document.addEventListener("pointerdown",e=>{
+  const el=e.target.closest("[data-drag]"); if(!el||e.button>0) return;
+  if(e.target.closest("button,input,select,a")) return;
+  drag={el,sx:e.clientX,sy:e.clientY,moved:false,ghost:null,over:null};
+});
+document.addEventListener("pointermove",e=>{
+  if(!drag) return;
+  const dx=e.clientX-drag.sx, dy=e.clientY-drag.sy;
+  if(!drag.moved){
+    if(Math.hypot(dx,dy)<6) return;
+    drag.moved=true;
+    const r=drag.el.getBoundingClientRect(), g=drag.el.cloneNode(true);
+    g.classList.add("ghost"); Object.assign(g.style,{left:r.left+"px",top:r.top+"px",width:r.width+"px"});
+    /* the big solitaire card would hide the options it is dragged over, so it shrinks around the pointer */
+    drag.mini=drag.el.classList.contains("solcard");
+    if(drag.mini){ g.classList.add("mini"); g.style.transformOrigin=`${drag.sx-r.left}px ${drag.sy-r.top}px`; }
+    document.body.appendChild(g); drag.ghost=g; drag.el.classList.add("dragging"); document.body.classList.add("is-dragging");
+  }
+  drag.ghost.style.transform=`translate(${dx}px,${dy}px) `+(drag.mini?"scale(.32)":"rotate(2deg)");
+  const t=document.elementFromPoint(e.clientX,e.clientY), d=t&&t.closest("[data-drop]");
+  if(d!==drag.over){ drag.over&&drag.over.classList.remove("over"); d&&d.classList.add("over"); drag.over=d; }
+});
+function endDrag(cancel){
+  if(!drag) return; const d=drag; drag=null;
+  if(!d.moved) return;
+  d.ghost.remove(); d.el.classList.remove("dragging"); document.body.classList.remove("is-dragging");
+  d.over&&d.over.classList.remove("over");
+  suppressClick=true; setTimeout(()=>suppressClick=false,60);
+  if(!cancel&&d.over) onDrop(d.el.dataset.drag,d.over.dataset.drop);
+}
+document.addEventListener("pointerup",()=>endDrag(false));
+document.addEventListener("pointercancel",()=>endDrag(true));
+document.addEventListener("click",e=>{ if(suppressClick){e.stopPropagation();e.preventDefault();suppressClick=false;} },true);
+
+function onDrop(src,dst){
+  const [sk,sid]=src.split(":"), [dk,dv]=dst.split(":");
+  const task=id=>tasks.find(x=>x.id==id);
+  if(sk==="proj"&&dk==="status") return moveProject(sid,dv);
+  if(sk==="next"&&dk==="ctx"){ const t=task(sid); t.ctx=dv==="none"?undefined:dv; render(); toast(dv==="none"?"Context removed.":`Now done at ${ctxLabel(dv)}.`,false); return; }
+  if(sk==="wait"&&dk==="who"){ const t=task(sid); if(t.who===dv) return; t.who=dv; render(); toast(`Handed to ${first(dv)} instead.`,false); return; }
+  if(sk==="sol"&&dk==="field"){ sol.focus=dv; sol.justDropped=true; render(); return; }
+  if(sk==="sol"&&dk==="opt"){ const [f,v,ty]=dv.split("~"), p=PROJECTS[sol.order[sol.i]];
+    if(ty==="pick") return solApply(f,v);
+    if(ty==="mtog"){ const a=p[f]; a.includes(v)?a.splice(a.indexOf(v),1):a.push(v); return solAfter(f); }
+    if(ty==="mnone"){ p[f]=[]; p.ans[f]=true; return solAfter(f); }
+    if(ty==="date"){ const inp=document.querySelector(`.slot[data-slot="${f}"] input[type=date]`); try{inp.showPicker()}catch(_){ sol.focus=f; render(); } return; }
+  }
+  if(sk==="person"&&dk==="pproj"){ const p=PROJECTS[dv];
+    if(sid==="me"){ toast("You are on every project you can see.",false); return; }
+    if(p.people.includes(sid)){ toast(`${first(sid)} is already on ${p.name}.`,false); return; }
+    p.people.push(sid); render(); toast(`${first(sid)} is now involved in ${p.name}.`,false); return; }
+  if(sk==="person"&&dk==="ptask"){ const t=task(dv);
+    if(sid==="me"){ if(t.who==="me") return; t.who="me"; t.by=undefined; if(t.state==="waiting") t.state="todo"; render(); toast(`${t.t} is yours again.`,false); return; }
+    if(t.who===sid) return;
+    t.who=sid; t.by="me"; t.state=PEOPLE[sid].member?(t.state==="waiting"?"todo":t.state):"waiting";
+    if(t.p&&!PROJECTS[t.p].people.includes(sid)) PROJECTS[t.p].people.push(sid);
+    render(); toast(`Now waiting for ${first(sid)}: ${t.t}. It is in your Waiting for.`,false); return; }
+  if(sk==="org"&&dk==="oproj"){ const p=PROJECTS[dv];
+    if(p.orgs.includes(sid)){ toast(`${ORGS[sid].name} is already on ${p.name}.`,false); return; }
+    p.orgs.push(sid); render(); toast(`${ORGS[sid].name} added to ${p.name}.`,false); return; }
+}
+
+/* ================= events ================= */
+function setF(path,val){ const [v,k]=path.split("."); F[v][k]=val; }
+document.addEventListener("click",e=>{
+  const el=e.target;
+  /* clicking away from the line being edited saves it */
+  if(edit && !el.closest(".jl.editing")){ commitEdit(); edit=null; setTimeout(()=>{ if(!edit) render(); },0); }
+  const ask0=el.closest("[data-ask]"); if(ask0){const p=PEOPLE[ask0.dataset.ask];
+    toast(p.member?`Pick a task to hand to ${first(ask0.dataset.ask)}`:`Check-in sheet ready for ${p.name}. Attach it to a mail.`,false);return;}
+  const wl=el.closest("[data-wl]"); if(wl){e.preventDefault();fullPage(wl.dataset.wl);return;}
+  /* the outline */
+  const sec=el.closest("[data-sec]"); if(sec){const k=sec.dataset.sec; secFold.has(k)?secFold.delete(k):secFold.add(k); render(); return;}
+  const fo=el.closest("[data-fold]"); if(fo&&fo.textContent.trim()){const b=REG[+fo.dataset.fold].b; folded.has(b)?folded.delete(b):folded.add(b); render(); return;}
+  const zm=el.closest("[data-zoom]"); if(zm){const r=REG[+zm.dataset.zoom]; for(const k in zoomMap) delete zoomMap[k]; zoomMap[r.ctx.key]=r.b; folded.delete(r.b); render(); $("#content").scrollTop=0; return;}
+  /* out of focus: to the top of the trail, or one step up it */
+  const uz=el.closest("[data-unzoom]"); if(uz){const c=CTX[+uz.dataset.unzoom], to=uz.dataset.to==="parent"?c.parentGo:c.rootGo, was=JSON.stringify(loc);
+    delete zoomMap[c.key]; if(to) go(to); if(JSON.stringify(loc)===was) render(); $("#content").scrollTop=0; return;}
+  const zt=el.closest("[data-zoomto]"); if(zt){const [ci,ix]=zt.dataset.zoomto.split(":"), c=CTX[+ci]; zoomMap[c.key]=viewOf(c)[+ix]; render(); return;}
+  const fop=el.closest("[data-fopen]"); if(fop&&edit){const k=fop.dataset.fopen;
+    if(k==="kind"){ if(taskOf(edit.blk)) toNote(); else ensureTask(); render(); return; }
+    if(k==="mkproj"){ makeProject(); return; }
+    if(edit.open===k) edit.open=null; else openRow(k); edit.trig=0; edit.q=""; refreshFly(); return;}
+  const fpk=el.closest("[data-fpick]"); if(fpk&&edit){const s=fpk.dataset.fpick, i=s.indexOf("="); flyPick(s.slice(0,i),s.slice(i+1)); return;}
+  const fd=el.closest("[data-fdate]"); if(fd){const inp=fd.parentNode.querySelector("input"); try{inp.showPicker()}catch(_){inp.style.opacity=1;inp.style.pointerEvents="auto";inp.style.position="static"} return;}
+  const ed=el.closest("[data-editln]"); if(ed&&!el.closest("[data-tick]")){const r=REG[+ed.dataset.editln]; if(!r.ctx.readonly) startEdit(r.ctx,r.b); return;}
+  if(el.closest(".jl.editing")&&!el.closest("[data-tick]")) return;
+  if(!el.closest("#spop")&&!el.closest("#spacesBtn")) { $("#spop").classList.remove("on"); $("#spacesBtn").setAttribute("aria-expanded","false"); }
+  const tick=el.closest("[data-tick]");
+  if(tick){e.stopPropagation();const t=tasks.find(x=>x.id==tick.dataset.tick);
+    lastTick={t,prev:t.state}; if(t.state==="done"){t.state="todo"}else{t.state="done";t.ago=0;t.doneBy="me"}
+    render(); if(el.closest("#drawer")) closeDrawer();
+    toast(t.state==="done"?`Done: ${t.t}${t.repeat?". Make the next one for next week?":""}`:"Opened again"); return;}
+  /* solitaire: every option is clickable as it stands */
+  const pick=el.closest("[data-pick]"); if(pick){const [f,v]=pick.dataset.pick.split("=");solApply(f,v);return;}
+  const mt=el.closest("[data-mtog]"); if(mt){const [f,v]=mt.dataset.mtog.split("="), p=PROJECTS[sol.order[sol.i]], a=p[f];
+    a.includes(v)?a.splice(a.indexOf(v),1):a.push(v); if(a.length) p.ans[f]=false; solAfter(f); return;}
+  const mn=el.closest("[data-mnone]"); if(mn){const f=mn.dataset.mnone,p=PROJECTS[sol.order[sol.i]]; p[f]=[]; p.ans[f]=true; solAfter(f); return;}
+  const dp=el.closest("[data-datepick]"); if(dp){const inp=dp.parentNode.querySelector("input"); try{inp.showPicker()}catch(_){inp.style.opacity=1;inp.style.pointerEvents="auto";inp.style.position="static";inp.focus()} return;}
+  if(el.closest("[data-solnext]")){sol.i++;sol.focus=null;render();return;}
+  if(el.closest("[data-solskip]")){sol.order.push(sol.order.splice(sol.i,1)[0]);sol.focus=null;render();toast("Skipped. It comes round again at the end.",false);return;}
+  if(el.closest("[data-solrestart]")){sol={order:solOrder(),i:0,focus:null};Object.values(PROJECTS).forEach(p=>{p.ans={};p.reviewedNow=false});render();return;}
+  const slot=el.closest("[data-slot]"); if(slot){ if(!el.closest("form,.opts")){ sol.focus=slot.dataset.slot; sol.justDropped=true; render(); } return; }
+  const rv=el.closest("[data-rv]"); if(rv){go({rv:rv.dataset.rv});return;}
+  /* boards: remove a stakeholder */
+  const us=el.closest("[data-unstake]"); if(us){const [k,u]=us.dataset.unstake.split(":"),a=PROJECTS[k].people;a.splice(a.indexOf(u),1);render();return;}
+  const uo=el.closest("[data-unorg]"); if(uo){const [k,o]=uo.dataset.unorg.split(":"),a=PROJECTS[k].orgs;a.splice(a.indexOf(o),1);render();return;}
+  /* timeline folding */
+  const tl=el.closest("[data-tl]"); if(tl){const k=tl.dataset.tl; tlOpen.has(k)?tlOpen.delete(k):tlOpen.add(k); render(); return;}
+  const tla=el.closest("[data-tlall]"); if(tla){ tlOpen = tla.dataset.tlall==="fold"?new Set():new Set(PK()); render(); return;}
+  /* navigation */
+  if(el.closest("#spacesBtn")){ spacesMenu(); const on=$("#spop").classList.toggle("on"); $("#spacesBtn").setAttribute("aria-expanded",on); return; }
+  if(el.closest("#brand")){ if(isNarrow()) $("#side").classList.remove("on"); go({view:"me",sub:null,org:null,ctx:null,center:null,page:null,jz:null}); return; }
+  if(el.closest("[data-unpic]")){ delete PEOPLE.me.pic; render(); toast("Picture removed. Your initials show again.",false); return; }
+  const nav=el.closest(".nav-item"); if(nav){$("#side").classList.remove("on");const v=nav.dataset.v;go({view:v,sub:lastSub[v]||"list",org:null,ctx:null,center:null,page:null,jz:null});return;}
+  if(el.closest("[data-history]")){historyDrawer();return;}
+  const full=el.closest("[data-full]"); if(full){fullPage(full.dataset.full);return;}
+  const pst=el.closest("[data-pst]"); if(pst){const [k,s]=pst.dataset.pst.split(":"); moveProject(k,s); if($("#drawer").classList.contains("on")) projDrawer(k); return;}
+  const sub=el.closest("[data-sub]"); if(sub){go({sub:sub.dataset.sub});return;}
+  const g=el.closest("[data-go]"); if(g){$("#side").classList.remove("on");go(JSON.parse(g.dataset.go));return;}
+  const mm=el.closest("[data-mm]"); if(mm){const id=mm.dataset.mm, c=loc.center||"root"; if(id===c){ if(id!=="root") pageDrawer(id); } else go({center:id}); return;}
+  const ff=el.closest("[data-f]"); if(ff){const [p,v]=ff.dataset.f.split("=");
+    if(p==="next.ctx"){ go({ctx:v||null}); return; }
+    setF(p,v);render();return;}
+  const ft=el.closest("[data-t]"); if(ft){const [v,k]=ft.dataset.t.split(".");F[v][k]=!F[v][k];render();return;}
+  const op=el.closest("[data-open]"); if(op){e.preventDefault();drawer(+op.dataset.open);return;}
+  const ask=el.closest("[data-ask]"); if(ask){e.stopPropagation();const p=PEOPLE[ask.dataset.ask];
+    toast(p.member?`Pick a task to hand to ${first(ask.dataset.ask)}`:`Check-in sheet ready for ${p.name}. Attach it to a mail.`,false);return;}
+  if(el.id==="newsX"){newsOpen=false;render();toast("Dismissed. History on Today keeps it, and everything before it.",false);return;}
+  if(el.id==="copyReport"){try{navigator.clipboard.writeText(reportText()).catch(()=>{})}catch(_){} toast("Report copied, grouped by project. Paste it into your status mail.",false);return;}
+  if(el.closest("[data-copy]")){toast("Link copied. It opens this for anyone in the space.",false);return;}
+  const mk=el.closest("[data-make]"); if(mk){toast(`pages/${mk.dataset.make}.md made. Every link to it now lands here.`,false);closeDrawer();return;}
+  const pg=el.closest("[data-page]"); if(pg){pageDrawer(pg.dataset.page);return;}
+  const pr=el.closest("[data-proj]"); if(pr){projDrawer(pr.dataset.proj);return;}
+  const r=el.closest("[data-id]"); if(r){drawer(+r.dataset.id);return;}
+});
+document.addEventListener("change",e=>{
+  if(e.target.matches("[data-space]")){
+    const k=e.target.dataset.space;
+    if(!e.target.checked && shown().length===1){ e.target.checked=true; toast("At least one space has to stay on.",false); return; }
+    SPACES[k].on=e.target.checked; sol.order=null; sol.i=0; graphCache=null;
+    if(F.today.who!=="me"&&!vis(PEOPLE[F.today.who].space)) F.today.who="me";
+    render(); spacesMenu(); return;
+  }
+  if(e.target.matches("[data-edate]")&&edit){
+    const v=e.target.value; if(!v) return;
+    const t=ensureTask(); t.due=Math.round((new Date(v+"T00:00")-TODAY)/864e5); edit.open=null; render(); return;
+  }
+  if(e.target.matches("[data-date]")){
+    const v=e.target.value; if(!v) return;
+    const days=Math.round((new Date(v+"T00:00")-TODAY)/864e5), p=PROJECTS[sol.order[sol.i]];
+    p.deadline=days; solAfter("deadline"); return;
+  }
+  if(e.target.matches("[data-centre]")){ go({center:e.target.value==="root"?null:e.target.value}); return; }
+  if(e.target.matches("[data-rdate]")){ if(e.target.value){ F.report[e.target.dataset.rdate]=e.target.value; render(); } return; }
+  /* a new picture for your page, kept in every space */
+  if(e.target.matches("[data-pic]")){ const file=e.target.files&&e.target.files[0]; if(!file) return;
+    /* cropped to a square and scaled down, so it stays small in every file it is written to */
+    const img=new Image(), url=URL.createObjectURL(file);
+    img.onload=()=>{ const c=document.createElement("canvas"), n=192, m=Math.min(img.width,img.height); c.width=c.height=n;
+      c.getContext("2d").drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,n,n); URL.revokeObjectURL(url);
+      PEOPLE.me.pic=c.toDataURL("image/jpeg",.85); render(); toast("Picture saved. It shows wherever you do, in every space.",false); };
+    img.onerror=()=>{ URL.revokeObjectURL(url); toast("That file is not a picture GroupTodo can read.",false); };
+    img.src=url; return; }
+  const s=e.target.closest("[data-sel]"); if(!s) return;
+  setF(s.dataset.sel,s.value); render();
+});
+document.addEventListener("submit",e=>{
+  const f=e.target;
+  if(f.dataset.jspace){ e.preventDefault(); const i=f.querySelector("input"), v=i.value.trim(), s=f.dataset.jspace; if(!v) return;
+    if(v.startsWith("[]")){ const id=Date.now(); addTask({id,t:v.slice(2).trim(),p:null,space:s,who:"me",state:"todo",age:0}); JOURNALS.me.push({t:id,i:0,space:s}); }
+    else JOURNALS.me.push({n:v,i:0,space:s});
+    render(); const again=document.querySelector(`form[data-jspace="${s}"] input`); again&&again.focus(); return; }
+  if(f.dataset.pid){ e.preventDefault(); const v=f.querySelector("input").value.trim(); if(!v) return;
+    const id=f.dataset.pid, k=f.dataset.pnote;
+    if(k) PROJECTS[k].body.push(v);
+    else { const n=[...NOTES,...LISTS].find(x=>"z:"+x.key===id||"l:"+x.key===id); if(n) n.body.push(v); else toast("Saved to the page.",false); }
+    graphCache=null; render(); return; }
+  if(f.dataset.padd){ e.preventDefault(); const name=f.querySelector("input").value.trim(); if(!name) return;
+    const k=sol.order[sol.i], p=PROJECTS[k], s=p.space, key="n"+Date.now(), field=f.dataset.padd;
+    if(field==="area"){ AREAS[key]={name,space:s}; graphCache=null; toast(`Area “${name}” made in ${SPACES[s].name}: pages/a/${name}.md`,false); solApply("area",key); }
+    else { ORGS[key]={name,what:"Organisation",space:s}; p.orgs.push(key); p.ans.orgs=false; graphCache=null; toast(`“${name}” made in ${SPACES[s].name}: pages/o/${name}.md`,false); solAfter("orgs"); }
+    return; }
+  if(f.dataset.ptext){ e.preventDefault(); const v=f.querySelector("input").value.trim(); if(!v) return; solApply(f.dataset.ptext,v); }
+});
+$("#undo").onclick=()=>{if(lastTick){lastTick.t.state=lastTick.prev;lastTick=null;render()}$("#toast").classList.remove("on")};
+$("#scrim").onclick=closeDrawer;
+$("#back").onclick=back; $("#fwd").onclick=fwd;
+/* The sidebar: hidden or shown on a wide screen, and remembered. On a phone it slides in over the page. */
+const isNarrow = () => matchMedia("(max-width:760px)").matches;
+function setSide(show){
+  $(".app").classList.toggle("noside",!show);
+  try{ localStorage.setItem("gt-side",show?"1":"0"); }catch(_){}
+}
+function toggleSide(){
+  if(isNarrow()) $("#side").classList.toggle("on");
+  else setSide($(".app").classList.contains("noside"));
+}
+try{ if(localStorage.getItem("gt-side")==="0") $(".app").classList.add("noside"); }catch(_){}
+$("#burger").onclick=toggleSide;
+$("#hideSide").onclick=()=>{ if(isNarrow()) $("#side").classList.remove("on"); else setSide(false); };
+$("#helpBtn").onclick=()=>$("#help").classList.add("on");
+$("#helpX").onclick=()=>$("#help").classList.remove("on");
+$("#search").onclick=()=>toast("Search finds tasks, pages, people, and commands like Raw text.",false);
+$("#theme").onclick=()=>{const r=document.documentElement,d=r.dataset.theme==="dark"||(!r.dataset.theme&&matchMedia("(prefers-color-scheme: dark)").matches);r.dataset.theme=d?"light":"dark"};
+
+$("#cap").addEventListener("keydown",e=>{
+  if(e.key!=="Enter"||!e.target.value.trim())return;
+  let s=e.target.value, who="me", p=null, due, state="todo", ctx;
+  s=s.replace(/@@(\w+)/,(m,n)=>{const k=CK().find(k=>k.startsWith(n.toLowerCase()));if(k)ctx=k;return ""});
+  s=s.replace(/@(\w+)/,(m,n)=>{const k=PPL().find(k=>k===n.toLowerCase()||PEOPLE[k].name.toLowerCase().startsWith(n.toLowerCase()));if(k){who=k;if(!PEOPLE[k].member)state="waiting"}return ""});
+  s=s.replace(/#(\w+)/,(m,n)=>{const k=PK().find(k=>k.startsWith(n.toLowerCase())||PROJECTS[k].name.toLowerCase().includes(n.toLowerCase()));if(k)p=k;return ""});
+  s=s.replace(/\b(today|tomorrow|friday)\b/i,m=>{due={today:0,tomorrow:1,friday:1}[m.toLowerCase()];return ""});
+  const id=Date.now(), space=p?PROJECTS[p].space:firstSpace();
+  addTask({id,t:s.replace(/\s+/g," ").trim(),who,p,due,state,ctx,age:0,by:who!=="me"?"me":undefined,space:p?undefined:space});
+  JOURNALS.me.push({t:id,i:0,space});
+  e.target.value=""; render();
+  toast((who==="me"?"Added to today's page":PEOPLE[who].member?`Handed to ${first(who)}. It is in your Waiting for.`:`Waiting on ${first(who)}. They are outside the space.`)+(multi()?` In ${SPACES[space].name}.`:""),false);
+});
+/* typing @, @@ or # on a line opens people, contexts or projects, filtered as you type */
+document.addEventListener("input",e=>{
+  if(!edit||!e.target.matches("[data-edit]")) return;
+  edit.draft=e.target.value;
+  const m=edit.draft.match(/(?:^|\s)(@@|@|#)([^\s@#]*)$/);
+  if(m){ const k={"@@":"ctx","@":"who","#":"proj"}[m[1]]; if(edit.open!==k) openRow(k); edit.q=m[2]; edit.trig=m[1].length+m[2].length; }
+  else if(edit.trig){ edit.trig=0; edit.q=""; edit.open=null; }
+  refreshFly();
+});
+/* a click on the empty line at the bottom starts a new line there */
+document.addEventListener("focusin",e=>{
+  const nl=e.target.closest&&e.target.closest("[data-newline]"); if(!nl) return;
+  const c=CTX[+nl.dataset.newline], z=zoomMap[c.key], view=viewOf(c);
+  commitEdit();
+  const nb={n:"",i:z?z.i+1:0}; if(c.space) nb.space=c.space;
+  if(z){ const k=kidsOf(view,z), last=k.length?k[k.length-1]:z; c.arr.splice(c.arr.indexOf(last)+1,0,nb); } else c.arr.push(nb);
+  edit={ctx:c,blk:nb,draft:"",open:null,q:"",trig:0}; render();
+});
+/* keep the caret in the line while you click its menu */
+document.addEventListener("mousedown",e=>{ if(e.target.closest(".fly")&&!e.target.matches("input")) e.preventDefault(); });
+document.addEventListener("keydown",e=>{
+  if(edit&&e.target.matches&&e.target.matches("[data-edit]")){ editKey(e); return; }
+  if(e.altKey&&e.key==="ArrowLeft"){e.preventDefault();back();return}
+  if(e.altKey&&e.key==="ArrowRight"){e.preventDefault();fwd();return}
+  /* keyboard route for the solitaire: focus a field and press Enter */
+  if(e.key==="Enter"&&e.target.matches&&e.target.matches("[data-slot]")){e.preventDefault();sol.focus=e.target.dataset.slot;sol.justDropped=true;render();return}
+  if(["INPUT","SELECT"].includes(e.target.tagName))return;
+  if(e.key==="n"){e.preventDefault();$("#cap").focus()}
+  if(e.key==="\\"){e.preventDefault();toggleSide()}
+  if(e.key==="?"){e.preventDefault();$("#help").classList.toggle("on")}
+  if(e.key==="Escape"){closeDrawer();$("#help").classList.remove("on");$("#spop").classList.remove("on")}
+});
+render();
+</script>
+</body>
+</html>
