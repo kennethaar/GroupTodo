@@ -127,6 +127,10 @@ body.sidebar-hidden #sidebar{display:none}
 .nav-item:hover{background:var(--bg3)}
 .nav-item.active{background:var(--accent-soft);color:var(--accent);font-weight:600}
 .nav-item .ic{width:18px;text-align:center;flex:none;opacity:.8}
+/* Black and white emoji: the monochrome symbol fonts where the system has them,
+   and the colour drained out where it does not, so the pictures read as type. */
+.bw{font-family:"Segoe UI Symbol","Noto Emoji","Apple Symbols",system-ui,sans-serif;
+  font-variant-emoji:text;filter:grayscale(1);font-style:normal}
 .nav-item .lbl{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nav-item .cnt{font-size:12px;font-variant-numeric:tabular-nums;color:var(--fg3)}
 .nav-item .cnt.hot{color:#fff;background:var(--late);border-radius:10px;padding:0 6px}
@@ -253,6 +257,7 @@ kbd{font:11px var(--mono);border:1px solid var(--border);border-radius:4px;paddi
 .helppanel .x{position:absolute;top:14px;right:14px;font-size:20px;color:var(--fg3)}
 .helppanel h2{margin:0 0 6px;font-size:19px}
 .helppanel h3{margin:22px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3)}
+.helppanel h4{margin:14px 0 4px;font-size:14px}
 .helppanel p,.helppanel li{font-size:14px;line-height:1.5}
 .helppanel ul{padding-left:18px;margin:6px 0}
 .helppanel li{margin-bottom:6px}
@@ -931,6 +936,7 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4p
 /* ---------- project/page list ---------- */
 .prow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border)}
 .prow:last-child{border-bottom:none}
+button.prow{width:100%;text-align:left}
 .prow:hover{background:var(--bg3)}
 .prow .st{
   width:22px;height:22px;border-radius:6px;display:grid;place-items:center;flex:none;
@@ -1101,6 +1107,13 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 .cardbox{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;
   text-align:left;display:flex;flex-direction:column;align-items:flex-start;gap:2px}
 .cardbox:hover{border-color:var(--accent)}
+.rstep{cursor:pointer}
+.rtick{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--border);flex:none;
+  font-size:12px;color:var(--fg3);display:grid;place-items:center;font-variant-numeric:tabular-nums}
+.rtick:hover{border-color:var(--accent);color:var(--accent)}
+.rstep.done .rtick{background:var(--done);border-color:var(--done);color:#fff}
+.rstep.done .t-title{color:var(--fg3);text-decoration:line-through}
+.rnote{color:var(--fg3);font-size:12.5px}
 .cardbox h4{margin:8px 0 2px;font-size:15px}
 .cardbox p{margin:0;color:var(--fg3);font-size:13px}
 .cardbox .textbtn{margin-top:8px;padding-left:0}
@@ -1122,6 +1135,30 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 .pcard{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px;min-height:100px}
 .pcard h4{margin:0 0 4px;font-size:15px;cursor:pointer}
 .pcard .stakes{padding:8px 0 0}
+.assign{display:grid;grid-template-columns:250px minmax(0,1fr);gap:16px;align-items:start}
+.picker{position:sticky;top:8px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px;
+  display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 110px)}
+.picker .say{font-size:12px;color:var(--fg3);line-height:1.4}
+.picker input,.assign-bar input{width:100%;min-width:0}
+.plist{overflow-y:auto;display:flex;flex-direction:column;gap:1px;margin:0 -4px;padding:0 4px}
+.plist .pchip{border:1px solid transparent;border-radius:8px;padding:4px 6px;background:transparent;width:100%}
+.plist .pchip:hover{background:var(--bg3);border-color:transparent}
+.plist .pchip.armed{background:var(--accent-soft);border-color:var(--accent)}
+.plist .pchip .pn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.plist .pchip .ps{font-size:11px;color:var(--fg3);flex:none}
+.plist .gh{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);padding:8px 6px 2px}
+.assign-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.assign-bar input{flex:1 1 200px;max-width:320px}
+.armed-on .pcard,.armed-on .pact{cursor:copy}
+.pcard .pacts{display:flex;flex-direction:column;gap:2px;margin-top:8px;border-top:1px solid var(--border);padding-top:6px}
+.pact{display:flex;gap:6px;align-items:center;font-size:13px;padding:3px 4px;border-radius:6px;min-height:26px}
+.pact:hover{background:var(--bg3)}
+.pact .pt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pact .nobody{width:20px;height:20px;border-radius:50%;border:1px dashed var(--fg3);flex:none}
+.stake.inh{opacity:.7;padding-right:8px}
+.gopen{margin-left:4px;padding:0 4px;border-radius:4px;color:var(--fg3);cursor:pointer}
+.gopen:hover,.gopen:focus{color:var(--accent);background:var(--bg3)}
+@media (max-width:760px){.assign{grid-template-columns:1fr}.picker{position:static;max-height:260px}}
 .over{outline:2px dashed var(--accent);outline-offset:-2px;background:var(--accent-soft)!important}
 /* A board of as many columns as it needs, scrolling sideways */
 .boardscroll{overflow-x:auto;padding-bottom:6px}
@@ -1145,6 +1182,13 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 .slot.focus{border-style:solid;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .slot .opts{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
 .slot .opts .fchip{font-size:12px;padding:2px 9px}
+.slot .opts .fchip.more{border-style:dashed;color:var(--accent)}
+.solmorewrap{flex-basis:100%;display:flex;flex-direction:column;gap:6px}
+.solmorewrap input[type=search]{width:100%;font-size:13px;padding:5px 8px}
+.solmore{display:flex;flex-wrap:wrap;gap:5px;align-content:flex-start;max-height:180px;overflow-y:auto;
+  padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--bg)}
+.solmore .fchip[hidden],.solmorewrap .say[hidden]{display:none}
+.solmorewrap .textbtn{align-self:flex-start;padding-left:0}
 .fchip.now{border-color:var(--accent);color:var(--accent)}
 .fchip.hi{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
 .slotform{display:flex;gap:6px}
@@ -1169,6 +1213,9 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 
 /* Your page, and a person's */
 .mehead{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:22px 0 6px}
+.areaface{display:flex;gap:12px;align-items:center;margin:4px 0 12px}
+.areaface .sub{color:var(--fg3);font-size:12.5px}
+.areaface .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .mehead h1{margin:0;font-size:26px}
 .mehead .sub,.personhead .sub{color:var(--fg3);font-size:13px}
 .mehead .acts,.personhead .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
@@ -1266,16 +1313,16 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 .space-transfer-list{max-height:220px;overflow:auto;font-size:12px}
 .space-transfer-choice{display:block;margin:12px 0}
 
-.space-horizons{display:grid;grid-template-columns:repeat(var(--space-count,1),minmax(320px,1fr));
-  gap:16px;align-items:start;overflow-x:auto;padding-bottom:12px}
-.space-horizon-col{min-width:320px;border:1px solid var(--border);border-radius:var(--radius);
-  padding:0 12px 14px;background:var(--bg2)}
-.space-horizon-head{position:sticky;top:0;z-index:2;margin:0 -12px 10px;padding:10px 12px;
-  background:var(--bg3);border-bottom:1px solid var(--border);font-size:13px}
-@media(max-width:820px){
-  .space-horizons{grid-template-columns:1fr}
-  .space-horizon-col{min-width:0}
-}
+.arow{padding:10px 12px;border-bottom:1px solid var(--border)}
+.arow:last-child{border-bottom:0}
+.arow-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.arow-top .nm{font-weight:600;font-size:14.5px;text-align:left}
+.arow-top .sub{color:var(--fg3);font-size:12.5px}
+.arow-dot{width:32px;height:32px;border-radius:50%;flex:none}
+.arow-resp{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 0 42px}
+.arow-resp .sub{color:var(--fg3);font-size:12.5px}
+.areahead{display:flex;align-items:center;gap:10px;margin:0 0 6px}
+.areahead .sub{color:var(--fg3);font-size:13px}
 
 /* nudges that wait in the corner */
 .toast.reminder{display:block;max-height:45vh;overflow:auto;width:min(430px,90vw)}
@@ -1331,8 +1378,8 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
       <button class="tbtn" id="btnSearch" title="Search (/)" aria-label="Search">&#8981;</button>
       <button class="tbtn" id="btnTheme" title="Light or dark" aria-label="Light or dark">&#9680;</button>
       <button class="help-btn" id="btnHelp" title="Help (?)">?<span class="long"> Help</span></button>
-      <button class="spacesbtn" id="spacesBtn" aria-haspopup="true" aria-expanded="false" title="Which spaces to show"></button>
-      <div class="spop" id="spop" role="dialog" aria-label="Spaces" hidden></div>
+      <button class="spacesbtn" id="spacesBtn" aria-haspopup="true" aria-expanded="false" title="Which areas to show"></button>
+      <div class="spop" id="spop" role="dialog" aria-label="Areas" hidden></div>
     </header>
     <div id="content"></div>
   </div>
@@ -1341,94 +1388,95 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 <aside class="helppanel" id="help" aria-label="Help">
   <button class="x" id="helpX" aria-label="Close">&times;</button>
   <h2>Help</h2>
-  <p>GroupToDo keeps your tasks, projects and notes as plain markdown files in folders you already own. Everything here is read from those files, and everything you change is written straight back to them. The name is a nod to GTD, the method underneath it.</p>
+  <p><b>GroupToDo</b> stores your tasks, projects, and reference material as plain Markdown files in your own folders. Every change writes directly back to disk. Built on Getting Things Done (GTD) principles, it is designed to get things out of your head and into a trusted system with minimal friction.</p>
 
-  <h3>Getting around</h3>
+  <h3>Capture &amp; Navigation</h3>
   <ul>
-    <li><b>The sidebar</b> lists the places you go every day. Hide it with &#8676; at its top, or press <kbd>\</kbd>. Bring it back with &#9776;.</li>
-    <li><b>Your page</b> opens when you click GroupToDo at the top left. Set your picture there, keep notes about yourself, and see everything in every space that links to you.</li>
-    <li><b>Back and forward</b> work everywhere, including after you open a page. Use the arrows at the top, or Alt+&larr; and Alt+&rarr;.</li>
-    <li><b>The capture box</b> adds a task to today's page from anywhere. Press <kbd>N</kbd> to jump to it. Names, contexts and dates are picked up as you type.</li>
-    <li><b>Search</b> finds tasks and pages. Paste a path someone copied for you and it opens that page.</li>
-    <li><b>Where it is saved</b> is the line at the bottom of the sidebar. Click it for folders, the vault file and sync.</li>
+    <li><b>Capture (<kbd>N</kbd>):</b> Press <kbd>N</kbd> from anywhere to capture an item to Today's page. Names, contexts, and dates parse automatically as you type.</li>
+    <li><b>Search (<kbd>/</kbd>):</b> Find any action or page, or paste a file path to open it directly.</li>
+    <li><b>Sidebar (<kbd>\</kbd>):</b> Access your core views. Hide with &#8676; or <kbd>\</kbd>; reopen with &#9776;.</li>
+    <li><b>History (<kbd>Alt+&larr;</kbd> / <kbd>Alt+&rarr;</kbd>):</b> Navigate back and forward across all views and pages.</li>
+    <li><b>Profile:</b> Click <b>GroupToDo</b> (top left) to view your personal notes, backlinks, and set area-specific profile pictures.</li>
+    <li><b>Storage &amp; Sync:</b> Click the folder path at the bottom of the sidebar to manage local folders, vault files, and sync settings.</li>
   </ul>
 
-  <h3>Spaces</h3>
+  <h3>Clarify &amp; Organize (Writing on a Line)</h3>
+  <p>Click any line to write or clarify. A menu appears below the line to assign GTD metadata:</p>
   <ul>
-    <li>Each space is its own folder, shared with the people in it. The squares at the top right show which spaces are on.</li>
-    <li>Tick any combination. Every view then shows exactly those spaces, and each item carries a coloured tag for its space while more than one is showing.</li>
-    <li>Click a space's name to make it the one new things land in.</li>
+    <li><b>Triggers:</b> Type <kbd>@</kbd> for people, <kbd>@@</kbd> for contexts, <kbd>#</kbd> for projects, and <kbd>[[</kbd> for pages.</li>
+    <li><b>Auto-linking:</b> Known names are suggested as you type (<kbd>Tab</kbd> to accept). Full names link automatically when you leave the line.</li>
+    <li><b>Dates:</b> Type natural dates (tomorrow, friday, in 3 days) and press <kbd>Tab</kbd>. Placing a date at the end of a task sets its due date.</li>
+    <li><b>Waiting For:</b> Setting a line's state to <i>Waiting</i> prompts you to assign the person you are waiting on.</li>
   </ul>
 
-  <h3>Today</h3>
+  <h3>Engage (Views)</h3>
+  <h4>Today</h4>
   <ul>
-    <li>At the top is what is due today or late, then the next seven days, then your journal for each space, such as Your Work journal.</li>
-    <li>Click a section's title or its arrow to fold it away. Click again to open it.</li>
-    <li>Click the bullet in front of a section, or in front of any line, to focus on it. Everything else leaves the screen and only the trail above it stays. Click a step in the trail to go back out.</li>
-    <li>On a wide screen the journals sit side by side, one column per space.</li>
-    <li>History, next to the date, scrolls back through everything that happened, day by day.</li>
+    <li><b>Overview:</b> Displays overdue and due-today items first, followed by the next 7 days, then your daily journals per Area. (On wide screens, journals appear side by side.)</li>
+    <li><b>Focus (Zoom):</b> Click any bullet to focus exclusively on that branch. Use the breadcrumb trail at the top to zoom back out.</li>
+    <li><b>Fold:</b> Click a section title or arrow to collapse or expand it.</li>
+    <li><b>History:</b> Next to the date, scroll backward day-by-day through past activity.</li>
+  </ul>
+  <h4>Contexts (c/)</h4>
+  <ul>
+    <li>Contexts represent the tools or locations required to take action.</li>
+    <li>Each context is a page under c/. Click a context to see all available Next Actions for that situation. Add icon:: on the page to give it an icon.</li>
+  </ul>
+  <h4>Projects</h4>
+  <ul>
+    <li><b>Status by Folder:</b> A project's status matches the folder its file lives in: <i>Active</i>, <i>Waiting for</i>, <i>Someday/Maybe</i>, <i>Completed</i>, or <i>Cancelled</i>. Drag cards on the board to change status; all links update automatically.</li>
+    <li><b>Auto-Waiting:</b> If all open next actions in a project are waiting on someone, the project automatically marks itself as <i>Waiting for (auto)</i>.</li>
+    <li><b>Timeline (<kbd>v t</kbd>):</b> View and drag project bars to adjust schedules.</li>
+    <li><b>Report (<kbd>v r</kbd>):</b> Review completed outcomes by date range. Use <i>Copy as text</i> for status updates.</li>
+  </ul>
+  <h4>People &amp; Organizations</h4>
+  <ul>
+    <li><b>Delegate:</b> On the People board, drag a person onto a Next Action to hand it off (moving it to <i>Waiting for</i>), or onto a Project to involve them. Organizations work the same way for projects.</li>
+    <li><b>External Updates:</b> Requesting an update from someone outside an Area generates a check-in sheet for them.</li>
+  </ul>
+  <h4>Areas of Focus &amp; Horizons</h4>
+  <ul>
+    <li><b>Areas (Horizon 2):</b> Each Area is a dedicated folder (shared with relevant people) representing an ongoing sphere of responsibility. Its responsibilities are pages under a/.</li>
+    <li><b>Filtering:</b> Use the top-right checkboxes to filter views by one or more Areas. When multiple Areas are active, items display color-coded tags. Click an Area's name to make it the default destination for new captures.</li>
+    <li><b>Horizons Ladder:</b> Connects daily actions to your overarching purpose. Purpose and Vision live in your primary home Area; Goals aggregate across all Areas. Open any Area in Horizon 2 to edit its specific horizons.</li>
   </ul>
 
-  <h3>Writing on a line</h3>
+  <h3>Reflect (Weekly Review)</h3>
   <ul>
-    <li>Click a line and type. A menu opens right under the line to set its state, due date, context, person, organisation, project and repeat. Each item shows its key.</li>
-    <li>As you type a name you have used before, it is offered. <kbd>Tab</kbd> takes it and turns it into a link. A name written out in full is linked by itself when you leave the line.</li>
-    <li>Dates work the same way: type tomorrow, friday, next week or in 3 days and press <kbd>Tab</kbd>. On a task, a date at the end of the line becomes its due date when you leave the line.</li>
-    <li><kbd>@</kbd>, <kbd>@@</kbd>, <kbd>#</kbd> and <kbd>[[</kbd> list people, contexts, projects and every page.</li>
-    <li>When a line becomes Waiting, the menu asks who you are waiting on.</li>
+    <li>Structured into three GTD phases: <b>Get Clear, Get Current, Get Creative</b>.</li>
+    <li>Check off steps as you go; linked steps take you directly to the relevant tool view. Customize the checklist under <i>Routines &amp; lists &gt; Weekly review</i>.</li>
+    <li><b>Project Review (Solitaire Mode):</b> Review active projects one card at a time, starting with the stalest. Filter to include <i>Waiting for</i> or <i>Someday/Maybe</i> lists, and drag or click to update project properties from that Area's most-used options.</li>
   </ul>
 
-  <h3>Keys on a line</h3>
+  <h3>Keyboard Shortcuts</h3>
+  <h4>Line Actions</h4>
   <table>
-    <tr><th>Key</th><th>Does</th></tr>
-    <tr><td>Alt+T</td><td>Make it a task, or back to a note</td></tr>
-    <tr><td>Alt+1</td><td>Make it a project, and link the line to it</td></tr>
-    <tr><td>Ctrl+Enter</td><td>Next state: to do, doing, waiting, done, note</td></tr>
-    <tr><td>Alt+D C P O J R</td><td>Due, context, person, organisation, project, repeat</td></tr>
-    <tr><td>Tab</td><td>Take the suggestion, or indent</td></tr>
-    <tr><td>Shift+Tab</td><td>Outdent</td></tr>
-    <tr><td>Alt+Shift+&uarr; &darr;</td><td>Move the line, children and all</td></tr>
-    <tr><td>&uarr; &darr; Enter Esc</td><td>In an open menu: choose, pick, close</td></tr>
-    <tr><td>Alt+S</td><td>Move the line to another space</td></tr>
+    <tr><th>Key</th><th>Action</th></tr>
+    <tr><td>Alt+T</td><td>Toggle between Task and Note</td></tr>
+    <tr><td>Alt+1</td><td>Convert line to a Project and link it</td></tr>
+    <tr><td>Ctrl+Enter</td><td>Cycle state: <i>To Do &rarr; Doing &rarr; Waiting &rarr; Done &rarr; Note</i></td></tr>
+    <tr><td>Alt+D / C / P / O / J / R</td><td>Set Due date, Context, Person, Organization, Project, or Repeat</td></tr>
+    <tr><td>Tab / Shift+Tab</td><td>Accept suggestion / Indent or Outdent</td></tr>
+    <tr><td>Alt+Shift+&uarr; / &darr;</td><td>Move line and its sub-items up or down</td></tr>
+    <tr><td>Alt+S</td><td>Move line to another Area</td></tr>
+    <tr><td>&uarr; / &darr; / Enter / Esc</td><td>Navigate, select, or close an open line menu</td></tr>
   </table>
-
-  <h3>Other keys</h3>
+  <h4>Global Navigation</h4>
   <table>
-    <tr><th>Key</th><th>Does</th></tr>
-    <tr><td>N</td><td>Add a task</td></tr>
+    <tr><th>Key</th><th>Action</th></tr>
+    <tr><td>N</td><td>Capture a new task</td></tr>
     <tr><td>/</td><td>Search</td></tr>
-    <tr><td>\</td><td>Hide or show the sidebar</td></tr>
-    <tr><td>?</td><td>Open this help</td></tr>
-    <tr><td>T</td><td>Today</td></tr>
-    <tr><td>@@</td><td>Where are you now? Pick a context</td></tr>
-    <tr><td>g n &middot; g w &middot; g p</td><td>Next, Waiting for, Projects</td></tr>
-    <tr><td>g c &middot; g r</td><td>Chat, Weekly review</td></tr>
-    <tr><td>v b &middot; v t &middot; v r</td><td>Next as a board, Timeline, Report</td></tr>
-    <tr><td>v g &middot; v m</td><td>Mind map, Graph</td></tr>
-    <tr><td>Ctrl+Z</td><td>Undo the last delete or move</td></tr>
-    <tr><td>Esc</td><td>Close a panel, menu or this help</td></tr>
+    <tr><td>\</td><td>Toggle sidebar</td></tr>
+    <tr><td>?</td><td>Open Help</td></tr>
+    <tr><td>T</td><td>Go to Today</td></tr>
+    <tr><td>@@</td><td>Switch current Context</td></tr>
+    <tr><td>g n &middot; g w &middot; g p</td><td>Go to Next Actions, Waiting For, or Projects</td></tr>
+    <tr><td>g c &middot; g r</td><td>Go to Chat or Weekly Review</td></tr>
+    <tr><td>v b &middot; v t &middot; v r</td><td>View Next Actions as Board, Timeline, or Report</td></tr>
+    <tr><td>v g &middot; v m</td><td>View Mind Map or Graph</td></tr>
+    <tr><td>Ctrl+Z</td><td>Undo last delete or move</td></tr>
+    <tr><td>Esc</td><td>Close active panel, menu, or Help</td></tr>
   </table>
-
-  <h3>Projects</h3>
-  <ul>
-    <li>A project's status is the folder its file sits in: Cancelled, Active, Someday/Maybe, Waiting for and Completed. Drag a card on the board to move it, and every link to it follows.</li>
-    <li>A project whose open next actions are all waiting on somebody shows as Waiting for, marked &ldquo;auto&rdquo;.</li>
-    <li>The timeline shows the plan ahead. Drag a bar to reschedule it.</li>
-    <li>The report shows what got done. Pick a week, month, quarter, half year, year or your own dates, then Copy as text for a status mail.</li>
-  </ul>
-
-  <h3>People and organisations</h3>
-  <ul>
-    <li>On the People board, drop a person on a project to involve them, or on a next action to hand it over. It then shows in your Waiting for.</li>
-    <li>Organisations work the same way, on projects.</li>
-    <li>People outside the space get a check-in sheet when you ask them for an update.</li>
-  </ul>
-
-  <h3>Weekly review</h3>
-  <ul>
-    <li>A handful of steps, about fifteen minutes. Everything the app thinks is worth a look is listed there too.</li>
-    <li>The projects step is played as solitaire: one project at a time, stalest first. Every field shows its options from the project's own space. Click one, or drag the card onto it.</li>
-  </ul>
 </aside>
 
 <div id="toasts"></div>
@@ -2247,7 +2295,7 @@ function setSync(state, text) {
   const onDisk = V.backend && (V.backend.kind === "fs" || V.backend.kind === "http");
   txt.textContent = (state === "ok" && !onDisk) ? "browser only - no files" : text;
   txt.title = onDisk ? "Saving to " + (V.backend.label || "")
-                     : "Nothing in this space is written to disk";
+                     : "Nothing in this area is written to disk";
 }
 
 function getPage(path) { return V.pages.get(path); }
@@ -2922,7 +2970,7 @@ async function folderConflict(handle, exceptSpace) {
 
 function conflictMessage(name, c) {
   if (c.how === "same")
-    return `That folder already holds ${c.space}. Two spaces in one folder would put them in the same place - share it and you share both. Pick a different folder for ${name}.`;
+    return `That folder already holds ${c.space}. Two areas in one folder would put them in the same place - share it and you share both. Pick a different folder for ${name}.`;
   if (c.how === "inside")
     return `That folder is inside ${c.space}'s folder. ${c.space} reads everything beneath it, so it would swallow ${name}. Pick a folder outside it.`;
   return `That folder contains ${c.space}'s folder. ${name} would read and sync ${c.space}'s files as its own. Pick a folder that does not contain it.`;
@@ -3024,19 +3072,19 @@ function openSpaceStorageSetup({firstRun = false} = {}) {
     body.append(el("div", {class: "field"},
       el("label", {}, "This browser cannot open folders"),
       el("div", {style: "color:var(--fg2);font-size:13px"},
-        "Safari, Firefox and the mobile browsers have no folder access, so each space " +
+        "Safari, Firefox and the mobile browsers have no folder access, so each area " +
         "lives in this browser's own storage. They are still completely separate from " +
         "each other, and each one syncs through its own vault file - Vault & sync → " +
-        "Save vault file. On desktop Chrome or Edge you can give each space a real folder.")));
+        "Save vault file. On desktop Chrome or Edge you can give each area a real folder.")));
   } else {
     body.append(el("div", {class: "field"},
       el("label", {}, "One folder each"),
       el("div", {style: "color:var(--fg2);font-size:13px"},
-        "A space is a folder you can share on its own. Two spaces can never share a " +
+        "An area is a folder you can share on its own. Two areas can never share a " +
         "folder, and one can never sit inside another - either would put them in the " +
         "same place, and sharing one would share both. GroupToDo refuses those choices."),
       el("div", {style: "color:var(--warn);font-size:12.5px;margin-top:8px"},
-        "Until a space has a folder it lives in this browser only, and nothing it " +
+        "Until an area has a folder it lives in this browser only, and nothing it " +
         "holds appears in your file explorer.")));
 
     const list = el("div", {});
@@ -3074,7 +3122,7 @@ function openSpaceStorageSetup({firstRun = false} = {}) {
 
   modal({
     center: true,
-    title: firstRun ? "Where does each space live?" : "Space folders",
+    title: firstRun ? "Where does each area live?" : "Area folders",
     body,
     foot: [
       el("button", {class: "btn ghost", onclick: () => done()}, CAP.dirPicker ? "Not now" : "OK"),
@@ -3234,11 +3282,11 @@ async function spaceBackend(sp) {
 
 async function openSpace(name, destination = null) {
   const sp = Spaces.get(name);
-  if (!sp) { notify("No such space: " + name, "error"); return; }
+  if (!sp) { notify("No such area: " + name, "error"); return; }
   const editor=document.activeElement;
   if (editor?.isContentEditable || /^(INPUT|TEXTAREA)$/.test(editor?.tagName || '')) editor.blur();
   SPACE_TRANSITION = true;
-  showNavigationLoading(destination?.pagePath ? 'Opening page...' : 'Opening space...');
+  showNavigationLoading(destination?.pagePath ? 'Opening page...' : 'Opening area...');
   try {
   if (Spaces.active) await flush();     // drain before the backend changes underneath
   await Spaces.writeSummary().catch(() => {});
@@ -3290,7 +3338,7 @@ async function openSpace(name, destination = null) {
     if (content) {
       content.removeAttribute("aria-busy");
       content.replaceChildren(
-        el("div", {class: "wrap", role: "alert"}, "Could not open the requested space. Please try again."),
+        el("div", {class: "wrap", role: "alert"}, "Could not open the requested area. Please try again."),
       );
     }
     throw error;
@@ -3299,8 +3347,8 @@ async function openSpace(name, destination = null) {
 
 /* ---------- creating and sharing ---------- */
 async function createSpace(name, kind, color) {
-  const clean = trim(name).replace(/[^\w \-]/g, "").slice(0, 40) || "Space";
-  if (Spaces.get(clean)) { notify("A space called " + clean + " already exists.", "warn"); return null; }
+  const clean = trim(name).replace(/[^\w \-]/g, "").slice(0, 40) || "Area";
+  if (Spaces.get(clean)) { notify("An area called " + clean + " already exists.", "warn"); return null; }
   const sp = {name: clean, kind: kind || "local"};
   if (normHex(color)) sp.color = normHex(color);   // else Spaces.add takes the next in the cycle
   if (kind === "fs") {
@@ -3386,7 +3434,7 @@ function colorPreview(name, hex) {
   let cur = normHex(hex) || SPACE_COLORS[0];
   const paint = c => {
     cur = normHex(c) || cur;
-    const label = trim(typeof name === "function" ? name() : name) || "Space";
+    const label = trim(typeof name === "function" ? name() : name) || "Area";
     box.textContent = "";
     box.append(
       el("span", {class: "avatar", style: "background:" + cur + ";color:" + inkOn(cur)},
@@ -3424,9 +3472,9 @@ function openSpaceColor(name, back) {
       picker,
       preview.node,
       el("div", {style: "color:var(--fg3);font-size:12px;margin-top:10px"},
-        "The colour of " + name + " in the sidebar, in the space switcher, and on the badge " +
-        "every row carries when several spaces are shown at once. Kept in this device's list " +
-        "of spaces, so it is not inside the folder or file you share.")),
+        "The colour of " + name + " in the sidebar, in the area switcher, and on the badge " +
+        "every row carries when several areas are shown at once. Kept in this device's list " +
+        "of areas, so it is not inside the folder or file you share.")),
     foot: [
       el("button", {class: "btn ghost", onclick: leave}, "Cancel"),
       el("div", {style: "flex:1"}),
@@ -3488,14 +3536,14 @@ function newSpacePrompt(then) {
   }
 
   modal({
-    center: true, title: "New space",
+    center: true, title: "New area",
     body: el("div", {},
       el("div", {class: "field"},
         el("label", {}, "Name"),
         nameInput,
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
           "A whole separate vault: its own projects, contexts and horizons. " +
-          "Nothing leaks between spaces.")),
+          "Nothing leaks between areas.")),
       el("div", {class: "field"},
         el("label", {}, "What is it for"), profSeg, profWhy),
       el("div", {class: "field"},
@@ -3507,8 +3555,8 @@ function newSpacePrompt(then) {
         picker,
         preview.node,
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:10px"},
-          "How this space shows up in the sidebar, and on the badge its rows carry when " +
-          "it is on screen next to another space. Change it later from the space switcher."))),
+          "How this area shows up in the sidebar, and on the badge its rows carry when " +
+          "it is on screen next to another area. Change it later from the area switcher."))),
     foot: [
       el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
       el("button", {class: "btn primary", onclick: async () => {
@@ -3518,7 +3566,7 @@ function newSpacePrompt(then) {
         const sp = await createSpace(name, kind, color);
         if (!sp) return;
         PENDING_PROFILE.set(sp.name, profile);
-        notify("Space created: " + sp.name);
+        notify("Area created: " + sp.name);
         if (then) then(sp); else await openSpace(sp.name);
         renderNav();
       }}, "Create"),
@@ -3810,7 +3858,7 @@ const TEMPLATE_DEFAULTS = {
   "o": {props:{title:"%title%",type:"org",created:"%today%"}},
   "c": {props:{title:"%title%",type:"context",created:"%today%"}},
   "z": {props:{title:"%title%",created:"%today%"},lines:["%title%","Relates to","Contradicts","Informs"]},
-  "a": {props:{title:"%title%",type:"area",created:"%today%"},lines:["What does keeping this area healthy look like?"]},
+  "a": {props:{title:"%title%",type:"area",created:"%today%"},lines:["What does keeping this responsibility healthy look like?"]},
   "g": {props:{title:"%title%",type:"goal",horizon:"3",created:"%today%"},lines:["What has to be true for this to count as achieved?"]},
   "k": {props:{title:"%title%",type:"checklist",created:"%today%"},lines:["First step"]}
 };
@@ -3842,7 +3890,7 @@ function requireTemplate(name) {
     const space = V.space;
     notify("Missing 8/" + name + ".md. Create it manually, or create an editable default.", "warn", {
       label:"Create default",run:()=>{
-        if (V.space !== space) { notify("Return to the original space to create this template.","warn"); return; }
+        if (V.space !== space) { notify("Return to the original area to create this template.","warn"); return; }
         const made = createDefaultTemplate(name); MISSING_TEMPLATE_NOTICES.delete(key); openPage(made);
       }
     });
@@ -4049,7 +4097,7 @@ function templateHelp() {
     el(
       "p",
       {},
-      "Projects use their folder name, for example 8/1.md. Tasks use 8/todo.md. Other types: p person, o organisation, c context, z note, a area, g goal, k checklist, page generic, journals journal. Relation choices retain ^ for up and _ for down. Use feature_repeat_prompt:: true to offer the next recurring task, and feature_completion_prompt:: true to check project completion when closing a task. Set false to disable. Template updates add missing fields and new rules to existing items. Existing values, including blank fields, are preserved. Opening a page does not rerun status or review rules. Existing notes and child nodes are not duplicated.",
+      "Projects use their folder name, for example 8/1.md. Tasks use 8/todo.md. Other types: p person, o organisation, c context, z note, a responsibility, g goal, k checklist, page generic, journals journal. Relation choices retain ^ for up and _ for down. Use feature_repeat_prompt:: true to offer the next recurring task, and feature_completion_prompt:: true to check project completion when closing a task. Set false to disable. Template updates add missing fields and new rules to existing items. Existing values, including blank fields, are preserved. Opening a page does not rerun status or review rules. Existing notes and child nodes are not duplicated.",
     ),
   );
 }
@@ -4995,7 +5043,7 @@ const HORIZONS = [
    ask: "What do you want to be true in the next one to two years?",
    wiz: {label: "What do you want to be true in one to two years?",
          help: "Concrete enough to know when you got there. One per line. You can hang each " +
-               "one under an area afterwards.",
+               "one under a responsibility afterwards.",
          placeholder: "Debt cleared\nShipped the new product\nRunning a half marathon"},
    by: {work: {
      ask: "What has to be true in the next year or two for your part of this to be working?",
@@ -5003,14 +5051,14 @@ const HORIZONS = [
            help: "The outcomes you are on the hook for, in your words rather than the " +
                  "performance-review ones. One per line.",
            placeholder: "Shipped the new product\nHiring no longer the bottleneck\nOn-call is quiet"}}}},
-  {key: "areas",   h: "Horizon 2", alt: "20,000 ft", name: "Areas of focus",
-   ask: "Which parts of your life and work must stay healthy? These never finish.",
-   wiz: {label: "Which parts of your life and work must stay healthy?",
-         help: "These never get finished - you just keep them in good shape. Most people " +
-               "land on somewhere between four and twelve. One per line, in your own words.",
+  {key: "areas",   h: "Horizon 2", alt: "20,000 ft", name: "Areas & responsibilities",
+   ask: "Which parts of this area must stay healthy? These never finish.",
+   wiz: {label: "Which responsibilities in this area must stay healthy?",
+         help: "These never get finished - you just keep them in good shape. Most areas " +
+               "hold somewhere between three and ten. One per line, in your own words.",
          placeholder: "Health\nFinances\nTeam\nHome"},
    by: {work: {
-     name: "Areas of focus & accountability",
+     name: "Areas & accountabilities",
      ask: "Which parts of the job must stay healthy? These never finish.",
      wiz: {label: "Which parts of the job must stay healthy?",
            help: "This is the job description in your own words: the handful of things that " +
@@ -5042,7 +5090,7 @@ const HORIZON_PROFILES = {
   life: {
     key: "life", label: "A whole life",
     blurb: "All six altitudes, purpose and vision included. The right answer for the " +
-           "space that holds everything, or for your own life outside work.",
+           "area that holds everything, or for your own life outside work.",
     active: HORIZON_KEYS,
     chips: "life",
   },
@@ -5995,13 +6043,13 @@ const NUDGE_PLAIN = {
   verb   : "tasks that don't say what to actually do",
   ctx    : "tasks with no place to do them",
   outcome: "projects with no finish line",
-  area   : "projects not under an area",
+  area   : "projects under no responsibility",
   goal   : "goals nobody is working on",
   wait   : "people to chase",
   ask    : "people to send a check-in to",
   late   : "overdue",
   stale  : "projects older than 6 months",
-  nofolder: "this space is not in a folder yet",
+  nofolder: "this area is not in a folder yet",
 };
 const DEEP_NUDGES = ["verb", "ctx", "area", "goal", "loose", "outcome"];
 
@@ -6052,7 +6100,7 @@ const NUDGE_WHY = {
     "The weekly look is what makes everything else trustworthy. Capture, contexts and " +
     "projects are bookkeeping if nobody ever reads them back.",
   nofolder:
-    "Until this space has a folder it exists in one browser on one machine: no .md " +
+    "Until this area has a folder it exists in one browser on one machine: no .md " +
     "files to open in Neovim or Obsidian, nothing to share with anybody, and nothing " +
     "left if this browser is cleared. Choosing one moves everything already here into " +
     "it. Asked once your list is worth something, not on the first day.",
@@ -6109,7 +6157,7 @@ function computeNudges() {
   /* Chasing somebody who is not in the space has an answer now, so the nudge
      can point at the thing that actually moves it rather than at a list. */
   const toAsk = updatesWorthAsking();
-  push("ask", "warn", "people outside the space to ask for an update", toAsk.length,
+  push("ask", "warn", "people outside the area to ask for an update", toAsk.length,
        () => toAsk.length === 1 ? openAskForUpdate(toAsk[0].name) : go("waiting"));
 
   const noOutcome = projectsWithoutOutcome();
@@ -6117,7 +6165,7 @@ function computeNudges() {
        () => noOutcome.length && openOutcomePrompt(noOutcome[0]));
 
   const orphanProjects = unassignedProjects();
-  push("area", "", "projects in no area of focus", orphanProjects.length, () => go("horizons"));
+  push("area", "", "projects under no responsibility", orphanProjects.length, () => go("horizons"));
 
   const idleGoals = goalsWithoutProjects();
   push("goal", "", "goals with no project", idleGoals.length, () => go("horizons"));
@@ -6192,7 +6240,7 @@ function assetFileName(file) {
 
 async function saveAsset(file) {
   const be = V.backend;
-  if (!be || typeof be.putAsset !== "function") throw new Error("this space has nowhere to keep files");
+  if (!be || typeof be.putAsset !== "function") throw new Error("this area has nowhere to keep files");
   let path = join(ASSET_DIR, assetFileName(file));
   // Two drops in the same second with the same name: keep both.
   if (await be.getAsset(path)) {
@@ -6277,7 +6325,7 @@ function resolveAssets(root) {
 async function attachFilesToBlock(path, b, files, txt) {
   const list = Array.from(files || []).filter(f => f && (f.size || f.type));
   if (!list.length) return false;
-  if (!canKeepFiles()) { notify("This space has nowhere to keep files.", "warn"); return true; }
+  if (!canKeepFiles()) { notify("This area has nowhere to keep files.", "warn"); return true; }
 
   const marks = [];
   for (const f of list) {
@@ -6405,6 +6453,7 @@ const state = {
   todayWho: null,       // whose day page Today is showing
   org: null,            // the organisation Projects is narrowed to
   ctxFilter: null,      // the context Next is narrowed to
+  horizonArea: null,    // the one area Horizons is showing, or null for the ladder
   lastTodoTouch: Date.now(),
   lastMeetingTouch: Date.now(),
 };
@@ -6450,7 +6499,7 @@ function openPage(path) { go("page", {pagePath: path}); }
    the way, the same as clicking the link did. A line you focused on is part of
    the place, so Back walks out of it. */
 const NAV_FIELDS = ["view", "sub", "pagePath", "context", "statusCode", "query", "searchFilter",
-                    "graphFocus", "jz", "todayWho", "org", "ctxFilter"];
+                    "graphFocus", "jz", "todayWho", "org", "ctxFilter", "horizonArea"];
 let NAV_HIST = [], NAV_AT = -1, NAV_JUMPING = false;
 
 function navSnapshot() {
@@ -6564,23 +6613,33 @@ function rememberedSub(view) {
 const subNow = () => subOk(state.view, state.sub) ? state.sub : rememberedSub(state.view);
 
 /* ---------- the sidebar ---------- */
+/* One picture per kind of thing, the same in the sidebar and in the line menu.
+   ︎ asks for the plain text glyph rather than the colour emoji. */
+const ICON = {
+  projects: "⚑",               // flag
+  next:     "⚡︎",         // lightning bolt
+  orgs:     "\u{1F3E2}︎",      // the tall office building
+  people:   "\u{1F464}︎",      // bust
+  pages:    "\u{1F4C4}︎",      // page
+  horizons: "\u{1F52D}︎",      // telescope
+};
 const NAV_ITEMS = [
   {id: "today",    icon: "☀", label: "Today"},
-  {id: "next",     icon: "→", label: "Next"},
+  {id: "next",     icon: ICON.next, label: "Next"},
   {id: "waiting",  icon: "⏳", label: "Waiting for"},
   // Talking to yourself is not a feature: Chat waits for somebody else to be
   // in one of your spaces, and stays once there are threads.
   {id: "chat",     icon: "○", label: "Chat", when: () => anySpaceShared() || allThreads().length > 0},
   "sep",
-  {id: "projects", icon: "▤", label: "Projects"},
-  {id: "people",   icon: "☺", label: "People"},
-  {id: "orgs",     icon: "▣", label: "Organisations"},
+  {id: "projects", icon: ICON.projects, label: "Projects"},
+  {id: "people",   icon: ICON.people, label: "People"},
+  {id: "orgs",     icon: ICON.orgs, label: "Organisations"},
   {id: "contexts", icon: "@",      label: "Contexts"},
-  {id: "pages",    icon: "❏", label: "Pages"},
-  {id: "horizons", icon: "◉", label: "Big picture", small: true,
-   when: () => areaList().length > 0 || goalList().length > 0 || !!getSetting("horizons_seen")},
-  {id: "checklists", icon: "↻", label: "Routines & lists", small: true,
-   when: () => checklistPages().length > 0},
+  {id: "pages",    icon: ICON.pages, label: "Pages"},
+  // Your areas are Horizon 2, so there is always something here to look at.
+  {id: "horizons", icon: ICON.horizons, label: "Horizons", small: true},
+  // The weekly review is a routine itself, so this is never empty.
+  {id: "checklists", icon: "↻", label: "Routines & lists", small: true},
   "grow",
   {id: "review",   icon: "✓", label: "Weekly review"},
 ];
@@ -6636,7 +6695,7 @@ function renderNav() {
       "aria-current": here ? "page" : null,
       onclick: () => go(it.id),
     },
-      el("span", {class: "ic"}, it.icon),
+      el("span", {class: "ic bw"}, it.icon),
       el("span", {class: "lbl"}, it.label),
       n ? el("span", {class: "cnt" + (hot ? " hot" : "")}, String(n)) : null));
   }
@@ -6677,7 +6736,7 @@ function setHelp(on) {
 function spaceBadge(name, big) {
   if (!Spaces.get(name)) return null;
   return el("span", {class: "sp" + (big ? " lg" : ""), style: "--sc:" + spaceColor(name),
-    title: "Lives in the " + name + " space"}, name);
+    title: "Lives in the " + name + " area"}, name);
 }
 /* Only worth saying while more than one space is on screen. */
 const spaceTag = name => multiSpace() && name ? spaceBadge(name) : null;
@@ -6692,7 +6751,7 @@ function renderSpacesButton() {
   btn.append(
     el("span", {class: "sqs"}, ...on.map(n => el("span", {class: "sq",
       style: "background:" + spaceColor(n) + ";color:" + inkOn(spaceColor(n))}, n[0].toUpperCase()))),
-    el("span", {class: "lab"}, on.length === 1 ? on[0] : on.length + " spaces"),
+    el("span", {class: "lab"}, on.length === 1 ? on[0] : on.length + " areas"),
     el("span", {"aria-hidden": "true"}, "▾"));
   $("#capWhere").textContent = multiSpace() && Spaces.active ? "→ " + Spaces.active : "";
 }
@@ -6706,7 +6765,7 @@ function openSpacesMenu() {
   const box = $("#spop");
   const shown = new Set(visibleSpaces());
   box.textContent = "";
-  box.append(el("h4", {}, "Show these spaces"));
+  box.append(el("h4", {}, "Show these areas"));
   for (const sp of Spaces.list) {
     const on = shown.has(sp.name), color = spaceColor(sp.name);
     const tick = el("input", {type: "checkbox", "aria-label": "Show " + sp.name});
@@ -6714,7 +6773,7 @@ function openSpacesMenu() {
     tick.addEventListener("change", async () => {
       const next = new Set(visibleSpaces());
       if (tick.checked) next.add(sp.name);
-      else if (next.size === 1) { tick.checked = true; notify("At least one space has to stay on."); return; }
+      else if (next.size === 1) { tick.checked = true; notify("At least one area has to stay on."); return; }
       else next.delete(sp.name);
       setVisibleSpaces(Array.from(next));
       await ensureVisibleLoaded();
@@ -6738,7 +6797,7 @@ function openSpacesMenu() {
     });
   }
   box.append(el("div", {class: "foot"},
-    el("button", {class: "btn sm ghost", onclick: () => { closeSpacesMenu(); newSpacePrompt(); }}, "+ New space"),
+    el("button", {class: "btn sm ghost", onclick: () => { closeSpacesMenu(); newSpacePrompt(); }}, "+ New area"),
     el("button", {class: "btn sm ghost", onclick: () => { closeSpacesMenu(); openSpaceStorageSetup(); }}, "Folders"),
     el("button", {class: "btn sm ghost", onclick: () => { closeSpacesMenu(); openShareSpaceInvite(); }}, "Invite somebody")));
   box.hidden = false;
@@ -6967,9 +7026,13 @@ const TOUR_DESTS = {
   people:     {label: "People",            go: () => go("people")},
   projects:   {label: "Active projects",   go: () => go("projects", {statusCode: "1"})},
   checklists: {label: "Routines & lists",  go: () => go("checklists")},
-  horizons:   {label: "Big picture",       go: () => go("horizons")},
+  horizons:   {label: "Horizons",          go: () => go("horizons", {horizonArea: null})},
   search:     {label: "Search",            go: () => goSearch()},
-  today:      {label: "My day",            go: () => go("today")},
+  today:      {label: "Today",             go: () => go("today")},
+  waiting:    {label: "Waiting for",       go: () => go("waiting", {sub: "board"})},
+  someday:    {label: "Someday/Maybe",     go: () => go("projects", {sub: "list", statusCode: "2"})},
+  solitaire:  {label: "Review projects",   go: () => go("review", {sub: "projects"})},
+  report:     {label: "What moved",        go: () => go("projects", {sub: "report"})},
   vault:      {label: "Vault & sync",      go: () => openVaultDialog()},
   capture:    {label: "Capture",           go: () => focusCapture()},
   review:     {label: "Weekly review",     go: () => go("review")},
@@ -7250,7 +7313,7 @@ function wizSteps() {
   const profile = horizonProfile();
   const ladder = activeHorizons();
   const intro = {
-    title: "Big picture",
+    title: "Horizons",
     render: () => el("div", {class: "field"},
       el("label", {}, ladder.length + " altitudes"),
       el("div", {style: "color:var(--fg2);font-size:13.5px;line-height:1.75"},
@@ -7306,7 +7369,7 @@ function applyWizard() {
   }
   setSetting("horizons_done", todayISO());
   const made = [];
-  if (areas.length) made.push(areas.length + " " + (horizonMeta("areas").inherited ? "" : "") + "areas");
+  if (areas.length) made.push(areas.length + " responsibilities");
   if (goals.length) made.push(goals.length + " goals");
   for (const key of ["vision", "purpose"]) {
     if (wrote[key]) made.push("a " + horizonMeta(key).name.toLowerCase());
@@ -7432,45 +7495,150 @@ function editHorizonText(key, h) {
   });
 }
 
+/* ---------- your areas, as one ladder ----------
+   An area is a folder of its own -- Work, Home, the choir -- and in GTD terms
+   it is Horizon 2: a part of your life you keep in good shape and never finish.
+   So Horizons is read top-down as one ladder. Purpose and vision are yours and
+   come from your home area, the first one you made. Goals are gathered from
+   every area. Horizon 2 is the areas themselves, each with the responsibilities
+   it holds. Opening an area shows its own ladder, and makes it the area new
+   things land in, so whatever you write there is written into that folder. */
+const homeArea = () => (Spaces.list[0] && Spaces.list[0].name) || Spaces.active;
+const HZ_LOADING = new Set();
+
+function openAreaHorizons(name) {
+  if (name && name !== Spaces.active) openSpace(name, {view: "horizons", horizonArea: name});
+  else go("horizons", {horizonArea: name || null});
+}
+
+/* What the ladder says about one area, or null while it is not open here. */
+function areaSummary(name) {
+  if (!LOADED.has(name)) {
+    if (!HZ_LOADING.has(name)) {
+      HZ_LOADING.add(name);
+      loadSpaceRecord(name).then(() => { if (state.view === "horizons") render(); }).catch(() => {});
+    }
+    return null;
+  }
+  return inSpace(name, () => ({
+    profile: horizonProfile().label,
+    resp: areaList().map(p => ({path: p, title: pageTitle(p)})),
+    active: projectsIn("1").length,
+    waiting: projectsIn("3").length,
+    face: whoAmI() ? avatarNode(whoAmI(), 32) : null,
+  }));
+}
+
+function horizonsLadder() {
+  const c = el("div", {class: "wrap"});
+  c.append(vhead("Horizons", "What it is all for, the areas you keep, and the work in them"));
+  const home = homeArea();
+  const homeOpen = home && LOADED.has(home);
+
+  if (homeOpen) inSpace(home, () => {
+    for (const key of ["purpose", "vision"]) {
+      if (!horizonActive(key)) continue;
+      const h = horizonMeta(key);
+      c.append(horizonRow(h, textHorizonCard(key, h),
+        el("button", {class: "btn sm ghost", title: "Kept in " + home,
+          onclick: () => openAreaHorizons(home)}, getHorizon(key).length ? "edit" : "define")));
+    }
+  });
+
+  const gh = horizonMeta("goals");
+  const goals = Spaces.list.map(sp => sp.name).filter(n => LOADED.has(n)).flatMap(n => inSpace(n, () =>
+    horizonActive("goals") ? goalList().map(g => ({space: n, path: g, title: pageTitle(g), resp: areaOfGoal(g)})) : []));
+  const gcard = el("div", {class: "card"});
+  if (!goals.length) gcard.append(el("div", {class: "empty"}, gh.ask));
+  for (const g of goals) gcard.append(el("div", {class: "prow"},
+    el("span", {class: "st st-1"}, "3"),
+    el("button", {class: "nm", style: "text-align:left", onclick: () => openPageIn(g.space, g.path)}, g.title),
+    g.resp ? el("span", {class: "chip"}, g.resp) : null,
+    spaceBadge(g.space)));
+  c.append(horizonRow(gh, gcard,
+    el("button", {class: "btn sm ghost", onclick: () => openAreaHorizons(Spaces.active)}, "+ goal")));
+
+  const ah = Object.assign({}, horizonMeta("areas"), {name: "Areas"});
+  const acard = el("div", {class: "card"});
+  for (const sp of Spaces.list) {
+    const s = areaSummary(sp.name);
+    const row = el("div", {class: "arow"},
+      el("div", {class: "arow-top"},
+        s && s.face ? s.face : el("span", {class: "arow-dot", style: "background:" + spaceColor(sp.name)}),
+        el("button", {class: "nm", onclick: () => openAreaHorizons(sp.name)}, sp.name),
+        s ? el("span", {class: "sub"}, s.profile) : el("span", {class: "sub"}, "opening..."),
+        s ? el("span", {class: "chip"}, s.active + (s.active === 1 ? " active project" : " active projects")) : null,
+        s && s.waiting ? el("span", {class: "chip"}, s.waiting + " waiting") : null,
+        el("button", {class: "btn sm ghost", style: "margin-left:auto", onclick: () => openAreaHorizons(sp.name)}, "Horizons ›")));
+    if (s) {
+      const chips = el("div", {class: "arow-resp"});
+      if (!s.resp.length) chips.append(el("span", {class: "sub"}, "No responsibilities written down yet"));
+      for (const r of s.resp.slice(0, 12))
+        chips.append(el("button", {class: "chip b", onclick: () => openPageIn(sp.name, r.path)}, r.title));
+      if (s.resp.length > 12) chips.append(el("button", {class: "textbtn", onclick: () => openAreaHorizons(sp.name)},
+        "+" + (s.resp.length - 12) + " more"));
+      row.append(chips);
+    }
+    acard.append(row);
+  }
+  c.append(horizonRow(ah, acard,
+    el("button", {class: "btn sm ghost", onclick: () => newSpacePrompt()}, "+ New area")));
+
+  const ph = horizonMeta("projects");
+  const pcard = el("div", {class: "card"});
+  for (const code of STATUS_ORDER) {
+    pcard.append(el("button", {class: "prow", onclick: () => go("projects", {statusCode: code})},
+      el("span", {class: "st st-" + code}, code),
+      el("span", {class: "nm"}, STATUS_LABEL[code]),
+      el("span", {class: "sub"}, visibleProjects(code).length + "")));
+  }
+  c.append(horizonRow(ph, pcard));
+  const gr = horizonMeta("ground");
+  c.append(horizonRow(gr, el("div", {class: "card"},
+    el("button", {class: "prow", onclick: () => go("next")},
+      el("span", {class: "st st-1"}, "▸"),
+      el("span", {class: "nm"}, "Your next actions"),
+      el("span", {class: "sub"}, myOpen().length + "")))));
+  c.append(el("p", {class: "hint"}, multiSpace()
+    ? "Projects and next actions count the areas you are showing."
+    : "Projects and next actions count " + (Spaces.active || "this area") + "."));
+  return c;
+}
+
+/* One area's own ladder, from its purpose (or the mission it inherits) down. */
+function horizonsOfArea(name) {
+  const c = el("div", {class: "wrap"});
+  c.append(vhead("Horizons", null,
+    el("button", {class: "textbtn push", onclick: () => go("horizons", {horizonArea: null})}, "‹ All areas")));
+  c.append(el("div", {class: "areahead"}, spaceBadge(name, true),
+    el("span", {class: "sub"}, inSpace(name, () => horizonProfile().label))));
+  const inner = inSpace(name, () => {
+    HORIZON_SINGLE_SPACE = true;
+    try { return viewHorizons(); } finally { HORIZON_SINGLE_SPACE = false; }
+  });
+  while (inner.firstChild) c.append(inner.firstChild);
+  return c;
+}
+
 let HORIZON_SINGLE_SPACE=false;
 function viewHorizons(){
-  if (!HORIZON_SINGLE_SPACE && visibleSpaces().filter(n => LOADED.has(n)).length > 1) {
-    const names = visibleSpaces().filter(n => LOADED.has(n)),
-      outer = el("div", {class: "wrap wide"});
-    outer.append(vhead("Big picture", "What all of this is for, space by space"));
-    const grid = el("div", {class: "space-horizons", style: "--space-count:" + names.length});
-    for (const name of names) {
-      const col = el("section", {class: "space-horizon-col"}, el("h3", {class: "space-horizon-head"}, name));
-      const inner = inSpace(name, () => {
-        HORIZON_SINGLE_SPACE = true;
-        try {
-          return viewHorizons();
-        } finally {
-          HORIZON_SINGLE_SPACE = false;
-        }
-      });
-      const own = inner.querySelector(".nudgebar");
-      if (own) own.remove();
-      while (inner.firstChild) col.append(inner.firstChild);
-      grid.append(col);
-    }
-    outer.append(grid);
-    return outer;
+  if (!HORIZON_SINGLE_SPACE) {
+    const one = state.horizonArea;
+    return one && Spaces.get(one) && LOADED.has(one) ? horizonsOfArea(one) : horizonsLadder();
   }
   const c = el("div", {class: "wrap"});
-  if (!HORIZON_SINGLE_SPACE) c.append(vhead("Big picture", "Purpose, vision, goals and areas"));
 
   const areas = areaList(), goals = goalList();
-  /* Only what this space actually runs counts as empty, or a space with no
+  /* Only what this area actually runs counts as empty, or an area with no
      purpose by design would sit under the hero for ever. */
   const texts = ["vision", "purpose"].filter(horizonActive);
   const nothing = !areas.length && !goals.length && !texts.some(k => getHorizon(k).length);
 
   if (nothing) {
     c.append(el("div", {class: "hero"},
-      el("h2", {}, "Big picture"),
+      el("h2", {}, "Horizons"),
       el("div", {style: "font-size:16px;font-weight:600;margin-bottom:2px"}, "Altitude, not just a list"),
-      el("p", {}, (texts.length ? "Purpose, vision, goals and areas are" : "Goals and areas are") +
+      el("p", {}, (texts.length ? "Purpose, vision, goals and responsibilities are" : "Goals and responsibilities are") +
                   " what make your projects mean something. " +
                   "Nothing is created for you - the wizard asks, you answer."),
       el("div", {class: "acts"},
@@ -7501,7 +7669,7 @@ function viewHorizons(){
           el("span", {class: "st st-1"}, "3"),
           el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(g)}, pageTitle(g)),
           el("button", {class: "chip b", onclick: () => openAreaPickerFor(g)},
-            areaOfGoal(g) ? areaOfGoal(g) : "no area"),
+            areaOfGoal(g) ? areaOfGoal(g) : "no responsibility"),
           live.length ? el("span", {class: "chip"}, live.length + " projects")
                       : el("span", {class: "chip miss b", onclick: () => newProjectPrompt(np => { setGoalOfProject(np, name); openPage(np); })},
                           "no project")));
@@ -7526,11 +7694,11 @@ function viewHorizons(){
       const orphans = unassignedProjects();
       if (orphans.length) {
         card.append(el("div", {class: "dash-item", style: "color:var(--warn)"},
-          el("span", {}, orphans.length + " project(s) belong to no area"),
+          el("span", {}, orphans.length + " project(s) under no responsibility"),
           el("span", {class: "fix", onclick: () => openAreaPicker(orphans[0])}, "assign")));
       }
-      c.append(horizonRow(h, card,
-        el("button", {class: "btn sm ghost", onclick: () => newAreaPrompt()}, "+ area")));
+      c.append(horizonRow(Object.assign({}, h, {name: "Responsibilities in " + V.space}), card,
+        el("button", {class: "btn sm ghost", onclick: () => newAreaPrompt()}, "+ responsibility")));
     } else if (h.key === "projects") {
       const card = el("div", {class: "card"});
       for (const code of STATUS_ORDER) {
@@ -7574,7 +7742,7 @@ function openAreaPickerFor(goalPath) {
   const areas = areaList().map(baseName);
   if (!areas.length) { newAreaPrompt(a => { setAreaOfGoal(goalPath, baseName(a)); render(); }); return; }
   listPicker({
-    title: "Area for " + pageTitle(goalPath),
+    title: "Responsibility for " + pageTitle(goalPath),
     items: areas.concat(["(none)"]),
     label: a => a,
     onPick: a => { setAreaOfGoal(goalPath, a === "(none)" ? null : a); render(); },
@@ -7605,6 +7773,20 @@ function viewChecklists() {
   ];
   const head = el("button", {class: "btn sm ghost", style: "margin-left:auto",
     onclick: () => newChecklistPrompt()}, "+ new");
+
+  /* The weekly review is a routine like the others, and the one everybody has,
+     so it is always here -- as the built-in steps until you edit it. */
+  const steps = reviewSteps().reduce((k, g) => k + g.steps.length, 0);
+  c.append(section("The weekly review", null, el("div", {class: "card"},
+    el("div", {class: "listblurb"}, "The steps the weekly review walks you through. Add your own, reword or drop any."),
+    el("div", {class: "prow"},
+      el("span", {class: "st st-2"}, "↻"),
+      el("button", {class: "nm", style: "text-align:left", onclick: editReviewSteps}, "Weekly review"),
+      el("span", {class: "chip"}, "weekly"),
+      el("span", {class: "sub"}, steps + " steps" + (V.pages.has(REVIEW_LIST_PATH) ? "" : ", built in")),
+      el("button", {class: "btn sm ghost", onclick: editReviewSteps}, "Edit steps"),
+      el("button", {class: "btn sm primary", onclick: () => go("review", {sub: "steps"})}, "Review")))));
+  lists.splice(0, lists.length, ...lists.filter(p => p !== REVIEW_LIST_PATH));
 
   // Empty, the three descriptions ARE the content: this is the one screen where
   // the difference between them is worth a paragraph.
@@ -7688,7 +7870,7 @@ function makePrivatePrompt(path) {
   }
   list.append(el("button", {class: "pick", onclick: () => { closeModal(); newSpacePrompt(sp => movePageToSpace(path, sp.name)); }},
     el("span", {class: "k"}, "+"),
-    el("span", {style: "flex:1"}, "A new private space"),
+    el("span", {style: "flex:1"}, "A new private area"),
     el("span", {class: "d"}, "its own folder")));
   body.append(el("div", {class: "field"}, el("label", {}, "Move it to"), list));
 
@@ -7950,7 +8132,7 @@ function parseDeepLink(hash) {
 async function followDeepLink(link) {
   if (link.space && link.space !== Spaces.active) {
     if (Spaces.get(link.space)) await openSpace(link.space);
-    else { notify("That link is for a space called \u201C" + link.space + "\u201D, which is not on this device.", "warn"); return false; }
+    else { notify("That link is for an area called \u201C" + link.space + "\u201D, which is not on this device.", "warn"); return false; }
   }
   if (!V.pages.has(link.path)) {
     notify("That link points at a page this vault does not have: " + link.path, "warn");
@@ -8166,7 +8348,10 @@ function shrinkToDataURI(file, px, limit) {
   });
 }
 
-function pickAvatar(name, then) {
+/* `space` is the area whose copy of the page gets the picture. The file dialog
+   answers long after the click, when another area may be the active one, so it
+   is named rather than taken from wherever V happens to point by then. */
+function pickAvatar(name, then, space) {
   const input = el("input", {type: "file", accept: "image/*", style: "display:none",
     onchange: async e => {
       const f = e.target.files[0];
@@ -8175,11 +8360,13 @@ function pickAvatar(name, then) {
       try {
         const data = await shrinkToDataURI(f, 96, AVATAR_MAX);
         if (!data) { notify("Could not get that picture small enough. Try a simpler one.", "warn"); return; }
-        const path = personPath(name);
-        const page = V.pages.has(path) ? getPage(path) : {props: {title: name}, blocks: []};
-        page.props[AVATAR_PROP] = data;
-        putPage(path, page);
-        notify("Picture set - " + Math.round(data.length / 1024) + "KB in your page.");
+        inSpace(space, () => {
+          const path = personPath(name);
+          const page = V.pages.has(path) ? getPage(path) : {props: {title: name}, blocks: []};
+          page.props[AVATAR_PROP] = data;
+          putPage(path, page);
+        });
+        notify("Picture set" + (space ? " for " + space : "") + " - " + Math.round(data.length / 1024) + "KB in your page.");
         render();
         if (then) then();
       } catch (_) { notify("That file did not read as an image.", "error"); }
@@ -8619,7 +8806,7 @@ function boardSelActions() {
       run: () => pickProject({title: "Put these under", onPick: r => {
         const mine = items.filter(x => (x.action.space || V.space) === r.space);
         if (mine.length < items.length) {
-          notify((items.length - mine.length) + " of them live in another space, so they " +
+          notify((items.length - mine.length) + " of them live in another area, so they " +
                  "cannot point at that project.", "warn");
         }
         boardSelApply(mine, "Filed under " + inSpace(r.space, () => pageTitle(r.path)),
@@ -8646,7 +8833,7 @@ function boardSelActions() {
         onPick: r => {
           const mine = items.filter(x => (x.project.space || V.space) === r.space);
           if (mine.length < items.length) {
-            notify((items.length - mine.length) + " of them live in another space, so they " +
+            notify((items.length - mine.length) + " of them live in another area, so they " +
                    "cannot point at that project.", "warn");
           }
           boardSelApply(mine, "Under " + inSpace(r.space, () => pageTitle(r.path)),
@@ -8872,7 +9059,7 @@ function boardSpaceTabs() {
   const row = el("div", {class: "btabs"});
   row.append(el("button", {
     class: "btab" + (showingAll ? " on" : ""), onclick: () => show(all),
-    title: "Every space at once",
+    title: "Every area at once",
   }, "All"));
 
   for (const sp of Spaces.list) {
@@ -9143,7 +9330,7 @@ function viewProjectBoard() {
   }
   c.append(boardMarquee(el("div", {class: "boardwrap boardscroll"}, board), "project"));
   c.append(el("p", {class: "hint"}, "Dragging a project moves its file to that folder, and every link to it " +
-    "follows. Drop one on a space tab to move it into that space; hold ctrl to copy it instead."));
+    "follows. Drop one on an area tab to move it into that area; hold ctrl to copy it instead."));
   return c;
 }
 
@@ -9175,7 +9362,7 @@ function boardDirCard(r) {
     el("div", {class: "bcard-meta"},
       multiSpace() ? spaceBadge(space) : null,
       el("span", {class: "chip"}, info.ref),
-      info.member ? el("span", {class: "chip who"}, "in this space") : null,
+      info.member ? el("span", {class: "chip who"}, "in this area") : null,
       info.open ? el("span", {class: "chip"}, info.open + " open") : null,
       el("span", {class: "chip age"}, info.links + (info.links === 1 ? " mention" : " mentions"))));
   return makeCardDraggable(card, "dirpage", {page: r}, space + "|" + path);
@@ -10991,7 +11178,7 @@ function viewGantt() {
       onclick: () => go("projects", {sub: "timeline", ganttSpan: k})}, (key === k ? "✓ " : "") + label));
   bar.append(el("button", {class: "chip filter" + (chains ? " on" : ""),
     title: "Draw the order projects have to happen in",
-    onclick: () => go("projects", {sub: "timeline", ganttChains: !chains})}, (chains ? "✓ " : "") + "Chains"));
+    onclick: () => go("projects", {sub: "timeline", ganttChains: !chains})}, (chains ? "✓ " : "") + "Dependencies"));
   c.append(el("div", {class: "section"}, bar));
 
   /* Only the groups with something inside the window, and only their dated
@@ -11256,7 +11443,11 @@ function ganttGroupRow(row, pct) {
       g.blockers && g.blockers.length
         ? el("span", {class: "gdep", title: "Waiting on " +
             inSpace(g.space, () => g.blockers.map(pageTitle).join(", "))}, "⇠") : null,
-      el("span", {class: "n"}, row.late ? "late" : row.openN ? row.openN + " open" : "done")),
+      el("span", {class: "n"}, row.late ? "late" : row.openN ? row.openN + " open" : "done"),
+      // A button cannot sit inside the row's button, so this is a span that acts as one.
+      el("span", {class: "gopen", role: "button", tabindex: "0", title: "Open " + g.label,
+        onclick: e => { e.stopPropagation(); previewPage(g.space, g.path); },
+        onkeydown: e => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); previewPage(g.space, g.path); } }}, "↗")),
     track);
   if (movable) nudgeKeys(rowEl, shift);
   return rowEl;
@@ -11388,8 +11579,7 @@ function drawChainArrows(body, links, rows) {
    ============================================================ */
 
 /* Who ticked it off, without the timestamp that follows the name. */
-const closedBy = b => trim(trim(blockProp(b, "done_by") || "")
-  .replace(/\s*\d{4}-\d{2}-\d{2}T[\d:]{5,8}Z?\s*$/, ""));
+const closedBy = b => splitStamp(blockProp(b, "done_by") || "").who;
 
 /* The day it was ticked off, from whichever of the three the file has. */
 const closedOn = b => (trim(blockProp(b, "done_by") || "").match(/\d{4}-\d{2}-\d{2}/) || [])[0]
@@ -11559,7 +11749,7 @@ function viewReport() {
     row.append(fselect("Person", who, [["", "Everyone"], ...Array.from(byWho.keys()).sort().map(n => [n, n])],
       v => goReport({reportWho: v})));
   if (spaces.length > 1)
-    row.append(fselect("Space", space, [["", "All spaces"], ...spaces.map(n => [n, n])], v => goReport({reportSpace: v})));
+    row.append(fselect("Area", space, [["", "All areas"], ...spaces.map(n => [n, n])], v => goReport({reportSpace: v})));
   row.append(fselect("Group by", by, REPORT_GROUPS.map(([k, label]) => [k, "By " + label.toLowerCase()]),
     v => goReport({reportBy: v})));
   c.append(row);
@@ -11650,7 +11840,7 @@ const CHAT_FILTERS = [["all", "All"], ["unread", "Unread"], ["flagged", "Flagged
 
 function viewChat() {
   const c = el("div", {class: "wrap"});
-  c.append(vhead("Chat", "Every conversation, in every space you are showing"));
+  c.append(vhead("Chat", "Every conversation, in every area you are showing"));
   const threads = allThreads();
   const mode = state.chatFilter || "all";
   const shown = threads.filter(t =>
@@ -11671,7 +11861,7 @@ function viewChat() {
     c.append(section("Chat", 0, el("div", {class: "card"}, el("div", {class: "empty"},
       mode === "flagged" ? "Nothing flagged. The \u2691 on a message keeps it here."
       : mode === "unread" ? "Nothing unread."
-      : "No conversations yet. Open a task and say something - everyone in that space sees it."))));
+      : "No conversations yet. Open a task and say something - everyone in that area sees it."))));
     return c;
   }
 
@@ -12087,7 +12277,7 @@ function openAssignOther(path, block) {
     body: el("div", {},
       el("div", {class: "field"}, el("label", {}, "Who"), input,
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          "They are not in this space, so this becomes something you are waiting " +
+          "They are not in this area, so this becomes something you are waiting " +
           "for rather than a task anybody here can tick off."))),
     foot: [
       el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
@@ -12171,7 +12361,7 @@ function openInviteArrived(cfg, text) {
     body: el("div", {},
       el("div", {class: "field"},
         el("div", {style: "font-size:13.5px"},
-          "Everything in that space is in this file. Open it and it is yours too - " +
+          "Everything in that area is in this file. Open it and it is yours too - " +
           "the same projects, the same lists, the same people.")),
       cfg.kind === "fs" ? el("div", {class: "field"},
         el("label", {}, "One thing to do afterwards"),
@@ -12183,7 +12373,7 @@ function openInviteArrived(cfg, text) {
       cfg.kind === "http" ? el("div", {class: "field"},
         el("label", {}, "Nothing else to set up"),
         el("div", {style: "color:var(--fg2);font-size:13px"},
-          "This space lives on a server at " + cfg.server + ", and that address is in the " +
+          "This area lives on a server at " + cfg.server + ", and that address is in the " +
           "file. You will be asked for the password the first time.")) : null),
     foot: [
       el("button", {class: "btn ghost", onclick: closeModal}, "Not now"),
@@ -12265,12 +12455,12 @@ function openShareSpaceInvite() {
   const slug = (sp.name || "space").toLowerCase().replace(/[^\w-]+/g, "-");
 
   modal({
-    center: true, title: "Invite somebody to " + (sp.name || "this space"),
+    center: true, title: "Invite somebody to " + (sp.name || "this area"),
     body: el("div", {},
       el("div", {class: "field"},
         el("label", {}, "What they get"),
         el("div", {style: "color:var(--fg2);font-size:13.5px"},
-          "The space already set up - its name, its colour" +
+          "The area already set up - its name, its colour" +
           (sp.kind === "http" ? ", the server address" : "") +
           " - and everything in it: " + counts.pages + " pages, " +
           counts.projects + " projects, " + counts.actions + " open. They open it " +
@@ -12295,11 +12485,11 @@ function openShareSpaceInvite() {
             try {
               const html = await bakeInviteHtml();
               downloadText("GroupToDo-" + slug + ".html", html);
-              notify("Saved one file with the app and the space in it. They just open it.");
+              notify("Saved one file with the app and the area in it. They just open it.");
             } catch (e) {
               notify("Could not build that here: " + e.message + " Send the invite file instead.", "warn");
             }
-          }}, "One file: app + space") : null),
+          }}, "One file: app + area") : null),
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:8px"},
           CAP.served
             ? "The invite file needs grouptodo.html at the other end. The single file needs nothing."
@@ -12311,7 +12501,7 @@ function openShareSpaceInvite() {
       el("div", {class: "field"},
         el("label", {}, "Careful"),
         el("div", {style: "color:var(--fg3);font-size:12.5px"},
-          "Your other spaces are different folders and different files. None of them is " +
+          "Your other areas are different folders and different files. None of them is " +
           "in here."))),
     foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Close")],
   });
@@ -12348,10 +12538,10 @@ function newsSince(since) {
       }
       // Something I handed over, now done by them.
       const raw = trim(blockProp(b, "done_by") || "");
-      if (raw && samePerson(by, me) && !samePerson(raw.split(/\s+/)[0], me)) {
-        const when = (raw.match(/\d{4}-\d{2}-\d{2}T[\d:]+Z/) || [])[0] || "";
+      const {who: doer, iso: when} = splitStamp(raw);
+      if (raw && samePerson(by, me) && !samePerson(doer, me)) {
         if (when && when > since)
-          out.push({kind: "finished", path, block: b, at: when, who: raw.split(/\s+/)[0]});
+          out.push({kind: "finished", path, block: b, at: when, who: doer});
       }
     });
   }
@@ -13781,7 +13971,7 @@ function nameIndex() {
 }
 const KIND_MARK = {person: "p", org: "o", project: "1", context: "@", page: "·", date: "📅"};
 const LINK_KIND_WORD = {context: "context", person: "person", org: "org", zettel: "note",
-  area: "area", goal: "goal", checklist: "routine", project: "project", journal: "day",
+  area: "responsibility", goal: "goal", checklist: "routine", project: "project", journal: "day",
   horizon: "horizon", page: "page"};
 
 /* ---------- dates in words ----------
@@ -14981,7 +15171,7 @@ function flyRows() {
     .filter(n => !(waiting && samePerson(n, whoAmI())));
   return [
     {k: "kind", ic: t ? "•" : "☐", label: t ? "Make it a note" : "Make it a task", key: "Alt+T"},
-    {k: "mkproj", ic: "▤", label: "Make it a project", key: "Alt+1"},
+    {k: "mkproj", ic: ICON.projects, label: "Make it a project", key: "Alt+1"},
     {k: "state", ic: "◐", label: "State", val: t ? STATE_WORD[t] : "Note", key: "Ctrl+Enter",
      opts: [["TODO", "To do"], ["DOING", "Doing"], ["WAIT", "Waiting"], ["DONE", "Done"], ["", "Note"]]},
     {k: "due", ic: "📅", label: "Due", val: dueDate(block) ? humanDate(dueDate(block)) : "None", key: "Alt+D", date: true,
@@ -14989,10 +15179,10 @@ function flyRows() {
             [shiftISO(todayISO(), 7), "In a week"], ["", "No date"]]},
     {k: "ctx", ic: "@", label: "Context", val: contextOf(block.title) ? "@" + contextOf(block.title) : "None", key: "@@ · Alt+C",
      opts: [...allContextNames().map(c => [c, contextLabel(c)]), ["", "No context"]]},
-    {k: "who", ic: "☺", label: waiting ? "Waiting on" : "Person",
+    {k: "who", ic: ICON.people, label: waiting ? "Waiting on" : "Person",
      val: waiting && (!who || samePerson(who, whoAmI())) ? "Pick someone" : who || "Me", key: "@ · Alt+P",
      opts: [...(waiting ? [] : [["", "Me"]]), ...people.filter(n => !samePerson(n, whoAmI())).map(n => [n, n])]},
-    {k: "org", ic: "▣", label: "Organisation", val: org || "None", key: "Alt+O",
+    {k: "org", ic: ICON.orgs, label: "Organisation", val: org || "None", key: "Alt+O",
      opts: [...allOrgNames().map(o => [o, o]), ["", "No organisation"]]},
     {k: "proj", ic: "#", label: "Project", val: proj ? proj.title : "None", key: "# · Alt+J",
      opts: [...["1", "3", "2"].flatMap(c => projectsIn(c)).map(p => [p, pageTitle(p)]), ["", "No project"]]},
@@ -15019,7 +15209,7 @@ function flyDraw() {
     const lit = FLY_LIT && FLY_LIT.id === block.id && FLY_LIT.k === r.k;
     const row = el("div", {class: "frow" + (open ? " open" : "") + (lit ? " lit" : "")},
       el("button", {class: "fhead", tabindex: "-1", onclick: () => flyHead(r.k)},
-        el("span", {class: "fic"}, r.ic), el("span", {class: "fl"}, r.label),
+        el("span", {class: "fic bw"}, r.ic), el("span", {class: "fl"}, r.label),
         el("span", {class: "fv"}, r.val || ""), r.key ? el("kbd", {}, r.key) : null));
     if (open && r.opts) {
       const os = flyOptsOf(r), hi = Math.min(FLY.hi || 0, os.length - 1);
@@ -15235,7 +15425,7 @@ function previewPage(space, path) {
   if (info.kind === "project") {
     fact("Done when", info.outcome || "");
     fact("Status", STATUS_LABEL[statusDirOf(path)]);
-    fact("Area", info.area ? "[[a/" + info.area + "]]" : "");
+    fact("Responsibility", info.area ? "[[a/" + info.area + "]]" : "");
     if (info.blockers.length) fact("Waits on", info.blockers.join(", "));
   }
   for (const [k, v] of Object.entries(info.props)) {
@@ -15260,10 +15450,10 @@ function previewPage(space, path) {
     el("button", {class: "btn primary", onclick: () => { closeModal(); openPageIn(space, path); }}, "Open full page")]});
 }
 const PAGE_KIND_ONE = {project: "Project", person: "Person", org: "Organisation", context: "Context",
-  area: "Area", goal: "Goal", zettel: "Note", checklist: "Routine or list", journal: "Day page",
+  area: "Responsibility", goal: "Goal", zettel: "Note", checklist: "Routine or list", journal: "Day page",
   horizon: "Horizon", page: "Page", verb: "Verb"};
 const PAGE_KINDS = {project: "Projects", person: "People", org: "Organisations", context: "Contexts",
-  area: "Areas", goal: "Goals", zettel: "Notes", checklist: "Routines & lists", journal: "Journals",
+  area: "Responsibilities", goal: "Goals", zettel: "Notes", checklist: "Routines & lists", journal: "Journals",
   horizon: "Horizons", page: "Other pages"};
 
 /* ============================================================
@@ -15444,7 +15634,7 @@ function openHistory(days = 90) {
   const mark = {done: "✓", added: "+", said: "○"};
   const body = el("div", {});
   body.append(el("div", {class: "field", style: "color:var(--fg2);font-size:13.5px"},
-    "Everything that happened in the spaces you are showing, newest first."));
+    "Everything that happened in the areas you are showing, newest first."));
   for (const [day, list] of byDay) {
     body.append(section(chatDayLabel(day), list.length, pagedCard(list, r => el("button", {class: "dash-item",
       onclick: () => { closeModal(); inSpace(r.space, () => openTaskDetail(r.path, r.block, r.space)); }},
@@ -15552,7 +15742,7 @@ function viewWaiting() {
   const askLine = name => {
     const owing = rows.filter(a => samePerson(nameOf(a), name));
     const asked = owing.map(a => askedDays(a.block)).filter(d => d != null);
-    return isMember(name) ? "in the space" : asked.length ? "asked " + Math.min(...asked) + "d ago" : "never asked";
+    return isMember(name) ? "in the area" : asked.length ? "asked " + Math.min(...asked) + "d ago" : "never asked";
   };
   const askBtn = name => name === "Nobody named" ? null
     : isMember(name)
@@ -15629,7 +15819,12 @@ function autoWaiting(r) {
 const effStatus = r => autoWaiting(r) ? "3" : inSpace(r.space, () => statusDirOf(r.path));
 const linksWith = (props, pfx) => linksIn(Object.values(props || {}).join(" "))
   .map(l => trim(l.split("][")[0])).filter(l => l.startsWith(pfx)).map(l => l.slice(pfx.length));
-const projectOrgs = r => inSpace(r.space, () => [...new Set(linksWith(getPage(r.path)?.props, "o/"))]);
+const projectOrgs = r => inSpace(r.space, () => [...new Set([...linksWith(getPage(r.path)?.props, "o/"),
+  ...areaOrgsOf(r.path)])]);
+/* An organisation dragged onto an area is whose work everything in that area is,
+   so every project in the area counts as theirs without saying so itself. */
+const areaOrgsOf = path => { const a = areaOfProject(path);
+  return a ? linksWith(getPage(join(DIRS.areas, slugify(a) + ".md"))?.props, "o/") : []; };
 const projectPeople = r => inSpace(r.space, () => [...new Set(linksIn(getPage(r.path)?.props?.with || "")
   .map(l => trim(l.split("][")[0])).filter(l => l.startsWith("p/")).map(l => l.slice(2)))]);
 
@@ -15684,11 +15879,18 @@ function viewProjects() {
   if (sub === "report") { c.append(viewReport()); return c; }
   if (sub === "board") { c.append(viewProjectBoard()); return c; }
 
+  const area = state.projArea || "";
+  const areaOf = r => inSpace(r.space, () => areaOfProject(r.path)) || "";
+  const areaNames = [...new Set(every.map(areaOf).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const areaSel = areaNames.length ? fselect("Area", area, [["", "All areas"], ["-", "No area"], ...areaNames.map(a => [a, a])],
+    v => go("projects", {projArea: v || null})) : null;
+  const inArea = r => !area || (area === "-" ? !areaOf(r) : areaOf(r).toLowerCase() === area.toLowerCase());
+
   const code = STATUS_DIRS[state.statusCode] ? state.statusCode : "1";
-  const rows = every.filter(inOrg);
+  const rows = every.filter(inOrg).filter(inArea);
   c.append(fbar(...STATUS_CHIPS.map(k => fchip(STATUS_LABEL[k], code === k,
       () => go("projects", {statusCode: k}), rows.filter(r => effStatus(r) === k).length)),
-    orgSel,
+    areaSel, orgSel,
     el("button", {class: "textbtn", onclick: () => newProjectPrompt()}, "+ New project")));
   const shown = rows.filter(r => effStatus(r) === code)
     .sort((x, y) => inSpace(x.space, () => pageTitle(x.path)).localeCompare(inSpace(y.space, () => pageTitle(y.path))));
@@ -15722,7 +15924,7 @@ function peopleRows() {
       r.open = openActionsOf(r.name);
       r.late = r.open.filter(a => a.due && a.due < todayISO()).length;
       r.owes = r.me ? 0 : waitingRows().filter(a => samePerson(a.assignee, r.name)).length;
-      r.seen = r.me ? "here now" : (r.member ? (lastSeenOf(r.name) ? "last seen " + lastSeenOf(r.name) : "not seen yet") : "outside the space");
+      r.seen = r.me ? "here now" : (r.member ? (lastSeenOf(r.name) ? "last seen " + lastSeenOf(r.name) : "not seen yet") : "outside the area");
     }
     return Array.from(rows.values()).sort((a, b) => (b.me - a.me) || a.name.localeCompare(b.name));
   });
@@ -15753,7 +15955,7 @@ function viewPeople() {
   const kind = PREF.get("people.kind", "all");
   const keep = r => kind === "all" || (kind === "in" ? r.member : !r.member);
   c.append(fbar(fchip("Everyone", kind === "all", () => { PREF.set("people.kind", "all"); render(); }),
-    fchip("In the space", kind === "in", () => { PREF.set("people.kind", "in"); render(); }),
+    fchip("In the area", kind === "in", () => { PREF.set("people.kind", "in"); render(); }),
     fchip("Outside it", kind === "out", () => { PREF.set("people.kind", "out"); render(); })));
   const rows = all.filter(keep);
   if (sub === "cards") {
@@ -15768,7 +15970,7 @@ function viewPeople() {
     el("div", {class: "t-body"},
       el("div", {class: "t-title"}, el("b", {}, r.name + (r.me ? " (you)" : ""))),
       el("div", {class: "t-meta"},
-        el("span", {class: "chip" + (r.member ? "" : " today")}, r.member ? "In the space" : "Outside the space"),
+        el("span", {class: "chip" + (r.member ? "" : " today")}, r.member ? "In the area" : "Outside the area"),
         el("span", {class: "chip"}, r.seen), ...[...r.spaces].map(spaceTag))),
     el("span", {class: "rnum"}, r.open.length + " open" + (r.late ? " · " + r.late + " late" : "") +
       (r.owes ? " · owes you " + r.owes : "")),
@@ -15793,7 +15995,16 @@ function trayChip(kind, name, face) {
   chip.addEventListener("dragend", () => { TRAY_DRAG = null; });
   return chip;
 }
+/* Dragging is not the only way: click a name to pick it up, then click where
+   it goes. Works on a touch screen and with a keyboard, where a drag does not. */
+let TRAY_ARMED = null;
 function trayTarget(node, accepts, onDrop) {
+  node.addEventListener("click", e => {
+    const d = TRAY_ARMED;
+    if (!d || !accepts(d)) return;
+    e.preventDefault(); e.stopPropagation();
+    onDrop(d);
+  }, true);
   node.addEventListener("dragover", e => { if (TRAY_DRAG && accepts(TRAY_DRAG)) { e.preventDefault(); e.stopPropagation(); node.classList.add("over"); } });
   node.addEventListener("dragleave", () => node.classList.remove("over"));
   node.addEventListener("drop", e => {
@@ -15822,45 +16033,131 @@ function stake(label, face, onRemove) {
 }
 const workingProjects = () => ["1", "3", "2"].flatMap(code => visibleProjects(code));
 
-function peopleBoard(people) {
-  const box = el("div", {});
-  box.append(el("div", {class: "tray"}, el("span", {class: "say"}, "Drag a person onto a project to involve them, or onto a next action to hand it over."),
-    ...people.map(p => trayChip("person", p.me ? "Me" : firstNameOf(p.name), avatarNode(p.name, 22)))
-      .map((chip, i) => (chip.dataset.full = people[i].name, chip))));
-  // The chips carry the short name; the full one is what gets written.
-  box.querySelectorAll(".pchip").forEach(ch => ch.addEventListener("dragstart", () => { TRAY_DRAG.name = ch.dataset.full; }));
-  const board = el("div", {class: "board ctxboard"});
-  for (const r of workingProjects()) {
-    const title = inSpace(r.space, () => pageTitle(r.path));
-    const open = projectActions(r).filter(a => OPEN_STATES[a.state]);
-    const col = el("div", {class: "bcol"},
-      el("div", {class: "bcol-head", style: "cursor:pointer", onclick: () => previewPage(r.space, r.path)},
-        el("span", {}, title), el("span", {class: "n"}, String(open.length))),
-      el("div", {class: "stakes"}, ...projectPeople(r).map(n => stake(firstNameOf(n), avatarNode(n, 18),
-        () => removeLinkFromProp(r.space, r.path, "with", "p/" + n))), spaceTag(r.space)));
-    trayTarget(col, d => d.kind === "person", d => {
-      if (samePerson(d.name, whoAmI())) { notify("You are on every project you can see."); return; }
-      if (inSpace(r.space, () => pageLinkPropAdd(r.path, "with", "p/" + d.name))) notify(firstNameOf(d.name) + " is now involved in " + title + ".");
-      else notify(firstNameOf(d.name) + " is already on " + title + ".");
-      render();
+/* The picker on the left: every name, searchable, grouped, one per line so a
+   hundred of them stay readable. Click picks one up; dragging works as before. */
+function trayPicker(kind, hint, groups, placeholder) {
+  const list = el("div", {class: "plist"});
+  const chips = [];
+  for (const [head, items] of groups) {
+    if (!items.length) continue;
+    const gh = head ? el("div", {class: "gh"}, head) : null;
+    if (gh) list.append(gh);
+    const mine = [];
+    for (const it of items) {
+      const chip = trayChip(kind, it.name, it.face);
+      chip.lastElementChild.className = "pn";
+      chip.title = it.name + " - drag it, or click it and then click where it goes";
+      if (it.sub) chip.append(el("span", {class: "ps"}, it.sub));
+      if (TRAY_ARMED && TRAY_ARMED.kind === kind && TRAY_ARMED.name === it.name) chip.classList.add("armed");
+      chip.addEventListener("click", () => {
+        const on = !(TRAY_ARMED && TRAY_ARMED.name === it.name);
+        TRAY_ARMED = on ? {kind, name: it.name} : null;
+        list.querySelectorAll(".pchip.armed").forEach(x => x.classList.remove("armed"));
+        if (on) chip.classList.add("armed");
+        document.body.classList.toggle("armed-on", on);
+      });
+      chip.dataset.q = it.name.toLowerCase();
+      list.append(chip); mine.push(chip); chips.push(chip);
+    }
+    if (gh) gh._chips = mine;
+  }
+  const search = el("input", {type: "search", placeholder, "aria-label": placeholder});
+  search.addEventListener("input", () => {
+    const q = search.value.trim().toLowerCase();
+    for (const ch of chips) ch.style.display = !q || ch.dataset.q.includes(q) ? "" : "none";
+    list.querySelectorAll(".gh").forEach(gh => gh.style.display = gh._chips.some(ch => ch.style.display !== "none") ? "" : "none");
+  });
+  document.body.classList.toggle("armed-on", !!(TRAY_ARMED && TRAY_ARMED.kind === kind));
+  return el("aside", {class: "picker"}, el("div", {class: "say"}, hint), search, list);
+}
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape" || !TRAY_ARMED) return;
+  TRAY_ARMED = null;
+  document.body.classList.remove("armed-on");
+  document.querySelectorAll(".pchip.armed").forEach(x => x.classList.remove("armed"));
+});
+
+/* The right-hand side: a filter bar over groups of cards. The text filter only
+   hides cards, so typing never loses focus to a re-render. */
+function assignTargets(parts, controls, placeholder) {
+  const search = el("input", {type: "search", placeholder, "aria-label": placeholder});
+  const wrap = el("div", {});
+  search.addEventListener("input", () => {
+    const q = search.value.trim().toLowerCase();
+    wrap.querySelectorAll("[data-q]").forEach(n => n.style.display = !q || n.dataset.q.includes(q) ? "" : "none");
+    wrap.querySelectorAll(".group").forEach(g => {
+      const grid = g.nextElementSibling;
+      g.style.display = grid && [...grid.children].some(n => n.style.display !== "none") ? "" : "none";
     });
-    const body = el("div", {class: "bcol-body"});
-    for (const a of open) {
-      const card = boardCard(a);
-      card.draggable = false;
-      trayTarget(card, d => d.kind === "person", d => {
+  });
+  wrap.append(el("div", {class: "assign-bar"}, search, ...controls.filter(Boolean)), ...parts);
+  return wrap;
+}
+const areaOfRow = r => inSpace(r.space, () => areaOfProject(r.path)) || "";
+function areaFilter(rows, key) {
+  const names = [...new Set(rows.map(areaOfRow).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const cur = PREF.get(key, "");
+  const keep = r => !cur || (cur === "-" ? !areaOfRow(r) : areaOfRow(r) === cur);
+  const sel = names.length ? fselect("Area", cur, [["", "All areas"], ["-", "No area"], ...names.map(a => [a, a])],
+    v => { PREF.set(key, v); render(); }) : null;
+  return {cur, keep, sel};
+}
+
+function peopleBoard(people) {
+  const busy = (a, b) => (b.open.length - a.open.length) || a.name.localeCompare(b.name);
+  const item = p => ({name: p.name, face: avatarNode(p.name, 22),
+    sub: p.me ? "you" : p.open.length ? p.open.length + " open" : ""});
+  const them = people.filter(p => !p.me);
+  const picker = trayPicker("person",
+    "Drag a name onto a project to involve them, or onto a next action to hand it over. Or click a name, then click the target.",
+    [["", people.filter(p => p.me).map(item)],
+     ["In the area", them.filter(p => p.member).sort(busy).map(item)],
+     ["Others", them.filter(p => !p.member).sort(busy).map(item)]], "Find a person");
+
+  const all = workingProjects();
+  const {keep, sel} = areaFilter(all, "people.board.area");
+  const hideEmpty = String(PREF.get("people.board.hideEmpty", "1")) === "1";
+  const titleOf = r => inSpace(r.space, () => pageTitle(r.path));
+  const rows = all.filter(keep).map(r => ({r, title: titleOf(r), open: projectActions(r).filter(a => OPEN_STATES[a.state])}));
+  const shown = rows.filter(x => !hideEmpty || x.open.length || projectPeople(x.r).length)
+    .sort((a, b) => (b.open.length - a.open.length) || a.title.localeCompare(b.title));
+  const hidden = rows.length - shown.length;
+
+  const cards = shown.map(({r, title, open}) => {
+    const area = areaOfRow(r);
+    const acts = el("div", {class: "pacts"});
+    for (const a of open.slice(0, 6)) {
+      const row = el("div", {class: "pact", title: a.title + (a.assignee ? " - " + a.assignee : " - yours")},
+        a.assignee ? avatarNode(a.assignee, 20) : el("span", {class: "nobody"}), el("span", {class: "pt"}, a.title));
+      trayTarget(row, d => d.kind === "person", d => {
         if (samePerson(d.name, a.assignee || whoAmI()) && (a.assignee || samePerson(d.name, whoAmI()))) return;
         inSpace(a.space, () => assignBlock(a.path, a.block, samePerson(d.name, whoAmI()) ? "" : d.name));
       });
-      body.append(card);
+      acts.append(row);
     }
-    if (!open.length) body.append(el("div", {class: "empty", style: "font-size:12px"}, "No next actions"));
-    col.append(body);
-    board.append(col);
-  }
-  box.append(el("div", {class: "boardscroll"}, board));
-  box.append(el("p", {class: "hint"}, "Hand a next action to somebody and it lands in your Waiting for. Drag yourself onto it to take it back."));
-  return box;
+    if (open.length > 6) acts.append(el("div", {class: "say", style: "font-size:12px;padding:2px 4px"}, "+ " + (open.length - 6) + " more"));
+    if (!open.length) acts.append(el("div", {class: "say", style: "font-size:12px;padding:2px 4px"}, "No next actions"));
+    const card = el("div", {class: "pcard", data: {q: (title + " " + area).toLowerCase()}},
+      el("h4", {onclick: () => previewPage(r.space, r.path)}, title),
+      el("div", {class: "t-meta"}, el("span", {class: "chip"}, open.length + " open"),
+        area ? el("span", {class: "chip"}, area) : null, spaceTag(r.space)),
+      el("div", {class: "stakes"}, ...projectPeople(r).map(n => stake(n, avatarNode(n, 18),
+        () => removeLinkFromProp(r.space, r.path, "with", "p/" + n)))),
+      acts);
+    return trayTarget(card, d => d.kind === "person", d => {
+      if (samePerson(d.name, whoAmI())) { notify("You are on every project you can see."); return; }
+      if (inSpace(r.space, () => pageLinkPropAdd(r.path, "with", "p/" + d.name))) notify(d.name + " is now involved in " + title + ".");
+      else notify(d.name + " is already on " + title + ".");
+      render();
+    });
+  });
+  const toggle = fchip(hidden ? "Hide empty (" + hidden + ")" : "Hide empty", hideEmpty,
+    () => { PREF.set("people.board.hideEmpty", hideEmpty ? "0" : "1"); render(); });
+  const right = assignTargets(
+    [cards.length ? el("div", {class: "pcards"}, ...cards) : el("div", {class: "card"}, el("div", {class: "empty"}, "No projects to show."))],
+    [sel, toggle], "Find a project");
+  return el("div", {}, el("div", {class: "assign"}, picker, right),
+    el("p", {class: "hint"}, "Hand a next action to somebody and it lands in your Waiting for. Drop yourself on it to take it back. Esc puts a picked-up name down."));
 }
 
 /* ============================================================
@@ -15874,31 +16171,7 @@ function viewOrgs() {
       onPick: n => { followLink("o/" + n); }})}, "+ New")));
   const orgs = dirPagesInVisible("org");
   const projectsOf = name => workingProjects().filter(r => projectOrgs(r).some(o => o.toLowerCase() === name.toLowerCase()));
-  if (sub === "board") {
-    c.append(el("div", {class: "tray"}, el("span", {class: "say"}, "Drag an organisation onto a project."),
-      ...orgs.map(o => trayChip("org", inSpace(o.space, () => pageTitle(o.path)),
-        el("span", {class: "odot"}, inSpace(o.space, () => pageTitle(o.path))[0])))));
-    for (const code of ["1", "3", "2"]) {
-      const list = visibleProjects(code);
-      if (!list.length) continue;
-      c.append(el("div", {class: "group"}, STATUS_LABEL[code]));
-      c.append(el("div", {class: "pcards"}, ...list.map(r => {
-        const title = inSpace(r.space, () => pageTitle(r.path));
-        const card = el("div", {class: "pcard"},
-          el("h4", {onclick: () => previewPage(r.space, r.path)}, title),
-          el("div", {class: "t-meta"}, el("span", {class: "chip"}, projectActions(r).filter(a => OPEN_STATES[a.state]).length + " open"), spaceTag(r.space)),
-          el("div", {class: "stakes"}, ...(projectOrgs(r).length
-            ? projectOrgs(r).map(o => stake(o, el("span", {class: "odot sm"}, o[0]), () => removeLinkFromProp(r.space, r.path, "org", "o/" + o)))
-            : [el("span", {class: "say"}, "No organisation yet. Drag one here.")])));
-        return trayTarget(card, d => d.kind === "org", d => {
-          if (inSpace(r.space, () => pageLinkPropAdd(r.path, "org", "o/" + d.name))) notify(d.name + " added to " + title + ".");
-          else notify(d.name + " is already on " + title + ".");
-          render();
-        });
-      })));
-    }
-    return c;
-  }
+  if (sub === "board") { c.append(orgBoard(orgs, projectsOf)); return c; }
   const rows = orgs.map(o => {
     const name = inSpace(o.space, () => pageTitle(o.path));
     const ps = projectsOf(name);
@@ -15916,6 +16189,71 @@ function viewOrgs() {
     "No organisations yet. A client, an employer or a club is a page under o/ - write [[o/Name]] on any line."));
   c.append(el("p", {class: "hint"}, "Open one to see its projects. Use the board to add organisations to projects by dragging."));
   return c;
+}
+
+/* Organisations go on areas as well as projects: on an area, every project in
+   it is theirs, which is usually what is meant -- one customer, one area. */
+function orgBoard(orgs, projectsOf) {
+  const names = [...new Map(orgs.map(o => {
+    const n = inSpace(o.space, () => pageTitle(o.path));
+    return [n.toLowerCase(), n];
+  })).values()].sort((a, b) => a.localeCompare(b));
+  const used = names.map(n => ({name: n, face: el("span", {class: "odot"}, n[0]), n: projectsOf(n).length}));
+  const item = x => ({name: x.name, face: x.face, sub: x.n ? String(x.n) : ""});
+  const picker = trayPicker("org",
+    "Drag an organisation onto an area or a project. On an area, every project in it is theirs. Or click one, then click the target.",
+    [["In use", used.filter(x => x.n).map(item)], ["Not on anything yet", used.filter(x => !x.n).map(item)]],
+    "Find an organisation");
+
+  const {cur, keep, sel} = areaFilter(workingProjects(), "orgs.board.area");
+  const onlyBare = String(PREF.get("orgs.board.bare", "0")) === "1";
+  const drop = (space, path, title) => d => {
+    if (inSpace(space, () => pageLinkPropAdd(path, "org", "o/" + d.name))) notify(d.name + " added to " + title + ".");
+    else notify(d.name + " is already on " + title + ".");
+    render();
+  };
+  const orgStake = (space, path) => o =>
+    stake(o, el("span", {class: "odot sm"}, o[0]), () => removeLinkFromProp(space, path, "org", "o/" + o));
+  const out = [];
+
+  const areaCards = acrossSpaces(() => areaList().map(path => ({path})))
+    .filter(a => cur !== "-" && (!cur || cur === baseName(a.path)))
+    .map(a => {
+      const name = baseName(a.path);
+      const own = inSpace(a.space, () => linksWith(getPage(a.path)?.props, "o/"));
+      if (onlyBare && own.length) return null;
+      const n = inSpace(a.space, () => projectsInArea(name).length);
+      const card = el("div", {class: "pcard", data: {q: (name + " " + own.join(" ")).toLowerCase()}},
+        el("h4", {onclick: () => previewPage(a.space, a.path)}, name),
+        el("div", {class: "t-meta"}, el("span", {class: "chip"}, n + (n === 1 ? " project" : " projects")), spaceTag(a.space)),
+        el("div", {class: "stakes"}, ...(own.length ? own.map(orgStake(a.space, a.path))
+          : [el("span", {class: "say"}, "No organisation. Drop one here.")])));
+      return trayTarget(card, d => d.kind === "org", drop(a.space, a.path, name));
+    }).filter(Boolean);
+  if (areaCards.length) out.push(el("div", {class: "group"}, "Areas"), el("div", {class: "pcards"}, ...areaCards));
+
+  for (const code of ["1", "3", "2"]) {
+    const cards = visibleProjects(code).filter(keep).map(r => {
+      const title = inSpace(r.space, () => pageTitle(r.path));
+      const own = inSpace(r.space, () => linksWith(getPage(r.path)?.props, "o/"));
+      const via = inSpace(r.space, () => areaOrgsOf(r.path)).filter(o => !own.includes(o));
+      if (onlyBare && (own.length || via.length)) return null;
+      const area = areaOfRow(r);
+      const card = el("div", {class: "pcard", data: {q: [title, area, ...own, ...via].join(" ").toLowerCase()}},
+        el("h4", {onclick: () => previewPage(r.space, r.path)}, title),
+        el("div", {class: "t-meta"}, el("span", {class: "chip"}, projectActions(r).filter(a => OPEN_STATES[a.state]).length + " open"),
+          area ? el("span", {class: "chip"}, area) : null, spaceTag(r.space)),
+        el("div", {class: "stakes"},
+          ...own.map(orgStake(r.space, r.path)),
+          ...via.map(o => el("span", {class: "stake inh", title: "Through the area " + area}, el("span", {class: "odot sm"}, o[0]), o)),
+          ...(own.length || via.length ? [] : [el("span", {class: "say"}, "No organisation. Drop one here.")])));
+      return trayTarget(card, d => d.kind === "org", drop(r.space, r.path, title));
+    }).filter(Boolean);
+    if (cards.length) out.push(el("div", {class: "group"}, STATUS_LABEL[code] + " projects"), el("div", {class: "pcards"}, ...cards));
+  }
+  if (!out.length) out.push(el("div", {class: "card"}, el("div", {class: "empty"}, "Nothing to show.")));
+  const bare = fchip("Only without one", onlyBare, () => { PREF.set("orgs.board.bare", onlyBare ? "0" : "1"); render(); });
+  return el("div", {class: "assign"}, picker, assignTargets(out, [sel, bare], "Find an area or project"));
 }
 
 /* ============================================================
@@ -15937,16 +16275,33 @@ function viewContexts() {
   c.append(el("div", {class: "cardgrid"}, ...names.map(n => {
     const here = acts.filter(a => a.context === n);
     const icon = contextIcon(n);
-    return el("button", {class: "cardbox", onclick: () => go("next", {sub: "list", ctxFilter: n})},
+    return el("div", {class: "cardbox", role: "button", tabindex: "0", title: "Open " + contextPath(n),
+      onclick: () => openContextPage(n),
+      onkeydown: e => { if (e.key === "Enter") { e.preventDefault(); openContextPage(n); } }},
       el("span", {class: "big" + (icon ? "" : " fallback"), title: icon ? "From icon:: on the page" : "No icon:: on this page yet"}, icon || "@"),
       el("h4", {}, "@" + n),
       el("p", {}, here.length + (here.length === 1 ? " thing" : " things") + " you can do here" +
-        (here.some(a => a.due && a.due < todayISO()) ? " · late" : "")));
+        (here.some(a => a.due && a.due < todayISO()) ? " · late" : "")),
+      here.length ? el("button", {class: "textbtn", onclick: e => { e.stopPropagation(); go("next", {sub: "list", ctxFilter: n}); }},
+        "Show in Next ›") : null);
   })));
   const none = acts.filter(a => !a.context).length;
-  c.append(el("p", {class: "hint"}, "The icon is read from icon:: on each context page." +
+  c.append(el("p", {class: "hint"}, "Each context is a page under c/, and its icon is read from icon:: on that page." +
     (none ? " " + none + (none === 1 ? " task has" : " tasks have") + " no context yet." : "")));
   return c;
+}
+
+/* A context is a page, pages/c/<name>.md, like a person or an organisation. One
+   that so far only exists as [[c/name]] on a line gets its page the first time
+   you open it, in the area new things land in. */
+const contextPath = name => join(DIRS.contexts, name + ".md");
+function openContextPage(name) {
+  const path = contextPath(name);
+  for (const n of visibleSpaces()) {
+    if (LOADED.has(n) && inSpace(n, () => V.pages.has(path))) { openPageIn(n, path); return; }
+  }
+  putPage(path, pageTemplateFor("c", name));
+  openPage(path);
 }
 
 /* ============================================================
@@ -15972,7 +16327,7 @@ function pageRowsVisible() {
 function viewPages() {
   const sub = subNow();
   const c = el("div", {class: "wrap" + (sub === "list" ? "" : " wide")});
-  c.append(vhead("Pages", multiSpace() ? "Everything in the spaces you are showing" : "Everything in " + (Spaces.active || "this space"),
+  c.append(vhead("Pages", multiSpace() ? "Everything in the areas you are showing" : "Everything in " + (Spaces.active || "this area"),
     viewSeg("pages")));
   if (sub === "mindmap") { c.append(viewPlex()); return c; }
   if (sub === "graph") { c.append(viewGraphMap()); return c; }
@@ -16059,21 +16414,33 @@ function viewMe() {
   }));
   const linked = refs.reduce((n, r) => n + new Set(r.hits.map(h => h.path)).size, 0);
   const face = avatarNode(me, 72);
-  const setPicture = () => pickAvatarEverywhere(me);
   c.append(el("div", {class: "mehead"}, face,
     el("div", {style: "min-width:0"},
       el("h1", {}, me),
-      el("div", {class: "sub"}, "In " + Spaces.list.length + (Spaces.list.length === 1 ? " space" : " spaces") +
+      el("div", {class: "sub"}, "In " + Spaces.list.length + (Spaces.list.length === 1 ? " area" : " areas") +
         " · " + myOpen().length + " open · " + waitingRows().length + " owed to you · " +
         linked + (linked === 1 ? " page links here" : " pages link here")),
       el("div", {class: "acts"},
-        el("button", {class: "btn sm ghost", onclick: setPicture}, avatarOf(me) ? "Change picture" : "Add a picture"),
-        avatarOf(me) ? el("button", {class: "btn sm ghost", onclick: () => { for (const s of spaces) inSpace(s, () => clearAvatar(me)); render(); }}, "Remove picture") : null,
         el("button", {class: "btn sm ghost", onclick: () => promptInput({title: "Your name", value: me, cta: "Save", label: "Full name",
           hint: "Changing it takes your journal, your page and your tasks with it",
           onSave: n => { for (const s of spaces) inSpace(s, () => setIdentity(n, s)); render(); }})}, "Change name")))));
+  /* A picture per area: the colleagues in Work see the one you put in Work, and
+     the family in Home see the one you put in Home. */
   c.append(el("div", {class: "jgrid"}, ...refs.map(r => el("section", {class: "jcol"},
     el("div", {class: "colhead"}, spaceBadge(r.space, true), el("span", {class: "pv-path"}, r.path)),
+    inSpace(r.space, () => el("div", {class: "areaface"}, avatarNode(me, 44),
+      el("div", {},
+        el("div", {class: "sub"}, avatarOf(me) ? "How you look in " + r.space : "No picture in " + r.space + " yet"),
+        el("div", {class: "acts"},
+          el("button", {class: "btn sm ghost", onclick: () => pickAvatar(me, null, r.space)},
+            avatarOf(me) ? "Change picture" : "Add a picture"),
+          avatarOf(me) ? el("button", {class: "btn sm ghost", onclick: () => { inSpace(r.space, () => {
+            const path = personPath(me);
+            if (!V.pages.has(path)) return;
+            const page = getPage(path);
+            delete page.props[AVATAR_PROP];
+            putPage(path, page);
+          }); render(); }}, "Remove") : null)))),
     el("div", {class: "group"}, "Notes", el("span", {class: "plain"}, "· click a line to write, a bullet to focus")),
     inSpace(r.space, () => {
       const node = el("div", {class: "space-journal", data: {space: r.space, path: r.path}},
@@ -16087,55 +16454,157 @@ function viewMe() {
   return c;
 }
 
-/* One picture, in every space you are in: each space's copy of your page
-   carries it, so whichever one a colleague opens shows the same face. */
-function pickAvatarEverywhere(me) {
-  const spaces = visibleSpaces().filter(n => LOADED.has(n));
-  const first = spaces.shift();
-  inSpace(first, () => pickAvatar(me, () => {
-    const data = inSpace(first, () => avatarOf(me));
-    if (!data) return;
-    for (const s of spaces) inSpace(s, () => {
-      const path = personPath(me);
-      const page = V.pages.has(path) ? getPage(path) : {props: {title: me}, blocks: []};
-      page.props[AVATAR_PROP] = data;
-      putPage(path, page);
-    });
-    render();
-  }));
-}
-
 /* ============================================================
    WEEKLY REVIEW -- a handful of steps, and what is worth a look
    ============================================================ */
 const attention = () => memo("attention", () => computeNudges().filter(n => n.id !== "clean"));
+
+/* ---------- the steps, kept as a routine ----------
+   The weekly review is a list you run every week, so it lives where routines
+   live: pages/8/Weekly review.md, in Routines & lists, where you can reword a
+   step, drop one, or add your own. Until somebody edits it the app uses the
+   list below, so nothing is written into a shared folder just for looking.
+
+   The page reads as an outline: a top line is a section (CLEAR, CURRENT,
+   CREATIVE), the lines under it are the steps, and the first line under a step
+   says what it means. A [[go/...]] link in a step is a door to the part of the
+   app that step is done in. */
+const REVIEW_LIST_PATH = join(DIRS.lists, "Weekly review.md");
+const REVIEW_STEPS = [
+  ["CLEAR", [
+    ["Horizons of focus [[go/horizons]]", "Review your higher-level commitments and goals."],
+    ["Mind dump [[go/today]]", "Write down all uncaptured thoughts, ideas, and open loops."],
+    ["Papers", "Process all loose physical papers and notes to zero."],
+    ["Phone messages", "Clear voice messages, texts, and communication apps."],
+    ["Downloads folder", "Organize or delete all downloaded files."],
+  ]],
+  ["CURRENT", [
+    ["Calendar two weeks back and four weeks forward [[go/agenda]]",
+     "Review the past two weeks for loose ends and preview the upcoming four weeks."],
+    ["Context and send reminders of waiting-for [[go/context]] [[go/waiting]]",
+     "Check next-action context lists and follow up on waiting-for items."],
+    ["Projects next action? Move to Someday/Maybe or Done [[go/solitaire]]",
+     "Ensure each project has an active next action, or archive it to Someday or Maybe or Done."],
+    ["Routines and checklists [[go/checklists]]", "Review recurring checklists and standard operating procedures."],
+  ]],
+  ["CREATIVE", [
+    ["Check Someday/Maybe to Projects? [[go/someday]]",
+     "Review Someday or Maybe lists to decide if any should become active projects."],
+    ["Celebrate! [[go/report]]", "Acknowledge your weekly progress and completed work."],
+  ]],
+];
+
+function reviewListPage() {
+  return {
+    props: {title: "Weekly review", cadence: "weekly", created: todayStamp()},
+    blocks: REVIEW_STEPS.map(([section, steps]) => newBlock({title: section,
+      children: steps.map(([title, note]) => newBlock({title, children: [newBlock({title: note})]}))})),
+  };
+}
+function ensureReviewList() {
+  if (!V.pages.has(REVIEW_LIST_PATH)) putPage(REVIEW_LIST_PATH, reviewListPage());
+  return REVIEW_LIST_PATH;
+}
+const editReviewSteps = () => openPage(ensureReviewList());
+
+/* [{title, steps: [{title, note, doors}]}], from the page if there is one. */
+function reviewSteps() {
+  const page = V.pages.has(REVIEW_LIST_PATH) ? getPage(REVIEW_LIST_PATH) : reviewListPage();
+  const step = b => ({title: b.title, note: trim((b.children || []).find(k => trim(k.title))?.title || "")});
+  const groups = [];
+  for (const b of page.blocks || []) {
+    if (!trim(b.title)) continue;
+    const kids = (b.children || []).filter(k => trim(k.title));
+    if (kids.length) groups.push({title: plainTitle(b.title), steps: kids.map(step)});
+    else {
+      // A line on its own at the top is a step without a section.
+      const last = groups[groups.length - 1];
+      if (last && last.loose) last.steps.push(step(b)); else groups.push({title: "", loose: true, steps: [step(b)]});
+    }
+  }
+  for (const g of groups) for (const s of g.steps) {
+    s.doors = [...s.title.matchAll(/\[\[go\/([A-Za-z0-9_-]+)(?:\]\[[^\]]*)?\]\]/g)].map(m => m[1]).filter(id => TOUR_DESTS[id]);
+    s.text = trim(s.title.replace(/\s*\[\[go\/[^\]]+(?:\]\[[^\]]*)?\]\]/g, ""));
+    s.key = s.text.toLowerCase();
+  }
+  return groups;
+}
+
+/* Ticks are about this week's run, on this device, so they are not written
+   into a folder colleagues share. Marking the review done starts them over. */
+function reviewTicks() {
+  try {
+    const t = JSON.parse(PREF.get("review.ticks", "{}") || "{}");
+    return t.at === (getSetting("last_review") || "") ? new Set(t.done || []) : new Set();
+  } catch (_) { return new Set(); }
+}
+function setReviewTick(key, on) {
+  const s = reviewTicks();
+  if (on) s.add(key); else s.delete(key);
+  PREF.set("review.ticks", JSON.stringify({at: getSetting("last_review") || "", done: [...s]}));
+  render();
+}
+
+/* What a door has waiting behind it this week, said on the step. */
+function reviewDoorCount(id) {
+  switch (id) {
+    case "today": {
+      const late = myOpen().filter(a => a.due && a.due < todayISO()).length;
+      return late ? late + " late" : "";
+    }
+    case "waiting": {
+      const w = waitingRows();
+      const never = w.filter(a => !isMember(a.assignee) && askedDays(a.block) == null).length;
+      return w.length ? w.length + " waiting" + (never ? ", " + never + " never asked" : "") : "";
+    }
+    case "solitaire": {
+      const none = visibleProjects("1").filter(r => !projectActions(r).some(a => OPEN_STATES[a.state])).length;
+      return none ? none + (none === 1 ? " project has" : " projects have") + " no next action" : "";
+    }
+    case "someday": { const n = visibleProjects("2").length; return n ? n + " someday/maybe" : ""; }
+    case "context": { const n = myOpen().filter(a => !a.context && a.state !== "WAIT").length; return n ? n + " without a context" : ""; }
+    default: return "";
+  }
+}
 
 function viewReview() {
   const sub = subNow();
   if (sub === "projects") return viewSolitaire();
   const c = el("div", {class: "wrap"});
   const last = dateIn(getSetting("last_review"));
-  c.append(vhead("Weekly review", last ? "Last done " + humanDate(last) : "Fifteen minutes, a handful of steps", viewSeg("review")));
-  const late = myOpen().filter(a => a.due && a.due < todayISO()).length;
-  const waiting = waitingRows();
-  const neverAsked = waiting.filter(a => !isMember(a.assignee) && askedDays(a.block) == null).length;
-  const gaps = solOrder().filter(r => solFields().some(f => f.k !== "status" && !f.filled(r))).length;
-  const health = healthScan().length;
-  const steps = [
-    ["Empty your head onto today's page", "Anything still in your head goes in the journal", () => go("today")],
-    ["Look at what is late", late + (late === 1 ? " thing" : " things") + " late", () => go("today", {jz: "due"})],
-    ["Chase what you are waiting for", waiting.length + " waiting" + (neverAsked ? ", " + neverAsked + " never asked" : ""), () => go("waiting", {sub: "board"})],
-    ["Review every project", gaps + (gaps === 1 ? " project" : " projects") + " with gaps. Play it as solitaire, stalest first.", () => go("review", {sub: "projects"})],
-    horizonActive("areas") ? ["Look at the big picture", "Areas, goals and what they are for", () => go("horizons")] : null,
-    weedingWorthIt() ? ["Weed the stalest projects", "Five minutes: is each of these still real?", () => openWeeding()] : null,
-    health ? ["Fix what is broken", health + " broken link" + (health === 1 ? "" : "s") + " or missing title" + (health === 1 ? "" : "s"), () => go("review", {sub: "health"})] : null,
-    ["See what moved", "Opens the report. Copy as text for the status mail.", () => go("projects", {sub: "report"})],
-  ].filter(Boolean);
+  const groups = reviewSteps();
+  const ticks = reviewTicks();
+  const all = groups.flatMap(g => g.steps);
+  const done = all.filter(s => ticks.has(s.key)).length;
+  c.append(vhead("Weekly review", (last ? "Last done " + humanDate(last) : "Clear, current, creative") +
+    " · " + done + " of " + all.length + " done", viewSeg("review")));
   if (sub === "health") { c.append(viewHealth()); return c; }
-  c.append(el("div", {class: "card"}, ...steps.map(([a, b, run], i) => el("button", {class: "task", onclick: run},
-    el("span", {class: "stepn"}, String(i + 1)),
-    el("div", {class: "t-body", style: "text-align:left"}, el("div", {class: "t-title"}, a), el("div", {class: "t-meta"}, el("span", {class: "chip"}, b))),
-    el("span", {class: "rnum"}, "›")))));
+  let n = 0;
+  for (const g of groups) {
+    if (g.title) c.append(el("div", {class: "group"}, g.title,
+      el("span", {class: "plain"}, "· " + g.steps.filter(s => ticks.has(s.key)).length + " of " + g.steps.length)));
+    c.append(el("div", {class: "card"}, ...g.steps.map(s => {
+      const on = ticks.has(s.key);
+      const count = s.doors.map(reviewDoorCount).filter(Boolean).join(" · ");
+      n++;
+      return el("div", {class: "task rstep" + (on ? " done" : ""),
+        onclick: () => s.doors.length ? goTour(s.doors[0]) : setReviewTick(s.key, !on)},
+        el("button", {class: "rtick", role: "checkbox", "aria-checked": String(on), "aria-label": "Done: " + s.text,
+          onclick: e => { e.stopPropagation(); setReviewTick(s.key, !on); }}, on ? "✓" : String(n)),
+        el("div", {class: "t-body", style: "text-align:left"},
+          el("div", {class: "t-title", html: renderInline(s.text)}),
+          s.note || count ? el("div", {class: "t-meta"},
+            s.note ? el("span", {class: "rnote"}, s.note) : null,
+            count ? el("span", {class: "chip"}, count) : null) : null),
+        ...s.doors.map(id => el("button", {class: "textbtn", onclick: e => { e.stopPropagation(); goTour(id); }},
+          tourLabel(id) + " ›")));
+    })));
+  }
+  c.append(el("p", {class: "hint"}, "The steps are the routine Weekly review in Routines & lists. ",
+    el("button", {class: "textbtn", onclick: editReviewSteps}, "Edit the steps")));
+  const health = healthScan().length;
+  if (health) c.append(el("p", {class: "hint"}, health + " broken link" + (health === 1 ? "" : "s") + " or missing title" +
+    (health === 1 ? "" : "s") + ". ", el("button", {class: "textbtn", onclick: () => go("review", {sub: "health"})}, "Fix what is broken")));
 
   const worth = attention();
   if (worth.length) {
@@ -16161,7 +16630,7 @@ function viewReview() {
       setSetting("last_review", todayStamp());
       notify("Weekly review logged for " + humanDate(todayISO()) + ".");
       render();
-    }}, "Mark the review done")));
+    }}, done === all.length && all.length ? "All done - mark the review done" : "Mark the review done")));
   return c;
 }
 
@@ -16180,7 +16649,7 @@ function viewReview() {
    "None" and "Nothing comes first" are answers too; they are held for the
    session rather than written, because an empty value says the same thing.
    ============================================================ */
-let SOL = {order: null, i: 0, focus: null};
+let SOL = {order: null, i: 0, focus: null, more: null};
 const SOL_ANS = new Map();
 const solKey = r => (r.space || "") + "|" + r.path;
 const solAns = r => SOL_ANS.get(solKey(r)) || (SOL_ANS.set(solKey(r), {}), SOL_ANS.get(solKey(r)));
@@ -16189,18 +16658,45 @@ const solIdle = r => inSpace(r.space, () => {
   const d = dateIn(p.reviewed || "") || dateIn(p.created || "");
   return d ? dateDiffDays(d, todayISO()) : null;
 });
+/* Active projects are the ones the review is for. Waiting and someday/maybe
+   come along only when you ask for them. */
+const solAll = () => PREF.get("sol.all", "") === "1";
 function solOrder() {
-  return ["1", "3", "2"].flatMap(code => visibleProjects(code))
+  return (solAll() ? ["1", "3", "2"] : ["1"]).flatMap(code => visibleProjects(code))
     .filter(r => !inSpace(r.space, () => isTourProject(r.path)))
     .sort((a, b) => (solIdle(b) ?? 1e6) - (solIdle(a) ?? 1e6));
 }
 const inS = (r, fn) => inSpace(r.space, fn);
 const pageNames = (r, kind) => inS(r, () => allPages(q => pageKind(q) === kind).map(p => [pageTitle(p), pageTitle(p)]));
 
+/* How much each option is already used across the projects of the card's own
+   area, so the ten shown first are the ten you are likeliest to want. */
+const solLive = r => inS(r, () => ["1", "3", "2"].flatMap(code => projectsIn(code)).map(path => ({space: r.space, path})));
+function solTally(r, read) {
+  const m = new Map();
+  for (const p of solLive(r)) for (const v of read(p)) m.set(v, (m.get(v) || 0) + 1);
+  return m;
+}
+/* For "comes after": projects that share this one's responsibility, an
+   organisation or a person are the ones most likely to come first. */
+function solKin(r) {
+  const area = inS(r, () => areaOfProject(r.path)), orgs = projectOrgs(r), ppl = projectPeople(r);
+  const m = new Map();
+  for (const p of solLive(r)) {
+    let s = 0;
+    if (area && inS(r, () => areaOfProject(p.path)) === area) s += 3;
+    s += projectOrgs(p).filter(o => orgs.includes(o)).length * 2;
+    s += projectPeople(p).filter(n => ppl.includes(n)).length;
+    if (inS(r, () => statusDirOf(p.path)) === "1") s += 0.5;
+    if (s) m.set(p.path, s);
+  }
+  return m;
+}
+
 function solFields() {
   return [
     {k: "orgs", label: "Organisations", type: "multi", none: "None", scoped: true, add: "New organisation",
-     opts: r => pageNames(r, "org"), cur: r => projectOrgs(r),
+     opts: r => pageNames(r, "org"), cur: r => projectOrgs(r), rank: r => solTally(r, projectOrgs),
      filled: r => projectOrgs(r).length > 0 || !!solAns(r).orgs,
      toggle: (r, v) => projectOrgs(r).includes(v) ? removeLinkFromProp(r.space, r.path, "org", "o/" + v)
                                                    : inS(r, () => pageLinkPropAdd(r.path, "org", "o/" + v)),
@@ -16208,13 +16704,14 @@ function solFields() {
      make: (r, name) => { inS(r, () => pageLinkPropAdd(r.path, "org", "o/" + slugify(name))); }},
     {k: "people", label: "People", type: "multi", none: "Just me", scoped: true,
      opts: r => inS(r, () => allPeople().map(personName).filter(n => !samePerson(n, whoAmI())).map(n => [n, n])),
-     cur: r => projectPeople(r),
+     cur: r => projectPeople(r), rank: r => solTally(r, projectPeople),
      filled: r => projectPeople(r).length > 0 || !!solAns(r).people,
      toggle: (r, v) => projectPeople(r).includes(v) ? removeLinkFromProp(r.space, r.path, "with", "p/" + v)
                                                      : inS(r, () => pageLinkPropAdd(r.path, "with", "p/" + v)),
      clear: r => { for (const n of projectPeople(r)) removeLinkFromProp(r.space, r.path, "with", "p/" + n); solAns(r).people = true; }},
-    {k: "area", label: "Area", type: "one", scoped: true, add: "New area",
+    {k: "area", label: "Responsibility", type: "one", scoped: true, add: "New responsibility",
      opts: r => inS(r, () => areaList().map(p => [baseName(p), pageTitle(p)])),
+     rank: r => solTally(r, p => { const a = inS(r, () => areaOfProject(p.path)); return a ? [a] : []; }),
      cur: r => inS(r, () => areaOfProject(r.path)),
      filled: r => !!inS(r, () => areaOfProject(r.path)),
      pick: (r, v) => inS(r, () => setAreaOfProject(r.path, v)),
@@ -16243,7 +16740,7 @@ function solFields() {
     {k: "after", label: "Comes after", type: "one", scoped: true,
      opts: r => [["none", "Nothing comes first"], ...inS(r, () => [...projectsIn("1"), ...projectsIn("3")]
        .filter(p => p !== r.path && !wouldCycle(r.path, p)).map(p => [p, pageTitle(p)]))],
-     cur: r => inS(r, () => dependsOn(r.path)[0]) || (solAns(r).after ? "none" : null),
+     cur: r => inS(r, () => dependsOn(r.path)[0]) || (solAns(r).after ? "none" : null), rank: solKin,
      filled: r => inS(r, () => dependsOn(r.path).length > 0) || !!solAns(r).after,
      pick: (r, v) => {
        if (v === "none") { inS(r, () => writeDependsOn(r.path, [])); solAns(r).after = true; return; }
@@ -16289,6 +16786,7 @@ function solOption(r, f, v, label, on, now) {
     onclick: e => { e.stopPropagation(); solApply(r, f, v); }}, label + (now ? " (now)" : ""));
 }
 function solApply(r, f, v) {
+  if (f.type !== "multi") SOL.more = null;    // one answer: the long list has done its job
   if (f.type === "multi") { if (v === "none") f.clear(r); else { f.toggle(r, v); delete solAns(r)[f.k]; } }
   else f.pick(r, v);
   solAfter(r, f.k);
@@ -16313,11 +16811,12 @@ function solSlot(r, f) {
   }
   if (f.type === "multi") {
     const cur = f.cur(r);
-    for (const [v, label] of f.opts(r)) opts.append(solOption(r, f, v, label, cur.includes(v)));
+    solChoices(r, f, opts, f.opts(r), v => cur.includes(v), (v, label) => solOption(r, f, v, label, cur.includes(v)));
     opts.append(solOption(r, f, "none", f.none, !cur.length && !!solAns(r)[f.k]));
   } else {
     const cur = f.cur(r), now = f.now ? f.now(r) : null;
-    for (const [v, label] of f.opts(r)) opts.append(solOption(r, f, v, label, cur === v, !solAns(r).status && now === v));
+    solChoices(r, f, opts, f.opts(r), v => cur === v,
+      (v, label) => solOption(r, f, v, label, cur === v, !solAns(r).status && now === v));
     if (f.type === "date") {
       const pickDate = el("input", {type: "date", min: todayISO(), "aria-label": "Pick a date",
         onchange: e => { if (e.target.value) { f.pick(r, e.target.value); solAfter(r, f.k); } }});
@@ -16340,6 +16839,44 @@ function solSlot(r, f) {
   return slot;
 }
 
+/* A field with a long list shows ten: what is picked, then what is used most.
+   "Show all" opens the whole list in a box that scrolls, with a search on top
+   that narrows it as you type. */
+const SOL_TOP = 10;
+function solChoices(r, f, host, list, isOn, chip) {
+  const fixed = list.filter(([v]) => v === "none");
+  const rest = list.filter(([v]) => v !== "none");
+  for (const [v, label] of fixed) host.append(chip(v, label));
+  if (rest.length <= SOL_TOP) { for (const [v, label] of rest) host.append(chip(v, label)); return; }
+  const score = f.rank ? f.rank(r) : new Map();
+  const ranked = rest.map((o, i) => ({o, i, on: isOn(o[0]) ? 1 : 0, s: score.get(o[0]) || 0}))
+    .sort((a, b) => (b.on - a.on) || (b.s - a.s) || (a.i - b.i)).map(x => x.o);
+  if (SOL.more !== f.k) {
+    for (const [v, label] of ranked.slice(0, SOL_TOP)) host.append(chip(v, label));
+    host.append(el("button", {class: "fchip more", onclick: e => { e.stopPropagation(); SOL.more = f.k; render(); }},
+      "Show all " + ranked.length + " ›"));
+    return;
+  }
+  const box = el("div", {class: "solmore"});
+  const empty = el("div", {class: "say", hidden: true}, "Nothing matches.");
+  const search = el("input", {type: "search", placeholder: "Search " + ranked.length + " " + f.label.toLowerCase(),
+    "aria-label": "Search " + f.label.toLowerCase(),
+    oninput: () => {
+      const q = trim(search.value).toLowerCase();
+      let shown = 0;
+      for (const b of box.children) { const hit = !q || b.textContent.toLowerCase().includes(q); b.hidden = !hit; shown += hit; }
+      empty.hidden = shown > 0;
+    },
+    onkeydown: e => {
+      if (e.key === "Escape") { e.preventDefault(); SOL.more = null; render(); }
+      else if (e.key === "Enter") { e.preventDefault(); const b = [...box.children].find(x => !x.hidden); if (b) b.click(); }
+    }});
+  for (const [v, label] of ranked) box.append(chip(v, label));
+  host.append(el("div", {class: "solmorewrap"}, search, box, empty,
+    el("button", {class: "textbtn", onclick: e => { e.stopPropagation(); SOL.more = null; render(); }}, "Show fewer")));
+  requestAnimationFrame(() => { if (search.isConnected) search.focus({preventScroll: true}); });
+}
+
 function viewSolitaire() {
   const c = el("div", {class: "wrap wide"});
   c.append(vhead("Review projects", null, viewSeg("review")));
@@ -16349,7 +16886,7 @@ function viewSolitaire() {
     c.append(el("div", {class: "card"}, el("div", {class: "empty"},
       el("div", {style: "font-size:34px"}, "🂡"), el("b", {}, "Every project reviewed."), el("br"),
       "Each one now carries reviewed:: " + todayISO() + ".", el("br"), el("br"),
-      el("button", {class: "textbtn", onclick: () => { SOL = {order: null, i: 0, focus: null}; SOL_ANS.clear(); render(); }}, "Deal again"))));
+      el("button", {class: "textbtn", onclick: () => { SOL = {order: null, i: 0, focus: null, more: null}; SOL_ANS.clear(); render(); }}, "Deal again"))));
     return c;
   }
   const r = SOL.order[SOL.i];
@@ -16359,8 +16896,13 @@ function viewSolitaire() {
   c.append(el("div", {class: "solbar"},
     el("span", {}, "Card " + (SOL.i + 1) + " of " + SOL.order.length + " · stalest first"),
     el("span", {}, "Drag the card straight onto an option, or click one."),
+    ...[["", "Active only"], ["1", "Waiting and someday too"]].map(([v, label]) => fchip(label, solAll() === !!v, () => {
+      if (solAll() === !!v) return;
+      PREF.set("sol.all", v);
+      SOL = {order: null, i: 0, focus: null, more: null}; render();
+    })),
     el("button", {class: "textbtn", style: "margin-left:auto", onclick: () => {
-      SOL.order.push(SOL.order.splice(SOL.i, 1)[0]); SOL.focus = null; render();
+      SOL.order.push(SOL.order.splice(SOL.i, 1)[0]); SOL.focus = null; SOL.more = null; render();
       notify("Skipped. It comes round again at the end.");
     }}, "Skip this one ›")));
   const grid = el("div", {class: "sol"});
@@ -16370,7 +16912,7 @@ function viewSolitaire() {
       ? el("div", {class: "solcard won"}, el("h3", {}, info.title),
           el("div", {class: "t-meta"}, el("span", {class: "chip ok"}, "Reviewed"), spaceBadge(r.space)),
           el("p", {}, "All " + fields.length + " fields are filled."),
-          el("button", {class: "btn primary", onclick: () => { SOL.i++; SOL.focus = null; render(); }}, "Next card ›"))
+          el("button", {class: "btn primary", onclick: () => { SOL.i++; SOL.focus = null; SOL.more = null; render(); }}, "Next card ›"))
       : el("div", {class: "solcard", data: {solDrag: "1"}, title: "Drag onto a field"},
           el("h3", {}, info.title),
           el("div", {class: "t-meta"}, spaceBadge(r.space), el("span", {class: "chip"}, STATUS_LABEL[info.code])),
@@ -16598,16 +17140,16 @@ function areaFact(path) {
       const text = trim(m ? m[1] : v);
       const link = factLinkTarget(text);
       const name = link ? trim(link.replace(/^a\//, "")) : text;
-      if (!name) { setAreaOfProject(path, null); notify("Area taken off."); return; }
+      if (!name) { setAreaOfProject(path, null); notify("Responsibility taken off."); return; }
       setAreaOfProject(path, baseName(createArea(name)));
     },
     pills: () => [area
-      ? factPill(area, "farea", "the area of life this serves", () => chipMenu(area, "the area of life this serves", [
-          ["a", "Go to " + area, "the area page", () => followLink("a/" + area)],
-          ["b", "Change the area", null, () => openAreaPicker(path)],
-          ["c", "Take it off", "the project stays where it is", () => { setAreaOfProject(path, null); render(); notify("Area taken off."); }],
+      ? factPill(area, "farea", "the responsibility this serves", () => chipMenu(area, "the responsibility this serves", [
+          ["a", "Go to " + area, "the responsibility page", () => followLink("a/" + area)],
+          ["b", "Change the responsibility", null, () => openAreaPicker(path)],
+          ["c", "Take it off", "the project stays where it is", () => { setAreaOfProject(path, null); render(); notify("Responsibility taken off."); }],
         ]))
-      : factPill("no area", "fwant", "A project nothing serves is a project nobody misses",
+      : factPill("no responsibility", "fwant", "A project nothing serves is a project nobody misses",
           () => openAreaPicker(path))],
   };
 }
@@ -16888,13 +17430,13 @@ function openPageMenu(path) {
     code ? ["Add a next action", null, () => openAddNextAction(path)] : null,
     code ? ["Mark reviewed", "runs the review rules on the page", () => { updateReviewed(path); render(); }] : null,
     kind === "checklist" ? [isProjectTemplate(path) ? "New project from this" : "Add this to a page", null, () => openRunChecklist(path)] : null,
-    isJournalPath(path) ? null : ["Share", "this page, without the rest of the space", () => openExportPage(path)],
+    isJournalPath(path) ? null : ["Share", "this page, without the rest of the area", () => openExportPage(path)],
     ["Copy path", "for somebody who shares the folder", () => copyPathTo(path)],
     V.backend && V.backend.openFile ? ["Open the file", "in the editor on the machine running the server", () => openSourceFile(path)] : null,
     ["Edit the markdown", "the whole file as text", () => editAllText({space, path, id: null})],
     isJournalPath(path) ? null : ["Rename", null, () => renamePrompt(path)],
     ["Move", "to another folder", () => movePrompt(path)],
-    isJournalPath(path) ? null : ["Make private", "move it to a space the others cannot open", () => makePrivatePrompt(path)],
+    isJournalPath(path) ? null : ["Make private", "move it to an area the others cannot open", () => makePrivatePrompt(path)],
     ["Delete", null, () => deletePrompt(path)],
   ]));
 }
@@ -16909,8 +17451,8 @@ function personPanel(name) {
   const box = el("div", {class: "section"});
   box.append(el("div", {class: "personhead"}, avatarNode(name, 48),
     el("div", {style: "min-width:0;flex:1"},
-      el("div", {class: "sub"}, mine ? "This is you." : isMember(name) ? "In this space" + (seen ? " · last seen " + seen : "")
-        : "Not using this space, so everything with their name on it is something you are waiting for."),
+      el("div", {class: "sub"}, mine ? "This is you." : isMember(name) ? "In this area" + (seen ? " · last seen " + seen : "")
+        : "Not using this area, so everything with their name on it is something you are waiting for."),
       mine ? null : el("div", {class: "acts"},
         isMember(name) ? null : el("button", {class: "btn sm" + (open.length ? " primary" : " ghost"),
           onclick: () => openAskForUpdate(name)}, "Ask " + firstNameOf(name) + " for an update"),
@@ -17034,7 +17576,7 @@ const SEARCH_KEEP = {
 
 function viewSearch() {
   const c = el("div", {class: "wrap"});
-  c.append(vhead("Search", "Tasks and pages, in every space you are showing"));
+  c.append(vhead("Search", "Tasks and pages, in every area you are showing"));
   const run = () => {
     const draft = trim(state.searchDraft);
     /* A path is an address, not a phrase: somebody has pasted what another
@@ -17042,7 +17584,7 @@ function viewSearch() {
        -- anything that is not path-shaped comes back null and is searched. */
     const hit = pathHit(draft);
     if (hit && !hit.missing) { openPageIn(hit.space, hit.path); return; }
-    if (hit) notify("No page at " + hit.path + " in any space open here. " +
+    if (hit) notify("No page at " + hit.path + " in any area open here. " +
                     "Searching for it as words instead.", "warn");
     state.query = draft;
     render();
@@ -17120,7 +17662,7 @@ const VIEWS = {
 const VIEW_TITLE = {
   today: "Today", next: "Next", waiting: "Waiting for", chat: "Chat", projects: "Projects",
   people: "People", orgs: "Organisations", contexts: "Contexts", pages: "Pages", me: "Your page",
-  review: "Weekly review", search: "Search", horizons: "Big picture", checklists: "Routines & lists",
+  review: "Weekly review", search: "Search", horizons: "Horizons", checklists: "Routines & lists",
 };
 
 /* Held while a batch of changes runs, each of which would otherwise redraw the
@@ -18343,12 +18885,12 @@ function projectGrid(path) {
   const quiet = text => el("span", {class: "anone"}, text);
 
   const area = areaOfProject(path);
-  grid.append(cell("a-project", "Area",
-    area ? chip(area, "a/" + area, () => chipMenu(area, "the area this project serves", [
-             ["a", "Go to " + area, "the area page", () => followLink("a/" + area)],
-             ["b", "Serve another area", "move it", () => openAreaPicker(path)],
+  grid.append(cell("a-project", "Responsibility",
+    area ? chip(area, "a/" + area, () => chipMenu(area, "the responsibility this project serves", [
+             ["a", "Go to " + area, "the responsibility page", () => followLink("a/" + area)],
+             ["b", "Serve another responsibility", "move it", () => openAreaPicker(path)],
            ]), "", "p:a/" + area)
-         : chip("no area", "A project nothing serves is a project nobody misses",
+         : chip("no responsibility", "A project nothing serves is a project nobody misses",
              () => openAreaPicker(path), "want")));
 
   const code = statusDirOf(path);
@@ -18388,7 +18930,7 @@ function projectGrid(path) {
     .filter(p => p !== path);
   grid.append(cell("a-sibs", "Beside it" + (sibs.length > 6 ? " · " + sibs.length : ""),
     sibs.length ? sibs.slice(0, 6).map(p => chip(pageTitle(p), p, () => openPage(p), "", "p:" + p))
-                : quiet(area ? "the only project in this area" : "nothing else on this shelf")));
+                : quiet(area ? "the only project under this responsibility" : "nothing else on this shelf")));
 
   const todos = page ? flattenBlocks(page.blocks).filter(b => b.state && !isMessage(b)) : [];
   const open = todos.filter(b => OPEN_STATES[b.state]);
@@ -18501,13 +19043,13 @@ function showTaskDetail(path, block, space) {
           return row;
         })(),
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          "Somebody in this space gets it as their task, and you get it in your " +
+          "Somebody in this area gets it as their task, and you get it in your " +
           "Waiting for. Anybody else is only a waiting-for - they cannot see this.")),
       el("div", {class: "field"},
         el("label", {}, "Chat" + (messagesOf(block).length ? " \u00B7 " + messagesOf(block).length : "")),
         threadPanel(path, block),
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          "Everyone in this space sees it, with who said it and when. Flag one with " +
+          "Everyone in this area sees it, with who said it and when. Flag one with " +
           "\u2691 to come back to it - that carries your name, so it follows you between " +
           "devices. Read is per device and stays out of the files.")),
       el("div", {class: "field"}, el("label", {}, "GTD hygiene"), el("div", {class: "seg"},
@@ -18650,14 +19192,14 @@ function arrangeTaskDetail(path, block, home) {
     panes.push(pane);
     const disabled = kind === "chat" && !shared;
     const btn = el("button", {class: "iconbtn", type: "button",
-      title: disabled ? "Chat needs at least two people in this space" : label,
+      title: disabled ? "Chat needs at least two people in this area" : label,
       "aria-label": label, "aria-pressed": "false", disabled, html: detailIcon(kind),
       onclick: () => showOnly(pane, btn)});
     tools.append(btn);
   }
   const more = el("div", {class: "detail-pane"},
     el("button", {class: "btn", onclick: () => openItemSpacePicker({path, space: home, id: block.id})},
-      "Move to another space (Alt+S)"));
+      "Move to another area (Alt+S)"));
   more.hidden = true;
   body.append(more);
   panes.push(more);
@@ -18951,15 +19493,15 @@ function openSpacesWizard() {
       el("label", {}, "Which parts of your life should never see each other?"),
       el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
         "Each one becomes a separate vault in its own folder, with its own projects, " +
-        "contexts and horizons. You share a whole space with the people it belongs to - " +
-        "colleagues get Work and never see Private. Skip this and you get a single space " +
+        "contexts and horizons. You share a whole area with the people it belongs to - " +
+        "colleagues get Work and never see Private. Skip this and you get a single area " +
         "called Personal; you can add more any time."),
       ta, chips,
       el("div", {style: "color:var(--fg3);font-size:12px;margin-top:10px"},
-        "Each space picks its storage when you first open it, so Work can live in the " +
+        "Each area picks its storage when you first open it, so Work can live in the " +
         "company drive and Private in your own.")),
     foot: [
-      el("button", {class: "btn ghost", onclick: () => { closeModal(); finishSpaceSetup([]); }}, "Just one space"),
+      el("button", {class: "btn ghost", onclick: () => { closeModal(); finishSpaceSetup([]); }}, "Just one area"),
       el("button", {class: "btn primary", onclick: () => {
         closeModal();
         finishSpaceSetup(ta.value.split("\n").map(trim).filter(Boolean));
@@ -19008,7 +19550,7 @@ async function finishSpaceSetup(names) {
       await Spaces.save();
     }
     await openSpace((first || Spaces.list[0]).name);
-    notify("Created " + names.length + " space" + (names.length > 1 ? "s" : "") + ".");
+    notify("Created " + names.length + " area" + (names.length > 1 ? "s" : "") + ".");
     render();
     openSpaceStorageSetup({firstRun: true});     // one folder each, asked straight away
     return;
@@ -19083,7 +19625,7 @@ function exportMarkdown(paths, {strip = false, fenced = true} = {}) {
 }
 
 function openExportPage(rootPath) {
-  if (!V.pages.has(rootPath)) { notify("That page is not in this space.", "error"); return; }
+  if (!V.pages.has(rootPath)) { notify("That page is not in this area.", "error"); return; }
   const opts = {includeRefs: false, strip: false, fenced: true};
   const manifest = el("div", {});
   const summary = el("div", {style: "color:var(--fg3);font-size:12px;margin-top:8px"});
@@ -19135,7 +19677,7 @@ function openExportPage(rootPath) {
       el("div", {class: "field"},
         el("label", {}, "Include"),
         toggle("includeRefs", "Pages this one links to",
-               "its context, area, goal and source template. Journals are never included."),
+               "its context, responsibility, goal and source template. Journals are never included."),
         toggle("strip", "Remove who did what",
                "drops by::, done_by:: and updated_by:: from the copy you send.")),
       el("div", {class: "field"},
@@ -19640,7 +20182,7 @@ async function connectServer(base) {
    ============================================================ */
 function newAreaPrompt(then) {
   promptInput({
-    title: "New area of focus", label: "Something ongoing, not a task (Health, Team, Home)",
+    title: "New responsibility", label: "Something ongoing in this area, not a task (Health, Team, Home)",
     cta: "Create",
     onSave: name => { const p = createArea(name); render(); then ? then(p) : openPage(p); },
   });
@@ -19650,12 +20192,12 @@ function openAreaPicker(projectPath) {
   const areas = areaList().map(baseName);
   if (!areas.length) { newAreaPrompt(a => { setAreaOfProject(projectPath, baseName(a)); render(); }); return; }
   listPicker({
-    title: "Area for " + pageTitle(projectPath),
+    title: "Responsibility for " + pageTitle(projectPath),
     items: areas.concat(["(none)"]),
     label: a => a,
     detail: a => a === areaOfProject(projectPath) ? "current" : "",
     onPick: a => { setAreaOfProject(projectPath, a === "(none)" ? null : a); render(); },
-    footer: el("button", {class: "btn ghost", onclick: () => { closeModal(); newAreaPrompt(np => { setAreaOfProject(projectPath, baseName(np)); render(); }); }}, "+ new area"),
+    footer: el("button", {class: "btn ghost", onclick: () => { closeModal(); newAreaPrompt(np => { setAreaOfProject(projectPath, baseName(np)); render(); }); }}, "+ new responsibility"),
   });
 }
 
@@ -19977,7 +20519,7 @@ function openVaultDialog() {
      It only changes which altitudes are shown and how they read; every page
      already written stays exactly where it is. */
   const profileBox = el("div", {class: "field"},
-    el("label", {}, "What this space is for"));
+    el("label", {}, "What this area is for"));
   const profSeg = el("div", {class: "seg", style: "flex-wrap:wrap"});
   const profWhy = el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
     horizonProfile().blurb);
@@ -19994,7 +20536,7 @@ function openVaultDialog() {
   }
   profileBox.append(profSeg, profWhy,
     el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-      "Nothing is deleted by changing this. An altitude a space does not run is " +
+      "Nothing is deleted by changing this. An altitude an area does not run is " +
       "just not shown and not nudged about; switch back and it is there untouched."));
 
   const serverInput = el("input", {
@@ -20036,9 +20578,9 @@ function openVaultDialog() {
           onFolder ? "Change folder for " + Spaces.active : "Choose folder for " + Spaces.active),
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
           "One file per day in journals/, one file per page in pages/, written as you type - " +
-          "the same files Neovim, Obsidian and Logseq open. Only this space goes here, so share " +
-          "that folder with the people who should see this space - and no one else." +
-          (onFolder ? "" : " Until you pick one, this space lives in the browser and writes no files.")),
+          "the same files Neovim, Obsidian and Logseq open. Only this area goes here, so share " +
+          "that folder with the people who should see this area - and no one else." +
+          (onFolder ? "" : " Until you pick one, this area lives in the browser and writes no files.")),
         onFolder ? el("div", {style: "color:var(--fg3);font-size:12px;margin-top:4px"},
           "Now writing into \u201C" + (V.backend.label || "") + "\u201D.") : null) : null,
 
@@ -20048,7 +20590,7 @@ function openVaultDialog() {
         el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
           (onFolder
             ? "Phones cannot open folders, so the way to reach one is a single markdown file " +
-              "that carries this space there and back. It is a courier, not a second home: " +
+              "that carries this area there and back. It is a courier, not a second home: " +
               "your files stay as they are above, and anything the phone sends back becomes " +
               "its own .md file in the folder. Keep the courier file OUTSIDE the folder."
             : "Your whole vault travels as one markdown file. Keep it in a folder your devices " +
@@ -20084,7 +20626,7 @@ function openVaultDialog() {
           el("div", {},
             el("div", {}, "Sync by itself"),
             el("div", {style: "color:var(--fg3);font-size:12px"},
-              "Merges when this space opens and when you come back to the tab, and writes " +
+              "Merges when this area opens and when you come back to the tab, and writes " +
               "back about a minute after you stop typing. Never while you are editing."))) : null,
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
           lastSync ? "Last sync: " + formatStamp(lastSync) : "Not synced yet.")),
@@ -20097,7 +20639,7 @@ function openVaultDialog() {
           el("button", {class: "btn ghost", onclick: () => { safeLS.del("gtd.server"); notify("Server forgotten."); }}, "Forget"))),
 
       el("div", {class: "field"},
-        el("label", {}, "You in " + (Spaces.active || "this space")),
+        el("label", {}, "You in " + (Spaces.active || "this area")),
         (() => {
           /* The picture belongs next to the name: one is who you are called and
              the other is what you look like, and hiding the second a page deeper
@@ -20135,17 +20677,17 @@ function openVaultDialog() {
           return input;
         })(),
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          "Both belong to " + (Spaces.active || "this space") + " alone: the name is kept on " +
+          "Both belong to " + (Spaces.active || "this area") + " alone: the name is kept on " +
           "this device and the photo in your own page inside this vault, so Work and Private " +
           "can show different ones and neither follows you between them. The name is written " +
-          "into the markdown as by:: and done_by:: so everyone sharing this space can see who " +
+          "into the markdown as by:: and done_by:: so everyone sharing this area can see who " +
           "added what; the photo is shrunk to about a kilobyte of text and never leaves the " +
           "folder, because there is nowhere for it to go. Leave both empty and nothing is " +
           "stamped." +
-          (attributionOff() ? " This space is set to record nothing, so the name is unused here." : ""))),
+          (attributionOff() ? " This area is set to record nothing, so the name is unused here." : ""))),
 
       el("div", {class: "field"},
-        el("label", {}, "Attribution in " + (Spaces.active || "this space")),
+        el("label", {}, "Attribution in " + (Spaces.active || "this area")),
         (() => {
           const off = attributionOff();
           const box = el("button", {class: "spacetoggle" + (off ? " on" : ""),
@@ -20159,10 +20701,10 @@ function openVaultDialog() {
             el("div", {style: "display:flex;gap:10px;align-items:flex-start"},
               box,
               el("div", {},
-                el("div", {}, "Do not record who did what in this space"),
+                el("div", {}, "Do not record who did what in this area"),
                 el("div", {style: "color:var(--fg3);font-size:12px"},
                   "No by::, done_by:: or updated_by:: is written here, whatever name you set. " +
-                  "Stored in the space's own settings, so it holds for everyone sharing it."))),
+                  "Stored in the area's own settings, so it holds for everyone sharing it."))),
             off && countStamps() ? el("button", {class: "btn sm ghost", style: "margin-top:8px",
               onclick: () => {
                 if (!confirm("Remove " + countStamps() + " existing attribution stamp(s) from " +
@@ -20173,20 +20715,20 @@ function openVaultDialog() {
         })()),
 
       el("div", {class: "field"},
-        el("label", {}, "Colour of " + (Spaces.active || "this space")),
+        el("label", {}, "Colour of " + (Spaces.active || "this area")),
         (() => {
           // Applied as you pick: this dialog has no save button of its own.
           const name = Spaces.active;
-          const preview = colorPreview(name || "Space", spaceColor(name));
+          const preview = colorPreview(name || "Area", spaceColor(name));
           const picker = colorPicker(spaceColor(name), async c => {
             preview.paint(c);
             if (await Spaces.setColor(name, c)) renderNav();
           });
           return el("div", {}, picker, preview.node,
             el("div", {style: "color:var(--fg3);font-size:12px;margin-top:10px"},
-              "Used for this space in the sidebar and on the badge its rows carry when it " +
-              "shares the screen with another space. Stored on this device, next to the list " +
-              "of spaces - not in the files, so sharing the space keeps your colours yours."));
+              "Used for this area in the sidebar and on the badge its rows carry when it " +
+              "shares the screen with another area. Stored on this device, next to the list " +
+              "of areas - not in the files, so sharing the area keeps your colours yours."));
         })()),
 
       el("div", {class: "field"},
@@ -20230,13 +20772,13 @@ function openVaultDialog() {
       el("div", {class: "field"},
         el("label", {}, "Start afresh"),
         el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
-          "Empties this browser\u2019s copy of GroupToDo - every space, its settings, " +
+          "Empties this browser\u2019s copy of GroupToDo - every area, its settings, " +
           "your name, the offline copy - and reloads as if you had never opened it. " +
           "Useful when you want to see onboarding again, or to hand the browser on. " +
           (onFolder
             ? "Your .md files in \u201C" + (V.backend.label || "the folder") + "\u201D are NOT " +
               "touched - but this browser forgets the folder, so reconnect it afterwards " +
-              "to get the space back."
+              "to get the area back."
             : "Save the vault file first if you want any of it back - this cannot be undone.")),
         el("button", {class: "btn danger", onclick: () => openStartAfreshDialog()},
           "Start afresh\u2026")),
@@ -20368,8 +20910,8 @@ function openStartAfreshDialog() {
                         "color:var(--late);line-height:1.5"},
         el("div", {style: "font-weight:600"}, "This empties GroupToDo in this browser."),
         el("div", {style: "margin-top:4px;color:var(--fg2)"},
-          (spaces === 1 ? "Your space" : "All " + spaces + " spaces") + ", every page and journal " +
-          "kept here, your name, your colours and timezone, the list of spaces, the linked " +
+          (spaces === 1 ? "Your area" : "All " + spaces + " areas") + ", every page and journal " +
+          "kept here, your name, your colours and timezone, the list of areas, the linked " +
           "vault file and server address, and the offline copy. Then the page reloads and " +
           "GroupToDo starts as it did the very first time.")),
       el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:10px"},
@@ -20379,7 +20921,7 @@ function openStartAfreshDialog() {
           ? "This browser does forget " + (folders === 1 ? "the folder it was writing into"
               : "the " + folders + " folders it was writing into") + ", so reconnect " +
             (folders === 1 ? "it" : "them") + " in Vault & sync afterwards to get those " +
-            "space" + (folders === 1 ? "" : "s") + " back."
+            "area" + (folders === 1 ? "" : "s") + " back."
           : "If this browser is the only place your work lives, save the vault file first - " +
             "there is no undo and no copy left behind.")),
       el("div", {class: "field"},
@@ -20861,7 +21403,7 @@ function relWouldCycle(parent, child) {
 }
 
 function relAddParent(parent, child) {
-  if (parent.space !== child.space) { notify("Relationships must be in the same space.", "warn"); return; }
+  if (parent.space !== child.space) { notify("Relationships must be in the same area.", "warn"); return; }
   if (relWouldCycle(parent, child)) { notify("That would create a parent cycle.", "warn"); return; }
   inSpace(parent.space, () => {
     const props = relProps(parent), ref = relRef(child), old = props.children ?? props.parent_of;
@@ -20935,7 +21477,7 @@ function relDragged() {
 /* A person dropped on an organisation (or the other way round) works there:
    both pages say so, so either one lists the other. */
 function relLinkPeople(a, b) {
-  if (a.space !== b.space) { notify("Use pages in the same space.", "warn"); return; }
+  if (a.space !== b.space) { notify("Use pages in the same area.", "warn"); return; }
   const undo = [];
   inSpace(a.space, () => {
     const person = relKind(a) === "person" ? a : b, org = person === a ? b : a;
@@ -21199,7 +21741,7 @@ function spaceJournalColumns(day) {
   const host = el("div", {class: "space-journals"});
   for (const name of visibleSpaces()) {
     if (!LOADED.has(name)) {
-      host.append(el("div", {class: "space-journal"}, el("h3", {}, name), el("p", {}, "This space is not available.")));
+      host.append(el("div", {class: "space-journal"}, el("h3", {}, name), el("p", {}, "This area is not available.")));
       continue;
     }
     host.append(inSpace(name, () => {
@@ -21356,7 +21898,7 @@ function branchReferenceFiles(path, space) {
 async function copyPagesToSpace(list, target, {mode: wanted, copy, exclude = [], branchReferences, inner} = {}) {
   if (!LOADED.has(target)) {
     try { await loadSpaceRecord(target); }
-    catch (_) { notify("Cannot open the target space. Nothing was moved.", "error"); return false; }
+    catch (_) { notify("Cannot open the target area. Nothing was moved.", "error"); return false; }
   }
   const mode = wanted || (copy ? "copy" : "move");
   const plans = [];
@@ -21477,7 +22019,7 @@ function chooseBoundedTransfer(plan, target, opts) {
       const box = el("input", {type: "checkbox", disabled: exists,
         onchange: e => { if (e.target.checked) selected.add(path); else selected.delete(path); }});
       body.append(el("label", {class: "space-transfer-choice"}, box,
-        " " + path + (exists ? " (already in the target space, left as it is)" : "")));
+        " " + path + (exists ? " (already in the target area, left as it is)" : "")));
     }
   }
   body.append(...radioChoices("bounded-mode", TRANSFER_MODES, mode, v => { mode = v; }));
@@ -21491,7 +22033,7 @@ function chooseBoundedTransfer(plan, target, opts) {
 async function transferLinkedPages(list, target, opts = {}) {
   if (!LOADED.has(target)) {
     try { await loadSpaceRecord(target); }
-    catch (_) { notify("Cannot open the target space. Nothing was moved.", "error"); return false; }
+    catch (_) { notify("Cannot open the target area. Nothing was moved.", "error"); return false; }
   }
   const plans = [];
   for (const x of list) {
@@ -21571,7 +22113,7 @@ async function transferBranch(ctx, target, choice, destination = null) {
   const targetPath = destination?.path || inSpace(target, () => isJournalPath(ctx.path)
     ? ensureJournal((/\d{4}-\d{2}-\d{2}/.exec(ctx.path) || [todayISO()])[0])
     : ctx.path);
-  if (target === ctx.space && targetPath === ctx.path) throw new Error("Choose another file or another space.");
+  if (target === ctx.space && targetPath === ctx.path) throw new Error("Choose another file or another area.");
   const oldTarget = inSpace(target, () => getPage(targetPath));
   const targetText = oldTarget ? serializePage(oldTarget) : null;
   await copyTransferAssets(pseudo, ctx.space, target);
@@ -21641,7 +22183,7 @@ async function runItemTransfer(ctx, target, choice, destination = null) {
 
 function openItemSpacePicker(ctx) {
   if (!ctx?.path || !ctx.space) return;
-  const body = el("div", {}, el("p", {}, "Current space: " + ctx.space));
+  const body = el("div", {}, el("p", {}, "Current area: " + ctx.space));
   for (const sp of Spaces.list) {
     if (sp.name === ctx.space) continue;
     body.append(el("button", {class: "pick", onclick: async () => {
@@ -21656,7 +22198,7 @@ function openItemSpacePicker(ctx) {
       } catch (e) { notify("The transfer did not finish: " + e.message, "error"); }
     }}, sp.name));
   }
-  modal({title: "Move to another space", body, foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Cancel")]});
+  modal({title: "Move to another area", body, foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Cancel")]});
 }
 
 /* The line, page or card an event happened on, in the space it belongs to. */
@@ -22029,7 +22571,7 @@ function installServiceWorker() {
   try {
     await openSpace(start);
   } catch (e) {
-    notify("Could not open space: " + e.message, "warn");
+    notify("Could not open area: " + e.message, "warn");
     Spaces.active = start;
     await loadFromBackend(CAP.idb ? Backends.idb() : CAP.ls ? Backends.ls() : Backends.memory());
   }
