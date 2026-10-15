@@ -1,12 +1,13 @@
-# GroupTodo
+# GroupToDo
 
 A shared to-do list that keeps everything as ordinary text files in a folder you
-already have. Nothing to install, no account, no password, and no server.
+already have. Nothing to install, no account, no password, and no server. The
+name is a nod to GTD, Getting Things Done, the method it is built on.
 
 **Why this one can actually be shared.** Most task apps keep your tasks on their
 servers, which is why sharing one is such a nuisance: everybody needs an account
 on the same thing, somebody pays for the seats, and adding a colleague means
-asking whoever administers it. GroupTodo has nothing to be a member of. Your
+asking whoever administers it. GroupToDo has nothing to be a member of. Your
 tasks are plain files in a folder — so share the folder the way you already
 share folders and you are done. The sharing is your company's, not ours. Nobody
 is invited to anything, and when somebody leaves you remove them from the
@@ -39,21 +40,21 @@ on what you take on, and you visible to everybody else.
 
 **If people were already waiting on you,** the app spots it. A colleague who put
 your name on something before you arrived could only file it as a waiting-for,
-because nobody here could tick it off. When you give your name, GroupTodo offers
+because nobody here could tick it off. When you give your name, GroupToDo offers
 you that pile — take them on and they become your tasks, while staying in your
 colleagues' *Waiting for*, because they wrote them.
 
 **Your first project is the tour.** The first space starts with one project,
-*Find your way round GroupTodo*, and every step in it is a door: an ordinary
-task whose text links straight to the part of the app it is about — Todos,
-Planned, Contexts, People, Routines & lists, the weekly review, Search, and the
+*Find your way round GroupToDo*, and every step in it is a door: an ordinary
+task whose text links straight to the part of the app it is about — Next, the
+calendar, Contexts, People, Routines & lists, the weekly review, Search, and the
 folder your files live in. Press the link and you are there. Come back and
-GroupTodo offers to tick off the steps whose destination you have now seen — it
+GroupToDo offers to tick off the steps whose destination you have now seen — it
 asks, because only you know whether looking was enough, and it never ticks one
 for you. They are tasks like any others, so reword them, reorder them or delete
 the lot; when the last one closes, the project files itself away like any other.
 
-To bring somebody in, use **Spaces → Invite somebody** (below). Failing that:
+To bring somebody in, use **the spaces menu, top right → Invite somebody** (below). Failing that:
 send them `grouptodo.html`, the name of the shared folder, and
 `docs/setup-sheet.html` — the same three steps, written for somebody who does not
 want to know how any of it works.
@@ -62,8 +63,9 @@ want to know how any of it works.
 
 ## How it works day to day
 
-Nothing is hidden, but nothing appears before it is about something. The app
-teaches itself as you use it.
+Nothing is hidden, but nothing appears before it is about something. Every
+screen is a heading, at most one quiet row of filters, and the work. The **?
+Help** button at the top explains the rest from inside the app.
 
 **Your day page is yours.** Each person gets their own, so nobody types over
 anybody. What you put on it is still visible to everyone.
@@ -72,86 +74,156 @@ anybody. What you put on it is still visible to everyone.
 case, so it costs nothing.
 
 **Hand one over and it tracks itself.** Give a task to somebody in the space and
-it becomes theirs — and appears in your *Waiting for*. One task, two points of
+it becomes theirs, and it appears in your *Waiting for*. One task, two points of
 view, never two copies, so ticking it off once is enough for both of you.
 
 **Name somebody outside the space** and it becomes a plain waiting-for instead,
 because they cannot see it and cannot tick it off. Calling that a task would be
 a lie.
 
-**People** appears once there is more than you. *Waiting for* only tells you what
-you handed over; this tells you what everyone is carrying. Click a name to see
-their projects and open work.
-
-**States are checkboxes.** To do, Doing and Waiting for tick on and off
-independently, so you can read them together or one at a time. A state nothing
-is in is never mentioned.
-
 **You are told what you missed.** There is no server to push a notification, so
-the app looks for itself: open a space and it tells you what happened since you
-last did — work somebody handed you, and work you handed over that is now
-finished. Click one to go straight to it. "Last seen" is per device and never
-written to the shared files, so marking your own news read does not mark it read
-for everybody.
+the app looks for itself. Today opens with *Since you were last here*: work
+somebody handed you, a word on a task you are part of, and work you handed over
+that is now finished. Dismiss it and nothing is lost: **History**, beside the
+date on Today, scrolls back through everything that happened, day by day. "Last
+seen" is per device and never written to the shared files, so marking your own
+news read does not mark it read for everybody.
 
-### Six ways to look at the same list
+### The screens
 
-A list answers "what next" and nothing else. Five more screens read the very
-same blocks from the same markdown — none of them is a separate mode, and
-anything you change in one is changed everywhere.
+The sidebar holds the places you go every day. Most of them can be read more
+than one way, and the switch for that sits at the right of the heading; each
+screen remembers the reading you last used. None of them is a separate mode:
+every one reads the very same blocks from the same markdown, and anything you
+change in one is changed everywhere.
 
-**Board** — four columns, To do, Doing, Waiting for and Done, with everything
-closed today in the last one so it is not permanently empty. Drag a card between
-columns to change its state; on a phone the columns stack and you open a card
-and use its state buttons instead, because dragging on a touch screen fights the
-scroll.
+| Place | Readings | What it answers |
+|---|---|---|
+| **Today** | your day page | what is due or late, the next seven days, and your journal for each space |
+| **Next** | List, Board, Calendar | everything on your plate; the board has a column per context |
+| **Waiting for** | List, Board | what you handed over, grouped by who owes it |
+| **Chat** | | every conversation on a task, once somebody else is here |
+| **Projects** | List, Board, Timeline, Report | one list per status folder, the plan, and what got done |
+| **People** | List, Cards, Board | who is carrying what; drag people onto the work |
+| **Organisations** | List, Board | whose work it is; drag them onto projects |
+| **Contexts** | | where you are, and what you can do there |
+| **Pages** | List, Board, Mind map, Graph, Hierarchy | everything in the spaces on screen |
+| **Big picture**, **Routines & lists** | | areas, goals and what they are for; the lists you run again |
+| **Weekly review** | Steps, Projects | the steps, and every project dealt as solitaire |
 
-**Calendar** — a month at a time, Monday first. Everything with a scheduled day
-or a deadline lands on its day, late ones in red. Pick a day and its tasks are
-listed underneath in full. On a phone the squares show coloured dots rather than
-shrunken titles, and the list below is where you read them.
+**Spaces are a filter, not a switch.** The squares at the top right are the
+spaces on screen. Tick any combination and every screen shows exactly those,
+with a coloured tag for its space on everything while more than one is
+showing. The space whose name you click is where new things land. The same menu
+holds each space's folder, its colour, and *Invite somebody*.
 
-**Graph** — every page as a dot, every `[[link]]` as a line, pushed apart and
-pulled together until it settles, so what you write about together ends up near
-each other without anybody filing it. A bigger dot has more links. A hollow dot
-is a link to a page nobody has made yet — `[[c/phone]]` written in fifty tasks
-long before `pages/c/phone.md` exists — and clicking one makes it, exactly as
-clicking the link in a task does. Under the picture, the same pages as an
-ordinary list, because a canvas means nothing to a keyboard or a screen reader.
+**Today, a section at a time.** Every section on Today folds like a line in the
+outline: the arrow or the title folds it away. The bullet in front of it focuses
+on it, and so does the bullet in front of any line: everything else leaves the
+screen and only the trail back out stays above it. Back walks out of a focus
+like any other move. On a wide screen the journals sit side by side, one column
+per space.
 
-**Timeline** — a Gantt: every project as a bar from the day its first task
-starts to the day its last one ends, with its tasks underneath when you open
-it. A bar is drawn from what the file already carries — `SCHEDULED::` or the
-day it was captured for the start, `DEADLINE::` or the day it was ticked off
-for the end, and today for anything still running. A project goes red, and
-says *late*, as soon as anything open inside it has run past its end, so you
-do not have to open it to find out. A task with no date at all gets no bar: it
-is counted underneath instead, because an invented span reads exactly like a
-real one.
+**Next** is everything you can do, filtered by To do and Doing and by context.
+As a **board** it has one column per context, with the tasks that have none
+pinned on the left so they get sorted; drag a card to another column to change
+where it can be done. As a **calendar** it is a month at a time, Monday first,
+and the next two weeks go to your own calendar in one press.
 
-**Bars move.** Drag one along to reschedule it, drag either end to change when
-it starts or when it is due, and drag a *project* bar to take the whole project
-with it — every open, dated task inside keeps its shape and shifts together.
-The dates follow the pointer while you drag, and nothing is written until you
-let go, so a drag across three months is one edit to the file rather than
-ninety. A drag only ever writes `SCHEDULED::` and `DEADLINE::`, which is where
-the plan already lived; `Added::` is history and is never rewritten, so a task
-captured in March that you push to May still says it was captured in March.
-Closed tasks have no handles: their end is the day somebody ticked them off,
-and dragging that would be editing the past. On a keyboard, focus a row and use
-`Alt+←` / `Alt+→` to move it a day, with `Shift` for a week.
+**Waiting for** groups what you are owed by person, with *Ask for an update*
+beside anybody outside the space. As a board it has a column per person, and
+dragging a card to somebody else hands it to them instead.
 
-**Report** — what actually got finished, over the last month, quarter, two
-quarters or year, filterable by person. It reads `done_by::`, which is stamped
-on the tick, so nothing new is recorded to make this work; the rows are grouped
-by month, because that is the shape a report is read in. **Copy as text** puts
-it on the clipboard grouped by project, ready to paste into a status mail or a
-stand-up note. Tasks marked DONE by hand in the file carry no date, so they
-cannot be placed in a window — the count of those is shown rather than quietly
-dropped.
+**Projects** lists one status folder at a time: Active, Waiting for,
+Someday/Maybe, Completed and Cancelled, with an organisation filter. A project
+in *Active* whose open steps are all waiting on somebody is shown under
+*Waiting for*, marked *auto*. Each row says what is late, what it is blocked
+by, whether it has a next step, who is involved and how far along it is.
 
-All six are in **Views** in the sidebar, or `v b`, `v c`, `v g`, `v t` and
-`v r`.
+- **Board**: one column per status folder. Dragging a project moves its file,
+  and every link to it follows. Drop one on a space tab to move it into that
+  space; hold ctrl to copy it instead.
+- **Timeline**: a Gantt. Every project is a bar from the day its first task
+  starts to the day its last one ends, with its tasks underneath when you open
+  it. A bar is drawn from what the file already carries: `SCHEDULED::` or the
+  day it was captured for the start, `DEADLINE::` or the day it was ticked off
+  for the end, and today for anything still running. A project goes red, and
+  says *late*, as soon as anything open inside it has run past its end. A task
+  with no date at all gets no bar: it is counted underneath instead, because an
+  invented span reads exactly like a real one.
+- **Bars move.** Drag one along to reschedule it, drag either end to change when
+  it starts or when it is due, and drag a *project* bar to take the whole project
+  with it: every open, dated task inside keeps its shape and shifts together.
+  The dates follow the pointer while you drag, and nothing is written until you
+  let go. A drag only ever writes `SCHEDULED::` and `DEADLINE::`; `Added::` is
+  history and is never rewritten. Closed tasks have no handles. On a keyboard,
+  focus a row and use `Alt+←` / `Alt+→` to move it a day, with `Shift` for a week.
+- **Report**: what actually got finished, over a week, month, quarter, half
+  year, year or dates you type, by person and by space, grouped by customer,
+  project, person or month. It reads `done_by::`, which is stamped on the tick,
+  so nothing new is recorded to make this work. **Copy as text** puts it on the
+  clipboard ready for a status mail. Tasks marked DONE by hand in the file carry
+  no date, so they cannot be placed in a window, and the count of those is shown
+  rather than quietly dropped.
+
+**People and organisations on a board.** On the People board, drop a person on
+a project to involve them (`with:: [[p/Name]]` on the project page), or on a
+next action to hand it over. On the Organisations board, drop an organisation on
+a project (`org:: [[o/Name]]`). The board writes exactly what the page would
+have said anyway.
+
+**Pages** lists every page, by kind and by how recently it was edited or how
+much links to it. Clicking one opens a preview with its values, what is open in
+it and what links to it; *Open full page* goes the rest of the way. The other
+readings:
+
+- **Board**: a column per kind. Drag a card to another column and the page
+  changes kind: the file moves into that folder and every link follows.
+- **Mind map**: one page in the middle, what links to it above, what it links to
+  below, and its tasks hanging off it.
+- **Graph**: every page as a dot, every `[[link]]` as a line, pulled together
+  until it settles. A hollow dot is a link to a page nobody has made yet, and
+  clicking one makes it.
+- **Hierarchy**: what is a child of what, from `children::`.
+
+### Writing on a line
+
+Today, every page and your own page are an outline you write in. Click a line
+and type. A menu opens right under it: what the line is, its state, when it is
+due, where it is done, who has it, whose work it is, which project it belongs to
+and whether it comes back. Each row shows its key, so the menu teaches the keys
+by being used. When a line becomes Waiting with nobody named, the menu asks who
+you are waiting on.
+
+**Names and dates are picked up as you type.** Start typing the name of a
+person, an organisation or a project you have used before and it is offered;
+`Tab` takes it and turns it into a link. A name written out in full is linked by
+itself when you leave the line, and so is a person's first name while it
+belongs to nobody else. Contexts are ordinary words, so they only link when you
+pick them. Dates work the same way: *tomorrow*, *friday*, *next week*, *end of
+month*, *in 3 days*, *15 oct*. `Tab` makes it the line's due date, and on a task
+a date written at the end of the line becomes its due date when you leave the
+line. The capture box at the top and the reply box under a task read names the
+same way. `@`, `@@`, `#` and `[[` still list people, contexts, projects and
+every page.
+
+### Your page
+
+Click **GroupToDo** at the top left. Your page has one copy in every space, so
+they sit side by side like the journals: your notes in that space, and every
+page there that links to you. Set your picture here; it is written to your page
+in every space you are showing.
+
+### The weekly review
+
+**Weekly review** lists a handful of steps, about fifteen minutes, and below them
+everything the app thinks is worth a look, with a count beside it in the
+sidebar. The projects step is played as solitaire: one project at a time,
+stalest first. Every field shows its options from the project's own space:
+organisations, people, area, next action, what done looks like, deadline, what
+comes first and status. Click one, or drag the card onto it, and add a missing
+area or organisation straight from the field. A card with every field answered
+is stamped `reviewed::`.
 
 ### Projects that have to happen in order
 
@@ -207,7 +279,7 @@ One file does the round trip now. There is [a mockup of the whole
 exchange](docs/check-in-sheet-mockup.html) — open it in a browser and tap the
 rows.
 
-1. **Ask.** **People** → the person → **Ask … for an update**. Everything open
+1. **Ask.** **Waiting for**, or the person's page → **Ask … for an update**. Everything open
    with their name on it is already listed and already ticked. Untick anything
    you would rather not raise, and press **Make the sheet**.
 2. **Send.** You get `grouptodo-check-in-mia-halvorsen.html` — one
@@ -225,8 +297,8 @@ rows.
    then one button. That writes a small markdown file — readable in any editor,
    so it survives being pasted into the body of an email. Their ticks are kept
    in their browser, so closing it halfway through costs nothing.
-4. **Import.** Open their file here — **Vault & sync → Open vault file**, or
-   **Import their reply** on their page. You get a review listing exactly what
+4. **Import.** Open their file here — **Waiting for → Import a reply**, or the
+   same button on their page. You get a review listing exactly what
    will change, with every row droppable, before anything is applied.
 
 Applying it closes the tasks they ticked, stamped `done_by:: Mia Halvorsen`,
@@ -237,7 +309,7 @@ unticked is left alone.
 **The sheet is not a copy of your vault.** It carries the lines you chose and
 nothing else: no project names, no colleagues, no other tasks, no files.
 Somebody forwarding it leaks four sentences, not a space. It also never needs
-an account, a login or a server — the same bargain as the rest of GroupTodo.
+an account, a login or a server — the same bargain as the rest of GroupToDo.
 
 Sending one stamps `asked:: <your name> <when>` on each task, so *People* can
 tell you *"3 things owing · asked 11d ago"* rather than making you remember,
@@ -274,8 +346,9 @@ sits at the same path, and the dialog says so rather than pretending.
 is kept on this device, the photo in your own page inside that vault, so Work and
 Private can show different ones and neither follows you between them.
 
-**Add a photo of yourself** in **Vault & sync**, beside your name — or click
-your own face in People. It opens the ordinary file picker, which on a phone
+**Add a photo of yourself** on your own page: click GroupToDo at the top left.
+It is written to your page in every space you are showing, so hide a space
+first if it should keep a different face. It opens the ordinary file picker, which on a phone
 offers the camera or your photo library.
 
 The picture lives in your own person page as a `data:` URI, so it travels in the
@@ -363,8 +436,8 @@ New messages on tasks you are part of also turn up in the arrival notice.
 
 ### Dates in your calendar
 
-Anything with a date gets **Add to calendar**, and **Planned** sends the whole
-window at once. Two routes, deliberately different:
+Anything with a date gets **Add to calendar**, and **Next → Calendar** sends the
+next two weeks at once. Two routes, deliberately different:
 
 - **A file** (`.ics`) is built on your machine and goes nowhere. Works with every
   calendar, including desktop Outlook and Apple, and works offline.
@@ -383,18 +456,19 @@ app has no such thing and no way to make one.
 Everything in the folder is shared. That is the whole permission model — there
 are no per-task rules, because the folder *is* the rule.
 
-If something should not be seen, open the page and use **make private**. It asks
+If something should not be seen, open the page and pick **Make private** from
+the ⋯ beside its title. It asks
 which other folder to move it to, because moving it is the only thing that
 actually makes it private. A checkbox would be a lie.
 
 ### Inviting somebody
 
-**Spaces → Invite somebody.** Two shapes:
+**The spaces menu, top right → Invite somebody.** Two shapes:
 
 - **Invite file** (`join-work.md`) — the space already set up, its name and
   colour and server address, plus everything in it. They open it with *Open one
   I was sent* and they are in. Needs `grouptodo.html` at their end.
-- **One file: app + space** — when you opened GroupTodo from a web address it
+- **One file: app + space** — when you opened GroupToDo from a web address it
   can bake itself and the space into a single `.html`. They open that one file
   and nothing else, and it offers to put them straight in.
 
@@ -411,7 +485,7 @@ who get Work cannot see Home because it is not in there.
 
 ### Phones
 
-A phone can run GroupTodo, but not from a file: phones give a page opened as a
+A phone can run GroupToDo, but not from a file: phones give a page opened as a
 file nowhere to save, and cannot open folders at all. So a phone needs the app
 at a **web address**, and it keeps its own copy that travels as one file you
 carry back and forth. See **Hosting** and **Storage and sync** below.
@@ -428,13 +502,15 @@ Everything past here is for whoever sets it up.
 ```
 grouptodo.html         the entire app -- open it and it runs
 sw.js                  offline + Share button, when it is served from a URL
-manifest.webmanifest   home-screen icon, own window, "open .md with GroupTodo"
+manifest.webmanifest   home-screen icon, own window, "open .md with GroupToDo"
 icon.svg               that icon
 index.html             two lines, so a hosted copy answers at https://host/
 serve.py               optional sync server (a laptop, a Pi, a NAS, Termux)
 docs/setup-sheet.html  the two-minute sheet to hand to colleagues
 docs/check-in-sheet-mockup.html
                        a working mockup of the waiting-for-updates exchange
+docs/lean-ui-mockup.html
+                       the clickable mockup the interface was designed from
 ```
 
 `grouptodo.html` alone is the whole app — named so it still means something in a
@@ -457,7 +533,7 @@ worker, so it has no offline-open, no home-screen install and no Share button.
 required — no PHP, no Node, no database, no build:
 
 ```bash
-cd GroupTodo && python3 -m http.server 8000     # then http://127.0.0.1:8000/
+cd GroupToDo && python3 -m http.server 8000     # then http://127.0.0.1:8000/
 ```
 
 That buys *Add to Home Screen*, opening with no network at all after the first
@@ -467,8 +543,8 @@ refresh.
 
 ### What each platform can do
 
-Capabilities are probed at runtime — **Vault & sync** tells you what this device
-actually allows.
+Capabilities are probed at runtime — **Vault & sync**, opened from the line at the
+bottom of the sidebar, tells you what this device actually allows.
 
 | | Runs standalone | Stores locally | Live folder of `.md` | Vault file out | Home screen | Opens offline |
 |---|---|---|---|---|---|---|
@@ -550,7 +626,7 @@ the whole space, used only to reach a device that cannot open a folder — which
 means every phone. Linking one does not change where your files live, and a page
 the phone sends back lands as its own `.md` file in the folder.
 
-Keep the courier **outside** the vault folder. If one ends up inside, GroupTodo
+Keep the courier **outside** the vault folder. If one ends up inside, GroupToDo
 recognises it, refuses to read it as a page, and says so.
 
 ### The courier in practice
@@ -562,7 +638,7 @@ recognises it, refuses to read it as a page, and says so.
   off. Needs a durable file handle, so it is desktop-only.
 - **Phones, served from a URL**: *Send vault file* opens the phone's own Share
   panel, so the markdown goes straight to Dropbox, Drive, OneDrive, Nextcloud,
-  Syncthing or mail. Coming back, share a `.md` **into** GroupTodo or open one
+  Syncthing or mail. Coming back, share a `.md` **into** GroupToDo or open one
   with it from a file manager. (Share-target and file-opening are Chromium; on
   iOS share out, then *Open vault file* to bring one in.)
 - **Everywhere else**: *Save vault file* and *Open vault file* use the ordinary
@@ -582,8 +658,8 @@ deletions.
 The asymmetry: desktop Edge writes into a folder you choose, Edge on Android
 cannot — no Android browser can.
 
-1. On the PC, **Choose folder** → `OneDrive\GroupTodo\Work`. This is your storage.
-2. On the PC, **Link vault file** → `OneDrive\GroupTodo\work-vault.md`, *beside*
+1. On the PC, **Choose folder** → `OneDrive\GroupToDo\Work`. This is your storage.
+2. On the PC, **Link vault file** → `OneDrive\GroupToDo\work-vault.md`, *beside*
    the Work folder, not inside it.
 3. On the phone, open the hosted URL → **Add to phone**.
 
@@ -606,7 +682,7 @@ install.
 
 ```sh
 export GTD_PASSWORD="$(head -c 24 /dev/urandom | base64)"
-python3 serve.py --vault ~/OneDrive/GroupTodo/Work      # stays on localhost
+python3 serve.py --vault ~/OneDrive/GroupToDo/Work      # stays on localhost
 tailscale serve  --bg 8777     # HTTPS, your own devices only
 tailscale funnel --bg 8777     # HTTPS, anyone with the URL + the password
 ```
@@ -643,7 +719,7 @@ pkg update && pkg install python git
 termux-setup-storage
 git clone https://github.com/kennethaar/GroupTodo ~/GroupTodo && cd ~/GroupTodo
 termux-wake-lock
-python3 serve.py --vault ~/storage/shared/Documents/GroupTodo
+python3 serve.py --vault ~/storage/shared/Documents/GroupToDo
 ```
 
 Then open `http://127.0.0.1:8777/` and *Add to Home screen*. `serve.py` and
@@ -667,7 +743,7 @@ that turns out to be unreachable. How much it keeps depends on the backend:
 
 ### Starting over
 
-**Vault & sync → Start afresh** empties this browser's copy of GroupTodo: every
+**Vault & sync → Start afresh** empties this browser's copy of GroupToDo: every
 space held in browser storage, the list of spaces, your name, colours and
 timezone, the linked file and server address, and the offline copy. It deletes
 the `grouptodo` IndexedDB database, removes the `gtd.*` keys from
@@ -780,15 +856,17 @@ untouched.
 ## The GTD nudges
 
 The method is in the app, kept quiet until it is about something. Below six open
-tasks, simple mode shows no hygiene nudges at all.
+tasks there are no hygiene nudges at all. Everything that is worth a look is
+listed on the **Weekly review** page, with a count beside it in the sidebar, and
+each one can be quietened for a week.
 
 - **Next actions must start with a filmable verb.** "Call", "draft", "buy" — not
   "think about". The lexicon is markdown in `pages/verbs/`, with synonyms.
 - **Projects are outcomes**, not topics: `outcome::` asks what *done* looks like.
 - **Contexts** `[[c/phone]]`, picked with a letter key.
 - **Age** is tracked from `Added::` and drives "oldest first" everywhere.
-- **Morning weeding** surfaces the stalest active projects — hidden under 5
-  active projects or 20 open tasks, both modes. `g w` opens it anyway.
+- **Morning weeding** surfaces the stalest active projects. It is a step of the
+  weekly review once there are 5 active projects and 20 open tasks to weed.
 - **Weekly review** only becomes due once a week of actual use has passed.
 - **Stuck projects**: active, with nothing actionable left. The classic trap.
 - **Waiting too long**: a `WAIT` older than `CFG.waitFollowUpDays` (14).
@@ -799,19 +877,20 @@ tasks, simple mode shows no hygiene nudges at all.
   open says so on its own page, and the Timeline hatches a bar that is
   scheduled to run during something it is waiting for.
 
-Two front doors over the same files: **Simple** reads like a to-do app,
-**Advanced** like an outliner with journals, `[[links]]`, backlinks and zettel.
-The markdown is identical either way.
-
 ## Keys
 
-`c` capture · `/` search · `?` all keys · `f t` today · `g n` todos ·
-`g x` context · `g a` planned · `g p` people · `g c` chat · `g w` weeding ·
-`g r` review · `v b` board · `v c` calendar · `v g` graph ·
-`v t` timeline · `v r` report ·
-`ctrl-z` undo a delete · **Copy link** on any task or page ·
-`g d` re-surface. In the outline: `Enter` new block, `Tab`/`Shift-Tab` indent,
-`Ctrl-Enter` cycle state.
+`n` add a task · `/` search · `?` help · `\` hide or show the sidebar ·
+`t` today · `g n` next · `g w` waiting for · `g p` projects · `g c` chat ·
+`g r` weekly review · `g x` where are you now · `g d` re-surface ·
+`v b` next as a board · `v c` calendar · `v p` project board · `v t` timeline ·
+`v r` report · `v g` mind map · `v m` graph · `v d` pages as a board ·
+`alt+←` / `alt+→` back and forward · `ctrl-z` undo a delete or a move ·
+**Copy link** on any task or page.
+
+On a line: `Enter` new line, `Tab` takes a suggestion or indents, `Shift-Tab`
+outdents, `Ctrl-Enter` cycles the state, `Alt+T` task or note, `Alt+1` make it a
+project, `Alt+D` `Alt+C` `Alt+P` `Alt+O` `Alt+J` `Alt+R` due, context, person,
+organisation, project and repeat, `Alt+S` move it to another space.
 
 ## What it does about the obvious risks
 
@@ -862,10 +941,6 @@ per item, which cost 146ms a draw on a big vault. Now 6.7ms.
 - **Auto-sync of the courier file is desktop only** (it needs a durable handle).
 - **Recurrence is offered, never scheduled.** Nothing appears until you tick the
   current one off and say yes, so a repeat you forget about simply stops.
-- **A Gantt bar is read, never dragged.** The dates live in the markdown as
-  `SCHEDULED::` and `DEADLINE::`; the timeline shows them, and you change them
-  by opening the task. Dragging a bar to reschedule would be a nice trick and
-  is not built.
 - **The report can only count what carries a date.** A task ticked off in the
   app is stamped `done_by::` with the day; one marked DONE by hand in the file
   is not, and nothing can tell when that happened.

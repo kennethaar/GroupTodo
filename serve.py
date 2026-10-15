@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-GroupTodo sync server.
+GroupToDo sync server.
 
 grouptodo.html is standalone, but browsers outside desktop Chrome/Edge cannot
 write to a folder on their own. This serves it and exposes a tiny REST API over
@@ -108,10 +108,10 @@ class Vault:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "GroupTodo/1.0"
+    server_version = "GroupToDo/1.0"
     vault = None
     password = None        # None = open; anything else = HTTP Basic required
-    realm = "GroupTodo"
+    realm = "GroupToDo"
 
     # ---------- helpers ----------
     def _send(self, code, body=b"", ctype="text/plain; charset=utf-8"):
@@ -166,7 +166,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def demand_password(self):
         time.sleep(0.5)                 # make a guessing run expensive
-        body = b"GroupTodo: password required.\n"
+        body = b"GroupToDo: password required.\n"
         self.send_response(401)
         self.send_header("WWW-Authenticate", 'Basic realm="%s", charset="UTF-8"' % self.realm)
         self.send_header("Content-Type", "text/plain; charset=utf-8")
@@ -346,7 +346,7 @@ def read_password(args):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Serve GroupTodo over a markdown vault.")
+    ap = argparse.ArgumentParser(description="Serve GroupToDo over a markdown vault.")
     ap.add_argument("--vault", default=os.environ.get("GTD_VAULT", DEFAULT_VAULT))
     ap.add_argument("--port", type=int, default=int(os.environ.get("GTD_PORT", 8777)))
     ap.add_argument("--host", default=os.environ.get("GTD_HOST", "127.0.0.1"))

@@ -1,4 +1,4 @@
-/* GroupTodo service worker.
+/* GroupToDo service worker.
 
    Two jobs, both so the app can be a no-install app rather than a download:
 

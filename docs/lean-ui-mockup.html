@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GroupTodo Lean UI</title>
+<title>GroupToDo Lean UI</title>
 <style>
 :root{
   --bg:#f6f6f3; --panel:#ffffff; --ink:#1d1d1b; --muted:#6b6b66; --line:#e4e3de;
@@ -434,7 +434,7 @@ body.is-dragging{user-select:none;cursor:grabbing}
 <div class="app">
   <aside class="side" id="side">
     <div class="sidehead">
-      <button class="brand" id="brand" title="Your page: picture, notes and everything that links to you"><span class="logo">G</span><span>GroupTodo<small>Kenneth Aar</small></span></button>
+      <button class="brand" id="brand" title="Your page: picture, notes and everything that links to you"><span class="logo">G</span><span>GroupToDo<small>Kenneth Aar</small></span></button>
       <button class="hideside" id="hideSide" title="Hide the sidebar (\)" aria-label="Hide the sidebar">⇤</button>
     </div>
     <button class="nav-item" data-v="today"><span class="ic">☀</span>Today<span class="n" data-c="today"></span></button>
@@ -480,12 +480,12 @@ body.is-dragging{user-select:none;cursor:grabbing}
 <aside class="helppanel" id="help" aria-label="Help">
   <button class="x" id="helpX" aria-label="Close">×</button>
   <h2>Help</h2>
-  <p>GroupTodo keeps your tasks, projects and notes as plain files in folders you already own. Everything you see here is read from those files, and everything you change is written straight back to them.</p>
+  <p>GroupToDo keeps your tasks, projects and notes as plain files in folders you already own. Everything you see here is read from those files, and everything you change is written straight back to them.</p>
 
   <h3>Getting around</h3>
   <ul>
     <li><b>The sidebar</b> lists the places you go every day. Hide it with ⇤ at its top, or press \. Bring it back with ☰.</li>
-    <li><b>Your page</b> opens when you click GroupTodo at the top left. Set your picture there, keep notes about yourself, and see everything in every space that links to you.</li>
+    <li><b>Your page</b> opens when you click GroupToDo at the top left. Set your picture there, keep notes about yourself, and see everything in every space that links to you.</li>
     <li><b>Back and forward</b> work everywhere, including after you open a full page. Use ← and → at the top, or Alt+← and Alt+→.</li>
     <li><b>The capture box</b> adds a task from anywhere. Press N to jump to it. Write @name for a person, @@place for a context, #project for a project and a day like friday for the due date.</li>
     <li><b>Search</b> finds tasks, pages, people and commands such as Raw text.</li>
@@ -583,7 +583,7 @@ body.is-dragging{user-select:none;cursor:grabbing}
 /* ================= sample data ================= */
 /* Each space is its own vault folder. Show any combination of them at once. */
 const SPACES = {
-  work:{name:"Work",ini:"W",col:"#2f6fde",on:true,folder:"OneDrive/GroupTodo/Work",members:3},
+  work:{name:"Work",ini:"W",col:"#2f6fde",on:true,folder:"OneDrive/GroupToDo/Work",members:3},
   home:{name:"Private",ini:"P",col:"#2e8a57",on:true,folder:"OneDrive/Private",members:1},
   club:{name:"Running club",ini:"R",col:"#c0662b",on:false,folder:"Dropbox/Running club",members:8}
 };
@@ -1966,7 +1966,7 @@ document.addEventListener("change",e=>{
     img.onload=()=>{ const c=document.createElement("canvas"), n=192, m=Math.min(img.width,img.height); c.width=c.height=n;
       c.getContext("2d").drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,n,n); URL.revokeObjectURL(url);
       PEOPLE.me.pic=c.toDataURL("image/jpeg",.85); render(); toast("Picture saved. It shows wherever you do, in every space.",false); };
-    img.onerror=()=>{ URL.revokeObjectURL(url); toast("That file is not a picture GroupTodo can read.",false); };
+    img.onerror=()=>{ URL.revokeObjectURL(url); toast("That file is not a picture GroupToDo can read.",false); };
     img.src=url; return; }
   const s=e.target.closest("[data-sel]"); if(!s) return;
   setF(s.dataset.sel,s.value); render();
