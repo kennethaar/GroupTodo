@@ -19,6 +19,13 @@ API
     GET    /api/file?path=REL   -> raw file contents
     PUT    /api/file?path=REL   -> writes the body (creates parent dirs)
     DELETE /api/file?path=REL   -> deletes the file
+    GET    /api/calendar?url=U  -> the iCalendar file at U, fetched by the server
+
+The app's CSP only lets it talk to itself and to localhost, so a calendar
+link (Outlook, Google, iCloud) is fetched here on its behalf. Only https
+links to public addresses are fetched, and only a reply that is an
+iCalendar file is passed back, so this is not a general way out to the
+network for any page that can reach the port.
 
 Every path is confined to the vault; traversal outside it is refused.
 
@@ -43,12 +50,15 @@ intended shape is this server on localhost with TLS terminated in front of it:
 import argparse
 import base64
 import hmac
+import ipaddress
 import json
 import os
 import posixpath
 import re
+import socket
 import sys
 import time
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
@@ -57,6 +67,43 @@ DEFAULT_VAULT = os.path.expanduser("~/storage/shared/Documents/OrgMode")
 ALLOWED_EXT = (".md", ".org")
 SKIP_DIRS = {".git", ".obsidian", ".trash", "node_modules", "logseq"}
 MAX_BODY = 8 * 1024 * 1024
+MAX_CALENDAR = 8 * 1024 * 1024
+
+
+def check_calendar_url(url):
+    """Refuse anything but https to a public address."""
+    u = urlparse(url)
+    if u.scheme != "https" or not u.hostname:
+        raise ValueError("only https:// (or webcal://) calendar links are fetched")
+    try:
+        infos = socket.getaddrinfo(u.hostname, u.port or 443, proto=socket.IPPROTO_TCP)
+    except socket.gaierror:
+        raise ValueError("cannot find %s" % u.hostname)
+    for info in infos:
+        if not ipaddress.ip_address(info[4][0].split("%")[0]).is_global:
+            raise ValueError("%s is not on the public internet" % u.hostname)
+
+
+class _CheckedRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        check_calendar_url(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def fetch_calendar(url):
+    url = re.sub(r"^webcal://", "https://", (url or "").strip(), flags=re.I)
+    check_calendar_url(url)
+    opener = urllib.request.build_opener(_CheckedRedirect)
+    req = urllib.request.Request(url, headers={"User-Agent": "GroupToDo calendar import",
+                                               "Accept": "text/calendar, */*;q=0.5"})
+    with opener.open(req, timeout=20) as r:
+        body = r.read(MAX_CALENDAR + 1)
+    if len(body) > MAX_CALENDAR:
+        raise ValueError("that calendar is too large")
+    text = body.decode("utf-8", "replace")
+    if "BEGIN:VCALENDAR" not in text[:4096]:
+        raise ValueError("that link did not return a calendar")
+    return text
 
 
 class Vault:
@@ -193,6 +240,14 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"ok": True, "vault": self.vault.root, "files": len(self.vault.list())})
         if route == "/api/list":
             return self._json(200, self.vault.list())
+        if route == "/api/calendar":
+            url = (parse_qs(urlparse(self.path).query).get("url") or [""])[0]
+            try:
+                return self._send(200, fetch_calendar(url), "text/calendar; charset=utf-8")
+            except ValueError as exc:
+                return self._send(400, str(exc))
+            except Exception as exc:
+                return self._send(502, "could not fetch the calendar: %s" % exc)
         if route == "/api/file":
             try:
                 return self._send(200, self.vault.read(self._rel()), "text/markdown; charset=utf-8")

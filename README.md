@@ -44,7 +44,7 @@ because nobody here could tick it off. When you give your name, GroupToDo offers
 you that pile — take them on and they become your tasks, while staying in your
 colleagues' *Waiting for*, because they wrote them.
 
-**Your first project is the tour.** The first space starts with one project,
+**Your first project is the tour.** The first area starts with one project,
 *Find your way round GroupToDo*, and every step in it is a door: an ordinary
 task whose text links straight to the part of the app it is about — Next, the
 calendar, Contexts, People, Routines & lists, the weekly review, Search, and the
@@ -54,7 +54,7 @@ asks, because only you know whether looking was enough, and it never ticks one
 for you. They are tasks like any others, so reword them, reorder them or delete
 the lot; when the last one closes, the project files itself away like any other.
 
-To bring somebody in, use **the spaces menu, top right → Invite somebody** (below). Failing that:
+To bring somebody in, use **the areas menu, top right → Invite somebody** (below). Failing that:
 send them `grouptodo.html`, the name of the shared folder, and
 `docs/setup-sheet.html` — the same three steps, written for somebody who does not
 want to know how any of it works.
@@ -73,11 +73,11 @@ anybody. What you put on it is still visible to everyone.
 **A task you write is yours.** No assigning, no ceremony. That is the common
 case, so it costs nothing.
 
-**Hand one over and it tracks itself.** Give a task to somebody in the space and
+**Hand one over and it tracks itself.** Give a task to somebody in the area and
 it becomes theirs, and it appears in your *Waiting for*. One task, two points of
 view, never two copies, so ticking it off once is enough for both of you.
 
-**Name somebody outside the space** and it becomes a plain waiting-for instead,
+**Name somebody outside the area** and it becomes a plain waiting-for instead,
 because they cannot see it and cannot tick it off. Calling that a task would be
 a lie.
 
@@ -89,6 +89,39 @@ date on Today, scrolls back through everything that happened, day by day. "Last
 seen" is per device and never written to the shared files, so marking your own
 news read does not mark it read for everybody.
 
+**Today is three tabs and a card per journal.** *Trackers*, *Due Today & Late*
+and *Next 7 Days* sit in a row, each with its count. Click one to open it and
+click it again to fold it away. Under them, each area's day page is a card,
+such as the *Work Journal*, and its **Edit Markdown ▾** menu shows the whole
+page as text. Trackers are values at the top of the day page
+(`tracker-pullups_krrr:: 100/8/4/2`), not lines among your notes. A tracker
+still written as a line is moved up there the next time Today opens.
+
+**Meetings are lines too.** Press **Alt+M** on a line, or pick *Make it a
+meeting* in the line menu, to tag it `#meeting` and give it attendees, a time
+and an agenda. The agenda becomes the lines under the meeting, so the notes go
+where they belong:
+
+```
+- #meeting Planning with Ola
+  time:: 13:00–14:00
+  attendees:: [[Ola Nordmann]], [[Per Dahl]]
+  - Budget
+  - Hiring
+```
+
+**📅 Calendars on Today brings your meetings in.** Paste a calendar's secret
+iCal link (Outlook, Google, iCloud) and pick the area it goes into, such as
+your private one. Every meeting in the next 14 days becomes a `#meeting` line on
+its day page, and the import runs again every 30 minutes while Today is open.
+The calendar decides the title, time and attendees. Anything you write under a
+meeting stays. A meeting that leaves the calendar is removed, or marked
+*Cancelled* if you wrote something under it. The links are kept on this device
+only, because a secret calendar link in a shared folder shares the whole
+calendar. The app may not fetch the internet itself (see the CSP below), so
+`serve.py` fetches the link for it. Without `serve.py`, download the `.ics` file
+and import that instead.
+
 ### The screens
 
 The sidebar holds the places you go every day. Most of them can be read more
@@ -99,30 +132,42 @@ change in one is changed everywhere.
 
 | Place | Readings | What it answers |
 |---|---|---|
-| **Today** | your day page | what is due or late, the next seven days, and your journal for each space |
+| **Today** | your day page | what is due or late, the next seven days, and your journal for each area |
 | **Next** | List, Board, Calendar | everything on your plate; the board has a column per context |
 | **Waiting for** | List, Board | what you handed over, grouped by who owes it |
 | **Chat** | | every conversation on a task, once somebody else is here |
 | **Projects** | List, Board, Timeline, Report | one list per status folder, the plan, and what got done |
 | **People** | List, Cards, Board | who is carrying what; drag people onto the work |
 | **Organisations** | List, Board | whose work it is; drag them onto projects |
-| **Contexts** | | where you are, and what you can do there |
-| **Pages** | List, Board, Mind map, Graph, Hierarchy | everything in the spaces on screen |
-| **Big picture**, **Routines & lists** | | areas, goals and what they are for; the lists you run again |
+| **Contexts** | | where you are, and what you can do there; each one is a page under `c/` |
+| **Pages** | List, Board, Mind map, Graph, Hierarchy | everything in the areas on screen |
+| **Horizons**, **Routines & lists** | | purpose and vision down through your areas to the next move; the lists you run again, the weekly review among them |
 | **Weekly review** | Steps, Projects | the steps, and every project dealt as solitaire |
 
-**Spaces are a filter, not a switch.** The squares at the top right are the
-spaces on screen. Tick any combination and every screen shows exactly those,
-with a coloured tag for its space on everything while more than one is
-showing. The space whose name you click is where new things land. The same menu
-holds each space's folder, its colour, and *Invite somebody*.
+**Areas are a filter, not a switch.** The squares at the top right are the
+areas on screen. Tick any combination and every screen shows exactly those,
+with a coloured tag for its area on everything while more than one is
+showing. The area whose name you click is where new things land. The same menu
+holds each area's folder, its colour, and *Invite somebody*.
+
+**Your areas are Horizon 2.** In GTD the parts of your life you keep in good
+shape and never finish are your areas of focus, and here each one is a folder of
+its own. **Horizons** reads them as one ladder: purpose and vision from your home
+area (the first one you made), goals gathered from every area, then the areas
+themselves, each with the responsibilities it holds (pages under `a/`), then
+projects and next actions. Open an area there to see and edit its own ladder.
 
 **Today, a section at a time.** Every section on Today folds like a line in the
 outline: the arrow or the title folds it away. The bullet in front of it focuses
 on it, and so does the bullet in front of any line: everything else leaves the
 screen and only the trail back out stays above it. Back walks out of a focus
 like any other move. On a wide screen the journals sit side by side, one column
-per space.
+per area.
+
+**Another day.** The arrows and the date box at the top of Today step the
+journals back and forward a day, or jump to any date; *Back to today* returns.
+What is due stays about today. Looking at a day with nothing written leaves no
+file behind: *Write on this day* starts that page.
 
 **Next** is everything you can do, filtered by To do and Doing and by context.
 As a **board** it has one column per context, with the tasks that have none
@@ -131,8 +176,28 @@ where it can be done. As a **calendar** it is a month at a time, Monday first,
 and the next two weeks go to your own calendar in one press.
 
 **Waiting for** groups what you are owed by person, with *Ask for an update*
-beside anybody outside the space. As a board it has a column per person, and
+beside anybody outside the area. As a board it has a column per person, and
 dragging a card to somebody else hands it to them instead.
+
+**Things to ask somebody** show up there too. A task of yours that links a
+person, *ask [[p/Alexander Bee]] about [[Pollen]]*, is still yours, but it
+stands under that person with a *to ask Alexander* pill. It goes in the same
+check-in as what they owe you: one email with both by default, or **Two
+emails: questions apart** in the ask dialog, which makes a second sheet and a
+second note that is only questions.
+
+**Tags are your own labels.** Write `#anything` on a task (`#urgent`,
+`#invoice`, `#q4`) and it is a tag. Both task boards, Next and Waiting for,
+can switch their columns to **By tag**: one column per tag, with the untagged
+on the left. A task with two tags stands in both. Dragging a card to another
+column swaps the tag of the column it left for the one it lands in, and *No
+tag* takes them all off.
+
+**Export to Excel** in the heading of Next and Waiting for saves what is on
+screen as a CSV file. Projects has **Export all tasks** for every task in the
+areas you are showing, open or finished, and the Report has its own button.
+The file uses the list separator your machine expects (a semicolon where the
+decimal mark is a comma), and æøå come through intact.
 
 **Projects** lists one status folder at a time: Active, Waiting for,
 Someday/Maybe, Completed and Cancelled, with an organisation filter. A project
@@ -141,8 +206,8 @@ in *Active* whose open steps are all waiting on somebody is shown under
 by, whether it has a next step, who is involved and how far along it is.
 
 - **Board**: one column per status folder. Dragging a project moves its file,
-  and every link to it follows. Drop one on a space tab to move it into that
-  space; hold ctrl to copy it instead.
+  and every link to it follows. Drop one on an area tab to move it into that
+  area; hold ctrl to copy it instead.
 - **Timeline**: a Gantt. Every project is a bar from the day its first task
   starts to the day its last one ends, with its tasks underneath when you open
   it. A bar is drawn from what the file already carries: `SCHEDULED::` or the
@@ -159,12 +224,18 @@ by, whether it has a next step, who is involved and how far along it is.
   history and is never rewritten. Closed tasks have no handles. On a keyboard,
   focus a row and use `Alt+←` / `Alt+→` to move it a day, with `Shift` for a week.
 - **Report**: what actually got finished, over a week, month, quarter, half
-  year, year or dates you type, by person and by space, grouped by customer,
+  year, year or dates you type, by person and by area, grouped by customer,
   project, person or month. It reads `done_by::`, which is stamped on the tick,
   so nothing new is recorded to make this work. **Copy as text** puts it on the
   clipboard ready for a status mail. Tasks marked DONE by hand in the file carry
   no date, so they cannot be placed in a window, and the count of those is shown
   rather than quietly dropped.
+
+**Every list view works the same way.** The heading holds the view's own
+actions and *+ New …*, then the List / Board switch. Under it, one row: a box
+that filters by any words you type (only the list redraws, so you never lose
+your place), then the chips and choices for that view. Next, Waiting for,
+Projects, People, Organisations, Pages and Routines & lists all have it.
 
 **People and organisations on a board.** On the People board, drop a person on
 a project to involve them (`with:: [[p/Name]]` on the project page), or on a
@@ -172,18 +243,38 @@ next action to hand it over. On the Organisations board, drop an organisation on
 a project (`org:: [[o/Name]]`). The board writes exactly what the page would
 have said anyway.
 
-**Pages** lists every page, by kind and by how recently it was edited or how
-much links to it. Clicking one opens a preview with its values, what is open in
-it and what links to it; *Open full page* goes the rest of the way. The other
-readings:
+**Pages** lists every page, by how recently it was edited or how much links to
+it. The chips along the top pick a folder; journals are a folder of their own,
+kept out of *All pages*, and one of your own day pages opens on Today at that
+day. The box in front of them filters by any words in the title or the path.
+Clicking one opens a preview with its values, what is open in it and what links
+to it; *Open full page* goes the rest of the way. The other readings:
 
 - **Board**: a column per kind. Drag a card to another column and the page
   changes kind: the file moves into that folder and every link follows.
+  The same move is in **Rename** (or **Move**) in the ⋯ beside a page's title:
+  name and folder sit in one dialog, so a page filed in the wrong folder is
+  fixed where you would fix its name. Moving into a project folder sets the
+  status as well.
 - **Mind map**: one page in the middle, what links to it above, what it links to
   below, and its tasks hanging off it.
-- **Graph**: every page as a dot, every `[[link]]` as a line, pulled together
-  until it settles. A hollow dot is a link to a page nobody has made yet, and
-  clicking one makes it.
+- **Graph**: every page as a dot, every `[[link]]` as a line (values such as
+  `area::` count too), pulled together until it settles. It takes sides so the
+  picture means something: day pages are off until you turn them on, because a
+  day mentions everything and melts every cluster into one, and pages with no
+  links at all are listed beside the picture instead of floating in it. A
+  click picks a page: its neighbours light up, and the panel says what it links
+  to and what links to it, with *Open*, *Preview* and *Mind map*. *1 step* or
+  *2 steps* cuts the map down to the page's neighbourhood. With nothing picked,
+  the panel lists the hubs, the links to pages nobody has made yet (a hollow
+  dot; *Make this page* makes it) and the pages nothing links to. Type to find
+  a page, `/` jumps to the box, Enter on a picked page opens it, Esc lets go,
+  double-click opens. The map draws the 500 best-connected pages first and
+  says how many it left out, with *Show more* and *Show all*; a big vault takes
+  a moment to settle, which is fine. **▶** replays the vault growing, oldest
+  first: each page arrives on its day (a day page on its date, any other page
+  on its `created::` date, or with the oldest page that links it if that is
+  earlier) beside a neighbour already there, with the date in the corner.
 - **Hierarchy**: what is a child of what, from `children::`.
 
 ### Writing on a line
@@ -207,23 +298,49 @@ line. The capture box at the top and the reply box under a task read names the
 same way. `@`, `@@`, `#` and `[[` still list people, contexts, projects and
 every page.
 
+In the capture box, a context you already have works as the last word, before
+any date: *Call Mia about the VAT phone tomorrow* is a call, at `@phone`, due
+tomorrow. Only the last word counts, so *Buy a phone charger* stays about a
+phone. `@phone` is the context too, when nobody is called that; `@mia` hands
+the task to Mia.
+
 ### Your page
 
-Click **GroupToDo** at the top left. Your page has one copy in every space, so
-they sit side by side like the journals: your notes in that space, and every
-page there that links to you. Set your picture here; it is written to your page
-in every space you are showing.
+Click **GroupToDo** at the top left. Your page has one copy in every area, so
+they sit side by side like the journals: your notes in that area, and every
+page there that links to you. Each area has its own picture of you, set in its
+column, so the people in Work see the one you put in Work.
 
 ### The weekly review
 
-**Weekly review** lists a handful of steps, about fifteen minutes, and below them
+**Weekly review** walks you through the steps in three groups, and below them
 everything the app thinks is worth a look, with a count beside it in the
-sidebar. The projects step is played as solitaire: one project at a time,
-stalest first. Every field shows its options from the project's own space:
-organisations, people, area, next action, what done looks like, deadline, what
-comes first and status. Click one, or drag the card onto it, and add a missing
-area or organisation straight from the field. A card with every field answered
-is stamped `reviewed::`.
+sidebar:
+
+- **Clear**: horizons of focus, mind dump, papers, phone messages, the
+  downloads folder.
+- **Current**: the calendar two weeks back and four forward, contexts and
+  reminders for what you are waiting for, a next action for every project (or
+  move it to Someday/Maybe or Done), routines and checklists.
+- **Creative**: anything in Someday/Maybe ready to become a project, and
+  celebrate.
+
+Tick each step off as you go; a step with a link opens the part of the app it is
+done in. The steps are an ordinary routine, `pages/8/Weekly review.md`, shown
+first in **Routines & lists**: edit it to reword a step, drop one or add your
+own. A top line is a section, the lines under it are steps, the first line under
+a step says what it means, and a `[[go/...]]` link makes the step a door. Until
+you edit it the built-in steps are used and nothing is written.
+
+The projects step is played as solitaire: one active project at a time, stalest
+first, with a switch to deal waiting and someday/maybe projects too. Every field
+shows its options from the project's own area: organisations, people,
+responsibility, next action, what done looks like, deadline, what comes first
+and status. A long list shows the ten you are likeliest to want (what is picked,
+then what is used most) and *Show all* opens the whole list, scrolling, with a
+search. Click one, or drag the card onto it, and add a missing responsibility or
+organisation straight from the field. A card with every field answered is
+stamped `reviewed::`.
 
 ### Projects that have to happen in order
 
@@ -281,7 +398,10 @@ rows.
 
 1. **Ask.** **Waiting for**, or the person's page → **Ask … for an update**. Everything open
    with their name on it is already listed and already ticked. Untick anything
-   you would rather not raise, and press **Make the sheet**.
+   you would rather not raise, and press **Make the sheet**. The lines written
+   under each task go along as context, indented under it in the mail and on
+   the sheet, each with its own tick so a note meant for you alone can stay
+   behind. The conversation on a task never goes.
 2. **Send.** You get `grouptodo-check-in-mia-halvorsen.html` — one
    self-contained page, no network, no libraries, no fonts to fetch — and a
    covering note to send it with, in your own voice, ready in your email or in
@@ -308,7 +428,7 @@ unticked is left alone.
 
 **The sheet is not a copy of your vault.** It carries the lines you chose and
 nothing else: no project names, no colleagues, no other tasks, no files.
-Somebody forwarding it leaks four sentences, not a space. It also never needs
+Somebody forwarding it leaks four sentences, not an area. It also never needs
 an account, a login or a server — the same bargain as the rest of GroupToDo.
 
 Sending one stamps `asked:: <your name> <when>` on each task, so *People* can
@@ -328,7 +448,7 @@ them a way back to the exact thing.
 https://your-host/grouptodo.html#gt&s=Work&p=pages%2F1%2FRollup.md&b=4bnggdod
 ```
 
-Space, file and block. Opening it switches space if it needs to, opens the page
+Area, file and block. Opening it switches area if it needs to, opens the page
 and pops the task itself. A link to something this vault does not have says so
 rather than landing you nowhere.
 
@@ -342,14 +462,13 @@ sits at the same path, and the dialog says so rather than pretending.
 
 ### Faces, and who has been here
 
-**One name and one photo per space.** Both belong to that space alone: the name
+**One name and one photo per area.** Both belong to that area alone: the name
 is kept on this device, the photo in your own page inside that vault, so Work and
 Private can show different ones and neither follows you between them.
 
-**Add a photo of yourself** on your own page: click GroupToDo at the top left.
-It is written to your page in every space you are showing, so hide a space
-first if it should keep a different face. It opens the ordinary file picker, which on a phone
-offers the camera or your photo library.
+**Add a photo of yourself** on your own page: click GroupToDo at the top left,
+and pick it in the column of the area it is for. It opens the ordinary file
+picker, which on a phone offers the camera or your photo library.
 
 The picture lives in your own person page as a `data:` URI, so it travels in the
 vault like everything else: no upload, no server, nowhere else for it to go
@@ -360,7 +479,7 @@ picture means initials in a colour derived from your name, stable everywhere.
 **`last_seen::`** on the same page answers "has anybody even opened this
 lately". It is written at most once an hour, so it does not churn the file, and
 shows up in People (*last seen 3 hours ago*, *here now*) and beside a name in
-chat. A space with `no_attribution:: true` records this too — same promise.
+chat. An area with `no_attribution:: true` records this too — same promise.
 
 ### Undo
 
@@ -426,10 +545,10 @@ unread.
 you flagged follows you between devices and your colleagues can see you have
 picked it up.
 
-**Chat** gathers every thread you have — across every space you are showing,
+**Chat** gathers every thread you have — across every area you are showing,
 every project and every day page — newest first, with the task it belongs to,
 who spoke last and what they said. Filter it by *All*, *Unread* or *Flagged*;
-click a row and you land on the task itself, switching space if it lives in
+click a row and you land on the task itself, switching area if it lives in
 another one. The nav entry appears once there is a conversation to find.
 
 New messages on tasks you are part of also turn up in the arrival notice.
@@ -463,23 +582,23 @@ actually makes it private. A checkbox would be a lie.
 
 ### Inviting somebody
 
-**The spaces menu, top right → Invite somebody.** Two shapes:
+**The areas menu, top right → Invite somebody.** Two shapes:
 
-- **Invite file** (`join-work.md`) — the space already set up, its name and
+- **Invite file** (`join-work.md`) — the area already set up, its name and
   colour and server address, plus everything in it. They open it with *Open one
   I was sent* and they are in. Needs `grouptodo.html` at their end.
-- **One file: app + space** — when you opened GroupToDo from a web address it
-  can bake itself and the space into a single `.html`. They open that one file
+- **One file: app + area** — when you opened GroupToDo from a web address it
+  can bake itself and the area into a single `.html`. They open that one file
   and nothing else, and it offers to put them straight in.
 
 The one thing an invite cannot carry is the folder: a browser will not let a
 directory handle be serialised or transferred, by design. So for a folder-backed
-space the invite *names* the folder and leaves them one button to press — and
-they do need the folder shared with them separately. A server-backed space needs
+area the invite *names* the folder and leaves them one button to press — and
+they do need the folder shared with them separately. A server-backed area needs
 nothing at all, because the address travels in the file.
 
-Separate parts of life get separate folders, called **spaces** — Work, Home,
-Volunteering. Two spaces can never share a folder and one can never sit inside
+Separate parts of life get separate folders, called **areas** — Work, Home,
+Volunteering. Two areas can never share a folder and one can never sit inside
 another, so the folder you share is exactly what you meant to share. Colleagues
 who get Work cannot see Home because it is not in there.
 
@@ -578,7 +697,7 @@ the tab. The app detects that frame and says so on the first screen instead.
 
 The useful part of Teams is the other tab: a channel's **Files** folder is a
 SharePoint folder, and channel membership is the permission model. Hit **Sync**
-and it becomes a real folder in File Explorer — point a space at that.
+and it becomes a real folder in File Explorer — point an area at that.
 
 ### What a host can see
 
@@ -587,7 +706,9 @@ whole codebase makes six network calls, all to `./api/*` on the optional sync
 server, and the CSP — `connect-src 'self' http://127.0.0.1:* http://localhost:*`
 — blocks every other destination, including a server address typed by hand
 unless it is localhost. No analytics, no error reporting, no remote font or
-script.
+script. The one way out is `/api/calendar` on your own `serve.py`, which
+fetches the calendar links you added. It only fetches https links to public
+addresses, and passes back nothing but iCalendar files.
 
 A host does see the ordinary web-server trail: your IP, the time, your browser,
 and which files you asked for. Not one task. Harmless for a work
@@ -622,7 +743,7 @@ These get confused easily, so plainly:
 live, as you type.
 
 **The vault file is a courier, not a home.** One markdown file holding a copy of
-the whole space, used only to reach a device that cannot open a folder — which
+the whole area, used only to reach a device that cannot open a folder — which
 means every phone. Linking one does not change where your files live, and a page
 the phone sends back lands as its own `.md` file in the folder.
 
@@ -632,7 +753,7 @@ recognises it, refuses to read it as a page, and says so.
 ### The courier in practice
 
 - **Desktop Chrome / Edge**: *Link vault file* once and the clicking is over. It
-  merges when the space opens, merges again when you come back to the tab, and
+  merges when the area opens, merges again when you come back to the tab, and
   writes back about a minute after you stop typing — never mid-edit, and quietly
   unless it brought something in. *Sync now* forces it; *Sync by itself* turns it
   off. Needs a durable file handle, so it is desktop-only.
@@ -700,7 +821,7 @@ Tailscale Funnel routes by TLS server name *without* terminating, so it moves
 bytes it cannot read — a different trust position from a CDN that decrypts your
 traffic in order to serve it.
 
-A server space **re-reads when you come back to the app**: it sends yours up
+A server area **re-reads when you come back to the app**: it sends yours up
 first and only re-reads if that succeeded, because the server is then
 authoritative for everything including deletions. If the send failed the server
 is behind you, so it leaves well alone and retries on a widening interval.
@@ -744,7 +865,7 @@ that turns out to be unreachable. How much it keeps depends on the backend:
 ### Starting over
 
 **Vault & sync → Start afresh** empties this browser's copy of GroupToDo: every
-space held in browser storage, the list of spaces, your name, colours and
+area held in browser storage, the list of areas, your name, colours and
 timezone, the linked file and server address, and the offline copy. It deletes
 the `grouptodo` IndexedDB database, removes the `gtd.*` keys from
 localStorage, drops the service worker's caches, unregisters the service
@@ -765,7 +886,7 @@ server. Safe to drop onto a file share, an intranet or a managed laptop.
 
 ## The vault
 
-Each space is a vault with this shape, in its own folder:
+Each area is a vault with this shape, in its own folder:
 
 ```
 journals/kenneth/2026-10-05.md   one file per person per day
@@ -774,7 +895,7 @@ pages/
                               _/Purpose.md  (H5)   _/Vision.md  (H4)
   0/  1/  2/  3/            project status: completed, active, someday, waiting
   8/                        routines, lists  -> [[8/Onboard new customer]]
-  a/                        areas of focus   -> [[a/Health]]       (H2)
+  a/                        responsibilities -> [[a/Health]]       (H2)
   g/                        goals            -> [[g/Debt cleared]] (H3)
   c/                        contexts         -> [[c/phone]]
   p/  o/                    people, organisations
@@ -785,8 +906,19 @@ pages/
 
 Listed in the vault's own order: `_`, `0`, `1`, `2`, `3`, then `8`.
 
+**Every folder explains itself.** In a folder or server area, GroupToDo puts one
+small guide in each folder, named for what the letter stands for:
+`pages/o/_o_for Organisations.md`, `pages/p/_p_for People.md`,
+`pages/1/_1_for Active projects.md` and so on, plus
+`_GroupToDo_for this folder.md` at the top. The leading underscore sorts it
+first in Explorer. Each one says what goes in that folder, how the folders work
+together (the folder is the kind of page and the start of its link) and how
+names, dates and tags are linked as you type. The app writes them, refreshes
+them when the wording changes, and never reads one as a page. Browser storage
+gets none, because there is no folder to look at.
+
 Naming yourself creates `pages/p/<Your Name>.md` with `member:: true`, which is
-what tells everybody else in the space that you exist. Changing your name later
+what tells everybody else in the area that you exist. Changing your name later
 takes your things with it: the person page, your journal folder and any tasks
 assigned to you all move across, while `by::` and `done_by::` stay as written —
 those record who did something at the time, not who to chase now.
@@ -813,7 +945,7 @@ updated:: 2026-10-05T09:12:00Z
   Added:: [[2026-09-10]] - [[2026-09-12]] = 2 days
 ```
 
-`assigned::` is who is doing it; absent means you. Somebody in the space keeps it
+`assigned::` is who is doing it; absent means you. Somebody in the area keeps it
 a live task in their name and puts it in your *Waiting for*; anybody else makes
 it a `WAIT`.
 
@@ -870,7 +1002,7 @@ each one can be quietened for a week.
 - **Weekly review** only becomes due once a week of actual use has passed.
 - **Stuck projects**: active, with nothing actionable left. The classic trap.
 - **Waiting too long**: a `WAIT` older than `CFG.waitFollowUpDays` (14).
-- **People to send a check-in to**: somebody outside the space owes you
+- **People to send a check-in to**: somebody outside the area owes you
   something you have never asked about, or asked about more than
   `CFG.waitFollowUpDays` ago. Clicking it opens the sheet for them.
 - **Blocked projects**: a project whose `depends_on::` prerequisite is still
@@ -890,7 +1022,7 @@ each one can be quietened for a week.
 On a line: `Enter` new line, `Tab` takes a suggestion or indents, `Shift-Tab`
 outdents, `Ctrl-Enter` cycles the state, `Alt+T` task or note, `Alt+1` make it a
 project, `Alt+D` `Alt+C` `Alt+P` `Alt+O` `Alt+J` `Alt+R` due, context, person,
-organisation, project and repeat, `Alt+S` move it to another space.
+organisation, project and repeat, `Alt+S` move it to another area.
 
 ## What it does about the obvious risks
 
@@ -908,8 +1040,9 @@ quarter of a million DOM nodes. Rows are drawn 100 at a time and project
 sections 100 at a time, with the headings still showing true totals: 160ms and
 3,400 nodes at the same twenty thousand. The board draws 100 cards a column (12
 on a phone, where they are stacked and you would otherwise scroll past the first
-column to reach the second), and the graph draws the 200 best-connected pages
-and says how many it left out — past that it stops being a picture of anything.
+column to reach the second), and the graph draws the 500 best-connected pages
+of what its filters leave in, says how many it left out, and draws the rest
+on *Show more* or *Show all*.
 
 Every rationed list ends in the same two buttons: **Show 100 more · 400 below**,
 and **Show all 500**. The cap is there because drawing everything was slow, not
@@ -930,11 +1063,11 @@ per item, which cost 146ms a draw on a big vault. Now 6.7ms.
   and fixable, never silent loss.
 - **Deleting a single task does not propagate** — only whole-page deletes carry
   tombstones.
-- **Spaces are separated, not secured.** Anyone who can open a space's folder or
+- **Areas are separated, not secured.** Anyone who can open an area's folder or
   file sees all of it. No password, nothing encrypted.
 - **The sync server is one shared password, not accounts.** No per-person access,
   no audit beyond the `by::` stamps.
-- **A server space re-reads on return, not continuously.** No polling, no push.
+- **A server area re-reads on return, not continuously.** No polling, no push.
 - **No phone browser can write into a folder you choose.**
 - **The service worker needs a URL**; a downloaded file cannot register one.
 - **A document library cannot host the app** — see above.
@@ -952,7 +1085,7 @@ per item, which cost 146ms a draw on a big vault. Now 6.7ms.
 - **A profile picture is bytes in the vault.** 24KB of base64 per person, in
   plain sight in the markdown. Small, but not nothing on a big team.
 - **Last seen has an hour's resolution** and only updates when somebody opens
-  the space, so it says "has this person been around", not "are they online".
+  the area, so it says "has this person been around", not "are they online".
 - **Undo is this device, this session.** It is a five-minute grace period, not
   history: reload the page and the stack is gone.
 - **Chat read state is per device.** A new device shows the whole thread as
@@ -960,9 +1093,9 @@ per item, which cost 146ms a draw on a big vault. Now 6.7ms.
 - **No live calendar feed**, by choice — see above. Calendar entries are a
   snapshot taken when you press the button; changing the date later does not
   update anything already in your calendar.
-- **Notifications arrive on opening the space**, not while it is closed. There is
+- **Notifications arrive on opening the area**, not while it is closed. There is
   no server to push one, and nothing is emailed.
 - **An invite cannot carry a folder.** Browsers forbid transferring a directory
-  handle, so a folder-backed space needs the folder shared separately and one
+  handle, so a folder-backed area needs the folder shared separately and one
   button pressed at the other end.
 - **Safari and Firefox are untested by me** (see the table above).
