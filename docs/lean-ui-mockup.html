@@ -367,9 +367,48 @@ body.is-dragging{user-select:none;cursor:grabbing}
 .ref ul{margin:4px 0 0;padding-left:28px;font-size:14px}
 .ref .via{font:12px ui-monospace,monospace;color:var(--muted);margin:4px 0 0 18px}
 
-/* Solitaire */
-.sol{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:900px;margin:0 auto}
-.slot{border:2px dashed var(--line);border-radius:12px;padding:12px;min-height:118px;background:var(--panel);display:flex;flex-direction:column;gap:7px;transition:background .12s;cursor:pointer}
+/* Solitaire: six boxes on top, and under them what comes first, the card and its status.
+   Every box is a playing card, 5 wide to 7 tall. */
+.sol{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;max-width:max(600px,calc((100vh - 230px) * 30 / 14 + 70px));margin:0 auto}
+.sol>*{grid-column:span 2}
+.sol>:nth-child(7){grid-column:4 / span 2}
+.slot{border:2px dashed var(--line);border-radius:12px;padding:10px;background:var(--panel);display:flex;flex-direction:column;gap:7px;cursor:pointer;
+  aspect-ratio:5/7;overflow-y:auto;min-width:0;min-height:0;box-sizing:border-box;position:relative;transition:transform 180ms cubic-bezier(.2,.8,.2,1),box-shadow 180ms}
+@media (max-width:760px){ .sol{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-width:none} .sol>*,.sol>:nth-child(7){grid-column:auto}
+  .sol .solcard{grid-column:1 / -1;order:-1;justify-self:center;width:min(250px,100%)} }
+/* Dragging the card: only the box you aim at grows, around the pointer, and the option nearest the pointer grows inside it */
+.sol .slot.solzoom{transform:scale(1.45);z-index:50;border-style:solid;border-color:var(--accent);overflow:visible;box-shadow:0 22px 60px rgba(0,0,0,.45),0 0 0 1px var(--accent)}
+.sol .slot .chip,.sol .slot .datepick,.sol .slot form,.sol .slot [data-solpick]{transition:transform 120ms cubic-bezier(.2,.8,.2,1),box-shadow 120ms}
+.sol .slot .solmag{transform:scale(1.35);position:relative;z-index:3;border-color:var(--accent);color:var(--accent);background:var(--accent-soft);
+  box-shadow:0 0 0 2px var(--accent),0 0 16px 3px color-mix(in srgb,var(--accent) 50%,transparent)}
+.sol .slot .solnear{transform:scale(1.1);position:relative;z-index:2}
+.sol .slot form.solmag{transform:scale(1.08);border-radius:9px}
+.sol .slot form.solnear{transform:none}
+.sol .slot.soltype::after{content:"+ Drop to type";position:absolute;inset:6px;display:flex;align-items:center;justify-content:center;border:2px dashed var(--accent);border-radius:9px;
+  background:color-mix(in srgb,var(--accent-soft) 94%,transparent);color:var(--accent);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:13px;pointer-events:none;z-index:4}
+.solghost{position:fixed;pointer-events:none;z-index:40;margin:0;opacity:.8}
+.solarrow{position:fixed;left:0;top:0;width:100vw;height:100vh;pointer-events:none;z-index:95;overflow:visible}
+.solarrow-lbl{position:fixed;z-index:96;pointer-events:none;background:var(--accent);color:#fff;font-size:12.5px;font-weight:650;padding:3px 10px;border-radius:999px;white-space:nowrap;box-shadow:var(--shadow);transform:translate(-50%,-50%)}
+.slotsuggest{display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--muted)}
+.slotsuggest .opts .chip{border-style:dashed}
+.slotsuggest .say{font-size:11.5px}
+/* What a project is part of, on its own line above the title */
+.parentline{display:flex;gap:5px;align-items:baseline;flex-wrap:wrap;font-size:12px;line-height:1.3;color:var(--muted);margin:0 0 2px;min-width:0}
+.parentline .pl{color:var(--ink);opacity:.8;cursor:pointer}
+.parentline .pl:hover{color:var(--accent);text-decoration:underline;opacity:1}
+/* Ask for an update: the round trip */
+.askrow{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line)}
+.askrow input{margin-top:3px}
+.askrow .meta{margin:2px 0 0}
+.askfile{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.askfile .ic{font-size:26px}
+.drawer .dbtns{display:flex;gap:8px;flex-wrap:wrap}
+.drawer .dbtns button,.drawer .dbtns a{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:7px 12px;font-size:13.5px;text-decoration:none;cursor:pointer}
+.drawer .dbtns .go{background:var(--accent);border-color:var(--accent);color:#fff}
+.drawer label.f{display:block;font-size:12px;color:var(--muted);margin:4px 0 3px}
+.drawer input.f,.drawer textarea.f{width:100%;font:inherit;font-size:13.5px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 9px;box-sizing:border-box}
+.drawer textarea.f{min-height:190px;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+.tag.reply{background:var(--ok-soft);color:var(--ok);border-color:transparent}
 .slot:focus{outline:2px solid var(--accent);outline-offset:2px}
 .slot .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .slot .lbl .sp{text-transform:none;letter-spacing:0;font-size:11px}
@@ -389,14 +428,17 @@ body.is-dragging{user-select:none;cursor:grabbing}
 .datepick{position:relative;display:inline-flex}
 .datepick button{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:1px 9px;font-size:13px}
 .datepick input{position:absolute;inset:0;opacity:0;pointer-events:none;width:100%}
-.solcard{background:var(--panel);border:2px solid var(--ink);border-radius:14px;padding:14px;box-shadow:var(--shadow);cursor:grab;touch-action:none;user-select:none;display:flex;flex-direction:column;gap:6px;min-height:118px}
+.solcard{background:var(--panel);border:2px solid var(--ink);border-radius:14px;padding:12px;box-shadow:var(--shadow);cursor:grab;touch-action:none;user-select:none;display:flex;flex-direction:column;gap:6px;
+  aspect-ratio:5/7;box-sizing:border-box;overflow-y:auto;min-width:0}
+.solcard.dragging{opacity:.3}
+.solcard:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
 .solcard h3{margin:0;font-size:17px}
 .solcard .meta{margin:0}
 .solcard .prog{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:auto}
 .solcard .prog i{display:block;height:100%;background:var(--ok);transition:width .2s}
 .solcard.won{border-color:var(--ok);cursor:default}
 .solcard .primary{border:0;background:var(--ok);color:#fff;border-radius:8px;padding:6px 12px;font-weight:600}
-.solbar{display:flex;gap:10px;align-items:center;max-width:900px;margin:0 auto 14px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.solbar{display:flex;gap:10px;align-items:center;margin:0 auto 14px;font-size:13px;color:var(--muted);flex-wrap:wrap}
 .solbar .textbtn{margin-left:auto}
 
 /* Drawer */
@@ -606,6 +648,16 @@ body.is-dragging{user-select:none;cursor:grabbing}
   <ul>
     <li>Five steps, about fifteen minutes. The projects step is played as solitaire: one project at a time, stalest first.</li>
     <li>Every field shows its options, taken from the project's own space. Click one, or drag the card onto it. Add a missing area or organisation straight from the field.</li>
+    <li>While you drag, only the box you aim at grows, around the pointer, so the option under it stays put. Inside it the nearest option grows, and an arrow from the card says what letting go will do.</li>
+    <li>Saying the status deals the next card. Done when offers the project's name: accept it, edit it, or write your own.</li>
+    <li>Keys: each numpad key opens the box in the same place on the table (7 8 9 and 4 5 6 the top row, 1 Comes after, 2 the card, 3 the status). The arrows move between options inside it, Enter takes one, 1 to 5 set the status, Esc goes back to the card, and Shift+→ flings the card on as reviewed.</li>
+    <li>A project that is part of another shows its parent on a line above its title.</li>
+  </ul>
+
+  <h3>Waiting for</h3>
+  <ul>
+    <li>Somebody outside the space gets <i>Ask for an update</i>: tick what to ask about and the app makes one HTML file to attach to a mail. They tick what is done and send it back, with no account.</li>
+    <li>Paste or import their reply and each answer lands on its own task: done is done, a note sits on the task.</li>
   </ul>
 
   <h3>Views</h3>
@@ -668,7 +720,7 @@ const STATUS = {
 const PROJECTS = {
   rollup:{name:"Q4 rollup",space:"work",status:"active",orgs:["hq"],people:["ola","mia"],area:"fin",outcome:"The board has signed off the Q4 numbers",deadline:20,touched:1,
     body:["Board meets 4 November. The draft goes out a week before.","Follow the [[Board pack checklist]]."]},
-  survey:{name:"Site survey",space:"work",status:"active",orgs:["hq"],people:["ola"],area:"fac",outcome:"We know which floor fits",deadline:7,touched:3,
+  survey:{name:"Site survey",space:"work",status:"active",orgs:["hq"],people:["ola"],area:"fac",outcome:"We know which floor fits",deadline:7,touched:3,parent:"office",
     body:["Two floors to compare: 3rd and 5th."]},
   office:{name:"Office move",space:"work",status:"active",orgs:["hq"],people:["sara"],area:"fac",blockedBy:"survey",outcome:"Everyone works from the new floor",touched:12,
     body:["Landlord prefers a five year lease. See [[Lease notes]].","Movers can do two weekends in January."]},
@@ -676,7 +728,7 @@ const PROJECTS = {
     body:["Start dates 2 and 9 November."]},
   web:{name:"Nordlys website",space:"work",status:"active",orgs:["nordlys"],people:["per"],area:"cli",outcome:"New site live before Christmas",deadline:60,touched:6,
     body:["Per needs the sitemap before he can quote."]},
-  insure:{name:"Insurance renewal",space:"work",status:"active",orgs:["broker"],people:[],area:null,outcome:"",touched:21,body:[]},
+  insure:{name:"Insurance renewal",space:"work",status:"active",orgs:["broker"],people:[],area:null,outcome:"",touched:21,parent:"rollup",body:[]},
   policy:{name:"Hybrid work policy",space:"work",status:"waiting",orgs:["hq"],people:[],area:"ppl",outcome:"",touched:18,statusAgo:18,
     body:["Waiting for the management group to read the draft.","Background in [[Hybrid work thoughts]]."]},
   kitchen:{name:"Paint the kitchen",space:"home",status:"active",orgs:[],people:[],area:"life",outcome:"Walls done before Christmas",touched:9,
@@ -902,6 +954,7 @@ function tags(t,opt={}){
   if(t.ctx) g.push(`<span>${ctxLabel(t.ctx)}</span>`);
   if(t.repeat) g.push(`<span>↻ ${t.repeat}</span>`);
   if(thread[t.id]) g.push(`<span>💬 ${thread[t.id].length}</span>`);
+  if(t.reply) g.push(`<span class="tag reply" title="From the check-in sheet">${esc(first(t.who))}: ${esc(t.reply)}</span>`);
   if(!opt.noSpace) g.push(spTag(spaceOfTask(t)));
   return g.join("");
 }
@@ -1162,7 +1215,8 @@ V.waiting = () => {
   <div class="chips">${chip("Overdue",f.overdue,'data-t="waiting.overdue"')}${chip("Not asked yet",f.notAsked,'data-t="waiting.notAsked"')}</div>`;
   const by={}; w.forEach(t=>(by[t.who]=by[t.who]||[]).push(t));
   const askLabel = k => PEOPLE[k].member?"Nudge":"Ask for an update";
-  const sub = k => PEOPLE[k].asked?`asked ${PEOPLE[k].asked}d ago`:PEOPLE[k].member?"in the space":"never asked";
+  const sub = k => PEOPLE[k].answered!=null?(PEOPLE[k].answered===0?"answered today":`answered ${PEOPLE[k].answered}d ago`)
+    :PEOPLE[k].asked===0?"asked today":PEOPLE[k].asked?`asked ${PEOPLE[k].asked}d ago`:PEOPLE[k].member?"in the space":"never asked";
   if(board){
     const cols=PPL().filter(k=>k!=="me");
     return h+`<div class="boardscroll"><div class="board">`+cols.map(k=>`<div class="col" data-drop="who:${k}">
@@ -1555,7 +1609,9 @@ const FIELDS = [
     val:p=>p.ans.status?STATUS[p.status].label:"",filled:p=>!!p.ans.status}
 ];
 const FIELD = Object.fromEntries(FIELDS.map(f=>[f.k,f]));
-const GRID = ["orgs","people","area","next","CARD","outcome","deadline","after","status"];
+const GRID = ["orgs","people","area","next","outcome","deadline","after","CARD","status"];
+/* The line above a project's title that says what it is part of. */
+const parentLine = k => { const up=PROJECTS[k]&&PROJECTS[k].parent; return up&&PROJECTS[up]?`<div class="parentline" title="Part of ${esc(PROJECTS[up].name)}">↑ <span class="pl" data-proj="${up}">${esc(PROJECTS[up].name)}</span></div>`:""; };
 
 V.reviewProjects = () => {
   if(!sol.order) sol.order=solOrder();
@@ -1571,12 +1627,12 @@ V.reviewProjects = () => {
   }
   const k=sol.order[sol.i], p=PROJECTS[k];
   const done=FIELDS.filter(f=>f.filled(p,k)).length, won=done===FIELDS.length;
-  h+=`<div class="solbar"><span>Card ${sol.i+1} of ${sol.order.length} · stalest first</span><span>Drag the card straight onto an option, or click one.</span><button class="textbtn" data-solskip>Skip this one ›</button></div><div class="sol">`;
+  h+=`<div class="solbar"><span>Card ${sol.i+1} of ${sol.order.length} · stalest first</span><span>Drag the card onto an option, or click one. Keys: numpad 7 8 9 / 4 5 6 / 1 2 3 open the box in that place, arrows move, Enter takes, Shift+→ next card.</span><button class="textbtn" data-solskip>Skip this one ›</button></div><div class="sol">`;
   GRID.forEach(g=>{
     if(g==="CARD"){
       h+= won
-        ? `<div class="solcard won"><h3>${esc(p.name)}</h3><div class="meta"><span class="tag ok">Reviewed</span>${spBadge(p.space)}</div><p style="margin:0;font-size:13px;color:var(--muted)">All ${FIELDS.length} fields are filled.</p><button class="primary" data-solnext>Next card ›</button></div>`
-        : `<div class="solcard" data-drag="sol:${k}" aria-label="Project card. Drag onto a field."><h3>${esc(p.name)}</h3>
+        ? `<div class="solcard won">${parentLine(k)}<h3>${esc(p.name)}</h3><div class="meta"><span class="tag ok">Reviewed</span>${spBadge(p.space)}</div><p style="margin:0;font-size:13px;color:var(--muted)">All ${FIELDS.length} fields are filled.</p><button class="primary" data-solnext>Next card ›</button></div>`
+        : `<div class="solcard" data-drag="sol:${k}" tabindex="0" aria-label="Project card. Drag onto a field, or use the arrow keys.">${parentLine(k)}<h3>${esc(p.name)}</h3>
             <div class="meta">${spBadge(p.space)}<span class="tag">${STATUS[p.status].dir}/ ${STATUS[p.status].label}</span></div>
             <div class="meta"><span>untouched for ${p.touched} days</span><span>${plural(projOpen(k).length,"open task")}</span></div>
             <div class="meta">${projTags(k,true)}</div>
@@ -1594,7 +1650,12 @@ V.reviewProjects = () => {
 function picker(f,p,k){
   /* a missing area or organisation can be made right here, as a page in the card's own space */
   const addNew = f.add ? `<form class="newopt" data-padd="${f.k}"><input placeholder="＋ ${f.add}" aria-label="${f.add} in ${esc(SPACES[p.space].name)}"></form>` : "";
-  if(f.type==="text") return `<form data-ptext="${f.k}"><input placeholder="${f.ph}" value="${f.k==="outcome"?esc(p.outcome):""}" aria-label="${f.label}"><button class="mini">${f.k==="outcome"&&p.outcome?"Save":"Add"}</button></form>`;
+  if(f.type==="text"){
+    const offer = f.k==="outcome" && !p.outcome;
+    let h=`<form data-ptext="${f.k}" ${offer?'data-solpick="write"':""}><input placeholder="${f.ph}" value="${f.k==="outcome"?esc(p.outcome):""}" aria-label="${f.label}"><button class="mini">${f.k==="outcome"&&p.outcome?"Save":"Add"}</button></form>`;
+    if(offer) h+=`<div class="slotsuggest"><span>Suggestion: “${esc(p.name)}”</span><div class="opts"><button class="chip" data-solpick="accept" title="Save the suggestion as it is">✓ Accept</button><button class="chip" data-solpick="edit" title="Put it in the box to change first">✎ Edit</button></div><span class="say">or write your own in the box</span></div>`;
+    return h;
+  }
   if(f.type==="multi"){
     const cur=p[f.k];
     return `<div class="opts">${f.opts(k).map(([v,l])=>`<button class="chip" data-mtog="${f.k}=${v}" data-drop="opt:${f.k}~${v}~mtog" aria-pressed="${cur.includes(v)}">${esc(l)}</button>`).join("")}
@@ -1617,7 +1678,8 @@ function solApply(field,value){
     else if(dependsOn(value,k)){ toast(`${PROJECTS[value].name} already waits on this one. That would be a loop.`,false); return; }
     else p.blockedBy=value;
   }
-  if(field==="status"){ p.status=value; p.ans.status=true; }
+  if(field==="status"){ p.status=value; p.ans.status=true; p.touched=0;
+    toast(`${p.name}: ${STATUS[value].label}. Next card.`,false); sol.i++; sol.focus=null; render(); return; }
   if(field==="outcome") p.outcome=value;
   if(field==="next") addTask({id:Date.now(),t:value,p:k,who:"me",state:"todo",age:0});
   solAfter(field);
@@ -2007,7 +2069,8 @@ document.addEventListener("click",e=>{
   /* clicking away from the line being edited saves it */
   if(edit && !el.closest(".jl.editing")){ commitEdit(); edit=null; setTimeout(()=>{ if(!edit) render(); },0); }
   const ask0=el.closest("[data-ask]"); if(ask0){const p=PEOPLE[ask0.dataset.ask];
-    toast(p.member?`Pick a task to hand to ${first(ask0.dataset.ask)}`:`Check-in sheet ready for ${p.name}. Attach it to a mail.`,false);return;}
+    if(!p.member){ askDrawer(ask0.dataset.ask); return; }
+    toast(`Pick a task to hand to ${first(ask0.dataset.ask)}`,false);return;}
   const wl=el.closest("[data-wl]"); if(wl){e.preventDefault();fullPage(wl.dataset.wl);return;}
   /* the outline */
   const sec=el.closest("[data-sec]"); if(sec){const k=sec.dataset.sec; secFold.has(k)?secFold.delete(k):secFold.add(k); render(); return;}
@@ -2039,6 +2102,7 @@ document.addEventListener("click",e=>{
   const mn=el.closest("[data-mnone]"); if(mn){const f=mn.dataset.mnone,p=PROJECTS[sol.order[sol.i]]; p[f]=[]; p.ans[f]=true; solAfter(f); return;}
   const dp=el.closest("[data-datepick]"); if(dp){const inp=dp.parentNode.querySelector("input"); try{inp.showPicker()}catch(_){inp.style.opacity=1;inp.style.pointerEvents="auto";inp.style.position="static";inp.focus()} return;}
   if(el.closest("[data-solnext]")){sol.i++;sol.focus=null;render();return;}
+  const sp=el.closest("[data-solpick]"); if(sp&&sp.dataset.solpick!=="write"){ solPickAction(sp.dataset.solpick); return; }
   if(el.closest("[data-solskip]")){sol.order.push(sol.order.splice(sol.i,1)[0]);sol.focus=null;render();toast("Skipped. It comes round again at the end.",false);return;}
   if(el.closest("[data-solrestart]")){sol={order:solOrder(),i:0,focus:null};Object.values(PROJECTS).forEach(p=>{p.ans={};p.reviewedNow=false});render();return;}
   const slot=el.closest("[data-slot]"); if(slot){ if(!el.closest("form,.opts")){ sol.focus=slot.dataset.slot; sol.justDropped=true; render(); } return; }
@@ -2072,7 +2136,8 @@ document.addEventListener("click",e=>{
   const ft=el.closest("[data-t]"); if(ft){const [v,k]=ft.dataset.t.split(".");F[v][k]=!F[v][k];render();return;}
   const op=el.closest("[data-open]"); if(op){e.preventDefault();drawer(+op.dataset.open);return;}
   const ask=el.closest("[data-ask]"); if(ask){e.stopPropagation();const p=PEOPLE[ask.dataset.ask];
-    toast(p.member?`Pick a task to hand to ${first(ask.dataset.ask)}`:`Check-in sheet ready for ${p.name}. Attach it to a mail.`,false);return;}
+    if(!p.member){ askDrawer(ask.dataset.ask); return; }
+    toast(`Pick a task to hand to ${first(ask.dataset.ask)}`,false);return;}
   if(el.id==="newsX"){newsOpen=false;render();toast("Dismissed. History on Today keeps it, and everything before it.",false);return;}
   if(el.id==="copyReport"){try{navigator.clipboard.writeText(reportText()).catch(()=>{})}catch(_){} toast("Report copied, grouped by project. Paste it into your status mail.",false);return;}
   if(el.closest("[data-copy]")){toast("Link copied. It opens this for anyone in the space.",false);return;}
@@ -2184,6 +2249,326 @@ document.addEventListener("focusin",e=>{
 });
 /* keep the caret in the line while you click its menu */
 document.addEventListener("mousedown",e=>{ if(e.target.closest(".fly")&&!e.target.matches("input")) e.preventDefault(); });
+/* ================= the solitaire under the card you are moving =================
+   The same as the app: only the box you aim at grows (1.45x), around the
+   pointer so the option under it does not move, and holds still once the
+   pointer is over it. Inside it the option nearest the pointer grows (1.35x),
+   its neighbours a little, and a drop within 12px of it lands on it. An arrow
+   from the card says what letting go will do. A zoomed box reaches down over
+   the box below to show every option, without moving anything else.
+   Keys: each numpad key opens the box in the same place on the table (7 8 9
+   / 4 5 6 the top row, 1 Comes after, 2 the card, 3 the status); Up, Left and
+   Right from the card open Organisations, Comes after and the status; inside
+   a box the arrows move between options; Enter or Space takes one; 1-5 set
+   the status; Esc goes back to the card; Shift+Right flings the card on as
+   reviewed. */
+const SZ = 1.45, SLEAD = 60, SSNAP = 12;
+const STOP = ["orgs","people","area","next","outcome","deadline"], STYPE = ["next","outcome"];
+let SD = null, SK = null, SARROW = null;
+const solView = () => loc.view==="review" && loc.sub==="projects" && (loc.rv||"solitaire")==="solitaire" && !!document.querySelector(".sol");
+const sBoxes = () => [...document.querySelectorAll(".sol .slot[data-slot]")];
+const sBox = k => k ? document.querySelector(`.sol .slot[data-slot="${k}"]`) : null;
+const sCard = () => document.querySelector(".sol .solcard");
+const sKey = b => b.dataset.slot;
+function sPills(box){
+  if(!box) return [];
+  if(STYPE.includes(sKey(box))){ const p=[...box.querySelectorAll("[data-solpick]")]; return p.length?p:[box]; }
+  const p=[...box.querySelectorAll('[data-drop^="opt:"]')];
+  return p.length?p:[box];
+}
+const sMid = r => [r.left+r.width/2, r.top+r.height/2];
+const sDist = (r,x,y,pad=0) => Math.hypot(Math.max(r.left-pad-x,0,x-r.right-pad), Math.max(r.top-pad-y,0,y-r.bottom-pad));
+const sIn = (r,x,y) => x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;
+function sBase(box){
+  const r=box.getBoundingClientRect(), t=getComputedStyle(box).transform;
+  const sc=t&&t!=="none"?new DOMMatrixReadOnly(t).a||1:1;
+  const w=r.width/sc, h=r.height/sc, fx=+(box.dataset.ox||.5), fy=+(box.dataset.oy||.5);
+  const left=r.left+fx*w*(sc-1), top=r.top+fy*h*(sc-1);
+  return {left,top,right:left+w,bottom:top+h,width:w,height:h};
+}
+const sOrigin = (box,fx,fy) => { box.dataset.ox=fx; box.dataset.oy=fy; box.style.transformOrigin=`${fx*100}% ${fy*100}%`; };
+function sFit(p,start,len,min,max,sc){
+  const c=(v,lo,hi)=>Math.min(Math.max(v,lo),hi), f=c((p-start)/len,0,1);
+  const hi=(start-min)/(len*(sc-1)), lo=(start+len*sc-max)/(len*(sc-1));
+  return c(lo<=hi?c(f,lo,hi):hi,0,1);
+}
+function sAnchor(box,x,y){
+  const b=sBase(box), a=($("#content")||document.body).getBoundingClientRect();
+  const at=[sFit(x,b.left,b.width,a.left+4,a.right-4,SZ), sFit(y,b.top,b.height,a.top+4,a.bottom-4,SZ)];
+  sOrigin(box,...at); return at;
+}
+/* Each box grows from its own edge when the keyboard opens it. */
+function sDefaults(){
+  sBoxes().forEach(b=>{ const i=GRID.indexOf(sKey(b)); b.dataset.dox=i===0?0:i===5?1:.5; b.dataset.doy=i<6?0:1; if(!b.classList.contains("solzoom")) sOrigin(b,+b.dataset.dox,+b.dataset.doy); });
+}
+function sTarget(x,y,vx,vy,cur){
+  if(cur&&cur.isConnected&&sIn(cur.getBoundingClientRect(),x,y)) return cur;
+  const boxes=sBoxes();
+  for(const b of boxes) if(sIn(sBase(b),x,y)) return b;
+  if(Math.hypot(vx,vy)<.5) return null;
+  let best=null, bd=Infinity;
+  for(const b of boxes){ const r=sBase(b), d=sDist(r,x,y); if(d>SLEAD) continue;
+    const [cx,cy]=sMid(r); if((cx-x)*vx+(cy-y)*vy<=0) continue; if(d<bd){bd=d;best=b;} }
+  return best;
+}
+function sNearest(box,x,y){ let best=null,bd=Infinity; for(const p of sPills(box)){ const d=sDist(p.getBoundingClientRect(),x,y); if(d<bd){bd=d;best=p;} } return best; }
+function sGrow(box){
+  if(box.dataset.grown) return; const need=box.scrollHeight-box.clientHeight; if(need<=1) return;
+  box.dataset.grown="1"; Object.assign(box.style,{width:box.offsetWidth+"px",height:box.offsetHeight+need+"px",marginBottom:-need+"px"});
+}
+function sShrink(box){ if(!box.dataset.grown) return; delete box.dataset.grown; Object.assign(box.style,{width:"",height:"",marginBottom:""}); }
+function sPaint(k,pill,{quiet=false,typing=false,x=null,y=null}={}){
+  const box=sBox(k);
+  for(const b of document.querySelectorAll(".sol .solzoom,.sol .soltype,.sol [data-grown]")) if(b!==box){ b.classList.remove("solzoom","soltype"); sShrink(b); }
+  for(const p of document.querySelectorAll(".sol .solmag,.sol .solnear")) if(p!==pill) p.classList.remove("solmag","solnear");
+  if(!box) return;
+  if(quiet) box.style.transition="none";
+  box.classList.add("solzoom"); sGrow(box);
+  box.classList.toggle("soltype", typing&&STYPE.includes(k)&&!box.querySelector("[data-solpick]"));
+  const pills=sPills(box), at=pill?pills.indexOf(pill):-1, br=box.getBoundingClientRect();
+  pills.forEach((p,i)=>{
+    if(p===box) return;
+    const mag=i===at, near=at>=0&&Math.abs(i-at)===1;
+    if((mag||near)&&!p.classList.contains(mag?"solmag":"solnear")){
+      const r=p.getBoundingClientRect(), sc=mag?1.35:1.1;
+      const px=mag&&x!=null?x:r.left+r.width/2, py=mag&&y!=null?y:r.top+r.height/2;
+      p.style.transformOrigin=`${sFit(px,r.left,r.width,br.left+2,br.right-2,sc)*100}% ${sFit(py,r.top,r.height,br.top+2,br.bottom-2,sc)*100}%`;
+    }
+    p.classList.toggle("solmag",mag); p.classList.toggle("solnear",near);
+  });
+  if(quiet){ void box.offsetWidth; box.style.transition=""; }
+}
+function sUnpaint(){
+  document.querySelectorAll(".sol [data-grown]").forEach(sShrink);
+  for(const b of document.querySelectorAll(".sol .solzoom,.sol .soltype,.sol .solmag,.sol .solnear")) b.classList.remove("solzoom","soltype","solmag","solnear");
+  sArrow(null);
+}
+function sWord(box,pill){
+  const k=sKey(box);
+  if(pill.dataset&&pill.dataset.solpick) return pill.dataset.solpick==="write"?"✎ Write":pill.textContent.trim();
+  if(STYPE.includes(k)) return SD?"+ Drop to type":"✎ Write";
+  if(pill===box) return "→ "+FIELD[k].label;
+  const text=pill.textContent.trim().replace(/\s*\(now\)$/,"").replace(/^[^\p{L}\p{N}"(]+/u,"");
+  const [,,ty]=(pill.dataset.drop||"").slice(4).split("~");
+  if(ty==="mtog") return (pill.getAttribute("aria-pressed")==="true"?"− ":"+ ")+text;
+  return "→ "+text;
+}
+function sArrow(from,pill,word){
+  if(!from||!pill||!pill.isConnected){ if(SARROW){SARROW.svg.remove();SARROW.tag.remove();SARROW=null;} return; }
+  if(!SARROW){
+    const NS="http://www.w3.org/2000/svg", svg=document.createElementNS(NS,"svg");
+    svg.setAttribute("class","solarrow"); svg.setAttribute("aria-hidden","true");
+    svg.innerHTML='<defs><marker id="solhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker></defs>'+
+      '<path class="solarrow-line" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="7 5" marker-end="url(#solhead)"/>';
+    const tag=document.createElement("div"); tag.className="solarrow-lbl";
+    document.body.append(svg,tag); SARROW={svg,tag};
+  }
+  const [x1,y1]=sMid(from.getBoundingClientRect()), pr=pill.getBoundingClientRect(), [cx,cy]=sMid(pr), len=Math.hypot(cx-x1,cy-y1)||1;
+  const stop=Math.min(len-4,Math.max(0,len-Math.min(pr.width,pr.height)/2-6)), x2=x1+(cx-x1)*stop/len, y2=y1+(cy-y1)*stop/len;
+  const bend=Math.min(80,len/4), mx=(x1+x2)/2-(y2-y1)/len*bend, my=(y1+y2)/2+(x2-x1)/len*bend;
+  SARROW.svg.querySelector(".solarrow-line").setAttribute("d",`M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}`);
+  SARROW.tag.textContent=word;
+  Object.assign(SARROW.tag.style,{left:(x1+2*mx+x2)/4+"px",top:(y1+2*my+y2)/4+"px"});
+}
+/* Accept saves the project name as the outcome; Edit puts it in the box to change first. */
+function solPickAction(what){
+  const k=sol.order[sol.i], p=PROJECTS[k];
+  if(what==="accept"){ solApply("outcome",p.name); toast(`Done when: “${p.name}”.`,false); return; }
+  if(what==="edit"){ const inp=sBox("outcome")&&sBox("outcome").querySelector("input"); if(inp){ inp.value=p.name; inp.focus(); inp.select(); } return; }
+  const inp=sBox("outcome")&&sBox("outcome").querySelector("input"); if(inp) inp.focus();
+}
+/* What taking a box or one of its options does, by drop or by key. */
+function sTake(box,target){
+  const k=sKey(box), id=sol.order[sol.i];
+  if(target.dataset&&target.dataset.solpick) return solPickAction(target.dataset.solpick);
+  if(STYPE.includes(k)||target===box){ sol.focus=k; sol.justDropped=true; render(); return; }
+  onDrop("sol:"+id, target.dataset.drop);
+}
+function sFling(){
+  const k=sol.order[sol.i], p=PROJECTS[k]; if(!p) return;
+  p.reviewedNow=true; p.touched=0; sol.i++; sol.focus=null; SK=null; sUnpaint(); render();
+  toast(`${p.name} reviewed. reviewed:: 2026-10-15 is on its page. Next card.`,false);
+}
+/* After every redraw the boxes are new: give them their edges, and put the zoom back. */
+const _render = render;
+render = function(){
+  _render();
+  if(!solView()){ SK=null; if(!SD) sArrow(null); return; }
+  sDefaults();
+  if(SD&&SD.ghost){
+    const home=sCard(); if(home){ home.classList.add("dragging"); SD.card=home; }
+    const box=sBox(SD.k);
+    sPaint(SD.k,null,{quiet:true,typing:true});
+    if(box&&SD.at&&SD.ak===SD.k){ const b=sBase(box); sOrigin(box,SD.at[2]/b.width,SD.at[3]/b.height); }
+    SD.pill=box?sNearest(box,SD.x,SD.y):null;
+    sPaint(SD.k,SD.pill,{quiet:true,typing:true});
+    if(SD.pill) sArrow(sCard()||SD.ghost,SD.pill,sWord(box,SD.pill));
+  } else if(SK){ if(sBox(SK.k)) sKbShow(true); else { SK=null; sUnpaint(); } }
+};
+function sAnchorPx(box,x,y){ const b=sBase(box), at=sAnchor(box,x,y); return [...at, at[0]*b.width, at[1]*b.height]; }
+
+/* the card in your hand: 0.85x, 80% opacity, under the enlarged box */
+document.addEventListener("pointerdown",e=>{
+  const card=e.target.closest&&e.target.closest('.sol .solcard[data-drag^="sol:"]');
+  if(!card||e.button>0||e.target.closest("button,input,a")) return;
+  e.stopImmediatePropagation();          // the general drag stays out of the solitaire
+  SK=null; sUnpaint();
+  SD={card,sx:e.clientX,sy:e.clientY,x:e.clientX,y:e.clientY,vx:0,vy:0,ghost:null,k:null,pill:null,ak:null,held:false};
+},true);
+document.addEventListener("pointermove",e=>{
+  const d=SD; if(!d) return;
+  const dx=e.clientX-d.sx, dy=e.clientY-d.sy;
+  if(!d.ghost){
+    if(Math.hypot(dx,dy)<6) return;
+    const r=d.card.getBoundingClientRect(); d.ghost=d.card.cloneNode(true); d.ghost.classList.add("solghost"); d.ghost.removeAttribute("data-drag");
+    Object.assign(d.ghost.style,{left:r.left+"px",top:r.top+"px",width:r.width+"px",height:r.height+"px",transformOrigin:`${d.sx-r.left}px ${d.sy-r.top}px`});
+    document.body.append(d.ghost); d.card.classList.add("dragging"); document.body.classList.add("is-dragging");
+  }
+  d.vx=d.vx*.6+(e.clientX-d.x)*.4; d.vy=d.vy*.6+(e.clientY-d.y)*.4; d.x=e.clientX; d.y=e.clientY;
+  d.ghost.style.transform=`translate(${dx}px,${dy}px) scale(.85)`;
+  const box=sTarget(d.x,d.y,d.vx,d.vy,sBox(d.k)), k=box?sKey(box):null;
+  const pill=box&&sIn(box.getBoundingClientRect(),d.x,d.y)?sNearest(box,d.x,d.y):null;
+  if(k!==d.k||pill!==d.pill){ d.k=k; d.pill=pill; sPaint(k,pill,{typing:true,x:d.x,y:d.y}); }
+  /* grows around the pointer on the way in, then holds still while the pointer is over it */
+  if(box){
+    if(k!==d.ak){ d.ak=k; d.held=false; }
+    if(d.held&&!sIn(box.getBoundingClientRect(),d.x,d.y)) d.held=false;
+    if(!d.held){ d.at=sAnchorPx(box,d.x,d.y); d.held=sIn(sBase(box),d.x,d.y); }
+  }
+  if(pill) sArrow(sCard()||d.ghost,pill,sWord(box,pill)); else sArrow(null);
+});
+function sEnd(drop){
+  const d=SD; SD=null; if(!d) return;
+  if(!d.ghost) return;
+  d.card.classList.remove("dragging"); document.body.classList.remove("is-dragging");
+  const box=sBox(d.k), pill=d.pill; sUnpaint();
+  let target=null;
+  if(drop&&box){
+    if(STYPE.includes(d.k)&&!box.querySelector("[data-solpick]")) target=box;
+    else if(pill&&pill!==box&&sDist(pill.getBoundingClientRect(),d.x,d.y,SSNAP)===0) target=pill;
+    else if(sIn(box.getBoundingClientRect(),d.x,d.y)) target=box;
+  }
+  const ghost=d.ghost, now=ghost.style.transform;
+  const deals=target&&target!==box&&d.k==="status";
+  if(deals){ const g=ghost.getBoundingClientRect(), [gx,gy]=sMid(g), [tx,ty]=sMid(target.getBoundingClientRect());
+    ghost.animate([{transform:now,opacity:.8},{transform:`${now} translate(${(tx-gx)/.85}px,${(ty-gy)/.85}px) scale(.15)`,opacity:0}],{duration:240,easing:"cubic-bezier(.4,0,.6,1)",fill:"forwards"}).onfinish=()=>ghost.remove(); }
+  else ghost.animate([{transform:now,opacity:.8},{transform:"translate(0,0) scale(1)",opacity:.25}],{duration:300,easing:"cubic-bezier(.3,1.35,.5,1)",fill:"forwards"}).onfinish=()=>ghost.remove();
+  if(target) sTake(box,target);
+}
+document.addEventListener("pointerup",()=>sEnd(true));
+document.addEventListener("pointercancel",()=>sEnd(false));
+
+/* the keyboard */
+function sKbShow(quiet=false){
+  const box=sBox(SK&&SK.k); if(!box){ sUnpaint(); return; }
+  sOrigin(box,+box.dataset.dox,+box.dataset.doy);
+  const pills=sPills(box), pill=pills[Math.max(0,Math.min(SK.i,pills.length-1))]||null;
+  sPaint(SK.k,pill===box?null:pill,{quiet});
+  const c=sCard(); if(c&&pill) sArrow(c,pill,sWord(box,pill)); else sArrow(null);
+}
+const sKbOpen = k => { if(!sBox(k)) return; SK={k,i:0}; sKbShow(); };
+function sKbStep(dx){ const n=sPills(sBox(SK.k)).length; SK.i=Math.max(0,Math.min(n-1,SK.i+dx)); sKbShow(); }
+function sKbAim(dx,dy){
+  const pills=sPills(sBox(SK.k)); if(pills.length<2) return;
+  const n=Math.hypot(dx,dy), ux=dx/n, uy=dy/n, [cx,cy]=sMid(pills[SK.i].getBoundingClientRect());
+  let best=-1, bd=Infinity;
+  pills.forEach((p,i)=>{ if(i===SK.i) return; const [px,py]=sMid(p.getBoundingClientRect());
+    const along=(px-cx)*ux+(py-cy)*uy, off=Math.abs((px-cx)*uy-(py-cy)*ux); if(along<=4) return;
+    const d=along+off*2.5; if(d<bd){bd=d;best=i;} });
+  if(best>=0){ SK.i=best; sKbShow(); }
+}
+/* Each numpad key is one box, where it sits on the table: 7 8 9 / 4 5 6 the top row, 1 Comes after, 2 the card, 3 the status. */
+const SPAD={Numpad7:"orgs",Numpad8:"people",Numpad9:"area",Numpad4:"next",Numpad5:"outcome",Numpad6:"deadline",Numpad1:"after",Numpad2:"CARD",Numpad3:"status"};
+const sKbClose = () => { SK=null; sUnpaint(); sCard()&&sCard().focus({preventScroll:true}); };
+window.addEventListener("keydown",e=>{
+  if(!solView()||$("#drawer").classList.contains("on")||e.ctrlKey||e.metaKey||e.altKey) return;
+  if(/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+  if(!sol.order||!sol.order[sol.i]) return;
+  const take=()=>{ e.preventDefault(); e.stopImmediatePropagation(); };
+  const key=e.key, to=SPAD[e.code];
+  if(e.shiftKey&&key==="ArrowRight"){ take(); sFling(); return; }
+  if(e.shiftKey) return;
+  if(to){ take(); if(to==="CARD") sKbClose(); else sKbOpen(to); return; }
+  if(!SK){
+    if(key==="ArrowUp"){ take(); sKbOpen("orgs"); }
+    else if(key==="ArrowLeft"){ take(); sKbOpen("after"); }
+    else if(key==="ArrowRight"){ take(); sKbOpen("status"); }
+    return;
+  }
+  if(key==="Escape"){ take(); sKbClose(); return; }
+  /* inside a box the arrows move between its options */
+  if(key==="ArrowLeft"||key==="ArrowRight"){ take(); sKbStep(key==="ArrowLeft"?-1:1); return; }
+  if(key==="ArrowUp"||key==="ArrowDown"){ take(); sKbAim(0,key==="ArrowUp"?-1:1); return; }
+  if(SK.k==="status"&&/^Digit[1-5]$/.test(e.code)){ take(); const box=sBox("status"), p=sPills(box)[+e.code.slice(5)-1]; SK=null; sUnpaint(); if(p) sTake(box,p); return; }
+  if(key==="Enter"||key===" "){
+    take(); const box=sBox(SK.k), p=sPills(box)[SK.i]; SK=null; sUnpaint(); if(p) sTake(box,p);
+  }
+},true);
+
+/* ================= ask somebody outside the space for an update =================
+   The round trip the app does: pick what to ask about, make one HTML file
+   they tick and send back, and bring their answers in. */
+function askDrawer(who){
+  const P=PEOPLE[who], owed=lists.waiting().filter(t=>t.who===who);
+  if(!owed.length){ toast(`Nothing open with ${P.name}'s name on it.`,false); return; }
+  const pick=new Set(owed.map(t=>t.id));
+  const asked=P.asked===0?"asked today":P.asked?`asked ${P.asked}d ago`:"never asked";
+  $("#drawer").innerHTML=`<button class="x" id="dx" aria-label="Close">×</button>
+    <h2>Ask ${esc(P.name)} for an update</h2>
+    <p style="margin:0;color:var(--muted);font-size:14px">${plural(owed.length,"thing")} open with ${esc(first(who))}'s name on it. Tick what to ask about.</p>
+    <div>${owed.map(t=>`<label class="askrow"><input type="checkbox" data-askpick="${t.id}" checked><div><div>${esc(t.t)}</div>
+      <div class="meta">${t.p?`<span>#${esc(PROJECTS[t.p].name)}</span>`:""}<span>open ${t.age}d</span><span>${asked}</span>${t.due!=null?`<span class="tag ${t.due<0?"late":""}">${dayLabel(t.due)}</span>`:""}</div></div></label>`).join("")}</div>
+    <div><label class="f">Your email, where their answers come back to</label><input class="f" type="email" value="kenneth.aar@example.com"></div>
+    <p style="margin:0;color:var(--muted);font-size:13px">One HTML file. ${esc(first(who))} double-clicks it, ticks what is done, writes a note where one helps, and presses one button. Nothing is uploaded and ${esc(first(who))} never needs an account. The file carries these lines and nothing else from your space.</p>
+    <div class="dbtns"><button class="go" id="askmake">Make the sheet</button><button id="askpaste">Paste a reply</button></div>`;
+  showDrawer();
+  $("#drawer").querySelectorAll("[data-askpick]").forEach(c=>c.onchange=()=>{ c.checked?pick.add(+c.dataset.askpick):pick.delete(+c.dataset.askpick); });
+  $("#askmake").onclick=()=>{
+    const chosen=owed.filter(t=>pick.has(t.id));
+    if(!chosen.length){ toast("Pick at least one thing to ask about.",false); return; }
+    P.asked=0; delete P.answered; chosen.forEach(t=>t.askedNow=true); render();
+    askSent(who,chosen);
+  };
+  $("#askpaste").onclick=()=>askPaste(who,owed);
+}
+function askSent(who,chosen){
+  const P=PEOPLE[who], file=`check-in-${P.name.toLowerCase().replace(/\s+/g,"-")}.html`;
+  $("#drawer").innerHTML=`<button class="x" id="dx" aria-label="Close">×</button>
+    <h2>The sheet for ${esc(first(who))} is ready</h2>
+    <div class="askfile"><span class="ic">📄</span><div><b>${file}</b><div class="meta" style="margin:2px 0 0"><span>${plural(chosen.length,"line")}</span><span>works offline, no account</span></div></div></div>
+    <p style="margin:0;color:var(--muted);font-size:14px">Attach it to a mail to ${esc(first(who))}. They tick what is done and press <i>Send back</i>, and the answers come to you as a short reply. ${esc(first(who))}'s line on Waiting for now says <b>asked today</b>.</p>
+    <div class="dbtns"><a href="check-in-sheet-mockup.html" target="_blank" rel="noopener">Open the sheet as ${esc(first(who))} sees it ↗</a></div>
+    <hr style="border:0;border-top:1px solid var(--line);margin:4px 0">
+    <p style="margin:0;font-size:14px"><b>When ${esc(first(who))} answers</b>, paste the reply here, or import the file they saved. It lands on the right tasks by itself.</p>
+    <div class="dbtns"><button class="go" id="askpaste">Paste ${esc(first(who))}'s reply</button></div>`;
+  showDrawer();
+  $("#askpaste").onclick=()=>askPaste(who,chosen);
+}
+function askPaste(who,chosen){
+  const P=PEOPLE[who];
+  /* What the sheet sends back: the lines ticked or not, with a note, and the same answers with ids for the import. */
+  const ans=chosen.map((t,i)=>({t, done:i===0, note:i===0?"":"The landlord sends it Thursday, I will forward it then"}));
+  const text=[`Reply from ${P.name}, 2026-10-15`,"",...ans.map(a=>(a.done?"[x] ":"[ ] ")+a.t.t+(a.note?"  -- "+a.note:"")),"",
+    "<!-- gtd:reply v1 -->",JSON.stringify({from:P.name,at:"2026-10-15T09:12:00Z",items:ans.map(a=>({id:a.t.id,done:a.done,note:a.note}))})].join("\n");
+  $("#drawer").innerHTML=`<button class="x" id="dx" aria-label="Close">×</button>
+    <h2>Paste a reply</h2>
+    <p style="margin:0;color:var(--muted);font-size:14px">Paste what ${esc(first(who))} sent back. This one is filled in as their sheet would write it.</p>
+    <textarea class="f" id="askreply" aria-label="The reply">${esc(text)}</textarea>
+    <div class="dbtns"><button class="go" id="askapply">Bring it in</button></div>`;
+  showDrawer();
+  $("#askapply").onclick=()=>{
+    let n=0, notes=0;
+    for(const a of ans){
+      if(a.done){ a.t.state="done"; a.t.ago=0; a.t.doneBy=who; n++; }
+      if(a.note){ a.t.reply=a.note; notes++; }
+      delete a.t.askedNow;
+    }
+    P.answered=0; delete P.asked;
+    closeDrawer(); render();
+    toast(`${first(who)} answered: ${plural(n,"task")} done, ${plural(notes,"note")} on the rest. Each landed on its own task.`,false);
+  };
+}
+
 document.addEventListener("keydown",e=>{
   if(edit&&e.target.matches&&e.target.matches("[data-edit]")){ editKey(e); return; }
   if(e.altKey&&e.key==="ArrowLeft"){e.preventDefault();back();return}

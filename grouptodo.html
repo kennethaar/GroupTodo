@@ -1629,7 +1629,7 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
     <li>Structured into three GTD phases: <b>Get Clear, Get Current, Get Creative</b>.</li>
     <li>Check off steps as you go; linked steps take you directly to the relevant tool view. Customize the checklist under <i>Routines &amp; lists &gt; Weekly review</i>.</li>
     <li><b>Project Review (Solitaire Mode):</b> Review active projects one card at a time, starting with the stalest. Filter to include <i>Waiting for</i> or <i>Someday/Maybe</i> lists, and drag or click to update project properties from that Area's most-used options. While you drag, only the box you aim at grows, and the option nearest the pointer grows inside it, with an arrow saying what letting go will do. Choosing the status deals the next card.</li>
-    <li><b>Solitaire keys:</b> <kbd>↑</kbd> opens Organisations, <kbd>←</kbd> Comes after, <kbd>→</kbd> the status. In the top row <kbd>←</kbd> <kbd>→</kbd> move to the next box. The numpad moves between options in eight directions (<kbd>8</kbd> <kbd>2</kbd> <kbd>4</kbd> <kbd>6</kbd> and the corners <kbd>7</kbd> <kbd>9</kbd> <kbd>1</kbd> <kbd>3</kbd>); <kbd>Enter</kbd>, <kbd>Space</kbd> or numpad <kbd>5</kbd> takes one. <kbd>1</kbd>–<kbd>5</kbd> set the status. <kbd>↓</kbd> or <kbd>Esc</kbd> goes back to the card, and <kbd>Shift</kbd>+<kbd>→</kbd> flings it on as reviewed.</li>
+    <li><b>Solitaire keys:</b> each numpad key opens the box in the same place on the table: <kbd>7</kbd> <kbd>8</kbd> <kbd>9</kbd> Organisations, People, Responsibility; <kbd>4</kbd> <kbd>5</kbd> <kbd>6</kbd> Next action, Done when, Deadline; <kbd>1</kbd> Comes after, <kbd>2</kbd> back to the card, <kbd>3</kbd> the status. From the card <kbd>↑</kbd> <kbd>←</kbd> <kbd>→</kbd> open Organisations, Comes after and the status too. Inside a box the arrows move between its options and <kbd>Enter</kbd> or <kbd>Space</kbd> takes one. <kbd>1</kbd>–<kbd>5</kbd> on the number row set the status. <kbd>Esc</kbd> goes back to the card, and <kbd>Shift</kbd>+<kbd>→</kbd> flings it on as reviewed.</li>
   </ul>
 
   <h3>Keyboard Shortcuts</h3>
@@ -19537,7 +19537,7 @@ function viewSolitaire() {
   const info = inS(r, () => ({title: pageTitle(r.path), code: statusDirOf(r.path)}));
   c.append(el("div", {class: "solbar"},
     el("span", {}, "Card " + (SOL.i + 1) + " of " + SOL.order.length + " · stalest first"),
-    el("span", {}, "Drag the card onto an option, or click one. Keys: ↑ ← → open a box, the numpad moves, Enter takes, Shift+→ next card."),
+    el("span", {}, "Drag the card onto an option, or click one. Keys: numpad 7 8 9 / 4 5 6 / 1 2 3 open the box in that place, arrows move, Enter takes, Shift+→ next card."),
     ...[["", "Active only"], ["1", "Waiting and someday too"]].map(([v, label]) => fchip(label, solAll() === !!v, () => {
       if (solAll() === !!v) return;
       PREF.set("sol.all", v);
@@ -19700,12 +19700,12 @@ function solAnimate(before, stacked, prevEls, els, pile, faceOf) {
    within 12px of it lands on it. An arrow from the card to that pill says
    what letting go will do.
 
-   The same zoom is driven by the keyboard: Up opens Organisations, Left
-   Comes after, Right the status; Left and Right walk the top row; the numpad
-   walks the pills in eight directions (8 up, 2 down, 4 and 6 sideways, 7 9 1 3
-   the corners), and so do the arrows inside a bottom box; Enter, Space or
-   numpad 5 takes one; Down or Esc goes back to the card. Shift+Right flings
-   the card to the next. */
+   The same zoom is driven by the keyboard. Each numpad key is one box, laid
+   out the way the table is: 7 8 9 and 4 5 6 the top row, 1 Comes after, 2 the
+   card, 3 the status. Up, Left and Right from the card open Organisations,
+   Comes after and the status. Inside a box the arrows move between its
+   options; Enter or Space takes one; Esc (or 2) goes back to the card.
+   Shift+Right flings the card to the next. */
 const SOL_ZOOM = 1.45, SOL_LEAD = 60, SOL_SNAP = 12, SOL_MORE_MS = 250;
 const SOL_TOP_ROW = ["orgs", "people", "area", "next", "outcome", "deadline"];
 const SOL_TYPE_K = ["next", "outcome"];
@@ -20076,8 +20076,9 @@ function solKbAim(dx, dy) {
   });
   if (best >= 0) { SOL_KB.i = best; solKbShow(); }
 }
-const SOL_PAD = {Numpad8: [0, -1], Numpad2: [0, 1], Numpad4: [-1, 0], Numpad6: [1, 0],
-  Numpad7: [-1, -1], Numpad9: [1, -1], Numpad1: [-1, 1], Numpad3: [1, 1]};
+/* Each numpad key is one box, where it sits on the table. */
+const SOL_PAD = {Numpad7: "orgs", Numpad8: "people", Numpad9: "area", Numpad4: "next", Numpad5: "outcome",
+  Numpad6: "deadline", Numpad1: "after", Numpad2: "CARD", Numpad3: "status"};
 window.addEventListener("keydown", e => {
   if (state.view !== "review" || subNow() !== "projects" || !document.querySelector(".sol")) return;
   if ($("#modalRoot").firstChild || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -20085,37 +20086,29 @@ window.addEventListener("keydown", e => {
   const r = SOL.order && SOL.order[SOL.i];
   if (!r) return;
   const take = () => { e.preventDefault(); e.stopImmediatePropagation(); };
-  const key = e.key, pad = SOL_PAD[e.code];
+  // By e.code, so the numpad means the same with NumLock on or off.
+  const key = e.key, to = SOL_PAD[e.code];
   if (e.shiftKey && key === "ArrowRight") { take(); SOL_KB = null; solUnpaint(); solOp(r, "next"); return; }
   if (e.shiftKey) return;
+  if (to) { take(); if (to === "CARD") solKbClose(); else solKbOpen(to); return; }
   if (!SOL_KB) {
-    // From the card, numpad 8, 4 and 6 open the same boxes as Up, Left and Right.
-    const dir = {Numpad8: "ArrowUp", Numpad4: "ArrowLeft", Numpad6: "ArrowRight"}[e.code] || (pad ? null : key);
-    if (dir === "ArrowUp") { take(); solKbOpen(SOL_TOP_ROW.find(k => solBox(k))); }
-    else if (dir === "ArrowLeft") { take(); solKbOpen("after"); }
-    else if (dir === "ArrowRight") { take(); solKbOpen("status"); }
+    if (key === "ArrowUp") { take(); solKbOpen(SOL_TOP_ROW.find(k => solBox(k))); }
+    else if (key === "ArrowLeft") { take(); solKbOpen("after"); }
+    else if (key === "ArrowRight") { take(); solKbOpen("status"); }
     return;
   }
-  const top = SOL_TOP_ROW.includes(SOL_KB.k);
-  if (pad) { take(); solKbAim(...pad); return; }
-  if (key === "ArrowDown" || key === "Escape") { take(); solKbClose(); return; }
-  if (top && (key === "ArrowLeft" || key === "ArrowRight")) {
-    take();
-    const row = SOL_TOP_ROW.filter(k => solBox(k)), at = row.indexOf(SOL_KB.k);
-    const to = row[Math.max(0, Math.min(row.length - 1, at + (key === "ArrowLeft" ? -1 : 1)))];
-    if (to !== SOL_KB.k) solKbOpen(to);
-    return;
-  }
+  if (key === "Escape") { take(); solKbClose(); return; }
+  // Inside a box the arrows move between its options: sideways in reading order, up and down by row.
   if (key === "ArrowLeft" || key === "ArrowRight") { take(); solKbStep(key === "ArrowLeft" ? -1 : 1); return; }
-  if (key === "ArrowUp") { take(); solKbAim(0, -1); return; }
-  // The number row sets the status; the numpad digits above are for moving.
+  if (key === "ArrowUp" || key === "ArrowDown") { take(); solKbAim(0, key === "ArrowUp" ? -1 : 1); return; }
+  // The number row sets the status.
   if (SOL_KB.k === "status" && /^Digit[1-5]$/.test(e.code)) {
     take();
     const pill = solPills(solBox("status"))[+e.code.slice(5) - 1];
     if (pill) { SOL_KB = null; solUnpaint(); solTake(r, solBox("status"), pill); }
     return;
   }
-  if (key === "Enter" || key === " " || e.code === "Numpad5") {
+  if (key === "Enter" || key === " ") {
     take();
     const box = solBox(SOL_KB.k), pill = solPills(box)[SOL_KB.i];
     const k = SOL_KB.k;
