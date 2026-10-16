@@ -218,6 +218,8 @@ kbd{font:12px ui-monospace,monospace;border:1px solid var(--line);border-radius:
 .jedit{border:0;background:none;font-size:13px;color:var(--muted)}
 .jedit:hover{color:var(--ink)}
 .jcard .journal{border:0;border-radius:0;background:none;padding:12px 0}
+/* A day page reads as headings and notes: the first level bold, what is under it not */
+.jcard .jl[style^="--i:0"]:not(.jnew)>.t{font-weight:650}
 .jcard .jnew .ein::placeholder{font-style:italic}
 .mtag{color:var(--accent);font-weight:600;margin-right:4px}
 .mdtext{width:100%;min-height:55vh;font-family:ui-monospace,Consolas,monospace;font-size:13px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px}
@@ -1260,7 +1262,7 @@ V.projects = () => {
     return h+`<div class="list">`+ps.map(k=>{
       const p=PROJECTS[k], ts=tasks.filter(t=>t.p===k), d=ts.filter(t=>!open(t)).length, o=ts.length-d;
       const who=[...new Set(ts.filter(open).map(t=>t.who))];
-      return `<div class="row" data-proj="${k}"><div class="t"><b>${esc(p.name)}</b><div class="meta">
+      return `<div class="row" data-proj="${k}"><div class="t">${parentLine(k)}<b>${esc(p.name)}</b><div class="meta">
         ${p.orgs.length?`<span>${esc(orgNames(p))}</span>`:""}${p.area?`<span>${AREAS[p.area].name}</span>`:""}<span>${o} open</span>${projTags(k)}
         </div></div><div class="avs">${who.map(av).join("")}</div>
         <div class="bar" title="${d} of ${ts.length} done"><i style="width:${ts.length?Math.round(d/ts.length*100):0}%"></i></div></div>`;
@@ -1273,7 +1275,7 @@ V.projects = () => {
       const ps=keys.filter(k=>eff(k)===s);
       return `<div class="col" data-drop="status:${s}"><h3><span class="dir">${STATUS[s].dir}/</span>${STATUS[s].label}<span class="cnt">${ps.length}</span></h3>${ps.map(k=>{
         const p=PROJECTS[k], o=projOpen(k);
-        return `<div class="card" data-proj="${k}" data-drag="proj:${k}"><b>${esc(p.name)}</b><div class="meta">${p.orgs.length?`<span>${esc(orgNames(p))}</span>`:""}<span>${o.length} open</span>${projTags(k)}</div></div>`;
+        return `<div class="card" data-proj="${k}" data-drag="proj:${k}">${parentLine(k)}<b>${esc(p.name)}</b><div class="meta">${p.orgs.length?`<span>${esc(orgNames(p))}</span>`:""}<span>${o.length} open</span>${projTags(k)}</div></div>`;
       }).join("")||`<div class="colhint">Drag a project here</div>`}</div>`;
     }).join("")+`</div></div><p class="hint">Dragging a project moves its file to that folder, and every link to it follows.</p>`;
   }
@@ -1610,7 +1612,9 @@ const FIELDS = [
 ];
 const FIELD = Object.fromEntries(FIELDS.map(f=>[f.k,f]));
 const GRID = ["orgs","people","area","next","outcome","deadline","after","CARD","status"];
-/* The line above a project's title that says what it is part of. */
+/* The line above a project's title that says what it is part of: the project
+   whose folder it lives in (pages/1/Office move/Site survey.md), or one whose
+   children:: names it. */
 const parentLine = k => { const up=PROJECTS[k]&&PROJECTS[k].parent; return up&&PROJECTS[up]?`<div class="parentline" title="Part of ${esc(PROJECTS[up].name)}">↑ <span class="pl" data-proj="${up}">${esc(PROJECTS[up].name)}</span></div>`:""; };
 
 V.reviewProjects = () => {
@@ -1619,7 +1623,7 @@ V.reviewProjects = () => {
   let h=`<div class="head"><h1>Review projects</h1><button class="textbtn" data-go='{"sub":"steps"}'>‹ All steps</button>${seg([["solitaire","Solitaire"],["list","List"]],rv,"data-rv")}</div>`;
   if(rv==="list"){
     return h+`<div class="list">`+solOrder().map(k=>{const p=PROJECTS[k], gaps=FIELDS.filter(f=>!f.filled(p,k)&&f.k!=="status");
-      return `<div class="row" data-proj="${k}"><div class="t"><b>${esc(p.name)}</b><div class="meta"><span>untouched ${p.touched}d</span>${gaps.map(f=>`<span class="tag wait">No ${f.label.toLowerCase()}</span>`).join("")||`<span class="tag ok">Complete</span>`}${spTag(p.space)}</div></div></div>`;}).join("")+`</div>`;
+      return `<div class="row" data-proj="${k}"><div class="t">${parentLine(k)}<b>${esc(p.name)}</b><div class="meta"><span>untouched ${p.touched}d</span>${gaps.map(f=>`<span class="tag wait">No ${f.label.toLowerCase()}</span>`).join("")||`<span class="tag ok">Complete</span>`}${spTag(p.space)}</div></div></div>`;}).join("")+`</div>`;
   }
   sol.order=sol.order.filter(k=>vis(PROJECTS[k].space));
   if(sol.i>=sol.order.length){
@@ -1949,8 +1953,8 @@ function projDrawer(k){
   const p=PROJECTS[k], ts=projOpen(k), {pages}=allPages(), refs=refsTo("p:"+k,pages);
   const quoted=refs.filter(r=>r.lines.length);
   $("#drawer").innerHTML=`<button class="x" id="dx" aria-label="Close">×</button>
-    <div class="dtop">${spBadge(p.space)}<span class="path">pages/${STATUS[p.status].dir}/${esc(p.name)}.md</span></div>
-    <div class="dtop"><h2 style="padding:0">${esc(p.name)}</h2><button class="fullbtn" data-full="p:${k}">⤢ Open full page</button></div>
+    <div class="dtop">${spBadge(p.space)}<span class="path">pages/${STATUS[p.status].dir}/${p.parent?esc(PROJECTS[p.parent].name)+"/":""}${esc(p.name)}.md</span></div>
+    ${parentLine(k)}<div class="dtop"><h2 style="padding:0">${esc(p.name)}</h2><button class="fullbtn" data-full="p:${k}">⤢ Open full page</button></div>
     ${projFields(k)}
     <div><div class="group" style="margin-top:4px">Next actions</div>${listHTML(ts,{noProj:true,noSpace:true,empty:"No open tasks. Add the next step."})}</div>
     <div><div class="group" style="margin-top:4px">Notes <span class="plain">· ${lines(p.body).length} on the page${quoted.length?`, ${quoted.reduce((n,r)=>n+r.lines.length,0)} elsewhere`:""}</span></div>
@@ -2531,28 +2535,76 @@ function askDrawer(who){
   };
   $("#askpaste").onclick=()=>askPaste(who,owed);
 }
+/* The note that goes with the sheet, in the words the app writes it: the
+   lines are the same ticks the sheet has, so a reply typed straight into the
+   mail is read back just as well as the sheet's. */
+let ASKLANG = "en";
+const ASKNOTE = {
+  en:{subject:(c)=>`Waiting for "${c[0].t}"`+(c.length>1?` + ${c.length-1} more`:""),
+    hi:"Hi", intro:f=>`I am waiting for answers on the items below. Tick them and send via the attached ${f}, or reply directly to this message with an x between the brackets [x] for what is done.`,
+    add:"Anything you want to add goes after Comment: under the item it is about.", comment:"Comment:", ref:"Reference (leave as is):", thanks:"Thanks,"},
+  no:{subject:(c)=>`Venter på "${c[0].t}"`+(c.length>1?` + ${c.length-1} flere`:""),
+    hi:"Hei", intro:f=>`Jeg venter på svar på punktene under. Huk av og send inn via vedlagte ${f}, eller svar direkte på denne meldingen med en x mellom klammene [x] for det som er gjort.`,
+    add:"Har du noe å legge til, skriv det etter Kommentar: under punktet det gjelder.", comment:"Kommentar:", ref:"Referanse (ikke endre):", thanks:"Takk,"}
+};
+function askNoteText(who,chosen,file){
+  const T=ASKNOTE[ASKLANG], P=PEOPLE[who];
+  const items=chosen.map(t=>[`- [ ] ${t.t}${t.p?` (${PROJECTS[t.p].name})`:""}`,`${T.comment} `,"",`${T.ref} Work-${t.id}`].join("\n")).join("\n\n");
+  return {subject:T.subject(chosen), body:[`${T.hi} ${first(who)},`,"",T.intro(file),T.add,"","---",items,"---","",T.thanks,PEOPLE.me.name].join("\n")};
+}
 function askSent(who,chosen){
   const P=PEOPLE[who], file=`check-in-${P.name.toLowerCase().replace(/\s+/g,"-")}.html`;
+  const addr=P.mail||(P.name.toLowerCase().replace(/\s+/g,".")+"@example.com");
+  const note=askNoteText(who,chosen,file);
+  const mailto=`mailto:${encodeURIComponent(addr)}?subject=${encodeURIComponent(note.subject)}&body=${encodeURIComponent(note.body)}`;
+  const teams=`https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(addr)}&message=${encodeURIComponent(note.body)}`;
   $("#drawer").innerHTML=`<button class="x" id="dx" aria-label="Close">×</button>
-    <h2>The sheet for ${esc(first(who))} is ready</h2>
-    <div class="askfile"><span class="ic">📄</span><div><b>${file}</b><div class="meta" style="margin:2px 0 0"><span>${plural(chosen.length,"line")}</span><span>works offline, no account</span></div></div></div>
-    <p style="margin:0;color:var(--muted);font-size:14px">Attach it to a mail to ${esc(first(who))}. They tick what is done and press <i>Send back</i>, and the answers come to you as a short reply. ${esc(first(who))}'s line on Waiting for now says <b>asked today</b>.</p>
+    <h2>Send it to ${esc(P.name)}</h2>
+    <div class="askfile"><span class="ic">📄</span><div><b>${file}</b><div class="meta" style="margin:2px 0 0"><span>${plural(chosen.length,"line")}</span><span>saved to your downloads</span><span>works offline, no account</span></div></div></div>
+    <div><label class="f">${esc(first(who))}'s address, for the email and the Teams chat</label><input class="f" type="email" id="askto" value="${esc(addr)}">
+      <div class="meta" style="margin:4px 0 0"><span>Saved as email:: on ${esc(first(who))}'s page, so you only type it once.</span></div></div>
+    <div><label class="f">The note. The first line is the subject. Edit it freely, or copy it and paste it anywhere.</label>
+      <textarea class="f" id="asknote" spellcheck="false">${esc(note.subject+"\n\n"+note.body)}</textarea>
+      <div class="meta" style="margin:4px 0 0"><span>You attach ${file} yourself: no link of any kind can do that. The note names what you are waiting on, which is what tells ${esc(first(who))} it really is from you.</span></div></div>
+    <div><label class="f">Language</label><div class="dbtns">${[["en","English"],["no","Norsk"]].map(([c,l])=>`<button data-asklang="${c}" ${ASKLANG===c?'class="go"':""}>${ASKLANG===c?"✓ ":""}${l}</button>`).join("")}</div></div>
+    <div class="dbtns"><button id="askcopy">Copy the note</button><a id="askmail" class="go" href="${esc(mailto)}">Open in email</a><a id="askteams" href="${esc(teams)}" target="_blank" rel="noopener">Send in Teams</a></div>
+    <details><summary style="cursor:pointer;color:var(--muted);font-size:13px">What the email button opens (${mailto.length} characters)</summary>
+      <p style="margin:6px 0;color:var(--muted);font-size:12.5px">A mailto: link carries the address, the subject and the body, and nothing else. Outlook cuts a link off around two thousand characters, so a longer note says to copy it instead of quietly sending half.</p>
+      <code id="askurl" style="display:block;font-size:11px;word-break:break-all;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;max-height:140px;overflow:auto">${esc(mailto)}</code></details>
     <div class="dbtns"><a href="check-in-sheet-mockup.html" target="_blank" rel="noopener">Open the sheet as ${esc(first(who))} sees it ↗</a></div>
     <hr style="border:0;border-top:1px solid var(--line);margin:4px 0">
-    <p style="margin:0;font-size:14px"><b>When ${esc(first(who))} answers</b>, paste the reply here, or import the file they saved. It lands on the right tasks by itself.</p>
+    <p style="margin:0;font-size:14px"><b>When ${esc(first(who))} answers</b>, by the sheet or straight in the mail, paste the reply here, or import the file they saved. It lands on the right tasks by itself.</p>
     <div class="dbtns"><button class="go" id="askpaste">Paste ${esc(first(who))}'s reply</button></div>`;
   showDrawer();
+  /* the note, the link and the address stay in step as you edit */
+  const sync=()=>{
+    const v=$("#asknote").value, subj=v.split("\n")[0], body=v.split("\n").slice(2).join("\n"), to=$("#askto").value.trim();
+    const m=`mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+    $("#askmail").href=m; $("#askurl").textContent=m;
+    $("#askteams").href=`https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(to)}&message=${encodeURIComponent(body)}`;
+    $("#drawer details summary").textContent=`What the email button opens (${m.length} characters)`;
+    return m;
+  };
+  $("#asknote").oninput=sync; $("#askto").oninput=sync;
+  $("#askcopy").onclick=()=>{ try{navigator.clipboard.writeText($("#asknote").value).catch(()=>{})}catch(_){} toast("Note copied. Paste it into a mail, Teams or Slack, and attach "+file+".",false); };
+  $("#askmail").onclick=e=>{ if(sync().length>1800){ e.preventDefault(); toast("That note is too long for an email link. Copy it and paste it instead.",false); return; }
+    toast(`Your email opens with the note. Attach ${file}, then send.`,false); };
+  $("#askteams").onclick=()=>toast(`Teams opens with the message ready. Drop ${file} into the same chat.`,false);
+  $("#drawer").querySelectorAll("[data-asklang]").forEach(b=>b.onclick=()=>{ ASKLANG=b.dataset.asklang; askSent(who,chosen); });
   $("#askpaste").onclick=()=>askPaste(who,chosen);
 }
 function askPaste(who,chosen){
   const P=PEOPLE[who];
   /* What the sheet sends back: the lines ticked or not, with a note, and the same answers with ids for the import. */
   const ans=chosen.map((t,i)=>({t, done:i===0, note:i===0?"":"The landlord sends it Thursday, I will forward it then"}));
-  const text=[`Reply from ${P.name}, 2026-10-15`,"",...ans.map(a=>(a.done?"[x] ":"[ ] ")+a.t.t+(a.note?"  -- "+a.note:"")),"",
-    "<!-- gtd:reply v1 -->",JSON.stringify({from:P.name,at:"2026-10-15T09:12:00Z",items:ans.map(a=>({id:a.t.id,done:a.done,note:a.note}))})].join("\n");
+  /* Mia answered straight in the mail: an x between the brackets, a line after Comment:. */
+  const T=ASKNOTE[ASKLANG];
+  const text=[`${T.hi==="Hei"?"Hei":"Hi"} ${first("me")},`,"","Here you go.","",`> ${T.hi} ${first(who)},`,">","> ---",
+    ...ans.flatMap((a,i)=>[`> - [${a.done?"x":" "}] ${a.t.t}${a.t.p?` (${PROJECTS[a.t.p].name})`:""}`,`> ${T.comment} ${a.note}`,">",`> ${T.ref} Work-${a.t.id}`,...(i<ans.length-1?[">"]:[])]),
+    "> ---","",P.name].join("\n");
   $("#drawer").innerHTML=`<button class="x" id="dx" aria-label="Close">×</button>
     <h2>Paste a reply</h2>
-    <p style="margin:0;color:var(--muted);font-size:14px">Paste what ${esc(first(who))} sent back. This one is filled in as their sheet would write it.</p>
+    <p style="margin:0;color:var(--muted);font-size:14px">Paste what ${esc(first(who))} sent back. This one is a reply typed straight into the mail: an x between the brackets for done, a note after Comment:. The sheet's own reply reads the same way.</p>
     <textarea class="f" id="askreply" aria-label="The reply">${esc(text)}</textarea>
     <div class="dbtns"><button class="go" id="askapply">Bring it in</button></div>`;
   showDrawer();

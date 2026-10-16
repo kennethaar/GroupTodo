@@ -1,3 +1,7 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Check-in Sheet</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
@@ -52,8 +56,10 @@ hr{border:0;border-top:1px solid var(--rule);margin:40px 0 0}
 .flow li::before{content:counter(f);font-family:var(--mono);font-size:12px;font-weight:500;
   display:grid;place-items:center;width:26px;height:26px;border-radius:50%;
   background:var(--accent-soft);color:var(--accent)}
-.flow b{display:block;font-weight:600}
-.flow small{color:var(--ink-faint);font-size:13.5px;display:block}
+.flow li::before{grid-row:1 / span 2}
+.flow b{display:block;font-weight:600;grid-column:2}
+/* The description sits beside the number, under the title, never in the number's narrow column */
+.flow small{color:var(--ink-faint);font-size:13.5px;display:block;grid-column:2;min-width:0}
 .who{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
   color:var(--ink-faint)}
 
