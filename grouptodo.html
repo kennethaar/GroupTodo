@@ -1313,6 +1313,26 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 .sol .slot.soltype::after{content:"+ Drop to type";position:absolute;inset:6px;display:flex;align-items:center;justify-content:center;
   border:2px dashed var(--accent);border-radius:9px;background:color-mix(in srgb,var(--accent-soft) 94%,transparent);
   color:var(--accent);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:13px;pointer-events:none;z-index:4}
+.calwarn{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 18px;padding:10px 14px;border-radius:var(--radius-sm);
+  border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);background:var(--wait-soft);color:var(--fg)}
+.calwarn .ic{font-size:18px}
+.calstatus{font-size:13px;color:var(--fg2);margin:4px 0 12px;min-height:1em}
+.calstatus.ok{color:var(--ok)}
+.calstatus.bad{color:var(--late)}
+.calwarn .say{flex:1;min-width:240px;font-size:13.5px}
+.calwarn code{font-family:var(--mono);font-size:12.5px;padding:1px 6px;border-radius:5px;background:var(--bg2);user-select:all}
+/* Calendars on Today: what was fetched when, and a button to fetch now */
+.calgroup{display:inline-flex;align-items:stretch}
+.calgroup .calchip{border-top-right-radius:0;border-bottom-right-radius:0}
+.calgroup .calrefresh{border-top-left-radius:0;border-bottom-left-radius:0;border-left:0;padding-left:9px;padding-right:9px}
+.calgroup .calrefresh[hidden]{display:none}
+.calgroup:has(.calrefresh[hidden]) .calchip{border-radius:var(--radius-sm)}
+.calsub{color:var(--fg2);font-weight:400}
+.calsub.bad{color:var(--late)}
+.calspin{display:inline-block}
+.calgroup.busy .calspin{animation:calspin 1s linear infinite}
+@keyframes calspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.calgroup.busy .calspin{animation:none;opacity:.5}}
 .solarrow{position:fixed;left:0;top:0;width:100vw;height:100vh;pointer-events:none;z-index:95;overflow:visible}
 .solarrow-lbl{position:fixed;z-index:96;pointer-events:none;background:var(--accent);color:var(--accent-fg);font-size:12.5px;
   font-weight:650;padding:3px 10px;border-radius:999px;white-space:nowrap;box-shadow:var(--shadow);transform:translate(-50%,-50%)}
@@ -1412,6 +1432,9 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 .parentline .pl{color:var(--fg2);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .parentline .pl:hover,.parentline .pl:focus-visible{color:var(--accent);text-decoration:underline;outline:none}
 .parentline .sep{opacity:.6}
+.parentline .pl.none{cursor:default;text-decoration:none;color:var(--fg2)}
+/* A day page reads as headings and notes: the first level bold, what is under it not */
+.space-journal .outline>.blk>.line .txt{font-weight:650}
 .pagehead+.parentline,.pcrumbs+.parentline{margin-top:4px}
 .pagehead{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:8px}
 .ptitle{margin:0;font-size:26px;flex:1;min-width:200px;outline:none;border-radius:var(--radius-sm);cursor:text}
@@ -2096,7 +2119,28 @@ const slugPerson = n => trim(n || "")
   .replace(/[\u0000-\u001f/\\:*?"<>|]/g, "-")
   .replace(/\s+/g, " ")
   .slice(0, 40);
-const journalOwner = () => slugPerson(whoAmI());
+/* Whose folder "my" day pages are in, in the area being worked in. The name
+   is set per area, so an area can know you by one name while your day pages
+   sit under another of yours ("Kenneth" here, journals/Kenneth Aar/ on disk).
+   When the folder for this area's name has no days and one of your other names
+   has, that folder is yours: your pages are found where they are, not hidden
+   behind an empty one. Kept per area until the page count changes. */
+const JOWNER = new WeakMap();
+const journalOwner = () => {
+  const s = slugPerson(whoAmI());
+  const pages = V.pages;
+  if (!pages || !pages.size) return s;
+  const hit = JOWNER.get(pages);
+  if (hit && hit.s === s && hit.n === pages.size) return hit.owner;
+  const has = dir => { const pre = join(JOURNALS, dir) + "/"; for (const p of pages.keys()) if (p.startsWith(pre)) return true; return false; };
+  let owner = s;
+  if (!s || !has(s)) {
+    const alt = myNames().map(slugPerson).filter(n => n && n !== s && has(n));
+    if (alt.length === 1) owner = alt[0];
+  }
+  JOWNER.set(pages, {s, n: pages.size, owner});
+  return owner;
+};
 const journalPath = (date, owner) => {
   const who = owner === undefined ? journalOwner() : slugPerson(owner);
   const day = (date || todayISO()) + ".md";
@@ -4051,7 +4095,9 @@ async function detectServer() {
   if (CAP.served) {
     try {
       const r = await fetch("./api/ping", {cache: "no-store"});
-      if (r.ok) SERVER_BASE = location.origin + location.pathname.replace(/\/[^/]*$/, "");
+      const j = r.ok ? await r.json().catch(() => ({})) : null;
+      // A helper started with --calendars-only fetches calendars and keeps no files.
+      if (r.ok && !(j && j.calendarsOnly)) SERVER_BASE = location.origin + location.pathname.replace(/\/[^/]*$/, "");
     } catch (_) {}
   }
   return SERVER_BASE;
@@ -6386,11 +6432,24 @@ function settingsPage() {
    as a fallback and the app goes on stamping a name it just said it had
    cleared. This is that stronger answer, and it is never shown. */
 const NO_NAME = "\u2014";
+/* The name you go by in the area being worked in: V.space, which inSpace()
+   points at the area whose journal or members are being read, not only the
+   one that is open. Otherwise a Work journal drawn beside Personal is looked
+   for under Personal's name, and your own Work page shows as somebody else's. */
 function whoAmI() {
-  const mine = trim(PREF.get("identity:" + (Spaces.active || ""), ""));
+  const mine = trim(PREF.get("identity:" + (V.space || Spaces.active || ""), ""));
   if (mine === NO_NAME) return "";
   return mine || trim(PREF.get("identity", "") || "");
 }
+/* Every name you go by, in any area: the name is set per area, so the same
+   person can be "Kenneth" in one and "Kenneth Aar" in another. Looking across
+   areas, any of them is you -- not somebody else with your name. */
+function myNames() {
+  const all = [PREF.get("identity", ""), ...Spaces.list.map(s => PREF.get("identity:" + s.name, ""))];
+  return [...new Set(all.map(n => trim(n || "")).filter(n => n && n !== NO_NAME))];
+}
+const isMe = name => !!trim(name || "") &&
+  myNames().some(m => slugPerson(m).toLowerCase() === slugPerson(name).toLowerCase());
 function setIdentity(name, space) {
   const clean = trim(name).slice(0, 60);
   const was = whoAmI();
@@ -7607,8 +7666,8 @@ function coachSteps() {
      Crossing something off your own list is not a lesson anybody needs taught,
      so the third step ends at "added" and the strip itself is what gets ticked. */
   const steps = [
-    {k: "who", done: coachDone("who") || hasFullName(whoAmI()),
-     label: "Who are you", cta: "Add name",
+    {k: "who", done: coachDone("who") || hasFullName(whoAmI()), auto: hasFullName(whoAmI()),
+     label: "Who are you", cta: "Add name", redo: "Change name",
      hint: hasFullName(whoAmI()) ? "" : "your full name",
      why: "Your name goes on what you add and what you close. Two people called Kenneth is " +
           "the day you wish you had typed the surname.",
@@ -7616,8 +7675,8 @@ function coachSteps() {
        title: "Your name", value: whoAmI(), cta: "Save", label: "Full name",
        onSave: n => { setIdentity(n, Spaces.active); coachMark("who"); render(); },
      })},
-    {k: "where", done: coachDone("where") || onDisk,
-     label: "Where the files live", cta: "Choose folder",
+    {k: "where", done: coachDone("where") || onDisk, auto: onDisk,
+     label: "Where the files live", cta: "Choose folder", redo: "Change folder",
      hint: onDisk ? "" : "right now they live in this browser only",
      why: "Plain .md files in a folder you picked. Share the folder and you have shared the list.",
      act: () => openSpaceStorageSetup()},
@@ -7630,8 +7689,8 @@ function coachSteps() {
     // The tour project was put there by the app, so it cannot stand in for one
     // of your own -- this step is about filing a job of your own.
     const own = projectsIn("1").filter(p => !isTourProject(p));
-    steps.push({k: "project", done: own.length > 0 || coachDone("project"), optional: true,
-      label: "Give a bigger job a project", cta: "Make one",
+    steps.push({k: "project", done: own.length > 0 || coachDone("project"), auto: own.length > 0, optional: true,
+      label: "Give a bigger job a project", cta: "Make one", redo: "Make another",
       hint: "anything that needs more than one step",
       why: "A task is one move. A project is the moves that finish something, plus a line " +
            "saying what done looks like.",
@@ -7642,7 +7701,7 @@ function coachSteps() {
   const tourPath = tourProjectPath();
   const tourLeft = tourPath ? tourSteps(tourPath).filter(s => s.open).length : 0;
   if (tourPath && coachDone("add")) {
-    steps.push({k: "tour", done: tourLeft === 0 || coachDone("tour"), optional: true,
+    steps.push({k: "tour", done: tourLeft === 0 || coachDone("tour"), auto: tourLeft === 0, optional: true,
       label: "Find your way round the rest of it", cta: "Open",
       hint: tourLeft ? tourLeft + " steps, each a link to the part it is about" : "",
       why: "Contexts, dates, people, routines, your folder. Each step is a task on your list: " +
@@ -7672,19 +7731,25 @@ function coachStrip() {
   const current = steps.find(st => !st.done);
   for (const st of steps) {
     /* The dot is a checkbox, not a bullet: a step you did your own way, or do
-       not want, is yours to cross off. */
+       not want, is yours to cross off -- and to take back, when crossing it off
+       was a mistake. A step that is done by itself (a full name, a folder) has
+       nothing to take back; its button below is still there to change it. */
+    const byHand = st.done && coachDone(st.k) && !st.auto;
     box.append(el("div", {class: "coach-step" + (st.done ? " done" : "")},
-      el("span", {class: "coach-dot" + (st.done ? "" : " can"),
-        title: st.done ? "" : "Cross it off",
-        onclick: st.done ? null : () => { PREF.set("coach." + st.k, "1"); render(); }},
-        st.done ? "\u2713" : ""),
+      el("span", {class: "coach-dot" + (!st.done || byHand ? " can" : ""), role: "checkbox", "aria-checked": String(!!st.done),
+        tabindex: !st.done || byHand ? "0" : null,
+        title: !st.done ? "Cross it off" : byHand ? "Not done after all" : "Done",
+        onclick: !st.done ? () => { PREF.set("coach." + st.k, "1"); render(); }
+               : byHand ? () => { PREF.set("coach." + st.k, ""); render(); } : null},
+        st.done ? "✓" : ""),
       el("div", {},
         el("div", {}, st.label,
           st.optional ? el("span", {class: "chip", style: "margin-left:6px"}, "optional") : null),
         st.hint ? el("div", {style: "color:var(--fg3);font-size:12px"}, st.hint) : null,
         (st === current && st.why) ? el("div", {class: "coach-why"}, st.why) : null),
-      (!st.done && st.act) ? el("button", {class: "btn sm ghost", style: "margin-left:auto",
-        onclick: st.act}, st.cta || "Choose") : null));
+      // Done or not, the step can be done again: a name to change, a folder to move.
+      st.act ? el("button", {class: "btn sm ghost", style: "margin-left:auto",
+        onclick: st.act}, st.done ? (st.redo || st.cta || "Open") : (st.cta || "Choose")) : null));
   }
   return box;
 }
@@ -17173,12 +17238,45 @@ function openMeetingForm(path, block) {
    chosen for the link, for the next two weeks. */
 const CAL_FEEDS_KEY = "calendar.feeds";
 const CAL_DAYS_AHEAD = 14;
-const CAL_EVERY_MIN = 30;
+const CAL_EVERY_MIN = 15;     // while the app is open
+const CAL_RETURN_MIN = 5;     // coming back to the app after this long fetches again
+/* Outlook and Google publish a calendar's link on their own schedule, so a
+   meeting made a minute ago is often not in it yet. Said wherever a fetch is. */
+const CAL_LAG_NOTE = "Outlook and Google update these links on their own schedule, often 30 minutes to a few hours " +
+  "behind, so a meeting you just made may not be in them yet.";
 const calFeeds = () => { try { return JSON.parse(PREF.get(CAL_FEEDS_KEY, "[]")) || []; } catch (_) { return []; } };
 const setCalFeeds = list => PREF.set(CAL_FEEDS_KEY, JSON.stringify(list));
 const calHash = s => { let h = 2166136261; for (const c of String(s)) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619) >>> 0; } return h.toString(36); };
 const calFeedId = url => calHash(trim(url).replace(/^webcal:/i, "https:"));
 const calHost = url => { try { return new URL(trim(url).replace(/^webcal:/i, "https:")).host; } catch (_) { return "calendar"; } };
+
+/* Meetings only go into an area nobody else is in. A day page there can be read
+   by everyone in it, and a calendar holds more than its owner would hand out
+   line by line: private appointments, who meets whom, agendas. Each person's
+   import would also fill the shared day pages with their own meetings. So the
+   whole calendar goes into a private area, and the meeting that concerns the
+   others is sent on from there, one line at a time. Checked again on every
+   fetch, since people can join an area after its link was added. */
+// You, under whatever name, plus everybody else who is a member there.
+const calAreaPeople = space => LOADED.has(space) ? 1 + inSpace(space, membersNow).filter(m => !isMe(m.name)).length : 0;
+const calAreaShared = space => calAreaPeople(space) > 1;
+const calSharedWhy = space => space + " has " + calAreaPeople(space) + " people in it, so meetings are not imported there: " +
+  "everyone in it could read your whole calendar, private appointments included. Import into a private area, " +
+  "and send a meeting on from there with Move to another area → Sync";
+function calSharedExplainer() {
+  return el("div", {class: "calwarn", style: "margin:0 0 12px"},
+    el("span", {class: "ic", "aria-hidden": "true"}, "\u{1F512}"),
+    el("div", {class: "say"},
+      el("b", {}, "Calendars only go into an area that is yours alone."), " ",
+      el("span", {}, "In an area with other people, everyone in it can read your day pages, so they would see every " +
+        "meeting in your calendar: private appointments, who you meet and the agendas. Everyone's imports would " +
+        "also crowd the shared day pages with their own meetings."),
+      el("br"), el("br"),
+      el("b", {}, "Instead: "),
+      el("span", {}, "import into a private area. When a meeting concerns the others, put the cursor on it in your private day " +
+        "page, press Alt+S (Move to another area), choose the shared area, “This line” and “Sync”. " +
+        "That one meeting, and the notes you write under it, are kept in step there; the rest of your calendar stays yours.")));
+}
 
 function calProxyBases() {
   const out = [];
@@ -17187,6 +17285,9 @@ function calProxyBases() {
   out.push("http://127.0.0.1:8777");
   return [...new Set(out)];
 }
+/* What to say when nothing on this computer is there to fetch the link. */
+const CAL_NO_SERVER = "nothing on this computer is fetching calendar links. Start it in the GroupToDo folder with " +
+  "python serve.py --calendars-only, or import the .ics file in Calendars instead";
 async function fetchCalendar(url) {
   url = trim(url).replace(/^webcal:/i, "https:");
   let why = "";
@@ -17198,7 +17299,7 @@ async function fetchCalendar(url) {
       if (r.status !== 404) why = trim(text).slice(0, 200);
     } catch (_) {}
   }
-  throw new Error(why || "no GroupToDo server is running to fetch it. Start serve.py, or import the .ics file instead");
+  throw new Error(why || CAL_NO_SERVER);
 }
 
 /* RFC 5545, as much of it as calendars send: folded lines, quoted
@@ -17433,13 +17534,20 @@ async function syncCalendars({quiet = true} = {}) {
   const feeds = calFeeds();
   if (!feeds.length || CAL_SYNCING) return null;
   CAL_SYNCING = true;
+  updateCalChips();
+  const hadProblem = !!calendarProblem();
   PREF.set("calendar.tried", String(Date.now()));
   const [from, to] = calWindow();
   const sum = {added: 0, changed: 0, gone: 0}, failed = [];
   try {
     for (const f of feeds) {
       const name = f.label || calHost(f.url);
-      if (!LOADED.has(f.space)) { failed.push(name + ": the area " + f.space + " is not open"); continue; }
+      /* The area does not have to be on screen: it is read in behind your back,
+         and flush() writes every area that is read in. */
+      if (!Spaces.get(f.space)) { failed.push(name + ": the area " + f.space + " no longer exists. Remove the link in Calendars and add it to another area"); continue; }
+      if (!LOADED.has(f.space)) { try { await loadSpaceRecord(f.space); } catch (_) {} }
+      if (!LOADED.has(f.space)) { failed.push(name + ": the area " + f.space + " could not be opened. Open it once from the area menu (a folder may need your permission again), then try again"); continue; }
+      if (calAreaShared(f.space)) { failed.push(name + ": " + calSharedWhy(f.space)); continue; }
       try {
         const r = importCalendarText(await fetchCalendar(f.url), f.space, calFeedId(f.url), from, to);
         for (const k in sum) sum[k] += r[k];
@@ -17447,74 +17555,218 @@ async function syncCalendars({quiet = true} = {}) {
     }
   } finally { CAL_SYNCING = false; }
   PREF.set("calendar.result", JSON.stringify({at: Date.now(), ...sum, failed}));
-  if (sum.added || sum.changed || sum.gone) { clearMemo(); render(); flush(); }
-  if (!quiet || sum.added) notify(calSummary(sum) + (failed.length ? " Not fetched: " + failed.join("; ") + "." : ""),
-    failed.length ? "warn" : "info");
+  updateCalChips();
+  /* Redrawn when meetings changed, or when the strip on Today should come or
+     go; otherwise not, so a background import never pulls the caret out of a line. */
+  if (sum.added || sum.changed || sum.gone) { clearMemo(); flush(); }
+  if (sum.added || sum.changed || sum.gone || hadProblem !== (failed.length > 0)) render();
+  const nothing = !sum.added && !sum.changed && !sum.gone;
+  if (!quiet || sum.added) notify(calSummary(sum) + (failed.length ? " Not fetched: " + failed.join("; ") + "."
+    : nothing ? " " + CAL_LAG_NOTE : ""), failed.length ? "warn" : "info");
   return {sum, failed};
 }
-/* Today asks for this; it fetches at most every half hour, in the background. */
-function maybeSyncCalendars() {
+/* Today, a timer and coming back to the app ask for this; it fetches in the
+   background, at most once per `everyMin`. */
+function maybeSyncCalendars(everyMin = CAL_EVERY_MIN) {
   if (!calFeeds().length || CAL_SYNCING) return;
-  if (Date.now() - (+PREF.get("calendar.tried", "0") || 0) < CAL_EVERY_MIN * 6e4) return;
+  if (Date.now() - (+PREF.get("calendar.tried", "0") || 0) < everyMin * 6e4) return;
   setTimeout(() => syncCalendars(), 0);
 }
+/* Once a minute: the "updated 12 min ago" stays true, and a due fetch runs --
+   but not while someone is typing, since new meetings redraw the page. */
+let CAL_LAST_KEY = 0;
+function installCalendarTimer() {
+  document.addEventListener("keydown", () => { CAL_LAST_KEY = Date.now(); }, true);
+  setInterval(() => {
+    updateCalChips();
+    if (!document.hidden && Date.now() - CAL_LAST_KEY > 6e4) maybeSyncCalendars();
+  }, 6e4);
+}
 
-function openCalendars() {
-  const spaces = Spaces.list.map(s => s.name).filter(n => LOADED.has(n));
-  const dflt = spaces.find(n => /priv/i.test(n)) || Spaces.active || spaces[0];
+/* How long ago, said the short way. */
+function calAgo(ms) {
+  const s = (Date.now() - ms) / 1000;
+  if (s < 60) return "just now";
+  if (s < 3600) return Math.floor(s / 60) + " min ago";
+  const d = new Date(ms);
+  return isoOf(d) === todayISO() ? "at " + pad2(d.getHours()) + ":" + pad2(d.getMinutes())
+    : d.toLocaleDateString(undefined, {month: "short", day: "numeric"});
+}
+const calLast = () => { try { return JSON.parse(PREF.get("calendar.result", "null")); } catch (_) { return null; } };
+
+/* Calendars on Today: the button says when they were last fetched, and the
+   arrow next to it fetches now. Kept current in place, without a redraw. */
+function calChip() {
+  const open = el("button", {class: "btn ghost calchip", onclick: openCalendars});
+  const now = el("button", {class: "btn ghost calrefresh", "aria-label": "Fetch calendars now",
+    onclick: () => syncCalendars({quiet: false})}, el("span", {class: "calspin", "aria-hidden": "true"}, "↻"));
+  const wrap = el("span", {class: "calgroup"}, open, now);
+  fillCalChip(wrap);
+  return wrap;
+}
+function fillCalChip(wrap) {
+  const [open, now] = wrap.children;
+  const feeds = calFeeds(), last = calLast();
+  const failed = !!(last && last.failed && last.failed.length);
+  let sub, bad = false;
+  if (!feeds.length) sub = "add a link";
+  else if (CAL_SYNCING) sub = "fetching…";
+  else if (!last) sub = "not fetched yet";
+  else if (failed) { sub = "not fetched"; bad = true; }
+  else sub = "updated " + calAgo(last.at);
+  wrap.classList.toggle("busy", CAL_SYNCING);
+  open.textContent = "";
+  open.append("\u{1F4C5} Calendars ", el("span", {class: "calsub" + (bad ? " bad" : "")}, "· " + sub));
+  open.title = !feeds.length ? "Bring meetings from your calendars into your day pages"
+    : (last ? "Last fetched " + new Date(last.at).toLocaleString() + ". " : "") +
+      "Fetched again every " + CAL_EVERY_MIN + " minutes while the app is open, and when you come back to it. " + CAL_LAG_NOTE;
+  now.hidden = !feeds.length;
+  now.disabled = CAL_SYNCING;
+  now.title = CAL_SYNCING ? "Fetching…" : "Fetch calendars now";
+}
+function updateCalChips() { document.querySelectorAll(".calgroup").forEach(fillCalChip); }
+
+/* A calendar that did not come in is said on Today, where its meetings were
+   expected, not only in a dialog nobody opens again. */
+function calendarProblem() {
+  if (!calFeeds().length) return null;
   let last = null;
   try { last = JSON.parse(PREF.get("calendar.result", "null")); } catch (_) {}
+  if (!last || !last.failed || !last.failed.length) return null;
+  const noServer = last.failed.some(f => f.includes("nothing on this computer"));
+  return el("div", {class: "calwarn", role: "status"},
+    el("span", {class: "ic", "aria-hidden": "true"}, "\u{1F4C5}"),
+    el("div", {class: "say"},
+      el("b", {}, last.failed.length === 1 ? "A calendar did not come in." : last.failed.length + " calendars did not come in."), " ",
+      noServer
+        ? el("span", {}, "The app cannot reach a calendar link by itself, so a small helper on this computer fetches it. Start it in the GroupToDo folder with ",
+            el("code", {}, "python serve.py --calendars-only"), " and leave it running, then try again.")
+        : el("span", {}, last.failed.join("; ") + ".")),
+    el("button", {class: "btn sm primary", onclick: () => syncCalendars({quiet: false})}, "Try again"),
+    el("button", {class: "btn sm ghost", onclick: openCalendars}, "Calendars"));
+}
+/* A pasted link as people paste it: in quotes or angle brackets, as http://,
+   or with no scheme at all. Calendars are fetched over https only. */
+function calNormalizeUrl(raw) {
+  let u = trim(String(raw || "")).replace(/^[<"'\s]+|[>"'\s]+$/g, "");
+  if (!u) return "";
+  if (/^http:\/\//i.test(u)) u = "https://" + u.slice(7);
+  else if (!/^(https|webcal):\/\//i.test(u) && /^[\w-]+(\.[\w-]+)+\//.test(u)) u = "https://" + u;
+  try { const x = new URL(u.replace(/^webcal:/i, "https:")); return x.hostname.includes(".") ? u : ""; } catch (_) { return ""; }
+}
+/* Whether what was just saved will still be here next time: a private
+   window, or blocked site data, keeps settings for this visit only. */
+const calStorageKeeps = () => safeLS.get("gtd.pref." + CAL_FEEDS_KEY) !== null;
+
+async function openCalendars() {
+  // Every area can take a calendar, not only the ones on screen: read the rest in first.
+  await Promise.all(Spaces.list.filter(s => !LOADED.has(s.name)).map(s => loadSpaceRecord(s.name).catch(() => null)));
+  const spaces = Spaces.list.map(s => s.name).filter(n => LOADED.has(n));
+  const mine = spaces.filter(n => !calAreaShared(n));
+  const dflt = mine.find(n => /priv/i.test(n)) || (mine.includes(Spaces.active) ? Spaces.active : mine[0]) || "";
   const rows = el("div", {});
+  /* What happened, said here in the dialog where you are looking, and kept
+     until the next thing happens: not only in a toast that is gone in seconds. */
+  const status = el("div", {class: "calstatus", role: "status", "aria-live": "polite"});
+  const say = (text, kind = "") => { status.className = "calstatus" + (kind ? " " + kind : ""); status.textContent = ""; if (text) status.append(...[].concat(text)); };
+  const lastSaid = () => {
+    let last = null;
+    try { last = JSON.parse(PREF.get("calendar.result", "null")); } catch (_) {}
+    if (!last) return say(calFeeds().length ? "Not imported yet." : "");
+    const when = "Last import " + new Date(last.at).toLocaleString() + " (" + calAgo(last.at) + "). ";
+    if (last.failed && last.failed.length) say([when, el("b", {}, "Not fetched: "), last.failed.join("; ") + "."], "bad");
+    else say(when + calSummary(last), "ok");
+  };
+  // The one button says what it will do: save the link in the box, or just fetch.
+  const label_ = () => { btn.textContent = trim(url.value) ? "Save and import" : "↻ Import now"; };
   const draw = () => {
     rows.textContent = "";
     const feeds = calFeeds();
-    if (!feeds.length) rows.append(el("p", {class: "hint"}, "No calendar links yet."));
+    if (!feeds.length) rows.append(el("p", {class: "hint", style: "text-align:left"}, "No calendar links yet."));
     feeds.forEach((f, i) => rows.append(el("div", {class: "pick", style: "cursor:default"},
       el("span", {class: "k"}, "📅"),
-      el("span", {style: "flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis"}, f.label || calHost(f.url)),
-      el("span", {class: "d"}, "into " + f.space),
+      el("span", {style: "flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis", title: f.url}, f.label || calHost(f.url)),
+      calAreaShared(f.space)
+        ? el("span", {class: "d", style: "color:var(--late)", title: calSharedWhy(f.space)}, "into " + f.space + " — shared, not imported")
+        : el("span", {class: "d"}, "into " + f.space),
       el("button", {class: "textbtn", title: "Forget this link", onclick: () => {
-        setCalFeeds(calFeeds().filter((_, j) => j !== i)); draw();
+        setCalFeeds(calFeeds().filter((_, j) => j !== i)); draw(); lastSaid();
       }}, "Remove"))));
   };
-  draw();
-  const url = el("input", {placeholder: "https://… .ics or webcal://…", type: "url"});
+  const url = el("input", {placeholder: "Paste the secret iCal address: https://… .ics or webcal://…", type: "text",
+    autocomplete: "off", spellcheck: "false"});
   const label = el("input", {placeholder: "e.g. Work calendar"});
-  const area = el("select", {}, ...spaces.map(n => el("option", {value: n}, n)));
+  // A shared area is listed, greyed out, so it is plain why it is not offered.
+  const area = el("select", {}, ...spaces.map(n => el("option", {value: n, disabled: calAreaShared(n) || null},
+    calAreaShared(n) ? n + " — shared with " + calAreaPeople(n) + " people" : n)));
   area.value = dflt;
-  const add = () => {
-    const u = trim(url.value);
-    if (!/^(https|webcal):\/\//i.test(u)) { notify("A calendar link starts with https:// or webcal://.", "warn"); url.focus(); return; }
+
+  /* Whatever is in the box is kept: by the button, by Enter, and by closing. */
+  const keep = () => {
+    const raw = trim(url.value);
+    if (!raw) return true;
+    const u = calNormalizeUrl(raw);
+    if (!u) { say("That does not look like a calendar link. It starts with https:// or webcal://, and Outlook's ends in .ics.", "bad"); url.focus(); return false; }
+    if (!area.value || calAreaShared(area.value)) { say(area.value ? calSharedWhy(area.value) + "." : "Make a private area first, then add the link to it.", "bad"); return false; }
     setCalFeeds([...calFeeds().filter(f => f.url !== u), {url: u, label: trim(label.value), space: area.value}]);
     url.value = ""; label.value = "";
+    label_();
     draw();
-    syncCalendars({quiet: false});
+    if (!calStorageKeeps())
+      say("Saved for now, but this browser is not keeping settings for this page (a private window, or blocked site data), " +
+        "so the link is gone when you close it.", "bad");
+    return true;
   };
+  const run = async () => {
+    if (!keep()) return;
+    if (!calFeeds().length) { say("Paste a calendar link first.", "bad"); url.focus(); return; }
+    if (CAL_SYNCING) { say("Already importing. One moment."); return; }
+    btn.disabled = true;
+    say("Saved. Fetching " + calFeeds().length + (calFeeds().length === 1 ? " calendar" : " calendars") + "…");
+    try { await syncCalendars({quiet: true}); } finally { btn.disabled = false; }
+    lastSaid();
+  };
+  url.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); run(); } });
+  label.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); run(); } });
+  const btn = el("button", {class: "btn primary", onclick: run});
+  url.addEventListener("input", label_);
+  label_();
+
   const file = el("input", {type: "file", accept: ".ics,text/calendar", onchange: async e => {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
+    if (!area.value || calAreaShared(area.value)) { e.target.value = ""; say(area.value ? calSharedWhy(area.value) + "." : "Make a private area first.", "bad"); return; }
     const [from, to] = calWindow();
     const r = importCalendarText(await f.text(), area.value, calHash("file:" + f.name), from, to);
     clearMemo(); render(); flush();
-    notify(calSummary(r));
+    say("From " + f.name + ": " + calSummary(r).replace(/^Calendars: /, ""), "ok");
   }});
+  draw();
+  lastSaid();
   modal({
     center: true, title: "Calendars", hint: "meetings into your day pages",
     body: el("div", {},
       el("p", {class: "hint", style: "text-align:left;margin-top:0"}, "Each meeting in the next " + CAL_DAYS_AHEAD + " days becomes a #meeting line on that day's page, " +
         "with its time, attendees and agenda. The links stay on this device, and serve.py fetches them " +
-        "every " + CAL_EVERY_MIN + " minutes while Today is open."),
-      last ? el("p", {class: "hint", style: "text-align:left"}, "Last import " + new Date(last.at).toLocaleString() + ". " + calSummary(last) +
-        (last.failed && last.failed.length ? " Not fetched: " + last.failed.join("; ") + "." : "")) : null,
+        "every " + CAL_EVERY_MIN + " minutes while the app is open and when you come back to it. " +
+        "↻ Import now, or the ↻ next to Calendars on Today, fetches straight away."),
+      el("p", {class: "hint", style: "text-align:left"}, CAL_LAG_NOTE + " Open the link in a browser to see what it holds right now."),
+      mine.length < spaces.length ? calSharedExplainer() : null,
+      mine.length ? null : el("div", {style: "margin:0 0 12px"},
+        el("button", {class: "btn primary", onclick: () => { closeModal(); newSpacePrompt(async sp => { await openSpace(sp.name); openCalendars(); }); }},
+          "+ Create a private area for your calendar")),
       rows,
       el("div", {class: "field"}, el("label", {}, "Add a calendar link (its secret iCal address)"), url),
       el("div", {style: "display:flex;gap:10px;flex-wrap:wrap"},
         el("div", {class: "field", style: "flex:1"}, el("label", {}, "Name"), label),
         el("div", {class: "field"}, el("label", {}, "Into the area"), area)),
+      status,
       el("div", {class: "field"}, el("label", {}, "Or import a downloaded .ics file into that area"), file)),
-    foot: [el("button", {class: "btn ghost", onclick: () => { closeModal(); syncCalendars({quiet: false}); }}, "Import now"),
-           el("button", {class: "btn primary", onclick: add}, "Add link")],
+    // Closing with a link still in the box keeps it rather than losing it.
+    onClose: () => { if (trim(url.value) && calNormalizeUrl(url.value)) { keep(); notify("Calendar link saved. It is fetched within " + CAL_EVERY_MIN + " minutes, or now with ↻ next to Calendars on Today."); } },
+    foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Close"), btn],
   });
+  setTimeout(() => url.focus(), 30);
 }
 
 /* True when the key belonged to the menu rather than the line. */
@@ -17712,7 +17964,7 @@ function todaySection(s) {
 function viewToday() {
   const today = todayISO();
   const me = whoAmI();
-  const who = state.todayWho && !samePerson(state.todayWho, me) ? state.todayWho : "";
+  const who = state.todayWho && !samePerson(state.todayWho, me) && !isMe(state.todayWho) ? state.todayWho : "";
   const nm = who ? firstNameOf(who) + "'s" : "Your";
   const acts = who ? openActionsOf(who) : myOpen();
   const now = acts.filter(a => a.due && a.due <= today).sort((x, y) => x.due.localeCompare(y.due));
@@ -17789,7 +18041,7 @@ function viewToday() {
   }
 
   const c = el("div", {class: "wrap" + (spaces.length > 1 ? " jwide" : "")});
-  const people = acrossNames(() => members().map(m => m.name)).filter(n => !samePerson(n, me));
+  const people = acrossNames(() => members().map(m => m.name)).filter(n => !samePerson(n, me) && !isMe(n));
   const toDay = iso => go("today", {todayDay: iso && iso !== today ? iso : null});
   const picker = el("input", {type: "date", value: day, "aria-label": "Go to a day",
     title: "Go to a day", onchange: e => { if (parseISO(e.target.value)) toDay(e.target.value); }});
@@ -17803,11 +18055,11 @@ function viewToday() {
         onclick: () => toDay(shiftISO(day, 1))}, "▶")),
     people.length ? fselect("Whose day page", who, [["", "Your page"], ...people.map(n => [n, firstNameOf(n) + "'s page"])],
       v => go("today", {todayWho: v || null})) : null,
-    who ? null : el("button", {class: "btn ghost", title: "Meetings from your calendars, into your day pages", onclick: openCalendars}, "📅 Calendars"),
+    who ? null : calChip(),
     el("button", {class: "btn ghost", title: "Everything that happened, newest first", onclick: () => openHistory()}, "⏱ History"));
   head.classList.add("todayhead");
   c.append(head);
-  if (!who) maybeSyncCalendars();
+  if (!who) { maybeSyncCalendars(); const cal = calendarProblem(); if (cal) c.append(cal); }
   const coach = coachStrip();
   if (coach) c.append(coach);
   if (!who) { const news = newsBox(); if (news) c.append(news); }
@@ -24034,7 +24286,7 @@ function pageSignature(rec) {
 }
 
 function installAutoSync() {
-  const onReturn = () => { autoSyncLinked(); refreshFromServer(); };
+  const onReturn = () => { autoSyncLinked(); refreshFromServer(); maybeSyncCalendars(CAL_RETURN_MIN); };
   window.addEventListener("focus", onReturn);
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) onReturn();
@@ -25279,21 +25531,39 @@ function parentsOfPage(space, path) {
     return up;
   }).get(path) || []);
 }
+/* A page in a folder named after another (pages/1/Party/Invites.md) is part
+   of it: the page by that name beside the folder, or anywhere, and when there
+   is none, still the folder itself, by name. */
+function folderParent(space, path) {
+  return inSpace(space, () => {
+    const parts = path.split("/");
+    const dir = parts.slice(0, -1).join("/");
+    if (parts.length < 3 || dir === PAGES || Object.values(DIRS).includes(dir)) return null;
+    const folder = parts[parts.length - 2];
+    const beside = parts.slice(0, -2).concat(folder + ".md").join("/");
+    if (V.pages.has(beside) && beside !== path) return {path: beside};
+    const found = findExistingPage(folder);
+    return found && found !== path ? {path: found} : {path: null, title: folder};
+  });
+}
 /* The line above a project's title that says what it is part of. Each parent
    opens on a click; the click goes no further, so a card it sits on does not
    open as well. */
 function parentLine(space, path) {
-  const parents = parentsOfPage(space, path);
-  if (!parents.length) return null;
-  const line = el("div", {class: "parentline", title: "Part of " + inSpace(space, () => parents.map(pageTitle).join(", "))},
+  const up = [], fp = folderParent(space, path);
+  if (fp) up.push(fp);
+  for (const p of parentsOfPage(space, path)) if (!up.some(x => x.path === p)) up.push({path: p});
+  if (!up.length) return null;
+  const name = x => x.path ? inSpace(space, () => pageTitle(x.path)) : x.title;
+  const line = el("div", {class: "parentline", title: "Part of " + up.map(name).join(", ")},
     el("span", {class: "up", "aria-hidden": "true"}, "↑"));
-  parents.forEach((p, i) => {
+  up.forEach((x, i) => {
     if (i) line.append(el("span", {class: "sep"}, "·"));
-    line.append(el("span", {class: "pl", role: "link", tabindex: "0",
-      onclick: e => { e.stopPropagation(); e.preventDefault(); openPageIn(space, p); },
-      onkeydown: e => { if (e.key === "Enter") { e.stopPropagation(); e.preventDefault(); openPageIn(space, p); } },
-      onmousedown: e => e.stopPropagation(), onpointerdown: e => e.stopPropagation()},
-      inSpace(space, () => pageTitle(p))));
+    if (!x.path) { line.append(el("span", {class: "pl none", title: "A folder, with no page of its own"}, x.title)); return; }
+    const open = e => { e.stopPropagation(); e.preventDefault(); openPageIn(space, x.path); };
+    line.append(el("span", {class: "pl", role: "link", tabindex: "0", onclick: open,
+      onkeydown: e => { if (e.key === "Enter") open(e); },
+      onmousedown: e => e.stopPropagation(), onpointerdown: e => e.stopPropagation()}, name(x)));
   });
   return line;
 }
@@ -26595,6 +26865,7 @@ function installServiceWorker() {
   }
 
   setInterval(nudgeCheck, 60000);
+  installCalendarTimer();
   scheduleContextPrompts();
 
   /* A file somebody baked for you answers every question onboarding would ask --

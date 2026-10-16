@@ -9,6 +9,7 @@ Logseq or Obsidian open.
 
     python3 serve.py [--vault DIR] [--port 8777] [--host 127.0.0.1]
                      [--password-file FILE] [--insecure]
+    python3 serve.py --calendars-only      (only fetches calendar links)
 
 Defaults to the vault path used by the original Neovim config:
     ~/storage/shared/Documents/OrgMode
@@ -26,6 +27,10 @@ link (Outlook, Google, iCloud) is fetched here on its behalf. Only https
 links to public addresses are fetched, and only a reply that is an
 iCalendar file is passed back, so this is not a general way out to the
 network for any page that can reach the port.
+
+--calendars-only runs just that: no vault, no files, only /api/ping and
+/api/calendar. It is for an app opened from a folder, which keeps its files
+itself and only needs something on this computer to fetch calendar links.
 
 Every path is confined to the vault; traversal outside it is refused.
 
@@ -237,7 +242,11 @@ class Handler(BaseHTTPRequestHandler):
             return self.demand_password()
         route = urlparse(self.path).path
         if route == "/api/ping":
+            if self.vault is None:
+                return self._json(200, {"ok": True, "calendarsOnly": True})
             return self._json(200, {"ok": True, "vault": self.vault.root, "files": len(self.vault.list())})
+        if self.vault is None and route.startswith("/api/") and route != "/api/calendar":
+            return self._send(404, "this helper only fetches calendars")
         if route == "/api/list":
             return self._json(200, self.vault.list())
         if route == "/api/calendar":
@@ -263,7 +272,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_PUT(self):
         if not self.authorised():
             return self.demand_password()
-        if urlparse(self.path).path != "/api/file":
+        if self.vault is None or urlparse(self.path).path != "/api/file":
             return self._send(404, "not found")
         length = int(self.headers.get("Content-Length") or 0)
         if length > MAX_BODY:
@@ -278,7 +287,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_DELETE(self):
         if not self.authorised():
             return self.demand_password()
-        if urlparse(self.path).path != "/api/file":
+        if self.vault is None or urlparse(self.path).path != "/api/file":
             return self._send(404, "not found")
         try:
             self.vault.delete(self._rel())
@@ -409,6 +418,8 @@ def main():
     ap.add_argument("--password-file", help="file whose contents are the password")
     ap.add_argument("--insecure", action="store_true",
                     help="allow a non-loopback bind with no password (don't)")
+    ap.add_argument("--calendars-only", action="store_true",
+                    help="no vault: only fetch calendar links for an app opened from a folder")
     args = ap.parse_args()
 
     password = read_password(args)
@@ -431,10 +442,14 @@ def main():
     if password and len(password) < 10:
         sys.exit("password too short: use at least 10 characters, it is reachable from a browser")
 
-    Handler.vault = Vault(args.vault)
     Handler.password = password
-    count = len(Handler.vault.list())
-    print(f"vault : {Handler.vault.root}  ({count} markdown files)")
+    if args.calendars_only:
+        Handler.vault = None
+        print("mode  : calendars only - fetches calendar links, keeps no files")
+    else:
+        Handler.vault = Vault(args.vault)
+        count = len(Handler.vault.list())
+        print(f"vault : {Handler.vault.root}  ({count} markdown files)")
     print(f"open  : http://{args.host}:{args.port}/")
     print("auth  : " + ("password required" if password else "open (localhost only)"))
     if exposed and password:

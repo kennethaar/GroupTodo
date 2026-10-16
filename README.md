@@ -119,8 +119,16 @@ meeting stays. A meeting that leaves the calendar is removed, or marked
 *Cancelled* if you wrote something under it. The links are kept on this device
 only, because a secret calendar link in a shared folder shares the whole
 calendar. The app may not fetch the internet itself (see the CSP below), so
-`serve.py` fetches the link for it. Without `serve.py`, download the `.ics` file
-and import that instead.
+`serve.py` fetches the link for it. If you open the app from a folder rather
+than from `serve.py`, run just that part and leave it running:
+
+```
+python serve.py --calendars-only
+```
+
+It keeps no files and answers nothing but calendar requests. Until something is
+fetching the links, Today says so, with *Try again*. Without `serve.py` at all,
+download the `.ics` file and import that in *Calendars* instead.
 
 ### The screens
 
