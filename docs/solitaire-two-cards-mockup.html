@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project Solitaire</title>
+<style>
+:root{
+  --felt-hi:#2f7a4b; --felt:#22603a; --felt-lo:#163d26; --hud:#f2efe6; --hud-muted:rgba(242,239,230,.62); --slot:rgba(255,255,255,.22); --slot-faint:rgba(255,255,255,.1);
+  --card:#fbf8f1; --card-ink:#1d1d1b; --card-muted:#7b766a; --card-line:rgba(0,0,0,.13); --red:#b3261e; --grey:#6f6a5f;
+  --gold:#e0ad2e; --gold-soft:rgba(232,190,70,.2); --gold-ink:#8a6508;
+  --back-a:#1f3f8a; --back-b:#2b56b5;
+  --shadow:0 1px 2px rgba(0,0,0,.25),0 6px 16px rgba(0,0,0,.28);
+  --lift:0 2px 4px rgba(0,0,0,.25),0 22px 44px rgba(0,0,0,.45);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --felt-hi:#1f5536; --felt:#163f27; --felt-lo:#0b2216; --hud:#e8e4d8; --hud-muted:rgba(232,228,216,.55); --slot:rgba(255,255,255,.16); --slot-faint:rgba(255,255,255,.07);
+    --card:#ece6d8; --card-ink:#1d1d1b; --card-muted:#756f63;
+  }
+}
+:root[data-theme="dark"]{
+  --felt-hi:#1f5536; --felt:#163f27; --felt-lo:#0b2216; --hud:#e8e4d8; --hud-muted:rgba(232,228,216,.55); --slot:rgba(255,255,255,.16); --slot-faint:rgba(255,255,255,.07);
+  --card:#ece6d8; --card-ink:#1d1d1b; --card-muted:#756f63;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{min-height:100vh;color:var(--hud);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow-x:hidden;
+  background:var(--felt);background-image:radial-gradient(ellipse 90% 70% at 50% 35%,var(--felt-hi),var(--felt) 55%,var(--felt-lo))}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;padding:0}
+.red{color:var(--red)!important}
+.grey{color:var(--grey)!important}
+
+/* ---------- One card size for everything on the table: a poker card, 5 wide to 7 tall ----------
+   It is as large as the screen allows: the top row plus the tableau has to fit the height,
+   and seven cards have to fit the width. */
+.table{
+  --gap:14px;
+  --cw:min(calc((100vh - 150px) / 3.08 * 5 / 7), calc((100vw - 150px) / 7), 170px);
+  --ch:calc(var(--cw) * 7 / 5);
+  --step:calc(var(--ch) * .36);          /* how much of a covered card still shows, as in a solitaire column */
+  display:grid;grid-template-columns:var(--cw) var(--cw) 1fr;column-gap:var(--gap);row-gap:38px;
+  max-width:calc(var(--cw) * 7 + var(--gap) * 6 + 60px);margin:0 auto;padding:46px 20px 12px}
+.cardsize{width:var(--cw);height:var(--ch);border-radius:calc(var(--cw) * .07)}
+
+/* Card backs and faces */
+.back{background:repeating-linear-gradient(45deg,var(--back-a) 0 5px,var(--back-b) 5px 10px);border:3px solid #fbf8f1;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.face{background:var(--card);color:var(--card-ink);box-shadow:var(--shadow)}
+
+/* Piles: how much is in one shows in how high it stands, never as a number */
+.stock,.pile{position:relative;flex:none}
+.slotline{border:2px dashed var(--slot)}
+.stack{position:absolute;inset:0}
+.stack i{position:absolute;inset:0;border-radius:inherit}
+.stack i.edge{background:var(--card);border:1px solid rgba(0,0,0,.2);box-shadow:0 1px 1px rgba(0,0,0,.25)}
+.stack i.top{display:grid;place-items:center;font:calc(var(--cw) * .3) Georgia,serif;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.stack i.top .ix{position:absolute;top:6%;left:8%;font-size:.5em;line-height:1}
+.pile .su{position:absolute;inset:0;display:grid;place-items:center;font:calc(var(--cw) * .3) Georgia,serif;color:var(--slot)}
+.pile small,.stock small{position:absolute;top:calc(100% + 6px);left:-10px;right:-10px;text-align:center;font-size:11.5px;color:var(--hud-muted);white-space:nowrap}
+.pile.glow .stack i.top,.pile.glow.slotline{box-shadow:0 0 0 3px var(--gold),0 0 26px 6px rgba(232,190,70,.45);border-color:var(--gold)}
+.pile.bump{animation:bump .3s}
+@keyframes bump{50%{transform:scale(1.08)}}
+.piles{grid-column:3;display:flex;gap:var(--gap);justify-self:end}
+
+/* The project: the card turned up from the deck */
+.pcard{grid-column:2;position:relative;padding:calc(var(--cw) * .07) calc(var(--cw) * .07) calc(var(--cw) * .07) calc(var(--cw) * .16);display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--lift);z-index:5}
+.idx{position:absolute;top:calc(var(--cw) * .05);left:calc(var(--cw) * .05);width:calc(var(--cw) * .09);text-align:center;font:700 calc(var(--cw) * 0.1064)/1 Georgia,serif}
+.idx i{display:block;font-style:normal;font-size:.85em;margin-top:2px}
+.idx.br{top:auto;left:auto;bottom:calc(var(--cw) * .05);right:calc(var(--cw) * .05);transform:rotate(180deg)}
+.parent{font-size:calc(var(--cw) * 0.0709);color:var(--card-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ptitle{font:600 calc(var(--cw) * 0.096)/1.18 Georgia,serif;margin:1px 0 6px;hyphens:auto;overflow-wrap:anywhere;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.pline{padding:4px 0 3px;border-top:1px dashed var(--card-line)}
+.pline .k{display:block;font:650 calc(var(--cw) * 0.0603) system-ui;letter-spacing:.08em;text-transform:uppercase;color:var(--card-muted)}
+.pline .v{hyphens:auto;font:calc(var(--cw) * 0.0816)/1.25 Georgia,serif;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;min-height:calc(var(--cw) * 0.0993)}
+.pline .v.blank{border-bottom:1.5px solid rgba(0,0,0,.2)}
+.pline.asking{background:linear-gradient(90deg,var(--gold-soft),transparent);margin:0 -6px;padding-left:6px;padding-right:6px;border-radius:4px}
+.pline.asking .k{color:var(--gold-ink)}
+.pline.just .v{animation:ink .9s ease-out}
+@keyframes ink{0%{clip-path:inset(0 100% 0 0)}70%{clip-path:inset(0 0 0 0)}}
+.ctx{font:600 calc(var(--cw) * 0.0674) system-ui;color:#2e6b45}
+.pfoot{margin-top:auto;font-size:calc(var(--cw) * 0.0674);color:var(--card-muted);padding-right:calc(var(--cw) * .1)}
+.pfoot .to{color:var(--gold-ink);font-weight:650}
+
+/* Below the top row: the question on the left, the answers dealt on the right */
+.side{grid-column:1 / span 2;align-self:start;display:flex;flex-direction:column;gap:6px;padding-top:4px}
+.side .slabel{font:650 11px system-ui;letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+.side h3{font:600 23px/1.2 Georgia,serif;margin:0}
+.side .coach{font-size:13px;font-style:italic;color:var(--hud-muted)}
+.side .score{margin-top:18px;display:flex;gap:14px;font-size:13px;color:var(--hud-muted);font-variant-numeric:tabular-nums}
+.side .score b{color:var(--hud)}
+
+/* The tableau: three overlapping rows like solitaire columns, in numpad order, and 0 and . below */
+.tableau{grid-column:3;justify-self:center;position:relative;width:calc(var(--cw) * 3 + var(--gap) * 2);height:calc(var(--step) * 3 + var(--ch))}
+.tableau>*{position:absolute;left:calc((var(--c) - 1) * (var(--cw) + var(--gap)));top:calc((var(--r) - 1) * var(--step));z-index:var(--r)}
+.slot{width:var(--cw);height:calc(var(--step) - 8px);border:1.5px dashed var(--slot-faint);border-radius:calc(var(--cw) * .07)}
+.slot.full{height:var(--ch)}
+.pc{display:flex;flex-direction:column;text-align:left;padding:calc(var(--cw) * .07) calc(var(--cw) * .07) 0 calc(var(--cw) * .16);overflow:hidden;
+  transition:transform .14s cubic-bezier(.2,.8,.2,1),box-shadow .14s}
+.pc .l{font-size:calc(var(--cw) * 0.0887);font-weight:620;line-height:1.22;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.pc .s{font-size:calc(var(--cw) * 0.0709);color:var(--card-muted);margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pc .art{position:absolute;left:0;right:0;bottom:calc(var(--ch) * .2);display:grid;place-items:center;pointer-events:none}
+.pc .art .ace{font:calc(var(--cw) * .36)/1 Georgia,serif}
+.pc .art .av{display:grid;place-items:center;width:calc(var(--cw) * .36);height:calc(var(--cw) * .36);border-radius:50%;background:#b8508a;color:#fff;font:700 calc(var(--cw) * 0.0922) system-ui}
+.pc.keep .s{color:#2e6b45;font-weight:600}
+.pc.new{background:#fffdf5}
+.pc.new .l{color:var(--gold-ink)}
+.pc.none .l{font-style:italic;font-weight:500}
+.pc .caret{display:inline-block;width:2px;height:1em;background:var(--gold-ink);vertical-align:-2px;margin-left:1px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+/* the card you aim at keeps its place in the column: its strip is enough to read, as in real solitaire */
+.pc.aim{transform:translateY(-7px);box-shadow:0 0 0 3px var(--gold),0 0 22px 4px rgba(232,190,70,.4),var(--shadow)}
+.pc.more{background:none;box-shadow:none;padding:0;overflow:visible}
+.pc.more .back{position:absolute;inset:0;border-radius:inherit}
+.pc.more .back:nth-child(2){transform:translate(-3px,-3px)}
+.pc.more .back:nth-child(3){transform:translate(-6px,-6px)}
+.pc.more .lbl{position:absolute;left:0;right:0;top:calc(100% + 6px);text-align:center;font-size:11.5px;color:var(--hud-muted)}
+.pc.more .k{position:absolute;right:-6px;bottom:-6px;z-index:2;background:var(--hud);color:var(--felt-lo);font:700 12px ui-monospace,monospace;border-radius:10px;padding:0 7px}
+.pc.more.aim{box-shadow:none}
+.pc.more.aim .back{box-shadow:0 0 0 3px var(--gold),var(--lift)}
+.pc.shake{animation:shake .25s}
+@keyframes shake{25%{translate:-5px 0}75%{translate:5px 0}}
+.pc.dealt{animation:dealin .32s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--d,0ms)}
+@keyframes dealin{from{opacity:0;translate:-80px -60px;rotate:-12deg}to{opacity:1;translate:0 0;rotate:0deg}}
+.pc.sweep{transition:transform .22s ease-in,opacity .22s ease-in;transform:translateY(24px) scale(.94);opacity:0}
+
+@media (max-width:760px){
+  .table{--gap:8px;--cw:calc((100vw - 32px - 16px) / 3);grid-template-columns:var(--cw) var(--cw) var(--cw);padding:40px 16px 12px;row-gap:30px}
+  .piles{grid-column:1 / -1;justify-self:start;flex-wrap:wrap;row-gap:44px;order:3}
+  .side{grid-column:1 / -1;order:4}
+  .tableau{grid-column:1 / -1;order:5}
+}
+
+.pop{position:fixed;z-index:60;pointer-events:none;font:700 14px system-ui;color:var(--felt-lo);background:#f7d774;border-radius:12px;padding:2px 10px;white-space:nowrap;transform:translate(-50%,0);animation:pop 1.3s ease-out forwards;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+@keyframes pop{0%{opacity:0;transform:translate(-50%,10px) scale(.8)}15%{opacity:1;transform:translate(-50%,0) scale(1.08)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-26px)}}
+
+.keys{text-align:center;font-size:12px;color:var(--hud-muted);padding:22px 16px 10px}
+.keys kbd{font:11px ui-monospace,monospace;border:1px solid var(--slot);border-radius:4px;padding:0 4px;color:var(--hud)}
+.rules{max-width:880px;margin:4px auto 30px;padding:0 16px;font-size:13px;color:var(--hud-muted)}
+.rules summary{cursor:pointer;text-align:center;list-style:none}
+.rules summary::-webkit-details-marker{display:none}
+.rules ul{margin:10px 0 0;padding-left:20px}
+.rules li{margin:5px 0}
+.rules b{color:var(--hud)}
+
+/* the end of the deck */
+.cascade{position:fixed;inset:0;z-index:80;pointer-events:none}
+.summary{grid-column:1 / -1;justify-self:center;width:min(520px,calc(100vw - 32px));text-align:center;padding:26px 40px 22px;border-radius:14px;box-shadow:var(--lift)}
+.summary h2{font:600 20px Georgia,serif;margin:0}
+.summary .big{font:700 40px/1.1 Georgia,serif;margin:14px 0 2px}
+.summary .sub{font-size:13px;color:var(--card-muted)}
+.weeks{display:flex;justify-content:center;gap:5px;margin:14px 0}
+.weeks i{width:18px;height:18px;border-radius:4px;background:var(--card-line)}
+.weeks i.on{background:#e0a92a}
+.weeks i.now{background:#e0a92a;box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--gold);animation:bump .6s .3s}
+.stats{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin:10px 0 16px;font-size:12.5px;color:var(--card-muted)}
+.stats b{display:block;font:700 20px Georgia,serif;color:var(--card-ink)}
+.endbtns{display:flex;flex-direction:column;gap:6px}
+.endbtns button{border:1.5px solid var(--card-line);border-radius:10px;padding:9px 12px;text-align:left;display:flex;gap:10px;align-items:center}
+.endbtns button.aim{border-color:var(--gold);background:var(--gold-soft)}
+.endbtns .n{font:600 11px ui-monospace,monospace;color:var(--card-muted)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--card);color:var(--card-ink);font-size:13px;padding:8px 14px;border-radius:9px;transition:.2s;pointer-events:none;box-shadow:var(--shadow);max-width:calc(100% - 32px);z-index:90}
+.toast.on{opacity:1;transform:translateX(-50%)}
+</style>
+</head>
+<body>
+
+<main class="table" id="table"></main>
+<div class="keys"><kbd>7</kbd>–<kbd>3</kbd> <kbd>.</kbd> pick a card · <kbd>Enter</kbd> plays it · <kbd>0</kbd> draws more · letters find or write · <kbd>⌫</kbd> undo</div>
+<details class="rules">
+  <summary>How to play · why it is strict GTD ▾</summary>
+  <ul>
+    <li><b>Laid out like Klondike.</b> Projects to review lie face down in the deck, top left. The project you are reviewing is the card turned up next to it. It shows what the project says now: its outcome and its next action. The five piles are on the right. Every card on the table is the same size.</li>
+    <li><b>One question at a time, one card per answer.</b> The answers are dealt below the piles in three overlapping rows, in the same places as the numpad keys, with <kbd>0</kbd> and <kbd>.</kbd> underneath. Aim at a card and it is pulled up so you can read it. Play it and it lands on the project.</li>
+    <li><b>Every project is played to one of five piles:</b> Active ♠, Waiting for ♣, Someday/Maybe ♦, Done ♥ or Cancelled ✕. This is the weekly “am I still committed?” check. The 5 card is always “as it is”. The height of a pile, or of the deck, shows how much is in it. There are no numbers to count.</li>
+    <li><b>An active project is always asked about its next action.</b> The current one lies on 5, so Enter keeps it. The other open tasks lie around it, in case one of them is really the next action. The <kbd>.</kbd> card is for a next action you have not captured yet. Just start typing.</li>
+    <li><b>Otherwise only the gaps are asked:</b> a missing outcome, a context for a new next action, and who a waiting project waits on. Anything already set is not asked again. You choose a person only when the project is waiting.</li>
+    <li><b>Letting go counts.</b> A cancelled or parked project lands on its pile like any other card. A shorter list is a win.</li>
+    <li><b>The streak.</b> Finish the deck to keep your weekly streak, then beat your best time. Afterwards there is a bonus round for Someday/Maybe.</li>
+  </ul>
+</details>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ======================= sample data ======================= */
+const PEOPLE = {"Linus Eberhart":9,"Alexander Breznik":6,"Sara Holm":5,"Ingrid Solberg":4,"Petter Nilsen":4,"Mats Lindqvist":3,"Henrik Dahl":3,"Jonas Berg":2,"Maria Svensson":2,"Karin Ek":2,"Eva Strand":1,"Ola Hansen":1};
+const CONTEXTS = ["@Computer","@Phone","@Agendas","@Office","@Home","@Errands","@Online","@Anywhere"];
+const DECK = [
+  {id:"api", name:"API for befaringskladd", parent:"Takstgruppen · webhooks, statistikk, API", idle:41, status:"active",
+   tasks:[{t:"Spør Alexander når API-et blir klart",ctx:null},{t:"Skriv kravspek for feltene i kladden",ctx:"@Computer"},{t:"Sjekk webhook-payload mot befaring-id",ctx:"@Computer"}],
+   suggest:"Takstgruppen sender data rett inn i befaringskladden via API",
+   people:{"Alexander Breznik":[5,"asked on 16 Oct"],"Linus Eberhart":[2,"through CodeBase"]}},
+  {id:"web", name:"Webhooks for befaringsstatus", parent:"Takstgruppen · webhooks, statistikk, API", idle:36, status:"active",
+   outcome:"Takstgruppen får varsel når en befaring endrer status", next:{t:"Test webhook mot Takstgruppens test-endepunkt",ctx:"@Computer"},
+   tasks:[{t:"Dokumenter payload for statusendring",ctx:"@Computer"}]},
+  {id:"dyn", name:"Koble kundekontakt til Dynamics", parent:"Monthly Property NO", idle:33, status:"active",
+   tasks:[{t:"Finn ut hvordan Teams-kontakt kommer inn i Dynamics",ctx:null},{t:"Book møte med CRM-ansvarlig",ctx:"@Computer"}],
+   suggest:"Kundekontakt via Teams logges automatisk i Dynamics",
+   people:{"Sara Holm":[4,"her page links here"],"Henrik Dahl":[3,"in a note on 16 Oct"]}},
+  {id:"meps", name:"Market Demo MEPS", idle:28, status:"active",
+   outcome:"Demoen er holdt med varslinger og standardtekster på plass", next:{t:"Beskriv varslinger i Userflow",ctx:"@Computer"},
+   tasks:[{t:"Sjekk standardtekster på firmanivå",ctx:"@Computer"},{t:"Lag demo-script",ctx:"@Computer"},{t:"Ring Ingrid om demodato",ctx:"@Phone"}]},
+  {id:"notif", name:"Beskrive varslinger i Userflow", parent:"Userflow · low hanging fruit", idle:19, status:"waiting",
+   outcome:"Hver varsling har en kort beskrivelse i Userflow",
+   people:{"Petter Nilsen":[5,"named on this project"],"Linus Eberhart":[3,"in a note on 16 Oct"]}},
+  {id:"std", name:"Standardtekster på firmanivå", parent:"Market Demo MEPS", idle:12, status:"active",
+   outcome:"Et firma kan lagre egne standardtekster i MEPS"},
+  {id:"vat", name:"Våtromsbelegg skal legges inn netto", idle:1, status:"waiting",
+   outcome:"Materialet beregner hulkil og oppbrett slik MEPS gjør", waitingFor:"Linus Eberhart", since:"16 Oct"},
+];
+const SOMEDAY = [
+  {id:"pris", name:"Ny prismodell 2027", idle:84, status:"someday", suggest:"Prismodell 2027 er vedtatt og publisert"},
+  {id:"onb", name:"Onboarding Norsk Takst", idle:61, status:"someday", outcome:"Norsk Takst bruker MEPS i alle avdelinger",
+   tasks:[{t:"Ring Norsk Takst om en pilot",ctx:"@Phone"}]},
+  {id:"app", name:"Mobilapp for befaring offline", idle:120, status:"someday", suggest:"Takstmenn kan gjøre en hel befaring uten nett"},
+];
+/* What already lies on the piles: the projects you finished and cancelled this year */
+const PILES_BEFORE = {active:0, waiting:0, someday:0, done:23, dropped:9};
+const STREAK_BEFORE = 7, STREAK_BEST = 11, BEST_TIME = 460, WEEK = 42, TODAY = "17 Oct";
+
+/* ======================= the game ======================= */
+const SUIT = {active:"♠", waiting:"♣", someday:"♦", done:"♥", dropped:"✕"};
+const PILE_NAME = {active:"Active", waiting:"Waiting for", someday:"Someday/Maybe", done:"Done", dropped:"Cancelled"};
+const PILE_OF = {active:"active", waiting:"waiting", nudge:"waiting", someday:"someday", done:"done", dropped:"dropped"};
+const suitCls = pile => pile==="someday"||pile==="done" ? "red" : pile==="dropped" ? "grey" : "";
+const first = n => n.split(" ")[0];
+const clone = x => JSON.parse(JSON.stringify(x));
+const norm = p => Object.assign({parent:"",outcome:"",next:null,waitingFor:null,since:null,tasks:[],suggest:"",people:{}}, clone(p));
+const newCard = () => ({decided:false,target:null,fixed:0,naDone:false});
+
+function fresh(){
+  const projects={}; DECK.concat(SOMEDAY).forEach(p=>projects[p.id]=norm(p));
+  return {projects, deck:DECK.slice().sort((a,b)=>b.idle-a.idle).map(p=>p.id), pi:0, bonus:false, bonusDone:false,
+    piles:clone(PILES_BEFORE), card:newCard(), stats:{fixed:0,nudged:0,letgo:0,clean:0}, combo:0, over:false};
+}
+let S=fresh(), hist=[], page=0, aim="5", buf="", writing=false, busy=false, just=null, started=Date.now(), elapsed=0;
+const cur = () => S.projects[S.deck[S.pi]];
+
+/* What this card still has to answer. The play is always asked, and so is the
+   next action of an active project. Everything else only when it is missing. */
+function step(){
+  const p=cur(), c=S.card, t=c.target;
+  if(!c.decided) return "commit";
+  if((t==="active"||t==="waiting"||t==="nudge") && !p.outcome) return "outcome";
+  if(t==="active" && !c.naDone) return "next";
+  if(t==="active" && p.next && !p.next.ctx) return "context";
+  if(t==="waiting" && !p.waitingFor) return "who";
+  return null;
+}
+const QS = {
+  commit: {label:"The play", ask:p=>p.status==="waiting"?"Still waiting on this?":p.status==="someday"?"Is this still someday?":"Still committed to this?",
+           coach:p=>p.status==="someday"?"Start it, leave it, or let it go.":"If you won’t move it in the next week or two, it belongs on Someday/Maybe."},
+  outcome:{label:"Done when", ask:()=>"What does done look like?", coach:()=>"Write it as if it were already true.", write:true},
+  next:   {label:"Next action", ask:p=>p.next?"Is this still the next action?":"What is the next action?",
+           coach:p=>p.next?"Keep it, pick another open task, or capture one that isn’t written down yet.":"Pick an open task, or capture one that isn’t written down yet.", write:true},
+  context:{label:"Context", ask:()=>"Where can you do it?", coach:()=>"The context decides which list it shows up on."},
+  who:    {label:"Waiting for", ask:()=>"Waiting for whom?", coach:()=>"Only for what someone else has to move. Today is noted as the date."},
+};
+
+/* ======================= the cards for each question ======================= */
+const RANK = ["5","8","4","6","2","7","9","1","3"];
+const PLACE = {"7":[1,1],"8":[2,1],"9":[3,1],"4":[1,2],"5":[2,2],"6":[3,2],"1":[1,3],"2":[2,3],"3":[3,3],"0":[1,4],".":[3,4]};
+function commitPage(p){
+  const pg={};
+  if(p.status==="waiting"){
+    pg["5"]={label:"Still waiting",sub:p.waitingFor?`on ${first(p.waitingFor)} since ${p.since}`:"then: for whom?",val:"waiting",pile:"waiting",ace:true};
+    if(p.waitingFor) pg["8"]={label:`Nudge ${first(p.waitingFor)}`,sub:"ask for an update",val:"nudge",pile:"waiting",ace:true};
+    pg["9"]={label:"It’s back with me",sub:"active again",val:"active",pile:"active",ace:true};
+  } else if(p.status==="someday"){
+    pg["5"]={label:"Leave it",sub:"stays on Someday/Maybe",val:"someday",pile:"someday",ace:true};
+    pg["8"]={label:"Start it now",sub:"make it active",val:"active",pile:"active",ace:true};
+  } else {
+    pg["5"]={label:"Keep going",sub:"active this week",val:"active",pile:"active",ace:true};
+    pg["8"]={label:"Waiting for…",sub:"someone else moves it",val:"waiting",pile:"waiting",ace:true};
+  }
+  if(p.status!=="someday") pg["4"]={label:"Someday/Maybe",sub:"not in the next weeks",val:"someday",pile:"someday",ace:true};
+  pg["6"]={label:"Done",sub:"the outcome is reached",val:"done",pile:"done",ace:true};
+  pg["2"]={label:"Cancel it",sub:"no longer committed",val:"dropped",pile:"dropped",ace:true};
+  return pg;
+}
+function ctxGuess(t){
+  const s=t.toLowerCase();
+  if(/\b(ring|call|telefon)/.test(s)) return "@Phone";
+  if(/\b(spør|ask|snakk|diskuter|avklar)/.test(s)) return "@Agendas";
+  if(/\b(kjøp|hent|buy)/.test(s)) return "@Errands";
+  return "@Computer";
+}
+function items(p,k){
+  if(k==="who") return Object.keys(PEOPLE).map(n=>{const c=p.people[n];
+    return {label:n,val:n,person:true,score:(c?c[0]*100:0)+PEOPLE[n],sub:c?c[1]:`on ${PEOPLE[n]} project${PEOPLE[n]===1?"":"s"}`};}).sort((a,b)=>b.score-a.score);
+  if(k==="outcome"){ const s=p.suggest||`${p.name} er ferdig og i bruk`;
+    return [{label:s,val:s,sub:"suggested from the title"},{label:"Edit the suggestion",val:s,edit:true,sub:"then change it"}]; }
+  if(k==="next"){
+    const list=[];
+    if(p.next) list.push({label:p.next.t,val:p.next,keep:true,sub:`✓ keep it${p.next.ctx?" · "+p.next.ctx:""}`});
+    p.tasks.filter(t=>!p.next||t.t!==p.next.t).forEach(t=>list.push({label:t.t,val:t,sub:`open task${t.ctx?" · "+t.ctx:""}`}));
+    list.push({label:"Decide next steps",val:{t:`Decide next steps for ${p.name}`,ctx:"@Anywhere"},sub:"when you can’t say yet"});
+    return list;
+  }
+  if(k==="context"){ const g=ctxGuess(p.next.t); return [g,...CONTEXTS.filter(c=>c!==g)].map((c,i)=>({label:c,val:c,sub:i===0?"guessed from the verb":""})); }
+  return [];
+}
+function noneFor(p,k){
+  if(k==="who") return {label:"Not waiting after all",sub:"it’s active",val:"__back",none:true};
+  if(k==="next") return {label:"Not captured yet",sub:"type the next action",write:true,none:true};
+  if(k==="outcome") return {label:"Write my own",sub:"type it",write:true,none:true};
+  return null;
+}
+const words = s => s.toLowerCase().split(/[\s@/·–-]+/);
+function find(list){
+  if(!buf) return list;
+  const b=buf.toLowerCase(), hit=list.filter(i=>!i.edit&&i.label.toLowerCase().includes(b));
+  const starts=i=>words(i.label).some(w=>w.startsWith(b))?1:0;
+  return hit.sort((x,y)=>starts(y)-starts(x));
+}
+function chunk(list,none){
+  const pages=[];
+  for(let i=0;i<list.length;i+=9){ const pg={}; RANK.forEach((pos,j)=>{ if(list[i+j]) pg[pos]=list[i+j]; }); pages.push(pg); }
+  if(!pages.length) pages.push({});
+  if(none) pages.forEach(pg=>pg["."]=none);
+  return pages;
+}
+function pagesFor(p,k){
+  if(k==="commit"){ const pg=commitPage(p); return buf?chunk(find(Object.values(pg))):[pg]; }
+  const write=QS[k].write && (writing||buf);
+  const list = write ? find(items(p,k)).filter(i=>!i.keep||buf) : find(items(p,k));
+  if(write) list.unshift({label:buf,val:k==="next"?{t:buf,ctx:null}:buf,isNew:true,writing:true,sub:k==="next"?"＋ new next action":"＋ as you write it"});
+  if(buf && k==="who" && !list.some(i=>i.label.toLowerCase()===buf.toLowerCase())) list.push({label:buf,val:buf,isNew:true,person:true,sub:"＋ a new person"});
+  if(buf && k==="context" && !list.length) list.push({label:"@"+buf.replace(/^@/,""),val:"@"+buf.replace(/^@/,""),isNew:true,sub:"＋ a new context"});
+  return chunk(list, write?null:noneFor(p,k));
+}
+function pageNow(){ const p=cur(), k=step(), ps=pagesFor(p,k); if(page>=ps.length) page=0; return {p,k,ps,pg:ps[page]}; }
+const firstAim = pg => pg["5"]?"5":(RANK.find(x=>pg[x])||(pg["."]?".":"5"));
+
+/* ======================= drawing ======================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const initials = n => n.split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase();
+const mmss = s => `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+
+/* A pile stands one card higher per card at first, then ever more slowly,
+   so a year of finished projects still fits on the table. */
+const layers = n => n<=0 ? 0 : n<=10 ? n : Math.min(18, 10+Math.round(Math.log2(n-9)*2));
+function stackHTML(n, top){
+  const L=layers(n); let h="";
+  for(let i=0;i<L;i++){
+    const last=i===L-1, cls = top==="back" ? "back" : last ? `top face ${suitCls(top)}` : "edge";
+    h+=`<i class="${cls}" style="transform:translate(${(-i*.5).toFixed(1)}px,${-i*2}px) rotate(${((((i*37)%7)-3)*.35).toFixed(2)}deg)">${last&&top!=="back"?`<span class="ix">${SUIT[top]}</span>${SUIT[top]}`:""}</i>`;
+  }
+  return `<span class="stack">${h}</span>`;
+}
+function topRowHTML(){
+  const left = S.over ? 0 : Math.max(0, S.deck.length-S.pi-1);
+  const glow = !S.over && S.card.decided ? PILE_OF[S.card.target] : null;
+  const stock = `<div class="stock cardsize ${left?"":"slotline"}" id="stock" style="grid-column:1">${stackHTML(left,"back")}<small>${S.bonus?"Someday/Maybe":"To review"}</small></div>`;
+  const piles = `<div class="piles">${Object.keys(SUIT).map(k=>`<div class="pile cardsize ${S.piles[k]?"":"slotline"} ${glow===k?"glow":""}" data-pile="${k}">
+      ${S.piles[k]?stackHTML(S.piles[k],k):`<span class="su">${SUIT[k]}</span>`}<small>${PILE_NAME[k]}</small></div>`).join("")}</div>`;
+  return {stock, piles};
+}
+function pcardHTML(p,k){
+  const target=S.card.target, st=target==="nudge"?"waiting":(target||p.status), pile=PILE_OF[target||p.status]||"active";
+  const line=(key,label,val,blank)=>`<div class="pline ${k===key?"asking":""} ${just===key?"just":""}"><span class="k">${label}</span><span class="v ${blank?"blank":""}">${val}</span></div>`;
+  let h=line("outcome","Done when",esc(p.outcome),!p.outcome);
+  if(st==="waiting") h+=line("who","Waiting for",p.waitingFor?`${esc(p.waitingFor)} <span class="ctx" style="color:var(--card-muted)">since ${p.since}</span>`:"",!p.waitingFor);
+  else if(st==="active"||p.next) h+=line(k==="context"?"context":"next","Next action",p.next?`${esc(p.next.t)}${p.next.ctx?` <span class="ctx">${p.next.ctx}</span>`:""}`:"",!p.next);
+  const foot = target ? `<span class="to">→ ${SUIT[PILE_OF[target]]} ${PILE_NAME[PILE_OF[target]]}</span>` : `untouched for ${p.idle} day${p.idle===1?"":"s"}`;
+  const ix = `${SUIT[pile]}`, cls=suitCls(pile);
+  return `<article class="pcard face cardsize" id="pcard" lang="nb" aria-label="Project card">
+    <span class="idx ${cls}">${ix}</span><span class="idx br ${cls}">${ix}</span>
+    ${p.parent?`<div class="parent">↑ ${esc(p.parent)}</div>`:""}<h2 class="ptitle">${esc(p.name)}</h2>${h}<div class="pfoot">${foot}</div></article>`;
+}
+function cardHTML(pos,it,order){
+  const [c,r]=PLACE[pos], at=`--c:${c};--r:${r};--d:${order*45}ms`;
+  if(!it) return `<div class="slot ${r===4?"full":""}" style="--c:${c};--r:${r}"></div>`;
+  const pile = it.pile || PILE_OF[S.card.target] || "active", cls=suitCls(pile);
+  const idx = `${pos}<i class="${cls}">${SUIT[pile]}</i>`;
+  const art = it.ace ? `<span class="art"><span class="ace ${cls}">${SUIT[pile]}</span></span>` : it.person ? `<span class="art"><span class="av">${initials(it.label||"?")}</span></span>` : "";
+  const label = it.writing ? `${esc(it.label)}<span class="caret"></span>` : esc(it.label).replace(/\//g,"/<wbr>");
+  return `<button class="pc face cardsize dealt ${it.keep?"keep":""} ${it.isNew?"new":""} ${it.none?"none":""}" data-pos="${pos}" style="${at}" type="button">
+    <span class="idx">${idx}</span><span class="idx br">${idx}</span>${art}
+    <span class="l">${label}</span>${it.sub?`<span class="s">${esc(it.sub)}</span>`:""}</button>`;
+}
+function tableauHTML(ps,pg){
+  let t="", order=0;
+  ["7","8","9","4","5","6","1","2","3","."].forEach(pos=>{ t+=cardHTML(pos,pg[pos],pg[pos]?RANK.indexOf(pos)+1:0); order++; });
+  if(ps.length>1){
+    const backs=Math.min(3,ps.length-1);
+    t+=`<button class="pc more cardsize dealt" data-pos="0" style="--c:1;--r:4;--d:${10*45}ms" type="button">${"<i class=\"back\"></i>".repeat(backs)}<b class="k">0</b><span class="lbl">more</span></button>`;
+  } else t+=`<div class="slot full" style="--c:1;--r:4"></div>`;
+  return `<div class="tableau" id="grid">${t}</div>`;
+}
+function sideHTML(p,k){
+  const q=QS[k];
+  return `<div class="side" aria-live="polite"><div class="slabel">${q.label}</div><h3>${esc(q.ask(p))}</h3><div class="coach">${esc(q.coach(p))}</div>
+    <div class="score"><span><b>🔥 ${STREAK_BEFORE} weeks</b></span><span id="clock">${mmss(elapsed)}</span><span>best ${mmss(BEST_TIME)}</span></div></div>`;
+}
+function render(mode){
+  const {stock,piles}=topRowHTML();
+  if(S.over){ $("#table").innerHTML = stock + `<div style="grid-column:2"></div>` + piles + ($("#summary-slot")?"":""); return; }
+  if(!step()){
+    $("#table").innerHTML = stock + pcardHTML(cur(),null) + piles; just=null; return;
+  }
+  const {p,k,ps,pg}=pageNow();
+  if(!pg[aim]&&aim!=="0") aim=firstAim(pg);
+  $("#table").innerHTML = stock + pcardHTML(p,k) + piles + sideHTML(p,k) + tableauHTML(ps,pg);
+  if(!mode) document.querySelectorAll("#grid .pc").forEach(el=>el.classList.remove("dealt"));
+  just=null;
+  paintAim();
+  if(mode==="deal") dealFromStock();
+}
+function paintAim(){ document.querySelectorAll("#grid [data-pos]").forEach(b=>b.classList.toggle("aim",b.dataset.pos===aim)); }
+
+/* ======================= motion ======================= */
+function dealFromStock(){
+  const card=$("#pcard"), st=$("#stock"); if(!card||!st) return;
+  const a=card.getBoundingClientRect(), b=st.getBoundingClientRect();
+  card.style.transition="none";
+  card.style.transform=`translate(${b.left-a.left}px,${b.top-a.top}px) rotateY(90deg)`;
+  card.getBoundingClientRect();
+  card.style.transition="transform .4s cubic-bezier(.2,.8,.2,1)"; card.style.transform="";
+}
+/* The card you play lands on the project; the rest of the hand is swept off the table. */
+function playOnto(done){
+  const chosen=$(`#grid [data-pos="${aim}"]`), pc=$("#pcard");
+  document.querySelectorAll("#grid .pc").forEach(el=>{ el.classList.remove("dealt"); if(el!==chosen) el.classList.add("sweep"); });
+  if(chosen&&pc){
+    const a=chosen.getBoundingClientRect(), b=pc.getBoundingClientRect();
+    chosen.classList.remove("aim"); chosen.style.zIndex=30;
+    chosen.style.transition="transform .32s cubic-bezier(.5,0,.3,1),opacity .14s .22s";
+    chosen.style.transform=`translate(${b.left-a.left+10}px,${b.top-a.top+14}px) rotate(-6deg)`;
+    chosen.style.opacity="0";
+  }
+  setTimeout(done,350);
+}
+function flyToPile(pile,done){
+  const card=$("#pcard"), el=$(`[data-pile="${pile}"]`);
+  if(!card||!el) return done();
+  const a=card.getBoundingClientRect(), b=el.getBoundingClientRect(), lift=layers(S.piles[pile]+1)*2;
+  card.style.zIndex=50;
+  card.style.transition="transform .45s cubic-bezier(.55,0,.3,1)";
+  card.style.transform=`translate(${b.left-a.left}px,${b.top-a.top-lift}px) rotate(4deg)`;
+  setTimeout(done,460);
+}
+function pop(text,pile){
+  const el=$(`[data-pile="${pile}"]`); if(!el||!text) return;
+  const r=el.getBoundingClientRect(), d=document.createElement("div");
+  d.className="pop"; d.textContent=text; d.style.left=(r.left+r.width/2)+"px"; d.style.top=(r.top+r.height/2)+"px";
+  document.body.appendChild(d); setTimeout(()=>d.remove(),1400);
+}
+function toast(t){ const el=$("#toast"); el.textContent=t; el.classList.add("on"); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove("on"),2400); }
+function shake(){ const el=$(`#grid [data-pos="${aim}"]`); if(!el) return; el.classList.remove("shake","dealt"); void el.offsetWidth; el.classList.add("shake"); }
+
+/* ======================= playing ======================= */
+const save = () => { hist.push(clone(S)); if(hist.length>80) hist.shift(); };
+function play(){
+  if(busy||S.over) return;
+  if(aim==="0") return more();
+  const {p,k,pg}=pageNow(), it=pg[aim];
+  if(!it) return shake();
+  if(it.edit){ buf=it.val; writing=true; page=0; aim="5"; render(); return; }
+  if(it.write){ writing=true; page=0; aim="5"; render(); return; }
+  if(it.writing && !buf.trim()) return shake();
+  save();
+  const c=S.card;
+  if(k==="commit"){
+    c.decided=true; c.target=it.val;
+    if(it.val==="active"){ if(p.status==="waiting"){ p.waitingFor=null; p.since=null; } p.status="active"; }
+    else if(it.val==="waiting"){ if(p.status!=="waiting"){ p.waitingFor=null; p.since=null; } p.status="waiting"; }
+    else if(it.val==="nudge"){ S.stats.nudged++; toast(`An ask-for-update note for ${p.waitingFor} is ready to send.`); }
+    else if(it.val==="someday"){ p.status="someday"; if(!S.bonus) S.stats.letgo++; }
+    else { p.status=it.val; if(it.val==="dropped") S.stats.letgo++; }
+  } else if(k==="who"){
+    if(it.val==="__back"){ c.target="active"; p.status="active"; toast("No one to wait on, so it is your move again."); }
+    else { p.waitingFor=it.val; p.since=TODAY; c.fixed++; if(it.isNew){ PEOPLE[it.val]=0; toast(`${it.val} made as a new person page.`); } }
+    just="who";
+  } else if(k==="outcome"){ p.outcome=it.val; c.fixed++; just="outcome"; }
+  else if(k==="next"){
+    c.naDone=true;
+    if(!it.keep){ p.next=clone(it.val); if(it.isNew) p.tasks.unshift(clone(it.val)); c.fixed++; just="next"; }
+  }
+  else if(k==="context"){ p.next.ctx=it.val; const t=p.tasks.find(x=>x.t===p.next.t); if(t) t.ctx=it.val; just="context"; }
+  buf=""; writing=false; page=0;
+  busy=true;
+  playOnto(()=>{
+    busy=false; aim="5";
+    if(step()) return render("stage");
+    finishCard();
+  });
+}
+function finishCard(){
+  busy=true;
+  const c=S.card, pile=PILE_OF[c.target];
+  const kept = c.target==="active"||c.target==="waiting"||(c.target==="someday"&&S.bonus);
+  const clean = kept && c.fixed===0;
+  S.combo = clean ? S.combo+1 : 0;
+  if(clean) S.stats.clean++;
+  S.stats.fixed += c.fixed;
+  const msg = clean ? (S.combo>1?`Clean ×${S.combo}`:"Clean")
+    : c.target==="dropped" ? "Cancelled · lighter list" : c.target==="done" ? "Done ✓" : c.target==="nudge" ? "Nudged"
+    : c.target==="someday" ? "Parked" : c.fixed ? `${c.fixed} update${c.fixed>1?"s":""}` : "";
+  render();
+  setTimeout(()=>flyToPile(pile,()=>{
+    S.piles[pile]++; S.pi++; S.card=newCard();
+    if(S.pi>=S.deck.length){ endDeck(); return; }
+    busy=false; render("deal");
+    const el=$(`[data-pile="${pile}"]`); el&&el.classList.add("bump"); pop(msg,pile);
+  }),just?500:120);
+}
+function undo(){
+  if(busy) return;
+  if(!hist.length) return toast("Nothing to take back.");
+  S=hist.pop(); buf=""; writing=false; page=0; aim="5"; render("deal"); toast("Took back the last move.");
+}
+function more(){ const {ps}=pageNow(); if(ps.length<2) return; page=(page+1)%ps.length; aim=firstAim(pageNow().pg); render("stage"); }
+function moveAim(dx,dy){
+  const at=PLACE[aim]||PLACE["5"]; const c=Math.max(1,Math.min(3,at[0]+dx)), r=Math.max(1,Math.min(4,at[1]+dy));
+  aim = r===4 ? (c===3?".":"0") : Object.keys(PLACE).find(x=>PLACE[x][0]===c&&PLACE[x][1]===r);
+  paintAim();
+}
+
+/* ======================= the end of the deck ======================= */
+function endDeck(){
+  S.over=true; busy=true;
+  if(!S.bonus) elapsed=Math.round((Date.now()-started)/1000);
+  render();
+  cascade(()=>{ busy=false; summary(); });
+}
+/* The old Windows win: cards bounce off the piles and leave a trail. */
+function cascade(done){
+  const cv=document.createElement("canvas"); cv.className="cascade";
+  const W=innerWidth, H=innerHeight, dpr=devicePixelRatio||1; cv.width=W*dpr; cv.height=H*dpr;
+  const ctx=cv.getContext&&cv.getContext("2d"); if(!ctx){ done(); return; }
+  document.body.appendChild(cv); ctx.scale(dpr,dpr);
+  const pileEls=[...document.querySelectorAll(".pile")], piles=pileEls.map(el=>el.getBoundingClientRect()), suits=pileEls.map(el=>el.dataset.pile);
+  const cw=piles[0]?piles[0].width:100, ch=cw*1.4, live=[]; let n=0, t=0, raf, over=false;
+  const total = S.bonus ? 10 : 25;
+  const draw = c => { ctx.fillStyle="#fbf8f1"; ctx.strokeStyle="#333"; ctx.lineWidth=1; ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(c.x,c.y,cw,ch,cw*.07); else ctx.rect(c.x,c.y,cw,ch); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=c.s==="someday"||c.s==="done"?"#b3261e":c.s==="dropped"?"#6f6a5f":"#1d1d1b";
+    ctx.font=`${Math.round(cw*.4)}px Georgia`; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(SUIT[c.s],c.x+cw/2,c.y+ch/2+1); };
+  function frame(){
+    if(over) return;
+    if(n<total && t%14===0){ const i=n%piles.length, r=piles[i]||{left:W/2,top:20}; live.push({x:r.left,y:r.top,vx:(Math.random()*4+3)*(Math.random()<.5?-1:1),vy:-Math.random()*5-1,s:suits[i]}); n++; }
+    for(const c of live){ c.vy+=.5; c.x+=c.vx; c.y+=c.vy; if(c.y+ch>H){ c.y=H-ch; c.vy*=-.78; } draw(c); }
+    for(let i=live.length-1;i>=0;i--) if(live[i].x>W||live[i].x+cw<0) live.splice(i,1);
+    t++;
+    if((n>=total&&!live.length)||t>600) return end();
+    raf=requestAnimationFrame(frame);
+  }
+  function end(){ if(over) return; over=true; cancelAnimationFrame(raf); removeEventListener("keydown",skip,true); removeEventListener("pointerdown",skip,true);
+    cv.style.transition="opacity .5s"; cv.style.opacity="0"; setTimeout(()=>cv.remove(),500); done(); }
+  function skip(e){ e.preventDefault(); e.stopPropagation(); end(); }
+  addEventListener("keydown",skip,true); addEventListener("pointerdown",skip,true);
+  frame();
+}
+let endAim="5";
+function summary(){
+  const streak=STREAK_BEFORE+1, newBest=elapsed<BEST_TIME, n=DECK.length;
+  const weeks=[1,1,1,0,1,1,1,1,1,1,1,2].map(w=>`<i class="${w===2?"now":w?"on":""}"></i>`).join("");
+  const bonusLeft = !S.bonus && !S.bonusDone;
+  if(!bonusLeft) endAim=".";
+  render();
+  $("#table").insertAdjacentHTML("beforeend",`<section class="summary face">
+    <h2>${S.bonus?"Someday/Maybe reviewed too":`Week ${WEEK} · every project reviewed`}</h2>
+    <div class="big">🔥 ${streak} weeks</div>
+    <div class="sub">${S.bonus?"A full weekly review. Your head is clear.":`Your streak goes on. Best ever: ${STREAK_BEST} weeks, ${STREAK_BEST-streak} to go.`}</div>
+    <div class="weeks" title="The last 12 weeks">${weeks}</div>
+    <div class="stats"><div><b>${n}</b>projects</div><div><b>${S.stats.fixed}</b>updates</div><div><b>${S.stats.clean}</b>clean</div><div><b>${S.stats.nudged}</b>nudged</div><div><b>${S.stats.letgo}</b>let go</div>
+      <div><b>${mmss(elapsed)}</b>${newBest?"new best!":`best ${mmss(BEST_TIME)}`}</div></div>
+    <div class="endbtns">
+      ${bonusLeft?`<button data-end="5" class="${endAim==="5"?"aim":""}" type="button"><span class="n">5</span><span><span class="red">${SUIT.someday}</span> <b>Bonus round:</b> Someday/Maybe</span></button>`:""}
+      <button data-end="." class="${endAim==="."?"aim":""}" type="button"><span class="n">.</span><span>Finish the weekly review</span></button>
+    </div></section>`);
+}
+function endChoice(pos){
+  if(pos==="5" && !S.bonus && !S.bonusDone){
+    S.over=false; S.bonus=true; S.deck=SOMEDAY.map(p=>p.id); S.pi=0; S.card=newCard(); hist=[]; aim="5"; render("deal"); return;
+  }
+  if(pos===".") toast("Weekly review done. See you next week.");
+}
+
+/* ======================= keys ======================= */
+const NUMPAD = {Numpad7:"7",Numpad8:"8",Numpad9:"9",Numpad4:"4",Numpad5:"5",Numpad6:"6",Numpad1:"1",Numpad2:"2",Numpad3:"3",NumpadDecimal:".",Numpad0:"0"};
+document.addEventListener("keydown",e=>{
+  if(e.ctrlKey||e.metaKey||e.altKey||busy) return;
+  if(S.over){
+    const pos=NUMPAD[e.code]||(e.key==="."?".":/^[0-9]$/.test(e.key)?e.key:null);
+    if(pos==="5"||pos==="."){ e.preventDefault(); if(S.bonus&&pos==="5") return; endAim=pos; summary(); return; }
+    if(e.key==="Enter"){ e.preventDefault(); if(S.bonus) S.bonusDone=true; endChoice(endAim); }
+    return;
+  }
+  if(NUMPAD[e.code]){ e.preventDefault(); const pos=NUMPAD[e.code]; if(pos==="0") more(); else { aim=pos; paintAim(); } return; }
+  if(e.key==="Enter"){ e.preventDefault(); return play(); }
+  const arrows={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]};
+  if(arrows[e.key]){ e.preventDefault(); return moveAim(...arrows[e.key]); }
+  if(e.key==="Backspace"){ e.preventDefault();
+    if(buf){ buf=buf.slice(0,-1); page=0; aim="5"; render(); }
+    else if(writing){ writing=false; aim="5"; render(); }
+    else undo(); return; }
+  if(e.key==="Escape"){ if(buf||writing){ buf=""; writing=false; page=0; aim="5"; render(); } return; }
+  if(e.key.length!==1) return;
+  if(/^\d$/.test(e.key) && !buf){ e.preventDefault(); if(e.key==="0") more(); else { aim=e.key; paintAim(); } return; }
+  if(e.key==="." && !buf){ e.preventDefault(); aim="."; paintAim(); return; }
+  if(e.key===" " && !buf){ e.preventDefault(); return; }
+  e.preventDefault(); buf+=e.key; page=0; aim="5"; render();
+});
+document.addEventListener("click",e=>{
+  const end=e.target.closest("[data-end]");
+  if(end){ if(S.bonus) S.bonusDone=true; endChoice(end.dataset.end); return; }
+  const b=e.target.closest("#grid [data-pos]"); if(!b||busy) return;
+  aim=b.dataset.pos; paintAim(); play();
+});
+document.addEventListener("mouseover",e=>{
+  const b=e.target.closest("#grid [data-pos]"); if(!b||b.dataset.pos===aim||busy) return;
+  aim=b.dataset.pos; paintAim();
+});
+setInterval(()=>{ if(S.over||S.bonus) return; elapsed=Math.round((Date.now()-started)/1000); const c=$("#clock"); if(c) c.textContent=mmss(elapsed); },1000);
+/* for showing a given project first: solitaire-two-cards-mockup.html#meps */
+{ const h=location.hash.slice(1), i=S.deck.indexOf(h); if(i>0){ S.deck.splice(i,1); S.deck.unshift(h); } }
+render("deal");
+</script>
+</body>
+</html>

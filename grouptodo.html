@@ -135,6 +135,26 @@ body.sidebar-hidden #sidebar{display:none}
 .nav-item .cnt{font-size:12px;font-variant-numeric:tabular-nums;color:var(--fg3)}
 .nav-item .cnt.hot{color:#fff;background:var(--late);border-radius:10px;padding:0 6px}
 .nav-item.small{font-size:13px;padding:5px 10px;color:var(--fg2)}
+/* The timer: a bar fills behind it as you drag out the minutes, and drains as
+   they run down. */
+.nav-item.timer{position:relative;overflow:hidden;touch-action:none;user-select:none}
+.nav-item.timer .fill{position:absolute;left:0;top:0;bottom:0;background:var(--accent-soft);
+  pointer-events:none;transition:width .2s linear}
+.nav-item.timer.dragging .fill{transition:none}
+.nav-item.timer > :not(.fill){position:relative}
+.pfact .trkx{opacity:0;color:var(--fg3);padding:0 6px;flex:none}
+.pfact:hover .trkx,.pfact .trkx:focus{opacity:1}
+.pfact .trkx:hover{color:var(--late)}
+.nav-item.timer .tpart{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;
+  flex:none;border-radius:4px;opacity:.8}
+.nav-item.timer .tpart:hover{opacity:1;color:var(--accent);background:var(--bg2)}
+.nav-item.timer .tpart svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round}
+/* Time is up: the logo and the timer pulse, ten times. */
+@keyframes timerpulse{0%,100%{box-shadow:0 0 0 0 transparent;background:transparent}
+  50%{box-shadow:0 0 0 4px var(--accent);background:var(--accent-soft)}}
+.timerpulse{animation:timerpulse .6s ease-in-out 10}
+.nav-item.timer.running .lbl,.nav-item.timer.dragging .lbl{font-variant-numeric:tabular-nums;color:var(--accent)}
 .sync{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--fg3);padding:8px 10px;
   border-radius:8px;width:100%;text-align:left}
 .sync:hover{background:var(--bg3);color:var(--fg2)}
@@ -889,6 +909,14 @@ details>summary:hover{color:var(--fg2)}
 /* ---------- outliner ---------- */
 .outline{padding:10px 12px}
 .blk{padding-left:18px;position:relative}
+.bl-node{position:relative;padding-left:16px}
+.bl-line{display:flex;align-items:flex-start;gap:7px;padding:1px 0}
+.bl-bullet{position:absolute;left:3px;top:8px;width:6px;height:6px;border-radius:50%;background:var(--fg3)}
+.bl-node.has-kids>.bl-line>.bl-bullet{box-shadow:0 0 0 3px var(--bg4)}
+.bl-txt{flex:1;min-width:0;overflow-wrap:anywhere}
+.bl-trail>.bl-line{color:var(--fg3);font-size:12px}
+.bl-body{white-space:pre-wrap;color:var(--fg3);overflow-wrap:anywhere}
+.bl-node>.bl-node::before{content:"";position:absolute;left:-10px;top:0;bottom:0;border-left:1px solid var(--border)}
 .blk>.line{display:flex;align-items:flex-start;gap:7px;padding:2px 0;border-radius:4px}
 .blk>.line:hover{background:var(--bg3)}
 .bullet{
@@ -897,6 +925,12 @@ details>summary:hover{color:var(--fg2)}
 }
 .blk.has-kids>.bullet{box-shadow:0 0 0 3.5px var(--bg4)}
 .blk.collapsed>.bullet{box-shadow:0 0 0 3.5px var(--bg4)}
+/* The line menu is asked for, never pushed: a quiet ⋯ at the end of the line
+   you are on or pointing at, and Ctrl+. from the keyboard. */
+.blk>.line>.linemenu{order:99;flex:none;align-self:center;padding:0 6px;border-radius:4px;color:var(--fg3);
+  font-size:14px;line-height:18px;opacity:0;transition:opacity .1s}
+.blk>.line:hover>.linemenu,.blk>.line.raw>.linemenu{opacity:1}
+.blk>.line>.linemenu:hover,.blk>.line>.linemenu[aria-expanded="true"]{background:var(--bg4);color:var(--fg)}
 .blk .txt{flex:1;min-width:0;word-wrap:break-word;overflow-wrap:anywhere;font-size:14px;padding:1px 0}
 /* A dropped picture shows at a size you can read a line around, and clicking
    it opens the file itself. */
@@ -967,6 +1001,25 @@ details>summary:hover{color:var(--fg2)}
 .trkchart .ln{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round}
 .trkchart .pt{fill:var(--bg2);stroke:var(--accent);stroke-width:2;cursor:pointer}
 .trkchart .pt:hover{fill:var(--accent)}
+.trksets .bar{fill:color-mix(in srgb,var(--accent) 22%,var(--bg2));stroke:color-mix(in srgb,var(--accent) 45%,var(--bg2));cursor:pointer}
+.trksets .bar:hover{fill:color-mix(in srgb,var(--accent) 34%,var(--bg2))}
+.trksets .hit{fill:transparent;cursor:pointer}
+.trksets text.kg{fill:var(--fg2);font-size:10.5px;font-weight:600;pointer-events:none}
+.trksets text.rp{fill:var(--fg3)}
+.trksets .sl{fill:none;stroke-width:1.8;stroke-linejoin:round;opacity:.85}
+.trksets .sp{stroke:var(--bg2);stroke-width:1.5;cursor:pointer}
+.trksets .sl.s0{stroke:#e0663a}.trksets .sp.s0{fill:#e0663a}
+.trksets .sl.s1{stroke:#2a9d8f}.trksets .sp.s1{fill:#2a9d8f}
+.trksets .sl.s2{stroke:#8e5bd0}.trksets .sp.s2{fill:#8e5bd0}
+.trksets .sl.s3{stroke:#d4a020}.trksets .sp.s3{fill:#d4a020}
+.trksets .sl.s4{stroke:#d0508a}.trksets .sp.s4{fill:#d0508a}
+.trklegend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--fg3);margin-top:4px}
+.trklegend span{display:inline-flex;align-items:center;gap:5px}
+.trklegend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.trklegend i.kgkey{border-radius:2px;width:10px;height:12px;background:color-mix(in srgb,var(--accent) 22%,var(--bg2));
+  border:1px solid color-mix(in srgb,var(--accent) 45%,var(--bg2))}
+.trklegend i.s0{background:#e0663a}.trklegend i.s1{background:#2a9d8f}.trklegend i.s2{background:#8e5bd0}
+.trklegend i.s3{background:#d4a020}.trklegend i.s4{background:#d0508a}
 .trkstrip{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}
 .trkstrip .tday{width:14px;height:14px;border-radius:3px;border:0;padding:0;background:var(--bg4);cursor:pointer}
 .trkstrip .tday.on{background:var(--ok)}
@@ -1290,15 +1343,36 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 @media (max-width:860px){ .board.ctxboard{grid-auto-flow:row;grid-template-columns:1fr} }
 
 /* The review, played as solitaire */
-.solbar{display:flex;gap:10px;align-items:center;margin:0 0 14px;font-size:13px;color:var(--fg3);flex-wrap:wrap}
-/* Every card is a playing card, 5 wide to 7 tall: six in a row on top and
-   three below, the project in the middle of those. Twelve columns, two to a
-   card, so the bottom three can sit centred under the six. The width is
-   capped so both rows fit the window's height. */
-.sol{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;
-  max-width:max(600px,calc((100vh - 230px) * 30 / 14 + 70px));margin:0 auto}
-.sol>*{grid-column:span 2}
-.sol>:nth-child(7){grid-column:4 / span 2}
+/* The heading and how to play in a column on the left, the table filling the
+   rest of the window: as wide as it goes, and exactly as tall as the window. */
+.solwrap{display:grid;grid-template-columns:220px minmax(0,1fr);gap:22px;align-items:start;padding-top:14px}
+.solside{display:flex;flex-direction:column;gap:10px;align-items:flex-start;font-size:13px;color:var(--fg3)}
+.solside .vhead{margin:0;flex-direction:column;align-items:flex-start;gap:8px}
+.solside .vhead-r{margin-left:0}
+.solside .solfilt{display:flex;flex-wrap:wrap;gap:6px}
+.solside .textbtn{padding-left:0}
+.solside .solhow{margin:0;font-size:12px;line-height:1.45}
+/* Nothing is added to the list from here, so the capture bar steps aside */
+body.solview header.top .capture{visibility:hidden}
+body.solview #content{padding-bottom:14px}
+@media (min-width:761px){
+  .solwrap .sol{max-width:none;margin:0;height:calc(100dvh - 92px);min-height:420px;
+    grid-template-rows:repeat(3,minmax(0,1fr))}
+  .solwrap .sol .slot,.solwrap .sol .solpile{aspect-ratio:auto;min-height:0}
+}
+@media (max-width:1000px){
+  .solwrap{grid-template-columns:1fr;gap:12px}
+  .solside{flex-direction:row;flex-wrap:wrap;align-items:center}
+  .solside .vhead{flex-direction:row;align-items:center;width:100%}
+  .solside .vhead-r{margin-left:auto}
+  .solside .solhow{display:none}
+}
+@media (min-width:761px) and (max-width:1000px){ .solwrap .sol{height:calc(100dvh - 150px)} }
+/* Every card lies on its side, 7 wide to 5 tall, in a 3 x 3 laid out like the
+   numpad: the key is the place, and the project is 5, in the middle. The
+   width is capped so all three rows fit the window's height. */
+.sol{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;
+  max-width:max(600px,calc((100vh - 258px) * 7 / 5 + 28px));margin:0 auto}
 /* One box enlarged at a time, by transform only, so nothing inside re-wraps */
 .sol .slot,.sol .solpile{position:relative;transition:transform 180ms cubic-bezier(.2,.8,.2,1),box-shadow 180ms}
 .sol .slot.solzoom{transform:scale(1.45);z-index:50;border-style:solid;border-color:var(--accent);
@@ -1338,20 +1412,55 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
   font-weight:650;padding:3px 10px;border-radius:999px;white-space:nowrap;box-shadow:var(--shadow);transform:translate(-50%,-50%)}
 .solcard:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
 .slot{border:2px dashed var(--border2);border-radius:12px;padding:10px;background:var(--bg2);
-  display:flex;flex-direction:column;gap:7px;aspect-ratio:5/7;overflow-y:auto;min-width:0;min-height:0;box-sizing:border-box}
-.slot.stacked{border:1.5px dashed var(--border);background:transparent;color:var(--fg3);cursor:pointer;
-  align-items:center;justify-content:center;text-align:center;gap:4px;opacity:.75;font:inherit}
-.slot.stacked:hover{opacity:1;border-color:var(--accent)}
-.slot.stacked .lbl{justify-content:center}
-.slot.stacked .val{font-size:12px;color:var(--fg3);overflow-wrap:anywhere}
-.slot.stacked .again{font-size:11px;color:var(--accent)}
-.slot.stacked .lbl::after{content:none}
-.solpile{position:relative;aspect-ratio:5/7}
+  display:flex;flex-direction:column;gap:7px;aspect-ratio:7/5;overflow-y:auto;min-width:0;min-height:0;box-sizing:border-box}
+.slot.solempty{border:1.5px dashed var(--border);background:transparent;opacity:.45}
+/* One answer to the question on the table, one to a box: big words, a line on what it does */
+.slot.solopt{border-style:solid;border-color:var(--border2);cursor:pointer;justify-content:center;align-items:flex-start;gap:4px;padding:14px 14px 12px}
+.slot.solopt:hover{border-color:var(--accent)}
+.slot.solopt .lbl{position:absolute;top:8px;left:10px}
+.solopt-t{font-size:17px;font-weight:650;line-height:1.25;color:var(--fg);overflow-wrap:anywhere}
+.solopt-s{font-size:12.5px;color:var(--fg3)}
+.slot.solopt.on{border-color:var(--ok);background:var(--ok-soft)}
+.slot.solopt.on .solopt-t::before{content:"¹3 a0";color:var(--ok)}
+.slot.solopt.now .solopt-s{color:var(--accent)}
+.slot.solopt.more{border-style:dashed}
+.slot.solopt.more .solopt-t{color:var(--accent)}
+.slot.solopt.write{cursor:text;justify-content:flex-end}
+.slot.solopt .slotform,.slot.solopt input{width:100%;box-sizing:border-box}
+.slot.solopt input.newopt,.slot.solopt input[type=date]{border-radius:8px;padding:5px 8px}
+/* The question the card is on, and the steps beside the table */
+.solcard .solq{margin-top:auto;display:flex;flex-direction:column;gap:2px;padding-top:8px;border-top:1px solid var(--border)}
+.solcard .solq span{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);font-weight:600}
+.solcard .solq b{font-size:17px;color:var(--accent)}
+.solcard .solq + .prog{margin-top:0}
+.solsteps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px;width:100%}
+.solstep{display:grid;grid-template-columns:20px minmax(0,1fr);column-gap:8px;width:100%;text-align:left;padding:4px 6px;
+  border:0;border-radius:6px;background:none;color:var(--fg3);font:inherit;font-size:12.5px;cursor:pointer}
+.solstep:hover{background:var(--bg2);color:var(--fg)}
+.solstep .n{grid-row:span 2;font-family:var(--mono);font-size:11px;line-height:18px;text-align:center}
+.solstep .v{grid-column:2;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.solstep.done{color:var(--fg2)}
+.solstep.done .n{color:var(--ok)}
+.solstep.now{background:var(--accent-soft);color:var(--accent);font-weight:600}
+@media (max-width:1000px){
+  .solsteps{flex-direction:row;flex-wrap:wrap;gap:4px}
+  .solstep{width:auto;grid-template-columns:auto auto;column-gap:5px}
+  .solstep .n{grid-row:auto}
+  .solstep .v{display:none}
+}
+.solpile{position:relative;aspect-ratio:7/5}
 .solpile .under{position:absolute;inset:0;border-radius:14px;background:var(--bg3);border:1.5px solid var(--border2)}
 .solfly{position:fixed;margin:0;z-index:90;pointer-events:none;overflow:hidden;box-shadow:var(--shadow)}
 .slot .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);font-weight:600;
   display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .slot .lbl .sp{text-transform:none;letter-spacing:0;font-size:11px}
+/* The numpad key for each box, written on it */
+.solkey{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:5px;
+  font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;
+  color:var(--fg2);background:var(--bg2);border:1px solid var(--border2);border-bottom-width:2px;line-height:1}
+.slot.solzoom .solkey{color:var(--accent);border-color:var(--accent)}
+.solpile>.solkey{position:absolute;top:-9px;left:-9px;z-index:3}
+@media (hover:none){.solkey{display:none}}
 .slot .val{font-size:14px}
 .slot.filled{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
 .slot.filled .lbl::after{content:"\2713";color:var(--ok)}
@@ -1394,8 +1503,9 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 .solghost{position:fixed;pointer-events:none;z-index:40;margin:0;opacity:.8}
 @media (max-width:760px){
   .sol{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-width:none}
-  .sol>*,.sol>:nth-child(7){grid-column:auto}
-  .sol .solpile{grid-column:1 / -1;order:-1;justify-self:center;width:min(250px,100%)}
+  .sol>*{grid-column:auto}
+  .sol .solpile{grid-column:1 / -1;order:-1;justify-self:center;width:min(340px,100%)}
+  .sol .slot.solempty{display:none}
 }
 
 /* Your page, and a person's */
@@ -1456,6 +1566,7 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 .frow{border-radius:8px}
 .fhead{display:flex;width:100%;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;text-align:left;font-size:13px}
 .fhead:hover,.frow.open .fhead{background:var(--bg3)}
+.frow.hi .fhead{background:var(--bg3);box-shadow:inset 2px 0 0 var(--accent)}
 .frow.lit .fhead{background:var(--accent-soft);color:var(--accent);animation:lit .5s ease-out}
 .frow.lit kbd{border-color:var(--accent);color:var(--accent)}
 @keyframes lit{from{box-shadow:0 0 0 0 var(--accent)}to{box-shadow:0 0 0 7px transparent}}
@@ -1593,7 +1704,7 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 <aside class="helppanel" id="help" aria-label="Help">
   <button class="x" id="helpX" aria-label="Close">&times;</button>
   <h2>Help</h2>
-  <label class="flytoggle"><input type="checkbox" id="flyToggle"> Show the menu beside the line you are editing</label>
+  <label class="flytoggle"><input type="checkbox" id="flyToggle"> Always show the menu under the line you are editing (otherwise &#8943; or <kbd>Ctrl+.</kbd> opens it)</label>
   <p><b>GroupToDo</b> stores your tasks, projects, and reference material as plain Markdown files in your own folders. Every change writes directly back to disk. Built on Getting Things Done (GTD) principles, it is designed to get things out of your head and into a trusted system with minimal friction.</p>
 
   <h3>Capture &amp; Navigation</h3>
@@ -1607,7 +1718,7 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
   </ul>
 
   <h3>Clarify &amp; Organize (Writing on a Line)</h3>
-  <p>Click any line to write or clarify. A menu appears below the line to assign GTD metadata:</p>
+  <p>Click any line to write or clarify. Press <kbd>Ctrl+.</kbd>, or click &#8943; at the end of the line, for a menu to assign GTD metadata:</p>
   <ul>
     <li><b>Triggers:</b> Type <kbd>@</kbd> for people, <kbd>@@</kbd> for contexts, <kbd>#</kbd> for projects, and <kbd>[[</kbd> for pages. In the box at the top, a context you already have works as the last word too: <i>Call Mia about the VAT phone tomorrow</i>.</li>
     <li><b>Auto-linking:</b> Known names are suggested as you type (<kbd>Tab</kbd> to accept). Full names link automatically when you leave the line.</li>
@@ -1651,7 +1762,7 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
   <ul>
     <li>Structured into three GTD phases: <b>Get Clear, Get Current, Get Creative</b>.</li>
     <li>Check off steps as you go; linked steps take you directly to the relevant tool view. Customize the checklist under <i>Routines &amp; lists &gt; Weekly review</i>.</li>
-    <li><b>Project Review (Solitaire Mode):</b> Review active projects one card at a time, starting with the stalest. Filter to include <i>Waiting for</i> or <i>Someday/Maybe</i> lists, and drag or click to update project properties from that Area's most-used options. While you drag, only the box you aim at grows, and the option nearest the pointer grows inside it, with an arrow saying what letting go will do. Choosing the status deals the next card.</li>
+    <li><b>Project Review (Solitaire Mode):</b> Review active projects one card at a time, starting with the stalest. Filter to include <i>Waiting for</i> or <i>Someday/Maybe</i> lists, and drag or click to update project properties from that Area's most-used options. While you drag, only the box you aim at grows, and the option nearest the pointer grows inside it, with an arrow saying what letting go will do. A card is done when every field is answered, or at once when you mark the project Completed or Cancelled; Skip sends it to the end of the deck.</li>
     <li><b>Solitaire keys:</b> each numpad key opens the box in the same place on the table: <kbd>7</kbd> <kbd>8</kbd> <kbd>9</kbd> Organisations, People, Responsibility; <kbd>4</kbd> <kbd>5</kbd> <kbd>6</kbd> Next action, Done when, Deadline; <kbd>1</kbd> Comes after, <kbd>2</kbd> back to the card, <kbd>3</kbd> the status. From the card <kbd>↑</kbd> <kbd>←</kbd> <kbd>→</kbd> open Organisations, Comes after and the status too. Inside a box the arrows move between its options and <kbd>Enter</kbd> or <kbd>Space</kbd> takes one. <kbd>1</kbd>–<kbd>5</kbd> on the number row set the status. <kbd>Esc</kbd> goes back to the card, and <kbd>Shift</kbd>+<kbd>→</kbd> flings it on as reviewed.</li>
   </ul>
 
@@ -1664,8 +1775,11 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
     <tr><td>Ctrl+Enter</td><td>Cycle state: <i>To Do &rarr; Doing &rarr; Waiting &rarr; Done &rarr; Note</i></td></tr>
     <tr><td>Alt+D / C / P / O / J / R</td><td>Set Due date, Context, Person, Organization, Project, or Repeat</td></tr>
     <tr><td>Tab / Shift+Tab</td><td>Accept suggestion / Indent or Outdent</td></tr>
-    <tr><td>Alt+Shift+&uarr; / &darr;</td><td>Move line and its sub-items up or down</td></tr>
+    <tr><td>Alt+1 / 2 / 3 / 8 / Z / P / O / C with words selected</td><td>Turn just those words into a link to a project, list, zettel, person, organisation or context</td></tr>
+    <tr><td>Esc, then Shift+&uarr; / &darr;</td><td>Pick the line, then pick more lines above or below (also Shift+&uarr; / &darr; at the top or bottom of a line)</td></tr>
+    <tr><td>Alt+Shift+&uarr; / &darr;</td><td>Move the line, or the picked lines, and their sub-items up or down</td></tr>
     <tr><td>Alt+S</td><td>Move line to another Area</td></tr>
+    <tr><td>Ctrl+.</td><td>Open or close the line menu</td></tr>
     <tr><td>&uarr; / &darr; / Enter / Esc</td><td>Navigate, select, or close an open line menu</td></tr>
   </table>
   <h4>Global Navigation</h4>
@@ -2170,7 +2284,9 @@ function slugify(title) {
    ============================================================ */
 // Any language's letters in a key, so tracker-knebøy:: is a value too.
 const PROP_RE   = /^(\p{L}[\p{L}\p{N}_-]*)::\s*(.*)$/u;
-const BULLET_RE = /^(\s*)[-*+]\s+(.*)$/;
+// The text is optional: an empty line is saved as a bare "-", and has to read
+// back as an empty line, not as a "-" in the note of the line above it.
+const BULLET_RE = /^(\s*)[-*+](?:\s+(.*))?$/;
 
 function indentLevel(ws) {
   let n = 0;
@@ -2253,23 +2369,37 @@ function parsePage(text) {
    whether an unmarked line is a task or a note. */
 function parseOutlineText(text) {
   const roots = [];
-  const stack = [];                       // {level, block}, outermost first
-  for (const raw of String(text || "").replace(/\r\n?/g, "\n").split("\n")) {
+  const stack = [];                       // {level, block, indent}, outermost first
+  const lines = String(text || "").replace(/\r\n?/g, "\n").split("\n");
+  /* Text with bullets in it is an outline -- most often lines copied out of
+     the app -- and there an unbulleted line under a bullet is that line's
+     note, the way the file holds it, not a line of its own. */
+  const outline = lines.some(l => BULLET_RE.test(l));
+  roots.outline = outline;
+  for (const raw of lines) {
     if (trim(raw) === "") continue;
     const bm = BULLET_RE.exec(raw);
-    const level = indentLevel(bm ? bm[1] : /^[ \t]*/.exec(raw)[0]);
+    const lead = bm ? bm[1] : /^[ \t]*/.exec(raw)[0];
+    const level = indentLevel(lead);
     const rest = trim(bm ? bm[2] : raw);
     if (rest === "") continue;
-    const cur = stack.length ? stack[stack.length - 1].block : null;
+    const top = stack.length ? stack[stack.length - 1] : null;
+    const cur = top ? top.block : null;
     const pm = PROP_RE.exec(rest);
     // A bulleted tracker is a line of its own, not a value of the line above.
     if (pm && cur && !(bm && /^tracker-/i.test(rest))) { cur.props[pm[1]] = trim(pm[2]); continue; }
+    if (!bm && outline && cur) {
+      cur.body.push(raw.slice(Math.min(lead.length, top.indent + 2)).replace(/\s+$/, ""));
+      continue;
+    }
     const [state, title] = splitState(rest);
-    const blk = newBlock({state, title: trim(title)});
+    // No template yet: the props a copied task carries come on the lines after
+    // it, and readyPastedBlocks decides once they are in.
+    const blk = newBlock({state, title: trim(title)}, false);
     while (stack.length && stack[stack.length - 1].level >= level) stack.pop();
     if (stack.length) stack[stack.length - 1].block.children.push(blk);
     else roots.push(blk);
-    stack.push({level, block: blk});
+    stack.push({level, block: blk, indent: lead.length});
   }
   return roots;
 }
@@ -2281,12 +2411,26 @@ function parseOutlineText(text) {
    further down; nothing calls this before they are.  */
 function readyPastedBlocks(roots, opts = {}) {
   let n = 0;
-  walkBlocks(roots, b => {
+  const taken = new Set();
+  for (const [, page] of V.pages)
+    walkBlocks(page.blocks, b => { const id = trim(blockProp(b, "id") || ""); if (id) taken.add(id); });
+  walkBlocks(roots, (b, parent) => {
     n++;
-    if (!b.state && opts.defaultState) b.state = opts.defaultState;
+    /* In a copied outline the lines already say what they are: a note under a
+       task stays a note. Loose text is a list of tasks. The capture box asks
+       for its top lines to be tasks either way. */
+    const wantsDefault = !roots.outline || (opts.outlineRoots && !parent);
+    if (!b.state && opts.defaultState && wantsDefault) b.state = opts.defaultState;
     if (b.state && opts.context && !hasContextLink(b.title))
       b.title = trim(b.title + " [[c/" + opts.context + "]]");
-    if (b.state) { applyTodoTemplate(b); }
+    // A copy of a line that still exists must not take its id:: -- links to
+    // that line would start landing on this one. After a cut it is free.
+    const id = trim(blockProp(b, "id") || "");
+    if (id && taken.has(id)) {
+      for (const k of Object.keys(b.props)) if (k.toLowerCase() === "id") delete b.props[k];
+    } else if (id) taken.add(id);
+    // A task copied out of the app brings its template's fields along with it.
+    if (b.state && !Object.keys(b.props || {}).length) { applyTodoTemplate(b); }
     if (b.title) createLinkedPages(b.title);
   });
   return n;
@@ -5251,14 +5395,14 @@ function backlinksTo(path) {
     for (const [k, v] of Object.entries(page.props || {})) {
       if (points(v)) hits.push({path: p, block: {id: null, title: k + ":: " + v, props: {}, body: [], children: []}});
     }
-    const scan = blocks => {
+    const scan = (blocks, trail) => {
       for (const b of blocks || []) {
         const text = [b.title, ...(b.body || [])].join("\n");
-        if (points(text)) hits.push({path: p, block: b});
-        else scan(b.children || []);
+        if (points(text)) hits.push({path: p, block: b, trail});
+        else scan(b.children || [], [...trail, b]);
       }
     };
-    scan(page.blocks);
+    scan(page.blocks, []);
   }
   return hits;
 }
@@ -5318,13 +5462,36 @@ function renamePage(path, newTitle) {
   return newPath;
 }
 
-function backlinkSubtree(block, depth = 0) {
-  const wrap = el("div", {class: "backlink-node", style: "margin-left:" + (depth * 18) + "px"});
-  wrap.append(el("div", {class: "backlink-line", html: renderInline(block?.title || "")}));
+/* The outline as the page itself draws it -- a bullet per line, a ring on one
+   with lines under it, each level indented under its parent -- but read-only
+   and without the page's own .blk classes, which the editor's handlers own. */
+function backlinkSubtree(block) {
+  const kids = block?.children || [];
+  const node = el("div", {class: "bl-node" + (kids.length ? " has-kids" : "")});
+  node.append(el("div", {class: "bl-line"},
+    el("span", {class: "bl-bullet", "aria-hidden": "true"}),
+    block?.state ? el("span", {class: "state " + block.state}, block.state) : null,
+    el("div", {class: "bl-txt", html: renderInline(block?.title || "")})));
   for (const body of block?.body || [])
-    wrap.append(el("div", {class: "backlink-body", style: "margin-left:18px", html: renderInline(body)}));
-  for (const child of block?.children || []) wrap.append(backlinkSubtree(child, 1));
-  return wrap;
+    node.append(el("div", {class: "bl-body", html: renderInline(body)}));
+  for (const child of kids) node.append(backlinkSubtree(child));
+  return node;
+}
+
+/* The lines the hit hangs under come first, greyed and without their other
+   children, so a link deep in a branch still says what it was about. */
+function backlinkWithTrail(hit) {
+  let tree = backlinkSubtree(hit.block);
+  for (const a of (hit.trail || []).slice().reverse()) {
+    const up = el("div", {class: "bl-node has-kids bl-trail"},
+      el("div", {class: "bl-line"},
+        el("span", {class: "bl-bullet", "aria-hidden": "true"}),
+        a.state ? el("span", {class: "state " + a.state}, a.state) : null,
+        el("div", {class: "bl-txt", html: renderInline(a.title || "")})));
+    up.append(tree);
+    tree = up;
+  }
+  return tree;
 }
 
 function jumpToSourceNode(path, block) {
@@ -5352,8 +5519,9 @@ function backlinksSection(path) {
       tabindex: "0", onclick: openSource,
       onkeydown: e => { if (e.key === "Enter" || e.key === " ") openSource(e); }
     },
-      el("button", {class: "nm", style: "flex:0 0 160px;text-align:left;font-weight:600;color:var(--accent)", onclick: openSource}, pageTitle(h.path)),
-      el("div", {class: "t-body backlink-subtree", style: "font-size:13px;color:var(--fg2);line-height:1.4;min-width:0;flex:1"}, backlinkSubtree(h.block))
+      el("button", {class: "nm", style: "flex:0 0 160px;text-align:left;font-weight:600;color:var(--accent);white-space:normal;overflow-wrap:anywhere", onclick: openSource}, pageTitle(h.path)),
+      el("div", {class: "t-body backlink-subtree", style: "font-size:13px;color:var(--fg2);line-height:1.4;min-width:0;flex:1"},
+        backlinkWithTrail(h))
     ));
   }
   return el("div", {class: "section quiet", style: "margin-top:36px;opacity:1"},
@@ -7074,8 +7242,9 @@ function appLinkTarget(raw) {
 }
 // href arrives already escaped for HTML, so it is put back first and
 // escaped once more on the way out.
-const appLinkHref = href => esc(appLinkTarget(href.replace(/&(amp|quot|#39|lt|gt);/g, (all, c) =>
-  ({amp: "&", quot: '"', "#39": "'", lt: "<", gt: ">"}[c]))));
+const unesc = s => String(s).replace(/&(amp|quot|#39|lt|gt);/g, (all, c) =>
+  ({amp: "&", quot: '"', "#39": "'", lt: "<", gt: ">"}[c]));
+const appLinkHref = href => esc(appLinkTarget(unesc(href)));
 /* A web page goes to a tab of its own; everything else goes through location,
    so the browser passes the intent to the app and the page stays put. */
 function openAppLink(target) {
@@ -7147,6 +7316,10 @@ function renderInline(text) {
     return sp + hold(`<a class="applink" href="${appLinkHref(addr)}" title="${addr}">${addr}</a>`) + tail;
   });
   h = h.replace(/\[\[([^\]]+(?:\]\[[^\]]*)?)\]\]/g, (all, t) => {
+    // The line was escaped as a whole above, so the link is put back to what
+    // was written and escaped once more on the way out -- or an apostrophe in
+    // a page name shows as &#39; and the link points at a page that is not there.
+    t = unesc(t);
     const raw = trim(t.split("][")[0]);
     const target = esc(raw);
     const pfx = (/^([^/]+)\//.exec(raw) || [])[1];
@@ -7155,9 +7328,7 @@ function renderInline(text) {
        about one, and it stays a plain readable line in the markdown. */
     if (pfx === "go") {
       const id = raw.slice(3);
-      // The text reached here already escaped, so a label written in the task
-      // stands as it is and only a label of our own needs escaping.
-      const shown = t.includes("][") ? trim(t.split("][")[1]) : esc(tourLabel(id));
+      const shown = esc(t.includes("][") ? trim(t.split("][")[1]) : tourLabel(id));
       return `<span class="wikilink go" data-link="${target}">${shown} ↗</span>`;
     }
     const known = pfx === "c" || pfx === "z" || pfx === "p" || pfx === "o" || (pfx && STATUS_DIRS[pfx]);
@@ -7387,6 +7558,8 @@ const NAV_ITEMS = [
   // Only once a day page has a tracker line on it.
   {id: "trackers", icon: "↗", label: "Trackers", small: true, when: () => trackerList().length > 0},
   "grow",
+  // Not a view: a countdown you start from the sidebar. See timerNavItem().
+  {id: "timer",    icon: "◷", label: "Timer", small: true},
   {id: "review",   icon: "✓", label: "Weekly review"},
 ];
 
@@ -7431,6 +7604,7 @@ function renderNav() {
   for (const it of NAV_ITEMS) {
     if (it === "sep") { nav.append(el("div", {class: "nav-sep"})); continue; }
     if (it === "grow") { nav.append(el("div", {class: "nav-grow"})); continue; }
+    if (it.id === "timer") { nav.append(timerNavItem(it)); continue; }
     const here = state.view === it.id;
     if (it.when && !here && !it.when()) continue;
     const n = navCount(it.id);
@@ -7445,6 +7619,203 @@ function renderNav() {
       el("span", {class: "lbl"}, it.label),
       n ? el("span", {class: "cnt" + (hot ? " hot" : "")}, String(n)) : null));
   }
+}
+
+/* ---------- the timer ----------
+   A pomodoro in the sidebar. Click it for the usual length (minutes:: on
+   pages/8/timer.md, 2 if there is no such page), or press and drag to pick
+   1 to 60 minutes, TIMER_PX pixels a minute. Which way you drag says how it
+   ends: up rings, down or right is silent, only a note in the corner. A click
+   rings. Click it while it runs to stop it. The end time is kept per device,
+   so a reload does not lose it. */
+const TIMER_PATH = join(DIRS.lists, "timer.md");
+const TIMER_MAX = 60;
+const TIMER_PX = 4;
+let TIMER_SOUND = safeLS.get("gtd.timerSound", "1") === "1";
+let TIMER_END = Number(safeLS.get("gtd.timerEnd", 0)) || 0;
+let TIMER_LEN = Number(safeLS.get("gtd.timerLen", 0)) || 0;
+let TIMER_TICK = null;
+
+function timerDefaultMinutes() {
+  const raw = getPage(TIMER_PATH)?.props?.minutes;
+  const n = parseFloat(String(raw ?? "").replace(",", "."));
+  return n > 0 ? Math.min(n, TIMER_MAX) : 2;
+}
+/* volume:: on the same page, 0 to 100; 30 if it says nothing. */
+function timerVolume() {
+  const n = parseFloat(String(getPage(TIMER_PATH)?.props?.volume ?? "").replace(",", "."));
+  return (n >= 0 ? Math.min(n, 100) : 30) / 100;
+}
+/* The settings page, made with the default in it the first time it is asked for. */
+function openTimerPage() {
+  if (!V.pages.has(TIMER_PATH)) putPage(TIMER_PATH, {
+    props: {title: "timer", minutes: "2", volume: "30", created: todayStamp()},
+    blocks: [newBlock({title: "The minutes above are what a click on the timer starts, 1 to " + TIMER_MAX + "."}),
+             newBlock({title: "The volume is how loud the alarm rings, 0 to 100."})],
+  });
+  openPage(TIMER_PATH);
+}
+const timerLeft = () => Math.max(0, TIMER_END - Date.now());
+const clock = ms => { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+
+function timerStart(minutes, sound = true) {
+  // Asked from the click that starts a timer, which is when browsers allow it.
+  try { if (window.Notification?.permission === "default") Notification.requestPermission(); } catch (_) {}
+  TIMER_SOUND = sound;
+  safeLS.set("gtd.timerSound", sound ? "1" : "0");
+  TIMER_LEN = minutes * 60000;
+  TIMER_END = Date.now() + TIMER_LEN;
+  safeLS.set("gtd.timerEnd", String(TIMER_END));
+  safeLS.set("gtd.timerLen", String(TIMER_LEN));
+  timerRun();
+}
+function timerStop() {
+  TIMER_END = 0;
+  safeLS.del("gtd.timerEnd");
+  clearInterval(TIMER_TICK); TIMER_TICK = null;
+  timerPaint();
+}
+function timerRun() {
+  clearInterval(TIMER_TICK);
+  TIMER_TICK = setInterval(() => {
+    if (timerLeft() > 0) return timerPaint();
+    const mins = Math.round(TIMER_LEN / 60000);
+    timerStop();
+    timerDone(mins);
+  }, 1000);
+  timerPaint();
+}
+function timerDone(mins) {
+  const msg = "Time is up: " + mins + " minute" + (mins === 1 ? "" : "s") + ".";
+  notify(msg, "warn");
+  try {
+    if (window.Notification?.permission === "granted") {
+      const n = new Notification("GroupTodo: time is up", {body: msg, tag: "gtd-timer",
+        icon: "icon.svg", requireInteraction: true, silent: !TIMER_SOUND});
+      n.onclick = () => { window.focus(); n.close(); };
+    }
+  } catch (_) {}
+  timerFlash();
+  if (!TIMER_SOUND) return;
+  timerChime(10);
+}
+
+/* A bell struck ten times, loud: a fundamental and the inharmonic partials a
+   real bell has, each dying away, alternating two notes so it reads as a
+   chime rather than a beep. A compressor keeps the sum from clipping. */
+function timerChime(times) {
+  try {
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    const out = ac.createDynamicsCompressor(), level = ac.createGain();
+    level.gain.value = timerVolume();
+    out.connect(level); level.connect(ac.destination);
+    const gap = 0.8;
+    for (let i = 0; i < times; i++) {
+      const t0 = ac.currentTime + 0.05 + i * gap, f = i % 2 ? 784 : 988;
+      for (const [mul, vol, len] of [[1, 1, 1.6], [2.76, 0.5, 0.9], [5.4, 0.25, 0.5], [0.5, 0.35, 1.8]]) {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = "sine"; o.frequency.value = f * mul;
+        o.connect(g); g.connect(out);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(vol, t0 + 0.008);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
+        o.start(t0); o.stop(t0 + len + 0.05);
+      }
+    }
+    setTimeout(() => ac.close(), (times * gap + 2.5) * 1000);
+  } catch (_) {}
+}
+
+/* The tab title blinks and the logo and the timer pulse, ten times each, so the
+   end is seen from another window or across the room. */
+let TIMER_FLASH = null;
+function timerFlash() {
+  clearInterval(TIMER_FLASH);
+  const was = document.title;
+  let n = 0;
+  TIMER_FLASH = setInterval(() => {
+    document.title = n % 2 ? was : "\u23F0 Time is up";
+    if (++n >= 20) { clearInterval(TIMER_FLASH); document.title = was; }
+  }, 600);
+  for (const sel of ["#brand", "#nav .nav-item.timer"]) {
+    const t = $(sel);
+    if (!t) continue;
+    t.classList.remove("timerpulse");
+    void t.offsetWidth;            // restart the animation if it is still going
+    t.classList.add("timerpulse");
+    t.addEventListener("animationend", () => t.classList.remove("timerpulse"), {once: true});
+  }
+}
+
+/* Redraw just the timer, not the whole sidebar, once a second. */
+function timerPaint(drag) {
+  const b = $("#nav .nav-item.timer");
+  if (!b) return;
+  const left = timerLeft(), dragging = drag != null;
+  const bell = on => on ? " \u{1F514}\uFE0E" : " \u{1F515}\uFE0E";
+  b.classList.toggle("running", left > 0 && !dragging);
+  b.classList.toggle("dragging", dragging);
+  b.querySelector(".lbl").textContent = dragging ? drag.minutes + " min" + bell(drag.sound)
+    : left > 0 ? clock(left) + bell(TIMER_SOUND) : "Timer";
+  b.querySelector(".fill").style.width = (dragging ? drag.minutes / TIMER_MAX
+    : left > 0 && TIMER_LEN ? left / TIMER_LEN : 0) * 100 + "%";
+  b.title = left > 0 ? "Click to stop, or drag to start over"
+    : "Click for " + timerDefaultMinutes() + " min. Drag up to ring, down or right to stay silent, up to " + TIMER_MAX + " min";
+}
+
+function timerNavItem(it) {
+  /* Bell on the left starts the usual length with the alarm, the stopwatch on
+     the right starts it silent. */
+  const part = (name, title, svg) => {
+    const p = el("span", {class: "tpart", "data-part": name, title});
+    p.innerHTML = svg;
+    return p;
+  };
+  const b = el("button", {class: "nav-item small timer"},
+    el("span", {class: "fill"}),
+    part("bell", "Usual length, with the alarm",
+      '<svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/><path d="M12 3v2"/></svg>'),
+    el("span", {class: "lbl"}, it.label),
+    part("silent", "Usual length, silent",
+      '<svg viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5"/><path d="M10 2.5h4"/><path d="M12 2.5V6"/><path d="M18.5 6.5l1.5-1.5"/></svg>'),
+    part("more", "Set the usual length (8/timer.md)",
+      '<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/></svg>'));
+  let down = null;   // {x, y, picked} while the pointer is pressed
+  const pick = e => {
+    const dx = e.clientX - down.x, dy = e.clientY - down.y;
+    return {minutes: Math.max(1, Math.min(TIMER_MAX, Math.round(Math.hypot(dx, dy) / TIMER_PX))),
+            sound: dy < 0 && -dy > Math.abs(dx)};
+  };
+  b.addEventListener("pointerdown", e => {
+    if (e.button) return;
+    down = {x: e.clientX, y: e.clientY, picked: null, part: e.target.closest("[data-part]")?.dataset.part};
+    b.setPointerCapture(e.pointerId);
+  });
+  b.addEventListener("pointermove", e => {
+    if (!down) return;
+    if (down.picked == null && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 5) return;
+    down.picked = pick(e);
+    timerPaint(down.picked);
+  });
+  const end = (e, cancel) => {
+    if (!down) return;
+    const {picked, part} = down;
+    down = null;
+    if (cancel) return timerPaint();
+    if (picked == null && part === "more") return openTimerPage();
+    if (picked != null) timerStart(picked.minutes, picked.sound);
+    else if (timerLeft() > 0) timerStop();
+    else timerStart(timerDefaultMinutes(), part !== "silent");
+  };
+  b.addEventListener("pointerup", e => end(e, false));
+  b.addEventListener("pointercancel", e => end(e, true));
+  b.addEventListener("keydown", e => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    if (timerLeft() > 0) timerStop(); else timerStart(timerDefaultMinutes());
+  });
+  queueMicrotask(() => { timerPaint(); if (timerLeft() > 0 && !TIMER_TICK) timerRun(); });
+  return b;
 }
 
 /* ---------- the sidebar, out of the way ----------
@@ -7636,7 +8007,7 @@ function installCaptureBox() {
     const roots = parseOutlineText(raw);
     if (!roots.length) return;
     const path = ensureJournal(todayISO());
-    const n = readyPastedBlocks(roots, {defaultState: "TODO", context: state.context});
+    const n = readyPastedBlocks(roots, {defaultState: "TODO", context: state.context, outlineRoots: true});
     for (const blk of roots) getPage(path).blocks.push(blk);
     touch(path); noteTodoTouched(); coachMark("add"); render();
     notify(n + " tasks added from what you pasted.");
@@ -16364,7 +16735,8 @@ function outlineBlock(path, page, b, opts = {}) {
 
     const sibs = siblingsOf(page, b);
     let tail = null;
-    if (trim(whole) === "" && !(b.children || []).length) {
+    // What stays on the line is what is outside the selection being pasted over.
+    if (trim(before + after) === "" && !(b.children || []).length) {
       // Pasted into the empty block you just opened: the list takes its place
       // rather than leaving a blank line above itself. A block with children
       // under it is not spare like that, so there the list goes after it.
@@ -16374,7 +16746,9 @@ function outlineBlock(path, page, b, opts = {}) {
       /* At the very start of a line that has words on it, the list goes above
          and the line keeps them. Emptying it and rebuilding it underneath
          leaves a blank block where the caret used to be, which is the same
-         debris Enter-at-the-start already takes care to avoid. */
+         debris Enter-at-the-start already takes care to avoid. A selection
+         from the start is pasted over, so only what follows it stays. */
+      txt.textContent = after;
       txt.blur();
       sibs.splice(sibs.indexOf(b), 0, ...roots);
     } else {
@@ -16421,7 +16795,7 @@ function outlineBlock(path, page, b, opts = {}) {
     if (st === "WAIT" && !assigneeOf(b)) FLY_OPEN_AFTER = {id: b.id, k: "who"};
     focusBlock(b.id, false);
   });
-  txt.addEventListener("input", () => { if (FLY && FLY.txt === txt) { FLY.box.hidden = !!(SUGGEST && SUGGEST.host === txt) || (!flyOn() && !FLY.open); flyPlace(); } });
+  txt.addEventListener("input", () => { if (FLY && FLY.txt === txt) { FLY.box.hidden = flyHidden(); flyPlace(); } });
   txt.addEventListener("keydown", e => {
     // The menu under the line, then the suggestion list, own their keys first.
     if (flyKey(e)) return;
@@ -16487,6 +16861,14 @@ function outlineBlock(path, page, b, opts = {}) {
       txt.blur();
       if (shiftBlocks(page, [b], e.key === "ArrowUp" ? -1 : 1)) { touch(path); noteTodoTouched(); render(); }
       focusBlock(b.id);
+    } else if (e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey &&
+               (e.key === "ArrowUp" ? caretAtEdge(txt).first : e.key === "ArrowDown" && caretAtEdge(txt).last)) {
+      /* Shift and an arrow at the top or bottom of the line has no more text to
+         take in, so it goes on and takes in lines instead. */
+      e.preventDefault();
+      txt.blur();
+      lineSelFrom(path, b.id);
+      lineSelMove(e.key === "ArrowUp" ? -1 : 1, true);
     } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       // Back into the same line afterwards, so ctrl-enter twice means two steps.
       e.preventDefault(); txt.blur(); cycleState(path, b); focusBlock(b.id);
@@ -16503,10 +16885,19 @@ function outlineBlock(path, page, b, opts = {}) {
     } else if (e.key === "ArrowDown" && !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey) {
       if (caretAtEdge(txt).last && moveToBlock(txt, 1)) e.preventDefault();
     } else if (e.key === "Escape") {
+      // Out of the words and onto the line itself, so shift and the arrows can
+      // pick more lines and alt-shift and the arrows can move them.
       txt.blur();
+      lineSelFrom(path, b.id);
     }
   });
   line.append(txt);
+  /* Pressing it must not take the caret out of the line, or the blur would
+     close the very menu it is opening. */
+  line.append(el("button", {class: "linemenu", tabindex: "-1", title: "Line menu (Ctrl+.)", "aria-label": "Line menu",
+    "aria-haspopup": "menu", "aria-expanded": "false",
+    onmousedown: e => e.preventDefault(),
+    onclick: e => { e.stopPropagation(); flySummon(txt); }}, "⋯"));
   paintTrackerLine(line, txt, path, b);
   node.append(line);
 
@@ -16539,7 +16930,34 @@ function outlineBlock(path, page, b, opts = {}) {
    so clicking into a line and selecting a word inside it works as it always
    did.
    ============================================================ */
-const LINE_SEL = {path: null, ids: []};
+const LINE_SEL = {path: null, ids: [], anchor: null, head: null};
+
+/* ---------- picking lines from the keyboard ----------
+   Esc on a line picks that line. Shift and an arrow then reach further up or
+   down from where the pick started; the arrows alone move a one-line pick;
+   Enter goes back into the line the pick ended on. The anchor is where it
+   started and the head where it has got to, and every line between them is
+   picked, the same as a drag. */
+const blkEl = id => $('.blk[data-id="' + id + '"]');
+function lineSelFrom(path, id) {
+  LINE_SEL.path = path;
+  LINE_SEL.ids = [id];
+  LINE_SEL.anchor = LINE_SEL.head = id;
+  paintLineSel();
+}
+function lineSelMove(dir, extend) {
+  const head = blkEl(LINE_SEL.head), outline = head && head.closest(".outline");
+  if (!outline) return;
+  const all = $$(".blk", outline);
+  const next = all[all.indexOf(head) + dir];
+  if (!next || !next.dataset.id) return;
+  LINE_SEL.head = next.dataset.id;
+  if (!extend) LINE_SEL.anchor = LINE_SEL.head;
+  const anchor = blkEl(LINE_SEL.anchor) || next;
+  LINE_SEL.ids = blksBetween(outline, anchor, next).map(n => n.dataset.id).filter(Boolean);
+  paintLineSel();
+  next.scrollIntoView({block: "nearest"});
+}
 
 /* Alt-shift and an arrow, as in Logseq: the line -- or the run of picked lines
    beside each other -- moves one place with everything under it. Past the
@@ -16571,6 +16989,7 @@ function lineSelClear(paint = true) {
   const had = LINE_SEL.ids.length;
   LINE_SEL.path = null;
   LINE_SEL.ids = [];
+  LINE_SEL.anchor = LINE_SEL.head = null;
   // The bar goes whatever happens: the lines it was about are no longer picked,
   // and a bar offering to cut nothing is worse than no bar.
   lineSelHud();
@@ -16600,7 +17019,7 @@ function lineSelHud() {
   hud.append(el("button", {class: "btn sm ghost", onclick: () => lineSelCut()}, "Cut"));
   hud.append(el("button", {class: "btn sm ghost", onclick: () => lineSelDelete()}, "Delete"));
   hud.append(el("button", {class: "btn sm ghost", onclick: () => lineSelClear()}, "Let go"));
-  hud.append(el("span", {class: "k"}, "ctrl-c · ctrl-x · ctrl-v · del · esc"));
+  hud.append(el("span", {class: "k"}, "shift-↑↓ more · alt-shift-↑↓ move · ctrl-c · ctrl-x · ctrl-v · del · esc"));
 }
 
 /* The lines the box touched, as the outermost ones only: a line inside another
@@ -16740,6 +17159,7 @@ function attachLineSelect(outline, path) {
       if (sel) sel.removeAllRanges();
       const end = blk && outline.contains(blk) ? blk : start;
       LINE_SEL.ids = blksBetween(outline, start, end).map(n => n.dataset.id).filter(Boolean);
+      LINE_SEL.anchor = start.dataset.id; LINE_SEL.head = end.dataset.id;
       paintLineSel();
     };
 
@@ -16778,8 +17198,16 @@ document.addEventListener("keydown", e => {
     const got = lineSelBlocks();
     if (got && shiftBlocks(got.page, got.blocks, e.key === "ArrowUp" ? -1 : 1)) {
       touch(LINE_SEL.path); noteTodoTouched(); render(); paintLineSel();
+    } else if (got && !got.blocks.every(b => siblingsOf(got.page, got.blocks[0]).includes(b))) {
+      notify("Only lines side by side, at the same depth, move together.");
     }
     return;
+  }
+  if (!e.altKey && !mod && (e.key === "ArrowUp" || e.key === "ArrowDown") && LINE_SEL.head) {
+    stop(); lineSelMove(e.key === "ArrowUp" ? -1 : 1, e.shiftKey); return;
+  }
+  if (e.key === "Enter" && !e.altKey && !mod && !e.shiftKey && LINE_SEL.head) {
+    stop(); const id = LINE_SEL.head; lineSelClear(); focusBlock(id); return;
   }
   if (mod && (e.key === "c" || e.key === "C")) { stop(); lineSelCopy(); return; }
   if (mod && (e.key === "x" || e.key === "X")) { stop(); lineSelCut(); return; }
@@ -16932,6 +17360,7 @@ function flyRows() {
   return [
     {k: "kind", ic: t ? "•" : "☐", label: t ? "Make it a note" : "Make it a task", key: "Alt+T"},
     {k: "mkproj", ic: ICON.projects, label: "Make it a project", key: "Alt+1"},
+    {k: "mkzet", ic: "◇", label: "Turn into zettel", val: "a note of its own", key: "Alt+Z"},
     {k: "state", ic: "◐", label: "State", val: t ? STATE_WORD[t] : "Note", key: "Ctrl+Enter",
      opts: [["TODO", "To do"], ["DOING", "Doing"], ["WAIT", "Waiting"], ["DONE", "Done"], ["", "Note"]]},
     {k: "due", ic: "📅", label: "Due", val: dueDate(block) ? humanDate(dueDate(block)) : "None", key: "Alt+D", date: true,
@@ -16978,10 +17407,11 @@ function flyDraw() {
   box.textContent = "";
   box.append(el("div", {class: "fhint"}, waitingNobody ? el("b", {}, "Waiting on whom? Pick the person below")
     : (block.state ? "Task" : "Note") + " · setting any of these makes the line a task"));
-  for (const r of rows) {
+  rows.forEach((r, i) => {
     const open = FLY.open === r.k;
     const lit = FLY_LIT && FLY_LIT.id === block.id && FLY_LIT.k === r.k;
-    const row = el("div", {class: "frow" + (open ? " open" : "") + (lit ? " lit" : "")},
+    const hi = FLY.summoned && !FLY.open && i === (FLY.row || 0);
+    const row = el("div", {class: "frow" + (open ? " open" : "") + (lit ? " lit" : "") + (hi ? " hi" : "")},
       el("button", {class: "fhead", tabindex: "-1", onclick: () => flyHead(r.k)},
         el("span", {class: "fic bw"}, r.ic), el("span", {class: "fl"}, r.label),
         el("span", {class: "fv"}, r.val || ""), r.key ? el("kbd", {}, r.key) : null));
@@ -17016,11 +17446,23 @@ function flyDraw() {
       row.append(opts);
     }
     box.append(row);
-  }
+  });
   box.append(el("div", {class: "fhint"}, FLY.open ? "↑ ↓ choose · Enter picks · Esc closes it"
+    : FLY.summoned ? "↑ ↓ choose · Enter opens · Esc or Ctrl+. closes the menu"
     : "Enter new line · Tab indent · Shift+Tab outdent · Esc done"));
-  box.hidden = !!(SUGGEST && SUGGEST.host === FLY.txt) || (!flyOn() && !FLY.open);
+  box.hidden = flyHidden();
+  const handle = FLY.txt.closest(".line")?.querySelector(":scope > .linemenu");
+  if (handle) handle.setAttribute("aria-expanded", String(!box.hidden));
   flyPlace();
+}
+/* The menu shows when it was asked for -- the ⋯ on the line, Ctrl+., or an Alt
+   key that opened one row -- or always, for those who switched it on in Help.
+   Never over the suggestion list. */
+const flyHidden = () => !!(SUGGEST && SUGGEST.host === FLY.txt) || (!flyOn() && !FLY.open && !FLY.summoned);
+function flySummon(txt) {
+  if (!FLY || FLY.txt !== txt) { txt.focus(); if (!FLY || FLY.txt !== txt) return; }
+  FLY.summoned = !FLY.summoned; FLY.open = null; FLY.row = 0;
+  flyDraw();
 }
 
 function flyShow(txt, path, page, block) {
@@ -17041,7 +17483,7 @@ function flyHide() { if (FLY) { FLY.box.remove(); FLY = null; } }
    line, starting where the words end, and over it when there is no room
    under. With room nowhere it takes the taller of under and over and scrolls
    inside. */
-const flyOn = () => PREF.get("fly.off", "") !== "1";
+const flyOn = () => PREF.get("fly.show", "") === "1";
 function flyPlace() {
   if (!FLY || FLY.box.hidden || !FLY.txt.isConnected) return;
   const {txt, box} = FLY;
@@ -17103,6 +17545,7 @@ function flyHead(k) {
   const {path, block} = FLY;
   if (k === "kind") { flyCommit(); setBlockState(path, block, block.state ? null : "TODO"); focusBlock(block.id); return; }
   if (k === "mkproj") { flyCommit(); const b = block; FLY.txt.blur(); makeFromLine(path, b, "project"); return; }
+  if (k === "mkzet") { flyCommit(); const b = block; FLY.txt.blur(); makeFromLine(path, b, "zettel"); return; }
   if (k === "more") { flyCommit(); const b = block; FLY.txt.blur(); openTaskDetail(path, b); return; }
   if (k === "meet") { flyCommit(); const b = block; FLY.txt.blur(); openMeetingForm(path, b); return; }
   if (k === "trk") { flyCommit(); const b = block; FLY.txt.blur(); openTrackerPicker((title, when) => insertTracker(path, b, title, when), path); return; }
@@ -17780,6 +18223,23 @@ function flyKey(e) {
     if (FLY) flyDraw();
     return true;
   }
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.code === "Period") {
+    e.preventDefault(); e.stopImmediatePropagation();
+    flySummon(FLY.txt);
+    return true;
+  }
+  /* Asked for, the menu's rows take the arrows until one is opened. */
+  if (FLY.summoned && !FLY.open) {
+    const rows = flyRows();
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      FLY.row = ((FLY.row || 0) + (e.key === "ArrowUp" ? -1 : 1) + rows.length) % rows.length;
+      flyDraw(); return true;
+    }
+    if (e.key === "Enter") { e.preventDefault(); flyHead(rows[FLY.row || 0].k); return true; }
+    if (e.key === "Escape") { e.preventDefault(); FLY.summoned = false; flyDraw(); return true; }
+    return false;
+  }
   if (!FLY.open) return false;
   const r = flyRows().find(x => x.k === FLY.open);
   const os = r ? flyOptsOf(r) : [];
@@ -17983,20 +18443,27 @@ function viewToday() {
   });
   /* The day's values, trackers among them, sit above what is due. A tracker
      still written as a line on my page is moved up to them first. */
-  const factSpaces = who ? [] : spaces.filter(sp => dayPath(sp));
+  /* Trackers belong to one area. Only the areas whose day has some are
+     shown, and "+ tracker" is offered once, for the area new ones go to: the
+     one that already has trackers, else the area you are in. */
+  const daySpaces = who ? [] : spaces.filter(sp => dayPath(sp));
   let trackers = 0;
-  for (const sp of factSpaces) inSpace(sp, () => {
+  const trkIn = new Map();
+  for (const sp of daySpaces) inSpace(sp, () => {
     const path = dayPath(sp), page = getPage(path);
     if (hoistDayTrackers(page)) touch(path);
-    trackers += Object.keys(page.props || {}).filter(k => parseTracker(k + "::")).length;
+    const n = Object.keys(page.props || {}).filter(k => parseTracker(k + "::")).length;
+    trkIn.set(sp, n); trackers += n;
   });
+  const trkHome = daySpaces.find(sp => trkIn.get(sp)) || (daySpaces.includes(Spaces.active) ? Spaces.active : daySpaces[0]);
+  const factSpaces = daySpaces.filter(sp => trkIn.get(sp) || sp === trkHome);
 
   const sections = [
     factSpaces.length ? {id: "facts", title: "Trackers", count: trackers,
      body: () => el("div", {class: "card"}, ...factSpaces.map(sp => inSpace(sp, () => {
        const path = dayPath(sp);
        const node = el("div", {class: "space-journal", data: {space: sp, path}},
-         factSpaces.length > 1 ? spaceBadge(sp) : null, dayTrackersBlock(path));
+         factSpaces.length > 1 ? spaceBadge(sp) : null, dayTrackersBlock(path, {add: sp === trkHome}));
        const activate = () => {
          activateJournalSpace(sp);
          if (!SPACE_CONTEXT || SPACE_CONTEXT.space !== sp) SPACE_CONTEXT = {space: sp, path};
@@ -19381,6 +19848,64 @@ function solTally(r, read) {
   for (const p of solLive(r)) for (const v of read(p)) m.set(v, (m.get(v) || 0) + 1);
   return m;
 }
+/* How connected each person, organisation and responsibility is to THIS
+   project, as "p/name", "o/name", "a/name" (lower case) -> a score:
+     5  named on the project page: its fields, its lines, who its tasks are for
+     4  a person's or organisation's page that links to the project
+     3  named in a line elsewhere that links to the project (a day page's notes)
+     2  one step on: the people of its organisations, the organisations of its people
+     1  on another project with the same responsibility
+   So the box offers the ones this project is about first, not the alphabet. */
+const solRef = l => trim(String(l).split("][")[0]).replace(/\.md$/i, "").toLowerCase();
+const SOL_REF_RE = /^[poa]\//;
+function solConnected(r) {
+  return memo("solconn:" + solKey(r), () => inS(r, () => {
+    const m = new Map();
+    const add = (ref, n) => { if (SOL_REF_RE.test(ref)) m.set(ref, (m.get(ref) || 0) + n); };
+    const blockText = b => [b.title, ...(b.body || []), ...Object.values(b.props || {})].join("\n");
+    const page = getPage(r.path);
+    if (!page) return m;
+    for (const l of linksIn(Object.values(page.props || {}).join(" "))) add(solRef(l), 5);
+    walkBlocks(page.blocks, b => {
+      for (const l of linksIn(blockText(b))) add(solRef(l), 5);
+      const who = assigneeOf(b, page);
+      if (who) add("p/" + slugPerson(who).toLowerCase(), 5);
+    });
+    for (const hit of backlinksTo(r.path)) {
+      const kind = pageKind(hit.path);
+      if (kind === "person") add("p/" + baseName(hit.path).toLowerCase(), 4);
+      else if (kind === "org") add("o/" + baseName(hit.path).toLowerCase(), 4);
+      else {
+        const lines = [];
+        walkBlocks([hit.block], b => { lines.push(blockText(b)); });
+        for (const l of linksIn(lines.join("\n"))) add(solRef(l), 3);
+      }
+    }
+    // One step on, through the pages of the people and organisations themselves.
+    const direct = new Set([...m.keys()]);
+    for (const p of allPages(q => ["person", "org"].includes(pageKind(q)))) {
+      const me = (pageKind(p) === "person" ? "p/" : "o/") + baseName(p).toLowerCase();
+      const out = linksIn(Object.values(getPage(p)?.props || {}).join(" ")).map(solRef).filter(x => SOL_REF_RE.test(x));
+      if (direct.has(me)) { for (const x of out) if (x !== me) add(x, 2); }
+      else if (out.some(x => direct.has(x))) add(me, 2);
+    }
+    const area = areaOfProject(r.path);
+    if (area) for (const p of projectsInArea(area)) {
+      if (p === r.path) continue;
+      for (const l of linksIn(Object.values(getPage(p)?.props || {}).join(" "))) add(solRef(l), 1);
+    }
+    return m;
+  }));
+}
+/* The order a box offers its options in: connection to this project first,
+   then how much the area uses it. Keys are lower case, as solChoices looks
+   them up. */
+function solRank(r, pfx, read) {
+  const m = new Map();
+  for (const [k, v] of solConnected(r)) if (k.startsWith(pfx)) m.set(k.slice(pfx.length), v * 100);
+  for (const [k, v] of solTally(r, read)) { const key = String(k).toLowerCase(); m.set(key, (m.get(key) || 0) + v); }
+  return m;
+}
 /* For "comes after": projects that share this one's responsibility, an
    organisation or a person are the ones most likely to come first. */
 function solKin(r) {
@@ -19400,7 +19925,7 @@ function solKin(r) {
 function solFields() {
   return [
     {k: "orgs", label: "Organisations", type: "multi", none: "None", scoped: true, add: "New organisation",
-     opts: r => pageNames(r, "org"), cur: r => projectOrgs(r), rank: r => solTally(r, projectOrgs),
+     opts: r => pageNames(r, "org"), cur: r => projectOrgs(r), rank: r => solRank(r, "o/", projectOrgs),
      filled: r => projectOrgs(r).length > 0 || !!solAns(r).orgs,
      toggle: (r, v) => projectOrgs(r).includes(v) ? removeLinkFromProp(r.space, r.path, "org", "o/" + v)
                                                    : inS(r, () => pageLinkPropAdd(r.path, "org", "o/" + v)),
@@ -19408,14 +19933,14 @@ function solFields() {
      make: (r, name) => { inS(r, () => pageLinkPropAdd(r.path, "org", "o/" + slugify(name))); }},
     {k: "people", label: "People", type: "multi", none: "Just me", scoped: true,
      opts: r => inS(r, () => allPeople().map(personName).filter(n => !samePerson(n, whoAmI())).map(n => [n, n])),
-     cur: r => projectPeople(r), rank: r => solTally(r, projectPeople),
+     cur: r => projectPeople(r), rank: r => solRank(r, "p/", projectPeople),
      filled: r => projectPeople(r).length > 0 || !!solAns(r).people,
      toggle: (r, v) => projectPeople(r).includes(v) ? removeLinkFromProp(r.space, r.path, "with", "p/" + v)
                                                      : inS(r, () => pageLinkPropAdd(r.path, "with", "p/" + v)),
      clear: r => { for (const n of projectPeople(r)) removeLinkFromProp(r.space, r.path, "with", "p/" + n); solAns(r).people = true; }},
     {k: "area", label: "Responsibility", type: "one", scoped: true, add: "New responsibility",
      opts: r => inS(r, () => areaList().map(p => [baseName(p), pageTitle(p)])),
-     rank: r => solTally(r, p => { const a = inS(r, () => areaOfProject(p.path)); return a ? [a] : []; }),
+     rank: r => solRank(r, "a/", p => { const a = inS(r, () => areaOfProject(p.path)); return a ? [a] : []; }),
      cur: r => inS(r, () => areaOfProject(r.path)),
      filled: r => !!inS(r, () => areaOfProject(r.path)),
      pick: (r, v) => inS(r, () => setAreaOfProject(r.path, v)),
@@ -19574,10 +20099,11 @@ function projectFieldPills(r, {skip = []} = {}) {
   return box;
 }
 
-const SOL_GRID = ["orgs", "people", "area", "next", "outcome", "deadline", "after", "CARD", "status"];
-/* Where a box grows from when the keyboard enlarges it, so the ones at the
-   edges grow inwards and the bottom row grows upwards. */
-const SOL_ORIGIN = i => [i === 0 ? 0 : i === 5 ? 1 : 0.5, i < 6 ? 0 : 1];
+/* Row by row, the way the numpad reads: 7 8 9 / 4 5 6 / 1 2 3. */
+const SOL_GRID = ["7", "8", "9", "4", "CARD", "6", "1", "2", "3"];
+/* Where a box grows from when it is enlarged: from its own corner or edge,
+   so every box grows inwards over the table and none off the screen. */
+const SOL_ORIGIN = i => [(i % 3) / 2, Math.floor(i / 3) / 2];
 
 /* An answered field is a card that goes onto the pile under the project. A
    list you can pick several from stays out until you answer something else
@@ -19586,6 +20112,7 @@ function solAfter(r, field, hold = false) {
   if (SOL_EDIT) { SOL_EDIT.after(field); return; }
   SOL.focus = field;
   SOL.hold = hold ? field : null;
+  SOL.step = null;
   if (solFields().every(f => f.filled(r))) solMarkReviewed(r);
   render();
 }
@@ -19622,12 +20149,13 @@ function solApply(r, f, v) {
   if (f.type !== "multi") SOL.more = null;    // one answer: the long list has done its job
   if (f.type === "multi") { if (v === "none") f.clear(r); else { f.toggle(r, v); delete solAns(r)[f.k]; } }
   else f.pick(r, v);
-  /* Saying what its status is ends the card: the hand is gathered up into it
-     and the next one dealt. Waiting is waiting on somebody, so that asks who
-     first. */
+  /* The status is one field like the others: the card ends only once every
+     field is answered, or when it is skipped -- except Completed and Cancelled,
+     which leave nothing more to ask, so they end the review there. Waiting is
+     waiting on somebody, so that asks who first. */
   if (f.k === "status" && !SOL_EDIT) {
-    if (v === "3") solAskWaiting(r, solDealNext); else solDealNext();
-    return;
+    if (v === "0" || v === "-") { solOp(r, "done"); return; }
+    if (v === "3") { solAskWaiting(r, () => solAfter(r, f.k)); return; }
   }
   solAfter(r, f.k, f.type === "multi" && v !== "none");
 }
@@ -19729,10 +20257,9 @@ function solChoices(r, f, host, list, isOn, chip) {
   const fixed = list.filter(([v]) => v === "none");
   const rest = list.filter(([v]) => v !== "none");
   for (const [v, label] of fixed) host.append(chip(v, label));
-  if (rest.length <= SOL_TOP) { for (const [v, label] of rest) host.append(chip(v, label)); return; }
-  const score = f.rank ? f.rank(r) : new Map();
-  const ranked = rest.map((o, i) => ({o, i, on: isOn(o[0]) ? 1 : 0, s: score.get(o[0]) || 0}))
-    .sort((a, b) => (b.on - a.on) || (b.s - a.s) || (a.i - b.i)).map(x => x.o);
+  // Always ranked, short list or long: what is picked, then what this project is most connected to.
+  const ranked = solRanked(r, f, rest, isOn);
+  if (ranked.length <= SOL_TOP) { for (const [v, label] of ranked) host.append(chip(v, label)); return; }
   if (SOL.more !== f.k) {
     for (const [v, label] of ranked.slice(0, SOL_TOP)) host.append(chip(v, label));
     host.append(el("button", {class: "fchip more", onclick: e => { e.stopPropagation(); SOL.more = f.k; solRedraw(); }},
@@ -19757,6 +20284,30 @@ function solChoices(r, f, host, list, isOn, chip) {
   host.append(el("div", {class: "solmorewrap"}, search, box, empty,
     el("button", {class: "textbtn", onclick: e => { e.stopPropagation(); SOL.more = null; solRedraw(); }}, "Show fewer")));
   requestAnimationFrame(() => { if (search.isConnected) search.focus({preventScroll: true}); });
+}
+
+/* The review asks one question at a time. The project lies in the middle and
+   the answers to the question it is on are dealt round it, one to a box, where
+   the numpad has them. The answer taken goes onto the pile under the project
+   and the next question is dealt. The steps down the side say where you are,
+   and any of them can be gone back to. */
+const SOL_STEPS = ["status", "next", "outcome", "deadline", "area", "orgs", "people", "after"];
+const SOL_ASK = {status: "Still the right status?", next: "What is the very next action?", outcome: "What does done look like?",
+  deadline: "When does it have to be done?", area: "Which responsibility is it part of?", orgs: "Which organisations is it for?",
+  people: "Who else is in it?", after: "Does it wait for another project?"};
+/* Where the answers go, best first, in the order the numpad reads, so a list
+   that has an order of its own (this week, next week, this month) keeps it. */
+const SOL_SPOTS = ["7", "8", "9", "4", "6", "1", "2", "3"];
+let SOL_ACTS = new Map();
+function solSteps() {
+  const by = Object.fromEntries(solFields().map(f => [f.k, f]));
+  return SOL_STEPS.map(k => by[k]);
+}
+/* The question on the table: one being changed, a list still being picked
+   from, or else the first one not answered yet. */
+function solStepNow(r, steps) {
+  const k = SOL.hold || SOL.step;
+  return (k && steps.find(f => f.k === k)) || steps.find(f => !f.filled(r)) || null;
 }
 
 function viewSolitaire() {
@@ -19784,183 +20335,277 @@ function viewSolitaire() {
     return c;
   }
   const r = SOL.order[SOL.i];
-  const fields = solFields(), byK = Object.fromEntries(fields.map(f => [f.k, f]));
-  const done = fields.filter(f => f.filled(r)).length, won = done === fields.length;
+  const steps = solSteps();
+  const done = steps.filter(f => f.filled(r)).length;
+  const f = solStepNow(r, steps), won = !f;
+  if (won) { SOL.hold = null; SOL.step = null; }
   const info = inS(r, () => ({title: pageTitle(r.path), code: statusDirOf(r.path)}));
-  c.append(el("div", {class: "solbar"},
-    el("span", {}, "Card " + (SOL.i + 1) + " of " + SOL.order.length + " · stalest first"),
-    el("span", {}, "Drag the card onto an option, or click one. Keys: numpad 7 8 9 / 4 5 6 / 1 2 3 open the box in that place, arrows move, Enter takes, Shift+→ next card."),
-    ...[["", "Active only"], ["1", "Waiting and someday too"]].map(([v, label]) => fchip(label, solAll() === !!v, () => {
+  /* The heading, the steps and how to play sit in a column beside the table,
+     so the table gets the whole height of the window, even on a laptop. */
+  c.classList.add("solwrap");
+  const head = c.firstChild;
+  c.append(el("aside", {class: "solside"}, head,
+    el("div", {class: "solcount"}, "Card " + (SOL.i + 1) + " of " + SOL.order.length + " · stalest first"),
+    el("div", {class: "solfilt"}, ...[["", "Active only"], ["1", "Waiting and someday too"]].map(([v, label]) => fchip(label, solAll() === !!v, () => {
       if (solAll() === !!v) return;
       PREF.set("sol.all", v);
       SOL = {order: null, i: 0, focus: null, more: null}; render();
+    }))),
+    el("ol", {class: "solsteps", "aria-label": "Questions"}, ...steps.map((s, i) => {
+      const text = projectFieldText(r, s);
+      return el("li", {}, el("button", {class: "solstep" + (s === f ? " now" : "") + (text ? " done" : ""),
+        "aria-current": s === f ? "step" : null, title: text ? s.label + ": " + text + ". Click to change it." : SOL_ASK[s.k],
+        onclick: () => { SOL.step = s.k; SOL.hold = s.type === "multi" && s.filled(r) ? s.k : null; SOL.more = null; SOL_KB = null; render(); }},
+        el("span", {class: "n"}, text ? "✓" : String(i + 1)), el("span", {class: "q"}, s.label),
+        text ? el("span", {class: "v"}, text) : null));
     })),
-    el("button", {class: "textbtn", style: "margin-left:auto", onclick: () => solOp(r, "skip")}, "Skip this one ›")));
-  /* Every answered field is a card on the pile under the project, so the
-     table empties as the review goes and the pile is the progress. */
+    el("button", {class: "textbtn", onclick: () => solOp(r, "skip")}, "Skip this project ›"),
+    el("p", {class: "solhow"}, "One question at a time. Drag the card onto an answer, or click one."),
+    el("p", {class: "solhow"}, "Keys: the number on a box aims at it (numpad or number row); the same number again, or Enter, takes it. Arrows go from box to box, a letter to the answer starting with it. 5 goes back to the project, 5 twice skips it.")));
+  /* Every answered question is a card on the pile under the project, so the
+     pile is the progress. */
   const key = solKey(r);
-  if (won) SOL.hold = null;
-  const stacked = new Set(fields.filter(f => f.filled(r) && SOL.hold !== f.k).map(f => f.k));
   const before = SOL.shown && SOL.shown.key === key ? SOL.shown : null;
-  const els = new Map();
+  const took = SOL.took; SOL.took = null;
+  const acts = f ? solDeal(r, f) : [];
+  SOL_ACTS = new Map();
+  const els = new Map(), cells = new Map();
+  acts.forEach((a, i) => { a.k = SOL_SPOTS[i]; SOL_ACTS.set(a.k, a); });
   let pile = null;
-  const grid = el("div", {class: "sol"});
+  const grid = el("div", {class: "sol", data: {step: f ? f.k : ""}});
   SOL_GRID.forEach((g, gi) => {
     const [ox, oy] = SOL_ORIGIN(gi);
-    const place = s => { s.dataset.dox = ox; s.dataset.doy = oy; solOrigin(s, ox, oy); return s; };
     if (g !== "CARD") {
-      const f = byK[g];
-      let s;
-      if (stacked.has(g)) {
-        s = el("button", {class: "slot stacked", title: f.label + ": " + (projectFieldText(r, f) || "") + ". Click to change it.",
-          onclick: () => { SOL.hold = g; SOL.focus = g; SOL.more = null; render(); }},
-          el("span", {class: "lbl"}, f.label), el("span", {class: "val"}, projectFieldText(r, f) || ""),
-          el("span", {class: "again"}, "\u21BA change"));
-      } else {
-        s = solSlot(r, f);
-        if (SOL.hold === g && f.filled(r))
-          s.append(el("button", {class: "textbtn", onclick: e => { e.stopPropagation(); SOL.hold = null; render(); }}, "Done, onto the pile \u203A"));
-      }
-      s.dataset.k = g;
-      place(s);
-      els.set(g, s);
+      const a = SOL_ACTS.get(g);
+      const s = a ? solActBox(r, a) : el("div", {class: "slot solempty", "aria-hidden": "true"});
+      if (a) { s.dataset.dox = ox; s.dataset.doy = oy; solOrigin(s, ox, oy); els.set(g, s); }
+      cells.set(g, s);
       grid.append(s);
       return;
     }
-    pile = el("div", {class: "solpile", title: stacked.size + " of " + fields.length + " answered"},
-      ...[...stacked].map((_, i) => el("i", {class: "under", style: "transform:translate(" + (i + 1) * 3 + "px," + (i + 1) * 3 + "px)"})));
+    pile = el("div", {class: "solpile", title: done + " of " + steps.length + " answered"},
+      ...Array.from({length: done}, (_, i) => el("i", {class: "under", style: "transform:translate(" + (i + 1) * 3 + "px," + (i + 1) * 3 + "px)"})));
     grid.append(pile);
+    pile.append(solKeycap("CARD"));
     pile.append(won
       ? el("div", {class: "solcard won"}, parentLine(r.space, r.path), el("h3", {}, info.title),
           el("div", {class: "t-meta"}, el("span", {class: "chip ok"}, "Reviewed"), spaceBadge(r.space)),
-          el("p", {}, "All " + fields.length + " fields are filled."),
-          el("button", {class: "btn primary", onclick: () => { SOL.i++; SOL.focus = null; SOL.more = null; SOL.hold = null; render(); }}, "Next card ›"))
-      : el("div", {class: "solcard", data: {solDrag: "1"}, tabindex: "0", title: "Drag onto a field, or use the arrow keys"},
+          el("p", {}, "All " + steps.length + " questions are answered."),
+          el("button", {class: "btn primary", onclick: () => { SOL.i++; SOL.focus = null; SOL.more = null; SOL.hold = null; SOL.step = null; render(); }}, "Next card ›"))
+      : el("div", {class: "solcard", data: {solDrag: "1"}, tabindex: "0", title: "Drag onto an answer, or use the arrow keys"},
           parentLine(r.space, r.path),
           el("h3", {}, info.title),
-          el("div", {class: "t-meta"}, spaceBadge(r.space), el("span", {class: "chip"}, STATUS_LABEL[info.code])),
-          el("div", {class: "t-meta"}, el("span", {class: "chip"}, solIdle(r) == null ? "never reviewed" : "untouched for " + solIdle(r) + " days"),
+          el("div", {class: "t-meta"}, spaceBadge(r.space), el("span", {class: "chip"}, STATUS_LABEL[info.code]),
+            el("span", {class: "chip"}, solIdle(r) == null ? "never reviewed" : "untouched for " + solIdle(r) + " days"),
             el("span", {class: "chip"}, openOf(projectActions(r)).length + " open")),
           el("div", {class: "t-meta"}, ...projectTags(r)),
           el("div", {class: "t-meta"},
             el("button", {class: "textbtn", onclick: () => previewPage(r.space, r.path)}, "Open the page"),
             Spaces.list.length > 1 ? el("button", {class: "textbtn", title: "Alt+S",
               onclick: () => openItemSpacePicker({space: r.space, path: r.path})}, "Move to another area") : null),
-          el("div", {class: "prog", title: done + " of " + fields.length + " filled"},
-            el("i", {style: "width:" + (done / fields.length * 100) + "%"}))));
+          el("div", {class: "solq"}, el("span", {}, "Question " + (steps.indexOf(f) + 1) + " of " + steps.length), el("b", {}, SOL_ASK[f.k])),
+          el("div", {class: "prog", title: done + " of " + steps.length + " answered"},
+            el("i", {style: "width:" + (done / steps.length * 100) + "%"}))));
   });
   c.append(grid);
   const prevEls = SOL.els;
   SOL.els = els;
-  SOL.shown = {key, stacked};
+  SOL.shown = {key, step: f ? f.k : null};
   requestAnimationFrame(() => {
-    solAnimate(before, stacked, prevEls, els, pile, k => solSlot(r, byK[k]));
+    solAnimate(before, SOL.shown, took, prevEls, els, cells, pile);
     solRestore();
   });
   return c;
 }
 
-/* The table moves like a deck. An answered field slides from its place onto
-   the pile under the project; a new project is turned face up and the fields
-   still to answer are dealt out from under it to their places. */
-function solAnimate(before, stacked, prevEls, els, pile, faceOf) {
-  if (!pile || !pile.isConnected || !pile.animate) return;
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+/* The answers to one question, best first, at most eight: one to a box. A
+   list longer than that shows its best and an "All" box for the rest. */
+function solDeal(r, f) {
+  const out = [];
+  // Gone back to an answered question: leaving it as it is is an answer too.
+  if (SOL.step === f.k && f.type !== "multi" && f.filled(r))
+    out.push({label: "Keep it", sub: projectFieldText(r, f) || "", word: "✓ Keep it",
+      take: () => { SOL.step = null; SOL.hold = null; render(); }});
+  if (f.type === "text") {
+    const input = el("input", {placeholder: f.ph, "aria-label": f.label});
+    if (f.k === "outcome") input.value = f.val(r);
+    attachSuggest(input);
+    const write = {label: f.k === "next" ? "Write the next action" : "Write it yourself", input, word: "✎ Write", stay: true,
+      take: () => input.focus()};
+    write.send = () => { const v = trim(input.value); if (!v) return; SOL.took = write.k; f.submit(r, v); solAfter(r, f.k); };
+    input.addEventListener("keydown", e => { if (suggestKey(e)) return; if (e.key === "Enter") { e.preventDefault(); write.send(); } });
+    out.push(write);
+    if (f.k === "outcome") {
+      /* A project's name is often already its outcome ("Website relaunched"):
+         take it as it is, or start from it in the box. */
+      const name = inS(r, () => pageTitle(r.path));
+      if (trim(input.value) !== name) {
+        out.push({label: "“" + name + "”", sub: "The project's name, as it is", word: "✓ Use the name",
+          take: () => { f.submit(r, name); solAfter(r, f.k); }});
+        out.push({label: "Start from the name", sub: "Put it in the box to change it", word: "✎ Edit the name", stay: true,
+          take: () => { input.value = name; input.focus(); input.select(); }});
+      }
+    }
+    if (f.k === "next") {
+      // No next action is an answer as well: it waits on somebody, it can wait, or it is done.
+      const st = solFields().find(x => x.k === "status");
+      const end = v => () => {
+        st.pick(r, v);
+        if (v === "3") solAskWaiting(r, () => solOp(r, "done")); else solOp(r, "done");
+      };
+      out.push({label: "Waiting on someone", sub: "Move it to Waiting for", word: "→ Waiting for", take: end("3")});
+      out.push({label: "Not now", sub: "Move it to Someday/Maybe", word: "→ Someday/Maybe", take: end("2")});
+      out.push({label: "It is done", sub: "Move it to Completed", word: "→ Completed", take: end("0")});
+    }
+    return out;
+  }
+  const pick = v => () => solApply(r, f, v);
+  const cur = f.cur(r), now = f.now ? f.now(r) : null;
+  const isOn = v => f.type === "multi" ? cur.includes(v) : cur === v;
+  const list = f.opts(r);
+  const first = [], last = [];
+  if (f.type === "multi") {
+    if (cur.length) first.push({label: "That's all", sub: cur.join(", "), word: "✓ Done", take: () => solAfter(r, f.k)});
+    else first.push({label: f.none, word: "→ " + f.none, on: !!solAns(r)[f.k], take: pick("none")});
+  }
+  for (const [v, label] of list.filter(([v]) => v === "none"))
+    (f.k === "deadline" ? last : first).push({label, word: "→ " + label, on: isOn(v), take: pick(v)});
+  if (f.type === "date") {
+    const input = el("input", {type: "date", min: todayISO(), "aria-label": "Pick a date",
+      onchange: e => { if (e.target.value) { SOL.took = date.k; f.pick(r, e.target.value); solAfter(r, f.k); } }});
+    const date = {label: "Pick a date", sub: "Any day you like", word: "📅 Pick a date", date: input, stay: true,
+      take: () => { try { input.showPicker(); } catch (_) { input.focus(); } }};
+    last.push(date);
+  }
+  // A missing area or organisation can be made right here, as a page in the card's own space.
+  if (f.add) {
+    const input = el("input", {class: "newopt", placeholder: f.add, "aria-label": f.add + " in " + r.space});
+    const make = {label: "＋ " + f.add, word: "＋ " + f.add, input, stay: true, take: () => input.focus()};
+    input.addEventListener("keydown", e => {
+      if (e.key !== "Enter" || !trim(input.value)) return;
+      e.preventDefault(); SOL.took = make.k; f.make(r, trim(input.value));
+      notify(f.add.replace(/^New /, "") + " “" + trim(input.value) + "” made in " + r.space + ".");
+      solAfter(r, f.k);
+    });
+    last.push(make);
+  }
+  // A list with an order of its own (the deadlines) keeps it; one ranked by use puts what is picked first.
+  const ranked = solRanked(r, f, list.filter(([v]) => v !== "none"), f.rank ? isOn : () => false, v => v === now);
+  let room = SOL_SPOTS.length - out.length - first.length - last.length;
+  const more = ranked.length > room;
+  if (more) room--;
+  const shown = ranked.slice(0, room).map(([v, label]) => ({label, word: (f.type === "multi" ? (isOn(v) ? "− " : "+ ") : "→ ") + label,
+    on: isOn(v), now: !solAns(r).status && now === v, sub: !solAns(r).status && now === v ? "As it is now" : "", take: pick(v)}));
+  out.push(...first, ...shown, ...last);
+  if (more) out.push({label: "All " + ranked.length + " ›", sub: "Search the whole list", word: "Show all", more: true, stay: true,
+    take: () => solMoreOf(r, f)});
+  return out;
+}
+/* Picked first, then what is now, then what this project is most connected to. */
+function solRanked(r, f, rest, isOn, isNow = () => false) {
+  const score = f.rank ? f.rank(r) : new Map();
+  const scoreOf = v => score.get(v) ?? score.get(String(v).toLowerCase()) ?? 0;
+  return rest.map((o, i) => ({o, i, on: isOn(o[0]) ? 1 : 0, now: isNow(o[0]) ? 1 : 0, s: scoreOf(o[0])}))
+    .sort((a, b) => (b.on - a.on) || (b.now - a.now) || (b.s - a.s) || (a.i - b.i)).map(x => x.o);
+}
+/* The whole list of a question, searchable, over the table. */
+function solMoreOf(r, f) {
+  const body = el("div", {class: "solone"});
+  SOL.more = f.k;
+  if (f.type === "multi") SOL.hold = f.k;
+  SOL_EDIT = {
+    redraw: () => { body.replaceChildren(solSlot(r, f)); },
+    // A list of several stays open for the next pick; one answer is the end of it.
+    after: () => {
+      if (f.type === "multi") { SOL_EDIT.redraw(); render(); return; }
+      SOL_EDIT = null; closeModal(); solAfter(r, f.k);
+    },
+  };
+  modal({center: true, title: SOL_ASK[f.k], body,
+    foot: [el("button", {class: "btn primary", onclick: () => closeModal()}, "Done")],
+    onClose: () => { SOL_EDIT = null; SOL.more = null; render(); }});
+  SOL_EDIT.redraw();
+}
+/* One answer, as a box of its own: what it is, big, and a line on what it does. */
+function solActBox(r, a) {
+  const box = el("div", {class: "slot solopt" + (a.on ? " on" : "") + (a.now ? " now" : "") + (a.more ? " more" : "") +
+      (a.input ? " write" : ""), tabindex: "0", role: a.input ? null : "button", data: {k: a.k},
+    title: a.word,
+    onclick: e => { if (e.target.closest("input,button")) return; SOL_KB = null; solUnpaint(); solTake(r, box); },
+    onkeydown: e => { if ((e.key === "Enter" || e.key === " ") && e.target === box) { e.preventDefault(); e.stopPropagation(); solTake(r, box); } }},
+    el("div", {class: "lbl"}, solKeycap(a.k)),
+    el("div", {class: "solopt-t"}, a.label),
+    a.sub ? el("div", {class: "solopt-s"}, a.sub) : null);
+  if (a.input && a.send) box.append(el("div", {class: "slotform"}, a.input, el("button", {class: "btn sm", onclick: a.send}, "Add")));
+  else if (a.input || a.date) box.append(a.input || a.date);
+  return box;
+}
+
+/* The table moves like a deck. The answer taken slides from its place onto
+   the pile under the project, and the answers to the next question are dealt
+   out from under it to their places. A new project is turned face up first. */
+function solAnimate(before, now, took, prevEls, els, cells, pile) {
+  if (!pile || !pile.isConnected || !pile.animate || solReduced()) return;
+  if (before && before.step === now.step) return;      // the same question, drawn again
   const to = pile.getBoundingClientRect();
   const mid = b => [b.left + b.width / 2, b.top + b.height / 2];
   const [tx, ty] = mid(to);
+  let wait = 420;
   if (before) {
-    for (const k of stacked) {
-      if (before.stacked.has(k)) continue;
-      const old = prevEls && prevEls.get(k), spot = els.get(k);
-      if (!old || !spot || !spot.isConnected) continue;
+    wait = 120;
+    const old = took && prevEls && prevEls.get(took), spot = took && cells.get(took);
+    if (old && spot && spot.isConnected) {
       const from = spot.getBoundingClientRect(), [fx, fy] = mid(from);
       const fly = old.cloneNode(true);
       fly.classList.add("solfly");
-      fly.classList.remove("focus", "over");
-      Object.assign(fly.style, {left: from.left + "px", top: from.top + "px", width: from.width + "px", height: from.height + "px"});
+      fly.classList.remove("solzoom", "soltype", "focus");
+      Object.assign(fly.style, {left: from.left + "px", top: from.top + "px", width: from.width + "px", height: from.height + "px", transform: ""});
       document.body.append(fly);
       const turn = (Math.random() - 0.5) * 10, sc = to.width / from.width;
       fly.animate([
         {transform: "none", opacity: 1},
         {transform: "translate(" + (tx - fx) + "px," + (ty - fy) + "px) scale(" + sc + ") rotate(" + turn + "deg)", opacity: 1, offset: 0.85},
         {transform: "translate(" + (tx - fx + 3) + "px," + (ty - fy + 3) + "px) scale(" + sc + ")", opacity: 0},
-      ], {duration: 560, easing: "cubic-bezier(.45,0,.25,1)"}).onfinish = () => fly.remove();
+      ], {duration: 460, easing: "cubic-bezier(.45,0,.25,1)"}).onfinish = () => fly.remove();
+      wait = 380;
     }
-    return;
+  } else {
+    // A new project: face down, turned over, then its first question dealt out from under it.
+    const card = pile.querySelector(".solcard");
+    if (card) {
+      card.classList.add("back");
+      card.animate([{transform: "perspective(900px) rotateY(0)"}, {transform: "perspective(900px) rotateY(90deg)"}],
+        {duration: 200, easing: "ease-in"}).onfinish = () => {
+        card.classList.remove("back");
+        card.animate([{transform: "perspective(900px) rotateY(-90deg)"}, {transform: "perspective(900px) rotateY(0)"}],
+          {duration: 220, easing: "ease-out"});
+      };
+    }
   }
-  // A new project: face down, turned over, then the rest dealt out from under it.
-  const card = pile.querySelector(".solcard");
-  if (card) {
-    card.classList.add("back");
-    card.animate([{transform: "perspective(900px) rotateY(0)"}, {transform: "perspective(900px) rotateY(90deg)"}],
-      {duration: 200, easing: "ease-in"}).onfinish = () => {
-      card.classList.remove("back");
-      card.animate([{transform: "perspective(900px) rotateY(-90deg)"}, {transform: "perspective(900px) rotateY(0)"}],
-        {duration: 220, easing: "ease-out"});
-    };
-  }
-  /* Every field is dealt, answered or not. An answered one lands face up with
-     its answer, then goes under the project with the others already done, so
-     the pile shows what this project had before you started. */
-  const unders = [...pile.querySelectorAll(".under")];
-  if (faceOf) for (const u of unders) u.style.opacity = "0";
   let n = 0;
-  const done = [];
-  for (const [k, spot] of els) {
-    if (!spot.isConnected) continue;
+  for (const k of SOL_SPOTS) {
+    const spot = els.get(k);
+    if (!spot || !spot.isConnected) continue;
     const from = spot.getBoundingClientRect(), [fx, fy] = mid(from);
     const at = "translate(" + (tx - fx) + "px," + (ty - fy) + "px) scale(" + (to.width / from.width) + ")";
-    let card = spot;
-    if (stacked.has(k)) {
-      if (!faceOf) continue;
-      card = faceOf(k);
-      if (!card) continue;
-      card.classList.add("solfly");
-      Object.assign(card.style, {left: from.left + "px", top: from.top + "px", width: from.width + "px", height: from.height + "px"});
-      document.body.append(card);
-      spot.style.opacity = "0";
-      done.push({card, spot, at});
-    }
-    card.animate([
+    spot.animate([
       {transform: at, opacity: 0},
       {transform: at, opacity: 1, offset: 0.1},
       {transform: "none", opacity: 1},
-    ], {duration: 460, delay: 420 + n++ * 75, easing: "cubic-bezier(.2,.7,.2,1)", fill: stacked.has(k) ? "both" : "backwards"});
+    ], {duration: 420, delay: wait + n++ * 60, easing: "cubic-bezier(.2,.7,.2,1)", fill: "backwards"});
   }
-  const back = 420 + n * 75 + 460 + 350;
-  done.forEach(({card, spot, at}, m) => setTimeout(() => {
-    spot.style.opacity = "";
-    if (!spot.isConnected) { card.remove(); return; }
-    card.animate([
-      {transform: "none", opacity: 1},
-      {transform: at + " rotate(" + ((Math.random() - 0.5) * 10) + "deg)", opacity: 1, offset: 0.85},
-      {transform: at, opacity: 0},
-    ], {duration: 520, easing: "cubic-bezier(.45,0,.25,1)", fill: "forwards"}).onfinish = () => {
-      card.remove();
-      if (unders[m]) unders[m].style.opacity = "";
-    };
-  }, back + m * 160));
 }
 
 /* ---------- the table under the card you are moving ----------
    Only one box is ever enlarged: the one the pointer is in, or the one it is
    heading straight for within 60px. The other boxes stay exactly as they are.
-   The box is scaled with a transform, never resized, so its pills do not
-   re-wrap and jump away from the pointer. Inside it, the pill nearest the
-   pointer grows the way a Mac dock does, its neighbours a little, and a drop
-   within 12px of it lands on it. An arrow from the card to that pill says
-   what letting go will do.
-
-   The same zoom is driven by the keyboard. Each numpad key is one box, laid
-   out the way the table is: 7 8 9 and 4 5 6 the top row, 1 Comes after, 2 the
-   card, 3 the status. Up, Left and Right from the card open Organisations,
-   Comes after and the status. Inside a box the arrows move between its
-   options; Enter or Space takes one; Esc (or 2) goes back to the card.
-   Shift+Right flings the card to the next. */
-const SOL_ZOOM = 1.45, SOL_LEAD = 60, SOL_SNAP = 12, SOL_MORE_MS = 250;
-const SOL_TOP_ROW = ["orgs", "people", "area", "next", "outcome", "deadline"];
-const SOL_TYPE_K = ["next", "outcome"];
+   The box is scaled with a transform, never resized, so its words do not
+   re-wrap and jump away from the pointer. Each box is one answer, so letting
+   go anywhere on it takes that answer; an arrow from the card to it says
+   what that will do. The keyboard drives the same zoom (see below). */
+const SOL_ZOOM = 1.45, SOL_LEAD = 60;
+const SOL_TWICE_MS = 450;   // 5 pressed twice within this skips the project
+let SOL_FIVE_AT = 0;
 const solZoomOn = () => matchMedia("(min-width: 761px)").matches;
 const solReduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 let SOL_DRAG = null, SOL_KB = null, SOL_ARROW = null;
@@ -19970,15 +20615,7 @@ const solBox = k => k ? document.querySelector('.sol [data-k="' + k + '"]') : nu
 const solCardEl = () => document.querySelector(".sol .solpile .solcard");
 /* The pills of a box: its options, its "Show all", or for a box with none (a
    text field, an answered card) the box itself. */
-function solPills(box) {
-  if (!box) return [];
-  // A text box is one target while dragging; the keyboard can also reach Accept and Edit.
-  /* A text box with a suggestion has three targets, dragged to or reached by
-     key: write, accept and edit. Without one the whole box is the target. */
-  if (SOL_TYPE_K.includes(box.dataset.k)) { const picks = [...box.querySelectorAll("[data-sol-pick]")]; return picks.length ? picks : [box]; }
-  const p = [...box.querySelectorAll("[data-sol-drop], .fchip.more")].filter(x => x !== box && x.dataset.solDrop !== box.dataset.solDrop);
-  return p.length ? p : [box];
-}
+const solPills = box => box ? [box] : [];
 const solMid = r => [r.left + r.width / 2, r.top + r.height / 2];
 const solDist = (r, x, y, pad = 0) => Math.hypot(Math.max(r.left - pad - x, 0, x - r.right - pad), Math.max(r.top - pad - y, 0, y - r.bottom - pad));
 const solInside = (r, x, y) => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
@@ -20053,7 +20690,7 @@ function solPaint(k, pill, {quiet = false, typing = false, x = null, y = null} =
   if (!box) return;
   if (quiet) box.style.transition = "none";
   if (solZoomOn()) { box.classList.add("solzoom"); solGrow(box); }
-  box.classList.toggle("soltype", typing && SOL_TYPE_K.includes(k) && !box.querySelector("[data-sol-pick]"));
+  box.classList.toggle("soltype", typing && box.classList.contains("write"));
   const pills = solPills(box);
   const at = pill ? pills.indexOf(pill) : -1;
   /* A pill grows around the pointer (or its own middle), kept inside its box,
@@ -20096,17 +20733,10 @@ function solUnpaint() {
 }
 
 /* What letting go on a pill does, in a few words: "+ Tomas", "→ Waiting for". */
-function solPillWord(box, pill) {
-  const k = box.dataset.k;
-  if (pill.dataset && pill.dataset.solPick) return pill.dataset.solPick === "write" ? "✎ Write" : trim(pill.textContent);
-  if (SOL_TYPE_K.includes(k)) return SOL_DRAG ? "+ Drop to type" : "✎ Write";
-  if (box.classList.contains("stacked")) return "↺ Change it";
-  if (pill.classList.contains("more")) return "Show all";
-  // The pill's own icon, if it has one, gives way to the arrow's.
-  const text = trim(pill.textContent).replace(/\s*\(now\)$/, "").replace(/^[^\p{L}\p{N}"(]+/u, "");
-  if ((k === "orgs" || k === "people") && !/~none$/.test(pill.dataset.solDrop || ""))
-    return (pill.getAttribute("aria-pressed") === "true" ? "− " : "+ ") + text;
-  return "→ " + text;
+function solPillWord(box) {
+  const a = SOL_ACTS.get(box.dataset.k);
+  if (!a) return "";
+  return a.input && SOL_DRAG ? "+ Drop to type" : a.word;
 }
 /* One arrow, from the card's place on the play mat to the pill it would land
    on. The card in hand sits under the pointer, so an arrow from there would
@@ -20203,11 +20833,6 @@ document.addEventListener("pointermove", e => {
     clearTimeout(d.moreT); d.moreT = null;
     d.k = k; d.pill = pill;
     solPaint(k, pill, {typing: true, x: d.x, y: d.y});
-    // Resting on "Show all" opens the whole list, there and then.
-    if (pill && pill.classList.contains("more")) d.moreT = setTimeout(() => {
-      if (SOL_DRAG !== d || d.pill !== pill) return;
-      SOL.more = k; render();
-    }, SOL_MORE_MS);
   }
   /* The box grows around the pointer, so what is under it as it zooms stays
      put. The point follows the pointer only on the way in; once the pointer is
@@ -20223,26 +20848,20 @@ document.addEventListener("pointermove", e => {
 
 /* Letting go: on a pill, that pill; on a text box, its box is typed in; on an
    answered card, it comes back to be changed. A pill that only adds to the
-   card sends the card back to the mat; a status or a deck operation deals
-   the next card. */
+   card sends the card back to the mat; answering the last field or a deck
+   operation deals the next card. */
 function solDragEnd(drop) {
   const d = SOL_DRAG; SOL_DRAG = null;
   if (!d) return;
   clearTimeout(d.moreT);
   if (!d.ghost) return;
   d.card.classList.remove("dragging");
-  const box = solBox(d.k), pill = d.pill;
+  const box = solBox(d.k);
   solUnpaint();
   const r = SOL.order && SOL.order[SOL.i];
-  let target = null;
-  if (drop && box && r) {
-    if ((SOL_TYPE_K.includes(d.k) && !box.querySelector("[data-sol-pick]")) || box.classList.contains("stacked")) target = box;
-    else if (pill && pill !== box && solDist(pill.getBoundingClientRect(), d.x, d.y, SOL_SNAP) === 0) target = pill;
-    else if (solInside(box.getBoundingClientRect(), d.x, d.y)) target = box;
-  }
-  const deals = target && target !== box && d.k === "status";
-  solGhostHome(d.ghost, deals ? target : null);
-  if (target) solTake(r, box, target);
+  const hit = drop && box && r && solInside(box.getBoundingClientRect(), d.x, d.y);
+  solGhostHome(d.ghost, null);
+  if (hit) solTake(r, box);
 }
 /* The card springs back to the mat, or goes into the pill that dealt the next one. */
 function solGhostHome(ghost, into) {
@@ -20258,23 +20877,14 @@ function solGhostHome(ghost, into) {
     {duration: 300, easing: "cubic-bezier(.3,1.35,.5,1)", fill: "forwards"}).onfinish = () => ghost.remove();
 }
 /* What a box or one of its pills does when it is taken, by drop or by key. */
-function solTake(r, box, target) {
-  if (!r || !box) return;
-  const k = box.dataset.k;
-  if (box.classList.contains("stacked")) { SOL.hold = k; SOL.focus = k; SOL.more = null; render(); return; }
-  if (SOL_TYPE_K.includes(k)) {
-    if (target.dataset && (target.dataset.solPick === "accept" || target.dataset.solPick === "edit")) { target.click(); return; }
-    SOL.focus = k; render();
-    requestAnimationFrame(() => solBox(k)?.querySelector("input")?.focus());
-    return;
-  }
-  if (target.classList.contains("more")) { SOL.more = k; render(); return; }
-  if (target === box || !target.dataset.solDrop) { SOL.focus = k; render(); return; }
-  const v = target.dataset.solDrop.split("~")[1];
-  const f = solFields().find(x => x.k === k);
-  if (!f) return;
-  if (v === "date") { const i = target.querySelector("input"); try { i.showPicker(); } catch (_) { i.focus(); } return; }
-  solApply(r, f, v);
+/* What a box does when it is taken, by drop, click or key. One that only
+   opens something (a box to write in, the calendar, the whole list) is not
+   an answer yet, so it is not what goes onto the pile. */
+function solTake(r, box) {
+  const a = r && box && SOL_ACTS.get(box.dataset.k);
+  if (!a) return;
+  if (!a.stay) SOL.took = a.k;
+  a.take();
 }
 /* The date input lies invisible over its chip; Chromium only opens the
    calendar from its own icon, so a click anywhere on the chip asks for it. */
@@ -20285,15 +20895,19 @@ document.addEventListener("click", e => {
 document.addEventListener("pointerup", () => solDragEnd(true));
 document.addEventListener("pointercancel", () => solDragEnd(false));
 
-/* ---------- the keyboard ---------- */
+/* ---------- the keyboard ----------
+   Each numpad key is one box, where it sits on the table, and the number row
+   does the same. A number aims at its box; the same number again takes it.
+   From the card the arrows aim at the box on that side, and from a box at the
+   next box that way. A letter aims at the answer starting with it. Enter or
+   Space takes the one aimed at; Esc (or 5) goes back to the card, 5 twice
+   skips the project. Shift+Right flings the card on to the next. */
 function solKbShow(quiet = false) {
   const box = solBox(SOL_KB && SOL_KB.k);
   if (!box) { solUnpaint(); return; }
-  const pills = solPills(box), pill = pills[Math.max(0, SOL_KB.i)] || null;
-  solPaint(SOL_KB.k, pill === box ? null : pill, {quiet});
-  if (pill && pill !== box) pill.scrollIntoView({block: "nearest"});
+  solPaint(SOL_KB.k, null, {quiet});
   const card = solCardEl();
-  if (card && pill) solArrow(card, pill, solPillWord(box, pill)); else solArrow(null);
+  if (card) solArrow(card, box, solPillWord(box, box)); else solArrow(null);
 }
 function solKbOpen(k) {
   const box = solBox(k);
@@ -20304,33 +20918,62 @@ function solKbOpen(k) {
   return true;
 }
 function solKbClose() { SOL_KB = null; solUnpaint(); solCardEl()?.focus({preventScroll: true}); }
-/* The next pill in reading order, for the arrows. */
-function solKbStep(dx) {
-  const pills = solPills(solBox(SOL_KB.k));
-  SOL_KB.i = Math.max(0, Math.min(pills.length - 1, SOL_KB.i + dx));
-  solKbShow();
+/* The next box one way across the numpad, over any empty place. Into the
+   middle is back to the card. */
+function solKbMove(dx, dy) {
+  const at = SOL_GRID.indexOf(SOL_KB ? SOL_KB.k : "CARD");
+  let x = at % 3, y = Math.floor(at / 3);
+  for (;;) {
+    x += dx; y += dy;
+    if (x < 0 || x > 2 || y < 0 || y > 2) return;
+    const k = SOL_GRID[y * 3 + x];
+    if (k === "CARD") { solKbClose(); return; }
+    if (solKbOpen(k)) return;
+  }
 }
-/* The pill nearest in one of eight directions, by where the pills are drawn:
-   furthest along the direction counts a little, straying off it counts more. */
-function solKbAim(dx, dy) {
-  const pills = solPills(solBox(SOL_KB.k));
-  if (pills.length < 2) return;
-  const n = Math.hypot(dx, dy), ux = dx / n, uy = dy / n;
-  const [cx, cy] = solMid(pills[SOL_KB.i].getBoundingClientRect());
-  let best = -1, bd = Infinity;
-  pills.forEach((p, i) => {
-    if (i === SOL_KB.i) return;
-    const [px, py] = solMid(p.getBoundingClientRect());
-    const along = (px - cx) * ux + (py - cy) * uy, off = Math.abs((px - cx) * uy - (py - cy) * ux);
-    if (along <= 4) return;
-    const d = along + off * 2.5;
-    if (d < bd) { bd = d; best = i; }
-  });
-  if (best >= 0) { SOL_KB.i = best; solKbShow(); }
+function solKbTake(r) {
+  const k = SOL_KB && SOL_KB.k, box = solBox(k), a = SOL_ACTS.get(k);
+  SOL_KB = null; solUnpaint();
+  if (!box) return;
+  solTake(r, box);
+  if (a && !a.stay) requestAnimationFrame(() => solCardEl()?.focus({preventScroll: true}));
 }
-/* Each numpad key is one box, where it sits on the table. */
-const SOL_PAD = {Numpad7: "orgs", Numpad8: "people", Numpad9: "area", Numpad4: "next", Numpad5: "outcome",
-  Numpad6: "deadline", Numpad1: "after", Numpad2: "CARD", Numpad3: "status"};
+/* Typing goes to the answer whose name starts with it, the way the typeahead
+   pickers do: the first one starting with what was typed, the same letter
+   again steps on to the next, and a pause starts afresh. A name that has no
+   answer starting with it tries the start of any word ("e" finds "Linus
+   Eberhart"). It only aims; Enter takes it. */
+let SOL_TA = {s: "", at: 0};
+const SOL_TA_MS = 900;
+const solActName = a => trim(a.label).replace(/^[^\p{L}\p{N}]+/u, "").toLocaleLowerCase();
+function solKbType(ch) {
+  const ks = SOL_SPOTS.filter(k => SOL_ACTS.has(k) && !SOL_ACTS.get(k).more);
+  const find = w => {
+    const by = test => ks.filter(k => test(solActName(SOL_ACTS.get(k))));
+    const h = by(n => n.startsWith(w));
+    return h.length ? h : by(n => n.split(/[\s\-/]+/).some(x => x.startsWith(w)));
+  };
+  const c = ch.toLocaleLowerCase(), now = Date.now();
+  let s = now - SOL_TA.at < SOL_TA_MS ? SOL_TA.s + c : c;
+  let hit = find([...s].every(x => x === s[0]) ? s[0] : s);
+  // A letter that does not carry on what was typed starts a new search with itself.
+  if (!hit.length && s !== c) { s = c; hit = find(c); }
+  SOL_TA = hit.length ? {s, at: now} : {s: "", at: 0};
+  if (!hit.length) return false;
+  /* "m", "mm", "mmm" step through the m's from the one aimed at; a longer
+     name keeps the one aimed at while it still fits. */
+  const from = SOL_KB ? hit.indexOf(SOL_KB.k) : -1, step = [...s].every(x => x === s[0]);
+  const k = !step && from >= 0 ? hit[from] : hit[from + 1] ?? hit[0];
+  return solKbOpen(k);
+}
+
+/* The box's numpad key written on it, so the keys are learnt by looking. */
+function solKeycap(k) {
+  const n = k === "CARD" ? "5" : k;
+  return el("kbd", {class: "solkey", title: "Numpad " + n + (k === "CARD" ? ": back to the project, twice to skip it" : ": aim at this answer, again to take it"),
+    "aria-hidden": "true"}, n);
+}
+const SOL_SIDE = {ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0]};
 window.addEventListener("keydown", e => {
   if (state.view !== "review" || subNow() !== "projects" || !document.querySelector(".sol")) return;
   if ($("#modalRoot").firstChild || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -20339,37 +20982,36 @@ window.addEventListener("keydown", e => {
   if (!r) return;
   const take = () => { e.preventDefault(); e.stopImmediatePropagation(); };
   // By e.code, so the numpad means the same with NumLock on or off.
-  const key = e.key, to = SOL_PAD[e.code];
+  const key = e.key, m = /^(?:Numpad|Digit)([1-9])$/.exec(e.code);
+  const to = m ? (m[1] === "5" ? "CARD" : m[1]) : null;
   if (e.shiftKey && key === "ArrowRight") { take(); SOL_KB = null; solUnpaint(); solOp(r, "next"); return; }
   if (e.shiftKey) return;
-  if (to) { take(); if (to === "CARD") solKbClose(); else solKbOpen(to); return; }
-  if (!SOL_KB) {
-    if (key === "ArrowUp") { take(); solKbOpen(SOL_TOP_ROW.find(k => solBox(k))); }
-    else if (key === "ArrowLeft") { take(); solKbOpen("after"); }
-    else if (key === "ArrowRight") { take(); solKbOpen("status"); }
+  /* 5 is the project: once goes back to it, twice in a row skips it. The first
+     press acts at once, so going back never waits to see if a second comes. */
+  if (to === "CARD") {
+    take();
+    if (e.repeat) return;
+    const now = Date.now(), twice = now - SOL_FIVE_AT < SOL_TWICE_MS;
+    SOL_FIVE_AT = twice ? 0 : now;
+    if (twice) { SOL_KB = null; solUnpaint(); solOp(r, "skip"); } else solKbClose();
     return;
   }
+  if (to) {
+    take(); SOL_FIVE_AT = 0;
+    if (e.repeat) return;
+    if (SOL_KB && SOL_KB.k === to) solKbTake(r); else solKbOpen(to);
+    return;
+  }
+  // Letters only ever aim: they never move the card or take an answer.
+  if (key.length === 1 && /\p{L}/u.test(key)) { take(); solKbType(key); return; }
+  if (SOL_SIDE[key]) { take(); solKbMove(...SOL_SIDE[key]); return; }
+  // Enter with nothing aimed at aims at the best answer: it never leaves the review.
+  if (!SOL_KB && (key === "Enter" || key === " ") && e.target.closest?.(".sol .solopt") == null) {
+    take(); solKbOpen(SOL_SPOTS.find(k => SOL_ACTS.has(k))); return;
+  }
+  if (!SOL_KB) return;
   if (key === "Escape") { take(); solKbClose(); return; }
-  // Inside a box the arrows move between its options: sideways in reading order, up and down by row.
-  if (key === "ArrowLeft" || key === "ArrowRight") { take(); solKbStep(key === "ArrowLeft" ? -1 : 1); return; }
-  if (key === "ArrowUp" || key === "ArrowDown") { take(); solKbAim(0, key === "ArrowUp" ? -1 : 1); return; }
-  // The number row sets the status.
-  if (SOL_KB.k === "status" && /^Digit[1-5]$/.test(e.code)) {
-    take();
-    const pill = solPills(solBox("status"))[+e.code.slice(5) - 1];
-    if (pill) { SOL_KB = null; solUnpaint(); solTake(r, solBox("status"), pill); }
-    return;
-  }
-  if (key === "Enter" || key === " ") {
-    take();
-    const box = solBox(SOL_KB.k), pill = solPills(box)[SOL_KB.i];
-    const k = SOL_KB.k;
-    // "Show all" opens the list and stays in the box; anything else is the answer.
-    if (pill && pill.classList.contains("more")) { solTake(r, box, pill); return; }
-    SOL_KB = null; solUnpaint();
-    if (pill) solTake(r, box, pill);
-    if (!SOL_TYPE_K.includes(k)) requestAnimationFrame(() => solCardEl()?.focus({preventScroll: true}));
-  }
+  if (key === "Enter" || key === " ") { take(); solKbTake(r); }
 }, true);
 
 function viewHealth() {
@@ -20900,12 +21542,21 @@ function pageFactsBlock(path, opts = {}) {
 }
 
 /* A day page shows only its trackers at the top: the rest of its values are
-   the file's bookkeeping. One more is added the way the line menu adds one. */
-function dayTrackersBlock(path) {
+   the file's bookkeeping. One more is added the way the line menu adds one;
+   the cross takes one off this day. add: false leaves out the "+ tracker",
+   for an area that is not where new trackers go. */
+function dayTrackersBlock(path, {add = true} = {}) {
   const props = getPage(path)?.props || {};
   const box = el("div", {class: "pfacts"});
-  for (const [k, v] of Object.entries(props))
-    if (parseTracker(k + ":: " + v)) box.append(factLine(path, propFact(path, k, v)));
+  for (const [k, v] of Object.entries(props)) {
+    if (!parseTracker(k + ":: " + v)) continue;
+    const line = factLine(path, propFact(path, k, v));
+    line.append(el("button", {class: "textbtn trkx", title: "Remove from this day",
+      "aria-label": "Remove " + trackerTitle(parseTracker(k + "::").name),
+      onclick: () => removeDayTracker(path, k)}, "✕"));
+    box.append(line);
+  }
+  if (!add) return box;
   const line = el("div", {class: "pfact"});
   line.append(el("button", {class: "textbtn", title: "Something to follow over time",
     onclick: () => openTrackerPicker((title, when) => insertTracker(path, newBlock({title: ""}, false), title, when), path)},
@@ -21613,6 +22264,136 @@ function openTrackerWizard(onDone, path) {
   setTimeout(() => name.focus(), 30);
 }
 
+/* ---------- taking one off ----------
+   The cross on a day takes the tracker off that day only, and says so if a
+   journal template will keep bringing it back. Stop tracking takes it out of
+   every journal template in every area, and off today and later days where it
+   is still empty. What was written on earlier days stays: that is the history. */
+const trackerTemplatesWith = name => [...LOADED.keys()].flatMap(sp => inSpace(sp, () =>
+  allPages(p => p.startsWith(DIRS.lists + "/") && pageHasTracker(getPage(p), name)).map(p => ({sp, p}))));
+
+function removeDayTracker(path, key) {
+  const page = getPage(path), t = parseTracker(key + "::");
+  if (!page || !t) return;
+  const space = V.space, was = page.props[key];
+  delete page.props[key];
+  touch(path); render();
+  const tpls = trackerTemplatesWith(t.name);
+  if (tpls.length) notify(trackerTitle(t.name) + " is off this day. " + [...new Set(tpls.map(x => baseName(x.p)))].join(", ") +
+    " will put it on new days.", "info", {label: "Stop tracking", run: () => stopTrackerPrompt(t.name)});
+  else notify(trackerTitle(t.name) + " is off this day.", "info", {label: "Undo", run: () => inSpace(space, () => {
+    const pg = getPage(path);
+    if (!pg) return;
+    pg.props[key] = was; touch(path); render();
+  })});
+}
+
+function stopTrackerPrompt(name) {
+  const tpls = trackerTemplatesWith(name);
+  const where = [...new Set(tpls.map(x => baseName(x.p) + (LOADED.size > 1 ? " (" + x.sp + ")" : "")))];
+  modal({
+    center: true, title: "Stop tracking " + trackerTitle(name) + "?",
+    hint: "the days you already filled in are kept",
+    body: el("div", {},
+      el("p", {}, where.length ? "Takes it out of " + where.join(", ") + " in Routines & lists, so new days do not get it."
+        : "No journal template brings it in."),
+      el("p", {class: "hint"}, "It is also taken off today and later days where it is still empty.")),
+    foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+      el("button", {class: "btn primary", onclick: () => { closeModal(); stopTracker(name); }}, "Stop tracking")],
+  });
+}
+function stopTracker(name) {
+  const mine = t => !!t && t.name === name;
+  const drop = list => list.filter(b => !mine(parseTracker(b.title)))
+    .map(b => { if (b.children) b.children = drop(b.children); return b; });
+  let tpls = 0, days = 0;
+  for (const {sp, p} of trackerTemplatesWith(name)) inSpace(sp, () => {
+    const page = getPage(p);
+    for (const k of Object.keys(page.props || {})) if (mine(parseTracker(k + "::"))) delete page.props[k];
+    page.blocks = drop(page.blocks || []);
+    touch(p); tpls++;
+  });
+  for (const sp of LOADED.keys()) inSpace(sp, () => {
+    for (const p of allPages(isJournalPath)) {
+      const d = dayOfPath(p), page = getPage(p);
+      if (!d || d < todayISO() || !page?.props) continue;
+      const keys = Object.keys(page.props).filter(k => mine(parseTracker(k + "::")) && !trim(String(page.props[k] || "")));
+      if (!keys.length) continue;
+      for (const k of keys) delete page.props[k];
+      touch(p); days++;
+    }
+  });
+  render();
+  notify("Stopped tracking " + trackerTitle(name) + (tpls ? ": out of " + tpls + " template" + (tpls === 1 ? "" : "s") : "") +
+    (days ? (tpls ? ", " : ": ") + "off " + days + " day" + (days === 1 ? "" : "s") : "") + ". The history is kept.");
+}
+
+/* ---------- renaming one ----------
+   The name is the part of the key before the code, so renaming is rewriting
+   that part on every line that carries it: every day page and every journal
+   template, in every area, the code and the values left as they are. Renamed
+   to a name already in use, the two become one history. */
+function renameTrackerPrompt(name) {
+  const input = el("input", {value: trackerTitle(name)});
+  const note = el("div", {class: "hint"});
+  const sync = () => {
+    const to = trackerSlug(input.value);
+    note.textContent = !to ? "Letters, numbers and dashes." : to === name ? ""
+      : "Written as tracker-" + to + "_… on every day and template." +
+        (trackerList().some(g => g.name === to) ? " " + trackerTitle(to) + " is already tracked: the two become one history." : "");
+  };
+  const save = () => {
+    const to = trackerSlug(input.value);
+    if (!to) { notify("Give it a name.", "warn"); input.focus(); return; }
+    closeModal();
+    if (to !== name) renameTracker(name, to);
+  };
+  input.addEventListener("input", sync);
+  sync();
+  modal({
+    center: true, title: "Rename " + trackerTitle(name), hint: "the history comes along",
+    body: el("div", {}, el("div", {class: "field"}, el("label", {}, "Name"), input, note)),
+    foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+      el("button", {class: "btn primary", onclick: save}, "Rename")],
+    onKey: e => { if (e.key === "Enter") { save(); return true; } return false; },
+  });
+  setTimeout(() => { input.focus(); input.select(); }, 30);
+}
+function renameTracker(from, to) {
+  const keyOf = t => "tracker-" + to + (t.code ? "_" + t.code : "");
+  const mine = t => !!t && t.name === from;
+  const reprops = props => {
+    let hit = false;
+    const out = {};
+    for (const [k, v] of Object.entries(props || {})) {
+      const t = parseTracker(k + "::");
+      if (mine(t)) { out[keyOf(t)] = v; hit = true; } else out[k] = v;
+    }
+    return hit ? out : null;
+  };
+  let pages = 0;
+  for (const sp of LOADED.keys()) inSpace(sp, () => {
+    for (const p of allPages(q => isJournalPath(q) || q.startsWith(DIRS.lists + "/"))) {
+      const page = getPage(p);
+      if (!page) continue;
+      let hit = false;
+      const np = reprops(page.props);
+      if (np) { page.props = np; hit = true; }
+      walkBlocks(page.blocks || [], b => {
+        const t = parseTracker(b.title);
+        if (mine(t)) { b.title = trim(keyOf(t) + ":: " + t.raw); hit = true; }
+        const bp = reprops(b.props);
+        if (bp) { b.props = bp; hit = true; }
+      });
+      if (hit) { touch(p); pages++; }
+    }
+  });
+  const pick = PREF.get("trk.measure." + from, "");
+  if (pick && !PREF.get("trk.measure." + to, "")) PREF.set("trk.measure." + to, pick);
+  render();
+  notify(trackerTitle(from) + " is now " + trackerTitle(to) + ", on " + pages + " page" + (pages === 1 ? "" : "s") + ".");
+}
+
 /* ---------- the view ---------- */
 /* One value per day: a day with two lines of the same tracker sums what adds
    up and keeps the best of what does not. */
@@ -21661,6 +22442,82 @@ function trackerLineChart(points, measure, openDay) {
   });
   return host;
 }
+/* Weight and sets (kr, krr, krrr...): one pillar per session, as tall as the
+   weight with the kilos written in it, and the reps of each set as dots on
+   their own scale, set 1 joined to set 1 the next time and so on. Only the
+   days you trained are on it, side by side: a skipped day is not a zero, and
+   a set left empty is stepped over, so neither pulls a line down. */
+function trackerSessions(g) {
+  const by = new Map();
+  for (const e of g.entries) {
+    const slots = trackerSlots(e);
+    let kg = null; const reps = [];
+    slots.forEach((L, i) => {
+      const x = trackerNum(e.values[i]);
+      if (L === "k" && kg == null) kg = x;
+      else if (L === "r") reps.push(x);
+    });
+    if (kg == null && !reps.some(r => r != null)) continue;
+    const prev = by.get(e.date);
+    // Two lines on one day: the heavier one is the session.
+    if (!prev || (kg || 0) > (prev.kg || 0)) by.set(e.date, {date: e.date, e, kg, reps});
+  }
+  return [...by.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function trackerSetsChart(sessions, openDay) {
+  const shown = sessions.slice(-30);
+  const n = shown.length, sets = Math.max(1, ...shown.map(d => d.reps.length));
+  const W = 600, H = 200, L = 34, R = 34, T = 14, B = 24;
+  const slot = (W - L - R) / Math.max(n, 1), bw = Math.min(46, slot * 0.62);
+  const X = i => L + slot * (i + 0.5);
+  const kgHi = Math.max(1, ...shown.map(d => d.kg || 0)) * 1.12;
+  const repHi = Math.max(1, ...shown.flatMap(d => d.reps.filter(r => r != null))) * 1.15;
+  const Yk = v => T + (1 - v / kgHi) * (H - T - B);
+  const Yr = v => T + (1 - v / repHi) * (H - T - B);
+  const base = H - B;
+  let svg = '<svg viewBox="0 0 ' + W + " " + H + '" class="trkchart trksets" role="img" aria-label="Weight and reps per set, by session">';
+  // Scales: kilos on the left, reps on the right.
+  for (const f of [0.5, 1]) {
+    const kv = kgHi / 1.12 * f, rv = repHi / 1.15 * f;
+    svg += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Yk(kv).toFixed(1) + '" y2="' + Yk(kv).toFixed(1) + '" class="grid"/>' +
+      '<text x="' + (L - 5) + '" y="' + (Yk(kv) + 4).toFixed(1) + '" text-anchor="end">' + fmtNum(Math.round(kv)) + "</text>" +
+      '<text x="' + (W - R + 5) + '" y="' + (Yr(rv) + 4).toFixed(1) + '" class="rp">' + fmtNum(Math.round(rv)) + "</text>";
+  }
+  svg += '<text x="' + (L - 5) + '" y="' + (base + 4) + '" text-anchor="end">kg</text>' +
+    '<text x="' + (W - R + 5) + '" y="' + (base + 4) + '" class="rp">reps</text>';
+  shown.forEach((d, i) => {
+    const tip = "<title>" + esc(humanDate(d.date) + " · " + d.e.raw) + "</title>";
+    if (d.kg != null) {
+      const y = Yk(d.kg), h = base - y, inside = h >= 18;
+      svg += '<rect data-i="' + i + '" x="' + (X(i) - bw / 2).toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + bw.toFixed(1) +
+        '" height="' + h.toFixed(1) + '" rx="3" class="bar">' + tip + "</rect>";
+      if (bw >= 14) svg += '<text x="' + X(i).toFixed(1) + '" y="' + (inside ? base - 6 : y - 4).toFixed(1) +
+        '" text-anchor="middle" class="kg' + (inside ? " in" : "") + '">' + fmtNum(d.kg) + "</text>";
+    } else svg += '<rect data-i="' + i + '" x="' + (X(i) - bw / 2).toFixed(1) + '" y="' + T + '" width="' + bw.toFixed(1) +
+      '" height="' + (base - T) + '" class="hit">' + tip + "</rect>";
+  });
+  for (let k = 0; k < sets; k++) {
+    const pts = shown.map((d, i) => d.reps[k] != null ? [X(i), Yr(d.reps[k]), i, d.reps[k]] : null).filter(Boolean);
+    if (!pts.length) continue;
+    svg += '<path d="' + pts.map((q, j) => (j ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" ") + '" class="sl s' + (k % 5) + '"/>';
+    svg += pts.map(q => '<circle data-i="' + q[2] + '" cx="' + q[0].toFixed(1) + '" cy="' + q[1].toFixed(1) + '" r="4" class="sp s' + (k % 5) + '">' +
+      "<title>" + esc(humanDate(shown[q[2]].date) + " · set " + (k + 1) + ": " + fmtNum(q[3]) + " reps") + "</title></circle>").join("");
+  }
+  if (n) svg += '<text x="' + L + '" y="' + (H - 6) + '">' + esc(humanDate(shown[0].date)) + "</text>" +
+    (n > 1 ? '<text x="' + (W - R) + '" y="' + (H - 6) + '" text-anchor="end">' + esc(humanDate(shown[n - 1].date)) + "</text>" : "");
+  svg += "</svg>";
+  const host = el("div", {class: "trkchartbox", html: svg});
+  host.addEventListener("click", e => {
+    const i = e.target.closest("[data-i]")?.dataset.i;
+    if (i != null) openDay(shown[+i].e);
+  });
+  const legend = el("div", {class: "trklegend"}, el("span", {}, el("i", {class: "kgkey"}), "kg"),
+    ...Array.from({length: sets}, (_, k) => el("span", {}, el("i", {class: "s" + (k % 5)}), "set " + (k + 1))));
+  return el("div", {}, host, legend,
+    sessions.length > n ? el("div", {class: "hint"}, "The last " + n + " of " + sessions.length + " sessions.") : null);
+}
+
 /* Done-or-not reads better as a row of days than as a line between 0 and 1. */
 function trackerDoneStrip(points, openDay) {
   const strip = el("div", {class: "trkstrip"});
@@ -21672,6 +22529,9 @@ function trackerDoneStrip(points, openDay) {
 function trackerCard(g) {
   const openDay = e => openPageIn(e.space || V.space, e.path);
   const avail = Object.keys(TRACKER_MEASURES).filter(m => g.entries.some(e => trackerMeasures(e)[m] != null));
+  // Weight with sets opens on its own picture: pillars of weight, dots of reps.
+  const sessions = /^kr+$/.test(g.code || "") ? trackerSessions(g) : [];
+  if (sessions.length) avail.unshift("sets");
   const pick = PREF.get("trk.measure." + g.name, "");
   const measure = avail.includes(pick) ? pick : avail[0];
   const card = el("div", {class: "card trkcard"});
@@ -21680,13 +22540,29 @@ function trackerCard(g) {
     el("h4", {}, trackerTitle(g.name)),
     el("span", {class: "plain"}, trackerKindWords(g.code) + " · " + g.entries.length + " day" + (g.entries.length === 1 ? "" : "s")),
     el("span", {style: "flex:1"}),
-    el("button", {class: "textbtn", onclick: () => openDay(last)}, "Latest: " + humanDate(last.date) + (last.raw ? " · " + last.raw : ""))));
+    el("button", {class: "textbtn", onclick: () => openDay(last)}, "Latest: " + humanDate(last.date) + (last.raw ? " · " + last.raw : "")),
+    el("button", {class: "textbtn", title: "On every day and template, the history kept",
+      onclick: () => renameTrackerPrompt(g.name)}, "Rename"),
+    el("button", {class: "textbtn", title: "No more of it on new days; the history stays",
+      onclick: () => stopTrackerPrompt(g.name)}, "Stop tracking")));
   if (!measure) {
     card.append(el("p", {class: "hint"}, "Nothing written in it yet. Fill in the line on a day and it shows up here."));
     return card;
   }
   if (avail.length > 1) card.append(el("div", {class: "fbar trkmeasures"},
-    ...avail.map(m => fchip(TRACKER_MEASURES[m].label, m === measure, () => { PREF.set("trk.measure." + g.name, m); render(); }))));
+    ...avail.map(m => fchip(m === "sets" ? "Weight & sets" : TRACKER_MEASURES[m].label, m === measure,
+      () => { PREF.set("trk.measure." + g.name, m); render(); }))));
+  if (measure === "sets") {
+    const now = sessions[sessions.length - 1];
+    const heaviest = sessions.reduce((a, d) => (d.kg || 0) > (a.kg || 0) ? d : a, sessions[0]);
+    card.append(el("div", {class: "trkstats"},
+      now.kg != null ? el("span", {}, el("b", {}, fmtNum(now.kg) + " kg"), " latest") : null,
+      el("span", {}, el("b", {}, now.reps.map(r => r == null ? "–" : fmtNum(r)).join(" / ")), " reps latest"),
+      heaviest.kg ? el("span", {title: humanDate(heaviest.date)}, el("b", {}, fmtNum(heaviest.kg) + " kg"), " heaviest") : null,
+      el("span", {}, el("b", {}, String(sessions.length)), " session" + (sessions.length === 1 ? "" : "s"))));
+    card.append(trackerSetsChart(sessions, openDay));
+    return card;
+  }
   const pts = trackerSeries(g, measure);
   const info = TRACKER_MEASURES[measure], unit = info.unit ? " " + info.unit : "";
   if (measure === "done") {
@@ -21861,6 +22737,7 @@ function render() {
   let node = VIEWS[state.view]();
   if (FOCUS_NODE) node = el("div", {class: "wrap"}, FOCUS_NODE);
   c.append(node);
+  document.body.classList.toggle("solview", node.classList.contains("solwrap"));
   restoreScroll();
   const title = state.view === "page" && state.pagePath ? pageTitle(state.pagePath) : VIEW_TITLE[state.view];
   document.title = (title ? title + " · " : "") + "GroupToDo";
@@ -22413,6 +23290,47 @@ function makeFromLine(path, block, kindKey, at) {
   if (kindKey === "task") { makeTask(path, block); return; }
   if (kindKey === "context") { makeContextFromLine(path, block, at); return; }
   openMakeLinkPicker(path, block, kindKey);
+}
+
+/* Words picked inside a line, and the key for a kind: just those words become
+   the link, where they stand -- "ring Kari about [[1/Office move]] on Friday"
+   -- and the page is started if it is not there yet. Alt-1/2/3 a project on
+   that shelf, alt-8 a list, alt-z a zettel, alt-p a person, alt-o an
+   organisation, alt-c a context. Without a selection the keys do what they
+   always did with the whole line. */
+function linkSelectedWords(e, kind) {
+  const host = e.target.closest && e.target.closest(".blk .txt");
+  if (!host || !host.isContentEditable) return false;
+  const pfx = STATUS_DIRS[kind] && kind !== "-" || PREFIX_DIR[kind] ? kind + "/" : KIND_PREFIX[kind];
+  if (!pfx) return false;
+  const [from, to] = caretOffsets(host);
+  const whole = lineText(host), picked = whole.slice(from, to), name = trim(picked);
+  if (!name) return false;
+  const hit = findBlock(host.closest(".blk").dataset.id);
+  if (!hit) return false;
+  e.preventDefault(); e.stopImmediatePropagation();
+  const before = whole.slice(0, from);
+  if (/\[\[|\]\]/.test(picked) || before.lastIndexOf("[[") > before.lastIndexOf("]]")) {
+    notify("Those words are already part of a link."); return true;
+  }
+  if (pfx === "c/" && hasContextLink(whole)) { notify("Already has a context."); return true; }
+  // A page of the same name already on another shelf of the same kind is the
+  // page meant, so the link goes to it rather than starting a second one.
+  const slug = slugify(name);
+  const there = findExistingPage(pfx + slug);
+  const ref = there && (pageRef(there).startsWith(pfx) || (/^\d\/$/.test(pfx) && statusDirOf(there)))
+    ? pageRef(there) : pfx + slug;
+  const lead = picked.length - picked.trimStart().length, tail = picked.length - picked.trimEnd().length;
+  const link = "[[" + ref + (slug === name || pfx === "c/" ? "" : "][" + name) + "]]";
+  const {path, block} = hit, was = block.title;
+  block.title = before + picked.slice(0, lead) + link + picked.slice(picked.length - tail) + whole.slice(to);
+  host.textContent = block.title;      // the blur the redraw causes writes this back
+  createLinkedPages(block.title);
+  touch(path); noteTodoTouched();
+  render(); focusBlock(block.id);
+  notify("Linked “" + name + "”.", "info",
+    {label: "undo", run: () => { block.title = was; touch(path); render(); }});
+  return true;
 }
 
 
@@ -25451,6 +26369,7 @@ function onConvertKey(e) {
   if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
   const kind = CONVERT_KEYS[e.code];
   if (!kind) return;
+  if (linkSelectedWords(e, kind)) return;
   if (e.target.closest && e.target.closest(".blk .txt") && FLY_KEYS[e.code]) return;
   const target = convertTarget(e);
   if (!target) return;
@@ -26516,6 +27435,7 @@ function onBranchPaste(e) {
   e.preventDefault();
   e.stopImmediatePropagation();
   const pending = PENDING_BRANCH_CUT;
+  if (dest.space === pending.ctx.space) { PENDING_BRANCH_CUT = null; moveBranchHere(pending.ctx, dest); return; }
   (async () => {
     const choice = await chooseItemTransfer(pending.ctx, dest.space, "move");
     if (!choice) return;
@@ -26523,6 +27443,44 @@ function onBranchPaste(e) {
       if (await runItemTransfer(pending.ctx, dest.space, choice, dest)) PENDING_BRANCH_CUT = null;
     } catch (err) { notify(err.message, "error"); }
   })();
+}
+
+/* A cut pasted in the area it came from is an ordinary cut and paste: no
+   question about areas, the branch just goes to where it was pasted -- after
+   the line pasted on, or in its place when that line is an empty one. */
+function moveBranchHere(src, dest) {
+  inSpace(src.space, () => {
+    const hit = findBlock(src.id);
+    if (!hit) { notify("That line no longer exists.", "warn"); return; }
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    const destPage = getPage(dest.path);
+    if (!destPage) return;
+    const anchor = dest.id ? findBlock(dest.id) : null;
+    let inside = false;
+    if (anchor) walkBlocks([hit.block], b => { if (b === anchor.block) inside = true; });
+    if (inside) { notify("A line cannot go inside itself."); return; }
+    const before = new Map([[hit.path, serializePage(hit.page)], [dest.path, serializePage(destPage)]]);
+    removeBlockFrom(hit.page, hit.block);
+    if (anchor && anchor.path === dest.path) {
+      const sibs = siblingsOf(destPage, anchor.block), at = sibs.indexOf(anchor.block);
+      const spare = trim(anchor.block.title || "") === "" && !anchor.block.state &&
+        !(anchor.block.children || []).length && !(anchor.block.body || []).length;
+      sibs.splice(at + 1, 0, hit.block);
+      if (spare) sibs.splice(at, 1);
+    } else destPage.blocks.push(hit.block);
+    if (!hit.page.blocks.length) hit.page.blocks.push(newBlock({title: ""}));
+    for (const p of before.keys()) touch(p);
+    noteTodoTouched();
+    render();
+    focusBlock(hit.block.id);
+    notify("Line moved.");
+    pushUndo({run: () => {
+      inSpace(src.space, () => { for (const [p, text] of before) { putPage(p, parsePage(text)); touch(p); } });
+      render();
+      notify("Put back.");
+      return true;
+    }});
+  });
 }
 
 /* ---------- the markdown itself ----------
@@ -26572,7 +27530,7 @@ $("#btnTheme").onclick   = () => toggleTheme();
 $("#btnHelp").onclick    = () => setHelp(!helpOpen());
 $("#helpX").onclick      = () => setHelp(false);
 $("#flyToggle").checked  = flyOn();
-$("#flyToggle").onchange = e => { PREF.set("fly.off", e.target.checked ? "" : "1"); if (FLY) flyDraw(); };
+$("#flyToggle").onchange = e => { PREF.set("fly.show", e.target.checked ? "1" : ""); if (FLY) flyDraw(); };
 $("#spacesBtn").onclick  = e => { e.stopPropagation(); $("#spop").hidden ? openSpacesMenu() : closeSpacesMenu(); };
 document.addEventListener("mousedown", e => {
   if (!$("#spop").hidden && !e.target.closest("#spop, #spacesBtn")) closeSpacesMenu();
