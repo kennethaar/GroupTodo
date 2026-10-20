@@ -17885,6 +17885,8 @@ function flyRows() {
     {k: "kind", ic: t ? "•" : "☐", label: t ? "Make it a note" : "Make it a task", key: "Alt+T"},
     {k: "mkproj", ic: ICON.projects, label: "Make it a project", key: "Alt+1"},
     {k: "mkzet", ic: "◇", label: "Turn into zettel", val: "a note of its own", key: "Alt+Z"},
+    {k: "mkarea", ic: "◎", label: statusDirOf(path) && !isJournalPath(path) ? "Turn the project into a responsibility" : "Make it a responsibility",
+     val: "new, or one already there", key: "Alt+A"},
     {k: "state", ic: "◐", label: "State", val: t ? STATE_WORD[t] : "Note", key: "Ctrl+Enter",
      opts: [["TODO", "To do"], ["DOING", "Doing"], ["WAIT", "Waiting"], ["DONE", "Done"], ["", "Note"]]},
     {k: "due", ic: "📅", label: "Due", val: dueDate(block) ? humanDate(dueDate(block)) : "None", key: "Alt+D", date: true,
@@ -18070,6 +18072,7 @@ function flyHead(k) {
   if (k === "kind") { flyCommit(); setBlockState(path, block, block.state ? null : "TODO"); focusBlock(block.id); return; }
   if (k === "mkproj") { flyCommit(); const b = block; FLY.txt.blur(); makeFromLine(path, b, "project"); return; }
   if (k === "mkzet") { flyCommit(); const b = block; FLY.txt.blur(); makeFromLine(path, b, "zettel"); return; }
+  if (k === "mkarea") { flyCommit(); const b = block; FLY.txt.blur(); areaFromLine(path, b); return; }
   if (k === "more") { flyCommit(); const b = block; FLY.txt.blur(); openTaskDetail(path, b); return; }
   if (k === "meet") { flyCommit(); const b = block; FLY.txt.blur(); openMeetingForm(path, b); return; }
   if (k === "trk") { flyCommit(); const b = block; FLY.txt.blur(); openTrackerPicker((title, when) => insertTracker(path, b, title, when), path); return; }
@@ -22465,7 +22468,7 @@ function openPageMenu(path) {
     isJournalPath(path) ? null : ["Rename", "and the folder it is in", () => renamePrompt(path)],
     ["Move", "to another folder", () => movePrompt(path)],
     code ? ["Turn into a todo", "one line, with this page's lines under it", () => projectToTodo(path)] : null,
-    code ? ["Turn into a responsibility", "an area it keeps in good shape, never finished", () => projectToArea(path)] : null,
+    code ? ["Turn into a responsibility", "Alt+A · new, or merged into one already there", () => projectToArea(path)] : null,
     Spaces.list.length > 1 ? ["Move to another area", "Alt+S", () => openItemSpacePicker({space, path})] : null,
     isJournalPath(path) ? null : ["Make private", "move it to an area the others cannot open", () => makePrivatePrompt(path)],
     ["Delete", null, () => deletePrompt(path)],
@@ -22536,11 +22539,90 @@ function projectToTodoAs(path, how) {
   notify("“" + pageTitle(home) + "” now has " + title + " as a todo." + (how === "page" ? "" : " Ctrl-Z brings the project back."));
 }
 
-/* One that never finishes was a responsibility all along: the page moves to
-   the areas folder, and loses the status and area it had as a project. */
+/* One that never finishes was a responsibility all along. Alt+A, or the page
+   menu, asks which one: a new responsibility of its own name, or one that is
+   already there -- the same name on top, then the ones whose names look
+   alike, so "Health" and "Helth" or "Team" and "Team admin" end up as one. */
+const areaWords = s => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+  .split(/[^a-z0-9æøå]+/).filter(Boolean);
+function nameDistance(a, b) {
+  const row = Array.from({length: b.length + 1}, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    let prev = row[0]; row[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const was = row[j];
+      row[j] = Math.min(row[j] + 1, row[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = was;
+    }
+  }
+  return row[b.length];
+}
+/* 3 the same name, 2 one inside the other, 1 close in spelling or sharing a word, 0 unrelated. */
+function areaLikeness(a, b) {
+  const x = areaWords(a).join(" "), y = areaWords(b).join(" ");
+  if (!x || !y) return 0;
+  if (x === y) return 3;
+  if (x.includes(y) || y.includes(x)) return 2;
+  if (nameDistance(x, y) <= Math.max(1, Math.floor(Math.min(x.length, y.length) / 4))) return 1;
+  const ys = new Set(areaWords(b).filter(w => w.length > 2));
+  return areaWords(a).some(w => ys.has(w)) ? 1 : 0;
+}
+
+/* The responsibilities for a name: a new one of that name first unless it is
+   already there, then the same name, the look-alikes, and the rest. */
+function rankedAreas(title) {
+  const ranked = areaList().map(p => ({path: p, label: pageTitle(p), score: areaLikeness(title, pageTitle(p))}))
+    .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label));
+  const own = join(DIRS.areas, slugify(title) + ".md");
+  const same = ranked.find(r => r.score === 3 || r.path === own) || null;
+  const items = (same || !trim(title) ? [] : [{path: null, label: title, score: -1}]).concat(ranked);
+  return {items, same};
+}
+
+/* A line on a day page, or any page that is not a project: Alt+A, or the
+   line menu, links it to a responsibility. A line that links a project turns
+   that project into one instead. */
+function lineToArea(path, block) {
+  const linked = linksIn(block.title).map(findExistingPage).find(p => p && statusDirOf(p) && !isHorizonPage(p));
+  if (linked) { projectToArea(linked); return; }
+  const linkedArea = linksIn(block.title).map(findExistingPage).find(p => p && pageKind(p) === "area");
+  if (linkedArea) { notify("Already under " + pageTitle(linkedArea) + "."); return; }
+  const bare = bareLineName(block);
+  const {items, same} = rankedAreas(bare);
+  if (!items.length) { newAreaPrompt(p => insertMakeLink(path, block, pageRef(p))); return; }
+  listPicker({
+    title: "Responsibility for this line",
+    hint: bare ? "“" + bare + "” · type the name · enter picks · esc cancels" : "",
+    items, typeahead: true,
+    label: r => r.label,
+    detail: r => r.path === null ? "new responsibility" : r === same ? "same name" : r.score > 0 ? "similar" : "",
+    onPick: r => insertMakeLink(path, block, r.path ? pageRef(r.path) : "a/" + slugify(r.label)),
+    footer: el("button", {class: "btn ghost", onclick: () => { closeModal();
+      newAreaPrompt(p => insertMakeLink(path, block, pageRef(p))); }}, "+ another name"),
+  });
+}
+
 function projectToArea(path) {
+  const title = pageTitle(path);
+  const {items, same} = rankedAreas(title);
+  listPicker({
+    title: "Turn “" + title + "” into a responsibility",
+    hint: "type the name · enter picks · an existing one takes the project's lines · esc cancels",
+    items, typeahead: true,
+    label: r => r.label,
+    detail: r => r.path === null ? "new responsibility" : r === same ? "same name · merge into it"
+      : r.score > 0 ? "similar · merge into it" : "merge into it",
+    onPick: r => projectToAreaAs(path, r.path),
+  });
+}
+
+/* Into a new one the page itself moves; into one already there its lines go
+   under a line with the project's name, links to it point at the
+   responsibility, and the project is deleted -- Ctrl-Z brings it back. */
+function projectToAreaAs(path, into) {
+  if (into) return mergeProjectIntoArea(path, into);
   const dest = join(DIRS.areas, baseName(path) + ".md");
-  if (V.pages.has(dest)) { notify("There is already a responsibility called " + pageTitle(dest) + ".", "warn"); return; }
+  if (V.pages.has(dest)) return mergeProjectIntoArea(path, dest);
   moveFile(path, dest);
   const page = getPage(dest);
   if (!page) return;
@@ -22548,6 +22630,25 @@ function projectToArea(path) {
   touch(dest);
   openPage(dest);
   notify(pageTitle(dest) + " is a responsibility now.");
+}
+function mergeProjectIntoArea(path, dest) {
+  const page = getPage(path), area = getPage(dest);
+  if (!page || !area) return;
+  const title = pageTitle(path);
+  if ((page.blocks || []).length) {
+    const b = newBlock({title});
+    b.children = page.blocks.map(cloneBlock);
+    area.blocks.push(b);
+    touch(dest);
+  }
+  const to = pageRef(dest);
+  let n = 0;
+  for (const old of spellingsOf(path)) n += rewriteLinksEverywhere(old, to);
+  deletePageWithUndo(path);
+  clearMemo();
+  openPage(dest);
+  notify("“" + title + "” is merged into " + pageTitle(dest) +
+    (n ? "; links on " + n + (n === 1 ? " page" : " pages") + " point there now" : "") + ". Ctrl-Z brings the project back.");
 }
 
 /* A person's page says what they are carrying, and for somebody outside the
@@ -24019,7 +24120,7 @@ const MAKE_KINDS = {
   context: {alt: "c", label: "Give it a context",    detail: "[[c/…]]", kind: "context"},
 };
 MAKE_KINDS.zettel = {alt:"z",label:"Link a concept / Zettelkasten note",detail:"[[z/…]]",kind:"zettel",noun:"note"};
-const KIND_PREFIX = {project: "1/", person: "p/", org: "o/", context: "c/", zettel:"z/"};
+const KIND_PREFIX = {project: "1/", person: "p/", org: "o/", context: "c/", zettel:"z/", area: "a/"};
 
 /* The line with its markup taken off: no state word, no links it already
    carries, no leading dash somebody typed out of habit. What is left is what
@@ -27177,8 +27278,43 @@ function convertTarget(e) {
   return hit ? {r: {...hit, space: nd.space}} : null;
 }
 
+/* Alt+A, and the line menu's row. On a project's own page the project
+   becomes a responsibility; any other line is linked to one -- or, when it
+   links a project, that project becomes one. Words picked inside a line
+   become the link where they stand, like the other kind keys. */
+function areaFromLine(path, block) {
+  if (statusDirOf(path) && !isJournalPath(path) && !isHorizonPage(path) &&
+      !linksIn(block.title).some(l => statusDirOf(findExistingPage(l) || "")))
+    projectToArea(path);
+  else lineToArea(path, block);
+}
+function onAreaKey(e) {
+  const t = convertTarget(e);
+  if (t) {
+    const {r, host} = t;
+    if (r.space && r.space !== V.space) { notify("Open that area first.", "warn"); return true; }
+    if (r.block) {
+      if (host) host.blur();
+      areaFromLine(r.path, r.block);
+      return true;
+    }
+    if (statusDirOf(r.path) && !isHorizonPage(r.path)) { projectToArea(r.path); return true; }
+    return false;
+  }
+  if (state.view === "page" && state.pagePath && statusDirOf(state.pagePath) && !isHorizonPage(state.pagePath)) {
+    projectToArea(state.pagePath); return true;
+  }
+  return false;
+}
+
 function onConvertKey(e) {
   if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  if (e.code === "KeyA") {
+    if ($("#modalRoot").firstChild) return;
+    if (linkSelectedWords(e, "area")) return;
+    if (onAreaKey(e)) { e.preventDefault(); e.stopImmediatePropagation(); }
+    return;
+  }
   const kind = CONVERT_KEYS[e.code];
   if (!kind) return;
   if (linkSelectedWords(e, kind)) return;
