@@ -340,12 +340,29 @@ own. A top line is a section, the lines under it are steps, the first line under
 a step says what it means, and a `[[go/...]]` link makes the step a door. Until
 you edit it the built-in steps are used and nothing is written.
 
-The projects step is played as solitaire: one active project at a time, stalest
-first, with a switch to deal waiting and someday/maybe projects too. Every field
-shows its options from the project's own area: organisations, people,
-responsibility, next action, what done looks like, deadline, what comes first
-and status. A long list shows the ten you are likeliest to want (what is picked,
-then what is used most) and *Show all* opens the whole list, scrolling, with a
+The projects step is played as solitaire: one project at a time, stalest
+first, in three passes through the deck.
+
+1. **Status**: every project, with a switch to deal waiting and someday/maybe
+   too. Is it still active, waiting, someday, completed or cancelled?
+2. **Outcome**: only what is still active. What done looks like, which
+   responsibility it is part of, the deadline, and what comes first.
+3. **Next action**: only what is still active. The very next thing to do, the
+   people in it and the organisations it is for.
+
+Why passes, and not everything about one project before the next? Each kind of
+question needs a different kind of thinking. Sorting by status is quick;
+saying what done looks like is strategy; the next phone call is tactics.
+Switching between all three on every card wears you down. Getting stuck on a
+hard next action halfway through is how weekly reviews get abandoned. Sorting
+first is quick and clears out what is done or dropped, so the slower passes
+only cover projects that still need thought.
+
+Each new project is dealt onto the table. The last card's answers are gathered
+up, the new card slides in face down and turns over, and then its answers are
+dealt. You always know you have moved to a different project. Every field
+shows its options from the project's own area. A long list shows the ten you
+are likeliest to want (what is picked, then what is used most) and *Show all* opens the whole list, scrolling, with a
 search. Click one, or drag the card onto it, and add a missing responsibility or
 organisation straight from the field. A card with every field answered is
 stamped `reviewed::`.

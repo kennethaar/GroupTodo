@@ -34,6 +34,7 @@
 /* Paper by day, ink by night. The theme follows the system unless the theme
    button has said otherwise, and every colour in the app is one of these. */
 :root{
+  --card-w:91; --card-h:59;   /* a European standard playing card, 59 x 91 mm, on its side */
   --bg:#f6f6f3; --bg2:#ffffff; --bg3:#f0efea; --bg4:#e6e5df;
   --fg:#1d1d1b; --fg2:#4d4d48; --fg3:#6b6b66;
   --border:#e4e3de; --border2:#d3d2cc;
@@ -586,6 +587,16 @@ body.marquee .bcard{cursor:default}
    once it has been dragged somewhere. */
 .bcard-top{display:flex;gap:6px;align-items:flex-start}
 .bcard-top .bcard-title{flex:1 1 auto}
+/* On a screen with room the columns share the width by how much they hold,
+   and a column wide enough lays its cards out side by side rather than in one
+   long thin strip with the rest of the screen empty. */
+@media (min-width:861px){
+  .wrap.wide:has(.board){max-width:100%}
+  .board:not(.ctxboard){display:flex;align-items:flex-start}
+  .board:not(.ctxboard)>.bcol{flex:var(--grow,1) 1 0;min-width:180px}
+  .board:not(.ctxboard) .bcol-body{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr));align-content:start}
+  .board:not(.ctxboard) .bcol-body>.showmorerow,.board:not(.ctxboard) .bcol-body>.empty{grid-column:1/-1}
+}
 @media (max-width:860px){
   /* Four columns on a phone is four slivers. One column each, stacked, and the
      state buttons in the detail panel do the moving -- dragging on a touch
@@ -1074,6 +1085,18 @@ body.lselecting,body.lselecting *{user-select:none;-webkit-user-select:none;curs
 .fpill.fst.s3{color:var(--wait);background:rgba(224,176,80,.13);border-color:rgba(224,176,80,.3)}
 .fpill.fst.s0{color:var(--done);background:rgba(79,191,123,.12);border-color:rgba(79,191,123,.28)}
 .fpill.fst.sx,.fpill.fst.s2{color:var(--fg3)}
+.twins{display:flex;flex-direction:column;gap:16px}
+.twingroup{display:flex;flex-direction:column;gap:6px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.twingroup:last-child{border-bottom:0;padding-bottom:0}
+.twinwhy{font-size:12.5px;color:var(--fg3)}
+.twinrows{display:flex;flex-direction:column;gap:4px}
+.twinrow{display:flex;gap:8px;align-items:center;padding:5px 8px;border:1px solid var(--border);border-radius:8px;cursor:pointer}
+.twinrow.keep{border-color:var(--accent);background:var(--accent-soft)}
+.twint{flex:1;min-width:0;overflow-wrap:anywhere}
+.twinacts{display:flex;gap:8px;margin-top:2px}
+.twinbtn{color:var(--warn)}
+.fpill.fst.fmove{font-weight:500;border-style:dashed;opacity:.85}
+.fpill.fst.fmove:hover{opacity:1;border-style:solid}
 .state{
   font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.6px;
   padding:1px 5px;border-radius:4px;flex:none;margin-top:2px;cursor:pointer;
@@ -1234,6 +1257,14 @@ button.prow{width:100%;text-align:left}
 
 /* toast */
 #toasts{position:fixed;right:14px;top:60px;z-index:200;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none;width:min(420px,calc(100vw - 28px))}
+/* A page open in the side panel is what you are reading: the toasts, the
+   list of what was just done among them, move over to its left. */
+@media (min-width:761px){
+  body:has(.scrim.side) #toasts{right:calc(min(480px,100vw) + 14px);width:min(430px,calc(100vw - min(480px,100vw) - 28px))}
+  body:has(.scrim.side) .toast.reminder{width:100%;box-sizing:border-box}
+  /* The review's table fills the window: they wait bottom left, over the help. */
+  body.solview:not(:has(.scrim)) #toasts{top:auto;bottom:14px;left:14px;right:auto;align-items:flex-start}
+}
 .toast{
   background:var(--bg4);border:1px solid var(--border2);border-radius:10px;padding:10px 14px;
   font-size:13px;box-shadow:var(--shadow);pointer-events:auto;display:flex;gap:10px;align-items:center;width:100%;
@@ -1355,10 +1386,17 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 /* Nothing is added to the list from here, so the capture bar steps aside */
 body.solview header.top .capture{visibility:hidden}
 body.solview #content{padding-bottom:14px}
+/* Three rows of playing cards fit the window's height, so the table is as
+   wide as that allows and no wider. */
 @media (min-width:761px){
-  .solwrap .sol{max-width:none;margin:0;height:calc(100dvh - 92px);min-height:420px;
-    grid-template-rows:repeat(3,minmax(0,1fr))}
-  .solwrap .sol .slot,.solwrap .sol .solpile{aspect-ratio:auto;min-height:0}
+  /* The cards are the size of real ones, 91 x 59 mm, and smaller only when
+     the window cannot hold four across (the deck and three columns) and three
+     down. The table is a container, so the width it has is what it measures. */
+  .soltable{container-type:inline-size;display:flex;gap:14px;align-items:flex-start}
+  .soltable>*{--cw:min(91mm,calc((100dvh - 120px) / 3 * var(--card-w) / var(--card-h)),calc((100cqw - 42px) / 4))}
+  .soltable .sol{grid-template-columns:repeat(3,var(--cw));max-width:none;margin:0}
+  .soltable .soldecks.big{display:flex;flex-direction:column;gap:14px;margin:0;width:var(--cw);flex:0 0 auto}
+  .solside .soldecks{display:none}
 }
 @media (max-width:1000px){
   .solwrap{grid-template-columns:1fr;gap:12px}
@@ -1367,12 +1405,13 @@ body.solview #content{padding-bottom:14px}
   .solside .vhead-r{margin-left:auto}
   .solside .solhow{display:none}
 }
-@media (min-width:761px) and (max-width:1000px){ .solwrap .sol{height:calc(100dvh - 150px)} }
-/* Every card lies on its side, 7 wide to 5 tall, in a 3 x 3 laid out like the
+@media (max-width:760px){ .soltable .soldecks.big{display:none} }
+/* Every card is a playing card of the European standard size (59 x 91 mm)
+   on its side, in a 3 x 3 laid out like the
    numpad: the key is the place, and the project is 5, in the middle. The
    width is capped so all three rows fit the window's height. */
 .sol{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;
-  max-width:max(600px,calc((100vh - 258px) * 7 / 5 + 28px));margin:0 auto}
+  max-width:max(600px,calc((100vh - 258px) * var(--card-w) / var(--card-h) + 28px));margin:0 auto}
 /* One box enlarged at a time, by transform only, so nothing inside re-wraps */
 .sol .slot,.sol .solpile{position:relative;transition:transform 180ms cubic-bezier(.2,.8,.2,1),box-shadow 180ms}
 .sol .slot.solzoom{transform:scale(1.45);z-index:50;border-style:solid;border-color:var(--accent);
@@ -1412,7 +1451,7 @@ body.solview #content{padding-bottom:14px}
   font-weight:650;padding:3px 10px;border-radius:999px;white-space:nowrap;box-shadow:var(--shadow);transform:translate(-50%,-50%)}
 .solcard:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
 .slot{border:2px dashed var(--border2);border-radius:12px;padding:10px;background:var(--bg2);
-  display:flex;flex-direction:column;gap:7px;aspect-ratio:7/5;overflow-y:auto;min-width:0;min-height:0;box-sizing:border-box}
+  display:flex;flex-direction:column;gap:7px;aspect-ratio:var(--card-w) / var(--card-h);overflow-y:auto;min-width:0;min-height:0;box-sizing:border-box}
 .slot.solempty{border:1.5px dashed var(--border);background:transparent;opacity:.45}
 /* One answer to the question on the table, one to a box: big words, a line on what it does */
 .slot.solopt{border-style:solid;border-color:var(--border2);cursor:pointer;justify-content:center;align-items:flex-start;gap:4px;padding:14px 14px 12px}
@@ -1442,13 +1481,48 @@ body.solview #content{padding-bottom:14px}
 .solstep.done{color:var(--fg2)}
 .solstep.done .n{color:var(--ok)}
 .solstep.now{background:var(--accent-soft);color:var(--accent);font-weight:600}
+/* The three passes through the deck, above the questions of the one you are on */
+.solpasses{list-style:none;margin:0 0 8px;padding:0;display:flex;gap:4px;width:100%}
+.solpasses li{flex:1;min-width:0}
+.solpass{display:flex;align-items:center;gap:5px;width:100%;padding:5px 6px;border:1px solid var(--border);border-radius:8px;
+  background:none;color:var(--fg3);font:inherit;font-size:12px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.solpass:hover{color:var(--fg);background:var(--bg2)}
+.solpass .n{font-family:var(--mono);font-size:11px}
+.solpass.done{color:var(--fg2)}
+.solpass.done .n{color:var(--ok)}
+.solpass.now{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
 @media (max-width:1000px){
   .solsteps{flex-direction:row;flex-wrap:wrap;gap:4px}
   .solstep{width:auto;grid-template-columns:auto auto;column-gap:5px}
   .solstep .n{grid-row:auto}
   .solstep .v{display:none}
 }
-.solpile{position:relative;aspect-ratio:7/5}
+.solpile{position:relative;aspect-ratio:var(--card-w) / var(--card-h)}
+/* An answer that is a stack: its edges under it, one per project sorted onto
+   it, and the count. An empty one is the place a stack will go. */
+.slot.solopt.stack{overflow:visible}
+.slot.solopt.stack.bare{border-style:dashed;background:transparent}
+.solpilen{margin-top:auto;font-size:12px;font-weight:600;color:var(--fg3)}
+.slot.solopt.stack:not(.bare) .solpilen{color:var(--fg2)}
+.slot.sollanded{animation:sollanded 520ms cubic-bezier(.2,.7,.2,1)}
+.slot.sollanded .solpilen{color:var(--ok)}
+@keyframes sollanded{0%{transform:translate(-3px,-3px) scale(1.04)}100%{transform:none}}
+/* The deck still to play, face down, and the pile this pass has finished. */
+.soldecks{display:flex;gap:18px;align-items:flex-start;margin:4px 0 2px}
+.soldeckpile{display:flex;flex-direction:column;gap:6px;align-items:center;width:96px;text-align:center;font-size:11.5px;line-height:1.3}
+.soldeckcard{width:84px;aspect-ratio:var(--card-w) / var(--card-h);border-radius:8px;border:1.5px solid var(--border2);display:grid;place-items:center;
+  background:var(--bg2);box-sizing:border-box}
+.soldeckcard b{font-size:20px;color:var(--fg);background:var(--bg2);border-radius:6px;padding:0 6px}
+.soldeckcard.deck{background:repeating-linear-gradient(45deg,var(--accent-soft) 0 6px,var(--bg2) 6px 12px);border-color:var(--accent)}
+.soldeckcard.donepile{border-color:var(--ok);background:var(--ok-soft)}
+@media (max-width:1000px){ .soldecks:not(.big){margin:0} .soldecks:not(.big) .soldeckpile{flex-direction:row;width:auto;gap:8px}
+  .soldecks:not(.big) .soldeckcard{width:56px} .soldecks:not(.big) .soldeckcard b{font-size:15px} }
+/* The deck on the table: a card like the others, face down, its edges
+   thinning as it is played, the count and what it is written on it. */
+.soldecks.big .soldeckpile{width:100%;display:block}
+.soldecks.big .soldeckcard{width:100%;border-radius:12px;border-width:2px;align-content:center;gap:4px}
+.soldecks.big .soldeckcard b{font-size:34px;line-height:1.1;padding:0 10px}
+.soldecks.big .soldeckcard span{font-size:12.5px;font-weight:600;color:var(--fg2);background:var(--bg2);border-radius:6px;padding:1px 8px}
 .solpile .under{position:absolute;inset:0;border-radius:14px;background:var(--bg3);border:1.5px solid var(--border2)}
 .solfly{position:fixed;margin:0;z-index:90;pointer-events:none;overflow:hidden;box-shadow:var(--shadow)}
 .slot .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);font-weight:600;
@@ -1490,6 +1564,11 @@ body.solview #content{padding-bottom:14px}
 .solcard{background:var(--bg2);border:2px solid var(--fg);border-radius:14px;padding:12px;box-shadow:var(--shadow);
   cursor:grab;touch-action:none;user-select:none;display:flex;flex-direction:column;gap:6px;
   position:relative;z-index:1;height:100%;box-sizing:border-box;overflow-y:auto}
+/* A playing card is short: when it runs out of room the chips give way, never
+   the question at the bottom. */
+.sol .solcard{overflow:hidden}
+.sol .solcard>*{flex-shrink:0}
+.sol .solcard>.t-meta{flex-shrink:1;min-height:0;overflow:hidden}
 .solcard.back{background:repeating-linear-gradient(45deg,var(--accent-soft) 0 8px,var(--bg2) 8px 16px);border-color:var(--accent)}
 .solcard.back>*{visibility:hidden}
 .solcard h3{margin:0;font-size:17px}
@@ -1762,8 +1841,15 @@ body.solview #content{padding-bottom:14px}
   <ul>
     <li>Structured into three GTD phases: <b>Get Clear, Get Current, Get Creative</b>.</li>
     <li>Check off steps as you go; linked steps take you directly to the relevant tool view. Customize the checklist under <i>Routines &amp; lists &gt; Weekly review</i>.</li>
-    <li><b>Project Review (Solitaire Mode):</b> Review active projects one card at a time, starting with the stalest. Filter to include <i>Waiting for</i> or <i>Someday/Maybe</i> lists, and drag or click to update project properties from that Area's most-used options. While you drag, only the box you aim at grows, and the option nearest the pointer grows inside it, with an arrow saying what letting go will do. A card is done when every field is answered, or at once when you mark the project Completed or Cancelled; Skip sends it to the end of the deck.</li>
-    <li><b>Solitaire keys:</b> each numpad key opens the box in the same place on the table: <kbd>7</kbd> <kbd>8</kbd> <kbd>9</kbd> Organisations, People, Responsibility; <kbd>4</kbd> <kbd>5</kbd> <kbd>6</kbd> Next action, Done when, Deadline; <kbd>1</kbd> Comes after, <kbd>2</kbd> back to the card, <kbd>3</kbd> the status. From the card <kbd>↑</kbd> <kbd>←</kbd> <kbd>→</kbd> open Organisations, Comes after and the status too. Inside a box the arrows move between its options and <kbd>Enter</kbd> or <kbd>Space</kbd> takes one. <kbd>1</kbd>–<kbd>5</kbd> on the number row set the status. <kbd>Esc</kbd> goes back to the card, and <kbd>Shift</kbd>+<kbd>→</kbd> flings it on as reviewed.</li>
+    <li><b>Project Review (Solitaire Mode):</b> Projects are dealt one card at a time, stalest first, and the deck is gone through in <b>three passes</b>:
+      <ol>
+        <li><b>Status</b> &ndash; every project, one question: still active, waiting, someday/maybe, completed or cancelled? Include <i>Waiting for</i> and <i>Someday/Maybe</i> here if you want them looked at too.</li>
+        <li><b>Outcome</b> &ndash; only what is still active: what does done look like, which responsibility is it part of, when is it due, and does it wait for another project?</li>
+        <li><b>Next action</b> &ndash; only what is still active: the very next thing to do, who else is in it, and which organisations it is for.</li>
+      </ol>
+      <i>Why passes, and not everything about one project at once?</i> Each kind of question needs a different kind of thinking. Deciding whether a project still matters is quick sorting; saying what done looks like is strategy; working out the next call to make is tactics. Switching between the three for every project tires you out fast, and a hard next action on project three is where most reviews get abandoned. Sorting everything first is fast and gives early wins: what is done or dropped leaves the deck, so the slower passes only cover projects that still need thought.</li>
+    <li>Every new project is <b>dealt onto the table</b>: the last card's answers are gathered up, the new card slides in face down and turns over, and only then are its answers dealt. You can always tell when you have moved to a different project. Pick an answer by clicking it or dragging the card onto it. A project is stamped <code>reviewed::</code> once every question is answered, or straight away when it is marked Completed or Cancelled, or stays Waiting or Someday after the first pass. <i>Skip</i> sends a card to the end of the pass; the passes down the side can be dealt in any order.</li>
+    <li><b>Solitaire keys:</b> the number on a box (numpad or number row) aims at it, and the same number again, or <kbd>Enter</kbd>, takes it. The arrows go from box to box, and a letter aims at the answer starting with it. <kbd>5</kbd> goes back to the project; press it twice to skip it. <kbd>Shift</kbd>+<kbd>→</kbd> flings the card on as reviewed.</li>
   </ul>
 
   <h3>Keyboard Shortcuts</h3>
@@ -2749,7 +2835,10 @@ const Backends = {
         });
         if (!r.ok) throw new Error("write failed: " + r.status);
       },
-      async remove(path) { await fetch(u("/api/file", path), {method: "DELETE"}); },
+      async remove(path) {
+        const r = await fetch(u("/api/file", path), {method: "DELETE"});
+        if (!r.ok && r.status !== 404) throw new Error("remove failed: " + r.status + " " + (await r.text().catch(() => "")));
+      },
       /* Ask the server to open the markdown in the editor on its own machine.
          Refused unless serve.py was started with --open-in-editor, and it says
          so in words meant to be shown to somebody. */
@@ -2927,6 +3016,14 @@ function reportStorageTrouble(rec, e) {
            {label: "Reconnect", run: () => offerFolderReconnect(rec.name)});
     return;
   }
+  // The storage answers but one file will not go: usually a sync client holding it.
+  const stuck = /^could not remove (.+?) \(/.exec((e && e.message) || "");
+  if (stuck) {
+    notify("The old copy of " + stuck[1] + " in " + label + " could not be deleted yet - " +
+           "something has it open (OneDrive often does). Trying again; until it goes, it may show up " +
+           "on its old shelf on another device.", "warn");
+    return;
+  }
   notify("Cannot reach " + label + "'s storage - " + storageReason(e) + ". Saved on this " +
          "device and it will go up when the connection is back.", "warn");
 }
@@ -2981,11 +3078,38 @@ async function doFlush() {
     await markUnconfirmed(rec, dirty);
     await removeMirror(rec, gone);
     try {
+      /* A name the folder will not take ("Name is not allowed") is not an
+         outage: every retry fails the same way, and it used to stop the files
+         after it from going up too. So it is said once, by name, and the rest
+         carry on. The page stays in the mirror on this device. */
       for (const p of dirty) {
         const page = rec.pages.get(p);
-        if (page) await rec.backend.write(p, serializePage(page));
+        if (!page) continue;
+        try { await rec.backend.write(p, serializePage(page)); }
+        catch (e) {
+          if (!(e instanceof TypeError) || !/name is not allowed/i.test(e.message || "")) throw e;
+          rec.badNames = rec.badNames || new Set();
+          if (!rec.badNames.has(p)) {
+            rec.badNames.add(p);
+            notify("\"" + p.split("/").pop() + "\" (in " + (p.split("/").slice(0, -1).join("/") || "the top folder") +
+                   ") has a name the folder will not take, so it stays on this device only. " +
+                   "Renaming it fixes it.", "warn");
+          }
+        }
       }
-      for (const p of gone) await rec.backend.remove(p).catch(() => {});
+      /* A file that will not go is not a detail: when a move's old file stays,
+         the project is back on its old shelf at the next load. So a delete
+         that fails is kept and tried again, and said, rather than swallowed.
+         One already gone is what was wanted. */
+      const stuck = [];
+      for (const p of gone) {
+        try { await rec.backend.remove(p); }
+        catch (e) { if (!/NotFound/i.test((e && (e.name + " " + e.message)) || "")) stuck.push([p, e]); }
+      }
+      if (stuck.length) {
+        stuck.forEach(([p]) => rec.removed.add(p));
+        throw new Error("could not remove " + stuck.map(([p]) => p).join(", ") + " (" + (stuck[0][1].message || stuck[0][1]) + ")");
+      }
       await confirmMirror(rec, dirty);
       V.error = null;
       if (rec.offline) {            // it came back; say so once and stop warning
@@ -3011,7 +3135,10 @@ async function doFlush() {
 
 window.addEventListener("beforeunload", e => {
   if (WIPING) return;
-  if (V.dirty.size) { flush(); e.preventDefault(); e.returnValue = ""; }
+  // Every area, not only the one on screen: the review changes projects in all of them.
+  if ([...LOADED.values()].some(r => r.dirty.size || r.removed.size) || V.dirty.size) {
+    flush(); e.preventDefault(); e.returnValue = "";
+  }
 });
 
 /* Local mirror. Always written BEFORE the real backend, so a save cannot be
@@ -3260,7 +3387,72 @@ async function readInto(record) {
     notify(newer + " change(s) made on this device are being sent up now.", "warn");
     scheduleFlush();
   }
+  const leftovers = dropLeftovers(record);
+  if (leftovers) {
+    notify(leftovers === 1 ? "The old copy of a moved project was still in its old folder. It is gone now."
+                           : leftovers + " old copies of moved projects were still in their old folders. They are gone now.");
+    scheduleFlush();
+  }
   return record;
+}
+
+/* ---------- the old file of a moved project ----------
+   A move writes the page into its new folder and deletes the old file. When
+   the delete did not land -- OneDrive holding the file open, the tab closed
+   before the save finished, or a build before moves left a headstone -- the
+   next load found the project on two shelves, the review dealt it out from
+   the old one again, and moving it "merged" two copies of the same page with
+   0 lines coming across.
+
+   So on the way in, two kinds of file are taken out and deleted again:
+   - one this area has a headstone for and that is no newer than the
+     headstone: it was already deleted here. A file with no updated:: at all
+     was written by hand, not by the app, and is left alone.
+   - the older of a project that sits on two status shelves, when it has no
+     line the newer one lacks: it is the leftover of a move. One with lines of
+     its own stays for the review to merge, so nothing written is lost. */
+function dropLeftovers(record) {
+  const tomb = new Map();
+  for (const part of String(record.pages.get(SETTINGS_PATH)?.props?.deleted || "").split(";")) {
+    const [p, t] = part.split("@");
+    if (p && t) tomb.set(trim(p), trim(t));
+  }
+  const stamp = page => String(page?.props?.updated || "");
+  const drop = new Set();
+  for (const [path, page] of record.pages) {
+    const at = tomb.get(path);
+    if (at && stamp(page) && stamp(page) <= at) drop.add(path);
+  }
+
+  const shelves = new Map();
+  for (const path of record.pages.keys()) {
+    const code = statusDirOf(path);
+    if (code == null || drop.has(path) || path !== join(STATUS_DIRS[code], baseName(path) + ".md")) continue;
+    const key = baseName(path).toLowerCase();
+    if (!shelves.has(key)) shelves.set(key, []);
+    shelves.get(key).push(path);
+  }
+  for (const paths of shelves.values()) {
+    if (paths.length < 2) continue;
+    paths.sort((a, b) => stamp(record.pages.get(b)).localeCompare(stamp(record.pages.get(a))));
+    const keep = record.pages.get(paths[0]);
+    const have = new Set();
+    walkBlocks(keep.blocks, b => { have.add(mergeLineKey(b)); });
+    for (const path of paths.slice(1)) {
+      const page = record.pages.get(path);
+      if (stamp(page) === stamp(keep)) continue;           // no telling which is the newer
+      let own = false;
+      walkBlocks(page.blocks, b => { if (trim(b.title) && !have.has(mergeLineKey(b))) own = true; });
+      if (!own) drop.add(path);
+    }
+  }
+
+  for (const path of drop) {
+    record.pages.delete(path);
+    record.dirty.delete(path);
+    record.removed.add(path);
+  }
+  return drop.size;
 }
 
 /* Load a space's files without making it the active one. */
@@ -4147,6 +4339,33 @@ function openSpaceColor(name, back) {
    in hand. */
 const PENDING_PROFILE = new Map();
 
+/* A row of mutually exclusive buttons with the chosen one's one-line reason
+   under it. Items are {key, label, blurb}. A radiogroup, so a screen reader
+   hears which one is picked, and the reason follows the pick. */
+function segPicker(items, current, onPick) {
+  const row = el("div", {class: "seg", role: "radiogroup"});
+  const why = el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"});
+  const paint = key => {
+    for (const b of row.children) {
+      const on = b.dataset.k === key;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-checked", on ? "true" : "false");
+    }
+    why.textContent = items.find(i => i.key === key)?.blurb || "";
+  };
+  for (const it of items) {
+    const b = el("button", {type: "button", role: "radio", onclick: () => {
+      if (b.classList.contains("on")) return;
+      paint(it.key);
+      onPick(it.key);
+    }}, it.label);
+    b.dataset.k = it.key;
+    row.append(b);
+  }
+  paint(current);
+  return el("div", {}, row, why);
+}
+
 function newSpacePrompt(then) {
   const nameInput = el("input", {placeholder: "Work"});
   let kind = CAP.dirPicker ? "fs" : "local";
@@ -4155,36 +4374,17 @@ function newSpacePrompt(then) {
   const preview = colorPreview(() => nameInput.value, color);
   const picker = colorPicker(color, c => { color = c; preview.paint(c); });
   nameInput.addEventListener("input", () => preview.paint());
-  const seg = el("div", {class: "seg"});
   const opts = [
-    CAP.dirPicker ? ["fs", "Its own folder", "pick a folder - share that folder with the people who should see it"] : null,
-    ["local", "In this browser", "share it later as a single markdown file"],
+    CAP.dirPicker ? ["fs", "Own folder", "Share the folder to share the area."] : null,
+    ["local", "This browser", "Share it later as one .md file."],
   ].filter(Boolean);
-  for (const [k, label] of opts) {
-    const btn = el("button", {class: k === kind ? "on" : "", onclick: () => {
-      kind = k;
-      for (const b of seg.children) b.classList.toggle("on", b.dataset.k === k);
-    }}, label);
-    btn.dataset.k = k;
-    seg.append(btn);
-  }
+  const where = segPicker(opts.map(([k, label, why]) => ({key: k, label, blurb: why})),
+    kind, k => { kind = k; });
 
-  /* What the space is for, asked once and only here. It decides which
-     altitudes this vault runs and how they are worded -- a job is not asked
-     why it is here and what it will not trade away. Changeable later, and it
-     only ever changes what is shown, never what is stored. */
-  const profSeg = el("div", {class: "seg", style: "flex-wrap:wrap"});
-  const profWhy = el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-    HORIZON_PROFILES[profile].blurb);
-  for (const p of Object.values(HORIZON_PROFILES)) {
-    const btn = el("button", {class: p.key === profile ? "on" : "", onclick: () => {
-      profile = p.key;
-      for (const b of profSeg.children) b.classList.toggle("on", b.dataset.p === profile);
-      profWhy.textContent = p.blurb;
-    }}, p.label);
-    btn.dataset.p = p.key;
-    profSeg.append(btn);
-  }
+  /* What the space is for. It decides which altitudes this vault runs and how
+     they are worded -- a job is not asked why it is here. Changeable later in
+     Vault & sync, and it only changes what is shown, never what is stored. */
+  const purpose = segPicker(Object.values(HORIZON_PROFILES), profile, k => { profile = k; });
 
   modal({
     center: true, title: "New area",
@@ -4193,21 +4393,13 @@ function newSpacePrompt(then) {
         el("label", {}, "Name"),
         nameInput,
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          "A whole separate vault: its own projects, contexts and horizons. " +
-          "Nothing leaks between areas.")),
-      el("div", {class: "field"},
-        el("label", {}, "What is it for"), profSeg, profWhy),
-      el("div", {class: "field"},
-        el("label", {}, "Where it lives"), seg,
-        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          opts.find(o => o[0] === kind)?.[2] || "")),
+          "Its own vault. Nothing leaks between areas.")),
+      el("div", {class: "field"}, el("label", {}, "For"), purpose),
+      el("div", {class: "field"}, el("label", {}, "Stored in"), where),
       el("div", {class: "field"},
         el("label", {}, "Colour"),
         picker,
-        preview.node,
-        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:10px"},
-          "How this area shows up in the sidebar, and on the badge its rows carry when " +
-          "it is on screen next to another area. Change it later from the area switcher."))),
+        preview.node)),
     foot: [
       el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
       el("button", {class: "btn primary", onclick: async () => {
@@ -5697,8 +5889,12 @@ function mergePageInto(sourcePath, targetPath, {links = true, temp = false, undo
     notify("Split back out. The links still point at " + pageTitle(targetPath) + ".");
   };
   const word = brought.length === 1 ? "1 line" : brought.length + " lines";
-  notify(pageTitle(targetPath) + " was already there, so the two are one page now - " +
-         word + " came across.", "info", temp || !undo ? null : {label: "Undo", run: back});
+  // Nothing new on the arriving page: it was an old copy of the one already there.
+  const leftover = !brought.length && !added.length && (prevChain ?? "") === (tgt.props[DEPENDS_PROP] ?? "");
+  notify(leftover
+    ? pageTitle(targetPath) + " was already there; the old copy had nothing it lacked, so only one is left."
+    : pageTitle(targetPath) + " was already there, so the two are one page now - " + word + " came across.",
+    "info", temp || !undo ? null : {label: "Undo", run: back});
   return "merged";
 }
 
@@ -5714,6 +5910,12 @@ function moveFile(oldPath, newPath) {
     V.pages.delete(oldPath);
     V.dirty.delete(oldPath);
     V.removed.add(oldPath);
+    /* The old path is gone as surely as a deleted page is: without the
+       headstone, the next sync with the vault file found the page missing
+       here and put the old copy back -- a project set to cancelled stood on
+       the active shelf again after a reload. */
+    addTombstone(oldPath);
+    dropTombstone(newPath);
     putPage(newPath, page);
   }
   if (!result) return result;
@@ -5729,7 +5931,12 @@ function moveFile(oldPath, newPath) {
   return result;
 }
 
-function setProjectStatus(path, code) {
+/* A status set by hand is the project looked at, so it carries today's
+   reviewed:: wherever it was set -- the board, the page, the review. Moved to
+   waiting, it asks who it waits for, unless the page already says. ask: false
+   is for a caller that asks itself; undo: true puts a move back and claims
+   nothing. */
+function setProjectStatus(path, code, {ask = true, undo = false} = {}) {
   if (!STATUS_DIRS[code]) return;
   const newPath = join(STATUS_DIRS[code], baseName(path) + ".md");
   /* Move first, stamp second. The page that is still there afterwards is the
@@ -5750,7 +5957,9 @@ function setProjectStatus(path, code) {
     if (!page) return;
     page.props.status = STATUS_TEXT[code];
     runTemplateRules(page,"status",code === "0" ? "DONE" : code === "3" ? "WAIT" : code === "-" ? "CANCELLED" : "TODO");
+    if (!undo) page.props.reviewed = todayStamp();
     touch(live);
+    if (code === "3" && ask && !undo && !trim(page.props.waiting_for || "")) askWaitingFor(V.space, live);
     notify(moved ? "Moved to " + STATUS_TEXT[code] : "Status: " + STATUS_TEXT[code]);
   }
   if (moved && state.view === "page" && state.pagePath === path) state.pagePath = newPath;
@@ -5890,23 +6099,20 @@ const HORIZON_KEYS = HORIZONS.map(h => h.key);
 
 const HORIZON_PROFILES = {
   life: {
-    key: "life", label: "A whole life",
-    blurb: "All six altitudes, purpose and vision included. The right answer for the " +
-           "area that holds everything, or for your own life outside work.",
+    key: "life", label: "Life",
+    blurb: "All six altitudes, purpose and vision included.",
     active: HORIZON_KEYS,
     chips: "life",
   },
   work: {
-    key: "work", label: "A job",
-    blurb: "The same six, but the top two are the organisation's mission and strategy - " +
-           "written down rather than invented, and never nagged about.",
+    key: "work", label: "Job",
+    blurb: "All six. The top two are the organisation's mission and strategy, never nagged about.",
     active: HORIZON_KEYS,
     chips: "work",
   },
   project: {
-    key: "project", label: "One project, or a volunteer role",
-    blurb: "Goals down to next actions. No purpose and no vision, because something " +
-           "this size borrows them from the life it sits in.",
+    key: "project", label: "Project",
+    blurb: "Goals down to next actions. No purpose or vision.",
     active: HORIZON_KEYS.filter(k => k !== "purpose" && k !== "vision"),
     chips: "life",
   },
@@ -10288,6 +10494,7 @@ function boardProjectCard(r, stuck) {
   }));
   const idle = info.reviewed ? dateDiffDays(info.reviewed, todayISO()) : null;
   const code = statusDirOf(path);
+  const twin = twinsOf(space, path);
   const card = el("button", {
     class: "bcard", draggable: "true",
     data: {path},
@@ -10308,7 +10515,10 @@ function boardProjectCard(r, stuck) {
       (stuck.has(path) && space === Spaces.active)
         ? el("span", {class: "chip miss b"}, "no next action") : null,
       info.blockers.length ? el("span", {class: "chip late"}, "blocked by " + info.blockers.join(", ")) : null,
-      idle != null ? el("span", {class: "chip age"}, "reviewed " + idle + "d ago") : null),
+      idle != null ? el("span", {class: "chip age"}, "reviewed " + idle + "d ago") : null,
+      twin ? el("span", {class: "chip late b",
+        title: "Looks like " + twin.rows.filter(x => !(x.space === space && x.path === path)).map(x => x.title).join(", "),
+        onclick: e => { e.stopPropagation(); openTwins(twin); }}, "looks alike") : null),
     projectFieldPills(r, {skip: ["status"]}));
   // Two spaces can hold the same path, so what makes a project card itself is
   // the space it is in as well as the file it is.
@@ -10420,6 +10630,11 @@ function fillBoardColumn(body, items, key, mkCard) {
     body.append(row);
   }
   if (!items.length) body.append(el("div", {class: "empty", style: "font-size:12px"}, "Nothing here."));
+  /* A column is as wide as what is in it calls for: the one holding thirty
+     projects gets the room, the empty one gives it up. Read once the body is
+     in its column, which the caller does straight after this returns. */
+  const grow = 1 + Math.min(items.length, 24) / 12;
+  queueMicrotask(() => { const col = body.closest(".bcol"); if (col) col.style.setProperty("--grow", grow.toFixed(2)); });
   return body;
 }
 
@@ -10570,7 +10785,7 @@ function viewProjectBoard() {
         return () => inSpace(space, () => {
           if (onto) { notify("That one merged into the project already there, so there is no file to move back.", "warn"); return; }
           const from = V.pages.has(landed) ? landed : path;
-          if (prev && STATUS_DIRS[prev]) setProjectStatus(from, prev);
+          if (prev && STATUS_DIRS[prev]) setProjectStatus(from, prev, {undo: true});
         });
       });
     col.append(fillBoardColumn(
@@ -16447,6 +16662,58 @@ function moveToBlock(txt, dir) {
   return true;
 }
 
+/* Backspace at the very start of a line joins it onto the end of the line
+   above, the one you can see -- the last line of the bullet before it, a body
+   line or its parent -- with the caret where the two meet, the way every
+   editor does it. The line's children stay where they were in the reading
+   order: under the line it joined, or in its place when that is its parent. */
+function focusLineAt(sel, offset) {
+  requestAnimationFrame(() => {
+    if ($("#modalRoot").firstChild) return;
+    const node = $(sel);
+    if (!node) return;
+    node.focus();
+    setHostText(node, node.textContent, offset);
+  });
+}
+function pullUpLine(txt, path, page, b) {
+  const outline = txt.closest(".outline");
+  if (!outline) return false;
+  const all = $$(".txt, .bodyline", outline);
+  const above = all[all.indexOf(txt) - 1];
+  const id = above?.closest(".blk")?.dataset.id;
+  if (!id) return false;
+  const target = findBlock(id);
+  if (!target || target.path !== path) return false;
+  const t = target.block;
+  // Blur is what writes the line back, so let it, then take what it wrote.
+  txt.blur();
+  const text = b.title || "";
+  const sibs = siblingsOf(page, b), i = sibs.indexOf(b);
+  const kids = b.children || [];
+  if (t === parentOf(page, b)) sibs.splice(i, 1, ...kids);
+  else {
+    sibs.splice(i, 1);
+    if (kids.length) { (t.children || (t.children = [])).push(...kids); t.collapsed = false; }
+  }
+  if ((b.body || []).length) (t.body || (t.body = [])).push(...b.body);
+  let sel, at;
+  if (above.classList.contains("bodyline")) {
+    const bi = Number(above.dataset.bi);
+    at = t.body[bi].length;
+    t.body[bi] += text;
+    sel = `.blk[data-id="${t.id}"] > .bodyline[data-bi="${bi}"]`;
+  } else {
+    at = (t.title || "").length;
+    t.title = (t.title || "") + text;
+    sel = `.blk[data-id="${t.id}"] .txt`;
+  }
+  createLinkedPages(text);
+  touch(path); noteTodoTouched(); render();
+  focusLineAt(sel, at);
+  return true;
+}
+
 /* ---------- a block's body lines ----------
    Everything under a bullet that is not itself a bullet -- a markdown heading
    like "## Purpose:", a quote, a wrapped paragraph -- is kept as that block's
@@ -16495,6 +16762,19 @@ function bodyLineEl(path, b, i) {
       b.body.splice(i, 1);
       touch(path); render();
       if (i > 0) focusBodyLine(b.id, i - 1); else focusBlock(b.id);
+    } else if (e.key === "Backspace" && !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey &&
+               caretOffsets(txt).join() === "0,0") {
+      // Onto the end of the line above: the body line before, or the bullet itself.
+      e.preventDefault();
+      txt.blur();
+      const text = b.body[i];
+      b.body.splice(i, 1);
+      let at;
+      if (i > 0) { at = b.body[i - 1].length; b.body[i - 1] += text; }
+      else { at = (b.title || "").length; b.title = (b.title || "") + text; }
+      touch(path); noteTodoTouched(); render();
+      focusLineAt(i > 0 ? `.blk[data-id="${b.id}"] > .bodyline[data-bi="${i - 1}"]`
+                        : `.blk[data-id="${b.id}"] .txt`, at);
     } else if (e.key === "Escape") {
       txt.blur();
     }
@@ -16879,6 +17159,9 @@ function outlineBlock(path, page, b, opts = {}) {
       sibs.splice(i, 1);
       touch(path); render();
       if (prev) focusBlock(prev.id);
+    } else if (e.key === "Backspace" && !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey &&
+               caretOffsets(txt).join() === "0,0" && pullUpLine(txt, path, page, b)) {
+      e.preventDefault();
     } else if (e.key === "ArrowUp" && !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey) {
       // Only once there is no line left above inside this block.
       if (caretAtEdge(txt).first && moveToBlock(txt, -1)) e.preventDefault();
@@ -18933,12 +19216,140 @@ function projectRow(r) {
       el("i", {style: "width:" + (total ? Math.round(done / total * 100) : 0) + "%"})));
 }
 
+/* ---------- projects that look alike ----------
+   The same project started twice -- "Ny nettside Nordlys" and "Nordlys ny
+   nettside", or one with a typo -- splits its tasks and its history in two.
+   Every project in every status in the areas on screen is compared by name:
+   the same words in another order, nearly the same words (a typo still counts
+   as the word), or nearly the same name. Look-alikes are grouped, so three
+   copies show as one group, and a group you say is not the same stays quiet. */
+const TWIN_SKIP = new Set(["og", "i", "på", "til", "for", "med", "av", "en", "et", "ei",
+  "the", "and", "of", "to", "a", "an", "in", "on"]);
+const twinNorm = t => String(t || "").toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "")
+  .replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+const twinWords = t => twinNorm(t).split(" ").filter(w => w && !TWIN_SKIP.has(w));
+function editRatio(a, b) {
+  if (a === b) return 1;
+  if (!a.length || !b.length) return 0;
+  let prev = Array.from({length: b.length + 1}, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++)
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return 1 - prev[b.length] / Math.max(a.length, b.length);
+}
+// Why two names look alike, or null when they do not.
+function twinWhy(a, b) {
+  const wa = twinWords(a), wb = twinWords(b);
+  if (!wa.length || !wb.length) return null;
+  // Fase 1 and Fase 2, Q3 and Q4: a different number is a different project.
+  const nums = w => w.map(x => (x.match(/\d+/g) || []).join(",")).filter(Boolean).sort().join(" ");
+  if (nums(wa) !== nums(wb)) return null;
+  const ka = [...wa].sort().join(" "), kb = [...wb].sort().join(" ");
+  if (ka === kb) return wa.join(" ") === wb.join(" ") ? "the same name" : "the same words in another order";
+  // Words matched one to one; a typo (4+ letters, 80% alike) still a match.
+  const left = [...wb];
+  let hit = 0;
+  for (const w of wa) {
+    const i = left.findIndex(x => x === w || (w.length >= 4 && x.length >= 4 && editRatio(w, x) >= 0.8));
+    if (i >= 0) { hit++; left.splice(i, 1); }
+  }
+  const most = Math.max(wa.length, wb.length);
+  if (most >= 2 && hit / most >= 0.75) return "nearly the same words";
+  const na = twinNorm(a), nb = twinNorm(b);
+  if (Math.min(na.length, nb.length) >= 6 && editRatio(na, nb) >= 0.85) return "nearly the same name";
+  return null;
+}
+const twinPairKey = (a, b) => [twinNorm(a), twinNorm(b)].sort().join("\u0001");
+const twinNotSame = () => { try { return new Set(JSON.parse(PREF.get("twins.not", "[]"))); } catch (_) { return new Set(); } };
+// Groups of look-alike projects: [{rows: [{space, path, title, code}], why}].
+function projectTwins() {
+  return memo("projectTwins", () => {
+    const all = STATUS_ORDER.flatMap(code => visibleProjects(code).map(r => ({...r, code, title: rowTitle(r)})))
+      .filter(r => !inSpace(r.space, () => isTourProject(r.path)));
+    const not = twinNotSame();
+    const up = all.map((_, i) => i);
+    const find = i => up[i] === i ? i : (up[i] = find(up[i]));
+    const why = new Map();
+    for (let i = 0; i < all.length; i++)
+      for (let j = i + 1; j < all.length; j++) {
+        if (not.has(twinPairKey(all[i].title, all[j].title))) continue;
+        const w = twinWhy(all[i].title, all[j].title);
+        if (!w) continue;
+        up[find(i)] = find(j);
+        why.set(i, w); why.set(j, w);
+      }
+    const groups = new Map();
+    all.forEach((r, i) => { if (!why.has(i)) return; const g = find(i); (groups.get(g) || groups.set(g, []).get(g)).push(r); });
+    return [...groups.values()].filter(rows => rows.length > 1)
+      .map(rows => ({rows, why: why.get(all.indexOf(rows[0]))}));
+  });
+}
+// The group a project is in, if it has look-alikes.
+const twinsOf = (space, path) => projectTwins().find(g => g.rows.some(r => r.space === space && r.path === path)) || null;
+
+/* The look-alikes, a group at a time: open any of them, fold them into one
+   (the one you keep takes the lines and fills its empty values from the
+   others), or say they are different and they stop being flagged. */
+function openTwins(only = null) {
+  const groups = only ? [only] : projectTwins();
+  if (!groups.length) { notify("No projects look alike."); return; }
+  const body = el("div", {class: "twins"});
+  groups.forEach((g, gi) => {
+    let keep = g.rows.find(r => r.code === "1") || g.rows[0];   // the live one, if there is one
+    const rowsEl = el("div", {class: "twinrows"});
+    const draw = () => {
+      rowsEl.textContent = "";
+      for (const r of g.rows) {
+        const here = r === keep;
+        rowsEl.append(el("label", {class: "twinrow" + (here ? " keep" : "")},
+          el("input", {type: "radio", name: "twin-keep-" + gi, checked: here, onchange: () => { keep = r; draw(); }}),
+          el("span", {class: "twint"}, r.title),
+          el("span", {class: "chip"}, STATUS_LABEL[r.code]),
+          multiSpace() ? spaceBadge(r.space) : null,
+          el("button", {class: "textbtn", onclick: e => { e.preventDefault(); closeModal(); previewPage(r.space, r.path); }}, "Open")));
+      }
+    };
+    draw();
+    const merge = () => {
+      const others = g.rows.filter(r => r !== keep);
+      const away = others.filter(r => r.space !== keep.space);
+      let n = 0;
+      for (const r of others) if (r.space === keep.space && inSpace(keep.space, () => mergePageInto(r.path, keep.path))) n++;
+      closeModal(); clearMemo(); render();
+      notify((n ? n + " folded into " + keep.title + "." : "Nothing folded.") +
+        (away.length ? " " + away.map(r => r.title + " (" + r.space + ")").join(", ") +
+          " is in another area: move it into " + keep.space + " first." : ""), away.length ? "warn" : "info");
+    };
+    const notSame = () => {
+      const not = twinNotSame();
+      for (let i = 0; i < g.rows.length; i++)
+        for (let j = i + 1; j < g.rows.length; j++) not.add(twinPairKey(g.rows[i].title, g.rows[j].title));
+      PREF.set("twins.not", JSON.stringify([...not]));
+      clearMemo(); closeModal(); render();
+      if (!only && projectTwins().length) openTwins();
+    };
+    body.append(el("div", {class: "twingroup"},
+      el("div", {class: "twinwhy"}, g.rows.length + " projects with " + g.why + ". Pick the one to keep:"),
+      rowsEl,
+      el("div", {class: "twinacts"},
+        el("button", {class: "btn sm primary", onclick: merge}, "Fold into the one kept"),
+        el("button", {class: "btn sm ghost", onclick: notSame}, "Not the same"))));
+  });
+  modal({title: only ? "Looks like another project" : "Projects that look alike", body,
+    foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Close")]});
+}
+
 function viewProjects() {
   const sub = subNow();
   const c = el("div", {class: "wrap" + (sub === "list" || sub === "report" ? "" : " wide")});
   const org = state.org || "";
   c.append(vhead("Projects", org || "What you have committed to finishing",
     org ? el("button", {class: "textbtn", onclick: () => go("projects", {org: null})}, "× clear") : null,
+    projectTwins().length ? el("button", {class: "textbtn twinbtn", title: "Projects with the same or nearly the same name",
+      onclick: () => openTwins()}, "⚠ " + projectTwins().length + " look alike") : null,
     csvBtn(allTasks, "all-tasks", "Export all tasks"),
     newBtn("project", () => newProjectPrompt()), viewSeg("projects")));
   const every = STATUS_CHIPS.flatMap(code => visibleProjects(code));
@@ -19272,8 +19683,19 @@ function peopleBoard(people) {
   const right = assignTargets(
     [cards.length ? el("div", {class: "pcards"}, ...cards) : emptyCard("No projects to show.")],
     [sel, toggle], "Find a project");
-  return el("div", {}, el("div", {class: "assign"}, picker, right),
-    el("p", {class: "hint"}, "Hand a next action to somebody and it lands in your Waiting for. Drop yourself on it to take it back. Esc puts a picked-up name down."));
+  /* The areas, as places a person can be carried to: drop a name on one (or
+     click the name, then the area) to move, copy or sync them into it. */
+  const areas = Spaces.list.length > 1 ? el("div", {class: "btabs pareas"},
+    el("span", {class: "say", style: "font-size:12px"}, "Carry a person to:"),
+    ...Spaces.list.map(sp => trayTarget(el("button", {class: "btab",
+      title: "Drop a name here to move, copy or sync that person into " + sp.name},
+      el("span", {class: "btab-dot", style: "background:" + spaceColor(sp.name)}), sp.name),
+      d => d.kind === "person" && !samePerson(d.name, whoAmI()),
+      d => { TRAY_ARMED = null; document.body.classList.remove("armed-on");
+             carryPerson(d.name, sp.name).then(ok => { if (ok) render(); }); }))) : null;
+  return el("div", {}, areas, el("div", {class: "assign"}, picker, right),
+    el("p", {class: "hint"}, "Hand a next action to somebody and it lands in your Waiting for. Drop yourself on it to take it back. " +
+      (areas ? "Drop a name on an area to move, copy or sync the person there. " : "") + "Esc puts a picked-up name down."));
 }
 
 /* ============================================================
@@ -19821,7 +20243,19 @@ function viewReview() {
    session rather than written, because an empty value says the same thing.
    ============================================================ */
 let SOL = {order: null, i: 0, focus: null, more: null};
-const SOL_ANS = new Map();
+/* What this week's review has answered, kept on this device for the week: a
+   reload, or coming back to it the next day, carries on where you were
+   instead of dealing every project again as if none had been looked at. */
+const solWeek = () => { const d = new Date(); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return isoOf(d); };
+const SOL_ANS = new Map((() => {
+  try {
+    const o = JSON.parse(PREF.get("sol.ans", "") || "null");
+    return o && o.week === solWeek() && Array.isArray(o.ans) ? o.ans : [];
+  } catch (_) { return []; }
+})());
+function solSaveAns() {
+  PREF.set("sol.ans", JSON.stringify({week: solWeek(), ans: [...SOL_ANS]}));
+}
 const solKey = r => (r.space || "") + "|" + r.path;
 const solAns = r => SOL_ANS.get(solKey(r)) || (SOL_ANS.set(solKey(r), {}), SOL_ANS.get(solKey(r)));
 const solIdle = r => inSpace(r.space, () => {
@@ -19832,9 +20266,11 @@ const solIdle = r => inSpace(r.space, () => {
 /* Active projects are the ones the review is for. Waiting and someday/maybe
    come along only when you ask for them. */
 const solAll = () => PREF.get("sol.all", "") === "1";
-function solOrder() {
-  return (solAll() ? ["1", "3", "2"] : ["1"]).flatMap(code => visibleProjects(code))
+function solOrder(pass = solPassNo()) {
+  const steps = solSteps(pass);
+  return (pass ? ["1"] : solAll() ? ["1", "3", "2"] : ["1"]).flatMap(code => visibleProjects(code))
     .filter(r => !inSpace(r.space, () => isTourProject(r.path)))
+    .filter(r => !pass || steps.some(f => !f.filled(r)))
     .sort((a, b) => (solIdle(b) ?? 1e6) - (solIdle(a) ?? 1e6));
 }
 const inS = (r, fn) => inSpace(r.space, fn);
@@ -19931,12 +20367,30 @@ function solFields() {
                                                    : inS(r, () => pageLinkPropAdd(r.path, "org", "o/" + v)),
      clear: r => { for (const o of projectOrgs(r)) removeLinkFromProp(r.space, r.path, "org", "o/" + o); solAns(r).orgs = true; },
      make: (r, name) => { inS(r, () => pageLinkPropAdd(r.path, "org", "o/" + slugify(name))); }},
-    {k: "people", label: "People", type: "multi", none: "Just me", scoped: true,
-     opts: r => inS(r, () => allPeople().map(personName).filter(n => !samePerson(n, whoAmI())).map(n => [n, n])),
+    /* The people of the project's own area, then those only another area
+       knows, as "Kari · Work": one of those is moved, copied or synced into
+       this area first, the way you choose, and then put on the project. */
+    {k: "people", label: "People", type: "multi", none: "Just me", scoped: true, add: "New person",
+     opts: r => {
+       const here = inS(r, () => allPeople().map(personName).filter(n => !samePerson(n, whoAmI())));
+       return [...here.map(n => [n, n]), ...peopleElsewhere(r.space, here).map(x => [PERSON_AWAY + x.space + PERSON_AWAY + x.name, x.name + " · " + x.space])];
+     },
      cur: r => projectPeople(r), rank: r => solRank(r, "p/", projectPeople),
      filled: r => projectPeople(r).length > 0 || !!solAns(r).people,
-     toggle: (r, v) => projectPeople(r).includes(v) ? removeLinkFromProp(r.space, r.path, "with", "p/" + v)
-                                                     : inS(r, () => pageLinkPropAdd(r.path, "with", "p/" + v)),
+     toggle: (r, v) => {
+       if (v.startsWith(PERSON_AWAY)) {
+         const [, from, name] = v.split(PERSON_AWAY);
+         carryPerson(name, r.space, from).then(ok => {
+           if (!ok) return;
+           inS(r, () => pageLinkPropAdd(r.path, "with", "p/" + name));
+           render();
+         });
+         return;
+       }
+       return projectPeople(r).includes(v) ? removeLinkFromProp(r.space, r.path, "with", "p/" + v)
+                                           : inS(r, () => pageLinkPropAdd(r.path, "with", "p/" + v));
+     },
+     make: (r, name) => { inS(r, () => pageLinkPropAdd(r.path, "with", "p/" + slugify(name))); },
      clear: r => { for (const n of projectPeople(r)) removeLinkFromProp(r.space, r.path, "with", "p/" + n); solAns(r).people = true; }},
     {k: "area", label: "Responsibility", type: "one", scoped: true, add: "New responsibility",
      opts: r => inS(r, () => areaList().map(p => [baseName(p), pageTitle(p)])),
@@ -19982,12 +20436,17 @@ function solFields() {
      filled: r => !!solAns(r).status,
      pick: (r, v) => {
        const was = solKey(r), ans = solAns(r);
-       if (inS(r, () => statusDirOf(r.path)) !== v) {
-         inS(r, () => setProjectStatus(r.path, v));
-         const moved = join(STATUS_DIRS[v], baseName(r.path) + ".md");
-         if (inS(r, () => V.pages.has(moved))) r.path = moved;
-       }
-       SOL_ANS.delete(was); SOL_ANS.set(solKey(r), Object.assign(ans, {status: true}));
+       /* The move redraws on its way past. Held until the card has followed
+          the page to its new folder, answers and all, or that redraw finds
+          the old path gone and takes the project off the table mid-review. */
+       holdRender(() => {
+         if (inS(r, () => statusDirOf(r.path)) !== v) {
+           inS(r, () => setProjectStatus(r.path, v, {ask: false}));
+           const moved = join(STATUS_DIRS[v], baseName(r.path) + ".md");
+           if (inS(r, () => V.pages.has(moved))) r.path = moved;
+         }
+         SOL_ANS.delete(was); SOL_ANS.set(solKey(r), Object.assign(ans, {status: true}));
+       });
        // In the review the card asks who itself, before the hand is gathered up.
        if (v === "3" && SOL_EDIT) setTimeout(() => solAskWaiting(r), 0);   // after the chooser has closed
      }},
@@ -20007,6 +20466,18 @@ function solEndOf(key) {
 }
 /* Waiting is always waiting on somebody, so moving a card there asks who,
    and writes it as waiting_for:: on the project page. */
+/* Several projects dropped on Waiting for at once are asked about one after
+   another, each when the one before is answered or skipped. */
+const WAIT_ASKS = [];
+function askWaitingFor(space, path) {
+  WAIT_ASKS.push({space, path});
+  if (WAIT_ASKS.length === 1) setTimeout(nextWaitAsk, 0);
+}
+function nextWaitAsk() {
+  const r = WAIT_ASKS[0];
+  if (!r) return;
+  askAfterModal(() => solAskWaiting(r, () => { WAIT_ASKS.shift(); render(); setTimeout(nextWaitAsk, 0); }));
+}
 function solAskWaiting(r, after = null) {
   // Saving, skipping and Escape all end here, once.
   let ended = false;
@@ -20113,10 +20584,11 @@ function solAfter(r, field, hold = false) {
   SOL.focus = field;
   SOL.hold = hold ? field : null;
   SOL.step = null;
-  if (solFields().every(f => f.filled(r))) solMarkReviewed(r);
+  // Everything this pass asks is answered: the card has had its turn.
+  if (!hold && solSteps().every(f => f.filled(r))) { solPassDone(r); return; }
   render();
 }
-function solMarkReviewed(r) {
+function solMarkReviewed(r, quiet = false) {
   if (solAns(r).reviewed) return;
   solAns(r).reviewed = true;
   inS(r, () => {
@@ -20125,18 +20597,24 @@ function solMarkReviewed(r) {
     page.props.reviewed = todayStamp();
     touch(r.path);
   });
-  notify(inS(r, () => pageTitle(r.path)) + " reviewed. reviewed:: " + todayISO() + " is on its page.");
+  if (!quiet) notify(inS(r, () => pageTitle(r.path)) + " reviewed. reviewed:: " + todayISO() + " is on its page.");
 }
 /* The hand is gathered up into the card and the next one dealt. */
-const solDealNext = () => solSweep(() => { SOL.i++; SOL.focus = null; SOL.more = null; SOL.hold = null; render(); });
-/* Fling the card on as reviewed (Shift+Right), or skip it to come round again at the end. */
+const solDealNext = () => (solSaveAns(), solSweep(() => { SOL.i++; SOL.focus = null; SOL.more = null; SOL.hold = null; SOL.step = null; render(); }));
+/* Fling the card on as reviewed (Shift+Right), or skip it to come round again
+   at the end of this pass. Either way the hand is gathered up and a new card
+   dealt, so it is plain that the next project is a different one. */
 function solOp(r, v) {
+  if (SOL.moving) return;
   if (v === "skip") {
-    SOL.order.push(SOL.order.splice(SOL.i, 1)[0]); SOL.focus = null; SOL.more = null; SOL.hold = null; render();
-    notify("Skipped. It comes round again at the end.");
+    solSweep(() => {
+      SOL.order.push(SOL.order.splice(SOL.i, 1)[0]); SOL.focus = null; SOL.more = null; SOL.hold = null; SOL.step = null; render();
+      notify("Skipped. It comes round again at the end of this pass.");
+    }, {skip: true});
     return;
   }
-  solMarkReviewed(r);
+  solAns(r)["p" + solPassNo()] = true;
+  solMarkReviewed(r, !solPassNo());
   solDealNext();
 }
 
@@ -20160,31 +20638,46 @@ function solApply(r, f, v) {
   solAfter(r, f.k, f.type === "multi" && v !== "none");
 }
 
-/* Every card still on the table slides down into the project card, one after
-   another, and the card goes off the table with them. */
-function solSweep(done) {
+/* The card goes off the table onto where it now belongs: the stack it was
+   sorted onto, the done pile beside the deck, or -- skipped -- back under the
+   deck. An answer that is not a stack slides into the card first. The other
+   answers stay where they are: the next card is asked the same question, so
+   gathering them up only to deal the same hand straight back out was the
+   deck dealt twice. */
+function solSweep(done0, {skip = false} = {}) {
+  /* Nothing is answered while a card is on its way off the table: a key
+     pressed for the next card would land on this one, change its status
+     back, and deal past the next project unasked. */
+  if (SOL.moving) return;
+  const sol = SOL;
+  sol.moving = true;
+  const done = () => { sol.moving = false; done0(); };
   const pile = document.querySelector(".sol .solpile");
-  if (!pile || !pile.animate || matchMedia("(prefers-reduced-motion: reduce)").matches) { done(); return; }
+  SOL.keepHand = true;
+  if (!pile || !pile.animate || solReduced()) { done(); return; }
   pile.parentNode.style.pointerEvents = "none";
-  const to = pile.getBoundingClientRect();
   const mid = b => [b.left + b.width / 2, b.top + b.height / 2];
-  const [tx, ty] = mid(to);
-  let n = 0;
-  for (const spot of (SOL.els || new Map()).values()) {
-    if (!spot.isConnected) continue;
-    const from = spot.getBoundingClientRect(), [fx, fy] = mid(from);
-    const at = "translate(" + (tx - fx) + "px," + (ty - fy) + "px) scale(" + (to.width / from.width) + ")";
-    Object.assign(spot.style, {position: "relative", zIndex: "3"});
-    spot.animate([
-      {transform: "none", opacity: 1},
-      {transform: at + " rotate(" + ((Math.random() - 0.5) * 8) + "deg)", opacity: 1, offset: 0.85},
-      {transform: at, opacity: 0},
-    ], {duration: 480, delay: n++ * 60, easing: "cubic-bezier(.45,0,.25,1)", fill: "forwards"});
+  const to = pile.getBoundingClientRect(), [tx, ty] = mid(to);
+  const took = !skip && SOL.took && SOL.els && SOL.els.get(SOL.took);
+  const onto = took && took.isConnected && took.classList.contains("stack") ? took
+    : solShown(skip ? ".soldecks .deck" : ".soldecks .donepile");
+  // The project is what moves: nothing flies into it, it goes onto its stack.
+  const wait = 0;
+  if (onto === took) SOL.landed = SOL.took;
+  const card = pile.querySelector(".solcard") || pile;
+  if (!onto || !onto.isConnected) {
+    card.animate([{transform: "none", opacity: 1}, {transform: "translateY(-14px) scale(.9) rotate(-4deg)", opacity: 0}],
+      {duration: 320, delay: wait, easing: "ease-in", fill: "forwards"}).onfinish = done;
+    return;
   }
-  pile.animate([
+  const from = card.getBoundingClientRect(), [fx, fy] = mid(from), at = onto.getBoundingClientRect(), [ox, oy] = mid(at);
+  const go = "translate(" + (ox - fx) + "px," + (oy - fy) + "px) scale(" + (at.width / from.width) + ")";
+  Object.assign(card.style, {zIndex: "60"});
+  card.animate([
     {transform: "none", opacity: 1},
-    {transform: "translateY(-14px) scale(.9) rotate(-4deg)", opacity: 0},
-  ], {duration: 320, delay: 480 + n * 60, easing: "ease-in", fill: "forwards"}).onfinish = done;
+    {transform: go + " rotate(" + ((Math.random() - 0.5) * 6) + "deg)", opacity: 1, offset: 0.85},
+    {transform: go, opacity: 0},
+  ], {duration: 520, delay: wait, easing: "cubic-bezier(.45,0,.25,1)", fill: "forwards"}).onfinish = done;
 }
 
 function solSlot(r, f) {
@@ -20291,7 +20784,17 @@ function solChoices(r, f, host, list, isOn, chip) {
    the numpad has them. The answer taken goes onto the pile under the project
    and the next question is dealt. The steps down the side say where you are,
    and any of them can be gone back to. */
-const SOL_STEPS = ["status", "next", "outcome", "deadline", "area", "orgs", "people", "after"];
+/* The deck is gone through three times, each pass asking one kind of
+   question, so the mind stays in one mode the whole way through: first sort
+   every project by status (quick, and what is done or dropped leaves the deck),
+   then for what is still active say what done looks like and where it fits,
+   and only then the very next action and who is in it. */
+const SOL_PASSES = [
+  {name: "Status", say: "Sort every project: still active, waiting, someday, done or dropped.", steps: ["status"]},
+  {name: "Outcome", say: "For what is still active: what done looks like, and where it fits.", steps: ["outcome", "area", "deadline", "after"]},
+  {name: "Next action", say: "For what is still active: the very next thing to do, and who is in it.", steps: ["next", "people", "orgs"]},
+];
+const solPassNo = () => SOL.pass || 0;
 const SOL_ASK = {status: "Still the right status?", next: "What is the very next action?", outcome: "What does done look like?",
   deadline: "When does it have to be done?", area: "Which responsibility is it part of?", orgs: "Which organisations is it for?",
   people: "Who else is in it?", after: "Does it wait for another project?"};
@@ -20299,9 +20802,36 @@ const SOL_ASK = {status: "Still the right status?", next: "What is the very next
    that has an order of its own (this week, next week, this month) keeps it. */
 const SOL_SPOTS = ["7", "8", "9", "4", "6", "1", "2", "3"];
 let SOL_ACTS = new Map();
-function solSteps() {
+function solSteps(pass = solPassNo()) {
   const by = Object.fromEntries(solFields().map(f => [f.k, f]));
-  return SOL_STEPS.map(k => by[k]);
+  return SOL_PASSES[pass].steps.map(k => by[k]);
+}
+/* This card has had its turn in this pass: gather the hand up and deal the
+   next. A project that stays waiting or someday is not dealt again, so the
+   first pass is its review. */
+function solPassDone(r) {
+  const ans = solAns(r);
+  ans["p" + solPassNo()] = true;
+  /* Its status settled is the project reviewed, and that is written on the
+     page at once -- kept only in memory, a reload dealt the whole status pass
+     again and a project kept as active looked as if it had never been seen.
+     Quietly: the stacks on the table already say where it went. */
+  if (!solPassNo()) solMarkReviewed(r, true);
+  else if (solFields().every(f => f.filled(r))) solMarkReviewed(r);
+  solDealNext();
+}
+/* Deal a pass. An active project with everything this pass asks already
+   answered is not dealt; if nothing else is missing either, it is reviewed. */
+function solGoPass(n) {
+  SOL = {order: null, i: 0, focus: null, more: null, pass: n};
+  SOL_KB = null;
+  if (n) {
+    const asked = new Set(solOrder(n).map(solKey));
+    const quiet = visibleProjects("1").filter(r => !asked.has(solKey(r)) && solAns(r).status && solFields().every(f => f.filled(r)));
+    for (const r of quiet) solMarkReviewed(r, true);
+    if (quiet.length) notify(quiet.length + " project" + (quiet.length > 1 ? "s" : "") + " had nothing left to ask, and are reviewed.");
+  }
+  render();
 }
 /* The question on the table: one being changed, a list still being picked
    from, or else the first one not answered yet. */
@@ -20318,19 +20848,32 @@ function viewSolitaire() {
      stay out of a new deal, so coming back never starts over -- and never
      claims everything is done just because the deck was dealt too early. */
   const vis = visibleSpaces().join("|");
-  const passed = r => !!(SOL_ANS.get(solKey(r)) || {}).reviewed;
+  const pass = solPassNo(), P = SOL_PASSES[pass], last = pass === SOL_PASSES.length - 1;
+  const passed = r => !!(SOL_ANS.get(solKey(r)) || {})["p" + pass];
   if (!SOL.order || SOL.vis !== vis || !SOL.order.length) {
     SOL.order = solOrder().filter(r => !passed(r)); SOL.i = 0; SOL.vis = vis;
   }
   const gone = r => !inS(r, () => V.pages.has(r.path));
   SOL.i -= SOL.order.slice(0, SOL.i).filter(gone).length;
   SOL.order = SOL.order.filter(r => !gone(r));
+  /* The passes, down the side: where you are, and any of them can be dealt. */
+  const passList = el("ol", {class: "solpasses", "aria-label": "Passes"}, ...SOL_PASSES.map((p, n) =>
+    el("li", {}, el("button", {class: "solpass" + (n === pass ? " now" : "") + (n < pass ? " done" : ""),
+      "aria-current": n === pass ? "step" : null, title: p.say, onclick: () => { if (n !== pass) solGoPass(n); }},
+      el("span", {class: "n"}, n < pass ? "✓" : String(n + 1)), el("span", {class: "q"}, p.name)))));
   if (SOL.i >= SOL.order.length) {
-    const any = [...SOL_ANS.values()].some(a => a.reviewed);
+    const any = [...SOL_ANS.values()].some(a => a["p" + pass]);
+    const next = SOL_PASSES[pass + 1];
     c.append(emptyCard(
-      el("div", {style: "font-size:34px"}, "🂡"), el("b", {}, any ? "Every project reviewed." : "No projects to review here."), el("br"),
-      any ? "Each one now carries reviewed:: " + todayISO() + "." : "Open an area that has active projects, or include waiting and someday.", el("br"), el("br"),
-      el("button", {class: "textbtn", onclick: () => { SOL = {order: null, i: 0, focus: null, more: null}; SOL_ANS.clear(); render(); }}, "Deal again")));
+      el("div", {style: "font-size:34px"}, "🂡"),
+      el("b", {}, last && any ? "Every project reviewed." : any ? "Pass " + (pass + 1) + " done: " + P.name + "."
+        : pass ? "Nothing to ask in this pass." : "No projects to review here."), el("br"),
+      !pass && !any ? "Open an area that has active projects, or include waiting and someday."
+        : next ? "Next, pass " + (pass + 2) + ": " + next.say : "Each one now carries reviewed:: " + todayISO() + ".", el("br"), el("br"),
+      next ? el("button", {class: "btn primary", onclick: () => solGoPass(pass + 1)}, "Deal pass " + (pass + 2) + ": " + next.name + " ›") : null,
+      " ",
+      el("button", {class: "textbtn", onclick: () => { SOL_ANS.clear(); solSaveAns(); solGoPass(0); }}, "Start over")));
+    c.firstChild.after(passList);
     SOL.shown = null;
     return c;
   }
@@ -20345,11 +20888,15 @@ function viewSolitaire() {
   c.classList.add("solwrap");
   const head = c.firstChild;
   c.append(el("aside", {class: "solside"}, head,
+    passList,
+    el("p", {class: "solhow"}, P.say),
+    solDecks(pass),
     el("div", {class: "solcount"}, "Card " + (SOL.i + 1) + " of " + SOL.order.length + " · stalest first"),
-    el("div", {class: "solfilt"}, ...[["", "Active only"], ["1", "Waiting and someday too"]].map(([v, label]) => fchip(label, solAll() === !!v, () => {
+    // Only the status pass goes through waiting and someday; the others are for what is active.
+    pass ? null : el("div", {class: "solfilt"}, ...[["", "Active only"], ["1", "Waiting and someday too"]].map(([v, label]) => fchip(label, solAll() === !!v, () => {
       if (solAll() === !!v) return;
       PREF.set("sol.all", v);
-      SOL = {order: null, i: 0, focus: null, more: null}; render();
+      solGoPass(0);
     }))),
     el("ol", {class: "solsteps", "aria-label": "Questions"}, ...steps.map((s, i) => {
       const text = projectFieldText(r, s);
@@ -20365,12 +20912,24 @@ function viewSolitaire() {
   /* Every answered question is a card on the pile under the project, so the
      pile is the progress. */
   const key = solKey(r);
-  const before = SOL.shown && SOL.shown.key === key ? SOL.shown : null;
-  const took = SOL.took; SOL.took = null;
-  const acts = f ? solDeal(r, f) : [];
+  /* The same project, even when an answer has just moved its page to another
+     folder and the redraw on the way past sees it under a new path. */
+  const before = SOL.shown && (SOL.shown.key === key || SOL.shown.r === r) ? SOL.shown : null;
+  // The answer taken stays known until the card leaves the table with it.
+  const took = SOL.took;
+  if (!before || before.step !== (f ? f.k : null)) SOL.took = null;
+  /* A card answered in full is about to leave the table: the answers to its
+     last question stay out meanwhile, as the stack it is going onto. */
+  const hand = f || (before && before.asked && steps.find(s => s.k === before.asked)) || null;
+  const acts = hand ? solDeal(r, hand) : [];
   SOL_ACTS = new Map();
   const els = new Map(), cells = new Map();
   acts.forEach((a, i) => { a.k = SOL_SPOTS[i]; SOL_ACTS.set(a.k, a); });
+  // Sorting by status: each answer is a stack the sorted projects lie on.
+  if (hand && hand.k === "status") {
+    const tally = solStatusTally();
+    for (const a of acts) if (a.v != null) a.pile = tally[a.v] || 0;
+  }
   let pile = null;
   const grid = el("div", {class: "sol", data: {step: f ? f.k : ""}});
   SOL_GRID.forEach((g, gi) => {
@@ -20390,8 +20949,8 @@ function viewSolitaire() {
     pile.append(won
       ? el("div", {class: "solcard won"}, parentLine(r.space, r.path), el("h3", {}, info.title),
           el("div", {class: "t-meta"}, el("span", {class: "chip ok"}, "Reviewed"), spaceBadge(r.space)),
-          el("p", {}, "All " + steps.length + " questions are answered."),
-          el("button", {class: "btn primary", onclick: () => { SOL.i++; SOL.focus = null; SOL.more = null; SOL.hold = null; SOL.step = null; render(); }}, "Next card ›"))
+          el("p", {}, "All " + steps.length + " questions of this pass are answered."),
+          el("button", {class: "btn primary", onclick: () => solPassDone(r)}, "Next card ›"))
       : el("div", {class: "solcard", data: {solDrag: "1"}, tabindex: "0", title: "Drag onto an answer, or use the arrow keys"},
           parentLine(r.space, r.path),
           el("h3", {}, info.title),
@@ -20407,12 +20966,22 @@ function viewSolitaire() {
           el("div", {class: "prog", title: done + " of " + steps.length + " answered"},
             el("i", {style: "width:" + (done / steps.length * 100) + "%"}))));
   });
-  c.append(grid);
+  // The deck lies on the table beside the cards, as big as they are.
+  c.append(el("div", {class: "soltable"}, solDecks(pass, true), grid));
   const prevEls = SOL.els;
+  // The stack the last card went onto says so.
+  const landed = SOL.landed && els.get(SOL.landed);
+  if (landed) landed.classList.add("sollanded");
+  SOL.landed = null;
+  // A new card asked what the last one was: its answers are already out.
+  const keep = SOL.keepHand && !before && SOL.shown && SOL.shown.asked === (f ? f.k : null);
+  if (!before) SOL.keepHand = false;
   SOL.els = els;
-  SOL.shown = {key, step: f ? f.k : null};
+  // asked outlives a card answered in full, which has no question on it.
+  SOL.shown = {key, r, step: hand ? hand.k : null, asked: f ? f.k : before ? before.asked : null};
+  const now = SOL.shown;
   requestAnimationFrame(() => {
-    solAnimate(before, SOL.shown, took, prevEls, els, cells, pile);
+    solAnimate(before, now, took, prevEls, keep ? new Map() : els, cells, pile);
     solRestore();
   });
   return c;
@@ -20425,7 +20994,7 @@ function solDeal(r, f) {
   // Gone back to an answered question: leaving it as it is is an answer too.
   if (SOL.step === f.k && f.type !== "multi" && f.filled(r))
     out.push({label: "Keep it", sub: projectFieldText(r, f) || "", word: "✓ Keep it",
-      take: () => { SOL.step = null; SOL.hold = null; render(); }});
+      take: () => solAfter(r, f.k)});
   if (f.type === "text") {
     const input = el("input", {placeholder: f.ph, "aria-label": f.label});
     if (f.k === "outcome") input.value = f.val(r);
@@ -20494,7 +21063,7 @@ function solDeal(r, f) {
   let room = SOL_SPOTS.length - out.length - first.length - last.length;
   const more = ranked.length > room;
   if (more) room--;
-  const shown = ranked.slice(0, room).map(([v, label]) => ({label, word: (f.type === "multi" ? (isOn(v) ? "− " : "+ ") : "→ ") + label,
+  const shown = ranked.slice(0, room).map(([v, label]) => ({v, label, word: (f.type === "multi" ? (isOn(v) ? "− " : "+ ") : "→ ") + label,
     on: isOn(v), now: !solAns(r).status && now === v, sub: !solAns(r).status && now === v ? "As it is now" : "", take: pick(v)}));
   out.push(...first, ...shown, ...last);
   if (more) out.push({label: "All " + ranked.length + " ›", sub: "Search the whole list", word: "Show all", more: true, stay: true,
@@ -20527,15 +21096,60 @@ function solMoreOf(r, f) {
   SOL_EDIT.redraw();
 }
 /* One answer, as a box of its own: what it is, big, and a line on what it does. */
+/* ---------- the stacks ----------
+   The projects not yet looked at are a deck, face down, that gets thinner
+   with every card; the ones sorted lie face up on the answer they got, so
+   Active, Waiting, Someday, Completed and Cancelled grow as the deck shrinks.
+   A pile is drawn as its edges under the top card, one per project up to a
+   handful, with the count on it. */
+const SOL_EDGES = 6;
+function solEdges(n, fill = "var(--bg3)") {
+  const out = [];
+  for (let i = 1; i <= Math.min(n, SOL_EDGES); i++)
+    out.push(`${i * 2}px ${i * 2}px 0 -1px ${fill}`, `${i * 2}px ${i * 2}px 0 0 var(--border2)`);
+  return out.join(",");
+}
+// Projects sorted in the status pass, by the status they were given.
+function solStatusTally() {
+  const tally = {};
+  for (const [key, ans] of SOL_ANS) {
+    if (!ans.p0) continue;
+    const code = statusDirOf(key.slice(key.indexOf("|") + 1));
+    if (code) tally[code] = (tally[code] || 0) + 1;
+  }
+  return tally;
+}
+/* The deck still to play, and beside it what this pass has done with. The
+   status pass sorts onto the table's own stacks, so it needs no done pile. */
+/* big: the deck as it lies on the table, a full-size card like the rest;
+   otherwise the small one in the side column, for a phone. */
+function solDecks(pass, big = false) {
+  const left = SOL.order ? Math.max(0, SOL.order.length - SOL.i - 1) : 0;
+  const done = [...SOL_ANS.values()].filter(a => a["p" + pass]).length;
+  const pile = (cls, n, word, fill) => el("div", {class: "soldeckpile"},
+    el("div", {class: "soldeckcard " + cls, style: "box-shadow:" + (solEdges(n, fill) || "none")},
+      el("b", {}, String(n)), big ? el("span", {}, word) : null),
+    big ? null : el("span", {}, word));
+  return el("div", {class: "soldecks" + (big ? " big" : "")},
+    pile("deck", left, left === 1 ? "card still to sort" : "cards still to sort", "var(--accent-soft)"),
+    pass ? pile("donepile", done, "reviewed") : null);
+}
+// The one of two copies (table or side column) that is on screen.
+const solShown = sel => [...document.querySelectorAll(sel)].find(e => e.offsetParent) || null;
+
 function solActBox(r, a) {
+  const stack = a.pile != null;
   const box = el("div", {class: "slot solopt" + (a.on ? " on" : "") + (a.now ? " now" : "") + (a.more ? " more" : "") +
-      (a.input ? " write" : ""), tabindex: "0", role: a.input ? null : "button", data: {k: a.k},
+      (a.input ? " write" : "") + (stack ? " stack" : "") + (stack && !a.pile ? " bare" : ""),
+    tabindex: "0", role: a.input ? null : "button", data: {k: a.k},
+    style: stack && a.pile ? "box-shadow:" + solEdges(a.pile) : null,
     title: a.word,
     onclick: e => { if (e.target.closest("input,button")) return; SOL_KB = null; solUnpaint(); solTake(r, box); },
     onkeydown: e => { if ((e.key === "Enter" || e.key === " ") && e.target === box) { e.preventDefault(); e.stopPropagation(); solTake(r, box); } }},
     el("div", {class: "lbl"}, solKeycap(a.k)),
     el("div", {class: "solopt-t"}, a.label),
-    a.sub ? el("div", {class: "solopt-s"}, a.sub) : null);
+    a.sub ? el("div", {class: "solopt-s"}, a.sub) : null,
+    stack ? el("div", {class: "solpilen"}, a.pile ? a.pile + (a.pile === 1 ? " project" : " projects") : "none yet") : null);
   if (a.input && a.send) box.append(el("div", {class: "slotform"}, a.input, el("button", {class: "btn sm", onclick: a.send}, "Add")));
   else if (a.input || a.date) box.append(a.input || a.date);
   return box;
@@ -20552,33 +21166,49 @@ function solAnimate(before, now, took, prevEls, els, cells, pile) {
   const [tx, ty] = mid(to);
   let wait = 420;
   if (before) {
+    /* An answer that only adds to the card: the card was put down on it and
+       is picked up again for the next question -- it comes back from there,
+       rather than the answer flying into the card. */
     wait = 120;
-    const old = took && prevEls && prevEls.get(took), spot = took && cells.get(took);
-    if (old && spot && spot.isConnected) {
+    const spot = took && cells.get(took), card = pile.querySelector(".solcard");
+    if (spot && spot.isConnected && card) {
       const from = spot.getBoundingClientRect(), [fx, fy] = mid(from);
-      const fly = old.cloneNode(true);
-      fly.classList.add("solfly");
-      fly.classList.remove("solzoom", "soltype", "focus");
-      Object.assign(fly.style, {left: from.left + "px", top: from.top + "px", width: from.width + "px", height: from.height + "px", transform: ""});
-      document.body.append(fly);
-      const turn = (Math.random() - 0.5) * 10, sc = to.width / from.width;
-      fly.animate([
-        {transform: "none", opacity: 1},
-        {transform: "translate(" + (tx - fx) + "px," + (ty - fy) + "px) scale(" + sc + ") rotate(" + turn + "deg)", opacity: 1, offset: 0.85},
-        {transform: "translate(" + (tx - fx + 3) + "px," + (ty - fy + 3) + "px) scale(" + sc + ")", opacity: 0},
-      ], {duration: 460, easing: "cubic-bezier(.45,0,.25,1)"}).onfinish = () => fly.remove();
-      wait = 380;
+      const there = "translate(" + (fx - tx) + "px," + (fy - ty) + "px) scale(" + (from.width / to.width) + ")";
+      card.style.zIndex = "60";
+      card.animate([
+        {transform: there + " rotate(" + ((Math.random() - 0.5) * 6) + "deg)"},
+        {transform: there, offset: 0.25},
+        {transform: "none"},
+      ], {duration: 520, easing: "cubic-bezier(.3,.6,.2,1)"}).onfinish = () => { card.style.zIndex = ""; };
+      wait = 420;
     }
   } else {
-    // A new project: face down, turned over, then its first question dealt out from under it.
+    /* A new project: dealt face down from the deck off the table, turned
+       over, and only then its first question dealt out from under it -- so a
+       new project never looks like the last one with a new question. */
     const card = pile.querySelector(".solcard");
     if (card) {
       card.classList.add("back");
-      card.animate([{transform: "perspective(900px) rotateY(0)"}, {transform: "perspective(900px) rotateY(90deg)"}],
-        {duration: 200, easing: "ease-in"}).onfinish = () => {
-        card.classList.remove("back");
-        card.animate([{transform: "perspective(900px) rotateY(-90deg)"}, {transform: "perspective(900px) rotateY(0)"}],
-          {duration: 220, easing: "ease-out"});
+      wait = 920;
+      // Off the top of the deck, when the deck is on screen.
+      const deck = solShown(".soldecks .deck");
+      let off = "translate(-60vw,-8vh) rotate(-14deg)", half = "translate(-30vw,-4vh) rotate(-7deg)";
+      if (deck && deck.offsetParent) {
+        const d = deck.getBoundingClientRect(), c = card.getBoundingClientRect(), [dx, dy] = mid(d), [cx, cy] = mid(c);
+        off = "translate(" + (dx - cx) + "px," + (dy - cy) + "px) scale(" + (d.width / c.width) + ")";
+        half = "translate(" + (dx - cx) / 2 + "px," + ((dy - cy) / 2 - 30) + "px) scale(" + (1 + d.width / c.width) / 2 + ") rotate(-5deg)";
+      }
+      card.animate([{transform: off, opacity: 1},
+                    {transform: half, opacity: 1, offset: 0.45},
+                    {transform: "none", opacity: 1}],
+        {duration: 460, easing: "cubic-bezier(.3,.6,.2,1)"}).onfinish = () => {
+        if (!card.isConnected) return;
+        card.animate([{transform: "perspective(900px) rotateY(0)"}, {transform: "perspective(900px) rotateY(90deg)"}],
+          {duration: 180, easing: "ease-in"}).onfinish = () => {
+          card.classList.remove("back");
+          card.animate([{transform: "perspective(900px) rotateY(-90deg)"}, {transform: "perspective(900px) rotateY(0)"}],
+            {duration: 220, easing: "ease-out"});
+        };
       };
     }
   }
@@ -20804,7 +21434,7 @@ function solRestore() {
    the enlarged box sits above it, so it never hides the pill underneath. */
 document.addEventListener("pointerdown", e => {
   const card = e.target.closest && e.target.closest("[data-sol-drag]");
-  if (!card || e.button > 0 || e.target.closest("button,input,a")) return;
+  if (!card || e.button > 0 || e.target.closest("button,input,a") || SOL.moving) return;
   SOL_KB = null; solUnpaint();
   SOL_DRAG = {card, sx: e.clientX, sy: e.clientY, x: e.clientX, y: e.clientY, vx: 0, vy: 0,
     ghost: null, k: null, pill: null, moreT: null};
@@ -20881,6 +21511,7 @@ function solGhostHome(ghost, into) {
    opens something (a box to write in, the calendar, the whole list) is not
    an answer yet, so it is not what goes onto the pile. */
 function solTake(r, box) {
+  if (SOL.moving) return;
   const a = r && box && SOL_ACTS.get(box.dataset.k);
   if (!a) return;
   if (!a.stay) SOL.took = a.k;
@@ -20980,6 +21611,7 @@ window.addEventListener("keydown", e => {
   if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
   const r = SOL.order && SOL.order[SOL.i];
   if (!r) return;
+  if (SOL.moving) { e.preventDefault(); e.stopImmediatePropagation(); return; }
   const take = () => { e.preventDefault(); e.stopImmediatePropagation(); };
   // By e.code, so the numpad means the same with NumLock on or off.
   const key = e.key, m = /^(?:Numpad|Digit)([1-9])$/.exec(e.code);
@@ -21153,13 +21785,25 @@ function statusFact(path, code) {
       if (!want) { notify("Status is one of: " + STATUS_ORDER.map(c => STATUS_LABEL[c]).join(", "), "warn"); return; }
       if (want !== code) setProjectStatus(path, want);
     },
-    pills: () => [factPill(STATUS_LABEL[code], "fst s" + (code === "-" ? "x" : code),
-      "the shelf this project is on", () => chipMenu(STATUS_LABEL[code], "the shelf this project is on", [
-        ["a", "Go to " + STATUS_LABEL[code], "everything on that shelf", () => go("projects", {statusCode: code})],
-        ["b", "Move it to another shelf", "moves the file into pages/<code>/", () => openStatusPicker(path)],
-      ]))],
+    /* A click on the status lays the other statuses out beside it, one click
+       from moving the project there, with the way to that shelf's list at the
+       end. Clicking the status again folds them away. */
+    pills: () => {
+      const cls = c => "fst s" + (c === "-" ? "x" : c);
+      const open = STATUS_PILLS_OPEN === path;
+      const toggle = () => { STATUS_PILLS_OPEN = open ? null : path; render(); };
+      const own = factPill(STATUS_LABEL[code], cls(code), open ? "Fold the other statuses away" : "Change the status, or see the shelf", toggle);
+      if (!open) return [own];
+      return [own,
+        ...["1", "3", "2", "0", "-"].filter(c => c !== code && STATUS_DIRS[c]).map(c => factPill("→ " + STATUS_LABEL[c], cls(c) + " fmove",
+          "Move it to " + STATUS_LABEL[c], () => { STATUS_PILLS_OPEN = null; setProjectStatus(path, c); })),
+        factPill("Go to " + STATUS_LABEL[code] + " ›", "fquiet", "Everything on the " + STATUS_LABEL[code] + " shelf",
+          () => { STATUS_PILLS_OPEN = null; go("projects", {statusCode: code}); })];
+    },
   };
 }
+// The project whose status pill is opened out into all the statuses.
+let STATUS_PILLS_OPEN = null;
 
 function outcomeFact(path) {
   const out = outcomeOf(path);
@@ -25558,54 +26202,148 @@ function openVaultDialog() {
   const lastSync = getSetting("last_sync");
   const linkedKnown = !!LINKED;
   const onFolder = V.backend && V.backend.kind === "fs";
+  const area = Spaces.active || "this area";
+  const hint = (text, top) => el("div", {style: "color:var(--fg3);font-size:12px;margin-top:" + (top || 6) + "px"}, text);
 
-  const storageBox = el("div", {class: "field"},
-    el("label", {}, "This device"),
+  /* A checkbox row, drawn the way the space switcher draws its toggles. */
+  const toggle = (on, title, sub, flip) => {
+    const box = el("button", {type: "button", role: "checkbox", "aria-checked": on ? "true" : "false",
+      class: "spacetoggle" + (on ? " on" : ""), onclick: () => {
+        on = !on;
+        box.classList.toggle("on", on);
+        box.textContent = on ? "✓" : "";
+        box.setAttribute("aria-checked", on ? "true" : "false");
+        flip(on);
+      }}, on ? "✓" : "");
+    return el("div", {style: "display:flex;gap:10px;align-items:flex-start"},
+      box, el("div", {}, el("div", {}, title), sub ? hint(sub, 2) : null));
+  };
+
+  /* One line says where the work is; the full list of what this browser can
+     and cannot do is folded away, because only the missing pieces ever matter. */
+  const status = el("div", {class: "field"},
     capLine(V.backend?.kind === "fs" || V.backend?.kind === "http",
-      V.backend?.kind === "fs" ? "Writing real .md files into " + V.backend.label
-      : V.backend?.kind === "http" ? "Synced with the server at " + V.backend.label
-      : "Working inside the browser (" + (V.backend?.label || "memory") + ")"),
-    capLine(CAP.persist !== "memory",
-      CAP.sandboxed ? "Running in a locked preview frame (SharePoint or Teams) - no storage at all"
-      : CAP.persist === "idb" ? "Changes persist here between visits"
-      : CAP.persist === "ls" ? "Changes persist (IndexedDB blocked, using localStorage)"
-      : "This browser blocks local storage for this page - your work lives in memory only, so save the vault file before closing"),
-    capLine(CAP.dirPicker, CAP.dirPicker ? "Can open a vault folder directly" : "Cannot open folders (normal on iOS, Android and Firefox)"),
-    capLine(CAP.savePicker, CAP.savePicker ? "Can link a vault file for one-click sync" : "No file linking - use Save / Open below"),
-    capLine(SW_READY, SW_READY ? "Opens without a network, and installs to your home screen"
-      : CAP.fromFile ? "Opened as a file, so: no offline open, no home screen, no Share button - open it from a URL instead"
-      : "No offline copy yet (sw.js missing from the host, or still installing)"),
-    capLine(canShareFiles(), canShareFiles()
-      ? "Can hand the vault file to your other apps with the Share button"
-      : "No Share button here - the vault file downloads instead"));
+      V.backend?.kind === "fs" ? "Files in “" + V.backend.label + "”"
+      : V.backend?.kind === "http" ? "Synced with " + V.backend.label
+      : "Only in this browser"),
+    CAP.persist === "memory" ? capLine(false, CAP.sandboxed
+      ? "Locked preview frame (SharePoint or Teams) - nothing is stored. Save the vault file."
+      : "This browser stores nothing for this page. Save the vault file before closing.") : null,
+    el("details", {style: "margin-top:4px"},
+      el("summary", {}, "What this browser can do"),
+      capLine(CAP.persist !== "memory", CAP.persist === "ls" ? "Keeps changes (localStorage)" : "Keeps changes between visits"),
+      capLine(CAP.dirPicker, CAP.dirPicker ? "Opens folders" : "Cannot open folders (normal on phones and Firefox)"),
+      capLine(CAP.savePicker, CAP.savePicker ? "Links a vault file for one-click sync" : "Cannot link a vault file"),
+      capLine(SW_READY, SW_READY ? "Works offline and installs"
+        : CAP.fromFile ? "Opened as a file: no offline, install or Share" : "No offline copy yet"),
+      capLine(canShareFiles(), canShareFiles() ? "Share button for the vault file" : "Vault file downloads instead of sharing")));
 
-  /* The same question New space asks, for a space whose answer has changed --
-     a side project that grew into the job, a job that is now the whole life.
-     It only changes which altitudes are shown and how they read; every page
-     already written stays exactly where it is. */
-  const profileBox = el("div", {class: "field"},
-    el("label", {}, "What this area is for"));
-  const profSeg = el("div", {class: "seg", style: "flex-wrap:wrap"});
-  const profWhy = el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-    horizonProfile().blurb);
-  for (const p of Object.values(HORIZON_PROFILES)) {
-    const btn = el("button", {class: p.key === horizonProfile().key ? "on" : "", onclick: () => {
-      setSetting("horizon_profile", p.key);
-      for (const b of profSeg.children) b.classList.toggle("on", b.dataset.p === p.key);
-      profWhy.textContent = p.blurb;
-      notify(Spaces.active + " runs " + p.active.length + " altitudes now.");
+  /* Name, photo and whether either is written down sit together: they are
+     all one question, "does this area know it was me". */
+  const nameInput = el("input", {placeholder: "Full name", value: whoAmI(), "aria-label": "Your name in " + area,
+                                 style: "flex:1;min-width:0"});
+  const face = el("span", {style: "display:contents"});
+  const photoBtns = el("span", {style: "display:flex;gap:6px"});
+  const avatarRow = el("div", {style: "display:flex;gap:12px;align-items:center"}, face, nameInput, photoBtns);
+  // Redraws around the name box, never the box itself, so typing keeps its focus.
+  const drawAvatar = () => {
+    const who = whoAmI();
+    face.textContent = photoBtns.textContent = "";
+    if (!who) return;
+    face.append(avatarNode(who, 36));
+    photoBtns.append(
+      el("button", {class: "btn sm ghost", onclick: () => pickAvatar(who, drawAvatar)},
+        avatarOf(who) ? "Change photo" : "Add photo"),
+      avatarOf(who) ? el("button", {class: "btn sm ghost", title: "Remove photo", "aria-label": "Remove photo",
+        onclick: () => { clearAvatar(who); drawAvatar(); }}, "✕") : null);
+  };
+  nameInput.addEventListener("change", () => {
+    setIdentity(nameInput.value, Spaces.active);
+    notify(trim(nameInput.value)
+      ? "Changes in " + area + " will be signed " + trim(nameInput.value) + "."
+      : "Name cleared - changes will not be signed.");
+    drawAvatar();
+    render();
+  });
+  drawAvatar();
+
+  const stampsBox = el("div");
+  const drawStamps = () => {
+    stampsBox.textContent = "";
+    const n = attributionOff() ? countStamps() : 0;
+    if (n) stampsBox.append(el("button", {class: "btn sm ghost", style: "margin-top:8px", onclick: () => {
+      if (!confirm("Remove " + n + " existing stamp(s) from " + area + "? This rewrites those files and cannot be undone."))
+        return;
+      clearExistingStamps(); drawStamps();
+    }}, "Remove the " + n + " stamps already here"));
+  };
+  drawStamps();
+
+  const youBox = el("div", {class: "field"},
+    el("label", {}, "You in " + area),
+    avatarRow,
+    el("div", {style: "margin-top:10px"},
+      toggle(!attributionOff(), "Sign what I add and finish",
+        "Writes by:: and done_by:: into the files, for everyone sharing " + area + ".",
+        on => {
+          setSetting("no_attribution", on ? "" : "true");
+          notify(on ? "Changes in " + area + " will be signed." : "Nothing in " + area + " records who did what.");
+          drawStamps(); render();
+        })),
+    stampsBox);
+
+  /* Purpose and colour: what the area is, as opposed to where it is kept. */
+  const colourPreview = colorPreview(Spaces.active || "Area", spaceColor(Spaces.active));
+  const areaBox = el("div", {class: "field"},
+    el("label", {}, "Area"),
+    segPicker(Object.values(HORIZON_PROFILES), horizonProfile().key, k => {
+      setSetting("horizon_profile", k);
       render();
-    }}, p.label);
-    btn.dataset.p = p.key;
-    profSeg.append(btn);
-  }
-  profileBox.append(profSeg, profWhy,
-    el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-      "Nothing is deleted by changing this. An altitude an area does not run is " +
-      "just not shown and not nudged about; switch back and it is there untouched."));
+    }),
+    hint("Changing it hides or shows altitudes. Nothing is deleted."),
+    el("div", {style: "margin-top:12px"},
+      colorPicker(spaceColor(Spaces.active), async c => {
+        colourPreview.paint(c);
+        if (await Spaces.setColor(Spaces.active, c)) renderNav();
+      }),
+      colourPreview.node));
+
+  /* The folder first: it is the answer to "where are my files". The vault
+     file below is a courier between devices, not a second home. */
+  const folderBox = CAP.dirPicker ? el("div", {class: "field"},
+    el("label", {}, "Folder"),
+    el("div", {style: "display:flex;gap:10px;align-items:center;flex-wrap:wrap"},
+      el("button", {class: onFolder ? "btn ghost" : "btn primary", onclick: connectFolder},
+        onFolder ? "Change folder" : "Choose folder"),
+      el("span", {style: "color:var(--fg2);font-size:13px"},
+        onFolder ? "“" + (V.backend.label || "") + "”" : "None - kept in this browser")),
+    hint("Plain .md files Obsidian, Logseq and Neovim open. Share the folder to share " + area + ".")) : null;
+
+  const devicesBox = el("div", {class: "field"},
+    el("label", {}, onFolder ? "Phone" : "Other devices"),
+    el("div", {style: "display:flex;gap:8px;flex-wrap:wrap"},
+      CAP.savePicker
+        ? el("button", {class: "btn primary", onclick: () => linkedKnown ? syncLinked() : linkVaultFile()},
+            linkedKnown ? "Sync now" : "Link vault file")
+        : null,
+      el("button", {class: "btn" + (CAP.savePicker ? " ghost" : " primary"), onclick: () => saveBundleAsDownload()},
+        canShareFiles() ? "Send vault file" : "Save vault file"),
+      el("button", {class: "btn ghost", onclick: () => openBundleFromFile()}, "Open vault file"),
+      CAP.savePicker && linkedKnown
+        ? el("button", {class: "btn ghost", onclick: () => linkVaultFile()}, "Re-link")
+        : null),
+    hint(onFolder
+      ? "One .md file carries " + area + " to a phone and back. Keep it outside the folder. Edits merge per page."
+      : "One .md file in iCloud, OneDrive or Dropbox, synced on each device. Edits merge per page."),
+    CAP.savePicker && linkedKnown ? el("div", {style: "margin-top:10px"},
+      toggle(autoSyncOn(), "Sync by itself", "On open, on return, and a minute after typing stops.", on => {
+        PREF.set("autosync", on ? "1" : "0");
+        notify(on ? "Syncing the linked file on its own." : "Sync only when you press it.");
+      })) : null,
+    hint(lastSync ? "Last sync " + formatStamp(lastSync) : "Not synced yet."));
 
   const serverInput = el("input", {
-    placeholder: "http://127.0.0.1:8777",
+    placeholder: "http://127.0.0.1:8777", "aria-label": "Sync server address",
     value: safeLS.get("gtd.server") || (CAP.served ? location.origin : "http://127.0.0.1:8777"),
   });
 
@@ -25628,226 +26366,59 @@ function openVaultDialog() {
     },
   });
 
+  const timezone = (() => {
+    const sel = el("select", {"aria-label": "Timezone"});
+    let zones = [];
+    try { zones = Intl.supportedValuesOf("timeZone") || []; } catch (_) {}
+    if (!zones.length) {
+      zones = ["UTC", "Europe/Oslo", "Europe/London", "Europe/Berlin", "America/New_York",
+               "America/Los_Angeles", "Asia/Singapore", "Asia/Tokyo", "Australia/Sydney"];
+    }
+    let detected = "UTC";
+    try { detected = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch (_) {}
+    if (!zones.includes(detected)) zones.unshift(detected);
+    sel.append(el("option", {value: ""}, "This device (" + detected + ")"));
+    for (const z of zones) sel.append(el("option", {value: z}, z));
+    sel.value = PREF.get("timezone", "") || "";
+    sel.addEventListener("change", () => {
+      PREF.set("timezone", sel.value);
+      notify("Times shown in " + (sel.value || detected) + ". Files stay in UTC.");
+      render();
+    });
+    return sel;
+  })();
+
+  /* Everything used once a year, folded. Start afresh stays last: you pass
+     every way of keeping your work before the way of losing it. */
+  const more = el("details", {},
+    el("summary", {style: "padding:8px 16px"}, "More"),
+    el("div", {class: "field"},
+      el("label", {}, "Timezone"), timezone,
+      hint("Changes what you see, including which day is today. Files stay in UTC.")),
+    el("div", {class: "field"},
+      el("label", {}, "Sync server"),
+      el("div", {style: "display:flex;gap:8px"},
+        serverInput,
+        el("button", {class: "btn ghost", onclick: () => connectServer(trim(serverInput.value))}, "Connect"),
+        el("button", {class: "btn ghost", onclick: () => { safeLS.del("gtd.server"); notify("Server forgotten."); }}, "Forget")),
+      hint("serve.py on Termux, a Raspberry Pi or any always-on box.")),
+    el("div", {class: "field"},
+      el("label", {}, "Import"),
+      el("div", {style: "display:flex;gap:8px;flex-wrap:wrap"},
+        el("button", {class: "btn ghost", onclick: () => fileInput.click()}, "Import .md / .org files"),
+        V.raw.size ? el("button", {class: "btn ghost", onclick: () => { importOrgFiles(); closeModal(); }},
+          "Convert " + V.raw.size + " .org files") : null),
+      fileInput),
+    el("div", {class: "field"},
+      el("label", {}, "Start afresh"),
+      el("button", {class: "btn danger", onclick: () => openStartAfreshDialog()}, "Start afresh…"),
+      hint("Empties this browser and reloads. " + (onFolder
+        ? "Files in “" + (V.backend.label || "the folder") + "” are kept; reconnect the folder after."
+        : "Save the vault file first - this cannot be undone."))));
+
   modal({
     center: true, title: "Vault & sync - " + (Spaces.active || "space"),
-    body: el("div", {},
-      storageBox,
-      profileBox,
-
-      /* Where the files live comes first, because it is the answer to "where are
-         my markdown files" -- and because the vault file below is a courier,
-         not a place. Putting the courier first once misled even me. */
-      CAP.dirPicker ? el("div", {class: "field"},
-        el("label", {}, "Where the files live - a folder of .md files (Chrome / Edge on desktop)"),
-        el("button", {class: onFolder ? "btn ghost" : "btn primary", onclick: connectFolder},
-          onFolder ? "Change folder for " + Spaces.active : "Choose folder for " + Spaces.active),
-        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          "One file per day in journals/, one file per page in pages/, written as you type - " +
-          "the same files Neovim, Obsidian and Logseq open. Only this area goes here, so share " +
-          "that folder with the people who should see this area - and no one else." +
-          (onFolder ? "" : " Until you pick one, this area lives in the browser and writes no files.")),
-        onFolder ? el("div", {style: "color:var(--fg3);font-size:12px;margin-top:4px"},
-          "Now writing into \u201C" + (V.backend.label || "") + "\u201D.") : null) : null,
-
-      el("div", {class: "field"},
-        el("label", {}, (onFolder ? "Carrying changes to a phone" : "Sync across devices") +
-          " - no server, no account"),
-        el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
-          (onFolder
-            ? "Phones cannot open folders, so the way to reach one is a single markdown file " +
-              "that carries this area there and back. It is a courier, not a second home: " +
-              "your files stay as they are above, and anything the phone sends back becomes " +
-              "its own .md file in the folder. Keep the courier file OUTSIDE the folder."
-            : "Your whole vault travels as one markdown file. Keep it in a folder your devices " +
-              "already sync - iCloud Drive, OneDrive, Dropbox, Google Drive, Syncthing - and " +
-              "sync on each device.") +
-          " Edits merge per page; nothing is overwritten blindly." +
-          (canShareFiles()
-            ? " On this device Send uses your phone\u2019s own Share panel, so you can hand the " +
-              "file straight to whichever of those apps you already have."
-            : "")),
-        el("div", {style: "display:flex;gap:8px;flex-wrap:wrap"},
-          CAP.savePicker
-            ? el("button", {class: "btn primary", onclick: () => linkedKnown ? syncLinked() : linkVaultFile()},
-                linkedKnown ? "Sync now" : "Link vault file")
-            : null,
-          el("button", {class: "btn" + (CAP.savePicker ? " ghost" : " primary"), onclick: () => saveBundleAsDownload()},
-            canShareFiles() ? "Send vault file" : "Save vault file"),
-          el("button", {class: "btn ghost", onclick: () => openBundleFromFile()}, "Open vault file"),
-          CAP.savePicker && linkedKnown
-            ? el("button", {class: "btn ghost", onclick: () => linkVaultFile()}, "Re-link")
-            : null),
-        CAP.savePicker && linkedKnown ? el("div", {style: "display:flex;gap:10px;align-items:flex-start;margin-top:10px"},
-          (() => {
-            const box = el("button", {class: "spacetoggle" + (autoSyncOn() ? " on" : ""), onclick: () => {
-              const on = !autoSyncOn();
-              PREF.set("autosync", on ? "1" : "0");
-              box.classList.toggle("on", on);
-              box.textContent = on ? "\u2713" : "";
-              notify(on ? "Syncing the linked file on its own." : "Sync only when you press it.");
-            }}, autoSyncOn() ? "\u2713" : "");
-            return box;
-          })(),
-          el("div", {},
-            el("div", {}, "Sync by itself"),
-            el("div", {style: "color:var(--fg3);font-size:12px"},
-              "Merges when this area opens and when you come back to the tab, and writes " +
-              "back about a minute after you stop typing. Never while you are editing."))) : null,
-        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          lastSync ? "Last sync: " + formatStamp(lastSync) : "Not synced yet.")),
-
-      el("div", {class: "field"},
-        el("label", {}, "Or: sync server (Termux, Raspberry Pi, any always-on box)"),
-        serverInput,
-        el("div", {style: "display:flex;gap:8px;margin-top:8px"},
-          el("button", {class: "btn ghost", onclick: () => connectServer(trim(serverInput.value))}, "Connect"),
-          el("button", {class: "btn ghost", onclick: () => { safeLS.del("gtd.server"); notify("Server forgotten."); }}, "Forget"))),
-
-      el("div", {class: "field"},
-        el("label", {}, "You in " + (Spaces.active || "this area")),
-        (() => {
-          /* The picture belongs next to the name: one is who you are called and
-             the other is what you look like, and hiding the second a page deeper
-             meant nobody found it. */
-          const me = whoAmI();
-          const row = el("div", {style: "display:flex;gap:12px;align-items:center;margin-bottom:8px"});
-          const draw = () => {
-            row.textContent = "";
-            const who = whoAmI();
-            if (!who) {
-              row.append(el("div", {style: "color:var(--fg3);font-size:12px"},
-                "Put a name in below and you can add a photo of yourself."));
-              return;
-            }
-            row.append(avatarNode(who, 44));
-            row.append(el("div", {style: "display:flex;gap:6px;flex-wrap:wrap"},
-              el("button", {class: "btn sm ghost", onclick: () => pickAvatar(who, draw)},
-                avatarOf(who) ? "Change photo" : "Add a photo"),
-              avatarOf(who)
-                ? el("button", {class: "btn sm ghost", onclick: () => { clearAvatar(who); draw(); }}, "Remove")
-                : null));
-          };
-          draw();
-          return row;
-        })(),
-        (() => {
-          const input = el("input", {placeholder: "Kenneth Aar", value: whoAmI()});
-          input.addEventListener("change", () => {
-            setIdentity(input.value, Spaces.active);
-            notify(trim(input.value)
-              ? "Changes in " + Spaces.active + " will be signed " + trim(input.value) + "."
-              : "Name cleared - changes will not be signed.");
-            render();
-          });
-          return input;
-        })(),
-        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          "Both belong to " + (Spaces.active || "this area") + " alone: the name is kept on " +
-          "this device and the photo in your own page inside this vault, so Work and Private " +
-          "can show different ones and neither follows you between them. The name is written " +
-          "into the markdown as by:: and done_by:: so everyone sharing this area can see who " +
-          "added what; the photo is shrunk to about a kilobyte of text and never leaves the " +
-          "folder, because there is nowhere for it to go. Leave both empty and nothing is " +
-          "stamped." +
-          (attributionOff() ? " This area is set to record nothing, so the name is unused here." : ""))),
-
-      el("div", {class: "field"},
-        el("label", {}, "Attribution in " + (Spaces.active || "this area")),
-        (() => {
-          const off = attributionOff();
-          const box = el("button", {class: "spacetoggle" + (off ? " on" : ""),
-            onclick: () => {
-              setSetting("no_attribution", off ? "" : "true");
-              notify(off ? "Changes in " + Spaces.active + " will be signed again."
-                         : "Nothing in " + Spaces.active + " will record who did what.");
-              closeModal(); render(); openVaultDialog();
-            }}, off ? "\u2713" : "");
-          return el("div", {},
-            el("div", {style: "display:flex;gap:10px;align-items:flex-start"},
-              box,
-              el("div", {},
-                el("div", {}, "Do not record who did what in this area"),
-                el("div", {style: "color:var(--fg3);font-size:12px"},
-                  "No by::, done_by:: or updated_by:: is written here, whatever name you set. " +
-                  "Stored in the area's own settings, so it holds for everyone sharing it."))),
-            off && countStamps() ? el("button", {class: "btn sm ghost", style: "margin-top:8px",
-              onclick: () => {
-                if (!confirm("Remove " + countStamps() + " existing attribution stamp(s) from " +
-                             Spaces.active + "? This rewrites those files and cannot be undone."))
-                  return;
-                clearExistingStamps(); closeModal(); openVaultDialog();
-              }}, "Also remove the " + countStamps() + " stamps already here") : null);
-        })()),
-
-      el("div", {class: "field"},
-        el("label", {}, "Colour of " + (Spaces.active || "this area")),
-        (() => {
-          // Applied as you pick: this dialog has no save button of its own.
-          const name = Spaces.active;
-          const preview = colorPreview(name || "Area", spaceColor(name));
-          const picker = colorPicker(spaceColor(name), async c => {
-            preview.paint(c);
-            if (await Spaces.setColor(name, c)) renderNav();
-          });
-          return el("div", {}, picker, preview.node,
-            el("div", {style: "color:var(--fg3);font-size:12px;margin-top:10px"},
-              "Used for this area in the sidebar and on the badge its rows carry when it " +
-              "shares the screen with another area. Stored on this device, next to the list " +
-              "of areas - not in the files, so sharing the area keeps your colours yours."));
-        })()),
-
-      el("div", {class: "field"},
-        el("label", {}, "Your timezone"),
-        (() => {
-          const sel = el("select", {});
-          let zones = [];
-          try { zones = Intl.supportedValuesOf("timeZone") || []; } catch (_) {}
-          if (!zones.length) {
-            zones = ["UTC", "Europe/Oslo", "Europe/London", "Europe/Berlin", "America/New_York",
-                     "America/Los_Angeles", "Asia/Singapore", "Asia/Tokyo", "Australia/Sydney"];
-          }
-          let detected = "UTC";
-          try { detected = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch (_) {}
-          if (!zones.includes(detected)) zones.unshift(detected);
-          sel.append(el("option", {value: ""}, "Use this device (" + detected + ")"));
-          for (const z of zones) sel.append(el("option", {value: z}, z));
-          sel.value = PREF.get("timezone", "") || "";
-          sel.addEventListener("change", () => {
-            PREF.set("timezone", sel.value);
-            notify("Times shown in " + (sel.value || detected) + ". Files stay in UTC.");
-            render();
-          });
-          return sel;
-        })(),
-        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          "Timestamps are written to the files in UTC so colleagues in different offices " +
-          "compare cleanly. This only changes what you see - including which day counts " +
-          "as today. Set on this device, for you.")),
-
-      el("div", {class: "field"},
-        el("label", {}, "Import"),
-        el("div", {style: "display:flex;gap:8px;flex-wrap:wrap"},
-          el("button", {class: "btn ghost", onclick: () => fileInput.click()}, "Import .md / .org files"),
-          V.raw.size ? el("button", {class: "btn ghost", onclick: () => { importOrgFiles(); closeModal(); }},
-            "Convert " + V.raw.size + " .org files") : null),
-        fileInput),
-
-      /* Last in the dialog, on purpose: you scroll past every way of keeping
-         your work before you reach the way of losing it. */
-      el("div", {class: "field"},
-        el("label", {}, "Start afresh"),
-        el("div", {style: "color:var(--fg2);font-size:13px;margin-bottom:8px"},
-          "Empties this browser\u2019s copy of GroupToDo - every area, its settings, " +
-          "your name, the offline copy - and reloads as if you had never opened it. " +
-          "Useful when you want to see onboarding again, or to hand the browser on. " +
-          (onFolder
-            ? "Your .md files in \u201C" + (V.backend.label || "the folder") + "\u201D are NOT " +
-              "touched - but this browser forgets the folder, so reconnect it afterwards " +
-              "to get the area back."
-            : "Save the vault file first if you want any of it back - this cannot be undone.")),
-        el("button", {class: "btn danger", onclick: () => openStartAfreshDialog()},
-          "Start afresh\u2026")),
-    ),
+    body: el("div", {}, status, folderBox, devicesBox, youBox, areaBox, more),
     foot: [
       el("button", {class: "btn ghost", onclick: () => { closeModal(); openShareSpaceInvite(); }}, "Invite somebody"),
       el("div", {style: "flex:1"}),
@@ -27154,7 +27725,7 @@ function chooseBoundedTransfer(plan, target, opts) {
   if (clash) body.append(el("p", {}, plan.path + " is already in " + target + ". What should happen to it?"),
     ...radioChoices("bounded-clash", [["merge", "Merge: keep its lines and add these under them"],
                                        ["replace", "Replace it with this one"]], clash, v => { clash = v; }));
-  return askTransfer("Move a page and the journal lines about it", body,
+  return askTransfer("Move, copy or sync a page and the journal lines about it", body,
     () => ({mode, files: [...selected], clash}));
 }
 
@@ -27322,6 +27893,37 @@ function chooseItemTransfer(ctx, target, defaultMode = "sync") {
     el("p", {}, "Links, properties and attachments come along. Linked pages are handled the same way."),
     ...radioChoices("transfer-mode", TRANSFER_MODES, mode, v => { mode = v; }));
   return askTransfer("What to move, and how", body, () => ({scope, mode}));
+}
+
+/* ---------- people between areas ----------
+   A person is a page, so carrying one to another area is the same move, copy
+   or sync any page gets: synced, an edit to Kari in one area is Kari in both. */
+const PERSON_AWAY = "";
+// People the other loaded areas have a page for and this one does not.
+function peopleElsewhere(space, here = null) {
+  const have = new Set((here || inSpace(space, () => allPeople().map(personName))).map(n => n.toLowerCase()));
+  const out = [];
+  for (const sp of LOADED.keys()) {
+    if (sp === space) continue;
+    for (const name of inSpace(sp, () => allPeople().map(personName))) {
+      if (have.has(name.toLowerCase()) || samePerson(name, whoAmI())) continue;
+      have.add(name.toLowerCase());
+      out.push({name, space: sp});
+    }
+  }
+  return out;
+}
+/* Move, copy or sync a person's page into target. Resolves true once the
+   person is there (or already was), false when nothing was carried. */
+async function carryPerson(name, target, from = null) {
+  const path = personPath(name);
+  if (inSpace(target, () => V.pages.has(path))) { notify(name + " is already in " + target + "."); return true; }
+  const home = from && LOADED.has(from) && inSpace(from, () => V.pages.has(path)) ? from
+    : [...LOADED.keys()].find(sp => inSpace(sp, () => V.pages.has(path)));
+  if (!home) return true;                     // no page anywhere: linking makes one here
+  // One question: the transfer itself asks move, copy or sync, and what comes along.
+  try { return !!(await transferLinkedPages([{path, from: home}], target, {mode: "sync"})); }
+  catch (e) { notify("The transfer did not finish: " + e.message, "error"); return false; }
 }
 
 /* Carry out a transfer the user has chosen: a branch, or the whole file. */

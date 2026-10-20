@@ -293,6 +293,11 @@ class Handler(BaseHTTPRequestHandler):
             self.vault.delete(self._rel())
         except ValueError as exc:
             return self._send(400, str(exc))
+        except OSError as exc:
+            # A file a sync client has open (OneDrive does this) will not go.
+            # Say so, so the app keeps the delete and tries again, instead of
+            # the old file of a moved project turning up again at the next load.
+            return self._send(500, "could not delete: " + str(exc))
         return self._json(200, {"ok": True})
 
     # ---------- the app itself ----------
