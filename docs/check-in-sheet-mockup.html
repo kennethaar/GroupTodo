@@ -364,7 +364,7 @@ same bargain as the rest of GroupToDo. The file <em>is</em> the round trip.</p>
    and the whole job of this note is to read as though a person wrote it.
    ============================================================ */
 var LANG = (function(){ try { return localStorage.getItem("gtd-mockup-lang") || "en"; } catch(e){ return "en"; } })();
-var WHO = {me:"Kenneth Aar", first:"Kenneth", them:"Mia", themFull:"Mia Halvorsen",
+var WHO = {me:"Kari Strand", first:"Kari", them:"Mia", themFull:"Mia Halvorsen",
            mail:"mia.halvorsen@example.com", file:"check-in-mia-halvorsen.html"};
 
 function numWord(lang, n){
@@ -380,7 +380,7 @@ var STR = {
     asked:   function(d){ return "asked " + d + (d === 1 ? " day ago" : " days ago"); },
     hi:      function(){ return "Hei " + WHO.them + " 👋"; },
     lede:    function(n){ return "<b>" + WHO.me + "</b> is waiting for <b>" + n + " things</b> from you. "
-               + "Tick what is done. Everything else he will assume is still coming."; },
+               + "Tick what is done. Anything not ticked is taken as still coming."; },
     howTitle:"When you are done. Three taps, no account.",
     steps:   ["Tick everything you have finished. Add a note where it helps.",
               "Press <em>Send back to " + "{WHO}" + "</em>. Your email opens, already addressed, with your answers written into the message.",
@@ -432,7 +432,7 @@ var STR = {
     asked:   function(d){ return "spurte for " + d + (d === 1 ? " dag siden" : " dager siden"); },
     hi:      function(){ return "Hei " + WHO.them + " 👋"; },
     lede:    function(n){ return "<b>" + WHO.me + "</b> venter på <b>" + n + " ting</b> fra deg. "
-               + "Huk av det som er gjort. Resten regner han med fortsatt kommer."; },
+               + "Huk av det som er gjort. Alt som ikke er huket av, regnes som på vei."; },
     howTitle:"Når du er ferdig. Tre trykk, ingen konto.",
     steps:   ["Huk av alt du har gjort. Skriv en kommentar der det trengs.",
               "Trykk <em>Send tilbake til " + "{WHO}" + "</em>. E-posten din åpner seg, ferdig adressert, med svarene skrevet inn i meldingen.",
@@ -582,7 +582,7 @@ var MAILTO_BUDGET = 1800;
 function mailtoLink(){
   var subject = L().replyHead(new Date().toISOString().slice(0,10));
   var body = replyText();
-  var url = "mailto:kenneth.aar@example.com"
+  var url = "mailto:kari.strand@example.com"
     + "?subject=" + encodeURIComponent(subject)
     + "&body=" + encodeURIComponent(body);
   return {url: url, body: body, fits: url.length <= MAILTO_BUDGET, len: url.length};

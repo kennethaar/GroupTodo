@@ -1354,6 +1354,7 @@ body.lselecting,body.lselecting *{user-select:none;-webkit-user-select:none;curs
 .blk>.line:hover .state.none,.state.none:focus{opacity:1}
 /* The badge is a control wherever it is clickable, and it keeps the focus ring
    after the redraw so the next space bar cycles it again. */
+.state.stage{font-family:inherit;letter-spacing:0;font-weight:600;white-space:nowrap}   /* a task type's stage, in its own words */
 .state.btn{padding:2px 6px}   /* a thumb-sized target: on a list row the badge is the control */
 .state.btn:hover{box-shadow:inset 0 0 0 1px currentColor}
 .state:focus-visible{outline:1.5px solid var(--accent);outline-offset:1px}
@@ -2106,6 +2107,7 @@ body.solview #content{padding-bottom:14px}
     <tr><td>Esc, then Shift+&uarr; / &darr;</td><td>Pick the line, then pick more lines above or below (also Shift+&uarr; / &darr; at the top or bottom of a line)</td></tr>
     <tr><td>Alt+Shift+&uarr; / &darr;</td><td>Move the line, or the picked lines, and their sub-items up or down</td></tr>
     <tr><td>Alt+S</td><td>Move line to another Area</td></tr>
+    <tr><td>Alt+I</td><td>Make it a responsibility: link the line to one, or turn the project into one (merged when it is already there)</td></tr>
     <tr><td>Ctrl+.</td><td>Open or close the line menu</td></tr>
     <tr><td>&uarr; / &darr; / Enter / Esc</td><td>Navigate, select, or close an open line menu</td></tr>
   </table>
@@ -5472,6 +5474,7 @@ function setBlockState(path, block, state, opts = {}) {
   });
   const prev = block.state;
   block.state = state;
+  if (opts.stage) writeStage(block, opts.stage.list, opts.stage.name); else { syncStage(block); state = block.state; }
 
   if (state) {
     if (!prev) applyTodoTemplate(block);
@@ -5526,6 +5529,7 @@ function projectOfBlock(path, block) {
    nowhere for a plain note to live, so {keepTask} stops at DONE and wraps to
    TODO; the action panel still has the explicit way out. */
 function cycleState(path, block, opts = {}) {
+  if (block.state && nextStage(path, block)) return;
   const order = opts.keepTask ? ["TODO", "DOING", "WAIT", "DONE"]
                               : ["TODO", "DOING", "WAIT", "DONE", null];
   const i = order.indexOf(block.state ?? null);
@@ -6802,6 +6806,113 @@ function createChecklist(title, kind, cadence) {
 const checklistPages = () => allPages(p => pageKind(p) === "checklist");
 const isRoutine = path => !!trim(getPage(path)?.props?.cadence || "");
 const cadenceOf = path => trim(getPage(path)?.props?.cadence || "");
+
+/* ---------- task types: a list of stages ----------
+   A list marked kind:: states is not steps to do but the steps ONE task goes
+   through -- a purchase is Ordered, Awaiting delivery, Delivered; a book is To
+   read, Reading, Done reading. Each line is a stage, and says in brackets
+   which of the five states it counts as, so everything that already knows
+   what waiting or done means -- Waiting for, the review, the reports -- keeps
+   knowing:
+
+       kind:: states
+       - Ordered (waiting)
+       - Awaiting delivery (waiting)
+       - Delivered (done)
+
+   Without brackets the first line counts as to do, the last as done and the
+   ones between as doing. A task of that type keeps its ordinary state word,
+   so the file still reads as a task anywhere, and says where it is with
+       stage:: [[8/Purchase]] Awaiting delivery */
+const isStateList = path => pageKind(path) === "checklist" && trim(getPage(path)?.props?.kind || "") === "states";
+const stateLists = () => checklistPages().filter(isStateList);
+const STAGE_CORE = {"to do": "TODO", todo: "TODO", doing: "DOING", waiting: "WAIT", wait: "WAIT",
+  done: "DONE", cancelled: "CANCELLED", canceled: "CANCELLED"};
+const CORE_WORD = {TODO: "to do", DOING: "doing", WAIT: "waiting", DONE: "done", CANCELLED: "cancelled"};
+function stagesOf(listPath) {
+  const lines = (getPage(listPath)?.blocks || []).filter(b => trim(b.title));
+  return lines.map((b, i) => {
+    const m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(trim(b.title));
+    const said = m && STAGE_CORE[trim(m[2]).toLowerCase()];
+    const name = trim(said ? m[1] : b.title);
+    const core = said || b.state || (i === 0 ? "TODO" : i === lines.length - 1 ? "DONE" : "DOING");
+    return {name, core};
+  }).filter(s => s.name);
+}
+/* {list, stage} for a task with a type, else null. */
+function taskStage(block) {
+  const m = /\[\[(8\/[^\]]+)\]\]\s*(.*)$/.exec(trim(blockProp(block, "stage") || ""));
+  if (!m) return null;
+  const list = findExistingPage(m[1]);
+  if (!list || !isStateList(list)) return null;
+  const stages = stagesOf(list);
+  const stage = stages.find(s => s.name.toLowerCase() === trim(m[2]).toLowerCase()) || null;
+  return {list, stages, stage};
+}
+const stageLabel = block => taskStage(block)?.stage?.name || null;
+function writeStage(block, list, name) {
+  block.props = block.props || {};
+  if (!list) { for (const k of Object.keys(block.props)) if (k.toLowerCase() === "stage") delete block.props[k]; return; }
+  setBlockProp(block, "stage", "[[" + pageRef(list) + "]]" + (name ? " " + name : ""));
+}
+/* A stage carries its state with it. */
+function setTaskStage(path, block, list, name) {
+  const s = stagesOf(list).find(x => x.name === name);
+  setBlockState(path, block, s ? s.core : block.state || "TODO", {stage: {list, name: s ? s.name : ""}});
+}
+/* Giving a task a type starts it at the first stage that fits where it is. */
+function setTaskType(path, block, list) {
+  if (!list) { writeStage(block, null); touch(path); render(); return; }
+  const stages = stagesOf(list);
+  const s = stages.find(x => x.core === block.state) || stages[0];
+  setTaskStage(path, block, list, s ? s.name : "");
+}
+/* Something other than the stage moved the state -- the tick, the pause
+   button, a key: the stage follows to the first one counting as that state.
+   A type with no stage of that kind takes an open state as "not finished"
+   and goes back to its first open stage: an unticked purchase is Ordered
+   again, not a to do the type has no word for. */
+function syncStage(block) {
+  const t = taskStage(block);
+  if (!t || (t.stage && t.stage.core === block.state)) return;
+  let s = t.stages.find(x => x.core === block.state);
+  if (!s && OPEN_STATES[block.state]) s = t.stages.find(x => OPEN_STATES[x.core]);
+  if (s) block.state = s.core;
+  writeStage(block, t.list, s ? s.name : "");
+}
+/* Ctrl+Enter and the state badge walk the stages, and round again. */
+function nextStage(path, block) {
+  const t = taskStage(block);
+  if (!t || !t.stages.length) return false;
+  const i = t.stage ? t.stages.indexOf(t.stage) : -1;
+  setTaskStage(path, block, t.list, t.stages[(i + 1) % t.stages.length].name);
+  return true;
+}
+function createStateList(title, stages) {
+  const path = join(DIRS.lists, slugify(title) + ".md");
+  if (V.pages.has(path)) return path;
+  const page = pageFromTemplate("k", slugify(title), {kind: "states"});
+  page.props.kind = "states";
+  delete page.props.cadence;
+  page.blocks = stages.map(s => newBlock({title: s}, false));
+  putPage(path, page);
+  return path;
+}
+/* A task type to pick for a task, with the starters offered when there is none. */
+function openTaskTypePicker(path, block) {
+  const lists = stateLists();
+  const cur = taskStage(block)?.list || null;
+  if (!lists.length) { newStateListPrompt(p => setTaskType(path, block, p)); return; }
+  listPicker({
+    title: "Type of task", typeahead: true,
+    items: lists.concat(cur ? [null] : []),
+    label: p => p ? pageTitle(p) : "No type",
+    detail: p => p ? stagesOf(p).map(s => s.name).join(" → ") + (p === cur ? " · current" : "") : "back to plain states",
+    onPick: p => setTaskType(path, block, p),
+    footer: el("button", {class: "btn ghost", onclick: () => { closeModal();
+      newStateListPrompt(p => setTaskType(path, block, p)); }}, "+ new type"),
+  });
+}
 
 /* Three things live in this folder and they are not the same thing:
 
@@ -8106,6 +8217,7 @@ const timerLeft = () => Math.max(0, TIMER_END - Date.now());
 const clock = ms => { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
 
 function timerStart(minutes, sound = true) {
+  timerSilence();
   // Asked from the click that starts a timer, which is when browsers allow it.
   try { if (window.Notification?.permission === "default") Notification.requestPermission(); } catch (_) {}
   TIMER_SOUND = sound;
@@ -8139,20 +8251,32 @@ function timerDone(mins) {
     if (window.Notification?.permission === "granted") {
       const n = new Notification("GroupTodo: time is up", {body: msg, tag: "gtd-timer",
         icon: "icon.svg", requireInteraction: true, silent: !TIMER_SOUND});
-      n.onclick = () => { window.focus(); n.close(); };
+      n.onclick = () => { window.focus(); n.close(); timerSilence(); };
     }
   } catch (_) {}
   timerFlash();
-  if (!TIMER_SOUND) return;
-  timerChime(10);
+  if (TIMER_SOUND) timerChime(6);
+  timerPaint();
 }
 
-/* A bell struck ten times, loud: a fundamental and the inharmonic partials a
+/* While the bell rings and the title blinks, a click on the timer silences
+   both instead of starting another one. */
+let TIMER_RING = null;   // the AudioContext still ringing, if any
+const timerRinging = () => !!(TIMER_RING || TIMER_FLASH);
+function timerSilence() {
+  try { TIMER_RING?.close(); } catch (_) {}
+  TIMER_RING = null;
+  if (TIMER_FLASH) { clearInterval(TIMER_FLASH); TIMER_FLASH = null; document.title = TIMER_TITLE; }
+  for (const sel of ["#brand", "#nav .nav-item.timer"]) $(sel)?.classList.remove("timerpulse");
+}
+
+/* A bell struck six times, loud: a fundamental and the inharmonic partials a
    real bell has, each dying away, alternating two notes so it reads as a
    chime rather than a beep. A compressor keeps the sum from clipping. */
 function timerChime(times) {
   try {
     const ac = new (window.AudioContext || window.webkitAudioContext)();
+    TIMER_RING = ac;
     const out = ac.createDynamicsCompressor(), level = ac.createGain();
     level.gain.value = timerVolume();
     out.connect(level); level.connect(ac.destination);
@@ -8169,20 +8293,20 @@ function timerChime(times) {
         o.start(t0); o.stop(t0 + len + 0.05);
       }
     }
-    setTimeout(() => ac.close(), (times * gap + 2.5) * 1000);
+    setTimeout(() => { if (TIMER_RING === ac) { ac.close(); TIMER_RING = null; } }, (times * gap + 2.5) * 1000);
   } catch (_) {}
 }
 
 /* The tab title blinks and the logo and the timer pulse, ten times each, so the
    end is seen from another window or across the room. */
-let TIMER_FLASH = null;
+let TIMER_FLASH = null, TIMER_TITLE = "";
 function timerFlash() {
+  if (!TIMER_FLASH) TIMER_TITLE = document.title;
   clearInterval(TIMER_FLASH);
-  const was = document.title;
   let n = 0;
   TIMER_FLASH = setInterval(() => {
-    document.title = n % 2 ? was : "\u23F0 Time is up";
-    if (++n >= 20) { clearInterval(TIMER_FLASH); document.title = was; }
+    document.title = n % 2 ? TIMER_TITLE : "\u23F0 Time is up";
+    if (++n >= 20) { clearInterval(TIMER_FLASH); TIMER_FLASH = null; document.title = TIMER_TITLE; timerPaint(); }
   }, 600);
   for (const sel of ["#brand", "#nav .nav-item.timer"]) {
     const t = $(sel);
@@ -8206,7 +8330,8 @@ function timerPaint(drag) {
     : left > 0 ? clock(left) + bell(TIMER_SOUND) : "Timer";
   b.querySelector(".fill").style.width = (dragging ? drag.minutes / TIMER_MAX
     : left > 0 && TIMER_LEN ? left / TIMER_LEN : 0) * 100 + "%";
-  b.title = left > 0 ? "Click to stop, or drag to start over"
+  b.title = timerRinging() ? "Click to silence the alarm"
+    : left > 0 ? "Click to stop, or drag to start over"
     : "Click for " + timerDefaultMinutes() + " min. Drag up to ring, down or right to stay silent, up to " + TIMER_MAX + " min";
 }
 
@@ -8249,6 +8374,7 @@ function timerNavItem(it) {
     const {picked, part} = down;
     down = null;
     if (cancel) return timerPaint();
+    if (picked == null && timerRinging()) { timerSilence(); return timerPaint(); }
     if (picked == null && part === "more") return openTimerPage();
     if (picked != null) timerStart(picked.minutes, picked.sound);
     else if (timerLeft() > 0) timerStop();
@@ -8259,7 +8385,8 @@ function timerNavItem(it) {
   b.addEventListener("keydown", e => {
     if (e.key !== "Enter" && e.key !== " ") return;
     e.preventDefault();
-    if (timerLeft() > 0) timerStop(); else timerStart(timerDefaultMinutes());
+    if (timerRinging()) { timerSilence(); timerPaint(); }
+    else if (timerLeft() > 0) timerStop(); else timerStart(timerDefaultMinutes());
   });
   queueMicrotask(() => { timerPaint(); if (timerLeft() > 0 && !TIMER_TICK) timerRun(); });
   return b;
@@ -9338,12 +9465,16 @@ function viewChecklists() {
     newBtn("routine or list", () => newChecklistPrompt())));
   const lists = checklistPages();
   const GROUPS = [
+    {label: "Task types", icon: "\u2630", cta: "Open", run: pth => openPage(pth),
+     test: pth => isStateList(pth),
+     blurb: "The stages one task goes through - a purchase is ordered, awaited, delivered. " +
+            "Give a task a type from its line menu, and Ctrl+Enter walks it through them."},
     {label: "Routines", icon: "\u21bb", cta: "Run",
-     test: pth => isRoutine(pth) && !isProjectTemplate(pth),
+     test: pth => isRoutine(pth) && !isProjectTemplate(pth) && !isStateList(pth),
      blurb: "Comes back and never finishes - the weekly accounts, the monthly report, " +
             "everything you pack before a trip. Not a project, because there is nothing to tick off."},
     {label: "Checklists", icon: "\u2611", cta: "Run",
-     test: pth => !isRoutine(pth) && !isProjectTemplate(pth),
+     test: pth => !isRoutine(pth) && !isProjectTemplate(pth) && !isStateList(pth),
      blurb: "Steps you would rather not think through twice. Run one into today, or into a " +
             "project you already have."},
     {label: "Project templates", icon: "\u221e", cta: "New project",
@@ -9390,9 +9521,10 @@ function viewChecklists() {
         card.append(el("div", {class: "prow"},
           el("span", {class: "st " + (isProjectTemplate(pth) ? "st-1" : "st-2")}, g.icon),
           el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(pth)}, pageTitle(pth)),
-          isRoutine(pth) ? el("span", {class: "chip"}, cadenceOf(pth)) : null,
-          el("span", {class: "sub"}, items + (items === 1 ? " step" : " steps")),
-          el("button", {class: "btn sm primary", onclick: () => openRunChecklist(pth)}, g.cta)));
+          isRoutine(pth) && !isStateList(pth) ? el("span", {class: "chip"}, cadenceOf(pth)) : null,
+          el("span", {class: "sub"}, isStateList(pth) ? stagesOf(pth).map(s => s.name).join(" → ")
+            : items + (items === 1 ? " step" : " steps")),
+          el("button", {class: "btn sm primary", onclick: () => g.run ? g.run(pth) : openRunChecklist(pth)}, g.cta)));
       }
       out.push(section(g.label, mine.length, card));
     }
@@ -16036,13 +16168,16 @@ function openNudgeExplainer() {
 
 /* With onCycle the badge is the control: one click per step, in place, instead of
    opening the action panel again for every state. */
-function stateChip(st, onCycle) {
+function stateChip(st, onCycle, block = null) {
   if (!st) return null;              // a plain note carries no badge
-  if (!onCycle) return el("span", {class: "state " + st}, st);
+  const stage = block && stageLabel(block);
+  const cls = "state " + st + (stage ? " stage" : "");
+  if (!onCycle) return el("span", {class: cls, title: stage ? "counts as " + CORE_WORD[st] : ""}, stage || st);
   return el("button", {
-    class: "state btn " + st, title: "Cycle: TODO \u2192 DOING \u2192 WAIT \u2192 DONE",
+    class: cls + " btn",
+    title: stage ? "Next stage (counts as " + CORE_WORD[st] + ")" : "Cycle: TODO \u2192 DOING \u2192 WAIT \u2192 DONE",
     onclick: e => { e.stopPropagation(); onCycle(e.currentTarget); },
-  }, st);
+  }, stage || st);
 }
 
 /* ---------- the pills on a row ----------
@@ -16227,7 +16362,7 @@ function taskRow(a) {
       el("div", {class: "t-meta"}, stateChip(a.state, node => {
         keepFocus(idSel(".task", a.block.id, ".state"), node);
         inSpace(a.space, () => cycleState(a.path, a.block, {keepTask: true}));
-      }),
+      }, a.block),
         multiSpace() && a.space ? spaceBadge(a.space) : null, ...chipsFor(a))),
     el("div", {class: "t-act"},
       el("button", {class: "iconbtn", title: "Waiting for",
@@ -17159,14 +17294,16 @@ function outlineBlock(path, page, b, opts = {}) {
   }));
   // Always a target here, so a plain note can become a task and a task can stop
   // being one, both by clicking the same place.
+  const stage = b.state && stageLabel(b);
   line.append(el("button", {
-    class: "state " + (b.state || "none"), disabled: ro,
-    title: b.state ? "Cycle state, then back to a plain note" : "Make this a task",
+    class: "state " + (b.state || "none") + (stage ? " stage" : ""), disabled: ro,
+    title: stage ? "Next stage (counts as " + CORE_WORD[b.state] + ")"
+      : b.state ? "Cycle state, then back to a plain note" : "Make this a task",
     onclick: e => {
       keepFocus(idSel(".blk", b.id, ".state"), e.currentTarget);
       cycleState(path, b);
     },
-  }, b.state || "\u00B7"));
+  }, stage || b.state || "\u00B7"));
 
   const txt = el("div", {
     class: "txt", contenteditable: ro ? "false" : "true", spellcheck: "false",
@@ -17876,6 +18013,7 @@ const lineOrg = block => (linksIn(block.title).map(l => trim(l.split("][")[0])).
 function flyRows() {
   const {path, block} = FLY;
   const t = block.state, waiting = t === "WAIT";
+  const typed = taskStage(block);
   const who = assigneeOf(block);
   const proj = lineProject(path, block);
   const org = lineOrg(block);
@@ -17886,9 +18024,13 @@ function flyRows() {
     {k: "mkproj", ic: ICON.projects, label: "Make it a project", key: "Alt+1"},
     {k: "mkzet", ic: "◇", label: "Turn into zettel", val: "a note of its own", key: "Alt+Z"},
     {k: "mkarea", ic: "◎", label: statusDirOf(path) && !isJournalPath(path) ? "Turn the project into a responsibility" : "Make it a responsibility",
-     val: "new, or one already there", key: "Alt+A"},
-    {k: "state", ic: "◐", label: "State", val: t ? STATE_WORD[t] : "Note", key: "Ctrl+Enter",
-     opts: [["TODO", "To do"], ["DOING", "Doing"], ["WAIT", "Waiting"], ["DONE", "Done"], ["", "Note"]]},
+     val: "new, or one already there", key: "Alt+I"},
+    {k: "state", ic: "◐", label: typed ? "Stage" : "State",
+     val: typed && typed.stage ? typed.stage.name : t ? STATE_WORD[t] : "Note", key: "Ctrl+Enter",
+     // A stage is told from a state by the mark in front of it.
+     opts: typed ? [...typed.stages.map(s => ["\u0001" + s.name, s.name + " · " + CORE_WORD[s.core]]), ["", "Note"]]
+                 : [["TODO", "To do"], ["DOING", "Doing"], ["WAIT", "Waiting"], ["DONE", "Done"], ["", "Note"]]},
+    {k: "ttype", ic: "☰", label: "Type", val: typed ? pageTitle(typed.list) : "stages of its own", key: ""},
     {k: "due", ic: "📅", label: "Due", val: dueDate(block) ? humanDate(dueDate(block)) : "None", key: "Alt+D", date: true,
      opts: [[todayISO(), "Today"], [shiftISO(todayISO(), 1), "Tomorrow"], [nextWeekday(1), "Monday"],
             [shiftISO(todayISO(), 7), "In a week"], ["", "No date"]]},
@@ -18072,6 +18214,7 @@ function flyHead(k) {
   if (k === "kind") { flyCommit(); setBlockState(path, block, block.state ? null : "TODO"); focusBlock(block.id); return; }
   if (k === "mkproj") { flyCommit(); const b = block; FLY.txt.blur(); makeFromLine(path, b, "project"); return; }
   if (k === "mkzet") { flyCommit(); const b = block; FLY.txt.blur(); makeFromLine(path, b, "zettel"); return; }
+  if (k === "ttype") { flyCommit(); const b = block; FLY.txt.blur(); openTaskTypePicker(path, b); return; }
   if (k === "mkarea") { flyCommit(); const b = block; FLY.txt.blur(); areaFromLine(path, b); return; }
   if (k === "more") { flyCommit(); const b = block; FLY.txt.blur(); openTaskDetail(path, b); return; }
   if (k === "meet") { flyCommit(); const b = block; FLY.txt.blur(); openMeetingForm(path, b); return; }
@@ -18085,6 +18228,11 @@ function flyPick(k, v) {
   if (!FLY) return;
   flyCommit();
   const {path, block} = FLY;
+  if (k === "state" && v && v[0] === "\u0001") {
+    const ts = taskStage(block);
+    if (ts) setTaskStage(path, block, ts.list, v.slice(1));
+    focusBlock(block.id); return;
+  }
   if (k === "state") { setBlockState(path, block, v || null); if (v === "WAIT" && !assigneeOf(block)) { FLY_OPEN_AFTER = {id: block.id, k: "who"}; } focusBlock(block.id); return; }
   if (k === "due") { flyMakeTask(path, block); setDue(block, v || null); touch(path); return flyAfter(k); }
   if (k === "ctx") {
@@ -18816,7 +18964,8 @@ function textFilter(key, placeholder, rows, hay, draw) {
   run();
   return {input, host};
 }
-const taskHay = a => [a.title, a.project, a.context && "@" + a.context, a.assignee, a.owner].filter(Boolean).join(" ");
+const taskHay = a => [a.title, a.project, a.context && "@" + a.context, a.assignee, a.owner,
+  a.block && blockProp(a.block, "stage")].filter(Boolean).join(" ");
 const noMatch = (q, otherwise) => q ? "Nothing matches “" + q + "”." : otherwise;
 /* The readings of a view, as one segmented control at the end of the heading. */
 function viewSeg(view) {
@@ -19217,7 +19366,8 @@ function viewNext() {
     if (["TODO", "DOING"].every(s => next.has(s))) next.delete(st === "TODO" ? "DOING" : "TODO");
     setHiddenStates(next); render();
   };
-  let acts = all.filter(a => stateOn(a.state));
+  const types = typeFilter(all, "next.type");
+  let acts = all.filter(a => stateOn(a.state)).filter(types.keep);
   // Only the contexts something open is waiting in, plus the one you are filtered to.
   const ctxs = Array.from(new Set([...all.map(a => a.context).filter(Boolean),
     ...(state.ctxFilter ? [state.ctxFilter] : [])])).sort();
@@ -19230,7 +19380,7 @@ function viewNext() {
     const byTag = PREF.get("next.boardBy", "ctx") === "tag";
     c.append(fbar(fchip("To do", stateOn("TODO"), () => toggleState("TODO"), all.filter(a => a.state === "TODO").length),
       fchip("Doing", stateOn("DOING"), () => toggleState("DOING"), all.filter(a => a.state === "DOING").length),
-      boardBySelect("next.boardBy", [["ctx", "By context"], ["tag", "By tag"]]),
+      boardBySelect("next.boardBy", [["ctx", "By context"], ["tag", "By tag"]]), types.sel,
       el("span", {class: "say right"}, byTag
         ? "Drag a card to another column to tag it that instead."
         : "Drag a card to another column, or onto a context below, to change where it can be done."),
@@ -19296,7 +19446,7 @@ function viewNext() {
     el("span", {class: "gap"}),
     fchip("Anywhere", !ctx, () => go("next", {ctxFilter: null})),
     ...ctxs.map(k => fchip(contextLabel(k), ctx === k, () => go("next", {ctxFilter: k}))),
-    sortSel), f.host);
+    types.sel, sortSel), f.host);
   return c;
 }
 
@@ -19311,7 +19461,9 @@ function viewWaiting() {
   const f = {late: PREF.get("waiting.late", "") === "1", asked: PREF.get("waiting.notAsked", "") === "1"};
   const flip = k => { PREF.set(k, PREF.get(k, "") === "1" ? "" : "1"); render(); };
   const all = waitingRows().concat(mentionRows());
-  const rows = all.filter(a => (!f.late || (a.due && a.due < todayISO())) && (!f.asked || askedDays(a.block) == null));
+  const types = typeFilter(all, "waiting.type");
+  const rows = all.filter(a => (!f.late || (a.due && a.due < todayISO())) && (!f.asked || askedDays(a.block) == null))
+    .filter(types.keep);
   const nameOf = a => a.mention || a.assignee || "Nobody named";
   const groupBy = list => {
     const by = new Map();
@@ -19326,7 +19478,7 @@ function viewWaiting() {
   };
   const askBtn = name => name === "Nobody named" ? null : personActionBtn(name, isMember(name));
   const chips = [fchip("Overdue", f.late, () => flip("waiting.late"), all.filter(a => a.due && a.due < todayISO()).length),
-    fchip("Not asked yet", f.asked, () => flip("waiting.notAsked")),
+    fchip("Not asked yet", f.asked, () => flip("waiting.notAsked")), types.sel,
     el("span", {class: "right"}, ...replyActions(),
       el("button", {class: "textbtn", onclick: showWaitingFeedback}, "As text"))];
 
@@ -19863,6 +20015,47 @@ function areaFilter(rows, key) {
   const sel = names.length ? fselect("Area", cur, [["", "All areas"], ["-", "No area"], ...names.map(a => [a, a])],
     v => { PREF.set(key, v); render(); }) : null;
   return {cur, keep, sel};
+}
+
+/* Task types, kept apart: Purchases on their own, Reading on its own. The
+   choice is the type's name, so it reads the same in every area shown. */
+const typeOfRow = a => inSpace(a.space, () => { const t = a.block && taskStage(a.block); return t ? pageTitle(t.list) : ""; });
+function typeFilter(rows, key) {
+  const names = [...new Set([...rows.map(typeOfRow),
+    ...acrossSpaces(() => stateLists().map(p => ({t: pageTitle(p)}))).map(x => x.t)].filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b));
+  let cur = PREF.get(key, "");
+  if (cur && cur !== "-" && !names.includes(cur)) cur = "";
+  const keep = r => !cur || (cur === "-" ? !typeOfRow(r) : typeOfRow(r) === cur);
+  const sel = names.length ? fselect("Type", cur, [["", "All types"], ["-", "No type"], ...names.map(t => [t, t])],
+    v => { PREF.set(key, v); render(); }) : null;
+  return {cur, keep, sel};
+}
+
+/* On a task type's own page, every task of that type, one section per stage --
+   the purchases still to order, the ones on their way, the ones that came. */
+function tasksOfTypeSections(listPath) {
+  const stages = stagesOf(listPath);
+  const rows = [];
+  for (const path of allPages(p => !isStencilPath(p))) {
+    for (const b of flattenBlocks(getPage(path).blocks)) {
+      if (!b.state) continue;
+      const m = /\[\[([^\]]+)\]\]/.exec(blockProp(b, "stage") || "");
+      if (!m || findExistingPage(m[1]) !== listPath) continue;
+      rows.push({path, block: b, state: b.state, title: b.title, space: V.space,
+        context: contextOf(b.title), due: dueDate(b), stage: stageLabel(b) || ""});
+    }
+  }
+  if (!rows.length) return [el("div", {class: "section"}, emptyCard(
+    "No tasks of this type yet. Give a task this type from its line menu (Ctrl+.), under Type."))];
+  const out = [];
+  for (const s of stages) {
+    const mine = rows.filter(r => r.stage.toLowerCase() === s.name.toLowerCase());
+    out.push(section(s.name, mine.length, taskCard(mine, "Nothing " + s.name.toLowerCase() + ".")));
+  }
+  const lost = rows.filter(r => !stages.some(s => s.name.toLowerCase() === r.stage.toLowerCase()));
+  if (lost.length) out.push(section("No stage", lost.length, taskCard(lost)));
+  return out;
 }
 
 /* A project as a card that a name can be dropped on: the title opens a
@@ -21427,32 +21620,30 @@ function solAnimate(before, now, took, prevEls, els, cells, pile) {
       wait = 420;
     }
   } else {
-    /* A new project: dealt face down from the deck off the table, turned
-       over, and only then its first question dealt out from under it -- so a
-       new project never looks like the last one with a new question. */
+    /* A new project: dealt face down from the deck off the table and turned
+       over on the way, and only then its first question dealt out from under
+       it -- so a new project never looks like the last one with a new
+       question. It is edge-on halfway there, where the back gives way to the
+       face. */
     const card = pile.querySelector(".solcard");
     if (card) {
       card.classList.add("back");
-      wait = 920;
+      wait = 540;
       // Off the top of the deck, when the deck is on screen.
       const deck = solShown(".soldecks .deck");
-      let off = "translate(-60vw,-8vh) rotate(-14deg)", half = "translate(-30vw,-4vh) rotate(-7deg)";
+      let off = "translate(-60vw,-8vh) scale(1) rotate(-14deg)", half = "translate(-30vw,-4vh) scale(1) rotate(-7deg)";
       if (deck && deck.offsetParent) {
         const d = deck.getBoundingClientRect(), c = card.getBoundingClientRect(), [dx, dy] = mid(d), [cx, cy] = mid(c);
-        off = "translate(" + (dx - cx) + "px," + (dy - cy) + "px) scale(" + (d.width / c.width) + ")";
+        off = "translate(" + (dx - cx) + "px," + (dy - cy) + "px) scale(" + (d.width / c.width) + ") rotate(0deg)";
         half = "translate(" + (dx - cx) / 2 + "px," + ((dy - cy) / 2 - 30) + "px) scale(" + (1 + d.width / c.width) / 2 + ") rotate(-5deg)";
       }
-      card.animate([{transform: off, opacity: 1},
-                    {transform: half, opacity: 1, offset: 0.45},
-                    {transform: "none", opacity: 1}],
-        {duration: 460, easing: "cubic-bezier(.3,.6,.2,1)"}).onfinish = () => {
+      const turn = deg => " perspective(900px) rotateY(" + deg + "deg)";
+      card.animate([{transform: off + turn(0)}, {transform: half + turn(90)}],
+        {duration: 240, easing: "cubic-bezier(.5,0,.9,.6)"}).onfinish = () => {
         if (!card.isConnected) return;
-        card.animate([{transform: "perspective(900px) rotateY(0)"}, {transform: "perspective(900px) rotateY(90deg)"}],
-          {duration: 180, easing: "ease-in"}).onfinish = () => {
-          card.classList.remove("back");
-          card.animate([{transform: "perspective(900px) rotateY(-90deg)"}, {transform: "perspective(900px) rotateY(0)"}],
-            {duration: 220, easing: "ease-out"});
-        };
+        card.classList.remove("back");
+        card.animate([{transform: half + turn(-90)}, {transform: "translate(0px,0px) scale(1) rotate(0deg)" + turn(0)}],
+          {duration: 260, easing: "cubic-bezier(.1,.4,.3,1)"});
       };
     }
   }
@@ -22150,6 +22341,12 @@ function dependsFact(path) {
 }
 
 function checklistKindFact(path) {
+  if (isStateList(path)) return {
+    key: "kind", raw: "kind:: states",
+    save: () => {},
+    pills: () => [factPill("task type", "fok", "each line is a stage: Name (waiting), (doing), (done)",
+      () => notify("Each line is a stage. Put (to do), (doing), (waiting), (done) or (cancelled) after it to say what it counts as."))],
+  };
   const tpl = isProjectTemplate(path);
   return {
     key: "kind", raw: "kind:: " + (tpl ? "project" : ""),
@@ -22460,7 +22657,7 @@ function openPageMenu(path) {
   chipMenu(pageTitle(path), path, lettered([
     code ? ["Add a next action", null, () => openAddNextAction(path)] : null,
     code ? ["Mark reviewed", "runs the review rules on the page", () => { updateReviewed(path); render(); }] : null,
-    kind === "checklist" ? [isProjectTemplate(path) ? "New project from this" : "Add this to a page", null, () => openRunChecklist(path)] : null,
+    kind === "checklist" && !isStateList(path) ? [isProjectTemplate(path) ? "New project from this" : "Add this to a page", null, () => openRunChecklist(path)] : null,
     isJournalPath(path) ? null : ["Share", "this page, without the rest of the area", () => openExportPage(path)],
     ["Copy path", "for somebody who shares the folder", () => copyPathTo(path)],
     V.backend && V.backend.openFile ? ["Open the file", "in the editor on the machine running the server", () => openSourceFile(path)] : null,
@@ -22468,7 +22665,7 @@ function openPageMenu(path) {
     isJournalPath(path) ? null : ["Rename", "and the folder it is in", () => renamePrompt(path)],
     ["Move", "to another folder", () => movePrompt(path)],
     code ? ["Turn into a todo", "one line, with this page's lines under it", () => projectToTodo(path)] : null,
-    code ? ["Turn into a responsibility", "Alt+A · new, or merged into one already there", () => projectToArea(path)] : null,
+    code ? ["Turn into a responsibility", "Alt+I · new, or merged into one already there", () => projectToArea(path)] : null,
     Spaces.list.length > 1 ? ["Move to another area", "Alt+S", () => openItemSpacePicker({space, path})] : null,
     isJournalPath(path) ? null : ["Make private", "move it to an area the others cannot open", () => makePrivatePrompt(path)],
     ["Delete", null, () => deletePrompt(path)],
@@ -22539,7 +22736,7 @@ function projectToTodoAs(path, how) {
   notify("“" + pageTitle(home) + "” now has " + title + " as a todo." + (how === "page" ? "" : " Ctrl-Z brings the project back."));
 }
 
-/* One that never finishes was a responsibility all along. Alt+A, or the page
+/* One that never finishes was a responsibility all along. Alt+I, or the page
    menu, asks which one: a new responsibility of its own name, or one that is
    already there -- the same name on top, then the ones whose names look
    alike, so "Health" and "Helth" or "Team" and "Team admin" end up as one. */
@@ -22579,7 +22776,7 @@ function rankedAreas(title) {
   return {items, same};
 }
 
-/* A line on a day page, or any page that is not a project: Alt+A, or the
+/* A line on a day page, or any page that is not a project: Alt+I, or the
    line menu, links it to a responsibility. A line that links a project turns
    that project into one instead. */
 function lineToArea(path, block) {
@@ -22710,6 +22907,7 @@ function viewPage() {
   if (kind === "person") c.append(personPanel(personName(path)));
 
   c.append(el("div", {class: "section"}, outlineFor(path, {facts: true})));
+  if (isStateList(path)) c.append(...tasksOfTypeSections(path));
   /* The outline shows this page's own lines. A task written in a day page with
      [[1/this project]] is this project's too, so it gets its own section --
      edited where it lives. */
@@ -22846,7 +23044,7 @@ function viewSearch() {
     card.append(el("button", {class: "dash-item",
       onclick: () => h.block ? inSpace(h.space, () => openTaskDetail(h.path, h.block, h.space))
                              : openPageIn(h.space, h.path)},
-      h.block ? stateChip(h.block.state) : null,
+      h.block ? stateChip(h.block.state, null, h.block) : null,
       el("span", {html: renderInline(label)}),
       multiSpace() && h.space ? spaceBadge(h.space) : null,
       el("span", {class: "p"}, h.path)));
@@ -25460,7 +25658,7 @@ function openWeeding(next) {
     }
     for (const t of p.todos) {
       sec.append(el("button", {class: "dash-item", onclick: () => { closeModal(); openTaskDetail(p.path, t.block); }},
-        stateChip(t.state), el("span", {html: renderInline(t.title)}),
+        stateChip(t.state, null, t.block), el("span", {html: renderInline(t.title)}),
         t.missingContext ? el("span", {class: "chip miss"}, "ctx") : null,
         t.missingVerb ? el("span", {class: "chip miss"}, "verb") : null));
     }
@@ -26277,8 +26475,11 @@ function newChecklistPrompt() {
     cadenceField.style.display = kind === "routine" ? "" : "none";
     tplNote.style.display = kind === "project" ? "" : "none";
   };
-  for (const [k, label] of [["routine", "Routine"], ["plain", "Checklist"], ["project", "Project template"]]) {
-    const btn = el("button", {onclick: () => { kind = k; sync(); }}, label);
+  for (const [k, label] of [["routine", "Routine"], ["plain", "Checklist"], ["project", "Project template"], ["states", "Task type"]]) {
+    // A task type asks different questions, so it has its own dialog.
+    const btn = el("button", {onclick: () => {
+      if (k === "states") { closeModal(); newStateListPrompt(p => openPage(p), trim(nameInput.value)); return; }
+      kind = k; sync(); }}, label);
     btn.dataset.k = k;
     seg.append(btn);
   }
@@ -26304,6 +26505,45 @@ function newChecklistPrompt() {
   });
   sync();
   setTimeout(() => nameInput.focus(), 30);
+}
+
+/* A task type: its name and its stages, one per line. The two starters are the
+   ones everybody has -- something bought and something read. */
+const STATE_LIST_STARTERS = {
+  Purchase: ["Ordered (waiting)", "Awaiting delivery (waiting)", "Delivered (done)"],
+  Reading:  ["To read (to do)", "Reading (doing)", "Done reading (done)"],
+};
+function newStateListPrompt(then, name = "") {
+  const nameInput = el("input", {placeholder: "Purchase", value: name});
+  const stagesInput = el("textarea", {rows: "5", placeholder: STATE_LIST_STARTERS.Purchase.join("\n")});
+  const create = () => {
+    const t = trim(nameInput.value);
+    const stages = String(stagesInput.value).split(/\r?\n/).map(trim).filter(Boolean);
+    if (!t || !stages.length) { notify("A name and at least one stage.", "warn"); return; }
+    if (V.pages.has(join(DIRS.lists, slugify(t) + ".md"))) { notify("There is already a list called " + t + ".", "warn"); return; }
+    closeModal();
+    const p = createStateList(t, stages);
+    render();
+    then ? then(p) : openPage(p);
+  };
+  modal({
+    center: true, title: "New task type",
+    body: el("div", {},
+      el("div", {class: "field"},
+        el("div", {style: "color:var(--fg2);font-size:13px;line-height:1.5"},
+          "The stages one task goes through. Ctrl+Enter on a task of this type moves it to the next one.")),
+      el("div", {class: "field"}, el("label", {}, "Start from"),
+        el("div", {class: "seg"}, ...Object.entries(STATE_LIST_STARTERS).map(([n, st]) =>
+          el("button", {onclick: () => { nameInput.value = n; stagesInput.value = st.join("\n"); }}, n)))),
+      el("div", {class: "field"}, el("label", {}, "Name"), nameInput),
+      el("div", {class: "field"}, el("label", {}, "Stages, one per line"), stagesInput,
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px;line-height:1.5"},
+          "Put (to do), (doing), (waiting), (done) or (cancelled) after a stage to say what it counts as. " +
+          "Without it the first counts as to do, the last as done, and the rest as doing."))),
+    foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+           el("button", {class: "btn primary", onclick: create}, "Create")],
+  });
+  setTimeout(() => (name ? stagesInput : nameInput).focus(), 30);
 }
 
 /* Running a project template: name it, confirm the outcome, get a real project. */
@@ -27278,7 +27518,7 @@ function convertTarget(e) {
   return hit ? {r: {...hit, space: nd.space}} : null;
 }
 
-/* Alt+A, and the line menu's row. On a project's own page the project
+/* Alt+I, and the line menu's row. On a project's own page the project
    becomes a responsibility; any other line is linked to one -- or, when it
    links a project, that project becomes one. Words picked inside a line
    become the link where they stand, like the other kind keys. */
@@ -27309,7 +27549,7 @@ function onAreaKey(e) {
 
 function onConvertKey(e) {
   if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-  if (e.code === "KeyA") {
+  if (e.code === "KeyI") {
     if ($("#modalRoot").firstChild) return;
     if (linkSelectedWords(e, "area")) return;
     if (onAreaKey(e)) { e.preventDefault(); e.stopImmediatePropagation(); }
