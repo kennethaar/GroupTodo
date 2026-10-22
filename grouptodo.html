@@ -1144,6 +1144,7 @@ body.lselecting,body.lselecting *{user-select:none;-webkit-user-select:none;curs
 .wikilink{color:var(--accent);cursor:pointer}
 .wikilink:hover{text-decoration:underline}
 .wikilink.ctx{color:var(--ctx)} .wikilink.zet{color:var(--zet)} .wikilink.proj{color:var(--proj)}
+.wikilink .porg{color:var(--fg3)}
 /* A door into the app rather than a page: [[go/todos]]. Drawn as something to
    press, because that is what it is. */
 .wikilink.go{
@@ -1386,7 +1387,11 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 .stake.inh{opacity:.7;padding-right:8px}
 .gopen{margin-left:4px;padding:0 4px;border-radius:4px;color:var(--fg3);cursor:pointer}
 .gopen:hover,.gopen:focus{color:var(--accent);background:var(--bg3)}
-@media (max-width:760px){.assign{grid-template-columns:1fr}.picker{position:static;max-height:260px}}
+.picks{position:sticky;top:8px;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 110px);min-width:0}
+.picks .picker{position:static;max-height:none;min-height:0;flex:1 1 60%}
+.picks .picker.mini{flex:1 1 40%}
+@media (max-width:760px){.assign{grid-template-columns:1fr}.picker{position:static;max-height:260px}
+  .picks{position:static;max-height:none}.picks .picker{max-height:260px}}
 .over{outline:2px dashed var(--accent);outline-offset:-2px;background:var(--accent-soft)!important}
 /* A board of as many columns as it needs, scrolling sideways */
 .boardscroll{overflow-x:auto;padding-bottom:6px}
@@ -1852,6 +1857,7 @@ body.solview #content{padding-bottom:14px}
   <ul>
     <li><b>Delegate:</b> On the People board, drag a person onto a Next Action to hand it off (moving it to <i>Waiting for</i>), or onto a Project to involve them. Organizations work the same way for projects.</li>
     <li><b>External Updates:</b> Requesting an update from someone outside an Area generates a check-in sheet for them.</li>
+    <li><b>Where people work:</b> Say it on a person's page (<i>Works at</i>), or name the page <i>Anna Berg - Acme</i>. Two people with the same name can then live side by side, a link to either reads <i>Anna Berg &middot; Acme</i>, and Acme's page lists its people and everything open that names Acme or any of them.</li>
   </ul>
   <h4>Areas of Focus &amp; Horizons</h4>
   <ul>
@@ -3305,9 +3311,10 @@ const GUIDE_FOLDERS = [
   [DIRS.goals, "g", "Goals", "What you want to be true in a year or two. Projects and responsibilities can point at a goal."],
   [join(PAGES, "_"), "_", "Purpose and vision", "The top of the horizons: Purpose.md and Vision.md. One of each per area."],
   [DIRS.people, "p", "People", "One page per person: [[p/Alice Berg]]. A page with member:: true is somebody who uses GroupToDo in this area. " +
-    "email:: on the page is where check-in sheets go."],
+    "email:: on the page is where check-in sheets go. organisation:: [[o/Acme]] says where they work, which tells two people with one name apart: " +
+    "p/Anna Berg - Acme and p/Anna Berg - Northwind."],
   [DIRS.orgs, "o", "Organisations", "Customers, suppliers and partners: [[o/Acme]]. A project or task that links one is that organisation's work, " +
-    "which is what the Report groups by customer."],
+    "which is what the Report groups by customer. Its page lists the people who work there and everything open that names it or them."],
   [DIRS.contexts, "c", "Contexts", "Where you are or what you need to do something: [[c/phone]], [[c/office]], [[c/errand]]. " +
     "Next can show one column per context."],
   [DIRS.lists, "8", "Routines and lists", "Checklists you run again and again, and templates for new projects. The weekly review is one of them. " +
@@ -7088,6 +7095,72 @@ function membersNow() {
 const isMember = name =>
   !!name && members().some(m => samePerson(m.name, name));
 
+/* ---------- where somebody works ----------
+   Two people can share a name and nothing else. Their pages cannot share a
+   file name, so they are p/Anna Berg - Acme and p/Anna Berg - Northwind, and
+   the organisation is what tells them apart wherever they turn up. Somebody
+   works where their own page says (organisation:: [[o/Acme]]), where the
+   organisation's page names them (people:: [[p/...]]), and where their page's
+   name ends in an organisation that has a page -- "Anna Berg - Acme" or
+   "Anna Berg (Acme)" -- which is how it was written before there was any
+   other way, and keeps working without touching a file. */
+function eachVisibleSpace(fn) {
+  const names = visibleSpaces().filter(n => LOADED.has(n));
+  if (!names.length) fn(); else for (const n of names) inSpace(n, fn);
+}
+function personOrgIndex() {
+  return memo("personOrgs", () => {
+    const orgs = new Map(), people = new Map();
+    const add = (name, org) => {
+      const k = slugPerson(name);
+      if (!k) return;
+      if (!people.has(k)) people.set(k, {name, orgs: []});
+      const r = people.get(k);
+      if (org && !r.orgs.some(o => o.toLowerCase() === org.toLowerCase())) r.orgs.push(org);
+    };
+    eachVisibleSpace(() => {
+      for (const p of allPages(q => pageKind(q) === "org")) {
+        orgs.set(baseName(p).toLowerCase(), baseName(p));
+        for (const who of linksWith(getPage(p)?.props, "p/")) add(who, baseName(p));
+      }
+      for (const p of allPeople()) {
+        add(personName(p));
+        for (const o of linksWith(getPage(p)?.props, "o/")) add(personName(p), o);
+      }
+    });
+    for (const r of people.values()) {
+      const m = /^(.+?)\s*\(([^()]+)\)$/.exec(r.name) || /^(.+)(?:\s[-–—]|,)\s*(.+)$/.exec(r.name);
+      const org = m && orgs.get(trim(m[2]).toLowerCase());
+      if (org) add(r.name, org);
+      r.orgs = r.orgs.map(o => orgs.get(o.toLowerCase()) || o);
+      r.bare = m && r.orgs.some(o => o.toLowerCase() === trim(m[2]).toLowerCase()) ? trim(m[1]) : r.name;
+    }
+    return people;
+  });
+}
+const personOrgs = name => personOrgIndex().get(slugPerson(name))?.orgs || [];
+// The name without the organisation it ends in, when that is where they work.
+const personBareName = name => personOrgIndex().get(slugPerson(name))?.bare || name;
+const personNameAt = name => [personBareName(name), ...personOrgs(name)].join(" · ");
+// Everybody else who goes by the same name.
+const namesakesOf = name => [...personOrgIndex().values()].filter(r => !samePerson(r.name, name) &&
+  r.bare.toLowerCase() === personBareName(name).toLowerCase()).map(r => r.name);
+const orgPeople = org => [...personOrgIndex().values()]
+  .filter(r => r.orgs.some(o => o.toLowerCase() === org.toLowerCase())).map(r => r.name)
+  .sort((a, b) => a.localeCompare(b));
+/* An organisation's open work: every open task that names it on its line,
+   and whatever its people are carrying or are named in. */
+function orgOpenWork(org) {
+  const people = orgPeople(org), key = org.toLowerCase();
+  return leafActions().filter(a => {
+    if (!OPEN_STATES[a.state]) return false;
+    const links = linksIn(a.block?.title || a.title || "").map(l => trim(l.split("][")[0]));
+    if (links.some(l => l.startsWith("o/") && l.slice(2).toLowerCase() === key)) return true;
+    return people.some(p => (a.assignee ? samePerson(a.assignee, p) : !!a.owner && samePerson(a.owner, p)) ||
+      links.some(l => l.startsWith("p/") && samePerson(l.slice(2), p)));
+  });
+}
+
 /* ---------- birthdays ----------
    birthday:: 1985-03-14 on a person's page, or birthday:: 03-14 when the year
    is not known. Today says whose birthday falls this week and the weekly
@@ -7804,8 +7877,16 @@ function renderInline(text) {
     const known = pfx === "c" || pfx === "z" || pfx === "p" || pfx === "o" || (pfx && STATUS_DIRS[pfx]);
     let label = trim(t.includes("][") ? t.split("][")[1] : (known ? raw.slice(pfx.length + 1) : raw));
     if (pfx === "c") label = "@" + label;
+    // A person reads with where they work, so two Anna Bergs are never one.
+    let at = "";
+    if (pfx === "p") {
+      const who = raw.slice(2);
+      if (!t.includes("][")) label = personBareName(who);
+      const orgs = personOrgs(who).filter(o => !label.toLowerCase().includes(o.toLowerCase()));
+      if (orgs.length) at = `<span class="porg"> · ${esc(orgs.join(", "))}</span>`;
+    }
     const cls = pfx === "c" ? " ctx" : pfx === "z" ? " zet" : (pfx && STATUS_DIRS[pfx]) ? " proj" : "";
-    return `<span class="wikilink${cls}" data-link="${target}">${esc(label)}</span>`;
+    return `<span class="wikilink${cls}" data-link="${target}">${esc(label)}${at}</span>`;
   });
   h = h.replace(/(^|\s)#([\p{L}\p{N}_\-/]+)/gu, (all, sp, t) =>
     `${sp}<span class="tag" data-link="${esc(t)}">#${esc(t)}</span>`);
@@ -20025,7 +20106,7 @@ function viewPeople() {
   const keep = r => kind === "all" || (kind === "in" ? r.member : !r.member);
   const rows = all.filter(keep);
   const card = r => el("div", {class: "cardbox", onclick: () => openPersonPage(r.name)},
-    avatarNode(r.name, 36), el("h4", {}, r.name + (r.me ? " (you)" : "")),
+    avatarNode(r.name, 36), el("h4", {}, personNameAt(r.name) + (r.me ? " (you)" : "")),
     el("p", {}, r.open.length + " open" + (r.late ? " · " + r.late + " late" : "") + " · " + r.seen),
     personAction(r));
   /* Whoever the open work names first, most-named on top; then everyone it
@@ -20036,7 +20117,7 @@ function viewPeople() {
       quiet.length ? el("div", {class: "group"}, el("span", {class: "plain"}, "Not named in any open work")) : null,
       quiet.length ? pagedCard(quiet, personRow) : null];
   };
-  const f = textFilter("people", "Filter people", rows, r => [r.name, r.seen, ...r.spaces].join(" "),
+  const f = textFilter("people", "Filter people", rows, r => [r.name, r.seen, ...r.spaces, ...personOrgs(r.name)].join(" "),
     sub === "cards" ? (hits, q) => hits.length ? el("div", {class: "cardgrid"}, ...hits.map(card))
       : emptyCard(noMatch(q, "Nobody here yet.")) : list);
   c.append(fbar(f.input, fchip("Everyone", kind === "all", () => { PREF.set("people.kind", "all"); render(); }),
@@ -20050,8 +20131,9 @@ function personRow(r) {
   return el("div", {class: "task", onclick: () => openPersonPage(r.name)},
     avatarNode(r.name, 30),
     el("div", {class: "t-body"},
-      el("div", {class: "t-title"}, el("b", {}, r.name + (r.me ? " (you)" : ""))),
+      el("div", {class: "t-title"}, el("b", {}, personBareName(r.name) + (r.me ? " (you)" : ""))),
       el("div", {class: "t-meta"},
+        ...personOrgs(r.name).map(o => el("span", {class: "chip"}, o)),
         el("span", {class: "chip" + (r.member ? "" : " today")}, r.member ? "In the area" : "Outside the area"),
         el("span", {class: "chip"}, r.seen), ...[...r.spaces].map(spaceTag))),
     el("span", {class: "rnum"}, r.open.length + " open" + (r.late ? " · " + r.late + " late" : "") +
@@ -20127,12 +20209,15 @@ function trayPicker(kind, hint, groups, placeholder) {
       if (it.sub) chip.append(el("span", {class: "ps"}, it.sub));
       if (TRAY_ARMED && TRAY_ARMED.kind === kind && TRAY_ARMED.name === it.name) chip.classList.add("armed");
       chip.addEventListener("click", () => {
-        const on = !(TRAY_ARMED && TRAY_ARMED.name === it.name);
+        const on = !(TRAY_ARMED && TRAY_ARMED.kind === kind && TRAY_ARMED.name === it.name);
         TRAY_ARMED = on ? {kind, name: it.name} : null;
-        list.querySelectorAll(".pchip.armed").forEach(x => x.classList.remove("armed"));
+        document.querySelectorAll(".pchip.armed").forEach(x => x.classList.remove("armed"));
         if (on) chip.classList.add("armed");
         document.body.classList.toggle("armed-on", on);
       });
+      // A person and an organisation dropped on each other: they work there.
+      if (kind === "person") trayTarget(chip, d => d.kind === "org", d => linkPersonToOrg(it.name, d.name));
+      if (kind === "org") trayTarget(chip, d => d.kind === "person", d => linkPersonToOrg(d.name, it.name));
       chip.dataset.q = it.name.toLowerCase();
       list.append(chip); mine.push(chip); chips.push(chip);
     }
@@ -20144,8 +20229,57 @@ function trayPicker(kind, hint, groups, placeholder) {
     for (const ch of chips) ch.style.display = !q || ch.dataset.q.includes(q) ? "" : "none";
     list.querySelectorAll(".gh").forEach(gh => gh.style.display = gh._chips.some(ch => ch.style.display !== "none") ? "" : "none");
   });
-  document.body.classList.toggle("armed-on", !!(TRAY_ARMED && TRAY_ARMED.kind === kind));
+  document.body.classList.toggle("armed-on", !!TRAY_ARMED);
   return el("aside", {class: "picker"}, el("div", {class: "say"}, hint), search, list);
+}
+
+/* ---------- people and organisations, onto each other ----------
+   Each board keeps a second tray of the other kind under its own: on People,
+   the organisations; on Organisations, the people. Drop one on the other, in
+   either tray, and the person works there -- organisation:: on their own page,
+   which is where the "Works at" line on that page reads it and undoes it.
+   Both trays put the most linked first: an organisation by its people and
+   projects, a person by the open work that names them and where they work. */
+function linkPersonToOrg(person, org) {
+  if (personOrgs(person).some(o => o.toLowerCase() === org.toLowerCase())) {
+    notify(personBareName(person) + " already works at " + org + "."); return;
+  }
+  const space = visibleSpaces().find(n => LOADED.has(n) && inSpace(n, () => V.pages.has(personPath(person)))) || V.space;
+  const u = inSpace(space, () => {
+    createLinkedPages("[[p/" + person + "]]");
+    return pageLinkPropAdd(personPath(person), "organisation", "o/" + org);
+  });
+  if (u) pushUndo({run: () => { inSpace(space, u); render(); return true; }});
+  notify(personBareName(person) + " works at " + org + ". Ctrl-Z takes it back.");
+  render();
+}
+function orgLinkCounts() {
+  return memo("orgLinkCounts", () => {
+    const m = new Map();
+    const bump = (o, k) => { const r = m.get(o.toLowerCase()) || {people: 0, projects: 0}; r[k]++; m.set(o.toLowerCase(), r); };
+    for (const r of personOrgIndex().values()) for (const o of r.orgs) bump(o, "people");
+    for (const r of workingProjects()) for (const o of projectOrgs(r)) bump(o, "projects");
+    return m;
+  });
+}
+const orgLinks = name => { const r = orgLinkCounts().get(name.toLowerCase()); return r ? r.people + r.projects : 0; };
+const personLinks = p => (p.mentions || 0) + personOrgs(p.name).length;
+const byLinks = (links, nameOf) => (a, b) => (links(b) - links(a)) || nameOf(a).localeCompare(nameOf(b));
+function orgTray() {
+  const names = acrossNames(() => allPages(q => pageKind(q) === "org").map(baseName)).sort(byLinks(orgLinks, n => n));
+  const people = n => orgLinkCounts().get(n.toLowerCase())?.people || 0;
+  const t = trayPicker("org", "Drop an organisation on a person to say they work there, or a person on an organisation.",
+    [["Organisations", names.map(n => ({name: n, face: el("span", {class: "odot sm"}, n[0]),
+      sub: people(n) ? people(n) + (people(n) === 1 ? " person" : " people") : ""}))]], "Find an organisation");
+  t.classList.add("mini");
+  return t;
+}
+function personTray() {
+  const rows = peopleRows().slice().sort(byLinks(personLinks, p => p.name));
+  const t = trayPicker("person", "Drop a person on an organisation to say they work there, or an organisation on a person.",
+    [["People", rows.map(p => ({name: p.name, face: avatarNode(p.name, 22), sub: personOrgs(p.name).join(", ")}))]], "Find a person");
+  t.classList.add("mini");
+  return t;
 }
 document.addEventListener("keydown", e => {
   if (e.key !== "Escape" || !TRAY_ARMED) return;
@@ -20259,12 +20393,12 @@ function projectCard(r, title, stakes, more, also) {
 }
 
 function peopleBoard(people) {
-  const busy = (a, b) => (b.mentions - a.mentions) || a.name.localeCompare(b.name);
+  const busy = byLinks(personLinks, p => p.name);
   const item = p => ({name: p.name, face: avatarNode(p.name, 22),
     sub: p.me ? "you" : p.open.length ? p.open.length + " open" : ""});
   const them = people.filter(p => !p.me);
   const picker = trayPicker("person",
-    "Drag a name onto a project to involve them, or onto a next action to hand it over. Or click a name, then click the target.",
+    "Drag a name onto a project to involve them, onto a next action to hand it over, or onto an organisation to say they work there. Or click a name, then click the target.",
     [["", people.filter(p => p.me).map(item)],
      ["In the area", them.filter(p => p.member).sort(busy).map(item)],
      ["Others", them.filter(p => !p.member).sort(busy).map(item)]], "Find a person");
@@ -20325,7 +20459,7 @@ function peopleBoard(people) {
       d => d.kind === "person" && !samePerson(d.name, whoAmI()),
       d => { TRAY_ARMED = null; document.body.classList.remove("armed-on");
              carryPerson(d.name, sp.name).then(ok => { if (ok) render(); }); }))) : null;
-  return el("div", {}, areas, el("div", {class: "assign"}, picker, right),
+  return el("div", {}, areas, el("div", {class: "assign"}, el("div", {class: "picks"}, picker, orgTray()), right),
     el("p", {class: "hint"}, "Hand a next action to somebody and it lands in your Waiting for. Drop yourself on it to take it back. " +
       (areas ? "Drop a name on an area to move, copy or sync the person there. " : "") + "Esc puts a picked-up name down."));
 }
@@ -20342,15 +20476,14 @@ function viewOrgs() {
   const orgs = dirPagesInVisible("org");
   const projectsOf = name => workingProjects().filter(r => projectOrgs(r).some(o => o.toLowerCase() === name.toLowerCase()));
   if (sub === "board") { c.append(orgBoard(orgs, projectsOf)); return c; }
-  /* Its work is its projects' next actions and every open task that names it on
-     the line itself -- [[o/Acme]] on a task is as much Acme's as org:: on a project. */
-  const named = leafActions().filter(a => OPEN_STATES[a.state] && lineOrg(a.block));
+  /* Its work is its projects' next actions, every open task that names it on
+     the line itself -- [[o/Acme]] on a task is as much Acme's as org:: on a
+     project -- and what its people are carrying or named in. */
   const rows = orgs.map(o => {
     const name = inSpace(o.space, () => pageTitle(o.path));
     const ps = projectsOf(name);
-    const keys = new Set([name.toLowerCase(), baseName(o.path).toLowerCase()]);
     const open = [...new Map([...ps.flatMap(r => openOf(projectActions(r))),
-      ...named.filter(a => keys.has(lineOrg(a.block).toLowerCase()))].map(a => [a.block || a, a])).values()];
+      ...orgOpenWork(baseName(o.path))].map(a => [a.block || a, a])).values()];
     return {o, name, what: pageProp(o.space, o.path, "what"), ps, open};
   }).sort((a, b) => a.name.localeCompare(b.name));
   const f = textFilter("orgs", "Filter organisations", rows, x => [x.name, x.what].join(" "), (hits, q) =>
@@ -20377,10 +20510,10 @@ function orgBoard(orgs, projectsOf) {
     const n = inSpace(o.space, () => pageTitle(o.path));
     return [n.toLowerCase(), n];
   })).values()].sort((a, b) => a.localeCompare(b));
-  const used = names.map(n => ({name: n, face: el("span", {class: "odot"}, n[0]), n: projectsOf(n).length}));
+  const used = names.map(n => ({name: n, face: el("span", {class: "odot"}, n[0]), n: orgLinks(n)})).sort(byLinks(x => x.n, x => x.name));
   const item = x => ({name: x.name, face: x.face, sub: x.n ? String(x.n) : ""});
   const picker = trayPicker("org",
-    "Drag an organisation onto an area or a project. On an area, every project in it is theirs. Or click one, then click the target.",
+    "Drag an organisation onto an area, a project or a person. On an area, every project in it is theirs. Or click one, then click the target.",
     [["In use", used.filter(x => x.n).map(item)], ["Not on anything yet", used.filter(x => !x.n).map(item)]],
     "Find an organisation");
 
@@ -20428,7 +20561,8 @@ function orgBoard(orgs, projectsOf) {
   }
   if (!out.length) out.push(emptyCard("Nothing to show."));
   const bare = fchip("Only without one", onlyBare, () => { PREF.set("orgs.board.bare", onlyBare ? "0" : "1"); render(); });
-  return el("div", {class: "assign"}, picker, assignTargets(out, [sel, bare], "Find an area or project"));
+  return el("div", {class: "assign"}, el("div", {class: "picks"}, picker, personTray()),
+    assignTargets(out, [sel, bare], "Find an area or project"));
 }
 
 /* ============================================================
@@ -23085,7 +23219,7 @@ function mergeProjectIntoArea(path, dest) {
 /* A person's page says what they are carrying, and for somebody outside the
    space, the way to ask them about it -- the only way their list ever gets
    shorter is you asking. */
-function personPanel(name) {
+function personPanel(name, path) {
   const mine = samePerson(name, whoAmI());
   const open = openActionsOf(name);
   const seen = lastSeenOf(name);
@@ -23099,8 +23233,43 @@ function personPanel(name) {
           onclick: () => openAskForUpdate(name)}, "Ask " + firstNameOf(name) + " for an update"),
         el("button", {class: "btn sm ghost", onclick: () => importUpdateFromFile()}, "Import a reply"),
         el("button", {class: "btn sm ghost", onclick: () => importUpdatePasted()}, "Paste a reply")))));
+  if (path) box.append(personWorksAt(name, path));
   box.append(section("Open", open.length, taskCard(open, "Nothing open.")));
   return box;
+}
+
+/* Where they work, said on their page and changed there. One their page's
+   name or the organisation's own page gives them is shown without a cross:
+   it is undone where it is written. And when somebody else has the same
+   name, this says who, so the two are never taken for one. */
+function personWorksAt(name, path) {
+  const space = V.space;
+  const own = linksWith(getPage(path)?.props, "o/").map(o => o.toLowerCase());
+  const unlink = o => {
+    const page = getPage(path);
+    for (const k of Object.keys(page?.props || {}))
+      if (linksWith({[k]: page.props[k]}, "o/").some(x => x.toLowerCase() === o.toLowerCase()))
+        removeLinkFromProp(space, path, k.toLowerCase(), "o/" + o);
+  };
+  const orgs = personOrgs(name).map(o => {
+    const mine = own.includes(o.toLowerCase());
+    return el("span", {class: "stake", title: mine ? "" : "From the page's name or " + o + "'s own page"},
+      el("span", {class: "odot sm"}, o[0]),
+      el("span", {class: "wikilink", onclick: () => followLink("o/" + o)}, o),
+      mine ? el("button", {"aria-label": "Not at " + o, title: "Not at " + o, onclick: () => unlink(o)}, "×") : null);
+  });
+  const add = el("button", {class: "textbtn", onclick: () => pickName({title: "Works at", items: allOrgNames(), prefix: "o",
+    onPick: org => {
+      const u = inSpace(space, () => pageLinkPropAdd(path, "organisation", "o/" + trim(org)));
+      if (u) pushUndo({run: () => { inSpace(space, u); render(); return true; }});
+      render();
+    }})}, orgs.length ? "+ another" : "+ organisation");
+  const same = namesakesOf(name);
+  return el("div", {class: "section"},
+    el("div", {class: "t-meta"}, el("span", {class: "plain"}, "Works at"), ...orgs, add),
+    same.length ? el("p", {class: "hint"}, "Not the same person as ",
+      ...same.flatMap((n, i) => [i ? ", " : "", el("span", {class: "wikilink", onclick: () => openPersonPage(n)}, personNameAt(n))]),
+      ".") : null);
 }
 
 function viewPage() {
@@ -23140,7 +23309,7 @@ function viewPage() {
   if (path.startsWith(DIRS.lists + "/")) c.append(templateHelp());
   // The tour explains itself on its own page and nowhere else.
   if (isTourProject(path)) { const tc = tourCard(path); if (tc) c.append(tc); }
-  if (kind === "person") c.append(personPanel(personName(path)));
+  if (kind === "person") c.append(personPanel(personName(path), path));
 
   c.append(el("div", {class: "section"}, outlineFor(path, {facts: true})));
   if (isStateList(path)) c.append(...tasksOfTypeSections(path));
@@ -23161,6 +23330,16 @@ function viewPage() {
       (kind === "org" ? projectOrgs(r).some(o => o.toLowerCase() === name.toLowerCase())
                       : areaOfProject(r.path) === name));
     c.append(section("Projects", ps.length, pagedCard(ps, projectRow, "None yet.")));
+  }
+  /* Who works there, and everything still open that is theirs: what names the
+     organisation on its line, and what its people carry or are named in. */
+  if (kind === "org") {
+    const name = baseName(path), who = orgPeople(name);
+    const people = peopleRows().filter(r => who.some(n => samePerson(n, r.name)));
+    c.append(section("People", people.length, pagedCard(people, personRow,
+      "Nobody yet. Open a person's page and say where they work, or name them Anna Berg - " + name + ".")));
+    const open = orgOpenWork(name);
+    c.append(section("Open", open.length, taskCard(open, "Nothing open names " + name + " or its people.")));
   }
   const linkedReferences = el("div", {class: "deferred-backlinks"});
   c.append(linkedReferences);

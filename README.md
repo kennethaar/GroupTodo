@@ -54,7 +54,7 @@ to an AI assistant along with a few sample notes, and ask it to write a converte
 | **Waiting for** | List, Board | what you handed over, by person |
 | **Chat** | | every conversation on a task |
 | **Projects** | List, Board, Timeline, Report | by status, as a Gantt, and what got done |
-| **People**, **Organisations** | List, Cards, Board | who is carrying what; drag them onto work |
+| **People**, **Organisations** | List, Cards, Board | who is carrying what and where they work; drag them onto work and onto each other |
 | **Contexts** | | where you are and what you can do there |
 | **Pages** | List, Board, Mind map, Graph, Hierarchy | every page in the areas on screen |
 | **Horizons**, **Routines & lists** | | purpose down to next actions; checklists you rerun |
