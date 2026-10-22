@@ -19051,13 +19051,7 @@ function viewToday() {
       const path = who ? null : dayPath(sp);
       return {id: "j:" + sp, title: jTitle(sp), space: sp, folded: lines + (lines === 1 ? " line" : " lines"),
         label: (who ? firstNameOf(who) + "'s " : "") + capitalise(sp) + " Journal",
-        edit: path ? () => chipMenu(capitalise(sp) + " Journal", humanDate(day), [
-          ["a", "Edit the markdown", "the whole day page as text", () => editAllText({space: sp, path, id: null})],
-          ["b", "Copy the markdown", "to paste somewhere else", () => {
-            const pg = inSpace(sp, () => getPage(path));
-            navigator.clipboard.writeText(serializePage(pg)).then(() => notify("Copied."), () => notify("Could not copy.", "warn"));
-          }],
-        ]) : null,
+        edit: path ? () => editAllText({space: sp, path, id: null}) : null,
         hint: who ? "you can read it, fold it and focus on a line" : "click a line to write, a bullet to focus",
         body: () => journalColumn(sp, day, who, Object.assign({title: jTitle(sp), parentGo: ["today", {jz: "j:" + sp}],
           newText: "+ Click here to write a new line…"}, TODAY_TRAIL))};
@@ -19113,7 +19107,7 @@ function viewToday() {
     el("header", {class: "jhead"}, spaceBadge(s.space),
       el("button", {class: "jtitle", title: "Focus on " + s.label, onclick: () => go("today", {jz: s.id})}, s.label),
       el("div", {style: "flex:1"}),
-      s.edit ? el("button", {class: "jedit", title: "The whole day page as text", onclick: s.edit}, "Edit Markdown ▾") : null),
+      s.edit ? el("button", {class: "jedit", title: "The whole day page as text", onclick: s.edit}, "Edit Markdown") : null),
     s.body()))));
   return c;
 }
@@ -29055,6 +29049,8 @@ function editAllText(ctx) {
     title: hit ? "Edit this line and its children" : "Edit the whole file",
     body: el("div", {class: "field"}, input),
     foot: [
+      el("button", {class: "btn ghost", style: "margin-right:auto", title: "To paste somewhere else", onclick: () =>
+        navigator.clipboard.writeText(input.value).then(() => notify("Copied."), () => notify("Could not copy.", "warn"))}, "Copy"),
       el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
       el("button", {class: "btn primary", onclick: save}, "Save"),
     ],
