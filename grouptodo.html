@@ -4832,6 +4832,23 @@ const allJournals = () => recentJournals(100000);
 const looseTodoPages = () => allPages(p =>
   isPagePath(p) && !statusDirOf(p) && !p.startsWith(DIRS.lists + "/"));
 
+/* archived:: true on a page puts it away without deleting it: an old note,
+   a person you no longer work with, three years of imported Logseq days. Its
+   open lines stop counting as things to do, it drops out of the done report,
+   and search shows it last. It is still a page, still linked, still opens. */
+const isArchived = path => /^(true|yes)$/i.test(trim(String(getPage(path)?.props?.archived || "")));
+
+function toggleArchived(path) {
+  const page = getPage(path);
+  if (!page) return;
+  const props = page.props || (page.props = {});
+  const was = isArchived(path);
+  if (was) delete props.archived; else props.archived = "true";
+  touch(path); render();
+  notify(was ? pageTitle(path) + " is back: its tasks count again."
+             : pageTitle(path) + " is archived. Its tasks are out of the lists; search still finds it, last.");
+}
+
 /* Move pre-name journals into this person's folder, once there is a name. */
 function migrateJournals() {
   const who = journalOwner();
@@ -5641,7 +5658,7 @@ function journalActionsIndex() {
       by.set(key, list);
     };
     for (const path of allJournals()) {
-      const page = getPage(path); if (!page) continue;
+      const page = getPage(path); if (!page || isArchived(path)) continue;
       for (const b of flattenBlocks(page.blocks)) {
         if (!b.state || isMessage(b) || hasOpenDescendant(b)) continue;
         const link = nearestProjectAncestor(b); if (!link) continue;
@@ -5686,7 +5703,7 @@ function leafActionsHere() {
      project there means. */
   const paths = [...projectsIn("1"), ...projectsIn("3"), ...allJournals(), ...looseTodoPages()];
   for (const path of paths) {
-    const page = getPage(path); if (!page) continue;
+    const page = getPage(path); if (!page || isArchived(path)) continue;
     const journal = isJournalPath(path);
     const statusDir = statusDirOf(path);
     const flat = flattenBlocks(page.blocks);
@@ -11580,6 +11597,7 @@ function doneTodayHere() {
   const out = [];
   const today = todayISO();
   for (const [path, page] of V.pages) {
+    if (isArchived(path)) continue;
     walkBlocks(page.blocks, b => {
       if (b.state !== "DONE" || isMessage(b)) return;
       if (closedOn(b) !== today) return;
@@ -14369,7 +14387,7 @@ function orgOfBlock(path, block, projectPath) {
 function completedSinceHere(from) {
   const out = [];
   for (const [path, page] of V.pages) {
-    if (isStencilPath(path)) continue;
+    if (isStencilPath(path) || isArchived(path)) continue;
     // Flattened rather than walked, because the customer is looked for up the
     // bullets above a task and that needs each block's parent.
     for (const b of flattenBlocks(page.blocks)) {
@@ -23483,6 +23501,8 @@ function openPageMenu(path) {
     code ? ["Turn into a responsibility", "Alt+I · new, or merged into one already there", () => projectToArea(path)] : null,
     Spaces.list.length > 1 ? ["Move to another area", "Alt+S", () => openItemSpacePicker({space, path})] : null,
     isJournalPath(path) ? null : ["Make private", "move it to an area the others cannot open", () => makePrivatePrompt(path)],
+    isArchived(path) ? ["Unarchive", "its tasks count again", () => toggleArchived(path)]
+                     : ["Archive", "kept, but its tasks leave the lists and search shows it last", () => toggleArchived(path)],
     ["Delete", null, () => deletePrompt(path)],
   ]));
 }
@@ -23833,21 +23853,89 @@ function goSearch() {
   go("search", {searchFilter: searchFilterForNow(), query: "", searchDraft: ""});
 }
 
+/* ---------- matching a search ----------
+   Every word you type has to be there, in any order, and the hits are ranked
+   rather than listed in file order. A whole word scores highest, the start of
+   a word next ("plumb" finds "plumber"), anywhere inside a word after that,
+   and last a word one letter off -- two for long words -- so "elektrikr" still
+   finds "elektriker". A page's own name counts double, since a search that
+   matches a name is usually looking for that page. Archived pages go last. */
+const searchWords = text => String(text || "").toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+
+/* Edit distance, given up on as soon as it passes `max`. */
+function withinEdits(a, b, max) {
+  if (Math.abs(a.length - b.length) > max) return false;
+  let prev = Array.from({length: b.length + 1}, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    let best = i;
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      if (cur[j] < best) best = cur[j];
+    }
+    if (best > max) return false;
+    prev = cur;
+  }
+  return prev[b.length] <= max;
+}
+
+/* How well one typed word matches a text, 0 when it does not. */
+function wordScore(w, lower, words) {
+  if (lower.includes(w)) {
+    if (words.includes(w)) return 4;
+    if (words.some(x => x.startsWith(w))) return 3;
+    return 2;
+  }
+  if (w.length < 4) return 0;
+  const max = w.length >= 8 ? 2 : 1;
+  return words.some(x => withinEdits(w, x, max)) ? 1 : 0;
+}
+
+/* The score of a whole query against a text, 0 unless every word is in it. */
+function searchScore(terms, phrase, text) {
+  const lower = String(text || "").toLowerCase();
+  const words = searchWords(lower);
+  let total = 0;
+  for (const w of terms) {
+    const s = wordScore(w, lower, words);
+    if (!s) return 0;
+    total += s;
+  }
+  // The words together, as typed, beat the same words scattered.
+  if (terms.length > 1 && lower.includes(phrase)) total += 3;
+  return total;
+}
+
 /* Everything the vault has that matches, with enough on each hit to filter it
-   afterwards without walking the pages a second time. */
+   afterwards without walking the pages a second time. Best first. */
 function searchHits(q) {
-  return acrossSpaces(() => {
+  const phrase = String(q).toLowerCase();
+  // Nothing but symbols -- "::", "#" -- has no words to rank; match it as typed.
+  const terms = searchWords(q);
+  if (!terms.length) return acrossSpaces(() => {
+    const found = [];
+    for (const [path, page] of V.pages) walkBlocks(page.blocks, b => {
+      if ([b.title, ...(b.body || [])].join(" ").toLowerCase().includes(phrase))
+        found.push({path, block: b, kind: pageKind(path), todo: !!b.state, archived: isArchived(path), score: 1});
+    });
+    return found;
+  }).sort((a, b) => a.archived - b.archived);
+  const hits = acrossSpaces(() => {
     const found = [];
     for (const [path, page] of V.pages) {
       const kind = pageKind(path);
-      if (pageTitle(path).toLowerCase().includes(q)) found.push({path, block: null, kind});
+      const archived = isArchived(path);
+      const named = searchScore(terms, phrase, pageTitle(path));
+      if (named) found.push({path, block: null, kind, archived, score: named * 2});
       walkBlocks(page.blocks, b => {
-        const text = [b.title, ...(b.body || [])].join(" ").toLowerCase();
-        if (text.includes(q)) found.push({path, block: b, kind, todo: !!b.state});
+        const s = searchScore(terms, phrase, [b.title, ...(b.body || [])].join(" "));
+        if (s) found.push({path, block: b, kind, todo: !!b.state, archived,
+                           score: s + (OPEN_STATES[b.state] ? 1 : 0)});
       });
     }
     return found;
   });
+  return hits.sort((a, b) => (a.archived - b.archived) || (b.score - a.score));
 }
 
 const SEARCH_KEEP = {
@@ -23900,7 +23988,8 @@ function viewSearch() {
   const q = trim(state.query).toLowerCase();
   if (!q) {
     c.append(el("div", {class: "empty"},
-      "Type what you are looking for and press Enter."));
+      "Type what you are looking for and press Enter. Every word has to be there, in any " +
+      "order; the start of a word is enough, and a small typo is forgiven."));
     return c;
   }
   const keep = SEARCH_KEEP[state.searchFilter] || SEARCH_KEEP.all;
@@ -23920,6 +24009,7 @@ function viewSearch() {
       h.block ? stateChip(h.block.state, null, h.block) : null,
       el("span", {html: renderInline(label)}),
       multiSpace() && h.space ? spaceBadge(h.space) : null,
+      h.archived ? el("span", {class: "chip"}, "archived") : null,
       el("span", {class: "p"}, h.path)));
   }
   c.append(section("Results", hits.length, card));
