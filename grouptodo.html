@@ -5314,6 +5314,19 @@ function nearestProjectAncestor(block) {
   return null;
 }
 
+/* The responsibility a line belongs to. Not every action needs a project: a
+   single action under an area of focus has been filed already, so it is no
+   loose journal action to refile. */
+function nearestAreaAncestor(block) {
+  let p = block;
+  while (p) {
+    const m = /\[\[a\/([^\]]+)\]\]/.exec(p.title || "");
+    if (m) return {title: trim(m[1]), ref: "a/" + trim(m[1])};
+    p = p._parent;
+  }
+  return null;
+}
+
 /* The checklist a line came from. Running a list into a day drops its steps
    under one parent carrying [[8/<list>]], so the ancestor walk finds it from any
    step. A copy of a list is not loose thinking somebody failed to file: it was
@@ -5450,6 +5463,7 @@ function leafActionsHere() {
         project, projectPath, projectStatusDir, group, due,
         assignee, mine, owner: journalOwnerOf(path) || null,
         tourStep, checklist: fromList ? fromList.title : null,
+        area: journal && !linked ? (nearestAreaAncestor(b) || {}).title || null : null,
         context: contextOf(b.title),
         missingContext: !authored && !hasContextLink(b.title),
         missingVerb: !authored && !startsWithVerb(b.title),
@@ -7315,8 +7329,8 @@ function computeNudges() {
   const stuck = stuckActiveProjects();
   push("stuck", "danger", "projects with no next action", stuck.length, () => goReviewSection("stuck"));
 
-  const loose = acts.filter(a => a.group === "JOURNAL");
-  push("loose", "warn", "journal actions not tied to a project", loose.length, () => goReviewSection("loose"));
+  const loose = acts.filter(a => a.group === "JOURNAL" && !a.area);
+  push("loose", "warn", "journal actions not tied to a project or responsibility", loose.length, () => goReviewSection("loose"));
 
   const noVerb = acts.filter(a => a.state === "TODO" && a.missingVerb);
   push("verb", "warn", "actions without a physical verb", noVerb.length, () => goReviewSection("verb"));
@@ -18005,7 +18019,9 @@ function flyShow(txt, path, page, block) {
   const blk = txt.closest(".blk"), line = txt.closest(".line");
   if (!blk || !line) return;
   const box = el("div", {class: "fly", role: "menu", "aria-label": "Line options"});
-  box.addEventListener("mousedown", e => { if (!e.target.matches("input")) e.preventDefault(); });
+  /* Nothing in the menu takes focus from the line: the line closes the menu
+     when it loses focus, so even the date chip only asks for its calendar. */
+  box.addEventListener("mousedown", e => e.preventDefault());
   document.body.append(box);
   FLY = {txt, path, page, block, box, open: null, hi: 0, q: ""};
   if (FLY_OPEN_AFTER && FLY_OPEN_AFTER.id === block.id) { FLY.open = FLY_OPEN_AFTER.k; FLY_OPEN_AFTER = null; }
@@ -25888,8 +25904,8 @@ function reviewSections() {
     {title: "Projects not stated as an outcome", hint: "what would done look like?",
      items: projectsWithoutOutcome().map(p => ({text: pageTitle(p), sub: "no outcome:: yet", path: p,
        fix: "state outcome", act: () => { closeModal(); openOutcomePrompt(p); }}))},
-    {id: "loose", title: "Journal actions without a project", hint: "refile or let them go",
-     items: acts.filter(a => a.group === "JOURNAL").map(a => ({text: a.title, sub: a.path, path: a.path, block: a.block,
+    {id: "loose", title: "Journal actions without a project or responsibility", hint: "refile or let them go",
+     items: acts.filter(a => a.group === "JOURNAL" && !a.area).map(a => ({text: a.title, sub: a.path, path: a.path, block: a.block,
        fix: "refile", act: () => { closeModal(); openRefile(a.path, a.block); }}))},
     {id: "verb", title: "Actions without a physical verb", hint: "what would a camera see?",
      items: acts.filter(a => a.state === "TODO" && a.missingVerb).map(a => ({text: a.title, sub: a.path, path: a.path, block: a.block,
