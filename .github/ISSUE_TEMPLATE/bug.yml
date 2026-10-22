@@ -1,0 +1,61 @@
+name: Bug report
+description: Something in GroupToDo does not work as it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Issues are public. Leave out real task text, names and file contents.
+  - type: textarea
+    id: what
+    attributes:
+      label: What did you do?
+      description: The steps, so someone else can repeat them.
+      placeholder: |
+        1. Opened Today
+        2. Typed "call Anna tomorrow" and pressed Tab
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead?
+      description: Paste or drag a screenshot here if you can.
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options: [Edge, Chrome, Firefox, Safari, Other]
+    validations:
+      required: true
+  - type: dropdown
+    id: device
+    attributes:
+      label: Device
+      options: [Windows, Mac, Linux, Android, iPhone / iPad]
+    validations:
+      required: true
+  - type: dropdown
+    id: opened
+    attributes:
+      label: How did you open the app?
+      options:
+        - Double-clicked grouptodo.html on disk
+        - From a URL (web host)
+        - Through serve.py
+    validations:
+      required: true
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else?
+      description: Error messages, or whether it happens every time.
