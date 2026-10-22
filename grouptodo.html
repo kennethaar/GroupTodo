@@ -1089,6 +1089,8 @@ body.lselecting,body.lselecting *{user-select:none;-webkit-user-select:none;curs
   background:var(--bg3);color:var(--fg2);border:1px solid var(--border);white-space:normal;
 }
 .fpill.b{cursor:pointer}
+.fpill.fbday{position:relative}
+.fpill.fbday input{position:absolute;inset:0;width:100%;opacity:0;pointer-events:none}
 .fpill.b:hover{border-color:var(--border2);color:var(--fg)}
 .fpill.fquiet{color:var(--fg3);background:transparent}
 .fpill.fout{color:var(--fg);background:rgba(79,191,123,.1);border-color:rgba(79,191,123,.28)}
@@ -7085,6 +7087,56 @@ function membersNow() {
 }
 const isMember = name =>
   !!name && members().some(m => samePerson(m.name, name));
+
+/* ---------- birthdays ----------
+   birthday:: 1985-03-14 on a person's page, or birthday:: 03-14 when the year
+   is not known. Today says whose birthday falls this week and the weekly
+   review the next two, once per person however many areas have their page.
+   29 February comes round on 1 March in the other years. */
+const BIRTHDAY_PROP = "birthday";
+function birthdayIn(props) {
+  const k = Object.keys(props || {}).find(k => k.toLowerCase() === BIRTHDAY_PROP);
+  return k ? String(props[k] || "") : "";
+}
+function parseBirthday(v) {
+  const m = /^\s*(?:(\d{4})-|--)?(\d{1,2})-(\d{1,2})\s*$/.exec(String(v || ""));
+  if (!m || +m[2] < 1 || +m[2] > 12 || +m[3] < 1 || +m[3] > 31) return null;
+  return {year: m[1] ? +m[1] : null, month: +m[2], day: +m[3]};
+}
+// The next time it comes round, today included, and how old they turn then.
+function nextBirthday(b, from = todayISO()) {
+  const on = y => isoOf(new Date(y, b.month - 1, b.day, 12));
+  const y = +from.slice(0, 4);
+  const iso = on(y) >= from ? on(y) : on(y + 1);
+  const age = b.year ? +iso.slice(0, 4) - b.year : 0;
+  return {iso, days: dateDiffDays(from, iso), age: age > 0 ? age : null};
+}
+const birthdayWhen = n => (n.age ? "turns " + n.age + " " : "") +
+  (n.days === 0 ? "today" : n.days === 1 ? "tomorrow" : "on " + humanDate(n.iso));
+function birthdayWords(v) {
+  const b = parseBirthday(v);
+  if (!b) return v;
+  const date = new Date(2000, b.month - 1, b.day).toLocaleDateString(undefined, {day: "numeric", month: "long"});
+  return date + (b.year ? " " + b.year : "") + " · " + birthdayWhen(nextBirthday(b));
+}
+// [{space, path, name, iso, days, age}] within the next `within` days, soonest first.
+function upcomingBirthdays(within) {
+  const seen = new Set(), out = [];
+  for (const space of visibleSpaces()) {
+    if (!LOADED.has(space)) continue;
+    inSpace(space, () => {
+      for (const path of allPeople()) {
+        const b = parseBirthday(birthdayIn(getPage(path)?.props));
+        const key = slugPerson(personName(path));
+        if (!b || seen.has(key)) continue;
+        seen.add(key);
+        const n = nextBirthday(b);
+        if (n.days <= within) out.push({space, path, name: personName(path), ...n});
+      }
+    });
+  }
+  return out.sort((x, y) => x.days - y.days || x.name.localeCompare(y.name));
+}
 
 /* Is there anybody else at all? True once any one space has a second member --
    the moment a conversation has somebody on the other end of it. */
@@ -19091,6 +19143,7 @@ function viewToday() {
   const coach = coachStrip();
   if (coach) c.append(coach);
   if (!who) { const news = newsBox(); if (news) c.append(news); }
+  if (!who) { const bdays = birthdayBox(); if (bdays) c.append(bdays); }
   /* What is due and the trackers are tabs: one open at a time, and pressing
      the open one again folds it away. */
   const tabs = sections.filter(s => !s.space);
@@ -19170,6 +19223,18 @@ function newsBox() {
       render();
       notify("Dismissed. History on Today keeps it, and everything before it.");
     }}, "✕"));
+}
+
+/* Whose birthday falls in the coming week, from birthday:: on their pages.
+   Gone by itself once the day has passed, so there is nothing to dismiss. */
+function birthdayBox() {
+  const soon = upcomingBirthdays(7);
+  if (!soon.length) return null;
+  return el("div", {class: "news"},
+    el("span", {"aria-hidden": "true"}, "🎂"),
+    el("div", {}, el("b", {}, soon.some(x => !x.days) ? "Birthday today" : "Birthdays this week"),
+      el("ul", {}, ...soon.map(x => el("li", {},
+        el("button", {onclick: () => openPageIn(x.space, x.path)}, x.name), " " + birthdayWhen(x))))));
 }
 
 /* ---------- history ----------
@@ -20674,7 +20739,7 @@ function viewReview() {
     if (!s.items.length) continue;
     c.append(el("div", {class: "group", id: s.id ? "rsec-" + s.id : null}, s.title, el("span", {class: "plain"}, "· " + s.items.length + " · " + s.hint)));
     c.append(pagedCard(s.items, it => el("div", {class: "dash-item",
-      onclick: () => it.block ? openTaskDetail(it.path, it.block) : previewPage(V.space, it.path)},
+      onclick: () => it.block ? openTaskDetail(it.path, it.block) : previewPage(it.space || V.space, it.path)},
       el("span", {style: "flex:1;min-width:0", html: renderInline(it.text)}),
       el("span", {class: "p"}, it.sub || ""),
       el("button", {class: "fix", onclick: e => { e.stopPropagation(); it.act(); }}, it.fix)), "", 8));
@@ -22437,7 +22502,28 @@ function templateKindForPage(path) {
   return STATUS_DIRS[prefix] || PREFIX_DIR[prefix] ? prefix : "page";
 }
 
+/* birthday:: on a person, as the day and how soon it is. The pill opens the
+   calendar; a birthday without its year is typed beside it, as 03-14. */
+function birthdayFact(path, k, v) {
+  const b = parseBirthday(v);
+  const input = el("input", {type: "date", tabindex: "-1", "aria-label": "Birthday",
+    value: b && b.year ? b.year + "-" + pad2(b.month) + "-" + pad2(b.day) : "",
+    onchange: e => { if (e.target.value) { saveRawProp(path, k, k + ":: " + e.target.value); render(); } }});
+  const pick = () => { try { input.showPicker(); } catch (_) { writePropValue(path, k, v); } };
+  return {
+    key: k, raw: k + ":: " + v, own: true,
+    save: text => saveRawProp(path, k, text),
+    pills: () => {
+      const pill = factPill(b ? birthdayWords(v) : trim(v) ? v : "+ pick a date", b ? "fquiet fbday" : "fwant fbday",
+        "Pick the date. Without the year, click beside it and write " + k + ":: 03-14", pick);
+      pill.append(input);
+      return [pill];
+    },
+  };
+}
+
 function propFact(path, k, v) {
+  if (k.toLowerCase() === BIRTHDAY_PROP && pageKind(path) === "person") return birthdayFact(path, k, v);
   // A tracker at the top of a page gets the same boxes it gets as a line.
   const trk = parseTracker(k + ":: " + v);
   if (trk) return {
@@ -22555,6 +22641,9 @@ function pageFacts(path) {
       dependsFact(path));
   }
   if (pageKind(path) === "checklist") facts.push(checklistKindFact(path));
+  // A person always has the line, so the birthday is a click away, not a key to remember.
+  if (pageKind(path) === "person" && !Object.keys(props).some(k => k.toLowerCase() === BIRTHDAY_PROP))
+    facts.push(birthdayFact(path, BIRTHDAY_PROP, ""));
   for (const [k, v] of Object.entries(props)) {
     if (/^template_(source|rules)$/.test(k)) continue;
     // Children have their own fact below, with a picker that refuses cycles.
@@ -26003,6 +26092,9 @@ function openWeeding(next) {
 function reviewSections() {
   const acts = leafActions();
   return [
+    {id: "birthdays", title: "Birthdays coming up", hint: "the next two weeks - a card, a call, a present?",
+     items: upcomingBirthdays(14).map(x => ({text: x.name, sub: birthdayWhen(x), path: x.path, space: x.space,
+       fix: "open", act: () => { closeModal(); openPageIn(x.space, x.path); }}))},
     {id: "stuck", title: "Stuck active projects", hint: "no next action - define one or park it",
      items: stuckActiveProjects().map(s => ({text: pageTitle(s.path), sub: s.reason, path: s.path,
        fix: "+ next action", act: () => { closeModal(); openAddNextAction(s.path); }}))},
