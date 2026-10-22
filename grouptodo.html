@@ -306,6 +306,17 @@ kbd{font:11px var(--mono);border:1px solid var(--border);border-radius:4px;paddi
 .jcard .card{border:0;background:none;border-radius:0}
 .jcard .outline{padding-top:12px}
 .jcard .newline{font-style:italic;padding-left:22px}
+/* Area folders: one card per area, side by side like the journals. */
+.modal:has(.afolders){width:min(960px,100%)}
+.afolders{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.afcard{display:flex;flex-direction:column;gap:10px;padding:16px 18px;border-radius:var(--radius);
+  background:color-mix(in srgb,var(--sc) 6%,var(--bg2));border:1px solid color-mix(in srgb,var(--sc) 45%,var(--border));
+  border-top:4px solid var(--sc)}
+.afcard .afname{font-size:18px;font-weight:650;color:var(--fg)}
+.afcard .afwhere{font-size:13px;color:var(--fg2);word-break:break-word}
+.afcard .afwhere.off{color:var(--warn)}
+.afcard .afbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:4px}
+.afnote{color:var(--fg3);font-size:12.5px;margin-top:14px}
 @media (min-width:1100px){ .jwide .jgrid{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))} }
 @media (max-width:640px){ .ttabs{gap:8px} .ttab{padding:6px 10px;font-size:13px} .jhead{padding:12px 14px} }
 
@@ -396,6 +407,11 @@ kbd{font:11px var(--mono);border:1px solid var(--border);border-radius:4px;paddi
 .chip.miss{color:var(--warn);background:rgba(224,176,80,.1);border-color:rgba(224,176,80,.3)}
 .chip.age{font-family:var(--mono);font-size:10.5px}
 .chip.who{color:var(--zet);background:rgba(199,146,234,.12)}
+/* A task's time, its #15m / #30m / #45m tag, drawn as one, two or three dots. */
+.trkevery{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0}
+.est{display:inline-block;min-width:1.4em;text-align:center;font-weight:800;font-size:.95em;
+  padding:0 5px;border-radius:6px;background:var(--bg3);color:var(--fg2);line-height:1.4;vertical-align:1px}
+.est[data-est="4"]{color:var(--warn);background:rgba(224,176,80,.13)}
 /* State filters: checkboxes, so several can be on at once. Off is legible
    rather than invisible -- a filter you cannot see is a bug report later. */
 .statefilter{display:flex;gap:8px;flex-wrap:wrap}
@@ -2509,6 +2525,7 @@ function readyPastedBlocks(roots, opts = {}) {
        for its top lines to be tasks either way. */
     const wantsDefault = !roots.outline || (opts.outlineRoots && !parent);
     if (!b.state && opts.defaultState && wantsDefault) b.state = opts.defaultState;
+    if (b.state) b.title = dotsToEst(b.title);
     if (b.state && opts.context && !hasContextLink(b.title))
       b.title = trim(b.title + " [[c/" + opts.context + "]]");
     // A copy of a line that still exists must not take its id:: -- links to
@@ -3911,51 +3928,34 @@ function spacesNeedingStorage() {
 }
 
 function openSpaceStorageSetup({firstRun = false} = {}) {
+  /* A card per area, side by side like the journals, so it is plain which
+     area a folder is being picked for. */
   const body = el("div", {});
-
-  if (!CAP.dirPicker) {
-    body.append(el("div", {class: "field"},
-      el("label", {}, "This browser cannot open folders"),
-      el("div", {style: "color:var(--fg2);font-size:13px"},
-        "Safari, Firefox and the mobile browsers have no folder access, so each area " +
-        "lives in this browser's own storage. They are still completely separate from " +
-        "each other, and each one syncs through its own vault file - Vault & sync → " +
-        "Save vault file. On desktop Chrome or Edge you can give each area a real folder.")));
-  } else {
-    body.append(el("div", {class: "field"},
-      el("label", {}, "One folder each"),
-      el("div", {style: "color:var(--fg2);font-size:13px"},
-        "An area is a folder you can share on its own. Two areas can never share a " +
-        "folder, and one can never sit inside another - either would put them in the " +
-        "same place, and sharing one would share both. GroupToDo refuses those choices."),
-      el("div", {style: "color:var(--warn);font-size:12.5px;margin-top:8px"},
-        "Until an area has a folder it lives in this browser only, and nothing it " +
-        "holds appears in your file explorer.")));
-
-    const list = el("div", {});
-    const draw = () => {
-      list.textContent = "";
-      for (const sp of Spaces.list) {
-        const placed = sp.kind === "fs";
-        list.append(el("div", {class: "pick", style: "cursor:default"},
-          el("span", {class: "k", style: "background:" + sp.color + ";color:#06101f"},
-            sp.name[0].toUpperCase()),
-          el("span", {style: "flex:1"}, sp.name),
-          el("span", {class: "d"}, placed ? (sp.label || "folder")
-                                 : sp.kind === "http" ? "server"
-                                 : el("span", {style: "color:var(--warn)"}, "not on disk")),
+  const list = el("div", {class: "afolders"});
+  const draw = () => {
+    list.textContent = "";
+    for (const sp of Spaces.list) {
+      const placed = sp.kind === "fs";
+      const where = placed ? "Folder: \u201C" + (sp.label || "folder") + "\u201D"
+                  : sp.kind === "http" ? "On the server"
+                  : "This browser only";
+      list.append(el("div", {class: "afcard", style: "--sc:" + sp.color},
+        el("div", {class: "afname"}, sp.name),
+        el("div", {class: "afwhere" + (placed || sp.kind === "http" ? "" : " off")}, where),
+        el("div", {class: "afbtns"},
+          CAP.dirPicker ? el("button", {class: "btn sm " + (placed ? "ghost" : "primary"),
+            onclick: async () => { if (await assignSpaceFolder(sp.name)) draw(); }},
+            placed ? "Change folder" : "Choose folder") : null,
           (SERVER_BASE && sp.kind !== "http" && sp.name === Spaces.active)
             ? el("button", {class: "btn sm ghost", onclick: async () => {
                 closeModal(); await connectServer(SERVER_BASE);
-              }}, "Use this server") : null,
-          el("button", {class: "btn sm " + (placed ? "ghost" : "primary"),
-            onclick: async () => { if (await assignSpaceFolder(sp.name)) draw(); }},
-            placed ? "Change" : "Choose folder")));
-      }
-    };
-    draw();
-    body.append(list);
-  }
+              }}, "Use server") : null)));
+    }
+  };
+  draw();
+  body.append(list, el("div", {class: "afnote"}, CAP.dirPicker
+    ? "One folder per area - never shared, never nested."
+    : "This browser cannot open folders. Use desktop Chrome or Edge, or a vault file."));
 
   // Whichever way this closes, the day's routine still has to start.
   const done = async () => {
@@ -3967,7 +3967,7 @@ function openSpaceStorageSetup({firstRun = false} = {}) {
 
   modal({
     center: true,
-    title: firstRun ? "Where does each area live?" : "Area folders",
+    title: "A folder for each area",
     body,
     foot: [
       el("button", {class: "btn ghost", onclick: () => done()}, CAP.dirPicker ? "Not now" : "OK"),
@@ -4708,6 +4708,8 @@ function expiringTemplates(today = todayISO()) {
   const items = acrossSpaces(() => allPages(p => p.startsWith(DIRS.lists + "/")).flatMap(path => {
     const name = baseName(path), next = templateNextYearName(name, year);
     if (!next || V.pages.has(join(DIRS.lists, next + ".md"))) return [];
+    // A day of a tracker's run is written ahead by topUpTrackerSeries, not copied a year on.
+    if (isDateName(name) && onlyTrackers(getPage(path))) return [];
     return [{path, name, next, space: V.space}];
   }));
   return {year, items};
@@ -5753,6 +5755,40 @@ function withoutTag(title, tag) {
   const lc = String(tag).toLowerCase();
   return trim(String(title || "").replace(NAMED_REF_RE, (whole, inside, label, lead, t) =>
     t !== undefined && t.toLowerCase() === lc ? lead : whole).replace(/\s{2,}/g, " "));
+}
+
+/* ---------- how long a task takes ----------
+   The dots of a paper list, one for each quarter of an hour. On disk it is a
+   tag like any other -- "Ring the bank #15m", "Write the agenda #30m", "Draft
+   the brief #45m" -- so it reads in any editor, searches as a word, and the
+   tag board sorts by it for nothing. On screen it is the dots: one, two or
+   three, in front of the words. #60m is an hour or more, a block that wants
+   its own slot in the calendar rather than a gap between other things.
+
+   You give a task its time by typing the dots: ". " ".. " "... " in front of
+   the words, or pick the line (Esc) and press the full stop that many times. */
+const EST_TAGS  = ["", "15m", "30m", "45m", "60m"];
+const EST_MARK  = ["", "·", ":", "⋯", "∷"];
+const EST_LABEL = ["", "under 15 min", "under 30 min", "under 45 min", "an hour or more"];
+function estTier(title) {
+  const tags = tagsIn(title).map(t => t.toLowerCase());
+  for (let n = 1; n < EST_TAGS.length; n++) if (tags.includes(EST_TAGS[n])) return n;
+  return 0;
+}
+const estMinutes = title => estTier(title) * 15 || null;
+const withoutEst = title => EST_TAGS.slice(1).reduce((t, tag) => hasTag(t, tag) ? withoutTag(t, tag) : t, String(title || ""));
+const withEst = (title, n) => n ? withTag(withoutEst(title), EST_TAGS[n]) : withoutEst(title);
+/* The dots typed in front of a task's words, made into its tag. Only with a
+   space after them, so "...and then" stays a sentence. */
+const EST_DOTS_RE = /^(\.{1,4})\s+(?=\S)/;
+function dotsToEst(title) {
+  const m = EST_DOTS_RE.exec(title || "");
+  return m ? withEst(title.slice(m[0].length), m[1].length) : title;
+}
+/* The tag drawn as its dots, in front of the words. */
+function estHtml(title) {
+  const n = estTier(title);
+  return n ? `<span class="est" data-est="${n}" title="${EST_LABEL[n]} (#${EST_TAGS[n]})">${EST_MARK[n]}</span> ` : "";
 }
 
 function rewriteNamedReference(value, oldRef, newRef) {
@@ -10596,7 +10632,7 @@ function boardCard(a) {
       inSpace(a.space, () => openTaskDetail(a.path, a.block, a.space));
     },
   },
-    el("div", {class: "bcard-title", html: renderInline(titleForRow(a.title))}),
+    el("div", {class: "bcard-title", html: estHtml(a.title) + renderInline(titleForRow(a.title))}),
     el("div", {class: "bcard-meta"},
       multiSpace() && a.space ? spaceBadge(a.space) : null,
       a.project ? el("span", {class: "chip proj"}, a.project) : null,
@@ -15855,6 +15891,27 @@ function loadSpacesForPeople() {
 
 
 
+/* ---------- reporting, once there is something to report ----------
+   A report of three tour steps teaches nothing and reads as an empty feature,
+   so the Report reading stays away until real work has gone through: five
+   tasks closed or two projects finished. Tour steps do not count. Once earned
+   it is earned for good -- a quiet week does not take a feature away. */
+const REPORT_MIN_TASKS = 5;
+const REPORT_MIN_PROJECTS = 2;
+function reportEarned() {
+  if (PREF.get("report.unlocked", "") === "1") return true;
+  return memo("reportEarned", () => {
+    const mine = r => !isTourProject(r.path) && !isTourProject(r.projectPath) && !tourDestOf(r.title);
+    const tasks = completedSince(addMonths(todayISO(), -24)).filter(r => !r.undated && mine(r)).length;
+    const projects = projectsIn("0").filter(q => !isTourProject(q)).length;
+    if (tasks < REPORT_MIN_TASKS && projects < REPORT_MIN_PROJECTS) return false;
+    PREF.set("report.unlocked", "1");
+    notify("Reporting unlocked!", "info",
+      {label: "Show me", run: () => go("projects", {sub: "report"})});
+    return true;
+  });
+}
+
 /* What the report is for, in four lines, the first time you open it. */
 function openReportWalkthrough() {
   PREF.set("report.seen", "1");
@@ -16059,6 +16116,11 @@ function chipsFor(a) {
     onclick: e => {e.stopPropagation(); openAssigneeChipMenu(a);}}, "\u2192 " + a.assignee));
   if (a.by && a.by !== whoAmI() && !samePerson(a.by, a.assignee))
     out.push(el("span", {class: "chip who"}, a.by));
+  /* An hour or more is not done in a gap between other things, so until it
+     has a day it asks for one. */
+  if (estTier(a.title) === 4 && OPEN_STATES[a.state] && a.state !== "WAIT" && !a.due)
+    out.push(el("span", {class: "chip miss b", title: "An hour or more wants its own slot in the calendar. Click to give it a day.",
+      onclick: e => {e.stopPropagation(); inSpace(a.space, () => openTaskDetail(a.path, a.block, a.space));}}, "book a slot"));
   const quietChips = gtdQuiet();
   if (a.missingVerb && a.state === "TODO" && !quietChips)
     out.push(el("span", {class: "chip miss b", onclick: e => {e.stopPropagation(); openVerbPicker(a.path, a.block);}}, "no verb"));
@@ -16071,7 +16133,8 @@ function chipsFor(a) {
 /* Context and project links are already chips on the row, so hide them
    from the title text. The outline view still shows them Logseq-style. */
 function titleForRow(title) {
-  return trim(String(title || "")
+  // The estimate is drawn as its own badge, by estHtml().
+  return trim(withoutEst(title)
     .replace(/\[\[[_0123c]\/[^\]]+\]\]/g, "")
     .replace(/\s{2,}/g, " "));
 }
@@ -16117,7 +16180,7 @@ function taskRow(a) {
         inSpace(a.space, () => setBlockState(a.path, a.block, a.state === "DONE" ? "TODO" : "DONE")); },
     }, "\u2713"),
     el("div", {class: "t-body"},
-      el("div", {class: "t-title", html: renderInline(titleForRow(a.title))}),
+      el("div", {class: "t-title", html: estHtml(a.title) + renderInline(titleForRow(a.title))}),
       el("div", {class: "t-meta"}, stateChip(a.state, node => {
         keepFocus(idSel(".task", a.block.id, ".state"), node);
         inSpace(a.space, () => cycleState(a.path, a.block, {keepTask: true}));
@@ -16983,7 +17046,7 @@ function attachOutlineUndo(host,path,block) {
    comes back, who has it, how much has been said on it -- and any value of
    its own that is not bookkeeping. Added::, by::, started:: and the rest are
    the file's business and stay there. */
-const BOOKKEEPING = /^(id|template_(source|rules)|added|by|started|closed|done_by|assigned_at|created|updated|updated_by|asked|feature_.*|scheduled|deadline|due|repeat|assigned|branch_sync_id|space_sync_.*|cal_.*)$/i;
+const BOOKKEEPING = /^(id|template_(source|rules)|added|by|started|closed|done_by|assigned_at|created|updated|updated_by|asked|feature_.*|scheduled|deadline|due|repeat|assigned|branch_sync_id|space_sync_.*|cal_.*|stage)$/i;
 function lineMeta(b) {
   const out = [];
   const due = dueDate(b);
@@ -17025,6 +17088,11 @@ function commitLine(txt, path, b) {
   } else {
     b.title = val;
   }
+  if (b.state) {
+    const typed = dotsToEst(b.title);
+    if (typed !== b.title) b.title = typed;
+    else if (!estTier(b.title)) estHint();
+  }
   if (b.state && OPEN_STATES[b.state] && !dueDate(b)) {
     const d = trailingDate(b.title);
     if (d) { b.title = trim(b.title.slice(0, d.start)); setDue(b, d.iso); }
@@ -17033,6 +17101,12 @@ function commitLine(txt, path, b) {
   touch(path); noteTodoTouched();
   return true;
 }
+
+/* A line as the outline draws it when you are not typing in it: a task's
+   time as its dots, everything else as written. Focus puts the raw
+   title back, #30m and all. */
+const lineHtml = b => b.state && estTier(b.title)
+  ? estHtml(b.title) + renderInline(withoutEst(b.title)) : renderInline(b.title);
 
 function outlineBlock(path, page, b, opts = {}) {
   const kids = b.children || [];
@@ -17066,7 +17140,7 @@ function outlineBlock(path, page, b, opts = {}) {
 
   const txt = el("div", {
     class: "txt", contenteditable: ro ? "false" : "true", spellcheck: "false",
-    html: renderInline(b.title),
+    html: lineHtml(b),
   });
   if (ro) {
     line.append(txt);
@@ -17091,7 +17165,7 @@ function outlineBlock(path, page, b, opts = {}) {
     /* A line with a dropped picture in it comes back as a path, not a URL, so
        the same pass the redraw runs has to run over the line it just rebuilt --
        otherwise editing a line emptied the picture that was already in it. */
-    txt.innerHTML = renderInline(b.title);
+    txt.innerHTML = lineHtml(b);
     resolveAssets(txt);
   });
   /* ---------- pasting a list ----------
@@ -17364,6 +17438,38 @@ function lineSelFrom(path, id) {
   LINE_SEL.ids = [id];
   LINE_SEL.anchor = LINE_SEL.head = id;
   paintLineSel();
+  if (lineSelBlocks()?.blocks.some(b => b.state && !estTier(b.title))) estHint();
+}
+
+/* A full stop on picked tasks: once is fifteen minutes, twice thirty, three
+   times forty-five, and a fourth takes the time off again. Presses close
+   together count as one go, so ". . ." is three and not fifteen minutes three
+   times over. */
+const EST_KEYS = {n: 0, at: 0, ids: ""};
+function lineSelEst() {
+  const got = lineSelBlocks();
+  const tasks = got ? got.blocks.filter(b => b.state) : [];
+  if (!tasks.length) { notify("Only a task takes time. Make the line a task first."); return; }
+  const now = Date.now(), ids = LINE_SEL.ids.join();
+  EST_KEYS.n = now - EST_KEYS.at < 900 && EST_KEYS.ids === ids ? (EST_KEYS.n + 1) % 4 : 1;
+  EST_KEYS.at = now; EST_KEYS.ids = ids;
+  const n = EST_KEYS.n;
+  for (const b of tasks) b.title = withEst(b.title, n);
+  touch(LINE_SEL.path); noteTodoTouched(); render(); paintLineSel();
+  const who = tasks.length === 1 ? "It takes " : tasks.length + " tasks take ";
+  notify(n ? who + EST_LABEL[n] + " (" + EST_MARK[n] + ")." : "Time taken off.");
+}
+
+/* How to give a task its time, said when it would help: a task just written
+   or picked without one. Once a session, and not after the first five. */
+let EST_HINTED = false;
+function estHint() {
+  if (EST_HINTED) return;
+  EST_HINTED = true;
+  const seen = +PREF.get("est.hints", "0") || 0;
+  if (seen >= 5) return;
+  PREF.set("est.hints", String(seen + 1));
+  notify("How long will it take? Type . .. or ... in front of a task's words, or pick the line (Esc) and press . once, twice or three times: 15, 30 or 45 minutes.");
 }
 function lineSelMove(dir, extend) {
   const head = blkEl(LINE_SEL.head), outline = head && head.closest(".outline");
@@ -17439,7 +17545,7 @@ function lineSelHud() {
   hud.append(el("button", {class: "btn sm ghost", onclick: () => lineSelCut()}, "Cut"));
   hud.append(el("button", {class: "btn sm ghost", onclick: () => lineSelDelete()}, "Delete"));
   hud.append(el("button", {class: "btn sm ghost", onclick: () => lineSelClear()}, "Let go"));
-  hud.append(el("span", {class: "k"}, "shift-↑↓ more · alt-shift-↑↓ move · ctrl-c · ctrl-x · ctrl-v · del · esc"));
+  hud.append(el("span", {class: "k"}, "shift-↑↓ more · alt-shift-↑↓ move · . .. ... time · ctrl-c · ctrl-x · ctrl-v · del · esc"));
 }
 
 /* The lines the box touched, as the outermost ones only: a line inside another
@@ -17632,6 +17738,7 @@ document.addEventListener("keydown", e => {
   if (mod && (e.key === "c" || e.key === "C")) { stop(); lineSelCopy(); return; }
   if (mod && (e.key === "x" || e.key === "X")) { stop(); lineSelCut(); return; }
   if (e.key === "Delete" || e.key === "Backspace") { stop(); lineSelDelete(); return; }
+  if (e.key === "." && !mod && !e.altKey) { stop(); lineSelEst(); return; }
   if (mod && (e.key === "v" || e.key === "V")) return;  // the paste event does it
   if (mod && (e.key === "z" || e.key === "Z")) { lineSelClear(); return; }
   // Anything else means the handful was not what you were after.
@@ -18726,12 +18833,16 @@ function textFilter(key, placeholder, rows, hay, draw) {
 const taskHay = a => [a.title, a.project, a.context && "@" + a.context, a.assignee, a.owner,
   a.block && blockProp(a.block, "stage")].filter(Boolean).join(" ");
 const noMatch = (q, otherwise) => q ? "Nothing matches “" + q + "”." : otherwise;
+/* A reading that waits until there is something for it to show. The one you
+   are on always shows, so v r or a link still lands on it. */
+const subShown = (view, k) => !(view === "projects" && k === "report") || reportEarned();
 /* The readings of a view, as one segmented control at the end of the heading. */
 function viewSeg(view) {
   const cur = subNow();
   return el("div", {class: "vseg", role: "group", "aria-label": "View as"},
-    ...SUBS[view].map(([k, label]) => el("button", {"aria-pressed": String(cur === k),
-      onclick: () => go(view, {sub: k})}, label)));
+    ...SUBS[view].filter(([k]) => k === cur || subShown(view, k))
+      .map(([k, label]) => el("button", {"aria-pressed": String(cur === k),
+        onclick: () => go(view, {sub: k})}, label)));
 }
 const fbar = (...kids) => el("div", {class: "fbar"}, ...kids);
 function fchip(label, on, onclick, count) {
@@ -19126,12 +19237,13 @@ function viewNext() {
     setHiddenStates(next); render();
   };
   const types = typeFilter(all, "next.type");
-  let acts = all.filter(a => stateOn(a.state)).filter(types.keep);
+  const est = estFilter(all, "next.est");
+  let acts = all.filter(a => stateOn(a.state)).filter(types.keep).filter(est.keep);
   // Only the contexts something open is waiting in, plus the one you are filtered to.
   const ctxs = Array.from(new Set([...all.map(a => a.context).filter(Boolean),
     ...(state.ctxFilter ? [state.ctxFilter] : [])])).sort();
   const sort = PREF.get("next.sort", "date");
-  const sortSel = fselect("Sort", sort, [["date", "By date"], ["age", "Oldest first"]],
+  const sortSel = fselect("Sort", sort, [["date", "By date"], ["age", "Oldest first"], ["est", "Shortest first"]],
     v => { PREF.set("next.sort", v); render(); });
   sortSel.classList.add("right");
 
@@ -19139,7 +19251,7 @@ function viewNext() {
     const byTag = PREF.get("next.boardBy", "ctx") === "tag";
     c.append(fbar(fchip("To do", stateOn("TODO"), () => toggleState("TODO"), all.filter(a => a.state === "TODO").length),
       fchip("Doing", stateOn("DOING"), () => toggleState("DOING"), all.filter(a => a.state === "DOING").length),
-      boardBySelect("next.boardBy", [["ctx", "By context"], ["tag", "By tag"]]), types.sel,
+      boardBySelect("next.boardBy", [["ctx", "By context"], ["tag", "By tag"]]), types.sel, est.sel,
       el("span", {class: "say right"}, byTag
         ? "Drag a card to another column to tag it that instead."
         : "Drag a card to another column, or onto a context below, to change where it can be done."),
@@ -19194,8 +19306,9 @@ function viewNext() {
 
   const ctx = state.ctxFilter || null;
   if (ctx) acts = acts.filter(a => a.context === ctx);
-  acts.sort(sort === "date"
-    ? (x, y) => (x.due || "9999").localeCompare(y.due || "9999") || (x.added || "9999").localeCompare(y.added || "9999")
+  const byDate = (x, y) => (x.due || "9999").localeCompare(y.due || "9999") || (x.added || "9999").localeCompare(y.added || "9999");
+  acts.sort(sort === "date" ? byDate
+    : sort === "est" ? (x, y) => byEst(x, y) || byDate(x, y)
     : (x, y) => (x.added || "9999").localeCompare(y.added || "9999"));
   const f = textFilter("next", "Filter next actions", acts, taskHay,
     (hits, q) => taskCard(hits, noMatch(q, ctx ? "Nothing to do at " + contextLabel(ctx) + "." : "Nothing on your plate. Add one at the top.")));
@@ -19205,7 +19318,7 @@ function viewNext() {
     el("span", {class: "gap"}),
     fchip("Anywhere", !ctx, () => go("next", {ctxFilter: null})),
     ...ctxs.map(k => fchip(contextLabel(k), ctx === k, () => go("next", {ctxFilter: k}))),
-    types.sel, sortSel), f.host);
+    types.sel, est.sel, sortSel), f.host);
   return c;
 }
 
@@ -19221,8 +19334,9 @@ function viewWaiting() {
   const flip = k => { PREF.set(k, PREF.get(k, "") === "1" ? "" : "1"); render(); };
   const all = waitingRows().concat(mentionRows());
   const types = typeFilter(all, "waiting.type");
+  const est = estFilter(all, "waiting.est");
   const rows = all.filter(a => (!f.late || (a.due && a.due < todayISO())) && (!f.asked || askedDays(a.block) == null))
-    .filter(types.keep);
+    .filter(types.keep).filter(est.keep);
   const nameOf = a => a.mention || a.assignee || "Nobody named";
   const groupBy = list => {
     const by = new Map();
@@ -19237,7 +19351,7 @@ function viewWaiting() {
   };
   const askBtn = name => name === "Nobody named" ? null : personActionBtn(name, isMember(name));
   const chips = [fchip("Overdue", f.late, () => flip("waiting.late"), all.filter(a => a.due && a.due < todayISO()).length),
-    fchip("Not asked yet", f.asked, () => flip("waiting.notAsked")), types.sel,
+    fchip("Not asked yet", f.asked, () => flip("waiting.notAsked")), types.sel, est.sel,
     el("span", {class: "right"}, ...replyActions(),
       el("button", {class: "textbtn", onclick: showWaitingFeedback}, "As text"))];
 
@@ -19271,7 +19385,7 @@ function viewWaiting() {
           return () => inSpace(a.space, () => assignBlock(a.path, a.block, prev || ""));
         });
       col.append(el("div", {class: "bcol-sub"}, askLine(name), askBtn(name)));
-      col.append(fillBoardColumn(el("div", {class: "bcol-body"}), items, "wait:" + slugPerson(name), boardCard));
+      col.append(fillBoardColumn(el("div", {class: "bcol-body", data: {keepScroll: "wait:" + slugPerson(name)}}), items, "wait:" + slugPerson(name), boardCard));
       board.append(col);
     }
     if (!names.length) {
@@ -19791,6 +19905,27 @@ function typeFilter(rows, key) {
   return {cur, keep, sel};
 }
 
+/* How long a task takes, as a filter: what fits in the time you have. "Fits in
+   30 min" is everything under half an hour, the quick ones too -- you have
+   half an hour, not exactly half an hour's work. It shows once a task in the
+   list carries an estimate; a choice that can only find nothing is noise. */
+const EST_FILTERS = [["", "Any length"], ["1", "Fits in 15 min"], ["2", "Fits in 30 min"],
+  ["3", "Fits in 45 min"], ["4", "An hour or more"], ["-", "No estimate"]];
+const estOfRow = a => estTier(a.block ? a.block.title : a.title);
+const estFits = (v, n) => !v || (v === "-" ? !n : v === "4" ? n === 4 : n > 0 && n <= +v);
+function estFilter(rows, key) {
+  let cur = PREF.get(key, "");
+  if (!EST_FILTERS.some(([v]) => v === cur)) cur = "";
+  const keep = r => estFits(cur, estOfRow(r));
+  const sel = cur || rows.some(estOfRow)
+    ? fselect("Time", cur, EST_FILTERS.map(([v, l]) => [v, v ? l + " (" + rows.filter(r => estFits(v, estOfRow(r))).length + ")" : l]),
+      v => { PREF.set(key, v); render(); })
+    : null;
+  return {cur, keep, sel};
+}
+/* Quickest first, and a task nobody has sized after every one somebody has. */
+const byEst = (x, y) => (estOfRow(x) || 9) - (estOfRow(y) || 9);
+
 /* On a task type's own page, every task of that type, one section per stage --
    the purchases still to order, the ones on their way, the ones that came. */
 function tasksOfTypeSections(listPath) {
@@ -20142,7 +20277,7 @@ function viewKindBoard() {
           if (DIR_OF_KIND[was]) moveFile(landed, join(DIR_OF_KIND[was], baseName(path) + ".md"));
         });
       });
-    col.append(fillBoardColumn(el("div", {class: "bcol-body"}), items, "d:" + kind, boardDirCard));
+    col.append(fillBoardColumn(el("div", {class: "bcol-body", data: {keepScroll: "dirboard:" + kind}}), items, "d:" + kind, boardDirCard));
     board.append(col);
   }
   c.append(boardMarquee(el("div", {class: "boardwrap boardscroll"}, board), "dirpage"));
@@ -23036,7 +23171,7 @@ function insertTracker(path, b, title, when) {
   const t = parseTracker(title);
   const day = dayOfPath(path);
   // A line on a day the schedule does not include waits for its own days.
-  const here = !when || (day && when.days.includes(weekdayOf(day)));
+  const here = !when || (day && whenOnDay(new Set(trackerTemplateNames(when, day)), day));
   // Half-typed "tracker-" on the line is what the wizard came to replace.
   const spare = (!trim(b.title) || /^tracker-[\p{L}\p{N}_-]*$/u.test(trim(b.title))) && !b.state && !(b.children || []).length;
   if (here && day) {
@@ -23054,43 +23189,361 @@ function insertTracker(path, b, title, when) {
   if (!when && !isJournalPath(path)) notify("Trackers are only counted on day pages, so this one will not show up in Trackers.", "warn");
 }
 
-/* The templates a schedule is written into: the year itself for every day,
-   else one per weekday -- 2026-Monday. In December next year's too, so a
-   tracker set up now does not run out in a few weeks. */
+/* ---------- when a tracker comes round ----------
+   The schedule is the journal templates the tracker's line is written into,
+   and nothing else. Routines & lists is where it lives: editing those pages by
+   hand changes it as surely as the When button on the Trackers page does,
+   which only reads the templates and writes them back. What the names mean:
+
+     2026                     every day of the year
+     2026-Monday              every Monday, one template per weekday picked
+     01-15 … 12-15            the 15th of every month, and every year after
+     2026-06                  every day in June
+     2026-10-22, 2026-10-24   one day each: every N days, or every N weeks
+
+   A run of single days -- every 2 days, every other Monday -- is read back
+   from the dates themselves. It is kept written about four months ahead and
+   the days gone by are tidied away, so it neither runs out at New Year nor
+   fills the folder with a year of files.
+
+   when: {mode: "daily"} | {mode: "weekly", days: [0-6]} (0 is Sunday)
+         | {mode: "ndays", n, start} | {mode: "nweeks", n, days, start}
+         | {mode: "monthdays", mdays: [1-31]} | {mode: "months", months: [1-12]}
+   Older callers pass only {days}: all seven is every day, fewer are weekdays. */
+const SERIES_AHEAD = 120, SERIES_TOPUP = 60, SERIES_KEEP = 7;
+const isDateName = n => /^\d{4}-\d{2}-\d{2}$/.test(n);
+const monFirst = (a, b) => ((a + 6) % 7) - ((b + 6) % 7);
+const MONTH_LEN = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const whenMode = w => w.mode || (w.days && w.days.length === 7 ? "daily" : "weekly");
+const weekdayOfName = n => {
+  const m = /^(\d{4})-(\p{L}+)$/u.exec(n);
+  return m ? WEEKDAY_NAMES.findIndex(w => w.some(x => x.toLowerCase() === m[2].toLowerCase())) : -1;
+};
+/* A name only a schedule uses, so the When button may take the line out of it. */
+const isWhenName = n => n === "journals" || /^\d{4}$/.test(n) || weekdayOfName(n) >= 0 ||
+  /^\d{2}-\d{2}$/.test(n) || /^\d{4}-\d{2}$/.test(n) || isDateName(n);
+/* A name for days that are over: last year's, last month's, yesterday's. */
+const isPastWhenName = (n, today = todayISO()) => isDateName(n) ? n < today
+  : /^\d{4}/.test(n) && (+n.slice(0, 4) < +today.slice(0, 4) || (/^\d{4}-\d{2}$/.test(n) && n < today.slice(0, 7)));
+
+/* The single days of a run, from `from` to `until`. */
+function seriesDates(when, from, until) {
+  const out = [], start = when.start || from;
+  const n = Math.max(1, +when.n || 1);
+  if (when.mode === "ndays") {
+    let d = start, guard = 0;
+    while (d < from && guard++ < 5000) d = shiftISO(d, n);
+    for (; d <= until; d = shiftISO(d, n)) out.push(d);
+    return out;
+  }
+  const days = (when.days || []).slice().sort(monFirst);
+  const monday = shiftISO(start, -((weekdayOf(start) + 6) % 7));
+  for (let wk = monday; wk <= until; wk = shiftISO(wk, 7 * n))
+    for (const d of days) {
+      const day = shiftISO(wk, (d + 6) % 7);
+      if (day >= from && day >= start && day <= until) out.push(day);
+    }
+  return out;
+}
+
+/* The templates a schedule is written into. Templates named for a year carry
+   next year's too in December, so a tracker set up now does not run out in a
+   few weeks. */
 function trackerTemplateNames(when, from) {
   const y = +from.slice(0, 4);
   const years = from.slice(5, 7) === "12" ? [y, y + 1] : [y];
-  return years.flatMap(year => when.days.length === 7 ? [String(year)]
-    : when.days.slice().sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7)).map(d => year + "-" + WEEKDAY_NAMES[d][0]));
-}
-function scheduleTracker(t, when, from) {
-  const names = trackerTemplateNames(when, from);
-  const line = t.key + "::";
-  for (const name of names) {
-    const path = join(DIRS.lists, name + ".md");
-    if (!V.pages.has(path)) {
-      putPage(path, {props: {title: name, created: todayStamp()}, blocks: [newBlock({title: line}, false)]});
-      continue;
-    }
-    const page = getPage(path);
-    if (pageHasTracker(page, t.name)) continue;
-    page.blocks.push(newBlock({title: line}, false));
-    touch(path);
+  const mode = whenMode(when);
+  if (mode === "daily") return years.map(String);
+  if (mode === "weekly") return years.flatMap(year => when.days.slice().sort(monFirst).map(d => year + "-" + WEEKDAY_NAMES[d][0]));
+  // The next of each month picked, a year on from now: June asked for in October is next year's.
+  if (mode === "months") return [y, y + 1].flatMap(year => when.months.slice().sort((a, b) => a - b).map(m => year + "-" + pad2(m)))
+    .filter(n => n >= from.slice(0, 7) && n < (y + 1) + from.slice(4, 7));
+  if (mode === "monthdays") {
+    const out = [], mdays = when.mdays.slice().sort((a, b) => a - b);
+    for (let m = 1; m <= 12; m++) for (const d of mdays) if (d <= MONTH_LEN[m - 1]) out.push(pad2(m) + "-" + pad2(d));
+    return out;
   }
-  /* Day pages that already exist from today on were made before the template
-     said so, and templates only pour into a page once, when it is made. */
-  let late = 0;
+  return seriesDates(when, from, shiftISO(from, SERIES_AHEAD));
+}
+/* Whether a day gets it, by the same reading the templates are poured with. */
+const whenOnDay = (names, day) => templateCandidates(day).some(n => names.has(n));
+
+function addTrackerLine(name, key) {
+  const path = join(DIRS.lists, name + ".md");
+  const line = key + "::";
+  if (!V.pages.has(path)) {
+    putPage(path, {props: {title: name, created: todayStamp()}, blocks: [newBlock({title: line}, false)]});
+    return;
+  }
+  const page = getPage(path);
+  if (pageHasTracker(page, parseTracker(line).name)) return;
+  page.blocks.push(newBlock({title: line}, false));
+  touch(path);
+}
+/* A template with nothing left in it but its name. */
+const emptyTemplate = page => !(page.blocks || []).some(b => trim(b.title) || (b.children || []).length || (b.body || []).length) &&
+  Object.keys(page.props || {}).every(k => /^(title|created)$/i.test(k));
+/* A template holding trackers and nothing else -- the kind a run of days writes. */
+const onlyTrackers = page => !!page && (page.blocks || []).every(b => !trim(b.title) || (parseTracker(b.title) && !(b.children || []).length)) &&
+  Object.keys(page.props || {}).every(k => /^(title|created)$/i.test(k) || parseTracker(k + "::"));
+function dropTrackerLine(path, name) {
+  const page = getPage(path);
+  if (!page) return;
+  const mine = t => !!t && t.name === name;
+  for (const k of Object.keys(page.props || {})) if (mine(parseTracker(k + "::"))) delete page.props[k];
+  const drop = list => list.filter(b => !mine(parseTracker(b.title)))
+    .map(b => { if (b.children) b.children = drop(b.children); return b; });
+  page.blocks = drop(page.blocks || []);
+  // A template the schedule made, with nothing left in it, goes with the line.
+  if (isWhenName(baseName(path)) && baseName(path) !== "journals" && emptyTemplate(page)) removePage(path);
+  else touch(path);
+}
+
+/* The days from today on, made before the schedule said so -- templates only
+   pour into a page once, when it is made -- given the tracker; and with
+   remove, the ones the schedule no longer includes relieved of it while
+   nothing is written in it yet. */
+function syncTrackerDays(name, key, names, {remove = false} = {}) {
+  let added = 0, removed = 0;
   for (const p of allPages(isJournalPath)) {
     const d = dayOfPath(p);
-    if (!d || d < todayISO() || !names.some(n => templateCandidates(d).includes(n))) continue;
+    if (!d || d < todayISO()) continue;
     const page = getPage(p);
-    if (pageHasTracker(page, t.name)) continue;
-    page.props = page.props || {};
-    page.props[t.key] = "";
-    touch(p); late++;
+    const on = whenOnDay(names, d), has = pageHasTracker(page, name);
+    if (on && !has) { page.props = page.props || {}; page.props[key] = ""; touch(p); added++; }
+    else if (!on && has && remove) {
+      const keys = Object.keys(page.props || {}).filter(k => parseTracker(k + "::")?.name === name && !trim(String(page.props[k] || "")));
+      if (!keys.length) continue;
+      for (const k of keys) delete page.props[k];
+      touch(p); removed++;
+    }
   }
-  notify(trackerTitle(t.name) + " is in " + names.join(", ") + " in Routines & lists" +
-    (late ? ", and on " + late + " day page" + (late === 1 ? "" : "s") + " already made" : "") + ".");
+  return {added, removed};
+}
+
+function scheduleTracker(t, when, from) {
+  const names = trackerTemplateNames(when, from);
+  for (const name of names) addTrackerLine(name, t.key);
+  const {added} = syncTrackerDays(t.name, t.key, new Set(names));
+  notify(trackerTitle(t.name) + " is in " + whereWords(names) + " in Routines & lists" +
+    (added ? ", and on " + added + " day page" + (added === 1 ? "" : "s") + " already made" : "") + ".");
+}
+/* A long list of templates, said briefly. */
+function whereWords(names) {
+  if (names.length <= 4) return names.join(", ");
+  return names.length + " templates, " + names[0] + " to " + names[names.length - 1];
+}
+
+/* ---------- reading a schedule back ----------
+   From the templates the line is in, the way they would have been written.
+   Several kinds at once -- a weekday and some months, say -- reads as the
+   first, and the rest are named so the editor can say they will be replaced.
+   Templates for days gone by are history and do not count. */
+function inferSeries(dates) {
+  if (dates.length < 2) return dates.length ? {mode: "dates", dates} : null;
+  const start = dates[0], last = dates[dates.length - 1];
+  const gap = (a, b) => Math.round((parseISO(b) - parseISO(a)) / 864e5);
+  const gaps = dates.slice(1).map((d, i) => gap(dates[i], d));
+  const cands = [];
+  if (gaps.every(g => g === gaps[0])) cands.push(gaps[0] % 7 === 0
+    ? {mode: "nweeks", n: gaps[0] / 7, days: [weekdayOf(start)], start}
+    : {mode: "ndays", n: gaps[0], start});
+  const days = [...new Set(dates.map(weekdayOf))];
+  const span = Math.min(...days.map(d => { const ds = dates.filter(x => weekdayOf(x) === d); return ds.length > 1 ? gap(ds[0], ds[1]) : Infinity; }));
+  if (span !== Infinity && span % 7 === 0) cands.push({mode: "nweeks", n: span / 7, days, start});
+  // A reading only counts if it writes these very days back.
+  for (const c of cands) if (seriesDates(c, start, last).join() === dates.join()) return c;
+  return {mode: "dates", dates};
+}
+function trackerWhen(name) {
+  const today = todayISO();
+  const tpls = trackerTemplatesWith(name).filter(x => !isPastWhenName(baseName(x.p), today));
+  const names = tpls.map(x => baseName(x.p));
+  let key = null;
+  const see = t => { if (!key && t && t.name === name) key = t.key; };
+  for (const {sp, p} of tpls) inSpace(sp, () => {
+    const page = getPage(p);
+    walkBlocks(page.blocks, b => see(parseTracker(b.title)));
+    for (const k of Object.keys(page.props || {})) see(parseTracker(k + "::"));
+  });
+  const kinds = [
+    ["daily", names.filter(n => n === "journals" || /^\d{4}$/.test(n))],
+    ["weekly", names.filter(n => weekdayOfName(n) >= 0)],
+    ["monthdays", names.filter(n => /^\d{2}-\d{2}$/.test(n))],
+    ["months", names.filter(n => /^\d{4}-\d{2}$/.test(n))],
+    ["series", names.filter(isDateName).sort()],
+  ].filter(([, list]) => list.length);
+  let when = null;
+  if (kinds.length) {
+    const [kind, list] = kinds[0];
+    when = kind === "daily" ? {mode: "daily"}
+      : kind === "weekly" ? {mode: "weekly", days: [...new Set(list.map(weekdayOfName))]}
+      : kind === "monthdays" ? {mode: "monthdays", mdays: [...new Set(list.map(n => +n.slice(3)))]}
+      : kind === "months" ? {mode: "months", months: [...new Set(list.map(n => +n.slice(5)))]}
+      : inferSeries(list);
+  }
+  const series = kinds.find(([k]) => k === "series");
+  return {when, key, also: kinds.slice(1).flatMap(([, l]) => l), other: names.filter(n => !isWhenName(n)),
+    last: series ? series[1][series[1].length - 1] : null, space: tpls[0]?.sp || V.space};
+}
+function describeWhen(w) {
+  if (!w) return "only where you write it";
+  const wd = days => days.slice().sort(monFirst).map(d => WEEKDAY_NAMES[d][0].slice(0, 3)).join(", ");
+  const nth = d => d + (d % 10 === 1 && d !== 11 ? "st" : d % 10 === 2 && d !== 12 ? "nd" : d % 10 === 3 && d !== 13 ? "rd" : "th");
+  const mode = whenMode(w);
+  return mode === "daily" ? "every day"
+    : mode === "weekly" ? wd(w.days)
+    : mode === "ndays" ? "every " + w.n + " days"
+    : mode === "nweeks" ? (w.n === 1 ? "every " : "every " + w.n + " weeks on ") + wd(w.days)
+    : mode === "monthdays" ? "the " + w.mdays.slice().sort((a, b) => a - b).map(nth).join(", ") + " of the month"
+    : mode === "months" ? "every day in " + w.months.slice().sort((a, b) => a - b).map(m => capitalise(MONTH_WORDS[m - 1])).join(", ")
+    : "on " + w.dates.length + " set day" + (w.dates.length === 1 ? "" : "s");
+}
+
+/* ---------- changing a schedule ----------
+   Out of every template that says when, except those for days gone by, which
+   are the record of what was; into the ones the new schedule names; and the
+   days already made from today on put right. Templates that say something
+   else about the day -- a week, a quarter -- are left as they are. */
+function setTrackerWhen(name, key, when) {
+  const today = todayISO();
+  const home = trackerWhen(name).space;
+  for (const {sp, p} of trackerTemplatesWith(name)) {
+    const n = baseName(p);
+    if (!isWhenName(n) || isPastWhenName(n, today)) continue;
+    inSpace(sp, () => dropTrackerLine(p, name));
+  }
+  return inSpace(home, () => {
+    const names = when ? trackerTemplateNames(when, today) : [];
+    for (const n of names) addTrackerLine(n, key);
+    return Object.assign({names}, syncTrackerDays(name, key, new Set(names), {remove: true}));
+  });
+}
+
+/* Runs of single days kept written ahead, and the ones gone by tidied away.
+   Run at start-up and whenever the Trackers page is drawn; it writes nothing
+   while a run still reaches two months on. */
+function topUpTrackerSeries() {
+  const today = todayISO(), horizon = shiftISO(today, SERIES_AHEAD);
+  for (const sp of LOADED.keys()) inSpace(sp, () => {
+    const lists = allPages(p => p.startsWith(DIRS.lists + "/") && isDateName(baseName(p)));
+    const names = new Set();
+    for (const p of lists) walkBlocks(getPage(p).blocks, b => { const t = parseTracker(b.title); if (t) names.add(t.name); });
+    for (const name of names) {
+      const w = trackerWhen(name);
+      if (!w.when || !/^n(days|weeks)$/.test(w.when.mode) || !w.key || !w.last || w.last >= shiftISO(today, SERIES_TOPUP)) continue;
+      const more = seriesDates(w.when, shiftISO(w.last, 1), horizon);
+      inSpace(w.space, () => {
+        for (const d of more) addTrackerLine(d, w.key);
+        syncTrackerDays(name, w.key, new Set(more));
+      });
+    }
+    for (const p of lists) {
+      const page = getPage(p);
+      if (page && baseName(p) < shiftISO(today, -SERIES_KEEP) && onlyTrackers(page)) removePage(p);
+    }
+  });
+}
+
+/* The When button: the schedule as the templates have it, to change. */
+function openTrackerWhen(name, fallbackKey) {
+  const cur = trackerWhen(name);
+  const key = cur.key || fallbackKey;
+  const pick = whenPicker(todayISO(), cur.when, {none: true});
+  const notes = [];
+  if (cur.when && cur.when.mode === "dates")
+    notes.push("It is in " + cur.when.dates.length + " single-day template" + (cur.when.dates.length === 1 ? "" : "s") +
+      " that do not make a pattern. Picking a schedule here takes it out of them.");
+  if (cur.also.length) notes.push("It is also in " + whereWords(cur.also) + ". Saving puts it only on the days picked here.");
+  if (cur.other.length) notes.push("It is in " + cur.other.join(", ") + " too, which say something else about the day. Those are left as they are.");
+  modal({
+    center: true, title: "When is " + trackerTitle(name) + "?", hint: "kept in the journal templates in Routines & lists",
+    body: el("div", {}, ...notes.map(t => el("p", {class: "hint"}, t)), pick.node),
+    foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+      el("button", {class: "btn primary", onclick: () => {
+        const w = pick.value();
+        if (w && w.invalid) { notify(w.invalid, "warn"); return; }
+        closeModal();
+        const r = setTrackerWhen(name, key, w);
+        render();
+        notify(trackerTitle(name) + ": " + describeWhen(w) + "." +
+          (r.names.length ? " In " + whereWords(r.names) + "." : "") +
+          (r.added ? " Put on " + r.added + " day" + (r.added === 1 ? "" : "s") + " already made." : "") +
+          (r.removed ? " Taken off " + r.removed + " empty day" + (r.removed === 1 ? "" : "s") + "." : ""));
+      }}, "Save")],
+  });
+}
+
+/* ---------- the schedule picker ----------
+   The same question in the wizard and behind the When button. value() is the
+   schedule, null for none, or {invalid} saying what is missing. */
+function whenPicker(from, init, opts = {}) {
+  const im = init ? whenMode(init) : null;
+  let often = !init || im === "dates" ? "once" : im;
+  const days = new Set(init && init.days ? init.days : [weekdayOf(from)]);
+  const mdays = new Set(init && init.mdays ? init.mdays : [+from.slice(8)]);
+  const months = new Set(init && init.months ? init.months : [+from.slice(5, 7)]);
+  const nDays = el("input", {type: "number", min: "2", max: "60", value: String(im === "ndays" ? init.n : 2), style: "width:4.5em"});
+  const nWeeks = el("input", {type: "number", min: "1", max: "12", value: String(im === "nweeks" ? init.n : 2), style: "width:4.5em"});
+  const start = el("input", {type: "date", value: init && init.start ? init.start : from});
+  const node = el("div", {}), where = el("div", {class: "hint"});
+  const value = () => {
+    if (often === "once") return null;
+    if (often === "daily") return {mode: "daily"};
+    if ((often === "weekly" || often === "nweeks") && !days.size) return {invalid: "Pick at least one day."};
+    if (often === "weekly") return {mode: "weekly", days: [...days]};
+    if (often === "monthdays") return mdays.size ? {mode: "monthdays", mdays: [...mdays]} : {invalid: "Pick at least one day of the month."};
+    if (often === "months") return months.size ? {mode: "months", months: [...months]} : {invalid: "Pick at least one month."};
+    const s = dateIn(start.value) || from;
+    if (often === "ndays") return {mode: "ndays", n: Math.max(2, Math.min(60, parseInt(nDays.value, 10) || 2)), start: s};
+    return {mode: "nweeks", n: Math.max(1, Math.min(12, parseInt(nWeeks.value, 10) || 1)), days: [...days], start: s};
+  };
+  const sayWhere = () => {
+    const w = value();
+    if (!w) { where.textContent = opts.none ? "In no template: it is only on the days you write it on yourself."
+      : "Only on this line. Nothing is added to other days."; return; }
+    if (w.invalid) { where.textContent = w.invalid; return; }
+    const names = trackerTemplateNames(w, from), set = new Set(names);
+    const next = [];
+    for (let d = todayISO(), i = 0; next.length < 4 && i < 400; d = shiftISO(d, 1), i++) if (whenOnDay(set, d)) next.push(humanDate(d));
+    const mode = whenMode(w);
+    where.textContent = "Written into " + whereWords(names) + " in Routines & lists, so those days get it by themselves. " +
+      (mode === "monthdays" ? "These carry on every year."
+        : mode === "ndays" || mode === "nweeks" ? "Kept written about four months ahead as the days go by."
+        : "These run out when the year ends; you are reminded in December.") +
+      (next.length ? " Next: " + next.join(", ") + "." : "");
+  };
+  const chips = (list, set, label) => {
+    const row = el("div", {class: "trkdays"});
+    for (const v of list) row.append(el("button", {type: "button", class: "fchip", "aria-pressed": String(set.has(v)),
+      onclick: () => { set.has(v) ? set.delete(v) : set.add(v); draw(); }}, label(v)));
+    return row;
+  };
+  const weekdayChips = () => chips([1, 2, 3, 4, 5, 6, 0], days, d => WEEKDAY_NAMES[d][0].slice(0, 3));
+  const row = (...kids) => el("div", {class: "trkevery"}, ...kids);
+  const draw = () => {
+    node.textContent = "";
+    const opt = (id, label, hint) => el("button", {class: "trkkind" + (often === id ? " on" : ""), type: "button",
+      onclick: () => { often = id; draw(); }}, el("b", {}, label), el("span", {}, hint));
+    node.append(el("div", {class: "trkkinds"},
+      opt("once", opts.none ? "No schedule" : "Just here", opts.none ? "only where you write it" : "this line only"),
+      opt("daily", "Every day", "on every day page"),
+      opt("weekly", "Some weekdays", "pick the days"),
+      opt("ndays", "Every few days", "every 2nd, 3rd…"),
+      opt("nweeks", "Every few weeks", "every other Monday…"),
+      opt("monthdays", "Days of the month", "the 1st, the 15th…"),
+      opt("months", "Some months", "every day in those")));
+    if (often === "weekly") node.append(weekdayChips());
+    if (often === "ndays") node.append(row("Every", nDays, "days, from", start));
+    if (often === "nweeks") node.append(row("Every", nWeeks, "weeks, from", start), weekdayChips());
+    if (often === "monthdays") node.append(chips(Array.from({length: 31}, (_, i) => i + 1), mdays, String));
+    if (often === "months") node.append(chips(Array.from({length: 12}, (_, i) => i + 1), months, m => capitalise(MONTH_WORDS[m - 1])));
+    node.append(where);
+    sayWhere();
+  };
+  for (const i of [nDays, nWeeks, start]) i.addEventListener("input", sayWhere);
+  draw();
+  return {node, value};
 }
 function trackerSuggestRows(q) {
   q = String(q || "").toLowerCase();
@@ -23128,33 +23581,11 @@ const trackerSlug = s => String(s || "").toLowerCase().normalize("NFC").replace(
 
 function openTrackerWizard(onDone, path) {
   let kind = TRACKER_KINDS[0], sets = 3;
-  /* When: just this line, every day, or some weekdays. The day it is set up
-     on is the weekday picked to start with. */
+  /* When: just this line, or a schedule. The day it is set up on is where
+     the picker starts. */
   const from = (path && dayOfPath(path)) || todayISO();
-  let often = "once";
-  const days = new Set([weekdayOf(from)]);
-  const whenBox = el("div", {});
-  const drawWhen = () => {
-    whenBox.textContent = "";
-    const opt = (id, label, hint) => el("button", {class: "trkkind" + (often === id ? " on" : ""), type: "button",
-      onclick: () => { often = id; drawWhen(); sync(); }}, el("b", {}, label), el("span", {}, hint));
-    whenBox.append(el("div", {class: "trkkinds"},
-      opt("once", "Just here", "this line only"),
-      opt("daily", "Every day", "on every day page"),
-      opt("weekly", "Some weekdays", "pick the days")));
-    if (often === "weekly") {
-      const row = el("div", {class: "trkdays"});
-      for (const d of [1, 2, 3, 4, 5, 6, 0]) row.append(el("button", {type: "button",
-        class: "fchip", "aria-pressed": String(days.has(d)),
-        onclick: () => { days.has(d) ? days.delete(d) : days.add(d); drawWhen(); sync(); }},
-        WEEKDAY_NAMES[d][0].slice(0, 3)));
-      whenBox.append(row);
-    }
-    whenBox.append(whereLine);
-  };
-  const whereLine = el("div", {class: "hint"});
-  const whenOf = () => often === "daily" ? {days: [0, 1, 2, 3, 4, 5, 6]}
-    : often === "weekly" ? (days.size ? {days: [...days]} : null) : null;
+  const pick = whenPicker(from, null);
+  const whenBox = pick.node;
   const name = el("input", {placeholder: "Pull-ups, water, sleep, mood…"});
   const setsIn = el("input", {type: "number", min: "1", max: "12", value: "3", style: "width:5em"});
   const preview = el("code", {class: "trkpreview"});
@@ -23168,11 +23599,6 @@ function openTrackerWizard(onDone, path) {
     preview.textContent = k ? k + "::" : "tracker-<name>_" + kind.code(sets) + "::";
     const same = trackerList().find(g => g.name === trackerSlug(name.value));
     hintLine.textContent = same ? "Already tracked, as " + trackerKindWords(same.code) + ". It stays one history either way." : "";
-    const w = whenOf();
-    whereLine.textContent = often === "once" ? "Only on this line. Nothing is added to other days."
-      : !w ? "Pick at least one day."
-      : "Written into " + trackerTemplateNames(w, from).join(", ") + " in Routines & lists, so those days get it by themselves." +
-        " These run out when the year ends; you are reminded in December.";
   };
   const hintLine = el("div", {class: "hint"});
   const drawKinds = () => {
@@ -23184,14 +23610,15 @@ function openTrackerWizard(onDone, path) {
   const save = () => {
     const k = keyOf();
     if (!k) { notify("Give it a name first.", "warn"); name.focus(); return; }
-    if (often === "weekly" && !days.size) { notify("Pick at least one day.", "warn"); return; }
+    const when = pick.value();
+    if (when && when.invalid) { notify(when.invalid, "warn"); return; }
     closeModal();
-    onDone(k + "::", whenOf());
+    onDone(k + "::", when);
   };
   name.addEventListener("input", sync);
   setsIn.addEventListener("input", sync);
   name.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); save(); } });
-  drawKinds(); drawWhen(); sync();
+  drawKinds(); sync();
   modal({
     center: true, title: "New tracker", hint: "a line you fill in on a day",
     body: el("div", {},
@@ -23481,9 +23908,12 @@ function trackerCard(g) {
   const last = g.entries[g.entries.length - 1];
   card.append(el("div", {class: "trkhead"},
     el("h4", {}, trackerTitle(g.name)),
-    el("span", {class: "plain"}, trackerKindWords(g.code) + " · " + g.entries.length + " day" + (g.entries.length === 1 ? "" : "s")),
+    el("span", {class: "plain"}, trackerKindWords(g.code) + " · " + g.entries.length + " day" + (g.entries.length === 1 ? "" : "s") +
+      " · " + describeWhen(trackerWhen(g.name).when)),
     el("span", {style: "flex:1"}),
     el("button", {class: "textbtn", onclick: () => openDay(last)}, "Latest: " + humanDate(last.date) + (last.raw ? " · " + last.raw : "")),
+    el("button", {class: "textbtn", title: "Which days it comes on, kept in the journal templates",
+      onclick: () => openTrackerWhen(g.name, g.key)}, "When"),
     el("button", {class: "textbtn", title: "On every day and template, the history kept",
       onclick: () => renameTrackerPrompt(g.name)}, "Rename"),
     el("button", {class: "textbtn", title: "No more of it on new days; the history stays",
@@ -23535,6 +23965,7 @@ function trackerCard(g) {
 function viewTrackers() {
   const c = el("div", {class: "wrap"});
   c.append(vhead("Trackers", "What you write down on your days, over time"));
+  topUpTrackerSeries();
   const list = trackerList();
   if (!list.length) {
     c.append(el("div", {class: "card", style: "padding:16px"},
@@ -24991,6 +25422,7 @@ function showTaskDetail(path, block, space) {
     const val = trim(titleInput.value).replace(/\n/g, " ");
     const [st, rest] = splitState(val);
     if (st) { block.state = st; block.title = rest; } else { block.title = val; }
+    if (block.state) block.title = dotsToEst(block.title);
     createLinkedPages(block.title);
     block.body = notes.value.split("\n");
     while (block.body.length && !trim(block.body[block.body.length - 1])) block.body.pop();
@@ -28747,6 +29179,7 @@ function installServiceWorker() {
   }
   await seedIfEmpty();
   scanVerbs();
+  topUpTrackerSeries();               // before today's page is made, so it gets them
   ensureJournal(todayISO());
   await ensureVisibleLoaded();
   render();
