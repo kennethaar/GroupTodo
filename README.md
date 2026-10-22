@@ -813,6 +813,79 @@ job on the 31st lands on the 28th in February rather than rolling into March.
 The next one carries the title, the repeat and who it is assigned to, and leaves
 behind what belonged to that one doing of it - the dates, the done stamp.
 
+### Dates in what you type
+
+Capture reads the end of the line. `Call Bob fri 2pm` becomes *Call Bob*,
+scheduled for Friday at 14:00, and a toast says so with one button,
+**Keep the words**, for the times it guessed wrong. Nothing else asks.
+
+- **Days:** `today`, `tomorrow`, `fri`, `friday`, `next friday`, `next week`,
+  `in 3 days`, `in 2 weeks`, `24 dec`, `dec 24th`, `2026-12-24`, and Norwegian
+  too: `i morgen`, `fredag`, `neste fredag`, `om 2 uker`, `24. des`.
+- **Times:** `14:00`, `2pm`, `at 3` (the afternoon), `kl 14`, `kl. 14.30`. A time
+  with no day is the next time the clock says it.
+- **Deadline rather than scheduled:** `by fri`, `due fri`, `before 24 dec`,
+  `innen fredag`.
+- **Repeats:** `every monday`, `every 2 weeks`, which also puts the first one
+  on the calendar.
+- **Taskwarrior's words, anywhere in the line:** `due:fri`, `due:2026-11-03T14:30`,
+  `until:eom`, `remind:30m`, and the short forms `eow`, `eom`, `eoy`, `+3d`.
+
+Only the end of the line is read, and only what cannot be anything else:
+*Call Tom* keeps Tom, *Lie in the sun* keeps the sun, and *version 2.1* and
+*1/2 cup* stay numbers. A short form that is also a word (`tom`, `sun`, `sat`,
+`wed`) counts only after `on`, `by` or `due:`. Links at the end are kept
+aside, so `Call Bob tomorrow [[c/phone]]` is still tomorrow.
+
+It is written into the file the way dates always were, with the time after
+the link: `SCHEDULED:: [[2026-10-23]] 14:00`. Every older reader still finds
+the day. The task panel has a time beside each date, and moving a bar on the
+Timeline or making the next one of a repeat keeps the time.
+
+### Reminders, and how long until
+
+A task with a time gets a toast that long before it: 10 minutes by default,
+or `remind:: 30m`, `1h`, `1d`, `0` (at the time) or `none` on the task, which
+the panel sets too. It is the one thing in the app that speaks up on a clock,
+because you asked for it when you typed the time. It stays until you answer
+it: **Open**, **In 10 min** or **Done**. Press **Also when this tab is
+hidden** once and the browser shows it as a system notification when you are
+in another tab.
+
+A task with only a day gets no toast. The Due list already says so.
+
+Today opens with one line of countdowns, each a button into the thing: the
+next thing with a time (*Standup in 10 min*), the next deadline (*Report in 7
+days*), and the next birthday within two weeks. Birthdays live on the person,
+`birthday:: 1986-10-27`, or `birthday:: 10-27` when the year is nobody's
+business. With a year it says *Anna turns 40*. The day itself gets a toast,
+and birthdays are on the Calendar every year.
+
+There is no server, so a reminder comes from an open page. One that came due
+while the app was closed shows when you open it, up to two hours late. Which
+ones you have seen is kept on this device, like read state, and never in the
+files.
+
+### Letting late tasks go
+
+A task three months past its date is not a task any more. Taskwarrior's
+`until` lets it go, and so does this, in two ways, both written in the files:
+
+- **On one task:** `until:: [[2026-11-01]]`, typed as `until:fri` in capture or
+  set in the panel. The day after, it is cancelled.
+- **For the whole list:** **Vault & sync → Cancel my tasks once they are more
+  than N days late**, stored as `expire_after_days::` in `pages/GTD.md`, per
+  space. Any task of yours that far past its deadline (or its scheduled day,
+  when it has no deadline) is cancelled.
+
+The second one only touches your own tasks: ones you wrote, or that were
+handed to you. It never touches somebody else's in a shared folder, never a
+Waiting for (being late is the other person's doing, and chasing it is the
+point), and never a repeating one. Expired tasks are struck out, not deleted,
+with `expired::` saying when. The toast that says so has **Undo**, which marks
+them `expire:: never` so they are not cancelled again the next time the app
+opens.
+
 ### Dates in your calendar
 
 Anything with a date gets **Add to calendar**, and **Planned** sends the whole
@@ -1596,6 +1669,7 @@ The markdown is identical either way.
 `v c` calendar · `v g` graph ·
 `v t` timeline · `v r` report · `f f` focus ·
 `ctrl-z` undo a delete · **Copy link** on any task or page ·
+in capture, `fri 2pm` · `by fri` · `every monday` · `until:eom` · `remind:30m` ·
 `g d` re-surface. In the outline: `Enter` splits the line where the caret is,
 `Tab`/`Shift-Tab` indent,
 `Ctrl-Enter` cycle state, `[[` a list of pages, `↑`/`↓` between blocks,
@@ -1696,6 +1770,11 @@ body, headings and buttons, so one cannot creep back in.
   update anything already in your calendar.
 - **Notifications arrive on opening the space**, not while it is closed. There is
   no server to push one, and nothing is emailed.
+- **Reminders need the app open.** A tab in the background is enough, but a
+  closed one cannot remind you. A missed one shows on opening, up to two hours
+  late.
+- **A time goes to your calendar as a whole day.** Add to calendar still sends
+  all-day entries, even for a task with a time.
 - **An invite cannot carry a folder.** Browsers forbid transferring a directory
   handle, so a folder-backed space needs the folder shared separately and one
   button pressed at the other end.
