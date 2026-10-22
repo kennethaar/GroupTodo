@@ -7562,6 +7562,37 @@ document.addEventListener("click", e => {
   openAppLink(link.getAttribute("href"));
 }, true);
 
+/* file:///C:%5CUsers%5C... -- a folder or document on this machine or a share,
+   the way Explorer and Obsidian hand them out. A page opened as a file may
+   follow it; a page served over http(s) is not let near the disk by any
+   browser, so there the path goes to the clipboard, ready for Explorer's
+   address bar or Win+R. */
+const FILE_LINK_RE = /^file:/i;
+function filePathOf(raw) {
+  let p = String(raw).replace(/^file:/i, "");
+  try { p = decodeURIComponent(p); } catch (_) {}
+  p = p.replace(/\\/g, "/");
+  if (/^\/\/\/?[a-z]:/i.test(p)) return p.replace(/^\/+/, "").replace(/\//g, "\\");  // C:\Users\...
+  if (/^\/\/[^/]/.test(p)) return p.replace(/\//g, "\\");                           // \\server\share
+  return p.replace(/^\/\/(?=\/)/, "");                                              // /home/...
+}
+// The same place written the one way every browser reads: forward slashes,
+// spaces and the rest escaped once.
+function fileHref(raw) {
+  const p = filePathOf(raw).replace(/\\/g, "/");
+  const url = /^[a-z]:/i.test(p) ? "file:///" + p : p.startsWith("//") ? "file:" + p : "file://" + p;
+  return encodeURI(url).replace(/#/g, "%23").replace(/\?/g, "%3F");
+}
+document.addEventListener("click", e => {
+  const link = e.target.closest && e.target.closest("a.filelink[href]");
+  if (!link) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const href = link.getAttribute("href");
+  if (CAP.fromFile) { window.open(href, "_blank"); return; }
+  copyText(filePathOf(href), "Path copied. Browsers do not open local files from a web page: paste it into Explorer.", "Local path");
+}, true);
+
 function resolveAssets(root) {
   for (const node of $$("[data-asset]", root || document)) {
     if (node.dataset.assetDone) continue;
@@ -7707,6 +7738,12 @@ function geoToOSM(rest) {
   return "https://www.openstreetmap.org/search?query=" + encodeURIComponent(q || where);
 }
 
+// href arrives escaped for HTML, label already escaped and ready to show.
+function fileLinkHTML(href, label) {
+  const raw = unesc(href);
+  const tip = CAP.fromFile ? filePathOf(raw) : filePathOf(raw) + "  (click to copy the path)";
+  return `<a class="filelink" href="${esc(fileHref(raw))}" title="${esc(tip)}">\u{1F4C1} ${label}</a>`;
+}
 function renderInline(text) {
   let h = esc(text || "");
   /* ![name](assets/x.png) and [name](assets/x.pdf) -- the markdown a dropped
@@ -7727,7 +7764,16 @@ function renderInline(text) {
         ? hold(`<a class="asset-file" href="${href}" target="_blank" rel="noopener">${label}</a>`)
         : APP_LINK_RE.test(href)
           ? hold(`<a class="applink" href="${appLinkHref(href)}" title="${href}">${label}</a>`)
-          : all);
+          : FILE_LINK_RE.test(href)
+            ? hold(fileLinkHTML(href, label))
+            : all);
+  // file:///... written bare. Up to the first space, so a path with spaces in
+  // it is written %20 or inside [name](...).
+  h = h.replace(/(^|[\s(])(file:\/\/[^\s<]+)/gi, (all, sp, u) => {
+    const tail = (/[.,;:!?)]+$/.exec(u) || [""])[0];
+    const addr = tail ? u.slice(0, -tail.length) : u;
+    return sp + hold(fileLinkHTML(addr, esc(filePathOf(unesc(addr))))) + tail;
+  });
   /* mailto:, tel:, sms:, geo:, msteams: and teams: written bare in a line. Held
      like the rest, so the #tag and *italic* rules cannot get into an address,
      and a trailing full stop or bracket stays part of the sentence. */
@@ -9829,6 +9875,63 @@ async function openSourceFile(path) {
     notify(String((e && e.message) || e), "warn");
     return false;
   }
+}
+
+/* Where an area's folder sits on this computer. A folder you picked is handed
+   to the page by name only -- the browser never says where it is on disk -- so
+   it is asked once, per area and per device, and kept here. serve.py says
+   where its vault is, so that one is only asked when the server will not. */
+const diskRootKey = space => "diskroot:" + (space || "");
+function tidyDiskPath(text) {
+  let p = trim(String(text || "")).replace(/^["']|["']$/g, "");
+  if (FILE_LINK_RE.test(p)) p = filePathOf(p);
+  return p.replace(/[\\/]+$/, "");
+}
+async function diskRootOf(space) {
+  const kept = PREF.get(diskRootKey(space));
+  if (kept) return kept;
+  const b = space === V.space ? V.backend : null;
+  if (b && b.kind === "http") {
+    const sp = Spaces.get(space);
+    try {
+      const r = await fetch(String(sp && sp.server || "").replace(/\/$/, "") + "/api/ping");
+      const vault = r.ok && (await r.json()).vault;
+      if (vault) return vault;
+    } catch (_) {}
+  }
+  return null;
+}
+function askDiskRoot(space, then) {
+  const sp = Spaces.get(space);
+  const name = (V.backend && V.backend.label) || (sp && sp.label) || space;
+  promptInput({
+    title: "Where is " + name + " on this computer?",
+    label: "The folder's full path, as Explorer's address bar shows it",
+    value: PREF.get(diskRootKey(space)) || "",
+    placeholder: "C:\\Users\\you\\OneDrive\\" + name,
+    hint: "Asked once for this area on this device. The browser knows the folder by name only.",
+    cta: "Save",
+    onSave: v => {
+      const p = tidyDiskPath(v);
+      if (!p) return;
+      PREF.set(diskRootKey(space), p);
+      notify("Kept: " + space + " is " + p + " here.");
+      if (then) then(p);
+    },
+  });
+}
+/* Explorer with the page's file selected. The browser may not start Explorer
+   itself, so it goes as a line for Win+R: paste it and press Enter. Off
+   Windows the plain path is what there is. */
+async function revealInExplorer(path, space = V.space) {
+  const root = await diskRootOf(space);
+  if (!root) return askDiskRoot(space, () => revealInExplorer(path, space));
+  const windows = /^[a-z]:|^\\\\/i.test(root);
+  const full = windows ? root + "\\" + path.replace(/\//g, "\\") : root + "/" + path;
+  if (!windows) return copyText(full, "Path copied: " + full, "Path to " + pageTitle(path));
+  return copyText('explorer /select,"' + full + '"',
+    "Copied. Press Win+R, then Ctrl+V and Enter: Explorer opens with the file selected.",
+    "Paste this into Win+R");
 }
 
 /* The same bargain for a block of text: the clipboard where the browser allows
@@ -16626,7 +16729,7 @@ function linkKnownNames(text) {
   for (const [f, n] of firsts) if (n) wants.push({word: f, ref: n.ref, label: f});
   wants.sort((a, b) => b.word.length - a.word.length);
   // Only plain words are touched: not what is already a link, code or an address.
-  const parts = src.split(/(\[\[[^\]]*(?:\]\[[^\]]*)?\]\]|`[^`]*`|https?:\/\/\S+|(?:tel|sms):(?:\/\/)?\+?\d[\d\s\-.()]*\d|(?:mailto|tel|sms|geo|msteams|teams):\S+|\]\])/i);
+  const parts = src.split(/(\[\[[^\]]*(?:\]\[[^\]]*)?\]\]|`[^`]*`|https?:\/\/\S+|file:\S+|(?:tel|sms):(?:\/\/)?\+?\d[\d\s\-.()]*\d|(?:mailto|tel|sms|geo|msteams|teams):\S+|\]\])/i);
   const linked = new Set(linksIn(src).map(l => trim(l.split("][")[0]).toLowerCase()));
   for (let i = 0; i < parts.length; i += 2) {
     let seg = parts[i];
@@ -22773,6 +22876,8 @@ function openPageMenu(path) {
     kind === "checklist" && !isStateList(path) ? [isProjectTemplate(path) ? "New project from this" : "Add this to a page", null, () => openRunChecklist(path)] : null,
     isJournalPath(path) ? null : ["Share", "this page, without the rest of the area", () => openExportPage(path)],
     ["Copy path", "for somebody who shares the folder", () => copyPathTo(path)],
+    ["Show in Explorer", "a line for Win+R that opens the folder with this file selected", () => revealInExplorer(path)],
+    ["Where the folder is", "on this computer, for Show in Explorer", () => askDiskRoot(space)],
     V.backend && V.backend.openFile ? ["Open the file", "in the editor on the machine running the server", () => openSourceFile(path)] : null,
     ["Edit the markdown", "the whole file as text", () => editAllText({space, path, id: null})],
     isJournalPath(path) ? null : ["Rename", "and the folder it is in", () => renamePrompt(path)],
@@ -23010,6 +23115,8 @@ function viewPage() {
     el("div", {class: "acts"},
       el("button", {class: "btn sm ghost", title: "A link you can paste into chat or email",
         onclick: () => copyLinkTo(deepLink(path), pageTitle(path))}, "Copy link"),
+      el("button", {class: "btn sm ghost", title: "Show the file in Explorer: copies a line for Win+R",
+        onclick: () => revealInExplorer(path)}, "Explorer"),
       isJournalPath(path) ? null : el("button", {class: "btn sm ghost",
         onclick: () => go("pages", {sub: "mindmap", graphFocus: (V.space || "") + "\u0000" + path})}, "Mind map"),
       el("button", {class: "btn sm ghost", title: "More", "aria-label": "More", onclick: () => openPageMenu(path)}, "⋯"))));
