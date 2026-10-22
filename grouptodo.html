@@ -2218,6 +2218,15 @@ function dateDiffDays(d1, d2) {           // d2 - d1, in days
   if (!a || !b) return null;
   return Math.round((b - a) / 86400000);
 }
+/* How far off a due date is, counted the way you scan a list: "3 d late",
+   "in 5 d". Today, tomorrow and yesterday already say it in the date itself,
+   and beyond a month the number stops meaning anything. */
+function relDue(iso) {
+  const n = dateDiffDays(todayISO(), iso);
+  if (n == null || Math.abs(n) <= 1) return "";
+  if (n < 0) return -n + " d late";
+  return n <= 30 ? "in " + n + " d" : "";
+}
 function humanDate(iso) {
   const d = parseISO(iso); if (!d) return iso || "";
   const t = todayISO();
@@ -4866,6 +4875,24 @@ const contextOf = text => {
 };
 const hasContextLink = text => /\[\[c\/[^\]]+\]\]/.test(text || "");
 
+/* A line's context, or the nearest one above it. Writing
+     - [[c/phone]]
+       - TODO Ring the plumber
+       - TODO Chase the quote
+   puts both calls @phone without repeating the link on every line, the same
+   way a [[1/project]] above a line files it. Own link first: a line that says
+   where it is done overrides the heading it sits under. The parent pointer is
+   set by flattenBlocks, which every list goes through. */
+function blockContext(b) {
+  for (let p = b; p; p = p._parent) {
+    const c = contextOf(p.title);
+    if (c) return c;
+  }
+  return null;
+}
+/* True when the context shown for a line comes from a line above it. */
+const contextInherited = b => !!b && !hasContextLink(b.title) && !!blockContext(b);
+
 /* target -> vault path (creating nothing) */
 function resolveWikiPath(target) {
   target = trim(target).replace(/\.md$/i, "");
@@ -5604,7 +5631,8 @@ function nearestChecklistAncestor(block) {
    empty. Indexed under both the link's own ref and its bare title, which is how
    nearestProjectAncestor finds them written. */
 function journalActionsIndex() {
-  return memo("journalActionsIndex", () => {
+  // Per area: it is read from inside inSpace() as well, and one area's index is no use to another.
+  return memo("journalActionsIndex:" + (V.space || ""), () => {
     const by = new Map();
     const add = (key, row) => {
       if (!key) return;
@@ -5618,13 +5646,13 @@ function journalActionsIndex() {
         if (!b.state || isMessage(b) || hasOpenDescendant(b)) continue;
         const link = nearestProjectAncestor(b); if (!link) continue;
         const row = {path, block: b, state: b.state, title: b.title,
-                     context: contextOf(b.title), due: dueDate(b),
+                     context: blockContext(b), due: dueDate(b),
                      age: blockAge(b) ?? dateDiffDays(baseName(path), todayISO()),
                      added: addedDate(b) || baseName(path),
                      assignee: assigneeOf(b), by: blockProp(b, "by"),
                      owner: journalOwnerOf(path) || null,
                      missingVerb: !startsWithVerb(b.title),
-                     missingContext: !hasContextLink(b.title)};
+                     missingContext: !blockContext(b)};
         add(link.ref.toLowerCase(), row);
         add(link.title.toLowerCase(), row);
       }
@@ -5719,8 +5747,8 @@ function leafActionsHere() {
         assignee, mine, owner: journalOwnerOf(path) || null,
         tourStep, checklist: fromList ? fromList.title : null,
         area: journal && !linked ? (nearestAreaAncestor(b) || {}).title || null : null,
-        context: contextOf(b.title),
-        missingContext: !authored && !hasContextLink(b.title),
+        context: blockContext(b),
+        missingContext: !authored && !blockContext(b),
         missingVerb: !authored && !startsWithVerb(b.title),
         // Journal items carry no Added:: stamp (the filename is the date),
         // so fall back to the journal's own date to keep "oldest first" honest.
@@ -5768,7 +5796,7 @@ function stalestActiveProjects(n = CFG.weedCount) {
     for (const b of flattenBlocks(page.blocks)) {
       if (!OPEN_STATES[b.state]) continue;
       anyTodo = true;
-      const ctx = contextOf(b.title);
+      const ctx = blockContext(b);
       const missingVerb = !startsWithVerb(b.title);
       if (!ctx) noContext = true;
       if (missingVerb) noVerb = true;
@@ -11445,7 +11473,7 @@ function allTasksHere() {
       out.push({path, block: b, state: b.state, title: b.title,
         project: journal ? (linked ? linked.title : null) : pageTitle(path),
         projectPath: journal ? (linked ? findExistingPage(linked.ref) : null) : path,
-        context: contextOf(b.title), due: dueDate(b), assignee: assigneeOf(b, page),
+        context: blockContext(b), due: dueDate(b), assignee: assigneeOf(b, page),
         by: blockProp(b, "by"), owner: journalOwnerOf(path) || null,
         added: addedDate(b) || (journal ? baseName(path) : null)});
     }
@@ -11555,7 +11583,7 @@ function doneTodayHere() {
     walkBlocks(page.blocks, b => {
       if (b.state !== "DONE" || isMessage(b)) return;
       if (closedOn(b) !== today) return;
-      out.push({path, block: b, state: "DONE", title: b.title, context: contextOf(b.title),
+      out.push({path, block: b, state: "DONE", title: b.title, context: blockContext(b),
                 due: dueDate(b), assignee: assigneeOf(b), project: isJournalPath(path) ? null : pageTitle(path),
                 projectPath: isJournalPath(path) ? null : path});
     });
@@ -14346,15 +14374,22 @@ function completedSinceHere(from) {
     // bullets above a task and that needs each block's parent.
     for (const b of flattenBlocks(page.blocks)) {
       if (b.state !== "DONE" || isMessage(b)) continue;
-      const when = closedOn(b);
       const journal = isJournalPath(path);
+      /* No stamp -- marked DONE by hand, or before stamping existed. On a day
+         page the day itself is a fair answer: the task was written that day and
+         most likely closed within a few. It is marked approximate wherever it
+         shows, so it never passes for a recorded date. A loose page has no day
+         to go by, and stays undated. */
+      const stamped = closedOn(b);
+      const approx = !stamped && journal && /^\d{4}-\d{2}-\d{2}$/.test(baseName(path));
+      const when = stamped || (approx ? baseName(path) : null);
       const linked = journal ? nearestProjectAncestor(b) : null;
       const projectPath = journal ? (linked ? findExistingPage(linked.ref) : null) : path;
       out.push({
         path, block: b, state: "DONE", title: b.title,
-        when, undated: !when,
+        when, undated: !when, approx,
         who: closedBy(b) || journalOwnerOf(path) || "",
-        context: contextOf(b.title), due: dueDate(b), assignee: assigneeOf(b),
+        context: blockContext(b), due: dueDate(b), assignee: assigneeOf(b),
         org: orgOfBlock(path, b, projectPath),
         project: journal ? (linked ? linked.title : null) : pageTitle(path),
         projectPath,
@@ -14439,6 +14474,7 @@ function viewReport() {
   const all = completedSince(win.from);
   const dated = all.filter(r => !r.undated && r.when >= win.from && r.when <= win.to);
   const undated = all.filter(r => r.undated).length;
+  const approxShown = dated.filter(r => r.approx).length;
 
   const goReport = patch => go("projects", Object.assign({sub: "report"},
     {reportRange: key, reportWho: state.reportWho, reportSpace: state.reportSpace, reportBy: by}, patch));
@@ -14506,18 +14542,24 @@ function viewReport() {
   }
 
   // Never quietly drop work: say what has no date and why it cannot be placed.
+  if (approxShown) c.append(el("div", {class: "section quiet"},
+    el("div", {style: "color:var(--fg3);font-size:12.5px"},
+      (approxShown === 1 ? "1 of these was marked DONE without a done date, so it is placed on the day page it was"
+                         : approxShown + " of these were marked DONE without a done date, so they are placed on the day page they were") +
+      " written on and marked approx.")));
   if (undated) c.append(el("div", {class: "section quiet"},
     el("div", {style: "color:var(--fg3);font-size:12.5px"},
       undated + " finished task(s) carry no date, so they are not counted above. " +
       "A task ticked off in the app is stamped done_by:: with the day; one marked " +
-      "DONE by hand in the file is not, and nothing can tell when that happened.")));
+      "DONE by hand on a page other than a day page is not, and nothing can tell when that happened.")));
   return c;
 }
 
 function reportRow(r) {
   return el("button", {class: "reprow",
     onclick: () => inSpace(r.space, () => openTaskDetail(r.path, r.block, r.space))},
-    el("span", {class: "when"}, humanDate(r.when)),
+    el("span", {class: "when", title: r.approx ? "No done date was recorded - this is the day page it was written on" : null},
+      (r.approx ? "approx. " : "") + humanDate(r.when)),
     el("span", {class: "what", html: renderInline(titleForRow(r.title))}),
     el("span", {class: "marks"},
       r.org ? el("span", {class: "chip"}, r.org) : null,
@@ -14533,7 +14575,7 @@ function copyReport(rows, window_, who, by) {
   for (const [k, items] of reportGroups(rows, by || "customer")) {
     lines.push("## " + reportGroupLabel(k, by || "customer") + " (" + items.length + ")");
     for (const r of items)
-      lines.push("- " + plainTitle(r.title) + "  - " + r.when + (r.who && !who ? ", " + r.who : ""));
+      lines.push("- " + plainTitle(r.title) + "  - " + (r.approx ? "approx. " : "") + r.when + (r.who && !who ? ", " + r.who : ""));
     lines.push("");
   }
   copyText(lines.join("\n"), rows.length + " finished task(s) copied.");
@@ -16596,9 +16638,12 @@ function openContextChipMenu(a) {
       () => inSpace(a.space, () => replaceContextLink(a.path, a.block, ctx))]);
     first = false;
   }
-  rows.push([MENU_KEYS[i++] || "", "Take the context off", "the words stay",
+  // Inherited from the line above: there is nothing on this line to take off.
+  const inherited = contextInherited(a.block);
+  if (!inherited) rows.push([MENU_KEYS[i++] || "", "Take the context off", "the words stay",
     () => inSpace(a.space, () => removeContextLink(a.path, a.block))]);
-  chipMenu("@" + a.context, "the context on this action", rows);
+  chipMenu("@" + a.context, inherited ? "from the line above - changing it here gives this line its own"
+                                      : "the context on this action", rows);
 }
 
 function openProjectChipMenu(a) {
@@ -16635,14 +16680,17 @@ function openDueChipMenu(a) {
 
 function chipsFor(a) {
   const out = [];
-  if (a.context) out.push(el("span", {class: "chip ctx b", title: "@" + a.context + " - go there, change it, take it off",
+  if (a.context) out.push(el("span", {class: "chip ctx b",
+    title: "@" + a.context + (contextInherited(a.block) ? " - from the line above. Go there, or give this line its own"
+                                                        : " - go there, change it, take it off"),
     onclick: e => {e.stopPropagation(); openContextChipMenu(a);}}, "@" + a.context));
   if (a.project) out.push(el("span", {class: "chip proj b", title: a.project + " - open it, move this, take it out",
     onclick: e => {e.stopPropagation(); openProjectChipMenu(a);}}, a.project));
   if (a.due) {
     const cls = a.due < todayISO() ? "late" : a.due === todayISO() ? "today" : "";
+    const rel = OPEN_STATES[a.state] ? relDue(a.due) : "";
     out.push(el("span", {class: "chip b " + cls, title: "Change or clear the date",
-      onclick: e => {e.stopPropagation(); openDueChipMenu(a);}}, humanDate(a.due)));
+      onclick: e => {e.stopPropagation(); openDueChipMenu(a);}}, humanDate(a.due) + (rel ? " · " + rel : "")));
   }
   if (a.age != null && a.age > 0) out.push(el("span", {class: "chip age"}, a.age + "d"));
   const msgs = messagesOf(a.block).length;
@@ -18446,7 +18494,7 @@ function flyRows() {
     {k: "due", ic: "📅", label: "Due", val: dueDate(block) ? humanDate(dueDate(block)) : "None", key: "Alt+D", date: true,
      opts: [[todayISO(), "Today"], [shiftISO(todayISO(), 1), "Tomorrow"], [nextWeekday(1), "Monday"],
             [shiftISO(todayISO(), 7), "In a week"], ["", "No date"]]},
-    {k: "ctx", ic: "@", label: "Context", val: contextOf(block.title) ? "@" + contextOf(block.title) : "None", key: "@@ · Alt+C",
+    {k: "ctx", ic: "@", label: "Context", val: contextOf(block.title) ? "@" + contextOf(block.title) : blockContext(block) ? "@" + blockContext(block) + " (from above)" : "None", key: "@@ · Alt+C",
      opts: [...ctxFolderOrder(allContextNames()).map(c => [c, contextLabel(c)]), ["", "No context"]]},
     {k: "who", ic: ICON.people, label: waiting ? "Waiting on" : "Person",
      val: waiting && (!who || samePerson(who, whoAmI())) ? "Pick someone" : who || "Me", key: "@ · Alt+P",
@@ -20017,11 +20065,39 @@ function projectTags(r) {
   return out;
 }
 
+/* What a project has finished and dropped, counted the way its open steps are:
+   lines on its own page, and lines on day pages that name it. Dropped is kept
+   apart from done, so cancelling half a project never reads as progress. */
+function projectTally(r) {
+  return inSpace(r.space, () => {
+    let done = 0, dropped = 0;
+    const count = b => {
+      if (isMessage(b)) return;
+      if (b.state === "DONE") done++;
+      else if (b.state === "CANCELLED") dropped++;
+    };
+    const page = getPage(r.path);
+    if (page) flattenBlocks(page.blocks).forEach(count);
+    for (const row of journalActionsFor(r.path)) count(row.block);
+    return {done, dropped};
+  });
+}
+
+/* "4 open · 12 done · 2 dropped": the numbers you weigh a project by. */
+function projectCountChips(open, tally) {
+  return [
+    el("span", {class: "chip"}, open + " open"),
+    tally.done ? el("span", {class: "chip"}, tally.done + " done") : null,
+    tally.dropped ? el("span", {class: "chip", title: "Cancelled, and not counted as done"}, tally.dropped + " dropped") : null,
+  ];
+}
+
 function projectRow(r) {
   const info = inSpace(r.space, () => ({title: pageTitle(r.path), area: areaOfProject(r.path),
     page: getPage(r.path)}));
   const acts = projectActions(r);
-  const done = inSpace(r.space, () => flattenBlocks(info.page.blocks).filter(b => b.state === "DONE").length);
+  const tally = projectTally(r);
+  const done = tally.done;
   const open = openOf(acts);
   const total = open.length + done;
   const who = [...new Set([...open.map(a => a.assignee).filter(Boolean), ...projectPeople(r)])];
@@ -20032,7 +20108,7 @@ function projectRow(r) {
       el("div", {class: "t-meta"},
         ...projectOrgs(r).map(o => el("span", {class: "chip"}, o)),
         info.area ? el("span", {class: "chip proj"}, info.area) : null,
-        el("span", {class: "chip"}, open.length + " open"),
+        ...projectCountChips(open.length, tally),
         ...projectTags(r), spaceTag(r.space)),
       projectFieldPills(r, {skip: ["status"]})),
     el("div", {class: "avs"}, ...who.slice(0, 4).map(n => avatarNode(n, 24))),
@@ -20697,7 +20773,7 @@ function tasksOfTypeSections(listPath) {
       const m = /\[\[([^\]]+)\]\]/.exec(blockProp(b, "stage") || "");
       if (!m || findExistingPage(m[1]) !== listPath) continue;
       rows.push({path, block: b, state: b.state, title: b.title, space: V.space,
-        context: contextOf(b.title), due: dueDate(b), stage: stageLabel(b) || ""});
+        context: blockContext(b), due: dueDate(b), stage: stageLabel(b) || ""});
     }
   }
   if (!rows.length) return [el("div", {class: "section"}, emptyCard(
@@ -20722,7 +20798,7 @@ function projectCard(r, title, stakes, more, also) {
   return el("div", {class: "pcard", data: {q: [title, area, ...(also || [])].join(" ").toLowerCase()}},
     parentLine(r.space, r.path),
     el("h4", {onclick: () => previewPage(r.space, r.path)}, title),
-    el("div", {class: "t-meta"}, el("span", {class: "chip"}, open + " open"),
+    el("div", {class: "t-meta"}, ...projectCountChips(open, projectTally(r)),
       area ? el("span", {class: "chip"}, area) : null, spaceTag(r.space)),
     el("div", {class: "stakes"}, ...stakes),
     more || null);
@@ -26274,7 +26350,7 @@ function showTaskDetail(path, block, space) {
   state.selected = block.id;
   const a = {
     path, block, state: block.state, title: block.title,
-    context: contextOf(block.title), due: dueDate(block),
+    context: blockContext(block), due: dueDate(block),
     age: blockAge(block), added: addedDate(block),
   };
   const titleInput = el("textarea", {}); titleInput.value = block.title;
@@ -28713,7 +28789,7 @@ function relAll() {
       walkBlocks(page.blocks, b => {
         if (!b.state || isMessage(b)) return;
         rows.push({path, space: V.space, block: b, state: b.state, title: b.title,
-          context: contextOf(b.title), due: dueDate(b), age: blockAge(b), assignee: assigneeOf(b)});
+          context: blockContext(b), due: dueDate(b), age: blockAge(b), assignee: assigneeOf(b)});
       });
     }
     return rows;
