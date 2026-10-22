@@ -27,8 +27,10 @@ offered those when you arrive.
 To bring someone in: **areas menu (top right) → Invite somebody**, or send them
 `grouptodo.html`, the folder name and [docs/setup-sheet.html](docs/setup-sheet.html).
 
-**Coming from Obsidian or Logseq?** Give [docs/vault-format.md](docs/vault-format.md)
-to an AI assistant along with a few sample notes, and ask it to write a converter.
+**Coming from Obsidian or Logseq?** Open `GroupToDo-Importer.html` in Edge or Chrome. It reads your
+old vault (never changing it), asks what your folders, namespaces and tags mean, shows a test run
+with every page before and after, and writes a GroupToDo folder into a new, empty folder. The
+format it writes is described in [docs/vault-format.md](docs/vault-format.md).
 
 ---
 

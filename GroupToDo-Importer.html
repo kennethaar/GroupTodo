@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<!-- Same promise as grouptodo.html: nothing is loaded from anywhere and
+     nothing is sent anywhere. The importer reads one folder and writes
+     another, both on this computer. -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'none';
+  script-src 'unsafe-inline';
+  style-src 'unsafe-inline';
+  img-src data: blob:;
+  form-action 'none';
+  base-uri 'none'">
+<title>GroupToDo Importer</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236aa3ff'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11.5' stroke='%2306101f' stroke-width='3.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f6f6f3; --bg2:#ffffff; --bg3:#f0efea; --bg4:#e6e5df;
+  --fg:#1d1d1b; --fg2:#4d4d48; --fg3:#6b6b66;
+  --border:#e4e3de; --border2:#d3d2cc;
+  --accent:#2f6fde; --accent2:#2559b8; --accent-fg:#ffffff; --accent-soft:#e7effc;
+  --ok:#2e8a57; --warn:#a8710f; --danger:#c4402f;
+  --late-soft:#fbeae7; --wait-soft:#fbf1dc; --ok-soft:#e3f3ea;
+  --radius:12px; --radius-sm:8px;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#161615; --bg2:#1f1f1d; --bg3:#272725; --bg4:#31312e;
+    --fg:#ecebe6; --fg2:#c3c2bc; --fg3:#9a9993;
+    --border:#33332f; --border2:#45453f;
+    --accent:#6c9cf0; --accent2:#8bb0f4; --accent-fg:#0d1626; --accent-soft:#1f2b40;
+    --ok:#5fc08a; --warn:#e0aa45; --danger:#ec7a68;
+    --late-soft:#3a201c; --wait-soft:#3a2f18; --ok-soft:#1b3326;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161615; --bg2:#1f1f1d; --bg3:#272725; --bg4:#31312e;
+  --fg:#ecebe6; --fg2:#c3c2bc; --fg3:#9a9993;
+  --border:#33332f; --border2:#45453f;
+  --accent:#6c9cf0; --accent2:#8bb0f4; --accent-fg:#0d1626; --accent-soft:#1f2b40;
+  --ok:#5fc08a; --warn:#e0aa45; --danger:#ec7a68;
+  --late-soft:#3a201c; --wait-soft:#3a2f18; --ok-soft:#1b3326;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg)}
+body{font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:28px 16px 80px}
+h1{font-size:24px;margin:0 0 4px;letter-spacing:-.01em}
+.lede{color:var(--fg2);margin:0 0 24px}
+.step{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin:0 0 16px}
+.step.off{opacity:.55;pointer-events:none}
+.step h2{font-size:16px;margin:0 0 4px;display:flex;align-items:center;gap:10px}
+.step h2 .n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;
+  background:var(--accent-soft);color:var(--accent);font-size:13px;font-weight:700;flex:none}
+.step .hint{color:var(--fg3);font-size:13.5px;margin:0 0 12px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{font:inherit;font-size:14px;border:1px solid var(--border2);background:var(--bg2);color:var(--fg);
+  border-radius:var(--radius-sm);padding:7px 14px;cursor:pointer}
+.btn:hover{background:var(--bg3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.primary:hover{background:var(--accent2)}
+.btn:disabled{opacity:.5;cursor:default}
+label.field{display:block;margin:0 0 12px}
+label.field span{display:block;font-size:13px;color:var(--fg2);margin-bottom:4px}
+input[type=text],select{font:inherit;font-size:14px;color:var(--fg);background:var(--bg);
+  border:1px solid var(--border2);border-radius:var(--radius-sm);padding:6px 10px;max-width:100%}
+input[type=text]{width:320px}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:14px;margin:0 0 8px}
+.check input{margin-top:4px}
+.found{font-size:14px;color:var(--fg2);margin-top:10px}
+.found b{color:var(--fg)}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0 14px}
+th{text-align:left;font-size:12px;font-weight:600;color:var(--fg3);text-transform:uppercase;letter-spacing:.04em;
+  padding:6px 8px;border-bottom:1px solid var(--border)}
+td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
+td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--fg2);width:60px}
+td .ex{display:block;font-size:12px;color:var(--fg3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:360px}
+.tablewrap{overflow-x:auto}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:8px 0 16px}
+.card{background:var(--bg3);border-radius:var(--radius-sm);padding:10px 12px}
+.card b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+.card span{font-size:12.5px;color:var(--fg2)}
+.issues{list-style:none;margin:0 0 14px;padding:0}
+.issues li{padding:8px 12px;border-radius:var(--radius-sm);margin:0 0 6px;font-size:14px;background:var(--wait-soft)}
+.issues li.ok{background:var(--ok-soft)}
+.issues li details{margin-top:4px}
+.issues li summary{cursor:pointer;color:var(--fg2);font-size:13px}
+.issues li pre{white-space:pre-wrap;font:12px/1.5 var(--mono);margin:6px 0 0;color:var(--fg2)}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:700px){.compare{grid-template-columns:1fr}}
+.compare pre{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);
+  font:12px/1.5 var(--mono);padding:10px;margin:4px 0 0;white-space:pre-wrap;word-break:break-word;max-height:420px;overflow:auto}
+.compare h3{font-size:12px;color:var(--fg3);margin:0;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.msg{padding:10px 14px;border-radius:var(--radius-sm);font-size:14px;margin:10px 0 0}
+.msg.err{background:var(--late-soft)}
+.msg.ok{background:var(--ok-soft)}
+.msg.warn{background:var(--wait-soft)}
+.progress{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden;margin:10px 0 4px}
+.progress i{display:block;height:100%;width:0;background:var(--accent);transition:width .15s}
+code{font-family:var(--mono);font-size:.92em;background:var(--bg3);padding:1px 5px;border-radius:4px}
+.theme{position:fixed;top:12px;right:12px}
+</style>
+</head>
+<body>
+<button class="btn theme" id="theme" title="Light or dark">◐</button>
+<div class="wrap">
+  <h1>GroupToDo Importer</h1>
+  <p class="lede">Turns a Logseq or Obsidian vault into a GroupToDo folder. Your old vault is only read, never
+    changed: everything is written into a new, empty folder you choose at the end.</p>
+
+  <section class="step" id="s1">
+    <h2><span class="n">1</span>Your old vault</h2>
+    <p class="hint">The folder Logseq or Obsidian opens: for Logseq the one with <code>journals</code> and
+      <code>pages</code> in it, for Obsidian the one with <code>.obsidian</code>.</p>
+    <div class="row">
+      <button class="btn primary" id="pickSource">Choose the folder…</button>
+      <select id="kind" hidden>
+        <option value="logseq">It is a Logseq vault</option>
+        <option value="obsidian">It is an Obsidian vault</option>
+      </select>
+    </div>
+    <div class="found" id="sourceInfo"></div>
+  </section>
+
+  <section class="step off" id="s2">
+    <h2><span class="n">2</span>You</h2>
+    <p class="hint">Day pages in GroupToDo belong to a person, so your journal goes into a folder with your name.</p>
+    <label class="field"><span>Your full name, as you want it shown</span>
+      <input type="text" id="me" placeholder="Kari Nordmann" autocomplete="name"></label>
+    <label class="field"><span>Pages nobody has touched for a long time</span>
+      <select id="archiveYears">
+        <option value="0">Bring them in as they are</option>
+        <option value="1">Mark archived if untouched for 1 year</option>
+        <option value="2">Mark archived if untouched for 2 years</option>
+        <option value="3">Mark archived if untouched for 3 years</option>
+        <option value="5">Mark archived if untouched for 5 years</option>
+      </select></label>
+    <label class="check"><input type="checkbox" id="atContext">
+      <span>Read <code>@word</code> as a context, so <code>@phone</code> becomes <code>[[c/phone]]</code>.
+        Leave it off if you write e-mail addresses or @names in your notes.</span></label>
+  </section>
+
+  <section class="step off" id="s3">
+    <h2><span class="n">3</span>What each kind of page becomes</h2>
+    <p class="hint">In GroupToDo the folder a page sits in says what it is: a person, a project, a context.
+      Say what your folders, namespaces and tags mean. A tag wins over a folder. Anything left as
+      <i>Plain page</i> comes in under its own name.</p>
+    <div id="rules"></div>
+  </section>
+
+  <section class="step off" id="s4">
+    <h2><span class="n">4</span>Test the conversion</h2>
+    <p class="hint">Nothing is written. You see what would happen, what could not be carried over, and any page
+      side by side, before and after.</p>
+    <button class="btn primary" id="runTest">Run a test conversion</button>
+    <div id="preview"></div>
+  </section>
+
+  <section class="step off" id="s5">
+    <h2><span class="n">5</span>Write the new vault</h2>
+    <p class="hint">Choose an <b>empty</b> folder. Everything is written there; the old vault stays as it is.</p>
+    <div class="row">
+      <button class="btn primary" id="write">Choose an empty folder and write…</button>
+      <button class="btn" id="report" disabled>Download the report</button>
+    </div>
+    <div id="writeOut"></div>
+  </section>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   GroupToDo Importer
+   Reads a Logseq or Obsidian vault and writes the same notes in the
+   GroupToDo vault format (docs/vault-format.md). Two halves:
+
+   - CONVERT is pure: lists of {rel, text, mtime} in, a map of output paths
+     to text out, plus a report. No DOM, no files, so it can be tested on
+     its own (window.GTDImport).
+   - The page around it reads the folders, asks the questions and writes.
+   ============================================================ */
+
+/* ---------- shared vocabulary ---------- */
+const KINDS = [
+  ["page",  "",  "Plain page"],
+  ["z",     "z", "Note (zettelkasten)"],
+  ["p",     "p", "Person"],
+  ["o",     "o", "Organisation"],
+  ["c",     "c", "Context"],
+  ["1",     "1", "Project, active"],
+  ["2",     "2", "Project, someday/maybe"],
+  ["3",     "3", "Project, waiting"],
+  ["0",     "0", "Project, completed"],
+  ["-",     "-", "Project, cancelled"],
+  ["a",     "a", "Responsibility (area of focus)"],
+  ["g",     "g", "Goal"],
+  ["8",     "8", "Checklist or template"],
+  ["skip",  null, "Leave it out"],
+];
+const KIND_PREFIX = Object.fromEntries(KINDS.map(([k, p]) => [k, p]));
+const STATUS_TEXT = {"-": "- = cancelled", "0": "0 = completed", "1": "1 = active",
+  "2": "2 = someday maybe", "3": "3 = waiting for 3rd party"};
+const KIND_PROPS = {
+  p: {type: "person"}, o: {type: "org"}, c: {type: "context"}, a: {type: "area"},
+  g: {type: "goal", horizon: "3"}, "8": {type: "checklist"},
+};
+const STATE_MAP = {TODO: "TODO", DOING: "DOING", DONE: "DONE", LATER: "TODO", NOW: "DOING",
+  WAITING: "WAIT", WAIT: "WAIT", CANCELED: "CANCELLED", CANCELLED: "CANCELLED", "IN-PROGRESS": "DOING"};
+
+/* What a folder, namespace or tag most likely means, from its name. Only a
+   first guess: every one of them is a choice on the screen. */
+function guessKind(word) {
+  const w = String(word || "").toLowerCase().replace(/[\s_-]+/g, "");
+  if (w === "&" || /^(people|persons?|personer|contacts?|kontakter?|folk)$/.test(w)) return "p";
+  if (/^(projects?|prosjekt(er)?|proj)$/.test(w)) return "1";
+  if (/^(someday|somedaymaybe|maybe|kanskje)$/.test(w)) return "2";
+  if (/^(companies|company|orgs?|organi[sz]ations?|organisasjon(er)?|firma|kunder?|clients?|customers?)$/.test(w)) return "o";
+  if (/^(contexts?|kontekst(er)?)$/.test(w)) return "c";
+  if (/^(areas?|responsibilit(y|ies)|ansvar|omr[aå]der?)$/.test(w)) return "a";
+  if (/^(goals?|m[aå]l)$/.test(w)) return "g";
+  if (/^(templates?|maler?|checklists?|sjekklister?|routines?|rutiner?)$/.test(w)) return "8";
+  if (/^(zettel|zettelkasten|notes?|notater|permanent|literature)$/.test(w)) return "z";
+  if (/^(trash|\.trash|archive)$/.test(w)) return "page";
+  return "page";
+}
+
+/* ---------- names ---------- */
+// The format's own rule: / \ : * ? " < > | and control characters become "-".
+const cleanName = s => String(s || "").replace(/[\/\\:*?"<>|\u0000-\u001f]/g, "-")
+  .replace(/\s+/g, " ").trim().slice(0, 120) || "Untitled";
+const lc = s => String(s || "").toLowerCase();
+const pad2 = n => String(n).padStart(2, "0");
+const unquote = s => String(s || "").trim().replace(/^"(.*)"$/, "$1").replace(/^'(.*)'$/, "$1");
+
+/* ---------- dates ---------- */
+const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+const MONTHS_NB = ["jan", "feb", "mar", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "des"];
+const validYMD = (y, m, d) => {
+  const t = new Date(Date.UTC(+y, +m - 1, +d));
+  return t.getUTCFullYear() === +y && t.getUTCMonth() === +m - 1 && t.getUTCDate() === +d;
+};
+const ymd = (y, m, d) => validYMD(y, m, d) ? y + "-" + pad2(m) + "-" + pad2(d) : null;
+const monthIndex = w => {
+  const k = lc(w).slice(0, 3);
+  const i = MONTHS.indexOf(k);
+  return i >= 0 ? i + 1 : MONTHS_NB.indexOf(k) >= 0 ? MONTHS_NB.indexOf(k) + 1 : 0;
+};
+
+/* A date written the way a journal names its day: 2026-10-05, 2026_10_05,
+   Oct 5th, 2026, 5. okt 2026, 05.10.2026, Monday, 5 October 2026. Null for
+   anything else. Day before month when only numbers are given, the European
+   way, which is how Norwegian and most Obsidian setups write it. */
+function dateOf(text) {
+  let s = String(text || "").trim();
+  s = s.replace(/^[A-Za-zæøåÆØÅ]+day,?\s+|^(mandag|tirsdag|onsdag|torsdag|fredag|lørdag|søndag),?\s+/i, "");
+  let m = /^(\d{4})[-_.\/](\d{1,2})[-_.\/](\d{1,2})(?:\s+\w+)?$/.exec(s);
+  if (m) return ymd(m[1], m[2], m[3]);
+  m = /^(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{4})$/.exec(s);
+  if (m) return ymd(m[3], m[2], m[1]);
+  m = /^([A-Za-zæøå]{3,})\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})$/i.exec(s);
+  if (m && monthIndex(m[1])) return ymd(m[3], monthIndex(m[1]), m[2]);
+  m = /^(\d{1,2})(?:st|nd|rd|th)?\.?\s+([A-Za-zæøå]{3,})\.?,?\s+(\d{4})$/i.exec(s);
+  if (m && monthIndex(m[2])) return ymd(m[3], monthIndex(m[2]), m[1]);
+  m = /^(\d{4})(\d{2})(\d{2})$/.exec(s);
+  if (m) return ymd(m[1], m[2], m[3]);
+  return null;
+}
+
+/* Logseq's <2026-10-08 Thu 10:00 .+1w>: the day, and a repeat if there is one. */
+function logseqStamp(inner) {
+  const m = /^(\d{4}-\d{2}-\d{2})/.exec(String(inner || "").trim());
+  if (!m) return null;
+  const rep = /([.+]?\+)(\d+)([hdwmy])/.exec(inner);
+  let repeat = null;
+  if (rep) {
+    const n = +rep[2], unit = {h: "hour", d: "day", w: "week", m: "month", y: "year"}[rep[3]];
+    const one = {day: "daily", week: "weekly", month: "monthly", year: "yearly"}[unit];
+    repeat = n === 1 && one ? one : "every " + n + " " + unit + "s";
+  }
+  return {date: m[1], repeat};
+}
+
+/* ---------- a tiny YAML reader, for front matter ----------
+   Obsidian front matter is almost always flat: key: value, key: [a, b], and
+   key: followed by "- item" lines. That is what this reads; anything deeper
+   is kept as its text and said in the report. */
+function readFrontMatter(text) {
+  const m = /^---\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/.exec(text);
+  if (!m) return {props: [], rest: text, odd: false};
+  const props = [];
+  let odd = false, list = null;
+  for (const line of m[1].split(/\r?\n/)) {
+    if (!line.trim() || /^\s*#/.test(line)) continue;
+    const item = /^\s+-\s+(.*)$/.exec(line);
+    if (item && list) { list.push(unquote(item[1])); continue; }
+    const kv = /^([A-Za-z][\w-]*):\s*(.*)$/.exec(line);
+    if (!kv) { odd = true; continue; }
+    let v = kv[2].trim();
+    if (v === "") { list = []; props.push([kv[1], list]); continue; }
+    list = null;
+    if (/^\[.*\]$/.test(v)) v = v.slice(1, -1).split(",").map(unquote).filter(Boolean);
+    else v = unquote(v);
+    props.push([kv[1], v]);
+  }
+  return {props: props.map(([k, v]) => [k, Array.isArray(v) ? v : String(v)]), rest: text.slice(m[0].length), odd};
+}
+
+/* ---------- reading the source into page records ---------- */
+/* A Logseq page's name: title:: if it says one, else the file name with
+   %2F and ___ (both of Logseq's spellings of a namespace "/") read back. */
+function logseqName(rel, text) {
+  const t = /^title::\s*(.+)$/m.exec(preambleOf(text));
+  if (t) return unquote(t[1]);
+  let base = rel.replace(/^pages\//, "").replace(/\.md$/i, "");
+  try { base = decodeURIComponent(base.replace(/%(?![0-9A-Fa-f]{2})/g, "%25")); } catch (_) {}
+  return base.replace(/___/g, "/");
+}
+const preambleOf = text => {
+  const out = [];
+  for (const line of String(text || "").split(/\r?\n/)) {
+    if (/^\s*[-*+]\s/.test(line) || /^\s*-$/.test(line)) break;
+    out.push(line);
+  }
+  return out.join("\n");
+};
+/* Page properties: the key:: lines above the first bullet, and -- the way
+   Logseq often writes them -- a first bullet made of nothing but key:: lines. */
+function preambleProps(text) {
+  const out = {};
+  const PROP = /^([\p{L}][\p{L}\p{N}_-]*)::\s*(.*)$/u;
+  for (const line of preambleOf(text).split(/\n/)) {
+    const m = PROP.exec(line.trim());
+    if (m) out[lc(m[1])] = m[2].trim();
+  }
+  const lines = String(text || "").split(/\r?\n/);
+  const first = lines.findIndex(l => /^\s*[-*+]\s/.test(l));
+  if (first >= 0) {
+    const m = PROP.exec(lines[first].replace(/^\s*[-*+]\s+/, ""));
+    if (m) {
+      out[lc(m[1])] = m[2].trim();
+      for (let i = first + 1; i < lines.length && /^\s+\S/.test(lines[i]) && !/^\s*[-*+]\s/.test(lines[i]); i++) {
+        const p = PROP.exec(lines[i].trim());
+        if (p) out[lc(p[1])] = p[2].trim();
+      }
+    }
+  }
+  return out;
+}
+// "[[Project]], person" -> ["project", "person"]
+const tagValues = v => String(v || "").split(/,/).map(x => lc(x.replace(/[\[\]#"]/g, "").trim())).filter(Boolean);
+
+/* Every source file sorted into journal days and pages, with what the
+   classification screen needs: the group it is in, its tags and type. */
+function analyze(kind, files) {
+  const journals = new Map();          // date -> [file]
+  const pages = [];
+  const skipped = [];
+  const assets = [];
+  for (const f of files) {
+    if (!/\.md$/i.test(f.rel)) {
+      // The apps' own settings are not attachments.
+      if (!/^(logseq|\.obsidian|\.trash|\.git|\.recycle|bak|version-files)\//.test(f.rel)) assets.push(f);
+      continue;
+    }
+    const base = f.rel.split("/").pop().replace(/\.md$/i, "");
+    if (kind === "logseq") {
+      if (/^(logseq|\.recycle|bak|version-files|draws)\//.test(f.rel)) { skipped.push(f.rel); continue; }
+      if (f.rel.startsWith("journals/")) {
+        const d = dateOf(base.replace(/\s*\(\d+\)$/, "")) ;
+        if (d) { (journals.get(d) || journals.set(d, []).get(d)).push(f); continue; }
+        skipped.push(f.rel + " (journal file without a date in its name)");
+        continue;
+      }
+      if (!f.rel.startsWith("pages/")) { skipped.push(f.rel + " (outside journals/ and pages/)"); continue; }
+      const name = logseqName(f.rel, f.text);
+      const props = preambleProps(f.text);
+      pages.push({file: f, name, group: name.includes("/") ? name.split("/")[0] : "",
+        tags: [...tagValues(props.tags), ...tagValues(props.type), ...tagValues(props.category)],
+        aliases: (props.alias || "").split(",").map(a => a.replace(/[\[\]]/g, "").trim()).filter(Boolean)});
+    } else {
+      if (/^(\.obsidian|\.trash|\.git)\//.test(f.rel) || f.rel.split("/").some(s => s.startsWith("."))) { skipped.push(f.rel); continue; }
+      const d = dateOf(base);
+      if (d) { (journals.get(d) || journals.set(d, []).get(d)).push(f); continue; }
+      const fm = readFrontMatter(f.text);
+      const fmv = k => {
+        const p = fm.props.find(([key]) => lc(key) === k);
+        return p ? (Array.isArray(p[1]) ? p[1] : [p[1]]) : [];
+      };
+      const inline = preambleProps(fm.rest);
+      const parts = f.rel.split("/");
+      pages.push({file: f, name: base, folder: parts.slice(0, -1).join("/"),
+        group: parts.length > 1 ? parts[0] : "",
+        tags: [...fmv("tags"), ...fmv("type"), ...fmv("category"), ...tagValues(inline.tags), ...tagValues(inline.type)]
+          .flatMap(t => tagValues(t)),
+        aliases: fmv("aliases").concat(fmv("alias")).map(String)});
+    }
+  }
+  return {kind, journals, pages, skipped, assets};
+}
+
+/* The groups and tags the screen asks about, most used first. */
+function ruleChoices(a) {
+  const groups = new Map(), tags = new Map();
+  for (const p of a.pages) {
+    const g = p.group;
+    if (!groups.has(g)) groups.set(g, {key: g, n: 0, ex: []});
+    const G = groups.get(g); G.n++; if (G.ex.length < 3) G.ex.push(p.name);
+    for (const t of new Set(p.tags)) {
+      if (!tags.has(t)) tags.set(t, {key: t, n: 0, ex: []});
+      const T = tags.get(t); T.n++; if (T.ex.length < 3) T.ex.push(p.name);
+    }
+  }
+  const sort = m => [...m.values()].sort((x, y) => y.n - x.n || x.key.localeCompare(y.key));
+  return {groups: sort(groups), tags: sort(tags)};
+}
+
+/* ---------- deciding where each page goes ---------- */
+function placePages(a, rules) {
+  const placed = [];
+  for (const p of a.pages) {
+    const byTag = p.tags.map(t => rules.tags[t]).find(k => k && k !== "page");
+    const byGroup = rules.groups[p.group];
+    const kind = byTag || byGroup || "page";
+    if (kind === "skip") continue;
+    // A namespace or folder that names the kind is not part of the name:
+    // "&/Kari Nordmann" filed as a person is p/Kari Nordmann.
+    let segs = a.kind === "logseq" ? p.name.split("/") : [p.name];
+    if (a.kind === "logseq" && !byTag && byGroup && byGroup !== "page" && segs.length > 1) segs = segs.slice(1);
+    const title = segs.map(s => s.trim()).filter(Boolean).join(" - ") || p.name;
+    const prefix = KIND_PREFIX[kind];
+    const fileName = cleanName(title);
+    const ref = prefix ? prefix + "/" + fileName : fileName;
+    placed.push(Object.assign({}, p, {kind, title, ref, out: "pages/" + ref + ".md"}));
+  }
+  return placed;
+}
+
+/* ---------- the conversion itself ---------- */
+function convert(a, opts) {
+  const R = {pages: 0, journals: 0, journalCopies: 0, tasks: {}, dates: 0, repeats: 0,
+    links: 0, blockRefs: 0, blockRefsMissing: [], embeds: 0, queries: [], collapsed: 0,
+    logbooks: 0, merged: [], skipped: a.skipped.slice(), oddFrontMatter: [], archived: 0,
+    contexts: new Set(), assets: 0, assetsMissing: new Set(), byKind: {}, plainRoots: []};
+  const out = new Map();
+  const assetsOut = [];
+  const placed = placePages(a, opts.rules);
+
+  // Old name (and alias) -> new link target, case-insensitively.
+  const linkMap = new Map();
+  for (const p of placed) {
+    linkMap.set(lc(p.name), p.ref);
+    for (const al of p.aliases || []) if (!linkMap.has(lc(al))) linkMap.set(lc(al), p.ref);
+  }
+  // A link to a namespace that never got a page of its own still follows its
+  // group's rule, so [[&/Somebody new]] lands on p/ like the others.
+  const mapTarget = raw => {
+    const t = String(raw || "").trim();
+    const d = dateOf(t);
+    if (d) return d;
+    const hit = linkMap.get(lc(t));
+    if (hit) return hit;
+    if (a.kind === "logseq" && t.includes("/")) {
+      const segs = t.split("/");
+      const k = opts.rules.groups[segs[0]];
+      if (k && k !== "page" && k !== "skip" && KIND_PREFIX[k]) return KIND_PREFIX[k] + "/" + cleanName(segs.slice(1).join(" - "));
+      return cleanName(segs.join(" - "));
+    }
+    if (a.kind === "obsidian") return linkMap.get(lc(t.split("/").pop())) || cleanName(t.split("/").pop());
+    return t;
+  };
+
+  // Logseq block ids -> their words, for ((uuid)) references.
+  const blockText = new Map();
+  if (a.kind === "logseq") {
+    for (const f of [...a.pages.map(p => p.file), ...[...a.journals.values()].flat()]) {
+      const lines = f.text.split(/\r?\n/);
+      let last = null;
+      for (const line of lines) {
+        const b = /^\s*[-*+]\s+(.*)$/.exec(line);
+        if (b) { last = b[1]; continue; }
+        const id = /^\s*id::\s*([0-9a-f-]{36})\s*$/i.exec(line);
+        if (id && last != null) blockText.set(lc(id[1]), last.replace(/^(TODO|DOING|DONE|LATER|NOW|WAITING|CANCELED|CANCELLED)\s+/, ""));
+      }
+    }
+  }
+
+  // Attachments by file name, for Obsidian's ![[shot.png]] and plain links.
+  const assetByName = new Map();
+  for (const f of a.assets) {
+    const base = f.rel.split("/").pop();
+    if (/^(\.obsidian|\.trash|logseq|\.git)\//.test(f.rel)) continue;
+    if (!assetByName.has(lc(base))) assetByName.set(lc(base), f);
+  }
+  const usedAssets = new Map();       // source rel -> assets/<name>
+  const takenAssetNames = new Set();
+  const assetRef = f => {
+    if (usedAssets.has(f.rel)) return usedAssets.get(f.rel);
+    let name = cleanName(f.rel.split("/").pop()), n = 1;
+    while (takenAssetNames.has(lc(name))) name = name.replace(/(\.[^.]*)?$/, m => "-" + (++n) + m);
+    takenAssetNames.add(lc(name));
+    const p = "assets/" + name;
+    usedAssets.set(f.rel, p);
+    assetsOut.push({file: f, out: p});
+    R.assets++;
+    return p;
+  };
+  const assetFor = path => {
+    const base = lc(decodeURIComponent(String(path).split(/[\\/]/).pop()));
+    const f = assetByName.get(base);
+    if (!f) { R.assetsMissing.add(path); return null; }
+    return assetRef(f);
+  };
+
+  /* Words on one line: links, tags, references, attachments. Code spans are
+     left exactly as they are. */
+  const inline = text => String(text).split(/(`[^`]*`)/).map((seg, i) => i % 2 ? seg : inlineSeg(seg)).join("");
+  function inlineSeg(s) {
+    if (a.kind === "logseq") {
+      s = s.replace(/\{\{embed\s+\(\(([0-9a-f-]{36})\)\)\s*\}\}/gi, (all, id) => {
+        R.embeds++; const t = blockText.get(lc(id)); return t != null ? t : all; });
+      s = s.replace(/\{\{embed\s+\[\[([^\]]+)\]\]\s*\}\}/gi, (all, t) => { R.embeds++; return "[[" + t + "]]"; });
+      s = s.replace(/\{\{query\s[^}]*\}\}/gi, all => { R.queries.push(all); return all; });
+      s = s.replace(/\(\(([0-9a-f-]{36})\)\)/gi, (all, id) => {
+        R.blockRefs++;
+        const t = blockText.get(lc(id));
+        if (t == null) { R.blockRefsMissing.push(id); return all; }
+        return t;
+      });
+      // ../assets/x.png -> assets/x.png: the app reads attachments from the vault root.
+      s = s.replace(/(\]\()(?:\.\.\/)+assets\//g, "$1assets/");
+      s = s.replace(/(\]\()assets\/([^)\s]+)\)/g, (all, lead, name) => {
+        const f = assetByName.get(lc(decodeURIComponent(name)));
+        if (f) assetRef(f); else R.assetsMissing.add("assets/" + name);
+        return all;
+      });
+    } else {
+      // ![[shot.png]] is an attachment; ![[Note]] is a link.
+      s = s.replace(/!\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]*))?\]\]/g, (all, t, label) => {
+        if (/\.[A-Za-z0-9]{2,5}$/.test(t.trim()) && !/\.md$/i.test(t.trim())) {
+          const p = assetFor(t.trim());
+          const name = t.trim().split("/").pop();
+          if (!p) return all;
+          return (/\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(name) ? "!" : "") + "[" + name + "](" + p + ")";
+        }
+        R.embeds++;
+        return "[[" + t.trim() + (label ? "|" + label : "") + "]]";
+      });
+      // ![](attachments/x.png) and [file](docs/x.pdf) pointing into the vault.
+      s = s.replace(/(!?)\[([^\]]*)\]\((?!https?:|mailto:|file:|#)([^)\s]+)\)/g, (all, bang, label, href) => {
+        if (/\.md$/i.test(href)) return "[[" + decodeURIComponent(href).replace(/\.md$/i, "").split("/").pop() + (label ? "|" + label : "") + "]]";
+        const p = assetFor(href);
+        return p ? bang + "[" + (label || p.split("/").pop()) + "](" + p + ")" : all;
+      });
+      s = s.replace(/\[\[([^\]|]+?)#\^[^\]|]+(\|[^\]]*)?\]\]/g, "[[$1$2]]");
+    }
+    // [[target]], [[target|label]], [[target#heading]]: the target moves, the rest stays.
+    s = s.replace(/(#?)\[\[([^\]]+?)\]\]/g, (all, hash, inner) => {
+      const m = /^([^|#]+)((?:#[^|]*)?)((?:\|.*)?)$/.exec(inner);
+      if (!m) return all;
+      const target = mapTarget(m[1]);
+      R.links++;
+      if (target.startsWith("c/")) R.contexts.add(target.slice(2));
+      return "[[" + target + m[2] + m[3] + "]]";
+    });
+    // #tag that names a page filed as something other than a plain page is a link to it.
+    s = s.replace(/(^|\s)#([\p{L}\p{N}][\p{L}\p{N}_\-\/]*)/gu, (all, lead, t) => {
+      const hit = linkMap.get(lc(t));
+      if (!hit || !hit.includes("/")) return all;
+      R.links++;
+      if (hit.startsWith("c/")) R.contexts.add(hit.slice(2));
+      return lead + "[[" + hit + "]]";
+    });
+    if (opts.atContext) {
+      s = s.replace(/(^|\s)@([\p{L}][\p{L}\p{N}_-]{1,30})(?![\p{L}\p{N}@.])/gu, (all, lead, w) => {
+        R.contexts.add(lc(w)); R.links++;
+        return lead + "[[c/" + lc(w) + "]]";
+      });
+    }
+    return s;
+  }
+
+  const countTask = st => { R.tasks[st] = (R.tasks[st] || 0) + 1; };
+
+  /* ---- Logseq: already an outline, so line by line ---- */
+  function logseqBody(text) {
+    const pageProps = [], body = [];
+    let seenBullet = false, drawer = false, fence = false;
+    let firstBlockProps = null;          // "- tags:: project" as the first block: page properties in disguise
+    const lines = String(text).replace(/\r\n?/g, "\n").split("\n")
+      .map(l => l.replace(/^\t+/, t => "  ".repeat(t.length)));
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
+      const lead = /^\s*/.exec(line)[0];
+      const t = line.trim();
+      if (fence) { body.push(line); if (/^```/.test(t)) fence = false; continue; }
+      if (drawer) { body.push(line); if (t === ":END:") drawer = false; continue; }
+      if (!seenBullet) {
+        const pm = /^([\p{L}][\p{L}\p{N}_-]*)::\s*(.*)$/u.exec(t);
+        if (pm) { if (!(lc(pm[1]) === "collapsed")) pageProps.push([pm[1], inline(pm[2])]); continue; }
+        if (t === "") continue;        // the blank line after the properties is written again by serialize
+      }
+      const b = /^(\s*)[-*+](?:\s+(.*))?$/.exec(line);
+      if (b) {
+        seenBullet = true;
+        let content = b[2] || "";
+        if (firstBlockProps === null && !body.length && /^[\p{L}][\p{L}\p{N}_-]*::\s/u.test(content)) {
+          firstBlockProps = true;
+          const pm = /^([\p{L}][\p{L}\p{N}_-]*)::\s*(.*)$/u.exec(content);
+          pageProps.push([pm[1], inline(pm[2])]);
+          continue;
+        }
+        if (firstBlockProps === true && !body.length && b[1].length === 0) firstBlockProps = false;
+        const sm = /^([A-Z-]{3,11})(\s+|$)(.*)$/.exec(content);
+        if (sm && STATE_MAP[sm[1]]) { content = STATE_MAP[sm[1]] + (sm[3] ? " " + sm[3] : ""); countTask(STATE_MAP[sm[1]]); }
+        content = content.replace(/^((?:TODO|DOING|DONE|WAIT|CANCELLED)\s+)?\[#([ABC])\]\s*/, (all, st, p) =>
+          (st || "") + "#" + {A: "high", B: "medium", C: "low"}[p] + " ");
+        if (/^```/.test(content)) fence = true;
+        body.push(b[1] + "- " + inline(content).replace(/\s+$/, ""));
+        continue;
+      }
+      if (firstBlockProps === true && !body.length) {
+        const pm = /^([\p{L}][\p{L}\p{N}_-]*)::\s*(.*)$/u.exec(t);
+        if (pm) { if (lc(pm[1]) !== "collapsed") pageProps.push([pm[1], inline(pm[2])]); continue; }
+      }
+      if (t === "") { body.push(""); continue; }
+      if (/^:[A-Z][A-Z_-]*:$/.test(t)) { drawer = true; R.logbooks++; body.push(line); continue; }
+      if (/^collapsed::\s*true$/i.test(t)) { R.collapsed++; continue; }
+      const sd = /^(SCHEDULED|DEADLINE):\s*<([^>]*)>\s*$/.exec(t);
+      if (sd) {
+        const st = logseqStamp(sd[2]);
+        if (st) {
+          R.dates++;
+          body.push(lead + sd[1] + ":: [[" + st.date + "]]");
+          if (st.repeat) { R.repeats++; body.push(lead + "repeat:: " + st.repeat); }
+          continue;
+        }
+      }
+      if (/^```/.test(t)) fence = true;
+      const pm = /^([\p{L}][\p{L}\p{N}_-]*)::\s*(.*)$/u.exec(t);
+      if (pm) { body.push(lead + pm[1] + ":: " + inline(pm[2])); continue; }
+      body.push(lead + inline(t));
+    }
+    while (body.length && body[body.length - 1] === "") body.pop();
+    return {pageProps, body};
+  }
+
+  /* ---- Obsidian: free-form markdown, turned into an outline ---- */
+  const TASK_BOX = {" ": "TODO", "x": "DONE", "X": "DONE", "/": "DOING", "-": "CANCELLED", ">": "TODO", "<": "TODO", "?": "TODO", "!": "TODO"};
+  const EMOJI_PROPS = [
+    [/📅\s*(\d{4}-\d{2}-\d{2})/u, "DEADLINE"], [/(?:⏳|🛫)\s*(\d{4}-\d{2}-\d{2})/u, "SCHEDULED"],
+    [/➕\s*(\d{4}-\d{2}-\d{2})/u, "Added"], [/✅\s*(\d{4}-\d{2}-\d{2})/u, "CLOSED"],
+    [/❌\s*(\d{4}-\d{2}-\d{2})/u, "CLOSED"],
+  ];
+  function obsidianBody(text, file) {
+    const fm = readFrontMatter(text);
+    if (fm.odd) R.oddFrontMatter.push(file.rel);
+    const pageProps = [];
+    for (const [k, v] of fm.props) {
+      const vals = Array.isArray(v) ? v : [v];
+      if (/^(tags?|aliases|alias|cssclass(es)?|cssclasses)$/i.test(k)) {
+        if (/^(tags?)$/i.test(k)) pageProps.push(["tags", vals.map(x => String(x).replace(/^#/, "")).join(", ")]);
+        else if (/^alias(es)?$/i.test(k)) pageProps.push(["alias", vals.join(", ")]);
+        continue;
+      }
+      // A list of names is a list of links, where they name pages.
+      pageProps.push([k, vals.map(x => {
+        const s = String(x);
+        if (/^\[\[.*\]\]$/.test(s)) return inline(s);
+        return linkMap.has(lc(s)) ? "[[" + linkMap.get(lc(s)) + "]]" : s;
+      }).join(", ")]);
+    }
+    const body = [];
+    const heads = [];                // heading levels currently open
+    let listStack = [];              // indents of open list levels
+    let last = null;                 // {depth} of the last bullet written
+    let para = null;                 // lines of the paragraph being gathered
+    let fence = null;                // the bullet a code fence is being written under
+    let table = null;
+    const base = () => heads.length;
+    const ind = d => "  ".repeat(d);
+    const emit = (depth, content, props = []) => {
+      body.push(ind(depth) + "- " + content);
+      for (const [k, v] of props) body.push(ind(depth) + "  " + k + ":: " + v);
+      last = {depth};
+    };
+    const flushPara = () => {
+      if (!para) return;
+      emit(base(), inline(para.join(" ").trim()));
+      para = null;
+    };
+    const lines = fm.rest.replace(/\r\n?/g, "\n").split("\n");
+    for (const raw of lines) {
+      const line = raw.replace(/\t/g, "    ");
+      const t = line.trim();
+      if (fence) {
+        body.push(ind(fence.depth) + "  " + raw.replace(/^\s*/, ""));
+        if (/^(```|~~~)/.test(t)) fence = null;
+        continue;
+      }
+      if (/^(```|~~~)/.test(t)) {
+        flushPara(); table = null;
+        // Indented under a list item it is that item's; at the margin it is the section's.
+        if (!/^\s/.test(line)) listStack = [];
+        const d = listStack.length && last ? last.depth + 1 : base();
+        emit(d, t); fence = {depth: d};
+        continue;
+      }
+      if (t === "") { flushPara(); table = null; continue; }
+      const h = /^(#{1,6})\s+(.*)$/.exec(t);
+      if (h && !/^#{1,6}[\p{L}\p{N}]/u.test(t)) {
+        flushPara(); table = null; listStack = [];
+        while (heads.length && heads[heads.length - 1] >= h[1].length) heads.pop();
+        emit(base(), inline(h[2].replace(/\s+#+\s*$/, "")));
+        heads.push(h[1].length);
+        continue;
+      }
+      if (/^(-{3,}|\*{3,}|_{3,})$/.test(t)) { flushPara(); table = null; continue; }
+      const li = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/.exec(line);
+      if (li) {
+        flushPara(); table = null;
+        const indent = li[1].length;
+        while (listStack.length && listStack[listStack.length - 1] > indent) listStack.pop();
+        if (!listStack.length || listStack[listStack.length - 1] < indent) listStack.push(indent);
+        const depth = base() + listStack.length - 1;
+        let content = li[3];
+        const props = [];
+        const box = /^\[(.)\]\s*(.*)$/.exec(content);
+        if (box && TASK_BOX[box[1]] !== undefined) {
+          const st = TASK_BOX[box[1]];
+          countTask(st);
+          content = box[2];
+          for (const [re, key] of EMOJI_PROPS) {
+            const m = re.exec(content);
+            if (m) { props.push([key, "[[" + m[1] + "]]"]); content = content.replace(re, ""); R.dates++; }
+          }
+          const rep = /🔁\s*([^📅⏳🛫➕✅❌⏫🔼🔽🔺⏬]+)/u.exec(content);
+          if (rep) {
+            const w = lc(rep[1].trim());
+            props.push(["repeat", /^every (day)$/.test(w) ? "daily" : /^every week$/.test(w) ? "weekly"
+              : /^every month$/.test(w) ? "monthly" : /^every year$/.test(w) ? "yearly" : w]);
+            content = content.replace(rep[0], ""); R.repeats++;
+          }
+          content = content.replace(/⏫|🔺/gu, "#high").replace(/🔼/gu, "#medium").replace(/🔽|⏬/gu, "#low");
+          content = st + " " + content.replace(/\s{2,}/g, " ").trim();
+        }
+        const bid = /\s\^([A-Za-z0-9-]+)\s*$/.exec(content);
+        if (bid) { props.push(["id", bid[1]]); content = content.slice(0, bid.index); }
+        emit(depth, inline(content.trim()), props);
+        continue;
+      }
+      // Dataview's key:: value, under the line above it -- or of the page, before any.
+      const dv = /^([\p{L}][\p{L}\p{N}_ -]*)::\s*(.*)$/u.exec(t);
+      if (dv && !para) {
+        const key = dv[1].trim().replace(/\s+/g, "_");
+        if (last) body.push(ind(last.depth) + "  " + key + ":: " + inline(dv[2]));
+        else pageProps.push([key, inline(dv[2])]);
+        continue;
+      }
+      // An indented line under a list item is that item's own text.
+      if (listStack.length && /^\s+/.test(line) && last && !para) {
+        body.push(ind(last.depth) + "  " + inline(t));
+        continue;
+      }
+      if (t.startsWith("|")) {
+        flushPara();
+        if (!table) { emit(base(), inline(t)); table = last; }
+        else body.push(ind(table.depth) + "  " + inline(t));
+        continue;
+      }
+      listStack = [];
+      const bid = /\s\^([A-Za-z0-9-]+)\s*$/.exec(t);
+      if (bid) {
+        (para || (para = [])).push(t.slice(0, bid.index));
+        flushPara();
+        body.push(ind(last.depth) + "  id:: " + bid[1]);
+        continue;
+      }
+      (para || (para = [])).push(t);
+    }
+    flushPara();
+    return {pageProps, body};
+  }
+
+  const bodyOf = (text, file) => a.kind === "logseq" ? logseqBody(text) : obsidianBody(text, file);
+
+  /* Properties, a blank line, the outline, a newline at the end. */
+  function serialize(props, body) {
+    const seen = new Set(), lines = [];
+    for (const [k, v] of props) {
+      if (seen.has(lc(k))) continue;
+      seen.add(lc(k));
+      lines.push(k + ":: " + v);
+    }
+    const out = [...lines];
+    if (out.length && body.length) out.push("");
+    out.push(...body);
+    return out.join("\n").replace(/\n+$/, "") + "\n";
+  }
+
+  /* A task written on a day page was captured that day. Said as Added::, or
+     GroupToDo stamps it with the day of the import and "oldest first" puts a
+     three-year-old task among this week's. */
+  function addedOn(body, date) {
+    const out = [];
+    for (let i = 0; i < body.length; i++) {
+      out.push(body[i]);
+      const b = /^(\s*)- (TODO|DOING|WAIT|DONE|CANCELLED)\b/.exec(body[i]);
+      if (!b) continue;
+      const pad = b[1] + "  ";
+      let j = i + 1, has = false;
+      while (j < body.length && body[j].startsWith(pad) && !/^\s*- /.test(body[j].slice(b[1].length))) {
+        if (/^\s*added::/i.test(body[j])) has = true;
+        j++;
+      }
+      if (!has) out.push(pad + "Added:: [[" + date + "]]");
+    }
+    return out;
+  }
+
+  /* ---- journals ---- */
+  const me = cleanName(opts.me).slice(0, 40);
+  for (const [date, files] of [...a.journals].sort((x, y) => x[0].localeCompare(y[0]))) {
+    // The day itself first, then its sync-conflict copies "(1)", "(2)" after it.
+    const copyNo = f => +((/\((\d+)\)\.md$/i.exec(f.rel) || [0, 0])[1]);
+    const parts = files.slice().sort((x, y) => copyNo(x) - copyNo(y) || x.rel.localeCompare(y.rel)).map(f => bodyOf(f.text, f));
+    if (files.length > 1) { R.journalCopies++; R.merged.push(date + ": " + files.map(f => f.rel).join(" + ")); }
+    const props = [["title", date], ["created", "[[" + date + "]]"]];
+    for (const p of parts) for (const kv of p.pageProps) if (!/^(title|created)$/i.test(kv[0])) props.push(kv);
+    out.set("journals/" + me + "/" + date + ".md", serialize(props, addedOn(parts.flatMap(p => p.body), date)));
+    R.journals++;
+  }
+
+  /* ---- pages ---- */
+  const cutoff = opts.archiveYears ? Date.now() - opts.archiveYears * 365.25 * 864e5 : 0;
+  const byOut = new Map();
+  for (const p of placed) {
+    const key = lc(p.out);
+    if (byOut.has(key)) { byOut.get(key).push(p); continue; }
+    byOut.set(key, [p]);
+  }
+  for (const group of byOut.values()) {
+    // Two pages that land on one file -- "Kari" and "kari", or a namespace
+    // flattened onto a name already taken -- are kept together, newest first.
+    group.sort((x, y) => (y.file.mtime || 0) - (x.file.mtime || 0));
+    const p = group[0];
+    if (group.length > 1) R.merged.push(p.ref + ": " + group.map(g => g.file.rel).join(" + "));
+    const parts = group.map(g => bodyOf(g.file.text, g.file));
+    const props = [];
+    props.push(["title", p.title]);
+    for (const [k, v] of Object.entries(KIND_PROPS[p.kind] || {})) props.push([k, v]);
+    if (STATUS_TEXT[p.kind]) props.push(["status", STATUS_TEXT[p.kind]]);
+    if (cutoff && group.every(g => (g.file.mtime || Date.now()) < cutoff)) { props.push(["archived", "true"]); R.archived++; }
+    for (const part of parts) for (const kv of part.pageProps) {
+      if (/^(title|status)$/i.test(kv[0])) continue;
+      if (/^type$/i.test(kv[0]) && KIND_PROPS[p.kind]) continue;
+      props.push(kv);
+    }
+    out.set(p.out, serialize(props, parts.flatMap(x => x.body)));
+    R.pages++;
+    R.byKind[p.kind] = (R.byKind[p.kind] || 0) + 1;
+    if (p.kind === "page" && /^(\d|[a-z_8-])$/i.test(p.title.split(" ")[0])) R.plainRoots.push(p.title);
+  }
+
+  /* ---- the pages every vault starts with ---- */
+  for (const c of R.contexts) {
+    const path = "pages/c/" + cleanName(c) + ".md";
+    if (!out.has(path)) out.set(path, serialize([["title", c], ["type", "context"]], []));
+  }
+  const mePath = "pages/p/" + me + ".md";
+  if (out.has(mePath)) {
+    const text = out.get(mePath);
+    if (!/^member::/m.test(text)) out.set(mePath, "member:: true\n" + text);
+  } else out.set(mePath, serialize([["title", me], ["type", "person"], ["member", "true"]], []));
+
+  return {files: out, assets: assetsOut, report: R, placed};
+}
+
+/* ---------- the report, as text ---------- */
+function reportText(a, res, opts) {
+  const R = res.report;
+  const kindName = k => (KINDS.find(x => x[0] === k) || [k, "", k])[2];
+  const L = [];
+  L.push("# GroupToDo import report", "");
+  L.push("From " + (a.kind === "logseq" ? "a Logseq" : "an Obsidian") + " vault, " + new Date().toLocaleString() + ".", "");
+  L.push("## Counts", "");
+  L.push("- Day pages: " + R.journals + (R.journalCopies ? " (" + R.journalCopies + " made from more than one file)" : ""));
+  L.push("- Pages: " + R.pages);
+  for (const [k, n] of Object.entries(R.byKind).sort((x, y) => y[1] - x[1])) L.push("  - " + kindName(k) + ": " + n);
+  L.push("- Tasks: " + (Object.entries(R.tasks).map(([k, n]) => k + " " + n).join(", ") || "none"));
+  L.push("- Dates turned into SCHEDULED::/DEADLINE::/CLOSED:: " + R.dates + (R.repeats ? ", repeats " + R.repeats : ""));
+  L.push("- Links rewritten: " + R.links);
+  L.push("- Contexts: " + (R.contexts.size ? [...R.contexts].sort().join(", ") : "none"));
+  L.push("- Attachments copied: " + R.assets);
+  if (R.archived) L.push("- Marked archived:: true: " + R.archived);
+  if (R.logbooks) L.push("- Logseq LOGBOOK drawers kept: " + R.logbooks + " (GroupToDo keeps them out of sight)");
+  if (R.collapsed) L.push("- collapsed:: true removed: " + R.collapsed);
+  L.push("", "## Needs a look", "");
+  const any = [];
+  if (R.blockRefsMissing.length) any.push("- " + R.blockRefsMissing.length + " block reference(s) point at a block that was not found; left as ((id)).");
+  if (R.queries.length) any.push("- " + R.queries.length + " query/queries kept as text: GroupToDo has no queries.\n" + R.queries.slice(0, 20).map(q => "  - `" + q + "`").join("\n"));
+  if (R.assetsMissing.size) any.push("- " + R.assetsMissing.size + " attachment link(s) point at a file that is not in the vault:\n" + [...R.assetsMissing].slice(0, 30).map(x => "  - " + x).join("\n"));
+  if (R.merged.length) any.push("- " + R.merged.length + " page(s) were made from more than one file:\n" + R.merged.slice(0, 50).map(x => "  - " + x).join("\n"));
+  if (R.oddFrontMatter.length) any.push("- Front matter that was not plain key: value, partly kept:\n" + R.oddFrontMatter.slice(0, 30).map(x => "  - " + x).join("\n"));
+  if (R.plainRoots.length) any.push("- Plain pages whose name starts like a GroupToDo folder letter; check their links:\n" + R.plainRoots.slice(0, 30).map(x => "  - " + x).join("\n"));
+  if (R.skipped.length) any.push("- Files left out:\n" + R.skipped.slice(0, 50).map(x => "  - " + x).join("\n") + (R.skipped.length > 50 ? "\n  - … and " + (R.skipped.length - 50) + " more" : ""));
+  L.push(...(any.length ? any : ["Nothing."]));
+  L.push("");
+  return L.join("\n");
+}
+
+window.GTDImport = {analyze, ruleChoices, placePages, convert, reportText, dateOf, guessKind, readFrontMatter};
+
+/* ============================================================
+   THE PAGE
+   ============================================================ */
+const $ = s => document.querySelector(s);
+const el = (tag, attrs = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if (k === "class") n.className = v;
+    else n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) n.append(c instanceof Node ? c : String(c));
+  return n;
+};
+const S = {source: null, files: [], analysis: null, rules: {groups: {}, tags: {}}, result: null};
+
+const themeBtn = $("#theme");
+themeBtn.onclick = () => {
+  const r = document.documentElement;
+  const dark = r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  r.dataset.theme = dark ? "light" : "dark";
+};
+
+if (!window.showDirectoryPicker) {
+  $("#s1").append(el("div", {class: "msg err"},
+    "This browser cannot open folders. Open this file in Microsoft Edge or Google Chrome on a computer."));
+  $("#pickSource").disabled = true;
+}
+
+const unlock = (...ids) => ids.forEach(id => $(id).classList.remove("off"));
+const lock = (...ids) => ids.forEach(id => $(id).classList.add("off"));
+
+/* Every file under the folder, text read for markdown, a handle kept for the rest. */
+async function readTree(dir) {
+  const files = [];
+  const walk = async (h, prefix) => {
+    for await (const [name, child] of h.entries()) {
+      const rel = prefix ? prefix + "/" + name : name;
+      if (child.kind === "directory") {
+        if (name === ".git" || name === "node_modules") continue;
+        await walk(child, rel);
+      } else if (/\.md$/i.test(name)) {
+        const f = await child.getFile();
+        files.push({rel, text: await f.text(), mtime: f.lastModified, handle: child});
+      } else {
+        files.push({rel, handle: child, mtime: 0});
+      }
+    }
+  };
+  await walk(dir, "");
+  return files;
+}
+
+function detectKind(files) {
+  if (files.some(f => f.rel.startsWith(".obsidian/"))) return "obsidian";
+  if (files.some(f => f.rel.startsWith("logseq/")) ||
+      (files.some(f => f.rel.startsWith("journals/")) && files.some(f => f.rel.startsWith("pages/")))) return "logseq";
+  return "obsidian";
+}
+
+$("#pickSource").onclick = async () => {
+  let dir;
+  try { dir = await window.showDirectoryPicker({mode: "read", id: "gtd-import-source"}); }
+  catch (e) { if (e.name !== "AbortError") $("#sourceInfo").textContent = "Could not open it: " + e.message; return; }
+  $("#sourceInfo").textContent = "Reading " + dir.name + "…";
+  try { S.files = await readTree(dir); }
+  catch (e) { $("#sourceInfo").textContent = "Could not read it: " + e.message; return; }
+  S.source = dir;
+  $("#kind").value = detectKind(S.files);
+  $("#kind").hidden = false;
+  analyzeNow();
+};
+$("#kind").onchange = analyzeNow;
+
+function analyzeNow() {
+  S.analysis = analyze($("#kind").value, S.files);
+  S.result = null;
+  const A = S.analysis;
+  const md = S.files.filter(f => /\.md$/i.test(f.rel)).length;
+  $("#sourceInfo").replaceChildren(
+    el("b", {}, S.source.name), " — ",
+    A.kind === "logseq" ? "Logseq" : "Obsidian", " vault: ",
+    el("b", {}, String(A.journals.size)), " day pages, ",
+    el("b", {}, String(A.pages.length)), " pages, ",
+    el("b", {}, String(A.assets.length)), " other files",
+    md - A.pages.length - [...A.journals.values()].flat().length > 0
+      ? " (" + (md - A.pages.length - [...A.journals.values()].flat().length) + " left out, listed in the report)" : "");
+  const C = ruleChoices(A);
+  S.rules = {groups: {}, tags: {}};
+  for (const g of C.groups) S.rules.groups[g.key] = g.key ? guessKind(g.key) : "page";
+  for (const t of C.tags) S.rules.tags[t.key] = guessKind(t.key);
+  drawRules(C);
+  unlock("#s2", "#s3", "#s4");
+  lock("#s5");
+  $("#preview").textContent = "";
+}
+
+function kindSelect(value, onchange) {
+  const s = el("select", {onchange: e => onchange(e.target.value)},
+    ...KINDS.map(([k, , label]) => el("option", {value: k}, label)));
+  s.value = value;
+  return s;
+}
+
+function drawRules(C) {
+  const host = $("#rules");
+  host.textContent = "";
+  const A = S.analysis;
+  const table = (title, rows, which, label) => {
+    if (!rows.length) return null;
+    return el("div", {},
+      el("h3", {style: "font-size:13px;margin:10px 0 0;color:var(--fg2)"}, title),
+      el("div", {class: "tablewrap"}, el("table", {},
+        el("thead", {}, el("tr", {}, el("th", {}, label), el("th", {}, "Pages"), el("th", {}, "Becomes"))),
+        el("tbody", {}, ...rows.slice(0, 60).map(r => el("tr", {},
+          el("td", {}, el("b", {}, r.key || (which === "groups" ? (A.kind === "logseq" ? "(no namespace)" : "(top folder)") : r.key)),
+            el("span", {class: "ex"}, r.ex.join(" · "))),
+          el("td", {class: "num"}, String(r.n)),
+          el("td", {}, kindSelect(S.rules[which][r.key], v => { S.rules[which][r.key] = v; S.result = null; lock("#s5"); }))))))));
+  };
+  host.append(
+    table(A.kind === "logseq" ? "Namespaces (the part before the first / in a page name)" : "Top folders",
+      C.groups, "groups", A.kind === "logseq" ? "Namespace" : "Folder") || el("p", {class: "hint"}, "No folders or namespaces."),
+    table("Tags and types (tags::, type::, category::)", C.tags, "tags", "Tag") || null);
+}
+
+$("#runTest").onclick = () => {
+  const me = $("#me").value.trim();
+  if (!me) { $("#me").focus(); $("#preview").replaceChildren(el("div", {class: "msg err"}, "Write your name in step 2 first.")); return; }
+  const opts = {me, rules: S.rules, archiveYears: +$("#archiveYears").value, atContext: $("#atContext").checked};
+  let res;
+  try { res = convert(S.analysis, opts); }
+  catch (e) { $("#preview").replaceChildren(el("div", {class: "msg err"}, "The conversion stopped: " + e.message)); console.error(e); return; }
+  S.result = res; S.opts = opts;
+  drawPreview(res);
+  unlock("#s5");
+  $("#report").disabled = false;
+};
+
+function drawPreview(res) {
+  const R = res.report;
+  const tasks = Object.values(R.tasks).reduce((x, y) => x + y, 0);
+  const cards = el("div", {class: "cards"},
+    ...[["Day pages", R.journals], ["Pages", R.pages], ["Tasks", tasks], ["Dates", R.dates],
+        ["Links", R.links], ["Contexts", R.contexts.size], ["Attachments", R.assets]]
+      .map(([k, n]) => el("div", {class: "card"}, el("b", {}, String(n)), el("span", {}, k))));
+  const issues = el("ul", {class: "issues"});
+  const add = (text, list) => issues.append(el("li", {}, text,
+    list && list.length ? el("details", {}, el("summary", {}, "Show " + list.length), el("pre", {}, list.slice(0, 200).join("\n"))) : null));
+  if (R.blockRefsMissing.length) add(R.blockRefsMissing.length + " block reference(s) point at nothing and are left as ((id)).");
+  if (R.queries.length) add(R.queries.length + " Logseq query/queries kept as plain text.", R.queries);
+  if (R.assetsMissing.size) add(R.assetsMissing.size + " attachment link(s) point at a file that is not in the vault.", [...R.assetsMissing]);
+  if (R.merged.length) add(R.merged.length + " page(s) made from more than one file.", R.merged);
+  if (R.oddFrontMatter.length) add(R.oddFrontMatter.length + " page(s) with front matter that was only partly read.", R.oddFrontMatter);
+  if (R.plainRoots.length) add(R.plainRoots.length + " plain page(s) start like a GroupToDo folder letter.", R.plainRoots);
+  if (R.skipped.length) add(R.skipped.length + " file(s) left out.", R.skipped);
+  if (!issues.children.length) issues.append(el("li", {class: "ok"}, "Nothing needs a look."));
+
+  // Before and after, for any file.
+  const pairs = [];
+  for (const p of res.placed) pairs.push([p.out, p.file.text, p.file.rel]);
+  const me = cleanName(S.opts.me).slice(0, 40);
+  for (const [date, files] of S.analysis.journals) pairs.push(["journals/" + me + "/" + date + ".md", files.map(f => f.text).join("\n"), files.map(f => f.rel).join(" + ")]);
+  pairs.sort((x, y) => x[0].localeCompare(y[0]));
+  const before = el("pre"), after = el("pre"), from = el("div", {style: "font-size:12px;color:var(--fg3);margin-top:4px"});
+  const pick = el("select", {onchange: e => show(e.target.value), style: "width:100%"},
+    ...pairs.map(([o], i) => el("option", {value: String(i)}, o)));
+  const show = i => {
+    const [o, src, rel] = pairs[+i] || [];
+    before.textContent = src || ""; after.textContent = res.files.get(o) || "";
+    from.textContent = rel ? "From " + rel : "";
+  };
+  // Start on a page that shows something happening: the one with the most tasks.
+  let best = 0, bestN = -1;
+  pairs.forEach(([o], i) => { const n = ((res.files.get(o) || "").match(/^\s*- (TODO|DONE|DOING|WAIT)/gm) || []).length; if (n > bestN) { bestN = n; best = i; } });
+  pick.value = String(best);
+  show(best);
+
+  $("#preview").replaceChildren(
+    el("div", {class: "msg ok"}, "Test done. Nothing has been written."),
+    cards,
+    el("h3", {style: "font-size:13px;color:var(--fg2);margin:0 0 6px"}, "Needs a look"),
+    issues,
+    el("h3", {style: "font-size:13px;color:var(--fg2);margin:0 0 6px"}, "Any page, before and after"),
+    pick, from,
+    el("div", {class: "compare", style: "margin-top:8px"},
+      el("div", {}, el("h3", {}, "Before"), before),
+      el("div", {}, el("h3", {}, "After"), after)));
+}
+
+$("#report").onclick = () => {
+  if (!S.result) return;
+  const blob = new Blob([reportText(S.analysis, S.result, S.opts)], {type: "text/markdown"});
+  const a = el("a", {href: URL.createObjectURL(blob), download: "GroupToDo import report.md"});
+  document.body.append(a); a.click(); a.remove();
+};
+
+/* Writing. The folder has to be empty: converting over something that is
+   already there is how two vaults end up mixed into one. */
+$("#write").onclick = async () => {
+  if (!S.result) return;
+  const outBox = $("#writeOut");
+  let dir;
+  try { dir = await window.showDirectoryPicker({mode: "readwrite", id: "gtd-import-target"}); }
+  catch (e) { if (e.name !== "AbortError") outBox.replaceChildren(el("div", {class: "msg err"}, "Could not open it: " + e.message)); return; }
+  try { if (S.source && await S.source.isSameEntry(dir)) {
+    outBox.replaceChildren(el("div", {class: "msg err"}, "That is the old vault itself. Choose a new, empty folder."));
+    return;
+  } } catch (_) {}
+  const there = [];
+  for await (const [name] of dir.entries()) if (!/^(\.|desktop\.ini$|thumbs\.db$)/i.test(name)) there.push(name);
+  if (there.length) {
+    outBox.replaceChildren(el("div", {class: "msg err"},
+      "That folder is not empty (" + there.slice(0, 5).join(", ") + (there.length > 5 ? ", …" : "") + "). " +
+      "Make a new folder and choose that one."));
+    return;
+  }
+  const res = S.result;
+  const total = res.files.size + res.assets.length;
+  const bar = el("i"), label = el("div", {style: "font-size:13px;color:var(--fg2)"});
+  outBox.replaceChildren(el("div", {class: "progress"}, bar), label);
+  const dirs = new Map();
+  const dirFor = async path => {
+    const parts = path.split("/").slice(0, -1);
+    let h = dir, sofar = "";
+    for (const p of parts) {
+      sofar = sofar ? sofar + "/" + p : p;
+      if (!dirs.has(sofar)) dirs.set(sofar, await h.getDirectoryHandle(p, {create: true}));
+      h = dirs.get(sofar);
+    }
+    return h;
+  };
+  const put = async (path, data) => {
+    const d = await dirFor(path);
+    const fh = await d.getFileHandle(path.split("/").pop(), {create: true});
+    const w = await fh.createWritable();
+    await w.write(data); await w.close();
+  };
+  let done = 0;
+  const failed = [];
+  const step = what => { done++; bar.style.width = Math.round(done / total * 100) + "%"; label.textContent = done + " of " + total + " — " + what; };
+  for (const [path, text] of res.files) {
+    try { await put(path, text); } catch (e) { failed.push(path + ": " + e.message); }
+    step(path);
+  }
+  for (const {file, out} of res.assets) {
+    try { await put(out, await file.handle.getFile()); } catch (e) { failed.push(out + ": " + e.message); }
+    step(out);
+  }
+  outBox.append(failed.length
+    ? el("div", {class: "msg warn"}, failed.length + " file(s) could not be written:", el("pre", {style: "white-space:pre-wrap;font:12px var(--mono)"}, failed.join("\n")))
+    : el("div", {class: "msg ok"},
+        "Done: " + res.files.size + " pages and " + res.assets.length + " attachments written to “" + dir.name + "”. ",
+        "Open GroupToDo, choose ", el("b", {}, "Vault & sync → Connect folder"), " (or Choose folder on the welcome screen) and point it at that folder."));
+};
+</script>
+</body>
+</html>
