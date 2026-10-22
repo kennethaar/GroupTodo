@@ -18993,26 +18993,25 @@ function openVaultDialog() {
         })()),
 
       el("div", {class: "field"},
-        el("label", {}, "Tasks that are far too late in " + (Spaces.active || "this space")),
+        el("label", {}, "Birthday tasks"),
         (() => {
-          const input = el("input", {type: "number", min: "0", step: "1", placeholder: "never",
-            style: "width:7em", value: expireAfterDays() || ""});
-          input.addEventListener("change", () => {
-            const n = Math.max(0, parseInt(input.value, 10) || 0);
-            setSetting("expire_after_days", n ? String(n) : "");
-            notify(n ? "Your tasks more than " + n + " days past their date will be cancelled."
-                     : "Late tasks stay until you deal with them.");
-            if (n) expireOverdue();
-          });
-          return el("div", {},
-            el("div", {style: "display:flex;gap:10px;align-items:center"},
-              el("span", {}, "Cancel my tasks once they are more than"), input, el("span", {}, "days late")),
-            el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-              "Taskwarrior's until, for the whole list. Only tasks you wrote or were handed: never " +
-              "a Waiting for, never a repeating one, never somebody else's. They are struck out, " +
-              "not deleted, with expired:: saying when, and the toast that says so can undo it. " +
-              "Empty means never. One task can have its own date instead: until:fri in capture, " +
-              "or the field in its panel."));
+          const on = birthdayTasksExpire();
+          const box = el("button", {class: "spacetoggle" + (on ? " on" : ""),
+            onclick: () => {
+              PREF.set("expire.birthdays", on ? "0" : "1");
+              notify(on ? "Birthday tasks stay until you deal with them."
+                        : "Birthday tasks go once the birthday has passed.");
+              closeModal(); if (!on) expireOverdue(); render(); openVaultDialog();
+            }}, on ? "\u2713" : "");
+          return el("div", {style: "display:flex;gap:10px;align-items:flex-start"},
+            box,
+            el("div", {},
+              el("div", {}, "Cancel a birthday task once the birthday has passed"),
+              el("div", {style: "color:var(--fg3);font-size:12px"},
+                "A task that says birthday and links a person with birthday:: on their page, " +
+                "like Buy a present for Anna's birthday [[p/Anna Berg]]. Every space, this device. " +
+                "Any other task goes only on its own until:: date - until:fri in capture, " +
+                "or the field in its panel.")));
         })()),
 
       el("div", {class: "field"},
@@ -19582,19 +19581,24 @@ function untilWords(day, time) {
   return d === 0 ? "today" : d === 1 ? "tomorrow" : d < 0 ? -d + " days late" : "in " + d + " days";
 }
 
-function birthdayOf(path) {
+function birthdayParts(path) {
   const props = getPage(path)?.props || {};
   const raw = String(props.birthday || props.born || props["fødselsdag"] || "");
-  let m, y = 0, mo, d;
-  if ((m = /(\d{4})-(\d{2})-(\d{2})/.exec(raw))) { y = +m[1]; mo = +m[2]; d = +m[3]; }
-  else if ((m = /(?:^|[^\d])(\d{2})-(\d{2})(?!\d)/.exec(raw))) { mo = +m[1]; d = +m[2]; }
-  else if ((m = /(\d{1,2})[./](\d{1,2})(?:[./](\d{4}))?/.exec(raw))) { d = +m[1]; mo = +m[2]; y = m[3] ? +m[3] : 0; }
-  else return null;
-  const today = todayISO();
-  // Born on the 29th of February: the 28th, in the years that have no 29th.
-  const day = whenDayMonth(d, mo, 0, today) || (mo === 2 && d === 29 ? whenDayMonth(28, 2, 0, today) : null);
+  let m;
+  if ((m = /(\d{4})-(\d{2})-(\d{2})/.exec(raw))) return {y: +m[1], mo: +m[2], d: +m[3]};
+  if ((m = /(?:^|[^\d])(\d{2})-(\d{2})(?!\d)/.exec(raw))) return {y: 0, mo: +m[1], d: +m[2]};
+  if ((m = /(\d{1,2})[./](\d{1,2})(?:[./](\d{4}))?/.exec(raw))) return {y: m[3] ? +m[3] : 0, mo: +m[2], d: +m[1]};
+  return null;
+}
+/* The first birthday on or after `from`. Born on the 29th of February: the
+   28th, in the years that have no 29th. */
+const birthdayFrom = (bp, from) =>
+  whenDayMonth(bp.d, bp.mo, 0, from) || (bp.mo === 2 && bp.d === 29 ? whenDayMonth(28, 2, 0, from) : null);
+function birthdayOf(path) {
+  const bp = birthdayParts(path);
+  const day = bp && birthdayFrom(bp, todayISO());
   if (!day) return null;
-  return {day, age: y ? Number(day.slice(0, 4)) - y : null};
+  return {day, age: bp.y ? Number(day.slice(0, 4)) - bp.y : null};
 }
 function birthdays() {
   return memo("birthdays", () => acrossSpaces(() => {
@@ -19721,49 +19725,62 @@ function remindTick() {
 }
 
 /* ============================================================
-   167_EXPIRY -- Taskwarrior's until:, and a limit on how late is too late
-   A task that is three months past its date is not a task any more, it is a
-   reproach. Two ways to let it go, both written in the files:
+   167_EXPIRY -- Taskwarrior's until:, and birthdays that have been
+   A task with a date of its own to stop mattering says so on the task:
 
-     until:: [[2026-11-01]]   on the task: after that day it is cancelled.
+     until:: [[2026-11-01]]   after that day it is cancelled.
                               "Buy tickets until:fri" in capture writes it.
-     expire_after_days:: 30   in pages/GTD.md, set from Vault & sync: any task
-                              of yours that far past its deadline (or its
-                              scheduled day, when it has no deadline) goes.
 
-   The second one only ever touches your own tasks -- ones you wrote, or that
-   are handed to you -- never somebody else's in a shared folder, never a
-   Waiting for (being late is the other person's doing, and chasing it is the
-   point), and never a repeating one, which only ever has one copy anyway.
+   Nothing else is cancelled for being late. Late is a question for the weekly
+   review, not for a rule that does not know why the task slipped.
+
+   The one exception is a task for somebody's birthday: "Buy a present for
+   Anna's birthday [[p/Anna Berg]]" means nothing the day after, so once the
+   birthday it was written for has passed it goes. It is a birthday task when
+   it (or a line above it) links a person whose page has birthday::, and its
+   words say birthday -- linking Anna alone is not enough, or "Send Anna the
+   contract" would vanish on her birthday. The birthday it was for is the
+   first one on or after the day it was added. One switch in Vault & sync
+   covers every space, kept on this device.
+
    Cancelled, not deleted: the task stays where it was, struck out, with
-   expired:: saying why, and one toast offers to put the lot back. Put back,
+   expired:: saying when, and one toast offers to put the lot back. Put back,
    a task is marked expire:: never, because "keep this" is an answer that has
    to outlive the next time the app opens.
    ============================================================ */
-const expireAfterDays = () => {
-  const n = parseInt(getSetting("expire_after_days") || "", 10);
-  return n > 0 ? n : 0;
-};
-function expirableMine(a) {
-  const me = whoAmI();
-  const who = assigneeOf(a.block);
-  if (who) return samePerson(who, me);
-  const by = blockProp(a.block, "by");
-  if (by) return samePerson(splitStamp(by).who, me);
-  return !a.owner || samePerson(a.owner, me);
+const BIRTHDAY_WORDS = /\b(birthday|bday|b-day)\b|bursdag|fødselsdag/i;
+const birthdayTasksExpire = () => PREF.get("expire.birthdays", "1") !== "0";
+
+/* The birthday a task was written for, or null when it is not a birthday task. */
+function birthdayTaskDay(block) {
+  let said = false, person = null;
+  for (let p = block; p; p = p._parent) {
+    if (BIRTHDAY_WORDS.test(linkWords(p.title || ""))) said = true;
+    if (!person) {
+      for (const m of String(p.title || "").matchAll(/\[\[p\/([^\]|]+)\]\]/g)) {
+        const path = personPath(trim(m[1]));
+        if (birthdayParts(path)) { person = path; break; }
+      }
+    }
+  }
+  if (!said || !person) return null;
+  const from = addedDate(block) || dueDate(block);
+  return from ? birthdayFrom(birthdayParts(person), from) : null;
 }
+
 function expireHere(today) {
-  const limit = expireAfterDays();
   const out = [];
   for (const a of leafActionsHere()) {
     const b = a.block;
+    if (/^never$/i.test(trim(blockProp(b, "expire") || ""))) continue;
     const until = dateIn(blockProp(b, "until"));
     let why = null;
-    if (/^never$/i.test(trim(blockProp(b, "expire") || ""))) continue;
     if (until && until < today) why = "until";
-    else if (limit && b.state !== "WAIT" && !repeatOf(b) && expirableMine(a)) {
-      const day = dateIn(blockProp(b, "DEADLINE")) || dateIn(blockProp(b, "SCHEDULED")) || dateIn(blockProp(b, "due"));
-      if (day && dateDiffDays(day, today) > limit) why = "late";
+    else if (birthdayTasksExpire()) {
+      const bday = birthdayTaskDay(b);
+      // A card dated after the day ("belated") is aimed past it on purpose.
+      const due = dueDate(b);
+      if (bday && bday < today && !(due && due > bday)) why = "birthday";
     }
     if (!why) continue;
     const before = {state: b.state, props: Object.assign({}, b.props)};
@@ -19782,13 +19799,14 @@ function expireOverdue() {
   if (!gone.length) return;
   clearMemo();
   render();
-  const late = gone.filter(g => g.why === "late").length;
+  const bdays = gone.filter(g => g.why === "birthday").length;
   const msg = gone.length === 1
     ? "“" + plainTitle(gone[0].block.title) + "” " +
-      (gone[0].why === "until" ? "ran past its until:: date" : "was more than " + expireAfterDays() + " days late") +
+      (gone[0].why === "until" ? "ran past its until:: date" : "was for a birthday that has passed") +
       " and is cancelled."
     : gone.length + " tasks cancelled: " +
-      [late ? late + " too late" : null, gone.length - late ? (gone.length - late) + " past their until:: date" : null]
+      [bdays ? bdays + " for a birthday that has passed" : null,
+       gone.length - bdays ? (gone.length - bdays) + " past their until:: date" : null]
         .filter(Boolean).join(", ") + ".";
   notify(msg, "info", {label: "Undo", run: () => {
     for (const g of gone) inSpace(g.space, () => {

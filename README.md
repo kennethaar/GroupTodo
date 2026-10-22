@@ -866,25 +866,27 @@ while the app was closed shows when you open it, up to two hours late. Which
 ones you have seen is kept on this device, like read state, and never in the
 files.
 
-### Letting late tasks go
+### Letting tasks go when their day has gone
 
-A task three months past its date is not a task any more. Taskwarrior's
-`until` lets it go, and so does this, in two ways, both written in the files:
+A task cancels itself only when its own day to stop mattering has passed.
+Being late on its own is never enough: why a task slipped is a question for
+the weekly review, not for a rule.
 
-- **On one task:** `until:: [[2026-11-01]]`, typed as `until:fri` in capture or
-  set in the panel. The day after, it is cancelled.
-- **For the whole list:** **Vault & sync → Cancel my tasks once they are more
-  than N days late**, stored as `expire_after_days::` in `pages/GTD.md`, per
-  space. Any task of yours that far past its deadline (or its scheduled day,
-  when it has no deadline) is cancelled.
+- **Any task, set on that task:** `until:: [[2026-11-01]]`, typed as `until:fri`
+  in capture or set in the task panel. The day after, it is cancelled.
+- **Birthday tasks:** *Buy a present for Anna's birthday [[p/Anna Berg]]*
+  means nothing the day after. Once the birthday it was written for has passed,
+  it goes. A task is a birthday task when it, or a line above it, links a
+  person whose page has `birthday::`, and its words say birthday (or
+  *bursdag*, *fødselsdag*). Linking Anna alone is not enough, or *Send Anna the
+  contract* would vanish on her birthday. The birthday it was for is the first
+  one on or after the day the task was added, and a task dated after it (a
+  belated card) is left alone. One switch in **Vault & sync → Birthday tasks**
+  turns this off. It covers every space and is kept on this device.
 
-The second one only touches your own tasks: ones you wrote, or that were
-handed to you. It never touches somebody else's in a shared folder, never a
-Waiting for (being late is the other person's doing, and chasing it is the
-point), and never a repeating one. Expired tasks are struck out, not deleted,
-with `expired::` saying when. The toast that says so has **Undo**, which marks
-them `expire:: never` so they are not cancelled again the next time the app
-opens.
+Expired tasks are struck out, not deleted, with `expired::` saying when. The
+toast that says so has **Undo**, which marks them `expire:: never` so they are
+not cancelled again the next time the app opens.
 
 ### Dates in your calendar
 
