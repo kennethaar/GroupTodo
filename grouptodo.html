@@ -7313,13 +7313,13 @@ function computeNudges() {
   push("late", "danger", "overdue", overdue.length, () => go("today", {jz: "due"}));
 
   const stuck = stuckActiveProjects();
-  push("stuck", "danger", "projects with no next action", stuck.length, () => go("review"));
+  push("stuck", "danger", "projects with no next action", stuck.length, () => goReviewSection("stuck"));
 
   const loose = acts.filter(a => a.group === "JOURNAL");
-  push("loose", "warn", "journal actions not tied to a project", loose.length, () => go("review"));
+  push("loose", "warn", "journal actions not tied to a project", loose.length, () => goReviewSection("loose"));
 
   const noVerb = acts.filter(a => a.state === "TODO" && a.missingVerb);
-  push("verb", "warn", "actions without a physical verb", noVerb.length, () => go("review"));
+  push("verb", "warn", "actions without a physical verb", noVerb.length, () => goReviewSection("verb"));
 
   const noCtx = acts.filter(a => a.state === "TODO" && a.missingContext);
   push("ctx", "warn", "actions without a context", noCtx.length, () => go("next", {sub: "board"}));
@@ -7338,10 +7338,11 @@ function computeNudges() {
        () => noOutcome.length && openOutcomePrompt(noOutcome[0]));
 
   const orphanProjects = unassignedProjects();
-  push("area", "", "projects under no responsibility", orphanProjects.length, () => go("horizons"));
+  // The all-areas ladder shows neither of these; the area's own Horizons does.
+  push("area", "", "projects under no responsibility", orphanProjects.length, () => openAreaHorizons(Spaces.active));
 
   const idleGoals = goalsWithoutProjects();
-  push("goal", "", "goals with no project", idleGoals.length, () => go("horizons"));
+  push("goal", "", "goals with no project", idleGoals.length, () => openAreaHorizons(Spaces.active));
 
   const stale = weedingWorthIt()
     ? stalestActiveProjects(99).filter(p => (p.ageDays ?? 0) > CFG.staleProjectDays) : [];
@@ -20399,6 +20400,13 @@ function ensureReviewList() {
 }
 const editReviewSteps = () => openPage(ensureReviewList());
 
+/* A nudge whose list lives further down the review: going to the review alone
+   does nothing when you are already on it, so it lands on the list itself. */
+function goReviewSection(id) {
+  go("review", {sub: "steps"});
+  requestAnimationFrame(() => document.getElementById("rsec-" + id)?.scrollIntoView({block: "start"}));
+}
+
 /* [{title, steps: [{title, note, doors}]}], from the page if there is one. */
 function reviewSteps() {
   const page = V.pages.has(REVIEW_LIST_PATH) ? getPage(REVIEW_LIST_PATH) : reviewListPage();
@@ -20530,7 +20538,8 @@ function viewReview() {
   if (health) c.append(el("p", {class: "hint"}, health + " broken link" + (health === 1 ? "" : "s") + " or missing title" +
     (health === 1 ? "" : "s") + ". ", el("button", {class: "textbtn", onclick: () => go("review", {sub: "health"})}, "Fix what is broken")));
 
-  const worth = attention();
+  // "The review is due" only leads back here, so it is not said on the review itself.
+  const worth = attention().filter(nd => nd.id !== "review");
   if (worth.length) {
     c.append(el("div", {class: "group"}, "Worth a look", el("span", {class: "plain"}, "· " + worth.length),
       el("button", {class: "textbtn", onclick: () => openNudgeExplainer()}, "Why these?")));
@@ -20542,7 +20551,7 @@ function viewReview() {
   }
   for (const s of reviewSections()) {
     if (!s.items.length) continue;
-    c.append(el("div", {class: "group"}, s.title, el("span", {class: "plain"}, "· " + s.items.length + " · " + s.hint)));
+    c.append(el("div", {class: "group", id: s.id ? "rsec-" + s.id : null}, s.title, el("span", {class: "plain"}, "· " + s.items.length + " · " + s.hint)));
     c.append(pagedCard(s.items, it => el("div", {class: "dash-item",
       onclick: () => it.block ? openTaskDetail(it.path, it.block) : previewPage(V.space, it.path)},
       el("span", {style: "flex:1;min-width:0", html: renderInline(it.text)}),
@@ -25873,16 +25882,16 @@ function openWeeding(next) {
 function reviewSections() {
   const acts = leafActions();
   return [
-    {title: "Stuck active projects", hint: "no next action - define one or park it",
+    {id: "stuck", title: "Stuck active projects", hint: "no next action - define one or park it",
      items: stuckActiveProjects().map(s => ({text: pageTitle(s.path), sub: s.reason, path: s.path,
        fix: "+ next action", act: () => { closeModal(); openAddNextAction(s.path); }}))},
     {title: "Projects not stated as an outcome", hint: "what would done look like?",
      items: projectsWithoutOutcome().map(p => ({text: pageTitle(p), sub: "no outcome:: yet", path: p,
        fix: "state outcome", act: () => { closeModal(); openOutcomePrompt(p); }}))},
-    {title: "Journal actions without a project", hint: "refile or let them go",
+    {id: "loose", title: "Journal actions without a project", hint: "refile or let them go",
      items: acts.filter(a => a.group === "JOURNAL").map(a => ({text: a.title, sub: a.path, path: a.path, block: a.block,
        fix: "refile", act: () => { closeModal(); openRefile(a.path, a.block); }}))},
-    {title: "Actions without a physical verb", hint: "what would a camera see?",
+    {id: "verb", title: "Actions without a physical verb", hint: "what would a camera see?",
      items: acts.filter(a => a.state === "TODO" && a.missingVerb).map(a => ({text: a.title, sub: a.path, path: a.path, block: a.block,
        fix: "add verb", act: () => { closeModal(); openVerbPicker(a.path, a.block); }}))},
     {title: "Actions without a context", hint: "where can this be done?",
