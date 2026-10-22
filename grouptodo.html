@@ -3052,7 +3052,8 @@ function reportStorageTrouble(rec, e) {
     return;
   }
   notify("Cannot reach " + label + "'s storage - " + storageReason(e) + ". Saved on this " +
-         "device and it will go up when the connection is back.", "warn");
+         "device and it will go up when the connection is back.", "warn",
+         {label: "Try now", run: saveNow});
 }
 
 let flushTimer = null;
@@ -3067,6 +3068,13 @@ function scheduleFlush() {
    Pi, a phone off wifi -- so keep trying on a widening interval rather than
    waiting for the next keystroke, which is what used to re-arm the timer. */
 let retryWait = 0;
+/* "Try now": the widening wait is for when nobody is looking. Somebody who
+   just plugged the drive back in should not sit out the rest of a minute. */
+function saveNow() {
+  retryWait = 0;
+  clearTimeout(flushTimer);
+  return flush();
+}
 function retryFlush() {
   retryWait = retryWait ? Math.min(retryWait * 2, 60000) : 3000;
   clearTimeout(flushTimer);
@@ -3093,6 +3101,7 @@ async function doFlush() {
   if (WIPING) return;
   let wrote = false;
   for (const rec of Array.from(LOADED.values())) {
+    if (rec.hold) continue;          // its folder looks emptied: see looksEmptied()
     if (!rec.backend || (!rec.dirty.size && !rec.removed.size)) continue;
     const dirty = Array.from(rec.dirty); rec.dirty.clear();
     const gone  = Array.from(rec.removed); rec.removed.clear();
@@ -3155,9 +3164,11 @@ async function doFlush() {
     }
   }
   V.syncing = false;
-  if (V.backend) setSync("ok", V.backend.label);
+  if (heldRecords().length) setSync("warn", "not saving - folder looks empty");
+  else if (V.backend) setSync("ok", V.backend.label);
   if (wrote) Spaces.writeSummary().catch(() => {});
-  for (const rec of LOADED.values()) if (rec.dirty.size || rec.removed.size) { scheduleFlush(); break; }
+  for (const rec of LOADED.values())
+    if (!rec.hold && (rec.dirty.size || rec.removed.size)) { scheduleFlush(); break; }
 }
 
 window.addEventListener("beforeunload", e => {
@@ -3167,6 +3178,114 @@ window.addEventListener("beforeunload", e => {
     flush(); e.preventDefault(); e.returnValue = "";
   }
 });
+
+/* Leaving the tab -- switching away, a phone putting the browser to sleep, the
+   window closing -- is the last moment anything is sure to run, so whatever is
+   waiting out the debounce goes now rather than in 450 ms that may never come. */
+const flushIfDirty = () => {
+  if (WIPING) return;
+  if ([...LOADED.values()].some(r => r.dirty.size || r.removed.size)) flush();
+};
+document.addEventListener("visibilitychange", () => { if (document.hidden) flushIfDirty(); });
+window.addEventListener("pagehide", flushIfDirty);
+
+/* ---------- the line you were typing ----------
+   A line is written back to its page when you leave it, so the words in the
+   line being typed exist nowhere but the screen until then. A crash, a closed
+   laptop or a killed tab took them with it, and neither the debounce nor the
+   mirror ever saw them. So every keystroke copies the line to this device,
+   and the copy is dropped the moment the line is written back. A copy still
+   here at the next start is a line that never made it; you are offered it.
+
+   The copy says which line it belongs to by the text the line had when you
+   started typing, because block ids are not stored in the file. When that
+   line is no longer there -- edited on another device, say -- the words are
+   added as a new line rather than written over anything. */
+const DRAFT_KEY = "gtd.linedraft";
+
+function keepLineDraft(space, path, b, text) {
+  try {
+    const old = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
+    // The text the line had before this edit began, kept from the first keystroke.
+    const base = old && old.id === b.id && old.path === path ? old.base : b.title;
+    if (text === base) { localStorage.removeItem(DRAFT_KEY); return; }
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(
+      {space: space || V.space, path, id: b.id, base, text, at: nowStamp()}));
+  } catch (_) {}
+}
+
+function readLineDraft() {
+  try {
+    const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
+    return d && typeof d.text === "string" && d.path ? d : null;
+  } catch (_) { return null; }
+}
+
+/* Called once the line is written back. By id, not by text: writing back
+   turns names into links and a trailing date into a due date, so the saved
+   title is often not the text that was typed. */
+function dropLineDraft(id) {
+  const d = readLineDraft();
+  if (d && d.id === id) forgetLineDraft();
+}
+
+function forgetLineDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch (_) {} }
+
+function offerLineDraft() {
+  const d = readLineDraft();
+  if (!d || !trim(d.text)) { if (d) forgetLineDraft(); return; }
+  if (!Spaces.get(d.space)) { forgetLineDraft(); return; }
+  const rec = LOADED.get(d.space);
+  // Its area is not open, or not writable yet: keep the copy for when it is.
+  if (!rec || rec.hold || PENDING_GRANT.has(d.space)) return;
+  if (document.querySelector("#modalRoot .modal")) return;
+  const page = rec.pages.get(d.path);
+  let target = null, landed = false;
+  // The line editor holds the title only; the state sits on its own button.
+  if (page) walkBlocks(page.blocks, blk => {
+    if (trim(blk.title || "") === trim(d.text)) landed = true;
+    if (!target && blk.title === d.base) target = blk;
+  });
+  if (landed) { forgetLineDraft(); return; }      // it was saved after all
+  const where = page ? inSpace(d.space, () => pageTitle(d.path)) : "today's journal";
+  modal({
+    center: true,
+    title: "A line you were typing was not saved",
+    body: el("div", {},
+      el("div", {class: "field"}, el("div", {style: "font-size:13.5px"},
+        "The app closed before this line was written to " + where + ":")),
+      el("div", {class: "field"}, el("div",
+        {style: "font-size:13.5px;padding:8px 10px;border-left:3px solid var(--accent);background:var(--bg2)"},
+        d.text)),
+      el("div", {class: "field"}, el("div", {style: "font-size:12.5px;color:var(--fg3)"},
+        target ? "Restoring puts it back on the line it was typed on."
+               : "That line has changed since, so restoring adds it as a new line instead of writing over it.")),
+    ),
+    foot: [
+      el("button", {class: "btn primary", onclick: () => { closeModal(); restoreLineDraft(d); }}, "Restore"),
+      el("button", {class: "btn ghost", onclick: () => { closeModal(); forgetLineDraft(); }}, "Discard"),
+    ],
+  });
+}
+
+function restoreLineDraft(d) {
+  inSpace(d.space, () => {
+    let path = d.path, page = V.pages.get(path);
+    if (!page) { path = ensureJournal(todayISO()); page = V.pages.get(path); }
+    let target = null;
+    walkBlocks(page.blocks, blk => { if (!target && blk.title === d.base) target = blk; });
+    const [st, rest] = splitState(d.text);
+    if (target && path === d.path) {
+      if (st) { target.state = st; target.title = rest; } else target.title = d.text;
+    } else {
+      page.blocks.push(newBlock(st ? {state: st, title: rest} : {title: d.text}));
+    }
+    touch(path);
+  });
+  forgetLineDraft();
+  render();
+  notify("Line restored.");
+}
 
 /* Local mirror. Always written BEFORE the real backend, so a save cannot be
    lost to storage that turns out to be unreachable. How much it keeps depends
@@ -3392,7 +3511,23 @@ async function readInto(record) {
     const page = record.pages.get(path);
     if (page) localEdits.set(path, page);
   }
-  const files = await record.backend.list();
+  let files;
+  try { files = await record.backend.list(); }
+  catch (e) {
+    // A folder that is not there any more is the same alarm as one that is empty.
+    if (!(record.backend.kind === "fs" && /NotFound/i.test((e && e.name) || ""))) throw e;
+    holdRecord(record, "missing", 0);
+    return record;
+  }
+  const seen = Array.from(files.keys())
+    .filter(p => !isGuidePath(p) && /\.md$/i.test(p) && !looksLikeBundle(files.get(p))).length;
+  if (looksEmptied(record, seen)) {
+    holdRecord(record, "empty", seen);
+    return record;
+  }
+  record.hold = null;
+  if (seen && (record.backend.kind === "fs" || record.backend.kind === "http"))
+    PREF.set("pagecount:" + record.name, String(seen));
   record.pages.clear(); record.raw.clear();
   let couriers = 0;
   for (const [path, text] of files) {
@@ -3422,6 +3557,110 @@ async function readInto(record) {
     scheduleFlush();
   }
   return record;
+}
+
+/* ---------- a folder that comes back empty ----------
+   An area that had pages and now opens to none has almost never been emptied
+   on purpose. OneDrive has not finished downloading, the drive is not mounted,
+   the folder was moved or renamed. Carrying on as usual is the worst answer:
+   the app seeds templates and today's journal, writes them into the empty
+   folder, and from then on it looks like a real vault that lost everything.
+
+   So the area is put on hold. Nothing is written to that folder until you
+   say what happened, and pages already in memory stay on screen. The count
+   is per device, the one thing that knows what "last time" looked like. */
+function looksEmptied(record, seen) {
+  const kind = record.backend && record.backend.kind;
+  if (kind !== "fs" && kind !== "http") return false;
+  const had = Number(PREF.get("pagecount:" + record.name, "0")) || 0;
+  if (had < 3) return false;
+  return seen === 0 || (had >= 20 && seen < had / 5);
+}
+
+function holdRecord(record, reason, seen) {
+  const had = Number(PREF.get("pagecount:" + record.name, "0")) || 0;
+  record.hold = {reason, had, seen, at: nowStamp()};
+}
+
+const heldRecords = () => Array.from(LOADED.values()).filter(r => r.hold);
+
+function showHoldDialog(name) {
+  const rec = LOADED.get(name);
+  if (!rec || !rec.hold) return;
+  const {reason, had, seen} = rec.hold;
+  const label = spaceLabel(name);
+  const where = (rec.backend && rec.backend.label) || "its folder";
+  const what = reason === "missing"
+    ? "The folder “" + where + "” cannot be found."
+    : "The folder “" + where + "” opened with " + (seen ? "only " + seen : "no") +
+      " page" + (seen === 1 ? "" : "s") + " in it. Last time on this device it had " + had + ".";
+  modal({
+    center: true,
+    title: label + (reason === "missing" ? "'s folder is missing" : "'s folder looks empty"),
+    body: el("div", {},
+      el("div", {class: "field"}, el("div", {style: "font-size:13.5px"},
+        what + " Nothing has been written to it.")),
+      el("div", {class: "field"}, el("div", {style: "font-size:13px;color:var(--fg2)"},
+        "Most often OneDrive or another sync app has not finished downloading, the drive is " +
+        "not connected, or the folder was moved or renamed. Your notes are most likely still " +
+        "where they were. Until you choose below, GroupToDo will not write to this folder.")),
+    ),
+    foot: [
+      el("button", {class: "btn primary", onclick: () => { closeModal(); retryHold(name); }}, "Try again"),
+      rec.backend && rec.backend.kind === "fs" && CAP.dirPicker
+        ? el("button", {class: "btn ghost", onclick: () => { closeModal(); assignSpaceFolder(name); }}, "Choose the folder")
+        : null,
+      el("button", {class: "btn ghost", onclick: () => { closeModal(); releaseHold(name); }},
+        reason === "missing" ? "Keep it in this browser" : "It is meant to be empty"),
+    ],
+  });
+}
+
+/* Read the folder again. What was made while it was on hold and never edited
+   by you -- seeded templates, an empty journal -- is dropped first, or it
+   would be laid over the real files that just came back. */
+async function retryHold(name) {
+  const rec = LOADED.get(name);
+  if (!rec || !rec.hold) return;
+  const since = rec.hold.at;
+  for (const p of Array.from(rec.dirty)) {
+    const page = rec.pages.get(p);
+    if (!page || !(page.props?.updated >= since)) { rec.dirty.delete(p); rec.pages.delete(p); }
+  }
+  rec.removed.clear();
+  try { await readInto(rec); }
+  catch (e) { notify("Could not read the folder: " + storageReason(e) + ".", "warn"); }
+  if (rec.hold) { showHoldDialog(name); notify("Still nothing there.", "warn"); return; }
+  afterHold(name);
+  notify(spaceLabel(name) + " is back: " + rec.pages.size + " pages.");
+}
+
+/* You said the folder is meant to be like this: start writing to it. */
+async function releaseHold(name) {
+  const rec = LOADED.get(name);
+  if (!rec) return;
+  PREF.set("pagecount:" + name, "0");
+  if (rec.hold && rec.hold.reason === "missing") {
+    // No folder to write to: carry on in this browser, as any area without one does.
+    const sp = Spaces.get(name);
+    if (sp) { sp.kind = "local"; delete sp.label; await Spaces.save(); }
+    rec.backend = await spaceBackend(sp);
+  }
+  rec.hold = null;
+  afterHold(name);
+}
+
+async function afterHold(name) {
+  if (name === Spaces.active) {
+    bindActive(name);
+    migrateVault();
+    await seedIfEmpty();
+    scanVerbs();
+    ensureJournal(todayISO());
+  }
+  clearMemo();
+  render();
+  scheduleFlush();
 }
 
 /* ---------- the old file of a moved project ----------
@@ -3628,6 +3867,7 @@ async function loadFromBackend(backend, {quick = false} = {}) {
     bindActive(name);
     setSync("ok", backend.label);
     readInto(rec).then(() => {
+      if (rec.hold) { showHoldDialog(name); setSync("warn", "not saving - folder looks empty"); }
       if (V.space !== name) return;
       bindActive(name); clearMemo();
       const ed = document.activeElement;
@@ -3888,6 +4128,8 @@ async function assignSpaceFolder(name) {
   sp.askedStorage = true;
   await Spaces.save();
 
+  // A folder chosen on purpose is never "the old one, emptied".
+  PREF.set("pagecount:" + name, "0");
   const rec = newRecord(name, Backends.fs(handle));
   await readInto(rec);                              // what the folder already has wins
   let moved = 0;
@@ -4186,6 +4428,8 @@ async function openSpace(name, destination = null) {
   checkClaimable();
   // At startup init() does this once, after everything else it opens.
   if (INIT_DONE && PENDING_GRANT.has(name)) offerFolderReconnect(name);
+  else if (INIT_DONE && LOADED.get(name)?.hold) showHoldDialog(name);
+  else if (INIT_DONE) offerLineDraft();
   } catch (error) {
     SPACE_TRANSITION = false;
     const content = $("#content");
@@ -4818,6 +5062,8 @@ function requireTemplate(name) {
   const path = readTemplate(name);
   if (path) { MISSING_TEMPLATE_NOTICES.delete((V.space || "") + ":" + name); return path; }
   const key = (V.space || "") + ":" + name;
+  // A folder that came back empty is missing every template; the hold dialog says why.
+  if (LOADED.get(V.space)?.hold) return null;
   if (!MISSING_TEMPLATE_NOTICES.has(key)) {
     MISSING_TEMPLATE_NOTICES.add(key);
     const space = V.space;
@@ -17455,9 +17701,11 @@ function outlineBlock(path, page, b, opts = {}) {
     if (e.target.closest("[data-link], a[href]")) e.preventDefault();
   });
   txt.addEventListener("focus", () => { line.classList.add("raw"); txt.textContent = b.title; flyShow(txt, path, page, b); });
+  txt.addEventListener("input", () => keepLineDraft(node.dataset.space, path, b, lineText(txt)));
   txt.addEventListener("blur", () => {
     if (FLY && FLY.txt === txt) flyHide();
     if (commitLine(txt, path, b)) renderNav();
+    dropLineDraft(b.id);
     line.classList.remove("raw");
     if (paintTrackerLine(line, txt, path, b)) return;
     /* A line with a dropped picture in it comes back as a path, not a URL, so
@@ -27216,6 +27464,7 @@ async function refreshFromServer() {
   try {
     const before = pageSignature(rec);
     await readInto(rec);
+    if (rec.hold) { showHoldDialog(rec.name); setSync("warn", "not saving - server looks empty"); return; }
     bindActive(rec.name);
     if (pageSignature(rec) !== before) {
       scanVerbs();
@@ -28049,6 +28298,8 @@ const SEED_VERBS = {
 };
 
 async function seedIfEmpty() {
+  // An area whose folder came back empty is not new; seeding it is what made it look new.
+  if (LOADED.get(V.space)?.hold) return;
   const hadPages = V.pages.size > 0;
   ensureDefaultTemplates();
   scheduleTemplateRefresh();
@@ -29591,7 +29842,13 @@ function editAllText(ctx) {
    170_INIT
    ============================================================ */
 $("#btnSearch").onclick  = () => goSearch();
-$("#syncLine").onclick   = () => openVaultDialog();
+$("#syncLine").onclick   = () => {
+  // A save that is waiting out its retry is tried again on the way in.
+  if (V.error) saveNow();
+  const held = heldRecords();
+  if (held.length) { showHoldDialog(held[0].name); return; }
+  openVaultDialog();
+};
 $("#brand").onclick      = () => go("me");
 $("#hideSide").onclick   = () => isNarrow() ? document.body.classList.remove("nav-open") : setSidebarHidden(true);
 $("#burger").onclick     = () => toggleSidebar();
@@ -29906,6 +30163,13 @@ function installServiceWorker() {
   if (!PREF.get("onboarded")) { openOnboarding(); return; }
 
   if (spacesNeedingStorage().length) { openSpaceStorageSetup({firstRun: false}); return; }
+  // A folder that came back empty comes before everything else that could write to it.
+  const held = heldRecords();
+  if (held.length) {
+    showHoldDialog(held.some(r => r.name === Spaces.active) ? Spaces.active : held[0].name);
+    setSync("warn", "not saving - folder looks empty");
+    return;
+  }
   // A remembered folder that only needs permission again: ask here, where it
   // is one click, instead of leaving a picker to be found in Vault & sync.
   if (PENDING_GRANT.size) {
@@ -29914,6 +30178,7 @@ function installServiceWorker() {
     return;
   }
   afterFirstRun();
+  offerLineDraft();
 })();
 </script>
 
