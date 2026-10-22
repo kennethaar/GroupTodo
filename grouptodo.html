@@ -2437,11 +2437,13 @@ function parsePage(text) {
   const root = {level: -1, children: page.blocks};
   const stack = [root];
   let cur = null, curIndent = 0, seenBullet = false;
+  let drawer = null;            // the :LOGBOOK: or other drawer being read, if any
 
   for (const line of lines) {
     const bm = BULLET_RE.exec(line);
     if (bm) {
       seenBullet = true;
+      drawer = null;            // a drawer left open ends where the next bullet starts
       const level = indentLevel(bm[1]);
       const [state, title] = splitState(bm[2]);
       const blk = newBlock({state, title: trim(title)}, false);
@@ -2464,6 +2466,21 @@ function parsePage(text) {
       continue;
     }
     if (!cur) continue;
+    /* A drawer -- Logseq's :LOGBOOK: of CLOCK lines, or any :NAME: ... :END: --
+       is the outliner's bookkeeping, not words anybody means to edit. Kept
+       aside, never shown, and written back exactly as it came, so a time log
+       is not one stray Backspace from gone. */
+    if (drawer) {
+      const lead = /^\s*/.exec(line)[0].length;
+      drawer.push(line.slice(Math.min(lead, curIndent + 2)).replace(/\s+$/, ""));
+      if (trim(line) === ":END:") drawer = null;
+      continue;
+    }
+    if (/^:[A-Z][A-Z_-]*:$/.test(trim(line)) && trim(line) !== ":END:") {
+      drawer = [trim(line)];
+      (cur.drawers || (cur.drawers = [])).push(drawer);
+      continue;
+    }
     if (trim(line) === "") { if (cur.body.length) cur.body.push(""); continue; }
     const pm = PROP_RE.exec(trim(line));
     if (pm) { cur.props[pm[1]] = trim(pm[2]); continue; }
@@ -2581,6 +2598,7 @@ function serializeBlockLines(blocks, level = 0) {
     out.push((pad + "- " + (b.state ? b.state + " " : "") + b.title).replace(/\s+$/, ""));
     for (const [k, v] of Object.entries(b.props || {})) out.push(pad + "  " + k + ":: " + v);
     for (const l of b.body || []) out.push(l === "" ? "" : pad + "  " + l);
+    for (const d of b.drawers || []) for (const l of d) out.push(l === "" ? "" : pad + "  " + l);
     if (b.children && b.children.length) out.push(...serializeBlockLines(b.children, level + 1));
   }
   return out;
@@ -8018,12 +8036,53 @@ function resolveAssets(root) {
   }
 }
 
+let UPLOAD_SEQ = 0;
 /* Saving the files, then putting them in the line -- at the caret when you are
    typing in it, at the end of the line when you dropped them on it. */
 async function attachFilesToBlock(path, b, files, txt) {
   const list = Array.from(files || []).filter(f => f && (f.size || f.type));
   if (!list.length) return false;
   if (!canKeepFiles()) { notify("This area has nowhere to keep files.", "warn"); return true; }
+
+  /* ---------- holding the place while it saves ----------
+     Saving a big file to a synced folder or a server takes a moment, and you
+     go on typing. The link used to go wherever the caret had got to by the
+     time the save finished, not where you pasted. So a marker goes in at
+     once, where the paste happened, and is swapped for the link when the file
+     is safe -- or taken out again if it could not be saved. */
+  // No file names in it: leaving the line turns names into links, and a marker
+  // that has been rewritten can no longer be found to swap.
+  const token = "\u27E6uploading " + (list.length === 1 ? "file" : list.length + " files") +
+                " \u00B7" + (++UPLOAD_SEQ) + "\u27E7";
+  let held = false, caretBack = null;   // where to put the caret once the redraw is done
+  if (txt && document.activeElement === txt) {
+    const whole = lineText(txt);
+    const [from, to] = caretOffsets(txt);
+    const before = whole.slice(0, from), after = whole.slice(to);
+    const lead = before && !/\s$/.test(before) ? " " : "", tail = after && !/^\s/.test(after) ? " " : "";
+    setHostText(txt, before + lead + token + tail + after, (before + lead + token + tail).length);
+    held = true;
+  }
+  /* Where the marker is now: in the line still being typed in, or -- once you
+     have left it -- in the line's saved title. */
+  const swapToken = text => {
+    if (held && txt && txt.isConnected && document.activeElement === txt && lineText(txt).includes(token)) {
+      const now = lineText(txt);
+      const [caret] = caretOffsets(txt);
+      const at = now.indexOf(token);
+      const next = (text ? now.replace(token, text) : now.replace(token, "").replace(/ {2,}/g, " "));
+      const shift = next.length - now.length;
+      b.title = next;
+      caretBack = caret > at ? caret + shift : caret;
+      setHostText(txt, next, caretBack);
+      return true;
+    }
+    if (b.title.includes(token)) {
+      b.title = trim(text ? b.title.replace(token, text) : b.title.replace(token, "").replace(/ {2,}/g, " "));
+      return true;
+    }
+    return false;
+  };
 
   const marks = [];
   for (const f of list) {
@@ -8035,13 +8094,22 @@ async function attachFilesToBlock(path, b, files, txt) {
     try { marks.push(assetMarkdown(f, await saveAsset(f))); }
     catch (e) { notify("Could not save " + (f.name || "that file") + ": " + (e.message || e), "warn"); }
   }
-  if (!marks.length) return true;
+  if (!marks.length) {
+    if (swapToken("")) {
+      touch(path); render();
+      if (caretBack != null) focusLineAt(`.blk[data-id="${b.id}"] .txt`, caretBack);
+    }
+    return true;
+  }
   const addition = marks.join(" ");
 
+  if (held && swapToken(addition)) {
+    // Swapped where it was pasted.
+  }
   /* Written straight into the line rather than left on screen for the blur
      handler to pick up: a drop does not necessarily come with the caret in the
      line, and the redraw below would throw an unsaved edit away. */
-  if (txt && document.activeElement === txt) {
+  else if (txt && document.activeElement === txt) {
     const whole = lineText(txt);
     const [from, to] = caretOffsets(txt);
     const before = whole.slice(0, from), after = whole.slice(to);
@@ -8061,6 +8129,8 @@ async function attachFilesToBlock(path, b, files, txt) {
   }
   touch(path); noteTodoTouched();
   render();
+  // Back where you were typing, after the link that just went in before it.
+  if (caretBack != null) focusLineAt(`.blk[data-id="${b.id}"] .txt`, caretBack);
   const where = V.backend.kind === "fs" || V.backend.kind === "http"
     ? "saved in " + ASSET_DIR + "/"
     : "kept in this browser only - choose a folder to make them real files";
@@ -17243,9 +17313,41 @@ function linkCandidates(query) {
   return out;
 }
 
+/* ---------- the slash menu ----------
+   A slash at the start of a word, on a line in the outline, lists what can be
+   done to the line by name: "/wait", "/due", "/ctx". It is the line menu and
+   the state badge, reached without the mouse and without remembering which
+   Alt key is which. The words in English and Norwegian both find a command,
+   so "/frist" is the due date and "/venter" is waiting for. A slash after a
+   letter -- 24/9, and/or, http:// -- is text, and so is one inside [[ ]]. */
+const SLASH_COMMANDS = [
+  {id: "TODO",      title: "Todo",            detail: "a task to do",          kw: ["todo", "task", "oppgave", "gjøre"]},
+  {id: "DOING",     title: "Doing",           detail: "started on it",         kw: ["doing", "started", "now", "pågår", "gang"]},
+  {id: "WAIT",      title: "Waiting for",     detail: "somebody else has it",  kw: ["wait", "waiting", "venter"]},
+  {id: "DONE",      title: "Done",            detail: "finished",              kw: ["done", "finished", "ferdig"]},
+  {id: "CANCELLED", title: "Cancelled",       detail: "dropped on purpose",    kw: ["cancel", "cancelled", "drop", "droppet", "avbrutt"]},
+  {id: "due",       title: "Due date",        detail: "when it is for",        kw: ["due", "date", "deadline", "scheduled", "frist", "dato", "planlagt"]},
+  {id: "ctx",       title: "Context",         detail: "where you can do it",   kw: ["context", "ctx", "where", "kontekst"]},
+  {id: "proj",      title: "Project",         detail: "what it belongs to",    kw: ["project", "prosjekt"]},
+  {id: "rep",       title: "Repeat",          detail: "comes back when done",  kw: ["repeat", "recurring", "gjenta"]},
+  {id: "meet",      title: "Meeting",         detail: "attendees and agenda",  kw: ["meeting", "møte"]},
+  {id: "more",      title: "Everything else", detail: "the task panel",        kw: ["more", "details", "panel", "mer"]},
+];
+function slashRows(q) {
+  const f = q.toLowerCase();
+  const hit = c => !f || c.kw.some(w => w.startsWith(f)) || c.title.toLowerCase().startsWith(f);
+  return SLASH_COMMANDS.filter(hit).map(c => ({accept: "command", id: c.id, title: c.title,
+    detail: c.detail, mark: "/"}));
+}
+
 function suggestFor(host, opts) {
   const before = textBeforeCaret(host);
   if (before == null) return null;
+  if (opts.commands && !insideLink(before)) {
+    const sm = /(^|\s)\/([\p{L}]*)$/u.exec(before);
+    const rows = sm ? slashRows(sm[2]) : [];
+    if (rows.length) return {mode: "slash", at: before.length - sm[2].length - 1, rows};
+  }
   if (opts.trackers) {
     const tm = /^tracker-([\p{L}\p{N}_-]*)$/iu.exec(before);
     if (tm) return {mode: "tracker", at: 0, rows: trackerSuggestRows(tm[1])};
@@ -17315,7 +17417,8 @@ function suggestDraw() {
       el("span", {class: "d"}, detail)));
   });
   box.append(el("div", {class: "suggest-hint"},
-    mode === "word" ? "Tab takes it · keep typing to ignore" : "Tab takes it · Esc closes"));
+    mode === "word" ? "Tab takes it · keep typing to ignore"
+    : mode === "slash" ? "Tab or Enter runs it · Esc closes" : "Tab takes it · Esc closes"));
   const cur = box.children[i];
   if (cur) cur.scrollIntoView({block: "nearest"});
 }
@@ -17331,6 +17434,15 @@ function suggestAccept(n) {
   suggestClose();
   SUGGEST_DISMISSED = "";
   if (r.accept === "wizard") { if (opts.onTrackerWizard) opts.onTrackerWizard(); return; }
+  if (r.accept === "command") {
+    // The "/wait" that was typed has done its job: it goes, and so does the
+    // space before it when it was the end of the line, or every trip through
+    // the menu would leave one more behind.
+    const cut = !trim(after) && at > 0 && /\s/.test(text[at - 1]) ? at - 1 : at;
+    setHostText(host, text.slice(0, cut) + after, cut);
+    if (opts.onCommand) opts.onCommand(r.id);
+    return;
+  }
   if (r.accept === "tracker") {
     const insert = r.key + ":: ";
     setHostText(host, insert + after.replace(/^[\p{L}\p{N}_-]*(::)?\s*/u, ""), insert.length);
@@ -17368,6 +17480,10 @@ function suggestKey(e) {
   if (!SUGGEST || SUGGEST.host !== e.target) return false;
   const n = SUGGEST.rows.length;
   const word = SUGGEST.mode === "word";
+  // A command is something you asked for by typing the slash, so Enter runs it.
+  if (e.key === "Enter" && SUGGEST.mode === "slash" && !e.shiftKey) {
+    suggestAccept(); e.preventDefault(); return true;
+  }
   if (e.key === "Enter") { suggestClose(); return false; }
   if (e.key === "ArrowDown" && !e.altKey) { SUGGEST.i = (SUGGEST.i + 1) % n; suggestDraw(); e.preventDefault(); return true; }
   if (e.key === "ArrowUp" && !e.altKey)   { SUGGEST.i = (SUGGEST.i - 1 + n) % n; suggestDraw(); e.preventDefault(); return true; }
@@ -17505,6 +17621,7 @@ function pullUpLine(txt, path, page, b) {
     if (kids.length) { (t.children || (t.children = [])).push(...kids); t.collapsed = false; }
   }
   if ((b.body || []).length) (t.body || (t.body = [])).push(...b.body);
+  if ((b.drawers || []).length) (t.drawers || (t.drawers = [])).push(...b.drawers);
   let sel, at;
   if (above.classList.contains("bodyline")) {
     const bi = Number(above.dataset.bi);
@@ -17544,6 +17661,18 @@ function bodyLineEl(path, b, i) {
   txt.addEventListener("focus", () => { txt.textContent = b.body[i]; });
   txt.addEventListener("blur", () => {
     const val = lineText(txt);
+    /* "DEADLINE:: [[2026-10-30]]" written under a task is a property of it, the
+       way the file reads it back. Taken as one at once, rather than sitting as
+       text until the next load quietly turns it into a date. */
+    const prop = /^\s*([A-Za-z][\w-]*)::\s*(.*)$/.exec(val);
+    if (prop && val !== b.body[i] && trim(prop[2])) {
+      b.body.splice(i, 1);
+      setBlockProp(b, prop[1], trim(prop[2]));
+      touch(path); noteTodoTouched();
+      // Not from inside blur: the redraw would pull the element out from under it.
+      setTimeout(() => render(), 0);
+      return;
+    }
     if (val !== b.body[i]) {
       b.body[i] = val;
       createLinkedPages(val);
@@ -17555,7 +17684,8 @@ function bodyLineEl(path, b, i) {
   attachSuggest(txt);
   txt.addEventListener("keydown", e => {
     if (suggestKey(e)) return;
-    if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+    // Shift+Enter is another line here too, as it is on the bullet.
+    if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();
       const whole = lineText(txt);
       const [from, to] = caretOffsets(txt);
@@ -17661,7 +17791,8 @@ function lineMeta(b) {
   const out = [];
   const due = dueDate(b);
   if (b.state && due && OPEN_STATES[b.state])
-    out.push(el("span", {class: "chip " + (due < todayISO() ? "late" : due === todayISO() ? "today" : "")}, humanDate(due)));
+    out.push(el("span", {class: "chip " + (due < todayISO() ? "late" : due === todayISO() ? "today" : "")},
+      humanDate(due) + (relDue(due) ? " · " + relDue(due) : "")));
   if (repeatOf(b)) out.push(el("span", {class: "chip"}, "\u21BB " + repeatOf(b)));
   const who = b.state ? assigneeOf(b) : "";
   if (who && !samePerson(who, whoAmI())) out.push(el("span", {class: "chip who"}, "\u2192 " + who));
@@ -17870,7 +18001,21 @@ function outlineBlock(path, page, b, opts = {}) {
   });
   /* Names and dates as you type. A date taken from the list is the line's
      due date at once, and the words that said it go. */
-  attachSuggest(txt, {dates: true, onDate: iso => {
+  attachSuggest(txt, {dates: true, commands: true,
+  /* A slash command. A state is set on the line there and then; everything
+     else opens the matching row of the line menu, which already knows how. */
+  onCommand: id => {
+    if (OPEN_STATES[id] || id === "DONE" || id === "CANCELLED") {
+      commitLine(txt, path, b);
+      setBlockState(path, b, id);
+      if (id === "WAIT" && !assigneeOf(b)) FLY_OPEN_AFTER = {id: b.id, k: "who"};
+      focusBlock(b.id, false);
+      return;
+    }
+    if (!FLY || FLY.txt !== txt) flyShow(txt, path, page, b);
+    flyHead(id);
+  },
+  onDate: iso => {
     commitLine(txt, path, b);
     flyMakeTask(path, b);
     setDue(b, iso);
@@ -17903,6 +18048,21 @@ function outlineBlock(path, page, b, opts = {}) {
     // The menu under the line, then the suggestion list, own their keys first.
     if (flyKey(e)) return;
     if (suggestKey(e)) return;
+    /* Shift+Enter writes a line under the bullet instead of a new bullet: one
+       block, several lines, the way a note under a task belongs to it. What is
+       after the caret moves down with you, as Enter does with a new bullet. */
+    if (e.key === "Enter" && e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      const whole = lineText(txt);
+      const [from, to] = caretOffsets(txt);
+      // Blur is what writes the line back, so hand it the half that stays.
+      txt.textContent = whole.slice(0, from);
+      txt.blur();
+      (b.body || (b.body = [])).unshift(trim(whole.slice(to)));
+      touch(path); render();
+      focusBodyLine(b.id, 0, false);
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
       /* Enter cuts the line where the caret is: what is behind the caret stays
          here and what is in front of it goes to the new block. At the end of a
