@@ -1293,7 +1293,7 @@ button.prow{width:100%;text-align:left}
   background:var(--bg4);border:1px solid var(--border2);border-radius:10px;padding:10px 14px;
   font-size:13px;box-shadow:var(--shadow);pointer-events:auto;display:flex;gap:10px;align-items:center;width:100%;
 }
-.toast.warn{border-color:rgba(224,176,80,.5)} .toast.err{border-color:rgba(255,107,107,.5)}
+.toast.warn{border-color:rgba(224,176,80,.5)} .hint.warn{color:var(--warn)}.toast.err{border-color:rgba(255,107,107,.5)}
 .toast .x{margin-left:auto;color:var(--fg3)}
 /* keyboard chord hud */
 #chord{
@@ -7165,6 +7165,25 @@ const personNameAt = name => [personBareName(name), ...personOrgs(name)].join(" 
 // Everybody else who goes by the same name.
 const namesakesOf = name => [...personOrgIndex().values()].filter(r => !samePerson(r.name, name) &&
   r.bare.toLowerCase() === personBareName(name).toLowerCase()).map(r => r.name);
+/* Family, Relatives, Friends and Creators are circles, not employers: a
+   friend can work at Acme as well, so being in one of them never counts as a
+   second organisation. Anybody at two real ones is allowed, but is said. */
+const CIRCLE_ORGS = ["Family", "Relatives", "Friends", "Creators"];
+const isCircleOrg = org => CIRCLE_ORGS.some(c => c.toLowerCase() === trim(String(org || "")).toLowerCase());
+const personWorkOrgs = name => personOrgs(name).filter(o => !isCircleOrg(o));
+const manyOrgsWarning = name => { const w = personWorkOrgs(name);
+  return w.length > 1 ? personBareName(name) + " is at " + w.length + " organisations: " + w.join(", ") + "." : ""; };
+// Once per vault, so one deleted stays deleted.
+function ensureCircleOrgs() {
+  if (getSetting("circle_orgs")) return;
+  for (const name of CIRCLE_ORGS) {
+    if (findExistingPage("o/" + name)) continue;
+    const page = pageTemplateFor("o", name);
+    page.props = Object.assign({}, page.props, {circle: "true"});
+    putPage(resolveWikiPath("o/" + name), page);
+  }
+  setSetting("circle_orgs", "true");
+}
 const orgPeople = org => [...personOrgIndex().values()]
   .filter(r => r.orgs.some(o => o.toLowerCase() === org.toLowerCase())).map(r => r.name)
   .sort((a, b) => a.localeCompare(b));
@@ -20275,7 +20294,9 @@ function linkPersonToOrg(person, org) {
     return pageLinkPropAdd(personPath(person), "organisation", "o/" + org);
   });
   if (u) pushUndo({run: () => { inSpace(space, u); render(); return true; }});
-  notify(personBareName(person) + " works at " + org + ". Ctrl-Z takes it back.");
+  const many = !isCircleOrg(org) && manyOrgsWarning(person);
+  notify(personBareName(person) + (isCircleOrg(org) ? " is in " : " works at ") + org + ". " +
+    (many ? many + " " : "") + "Ctrl-Z takes it back.", many ? "warn" : undefined);
   render();
 }
 // The page that says where somebody works, in whichever area has it.
@@ -23364,11 +23385,14 @@ function personWorksAt(name, path) {
     onPick: org => {
       const u = inSpace(space, () => pageLinkPropAdd(path, "organisation", "o/" + trim(org)));
       if (u) pushUndo({run: () => { inSpace(space, u); render(); return true; }});
+      const many = !isCircleOrg(org) && manyOrgsWarning(name);
+      if (many) notify(many, "warn");
       render();
     }})}, orgs.length ? "+ another" : "+ organisation");
-  const same = namesakesOf(name);
+  const same = namesakesOf(name), many = manyOrgsWarning(name);
   return el("div", {class: "section"},
     el("div", {class: "t-meta"}, el("span", {class: "plain"}, "Works at"), ...orgs, add),
+    many ? el("p", {class: "hint warn"}, many + " Family, Relatives, Friends and Creators do not count.") : null,
     same.length ? el("p", {class: "hint"}, "Not the same person as ",
       ...same.flatMap((n, i) => [i ? ", " : "", el("span", {class: "wikilink", onclick: () => openPersonPage(n)}, personNameAt(n))]),
       ".") : null);
@@ -23382,7 +23406,15 @@ function viewPage() {
   const code = isHorizonPage(path) ? null : statusDirOf(path);
   const icon = kind === "context" ? trim(getPage(path)?.props?.icon || "") : "";
 
-  c.append(el("div", {class: "pcrumbs"}, spaceBadge(V.space, true),
+  // The area it lives in is also where you move it from: the same menu as Alt+S.
+  const badge = spaceBadge(V.space, true);
+  if (badge && Spaces.list.length > 1) {
+    const space = V.space;
+    badge.style.cursor = "pointer";
+    badge.title = "Lives in the " + space + " area. Click to move it to another (Alt+S)";
+    badge.onclick = () => openItemSpacePicker({space, path});
+  }
+  c.append(el("div", {class: "pcrumbs"}, badge,
     el("span", {}, PAGE_KIND_ONE[kind] || "Page"), el("span", {class: "pv-path"}, path)));
   const titleEl = el("h1", {
     class: "ptitle", contenteditable: !isJournalPath(path) ? "true" : "false", spellcheck: "false",
@@ -28020,6 +28052,7 @@ async function seedIfEmpty() {
   const hadPages = V.pages.size > 0;
   ensureDefaultTemplates();
   scheduleTemplateRefresh();
+  ensureCircleOrgs();
   if (hadPages) return;
 
   for (const [lang, verbs] of Object.entries(SEED_VERBS)) {
