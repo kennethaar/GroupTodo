@@ -20272,7 +20272,13 @@ function peopleBoard(people) {
   const all = workingProjects();
   const {keep, sel} = areaFilter(all, "people.board.area");
   const hideEmpty = String(PREF.get("people.board.hideEmpty", "1")) === "1";
-  const rows = all.filter(keep).map(r => ({r, title: rowTitle(r), open: openOf(projectActions(r))}));
+  /* A task that names an organisation on its line and nobody to do it is the
+     organisation's work: it wears the organisation's dot here, and can be left
+     to the Organisations page altogether. One handed to a person stays. */
+  const hideOrgs = String(PREF.get("people.board.hideOrgs", "0")) === "1";
+  const orgOnly = a => !a.assignee && !!lineOrg(a.block);
+  const rows = all.filter(keep).map(r => ({r, title: rowTitle(r),
+    open: openOf(projectActions(r)).filter(a => !hideOrgs || !orgOnly(a))}));
   const shown = rows.filter(x => !hideEmpty || x.open.length || projectPeople(x.r).length)
     .sort((a, b) => (b.open.length - a.open.length) || a.title.localeCompare(b.title));
   const hidden = rows.length - shown.length;
@@ -20280,8 +20286,11 @@ function peopleBoard(people) {
   const cards = shown.map(({r, title, open}) => {
     const acts = el("div", {class: "pacts"});
     for (const a of open.slice(0, 6)) {
-      const row = el("div", {class: "pact", title: plainTitle(a.title) + (a.assignee ? " - " + a.assignee : " - yours")},
-        a.assignee ? avatarNode(a.assignee, 20) : el("span", {class: "nobody"}), el("span", {class: "pt"}, plainTitle(a.title)));
+      const org = lineOrg(a.block);
+      const row = el("div", {class: "pact", title: plainTitle(a.title) +
+          (a.assignee ? " - " + a.assignee : org ? " - for " + org + ", nobody on it yet" : " - yours")},
+        a.assignee ? avatarNode(a.assignee, 20) : org ? el("span", {class: "odot sm", style: "width:20px;height:20px"}, org[0])
+          : el("span", {class: "nobody"}), el("span", {class: "pt"}, plainTitle(a.title)));
       trayTarget(row, d => d.kind === "person", d => {
         if (samePerson(d.name, a.assignee || whoAmI()) && (a.assignee || samePerson(d.name, whoAmI()))) return;
         inSpace(a.space, () => assignBlock(a.path, a.block, samePerson(d.name, whoAmI()) ? "" : d.name));
@@ -20301,9 +20310,11 @@ function peopleBoard(people) {
   });
   const toggle = fchip(hidden ? "Hide empty (" + hidden + ")" : "Hide empty", hideEmpty,
     () => { PREF.set("people.board.hideEmpty", hideEmpty ? "0" : "1"); render(); });
+  const orgToggle = fchip("Hide organisation tasks", hideOrgs,
+    () => { PREF.set("people.board.hideOrgs", hideOrgs ? "0" : "1"); render(); });
   const right = assignTargets(
     [cards.length ? el("div", {class: "pcards"}, ...cards) : emptyCard("No projects to show.")],
-    [sel, toggle], "Find a project");
+    [sel, toggle, orgToggle], "Find a project");
   /* The areas, as places a person can be carried to: drop a name on one (or
      click the name, then the area) to move, copy or sync them into it. */
   const areas = Spaces.list.length > 1 ? el("div", {class: "btabs pareas"},
@@ -20331,10 +20342,15 @@ function viewOrgs() {
   const orgs = dirPagesInVisible("org");
   const projectsOf = name => workingProjects().filter(r => projectOrgs(r).some(o => o.toLowerCase() === name.toLowerCase()));
   if (sub === "board") { c.append(orgBoard(orgs, projectsOf)); return c; }
+  /* Its work is its projects' next actions and every open task that names it on
+     the line itself -- [[o/Acme]] on a task is as much Acme's as org:: on a project. */
+  const named = leafActions().filter(a => OPEN_STATES[a.state] && lineOrg(a.block));
   const rows = orgs.map(o => {
     const name = inSpace(o.space, () => pageTitle(o.path));
     const ps = projectsOf(name);
-    const open = ps.flatMap(r => openOf(projectActions(r)));
+    const keys = new Set([name.toLowerCase(), baseName(o.path).toLowerCase()]);
+    const open = [...new Map([...ps.flatMap(r => openOf(projectActions(r))),
+      ...named.filter(a => keys.has(lineOrg(a.block).toLowerCase()))].map(a => [a.block || a, a])).values()];
     return {o, name, what: pageProp(o.space, o.path, "what"), ps, open};
   }).sort((a, b) => a.name.localeCompare(b.name));
   const f = textFilter("orgs", "Filter organisations", rows, x => [x.name, x.what].join(" "), (hits, q) =>
