@@ -74,6 +74,23 @@ Next, Waiting for and Projects export to CSV for Excel.
 
 ---
 
+## Bugs and ideas
+
+Report bugs and suggest features at
+[github.com/kennethaar/GroupTodo/issues](https://github.com/kennethaar/GroupTodo/issues)
+→ **New issue**. You need a free GitHub account. Search first; if someone already
+raised it, add a 👍 or a comment instead.
+
+- **A bug:** what you did, what you expected and what happened. Add the browser
+  (Edge, Chrome, …), the device, and whether you opened the file from disk or a
+  URL. A screenshot helps.
+- **A feature:** the problem it would solve, not only the solution, so it can be
+  weighed against what is already there.
+
+Leave out real task text, names and file contents. Issues are public.
+
+---
+
 # Technical details
 
 ## Files
