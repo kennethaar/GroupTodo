@@ -1387,11 +1387,7 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 .stake.inh{opacity:.7;padding-right:8px}
 .gopen{margin-left:4px;padding:0 4px;border-radius:4px;color:var(--fg3);cursor:pointer}
 .gopen:hover,.gopen:focus{color:var(--accent);background:var(--bg3)}
-.picks{position:sticky;top:8px;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 110px);min-width:0}
-.picks .picker{position:static;max-height:none;min-height:0;flex:1 1 60%}
-.picks .picker.mini{flex:1 1 40%}
-@media (max-width:760px){.assign{grid-template-columns:1fr}.picker{position:static;max-height:260px}
-  .picks{position:static;max-height:none}.picks .picker{max-height:260px}}
+@media (max-width:760px){.assign{grid-template-columns:1fr}.picker{position:static;max-height:260px}}
 .over{outline:2px dashed var(--accent);outline-offset:-2px;background:var(--accent-soft)!important}
 /* A board of as many columns as it needs, scrolling sideways */
 .boardscroll{overflow-x:auto;padding-bottom:6px}
@@ -1855,7 +1851,7 @@ body.solview #content{padding-bottom:14px}
   </ul>
   <h4>People &amp; Organizations</h4>
   <ul>
-    <li><b>Delegate:</b> On the People board, drag a person onto a Next Action to hand it off (moving it to <i>Waiting for</i>), or onto a Project to involve them. Organizations work the same way for projects.</li>
+    <li><b>Delegate:</b> On the People board, pick what a person is dragged to: <i>Projects</i> to involve them, <i>Organisations</i> for where they work, <i>Areas</i> to move, copy or sync them into another area, or <i>Tasks</i> to hand a next action off (moving it to <i>Waiting for</i>). The Organisations board does the same for organisations: <i>Projects and areas</i>, or <i>People</i>.</li>
     <li><b>External Updates:</b> Requesting an update from someone outside an Area generates a check-in sheet for them.</li>
     <li><b>Where people work:</b> Say it on a person's page (<i>Works at</i>), or name the page <i>Anna Berg - Acme</i>. Two people with the same name can then live side by side, a link to either reads <i>Anna Berg &middot; Acme</i>, and Acme's page lists its people and everything open that names Acme or any of them.</li>
   </ul>
@@ -20234,12 +20230,13 @@ function trayPicker(kind, hint, groups, placeholder) {
 }
 
 /* ---------- people and organisations, onto each other ----------
-   Each board keeps a second tray of the other kind under its own: on People,
-   the organisations; on Organisations, the people. Drop one on the other, in
-   either tray, and the person works there -- organisation:: on their own page,
-   which is where the "Works at" line on that page reads it and undoes it.
-   Both trays put the most linked first: an organisation by its people and
-   projects, a person by the open work that names them and where they work. */
+   Each board has a tab for what its tray is dropped on. On People, the
+   organisations: one card each, with whoever works there. On Organisations,
+   the people: one card each, with where they work. A drop says the person
+   works there -- organisation:: on their own page, which is where the "Works
+   at" line on that page reads it and undoes it. Both put the most linked
+   first: an organisation by its people and projects, a person by the open
+   work that names them and where they work. */
 function linkPersonToOrg(person, org) {
   if (personOrgs(person).some(o => o.toLowerCase() === org.toLowerCase())) {
     notify(personBareName(person) + " already works at " + org + "."); return;
@@ -20253,6 +20250,28 @@ function linkPersonToOrg(person, org) {
   notify(personBareName(person) + " works at " + org + ". Ctrl-Z takes it back.");
   render();
 }
+// The page that says where somebody works, in whichever area has it.
+function personPageAt(person) {
+  const space = visibleSpaces().find(n => LOADED.has(n) && inSpace(n, () => V.pages.has(personPath(person)))) || V.space;
+  return {space, path: personPath(person)};
+}
+const saysWorksAt = (person, org) => { const {space, path} = personPageAt(person);
+  return inSpace(space, () => linksWith(getPage(path)?.props, "o/").some(o => o.toLowerCase() === org.toLowerCase())); };
+function unlinkPersonFromOrg(person, org) {
+  const {space, path} = personPageAt(person);
+  inSpace(space, () => {
+    const page = getPage(path);
+    for (const k of Object.keys(page?.props || {}))
+      if (linksWith({[k]: page.props[k]}, "o/").some(x => x.toLowerCase() === org.toLowerCase()))
+        removeLinkFromProp(space, path, k.toLowerCase(), "o/" + org);
+  });
+}
+/* One person at one organisation, on a card. Said on the person's own page, it
+   comes off with the cross; given by the page's name or the organisation's
+   page, it is undone there. */
+const worksAtStake = (person, org, face, label) => saysWorksAt(person, org)
+  ? stake(label, face, () => unlinkPersonFromOrg(person, org))
+  : el("span", {class: "stake inh", title: "From the page's name or " + org + "'s own page"}, face, label);
 function orgLinkCounts() {
   return memo("orgLinkCounts", () => {
     const m = new Map();
@@ -20265,21 +20284,36 @@ function orgLinkCounts() {
 const orgLinks = name => { const r = orgLinkCounts().get(name.toLowerCase()); return r ? r.people + r.projects : 0; };
 const personLinks = p => (p.mentions || 0) + personOrgs(p.name).length;
 const byLinks = (links, nameOf) => (a, b) => (links(b) - links(a)) || nameOf(a).localeCompare(nameOf(b));
-function orgTray() {
-  const names = acrossNames(() => allPages(q => pageKind(q) === "org").map(baseName)).sort(byLinks(orgLinks, n => n));
-  const people = n => orgLinkCounts().get(n.toLowerCase())?.people || 0;
-  const t = trayPicker("org", "Drop an organisation on a person to say they work there, or a person on an organisation.",
-    [["Organisations", names.map(n => ({name: n, face: el("span", {class: "odot sm"}, n[0]),
-      sub: people(n) ? people(n) + (people(n) === 1 ? " person" : " people") : ""}))]], "Find an organisation");
-  t.classList.add("mini");
-  return t;
+function orgDropCards() {
+  const orgs = [...new Map(dirPagesInVisible("org").map(o => [baseName(o.path).toLowerCase(), o])).values()]
+    .sort(byLinks(o => orgLinks(baseName(o.path)), o => baseName(o.path)));
+  return orgs.map(o => {
+    const name = baseName(o.path), who = orgPeople(name);
+    const card = el("div", {class: "pcard", data: {q: [name, ...who].join(" ").toLowerCase()}},
+      el("h4", {onclick: () => previewPage(o.space, o.path)}, name),
+      el("div", {class: "t-meta"}, el("span", {class: "chip"}, who.length + (who.length === 1 ? " person" : " people")), spaceTag(o.space)),
+      el("div", {class: "stakes"}, ...(who.length ? who.map(n => worksAtStake(n, name, avatarNode(n, 18), personBareName(n)))
+        : [el("span", {class: "say"}, "Nobody yet. Drop a person here.")])));
+    return trayTarget(card, d => d.kind === "person", d => linkPersonToOrg(d.name, name));
+  });
 }
-function personTray() {
-  const rows = peopleRows().slice().sort(byLinks(personLinks, p => p.name));
-  const t = trayPicker("person", "Drop a person on an organisation to say they work there, or an organisation on a person.",
-    [["People", rows.map(p => ({name: p.name, face: avatarNode(p.name, 22), sub: personOrgs(p.name).join(", ")}))]], "Find a person");
-  t.classList.add("mini");
-  return t;
+function personDropCards() {
+  return peopleRows().slice().sort(byLinks(personLinks, p => p.name)).map(p => {
+    const orgs = personOrgs(p.name);
+    const card = el("div", {class: "pcard", data: {q: [p.name, ...orgs].join(" ").toLowerCase()}},
+      el("h4", {onclick: () => openPersonPage(p.name)}, personBareName(p.name) + (p.me ? " (you)" : "")),
+      el("div", {class: "t-meta"}, el("span", {class: "chip"}, p.open.length + " open")),
+      el("div", {class: "stakes"}, ...(orgs.length ? orgs.map(o => worksAtStake(p.name, o, el("span", {class: "odot sm"}, o[0]), o))
+        : [el("span", {class: "say"}, "No organisation. Drop one here.")])));
+    return trayTarget(card, d => d.kind === "org", d => linkPersonToOrg(p.name, d.name));
+  });
+}
+/* The tab row that says what the tray is dropped on. */
+function ontoTabs(label, key, cur, tabs) {
+  return el("div", {class: "btabs", style: "margin:0 0 10px"},
+    el("span", {class: "say", style: "font-size:12px"}, label),
+    ...tabs.map(([v, label]) => el("button", {class: "btab" + (cur === v ? " on" : ""), "aria-pressed": String(cur === v),
+      onclick: () => { PREF.set(key, v); render(); }}, label)));
 }
 document.addEventListener("keydown", e => {
   if (e.key !== "Escape" || !TRAY_ARMED) return;
@@ -20392,16 +20426,47 @@ function projectCard(r, title, stakes, more, also) {
     more || null);
 }
 
+/* One tray of names, and a tab for what they are dropped on: a project to
+   involve them, an organisation they work at, another area to move, copy or
+   sync them into, or a next action to hand over. */
 function peopleBoard(people) {
   const busy = byLinks(personLinks, p => p.name);
   const item = p => ({name: p.name, face: avatarNode(p.name, 22),
     sub: p.me ? "you" : p.open.length ? p.open.length + " open" : ""});
   const them = people.filter(p => !p.me);
-  const picker = trayPicker("person",
-    "Drag a name onto a project to involve them, onto a next action to hand it over, or onto an organisation to say they work there. Or click a name, then click the target.",
+  const tabsFor = [["projects", "Projects"], ["orgs", "Organisations"],
+    ...(Spaces.list.length > 1 ? [["areas", "Areas"]] : []), ["tasks", "Tasks"]];
+  const pref = PREF.get("people.board.onto", "projects");
+  const onto = tabsFor.some(([v]) => v === pref) ? pref : "projects";
+  const say = {projects: "Drag a name onto a project to involve them.",
+    orgs: "Drag a name onto the organisation they work at.",
+    areas: "Drag a name onto an area to move, copy or sync the person there.",
+    tasks: "Drag a name onto a next action to hand it over. It lands in your Waiting for; drop yourself on it to take it back."}[onto];
+  const picker = trayPicker("person", say + " Or click a name, then click the target.",
     [["", people.filter(p => p.me).map(item)],
      ["In the area", them.filter(p => p.member).sort(busy).map(item)],
      ["Others", them.filter(p => !p.member).sort(busy).map(item)]], "Find a person");
+  const tabs = ontoTabs("Drag a person to:", "people.board.onto", onto, tabsFor);
+  const board = right => el("div", {}, tabs, el("div", {class: "assign"}, picker, right),
+    el("p", {class: "hint"}, "Esc puts a picked-up name down."));
+  const grid = (cards, empty) => cards.length ? el("div", {class: "pcards"}, ...cards) : emptyCard(empty);
+
+  if (onto === "orgs") return board(assignTargets([grid(orgDropCards(),
+    "No organisations yet. Write [[o/Name]] on any line to make one.")], [], "Find an organisation"));
+
+  if (onto === "areas") {
+    const cards = Spaces.list.map(sp => {
+      const n = LOADED.has(sp.name) ? inSpace(sp.name, () => allPeople().length) : null;
+      const card = el("div", {class: "pcard", data: {q: sp.name.toLowerCase()}},
+        el("h4", {}, el("span", {class: "btab-dot", style: "background:" + spaceColor(sp.name) + ";display:inline-block;margin-right:6px"}), sp.name),
+        el("div", {class: "t-meta"}, n == null ? null : el("span", {class: "chip"}, n + (n === 1 ? " person" : " people"))),
+        el("div", {class: "stakes"}, el("span", {class: "say"}, "Drop a person here to move, copy or sync them into " + sp.name + ".")));
+      return trayTarget(card, d => d.kind === "person" && !samePerson(d.name, whoAmI()),
+        d => { TRAY_ARMED = null; document.body.classList.remove("armed-on");
+               carryPerson(d.name, sp.name).then(ok => { if (ok) render(); }); });
+    });
+    return board(assignTargets([grid(cards, "Only one area.")], [], "Find an area"));
+  }
 
   const all = workingProjects();
   const {keep, sel} = areaFilter(all, "people.board.area");
@@ -20413,55 +20478,45 @@ function peopleBoard(people) {
   const orgOnly = a => !a.assignee && !!lineOrg(a.block);
   const rows = all.filter(keep).map(r => ({r, title: rowTitle(r),
     open: openOf(projectActions(r)).filter(a => !hideOrgs || !orgOnly(a))}));
-  const shown = rows.filter(x => !hideEmpty || x.open.length || projectPeople(x.r).length)
+  const shown = rows.filter(x => onto === "tasks" ? (!hideEmpty || x.open.length)
+      : (!hideEmpty || x.open.length || projectPeople(x.r).length))
     .sort((a, b) => (b.open.length - a.open.length) || a.title.localeCompare(b.title));
   const hidden = rows.length - shown.length;
-
-  const cards = shown.map(({r, title, open}) => {
-    const acts = el("div", {class: "pacts"});
-    for (const a of open.slice(0, 6)) {
-      const org = lineOrg(a.block);
-      const row = el("div", {class: "pact", title: plainTitle(a.title) +
-          (a.assignee ? " - " + a.assignee : org ? " - for " + org + ", nobody on it yet" : " - yours")},
-        a.assignee ? avatarNode(a.assignee, 20) : org ? el("span", {class: "odot sm", style: "width:20px;height:20px"}, org[0])
-          : el("span", {class: "nobody"}), el("span", {class: "pt"}, plainTitle(a.title)));
-      trayTarget(row, d => d.kind === "person", d => {
-        if (samePerson(d.name, a.assignee || whoAmI()) && (a.assignee || samePerson(d.name, whoAmI()))) return;
-        inSpace(a.space, () => assignBlock(a.path, a.block, samePerson(d.name, whoAmI()) ? "" : d.name));
-      });
-      acts.append(row);
-    }
-    if (open.length > 6) acts.append(el("div", {class: "say", style: "font-size:12px;padding:2px 4px"}, "+ " + (open.length - 6) + " more"));
-    if (!open.length) acts.append(el("div", {class: "say", style: "font-size:12px;padding:2px 4px"}, "No next actions"));
-    const card = projectCard(r, title, projectPeople(r).map(n => stake(n, avatarNode(n, 18),
-      () => removeLinkFromProp(r.space, r.path, "with", "p/" + n))), acts);
-    return trayTarget(card, d => d.kind === "person", d => {
-      if (samePerson(d.name, whoAmI())) { notify("You are on every project you can see."); return; }
-      if (inSpace(r.space, () => pageLinkPropAdd(r.path, "with", "p/" + d.name))) notify(d.name + " is now involved in " + title + ".");
-      else notify(d.name + " is already on " + title + ".");
-      render();
-    });
-  });
   const toggle = fchip(hidden ? "Hide empty (" + hidden + ")" : "Hide empty", hideEmpty,
     () => { PREF.set("people.board.hideEmpty", hideEmpty ? "0" : "1"); render(); });
-  const orgToggle = fchip("Hide organisation tasks", hideOrgs,
-    () => { PREF.set("people.board.hideOrgs", hideOrgs ? "0" : "1"); render(); });
-  const right = assignTargets(
-    [cards.length ? el("div", {class: "pcards"}, ...cards) : emptyCard("No projects to show.")],
-    [sel, toggle, orgToggle], "Find a project");
-  /* The areas, as places a person can be carried to: drop a name on one (or
-     click the name, then the area) to move, copy or sync them into it. */
-  const areas = Spaces.list.length > 1 ? el("div", {class: "btabs pareas"},
-    el("span", {class: "say", style: "font-size:12px"}, "Carry a person to:"),
-    ...Spaces.list.map(sp => trayTarget(el("button", {class: "btab",
-      title: "Drop a name here to move, copy or sync that person into " + sp.name},
-      el("span", {class: "btab-dot", style: "background:" + spaceColor(sp.name)}), sp.name),
-      d => d.kind === "person" && !samePerson(d.name, whoAmI()),
-      d => { TRAY_ARMED = null; document.body.classList.remove("armed-on");
-             carryPerson(d.name, sp.name).then(ok => { if (ok) render(); }); }))) : null;
-  return el("div", {}, areas, el("div", {class: "assign"}, el("div", {class: "picks"}, picker, orgTray()), right),
-    el("p", {class: "hint"}, "Hand a next action to somebody and it lands in your Waiting for. Drop yourself on it to take it back. " +
-      (areas ? "Drop a name on an area to move, copy or sync the person there. " : "") + "Esc puts a picked-up name down."));
+  const peopleOn = r => projectPeople(r).map(n => stake(n, avatarNode(n, 18),
+    () => removeLinkFromProp(r.space, r.path, "with", "p/" + n)));
+
+  if (onto === "tasks") {
+    const cards = shown.map(({r, title, open}) => {
+      const acts = el("div", {class: "pacts"});
+      for (const a of open) {
+        const org = lineOrg(a.block);
+        const row = el("div", {class: "pact", title: plainTitle(a.title) +
+            (a.assignee ? " - " + a.assignee : org ? " - for " + org + ", nobody on it yet" : " - yours")},
+          a.assignee ? avatarNode(a.assignee, 20) : org ? el("span", {class: "odot sm", style: "width:20px;height:20px"}, org[0])
+            : el("span", {class: "nobody"}), el("span", {class: "pt"}, plainTitle(a.title)));
+        trayTarget(row, d => d.kind === "person", d => {
+          if (samePerson(d.name, a.assignee || whoAmI()) && (a.assignee || samePerson(d.name, whoAmI()))) return;
+          inSpace(a.space, () => assignBlock(a.path, a.block, samePerson(d.name, whoAmI()) ? "" : d.name));
+        });
+        acts.append(row);
+      }
+      if (!open.length) acts.append(el("div", {class: "say", style: "font-size:12px;padding:2px 4px"}, "No next actions"));
+      return projectCard(r, title, [], acts, open.map(a => plainTitle(a.title)));
+    });
+    const orgToggle = fchip("Hide organisation tasks", hideOrgs,
+      () => { PREF.set("people.board.hideOrgs", hideOrgs ? "0" : "1"); render(); });
+    return board(assignTargets([grid(cards, "No next actions to show.")], [sel, toggle, orgToggle], "Find a task or project"));
+  }
+
+  const cards = shown.map(({r, title}) => trayTarget(projectCard(r, title, peopleOn(r)), d => d.kind === "person", d => {
+    if (samePerson(d.name, whoAmI())) { notify("You are on every project you can see."); return; }
+    if (inSpace(r.space, () => pageLinkPropAdd(r.path, "with", "p/" + d.name))) notify(d.name + " is now involved in " + title + ".");
+    else notify(d.name + " is already on " + title + ".");
+    render();
+  }));
+  return board(assignTargets([grid(cards, "No projects to show.")], [sel, toggle], "Find a project"));
 }
 
 /* ============================================================
@@ -20513,7 +20568,7 @@ function orgBoard(orgs, projectsOf) {
   const used = names.map(n => ({name: n, face: el("span", {class: "odot"}, n[0]), n: orgLinks(n)})).sort(byLinks(x => x.n, x => x.name));
   const item = x => ({name: x.name, face: x.face, sub: x.n ? String(x.n) : ""});
   const picker = trayPicker("org",
-    "Drag an organisation onto an area, a project or a person. On an area, every project in it is theirs. Or click one, then click the target.",
+    "Drag an organisation onto an area or a project - on an area, every project in it is theirs - or, under People, onto somebody who works there. Or click one, then click the target.",
     [["In use", used.filter(x => x.n).map(item)], ["Not on anything yet", used.filter(x => !x.n).map(item)]],
     "Find an organisation");
 
@@ -20561,8 +20616,13 @@ function orgBoard(orgs, projectsOf) {
   }
   if (!out.length) out.push(emptyCard("Nothing to show."));
   const bare = fchip("Only without one", onlyBare, () => { PREF.set("orgs.board.bare", onlyBare ? "0" : "1"); render(); });
-  return el("div", {class: "assign"}, el("div", {class: "picks"}, picker, personTray()),
-    assignTargets(out, [sel, bare], "Find an area or project"));
+  const onto = PREF.get("orgs.board.onto", "work") === "people" ? "people" : "work";
+  const tabs = ontoTabs("Drag an organisation to:", "orgs.board.onto", onto, [["work", "Projects and areas"], ["people", "People"]]);
+  const people = onto === "people" ? personDropCards().filter(card => !onlyBare || card.querySelector(".stakes .say")) : [];
+  const right = onto === "people"
+    ? assignTargets([people.length ? el("div", {class: "pcards"}, ...people) : emptyCard("Nobody to show.")], [bare], "Find a person")
+    : assignTargets(out, [sel, bare], "Find an area or project");
+  return el("div", {}, tabs, el("div", {class: "assign"}, picker, right));
 }
 
 /* ============================================================
