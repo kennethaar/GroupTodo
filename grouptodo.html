@@ -3754,7 +3754,7 @@ function ensureJournal(date) {
    for a note but unforgiving if the cycle went one click too far. The stripped
    properties are held here, in memory only, long enough to click back. */
 const DEMOTED = new WeakMap();
-const TASK_PROPS = /^(added|closed|done_by|scheduled|deadline|until|remind|expired)$/i;
+const TASK_PROPS = /^(added|closed|done_by|scheduled|deadline|until|remind|expired|hold)$/i;
 const CLOSED_PROPS = /^(closed|done_by|expired)$/i;
 
 function setBlockState(path, block, state, opts = {}) {
@@ -3954,7 +3954,37 @@ function journalActionsFor(projectPath) {
 
 /* Open leaf actions: an open item with no open children is the actionable one.
    With several spaces shown, this runs once per space and tags each result. */
-function leafActions() { return memo("leafActions", () => acrossSpaces(leafActionsHere)); }
+function leafActions() { return memo("leafActions", () => allLeafActions().filter(a => !a.held)); }
+
+/* ---------- on hold ----------
+   Taskwarrior's wait:, written hold:: [[2026-11-03]]. A task on hold is real
+   and stays where it was written, but no list shows it until that day comes:
+   the renewal you cannot do before March, the follow-up that makes no sense
+   until they have had a week. On the day it simply reappears, with nothing
+   to tick off and nobody asked. Holding a line holds the steps under it, the
+   way a date on it dates them. Planned lists what is on hold, and when it
+   comes back, so nothing held is lost.
+
+   Only leafActions() hides them. Expiry still sees them, so a held task can
+   run past its until:: like any other. */
+function allLeafActions() { return memo("allLeafActions", () => acrossSpaces(leafActionsHere)); }
+function heldActions() {
+  return memo("heldActions", () => allLeafActions().filter(a => a.held)
+    .sort((x, y) => x.held.localeCompare(y.held)));
+}
+function holdOf(block) {
+  for (let p = block; p; p = p._parent) {
+    const day = dateIn(blockProp(p, "hold"));
+    if (day) return day;
+  }
+  return null;
+}
+function releaseHold(path, block) {
+  for (let p = block; p; p = p._parent)
+    for (const k of Object.keys(p.props || {})) if (k.toLowerCase() === "hold") delete p.props[k];
+  touch(path); render();
+  notify("Off hold, and back on your lists.");
+}
 
 function leafActionsHere() {
   const out = [];
@@ -4017,9 +4047,11 @@ function leafActionsHere() {
          list, and asking for a verb again on every run is the method talking to
          itself. Fix the list, not the copy. */
       const authored = tourStep || !!fromList;
+      const hold = holdOf(b);
       out.push({
         path, block: b, state: b.state, title: b.title,
         project, projectPath, projectStatusDir, group, due,
+        held: hold && hold > todayISO() ? hold : null,
         assignee, mine, owner: journalOwnerOf(path) || null,
         tourStep, checklist: fromList ? fromList.title : null,
         context: contextOf(b.title),
@@ -6370,7 +6402,7 @@ const humanWhen = (day, time) => humanDate(day) + (time ? " " + time : "");
 function parseWhen(text) {
   const today = todayISO();
   const out = {source: text, title: text, SCHEDULED: null, DEADLINE: null, until: null,
-               time: null, repeat: null, remind: null, priority: null, taken: []};
+               time: null, repeat: null, remind: null, priority: null, hold: null, taken: []};
   let s = trim(text);
   // Links at the end are kept aside: "Call Bob tomorrow [[c/phone]]" is still tomorrow.
   const lm = /((?:\s*\[\[[^\]]*\]\])+)\s*$/.exec(s);
@@ -6378,7 +6410,7 @@ function parseWhen(text) {
   if (lm) s = trim(s.slice(0, lm.index));
 
   // Taskwarrior's words, anywhere in the line: due:fri until:eom remind:30m
-  s = s.replace(/(^|\s)(due|sched|scheduled|until|remind|wait|pri|priority):(\S+)/gi, (all, pre, key, val) => {
+  s = s.replace(/(^|\s)(due|sched|scheduled|until|hold|wait|remind|pri|priority):(\S+)/gi, (all, pre, key, val) => {
     key = key.toLowerCase();
     const v = val.toLowerCase();
     if (key === "remind") { out.remind = v; out.taken.push(all.trim()); return pre; }
@@ -6389,9 +6421,10 @@ function parseWhen(text) {
     const [dayPart, timePart] = v.split(/[@t,](?=\d)/);
     const day = whenDay(dayPart, today, 2);
     if (!day) return all;
-    const prop = key === "due" ? "DEADLINE" : key === "until" ? "until" : "SCHEDULED";
+    const prop = key === "due" ? "DEADLINE" : key === "until" ? "until"
+               : key === "hold" || key === "wait" ? "hold" : "SCHEDULED";
     out[prop] = day;
-    if (timePart && prop !== "until") out.time = whenClock(timePart.includes(":") ? timePart : "at " + timePart);
+    if (timePart && prop !== "until" && prop !== "hold") out.time = whenClock(timePart.includes(":") ? timePart : "at " + timePart);
     out.taken.push(all.trim());
     return pre;
   });
@@ -6450,6 +6483,7 @@ function applyWhen(block, w) {
   if (w.repeat)    put(REPEAT_PROP, w.repeat);
   if (w.remind)    put("remind",    w.remind);
   if (w.priority)  put("priority",  w.priority);
+  if (w.hold)      put("hold",      "[[" + w.hold + "]]");
   block.title = w.title;
   return keys;
 }
@@ -6460,6 +6494,7 @@ function whenSays(w) {
   if (w.repeat) bits.push("repeats " + w.repeat);
   if (w.until) bits.push("expires after " + humanDate(w.until));
   if (w.priority) bits.push("priority " + w.priority);
+  if (w.hold) bits.push("on hold until " + humanDate(w.hold));
   if (w.remind) {
     const lead = remindLead(w.remind);
     bits.push(lead == null ? "no reminder" : lead === 0 ? "reminder at the time" : "reminder " + w.remind + " before");
@@ -12081,7 +12116,7 @@ function makeNextOccurrence(path, block, when) {
   });
   // Carry what describes the job; leave behind what described that one doing of it.
   for (const [k, v] of Object.entries(block.props || {})) {
-    if (/^(added|closed|done_by|scheduled|deadline|assigned_at|until|expired)$/i.test(k)) continue;
+    if (/^(added|closed|done_by|scheduled|deadline|assigned_at|until|expired|hold)$/i.test(k)) continue;
     copy.props[k] = v;
   }
   // Same time of day as the last one: a weekly meeting is still at ten.
@@ -14105,6 +14140,11 @@ function chipsFor(a) {
   }
   if (a.age != null && a.age > 0) out.push(el("span", {class: "chip age"}, a.age + "d"));
   if (a._showUrgency) out.push(urgencyChip(a));
+  if (a.held) out.push(el("span", {class: "chip b", title: "Hidden from your lists until then",
+    onclick: e => { e.stopPropagation(); chipMenu("on hold until " + humanDate(a.held), "hold", [
+      ["a", "Bring it back now", null, () => inSpace(a.space, () => releaseHold(a.path, a.block))],
+      ["b", "Change the date", null, () => inSpace(a.space, () => openTaskDetail(a.path, a.block, a.space))],
+    ]); }}, "on hold \u2192 " + humanDate(a.held)));
   const msgs = messagesOf(a.block).length;
   if (msgs) {
     const un = unreadCount(a.block);
@@ -15307,6 +15347,8 @@ function viewAgenda() {
     const label = date === todayISO() ? date + "  (today)" : date < todayISO() ? date + "  (overdue)" : date;
     c.append(section(label + " · " + humanDate(date), items.length, taskCard(items)));
   }
+  const held = heldActions();
+  if (held.length) c.append(foldSection("On hold", held.length, taskCard(held)));
   return c;
 }
 
@@ -17449,6 +17491,7 @@ function openTaskDetail(path, block, space) {
   for (const [v, label] of [["", "None"], ["H", "High"], ["M", "Medium"], ["L", "Low"]])
     priSel.append(el("option", {value: v}, label));
   priSel.value = priorityOf(block) || "";
+  const hold = el("input", {type: "date", value: dateIn(blockProp(block, "hold")) || ""});
   const remindSel = el("select", {});
   for (const [v, label] of [["", CFG.remindLeadMinutes + " min before (usual)"], ["0", "At the time"],
                             ["30m", "30 min before"], ["1h", "1 hour before"], ["1d", "A day before"],
@@ -17516,6 +17559,8 @@ function openTaskDetail(path, block, space) {
     else drop("remind");
     if (priSel.value) setBlockProp(block, "priority", priSel.value);
     else drop("priority");
+    if (hold.value) setBlockProp(block, "hold", "[[" + hold.value + "]]");
+    else drop("hold");
     touch(path); noteTodoTouched(); closeModal(); render();
   };
 
@@ -17571,7 +17616,8 @@ function openTaskDetail(path, block, space) {
         el("div", {class: "field"}, el("label", {}, "Cancel it if still open after"), until)),
       el("div", {class: "grid2"},
         el("div", {class: "field"}, el("label", {}, "Priority"), priSel),
-        el("div", {class: "field"}, el("label", {}, "Urgency"),
+        el("div", {class: "field"}, el("label", {}, "On hold until"), hold)),
+      el("div", {class: "field"}, el("label", {}, "Urgency"),
           (() => {
             const row = {block, state: block.state, title: block.title, context: contextOf(block.title),
                          project: (nearestProjectAncestor(block) || {}).title || (statusDirOf(path) ? pageTitle(path) : null),
@@ -17580,7 +17626,7 @@ function openTaskDetail(path, block, space) {
             return el("div", {style: "font-size:12.5px;color:var(--fg2);line-height:1.6"},
               el("div", {style: "font-weight:600;color:var(--fg)"}, "\u2191" + urgencyOf(row)),
               ...parts.map(([why, n]) => el("div", {}, (n > 0 ? "+" : "") + n + "  " + why)));
-          })())),
+          })()),
       el("div", {class: "field"},
         el("label", {}, "Repeats"),
         (() => {
