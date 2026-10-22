@@ -518,6 +518,21 @@ kbd{font:11px var(--mono);border:1px solid var(--border);border-radius:4px;paddi
 .ctxnow .x{color:var(--fg3);font-size:13px;line-height:1}
 .ctxnow .x:hover{color:var(--fg)}
 @media (max-width:560px){.ctxnow{max-width:9rem;overflow:hidden;text-overflow:ellipsis}}
+/* The next meeting, counting down, at the top of every screen. */
+.nextmeet[hidden]{display:none}
+.nextmeet{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;padding:4px 10px;border-radius:20px;
+  cursor:pointer;white-space:nowrap;min-width:0;max-width:22rem;color:var(--fg2);background:var(--bg3);border:1px solid var(--border)}
+.nextmeet:hover{border-color:var(--border2);color:var(--fg)}
+.nextmeet .t{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.nextmeet .w{color:var(--fg3);flex:none}
+.nextmeet.soon{color:var(--today);background:rgba(224,176,80,.13);border-color:rgba(224,176,80,.4)}
+.nextmeet.soon .w{color:inherit}
+.nextmeet.now{color:var(--ok);background:rgba(79,191,123,.12);border-color:rgba(79,191,123,.4)}
+.nextmeet.now .w{color:inherit}
+@media (max-width:760px){.nextmeet{max-width:11rem}}
+@media (max-width:560px){.nextmeet .t{display:none}}
+.toast.meetrem strong{display:block;margin-bottom:2px}
+.toast.meetrem p{margin:0 0 8px;color:var(--fg2)}
 .chip.st{font-family:var(--mono);font-size:10px;letter-spacing:.5px}
 
 /* ---------- board, calendar, graph ----------
@@ -997,6 +1012,61 @@ details>summary:hover{color:var(--fg2)}
 .tstar.on{color:var(--warn);opacity:1}
 .tstar:hover{opacity:1}
 .trkw .tadd{font-size:12px}
+/* ---------- what you wrote last time ---------- */
+.prevval{color:var(--fg3);opacity:.75;font-size:11.5px;font-style:italic;margin-left:8px;white-space:nowrap;align-self:center}
+.pkv .prevval{margin-left:5px}
+/* ---------- ((id)), {{embed}} and {{query}} ---------- */
+.bref{border-bottom:1px dashed var(--border2);cursor:pointer;color:var(--fg2)}
+.bref:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.macro{display:inline-block;font-size:11.5px;padding:0 7px;border-radius:10px;border:1px solid var(--border);
+  background:var(--bg3);color:var(--fg3);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:baseline}
+.macros{margin:4px 0 6px 53px;display:flex;flex-direction:column;gap:6px}
+.embedbox,.querybox{border:1px solid var(--border);border-left:3px solid var(--accent-soft);border-radius:8px;
+  background:var(--bg2);padding:6px 10px 8px;font-size:13.5px;min-width:0}
+.querybox{border-left-color:color-mix(in srgb,var(--ctx) 45%,var(--bg2))}
+.ehead{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--fg3);margin-bottom:4px;min-width:0}
+.ehead .eic{flex:none}
+.ehead .textbtn{font-size:12px}
+.ehead .n{font-family:var(--mono);font-size:11px;color:var(--fg3);margin-left:auto}
+.ehead .qtext{font-family:var(--mono);font-size:11.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ebody .eblk .eblk{margin-left:16px}
+.eline,.qrow{display:flex;align-items:flex-start;gap:7px;padding:2px 4px;border-radius:5px;cursor:pointer;min-width:0}
+.eline:hover,.qrow:hover{background:var(--bg3)}
+.eline::before{content:"2";color:var(--fg3);flex:none;width:8px}
+.etxt{min-width:0;overflow-wrap:anywhere}
+.ebodyline{margin-left:19px;color:var(--fg2);font-size:13px}
+.eempty{color:var(--fg3);font-size:12.5px;font-style:italic;padding:2px 4px}
+.qpage{display:block;background:none;border:0;padding:6px 4px 1px;font:inherit;font-size:12px;font-weight:600;color:var(--accent);cursor:pointer;text-align:left}
+.qpage:first-child{padding-top:0}
+.qtrail{color:var(--fg3);font-size:12px;flex:none;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qmore{margin-top:4px;font-size:12px}
+/* ---------- the query builder ---------- */
+.qb{display:flex;flex-direction:column;gap:10px;min-width:0}
+.qbmode{display:flex;gap:14px;flex-wrap:wrap}
+.qbrows{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.qbrows[hidden]{display:none}
+.qbrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%}
+.qbrow select,.qbrow input:not([type]){font:inherit;font-size:13px;padding:4px 7px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--fg);min-width:0}
+.qbwhat{display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex:1;min-width:0}
+.qbwhat input{flex:1;min-width:8em}
+.qbstate,.qbnot{display:inline-flex;align-items:center;gap:4px;font-size:13px;cursor:pointer}
+.qbeq{color:var(--fg3);font-size:12px}
+.qbtext{width:100%;box-sizing:border-box;font-family:var(--mono);font-size:12.5px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--fg);resize:vertical}
+.qbtext.ro{background:var(--bg3);color:var(--fg2)}
+.qbpreview{font-size:13px;color:var(--fg2);min-height:2.6em}
+.qbpreview .bad{color:var(--late)}
+.qbhit{display:flex;gap:7px;align-items:baseline;padding:2px 0;min-width:0}
+.qbhit>span:not(.state):not(.p){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qbhit .p{color:var(--fg3);font-size:12px;margin-left:auto;flex:none;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ---------- the namespace a page is in ---------- */
+.nstree ul{list-style:none;margin:0;padding:0 0 0 16px}
+.nstree ul.nsroot{padding-left:0}
+.nstree li{margin:1px 0}
+.nsname{background:none;border:0;padding:1px 4px;font:inherit;font-size:13.5px;color:var(--accent);cursor:pointer;border-radius:4px;text-align:left}
+.nsname:hover{background:var(--bg3)}
+.nsname.here{color:var(--fg);font-weight:700;cursor:default}
+.nsname.none{color:var(--fg3);cursor:default}
+.nsmore{color:var(--fg3);padding-left:4px}
 .trkkinds{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px}
 .trkkind{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:7px 10px;
   border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--fg);cursor:pointer;font:inherit}
@@ -1793,6 +1863,7 @@ body.solview #content{padding-bottom:14px}
         <span class="where" id="capWhere"></span>
         <kbd>N</kbd>
       </label>
+      <button class="nextmeet" id="nextMeet" hidden></button>
       <button class="ctxnow" id="btnContext" hidden></button>
       <button class="tbtn" id="btnSearch" title="Search (/)" aria-label="Search">&#8981;</button>
       <button class="tbtn" id="btnTheme" title="Light or dark" aria-label="Light or dark">&#9680;</button>
@@ -1827,6 +1898,12 @@ body.solview #content{padding-bottom:14px}
     <li><b>Auto-linking:</b> Known names are suggested as you type (<kbd>Tab</kbd> to accept). Full names link automatically when you leave the line.</li>
     <li><b>Dates:</b> Type natural dates (tomorrow, friday, in 3 days) and press <kbd>Tab</kbd>. Placing a date at the end of a task sets its due date.</li>
     <li><b>Waiting For:</b> Setting a line's state to <i>Waiting</i> prompts you to assign the person you are waiting on.</li>
+    <li><b>Live lists (<kbd>/query</kbd>):</b> A line like <code>{{query (and [[1/Fix sink]] (task TODO DOING))}}</code> shows every line that matches, kept up to date, and its tasks can be ticked from there. The builder writes the query for you; <i>Edit</i> on the list changes it. Logseq's simple queries work: <code>[[page]]</code>, <code>#tag</code>, <code>"words"</code>, <code>(task ...)</code>, <code>(page ...)</code>, <code>(property key value)</code>, <code>(page-property key value)</code>, <code>(between -7d today)</code>, <code>and</code> / <code>or</code> / <code>not</code>.</li>
+    <li><b>Embeds (<kbd>/embed</kbd>):</b> <code>{{embed [[page]]}}</code> shows that page in the line, live. For one line, use its line menu &rarr; <i>Copy as embed</i> and paste it anywhere: <code>{{embed ((id))}}</code>. <code>((id))</code> on its own reads as the words of that line.</li>
+    <li><b>Last time:</b> On a day page, a tracker or a <code>key:: value</code> of your own shows faintly what you wrote the last time you filled it in.</li>
+    <li><b>Namespaces:</b> A page in a family, <code>[[Work/Clients/Acme]]</code> or <i>Work - Clients - Acme</i>, lists the rest of the family at the bottom.</li>
+    <li><b>Duplicate lines:</b> &#8943; beside a page title &rarr; <i>Remove duplicate lines</i>. A line written twice under the same parent goes, and what was under it moves to the first copy. The <i>Weekly review</i> says when any page has some, and lists them. Undo puts them back.</li>
+    <li><b>Meetings:</b> The next <code>#meeting</code> with a time today is shown at the top, counting down, and you are reminded before it starts (Calendars sets how long before, or turns it off).</li>
   </ul>
 
   <h3>Engage (Views)</h3>
@@ -5557,6 +5634,7 @@ function setBlockState(path, block, state, opts = {}) {
   if (state) {
     if (!prev) applyTodoTemplate(block);
     if (prev !== state) runTemplateRules(block,"status",state);
+    stampAddedIfMissing(path, block);
   }
   touch(path);
 
@@ -8226,6 +8304,15 @@ function renderInline(text) {
      would come out with its own href linked all over again. */
   const held = [];
   const hold = html => "\u0000" + (held.push(html) - 1) + "\u0000";
+  /* {{embed ...}} and {{query ...}} read as a small label; what they show is
+     drawn under the line (liveMacros). ((id)) reads as the line it names.
+     Both held first, so the [[link]] inside an embed is not linked twice. */
+  h = h.replace(/\{\{\s*(embed|query)\s+([\s\S]*?)\s*\}\}/gi, (all, kind, arg) =>
+    hold(macroChipHTML(kind.toLowerCase(), unesc(arg))));
+  h = h.replace(/\(\(([A-Za-z0-9_-]{4,64})\)\)/g, (all, id) => {
+    const hit = blockById(id);
+    return hit ? hold(blockRefHTML(id, hit)) : all;
+  });
   h = h.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (all, alt, src) =>
     isAssetPath(src) || /^(blob|data|https?):/.test(src)
       ? hold(`<img class="asset" alt="${alt}" title="${alt}" ${isAssetPath(src) ? `data-asset="${src}"` : `src="${src}"`}>`)
@@ -17331,6 +17418,8 @@ const SLASH_COMMANDS = [
   {id: "proj",      title: "Project",         detail: "what it belongs to",    kw: ["project", "prosjekt"]},
   {id: "rep",       title: "Repeat",          detail: "comes back when done",  kw: ["repeat", "recurring", "gjenta"]},
   {id: "meet",      title: "Meeting",         detail: "attendees and agenda",  kw: ["meeting", "møte"]},
+  {id: "query",     title: "Live list",       detail: "lines that match, kept up to date", kw: ["query", "list", "filter", "spørring", "liste", "filter"]},
+  {id: "embed",     title: "Show a page here", detail: "another page, live",   kw: ["embed", "include", "show", "vis", "bygg"]},
   {id: "more",      title: "Everything else", detail: "the task panel",        kw: ["more", "details", "panel", "mer"]},
 ];
 function slashRows(q) {
@@ -17656,7 +17745,7 @@ function bodyLineEl(path, b, i) {
   // Same bargain as a bullet's own line: a click on a [[link]] follows it
   // instead of dropping the caret into the raw text behind it.
   txt.addEventListener("mousedown", e => {
-    if (e.target.closest("[data-link], a[href]")) e.preventDefault();
+    if (e.target.closest("[data-link], [data-bref], a[href]")) e.preventDefault();
   });
   txt.addEventListener("focus", () => { txt.textContent = b.body[i]; });
   txt.addEventListener("blur", () => {
@@ -17787,7 +17876,7 @@ function attachOutlineUndo(host,path,block) {
    its own that is not bookkeeping. Added::, by::, started:: and the rest are
    the file's business and stay there. */
 const BOOKKEEPING = /^(id|template_(source|rules)|added|by|started|closed|done_by|assigned_at|created|updated|updated_by|asked|feature_.*|scheduled|deadline|due|repeat|assigned|branch_sync_id|space_sync_.*|cal_.*|stage)$/i;
-function lineMeta(b) {
+function lineMeta(b, path = null) {
   const out = [];
   const due = dueDate(b);
   if (b.state && due && OPEN_STATES[b.state])
@@ -17807,7 +17896,12 @@ function lineMeta(b) {
   }
   const rest = Object.entries(b.props || {}).filter(([k, v]) => !BOOKKEEPING.test(k) && trim(v) && !isMessage(b)
     && !(meet && /^(date|time|attendees)$/i.test(k)));
-  if (rest.length) out.push(el("span", {class: "pkv", html: rest.map(([k, v]) => esc(k) + ":: " + renderInline(v)).join("  \u00B7  ")}));
+  // On a day page each value says, faintly, what you wrote the last time.
+  const day = path && dayOfPath(path);
+  if (rest.length) out.push(el("span", {class: "pkv"}, ...rest.flatMap(([k, v], i) => [
+    i ? "  \u00B7  " : null,
+    el("span", {html: esc(k) + ":: " + renderInline(v)}),
+    day && isDayValueKey(k) ? prevValueEl(path, k.toLowerCase()) : null])));
   return out.length ? el("div", {class: "props"}, ...out) : null;
 }
 
@@ -17826,6 +17920,7 @@ function commitLine(txt, path, b) {
     b.title = rest;
     if (!prev) applyTodoTemplate(b);
     if (prev !== st) runTemplateRules(b, "status", st);
+    stampAddedIfMissing(path, b);
   } else {
     b.title = val;
   }
@@ -17887,6 +17982,8 @@ function outlineBlock(path, page, b, opts = {}) {
     line.append(txt);
     node.append(line);
     (b.body || []).forEach(l => node.append(el("div", {class: "bodyline", html: renderInline(l)})));
+    const shown = liveMacros(path, b);
+    if (shown) node.append(shown);
     if (!b.collapsed) for (const k of kids) node.append(outlineBlock(path, page, k, opts));
     return node;
   }
@@ -17895,7 +17992,7 @@ function outlineBlock(path, page, b, opts = {}) {
   // replace this line with its raw text and destroy the span mid-click, so
   // refuse focus for that one gesture and let the delegated handler navigate.
   txt.addEventListener("mousedown", e => {
-    if (e.target.closest("[data-link], a[href]")) e.preventDefault();
+    if (e.target.closest("[data-link], [data-bref], a[href]")) e.preventDefault();
   });
   txt.addEventListener("focus", () => { line.classList.add("raw"); txt.textContent = b.title; flyShow(txt, path, page, b); });
   txt.addEventListener("input", () => keepLineDraft(node.dataset.space, path, b, lineText(txt)));
@@ -17991,7 +18088,7 @@ function outlineBlock(path, page, b, opts = {}) {
       if (trim(after) !== "") {
         const [st, rest] = splitState(after);
         tail = newBlock({state: st || inherit, title: trim(st ? rest : after)});
-        if (tail.state) { applyTodoTemplate(tail); }
+        if (tail.state) { applyTodoTemplate(tail); stampAddedIfMissing(path, tail); }
       }
       sibs.splice(sibs.indexOf(b) + 1, 0, ...roots, ...(tail ? [tail] : []));
     }
@@ -18010,6 +18107,14 @@ function outlineBlock(path, page, b, opts = {}) {
       setBlockState(path, b, id);
       if (id === "WAIT" && !assigneeOf(b)) FLY_OPEN_AFTER = {id: b.id, k: "who"};
       focusBlock(b.id, false);
+      return;
+    }
+    // A live list or another page shown here: asked in a dialog, written as a macro.
+    if (id === "query" || id === "embed") {
+      commitLine(txt, path, b);
+      txt.blur();
+      if (id === "query") openQueryBuilder({onSave: q => putMacroLine(path, b, "{{query " + q + "}}")});
+      else openEmbedPicker(path, b);
       return;
     }
     if (!FLY || FLY.txt !== txt) flyShow(txt, path, page, b);
@@ -18080,7 +18185,7 @@ function outlineBlock(path, page, b, opts = {}) {
         // rather than emptying it and carrying its words down.
         txt.blur();
         const nb = newBlock({state: inherit});
-        if (nb.state) { applyTodoTemplate(nb); }
+        if (nb.state) { applyTodoTemplate(nb); stampAddedIfMissing(path, nb); }
         sibs.splice(sibs.indexOf(b), 0, nb);
         touch(path); render(); focusBlock(nb.id);
         return;
@@ -18090,7 +18195,7 @@ function outlineBlock(path, page, b, opts = {}) {
       txt.blur();
       const [st, rest] = splitState(after);
       const nb = newBlock({state: st || inherit, title: trim(st ? rest : after)});
-      if (nb.state) { applyTodoTemplate(nb); }
+      if (nb.state) { applyTodoTemplate(nb); stampAddedIfMissing(path, nb); }
       if (nb.title) createLinkedPages(nb.title);
       sibs.splice(sibs.indexOf(b) + 1, 0, nb);
       touch(path); render();
@@ -18167,9 +18272,11 @@ function outlineBlock(path, page, b, opts = {}) {
   paintTrackerLine(line, txt, path, b);
   node.append(line);
 
-  const meta = lineMeta(b);
+  const meta = lineMeta(b, path);
   if (meta) node.append(meta);
   (b.body || []).forEach((l, i) => node.append(bodyLineEl(path, b, i)));
+  const shown = liveMacros(path, b);
+  if (shown) node.append(shown);
 
   if (!b.collapsed) for (const k of kids) node.append(outlineBlock(path, page, k, opts));
   return node;
@@ -18686,6 +18793,7 @@ function flyRows() {
     {k: "meet", ic: "👥", label: isMeeting(block) ? "Meeting" : "Make it a meeting",
      val: isMeeting(block) ? blockProp(block, "time") || "attendees, agenda" : "attendees, agenda", key: "Alt+M"},
     {k: "trk", ic: "↗", label: "Insert tracker", val: "something to follow over time", key: "tracker-"},
+    {k: "embedref", ic: "⧉", label: "Copy as embed", val: "paste it on another line to show this one there", key: ""},
     {k: "more", ic: "⋯", label: "Everything else", val: "dates, chat, history", key: ""},
   ];
 }
@@ -18846,7 +18954,7 @@ function flyAfter(k) {
   render();
   focusBlock(id);
 }
-const flyMakeTask = (path, block) => { if (!block.state) { block.state = "TODO"; applyTodoTemplate(block); runTemplateRules(block, "status", "TODO"); } };
+const flyMakeTask = (path, block) => { if (!block.state) { block.state = "TODO"; applyTodoTemplate(block); runTemplateRules(block, "status", "TODO"); stampAddedIfMissing(path, block); } };
 
 function flyHead(k) {
   if (!FLY) return;
@@ -18859,6 +18967,7 @@ function flyHead(k) {
   if (k === "more") { flyCommit(); const b = block; FLY.txt.blur(); openTaskDetail(path, b); return; }
   if (k === "meet") { flyCommit(); const b = block; FLY.txt.blur(); openMeetingForm(path, b); return; }
   if (k === "trk") { flyCommit(); const b = block; FLY.txt.blur(); openTrackerPicker((title, when) => insertTracker(path, b, title, when), path); return; }
+  if (k === "embedref") { flyCommit(); const b = block; FLY.txt.blur(); copyEmbedOf(path, b); return; }
   FLY.open = FLY.open === k ? null : k;
   FLY.hi = 0; FLY.q = "";
   flyDraw();
@@ -19514,6 +19623,7 @@ async function openCalendars() {
         el("button", {class: "btn primary", onclick: () => { closeModal(); newSpacePrompt(async sp => { await openSpace(sp.name); openCalendars(); }); }},
           "+ Create a private area for your calendar")),
       rows,
+      meetRemindField(),
       el("div", {class: "field"}, el("label", {}, "Add a calendar link (its secret iCal address)"), url),
       el("div", {style: "display:flex;gap:10px;flex-wrap:wrap"},
         el("div", {class: "field", style: "flex:1"}, el("label", {}, "Name"), label),
@@ -19772,7 +19882,7 @@ function viewToday() {
   for (const sp of daySpaces) inSpace(sp, () => {
     const path = dayPath(sp), page = getPage(path);
     if (hoistDayTrackers(page)) touch(path);
-    const n = Object.keys(page.props || {}).filter(k => parseTracker(k + "::")).length;
+    const n = Object.keys(page.props || {}).filter(k => parseTracker(k + "::") || isDayValueKey(k)).length;
     trkIn.set(sp, n); trackers += n;
   });
   const trkHome = daySpaces.find(sp => trkIn.get(sp)) || (daySpaces.includes(Spaces.active) ? Spaces.active : daySpaces[0]);
@@ -21564,7 +21674,8 @@ function reviewDoorCount(id) {
 }
 
 function viewReview() {
-  const sub = subNow();
+  // Health is reached from the review's own links, not a tab of its own, so subNow() would turn it away.
+  const sub = state.sub === "health" ? "health" : subNow();
   if (sub === "projects") return viewSolitaire();
   const c = el("div", {class: "wrap"});
   const last = dateIn(getSetting("last_review"));
@@ -21601,6 +21712,9 @@ function viewReview() {
   const health = healthScan().length;
   if (health) c.append(el("p", {class: "hint"}, health + " broken link" + (health === 1 ? "" : "s") + " or missing title" +
     (health === 1 ? "" : "s") + ". ", el("button", {class: "textbtn", onclick: () => go("review", {sub: "health"})}, "Fix what is broken")));
+  const twice = duplicateLinePages().length;
+  if (twice) c.append(el("p", {class: "hint"}, twice + (twice === 1 ? " page has" : " pages have") + " a line written twice. ",
+    el("button", {class: "textbtn", onclick: () => go("review", {sub: "health"})}, "Tidy them")));
 
   // "The review is due" only leads back here, so it is not said on the review itself.
   const worth = attention().filter(nd => nd.id !== "review");
@@ -23053,7 +23167,8 @@ function viewHealth() {
   const c = el("div", {});
   const byType = new Map();
   for (const i of issues) { if (!byType.has(i.type)) byType.set(i.type, []); byType.get(i.type).push(i); }
-  if (!issues.length) c.append(section("Health", 0, emptyCard("System healthy.")));
+  const twice = duplicateLinePages();
+  if (!issues.length && !twice.length && !duplicateProjects().length) c.append(section("Health", 0, emptyCard("System healthy.")));
   for (const [type, items] of byType) {
     c.append(section(type.replace(/-/g, " "), items.length,
       pagedCard(items, i => el("button", {class: "dash-item", onclick: () => openPage(i.path)},
@@ -23075,6 +23190,25 @@ function viewHealth() {
       }
     }
     c.append(section("duplicate projects", dupes.length, card));
+  }
+  /* Lines written twice, page by page, in every area on screen. One page at a
+     time, or all of them at once; either way Undo puts them back. */
+  if (twice.length) {
+    const total = twice.reduce((n, x) => n + x.n, 0);
+    const card = el("div", {class: "card"});
+    for (const x of twice) card.append(el("div", {class: "prow"},
+      multiSpace() ? spaceBadge(x.space) : null,
+      el("button", {class: "nm", style: "text-align:left", onclick: () => openPageIn(x.space, x.path)}, inSpace(x.space, () => pageTitle(x.path))),
+      el("span", {class: "sub"}, x.n + " twice"),
+      el("button", {class: "btn sm ghost", onclick: () => inSpace(x.space, () => removeDuplicateLines([x.path]))}, "Remove")));
+    const all = el("button", {class: "btn sm ghost", style: "margin-left:auto",
+      title: "Every page listed here; Undo puts them all back",
+      onclick: () => {
+        const by = new Map();
+        for (const x of twice) { if (!by.has(x.space)) by.set(x.space, []); by.get(x.space).push(x.path); }
+        for (const [sp, paths] of by) inSpace(sp, () => removeDuplicateLines(paths));
+      }}, "Remove all " + total);
+    c.append(section("duplicate lines", twice.length, card, all));
   }
   return c;
 }
@@ -23625,10 +23759,19 @@ function dayTrackersBlock(path, {add = true} = {}) {
   const props = getPage(path)?.props || {};
   const box = el("div", {class: "pfacts"});
   for (const [k, v] of Object.entries(props)) {
-    if (!parseTracker(k + ":: " + v)) continue;
-    const line = factLine(path, propFact(path, k, v));
-    line.append(el("button", {class: "textbtn trkx", title: "Remove from this day",
-      "aria-label": "Remove " + trackerTitle(parseTracker(k + "::").name),
+    const trk = parseTracker(k + ":: " + v);
+    /* A value of your own written at the top of the day -- pushups:: 20, the
+       way a Logseq journal template writes them -- is shown with the trackers,
+       so it can be filled in here and compared with last time. */
+    if (!trk && !isDayValueKey(k)) continue;
+    const fact = propFact(path, k, v);
+    // A day's number is written, not chosen from the values other pages used.
+    if (!trk) fact.own = true;
+    const line = factLine(path, fact);
+    const prev = prevValueEl(path, prevKeyOf(k, v));
+    if (prev) line.append(prev);
+    if (trk) line.append(el("button", {class: "textbtn trkx", title: "Remove from this day",
+      "aria-label": "Remove " + trackerTitle(trk.name),
       onclick: () => removeDayTracker(path, k)}, "✕"));
     box.append(line);
   }
@@ -23663,6 +23806,7 @@ function openPageMenu(path) {
     isJournalPath(path) ? null : ["Make private", "move it to an area the others cannot open", () => makePrivatePrompt(path)],
     isArchived(path) ? ["Unarchive", "its tasks count again", () => toggleArchived(path)]
                      : ["Archive", "kept, but its tasks leave the lists and search shows it last", () => toggleArchived(path)],
+    dedupWritable(path) ? ["Remove duplicate lines", "a line written twice under the same parent goes; what was under it stays", () => removeDuplicateLines([path])] : null,
     ["Delete", null, () => deletePrompt(path)],
   ]));
 }
@@ -23979,6 +24123,9 @@ function viewPage() {
     const open = orgOpenWork(name);
     c.append(section("Open", open.length, taskCard(open, "Nothing open names " + name + " or its people.")));
   }
+  // The other pages in its namespace, when it has one: Work, Work/Clients, Work/Clients/Acme.
+  const ns = namespaceSection(path);
+  if (ns) c.append(ns);
   const linkedReferences = el("div", {class: "deferred-backlinks"});
   c.append(linkedReferences);
   deferPageSection(linkedReferences, () => backlinksSection(path));
@@ -24316,6 +24463,8 @@ function paintTrackerLine(line, txt, path, b) {
   if (!t) return false;
   txt.innerHTML = trackerLabelHtml(t);
   line.append(trackerWidget(t, text => { b.title = text; touch(path); }));
+  const prev = prevValueEl(path, "tracker:" + t.name);
+  if (prev) line.querySelector(":scope > .trkw").append(prev);
   return true;
 }
 const trackerLabelHtml = t => '<span class="trkname" title="' + esc(t.key) + '">' + esc(trackerTitle(t.name)) + "</span>";
@@ -25333,6 +25482,7 @@ function render() {
   renderNav();
   renderSpacesButton();
   renderContextChip();
+  scheduleMeetPaint();
   const c = $("#content");
   c.textContent = "";
   c.removeAttribute("aria-busy");
@@ -30165,6 +30315,1048 @@ function editAllText(ctx) {
 
 
 /* ============================================================
+   169_EMBEDS_QUERIES_NAMESPACES_AND_MEETINGS
+   Things the Logseq side of the app always had in Neovim: a line that shows
+   another page or line in place ({{embed}}), a line that is a live list
+   ({{query}}), a reference to one line from another (((id))), the family of
+   pages a page belongs to, the value you wrote last time, duplicate lines
+   taken out, and a word before a meeting starts.
+   ============================================================ */
+
+/* ---------- lines by their id:: ----------
+   id:: is the durable name a line gets when something points at it: a copied
+   link, an embed, a reference. Runtime ids are new on every read, so this is
+   the only id that survives a reload. One map per area, rebuilt when anything
+   is touched. */
+function blockIdIndex() {
+  return memo("blockIds\u0000" + (V.space || "") + "\u0000" + V.pages.size, () => {
+    const by = new Map();
+    for (const [path, page] of V.pages) walkBlocks(page.blocks, b => {
+      const id = trim(blockProp(b, "id") || "").toLowerCase();
+      if (id && !by.has(id)) by.set(id, {path, block: b});
+    });
+    return by;
+  });
+}
+const blockById = id => blockIdIndex().get(trim(String(id || "")).toLowerCase()) || null;
+
+/* Open the page a line is on and bring the line to the middle, in whichever
+   area it lives. */
+function openBlockAt(space, path, block) {
+  const centre = () => {
+    const n = block && document.querySelector(idSel(".blk", block.id, ".txt"));
+    if (n) centerLinkText(n);
+    return !!n;
+  };
+  openPageIn(space, path);
+  requestAnimationFrame(() => requestAnimationFrame(() => { if (!centre()) setTimeout(centre, 250); }));
+}
+
+/* ((id)) in a line reads as the words of the line it points at. Clicking it
+   goes there; the reference stays in the file as written. */
+function blockRefHTML(id, hit) {
+  const words = plainTitle(String(hit.block.title || "").replace(/\(\([A-Za-z0-9_-]{4,64}\)\)/g, "…"))
+    || "(an empty line)";
+  return `<span class="bref" data-bref="${esc(id)}" contenteditable="false" title="${esc("From " + pageTitle(hit.path) + " - click to go there")}">${esc(words)}</span>`;
+}
+document.addEventListener("click", e => {
+  const ref = e.target.closest("[data-bref]");
+  if (!ref) return;
+  e.preventDefault(); e.stopPropagation();
+  const host = ref.closest("[data-space]");
+  const space = host?.dataset.space || V.space;
+  const hit = inSpace(space, () => blockById(ref.dataset.bref));
+  if (hit) openBlockAt(space, hit.path, hit.block);
+  else notify("The line this pointed at has gone.", "warn");
+}, true);
+
+/* ---------- {{embed}} and {{query}} in a line ----------
+   The line keeps its words: the macro reads as a small label where it was
+   written, and what it shows is drawn under the line, live. Click the label
+   to type the macro itself, the way any line is edited. */
+const MACRO_RE = /\{\{\s*(embed|query)\s+([\s\S]*?)\s*\}\}/gi;
+function macrosIn(title) {
+  const out = [];
+  for (const m of String(title || "").matchAll(MACRO_RE)) {
+    const kind = m[1].toLowerCase(), arg = trim(m[2]);
+    if (kind === "query") { out.push({kind, q: arg, raw: m[0]}); continue; }
+    const page = /^\[\[([^\]]+?)(?:\]\[[^\]]*)?\]\]$/.exec(arg);
+    const id = /^\(\(([A-Za-z0-9_-]{4,64})\)\)$/.exec(arg);
+    if (page) out.push({kind, page: trim(page[1].split("|")[0]), raw: m[0]});
+    else if (id) out.push({kind, id: id[1], raw: m[0]});
+  }
+  return out;
+}
+function macroChipHTML(kind, arg) {
+  if (kind === "query")
+    return `<span class="macro query" title="A live list of the lines this finds. Click to edit the query">\u{1F50D} ${esc(arg)}</span>`;
+  const id = /^\(\(([A-Za-z0-9_-]{4,64})\)\)$/.exec(arg);
+  const page = /^\[\[([^\]]+?)(?:\]\[[^\]]*)?\]\]$/.exec(arg);
+  const what = id ? "a line" : page ? linkWords("[[" + page[1] + "]]") : arg;
+  return `<span class="macro embed" title="Shows ${esc(id ? "that line" : "that page")} here, live. Click to edit">⧉ ${esc(what)}</span>`;
+}
+
+/* What a line's macros show, drawn under it. `seen` holds the pages and lines
+   already on the way down, so a page that embeds itself, or two pages that
+   embed each other, stop instead of going round for ever. */
+const EMBED_MAX_DEPTH = 3;
+const EMBED_MAX_LINES = 400;
+function liveMacros(path, b, seen = new Set([path]), depth = 0) {
+  const ms = macrosIn(b.title);
+  if (!ms.length) return null;
+  const space = V.space;
+  const box = el("div", {class: "macros", data: {space}});
+  for (const m of ms) {
+    if (m.kind === "query") box.append(queryBox(path, b, m));
+    else box.append(embedBox(path, m, seen, depth));
+  }
+  return box;
+}
+
+function embedBox(fromPath, m, seen, depth) {
+  const space = V.space;
+  const box = el("div", {class: "embedbox"});
+  const head = (label, open) => el("div", {class: "ehead"},
+    el("span", {class: "eic", "aria-hidden": "true"}, "⧉"),
+    open ? el("button", {class: "textbtn", title: "Open it, to edit it there", onclick: e => { e.stopPropagation(); open(); }}, label)
+         : el("span", {}, label));
+  if (m.page) {
+    const target = findExistingPage(m.page);
+    if (!target) {
+      box.append(head("No page called “" + m.page + "” yet", null));
+      return box;
+    }
+    box.append(head(pageTitle(target), () => openPageIn(space, target)));
+    if (seen.has(target) || depth >= EMBED_MAX_DEPTH) {
+      box.append(el("div", {class: "eempty"}, seen.has(target) ? "Already shown above, so not again here." : "Nested too deep to show here."));
+      return box;
+    }
+    const page = getPage(target);
+    const next = new Set(seen).add(target);
+    const budget = {n: EMBED_MAX_LINES};
+    const body = el("div", {class: "ebody"});
+    for (const c of page.blocks || []) body.append(embedLine(target, c, next, depth + 1, budget));
+    if (!(page.blocks || []).length) body.append(el("div", {class: "eempty"}, "Nothing on that page yet."));
+    box.append(body);
+    return box;
+  }
+  const hit = blockById(m.id);
+  if (!hit) { box.append(head("The line this showed has gone", null)); return box; }
+  const key = hit.path + "\u0000" + m.id.toLowerCase();
+  box.append(head("from " + pageTitle(hit.path), () => openBlockAt(space, hit.path, hit.block)));
+  if (seen.has(key) || depth >= EMBED_MAX_DEPTH) {
+    box.append(el("div", {class: "eempty"}, "Already shown above, so not again here."));
+    return box;
+  }
+  const body = el("div", {class: "ebody"});
+  body.append(embedLine(hit.path, hit.block, new Set(seen).add(key), depth + 1, {n: EMBED_MAX_LINES}));
+  box.append(body);
+  return box;
+}
+
+/* One line of an embed, read-only, children and all. A click goes to where
+   it is written; a task's state can be ticked from here, since that is what
+   an embedded list of tasks is usually for. */
+function embedLine(path, b, seen, depth, budget) {
+  const space = V.space;
+  const node = el("div", {class: "eblk"});
+  if (budget.n-- <= 0) { node.append(el("div", {class: "eempty"}, "… and more on the page itself.")); return node; }
+  const line = el("div", {class: "eline", title: "Go to this line",
+    onclick: e => { if (e.target.closest("[data-link], [data-bref], a[href], .state")) return; openBlockAt(space, path, b); }});
+  if (b.state) line.append(el("button", {class: "state " + b.state, title: "Next state",
+    onclick: e => { e.stopPropagation(); inSpace(space, () => cycleState(path, b, {keepTask: true})); }}, b.state));
+  line.append(el("span", {class: "etxt", html: lineHtml(b)}));
+  node.append(line);
+  for (const l of b.body || []) node.append(el("div", {class: "ebodyline", html: renderInline(l)}));
+  const inner = liveMacros(path, b, seen, depth);
+  if (inner) node.append(inner);
+  const kids = b.children || [];
+  if (kids.length && b.collapsed) node.append(el("div", {class: "eempty"}, "▸ " + kids.length + " folded"));
+  else for (const k of kids) node.append(embedLine(path, k, seen, depth, budget));
+  return node;
+}
+
+/* ---------- the query language ----------
+   Logseq's simple queries, the parts that mean something here:
+     [[page]]  #tag             lines that link to it, sit under a line that
+                                does, or are written on that page
+     "words"   bare words       lines with those words in them
+     (task TODO DOING)          tasks in those states (todo works too)
+     (page "name")              lines on that page
+     (property key value)       lines with that value; without a value, any
+     (page-property key value)  pages with that value (alone: the pages)
+     (between -7d today)        lines from those days: the day page they are
+                                on, or the day they were added
+     (and ...) (or ...) (not ...)
+   Several at the top are all required. Anything else -- sort-by, priority --
+   is read and ignored, so a query brought over from Logseq still runs. */
+function queryTokens(src) {
+  const out = [], s = String(src || "");
+  let i = 0;
+  while (i < s.length) {
+    const c = s[i];
+    if (/\s/.test(c)) { i++; continue; }
+    if (c === "(" && s[i + 1] === "(") {
+      const j = s.indexOf("))", i + 2);
+      if (j > 0) { out.push({t: "bref", v: s.slice(i + 2, j)}); i = j + 2; continue; }
+    }
+    if (c === "(" || c === ")") { out.push({t: c}); i++; continue; }
+    if (c === "[" && s[i + 1] === "[") {
+      const j = s.indexOf("]]", i + 2);
+      const v = j > 0 ? s.slice(i + 2, j) : s.slice(i + 2);
+      out.push({t: "link", v: trim(v.split("][")[0].split("|")[0])}); i = j > 0 ? j + 2 : s.length; continue;
+    }
+    if (c === '"' || c === "“") {
+      const close = c === '"' ? '"' : "”";
+      const j = s.indexOf(close, i + 1);
+      out.push({t: "str", v: j > 0 ? s.slice(i + 1, j) : s.slice(i + 1)}); i = j > 0 ? j + 1 : s.length; continue;
+    }
+    let j = i;
+    while (j < s.length && !/[\s()"]/.test(s[j])) j++;
+    const w = s.slice(i, j);
+    out.push(w[0] === "#" && w.length > 1 ? {t: "link", v: w.slice(1), tag: true} : {t: "word", v: w});
+    i = j;
+  }
+  return out;
+}
+function parseQuery(src) {
+  const toks = queryTokens(src);
+  let i = 0;
+  const atom = t => t.t === "link" ? {op: "link", ref: t.v, tag: !!t.tag}
+    : t.t === "str" ? {op: "text", s: t.v}
+    : t.t === "bref" ? {op: "text", s: "((" + t.v + "))"}
+    : {op: "text", s: t.v};
+  const val = t => !t ? "" : t.t === "link" ? (t.tag ? "#" : "") + "[[" + t.v + "]]" : t.v;
+  function expr() {
+    const t = toks[i++];
+    if (!t) return null;
+    if (t.t === ")") return null;
+    if (t.t !== "(") return atom(t);
+    const head = toks[i] && toks[i].t === "word" ? toks[i++].v.toLowerCase() : "and";
+    const args = [];
+    while (i < toks.length && toks[i].t !== ")") args.push(toks[i].t === "(" ? expr() : toks[i++]);
+    i++;                                               // the ")"
+    const words = args.filter(a => a && a.t).map(val);
+    // In the order written, so the builder hands a query back the way it came.
+    const parts = args.filter(Boolean).map(a => a.t ? atom(a) : a);
+    switch (head) {
+      case "and": case "or": return {op: head, args: parts};
+      case "not": return {op: "not", args: parts};
+      case "task": case "todo":
+        return {op: "task", states: words.map(w => w.toUpperCase()).map(w => STATE_ALIAS[w] || w).filter(w => TODO_STATES.includes(w))};
+      case "page": return {op: "page", ref: words.map(w => w.replace(/^\[\[|\]\]$/g, "")).join(" ")};
+      case "property": return {op: "prop", key: words[0] || "", value: words.slice(1).join(" ")};
+      case "page-property": return {op: "pageprop", key: words[0] || "", value: words.slice(1).join(" ")};
+      case "between": return {op: "between", from: words[0] || "", to: words[1] || words[0] || ""};
+      default: return {op: "true"};                     // sort-by, priority, sample ...
+    }
+  }
+  const top = [];
+  while (i < toks.length) { const e = expr(); if (e) top.push(e); }
+  return top.length === 1 ? top[0] : {op: "and", args: top};
+}
+
+/* "-7d", "today", "+2w", "2026-10-01", "[[2026-10-01]]" as a day. */
+function queryDay(w) {
+  const s = trim(String(w || "")).toLowerCase().replace(/^\[\[|\]\]$/g, "");
+  const t = todayISO();
+  if (!s || s === "today" || s === "now" || s === "i dag" || s === "idag") return t;
+  if (s === "yesterday" || s === "i går") return shiftISO(t, -1);
+  if (s === "tomorrow" || s === "i morgen") return shiftISO(t, 1);
+  const iso = dateIn(s);
+  if (iso) return iso;
+  const m = /^([+-]?)(\d+)([dwmy])$/.exec(s);
+  if (!m) return null;
+  const n = (m[1] === "-" ? -1 : 1) * Number(m[2]);
+  if (m[3] === "d") return shiftISO(t, n);
+  if (m[3] === "w") return shiftISO(t, 7 * n);
+  const d = parseISO(t);
+  if (m[3] === "m") d.setMonth(d.getMonth() + n); else d.setFullYear(d.getFullYear() + n);
+  return isoOf(d);
+}
+
+/* Where a link points, the way the rest of the app resolves one: the page if
+   there is one, else the words, so two spellings of a missing page still meet. */
+/* A query asks the same few links of thousands of lines, so while one runs
+   each spelling is looked up once. */
+let QUERY_REFS = null;
+const queryRefKey = ref => {
+  const t = trim(String(ref || "").split("|")[0].split("#")[0]);
+  if (QUERY_REFS && QUERY_REFS.has(t)) return QUERY_REFS.get(t);
+  const key = findExistingPage(t) || "?" + t.toLowerCase();
+  if (QUERY_REFS) QUERY_REFS.set(t, key);
+  return key;
+};
+/* The lines that link to a page, from the index Linked References already
+   keeps: a line counts when it, or a line above it, names the page. */
+let QUERY_LINKS = null;
+function queryLinkSet(ref) {
+  const t = trim(String(ref || "").split("|")[0].split("#")[0]);
+  if (QUERY_LINKS && QUERY_LINKS.has(t)) return QUERY_LINKS.get(t);
+  const path = findExistingPage(t);
+  const names = path ? [pageRef(path).toLowerCase(), baseName(path).toLowerCase()] : [t.toLowerCase()];
+  const {recs, by} = backlinkIndex();
+  const set = new Set();
+  for (const n of names) for (const i of by.get(n) || []) if (recs[i].block) set.add(recs[i].block);
+  const out = {key: queryRefKey(t), set};
+  if (QUERY_LINKS) QUERY_LINKS.set(t, out);
+  return out;
+}
+function refsOfText(text) {
+  const out = new Set(), s = String(text || "");
+  for (const l of linksIn(s)) out.add(queryRefKey(l));
+  for (const t of tagsIn(s)) out.add(queryRefKey(t));
+  return out;
+}
+const queryValueMatch = (have, want) => {
+  const norm = v => trim(String(v || "")).toLowerCase().replace(/^#/, "").replace(/\[\[([^\]]+?)(?:\]\[[^\]]*)?\]\]/g, "$1");
+  const h = norm(have), w = norm(want);
+  if (!w) return !!h;
+  return h === w || h.split(/\s*,\s*/).includes(w);
+};
+const pagePropOf = (path, key) => {
+  const props = getPage(path)?.props || {};
+  const k = Object.keys(props).find(x => x.toLowerCase() === String(key).toLowerCase());
+  return k ? props[k] : "";
+};
+function pageNamed(path, name) {
+  const n = trim(String(name || "")).toLowerCase();
+  if (!n) return false;
+  return findExistingPage(name) === path || pageTitle(path).toLowerCase() === n ||
+    baseName(path).toLowerCase() === n || pageRef(path).toLowerCase() === n;
+}
+
+function queryMatch(q, x) {
+  switch (q.op) {
+    case "and": return q.args.every(a => queryMatch(a, x));
+    case "or": return q.args.some(a => queryMatch(a, x));
+    case "not": return !q.args.some(a => queryMatch(a, x));
+    case "true": return true;
+    case "task": return !!x.block && (q.states.length ? q.states.includes(x.block.state) : !!x.block.state);
+    case "text": return x.text().includes(String(q.s || "").toLowerCase());
+    case "link": {
+      const L = queryLinkSet(q.ref);
+      return x.path === L.key || x.links(L);
+    }
+    case "page": return pageNamed(x.path, q.ref);
+    case "prop": return !!x.block && queryValueMatch(blockProp(x.block, q.key), q.value);
+    case "pageprop": return queryValueMatch(pagePropOf(x.path, q.key), q.value);
+    case "between": {
+      const day = x.day();
+      const from = queryDay(q.from), to = queryDay(q.to);
+      if (!day || !from || !to) return false;
+      return day >= (from < to ? from : to) && day <= (from < to ? to : from);
+    }
+    default: return false;
+  }
+}
+const queryLeaves = q => q.args ? q.args.flatMap(queryLeaves) : [q];
+const isPageQuery = q => { const l = queryLeaves(q).filter(x => x.op !== "true"); return l.length > 0 && l.every(x => x.op === "pageprop"); };
+
+/* Every match in the area, best read first: day pages newest first, then the
+   rest by name, each in the order it is written. `skip` is the line holding
+   the query, which is never one of its own answers. */
+function runQuery(src, skip = null) {
+  return memo("query\u0000" + (V.space || "") + "\u0000" + src + "\u0000" + (skip ? skip.id : ""), () => {
+    // A query that asks for nothing would otherwise match every line there is.
+    if (!trim(src)) return {pages: false, rows: []};
+    QUERY_REFS = new Map(); QUERY_LINKS = new Map();
+    try { return queryAll(src, skip); } finally { QUERY_REFS = QUERY_LINKS = null; }
+  });
+}
+function queryAll(src, skip) {
+  const q = parseQuery(src);
+  const pages = [...V.pages.keys()].filter(p => !isArchived(p) && pageKind(p) !== "verb")
+    .sort((a, b) => {
+      const da = dayOfPath(a), db = dayOfPath(b);
+      if (da && db) return db.localeCompare(da);
+      if (da || db) return da ? -1 : 1;
+      return pageTitle(a).localeCompare(pageTitle(b));
+    });
+  if (isPageQuery(q)) return {pages: true, rows: pages.filter(p => queryMatch(q, {path: p, block: null,
+    text: () => pageTitle(p).toLowerCase(), links: () => false, day: () => dayOfPath(p)})).map(p => ({path: p}))};
+  const rows = [];
+  // A link in a line's own values (with:: [[p/Ola]]) counts too; the index only reads its words.
+  const propRefs = b => {
+    const vals = Object.values(b.props || {}).filter(v => /\[\[|#/.test(v));
+    return vals.length ? refsOfText(vals.join("\n")) : null;
+  };
+  for (const path of pages) {
+    const page = getPage(path);
+    const day = dayOfPath(path);
+    const walk = (blocks, trail) => {
+      for (const b of blocks || []) {
+        if (b === skip) continue;
+        if (isMessage(b)) continue;
+        let text = null, own;
+        const x = {path, block: b,
+          text: () => text ?? (text = [b.title, ...(b.body || [])].join("\n").toLowerCase()),
+          links: L => L.set.has(b) || trail.some(a => L.set.has(a)) ||
+            !!(own === undefined ? (own = propRefs(b)) : own)?.has(L.key),
+          day: () => day || addedDate(b)};
+        if (queryMatch(q, x)) rows.push({path, block: b, trail});
+        walk(b.children, [...trail, b]);
+      }
+    };
+    walk(page.blocks, []);
+  }
+  return {pages: false, rows};
+}
+
+const QUERY_SHOW = 25;
+const QUERY_ALL_MAX = 500;      // past this, a list is a search, and the Search screen is better at it
+const QUERY_OPEN = new Set();          // queries opened past QUERY_SHOW, by line id
+function queryBox(path, b, m) {
+  const space = V.space;
+  const box = el("div", {class: "querybox"});
+  let res;
+  try { res = runQuery(m.q, b); } catch (err) { res = {rows: [], error: String(err.message || err)}; }
+  const edit = () => openQueryBuilder({query: m.q, space, onSave: q => inSpace(space, () => {
+    b.title = b.title.replace(m.raw, () => "{{query " + q + "}}");
+    touch(path); render();
+  })});
+  box.append(el("div", {class: "ehead"},
+    el("span", {class: "eic", "aria-hidden": "true"}, "\u{1F50D}"),
+    el("span", {class: "qtext", title: m.q}, m.q || "(empty query)"),
+    el("span", {class: "n"}, String(res.rows.length)),
+    el("button", {class: "textbtn", title: "Change what it looks for", onclick: e => { e.stopPropagation(); edit(); }}, "Edit")));
+  if (!res.rows.length) {
+    box.append(el("div", {class: "eempty"}, res.error ? "Could not read the query: " + res.error : "Nothing matches yet."));
+    return box;
+  }
+  const all = QUERY_OPEN.has(b.id);
+  const list = el("div", {class: "qrows"});
+  let lastPage = null;
+  for (const r of res.rows.slice(0, all ? QUERY_ALL_MAX : QUERY_SHOW)) {
+    if (r.path !== lastPage) {
+      lastPage = r.path;
+      list.append(el("button", {class: "qpage", onclick: e => { e.stopPropagation(); openPageIn(space, r.path); }}, pageTitle(r.path)));
+      if (res.pages) continue;
+    }
+    if (!r.block) continue;
+    const row = el("div", {class: "qrow", title: "Go to this line",
+      onclick: e => { if (e.target.closest("[data-link], [data-bref], a[href], .state")) return; openBlockAt(space, r.path, r.block); }});
+    if (r.block.state) row.append(el("button", {class: "state " + r.block.state, title: "Next state",
+      onclick: e => { e.stopPropagation(); inSpace(space, () => cycleState(r.path, r.block, {keepTask: true})); }}, r.block.state));
+    if (r.trail.length) row.append(el("span", {class: "qtrail"}, r.trail.map(t => plainTitle(t.title)).filter(Boolean).slice(-2).join(" › ") + " ›"));
+    row.append(el("span", {class: "etxt", html: lineHtml(r.block)}));
+    list.append(row);
+  }
+  box.append(list);
+  if (res.rows.length > QUERY_SHOW) box.append(el("button", {class: "textbtn qmore", onclick: e => {
+    e.stopPropagation();
+    if (all) QUERY_OPEN.delete(b.id); else QUERY_OPEN.add(b.id);
+    render();
+  }}, all ? "Show the first " + QUERY_SHOW : "Show all " + Math.min(res.rows.length, QUERY_ALL_MAX)));
+  return box;
+}
+
+/* ---------- the query builder ----------
+   A query is easier to say than to spell, so it is said here: what to match,
+   all of it or any of it, with the matches counted as you go. What it writes
+   is the plain query text, the same Logseq would read, and Edit as text is
+   always there for the parts the form has no row for. */
+const QB_KINDS = [
+  ["task",     "Task in state"],
+  ["link",     "Links to page"],
+  ["tag",      "Has tag"],
+  ["text",     "Contains words"],
+  ["page",     "Written on page"],
+  ["prop",     "Line has value"],
+  ["pageprop", "Page has value"],
+  ["between",  "From the days"],
+];
+const qbQuote = s => /[\s()"]/.test(s) || !s ? '"' + String(s).replace(/"/g, "") + '"' : s;
+function qbRowText(r) {
+  let s = "";
+  switch (r.kind) {
+    case "task": s = r.states.length ? "(task " + r.states.join(" ") + ")" : ""; break;
+    case "link": s = trim(r.a) ? "[[" + trim(r.a) + "]]" : ""; break;
+    case "tag": { const t = trim(r.a).replace(/^#/, ""); s = !t ? "" : /\s/.test(t) ? "[[" + t + "]]" : "#" + t; break; }
+    case "text": s = trim(r.a) ? '"' + trim(r.a).replace(/"/g, "") + '"' : ""; break;
+    case "page": s = trim(r.a) ? '(page "' + trim(r.a).replace(/"/g, "") + '")' : ""; break;
+    case "prop": s = trim(r.a) ? "(property " + trim(r.a) + (trim(r.b) ? " " + qbQuote(trim(r.b)) : "") + ")" : ""; break;
+    case "pageprop": s = trim(r.a) ? "(page-property " + trim(r.a) + (trim(r.b) ? " " + qbQuote(trim(r.b)) : "") + ")" : ""; break;
+    case "between": s = trim(r.a) ? "(between " + trim(r.a) + " " + (trim(r.b) || "today") + ")" : ""; break;
+  }
+  return s && r.not ? "(not " + s + ")" : s;
+}
+function qbText(st) {
+  const parts = st.rows.map(qbRowText).filter(Boolean);
+  if (!parts.length) return "";
+  if (parts.length === 1) return parts[0];
+  return "(" + st.mode + " " + parts.join(" ") + ")";
+}
+/* Back from a query to the form, when the form can say it; null when it
+   cannot, and the query opens as text. */
+function qbFromQuery(src) {
+  if (!trim(src)) return {mode: "and", rows: []};
+  let q;
+  try { q = parseQuery(src); } catch (_) { return null; }
+  const rowOf = (leaf, not = false) => {
+    const r = {kind: "", states: [], a: "", b: "", not};
+    switch (leaf.op) {
+      case "task": return Object.assign(r, {kind: "task", states: leaf.states});
+      case "link": return Object.assign(r, {kind: leaf.tag ? "tag" : "link", a: leaf.ref});
+      case "text": return Object.assign(r, {kind: "text", a: leaf.s});
+      case "page": return Object.assign(r, {kind: "page", a: leaf.ref});
+      case "prop": return Object.assign(r, {kind: "prop", a: leaf.key, b: leaf.value});
+      case "pageprop": return Object.assign(r, {kind: "pageprop", a: leaf.key, b: leaf.value});
+      case "between": return Object.assign(r, {kind: "between", a: leaf.from, b: leaf.to});
+      case "not": return leaf.args.length === 1 && !leaf.args[0].args ? rowOf(leaf.args[0], true) : null;
+      default: return null;
+    }
+  };
+  const top = (q.op === "and" || q.op === "or") ? q.args : [q];
+  const rows = top.map(a => rowOf(a));
+  if (rows.some(r => !r)) return null;
+  // The form may spell it differently; that is fine as long as it means the same.
+  const again = qbText({mode: q.op === "or" ? "or" : "and", rows});
+  if (JSON.stringify(parseQuery(again)) !== JSON.stringify(q)) return null;
+  return {mode: q.op === "or" ? "or" : "and", rows};
+}
+
+function openQueryBuilder({query = "", space = V.space, onSave}) {
+  const parsed = qbFromQuery(query);
+  const st = parsed || {mode: "and", rows: []};
+  let asText = !parsed;
+  if (!st.rows.length && !asText) st.rows.push({kind: "task", states: ["TODO", "DOING"], a: "", b: "", not: false});
+  const pageList = el("datalist", {id: "qbPages"}, ...inSpace(space, () => allPages(p => !isJournalPath(p)).slice(0, 2000)
+    .map(p => el("option", {value: linkRefTo(p)}, pageTitle(p)))));
+  const rowsBox = el("div", {class: "qbrows"});
+  const textBox = el("textarea", {class: "qbtext", spellcheck: "false", rows: "3",
+    placeholder: "(and [[1/Fix sink]] (task TODO DOING))"});
+  textBox.value = query;
+  const preview = el("div", {class: "qbpreview", "aria-live": "polite"});
+  const modeBox = el("div", {class: "qbmode"});
+  const current = () => asText ? trim(textBox.value) : qbText(st);
+
+  let timer = null;
+  const refresh = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const q = current();
+      if (!asText) textBox.value = q;
+      preview.textContent = "";
+      if (!q) { preview.append(el("span", {class: "hint"}, "Add something to look for.")); return; }
+      let res;
+      try { res = inSpace(space, () => runQuery(q)); } catch (err) { preview.append(el("span", {class: "bad"}, "Could not read that: " + (err.message || err))); return; }
+      preview.append(el("b", {}, res.rows.length + (res.pages ? (res.rows.length === 1 ? " page" : " pages") : (res.rows.length === 1 ? " line" : " lines"))),
+        (res.rows.length === 1 ? " matches now" : " match now") + (res.rows.length ? ", for example:" : "."));
+      for (const r of res.rows.slice(0, 6)) preview.append(el("div", {class: "qbhit"},
+        r.block?.state ? el("span", {class: "state " + r.block.state}, r.block.state) : null,
+        el("span", {}, r.block ? plainTitle(r.block.title) || "(empty line)" : inSpace(space, () => pageTitle(r.path))),
+        el("span", {class: "p"}, inSpace(space, () => pageTitle(r.path)))));
+    }, 120);
+  };
+
+  const input = (value, ph, onInput, list) => {
+    const i = el("input", {value: value || "", placeholder: ph, spellcheck: "false", list: list || null,
+      oninput: e => { onInput(e.target.value); refresh(); }});
+    return i;
+  };
+  const drawRows = () => {
+    rowsBox.textContent = "";
+    st.rows.forEach((r, n) => {
+      const kind = el("select", {"aria-label": "What to match", onchange: e => {
+        Object.assign(r, {kind: e.target.value, a: "", b: "", states: e.target.value === "task" ? ["TODO", "DOING"] : []});
+        drawRows(); refresh();
+      }}, ...QB_KINDS.map(([v, l]) => el("option", {value: v, selected: v === r.kind ? "" : null}, l)));
+      const what = el("div", {class: "qbwhat"});
+      if (r.kind === "task") {
+        for (const s of TODO_STATES) what.append(el("label", {class: "qbstate"},
+          el("input", {type: "checkbox", checked: r.states.includes(s) ? "" : null, onchange: e => {
+            r.states = e.target.checked ? [...r.states, s] : r.states.filter(x => x !== s);
+            r.states = TODO_STATES.filter(x => r.states.includes(x));
+            refresh();
+          }}), el("span", {class: "state " + s}, s)));
+      } else if (r.kind === "link" || r.kind === "page") {
+        what.append(input(r.a, r.kind === "link" ? "page, e.g. 1/Fix sink or p/Ola" : "page name", v => { r.a = v; }, "qbPages"));
+      } else if (r.kind === "tag") {
+        what.append(input(r.a, "tag, e.g. urgent", v => { r.a = v; }));
+      } else if (r.kind === "text") {
+        what.append(input(r.a, "words", v => { r.a = v; }));
+      } else if (r.kind === "prop" || r.kind === "pageprop") {
+        what.append(input(r.a, "key, e.g. type", v => { r.a = v; }),
+          el("span", {class: "qbeq"}, "="), input(r.b, "value (empty: any)", v => { r.b = v; }));
+      } else if (r.kind === "between") {
+        what.append(input(r.a, "from, e.g. -7d", v => { r.a = v; }),
+          el("span", {class: "qbeq"}, "to"), input(r.b, "today", v => { r.b = v; }));
+      }
+      rowsBox.append(el("div", {class: "qbrow"}, kind, what,
+        el("label", {class: "qbnot", title: "Lines that do NOT match this"},
+          el("input", {type: "checkbox", checked: r.not ? "" : null, onchange: e => { r.not = e.target.checked; refresh(); }}), "not"),
+        el("button", {class: "textbtn", title: "Take this away", "aria-label": "Take this away",
+          onclick: () => { st.rows.splice(n, 1); drawRows(); refresh(); }}, "✕")));
+    });
+    rowsBox.append(el("button", {class: "btn sm ghost", onclick: () => {
+      st.rows.push({kind: "link", states: [], a: "", b: "", not: false}); drawRows(); refresh();
+      rowsBox.querySelector(".qbrow:last-of-type input")?.focus();
+    }}, "+ something else to match"));
+  };
+  const drawMode = () => {
+    modeBox.textContent = "";
+    if (asText) return;
+    for (const [v, l] of [["and", "All of these"], ["or", "Any of these"]])
+      modeBox.append(el("label", {class: "qbstate"},
+        el("input", {type: "radio", name: "qbmode", checked: st.mode === v ? "" : null,
+          onchange: () => { st.mode = v; refresh(); }}), l));
+  };
+  const toggle = el("button", {class: "textbtn", onclick: () => {
+    if (!asText) { asText = true; }
+    else {
+      const back = qbFromQuery(textBox.value);
+      if (!back) { notify("The form has no rows for some of that, so it stays as text.", "warn"); return; }
+      Object.assign(st, back); asText = false;
+    }
+    draw(); refresh();
+  }});
+  const draw = () => {
+    toggle.textContent = asText ? "Back to the form" : "Edit as text";
+    rowsBox.hidden = asText;
+    textBox.readOnly = !asText;
+    textBox.classList.toggle("ro", !asText);
+    drawMode(); if (!asText) drawRows();
+  };
+  textBox.addEventListener("input", () => { if (asText) refresh(); });
+  const save = () => {
+    const q = current();
+    if (!q) { notify("There is nothing to look for yet.", "warn"); return; }
+    closeModal(); onSave(q);
+  };
+  draw(); refresh();
+  modal({
+    center: true, title: query ? "Edit the query" : "A live list", hint: "lines that match, kept up to date",
+    body: el("div", {class: "qb"}, pageList, modeBox, rowsBox,
+      el("div", {class: "field"}, el("label", {}, "The query, as written in the line ", toggle), textBox),
+      preview),
+    foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+           el("button", {class: "btn primary", onclick: save}, query ? "Save" : "Put it in the line")],
+    onKey: e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { save(); return true; } return false; },
+  });
+  setTimeout(() => (asText ? textBox : $(".qbrow input, .qbrow select"))?.focus(), 40);
+}
+
+/* What to write in [[ ]] so it finds this page again. The short form is the
+   usual one, but a page in a folder of its own (pages/Work/Clients.md) is
+   only found by its whole path. */
+function linkRefTo(path) {
+  const ref = pageRef(path);
+  if (findExistingPage(ref) === path || !path.startsWith(PAGES + "/")) return ref;
+  return path.slice(PAGES.length + 1).replace(/\.md$/i, "");
+}
+
+/* A macro written into a line from the slash menu: the line itself when it
+   is empty, else a new line under it, so nothing already written is lost. */
+function putMacroLine(path, b, text) {
+  const page = getPage(path);
+  if (!page) return;
+  if (!trim(b.title) && !b.state) b.title = text;
+  else {
+    const sibs = siblingsOf(page, b);
+    const nb = newBlock({title: text}, false);
+    sibs.splice(sibs.indexOf(b) + 1, 0, nb);
+    b = nb;
+  }
+  touch(path); render(); focusBlock(b.id, true);
+}
+function openEmbedPicker(path, b) {
+  const items = allPages(p => p !== path && !isArchived(p) && pageKind(p) !== "verb")
+    .sort((x, y) => pageTitle(x).localeCompare(pageTitle(y)));
+  listPicker({title: "Show which page here?", typeahead: true, items,
+    label: p => pageTitle(p), detail: p => pageRef(p),
+    onPick: p => putMacroLine(path, b, "{{embed [[" + linkRefTo(p) + "]]}}"),
+    footer: el("span", {class: "hint", style: "text-align:left"},
+      "For one line instead: its line menu → Copy as embed, then paste it here.")});
+}
+/* The line menu's Copy as embed: the line gets an id:: if it has none, and
+   what is copied pastes as a live copy of it anywhere in the area. */
+function copyEmbedOf(path, block) {
+  const id = ensureBlockId(path, block);
+  copyText("{{embed ((" + id + "))}}", "Copied. Paste it on any line to show this one there.");
+}
+
+/* ---------- the family a page belongs to ----------
+   A namespace is a page name with parts: in folders (pages/Work/Clients.md,
+   linked as [[Work/Clients]]) or, the way the importer flattens Logseq's,
+   in the name itself (Work - Clients). The kind folders (1/, p/, c/ ...) say
+   what a page is, not which family, so they are not a part -- but a project
+   kept in a folder of its own (1/Party/Invites) still has one. People are
+   never split on " - ", since "Anna Berg - Acme" names where Anna works. */
+const NS_KIND_DIRS = () => new Set([...Object.values(DIRS), join(PAGES, "_")].filter(d => d !== PAGES && d !== JOURNALS));
+function nsPlace(path) {
+  if (!path.startsWith(PAGES + "/")) return null;
+  const kinds = NS_KIND_DIRS();
+  let rel = path.slice(PAGES.length + 1).replace(/\.md$/i, "").split("/");
+  let base = PAGES;
+  if (rel.length > 1 && kinds.has(join(PAGES, rel[0]))) { base = join(PAGES, rel[0]); rel = rel.slice(1); }
+  else if (rel.length === 1 && kinds.has(join(PAGES, rel[0]))) return null;
+  const last = rel.length === 1 && base === PAGES ? rel[0].split(" - ").map(trim).filter(Boolean) : [rel[rel.length - 1]];
+  const segs = [...rel.slice(0, -1), ...last];
+  return segs.length ? {base, segs} : null;
+}
+function namespaceMembers(path) {
+  const me = nsPlace(path);
+  if (!me) return null;
+  const root = me.segs[0].toLowerCase();
+  const out = [];
+  for (const p of V.pages.keys()) {
+    if (!p.startsWith(me.base + "/")) continue;
+    const at = nsPlace(p);
+    if (!at || at.base !== me.base || at.segs[0].toLowerCase() !== root) continue;
+    out.push({path: p, segs: at.segs});
+  }
+  if (out.length < 2 || !out.some(x => x.segs.length > 1)) return null;
+  return {root: me.segs[0], base: me.base, members: out};
+}
+const NS_MAX = 300;
+function namespaceSection(path) {
+  const ns = namespaceMembers(path);
+  if (!ns) return null;
+  const space = V.space;
+  const tree = {name: ns.root, path: null, kids: new Map()};
+  for (const m of ns.members) {
+    let node = tree;
+    for (const s of m.segs.slice(1)) {
+      const k = s.toLowerCase();
+      if (!node.kids.has(k)) node.kids.set(k, {name: s, path: null, kids: new Map()});
+      node = node.kids.get(k);
+    }
+    if (!node.path || m.path.length < node.path.length) node.path = m.path;
+  }
+  let shown = 0;
+  const draw = node => {
+    const li = el("li", {});
+    const label = node.path
+      ? el("button", {class: "nsname" + (node.path === path ? " here" : ""), "aria-current": node.path === path ? "page" : null,
+          title: node.path === path ? "This page" : "Open " + pageTitle(node.path),
+          onclick: () => { if (node.path !== path) openPageIn(space, node.path); }}, node.name)
+      : el("span", {class: "nsname none", title: "No page by this name yet"}, node.name);
+    li.append(label);
+    const kids = [...node.kids.values()].sort((a, b) => a.name.localeCompare(b.name));
+    if (kids.length && shown < NS_MAX) {
+      const ul = el("ul", {});
+      for (const k of kids) { if (shown++ >= NS_MAX) { ul.append(el("li", {class: "nsmore"}, "…")); break; } ul.append(draw(k)); }
+      li.append(ul);
+    }
+    return li;
+  };
+  return el("div", {class: "section quiet nstree"},
+    el("h3", {}, el("span", {}, "Namespace"), el("span", {class: "n"}, String(ns.members.length))),
+    el("div", {class: "card"}, el("ul", {class: "nsroot"}, draw(tree))));
+}
+
+/* ---------- what you wrote last time ----------
+   A value on a day page -- a tracker, or any key:: of your own -- shows faintly
+   what you wrote the last time you filled it in, so today's number has
+   something to be compared with. Only your own earlier day pages count, and
+   only values that say something: bookkeeping like created:: stays out. */
+const DAY_VALUE_SKIP = /^(title|type|alias|aliases|tags|archived|collapsed|icon|msg|at|cal_feed|cal_uid|time|date|attendees|from|member|kind|deleted)$/i;
+const isDayValueKey = k => !!k && !BOOKKEEPING.test(k) && !DAY_VALUE_SKIP.test(k) && !/^tracker-/i.test(k) && !/^template_|^feature_/i.test(k);
+const prevKeyOf = (k, v) => { const t = parseTracker(k + ":: " + (v ?? "")); return t ? "tracker:" + t.name : String(k).toLowerCase(); };
+function prevValueIndex() {
+  return memo("prevValues\u0000" + (V.space || "") + "\u0000" + V.pages.size, () => {
+    const by = new Map();      // owner -> key -> [{date, value}] oldest first
+    const put = (owner, key, date, value) => {
+      if (!trim(value)) return;
+      if (!by.has(owner)) by.set(owner, new Map());
+      const m = by.get(owner);
+      if (!m.has(key)) m.set(key, []);
+      m.get(key).push({date, value: trim(value)});
+    };
+    for (const path of V.pages.keys()) {
+      const date = dayOfPath(path);
+      if (!date) continue;
+      const owner = (journalOwnerOf(path) || "").toLowerCase();
+      const page = getPage(path);
+      for (const [k, v] of Object.entries(page.props || {})) {
+        const t = parseTracker(k + ":: " + v);
+        if (t) put(owner, "tracker:" + t.name, date, t.raw);
+        else if (isDayValueKey(k)) put(owner, k.toLowerCase(), date, v);
+      }
+      walkBlocks(page.blocks, b => {
+        const t = parseTracker(b.title);
+        if (t) put(owner, "tracker:" + t.name, date, t.raw);
+        if (isMessage(b)) return;
+        for (const [k, v] of Object.entries(b.props || {})) {
+          const tp = parseTracker(k + ":: " + v);
+          if (tp) put(owner, "tracker:" + tp.name, date, tp.raw);
+          else if (isDayValueKey(k)) put(owner, k.toLowerCase(), date, v);
+        }
+      });
+    }
+    for (const m of by.values()) for (const list of m.values()) list.sort((a, b) => a.date.localeCompare(b.date));
+    return by;
+  });
+}
+/* The newest value before the day page at `path`, or null. */
+function prevValue(path, key) {
+  const day = dayOfPath(path);
+  if (!day) return null;
+  const list = prevValueIndex().get((journalOwnerOf(path) || "").toLowerCase())?.get(key);
+  if (!list) return null;
+  for (let i = list.length - 1; i >= 0; i--) if (list[i].date < day) return list[i];
+  return null;
+}
+function prevValueEl(path, key) {
+  const p = prevValue(path, key);
+  if (!p) return null;
+  return el("span", {class: "prevval", contenteditable: "false", title: "What you wrote on " + humanDate(p.date)},
+    "last " + p.value + " · " + humanDate(p.date));
+}
+
+/* ---------- duplicate lines ----------
+   The same line written twice under the same parent -- a template poured in
+   twice, a paste that went in again, two devices that both kept a copy -- is
+   one line. The second copy goes; whatever was under it moves to the bottom of
+   the first, and its values fill any the first did not have, so nothing
+   written goes with it. A line whose id::, meeting or synced copy differs from
+   the other's is a different line that happens to read the same, and stays.
+   Comments are never duplicates: two people can say "Agreed". */
+const DEDUP_IDENTITY = ["id", "cal_uid", "branch_sync_id", "space_sync_id"];
+const dedupKey = b => (b.state || "") + "\u0000" + trim(String(b.title || "")).replace(/\s+/g, " ");
+function dedupClash(a, b) {
+  return DEDUP_IDENTITY.some(k => {
+    const x = trim(blockProp(a, k) || ""), y = trim(blockProp(b, k) || "");
+    return x && y && x !== y;
+  });
+}
+function dedupSiblings(list, apply) {
+  let n = 0;
+  const groups = [];
+  for (const b of list) {
+    const key = dedupKey(b);
+    const blank = !trim(b.title) || /^-{3,}$/.test(trim(b.title)) || isMessage(b);
+    // Against every copy already in the group: the first may have no id:: while two others have different ones.
+    const g = !blank && groups.find(x => !x.blank && x.key === key && ![x.first, ...x.rest].some(m => dedupClash(m, b)));
+    if (g) { g.rest.push(b); n++; } else groups.push({first: b, key, blank, rest: []});
+  }
+  for (const g of groups) {
+    const kids = [...(g.first.children || []), ...g.rest.flatMap(b => b.children || [])];
+    if (apply && g.rest.length) {
+      const first = g.first;
+      first.children = kids;
+      for (const b of g.rest) {
+        for (const l of b.body || []) if (!(first.body || []).includes(l)) (first.body || (first.body = [])).push(l);
+        for (const [pk, pv] of Object.entries(b.props || {}))
+          if (!trim(blockProp(first, pk) || "") && trim(pv)) setBlockProp(first, pk, pv);
+        if (!b.collapsed) first.collapsed = false;
+      }
+    }
+    // Counting walks the merged children without making them, so it changes nothing.
+    n += dedupSiblings(apply ? (g.first.children || []) : kids, apply);
+  }
+  if (apply) list.splice(0, list.length, ...groups.map(g => g.first));
+  return n;
+}
+/* How many lines would go, without changing anything. */
+function countDuplicateLines(path) {
+  const page = getPage(path);
+  return page ? dedupSiblings(page.blocks || [], false) : 0;
+}
+/* Only the pages you may write to: another person's day page is theirs. */
+const dedupWritable = path => !isJournalPath(path) || !journalOwnerOf(path) || myJournal(path);
+function removeDuplicateLines(paths, {quiet = false} = {}) {
+  const space = V.space;
+  const snaps = [];
+  let total = 0;
+  for (const path of paths) {
+    const page = getPage(path);
+    if (!page || !dedupWritable(path) || !countDuplicateLines(path)) continue;
+    snaps.push([path, clonePage(page)]);
+    total += dedupSiblings(page.blocks, true);
+    touch(path);
+  }
+  if (!total) { if (!quiet) notify(paths.length === 1 ? "No duplicate lines on this page." : "No duplicate lines found."); return 0; }
+  const undo = () => inSpace(space, () => {
+    for (const [path, snap] of snaps) {
+      const page = getPage(path);
+      if (!page) continue;
+      page.props = snap.props; page.blocks = snap.blocks;
+      touch(path);
+    }
+    render();
+    return true;
+  });
+  pushUndo({run: undo});
+  render();
+  notify("Took out " + total + " duplicate line" + (total === 1 ? "" : "s") +
+    (snaps.length > 1 ? " on " + snaps.length + " pages" : "") + ". What was under them is kept.", "info",
+    {label: "Undo", run: undo});
+  return total;
+}
+/* Every page in the areas on screen with a line written twice, most first. */
+function duplicateLinePages() {
+  return acrossSpaces(() => allPages(p => dedupWritable(p) && pageKind(p) !== "verb")
+    .map(path => ({path, n: countDuplicateLines(path)})).filter(x => x.n > 0))
+    .sort((a, b) => b.n - a.n || a.path.localeCompare(b.path));
+}
+
+/* ---------- "Added" on a task ----------
+   A task made anywhere but a day page has no date in its file name, so the
+   day it became a task is written on it, the way the Neovim config did. The
+   todo template usually says so already; this covers the rest -- a template
+   without it, a line read in with values of its own, a note made a task
+   again. A task already dated keeps its date. Nor on a checklist or a
+   template in 8/: what is written there is poured into every run of it, and
+   the day it was written would go along into all of them. */
+function stampAddedIfMissing(path, b) {
+  if (!b || !OPEN_STATES[b.state] || !path || isJournalPath(path) || path.startsWith(DIRS.lists + "/")) return false;
+  if (trim(blockProp(b, "Added") || "")) return false;
+  setBlockProp(b, "Added", "[[" + todayISO() + "]]");
+  return true;
+}
+
+/* ---------- meetings: a word before, and the next one at the top ----------
+   A meeting is a #meeting line with a time:: on today's day page, or with
+   date:: today anywhere else -- the same lines Calendars writes and Alt+M
+   makes. The next one is shown at the top of the screen, counting down. How
+   many minutes before it the reminder comes is kept on this device (Calendars
+   sets it, 0 turns it off); the reminder is a note in the corner and, when the
+   browser allows it, a system notification. Each meeting is reminded once. */
+const MEET_REMIND_KEY = "meeting.remindMin";
+const MEET_REMIND_CHOICES = [0, 5, 10, 15, 30];
+const meetRemindMin = () => { const n = parseInt(PREF.get(MEET_REMIND_KEY, "10"), 10); return isFinite(n) && n >= 0 ? n : 10; };
+
+/* "13:00–14:00", "13:00-14:00", "9.30", "13:00" -> minutes after midnight. */
+function meetingClock(b) {
+  const raw = trim(blockProp(b, "time") || "");
+  const m = /^(\d{1,2})[:.](\d{2})(?:\s*[–\-—]\s*(\d{1,2})[:.](\d{2}))?/.exec(raw);
+  if (!m) return null;
+  const start = +m[1] * 60 + +m[2];
+  const end = m[3] != null ? +m[3] * 60 + +m[4] : null;
+  return start < 24 * 60 ? {start, end: end != null && end > start ? end : null} : null;
+}
+function todaysMeetings() {
+  const today = todayISO();
+  const out = [];
+  for (const name of LOADED.keys()) inSpace(name, () => {
+    for (const m of memo("meetings\u0000" + name + "\u0000" + today + "\u0000" + V.pages.size, () => {
+      const found = [];
+      const mine = journalPath(today);
+      for (const [path, page] of V.pages) {
+        const onDay = path === mine;
+        if (isJournalPath(path) && !onDay) continue;
+        walkBlocks(page.blocks, b => {
+          if (!isMeeting(b) || /^#meeting Cancelled:/i.test(b.title) || b.state === "DONE" || b.state === "CANCELLED") return;
+          if (!onDay && dateIn(blockProp(b, "date")) !== today) return;
+          const clock = meetingClock(b);
+          if (clock) found.push({path, block: b, clock});
+        });
+      }
+      return found;
+    })) {
+      const d = parseISO(today);
+      const at = mins => new Date(d.getFullYear(), d.getMonth(), d.getDate(), Math.floor(mins / 60), mins % 60).getTime();
+      const start = at(m.clock.start);
+      out.push({space: name, path: m.path, block: m.block, title: meetingTitle(m.block) || "Meeting",
+        start, end: m.clock.end != null ? at(m.clock.end) : start + 30 * 6e4,
+        key: today + "\u0000" + name + "\u0000" + (blockProp(m.block, "cal_uid") || meetingTitle(m.block)) + "\u0000" + m.clock.start});
+    }
+  });
+  return out.sort((a, b) => a.start - b.start);
+}
+const hhmm = ms => { const d = new Date(ms); return pad2(d.getHours()) + ":" + pad2(d.getMinutes()); };
+function untilWords(ms) {
+  const min = Math.max(0, Math.round(ms / 6e4));
+  if (min < 1) return "now";
+  if (min < 60) return "in " + min + " min";
+  const h = Math.floor(min / 60), r = min % 60;
+  return "in " + h + " h" + (r ? " " + r + " min" : "");
+}
+
+/* The button at the top: the meeting on now, else the next one today. */
+function paintNextMeeting(list = todaysMeetings()) {
+  const btn = $("#nextMeet");
+  if (!btn) return;
+  const now = Date.now();
+  const on = list.find(m => m.start <= now && now < m.end);
+  const next = list.find(m => m.start > now);
+  const m = on || next;
+  btn.textContent = "";
+  if (!m) { btn.hidden = true; btn.onclick = null; return; }
+  btn.hidden = false;
+  btn.classList.toggle("now", !!on);
+  btn.classList.toggle("soon", !on && m.start - now <= meetRemindMin() * 6e4);
+  const when = on ? "now, until " + hhmm(m.end) : untilWords(m.start - now);
+  btn.title = m.title + ", " + hhmm(m.start) + "–" + hhmm(m.end) + (on ? " (on now)" : " (" + when + ")") +
+    ". Click to open it." + (meetRemindMin() ? " Reminded " + meetRemindMin() + " min before." : " Reminders are off (Calendars).");
+  btn.append(el("span", {class: "ic", "aria-hidden": "true"}, "\u{1F552}"),
+    el("span", {class: "t"}, m.title), el("span", {class: "w"}, when));
+  btn.onclick = () => openBlockAt(m.space, m.path, m.block);
+}
+
+/* After a redraw the button may be out of date -- a meeting just written, or
+   ticked off -- so it is painted again, once things are quiet. */
+let MEET_PAINT = null;
+function scheduleMeetPaint() {
+  clearTimeout(MEET_PAINT);
+  MEET_PAINT = setTimeout(() => { if (V.loaded) paintNextMeeting(); }, 400);
+}
+
+/* Reminded once each, also across a reload: the keys are kept for today. */
+function meetReminded() {
+  try {
+    const o = JSON.parse(safeLS.get("gtd.meetReminded", "null"));
+    return o && o.day === todayISO() ? new Set(o.keys) : new Set();
+  } catch (_) { return new Set(); }
+}
+function remindMeeting(m) {
+  const lead = untilWords(m.start - Date.now());
+  const who = trim(blockProp(m.block, "attendees") || "");
+  const body = hhmm(m.start) + "–" + hhmm(m.end) + (who ? " · " + linkWords(who) : "");
+  const t = el("div", {class: "toast reminder meetrem", role: "alert"},
+    el("strong", {}, "\u{1F552} " + m.title + " " + (lead === "now" ? "starts now" : lead)),
+    el("p", {}, body));
+  const close = () => t.remove();
+  t.append(el("div", {class: "acts"},
+    el("button", {class: "btn sm primary", onclick: () => { close(); openBlockAt(m.space, m.path, m.block); }}, "Open"),
+    el("button", {class: "btn sm ghost", onclick: close}, "OK")));
+  $("#toasts").append(t);
+  // Gone once the meeting is over, in case nobody was there to see it.
+  setTimeout(close, Math.max(6e4, m.end - Date.now()));
+  try {
+    if (window.Notification?.permission === "granted") {
+      const n = new Notification(m.title + " " + (lead === "now" ? "starts now" : lead), {body, tag: "gtd-meet-" + calHash(m.key), icon: "icon.svg"});
+      n.onclick = () => { window.focus(); n.close(); close(); openBlockAt(m.space, m.path, m.block); };
+    }
+  } catch (_) {}
+}
+function meetingTick() {
+  if (!V.loaded) return;
+  const list = todaysMeetings();
+  paintNextMeeting(list);
+  const lead = meetRemindMin();
+  if (!lead) return;
+  const now = Date.now(), done = meetReminded();
+  let changed = false;
+  for (const m of list) {
+    if (done.has(m.key)) continue;
+    // Not for one long started: opening the app at three is no time to hear about the one at nine.
+    if (now >= m.start - lead * 6e4 && now < m.start + 2 * 6e4) { remindMeeting(m); done.add(m.key); changed = true; }
+  }
+  if (changed) safeLS.set("gtd.meetReminded", JSON.stringify({day: todayISO(), keys: [...done]}));
+}
+function installMeetingReminders() {
+  setInterval(meetingTick, 20000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) meetingTick(); });
+  setTimeout(meetingTick, 1500);
+}
+/* The setting, as Calendars shows it. Asking for notifications needs a click,
+   and choosing a time is that click. */
+function meetRemindField() {
+  const sel = el("select", {onchange: e => {
+    PREF.set(MEET_REMIND_KEY, e.target.value);
+    try { if (+e.target.value && window.Notification?.permission === "default") Notification.requestPermission(); } catch (_) {}
+    meetingTick();
+  }}, ...MEET_REMIND_CHOICES.map(n => el("option", {value: String(n), selected: n === meetRemindMin() ? "" : null},
+    n ? n + " minutes before" : "Off")));
+  return el("div", {class: "field"}, el("label", {}, "Remind me before a meeting"), sel,
+    el("div", {class: "hint", style: "text-align:left;margin-top:4px"},
+      "For every #meeting line with a time on today's page, from a calendar or written by hand. On this device only."));
+}
+
+/* ============================================================
    170_INIT
    ============================================================ */
 $("#btnSearch").onclick  = () => goSearch();
@@ -30479,6 +31671,7 @@ function installServiceWorker() {
 
   setInterval(nudgeCheck, 60000);
   installCalendarTimer();
+  installMeetingReminders();
   scheduleContextPrompts();
 
   /* A file somebody baked for you answers every question onboarding would ask --

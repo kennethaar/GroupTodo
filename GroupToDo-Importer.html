@@ -476,7 +476,7 @@ function convert(a, opts) {
     return t;
   };
 
-  // Logseq block ids -> their words, for ((uuid)) references.
+  // Logseq block ids -> their words. Which ids exist tells a ((uuid)) or an embed that points at nothing.
   const blockText = new Map();
   if (a.kind === "logseq") {
     for (const f of [...a.pages.map(p => p.file), ...[...a.journals.values()].flat()]) {
@@ -523,16 +523,23 @@ function convert(a, opts) {
   const inline = text => String(text).split(/(`[^`]*`)/).map((seg, i) => i % 2 ? seg : inlineSeg(seg)).join("");
   function inlineSeg(s) {
     if (a.kind === "logseq") {
+      /* GroupToDo shows embeds, queries and ((id)) references live, and the
+         id:: they point at is carried over with its line, so they are kept as
+         written. The [[link]] inside an embed or a query is rewritten below
+         like any other. */
       s = s.replace(/\{\{embed\s+\(\(([0-9a-f-]{36})\)\)\s*\}\}/gi, (all, id) => {
-        R.embeds++; const t = blockText.get(lc(id)); return t != null ? t : all; });
-      s = s.replace(/\{\{embed\s+\[\[([^\]]+)\]\]\s*\}\}/gi, (all, t) => { R.embeds++; return "[[" + t + "]]"; });
+        R.embeds++;
+        if (!blockText.has(lc(id))) R.blockRefsMissing.push(id);
+        return "\u0001" + id + "\u0002";            // set aside, so the ((id)) rule below does not count it twice
+      });
+      s = s.replace(/\{\{embed\s+\[\[([^\]]+)\]\]\s*\}\}/gi, all => { R.embeds++; return all; });
       s = s.replace(/\{\{query\s[^}]*\}\}/gi, all => { R.queries.push(all); return all; });
       s = s.replace(/\(\(([0-9a-f-]{36})\)\)/gi, (all, id) => {
         R.blockRefs++;
-        const t = blockText.get(lc(id));
-        if (t == null) { R.blockRefsMissing.push(id); return all; }
-        return t;
+        if (!blockText.has(lc(id))) R.blockRefsMissing.push(id);
+        return all;
       });
+      s = s.replace(/\u0001([0-9a-f-]{36})\u0002/gi, "{{embed (($1))}}");
       // ../assets/x.png -> assets/x.png: the app reads attachments from the vault root.
       s = s.replace(/(\]\()(?:\.\.\/)+assets\//g, "$1assets/");
       s = s.replace(/(\]\()assets\/([^)\s]+)\)/g, (all, lead, name) => {
@@ -541,7 +548,7 @@ function convert(a, opts) {
         return all;
       });
     } else {
-      // ![[shot.png]] is an attachment; ![[Note]] is a link.
+      // ![[shot.png]] is an attachment; ![[Note]] shows the note, as {{embed}} does in GroupToDo.
       s = s.replace(/!\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]*))?\]\]/g, (all, t, label) => {
         if (/\.[A-Za-z0-9]{2,5}$/.test(t.trim()) && !/\.md$/i.test(t.trim())) {
           const p = assetFor(t.trim());
@@ -550,7 +557,7 @@ function convert(a, opts) {
           return (/\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(name) ? "!" : "") + "[" + name + "](" + p + ")";
         }
         R.embeds++;
-        return "[[" + t.trim() + (label ? "|" + label : "") + "]]";
+        return "{{embed [[" + t.trim() + "]]}}";
       });
       // ![](attachments/x.png) and [file](docs/x.pdf) pointing into the vault.
       s = s.replace(/(!?)\[([^\]]*)\]\((?!https?:|mailto:|file:|#)([^)\s]+)\)/g, (all, bang, label, href) => {
@@ -903,8 +910,8 @@ function reportText(a, res, opts) {
   if (R.collapsed) L.push("- collapsed:: true removed: " + R.collapsed);
   L.push("", "## Needs a look", "");
   const any = [];
-  if (R.blockRefsMissing.length) any.push("- " + R.blockRefsMissing.length + " block reference(s) point at a block that was not found; left as ((id)).");
-  if (R.queries.length) any.push("- " + R.queries.length + " query/queries kept as text: GroupToDo has no queries.\n" + R.queries.slice(0, 20).map(q => "  - `" + q + "`").join("\n"));
+  if (R.blockRefsMissing.length) any.push("- " + R.blockRefsMissing.length + " block reference(s) or embed(s) point at a block that was not found; left as ((id)).");
+  if (R.queries.length) any.push("- " + R.queries.length + " query/queries carried over. GroupToDo runs Logseq's simple queries as live lists and ignores sort-by and the like; check they find what they did.\n" + R.queries.slice(0, 20).map(q => "  - `" + q + "`").join("\n"));
   if (R.assetsMissing.size) any.push("- " + R.assetsMissing.size + " attachment link(s) point at a file that is not in the vault:\n" + [...R.assetsMissing].slice(0, 30).map(x => "  - " + x).join("\n"));
   if (R.merged.length) any.push("- " + R.merged.length + " page(s) were made from more than one file:\n" + R.merged.slice(0, 50).map(x => "  - " + x).join("\n"));
   if (R.oddFrontMatter.length) any.push("- Front matter that was not plain key: value, partly kept:\n" + R.oddFrontMatter.slice(0, 30).map(x => "  - " + x).join("\n"));
@@ -1067,8 +1074,8 @@ function drawPreview(res) {
   const issues = el("ul", {class: "issues"});
   const add = (text, list) => issues.append(el("li", {}, text,
     list && list.length ? el("details", {}, el("summary", {}, "Show " + list.length), el("pre", {}, list.slice(0, 200).join("\n"))) : null));
-  if (R.blockRefsMissing.length) add(R.blockRefsMissing.length + " block reference(s) point at nothing and are left as ((id)).");
-  if (R.queries.length) add(R.queries.length + " Logseq query/queries kept as plain text.", R.queries);
+  if (R.blockRefsMissing.length) add(R.blockRefsMissing.length + " block reference(s) or embed(s) point at nothing and are left as ((id)).");
+  if (R.queries.length) add(R.queries.length + " Logseq query/queries carried over as live lists; check they find what they did.", R.queries);
   if (R.assetsMissing.size) add(R.assetsMissing.size + " attachment link(s) point at a file that is not in the vault.", [...R.assetsMissing]);
   if (R.merged.length) add(R.merged.length + " page(s) made from more than one file.", R.merged);
   if (R.oddFrontMatter.length) add(R.oddFrontMatter.length + " page(s) with front matter that was only partly read.", R.oddFrontMatter);

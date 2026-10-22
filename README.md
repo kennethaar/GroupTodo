@@ -40,12 +40,15 @@ format it writes is described in [docs/vault-format.md](docs/vault-format.md).
 - **A task you write is yours.** Hand it to someone in the area and it becomes theirs and shows in your *Waiting for* — one task, never two copies. Name someone outside the area and it becomes a plain waiting-for.
 - **You are told what you missed.** Today opens with *Since you were last here*; **History** scrolls back day by day.
 - **Areas** (Work, Home, …) are separate folders. Tick any combination at the top right and every screen shows those.
-- **Meetings** are lines: **Alt+M** adds attendees, time and agenda. **📅 Calendars** on Today imports an iCal link into a day page every 30 minutes (needs `serve.py`, see below).
+- **Meetings** are lines: **Alt+M** adds attendees, time and agenda. **📅 Calendars** on Today imports an iCal link into a day page every 30 minutes (needs `serve.py`, see below). The next meeting today is shown at the top, counting down, with a reminder a few minutes before (set in Calendars).
 - **Names and dates are picked up as you type** — *tomorrow*, *friday*, *in 3 days*; `Tab` turns a suggestion into a link or due date. `@`, `#` and `[[` list people, projects and pages.
 - **Threads on tasks.** Every task has a conversation; **Chat** gathers them all.
 - **Repeats** (`repeat:: weekly`) are offered when you tick one off, never scheduled ahead, so there is no backlog of missed chores.
 - **Undo** a delete from the toast, or `Ctrl-Z` for five minutes.
 - **Make private** (⋯ beside a page title) moves a page to another folder — the folder is the permission model.
+- **Live lists and embeds.** `/query` on a line builds a Logseq-style query (`{{query (and [[1/Fix sink]] (task TODO))}}`) that lists matching lines, kept up to date; `/embed` shows another page in the line, and a line's menu has *Copy as embed* for one line. `((id))` reads as the line it points at.
+- **Last time.** On a day page, a tracker or a `key:: value` of your own shows faintly what you wrote the previous time.
+- **Tidy.** ⋯ beside a page title → *Remove duplicate lines*; the weekly review says when pages have some. A page in a namespace (`[[Work/Clients]]`, *Work - Clients*) lists the rest of its family at the bottom.
 
 ### Screens
 

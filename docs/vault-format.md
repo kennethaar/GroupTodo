@@ -164,6 +164,22 @@ tracker-pullups:: 100/8/4/2        (page property at the top of a day page)
   at:: 2026-10-07T19:05:39Z
 ```
 
+```markdown
+- {{embed [[1/Fix sink]]}}                 (shows that page here, live)
+- {{embed ((k3x9a2qd))}}                   (shows the line with id:: k3x9a2qd)
+- Ask about ((k3x9a2qd)) on Monday         (reads as that line's words)
+- {{query (and [[1/Fix sink]] (task TODO DOING))}}   (a live list of matching lines)
+```
+
+Queries are Logseq's simple queries: `[[page]]`, `#tag`, `"words"`,
+`(task TODO DOING)`, `(page "name")`, `(property key value)`,
+`(page-property key value)`, `(between -7d today)`, and `and`, `or`, `not`
+around them. Anything else (`sort-by`, `priority`) is read and ignored.
+
+A **namespace** is a page in a folder of its own, `pages/Work/Clients.md`
+linked as `[[Work/Clients]]`, or a plain page whose name has parts,
+`pages/Work - Clients.md`. Either way the page lists the rest of its family.
+
 ---
 
 ## 5. Converting from Logseq
@@ -185,8 +201,8 @@ it carries over unchanged.
 | `[[Oct 5th, 2026]]` (date links in your journal format) | `[[2026-10-05]]` |
 | `[[Fix sink]]` | `[[1/Fix sink]]` once the page has moved |
 | `@phone`, `#phone` or `[[phone]]` used as a context | `[[c/phone]]` |
-| `((block-uuid))` block references | the referenced block's text (no block refs) |
-| `{{embed …}}`, `{{query …}}` | remove, or keep as plain text |
+| `((block-uuid))` block references | unchanged; keep the `id::` on the line it points at |
+| `{{embed [[page]]}}`, `{{embed ((uuid))}}`, `{{query …}}` | unchanged; rewrite the `[[link]]` inside like any other |
 | `collapsed:: true` | can be dropped |
 | `id::` | keep |
 | `assets/` images | keep `assets/` next to the vault; links stay as text |
@@ -216,7 +232,7 @@ an outline** and **moving front matter into `key::` lines**.
 | people, companies | `pages/p/`, `pages/o/` |
 | other notes | `pages/<Name>.md`, or `pages/z/` |
 | `[[Note]]`, `[[Note\|alias]]`, `[[Note#Heading]]` | same syntax; rewrite the target to its new prefix, e.g. `[[p/Note]]` |
-| `![[embed]]` | a plain `[[link]]` |
+| `![[Note]]` (embedding a note) | `{{embed [[Note]]}}` |
 | `^block-id` and `[[Note#^block-id]]` | `id:: block-id` on the bullet; links become `[[Note]]` |
 | attachments | keep the folder next to the vault; links stay as text |
 | `.obsidian/`, `.trash/` | skip |
@@ -235,5 +251,5 @@ an outline** and **moving front matter into `key::` lines**.
 10. Report pages it could not classify, links it could not resolve, and syntax it dropped.
 
 Things GroupToDo has no equivalent for, which the converter should flatten or
-drop: block references, embeds, queries, Canvas files, plugin-specific blocks
-and per-page CSS.
+drop: advanced (Datalog) queries, Canvas files, plugin-specific blocks and
+per-page CSS.
