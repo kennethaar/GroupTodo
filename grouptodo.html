@@ -1110,6 +1110,10 @@ body.lselecting,body.lselecting *{user-select:none;-webkit-user-select:none;curs
 .twinrow.keep{border-color:var(--accent);background:var(--accent-soft)}
 .twint{flex:1;min-width:0;overflow-wrap:anywhere}
 .twinacts{display:flex;gap:8px;margin-top:2px}
+.twinarea{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;font-size:12.5px}
+.twinarea .space-transfer-choice{cursor:pointer}
+.twinwarn{font-size:12.5px;color:var(--warn)}
+.twinwarn:empty{display:none}
 .twinbtn{color:var(--warn)}
 .fpill.fst.fmove{font-weight:500;border-style:dashed;opacity:.85}
 .fpill.fst.fmove:hover{opacity:1;border-style:solid}
@@ -19576,22 +19580,129 @@ function projectTwins() {
 // The group a project is in, if it has look-alikes.
 const twinsOf = (space, path) => projectTwins().find(g => g.rows.some(r => r.space === space && r.path === path)) || null;
 
+// Everybody else who works in an area: its members, less you.
+const othersIn = space => inSpace(space, membersNow).filter(m => !m.me).map(m => m.name);
+
+/* Look-alikes in more than one area, folded into one in `dest`. Every copy
+   not already there is brought in and merged into the one kept, which keeps
+   its file name. An area it leaves where nobody else works just loses it; an
+   area others share keeps a synced copy of the result -- the way a person is
+   carried between areas -- so the project does not vanish from under them.
+   One undo puts every file back; rewritten links stay, as with any merge. */
+async function foldTwinsAcrossAreas(rows, keep, dest) {
+  if (!LOADED.has(dest)) await loadSpaceRecord(dest);
+  const snaps = new Map();
+  const remember = (space, path) => {
+    const k = JSON.stringify([space, path]);
+    if (snaps.has(k)) return;
+    const p = LOADED.get(space)?.pages.get(path);
+    snaps.set(k, {space, path, text: p ? serializePage(p) : null});
+  };
+  const restore = () => {
+    for (const x of snaps.values()) inSpace(x.space, () => {
+      if (x.text === null) { if (V.pages.has(x.path)) removePage(x.path); }
+      else { putPage(x.path, parsePage(x.text)); dropTombstone(x.path); touchHere(x.path); }
+    });
+    clearMemo(); flush(); render();
+  };
+  const destPages = LOADED.get(dest).pages;
+  const freePath = path => {
+    let p = path, i = 2;
+    while (destPages.has(p)) p = path.replace(/\.md$/, "") + " " + i++ + ".md";
+    return p;
+  };
+  for (const r of rows) remember(r.space, r.path);
+  remember(dest, keep.path);
+  try {
+    // Every copy from elsewhere comes into dest, under a free name for now.
+    const at = new Map();
+    for (const r of rows) {
+      if (r.space === dest) { at.set(r, r.path); continue; }
+      const src = LOADED.get(r.space)?.pages.get(r.path);
+      if (!src) throw new Error(r.title + " is no longer in " + r.space + ".");
+      await copyTransferAssets(src, r.space, dest);
+      const copy = parsePage(serializePage(src));
+      delete copy.props.space_sync_id;
+      delete copy.props.space_sync_peers;
+      const p = freePath(r.path);
+      remember(dest, p);
+      inSpace(dest, () => putPage(p, copy));
+      at.set(r, p);
+    }
+    const into = at.get(keep);
+    let final = into;
+    inSpace(dest, () => {
+      // A copy brought in only for this never existed there: no headstone for it.
+      for (const r of rows) if (r !== keep) mergePageInto(at.get(r), into, {temp: r.space !== dest, undo: false});
+      if (into !== keep.path && !V.pages.has(keep.path) && moveFile(into, keep.path)) final = keep.path;
+    });
+    const synced = [];
+    for (const space of new Set(rows.filter(r => r.space !== dest).map(r => r.space))) {
+      inSpace(space, () => { for (const r of rows) if (r.space === space) removePage(r.path); });
+      if (!othersIn(space).length) continue;
+      if (LOADED.get(space).pages.has(final)) throw new Error(final + " is already in " + space + ".");
+      remember(space, final);
+      inSpace(space, () => dropTombstone(final));
+      if (!await copyPagesToSpace([{path: final, from: dest}], space, {mode: "sync", inner: true}))
+        throw new Error("The synced copy in " + space + " could not be saved.");
+      synced.push(space);
+    }
+    await flush();
+    if ([...LOADED.values()].some(r => r.dirty.size || r.removed.size))
+      throw new Error("The fold could not be saved completely.");
+    pushUndo({run: () => { restore(); return true; }});
+    const title = inSpace(dest, () => pageTitle(final));
+    notify((rows.length - 1) + " folded into " + title + " in " + dest + "." +
+      (synced.length ? " " + synced.join(" and ") + " keep" + (synced.length === 1 ? "s" : "") +
+        " a synced copy for the others there." : ""),
+      "info", {label: "Undo", run: () => { restore(); return true; }});
+    return true;
+  } catch (e) {
+    restore();
+    await flush();
+    notify("Nothing was folded: " + e.message, "error");
+    return false;
+  }
+}
+
 /* The look-alikes, a group at a time: open any of them, fold them into one
    (the one you keep takes the lines and fills its empty values from the
-   others), or say they are different and they stop being flagged. */
+   others), or say they are different and they stop being flagged. A group
+   that spans areas also asks which area the one project ends up in. */
 function openTwins(only = null) {
   const groups = only ? [only] : projectTwins();
   if (!groups.length) { notify("No projects look alike."); return; }
   const body = el("div", {class: "twins"});
+  // After one group is dealt with, the rest are still waiting: show them again.
+  const again = () => { clearMemo(); render(); if (!only && projectTwins().length) openTwins(); };
   groups.forEach((g, gi) => {
     let keep = g.rows.find(r => r.code === "1") || g.rows[0];   // the live one, if there is one
+    const areas = [...new Set(g.rows.map(r => r.space))];
+    let dest = keep.space;
     const rowsEl = el("div", {class: "twinrows"});
+    const areaEl = el("div", {class: "twinarea"});
+    const warnEl = el("div", {class: "twinwarn"});
+    const drawArea = () => {
+      areaEl.textContent = "";
+      warnEl.textContent = "";
+      if (areas.length < 2) return;
+      areaEl.append(el("span", {}, "Keep it in"),
+        ...radioChoices("twin-area-" + gi, areas.map(a => [a, a + (a === keep.space ? " (where the kept one is)" : "")]),
+          dest, v => { dest = v; drawArea(); }));
+      const warns = areas.filter(a => a !== dest).map(a => [a, othersIn(a)]).filter(([, who]) => who.length)
+        .map(([a, who]) => "⚠ " + (who.length > 3 ? who.slice(0, 3).join(", ") + " and " + (who.length - 3) + " more"
+          : who.join(", ").replace(/, ([^,]*)$/, " and $1")) + " also work in " + a +
+          ". The project stays there as a synced copy, so they keep it: an edit in one area is the edit in both.");
+      warnEl.textContent = warns.join("\n");
+      warnEl.style.whiteSpace = "pre-line";
+    };
     const draw = () => {
       rowsEl.textContent = "";
       for (const r of g.rows) {
         const here = r === keep;
         rowsEl.append(el("label", {class: "twinrow" + (here ? " keep" : "")},
-          el("input", {type: "radio", name: "twin-keep-" + gi, checked: here, onchange: () => { keep = r; draw(); }}),
+          el("input", {type: "radio", name: "twin-keep-" + gi, checked: here,
+            onchange: () => { keep = r; dest = r.space; draw(); drawArea(); }}),
           el("span", {class: "twint"}, r.title),
           el("span", {class: "chip"}, STATUS_LABEL[r.code]),
           multiSpace() ? spaceBadge(r.space) : null,
@@ -19599,27 +19710,27 @@ function openTwins(only = null) {
       }
     };
     draw();
-    const merge = () => {
-      const others = g.rows.filter(r => r !== keep);
-      const away = others.filter(r => r.space !== keep.space);
-      let n = 0;
-      for (const r of others) if (r.space === keep.space && inSpace(keep.space, () => mergePageInto(r.path, keep.path))) n++;
-      closeModal(); clearMemo(); render();
-      notify((n ? n + " folded into " + keep.title + "." : "Nothing folded.") +
-        (away.length ? " " + away.map(r => r.title + " (" + r.space + ")").join(", ") +
-          " is in another area: move it into " + keep.space + " first." : ""), away.length ? "warn" : "info");
+    drawArea();
+    const merge = async () => {
+      closeModal();
+      if (g.rows.every(r => r.space === dest)) {
+        let n = 0;
+        for (const r of g.rows) if (r !== keep && inSpace(dest, () => mergePageInto(r.path, keep.path))) n++;
+        if (!n) notify("Nothing folded.");
+      } else await foldTwinsAcrossAreas(g.rows, keep, dest);
+      again();
     };
     const notSame = () => {
       const not = twinNotSame();
       for (let i = 0; i < g.rows.length; i++)
         for (let j = i + 1; j < g.rows.length; j++) not.add(twinPairKey(g.rows[i].title, g.rows[j].title));
       PREF.set("twins.not", JSON.stringify([...not]));
-      clearMemo(); closeModal(); render();
-      if (!only && projectTwins().length) openTwins();
+      closeModal();
+      again();
     };
     body.append(el("div", {class: "twingroup"},
       el("div", {class: "twinwhy"}, g.rows.length + " projects with " + g.why + ". Pick the one to keep:"),
-      rowsEl,
+      rowsEl, areaEl, warnEl,
       el("div", {class: "twinacts"},
         el("button", {class: "btn sm primary", onclick: merge}, "Fold into the one kept"),
         el("button", {class: "btn sm ghost", onclick: notSame}, "Not the same"))));
