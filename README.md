@@ -813,6 +813,38 @@ job on the 31st lands on the 28th in February rather than rolling into March.
 The next one carries the title, the repeat and who it is assigned to, and leaves
 behind what belonged to that one doing of it - the dates, the done stamp.
 
+### Which first: urgency
+
+Todos, Next actions and the project lists are in order of urgency by default,
+Taskwarrior's idea: one number per task, made of plain reasons added up. The
+number is on every row, and hovering it (or opening the task) lists the
+reasons, because an order you cannot question is an order you stop trusting.
+
+| Reason | Adds |
+|---|---|
+| Deadline (or the scheduled day, when there is no deadline) | 12 × how close: 0.2 two weeks out, 1.0 a week late |
+| Its scheduled day has come | 5 |
+| `priority:: H` / `M` / `L` | 6 / 3.9 / 1.8 |
+| Already started (Doing) | 4 |
+| Its context is the one you are in | 3 |
+| Age | 2 × a year on the list |
+| In a project | 1 |
+| Somebody has said something on it | 1 |
+| Its project is what another project waits on | 8 |
+| Its project waits on one that is not finished | −5 |
+| Waiting for, or handed to somebody else | −3 |
+
+The coefficients are Taskwarrior's wherever it has one. Two are GroupTodo's
+own: the context you are standing in, and the hierarchy. A step with no date
+of its own takes the date of the nearest line above it that has one, so the
+steps under *Plant bulbs by 1 Dec* rise as December comes. A project ranks as
+its most urgent open action, or by its own deadline and its place in a chain
+when it has none.
+
+**Oldest** and **A-Z** are one press away above the list, and the choice is
+kept per device. Priority is set in the task panel, or typed in capture as
+`pri:H`.
+
 ### Dates in what you type
 
 Capture reads the end of the line. `Call Bob fri 2pm` becomes *Call Bob*,
@@ -1671,7 +1703,7 @@ The markdown is identical either way.
 `v c` calendar · `v g` graph ·
 `v t` timeline · `v r` report · `f f` focus ·
 `ctrl-z` undo a delete · **Copy link** on any task or page ·
-in capture, `fri 2pm` · `by fri` · `every monday` · `until:eom` · `remind:30m` ·
+in capture, `fri 2pm` · `by fri` · `every monday` · `until:eom` · `remind:30m` · `pri:H` ·
 `g d` re-surface. In the outline: `Enter` splits the line where the caret is,
 `Tab`/`Shift-Tab` indent,
 `Ctrl-Enter` cycle state, `[[` a list of pages, `↑`/`↓` between blocks,

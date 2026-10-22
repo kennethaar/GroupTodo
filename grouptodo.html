@@ -1071,6 +1071,9 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4p
 .dt input[type=time]{flex:1 1 6.5em;min-width:0}
 .grid2>.field{min-width:0}
 .cal-item.bday{font-style:italic}
+.sortrow{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--fg3)}
+.sortseg button{font-size:12px;padding:3px 10px}
+.chip.urg{font-variant-numeric:tabular-nums;color:var(--fg2)}
 
 /* keyboard chord hud */
 #chord{
@@ -4123,6 +4126,141 @@ function agendaScan(days = CFG.agendaDays) {
   return Array.from(byDate.entries()).sort((x, y) => x[0].localeCompare(y[0]));
 }
 
+/* ============================================================
+   66_URGENCY -- which of these first
+   Taskwarrior's answer to "what next": one number per task, made of plain
+   reasons added up, so the list can be read top to bottom. The coefficients
+   are Taskwarrior's wherever it has one, so somebody coming from there finds
+   the order they expect; the two that are GroupTodo's own are the context you
+   are standing in, and a date on a line above counting for the steps under it
+   -- that is what the hierarchy is for. Every reason is shown on the score's
+   chip, because an order you cannot question is an order you stop trusting.
+
+     deadline      12 x how close: 0.2 two weeks out, 1.0 a week late
+                   (no deadline: the scheduled day, the same way)
+     scheduled      5 once its scheduled day has come
+     priority       6 / 3.9 / 1.8 for priority:: H / M / L
+     doing          4 already started
+     here           3 its context is the one you are in
+     age            2 x a year on the list
+     project        1 in a project
+     chat           1 somebody has said something on it
+     blocking       8 its project is what another project waits on
+     blocked       -5 its project waits on one that is not finished
+     waiting       -3 a Waiting for, or handed to somebody else
+
+   A project ranks as its most urgent open action, or by its own deadline and
+   its place in a chain when it has none, and a busier one edges ahead of a
+   quieter one on a tie.
+   ============================================================ */
+const URGENCY = {
+  due: 12, scheduled: 5, priorityH: 6, priorityM: 3.9, priorityL: 1.8,
+  doing: 4, here: 3, age: 2, project: 1, chat: 1, blocking: 8, blocked: -5, waiting: -3,
+};
+function dueFactor(day) {
+  const late = dateDiffDays(day, todayISO());          // days past it
+  if (late == null) return 0;
+  if (late >= 7) return 1;
+  if (late >= -14) return (late + 14) * 0.8 / 21 + 0.2;
+  return 0.2;
+}
+/* The day on this line, or on the nearest line above that has one. */
+function inheritedDay(block, key) {
+  for (let p = block; p; p = p._parent) {
+    const day = dateIn(blockProp(p, key));
+    if (day) return {day, own: p === block};
+  }
+  return null;
+}
+const priorityOf = b => {
+  const v = trim(blockProp(b, "priority") || "").toUpperCase();
+  return /^(H|HIGH|HØY)$/.test(v) ? "H" : /^(M|MED|MEDIUM|MIDDELS)$/.test(v) ? "M" : /^(L|LOW|LAV)$/.test(v) ? "L" : null;
+};
+/* Is this project part of a chain, and which end? Asked in its own space. */
+function chainTerms(projectPath, space) {
+  if (!projectPath) return {blocked: false, blocking: false};
+  return inSpace(space, () => ({
+    blocked: blockersOf(projectPath).length > 0,
+    blocking: dependentsOf(projectPath).some(p => !projectCleared(p)),
+  }));
+}
+
+function urgencyParts(a) {
+  const b = a.block, parts = [];
+  const add = (why, n) => { n = Math.round(n * 10) / 10; if (n) parts.push([why, n]); };
+  const above = d => d.own ? "" : ", from the line above";
+  const dl = inheritedDay(b, "DEADLINE") || inheritedDay(b, "due");
+  const sc = inheritedDay(b, "SCHEDULED");
+  if (dl) add("deadline " + humanDate(dl.day) + above(dl), URGENCY.due * dueFactor(dl.day));
+  else if (sc) add("scheduled " + humanDate(sc.day) + above(sc), URGENCY.due * dueFactor(sc.day));
+  if (sc && sc.day <= todayISO()) add("its day has come", URGENCY.scheduled);
+  const pri = priorityOf(b);
+  if (pri) add("priority " + pri, URGENCY["priority" + pri]);
+  if (b.state === "DOING") add("already started", URGENCY.doing);
+  if (a.context && a.context === state.context) add("you are @" + a.context, URGENCY.here);
+  const age = blockAge(b);
+  if (age > 0) add(age + " days on the list", URGENCY.age * Math.min(age / 365, 1));
+  if (a.project) add("in " + a.project, URGENCY.project);
+  if (messagesOf(b).length) add("talked about", URGENCY.chat);
+  const chain = chainTerms(a.projectPath, a.space);
+  if (chain.blocking) add("another project waits on this one", URGENCY.blocking);
+  if (chain.blocked) add("its project waits on another", URGENCY.blocked);
+  if (b.state === "WAIT" || a.mine === false) add("waiting for somebody", URGENCY.waiting);
+  return parts;
+}
+function urgencyOf(a) {
+  if (a._urgency == null) a._urgency = Math.round(urgencyParts(a).reduce((s, [, n]) => s + n, 0) * 10) / 10;
+  return a._urgency;
+}
+const byUrgency = (x, y) => urgencyOf(y) - urgencyOf(x) || (x.added || "9999").localeCompare(y.added || "9999");
+
+function projectUrgency(path, space) {
+  return memo("purg:" + (space || "") + ":" + path, () => {
+    const acts = leafActions().filter(a => a.projectPath === path && (!a.space || !space || a.space === space)
+                                           && OPEN_STATES[a.state]);
+    let best = acts.length ? Math.max(...acts.map(urgencyOf)) : null;
+    if (best == null) {
+      const props = inSpace(space, () => getPage(path)?.props || {});
+      const own = dateIn(props.deadline || props.due || "");
+      const chain = chainTerms(path, space);
+      best = (own ? URGENCY.due * dueFactor(own) : 0) +
+             (chain.blocking ? URGENCY.blocking : 0) + (chain.blocked ? URGENCY.blocked : 0);
+    }
+    return Math.round((best + 0.1 * Math.min(acts.length, 10)) * 10) / 10;
+  });
+}
+
+/* ---------- the order a list is read in ----------
+   Urgency first, by default; the old orders are one press away and the
+   choice is per device, like the theme. */
+const SORTS = {
+  todos: [["urgency", "Urgency"], ["oldest", "Oldest"], ["az", "A-Z"]],
+  projects: [["urgency", "Urgency"], ["az", "A-Z"]],
+};
+const sortOf = list => {
+  const v = PREF.get("sort." + list, "urgency");
+  return SORTS[list].some(([k]) => k === v) ? v : "urgency";
+};
+function sortSwitch(list) {
+  const cur = sortOf(list);
+  const seg = el("div", {class: "seg sortseg", title: "Urgency adds up the deadline, the scheduled day, priority, " +
+    "being started, your context, age and the project chain. The chip on each row says why."});
+  for (const [k, label] of SORTS[list])
+    seg.append(el("button", {class: k === cur ? "on" : "", onclick: () => { PREF.set("sort." + list, k); render(); }}, label));
+  return seg;
+}
+function sortActions(items, how) {
+  if (how === "urgency") { items.forEach(a => { a._showUrgency = true; }); return items.sort(byUrgency); }
+  if (how === "az") return items.sort((x, y) => plainTitle(x.title).localeCompare(plainTitle(y.title)));
+  return items.sort((x, y) => (x.added || "9999").localeCompare(y.added || "9999"));
+}
+function urgencyChip(a) {
+  const parts = urgencyParts(a);
+  return el("span", {class: "chip urg", title: "Urgency " + urgencyOf(a) + (parts.length ? ":\n" +
+    parts.map(([why, n]) => (n > 0 ? "+" : "") + n + "  " + why).join("\n") : "")},
+    "↑" + urgencyOf(a));
+}
+
 /* Port of: init.lua 70_HEALTH_CHECKS */
 function healthScan() {
   const issues = [];
@@ -6232,7 +6370,7 @@ const humanWhen = (day, time) => humanDate(day) + (time ? " " + time : "");
 function parseWhen(text) {
   const today = todayISO();
   const out = {source: text, title: text, SCHEDULED: null, DEADLINE: null, until: null,
-               time: null, repeat: null, remind: null, taken: []};
+               time: null, repeat: null, remind: null, priority: null, taken: []};
   let s = trim(text);
   // Links at the end are kept aside: "Call Bob tomorrow [[c/phone]]" is still tomorrow.
   const lm = /((?:\s*\[\[[^\]]*\]\])+)\s*$/.exec(s);
@@ -6240,10 +6378,14 @@ function parseWhen(text) {
   if (lm) s = trim(s.slice(0, lm.index));
 
   // Taskwarrior's words, anywhere in the line: due:fri until:eom remind:30m
-  s = s.replace(/(^|\s)(due|sched|scheduled|until|remind|wait):(\S+)/gi, (all, pre, key, val) => {
+  s = s.replace(/(^|\s)(due|sched|scheduled|until|remind|wait|pri|priority):(\S+)/gi, (all, pre, key, val) => {
     key = key.toLowerCase();
     const v = val.toLowerCase();
     if (key === "remind") { out.remind = v; out.taken.push(all.trim()); return pre; }
+    if (key === "pri" || key === "priority") {
+      if (!/^[hml]$/.test(v)) return all;
+      out.priority = v.toUpperCase(); out.taken.push(all.trim()); return pre;
+    }
     const [dayPart, timePart] = v.split(/[@t,](?=\d)/);
     const day = whenDay(dayPart, today, 2);
     if (!day) return all;
@@ -6307,6 +6449,7 @@ function applyWhen(block, w) {
   if (w.until)     put("until",     "[[" + w.until + "]]");
   if (w.repeat)    put(REPEAT_PROP, w.repeat);
   if (w.remind)    put("remind",    w.remind);
+  if (w.priority)  put("priority",  w.priority);
   block.title = w.title;
   return keys;
 }
@@ -6316,6 +6459,7 @@ function whenSays(w) {
   if (w.DEADLINE) bits.push("due " + humanWhen(w.DEADLINE, w.SCHEDULED ? null : w.time));
   if (w.repeat) bits.push("repeats " + w.repeat);
   if (w.until) bits.push("expires after " + humanDate(w.until));
+  if (w.priority) bits.push("priority " + w.priority);
   if (w.remind) {
     const lead = remindLead(w.remind);
     bits.push(lead == null ? "no reminder" : lead === 0 ? "reminder at the time" : "reminder " + w.remind + " before");
@@ -7427,9 +7571,14 @@ function viewTodos() {
 
   /* The groups need rationing as much as the rows do: capping each project at
      sixty tasks does nothing when the cost is two thousand projects. */
-  const groups = Array.from(byProject.entries()).sort((x, y) => x[0].localeCompare(y[0]));
-  for (const [, items] of groups)
-    items.sort((x, y) => (x.added || "9999").localeCompare(y.added || "9999"));
+  const how = sortOf("todos");
+  const groups = Array.from(byProject.entries());
+  for (const [, items] of groups) sortActions(items, how);
+  // By urgency, a project sits where its most urgent task does.
+  groups.sort(how === "urgency"
+    ? (x, y) => urgencyOf(y[1][0]) - urgencyOf(x[1][0]) || x[0].localeCompare(y[0])
+    : (x, y) => x[0].localeCompare(y[0]));
+  if (acts.length) c.append(el("div", {class: "section sortrow"}, el("span", {}, "Order"), sortSwitch("todos")));
   appendPaged(c, groups, ([name, items]) => section(name, items.length, taskCard(items)),
               n => n + " more project" + (n === 1 ? "" : "s"));
   return c;
@@ -13955,6 +14104,7 @@ function chipsFor(a) {
       onclick: e => {e.stopPropagation(); openDueChipMenu(a);}}, humanWhen(a.due, w && w.time)));
   }
   if (a.age != null && a.age > 0) out.push(el("span", {class: "chip age"}, a.age + "d"));
+  if (a._showUrgency) out.push(urgencyChip(a));
   const msgs = messagesOf(a.block).length;
   if (msgs) {
     const un = unreadCount(a.block);
@@ -15101,10 +15251,11 @@ function viewNext() {
   for (const g of GROUPS) {
     const items = acts.filter(a => a.group === g);
     if (!items.length) continue;
-    items.sort((x, y) => (x.added || "9999").localeCompare(y.added || "9999"));
+    sortActions(items, sortOf("todos"));
     c.append(section(GROUP_META[g].label, items.length, taskCard(items)));
   }
   if (!acts.length) c.append(section("Next actions", 0, taskCard([], "No open actions. Capture something, or check your projects.")));
+  else c.insertBefore(el("div", {class: "section sortrow"}, el("span", {}, "Order"), sortSwitch("todos")), c.children[1] || null);
   return c;
 }
 
@@ -15176,7 +15327,10 @@ function viewProjects() {
   const card = el("div", {class: "card"});
   if (!rows.length) card.append(el("div", {class: "empty"}, "No " + STATUS_LABEL[code].toLowerCase() + " projects."));
   const titleOf = r => inSpace(r.space, () => pageTitle(r.path));
-  rows.sort((x, y) => titleOf(x).localeCompare(titleOf(y)));
+  const how = sortOf("projects");
+  rows.sort(how === "urgency"
+    ? (x, y) => projectUrgency(y.path, y.space) - projectUrgency(x.path, x.space) || titleOf(x).localeCompare(titleOf(y))
+    : (x, y) => titleOf(x).localeCompare(titleOf(y)));
   for (const {path: p, space} of rows) {
     const info = inSpace(space, () => ({
       title: pageTitle(p),
@@ -15193,9 +15347,12 @@ function viewProjects() {
         ? el("span", {class: "chip miss b", onclick: () => openAddNextAction(p)}, "no next action") : null,
       info.open ? el("span", {class: "chip"}, info.open + " open") : null,
       idle != null ? el("span", {class: "chip age"}, "reviewed " + idle + "d ago") : null,
+      how === "urgency" ? el("span", {class: "chip urg", title: "Urgency of its most urgent open action, " +
+        "or of its own deadline and chain when it has none"}, "\u2191" + projectUrgency(p, space)) : null,
       el("button", {class: "iconbtn", title: "Change status",
         onclick: () => inSpace(space, () => openStatusPicker(p))}, "⇄")));
   }
+  if (rows.length > 1) c.append(el("div", {class: "section sortrow"}, el("span", {}, "Order"), sortSwitch("projects")));
   c.append(section(STATUS_LABEL[code] + " projects", rows.length, card,
     el("button", {class: "btn sm ghost", style: "margin-left:auto", onclick: () => newProjectPrompt()}, "+ new project")));
   return c;
@@ -17288,6 +17445,10 @@ function openTaskDetail(path, block, space) {
   const schedAt = el("input", {type: "time", value: timeOf("SCHEDULED"), title: "Time, if it has one"});
   const deadAt  = el("input", {type: "time", value: timeOf("DEADLINE"), title: "Time, if it has one"});
   const until = el("input", {type: "date", value: dateIn(blockProp(block, "until")) || ""});
+  const priSel = el("select", {});
+  for (const [v, label] of [["", "None"], ["H", "High"], ["M", "Medium"], ["L", "Low"]])
+    priSel.append(el("option", {value: v}, label));
+  priSel.value = priorityOf(block) || "";
   const remindSel = el("select", {});
   for (const [v, label] of [["", CFG.remindLeadMinutes + " min before (usual)"], ["0", "At the time"],
                             ["30m", "30 min before"], ["1h", "1 hour before"], ["1d", "A day before"],
@@ -17353,6 +17514,8 @@ function openTaskDetail(path, block, space) {
     else drop("until");
     if (remindSel.value) setBlockProp(block, "remind", remindSel.value);
     else drop("remind");
+    if (priSel.value) setBlockProp(block, "priority", priSel.value);
+    else drop("priority");
     touch(path); noteTodoTouched(); closeModal(); render();
   };
 
@@ -17406,6 +17569,18 @@ function openTaskDetail(path, block, space) {
       el("div", {class: "grid2"},
         el("div", {class: "field"}, el("label", {}, "Reminder, when it has a time"), remindSel),
         el("div", {class: "field"}, el("label", {}, "Cancel it if still open after"), until)),
+      el("div", {class: "grid2"},
+        el("div", {class: "field"}, el("label", {}, "Priority"), priSel),
+        el("div", {class: "field"}, el("label", {}, "Urgency"),
+          (() => {
+            const row = {block, state: block.state, title: block.title, context: contextOf(block.title),
+                         project: (nearestProjectAncestor(block) || {}).title || (statusDirOf(path) ? pageTitle(path) : null),
+                         projectPath: statusDirOf(path) ? path : null, space, mine: assignedToMe(block)};
+            const parts = urgencyParts(row);
+            return el("div", {style: "font-size:12.5px;color:var(--fg2);line-height:1.6"},
+              el("div", {style: "font-weight:600;color:var(--fg)"}, "\u2191" + urgencyOf(row)),
+              ...parts.map(([why, n]) => el("div", {}, (n > 0 ? "+" : "") + n + "  " + why)));
+          })())),
       el("div", {class: "field"},
         el("label", {}, "Repeats"),
         (() => {
