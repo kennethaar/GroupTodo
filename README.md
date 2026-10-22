@@ -180,10 +180,19 @@ blocked projects.
 
 ## Keys
 
-`n` new task · `/` search · `?` help · `\` sidebar · `t` today ·
-`g n` `g w` `g p` `g c` `g r` next, waiting, projects, chat, review ·
-`v b` `v c` `v p` `v t` `v r` `v g` `v m` `v d` boards, calendar, timeline, report, mind map, graph ·
-`Alt+←/→` back/forward · `Ctrl-Z` undo.
+| Key | Does |
+|---|---|
+| `n` | new task |
+| `/` | search |
+| `?` | help |
+| `\` | sidebar |
+| `t` | today |
+| `Alt+←` / `Alt+→` | back / forward |
+| `Ctrl-Z` | undo |
+
+**Go to** (press `g`, then a letter): `g n` next · `g w` waiting · `g p` projects · `g c` chat · `g r` review
+
+**Views** (press `v`, then a letter): `v b` task board · `v c` calendar · `v p` project board · `v t` timeline · `v r` report · `v g` mind map · `v m` graph · `v d` page board
 
 On a line: `Tab`/`Shift-Tab` indent, `Ctrl-Enter` cycle state, `Alt+T` task or
 note, `Alt+1` project, `Alt+D` `Alt+C` `Alt+P` `Alt+O` `Alt+J` `Alt+R` due,
