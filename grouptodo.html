@@ -20308,6 +20308,11 @@ function personDropCards() {
     return trayTarget(card, d => d.kind === "org", d => linkPersonToOrg(p.name, d.name));
   });
 }
+/* Whoever already works somewhere is hidden while people are being placed,
+   on both boards, until the chip shows them again. */
+const placedHidden = () => String(PREF.get("board.hidePlaced", "1")) === "1";
+const placedChip = n => fchip("Hide people with an organisation" + (n ? " (" + n + ")" : ""), placedHidden(),
+  () => { PREF.set("board.hidePlaced", placedHidden() ? "0" : "1"); render(); });
 /* The tab row that says what the tray is dropped on. */
 function ontoTabs(label, key, cur, tabs) {
   return el("div", {class: "btabs", style: "margin:0 0 10px"},
@@ -20442,17 +20447,23 @@ function peopleBoard(people) {
     orgs: "Drag a name onto the organisation they work at.",
     areas: "Drag a name onto an area to move, copy or sync the person there.",
     tasks: "Drag a name onto a next action to hand it over. It lands in your Waiting for; drop yourself on it to take it back."}[onto];
+  /* Placing people at organisations is mostly placing the ones nobody has yet,
+     so on that tab whoever already works somewhere is out of the tray until
+     asked for -- the chip says how many that is. */
+  const hidePlaced = onto === "orgs" && placedHidden();
+  const unplaced = p => !hidePlaced || !personOrgs(p.name).length;
+  const placed = onto === "orgs" ? people.filter(p => personOrgs(p.name).length).length : 0;
   const picker = trayPicker("person", say + " Or click a name, then click the target.",
-    [["", people.filter(p => p.me).map(item)],
-     ["In the area", them.filter(p => p.member).sort(busy).map(item)],
-     ["Others", them.filter(p => !p.member).sort(busy).map(item)]], "Find a person");
+    [["", people.filter(p => p.me && unplaced(p)).map(item)],
+     ["In the area", them.filter(p => p.member && unplaced(p)).sort(busy).map(item)],
+     ["Others", them.filter(p => !p.member && unplaced(p)).sort(busy).map(item)]], "Find a person");
   const tabs = ontoTabs("Drag a person to:", "people.board.onto", onto, tabsFor);
   const board = right => el("div", {}, tabs, el("div", {class: "assign"}, picker, right),
     el("p", {class: "hint"}, "Esc puts a picked-up name down."));
   const grid = (cards, empty) => cards.length ? el("div", {class: "pcards"}, ...cards) : emptyCard(empty);
 
   if (onto === "orgs") return board(assignTargets([grid(orgDropCards(),
-    "No organisations yet. Write [[o/Name]] on any line to make one.")], [], "Find an organisation"));
+    "No organisations yet. Write [[o/Name]] on any line to make one.")], [placedChip(placed)], "Find an organisation"));
 
   if (onto === "areas") {
     const cards = Spaces.list.map(sp => {
@@ -20618,9 +20629,12 @@ function orgBoard(orgs, projectsOf) {
   const bare = fchip("Only without one", onlyBare, () => { PREF.set("orgs.board.bare", onlyBare ? "0" : "1"); render(); });
   const onto = PREF.get("orgs.board.onto", "work") === "people" ? "people" : "work";
   const tabs = ontoTabs("Drag an organisation to:", "orgs.board.onto", onto, [["work", "Projects and areas"], ["people", "People"]]);
-  const people = onto === "people" ? personDropCards().filter(card => !onlyBare || card.querySelector(".stakes .say")) : [];
+  const everyone = onto === "people" ? personDropCards() : [];
+  const people = everyone.filter(card => !placedHidden() || card.querySelector(".stakes .say"));
   const right = onto === "people"
-    ? assignTargets([people.length ? el("div", {class: "pcards"}, ...people) : emptyCard("Nobody to show.")], [bare], "Find a person")
+    ? assignTargets([people.length ? el("div", {class: "pcards"}, ...people)
+        : emptyCard(everyone.length ? "Everybody works somewhere already." : "Nobody to show.")],
+        [placedChip(everyone.length - everyone.filter(card => card.querySelector(".stakes .say")).length)], "Find a person")
     : assignTargets(out, [sel, bare], "Find an area or project");
   return el("div", {}, tabs, el("div", {class: "assign"}, picker, right));
 }
