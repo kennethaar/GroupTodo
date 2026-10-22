@@ -5591,39 +5591,63 @@ function healthScan() {
   return issues;
 }
 
-/* Port of: init.lua 60_GRAPH_QUERIES */
+/* Port of: init.lua 60_GRAPH_QUERIES
+
+   Every page's links, read once per render. The boards ask backlinksTo for
+   every card they draw, and reading the whole vault for each of 1600 cards is
+   a couple of million block reads -- the Pages board and hierarchy froze for
+   minutes on a vault that size. Each property and each line is filed under
+   every target it names, in vault order, so asking about one page is a lookup. */
+function backlinkIndex() {
+  return memo("backlinks\u0000" + (V.space || "") + "\u0000" + V.pages.size, () => {
+    const recs = [], by = new Map();
+    const file = (rec, text) => {
+      const source = String(text || "");
+      const targets = new Set();
+      const add = target => targets.add(target.split("][")[0].toLowerCase().replace(/\.md$/, ""));
+      for (const l of linksIn(source)) add(l);
+      // Match the same hashtag syntax used by renderInline. Hide wiki links
+      // first so a hashtag inside a link label is not a second reference.
+      const plain = source.replace(/\[\[[\s\S]*?\]\]/g, " ");
+      for (const tag of plain.matchAll(/(^|\s)#([\p{L}\p{N}_\-/]+)/gu)) add(tag[2]);
+      if (!targets.size) return;
+      const i = recs.push(rec) - 1;
+      for (const t of targets) {
+        if (!by.has(t)) by.set(t, []);
+        by.get(t).push(i);
+      }
+    };
+    for (const [p, page] of V.pages) {
+      for (const [k, v] of Object.entries(page.props || {})) file({path: p, prop: k, value: v}, v);
+      const scan = (blocks, trail) => {
+        for (const b of blocks || []) {
+          file({path: p, block: b, trail}, [b.title, ...(b.body || [])].join("\n"));
+          scan(b.children || [], [...trail, b]);
+        }
+      };
+      scan(page.blocks, []);
+    }
+    return {recs, by};
+  });
+}
+
 function backlinksTo(path) {
   const ref = pageRef(path).toLowerCase();
   const name = baseName(path).toLowerCase();
-  const hits = [];
-  const points = text => {
-    const source = String(text || "");
-    const matches = target => {
-      const t = target.split("][")[0].toLowerCase().replace(/\.md$/, "");
-      return t === ref || t === name;
-    };
-    if (linksIn(source).some(matches)) return true;
-    // Match the same hashtag syntax used by renderInline. Hide wiki links
-    // first so a hashtag inside a link label is not a second reference.
-    const plain = source.replace(/\[\[[\s\S]*?\]\]/g, " ");
-    for (const tag of plain.matchAll(/(^|\s)#([\p{L}\p{N}_\-/]+)/gu)) {
-      if (matches(tag[2])) return true;
+  const {recs, by} = backlinkIndex();
+  const at = [...new Set([...(by.get(ref) || []), ...(by.get(name) || [])])].sort((a, b) => a - b);
+  const hits = [], hit = new Set();
+  for (const i of at) {
+    const r = recs[i];
+    if (r.path === path) continue;
+    if (r.prop != null) {
+      hits.push({path: r.path, block: {id: null, title: r.prop + ":: " + r.value, props: {}, body: [], children: []}});
+      continue;
     }
-    return false;
-  };
-  for (const [p, page] of V.pages) {
-    if (p === path) continue;
-    for (const [k, v] of Object.entries(page.props || {})) {
-      if (points(v)) hits.push({path: p, block: {id: null, title: k + ":: " + v, props: {}, body: [], children: []}});
-    }
-    const scan = (blocks, trail) => {
-      for (const b of blocks || []) {
-        const text = [b.title, ...(b.body || [])].join("\n");
-        if (points(text)) hits.push({path: p, block: b, trail});
-        else scan(b.children || [], [...trail, b]);
-      }
-    };
-    scan(page.blocks, []);
+    // A line that links here counts once, with what is under it.
+    if (r.trail.some(b => hit.has(b))) continue;
+    hit.add(r.block);
+    hits.push({path: r.path, block: r.block, trail: r.trail});
   }
   return hits;
 }
@@ -11223,6 +11247,12 @@ function viewProjectBoard() {
 /* What a card of this kind is worth knowing: what it is called, and how much of
    the vault actually mentions it -- which is the honest answer to "can I let go
    of this one". */
+/* Open tasks per context, counted once rather than once per context card. */
+const openPerContext = () => memo("openPerContext", () => {
+  const n = new Map();
+  for (const a of leafActions()) if (a.context && OPEN_STATES[a.state]) n.set(a.context, (n.get(a.context) || 0) + 1);
+  return n;
+});
 function boardDirCard(r) {
   const {path, space} = r;
   const info = inSpace(space, () => ({
@@ -11230,9 +11260,7 @@ function boardDirCard(r) {
     ref: pageRef(path),
     links: backlinksTo(path).length,
     member: pageKind(path) === "person" && isMemberPage(path),
-    open: pageKind(path) === "context"
-      ? leafActions().filter(a => a.context === baseName(path) && OPEN_STATES[a.state]).length
-      : 0,
+    open: pageKind(path) === "context" ? openPerContext().get(baseName(path)) || 0 : 0,
   }));
   const card = el("button", {
     class: "bcard", draggable: "true", data: {path},
@@ -28633,7 +28661,7 @@ function relTagCard(card, r) {
 function relCard(r) {
   const kind = relKind(r);
   const card = r.block ? boardCard(r)
-    : kind === "project" ? boardProjectCard(r, new Set(stuckActiveProjects().map(x => x.path)))
+    : kind === "project" ? boardProjectCard(r, memo("stuckSet", () => new Set(stuckActiveProjects().map(x => x.path))))
     : boardDirCard(r);
   return relTagCard(card, r);
 }
