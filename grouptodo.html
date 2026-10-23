@@ -136,6 +136,12 @@ body.sidebar-hidden #sidebar{display:none}
 .nav-item .cnt{font-size:12px;font-variant-numeric:tabular-nums;color:var(--fg3)}
 .nav-item .cnt.hot{color:#fff;background:var(--late);border-radius:10px;padding:0 6px}
 .nav-item.small{font-size:13px;padding:5px 10px;color:var(--fg2)}
+/* Contexts unfold into one row each, under the item. */
+.nav-item .fold{width:18px;height:18px;margin-right:-6px;flex:none;display:inline-flex;align-items:center;
+  justify-content:center;border-radius:4px;color:var(--fg3);font-size:11px}
+.nav-item .fold:hover{background:var(--bg2);color:var(--fg)}
+.nav-item.nav-sub{padding-left:24px}
+.nav-item.nav-sub.deep{padding-left:38px}
 /* The timer: a bar fills behind it as you drag out the minutes, and drains as
    they run down. */
 .nav-item.timer{position:relative;overflow:hidden;touch-action:none;user-select:none}
@@ -8997,6 +9003,8 @@ function renderNav() {
     const n = navCount(it.id);
     const hot = (it.id === "today" && dueNow().some(a => a.due < todayISO())) ||
                 (it.id === "review" && reviewDue());
+    const folds = it.id === "contexts" && n > 0;
+    const open = folds && PREF.get("nav.ctxOpen", "0") === "1";
     nav.append(el("button", {
       class: "nav-item" + (here ? " active" : "") + (it.small ? " small" : ""),
       "aria-current": here ? "page" : null,
@@ -9004,8 +9012,31 @@ function renderNav() {
     },
       el("span", {class: "ic bw"}, it.icon),
       el("span", {class: "lbl"}, it.label),
-      n ? el("span", {class: "cnt" + (hot ? " hot" : "")}, String(n)) : null));
+      n ? el("span", {class: "cnt" + (hot ? " hot" : "")}, String(n)) : null,
+      folds ? el("span", {class: "fold", role: "button", "aria-expanded": String(open),
+        title: open ? "Fold the contexts away" : "Show every context",
+        onclick: e => { e.stopPropagation(); PREF.set("nav.ctxOpen", open ? "0" : "1"); renderNav(); }},
+        open ? "▾" : "▸") : null));
+    if (open) nav.append(...navContexts());
   }
+}
+
+/* The contexts, unfolded under Contexts: each one opens Next narrowed to it,
+   with what you can do there as its count. Folders of them are indented. */
+function navContexts() {
+  const acts = nextActions();
+  return ctxFolderOrder(allContextNames()).map(k => {
+    const top = ctxTop(k), here = state.view === "next" && state.ctxFilter === k;
+    const n = acts.filter(a => a.context === k).length;
+    return el("button", {
+      class: "nav-item small nav-sub" + (k !== top ? " deep" : "") + (here ? " active" : ""),
+      "aria-current": here ? "page" : null, title: "What you can do at " + contextLabel(k),
+      onclick: () => go("next", {sub: "list", ctxFilter: k}),
+    },
+      el("span", {class: "ic bw"}, contextIcon(k) || "@"),
+      el("span", {class: "lbl"}, k === top ? k : k.slice(top.length + 1)),
+      n ? el("span", {class: "cnt"}, String(n)) : null);
+  });
 }
 
 /* ---------- the timer ----------
