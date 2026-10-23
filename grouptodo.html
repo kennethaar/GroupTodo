@@ -1949,7 +1949,7 @@ body.solview #content{padding-bottom:14px}
     <li><b>Duplicate lines:</b> &#8943; beside a page title &rarr; <i>Remove duplicate lines</i>. A line written twice under the same parent goes, and what was under it moves to the first copy. The <i>Weekly review</i> says when any page has some, and lists them. Undo puts them back.</li>
     <li><b>Dates in the words:</b> In the box at the top, the end of the line is read for when: <i>Call Bob fri 2pm</i>, <i>Pay rent by the 1st</i>, <i>Water plants every monday</i>, in English or Norwegian (<i>i morgen kl 14</i>, <i>fredag</i>), and Taskwarrior's <code>due:</code>, <code>until:</code> and <code>remind:</code> anywhere in it. A toast says what was read, with <i>Keep the words</i> to undo it. A time is written after the day, <code>SCHEDULED:: [[2026-10-23]] 14:00</code>.</li>
     <li><b>Reminders:</b> A task with a time gets a reminder 10 minutes before (or <code>remind::</code>, set in its panel), which stays until answered: Open, In 10 min, Done. A birthday gets one on the day. Today shows how long until the next timed task and the next deadline.</li>
-    <li><b>Letting late tasks go:</b> <code>until::</code> on a task cancels it once that day has passed; <i>Vault &amp; sync</i> can cancel your own tasks once they are a number of days late. Struck out, not deleted, with <code>expired::</code>, and the toast can undo it.</li>
+    <li><b>Letting tasks go:</b> <code>until::</code> on a task cancels it once that day has passed, and a birthday task (<i>Buy a present for Anna's birthday [[p/Anna Berg]]</i>) goes once that birthday has passed, unless it is switched off in <i>Vault &amp; sync</i>. Being late cancels nothing. Struck out, not deleted, with <code>expired::</code>, and the toast can undo it.</li>
     <li><b>Time on site:</b> Type <code>/in</code> on any line when somebody arrives: who, which project and the time now are filled in (the last person and project you used), to change before it is saved as a <code>#timelog</code> line on that day's page. <code>/out</code> when they leave. Gone for a while and back is a second /in. Click the clock under the line to correct it. <i>Projects &gt; Hours</i> (<kbd>v h</kbd>) shows each week by day, to copy as text; a project's page shows its hours per week.</li>
     <li><b>Meetings:</b> The next <code>#meeting</code> with a time today is shown at the top, counting down, and you are reminded before it starts (Calendars sets how long before, or turns it off).</li>
   </ul>
@@ -29295,29 +29295,19 @@ function openVaultDialog() {
   };
   drawStamps();
 
-  /* Taskwarrior's until, for the whole list: the area's own setting, so the
-     people sharing it agree on it. */
+  /* Late is not a reason to cancel anything; a birthday that has passed is. */
   const expireBox = el("div", {class: "field"},
-    el("label", {}, "Tasks that are far too late in " + area),
-    (() => {
-      const input = el("input", {type: "number", min: "0", step: "1", placeholder: "never",
-        style: "width:7em", value: expireAfterDays() || ""});
-      input.addEventListener("change", () => {
-        const n = Math.max(0, parseInt(input.value, 10) || 0);
-        setSetting("expire_after_days", n ? String(n) : "");
-        notify(n ? "Your tasks more than " + n + " days past their date will be cancelled."
-                 : "Late tasks stay until you deal with them.");
-        if (n) expireOverdue();
-      });
-      return el("div", {},
-        el("div", {style: "display:flex;gap:10px;align-items:center;flex-wrap:wrap"},
-          el("span", {}, "Cancel my tasks once they are more than"), input, el("span", {}, "days late")),
-        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          "Only tasks you wrote or were handed: never a Waiting for, never a repeating one, never " +
-          "somebody else's. They are struck out, not deleted, with expired:: saying when, and the " +
-          "toast that says so can undo it. Empty means never. One task can have its own date " +
-          "instead: until:fri in the box at the top, or the field in its panel."));
-    })());
+    el("label", {}, "Birthday tasks"),
+    toggle(birthdayTasksExpire(), "Cancel a birthday task once the birthday has passed",
+      "A task that says birthday and links a person with birthday:: on their page, like Buy a " +
+      "present for Anna's birthday [[p/Anna Berg]]. Every area, this device. Any other task goes " +
+      "only on its own until:: date - until:fri in the box at the top, or the field in its panel.",
+      on => {
+        PREF.set("expire.birthdays", on ? "1" : "0");
+        notify(on ? "Birthday tasks go once the birthday has passed."
+                  : "Birthday tasks stay until you deal with them.");
+        if (on) expireOverdue();
+      }));
 
   const youBox = el("div", {class: "field"},
     el("label", {}, "You in " + area),
@@ -32251,39 +32241,51 @@ function remindTick() {
 }
 
 /* ============================================================
-   167_EXPIRY -- Taskwarrior's until:, and a limit on how late is too late
-   A task that is three months past its date is not a task any more, it is a
-   reproach. Two ways to let it go, both written in the files:
+   167_EXPIRY -- Taskwarrior's until:, and birthdays that have been
+   A task with a date of its own to stop mattering says so on the task:
 
-     until:: [[2026-11-01]]   on the task: after that day it is cancelled.
-                              "Buy tickets until:fri" in capture writes it.
-     expire_after_days:: 30   in pages/GTD.md, set from Vault & sync: any task
-                              of yours that far past its deadline (or its
-                              scheduled day, when it has no deadline) goes.
+     until:: [[2026-11-01]]   after that day it is cancelled.
+                              "Buy tickets until:fri" in the box at the top writes it.
 
-   The second one only ever touches your own tasks -- ones you wrote, or that
-   are handed to you -- never somebody else's in a shared folder, never a
-   Waiting for (being late is the other person's doing, and chasing it is the
-   point), and never a repeating one, which only ever has one copy anyway.
+   Nothing else is cancelled for being late. Late is a question for the weekly
+   review, not for a rule that does not know why the task slipped.
+
+   The one exception is a task for somebody's birthday: "Buy a present for
+   Anna's birthday [[p/Anna Berg]]" means nothing the day after, so once the
+   birthday it was written for has passed it goes. It is a birthday task when
+   it (or a line above it) links a person whose page has birthday::, and its
+   words say birthday -- linking Anna alone is not enough, or "Send Anna the
+   contract" would vanish on her birthday. The birthday it was for is the
+   first one on or after the day it was added. One switch in Vault & sync
+   covers every area, kept on this device.
+
    Cancelled, not deleted: the task stays where it was, struck out, with
-   expired:: saying why, and one toast offers to put the lot back. Put back,
+   expired:: saying when, and one toast offers to put the lot back. Put back,
    a task is marked expire:: never, because "keep this" is an answer that has
    to outlive the next time the app opens.
    ============================================================ */
-const expireAfterDays = () => {
-  const n = parseInt(getSetting("expire_after_days") || "", 10);
-  return n > 0 ? n : 0;
-};
-function expirableMine(a) {
-  const me = whoAmI();
-  const who = assigneeOf(a.block);
-  if (who) return samePerson(who, me);
-  const by = blockProp(a.block, "by");
-  if (by) return samePerson(splitStamp(by).who, me);
-  return !a.owner || samePerson(a.owner, me);
+const BIRTHDAY_WORDS = /\b(birthday|bday|b-day)\b|bursdag|fødselsdag/i;
+const birthdayTasksExpire = () => PREF.get("expire.birthdays", "1") !== "0";
+
+/* The birthday a task was written for, or null when it is not a birthday task.
+   Read the way the rest of the app reads birthday:: (parseBirthday). */
+function birthdayTaskDay(block) {
+  let said = false, bday = null;
+  for (let p = block; p; p = p._parent) {
+    if (BIRTHDAY_WORDS.test(linkWords(p.title || ""))) said = true;
+    if (!bday) {
+      for (const m of String(p.title || "").matchAll(/\[\[p\/([^\]|]+)\]\]/g)) {
+        const b = parseBirthday(birthdayIn(getPage(personPath(trim(m[1].split("][")[0])))?.props));
+        if (b) { bday = b; break; }
+      }
+    }
+  }
+  if (!said || !bday) return null;
+  const from = addedDate(block) || dueDate(block);
+  return from ? nextBirthday(bday, from).iso : null;
 }
+
 function expireHere(today) {
-  const limit = expireAfterDays();
   const out = [];
   for (const a of leafActionsHere()) {
     const b = a.block;
@@ -32291,9 +32293,11 @@ function expireHere(today) {
     let why = null;
     if (/^never$/i.test(trim(blockProp(b, "expire") || ""))) continue;
     if (until && until < today) why = "until";
-    else if (limit && b.state !== "WAIT" && !repeatOf(b) && expirableMine(a)) {
-      const day = dateIn(blockProp(b, "DEADLINE")) || dateIn(blockProp(b, "SCHEDULED")) || dateIn(blockProp(b, "due"));
-      if (day && dateDiffDays(day, today) > limit) why = "late";
+    else if (birthdayTasksExpire()) {
+      const bday = birthdayTaskDay(b);
+      // A card dated after the day ("belated") is aimed past it on purpose.
+      const due = dueDate(b);
+      if (bday && bday < today && !(due && due > bday)) why = "birthday";
     }
     if (!why) continue;
     const before = {state: b.state, props: Object.assign({}, b.props)};
@@ -32312,13 +32316,14 @@ function expireOverdue() {
   if (!gone.length) return;
   clearMemo();
   render();
-  const late = gone.filter(g => g.why === "late").length;
+  const bdays = gone.filter(g => g.why === "birthday").length;
   const msg = gone.length === 1
     ? "“" + plainTitle(gone[0].block.title) + "” " +
-      (gone[0].why === "until" ? "ran past its until:: date" : "was more than " + expireAfterDays() + " days late") +
+      (gone[0].why === "until" ? "ran past its until:: date" : "was for a birthday that has passed") +
       " and is cancelled."
     : gone.length + " tasks cancelled: " +
-      [late ? late + " too late" : null, gone.length - late ? (gone.length - late) + " past their until:: date" : null]
+      [bdays ? bdays + " for a birthday that has passed" : null,
+       gone.length - bdays ? (gone.length - bdays) + " past their until:: date" : null]
         .filter(Boolean).join(", ") + ".";
   notify(msg, "info", {label: "Undo", run: () => {
     for (const g of gone) inSpace(g.space, () => {
