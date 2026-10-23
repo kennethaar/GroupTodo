@@ -822,7 +822,10 @@ its own, with nothing to tick off. It is for the renewal you cannot do before
 March, or the follow-up that makes no sense until they have had a week.
 
 Type `hold:fri` (or `wait:fri`) in capture, or set **On hold until** in the
-task panel. Holding a line holds the steps under it, the way a date on it
+task panel. A whole project can be held the same way: `hold::` on its page,
+or **Hold until a day…** under its status. Its actions leave your lists, it
+moves to an **On hold** group under the project list, and the weekly review
+stops calling it stuck. Holding a line holds the steps under it, the way a date on it
 dates them. **Planned** has an **On hold** section listing everything held and
 the day it comes back, so nothing held is lost. The chip on each one has
 **Bring it back now**.
@@ -951,12 +954,35 @@ feed is fetched by Microsoft's and Google's servers, so it would mean the whole
 list sitting at a publicly reachable URL protected by nothing but obscurity. The
 app has no such thing and no way to make one.
 
+### Burndown
+
+The Report opens with one line: how many tasks were open on each day of the
+window. Down is the work getting done, up is more arriving than leaving.
+Hover (or tap) a day for what was added and finished on it. Underneath, one
+sentence says where the pace leads (*at this pace the list is empty in about
+20 weeks*), and **As a table** has the same numbers for anyone who would
+rather read them. It follows the space chosen for the report and counts every
+task from the day it was added to the day it was closed. A task marked done by
+hand with no date cannot be placed, and is left out.
+
 ### Phones
 
 A phone can run GroupTodo, but not from a file: phones give a page opened as a
 file nowhere to save, and cannot open folders at all. So a phone needs the app
 at a **web address**, and it keeps its own copy that travels as one file you
 carry back and forth. See **Hosting** and **Storage and sync** below.
+
+On a phone that file is one press: **Send** sits in the top bar, with a dot on
+it whenever you have changed something the file has not carried yet, and if
+you leave changes unsent for ten minutes the app says so once.
+
+**Working hours** (Vault & sync, kept on your own page as
+`work_hours:: 08:00-16:00`, so phone and PC both know them) set the rhythm.
+From half an hour before you start to half an hour after, the PC asks for what
+you did on your phone. Around the end of the day, the phone asks for the PC's
+file. Once a day, and not at all on a day you have already brought one in.
+Monday to Friday unless the page says otherwise, e.g.
+`work_hours:: 08:00-16:00 mon-sat`.
 
 ---
 
