@@ -1951,6 +1951,7 @@ body.solview #content{padding-bottom:14px}
     <li><b>Dates in the words:</b> In the box at the top, the end of the line is read for when: <i>Call Bob fri 2pm</i>, <i>Pay rent by the 1st</i>, <i>Water plants every monday</i>, in English or Norwegian (<i>i morgen kl 14</i>, <i>fredag</i>), and Taskwarrior's <code>due:</code>, <code>until:</code> and <code>remind:</code> anywhere in it. A toast says what was read, with <i>Keep the words</i> to undo it. A time is written after the day, <code>SCHEDULED:: [[2026-10-23]] 14:00</code>.</li>
     <li><b>Reminders:</b> A task with a time gets a reminder 10 minutes before (or <code>remind::</code>, set in its panel), which stays until answered: Open, In 10 min, Done. A birthday gets one on the day. Today shows how long until the next timed task and the next deadline.</li>
     <li><b>Letting tasks go:</b> <code>until::</code> on a task cancels it once that day has passed, and a birthday task (<i>Buy a present for Anna's birthday [[p/Anna Berg]]</i>) goes once that birthday has passed, unless it is switched off in <i>Vault &amp; sync</i>. Being late cancels nothing. Struck out, not deleted, with <code>expired::</code>, and the toast can undo it.</li>
+    <li><b>On hold:</b> <code>hold:: [[date]]</code> hides a task from every list until that day, and then it is back by itself; holding a line holds the steps under it. <code>hold:fri</code> (or <code>wait:fri</code>) in the box at the top, or <i>On hold until</i> in the task panel. The bottom of <i>Next</i> lists what is on hold, each with <i>Bring it back now</i>.</li>
     <li><b>Urgency:</b> <i>Next</i> and the project list are in order of urgency by default, Taskwarrior's way: the deadline coming closer, the scheduled day reached, <code>priority::</code> H/M/L, started, the context you are in, age, being in a project, chat, and the project chain (another project waiting on it counts up, waiting on another counts down). The &uarr; chip on a row says why. Priority is in the task panel, or <code>pri:H</code> in the box at the top. The Sort menu has the other orders.</li>
     <li><b>Time on site:</b> Type <code>/in</code> on any line when somebody arrives: who, which project and the time now are filled in (the last person and project you used), to change before it is saved as a <code>#timelog</code> line on that day's page. <code>/out</code> when they leave. Gone for a while and back is a second /in. Click the clock under the line to correct it. <i>Projects &gt; Hours</i> (<kbd>v h</kbd>) shows each week by day, to copy as text; a project's page shows its hours per week.</li>
     <li><b>Meetings:</b> The next <code>#meeting</code> with a time today is shown at the top, counting down, and you are reminded before it starts (Calendars sets how long before, or turns it off).</li>
@@ -5841,7 +5842,37 @@ function journalActionsFor(projectPath) {
 
 /* Open leaf actions: an open item with no open children is the actionable one.
    With several spaces shown, this runs once per space and tags each result. */
-function leafActions() { return memo("leafActions", () => acrossSpaces(leafActionsHere)); }
+function leafActions() { return memo("leafActions", () => allLeafActions().filter(a => !a.held)); }
+
+/* ---------- on hold ----------
+   Taskwarrior's wait:, written hold:: [[2026-11-03]]. A task on hold is real
+   and stays where it was written, but no list shows it until that day comes:
+   the renewal you cannot do before March, the follow-up that makes no sense
+   until they have had a week. On the day it simply reappears, with nothing
+   to tick off and nobody asked. Holding a line holds the steps under it, the
+   way a date on it dates them. Next lists what is on hold at the bottom, and
+   when it comes back, so nothing held is lost.
+
+   Only leafActions() hides them. Expiry still sees them, so a held task can
+   run past its until:: like any other. */
+function allLeafActions() { return memo("allLeafActions", () => acrossSpaces(leafActionsHere)); }
+function heldActions() {
+  return memo("heldActions", () => allLeafActions().filter(a => a.held)
+    .sort((x, y) => x.held.localeCompare(y.held)));
+}
+function holdOf(block) {
+  for (let p = block; p; p = p._parent) {
+    const day = dateIn(blockProp(p, "hold"));
+    if (day) return day;
+  }
+  return null;
+}
+function releaseTaskHold(path, block) {
+  for (let p = block; p; p = p._parent)
+    for (const k of Object.keys(p.props || {})) if (k.toLowerCase() === "hold") delete p.props[k];
+  touch(path); render();
+  notify("Off hold, and back on your lists.");
+}
 
 function leafActionsHere() {
   const out = [];
@@ -5908,9 +5939,11 @@ function leafActionsHere() {
          list, and asking for a verb again on every run is the method talking to
          itself. Fix the list, not the copy. */
       const authored = tourStep || !!fromList;
+      const hold = holdOf(b);
       out.push({
         path, block: b, state: b.state, title: b.title,
         project, projectPath, projectStatusDir, group, due,
+        held: hold && hold > todayISO() ? hold : null,
         assignee, mine, owner: journalOwnerOf(path) || null,
         tourStep, checklist: fromList ? fromList.title : null,
         area: journal && !linked ? (nearestAreaAncestor(b) || {}).title || null : null,
@@ -9316,7 +9349,7 @@ const humanWhen = (day, time) => humanDate(day) + (time ? " " + time : "");
 function parseWhen(text) {
   const today = todayISO();
   const out = {source: text, title: text, SCHEDULED: null, DEADLINE: null, until: null,
-               time: null, repeat: null, remind: null, priority: null, taken: []};
+               time: null, repeat: null, remind: null, priority: null, hold: null, taken: []};
   let s = trim(text);
   // Links at the end are kept aside: "Call Bob tomorrow [[c/phone]]" is still tomorrow.
   const lm = /((?:\s*\[\[[^\]]*\]\])+)\s*$/.exec(s);
@@ -9324,7 +9357,7 @@ function parseWhen(text) {
   if (lm) s = trim(s.slice(0, lm.index));
 
   // Taskwarrior's words, anywhere in the line: due:fri until:eom remind:30m
-  s = s.replace(/(^|\s)(due|sched|scheduled|until|remind|wait|pri|priority):(\S+)/gi, (all, pre, key, val) => {
+  s = s.replace(/(^|\s)(due|sched|scheduled|until|hold|wait|remind|pri|priority):(\S+)/gi, (all, pre, key, val) => {
     key = key.toLowerCase();
     const v = val.toLowerCase();
     if (key === "remind") { out.remind = v; out.taken.push(all.trim()); return pre; }
@@ -9335,9 +9368,10 @@ function parseWhen(text) {
     const [dayPart, timePart] = v.split(/[@t,](?=\d)/);
     const day = whenDay(dayPart, today, 2);
     if (!day) return all;
-    const prop = key === "due" ? "DEADLINE" : key === "until" ? "until" : "SCHEDULED";
+    const prop = key === "due" ? "DEADLINE" : key === "until" ? "until"
+               : key === "hold" || key === "wait" ? "hold" : "SCHEDULED";
     out[prop] = day;
-    if (timePart && prop !== "until") out.time = whenClock(timePart.includes(":") ? timePart : "at " + timePart);
+    if (timePart && prop !== "until" && prop !== "hold") out.time = whenClock(timePart.includes(":") ? timePart : "at " + timePart);
     out.taken.push(all.trim());
     return pre;
   });
@@ -9396,6 +9430,7 @@ function applyWhen(block, w) {
   if (w.repeat)    put(REPEAT_PROP, w.repeat);
   if (w.remind)    put("remind",    w.remind);
   if (w.priority)  put("priority",  w.priority);
+  if (w.hold)      put("hold",      "[[" + w.hold + "]]");
   block.title = w.title;
   return keys;
 }
@@ -9406,6 +9441,7 @@ function whenSays(w) {
   if (w.repeat) bits.push("repeats " + w.repeat);
   if (w.until) bits.push("expires after " + humanDate(w.until));
   if (w.priority) bits.push("priority " + w.priority);
+  if (w.hold) bits.push("on hold until " + humanDate(w.hold));
   if (w.remind) {
     const lead = remindLead(w.remind);
     bits.push(lead == null ? "no reminder" : lead === 0 ? "reminder at the time" : "reminder " + w.remind + " before");
@@ -15406,7 +15442,7 @@ function makeNextOccurrence(path, block, when) {
   });
   // Carry what describes the job; leave behind what described that one doing of it.
   for (const [k, v] of Object.entries(block.props || {})) {
-    if (/^(added|closed|done_by|scheduled|deadline|assigned_at|until|expired)$/i.test(k)) continue;
+    if (/^(added|closed|done_by|scheduled|deadline|assigned_at|until|expired|hold)$/i.test(k)) continue;
     copy.props[k] = v;
   }
   // Same time of day as the last one: a weekly meeting is still at ten.
@@ -17356,6 +17392,11 @@ function chipsFor(a) {
   if (a.age != null && a.age > 0) out.push(el("span", {class: "chip age"}, a.age + "d"));
   // Only where the list is in that order: the row objects are shared with every other view.
   if (a._showUrgency && state.view === "next") out.push(urgencyChip(a));
+  if (a.held) out.push(el("span", {class: "chip b", title: "Hidden from your lists until then",
+    onclick: e => { e.stopPropagation(); chipMenu("on hold until " + humanDate(a.held), "hold", [
+      ["a", "Bring it back now", null, () => inSpace(a.space, () => releaseTaskHold(a.path, a.block))],
+      ["b", "Change the date", null, () => inSpace(a.space, () => openTaskDetail(a.path, a.block, a.space))],
+    ]); }}, "on hold → " + humanDate(a.held)));
   const msgs = messagesOf(a.block).length;
   if (msgs) {
     const un = unreadCount(a.block);
@@ -18365,7 +18406,7 @@ function attachOutlineUndo(host,path,block) {
    comes back, who has it, how much has been said on it -- and any value of
    its own that is not bookkeeping. Added::, by::, started:: and the rest are
    the file's business and stay there. */
-const BOOKKEEPING = /^(id|template_(source|rules)|added|by|started|closed|done_by|assigned_at|created|updated|updated_by|asked|feature_.*|scheduled|deadline|due|repeat|assigned|branch_sync_id|space_sync_.*|cal_.*|stage|until|remind|expired|expire)$/i;
+const BOOKKEEPING = /^(id|template_(source|rules)|added|by|started|closed|done_by|assigned_at|created|updated|updated_by|asked|feature_.*|scheduled|deadline|due|repeat|assigned|branch_sync_id|space_sync_.*|cal_.*|stage|until|remind|expired|expire|hold)$/i;
 function lineMeta(b, path = null) {
   const out = [];
   const due = dueDate(b);
@@ -21167,6 +21208,10 @@ function viewNext() {
     fchip("Anywhere", !ctx, () => go("next", {ctxFilter: null})),
     ...ctxs.map(k => fchip(contextLabel(k), ctx === k, () => go("next", {ctxFilter: k}))),
     types.sel, est.sel, sortSel), f.host);
+  const held = heldActions();
+  if (held.length) c.append(el("details", {class: "section fold"},
+    el("summary", {}, "On hold", el("span", {class: "n"}, String(held.length))),
+    taskCard(held)));
   return c;
 }
 
@@ -27738,6 +27783,7 @@ function showTaskDetail(path, block, space) {
   for (const [v, label] of [["", "None"], ["H", "High"], ["M", "Medium"], ["L", "Low"]])
     priSel.append(el("option", {value: v}, label));
   priSel.value = priorityOf(block) || "";
+  const hold = el("input", {type: "date", value: dateIn(blockProp(block, "hold")) || ""});
   const remindSel = el("select", {});
   for (const [v, label] of [["", CFG.remindLeadMinutes + " min before (usual)"], ["0", "At the time"],
                             ["30m", "30 min before"], ["1h", "1 hour before"], ["1d", "A day before"],
@@ -27806,6 +27852,8 @@ function showTaskDetail(path, block, space) {
     else drop("remind");
     if (priSel.value) setBlockProp(block, "priority", priSel.value);
     else drop("priority");
+    if (hold.value) setBlockProp(block, "hold", "[[" + hold.value + "]]");
+    else drop("hold");
     touch(path); noteTodoTouched(); closeModal(); render();
   };
 
@@ -27859,6 +27907,8 @@ function showTaskDetail(path, block, space) {
         el("div", {class: "field"}, el("label", {}, "Cancel it if still open after"), until)),
       el("div", {class: "grid2"},
         el("div", {class: "field"}, el("label", {}, "Priority"), priSel),
+        el("div", {class: "field"}, el("label", {}, "On hold until"), hold)),
+      el("div", {class: "grid2"},
         el("div", {class: "field"}, el("label", {}, "Urgency"),
           (() => {
             const who = assigneeOf(block);
@@ -27964,7 +28014,7 @@ const DETAIL_GROUPS = [
   ["repeat", "Repeats", ["Repeats"]],
   ["chat", "Chat", ["Chat"]],
   ["who", "Who is doing it", ["Who is doing it"]],
-  ["gtd", "GTD hygiene", ["GTD hygiene", "Priority"]],
+  ["gtd", "GTD hygiene", ["GTD hygiene", "Priority", "Urgency"]],
   ["history", "History", ["Trail", "Source"]],
 ];
 
