@@ -9,6 +9,7 @@ Logseq or Obsidian open.
 
     python3 serve.py [--vault DIR] [--port 8777] [--host 127.0.0.1]
                      [--password-file FILE] [--insecure]
+                     [--open-in-editor [--open-with CMD]]
     python3 serve.py --calendars-only      (only fetches calendar links)
 
 Defaults to the vault path used by the original Neovim config:
@@ -16,10 +17,14 @@ Defaults to the vault path used by the original Neovim config:
 
 API
     GET    /api/ping            -> {"ok": true, ...}
+    GET    /api/asset?path=assets/x.png  -> the bytes of a dropped file
+    PUT    /api/asset?path=assets/x.png  -> write one (body is the bytes)
     GET    /api/list            -> ["journals/2026-09-17.md", "pages/1/Foo.md", ...]
     GET    /api/file?path=REL   -> raw file contents
     PUT    /api/file?path=REL   -> writes the body (creates parent dirs)
     DELETE /api/file?path=REL   -> deletes the file
+    POST   /api/open?path=REL   -> opens that file in an editor ON THIS MACHINE,
+                                   and only with --open-in-editor; 403 otherwise
     GET    /api/calendar?url=U  -> the iCalendar file at U, fetched by the server
 
 The app's CSP only lets it talk to itself and to localhost, so a calendar
@@ -33,6 +38,14 @@ network for any page that can reach the port.
 itself and only needs something on this computer to fetch calendar links.
 
 Every path is confined to the vault; traversal outside it is refused.
+
+--open-in-editor lets the app ask for a page to be opened in an editor -- the
+"open file" button beside "copy path". The editor runs here, on the machine with
+the vault on it, so it is off by default and the flag is the whole consent: with
+a password and a tunnel in front, anybody holding that password can make this
+process launch an editor on your desktop. Harmless as such things go (it is one
+of your own .md files, in a text editor) but it is yours to choose. --open-with
+names the command when the system default is not what you want.
 
 Binds to localhost by default and serves openly there. Reaching it from
 anywhere else needs a password, set through GTD_PASSWORD or --password-file:
@@ -60,7 +73,9 @@ import json
 import os
 import posixpath
 import re
+import shlex
 import socket
+import subprocess
 import sys
 import time
 import urllib.request
@@ -70,6 +85,10 @@ from urllib.parse import urlparse, parse_qs
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_VAULT = os.path.expanduser("~/storage/shared/Documents/OrgMode")
 ALLOWED_EXT = (".md", ".org")
+# Files dragged onto a line: pictures and documents, kept beside the markdown
+# that mentions them, in one folder of their own so a vault walk never meets
+# them. Anything outside it stays off limits whatever its name.
+ASSET_DIR = "assets"
 SKIP_DIRS = {".git", ".obsidian", ".trash", "node_modules", "logseq"}
 MAX_BODY = 8 * 1024 * 1024
 MAX_CALENDAR = 8 * 1024 * 1024
@@ -130,6 +149,35 @@ class Vault:
             raise ValueError("path escapes the vault")
         return full
 
+    def resolve_asset(self, rel):
+        """Map a client path to a file inside the vault's assets/ folder."""
+        if not rel:
+            raise ValueError("empty path")
+        rel = posixpath.normpath(rel.replace("\\", "/")).lstrip("/")
+        if rel.startswith("..") or os.path.isabs(rel):
+            raise ValueError("path escapes the vault")
+        parts = rel.split("/")
+        if parts[0] != ASSET_DIR or len(parts) < 2 or any(p in ("", ".", "..") for p in parts):
+            raise ValueError("only files under %s/ are served" % ASSET_DIR)
+        if parts[-1].endswith(ALLOWED_EXT):
+            raise ValueError("pages are served from /api/file")
+        full = os.path.abspath(os.path.join(self.root, rel))
+        if not full.startswith(os.path.join(self.root, ASSET_DIR) + os.sep):
+            raise ValueError("path escapes the vault")
+        return full
+
+    def read_asset(self, rel):
+        with open(self.resolve_asset(rel), "rb") as fh:
+            return fh.read()
+
+    def write_asset(self, rel, data):
+        full = self.resolve_asset(rel)
+        os.makedirs(os.path.dirname(full), exist_ok=True)
+        tmp = full + ".tmp"
+        with open(tmp, "wb") as fh:
+            fh.write(data)
+        os.replace(tmp, full)
+
     def list(self):
         out = []
         for dirpath, dirnames, filenames in os.walk(self.root):
@@ -159,11 +207,39 @@ class Vault:
             os.remove(full)
 
 
+def open_in_editor(full, command=None):
+    """Open one file in an editor on THIS machine. Returns what was used.
+
+    A browser cannot launch a program, which is right, so the only process in a
+    position to do this is the one already holding the vault. An explicit
+    command wins; otherwise the system's own idea of who owns a .md file, which
+    on Windows is Notepad on a stock install, and the Notepad fallback is there
+    for the machine where nothing is registered for the extension at all."""
+    if command:
+        argv = shlex.split(command) + [full]
+        subprocess.Popen(argv)
+        return os.path.basename(argv[0])
+    if sys.platform.startswith("win"):
+        try:
+            os.startfile(full)             # noqa: S606 - the default handler
+            return "the default editor"
+        except OSError:
+            subprocess.Popen(["notepad.exe", full])
+            return "Notepad"
+    if sys.platform == "darwin":
+        subprocess.Popen(["open", "-t", full])
+        return "the default editor"
+    subprocess.Popen(["xdg-open", full])
+    return "the default editor"
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "GroupToDo/1.0"
     vault = None
     password = None        # None = open; anything else = HTTP Basic required
     realm = "GroupToDo"
+    allow_open = False     # --open-in-editor: may launch an editor on this box
+    open_with = None       # --open-with: the command to launch, if not the default
 
     # ---------- helpers ----------
     def _send(self, code, body=b"", ctype="text/plain; charset=utf-8"):
@@ -177,7 +253,7 @@ class Handler(BaseHTTPRequestHandler):
             # password is set the app is served from this origin anyway, and a
             # wildcard would only widen what a hostile page could attempt.
             self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Access-Control-Allow-Methods", "GET, PUT, DELETE, OPTIONS")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
             self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
@@ -244,7 +320,9 @@ class Handler(BaseHTTPRequestHandler):
         if route == "/api/ping":
             if self.vault is None:
                 return self._json(200, {"ok": True, "calendarsOnly": True})
-            return self._json(200, {"ok": True, "vault": self.vault.root, "files": len(self.vault.list())})
+            return self._json(200, {"ok": True, "vault": self.vault.root,
+                                    "files": len(self.vault.list()),
+                                    "open_in_editor": bool(self.allow_open)})
         if self.vault is None and route.startswith("/api/") and route != "/api/calendar":
             return self._send(404, "this helper only fetches calendars")
         if route == "/api/list":
@@ -264,22 +342,63 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(400, str(exc))
             except FileNotFoundError:
                 return self._send(404, "not found")
+        if route == "/api/asset":
+            rel = self._rel()
+            try:
+                body = self.vault.read_asset(rel)
+            except (ValueError, KeyError) as exc:
+                return self._send(400, str(exc))
+            except (FileNotFoundError, IsADirectoryError):
+                return self._send(404, "not found")
+            ext = os.path.splitext(rel)[1].lower()
+            return self._send(200, body, self.CTYPES.get(ext, "application/octet-stream"))
         return self._static(route)
 
     # The static and API handlers already suppress bodies for HEAD.
     do_HEAD = do_GET
 
+    def do_POST(self):
+        if not self.authorised():
+            return self.demand_password()
+        if self.vault is None or urlparse(self.path).path != "/api/open":
+            return self._send(404, "not found")
+        if not self.allow_open:
+            return self._send(403, "This server was not started with --open-in-editor, "
+                                   "so it will not launch anything.")
+        # A plain cross-origin POST needs no preflight, so any page in the
+        # browser could otherwise poke an open server into launching an editor.
+        # Demanding a header that is not on the Allow-Headers list forces a
+        # preflight the browser then refuses -- the app's own fetch, same
+        # origin, is unaffected.
+        if (self.headers.get("X-GroupTodo") or "") != "open":
+            return self._send(403, "This endpoint is for the app itself.")
+        try:
+            full = self.vault.resolve(self._rel())
+        except ValueError as exc:
+            return self._send(400, str(exc))
+        if not os.path.isfile(full):
+            return self._send(404, "There is no such file in the vault yet.")
+        try:
+            used = open_in_editor(full, self.open_with)
+        except Exception as exc:          # no editor, no display, a bad --open-with
+            return self._send(500, "Could not open an editor here: %s" % exc)
+        return self._json(200, {"ok": True, "with": used})
+
     def do_PUT(self):
         if not self.authorised():
             return self.demand_password()
-        if self.vault is None or urlparse(self.path).path != "/api/file":
+        route = urlparse(self.path).path
+        if self.vault is None or route not in ("/api/file", "/api/asset"):
             return self._send(404, "not found")
         length = int(self.headers.get("Content-Length") or 0)
         if length > MAX_BODY:
             return self._send(413, "too large")
-        body = self.rfile.read(length).decode("utf-8")
+        raw = self.rfile.read(length)
         try:
-            self.vault.write(self._rel(), body)
+            if route == "/api/asset":
+                self.vault.write_asset(self._rel(), raw)
+            else:
+                self.vault.write(self._rel(), raw.decode("utf-8"))
         except ValueError as exc:
             return self._send(400, str(exc))
         return self._json(200, {"ok": True})
@@ -349,6 +468,17 @@ self.addEventListener("fetch", e => {
         ".css": "text/css; charset=utf-8",
         ".png": "image/png",
         ".md": "text/markdown; charset=utf-8",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+        ".avif": "image/avif",
+        ".bmp": "image/bmp",
+        ".ico": "image/x-icon",
+        ".pdf": "application/pdf",
+        ".txt": "text/plain; charset=utf-8",
+        ".csv": "text/csv; charset=utf-8",
+        ".zip": "application/zip",
     }
 
     def _file(self, full, ctype, extra=()):
@@ -425,6 +555,11 @@ def main():
                     help="allow a non-loopback bind with no password (don't)")
     ap.add_argument("--calendars-only", action="store_true",
                     help="no vault: only fetch calendar links for an app opened from a folder")
+    ap.add_argument("--open-in-editor", action="store_true",
+                    default=bool(os.environ.get("GTD_OPEN_IN_EDITOR")),
+                    help="let the app open a page in an editor on THIS machine")
+    ap.add_argument("--open-with", default=os.environ.get("GTD_OPEN_WITH"),
+                    help="the command --open-in-editor runs (default: the system's own)")
     args = ap.parse_args()
 
     password = read_password(args)
@@ -447,7 +582,12 @@ def main():
     if password and len(password) < 10:
         sys.exit("password too short: use at least 10 characters, it is reachable from a browser")
 
+    if args.open_with and not args.open_in_editor:
+        sys.exit("--open-with does nothing without --open-in-editor")
+
     Handler.password = password
+    Handler.allow_open = args.open_in_editor
+    Handler.open_with = args.open_with
     if args.calendars_only:
         Handler.vault = None
         print("mode  : calendars only - fetches calendar links, keeps no files")
@@ -457,6 +597,9 @@ def main():
         print(f"vault : {Handler.vault.root}  ({count} markdown files)")
     print(f"open  : http://{args.host}:{args.port}/")
     print("auth  : " + ("password required" if password else "open (localhost only)"))
+    if args.open_in_editor:
+        print("editor: " + (args.open_with or "the system default") +
+              "  -- the app can open pages in it, here on this machine")
     if exposed and password:
         print("note  : HTTP Basic is only private over HTTPS -- terminate TLS in front of this")
     if exposed and not password:
