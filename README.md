@@ -86,6 +86,7 @@ Next, Waiting for and Projects export to CSV for Excel.
 - **Time on site.** `/in` and `/out` on any line write a `#timelog` visit: who, which project, in and out. **Projects → Hours** shows each week by day, and a project's page its hours per week.
 - **Sheets: hours, amounts, stock.** Three more tracker kinds take the line as you say it: `tracker-office_t:: 07:12 - 10:00, 10:30 - 12:30` (start and end, one tracker per place you work, with **Start**/**Stop** on today's page), `tracker-food_a:: 129,50 + 45` and `tracker-paint_q:: +3` (`-1` out, `=12` counted). **Trackers → Hours / Amounts / Stock** adds them up: the previous week by day with a column per tracker, the total, extra hours per day worked and flex against a normal day per weekday, then the year by month (days at each place, so the days driven in for a travel deduction). Decimal hours with a comma if you like, and both copy as cells for a spreadsheet. Settings are on your own page as `hours_target::`, `hours_extra::` and so on.
 - **Time per client.** Setting a todo to Doing starts a clock and leaving Doing stops it, in Logseq's `:LOGBOOK:` lines. A project's client is the organisation its page or area names (`org::`). **Projects → Hours → Clients** is the week by day per client, the projects the time went to and the year by month; a project's page shows the time on its todos.
+- **Languages.** The app ships in English; **Vault & sync → Language** switches what this device shows. Each language is a file in `pages/8/Languages/`, one line per piece of text: `Today => I dag`. Get one from the [languages folder](languages/) here on GitHub (download it, then **Open the file**), or **Translate it yourself**: fill in the lines in the app, or **Copy for an AI** and **Paste a translation** back. What people write is never translated. To share a translation, add the file to `languages/` in a pull request.
 
 ---
 
@@ -118,6 +119,7 @@ icon.svg               icon
 index.html             redirect, so https://host/ works
 serve.py               optional sync server and calendar fetcher
 docs/vault-format.md   the file format, and converting from Obsidian or Logseq
+languages/             language files; English.md lists every line to translate
 docs/                  setup sheet and mockups
 ```
 
@@ -192,6 +194,37 @@ Quiet until there are six open tasks, and listed on **Weekly review**: next
 actions start with a physical verb, projects state an outcome, stuck projects
 (nothing actionable), waits older than 14 days, people due a check-in, and
 blocked projects.
+
+## Languages
+
+Each area has `pages/8/Languages/`, one file per language. The app writes
+`English.md` there itself and adds lines when a newer version has more text;
+the others are yours. They are not pages: search, links and lists never see them.
+
+```
+language:: Norsk
+code:: nb
+
+Today => I dag
+Imported {1} file(s). => Importerte {1} fil(er).
+Waiting for =>
+```
+
+- One line per piece of text on screen, the English before `=>`, the translation after.
+- `{1}`, `{2}` are a number or name the app fills in; keep them, in any order.
+- A line with nothing after `=>` stays in English, so a half-done file is usable.
+- Text is translated as it appears on screen, exact lines only. Editable text,
+  page and task titles are never touched.
+- The app does not fetch from GitHub; the page's security policy allows no host
+  but your own sync server. Download a file from [languages/](languages/) and
+  open it in **Vault & sync → Language → Get one from GitHub**, or put it in the folder.
+
+**Sharing a translation:** start it with **Translate it yourself**, then add the
+file from `pages/8/Languages/` to `languages/` here in a pull request.
+
+**After changing words in the app:** `python docs/build-language-catalog.py`
+rebuilds the list in `grouptodo.html` and `languages/English.md`. A line it
+misses can still be added to a language file by hand.
 
 ## Keys
 

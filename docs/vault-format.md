@@ -50,6 +50,7 @@ An *area* (Work, Home, …) is one folder. Areas never share or nest folders.
 - **Journals** are `journals/<Person Name>/YYYY-MM-DD.md`, with the person's full name as the folder name (max 40 characters, same character rules). A day page is linked as `[[2026-10-05]]`.
 - Files the app writes for itself and never reads as pages: `pages/**/_<x>_for ….md` and `_GroupToDo_for this folder.md`. Do not create these yourself.
 - `pages/8/todo.md`, `pages/8/1.md` and similar are templates the app creates when they are missing. Do not create them yourself.
+- `pages/8/Languages/<Language>.md` are the app's words in other languages, one `English => translation` line each. They are not pages; the app writes `English.md` itself.
 
 ## 2. A page
 
