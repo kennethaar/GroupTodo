@@ -1176,6 +1176,17 @@ body.lselecting,body.lselecting *{user-select:none;-webkit-user-select:none;curs
 .ftxt:focus{background:var(--bg3);box-shadow:inset 0 0 0 1px var(--border2)}
 .ftxt.ro{cursor:default}
 .fkey{color:var(--fg3);font-size:11.5px;letter-spacing:.3px;min-width:74px;flex:none}
+/* Two or three values to a row, however wide the page is; folded, one line. */
+.pfacts.cols .pfgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));column-gap:14px}
+.pfacts.folded{padding-bottom:2px}
+.pfhead{display:flex;align-items:center;gap:6px;width:100%;min-width:0;padding:2px 4px;border-radius:4px;
+  font-size:11.5px;color:var(--fg3);text-align:left;letter-spacing:.3px}
+.pfhead:hover{background:var(--bg3)}
+.pftog{width:10px;flex:none}
+.pfkeys{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.7}
+.helppanel .pfprefs{display:flex;flex-wrap:wrap;gap:4px 12px;margin:0 0 14px;font-size:13px}
+.helppanel .pfprefhead{flex-basis:100%}
+.helppanel .pfprefs label{display:flex;gap:5px;align-items:center}
 .ftxt.new .fkey{min-width:0;opacity:.55}
 .fpill{
   display:inline-flex;align-items:center;gap:4px;max-width:100%;
@@ -1953,6 +1964,7 @@ body.solview #content{padding-bottom:14px}
   <button class="x" id="helpX" aria-label="Close">&times;</button>
   <h2>Help</h2>
   <label class="flytoggle"><input type="checkbox" id="flyToggle"> Always show the menu under the line you are editing (otherwise &#8943; or <kbd>Ctrl+.</kbd> opens it)</label>
+  <div class="pfprefs" id="factFoldPrefs"></div>
   <p><b>GroupToDo</b> stores your tasks, projects, and reference material as plain Markdown files in your own folders. Every change writes directly back to disk. Built on Getting Things Done (GTD) principles, it is designed to get things out of your head and into a trusted system with minimal friction.</p>
 
   <h3>Capture &amp; Navigation</h3>
@@ -25123,13 +25135,45 @@ function newFactLine(path) {
   return line;
 }
 
+/* The values fold away under one line, so the page starts with its lines and
+   not a screen of key:: value. Whether a kind of page starts folded is a
+   setting (in Help); unfolding one page holds until the app is reloaded. */
+const factsFoldKey = kind => "facts.fold." + kind;
+const factsFoldedByDefault = kind => PREF.get(factsFoldKey(kind), "1") !== "0";
+const FACTS_OPEN = new Map();
+const factsFolded = path => !(FACTS_OPEN.get(path) ?? !factsFoldedByDefault(pageKind(path)));
+
 function pageFactsBlock(path, opts = {}) {
   if (opts.trackersOnly) return dayTrackersBlock(path);
   const facts = pageFacts(path);
-  const box = el("div", {class: "pfacts"});
-  for (const f of facts) box.append(factLine(path, f));
-  box.append(newFactLine(path));
+  const folded = factsFolded(path);
+  const toggle = () => { FACTS_OPEN.set(path, folded); render(); };
+  const keys = facts.map(f => f.key).filter(Boolean);
+  const box = el("div", {class: "pfacts cols" + (folded ? " folded" : "")},
+    el("button", {class: "pfhead", "aria-expanded": String(!folded),
+      title: folded ? "Show the page's values" : "Fold the values away", onclick: toggle},
+      el("span", {class: "pftog"}, folded ? "▸" : "▾"),
+      el("span", {}, keys.length + (keys.length === 1 ? " value" : " values")),
+      folded ? el("span", {class: "pfkeys"}, keys.join(" · ")) : null));
+  if (folded) return box;
+  const grid = el("div", {class: "pfgrid"});
+  for (const f of facts) grid.append(factLine(path, f));
+  grid.append(newFactLine(path));
+  box.append(grid);
   return box;
+}
+
+/* Help panel: which kinds of page open with their values folded. */
+function drawFactFoldPrefs() {
+  const box = $("#factFoldPrefs");
+  if (!box) return;
+  box.replaceChildren(el("div", {class: "pfprefhead"}, "Fold the values at the top of:"),
+    ...Object.keys(PAGE_KINDS).map(kind => {
+      const input = el("input", {type: "checkbox",
+        onchange: e => { PREF.set(factsFoldKey(kind), e.target.checked ? "1" : "0"); FACTS_OPEN.clear(); render(); }});
+      input.checked = factsFoldedByDefault(kind);
+      return el("label", {}, input, " " + PAGE_KINDS[kind]);
+    }));
 }
 
 /* A day page shows only its trackers at the top: the rest of its values are
@@ -33798,6 +33842,7 @@ $("#btnHelp").onclick    = () => setHelp(!helpOpen());
 $("#helpX").onclick      = () => setHelp(false);
 $("#flyToggle").checked  = flyOn();
 $("#flyToggle").onchange = e => { PREF.set("fly.show", e.target.checked ? "1" : ""); if (FLY) flyDraw(); };
+drawFactFoldPrefs();
 $("#spacesBtn").onclick  = e => { e.stopPropagation(); $("#spop").hidden ? openSpacesMenu() : closeSpacesMenu(); };
 document.addEventListener("mousedown", e => {
   if (!$("#spop").hidden && !e.target.closest("#spop, #spacesBtn")) closeSpacesMenu();
