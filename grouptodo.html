@@ -1841,8 +1841,12 @@ body.solview #content{padding-bottom:14px}
 .parentline .pl:hover,.parentline .pl:focus-visible{color:var(--accent);text-decoration:underline;outline:none}
 .parentline .sep{opacity:.6}
 .parentline .pl.none{cursor:default;text-decoration:none;color:var(--fg2)}
-/* A day page reads as headings and notes: the first level bold, what is under it not */
-.space-journal .outline>.blk>.line .txt{font-weight:650}
+/* Indentation carries the formatting, so a page reads as headings and notes
+   without any markup: the first level is a heading, the second bold, and
+   everything deeper plain. The heading's dot moves down to sit on its line. */
+.outline>.blk>.line .txt{font-size:17px;font-weight:650;line-height:1.35}
+.outline>.blk>.line>.bullet{top:11px}
+.outline>.blk>.blk>.line .txt{font-weight:650}
 .pagehead+.parentline,.pcrumbs+.parentline{margin-top:4px}
 .pagehead{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:8px}
 .ptitle{margin:0;font-size:26px;flex:1;min-width:200px;outline:none;border-radius:var(--radius-sm);cursor:text}
