@@ -1621,6 +1621,13 @@ body.solview #content{padding-bottom:14px}
 .sdrank .nm{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sdrank details summary{cursor:pointer;font-size:13px;color:var(--fg3)}
 .sdrank details ol{margin-top:6px}
+/* The loose actions pass: the action, then where it could go. */
+.lscard{height:auto;min-height:0}
+.lsopts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.lsopts li{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border);border-radius:10px;background:var(--bg2)}
+.lsopts li.on{border-color:var(--accent)}
+.lsopts li.open{border-style:dashed;color:var(--fg3);background:none}
+.lsopts .nm{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:1000px){ .sdtable{grid-template-columns:1fr} }
 @media (max-width:600px){ .sdpair{grid-template-columns:1fr} .sdvs{display:none} .sdask{font-size:17px} }
 /* Every card is a playing card of the European standard size (59 x 91 mm)
@@ -6398,6 +6405,16 @@ function nearestAreaAncestor(block) {
   return null;
 }
 
+/* Actions on your own day pages that nothing holds: no project line above
+   them, no responsibility, no checklist. Due, overdue or waiting, they are
+   still loose; a colleague's day page is theirs to file. The nudge, the
+   review's checklist and its loose actions pass all count these. */
+function looseActions(acts = leafActions()) {
+  const me = journalOwner();
+  return acts.filter(a => isJournalPath(a.path) && !a.project && !a.area && !a.checklist && !a.tourStep
+    && !(a.owner && a.owner !== me));
+}
+
 /* The checklist a line came from. Running a list into a day drops its steps
    under one parent carrying [[8/<list>]], so the ancestor walk finds it from any
    step. A copy of a list is not loose thinking somebody failed to file: it was
@@ -8792,7 +8809,7 @@ function computeNudges() {
   const stuck = stuckActiveProjects();
   push("stuck", "danger", "projects with no next action", stuck.length, () => goReviewSection("stuck"));
 
-  const loose = acts.filter(a => a.group === "JOURNAL" && !a.area);
+  const loose = looseActions(acts);
   push("loose", "warn", "journal actions not tied to a project or responsibility", loose.length, () => goReviewSection("loose"));
 
   const noVerb = acts.filter(a => a.state === "TODO" && a.missingVerb);
@@ -23972,12 +23989,16 @@ const solIdle = r => inSpace(r.space, () => {
   return d ? dateDiffDays(d, todayISO()) : null;
 });
 /* Active projects are the ones the review is for. Waiting and someday/maybe
-   come along only when you ask for them. */
+   come along only when you ask for them. A project on hold sits out the
+   passes for what is active -- nobody is meant to be doing it yet -- and has
+   a pass of its own after them, which asks only whether it still is. */
 const solAll = () => PREF.get("sol.all", "") === "1";
+const solHeld = r => !!inS(r, () => projectHold(r.path));
 function solOrder(pass = solPassNo()) {
-  const steps = solSteps(pass);
-  return (pass ? ["1"] : solAll() ? ["1", "3", "2"] : ["1"]).flatMap(code => visibleProjects(code))
+  const steps = solSteps(pass), holdPass = SOL_PASSES[pass].k === "hold";
+  return (holdPass ? ["1", "3", "2"] : pass ? ["1"] : solAll() ? ["1", "3", "2"] : ["1"]).flatMap(code => visibleProjects(code))
     .filter(r => !inSpace(r.space, () => isTourProject(r.path)))
+    .filter(r => holdPass === solHeld(r))
     .filter(r => !pass || steps.some(f => !f.filled(r)))
     .sort((a, b) => (solIdle(b) ?? 1e6) - (solIdle(a) ?? 1e6));
 }
@@ -24495,26 +24516,49 @@ function solChoices(r, f, host, list, isOn, chip) {
 /* The deck is gone through three times, each pass asking one kind of
    question, so the mind stays in one mode the whole way through: first sort
    every project by status (quick, and what is done or dropped leaves the deck),
-   then for what is still active say what done looks like and where it fits,
-   and only then the very next action and who is in it. */
+   then ask of each project on hold whether it still is, then for what is
+   still active say what done looks like and where it fits, and only then the
+   very next action and who is in it. A hold taken off comes back in time to
+   be asked those, like any active project. */
 const SOL_PASSES = [
   {name: "Status", say: "Sort every project: still active, waiting, someday, done or dropped.", steps: ["status"]},
+  {k: "hold", name: "On hold", say: "Every project on hold: is it still on hold, or can it be done now?", steps: ["hold"]},
   {name: "Outcome", say: "For what is still active: what done looks like, and where it fits.", steps: ["outcome", "area", "deadline", "after"]},
   {name: "Next action", say: "For what is still active: the very next thing to do, and who is in it.", steps: ["next", "people", "orgs"]},
+  {k: "loose", name: "Loose actions", say: "Actions on your day pages that no project or responsibility holds: which one does each belong to?", steps: []},
   {k: "someday", name: "Someday", say: "Two someday/maybe projects at a time: pick the one you would rather do. The best few rise to the top.", steps: []},
 ];
 const SD_PASS = SOL_PASSES.findIndex(p => p.k === "someday");
 const solPassNo = () => SOL.pass || 0;
 const SOL_ASK = {status: "Still the right status?", next: "What is the very next action?", outcome: "What does done look like?",
   deadline: "When does it have to be done?", area: "Which responsibility is it part of?", orgs: "Which organisations is it for?",
-  people: "Who else is in it?", after: "Does it wait for another project?"};
+  people: "Who else is in it?", after: "Does it wait for another project?", hold: "Still on hold, or can it be done now?"};
 /* Where the answers go, best first, in the order the numpad reads, so a list
    that has an order of its own (this week, next week, this month) keeps it. */
 const SOL_SPOTS = ["7", "8", "9", "4", "6", "1", "2", "3"];
 let SOL_ACTS = new Map();
 function solSteps(pass = solPassNo()) {
-  const by = Object.fromEntries(solFields().map(f => [f.k, f]));
+  const by = Object.fromEntries([...solFields(), solHoldField()].map(f => [f.k, f]));
   return SOL_PASSES[pass].steps.map(k => by[k]);
+}
+/* The on hold pass's one question. Not one of solFields(): those are what a
+   project is missing everywhere it is shown, and a hold is not missing from
+   the projects that have none. Kept as it is, it stays held to the same day;
+   taken off, its actions are back on your lists at once. */
+function solHoldField() {
+  const day = r => dateIn(pageProp(r.space, r.path, "hold"));
+  return {k: "hold", label: "Still on hold?", type: "date",
+    opts: r => [
+      ["keep", "Still on hold" + (day(r) ? ", until " + humanDate(day(r)) : "")],
+      ["off", "Take it off hold: it can be done now"],
+      ...["w1", "m1", "q1", "h1"].map(k => [solEndOf(k), "Hold until the end of " + SOL_ENDS.find(([x]) => x === k)[1].toLowerCase()])],
+    cur: () => null,
+    val: r => solHeld(r) ? "until " + humanDate(day(r)) : "off hold",
+    filled: r => !!solAns(r).hold,
+    pick: (r, v) => {
+      solAns(r).hold = true;
+      if (v !== "keep") inS(r, () => setProjectHold(r.path, v === "off" ? null : v));
+    }};
 }
 /* This card has had its turn in this pass: gather the hand up and deal the
    next. A project that stays waiting or someday is not dealt again, so the
@@ -24526,7 +24570,7 @@ function solPassDone(r) {
      page at once -- kept only in memory, a reload dealt the whole status pass
      again and a project kept as active looked as if it had never been seen.
      Quietly: the stacks on the table already say where it went. */
-  if (!solPassNo()) solMarkReviewed(r, true);
+  if (!solPassNo() || SOL_PASSES[solPassNo()].k === "hold") solMarkReviewed(r, true);
   else if (solFields().every(f => f.filled(r))) solMarkReviewed(r);
   solDealNext();
 }
@@ -24536,6 +24580,7 @@ function solGoPass(n) {
   SOL = {order: null, i: 0, focus: null, more: null, pass: n};
   SOL_KB = null;
   if (n === SD_PASS) { SD.skipped.clear(); SD.keep = null; }
+  if (SOL_PASSES[n].k === "loose") { LOOSE.skipped.clear(); LOOSE.q = ""; }
   if (n && SOL_PASSES[n].steps.length) {
     const asked = new Set(solOrder(n).map(solKey));
     const quiet = visibleProjects("1").filter(r => !asked.has(solKey(r)) && solAns(r).status && solFields().every(f => f.filled(r)));
@@ -24574,6 +24619,8 @@ function viewSolitaire() {
       el("span", {class: "n"}, n < pass ? "✓" : String(n + 1)), el("span", {class: "q"}, p.name)))));
   // The someday pass is a game of its own: two cards, not a card and its answers.
   if (pass === SD_PASS) return viewSomeday(c, passList);
+  // So is the loose actions pass: the card is an action, the answers where it goes.
+  if (P.k === "loose") return viewLoose(c, passList);
   if (SOL.i >= SOL.order.length) {
     const any = [...SOL_ANS.values()].some(a => a["p" + pass]);
     const next = SOL_PASSES[pass + 1];
@@ -24668,6 +24715,7 @@ function viewSolitaire() {
           parentLine(r.space, r.path),
           el("h3", {}, info.title),
           el("div", {class: "t-meta"}, spaceBadge(r.space), el("span", {class: "chip"}, STATUS_LABEL[info.code]),
+            solHeld(r) ? el("span", {class: "chip"}, "on hold → " + humanDate(inS(r, () => projectHold(r.path)))) : null,
             el("span", {class: "chip"}, solIdle(r) == null ? "never reviewed" : "untouched for " + solIdle(r) + " days"),
             el("span", {class: "chip"}, openOf(projectActions(r)).length + " open")),
           el("div", {class: "t-meta"}, ...projectTags(r)),
@@ -25567,6 +25615,119 @@ window.addEventListener("keydown", e => {
     if (!e.repeat) pair.querySelector('.sdside[data-side="' + (e.key === "ArrowLeft" ? 0 : 1) + '"] > .btn')?.click();
   } else if (e.key === "ArrowDown") { take(); if (!e.repeat) document.querySelector(".sdskip")?.click(); }
 }, true);
+
+/* ---------- the loose actions pass ----------
+   An action written on a day page under no project and no responsibility is
+   thinking nobody filed: the same loose actions the review's checklist and the
+   nudge count. Once the projects are gone through, each is dealt in turn with
+   the projects and responsibilities of its own area, the likeliest first --
+   the ones sharing its words, or the people and organisations it names.
+   Picking one refiles it there, leaving the usual "Refiled" line on the day.
+   Left on the day page, it comes round again next week. */
+let LOOSE = {skipped: new Set(), filed: 0, q: ""};
+const LOOSE_TOP = 8;
+const looseKey = a => (a.space || "") + "|" + a.path + "|" + a.title;
+function looseDeck() {
+  return visibleSpaces().flatMap(sp => inSpace(sp, () => looseActions().map(a => ({...a, space: sp}))))
+    .filter(a => !LOOSE.skipped.has(looseKey(a)))
+    .sort((x, y) => (y.age ?? 0) - (x.age ?? 0));
+}
+// Where an action could go, in its own area: projects that can still take one, then responsibilities.
+function looseTargets(a) {
+  return inSpace(a.space, () => {
+    const words = s => new Set(plainTitle(String(s)).toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(w => w.length > 3).map(w => w.slice(0, 5)));
+    const mine = words(a.title);
+    const refs = new Set(linksIn(a.title).map(solRef));
+    const shared = s => [...words(s)].filter(w => mine.has(w)).length;
+    const projects = ["1", "3", "2"].flatMap(code => projectsIn(code).map(path => ({code, path})))
+      .filter(x => !isTourProject(x.path))
+      .map(x => {
+        const r = {space: a.space, path: x.path};
+        const names = [...projectPeople(r).map(n => "p/" + n), ...projectOrgs(r).map(n => "o/" + n)].map(n => n.toLowerCase());
+        return {path: x.path, title: pageTitle(x.path), kind: STATUS_LABEL[x.code], first: x.code === "1" ? 1 : 0,
+          score: shared(pageTitle(x.path)) * 2 + names.filter(n => refs.has(n)).length * 3};
+      });
+    const areas = areaList().map(p => ({path: p, title: pageTitle(p), kind: "Responsibility", first: 0,
+      score: shared(pageTitle(p)) * 2 + (refs.has("a/" + baseName(p).toLowerCase()) ? 3 : 0)}));
+    return [...projects, ...areas].sort((x, y) => y.score - x.score || y.first - x.first
+      || x.title.localeCompare(y.title, undefined, {numeric: true, sensitivity: "base"}));
+  });
+}
+function looseFile(a, to) {
+  inSpace(a.space, () => refileBlock(a.path, a.block, to));
+  LOOSE.filed++; LOOSE.q = "";
+}
+function looseSkip(a) {
+  LOOSE.skipped.add(looseKey(a)); LOOSE.q = "";
+  render();
+}
+function looseLetGo(a) {
+  inSpace(a.space, () => setBlockState(a.path, a.block, "CANCELLED"));
+  LOOSE.q = "";
+  render();
+  notify("Let go. It stays on its day page, crossed out.");
+}
+function viewLoose(c, passList) {
+  c.classList.add("solwrap");
+  const head = c.firstChild;
+  const deck = looseDeck(), a = deck[0];
+  c.append(el("aside", {class: "solside"}, head, passList,
+    el("p", {class: "solhow"}, SOL_PASSES[SOL_PASSES.findIndex(p => p.k === "loose")].say),
+    el("div", {class: "solcount"}, deck.length + " still loose" + (LOOSE.filed ? " · " + LOOSE.filed + " filed now" : "")),
+    el("p", {class: "solhow"}, "Type to search. ↑ ↓ go through the list, Enter files the action there.")));
+  const next = SOL_PASSES[SD_PASS];
+  if (!a) {
+    c.append(emptyCard(el("div", {style: "font-size:34px"}, "🂡"),
+      el("b", {}, LOOSE.skipped.size ? "The rest are left on their day pages." : "Every action has a home."), el("br"),
+      LOOSE.skipped.size ? "They come round again next review." : "No action on a day page is outside a project or a responsibility.", el("br"), el("br"),
+      el("button", {class: "btn primary", onclick: () => solGoPass(SD_PASS)}, "Deal pass " + (SD_PASS + 1) + ": " + next.name + " ›"),
+      LOOSE.skipped.size ? " " : null,
+      LOOSE.skipped.size ? el("button", {class: "textbtn", onclick: () => { LOOSE.skipped.clear(); render(); }}, "Ask the skipped ones again") : null));
+    return c;
+  }
+  const all = looseTargets(a);
+  const list = el("ol", {class: "lsopts"});
+  let sel = 0, shown = [];
+  const paint = () => [...list.children].forEach((li, i) => li.classList.toggle("on", i === sel));
+  const fill = () => {
+    const q = trim(LOOSE.q).toLowerCase();
+    shown = q ? all.filter(t => t.title.toLowerCase().includes(q)) : all.slice(0, LOOSE_TOP);
+    sel = Math.min(sel, Math.max(0, shown.length - 1));
+    list.replaceChildren(...(shown.length ? shown.map((t, i) => el("li", {},
+      el("button", {class: "nm", translate: "no", onclick: () => looseFile(a, t.path), onmouseenter: () => { sel = i; paint(); }}, t.title),
+      el("span", {class: "chip"}, t.kind))) : [el("li", {class: "open"}, "Nothing matches.")]));
+    paint();
+  };
+  const search = el("input", {type: "search", value: LOOSE.q, "aria-label": "Search projects and responsibilities",
+    placeholder: "Search " + all.length + " projects and responsibilities",
+    oninput: () => { LOOSE.q = search.value; sel = 0; fill(); },
+    onkeydown: e => {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        if (shown.length) { sel = (sel + (e.key === "ArrowDown" ? 1 : -1) + shown.length) % shown.length; paint(); }
+      } else if (e.key === "Enter") { e.preventDefault(); if (shown[sel]) looseFile(a, shown[sel].path); }
+    }});
+  fill();
+  const day = dateIn(a.added);
+  const here = (a.space || "") === (V.space || "");
+  c.append(el("div", {class: "sdduel"},
+    el("div", {class: "sdhead"}, el("span", {}, "Action 1 of " + deck.length), el("span", {}, LOOSE.filed ? LOOSE.filed + " filed now" : "")),
+    el("h2", {class: "sdask"}, "Which project or responsibility does this belong to?"),
+    el("div", {class: "solcard lscard"},
+      el("h3", {translate: "no"}, plainTitle(a.title)),
+      el("div", {class: "t-meta"}, spaceBadge(a.space),
+        el("span", {class: "chip"}, day ? "from the day page of " + humanDate(day) : "on a day page"),
+        a.age != null ? el("span", {class: "chip"}, a.age + " days old") : null,
+        a.state !== "TODO" ? el("span", {class: "chip"}, a.state) : null),
+      el("div", {class: "t-meta"}, el("button", {class: "textbtn", onclick: () => previewPage(a.space, a.path)}, "Open the day page"))),
+    search, list,
+    el("div", {class: "t-meta"},
+      here ? el("button", {class: "btn", onclick: () => newProjectPrompt(p => looseFile(a, p))}, "＋ New project for it") : null,
+      el("button", {class: "btn ghost", onclick: () => looseLetGo(a)}, "Let it go"),
+      el("button", {class: "textbtn", onclick: () => looseSkip(a)}, "Leave it on the day page ›"))));
+  requestAnimationFrame(() => { if (search.isConnected) search.focus({preventScroll: true}); });
+  return c;
+}
 
 function viewHealth() {
   const issues = healthScan();
@@ -30293,7 +30454,7 @@ function reviewSections() {
      items: projectsWithoutOutcome().map(p => ({text: pageTitle(p), sub: "no outcome:: yet", path: p,
        fix: "state outcome", act: () => { closeModal(); openOutcomePrompt(p); }}))},
     {id: "loose", title: "Journal actions without a project or responsibility", hint: "refile or let them go",
-     items: acts.filter(a => a.group === "JOURNAL" && !a.area).map(a => ({text: a.title, sub: a.path, path: a.path, block: a.block,
+     items: looseActions(acts).map(a => ({text: a.title, sub: a.path, path: a.path, block: a.block,
        fix: "refile", act: () => { closeModal(); openRefile(a.path, a.block); }}))},
     {id: "verb", title: "Actions without a physical verb", hint: "what would a camera see?",
      items: acts.filter(a => a.state === "TODO" && a.missingVerb).map(a => ({text: a.title, sub: a.path, path: a.path, block: a.block,
