@@ -5594,6 +5594,10 @@ const contextOf = text => {
   return m ? trim(m[1]) : null;
 };
 const hasContextLink = text => /\[\[c\/[^\]]+\]\]/.test(text || "");
+/* A context is also the folder of the ones under it: standing at @PC you can
+   do what is @PC/email too, the same way c/PC.md holds c/PC/email.md. */
+const inContext = (a, ctx) => !!a.context && !!ctx &&
+  (a.context === ctx || a.context.startsWith(ctx + "/"));
 
 /* A line's context, or the nearest one above it. Writing
      - [[c/phone]]
@@ -6728,7 +6732,7 @@ function urgencyParts(a) {
   const pri = priorityOf(b);
   if (pri) add("priority " + pri, URGENCY["priority" + pri]);
   if (b.state === "DOING") add("already started", URGENCY.doing);
-  if (a.context && a.context === state.ctxFilter) add("you are @" + a.context, URGENCY.here);
+  if (inContext(a, state.ctxFilter)) add("you are @" + a.context, URGENCY.here);
   const age = blockAge(b);
   if (age > 0) add(age + " days on the list", URGENCY.age * Math.min(age / 365, 1));
   if (a.project) add("in " + a.project, URGENCY.project);
@@ -22342,7 +22346,7 @@ function viewNext() {
   }
 
   const ctx = state.ctxFilter || null;
-  if (ctx) acts = acts.filter(a => a.context === ctx);
+  if (ctx) acts = acts.filter(a => inContext(a, ctx));
   const byDate = (x, y) => (x.due || "9999").localeCompare(y.due || "9999") || (x.added || "9999").localeCompare(y.added || "9999");
   acts.forEach(a => { a._showUrgency = sort === "urgency"; });
   acts.sort(sort === "urgency" ? byUrgency
@@ -26540,7 +26544,8 @@ function viewPage() {
     if (clocked) c.append(clocked);
   }
   if (kind === "context") {
-    const here = nextActions().filter(a => a.context === baseName(path));
+    const ctx = path.slice(DIRS.contexts.length + 1).replace(/\.md$/i, "");
+    const here = nextActions().filter(a => inContext(a, ctx));
     c.append(section("Things you can do here", here.length, taskCard(here, "Nothing open here.")));
   }
   if (kind === "org" || kind === "area") {
