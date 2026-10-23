@@ -21897,6 +21897,8 @@ function projectRow(r) {
       parentLine(r.space, r.path),
       el("div", {class: "t-title"}, el("b", {}, info.title)),
       el("div", {class: "t-meta"},
+        // In All, which folder it sits in is no longer said by the chip on top.
+        r._all ? el("span", {class: "chip"}, STATUS_LABEL[effStatus(r)]) : null,
         ...projectOrgs(r).map(o => el("span", {class: "chip"}, o)),
         info.area ? el("span", {class: "chip proj"}, info.area) : null,
         ...projectCountChips(open.length, tally),
@@ -22165,24 +22167,29 @@ function viewProjects() {
   if (sub === "board") { c.append(viewProjectBoard()); return c; }
 
   const area = areaFilter(every, "projects.area");
-  const code = STATUS_DIRS[state.statusCode] ? state.statusCode : "1";
+  /* All is every status in one list, so the numbers in "243 - Title" can be
+     read off top to bottom, whichever folder each project sits in. */
+  const code = state.statusCode === "all" ? "all" : STATUS_DIRS[state.statusCode] ? state.statusCode : "1";
+  const inCode = r => code === "all" || effStatus(r) === code;
   const rows = every.filter(inOrg).filter(area.keep);
-  const psort = PREF.get("projects.sort", "urgency") === "az" ? "az" : "urgency";
+  const psort = ["az", "za"].includes(PREF.get("projects.sort", "urgency")) ? PREF.get("projects.sort") : "urgency";
   const heldOf = r => inSpace(r.space, () => projectHold(r.path));
-  const held = rows.filter(r => effStatus(r) === code && heldOf(r)).sort((x, y) => heldOf(x).localeCompare(heldOf(y)));
-  const shown = rows.filter(r => effStatus(r) === code && !heldOf(r));
-  shown.forEach(r => { r._urg = psort === "urgency" ? projectUrgency(r.path, r.space) : null; });
-  shown.sort(psort === "urgency"
-    ? (x, y) => y._urg - x._urg || rowTitle(x).localeCompare(rowTitle(y))
-    : (x, y) => rowTitle(x).localeCompare(rowTitle(y)));
-  const psortSel = fselect("Sort", psort, [["urgency", "By urgency"], ["az", "A-Z"]],
+  const held = rows.filter(r => inCode(r) && heldOf(r)).sort((x, y) => heldOf(x).localeCompare(heldOf(y)));
+  const shown = rows.filter(r => inCode(r) && !heldOf(r));
+  shown.forEach(r => { r._urg = psort === "urgency" ? projectUrgency(r.path, r.space) : null; r._all = code === "all"; });
+  // Numbers as numbers: 99 before 243 before 1000, not 1000 first because 1 < 2.
+  const byName = (x, y) => rowTitle(x).localeCompare(rowTitle(y), undefined, {numeric: true, sensitivity: "base"});
+  shown.sort(psort === "urgency" ? (x, y) => y._urg - x._urg || byName(x, y)
+    : psort === "za" ? (x, y) => byName(y, x) : byName);
+  const psortSel = fselect("Sort", psort, [["urgency", "By urgency"], ["az", "A-Z, 1-9"], ["za", "Z-A, 9-1"]],
     v => { PREF.set("projects.sort", v); render(); });
   psortSel.title = "A project is as urgent as its most urgent open action, or its own deadline and its place in a chain.";
   const f = textFilter("projects", "Filter projects", shown,
     r => [rowTitle(r), areaOfRow(r), ...projectOrgs(r), ...projectPeople(r)].join(" "),
-    (hits, q) => pagedCard(hits, projectRow, noMatch(q, "No " + STATUS_LABEL[code].toLowerCase() + " projects.")));
+    (hits, q) => pagedCard(hits, projectRow, noMatch(q, code === "all" ? "No projects." : "No " + STATUS_LABEL[code].toLowerCase() + " projects.")));
   c.append(fbar(f.input, ...STATUS_CHIPS.map(k => fchip(STATUS_LABEL[k], code === k,
       () => go("projects", {statusCode: k}), rows.filter(r => effStatus(r) === k).length)),
+    fchip("All", code === "all", () => go("projects", {statusCode: "all"}), rows.length),
     area.sel, orgSel, psortSel), f.host);
   if (held.length) c.append(el("details", {class: "section fold"},
     el("summary", {}, "On hold", el("span", {class: "n"}, String(held.length))),
