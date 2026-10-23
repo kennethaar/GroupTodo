@@ -763,6 +763,25 @@ body.marquee .bcard{cursor:default}
 .reportsum{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--fg2);
   background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:11px 14px}
 .reportsum b{color:var(--fg);font-size:17px}
+/* ---------- hours: a week as a table, a project as bars ---------- */
+.htable-wrap{overflow-x:auto}
+.htable{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.htable th,.htable td{padding:7px 8px;text-align:right;border-top:1px solid var(--border);white-space:nowrap}
+.htable thead th{border-top:0;font-weight:500;color:var(--fg3);font-size:11px}
+.htable th small{display:block;font-size:10.5px;color:var(--fg3)}
+.htable th:first-child,.htable td:first-child{text-align:left;white-space:normal;min-width:110px;color:var(--fg)}
+.htable td{color:var(--fg2)}
+.htable .now{background:var(--bg3)}
+.htable tr.tot td{color:var(--fg)}
+.hlist>summary{cursor:pointer;padding:8px 12px;font-size:12px;color:var(--fg3);border-top:1px solid var(--border)}
+.hlist>.card{border:0;border-radius:0}
+.hbars{display:flex;align-items:flex-end;gap:2px;height:110px;padding:8px 14px 10px}
+.hbar{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:stretch;min-width:0}
+.hbar i{display:block;background:var(--proj);border-radius:4px 4px 0 0;min-height:1px}
+.hbar:hover i{opacity:.8}
+.hbar .v{font-size:10.5px;color:var(--fg2);text-align:center;min-height:14px;font-variant-numeric:tabular-nums}
+.hbar .w{font-size:10.5px;color:var(--fg3);text-align:center;border-top:1px solid var(--border);padding-top:3px}
+button.chip{cursor:pointer;font-family:inherit}
 .reprow{display:flex;gap:10px;align-items:baseline;width:100%;text-align:left;background:none;
   border:0;border-top:1px solid var(--border);padding:8px 12px;cursor:pointer;color:inherit}
 .reprow:first-child{border-top:0}
@@ -1903,6 +1922,7 @@ body.solview #content{padding-bottom:14px}
     <li><b>Last time:</b> On a day page, a tracker or a <code>key:: value</code> of your own shows faintly what you wrote the last time you filled it in.</li>
     <li><b>Namespaces:</b> A page in a family, <code>[[Work/Clients/Acme]]</code> or <i>Work - Clients - Acme</i>, lists the rest of the family at the bottom.</li>
     <li><b>Duplicate lines:</b> &#8943; beside a page title &rarr; <i>Remove duplicate lines</i>. A line written twice under the same parent goes, and what was under it moves to the first copy. The <i>Weekly review</i> says when any page has some, and lists them. Undo puts them back.</li>
+    <li><b>Time on site:</b> Type <code>/in</code> on any line when somebody arrives: who, which project and the time now are filled in (the last person and project you used), to change before it is saved as a <code>#timelog</code> line on that day's page. <code>/out</code> when they leave. Gone for a while and back is a second /in. Click the clock under the line to correct it. <i>Projects &gt; Hours</i> (<kbd>v h</kbd>) shows each week by day, to copy as text; a project's page shows its hours per week.</li>
     <li><b>Meetings:</b> The next <code>#meeting</code> with a time today is shown at the top, counting down, and you are reminded before it starts (Calendars sets how long before, or turns it off).</li>
   </ul>
 
@@ -1984,6 +2004,7 @@ body.solview #content{padding-bottom:14px}
     <tr><td>g c &middot; g r</td><td>Go to Chat or Weekly Review</td></tr>
     <tr><td>g h</td><td>Recently done: what you finished, to add a comment to</td></tr>
     <tr><td>v b &middot; v t &middot; v r</td><td>View Next Actions as Board, Timeline, or Report</td></tr>
+    <tr><td>v h</td><td>Hours on site, week by week</td></tr>
     <tr><td>v g &middot; v m</td><td>View Mind Map or Graph</td></tr>
     <tr><td>Ctrl+Z</td><td>Undo last delete or move</td></tr>
     <tr><td>Esc</td><td>Close active panel, menu, or Help</td></tr>
@@ -8585,7 +8606,7 @@ const noteTodoTouched = () => { state.lastTodoTouch = Date.now(); };
 const SUBS = {
   next:     [["list", "List"], ["board", "Board"], ["calendar", "Calendar"]],
   waiting:  [["list", "List"], ["board", "Board"]],
-  projects: [["list", "List"], ["board", "Board"], ["timeline", "Timeline"], ["report", "Report"]],
+  projects: [["list", "List"], ["board", "Board"], ["timeline", "Timeline"], ["report", "Report"], ["hours", "Hours"]],
   people:   [["list", "List"], ["cards", "Cards"], ["board", "Board"]],
   orgs:     [["list", "List"], ["board", "Board"]],
   pages:    [["list", "List"], ["board", "Board"], ["mindmap", "Mind map"], ["graph", "Graph"], ["tree", "Hierarchy"]],
@@ -17451,6 +17472,8 @@ const SLASH_COMMANDS = [
   {id: "proj",      title: "Project",         detail: "what it belongs to",    kw: ["project", "prosjekt"]},
   {id: "rep",       title: "Repeat",          detail: "comes back when done",  kw: ["repeat", "recurring", "gjenta"]},
   {id: "meet",      title: "Meeting",         detail: "attendees and agenda",  kw: ["meeting", "møte"]},
+  {id: "in",        title: "Check in",        detail: "somebody arrived: who, project, time", kw: ["in", "arrive", "checkin", "inn", "kom", "ankom"]},
+  {id: "out",       title: "Check out",       detail: "somebody left: the time out",          kw: ["out", "leave", "checkout", "ut", "gikk", "dro"]},
   {id: "query",     title: "Live list",       detail: "lines that match, kept up to date", kw: ["query", "list", "filter", "spørring", "liste", "filter"]},
   {id: "embed",     title: "Show a page here", detail: "another page, live",   kw: ["embed", "include", "show", "vis", "bygg"]},
   {id: "more",      title: "Everything else", detail: "the task panel",        kw: ["more", "details", "panel", "mer"]},
@@ -17927,8 +17950,11 @@ function lineMeta(b, path = null) {
     if (when) out.push(el("span", {class: "chip"}, "🕒 " + when));
     if (blockProp(b, "attendees")) out.push(el("span", {class: "chip who"}, "👥 " + linkWords(blockProp(b, "attendees"))));
   }
+  // A visit says its clock and its hours as one chip, which opens it again.
+  const visit = isTimeLog(b);
+  if (visit) out.push(timeLogChip(b, path));
   const rest = Object.entries(b.props || {}).filter(([k, v]) => !BOOKKEEPING.test(k) && trim(v) && !isMessage(b)
-    && !(meet && /^(date|time|attendees)$/i.test(k)));
+    && !(meet && /^(date|time|attendees)$/i.test(k)) && !(visit && /^(in|out|hours)$/i.test(k)));
   // On a day page each value says, faintly, what you wrote the last time.
   const day = path && dayOfPath(path);
   if (rest.length) out.push(el("span", {class: "pkv"}, ...rest.flatMap(([k, v], i) => [
@@ -18148,6 +18174,19 @@ function outlineBlock(path, page, b, opts = {}) {
       txt.blur();
       if (id === "query") openQueryBuilder({onSave: q => putMacroLine(path, b, "{{query " + q + "}}")});
       else openEmbedPicker(path, b);
+      return;
+    }
+    /* Somebody came or went: asked in a dialog, written as a #timelog line.
+       Opened once the Enter that picked the command is over, or the dialog
+       takes that same Enter as Save before anything could be changed. */
+    if (id === "in" || id === "out") {
+      commitLine(txt, path, b);
+      txt.blur();
+      setTimeout(() => {
+        if (id === "out") timeLogLeave({path, block: b});
+        else if (isTimeLog(b)) openTimeForm(path, b);
+        else openTimeForm(null, null, {from: {path, block: b}});
+      }, 0);
       return;
     }
     if (!FLY || FLY.txt !== txt) flyShow(txt, path, page, b);
@@ -19129,6 +19168,363 @@ function openMeetingForm(path, block) {
   setTimeout(() => title.focus(), 30);
 }
 
+/* ---------- time on site ----------
+   A visit is a line on the day page it happened on, tagged #timelog: who came,
+   for which project, and the clock when they came and went.
+
+     - #timelog [[p/Ola Nordmann]] [[1/Bathroom renovation]] tiles
+       in:: 07:30
+       out:: 15:45
+
+   The clock is what is written, never the sum, so a day can be gone through
+   with the times in hand. A line with in:: and no out:: is somebody still
+   there. Away for a few hours and back again is two lines. hours:: 3.5 stands
+   in for a visit whose clock nobody noted. /in writes one, /out closes one. */
+const TIMELOG_RE = /(^|\s)#timelog(?![\p{L}\p{N}_-])/iu;
+const isTimeLog = b => TIMELOG_RE.test(String(b?.title || ""));
+function clockMin(s) {
+  const m = /^(\d{1,2})[:.](\d{2})$/.exec(trim(String(s || "")));
+  if (!m || +m[1] > 23 || +m[2] > 59) return null;
+  return +m[1] * 60 + +m[2];
+}
+const nowClock = () => { const d = new Date(); return pad2(d.getHours()) + ":" + pad2(d.getMinutes()); };
+const timeLogWho  = b => trim((/\[\[p\/([^\]]+)/i.exec(b.title || "") || [])[1] || "");
+const timeLogProj = b => trim((/\[\[[-0123]\/([^\]]+)/.exec(b.title || "") || [])[1] || "");
+/* What is left of the line once the tag, the person and the project are out. */
+const timeLogNote = b => trim(String(b.title || "").replace(TIMELOG_RE, " ")
+  .replace(/\[\[(?:p|[-0123])\/[^\]]*(?:\]\[[^\]]*)?\]\]/gi, " ").replace(/\s{2,}/g, " "));
+const timeLogOpen = b => clockMin(blockProp(b, "in")) != null && clockMin(blockProp(b, "out")) == null
+  && !trim(blockProp(b, "hours") || "");
+/* Minutes on site. Out before in is a night shift, over midnight. A visit still
+   open today counts up to now; one left open on an earlier day counts nothing,
+   since nobody wrote down when they left. */
+function timeLogMinutes(b, date) {
+  const a = clockMin(blockProp(b, "in")), z = clockMin(blockProp(b, "out"));
+  if (a != null && z != null) return (z - a + 1440) % 1440;
+  const h = parseFloat(String(blockProp(b, "hours") || "").replace(",", "."));
+  if (isFinite(h) && h > 0) return Math.round(h * 60);
+  if (a != null && date === todayISO()) return Math.max(0, clockMin(nowClock()) - a);
+  return null;
+}
+function fmtMinutes(m) {
+  if (m == null) return "";
+  const h = Math.floor(m / 60), r = m % 60;
+  return h && r ? h + " h " + r + " m" : h ? h + " h" : r + " m";
+}
+const fmtHM = m => m ? Math.floor(m / 60) + ":" + pad2(m % 60) : "";
+
+/* Every visit on every day page in the areas on screen, oldest first. */
+function timeLogEntries() {
+  return memo("timeLog", () => acrossSpaces(() => {
+    const out = [];
+    for (const path of allPages(p => isJournalPath(p))) {
+      const date = dayOfPath(path), page = date && getPage(path);
+      if (!page) continue;
+      walkBlocks(page.blocks, b => {
+        if (isTimeLog(b)) out.push({date, path, block: b, space: V.space,
+          who: timeLogWho(b), project: timeLogProj(b), at: clockMin(blockProp(b, "in"))});
+      });
+    }
+    return out;
+  }).sort((a, b) => a.date.localeCompare(b.date) || (a.at ?? 0) - (b.at ?? 0)));
+}
+const timeLogMin = e => timeLogMinutes(e.block, e.date) || 0;
+/* The newest visit here, whose person and project a new one starts from. */
+function lastTimeLog() {
+  const all = timeLogEntries();
+  return all.filter(e => e.space === V.space).pop() || all[all.length - 1] || null;
+}
+function timeLogPersonRef(name) {
+  const p = personPath(name);
+  return V.pages.has(p) ? pageRef(p) : "p/" + name.replace(/[\/]/g, "-");
+}
+function timeLogProjectRef(name) {
+  const low = name.toLowerCase();
+  const p = allPages(q => statusDirOf(q) && !isHorizonPage(q))
+    .find(q => pageTitle(q).toLowerCase() === low || baseName(q).toLowerCase() === low);
+  return p ? pageRef(p) : "1/" + name.replace(/[\/]/g, "-");
+}
+
+/* The form /in and /out open. Who and which project start as the last visit's,
+   the clock as now, and nothing is written until Save -- so a time that is a
+   little off is corrected before it is a fact. `entry` is a #timelog line to
+   change; `from` is the line the command was typed on, used for the visit when
+   it is an empty line on the same day, and cleared away otherwise. */
+function openTimeForm(path, entry, {leaving = false, from = null, project = ""} = {}) {
+  const space = V.space;
+  const last = entry ? null : lastTimeLog();
+  const people = acrossNames(() => [...allPeople().map(personName), ...members().map(m => m.name)]);
+  const projects = acrossNames(() => ["1", "3", "2"].flatMap(c => projectsIn(c)).map(pageTitle));
+  const lists = el("span", {},
+    el("datalist", {id: "tlpeople"}, ...people.map(n => el("option", {value: n}))),
+    el("datalist", {id: "tlprojects"}, ...projects.map(n => el("option", {value: n}))));
+  const who = el("input", {value: entry ? timeLogWho(entry) : last?.who || "", list: "tlpeople", placeholder: "Who came"});
+  const proj = el("input", {value: entry ? timeLogProj(entry) : project || last?.project || "", list: "tlprojects",
+    placeholder: "Which project"});
+  const fromDay = from && from.path && dayOfPath(from.path);
+  const day = el("input", {type: "date", value: (entry && dayOfPath(path)) || fromDay || todayISO()});
+  const tin = el("input", {type: "time", value: entry ? trim(blockProp(entry, "in") || "") : nowClock()});
+  const tout = el("input", {type: "time", value: leaving ? nowClock() : entry ? trim(blockProp(entry, "out") || "") : ""});
+  const hrs = el("input", {inputmode: "decimal", value: entry ? trim(blockProp(entry, "hours") || "") : "",
+    placeholder: "e.g. 3.5", style: "width:90px"});
+  const note = el("input", {value: entry ? timeLogNote(entry) : "", placeholder: "What they did (optional)"});
+  const sum = el("div", {class: "hint", style: "text-align:left;margin:0;padding:0 16px"});
+  const draft = () => {
+    const b = {props: {in: tin.value, out: tout.value, hours: tin.value ? "" : hrs.value}};
+    const m = timeLogMinutes(b, day.value);
+    sum.textContent = !tin.value && !trim(hrs.value) ? "Give the time they came, or the hours."
+      : tin.value && !tout.value ? (m ? fmtMinutes(m) + " so far. " : "") + "Out stays empty while they are there."
+      : m != null ? fmtMinutes(m) + " on site." : "";
+  };
+  [tin, tout, hrs, day].forEach(i => i.addEventListener("input", draft));
+  draft();
+  /* A name half typed is finished from the list rather than saved as a new
+     person: Enter on "Ol" is "Ola Nordmann", and only the next Enter saves. */
+  const finish = (input, names) => {
+    const v = trim(input.value).toLowerCase();
+    if (!v || names.some(n => n.toLowerCase() === v)) return false;
+    const hit = names.find(n => n.toLowerCase().startsWith(v));
+    if (!hit) return false;
+    input.value = hit;
+    return true;
+  };
+  const save = () => {
+    const name = trim(who.value), pname = trim(proj.value);
+    if (!name) { who.focus(); return; }
+    if (!tin.value && !trim(hrs.value)) { tin.focus(); return; }
+    const date = day.value || todayISO();
+    let target = null;
+    inSpace(space, () => {
+      target = ensureJournal(date);
+      const tpage = getPage(target);
+      const fb = from && from.block;
+      const spare = !!fb && fb !== entry && !trim(fb.title) && !(fb.children || []).length;
+      let b = entry;
+      if (b) {
+        if (path !== target) { removeBlockFrom(getPage(path), b); touch(path); tpage.blocks.push(b); }
+      } else if (spare && from.path === target) {
+        b = fb;
+      } else {
+        b = newBlock({}, false);
+        if (fb && from.path === target) { const sibs = siblingsOf(tpage, fb); sibs.splice(sibs.indexOf(fb) + 1, 0, b); }
+        else tpage.blocks.push(b);
+      }
+      if (spare && b !== fb && getPage(from.path)) { removeBlockFrom(getPage(from.path), fb); touch(from.path); }
+      b.state = null;
+      b.title = ["#timelog", "[[" + timeLogPersonRef(name) + "]]", pname ? "[[" + timeLogProjectRef(pname) + "]]" : "",
+        linkKnownNames(trim(note.value))].filter(Boolean).join(" ");
+      setOrDropProp(b, "in", tin.value);
+      setOrDropProp(b, "out", tin.value ? tout.value : "");
+      setOrDropProp(b, "hours", tin.value ? "" : trim(hrs.value));
+      createLinkedPages(b.title);
+      touch(target);
+      const m = timeLogMinutes(b, date);
+      const first = name.split(/\s+/)[0];
+      const msg = tin.value && !tout.value ? first + " in at " + tin.value + (pname ? " on " + pname : "") + "."
+        : first + (tout.value ? " out at " + tout.value : "") + " · " + fmtMinutes(m) + (pname ? " on " + pname : "") + ".";
+      const showing = state.view === "page" && state.pagePath === target;
+      notify(msg, "info", showing ? null : {label: "Show the day", run: () => openPageIn(space, target)});
+    });
+    closeModal();
+    render();
+  };
+  const field = (label, ...kids) => el("div", {class: "field"}, el("label", {}, label), ...kids);
+  modal({
+    center: true, title: leaving ? "Leaving" : entry ? "Time on site" : "Arriving", hint: "a #timelog line",
+    body: el("div", {}, lists,
+      field("Who", who),
+      field("Project", proj),
+      el("div", {style: "display:flex;gap:10px;flex-wrap:wrap"},
+        field("Day", day), field("In", tin), field("Out", tout), field("Or hours", hrs)),
+      sum,
+      field("Note", note)),
+    foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+           el("button", {class: "btn primary", onclick: save}, leaving ? "Check out" : entry ? "Save" : "Check in")],
+    onKey: e => {
+      if (e.key !== "Enter") return false;
+      if (e.target === who && finish(who, people)) return true;
+      if (e.target === proj && finish(proj, projects)) return true;
+      save();
+      return true;
+    },
+  });
+  setTimeout(() => (leaving ? tout : who.value ? tin : who).focus(), 30);
+}
+
+/* /out: the line it was typed on when that is a visit, else the visit still
+   open -- asked which when more than one is. */
+function timeLogLeave(from) {
+  if (from && isTimeLog(from.block)) { openTimeForm(from.path, from.block, {leaving: true}); return; }
+  const open = timeLogEntries().filter(e => e.space === V.space && timeLogOpen(e.block)).reverse();
+  if (!open.length) { notify("Nobody is checked in. /in writes it when somebody comes.", "warn"); return; }
+  const pick = e => openTimeForm(e.path, e.block, {leaving: true, from});
+  if (open.length === 1) { pick(open[0]); return; }
+  listPicker({title: "Who is leaving?", items: open,
+    label: e => e.who || "Somebody",
+    detail: e => [e.project, "in " + blockProp(e.block, "in"), e.date === todayISO() ? "" : humanDate(e.date)]
+      .filter(Boolean).join(" · "),
+    onPick: pick});
+}
+
+/* The chip under a visit: its clock and its sum, and the way back into the form. */
+function timeLogChip(b, path) {
+  const date = path && dayOfPath(path);
+  const a = trim(blockProp(b, "in") || ""), z = trim(blockProp(b, "out") || "");
+  const m = timeLogMinutes(b, date), open = timeLogOpen(b);
+  const stale = open && date && date < todayISO();
+  const label = "\u{1F552} " + (stale ? "in " + a + " · no time out"
+    : open ? "in since " + a + (m ? " · " + fmtMinutes(m) : "")
+    : (a ? a + "–" + z + " · " : "") + fmtMinutes(m));
+  return el("button", {class: "chip" + (stale ? " late" : open ? " today" : ""),
+    title: open ? "Still there. Click to check out" : "Click to change",
+    onmousedown: e => e.preventDefault(),
+    onclick: e => { e.stopPropagation(); if (path) openTimeForm(path, b, {leaving: open}); }}, label);
+}
+
+/* ---------- hours, week by week ----------
+   The weeks run Monday to Sunday, numbered the way the calendar on the wall
+   numbers them, each a table of who (or which project) and the days. It is
+   there so you and whoever was on site can go down the same week line by line,
+   so it copies as text too. */
+const HOURS_RANGES = [["week", "This week", 0], ["4", "Last 4 weeks", 3], ["13", "Last 13 weeks", 12], ["52", "Last 52 weeks", 51]];
+const HOURS_GROUPS = [["person", "By person"], ["project", "By project"]];
+const hoursKey = (e, by) => by === "project" ? e.project || "No project" : e.who || "Nobody named";
+function weekLabel(monday) {
+  const [w] = isoWeek(monday) || [""];
+  const fmt = iso => parseISO(iso).toLocaleDateString(undefined, {day: "numeric", month: "short"});
+  return "Week " + w + " · " + fmt(monday) + " – " + fmt(shiftISO(monday, 6));
+}
+function hoursWindow() {
+  const weeks = (HOURS_RANGES.find(r => r[0] === state.hoursRange) || HOURS_RANGES[0])[2];
+  const monday = weekStartISO(todayISO());
+  return {from: shiftISO(monday, -7 * weeks), to: shiftISO(monday, 6)};
+}
+function hoursWeeks(rows) {
+  const g = new Map();
+  for (const e of rows) {
+    const k = weekStartISO(e.date);
+    if (!g.has(k)) g.set(k, []);
+    g.get(k).push(e);
+  }
+  return [...g.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+}
+function hoursTable(monday, items, by) {
+  const days = Array.from({length: 7}, (_, i) => shiftISO(monday, i));
+  const keys = new Map();
+  for (const e of items) {
+    const k = hoursKey(e, by);
+    if (!keys.has(k)) keys.set(k, new Map());
+    const m = keys.get(k);
+    m.set(e.date, (m.get(e.date) || 0) + timeLogMin(e));
+  }
+  const sumOf = m => [...m.values()].reduce((s, x) => s + x, 0);
+  const rows = [...keys.entries()].sort((a, b) => sumOf(b[1]) - sumOf(a[1]) || a[0].localeCompare(b[0]));
+  const today = todayISO();
+  const head = el("tr", {}, el("th", {}, by === "project" ? "Project" : "Who"),
+    ...days.map(d => el("th", {class: d === today ? "now" : ""},
+      parseISO(d).toLocaleDateString(undefined, {weekday: "short"}), el("small", {}, String(parseISO(d).getDate())))),
+    el("th", {}, "Total"));
+  const body = rows.map(([k, m]) => el("tr", {}, el("td", {}, k),
+    ...days.map(d => el("td", {class: d === today ? "now" : ""}, fmtHM(m.get(d) || 0))),
+    el("td", {}, el("b", {}, fmtHM(sumOf(m))))));
+  const foot = rows.length > 1 ? [el("tr", {class: "tot"}, el("td", {}, "All"),
+    ...days.map(d => el("td", {class: d === today ? "now" : ""}, fmtHM(rows.reduce((s, [, m]) => s + (m.get(d) || 0), 0)))),
+    el("td", {}, el("b", {}, fmtHM(items.reduce((s, e) => s + timeLogMin(e), 0)))))] : [];
+  return el("div", {class: "htable-wrap"}, el("table", {class: "htable"}, el("thead", {}, head), el("tbody", {}, ...body, ...foot)));
+}
+function timeLogRow(e) {
+  const a = trim(blockProp(e.block, "in") || ""), z = trim(blockProp(e.block, "out") || "");
+  const stale = timeLogOpen(e.block) && e.date < todayISO();
+  return el("button", {class: "reprow",
+    onclick: () => inSpace(e.space, () => openTimeForm(e.path, e.block, {leaving: timeLogOpen(e.block)}))},
+    el("span", {class: "when"}, humanDate(e.date)),
+    el("span", {class: "what", html: renderInline([e.who, timeLogNote(e.block)].filter(Boolean).join(" · "))}),
+    el("span", {class: "marks"},
+      e.project ? el("span", {class: "chip proj"}, e.project) : null,
+      stale ? el("span", {class: "chip late"}, "in " + a + " · no time out")
+        : el("span", {class: "chip"}, (a ? a + "–" + (z || "…") + " · " : "") + fmtMinutes(timeLogMin(e)))));
+}
+function copyHours(weeks, by) {
+  const lines = [];
+  for (const [monday, items] of weeks) {
+    lines.push("## " + weekLabel(monday) + " · " + fmtMinutes(items.reduce((s, e) => s + timeLogMin(e), 0)));
+    const tot = new Map();
+    for (const e of items) tot.set(hoursKey(e, by), (tot.get(hoursKey(e, by)) || 0) + timeLogMin(e));
+    for (const [k, m] of [...tot.entries()].sort((a, b) => b[1] - a[1])) lines.push(k + ": " + fmtMinutes(m));
+    lines.push("");
+    for (const e of items) {
+      const a = trim(blockProp(e.block, "in") || ""), z = trim(blockProp(e.block, "out") || "");
+      const open = timeLogOpen(e.block);
+      lines.push("- " + e.date + "  " + [e.who, e.project, a ? a + "-" + (z || "?") : "",
+        open && e.date < todayISO() ? "no time out" : (open ? "still there, " : "") + fmtMinutes(timeLogMin(e)),
+        timeLogNote(e.block)].filter(Boolean).join("  "));
+    }
+    lines.push("");
+  }
+  copyText(lines.join("\n"), "Hours copied.");
+}
+function viewHours() {
+  const c = el("div", {});
+  const key = state.hoursRange || "week", by = state.hoursBy || "person";
+  const goHours = patch => go("projects", Object.assign({sub: "hours", hoursRange: key, hoursBy: by}, patch));
+  const win = hoursWindow();
+  const rows = timeLogEntries().filter(e => e.date >= win.from && e.date <= win.to);
+  const weeks = hoursWeeks(rows);
+  const total = rows.reduce((s, e) => s + timeLogMin(e), 0);
+  c.append(fbar(
+    fselect("Period", key, HOURS_RANGES.map(([k, l]) => [k, l]), v => goHours({hoursRange: v})),
+    el("span", {class: "gap"}),
+    fselect("Group by", by, HOURS_GROUPS, v => goHours({hoursBy: v})),
+    el("button", {class: "btn sm primary", onclick: () => openTimeForm(null, null)}, "Check in")));
+  c.append(el("div", {class: "section"}, el("div", {class: "reportsum"},
+    el("b", {}, fmtMinutes(total) || "0 h"), " on site, " + humanDate(win.from) + " to " + humanDate(win.to) +
+      " · " + rows.length + " visit(s) · " + new Set(rows.map(e => e.who)).size + " person(s)",
+    el("button", {class: "btn sm ghost", style: "margin-left:auto", onclick: () => copyHours(weeks, by)}, "Copy as text"))));
+  /* Whoever has not been checked out, today's and any forgotten on an earlier day. */
+  const here = timeLogEntries().filter(e => timeLogOpen(e.block)).reverse();
+  if (here.length) c.append(section("Not checked out", here.length, pagedCard(here, timeLogRow)));
+  if (!rows.length) c.append(section("Hours", 0, emptyCard(
+    "No visits in this window. Type /in on any line when somebody arrives, and /out when they leave.")));
+  for (const [monday, items] of weeks)
+    c.append(section(weekLabel(monday), fmtMinutes(items.reduce((s, e) => s + timeLogMin(e), 0)),
+      el("div", {class: "card"}, hoursTable(monday, items, by),
+        el("details", {class: "hlist"}, el("summary", {}, items.length + " visit(s)"),
+          pagedCard(items.slice().reverse(), timeLogRow)))));
+  return c;
+}
+
+/* On a project's page: how much time it has had, the last eight weeks as
+   bars, and who put it in. Only once somebody has been there. */
+function projectTimeSection(path) {
+  const name = baseName(path).toLowerCase(), title = pageTitle(path).toLowerCase();
+  const rows = timeLogEntries().filter(e => e.space === V.space &&
+    [name, title].includes(e.project.toLowerCase()));
+  if (!rows.length) return null;
+  const monday = weekStartISO(todayISO());
+  const weekSum = from => rows.filter(e => e.date >= from && e.date <= shiftISO(from, 6)).reduce((s, e) => s + timeLogMin(e), 0);
+  const total = rows.reduce((s, e) => s + timeLogMin(e), 0);
+  const weeks = Array.from({length: 8}, (_, i) => shiftISO(monday, -7 * (7 - i)));
+  const sums = weeks.map(weekSum), top = Math.max(...sums, 1);
+  const bars = el("div", {class: "hbars", role: "img",
+    "aria-label": "Hours per week, last 8 weeks: " + weeks.map((w, i) => "week " + isoWeek(w)[0] + " " + fmtMinutes(sums[i] || 0)).join(", ")},
+    ...weeks.map((w, i) => el("div", {class: "hbar", title: weekLabel(w) + ": " + (fmtMinutes(sums[i]) || "0 h")},
+      el("span", {class: "v"}, i === 7 || sums[i] === top && sums[i] ? fmtHM(sums[i]) : ""),
+      el("i", {style: "height:" + Math.round(sums[i] / top * 100) + "%"}),
+      el("span", {class: "w"}, String(isoWeek(w)[0])))));
+  const byWho = new Map();
+  for (const e of rows) byWho.set(e.who || "Nobody named", (byWho.get(e.who || "Nobody named") || 0) + timeLogMin(e));
+  return section("Time on site", fmtMinutes(total), el("div", {class: "card"},
+    el("div", {class: "reportsum", style: "border:0;border-radius:0"},
+      "This week ", el("b", {}, fmtMinutes(weekSum(monday)) || "0 h"),
+      " · last week " + (fmtMinutes(weekSum(shiftISO(monday, -7))) || "0 h") + " · " + rows.length + " visit(s)",
+      el("span", {style: "margin-left:auto;display:flex;gap:6px"},
+        el("button", {class: "btn sm primary", onclick: () => openTimeForm(null, null, {project: pageTitle(path)})}, "Check in"),
+        el("button", {class: "btn sm ghost", onclick: () => go("projects", {sub: "hours", hoursBy: "person", hoursRange: "13"})}, "All hours"))),
+    bars,
+    el("div", {class: "props", style: "padding:0 14px 12px"},
+      ...[...byWho.entries()].sort((a, b) => b[1] - a[1]).map(([k, m]) => el("span", {class: "chip who"}, k + " · " + fmtMinutes(m))))));
+}
+
 /* ---------- calendars into the day ----------
    The app may only talk to itself and to a server on this machine (the CSP
    at the top says so), so a calendar link is fetched by serve.py on its
@@ -19752,7 +20148,8 @@ const taskHay = a => [a.title, a.project, a.context && "@" + a.context, a.assign
 const noMatch = (q, otherwise) => q ? "Nothing matches “" + q + "”." : otherwise;
 /* A reading that waits until there is something for it to show. The one you
    are on always shows, so v r or a link still lands on it. */
-const subShown = (view, k) => !(view === "projects" && k === "report") || reportEarned();
+const subShown = (view, k) => view !== "projects" ? true
+  : k === "report" ? reportEarned() : k === "hours" ? timeLogEntries().length > 0 : true;
 /* The readings of a view, as one segmented control at the end of the heading. */
 function viewSeg(view) {
   const cur = subNow();
@@ -20672,7 +21069,7 @@ function openTwins(only = null) {
 
 function viewProjects() {
   const sub = subNow();
-  const c = el("div", {class: "wrap" + (sub === "list" || sub === "report" ? "" : " wide")});
+  const c = el("div", {class: "wrap" + (sub === "list" || sub === "report" || sub === "hours" ? "" : " wide")});
   const org = state.org || "";
   c.append(vhead("Projects", org || "What you have committed to finishing",
     org ? el("button", {class: "textbtn", onclick: () => go("projects", {org: null})}, "× clear") : null,
@@ -20689,6 +21086,7 @@ function viewProjects() {
 
   if (sub === "timeline") { c.append(viewGantt()); return c; }
   if (sub === "report") { c.append(viewReport()); return c; }
+  if (sub === "hours") { c.append(viewHours()); return c; }
   if (sub === "board") { c.append(viewProjectBoard()); return c; }
 
   const area = areaFilter(every, "projects.area");
@@ -24134,6 +24532,8 @@ function viewPage() {
   if (code) {
     const fromDays = journalActionsFor(path);
     if (fromDays.length) c.append(section("From the day pages", fromDays.length, taskCard(fromDays)));
+    const time = projectTimeSection(path);
+    if (time) c.append(time);
   }
   if (kind === "context") {
     const here = nextActions().filter(a => a.context === baseName(path));
@@ -28899,6 +29299,7 @@ const CHORDS = {
   "v p": () => go("projects", {sub: "board"}),
   "v t": () => go("projects", {sub: "timeline"}),
   "v r": () => go("projects", {sub: "report"}),
+  "v h": () => go("projects", {sub: "hours"}),
   "v g": () => go("pages", {sub: "mindmap"}),
   "v m": () => go("pages", {sub: "graph"}),
   "v d": () => go("pages", {sub: "board"}),
@@ -31084,7 +31485,7 @@ function namespaceSection(path) {
    what you wrote the last time you filled it in, so today's number has
    something to be compared with. Only your own earlier day pages count, and
    only values that say something: bookkeeping like created:: stays out. */
-const DAY_VALUE_SKIP = /^(title|type|alias|aliases|tags|archived|collapsed|icon|msg|at|cal_feed|cal_uid|time|date|attendees|from|member|kind|deleted)$/i;
+const DAY_VALUE_SKIP = /^(title|type|alias|aliases|tags|archived|collapsed|icon|msg|at|cal_feed|cal_uid|time|date|attendees|from|member|kind|deleted|in|out)$/i;
 const isDayValueKey = k => !!k && !BOOKKEEPING.test(k) && !DAY_VALUE_SKIP.test(k) && !/^tracker-/i.test(k) && !/^template_|^feature_/i.test(k);
 const prevKeyOf = (k, v) => { const t = parseTracker(k + ":: " + (v ?? "")); return t ? "tracker:" + t.name : String(k).toLowerCase(); };
 function prevValueIndex() {
