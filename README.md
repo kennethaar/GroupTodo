@@ -59,7 +59,7 @@ format it writes is described in [docs/vault-format.md](docs/vault-format.md).
 | **Next** | List, Board, Calendar | everything on your plate; board columns per context or tag |
 | **Waiting for** | List, Board | what you handed over, by person |
 | **Chat** | | every conversation on a task |
-| **Projects** | List, Board, Timeline, Report | by status, as a Gantt, and what got done |
+| **Projects** | List, Board, Timeline, Report, Hours | by status, as a Gantt, what got done, and time on site |
 | **People**, **Organisations** | List, Cards, Board | who is carrying what and where they work; drag them onto work and onto each other |
 | **Contexts** | | where you are and what you can do there |
 | **Pages** | List, Board, Mind map, Graph, Hierarchy | every page in the areas on screen |
@@ -77,6 +77,13 @@ Next, Waiting for and Projects export to CSV for Excel.
 - **Weekly review.** The steps are an editable routine (`pages/8/Weekly review.md`). Projects are reviewed in three passes — status, outcome, next action — because each needs a different kind of thinking.
 - **Copy link** on any task or page gives a URL that opens exactly that block.
 - **Add to calendar** as an `.ics` file (private, offline) or an Outlook/Google link. Nothing is ever subscribed.
+- **Dates in the words.** The box at the top reads *Call Bob fri 2pm*, *Pay rent by 1 nov*, *every monday*, Norwegian days and times, and Taskwarrior's `due:`, `until:`, `hold:`, `remind:` and `pri:`. A toast says what it read, with **Keep the words** to undo. A time is written after the day: `SCHEDULED:: [[2026-10-23]] 14:00`.
+- **Reminders.** A task with a time gets a toast 10 minutes before (or `remind::`), which stays until answered. Today counts down to the next timed task and the next deadline; birthdays are on the calendar.
+- **Urgency.** Next and the project list are ordered by Taskwarrior's urgency: deadline, scheduled day, `priority::`, started, context, age, project chain. The ↑ chip on a row says why.
+- **On hold.** `hold:: [[date]]` on a task or a whole project hides it until that day. `until::` cancels a task once its day has passed; birthday tasks go once the birthday has.
+- **Burndown.** The Report shows open tasks per day over its window, with the numbers as a table.
+- **Phone and PC.** On a phone, **Send** sits in the top bar with a dot while changes are unsent; with `work_hours::` the PC and the phone ask for each other's file at the start and end of the day.
+- **Time on site.** `/in` and `/out` on any line write a `#timelog` visit: who, which project, in and out. **Projects → Hours** shows each week by day, and a project's page its hours per week.
 
 ---
 
