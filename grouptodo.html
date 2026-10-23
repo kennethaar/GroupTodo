@@ -1410,6 +1410,29 @@ button.prow{width:100%;text-align:left}
 .grid2>.field{min-width:0}
 .cal-item.bday{font-style:italic}
 .chip.urg{font-variant-numeric:tabular-nums;color:var(--fg2)}
+.sendbtn{position:relative}
+.sendbtn.dot::after{content:"";position:absolute;top:-3px;right:-3px;width:7px;height:7px;border-radius:50%;
+  background:var(--accent);box-shadow:0 0 0 2px var(--bg)}
+
+/* ---------- burndown ----------
+   One line in the accent, a faint area under it, a recessive grid. */
+.burncard{padding:12px 14px}
+.burnbox{position:relative}
+.burn{width:100%;height:auto;display:block;touch-action:pan-y}
+.burn .grid{stroke:var(--border);stroke-width:1}
+.burn .ax{fill:var(--fg3);font-size:10.5px;font-family:inherit}
+.burn .line{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.burn .area{fill:var(--accent);opacity:.1}
+.burn .end{fill:var(--accent);stroke:var(--bg2);stroke-width:2}
+.burn .cross{stroke:var(--fg3);stroke-width:1;stroke-dasharray:3 3}
+.burntip{position:absolute;top:0;width:160px;pointer-events:none;background:var(--bg4);border:1px solid var(--border2);
+  border-radius:8px;padding:6px 9px;font-size:12px;box-shadow:var(--shadow)}
+.burntip .q{color:var(--fg3)}
+.burnsum{color:var(--fg2);font-size:12.5px;margin-top:8px;line-height:1.5}
+.burndetails{margin-top:6px;font-size:12px;color:var(--fg3)}
+.burntable{border-collapse:collapse;margin-top:6px;font-variant-numeric:tabular-nums}
+.burntable th,.burntable td{text-align:right;padding:2px 10px;color:var(--fg2)}
+.burntable th:first-child,.burntable td:first-child{text-align:left}
 /* keyboard chord hud */
 #chord{
   position:fixed;left:12px;bottom:12px;z-index:210;background:var(--bg4);border:1px solid var(--border2);
@@ -1912,6 +1935,7 @@ body.solview #content{padding-bottom:14px}
       <button class="ctxnow" id="btnContext" hidden></button>
       <button class="tbtn" id="btnSearch" title="Search (/)" aria-label="Search">&#8981;</button>
       <button class="tbtn" id="btnTheme" title="Light or dark" aria-label="Light or dark">&#9680;</button>
+      <button class="tbtn sendbtn" id="btnSend" hidden aria-label="Send the vault file">&#8679;</button>
       <button class="help-btn" id="btnHelp" title="Help (?)">?<span class="long"> Help</span></button>
       <button class="spacesbtn" id="spacesBtn" aria-haspopup="true" aria-expanded="false" title="Which areas to show"></button>
       <div class="spop" id="spop" role="dialog" aria-label="Areas" hidden></div>
@@ -1951,6 +1975,9 @@ body.solview #content{padding-bottom:14px}
     <li><b>Dates in the words:</b> In the box at the top, the end of the line is read for when: <i>Call Bob fri 2pm</i>, <i>Pay rent by the 1st</i>, <i>Water plants every monday</i>, in English or Norwegian (<i>i morgen kl 14</i>, <i>fredag</i>), and Taskwarrior's <code>due:</code>, <code>until:</code> and <code>remind:</code> anywhere in it. A toast says what was read, with <i>Keep the words</i> to undo it. A time is written after the day, <code>SCHEDULED:: [[2026-10-23]] 14:00</code>.</li>
     <li><b>Reminders:</b> A task with a time gets a reminder 10 minutes before (or <code>remind::</code>, set in its panel), which stays until answered: Open, In 10 min, Done. A birthday gets one on the day. Today shows how long until the next timed task and the next deadline.</li>
     <li><b>Letting tasks go:</b> <code>until::</code> on a task cancels it once that day has passed, and a birthday task (<i>Buy a present for Anna's birthday [[p/Anna Berg]]</i>) goes once that birthday has passed, unless it is switched off in <i>Vault &amp; sync</i>. Being late cancels nothing. Struck out, not deleted, with <code>expired::</code>, and the toast can undo it.</li>
+    <li><b>A project on hold:</b> the status menu (&#8644;) has <i>Hold until a day</i>: <code>hold::</code> on the project's page hides its actions until then, moves it to <i>On hold</i> under the project list and keeps it out of the stuck-projects check.</li>
+    <li><b>Burndown:</b> the Report shows how many tasks were open on each day of its window, with what was added and finished on a day when you point at it, where the pace leads, and the same numbers as a table.</li>
+    <li><b>Phone and PC:</b> on a phone, <i>Send</i> (&#8679;) is in the top bar, with a dot while there are changes the vault file has not carried. Set your working hours in <i>Vault &amp; sync</i> and the PC asks for the phone's file around the start of the day, the phone for the PC's around the end.</li>
     <li><b>On hold:</b> <code>hold:: [[date]]</code> hides a task from every list until that day, and then it is back by itself; holding a line holds the steps under it. <code>hold:fri</code> (or <code>wait:fri</code>) in the box at the top, or <i>On hold until</i> in the task panel. The bottom of <i>Next</i> lists what is on hold, each with <i>Bring it back now</i>.</li>
     <li><b>Urgency:</b> <i>Next</i> and the project list are in order of urgency by default, Taskwarrior's way: the deadline coming closer, the scheduled day reached, <code>priority::</code> H/M/L, started, the context you are in, age, being in a project, chat, and the project chain (another project waiting on it counts up, waiting on another counts down). The &uarr; chip on a row says why. Priority is in the task panel, or <code>pri:H</code> in the box at the top. The Sort menu has the other orders.</li>
     <li><b>Time on site:</b> Type <code>/in</code> on any line when somebody arrives: who, which project and the time now are filled in (the last person and project you used), to change before it is saved as a <code>#timelog</code> line on that day's page. <code>/out</code> when they leave. Gone for a while and back is a second /in. Click the clock under the line to correct it. <i>Projects &gt; Hours</i> (<kbd>v h</kbd>) shows each week by day, to copy as text; a project's page shows its hours per week.</li>
@@ -3123,6 +3150,7 @@ function touch(path) {
   syncBranchCopies(path);
   touchHere(path);
   syncPageCopies(path, V.space);
+  if (typeof noteLocalEdit === "function") noteLocalEdit(path);
 }
 
 /* The edit on this page only. Undo uses this, because it puts back each copy
@@ -5939,7 +5967,9 @@ function leafActionsHere() {
          list, and asking for a verb again on every run is the method talking to
          itself. Fix the list, not the copy. */
       const authored = tourStep || !!fromList;
-      const hold = holdOf(b);
+      const ph = projectPath ? projectHold(projectPath) : null;
+      const own = holdOf(b);
+      const hold = own && ph ? (own > ph ? own : ph) : own || ph;
       out.push({
         path, block: b, state: b.state, title: b.title,
         project, projectPath, projectStatusDir, group, due,
@@ -5969,6 +5999,7 @@ function stuckActiveProjects() {
   }
   const stuck = [];
   for (const path of projectsIn("1")) {
+    if (projectHold(path)) continue;          // nobody is meant to be doing it yet
     const page = getPage(path);
     const flat = flattenBlocks(page.blocks);
     let leafTodo = false, waiting = false, parentTodos = false;
@@ -15228,6 +15259,9 @@ function viewReport() {
       el("button", {class: "btn sm ghost", title: "Download as a CSV file, which Excel opens",
         onclick: () => exportTasksCsv(rows, "finished-" + win.from + "-to-" + win.to)}, "Export to Excel"))));
 
+  const burn = burndownSection(win, space);
+  if (burn) c.append(burn);
+
   if (!rows.length) {
     c.append(section("Finished", 0, emptyCard(
       "Nothing ticked off in this window. Tick a task and it lands here.")));
@@ -15248,6 +15282,138 @@ function viewReport() {
       "A task ticked off in the app is stamped done_by:: with the day; one marked " +
       "DONE by hand on a page other than a day page is not, and nothing can tell when that happened.")));
   return c;
+}
+
+/* ---------- burndown ----------
+   How many tasks were open on each day of the window, as one line: the list
+   going down is the work getting done, and the list going up is more arriving
+   than leaving. Every task counts from the day it was added until the day it
+   was closed, whoever did it, in the space(s) the report is showing. The line
+   alone does not say why it moved, so hovering a day says what was added and
+   what was finished on it, and the sentence underneath says where the pace
+   leads. The same numbers are in a table, because a picture means nothing to
+   a screen reader. */
+function taskSpans() {
+  return memo("taskSpans", () => acrossSpaces(() => {
+    const out = [];
+    for (const [path, page] of V.pages) {
+      if (isStencilPath(path) || path === SETTINGS_PATH) continue;
+      const journalDay = isJournalPath(path) ? dateIn(baseName(path)) : null;
+      walkBlocks(page.blocks, b => {
+        if (!b.state || isMessage(b)) return;
+        const raw = blockProp(b, "Added") || "";
+        const added = dateIn(raw) || journalDay;
+        let closed = null;
+        if (!OPEN_STATES[b.state]) {
+          closed = (/\]\]\s*-\s*\[\[(\d{4}-\d{2}-\d{2})\]\]/.exec(raw) || [])[1]
+                || dateIn(blockProp(b, "CLOSED")) || dateIn(blockProp(b, "done_by"));
+          if (!closed) return;                 // closed, but nobody knows when
+        }
+        out.push({added: added || "0000-00-00", closed});
+      });
+    }
+    return out;
+  }));
+}
+
+function burndownSeries(from, to, space) {
+  const spans = taskSpans().filter(s => !space || (s.space || "") === space);
+  const days = [];
+  for (let d = from, guard = 0; d <= to && guard < 800; d = shiftISO(d, 1), guard++) days.push(d);
+  return days.map(day => {
+    let open = 0, added = 0, done = 0;
+    for (const s of spans) {
+      if (s.added <= day && (!s.closed || s.closed > day)) open++;
+      if (s.added === day) added++;
+      if (s.closed === day) done++;
+    }
+    return {day, open, added, done};
+  });
+}
+
+function burndownChart(series) {
+  const W = 640, H = 170, L = 34, R = 10, T = 12, B = 22;
+  const max = Math.max(4, ...series.map(p => p.open));
+  const step = Math.pow(10, Math.floor(Math.log10(max))) * (max / Math.pow(10, Math.floor(Math.log10(max))) > 5 ? 2 : 1);
+  const top = Math.ceil(max / step) * step;
+  const x = i => L + (series.length < 2 ? (W - L - R) / 2 : i * (W - L - R) / (series.length - 1));
+  const y = v => T + (H - T - B) * (1 - v / top);
+  const NS = "http://www.w3.org/2000/svg";
+  const s = (tag, attrs) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; };
+  const svg = s("svg", {viewBox: "0 0 " + W + " " + H, class: "burn", role: "img",
+    "aria-label": "Open tasks per day, from " + series[0].open + " to " + series[series.length - 1].open});
+  for (let v = 0; v <= top; v += step) {
+    svg.append(s("line", {x1: L, x2: W - R, y1: y(v), y2: y(v), class: "grid"}));
+    const t = s("text", {x: L - 6, y: y(v) + 3.5, class: "ax", "text-anchor": "end"}); t.textContent = v; svg.append(t);
+  }
+  const ticks = series.length < 2 ? [0] : [0, Math.floor((series.length - 1) / 2), series.length - 1];
+  for (const i of ticks) {
+    const t = s("text", {x: x(i), y: H - 6, class: "ax",
+      "text-anchor": i === 0 && series.length > 1 ? "start" : i === series.length - 1 && series.length > 1 ? "end" : "middle"});
+    t.textContent = humanDate(series[i].day); svg.append(t);
+  }
+  const pts = series.map((p, i) => x(i).toFixed(1) + "," + y(p.open).toFixed(1));
+  svg.append(s("path", {d: "M" + x(0) + "," + y(0) + " L" + pts.join(" L") + " L" + x(series.length - 1) + "," + y(0) + " Z", class: "area"}));
+  svg.append(s("polyline", {points: pts.join(" "), class: "line"}));
+  const last = series.length - 1;
+  svg.append(s("circle", {cx: x(last), cy: y(series[last].open), r: 4, class: "end"}));
+
+  // The hover layer: a crosshair on the nearest day, and what happened on it.
+  const cross = s("line", {y1: T, y2: H - B, class: "cross", visibility: "hidden"});
+  const dot = s("circle", {r: 4.5, class: "end", visibility: "hidden"});
+  svg.append(cross, dot);
+  const tip = el("div", {class: "burntip", hidden: ""});
+  const box = el("div", {class: "burnbox"}, svg, tip);
+  const hit = s("rect", {x: L, y: T, width: W - L - R, height: H - T - B, fill: "transparent"});
+  svg.append(hit);
+  const show = clientX => {
+    const r = svg.getBoundingClientRect();
+    const vx = (clientX - r.left) * W / r.width;
+    const i = Math.max(0, Math.min(last, Math.round((vx - L) / ((W - L - R) / Math.max(1, last)))));
+    const p = series[i];
+    cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("visibility", "visible");
+    dot.setAttribute("cx", x(i)); dot.setAttribute("cy", y(p.open)); dot.setAttribute("visibility", "visible");
+    tip.hidden = false;
+    tip.textContent = "";
+    tip.append(el("b", {}, humanDate(p.day)), el("div", {}, p.open + " open"),
+      el("div", {class: "q"}, "+" + p.added + " added · −" + p.done + " finished"));
+    // Beside the crosshair, never on top of the line it is describing.
+    const px = x(i) / W * r.width;
+    tip.style.left = (px + 172 > r.width ? px - 172 : px + 12) + "px";
+  };
+  const hide = () => { tip.hidden = true; cross.setAttribute("visibility", "hidden"); dot.setAttribute("visibility", "hidden"); };
+  hit.addEventListener("pointermove", e => show(e.clientX));
+  hit.addEventListener("pointerdown", e => show(e.clientX));
+  hit.addEventListener("pointerleave", hide);
+  return box;
+}
+
+function burndownSection(win, space) {
+  const series = burndownSeries(win.from, win.to, space);
+  if (!series.length) return null;
+  const first = series[0].open, now = series[series.length - 1].open;
+  const added = series.reduce((n, p) => n + p.added, 0);
+  const done = series.reduce((n, p) => n + p.done, 0);
+  if (!added && !done && !now) return null;
+  const days = Math.max(1, series.length - 1);
+  const net = (done - added) / days;                       // tasks a day the list shrinks by
+  const pace = !now ? "Nothing open. "
+    : net > 0.05 ? "At this pace the list is empty in about " + Math.ceil(now / net / 7) + " week" + (Math.ceil(now / net / 7) === 1 ? "" : "s") + ". "
+    : net < -0.05 ? "More is arriving than leaving. "
+    : "About as much is arriving as leaving. ";
+  const table = el("table", {class: "burntable"},
+    el("tr", {}, el("th", {}, "Day"), el("th", {}, "Open"), el("th", {}, "Added"), el("th", {}, "Finished")),
+    ...series.filter((p, i) => p.added || p.done || i === 0 || i === series.length - 1).map(p =>
+      el("tr", {}, el("td", {}, humanDate(p.day)), el("td", {}, String(p.open)),
+        el("td", {}, String(p.added)), el("td", {}, String(p.done)))));
+  return el("div", {class: "section"},
+    el("h3", {}, "Burndown", el("span", {class: "n"}, String(now))),
+    el("div", {class: "card burncard"},
+      burndownChart(series),
+      el("div", {class: "burnsum"},
+        "Open tasks went from " + first + " to " + now + " (" + (now - first > 0 ? "+" : "") + (now - first) + "): " +
+        added + " added, " + done + " finished. " + pace),
+      el("details", {class: "burndetails"}, el("summary", {}, "As a table"), table)));
 }
 
 function reportRow(r) {
@@ -21667,7 +21833,9 @@ function viewProjects() {
   const code = STATUS_DIRS[state.statusCode] ? state.statusCode : "1";
   const rows = every.filter(inOrg).filter(area.keep);
   const psort = PREF.get("projects.sort", "urgency") === "az" ? "az" : "urgency";
-  const shown = rows.filter(r => effStatus(r) === code);
+  const heldOf = r => inSpace(r.space, () => projectHold(r.path));
+  const held = rows.filter(r => effStatus(r) === code && heldOf(r)).sort((x, y) => heldOf(x).localeCompare(heldOf(y)));
+  const shown = rows.filter(r => effStatus(r) === code && !heldOf(r));
   shown.forEach(r => { r._urg = psort === "urgency" ? projectUrgency(r.path, r.space) : null; });
   shown.sort(psort === "urgency"
     ? (x, y) => y._urg - x._urg || rowTitle(x).localeCompare(rowTitle(y))
@@ -21681,6 +21849,16 @@ function viewProjects() {
   c.append(fbar(f.input, ...STATUS_CHIPS.map(k => fchip(STATUS_LABEL[k], code === k,
       () => go("projects", {statusCode: k}), rows.filter(r => effStatus(r) === k).length)),
     area.sel, orgSel, psortSel), f.host);
+  if (held.length) c.append(el("details", {class: "section fold"},
+    el("summary", {}, "On hold", el("span", {class: "n"}, String(held.length))),
+    el("div", {class: "card"}, ...held.map(r => el("div", {class: "task prow2"},
+      el("div", {class: "t-body"},
+        el("div", {class: "t-title"}, el("button", {class: "textbtn", style: "font-weight:600",
+          onclick: () => openPageIn(r.space, r.path)}, rowTitle(r))),
+        el("div", {class: "t-meta"},
+          el("button", {class: "chip b", title: "Change the day, or bring it back now",
+            onclick: () => inSpace(r.space, () => openProjectHold(r.path))}, "on hold → " + humanDate(heldOf(r))),
+          spaceTag(r.space))))))));
   return c;
 }
 
@@ -26514,6 +26692,7 @@ function render() {
   document.title = (title ? title + " · " : "") + "GroupToDo";
   resolveAssets(c);
   syncNavArrows();
+  syncSendButton();
   applyRefocus();
 }
 
@@ -28080,6 +28259,8 @@ function openStatusPicker(path) {
     label: c => STATUS_TEXT[c],
     detail: c => statusDirOf(path) === c ? "current" : "",
     onPick: c => setProjectStatus(path, c),
+    footer: el("button", {class: "btn ghost", onclick: () => { closeModal(); openProjectHold(path); }},
+      projectHold(path) ? "On hold until " + humanDate(projectHold(path)) + "…" : "Hold until a day…"),
   });
 }
 
@@ -28837,6 +29018,8 @@ async function saveBundleAsDownload() {
   const how = await sendMarkdownOut(name, bundleMarkdown(),
     {title: (Spaces.active || "GroupToDo") + " vault"});
   setSetting("last_sync", nowStamp());
+  markSent();
+  syncSendButton();
   notify(how === "shared"
     ? "Sent " + name + ". Dropping it in a synced folder is what keeps your devices together."
     : "Saved " + name + ". Put it in a folder you share with the right people.");
@@ -28854,6 +29037,7 @@ function openBundleFromFile(onDone) {
       const files = parseBundle(text);
       if (!files.size) { notify("That file has no GroupToDo pages in it.", "error"); return; }
       const report = mergeBundle(files);
+      markImported();
       notify(syncSummary(report));
       render();
       if (onDone) onDone(report);
@@ -28923,6 +29107,8 @@ async function syncLinked({quiet = false} = {}) {
     setSetting("last_sync", nowStamp());
     setSync("ok", V.backend ? V.backend.label : "synced");
     const changed = report.added + report.updated + report.merged + report.deleted;
+    markSent();
+    if (changed || !quiet) markImported();
     if (!quiet) notify(syncSummary(report) + " Vault file written.");
     else if (changed) notify(syncSummary(report));     // silent unless it brought something in
     render();
@@ -29499,6 +29685,30 @@ function openVaultDialog() {
   };
   drawStamps();
 
+  /* The two moments to move the file between phone and PC. */
+  const workBox = el("div", {class: "field"},
+    el("label", {}, "Your working hours"),
+    (() => {
+      const wh = workHours();
+      const from = el("input", {type: "time", value: wh ? wh.start : ""});
+      const to = el("input", {type: "time", value: wh ? wh.end : ""});
+      const save = () => {
+        if (!!from.value !== !!to.value) return;     // half a workday is not one yet
+        setWorkHours(from.value, to.value);
+        notify(from.value ? "Working " + from.value + " to " + to.value + ", Monday to Friday." : "Working hours cleared.");
+      };
+      from.addEventListener("change", save);
+      to.addEventListener("change", save);
+      return el("div", {},
+        el("div", {style: "display:flex;gap:8px;align-items:center"}, from, el("span", {}, "to"), to),
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          "Kept on your own page as work_hours::, so your phone knows them too. Half an hour " +
+          "either side of starting, the PC asks for what you did on your phone; half an hour " +
+          "either side of finishing, the phone asks for the PC's file. Once a day, and not at " +
+          "all on a day you have already brought one in. Monday to Friday unless the page says " +
+          "otherwise, e.g. work_hours:: 08:00-16:00 mon-sat."));
+    })());
+
   /* Late is not a reason to cancel anything; a birthday that has passed is. */
   const expireBox = el("div", {class: "field"},
     el("label", {}, "Birthday tasks"),
@@ -29652,7 +29862,7 @@ function openVaultDialog() {
 
   modal({
     center: true, title: "Vault & sync - " + (Spaces.active || "space"),
-    body: el("div", {}, status, folderBox, devicesBox, youBox, expireBox, areaBox, more),
+    body: el("div", {}, status, folderBox, devicesBox, youBox, workBox, expireBox, areaBox, more),
     foot: [
       el("button", {class: "btn ghost", onclick: () => { closeModal(); openShareSpaceInvite(); }}, "Invite somebody"),
       el("div", {style: "flex:1"}),
@@ -32425,6 +32635,9 @@ function remindTick() {
   if (REMIND_DAY && REMIND_DAY !== today) { clearMemo(); expireOverdue(); render(); }
   REMIND_DAY = today;
   for (const n of document.querySelectorAll(".cd-left")) n.textContent = whenUntilWords(n.dataset.day, n.dataset.time || null);
+  syncSendButton();
+  workdayNudge();
+  sendNudge();
   const seen = remindSeen();
   for (const e of upcomingEvents()) {
     const key = eventKey(e);
@@ -32539,6 +32752,151 @@ function expireOverdue() {
     clearMemo(); render();
     notify("Back on your list, marked expire:: never so they stay.");
   }});
+}
+
+/* ============================================================
+   168_PHONE_AND_WORKDAY -- the file between phone and PC, and when to move it
+   A phone cannot write into a folder, so its work reaches the PC as one file
+   it sends through the Share panel. That press is the whole loop, and it is
+   the press people forget, so on a phone it is always in the top bar, with a
+   dot on it whenever there is something here the file has not carried yet.
+
+   And the loop has a rhythm: the phone goes home with you, the PC stays at
+   work. So the two moments to move the file are around the start and the end
+   of the workday, which you set once on your own page as work_hours:: --
+   it lives in the vault, so the phone and the PC both know it. Half an hour
+   either side of starting, the PC asks for what the phone did; half an hour
+   either side of finishing, the phone asks for the PC's file. Once a day,
+   and never if you have already brought one in that day.
+   ============================================================ */
+const phoneLike = () => !CAP.dirPicker && !CAP.savePicker &&
+  (() => { try { return matchMedia("(pointer: coarse)").matches; } catch (_) { return false; } })();
+
+const editKey = () => "edit.at." + (Spaces.active || "");
+const sentKey = () => "sent.at." + (Spaces.active || "");
+function noteLocalEdit(path) { if (path !== SETTINGS_PATH) PREF.set(editKey(), nowStamp()); }
+const markSent = () => PREF.set(sentKey(), nowStamp());
+const unsentEdits = () => (PREF.get(editKey(), "") || "") > (PREF.get(sentKey(), "") || "");
+const markImported = () => PREF.set("import.day." + (Spaces.active || ""), todayISO());
+const importedToday = () => PREF.get("import.day." + (Spaces.active || ""), "") === todayISO();
+
+function sendFromPhone() {
+  saveBundleAsDownload();
+}
+function syncSendButton() {
+  const b = $("#btnSend");
+  if (!b) return;
+  b.hidden = !phoneLike();
+  b.classList.toggle("dot", unsentEdits());
+  b.title = unsentEdits() ? "You have changes the vault file has not carried yet" : "Send the vault file";
+}
+
+/* ---------- work hours, on your own page ---------- */
+const WORK_DAYS = {sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6};
+function workHours() {
+  const me = whoAmI();
+  const raw = String((me && getPage(personPath(me))?.props?.work_hours) || PREF.get("work_hours", "") || "");
+  const m = /(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/.exec(raw);
+  if (!m) return null;
+  let days = [1, 2, 3, 4, 5];
+  const d = /\b(sun|mon|tue|wed|thu|fri|sat)\w*\s*-\s*(sun|mon|tue|wed|thu|fri|sat)/i.exec(raw);
+  if (/\b(daily|every day|alle dager)\b/i.test(raw)) days = [0, 1, 2, 3, 4, 5, 6];
+  else if (d) {
+    days = [];
+    for (let i = WORK_DAYS[d[1].toLowerCase()], n = 0; n < 7; i = (i + 1) % 7, n++) {
+      days.push(i);
+      if (i === WORK_DAYS[d[2].toLowerCase()]) break;
+    }
+  }
+  return {start: pad2(+m[1]) + ":" + m[2], end: pad2(+m[3]) + ":" + m[4], days, raw: trim(raw)};
+}
+function setWorkHours(start, end) {
+  const me = whoAmI();
+  const val = start && end ? start + "-" + end : "";
+  const old = workHours();
+  const days = old && /[a-z]/i.test(old.raw) ? " " + old.raw.replace(/^[\d:\s-]+/, "") : "";
+  const page = me && getPage(personPath(me));
+  if (page) {
+    if (val) page.props.work_hours = val + days;
+    else delete page.props.work_hours;
+    touch(personPath(me));
+  } else PREF.set("work_hours", val);
+}
+
+let WORKDAY_SAID = "";
+function workdayNudge() {
+  const wh = workHours();
+  if (!wh || !wh.days.includes(weekdayOf(todayISO()))) return;
+  const phone = phoneLike();
+  const at = phone ? wh.end : wh.start;
+  const left = hmMinutes(at) - hmMinutes(nowHM());
+  if (left > 30 || left < -30) return;
+  const key = todayISO() + (phone ? "end" : "start") + (Spaces.active || "");
+  if (WORKDAY_SAID === key || PREF.get("workday.said", "") === key || importedToday()) return;
+  WORKDAY_SAID = key;
+  PREF.set("workday.said", key);
+  const linked = !phone && CAP.savePicker && !!LINKED;
+  const t = el("div", {class: "toast reminder remind", role: "alert"},
+    el("strong", {}, phone ? "End of the workday: bring the PC's file onto your phone"
+                           : "Start of the workday: bring in what you did on your phone"),
+    el("p", {}, phone
+      ? "Work ends at " + wh.end + ". Open the vault file the PC wrote, and the day's work comes home with you."
+      : "Work starts at " + wh.start + ". If you worked on your phone, open the file it sent and it merges in."));
+  const shut = () => t.remove();
+  const act = (cls, label, run) => el("button", {class: "btn sm " + cls, onclick: () => { shut(); run(); }}, label);
+  t.append(el("div", {class: "acts"},
+    linked ? act("primary", "Sync now", () => syncLinked()) : act("primary", "Open vault file", () => openBundleFromFile()),
+    act("ghost", "Not today", () => {})));
+  $("#toasts").append(t);
+}
+
+/* A phone with changes it has not sent, left alone for ten minutes: say so,
+   once a session. Leaving the app is when the file gets forgotten. */
+let SEND_SAID = false;
+function sendNudge() {
+  if (SEND_SAID || !phoneLike() || !unsentEdits()) return;
+  const at = Date.parse(PREF.get(editKey(), "") || "");
+  if (!at || Date.now() - at < 10 * 60000) return;
+  SEND_SAID = true;
+  notify("Changes here that your PC has not got yet.", "info", {label: "Send", run: sendFromPhone});
+}
+
+/* ============================================================
+   169_PROJECT_HOLD -- a whole project, out of sight until a day
+   The same hold:: as a task's, on the project's page: hold:: [[2027-03-01]].
+   Its actions leave every list, it leaves the project list for an On hold
+   group under it, and the weekly review stops calling it stuck -- nobody is
+   meant to be doing it yet. On the day it all comes back by itself.
+   ============================================================ */
+function projectHold(path) {
+  const day = dateIn(getPage(path)?.props?.hold || "");
+  return day && day > todayISO() ? day : null;
+}
+function setProjectHold(path, day) {
+  const page = getPage(path); if (!page) return;
+  for (const k of Object.keys(page.props)) if (k.toLowerCase() === "hold") delete page.props[k];
+  if (day) page.props.hold = "[[" + day + "]]";
+  touch(path); render();
+  notify(day ? pageTitle(path) + " is on hold until " + humanDate(day) + "." : pageTitle(path) + " is back.");
+}
+function openProjectHold(path) {
+  const input = el("input", {type: "date", min: shiftISO(todayISO(), 1),
+    value: dateIn(getPage(path)?.props?.hold || "") || ""});
+  const save = () => { closeModal(); if (input.value) setProjectHold(path, input.value); };
+  modal({
+    center: true, title: "Hold " + pageTitle(path),
+    body: el("div", {},
+      el("div", {class: "field"}, el("label", {}, "Out of sight until"), input),
+      el("div", {style: "color:var(--fg3);font-size:12px"},
+        "Its actions leave your lists and it moves to On hold. On the day it comes back by itself.")),
+    foot: [
+      projectHold(path) ? el("button", {class: "btn ghost", onclick: () => { closeModal(); setProjectHold(path, null); }}, "Bring it back now") : null,
+      el("div", {style: "flex:1"}),
+      el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+      el("button", {class: "btn primary", onclick: save}, "Hold")],
+    onKey: e => { if (e.key === "Enter") { save(); return true; } return false; },
+  });
+  setTimeout(() => input.focus(), 30);
 }
 
 /* ---------- meetings: a word before, and the next one at the top ----------
@@ -32694,6 +33052,7 @@ function meetRemindField() {
    170_INIT
    ============================================================ */
 $("#btnSearch").onclick  = () => goSearch();
+$("#btnSend").onclick    = () => sendFromPhone();
 $("#syncLine").onclick   = () => {
   // A save that is waiting out its retry is tried again on the way in.
   if (V.error) saveNow();
@@ -32840,6 +33199,7 @@ async function mergeIncomingText(text, label) {
     return false;
   }
   notify(syncSummary(mergeBundle(files)));
+  markImported();
   render();
   return true;
 }
