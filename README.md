@@ -25,7 +25,8 @@ to a part of the app. If colleagues already put your name on tasks, you are
 offered those when you arrive.
 
 To bring someone in: **areas menu (top right) → Invite somebody**, or send them
-`grouptodo.html`, the folder name and [docs/setup-sheet.html](docs/setup-sheet.html).
+`grouptodo.html`, the folder name and [docs/setup-sheet-group.html](docs/setup-sheet-group.html).
+Using it on your own, with several groups around you? [docs/setup-sheet-personal.html](docs/setup-sheet-personal.html) is the same app from that side.
 
 **Coming from Obsidian or Logseq?** Open `GroupToDo-Importer.html` in Edge or Chrome. It reads your
 old vault (never changing it), asks what your folders, namespaces and tags mean, shows a test run
