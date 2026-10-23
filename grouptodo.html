@@ -1409,6 +1409,7 @@ button.prow{width:100%;text-align:left}
 .dt input[type=time]{flex:1 1 6.5em;min-width:0}
 .grid2>.field{min-width:0}
 .cal-item.bday{font-style:italic}
+.chip.urg{font-variant-numeric:tabular-nums;color:var(--fg2)}
 /* keyboard chord hud */
 #chord{
   position:fixed;left:12px;bottom:12px;z-index:210;background:var(--bg4);border:1px solid var(--border2);
@@ -1950,6 +1951,7 @@ body.solview #content{padding-bottom:14px}
     <li><b>Dates in the words:</b> In the box at the top, the end of the line is read for when: <i>Call Bob fri 2pm</i>, <i>Pay rent by the 1st</i>, <i>Water plants every monday</i>, in English or Norwegian (<i>i morgen kl 14</i>, <i>fredag</i>), and Taskwarrior's <code>due:</code>, <code>until:</code> and <code>remind:</code> anywhere in it. A toast says what was read, with <i>Keep the words</i> to undo it. A time is written after the day, <code>SCHEDULED:: [[2026-10-23]] 14:00</code>.</li>
     <li><b>Reminders:</b> A task with a time gets a reminder 10 minutes before (or <code>remind::</code>, set in its panel), which stays until answered: Open, In 10 min, Done. A birthday gets one on the day. Today shows how long until the next timed task and the next deadline.</li>
     <li><b>Letting tasks go:</b> <code>until::</code> on a task cancels it once that day has passed, and a birthday task (<i>Buy a present for Anna's birthday [[p/Anna Berg]]</i>) goes once that birthday has passed, unless it is switched off in <i>Vault &amp; sync</i>. Being late cancels nothing. Struck out, not deleted, with <code>expired::</code>, and the toast can undo it.</li>
+    <li><b>Urgency:</b> <i>Next</i> and the project list are in order of urgency by default, Taskwarrior's way: the deadline coming closer, the scheduled day reached, <code>priority::</code> H/M/L, started, the context you are in, age, being in a project, chat, and the project chain (another project waiting on it counts up, waiting on another counts down). The &uarr; chip on a row says why. Priority is in the task panel, or <code>pri:H</code> in the box at the top. The Sort menu has the other orders.</li>
     <li><b>Time on site:</b> Type <code>/in</code> on any line when somebody arrives: who, which project and the time now are filled in (the last person and project you used), to change before it is saved as a <code>#timelog</code> line on that day's page. <code>/out</code> when they leave. Gone for a while and back is a second /in. Click the clock under the line to correct it. <i>Projects &gt; Hours</i> (<kbd>v h</kbd>) shows each week by day, to copy as text; a project's page shows its hours per week.</li>
     <li><b>Meetings:</b> The next <code>#meeting</code> with a time today is shown at the top, counting down, and you are reminded before it starts (Calendars sets how long before, or turns it off).</li>
   </ul>
@@ -6006,6 +6008,116 @@ function contextList() {
 }
 
 
+/* ============================================================
+   66_URGENCY -- which of these first
+   Taskwarrior's answer to "what next": one number per task, made of plain
+   reasons added up, so the list can be read top to bottom. The coefficients
+   are Taskwarrior's wherever it has one, so somebody coming from there finds
+   the order they expect; the two that are GroupToDo's own are the context you
+   are standing in, and a date on a line above counting for the steps under it
+   -- that is what the hierarchy is for. Every reason is shown on the score's
+   chip, because an order you cannot question is an order you stop trusting.
+
+     deadline      12 x how close: 0.2 two weeks out, 1.0 a week late
+                   (no deadline: the scheduled day, the same way)
+     scheduled      5 once its scheduled day has come
+     priority       6 / 3.9 / 1.8 for priority:: H / M / L
+     doing          4 already started
+     here           3 its context is the one you are in
+     age            2 x a year on the list
+     project        1 in a project
+     chat           1 somebody has said something on it
+     blocking       8 its project is what another project waits on
+     blocked       -5 its project waits on one that is not finished
+     waiting       -3 a Waiting for, or handed to somebody else
+
+   A project ranks as its most urgent open action, or by its own deadline and
+   its place in a chain when it has none, and a busier one edges ahead of a
+   quieter one on a tie.
+   ============================================================ */
+const URGENCY = {
+  due: 12, scheduled: 5, priorityH: 6, priorityM: 3.9, priorityL: 1.8,
+  doing: 4, here: 3, age: 2, project: 1, chat: 1, blocking: 8, blocked: -5, waiting: -3,
+};
+function dueFactor(day) {
+  const late = dateDiffDays(day, todayISO());          // days past it
+  if (late == null) return 0;
+  if (late >= 7) return 1;
+  if (late >= -14) return (late + 14) * 0.8 / 21 + 0.2;
+  return 0.2;
+}
+/* The day on this line, or on the nearest line above that has one. */
+function inheritedDay(block, key) {
+  for (let p = block; p; p = p._parent) {
+    const day = dateIn(blockProp(p, key));
+    if (day) return {day, own: p === block};
+  }
+  return null;
+}
+const priorityOf = b => {
+  const v = trim(blockProp(b, "priority") || "").toUpperCase();
+  return /^(H|HIGH|HØY)$/.test(v) ? "H" : /^(M|MED|MEDIUM|MIDDELS)$/.test(v) ? "M" : /^(L|LOW|LAV)$/.test(v) ? "L" : null;
+};
+/* Is this project part of a chain, and which end? Asked in its own area. */
+function chainTerms(projectPath, space) {
+  if (!projectPath) return {blocked: false, blocking: false};
+  return inSpace(space, () => ({
+    blocked: blockersOf(projectPath).length > 0,
+    blocking: dependentsOf(projectPath).some(p => !projectCleared(p)),
+  }));
+}
+
+function urgencyParts(a) {
+  const b = a.block, parts = [];
+  const add = (why, n) => { n = Math.round(n * 10) / 10; if (n) parts.push([why, n]); };
+  const above = d => d.own ? "" : ", from the line above";
+  const dl = inheritedDay(b, "DEADLINE") || inheritedDay(b, "due");
+  const sc = inheritedDay(b, "SCHEDULED");
+  if (dl) add("deadline " + humanDate(dl.day) + above(dl), URGENCY.due * dueFactor(dl.day));
+  else if (sc) add("scheduled " + humanDate(sc.day) + above(sc), URGENCY.due * dueFactor(sc.day));
+  if (sc && sc.day <= todayISO()) add("its day has come", URGENCY.scheduled);
+  const pri = priorityOf(b);
+  if (pri) add("priority " + pri, URGENCY["priority" + pri]);
+  if (b.state === "DOING") add("already started", URGENCY.doing);
+  if (a.context && a.context === state.ctxFilter) add("you are @" + a.context, URGENCY.here);
+  const age = blockAge(b);
+  if (age > 0) add(age + " days on the list", URGENCY.age * Math.min(age / 365, 1));
+  if (a.project) add("in " + a.project, URGENCY.project);
+  if (messagesOf(b).length) add("talked about", URGENCY.chat);
+  const chain = chainTerms(a.projectPath, a.space);
+  if (chain.blocking) add("another project waits on this one", URGENCY.blocking);
+  if (chain.blocked) add("its project waits on another", URGENCY.blocked);
+  if (b.state === "WAIT" || a.mine === false) add("waiting for somebody", URGENCY.waiting);
+  return parts;
+}
+function urgencyOf(a) {
+  if (a._urgency == null) a._urgency = Math.round(urgencyParts(a).reduce((s, [, n]) => s + n, 0) * 10) / 10;
+  return a._urgency;
+}
+const byUrgency = (x, y) => urgencyOf(y) - urgencyOf(x) || (x.added || "9999").localeCompare(y.added || "9999");
+
+function projectUrgency(path, space) {
+  return memo("purg:" + (space || "") + ":" + path, () => {
+    const acts = leafActions().filter(a => a.projectPath === path && (!a.space || !space || a.space === space)
+                                           && OPEN_STATES[a.state]);
+    let best = acts.length ? Math.max(...acts.map(urgencyOf)) : null;
+    if (best == null) {
+      const props = inSpace(space, () => getPage(path)?.props || {});
+      const own = dateIn(props.deadline || props.due || "");
+      const chain = chainTerms(path, space);
+      best = (own ? URGENCY.due * dueFactor(own) : 0) +
+             (chain.blocking ? URGENCY.blocking : 0) + (chain.blocked ? URGENCY.blocked : 0);
+    }
+    return Math.round((best + 0.1 * Math.min(acts.length, 10)) * 10) / 10;
+  });
+}
+function urgencyChip(a) {
+  const parts = urgencyParts(a);
+  return el("span", {class: "chip urg", title: "Urgency " + urgencyOf(a) + (parts.length ? ":\n" +
+    parts.map(([why, n]) => (n > 0 ? "+" : "") + n + "  " + why).join("\n") : "")},
+    "↑" + urgencyOf(a));
+}
+
 /* Port of: init.lua 70_HEALTH_CHECKS */
 function healthScan() {
   const issues = [];
@@ -9204,7 +9316,7 @@ const humanWhen = (day, time) => humanDate(day) + (time ? " " + time : "");
 function parseWhen(text) {
   const today = todayISO();
   const out = {source: text, title: text, SCHEDULED: null, DEADLINE: null, until: null,
-               time: null, repeat: null, remind: null, taken: []};
+               time: null, repeat: null, remind: null, priority: null, taken: []};
   let s = trim(text);
   // Links at the end are kept aside: "Call Bob tomorrow [[c/phone]]" is still tomorrow.
   const lm = /((?:\s*\[\[[^\]]*\]\])+)\s*$/.exec(s);
@@ -9212,10 +9324,14 @@ function parseWhen(text) {
   if (lm) s = trim(s.slice(0, lm.index));
 
   // Taskwarrior's words, anywhere in the line: due:fri until:eom remind:30m
-  s = s.replace(/(^|\s)(due|sched|scheduled|until|remind|wait):(\S+)/gi, (all, pre, key, val) => {
+  s = s.replace(/(^|\s)(due|sched|scheduled|until|remind|wait|pri|priority):(\S+)/gi, (all, pre, key, val) => {
     key = key.toLowerCase();
     const v = val.toLowerCase();
     if (key === "remind") { out.remind = v; out.taken.push(all.trim()); return pre; }
+    if (key === "pri" || key === "priority") {
+      if (!/^[hml]$/.test(v)) return all;
+      out.priority = v.toUpperCase(); out.taken.push(all.trim()); return pre;
+    }
     const [dayPart, timePart] = v.split(/[@t,](?=\d)/);
     const day = whenDay(dayPart, today, 2);
     if (!day) return all;
@@ -9279,6 +9395,7 @@ function applyWhen(block, w) {
   if (w.until)     put("until",     "[[" + w.until + "]]");
   if (w.repeat)    put(REPEAT_PROP, w.repeat);
   if (w.remind)    put("remind",    w.remind);
+  if (w.priority)  put("priority",  w.priority);
   block.title = w.title;
   return keys;
 }
@@ -9288,6 +9405,7 @@ function whenSays(w) {
   if (w.DEADLINE) bits.push("due " + humanWhen(w.DEADLINE, w.SCHEDULED ? null : w.time));
   if (w.repeat) bits.push("repeats " + w.repeat);
   if (w.until) bits.push("expires after " + humanDate(w.until));
+  if (w.priority) bits.push("priority " + w.priority);
   if (w.remind) {
     const lead = remindLead(w.remind);
     bits.push(lead == null ? "no reminder" : lead === 0 ? "reminder at the time" : "reminder " + w.remind + " before");
@@ -17236,6 +17354,8 @@ function chipsFor(a) {
       onclick: e => {e.stopPropagation(); openDueChipMenu(a);}}, humanWhen(a.due, w && w.time) + (rel ? " · " + rel : "")));
   }
   if (a.age != null && a.age > 0) out.push(el("span", {class: "chip age"}, a.age + "d"));
+  // Only where the list is in that order: the row objects are shared with every other view.
+  if (a._showUrgency && state.view === "next") out.push(urgencyChip(a));
   const msgs = messagesOf(a.block).length;
   if (msgs) {
     const un = unreadCount(a.block);
@@ -20966,9 +21086,11 @@ function viewNext() {
   // Only the contexts something open is waiting in, plus the one you are filtered to.
   const ctxs = Array.from(new Set([...all.map(a => a.context).filter(Boolean),
     ...(state.ctxFilter ? [state.ctxFilter] : [])])).sort();
-  const sort = PREF.get("next.sort", "date");
-  const sortSel = fselect("Sort", sort, [["date", "By date"], ["age", "Oldest first"], ["est", "Shortest first"]],
+  const sort = PREF.get("next.sort", "urgency");
+  const sortSel = fselect("Sort", sort, [["urgency", "By urgency"], ["date", "By date"], ["age", "Oldest first"], ["est", "Shortest first"]],
     v => { PREF.set("next.sort", v); render(); });
+  sortSel.title = "Urgency adds up the deadline, the scheduled day, priority, being started, " +
+    "the context you are in, age and the project chain. The ↑ chip on each row says why.";
   sortSel.classList.add("right");
 
   if (sub === "board") {
@@ -21031,7 +21153,9 @@ function viewNext() {
   const ctx = state.ctxFilter || null;
   if (ctx) acts = acts.filter(a => a.context === ctx);
   const byDate = (x, y) => (x.due || "9999").localeCompare(y.due || "9999") || (x.added || "9999").localeCompare(y.added || "9999");
-  acts.sort(sort === "date" ? byDate
+  acts.forEach(a => { a._showUrgency = sort === "urgency"; });
+  acts.sort(sort === "urgency" ? byUrgency
+    : sort === "date" ? byDate
     : sort === "est" ? (x, y) => byEst(x, y) || byDate(x, y)
     : (x, y) => (x.added || "9999").localeCompare(y.added || "9999"));
   const f = textFilter("next", "Filter next actions", acts, taskHay,
@@ -21230,6 +21354,8 @@ function projectRow(r) {
         ...projectOrgs(r).map(o => el("span", {class: "chip"}, o)),
         info.area ? el("span", {class: "chip proj"}, info.area) : null,
         ...projectCountChips(open.length, tally),
+        r._urg != null ? el("span", {class: "chip urg", title: "Urgency of its most urgent open action, " +
+          "or of its own deadline and chain when it has none"}, "↑" + r._urg) : null,
         ...projectTags(r), spaceTag(r.space)),
       projectFieldPills(r, {skip: ["status"]})),
     el("div", {class: "avs"}, ...who.slice(0, 4).map(n => avatarNode(n, 24))),
@@ -21495,13 +21621,21 @@ function viewProjects() {
   const area = areaFilter(every, "projects.area");
   const code = STATUS_DIRS[state.statusCode] ? state.statusCode : "1";
   const rows = every.filter(inOrg).filter(area.keep);
-  const shown = rows.filter(r => effStatus(r) === code).sort((x, y) => rowTitle(x).localeCompare(rowTitle(y)));
+  const psort = PREF.get("projects.sort", "urgency") === "az" ? "az" : "urgency";
+  const shown = rows.filter(r => effStatus(r) === code);
+  shown.forEach(r => { r._urg = psort === "urgency" ? projectUrgency(r.path, r.space) : null; });
+  shown.sort(psort === "urgency"
+    ? (x, y) => y._urg - x._urg || rowTitle(x).localeCompare(rowTitle(y))
+    : (x, y) => rowTitle(x).localeCompare(rowTitle(y)));
+  const psortSel = fselect("Sort", psort, [["urgency", "By urgency"], ["az", "A-Z"]],
+    v => { PREF.set("projects.sort", v); render(); });
+  psortSel.title = "A project is as urgent as its most urgent open action, or its own deadline and its place in a chain.";
   const f = textFilter("projects", "Filter projects", shown,
     r => [rowTitle(r), areaOfRow(r), ...projectOrgs(r), ...projectPeople(r)].join(" "),
     (hits, q) => pagedCard(hits, projectRow, noMatch(q, "No " + STATUS_LABEL[code].toLowerCase() + " projects.")));
   c.append(fbar(f.input, ...STATUS_CHIPS.map(k => fchip(STATUS_LABEL[k], code === k,
       () => go("projects", {statusCode: k}), rows.filter(r => effStatus(r) === k).length)),
-    area.sel, orgSel), f.host);
+    area.sel, orgSel, psortSel), f.host);
   return c;
 }
 
@@ -27600,6 +27734,10 @@ function showTaskDetail(path, block, space) {
   const schedAt = el("input", {type: "time", value: timeOf("SCHEDULED"), title: "Time, if it has one"});
   const deadAt  = el("input", {type: "time", value: timeOf("DEADLINE"), title: "Time, if it has one"});
   const until = el("input", {type: "date", value: dateIn(blockProp(block, "until")) || ""});
+  const priSel = el("select", {});
+  for (const [v, label] of [["", "None"], ["H", "High"], ["M", "Medium"], ["L", "Low"]])
+    priSel.append(el("option", {value: v}, label));
+  priSel.value = priorityOf(block) || "";
   const remindSel = el("select", {});
   for (const [v, label] of [["", CFG.remindLeadMinutes + " min before (usual)"], ["0", "At the time"],
                             ["30m", "30 min before"], ["1h", "1 hour before"], ["1d", "A day before"],
@@ -27666,6 +27804,8 @@ function showTaskDetail(path, block, space) {
     else drop("until");
     if (remindSel.value) setBlockProp(block, "remind", remindSel.value);
     else drop("remind");
+    if (priSel.value) setBlockProp(block, "priority", priSel.value);
+    else drop("priority");
     touch(path); noteTodoTouched(); closeModal(); render();
   };
 
@@ -27717,6 +27857,20 @@ function showTaskDetail(path, block, space) {
       el("div", {class: "grid2"},
         el("div", {class: "field"}, el("label", {}, "Reminder, when it has a time"), remindSel),
         el("div", {class: "field"}, el("label", {}, "Cancel it if still open after"), until)),
+      el("div", {class: "grid2"},
+        el("div", {class: "field"}, el("label", {}, "Priority"), priSel),
+        el("div", {class: "field"}, el("label", {}, "Urgency"),
+          (() => {
+            const who = assigneeOf(block);
+            const row = {block, state: block.state, title: block.title, context: contextOf(block.title),
+                         project: (nearestProjectAncestor(block) || {}).title || (statusDirOf(path) ? pageTitle(path) : null),
+                         projectPath: statusDirOf(path) ? path : null, space,
+                         mine: !who || samePerson(who, whoAmI())};
+            const parts = urgencyParts(row);
+            return el("div", {style: "font-size:12.5px;color:var(--fg2);line-height:1.6"},
+              el("div", {style: "font-weight:600;color:var(--fg)"}, "↑" + urgencyOf(row)),
+              ...parts.map(([why, n]) => el("div", {}, (n > 0 ? "+" : "") + n + "  " + why)));
+          })())),
       el("div", {class: "field"},
         el("label", {}, "Repeats"),
         (() => {
@@ -27810,7 +27964,7 @@ const DETAIL_GROUPS = [
   ["repeat", "Repeats", ["Repeats"]],
   ["chat", "Chat", ["Chat"]],
   ["who", "Who is doing it", ["Who is doing it"]],
-  ["gtd", "GTD hygiene", ["GTD hygiene"]],
+  ["gtd", "GTD hygiene", ["GTD hygiene", "Priority"]],
   ["history", "History", ["Trail", "Source"]],
 ];
 
