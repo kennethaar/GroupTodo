@@ -1393,6 +1393,22 @@ button.prow{width:100%;text-align:left}
 }
 .toast.warn{border-color:rgba(224,176,80,.5)} .hint.warn{color:var(--warn)}.toast.err{border-color:rgba(255,107,107,.5)}
 .toast .x{margin-left:auto;color:var(--fg3)}
+/* A reminder you asked for stays until it is answered, so it is marked as one. */
+.toast.remind{border-color:var(--accent)}
+/* ---------- how long until ----------
+   One quiet line on Today: the next task with a time, the next deadline. Each
+   is a button into the task itself. */
+.countdown{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.countdown .cd{display:flex;gap:8px;align-items:baseline;min-width:0;max-width:100%;color:inherit;cursor:pointer;
+  background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12.5px;text-align:left}
+.countdown .cd-k{font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--fg3);font-weight:600}
+.countdown .cd-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.countdown .cd-left{color:var(--accent);white-space:nowrap;font-variant-numeric:tabular-nums}
+.dt{display:flex;gap:6px;flex-wrap:wrap}
+.dt input[type=date]{flex:1 1 9em;min-width:0}
+.dt input[type=time]{flex:1 1 6.5em;min-width:0}
+.grid2>.field{min-width:0}
+.cal-item.bday{font-style:italic}
 /* keyboard chord hud */
 #chord{
   position:fixed;left:12px;bottom:12px;z-index:210;background:var(--bg4);border:1px solid var(--border2);
@@ -1931,6 +1947,9 @@ body.solview #content{padding-bottom:14px}
     <li><b>Last time:</b> On a day page, a tracker or a <code>key:: value</code> of your own shows faintly what you wrote the last time you filled it in.</li>
     <li><b>Namespaces:</b> A page in a family, <code>[[Work/Clients/Acme]]</code> or <i>Work - Clients - Acme</i>, lists the rest of the family at the bottom.</li>
     <li><b>Duplicate lines:</b> &#8943; beside a page title &rarr; <i>Remove duplicate lines</i>. A line written twice under the same parent goes, and what was under it moves to the first copy. The <i>Weekly review</i> says when any page has some, and lists them. Undo puts them back.</li>
+    <li><b>Dates in the words:</b> In the box at the top, the end of the line is read for when: <i>Call Bob fri 2pm</i>, <i>Pay rent by the 1st</i>, <i>Water plants every monday</i>, in English or Norwegian (<i>i morgen kl 14</i>, <i>fredag</i>), and Taskwarrior's <code>due:</code>, <code>until:</code> and <code>remind:</code> anywhere in it. A toast says what was read, with <i>Keep the words</i> to undo it. A time is written after the day, <code>SCHEDULED:: [[2026-10-23]] 14:00</code>.</li>
+    <li><b>Reminders:</b> A task with a time gets a reminder 10 minutes before (or <code>remind::</code>, set in its panel), which stays until answered: Open, In 10 min, Done. A birthday gets one on the day. Today shows how long until the next timed task and the next deadline.</li>
+    <li><b>Letting late tasks go:</b> <code>until::</code> on a task cancels it once that day has passed; <i>Vault &amp; sync</i> can cancel your own tasks once they are a number of days late. Struck out, not deleted, with <code>expired::</code>, and the toast can undo it.</li>
     <li><b>Time on site:</b> Type <code>/in</code> on any line when somebody arrives: who, which project and the time now are filled in (the last person and project you used), to change before it is saved as a <code>#timelog</code> line on that day's page. <code>/out</code> when they leave. Gone for a while and back is a second /in. Click the clock under the line to correct it. <i>Projects &gt; Hours</i> (<kbd>v h</kbd>) shows each week by day, to copy as text; a project's page shows its hours per week.</li>
     <li><b>Meetings:</b> The next <code>#meeting</code> with a time today is shown at the top, counting down, and you are reminded before it starts (Calendars sets how long before, or turns it off).</li>
   </ul>
@@ -2441,6 +2460,7 @@ const CFG = {
   graphStep        : 500,    // pages the map draws at first, and how many more "Show more" adds
   plexTaskFan      : 12,     // todos hung off one page or todo in the mindmap
   journalScanDays  : 365,
+  remindLeadMinutes: 10,     // a toast this long before a task's time; remind:: overrides
   contextPrompts   : [[12, 0, "lunchtime"], [17, 0, "after work"]],
 };
 
@@ -2679,6 +2699,8 @@ function readyPastedBlocks(roots, opts = {}) {
     if (b.state && !Object.keys(b.props || {}).length) { applyTodoTemplate(b); }
     if (b.title) createLinkedPages(b.title);
   });
+  // Typed into capture, a line's date is in its words; pasted into a page, it is only text.
+  if (opts.when) roots.when = readWhenInto(roots);
   return n;
 }
 
@@ -9038,6 +9060,268 @@ function openSpacesMenu() {
   $("#spacesBtn").setAttribute("aria-expanded", "true");
 }
 
+/* ============================================================
+   113a_WHEN -- the date is already in the words
+   "Call Bob fri 2pm" says Friday at two. Making somebody open the panel and
+   find a date field to say what they have just typed is a tax on every
+   capture, so the end of a captured line is read for a date, a time, a
+   repeat, and the Taskwarrior-style words due:, until: and remind:.
+
+   Only the end of the line is read, because that is where people put it and
+   because "Ring Mon about the May accounts" is a sentence, not a schedule.
+   A bare number is a number: 10.30 is a version and 1/2 is half a cup unless
+   something says otherwise (kl., at, by, a year). Whatever was taken is said
+   in a toast with one button that puts the words back, so a wrong guess
+   costs a click and never a lost word.
+
+   Written into the file the way it was always written -- SCHEDULED:: [[day]]
+   -- with the time after the link when there is one, so the date still reads
+   in Notepad and every older reader of the property still finds the day.
+   ============================================================ */
+const WHEN_MONTHS = {
+  jan: 1, january: 1, januar: 1, feb: 2, february: 2, februar: 2, mar: 3, march: 3, mars: 3,
+  apr: 4, april: 4, may: 5, mai: 5, jun: 6, june: 6, juni: 6, jul: 7, july: 7, juli: 7,
+  aug: 8, august: 8, sep: 9, sept: 9, september: 9, oct: 10, october: 10, okt: 10, oktober: 10,
+  nov: 11, november: 11, dec: 12, december: 12, des: 12, desember: 12,
+};
+/* Full names in both languages, and the English short forms. The Norwegian
+   short forms are left out on purpose: "man", "tor" and "fre" are words. */
+const WHEN_WEEKDAYS = {
+  sunday: 0, sun: 0, "søndag": 0, monday: 1, mon: 1, mandag: 1,
+  tuesday: 2, tue: 2, tues: 2, tirsdag: 2, wednesday: 3, wed: 3, onsdag: 3,
+  thursday: 4, thu: 4, thur: 4, thurs: 4, torsdag: 4, friday: 5, fri: 5, fredag: 5,
+  saturday: 6, sat: 6, "lørdag": 6,
+};
+const WHEN_LOOSE_ONLY = new Set(["tom", "tod", "eod", "sat", "sun", "wed"]);
+const WHEN_KIND = {
+  by: "DEADLINE", due: "DEADLINE", before: "DEADLINE", innen: "DEADLINE", frist: "DEADLINE",
+  on: "SCHEDULED", "på": "SCHEDULED", this: "SCHEDULED", denne: "SCHEDULED",
+  until: "until",
+};
+
+/* The next one strictly after `from`: "fri" said on a Friday is next week,
+   because "today" is the word for today. */
+const nextWeekdayISO = (wd, from) => shiftISO(from, ((wd - weekdayOf(from) + 7) % 7) || 7);
+const mondayAfterISO = from => shiftISO(from, 7 - ((weekdayOf(from) + 6) % 7));
+
+/* A day and a month without a year is the next one of them, never last year's. */
+function whenDayMonth(d, mo, y, today) {
+  const year = y ? (y < 100 ? 2000 + y : y) : Number(today.slice(0, 4));
+  if (mo < 1 || mo > 12 || d < 1) return null;
+  const last = new Date(Date.UTC(year, mo, 0)).getUTCDate();
+  if (d > last) return null;
+  const iso = year + "-" + pad2(mo) + "-" + pad2(d);
+  return !y && iso < today ? whenDayMonth(d, mo, year + 1, today) : iso;
+}
+
+/* One phrase -> a day, or null. `loose` says how sure we are that a date was
+   meant: 0 for the bare end of a line, 1 after "by" or "on", 2 for the value
+   of due: or until:, where nothing else could have been meant and 3d is safe. */
+function whenDay(p, today, loose = 0) {
+  let m;
+  // Short forms that are also words -- Tom, the sun, sat down -- count only
+  // where nothing else could have been meant.
+  if (loose < 1 && WHEN_LOOSE_ONLY.has(p)) return null;
+  if (/^(today|tod|i ?dag|eod)$/.test(p)) return today;
+  if (/^(tomorrow|tmrw|tom|i ?morgen)$/.test(p)) return shiftISO(today, 1);
+  if (/^((the )?day after tomorrow|(i )?overmorgen)$/.test(p)) return shiftISO(today, 2);
+  if (p in WHEN_WEEKDAYS) return nextWeekdayISO(WHEN_WEEKDAYS[p], today);
+  if ((m = /^(?:next|neste)\s+(\S+)$/.exec(p)) && m[1] in WHEN_WEEKDAYS)
+    return shiftISO(mondayAfterISO(today), (WHEN_WEEKDAYS[m[1]] + 6) % 7);
+  if (/^(next week|neste uke)$/.test(p)) return mondayAfterISO(today);
+  if (/^(next month|neste måned)$/.test(p)) return addMonths(today.slice(0, 8) + "01", 1);
+  if (/^eow$/.test(p)) return shiftISO(today, (7 - weekdayOf(today)) % 7);
+  if (/^eom$/.test(p)) return shiftISO(addMonths(today.slice(0, 8) + "01", 1), -1);
+  if (/^eoy$/.test(p)) return today.slice(0, 4) + "-12-31";
+  if ((m = /^(?:in|om)\s+(an?|one|en|ett|\d{1,3})\s+(days?|dager?|weeks?|uker?|uke|months?|måneder?|måned|years?|år)$/.exec(p))) {
+    const n = /^\d/.test(m[1]) ? Number(m[1]) : 1;
+    const u = m[2][0];
+    return u === "d" ? shiftISO(today, n) : (u === "w" || u === "u") ? shiftISO(today, 7 * n)
+         : (u === "y" || u === "å") ? addMonths(today, 12 * n) : addMonths(today, n);
+  }
+  if ((m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(p))) return whenDayMonth(+m[3], +m[2], +m[1], today);
+  if ((m = /^(\d{1,2})(?:st|nd|rd|th|\.)?\s+([a-zæøå]+)\.?(?:\s+(\d{4}))?$/.exec(p)) && m[2] in WHEN_MONTHS)
+    return whenDayMonth(+m[1], WHEN_MONTHS[m[2]], m[3] ? +m[3] : 0, today);
+  if ((m = /^([a-zæøå]+)\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?$/.exec(p)) && m[1] in WHEN_MONTHS)
+    return whenDayMonth(+m[2], WHEN_MONTHS[m[1]], m[3] ? +m[3] : 0, today);
+  // Day first, the way it is written everywhere this app is used.
+  if ((m = /^(\d{1,2})[./](\d{1,2})(?:[./](\d{4}|\d{2}))?(\.)?$/.exec(p)) && (loose >= 1 || m[3] || m[4]))
+    return whenDayMonth(+m[1], +m[2], m[3] ? +m[3] : 0, today);
+  if (loose >= 2 && (m = /^\+?(\d{1,3})([dwmy])$/.exec(p))) {
+    const n = Number(m[1]);
+    return m[2] === "d" ? shiftISO(today, n) : m[2] === "w" ? shiftISO(today, 7 * n)
+         : m[2] === "m" ? addMonths(today, n) : addMonths(today, 12 * n);
+  }
+  return null;
+}
+
+/* One phrase -> "HH:MM", or null. 14:00 is a time on its own; 2pm, at 2 and
+   kl 14 are times because of the word that came with them. */
+function whenClock(p) {
+  const m = /^(at|kl\.?|klokka|klokken)?\s*(\d{1,2})(?:([:.])(\d{2}))?\s*(am|pm)?$/.exec(p);
+  if (!m) return null;
+  const [, kw, hh, sep, mm, ap] = m;
+  if (!kw && !ap && sep !== ":") return null;
+  if (sep === "." && !/^kl/.test(kw || "")) return null;
+  let h = Number(hh);
+  const min = mm ? Number(mm) : 0;
+  if (min > 59 || h > 23) return null;
+  if (ap) { if (h < 1 || h > 12) return null; h = h % 12 + (ap === "pm" ? 12 : 0); }
+  else if (kw === "at" && !mm && h >= 1 && h <= 7) h += 12;   // "at 3" is the afternoon
+  return pad2(h) + ":" + pad2(min);
+}
+
+/* "30m", "1h", "2d", "0" (at the time) or "none" -> minutes before, or null. */
+function remindLead(spec) {
+  const s = trim(String(spec || "")).toLowerCase();
+  if (!s) return CFG.remindLeadMinutes;
+  if (/^(none|off|no|never|nei)$/.test(s)) return null;
+  const m = /^(\d{1,4})\s*(m|min|mins|minutes?|h|hours?|t|timer?|d|days?|dager?)?$/.exec(s);
+  if (!m) return CFG.remindLeadMinutes;
+  const n = Number(m[1]), u = (m[2] || "m")[0];
+  return u === "h" || u === "t" ? n * 60 : u === "d" ? n * 1440 : n;
+}
+
+/* The time after a date property's day: "[[2026-10-24]] 14:00" -> "14:00". */
+const timeIn = s => {
+  const m = /(?:^|[\s\]])(\d{1,2}):(\d{2})(?![\d:])/.exec(s || "");
+  return m && +m[1] < 24 && +m[2] < 60 ? pad2(+m[1]) + ":" + pad2(+m[2]) : null;
+};
+const whenValue = (day, time) => "[[" + day + "]]" + (time ? " " + time : "");
+/* The day a task is due, and the time when it has one, from the same property
+   dueDate() reads -- so the chip and the reminder never disagree with it. */
+function dueWhen(b) {
+  for (const key of ["SCHEDULED", "DEADLINE", "due"]) {
+    const raw = blockProp(b, key);
+    const day = dateIn(raw);
+    if (day) return {key, day, time: timeIn(String(raw).replace(/\[\[[^\]]*\]\]/g, " "))};
+  }
+  return null;
+}
+const humanWhen = (day, time) => humanDate(day) + (time ? " " + time : "");
+
+/* The line, read: what stays as the title, and what was taken out of it. */
+function parseWhen(text) {
+  const today = todayISO();
+  const out = {source: text, title: text, SCHEDULED: null, DEADLINE: null, until: null,
+               time: null, repeat: null, remind: null, taken: []};
+  let s = trim(text);
+  // Links at the end are kept aside: "Call Bob tomorrow [[c/phone]]" is still tomorrow.
+  const lm = /((?:\s*\[\[[^\]]*\]\])+)\s*$/.exec(s);
+  const tail = lm ? trim(lm[1]) : "";
+  if (lm) s = trim(s.slice(0, lm.index));
+
+  // Taskwarrior's words, anywhere in the line: due:fri until:eom remind:30m
+  s = s.replace(/(^|\s)(due|sched|scheduled|until|remind|wait):(\S+)/gi, (all, pre, key, val) => {
+    key = key.toLowerCase();
+    const v = val.toLowerCase();
+    if (key === "remind") { out.remind = v; out.taken.push(all.trim()); return pre; }
+    const [dayPart, timePart] = v.split(/[@t,](?=\d)/);
+    const day = whenDay(dayPart, today, 2);
+    if (!day) return all;
+    const prop = key === "due" ? "DEADLINE" : key === "until" ? "until" : "SCHEDULED";
+    out[prop] = day;
+    if (timePart && prop !== "until") out.time = whenClock(timePart.includes(":") ? timePart : "at " + timePart);
+    out.taken.push(all.trim());
+    return pre;
+  });
+  s = trim(s.replace(/\s+/g, " "));
+
+  for (let guard = 0; guard < 4; guard++) {
+    const words = s.split(/\s+/);
+    let hit = null;
+    // Longest phrase first, and never the whole line: a task called "Tomorrow" stays one.
+    for (let n = Math.min(5, words.length - 1); n >= 1 && !hit; n--) {
+      const raw = words.slice(-n).join(" ");
+      const p = raw.toLowerCase().replace(/[,;!?]+$/, "");
+      const every = /^(?:every|each)\s+(.+)$/.exec(p);
+      if (!out.repeat && every && parseRepeat(every[1])) { out.repeat = "every " + every[1]; hit = raw; break; }
+      if (!out.time) {
+        const c = whenClock(p) || whenClock(p.replace(/\.$/, ""));
+        if (c) { out.time = c; hit = raw; break; }
+      }
+      if (!out.SCHEDULED && !out.DEADLINE) {
+        const km = /^(\S+)\s+(.+)$/.exec(p);
+        const kind = km && WHEN_KIND[km[1]];
+        const day = kind ? (whenDay(km[2], today, 1) || whenDay(km[2].replace(/\.$/, ""), today, 1))
+                         : (whenDay(p, today) || whenDay(p.replace(/\.$/, ""), today));
+        // "every monday" is a repeat even when the repeat word is not part of this phrase.
+        const before = (words[words.length - n - 1] || "").toLowerCase();
+        if (day && !/^(every|each|hver)$/.test(before)) {
+          if (kind === "until") { if (!out.until) { out.until = day; hit = raw; } }
+          else { out[kind || "SCHEDULED"] = day; hit = raw; }
+        }
+      }
+    }
+    if (!hit) break;
+    out.taken.unshift(hit);
+    s = trim(s.slice(0, s.length - hit.length)).replace(/[,;]$/, "");
+  }
+
+  // A time with no day is the next time the clock says it.
+  if (out.time && !out.SCHEDULED && !out.DEADLINE)
+    out.SCHEDULED = out.time > nowHM() ? today : shiftISO(today, 1);
+  if (out.repeat && !out.SCHEDULED && !out.DEADLINE && parseRepeat(out.repeat)?.unit === "weekday")
+    out.SCHEDULED = nextRepeatDate(out.repeat, shiftISO(today, -1));
+  if (!out.taken.length) return null;
+  out.title = trim(s + (tail ? " " + tail : ""));
+  return out;
+}
+
+/* Write what parseWhen found onto a block, and say what it was in a few words.
+   Returns the property keys written so a "keep the words" can take them off. */
+function applyWhen(block, w) {
+  const keys = [];
+  const put = (k, v) => { setBlockProp(block, k, v); keys.push(k); };
+  const timed = w.DEADLINE && !w.SCHEDULED ? "DEADLINE" : "SCHEDULED";
+  if (w.SCHEDULED) put("SCHEDULED", whenValue(w.SCHEDULED, timed === "SCHEDULED" ? w.time : null));
+  if (w.DEADLINE)  put("DEADLINE",  whenValue(w.DEADLINE,  timed === "DEADLINE" ? w.time : null));
+  if (w.until)     put("until",     "[[" + w.until + "]]");
+  if (w.repeat)    put(REPEAT_PROP, w.repeat);
+  if (w.remind)    put("remind",    w.remind);
+  block.title = w.title;
+  return keys;
+}
+function whenSays(w) {
+  const bits = [];
+  if (w.SCHEDULED) bits.push(humanWhen(w.SCHEDULED, w.DEADLINE ? null : w.time));
+  if (w.DEADLINE) bits.push("due " + humanWhen(w.DEADLINE, w.SCHEDULED ? null : w.time));
+  if (w.repeat) bits.push("repeats " + w.repeat);
+  if (w.until) bits.push("expires after " + humanDate(w.until));
+  if (w.remind) {
+    const lead = remindLead(w.remind);
+    bits.push(lead == null ? "no reminder" : lead === 0 ? "reminder at the time" : "reminder " + w.remind + " before");
+  }
+  return bits.join(", ");
+}
+
+/* Read every captured line that is a task, and offer to take it all back in
+   one toast: a guess about one line is not worth a dialog per line. */
+function readWhenInto(blocks) {
+  const undo = [];
+  walkBlocks(blocks, b => {
+    if (!b.state) return;
+    const w = parseWhen(b.title);
+    if (!w) return;
+    undo.push({block: b, w, keys: applyWhen(b, w)});
+  });
+  return undo;
+}
+function offerKeepWords(undo, path) {
+  if (!undo.length) return;
+  const msg = undo.length === 1
+    ? "“" + plainTitle(undo[0].w.title) + "”: " + whenSays(undo[0].w) + "."
+    : "Dates read from " + undo.length + " lines.";
+  notify(msg, "info", {label: "Keep the words", run: () => {
+    for (const {block, w, keys} of undo) {
+      block.title = block.title.replace(w.title, trim(w.source));
+      for (const k of keys) for (const real of Object.keys(block.props))
+        if (real.toLowerCase() === k.toLowerCase()) delete block.props[real];
+    }
+    touch(path); render();
+  }});
+}
+
 /* ---------- the capture box ----------
    One line, from anywhere, onto today's page in the space new things land
    in. The same reading a line gets in the outline: names you have used are
@@ -9052,8 +9336,12 @@ function captureLine(raw) {
   const path = ensureJournal(todayISO());
   const page = getPage(path);
   let who = null, due = null;
-  // A date at the end of the line is when it is due.
-  const tail = trailingDate(text);
+  /* "Call Bob fri 2pm", "Pay rent by the 1st every month", "until:eom": the
+     day, the time, a deadline, a repeat. Failing that, the plain date at the
+     end that the outline also understands -- "this weekend", "end of week". */
+  const w = parseWhen(text);
+  if (w) text = w.title;
+  const tail = w ? null : trailingDate(text);
   if (tail) { due = tail.iso; text = trim(text.slice(0, tail.start)); }
   // @@phone, #rollup and @mia, typed out rather than picked from the list.
   text = text.replace(/(^|\s)@@([\p{L}\p{N}_-]+)/gu, (m, sp, c) => sp + "[[c/" + slugify(c) + "]]");
@@ -9078,13 +9366,14 @@ function captureLine(raw) {
   text = linkKnownNames(trim(text.replace(/\s{2,}/g, " ")));
   const blk = stampAuthor(newBlock({state: "TODO", title: text, props: {}}));
   if (due) setDue(blk, due);
+  const when = w ? [{block: blk, w, keys: applyWhen(blk, Object.assign({}, w, {title: text}))}] : [];
   createLinkedPages(blk.title);
   page.blocks.push(blk);
   touch(path);
   if (who) assignBlock(path, blk, who);
   noteTodoTouched();
   coachMark("add");
-  return {path, block: blk, who};
+  return {path, block: blk, who, when};
 }
 
 function captureFromBox(input) {
@@ -9099,7 +9388,8 @@ function captureFromBox(input) {
     const page = getPage(made.path);
     if (page && removeBlockFrom(page, made.block)) { touch(made.path); render(); }
   }};
-  if (!made.who) notify("Added to today's page" + where + ".", "info", undo);
+  if (made.when.length) offerKeepWords(made.when, made.path);
+  else if (!made.who) notify("Added to today's page" + where + ".", "info", undo);
   if (!startsWithVerb(made.block.title) && !gtdQuiet())
     notify("Start with a verb you could film: Call, Draft, Buy.", "warn");
 }
@@ -9124,7 +9414,7 @@ function installCaptureBox() {
     const roots = parseOutlineText(raw);
     if (!roots.length) return;
     const path = ensureJournal(todayISO());
-    const n = readyPastedBlocks(roots, {defaultState: "TODO", context: state.context, outlineRoots: true});
+    const n = readyPastedBlocks(roots, {defaultState: "TODO", context: state.context, outlineRoots: true, when: true});
     for (const blk of roots) getPage(path).blocks.push(blk);
     touch(path); noteTodoTouched(); coachMark("add"); render();
     notify(n + " tasks added from what you pasted.");
@@ -11857,6 +12147,13 @@ function viewCalendar() {
     if (!byDay.has(a.due)) byDay.set(a.due, []);
     byDay.get(a.due).push(a);
   }
+  // Birthdays are not tasks, so they are drawn beside them rather than among them.
+  const bdays = new Map();             // "MM-DD" -> people, every year alike
+  for (const b of birthdays()) {
+    const k = b.day.slice(5);
+    if (!bdays.has(k)) bdays.set(k, []);
+    bdays.get(k).push(b);
+  }
 
   const shift = n => {
     const [y, m] = anchor.split("-").map(Number);
@@ -11894,6 +12191,8 @@ function viewCalendar() {
       onclick: () => go("next", {sub: "calendar", calMonth: day.slice(0, 7), calDay: day}),
     }, el("div", {class: "cal-num"}, String(Number(day.slice(8)))));
     const box = el("div", {class: "cal-items"});
+    for (const b of bdays.get(day.slice(5)) || [])
+      box.append(el("span", {class: "cal-item bday", title: b.name + "'s birthday"}, b.name));
     for (const a of items.slice(0, 4))
       box.append(el("span", {class: "cal-item" + (late(a) ? " late" : ""),
         title: plainTitle(a.title)}, plainTitle(a.title)));
@@ -11904,6 +12203,10 @@ function viewCalendar() {
   c.append(grid);
 
   const dayItems = (byDay.get(picked) || []);
+  for (const b of bdays.get(picked.slice(5)) || [])
+    c.append(el("div", {class: "section quiet"},
+      el("button", {class: "btn sm ghost", onclick: () => openPageIn(b.space, b.path)},
+        b.name + "'s birthday" + (b.age && picked.slice(0, 4) === b.day.slice(0, 4) ? " · " + b.age : ""))));
   // humanDate already says "Today", so do not say it twice.
   c.append(section(humanDate(picked), dayItems.length,
     taskCard(dayItems, "Nothing due on this day.")));
@@ -13966,7 +14269,7 @@ const dropProp = (b, key) => {
   const k = Object.keys(b.props || {}).find(x => x.toLowerCase() === key.toLowerCase());
   if (k) delete b.props[k];
 };
-const writeDay = (b, key, iso) => setBlockProp(b, key, "[[" + iso + "]]");
+const writeDay = (b, key, iso) => setBlockProp(b, key, whenValue(iso, timeIn(String(blockProp(b, key) || "").replace(/\[\[[^\]]*\]\]/g, " "))));
 
 /* Move both ends by the same number of days, writing only the properties the
    task already had -- plus a SCHEDULED:: when the bar's start was coming from
@@ -14985,10 +15288,11 @@ function makeNextOccurrence(path, block, when) {
   });
   // Carry what describes the job; leave behind what described that one doing of it.
   for (const [k, v] of Object.entries(block.props || {})) {
-    if (/^(added|closed|done_by|scheduled|deadline|assigned_at)$/i.test(k)) continue;
+    if (/^(added|closed|done_by|scheduled|deadline|assigned_at|until|expired)$/i.test(k)) continue;
     copy.props[k] = v;
   }
-  setBlockProp(copy, "SCHEDULED", "[[" + when + "]]");
+  // Same time of day as the last one: a weekly meeting is still at ten.
+  setBlockProp(copy, "SCHEDULED", whenValue(when, dueWhen(block)?.time));
   stampAuthor(copy);
 
   const sibs = siblingsOf(page, block);
@@ -16927,8 +17231,9 @@ function chipsFor(a) {
   if (a.due) {
     const cls = a.due < todayISO() ? "late" : a.due === todayISO() ? "today" : "";
     const rel = OPEN_STATES[a.state] ? relDue(a.due) : "";
+    const w = dueWhen(a.block);
     out.push(el("span", {class: "chip b " + cls, title: "Change or clear the date",
-      onclick: e => {e.stopPropagation(); openDueChipMenu(a);}}, humanDate(a.due) + (rel ? " · " + rel : "")));
+      onclick: e => {e.stopPropagation(); openDueChipMenu(a);}}, humanWhen(a.due, w && w.time) + (rel ? " · " + rel : "")));
   }
   if (a.age != null && a.age > 0) out.push(el("span", {class: "chip age"}, a.age + "d"));
   const msgs = messagesOf(a.block).length;
@@ -17940,13 +18245,13 @@ function attachOutlineUndo(host,path,block) {
    comes back, who has it, how much has been said on it -- and any value of
    its own that is not bookkeeping. Added::, by::, started:: and the rest are
    the file's business and stay there. */
-const BOOKKEEPING = /^(id|template_(source|rules)|added|by|started|closed|done_by|assigned_at|created|updated|updated_by|asked|feature_.*|scheduled|deadline|due|repeat|assigned|branch_sync_id|space_sync_.*|cal_.*|stage)$/i;
+const BOOKKEEPING = /^(id|template_(source|rules)|added|by|started|closed|done_by|assigned_at|created|updated|updated_by|asked|feature_.*|scheduled|deadline|due|repeat|assigned|branch_sync_id|space_sync_.*|cal_.*|stage|until|remind|expired|expire)$/i;
 function lineMeta(b, path = null) {
   const out = [];
   const due = dueDate(b);
   if (b.state && due && OPEN_STATES[b.state])
     out.push(el("span", {class: "chip " + (due < todayISO() ? "late" : due === todayISO() ? "today" : "")},
-      humanDate(due) + (relDue(due) ? " · " + relDue(due) : "")));
+      humanWhen(due, dueWhen(b)?.time) + (relDue(due) ? " · " + relDue(due) : "")));
   if (repeatOf(b)) out.push(el("span", {class: "chip"}, "\u21BB " + repeatOf(b)));
   const who = b.state ? assigneeOf(b) : "";
   if (who && !samePerson(who, whoAmI())) out.push(el("span", {class: "chip who"}, "\u2192 " + who));
@@ -20481,6 +20786,7 @@ function viewToday() {
   const coach = coachStrip();
   if (coach) c.append(coach);
   if (!who) { const news = newsBox(); if (news) c.append(news); }
+  if (!who) { const cd = countdownStrip(); if (cd) c.append(cd); }
   if (!who) { const bdays = birthdayBox(); if (bdays) c.append(bdays); }
   /* What is due and the trackers are tabs: one open at a time, and pressing
      the open one again folds it away. */
@@ -27290,6 +27596,19 @@ function showTaskDetail(path, block, space) {
   const notes = el("textarea", {placeholder: "Notes"}); notes.value = (block.body || []).join("\n");
   const sched = el("input", {type: "date", value: dateIn(blockProp(block, "SCHEDULED")) || ""});
   const dead  = el("input", {type: "date", value: dateIn(blockProp(block, "DEADLINE")) || ""});
+  const timeOf = key => timeIn(String(blockProp(block, key) || "").replace(/\[\[[^\]]*\]\]/g, " ")) || "";
+  const schedAt = el("input", {type: "time", value: timeOf("SCHEDULED"), title: "Time, if it has one"});
+  const deadAt  = el("input", {type: "time", value: timeOf("DEADLINE"), title: "Time, if it has one"});
+  const until = el("input", {type: "date", value: dateIn(blockProp(block, "until")) || ""});
+  const remindSel = el("select", {});
+  for (const [v, label] of [["", CFG.remindLeadMinutes + " min before (usual)"], ["0", "At the time"],
+                            ["30m", "30 min before"], ["1h", "1 hour before"], ["1d", "A day before"],
+                            ["none", "No reminder"]])
+    remindSel.append(el("option", {value: v}, label));
+  remindSel.value = trim(blockProp(block, "remind") || "");
+  if (remindSel.value !== trim(blockProp(block, "remind") || ""))
+    remindSel.append(el("option", {value: blockProp(block, "remind")}, blockProp(block, "remind") + " before"));
+  remindSel.value = trim(blockProp(block, "remind") || "");
 
   // Picking a state leaves the panel open: moving TODO -> DOING -> WAIT used to
   // cost one trip through the panel per step, because the first pick closed it.
@@ -27338,10 +27657,15 @@ function showTaskDetail(path, block, space) {
     createLinkedPages(block.title);
     block.body = notes.value.split("\n");
     while (block.body.length && !trim(block.body[block.body.length - 1])) block.body.pop();
-    if (sched.value) setBlockProp(block, "SCHEDULED", "[[" + sched.value + "]]");
-    else if (blockProp(block, "SCHEDULED")) delete block.props[Object.keys(block.props).find(k => k.toLowerCase() === "scheduled")];
-    if (dead.value) setBlockProp(block, "DEADLINE", "[[" + dead.value + "]]");
-    else if (blockProp(block, "DEADLINE")) delete block.props[Object.keys(block.props).find(k => k.toLowerCase() === "deadline")];
+    const drop = key => { for (const k of Object.keys(block.props)) if (k.toLowerCase() === key) delete block.props[k]; };
+    if (sched.value) setBlockProp(block, "SCHEDULED", whenValue(sched.value, schedAt.value));
+    else drop("scheduled");
+    if (dead.value) setBlockProp(block, "DEADLINE", whenValue(dead.value, deadAt.value));
+    else drop("deadline");
+    if (until.value) setBlockProp(block, "until", "[[" + until.value + "]]");
+    else drop("until");
+    if (remindSel.value) setBlockProp(block, "remind", remindSel.value);
+    else drop("remind");
     touch(path); noteTodoTouched(); closeModal(); render();
   };
 
@@ -27388,8 +27712,11 @@ function showTaskDetail(path, block, space) {
         el("button", {onclick: () => { closeModal(); openRefile(path, block); }}, "refile"),
       )),
       el("div", {class: "grid2"},
-        el("div", {class: "field"}, el("label", {}, "Scheduled"), sched),
-        el("div", {class: "field"}, el("label", {}, "Deadline"), dead)),
+        el("div", {class: "field"}, el("label", {}, "Scheduled"), el("div", {class: "dt"}, sched, schedAt)),
+        el("div", {class: "field"}, el("label", {}, "Deadline"), el("div", {class: "dt"}, dead, deadAt))),
+      el("div", {class: "grid2"},
+        el("div", {class: "field"}, el("label", {}, "Reminder, when it has a time"), remindSel),
+        el("div", {class: "field"}, el("label", {}, "Cancel it if still open after"), until)),
       el("div", {class: "field"},
         el("label", {}, "Repeats"),
         (() => {
@@ -27479,7 +27806,7 @@ const detailIcon = kind => '<svg viewBox="0 0 24 24" fill="none" stroke="current
 
 /* [icon, tooltip, the field labels that pane holds] */
 const DETAIL_GROUPS = [
-  ["date", "Dates", ["Scheduled", "Deadline", "Calendar"]],
+  ["date", "Dates", ["Scheduled", "Deadline", "Calendar", "Reminder"]],
   ["repeat", "Repeats", ["Repeats"]],
   ["chat", "Chat", ["Chat"]],
   ["who", "Who is doing it", ["Who is doing it"]],
@@ -28968,6 +29295,30 @@ function openVaultDialog() {
   };
   drawStamps();
 
+  /* Taskwarrior's until, for the whole list: the area's own setting, so the
+     people sharing it agree on it. */
+  const expireBox = el("div", {class: "field"},
+    el("label", {}, "Tasks that are far too late in " + area),
+    (() => {
+      const input = el("input", {type: "number", min: "0", step: "1", placeholder: "never",
+        style: "width:7em", value: expireAfterDays() || ""});
+      input.addEventListener("change", () => {
+        const n = Math.max(0, parseInt(input.value, 10) || 0);
+        setSetting("expire_after_days", n ? String(n) : "");
+        notify(n ? "Your tasks more than " + n + " days past their date will be cancelled."
+                 : "Late tasks stay until you deal with them.");
+        if (n) expireOverdue();
+      });
+      return el("div", {},
+        el("div", {style: "display:flex;gap:10px;align-items:center;flex-wrap:wrap"},
+          el("span", {}, "Cancel my tasks once they are more than"), input, el("span", {}, "days late")),
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          "Only tasks you wrote or were handed: never a Waiting for, never a repeating one, never " +
+          "somebody else's. They are struck out, not deleted, with expired:: saying when, and the " +
+          "toast that says so can undo it. Empty means never. One task can have its own date " +
+          "instead: until:fri in the box at the top, or the field in its panel."));
+    })());
+
   const youBox = el("div", {class: "field"},
     el("label", {}, "You in " + area),
     avatarRow,
@@ -29107,7 +29458,7 @@ function openVaultDialog() {
 
   modal({
     center: true, title: "Vault & sync - " + (Spaces.active || "space"),
-    body: el("div", {}, status, folderBox, devicesBox, youBox, areaBox, more),
+    body: el("div", {}, status, folderBox, devicesBox, youBox, expireBox, areaBox, more),
     foot: [
       el("button", {class: "btn ghost", onclick: () => { closeModal(); openShareSpaceInvite(); }}, "Invite somebody"),
       el("div", {style: "flex:1"}),
@@ -31741,6 +32092,246 @@ function stampAddedIfMissing(path, b) {
   return true;
 }
 
+/* ============================================================
+   166_REMINDERS -- a toast at the time you wrote, and how long until
+   A time on a task is somewhere you have said you will be, so it is the one
+   thing in the app that is allowed to speak up on a clock: you asked for it
+   when you typed "2pm". Everything else stays as quiet as before -- a task
+   with only a day gets no toast, because the Due list already says so.
+
+   There is no server, so a reminder comes from a page that is open. One that
+   came due while the app was closed is shown when it opens, up to two hours
+   late; past that it is history, not a reminder. What has been shown is kept
+   on this device, like read state, and never written into the files.
+
+   Birthdays live on the person, birthday:: 1985-03-14, or 03-14 when the year
+   is nobody's business. The day itself gets one toast; the days before it are
+   in the birthday box on Today. Meetings have their own countdown at the top,
+   so the strip here is the next timed task and the next deadline.
+   ============================================================ */
+function nowHM() {
+  try {
+    return new Intl.DateTimeFormat("en-GB", {timeZone: userTZ(), hour: "2-digit",
+      minute: "2-digit", hourCycle: "h23"}).format(new Date());
+  } catch (_) { const d = new Date(); return pad2(d.getHours()) + ":" + pad2(d.getMinutes()); }
+}
+const hmMinutes = hm => { const [h, m] = String(hm || "00:00").split(":").map(Number); return h * 60 + m; };
+/* In the timezone the app is set to, like todayISO(), so a reminder and the
+   day it sits on can never disagree about which day it is. */
+function minutesUntil(day, time) {
+  const d = dateDiffDays(todayISO(), day);
+  return d == null ? null : d * 1440 + hmMinutes(time) - hmMinutes(nowHM());
+}
+function whenUntilWords(day, time) {
+  if (time) {
+    const m = minutesUntil(day, time);
+    if (m <= -1 && m > -1440) return "started " + (m > -60 ? -m + " min" : Math.floor(-m / 60) + " h") + " ago";
+    if (m > -1 && m < 1) return "now";
+    if (m >= 1 && m < 60) return "in " + m + " min";
+    if (m >= 60 && m < 1440) return "in " + Math.floor(m / 60) + " h" + (m % 60 ? " " + (m % 60) + " min" : "");
+  }
+  const d = dateDiffDays(todayISO(), day);
+  return d === 0 ? "today" : d === 1 ? "tomorrow" : d < 0 ? -d + " days late" : "in " + d + " days";
+}
+
+/* The birthdays lean-ui already reads from birthday:: on person pages, as the
+   next day each comes round. */
+function birthdays() {
+  return memo("birthdays", () => upcomingBirthdays(366).map(x =>
+    ({path: x.path, space: x.space, name: x.name, day: x.iso, age: x.age})));
+}
+const birthdayTitle = b => b.age ? b.name + " turns " + b.age : b.name + "'s birthday";
+
+/* Everything with a when, yours: what you are doing, not what you handed on. */
+function upcomingEvents() {
+  return memo("upcomingEvents", () => {
+    const out = [];
+    for (const a of leafActions()) {
+      if (!a.mine) continue;
+      const w = dueWhen(a.block);
+      if (w) out.push({kind: "task", key: w.key, day: w.day, time: w.time, a, title: plainTitle(a.title)});
+    }
+    for (const b of birthdays())
+      out.push({kind: "birthday", day: b.day, time: null, b, title: birthdayTitle(b)});
+    return out;
+  });
+}
+const eventOrder = (x, y) => (x.day + (x.time || "99:99")).localeCompare(y.day + (y.time || "99:99"));
+
+/* The strip on Today: the next task with a time and the next deadline, each
+   with how long until it. Only what exists is shown, so
+   most mornings it is one line or nothing at all. */
+function countdownStrip() {
+  const today = todayISO();
+  const ev = upcomingEvents();
+  const timed = ev.filter(e => e.time && minutesUntil(e.day, e.time) > -15).sort(eventOrder)[0];
+  const due = ev.filter(e => e.kind === "task" && e.key === "DEADLINE" && e.day >= today && e !== timed)
+    .sort(eventOrder)[0];
+  const items = [[timed, "Next"], [due, "Due"]].filter(([e]) => e);
+  if (!items.length) return null;
+  const box = el("div", {class: "section countdown"});
+  for (const [e, label] of items) {
+    box.append(el("button", {class: "cd", title: e.time ? humanWhen(e.day, e.time) : humanDate(e.day),
+      onclick: () => e.kind === "birthday" ? openPageIn(e.b.space, e.b.path)
+                                           : inSpace(e.a.space, () => openTaskDetail(e.a.path, e.a.block, e.a.space))},
+      el("span", {class: "cd-k"}, label),
+      el("span", {class: "cd-t"}, e.title),
+      el("span", {class: "cd-left", data: {day: e.day, time: e.time || ""}}, whenUntilWords(e.day, e.time))));
+  }
+  return box;
+}
+
+/* ---------- what has been said, per device ---------- */
+const REMIND_PREF = "remind.seen";
+function remindSeen() {
+  try { return JSON.parse(PREF.get(REMIND_PREF, "{}")) || {}; } catch (_) { return {}; }
+}
+function remindMark(key, snoozeMs = 0) {
+  const seen = remindSeen();
+  const old = shiftISO(todayISO(), -3);
+  for (const k of Object.keys(seen)) if ((seen[k].day || "") < old) delete seen[k];
+  seen[key] = {day: todayISO(), snooze: snoozeMs ? Date.now() + snoozeMs : 0};
+  PREF.set(REMIND_PREF, JSON.stringify(seen));
+}
+const eventKey = e => e.kind === "birthday" ? "bday|" + e.b.name + "|" + e.day
+                                            : e.day + "T" + e.time + "|" + e.title;
+
+function reminderToast(e) {
+  const task = e.kind === "task";
+  const t = el("div", {class: "toast reminder remind", role: "alert"},
+    el("strong", {}, (task ? "\u{1F552} " : "\u{1F382} ") + e.title),
+    el("p", {}, task ? humanWhen(e.day, e.time) + " \u00B7 " + whenUntilWords(e.day, e.time) : "Birthday today."));
+  const shut = () => t.remove();
+  const act = (cls, label, run) => el("button", {class: "btn sm " + cls,
+    onclick: () => { shut(); run(); }}, label);
+  const acts = el("div", {class: "acts"},
+    task ? act("primary", "Open", () => inSpace(e.a.space, () => openTaskDetail(e.a.path, e.a.block, e.a.space)))
+         : act("primary", "Open " + e.b.name, () => openPageIn(e.b.space, e.b.path)),
+    task ? act("ghost", "In 10 min", () => remindMark(eventKey(e), 10 * 60000)) : null,
+    task ? act("ghost", "Done", () => { inSpace(e.a.space, () => setBlockState(e.a.path, e.a.block, "DONE")); render(); }) : null,
+    act("ghost", "OK", () => {}));
+  if ("Notification" in window && Notification.permission === "default")
+    acts.append(el("button", {class: "btn sm ghost", onclick: ev => {
+      ev.currentTarget.remove();
+      try { Notification.requestPermission(); } catch (_) {}
+    }}, "Also when this tab is hidden"));
+  t.append(acts);
+  // It stays until it is answered: unlike a nudge, this one you asked for.
+  $("#toasts").append(t);
+  try {
+    if (document.hidden && "Notification" in window && Notification.permission === "granted")
+      new Notification(e.title, {body: task ? humanWhen(e.day, e.time) : "Birthday today", tag: eventKey(e), icon: "icon.svg"});
+  } catch (_) {}
+}
+
+let REMIND_DAY = null;
+function remindTick() {
+  if (!V.loaded || !INIT_DONE) return;
+  const today = todayISO();
+  if (REMIND_DAY && REMIND_DAY !== today) { clearMemo(); expireOverdue(); render(); }
+  REMIND_DAY = today;
+  for (const n of document.querySelectorAll(".cd-left")) n.textContent = whenUntilWords(n.dataset.day, n.dataset.time || null);
+  const seen = remindSeen();
+  for (const e of upcomingEvents()) {
+    const key = eventKey(e);
+    const was = seen[key];
+    if (was && !(was.snooze && Date.now() >= was.snooze)) continue;
+    if (e.kind === "birthday") {
+      if (e.day !== today) continue;
+    } else {
+      if (!e.time) continue;
+      const lead = remindLead(blockProp(e.a.block, "remind"));
+      if (lead == null) continue;
+      const left = minutesUntil(e.day, e.time);
+      if (left > lead || left < -120) continue;
+    }
+    remindMark(key);
+    reminderToast(e);
+  }
+}
+
+/* ============================================================
+   167_EXPIRY -- Taskwarrior's until:, and a limit on how late is too late
+   A task that is three months past its date is not a task any more, it is a
+   reproach. Two ways to let it go, both written in the files:
+
+     until:: [[2026-11-01]]   on the task: after that day it is cancelled.
+                              "Buy tickets until:fri" in capture writes it.
+     expire_after_days:: 30   in pages/GTD.md, set from Vault & sync: any task
+                              of yours that far past its deadline (or its
+                              scheduled day, when it has no deadline) goes.
+
+   The second one only ever touches your own tasks -- ones you wrote, or that
+   are handed to you -- never somebody else's in a shared folder, never a
+   Waiting for (being late is the other person's doing, and chasing it is the
+   point), and never a repeating one, which only ever has one copy anyway.
+   Cancelled, not deleted: the task stays where it was, struck out, with
+   expired:: saying why, and one toast offers to put the lot back. Put back,
+   a task is marked expire:: never, because "keep this" is an answer that has
+   to outlive the next time the app opens.
+   ============================================================ */
+const expireAfterDays = () => {
+  const n = parseInt(getSetting("expire_after_days") || "", 10);
+  return n > 0 ? n : 0;
+};
+function expirableMine(a) {
+  const me = whoAmI();
+  const who = assigneeOf(a.block);
+  if (who) return samePerson(who, me);
+  const by = blockProp(a.block, "by");
+  if (by) return samePerson(splitStamp(by).who, me);
+  return !a.owner || samePerson(a.owner, me);
+}
+function expireHere(today) {
+  const limit = expireAfterDays();
+  const out = [];
+  for (const a of leafActionsHere()) {
+    const b = a.block;
+    const until = dateIn(blockProp(b, "until"));
+    let why = null;
+    if (/^never$/i.test(trim(blockProp(b, "expire") || ""))) continue;
+    if (until && until < today) why = "until";
+    else if (limit && b.state !== "WAIT" && !repeatOf(b) && expirableMine(a)) {
+      const day = dateIn(blockProp(b, "DEADLINE")) || dateIn(blockProp(b, "SCHEDULED")) || dateIn(blockProp(b, "due"));
+      if (day && dateDiffDays(day, today) > limit) why = "late";
+    }
+    if (!why) continue;
+    const before = {state: b.state, props: Object.assign({}, b.props)};
+    b.state = "CANCELLED";
+    setBlockProp(b, "expired", "[[" + today + "]]");
+    const me = stampName();
+    if (me) setBlockProp(b, "done_by", me + " " + nowStamp());
+    touch(a.path);
+    out.push({path: a.path, block: b, before, why});
+  }
+  return out;
+}
+function expireOverdue() {
+  if (!V.loaded) return;
+  const gone = acrossSpaces(() => expireHere(todayISO()));
+  if (!gone.length) return;
+  clearMemo();
+  render();
+  const late = gone.filter(g => g.why === "late").length;
+  const msg = gone.length === 1
+    ? "“" + plainTitle(gone[0].block.title) + "” " +
+      (gone[0].why === "until" ? "ran past its until:: date" : "was more than " + expireAfterDays() + " days late") +
+      " and is cancelled."
+    : gone.length + " tasks cancelled: " +
+      [late ? late + " too late" : null, gone.length - late ? (gone.length - late) + " past their until:: date" : null]
+        .filter(Boolean).join(", ") + ".";
+  notify(msg, "info", {label: "Undo", run: () => {
+    for (const g of gone) inSpace(g.space, () => {
+      g.block.state = g.before.state;
+      g.block.props = g.before.props;
+      setBlockProp(g.block, "expire", "never");
+      touch(g.path);
+    });
+    clearMemo(); render();
+    notify("Back on your list, marked expire:: never so they stay.");
+  }});
+}
+
 /* ---------- meetings: a word before, and the next one at the top ----------
    A meeting is a #meeting line with a time:: on today's day page, or with
    date:: today anywhere else -- the same lines Calendars writes and Alt+M
@@ -32207,6 +32798,9 @@ function installServiceWorker() {
   installCalendarTimer();
   installMeetingReminders();
   scheduleContextPrompts();
+  expireOverdue();
+  remindTick();
+  setInterval(remindTick, 30000);
 
   /* A file somebody baked for you answers every question onboarding would ask --
      but only once they have said yes. Turned down, the invite and the welcome
