@@ -156,7 +156,7 @@ Other line formats:
 
 ```markdown
 tracker-pullups:: 100/8/4/2        (page property at the top of a day page)
-tracker-acme_t:: 07:12 - 10:00, 10:30 - 12:30   (hours: start and end; "07:12 -" is still running)
+tracker-office_t:: 07:12 - 10:00, 10:30 - 12:30 (hours, one per place: start and end; "07:12 -" is still running)
 tracker-food_a:: 129,50 + 45       (an amount)
 tracker-paint_q:: +3               (stock: +3 in, -1 out, =12 counted)
 ```
@@ -165,12 +165,23 @@ How the sheets add these up is on your own person page:
 
 ```markdown
 hours_target:: mon-thu 7.5, fri 7
-hours_split:: Client A 60, Client B 40
+amounts_split:: Home 50, Work 50
 hours_extra:: 1
 hours_format:: 0,00
-hours_trackers:: acme, remote
+hours_trackers:: office, home
 amounts_unit:: kr
 ```
+
+A todo that has been Doing carries Logseq's clock, which the Clients sheet adds up
+per project organisation (`org::` on the project page or its area):
+
+```markdown
+- DONE Draft the offer [[1/Acme website]]
+  :LOGBOOK:
+  CLOCK: [2026-10-23 Fri 09:02:11]--[2026-10-23 Fri 10:47:30] =>  01:45:19
+  :END:
+```
+
 
 ```markdown
 - Numbers are in the shared sheet          (a comment on the task above it,

@@ -1974,7 +1974,8 @@ body.solview #content{padding-bottom:14px}
     <li><b>Waiting For:</b> Setting a line's state to <i>Waiting</i> prompts you to assign the person you are waiting on.</li>
     <li><b>Live lists (<kbd>/query</kbd>):</b> A line like <code>{{query (and [[1/Fix sink]] (task TODO DOING))}}</code> shows every line that matches, kept up to date, and its tasks can be ticked from there. The builder writes the query for you; <i>Edit</i> on the list changes it. Logseq's simple queries work: <code>[[page]]</code>, <code>#tag</code>, <code>"words"</code>, <code>(task ...)</code>, <code>(page ...)</code>, <code>(property key value)</code>, <code>(page-property key value)</code>, <code>(between -7d today)</code>, <code>and</code> / <code>or</code> / <code>not</code>.</li>
     <li><b>Embeds (<kbd>/embed</kbd>):</b> <code>{{embed [[page]]}}</code> shows that page in the line, live. For one line, use its line menu &rarr; <i>Copy as embed</i> and paste it anywhere: <code>{{embed ((id))}}</code>. <code>((id))</code> on its own reads as the words of that line.</li>
-    <li><b>Sheets:</b> Three tracker kinds take the line as you say it: <i>Hours worked</i> (<code>tracker-acme_t:: 07:12 - 10:00, 10:30 - 12:30</code>, with Start and Stop on today's page), <i>An amount</i> (<code>129,50 + 45</code>) and <i>Stock</i> (<code>+3</code>, <code>-1</code>, <code>=12</code>). One tracker per kind, like acme and remote. <i>Trackers &gt; Hours</i>, <i>Amounts</i> or <i>Stock</i> adds them up: a week by day with shares, extra hours and flex, and a year by month, each copied as cells for a spreadsheet. Settings set the normal day, the split and the format, on your own page.</li>
+    <li><b>Sheets:</b> Three tracker kinds take the line as you say it: <i>Hours worked</i> (<code>tracker-office_t:: 07:12 - 10:00, 10:30 - 12:30</code>, with Start and Stop on today's page), <i>An amount</i> (<code>129,50 + 45</code>) and <i>Stock</i> (<code>+3</code>, <code>-1</code>, <code>=12</code>). For hours, one tracker per place you work, like office and home: the year then counts the days you drove in. <i>Trackers &gt; Hours</i>, <i>Amounts</i> or <i>Stock</i> adds them up: a week by day with extra hours and flex, and a year by month, each copied as cells for a spreadsheet.</li>
+    <li><b>Time per client:</b> A todo set to Doing runs a clock until it leaves Doing (Logseq's <code>:LOGBOOK:</code>), shown as &#9201; under the line. The client is the organisation the project's page or area names. <i>Projects &gt; Hours &gt; Clients</i> adds it up by week and month, with the projects under each client.</li>
     <li><b>Last time:</b> On a day page, a tracker or a <code>key:: value</code> of your own shows faintly what you wrote the last time you filled it in.</li>
     <li><b>Namespaces:</b> A page in a family, <code>[[Work/Clients/Acme]]</code> or <i>Work - Clients - Acme</i>, lists the rest of the family at the bottom.</li>
     <li><b>Duplicate lines:</b> &#8943; beside a page title &rarr; <i>Remove duplicate lines</i>. A line written twice under the same parent goes, and what was under it moves to the first copy. The <i>Weekly review</i> says when any page has some, and lists them. Undo puts them back.</li>
@@ -5725,6 +5726,12 @@ function setBlockState(path, block, state, opts = {}) {
     if (prev !== state) runTemplateRules(block,"status",state);
     stampAddedIfMissing(path, block);
   }
+  /* Doing it is the clock running: started on DOING, stopped on whatever
+     comes next -- Logseq's way, in its :LOGBOOK:, so it reads them too. */
+  if (prev !== state) {
+    if (state === "DOING") clockIn(block);
+    else if (prev === "DOING") clockOut(block);
+  }
   touch(path);
 
   /* No context prompt here. A state change is you handling a task you are
@@ -5759,6 +5766,60 @@ function setBlockState(path, block, state, opts = {}) {
   }
   render();
 }
+/* ---------- the clock on a todo ----------
+   Logseq's lines, in the task's :LOGBOOK: drawer, which is kept and written
+   back as it came:
+     CLOCK: [2026-10-23 Fri 09:02:11]--[2026-10-23 Fri 10:47:30] =>  01:45:19
+   A clock with no end is the task still being done. It counts up to now on
+   the day it started, and as nothing after that, the same as hours. */
+const CLOCK_RE = /^CLOCK:\s*\[(\d{4}-\d{2}-\d{2})[^\]\d]*(\d{1,2}):(\d{2})(?::(\d{2}))?\](?:\s*--\s*\[(\d{4}-\d{2}-\d{2})[^\]\d]*(\d{1,2}):(\d{2})(?::(\d{2}))?\])?/;
+const clockStamp = (d = new Date()) => isoOf(d) + " " + ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()] + " " +
+  pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
+const logbookOf = b => (b.drawers || []).find(d => trim(d[0] || "").toUpperCase() === ":LOGBOOK:");
+function clockIn(b) {
+  if (blockClocks(b).some(c => c.running)) return;
+  let lb = logbookOf(b);
+  if (!lb) { lb = [":LOGBOOK:", ":END:"]; (b.drawers || (b.drawers = [])).push(lb); }
+  const end = lb.findIndex(l => trim(l) === ":END:");
+  lb.splice(end < 0 ? lb.length : end, 0, "CLOCK: [" + clockStamp() + "]");
+}
+function clockOut(b) {
+  const lb = logbookOf(b);
+  if (!lb) return;
+  const i = lb.findIndex(l => { const m = CLOCK_RE.exec(trim(l)); return m && !m[5]; });
+  if (i < 0) return;
+  const m = CLOCK_RE.exec(trim(lb[i]));
+  const from = new Date(m[1] + "T" + pad2(+m[2]) + ":" + m[3] + ":" + (m[4] || "00"));
+  const now = new Date(), s = Math.max(0, Math.round((now - from) / 1000));
+  lb[i] = trim(lb[i]) + "--[" + clockStamp(now) + "] =>  " +
+    pad2(Math.floor(s / 3600)) + ":" + pad2(Math.floor(s / 60) % 60) + ":" + pad2(s % 60);
+}
+/* Each clock on a line: the day it started and its minutes. */
+function blockClocks(b) {
+  const lb = logbookOf(b), out = [];
+  if (!lb) return out;
+  const today = todayISO();
+  for (const l of lb) {
+    const m = CLOCK_RE.exec(trim(l));
+    if (!m) continue;
+    const a = new Date(m[1] + "T" + pad2(+m[2]) + ":" + m[3] + ":" + (m[4] || "00"));
+    if (m[5]) {
+      const z = new Date(m[5] + "T" + pad2(+m[6]) + ":" + m[7] + ":" + (m[8] || "00"));
+      out.push({day: m[1], min: Math.max(0, Math.round((z - a) / 60000))});
+    } else out.push({day: m[1], running: true, open: m[1] === today, stale: m[1] !== today,
+      min: m[1] === today ? Math.max(0, Math.round((Date.now() - a) / 60000)) : 0});
+  }
+  return out;
+}
+/* The chip under a todo that has been clocked: how long, and whether it runs. */
+function clockChip(b) {
+  const cs = blockClocks(b);
+  if (!cs.length) return null;
+  const min = cs.reduce((s, c) => s + c.min, 0), on = cs.some(c => c.open);
+  return el("span", {class: "chip" + (on ? " today" : ""), title: on ? "The clock is running: it stops when the task leaves Doing"
+    : cs.length + " stretch" + (cs.length === 1 ? "" : "es") + " of doing it"}, "⏱ " + (fmtMinutes(min) || "0 m") + (on ? " running" : ""));
+}
+
 /* The project a line belongs to: the page it is on, if that is a project, or
    the project it (or the nearest bullet above it) links to. */
 function projectOfBlock(path, block) {
@@ -18600,6 +18661,7 @@ function lineMeta(b, path = null) {
   // A visit says its clock and its hours as one chip, which opens it again.
   const visit = isTimeLog(b);
   if (visit) out.push(timeLogChip(b, path));
+  if (b.state) { const ck = clockChip(b); if (ck) out.push(ck); }
   const rest = Object.entries(b.props || {}).filter(([k, v]) => !BOOKKEEPING.test(k) && trim(v) && !isMessage(b)
     && !(meet && /^(date|time|attendees)$/i.test(k)) && !(visit && /^(in|out|hours)$/i.test(k)));
   // On a day page each value says, faintly, what you wrote the last time.
@@ -20198,10 +20260,20 @@ function copyHours(weeks, by) {
   }
   copyText(lines.join("\n"), "Hours copied.");
 }
+/* Projects > Hours: the clock on the clients' projects, or who was on site. */
 function viewHours() {
+  const clients = sheetEntries(sheetById("clients")).length > 0, site = timeLogEntries().length > 0;
+  const of = state.hoursOf === "site" || state.hoursOf === "clients" ? state.hoursOf : clients || !site ? "clients" : "site";
+  const c = el("div", {});
+  c.append(fbar(fchip("Clients", of === "clients", () => go("projects", {sub: "hours", hoursOf: "clients"})),
+    fchip("Time on site", of === "site", () => go("projects", {sub: "hours", hoursOf: "site"}))));
+  c.append(of === "clients" ? viewSheet(sheetById("clients")) : viewSiteHours());
+  return c;
+}
+function viewSiteHours() {
   const c = el("div", {});
   const key = state.hoursRange || "week", by = state.hoursBy || "person";
-  const goHours = patch => go("projects", Object.assign({sub: "hours", hoursRange: key, hoursBy: by}, patch));
+  const goHours = patch => go("projects", Object.assign({sub: "hours", hoursOf: "site", hoursRange: key, hoursBy: by}, patch));
   const win = hoursWindow();
   const rows = timeLogEntries().filter(e => e.date >= win.from && e.date <= win.to);
   const weeks = hoursWeeks(rows);
@@ -20996,7 +21068,7 @@ const noMatch = (q, otherwise) => q ? "Nothing matches “" + q + "”." : other
 /* A reading that waits until there is something for it to show. The one you
    are on always shows, so v r or a link still lands on it. */
 const subShown = (view, k) => view !== "projects" ? true
-  : k === "report" ? reportEarned() : k === "hours" ? timeLogEntries().length > 0 : true;
+  : k === "report" ? reportEarned() : k === "hours" ? timeLogEntries().length > 0 || sheetEntries(sheetById("clients")).length > 0 : true;
 /* The readings of a view, as one segmented control at the end of the heading. */
 function viewSeg(view) {
   const cur = subNow();
@@ -25415,6 +25487,8 @@ function viewPage() {
     if (fromDays.length) c.append(section("From the day pages", fromDays.length, taskCard(fromDays)));
     const time = projectTimeSection(path);
     if (time) c.append(time);
+    const clocked = projectClockSection(path);
+    if (clocked) c.append(clocked);
   }
   if (kind === "context") {
     const here = nextActions().filter(a => a.context === baseName(path));
@@ -25652,7 +25726,7 @@ function viewSearch() {
 
    Three letters take the whole line as one value, written the way it is
    said, and are what the sheets add up (see SHEETS below):
-     tracker-acme_t:: 07:12 - 10:00, 10:30 - 12:30   start and end; "07:12 -" is still running
+     tracker-office_t:: 07:12 - 10:00, 10:30 - 12:30 start and end; "07:12 -" is still running
      tracker-food_a:: 129,50 + 45                    an amount, several with +
      tracker-paint_q:: +3                            stock: +3 in, -1 out, =12 counted
    ============================================================ */
@@ -26313,7 +26387,7 @@ const TRACKER_KINDS = [
   {id: "m", label: "Minutes", hint: "how long", code: () => "m"},
   {id: "c", label: "Done or not", hint: "a box to tick", code: () => "c"},
   {id: "s", label: "Rating 1–10", hint: "ten stars", code: () => "s"},
-  {id: "t", label: "Hours worked", hint: "start and end, like 07:12 - 10:00 -- one tracker per kind of work", code: () => "t"},
+  {id: "t", label: "Hours worked", hint: "start and end, like 07:12 - 10:00 -- one tracker per place, like office and home", code: () => "t"},
   {id: "a", label: "An amount", hint: "money spent or earned -- one tracker per kind, like food", code: () => "a"},
   {id: "q", label: "Stock", hint: "+3 in, -1 out, =12 counted -- one tracker per thing", code: () => "q"},
 ];
@@ -26707,10 +26781,11 @@ function trackerCard(g) {
    SHEETS -- trackers added up, a week by its days and a year by its months
    A sheet takes every tracker of one letter and makes each a column:
 
-     tracker-acme_t:: 07:12 - 10:00, 10:30 - 12:30
-     tracker-remote_t:: 17:30 - 19:00
+     tracker-office_t:: 07:12 - 10:00, 10:30 - 12:30
+     tracker-home_t:: 17:30 - 19:00
 
-   is a day with Acme and Remote in the Hours sheet. Amounts does the same for
+   is a day at the office and an evening at home in the Hours sheet -- where
+   the work was done, so the year can count the days you drove in. Amounts does the same for
    _a trackers (what was spent on food, on travel) and Stock for _q (what is
    on the shelf, counted forward from every +3 and -1, and =12 when counted).
    What is the same for all of them is here once; a sheet only says what its
@@ -26718,23 +26793,23 @@ function trackerCard(g) {
    knows too, each key starting with the sheet's id:
 
      hours_target:: mon-thu 7.5, fri 7      per weekday: a normal day, a budget
-     hours_split:: Client A 60, Client B 40 a fixed share of every day
+     amounts_split:: Home 50, Work 50      a fixed share of every day
      hours_extra:: 1                        added to each day with anything on it
      hours_format:: 0,00                    h:mm, 0.00 or 0,00
-     hours_trackers:: acme, remote          only these, when not all of them
+     hours_trackers:: office, home          only these, when not all of them
      amounts_unit:: kr
 
    Hours and Amounts count your own day pages; Stock counts everybody's, as
    a shelf is shared. Without hours_target:: a normal day is work_hours::.
    ============================================================ */
 const SHEETS = [
-  {id: "hours", letter: "t", title: "Hours", mine: true, total: "Total",
+  {id: "hours", letter: "t", title: "Hours", mine: true, total: "Total", time: true, days: true,
    diff: {head: "Flex", target: "A normal day", hint: "Hours per weekday, which flex is counted against. Left empty, your working hours are.",
      of: (total, target) => total - target},
    extra: "Hours added to each day worked, e.g. 1 makes a 7 hour day count as 8.",
    formats: [["h:mm", "7:30"], ["0.00", "7.50"], ["0,00", "7,50"]],
-   empty: "Set up a tracker of Hours worked -- one per kind of work, like acme and remote -- and fill in start and end on your days."},
-  {id: "amounts", letter: "a", title: "Amounts", mine: true, total: "Total", unit: true,
+   empty: "Set up a tracker of Hours worked -- one per place you work, like office and home -- and fill in start and end on your days."},
+  {id: "amounts", letter: "a", title: "Amounts", mine: true, total: "Total", unit: true, split: true,
    diff: {head: "Under budget", target: "Budget per day", hint: "Per weekday; the week says how far under it you stayed.",
      of: (total, target) => target - total},
    formats: [["0.00", "129.50"], ["0,00", "129,50"], ["0", "130"]],
@@ -26742,8 +26817,60 @@ const SHEETS = [
   {id: "stock", letter: "q", title: "Stock", mine: false, total: "On hand", unit: true, onHand: true,
    formats: [["0", "12"], ["0.00", "12.50"], ["0,00", "12,50"]],
    empty: "Set up a tracker of Stock -- one per thing -- and write +3 when it comes in, -1 when it goes and =12 when you count."},
+  /* Not trackers: the clock on the todos of each client's projects. */
+  {id: "clients", title: "Clients", mine: true, total: "Total", time: true, source: () => clientEntries(),
+   nav: patch => go("projects", Object.assign({sub: "hours", hoursOf: "clients"}, patch)),
+   formats: [["h:mm", "7:30"], ["0.00", "7.50"], ["0,00", "7,50"]]},
 ];
+const sheetNav = (S, patch) => S.nav ? S.nav(patch) : go("trackers", Object.assign({trkSheet: S.id}, patch));
 const sheetById = id => SHEETS.find(S => S.id === id);
+
+/* The clocks on the todos of projects, each under the project's client: the
+   organisation its page or its area names (org::). Your own todos and the
+   ones nobody has; a todo somebody else was given is theirs to count. */
+function clientEntries() {
+  return memo("clientClock", () => acrossSpaces(() => {
+    const out = [];
+    for (const t of allTasksHere()) {
+      if (!logbookOf(t.block)) continue;
+      const proj = t.projectPath && pageKind(t.projectPath) === "project" ? t.projectPath : null;
+      if (!proj || (t.assignee && !isMe(t.assignee))) continue;
+      const name = projectOrgs({space: V.space, path: proj})[0] || "No client";
+      for (const c of blockClocks(t.block)) out.push({date: c.day, name, value: c.min, open: c.open, stale: c.stale,
+        project: pageTitle(proj), projectPath: proj, space: V.space});
+    }
+    return out;
+  }).sort((a, b) => a.date.localeCompare(b.date)));
+}
+/* On a project's page: the time clocked on its todos, and whose it is. */
+function projectClockSection(path) {
+  const S = sheetById("clients");
+  const rows = sheetEntries(S).filter(e => e.space === V.space && e.projectPath === path);
+  if (!rows.length) return null;
+  const monday = weekStartISO(todayISO());
+  const sum = (from, to) => rows.filter(e => e.date >= from && e.date <= to).reduce((n, e) => n + e.value, 0);
+  const total = rows.reduce((n, e) => n + e.value, 0);
+  return section("Time on its todos", fmtSheet(S, total), el("div", {class: "reportsum"},
+    "This week ", el("b", {}, fmtSheet(S, sum(monday, shiftISO(monday, 6)))),
+    " · last week " + fmtSheet(S, sum(shiftISO(monday, -7), shiftISO(monday, -1))) + " · for " + rows[0].name,
+    el("button", {class: "btn sm ghost", style: "margin-left:auto",
+      onclick: () => S.nav({sheetWeek: monday})}, "Clients")));
+}
+/* Under the clients' week: which projects the time went to. */
+function clientProjects(w) {
+  const by = new Map();
+  for (const e of w.rows) {
+    const k = e.name + " " + e.project;
+    if (!by.has(k)) by.set(k, {name: e.name, project: e.project, path: e.projectPath, space: e.space, min: 0});
+    by.get(k).min += e.value;
+  }
+  const rows = [...by.values()].filter(r => r.min).sort((a, b) => a.name.localeCompare(b.name) || b.min - a.min);
+  if (!rows.length) return null;
+  return section("Projects", rows.length, el("div", {class: "card"}, ...rows.map(r => el("button", {class: "reprow",
+    onclick: () => openPageIn(r.space, r.path)},
+    el("span", {class: "when"}, r.name), el("span", {class: "what"}, r.project),
+    el("span", {class: "marks"}, el("span", {class: "chip"}, fmtSheet(sheetById("clients"), r.min)))))));
+}
 
 /* ---------- what a line comes to ---------- */
 const SPAN_RE = /(\d{1,2})[:.](\d{2})\s*[-–](?:\s*(\d{1,2})[:.](\d{2}))?/g;
@@ -26808,9 +26935,9 @@ const sheetSetting = (S, key) => mySetting(S.id + "_" + key);
 function sheetNum(S, s) {
   const t = trim(String(s || ""));
   const c = /^(\d{1,2}):(\d{2})$/.exec(t);
-  if (c) return S.letter === "t" ? +c[1] * 60 + +c[2] : +c[1] + +c[2] / 60;
+  if (c) return S.time ? +c[1] * 60 + +c[2] : +c[1] + +c[2] / 60;
   const x = numIn(t);
-  return x == null ? 0 : S.letter === "t" ? Math.round(x * 60) : x;
+  return x == null ? 0 : S.time ? Math.round(x * 60) : x;
 }
 const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 function dayRun(from, to) {
@@ -26832,7 +26959,7 @@ function sheetTarget(S) {
     for (const m of raw.matchAll(re)) { for (const d of dayRun(m[1], m[2] || m[1])) per[d] = sheetNum(S, m[3]); any = true; }
     if (any) return per;
   }
-  const wh = S.letter === "t" && workHours();
+  const wh = S.id === "hours" && workHours();
   if (!wh) return null;
   const len = (hmMinutes(wh.end) - hmMinutes(wh.start) + 1440) % 1440;
   return WEEKDAY_KEYS.map((_, d) => wh.days.includes(d) ? len : 0);
@@ -26840,7 +26967,7 @@ function sheetTarget(S) {
 /* Back to words, Monday first, days in a row with the same value together. */
 function sheetTargetText(S, per) {
   const order = [1, 2, 3, 4, 5, 6, 0], parts = [];
-  const num = v => +(S.letter === "t" ? v / 60 : v).toFixed(2);
+  const num = v => +(S.time ? v / 60 : v).toFixed(2);
   for (let i = 0; i < 7;) {
     let j = i;
     while (j < 6 && per[order[j + 1]] === per[order[i]]) j++;
@@ -26849,9 +26976,9 @@ function sheetTargetText(S, per) {
   }
   return parts.join(", ");
 }
-/* "Client A 60, Client B 37,5" -- a comma before a digit is a decimal comma. */
+/* "Home 62,5, Work 37,5" -- a comma before a digit is a decimal comma. */
 function sheetSplit(S) {
-  if (S.onHand) return [];
+  if (!S.split) return [];
   return sheetSetting(S, "split").split(/[;,](?=\s*[^\d\s])/)
     .map(s => /^\s*(.*?)\s*(\d+(?:[.,]\d+)?)\s*%?\s*$/.exec(s))
     .filter(m => m && trim(m[1])).map(m => ({name: trim(m[1]), pct: numIn(m[2])}));
@@ -26859,8 +26986,8 @@ function sheetSplit(S) {
 function fmtSheet(S, v, signed = false) {
   const f = sheetSetting(S, "format") || S.formats[0][0];
   const a = Math.abs(v || 0);
-  let s = S.letter === "t" && f === "h:mm" ? Math.floor(Math.round(a) / 60) + ":" + pad2(Math.round(a) % 60)
-    : S.letter === "t" ? (a / 60).toFixed(2) : f === "0" ? String(Math.round(a)) : a.toFixed(2);
+  let s = S.time && f === "h:mm" ? Math.floor(Math.round(a) / 60) + ":" + pad2(Math.round(a) % 60)
+    : S.time ? (a / 60).toFixed(2) : f === "0" ? String(Math.round(a)) : a.toFixed(2);
   if (f === "0,00") s = s.replace(".", ",");
   return (v < 0 && +s.replace(/[^\d]/g, "") ? "-" : signed ? "+" : "") + s;
 }
@@ -26868,6 +26995,7 @@ const sheetUnit = S => S.unit ? sheetSetting(S, "unit") : "";
 
 /* ---------- the lines a sheet counts ---------- */
 function sheetTrackers(S) {
+  if (S.source) return [];
   const only = sheetSetting(S, "trackers").toLowerCase().split(/[\s,;]+/).filter(Boolean);
   const all = trackerList().filter(g => g.code === S.letter).map(g => g.name);
   return only.length ? all.filter(n => only.includes(n)) : all;
@@ -26875,6 +27003,7 @@ function sheetTrackers(S) {
 /* Every line of its trackers, oldest first, with what it comes to. */
 function sheetEntries(S) {
   return memo("sheet:" + S.id, () => {
+    if (S.source) return S.source();
     const names = new Set(sheetTrackers(S));
     return trackerEntries().filter(e => e.code === S.letter && names.has(e.name) &&
       (!S.mine || inSpace(e.space || V.space, () => myJournal(e.path))))
@@ -26884,6 +27013,7 @@ function sheetEntries(S) {
 /* The columns a sheet has, as [name, title]: the trackers, in the order the
    setting names them, else by name. */
 function sheetKinds(S) {
+  if (S.source) return [...new Set(sheetEntries(S).map(e => e.name))].sort((a, b) => a.localeCompare(b)).map(n => [n, n]);
   return sheetTrackers(S).map(n => [n, trackerTitle(n)]);
 }
 /* What is on hand of each thing at the end of a day: every change up to it,
@@ -26964,7 +27094,7 @@ function copySheetWeek(w) {
     "Week " + wk + " copied. It pastes into a spreadsheet as cells.");
 }
 
-/* A year by months. Hours: the days with each kind of work -- days on site
+/* A year by months. Hours: the days in each place -- the days at the office
    are what a travel deduction asks for -- and the hours. Amounts: what each
    came to. Stock: what was on hand at the end of each month. */
 function sheetYear(S, year) {
@@ -26972,7 +27102,7 @@ function sheetYear(S, year) {
   const kinds = sheetKinds(S), extra = S.extra ? sheetNum(S, sheetSetting(S, "extra")) : 0;
   const months = Array.from({length: 12}, (_, i) => {
     const key = year + "-" + pad2(i + 1);
-    const items = rows.filter(e => e.date.startsWith(key) && (S.letter !== "t" || e.value > 0 || e.open));
+    const items = rows.filter(e => e.date.startsWith(key) && (!S.time || e.value > 0 || e.open));
     const days = n => new Set(items.filter(e => n == null || e.name === n).map(e => e.date)).size;
     const sum = n => items.filter(e => e.name === n).reduce((s, e) => s + e.value, 0);
     const worked = days(null);
@@ -26990,9 +27120,9 @@ function sheetYearCols(y) {
     foot: () => { const h = y.months[11].hand; return h.has(n) ? F(h.get(n)) : ""; }})),
     ...(many ? [{head: S.total, cell: m => m.hand.size ? F(m.total) : "", foot: () => F(y.months[11].total)}] : [])];
   return [
-    ...(S.letter === "t" ? y.kinds.map(([, label], i) => ({head: label + " days", cell: m => String(m.days[i] || ""), foot: () => String(add(m => m.days[i]))}))
+    ...(S.days ? y.kinds.map(([, label], i) => ({head: label + " days", cell: m => String(m.days[i] || ""), foot: () => String(add(m => m.days[i]))}))
       : many ? y.kinds.map(([, label], i) => ({head: label, cell: m => m.sums[i] ? F(m.sums[i]) : "", foot: () => F(add(m => m.sums[i]))})) : []),
-    ...(S.letter === "t" && many ? [{head: "Days worked", cell: m => String(m.worked || ""), foot: () => String(add(m => m.worked))}] : []),
+    ...(S.days && many ? [{head: "Days worked", cell: m => String(m.worked || ""), foot: () => String(add(m => m.worked))}] : []),
     {head: S.total + (sheetUnit(S) ? " (" + sheetUnit(S) + ")" : ""), cell: m => m.total ? F(m.total) : "", foot: () => F(add(m => m.total))},
   ];
 }
@@ -27008,13 +27138,13 @@ function copySheetYear(y) {
 function openSheetSettings(S) {
   const order = [1, 2, 3, 4, 5, 6, 0];
   const per = sheetTarget(S) || Array(7).fill(0);
-  const shown = v => v ? String(+(S.letter === "t" ? v / 60 : v).toFixed(2)) : "";
+  const shown = v => v ? String(+(S.time ? v / 60 : v).toFixed(2)) : "";
   const dayIns = order.map(d => el("input", {inputmode: "decimal", value: shown(per[d]), placeholder: "0",
     style: "width:52px", "aria-label": WEEKDAY_KEYS[d]}));
-  const names = trackerList().filter(g => g.code === S.letter).map(g => g.name);
+  const names = S.source ? [] : trackerList().filter(g => g.code === S.letter).map(g => g.name);
   const chosen = new Set(sheetTrackers(S));
   const ticks = names.map(n => el("input", {type: "checkbox", checked: chosen.has(n) ? "" : null, value: n}));
-  const split = el("input", {value: sheetSetting(S, "split"), placeholder: "Client A 60, Client B 40", style: "width:100%"});
+  const split = el("input", {value: sheetSetting(S, "split"), placeholder: "Home 50, Work 50", style: "width:100%"});
   const extra = el("input", {inputmode: "decimal", value: sheetSetting(S, "extra"), placeholder: "0", style: "width:70px"});
   const unit = el("input", {value: sheetSetting(S, "unit"), placeholder: S.letter === "a" ? "kr" : "pcs", style: "width:90px"});
   const fmt = fselect("Format", sheetSetting(S, "format") || S.formats[0][0], S.formats, () => {});
@@ -27028,7 +27158,7 @@ function openSheetSettings(S) {
     }
     const on = ticks.filter(t => t.checked).map(t => t.value);
     setMySetting(S.id + "_trackers", on.length && on.length < names.length ? on.join(", ") : "");
-    if (!S.onHand) setMySetting(S.id + "_split", trim(split.value));
+    if (S.split) setMySetting(S.id + "_split", trim(split.value));
     if (S.extra) setMySetting(S.id + "_extra", sheetNum(S, extra.value) ? trim(extra.value) : "");
     if (S.unit) setMySetting(S.id + "_unit", trim(unit.value));
     setMySetting(S.id + "_format", fmt.value === S.formats[0][0] ? "" : fmt.value);
@@ -27046,7 +27176,7 @@ function openSheetSettings(S) {
         el("div", {style: "display:flex;gap:6px;flex-wrap:wrap"}, ...order.map((d, i) => el("label",
           {style: "display:flex;flex-direction:column;font-size:11px;color:var(--fg3)"},
           parseISO(shiftISO("2026-10-04", d)).toLocaleDateString(undefined, {weekday: "short"}), dayIns[i])))) : null,
-      S.onHand ? null : field("Split between", "Names and percent, each a column of its own.", split),
+      !S.split ? null : field("Split between", "Names and percent, each a column of its own.", split),
       S.extra ? field("Added to each day", S.extra, extra) : null,
       S.unit ? field("Unit", "Shown with the totals.", unit) : null,
       field("Numbers as", null, fmt)),
@@ -27062,7 +27192,7 @@ function viewSheet(S) {
   const c = el("div", {});
   const thisMon = weekStartISO(todayISO()), lastMon = shiftISO(thisMon, -7);
   const monday = state.sheetWeek ? weekStartISO(state.sheetWeek) : lastMon;
-  const to = patch => go("trackers", Object.assign({trkSheet: S.id, sheetWeek: monday}, patch));
+  const to = patch => sheetNav(S, Object.assign({sheetWeek: monday}, patch));
   const w = sheetWeek(S, monday), unit = sheetUnit(S);
   c.append(fbar(
     el("button", {class: "dayarrow", title: "The week before", "aria-label": "The week before", onclick: () => to({sheetWeek: shiftISO(monday, -7)})}, "◀"),
@@ -27083,6 +27213,12 @@ function viewSheet(S) {
     w.days.some(d => d.stale) ? "A stretch with no end counts nothing until it has one." : ""].filter(Boolean).join(" ");
   c.append(section("Days", null, el("div", {class: "card"}, sheetWeekTable(w),
     notes ? el("div", {class: "hint", style: "text-align:left;padding:8px 12px;margin:0;border-top:1px solid var(--border)"}, notes) : null)));
+  if (S.id === "clients") {
+    const pr = clientProjects(w);
+    if (pr) c.append(pr);
+    if (!sheetEntries(S).length) c.append(emptyCard("Nothing clocked yet. Set a todo in a project to Doing and the clock runs until it " +
+      "is Done or set back; the project's organisation (org:: on its page or its area) is the client."));
+  }
   const years = [...new Set([...sheetEntries(S).map(e => e.date.slice(0, 4)), monday.slice(0, 4)])].sort().reverse();
   const year = state.sheetYear && years.includes(state.sheetYear) ? state.sheetYear : monday.slice(0, 4);
   const y = sheetYear(S, year), ycols = sheetYearCols(y);
@@ -27091,7 +27227,7 @@ function viewSheet(S) {
     el("tbody", {}, ...y.months.map(m => el("tr", {class: m.key === todayISO().slice(0, 7) ? "now" : ""},
       el("td", {}, capitalise(m.label)), ...ycols.map(col => el("td", {}, col.cell(m))))),
       el("tr", {class: "tot"}, el("td", {}, S.onHand ? "End of year" : "Year"), ...ycols.map(col => el("td", {}, el("b", {}, col.foot())))))));
-  c.append(section(S.letter === "t" ? "Days per month" : "Per month", null, el("div", {class: "card"}, ytab),
+  c.append(section(S.days ? "Days per month" : "Per month", null, el("div", {class: "card"}, ytab),
     el("span", {style: "margin-left:auto;display:flex;gap:6px;align-items:center"},
       fselect("Year", year, years.map(v => [v, v]), v => to({sheetYear: v})),
       el("button", {class: "btn sm ghost", onclick: () => copySheetYear(y)}, "Copy as text"))));
@@ -27106,7 +27242,7 @@ function sheetsToday(day) {
     if (S.onHand || !sheetEntries(S).some(e => e.date >= shiftISO(day, -60) && e.date <= day)) continue;
     const w = sheetWeek(S, weekStartISO(day)), d = w.days.find(x => x.date === day), unit = sheetUnit(S);
     out.push(el("button", {class: "cd", title: "The " + S.title.toLowerCase() + " sheet",
-      onclick: () => go("trackers", {trkSheet: S.id, sheetWeek: weekStartISO(day)})},
+      onclick: () => sheetNav(S, {sheetWeek: weekStartISO(day)})},
       el("span", {class: "cd-k"}, S.title),
       el("span", {class: "cd-t"}, (d.any ? (day === todayISO() ? "today " : "this day ") + fmtSheet(S, d.total) + " · " : "") +
         "week " + fmtSheet(S, w.total) + (unit ? " " + unit : "")),
@@ -27118,7 +27254,7 @@ function sheetsToday(day) {
 function viewTrackers() {
   const c = el("div", {class: "wrap"});
   /* The charts, or one of the sheets: those with a tracker of their letter. */
-  const sheets = SHEETS.filter(S => trackerList().some(g => g.code === S.letter));
+  const sheets = SHEETS.filter(S => S.letter && trackerList().some(g => g.code === S.letter));
   const cur = sheets.find(S => S.id === state.trkSheet);
   if (sheets.length) {
     c.append(vhead("Trackers", cur ? cur.title + ", added up" : "What you write down on your days, over time"));
