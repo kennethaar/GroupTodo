@@ -10591,7 +10591,17 @@ function viewChecklists() {
       el("span", {class: "sub"}, steps + " steps" + (V.pages.has(REVIEW_LIST_PATH) ? "" : ", built in")),
       el("button", {class: "btn sm ghost", onclick: editReviewSteps}, "Edit steps"),
       el("button", {class: "btn sm primary", onclick: () => go("review", {sub: "steps"})}, "Review")))));
-  lists.splice(0, lists.length, ...lists.filter(p => p !== REVIEW_LIST_PATH));
+  lists.splice(0, lists.length, ...lists.filter(p => p !== REVIEW_LIST_PATH && p !== ASK_OWN_PATH));
+  // The words around an update sheet: a page of its own kind, not a list you run.
+  const editAskOwn = () => openPage(ensureAskOwn());
+  c.append(section("The update note", null, el("div", {class: "card"},
+    el("div", {class: "listblurb"}, "The words around the list when you ask for an update. " +
+      "Make them more your own, or write them in another language, and pick Personalize text when you send."),
+    el("div", {class: "prow"},
+      el("span", {class: "st st-2"}, "\u2709"),
+      el("button", {class: "nm", style: "text-align:left", onclick: editAskOwn}, "Update note"),
+      el("span", {class: "sub"}, V.pages.has(ASK_OWN_PATH) ? "personalized" : "built in"),
+      el("button", {class: "btn sm ghost", onclick: editAskOwn}, "Edit text")))));
 
   // Empty, the three descriptions ARE the content: this is the one screen where
   // the difference between them is worth a paragraph.
@@ -16844,71 +16854,182 @@ function openAskForUpdate(name) {
 /* The subject names the first line, as before. A mail that is only questions
    says so, because "Waiting for" on a question reads as a reproach. */
 const askKinds = items => ({q: items.filter(i => i.q).length, w: items.filter(i => !i.q).length});
+/* intro(k, file, q): q is "a question" or "a few questions" already picked
+   for k.q, so the personalized page can be seeded with {one|more} in its place. */
+const askSubject = (wait, ask, more, empty) => (items, them) =>
+  (askKinds(items).w ? wait : ask) + ' "' +
+  askLineTitle(items[0] || {title: empty}, them) +
+  '"' +
+  (items.length > 1 ? " + " + (items.length - 1) + " " + more : "");
 const ASK_NOTE = {
   en: {
-    subject: (items, them) =>
-      (askKinds(items).w ? 'Waiting for "' : 'Question about "') +
-      askLineTitle(items[0] || {title: "update"}, them) +
-      '"' +
-      (items.length > 1 ? " + " + (items.length - 1) + " more" : ""),
-    intro: (k, file) =>
+    label: "English",
+    subject: askSubject("Waiting for", "Question about", "more", "update"),
+    qWords: ["a question", "a few questions"],
+    intro: (k, file, q) =>
       !k.q ? "I am waiting for answers on the items below. Tick them and send via the attached " + file +
              ", or reply directly to this message with an x between the brackets [x] for what is done."
-    : !k.w ? "I have " + (k.q === 1 ? "a question" : "a few questions") + " for you below. Answer after Comment: and send via the attached " + file +
+    : !k.w ? "I have " + q + " for you below. Answer after Comment: and send via the attached " + file +
              ", or reply directly to this message. An x between the brackets [x] marks one as answered."
-           : "Below are things I am waiting for from you, and " + (k.q === 1 ? "a question" : "a few questions") +
+           : "Below are things I am waiting for from you, and " + q +
              ". Tick them and send via the attached " + file +
              ", or reply directly to this message with an x between the brackets [x] for what is done or answered.",
-    body(them, me, items, file, k) {
-      return [
-        "Hi " + them + ",",
-        "",
-        this.intro(k, file),
-        "Anything you want to add goes after Comment: under the item it is about.",
-        "",
-        items,
-        "",
-        "Thanks,",
-        me,
-      ].join("\n");
-    },
+    greet: them => "Hi " + them + ",",
+    add: "Anything you want to add goes after Comment: under the item it is about.",
+    bye: "Thanks,",
     waitHead: "Waiting for:", askHead: "Questions:",
     comment: "Comment:",
-    reference: "Reference (leave as is):",  },
+    reference: "Reference (leave as is):",
+  },
+  sv: {
+    label: "Svenska",
+    subject: askSubject("Väntar på", "Fråga om", "till", "svar"),
+    qWords: ["en fråga", "några frågor"],
+    intro: (k, file, q) =>
+      !k.q ? "Jag väntar på svar på punkterna nedan. Bocka av dem och skicka via bifogade " + file +
+             ", eller svara direkt på det här meddelandet med ett x mellan hakparenteserna [x] för det som är klart."
+    : !k.w ? "Jag har " + q + " till dig nedan. Svara efter Kommentar: och skicka via bifogade " + file +
+             ", eller svara direkt på det här meddelandet. Ett x mellan hakparenteserna [x] betyder att det är besvarat."
+           : "Nedan är det jag väntar på från dig, och " + q +
+             ". Bocka av dem och skicka via bifogade " + file +
+             ", eller svara direkt på det här meddelandet med ett x mellan hakparenteserna [x] för det som är klart eller besvarat.",
+    greet: them => "Hej " + them + ",",
+    add: "Vill du lägga till något, skriv det efter Kommentar: under punkten det gäller.",
+    bye: "Tack,",
+    waitHead: "Väntar på:", askHead: "Frågor:",
+    comment: "Kommentar:",
+    reference: "Referens (ändra inte):",
+  },
   no: {
-    subject: (items, them) =>
-      (askKinds(items).w ? 'Venter på "' : 'Spørsmål om "') +
-      askLineTitle(items[0] || {title: "svar"}, them) +
-      '"' +
-      (items.length > 1 ? " + " + (items.length - 1) + " flere" : ""),
-    intro: (k, file) =>
+    label: "Norsk",
+    subject: askSubject("Venter på", "Spørsmål om", "flere", "svar"),
+    qWords: ["et spørsmål", "noen spørsmål"],
+    intro: (k, file, q) =>
       !k.q ? "Jeg venter på svar på punktene under. Huk av og send inn via vedlagte " + file +
              ", eller svar direkte på denne meldingen med en x mellom klammene [x] for det som er gjort."
-    : !k.w ? "Jeg har " + (k.q === 1 ? "et spørsmål" : "noen spørsmål") + " til deg under. Svar etter Kommentar: og send inn via vedlagte " + file +
+    : !k.w ? "Jeg har " + q + " til deg under. Svar etter Kommentar: og send inn via vedlagte " + file +
              ", eller svar direkte på denne meldingen. En x mellom klammene [x] betyr at det er besvart."
-           : "Under er det jeg venter på fra deg, og " + (k.q === 1 ? "et spørsmål" : "noen spørsmål") +
+           : "Under er det jeg venter på fra deg, og " + q +
              ". Huk av og send inn via vedlagte " + file +
              ", eller svar direkte på denne meldingen med en x mellom klammene [x] for det som er gjort eller besvart.",
-    body(them, me, items, file, k) {
-      return [
-        "Hei " + them + ",",
-        "",
-        this.intro(k, file),
-        "Har du noe å legge til, skriv det etter Kommentar: under punktet det gjelder.",
-        "",
-        items,
-        "",
-        "Takk,",
-        me,
-      ].join("\n");
-    },
+    greet: them => "Hei " + them + ",",
+    add: "Har du noe å legge til, skriv det etter Kommentar: under punktet det gjelder.",
+    bye: "Takk,",
     waitHead: "Venter på:", askHead: "Spørsmål:",
     comment: "Kommentar:",
-    reference: "Referanse (ikke endre):",  },
+    reference: "Referanse (ikke endre):",
+  },
+  da: {
+    label: "Dansk",
+    subject: askSubject("Venter på", "Spørgsmål om", "mere", "svar"),
+    qWords: ["et spørgsmål", "nogle spørgsmål"],
+    intro: (k, file, q) =>
+      !k.q ? "Jeg venter på svar på punkterne nedenfor. Sæt kryds og send via den vedhæftede " + file +
+             ", eller svar direkte på denne besked med et x mellem klammerne [x] for det, der er klaret."
+    : !k.w ? "Jeg har " + q + " til dig nedenfor. Svar efter Kommentar: og send via den vedhæftede " + file +
+             ", eller svar direkte på denne besked. Et x mellem klammerne [x] betyder, at det er besvaret."
+           : "Nedenfor er det, jeg venter på fra dig, og " + q +
+             ". Sæt kryds og send via den vedhæftede " + file +
+             ", eller svar direkte på denne besked med et x mellem klammerne [x] for det, der er klaret eller besvaret.",
+    greet: them => "Hej " + them + ",",
+    add: "Har du noget at tilføje, så skriv det efter Kommentar: under det punkt, det drejer sig om.",
+    bye: "Tak,",
+    waitHead: "Venter på:", askHead: "Spørgsmål:",
+    comment: "Kommentar:",
+    reference: "Reference (rør ikke):",
+  },
+  de: {
+    label: "Deutsch",
+    subject: askSubject("Warte auf", "Frage zu", "weitere", "Antwort"),
+    qWords: ["eine Frage", "ein paar Fragen"],
+    intro: (k, file, q) =>
+      !k.q ? "Ich warte auf Antworten zu den Punkten unten. Hake sie ab und sende sie über die angehängte Datei " + file +
+             ", oder antworte direkt auf diese Nachricht mit einem x zwischen den Klammern [x] für das, was erledigt ist."
+    : !k.w ? "Ich habe " + q + " an dich. Antworte nach Kommentar: und sende über die angehängte Datei " + file +
+             ", oder antworte direkt auf diese Nachricht. Ein x zwischen den Klammern [x] heißt, dass es beantwortet ist."
+           : "Unten steht, worauf ich von dir warte, und " + q +
+             ". Hake sie ab und sende sie über die angehängte Datei " + file +
+             ", oder antworte direkt auf diese Nachricht mit einem x zwischen den Klammern [x] für das, was erledigt oder beantwortet ist.",
+    greet: them => "Hallo " + them + ",",
+    add: "Möchtest du etwas ergänzen, schreib es nach Kommentar: unter den Punkt, um den es geht.",
+    bye: "Danke,",
+    waitHead: "Warte auf:", askHead: "Fragen:",
+    comment: "Kommentar:",
+    reference: "Referenz (nicht ändern):",
+  },
 };
-/* The headings between the two lists. The importer steps over them. */
-const ASK_SECTION_RE = /^\s*(?:Waiting for|Questions|Venter på|Spørsmål):\s*$/i;
-const askLang = () => (PREF.get("askLang", "") === "no" ? "no" : "en");
+const askQWords = (t, n) => t.qWords[n === 1 ? 0 : 1];
+/* The headings between the two lists, in every language. The importer steps over them. */
+const ASK_SECTION_RE = new RegExp("^\\s*(?:" + [...new Set(Object.values(ASK_NOTE)
+  .flatMap(t => [t.waitHead, t.askHead]).map(h => h.replace(/:$/, "")))].join("|") + "):\\s*$", "i");
+/* ---------- personalized text ----------
+   The words around the list are yours to change, or to write in a language
+   the app does not speak: pages/8/Update note.md, in Routines & lists. Until
+   you edit it the app uses the standard text, so nothing is written into a
+   shared folder just for looking, like the weekly review.
+
+   A top line names a part, the lines under it are its text. %name% is their
+   first name, %file% the sheet, %me% you, %count% how many lines the part is
+   about, %questions% "a question" or "a few questions". {one|more} picks the
+   left side for one and the right for more: in Waiting for it counts what you
+   wait for, everywhere else the questions. What the importer reads (the boxes,
+   Comment:, Reference: and the --- fences) stays as it is, in the language the
+   page was made from (base::), so their answer still finds its way home. */
+const ASK_OWN_PATH = join(DIRS.lists, "Update note.md");
+const ASK_OWN_PARTS = [["greeting", "greet"], ["waiting for", "w"], ["questions", "q"],
+  ["both", "both"], ["comment", "add"], ["sign-off", "bye"]];
+const askOwn = () => PREF.get("askLang", "") === "own";
+const askLang = () => {
+  const code = askOwn()
+    ? (V.pages.has(ASK_OWN_PATH) ? trim(getPage(ASK_OWN_PATH).props?.base || "") : PREF.get("askLangBase", ""))
+    : PREF.get("askLang", "");
+  return ASK_NOTE[code] ? code : "en";
+};
+function askOwnPage() {
+  const base = askLang(), t = ASK_NOTE[base], q = "{" + t.qWords.join("|") + "}";
+  const text = {greet: [t.greet("%name%")], w: [t.intro({q: 0, w: 2}, "%file%", q)], q: [t.intro({q: 2, w: 0}, "%file%", q)],
+    both: [t.intro({q: 2, w: 2}, "%file%", q)], add: [t.add], bye: [t.bye, "%me%"]};
+  return {
+    props: {title: "Update note", base, created: todayStamp(),
+      help: "%name% their first name, %file% the sheet, %me% you, %count% how many, " +
+            "%questions% a question or a few, {one|more} by how many"},
+    blocks: ASK_OWN_PARTS.map(([part, key]) => newBlock({title: part.charAt(0).toUpperCase() + part.slice(1),
+      children: text[key].map(title => newBlock({title}))})),
+  };
+}
+function ensureAskOwn() {
+  if (!V.pages.has(ASK_OWN_PATH)) putPage(ASK_OWN_PATH, askOwnPage());
+  return ASK_OWN_PATH;
+}
+/* {greet, w, q, both, add, bye}: each part's lines. A part the page leaves out
+   keeps the standard text. */
+function askOwnParts() {
+  const page = V.pages.has(ASK_OWN_PATH) ? getPage(ASK_OWN_PATH) : askOwnPage(), parts = {};
+  for (const b of page.blocks || []) {
+    const hit = ASK_OWN_PARTS.find(([part]) => plainTitle(b.title).toLowerCase().replace(/:\s*$/, "") === part);
+    if (hit) parts[hit[1]] = (b.children || []).map(k => k.title).filter(l => trim(l)).join("\n");
+  }
+  return parts;
+}
+function askNoteBody(them, me, items, file, k) {
+  const t = ASK_NOTE[askLang()];
+  const own = askOwn() ? askOwnParts() : {},
+    fill = (s, n) => s.replace(/%name%/gi, them).replace(/%file%/gi, file).replace(/%me%/gi, me)
+      .replace(/%count%/gi, String(n)).replace(/%questions%/gi, askQWords(t, k.q))
+      .replace(/\{([^{}|]*)\|([^{}]*)\}/g, (_, one, more) => (n === 1 ? one : more)),
+    part = (key, built, n = k.q) => own[key] != null ? fill(own[key], n) : built;
+  const which = !k.q ? "w" : !k.w ? "q" : "both";
+  const intro = part(which, t.intro(k, file, askQWords(t, k.q)), which === "w" ? k.w : k.q);
+  return [
+    part("greet", t.greet(them)),
+    "",
+    ...[intro, part("add", t.add)].filter(l => trim(l)),
+    "",
+    items,
+    "",
+    ...(own.bye != null ? [fill(own.bye, k.q)] : [t.bye, me]),
+  ].join("\n");
+}
 function checkinTaskTitle(title, recipient) {
   let text = plainTitle(title);
   for (const name of [recipient, recipient.split(" ")[0]]
@@ -16980,7 +17101,7 @@ function askItemsMarkdown(items, recipient) {
 function askNote(name, items, file) {
   const t = ASK_NOTE[askLang()],
     lines = askItemsMarkdown(items, name);
-  return {subject: t.subject(items, name), body: t.body(name.split(" ")[0], whoAmI() || "", lines, file, askKinds(items))};
+  return {subject: t.subject(items, name), body: askNoteBody(name.split(" ")[0], whoAmI() || "", lines, file, askKinds(items))};
 }
 
 /* mailto: carries to, subject and body and nothing else, so the file is
@@ -17029,10 +17150,22 @@ function openAskNote(name, items, file, html = null, area = Spaces.active || "",
       el("div", {class: "field"},
         el("label", {}, "Language"),
         el("div", {class: "statefilter"},
-          ...[["en", "English"], ["no", "Norsk"]].map(([code, label]) =>
-            el("button", {class: "chip filter" + (askLang() === code ? " on" : ""),
-              onclick: () => { remember(); PREF.set("askLang", code); closeModal(); openAskNote(name, items, file, html, area, next); }},
-              (askLang() === code ? "\u2713 " : "") + label))))),
+          ...[...Object.entries(ASK_NOTE).map(([code, t]) => [code, t.label]), ["own", "Personalize text"]].map(([code, label]) => {
+            const on = (askOwn() ? "own" : askLang()) === code;
+            return el("button", {class: "chip filter" + (on ? " on" : ""),
+              onclick: () => {
+                remember();
+                // Personalized text starts from the language you had, until you edit it.
+                if (code === "own" && !askOwn()) PREF.set("askLangBase", askLang());
+                PREF.set("askLang", code);
+                closeModal(); openAskNote(name, items, file, html, area, next);
+              }}, (on ? "\u2713 " : "") + label);
+          })),
+        askOwn() ? el("div", {style: "margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"},
+          el("button", {class: "btn sm ghost", onclick: () => { remember(); closeModal(); openPage(ensureAskOwn()); }},
+            "Edit the text"),
+          el("span", {style: "color:var(--fg3);font-size:12px"},
+            "Update note in Routines & lists" + (V.pages.has(ASK_OWN_PATH) ? "." : ", the standard text until you edit it."))) : null)),
     foot: [
       next ? el("button", {class: "btn ghost", onclick: () => { remember(); closeModal(); next.run(); }}, next.label)
            : el("button", {class: "btn ghost", onclick: closeModal}, "Close"),
@@ -17073,9 +17206,9 @@ function parseUpdateReply(text) {
   const lines = text.split(/\r?\n/).map(l => l.replace(/^(?:[ \t]*>)+[ \t]?/, ""));
   const TASK = /^\s*(?:[-*•·]\s*)?\[([^\[\]]*)\]\s*(\S.*)$/;
   const DONE = /^\s*[xX✓✔]\s*$/;
-  const NOTE = /^\s*(?:Comment|Kommentar):\s?(.*)$/i;
+  const NOTE = /^\s*(?:Comment|Kommentar):\s?(.*)$/i;  // Kommentar in sv, no, da and de
   // "Referanse (ikke endre): Work-d0n86bq4", the area and the task's id::.
-  const REF  = /^\s*(?:Reference|Referanse)\b[^:]*:\s*(\S+)\s*$/i;
+  const REF  = /^\s*(?:Reference|Referanse|Referens|Referenz)\b[^:]*:\s*(\S+)\s*$/i;
   /* Only the block is read: from the --- that opens it to the --- that closes
      it, so the bracketed image names a mail program leaves behind, or a
      checkbox in the signature, are not taken for answers. */
