@@ -2264,6 +2264,7 @@ body.solview #content{padding-bottom:14px}
   <ul>
     <li><b>Triggers:</b> Type <kbd>@</kbd> for people, <kbd>@@</kbd> for contexts, <kbd>#</kbd> for projects, and <kbd>[[</kbd> for pages. In the box at the top, a context you already have works as the last word too: <i>Call Mia about the VAT phone tomorrow</i>.</li>
     <li><b>Auto-linking:</b> Known names are suggested as you type (<kbd>Tab</kbd> to accept). Full names link automatically when you leave the line.</li>
+    <li><b>Aliases:</b> <code>aliases:: JS, Johnny</code> on a person's or organisation's page gives it short names. <kbd>@js</kbd> <kbd>Tab</kbd> writes <code>[[p/John Smith][JS]]</code>, which reads as <i>JS</i> and shows <i>John Smith &middot; Acme</i> on hover; <i>Storebrand</i> written out links to <i>Storebrand Forsikring AS</i>.</li>
     <li><b>Dates:</b> Type natural dates (tomorrow, friday, in 3 days) and press <kbd>Tab</kbd>. Placing a date at the end of a task sets its due date.</li>
     <li><b>Waiting For:</b> Setting a line's state to <i>Waiting</i> prompts you to assign the person you are waiting on.</li>
     <li><b>Live lists (<kbd>/query</kbd>):</b> A line like <code>{{query (and [[1/Fix sink]] (task TODO DOING))}}</code> shows every line that matches, kept up to date, and its tasks can be ticked from there. The builder writes the query for you; <i>Edit</i> on the list changes it. Logseq's simple queries work: <code>[[page]]</code>, <code>#tag</code>, <code>"words"</code>, <code>(task ...)</code>, <code>(page ...)</code>, <code>(property key value)</code>, <code>(page-property key value)</code>, <code>(between -7d today)</code>, <code>and</code> / <code>or</code> / <code>not</code>.</li>
@@ -9490,7 +9491,10 @@ function renderInline(text) {
     // was written and escaped once more on the way out -- or an apostrophe in
     // a page name shows as &#39; and the link points at a page that is not there.
     t = unesc(t);
-    const raw = trim(t.split("][")[0]);
+    // [[target][label]], or Obsidian's [[target|label]].
+    const pipe = t.includes("][") ? -1 : t.indexOf("|");
+    const raw = trim(pipe < 0 ? t.split("][")[0] : t.slice(0, pipe));
+    const given = t.includes("][") ? trim(t.split("][")[1]) : pipe < 0 ? null : trim(t.slice(pipe + 1));
     const target = esc(raw);
     const pfx = (/^([^/]+)\//.exec(raw) || [])[1];
     /* [[go/todos]] is not a page but a door into the app itself. That is what
@@ -9498,22 +9502,25 @@ function renderInline(text) {
        about one, and it stays a plain readable line in the markdown. */
     if (pfx === "go") {
       const id = raw.slice(3);
-      const shown = esc(t.includes("][") ? trim(t.split("][")[1]) : tourLabel(id));
+      const shown = esc(given != null ? given : tourLabel(id));
       return `<span class="wikilink go" data-link="${target}">${shown} ↗</span>`;
     }
     const known = pfx === "c" || pfx === "z" || pfx === "p" || pfx === "o" || (pfx && STATUS_DIRS[pfx]);
-    let label = trim(t.includes("][") ? t.split("][")[1] : (known ? raw.slice(pfx.length + 1) : raw));
+    let label = given != null ? given : (known ? raw.slice(pfx.length + 1) : raw);
     if (pfx === "c") label = "@" + label;
     // A person reads with where they work, so two Anna Bergs are never one.
-    let at = "";
+    // Written by an alias it is only the alias, with the whole name on hover.
+    let at = "", tip = "";
+    const short = (pfx === "p" || pfx === "o") && isAliasOf(raw, given);
     if (pfx === "p") {
       const who = raw.slice(2);
-      if (!t.includes("][")) label = personBareName(who);
+      if (given == null) label = personBareName(who);
       const orgs = personOrgs(who).filter(o => !label.toLowerCase().includes(o.toLowerCase()));
-      if (orgs.length) at = `<span class="porg"> · ${esc(orgs.join(", "))}</span>`;
-    }
+      if (short) tip = personNameAt(who);
+      else if (orgs.length) at = `<span class="porg"> · ${esc(orgs.join(", "))}</span>`;
+    } else if (short) tip = nameByRef(raw)?.title || raw.slice(2);
     const cls = pfx === "c" ? " ctx" : pfx === "z" ? " zet" : (pfx && STATUS_DIRS[pfx]) ? " proj" : "";
-    return `<span class="wikilink${cls}" data-link="${target}">${esc(label)}${at}</span>`;
+    return `<span class="wikilink${cls}" data-link="${target}"${tip ? ` title="${esc(tip)}"` : ""}>${esc(label)}${at}</span>`;
   });
   h = h.replace(/(^|\s)#([\p{L}\p{N}_\-/]+)/gu, (all, sp, t) =>
     `${sp}<span class="tag" data-link="${esc(t)}">#${esc(t)}</span>`);
@@ -18912,20 +18919,45 @@ function caretOffsets(host) {
 let SUGGEST = null;          // {host, box, rows, i, at, end, mode, opts}
 let SUGGEST_DISMISSED = "";  // the fragment Escape said no to, so it stays said
 
+/* ---------- what a person or organisation is called for short ----------
+   The page keeps the full name and aliases:: says what people actually say:
+   aliases:: JS, Johnny on p/John Smith, aliases:: Storebrand on
+   o/Storebrand Forsikring AS. Written as a list, Obsidian's way, or one name
+   at a time with commas; alias:: works too. Taking an alias from @ writes
+   [[p/John Smith][JS]], which reads as JS and still goes to John. */
+function splitAliases(value) {
+  let v = trim(String(value || ""));
+  if (/^\[(?!\[)[\s\S]*\]$/.test(v)) v = v.slice(1, -1);       // [JS, Johnny]
+  return v.split(/[,;]/).map(s => trim(trim(s).replace(/^\[\[|\]\]$/g, "").replace(/^["']|["']$/g, "")))
+    .filter(Boolean);
+}
+function pageAliases(path) {
+  const props = getPage(path)?.props || {};
+  const out = [];
+  for (const a of [...splitAliases(props.aliases), ...splitAliases(props.alias)])
+    if (!out.some(o => o.toLowerCase() === a.toLowerCase())) out.push(a);
+  return out;
+}
+/* The name behind a link, by its ref: "p/John Smith" -> its row in nameIndex. */
+const nameByRef = ref => memo("nameByRef", () =>
+  new Map(nameIndex().map(n => [n.ref.toLowerCase(), n]))).get(trim(String(ref || "")).toLowerCase());
+const isAliasOf = (ref, label) => !!label &&
+  (nameByRef(ref)?.aliases || []).some(a => a.toLowerCase() === trim(label).toLowerCase());
+
 /* Every name worth offering, across the spaces on screen. */
 function nameIndex() {
   return memo("nameIndex", () => {
     const seen = new Set(), out = [];
-    const add = (kind, title, ref) => {
+    const add = (kind, title, ref, aliases = []) => {
       const key = ref.toLowerCase();
       if (!title || seen.has(key)) return;
       seen.add(key);
-      out.push({kind, title, ref});
+      out.push({kind, title, ref, aliases});
     };
     acrossSpaces(() => {
-      for (const p of allPeople()) add("person", personName(p), pageRef(p));
+      for (const p of allPeople()) add("person", personName(p), pageRef(p), pageAliases(p));
       for (const m of members()) add("person", m.name, "p/" + m.name);
-      for (const p of allPages(q => pageKind(q) === "org")) add("org", pageTitle(p), pageRef(p));
+      for (const p of allPages(q => pageKind(q) === "org")) add("org", pageTitle(p), pageRef(p), pageAliases(p));
       for (const code of ["1", "3", "2"])
         for (const p of projectsIn(code)) add("project", pageTitle(p), pageRef(p));
       for (const c of contextList()) add("context", c, "c/" + c);
@@ -19050,9 +19082,17 @@ function linkKnownNames(text) {
     const f = n.title.split(/\s+/)[0];
     if (f.length >= 3 && f !== n.title) firsts.set(f, firsts.has(f) ? null : n);
   }
+  // An alias links the same way, while no other page goes by it.
+  const aliases = new Map();
+  for (const n of names) for (const a of n.aliases || []) {
+    const k = a.toLowerCase();
+    aliases.set(k, aliases.has(k) && aliases.get(k).n !== n ? {a, n: null} : {a, n});
+  }
   const wants = [];
   for (const n of names) wants.push({word: n.title, ref: n.ref, label: null});
   for (const [f, n] of firsts) if (n) wants.push({word: f, ref: n.ref, label: f});
+  for (const {a, n} of aliases.values()) if (n && !names.some(x => x.title.toLowerCase() === a.toLowerCase()))
+    wants.push({word: a, ref: n.ref, label: a});
   wants.sort((a, b) => b.word.length - a.word.length);
   // Only plain words are touched: not what is already a link, code or an address.
   const parts = src.split(/(\[\[[^\]]*(?:\]\[[^\]]*)?\]\]|`[^`]*`|https?:\/\/\S+|file:\S+|(?:tel|sms):(?:\/\/)?\+?\d[\d\s\-.()]*\d|(?:mailto|tel|sms|geo|msteams|teams):\S+|\]\])/i);
@@ -19164,6 +19204,20 @@ function slashRows(q) {
     detail: c.detail, mark: "/"}));
 }
 
+/* The names whose alias starts with what was typed, each offered as that
+   alias: "@js" is John Smith written as JS. An alias typed in full comes
+   first, and the full name is still offered under it for when you want it. */
+function aliasRows(pool, q) {
+  if (!q) return [];
+  const hits = [];
+  for (const n of pool) {
+    const a = (n.aliases || []).find(x => x.toLowerCase().startsWith(q));
+    if (a) hits.push(Object.assign({accept: "link"}, n, {label: a, detail: "as " + a,
+      exact: a.toLowerCase() === q}));
+  }
+  return hits.sort((x, y) => y.exact - x.exact);
+}
+
 function suggestFor(host, opts) {
   const before = textBeforeCaret(host);
   if (before == null) return null;
@@ -19188,9 +19242,14 @@ function suggestFor(host, opts) {
   if (trig) {
     const kind = {"@@": "context", "@": "person", "#": "project"}[trig[2]];
     const q = trig[3].toLowerCase();
-    const rows = nameIndex().filter(n => n.kind === kind &&
-      (!q || n.title.toLowerCase().split(/\s+/).some(w => w.startsWith(q)) || n.title.toLowerCase().startsWith(q)))
-      .slice(0, 8).map(n => Object.assign({accept: "link"}, n));
+    // @ is who: people first, then the organisations, by name or by alias.
+    const kinds = kind === "person" ? ["person", "org"] : [kind];
+    const pool = nameIndex().filter(n => kinds.includes(n.kind))
+      .sort((a, b) => kinds.indexOf(a.kind) - kinds.indexOf(b.kind));
+    const named = pool.filter(n =>
+      !q || n.title.toLowerCase().split(/\s+/).some(w => w.startsWith(q)) || n.title.toLowerCase().startsWith(q))
+      .map(n => Object.assign({accept: "link"}, n));
+    const rows = aliasRows(pool, q).concat(named).slice(0, 8);
     if (q && kind === "context" && !rows.some(r => r.title.toLowerCase() === q))
       rows.push({kind, title: q, ref: "c/" + slugify(q), accept: "link", isNew: true});
     return rows.length ? {mode: "trigger", at: before.length - trig[2].length - trig[3].length, rows} : null;
@@ -19209,8 +19268,10 @@ function suggestFor(host, opts) {
       (n === 1 && f.length >= 3 && x.title.toLowerCase().split(/\s+/).some(w => w.startsWith(f)))))
       .filter(x => x.title.toLowerCase() !== f || x.kind !== "context")
       .slice(0, 5).map(x => Object.assign({accept: "link"}, x));
+    // "storebrand" is Storebrand Forsikring AS, written the way it was said.
+    const aliased = aliasRows(nameIndex().filter(x => x.kind !== "context"), f).slice(0, 3);
     const dates = opts.dates ? dateSuggestions(frag).map(r => Object.assign({accept: "date"}, r)) : [];
-    const rows = dates.concat(names);
+    const rows = dates.concat(aliased, names);
     if (rows.length) return {mode: "word", at: before.length - frag.length, rows};
   }
   return null;
@@ -19291,7 +19352,8 @@ function suggestAccept(n) {
     return;
   }
   const space = host.isContentEditable ? "\u00A0" : " ";
-  const insert = "[[" + r.ref + "]]" + (/^\s/.test(after) || SUGGEST_MODE_KEEP_TIGHT(after) ? "" : space);
+  const insert = "[[" + r.ref + (r.label ? "][" + r.label : "") + "]]" +
+    (/^\s/.test(after) || SUGGEST_MODE_KEEP_TIGHT(after) ? "" : space);
   setHostText(host, text.slice(0, at) + insert + after, at + insert.length);
   host.dispatchEvent(new Event("input", {bubbles: true}));
 }
