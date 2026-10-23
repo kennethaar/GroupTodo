@@ -6335,6 +6335,10 @@ function backlinksTo(path) {
     const r = recs[i];
     if (r.path === path) continue;
     if (r.prop != null) {
+      /* created:: [[day]], due:: [[day]] and the like are when-values, not
+         mentions: a day would list every page made on it, and what is due
+         already shows under Due Today. */
+      if (isJournalPath(path)) continue;
       hits.push({path: r.path, block: {id: null, title: r.prop + ":: " + r.value, props: {}, body: [], children: []}});
       continue;
     }
@@ -6463,8 +6467,13 @@ function backlinksSection(path) {
         backlinkWithTrail(h))
     ));
   }
-  return el("div", {class: "section quiet", style: "margin-top:36px;opacity:1"},
-    el("h3", {}, el("span", {}, "Linked References"), el("span", {class: "n"}, String(hits.length))), card);
+  /* Folded under its heading until you open it. Opening or folding it once
+     holds for every page, across reloads. */
+  const key = "backlinks.open";
+  return el("details", {class: "section quiet fold", style: "margin-top:36px;opacity:1",
+      open: PREF.get(key, "0") === "1",
+      ontoggle: e => PREF.set(key, e.currentTarget.open ? "1" : "0")},
+    el("summary", {}, el("span", {}, "Linked References"), el("span", {class: "n"}, String(hits.length))), card);
 }
 
 
@@ -21467,7 +21476,9 @@ function viewToday() {
       el("button", {class: "jtitle", title: "Focus on " + s.label, onclick: () => go("today", {jz: s.id})}, s.label),
       el("div", {style: "flex:1"}),
       s.edit ? el("button", {class: "jedit", title: "The whole day page as text", onclick: s.edit}, "Edit Markdown") : null),
-    s.body()))));
+    s.body(),
+    // The lines elsewhere that name this day, as any page shows what links to it.
+    who ? null : inSpace(s.space, () => backlinksSection(journalPath(day)))))));
   return c;
 }
 
