@@ -772,6 +772,10 @@ body.marquee .bcard{cursor:default}
 .htable th:first-child,.htable td:first-child{text-align:left;white-space:normal;min-width:110px;color:var(--fg)}
 .htable td{color:var(--fg2)}
 .htable .now{background:var(--bg3)}
+.htable td.neg,.reportsum .neg,.cd-left.neg{color:var(--late)}
+.htable td.pos,.reportsum .pos{color:var(--done, var(--accent))}
+.htable.sheet td:first-child .chip{margin-left:6px}
+.sheetsum{margin:10px 12px 12px}
 .htable tr.tot td{color:var(--fg)}
 .hlist>summary{cursor:pointer;padding:8px 12px;font-size:12px;color:var(--fg3);border-top:1px solid var(--border)}
 .hlist>.card{border:0;border-radius:0}
@@ -1031,6 +1035,7 @@ details>summary:hover{color:var(--fg2)}
 .tstar.on{color:var(--warn);opacity:1}
 .tstar:hover{opacity:1}
 .trkw .tadd{font-size:12px}
+.trkw .tv.tvw{width:auto;flex:1 1 14em;min-width:9em;text-align:left}
 /* ---------- what you wrote last time ---------- */
 .prevval{color:var(--fg3);opacity:.75;font-size:11.5px;font-style:italic;margin-left:8px;white-space:nowrap;align-self:center}
 .pkv .prevval{margin-left:5px}
@@ -1969,6 +1974,7 @@ body.solview #content{padding-bottom:14px}
     <li><b>Waiting For:</b> Setting a line's state to <i>Waiting</i> prompts you to assign the person you are waiting on.</li>
     <li><b>Live lists (<kbd>/query</kbd>):</b> A line like <code>{{query (and [[1/Fix sink]] (task TODO DOING))}}</code> shows every line that matches, kept up to date, and its tasks can be ticked from there. The builder writes the query for you; <i>Edit</i> on the list changes it. Logseq's simple queries work: <code>[[page]]</code>, <code>#tag</code>, <code>"words"</code>, <code>(task ...)</code>, <code>(page ...)</code>, <code>(property key value)</code>, <code>(page-property key value)</code>, <code>(between -7d today)</code>, <code>and</code> / <code>or</code> / <code>not</code>.</li>
     <li><b>Embeds (<kbd>/embed</kbd>):</b> <code>{{embed [[page]]}}</code> shows that page in the line, live. For one line, use its line menu &rarr; <i>Copy as embed</i> and paste it anywhere: <code>{{embed ((id))}}</code>. <code>((id))</code> on its own reads as the words of that line.</li>
+    <li><b>Sheets:</b> Three tracker kinds take the line as you say it: <i>Hours worked</i> (<code>tracker-acme_t:: 07:12 - 10:00, 10:30 - 12:30</code>, with Start and Stop on today's page), <i>An amount</i> (<code>129,50 + 45</code>) and <i>Stock</i> (<code>+3</code>, <code>-1</code>, <code>=12</code>). One tracker per kind, like acme and remote. <i>Trackers &gt; Hours</i>, <i>Amounts</i> or <i>Stock</i> adds them up: a week by day with shares, extra hours and flex, and a year by month, each copied as cells for a spreadsheet. Settings set the normal day, the split and the format, on your own page.</li>
     <li><b>Last time:</b> On a day page, a tracker or a <code>key:: value</code> of your own shows faintly what you wrote the last time you filled it in.</li>
     <li><b>Namespaces:</b> A page in a family, <code>[[Work/Clients/Acme]]</code> or <i>Work - Clients - Acme</i>, lists the rest of the family at the bottom.</li>
     <li><b>Duplicate lines:</b> &#8943; beside a page title &rarr; <i>Remove duplicate lines</i>. A line written twice under the same parent goes, and what was under it moves to the first copy. The <i>Weekly review</i> says when any page has some, and lists them. Undo puts them back.</li>
@@ -21172,7 +21178,7 @@ function viewToday() {
        node.addEventListener("pointerdown", activate, true);
        node.addEventListener("focusin", activate, true);
        return node;
-     })))} : null,
+     })), sheetsToday(day))} : null,
     {id: "due", title: "Due Today & Late", late: now.some(a => a.due < today), count: now.length,
      body: () => taskCard(now, "Nothing due. Nothing late.")},
     {id: "week", title: "Next 7 Days", count: week.length,
@@ -24844,7 +24850,7 @@ function propFact(path, k, v) {
   if (trk) return {
     key: trackerTitle(trk.name), raw: k + ":: " + v, own: true,
     save: text => saveRawProp(path, k, text),
-    pills: () => [trackerWidget(trk, text => saveRawProp(path, k, text))],
+    pills: () => [trackerWidget(trk, text => saveRawProp(path, k, text), {date: dayOfPath(path)})],
   };
   const directive = templateChoiceDirective(v);
   const placeholder = /^%[A-Za-z0-9_-]+%$/.test(trim(v || ""));
@@ -25643,6 +25649,12 @@ function viewSearch() {
    one number. What is being tracked is the part before the underscore, so
    changing the code later keeps the history in one graph. Only day pages
    count: a tracker anywhere else has no day to be on.
+
+   Three letters take the whole line as one value, written the way it is
+   said, and are what the sheets add up (see SHEETS below):
+     tracker-acme_t:: 07:12 - 10:00, 10:30 - 12:30   start and end; "07:12 -" is still running
+     tracker-food_a:: 129,50 + 45                    an amount, several with +
+     tracker-paint_q:: +3                            stock: +3 in, -1 out, =12 counted
    ============================================================ */
 const TRACKER_LETTERS = {
   k: {word: "kilos", unit: "kg"},
@@ -25651,16 +25663,20 @@ const TRACKER_LETTERS = {
   m: {word: "minutes", unit: "min"},
   c: {word: "done or not"},
   s: {word: "rating 1-10"},
+  t: {word: "start and end"},
+  a: {word: "amount"},
+  q: {word: "in and out"},
 };
-const TRACKER_RE = /^tracker-([\p{L}\p{N}_-]+?)(?:_([krnmcs]+))?::[ \t ]*(.*)$/iu;
+const wholeLineTracker = code => /^[taq]$/.test(code || "");
+const TRACKER_RE = /^tracker-([\p{L}\p{N}_-]+?)(?:_([krnmcstaq]+))?::[ \t ]*(.*)$/iu;
 
 function parseTracker(text) {
   const m = TRACKER_RE.exec(trim(String(text || "")));
   if (!m) return null;
-  const raw = trim(m[3]);
-  return {name: m[1].toLowerCase(), code: (m[2] || "").toLowerCase(),
+  const raw = trim(m[3]), code = (m[2] || "").toLowerCase();
+  return {name: m[1].toLowerCase(), code,
     key: "tracker-" + m[1] + (m[2] ? "_" + m[2] : ""),
-    values: raw ? raw.split("/").map(trim) : [], raw};
+    values: !raw ? [] : wholeLineTracker(code) ? [raw] : raw.split("/").map(trim), raw};
 }
 /* One letter per value. More values than letters are more of the last kind:
    krrr written 100/8/4/2/1 is a fourth set. */
@@ -25697,6 +25713,13 @@ const TRACKER_DONE_RE = /^(x|y|yes|ja|j|done|ok|1|✓|true)$/i;
 function trackerMeasures(t) {
   const slots = trackerSlots(t);
   const out = {};
+  if (wholeLineTracker(t.code)) {
+    const v = lineValue(t.code, t.raw, t.date);
+    if (t.code === "t" && (v.value || v.open)) out.hours = Math.round(v.value / 60 * 100) / 100;
+    if (t.code === "a" && t.raw) out.amount = v.value;
+    if (t.code === "q" && t.raw) out.stock = v.value;
+    return out;
+  }
   let kg = null; const reps = [];
   slots.forEach((L, i) => {
     const v = t.values[i], x = trackerNum(v);
@@ -25725,6 +25748,9 @@ const TRACKER_MEASURES = {
   minutes: {label: "Minutes", unit: "min", agg: "sum"},
   rating:  {label: "Rating", agg: "avg"},
   done:    {label: "Done", agg: "max"},
+  hours:   {label: "Hours", unit: "h", agg: "sum"},
+  amount:  {label: "Amount", agg: "sum"},
+  stock:   {label: "In and out", agg: "sum"},
 };
 
 /* Every tracker line on every day page in the areas on screen, oldest first. */
@@ -25770,14 +25796,15 @@ function paintTrackerLine(line, txt, path, b) {
   line.classList.toggle("trkline", !!t);
   if (!t) return false;
   txt.innerHTML = trackerLabelHtml(t);
-  line.append(trackerWidget(t, text => { b.title = text; touch(path); }));
+  line.append(trackerWidget(t, text => { b.title = text; touch(path); }, {date: dayOfPath(path)}));
   const prev = prevValueEl(path, "tracker:" + t.name);
   if (prev) line.querySelector(":scope > .trkw").append(prev);
   return true;
 }
 const trackerLabelHtml = t => '<span class="trkname" title="' + esc(t.key) + '">' + esc(trackerTitle(t.name)) + "</span>";
 
-function trackerWidget(t, save) {
+function trackerWidget(t, save, opts = {}) {
+  if (wholeLineTracker(t.code)) return trackerLineWidget(t, save, opts);
   const vals = t.values.slice();
   const box = el("span", {class: "trkw", contenteditable: "false"});
   const write = () => save(trackerText(t, vals));
@@ -25822,6 +25849,31 @@ function trackerWidget(t, save) {
   };
   box.addEventListener("mousedown", e => e.stopPropagation());
   build();
+  return box;
+}
+/* Hours, an amount or stock: one box for the line as it is said, and on
+   today's page Start and Stop, which write the clock now into it. */
+function trackerLineWidget(t, save, {date = null} = {}) {
+  const L = t.code;
+  const box = el("span", {class: "trkw", contenteditable: "false"});
+  const input = el("input", {class: "tv tvw", type: "text", inputmode: L === "t" ? "text" : "decimal", value: t.raw,
+    placeholder: L === "t" ? "07:12 - 10:00, 10:30 - 12:30" : L === "a" ? "129.50 + 45" : "+3, -1 or =12",
+    title: TRACKER_LETTERS[L].word, "aria-label": TRACKER_LETTERS[L].word});
+  input.addEventListener("keydown", e => {
+    e.stopPropagation();
+    if (e.key === "Enter" || e.key === "Escape") { e.preventDefault(); input.blur(); }
+  });
+  input.addEventListener("change", () => save(trackerText(t, [trim(input.value)])));
+  box.append(input);
+  if (L === "t") {
+    const v = lineValue("t", t.raw, date);
+    if (v.value || v.open) box.append(el("span", {class: "tu"}, fmtMinutes(v.value)));
+    if (v.stale) box.append(el("span", {class: "chip late", title: "A stretch with no end counts nothing"}, "no end"));
+    if (date && date === todayISO()) box.append(el("button", {class: "textbtn tadd", type: "button",
+      onclick: e => { e.stopPropagation(); save(trackerText(t, [v.open ? stopClock(t.raw) : startClock(t.raw)])); render(); }},
+      v.open ? "■ Stop" : "▶ Start"));
+  }
+  box.addEventListener("mousedown", e => e.stopPropagation());
   return box;
 }
 
@@ -26261,6 +26313,9 @@ const TRACKER_KINDS = [
   {id: "m", label: "Minutes", hint: "how long", code: () => "m"},
   {id: "c", label: "Done or not", hint: "a box to tick", code: () => "c"},
   {id: "s", label: "Rating 1–10", hint: "ten stars", code: () => "s"},
+  {id: "t", label: "Hours worked", hint: "start and end, like 07:12 - 10:00 -- one tracker per kind of work", code: () => "t"},
+  {id: "a", label: "An amount", hint: "money spent or earned -- one tracker per kind, like food", code: () => "a"},
+  {id: "q", label: "Stock", hint: "+3 in, -1 out, =12 counted -- one tracker per thing", code: () => "q"},
 ];
 const trackerSlug = s => String(s || "").toLowerCase().normalize("NFC").replace(/[\s_]+/g, "-")
   .replace(/[^\p{L}\p{N}-]/gu, "").replace(/-{2,}/g, "-").replace(/^-|-$/g, "");
@@ -26648,10 +26703,435 @@ function trackerCard(g) {
   return card;
 }
 
+/* ============================================================
+   SHEETS -- trackers added up, a week by its days and a year by its months
+   A sheet takes every tracker of one letter and makes each a column:
+
+     tracker-acme_t:: 07:12 - 10:00, 10:30 - 12:30
+     tracker-remote_t:: 17:30 - 19:00
+
+   is a day with Acme and Remote in the Hours sheet. Amounts does the same for
+   _a trackers (what was spent on food, on travel) and Stock for _q (what is
+   on the shelf, counted forward from every +3 and -1, and =12 when counted).
+   What is the same for all of them is here once; a sheet only says what its
+   letter means. How a sheet adds up is yours, on your own page so the phone
+   knows too, each key starting with the sheet's id:
+
+     hours_target:: mon-thu 7.5, fri 7      per weekday: a normal day, a budget
+     hours_split:: Client A 60, Client B 40 a fixed share of every day
+     hours_extra:: 1                        added to each day with anything on it
+     hours_format:: 0,00                    h:mm, 0.00 or 0,00
+     hours_trackers:: acme, remote          only these, when not all of them
+     amounts_unit:: kr
+
+   Hours and Amounts count your own day pages; Stock counts everybody's, as
+   a shelf is shared. Without hours_target:: a normal day is work_hours::.
+   ============================================================ */
+const SHEETS = [
+  {id: "hours", letter: "t", title: "Hours", mine: true, total: "Total",
+   diff: {head: "Flex", target: "A normal day", hint: "Hours per weekday, which flex is counted against. Left empty, your working hours are.",
+     of: (total, target) => total - target},
+   extra: "Hours added to each day worked, e.g. 1 makes a 7 hour day count as 8.",
+   formats: [["h:mm", "7:30"], ["0.00", "7.50"], ["0,00", "7,50"]],
+   empty: "Set up a tracker of Hours worked -- one per kind of work, like acme and remote -- and fill in start and end on your days."},
+  {id: "amounts", letter: "a", title: "Amounts", mine: true, total: "Total", unit: true,
+   diff: {head: "Under budget", target: "Budget per day", hint: "Per weekday; the week says how far under it you stayed.",
+     of: (total, target) => target - total},
+   formats: [["0.00", "129.50"], ["0,00", "129,50"], ["0", "130"]],
+   empty: "Set up a tracker of An amount -- one per kind, like food and travel -- and write what it came to on your days."},
+  {id: "stock", letter: "q", title: "Stock", mine: false, total: "On hand", unit: true, onHand: true,
+   formats: [["0", "12"], ["0.00", "12.50"], ["0,00", "12,50"]],
+   empty: "Set up a tracker of Stock -- one per thing -- and write +3 when it comes in, -1 when it goes and =12 when you count."},
+];
+const sheetById = id => SHEETS.find(S => S.id === id);
+
+/* ---------- what a line comes to ---------- */
+const SPAN_RE = /(\d{1,2})[:.](\d{2})\s*[-–](?:\s*(\d{1,2})[:.](\d{2}))?/g;
+/* The stretches on a line in the order written, in minutes since midnight;
+   z is null while the clock still runs. at/len are where it is in the line. */
+function clockSpans(text) {
+  const out = [];
+  for (const m of String(text || "").matchAll(SPAN_RE)) {
+    if (+m[1] > 23 || +m[2] > 59 || (m[3] != null && (+m[3] > 24 || +m[4] > 59))) continue;
+    out.push({a: +m[1] * 60 + +m[2], z: m[3] != null ? +m[3] * 60 + +m[4] : null, at: m.index, len: m[0].length});
+  }
+  return out;
+}
+const fmtClock = m => pad2(Math.floor(m / 60)) + ":" + pad2(m % 60);
+const startClock = raw => trim(raw) ? trim(raw).replace(/,\s*$/, "") + ", " + nowClock() + " -" : nowClock() + " -";
+function stopClock(raw) {
+  const s = clockSpans(raw).find(x => x.z == null);
+  return s ? raw.slice(0, s.at) + fmtClock(s.a) + " - " + nowClock() + raw.slice(s.at + s.len) : raw;
+}
+const numIn = s => { const x = parseFloat(String(s || "").replace(/\s/g, "").replace("−", "-").replace(",", ".")); return isFinite(x) ? x : null; };
+/* What the value of a whole-line tracker comes to on its day: minutes for
+   start and end (out before in is past midnight; a stretch still open counts
+   up to now today and as nothing on an earlier day), the sum for an amount,
+   and for stock the change, or the count when it says =. */
+function lineValue(code, raw, date) {
+  if (code === "t") {
+    let value = 0, open = false, stale = false;
+    const today = date === todayISO();
+    for (const s of clockSpans(raw)) {
+      if (s.z != null) value += (s.z - s.a + 1440) % 1440;
+      else if (today) { open = true; value += Math.max(0, clockMin(nowClock()) - s.a); }
+      else stale = true;
+    }
+    return {value, open, stale};
+  }
+  let value = 0, set = false;
+  for (const m of String(raw || "").matchAll(/([+\-−=]?)\s*(\d+(?:[.,]\d+)?)/g)) {
+    const x = numIn(m[2]);
+    if (m[1] === "=" && code === "q") { value = x; set = true; }
+    else value += m[1] === "-" || m[1] === "−" ? -x : x;
+  }
+  return {value, set};
+}
+
+/* ---------- how a sheet adds up ---------- */
+function mySetting(key) {
+  const me = whoAmI();
+  return trim(String((me && getPage(personPath(me))?.props?.[key]) || PREF.get(key, "") || ""));
+}
+function setMySetting(key, val) {
+  const me = whoAmI(), page = me && getPage(personPath(me));
+  val = trim(val || "");
+  if (page) {
+    page.props = page.props || {};
+    if (val) page.props[key] = val; else delete page.props[key];
+    touch(personPath(me));
+  } else PREF.set(key, val);
+}
+const sheetSetting = (S, key) => mySetting(S.id + "_" + key);
+/* "7.5", "7,5" and "7:30" are the same seven and a half hours; a sheet of
+   hours keeps minutes, the others the number. */
+function sheetNum(S, s) {
+  const t = trim(String(s || ""));
+  const c = /^(\d{1,2}):(\d{2})$/.exec(t);
+  if (c) return S.letter === "t" ? +c[1] * 60 + +c[2] : +c[1] + +c[2] / 60;
+  const x = numIn(t);
+  return x == null ? 0 : S.letter === "t" ? Math.round(x * 60) : x;
+}
+const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+function dayRun(from, to) {
+  const days = [];
+  for (let i = WORK_DAYS[from.toLowerCase()], n = 0; n < 7; i = (i + 1) % 7, n++) {
+    days.push(i);
+    if (i === WORK_DAYS[to.toLowerCase()]) break;
+  }
+  return days;
+}
+/* Per weekday, Sunday first, or null when nothing says. */
+function sheetTarget(S) {
+  if (!S.diff) return null;
+  const raw = sheetSetting(S, "target");
+  if (raw) {
+    const per = Array(7).fill(0);
+    let any = false;
+    const re = /(sun|mon|tue|wed|thu|fri|sat)[a-z]*(?:\s*-\s*(sun|mon|tue|wed|thu|fri|sat)[a-z]*)?\s*:?\s*(\d+(?:[.,]\d+|:\d{2})?)/gi;
+    for (const m of raw.matchAll(re)) { for (const d of dayRun(m[1], m[2] || m[1])) per[d] = sheetNum(S, m[3]); any = true; }
+    if (any) return per;
+  }
+  const wh = S.letter === "t" && workHours();
+  if (!wh) return null;
+  const len = (hmMinutes(wh.end) - hmMinutes(wh.start) + 1440) % 1440;
+  return WEEKDAY_KEYS.map((_, d) => wh.days.includes(d) ? len : 0);
+}
+/* Back to words, Monday first, days in a row with the same value together. */
+function sheetTargetText(S, per) {
+  const order = [1, 2, 3, 4, 5, 6, 0], parts = [];
+  const num = v => +(S.letter === "t" ? v / 60 : v).toFixed(2);
+  for (let i = 0; i < 7;) {
+    let j = i;
+    while (j < 6 && per[order[j + 1]] === per[order[i]]) j++;
+    if (per[order[i]]) parts.push(WEEKDAY_KEYS[order[i]] + (j > i ? "-" + WEEKDAY_KEYS[order[j]] : "") + " " + num(per[order[i]]));
+    i = j + 1;
+  }
+  return parts.join(", ");
+}
+/* "Client A 60, Client B 37,5" -- a comma before a digit is a decimal comma. */
+function sheetSplit(S) {
+  if (S.onHand) return [];
+  return sheetSetting(S, "split").split(/[;,](?=\s*[^\d\s])/)
+    .map(s => /^\s*(.*?)\s*(\d+(?:[.,]\d+)?)\s*%?\s*$/.exec(s))
+    .filter(m => m && trim(m[1])).map(m => ({name: trim(m[1]), pct: numIn(m[2])}));
+}
+function fmtSheet(S, v, signed = false) {
+  const f = sheetSetting(S, "format") || S.formats[0][0];
+  const a = Math.abs(v || 0);
+  let s = S.letter === "t" && f === "h:mm" ? Math.floor(Math.round(a) / 60) + ":" + pad2(Math.round(a) % 60)
+    : S.letter === "t" ? (a / 60).toFixed(2) : f === "0" ? String(Math.round(a)) : a.toFixed(2);
+  if (f === "0,00") s = s.replace(".", ",");
+  return (v < 0 && +s.replace(/[^\d]/g, "") ? "-" : signed ? "+" : "") + s;
+}
+const sheetUnit = S => S.unit ? sheetSetting(S, "unit") : "";
+
+/* ---------- the lines a sheet counts ---------- */
+function sheetTrackers(S) {
+  const only = sheetSetting(S, "trackers").toLowerCase().split(/[\s,;]+/).filter(Boolean);
+  const all = trackerList().filter(g => g.code === S.letter).map(g => g.name);
+  return only.length ? all.filter(n => only.includes(n)) : all;
+}
+/* Every line of its trackers, oldest first, with what it comes to. */
+function sheetEntries(S) {
+  return memo("sheet:" + S.id, () => {
+    const names = new Set(sheetTrackers(S));
+    return trackerEntries().filter(e => e.code === S.letter && names.has(e.name) &&
+      (!S.mine || inSpace(e.space || V.space, () => myJournal(e.path))))
+      .map(e => Object.assign({date: e.date, name: e.name, e}, lineValue(S.letter, e.raw, e.date)));
+  });
+}
+/* The columns a sheet has, as [name, title]: the trackers, in the order the
+   setting names them, else by name. */
+function sheetKinds(S) {
+  return sheetTrackers(S).map(n => [n, trackerTitle(n)]);
+}
+/* What is on hand of each thing at the end of a day: every change up to it,
+   started again from each count. */
+function onHandAt(rows, date) {
+  const m = new Map();
+  for (const r of rows) {
+    if (r.date > date) break;
+    m.set(r.name, r.set ? r.value : (m.get(r.name) || 0) + r.value);
+  }
+  return m;
+}
+
+/* A week: each day by column, the total with the extra, the shares and how
+   it stands against the target. A day still to come has nothing to stand
+   against yet. */
+function sheetWeek(S, monday) {
+  const all = sheetEntries(S), end = shiftISO(monday, 6), today = todayISO();
+  const rows = all.filter(e => e.date >= monday && e.date <= end);
+  const target = sheetTarget(S), extra = S.extra ? sheetNum(S, sheetSetting(S, "extra")) : 0;
+  const days = Array.from({length: 7}, (_, i) => {
+    const date = shiftISO(monday, i);
+    const items = rows.filter(e => e.date === date);
+    let byKind, total;
+    if (S.onHand) {
+      byKind = onHandAt(all, date);
+      total = [...byKind.values()].reduce((s, v) => s + v, 0);
+    } else {
+      byKind = new Map();
+      for (const e of items) byKind.set(e.name, (byKind.get(e.name) || 0) + e.value);
+      const sum = items.reduce((s, e) => s + e.value, 0);
+      total = sum + (sum ? extra : 0);
+    }
+    const diff = target && date <= today ? S.diff.of(total, target[weekdayOf(date)]) : null;
+    return {date, items, byKind, total, diff, any: items.length > 0,
+      open: items.some(e => e.open), stale: items.some(e => e.stale)};
+  });
+  return {S, monday, days, rows, target, extra, split: sheetSplit(S), kinds: sheetKinds(S),
+    total: S.onHand ? days[6].total : days.reduce((s, d) => s + d.total, 0),
+    diff: target ? days.reduce((s, d) => s + (d.diff || 0), 0) : null,
+    count: days.filter(d => d.any).length};
+}
+/* The columns of a week, the same on screen and when copied. */
+function sheetCols(w) {
+  const S = w.S, F = (v, s) => fmtSheet(S, v, s), unit = sheetUnit(S);
+  const last = w.days[6];
+  return [
+    ...(w.kinds.length > 1 || S.onHand ? w.kinds.map(([k, label]) => ({head: label,
+      cell: d => d.byKind.has(k) ? F(d.byKind.get(k)) : "",
+      foot: () => S.onHand ? (last.byKind.has(k) ? F(last.byKind.get(k)) : "") : F(w.days.reduce((s, d) => s + (d.byKind.get(k) || 0), 0))})) : []),
+    ...(S.onHand && w.kinds.length < 2 ? [] : [{head: S.total + (unit ? " (" + unit + ")" : ""), strong: true,
+      cell: d => F(d.total), foot: () => F(w.total)}]),
+    ...w.split.map(p => ({head: p.name + " " + p.pct + " %", cell: d => F(d.total * p.pct / 100), foot: () => F(w.total * p.pct / 100)})),
+    ...(w.target ? [{head: S.diff.head, diff: true, cell: d => d.diff == null ? "" : F(d.diff, true), foot: () => F(w.diff, true)}] : []),
+  ];
+}
+const dayWithName = iso => iso + " " + parseISO(iso).toLocaleDateString(undefined, {weekday: "long"});
+const diffCls = v => v == null ? "" : v < 0 ? "neg" : v > 0 ? "pos" : "";
+function sheetWeekTable(w) {
+  const cols = sheetCols(w), today = todayISO();
+  return el("div", {class: "htable-wrap"}, el("table", {class: "htable sheet"},
+    el("thead", {}, el("tr", {}, el("th", {}, "Date"), ...cols.map(c => el("th", {}, c.head)))),
+    el("tbody", {}, ...w.days.map(d => el("tr", {class: d.date === today ? "now" : ""},
+      el("td", {}, el("button", {class: "textbtn", title: "Open the day", onclick: () => go("today", {todayDay: d.date})},
+          dayWithName(d.date)),
+        d.open ? el("span", {class: "chip today"}, "running") : null,
+        d.stale ? el("span", {class: "chip late", title: "A stretch on this day has no end, and counts nothing"}, "no end") : null),
+      ...cols.map(c => el("td", {class: c.diff ? diffCls(d.diff) : ""}, c.strong ? el("b", {}, c.cell(d)) : c.cell(d))))),
+      el("tr", {class: "tot"}, el("td", {}, w.S.onHand ? "End of week" : "Week"),
+        ...cols.map(c => el("td", {class: c.diff ? diffCls(w.diff) : ""}, el("b", {}, c.foot())))))));
+}
+/* Tabs between the columns, so it pastes into a spreadsheet as cells. */
+function copySheetWeek(w) {
+  const cols = sheetCols(w), [wk, yr] = isoWeek(w.monday);
+  copyText([yr + "-W" + pad2(wk), ["Date", ...cols.map(c => c.head)].join("\t"),
+    ...w.days.map(d => [dayWithName(d.date), ...cols.map(c => c.cell(d))].join("\t")),
+    [w.S.onHand ? "End of week" : "Week", ...cols.map(c => c.foot())].join("\t")].join("\n"),
+    "Week " + wk + " copied. It pastes into a spreadsheet as cells.");
+}
+
+/* A year by months. Hours: the days with each kind of work -- days on site
+   are what a travel deduction asks for -- and the hours. Amounts: what each
+   came to. Stock: what was on hand at the end of each month. */
+function sheetYear(S, year) {
+  const all = sheetEntries(S), rows = all.filter(e => e.date.startsWith(year + "-"));
+  const kinds = sheetKinds(S), extra = S.extra ? sheetNum(S, sheetSetting(S, "extra")) : 0;
+  const months = Array.from({length: 12}, (_, i) => {
+    const key = year + "-" + pad2(i + 1);
+    const items = rows.filter(e => e.date.startsWith(key) && (S.letter !== "t" || e.value > 0 || e.open));
+    const days = n => new Set(items.filter(e => n == null || e.name === n).map(e => e.date)).size;
+    const sum = n => items.filter(e => e.name === n).reduce((s, e) => s + e.value, 0);
+    const worked = days(null);
+    const hand = !S.onHand ? null : key <= todayISO().slice(0, 7) ? onHandAt(all, key + "-31") : new Map();
+    return {key, label: parseISO(key + "-01").toLocaleDateString(undefined, {month: "long"}),
+      days: kinds.map(([n]) => days(n)), sums: kinds.map(([n]) => sum(n)), hand, worked,
+      total: S.onHand ? [...hand.values()].reduce((s, v) => s + v, 0) : items.reduce((s, e) => s + e.value, 0) + worked * extra};
+  });
+  return {S, year, kinds, months};
+}
+function sheetYearCols(y) {
+  const S = y.S, F = v => fmtSheet(S, v), many = y.kinds.length > 1;
+  const add = f => y.months.reduce((s, m) => s + f(m), 0);
+  if (S.onHand) return [...y.kinds.map(([n, label]) => ({head: label, cell: m => m.hand.has(n) ? F(m.hand.get(n)) : "",
+    foot: () => { const h = y.months[11].hand; return h.has(n) ? F(h.get(n)) : ""; }})),
+    ...(many ? [{head: S.total, cell: m => m.hand.size ? F(m.total) : "", foot: () => F(y.months[11].total)}] : [])];
+  return [
+    ...(S.letter === "t" ? y.kinds.map(([, label], i) => ({head: label + " days", cell: m => String(m.days[i] || ""), foot: () => String(add(m => m.days[i]))}))
+      : many ? y.kinds.map(([, label], i) => ({head: label, cell: m => m.sums[i] ? F(m.sums[i]) : "", foot: () => F(add(m => m.sums[i]))})) : []),
+    ...(S.letter === "t" && many ? [{head: "Days worked", cell: m => String(m.worked || ""), foot: () => String(add(m => m.worked))}] : []),
+    {head: S.total + (sheetUnit(S) ? " (" + sheetUnit(S) + ")" : ""), cell: m => m.total ? F(m.total) : "", foot: () => F(add(m => m.total))},
+  ];
+}
+function copySheetYear(y) {
+  const cols = sheetYearCols(y);
+  copyText([y.S.title + " " + y.year, ["Month", ...cols.map(c => c.head)].join("\t"),
+    ...y.months.map(m => [m.key, ...cols.map(c => c.cell(m))].join("\t")),
+    ["Year", ...cols.map(c => c.foot())].join("\t")].join("\n"), y.year + " copied.");
+}
+
+/* What a sheet adds up, as a dialog rather than keys to remember the
+   spelling of. */
+function openSheetSettings(S) {
+  const order = [1, 2, 3, 4, 5, 6, 0];
+  const per = sheetTarget(S) || Array(7).fill(0);
+  const shown = v => v ? String(+(S.letter === "t" ? v / 60 : v).toFixed(2)) : "";
+  const dayIns = order.map(d => el("input", {inputmode: "decimal", value: shown(per[d]), placeholder: "0",
+    style: "width:52px", "aria-label": WEEKDAY_KEYS[d]}));
+  const names = trackerList().filter(g => g.code === S.letter).map(g => g.name);
+  const chosen = new Set(sheetTrackers(S));
+  const ticks = names.map(n => el("input", {type: "checkbox", checked: chosen.has(n) ? "" : null, value: n}));
+  const split = el("input", {value: sheetSetting(S, "split"), placeholder: "Client A 60, Client B 40", style: "width:100%"});
+  const extra = el("input", {inputmode: "decimal", value: sheetSetting(S, "extra"), placeholder: "0", style: "width:70px"});
+  const unit = el("input", {value: sheetSetting(S, "unit"), placeholder: S.letter === "a" ? "kr" : "pcs", style: "width:90px"});
+  const fmt = fselect("Format", sheetSetting(S, "format") || S.formats[0][0], S.formats, () => {});
+  const field = (label, hint, ...kids) => el("div", {class: "field"}, el("label", {}, label), ...kids,
+    hint ? el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"}, hint) : null);
+  const save = () => {
+    if (S.diff) {
+      const vals = Array(7).fill(0);
+      order.forEach((d, i) => { vals[d] = sheetNum(S, dayIns[i].value); });
+      setMySetting(S.id + "_target", vals.some(Boolean) ? sheetTargetText(S, vals) : "");
+    }
+    const on = ticks.filter(t => t.checked).map(t => t.value);
+    setMySetting(S.id + "_trackers", on.length && on.length < names.length ? on.join(", ") : "");
+    if (!S.onHand) setMySetting(S.id + "_split", trim(split.value));
+    if (S.extra) setMySetting(S.id + "_extra", sheetNum(S, extra.value) ? trim(extra.value) : "");
+    if (S.unit) setMySetting(S.id + "_unit", trim(unit.value));
+    setMySetting(S.id + "_format", fmt.value === S.formats[0][0] ? "" : fmt.value);
+    closeModal();
+    render();
+    notify(whoAmI() ? "Saved on your own page, so your phone has it too." : "Saved on this device. Set your name to keep it in the vault.");
+  };
+  modal({
+    center: true, title: S.title, hint: "how the sheet adds up, kept on your own page",
+    body: el("div", {},
+      names.length > 1 ? field("Trackers in it", "Each is a column of its own.",
+        el("div", {style: "display:flex;gap:12px;flex-wrap:wrap"}, ...names.map((n, i) =>
+          el("label", {style: "display:flex;gap:4px;align-items:center"}, ticks[i], trackerTitle(n))))) : null,
+      S.diff ? field(S.diff.target, S.diff.hint,
+        el("div", {style: "display:flex;gap:6px;flex-wrap:wrap"}, ...order.map((d, i) => el("label",
+          {style: "display:flex;flex-direction:column;font-size:11px;color:var(--fg3)"},
+          parseISO(shiftISO("2026-10-04", d)).toLocaleDateString(undefined, {weekday: "short"}), dayIns[i])))) : null,
+      S.onHand ? null : field("Split between", "Names and percent, each a column of its own.", split),
+      S.extra ? field("Added to each day", S.extra, extra) : null,
+      S.unit ? field("Unit", "Shown with the totals.", unit) : null,
+      field("Numbers as", null, fmt)),
+    foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
+           el("button", {class: "btn primary", onclick: save}, "Save")],
+    onKey: e => { if (e.key !== "Enter" || e.target.tagName === "SELECT") return false; save(); return true; },
+  });
+}
+
+/* Trackers > a sheet: the previous week first, since that is the one being
+   handed in, and the year under it. */
+function viewSheet(S) {
+  const c = el("div", {});
+  const thisMon = weekStartISO(todayISO()), lastMon = shiftISO(thisMon, -7);
+  const monday = state.sheetWeek ? weekStartISO(state.sheetWeek) : lastMon;
+  const to = patch => go("trackers", Object.assign({trkSheet: S.id, sheetWeek: monday}, patch));
+  const w = sheetWeek(S, monday), unit = sheetUnit(S);
+  c.append(fbar(
+    el("button", {class: "dayarrow", title: "The week before", "aria-label": "The week before", onclick: () => to({sheetWeek: shiftISO(monday, -7)})}, "◀"),
+    el("b", {style: "font-size:13px"}, weekLabel(monday)),
+    el("button", {class: "dayarrow", title: "The week after", "aria-label": "The week after", onclick: () => to({sheetWeek: shiftISO(monday, 7)})}, "▶"),
+    monday !== lastMon ? el("button", {class: "textbtn", onclick: () => to({sheetWeek: lastMon})}, "Last week") : null,
+    monday !== thisMon ? el("button", {class: "textbtn", onclick: () => to({sheetWeek: thisMon})}, "This week") : null,
+    el("span", {class: "gap"}),
+    el("button", {class: "btn sm ghost", onclick: () => openSheetSettings(S)}, "Settings")));
+  c.append(el("div", {class: "section"}, el("div", {class: "reportsum"},
+    el("b", {}, fmtSheet(S, w.total) + (unit ? " " + unit : "")),
+    S.onHand ? " on hand at the end of the week" : " in " + w.count + " day(s)",
+    w.diff != null ? el("span", {class: diffCls(w.diff)}, " · " + S.diff.head.toLowerCase() + " " + fmtSheet(S, w.diff, true)) : null,
+    el("button", {class: "btn sm ghost", style: "margin-left:auto", onclick: () => copySheetWeek(w)}, "Copy as text"))));
+  const notes = [
+    w.extra ? fmtSheet(S, w.extra) + " is added to each day with anything on it." : "",
+    w.target ? S.diff.head + " is against " + sheetTargetText(S, w.target) + "." : S.diff ? "Set " + S.diff.target.toLowerCase() + " in Settings to see " + S.diff.head.toLowerCase() + "." : "",
+    w.days.some(d => d.stale) ? "A stretch with no end counts nothing until it has one." : ""].filter(Boolean).join(" ");
+  c.append(section("Days", null, el("div", {class: "card"}, sheetWeekTable(w),
+    notes ? el("div", {class: "hint", style: "text-align:left;padding:8px 12px;margin:0;border-top:1px solid var(--border)"}, notes) : null)));
+  const years = [...new Set([...sheetEntries(S).map(e => e.date.slice(0, 4)), monday.slice(0, 4)])].sort().reverse();
+  const year = state.sheetYear && years.includes(state.sheetYear) ? state.sheetYear : monday.slice(0, 4);
+  const y = sheetYear(S, year), ycols = sheetYearCols(y);
+  const ytab = el("div", {class: "htable-wrap"}, el("table", {class: "htable"},
+    el("thead", {}, el("tr", {}, el("th", {}, "Month"), ...ycols.map(col => el("th", {}, col.head)))),
+    el("tbody", {}, ...y.months.map(m => el("tr", {class: m.key === todayISO().slice(0, 7) ? "now" : ""},
+      el("td", {}, capitalise(m.label)), ...ycols.map(col => el("td", {}, col.cell(m))))),
+      el("tr", {class: "tot"}, el("td", {}, S.onHand ? "End of year" : "Year"), ...ycols.map(col => el("td", {}, el("b", {}, col.foot())))))));
+  c.append(section(S.letter === "t" ? "Days per month" : "Per month", null, el("div", {class: "card"}, ytab),
+    el("span", {style: "margin-left:auto;display:flex;gap:6px;align-items:center"},
+      fselect("Year", year, years.map(v => [v, v]), v => to({sheetYear: v})),
+      el("button", {class: "btn sm ghost", onclick: () => copySheetYear(y)}, "Copy as text"))));
+  return c;
+}
+
+/* On Today, under the trackers: each sheet with something this week, how the
+   day and the week stand, and the way into it. */
+function sheetsToday(day) {
+  const out = [];
+  for (const S of SHEETS) {
+    if (S.onHand || !sheetEntries(S).some(e => e.date >= shiftISO(day, -60) && e.date <= day)) continue;
+    const w = sheetWeek(S, weekStartISO(day)), d = w.days.find(x => x.date === day), unit = sheetUnit(S);
+    out.push(el("button", {class: "cd", title: "The " + S.title.toLowerCase() + " sheet",
+      onclick: () => go("trackers", {trkSheet: S.id, sheetWeek: weekStartISO(day)})},
+      el("span", {class: "cd-k"}, S.title),
+      el("span", {class: "cd-t"}, (d.any ? (day === todayISO() ? "today " : "this day ") + fmtSheet(S, d.total) + " · " : "") +
+        "week " + fmtSheet(S, w.total) + (unit ? " " + unit : "")),
+      w.diff != null ? el("span", {class: "cd-left " + diffCls(w.diff)}, S.diff.head.toLowerCase() + " " + fmtSheet(S, w.diff, true)) : null));
+  }
+  return out.length ? el("div", {class: "countdown sheetsum"}, ...out) : null;
+}
+
 function viewTrackers() {
   const c = el("div", {class: "wrap"});
-  c.append(vhead("Trackers", "What you write down on your days, over time"));
-  topUpTrackerSeries();
+  /* The charts, or one of the sheets: those with a tracker of their letter. */
+  const sheets = SHEETS.filter(S => trackerList().some(g => g.code === S.letter));
+  const cur = sheets.find(S => S.id === state.trkSheet);
+  if (sheets.length) {
+    c.append(vhead("Trackers", cur ? cur.title + ", added up" : "What you write down on your days, over time"));
+    c.append(fbar(fchip("Charts", !cur, () => go("trackers", {trkSheet: null})),
+      ...sheets.map(S => fchip(S.title, S === cur, () => go("trackers", {trkSheet: S.id})))));
+    if (cur) { c.append(viewSheet(cur)); return c; }
+    topUpTrackerSeries();
+    return viewTrackerCharts(c, true);
+  }
+  return viewTrackerCharts(c, false);
+}
+function viewTrackerCharts(c, headed) {
+  if (!headed) { c.append(vhead("Trackers", "What you write down on your days, over time")); topUpTrackerSeries(); }
   const list = trackerList();
   if (!list.length) {
     c.append(el("div", {class: "card", style: "padding:16px"},
