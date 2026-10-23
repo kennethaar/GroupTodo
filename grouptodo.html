@@ -20433,18 +20433,29 @@ function icsOccurrences(ev, fromMs, toMs) {
   const nth = (b, y, m, d, wd) => b.wd === wd && (!b.n || (b.n > 0 ? Math.ceil(d / 7) === b.n
     : Math.ceil((inMonth(y, m) - d + 1) / 7) === -b.n));
   const mdHit = (y, m, d) => bymd.some(x => x === d || (x < 0 && inMonth(y, m) + x + 1 === d));
+  const dayHit = (y, m, d, wd) => bymd.length ? mdHit(y, m, d) : byday.length ? byday.some(b => nth(b, y, m, d, wd)) : d === w.d;
+  /* BYSETPOS picks among the days of the month the rest of the rule lets
+     through: Apple writes "the second Sunday" as BYDAY=SU;BYSETPOS=2, and
+     "the last weekday" as BYDAY=MO,...,FR;BYSETPOS=-1. Without it, every
+     Sunday would do. For YEARLY it is taken within each month of BYMONTH. */
+  const setpos = (rule.BYSETPOS || "").split(",").filter(Boolean).map(Number).filter(x => x);
+  const posOk = (y, m, d) => {
+    if (!setpos.length || (freq !== "MONTHLY" && freq !== "YEARLY")) return true;
+    const days = [];
+    for (let k = 1; k <= inMonth(y, m); k++) if (dayHit(y, m, k, new Date(Date.UTC(y, m - 1, k)).getUTCDay())) days.push(k);
+    return setpos.some(p => days[p > 0 ? p - 1 : days.length + p] === d);
+  };
   let n = 0;
   for (let dn = d0; dn - d0 < 366 * 40; dn++) {
     const dt = new Date(dn * DAY), y = dt.getUTCFullYear(), m = dt.getUTCMonth() + 1, d = dt.getUTCDate(), wd = dt.getUTCDay();
     let ok;
     if (freq === "DAILY") ok = (dn - d0) % every === 0 && (!byday.length || byday.some(b => b.wd === wd));
     else if (freq === "WEEKLY") ok = ((monday(dn) - monday(d0)) / 7) % every === 0 && (byday.length ? byday.some(b => b.wd === wd) : wd === wd0);
-    else if (freq === "MONTHLY") ok = ((y - w.y) * 12 + m - w.m) % every === 0 &&
-      (bymd.length ? mdHit(y, m, d) : byday.length ? byday.some(b => nth(b, y, m, d, wd)) : d === w.d);
-    else if (freq === "YEARLY") ok = (y - w.y) % every === 0 && (bymonth.length ? bymonth.includes(m) : m === w.m) &&
-      (bymd.length ? mdHit(y, m, d) : byday.length ? byday.some(b => nth(b, y, m, d, wd)) : d === w.d);
+    else if (freq === "MONTHLY") ok = ((y - w.y) * 12 + m - w.m) % every === 0 && dayHit(y, m, d, wd);
+    else if (freq === "YEARLY") ok = (y - w.y) % every === 0 && (bymonth.length ? bymonth.includes(m) : m === w.m) && dayHit(y, m, d, wd);
     else { push(start); return out; }
     if (ok && bymonth.length && freq !== "YEARLY") ok = bymonth.includes(m);
+    if (ok) ok = posOk(y, m, d);
     if (!ok) continue;
     const ms = at(y, m, d);
     if (ms < start) continue;
@@ -20497,11 +20508,13 @@ function icsMeetings(text, fromMs, toMs) {
 /* Write a calendar's meetings into an area's day pages. The calendar decides
    the title, time and attendees; what you write under a meeting stays. One
    that has left the calendar goes too, unless something was written under it. */
+// Something was written under the meeting: a line with steps under it, or a task.
+const calKept = b => (b.children || []).some(c => (c.children || []).length || c.state);
 function importCalendarText(text, space, feed, fromMs, toMs) {
   const meetings = icsMeetings(text, fromMs, toMs);
   const hm = ms => { const d = new Date(ms); return pad2(d.getHours()) + ":" + pad2(d.getMinutes()); };
   const firstDay = isoOf(new Date(fromMs)), lastDay = isoOf(new Date(toMs));
-  const kept = b => (b.children || []).some(c => (c.children || []).length || c.state);
+  const kept = calKept;
   return inSpace(space, () => {
     let added = 0, changed = 0, gone = 0;
     const have = new Map();
@@ -20550,6 +20563,65 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
   });
 }
 
+/* A meeting only says which calendar it came from as a hash (cal_feed::), so
+   each import remembers the name it went in under, on this device. That is
+   how a calendar whose link is gone, or a .ics file, is still named when its
+   meetings are cleared. */
+const CAL_NAMES_KEY = "calendar.names";
+const calNames = () => { try { return JSON.parse(PREF.get(CAL_NAMES_KEY, "{}")) || {}; } catch (_) { return {}; } };
+const calNameFeed = (feed, name) => { const m = calNames(); if (m[feed] !== name) { m[feed] = name; PREF.set(CAL_NAMES_KEY, JSON.stringify(m)); } };
+
+/* Every calendar that has meetings on the day pages of an area that is yours
+   alone, with how many and over which days. A shared area is left out: a
+   meeting sent on there is the others' too. */
+function calImported() {
+  const out = new Map();
+  for (const space of Spaces.list.map(s => s.name).filter(n => LOADED.has(n) && !calAreaShared(n)))
+    inSpace(space, () => {
+      for (const p of allPages(isJournalPath)) {
+        const d = dayOfPath(p);
+        if (d) walkBlocks(getPage(p).blocks, b => {
+          const feed = blockProp(b, "cal_feed");
+          if (!feed) return;
+          const k = space + "\n" + feed;
+          const g = out.get(k) || {space, feed, n: 0, first: d, last: d, sample: ""};
+          g.n++;
+          if (d < g.first) g.first = d;
+          if (d > g.last) g.last = d;
+          if (!g.sample) g.sample = trim(b.title.replace(MEETING_RE, " "));
+          out.set(k, g);
+        });
+      }
+    });
+  return [...out.values()];
+}
+
+/* Take one calendar's meetings off an area's day pages, every day of them.
+   One you wrote under stays, as a plain #meeting line the calendar no longer
+   touches. Undo puts the pages back as they were. */
+function clearCalendarMeetings(space, feed) {
+  return inSpace(space, () => {
+    let removed = 0, kept = 0;
+    const before = new Map();
+    for (const p of allPages(isJournalPath)) {
+      if (!dayOfPath(p)) continue;
+      const page = getPage(p), hits = [];
+      walkBlocks(page.blocks, b => { if (blockProp(b, "cal_feed") === feed) { hits.push(b); return false; } });
+      if (!hits.length) continue;
+      before.set(p, (page.blocks || []).map(cloneBlock));
+      for (const b of hits) {
+        if (calKept(b)) { setOrDropProp(b, "cal_feed", ""); setOrDropProp(b, "cal_uid", ""); kept++; }
+        else { removeBlockFrom(page, b); removed++; }
+      }
+      touch(p);
+    }
+    const undo = () => inSpace(space, () => {
+      for (const [p, blocks] of before) { const pg = getPage(p); if (pg) { pg.blocks = blocks.map(cloneBlock); touch(p); } }
+    });
+    return {removed, kept, undo};
+  });
+}
+
 let CAL_SYNCING = false;
 const calWindow = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return [d.getTime(), d.getTime() + CAL_DAYS_AHEAD * 864e5]; };
 const calSummary = s => !s.added && !s.changed && !s.gone ? "Calendars: nothing new."
@@ -20573,6 +20645,7 @@ async function syncCalendars({quiet = true} = {}) {
       if (!LOADED.has(f.space)) { try { await loadSpaceRecord(f.space); } catch (_) {} }
       if (!LOADED.has(f.space)) { failed.push(name + ": the area " + f.space + " could not be opened. Open it once from the area menu (a folder may need your permission again), then try again"); continue; }
       if (calAreaShared(f.space)) { failed.push(name + ": " + calSharedWhy(f.space)); continue; }
+      calNameFeed(calFeedId(f.url), name);
       try {
         const r = importCalendarText(await fetchCalendar(f.url), f.space, calFeedId(f.url), from, to);
         for (const k in sum) sum[k] += r[k];
@@ -20714,8 +20787,9 @@ async function openCalendars() {
       calAreaShared(f.space)
         ? el("span", {class: "d", style: "color:var(--late)", title: calSharedWhy(f.space)}, "into " + f.space + " — shared, not imported")
         : el("span", {class: "d"}, "into " + f.space),
-      el("button", {class: "textbtn", title: "Forget this link", onclick: () => {
-        setCalFeeds(calFeeds().filter((_, j) => j !== i)); draw(); lastSaid();
+      el("button", {class: "textbtn", title: "Forget this link. Its meetings stay until you clear them below", onclick: () => {
+        setCalFeeds(calFeeds().filter((_, j) => j !== i)); draw(); lastSaid(); drawOnPages();
+        if (onPages.childElementCount) say("Link removed. Its meetings are still on your day pages: Clear, below, takes them off.");
       }}, "Remove"))));
   };
   const url = el("input", {placeholder: "Paste the secret iCal address: https://… .ics or webcal://…", type: "text",
@@ -20762,11 +20836,48 @@ async function openCalendars() {
     if (!f) return;
     if (!area.value || calAreaShared(area.value)) { e.target.value = ""; say(area.value ? calSharedWhy(area.value) + "." : "Make a private area first.", "bad"); return; }
     const [from, to] = calWindow();
+    calNameFeed(calHash("file:" + f.name), f.name);
     const r = importCalendarText(await f.text(), area.value, calHash("file:" + f.name), from, to);
     clearMemo(); render(); flush();
+    drawOnPages();
     say("From " + f.name + ": " + calSummary(r).replace(/^Calendars: /, ""), "ok");
   }});
+
+  /* Meetings on your day pages from a calendar that is no longer listed above:
+     a removed link, an imported .ics file, or the same calendar added twice
+     under two links. Each can be cleared off. A listed calendar is not offered,
+     since its next fetch would put them all back: remove its link first. */
+  const onPages = el("div", {});
+  const drawOnPages = () => {
+    onPages.textContent = "";
+    const live = new Set(calFeeds().map(f => f.space + "\n" + calFeedId(f.url)));
+    const names = calNames();
+    const left = calImported().filter(g => !live.has(g.space + "\n" + g.feed));
+    if (!left.length) return;
+    const day = iso => new Date(iso + "T12:00").toLocaleDateString(undefined, {month: "short", day: "numeric"});
+    onPages.append(el("label", {style: "display:block;margin:12px 0 4px"}, "Still on your day pages, from calendars no longer listed"));
+    for (const g of left) onPages.append(el("div", {class: "pick", style: "cursor:default"},
+      el("span", {class: "k"}, "📅"),
+      el("span", {style: "flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis",
+        title: g.sample ? "For example: " + g.sample : null},
+        (names[g.feed] || "A removed calendar") + " · " + g.n + (g.n === 1 ? " meeting" : " meetings") + ", " +
+        (g.first === g.last ? day(g.first) : day(g.first) + " – " + day(g.last))),
+      el("span", {class: "d"}, "in " + g.space),
+      el("button", {class: "textbtn", title: "Take these meetings off your day pages", onclick: () => {
+        const r = clearCalendarMeetings(g.space, g.feed);
+        let undone = false;
+        const back = () => { if (undone) return false; undone = true; r.undo(); clearMemo(); render(); flush(); return true; };
+        pushUndo({run: back, label: "Cleared calendar meetings"});
+        clearMemo(); render(); flush();
+        drawOnPages();
+        const msg = "Cleared " + r.removed + (r.removed === 1 ? " meeting" : " meetings") +
+          (r.kept ? "; " + r.kept + " you wrote under stayed, as plain #meeting lines" : "") + ".";
+        say(msg, "ok");
+        notify(msg, "info", {label: "Undo", run: () => { back(); drawOnPages(); return true; }});
+      }}, "Clear")));
+  };
   draw();
+  drawOnPages();
   lastSaid();
   modal({
     center: true, title: "Calendars", hint: "meetings into your day pages",
@@ -20781,6 +20892,7 @@ async function openCalendars() {
         el("button", {class: "btn primary", onclick: () => { closeModal(); newSpacePrompt(async sp => { await openSpace(sp.name); openCalendars(); }); }},
           "+ Create a private area for your calendar")),
       rows,
+      onPages,
       meetRemindField(),
       el("div", {class: "field"}, el("label", {}, "Add a calendar link (its secret iCal address)"), url),
       el("div", {style: "display:flex;gap:10px;flex-wrap:wrap"},
