@@ -2353,7 +2353,6 @@ goals nobody is working on =>
 goals with no project =>
 goes back to the project; press it twice to skip it. =>
 got it =>
-hand it over and wait =>
 has to finish first - it has not =>
 here if you want them looked at too. =>
 hides a task from every list until that day, and then it is back by itself; holding a line holds the steps under it. =>
