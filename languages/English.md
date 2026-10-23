@@ -2596,7 +2596,6 @@ talked about =>
 task closes, =>
 task has =>
 task is =>
-task prow2 =>
 task type =>
 tasks are =>
 tasks close, =>
