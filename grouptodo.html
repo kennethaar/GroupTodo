@@ -288,6 +288,11 @@ kbd{font:11px var(--mono);border:1px solid var(--border);border-radius:4px;paddi
 .todayhead{padding-bottom:16px;border-bottom:1px solid var(--border);margin-bottom:22px}
 .todayhead h1{font-size:30px;letter-spacing:-.4px}
 .todayhead .sub{font-size:15px}
+.todaymore{display:none;font-size:18px;line-height:1;padding:6px 12px}
+@media (max-width:640px){
+  .todayhead .sub,.todayhead .wideonly{display:none}
+  .todayhead .todaymore{display:inline-flex}
+}
 .daybox{border:1px solid var(--border2);border-radius:var(--radius-sm);padding:2px 6px;background:var(--bg2);gap:2px}
 .daybox input[type=date]{border:0;background:none;font-size:14px;font-weight:600;color:var(--fg)}
 .dayarrow{padding:4px 8px;color:var(--fg2);font-size:12px;border-radius:6px}
@@ -309,9 +314,9 @@ kbd{font:11px var(--mono);border:1px solid var(--border);border-radius:4px;paddi
 .jhead .sp{text-transform:uppercase;letter-spacing:.08em;font-size:11px;padding:3px 9px;border-radius:5px;
   background:color-mix(in srgb,var(--sc) 10%,transparent);border:1px solid color-mix(in srgb,var(--sc) 55%,transparent)}
 .jhead .sp::before{display:none}
-.jtitle{font-size:16px;font-weight:600;color:var(--fg)}
+.jtitle{font-size:16px;font-weight:600;color:var(--fg);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .jtitle:hover{color:var(--accent)}
-.jedit{font-size:13px;color:var(--fg3)}
+.jedit{font-size:13px;color:var(--fg3);white-space:nowrap}
 .jedit:hover{color:var(--fg)}
 .jcard .card{border:0;background:none;border-radius:0}
 .jcard .outline{padding-top:12px}
@@ -338,7 +343,7 @@ kbd{font:11px var(--mono);border:1px solid var(--border);border-radius:4px;paddi
 .afcard .afbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:4px}
 .afnote{color:var(--fg3);font-size:12.5px;margin-top:14px}
 @media (min-width:1100px){ .jwide .jgrid{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))} }
-@media (max-width:640px){ .ttabs{gap:8px} .ttab{padding:6px 10px;font-size:13px} .jhead{padding:12px 14px} }
+@media (max-width:640px){ .ttabs{gap:8px} .ttab{padding:6px 10px;font-size:13px} .jhead{padding:12px 14px;gap:10px} }
 
 /* ---------- help ---------- */
 .helppanel{position:fixed;top:0;left:0;bottom:0;width:min(500px,100%);background:var(--bg2);
@@ -22267,6 +22272,8 @@ function todaySection(s) {
   return box;
 }
 
+/* Shown on a wide screen only; on a phone it lives behind the ⋯ in the heading. */
+const wideOnly = (node, hide = true) => { if (node && hide) node.classList.add("wideonly"); return node; };
 function viewToday() {
   const today = todayISO();
   const me = whoAmI();
@@ -22360,10 +22367,20 @@ function viewToday() {
       picker,
       el("button", {class: "dayarrow", title: "The day after", "aria-label": "The day after",
         onclick: () => toDay(shiftISO(day, 1))}, "▶")),
-    people.length ? fselect("Whose day page", who, [["", "Your page"], ...people.map(n => [n, firstNameOf(n) + "'s page"])],
-      v => go("today", {todayWho: v || null})) : null,
-    who ? null : calChip(),
-    el("button", {class: "btn ghost", title: "Everything that happened, newest first", onclick: () => openHistory()}, "⏱ History"));
+    people.length ? wideOnly(fselect("Whose day page", who, [["", "Your page"], ...people.map(n => [n, firstNameOf(n) + "'s page"])],
+      v => go("today", {todayWho: v || null})), !who) : null,
+    who ? null : wideOnly(calChip()),
+    wideOnly(el("button", {class: "btn ghost", title: "Everything that happened, newest first", onclick: () => openHistory()}, "⏱ History")),
+    /* On a phone the row above is one button: the day is what matters there,
+       and the rest is a tap away instead of three rows of chrome. */
+    el("button", {class: "btn ghost todaymore", "aria-label": "More for this day", title: "Calendars, history, other people's pages",
+      onclick: () => chipMenu("This day", null, [
+        who ? null : ["c", "\u{1F4C5} Calendars", "Import a calendar into the day page", openCalendars],
+        ["h", "\u23F1 History", "Everything that happened, newest first", () => openHistory()],
+        who ? ["0", "Your page", null, () => go("today", {todayWho: null})] : null,
+        ...people.filter(n => n !== who).slice(0, 9).map((n, i) => [String(i + 1), firstNameOf(n) + "'s page", null,
+          () => go("today", {todayWho: n})]),
+      ])}, "\u22EF"));
   head.classList.add("todayhead");
   c.append(head);
   if (!who) { maybeSyncCalendars(); const cal = calendarProblem(); if (cal) c.append(cal); }
