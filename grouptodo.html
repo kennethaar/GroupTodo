@@ -6672,9 +6672,12 @@ function leafActionsHere() {
 
 /* Active projects with nothing actionable left -- the classic GTD trap. */
 function stuckActiveProjects() {
+  /* A task on a day page that links the project moves it along just as one
+     written on the project page does, whatever group it lands in: waiting,
+     handed to somebody, or due today all still count. */
   const linkedFromJournal = new Set();
   for (const a of leafActions()) {
-    if (a.group === "LINKED" && a.project) linkedFromJournal.add(a.project.toLowerCase());
+    if (a.project && isJournalPath(a.path)) linkedFromJournal.add(a.project.toLowerCase());
   }
   const stuck = [];
   for (const path of projectsIn("1")) {
