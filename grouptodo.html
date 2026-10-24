@@ -292,6 +292,8 @@ kbd{font:11px var(--mono);border:1px solid var(--border);border-radius:4px;paddi
 @media (max-width:640px){
   .todayhead .sub,.todayhead .wideonly{display:none}
   .todayhead .todayicon{display:inline-flex}
+  .todayicon.on{border-color:var(--accent);background:var(--accent-soft)}
+  .ttabs .ttab-facts{display:none}
   .todayhead .vhead-r{gap:6px;margin-left:0;width:100%}
   .todayhead .backtoday{flex-basis:100%;text-align:left;padding-left:0}
   .todayhead .daybox{flex:1;min-width:0;justify-content:space-between}
@@ -22278,7 +22280,8 @@ function todaySection(s) {
 
 /* Shown on a wide screen only; on a phone it lives behind the ⋯ in the heading. */
 const wideOnly = (node, hide = true) => { if (node && hide) node.classList.add("wideonly"); return node; };
-const todayIcon = (icon, label, onclick) => el("button", {class: "btn ghost todayicon", "aria-label": label, title: label, onclick}, icon);
+const todayIcon = (icon, label, onclick, on) => el("button", {class: "btn ghost todayicon" + (on ? " on" : ""),
+  "aria-label": label, title: label, "aria-pressed": on == null ? null : String(!!on), onclick}, icon);
 function viewToday() {
   const today = todayISO();
   const me = whoAmI();
@@ -22317,6 +22320,11 @@ function viewToday() {
   const factSpaces = daySpaces.filter(sp => trkIn.get(sp) || sp === trkHome);
 
   const sections = [
+    /* A day with no page yet still gets its trackers: yesterday's sleep is
+       often filled in today, and that day's page is made for it on the spot. */
+    !who && !factSpaces.length ? {id: "facts", title: "Trackers", count: 0,
+     body: () => emptyCard("Nothing tracked on " + dayName(day) + " yet. ",
+       el("button", {class: "textbtn", onclick: () => { inSpace(Spaces.active, () => ensureJournal(day)); render(); }}, "Track this day"))} : null,
     factSpaces.length ? {id: "facts", title: "Trackers", count: trackers,
      body: () => el("div", {class: "card"}, ...factSpaces.map(sp => inSpace(sp, () => {
        const path = dayPath(sp);
@@ -22382,6 +22390,9 @@ function viewToday() {
     wideOnly(el("button", {class: "btn ghost", title: "Everything that happened, newest first", onclick: () => openHistory()}, "⏱ History")),
     /* On a phone the row above is icons: the day is what matters there, and
        the rest is a tap away instead of three rows of chrome. */
+    who ? null : todayIcon("\u{1F4CA}", "Trackers", () => {
+      PREF.set("today.tab", PREF.get("today.tab", "facts") === "facts" ? "" : "facts"); render(); },
+      PREF.get("today.tab", "facts") === "facts"),
     who ? null : todayIcon("\u{1F4C5}", "Calendars", openCalendars),
     todayIcon("\u23F1", "History", () => openHistory()),
     people.length && !who ? todayIcon("\u{1F465}", "Somebody else's day page", () => chipMenu("Whose day page", null,
@@ -22400,7 +22411,7 @@ function viewToday() {
   const want = PREF.get("today.tab", "facts");
   const openTab = tabs.find(s => s.id === want);
   c.append(el("div", {class: "ttabs", role: "tablist"}, ...tabs.map(s => el("button", {
-    class: "ttab" + (s === openTab ? " on" : "") + (s.late ? " late" : ""), role: "tab",
+    class: "ttab ttab-" + s.id + (s === openTab ? " on" : "") + (s.late ? " late" : ""), role: "tab",
     "aria-selected": String(s === openTab), title: s === openTab ? "Fold away" : "Show",
     onclick: () => { PREF.set("today.tab", s === openTab ? "" : s.id); render(); },
   }, s.title, el("span", {class: "tcount"}, String(s.count || 0))))));
