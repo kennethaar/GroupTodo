@@ -23177,7 +23177,9 @@ const replyActions = () => [
 function viewPeople() {
   const sub = subNow();
   const c = el("div", {class: "wrap" + (sub === "board" ? " wide" : "")});
-  c.append(vhead("People", "Who is carrying what", viewSeg("people")));
+  c.append(vhead("People", "Who is carrying what",
+    newBtn("person", () => pickName({title: "Person", items: [], prefix: "p",
+      onPick: n => { if (n) openPersonPage(n); }})), viewSeg("people")));
   if (!whoAmI()) c.append(el("div", {class: "news"}, el("div", {},
     "Put your name in and you will show up here. ", el("button", {class: "textbtn", onclick: () => openVaultDialog()}, "Your name"))));
   const all = peopleRows();
@@ -23634,7 +23636,7 @@ function viewOrgs() {
   const sub = subNow();
   const c = el("div", {class: "wrap" + (sub === "board" ? " wide" : "")});
   c.append(vhead("Organisations", "Whose work it is",
-    newBtn("organisation", () => pickName({title: "New organisation", items: [], prefix: "o",
+    newBtn("organisation", () => pickName({title: "Organisation", items: [], prefix: "o",
       onPick: n => { followLink("o/" + n); }})), viewSeg("orgs")));
   const orgs = dirPagesInVisible("org");
   const projectsOf = name => workingProjects().filter(r => projectOrgs(r).some(o => o.toLowerCase() === name.toLowerCase()));
