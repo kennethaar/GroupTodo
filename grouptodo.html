@@ -323,6 +323,16 @@ kbd{font:11px var(--mono);border:1px solid var(--border);border-radius:4px;paddi
   background:color-mix(in srgb,var(--sc) 6%,var(--bg2));border:1px solid color-mix(in srgb,var(--sc) 45%,var(--border));
   border-top:4px solid var(--sc)}
 .afcard .afname{font-size:18px;font-weight:650;color:var(--fg)}
+.afcard{cursor:grab}
+.afcard.dragging,.sprow.dragging{opacity:.45}
+.afcard.over{outline:2px dashed var(--sc);outline-offset:2px}
+.sprow.over{box-shadow:inset 0 2px 0 var(--accent)}
+.afhead{display:flex;align-items:center;gap:8px}
+.afhead .afname{flex:1;min-width:0}
+.afmoves{display:flex;gap:2px}
+.afmove{width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--fg2);font-size:16px;line-height:1;cursor:pointer}
+.afmove:hover:not(:disabled){border-color:var(--sc);color:var(--fg)}
+.afmove:disabled{opacity:.35;cursor:default}
 .afcard .afwhere{font-size:13px;color:var(--fg2);word-break:break-word}
 .afcard .afwhere.off{color:var(--warn)}
 .afcard .afbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:4px}
@@ -4806,6 +4816,18 @@ const Spaces = {
     return true;
   },
 
+  /* The order of the list is the order areas sit in on screen, left to right,
+     whichever of them happen to be ticked on. */
+  async move(name, to) {
+    const from = Spaces.list.findIndex(s => s.name === name);
+    to = Math.max(0, Math.min(Spaces.list.length - 1, to));
+    if (from < 0 || from === to) return false;
+    const [sp] = Spaces.list.splice(from, 1);
+    Spaces.list.splice(to, 0, sp);
+    await Spaces.save();
+    return true;
+  },
+
   async remove(name) {
     Spaces.list = Spaces.list.filter(s => s.name !== name);
     await Spaces.save();
@@ -4975,8 +4997,14 @@ function openSpaceStorageSetup({firstRun = false} = {}) {
       const where = placed ? "Folder: \u201C" + (sp.label || "folder") + "\u201D"
                   : sp.kind === "http" ? "On the server"
                   : "This browser only";
-      list.append(el("div", {class: "afcard", style: "--sc:" + sp.color},
-        el("div", {class: "afname"}, sp.name),
+      const i = Spaces.list.indexOf(sp);
+      const shift = d => el("button", {class: "afmove", "aria-label": "Move " + sp.name + (d < 0 ? " left" : " right"),
+        title: d < 0 ? "Further left" : "Further right", disabled: !Spaces.list[i + d],
+        onclick: async () => { if (await Spaces.move(sp.name, i + d)) { render(); draw(); } }}, d < 0 ? "\u2039" : "\u203A");
+      list.append(areaDraggable(el("div", {class: "afcard", style: "--sc:" + sp.color,
+        title: "Drag to change where " + sp.name + " sits when it is shown"},
+        el("div", {class: "afhead"}, el("div", {class: "afname"}, sp.name),
+          Spaces.list.length > 1 ? el("span", {class: "afmoves"}, shift(-1), shift(1)) : null),
         el("div", {class: "afwhere" + (placed || sp.kind === "http" ? "" : " off")}, where),
         el("div", {class: "afbtns"},
           CAP.dirPicker ? el("button", {class: "btn sm " + (placed ? "ghost" : "primary"),
@@ -4985,12 +5013,12 @@ function openSpaceStorageSetup({firstRun = false} = {}) {
           (SERVER_BASE && sp.kind !== "http" && sp.name === Spaces.active)
             ? el("button", {class: "btn sm ghost", onclick: async () => {
                 closeModal(); await connectServer(SERVER_BASE);
-              }}, "Use server") : null)));
+              }}, "Use server") : null)), sp.name, draw));
     }
   };
   draw();
   body.append(list, el("div", {class: "afnote"}, CAP.dirPicker
-    ? "One folder per area - never shared, never nested."
+    ? "One folder per area - never shared, never nested. The order here, left to right, is the order areas sit in when shown; drag a card to change it."
     : "This browser cannot open folders. Use desktop Chrome or Edge, or a vault file."));
 
   // Whichever way this closes, the day's routine still has to start.
@@ -5024,7 +5052,34 @@ function openSpaceStorageSetup({firstRun = false} = {}) {
 function storedVisible() {
   let names = [];
   try { names = JSON.parse(PREF.get("visibleSpaces") || "[]"); } catch (_) {}
-  return names.filter(n => Spaces.get(n));
+  // Always in the order of the areas list, never the order they were ticked on.
+  const at = n => Spaces.list.findIndex(s => s.name === n);
+  return names.filter(n => Spaces.get(n)).sort((a, b) => at(a) - at(b));
+}
+
+/* Dragging an area onto another puts it in that one's place. Shared by the
+   areas menu and the folders dialog, which both list them in this order. */
+let AREA_DRAG = null;
+function areaDraggable(node, name, after) {
+  node.draggable = true;
+  node.addEventListener("dragstart", e => {
+    AREA_DRAG = name; node.classList.add("dragging");
+    try { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", name); } catch (_) {}
+  });
+  node.addEventListener("dragend", () => { AREA_DRAG = null; node.classList.remove("dragging"); });
+  node.addEventListener("dragover", e => {
+    if (!AREA_DRAG || AREA_DRAG === name) return;
+    e.preventDefault(); node.classList.add("over");
+  });
+  node.addEventListener("dragleave", () => node.classList.remove("over"));
+  node.addEventListener("drop", async e => {
+    node.classList.remove("over");
+    const moving = AREA_DRAG; AREA_DRAG = null;
+    if (!moving || moving === name) return;
+    e.preventDefault();
+    if (await Spaces.move(moving, Spaces.list.findIndex(s => s.name === name))) { render(); after(); }
+  });
+  return node;
 }
 function visibleSpaces() {
   const names = storedVisible();
@@ -9984,7 +10039,7 @@ function openSpacesMenu() {
       render(); openSpacesMenu();
     });
     const meta = el("small", {}, sp.kind === "fs" ? (sp.label || "folder") : sp.kind === "http" ? "server" : "this browser");
-    const row = el("div", {class: "sprow"},
+    const row = el("div", {class: "sprow", title: "Drag to change the order areas sit in, top here is left on screen"},
       el("button", {class: "sq", title: "Colour for " + sp.name,
         style: "background:" + color + ";color:" + inkOn(color),
         onclick: () => { closeSpacesMenu(); openSpaceColor(sp.name); }}, sp.name[0].toUpperCase()),
@@ -9993,7 +10048,7 @@ function openSpacesMenu() {
         el("span", {}, sp.name, sp.name === Spaces.active ? el("span", {class: "cur"}, "  · new things land here") : null),
         meta),
       tick);
-    box.append(row);
+    box.append(areaDraggable(row, sp.name, openSpacesMenu));
     Spaces.summary(sp.name).then(sm => {
       if (sm) meta.textContent += " · " + sm.open + " open" + (sm.late ? " · " + sm.late + " late" : "");
     });

@@ -40,7 +40,7 @@ format it writes is described in [docs/vault-format.md](docs/vault-format.md).
 - **Your day page is yours.** One per person, so nobody types over anybody, but everyone can read it.
 - **A task you write is yours.** Hand it to someone in the area and it becomes theirs and shows in your *Waiting for* — one task, never two copies. Name someone outside the area and it becomes a plain waiting-for.
 - **You are told what you missed.** Today opens with *Since you were last here*; **History** scrolls back day by day.
-- **Areas** (Work, Home, …) are separate folders. Tick any combination at the top right and every screen shows those.
+- **Areas** (Work, Home, …) are separate folders. Tick any combination at the top right and every screen shows those. Drag them in that menu, or under **Folders**, to fix the order they sit in left to right.
 - **Meetings** are lines: **Alt+M** adds attendees, time and agenda. **📅 Calendars** on Today imports an iCal link into a day page every 30 minutes (needs `serve.py`, see below). The next meeting today is shown at the top, counting down, with a reminder a few minutes before (set in Calendars).
 - **Names and dates are picked up as you type** — *tomorrow*, *friday*, *in 3 days*; `Tab` turns a suggestion into a link or due date. `@`, `#` and `[[` list people, projects and pages.
 - **Threads on tasks.** Every task has a conversation; **Chat** gathers them all.
