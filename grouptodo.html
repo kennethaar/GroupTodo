@@ -7414,6 +7414,9 @@ function createProjectPage(title, blocks) {
   if (V.pages.has(path)) return path;
   const page = projectTemplateLines(clean, "1");
   if (blocks && blocks.length) page.blocks = blocks;
+  // The standard clients (share:: on their page) come with every new project.
+  const clients = defaultClients();
+  if (clients.length && !trim(page.props.org || "")) page.props.org = clients.map(o => "[[o/" + o + "]]").join(", ");
   putPage(path, page);
   return path;
 }
@@ -15851,8 +15854,9 @@ const closedOn = b => (trim(blockProp(b, "done_by") || "").match(/\d{4}-\d{2}-\d
    written as a link to it. This reads that link out of wherever somebody
    naturally put it: on the task, on a bullet above it, on the page the task
    lives on, or on the project the task belongs to. */
-const ORG_LINK = /\[\[o\/([^\]]+)\]\]/;
-const orgIn = text => { const m = ORG_LINK.exec(text || ""); return m ? trim(m[1]) : ""; };
+const ORG_LINK = /\[\[o\/([^\]]+)\]\]/g;
+// A supplier on the line is who helped, not who it was for, so it is passed over.
+const orgIn = text => { for (const m of String(text || "").matchAll(ORG_LINK)) if (!isSupplier(trim(m[1]))) return trim(m[1]); return ""; };
 function orgOfPage(path) {
   const page = path && getPage(path);
   if (!page) return "";
@@ -22702,6 +22706,32 @@ const projectOrgs = r => inSpace(r.space, () => [...new Set([...linksWith(getPag
    so every project in the area counts as theirs without saying so itself. */
 const areaOrgsOf = path => { const a = areaOfProject(path);
   return a ? linksWith(getPage(join(DIRS.areas, slugify(a) + ".md"))?.props, "o/") : []; };
+/* ---------- client or supplier ----------
+   An organisation says once, on its own page, what it is to you: role:: client
+   or role:: supplier. Without one it is a client, as every org was before, so
+   org:: on a project stays the one key and only the suppliers drop out of the
+   time sheet. share:: 60 on a client makes it a standard one: every new
+   project is given it, and its time is split by those shares. */
+const orgProp = (name, key) => { const p = findExistingPage("o/" + name);
+  return p ? trim(String(getPage(p)?.props?.[key] || "")) : ""; };
+const isSupplier = name => orgProp(name, "role").toLowerCase() === "supplier";
+const orgShare = name => numIn(orgProp(name, "share")) || 0;
+const projectClients = r => inSpace(r.space, () => projectOrgs(r).filter(o => !isSupplier(o)));
+const defaultClients = () => allPages(q => pageKind(q) === "org").map(baseName)
+  .filter(o => orgShare(o) > 0 && !isSupplier(o));
+/* How a project's time is shared among its clients, in percent: client_split::
+   on the project when it says so, else the clients' own share::, else evenly. */
+function clientShares(r) {
+  const clients = projectClients(r);
+  if (!clients.length) return [];
+  const own = parseSplit(pageProp(r.space, r.path, "client_split"))
+    .map(x => ({name: clients.find(c => c.toLowerCase() === x.name.toLowerCase()) || x.name, pct: x.pct}));
+  const shares = own.length ? own
+    : inSpace(r.space, () => clients.every(c => orgShare(c) > 0)) ? clients.map(c => ({name: c, pct: inSpace(r.space, () => orgShare(c))}))
+    : clients.map(c => ({name: c, pct: 1}));
+  const sum = shares.reduce((n, x) => n + x.pct, 0) || 1;
+  return shares.map(x => ({name: x.name, pct: x.pct * 100 / sum}));
+}
 const projectPeople = r => inSpace(r.space, () => [...new Set(linksIn(getPage(r.path)?.props?.with || "")
   .map(l => trim(l.split("][")[0])).filter(l => l.startsWith("p/")).map(l => l.slice(2)))]);
 
@@ -24284,6 +24314,10 @@ function solKin(r) {
   return m;
 }
 
+/* Which of this project's organisations somebody works at. */
+const orgsOnProject = (r, name) => { const orgs = projectOrgs(r).map(o => o.toLowerCase());
+  return inS(r, () => personOrgs(name)).filter(o => orgs.includes(o.toLowerCase())); };
+
 function solFields() {
   return [
     {k: "orgs", label: "Organisations", type: "multi", none: "None", scoped: true, add: "New organisation",
@@ -24299,9 +24333,15 @@ function solFields() {
     {k: "people", label: "People", type: "multi", none: "Just me", scoped: true, add: "New person",
      opts: r => {
        const here = inS(r, () => allPeople().map(personName).filter(n => !samePerson(n, whoAmI())));
-       return [...here.map(n => [n, n]), ...peopleElsewhere(r.space, here).map(x => [PERSON_AWAY + x.space + PERSON_AWAY + x.name, x.name + " · " + x.space])];
+       const at = n => orgsOnProject(r, n);
+       return [...here.map(n => [n, at(n).length ? n + " · " + at(n).join(", ") : n]), ...peopleElsewhere(r.space, here).map(x => [PERSON_AWAY + x.space + PERSON_AWAY + x.name, x.name + " · " + x.space])];
      },
-     cur: r => projectPeople(r), rank: r => solRank(r, "p/", projectPeople),
+     cur: r => projectPeople(r),
+     // Somebody who works at one of the project's organisations is offered first.
+     rank: r => { const m = solRank(r, "p/", projectPeople);
+       for (const n of inS(r, () => allPeople().map(personName))) if (orgsOnProject(r, n).length)
+         m.set(n.toLowerCase(), (m.get(n.toLowerCase()) || 0) + 10000);
+       return m; },
      filled: r => projectPeople(r).length > 0 || !!solAns(r).people,
      toggle: (r, v) => {
        if (v.startsWith(PERSON_AWAY)) {
@@ -28241,8 +28281,9 @@ const SHEETS = [
 const sheetNav = (S, patch) => S.nav ? S.nav(patch) : go("trackers", Object.assign({trkSheet: S.id}, patch));
 const sheetById = id => SHEETS.find(S => S.id === id);
 
-/* The clocks on the todos of projects, each under the project's client: the
-   organisation its page or its area names (org::). Your own todos and the
+/* The clocks on the todos of projects, each under the project's clients: the
+   organisations its page or its area names (org::) that are not suppliers,
+   shared out by clientShares when there are several. Your own todos and the
    ones nobody has; a todo somebody else was given is theirs to count. */
 function clientEntries() {
   return memo("clientClock", () => acrossSpaces(() => {
@@ -28251,9 +28292,11 @@ function clientEntries() {
       if (!logbookOf(t.block)) continue;
       const proj = t.projectPath && pageKind(t.projectPath) === "project" ? t.projectPath : null;
       if (!proj || (t.assignee && !isMe(t.assignee))) continue;
-      const name = projectOrgs({space: V.space, path: proj})[0] || "No client";
-      for (const c of blockClocks(t.block)) out.push({date: c.day, name, value: c.min, open: c.open, stale: c.stale,
-        project: pageTitle(proj), projectPath: proj, space: V.space});
+      const shares = clientShares({space: V.space, path: proj});
+      const to = shares.length ? shares : [{name: "No client", pct: 100}];
+      for (const c of blockClocks(t.block)) for (const {name, pct} of to)
+        out.push({date: c.day, name, value: c.min * pct / 100, open: c.open, stale: c.stale,
+          project: pageTitle(proj), projectPath: proj, space: V.space});
     }
     return out;
   }).sort((a, b) => a.date.localeCompare(b.date)));
@@ -28268,7 +28311,7 @@ function projectClockSection(path) {
   const total = rows.reduce((n, e) => n + e.value, 0);
   return section("Time on its todos", fmtSheet(S, total), el("div", {class: "reportsum"},
     "This week ", el("b", {}, fmtSheet(S, sum(monday, shiftISO(monday, 6)))),
-    " · last week " + fmtSheet(S, sum(shiftISO(monday, -7), shiftISO(monday, -1))) + " · for " + rows[0].name,
+    " · last week " + fmtSheet(S, sum(shiftISO(monday, -7), shiftISO(monday, -1))) + " · for " + [...new Set(rows.map(e => e.name))].join(", "),
     el("button", {class: "btn sm ghost", style: "margin-left:auto",
       onclick: () => S.nav({sheetWeek: monday})}, "Clients")));
 }
@@ -28394,8 +28437,10 @@ function sheetTargetText(S, per) {
 }
 /* "Home 62,5, Work 37,5" -- a comma before a digit is a decimal comma. */
 function sheetSplit(S) {
-  if (!S.split) return [];
-  return sheetSetting(S, "split").split(/[;,](?=\s*[^\d\s])/)
+  return S.split ? parseSplit(sheetSetting(S, "split")) : [];
+}
+function parseSplit(text) {
+  return String(text || "").split(/[;,](?=\s*[^\d\s])/)
     .map(s => /^\s*(.*?)\s*(\d+(?:[.,]\d+)?)\s*%?\s*$/.exec(s))
     .filter(m => m && trim(m[1])).map(m => ({name: trim(m[1]), pct: numIn(m[2])}));
 }
