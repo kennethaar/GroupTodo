@@ -288,10 +288,14 @@ kbd{font:11px var(--mono);border:1px solid var(--border);border-radius:4px;paddi
 .todayhead{padding-bottom:16px;border-bottom:1px solid var(--border);margin-bottom:22px}
 .todayhead h1{font-size:30px;letter-spacing:-.4px}
 .todayhead .sub{font-size:15px}
-.todaymore{display:none;font-size:18px;line-height:1;padding:6px 12px}
+.todayicon{display:none;font-size:17px;line-height:1;padding:6px 10px}
 @media (max-width:640px){
   .todayhead .sub,.todayhead .wideonly{display:none}
-  .todayhead .todaymore{display:inline-flex}
+  .todayhead .todayicon{display:inline-flex}
+  .todayhead .vhead-r{gap:6px;margin-left:0;width:100%}
+  .todayhead .backtoday{flex-basis:100%;text-align:left;padding-left:0}
+  .todayhead .daybox{flex:1;min-width:0;justify-content:space-between}
+  .todayhead .daybox input[type=date]{min-width:0;flex:1}
 }
 .daybox{border:1px solid var(--border2);border-radius:var(--radius-sm);padding:2px 6px;background:var(--bg2);gap:2px}
 .daybox input[type=date]{border:0;background:none;font-size:14px;font-weight:600;color:var(--fg)}
@@ -22274,6 +22278,7 @@ function todaySection(s) {
 
 /* Shown on a wide screen only; on a phone it lives behind the ⋯ in the heading. */
 const wideOnly = (node, hide = true) => { if (node && hide) node.classList.add("wideonly"); return node; };
+const todayIcon = (icon, label, onclick) => el("button", {class: "btn ghost todayicon", "aria-label": label, title: label, onclick}, icon);
 function viewToday() {
   const today = todayISO();
   const me = whoAmI();
@@ -22360,7 +22365,7 @@ function viewToday() {
   const picker = el("input", {type: "date", value: day, "aria-label": "Go to a day",
     title: "Go to a day", onchange: e => { if (parseISO(e.target.value)) toDay(e.target.value); }});
   const head = vhead("Today", dayName(day) + (day === today ? "" : day < today ? " · in the past" : " · ahead"),
-    day !== today ? el("button", {class: "textbtn", onclick: () => toDay(null)}, "Back to today") : null,
+    day !== today ? el("button", {class: "textbtn backtoday", onclick: () => toDay(null)}, "Back to today") : null,
     el("div", {class: "daynav daybox"},
       el("button", {class: "dayarrow", title: "The day before", "aria-label": "The day before",
         onclick: () => toDay(shiftISO(day, -1))}, "◀"),
@@ -22371,16 +22376,12 @@ function viewToday() {
       v => go("today", {todayWho: v || null})), !who) : null,
     who ? null : wideOnly(calChip()),
     wideOnly(el("button", {class: "btn ghost", title: "Everything that happened, newest first", onclick: () => openHistory()}, "⏱ History")),
-    /* On a phone the row above is one button: the day is what matters there,
-       and the rest is a tap away instead of three rows of chrome. */
-    el("button", {class: "btn ghost todaymore", "aria-label": "More for this day", title: "Calendars, history, other people's pages",
-      onclick: () => chipMenu("This day", null, [
-        who ? null : ["c", "\u{1F4C5} Calendars", "Import a calendar into the day page", openCalendars],
-        ["h", "\u23F1 History", "Everything that happened, newest first", () => openHistory()],
-        who ? ["0", "Your page", null, () => go("today", {todayWho: null})] : null,
-        ...people.filter(n => n !== who).slice(0, 9).map((n, i) => [String(i + 1), firstNameOf(n) + "'s page", null,
-          () => go("today", {todayWho: n})]),
-      ])}, "\u22EF"));
+    /* On a phone the row above is icons: the day is what matters there, and
+       the rest is a tap away instead of three rows of chrome. */
+    who ? null : todayIcon("\u{1F4C5}", "Calendars", openCalendars),
+    todayIcon("\u23F1", "History", () => openHistory()),
+    people.length && !who ? todayIcon("\u{1F465}", "Somebody else's day page", () => chipMenu("Whose day page", null,
+      people.slice(0, 9).map((n, i) => [String(i + 1), firstNameOf(n) + "'s page", null, () => go("today", {todayWho: n})]))) : null);
   head.classList.add("todayhead");
   c.append(head);
   if (!who) { maybeSyncCalendars(); const cal = calendarProblem(); if (cal) c.append(cal); }
