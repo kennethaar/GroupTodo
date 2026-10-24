@@ -19747,9 +19747,22 @@ function lineMeta(b, path = null) {
 /* The words of a line, written back when you leave it. A name written out in
    full becomes a link, and on a task a date at the end of the line becomes
    its due date -- the line keeps reading as you wrote it. */
+/* The people a line links to, as [[p/Name]], by the key names are compared on. */
+const personLinksOf = title => new Set([...String(title || "").matchAll(/\[\[p\/([^\]]+?)(?:\]\[[^\]]*)?\]\]/g)]
+  .map(m => slugPerson(m[1])));
+/* Taking a person's link out of a task takes the task off them too: the line
+   no longer says who has it, so assigned:: must not go on saying it. */
+function dropUnlinkedAssignee(b, before) {
+  const who = waitingPersonName(blockProp(b, ASSIGN_PROP));
+  if (!who) return;
+  const key = slugPerson(who);
+  if (!personLinksOf(before).has(key) || personLinksOf(b.title).has(key)) return;
+  for (const k of Object.keys(b.props)) if (/^assigned(_at)?$/i.test(k)) delete b.props[k];
+}
 function commitLine(txt, path, b) {
   let val = lineText(txt);
   if (val === b.title) return false;
+  const before = b.title;
   // A tracker's line is a key and its numbers; a name in it is not a person.
   if (!parseTracker(val)) val = linkKnownNames(val);
   const [st, rest] = splitState(val);
@@ -19772,6 +19785,7 @@ function commitLine(txt, path, b) {
     const d = trailingDate(b.title);
     if (d) { b.title = trim(b.title.slice(0, d.start)); setDue(b, d.iso); }
   }
+  dropUnlinkedAssignee(b, before);
   createLinkedPages(b.title);
   touch(path); noteTodoTouched();
   return true;
@@ -19837,7 +19851,20 @@ function outlineBlock(path, page, b, opts = {}) {
   txt.addEventListener("input", () => keepLineDraft(node.dataset.space, path, b, lineText(txt)));
   txt.addEventListener("blur", () => {
     if (FLY && FLY.txt === txt) flyHide();
-    if (commitLine(txt, path, b)) renderNav();
+    const had = b.state ? assigneeOf(b) : "";
+    if (commitLine(txt, path, b)) {
+      renderNav();
+      /* The pills under the line are drawn with it, so a hand-off undone by
+         editing the words redraws them here -- not the whole view, which would
+         take the caret from wherever the click that left this line put it. */
+      if ((b.state ? assigneeOf(b) : "") !== had) {
+        const old = [...node.children].find(c => c.classList.contains("props"));
+        const fresh = lineMeta(b, path);
+        if (old && fresh) old.replaceWith(fresh);
+        else if (old) old.remove();
+        else if (fresh) line.after(fresh);
+      }
+    }
     dropLineDraft(b.id);
     line.classList.remove("raw");
     if (paintTrackerLine(line, txt, path, b)) return;
