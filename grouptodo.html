@@ -22360,7 +22360,11 @@ function viewToday() {
   }
 
   const c = el("div", {class: "wrap" + (spaces.length > 1 ? " jwide" : "")});
-  const people = acrossNames(() => members().map(m => m.name)).filter(n => !samePerson(n, me) && !isMe(n));
+  /* Somebody else's day page is only worth offering if there is one: a member
+     who has never written a day here, or nobody but you, and the picker goes. */
+  const writers = new Set(acrossSpaces(() => allJournals().map(journalOwnerOf)).filter(Boolean));
+  const people = acrossNames(() => members().map(m => m.name))
+    .filter(n => !samePerson(n, me) && !isMe(n) && (writers.has(slugPerson(n)) || samePerson(n, who)));
   const toDay = iso => go("today", {todayDay: iso && iso !== today ? iso : null});
   const picker = el("input", {type: "date", value: day, "aria-label": "Go to a day",
     title: "Go to a day", onchange: e => { if (parseISO(e.target.value)) toDay(e.target.value); }});
