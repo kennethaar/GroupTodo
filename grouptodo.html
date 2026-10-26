@@ -21603,7 +21603,7 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
       if (d) for (const b of getPage(p).blocks || [])
         if (blockProp(b, "cal_feed") === feed) have.set(blockProp(b, "cal_uid"), {path: p, b, d});
     }
-    const seen = new Set();
+    const seen = new Set(), days = new Set();
     for (const o of meetings) {
       seen.add(o.key);
       const hit = have.get(o.key);
@@ -21612,6 +21612,7 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
       const time = o.allDay ? "" : hm(o.start) + (o.end > o.start ? "–" + hm(o.end) : "");
       const att = o.people.map(linkKnownNames).join(", ");
       const path = ensureJournal(isoOf(new Date(o.start))), page = getPage(path);
+      days.add(path);
       if (!hit) {
         const b = newBlock({title, children: o.agenda.map(a => newBlock({title: a}, false))}, false);
         b.props = {cal_uid: o.key, cal_feed: feed};
@@ -21638,6 +21639,17 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
       else if (!/^#meeting Cancelled:/.test(hit.b.title)) hit.b.title = hit.b.title.replace(/^#meeting /, "#meeting Cancelled: ");
       else continue;
       touch(hit.path); gone++;
+    }
+    // A calendar lists its meetings in whatever order it keeps them, so each day's
+    // meetings are put in time order, in the places meetings already have on the
+    // page; the other lines stay where they are.
+    for (const path of days) {
+      const page = getPage(path), at = [], cal = [];
+      (page.blocks || []).forEach((b, i) => { if (blockProp(b, "cal_uid")) { at.push(i); cal.push(b); } });
+      const sorted = cal.slice().sort((a, b) => (blockProp(a, "time") || "").localeCompare(blockProp(b, "time") || ""));
+      if (sorted.every((b, i) => b === cal[i])) continue;
+      at.forEach((i, k) => { page.blocks[i] = sorted[k]; });
+      touch(path);
     }
     return {added, changed, gone};
   });
