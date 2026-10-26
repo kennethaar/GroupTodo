@@ -438,6 +438,8 @@ kbd{font:11px var(--mono);border:1px solid var(--border);border-radius:4px;paddi
 .chip.miss{color:var(--warn);background:rgba(224,176,80,.1);border-color:rgba(224,176,80,.3)}
 .chip.age{font-family:var(--mono);font-size:10.5px}
 .chip.who{color:var(--zet);background:rgba(199,146,234,.12)}
+/* The person who has a task, drawn in its title where the title names them. */
+.t-title .chip.who,.bcard-title .chip.who{font-size:inherit;white-space:normal;display:inline;padding:0 7px}
 /* A task's time, its #15m / #30m / #45m tag, drawn as one, two or three dots. */
 .trkevery{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0}
 .est{display:inline-block;min-width:1.4em;text-align:center;font-weight:800;font-size:.95em;
@@ -12777,6 +12779,9 @@ function boardSpaceTabs() {
 }
 
 function boardCard(a) {
+  const title = el("div", {class: "bcard-title", html: estHtml(a.title) + renderInline(titleForRow(a.title))});
+  const who = a.assignee ? el("span", {class: "chip who"}, "\u2192 " + a.assignee) : null;
+  const whoInTitle = pillInTitle(title, who, a.assignee);
   // A button, not a div: a card you cannot reach with Tab is a card half the
   // people here cannot open. Dragging works on a button just the same.
   const card = el("button", {
@@ -12790,7 +12795,7 @@ function boardCard(a) {
       inSpace(a.space, () => openTaskDetail(a.path, a.block, a.space));
     },
   },
-    el("div", {class: "bcard-title", html: estHtml(a.title) + renderInline(titleForRow(a.title))}),
+    title,
     el("div", {class: "bcard-meta"},
       multiSpace() && a.space ? spaceBadge(a.space) : null,
       a.project ? el("span", {class: "chip proj"}, a.project) : null,
@@ -12798,7 +12803,7 @@ function boardCard(a) {
       a.due ? el("span", {class: "chip " + (a.due < todayISO() ? "late" : a.due === todayISO() ? "today" : "")},
         humanDate(a.due)) : null,
       a.mention ? el("span", {class: "chip who"}, "to ask " + firstNameOf(a.mention)) : null,
-      a.assignee ? el("span", {class: "chip who"}, "\u2192 " + a.assignee) : null,
+      whoInTitle ? null : who,
       messagesOf(a.block).length ? el("span", {class: "chip msg"}, "\u25CB " + messagesOf(a.block).length) : null));
   // A task that names two people stands in both their columns, as itself and
   // as something to ask; each card has to be told apart from the other.
@@ -18579,7 +18584,7 @@ function chipsFor(a) {
     out.push(el("span", {class: "chip flagged when"}, "\u2691"));
   if (a.mention) out.push(el("span", {class: "chip who", title: "Yours to do, and it names " + a.mention +
     ", so it is something to ask them about"}, "to ask " + firstNameOf(a.mention)));
-  if (a.assignee) out.push(el("span", {class: "chip who b", title: a.assignee + " has it - go there, hand it on, take it back",
+  if (a.assignee) out.push(el("span", {class: "chip who b asg", title: a.assignee + " has it - go there, hand it on, take it back",
     onclick: e => {e.stopPropagation(); openAssigneeChipMenu(a);}}, "\u2192 " + a.assignee));
   if (a.by && a.by !== whoAmI() && !samePerson(a.by, a.assignee))
     out.push(el("span", {class: "chip who"}, a.by));
@@ -18595,6 +18600,17 @@ function chipsFor(a) {
     out.push(el("span", {class: "chip miss b", title: "Where would you do this? Click to say - nothing else asks you.",
       onclick: e => {e.stopPropagation(); promptAndInsertContext(a.path, a.block);}}, "no context"));
   return out;
+}
+
+/* A title that names the person who has the task shows the → pill in that
+   name's place, rather than the name and then the same name again as a pill. */
+function pillInTitle(titleEl, pill, who) {
+  if (!pill || !who) return false;
+  const link = [...titleEl.querySelectorAll(".wikilink[data-link]")]
+    .find(n => samePerson(waitingPersonName(n.dataset.link), who));
+  if (!link) return false;
+  link.replaceWith(pill);
+  return true;
 }
 
 /* Context and project links are already chips on the row, so hide them
@@ -18688,7 +18704,8 @@ function askWaitingOn(a, set = false) {
 function taskRow(a) {
   // An action shown from another space must be edited IN that space, or the
   // change would be written through the active space's backend.
-  const chips = chipsFor(a);
+  const title = el("div", {class: "t-title", html: estHtml(a.title) + renderInline(titleForRow(a.title))});
+  const chips = chipsFor(a).filter(c => !(c.classList.contains("asg") && pillInTitle(title, c, a.assignee)));
   const stage = stageLabel(a.block);
   const word = (a.state !== "TODO" && !(a.state === "WAIT" && state.view === "waiting")) || stage ? el("button", {class: "t-state " + a.state, title: "Change the state",
     onclick: e => { e.stopPropagation(); stateMenu(a); }}, stage || CORE_WORD[a.state] || a.state) : null;
@@ -18723,7 +18740,7 @@ function taskRow(a) {
       el("button", {class: "iconbtn t-menu", title: "More: the states, refile, open the page", "aria-label": "More",
         onclick: e => { e.stopPropagation(); taskRowMenu(a); }}, "\u22EF")),
     el("div", {class: "t-body"},
-      el("div", {class: "t-title", html: estHtml(a.title) + renderInline(titleForRow(a.title))}),
+      title,
       pills.length || info.length ? el("div", {class: "t-meta"},
         el("span", {class: "t-pills"}, ...pills),
         el("span", {class: "t-info"}, ...info)) : null)
