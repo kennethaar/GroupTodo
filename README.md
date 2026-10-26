@@ -51,6 +51,8 @@ format it writes is described in [docs/vault-format.md](docs/vault-format.md).
 - **Live lists and embeds.** `/query` on a line builds a Logseq-style query (`{{query (and [[1/Fix sink]] (task TODO))}}`) that lists matching lines, kept up to date; `/embed` shows another page in the line, and a line's menu has *Copy as embed* for one line. `((id))` reads as the line it points at.
 - **Last time.** On a day page, a tracker or a `key:: value` of your own shows faintly what you wrote the previous time.
 - **Tidy.** ⋯ beside a page title → *Remove duplicate lines*; the weekly review says when pages have some. A page in a namespace (`[[Work/Clients]]`, *Work - Clients*) lists the rest of its family at the bottom.
+- **Refile** a line with **Alt+G**: to a project, a responsibility, or a context (a recurring meeting's agenda).
+- **On hold.** A project's status pill → *On hold…* keeps it committed but out of sight until a day; the weekly review asks about it in its own pass.
 - **Gather what a project collected.** ⋯ beside a page title → *Copy linked references here* copies every line that links to the page, with what is under it, to its bottom; the originals stay. Completing a project offers the same.
 - **Values follow their template.** A page's `key:: value` lines stand in its template's order. *hide* beside a value folds it under *hidden values*, on every page made from the same template.
 - **Time on a task.** Click the ⏱ under a task to change its clock: drag on the day for a stretch, drag a box or its edges, or type the times; *Clear all* takes them off.
