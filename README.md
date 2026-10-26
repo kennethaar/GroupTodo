@@ -51,6 +51,9 @@ format it writes is described in [docs/vault-format.md](docs/vault-format.md).
 - **Live lists and embeds.** `/query` on a line builds a Logseq-style query (`{{query (and [[1/Fix sink]] (task TODO))}}`) that lists matching lines, kept up to date; `/embed` shows another page in the line, and a line's menu has *Copy as embed* for one line. `((id))` reads as the line it points at.
 - **Last time.** On a day page, a tracker or a `key:: value` of your own shows faintly what you wrote the previous time.
 - **Tidy.** ⋯ beside a page title → *Remove duplicate lines*; the weekly review says when pages have some. A page in a namespace (`[[Work/Clients]]`, *Work - Clients*) lists the rest of its family at the bottom.
+- **Gather what a project collected.** ⋯ beside a page title → *Copy linked references here* copies every line that links to the page, with what is under it, to its bottom; the originals stay. Completing a project offers the same.
+- **Values follow their template.** A page's `key:: value` lines stand in its template's order. *hide* beside a value folds it under *hidden values*, on every page made from the same template.
+- **Time on a task.** Click the ⏱ under a task to change its clock: drag on the day for a stretch, drag a box or its edges, or type the times; *Clear all* takes them off.
 
 ### Screens
 
@@ -77,7 +80,7 @@ Next, Waiting for and Projects export to CSV for Excel.
 - **Check-ins for outsiders.** **Waiting for → Ask … for an update** makes a self-contained HTML sheet plus a covering note. They tick what is done, send back a small markdown file, and **Import a reply** closes those tasks in their name. The sheet carries only the lines you chose. See the [mockup](docs/check-in-sheet-mockup.html).
 - **Weekly review.** The steps are an editable routine (`pages/8/Weekly review.md`). Projects are reviewed in passes — status, on hold, outcome, next action — because each needs a different kind of thinking. The on hold pass asks of each project on hold whether it still is, or can be done now. After the next actions, the loose actions pass takes each action on your day pages that no project or responsibility holds, and asks which one it belongs to.
 - **Copy link** on any task or page gives a URL that opens exactly that block.
-- **Add to calendar** as an `.ics` file (private, offline) or an Outlook/Google link. Nothing is ever subscribed.
+- **Add to calendar** as an `.ics` file (private, offline) or an Outlook/Google link. A task with a time goes in at that time, for as long as its dots say (an hour without); one without a time is all day. Nothing is ever subscribed.
 - **Dates in the words.** The box at the top reads *Call Bob fri 2pm*, *Pay rent by 1 nov*, *every monday*, Norwegian days and times, and Taskwarrior's `due:`, `until:`, `hold:`, `remind:` and `pri:`. A toast says what it read, with **Keep the words** to undo. A time is written after the day: `SCHEDULED:: [[2026-10-23]] 14:00`.
 - **Reminders.** A task with a time gets a toast 10 minutes before (or `remind::`), which stays until answered. Today counts down to the next timed task and the next deadline; birthdays are on the calendar.
 - **Urgency.** Next and the project list are ordered by Taskwarrior's urgency: deadline, scheduled day, `priority::`, started, context, age, project chain. The ↑ chip on a row says why.
