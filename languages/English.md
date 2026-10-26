@@ -445,7 +445,6 @@ Change the date =>
 Change the dates =>
 Change the day, or bring it back now =>
 Change the responsibility =>
-Change the state =>
 Change the status, or see the shelf =>
 Change what comes first =>
 Change what it looks for =>
