@@ -42,7 +42,7 @@ format it writes is described in [docs/vault-format.md](docs/vault-format.md).
 - **You are told what you missed.** Today opens with *Since you were last here*; **History** scrolls back day by day.
 - **Areas** (Work, Home, …) are separate folders. Tick any combination at the top right and every screen shows those. Drag them in that menu, or under **Folders**, to fix the order they sit in left to right. With several side by side on Today, drag the line between two day pages to make one wider; double-click it to even them out.
 - **Meetings** are lines: **Alt+M** adds attendees, time and agenda. **📅 Calendars** on Today imports an iCal link into a day page every 30 minutes (needs `serve.py`, see below). The next meeting today is shown at the top, counting down, with a reminder a few minutes before (set in Calendars).
-- **Names and dates are picked up as you type** — *tomorrow*, *friday*, *in 3 days*; `Tab` turns a suggestion into a link or due date. `@`, `#` and `[[` list people, projects and pages.
+- **Names and dates are picked up as you type** — *tomorrow*, *friday*, *in 3 days*; `Tab` turns a suggestion into a link or due date. `@`, `#` and `[[` list contexts, projects and pages; people come up as you type their name.
 - **Threads on tasks.** Every task has a conversation; **Chat** gathers them all.
 - **Repeats** (`repeat:: weekly`) are offered when you tick one off, never scheduled ahead, so there is no backlog of missed chores.
 - **Undo** a delete from the toast, or `Ctrl-Z` for five minutes.
