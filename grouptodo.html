@@ -6204,7 +6204,11 @@ function backfillUpdatedTemplates(entries = V.pages, changedTemplates = null) {
         if (isJournalPath(path)) templatePath = resolveTemplate({date,kind:'journals'})?.path;
         else if (!path.startsWith(DIRS.lists + '/') && !path.startsWith(DIRS.verbs + '/')) templatePath = readTemplate(templateKindForPage(path));
       }
-      if (templatePath && (!changedTemplates || changedTemplates.has(templatePath))) changed = backfillTemplateFields(page, templatePath, vars) || changed;
+      const day = isJournalPath(path) && dayOfPath(path);
+      const dayTpls = day ? resolveTemplates({date: day, kind: 'journals'}) : [];
+      if (dayTpls.length) {
+        if (!changedTemplates || dayTpls.some(t => changedTemplates.has(t.path))) changed = backfillDayFields(page, day, dayTpls) || changed;
+      } else if (templatePath && (!changedTemplates || changedTemplates.has(templatePath))) changed = backfillTemplateFields(page, templatePath, vars) || changed;
       changed = stripTemplateMachinery(page, false) || changed;
       walkBlocks(page.blocks, block => {
         if (!block.state) return;
@@ -6475,22 +6479,45 @@ function ensureJournal(date) {
   date = date || todayISO();
   const path = journalPath(date);
   if (V.pages.has(path)) return path;
-  /* Every template that applies to the day is poured in: the general ones'
-     lines first, the most specific last; on a clashing field the most
-     specific wins, and it is the one the page records it came from. */
   const tpls = resolveTemplates({date, kind: "journals"});
-  let page;
-  if (tpls.length) {
-    page = {props: {}, blocks: []};
-    for (const tpl of tpls.slice().reverse()) {
-      const part = instantiateTemplate(tpl.path, {title: date, date, created: "[[" + date + "]]"});
-      Object.assign(page.props, part.props);
-      page.blocks.push(...part.blocks);
-    }
-  } else page = pageFromTemplate("journals",date,{date});
+  const page = tpls.length ? pourDayTemplates(date, tpls) : pageFromTemplate("journals",date,{date});
   hoistDayTrackers(page);
   putPage(path, page);
   return path;
+}
+/* Every template that applies to the day, poured in: the general ones' lines
+   first, the most specific last; on a clashing field the most specific wins,
+   and it is the one the page records it came from. A template's own name and
+   dates -- title:: 2026-Monday, when it was made and last edited -- are about
+   the template, not the day, and stay behind unless written as %placeholders%. */
+function pourDayTemplates(date, tpls = resolveTemplates({date, kind: "journals"})) {
+  const page = {props: {title: date, created: "[[" + date + "]]"}, blocks: []};
+  for (const tpl of tpls.slice().reverse()) {
+    const own = getPage(tpl.path).props || {};
+    const part = instantiateTemplate(tpl.path, {title: date, date, created: "[[" + date + "]]"});
+    for (const k of Object.keys(part.props))
+      if (/^(title|created|updated|updated_by)$/i.test(k) && !/%/.test(String(own[k] ?? ""))) delete part.props[k];
+    Object.assign(page.props, part.props);
+    page.blocks.push(...part.blocks);
+  }
+  hoistDayTrackers(page);
+  return page;
+}
+/* A day page's missing fields, from every template the day has, poured the
+   way ensureJournal pours them -- so a page made before its templates were
+   there still gets its trackers. Only today and the days ahead get a
+   tracker: one turning up on a day gone by would read as a day you skipped. */
+function backfillDayFields(page, day, tpls) {
+  const props = page.props || (page.props = {});
+  const present = new Set(Object.keys(props).map(k => k.toLowerCase()));
+  let changed = false;
+  for (const [k, v] of Object.entries(pourDayTemplates(day, tpls).props)) {
+    if (present.has(k.toLowerCase()) || /^(template_rules|feature_)/i.test(k)) continue;
+    const t = parseTracker(k + "::");
+    if (t && (day < todayISO() || pageHasTracker(page, t.name))) continue;
+    props[k] = v; changed = true;
+  }
+  return changed;
 }
 
 /* ============================================================
