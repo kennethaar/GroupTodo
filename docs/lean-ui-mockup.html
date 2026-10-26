@@ -707,23 +707,29 @@ kbd{font:11px var(--mono);border:1px solid var(--border);border-radius:4px;paddi
   width:19px;height:19px;border-radius:50%;border:1.6px solid var(--fg3);flex:none;margin-top:1px;
   display:grid;place-items:center;font-size:11px;color:transparent;transition:.12s;
 }
-.chk:hover,.tick:hover .chk{border-color:var(--done);color:var(--fg3)}
+.chk:hover{border-color:var(--done);color:var(--fg3)}
 /* The state is on the tick itself, so it reads the same in a row, on a line,
    in an embed or a backlink. */
 .chk[data-state="DONE"]{background:var(--done);border-color:var(--done);color:#06210f}
 .chk[data-state="CANCELLED"]{background:var(--cancel);border-color:var(--cancel);color:#fff}
 .chk[data-state="WAIT"]{border-color:var(--wait);color:var(--wait)}
 .chk[data-state="DOING"]{border-color:var(--doing);color:var(--doing)}
-/* The same tick in a line of text: a size smaller, its word under it as on a
-   row. Always a word, to do included, since a task type's stages are told
+/* The same state in a line of text: a square in the state's colour with its
+   word inside, no taller than the words, so a task's line is as high as a
+   note's. Always a word, to do included, since a task type's stages are told
    apart by it. The same width whatever it says, so the words of the lines
    at one depth start in one place. */
-.tick{display:inline-flex;flex-direction:column;align-items:center;gap:1px;flex:none;width:58px;padding:0;margin-top:3px;border:0;background:none;
-  color:inherit;font:inherit;line-height:1;cursor:pointer;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.tick{display:inline-flex;align-items:center;justify-content:center;flex:none;width:58px;height:17px;padding:0 3px;margin-top:2px;
+  border:0;border-radius:4px;background:rgba(106,163,255,.16);color:var(--todo);font:inherit;line-height:1;cursor:pointer;
+  -webkit-touch-callout:none;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.tick[data-state="DOING"]{background:rgba(199,146,234,.16);color:var(--doing)}
+.tick[data-state="WAIT"]{background:rgba(224,176,80,.16);color:var(--wait)}
+.tick[data-state="DONE"]{background:rgba(79,191,123,.14);color:var(--done)}
+.tick[data-state="CANCELLED"]{background:var(--bg4);color:var(--cancel)}
 span.tick{cursor:inherit}
-.tick .chk{width:16px;height:16px;font-size:9.5px;margin-top:0}
-.tick .t-state{padding:0;font-size:9px;max-width:100%}
-.tick:focus-visible{outline:1.5px solid var(--accent);outline-offset:2px;border-radius:9px}
+button.tick:hover{box-shadow:inset 0 0 0 1px currentColor}
+.tick .t-state{padding:0;color:inherit}
+.tick:focus-visible{outline:1.5px solid var(--accent);outline-offset:1px}
 .t-body{flex:1;min-width:0}
 .t-title{font-size:14px;word-wrap:break-word;overflow-wrap:anywhere}
 .task[data-state="DONE"] .t-title,.task[data-state="CANCELLED"] .t-title{color:var(--fg3);text-decoration:line-through}
@@ -19116,20 +19122,18 @@ function openNudgeExplainer() {
 }
 
 
-/* A task's state looks one way wherever it is drawn: the round tick a row
-   has, in the state's colour, with the state in small letters under it --
-   to do too, since a task type's stages are told apart by it. A stage is
-   said in its own words. */
+/* A task's state on a line of text: a square in the state's colour with the
+   state in small letters inside -- to do too, since a task type's stages are
+   told apart by it. A stage is said in its own words. */
 function tickParts(st, block) {
   const stage = block && stageLabel(block);
-  return [el("span", {class: "chk", data: {state: st}}, "\u2713"),
-          // A long stage name is cut short to the tick's width; hovering says it all.
-          el("span", {class: "t-state " + st, title: stage || null}, stage || CORE_WORD[st] || st)];
+  // A long stage name is cut short to the square's width; hovering says it all.
+  return [el("span", {class: "t-state " + st, title: stage || null}, stage || CORE_WORD[st] || st)];
 }
 function stateChip(st, block = null) {
   if (!st) return null;              // a plain note carries no tick
   const stage = block && stageLabel(block);
-  return el("span", {class: "tick", title: stage ? stage + " (counts as " + CORE_WORD[st] + ")" : CORE_WORD[st] || st},
+  return el("span", {class: "tick", data: {state: st}, title: stage ? stage + " (counts as " + CORE_WORD[st] + ")" : CORE_WORD[st] || st},
     ...tickParts(st, block));
 }
 
@@ -19476,7 +19480,7 @@ function lineStateMenu(path, b, space, canUntask) {
 }
 /* The tick on an embedded or queried line, acting the same as a row's. */
 function lineStateButton(space, path, b) {
-  return holdable(el("button", {class: "tick",
+  return holdable(el("button", {class: "tick", data: {state: b.state},
     title: b.state === "DONE" ? "Not done after all (hold for every state)" : "Done (hold for every state)"}, ...tickParts(b.state, b)),
     () => inSpace(space, () => tapTaskState(path, b)), () => lineStateMenu(path, b, space, false));
 }
@@ -20575,11 +20579,11 @@ function outlineBlock(path, page, b, opts = {}) {
     class: "bullet", title: "Focus on this line", "aria-label": "Focus on this line",
     onclick: e => { e.stopPropagation(); setBranchFocus(page, b.id, path); },
   }));
-  /* The same tick as a task's row, doing the same: a tap and a hold. The
+  /* The state's square, doing what a task row's tick does: a tap and a hold. The
      menu here also has the way back to a plain note. */
   if (b.state) {
     const stateBtn = el("button", {
-      class: "tick", disabled: ro,
+      class: "tick", data: {state: b.state}, disabled: ro,
       title: b.state === "DONE" ? "Not done after all (hold for every state)" : "Done (hold for every state)",
     }, ...tickParts(b.state, b));
     line.append(ro ? stateBtn : holdable(stateBtn, () => {
