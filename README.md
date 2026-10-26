@@ -178,7 +178,7 @@ reaches the page.
 journals/<Person Name>/2026-10-05.md   one file per person per day
 pages/1/ 2/ 3/ 0/ -/   projects: active, someday, waiting, completed, cancelled
 pages/_/ g/ a/         horizons, goals, responsibilities
-pages/8/               checklists, routines, templates
+pages/8/               checklists, routines, templates; *.css for your own look
 pages/c/ p/ o/ z/      contexts, people, organisations, notes
 ```
 

@@ -1923,12 +1923,16 @@ body.solview #content{padding-bottom:14px}
 .parentline .pl:hover,.parentline .pl:focus-visible{color:var(--accent);text-decoration:underline;outline:none}
 .parentline .sep{opacity:.6}
 .parentline .pl.none{cursor:default;text-decoration:none;color:var(--fg2)}
-/* Indentation carries the formatting, so a page reads as headings and notes
-   without any markup: the first level is a heading, the second bold, and
-   everything deeper plain. The heading's dot moves down to sit on its line. */
-.outline>.blk>.line .txt{font-size:17px;font-weight:650;line-height:1.35}
-.outline>.blk>.line>.bullet{top:11px}
-.outline>.blk>.blk>.line .txt{font-weight:650}
+/* Every line is plain until it says otherwise: # , ## and ### at the start
+   of a line make it a heading, as in any markdown, whatever its depth. The
+   heading's dot moves down to sit on its line. Anything more is yours to
+   write in a .css file in pages/8/ (applyVaultCss). */
+.line.hd1 .txt{font-size:20px;font-weight:650;line-height:1.3}
+.line.hd2 .txt{font-size:17px;font-weight:650;line-height:1.35}
+.line.hd3 .txt{font-size:15px;font-weight:650}
+.line.hd4 .txt,.line.hd5 .txt,.line.hd6 .txt{font-weight:650}
+.line.hd1>.bullet{top:12px}
+.line.hd2>.bullet{top:11px}
 .pagehead+.parentline,.pcrumbs+.parentline{margin-top:4px}
 .pagehead{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:8px}
 .ptitle{margin:0;font-size:26px;flex:1;min-width:200px;outline:none;border-radius:var(--radius-sm);cursor:text}
@@ -3147,7 +3151,7 @@ const Backends = {
             if (name.startsWith(".")) continue;
             const p = prefix ? prefix + "/" + name : name;
             if (h.kind === "directory") { dirCache.set(p, h); await walk(h, p); }
-            else if (/\.(md|org)$/i.test(name)) out.set(p, await (await h.getFile()).text());
+            else if (/\.(md|org)$/i.test(name) || isVaultCssPath(p)) out.set(p, await (await h.getFile()).text());
           }
         };
         await walk(rootHandle, "");
@@ -3873,9 +3877,11 @@ async function readInto(record) {
     PREF.set("pagecount:" + record.name, String(seen));
   record.pages.clear(); record.raw.clear();
   record.langs = new Map();
+  record.css = new Map();
   let couriers = 0;
   for (const [path, text] of files) {
     if (isGuidePath(path)) continue;          // a folder's guide, not a page
+    if (isVaultCssPath(path)) { record.css.set(path, text); continue; }   // your own look, not a page
     if (isLangPath(path)) { record.langs.set(path, text); continue; }   // the app's words, not a page
     if (/\.org$/i.test(path)) { record.raw.set(path, text); continue; }
     if (looksLikeBundle(text)) { couriers++; continue; }
@@ -3886,6 +3892,7 @@ async function readInto(record) {
   for (const [path, page] of localEdits) record.pages.set(path, page);
   ensureGuides(record, files).catch(() => {});
   langAfterLoad(record).catch(() => {});
+  applyVaultCss(record);
   if (couriers) {
     notify(couriers + (couriers === 1 ? " exported vault file is" : " exported vault files are") +
            " in this folder. Left as they are - they are copies for sending, not pages. " +
@@ -3903,6 +3910,30 @@ async function readInto(record) {
     scheduleFlush();
   }
   return record;
+}
+
+/* ---------- your own stylesheet ----------
+   The app keeps its own look plain. Any .css file in pages/8/ of an area is
+   laid over it, after the app's own styles so it wins, in file-name order:
+   a monospace font, other heading sizes, the first level bold again. The
+   app only reads these files, never writes them. Only a chosen folder or the
+   sync server can hold one; browser storage has no files of its own. */
+const isVaultCssPath = p => p.startsWith(DIRS.lists + "/") && /\.css$/i.test(p);
+function applyVaultCss(loading) {
+  const seen = new Set(), parts = [];
+  // The area being read is not in LOADED until its read is done.
+  for (const rec of new Set([...LOADED.values(), loading].filter(Boolean))) {
+    for (const [path, text] of [...(rec.css || new Map())].sort(([a], [b]) => a.localeCompare(b))) {
+      if (seen.has(text)) continue;        // the same file kept in two areas
+      seen.add(text);
+      parts.push("/* " + (rec.name || "") + ": " + path + " */\n" + text);
+    }
+  }
+  let tag = document.getElementById("vault-css");
+  if (!parts.length) { if (tag) tag.remove(); return; }
+  if (!tag) tag = el("style", {id: "vault-css"});
+  document.head.append(tag);               // last, every time, so it stays on top
+  if (tag.textContent !== parts.join("\n\n")) tag.textContent = parts.join("\n\n");
 }
 
 /* ---------- a folder that comes back empty ----------
@@ -19795,13 +19826,26 @@ function commitLine(txt, path, b) {
    time as its dots, everything else as written. Focus puts the raw
    title back, #30m and all. */
 const lineHtml = b => b.state && estTier(b.title)
-  ? estHtml(b.title) + renderInline(withoutEst(b.title)) : renderInline(b.title);
+  ? estHtml(b.title) + renderInline(withoutEst(b.title))
+  : renderInline(headLevel(b.title, b.state) ? b.title.replace(HEAD_RE, "") : b.title);
+
+/* # , ## , ### in front of a note make it a heading, the markdown way. The
+   marks stay in the file and show while you type in the line; a task is
+   never a heading. */
+const HEAD_RE = /^(#{1,6})[ \t]+(?=\S)/;
+const headLevel = (title, isTask) => isTask ? 0 : ((HEAD_RE.exec(title || "") || [])[1] || "").length;
+function paintHeadLine(line, title, isTask) {
+  for (let n = 1; n <= 6; n++) line.classList.remove("hd" + n);
+  const n = headLevel(title, isTask);
+  if (n) line.classList.add("hd" + n);
+}
 
 function outlineBlock(path, page, b, opts = {}) {
   const kids = b.children || [];
   const ro = !!opts.readonly;
   const node = el("div", {class: "blk" + (kids.length ? " has-kids" : "") + (b.collapsed ? " collapsed" : ""), data: {id: b.id, space: V.space, path}});
   const line = el("div", {class: "line"});
+  paintHeadLine(line, b.title, b.state);
 
   const foldLabel = kids.length ? (b.collapsed ? "Unfold branch" : "Fold branch") : "No lines under this one";
   line.append(el("button", {
@@ -19848,7 +19892,10 @@ function outlineBlock(path, page, b, opts = {}) {
     if (e.target.closest("[data-link], [data-bref], a[href]")) e.preventDefault();
   });
   txt.addEventListener("focus", () => { line.classList.add("raw"); txt.textContent = b.title; flyShow(txt, path, page, b); });
-  txt.addEventListener("input", () => keepLineDraft(node.dataset.space, path, b, lineText(txt)));
+  txt.addEventListener("input", () => {
+    keepLineDraft(node.dataset.space, path, b, lineText(txt));
+    paintHeadLine(line, lineText(txt), b.state);
+  });
   txt.addEventListener("blur", () => {
     if (FLY && FLY.txt === txt) flyHide();
     const had = b.state ? assigneeOf(b) : "";
@@ -19867,6 +19914,7 @@ function outlineBlock(path, page, b, opts = {}) {
     }
     dropLineDraft(b.id);
     line.classList.remove("raw");
+    paintHeadLine(line, b.title, b.state);
     if (paintTrackerLine(line, txt, path, b)) return;
     /* A line with a dropped picture in it comes back as a path, not a URL, so
        the same pass the redraw runs has to run over the line it just rebuilt --

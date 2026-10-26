@@ -85,6 +85,9 @@ from urllib.parse import urlparse, parse_qs
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_VAULT = os.path.expanduser("~/storage/shared/Documents/OrgMode")
 ALLOWED_EXT = (".md", ".org")
+# Your own stylesheets, laid over the app's look. Only from pages/8/, the
+# folder for the app's own files, so a .css anywhere else stays off limits.
+CSS_DIR = "pages/8/"
 # Files dragged onto a line: pictures and documents, kept beside the markdown
 # that mentions them, in one folder of their own so a vault walk never meets
 # them. Anything outside it stays off limits whatever its name.
@@ -130,6 +133,10 @@ def fetch_calendar(url):
     return text
 
 
+def is_vault_css(rel):
+    return rel.startswith(CSS_DIR) and rel.lower().endswith(".css")
+
+
 class Vault:
     def __init__(self, root):
         self.root = os.path.abspath(os.path.expanduser(root))
@@ -142,8 +149,8 @@ class Vault:
         rel = posixpath.normpath(rel.replace("\\", "/")).lstrip("/")
         if rel.startswith("..") or os.path.isabs(rel):
             raise ValueError("path escapes the vault")
-        if not rel.endswith(ALLOWED_EXT):
-            raise ValueError("only .md and .org files are served")
+        if not (rel.endswith(ALLOWED_EXT) or is_vault_css(rel)):
+            raise ValueError("only .md and .org files are served, and .css from %s" % CSS_DIR)
         full = os.path.abspath(os.path.join(self.root, rel))
         if full != self.root and not full.startswith(self.root + os.sep):
             raise ValueError("path escapes the vault")
@@ -183,10 +190,12 @@ class Vault:
         for dirpath, dirnames, filenames in os.walk(self.root):
             dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS and not d.startswith(".")]
             for name in filenames:
-                if not name.endswith(ALLOWED_EXT) or name.startswith("."):
+                if name.startswith("."):
                     continue
                 full = os.path.join(dirpath, name)
-                out.append(os.path.relpath(full, self.root).replace(os.sep, "/"))
+                rel = os.path.relpath(full, self.root).replace(os.sep, "/")
+                if name.endswith(ALLOWED_EXT) or is_vault_css(rel):
+                    out.append(rel)
         return sorted(out)
 
     def read(self, rel):
