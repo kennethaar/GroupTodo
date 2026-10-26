@@ -64,8 +64,8 @@ format it writes is described in [docs/vault-format.md](docs/vault-format.md).
 | **People**, **Organisations** | List, Cards, Board | who is carrying what and where they work; drag them onto work and onto each other |
 | **Contexts** | | where you are and what you can do there |
 | **Pages** | List, Board, Mind map, Graph, Hierarchy | every page in the areas on screen |
-| **Horizons**, **Routines & lists** | | purpose down to next actions; checklists you rerun |
-| **Weekly review** | Steps, Projects | the GTD review, projects dealt one card at a time |
+| **Horizons**, **Settings** | | purpose down to next actions; checklists you rerun |
+| **Weekly review** | Steps, Projects, Actions | the GTD review, projects and next actions dealt one card at a time |
 
 Every view reads the same markdown; a change in one is a change everywhere.
 Next, Waiting for and Projects export to CSV for Excel.
