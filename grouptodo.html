@@ -36325,7 +36325,7 @@ document.addEventListener("mousedown", e => {
   if (helpOpen() && !e.target.closest("#help, #btnHelp")) setHelp(false);
 });
 // Tapping a place on a phone puts the drawer away again.
-$("#sidebar").addEventListener("click", e => { if (e.target.closest(".nav-item, .brand")) document.body.classList.remove("nav-open"); });
+$("#sidebar").addEventListener("click", e => { if (e.target.closest(".nav-item, .brand, #syncLine")) document.body.classList.remove("nav-open"); });
 const storedTheme = safeLS.get("gtd.theme");
 if (storedTheme) document.documentElement.dataset.theme = storedTheme;
 applyStyles();
