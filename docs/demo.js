@@ -1,11 +1,11 @@
 /* ============================================================
-   LEAN UI MOCKUP -- the real app with a made-up vault
-   build-lean-ui-mockup.py puts this file in front of grouptodo.html and calls
-   MOCKUP_DEMO.seed() straight after the app's own seedIfEmpty(). Everything
+   DEMO -- the real app with a made-up vault
+   build-demo.py puts this file in front of grouptodo.html and calls
+   GTD_DEMO.seed() straight after the app's own seedIfEmpty(). Everything
    else on the page is the app itself, unchanged.
 
    Nothing here may reach real storage: every page opened from disk shares one
-   file:// origin, so a mockup writing to localStorage or IndexedDB would be
+   file:// origin, so a demo writing to localStorage or IndexedDB would be
    writing into the vault of the real grouptodo.html beside it. Both are
    swapped for memory before the app looks, and a reload starts afresh.
    ============================================================ */
@@ -36,7 +36,7 @@
   pref("spaces", JSON.stringify([{name: "Work", kind: "local", askedStorage: true, color: "#2f6fde"}]));
 })();
 
-window.MOCKUP_DEMO = {
+window.GTD_DEMO = {
   seed() {
     if (V.pages.has(join(DIRS.orgs, "Nordvik Shipping.md"))) return;
     const T = todayISO();
