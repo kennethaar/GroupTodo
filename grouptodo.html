@@ -7755,7 +7755,10 @@ function openTodoCount(path) {
 }
 
 
-function renamePage(path, newTitle) {
+/* status: the shelf a caller (the rename dialog's folder) wants the project on,
+   for when the name is taken and the two have to become one. Returns null when
+   that question is open: nothing has moved yet. */
+function renamePage(path, newTitle, {status = null} = {}) {
   const page = getPage(path);
   if (!page) return path;
   const clean = trim(
@@ -7778,6 +7781,8 @@ function renamePage(path, newTitle) {
     render();
     return path;
   }
+  const twin = projectTwin(path, newPath);
+  if (twin) { askRenameOntoTwin(path, twin, status); return null; }
   const oldRef = pageRef(path);
   const moved = moveFile(path, newPath);
   if (!moved) return path;
@@ -7790,6 +7795,55 @@ function renamePage(path, newTitle) {
   if (state.view === "page" && state.pagePath === path) state.pagePath = newPath;
   render();
   return newPath;
+}
+
+/* The project of that name on another status shelf, if there is one. */
+function projectTwin(path, newPath) {
+  const mine = statusDirOf(path);
+  if (!mine) return null;
+  const slug = baseName(newPath).toLowerCase();
+  return allPages(p => statusDirOf(p) && statusDirOf(p) !== mine && !isHorizonPage(p))
+    .find(p => baseName(p).toLowerCase() === slug) || null;
+}
+
+/* A project renamed to the name of one on another shelf would be one project
+   in two folders, and the next load keeps only the newer file (dropLeftovers)
+   -- the one just renamed. An active project quietly became the completed one.
+   So it asks, and the answer it leans to is the shelf the project already
+   there is on: renaming an old project does not close a live one. */
+function askRenameOntoTwin(path, twin, want) {
+  const mine = statusDirOf(path), theirs = statusDirOf(twin);
+  const keep = want || theirs, other = keep === theirs ? mine : theirs;
+  const viewing = state.view === "page" && state.pagePath === path;
+  const join1 = code => {
+    closeModal();
+    let into = twin;
+    if (statusDirOf(twin) !== code) {
+      setProjectStatus(twin, code, {ask: false});
+      into = join(STATUS_DIRS[code], baseName(twin) + ".md");
+    }
+    if (mergePageInto(path, into) && viewing) state.pagePath = into;
+    render();
+  };
+  const shelf = c => STATUS_LABEL[c].toLowerCase();
+  modal({
+    center: true, title: pageTitle(twin) + " is already a project", hint: "Enter / o / n",
+    body: el("div", {},
+      el("div", {class: "field"},
+        el("div", {style: "color:var(--fg2);font-size:13.5px"},
+          "There is a " + shelf(theirs) + " project called " + pageTitle(twin) + ", and " + pageTitle(path) +
+          " is " + shelf(mine) + ". Two projects cannot share a name, so the two would become one page.")),
+      pickRow("↵", "Make them one, " + shelf(keep), "the lines of both on one page", () => join1(keep)),
+      pickRow("o", "Make them one, " + shelf(other), "", () => join1(other)),
+      pickRow("n", "Keep the old name", pageTitle(path) + " stays as it is", closeModal)),
+    onClose: render,
+    onKey: e => {
+      if (e.key === "Enter") { join1(keep); return true; }
+      if (e.key === "o") { join1(other); return true; }
+      if (e.key === "n") { closeModal(); return true; }
+      return false;
+    },
+  });
 }
 
 /* A page is also the folder of the pages under it: c/PC.md has c/PC/email.md
@@ -33176,9 +33230,9 @@ function renamePrompt(path, {focus = "name"} = {}) {
     const title = trim(name.value), dir = folder.value;
     closeModal();
     let at = path;
-    if (!journal && title && title !== pageTitle(path)) at = renamePage(path, title);
-    if (dir === here) return;
     const code = Object.keys(STATUS_DIRS).find(k => STATUS_DIRS[k] === dir);
+    if (!journal && title && title !== pageTitle(path)) at = renamePage(path, title, {status: dir === here ? null : code});
+    if (!at || dir === here) return;
     if (code) setProjectStatus(at, code);
     else if (moveFile(at, join(dir, baseName(at) + ".md"))) { notify("Moved to " + dir.replace(/^pages\/?/, "") + "/."); render(); }
   };
