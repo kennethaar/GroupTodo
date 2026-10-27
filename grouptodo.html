@@ -2665,6 +2665,9 @@ function offerDone(e) {
     el("div", {style: "display:flex;gap:8px;align-items:center;margin-bottom:4px"},
       name,
       ...backdateButton(e, day => { name.textContent = "✓ " + e.label + " · " + humanDate(day); }),
+      e.kind === "project" && stakeholdersOf(e.space, e.path).length
+        ? el("button", {class: "btn sm ghost", title: "Email the people and organisations on it that it is done",
+            onclick: () => { closeDoneToast(); openDoneNote(e.space, e.path); }}, "Notify") : null,
       e.undo ? el("button", {class: "btn sm ghost", onclick: () => {
         e.undo();
         PREF.set("done.history", JSON.stringify(doneHistory().filter(x => x.at !== e.at)));
@@ -2693,6 +2696,74 @@ function closeDoneToast() {
   T.el = null;
 }
 
+/* Who to tell a project is finished: the people it is with:: (you aside) and
+   its clients, each with the address on their page, or "" when there is none. */
+function stakeholdersOf(space, path) {
+  if (space && space !== V.space && !LOADED.has(space)) return [];
+  return inSpace(space, () => {
+    if (!getPage(path)) return [];
+    const r = {space, path}, me = (whoAmI() || "").toLowerCase();
+    return [
+      ...projectPeople(r).filter(n => n.toLowerCase() !== me).map(name => ({name, email: emailOf(name, space)})),
+      ...projectClients(r).map(name => ({name, org: true, email: orgProp(name, EMAIL_PROP)})),
+    ];
+  });
+}
+
+/* A mailto: note saying the project is done, with its outcome and the steps
+   that were ticked off. Nothing goes until you press Send in your mail. */
+function openDoneNote(space, path) {
+  const t = doneTarget({kind: "project", space, path});
+  if (!t) { notify("Could not find that project any more.", "warn"); return; }
+  const who = stakeholdersOf(space, t.path);
+  const title = inSpace(space, () => pageTitle(t.path));
+  const outcome = trim(t.page.props.outcome || "");
+  const steps = flattenBlocks(t.page.blocks).filter(b => b.state === "DONE").map(b => "- " + plainTitle(b.title));
+  const box = el("textarea", {rows: 14, style: "font-size:12.5px;line-height:1.5"});
+  box.value = ["Done: " + title, "", "Hi,", "", title + " is done.",
+    ...(outcome ? ["", "Outcome: " + outcome] : []),
+    ...(steps.length ? ["", "What was done:", ...steps] : []),
+    "", whoAmI() || ""].join("\n").replace(/\n+$/, "");
+  const rows = who.map(s => ({s, input: el("input", {type: "email", placeholder: "them@example.com", value: s.email})}));
+  const to = () => rows.map(r => trim(r.input.value)).filter(looksLikeEmail);
+  const remember = () => rows.forEach(r => { if (!r.s.org) setEmailOf(r.s.name, space, r.input.value); });
+
+  modal({
+    center: true, title: "Tell them " + title + " is done",
+    body: el("div", {},
+      el("div", {class: "field"},
+        el("label", {}, "Who gets it. Leave an address empty to leave them out."),
+        ...rows.map(r => el("div", {style: "display:flex;gap:8px;align-items:center;margin-bottom:6px"},
+          el("span", {style: "flex:0 0 40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"},
+            (r.s.org ? "\u{1F3E2} " : "") + r.s.name),
+          r.input)),
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          "From email:: on their pages. An address you type for a person is saved there when you send.")),
+      el("div", {class: "field"},
+        el("label", {}, "The note (first line is the subject). Edit it freely."),
+        box)),
+    foot: [
+      el("button", {class: "btn ghost", onclick: closeModal}, "Close"),
+      el("button", {class: "btn ghost", onclick: () => copyText(box.value, "Note copied. Paste it wherever you like.")}, "Copy"),
+      el("button", {class: "btn primary", onclick: () => {
+        if (!to().length) { notify("Put in at least one address first.", "warn"); return; }
+        remember();
+        const lines = box.value.split("\n");
+        const url = "mailto:" + to().map(encodeURIComponent).join(",") +
+          "?subject=" + encodeURIComponent(lines[0]) +
+          "&body=" + encodeURIComponent(lines.slice(2).join("\n"));
+        if (url.length > 1800) {
+          notify("That note is too long for an email link. Use Copy and paste it instead.", "warn");
+          return;
+        }
+        location.href = url;
+        closeModal();
+        notify("Your email is opening with the note. Press Send.");
+      }}, "Open in email"),
+    ],
+  });
+}
+
 function openDoneHistory() {
   const body = el("div", {});
   const draw = () => {
@@ -2713,7 +2784,9 @@ function openDoneHistory() {
           multiSpace() && e.space ? spaceBadge(e.space) : null,
           t ? el("button", {style: "all:unset;flex:1;cursor:pointer;font-weight:600",
                 onclick: () => { closeModal(); openPageIn(e.space, t.path); }}, e.label)
-            : el("span", {style: "flex:1;color:var(--fg3)"}, e.label + " (no longer found)")),
+            : el("span", {style: "flex:1;color:var(--fg3)"}, e.label + " (no longer found)"),
+          t && e.kind === "project" && stakeholdersOf(e.space, t.path).length
+            ? el("button", {class: "btn sm ghost", onclick: () => { closeModal(); openDoneNote(e.space, t.path); }}, "Notify") : null),
         ...(t ? doneComments(t) : []).map(n =>
           el("div", {style: "font-size:13px;color:var(--fg2);margin:2px 0 4px 8px", translate: "no", html: renderInline(n.title)})),
         t ? doneCommentRow(e, draw) : null));
