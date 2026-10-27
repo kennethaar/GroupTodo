@@ -403,6 +403,9 @@ kbd{font:11px var(--mono);border:1px solid var(--border);border-radius:4px;paddi
 .tpanel .pfact{padding:4px 0}
 .jcard{min-width:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:20px;
   min-height:320px;display:flex;flex-direction:column}
+/* An area's trackers, in the column its journal has below: only as tall as they are. */
+.jcard.trkcol{min-height:0;margin-bottom:12px}
+.trkcol .jhead{padding:8px 20px}
 .jhead{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--border)}
 .jhead .sp{text-transform:uppercase;letter-spacing:.08em;font-size:11px;padding:3px 9px;border-radius:5px;
   background:color-mix(in srgb,var(--sc) 10%,transparent);border:1px solid color-mix(in srgb,var(--sc) 55%,transparent)}
@@ -2272,6 +2275,7 @@ body.solview #content{padding-bottom:14px}
     <li><b>Embeds (<kbd>/embed</kbd>):</b> <code>{{embed [[page]]}}</code> shows that page in the line, live. For one line, use its line menu &rarr; <i>Copy as embed</i> and paste it anywhere: <code>{{embed ((id))}}</code>. <code>((id))</code> on its own reads as the words of that line.</li>
     <li><b>Sheets:</b> Three tracker kinds take the line as you say it: <i>Hours worked</i> (<code>tracker-office_t:: 07:12 - 10:00, 10:30 - 12:30</code>, with Start and Stop on today's page), <i>An amount</i> (<code>129,50 + 45</code>) and <i>Stock</i> (<code>+3</code>, <code>-1</code>, <code>=12</code>). For hours, one tracker per place you work, like office and home: the year then counts the days you drove in. <i>Trackers &gt; Hours</i>, <i>Amounts</i> or <i>Stock</i> adds them up: a week by day with extra hours and flex, and a year by month, each copied as cells for a spreadsheet.</li>
     <li><b>Time per client:</b> A todo set to Doing runs a clock until it leaves Doing (Logseq's <code>:LOGBOOK:</code>), shown as &#9201; under the line. The client is the organisation the project's page or area names. <i>Projects &gt; Hours &gt; Clients</i> adds it up by week and month, with the projects under each client.</li>
+    <li><b>Trackers in areas:</b> With several areas on Today, the trackers stand in the same columns as the journals, as wide as you dragged them. <i>+ tracker</i> in a column adds it to that area; &#8644; beside a tracker, or <i>Area</i> on the Trackers page, moves it to another, with its templates and today's value. Days already filled in stay where they were.</li>
     <li><b>Last time:</b> On a day page, a tracker or a <code>key:: value</code> of your own shows faintly what you wrote the last time you filled it in.</li>
     <li><b>Namespaces:</b> A page in a family, <code>[[Work/Clients/Acme]]</code> or <i>Work - Clients - Acme</i>, lists the rest of the family at the bottom.</li>
     <li><b>Duplicate lines:</b> &#8943; beside a page title &rarr; <i>Remove duplicate lines</i>. A line written twice under the same parent goes, and what was under it moves to the first copy. The <i>Weekly review</i> says when any page has some, and lists them. Undo puts them back.</li>
@@ -23713,25 +23717,39 @@ function viewToday() {
   });
   const trkHome = daySpaces.find(sp => trkIn.get(sp)) || (daySpaces.includes(Spaces.active) ? Spaces.active : daySpaces[0]);
   const factSpaces = daySpaces.filter(sp => trkIn.get(sp) || sp === trkHome);
+  const trkNode = (sp, path, body) => {
+    const node = el("div", {class: "space-journal", data: {space: sp, path}}, ...body);
+    const activate = () => {
+      activateJournalSpace(sp);
+      if (!SPACE_CONTEXT || SPACE_CONTEXT.space !== sp) SPACE_CONTEXT = {space: sp, path};
+    };
+    node.addEventListener("pointerdown", activate, true);
+    node.addEventListener("focusin", activate, true);
+    return node;
+  };
+  /* With journals side by side, the trackers stand in the same columns, as
+     wide as the journal under them, and each area adds its own. */
+  const trkCols = !who && spaces.length > 1;
 
   const sections = [
+    trkCols ? {id: "facts", title: "Trackers", count: trackers,
+     body: () => el("div", {}, journalWidths(el("div", {class: "jgrid"}, ...spaces.map(sp => el("section", {class: "jcard trkcol"},
+       el("header", {class: "jhead"}, spaceBadge(sp)),
+       inSpace(sp, () => {
+         const path = dayPath(sp);
+         if (!path) return trkNode(sp, null, [emptyCard("Nothing tracked on " + dayName(day) + " yet. ",
+           el("button", {class: "textbtn", onclick: () => { inSpace(sp, () => ensureJournal(day)); render(); }}, "Track this day"))]);
+         return trkNode(sp, path, [dayTrackersBlock(path, {move: sp})]);
+       })))), spaces), sheetsToday(day))} :
     /* A day with no page yet still gets its trackers: yesterday's sleep is
        often filled in today, and that day's page is made for it on the spot. */
     !who && !factSpaces.length ? {id: "facts", title: "Trackers", count: 0,
      body: () => emptyCard("Nothing tracked on " + dayName(day) + " yet. ",
        el("button", {class: "textbtn", onclick: () => { inSpace(Spaces.active, () => ensureJournal(day)); render(); }}, "Track this day"))} : null,
-    factSpaces.length ? {id: "facts", title: "Trackers", count: trackers,
+    !trkCols && factSpaces.length ? {id: "facts", title: "Trackers", count: trackers,
      body: () => el("div", {class: "card"}, ...factSpaces.map(sp => inSpace(sp, () => {
        const path = dayPath(sp);
-       const node = el("div", {class: "space-journal", data: {space: sp, path}},
-         factSpaces.length > 1 ? spaceBadge(sp) : null, dayTrackersBlock(path, {add: sp === trkHome}));
-       const activate = () => {
-         activateJournalSpace(sp);
-         if (!SPACE_CONTEXT || SPACE_CONTEXT.space !== sp) SPACE_CONTEXT = {space: sp, path};
-       };
-       node.addEventListener("pointerdown", activate, true);
-       node.addEventListener("focusin", activate, true);
-       return node;
+       return trkNode(sp, path, [factSpaces.length > 1 ? spaceBadge(sp) : null, dayTrackersBlock(path, {add: sp === trkHome})]);
      })), sheetsToday(day))} : null,
     {id: "due", title: "Due Today & Late", late: now.some(a => a.due < today), count: now.length,
      body: () => taskCard(now, "Nothing due. Nothing late.")},
@@ -23827,7 +23845,8 @@ function viewToday() {
 /* Day pages side by side share the width as you drag the line between two of
    them; a double-click on it makes them even again. Each area keeps its share
    on this device, so it holds whichever other areas are ticked on beside it.
-   Only on a screen wide enough to put them side by side. */
+   Only on a screen wide enough to put them side by side. The trackers' columns
+   above the journals share the same widths: dragging either moves both. */
 const JW_MIN_PX = 240;
 function jwShares() {
   try { const o = JSON.parse(PREF.get("today.jwidths", "{}")); return o && typeof o === "object" ? o : {}; }
@@ -23835,9 +23854,15 @@ function jwShares() {
 }
 function journalWidths(grid, spaces) {
   if (spaces.length < 2) return grid;
-  const saved = jwShares();
-  const fr = spaces.map(n => { const v = Number(saved[n]); return v > 0 ? v : 1; });
-  const paint = () => grid.style.setProperty("--jcols", fr.map(f => "minmax(" + JW_MIN_PX + "px," + f.toFixed(3) + "fr)").join(" "));
+  const fr = [];
+  const load = () => { const saved = jwShares(); spaces.forEach((n, i) => { const v = Number(saved[n]); fr[i] = v > 0 ? v : 1; }); };
+  load();
+  grid.dataset.jw = spaces.join("|");
+  const paint = () => {
+    const cols = fr.map(f => "minmax(" + JW_MIN_PX + "px," + f.toFixed(3) + "fr)").join(" ");
+    for (const g of new Set([grid, ...document.querySelectorAll(".jgrid.sized")]))
+      if (g.dataset.jw === grid.dataset.jw) g.style.setProperty("--jcols", cols);
+  };
   const save = () => {
     const all = jwShares();
     spaces.forEach((n, i) => { if (Math.abs(fr[i] - 1) < 0.01) delete all[n]; else all[n] = +fr[i].toFixed(3); });
@@ -23854,6 +23879,8 @@ function journalWidths(grid, spaces) {
       e.preventDefault();
       bar.setPointerCapture(e.pointerId);
       bar.classList.add("on");
+      // The other grid of the pair may have been dragged since this one was drawn.
+      load();
       const x0 = e.clientX, a0 = fr[i], b0 = fr[i + 1];
       const gap = parseFloat(getComputedStyle(grid).columnGap) || 0;
       const perPx = fr.reduce((t, f) => t + f, 0) / Math.max(1, grid.clientWidth - gap * (fr.length - 1));
@@ -28626,8 +28653,9 @@ function drawFactFoldPrefs() {
 /* A day page shows only its trackers at the top: the rest of its values are
    the file's bookkeeping. One more is added the way the line menu adds one;
    the cross takes one off this day. add: false leaves out the "+ tracker",
-   for an area that is not where new trackers go. */
-function dayTrackersBlock(path, {add = true} = {}) {
+   for an area that is not where new trackers go; move, the area the page is
+   in, offers to move a tracker to another. */
+function dayTrackersBlock(path, {add = true, move = null} = {}) {
   const props = getPage(path)?.props || {};
   const box = el("div", {class: "pfacts"});
   for (const [k, v] of Object.entries(props)) {
@@ -28642,6 +28670,9 @@ function dayTrackersBlock(path, {add = true} = {}) {
     const line = factLine(path, fact);
     const prev = prevValueEl(path, prevKeyOf(k, v));
     if (prev) line.append(prev);
+    if (trk && move) line.append(el("button", {class: "textbtn trkx", title: "Move to another area",
+      "aria-label": "Move " + trackerTitle(trk.name) + " to another area",
+      onclick: () => openMoveTracker(trk.name, move, dayOfPath(path))}, "⇄"));
     if (trk) line.append(el("button", {class: "textbtn trkx", title: "Remove from this day",
       "aria-label": "Remove " + trackerTitle(trk.name),
       onclick: () => removeDayTracker(path, k)}, "✕"));
@@ -29999,6 +30030,74 @@ function removeDayTracker(path, key) {
   })});
 }
 
+/* ---------- moving one to another area ----------
+   A tracker belongs to the area whose templates bring it in. Moving it takes
+   its line out of the other areas' templates for today on and puts it in the
+   same templates of the new one; the day it was moved from, and today and
+   the days after, carry their values across. Earlier days stay where they
+   were written: that is the history, and Trackers reads every area anyway. */
+const trackerKeyIn = (page, name) => {
+  let key = null;
+  const see = t => { if (!key && t && t.name === name) key = t.key; };
+  walkBlocks(page.blocks || [], b => see(parseTracker(b.title)));
+  for (const k of Object.keys(page.props || {})) see(parseTracker(k + "::"));
+  return key;
+};
+function moveTracker(name, to, day = todayISO()) {
+  const today = todayISO();
+  let tpls = 0, days = 0;
+  for (const {sp, p} of trackerTemplatesWith(name)) {
+    const n = baseName(p);
+    if (sp === to || !isWhenName(n) || isPastWhenName(n, today)) continue;
+    const key = inSpace(sp, () => trackerKeyIn(getPage(p), name));
+    inSpace(sp, () => dropTrackerLine(p, name));
+    // The plain journals template is all of an area's days; one it has not got is this year's.
+    inSpace(to, () => addTrackerLine(n === "journals" && !V.pages.has(join(DIRS.lists, "journals.md")) ? today.slice(0, 4) : n, key));
+    tpls++;
+  }
+  for (const sp of LOADED.keys()) {
+    if (sp === to) continue;
+    const moves = inSpace(sp, () => {
+      const out = [];
+      for (const p of allPages(isJournalPath)) {
+        const d = dayOfPath(p), page = getPage(p);
+        if (!d || (d !== day && d < today) || p !== journalPath(d)) continue;
+        liftTrackerLine(page, name);
+        const keys = Object.keys(page.props || {}).filter(k => parseTracker(k + "::")?.name === name);
+        if (!keys.length) continue;
+        out.push({d, vals: keys.map(k => [k, page.props[k]])});
+        for (const k of keys) delete page.props[k];
+        touch(p);
+      }
+      return out;
+    });
+    for (const {d, vals} of moves) inSpace(to, () => {
+      const filled = vals.some(([, v]) => trim(String(v || "")));
+      // A day not made there yet gets the tracker from the templates when it is.
+      if (!V.pages.has(journalPath(d)) && !filled && d !== day) return;
+      const path = ensureJournal(d), page = getPage(path);
+      page.props = page.props || {};
+      liftTrackerLine(page, name);
+      for (const [k, v] of vals) {
+        const cur = Object.keys(page.props).find(x => parseTracker(x + "::")?.name === name);
+        if (cur && trim(String(page.props[cur] || ""))) continue;
+        if (cur) delete page.props[cur];
+        page.props[k] = v;
+      }
+      touch(path);
+      days++;
+    });
+  }
+  notify(trackerTitle(name) + " now belongs to " + to + "." +
+    (tpls ? " Moved in " + tpls + " template" + (tpls === 1 ? "" : "s") + "." : "") +
+    (days ? " Moved on " + days + " day" + (days === 1 ? "" : "s") + "." : ""));
+}
+function openMoveTracker(name, here, day) {
+  const others = visibleSpaces().filter(sp => LOADED.has(sp) && sp !== here);
+  chipMenu("Which area does " + trackerTitle(name) + " belong to?", here ? "now in " + here : null,
+    others.map((sp, i) => [String(i + 1), capitalise(sp), null, () => { moveTracker(name, sp, day); render(); }]));
+}
+
 function stopTrackerPrompt(name) {
   const tpls = trackerTemplatesWith(name);
   const where = [...new Set(tpls.map(x => baseName(x.p) + (LOADED.size > 1 ? " (" + x.sp + ")" : "")))];
@@ -30255,6 +30354,10 @@ function trackerCard(g) {
     el("button", {class: "textbtn", onclick: () => openDay(last)}, "Latest: " + humanDate(last.date) + (last.raw ? " · " + last.raw : "")),
     el("button", {class: "textbtn", title: "Which days it comes on, kept in the journal templates",
       onclick: () => openTrackerWhen(g.name, g.key)}, "When"),
+    visibleSpaces().filter(sp => LOADED.has(sp)).length > 1 ? el("button", {class: "textbtn",
+      title: "The area it belongs to; the days already filled in stay where they are",
+      onclick: () => openMoveTracker(g.name, trackerTemplatesWith(g.name)[0]?.sp || last.space, todayISO())},
+      "Area: " + (trackerTemplatesWith(g.name)[0]?.sp || last.space || V.space)) : null,
     el("button", {class: "textbtn", title: "On every day and template, the history kept",
       onclick: () => renameTrackerPrompt(g.name)}, "Rename"),
     el("button", {class: "textbtn", title: "No more of it on new days; the history stays",
