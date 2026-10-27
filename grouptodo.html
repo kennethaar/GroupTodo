@@ -1134,19 +1134,16 @@ details>summary:hover{color:var(--fg2)}
 .t-act{display:flex;gap:2px;opacity:0;flex:none;transition:.12s}
 .task:hover .t-act,.task.sel .t-act{opacity:1}
 .t-lead{display:flex;align-items:flex-start;gap:2px;flex:none}
-.t-chk{display:flex;flex-direction:column;align-items:center;gap:1px;width:58px;margin-left:-14px}
-.t-chk .chk{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.t-chk{display:flex;align-items:center;width:58px}
+.t-chk .tick{margin-top:1px}
 .t-state{padding:2px 0;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.2px;line-height:1;max-width:100%;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
 .t-state.DOING{color:var(--doing)}.t-state.WAIT{color:var(--wait)}.t-state.DONE{color:var(--done)}
 .t-state.CANCELLED{color:var(--cancel)}.t-state.TODO{color:var(--todo)}
-/* Shown on the row you point at or are on, not on every row of a list. The
-   state word keeps its room, so the circles do not jump. */
+/* Shown on the row you point at or are on, not on every row of a list. */
 .task .chip.onhover,.bcard .chip.onhover{display:none}
 .task:hover .chip.onhover,.task:focus-within .chip.onhover,.task.sel .chip.onhover,
 .bcard:hover .chip.onhover,.bcard:focus .chip.onhover{display:inline-flex}
-.t-state.onhover{visibility:hidden}
-.task:hover .t-state.onhover,.task:focus-within .t-state.onhover,.task.sel .t-state.onhover{visibility:visible}
 .t-menu{width:22px;height:22px;font-size:15px;opacity:.45}
 .task:hover .t-menu,.task.sel .t-menu{opacity:1}
 .t-pills,.t-info{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}
@@ -19988,11 +19985,6 @@ function taskRow(a) {
   // change would be written through the active space's backend.
   const title = el("div", {class: "t-title", html: estHtml(a.title) + renderInline(titleForRow(a.title))});
   const chips = chipsFor(a).filter(c => !(c.classList.contains("asg") && pillInTitle(title, c, a.assignee)));
-  const stage = stageLabel(a.block);
-  /* Said when it tells you something: Doing, Waiting, done, or a type's stage.
-     Plain to do is nearly every row, so it shows only on the row you point at. */
-  const word = el("button", {class: "t-state " + a.state + (a.state === "TODO" && !stage ? " onhover" : ""), title: (stage ? stage + " \u00B7 " : "") + "Change the state",
-    onclick: e => { e.stopPropagation(); stateMenu(a); }}, stage || CORE_WORD[a.state] || a.state);
   const pills = [multiSpace() && a.space ? spaceBadge(a.space) : null, ...chips.filter(c => !c.classList.contains("when"))].filter(Boolean);
   const info = chips.filter(c => c.classList.contains("when"));
   const linger = a.state === "WAIT" && LINGER.get(a.block.id);
@@ -20013,15 +20005,16 @@ function taskRow(a) {
     },
   },
     el("div", {class: "t-lead"},
+      /* The same box as on the day page, its word always inside: whether a row
+         is a plain to do or a stage of a task type is the first thing to read. */
       el("div", {class: "t-chk"},
         holdable(el("button", {
-          class: "chk", data: {state: a.state || ""},
+          class: "tick", data: {state: a.state || ""},
           title: a.state === "DONE" ? "Not done after all (hold for every state)" : "Done (hold for every state)",
-        }, "\u2713"), () => {
-          keepFocus(idSel(".task", a.block.id, ".chk"), null);
+        }, ...tickParts(a.state, a.block)), () => {
+          keepFocus(idSel(".task", a.block.id, ".tick"), null);
           rowSetState(a, () => setBlockState(a.path, a.block, a.state === "DONE" ? "TODO" : "DONE"));
-        }, () => stateMenu(a)),
-        word),
+        }, () => stateMenu(a))),
       el("button", {class: "iconbtn t-menu", title: "More: the states, refile, open the page", "aria-label": "More",
         onclick: e => { e.stopPropagation(); taskRowMenu(a); }}, "\u22EF")),
     el("div", {class: "t-body t-one"},
