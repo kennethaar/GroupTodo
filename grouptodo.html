@@ -687,6 +687,8 @@ button.tick:hover{box-shadow:inset 0 0 0 1px currentColor}
 .nextmeet.soon .w{color:inherit}
 .nextmeet.now{color:var(--ok);background:rgba(79,191,123,.12);border-color:rgba(79,191,123,.4)}
 .nextmeet.now .w{color:inherit}
+.nextmeet .n{color:var(--fg3);flex:none}
+.nextmeet .n.soon{color:var(--today)}
 @media (max-width:760px){.nextmeet{max-width:11rem}}
 @media (max-width:560px){.nextmeet .t{display:none}}
 .toast.meetrem strong{display:block;margin-bottom:2px}
@@ -37713,24 +37715,30 @@ function untilWords(ms) {
   return "in " + h + " h" + (r ? " " + r + " min" : "");
 }
 
-/* The button at the top: the meeting on now, else the next one today. */
+/* The button at the top: the meeting on now, else the next one today. When
+   meetings overlap, the one on now is the latest to start -- a short meeting
+   inside a long one -- and the next one's start is counted down beside it. */
 function paintNextMeeting(list = todaysMeetings()) {
   const btn = $("#nextMeet");
   if (!btn) return;
   const now = Date.now();
-  const on = list.find(m => m.start <= now && now < m.end);
+  const on = list.filter(m => m.start <= now && now < m.end)
+    .sort((a, b) => b.start - a.start || a.end - b.end)[0];
   const next = list.find(m => m.start > now);
   const m = on || next;
   btn.textContent = "";
   if (!m) { btn.hidden = true; btn.onclick = null; return; }
   btn.hidden = false;
+  const soon = next && next.start - now <= meetRemindMin() * 6e4;
   btn.classList.toggle("now", !!on);
-  btn.classList.toggle("soon", !on && m.start - now <= meetRemindMin() * 6e4);
+  btn.classList.toggle("soon", !on && soon);
   const when = on ? "now, until " + hhmm(m.end) : untilWords(m.start - now);
   btn.title = m.title + ", " + hhmm(m.start) + "–" + hhmm(m.end) + (on ? " (on now)" : " (" + when + ")") +
+    (on && next ? ". Next: " + next.title + ", " + hhmm(next.start) + " (" + untilWords(next.start - now) + ")" : "") +
     ". Click to open it." + (meetRemindMin() ? " Reminded " + meetRemindMin() + " min before." : " Reminders are off (Calendars).");
   btn.append(el("span", {class: "ic", "aria-hidden": "true"}, "\u{1F552}"),
     el("span", {class: "t"}, m.title), el("span", {class: "w"}, when));
+  if (on && next) btn.append(el("span", {class: "n" + (soon ? " soon" : "")}, "· next " + untilWords(next.start - now)));
   btn.onclick = () => openBlockAt(m.space, m.path, m.block);
 }
 
