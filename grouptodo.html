@@ -249,6 +249,7 @@ body.sidebar-hidden #sidebar{display:none}
   50%{box-shadow:0 0 0 4px var(--accent);background:var(--accent-soft)}}
 .timerpulse{animation:timerpulse .6s ease-in-out 10}
 .nav-item.timer.running .lbl,.nav-item.timer.dragging .lbl{font-variant-numeric:tabular-nums;color:var(--accent)}
+.nav-item.timer.overdue .lbl{font-variant-numeric:tabular-nums;color:var(--late)}
 .sync{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--fg3);padding:8px 10px;
   border-radius:8px;width:100%;text-align:left}
 .sync:hover{background:var(--bg3);color:var(--fg2)}
@@ -10591,6 +10592,9 @@ const TIMER_PX = 4;
 let TIMER_SOUND = safeLS.get("gtd.timerSound", "1") === "1";
 let TIMER_END = Number(safeLS.get("gtd.timerEnd", 0)) || 0;
 let TIMER_LEN = Number(safeLS.get("gtd.timerLen", 0)) || 0;
+// When it rang, kept until the alarm is clicked away, so the timer can show
+// how long ago that was.
+let TIMER_DUE = Number(safeLS.get("gtd.timerDue", 0)) || 0;
 let TIMER_TICK = null;
 
 function timerDefaultMinutes() {
@@ -10616,7 +10620,7 @@ const timerLeft = () => Math.max(0, TIMER_END - Date.now());
 const clock = ms => { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
 
 function timerStart(minutes, sound = true) {
-  timerSilence();
+  timerAck();
   // Asked from the click that starts a timer, which is when browsers allow it.
   try { if (window.Notification?.permission === "default") Notification.requestPermission(); } catch (_) {}
   TIMER_SOUND = sound;
@@ -10630,17 +10634,29 @@ function timerStart(minutes, sound = true) {
 function timerStop() {
   TIMER_END = 0;
   safeLS.del("gtd.timerEnd");
-  clearInterval(TIMER_TICK); TIMER_TICK = null;
+  if (!TIMER_DUE) { clearInterval(TIMER_TICK); TIMER_TICK = null; }
   timerPaint();
 }
+/* Ticks while it runs, and on after it rings so the time since keeps counting.
+   A timer that ran out while the app was closed rings on the first tick. */
 function timerRun() {
   clearInterval(TIMER_TICK);
   TIMER_TICK = setInterval(() => {
-    if (timerLeft() > 0) return timerPaint();
+    if (timerLeft() > 0 || !TIMER_END) return timerPaint();
     const mins = Math.round(TIMER_LEN / 60000);
+    TIMER_DUE = TIMER_END;
+    safeLS.set("gtd.timerDue", String(TIMER_DUE));
     timerStop();
     timerDone(mins);
   }, 1000);
+  timerPaint();
+}
+/* The alarm clicked away: silent, and the time since it rang is no longer shown. */
+function timerAck() {
+  timerSilence();
+  TIMER_DUE = 0;
+  safeLS.del("gtd.timerDue");
+  if (!TIMER_END) { clearInterval(TIMER_TICK); TIMER_TICK = null; }
   timerPaint();
 }
 function timerDone(mins) {
@@ -10650,7 +10666,7 @@ function timerDone(mins) {
     if (window.Notification?.permission === "granted") {
       const n = new Notification("GroupTodo: time is up", {body: msg, tag: "gtd-timer",
         icon: "icon.svg", requireInteraction: true, silent: !TIMER_SOUND});
-      n.onclick = () => { window.focus(); n.close(); timerSilence(); };
+      n.onclick = () => { window.focus(); n.close(); timerAck(); };
     }
   } catch (_) {}
   timerFlash();
@@ -10658,10 +10674,10 @@ function timerDone(mins) {
   timerPaint();
 }
 
-/* While the bell rings and the title blinks, a click on the timer silences
-   both instead of starting another one. */
+/* Until the alarm is clicked away, a click on the timer silences it and stops
+   the count since it rang, instead of starting another one. */
 let TIMER_RING = null;   // the AudioContext still ringing, if any
-const timerRinging = () => !!(TIMER_RING || TIMER_FLASH);
+const timerRinging = () => !!(TIMER_RING || TIMER_FLASH || TIMER_DUE);
 function timerSilence() {
   try { TIMER_RING?.close(); } catch (_) {}
   TIMER_RING = null;
@@ -10723,13 +10739,20 @@ function timerPaint(drag) {
   if (!b) return;
   const left = timerLeft(), dragging = drag != null;
   const bell = on => on ? " \u{1F514}\uFE0E" : " \u{1F515}\uFE0E";
+  // Rung and not yet clicked away: the length it was set to, and the time since.
+  const due = !dragging && left <= 0 && TIMER_DUE ? Math.max(0, Date.now() - TIMER_DUE) : -1;
   b.classList.toggle("running", left > 0 && !dragging);
   b.classList.toggle("dragging", dragging);
+  b.classList.toggle("overdue", due >= 0);
   b.querySelector(".lbl").textContent = dragging ? drag.minutes + " min" + bell(drag.sound)
-    : left > 0 ? clock(left) + bell(TIMER_SOUND) : "Timer";
+    : left > 0 ? clock(left) + bell(TIMER_SOUND)
+    : due >= 0 ? Math.round(TIMER_LEN / 60000) + " min +" + clock(due) + bell(TIMER_SOUND) : "Timer";
   b.querySelector(".fill").style.width = (dragging ? drag.minutes / TIMER_MAX
     : left > 0 && TIMER_LEN ? left / TIMER_LEN : 0) * 100 + "%";
-  b.title = timerRinging() ? "Click to silence the alarm"
+  b.title = due >= 0 ? "The " + Math.round(TIMER_LEN / 60000) + " min alarm rang at "
+      + new Date(TIMER_DUE).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"})
+      + ", " + clock(due) + " ago. Click to dismiss"
+    : timerRinging() ? "Click to silence the alarm"
     : left > 0 ? "Click to stop, or drag to start over"
     : "Click for " + timerDefaultMinutes() + " min. Drag up to ring, down or right to stay silent, up to " + TIMER_MAX + " min";
 }
@@ -10773,7 +10796,7 @@ function timerNavItem(it) {
     const {picked, part} = down;
     down = null;
     if (cancel) return timerPaint();
-    if (picked == null && timerRinging()) { timerSilence(); return timerPaint(); }
+    if (picked == null && timerRinging()) return timerAck();
     if (picked == null && part === "more") return openTimerPage();
     if (picked != null) timerStart(picked.minutes, picked.sound);
     else if (timerLeft() > 0) timerStop();
@@ -10784,10 +10807,10 @@ function timerNavItem(it) {
   b.addEventListener("keydown", e => {
     if (e.key !== "Enter" && e.key !== " ") return;
     e.preventDefault();
-    if (timerRinging()) { timerSilence(); timerPaint(); }
+    if (timerRinging()) timerAck();
     else if (timerLeft() > 0) timerStop(); else timerStart(timerDefaultMinutes());
   });
-  queueMicrotask(() => { timerPaint(); if (timerLeft() > 0 && !TIMER_TICK) timerRun(); });
+  queueMicrotask(() => { timerPaint(); if ((TIMER_END || TIMER_DUE) && !TIMER_TICK) timerRun(); });
   return b;
 }
 
