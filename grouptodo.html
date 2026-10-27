@@ -1935,7 +1935,7 @@ body.solview #content{padding-bottom:14px}
 .solopt-t{font-size:17px;font-weight:650;line-height:1.25;color:var(--fg);overflow-wrap:anywhere}
 .solopt-s{font-size:12.5px;color:var(--fg3)}
 .slot.solopt.on{border-color:var(--ok);background:var(--ok-soft)}
-.slot.solopt.on .solopt-t::before{content:"¹3 a0";color:var(--ok)}
+.slot.solopt.on .solopt-t::before{content:"\2713\a0";color:var(--ok)}
 .slot.solopt.now .solopt-s{color:var(--accent)}
 .slot.solopt.more{border-style:dashed}
 .slot.solopt.more .solopt-t{color:var(--accent)}
@@ -6550,7 +6550,7 @@ function instantiateTemplate(tplPath, vars) {
     const copy=bs=>(bs || []).flatMap(b=>{
       const rule=templateRule(b.title);
       if (rule) { rules.push(rule); return []; }
-      if (/^@on/.test(trim(b.title))) { notify("Invalid template rule: " + b.title,"warn"); return []; }
+      if (/^@on\b/.test(trim(b.title))) { notify("Invalid template rule: " + b.title,"warn"); return []; }
       return [newBlock({state:b.state,title:expandVars(b.title,vars),
         props:Object.fromEntries(Object.entries(b.props || {}).map(([k,v])=>[k,expandVars(v,vars)])),
         body:(b.body || []).map(l=>expandVars(l,vars)),children:copy(b.children)},false)];
@@ -31027,7 +31027,7 @@ function projectClockSection(path) {
 function clientProjects(w) {
   const by = new Map();
   for (const e of w.rows) {
-    const k = e.name + " " + e.project;
+    const k = e.name + "\0" + e.project;
     if (!by.has(k)) by.set(k, {name: e.name, project: e.project, path: e.projectPath, space: e.space, min: 0});
     by.get(k).min += e.value;
   }
@@ -36439,7 +36439,7 @@ function chooseItemTransfer(ctx, target, defaultMode = "sync") {
 /* ---------- people between areas ----------
    A person is a page, so carrying one to another area is the same move, copy
    or sync any page gets: synced, an edit to Kari in one area is Kari in both. */
-const PERSON_AWAY = "";
+const PERSON_AWAY = "\u0001";
 // People the other loaded areas have a page for and this one does not.
 function peopleElsewhere(space, here = null) {
   const have = new Set((here || inSpace(space, () => allPeople().map(personName))).map(n => n.toLowerCase()));
