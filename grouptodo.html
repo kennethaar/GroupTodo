@@ -21938,7 +21938,7 @@ const flyMakeTask = (path, block) => { if (!block.state) { block.state = "TODO";
 function flyHead(k) {
   if (!FLY) return;
   const {path, block} = FLY;
-  if (k === "kind") { flyCommit(); setBlockState(path, block, block.state ? null : "TODO"); focusBlock(block.id); return; }
+  if (k === "kind") { flyCommit(); if (!projectLineToTask(path, block)) setBlockState(path, block, block.state ? null : "TODO"); focusBlock(block.id); return; }
   if (k === "mkproj") { flyCommit(); const b = block; FLY.txt.blur(); makeFromLine(path, b, "project"); return; }
   if (k === "mkzet") { flyCommit(); const b = block; FLY.txt.blur(); makeFromLine(path, b, "zettel"); return; }
   if (k === "ttype") { flyCommit(); const b = block; FLY.txt.blur(); openTaskTypePicker(path, b); return; }
@@ -31368,7 +31368,69 @@ function bareLineName(block) {
   return trim(t).replace(/[.,;:!?]+$/, "");
 }
 
+/* A line that is nothing but a project's link -- alt-1 made it out of the
+   words that were there -- and then turns out to be one step. Making it a
+   task takes the 1/ back off: the line gets its name again, with the
+   project's lines under it, and the page goes. When other pages link to the
+   project too, the page stays for them as a plain page and the task links
+   to it. Returns false for any other line. */
+function projectLineToTask(path, block) {
+  if (block.state || bareLineName(block)) return false;
+  const proj = linksIn(block.title).map(findExistingPage).find(p => p && p !== path && statusDirOf(p) && !isHorizonPage(p));
+  if (!proj) return false;
+  const code = statusDirOf(proj), title = pageTitle(proj);
+  const st = code === "3" ? "WAIT" : code === "0" ? "DONE" : code === "-" ? "CANCELLED" : "TODO";
+  const others = backlinksTo(proj).some(h => h.path !== path);
+  const plain = join(PAGES, baseName(proj) + ".md");
+  const toTask = () => {
+    block.state = st;
+    applyTodoTemplate(block);
+    runTemplateRules(block, "status", st);
+    stampAddedIfMissing(path, block);
+    touch(path);
+  };
+  if (others && !V.pages.has(plain)) {
+    // moveFile rewrites every link on the way, this line's among them.
+    if (!moveFile(proj, plain)) return true;
+    const kept = getPage(plain);
+    for (const k of ["status", "area", "reviewed", "deadline", "depends_on"]) delete kept.props[k];
+    touch(plain);
+    toTask();
+    clearMemo();
+    render();
+    notify("“" + title + "” is a task now; its page stays, without the 1/, for the pages that link to it.");
+    return true;
+  }
+  const snap = structuredClone(getPage(path)), copy = clonePage(getPage(proj)), space = Spaces.active;
+  const spellings = spellingsOf(proj);
+  block.title = title;
+  block.children = (block.children || []).concat((getPage(proj).blocks || []).map(cloneBlock));
+  toTask();
+  if (others) for (const old of spellings) rewriteLinksEverywhere(old, pageRef(path));
+  removePage(proj);
+  clearMemo();
+  render();
+  const restore = () => {
+    let ok = false;
+    inSpace(space, () => {
+      if (!getPage(path) || V.pages.has(proj)) return;
+      Object.assign(getPage(path), structuredClone(snap));
+      touch(path);
+      V.removed.delete(proj);
+      dropTombstone(proj);
+      putPage(proj, clonePage(copy));
+      ok = true;
+    });
+    if (ok) { clearMemo(); render(); notify("Put the project “" + title + "” back."); }
+    return ok;
+  };
+  pushUndo({run: restore, label: "Project to task " + title});
+  notify("“" + title + "” is a task now, and its project page is gone.", "info", {label: "Undo", run: restore});
+  return true;
+}
+
 function makeTask(path, block) {
+  if (projectLineToTask(path, block)) return;
   if (block.state) {
     notify("Already a task. ctrl-enter walks it through TODO, DOING, WAIT, DONE.");
     return;
