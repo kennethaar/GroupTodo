@@ -1510,6 +1510,16 @@ button.prow{width:100%;text-align:left}
    a checkbox nobody ticked. */
 .pick .k:empty{background:transparent;box-shadow:none}
 .pick .d{margin-left:auto;font-size:11.5px;color:var(--fg3)}
+/* The state menu with task types: one column per set of states, side by side
+   while they fit and under each other on a phone. Narrow columns put what a
+   row counts as under its name rather than beside it. */
+.state-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:4px 0}
+.state-col{min-width:0}
+.state-col + .state-col{border-left:1px solid var(--border)}
+.state-col h3{margin:0;padding:4px 16px 6px;font-size:11.5px;font-weight:650;color:var(--fg3);text-transform:uppercase;letter-spacing:.04em}
+.state-col.cur h3{color:var(--accent)}
+.state-col .pick{flex-wrap:wrap;gap:2px 11px;padding:7px 16px}
+.state-col .pick .d{margin-left:0;flex-basis:100%;padding-left:31px}
 /* On a phone: the title gets the header's width and any hint goes under it;
    what a row does goes under its name rather than squeezing it. */
 @media (max-width:560px){
@@ -19784,7 +19794,49 @@ function stateRows(a) {
     .map(([k, label, st]) => [k, label, a.state === st ? "now" : null,
       () => a.state === st ? null : rowSetState(a, () => setBlockState(a.path, a.block, st))]);
 }
-const stateMenu = a => chipMenu(plainTitle(a.title), "state", stateRows(a));
+/* With task types there is more than one set of states, so each is a column:
+   the plain states, then every type's stages. A stage in another column
+   changes the type; the plain column takes the type off. The letters stay on
+   the plain states and the numbers on the task's own type, as they were. */
+function stateColumns(a, extra = []) {
+  const lists = inSpace(a.space, () => stateLists());
+  if (!lists.length) return null;
+  const t = inSpace(a.space, () => taskStage(a.block));
+  const plain = [["t", "To do", "TODO"], ["d", "Doing", "DOING"], ["w", "Waiting for…", "WAIT"], ["x", "Done", "DONE"], ["c", "Cancelled", "CANCELLED"]]
+    .map(([k, label, st]) => {
+      const now = !t && a.state === st;
+      return [k, label, now ? "now" : null,
+        () => now ? null : rowSetState(a, () => setBlockState(a.path, a.block, st, {stage: {list: null}}))];
+    });
+  return [{head: "Plain", cur: !t, rows: [...plain, ...extra]},
+    ...lists.map(list => {
+      const own = !!t && t.list === list;
+      return {head: pageTitle(list), cur: own, rows: stagesOf(list).map((st, i) =>
+        [own && i < 9 ? String(i + 1) : "", st.name,
+         own && t.stage && t.stage.name === st.name ? "now" : CORE_WORD[st.core],
+         () => rowSetState(a, () => setTaskStage(a.path, a.block, list, st.name), false)])};
+    })];
+}
+function columnMenu(title, hint, cols) {
+  const live = cols.flatMap(c => c.rows).filter(r => r && r[0]);
+  const body = el("div", {class: "state-cols"}, ...cols.map(c => el("div", {class: "state-col" + (c.cur ? " cur" : "")},
+    el("h3", {}, c.head),
+    ...c.rows.filter(Boolean).map(([key, label, detail, run]) => pickRow(key, label, detail, () => { closeModal(); run(); })))));
+  modal({
+    title, hint, body, center: true,
+    onKey: e => {
+      const hit = live.find(r => r[0] === e.key.toLowerCase());
+      if (!hit) return false;
+      closeModal(); hit[3]();
+      return true;
+    },
+  });
+}
+const stateMenu = a => {
+  const cols = stateColumns(a);
+  if (cols) columnMenu(plainTitle(a.title), "state", cols);
+  else chipMenu(plainTitle(a.title), "state", stateRows(a));
+};
 /* One task icon, one behaviour, wherever the task is drawn -- its row in a
    list, its own line, an embed or a query: a tap ticks it done (or back to
    To do), holding it or a right-click offers every state. */
@@ -19793,8 +19845,10 @@ function tapTaskState(path, b) {
 }
 function lineStateMenu(path, b, space, canUntask) {
   const a = {path, block: b, state: b.state, title: b.title, space};
-  chipMenu(plainTitle(b.title), "state", [...stateRows(a),
-    ...(canUntask && b.state ? [["n", "Not a task", null, () => { inSpace(space, () => setBlockState(path, b, null)); render(); }]] : [])]);
+  const untask = canUntask && b.state ? [["n", "Not a task", null, () => { inSpace(space, () => setBlockState(path, b, null)); render(); }]] : [];
+  const cols = stateColumns(a, untask);
+  if (cols) columnMenu(plainTitle(b.title), "state", cols);
+  else chipMenu(plainTitle(b.title), "state", [...stateRows(a), ...untask]);
 }
 /* The tick on an embedded or queried line, acting the same as a row's. */
 function lineStateButton(space, path, b) {
@@ -20310,12 +20364,21 @@ const SLASH_COMMANDS = [
   {id: "query",     title: "Live list",       detail: "lines that match, kept up to date", kw: ["query", "list", "filter", "spørring", "liste", "filter"]},
   {id: "embed",     title: "Show a page here", detail: "another page, live",   kw: ["embed", "include", "show", "vis", "bygg"]},
   {id: "more",      title: "Open in the side panel", detail: "dates, chat, history", kw: ["open", "side", "more", "details", "panel", "mer", "åpne"]},
+  {id: "ttype",     title: "Task type",       detail: "stages of its own",     kw: ["type", "kind", "stages", "slag"]},
 ];
+/* Every task type's stages are commands too, found by the stage's words or the
+   type's: "/deliv" and "/purchase" both find Awaiting delivery. */
+const STAGE_CMD = "stage\u0001";
 function slashRows(q) {
   const f = q.toLowerCase();
   const hit = c => !f || c.kw.some(w => w.startsWith(f)) || c.title.toLowerCase().startsWith(f);
-  return SLASH_COMMANDS.filter(hit).map(c => ({accept: "command", id: c.id, title: c.title,
-    detail: c.detail, mark: "/"}));
+  const stages = stateLists().flatMap(list => stagesOf(list).map(st => ({list, st,
+    kw: [...st.name.toLowerCase().split(/\s+/), ...pageTitle(list).toLowerCase().split(/\s+/)]})));
+  return [...SLASH_COMMANDS.filter(hit).map(c => ({accept: "command", id: c.id, title: c.title,
+    detail: c.detail, mark: "/"})),
+    ...stages.filter(s => !f || s.kw.some(w => w.startsWith(f))).map(s => ({accept: "command",
+      id: STAGE_CMD + s.list + "\u0001" + s.st.name, title: s.st.name,
+      detail: pageTitle(s.list) + " · " + CORE_WORD[s.st.core], mark: "/"}))];
 }
 
 /* The names whose alias starts with what was typed, each offered as that
@@ -21076,6 +21139,15 @@ function outlineBlock(path, page, b, opts = {}) {
       focusBlock(b.id, false);
       return;
     }
+    // A stage of a task type: the line takes that type and that stage.
+    if (id.startsWith(STAGE_CMD)) {
+      const [list, name] = id.slice(STAGE_CMD.length).split("\u0001");
+      commitLine(txt, path, b);
+      setTaskStage(path, b, list, name);
+      focusBlock(b.id, false);
+      return;
+    }
+    if (id === "ttype") { commitLine(txt, path, b); txt.blur(); openTaskTypePicker(path, b); return; }
     // A live list or another page shown here: asked in a dialog, written as a macro.
     if (id === "query" || id === "embed") {
       commitLine(txt, path, b);
