@@ -24140,9 +24140,9 @@ function viewToday() {
   const spaces = who ? [Spaces.active] : visibleSpaces().filter(n => LOADED.has(n));
   /* The journals can show another day; what is due stays about today. */
   const day = state.todayDay && state.todayDay !== today ? state.todayDay : today;
-  const dayName = iso => capitalise(parseISO(iso).toLocaleDateString(undefined, {weekday: "long", day: "numeric", month: "long",
-    year: "numeric"}));
-  const jTitle = sp => nm + " " + sp + " journal" + (day === today ? "" : " · " + dayName(day));
+  // The date is in the picker; the weekday, which the picker does not say, goes beside the title.
+  const dayName = iso => capitalise(parseISO(iso).toLocaleDateString(undefined, {weekday: "long"}));
+  const jTitle = sp => nm + " " + sp + " journal";
   const TODAY_TRAIL = {root: "Today", rootGo: ["today", {jz: null}]};
   const dayPath = sp => inSpace(sp, () => {
     const path = who ? journalPath(day, who) : day === today ? ensureJournal(day) : journalPath(day);
