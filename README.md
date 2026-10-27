@@ -18,11 +18,18 @@ In Edge or Chrome, double-click `grouptodo.html`. It asks:
 
 1. **Who** — your full name, shown beside what you add.
 2. **Where** — a folder for your files. Skip it to keep everything in the browser for now.
-3. **What** — your first task.
+3. **Start** — *Start a new list*, or *Open one I was sent* (a shared folder, an invite or a vault file).
 
-The first project, *Find your way round GroupToDo*, is a tour: each step links
-to a part of the app. If colleagues already put your name on tasks, you are
-offered those when you arrive.
+*Set up several areas* at the bottom splits the list into Work, Home and so on
+before you begin, with a folder for each.
+
+Today then opens with the cursor in the box at the top, and a *Getting
+started* strip that ticks itself off as you go: your name, your folder, your
+first task. Once the first task is in, it points to the first project, *Find
+your way round GroupToDo*, which is a tour: each step links to a part of the
+app, and the app offers to tick a step off once you have been there. If
+colleagues already put your name on tasks, you are offered those when you
+arrive.
 
 To bring someone in: **areas menu (top right) → Invite somebody**, or send them
 `grouptodo.html`, the folder name and [docs/setup-sheet-group.html](docs/setup-sheet-group.html).
@@ -40,8 +47,11 @@ format it writes is described in [docs/vault-format.md](docs/vault-format.md).
 - **Your day page is yours.** One per person, so nobody types over anybody, but everyone can read it.
 - **A task you write is yours.** Hand it to someone in the area and it becomes theirs and shows in your *Waiting for* — one task, never two copies. Name someone outside the area and it becomes a plain waiting-for.
 - **You are told what you missed.** Today opens with *Since you were last here*; **History** scrolls back day by day.
-- **Areas** (Work, Home, …) are separate folders. Tick any combination at the top right and every screen shows those. Drag them in that menu, or under **Folders**, to fix the order they sit in left to right. With several side by side on Today, drag the line between two day pages to make one wider; double-click it to even them out.
-- **Meetings** are lines: **Alt+M** adds attendees, time and agenda. **📅 Calendars** on Today imports an iCal link into a day page every 30 minutes (needs `serve.py`, see below). The next meeting today is shown at the top, counting down, with a reminder a few minutes before (set in Calendars).
+- **Areas** (Work, Home, …) are separate folders. Tick any combination at the top right and every screen shows those. Drag them in that menu, or under **Folders**, to fix the order they sit in left to right. With several side by side on Today, each area gets a column: its due tasks, next seven days, trackers and day page stacked in it. Drag the line between two columns to make one wider; double-click it to even them out.
+- **Meetings** are lines: **Alt+M** adds attendees, time and agenda. **📅 Calendars** on Today imports an iCal link into a day page every 30 minutes (needs `serve.py`, see below). A meeting you delete or move stays that way. The pill at the top shows the meeting on now and counts down to the next one, with a reminder a few minutes before (set in Calendars).
+- **Pages open beside the view.** A page opened from a list docks at the right, so you can write in it with the list still there; **hold** any link for half a second to open it there. ⤢ makes it the page on screen.
+- **Several lines at once.** With lines picked, `Tab`/`Shift-Tab` indents or outdents them together and `Ctrl-Enter` makes them all tasks.
+- **Done earlier?** The toast after you close a task or project offers to backdate it.
 - **Names and dates are picked up as you type** — *tomorrow*, *friday*, *in 3 days*; `Tab` turns a suggestion into a link or due date. `@`, `#` and `[[` list contexts, projects and pages; people come up as you type their name.
 - **Threads on tasks.** Every task has a conversation; **Chat** gathers them all.
 - **Repeats** (`repeat:: weekly`) are offered when you tick one off, never scheduled ahead, so there is no backlog of missed chores.
@@ -55,7 +65,11 @@ format it writes is described in [docs/vault-format.md](docs/vault-format.md).
 - **On hold.** A project's status pill → *On hold…* keeps it committed but out of sight until a day; the weekly review asks about it in its own pass.
 - **Gather what a project collected.** ⋯ beside a page title → *Copy linked references here* copies every line that links to the page, with what is under it, to its bottom; the originals stay. Completing a project offers the same.
 - **Values follow their template.** A page's `key:: value` lines stand in its template's order. *hide* beside a value folds it under *hidden values*, on every page made from the same template.
-- **Time on a task.** Click the ⏱ under a task to change its clock: drag on the day for a stretch, drag a box or its edges, or type the times; *Clear all* takes them off.
+- **Time on a task.** Click the ⏱ under a task to change its clock: drag on the day for a stretch, drag a box or its edges, or type the times; *Clear all* takes them off. Your other clocked tasks that day show greyed beside it, and a **+** after the last one starts a stretch where it ended.
+- **Task types.** A list in Settings with `kind:: states` is the stages one kind of task goes through: *Ordered (waiting)*, *Awaiting delivery (waiting)*, *Delivered (done)*. A task of that type shows its stage instead of To do or Doing; the state menu gives each type its own column and the `/` menu offers the stages. Types from every area on screen are offered, and copied into the task's own area when picked.
+- **A project that turned out small.** `Alt+T` on a line that is only `[[1/Project]]` makes it a task. The page stays as a plain page the task links to, and the project's open steps hang under the task, which waits for them.
+- **Look-alike projects.** The same project started twice (*Nordlys new website*, *New website Nordlys*) is flagged *⚠ look alike* on Projects. Fold each group into one, say they differ, or move one to another area, then **Apply** does it all.
+- **Timer.** ◷ in the sidebar: click for your usual length (`minutes::` on `pages/8/timer.md`), or press and drag for 1 to 60 minutes; drag up for an alarm, down or right for a quiet note. The alarm stays on screen, with how long ago it rang, until clicked.
 
 ### Screens
 
@@ -89,7 +103,7 @@ Next, Waiting for and Projects export to CSV for Excel.
 - **On hold.** `hold:: [[date]]` on a task or a whole project hides it until that day. `until::` cancels a task once its day has passed; birthday tasks go once the birthday has.
 - **Burndown.** The Report shows open tasks per day over its window, with the numbers as a table.
 - **Phone and PC.** On a phone, **Send** sits in the top bar with a dot while changes are unsent; with `work_hours::` the PC and the phone ask for each other's file at the start and end of the day.
-- **Time on site.** `/in` and `/out` on any line write a `#timelog` visit: who, which project, in and out. **Projects → Hours** shows each week by day, and a project's page its hours per week.
+- **Time on site.** `/in` and `/out` on any line write a `#timelog` visit: who, which project, in and out. **Projects → Hours** shows each week by day, and a project's page its hours per week. A craftsman's visit is logged the same way: *Someone on site* in the new-tracker window checks them in.
 - **Sheets: hours, amounts, stock.** Three more tracker kinds take the line as you say it: `tracker-office_t:: 07:12 - 10:00, 10:30 - 12:30` (start and end, one tracker per place you work, with **Start**/**Stop** on today's page), `tracker-food_a:: 129,50 + 45` and `tracker-paint_q:: +3` (`-1` out, `=12` counted). **Trackers → Hours / Amounts / Stock** adds them up: the previous week by day with a column per tracker, the total, extra hours per day worked and flex against a normal day per weekday, then the year by month (days at each place, so the days driven in for a travel deduction). Decimal hours with a comma if you like, and both copy as cells for a spreadsheet. Settings are on your own page as `hours_target::`, `hours_extra::` and so on.
 - **Time per client.** Setting a todo to Doing starts a clock and leaving Doing stops it, in Logseq's `:LOGBOOK:` lines. Turn it off in **Vault & sync → Time on tasks** if Doing is only a state for you. A project's clients are the organisations its page or area names (`org::`), except those marked `role:: supplier` on their own page. With several clients the time is split by `client_split:: Alpha 60, Beta 40` on the project, else by each client's `share::`, else evenly; a client with `share::` is added to every new project. **Projects → Hours → Clients** is the week by day per client, the projects the time went to and the year by month; a project's page shows the time on its todos.
 - **Languages.** The app ships in English; **Vault & sync → Language** switches what this device shows. Each language is a file in `pages/8/Languages/`, one line per piece of text: `Today => I dag`. Get one from the [languages folder](languages/) here on GitHub (download it, then **Open the file**), or **Translate it yourself**: fill in the lines in the app, or **Copy for an AI** and **Paste a translation** back. What people write is never translated. To share a translation, add the file to `languages/` in a pull request.
@@ -119,6 +133,7 @@ Leave out real task text, names and file contents. Issues are public.
 
 ```
 grouptodo.html         the whole app
+GroupToDo-Importer.html  converts an Obsidian or Logseq vault into a new folder
 sw.js                  offline + Share button, when served from a URL
 manifest.webmanifest   home-screen install
 icon.svg               icon
@@ -251,7 +266,7 @@ misses can still be added to a language file by hand.
 On a line: `Tab`/`Shift-Tab` indent, `Ctrl-Enter` cycle state, `Alt+T` task or
 note, `Alt+1` project, `Alt+D` `Alt+C` `Alt+P` `Alt+O` `Alt+J` `Alt+R` due,
 context, person, organisation, project, repeat, `Alt+M` meeting, `Alt+I`
-responsibility, `Alt+S` move to another area.
+responsibility, `Alt+G` refile, `Alt+S` move to another area.
 
 ## Known limits
 
