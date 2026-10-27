@@ -9,7 +9,7 @@ Logseq or Obsidian open.
 
     python3 serve.py [--vault DIR] [--port 8777] [--host 127.0.0.1]
                      [--password-file FILE] [--insecure]
-                     [--open-in-editor [--open-with CMD]]
+                     [--open-in-editor [--open-with CMD]] [--allow-host NAME]
     python3 serve.py --calendars-only      (only fetches calendar links)
 
 Defaults to the vault path used by the original Neovim config:
@@ -53,6 +53,12 @@ binding a non-loopback address without one is refused outright rather than
 warned about. The password is checked with HTTP Basic, so the browser prompts
 for it once and then attaches it to everything -- the page, the service worker
 and the API alike.
+
+Without a password the API answers only the app: requests from another
+site's pages (a foreign Origin) are refused, and so is any Host name but
+localhost, the --host address and those given with --allow-host -- otherwise a
+site that points its own name at 127.0.0.1 could read the vault. A tunnel with
+no password in front therefore needs --allow-host <its name>.
 
 Basic encodes rather than encrypts, so it is only private over HTTPS. The
 intended shape is this server on localhost with TLS terminated in front of it:
@@ -249,6 +255,48 @@ class Handler(BaseHTTPRequestHandler):
     realm = "GroupToDo"
     allow_open = False     # --open-in-editor: may launch an editor on this box
     open_with = None       # --open-with: the command to launch, if not the default
+    allow_hosts = ()       # --allow-host: names besides localhost this answers to
+
+    # ---------- who may ask ----------
+    # With no password the API is open to anything that can reach the port,
+    # and every web page in the browser can. Two checks keep it to the app:
+    #
+    # Origin: a page on another site always sends one with a cross-origin
+    # request, so anything but this server's own origin, another localhost
+    # port, or "null" (the app opened from a file) is refused outright.
+    #
+    # Host: a site can point its own name at 127.0.0.1 (DNS rebinding) and its
+    # page is then same-origin with this server, so it sends no Origin at all.
+    # Its Host header still carries its own name, so without a password only
+    # localhost and the names given with --allow-host are answered. With a
+    # password the rebound page has no credentials, so any name will do.
+    def _origin_allowed(self, origin):
+        if not origin or origin == "null":
+            return True
+        u = urlparse(origin)
+        if u.hostname in LOOPBACK:
+            return True
+        return u.netloc.lower() == (self.headers.get("Host") or "").lower()
+
+    def _host_allowed(self):
+        if self.password:
+            return True
+        host = urlparse("//" + (self.headers.get("Host") or "")).hostname or ""
+        return host in LOOPBACK or host in self.allow_hosts
+
+    def refused(self):
+        """Send a 403 and return True when this request is not from the app."""
+        if not urlparse(self.path).path.startswith("/api/"):
+            return False
+        if not self._host_allowed():
+            self._send(403, "This server does not answer to %s. If that is your own name for it, "
+                            "start it with --allow-host %s." % (self.headers.get("Host"),
+                            urlparse("//" + (self.headers.get("Host") or "")).hostname))
+            return True
+        if not self._origin_allowed(self.headers.get("Origin")):
+            self._send(403, "This endpoint is for the app itself.")
+            return True
+        return False
 
     # ---------- helpers ----------
     def _send(self, code, body=b"", ctype="text/plain; charset=utf-8"):
@@ -257,13 +305,15 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
-        if not self.password:
-            # Only an unprotected local server invites other origins in. Once a
-            # password is set the app is served from this origin anyway, and a
-            # wildcard would only widen what a hostile page could attempt.
-            self.send_header("Access-Control-Allow-Origin", "*")
+        origin = self.headers.get("Origin")
+        if not self.password and origin and self._origin_allowed(origin):
+            # Only an unprotected local server invites other origins in, and
+            # only the app's own: opened from a file, or from another localhost
+            # port. Once a password is set the app is served from this origin.
+            self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
             self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Vary", "Origin")
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         if self.command != "HEAD":
@@ -320,11 +370,15 @@ class Handler(BaseHTTPRequestHandler):
 
     # ---------- verbs ----------
     def do_OPTIONS(self):
+        if self.refused():
+            return
         self._send(204)
 
     def do_GET(self):
         if not self.authorised():
             return self.demand_password()
+        if self.refused():
+            return
         route = urlparse(self.path).path
         if route == "/api/ping":
             if self.vault is None:
@@ -369,6 +423,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if not self.authorised():
             return self.demand_password()
+        if self.refused():
+            return
         if self.vault is None or urlparse(self.path).path != "/api/open":
             return self._send(404, "not found")
         if not self.allow_open:
@@ -396,6 +452,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_PUT(self):
         if not self.authorised():
             return self.demand_password()
+        if self.refused():
+            return
         route = urlparse(self.path).path
         if self.vault is None or route not in ("/api/file", "/api/asset"):
             return self._send(404, "not found")
@@ -415,6 +473,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_DELETE(self):
         if not self.authorised():
             return self.demand_password()
+        if self.refused():
+            return
         if self.vault is None or urlparse(self.path).path != "/api/file":
             return self._send(404, "not found")
         try:
@@ -560,6 +620,9 @@ def main():
     ap.add_argument("--host", default=os.environ.get("GTD_HOST", "127.0.0.1"))
     ap.add_argument("--password", help="shared password (see --password-file)")
     ap.add_argument("--password-file", help="file whose contents are the password")
+    ap.add_argument("--allow-host", action="append",
+                    default=[h for h in os.environ.get("GTD_ALLOW_HOST", "").split(",") if h],
+                    help="another name this answers to with no password, e.g. a tailscale name")
     ap.add_argument("--insecure", action="store_true",
                     help="allow a non-loopback bind with no password (don't)")
     ap.add_argument("--calendars-only", action="store_true",
@@ -597,6 +660,8 @@ def main():
     Handler.password = password
     Handler.allow_open = args.open_in_editor
     Handler.open_with = args.open_with
+    # The address it was told to bind is a name it answers to, of course.
+    Handler.allow_hosts = tuple(h.strip().lower() for h in args.allow_host + [args.host])
     if args.calendars_only:
         Handler.vault = None
         print("mode  : calendars only - fetches calendar links, keeps no files")

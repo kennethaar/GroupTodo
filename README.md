@@ -182,7 +182,10 @@ tailscale serve --bg 8777                            # HTTPS to your devices
 ```
 
 It refuses to listen beyond localhost without a password of 10+ characters
-(HTTP Basic — put TLS in front). Works in Termux on Android too. For calendar
+(HTTP Basic — put TLS in front). Without a password it answers only the app:
+other websites open in your browser are refused, and so is any name but
+localhost, so a tunnel with no password in front needs `--allow-host <its name>`.
+Works in Termux on Android too. For calendar
 import alone, run `python serve.py --calendars-only`.
 
 ## Privacy and corporate use
