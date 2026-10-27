@@ -6083,6 +6083,15 @@ function readTemplate(name) {
   const path = join(DIRS.lists, name + ".md");
   return V.pages.has(path) ? path : null;
 }
+/* 8/ holds templates, and also the timer's settings and the checklists, which
+   are pages of their own and not templates. */
+function isTemplatePath(path) {
+  if (!path.startsWith(DIRS.lists + "/") || path === TIMER_PATH) return false;
+  // k.md is the template checklists are made from, and says type:: checklist itself.
+  if (baseName(path) in TEMPLATE_DEFAULTS) return true;
+  const props = getPage(path)?.props || {};
+  return !/^checklist$/i.test(trim(props.type || "")) && !trim(props.kind || "");
+}
 /* Every template that applies, most specific first. */
 function resolveTemplates({date, kind}) {
   const cands = templateCandidates(date, kind);
@@ -29199,7 +29208,7 @@ function viewPage() {
         onclick: () => go("pages", {sub: "mindmap", graphFocus: (V.space || "") + "\u0000" + path})}, "Mind map"),
       el("button", {class: "btn sm ghost", title: "More", "aria-label": "More", onclick: () => openPageMenu(path)}, "⋯"))));
 
-  if (path.startsWith(DIRS.lists + "/")) c.append(templateHelp());
+  if (isTemplatePath(path)) c.append(templateHelp());
   // The tour explains itself on its own page and nowhere else.
   if (isTourProject(path)) { const tc = tourCard(path); if (tc) c.append(tc); }
   /* A day page is where a meeting gets written down, so the one explanation
