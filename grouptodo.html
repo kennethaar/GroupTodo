@@ -31392,9 +31392,9 @@ function bareLineName(block) {
 /* A line that is nothing but a project's link -- alt-1 made it out of the
    words that were there -- and then turns out to be one step. Making it a
    task takes the 1/ back off: the page stays, as a plain page with whatever
-   was written on it, and the line becomes the task linking to it. A plain
-   page of that name already there takes the project's lines in. Returns
-   false for any other line. */
+   was written on it -- outcome, area and the rest -- and the line becomes
+   the task linking to it. A plain page of that name already there takes
+   the project's lines in. Returns false for any other line. */
 function projectLineToTask(path, block) {
   if (block.state || bareLineName(block)) return false;
   const proj = linksIn(block.title).map(findExistingPage).find(p => p && p !== path && statusDirOf(p) && !isHorizonPage(p));
@@ -31406,8 +31406,8 @@ function projectLineToTask(path, block) {
   const snap = structuredClone(getPage(path)), props = structuredClone(getPage(proj).props), space = Spaces.active;
   // moveFile rewrites every link on the way, this line's among them.
   if (!moveFile(proj, plain)) return true;
-  const kept = getPage(plain);
-  for (const k of ["status", "area", "reviewed", "deadline", "depends_on"]) delete kept.props[k];
+  // Only the status goes, which the task now carries; the rest is the page's own.
+  delete getPage(plain).props.status;
   touch(plain);
   block.state = st;
   applyTodoTemplate(block);
