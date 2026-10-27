@@ -7052,6 +7052,7 @@ function projectOfBlock(path, block) {
    one -- can be turned back into an ordinary note without retyping it. */
 function cycleState(path, block) {
   if (block.state && nextStage(path, block)) return;
+  if (projectLineToTask(path, block)) return;
   const order = ["TODO", "DOING", "WAIT", "DONE", null];
   const i = order.indexOf(block.state ?? null);
   setBlockState(path, block, order[(i + 1) % order.length]);
@@ -21954,7 +21955,9 @@ const flyMakeTask = (path, block) => { if (!block.state) { block.state = "TODO";
 function flyHead(k) {
   if (!FLY) return;
   const {path, block} = FLY;
-  if (k === "kind") { flyCommit(); if (!projectLineToTask(path, block)) setBlockState(path, block, block.state ? null : "TODO"); focusBlock(block.id); return; }
+  /* Off the line first: losing focus writes the line's words back, and a
+     [[1/…]] written back over a project made into a task brings its page back. */
+  if (k === "kind") { flyCommit(); const b = block; FLY.txt.blur(); if (!projectLineToTask(path, b)) setBlockState(path, b, b.state ? null : "TODO"); focusBlock(b.id); return; }
   if (k === "mkproj") { flyCommit(); const b = block; FLY.txt.blur(); makeFromLine(path, b, "project"); return; }
   if (k === "mkzet") { flyCommit(); const b = block; FLY.txt.blur(); makeFromLine(path, b, "zettel"); return; }
   if (k === "ttype") { flyCommit(); const b = block; FLY.txt.blur(); openTaskTypePicker(path, b); return; }
