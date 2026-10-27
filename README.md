@@ -100,7 +100,7 @@ Next, Waiting for and Projects export to CSV for Excel.
 - **Add to calendar** as an `.ics` file (private, offline) or an Outlook/Google link. A task with a time goes in at that time, for as long as its dots say (an hour without); one without a time is all day. Nothing is ever subscribed.
 - **Dates in the words.** The box at the top reads *Call Bob fri 2pm*, *Pay rent by 1 nov*, *every monday*, Norwegian days and times, and Taskwarrior's `due:`, `until:`, `hold:`, `remind:` and `pri:`. A toast says what it read, with **Keep the words** to undo. A time is written after the day: `SCHEDULED:: [[2026-10-23]] 14:00`.
 - **Reminders.** A task with a time gets a toast 10 minutes before (or `remind::`), which stays until answered. Today counts down to the next timed task and the next deadline; birthdays are on the calendar.
-- **Urgency.** Next and the project list are ordered by Taskwarrior's urgency: deadline, scheduled day, `priority::`, started, context, age, project chain. The ↑ chip on a row says why.
+- **Urgency.** Next and the project list are ordered by Taskwarrior's urgency: deadline, scheduled day, `priority::`, started, context, age, project chain. Point at a row and its ↑ chip says why.
 - **On hold.** `hold:: [[date]]` on a task or a whole project hides it until that day. `until::` cancels a task once its day has passed; birthday tasks go once the birthday has.
 - **Burndown.** The Report shows open tasks per day over its window, with the numbers as a table.
 - **Phone and PC.** On a phone, **Send** sits in the top bar with a dot while changes are unsent; with `work_hours::` the PC and the phone ask for each other's file at the start and end of the day.
@@ -227,7 +227,9 @@ The app keeps to itself otherwise. It speaks up unasked only for what has a
 time on it: meetings, timed tasks and birthdays. *Since you were last here*
 and, on days it is worth it, a *Morning review* link wait on Today. The
 12:00 and 17:00 "still @context?" check is off until you turn it on in
-**Vault & sync → Context check**.
+**Vault & sync → Context check**. On Next and Waiting for, *no verb* and
+*no context* and the plain *To do* word show only on the row you point at;
+the weekly review shows them all.
 
 ## Languages
 
