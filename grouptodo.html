@@ -1161,6 +1161,13 @@ details>summary:hover{color:var(--fg2)}
 .blk>.line:hover>.linemenu,.blk>.line.raw>.linemenu{opacity:1}
 .blk>.line>.linemenu:hover,.blk>.line>.linemenu[aria-expanded="true"]{background:var(--bg4);color:var(--fg)}
 .blk .txt{flex:1;min-width:0;word-wrap:break-word;overflow-wrap:anywhere;font-size:14px;padding:1px 0}
+/* A task's words go on under its state, not under its own first word: the
+   words start back at the badge's left edge and only their first line steps
+   past it (58px badge + the line's 7px gap). The badge sits above them so the
+   first line's indent is still the badge to a click. */
+.blk>.line>.tick{position:relative;z-index:1}
+.blk>.line>.tick~.txt{margin-left:-65px;text-indent:65px}
+.blk>.line>.tick~.txt *{text-indent:0}
 /* A dropped picture shows at a size you can read a line around, and clicking
    it opens the file itself. */
 .txt img.asset,.note img.asset{display:block;max-width:min(100%,520px);max-height:360px;
@@ -20965,7 +20972,7 @@ function outlineBlock(path, page, b, opts = {}) {
   trackers: true,
   onTrackerWizard: () => {
     txt.blur();
-    openTrackerWizard((title, when) => insertTracker(path, b, title, when), path);
+    openTrackerWizard((title, when) => insertTracker(path, b, title, when), path, {path, block: b});
   }});
   /* Typing a state word and a space at the start of a line makes it that kind
      of line there and then -- "TODO " a todo, "WAIT " a waiting-for -- the way
@@ -21861,7 +21868,7 @@ function flyHead(k) {
   if (k === "mkarea") { flyCommit(); const b = block; FLY.txt.blur(); areaFromLine(path, b); return; }
   if (k === "more") { flyCommit(); const b = block; FLY.txt.blur(); openTaskDetail(path, b); return; }
   if (k === "meet") { flyCommit(); const b = block; FLY.txt.blur(); openMeetingForm(path, b); return; }
-  if (k === "trk") { flyCommit(); const b = block; FLY.txt.blur(); openTrackerPicker((title, when) => insertTracker(path, b, title, when), path); return; }
+  if (k === "trk") { flyCommit(); const b = block; FLY.txt.blur(); openTrackerPicker((title, when) => insertTracker(path, b, title, when), path, {path, block: b}); return; }
   if (k === "refile") { flyCommit(); const b = block; FLY.txt.blur(); openRefile(path, b); return; }
   if (k === "embedref") { flyCommit(); const b = block; FLY.txt.blur(); copyEmbedOf(path, b); return; }
   FLY.open = FLY.open === k ? null : k;
@@ -22182,7 +22189,7 @@ function timeLogProjectRef(name) {
    little off is corrected before it is a fact. `entry` is a #timelog line to
    change; `from` is the line the command was typed on, used for the visit when
    it is an empty line on the same day, and cleared away otherwise. */
-function openTimeForm(path, entry, {leaving = false, from = null, project = ""} = {}) {
+function openTimeForm(path, entry, {leaving = false, from = null, project = "", person = ""} = {}) {
   const space = V.space;
   const last = entry ? null : lastTimeLog();
   const people = acrossNames(() => [...allPeople().map(personName), ...members().map(m => m.name)]);
@@ -22190,7 +22197,7 @@ function openTimeForm(path, entry, {leaving = false, from = null, project = ""} 
   const lists = el("span", {},
     el("datalist", {id: "tlpeople"}, ...people.map(n => el("option", {value: n}))),
     el("datalist", {id: "tlprojects"}, ...projects.map(n => el("option", {value: n}))));
-  const who = el("input", {value: entry ? timeLogWho(entry) : last?.who || "", list: "tlpeople", placeholder: "Who came"});
+  const who = el("input", {value: entry ? timeLogWho(entry) : person || last?.who || "", list: "tlpeople", placeholder: "Who came"});
   const proj = el("input", {value: entry ? timeLogProj(entry) : project || last?.project || "", list: "tlprojects",
     placeholder: "Which project"});
   const fromDay = from && from.path && dayOfPath(from.path);
@@ -29284,18 +29291,42 @@ const pageHasTracker = (page, name) => {
 };
 /* On a day page a tracker is one of the page's values, at the top with the
    rest of them, not a line among the day's notes. A tracker line with nothing
-   under it is moved up there; it keeps its values. */
+   under it is moved up there; it keeps its values. So are the ones at the top
+   of the page with only trackers above them, parents and siblings both --
+   hours written under hours -- however deep. */
 function hoistDayTrackers(page) {
   let moved = false;
   page.props = page.props || {};
-  page.blocks = (page.blocks || []).filter(b => {
+  const lift = t => { if (!(t.key in page.props)) page.props[t.key] = t.raw; moved = true; };
+  // The run of tracker lines the page opens with: true while it is unbroken.
+  const leading = blocks => {
+    while (blocks.length) {
+      const b = blocks[0], t = !b.state && parseTracker(b.title);
+      if (!t || !leading(b.children || [])) return false;
+      blocks.shift(); lift(t);
+    }
+    return true;
+  };
+  leading(page.blocks = page.blocks || []);
+  page.blocks = page.blocks.filter(b => {
     const t = !b.state && !(b.children || []).length && parseTracker(b.title);
     if (!t) return true;
-    if (!(t.key in page.props)) page.props[t.key] = t.raw;
-    moved = true;
+    lift(t);
     return false;
   });
   return moved;
+}
+/* The tracker the dialog or a schedule names, already a line among the notes:
+   moved up to the top of the day rather than left where the section misses it. */
+function liftTrackerLine(page, name) {
+  if (Object.keys(page.props || {}).some(k => parseTracker(k + "::")?.name === name)) return false;
+  let hit = null;
+  walkBlocks(page.blocks, b => { const t = !hit && !b.state && !(b.children || []).length && parseTracker(b.title); if (t && t.name === name) hit = {b, t}; });
+  if (!hit) return false;
+  removeBlockFrom(page, hit.b);
+  page.props = page.props || {};
+  page.props[hit.t.key] = hit.t.raw;
+  return true;
 }
 function insertTracker(path, b, title, when) {
   const page = getPage(path);
@@ -29311,6 +29342,7 @@ function insertTracker(path, b, title, when) {
     if (spare && at >= 0) sibs.splice(at, 1);
     page.props = page.props || {};
     if (!pageHasTracker(page, t.name)) page.props[t.key] = t.raw;
+    else liftTrackerLine(page, t.name);
   } else if (here) {
     if (spare) b.title = title;
     else siblingsOf(page, b).splice(siblingsOf(page, b).indexOf(b) + 1, 0, newBlock({title}, false));
@@ -29443,6 +29475,7 @@ function syncTrackerDays(name, key, names, {remove = false} = {}) {
     const page = getPage(p);
     const on = whenOnDay(names, d), has = pageHasTracker(page, name);
     if (on && !has) { page.props = page.props || {}; page.props[key] = ""; touch(p); added++; }
+    else if (on && liftTrackerLine(page, name)) touch(p);
     else if (!on && has && remove) {
       const keys = Object.keys(page.props || {}).filter(k => parseTracker(k + "::")?.name === name && !trim(String(page.props[k] || "")));
       if (!keys.length) continue;
@@ -29686,14 +29719,14 @@ function trackerSuggestRows(q) {
   return rows;
 }
 /* The line menu's way in: the trackers already in use, or the wizard. */
-function openTrackerPicker(onDone, path) {
+function openTrackerPicker(onDone, path, line = null) {
   const items = trackerList();
-  if (!items.length) { openTrackerWizard(onDone, path); return; }
+  if (!items.length) { openTrackerWizard(onDone, path, line); return; }
   listPicker({
     title: "Insert tracker", hint: "the same name keeps one history", items, typeahead: true,
     label: g => trackerTitle(g.name), detail: g => trackerKindWords(g.code),
     onPick: g => onDone(g.key + "::", null),
-    footer: el("button", {class: "btn ghost", onclick: () => openTrackerWizard(onDone, path)}, "+ Set up a new tracker"),
+    footer: el("button", {class: "btn ghost", onclick: () => openTrackerWizard(onDone, path, line)}, "+ Set up a new tracker"),
   });
 }
 
@@ -29714,7 +29747,7 @@ const TRACKER_KINDS = [
 const trackerSlug = s => String(s || "").toLowerCase().normalize("NFC").replace(/[\s_]+/g, "-")
   .replace(/[^\p{L}\p{N}-]/gu, "").replace(/-{2,}/g, "-").replace(/^-|-$/g, "");
 
-function openTrackerWizard(onDone, path) {
+function openTrackerWizard(onDone, path, line = null) {
   let kind = TRACKER_KINDS[0], sets = 3;
   /* When: just this line, or a schedule. The day it is set up on is where
      the picker starts. */
@@ -29741,6 +29774,11 @@ function openTrackerWizard(onDone, path) {
     for (const k of TRACKER_KINDS) kinds.append(el("button", {class: "trkkind" + (k === kind ? " on" : ""), type: "button",
       onclick: () => { kind = k; drawKinds(); sync(); }},
       el("b", {}, k.label), el("span", {}, k.hint)));
+    /* Not a tracker: somebody's hours on site are a visit, so this hands over
+       to Check in with the name typed so far, rather than counting as flex. */
+    kinds.append(el("button", {class: "trkkind", type: "button",
+      onclick: () => { closeModal(); openTimeForm(null, null, {from: line || {path, block: null}, person: trim(name.value)}); }},
+      el("b", {}, "Someone on site"), el("span", {}, "a craftsman or helper: when they came and left -- opens Check in")));
   };
   const save = () => {
     const k = keyOf();
