@@ -3482,8 +3482,10 @@ function getPage(path) { return V.pages.get(path); }
 function putPage(path, page, {silent = false} = {}) {
   /* A page put in place of another remembers only the meetings it holds
      itself. Inheriting the old page's took every meeting a synced or merged
-     copy did not have yet for one you had deleted, and cal_skip:: then kept
-     them all off the day for good. */
+     copy did not have yet for one you had deleted, and cal_deleted:: then kept
+     them all off the day for good. A page that remembers nothing yet (a merge,
+     a clone) remembers what it holds, so the first delete on it still counts. */
+  if (!page._cal && path.startsWith(JOURNALS + "/")) calRemember(page, calKeysOn(page));
   V.pages.set(path, page);
   V.removed.delete(path);
   if (!silent) { V.dirty.add(path); scheduleFlush(); }
@@ -3523,33 +3525,33 @@ function touchHere(path) {
 }
 
 /* A calendar meeting deleted from a day page, or cut from it to be pasted
-   somewhere else, stays gone: its key goes on the page's one cal_skip:: line,
+   somewhere else, stays gone: its key goes on the page's one cal_deleted:: line,
    and the next import does not bring it back. Each day page remembers which
    meetings it held (page._cal, not written), so any edit that takes one away
    counts -- except the importer's own, which run inside calQuietly. A meeting
    that comes back to the page, by undo or a paste, comes off the line. */
 let CAL_OWN_EDIT = 0;
 function calQuietly(fn) { CAL_OWN_EDIT++; try { return fn(); } finally { CAL_OWN_EDIT--; } }
-function calSkips(page) { return new Set(trim(page?.props?.cal_skip || "").split(/[\s,]+/).filter(Boolean)); }
+function calSkips(page) { return new Set(trim(page?.props?.cal_deleted || "").split(/[\s,]+/).filter(Boolean)); }
 function calKeysOn(page) {
   const keys = new Set();
   walkBlocks(page.blocks, b => { const k = blockProp(b, "cal_uid"); if (k) keys.add(k); });
   return keys;
 }
 function calRemember(page, keys) { Object.defineProperty(page, "_cal", {value: keys, writable: true, configurable: true}); }
-/* The first build of cal_skip:: wrote it for meetings nobody deleted -- a
-   synced copy of a day without them yet was taken for a deletion -- and the
-   import then kept them away. Once per area those lines go, and the meetings
-   come back on the next sync. */
-function resetCalSkipsOnce() {
-  if (getSetting("cal_skip_reset")) return;
+/* The first build wrote cal_skip:: for meetings nobody deleted -- a synced
+   copy of a day without them yet was taken for a deletion -- and the import
+   then kept them away. Those lines go wherever they are found. Deletes since
+   are on cal_deleted::, so no "done once" flag is needed: one kept in GTD.md
+   was lost whenever another device or tab wrote that file, and every reload
+   then wiped the meetings you had deleted since. */
+function dropOldCalSkips() {
   for (const p of allPages(isJournalPath)) {
     const page = getPage(p);
     if (page?.props?.cal_skip == null) continue;
     delete page.props.cal_skip;
     touch(p);
   }
-  setSetting("cal_skip_reset", "1");
 }
 function calNoteGone(path, page) {
   if (!path.startsWith(JOURNALS + "/")) return;
@@ -3559,8 +3561,8 @@ function calNoteGone(path, page) {
   if (was && !CAL_OWN_EDIT) for (const k of was) if (!now.has(k)) skip.add(k);
   for (const k of now) skip.delete(k);
   if (skip.size === before.size && [...skip].every(k => before.has(k))) return;
-  if (skip.size) page.props.cal_skip = [...skip].join(" ");
-  else delete page.props.cal_skip;
+  if (skip.size) page.props.cal_deleted = [...skip].join(" ");
+  else delete page.props.cal_deleted;
 }
 
 function removePage(path) {
@@ -4353,7 +4355,7 @@ function migrateVault() {
   migrateCancelled();
   migrateJournals();
   migrateTemplates();
-  resetCalSkipsOnce();
+  dropOldCalSkips();
   return moved;
 }
 
@@ -22825,7 +22827,7 @@ function routeCalendarMeetings(home, feed, also, fromMs, toMs, only = null) {
   for (const space of only ? [only] : [...LOADED.keys()]) {
     if (space === home || !LOADED.has(space)) continue;
     inSpace(space, () => calQuietly(() => {
-      resetCalSkipsOnce();
+      dropOldCalSkips();
       const there = new Map(), days = new Set(), skip = new Set();
       dayBlocks((b, path, d) => {
         const k = blockProp(b, "cal_uid");
@@ -23104,7 +23106,7 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
   const firstDay = isoOf(new Date(fromMs)), lastDay = isoOf(new Date(toMs));
   const kept = calKept;
   return inSpace(space, () => calQuietly(() => {
-    resetCalSkipsOnce();
+    dropOldCalSkips();
     let added = 0, changed = 0, gone = 0;
     const have = new Map(), skip = new Set();
     for (const p of allPages(isJournalPath)) {
@@ -23155,10 +23157,10 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
     // A skipped meeting that has left the calendar needs no more remembering.
     for (const p of allPages(isJournalPath)) {
       const d = dayOfPath(p), page = getPage(p);
-      if (!d || d < firstDay || d >= lastDay || !page.props?.cal_skip) continue;
+      if (!d || d < firstDay || d >= lastDay || !page.props?.cal_deleted) continue;
       const had = calSkips(page), left = [...had].filter(k => seen.has(k));
       if (left.length === had.size) continue;
-      if (left.length) page.props.cal_skip = left.join(" "); else delete page.props.cal_skip;
+      if (left.length) page.props.cal_deleted = left.join(" "); else delete page.props.cal_deleted;
       touch(p);
     }
     // A calendar lists its meetings in whatever order it keeps them, so each day's are put in time order.
