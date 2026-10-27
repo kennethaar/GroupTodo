@@ -2961,6 +2961,7 @@ function parsePage(text) {
   }
   // drop trailing blank body lines
   walkBlocks(page.blocks, b => { while (b.body.length && trim(b.body[b.body.length-1]) === "") b.body.pop(); });
+  calRemember(page, calKeysOn(page));
   return page;
 }
 
@@ -3450,6 +3451,9 @@ function setSync(state, text) {
 function getPage(path) { return V.pages.get(path); }
 
 function putPage(path, page, {silent = false} = {}) {
+  // A page put in place of another still remembers the meetings that one held.
+  const old = V.pages.get(path);
+  if (old && old !== page && old._cal) calRemember(page, old._cal);
   V.pages.set(path, page);
   V.removed.delete(path);
   if (!silent) { V.dirty.add(path); scheduleFlush(); }
@@ -3480,11 +3484,39 @@ function touchHere(path) {
     const me = stampName();
     if (me) props.updated_by = me;
     else delete props.updated_by;
+    calNoteGone(path, page);
   }
   V.dirty.add(path);
   scheduleFlush();
   scheduleAutoSync();
   if (path.startsWith(DIRS.lists + "/") && !TEMPLATE_BACKFILL_BUSY) scheduleTemplateRefresh(path);
+}
+
+/* A calendar meeting deleted from a day page, or cut from it to be pasted
+   somewhere else, stays gone: its key goes on the page's one cal_skip:: line,
+   and the next import does not bring it back. Each day page remembers which
+   meetings it held (page._cal, not written), so any edit that takes one away
+   counts -- except the importer's own, which run inside calQuietly. A meeting
+   that comes back to the page, by undo or a paste, comes off the line. */
+let CAL_OWN_EDIT = 0;
+function calQuietly(fn) { CAL_OWN_EDIT++; try { return fn(); } finally { CAL_OWN_EDIT--; } }
+function calSkips(page) { return new Set(trim(page?.props?.cal_skip || "").split(/[\s,]+/).filter(Boolean)); }
+function calKeysOn(page) {
+  const keys = new Set();
+  walkBlocks(page.blocks, b => { const k = blockProp(b, "cal_uid"); if (k) keys.add(k); });
+  return keys;
+}
+function calRemember(page, keys) { Object.defineProperty(page, "_cal", {value: keys, writable: true, configurable: true}); }
+function calNoteGone(path, page) {
+  if (!path.startsWith(JOURNALS + "/")) return;
+  const was = page._cal, now = calKeysOn(page);
+  calRemember(page, now);
+  const before = calSkips(page), skip = new Set(before);
+  if (was && !CAL_OWN_EDIT) for (const k of was) if (!now.has(k)) skip.add(k);
+  for (const k of now) skip.delete(k);
+  if (skip.size === before.size && [...skip].every(k => before.has(k))) return;
+  if (skip.size) page.props.cal_skip = [...skip].join(" ");
+  else delete page.props.cal_skip;
 }
 
 function removePage(path) {
@@ -22618,19 +22650,21 @@ function routeCalendarMeetings(home, feed, also, fromMs, toMs, only = null) {
   };
   for (const space of only ? [only] : [...LOADED.keys()]) {
     if (space === home || !LOADED.has(space)) continue;
-    inSpace(space, () => {
-      const there = new Map(), days = new Set();
+    inSpace(space, () => calQuietly(() => {
+      const there = new Map(), days = new Set(), skip = new Set();
       dayBlocks((b, path, d) => {
         const k = blockProp(b, "cal_uid");
         if (k) (there.get(k) || there.set(k, []).get(k)).push({b, path, d});
       });
+      // A copy deleted or moved in this area is not sent again, nor moved back.
+      for (const p of allPages(isJournalPath)) calSkips(getPage(p)).forEach(k => skip.add(k));
       for (const [k, m] of mine) {
         const all = there.get(k) || [];
         // Ours: this calendar's, here (a synced copy, or from when this was your own area).
         const copy = all.find(x => blockProp(x.b, "cal_feed") === feed);
         const want = calTargets(m.b, also).includes(space);
         if (want && !copy) {
-          if (all.length) continue;
+          if (all.length || skip.has(k)) continue;
           const id = blockProp(m.b, "branch_sync_id") || uid();
           if (!blockProp(m.b, "branch_sync_id")) { m.b.props.branch_sync_id = id; inSpace(home, () => touchHere(m.path)); }
           const c = cloneBlock(m.b);
@@ -22646,7 +22680,7 @@ function routeCalendarMeetings(home, feed, also, fromMs, toMs, only = null) {
             Object.assign(copy.b, cloneBlock(m.b), {id: copy.b.id});
             touchHere(copy.path); r.sent++;
           }
-          if (copy.d !== m.d) {                   // the meeting moved to another day
+          if (copy.d !== m.d && !skip.has(k)) {   // the meeting moved to another day
             removeBlockFrom(getPage(copy.path), copy.b);
             const path = ensureJournal(m.d);
             getPage(path).blocks.push(copy.b);
@@ -22657,7 +22691,7 @@ function routeCalendarMeetings(home, feed, also, fromMs, toMs, only = null) {
       for (const [k, list] of there)
         if (!mine.has(k)) for (const x of list) if (blockProp(x.b, "cal_feed") === feed) letGo(x, true);
       for (const path of days) calSortDay(path);
-    });
+    }));
   }
   return r;
 }
@@ -22666,7 +22700,7 @@ function routeCalendarMeetings(home, feed, also, fromMs, toMs, only = null) {
    meeting chosen for that area on its own, or one with something written under it. */
 function unrouteCalendar(feed, space) {
   if (!LOADED.has(space)) return 0;
-  return inSpace(space, () => {
+  return inSpace(space, () => calQuietly(() => {
     let n = 0;
     for (const p of allPages(isJournalPath)) {
       if (!dayOfPath(p)) continue;
@@ -22679,7 +22713,7 @@ function unrouteCalendar(feed, space) {
       }
     }
     return n;
-  });
+  }));
 }
 
 function calProxyBases() {
@@ -22894,19 +22928,21 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
   const hm = ms => { const d = new Date(ms); return pad2(d.getHours()) + ":" + pad2(d.getMinutes()); };
   const firstDay = isoOf(new Date(fromMs)), lastDay = isoOf(new Date(toMs));
   const kept = calKept;
-  return inSpace(space, () => {
+  return inSpace(space, () => calQuietly(() => {
     let added = 0, changed = 0, gone = 0;
-    const have = new Map();
+    const have = new Map(), skip = new Set();
     for (const p of allPages(isJournalPath)) {
       const d = dayOfPath(p);
       if (d) for (const b of getPage(p).blocks || [])
         if (blockProp(b, "cal_feed") === feed) have.set(blockProp(b, "cal_uid"), {path: p, b, d});
+      calSkips(getPage(p)).forEach(k => skip.add(k));
     }
     const seen = new Set(), days = new Set();
     for (const o of meetings) {
       seen.add(o.key);
       const hit = have.get(o.key);
-      if (!hit && o.cancelled) continue;
+      // Deleted, or cut to somewhere else: not brought back.
+      if (!hit && (o.cancelled || skip.has(o.key))) continue;
       const title = "#meeting " + (o.cancelled ? "Cancelled: " : "") + o.summary.replace(/^cancel(l)?ed:\s*/i, "");
       const time = o.allDay ? "" : hm(o.start) + (o.end > o.start ? "–" + hm(o.end) : "");
       const att = o.people.map(linkKnownNames).join(", ");
@@ -22922,14 +22958,15 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
         continue;
       }
       const b = hit.b, was = [b.title, blockProp(b, "time"), blockProp(b, "attendees")].join("\n");
-      if (hit.path !== path) {                    // moved to another day
+      // Moved to another day in the calendar; one you moved yourself stays where you put it.
+      if (hit.path !== path && !skip.has(o.key)) {
         const old = getPage(hit.path);
         old.blocks = old.blocks.filter(x => x !== b);
         page.blocks.push(b);
         touch(hit.path); touch(path); changed++;
       }
       b.title = title; setOrDropProp(b, "time", time); setOrDropProp(b, "attendees", att);
-      if ([b.title, blockProp(b, "time"), blockProp(b, "attendees")].join("\n") !== was) { touch(path); changed++; }
+      if ([b.title, blockProp(b, "time"), blockProp(b, "attendees")].join("\n") !== was) { touch(path); touch(hit.path); changed++; }
     }
     for (const [key, hit] of have) {
       if (seen.has(key) || hit.d < firstDay || hit.d >= lastDay) continue;
@@ -22939,10 +22976,19 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
       else continue;
       touch(hit.path); gone++;
     }
+    // A skipped meeting that has left the calendar needs no more remembering.
+    for (const p of allPages(isJournalPath)) {
+      const d = dayOfPath(p), page = getPage(p);
+      if (!d || d < firstDay || d >= lastDay || !page.props?.cal_skip) continue;
+      const had = calSkips(page), left = [...had].filter(k => seen.has(k));
+      if (left.length === had.size) continue;
+      if (left.length) page.props.cal_skip = left.join(" "); else delete page.props.cal_skip;
+      touch(p);
+    }
     // A calendar lists its meetings in whatever order it keeps them, so each day's are put in time order.
     for (const path of days) calSortDay(path);
     return {added, changed, gone};
-  });
+  }));
 }
 
 /* A meeting only says which calendar it came from as a hash (cal_feed::), so
@@ -22982,7 +23028,7 @@ function calImported() {
    One you wrote under stays, as a plain #meeting line the calendar no longer
    touches. Undo puts the pages back as they were. */
 function clearCalendarMeetings(space, feed) {
-  return inSpace(space, () => {
+  return inSpace(space, () => calQuietly(() => {
     let removed = 0, kept = 0;
     const before = new Map();
     for (const p of allPages(isJournalPath)) {
@@ -22997,11 +23043,11 @@ function clearCalendarMeetings(space, feed) {
       }
       touch(p);
     }
-    const undo = () => inSpace(space, () => {
+    const undo = () => inSpace(space, () => calQuietly(() => {
       for (const [p, blocks] of before) { const pg = getPage(p); if (pg) { pg.blocks = blocks.map(cloneBlock); touch(p); } }
-    });
+    }));
     return {removed, kept, undo};
-  });
+  }));
 }
 
 let CAL_SYNCING = false;
