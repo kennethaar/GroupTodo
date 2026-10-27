@@ -223,6 +223,12 @@ actions start with a physical verb, projects state an outcome, stuck projects
 (nothing actionable), waits older than 14 days, people due a check-in, and
 blocked projects.
 
+The app keeps to itself otherwise. It speaks up unasked only for what has a
+time on it: meetings, timed tasks and birthdays. *Since you were last here*
+and, on days it is worth it, a *Morning review* link wait on Today. The
+12:00 and 17:00 "still @context?" check is off until you turn it on in
+**Vault & sync → Context check**.
+
 ## Languages
 
 Each area has `pages/8/Languages/`, one file per language. The app writes
