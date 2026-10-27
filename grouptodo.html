@@ -20178,8 +20178,13 @@ function linkKnownNames(text) {
       const multi = /\s/.test(w.word);
       if (!multi && w.word.length < 3) continue;
       const esc_ = w.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const re = new RegExp("(^|[^\\p{L}\\p{N}_/])(" + esc_ + ")(?![\\p{L}\\p{N}_])", multi ? "iu" : "u");
-      const m = re.exec(seg);
+      const re = new RegExp("(^|[^\\p{L}\\p{N}_/])(" + esc_ + ")(?![\\p{L}\\p{N}_])", multi ? "giu" : "gu");
+      /* A sentence starts with a capital whatever the word is, so there the
+         capital says nothing: "Review the budget" is not the page Review. A
+         name with a capital of its own further in -- GroupTodo, NRK -- still is. */
+      const plainCap = !multi && w.word.slice(1) === w.word.slice(1).toLowerCase();
+      let m;
+      while ((m = re.exec(seg)) && plainCap && sentenceStart(parts.slice(0, i).join("") + seg.slice(0, m.index + m[1].length))) {}
       if (!m) continue;
       const at = m.index + m[1].length;
       const link = "[[" + w.ref + (w.label ? "][" + w.label + "]]" : "]]");
@@ -20195,6 +20200,9 @@ function linkKnownNames(text) {
   }
   return parts.join("");
 }
+// The start of the line, after its TODO, a [[date]] or a link, or after a full stop.
+const sentenceStart = before =>
+  /(?:^|[.!?]\s)[\s"'(*_-]*$/u.test(String(before).replace(/^\s*[A-Z]{3,9}\s+/, "").replace(/^(?:\s*\[\[[^\]]*\]\])+/, ""));
 
 /* ---------- what the caret is sitting after ---------- */
 /* An unclosed [[ immediately before the caret, and whatever has been typed
