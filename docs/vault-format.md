@@ -50,6 +50,7 @@ An *area* (Work, Home, …) is one folder. Areas never share or nest folders.
 - **Journals** are `journals/<Person Name>/YYYY-MM-DD.md`, with the person's full name as the folder name (max 40 characters, same character rules). A day page is linked as `[[2026-10-05]]`.
 - Files the app writes for itself and never reads as pages: `pages/**/_<x>_for ….md` and `_GroupToDo_for this folder.md`. Do not create these yourself.
 - `pages/8/todo.md`, `pages/8/1.md` and similar are templates the app creates when they are missing. Do not create them yourself.
+- `planner/` (outbox.json, state.json, sent.json) is there only when the area is sent to Microsoft Planner (experimental): the app and a Power Automate flow write it, never by hand. See [planner-sync.md](planner-sync.md).
 - `pages/8/timer.md` holds the sidebar timer's usual length as `minutes:: 25`. Optional; without it the timer runs 2 minutes.
 - `pages/8/Languages/<Language>.md` are the app's words in other languages, one `English => translation` line each. They are not pages; the app writes `English.md` itself.
 - `pages/8/*.css` are your own stylesheets, laid over the app's look in file-name order (for example a monospace font: `.blk .txt{font-family:monospace}`). The app reads them and never writes them. They work from a chosen folder or the sync server, not from browser storage.
@@ -134,7 +135,7 @@ Where things are said on the line itself:
 
 | Folder | Kind | Typical page properties |
 |---|---|---|
-| `1/ 2/ 3/ 0/ -/` | project | `title`, `status` (e.g. `1 = active`), `outcome` (what done looks like), `area:: [[a/…]]`, `goal:: [[g/…]]`, `org:: [[o/…]]`, `with:: [[p/…]], [[p/…]]`, `depends_on:: [[1/…]], [[1/…]]`, `waiting_for::`, `created`, `reviewed` |
+| `1/ 2/ 3/ 0/ -/` | project | `title`, `status` (e.g. `1 = active`), `outcome` (what done looks like), `area:: [[a/…]]`, `goal:: [[g/…]]`, `org:: [[o/…]]`, `with:: [[p/…]], [[p/…]]`, `depends_on:: [[1/…]], [[1/…]]`, `waiting_for::`, `planner_id::` (its Microsoft Planner card, written by the sync; keep it), `created`, `reviewed` |
 | `p/` | person | `title`, `type:: person`, `member:: true` (only for people who use GroupToDo in this area), `aliases:: JS, Johnny` (short names; `[[p/John Smith][JS]]` reads as JS) |
 | `o/` | organisation | `title`, `type:: org`, `aliases:: Storebrand` (short names, as for people), `role:: supplier` (left out of customers and time; default is client), `share:: 60` (a standard client: added to new projects, its share of their time) |
 | `c/` | context | `title`, `type:: context` |
