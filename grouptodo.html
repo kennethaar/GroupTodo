@@ -23727,34 +23727,36 @@ function viewToday() {
     node.addEventListener("focusin", activate, true);
     return node;
   };
-  /* With journals side by side, the trackers stand in the same columns, as
-     wide as the journal under them, and each area adds its own. */
-  const trkCols = !who && spaces.length > 1;
+  /* With journals side by side, the trackers and what is due stand in the
+     same columns, as wide as the journal under them: each area's own above
+     its journal, and each area adds its own trackers. */
+  const byArea = !who && spaces.length > 1;
+  const areaCols = cell => journalWidths(el("div", {class: "jgrid"}, ...spaces.map(sp => el("section", {class: "jcard trkcol"},
+    el("header", {class: "jhead"}, spaceBadge(sp)), cell(sp)))), spaces);
+  const tasksBy = (acts, empty) => byArea ? areaCols(sp => taskCard(acts.filter(a => a.space === sp), empty)) : taskCard(acts, empty);
 
   const sections = [
-    trkCols ? {id: "facts", title: "Trackers", count: trackers,
-     body: () => el("div", {}, journalWidths(el("div", {class: "jgrid"}, ...spaces.map(sp => el("section", {class: "jcard trkcol"},
-       el("header", {class: "jhead"}, spaceBadge(sp)),
-       inSpace(sp, () => {
-         const path = dayPath(sp);
-         if (!path) return trkNode(sp, null, [emptyCard("Nothing tracked on " + dayName(day) + " yet. ",
-           el("button", {class: "textbtn", onclick: () => { inSpace(sp, () => ensureJournal(day)); render(); }}, "Track this day"))]);
-         return trkNode(sp, path, [dayTrackersBlock(path, {move: sp})]);
-       })))), spaces), sheetsToday(day))} :
+    byArea ? {id: "facts", title: "Trackers", count: trackers,
+     body: () => el("div", {}, areaCols(sp => inSpace(sp, () => {
+       const path = dayPath(sp);
+       if (!path) return trkNode(sp, null, [emptyCard("Nothing tracked on " + dayName(day) + " yet. ",
+         el("button", {class: "textbtn", onclick: () => { inSpace(sp, () => ensureJournal(day)); render(); }}, "Track this day"))]);
+       return trkNode(sp, path, [dayTrackersBlock(path, {move: sp})]);
+     })), sheetsToday(day))} :
     /* A day with no page yet still gets its trackers: yesterday's sleep is
        often filled in today, and that day's page is made for it on the spot. */
     !who && !factSpaces.length ? {id: "facts", title: "Trackers", count: 0,
      body: () => emptyCard("Nothing tracked on " + dayName(day) + " yet. ",
        el("button", {class: "textbtn", onclick: () => { inSpace(Spaces.active, () => ensureJournal(day)); render(); }}, "Track this day"))} : null,
-    !trkCols && factSpaces.length ? {id: "facts", title: "Trackers", count: trackers,
+    !byArea && factSpaces.length ? {id: "facts", title: "Trackers", count: trackers,
      body: () => el("div", {class: "card"}, ...factSpaces.map(sp => inSpace(sp, () => {
        const path = dayPath(sp);
        return trkNode(sp, path, [factSpaces.length > 1 ? spaceBadge(sp) : null, dayTrackersBlock(path, {add: sp === trkHome})]);
      })), sheetsToday(day))} : null,
     {id: "due", title: "Due Today & Late", late: now.some(a => a.due < today), count: now.length,
-     body: () => taskCard(now, "Nothing due. Nothing late.")},
+     body: () => tasksBy(now, "Nothing due. Nothing late.")},
     {id: "week", title: "Next 7 Days", count: week.length,
-     body: () => taskCard(week, "Nothing in the next seven days.")},
+     body: () => tasksBy(week, "Nothing in the next seven days.")},
     ...spaces.map(sp => {
       const lines = inSpace(sp, () => {
         const pg = getPage(who ? journalPath(day, who) : journalPath(day));
