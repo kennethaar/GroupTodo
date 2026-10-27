@@ -2701,9 +2701,13 @@ function humanDate(iso) {
   if (iso === shiftISO(t, 1)) return "Tomorrow";
   if (iso === shiftISO(t, -1)) return "Yesterday";
   const sameYear = d.getFullYear() === new Date().getFullYear();
-  return d.toLocaleDateString(undefined,
-    {weekday:"short", day:"numeric", month:"short", year: sameYear ? undefined : "numeric"});
+  return dateFormat(sameYear).format(d);
 }
+/* toLocaleDateString builds a new formatter on every call, which is most of
+   the cost of a list of a thousand dated lines. These are built once. */
+const DATE_FORMATS = {};
+const dateFormat = sameYear => DATE_FORMATS[sameYear] || (DATE_FORMATS[sameYear] = new Intl.DateTimeFormat(undefined,
+  {weekday:"short", day:"numeric", month:"short", year: sameYear ? undefined : "numeric"}));
 function isoWeek(iso) {
   const d = parseISO(iso); if (!d) return null;
   const t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -5836,8 +5840,10 @@ function recentJournals(days = CFG.journalScanDays) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < from) continue;
     out.push(path);
   }
-  // Mine first, then the rest, newest first within each.
-  return out.sort((a, b) => (myJournal(b) - myJournal(a)) || baseName(b).localeCompare(baseName(a)));
+  // Mine first, then the rest, newest first within each. Whose a page is gets
+  // worked out once per page, not once per comparison.
+  const mine = new Map(out.map(p => [p, myJournal(p)]));
+  return out.sort((a, b) => (mine.get(b) - mine.get(a)) || baseName(b).localeCompare(baseName(a)));
 }
 
 /* Every journal there is, however old. The day window above is right for
@@ -9193,14 +9199,21 @@ const orgPeople = org => [...personOrgIndex().values()]
 /* An organisation's open work: every open task that names it on its line,
    and whatever its people are carrying or are named in. */
 function orgOpenWork(org) {
-  const people = orgPeople(org), key = org.toLowerCase();
-  return leafActions().filter(a => {
-    if (!OPEN_STATES[a.state]) return false;
+  const people = new Set(orgPeople(org).filter(p => trim(p)).map(slugPerson)), key = org.toLowerCase();
+  return openWorkLinks().filter(({orgs, persons}) =>
+    orgs.has(key) || [...persons].some(p => people.has(p))).map(x => x.a);
+}
+/* Each open action with the organisations it names and the people it is about,
+   worked out once per render: Organisations asks this once per organisation. */
+function openWorkLinks() {
+  return memo("openWorkLinks", () => openOf(leafActions()).map(a => {
     const links = linksIn(a.block?.title || a.title || "").map(l => trim(l.split("][")[0]));
-    if (links.some(l => l.startsWith("o/") && l.slice(2).toLowerCase() === key)) return true;
-    return people.some(p => (a.assignee ? samePerson(a.assignee, p) : !!a.owner && samePerson(a.owner, p)) ||
-      links.some(l => l.startsWith("p/") && samePerson(l.slice(2), p)));
-  });
+    const orgs = new Set(links.filter(l => l.startsWith("o/")).map(l => l.slice(2).toLowerCase()));
+    const persons = new Set(links.filter(l => l.startsWith("p/") && trim(l.slice(2))).map(l => slugPerson(l.slice(2))));
+    const who = a.assignee || a.owner;
+    if (trim(who)) persons.add(slugPerson(who));
+    return {a, orgs, persons};
+  }));
 }
 
 /* ---------- birthdays ----------
@@ -9287,16 +9300,21 @@ function waitingPersonOf(b, page) {
   const explicit = waitingPersonName(blockProp(b, "waiting_for") || blockProp(b, "waiting-for") || blockProp(b, "waiting_on"));
   if (explicit) return explicit;
   const title = trim(b.title || "");
-  const names = [...new Set(allPeople().map(personName))];
+  // Asked for every WAIT line in the vault, so the list is made once per render.
+  const {names, slugs, lower} = memo("peopleNames\u0000" + (V.space || ""), () => {
+    const names = [...new Set(allPeople().map(personName))];
+    return {names, slugs: new Set(names.filter(Boolean).map(slugPerson)),
+            lower: names.map(n => n.toLocaleLowerCase())};
+  });
   const linked = [...title.matchAll(/\[\[([^\]]+?)(?:\]\[[^\]]*)?\]\]/g)]
     .map(m => waitingPersonName(m[1]))
-    .filter(n => names.some(p => samePerson(p, n)));
+    .filter(n => !!n && slugs.has(slugPerson(n)));
   const unique = [...new Map(linked.map(n => [slugPerson(n), n])).values()];
   if (unique.length === 1) return unique[0];
   if (unique.length > 1) return "";
   const text = plainTitle(title).trim().toLocaleLowerCase();
-  const leading = names.filter(n => {
-    const key = n.toLocaleLowerCase();
+  const leading = names.filter((n, i) => {
+    const key = lower[i];
     return text === key || (text.startsWith(key) && /^[\s,:;.!?()\-]/.test(text.slice(key.length, key.length + 1)));
   }).sort((a, b) => b.length - a.length);
   if (leading.length && (leading.length === 1 || leading[0].length > leading[1].length)) return leading[0];
@@ -10115,18 +10133,17 @@ const state = {
 
 function go(view, opts = {}) {
   navRecord();
-  /* A view keeps the reading you last used. Arriving from somewhere else takes
-     that one; asking for a reading remembers it. */
+  /* Arriving from somewhere else opens a view at its first reading, the list,
+     which is also the quickest to draw. Board and the rest are a click away. */
   if (view !== state.view) {
     state.jz = null;
     state.todayDay = null;
-    if (!("sub" in opts)) state.sub = rememberedSub(view);
+    if (!("sub" in opts)) state.sub = defaultSub(view);
   }
-  if (opts.sub && SUBS[view]) PREF.set("sub." + view, opts.sub);
   /* ---------- arriving at the mind map ----------
      If you came from a page, that page is the middle, rather than whatever
      happens to have the most links in the vault. */
-  const sub = opts.sub || (view === state.view ? state.sub : rememberedSub(view));
+  const sub = opts.sub || (view === state.view ? state.sub : defaultSub(view));
   if (view === "pages" && sub === "mindmap" && opts.graphFocus == null &&
       state.view === "page" && state.pagePath)
     opts = Object.assign({graphFocus: (V.space || "") + "\u0000" + state.pagePath}, opts);
@@ -10250,8 +10267,7 @@ const noteTodoTouched = () => { state.lastTodoTouch = Date.now(); };
    ============================================================ */
 
 /* ---------- the views, and the readings each one has ----------
-   A view keeps the reading you last used, per device, so coming back to the
-   project board does not mean picking it again every time. */
+   The first reading of each is where the view opens. */
 const SUBS = {
   next:     [["list", "List"], ["board", "Board"], ["calendar", "Calendar"]],
   waiting:  [["list", "List"], ["board", "Board"]],
@@ -10262,11 +10278,8 @@ const SUBS = {
   review:   [["steps", "Steps"], ["projects", "Projects"], ["actions", "Actions"]],
 };
 const subOk = (view, sub) => !!(SUBS[view] || []).find(s => s[0] === sub);
-function rememberedSub(view) {
-  const want = PREF.get("sub." + view, "");
-  return subOk(view, want) ? want : (SUBS[view] ? SUBS[view][0][0] : null);
-}
-const subNow = () => subOk(state.view, state.sub) ? state.sub : rememberedSub(state.view);
+const defaultSub = view => SUBS[view] ? SUBS[view][0][0] : null;
+const subNow = () => subOk(state.view, state.sub) ? state.sub : defaultSub(state.view);
 
 /* ---------- the sidebar ---------- */
 /* One picture per kind of thing, the same in the sidebar and in the line menu.
@@ -10359,7 +10372,7 @@ function renderNav() {
     nav.append(el("button", {
       class: "nav-item" + (here ? " active" : "") + (it.small ? " small" : ""),
       "aria-current": here ? "page" : null,
-      onclick: () => go(it.id),
+      onclick: e => goFromNav(it.id, e.currentTarget),
     },
       el("span", {class: "ic bw"}, it.icon),
       el("span", {class: "lbl"}, it.label),
@@ -10370,6 +10383,25 @@ function renderNav() {
         open ? "▾" : "▸") : null));
     if (open) nav.append(...navContexts());
   }
+}
+
+/* A click in the sidebar shows where you are going at once -- the item lit and
+   the heading up -- and draws the view a frame later, so a big vault never
+   leaves the click looking ignored. Clicking on before it is drawn goes to the
+   last one clicked. */
+let NAV_PENDING = 0;
+function goFromNav(view, btn) {
+  if (view === state.view) { go(view); return; }
+  const ticket = ++NAV_PENDING;
+  for (const b of document.querySelectorAll("#nav .nav-item.active")) {
+    b.classList.remove("active"); b.removeAttribute("aria-current");
+  }
+  if (btn) { btn.classList.add("active"); btn.setAttribute("aria-current", "page"); }
+  // Where you were is kept now, before the placeholder scrolls it back to the top.
+  captureScroll();
+  delete $("#content").dataset.scrollView;
+  showNavigationLoading((VIEW_TITLE[view] || "") + "...");
+  requestAnimationFrame(() => setTimeout(() => { if (ticket === NAV_PENDING) go(view); }, 0));
 }
 
 /* The contexts, unfolded under Contexts: each one opens Next narrowed to it,
@@ -11512,7 +11544,7 @@ function tourOf(view, sub, opts = {}) {
   return TOUR_OF_VIEW[view] || null;
 }
 function tourNoteView(view, opts = {}) {
-  const id = tourOf(view, opts.sub || (view === state.view ? subNow() : rememberedSub(view)), opts);
+  const id = tourOf(view, opts.sub || (view === state.view ? subNow() : defaultSub(view)), opts);
   if (id) tourMarkSeen(id);
 }
 
@@ -23518,8 +23550,24 @@ const toggleSection = id => { PREF.set(foldKey(id), sectionFolded(id) ? "" : "1"
 /* The tasks of somebody else in the space, from my side: theirs by name, or
    written on their own day page without anybody else's name on them. */
 function openActionsOf(name) {
-  return leafActions().filter(a => OPEN_STATES[a.state] &&
-    (a.assignee ? samePerson(a.assignee, name) : (a.owner && slugPerson(a.owner) === slugPerson(name))));
+  if (!trim(name)) return [];
+  return openActionsByPerson().get(slugPerson(name)) || [];
+}
+/* Asked once per person on People and in the sidebar count, so the open
+   actions are sorted by person once per render rather than scanned per name. */
+function openActionsByPerson() {
+  return memo("openByPerson", () => {
+    const m = new Map();
+    for (const a of leafActions()) {
+      if (!OPEN_STATES[a.state]) continue;
+      const who = a.assignee || a.owner;
+      if (!trim(who)) continue;
+      const k = slugPerson(who);
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push(a);
+    }
+    return m;
+  });
 }
 
 function todaySection(s) {
@@ -24016,7 +24064,7 @@ function viewWaiting() {
   };
   const by = groupBy(rows);
   const askLine = name => {
-    const owing = rows.filter(a => samePerson(nameOf(a), name));
+    const owing = (by.get(slugPerson(name)) || {items: []}).items;
     const asked = owing.map(a => askedDays(a.block)).filter(d => d != null);
     return isMember(name) ? "in the area" : asked.length ? "asked " + Math.min(...asked) + "d ago" : "never asked";
   };
@@ -24072,13 +24120,32 @@ function viewWaiting() {
     if (!hits.length) return taskCard([], noMatch(q, all.length ? "Nobody owes you anything that matches." : "Nobody owes you anything."));
     // Nobody named first, as on the board: those are the ones still to sort out.
     const unnamed = g => g.name === "Nobody named" ? 0 : 1;
-    return Array.from(groupBy(hits).values())
-      .sort((x, y) => unnamed(x) - unnamed(y) || x.name.localeCompare(y.name)).flatMap(g => [
-      el("div", {class: "group"},
-        g.name === "Nobody named" ? null : avatarNode(g.name, 24),
-        el("span", {class: "plain", style: "font-weight:600;color:var(--fg)"}, g.name),
-        el("span", {class: "plain"}, "· " + askLine(g.name)), askBtn(g.name)),
-      taskCard(g.items.sort((x, y) => (x.due || "9999").localeCompare(y.due || "9999")))]);
+    const groups = Array.from(groupBy(hits).values())
+      .sort((x, y) => unnamed(x) - unnamed(y) || x.name.localeCompare(y.name));
+    /* Each group rations its own rows, which is no ration at all with a few
+       rows owed by each of a hundred people: whole groups are drawn up to a
+       page's worth of rows, and the rest wait behind "show more". */
+    const host = el("div", {});
+    let drawn = 0;
+    const drawTo = rows => {
+      let shown = 0;
+      while (drawn < groups.length && (shown < rows || !shown)) {
+        const g = groups[drawn++];
+        shown += g.items.length;
+        host.insertBefore(el("div", {class: "group"},
+          g.name === "Nobody named" ? null : avatarNode(g.name, 24),
+          el("span", {class: "plain", style: "font-weight:600;color:var(--fg)"}, g.name),
+          el("span", {class: "plain"}, "· " + askLine(g.name)), askBtn(g.name)), more);
+        host.insertBefore(taskCard(g.items.sort((x, y) => (x.due || "9999").localeCompare(y.due || "9999"))), more);
+      }
+      const left = groups.length - drawn;
+      if (!left) { more.remove(); return; }
+      more.set("Show more · " + left + (left === 1 ? " more person" : " more people"), "Show everyone");
+    };
+    const more = moreRow(() => drawTo(CFG.rowsPerPage), () => drawTo(Infinity));
+    host.append(more);
+    drawTo(CFG.rowsPerPage);
+    return host;
   });
   c.append(fbar(f2.input, ...chips), f2.host);
   return c;
@@ -24262,28 +24329,38 @@ function twinWhy(a, b) {
 }
 const twinPairKey = (a, b) => [twinNorm(a), twinNorm(b)].sort().join("\u0001");
 const twinNotSame = () => { try { return new Set(JSON.parse(PREF.get("twins.not", "[]"))); } catch (_) { return new Set(); } };
+/* Every name against every other is the slow part of drawing Projects, and it
+   only depends on the names, so the answer is kept until one of them changes. */
+let TWINS_KEPT = null;
 // Groups of look-alike projects: [{rows: [{space, path, title, code}], why}].
 function projectTwins() {
   return memo("projectTwins", () => {
     const all = STATUS_ORDER.flatMap(code => visibleProjects(code).map(r => ({...r, code, title: rowTitle(r)})))
       .filter(r => !inSpace(r.space, () => isTourProject(r.path)));
-    const not = twinNotSame();
-    const up = all.map((_, i) => i);
-    const find = i => up[i] === i ? i : (up[i] = find(up[i]));
-    const why = new Map();
-    for (let i = 0; i < all.length; i++)
-      for (let j = i + 1; j < all.length; j++) {
-        if (not.has(twinPairKey(all[i].title, all[j].title))) continue;
-        const w = twinWhy(all[i].title, all[j].title);
-        if (!w) continue;
-        up[find(i)] = find(j);
-        why.set(i, w); why.set(j, w);
-      }
-    const groups = new Map();
-    all.forEach((r, i) => { if (!why.has(i)) return; const g = find(i); (groups.get(g) || groups.set(g, []).get(g)).push(r); });
-    return [...groups.values()].filter(rows => rows.length > 1)
-      .map(rows => ({rows, why: why.get(all.indexOf(rows[0]))}));
+    const key = PREF.get("twins.not", "[]") + "\u0002" + all.map(r => [r.space, r.path, r.code, r.title].join("\u0001")).join("\u0002");
+    if (TWINS_KEPT && TWINS_KEPT.key === key) return TWINS_KEPT.groups;
+    const groups = projectTwinsOf(all);
+    TWINS_KEPT = {key, groups};
+    return groups;
   });
+}
+function projectTwinsOf(all) {
+  const not = twinNotSame();
+  const up = all.map((_, i) => i);
+  const find = i => up[i] === i ? i : (up[i] = find(up[i]));
+  const why = new Map();
+  for (let i = 0; i < all.length; i++)
+    for (let j = i + 1; j < all.length; j++) {
+      if (not.has(twinPairKey(all[i].title, all[j].title))) continue;
+      const w = twinWhy(all[i].title, all[j].title);
+      if (!w) continue;
+      up[find(i)] = find(j);
+      why.set(i, w); why.set(j, w);
+    }
+  const groups = new Map();
+  all.forEach((r, i) => { if (!why.has(i)) return; const g = find(i); (groups.get(g) || groups.set(g, []).get(g)).push(r); });
+  return [...groups.values()].filter(rows => rows.length > 1)
+    .map(rows => ({rows, why: why.get(all.indexOf(rows[0]))}));
 }
 // The group a project is in, if it has look-alikes.
 const twinsOf = (space, path) => projectTwins().find(g => g.rows.some(r => r.space === space && r.path === path)) || null;
@@ -24529,10 +24606,15 @@ function peopleRows() {
       return [];
     });
     for (const a of leafActions()) if (a.assignee) add(a.assignee, a.space);
+    const owing = new Map();
+    for (const a of waitingRows()) if (trim(a.assignee)) {
+      const k = slugPerson(a.assignee);
+      owing.set(k, (owing.get(k) || 0) + 1);
+    }
     for (const r of rows.values()) {
       r.open = openActionsOf(r.name);
       r.late = r.open.filter(a => a.due && a.due < todayISO()).length;
-      r.owes = r.me ? 0 : waitingRows().filter(a => samePerson(a.assignee, r.name)).length;
+      r.owes = r.me ? 0 : owing.get(slugPerson(r.name)) || 0;
       r.seen = r.me ? "here now" : (r.member ? (lastSeenOf(r.name) ? "last seen " + lastSeenOf(r.name) : "not seen yet") : "outside the area");
     }
     const ment = personMentions();
