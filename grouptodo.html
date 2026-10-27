@@ -22993,14 +22993,26 @@ function routeCalendarMeetings(home, feed, also, fromMs, toMs, only = null) {
     if (space === home || !LOADED.has(space)) continue;
     inSpace(space, () => calQuietly(() => {
       dropOldCalSkips();
-      const there = new Map(), days = new Set(), skip = new Set();
+      const there = new Map(), synced = new Map(), days = new Set(), skip = new Set();
       dayBlocks((b, path, d) => {
         const k = blockProp(b, "cal_uid");
-        if (k) (there.get(k) || there.set(k, []).get(k)).push({b, path, d});
+        if (!k) return;
+        const x = {b, path, d, k};
+        (there.get(k) || there.set(k, []).get(k)).push(x);
+        if (blockProp(b, "cal_feed") === feed && blockProp(b, "branch_sync_id")) synced.set(blockProp(b, "branch_sync_id"), x);
       });
       // A copy deleted or moved in this area is not sent again, nor moved back.
       for (const p of allPages(isJournalPath)) calSkips(getPage(p)).forEach(k => skip.add(k));
       for (const [k, m] of mine) {
+        // The calendar gave the meeting a new key: its copy here takes it too.
+        const was = !there.has(k) && synced.get(blockProp(m.b, "branch_sync_id"));
+        if (was && !mine.has(was.k)) {
+          const list = there.get(was.k);
+          list.splice(list.indexOf(was), 1);
+          setBlockProp(was.b, "cal_uid", k); was.k = k;
+          there.set(k, [was]);
+          touchHere(was.path);
+        }
         const all = there.get(k) || [];
         // Ours: this calendar's, here (a synced copy, or from when this was your own area).
         const copy = all.find(x => blockProp(x.b, "cal_feed") === feed);
@@ -23266,8 +23278,17 @@ function icsMeetings(text, fromMs, toMs) {
 // Something was written under the meeting: a line with steps under it, or a task.
 const calKept = b => (b.children || []).some(c => (c.children || []).length || c.state);
 function importCalendarText(text, space, feed, fromMs, toMs) {
-  const meetings = icsMeetings(text, fromMs, toMs);
   const hm = ms => { const d = new Date(ms); return pad2(d.getHours()) + ":" + pad2(d.getMinutes()); };
+  /* The same meeting listed twice by the calendar comes in once. Some calendars
+     also give a meeting a new UID on a later fetch; it is then known by its
+     title, day and time, and the line already there takes the new key. */
+  const sig = (title, day, time) => title + "\n" + day + "\n" + time;
+  const meetings = [], sigs = new Set();
+  for (const o of icsMeetings(text, fromMs, toMs)) {
+    const s = sig(o.summary, o.start, o.allDay ? "" : o.end);
+    if (!sigs.has(s)) { sigs.add(s); meetings.push(o); }
+  }
+  const keys = new Set(meetings.map(o => o.key));
   const firstDay = isoOf(new Date(fromMs)), lastDay = isoOf(new Date(toMs));
   const kept = calKept;
   return inSpace(space, () => calQuietly(() => {
@@ -23280,14 +23301,27 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
         if (blockProp(b, "cal_feed") === feed) have.set(blockProp(b, "cal_uid"), {path: p, b, d});
       calSkips(getPage(p)).forEach(k => skip.add(k));
     }
+    // Lines whose key the calendar no longer gives, by what they say.
+    const loose = new Map();
+    for (const [k, x] of have) if (!keys.has(k)) {
+      const s = sig(x.b.title, x.d, blockProp(x.b, "time") || "");
+      (loose.get(s) || loose.set(s, []).get(s)).push(k);
+    }
     const seen = new Set(), days = new Set();
     for (const o of meetings) {
       seen.add(o.key);
-      const hit = have.get(o.key);
-      // Deleted, or cut to somewhere else: not brought back.
-      if (!hit && (o.cancelled || skip.has(o.key))) continue;
       const title = "#meeting " + (o.cancelled ? "Cancelled: " : "") + o.summary.replace(/^cancel(l)?ed:\s*/i, "");
       const time = o.allDay ? "" : hm(o.start) + (o.end > o.start ? "–" + hm(o.end) : "");
+      let hit = have.get(o.key);
+      const old = !hit && (loose.get(sig(title, isoOf(new Date(o.start)), time)) || []).shift();
+      if (old) {
+        hit = have.get(old);
+        have.delete(old); have.set(o.key, hit);
+        setBlockProp(hit.b, "cal_uid", o.key);
+        touch(hit.path); changed++;
+      }
+      // Deleted, or cut to somewhere else: not brought back.
+      if (!hit && (o.cancelled || skip.has(o.key))) continue;
       const att = o.people.map(linkKnownNames).join(", ");
       const path = ensureJournal(isoOf(new Date(o.start))), page = getPage(path);
       days.add(path);
