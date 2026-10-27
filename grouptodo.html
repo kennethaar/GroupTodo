@@ -24628,7 +24628,8 @@ function openTwins(only = null) {
         const here = r === keep;
         rowsEl.append(el("label", {class: "twinrow" + (here ? " keep" : "")},
           el("input", {type: "radio", name: "twin-keep-" + gi, checked: here,
-            onchange: () => { keep = r; dest = r.space; draw(); drawArea(); drawAct(); count(); }}),
+            // Picking the one to keep means fold, unless you then choose otherwise.
+            onchange: () => { keep = r; dest = r.space; plan.act = "fold"; draw(); drawArea(); drawAct(); count(); }}),
           el("span", {class: "twint"}, r.title),
           el("span", {class: "chip"}, STATUS_LABEL[r.code]),
           multiSpace() ? spaceBadge(r.space) : null,
