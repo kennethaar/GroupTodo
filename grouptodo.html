@@ -1407,7 +1407,8 @@ body.lselecting,body.lselecting *{user-select:none;-webkit-user-select:none;curs
 .twinrow{display:flex;gap:8px;align-items:center;padding:5px 8px;border:1px solid var(--border);border-radius:8px;cursor:pointer}
 .twinrow.keep{border-color:var(--accent);background:var(--accent-soft)}
 .twint{flex:1;min-width:0;overflow-wrap:anywhere}
-.twinacts{display:flex;gap:8px;margin-top:2px}
+.twinacts{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:2px;font-size:12.5px}
+.twinacts .space-transfer-choice{cursor:pointer}
 .twinarea{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;font-size:12.5px}
 .twinarea .space-transfer-choice{cursor:pointer}
 .twinwarn{font-size:12.5px;color:var(--warn)}
@@ -24565,27 +24566,52 @@ async function foldTwinsAcrossAreas(rows, keep, dest) {
   }
 }
 
-/* The look-alikes, a group at a time: open any of them, fold them into one
-   (the one you keep takes the lines and fills its empty values from the
-   others), or say they are different and they stop being flagged. A group
-   that spans areas also asks which area the one project ends up in. */
+/* The look-alikes, every group at once: open any of them, and for each say
+   fold them into one (the one you keep takes the lines and fills its empty
+   values from the others), they are different and stop being flagged, or
+   leave it for now. Apply then does every choice in one go. A group that
+   spans areas also asks which area the one project ends up in. */
 function openTwins(only = null) {
   const groups = only ? [only] : projectTwins();
   if (!groups.length) { notify("No projects look alike."); return; }
   const body = el("div", {class: "twins"});
-  // After one group is dealt with, the rest are still waiting: show them again.
-  const again = () => { clearMemo(); render(); if (!only && projectTwins().length) openTwins(); };
+  const plans = [];                    // per group: what to do with it
+  const applyBtn = el("button", {class: "btn primary", onclick: () => apply()});
+  const count = () => {
+    const n = plans.filter(p => p.ready()).length;
+    applyBtn.textContent = n ? "Apply " + n : "Apply";
+    applyBtn.disabled = !n;
+  };
+  const apply = async () => {
+    closeModal();
+    const not = twinNotSame();
+    for (const p of plans) if (p.ready() && p.act === "not") p.pairs().forEach(k => not.add(k));
+    PREF.set("twins.not", JSON.stringify([...not]));
+    for (const p of plans) if (p.ready() && p.act === "fold") await p.fold();
+    clearMemo(); render();
+  };
   groups.forEach((g, gi) => {
-    let keep = g.rows.find(r => r.code === "1") || g.rows[0];   // the live one, if there is one
+    // Nothing is picked for you: a group you make no choice for is left as it is.
+    let keep = null;
     const areas = [...new Set(g.rows.map(r => r.space))];
-    let dest = keep.space;
+    let dest = null;
+    const plan = {act: null, ready: () => plan.act === "not" || (plan.act === "fold" && !!keep)};
+    plans.push(plan);
     const rowsEl = el("div", {class: "twinrows"});
     const areaEl = el("div", {class: "twinarea"});
     const warnEl = el("div", {class: "twinwarn"});
+    const actEl = el("div", {class: "twinacts"});
+    const drawAct = () => {
+      actEl.textContent = "";
+      actEl.append(...radioChoices("twin-act-" + gi,
+        [["fold", "Fold into the one kept"], ["not", "Not the same"], ["leave", "Leave for now"]],
+        plan.act, v => { plan.act = v; drawAct(); count(); }),
+        plan.act === "fold" && !keep ? el("span", {class: "twinwarn"}, "Pick the one to keep") : null);
+    };
     const drawArea = () => {
       areaEl.textContent = "";
       warnEl.textContent = "";
-      if (areas.length < 2) return;
+      if (areas.length < 2 || !keep) return;
       areaEl.append(el("span", {}, "Keep it in"),
         ...radioChoices("twin-area-" + gi, areas.map(a => [a, a + (a === keep.space ? " (where the kept one is)" : "")]),
           dest, v => { dest = v; drawArea(); }));
@@ -24602,7 +24628,7 @@ function openTwins(only = null) {
         const here = r === keep;
         rowsEl.append(el("label", {class: "twinrow" + (here ? " keep" : "")},
           el("input", {type: "radio", name: "twin-keep-" + gi, checked: here,
-            onchange: () => { keep = r; dest = r.space; draw(); drawArea(); }}),
+            onchange: () => { keep = r; dest = r.space; draw(); drawArea(); drawAct(); count(); }}),
           el("span", {class: "twint"}, r.title),
           el("span", {class: "chip"}, STATUS_LABEL[r.code]),
           multiSpace() ? spaceBadge(r.space) : null,
@@ -24611,32 +24637,27 @@ function openTwins(only = null) {
     };
     draw();
     drawArea();
-    const merge = async () => {
-      closeModal();
+    drawAct();
+    plan.fold = async () => {
       if (g.rows.every(r => r.space === dest)) {
         let n = 0;
         for (const r of g.rows) if (r !== keep && inSpace(dest, () => mergePageInto(r.path, keep.path))) n++;
         if (!n) notify("Nothing folded.");
       } else await foldTwinsAcrossAreas(g.rows, keep, dest);
-      again();
     };
-    const notSame = () => {
-      const not = twinNotSame();
+    plan.pairs = () => {
+      const keys = [];
       for (let i = 0; i < g.rows.length; i++)
-        for (let j = i + 1; j < g.rows.length; j++) not.add(twinPairKey(g.rows[i].title, g.rows[j].title));
-      PREF.set("twins.not", JSON.stringify([...not]));
-      closeModal();
-      again();
+        for (let j = i + 1; j < g.rows.length; j++) keys.push(twinPairKey(g.rows[i].title, g.rows[j].title));
+      return keys;
     };
     body.append(el("div", {class: "twingroup"},
       el("div", {class: "twinwhy"}, g.rows.length + " projects with " + g.why + ". Pick the one to keep:"),
-      rowsEl, areaEl, warnEl,
-      el("div", {class: "twinacts"},
-        el("button", {class: "btn sm primary", onclick: merge}, "Fold into the one kept"),
-        el("button", {class: "btn sm ghost", onclick: notSame}, "Not the same"))));
+      rowsEl, areaEl, warnEl, actEl));
   });
+  count();
   modal({title: only ? "Looks like another project" : "Projects that look alike", body,
-    foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Close")]});
+    foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Close"), applyBtn]});
 }
 
 function viewProjects() {
