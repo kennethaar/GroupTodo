@@ -520,6 +520,7 @@ Colour as hex =>
 Columns =>
 Comes after =>
 Comes back and never finishes - the weekly accounts, the monthly report, everything you pack before a trip. Not a project, because there is nothing to tick off. =>
+Coming from Obsidian or Logseq? Open GroupToDo-Importer.html, next to this file on GitHub. It copies your vault into a new folder to choose in step 2. =>
 Comment: =>
 Completed =>
 Completed projects =>
@@ -962,7 +963,6 @@ Humanist =>
 I am here to... I will not... =>
 I have seen every part of GroupToDo and know where my files live =>
 I understand =>
-I use Logseq or org-mode =>
 If all open next actions in a project are waiting on someone, the project automatically marks itself as =>
 If this browser is the only place your work lives, save the vault file first - there is no undo and no copy left behind. =>
 Import =>
@@ -1765,6 +1765,7 @@ Set up a tracker of An amount -- one per kind, like food and travel -- and write
 Set up a tracker of Hours worked -- one per place you work, like office and home -- and fill in start and end on your days. =>
 Set up a tracker of Stock -- one per thing -- and write +3 when it comes in, -1 when it goes and =12 when you count. =>
 Set up a tracker on today's page =>
+Set up several areas =>
 Set up your contexts =>
 Set your name =>
 Sets of reps =>
