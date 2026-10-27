@@ -24,6 +24,13 @@ project.
 | Checklist | open next actions, most urgent first, then steps done in the last 14 days, ticked. Up to 20, Planner's limit. |
 | Notes | outcome, status, what it is waiting for, what was done lately. Below a divider, so anything written above it in Planner stays. |
 
+Everything goes as plain words, the way people read it in Planner: `[[c/PC]]`
+is *PC*, `[[1/Fix sink]]` is *Fix sink*, `#urgent` is *urgent*, `[[page][label]]`
+is *label*, `((id))` is the line it points at, and bold, italics and code keep
+only their words. A person is written out with where they work and their
+address: `[[p/Ken Jenkins]]` is *Ken Jenkins, CAB Group AS (ken.jenkins@cab.no)*,
+from `organisation::` and `email::` on their page.
+
 ## How it travels
 
 GroupToDo cannot talk to Planner directly: it is not allowed to connect

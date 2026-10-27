@@ -34681,8 +34681,48 @@ function plannerGuid(s) {
   const x = [1, 2, 3, 4].map(n => plannerHash(s, 0x811c9dc5 ^ n)).join("");
   return x.slice(0, 8) + "-" + x.slice(8, 12) + "-4" + x.slice(13, 16) + "-a" + x.slice(17, 20) + "-" + x.slice(20, 32);
 }
+/* A person as the people reading the card need them, not as a link: the
+   name, where they work and how to reach them --
+   Ken Jenkins, CAB Group AS (ken.jenkins@cab.no). */
+function plannerPerson(name) {
+  name = trim(name || "");
+  if (!name) return "";
+  const org = personOrgs(name)[0];
+  const orgName = org ? pageTitle(findExistingPage("o/" + org) || "") || org : "";
+  const mail = emailOf(name, V.space);
+  return personBareName(name) + (orgName ? ", " + orgName : "") + (looksLikeEmail(mail) ? " (" + mail + ")" : "");
+}
+
+/* Planner shows text as it is written, so a line goes there as words:
+   [[c/PC]] is PC, [[1/Fix sink]] is Fix sink, #urgent is urgent, a person is
+   plannerPerson(), ((id)) is the line it points at, and bold, italics, code
+   and the like keep only their words. */
+function plannerWords(text) {
+  let t = withoutEst(String(text || ""));
+  t = t.replace(/\{\{\s*(embed|query)\b[\s\S]*?\}\}/gi, "");
+  t = t.replace(/\(\(([A-Za-z0-9_-]{4,64})\)\)/g, (all, id) => {
+    const hit = blockById(id);
+    return hit ? plannerWords(String(hit.block.title || "").replace(/\(\([A-Za-z0-9_-]{4,64}\)\)/g, "")) : "";
+  });
+  t = t.replace(/!\[([^\]]*)\]\([^)\s]+\)/g, "$1");
+  t = t.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (all, label, href) => /^https?:/.test(href) ? label + " (" + href + ")" : label);
+  t = t.replace(/#?\[\[([^\]]+)\](?:\[([^\]]*)\])?\]/g, (all, target, label) => {
+    target = trim(target.split("|")[0].split("#")[0]);
+    const pfx = (/^([^/]+)\//.exec(target) || [])[1];
+    if (pfx === "p") return plannerPerson(target.slice(2));
+    if (label && trim(label)) return trim(label);
+    if (pfx === "go") return tourLabel(target.slice(3));
+    const known = ["c", "o", "z", "a", "g", "8", "_"].includes(pfx) || (pfx && STATUS_DIRS[pfx]);
+    return known ? target.slice(pfx.length + 1) : target;
+  });
+  t = t.replace(/(^|[\s(])#([\p{L}\p{N}_\-/]+)/gu, "$1$2");
+  t = t.replace(/\*\*(.+?)\*\*|__(.+?)__|~~(.+?)~~|==(.+?)==/g, (all, a, b, c, d) => a ?? b ?? c ?? d);
+  t = t.replace(/(^|[^\w*])\*([^*\s][^*]*?)\*(?!\w)/g, "$1$2").replace(/(^|[^\w_])_([^_\s][^_]*?)_(?!\w)/g, "$1$2");
+  t = t.replace(/`([^`]+)`/g, "$1");
+  return trim(t.replace(/\s+/g, " ").replace(/\s+([,.;:!?)])/g, "$1"));
+}
 const plannerText = (title, max) => {
-  const t = trim(plainTitle(title || "").replace(/\s+/g, " "));
+  const t = plannerWords(title);
   return t.length > max ? t.slice(0, max - 1) + "…" : t;
 };
 const plannerJson = text => { try { return text ? JSON.parse(text) : null; } catch (_) { return null; } };
@@ -34766,17 +34806,17 @@ function plannerCard(r) {
     notes.push("", "Waiting for:");
     for (const s of waits.slice(0, 10)) {
       const who = assigneeOf(s.block);
-      notes.push("- " + plannerText(s.block.title, 200) + (who ? " (" + who + ")" : ""));
+      notes.push("- " + plannerText(s.block.title, 200) + (who ? " \u2014 " + plannerPerson(who) : ""));
     }
   }
   if (done.length) {
     notes.push("", "Done lately:");
     for (const s of done.slice(0, 10)) {
       const who = closedBy(s.block);
-      notes.push("- " + closedOn(s.block) + " " + plannerText(s.block.title, 200) + (who ? " (" + who + ")" : ""));
+      notes.push("- " + closedOn(s.block) + " " + plannerText(s.block.title, 200) + (who ? " \u2014 " + plannerPerson(who) : ""));
     }
   }
-  if (people.missing.length) notes.push("", "Not assigned, no email:: on their page: " + people.missing.join(", "));
+  if (people.missing.length) notes.push("", "Not assigned, no email:: on their page: " + people.missing.map(plannerPerson).join("; "));
   notes.push("", "In GroupToDo: " + r.path + (r.space ? " (" + r.space + ")" : ""));
 
   const {start, due} = plannerDates(r.path);
