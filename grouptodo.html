@@ -8765,6 +8765,28 @@ const cadenceOf = path => trim(getPage(path)?.props?.cadence || "");
        stage:: [[8/Purchase]] Awaiting delivery */
 const isStateList = path => pageKind(path) === "checklist" && trim(getPage(path)?.props?.kind || "") === "states";
 const stateLists = () => checklistPages().filter(isStateList);
+/* A type is a page in one area, but it is offered for tasks in every visible
+   area, {path, space} each: one per name, this area's own first. */
+function typeChoices() {
+  const out = stateLists().map(path => ({path, space: V.space}));
+  const names = new Set(out.map(t => baseName(t.path).toLowerCase()));
+  for (const t of acrossSpaces(() => stateLists().map(path => ({path})))) {
+    if (!t.space || t.space === V.space || names.has(baseName(t.path).toLowerCase())) continue;
+    names.add(baseName(t.path).toLowerCase());
+    out.push(t);
+  }
+  return out;
+}
+const typeTitle = t => inSpace(t.space, () => pageTitle(t.path));
+const typeStages = t => inSpace(t.space, () => stagesOf(t.path));
+/* The type as a page in this area. One from another area is copied here
+   first, so the task's stage:: link resolves where the task lives. */
+function typeHere(t) {
+  if (!t.space || t.space === V.space) return t.path;
+  const lines = inSpace(t.space, () => (getPage(t.path)?.blocks || []).filter(b => trim(b.title)).map(b =>
+    b.state && !/\([^)]+\)\s*$/.test(b.title) ? trim(b.title) + " (" + CORE_WORD[b.state] + ")" : trim(b.title)));
+  return createStateList(baseName(t.path), lines);
+}
 const STAGE_CORE = {"to do": "TODO", todo: "TODO", doing: "DOING", waiting: "WAIT", wait: "WAIT",
   done: "DONE", cancelled: "CANCELLED", canceled: "CANCELLED"};
 const CORE_WORD = {TODO: "to do", DOING: "doing", WAIT: "waiting", DONE: "done", CANCELLED: "cancelled"};
@@ -8839,15 +8861,17 @@ function createStateList(title, stages) {
 }
 /* A task type to pick for a task, with the starters offered when there is none. */
 function openTaskTypePicker(path, block) {
-  const lists = stateLists();
+  const types = typeChoices();
   const cur = taskStage(block)?.list || null;
-  if (!lists.length) { newStateListPrompt(p => setTaskType(path, block, p)); return; }
+  if (!types.length) { newStateListPrompt(p => setTaskType(path, block, p)); return; }
+  const here = V.space;
   listPicker({
     title: "Type of task", typeahead: true,
-    items: lists.concat(cur ? [null] : []),
-    label: p => p ? pageTitle(p) : "No type",
-    detail: p => p ? stagesOf(p).map(s => s.name).join(" → ") + (p === cur ? " · current" : "") : "back to plain states",
-    onPick: p => setTaskType(path, block, p),
+    items: types.concat(cur ? [null] : []),
+    label: t => t ? typeTitle(t) : "No type",
+    detail: t => t ? typeStages(t).map(s => s.name).join(" → ")
+      + (t.space !== here ? " · from " + t.space : t.path === cur ? " · current" : "") : "back to plain states",
+    onPick: t => inSpace(here, () => setTaskType(path, block, t ? typeHere(t) : null)),
     footer: el("button", {class: "btn ghost", onclick: () => { closeModal();
       newStateListPrompt(p => setTaskType(path, block, p)); }}, "+ new type"),
   });
@@ -19799,8 +19823,8 @@ function stateRows(a) {
    changes the type; the plain column takes the type off. The letters stay on
    the plain states and the numbers on the task's own type, as they were. */
 function stateColumns(a, extra = []) {
-  const lists = inSpace(a.space, () => stateLists());
-  if (!lists.length) return null;
+  const types = inSpace(a.space, typeChoices);
+  if (!types.length) return null;
   const t = inSpace(a.space, () => taskStage(a.block));
   const plain = [["t", "To do", "TODO"], ["d", "Doing", "DOING"], ["w", "Waiting for…", "WAIT"], ["x", "Done", "DONE"], ["c", "Cancelled", "CANCELLED"]]
     .map(([k, label, st]) => {
@@ -19809,12 +19833,12 @@ function stateColumns(a, extra = []) {
         () => now ? null : rowSetState(a, () => setBlockState(a.path, a.block, st, {stage: {list: null}}))];
     });
   return [{head: "Plain", cur: !t, rows: [...plain, ...extra]},
-    ...lists.map(list => {
-      const own = !!t && t.list === list;
-      return {head: pageTitle(list), cur: own, rows: stagesOf(list).map((st, i) =>
+    ...types.map(ty => {
+      const own = !!t && ty.space === inSpace(a.space, () => V.space) && t.list === ty.path;
+      return {head: typeTitle(ty), cur: own, rows: typeStages(ty).map((st, i) =>
         [own && i < 9 ? String(i + 1) : "", st.name,
          own && t.stage && t.stage.name === st.name ? "now" : CORE_WORD[st.core],
-         () => rowSetState(a, () => setTaskStage(a.path, a.block, list, st.name), false)])};
+         () => rowSetState(a, () => setTaskStage(a.path, a.block, typeHere(ty), st.name), false)])};
     })];
 }
 function columnMenu(title, hint, cols) {
@@ -20372,13 +20396,13 @@ const STAGE_CMD = "stage\u0001";
 function slashRows(q) {
   const f = q.toLowerCase();
   const hit = c => !f || c.kw.some(w => w.startsWith(f)) || c.title.toLowerCase().startsWith(f);
-  const stages = stateLists().flatMap(list => stagesOf(list).map(st => ({list, st,
-    kw: [...st.name.toLowerCase().split(/\s+/), ...pageTitle(list).toLowerCase().split(/\s+/)]})));
+  const stages = typeChoices().flatMap(t => { const name = typeTitle(t); return typeStages(t).map(st => ({t, name, st,
+    kw: [...st.name.toLowerCase().split(/\s+/), ...name.toLowerCase().split(/\s+/)]})); });
   return [...SLASH_COMMANDS.filter(hit).map(c => ({accept: "command", id: c.id, title: c.title,
     detail: c.detail, mark: "/"})),
     ...stages.filter(s => !f || s.kw.some(w => w.startsWith(f))).map(s => ({accept: "command",
-      id: STAGE_CMD + s.list + "\u0001" + s.st.name, title: s.st.name,
-      detail: pageTitle(s.list) + " · " + CORE_WORD[s.st.core], mark: "/"}))];
+      id: STAGE_CMD + (s.t.space || "") + "\u0001" + s.t.path + "\u0001" + s.st.name, title: s.st.name,
+      detail: s.name + " · " + CORE_WORD[s.st.core], mark: "/"}))];
 }
 
 /* The names whose alias starts with what was typed, each offered as that
@@ -21141,9 +21165,9 @@ function outlineBlock(path, page, b, opts = {}) {
     }
     // A stage of a task type: the line takes that type and that stage.
     if (id.startsWith(STAGE_CMD)) {
-      const [list, name] = id.slice(STAGE_CMD.length).split("\u0001");
+      const [space, list, name] = id.slice(STAGE_CMD.length).split("\u0001");
       commitLine(txt, path, b);
-      setTaskStage(path, b, list, name);
+      setTaskStage(path, b, typeHere({space, path: list}), name);
       focusBlock(b.id, false);
       return;
     }
