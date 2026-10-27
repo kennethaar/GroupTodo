@@ -137,7 +137,15 @@ body.sidebar-hidden #sidebar{display:none}
   display:flex;flex-direction:column;overflow:hidden;padding:14px 10px 10px;
 }
 #main{display:flex;flex-direction:column;overflow:hidden;min-width:0}
-#content{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 22px 96px}
+#work{flex:1;display:flex;min-height:0}
+#content{flex:1;min-width:0;overflow-y:auto;overflow-x:hidden;padding:0 22px 96px}
+/* A page docked beside the view, narrow and its own scroll. */
+#pagePane{width:min(400px,45vw);flex:none;overflow-y:auto;overflow-x:hidden;padding:0 18px 96px;
+  border-left:1px solid var(--border);background:var(--bg)}
+#pagePane[hidden]{display:none}
+#pagePane .panebar{position:sticky;top:0;z-index:2;display:flex;justify-content:flex-end;gap:4px;
+  padding:8px 0 4px;background:var(--bg)}
+#pagePane .pcrumbs{margin-top:0}
 .wrap{max-width:820px;margin:0 auto}
 .wrap.wide{max-width:min(1400px,100%)}
 @media (min-width:1100px){ .wrap.jwide{max-width:1600px} }
@@ -1604,7 +1612,7 @@ button.prow{width:100%;text-align:left}
    list of what was just done among them, move over to its left. */
 @media (min-width:761px){
   body:has(.scrim.side) #toasts{right:calc(min(480px,100vw) + 14px);width:min(430px,calc(100vw - min(480px,100vw) - 28px))}
-  body:has(.scrim.side .pageside) #toasts{right:calc(min(720px,100vw) + 14px);width:min(430px,calc(100vw - min(720px,100vw) - 28px))}
+  body.pane-open:not(:has(.scrim.side)) #toasts{right:calc(min(400px,45vw) + 14px)}
   body:has(.scrim.side) .toast.reminder{width:100%;box-sizing:border-box}
   /* The review's table fills the window: they wait bottom left, over the help. */
   body.solview:not(:has(.scrim)) #toasts{top:auto;bottom:14px;left:14px;right:auto;align-items:flex-start}
@@ -2079,9 +2087,6 @@ body.solview #content{padding-bottom:14px}
 .scrim.side{justify-content:flex-end;align-items:stretch;background:rgba(0,0,0,.25);backdrop-filter:none}
 .scrim.side .modal{border-radius:0;height:100%;max-height:none;width:min(480px,100%);border-width:0 0 0 1px}
 /* A whole page beside the view needs the room of one. */
-.scrim.side .modal.pageside{width:min(720px,100%)}
-.sidepage .wrap{max-width:none}
-.sidepage .pcrumbs{margin-top:0}
 .suggest-hint{font-size:11px;color:var(--fg3);padding:5px 11px 2px;border-top:1px solid var(--border);margin-top:4px}
 
 /* The menu under the line you are editing */
@@ -2134,6 +2139,8 @@ body.solview #content{padding-bottom:14px}
   .h-hist,.capture kbd,.capture .where,.help-btn .long,#btnTheme,.spacesbtn .lab{display:none}
   .spop{right:14px}
   #content{padding:0 14px 96px}
+  /* No room beside it on a phone: the docked page takes the screen until ✕. */
+  #pagePane{position:fixed;inset:0;width:auto;z-index:60;border:0;padding:0 14px 96px}
   .modal{max-height:92dvh}
   #toasts{left:14px;right:14px;width:auto;align-items:stretch}
 }
@@ -2226,7 +2233,10 @@ body.solview #content{padding-bottom:14px}
       <button class="spacesbtn" id="spacesBtn" aria-haspopup="true" aria-expanded="false" title="Which areas to show"></button>
       <div class="spop" id="spop" role="dialog" aria-label="Areas" hidden></div>
     </header>
-    <div id="content"></div>
+    <div id="work">
+      <div id="content"></div>
+      <aside id="pagePane" aria-label="Page beside the view" hidden></aside>
+    </div>
   </div>
 </div>
 
@@ -2418,9 +2428,6 @@ const uid = () => Date.now().toString(36) + "-" + Math.random().toString(36).sli
    before the change that redraws, and focus lands back on the rebuilt one, so
    the next click or keypress carries straight on. */
 let REFOCUS = null;
-/* A dialog is up and owns the keys. A page open in the side panel is not one:
-   its lines are written exactly like the lines on screen. */
-const dialogUp = () => { const m = $("#modalRoot").firstChild; return !!m && !m.querySelector(".pageside"); };
 function keepFocus(selector, node) {
   REFOCUS = {selector, nth: node ? Math.max(0, $$(selector).indexOf(node)) : 0};
 }
@@ -2428,7 +2435,7 @@ function applyRefocus() {
   const want = REFOCUS; REFOCUS = null;
   if (!want) return;
   requestAnimationFrame(() => {
-    if (dialogUp()) return;   // a picker opened on the way; it owns the keys
+    if ($("#modalRoot").firstChild) return;   // a picker opened on the way; it owns the keys
     const all = $$(want.selector);
     const node = all[want.nth] || all[0];     // the row may have left one list on the way
     if (node) node.focus({preventScroll: true});
@@ -19841,7 +19848,7 @@ function parentOf(page, block) {
 /* The same, for one of a block's body lines. */
 function focusBodyLine(id, i, atEnd = true) {
   requestAnimationFrame(() => {
-    if (dialogUp()) return;
+    if ($("#modalRoot").firstChild) return;
     const node = $(`.blk[data-id="${id}"] > .bodyline[data-bi="${i}"]`);
     if (!node) return;
     node.focus();
@@ -19853,7 +19860,7 @@ function focusBodyLine(id, i, atEnd = true) {
 
 function focusBlock(id, atEnd = true) {
   requestAnimationFrame(() => {
-    if (dialogUp()) return;   // a picker opened on the way; it owns the keys
+    if ($("#modalRoot").firstChild) return;   // a picker opened on the way; it owns the keys
     const node = $(`.blk[data-id="${id}"] .txt`);
     if (!node) return;
     node.focus();
@@ -20522,7 +20529,7 @@ function moveToBlock(txt, dir) {
    order: under the line it joined, or in its place when that is its parent. */
 function focusLineAt(sel, offset) {
   requestAnimationFrame(() => {
-    if (dialogUp()) return;
+    if ($("#modalRoot").firstChild) return;
     const node = $(sel);
     if (!node) return;
     node.focus();
@@ -21525,7 +21532,7 @@ function attachLineSelect(outline, path) {
    the document too, and while lines are picked these come first. */
 document.addEventListener("keydown", e => {
   if (!LINE_SEL.ids.length) return;
-  if (dialogUp()) return;              // a dialog owns the keys
+  if ($("#modalRoot").firstChild) return;              // a dialog owns the keys
   const mod = e.ctrlKey || e.metaKey;
   /* Somebody typing in a box is typing in a box, whatever is picked behind
      them -- and what they are typing is not a command about these lines.
@@ -21569,7 +21576,7 @@ document.addEventListener("keydown", e => {
 /* While lines are picked, the clipboard is theirs -- unless there is text
    selected inside a line, which is plain text editing as always. */
 function lineSelOwnsClipboard() {
-  if (!LINE_SEL.ids.length || dialogUp()) return false;
+  if (!LINE_SEL.ids.length || $("#modalRoot").firstChild) return false;
   const sel = getSelection();
   return !sel || sel.isCollapsed;
 }
@@ -23525,43 +23532,52 @@ const contextLabel = name => (contextIcon(name) ? contextIcon(name) + " " : "@")
 /* ---------- a side drawer ---------- */
 function drawer(opts) { return modal(Object.assign({side: true}, opts)); }
 
-/* ---------- a page, in the side panel ----------
-   The page itself, every line of it written as on screen, beside what you
-   were looking at: a small change there does not cost you your place. ⤢ makes
-   it the page on screen. render() draws it again with everything else. */
-let SIDE_PAGE = null;   // {space, path, host} while a page is open in the drawer
+/* ---------- a page, docked beside the view ----------
+   The full page in a narrow pane at the right, next to what you were looking
+   at rather than over it: both stay usable, so a small change there does not
+   cost you your place. ⤢ makes it the page on screen, ✕ puts it away.
+   render() draws it again with everything else. */
+let SIDE_PAGE = null;   // {space, path} while a page is docked
 function previewPage(space, path) {
   space = space || V.space;
   if (!inSpace(space, () => V.pages.has(path))) { openPageIn(space, path); return; }
-  const host = el("div", {class: "sidepage"});
-  const {root} = drawer({title: "", body: host, onClose: () => { SIDE_PAGE = null; }});
-  root.classList.add("pageside");
-  const header = root.querySelector("header");
-  header.insertBefore(el("button", {class: "iconbtn", title: "Expand to the full page",
-    "aria-label": "Expand to the full page", onclick: () => { closeModal(); openPageIn(space, path); }}, "⤢"),
-    header.lastElementChild);
-  // Every edit in here is written to the area the page lives in.
-  root.addEventListener("pointerdown", () => activateJournalSpace(space), true);
-  root.addEventListener("focusin", () => activateJournalSpace(space), true);
-  SIDE_PAGE = {space, path, host};
+  SIDE_PAGE = {space, path};
+  $("#pagePane").scrollTop = 0;
   drawSidePage();
+}
+function closeSidePage() {
+  SIDE_PAGE = null;
+  const pane = $("#pagePane");
+  pane.hidden = true;
+  pane.replaceChildren();
+  document.body.classList.remove("pane-open");
 }
 function drawSidePage() {
   const s = SIDE_PAGE;
   if (!s) return;
-  if (!s.host.isConnected) { SIDE_PAGE = null; return; }
-  // Renamed, moved or deleted from in here: there is no page left to show.
-  if (!inSpace(s.space, () => V.pages.has(s.path))) { closeModal(); return; }
-  const scroller = s.host.closest(".body"), top = scroller ? scroller.scrollTop : 0;
+  // Gone, or now the page on screen: one copy of its lines is enough.
+  if (!inSpace(s.space, () => V.pages.has(s.path)) ||
+      (state.view === "page" && state.pagePath === s.path && (V.space || null) === (s.space || null))) {
+    closeSidePage(); return;
+  }
+  const pane = $("#pagePane"), top = pane.scrollTop;
   const node = inSpace(s.space, () => {
     const keep = {view: state.view, pagePath: state.pagePath};
     state.view = "page"; state.pagePath = s.path;
     try { return viewPage(); } finally { Object.assign(state, keep); }
   });
-  s.host.replaceChildren(node);
-  resolveAssets(s.host);
-  if (scroller) scroller.scrollTop = top;
+  pane.replaceChildren(el("div", {class: "panebar"},
+    el("button", {class: "iconbtn", title: "Expand to the full page", "aria-label": "Expand to the full page",
+      onclick: () => { const {space, path} = s; closeSidePage(); openPageIn(space, path); }}, "⤢"),
+    el("button", {class: "iconbtn", title: "Close", "aria-label": "Close", onclick: closeSidePage}, "✕")), node);
+  pane.hidden = false;
+  document.body.classList.add("pane-open");
+  resolveAssets(pane);
+  pane.scrollTop = top;
 }
+// Every edit in the pane is written to the area its page lives in.
+for (const ev of ["pointerdown", "focusin"])
+  $("#pagePane").addEventListener(ev, () => { if (SIDE_PAGE) activateJournalSpace(SIDE_PAGE.space); }, true);
 const PAGE_KIND_ONE = {project: "Project", person: "Person", org: "Organisation", context: "Context",
   area: "Responsibility", goal: "Goal", zettel: "Note", checklist: "Routine or list", journal: "Day page",
   horizon: "Horizon", page: "Page", verb: "Verb"};
@@ -34666,7 +34682,7 @@ function onAreaKey(e) {
 function onConvertKey(e) {
   if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
   if (e.code === "KeyI") {
-    if (dialogUp()) return;
+    if ($("#modalRoot").firstChild) return;
     if (linkSelectedWords(e, "area")) return;
     if (onAreaKey(e)) { e.preventDefault(); e.stopImmediatePropagation(); }
     return;
@@ -35711,7 +35727,7 @@ function rememberItemContext(e) {
 /* Alt+G: refile the line you are on, or the selected one. */
 function onRefileKey(e) {
   if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.code !== "KeyG") return;
-  if (dialogUp()) return;
+  if ($("#modalRoot").firstChild) return;
   let ctx = itemContext(e.target);
   if (!ctx?.id && state.selected) {
     for (const [space] of LOADED) {
@@ -35760,7 +35776,7 @@ function wholeLineSelected(target) {
 }
 
 function branchToCut(e) {
-  if (dialogUp()) return null;
+  if ($("#modalRoot").firstChild) return null;
   /* Lines picked with the mouse or Esc are cut as the handful they are: the
      line remembered here would be the one the drag started on, and only it. */
   if (LINE_SEL.ids.length) return null;
@@ -35791,7 +35807,7 @@ function onBranchCut(e) {
 }
 
 function onBranchPaste(e) {
-  if (!PENDING_BRANCH_CUT || dialogUp()) return;
+  if (!PENDING_BRANCH_CUT || $("#modalRoot").firstChild) return;
   const raw = e.clipboardData?.getData("text/plain");
   if (trim(raw) !== trim(PENDING_BRANCH_CUT.text)) return;
   const dest = itemContext(e.target);
