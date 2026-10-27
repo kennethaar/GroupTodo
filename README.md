@@ -52,7 +52,7 @@ format it writes is described in [docs/vault-format.md](docs/vault-format.md).
 - **Pages open beside the view.** A page opened from a list docks at the right, so you can write in it with the list still there; **hold** any link for half a second to open it there. ⤢ makes it the page on screen.
 - **Several lines at once.** With lines picked, `Tab`/`Shift-Tab` indents or outdents them together and `Ctrl-Enter` makes them all tasks.
 - **Done earlier?** The toast after you close a task or project offers to backdate it.
-- **Tell them it's done.** When a project is completed, the toast's *Notify* writes an email to the people it is `with::` and its client, with the outcome and the steps that were ticked off. Your mail app opens it; nothing goes until you press Send. Also in Done → History.
+- **Tell them it's done.** When a project is completed, the toast's *Notify* writes an email to the people it is `with::` and its client, with the outcome and the steps that were ticked off. Your mail app or Teams opens it; nothing goes until you press Send. Also in Done → History.
 - **Names and dates are picked up as you type** — *tomorrow*, *friday*, *in 3 days*; `Tab` turns a suggestion into a link or due date. `@`, `#` and `[[` list contexts, projects and pages; people come up as you type their name.
 - **Threads on tasks.** Every task has a conversation; **Chat** gathers them all.
 - **Repeats** (`repeat:: weekly`) are offered when you tick one off, never scheduled ahead, so there is no backlog of missed chores.
