@@ -4136,7 +4136,17 @@ async function ensureGuides(record, files) {
   }
 }
 
+/* Every area being read in from its folder right now. A calendar import waits
+   for these: one written into a page before its file is read would be laid
+   back over the file, and the meetings deleted there would come back. */
+const READING = new Set();
+async function filesLoaded() { while (READING.size) await Promise.allSettled([...READING]); }
 async function readInto(record) {
+  const p = readIntoNow(record);
+  READING.add(p);
+  try { return await p; } finally { READING.delete(p); }
+}
+async function readIntoNow(record) {
   /* A folder or template load can finish after the journal is already on screen.
      Keep every locally dirty page and lay it back over the loaded snapshot, so
      text typed during startup can never be replaced by the later load. */
@@ -23292,6 +23302,10 @@ function clearCalendarMeetings(space, feed) {
 }
 
 let CAL_SYNCING = false;
+/* An area whose folder still waits for permission, or came back empty, is on
+   browser storage for now; meetings written there would go over the folder's
+   own day pages once it is back. */
+const calNotOnFolder = space => !!space && (PENDING_GRANT.has(space) || !!LOADED.get(space)?.hold);
 const calWindow = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return [d.getTime(), d.getTime() + CAL_DAYS_AHEAD * 864e5]; };
 const calSummary = s => !s.added && !s.changed && !s.gone ? "Calendars: nothing new."
   : "Calendars: " + [s.added && s.added + " new", s.changed && s.changed + " changed", s.gone && s.gone + " gone"]
@@ -23307,10 +23321,11 @@ async function syncCalendars({quiet = true} = {}) {
   const sum = {added: 0, changed: 0, gone: 0}, failed = [];
   /* An area does not have to be on screen: it is read in behind your back,
      and flush() writes every area that is read in. */
-  const open = async space => { if (Spaces.get(space) && !LOADED.has(space)) { try { await loadSpaceRecord(space); } catch (_) {} } return LOADED.has(space); };
+  const open = async space => { if (Spaces.get(space) && !LOADED.has(space)) { try { await loadSpaceRecord(space); } catch (_) {} } return LOADED.has(space) && !calNotOnFolder(space); };
   const home = calHome();
   let shared = false;
   try {
+    await filesLoaded();
     if (!home) failed.push("there is no area of your own to bring calendars into. Make one in Calendars");
     else if (!await open(home)) failed.push("your own area, " + home + ", could not be opened. Open it once from the area menu (a folder may need your permission again), then try again");
     else if (calAreaShared(home)) failed.push(calSharedWhy(home));
@@ -23318,7 +23333,9 @@ async function syncCalendars({quiet = true} = {}) {
       const name = f.label || calHost(f.url), feed = calFeedId(f.url);
       calNameFeed(feed, name);
       try {
-        const r = importCalendarText(await fetchCalendar(f.url), home, feed, from, to);
+        const text = await fetchCalendar(f.url);
+        await filesLoaded();               // an area may have started reading while the link was fetched
+        const r = importCalendarText(text, home, feed, from, to);
         for (const k in sum) sum[k] += r[k];
       } catch (e) { failed.push(name + ": " + (e.message || e)); continue; }
       // Every area a meeting of this calendar is to show in is read in first.
@@ -23326,6 +23343,7 @@ async function syncCalendars({quiet = true} = {}) {
       inSpace(home, () => { for (const p of allPages(isJournalPath)) for (const b of getPage(p).blocks || [])
         if (blockProp(b, "cal_feed") === feed) calTargets(b, []).forEach(n => areas.add(n)); });
       for (const a of areas) if (a !== home && !await open(a)) failed.push(name + ": the area " + a + " could not be opened, so its meetings are not shown there yet");
+      await filesLoaded();
       const r = routeCalendarMeetings(home, feed, calAlso(f), from, to);
       if (r.sent || r.taken) shared = true;
     }
@@ -23345,6 +23363,8 @@ async function syncCalendars({quiet = true} = {}) {
    background, at most once per `everyMin`. */
 function maybeSyncCalendars(everyMin = CAL_EVERY_MIN) {
   if (!calFeeds().length || CAL_SYNCING) return;
+  // Not before the app has read its folders, nor into an area whose folder is not there yet.
+  if (!INIT_DONE || READING.size || calNotOnFolder(calHome())) return;
   if (Date.now() - (+PREF.get("calendar.tried", "0") || 0) < everyMin * 6e4) return;
   setTimeout(() => syncCalendars(), 0);
 }
@@ -38185,6 +38205,7 @@ function installServiceWorker() {
 
   setInterval(nudgeCheck, 60000);
   installCalendarTimer();
+  maybeSyncCalendars();               // held back until now: the folders are read in
   installMeetingReminders();
   scheduleContextPrompts();
   expireOverdue();
