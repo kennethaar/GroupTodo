@@ -22367,14 +22367,23 @@ function dateSuggestions(frag) {
   if (m) for (const unit of ["minutes", "hours", "days", "weeks", "months"])
     if (!m[2] || unit.startsWith(m[2])) out.push("in " + m[1] + " " + unit);
   for (const w of DATE_WORDS) if (w.startsWith(f) && w !== f && !out.includes(w)) out.push(w);
-  if ((dateFromWords(f) || whenClock(f) || whenDay(f, todayISO())) && !out.includes(f)) out.unshift(f);
+  if ((dateFromWords(f) || whenClock(f) || whenDay(f, todayISO()) || dayAndClock(f)) && !out.includes(f)) out.unshift(f);
   return out.slice(0, 5).map(dateSuggestion).filter(r => r.iso);
+}
+/* "onsdag kl 12", "fri 2pm", "neste onsdag kl 13": a day, then a time on it. */
+function dayAndClock(p) {
+  const m = /^(.+?)\s+((?:at|kl\.?|klokka|klokken)\s+\S+|\S+)$/.exec(p);
+  const time = m && whenClock(m[2]);
+  const day = time && (dateFromWords(m[1]) || whenDay(m[1], todayISO()));
+  return day ? {day, time} : null;
 }
 /* A phrase as a row: a day, or a day and a time. In 45 minutes is a moment, so
    it is reminded then; 14:30 is the next time the clock says it. */
 function dateSuggestion(w) {
   const rel = whenFromNow(w);
   if (rel) return {kind: "date", title: w, iso: rel.day, time: rel.time, now: true};
+  const both = dayAndClock(w);
+  if (both) return {kind: "date", title: w, iso: both.day, time: both.time};
   const time = whenClock(w);
   if (time) return {kind: "date", title: w, iso: time > nowHM() ? todayISO() : shiftISO(todayISO(), 1), time};
   // The words the capture box reads too: "neste onsdag", "i morgen".
@@ -22611,8 +22620,9 @@ function suggestFor(host, opts) {
     return rows.length ? {mode: "trigger", at: before.length - trig[2].length - trig[3].length, rows} : null;
   }
   if (opts.typed === false) return null;
-  // A name or a date being typed, word by word: the last three words at most.
-  const tail = /(?:^|\s)((?:[\p{L}\p{N}][\p{L}\p{N}'._-]*\s){0,2}[\p{L}\p{N}][\p{L}\p{N}'._-]*)$/u.exec(before);
+  // A name or a date being typed, word by word: the last four words at most,
+  // so "neste onsdag kl 13" is read whole.
+  const tail = /(?:^|\s)((?:[\p{L}\p{N}][\p{L}\p{N}'._-]*\s){0,3}[\p{L}\p{N}][\p{L}\p{N}'._-]*)$/u.exec(before);
   if (!tail) return null;
   const words = tail[1].split(/\s+/);
   for (let n = words.length; n >= 1; n--) {
