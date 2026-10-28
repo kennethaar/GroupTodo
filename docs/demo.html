@@ -23498,13 +23498,14 @@ function nameIndex() {
       for (const p of allPages(q => pageKind(q) === "org")) add("org", pageTitle(p), pageRef(p), pageAliases(p));
       for (const code of ["1", "3", "2"])
         for (const p of projectsIn(code)) add("project", pageTitle(p), pageRef(p));
+      for (const p of areaList()) add("area", pageTitle(p), pageRef(p), pageAliases(p));
       for (const c of contextList()) add("context", c, "c/" + c);
       return [];
     });
     return out;
   });
 }
-const KIND_MARK = {person: "p", org: "o", project: "1", context: "@", page: "·", date: "📅"};
+const KIND_MARK = {person: "p", org: "o", project: "1", area: "a", context: "@", page: "·", date: "📅"};
 const LINK_KIND_WORD = {context: "context", person: "person", org: "org", zettel: "note", email: "email",
   area: "responsibility", goal: "goal", checklist: "routine", project: "project", journal: "day",
   horizon: "horizon", page: "page"};
@@ -23643,7 +23644,9 @@ function setDue(block, iso, time = null) {
 function linkKnownNames(text, before = "") {
   const src = String(text || "");
   if (!src) return src;
-  const names = nameIndex().filter(n => n.kind !== "context");
+  // A responsibility is offered as you type, never linked unasked: Health and
+  // Home are words in a sentence far more often than the page.
+  const names = nameIndex().filter(n => n.kind !== "context" && n.kind !== "area");
   const plainBefore = String(before || "").replace(/\[\[[^\]]*(?:\]\[[^\]]*)?\]\]/g, " ");
   const wants = names.map(n => ({word: n.title, ref: n.ref, label: null}));
   wants.sort((a, b) => b.word.length - a.word.length);
