@@ -15362,10 +15362,19 @@ function boardCard(a) {
   const title = el("div", {class: "bcard-title", html: estHtml(a.title) + renderInline(titleForRow(a.title))});
   const who = a.assignee ? el("span", {class: "chip who"}, "\u2192 " + a.assignee) : null;
   const whoInTitle = pillInTitle(title, who, a.assignee);
-  // A button, not a div: a card you cannot reach with Tab is a card half the
-  // people here cannot open. Dragging works on a button just the same.
-  const card = el("button", {
-    class: "bcard", draggable: "true",
+  /* The same box as the list rows, so a card is ticked off where it stands:
+     a tap is done, holding is every state. */
+  const tick = holdable(el("button", {
+    class: "tick", data: {state: a.state || ""},
+    title: a.state === "DONE" ? "Not done after all (hold for every state)" : "Done (hold for every state)",
+  }, ...tickParts(a.state, a.block)), () => {
+    rowSetState(a, () => setBlockState(a.path, a.block, a.state === "DONE" ? "TODO" : "DONE"));
+  }, () => stateMenu(a));
+  /* Reachable with Tab and opened with Enter, as a button would be: a card you
+     cannot reach with Tab is a card half the people here cannot open. Not a
+     button itself, since the box inside it is one. */
+  const card = el("div", {
+    class: "bcard", draggable: "true", role: "button", tabindex: "0",
     data: {id: a.block.id},
     // A link inside the title is the link's click, not the card's -- the same
     // rule the list rows follow, so [[go/todos]] goes to Todos.
@@ -15374,8 +15383,11 @@ function boardCard(a) {
       if (e.target.closest("[data-link]")) return;
       inSpace(a.space, () => openTaskDetail(a.path, a.block, a.space));
     },
+    onkeydown: e => {
+      if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); e.currentTarget.click(); }
+    },
   },
-    title,
+    el("div", {class: "bcard-top"}, tick, title),
     el("div", {class: "bcard-meta"},
       multiSpace() && a.space ? spaceBadge(a.space) : null,
       a.project ? el("span", {class: "chip proj"}, a.project) : null,
