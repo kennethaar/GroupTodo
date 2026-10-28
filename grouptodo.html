@@ -25409,11 +25409,124 @@ function shownChips(by, label, keys, labelOf, countOf) {
     }, countOf(k)))) : null;
 }
 
+/* ---------- next actions that look alike ----------
+   The same todo written twice -- "Call the plumber about the sink" on the
+   project and "Call plumber about sink" on the day you thought of it -- is
+   one thing to do counted twice. Next compares its open actions the way
+   Projects compares projects (projectTwinsOf, on the words of the line) and
+   offers each group at once: keep one, and the others go, or say they are not
+   the same and they stop being flagged. */
+let NEXT_TWINS_KEPT = null;
+function nextTwins() {
+  return memo("nextTwins", () => {
+    const all = nextActions().filter(a => !a.tourStep)
+      .map(a => ({space: a.space, path: a.path, block: a.block, project: a.project, title: plainTitle(a.title)}));
+    const key = PREF.get("twins.not", "[]") + "\u0002" +
+      all.map(r => [r.space, r.path, r.block.id, r.title].join("\u0001")).join("\u0002");
+    if (NEXT_TWINS_KEPT && NEXT_TWINS_KEPT.key === key) return NEXT_TWINS_KEPT.groups;
+    const groups = projectTwinsOf(all);
+    NEXT_TWINS_KEPT = {key, groups};
+    return groups;
+  });
+}
+
+/* The ones not kept go, and whatever was under them -- lines, notes -- moves
+   under the one kept, so nothing written goes with them. Each page touched is
+   kept as it was in snaps, so one undo puts every group back. */
+function foldNextTwins(rows, keep, snaps) {
+  const remember = (space, path) => {
+    const k = JSON.stringify([space, path]);
+    if (!snaps.has(k)) snaps.set(k, {space, path, text: inSpace(space, () => serializePage(getPage(path)))});
+  };
+  const here = inSpace(keep.space, () => findBlock(keep.block.id));
+  if (!here) { notify("The one to keep is no longer there.", "warn"); return 0; }
+  remember(keep.space, here.path);
+  let n = 0;
+  for (const r of rows) {
+    if (r === keep) continue;
+    const hit = inSpace(r.space, () => findBlock(r.block.id));
+    if (!hit) continue;
+    remember(r.space, hit.path);
+    const b = hit.block, k = here.block;
+    k.children = [...(k.children || []), ...(b.children || []).map(cloneBlock)];
+    for (const l of b.body || []) if (!(k.body || []).includes(l)) (k.body || (k.body = [])).push(l);
+    inSpace(r.space, () => { removeBlockFrom(hit.page, b); touch(hit.path); });
+    n++;
+  }
+  if (n) inSpace(keep.space, () => touch(here.path));
+  return n;
+}
+
+function openNextTwins() {
+  const groups = nextTwins();
+  if (!groups.length) { notify("No next actions look alike."); return; }
+  const plans = groups.map(g => ({g, keep: null, not: false}));
+  const applyBtn = el("button", {class: "btn primary", onclick: () => apply()});
+  const count = () => {
+    const n = plans.filter(p => p.keep || p.not).length;
+    applyBtn.textContent = n ? "Apply " + n : "Apply";
+    applyBtn.disabled = !n;
+  };
+  const apply = () => {
+    closeModal();
+    const not = twinNotSame(), snaps = new Map();
+    let gone = 0;
+    for (const p of plans) {
+      if (p.not) for (let i = 0; i < p.g.rows.length; i++)
+        for (let j = i + 1; j < p.g.rows.length; j++) not.add(twinPairKey(p.g.rows[i].title, p.g.rows[j].title));
+      else if (p.keep) gone += foldNextTwins(p.g.rows, p.keep, snaps);
+    }
+    PREF.set("twins.not", JSON.stringify([...not]));
+    clearMemo(); render();
+    if (!gone) return;
+    const undo = () => {
+      for (const x of snaps.values()) inSpace(x.space, () => { putPage(x.path, parsePage(x.text)); touchHere(x.path); });
+      clearMemo(); render();
+      return true;
+    };
+    pushUndo({run: undo});
+    notify("Took out " + gone + " look-alike" + (gone === 1 ? "" : "s") + ". What was under them is kept.",
+      "info", {label: "Undo", run: undo});
+  };
+  const body = el("div", {class: "twins"});
+  plans.forEach((p, gi) => {
+    const rowsEl = el("div", {class: "twinrows"}), actEl = el("div", {class: "twinacts"});
+    // Clicking the choice already made takes it back, as on Projects.
+    const draw = () => {
+      rowsEl.textContent = "";
+      for (const r of p.g.rows) {
+        const here = p.keep === r;
+        rowsEl.append(el("label", {class: "twinrow" + (here ? " keep" : "")},
+          el("input", {type: "radio", name: "ntwin-" + gi, checked: here,
+            onclick: () => { p.keep = here ? null : r; p.not = false; draw(); count(); }}),
+          el("span", {class: "twint"}, r.title),
+          r.project ? el("span", {class: "chip proj"}, r.project) : null,
+          multiSpace() ? spaceBadge(r.space) : null,
+          el("button", {class: "textbtn", onclick: e => { e.preventDefault(); closeModal(); openBlockAt(r.space, r.path, r.block); }}, "Open")));
+      }
+      actEl.textContent = "";
+      actEl.append(el("label", {class: "space-transfer-choice"},
+        el("input", {type: "radio", name: "ntwin-" + gi, checked: p.not,
+          onclick: () => { p.not = !p.not; p.keep = null; draw(); count(); }}), " Not the same"));
+    };
+    draw();
+    body.append(el("div", {class: "twingroup"},
+      el("div", {class: "twinwhy"}, p.g.rows.length + " next actions with " + p.g.why + ". Pick the one to keep:"),
+      rowsEl, actEl));
+  });
+  count();
+  modal({title: "Next actions that look alike", body,
+    foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Close"), applyBtn]});
+}
+
 function viewNext() {
   const sub = subNow();
   const c = el("div", {class: "wrap" + (sub === "board" ? " wide" : "")});
   // What is on screen is what leaves: the states and the context you filtered to.
+  const twins = nextTwins().length;
   c.append(vhead("Next", "Everything on your plate",
+    twins ? el("button", {class: "textbtn twinbtn", title: "Next actions with the same or nearly the same words",
+      onclick: () => openNextTwins()}, "⚠ " + twins + " look alike") : null,
     csvBtn(() => sub === "calendar" ? all : acts, "next"), viewSeg("next")));
   const all = nextActions();
   if (sub === "calendar") { c.append(viewCalendar()); return c; }
