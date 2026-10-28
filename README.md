@@ -11,7 +11,7 @@ A shared to-do list built on GTD (Getting Things Done) that keeps everything as 
 In Edge or Chrome, double-click `grouptodo.html`. It asks three things:
 
 1. **Who** — Your full name, shown beside what you add.
-2. **Where** — A folder for your files (skip to keep everything in the browser for now).
+2. **Where** — A folder for your files (skip to keep everything in the browser for now). Pick a folder a colleague shared and you join it as it is: none of your starter pages go into it, and *You are in …* then shows who else is there, the projects and open tasks you now share, and how to hand a task to somebody.
 3. **Start** — *Start a new list*, or *Open one I was sent* (a shared folder, an invite, or a vault file).
 
 > **Tip:** Click *Set up several areas* at the bottom to split your list into separate folders (e.g., Work, Home) before you begin.
@@ -19,6 +19,7 @@ In Edge or Chrome, double-click `grouptodo.html`. It asks three things:
 ### First Steps
 * **Onboarding:** **Today** opens with the cursor in the top input box and a *Getting started* strip that ticks itself off as you add your name, folder, and first task. It then points you to the *Find your way round GroupToDo* tour project. If colleagues already put your name on tasks, those are offered when you arrive.
 * **Inviting others:** Go to **Areas menu (top right) → Invite somebody**, or send them `grouptodo.html`, the folder name, and [docs/setup-sheet-group.html](docs/setup-sheet-group.html).
+* **Wrong folder or name:** **Areas menu → Folders** renames an area (only in this browser; the folder is untouched) or changes its folder. Changing from one folder to another asks before copying any pages, and leaves them where they are by default.
 * **Solo use across groups:** Using it on your own with several groups around you? See [docs/setup-sheet-personal.html](docs/setup-sheet-personal.html).
 * **Migrating from Obsidian or Logseq:** Open `GroupToDo-Importer.html` in Edge or Chrome. It reads your old vault without changing it, asks what your folders/namespaces/tags mean, previews every page before and after, and writes a new GroupToDo folder. (Format details: [docs/vault-format.md](docs/vault-format.md)).
 
