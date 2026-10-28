@@ -20662,9 +20662,13 @@ function openAskForUpdate(name, only = null) {
   if (!me) { notify("Put your name in first - the sheet has to say who is asking.", "warn"); return; }
   /* Two kinds of line go to the same person: what they owe you, and your own
      tasks that name them -- the questions. Both are in one mail unless you
-     would rather keep the questions apart from the chasing. */
-  const found = waitingOnFrom(name).concat(askingAbout(name)
-    .filter(a => !waitingOnFrom(name).some(w => w.block === a.block)));
+     would rather keep the questions apart from the chasing. A question once
+     asked waits on them, and still names them: it is asked again as a
+     question, not chased as something they owe. */
+  const waits = waitingOnFrom(name).map(a =>
+    peopleNamedIn(a.title).some(n => samePerson(n, name)) ? Object.assign({}, a, {mention: name}) : a);
+  const found = waits.concat(askingAbout(name)
+    .filter(a => !waits.some(w => w.block === a.block)));
   if (!found.length) {
     notify("Nothing open with " + name + "'s name on it.", "warn");
     return;
