@@ -7692,7 +7692,7 @@ function looseActions(acts = leafActions()) {
 function nearestChecklistAncestor(block) {
   let p = block;
   while (p) {
-    const m = /\[\[8\/([^\]]+)\]\]/.exec(p.title || "");
+    const m = /\[\[8\/([^\]|#]+)/.exec(p.title || "");
     if (m) return {title: trim(m[1]), ref: "8/" + trim(m[1])};
     p = p._parent;
   }
@@ -9458,9 +9458,10 @@ function pourDueRoutines(target, day) {
     const s = routineSchedule(path);
     if (!s || (s.last && s.last >= day) || routineDates(path, day)[0] !== day) continue;
     const page = getPage(path);
-    const mark = "[[8/" + baseName(path) + "]]";
+    const mark = ("8/" + baseName(path)).toLowerCase();
     // Added by hand today already: that is this day's one.
-    const there = getPage(target).blocks.some(b => String(b.title || "").includes(mark));
+    const there = getPage(target).blocks.some(b =>
+      linksIn(b.title).some(l => trim(l.split("|")[0]).toLowerCase() === mark));
     if (!there) {
       applyStencil(path, target);
       const parent = getPage(target).blocks[getPage(target).blocks.length - 1];
@@ -9888,7 +9889,8 @@ function applyStencil(listPath, targetPath, context) {
 
   if (todos) {
     const parent = newBlock({
-      title: pageTitle(listPath) + " [[8/" + baseName(listPath) + "]]",
+      // The list's name once, as a link to the list: [[8/daily][Daily checklist]].
+      title: "[[8/" + baseName(listPath) + "][" + pageTitle(listPath) + "]]",
       props: {},
     });
     parent.children = copied;
