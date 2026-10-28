@@ -121,7 +121,7 @@ Every view reads the same Markdown; a change in one is a change everywhere.
 <details>
 <summary><b>🤖 AI Planning, Queries, Templates & Tidying</b></summary>
 
-* **Plan with AI:** From a line's menu, selection bar, or email page, GroupToDo builds a prompt (stored in `8/Prompts/GTD project.md`) containing the text, your name, contexts, mentioned people, and candidate existing projects. It copies the prompt and opens your chosen AI (Local, DeepSeek, ChatGPT, Claude, Gemini, Copilot, Le Chat, or Perplexity). Paste the reply back: GroupToDo formats links, fixes `TODO [[whole sentence]]` errors, maps contexts, and creates the project and next action.
+* **Plan with AI:** From a line's menu, selection bar, or email page, GroupToDo builds a prompt (stored in `8/Prompts/GTD project.md`) containing the text, your name, contexts, mentioned people, and candidate existing projects. It copies the prompt and opens your chosen AI (DeepSeek, ChatGPT, Claude, Gemini, Copilot, Le Chat, Perplexity, or local). Paste the reply back: GroupToDo formats links, fixes `TODO [[whole sentence]]` errors, maps contexts, and creates the project and next action.
 * **Live queries & Embeds:** Type `/query` to build a live Logseq-style query (`{{query (and [[1/Fix sink]] (task TODO))}}`). Type `/embed` to embed a page, or use *Copy as embed* (`((id))`) for a single line.
 * **Templates & Previous values:** Page `key:: value` properties stay in their template's order; click *hide* to fold a property under *hidden values* across all pages using that template. On day pages, trackers and custom properties faintly display what you wrote last time.
 * **Deduplication & Look-alikes:**
@@ -173,3 +173,87 @@ languages/               Language files; English.md lists every line to translat
 docs/                    Setup sheets, mockups, and demo.html (app with sample data)
 docs/vault-format.md     File format spec and Obsidian/Logseq conversion guide
 docs/planner-sync.md     Sending projects to Microsoft Planner (experimental)
+```
+
+### Running It
+
+* **From disk:** Double-click `grouptodo.html`. Desktop Chrome/Edge get the full app including live folder access (no service worker or offline install).
+* **From a URL:** Serve via any static host with no build step (`python3 -m http.server 8000`). Adds home-screen install, offline opening, and the mobile Share button.
+
+| Platform / Browser | Live Folder | Vault File Out | Home Screen |
+|---|---|---|---|
+| **Desktop Chrome / Edge** | **Yes** | Auto-sync | When served |
+| **Desktop Firefox** | No | Save / Open | No |
+| **Android Chrome / Edge** | No | Share | When served |
+| **iOS Safari** | No | Share | When served |
+
+*Check **Vault & sync** (bottom of the sidebar) to see what your current device supports. Safari and Firefox are untested. On iOS, serve from a URL (Safari restricts storage for files opened from the Files app). Do not host the HTML file inside Teams/SharePoint libraries (they sandbox it without storage); instead, click **Sync** in Teams/SharePoint to map the folder to File Explorer and point an area at it.*
+
+### Storage, Sync & `serve.py`
+
+* **Folder structure:** Plain Markdown (`key:: value` properties above a bullet outline). A project's folder defines its status:
+
+```text
+journals/<Person Name>/2026-10-05.md   One file per person per day
+pages/1/ 2/ 3/ 0/ -/                   Projects: active, someday, waiting, completed, cancelled
+pages/_/ g/ a/                         Horizons, goals, responsibilities
+pages/8/                               Checklists, routines, templates, custom *.css
+pages/c/ p/ o/ z/ m/                   Contexts, people, organisations, notes, pasted emails
+```
+
+* **Courier vault file (Mobile/Firefox):** A single `.md` file holding a copy of the whole area for devices that cannot open folders. Keep it *outside* the vault folder. Desktop auto-syncs via *Link vault file*; phones use *Send / Open vault file* (prompts automatically at start/end of day when `work_hours::` is set).
+* **Conflict-free merging:** Pages carry `updated::` timestamps. When both sides change, blocks merge by text. Page deletions travel as tombstones. **Start afresh** wipes only the local browser copy.
+* **`serve.py` (Optional live server):** Lets one always-on machine (including Android Termux) serve everyone live without a courier file, and fetches iCal feeds:
+
+```sh
+export GTD_PASSWORD="$(head -c 24 /dev/urandom | base64)"
+python3 serve.py --vault ~/OneDrive/GroupToDo/Work   # localhost only
+tailscale serve --bg 8777                            # HTTPS to your devices
+```
+
+Refuses non-localhost connections without a 10+ character password (HTTP Basic; put TLS in front). Without a password, it answers only the app on `localhost` (use `--allow-host <name>` for passwordless tunnels, or `--calendars-only` for iCal fetching alone).
+
+### Privacy & GTD Nudges
+
+* **Zero telemetry:** No external dependencies, CDNs, or analytics. Content Security Policy (CSP) restricts connections strictly to `localhost` (`serve.py`), and calendar fetching only contacts public `https` iCal URLs. All user text is escaped before rendering.
+* **Quiet GTD nudges:** Inactive until you have 6+ open tasks, then surfaced during the **Weekly review** (or on row hover in Next/Waiting): missing physical verbs on next actions, missing project outcomes, stuck projects, waits older than 14 days, overdue people check-ins, and blocked projects. Optional 12:00 and 17:00 *"still @context?"* checks can be enabled in **Vault & sync → Context check**.
+
+### Languages & Translations
+
+Switch display languages in **Vault & sync → Language**. Language files live in `pages/8/Languages/` (ignored by search and lists):
+
+```text
+language:: Norsk
+code:: nb
+
+Today => I dag
+Imported {1} file(s). => Importerte {1} fil(er).
+Waiting for =>
+```
+
+* Download a file from [languages/](languages/) and load it via **Open the file**, or use **Translate it yourself** (in-app editor or **Copy for an AI** / **Paste a translation**).
+* Keep `{1}`, `{2}` placeholders intact. Blank lines after `=>` fall back to English. User content is never translated.
+* Developers: run `python docs/build-language-catalog.py` after UI string changes to update `grouptodo.html` and `languages/English.md`. Submit new translations to `languages/` via Pull Request.
+
+### Known Limits
+
+* **Text-based merge:** Rewording the same task on two devices simultaneously leaves both versions.
+* **Single-task deletion:** Deleting a single task line does not propagate across sync; whole-page deletes do.
+* **Folder permissions:** Areas are separated, not encrypted—anyone with folder access can read all files in it.
+* **Shared password:** `serve.py` uses a single shared password rather than individual user accounts.
+* **Mobile folder access:** Mobile browsers cannot write directly to folders; phones must use the courier vault file or `serve.py`.
+* **Pull-only updates:** Updates appear when you open the area; nothing is pushed or emailed.
+* **Mouse-only boards:** Dragging cards on boards requires a mouse.
+* **Folder invites:** An invite file cannot carry a shared folder; the folder itself must be shared via your cloud/network drive.
+* **Device-local state:** Undo history, sidebar pins, and chat read-states are stored per device.
+
+---
+
+## Bugs and Ideas
+
+Report bugs and suggest features at [github.com/kennethaar/GroupTodo/issues](https://github.com/kennethaar/GroupTodo/issues) → **New issue** (search existing issues first and add a 👍 or comment if already raised).
+
+* **Bugs:** Include what you did, what you expected, what happened, your browser/device, whether opened from disk or URL, and a screenshot if possible.
+* **Features:** Describe the problem it solves, not just the proposed solution, so it can be weighed against existing tools.
+
+*Note: Issues are public—leave out real task text, names, and file contents.*
