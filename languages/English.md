@@ -596,6 +596,7 @@ Copied. Paste it on any line to show this one there. =>
 Copied. Paste it wherever you like. =>
 Copied. Press Win+R, then Ctrl+V and Enter: Explorer opens with the file selected. =>
 Copilot =>
+Copilot for work =>
 Copy =>
 Copy and open =>
 Copy as embed =>
