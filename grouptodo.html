@@ -2330,7 +2330,7 @@ body.solview #content{padding-bottom:14px}
     <li><b>Triggers:</b> Type <kbd>@</kbd> for contexts, <kbd>#</kbd> for projects, and <kbd>[[</kbd> for pages; people are offered as you start typing their name. In the box at the top, a context you already have works as the last word too: <i>Call Mia about the VAT phone tomorrow</i>.</li>
     <li><b>Links:</b> Click a link to go to the page. Hold it for half a second to open the page beside the view instead; &#10530; there makes it the full page.</li>
     <li><b>Auto-linking:</b> Known names are suggested as you type (<kbd>Tab</kbd> to accept). Full names link automatically when you leave the line.</li>
-    <li><b>Aliases:</b> <code>aliases:: JS, Johnny</code> on a person's or organisation's page gives it short names. <kbd>@js</kbd> <kbd>Tab</kbd> writes <code>[[p/John Smith][JS]]</code>, which reads as <i>JS</i> and shows <i>John Smith &middot; Acme</i> on hover; <i>Storebrand</i> <kbd>Tab</kbd> links to <i>Storebrand Forsikring AS</i>. Only full names link by themselves when you leave a line; a first name or an alias waits for <kbd>Tab</kbd>, since <i>John</i> may be another John. A name you unlink stays plain.</li>
+    <li><b>Aliases:</b> <code>aliases:: JS, Johnny</code> on a person's or organisation's page gives it short names. <kbd>@js</kbd> <kbd>Tab</kbd> writes <code>[[p/John Smith][JS]]</code>, which reads as <i>JS</i> and shows <i>John Smith &middot; Acme</i> on hover; <i>Storebrand</i> <kbd>Tab</kbd> links to <i>Storebrand Forsikring AS</i>. Only full names link by themselves when you leave a line; a first name or an alias waits for <kbd>Tab</kbd>, since <i>John</i> may be another John. A name you unlink stays plain. An alias that is already the name of another page asks to make the two one.</li>
     <li><b>Dates:</b> Type natural dates (tomorrow, friday, in 3 days) and press <kbd>Tab</kbd>. Placing a date at the end of a task sets its due date.</li>
     <li><b>Waiting For:</b> Setting a line's state to <i>Waiting</i> prompts you to assign the person you are waiting on.</li>
     <li><b>Live lists (<kbd>/query</kbd>):</b> A line like <code>{{query (and [[1/Fix sink]] (task TODO DOING))}}</code> shows every line that matches, kept up to date, and its tasks can be ticked from there. The builder writes the query for you; <i>Edit</i> on the list changes it. Logseq's simple queries work: <code>[[page]]</code>, <code>#tag</code>, <code>"words"</code>, <code>(task ...)</code>, <code>(page ...)</code>, <code>(property key value)</code>, <code>(page-property key value)</code>, <code>(between -7d today)</code>, <code>and</code> / <code>or</code> / <code>not</code>.</li>
@@ -29658,11 +29658,59 @@ function saveRawProp(path, key, text) {
     return;
   }
   const k = m[1].toLowerCase(), v = trim(m[2]);
+  const namesBefore = pageAliases(path);
   if (key && k !== key.toLowerCase()) drop(key.toLowerCase());
   page.props[k] = v;
-  createLinkedPages(v);
+  // An alias is a name, not a page to make: [[JS]] in it would have made one.
+  if (!ALIAS_KEYS.includes(k)) createLinkedPages(v);
   touch(path);
   if (v && WAIT_KEYS.includes(k)) shelveAsWaiting(path);
+  if (ALIAS_KEYS.includes(k)) {
+    const twins = aliasTwins(path, namesBefore);
+    // After the Enter that saved the line, or that same keypress answers the question.
+    if (twins.length) setTimeout(() => askAliasMerge(path, twins), 0);
+  }
+}
+
+/* ---------- an alias that is another page's name ----------
+   Giving John Smith the alias JS says JS is John Smith. When there is a page
+   called JS as well -- made from an @JS before the alias existed, say -- the
+   two are one person written down twice, so it offers to make them one, the
+   way a rename onto a taken name does. The page you gave the alias keeps its
+   name and takes the other's lines; links to JS go to John Smith. Only a name
+   just added asks, so editing the line again does not ask again. */
+const ALIAS_KEYS = ["alias", "aliases"];
+function aliasTwins(path, before) {
+  const old = new Set(before.map(a => a.toLowerCase()));
+  const fresh = pageAliases(path).map(a => a.toLowerCase()).filter(a => !old.has(a));
+  if (!fresh.length) return [];
+  return allPages(p => p !== path && !isJournalPath(p) && !isStencilPath(p) && !isHorizonPage(p) &&
+    (fresh.includes(baseName(p).toLowerCase()) || fresh.includes(pageTitle(p).toLowerCase())));
+}
+function askAliasMerge(path, twins) {
+  const name = pageTitle(path);
+  const list = twins.map(pageTitle).join(", ");
+  const one = () => {
+    closeModal();
+    let n = 0;
+    for (const t of twins) if (mergePageInto(t, path)) n++;
+    if (n) render();
+  };
+  modal({
+    center: true, title: list + (twins.length === 1 ? " is a page too" : " are pages too"), hint: "Enter / n",
+    body: el("div", {},
+      el("div", {class: "field"},
+        el("div", {style: "color:var(--fg2);font-size:13.5px"},
+          name + " now also goes by " + list + ", and there " + (twins.length === 1 ? "is a page" : "are pages") +
+          " by that name. If they are the same, " + name + " takes the lines and links point here.")),
+      pickRow("↵", "Make them one", "the lines of " + list + " move to " + name, one),
+      pickRow("n", "Keep them apart", "the alias stays, and so does " + list, closeModal)),
+    onKey: e => {
+      if (e.key === "Enter") { one(); return true; }
+      if (e.key === "n") { closeModal(); return true; }
+      return false;
+    },
+  });
 }
 
 /* A project that says who it is waiting for is a waiting project, so it goes
