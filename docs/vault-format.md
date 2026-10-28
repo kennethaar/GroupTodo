@@ -121,7 +121,7 @@ Task properties (all optional):
 | `started::` | `YYYY-MM-DD` | when it became DOING |
 | `CLOSED::` | `[[YYYY-MM-DD]]` | when it was finished or cancelled |
 | `done_by::` | `Full Name YYYY-MM-DDTHH:MM:SSZ` | who ticked it off, and when (used by reports) |
-| `repeat::` | `weekly`, `monthly`, `every 2 weeks`, `every monday` | offered again when ticked off |
+| `repeat::` | `weekly`, `monthly`, `every 2 weeks`, `every monday`, `weekly on mon, thu`, `monthly on the last friday`, `yearly on 15 march` | offered again when ticked off |
 | `id::` | short id | stable anchor for links; keep if present |
 
 Where things are said on the line itself:
@@ -142,7 +142,7 @@ Where things are said on the line itself:
 | `c/` | context | `title`, `type:: context` |
 | `a/` | responsibility | `title`, `type:: area` |
 | `g/` | goal | `title`, `type:: goal`, `horizon:: 3` |
-| `8/` | checklist / routine | `title`, `type:: checklist`, `cadence:: weekly` (makes it a routine), `kind:: project` (running it creates a project), `kind:: states` (stages of a task type) |
+| `8/` | checklist / routine | `title`, `type:: checklist`, `cadence:: weekly` (makes it a routine; a rule like `every weekday` or `monthly on the 2nd tuesday` puts it on the day page on those days, with `starts:: [[date]]`, `ends:: [[date]]` or `ends:: after 10`, `time:: 08:00`, and `runs::` / `last_run::` kept by the app), `kind:: project` (running it creates a project), `kind:: states` (stages of a task type) |
 | `_/` | horizon | `type:: horizon` |
 | `journals/` | day page | `title:: YYYY-MM-DD`, `created:: [[YYYY-MM-DD]]` |
 
