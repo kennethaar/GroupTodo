@@ -3586,6 +3586,7 @@ You in {1} =>
 Your email is opening. Attach {1}, then send. =>
 Your name in {1} =>
 Your notes in {1} =>
+Your own to-dos among them wait on {1} once sent. =>
 Your use of GroupToDo is kept in {1}. =>
 Yours to do, and it names {1}, so it is something to ask them about =>
 [[{1}]] Answer =>
@@ -3697,6 +3698,7 @@ your own area, {1}, could not be opened. Open it once from the area menu (a fold
 {1} keeps the folder you chose, “{2}”. =>
 {1} lines are no longer tasks. =>
 {1} lines now =>
+{1} lines now wait on {2}. =>
 {1} lines pasted, one block each. =>
 {1} lines put back. =>
 {1} min + =>
