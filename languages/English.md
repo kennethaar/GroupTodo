@@ -2813,7 +2813,6 @@ here if you want them looked at too. =>
 hides a task from every list until that day, and then it is back by itself; holding a line holds the steps under it. =>
 hour ago =>
 hours ago =>
-how long =>
 how the sheet adds up, kept on your own page =>
 i morgen kl 14 =>
 in 1 month =>
