@@ -4087,6 +4087,21 @@ function calNoteGone(path, page) {
   if (skip.size) page.props.cal_deleted = [...skip].join(" ");
   else delete page.props.cal_deleted;
 }
+/* A day page merged from two copies of it keeps the deletes of both, and a
+   meeting either deleted stays out: the merge alone brought it back from the
+   copy that still had it, and being back took it off the line for good. */
+function calMergeDeleted(merged, a, b) {
+  const skip = new Set([...calSkips(a), ...calSkips(b)]);
+  if (!skip.size) return merged;
+  merged.props.cal_deleted = [...skip].join(" ");
+  const out = [];
+  walkBlocks(merged.blocks, x => {
+    const k = blockProp(x, "cal_uid");
+    if (k && (skip.has(k) || skip.has(calLook(x.title, blockProp(x, "time"))))) { out.push(x); return false; }
+  });
+  out.forEach(x => removeBlockFrom(merged, x));
+  return merged;
+}
 
 function removePage(path) {
   V.pages.delete(path);
@@ -4213,6 +4228,8 @@ async function doFlush() {
     if (!rec.backend || (!rec.dirty.size && !rec.removed.size)) continue;
     const dirty = Array.from(rec.dirty); rec.dirty.clear();
     const gone  = Array.from(rec.removed); rec.removed.clear();
+    // A read of this area under way may have listed the files before these went.
+    for (const edited of rec.readers || []) for (const p of [...dirty, ...gone]) edited.add(p);
     wrote = true;
     V.syncing = true;
     setSync("sync", "saving...");
@@ -4622,19 +4639,21 @@ async function ensureGuides(record, files) {
 const READING = new Set();
 async function filesLoaded() { while (READING.size) await Promise.allSettled([...READING]); }
 async function readInto(record) {
-  const p = readIntoNow(record);
+  /* Every page edited while this read runs: dirty when it starts or ends, or
+     saved in between (doFlush adds those here). The listing can be older than
+     any of them. */
+  const edited = new Set(record.dirty);
+  (record.readers || (record.readers = new Set())).add(edited);
+  const p = readIntoNow(record, edited);
   READING.add(p);
-  try { return await p; } finally { READING.delete(p); }
+  try { return await p; } finally { READING.delete(p); record.readers.delete(edited); }
 }
-async function readIntoNow(record) {
-  /* A folder or template load can finish after the journal is already on screen.
-     Keep every locally dirty page and lay it back over the loaded snapshot, so
-     text typed during startup can never be replaced by the later load. */
-  const localEdits = new Map();
-  for (const path of record.dirty) {
-    const page = record.pages.get(path);
-    if (page) localEdits.set(path, page);
-  }
+async function readIntoNow(record, edited) {
+  /* A folder or template load can finish after the journal is already on screen,
+     and an area is read again behind your back each time you switch to it --
+     seconds, for a big synced folder. Every page edited meanwhile is laid back
+     over the loaded snapshot, and one deleted meanwhile stays deleted: a line
+     typed or taken out then is never replaced by the older file. */
   let files;
   try { files = await record.backend.list(); }
   catch (e) {
@@ -4652,6 +4671,8 @@ async function readIntoNow(record) {
   record.hold = null;
   if (seen && (record.backend.kind === "fs" || record.backend.kind === "http"))
     PREF.set("pagecount:" + record.name, String(seen));
+  for (const path of [...record.dirty, ...record.removed]) edited.add(path);
+  const localEdits = new Map([...edited].map(path => [path, record.pages.get(path)]));
   record.pages.clear(); record.raw.clear();
   record.langs = new Map();
   record.prompts = new Map();
@@ -4666,9 +4687,12 @@ async function readIntoNow(record) {
     if (looksLikeBundle(text)) { couriers++; continue; }
     record.pages.set(path, parsePage(text));
   }
-  /* Local edits win over files that completed loading later. They remain dirty
-     and are flushed normally to the selected backend. */
-  for (const [path, page] of localEdits) record.pages.set(path, page);
+  /* Local edits win over files that completed loading later. Those still dirty
+     are flushed normally to the selected backend. */
+  for (const [path, page] of localEdits) {
+    if (page) record.pages.set(path, page);
+    else record.pages.delete(path);
+  }
   ensureGuides(record, files).catch(() => {});
   langAfterLoad(record).catch(() => {});
   applyVaultCss(record);
@@ -25087,7 +25111,7 @@ function calSortDay(path) {
 function routeCalendarMeetings(home, feed, also, fromMs, toMs, only = null) {
   const firstDay = isoOf(new Date(fromMs)), lastDay = isoOf(new Date(toMs));
   const inWindow = d => d && d >= firstDay && d < lastDay;
-  const dayBlocks = fn => { for (const p of allPages(isJournalPath)) { const d = dayOfPath(p); if (inWindow(d)) for (const b of getPage(p).blocks || []) fn(b, p, d); } };
+  const dayBlocks = fn => { for (const p of allPages(isJournalPath)) { const d = dayOfPath(p); if (inWindow(d)) walkBlocks(getPage(p).blocks, b => { fn(b, p, d); }); } };
   const mine = new Map();
   inSpace(home, () => dayBlocks((b, path, d) => { if (blockProp(b, "cal_feed") === feed) mine.set(blockProp(b, "cal_uid"), {b, path, d}); }));
   const r = {sent: 0, taken: 0};
@@ -25167,9 +25191,9 @@ function unrouteCalendar(feed, space) {
     let n = 0;
     for (const p of allPages(isJournalPath)) {
       if (!dayOfPath(p)) continue;
-      const page = getPage(p);
-      for (const b of (page.blocks || []).slice()) {
-        if (blockProp(b, "cal_feed") !== feed || calTargets(b, []).includes(space)) continue;
+      const page = getPage(p), hits = [];
+      walkBlocks(page.blocks, b => { if (blockProp(b, "cal_feed") === feed && !calTargets(b, []).includes(space)) hits.push(b); });
+      for (const b of hits) {
         if (calKept(b)) for (const k of ["cal_feed", "cal_uid", "cal_share", "branch_sync_id"]) setOrDropProp(b, k, "");
         else { removeBlockFrom(page, b); n++; }
         touchHere(p);
@@ -25406,8 +25430,10 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
     const have = new Map(), skip = new Set();
     for (const p of allPages(isJournalPath)) {
       const d = dayOfPath(p);
-      if (d) for (const b of getPage(p).blocks || [])
+      // Indented under another line is still on the page: not to be imported again.
+      if (d) walkBlocks(getPage(p).blocks, b => {
         if (blockProp(b, "cal_feed") === feed) have.set(blockProp(b, "cal_uid"), {path: p, b, d});
+      });
       calSkipsOf(p, skip);
     }
     // Lines whose key the calendar no longer gives, by what they say.
@@ -25421,7 +25447,7 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
       const title = "#meeting " + (o.cancelled ? "Cancelled: " : "") + o.summary.replace(/^cancel(l)?ed:\s*/i, "");
       const time = o.allDay ? "" : hm(o.start) + (o.end > o.start ? "–" + hm(o.end) : "");
       const lookDay = isoOf(new Date(o.start)) + calLook(title, time);
-      seen.add(o.key); seen.add(lookDay);
+      seen.add(o.key);
       let hit = have.get(o.key);
       const old = !hit && (loose.get(sig(title, isoOf(new Date(o.start)), time)) || []).shift();
       if (old) {
@@ -25447,8 +25473,7 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
       const b = hit.b, was = [b.title, blockProp(b, "time"), blockProp(b, "attendees")].join("\n");
       // Moved to another day in the calendar; one you moved yourself stays where you put it.
       if (hit.path !== path && !skip.has(o.key)) {
-        const old = getPage(hit.path);
-        old.blocks = old.blocks.filter(x => x !== b);
+        removeBlockFrom(getPage(hit.path), b);
         page.blocks.push(b);
         touch(hit.path); touch(path); changed++;
       }
@@ -25457,21 +25482,15 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
     }
     for (const [key, hit] of have) {
       if (seen.has(key) || hit.d < firstDay || hit.d >= lastDay) continue;
-      const page = getPage(hit.path);
-      if (!kept(hit.b)) page.blocks = page.blocks.filter(x => x !== hit.b);
+      if (!kept(hit.b)) removeBlockFrom(getPage(hit.path), hit.b);
       else if (!/^#meeting Cancelled:/.test(hit.b.title)) hit.b.title = hit.b.title.replace(/^#meeting /, "#meeting Cancelled: ");
       else continue;
       touch(hit.path); gone++;
     }
-    // A skipped meeting that has left the calendar needs no more remembering.
-    for (const p of allPages(isJournalPath)) {
-      const d = dayOfPath(p), page = getPage(p);
-      if (!d || d < firstDay || d >= lastDay || !page.props?.cal_deleted) continue;
-      const had = calSkips(page), left = [...had].filter(k => seen.has(k[0] === "~" ? d + k : k));
-      if (left.length === had.size) continue;
-      if (left.length) page.props.cal_deleted = left.join(" "); else delete page.props.cal_deleted;
-      touch(p);
-    }
+    /* cal_deleted:: is not pruned against what came in. This import is one
+       calendar's: pruning took the deletes of every other calendar's meetings
+       off the line, and their import brought them back. A calendar that leaves
+       a meeting out of one fetch and has it back in the next did the same. */
     // A calendar lists its meetings in whatever order it keeps them, so each day's are put in time order.
     for (const path of days) calSortDay(path);
     return {added, changed, gone};
@@ -25576,8 +25595,8 @@ async function syncCalendars({quiet = true} = {}) {
       } catch (e) { failed.push(name + ": " + (e.message || e)); continue; }
       // Every area a meeting of this calendar is to show in is read in first.
       const areas = new Set(calAlso(f));
-      inSpace(home, () => { for (const p of allPages(isJournalPath)) for (const b of getPage(p).blocks || [])
-        if (blockProp(b, "cal_feed") === feed) calTargets(b, []).forEach(n => areas.add(n)); });
+      inSpace(home, () => { for (const p of allPages(isJournalPath)) walkBlocks(getPage(p).blocks, b => {
+        if (blockProp(b, "cal_feed") === feed) calTargets(b, []).forEach(n => areas.add(n)); }); });
       for (const a of areas) if (a !== home && !await open(a)) failed.push(name + ": the area " + a + " could not be opened, so its meetings are not shown there yet");
       await filesLoaded();
       const r = routeCalendarMeetings(home, feed, calAlso(f), from, to);
@@ -36765,7 +36784,8 @@ function mergeBundle(files) {
     if (ii <= li && !incomingChanged) { report.kept++; continue; }
 
     if (localChanged && incomingChanged && serializePage(local) !== serializePage(incoming)) {
-      putPage(path, mergePageContents(local, incoming, ii > li));
+      const merged = mergePageContents(local, incoming, ii > li);
+      putPage(path, isJournalPath(path) ? calMergeDeleted(merged, local, incoming) : merged);
       report.merged++;
     } else if (ii > li) {
       putPage(path, incoming);
