@@ -10946,8 +10946,8 @@ const state = {
 
 function go(view, opts = {}) {
   navRecord();
-  /* Arriving from somewhere else opens a view at its first reading, the list,
-     which is also the quickest to draw. Board and the rest are a click away. */
+  /* Arriving from somewhere else opens a view at the reading last picked for
+     it, or at its first, the list, which is also the quickest to draw. */
   if (view !== state.view) {
     state.jz = null;
     state.todayDay = null;
@@ -11080,7 +11080,9 @@ const noteTodoTouched = () => { state.lastTodoTouch = Date.now(); };
    ============================================================ */
 
 /* ---------- the views, and the readings each one has ----------
-   The first reading of each is where the view opens. */
+   A view opens at the reading last picked for it with its switch or a v key,
+   and at its first before one has been. A link that goes to one reading
+   (a review step, a mind map focus) does not change which. */
 const SUBS = {
   next:     [["list", "List"], ["board", "Board"], ["calendar", "Calendar"]],
   waiting:  [["list", "List"], ["board", "Board"]],
@@ -11091,7 +11093,12 @@ const SUBS = {
   review:   [["steps", "Steps"], ["days", "Day pages"], ["projects", "Projects"], ["actions", "Actions"]],
 };
 const subOk = (view, sub) => !!(SUBS[view] || []).find(s => s[0] === sub);
-const defaultSub = view => SUBS[view] ? SUBS[view][0][0] : null;
+const defaultSub = view => {
+  if (!SUBS[view]) return null;
+  const kept = PREF.get("sub." + view);
+  return subOk(view, kept) ? kept : SUBS[view][0][0];
+};
+const pickSub = (view, sub) => { PREF.set("sub." + view, sub); go(view, {sub}); };
 const subNow = () => subOk(state.view, state.sub) ? state.sub : defaultSub(state.view);
 
 /* ---------- the sidebar ---------- */
@@ -24906,7 +24913,7 @@ function viewSeg(view) {
   return el("div", {class: "vseg", role: "group", "aria-label": "View as"},
     ...SUBS[view].filter(([k]) => k === cur || subShown(view, k))
       .map(([k, label]) => el("button", {"aria-pressed": String(cur === k),
-        onclick: () => go(view, {sub: k})}, label)));
+        onclick: () => pickSub(view, k)}, label)));
 }
 const fbar = (...kids) => el("div", {class: "fbar"}, ...kids);
 function fchip(label, on, onclick, count) {
@@ -37360,15 +37367,15 @@ const CHORDS = {
   "w p": () => go("projects", {sub: "list", statusCode: "1"}),
   "w w": () => go("projects", {sub: "list", statusCode: "3"}),
   "w m": () => go("projects", {sub: "list", statusCode: "2"}),
-  "v b": () => go("next", {sub: "board"}),
-  "v c": () => go("next", {sub: "calendar"}),
-  "v p": () => go("projects", {sub: "board"}),
-  "v t": () => go("projects", {sub: "timeline"}),
-  "v r": () => go("projects", {sub: "report"}),
-  "v h": () => go("projects", {sub: "hours"}),
-  "v g": () => go("pages", {sub: "mindmap"}),
-  "v m": () => go("pages", {sub: "graph"}),
-  "v d": () => go("pages", {sub: "board"}),
+  "v b": () => pickSub("next", "board"),
+  "v c": () => pickSub("next", "calendar"),
+  "v p": () => pickSub("projects", "board"),
+  "v t": () => pickSub("projects", "timeline"),
+  "v r": () => pickSub("projects", "report"),
+  "v h": () => pickSub("projects", "hours"),
+  "v g": () => pickSub("pages", "mindmap"),
+  "v m": () => pickSub("pages", "graph"),
+  "v d": () => pickSub("pages", "board"),
 };
 let chordBuf = "";
 let chordTimer = null;
