@@ -1680,6 +1680,15 @@ button.prow{width:100%;text-align:left}
 .toast .x{margin-left:auto;color:var(--fg3)}
 /* A reminder you asked for stays until it is answered, so it is marked as one. */
 .toast.remind{border-color:var(--accent)}
+/* A move or merge being saved: a bar that fills as the files go, sliding
+   while there is nothing yet to count. */
+.toast.job .job-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.toast.job .job-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jbar{height:5px;border-radius:3px;background:var(--border);overflow:hidden;position:relative}
+.jbar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.jbar.wait i{width:35%;position:absolute;animation:jslide 1.1s ease-in-out infinite}
+@keyframes jslide{from{left:-35%}to{left:100%}}
+@media (prefers-reduced-motion:reduce){.jbar.wait i{animation:none;width:100%;opacity:.4}}
 /* ---------- how long until ----------
    One quiet line on Today: the next task with a time, the next deadline. Each
    is a button into the task itself. */
@@ -2520,6 +2529,69 @@ function notify(msg, level="info", action=null) {
   $("#toasts").append(t);
   // An offer to undo has to outlast the moment you realise you need it.
   setTimeout(() => t.remove(), action ? 12000 : level === "info" ? 3800 : 9000);
+}
+
+/* ---------- work going on in the background ----------
+   Moving or merging a page rewrites the links to it across the vault and then
+   writes every file that changed, which on a synced folder takes a while.
+   Nothing on screen said so, and it looked stuck. Now a toast in the corner
+   carries a bar until the last file is saved. It holds nothing up: you carry
+   on elsewhere, and the cross only hides it. A job done inside a quarter of a
+   second never shows at all. */
+const JOBS = new Set();
+function startJob(label) {
+  const bar = el("i", {}), txt = el("span", {class: "job-t"}, label);
+  const t = el("div", {class: "toast job", role: "status"},
+    el("div", {class: "job-b"}, txt, el("div", {class: "jbar wait"}, bar)),
+    el("button", {class: "x", title: "Hide - it carries on", onclick: () => t.remove()}, "✕"));
+  const job = {
+    label, shown: false,
+    set(done, total, note) {
+      if (total > 0) {
+        t.querySelector(".jbar").classList.remove("wait");
+        bar.style.width = Math.min(100, Math.round(100 * done / total)) + "%";
+      }
+      txt.textContent = job.label + (note ? " - " + note : "");
+    },
+    retitle(text) { job.label = text; txt.textContent = text; },
+    // No message: it just goes (whatever failed has said so itself).
+    finish(msg, level = "info") {
+      JOBS.delete(job);
+      clearTimeout(job.timer);
+      if (!job.shown) { if (msg && level !== "info") notify(msg, level); return; }
+      if (!msg) { t.remove(); return; }
+      t.querySelector(".jbar").classList.remove("wait");
+      bar.style.width = "100%";
+      txt.textContent = msg;
+      if (level !== "info") t.classList.add("warn");
+      setTimeout(() => t.remove(), level === "info" ? 1800 : 9000);
+    },
+  };
+  job.timer = setTimeout(() => { job.shown = true; $("#toasts").append(t); }, 250);
+  JOBS.add(job);
+  return job;
+}
+
+/* A job that ends when everything changed has been written. A batch of moves
+   is one job: the first starts it, the rest join it. key says which page the
+   label is about, so a move that turns into a merge does not count as two. */
+function trackSave(label, key) {
+  for (const j of JOBS) if (j.untilSaved) {
+    if (j.key !== key) { j.key = key; j.retitle("Moving pages"); }
+    return j;
+  }
+  const j = startJob(label);
+  Object.assign(j, {untilSaved: true, key});
+  // Not after the usual pause: it runs once the move in hand has finished.
+  clearTimeout(flushTimer);
+  flush();
+  return j;
+}
+function jobsSaving(n, total) {
+  for (const j of JOBS) if (j.untilSaved) j.set(n, total, "saving " + n + " of " + total + " files");
+}
+function jobsSaved(msg, level) {
+  for (const j of JOBS) if (j.untilSaved) j.finish(msg, level);
 }
 
 /* A reminder the app thought of, rather than one you asked for, so it waits in
@@ -3871,6 +3943,11 @@ function flush() {
 async function doFlush() {
   if (WIPING) return;
   let wrote = false;
+  // Counted for the bar of a move being saved (trackSave).
+  let sent = 0;
+  const toSend = [...LOADED.values()].reduce((n, r) =>
+    n + (r.hold || !r.backend ? 0 : r.dirty.size + r.removed.size), 0);
+  if (toSend) jobsSaving(0, toSend);
   for (const rec of Array.from(LOADED.values())) {
     if (rec.hold) continue;          // its folder looks emptied: see looksEmptied()
     if (!rec.backend || (!rec.dirty.size && !rec.removed.size)) continue;
@@ -3903,6 +3980,7 @@ async function doFlush() {
                    "Renaming it fixes it.", "warn");
           }
         }
+        jobsSaving(++sent, toSend);
       }
       /* A file that will not go is not a detail: when a move's old file stays,
          the project is back on its old shelf at the next load. So a delete
@@ -3912,6 +3990,7 @@ async function doFlush() {
       for (const p of gone) {
         try { await rec.backend.remove(p); }
         catch (e) { if (!/NotFound/i.test((e && (e.name + " " + e.message)) || "")) stuck.push([p, e]); }
+        jobsSaving(++sent, toSend);
       }
       if (stuck.length) {
         stuck.forEach(([p]) => rec.removed.add(p));
@@ -3930,11 +4009,13 @@ async function doFlush() {
       setSync("warn", "saved on device");
       reportStorageTrouble(rec, e);
       V.syncing = false;
+      jobsSaved("Done here, and kept on this device - the files go up when the folder is back.", "warn");
       retryFlush();                 // a sleeping box must not need a keystroke
       return;
     }
   }
   V.syncing = false;
+  if (![...LOADED.values()].some(r => !r.hold && (r.dirty.size || r.removed.size))) jobsSaved("Saved.");
   if (heldRecords().length) setSync("warn", "not saving - folder looks empty");
   else if (V.backend) setSync("ok", V.backend.label);
   if (wrote) Spaces.writeSummary().catch(() => {});
@@ -8254,6 +8335,7 @@ const mergeLineKey = b => (b.state || "") + "\u0000" + trim(b.title);
 function mergePageInto(sourcePath, targetPath, {links = true, temp = false, undo = true} = {}) {
   const src = getPage(sourcePath), tgt = getPage(targetPath);
   if (!src || !tgt || sourcePath === targetPath) return false;
+  trackSave("Merging " + pageTitle(sourcePath) + " into " + pageTitle(targetPath), sourcePath);
   const srcCopy = clonePage(src);
   tgt.props = tgt.props || {};
 
@@ -8320,6 +8402,7 @@ function moveFile(oldPath, newPath) {
   if (oldPath === newPath) return true;
   const page = getPage(oldPath);
   if (!page) { notify("The source page no longer exists.", "warn"); return false; }
+  if (!V.pages.has(newPath)) trackSave("Moving " + pageTitle(oldPath), oldPath);
   const spellings = spellingsOf(oldPath);
   let result = true;
   // The same project on both sides is a merge, not a collision.
@@ -9638,6 +9721,7 @@ function updateReviewed(path) {
 function mergePages(sourcePath, targetPath) {
   const src = getPage(sourcePath), tgt = getPage(targetPath);
   if (!src || !tgt) return;
+  trackSave("Merging " + pageTitle(sourcePath) + " into " + pageTitle(targetPath), sourcePath);
   tgt.blocks.push(...src.blocks);
   touch(targetPath);
   removePage(sourcePath);
@@ -38162,19 +38246,30 @@ async function transferLinkedPages(list, target, opts = {}) {
     if (plan.choice.clash === "merge") merges.push({path: plan.path, dest});
     LOADED.get(target).pages.delete(plan.path);
   }
+  // Each step waits on a save, so the bar counts the steps: files, journal lines, the last save.
+  const verb = {move: "Moving", copy: "Copying", sync: "Syncing"}[plans[0].choice.mode] || "Moving";
+  const what = plans.length === 1 ? inSpace(plans[0].space, () => pageTitle(plans[0].path)) : plans.length + " pages";
+  const job = startJob(verb + " " + what + " to " + target);
+  const steps = plans.reduce((n, p) => n + 1 + p.branches.length, 1);
+  let step = 0;
   try {
     for (const plan of plans) {
       // Copy or sync first; a move removes the source only once the journal lines are saved too.
       const stageMode = plan.choice.mode === "move" ? "copy" : plan.choice.mode;
       const files = [plan.path, ...plan.choice.files].map(path => ({path, from: plan.space}));
+      job.set(step, steps, files.length === 1 ? "the page" : files.length + " pages");
       if (!await copyPagesToSpace(files, target, {mode: stageMode, inner: true}))
         throw new Error("The files could not be saved.");
+      job.set(++step, steps);
       for (const branch of plan.branches) {
+        job.set(step, steps, "journal line " + (plan.branches.indexOf(branch) + 1) + " of " + plan.branches.length);
         if (!await transferBranch(branch, target, {mode: plan.choice.mode, references: false, inner: true}, {path: branch.path}))
           throw new Error("A journal line could not be saved.");
+        job.set(++step, steps);
       }
       if (plan.choice.mode === "move") for (const x of files) inSpace(plan.space, () => removePage(x.path));
     }
+    job.set(step, steps, "saving");
     for (const m of merges) inSpace(target, () => {
       const page = getPage(m.path);
       if (!page) return;
@@ -38187,8 +38282,10 @@ async function transferLinkedPages(list, target, opts = {}) {
       throw new Error("The transfer could not be saved completely.");
     pushUndo({run: () => { restore(); return true; }});
     render();
+    job.finish({Moving: "Moved", Copying: "Copied", Syncing: "Synced"}[verb] + " to " + target + ".");
     return true;
   } catch (e) {
+    job.finish();
     restore();
     await flush();
     notify("Transfer rolled back: " + e.message, "error");
