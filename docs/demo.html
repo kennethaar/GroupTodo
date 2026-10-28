@@ -21103,8 +21103,6 @@ const ASK_FINITE = "er|var|blir|kan|skal|vil|må|har|bør|går|är|ska|vill|mås
 const ASK_QWORD = /^(?:hva|hvem|hvor|hvorfor|hvordan|når|hvilk\p{L}*|hvad|vad|vem|var|varför|hur|när|vilk\p{L}*|what|who|where|why|how|when|which|was|wer|wo|warum|wie|wann|welch\p{L}*)$/iu;
 const ASK_GENERIC = new Set(/hva|hvad|vad|what|wie|was|er|är|is|ist|the|der|den|det|dette|denne|detta|this|it|that|das|dem|status|stand|update|oppdatering|uppdatering|opdatering|nytt|news|latest|siste|noe|any|på|on|of|om|for|för|zu|von|til|med|with|about|waiting|wait|venter|väntar|warte|warten|svar|svaret|answer|reply|antwort|feedback|tilbakemelding|fra|från|from|auf/
   .source.split("|"));
-// "Ask Johan and Jenny": the others asked with them, and the word between.
-const ASK_AND = /,|&|og|and|och|und/.source;
 const askEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const askNameRe = name => new RegExp("(?<![\\p{L}\\p{N}])(?:(?:" + ASK_VERB + ")\\s+)?" + askEsc(name) +
   "(?![\\p{L}\\p{N}])", "giu");
@@ -21112,20 +21110,14 @@ function askQuestionParts(item, recipient) {
   const raw = plainTitle(item.title);
   let text = raw;
   const full = trim(recipient || ""), first = full.split(/\s+/)[0];
-  /* "Ask Johan and Jenny about X", sent to Jenny: the asking is the mail, and
-     so is the list of who is asked, Johan with them. Only a list that names
-     them, at the start. */
+  /* A line that names somebody else as well, "ask Johan and Jenny about X",
+     goes as you wrote it: taking one name out leaves the others making no
+     sense, and who else is in it is part of the question. */
   const others = full ? peopleNamedIn(item.title || "").filter(n => !samePerson(n, full)) : [];
-  if (others.length) {
-    const names = [full, first, ...others].filter(Boolean).sort((a, b) => b.length - a.length).map(askEsc).join("|");
-    const list = new RegExp("^\\s*(?:(?:" + ASK_VERB + ")\\s+)?(?:" + names + ")(?:\\s*(?:" + ASK_AND + ")\\s*(?:" +
-      names + "))+(?![\\p{L}\\p{N}])", "iu");
-    text = text.replace(list, m => askNameRe(full).test(m) ? " " : m);
-  }
   // The whole name wherever it stands; the first name alone only where it is
   // plainly the one being asked: after the asking, or at either end.
-  if (full) text = text.replace(askNameRe(full), " ");
-  if (first && first !== full) {
+  if (full && !others.length) text = text.replace(askNameRe(full), " ");
+  if (first && first !== full && !others.length) {
     const safe = askEsc(first);
     text = text.replace(new RegExp("(?<![\\p{L}\\p{N}])(?:" + ASK_VERB + ")\\s+" + safe + "(?![\\p{L}\\p{N}])", "giu"), " ")
       .replace(new RegExp("^\\s*" + safe + "(?![\\p{L}\\p{N}])|(?<![\\p{L}\\p{N}])" + safe + "\\s*[?.!]?\\s*$", "giu"), " ");
@@ -21141,10 +21133,8 @@ function askQuestionParts(item, recipient) {
     else text = text.replace(new RegExp("^(?:" + ASK_ABOUT + ")\\s+", "iu"), "");
     // "hva som må gjøres" is asked as "hva må gjøres?"
     text = text.replace(/^(hv\p{L}*|va\p{L}*|vem|vilk\p{L}*)\s+(?:som|der)\s+/iu, "$1 ");
-    // What is left of "status på [name]": the på that pointed at them, or
-    // the "and" that joined them to somebody else.
-    text = tidy(text.replace(/\s+(?:på|til|med|to|with|for|of|on|fra|från|from|von|og|and|och|und|&)\s*([?.!]?)$/iu, "$1")
-      .replace(/^(?:og|and|och|und|&)\s+/iu, ""));
+    // What is left of "status på [name]": the på that pointed at them.
+    text = tidy(text.replace(/\s+(?:på|til|med|to|with|for|of|on|fra|från|from|von)\s*([?.!]?)$/iu, "$1"));
     const lead = (text.split(/\s/)[0] || "").replace(/[^\p{L}]/gu, "");
     if (asked || ASK_QWORD.test(lead)) {
       const m = /^([^.!?]+)([.!?]?)([\s\S]*)$/.exec(text);
