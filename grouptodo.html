@@ -26398,14 +26398,18 @@ function peopleRows() {
     const add = (name, space) => {
       if (!trim(name)) return null;
       const k = slugPerson(name);
-      if (!rows.has(k)) rows.set(k, {name, spaces: new Set(), member: false, me: samePerson(name, me)});
+      if (!rows.has(k)) rows.set(k, {name, spaces: new Set(), aliases: new Set(), member: false, me: samePerson(name, me)});
       const r = rows.get(k);
       if (space) r.spaces.add(space);
       return r;
     };
     if (me) add(me).member = true;
     acrossSpaces(() => {
-      for (const p of allPeople()) { const r = add(personName(p), V.space); if (isMemberPage(p)) r.member = true; }
+      for (const p of allPeople()) {
+        const r = add(personName(p), V.space);
+        for (const a of pageAliases(p)) r.aliases.add(a);
+        if (isMemberPage(p)) r.member = true;
+      }
       for (const m of members()) add(m.name, V.space).member = true;
       return [];
     });
@@ -26496,7 +26500,7 @@ function viewPeople() {
       quiet.length ? el("div", {class: "group"}, el("span", {class: "plain"}, "Not named in any open work")) : null,
       quiet.length ? pagedCard(quiet, personRow) : null];
   };
-  const f = textFilter("people", "Filter people", rows, r => [r.name, r.seen, ...r.spaces, ...personOrgs(r.name)].join(" "),
+  const f = textFilter("people", "Filter people", rows, r => [r.name, ...r.aliases, r.seen, ...r.spaces, ...personOrgs(r.name)].join(" "),
     sub === "cards" ? (hits, q) => hits.length ? el("div", {class: "cardgrid"}, ...hits.map(card))
       : emptyCard(noMatch(q, "Nobody here yet.")) : list);
   c.append(fbar(f.input, fchip("Everyone", kind === "all", () => { PREF.set("people.kind", "all"); render(); }),
