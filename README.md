@@ -90,7 +90,12 @@ format it writes is described in [docs/vault-format.md](docs/vault-format.md).
 | **Weekly review** | Steps, Projects, Actions | the GTD review, projects and next actions dealt one card at a time |
 
 Every view reads the same markdown; a change in one is a change everywhere.
-Next, Waiting for and Projects export to CSV for Excel.
+Next, Waiting for and Projects export to CSV for Excel. On their boards, the ✕ on a
+column's head puts it away until you click its pill above the board; on the lists,
+the same chips show or hide a context, person or status, and a hidden one stays
+hidden in both views. Each has a **Sort** menu (by urgency, by name and, on Next and
+Waiting for, by date, age or length); sorted by urgency, every row and card carries
+its ↑ chip.
 
 ### Highlights
 
@@ -148,7 +153,7 @@ serve.py               optional sync server and calendar fetcher
 docs/vault-format.md   the file format, and converting from Obsidian or Logseq
 docs/planner-sync.md   sending projects to Microsoft Planner (experimental)
 languages/             language files; English.md lists every line to translate
-docs/                  setup sheet and mockups
+docs/                  setup sheets, mockups, and demo.html (the app with sample data)
 ```
 
 ## Running it
@@ -210,7 +215,7 @@ journals/<Person Name>/2026-10-05.md   one file per person per day
 pages/1/ 2/ 3/ 0/ -/   projects: active, someday, waiting, completed, cancelled
 pages/_/ g/ a/         horizons, goals, responsibilities
 pages/8/               checklists, routines, templates; *.css for your own look
-pages/c/ p/ o/ z/      contexts, people, organisations, notes
+pages/c/ p/ o/ z/ m/   contexts, people, organisations, notes, pasted emails
 ```
 
 Plain markdown: `key:: value` properties, then a bullet outline. A project's
