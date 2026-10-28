@@ -177,7 +177,14 @@ def catalog(html):
     return sorted(strings), sorted(templates - strings)
 
 
-def english_file(strings, templates):
+def when_words(strings):
+    """The keys for the words dates and times are read in -- when: next,
+    when: tomorrow -- taken out of the screen text into a section of their own."""
+    words = [s for s in strings if re.fullmatch(r"when: [a-z ]+", s)]
+    return [s for s in strings if s not in words], words
+
+
+def english_file(strings, templates, words):
     lines = [
         "language:: English",
         "code:: en",
@@ -191,22 +198,26 @@ def english_file(strings, templates):
     lines += [s + " =>" for s in strings]
     lines += ["", "# Sentences with a value in them"]
     lines += [s + " =>" for s in templates]
+    lines += ["", "# Words for dates and times, read in what you write: \"neste onsdag kl 13\".",
+              "# Several words after => are separated by commas:   when: tomorrow => i morgen, imorgen"]
+    lines += [s + " =>" for s in words]
     return "\n".join(lines) + "\n"
 
 
 def main():
     html = open(APP, encoding="utf-8", newline="").read()
     strings, templates = catalog(html)
-    line = BEGIN + "\nconst LANG_CATALOG = " + json.dumps({"s": strings, "t": templates},
+    strings, words = when_words(strings)
+    line = BEGIN + "\nconst LANG_CATALOG = " + json.dumps({"s": strings, "t": templates, "w": words},
                                                         ensure_ascii=False, separators=(",", ":")) + ";\n" + END
     if BEGIN not in html:
         sys.exit("Markers not found in grouptodo.html -- add them where LANG_CATALOG belongs.")
     html = re.sub(re.escape(BEGIN) + r"[\s\S]*?" + re.escape(END), lambda _: line, html)
     open(APP, "w", encoding="utf-8", newline="").write(html)
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    open(OUT, "w", encoding="utf-8", newline="\n").write(english_file(strings, templates))
+    open(OUT, "w", encoding="utf-8", newline="\n").write(english_file(strings, templates, words))
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
-    print(len(strings), "strings,", len(templates), "templates")
+    print(len(strings), "strings,", len(templates), "templates,", len(words), "date words")
 
 
 if __name__ == "__main__":
