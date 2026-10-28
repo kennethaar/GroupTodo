@@ -3710,14 +3710,24 @@ function touchHere(path) {
    and the next import does not bring it back. Each day page remembers which
    meetings it held (page._cal, not written), so any edit that takes one away
    counts -- except the importer's own, which run inside calQuietly. A meeting
-   that comes back to the page, by undo or a paste, comes off the line. */
+   that comes back to the page, by undo or a paste, comes off the line.
+   Some calendars give a meeting a new UID on a later fetch, so the line also
+   holds what the meeting looked like (~ and a hash of its title and time):
+   under a new UID it is still the one you deleted from that day. */
 let CAL_OWN_EDIT = 0;
 function calQuietly(fn) { CAL_OWN_EDIT++; try { return fn(); } finally { CAL_OWN_EDIT--; } }
 function calSkips(page) { return new Set(trim(page?.props?.cal_deleted || "").split(/[\s,]+/).filter(Boolean)); }
+const calLook = (title, time) => "~" + calHash(title + "\n" + (time || ""));
 function calKeysOn(page) {
-  const keys = new Set();
-  walkBlocks(page.blocks, b => { const k = blockProp(b, "cal_uid"); if (k) keys.add(k); });
+  const keys = new Map();
+  walkBlocks(page.blocks, b => { const k = blockProp(b, "cal_uid"); if (k) keys.set(k, calLook(b.title, blockProp(b, "time"))); });
   return keys;
+}
+// What a fetch is checked against: the keys, and each look with its day in front.
+function calSkipsOf(path, into) {
+  const d = dayOfPath(path);
+  calSkips(getPage(path)).forEach(k => into.add(k[0] === "~" ? d + k : k));
+  return into;
 }
 function calRemember(page, keys) { Object.defineProperty(page, "_cal", {value: keys, writable: true, configurable: true}); }
 /* The first build wrote cal_skip:: for meetings nobody deleted -- a synced
@@ -3739,8 +3749,8 @@ function calNoteGone(path, page) {
   const was = page._cal, now = calKeysOn(page);
   calRemember(page, now);
   const before = calSkips(page), skip = new Set(before);
-  if (was && !CAL_OWN_EDIT) for (const k of was) if (!now.has(k)) skip.add(k);
-  for (const k of now) skip.delete(k);
+  if (was && !CAL_OWN_EDIT) for (const [k, look] of was) if (!now.has(k)) { skip.add(k); skip.add(look); }
+  for (const [k, look] of now) { skip.delete(k); skip.delete(look); }
   if (skip.size === before.size && [...skip].every(k => before.has(k))) return;
   if (skip.size) page.props.cal_deleted = [...skip].join(" ");
   else delete page.props.cal_deleted;
@@ -23882,7 +23892,7 @@ function routeCalendarMeetings(home, feed, also, fromMs, toMs, only = null) {
         if (blockProp(b, "cal_feed") === feed && blockProp(b, "branch_sync_id")) synced.set(blockProp(b, "branch_sync_id"), x);
       });
       // A copy deleted or moved in this area is not sent again, nor moved back.
-      for (const p of allPages(isJournalPath)) calSkips(getPage(p)).forEach(k => skip.add(k));
+      for (const p of allPages(isJournalPath)) calSkipsOf(p, skip);
       for (const [k, m] of mine) {
         // The calendar gave the meeting a new key: its copy here takes it too.
         const was = !there.has(k) && synced.get(blockProp(m.b, "branch_sync_id"));
@@ -23898,7 +23908,7 @@ function routeCalendarMeetings(home, feed, also, fromMs, toMs, only = null) {
         const copy = all.find(x => blockProp(x.b, "cal_feed") === feed);
         const want = calTargets(m.b, also).includes(space);
         if (want && !copy) {
-          if (all.length || skip.has(k)) continue;
+          if (all.length || skip.has(k) || skip.has(m.d + calLook(m.b.title, blockProp(m.b, "time")))) continue;
           const id = blockProp(m.b, "branch_sync_id") || uid();
           if (!blockProp(m.b, "branch_sync_id")) { m.b.props.branch_sync_id = id; inSpace(home, () => touchHere(m.path)); }
           const c = cloneBlock(m.b);
@@ -24179,7 +24189,7 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
       const d = dayOfPath(p);
       if (d) for (const b of getPage(p).blocks || [])
         if (blockProp(b, "cal_feed") === feed) have.set(blockProp(b, "cal_uid"), {path: p, b, d});
-      calSkips(getPage(p)).forEach(k => skip.add(k));
+      calSkipsOf(p, skip);
     }
     // Lines whose key the calendar no longer gives, by what they say.
     const loose = new Map();
@@ -24189,9 +24199,10 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
     }
     const seen = new Set(), days = new Set();
     for (const o of meetings) {
-      seen.add(o.key);
       const title = "#meeting " + (o.cancelled ? "Cancelled: " : "") + o.summary.replace(/^cancel(l)?ed:\s*/i, "");
       const time = o.allDay ? "" : hm(o.start) + (o.end > o.start ? "–" + hm(o.end) : "");
+      const lookDay = isoOf(new Date(o.start)) + calLook(title, time);
+      seen.add(o.key); seen.add(lookDay);
       let hit = have.get(o.key);
       const old = !hit && (loose.get(sig(title, isoOf(new Date(o.start)), time)) || []).shift();
       if (old) {
@@ -24201,7 +24212,7 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
         touch(hit.path); changed++;
       }
       // Deleted, or cut to somewhere else: not brought back.
-      if (!hit && (o.cancelled || skip.has(o.key))) continue;
+      if (!hit && (o.cancelled || skip.has(o.key) || skip.has(lookDay))) continue;
       const att = o.people.map(linkKnownNames).join(", ");
       const path = ensureJournal(isoOf(new Date(o.start))), page = getPage(path);
       days.add(path);
@@ -24237,7 +24248,7 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
     for (const p of allPages(isJournalPath)) {
       const d = dayOfPath(p), page = getPage(p);
       if (!d || d < firstDay || d >= lastDay || !page.props?.cal_deleted) continue;
-      const had = calSkips(page), left = [...had].filter(k => seen.has(k));
+      const had = calSkips(page), left = [...had].filter(k => seen.has(k[0] === "~" ? d + k : k));
       if (left.length === had.size) continue;
       if (left.length) page.props.cal_deleted = left.join(" "); else delete page.props.cal_deleted;
       touch(p);
