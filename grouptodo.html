@@ -33494,7 +33494,7 @@ function openVerbPicker(path, block) {
   const tabs = el("div", {class: "statefilter"});
   for (const code of verbLangs()) {
     tabs.append(el("button", {class: "chip filter" + (code === lang ? " on" : ""),
-      onclick: () => { PREF.set("verbLang", code); closeModal(); openVerbPicker(path, block); }},
+      onclick: () => { PREF.set("verbLang", code); closeModal({keepQueue: true}); openVerbPicker(path, block); }},
       (code === lang ? "\u2713 " : "") + (VERB_LANG_NAME[code] || code)));
   }
   body.append(el("div", {class: "field"}, el("label", {}, "Language"), tabs));
@@ -34525,6 +34525,11 @@ function deletePrompt(path) {
    ============================================================ */
 function openWeeding(next) {
   const stalest = stalestActiveProjects(CFG.weedCount);
+  /* A fix opens its own dialog over the review, and the review comes back
+     when that one is answered or left, so a morning is not a single repair. */
+  const fixThen = fn => { closeModal({keepQueue: true}); fn(); askAfterModal(() => openWeeding(next)); };
+  const finish = () => { PREF.set(MORNING_KEY, todayISO()); closeModal(); render(); };
+  const onward = () => { finish(); (next || (() => openContextPicker("Where are you now?", surfaceContext)))(); };
   const body = el("div", {});
   if (!weedingWorthIt()) {
     body.append(el("div", {class: "field"},
@@ -34540,8 +34545,7 @@ function openWeeding(next) {
     const flags = [];
     if (!p.anyTodo)  flags.push("no next action");
     if (!outcomeOf(p.path)) flags.push("no outcome");
-    if (p.noContext) flags.push("no context");
-    if (p.noVerb)    flags.push("no verb");
+    // Context and verb belong to a task, so they are flagged on its row below.
     sec.append(el("h4", {},
       el("span", {}, (i + 1) + ". " + p.title),
       p.ageDays != null ? el("span", {class: "n"}, p.ageDays + "d old") : null,
@@ -34550,28 +34554,40 @@ function openWeeding(next) {
     if (p.ageDays != null && p.ageDays > CFG.staleProjectDays) {
       sec.append(el("div", {class: "dash-item", style: "color:var(--warn)"},
         el("span", {}, "Older than 6 months. Still real? Park it in 2/ or kill it in _/."),
-        el("button", {class: "fix", onclick: () => openStatusPicker(p.path)}, "change status")));
+        el("button", {class: "fix", onclick: () => fixThen(() => openStatusPicker(p.path))}, "change status")));
     }
     for (const t of p.todos) {
-      sec.append(el("button", {class: "dash-item", onclick: () => { closeModal(); openTaskDetail(p.path, t.block); }},
-        stateChip(t.state, t.block), el("span", {translate: "no", html: renderInline(t.title)}),
-        t.missingContext ? el("span", {class: "chip miss"}, "ctx") : null,
-        t.missingVerb ? el("span", {class: "chip miss"}, "verb") : null));
+      const open = () => {
+        closeModal({keepQueue: true});
+        openTaskDetail(p.path, t.block);
+        notify("Opened " + plainTitle(t.title) + ".", "info", {label: "Back to the review", run: () => openWeeding(next)});
+      };
+      sec.append(el("div", {class: "dash-item"},
+        stateChip(t.state, t.block),
+        el("button", {style: "flex:1;min-width:0;text-align:left;color:inherit", title: "Open the task",
+          translate: "no", html: renderInline(t.title), onclick: open}),
+        t.missingContext ? el("button", {class: "chip miss", title: "Where can this be done?",
+          onclick: () => fixThen(() => promptAndInsertContext(p.path, t.block))}, "+ context") : null,
+        t.missingVerb ? el("button", {class: "chip miss", title: "What would a camera see?",
+          onclick: () => fixThen(() => openVerbPicker(p.path, t.block))}, "+ verb") : null));
     }
     sec.append(el("div", {style: "display:flex;gap:6px;padding:6px 16px 10px;flex-wrap:wrap"},
-      el("button", {class: "btn sm ghost", onclick: () => { closeModal(); openPage(p.path); }}, "open"),
-      el("button", {class: "btn sm ghost", onclick: () => { closeModal(); openAddNextAction(p.path); }}, "+ next action"),
-      el("button", {class: "btn sm ghost", onclick: () => { closeModal(); openOutcomePrompt(p.path); }}, "outcome"),
-      el("button", {class: "btn sm ghost", onclick: () => { closeModal(); openStatusPicker(p.path); }}, "status"),
+      el("button", {class: "btn sm ghost", onclick: () => {
+        closeModal({keepQueue: true}); openPage(p.path);
+        notify("Opened " + p.title + ".", "info", {label: "Back to the review", run: () => openWeeding(next)});
+      }}, "open"),
+      el("button", {class: "btn sm ghost", onclick: () => fixThen(() => openAddNextAction(p.path))}, "+ next action"),
+      el("button", {class: "btn sm ghost", onclick: () => fixThen(() => openOutcomePrompt(p.path))}, "outcome"),
+      el("button", {class: "btn sm ghost", onclick: () => fixThen(() => openStatusPicker(p.path))}, "status"),
       el("button", {class: "btn sm ghost", onclick: () => { updateReviewed(p.path); closeModal(); openWeeding(next); }}, "mark reviewed")));
     body.append(sec);
   });
   modal({
     title: "Morning weeding", hint: "5 minutes · w continues",
     body,
-    foot: [el("button", {class: "btn ghost", onclick: closeModal}, "Skip"),
-           el("button", {class: "btn primary", onclick: () => { closeModal(); (next || (() => openContextPicker("Where are you now?", surfaceContext)))(); }}, "Continue → context")],
-    onKey: e => { if (e.key === "w") { closeModal(); (next || (() => openContextPicker("Where are you now?", surfaceContext)))(); return true; } return false; },
+    foot: [el("button", {class: "btn ghost", title: "Finish the review for today", onclick: () => { finish(); notify("Morning review done."); }}, "Done"),
+           el("button", {class: "btn primary", onclick: onward}, "Done → context")],
+    onKey: e => { if (e.key === "w") { onward(); return true; } return false; },
   });
 }
 
@@ -37101,21 +37117,26 @@ function offerContextChange(label) {
 }
 
 /* The morning review waits on Today rather than calling out when the app
-   opens: there on a day it is worth it, gone once opened or put away. Kept
-   on this device, since it is your morning and not the area's. */
+   opens: there on a day it is worth it, gone once finished with Done or put
+   away. Opening it is not finishing it -- going off to fix a task leaves the
+   box behind, saying it can be resumed. Kept on this device, since it is
+   your morning and not the area's. */
 const MORNING_KEY = "morning.done";
+const MORNING_BEGUN = "morning.begun";
 const morningDue = () => weedingWorthIt() && PREF.get(MORNING_KEY, "") !== todayISO() &&
   !!dateIn(getSetting("started")) && dateIn(getSetting("started")) !== todayISO();
 function morningRoutine() {
-  PREF.set(MORNING_KEY, todayISO());
+  PREF.set(MORNING_BEGUN, todayISO());
   openWeeding();
 }
 function morningBox() {
   if (!morningDue()) return null;
+  const begun = PREF.get(MORNING_BEGUN, "") === todayISO();
   return el("div", {class: "news"},
     el("span", {"aria-hidden": "true"}, "\u2600"),
-    el("div", {}, el("button", {class: "go", onclick: () => { morningRoutine(); render(); }}, "Morning review"),
-      " \u00B7 five minutes on the stalest projects"),
+    el("div", {}, el("button", {class: "go", onclick: () => { morningRoutine(); render(); }},
+        begun ? "Resume morning review" : "Morning review"),
+      begun ? " \u00B7 press Done in it when you are finished" : " \u00B7 five minutes on the stalest projects"),
     el("button", {class: "x", "aria-label": "Not today", title: "Not today", onclick: () => {
       PREF.set(MORNING_KEY, todayISO());
       render();
