@@ -32299,7 +32299,8 @@ function trackerTapWidget(t, save) {
   function build() {
     const n = tapCount(raw);
     box.textContent = "";
-    box.append(tap(() => write(n + 1), {class: "tapadd", title: "One more"}, "+1 " + trackerTitle(t.name)));
+    // The name is already beside it, on the line and among the page's values.
+    box.append(tap(() => write(n + 1), {class: "tapadd", title: "One more " + trackerTitle(t.name)}, "+1"));
     if (n > 10) box.append(el("span", {class: "tapmany"}, icon + " \u00d7 " + n),
       tap(() => write(n - 1), {class: "textbtn", title: "One less"}, "\u22121"));
     else for (let i = 0; i < n; i++) box.append(tap(() => write(n - 1), {class: "tapicon", title: "Take one off"}, icon));
