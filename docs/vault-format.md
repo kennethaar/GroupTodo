@@ -54,6 +54,7 @@ An *area* (Work, Home, …) is one folder. Areas never share or nest folders.
 - `planner/` (outbox.json, state.json, sent.json) is there only when the area is sent to Microsoft Planner (experimental): the app and a Power Automate flow write it, never by hand. See [planner-sync.md](planner-sync.md).
 - `pages/8/timer.md` holds the sidebar timer's usual length as `minutes:: 25`. Optional; without it the timer runs 2 minutes.
 - `pages/8/Languages/<Language>.md` are the app's words in other languages, one `English => translation` line each. They are not pages; the app writes `English.md` itself.
+- `pages/8/Prompts/<name>.md` are prompts for an AI, kept as plain text, not pages: `GTD project.md` is the one *Plan it with an AI* uses, with `{name}`, `{contexts}`, `{people}`, `{project}`, `{projects}` and `{text}` filled in each time. Optional; without it the app's own wording is used.
 - `pages/8/*.css` are your own stylesheets, laid over the app's look in file-name order (for example a monospace font: `.blk .txt{font-family:monospace}`). The app reads them and never writes them. They work from a chosen folder or the sync server, not from browser storage.
 
 ## 2. A page
