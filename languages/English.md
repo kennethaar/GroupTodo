@@ -165,6 +165,7 @@ code:: en
 : skipped =>
 : the last card's answers are gathered up, the new card slides in face down and turns over, and only then are its answers dealt. You can always tell when you have moved to a different project. Pick an answer by clicking it or dragging the card onto it. A project is stamped =>
 :scope > .bcard =>
+:scope > .bcol[data-colkey] =>
 :scope > .linemenu =>
 :scope > .props =>
 :scope > .rel-children =>
@@ -545,6 +546,7 @@ Closed by =>
 Code, for example nb, de, sv (optional) =>
 Colour =>
 Colour as hex =>
+Column put back. =>
 Columns =>
 Comes after =>
 Comes back and never finishes - the weekly accounts, the monthly report, everything you pack before a trip. Not a project, because there is nothing to tick off. =>
