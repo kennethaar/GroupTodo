@@ -1173,7 +1173,7 @@ details>summary:hover{color:var(--fg2)}
 .bl-line{display:flex;align-items:flex-start;gap:7px;padding:1px 0}
 .bl-bullet{position:absolute;left:3px;top:8px;width:6px;height:6px;border-radius:50%;background:var(--fg3)}
 .bl-node.has-kids>.bl-line>.bl-bullet{box-shadow:0 0 0 3px var(--bg4)}
-.bl-line.empty>.bl-bullet{visibility:hidden}
+.bl-line.blank>.bl-bullet{visibility:hidden}
 .bl-txt{flex:1;min-width:0;overflow-wrap:anywhere}
 .bl-trail>.bl-line{color:var(--fg3);font-size:12px}
 .bl-body{white-space:pre-wrap;color:var(--fg3);overflow-wrap:anywhere}
@@ -2219,7 +2219,7 @@ body.solview #content{padding-bottom:14px}
 .blk.collapsed>.line>.bullet{background:var(--accent);box-shadow:0 0 0 3.5px var(--bg4)}
 /* An empty line is a gap, not a note: no dot, unless you are typing in it
    or it has lines under it. */
-.blk:not(.has-kids)>.line.empty:not(.raw)>.bullet{visibility:hidden}
+.blk:not(.has-kids)>.line.blank:not(.raw)>.bullet{visibility:hidden}
 
 /* the task panel's sections behind icons */
 .detail-tools{display:flex;gap:4px;flex-wrap:wrap;margin-right:8px}
@@ -8120,7 +8120,7 @@ function backlinkSubtree(block) {
   const kids = block?.children || [];
   const node = el("div", {class: "bl-node" + (kids.length ? " has-kids" : "")});
   const gap = !block?.state && !trim(block?.title) && !kids.length;
-  node.append(el("div", {class: "bl-line" + (gap ? " empty" : "")},
+  node.append(el("div", {class: "bl-line" + (gap ? " blank" : "")},
     el("span", {class: "bl-bullet", "aria-hidden": "true"}),
     stateChip(block?.state, block),
     el("div", {class: "bl-txt", translate: "no", html: renderInline(block?.title || "")})));
@@ -22060,8 +22060,9 @@ const HEAD_RE = /^(#{1,6})[ \t]+(?=\S)/;
 const headLevel = (title, isTask) => isTask ? 0 : ((HEAD_RE.exec(title || "") || [])[1] || "").length;
 function paintHeadLine(line, title, isTask) {
   for (let n = 1; n <= 6; n++) line.classList.remove("hd" + n);
-  // An empty note is space between notes, so it goes without its dot (#106).
-  line.classList.toggle("empty", !isTask && !trim(title));
+  /* An empty note is space between notes, so it goes without its dot (#106).
+     "blank", not "empty": .empty is the centred "Nothing here" message. */
+  line.classList.toggle("blank", !isTask && !trim(title));
   const n = headLevel(title, isTask);
   if (n) line.classList.add("hd" + n);
 }
