@@ -9331,8 +9331,12 @@ const unassignedProjects = () =>
    73_CHECKLISTS -- the MS To Do half: a reusable list you run again
    and again (weekly shop, trip packing, release steps).
    ============================================================ */
+/* The "k" template may not name kind:: or cadence::, so they are set here: a
+   project template is kind:: project, and a routine has a cadence. */
 function checklistTemplate(title, kind, cadence) {
   const page=pageFromTemplate("k",title,{kind:kind || "",cadence:cadence || "as needed"});
+  if (kind === "project") page.props.kind = "project";
+  if (kind === "routine") page.props.cadence = cadence || "as needed";
   return page;
 }
 
@@ -38124,13 +38128,6 @@ function openAreaPicker(projectPath) {
 
 function newChecklistPrompt() {
   const nameInput = el("input", {placeholder: "Weekly accounts"});
-  const cadenceInput = el("input", {value: "weekly", placeholder: "weekly, monthly, every trip"});
-  const cadenceField = el("div", {class: "field"},
-    el("label", {}, "How often does it come round?"), cadenceInput,
-    el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-      "Words like every weekday, weekly on mon, thu or monthly on the last friday put it " +
-      "on your day page by itself on those days; the dial beside its name on the page sets " +
-      "the rest. Anything else - every trip, as needed - is a word for you, and nothing comes round."));
   const tplNote = el("div", {class: "field"},
     el("div", {style: "color:var(--fg2);font-size:12.5px;line-height:1.5"},
       "Write %name% wherever the thing you are onboarding should appear - " +
@@ -38145,7 +38142,6 @@ function newChecklistPrompt() {
   const sync = () => {
     for (const x of seg.children) x.classList.toggle("on", x.dataset.k === kind);
     const h = $("#ckHint"); if (h) h.textContent = hints[kind];
-    cadenceField.style.display = kind === "routine" ? "" : "none";
     tplNote.style.display = kind === "project" ? "" : "none";
   };
   for (const [k, label] of [["routine", "Routine"], ["plain", "Checklist"], ["project", "Project template"], ["states", "Task type"]]) {
@@ -38164,15 +38160,17 @@ function newChecklistPrompt() {
       el("div", {class: "field"}, el("label", {}, "Name"), nameInput),
       el("div", {class: "field"}, el("label", {}, "Which of the three"), seg,
         el("div", {id: "ckHint", style: "color:var(--fg3);font-size:12px;margin-top:6px"}, hints.plain)),
-      cadenceField, tplNote),
+      tplNote),
     foot: [
       el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
       el("button", {class: "btn primary", onclick: () => {
         const t = trim(nameInput.value);
         if (!t) return;
         closeModal();
-        if (kind === "routine") PREF.set("madeRoutine", "1");
-        openPage(createChecklist(t, kind === "plain" ? null : kind, trim(cadenceInput.value)));
+        const path = createChecklist(t, kind === "plain" ? null : kind);
+        openPage(path);
+        // When it comes round is asked in the same dialog its pill opens.
+        if (kind === "routine") { PREF.set("madeRoutine", "1"); openRoutineSchedule(path); }
       }}, "Create"),
     ],
   });
