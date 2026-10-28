@@ -177,6 +177,8 @@ tracker-pullups:: 100/8/4/2        (page property at the top of a day page)
 tracker-office_t:: 07:12 - 10:00, 10:30 - 12:30 (hours, one per place: start and end; "07:12 -" is still running)
 tracker-food_a:: 129,50 + 45       (an amount)
 tracker-paint_q:: +3               (stock: +3 in, -1 out, =12 counted)
+tracker-coffee_i:: ☕☕☕            (tap to count: one icon a tap; a number, 3, counts the same.
+                                    The icon for an empty day is tracker_icon_coffee:: in Settings)
 ```
 
 How the sheets add these up is on your own person page:
