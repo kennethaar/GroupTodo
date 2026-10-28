@@ -1,308 +1,175 @@
 # GroupToDo
 
-A shared to-do list, built on GTD (Getting Things Done), that keeps everything
-as plain markdown files in a folder you already have. No install, no account,
-no server.
+A shared to-do list built on GTD (Getting Things Done) that keeps everything as plain Markdown files in a folder you already have. **No install, no account, no server.**
 
-**Why it shares easily.** Most task apps keep your tasks on their servers, so
-everybody needs an account and a seat. GroupToDo has nothing to join: share the
-folder the way you already share folders (OneDrive, Dropbox, a network share)
-and you are done. Remove someone from the folder and they are out. Every file
-opens in Notepad, so the list outlives the tool.
+**Why it shares easily:** Most task apps keep your tasks on their servers, requiring an account and a paid seat for everyone. GroupToDo has nothing to join: share the folder the way you already share folders (OneDrive, Dropbox, or a network share) and you are done. Remove someone from the folder and they are out. Every file opens in Notepad, so the list outlives the tool.
 
 ---
 
-## Start
+## Quick Start
 
-In Edge or Chrome, double-click `grouptodo.html`. It asks:
+In Edge or Chrome, double-click `grouptodo.html`. It asks three things:
 
-1. **Who** — your full name, shown beside what you add.
-2. **Where** — a folder for your files. Skip it to keep everything in the browser for now.
-3. **Start** — *Start a new list*, or *Open one I was sent* (a shared folder, an invite or a vault file).
+1. **Who** — Your full name, shown beside what you add.
+2. **Where** — A folder for your files (skip to keep everything in the browser for now).
+3. **Start** — *Start a new list*, or *Open one I was sent* (a shared folder, an invite, or a vault file).
 
-*Set up several areas* at the bottom splits the list into Work, Home and so on
-before you begin, with a folder for each.
+> **Tip:** Click *Set up several areas* at the bottom to split your list into separate folders (e.g., Work, Home) before you begin.
 
-Today then opens with the cursor in the box at the top, and a *Getting
-started* strip that ticks itself off as you go: your name, your folder, your
-first task. Once the first task is in, it points to the first project, *Find
-your way round GroupToDo*, which is a tour: each step links to a part of the
-app, and the app offers to tick a step off once you have been there. If
-colleagues already put your name on tasks, you are offered those when you
-arrive.
-
-To bring someone in: **areas menu (top right) → Invite somebody**, or send them
-`grouptodo.html`, the folder name and [docs/setup-sheet-group.html](docs/setup-sheet-group.html).
-Using it on your own, with several groups around you? [docs/setup-sheet-personal.html](docs/setup-sheet-personal.html) is the same app from that side.
-
-**Coming from Obsidian or Logseq?** Open `GroupToDo-Importer.html` in Edge or Chrome. It reads your
-old vault (never changing it), asks what your folders, namespaces and tags mean, shows a test run
-with every page before and after, and writes a GroupToDo folder into a new, empty folder. The
-format it writes is described in [docs/vault-format.md](docs/vault-format.md).
+### First Steps
+* **Onboarding:** **Today** opens with the cursor in the top input box and a *Getting started* strip that ticks itself off as you add your name, folder, and first task. It then points you to the *Find your way round GroupToDo* tour project. If colleagues already put your name on tasks, those are offered when you arrive.
+* **Inviting others:** Go to **Areas menu (top right) → Invite somebody**, or send them `grouptodo.html`, the folder name, and [docs/setup-sheet-group.html](docs/setup-sheet-group.html).
+* **Solo use across groups:** Using it on your own with several groups around you? See [docs/setup-sheet-personal.html](docs/setup-sheet-personal.html).
+* **Migrating from Obsidian or Logseq:** Open `GroupToDo-Importer.html` in Edge or Chrome. It reads your old vault without changing it, asks what your folders/namespaces/tags mean, previews every page before and after, and writes a new GroupToDo folder. (Format details: [docs/vault-format.md](docs/vault-format.md)).
 
 ---
 
-## Using it
+## Screens & Views
 
-- **Your day page is yours.** One per person, so nobody types over anybody, but everyone can read it.
-- **A task you write is yours.** Hand it to someone in the area and it becomes theirs and shows in your *Waiting for* — one task, never two copies. Name someone outside the area and it becomes a plain waiting-for.
-- **You are told what you missed.** Today opens with *Since you were last here*; **History** scrolls back day by day.
-- **Areas** (Work, Home, …) are separate folders. Tick any combination at the top right and every screen shows those. Drag them in that menu, or under **Folders**, to fix the order they sit in left to right. With several side by side on Today, each area gets a column: its due tasks, next seven days, trackers and day page stacked in it. Drag the line between two columns to make one wider; double-click it to even them out.
-- **Meetings** are lines: **Alt+M** adds attendees, time and agenda. **📅 Calendars** on Today imports an iCal link into a day page every 30 minutes (needs `serve.py`, see below). A meeting you delete or move stays that way. The pill at the top shows the meeting on now and counts down to the next one, with a reminder a few minutes before (set in Calendars).
-- **Pages open beside the view.** A page opened from a list docks at the right, so you can write in it with the list still there; **hold** any link for half a second to open it there. ⤢ makes it the page on screen.
-- **Several lines at once.** With lines picked, `Tab`/`Shift-Tab` indents or outdents them together and `Ctrl-Enter` makes them all tasks.
-- **Done earlier?** The toast after you close a task or project offers to backdate it.
-- **Tell them it's done.** When a project is completed, the toast's *Notify* writes an email to the people it is `with::` and its client, with the outcome and the steps that were ticked off. Your mail app or Teams opens it; nothing goes until you press Send. Also in Done → History.
-- **Paste an email into the box at the top** (copied out of Gmail or Outlook) and it becomes a page under `m/` (Emails) — subject, sender, date, the words — with a *Follow up* task on today that links to it. The sender gets a page too, with their address when the copy carried one. The page's *Reply*, *Ask for news* and *Forward* write the email for your mail app (the words only: a link cannot bring attachments), and *Add their answer* puts the reply on the page under today's date. *Make tasks instead* in the toast turns it back into one task per line.
-- **Plan it with an AI.** On a line's menu, the bar for picked lines, or an email page: GroupToDo writes a prompt that turns the text into a GTD project with one next action, with your name, the area's contexts, the people the text names and the few projects it may already be. Pick how far back to look for those (someday and completed ones), or send none. It copies the prompt and opens the AI you chose for that area (DeepSeek, ChatGPT, Claude, Gemini, Copilot, Le Chat, Perplexity or any address), or only copies it, for an AI on your own machine. Paste the answer back into the same dialog: the next action goes on the project it names, or a new one, and the lines you started from get a link to it. Answers are mended on the way in: `TODO [[the whole sentence]]` becomes plain words, names become links to their people, and a context becomes one of yours. *Edit the prompt* changes the wording for that area; it is kept in `8/Prompts/GTD project.md`.
-- **Names and dates are picked up as you type** — *tomorrow*, *friday*, *in 3 days*; `Tab` turns a suggestion into a link or due date. `@`, `#` and `[[` list contexts, projects and pages; people come up as you type their name.
-- **Threads on tasks.** Every task has a conversation; **Chat** gathers them all.
-- **Repeats** (`repeat:: weekly`, or *Custom…* for `weekly on mon, thu`, `monthly on the last friday` and the like) are offered when you tick one off, never scheduled ahead, so there is no backlog of missed chores.
-- **Routines come round by themselves.** A routine whose `cadence::` is a rule — *every weekday*, *every 2 weeks on fri*, *monthly on the 15th*, *yearly on the first monday of june* — goes onto your day page on the days it falls, its steps under a line naming it. *When it comes round* (⋯ beside its title, or the chip in Settings) sets the rule, when it starts, a time for its steps, and when it ends: on a day or after so many times. Only today is filled, once, so a change to the routine is in the next one, and a day you did not open the app leaves nothing behind. `as needed` stays a word.
-- **Undo** a delete from the toast, or `Ctrl-Z` for five minutes.
-- **Pin pages to the sidebar** from the ⋯ beside a page title, as many as you like; drag them to reorder, ✕ to unpin. Pins are kept per device.
-- **Make private** (⋯ beside a page title) moves a page to another folder — the folder is the permission model.
-- **Live lists and embeds.** `/query` on a line builds a Logseq-style query (`{{query (and [[1/Fix sink]] (task TODO))}}`) that lists matching lines, kept up to date; `/embed` shows another page in the line, and a line's menu has *Copy as embed* for one line. `((id))` reads as the line it points at.
-- **Last time.** On a day page, a tracker or a `key:: value` of your own shows faintly what you wrote the previous time.
-- **Tidy.** ⋯ beside a page title → *Remove duplicate lines*; the weekly review says when pages have some. A page in a namespace (`[[Work/Clients]]`, *Work - Clients*) lists the rest of its family at the bottom.
-- **Refile** a line with **Alt+G**: to a project, a responsibility, or a context (a recurring meeting's agenda).
-- **On hold.** A project's status pill → *On hold…* keeps it committed but out of sight until a day; the weekly review asks about it in its own pass.
-- **Gather what a project collected.** ⋯ beside a page title → *Copy linked references here* copies every line that links to the page, with what is under it, to its bottom; the originals stay. Completing a project offers the same.
-- **Values follow their template.** A page's `key:: value` lines stand in its template's order. *hide* beside a value folds it under *hidden values*, on every page made from the same template.
-- **Time on a task.** Click the ⏱ under a task to change its clock: drag on the day for a stretch, drag a box or its edges, or type the times; *Clear all* takes them off. Your other clocked tasks that day show greyed beside it, and a **+** after the last one starts a stretch where it ended.
-- **Task types.** A list in Settings with `kind:: states` is the stages one kind of task goes through: *Ordered (waiting)*, *Awaiting delivery (waiting)*, *Delivered (done)*. A task of that type shows its stage instead of To do or Doing; the state menu gives each type its own column and the `/` menu offers the stages. Types from every area on screen are offered, and copied into the task's own area when picked.
-- **A project that turned out small.** `Alt+T` on a line that is only `[[1/Project]]` makes it a task. The page stays as a plain page the task links to, and the project's open steps hang under the task, which waits for them.
-- **Look-alike projects.** The same project started twice (*Nordlys new website*, *New website Nordlys*) is flagged *⚠ look alike* on Projects. Fold each group into one, say they differ, or move one to another area, then **Apply** does it all.
-- **Look-alike next actions.** The same todo written twice (*Call the plumber about the sink*, *Call plumber about sink*) is flagged *⚠ look alike* on Next. Keep one of each group and the others go, with what was under them moved to the one kept, or say they differ. One Undo puts them all back.
-- **An alias that is another page.** Give *John Smith* `aliases:: JS` while a page *JS* exists, and it asks to make them one: John Smith takes JS's lines and links to JS point at John Smith.
-- **Timer.** ◷ in the sidebar: click for your usual length (`minutes::` on `pages/8/timer.md`), or press and drag for 1 to 60 minutes; drag up for an alarm, down or right for a quiet note. The alarm stays on screen, with how long ago it rang, until clicked.
-
-### Screens
+Every view reads the same Markdown; a change in one is a change everywhere.
 
 | Place | Views | What it answers |
 |---|---|---|
-| **Today** | | what is due or late, the next seven days, your journal per area |
-| **Next** | List, Board, Calendar | everything on your plate; board columns per context or tag |
-| **Waiting for** | List, Board | what you handed over, by person |
-| **Chat** | | every conversation on a task |
-| **Projects** | List, Board, Timeline, Report, Hours | by status, as a Gantt, what got done, and time on site |
-| **People**, **Organisations** | List, Cards, Board | who is carrying what and where they work; drag them onto work and onto each other |
-| **Contexts** | | where you are and what you can do there |
-| **Pages** | List, Board, Mind map, Graph, Hierarchy | every page in the areas on screen |
-| **Horizons**, **Settings** | | purpose down to next actions; checklists you rerun |
-| **Weekly review** | Steps, Projects, Actions | the GTD review, projects and next actions dealt one card at a time |
+| **Today** | — | What is due or late, the next 7 days, and your journal per area |
+| **Next** | List, Board, Calendar | Everything on your plate; board columns per context or tag |
+| **Waiting for** | List, Board | What you handed over, grouped by person |
+| **Chat** | — | Every conversation thread on a task |
+| **Projects** | List, Board, Timeline, Report, Hours | Projects by status, Gantt chart, completed work, and time on site |
+| **People / Orgs** | List, Cards, Board | Who is carrying what and where they work; drag onto work or each other |
+| **Contexts** | — | Where you are and what you can do there |
+| **Pages** | List, Board, Mind map, Graph, Hierarchy | Every page in the areas currently on screen |
+| **Horizons / Settings** | — | Purpose down to next actions; checklists you rerun |
+| **Weekly review** | Steps, Projects, Actions | The GTD review; projects and next actions dealt with one card at a time |
 
-Every view reads the same markdown; a change in one is a change everywhere.
-Next, Waiting for and Projects export to CSV for Excel. On their boards, the ✕ on a
-column's head puts it away until you click its pill above the board; on the lists,
-the same chips show or hide a context, person or status, and a hidden one stays
-hidden in both views. Each has a **Sort** menu (by urgency, by name and, on Next and
-Waiting for, by date, age or length); sorted by urgency, every row and card carries
-its ↑ chip.
-
-### Highlights
-
-- **Timeline.** Bars come from `SCHEDULED::` and `DEADLINE::`. Drag to reschedule; dragging a project moves all its dated tasks. Late projects turn red.
-- **Project order.** `depends_on:: [[1/site-survey]]` marks what must finish first. Blocked projects say so, the Timeline draws arrows and hatches overlaps, and downstream projects are offered a push when you move one.
-- **Check-ins for outsiders.** **Waiting for → Ask … for an update** makes a self-contained HTML sheet plus a covering note. They tick what is done, send back a small markdown file, and **Import a reply** closes those tasks in their name. The sheet carries only the lines you chose. See the [mockup](docs/check-in-sheet-mockup.html).
-- **Weekly review.** The steps are an editable routine (`pages/8/Weekly review.md`). Projects are reviewed in passes — status, on hold, outcome, next action — because each needs a different kind of thinking. The on hold pass asks of each project on hold whether it still is, or can be done now. After the next actions, the loose actions pass takes each action on your day pages that no project or responsibility holds, and asks which one it belongs to. **Day pages** shows each of your day pages from the last two weeks, whole and as written: click any line that should be a to do, a waiting-for or a project, then *Done with this day*. The lines you left alone are notes and are not asked about again.
-- **Copy link** on any task or page gives a URL that opens exactly that block.
-- **Add to calendar** as an `.ics` file (private, offline) or an Outlook/Google link. A task with a time goes in at that time, for as long as its dots say (an hour without); one without a time is all day. Nothing is ever subscribed.
-- **Dates in the words.** The box at the top reads *Call Bob fri 2pm*, *Pay rent by 1 nov*, *every monday*, Norwegian days and times, and Taskwarrior's `due:`, `until:`, `hold:`, `remind:` and `pri:`. A toast says what it read, with **Keep the words** to undo. A time is written after the day: `SCHEDULED:: [[2026-10-23]] 14:00`.
-- **Reminders.** A task with a time gets a toast 10 minutes before (or `remind::`), which stays until answered. Today counts down to the next timed task and the next deadline; birthdays are on the calendar.
-- **Urgency.** Next and the project list are ordered by Taskwarrior's urgency: deadline, scheduled day, `priority::`, started, context, age, project chain. Point at a row and its ↑ chip says why.
-- **On hold.** `hold:: [[date]]` on a task or a whole project hides it until that day. `until::` cancels a task once its day has passed; birthday tasks go once the birthday has.
-- **Burndown.** The Report shows open tasks per day over its window, with the numbers as a table.
-- **Phone and PC.** On a phone, **Send** sits in the top bar with a dot while changes are unsent; with `work_hours::` the PC and the phone ask for each other's file at the start and end of the day.
-- **Time on site.** `/in` and `/out` on any line write a `#timelog` visit: who, which project, in and out. **Projects → Hours** shows each week by day, and a project's page its hours per week. A craftsman's visit is logged the same way: *Someone on site* in the new-tracker window checks them in.
-- **Tap to count.** Cups of coffee, glasses of water, breaks: the *Tap to count* tracker puts a **+1 Coffee** pill on the day, and each tap adds an icon after it, `tracker-coffee_i:: ☕☕☕`, which counts 3 on the chart. Tap an icon to take one off, ↺ to go back to 0 (with an undo); past ten it reads ☕ × 14. The icon is picked in the wizard, and a number typed by hand counts the same.
-- **Sheets: hours, amounts, stock.** Three more tracker kinds take the line as you say it: `tracker-office_t:: 07:12 - 10:00, 10:30 - 12:30` (start and end, one tracker per place you work, with **Start**/**Stop** on today's page), `tracker-food_a:: 129,50 + 45` and `tracker-paint_q:: +3` (`-1` out, `=12` counted). **Trackers → Hours / Amounts / Stock** adds them up: the previous week by day with a column per tracker, the total, extra hours per day worked and flex against a normal day per weekday, then the year by month (days at each place, so the days driven in for a travel deduction). Decimal hours with a comma if you like, and both copy as cells for a spreadsheet. Settings are on your own page as `hours_target::`, `hours_extra::` and so on.
-- **Time per client.** Setting a todo to Doing starts a clock and leaving Doing stops it, in Logseq's `:LOGBOOK:` lines. Turn it off in **Vault & sync → Time on tasks** if Doing is only a state for you. A project's clients are the organisations its page or area names (`org::`), except those marked `role:: supplier` on their own page. With several clients the time is split by `client_split:: Alpha 60, Beta 40` on the project, else by each client's `share::`, else evenly; a client with `share::` is added to every new project. **Projects → Hours → Clients** is the week by day per client, the projects the time went to and the year by month; a project's page shows the time on its todos.
-- **Prices on tasks.** Write the price on the task line with its currency, the way you would say it: `Buy paint EUR 349,95`, `Hire a skip 1200 NOK`, `DKK400`, `kr 1 200,-`, `€12`. Codes are capitals (EUR, NOK, DKK, SEK, USD, GBP…), `kr` or € $ £, before or after the number; a bare number is never a price. A comma or full stop before two digits is decimals, before three it is thousands. The price is highlighted on the line, and the project adds it up per currency, never converted: done tasks as **spent**, open ones as **planned**, cancelled ones not at all. It shows on project rows and cards and as **Cost** on the project's page, counting day-page lines that link to the project too.
-- **Microsoft Planner (experimental).** For colleagues who live in Planner: **Vault & sync → Microsoft Planner** sends an area's projects to a plan, one card per project in a bucket per client organisation, with the next actions as its checklist. A Power Automate flow you set up once carries them from the folder; nothing comes back yet but which card is which. See [docs/planner-sync.md](docs/planner-sync.md).
-- **Your use of GroupToDo.** **Vault & sync → Your use of GroupToDo** counts, on each device, which screens, views, kinds of page and dialogs you use: visits, active minutes and clicks. Each finished day goes as one line onto *Usage of GroupToDo* in an area only you are in. Page titles and what you wrote are never in it. The report puts the weeks you used a place, out of the last 13, ahead of the minutes, because some places are opened rarely but matter (the weekly review) and some work without being opened at all. You mark each place *Keep*, *Not sure* or *Could go* yourself. *Copy summary* gives a table to paste into an issue. Nothing is sent anywhere; turn it off in the same place.
-- **Languages.** The app ships in English; **Vault & sync → Language** switches what this device shows. Each language is a file in `pages/8/Languages/`, one line per piece of text: `Today => I dag`. Get one from the [languages folder](languages/) here on GitHub (download it, then **Open the file**), or **Translate it yourself**: fill in the lines in the app, or **Copy for an AI** and **Paste a translation** back. What people write is never translated. To share a translation, add the file to `languages/` in a pull request.
+* **Filtering & Sorting:** On boards, click `✕` on a column header to hide it until you click its pill above the board. In lists, the same chips show/hide contexts, people, or statuses across both views. Use the **Sort** menu to order by urgency (`↑` chip), name, date, age, or length.
+* **Export:** **Next**, **Waiting for**, and **Projects** export directly to CSV for Excel.
 
 ---
 
-## Bugs and ideas
+## Core Concepts & Daily Use
 
-Report bugs and suggest features at
-[github.com/kennethaar/GroupTodo/issues](https://github.com/kennethaar/GroupTodo/issues)
-→ **New issue**. You need a free GitHub account. Search first; if someone already
-raised it, add a 👍 or a comment instead.
+### Ownership & Sharing
+* **Your day page is yours:** One file per person per day, so nobody types over anybody, though everyone can read it.
+* **Single-source delegation:** A task you write is yours. Hand it to someone in the area and it becomes theirs while showing in your *Waiting for*—one task, never two copies. Name someone outside the area and it becomes a plain waiting-for.
+* **Catching up:** **Today** opens with *Since you were last here*; **History** scrolls back day by day.
+* **Areas (Work, Home, etc.):** Each area is a separate folder. Tick any combination at the top right to filter the whole app. Drag them in the menu or under **Folders** to reorder columns left-to-right. On **Today**, each active area gets its own resizable column (drag borders to resize; double-click to even out).
+* **Privacy:** Click `⋯` beside a page title → **Make private** to move a page to another folder (the folder is the permission model).
 
-- **A bug:** what you did, what you expected and what happened. Add the browser
-  (Edge, Chrome, …), the device, and whether you opened the file from disk or a
-  URL. A screenshot helps.
-- **A feature:** the problem it would solve, not only the solution, so it can be
-  weighed against what is already there.
+### Capturing & Typing
+* **Natural language dates:** The top input box reads *Call Bob fri 2pm*, *Pay rent by 1 nov*, *every monday*, Norwegian days/times, and Taskwarrior syntax (`due:`, `until:`, `hold:`, `remind:`, `pri:`). A toast confirms what it read (click **Keep the words** to undo). Times write as `SCHEDULED:: [[2026-10-23]] 14:00`.
+* **Auto-complete:** Names and dates (*tomorrow*, *friday*, *in 3 days*) are picked up as you type; press `Tab` to turn suggestions into links or due dates. Type `@`, `#`, or `[[` to list contexts, projects, and pages.
+* **Multi-line editing:** Select multiple lines and press `Tab`/`Shift-Tab` to indent/outdent together, or `Ctrl-Enter` to make them all tasks.
+* **Refiling & Undo:** Press `Alt+G` to refile a line to a project, responsibility, or context (like a recurring meeting's agenda). Undo deletes from the toast, or press `Ctrl-Z` (kept for 5 minutes).
+* **Demote small projects:** Press `Alt+T` on a line that is only `[[1/Project]]` to turn it into a task. The page remains as a linked plain page, and open project steps hang under the task.
 
-Leave out real task text, names and file contents. Issues are public.
+### Navigation & Layout
+* **Side-by-side docking:** Opening a page from a list docks it to the right so you can write while keeping the list visible. **Hold** any link for half a second to open it docked; click `⤢` to make it full screen.
+* **Sidebar pins:** Click `⋯` beside a page title to pin pages to the sidebar (saved per device). Drag to reorder, `✕` to unpin.
+* **Deep links:** **Copy link** on any task or page gives a URL that opens that exact block.
 
 ---
 
-# Technical details
+## Features by Workflow
 
-## Files
+<details>
+<summary><b>📅 Scheduling, Repeats, Routines & Reminders</b></summary>
 
-```
-grouptodo.html         the whole app
-GroupToDo-Importer.html  converts an Obsidian or Logseq vault into a new folder
-sw.js                  offline + Share button, when served from a URL
-manifest.webmanifest   home-screen install
-icon.svg               icon
-index.html             redirect, so https://host/ works
-serve.py               optional sync server and calendar fetcher
-docs/vault-format.md   the file format, and converting from Obsidian or Logseq
-docs/planner-sync.md   sending projects to Microsoft Planner (experimental)
-languages/             language files; English.md lists every line to translate
-docs/                  setup sheets, mockups, and demo.html (the app with sample data)
-```
+* **Repeats without backlog:** Tasks with `repeat:: weekly` (or *Custom…* like `weekly on mon, thu`, `monthly on the last friday`) are offered only when you tick them off—never scheduled ahead—preventing a backlog of missed chores.
+* **Automated routines:** A routine whose `cadence::` is a rule (*every weekday*, *every 2 weeks on fri*, *monthly on the 15th*, *yearly on the first monday of june*) copies its steps onto your day page on the days it falls. Configure start date, step times, and end conditions via `⋯` → *When it comes round* (or in Settings). Only today is filled, once, so edits apply to future runs and unopened days leave nothing behind. `as needed` stays plain text.
+* **On hold & Expiry:** Setting a project's status pill to *On hold…* or adding `hold:: [[date]]` hides a task or project until that date. `until::` cancels a task once its day passes; birthday tasks disappear once the birthday passes.
+* **Reminders:** Timed tasks trigger a persistent toast 10 minutes before (or via `remind::`). **Today** counts down to the next timed task and deadline; birthdays show on the calendar.
+* **Built-in Timer:** Click `◷` in the sidebar for your default duration (`minutes::` on `pages/8/timer.md`), or press and drag for 1–60 minutes. Drag up for an alarm (stays on screen showing time elapsed until clicked); drag down or right for a quiet note.
+* **Backdating:** After closing a task or project, the toast offers **Done earlier?** to backdate completion.
+</details>
 
-## Running it
+<details>
+<summary><b>🤝 Meetings, Email, Chat & External Check-ins</b></summary>
 
-- **From disk:** double-click `grouptodo.html`. Desktop Chrome/Edge get the full app including a live folder. No service worker, so no offline install.
-- **From a URL:** any static host, no build — `python3 -m http.server 8000`. Adds home-screen install, offline open and the Share button.
+* **Meetings & iCal:** Press `Alt+M` on a line to add attendees, time, and agenda. **📅 Calendars** on Today imports an iCal link every 30 minutes (requires `serve.py`). Deleted or moved meetings stay that way. A top bar pill shows the current meeting, counts down to the next, and triggers reminders.
+* **Calendar export:** **Add to calendar** exports a task as a private `.ics` file or an Outlook/Google link (timed tasks use their dot-duration or default to 1 hour; untimed tasks are all-day).
+* **Task threads:** Every task has a conversation thread; **Chat** gathers them all in one view.
+* **Email integration:** Paste an email copied from Gmail or Outlook into the top box to create a page under `m/` (Emails) with subject, sender, date, body, a linked *Follow up* task on Today, and a sender page. Use *Reply*, *Ask for news*, or *Forward* to draft text in your mail app, and *Add their answer* to log replies under today's date. Click *Make tasks instead* in the toast to convert lines directly into tasks.
+* **Completion notifications:** When a project finishes, click *Notify* in the toast (or via **Done → History**) to draft an email in your mail app/Teams to everyone in `with::` and the client, listing the outcome and completed steps.
+* **Check-ins for outsiders:** **Waiting for → Ask … for an update** generates a self-contained HTML sheet ([mockup](docs/check-in-sheet-mockup.html)) and covering note. Recipients tick off completed items and return a small Markdown file; **Import a reply** closes those tasks in their name.
+</details>
 
-| | Live folder | Vault file out | Home screen |
-|---|---|---|---|
-| Desktop Chrome / Edge | **yes** | auto-sync | served |
-| Desktop Firefox | no | Save / Open | no |
-| Android Chrome / Edge | no | Share | served |
-| iOS Safari | no | Share | served |
+<details>
+<summary><b>📊 Project Management, Urgency & Weekly Review</b></summary>
 
-**Vault & sync** (bottom of the sidebar) shows what the current device allows.
-Safari and Firefox are untested. On iOS, serve from a URL; Safari restricts
-storage for files opened from the Files app.
+* **Timeline & Dependencies:** Gantt bars draw from `SCHEDULED::` and `DEADLINE::`. Drag to reschedule (dragging a project moves all its dated tasks; late projects turn red). Use `depends_on:: [[1/site-survey]]` to mark prerequisites: blocked projects state it, the Timeline draws arrows and hatches overlaps, and moving a project offers to push downstream ones.
+* **Taskwarrior Urgency:** **Next** and **Projects** sort by deadline, scheduled day, `priority::`, started state, context, age, and project chain. Hover over the `↑` chip on any row to see the exact score breakdown.
+* **Custom task states:** Create a list in Settings with `kind:: states` to define custom stages (e.g., *Ordered (waiting)*, *Awaiting delivery (waiting)*, *Delivered (done)*). Tasks of that type display their custom stage, get their own column in the state menu, and appear in the `/` menu.
+* **Burndown:** **Projects → Report** charts open tasks per day over a chosen window alongside a data table.
+* **Multi-pass Weekly Review:** Driven by an editable routine (`pages/8/Weekly review.md`). Projects are reviewed in distinct cognitive passes: *status*, *on hold*, *outcome*, and *next action*, followed by *loose actions* (unassigned day-page tasks). **Day pages** displays the last two weeks of journals in full—click lines to promote them to tasks, waiting-fors, or projects, then click *Done with this day* to leave the rest as plain notes.
+</details>
 
-**Teams / SharePoint libraries cannot host the app** — they sandbox it with no
-storage. Instead, **Sync** the channel's Files folder to File Explorer and point
-an area at it.
+<details>
+<summary><b>⏱️ Time Tracking, Habits, Costs & Budgets</b></summary>
 
-## Storage and sync
+* **Task clocks:** Click `⏱` under a task to edit time entries: drag on the day timeline, adjust box edges, or type times directly (`+` starts a new stretch where the last ended). Setting a task to *Doing* automatically starts/stops a clock in Logseq `:LOGBOOK:` format (toggleable in **Vault & sync → Time on tasks**).
+* **Client billing & splits:** A project's clients come from `org::` links on its page or area (excluding pages marked `role:: supplier`). Multi-client time splits via `client_split:: Alpha 60, Beta 40`, client `share::` properties, or evenly. **Projects → Hours → Clients** breaks down time by day, project, and month.
+* **Time on site:** Type `/in` and `/out` on any line to log a `#timelog` visit (who, project, in/out), or check in craftsmen via *Someone on site* in the new-tracker window. Viewed under **Projects → Hours**.
+* **Tap-to-count trackers:** Adds a **+1 Coffee** pill on Today (`tracker-coffee_i:: ☕☕☕`, reading `☕ × 14` past ten). Tap an icon to subtract, or `↺` to reset.
+* **Hours, Amounts & Stock sheets:** Log inline on your day page:
+  * *Work hours:* `tracker-office_t:: 07:12 - 10:00, 10:30 - 12:30` (includes **Start/Stop** buttons on Today).
+  * *Amounts:* `tracker-food_a:: 129,50 + 45`
+  * *Stock:* `tracker-paint_q:: +3` (`-1` out, `=12` counted).
+  * **Trackers → Hours / Amounts / Stock** totals the week by day, extra hours, flex against `hours_target::`, and year-by-month summaries (including commute days for tax deductions). Copyable as spreadsheet cells.
+* **Prices on tasks:** Write currencies naturally on task lines (`Buy paint EUR 349,95`, `Hire a skip 1200 NOK`, `kr 1 200,-`, `€12`). Highlighted inline and totaled per currency on the project (never converted): completed tasks as **spent**, open as **planned**, cancelled ignored.
+</details>
 
-- **Storage** is a folder of markdown: `journals/<person>/<date>.md` and `pages/`. Desktop Chrome/Edge write it as you type.
-- **The vault file** is a courier: one `.md` holding a copy of the whole area, for devices that cannot open folders (all phones). Keep it *outside* the vault folder. On desktop, *Link vault file* syncs it automatically; on phones, *Send / Open vault file*.
-- **It merges, never overwrites.** Pages carry `updated::`; when both sides changed, blocks are merged by text. Page deletes travel as tombstones. Re-syncing is always safe.
-- **Start afresh** (Vault & sync) wipes this browser's copy only; files on disk and the server are untouched.
+<details>
+<summary><b>🤖 AI Planning, Queries, Templates & Tidying</b></summary>
 
-## serve.py
+* **Plan with AI:** From a line's menu, selection bar, or email page, GroupToDo builds a prompt (stored in `8/Prompts/GTD project.md`) containing the text, your name, contexts, mentioned people, and candidate existing projects. It copies the prompt and opens your chosen AI (Local, DeepSeek, ChatGPT, Claude, Gemini, Copilot, Le Chat, or Perplexity). Paste the reply back: GroupToDo formats links, fixes `TODO [[whole sentence]]` errors, maps contexts, and creates the project and next action.
+* **Live queries & Embeds:** Type `/query` to build a live Logseq-style query (`{{query (and [[1/Fix sink]] (task TODO))}}`). Type `/embed` to embed a page, or use *Copy as embed* (`((id))`) for a single line.
+* **Templates & Previous values:** Page `key:: value` properties stay in their template's order; click *hide* to fold a property under *hidden values* across all pages using that template. On day pages, trackers and custom properties faintly display what you wrote last time.
+* **Deduplication & Look-alikes:**
+  * *Look-alike projects & actions:* Duplicate projects (*Nordlys new website* / *New website Nordlys*) and next actions are flagged `⚠ look alike` for one-click merging.
+  * *Alias merging:* Giving *John Smith* `aliases:: JS` when a *JS* page already exists prompts to merge them and update all links.
+  * *Page tidying:* `⋯` → *Remove duplicate lines* cleans up a page (flagged during Weekly Review). `⋯` → *Copy linked references here* gathers all backlinked lines to the bottom of a page (also offered on project completion). Pages in a namespace (`[[Work/Clients]]`) list sibling pages at the bottom.
+* **Microsoft Planner (Experimental):** **Vault & sync → Microsoft Planner** pushes an area's projects to Planner via Power Automate (one card per project in client buckets, next actions as checklist items). See [docs/planner-sync.md](docs/planner-sync.md).
+* **Local usage stats:** **Vault & sync → Your use of GroupToDo** logs visits, active minutes, and clicks per screen/view to a private *Usage of GroupToDo* page (never titles or text). Ranks views by weeks used out of the last 13 so you can mark features *Keep*, *Not sure*, or *Could go*.
+</details>
 
-One always-on machine serves everybody, live, with no courier file:
+---
 
-```sh
-export GTD_PASSWORD="$(head -c 24 /dev/urandom | base64)"
-python3 serve.py --vault ~/OneDrive/GroupToDo/Work   # localhost only
-tailscale serve --bg 8777                            # HTTPS to your devices
-```
+## Keyboard Shortcuts
 
-It refuses to listen beyond localhost without a password of 10+ characters
-(HTTP Basic — put TLS in front). Without a password it answers only the app:
-other websites open in your browser are refused, and so is any name but
-localhost, so a tunnel with no password in front needs `--allow-host <its name>`.
-Works in Termux on Android too. For calendar
-import alone, run `python serve.py --calendars-only`.
-
-## Privacy and corporate use
-
-No dependencies, CDN or telemetry. (*Your use of GroupToDo* is a page in your own area, not telemetry: it goes nowhere unless you send it.) The CSP allows connections only to
-localhost, so the app cannot send data anywhere but your own `serve.py`. Its
-calendar fetch only reaches public https iCal links. A static host sees ordinary
-web-server logs, never tasks. Every piece of user text is escaped before it
-reaches the page.
-
-## The vault
-
-```
-journals/<Person Name>/2026-10-05.md   one file per person per day
-pages/1/ 2/ 3/ 0/ -/   projects: active, someday, waiting, completed, cancelled
-pages/_/ g/ a/         horizons, goals, responsibilities
-pages/8/               checklists, routines, templates; *.css for your own look
-pages/c/ p/ o/ z/ m/   contexts, people, organisations, notes, pasted emails
-```
-
-Plain markdown: `key:: value` properties, then a bullet outline. A project's
-status is its folder. The full format, and how to convert an **Obsidian or
-Logseq** vault (written so you can hand it to an AI), is in
-[docs/vault-format.md](docs/vault-format.md). Existing `.org` vaults are
-converted on request.
-
-## GTD nudges
-
-Quiet until there are six open tasks, and listed on **Weekly review**: next
-actions start with a physical verb, projects state an outcome, stuck projects
-(nothing actionable), waits older than 14 days, people due a check-in, and
-blocked projects.
-
-The app keeps to itself otherwise. It speaks up unasked only for what has a
-time on it: meetings, timed tasks and birthdays. *Since you were last here*
-and, on days it is worth it, a *Morning review* link wait on Today. The
-12:00 and 17:00 "still @context?" check is off until you turn it on in
-**Vault & sync → Context check**. On Next and Waiting for, *no verb* and
-*no context* and the plain *To do* word show only on the row you point at;
-the weekly review shows them all.
-
-## Languages
-
-Each area has `pages/8/Languages/`, one file per language. The app writes
-`English.md` there itself and adds lines when a newer version has more text;
-the others are yours. They are not pages: search, links and lists never see them.
-
-```
-language:: Norsk
-code:: nb
-
-Today => I dag
-Imported {1} file(s). => Importerte {1} fil(er).
-Waiting for =>
-```
-
-- One line per piece of text on screen, the English before `=>`, the translation after.
-- `{1}`, `{2}` are a number or name the app fills in; keep them, in any order.
-- A line with nothing after `=>` stays in English, so a half-done file is usable.
-- Text is translated as it appears on screen, exact lines only. Editable text,
-  page and task titles are never touched.
-- The app does not fetch from GitHub; the page's security policy allows no host
-  but your own sync server. Download a file from [languages/](languages/) and
-  open it in **Vault & sync → Language → Get one from GitHub**, or put it in the folder.
-
-**Sharing a translation:** start it with **Translate it yourself**, then add the
-file from `pages/8/Languages/` to `languages/` here in a pull request.
-
-**After changing words in the app:** `python docs/build-language-catalog.py`
-rebuilds the list in `grouptodo.html` and `languages/English.md`. A line it
-misses can still be added to a language file by hand.
-
-## Keys
-
-| Key | Does |
+| Key | Action |
 |---|---|
-| `n` | new task |
-| `/` | search |
-| `?` | help |
-| `\` | sidebar |
-| `t` | today |
-| `Alt+←` / `Alt+→` | back / forward |
-| `Ctrl-Z` | undo |
+| `n` | New task |
+| `/` | Search |
+| `?` | Help |
+| `\` | Toggle sidebar |
+| `t` | Go to Today |
+| `Alt+←` / `Alt+→` | Navigate back / forward |
+| `Ctrl-Z` | Undo |
 
-**Go to** (press `g`, then a letter): `g n` next · `g w` waiting · `g p` projects · `g c` chat · `g r` review
+* **Go to (`g` then letter):** `g n` Next · `g w` Waiting · `g p` Projects · `g c` Chat · `g r` Review
+* **Views (`v` then letter):** `v b` Task board · `v c` Calendar · `v p` Project board · `v t` Timeline · `v r` Report · `v g` Mind map · `v m` Graph · `v d` Page board
+* **On a line:**
+  * `Tab` / `Shift-Tab`: Indent / Outdent
+  * `Ctrl-Enter`: Cycle task state
+  * `Alt+T`: Toggle task / note · `Alt+1`: Make project · `Alt+M`: Meeting · `Alt+I`: Responsibility
+  * `Alt+D`: Due date · `Alt+C`: Context · `Alt+P`: Person · `Alt+O`: Organisation · `Alt+J`: Project · `Alt+R`: Repeat
+  * `Alt+G`: Refile · `Alt+S`: Move to another area
 
-**Views** (press `v`, then a letter): `v b` task board · `v c` calendar · `v p` project board · `v t` timeline · `v r` report · `v g` mind map · `v m` graph · `v d` page board
+---
 
-On a line: `Tab`/`Shift-Tab` indent, `Ctrl-Enter` cycle state, `Alt+T` task or
-note, `Alt+1` project, `Alt+D` `Alt+C` `Alt+P` `Alt+O` `Alt+J` `Alt+R` due,
-context, person, organisation, project, repeat, `Alt+M` meeting, `Alt+I`
-responsibility, `Alt+G` refile, `Alt+S` move to another area.
+## Technical Details
 
-## Known limits
+### Repository Files
 
-- Merge matches on text: rewording a task on two devices at once can leave both versions.
-- Deleting a single task does not propagate; whole-page deletes do.
-- Areas are separated, not secured — anyone with the folder sees all of it.
-- `serve.py` is one shared password, not accounts.
-- No phone browser can write to a folder; phones use the vault file or `serve.py`.
-- News arrives when you open the area; nothing is pushed or emailed.
-- Board drag is mouse only.
-- An invite cannot carry a folder; it must be shared separately.
-- Undo and chat read state are per device.
+```text
+grouptodo.html           The whole app
+GroupToDo-Importer.html  Converts an Obsidian or Logseq vault into a new folder
+sw.js                    Offline support + Share button (when served from a URL)
+manifest.webmanifest     Home-screen install manifest
+icon.svg                 App icon
+index.html               Redirect so https://host/ works
+serve.py                 Optional sync server and calendar fetcher
+languages/               Language files; English.md lists every line to translate
+docs/                    Setup sheets, mockups, and demo.html (app with sample data)
+docs/vault-format.md     File format spec and Obsidian/Logseq conversion guide
+docs/planner-sync.md     Sending projects to Microsoft Planner (experimental)
