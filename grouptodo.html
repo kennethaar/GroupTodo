@@ -6485,7 +6485,7 @@ const TEMPLATE_DEFAULTS = {
     "@on status=DOING -> CLOSED=%empty% ; overwrite", "@on status=DOING -> done_by=%empty% ; overwrite"]},
   "journals": {props:{title:"%date%",created:"[[%date%]]"}},
   "page": {props:{title:"%title%",created:"%today%"}},
-  "p": {props:{title:"%title%",type:"person",created:"%today%"}},
+  "p": {props:{title:"%title%",type:"person",birthday:"",email:"",phone:"",created:"%today%"}},
   "o": {props:{title:"%title%",type:"org",created:"%today%"}},
   "c": {props:{title:"%title%",type:"context",created:"%today%"}},
   "z": {props:{title:"%title%",created:"%today%"},lines:["%title%","Relates to","Contradicts","Informs"]},
