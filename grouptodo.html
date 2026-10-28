@@ -30149,6 +30149,16 @@ function factLine(path, f) {
   };
   paint();
   if (f.save) {
+    /* The click that opens the line lands after focus has swapped the pills for
+       the raw text, so the caret went wherever the mouse now was in it --
+       "aliases:|: JS". The first click only opens it, at the end; once you
+       are typing, a click puts the caret where you clicked. A pill that does
+       something has already said no to this mousedown. */
+    txt.addEventListener("mousedown", e => {
+      if (document.activeElement === txt || e.defaultPrevented) return;
+      e.preventDefault();
+      txt.focus();
+    });
     txt.addEventListener("focus", () => setHostText(txt, f.raw, f.raw.length));
     txt.addEventListener("blur", () => {
       const val = lineText(txt);
