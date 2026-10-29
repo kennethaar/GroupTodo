@@ -5,6 +5,21 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.3.0 - 2026-10-29
+
+- The update mail (#159), for Send an update and Ask for an update alike.
+  Write the email, then Copy and open email: the mail goes on the clipboard
+  as formatted text and a new mail opens with To and Subject filled in and a
+  line saying where to paste, above your own signature. Each line is
+  numbered, with its status and your word on it, and links that open a short
+  reply to you: Ask about this, ✓ Mark as done, Write about this, Answer
+  this, and ✓ Got it, thanks for the whole mail. A reply typed by hand works
+  the same way, "1 done" or "2: next week". Paste a reply reads both, stamps
+  `acknowledged::` for Got it, closes only what you asked about, and asks
+  which task words with no number are about. Built to survive a paste into
+  Outlook and Gmail, dark mode included. Copy text, Plain-text mail and the
+  sheet are still there. Mockup in docs/update-mail-mockup.html.
+
 ## 1.2.0 - 2026-10-29
 
 - Stakeholders on responsibilities (#158): `stakeholder::` on a

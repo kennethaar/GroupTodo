@@ -520,6 +520,110 @@ var GTD_TEST = (() => {
   });
 
   /* ============================================================
+     The update mail, both directions (#159)
+     ============================================================ */
+  const inEnglish = fn => { const was = PREF.get("askLang", ""); PREF.set("askLang", "en"); try { return fn(); } finally { PREF.set("askLang", was); } };
+  const REF_LINE = refs => "Reference (leave as is): " + refs.join(" ");
+  test("#159 the update mail is numbered, has a link on each line and Got it, and no sign-off", () => inEnglish(() => {
+    const m = updateMail({mode: "inform", them: "Lars Haugen", subject: "Update", replyTo: "me@example.com", greet: "Hi Lars,", ack: true,
+      items: [{ref: "Work-aaaa1111", t: "Quote for the depot", word: "In progress", color: MAIL_COLOR.DOING, comment: "Board on 12 Nov",
+               context: [{depth: 0, text: "two options"}]},
+              {ref: "Work-bbbb2222", t: "Old badges", word: "Cancelled", color: MAIL_COLOR.CANCELLED, struck: true}]});
+    has(m.html, "1.</span> Quote for the depot");
+    has(m.html, "2.</span> Old badges");
+    has(m.html, REF_LINE(["Work-aaaa1111", "Work-bbbb2222"]));
+    has(m.html, "Board on 12 Nov");
+    has(m.html, "two options");
+    has(m.html, "line-through", "a cancelled line is struck through");
+    has(m.html, "Powered by");
+    ok(!/background:#[c-f]/i.test(m.html), "a light fill behind text turns grey in Outlook's dark mode");
+    ok(!/Best regards/.test(m.html + m.text), "the mail signs off; their own signature does that");
+    eq(m.links.length, 3, "one Ask about this per line and one Got it");
+    ok(m.links.every(l => l.length < 2000 && l.startsWith("mailto:me@example.com?")), "links too long or not to me");
+    has(decodeURIComponent(m.links[0]), "\r\n--\r\n1: Quote for the depot\r\n");
+    const got = decodeURIComponent(m.links[2]);
+    has(got, "body=Got it, thanks.");
+    has(got, "\r\n--\r\nGot it\r\n");
+    has(m.text, "1. Quote for the depot");
+  }));
+  test("#159 asking, each line gets Mark as done and Write about it, a question Answer this", () => inEnglish(() => {
+    const m = updateMail({mode: "ask", them: "Lars Haugen", subject: "Waiting for", replyTo: "me@example.com", greet: "Hi Lars,",
+      items: [{ref: "Work-aaaa1111", kind: "wait", t: "The signed contract", word: "Waiting for", color: MAIL_COLOR.wait},
+              {ref: "Work-bbbb2222", kind: "question", t: "Which week works?", word: "Question", color: MAIL_COLOR.question}]});
+    has(m.html, "Mark as done");
+    has(m.html, "Write about this");
+    has(m.html, "Answer this");
+    ok(!m.html.includes("Got it"), "no Got it when asking");
+    has(m.html, REF_LINE(["Work-aaaa1111", "Work-bbbb2222?"]), "a question's reference ends in ?");
+    has(decodeURIComponent(m.links[0]), "1 done: The signed contract");
+  }));
+  test("#159 a reply typed by hand is read by its numbers", () => {
+    const d = parseUpdateReply("Hi Kenneth\n\n1 done\n2: week 47, Tuesday\n3: next Friday\n\nLars\n\n> Hi Lars,\n> " +
+      REF_LINE(["Work-aaaa1111", "Work-bbbb2222?", "Work-cccc3333"]));
+    eq(d.items.map(i => [i.ref, i.done, i.note, !!i.answered]),
+      [["Work-aaaa1111", true, "", false], ["Work-bbbb2222", true, "week 47, Tuesday", true], ["Work-cccc3333", false, "next Friday", false]]);
+    eq(d.loose, "", "the greeting and the name are not about a task");
+  });
+  test("#159 a clicked reply: the words above the -- go to the task its footer names", () => {
+    const r = REF_LINE(["Work-aaaa1111", "Work-bbbb2222"]);
+    const d = parseUpdateReply("Which supplier is the second one?\n\n\n--\n2: Quote for the chairs\n" + r);
+    eq(d.items.map(i => [i.ref, i.done, i.note]), [["Work-bbbb2222", false, "Which supplier is the second one?"]]);
+    const done = parseUpdateReply("Signed copy attached.\n\n--\n1 done: The contract\n" + r);
+    eq(done.items.map(i => [i.ref, i.done, i.note]), [["Work-aaaa1111", true, "Signed copy attached."]]);
+  });
+  test("#159 Got it is Got it for every line, and words added to it are kept", () => {
+    const r = REF_LINE(["Work-aaaa1111", "Work-bbbb2222"]);
+    const d = parseUpdateReply("Got it, thanks.\n\n\n--\nGot it\n" + r);
+    eq(d.items.map(i => [i.ref, !!i.ack]), [["Work-aaaa1111", true], ["Work-bbbb2222", true]]);
+    eq(d.loose, "");
+    eq(parseUpdateReply("Got it, thanks. Lunch is on me.\n\n\n--\nGot it\n" + r).loose, "Lunch is on me.");
+    eq(parseUpdateReply("Thanks!\n\nLars\n> " + r).items.filter(i => i.ack).length, 2, "a plain thanks is Got it");
+  });
+  test("#159 replies in the older formats still import", () => {
+    const d = parseUpdateReply("---\n1. [x] Send the contract\n   Comment: signed\n\n   Reference (leave as is): Work-zzzz9999\n---");
+    eq(d.items.map(i => [i.ref, i.done, i.note]), [["Work-zzzz9999", true, "signed"]]);
+  });
+  test("#159 Got it stamps acknowledged::, done on a task you told them closes nothing, done on one you asked closes it", async () => {
+    const path = scratchProject("update mail ack", [["DOING", "Quote for [[p/Lars Haugen]]"], ["WAIT", "Contract from [[p/Lars Haugen]]"]]);
+    const [a, b] = getPage(path).blocks;
+    const ra = V.space + "-" + ensureBlockId(path, a), rb = V.space + "-" + ensureBlockId(path, b);
+    setBlockProp(b, ASKED_PROP, "Kenneth Aar " + nowStamp());
+    openUpdateArrived(parseUpdateReply("1 done\n2 done\n\n> " + REF_LINE([ra, rb])));
+    await settle();
+    [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent.startsWith("Apply")).click();
+    const [a2, b2] = getPage(path).blocks;
+    ok(blockProp(a2, ACK_PROP), "no acknowledged:: on the task you told them about");
+    eq(ackedDays(a2), 0);
+    eq(a2.state, "DOING", "their done closed your own task");
+    eq(b2.state, "DONE", "their done did not close what you asked about");
+    closeAll();
+  });
+  test("#159 words with no number go to the task you pick, the only one by itself", async () => {
+    const path = scratchProject("update mail loose", [["DOING", "Plan for [[p/Lars Haugen]]"]]);
+    const a = getPage(path).blocks[0];
+    const ra = V.space + "-" + ensureBlockId(path, a);
+    openUpdateArrived(parseUpdateReply("Sounds good, but call me first.\n\nLars\n\n> " + REF_LINE([ra])));
+    await settle();
+    [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent.startsWith("Apply")).click();
+    eq(messagesOf(getPage(path).blocks[0]).map(m => m.title), ["Sounds good, but call me first."]);
+    closeAll();
+  });
+  test("#159 the send step offers Copy and open email, the plain text and the sheet second", async () => {
+    openInformNote({name: "Lars Haugen"}, [{ref: V.space + "-x1", t: "Quote", status: "DOING", core: "DOING", comment: "", context: []}],
+      {file: null, named: false, area: V.space, sheetOf: null, sent: null});
+    await settle();
+    const buttons = [...document.querySelectorAll("#modalRoot button")].map(x => x.textContent);
+    ok(buttons.includes("Copy and open email"), "no Copy and open email: " + buttons);
+    ok(buttons.includes("Plain-text mail") && buttons.includes("Copy text"), "the plain text went: " + buttons);
+    eq(document.querySelector("#modalRoot .btn.primary").textContent, "Copy and open email");
+    closeAll();
+    openSendUpdate({name: "Lars Haugen"});
+    await settle();
+    eq(document.querySelector("#modalRoot .btn.primary").textContent, "Write the email");
+    closeAll();
+  });
+
+  /* ============================================================
      Timer
      ============================================================ */
   test("timer starts and stops", () => {

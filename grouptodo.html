@@ -2573,7 +2573,7 @@ body.solview #content{padding-bottom:14px}
    number for a fix, the middle one for a feature. CHANGELOG.md says what each
    one brought, and it is shown beside the name top left, so whoever is testing
    can see at a glance that they have the newest file open. */
-const APP_VERSION = "1.2.0";
+const APP_VERSION = "1.3.0";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 /* ============================================================
    00_BOOTSTRAP -- utilities
@@ -22036,9 +22036,9 @@ function openAskForUpdate(name, only = null) {
   const send = sheet => {
     const chosen = found.filter((_, i) => pick.has(i));
     if (!chosen.length) { notify("Pick at least one thing to ask about.", "warn"); return; }
-    // A plain reply finds its own way back; only the sheet needs to be told where.
+    // The sheet and the links in the mail both reply to you, so both need your address.
     const replyTo = trim(email.value);
-    if (sheet && !looksLikeEmail(replyTo)) {
+    if (!looksLikeEmail(replyTo)) {
       notify("Put in your email for " + (area || "this area") + ", so their answers have somewhere to go.", "warn");
       email.focus();
       return;
@@ -22109,21 +22109,20 @@ function openAskForUpdate(name, only = null) {
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
           saved ? "From email:: on your page in " + area + ". Change it there, or here."
                 : "Not on your page in " + (area || "this area") + " yet. It is saved there as " +
-                  "email:: when you make the sheet, so you are only asked once.")),
+                  "email:: when you write the email or make the sheet, so you are only asked once.")),
       el("div", {class: "field"},
         el("div", {style: "color:var(--fg3);font-size:12.5px"},
-          "Make the sheet: one HTML file, made when you send the note. They open it, tick and answer, " +
-          "press one button, and their answers come back by email. Nothing is uploaded and " + name +
-          " never needs an account. Edit message: the same lines in the mail itself, no file, " +
-          "answered with a plain reply you paste back."))),
+          "Write the email: each line numbered in the mail itself, with a link on each that opens a short " +
+          "reply to you, so " + name + " answers with a click or a plain reply you paste back. Nothing to " +
+          "open and no account. Make the sheet: the same as one HTML file to attach as well, for a long list."))),
     foot: [
       el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
       el("button", {class: "btn ghost", onclick: () => { closeModal(); importUpdatePasted(); }},
         "Paste a reply"),
       el("button", {class: "btn ghost", onclick: () => { closeModal(); importUpdateFromFile(); }},
         "Import a file"),
-      el("button", {class: "btn ghost", onclick: () => send(false)}, "Edit message"),
-      el("button", {class: "btn primary", onclick: () => send(true)}, "Make the sheet"),
+      el("button", {class: "btn ghost", onclick: () => send(true)}, "Make the sheet"),
+      el("button", {class: "btn primary", onclick: () => send(false)}, "Write the email"),
     ],
   });
 }
@@ -22667,6 +22666,25 @@ function openAskNote(name, items, file, sheetOf = null, area = Spaces.active || 
     sent = null;
     once(askItemsEdited(items, bodyNow(), name), next ? () => next.run() : null);
   };
+  // The update mail, from the lines as the note now has them, a reworded one included.
+  const mailNow = () => {
+    const w = mailWords();
+    return updateMail({mode: "ask", them: name, subject: subjNow(), replyTo: emailOf(whoAmI(), area),
+      greet: bodyNow().split("\n")[0],
+      items: askItemsEdited(items, bodyNow(), name).map(it => {
+        const parts = String(it.key || "").split("\u0001"), ref = (parts[0] || Spaces.active || "") + "-" + (parts[2] || "");
+        const context = it.edit ? it.edit.c : it.context || [];
+        if (it.q) {
+          const q = it.edit ? {subject: it.edit.s, ask: it.edit.t} : askQuestionParts(it, name);
+          return {ref, kind: "question", t: q.ask || q.subject, meta: q.ask ? q.subject : "", word: w.question,
+            color: MAIL_COLOR.question, context};
+        }
+        const project = trim(it.project || "");
+        const t = it.edit ? trim(it.edit.t.replace(new RegExp("\\s*\\(" + askEsc(project) + "\\)\\s*$"), "")) : askLineTitle(it, name);
+        return {ref, kind: "wait", t, word: w.waitingFor, color: MAIL_COLOR.wait, context,
+          meta: [project, it.days ? w.open(it.days) : ""].filter(Boolean).join(" · ")};
+      })});
+  };
 
   modal({
     center: true, title: "Send it to " + name,
@@ -22685,8 +22703,10 @@ function openAskNote(name, items, file, sheetOf = null, area = Spaces.active || 
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
           (file ? "You attach " + file + " yourself: no link of any kind can do that for you. It is made " +
                   "from the note as it reads when you send it. " : "") +
-          "Reword a question or a line and you are asked, once it is sent, whether the task should " +
-          "say the same. Leave the Reference lines as they are: they are how the answers find their tasks."),
+          "Copy and open email puts the update mail on your clipboard, numbered, with a link on each line " +
+          "that opens a short reply to you, and opens a new mail to paste it into. The note here is the plain " +
+          "text, for Copy text, Teams and Plain-text mail. Reword a question or a line and you are asked, " +
+          "once it is sent, whether the task should say the same."),
         /* Where the file went, and a way to get it back. A browser puts it
            wherever it puts downloads and says so in its own bar, which is gone
            by the time you are writing the note. */
@@ -22720,7 +22740,7 @@ function openAskNote(name, items, file, sheetOf = null, area = Spaces.active || 
         const said = saveSheet();
         copyText(box.value, said + "Note copied. Paste it wherever you like.");
         going();
-      }}, "Copy"),
+      }}, "Copy text"),
       el("button", {class: "btn ghost", onclick: () => {
         remember();
         const addr = trim(to.value);
@@ -22731,7 +22751,7 @@ function openAskNote(name, items, file, sheetOf = null, area = Spaces.active || 
         notify(said + (file ? "Teams opens with the message ready. Drop " + file + " into the same window." : "Teams opens with the message ready. Press Send."));
         going();
       }}, "Send in Teams"),
-      el("button", {class: "btn primary", onclick: () => {
+      el("button", {class: "btn ghost", onclick: () => {
         remember();
         const url = "mailto:" + encodeURIComponent(trim(to.value)) +
           "?subject=" + encodeURIComponent(subjNow()) +
@@ -22745,9 +22765,286 @@ function openAskNote(name, items, file, sheetOf = null, area = Spaces.active || 
         setTimeout(() => { location.href = url; }, said ? 600 : 0);
         notify(said + (file ? "Your email is opening. Attach " + file + ", then send." : "Your email is opening with the note. Press Send."));
         going();
-      }}, "Open in email"),
+      }}, "Plain-text mail"),
+      el("button", {class: "btn primary", onclick: () => {
+        remember();
+        if (!looksLikeEmail(emailOf(whoAmI(), area))) {
+          notify("Put your own email on your page in " + (area || "this area") + " first: the links in the mail reply to it.", "warn");
+          return;
+        }
+        saveSheet();
+        copyAndOpenMail(mailNow(), to.value, going);
+      }}, "Copy and open email"),
     ],
   });
+}
+
+/* ============================================================
+   THE UPDATE MAIL -- one mail for asking and for telling (#159)
+   The mail is copied as formatted text and pasted into any mail program:
+   no attachment to open, no server, no account. Each task in it is numbered,
+   and each action is a mailto: link that opens a short reply to you, already
+   saying which task it is about. A reply typed by hand uses the same rule, a
+   number and then words, "2: next week" or "1 done", and the reference line
+   at the bottom, which comes back in the quoted original, says which task
+   each number is. docs/update-mail-mockup.html is the drawing it was made from.
+
+   Outlook keeps only inline styles on a paste, and its dark mode turns light
+   fills grey and dark text white. So: tables and inline styles, no fill
+   behind any text, colours that read on white and on near-black, and the one
+   filled cell is the Got it button, whose text is white anyway. Outlook
+   ignores padding on a link, so the button's padding is on its cell.
+   ============================================================ */
+const ACK_PROP = "acknowledged";
+const ackedDays = b => { const d = (trim(blockProp(b, ACK_PROP) || "").match(/\d{4}-\d{2}-\d{2}/) || [])[0]; return d ? dateDiffDays(d, todayISO()) : null; };
+const MAIL_COLOR = {DONE: "#1f9255", DOING: "#2a7ae2", WAIT: "#c07a12", TODO: "#7b8794", CANCELLED: "#c8504a",
+  wait: "#c07a12", question: "#2a7ae2"};
+/* What the footer of a reply says, read back by parseNumberedReply: "2: ...",
+   "1 done: ...", "Got it". These stay English in every language, as the
+   reference does, so a reply reads the same whatever language the mail was in. */
+const MAIL_GOT_IT = "Got it";
+const MAIL_WORDS = {
+  en: {
+    askAbout: "Ask about this ›", markDone: "✓ Mark as done", writeAbout: "Write about this ›", answer: "Answer this ›",
+    gotIt: "✓ Got it, thanks", gotItSaid: "Got it, thanks.",
+    waitingFor: "Waiting for", question: "Question", open: n => "open " + n + " days",
+    reQuestion: t => 'Question about "' + t + '"', reDone: t => 'Done: "' + t + '"', reAbout: t => 'About "' + t + '"',
+    reAnswer: t => 'Answer: "' + t + '"',
+    intro: n => "Here is a short update on " + (n === 1 ? "the task" : "the " + n + " tasks") + " I said I would get back to you about.",
+    introAsk: (w, q) => !w ? (q === 1 ? "I have a quick question for you." : "I have " + q + " quick questions for you.")
+      : "I am waiting for an update on the items below" + (q ? ", and I have " + (q === 1 ? "a question" : q + " questions") : "") + ".",
+    help: ack => (ack ? "One click confirms the lot. " : "") + "Ask about this opens a reply about that task alone. " +
+      "Or just reply, with the number of the task: 2: can we go with the cheaper one?",
+    helpAsk: "Each link opens a short reply: write a line if you like, and send. Or just reply, with the number: 1 done, or 2: next week.",
+    paste: "[ Paste the GroupToDo update here: select this line and press Ctrl+V ]",
+    powered: "Powered by",
+  },
+  sv: {
+    askAbout: "Fråga om detta ›", markDone: "✓ Markera som klar", writeAbout: "Skriv om detta ›", answer: "Svara på detta ›",
+    gotIt: "✓ Uppfattat, tack", gotItSaid: "Uppfattat, tack.",
+    waitingFor: "Väntar på", question: "Fråga", open: n => "öppen " + n + " dagar",
+    reQuestion: t => 'Fråga om "' + t + '"', reDone: t => 'Klart: "' + t + '"', reAbout: t => 'Om "' + t + '"',
+    reAnswer: t => 'Svar: "' + t + '"',
+    intro: n => "Här är en kort uppdatering om " + (n === 1 ? "uppgiften" : "de " + n + " uppgifterna") + " jag lovade att återkomma om.",
+    introAsk: (w, q) => !w ? (q === 1 ? "Jag har en snabb fråga till dig." : "Jag har " + q + " snabba frågor till dig.")
+      : "Jag väntar på en uppdatering om punkterna nedan" + (q ? ", och jag har " + (q === 1 ? "en fråga" : q + " frågor") : "") + ".",
+    help: ack => (ack ? "Ett klick bekräftar alltihop. " : "") + "Fråga om detta öppnar ett svar om just den uppgiften. " +
+      "Eller svara bara, med uppgiftens nummer: 2: kan vi ta den billigare?",
+    helpAsk: "Varje länk öppnar ett kort svar: skriv en rad om du vill, och skicka. Eller svara bara, med numret: 1 klar, eller 2: nästa vecka.",
+    paste: "[ Klistra in GroupToDo-uppdateringen här: markera raden och tryck Ctrl+V ]",
+    powered: "Skapat med",
+  },
+  no: {
+    askAbout: "Spør om dette ›", markDone: "✓ Merk som ferdig", writeAbout: "Skriv om dette ›", answer: "Svar på dette ›",
+    gotIt: "✓ Mottatt, takk", gotItSaid: "Mottatt, takk.",
+    waitingFor: "Venter på", question: "Spørsmål", open: n => "åpen " + n + " dager",
+    reQuestion: t => 'Spørsmål om "' + t + '"', reDone: t => 'Ferdig: "' + t + '"', reAbout: t => 'Om "' + t + '"',
+    reAnswer: t => 'Svar: "' + t + '"',
+    intro: n => "Her er en kort oppdatering på " + (n === 1 ? "oppgaven" : "de " + n + " oppgavene") + " jeg lovet å komme tilbake til deg om.",
+    introAsk: (w, q) => !w ? (q === 1 ? "Jeg har et kjapt spørsmål til deg." : "Jeg har " + q + " kjappe spørsmål til deg.")
+      : "Jeg venter på en oppdatering på punktene under" + (q ? ", og jeg har " + (q === 1 ? "et spørsmål" : q + " spørsmål") : "") + ".",
+    help: ack => (ack ? "Ett klikk bekrefter alt. " : "") + "Spør om dette åpner et svar om akkurat den oppgaven. " +
+      "Eller bare svar, med nummeret på oppgaven: 2: kan vi ta den billigste?",
+    helpAsk: "Hver lenke åpner et kort svar: skriv en linje om du vil, og send. Eller bare svar, med nummeret: 1 ferdig, eller 2: neste uke.",
+    paste: "[ Lim inn GroupToDo-oppdateringen her: merk linjen og trykk Ctrl+V ]",
+    powered: "Laget med",
+  },
+  da: {
+    askAbout: "Spørg om dette ›", markDone: "✓ Markér som færdig", writeAbout: "Skriv om dette ›", answer: "Svar på dette ›",
+    gotIt: "✓ Modtaget, tak", gotItSaid: "Modtaget, tak.",
+    waitingFor: "Venter på", question: "Spørgsmål", open: n => "åben " + n + " dage",
+    reQuestion: t => 'Spørgsmål om "' + t + '"', reDone: t => 'Færdig: "' + t + '"', reAbout: t => 'Om "' + t + '"',
+    reAnswer: t => 'Svar: "' + t + '"',
+    intro: n => "Her er en kort opdatering på " + (n === 1 ? "opgaven" : "de " + n + " opgaver") + ", jeg lovede at vende tilbage om.",
+    introAsk: (w, q) => !w ? (q === 1 ? "Jeg har et hurtigt spørgsmål til dig." : "Jeg har " + q + " hurtige spørgsmål til dig.")
+      : "Jeg venter på en opdatering på punkterne nedenfor" + (q ? ", og jeg har " + (q === 1 ? "et spørgsmål" : q + " spørgsmål") : "") + ".",
+    help: ack => (ack ? "Ét klik bekræfter det hele. " : "") + "Spørg om dette åbner et svar om netop den opgave. " +
+      "Eller svar bare, med opgavens nummer: 2: kan vi tage den billigste?",
+    helpAsk: "Hvert link åbner et kort svar: skriv en linje, hvis du vil, og send. Eller svar bare, med nummeret: 1 færdig, eller 2: næste uge.",
+    paste: "[ Indsæt GroupToDo-opdateringen her: markér linjen og tryk Ctrl+V ]",
+    powered: "Lavet med",
+  },
+  de: {
+    askAbout: "Dazu fragen ›", markDone: "✓ Als erledigt melden", writeAbout: "Dazu schreiben ›", answer: "Darauf antworten ›",
+    gotIt: "✓ Erhalten, danke", gotItSaid: "Erhalten, danke.",
+    waitingFor: "Warte auf", question: "Frage", open: n => "seit " + n + " Tagen offen",
+    reQuestion: t => 'Frage zu "' + t + '"', reDone: t => 'Erledigt: "' + t + '"', reAbout: t => 'Zu "' + t + '"',
+    reAnswer: t => 'Antwort: "' + t + '"',
+    intro: n => "Hier ein kurzes Update zu " + (n === 1 ? "der Aufgabe" : "den " + n + " Aufgaben") + ", zu denen ich mich melden wollte.",
+    introAsk: (w, q) => !w ? (q === 1 ? "Ich habe eine kurze Frage an dich." : "Ich habe " + q + " kurze Fragen an dich.")
+      : "Ich warte auf ein Update zu den Punkten unten" + (q ? ", und ich habe " + (q === 1 ? "eine Frage" : q + " Fragen") : "") + ".",
+    help: ack => (ack ? "Ein Klick bestätigt alles. " : "") + "Dazu fragen öffnet eine Antwort nur zu dieser Aufgabe. " +
+      "Oder antworte einfach, mit der Nummer der Aufgabe: 2: können wir die günstigere nehmen?",
+    helpAsk: "Jeder Link öffnet eine kurze Antwort: schreib eine Zeile, wenn du willst, und sende sie. Oder antworte einfach, mit der Nummer: 1 erledigt, oder 2: nächste Woche.",
+    paste: "[ GroupToDo-Update hier einfügen: Zeile markieren und Strg+V drücken ]",
+    powered: "Erstellt mit",
+  },
+};
+const mailWords = () => MAIL_WORDS[askLang()] || MAIL_WORDS.en;
+const mailCut = (s, n = 80) => s.length > n ? s.slice(0, n - 1) + "…" : s;
+const mailEsc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+
+/* mode: "inform" or "ask". items: {ref, t, word, color, struck, meta, comment,
+   context: [{depth, text}], kind: "wait" | "question" | undefined}; an item
+   without a ref (a project summary) is told but has no link. replyTo: your
+   address, where every link replies to. Gives {subject, html, text, links}. */
+function updateMail({mode, them, subject, items, ack, replyTo, greet}) {
+  const w = mailWords(), refWord = (ASK_NOTE[askLang()] || ASK_NOTE.en).reference;
+  // A question's reference ends in ?, so words about it come back as its answer.
+  const refLine = refWord + " " + items.map(it => it.ref ? it.ref + (it.kind === "question" ? "?" : "") : "-").join(" ");
+  const reply = (subj, line, said = "") => ({subject: subj,
+    body: said + "\n\n\n--\n" + line + "\n" + refLine});
+  const href = r => "mailto:" + encodeURIComponent(trim(replyTo || "")).replace(/%40/g, "@") +
+    "?subject=" + encodeURIComponent(r.subject) + "&body=" + encodeURIComponent(r.body).replace(/%0A/g, "%0D%0A");
+  const cards = items.map((it, i) => {
+    const n = i + 1, title = mailCut(it.t);
+    const links = !it.ref ? [] : mode === "inform" ? [[w.askAbout, reply(w.reQuestion(title), n + ": " + title)]]
+      : it.kind === "question" ? [[w.answer, reply(w.reAnswer(title), n + ": " + title)]]
+      : [[w.markDone, reply(w.reDone(title), n + " done: " + title)], [w.writeAbout, reply(w.reAbout(title), n + ": " + title)]];
+    return {n, it, links};
+  });
+  const gotIt = mode === "inform" && ack ? reply("Re: " + subject, MAIL_GOT_IT, w.gotItSaid) : null;
+  const F = "font-family:Segoe UI,Arial,sans-serif;", ink = "#15202b", grey = "#8190a0";
+  const pill = (label, c) => '<td style="' + F + "border:1.5px solid " + c + ";border-radius:10px;padding:1px 9px;font-size:11.5px;" +
+    "font-weight:bold;letter-spacing:.5px;text-transform:uppercase;color:" + c + ';">' + mailEsc(label) + "</td>";
+  const link = ([label, r]) => '<a href="' + mailEsc(href(r)) + '" style="color:#2a7ae2;font-weight:bold;text-decoration:none;">' +
+    mailEsc(label).replace("›", "&rsaquo;") + "</a>";
+  const card = ({n, it, links}) => '<tr><td style="padding:0 0 12px;">' +
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #c9d1d9;border-radius:8px;">' +
+    '<tr><td style="' + F + "padding:14px 16px 6px;font-size:16px;font-weight:bold;color:" + ink + ";" +
+      (it.struck ? "text-decoration:line-through;" : "") + '"><span style="color:' + grey + ';">' + n + ".</span> " + mailEsc(it.t) + "</td></tr>" +
+    (it.context || []).map(c => '<tr><td style="' + F + "padding:0 16px 4px " + (16 + c.depth * 16) + "px;font-size:13px;color:" + grey + ';">' +
+      mailEsc(c.text) + "</td></tr>").join("") +
+    (it.word ? '<tr><td style="padding:2px 16px 10px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>' +
+      pill(it.word, it.color || grey) +
+      (it.meta ? '<td style="' + F + "padding-left:10px;font-size:13px;color:" + grey + ';">' + mailEsc(it.meta) + "</td>" : "") +
+      "</tr></table></td></tr>" : "") +
+    (trim(it.comment || "") ? '<tr><td style="padding:0 16px 10px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>' +
+      '<td width="3" bgcolor="' + (it.color || grey) + '" style="background:' + (it.color || grey) + ';width:3px;font-size:0;line-height:0;">&nbsp;</td>' +
+      '<td style="' + F + "padding:2px 0 2px 12px;font-size:14.5px;color:" + ink + ';">' + mailEsc(trim(it.comment)).replace(/\n/g, "<br>") + "</td>" +
+      "</tr></table></td></tr>" : "") +
+    (links.length ? '<tr><td style="' + F + 'padding:0 16px 13px;font-size:13.5px;">' +
+      links.map(link).join('<span style="color:' + grey + ';">&nbsp;&nbsp;·&nbsp;&nbsp;</span>') + "</td></tr>" : "") +
+    "</table></td></tr>";
+  const k = {w: items.filter(it => it.kind !== "question").length, q: items.filter(it => it.kind === "question").length};
+  const intro = mode === "inform" ? w.intro(items.length) : w.introAsk(k.w, k.q);
+  const help = mode === "inform" ? w.help(!!gotIt) : w.helpAsk;
+  const html = '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="' + F +
+      "font-size:15px;line-height:1.5;color:" + ink + ';max-width:600px;">' +
+    '<tr><td style="' + F + 'padding:0 0 14px;">' + mailEsc(greet) + "</td></tr>" +
+    '<tr><td style="' + F + 'padding:0 0 16px;">' + mailEsc(intro) + "</td></tr>" +
+    cards.map(card).join("") +
+    (gotIt ? '<tr><td style="padding:8px 0;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>' +
+      '<td bgcolor="#1a7f4f" style="background:#1a7f4f;border:1px solid #1a7f4f;border-radius:6px;padding:10px 18px;mso-padding-alt:10px 18px;">' +
+      '<a href="' + mailEsc(href(gotIt)) + '" style="color:#ffffff;' + F + 'font-size:15px;font-weight:bold;text-decoration:none;display:inline-block;">' +
+      mailEsc(w.gotIt) + "</a></td></tr></table></td></tr>" : "") +
+    '<tr><td style="' + F + "padding:" + (gotIt ? "4px" : "8px") + ' 0 8px;font-size:13px;color:#7d8c99;">' + mailEsc(help) + "</td></tr>" +
+    '<tr><td style="padding:0 0 18px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>' +
+      '<td style="' + F + 'border:1px solid #8696a4;border-radius:10px;padding:2px 10px;font-size:12px;color:#6e7b88;">' +
+      mailEsc(w.powered) + ' <a href="https://github.com/kennethaar/GroupTodo" style="color:#2a7ae2;font-weight:bold;text-decoration:none;">GroupToDo</a></td>' +
+    "</tr></table></td></tr>" +
+    '<tr><td style="' + F + "font-size:11px;color:" + grey + ';">' + mailEsc(refLine) + "</td></tr>" +
+    "</table>";
+  // No sign-off in either: their own mail signature follows the paste.
+  const text = [greet, "", intro, "",
+    ...cards.flatMap(({n, it}) => [n + ". " + it.t,
+      ...(it.context || []).map(c => ASK_IND + "  ".repeat(c.depth) + c.text),
+      ...(it.word ? [ASK_IND + it.word + (it.meta ? " · " + it.meta : "")] : []),
+      ...String(it.comment || "").split(/\r?\n/).filter(l => trim(l)).map(l => ASK_IND + trim(l)), ""]),
+    help, "", refLine].join("\n");
+  const links = [...cards.flatMap(c => c.links.map(([, r]) => href(r))), ...(gotIt ? [href(gotIt)] : [])];
+  return {subject, html, text, links};
+}
+
+/* Formatted text on the clipboard: the copy event carries text/html beside
+   text/plain, which is what a mail program reads on a paste, and it works in
+   a page opened from a file. The async clipboard is the second try. */
+function copyRich(html, text) {
+  let done = false;
+  const on = e => { e.clipboardData.setData("text/html", html); e.clipboardData.setData("text/plain", text); e.preventDefault(); done = true; };
+  document.addEventListener("copy", on);
+  try { document.execCommand("copy"); } catch (_) {}
+  document.removeEventListener("copy", on);
+  if (done) return Promise.resolve(true);
+  if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write)
+    return navigator.clipboard.write([new ClipboardItem({"text/html": new Blob([html], {type: "text/html"}),
+      "text/plain": new Blob([text], {type: "text/plain"})})]).then(() => true, () => false);
+  return Promise.resolve(false);
+}
+/* Copy and open email: the mail on the clipboard, then a new mail to them
+   with the subject in and one line in the body saying where the paste goes,
+   above their signature. */
+function copyAndOpenMail(mail, to, then) {
+  copyRich(mail.html, mail.text).then(ok => {
+    if (!ok) { notify("The browser would not copy the mail. Use Copy text instead.", "warn"); return; }
+    location.href = "mailto:" + encodeURIComponent(trim(to || "")).replace(/%40/g, "@") +
+      "?subject=" + encodeURIComponent(mail.subject) + "&body=" + encodeURIComponent(mailWords().paste + "\r\n\r\n");
+    notify("The update is on your clipboard. In the new mail, select the paste line and press Ctrl+V.");
+    if (then) then();
+  });
+}
+
+/* A reply to the mail: the reference line lists the tasks in order, so the
+   number is the task. "2: words" or "re 2 words" is about task 2, "2 done"
+   says it is done, words above the -- of a clicked reply belong to the task
+   its footer names, and Got it, or a plain ok or thanks, is Got it for all
+   of them. Anything else is kept as loose, for you to place. Gives null when
+   the text is not such a reply, so the older formats are read as before. */
+const MAIL_DONE_WORDS = "done|ok|okay|✓|ja|yes|klar|klart|ferdig|færdig|fertig|erledigt";
+function parseNumberedReply(text) {
+  text = String(text || "");
+  const lines = text.split(/\r?\n/).map(l => l.replace(/^(?:[ \t]*>)+[ \t]?/, ""));
+  const refAt = lines.findIndex(l => /^\s*(?:Reference|Referanse|Referens|Referenz)\b[^:]*:\s*\S/i.test(l));
+  if (refAt < 0) return null;
+  const refs = lines[refAt].replace(/^[^:]*:\s*/, "").split(/[\s,]+/).filter(Boolean);
+  // The older formats have boxes, Comment: and Answer:; those are theirs.
+  if (lines.some(l => /^\s*(?:(?:[-*•·]|\d+[.)])\s*)?\[[^\[\]]*\]\s*\S/.test(l) ||
+    /^\s*(?:Comment|Kommentar|Answer|Svar|Antwort):/i.test(l))) return null;
+  const mailFrom = lines.map(l => /^\s*(?:From|Fra|Från|Von):\s*(.+)$/i.exec(l)).find(Boolean);
+  const from = mailFrom ? trim(mailFrom[1].replace(/<[^>]*>/g, "").replace(/["']/g, "")) : "";
+  // What they wrote ends at the fence of a clicked reply, or where the quote of the mail begins.
+  const quoteAt = text.split(/\r?\n/).findIndex(l => /^\s*>/.test(l) || /^\s*(?:On .* wrote:|From:|Fra:|Från:|Von:|-----)/i.test(l));
+  const fence = lines.findIndex(l => /^\s*--\s*$/.test(l));
+  const stop = [quoteAt, fence, refAt].filter(i => i >= 0).reduce((a, b) => Math.min(a, b), lines.length);
+  const foot = fence >= 0 ? trim(lines[fence + 1] || "") : "";
+  const footM = /^(\d+)(\s+done)?:/i.exec(foot);
+  const gotIt = new RegExp("^(?:" + MAIL_GOT_IT + "|ok)$", "i").test(foot);
+  const out = [], loose = [];
+  let cur = null;
+  const doneRe = new RegExp("^(?:re\\s*)?(\\d+)\\s*[.:)\\-]?\\s*(?:" + MAIL_DONE_WORDS + ")\\s*[.!]?$", "iu");
+  for (const raw of lines.slice(0, stop)) {
+    const line = trim(raw);
+    let m;
+    if (!line) { cur = null; continue; }
+    if ((m = doneRe.exec(line))) { out.push({n: +m[1], done: true, note: ""}); cur = null; }
+    else if ((m = /^(?:re\s*)?(\d+)\s*[.:)\-]\s*(\S.*)$/i.exec(line)) || (m = /^re\s*(\d+)\s+(\S.*)$/i.exec(line))) {
+      cur = {n: +m[1], done: false, note: m[2]}; out.push(cur);
+    }
+    else if (cur) cur.note += " " + line;
+    else loose.push(line);
+  }
+  /* Greetings, sign-offs and a name on its own are not about any task, and
+     the words a Got it link writes in are the Got it itself. */
+  const THANKS = /^(?:ok|okay|got it|got it, thanks|thanks|thank you|takk|tack|tak|danke|cheers|mottatt|uppfattat|modtaget|erhalten)[,.!\s\w]{0,8}$/i;
+  const said = loose.filter(l => !/^(?:hi|hello|dear|hej|hei|hallo)\b/i.test(l) &&
+    !/^(?:best|kind regards|regards|br|mvh|med vennlig hilsen|vh|venlig hilsen|hälsningar|viele grüße|gruß|grüße)\b/i.test(l) &&
+    !/^[\p{Lu}][\p{L}\-]*\.?$/u.test(l));
+  let rest = said.filter(l => !THANKS.test(l)).join(" ").replace(/\s+/g, " ").trim();
+  for (const w of Object.values(MAIL_WORDS))
+    if (rest.toLowerCase().startsWith(w.gotItSaid.toLowerCase())) rest = trim(rest.slice(w.gotItSaid.length));
+  const ack = gotIt || (!out.length && !footM && said.length > 0 && said.every(l => THANKS.test(l)));
+  if (footM && rest) { out.push({n: +footM[1], done: !!footM[2], note: rest}); rest = ""; }
+  else if (footM && footM[2] && !out.some(o => o.n === +footM[1])) out.push({n: +footM[1], done: true, note: ""});
+  const real = refs.filter(r => r !== "-").map(r => r.replace(/\?$/, ""));
+  const items = out.filter(o => refs[o.n - 1] && refs[o.n - 1] !== "-").map(o => {
+    const q = refs[o.n - 1].endsWith("?"), note = trim(o.note);
+    // Words on a question are its answer, which is what makes it answered.
+    return Object.assign({ref: refs[o.n - 1].replace(/\?$/, ""), t: "", numbered: true, done: o.done || (q && !!note), note},
+      q && note ? {answered: true} : {});
+  });
+  if (ack) for (const ref of real) items.push({ref, t: "", numbered: true, ack: true, done: false, note: ""});
+  if (!items.length && !rest) return null;
+  return {from, items, loose: rest, refs: real};
 }
 
 /* ============================================================
@@ -23122,6 +23419,7 @@ function openSendUpdate(to, start = null) {
     const meta = r.kind === "proj"
       ? ["done since " + humanDate(r.area.since), r.lines.length ? "untick a line to leave it out" : "nothing else to say about it"]
       : [informedDays(r.a.block) != null ? "told " + informedDays(r.a.block) + "d ago" : "never told",
+         ackedDays(r.a.block) != null ? "got it " + ackedDays(r.a.block) + "d ago" : null,
          askedDays(r.a.block) != null ? "asked " + askedDays(r.a.block) + "d ago" : null,
          r.lines.length ? "the lines under it go along unless you untick them" : null];
     const label = c => (c.label ? INFORM_NOTE.en.lines[c.label] + " " : "") + c.text;
@@ -23166,6 +23464,8 @@ function openSendUpdate(to, start = null) {
       comment: r.comment.value, project: r.p.title, head: r.area.title,
       context: r.lines.filter((_, j) => r.ctx.has(j)),
     } : {
+      // The task's area and id::, so a reply to the mail finds its way back.
+      ref: (r.a.space || V.space) + "-" + inSpace(r.a.space, () => ensureBlockId(r.a.path, r.a.block)),
       t: trim(r.title.value) || plainTitle(r.a.title), status: r.sel.value,
       core: inSpace(r.a.space, () => informCore(r.a.block, r.sel.value)),
       comment: r.comment.value, project: aboutOf.get(r.a) || "",
@@ -23193,13 +23493,14 @@ function openSendUpdate(to, start = null) {
           el("span", {}, "Name the projects in what they get"))) : null,
       el("div", {class: "field"},
         el("div", {style: "color:var(--fg3);font-size:12.5px"},
-          "Make the sheet: one HTML page with each line and where it stands, to attach and keep. " +
-          "Edit message: the same lines in the mail itself. Either way, once it is sent each line is marked as told, " +
-          "what you wrote goes in its chat or on the responsibility's page, and a status you changed here can go to the task."))),
+          "Write the email: each line numbered in the mail itself, where it stands and your word on it, " +
+          "with a link to ask about it and one to say Got it. Make the sheet: the same as one HTML page to attach and keep. " +
+          "Either way, once it is sent each line is marked as told, what you wrote goes in its chat or on the " +
+          "responsibility's page, and a status you changed here can go to the task."))),
     foot: [
       el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
-      el("button", {class: "btn ghost", onclick: () => send(false)}, "Edit message"),
-      el("button", {class: "btn primary", onclick: () => send(true)}, "Make the sheet"),
+      el("button", {class: "btn ghost", onclick: () => send(true)}, "Make the sheet"),
+      el("button", {class: "btn primary", onclick: () => send(false)}, "Write the email"),
     ],
   });
 }
@@ -23298,6 +23599,26 @@ function openInformNote(to, items, opts) {
     return "Saved " + file + " to your downloads. ";
   };
   const going = () => { if (!opts.sent) return; const once = opts.sent; opts.sent = null; once(); };
+  /* The links in the update mail reply to you, so it needs your address: the
+     one on your page in this area, asked for here only when there is none. */
+  const myOwn = emailOf(me, area);
+  const mine = el("input", {type: "email", placeholder: "you@example.com", value: myOwn});
+  if (opts.ack == null) opts.ack = true;
+  const ackBox = el("button", {class: "spacetoggle" + (opts.ack ? " on" : ""), style: "flex:0 0 auto", onclick: () => {
+    opts.ack = !opts.ack;
+    ackBox.className = "spacetoggle" + (opts.ack ? " on" : "");
+    ackBox.textContent = opts.ack ? "✓" : "";
+  }}, opts.ack ? "✓" : "");
+  const mailNow = () => {
+    const t = informWords();
+    return updateMail({mode: "inform", them: name, subject: box.value.split("\n")[0], replyTo: trim(mine.value),
+      greet: bodyNow().split("\n")[0], ack: opts.ack,
+      items: items.map(it => ({ref: it.ref, t: it.t, word: informWordOf(it, t), color: MAIL_COLOR[it.core] || MAIL_COLOR.TODO,
+        struck: it.core === "CANCELLED", comment: it.comment,
+        // What it is under, a responsibility or the project you chose to name.
+        meta: it.head && it.head !== "\u0001other" ? it.head : named ? it.project || "" : "",
+        context: (it.context || []).map(c => ({depth: c.depth, text: informLineText(c, t)}))}))});
+  };
   modal({
     center: true, title: "Send it to " + name,
     hint: file || "",
@@ -23309,6 +23630,14 @@ function openInformNote(to, items, opts) {
           saved ? "From email:: on " + name + "'s page."
                 : to.org ? "No email:: on " + name + "'s page. Type one here, or put it on the page."
                          : "Not on " + name + "'s page yet. It is saved there as email:: when you send.")),
+      myOwn ? null : el("div", {class: "field"},
+        el("label", {}, "Your email in " + (area || "this area") + ", where their replies come back to"),
+        mine,
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+          "Not on your page yet. It is saved there as email:: when you send, so you are only asked once.")),
+      el("div", {class: "field"},
+        el("div", {style: "display:flex;gap:10px;align-items:center"}, ackBox,
+          el("span", {}, "Ask them to confirm, with a Got it button in the email"))),
       el("div", {class: "field"},
         el("label", {}, "The note (first line is the subject). Edit it freely."),
         box,
@@ -23340,7 +23669,7 @@ function openInformNote(to, items, opts) {
         const said = saveSheet();
         copyText(box.value, said + "Note copied. Paste it wherever you like.");
         going();
-      }}, "Copy"),
+      }}, "Copy text"),
       el("button", {class: "btn ghost", onclick: () => {
         remember();
         const a = trim(addr.value);
@@ -23351,20 +23680,31 @@ function openInformNote(to, items, opts) {
         notify(said + (file ? "Teams opens with the message ready. Drop " + file + " into the same window." : "Teams opens with the message ready. Press Send."));
         going();
       }}, "Send in Teams"),
-      el("button", {class: "btn primary", onclick: () => {
+      el("button", {class: "btn ghost", onclick: () => {
         remember();
         const url = "mailto:" + encodeURIComponent(trim(addr.value)) +
           "?subject=" + encodeURIComponent(box.value.split("\n")[0]) +
           "&body=" + encodeURIComponent(bodyNow());
         if (url.length > 1800) {
-          notify("That note is too long for an email link. Use Copy and paste it instead.", "warn");
+          notify("That note is too long for an email link. Use Copy text and paste it instead.", "warn");
           return;
         }
         const said = saveSheet();
         setTimeout(() => { location.href = url; }, said ? 600 : 0);
         notify(said + (file ? "Your email is opening. Attach " + file + ", then send." : "Your email is opening with the note. Press Send."));
         going();
-      }}, "Open in email"),
+      }}, "Plain-text mail"),
+      el("button", {class: "btn primary", onclick: () => {
+        remember();
+        if (!looksLikeEmail(trim(mine.value))) {
+          notify("Put your own email in first: the links in the mail reply to it.", "warn");
+          mine.focus();
+          return;
+        }
+        setEmailOf(me, area, trim(mine.value));
+        saveSheet();
+        copyAndOpenMail(mailNow(), addr.value, going);
+      }}, "Copy and open email"),
     ],
   });
 }
@@ -23610,6 +23950,9 @@ function stakeholderLine(to) {
 /* ---------- their reply, coming back ---------- */
 function parseUpdateReply(text) {
   text = String(text || "");
+  // A reply to the update mail; the sheet's and the plain note's formats below.
+  const numbered = parseNumberedReply(text);
+  if (numbered) return numbered;
   /* A reply written in the mail is usually quoted ("> - [x] ..."), so the quote
      marks come off first. Spacing is whatever their fingers did: [ x ], [x  ],
      -[x]Task. Mail programs turn the dash into a bullet, or drop it. An x in
@@ -23776,13 +24119,23 @@ function openUpdateArrived(data) {
       peopleNamedIn(hit.block.title).find(n => !samePerson(n, whoAmI()));
     if (owner) askedOf.set(owner, (askedOf.get(owner) || 0) + 1);
     const note = trim(item.note || "");
-    if (!item.done && !note) continue;                  // no answer is not news
     const closed = inSpace(hit.space, () => !OPEN_STATES[hit.block.state]);
+    /* Got it, on the update you sent them. "2 done" on a task you only told
+       them about is the same: it is yours to close, not theirs. */
+    if (item.ack || (item.numbered && item.done && !item.answered && !inSpace(hit.space, () => blockProp(hit.block, ASKED_PROP)))) {
+      if (!rows.some(r => r.ack && r.hit.block === hit.block)) rows.push({hit, ack: true, done: false, note, closed, take: true});
+      continue;
+    }
+    if (!item.done && !note) continue;                  // no answer is not news
     rows.push({hit, done: !!item.done, answered: !!item.answered, note, closed, take: true});
   }
   const who = [...askedOf].sort((x, y) => y[1] - x[1])[0]?.[0] || trim(data.from) || "They";
+  /* Words in the reply with no number on them: yours to place, on one of the
+     tasks the mail was about. With only one, they are about that one. */
+  const hits = (data.refs || []).map(ref => resolveReplyItem({ref})).filter(Boolean);
+  const loose = trim(data.loose || "") && hits.length ? {note: trim(data.loose), hits, at: hits.length === 1 ? 0 : -1} : null;
 
-  if (!rows.length) {
+  if (!rows.length && !loose) {
     modal({center: true, title: who + " replied", body: el("div", {},
       el("div", {class: "field"}, el("div", {style: "color:var(--fg2);font-size:13.5px;line-height:1.6"},
         gone ? "Nothing in the reply matches a task that is still here. " +
@@ -23806,13 +24159,16 @@ function openUpdateArrived(data) {
   const waiting = r => inSpace(r.hit.space, () => r.hit.block.state === "WAIT");
   const mayReturn = r => r.answered && closable(r) && !r.take && waiting(r);
   const returns = r => mayReturn(r) && r.back;
+  // Got it is stamped on the task, acknowledged:: who and when.
+  const acks = r => r.ack && r.take;
+  const places = () => !!loose && loose.at >= 0;
   for (const r of rows) r.back = true;
   const refresh = () => {
-    const n = rows.filter(closes).length, notes = rows.filter(files).length,
-      back = rows.filter(returns).length,
-      taken = rows.filter(r => closes(r) || files(r)).length;
+    const n = rows.filter(closes).length, notes = rows.filter(files).length + (places() ? 1 : 0),
+      back = rows.filter(returns).length, seen = rows.filter(acks).length,
+      taken = rows.filter(r => closes(r) || files(r) || acks(r)).length + (places() ? 1 : 0);
     counts.textContent = n + (n === 1 ? " task closes, " : " tasks close, ") +
-      (back ? back + " back to you, " : "") +
+      (back ? back + " back to you, " : "") + (seen ? seen + " got it, " : "") +
       notes + (notes === 1 ? " comment filed." : " comments filed.");
     apply.textContent = taken ? "Apply " + taken : "Apply nothing";
   };
@@ -23820,7 +24176,9 @@ function openUpdateArrived(data) {
   for (const r of rows) {
     const title = inSpace(r.hit.space, () => plainTitle(r.hit.block.title));
     const said = r.answered ? "answered" : "they say done";
-    const what = () => (!r.done ? "comment only · stays open"
+    const what = () => (r.ack ? (r.take ? "got it · marked as seen by " + firstNameOf(who) : "got it · not marked") +
+        (r.note ? ", the comment is filed" : "")
+      : !r.done ? "comment only · stays open"
       : r.closed ? said + " · already closed here"
       : r.take ? said + " → close it"
       : mayReturn(r) ? said + (r.back ? " · back to you as a to-do" : " · keeps waiting on " + firstNameOf(who)) +
@@ -23832,9 +24190,9 @@ function openUpdateArrived(data) {
     const whose = el("div", {class: "statefilter", style: "margin-top:6px"});
     const draw = () => {
       line.textContent = what();
-      const st = closes(r) ? "DONE" : returns(r) ? "TODO" : "WAIT";
+      const st = closes(r) || acks(r) ? "DONE" : returns(r) ? "TODO" : "WAIT";
       state.className = "state " + st;
-      state.textContent = closes(r) ? "done" : returns(r) ? "yours" : "open";
+      state.textContent = closes(r) ? "done" : acks(r) ? "got it" : returns(r) ? "yours" : "open";
       whose.style.display = mayReturn(r) ? "" : "none";
       whose.replaceChildren(...[[true, "Back to you as TODO"], [false, "Keep waiting on " + firstNameOf(who)]]
         .map(([v, label]) => el("button", {class: "chip filter" + (r.back === v ? " on" : ""),
@@ -23857,12 +24215,30 @@ function openUpdateArrived(data) {
         line, whose),
       state));
   }
+  if (loose) {
+    const sel = el("select", {style: "margin-top:6px", onchange: () => { loose.at = +sel.value; refresh(); }},
+      el("option", {value: "-1"}, "Leave it out"),
+      ...loose.hits.map((h, i) => el("option", {value: String(i)}, inSpace(h.space, () => plainTitle(h.block.title)))));
+    sel.value = String(loose.at);
+    list.append(el("div", {style: "display:flex;gap:10px;align-items:flex-start;margin:9px 0"},
+      el("span", {style: "width:22px;flex:0 0 auto"}),
+      el("div", {style: "min-width:0;flex:1"},
+        el("div", {style: "color:var(--fg2);font-size:12.5px;font-style:italic"}, "“" + loose.note + "”"),
+        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:2px"}, "No number on it: which task is it about?"),
+        sel)));
+  }
 
   const apply = el("button", {class: "btn primary", onclick: () => {
-    let closed = 0, noted = 0, back = 0;
+    let closed = 0, noted = 0, back = 0, seen = 0;
+    if (places()) {
+      const h = loose.hits[loose.at];
+      inSpace(h.space, () => { if (postMessageAs(h.path, h.block, loose.note, who, at)) noted++; touch(h.path); });
+    }
     for (const r of rows) {
-      if (!closes(r) && !files(r)) continue;
+      if (!closes(r) && !files(r) && !acks(r)) continue;
       inSpace(r.hit.space, () => {
+        if (acks(r)) { setBlockProp(r.hit.block, ACK_PROP, who + " " + at); seen++; touch(r.hit.path); }
+        if (r.ack) { if (files(r) && postMessageAs(r.hit.path, r.hit.block, r.note, who, at)) noted++; return; }
         if (closes(r)) { closeOnTheirWord(r.hit.path, r.hit.block, who, at); closed++; }
         if (returns(r)) {
           r.hit.block.state = "TODO";
@@ -23877,7 +24253,7 @@ function openUpdateArrived(data) {
       });
     }
     closeModal();
-    notify(who + "'s update is in: " + closed + " closed, " + (back ? back + " back to you, " : "") + noted +
+    notify(who + "'s update is in: " + closed + " closed, " + (back ? back + " back to you, " : "") + (seen ? seen + " got it, " : "") + noted +
            (noted === 1 ? " comment." : " comments."));
     render();
   }});
