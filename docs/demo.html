@@ -3440,6 +3440,7 @@ const DIRS = {
   goals    : join(PAGES, "g"),   // H3: goals and objectives, 1-2 years
   lists    : join(PAGES, "8"),   // 8 = eternity: checklists you run again and again
   mail     : join(PAGES, "m"),   // emails pasted in, each with what came of it
+  reviews  : join(PAGES, "r"),   // books, films, series and videos, and what you made of them
 };
 const TODO_STATES  = ["TODO", "DOING", "WAIT", "DONE", "CANCELLED"];
 const OPEN_STATES  = {TODO:true, DOING:true, WAIT:true};
@@ -3458,7 +3459,7 @@ const STATUS_LABEL = {"-":"Cancelled", "0":"Completed", "1":"Active", "2":"Somed
 const STATUS_ORDER = ["-", "0", "1", "2", "3"];
 const PREFIX_DIR   = {"8":DIRS.lists,            // integer-like key, so pageRef finds it first
                       p:DIRS.people, c:DIRS.contexts, o:DIRS.orgs, z:DIRS.zettel,
-                      a:DIRS.areas, g:DIRS.goals, m:DIRS.mail,
+                      a:DIRS.areas, g:DIRS.goals, m:DIRS.mail, r:DIRS.reviews,
                       _:join(PAGES, "_"),           // horizons: [[_/Purpose]], [[_/Vision]]
                       k:DIRS.lists};                // legacy: old [[k/...]] links still resolve
 
@@ -4716,6 +4717,7 @@ const GUIDE_FOLDERS = [
   [DIRS.zettel, "z", "Notes", "Notes worth keeping that are not projects: ideas, references, meeting notes."],
   [DIRS.mail, "m", "Emails", "Emails pasted into the box at the top: who sent it, when, the words, and the answers that came back. " +
     "A task on the day it arrived links to it as [[m/Subject]]."],
+  [DIRS.reviews, "r", "Reviews", "Books, films, series and videos you have been through: what it was, who made it, how good it was, and what you made of it."],
   [DIRS.verbs, "verbs", "Verbs", "The words a next action can start with (call, draft, buy), with their synonyms. Used to nudge a task towards something you can actually do."],
 ];
 const guideFileName = (code, name) => "_" + code + "_for " + name + ".md";
@@ -6781,6 +6783,7 @@ function pageKind(path) {
   if (path.startsWith(DIRS.orgs      + "/")) return "org";
   if (path.startsWith(DIRS.zettel    + "/")) return "zettel";
   if (path.startsWith(DIRS.mail      + "/")) return "email";
+  if (path.startsWith(DIRS.reviews   + "/")) return "review";
   if (path.startsWith(DIRS.areas     + "/")) return "area";
   if (path.startsWith(DIRS.goals     + "/")) return "goal";
   // Both folders answer "checklist": the old one empties on load, and until it
@@ -6974,7 +6977,7 @@ function findExistingPage(target) {
   if (/^\d{4}-\d{2}-\d{2}$/.test(target)) return null;
   const slug = slugify(target.includes("/") ? target.split("/").pop() : target);
   const roots = [PAGES, DIRS.active, DIRS.someday, DIRS.waiting, DIRS.completed,
-                 DIRS.cancelled, DIRS.people, DIRS.contexts, DIRS.orgs, DIRS.zettel, DIRS.mail];
+                 DIRS.cancelled, DIRS.people, DIRS.contexts, DIRS.orgs, DIRS.zettel, DIRS.mail, DIRS.reviews];
   for (const r of roots) {
     const p = join(r, slug + ".md");
     if (V.pages.has(p)) return p;
@@ -7131,6 +7134,8 @@ const TEMPLATE_DEFAULTS = {
   "c": {props:{title:"%title%",type:"context",created:"%today%"}},
   "z": {props:{title:"%title%",created:"%today%"},lines:["%title%","Relates to","Contradicts","Informs"]},
   "m": {props:{title:"%title%",type:"email",created:"%today%"}},
+  // medium:: book, film, series or video -- one kind of page for all of them
+  "r": {props:{title:"%title%",type:"review",medium:"",by:"",rating:"",created:"%today%"}},
   "a": {props:{title:"%title%",type:"area",created:"%today%"},lines:["What does keeping this responsibility healthy look like?"]},
   "g": {props:{title:"%title%",type:"goal",horizon:"3",created:"%today%"},lines:["What has to be true for this to count as achieved?"]},
   "k": {props:{title:"%title%",type:"checklist",created:"%today%"},lines:["First step"]}
@@ -17230,7 +17235,7 @@ function viewCalendar() {
    screen in the app that is a picture rather than a document. */
 const GRAPH_KIND_VAR = {
   project: "--proj", journal: "--fg3", person: "--zet", context: "--ctx",
-  zettel: "--zet", email: "--zet", area: "--accent", goal: "--accent", horizon: "--accent",
+  zettel: "--zet", email: "--zet", review: "--zet", area: "--accent", goal: "--accent", horizon: "--accent",
   checklist: "--done", org: "--wait",
   // the mindmap hangs the tasks themselves off their page, coloured by state
   TODO: "--todo", DOING: "--doing", WAIT: "--wait", DONE: "--done", CANCELLED: "--cancel",
@@ -24172,7 +24177,7 @@ function nameIndex() {
   });
 }
 const KIND_MARK = {person: "p", org: "o", project: "1", area: "a", context: "@", page: "·", date: "📅"};
-const LINK_KIND_WORD = {context: "context", person: "person", org: "org", zettel: "note", email: "email",
+const LINK_KIND_WORD = {context: "context", person: "person", org: "org", zettel: "note", email: "email", review: "review",
   area: "responsibility", goal: "goal", checklist: "routine", project: "project", journal: "day",
   horizon: "horizon", page: "page"};
 
@@ -28183,10 +28188,10 @@ $("#pagePane").addEventListener("click", e => {
   pane.before(grip);
 })();
 const PAGE_KIND_ONE = {project: "Project", person: "Person", org: "Organisation", context: "Context",
-  area: "Responsibility", goal: "Goal", zettel: "Note", email: "Email", checklist: "Routine or list", journal: "Day page",
+  area: "Responsibility", goal: "Goal", zettel: "Note", email: "Email", review: "Review", checklist: "Routine or list", journal: "Day page",
   horizon: "Horizon", page: "Page", verb: "Verb"};
 const PAGE_KINDS = {project: "Projects", person: "People", org: "Organisations", context: "Contexts",
-  area: "Responsibilities", goal: "Goals", zettel: "Notes", email: "Emails", checklist: "Settings", journal: "Journals",
+  area: "Responsibilities", goal: "Goals", zettel: "Notes", email: "Emails", review: "Reviews", checklist: "Settings", journal: "Journals",
   horizon: "Horizons", page: "Other pages"};
 
 /* ============================================================
@@ -30408,7 +30413,7 @@ function openContextPage(name) {
    PAGES -- everything in the spaces on screen
    ============================================================ */
 const KIND_DOT = {project: "--proj", person: "--zet", org: "--wait", context: "--ctx", area: "--accent",
-  goal: "--accent", zettel: "--fg3", checklist: "--done", journal: "--fg3", horizon: "--accent", page: "--fg3"};
+  goal: "--accent", zettel: "--fg3", review: "--zet", checklist: "--done", journal: "--fg3", horizon: "--accent", page: "--fg3"};
 const kindDot = kind => el("span", {class: "kdot", style: "background:var(" + (KIND_DOT[kind] || "--fg3") + ")"});
 
 function pageRowsVisible() {
@@ -38384,7 +38389,7 @@ function pageFolderChoices(path) {
     [DIRS.cancelled, "Project, cancelled (-/)"],
     [DIRS.areas, "Responsibility (a/)"], [DIRS.goals, "Goal (g/)"],
     [DIRS.people, "Person (p/)"], [DIRS.orgs, "Organisation (o/)"], [DIRS.contexts, "Context (c/)"],
-    [DIRS.lists, "Routine or list (8/)"], [DIRS.zettel, "Note (z/)"], [DIRS.mail, "Email (m/)"], [DIRS.pages, "Other page (pages/)"],
+    [DIRS.lists, "Routine or list (8/)"], [DIRS.zettel, "Note (z/)"], [DIRS.mail, "Email (m/)"], [DIRS.reviews, "Review (r/)"], [DIRS.pages, "Other page (pages/)"],
   ];
   if (!list.some(([d]) => d === here))
     list.unshift([here, "Where it is now (" + here.replace(/^pages\/?/, "") + "/)"]);
@@ -40281,7 +40286,7 @@ function usageRecords() {
 }
 
 const USAGE_PAGE_KINDS = {journal: "Day pages", project: "Project pages", horizon: "Horizon pages",
-  context: "Context pages", person: "Person pages", org: "Organisation pages", zettel: "Notes", email: "Emails",
+  context: "Context pages", person: "Person pages", org: "Organisation pages", zettel: "Notes", email: "Emails", review: "Reviews",
   area: "Responsibility pages", goal: "Goal pages", checklist: "Checklists", verb: "Verb pages", page: "Other pages"};
 function usageLabel(place) {
   const [kind, ...more] = place.split("/"), rest = more.join("/");

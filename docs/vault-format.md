@@ -40,6 +40,7 @@ An *area* (Work, Home, …) is one folder. Areas never share or nest folders.
     o/   organisations            [[o/Acme AS]]
     z/   notes (zettelkasten)     [[z/Spaced repetition]]
     m/   emails pasted in         [[m/Quote for the kitchen]]
+    r/   reviews: books, films, series, videos  [[r/Getting Things Done]]
     verbs/  verb lexicon (optional)
     <anything else>.md            plain pages, [[Recipe ideas]]
 ```
