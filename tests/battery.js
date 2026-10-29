@@ -608,6 +608,18 @@ var GTD_TEST = (() => {
     eq(messagesOf(getPage(path).blocks[0]).map(m => m.title), ["Sounds good, but call me first."]);
     closeAll();
   });
+  test("#159 a linked email reads as its subject, without the m/", () => {
+    eq(plainTitle("Svar om [[m/Forespørsel om revisjonsrapport – MEPS 3]]"), "Svar om Forespørsel om revisjonsrapport – MEPS 3");
+  });
+  test("#159 taking the name out of a question takes its 'fra' too", () => {
+    const was = PREF.get("askLang", "");
+    PREF.set("askLang", "no");
+    try {
+      const {ask} = askQuestionParts({title: "Venter på svar fra [[p/Lars Haugen]] om [[m/Forespørsel om revisjonsrapport – MEPS 3]]",
+        project: "MEPS"}, "Lars Haugen");
+      eq(ask, "Venter på svar om Forespørsel om revisjonsrapport – MEPS 3");
+    } finally { PREF.set("askLang", was); }
+  });
   test("#159 the send step offers Copy and open email, the plain text and the sheet second", async () => {
     openInformNote({name: "Lars Haugen"}, [{ref: V.space + "-x1", t: "Quote", status: "DOING", core: "DOING", comment: "", context: []}],
       {file: null, named: false, area: V.space, sheetOf: null, sent: null});

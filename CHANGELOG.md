@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.3.1 - 2026-10-29
+
+- The update mail (#159): a task linking an email ([[m/...]]) now shows the
+  email's subject without the m/, and a question with the person's name taken
+  out no longer reads "svar fra om ...": the fra goes with the name.
+
 ## 1.3.0 - 2026-10-29
 
 - The update mail (#159), for Send an update and Ask for an update alike.

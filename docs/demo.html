@@ -2814,7 +2814,7 @@ body.solview #content{padding-bottom:14px}
    number for a fix, the middle one for a feature. CHANGELOG.md says what each
    one brought, and it is shown beside the name top left, so whoever is testing
    can see at a glance that they have the newest file open. */
-const APP_VERSION = "1.3.0";
+const APP_VERSION = "1.3.1";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 /* ============================================================
    00_BOOTSTRAP -- utilities
@@ -22627,6 +22627,10 @@ function askQuestionParts(item, recipient) {
       .replace(new RegExp("^\\s*" + safe + "(?![\\p{L}\\p{N}])|(?<![\\p{L}\\p{N}])" + safe + "\\s*[?.!]?\\s*$", "giu"), " ");
   }
   const named = text !== raw;
+  /* "svar fra [name] om X": the from that pointed at them goes with the
+     name, or the question reads "svar fra om X". */
+  if (named) text = text.replace(new RegExp("(?<![\\p{L}\\p{N}])(?:fra|från|fram|from|von|til|to|with|med|for|of)\\s+" +
+    "(?=(?:" + ASK_ABOUT + ")(?![\\p{L}\\p{N}]))", "giu"), "");
   const tidy = s => trim(s.replace(/\s+/g, " ").replace(/\s+([?.!,:;])/g, "$1").replace(/([?!.])[?!.]+/g, "$1")
     .replace(/^[\s,:;\-]+|[\s,:;\-]+$/g, ""));
   text = tidy(text);
@@ -25086,7 +25090,8 @@ function linkWords(text) {
     const pfx = (/^([^/]+)\//.exec(raw) || [])[1];
     if (pfx === "go") return tourLabel(raw.slice(3));
     const known = pfx === "c" || pfx === "z" || pfx === "p" || pfx === "o" || (pfx && STATUS_DIRS[pfx]);
-    const label = known ? raw.slice(pfx.length + 1) : raw;
+    // An email is its subject, as it reads in the app, without the m/ (#159).
+    const label = known || pfx === "m" ? raw.slice(pfx.length + 1) : raw;
     return pfx === "c" ? "@" + label : label;
   }).replace(/\s{2,}/g, " "));
 }
