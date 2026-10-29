@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.7.2 - 2026-10-29
+
+- On a phone the top bar no longer squeezes the Add a task field to a sliver
+  or clips the meeting's time (#168). The first row is the menu, the capture
+  field, search, help and areas; the meeting on now and your @context get a
+  row of their own under it, in full, and only when there is one.
+
 ## 1.7.1 - 2026-10-29
 
 - On a project card the next action has the lightning bolt and the

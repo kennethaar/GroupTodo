@@ -75,6 +75,49 @@ var GTD_TEST = (() => {
       });
     }
   }
+  /* ============================================================
+     The top bar
+     ============================================================ */
+  // The page is wide, so the bar is laid out again in a phone-wide frame
+  // with the app's own styles.
+  const phoneBar = async (width, meeting, context) => {
+    const f = document.createElement("iframe");
+    f.style.cssText = "position:fixed;left:0;top:0;height:300px;border:0;width:" + width + "px";
+    const css = [...document.querySelectorAll("style")].map(s => s.textContent).join("\n");
+    const bar = document.querySelector("header.top").cloneNode(true);
+    const mt = bar.querySelector("#nextMeet"), cx = bar.querySelector("#btnContext");
+    mt.hidden = !meeting; cx.hidden = !context;
+    mt.className = "nextmeet now";
+    mt.innerHTML = '<span class="ic">\u{1F552}</span><span class="t">Weekly sync with Nordvik</span><span class="w">' + (meeting || "") + "</span>";
+    cx.innerHTML = "<span>@" + (context || "") + '</span><span class="x">\u00D7</span>';
+    f.srcdoc = "<!doctype html><html data-theme=\"" + (document.documentElement.dataset.theme || "") + "\"><style>" + css + "</style><body>" + bar.outerHTML;
+    document.body.append(f);
+    await new Promise(r => f.onload = r);
+    return {f, d: f.contentDocument};
+  };
+  test("#168 on a phone the capture field stays usable and the meeting time is not clipped", async () => {
+    const {f, d} = await phoneBar(390, "now, until 20:30", "pc");
+    try {
+      const head = d.querySelector("header.top").getBoundingClientRect();
+      const cap = d.querySelector(".capture").getBoundingClientRect();
+      const meet = d.querySelector("#nextMeet"), mr = meet.getBoundingClientRect();
+      const w = meet.querySelector(".w"), wr = w.getBoundingClientRect();
+      ok(cap.width >= 110, "the capture field is " + Math.round(cap.width) + "px wide");
+      ok(cap.height <= 44, "the capture field is " + Math.round(cap.height) + "px tall");
+      ok(mr.top >= cap.bottom, "the meeting is on a row under the capture field");
+      ok(wr.right <= mr.right + 0.5 && w.scrollWidth <= w.clientWidth + 0.5, "the meeting's time is clipped");
+      const ctx = d.querySelector("#btnContext").getBoundingClientRect();
+      ok(ctx.top >= cap.bottom && ctx.right <= head.right, "the @context is on the row under, inside the bar");
+      ok(d.documentElement.scrollWidth <= 390, "the bar is wider than the phone");
+    } finally { f.remove(); }
+  });
+  test("#168 on a phone with no meeting or context the bar is one row", async () => {
+    const {f, d} = await phoneBar(390, null, null);
+    try {
+      eq(getComputedStyle(d.querySelector(".hnow")).display, "none", "the empty row");
+      ok(d.querySelector("header.top").getBoundingClientRect().height < 70, "the bar is one row");
+    } finally { f.remove(); }
+  });
   test("#166 the projects list draws no stray null", async () => {
     go("projects", {sub: "list", statusCode: "1"});
     await settle();

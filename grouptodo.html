@@ -824,7 +824,6 @@ button.tick:hover{box-shadow:inset 0 0 0 1px currentColor}
 .ctxnow:hover{background:rgba(94,207,192,.2)}
 .ctxnow .x{color:var(--fg3);font-size:13px;line-height:1}
 .ctxnow .x:hover{color:var(--fg)}
-@media (max-width:560px){.ctxnow{max-width:9rem;overflow:hidden;text-overflow:ellipsis}}
 /* The next meeting, counting down, at the top of every screen. */
 .nextmeet[hidden]{display:none}
 .nextmeet{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;padding:4px 10px;border-radius:20px;
@@ -839,7 +838,18 @@ button.tick:hover{box-shadow:inset 0 0 0 1px currentColor}
 .nextmeet .n{color:var(--fg3);flex:none}
 .nextmeet .n.soon{color:var(--today)}
 @media (max-width:760px){.nextmeet{max-width:11rem}}
-@media (max-width:560px){.nextmeet .t{display:none}}
+/* Beside the capture field on a wide screen; on a phone a row of its own
+   under the bar, where the time and the @context are never clipped (#168). */
+.hnow{display:contents}
+@media (max-width:560px){
+  header.top{flex-wrap:wrap;row-gap:8px}
+  header.top .capture{flex:1 1 7rem;margin-left:0;height:36px}
+  .hnow{display:flex;order:1;flex:1 0 100%;gap:6px;min-width:0}
+  .hnow:not(:has(> :not([hidden]))){display:none}
+  .hnow .nextmeet{max-width:none;flex:0 1 auto}
+  .hnow .ctxnow{flex:none}
+  .spop{top:calc(100% + 4px)}
+}
 .toast.meetrem strong{display:block;margin-bottom:2px}
 .toast.meetrem p{margin:0 0 8px;color:var(--fg2)}
 .chip.st{font-family:var(--mono);font-size:10px;letter-spacing:.5px}
@@ -2528,8 +2538,12 @@ body.solview #content{padding-bottom:14px}
         <span class="where" id="capWhere"></span>
         <kbd>N</kbd>
       </label>
-      <button class="nextmeet" id="nextMeet" hidden></button>
-      <button class="ctxnow" id="btnContext" hidden></button>
+      <!-- What is on now: the meeting and the @context. A row of its own on a
+           phone, so neither squeezes the capture field nor is clipped. -->
+      <div class="hnow">
+        <button class="nextmeet" id="nextMeet" hidden></button>
+        <button class="ctxnow" id="btnContext" hidden></button>
+      </div>
       <button class="tbtn" id="btnSearch" title="Search (/)" aria-label="Search">&#8981;</button>
       <button class="tbtn" id="btnTheme" title="Light or dark (pick which under Settings &gt; Styles)" aria-label="Light or dark">&#9680;</button>
       <button class="tbtn sendbtn" id="btnSend" hidden aria-label="Send the vault file">&#8679;</button>
@@ -2695,7 +2709,7 @@ body.solview #content{padding-bottom:14px}
    number for a fix, the middle one for a feature. CHANGELOG.md says what each
    one brought, and it is shown beside the name top left, so whoever is testing
    can see at a glance that they have the newest file open. */
-const APP_VERSION = "1.7.1";
+const APP_VERSION = "1.7.2";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 /* ============================================================
    00_BOOTSTRAP -- utilities
