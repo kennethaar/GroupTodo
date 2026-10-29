@@ -2195,6 +2195,32 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
   .task.prow2>.t-body{flex-basis:100%}
   .task.prow2>.pbar{flex:1 1 auto;width:auto}
 }
+/* A project in the list: name, then where it sits and its numbers in one row,
+   the bar right under them, a line per field and the faces at the foot. */
+.task.pcard{padding:12px 14px}
+.pcard .t-title{font-size:15px;line-height:1.3}
+.pcard .t-title b{font-weight:650;color:var(--fg)}
+.pstats{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin-top:6px;font-size:12px;color:var(--fg2);
+  font-variant-numeric:tabular-nums}
+.pstats .sep{color:var(--fg3)}
+.pprog{display:flex;align-items:center;gap:8px;margin-top:6px}
+.pprog .pbar{flex:1 1 auto;width:auto;max-width:280px}
+.pprog .pct{font-size:11.5px;color:var(--fg3);font-variant-numeric:tabular-nums;min-width:3ch;text-align:right}
+.pfields.lines{flex-direction:column;align-items:flex-start;gap:3px;margin-top:8px}
+.pfields.lines .pfield{border:0;background:none;padding:1px 0;font-size:12.5px;max-width:100%;white-space:normal;
+  overflow-wrap:anywhere;display:inline-flex;gap:6px;align-items:baseline;border-radius:4px}
+.pfields.lines .pfield:hover,.pfields.lines .pfield:focus-visible{color:var(--accent)}
+.pfields.lines .fi{flex:none;width:16px;text-align:center;font-size:12px;color:var(--fg3)}
+/* What is still to be set shows once you reach for the card, not before. */
+.pfields.lines .pfield.miss{display:none;border:1px dashed var(--border);padding:0 8px;font-size:11px}
+.pcard:hover .pfields.lines,.pcard:focus-within .pfields.lines{flex-flow:row wrap}
+.pcard:hover .pfield.miss,.pcard:focus-within .pfield.miss{display:inline-flex}
+.pcard:hover .pfields.lines .pfield:not(.miss),.pcard:focus-within .pfields.lines .pfield:not(.miss){flex-basis:100%}
+.pfields.lines:not(:has(.pfield:not(.miss))){margin-top:0}
+.pfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.pfoot .avs{padding-left:6px;min-height:24px}
+.pfoot .avs .more{font-size:11px;color:var(--fg3);margin-left:4px;align-self:center}
+.pfoot .btn{flex:none}
 .chip.ok{color:var(--ok);background:var(--ok-soft)}
 .kdot{width:10px;height:10px;border-radius:50%;flex:none;display:inline-block;margin-top:5px}
 .odot{width:26px;height:26px;border-radius:50%;background:var(--wait);color:#fff;display:grid;place-items:center;
@@ -2910,7 +2936,7 @@ body.solview #content{padding-bottom:14px}
    number for a fix, the middle one for a feature. CHANGELOG.md says what each
    one brought, and it is shown beside the name top left, so whoever is testing
    can see at a glance that they have the newest file open. */
-const APP_VERSION = "1.6.0";
+const APP_VERSION = "1.7.0";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 /* ============================================================
    00_BOOTSTRAP -- utilities
@@ -31032,32 +31058,47 @@ function projectCostSection(path) {
     "Spent ", el("b", {}, spent || "nothing yet"), planned ? " · still planned " + planned : ""));
 }
 
+/* A project in the list, read top to bottom in one pass: the name; where it
+   sits and how far along it is, the bar right under the numbers; what is set
+   on it, a line each; and who is in it, with the way into its tasks. Nothing
+   is said twice -- the area and the organisations are no longer a chip and a
+   field both, and the people are their faces, not a clipped list of names.
+   The fields still to fill in come up on hover or focus, and in the review. */
 function projectRow(r) {
-  const info = inSpace(r.space, () => ({title: pageTitle(r.path), area: areaOfProject(r.path),
-    page: getPage(r.path)}));
+  const info = inSpace(r.space, () => ({title: pageTitle(r.path), area: areaOfProject(r.path)}));
   const acts = projectActions(r);
   const tally = projectTally(r);
   const done = tally.done;
   const open = openOf(acts);
   const total = open.length + done;
+  const pct = total ? Math.round(done / total * 100) : 0;
   const who = [...new Set([...open.map(a => a.assignee).filter(Boolean), ...projectPeople(r)])];
-  return el("div", {class: "task prow2", onclick: e => { if (!e.target.closest("[data-link]")) previewPage(r.space, r.path); }},
+  const dot = () => el("span", {class: "sep", "aria-hidden": "true"}, "•");
+  const stats = [
+    // In All, which folder it sits in is no longer said by the chip on top.
+    r._all ? el("span", {class: "chip"}, STATUS_LABEL[effStatus(r)]) : null,
+    info.area ? el("span", {class: "chip", title: "Responsibility"}, info.area) : null,
+    el("span", {}, open.length + " open"),
+    tally.done ? el("span", {}, tally.done + " done") : null,
+    tally.dropped ? el("span", {title: "Cancelled, and not counted as done"}, tally.dropped + " dropped") : null,
+    ...priceChips(tally),
+  ].filter(Boolean).flatMap((x, i) => i ? [dot(), x] : [x]);
+  return el("div", {class: "task prow2 pcard", onclick: e => { if (!e.target.closest("[data-link]")) previewPage(r.space, r.path); }},
     el("div", {class: "t-body"},
       parentLine(r.space, r.path),
       el("div", {class: "t-title"}, el("b", {}, info.title)),
-      el("div", {class: "t-meta"},
-        // In All, which folder it sits in is no longer said by the chip on top.
-        r._all ? el("span", {class: "chip"}, STATUS_LABEL[effStatus(r)]) : null,
-        ...projectOrgs(r).map(o => el("span", {class: "chip"}, o)),
-        info.area ? el("span", {class: "chip proj"}, info.area) : null,
-        ...projectCountChips(open.length, tally),
-        r._urg != null ? el("span", {class: "chip urg", title: "Urgency of its most urgent open action, " +
-          "or of its own deadline and chain when it has none"}, "↑" + r._urg) : null,
+      el("div", {class: "pstats"}, ...stats,
+        r._urg != null ? el("span", {class: "chip urg onhover", title: "Urgency of its most urgent open action, " +
+          "or of its own deadline and chain when it has none. The list is sorted by it."}, "↑" + r._urg) : null,
         ...projectTags(r), spaceTag(r.space)),
-      projectFieldPills(r, {skip: ["status"]})),
-    el("div", {class: "avs"}, ...who.slice(0, 4).map(n => avatarNode(n, 24))),
-    el("div", {class: "pbar", title: done + " of " + total + " done"},
-      el("i", {style: "width:" + (total ? Math.round(done / total * 100) : 0) + "%"})));
+      el("div", {class: "pprog", title: done + " of " + total + " done"},
+        el("div", {class: "pbar"}, el("i", {style: "width:" + pct + "%"})),
+        el("span", {class: "pct"}, pct + "%")),
+      projectFieldPills(r, {skip: ["status", "area", "people"], lines: true}),
+      el("div", {class: "pfoot"},
+        el("div", {class: "avs", title: who.join(", ")}, ...who.slice(0, 4).map(n => avatarNode(n, 24)),
+          who.length > 4 ? el("span", {class: "more"}, "+" + (who.length - 4)) : null),
+        el("button", {class: "btn ghost sm", onclick: e => { e.stopPropagation(); openPageIn(r.space, r.path); }}, "View tasks"))));
 }
 
 /* ---------- projects that look alike ----------
@@ -33103,16 +33144,26 @@ function projectFieldText(r, f) {
 }
 const fieldWord = f => f.label.replace(/\?$/, "").toLowerCase();
 
-function projectFieldPills(r, {skip = []} = {}) {
-  const box = el("div", {class: "pfields"});
+/* As lines, in the projects list: one per field, an icon before it, and a
+   field answered with nothing (no deadline, nothing first) is not said. */
+const FIELD_ICON = {orgs: "📁", next: "💬", outcome: "✓", deadline: "📅", after: "⛓"};
+function projectFieldPills(r, {skip = [], lines = false} = {}) {
+  const box = el("div", {class: "pfields" + (lines ? " lines" : "")});
   for (const f of solFields()) {
     if (skip.includes(f.k)) continue;
-    const text = projectFieldText(r, f);
+    let text = projectFieldText(r, f);
+    if (lines && text) {
+      if (f.k === "orgs" && !f.cur(r).length || f.k === "deadline" && !dateIn(pageProp(r.space, r.path, "deadline"))
+        || f.k === "after" && !inS(r, () => dependsOn(r.path).length)) continue;
+      if (f.k === "next") text = "\u201c" + text + "\u201d";
+      if (f.k === "deadline") text = "Due " + text;
+    }
     const open = e => { e.stopPropagation(); e.preventDefault(); openProjectField(r, f.k); };
     box.append(el("span", {class: "pfield" + (text ? "" : " miss"), role: "button", tabindex: "0",
       title: f.label + (text ? ": " + text : " - not set"),
-      onclick: open, onkeydown: e => { if (e.key === "Enter") open(e); },
+      onclick: open, onkeydown: e => { if (e.key === "Enter" || e.key === " ") open(e); },
       onmousedown: e => e.stopPropagation()},
+      lines && text ? el("span", {class: "fi", "aria-hidden": "true"}, FIELD_ICON[f.k] || "•") : null,
       text || "+ " + fieldWord(f)));
   }
   return box;

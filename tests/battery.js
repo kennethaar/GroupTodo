@@ -128,6 +128,30 @@ var GTD_TEST = (() => {
     go("projects", {sub: "list"});
     await settle();
   });
+  test("#167 a project card says each thing once: stats row, bar under it, field lines, faces at the foot", async () => {
+    const path = scratchProject("Card anatomy", [["TODO", "Call the printer"], ["DONE", "Book the hall"], ["DONE", "Send the invite"]]);
+    const page = getPage(path);
+    page.props.with = "[[p/Lars Haugen]]";
+    page.props.org = "[[o/Nordvik Shipping]]";
+    touch(path);
+    go("projects", {sub: "list", statusCode: "1", org: null});
+    await settle();
+    const card = [...content().querySelectorAll(".pcard")].find(c => c.querySelector(".t-title").textContent.includes("Card anatomy"));
+    ok(card, "no card for the project");
+    const stats = card.querySelector(".pstats").textContent;
+    has(stats, "1 open"); has(stats, "2 done");
+    ok(!/Nordvik/.test(stats), "the organisation is said in the stats row as well as its line");
+    eq(card.querySelector(".pprog .pct").textContent, "67%", "percentage beside the bar");
+    ok(card.querySelector(".pstats").nextElementSibling.classList.contains("pprog"), "the bar is right under the numbers");
+    const lines = [...card.querySelectorAll(".pfields.lines .pfield:not(.miss)")].map(x => x.textContent);
+    ok(lines.some(t => t.includes("Nordvik Shipping")), "no organisations line");
+    ok(lines.some(t => t.includes("“Call the printer”")), "no next action line");
+    ok(!lines.some(t => t.includes("Lars")), "the people are a line of names as well as faces");
+    ok(card.querySelector(".pfoot .avs .avatar"), "no faces at the foot");
+    ok([...card.querySelectorAll(".pfoot button")].some(b => b.textContent === "View tasks"), "no View tasks button");
+    const miss = card.querySelector(".pfield.miss");
+    ok(miss && getComputedStyle(miss).display === "none", "empty fields show before the card is reached for");
+  });
   test("every kind of demo page opens", async () => {
     const seen = new Set();
     for (const path of allPages()) {
