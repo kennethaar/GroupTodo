@@ -496,20 +496,31 @@ body:not(.pane-open) .panegrip{display:none}
 @keyframes timerpulse{0%,100%{box-shadow:0 0 0 0 transparent;background:transparent}
   50%{box-shadow:0 0 0 4px var(--accent);background:var(--accent-soft)}}
 .timerpulse{animation:timerpulse .6s ease-in-out 10}
+/* And three rings run out from the timer across the whole screen, a tint
+   inside each and a bright band at its edge, so it cannot be missed. */
+.timer-ripple{position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden}
+.timer-ripple i{position:absolute;border-radius:50%;opacity:0;transform:translate(-50%,-50%) scale(0);
+  background:radial-gradient(circle,color-mix(in srgb,var(--accent) 14%,transparent) 0 62%,
+    var(--accent) 68%,transparent 74%);animation:timerripple 1.6s cubic-bezier(.2,.6,.4,1) forwards}
+@keyframes timerripple{0%{transform:translate(-50%,-50%) scale(0);opacity:.85}
+  70%{opacity:.6}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
 .nav-item.timer.running .lbl,.nav-item.timer.dragging .lbl{font-variant-numeric:tabular-nums;color:var(--accent)}
 .nav-item.timer.overdue .lbl{font-variant-numeric:tabular-nums;color:var(--late)}
-/* style:: dial: a small pie beside the time, not a clock face. Only the four
-   quarters are marked; the finer ticks and a ghost of what you would set show
-   while the pointer is on it. */
+/* style:: dial: a clock face beside the time and a pie that shrinks. The
+   minutes are written round the rim the way a Time Timer has them, but only
+   while you set it; a ghost of what you would set shows while the pointer is
+   on it. */
 .nav-item.timer.dial{gap:8px;padding:4px 8px;cursor:default}
-.nav-item.timer.dial .tdial{flex:none;width:56px;height:56px;border-radius:50%;cursor:pointer;touch-action:none}
+.nav-item.timer.dial .tdial{flex:none;width:92px;height:92px;border-radius:50%;cursor:pointer;touch-action:none}
 .nav-item.timer.dial .tdial:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.nav-item.timer.dial .tdial svg{display:block;width:56px;height:56px;overflow:visible}
+.nav-item.timer.dial .tdial svg{display:block;width:92px;height:92px;overflow:visible}
+.tdial .tnum{fill:var(--fg2);font-size:7px;font-variant-numeric:tabular-nums;text-anchor:middle;dominant-baseline:central;pointer-events:none;
+  opacity:0;transition:opacity .15s}
+.nav-item.timer.dial.dragging .tnum{opacity:1}
 .tdial .tface{fill:var(--bg);stroke:var(--border2);stroke-width:1.5}
 .tdial .tquart line{stroke:var(--fg3);stroke-width:2;stroke-linecap:round}
 .tdial .tfine line{stroke:var(--fg3);stroke-width:1;stroke-linecap:round}
-.tdial .tfine,.tdial .tghost{opacity:0;transition:opacity .15s}
-.tdial:hover .tfine,.nav-item.timer.dial.dragging .tfine,.tdial:focus-visible .tfine{opacity:1}
+.tdial .tghost{opacity:0;transition:opacity .15s}
 .tdial .tghost{fill:var(--accent);pointer-events:none}
 .tdial.ghost .tghost{opacity:.25}
 .tdial .tsector{fill:var(--accent);pointer-events:none}
@@ -12361,10 +12372,31 @@ function timerChime(times) {
   } catch (_) {}
 }
 
-/* The tab title blinks and the logo and the timer pulse, ten times each, so the
-   end is seen from another window or across the room. */
+/* Three rings out from the timer to the far corner of the window; from the
+   top left when the sidebar is out of sight. */
+function timerRipple() {
+  document.querySelector(".timer-ripple")?.remove();
+  const t = $("#nav .nav-item.timer .tdial") || $("#nav .nav-item.timer");
+  const r = t?.getBoundingClientRect(), seen = r && r.width > 0;
+  const x = seen ? r.left + r.width / 2 : 0, y = seen ? r.top + r.height / 2 : 0;
+  const R = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+  const wrap = el("div", {class: "timer-ripple", "aria-hidden": "true"});
+  for (let i = 0; i < 3; i++) {
+    const ring = el("i");
+    Object.assign(ring.style, {left: x + "px", top: y + "px", width: 2 * R + "px", height: 2 * R + "px",
+      animationDelay: i * 0.9 + "s"});
+    wrap.append(ring);
+  }
+  document.body.append(wrap);
+  setTimeout(() => wrap.remove(), 2 * 900 + 1600 + 200);
+}
+
+/* The tab title blinks and the logo and the timer pulse, ten times each, and
+   the rings run out over the screen, so the end is seen from another window
+   or across the room. */
 let TIMER_FLASH = null, TIMER_TITLE = "";
 function timerFlash() {
+  timerRipple();
   if (!TIMER_FLASH) TIMER_TITLE = document.title;
   clearInterval(TIMER_FLASH);
   let n = 0;
@@ -12467,10 +12499,10 @@ function timerNavItem(it) {
 }
 
 /* ---------- the timer as a dial ----------
-   A 56 px pie beside the time: the coloured part is what is left out of
+   A clock face beside the time: the coloured part is what is left out of
    max:: minutes, with 0 at the top, and it shrinks clockwise back to 0 as the
-   time runs. No numbers on it; the quarters are marked, and the finer ticks
-   show while the pointer is on it. You set it three ways, and letting go
+   time runs. While you set it, the minutes are written round the rim,
+   counter-clockwise from 0 the way a Time Timer has them, a dozen at most. You set it three ways, and letting go
    starts it: press on the rim and drag round it (counter-clockwise adds), or
    press near the middle and drag like a knob (up or right adds), or roll the
    wheel down or press the arrow keys over it, which starts a moment after you
@@ -12478,7 +12510,7 @@ function timerNavItem(it) {
    the way the bar does: dragged up it rings, dragged right it is silent, and
    Ctrl makes any drag ring. Otherwise the bell is a switch for the sound,
    which lasts until you flip it. */
-const DIAL_C = 28, DIAL_R = 25;
+const DIAL_C = 28, DIAL_R = 25, DIAL_PAD = 9;   // the numbers sit in the pad outside the rim
 function dialSector(f, r = DIAL_R) {
   if (!(f > 0)) return "";
   if (f >= 0.9999) return `M${DIAL_C} ${DIAL_C - r}A${r} ${r} 0 1 0 ${DIAL_C} ${DIAL_C + r}A${r} ${r} 0 1 0 ${DIAL_C} ${DIAL_C - r}Z`;
@@ -12490,7 +12522,12 @@ function dialTick(f, inner) {
   const a = f * 2 * Math.PI, s = -Math.sin(a), c = -Math.cos(a), r1 = DIAL_R - inner, r2 = DIAL_R;
   return `<line x1="${(DIAL_C + r1 * s).toFixed(2)}" y1="${(DIAL_C + r1 * c).toFixed(2)}" x2="${(DIAL_C + r2 * s).toFixed(2)}" y2="${(DIAL_C + r2 * c).toFixed(2)}"/>`;
 }
-/* The finer ticks: the smallest round step that keeps them to a dozen or so. */
+/* A minute's number outside the rim, at its place counter-clockwise from the top. */
+function dialNumber(m, max) {
+  const a = m / max * 2 * Math.PI, r = DIAL_R + 5.5;
+  return `<text class="tnum" x="${(DIAL_C - r * Math.sin(a)).toFixed(2)}" y="${(DIAL_C - r * Math.cos(a)).toFixed(2)}">${m}</text>`;
+}
+/* The finer ticks and the numbers: the smallest round step that keeps them to a dozen or so. */
 function dialStep(max) {
   return [1, 5, 10, 15, 30, 60, 120].find(s => max / s <= 12) || Math.ceil(max / 12);
 }
@@ -12506,10 +12543,13 @@ function timerDialItem(it) {
   for (let m = step; m < max; m += step) if ((m / max * 4) % 1) fine.push(dialTick(m / max, 3));
   const dial = el("span", {class: "tdial", tabindex: "0", role: "slider",
     "aria-label": it.label, "aria-valuemin": "0", "aria-valuemax": String(max)});
-  dial.innerHTML = `<svg viewBox="0 0 56 56" aria-hidden="true"><circle class="tface" cx="${DIAL_C}" cy="${DIAL_C}" r="${DIAL_R + 1}"/>`
+  const nums = [];
+  for (let m = 0; m < max; m += step) nums.push(dialNumber(m, max));
+  const box = 2 * (DIAL_C + DIAL_PAD);
+  dial.innerHTML = `<svg viewBox="${-DIAL_PAD} ${-DIAL_PAD} ${box} ${box}" aria-hidden="true"><circle class="tface" cx="${DIAL_C}" cy="${DIAL_C}" r="${DIAL_R + 1}"/>`
     + `<path class="tghost"/><path class="tsector"/>`
     + `<g class="tfine">${fine.join("")}</g><g class="tquart">${[0, .25, .5, .75].map(f => dialTick(f, 5)).join("")}</g>`
-    + `<circle class="thub" cx="${DIAL_C}" cy="${DIAL_C}" r="2.5"/></svg>`;
+    + `<circle class="thub" cx="${DIAL_C}" cy="${DIAL_C}" r="2.5"/>${nums.join("")}</svg>`;
   const b = el("div", {class: "nav-item small timer dial"},
     dial,
     el("span", {class: "tread"}, el("span", {class: "lbl"}, it.label), el("span", {class: "tsub"})),
@@ -12523,11 +12563,11 @@ function timerDialItem(it) {
   // Where the pointer is on the dial: how far out (0 at the middle, 1 on the
   // rim) and the minutes at that angle, counter-clockwise from the top.
   const at = e => {
-    const r = dial.getBoundingClientRect(), half = r.width / 2;
+    const r = dial.getBoundingClientRect(), half = r.width / 2, rim = half * (DIAL_R + 1) / (DIAL_C + DIAL_PAD);
     const dx = e.clientX - r.left - half, dy = e.clientY - r.top - half;
     let a = Math.atan2(-dx, -dy);
     if (a < 0) a += 2 * Math.PI;
-    return {out: Math.hypot(dx, dy) / half, minutes: Math.round(a / (2 * Math.PI) * max)};
+    return {out: Math.hypot(dx, dy) / rim, minutes: Math.round(a / (2 * Math.PI) * max)};
   };
   // Round the rim, without jumping from the top end to the bottom across 0.
   const round = (e, last) => {
