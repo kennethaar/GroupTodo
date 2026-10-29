@@ -145,6 +145,9 @@ var GTD_TEST = (() => {
     ok(card.querySelector(".pstats").nextElementSibling.classList.contains("pprog"), "the bar is right under the numbers");
     const lines = [...card.querySelectorAll(".pfields.lines .pfield:not(.miss)")].map(x => x.textContent);
     ok(lines.some(t => t.includes("Nordvik Shipping")), "no organisations line");
+    const icon = k => [...card.querySelectorAll(".pfields.lines .pfield")].find(x => x.title.startsWith(k))?.querySelector(".fi")?.textContent;
+    eq(icon("Organisations"), ICON.orgs, "organisations use the sidebar's building");
+    eq(icon("Next action"), ICON.next, "the next action uses the sidebar's lightning bolt");
     ok(lines.some(t => t.includes("“Call the printer”")), "no next action line");
     ok(!lines.some(t => t.includes("Lars")), "the people are a line of names as well as faces");
     ok(card.querySelector(".pfoot .avs .avatar"), "no faces at the foot");

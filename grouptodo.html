@@ -2695,7 +2695,7 @@ body.solview #content{padding-bottom:14px}
    number for a fix, the middle one for a feature. CHANGELOG.md says what each
    one brought, and it is shown beside the name top left, so whoever is testing
    can see at a glance that they have the newest file open. */
-const APP_VERSION = "1.7.0";
+const APP_VERSION = "1.7.1";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 /* ============================================================
    00_BOOTSTRAP -- utilities
@@ -32903,9 +32903,10 @@ function projectFieldText(r, f) {
 }
 const fieldWord = f => f.label.replace(/\?$/, "").toLowerCase();
 
-/* As lines, in the projects list: one per field, an icon before it, and a
+/* As lines, in the projects list: one per field, an icon before it (the
+   sidebar's own for organisations and next actions), and a
    field answered with nothing (no deadline, nothing first) is not said. */
-const FIELD_ICON = {orgs: "📁", next: "💬", outcome: "✓", deadline: "📅", after: "⛓"};
+const FIELD_ICON = {orgs: ICON.orgs, next: ICON.next, outcome: "✓", deadline: "📅", after: "⛓"};
 function projectFieldPills(r, {skip = [], lines = false} = {}) {
   const box = el("div", {class: "pfields" + (lines ? " lines" : "")});
   for (const f of solFields()) {

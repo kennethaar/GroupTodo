@@ -5,12 +5,17 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.7.1 - 2026-10-29
+
+- On a project card the next action has the lightning bolt and the
+  organisations the office building, the same as in the sidebar (#167).
+
 ## 1.7.0 - 2026-10-29
 
 - A project card in the Projects list reads in one glance (#167). The name
   comes first; under it one row with the responsibility and "4 open • 55
   done", and the progress bar right under that row with its percentage. What
-  is set on the project is a line each: 📁 organisations, 💬 the next action,
+  is set on the project is a line each: 🏢 organisations, ⚡ the next action,
   ✓ done when, 📅 Due and the date. The people are the faces at the foot,
   beside a View tasks button, no longer a clipped list of names. Nothing is
   said twice: the area and the organisations were a chip and a field both.
