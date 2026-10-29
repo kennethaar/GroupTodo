@@ -63,6 +63,7 @@ Every view reads the same Markdown; a change in one is a change everywhere.
 * **Demote small projects:** Press `Alt+T` on a line that is only `[[1/Project]]` to turn it into a task. The page remains as a linked plain page, and open project steps hang under the task.
 
 ### Navigation & Layout
+* **Help where you are:** Press `?` on any screen: *This page* opens at the right with what the page is for, what you can do and what each thing on it is. **Show me** (`s`) puts matching numbers on the screen. The full help has contents, search and a picture of each screen.
 * **Side-by-side docking:** Opening a page from a list docks it to the right so you can write while keeping the list visible. **Hold** any link for half a second to open it docked; click `⤢` to make it full screen.
 * **Sidebar pins:** Click `⋯` beside a page title to pin pages to the sidebar (saved per device). Drag to reorder, `✕` to unpin.
 * **Deep links:** **Copy link** on any task or page gives a URL that opens that exact block.

@@ -19,6 +19,28 @@ the test that would have caught it, named with its issue number. Never weaken
 a test to make it pass: if the app is wrong, fix the app, and if the test's
 expectation is out of date, say so to the user.
 
+## Help and its screenshots
+
+The help is data: `HELP` in `grouptodo.html`, one short topic per view,
+sub-view and feature. The full help, its search and "This page" (`?`) all
+read it. When a change adds or alters a screen, update its topic in the same
+commit: `what`, `steps`, `keys`, and the `legend` selectors that "Show me"
+points at. A new view or sub-view needs a topic with its `view`/`sub`; the
+battery fails without one, and when a legend selector finds nothing.
+
+Help text is short and plain. Use GTD terms when in doubt (capture, clarify,
+organise, reflect, engage, next action, context, waiting for, someday/maybe).
+Don't use two words when one will do. Keep each topic's LIX below 30 unless a
+term requires it; the battery measures it. Then run
+`python docs/build-language-catalog.py` so the new words can be translated.
+
+**Screenshots:** topics marked `shot: 1` show `docs/help/<id>.jpg`. Whenever a
+page or dialog shown in the help changes, run `node tests/screenshots.mjs`
+(or `node tests/screenshots.mjs <id>` for one) and commit the new pictures
+with the change. A dialog's topic needs a `SETUP` entry in
+`tests/screenshots.mjs` that opens it. The battery fails when a topic has no
+picture or a picture has no topic.
+
 ## GitHub issues for every change
 
 Log each fix or feature as an issue on `kennethaar/GroupTodo` and reference it

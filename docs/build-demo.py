@@ -28,6 +28,8 @@ out = replace_once(app, "<head>", "<head>\n<script>\n" + demo + "</script>")
 out = replace_once(out, "  await seedIfEmpty();\n  scanVerbs();\n",
                    "  await seedIfEmpty();\n  GTD_DEMO.seed();\n  scanVerbs();\n")
 out = replace_once(out, "<title>GroupToDo</title>", "<title>GroupToDo Demo</title>")
+# The demo sits in docs/, beside the help's pictures rather than above them.
+out = replace_once(out, 'src: "docs/help/" + id', 'src: "help/" + id')
 
 (HERE / "demo.html").write_text(out, encoding="utf-8", newline="\n")
 print("wrote docs/demo.html")

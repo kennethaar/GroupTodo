@@ -1120,6 +1120,198 @@ var GTD_TEST = (() => {
   });
 
   /* ============================================================
+     Help: the full help, "This page" and Show me (#171)
+     ============================================================ */
+  const keyDown = key => document.dispatchEvent(new KeyboardEvent("keydown", {key, bubbles: true}));
+  const helpTexts = t => [t.what, t.hint, ...(t.steps || []).map(x => [].concat(x)[0]),
+    ...(t.legend || []).map(l => l[1]), ...(t.more || []), ...(t.code || []).map(c => c[1])].filter(Boolean);
+  const helpReset = () => { closeModal(); setHelp(false); helpMarks(false); HELP_Q = ""; };
+  test("#171 every view in the sidebar and every sub-view has its own help topic", () => {
+    const views = [...NAV_ITEMS.filter(it => it && it.id && it.id !== "timer").map(it => it.id), ...Object.keys(VIEWS)];
+    for (const view of new Set(views)) {
+      for (const sub of SUBS[view] ? SUBS[view].map(x => x[0]) : [null]) {
+        const id = helpTopicOf(view, sub);
+        ok(HELP[id].view === view && (HELP[id].sub || null) === sub, "no topic for " + view + (sub ? " / " + sub : ""));
+      }
+    }
+    ok(HELP.timer, "the Timer has a topic");
+  });
+  test("#171 every topic is short, links only to topics that exist, and sits in a part", () => {
+    for (const [id, t] of Object.entries(HELP)) {
+      ok(HELP_PARTS.some(p => p[0] === t.part), id + " is in no part");
+      ok(t.title && t.what, id + " has a title and what it is");
+      ok((t.steps || []).length <= 6, id + " has more than 6 steps");
+      const before = [t.what, ...(t.steps || []).map(x => [].concat(x)[0])].join(" ").split(/\s+/).length;
+      ok(before <= 90, id + " is " + before + " words before its More fold");
+      for (const s of t.see || []) ok(HELP[s], id + " links to a topic that is not there: " + s);
+      for (const w of t.words || []) ok(w === w.toLowerCase() && !/\s/.test(w), id + ": search word " + w);
+    }
+  });
+  test("#171 every topic reads easily: LIX under 30", () => {
+    const lix = texts => {
+      let words = 0, long = 0, sents = 0;
+      for (const t of texts) {
+        sents += Math.max(1, t.split(/[.!?:]+(?:\s|$)/).filter(x => /[A-Za-z]/.test(x)).length);
+        for (const w of t.match(/[A-Za-zÀ-ÿ]+/g) || []) { words++; if (w.length > 6) long++; }
+      }
+      return words ? words / sents + 100 * long / words : 0;
+    };
+    const high = Object.entries(HELP).map(([id, t]) => [id, lix(helpTexts(t))]).filter(([, v]) => v >= 30);
+    eq(high.map(([id, v]) => id + " " + v.toFixed(1)), []);
+  });
+  test("#171 all help text goes through the language file", () => {
+    const known = new Set(LANG_CATALOG.s);
+    const missing = [];
+    for (const [id, t] of Object.entries(HELP))
+      for (const x of [t.title, ...helpTexts(t), ...(t.keys || []).map(k => k[1])])
+        if (!known.has(x.replace(/\s+/g, " "))) missing.push(id + ": " + x);
+    eq(missing, [], "run python docs/build-language-catalog.py");
+  });
+  test("#171 every legend on a screen points at something on that screen", async () => {
+    setHelp(false);
+    const missing = [];
+    for (const [id, t] of Object.entries(HELP)) {
+      if (!t.view || t.view === "page" || t.view === "help" || t.view === "me" || !t.legend) continue;
+      go(t.view, t.sub ? {sub: t.sub} : {});
+      await settle();
+      for (const [sel] of t.legend) if (!sel.startsWith("?") && !helpFind(sel)) missing.push(id + ": " + sel);
+    }
+    eq(missing, []);
+  });
+  test("#171 ? opens This page for the view and sub-view, and it follows a change of view", async () => {
+    helpReset();
+    go("next", {sub: "board"});
+    await settle();
+    keyDown("?");
+    const pane = document.querySelector("#pagePane");
+    ok(helpOpen() && !pane.hidden, "the pane is open");
+    has(pane.textContent, "Next › Board");
+    has(pane.textContent, "What you see");
+    go("waiting", {sub: "list"});
+    await settle();
+    has(pane.textContent, "Waiting for › List");
+    keyDown("Escape");
+    ok(!helpOpen() && pane.hidden, "Esc closes it");
+  });
+  test("#171 Show me puts numbers on the screen that match the legend, and Esc takes them off", async () => {
+    helpReset();
+    go("next", {sub: "board"});
+    await settle();
+    keyDown("s");
+    await settle();
+    ok(helpOpen() && HELP_MARKS, "s opens This page with Show me on");
+    const marks = [...document.querySelectorAll("#helpMarks .hmark")];
+    ok(marks.length >= 4, "only " + marks.length + " numbers on the board");
+    const legend = HELP["next-board"].legend;
+    for (const m of marks) eq(m.title, legend[+m.dataset.n][1], "number " + m.textContent);
+    eq(marks[0].textContent, "1");
+    keyDown("Escape");
+    ok(!HELP_MARKS && !document.querySelector("#helpMarks"), "Esc takes the numbers off");
+    ok(helpOpen(), "and leaves the page's help open");
+    keyDown("Escape");
+    ok(!helpOpen(), "a second Esc closes it");
+  });
+  test("#171 while Show me is on, a click explains instead of acting", async () => {
+    helpReset();
+    go("next", {sub: "list"});
+    await settle();
+    helpMarks(true);
+    const before = state.view;
+    const seg = [...document.querySelectorAll("#content .vseg button")].find(b => b.textContent === "Board");
+    seg.click();
+    await settle();
+    eq(state.view + "/" + subNow(), before + "/list", "the click did not switch to the board");
+    ok(document.querySelector(".helpsay"), "it said what the thing is");
+    helpReset();
+  });
+  test("#171 the full help has contents and search, and everyday words find the topic", async () => {
+    helpReset();
+    openHelp("start");
+    await settle();
+    eq(state.view, "help");
+    ok(content().querySelector(".helptoc"), "contents");
+    ok(content().querySelector("input.helpq"), "search field");
+    eq(helpSearch("delegate")[0], "waiting-list");
+    ok(helpSearch("recurring").includes("repeat"), "recurring finds Repeat and routines");
+    ok(helpSearch("delegate").length < Object.keys(HELP).length, "search filters");
+    const q = content().querySelector("input.helpq");
+    q.value = "snooze";
+    q.dispatchEvent(new Event("input"));
+    has(content().querySelector(".helptoc").textContent, "Hold and until");
+    q.value = "";
+    q.dispatchEvent(new Event("input"));
+  });
+  test("#171 Back and Forward walk the help topics, and each topic has a link of its own", async () => {
+    helpReset();
+    openHelp("journal");
+    openHelp("hold");
+    await settle();
+    has(content().textContent, "Hold and until");
+    navGo(-1);
+    await settle();
+    eq(state.helpTopic, "journal");
+    navGo(1);
+    await settle();
+    eq(state.helpTopic, "hold");
+    eq(tourDestOf("Read [[go/help-repeat]]"), "help-repeat");
+    eq(tourLabel("help-repeat"), "Repeat and routines");
+    goTour("help-repeat");
+    await settle();
+    eq(state.helpTopic, "repeat");
+  });
+  test("#171 a topic can be read beside the view", async () => {
+    helpReset();
+    go("projects", {sub: "list"});
+    helpBeside("hold");
+    await settle();
+    const pane = document.querySelector("#pagePane");
+    ok(!pane.hidden, "the pane is open");
+    has(pane.textContent, "Hold and until");
+    eq(state.view, "projects", "the view stays");
+    helpReset();
+  });
+  test("#171 a first-visit note shows once per view, and Settings turns them off", async () => {
+    helpReset();
+    const was = PREF.get("help.hints", "1");
+    PREF.set("help.hints", "1");
+    PREF.set("help.seen.contexts", "");
+    PREF.set("help.seen.chat", "");
+    go("contexts");
+    await settle();
+    const note = document.querySelector("#helpHint");
+    ok(note, "the note is there on the first visit");
+    has(note.textContent, HELP.contexts.hint);
+    go("today");
+    go("contexts");
+    await settle();
+    ok(!document.querySelector("#helpHint"), "not on the second visit");
+    PREF.set("help.hints", "0");
+    go("chat");
+    await settle();
+    ok(!document.querySelector("#helpHint"), "off in Settings, none shows");
+    go("checklists");
+    await settle();
+    has(content().textContent, "First-visit notes");
+    PREF.set("help.hints", was);
+  });
+  test("#171 the full help on a phone is one column with the contents behind a button", async () => {
+    const f = document.createElement("iframe");
+    f.style.cssText = "position:fixed;left:0;top:0;height:700px;width:390px;border:0";
+    const css = [...document.querySelectorAll("style")].map(x => x.textContent).join("\n");
+    openHelp("start");
+    await settle();
+    f.srcdoc = "<!doctype html><style>" + css + "</style><body><div id=\"content\">" + content().innerHTML + "</div>";
+    document.body.append(f);
+    await new Promise(r => f.onload = r);
+    try {
+      const d = f.contentDocument;
+      eq(getComputedStyle(d.querySelector(".helptoc")).display, "none", "the contents wait behind the button");
+      ok(getComputedStyle(d.querySelector(".helpcontents")).display !== "none", "the Contents button shows");
+      ok(d.documentElement.scrollWidth <= 390, "nothing is wider than the phone");
+    } finally { f.remove(); }
+  });
+
+  /* ============================================================
      Timer
      ============================================================ */
   test("timer starts and stops", () => {

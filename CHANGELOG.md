@@ -5,6 +5,26 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.11.0 - 2026-10-29
+
+- Help is now short topics with contents and search (#171). Search knows
+  everyday words, so "delegate" finds Waiting for and "recurring" finds
+  repeats. There is a topic for every view and sub-view, in sidebar order,
+  plus topics on writing a line, storage, keys and what's new. Each topic is
+  one screen: what it is, the steps, the keys, a picture of the screen, and a
+  More fold. Back and forward move between topics, and `[[go/help-<topic>]]`
+  links to one.
+- ? explains the page you are on (#171). It opens This page at the right:
+  what the page is for, what you can do, what you see, and where to read
+  more. It follows you as you change view. Read beside opens any topic there.
+- Show me (s, or the button in This page) puts numbers on the screen that
+  match the legend (#171). Click a number, or the thing itself, to hear what
+  it is. Esc turns it off.
+- A one-line note on each screen the first time you open it, on this device
+  (#171). Settings › Help turns them off. The line-menu and folding choices
+  that sat in the old help panel moved there too. An ⓘ beside the Sort menu
+  says what urgency is.
+
 ## 1.10.3 - 2026-10-29
 
 - The regression battery runs in a Claude Code cloud session (#173). With no
