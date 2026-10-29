@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.13.0 - 2026-10-29
+
+- Sense where I am knows work hours (#183). Set the days, from and to,
+  and the context you are in then, like weekdays 08:00-16:00 is @office.
+  A saved place and being out and about still come first; work hours come
+  before the device's usual context. Each device has its own, so the PC
+  can say @office while the phone says nothing. A shift past midnight
+  counts as the day it began.
+
 ## 1.12.0 - 2026-10-29
 
 - Sense where I am (#183). GroupToDo guesses your context, so Next shows

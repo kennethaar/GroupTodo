@@ -1519,6 +1519,45 @@ var GTD_TEST = (() => {
     eq(sensed({device: "pc", here: "computer", net: "none"}).ctx, "computer", "a PC is never out and about");
     eq(sensed({here: "", away: ""}), null);
   });
+  test("#183 work hours come after places and out and about, before the device", () => {
+    const work = {ctx: "office", days: [1, 2, 3, 4, 5], from: "08:00", to: "16:00"};
+    const wed10 = new Date(2026, 9, 28, 10, 0), wed17 = new Date(2026, 9, 28, 17, 0), sat10 = new Date(2026, 9, 31, 10, 0);
+    eq(sensed({device: "pc", here: "computer", work, now: wed10}).ctx, "office");
+    has(sensed({device: "pc", here: "computer", work, now: wed10}).why, "work hours");
+    eq(sensed({device: "pc", here: "computer", work, now: wed17}).ctx, "computer", "after work");
+    eq(sensed({device: "pc", here: "computer", work, now: sat10}).ctx, "computer", "a Saturday");
+    eq(sensed({work, now: wed10, pos: {lat: 59.9140, lon: 10.7523, acc: 20}}).ctx, "home", "a saved place wins");
+    eq(sensed({work, now: wed10, net: "cellular"}).ctx, "errand", "out and about wins");
+    eq(sensed({device: "pc", here: "computer", work: Object.assign({}, work, {ctx: ""}), now: wed10}).ctx, "computer", "no context, no rule");
+  });
+  test("#183 a night shift runs past midnight and counts as the day it began", () => {
+    const night = {ctx: "ward", days: [5], from: "22:00", to: "06:00"};
+    ok(inWorkHours(night, new Date(2026, 9, 30, 23, 0)), "Friday 23:00");
+    ok(inWorkHours(night, new Date(2026, 9, 31, 2, 0)), "Saturday 02:00 is Friday's shift");
+    ok(!inWorkHours(night, new Date(2026, 9, 31, 23, 0)), "Saturday 23:00 is not a shift");
+    ok(!inWorkHours(night, new Date(2026, 9, 30, 2, 0)), "Friday 02:00 is Thursday's, not set");
+  });
+  test("#183 the setup asks for work hours and keeps them", async () => {
+    const was = PREF.get("sense.work", "");
+    PREF.set("sense.work", JSON.stringify({ctx: "office", days: [1, 3], from: "09:00", to: "15:00"}));
+    openSenseSetup();
+    await settle();
+    const dlg = document.querySelector("#modalRoot .modal");
+    has(dlg.textContent, "In work hours you are at");
+    eq([...dlg.querySelectorAll(".sensedays button.on")].map(b => +b.dataset.d), [1, 3]);
+    dlg.querySelector(".sensedays button[data-d='5']").click();
+    const keepSet = PREF.get("sense.set", "");
+    const saveBtn = [...dlg.querySelectorAll(".foot button")].find(b => b.textContent === "Save and sense");
+    const realNow = window.senseNow;
+    try {
+      senseNow = () => {};
+      saveBtn.click();
+    } finally { senseNow = realNow; }
+    const saved = JSON.parse(PREF.get("sense.work", "{}"));
+    eq(saved.ctx, "office"); eq(saved.days, [1, 3, 5]); eq(saved.from, "09:00"); eq(saved.to, "15:00");
+    PREF.set("sense.work", was);
+    PREF.set("sense.set", keepSet);
+  });
   test("#183 defaults follow the contexts you already have", () => {
     const had = ["computer", "home", "errand"].filter(c => contextList().includes(c));
     eq(senseDefault("pc"), had.includes("computer") ? "computer" : SENSE_DEFAULTS.pc.find(c => contextList().includes(c)) || "computer");
