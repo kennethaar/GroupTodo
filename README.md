@@ -16,7 +16,7 @@ In Edge or Chrome, double-click `grouptodo.html`. It first asks how you are star
 > **Tip:** Click *Set up several areas* on the second path to split your list into separate folders (e.g., Work, Home) before you begin.
 
 ### First Steps
-* **Onboarding:** **Today** opens with the cursor in the top input box and a *Getting started* strip that ticks itself off as you add your name, folder, and first task. It then points you to the *Find your way round GroupToDo* tour project. If colleagues already put your name on tasks, those are offered when you arrive.
+* **Onboarding:** **Journal** opens with the cursor in the top input box and a *Getting started* strip that ticks itself off as you add your name, folder, and first task. It then points you to the *Find your way round GroupToDo* tour project. If colleagues already put your name on tasks, those are offered when you arrive.
 * **Inviting others:** Go to **Areas menu (top right) → Invite somebody**, or send them `grouptodo.html`, the folder name, and [docs/setup-sheet-group.html](docs/setup-sheet-group.html).
 * **Wrong folder or name:** **Areas menu → Folders** renames an area — *just for me*, or *for everyone*, which writes the name into the folder for whoever joins from now on — or changes its folder. Changing from one folder to another asks before copying any pages, and leaves them where they are by default.
 * **Solo use across groups:** Using it on your own with several groups around you? See [docs/setup-sheet-personal.html](docs/setup-sheet-personal.html).
@@ -30,7 +30,7 @@ Every view reads the same Markdown; a change in one is a change everywhere.
 
 | Place | Views | What it answers |
 |---|---|---|
-| **Today** | — | What is due or late, the next 7 days, and your journal per area |
+| **Journal** | — | What is due or late, the next 7 days, and your journal per area |
 | **Next** | List, Board, Calendar | Everything on your plate; board columns per context or tag |
 | **Waiting for** | List, Board | What you handed over, grouped by person |
 | **Chat** | — | Every conversation thread on a task |
@@ -51,8 +51,8 @@ Every view reads the same Markdown; a change in one is a change everywhere.
 ### Ownership & Sharing
 * **Your day page is yours:** One file per person per day, so nobody types over anybody, though everyone can read it.
 * **Single-source delegation:** A task you write is yours. Hand it to someone in the area and it becomes theirs while showing in your *Waiting for*—one task, never two copies. Name someone outside the area and it becomes a plain waiting-for.
-* **Catching up:** **Today** opens with *Since you were last here*; **History** scrolls back day by day.
-* **Areas (Work, Home, etc.):** Each area is a separate folder. Tick any combination at the top right to filter the whole app. Drag them in the menu or under **Folders** to reorder columns left-to-right. On **Today**, each active area gets its own resizable column (drag borders to resize; double-click to even out).
+* **Catching up:** **Journal** opens with *Since you were last here*; **History** scrolls back day by day.
+* **Areas (Work, Home, etc.):** Each area is a separate folder. Tick any combination at the top right to filter the whole app. Drag them in the menu or under **Folders** to reorder columns left-to-right. On **Journal**, each active area gets its own resizable column (drag borders to resize; double-click to even out).
 * **Privacy:** Click `⋯` beside a page title → **Make private** to move a page to another folder (the folder is the permission model).
 
 ### Capturing & Typing
@@ -78,7 +78,7 @@ Every view reads the same Markdown; a change in one is a change everywhere.
 * **Automated routines:** A routine whose `cadence::` is a rule (*every weekday*, *every 2 weeks on fri*, *monthly on the 15th*, *yearly on the first monday of june*) copies its steps onto your day page on the days it falls. Configure start date, step times, and end conditions via `⋯` → *When it comes round* (or in Settings). To run a routine, checklist or project template by hand, type `/run` on the line where its steps should go. Only today is filled, once, so edits apply to future runs and unopened days leave nothing behind. `as needed` stays plain text.
 * **On hold & Expiry:** Setting a project's status pill to *On hold…* or adding `hold:: [[date]]` hides a task or project until that date. `hold:: open` (`hold:open` in the top box, or *No date* in the hold dialog) holds it with no date, until you bring it back. `until::` cancels a task once its day passes; birthday tasks disappear once the birthday passes.
 * **Chores:** A repeating task shows a bar for how far it has come round since it was last due: 100% is its day, and it turns red a half round late. Urgency counts it in rounds, so a daily chore two days late outranks a monthly one two days late. When you tick a chore off, *Again?* suggests whose turn the next one is (whoever in the area has done it least lately) and hands it over with `assigned::`. To pause chores while you are away, put them under one line or project and hold it (with a date, or `hold:: open`). Once the hold ends, the bars count from that day. **Next → Time → I have 30 min** picks the most urgent sized tasks that fit together, **Contexts** shows how fresh each room is, and **Projects → Report** shows who carried what.
-* **Reminders:** Timed tasks trigger a persistent toast 10 minutes before (or via `remind::`). Click the time pill on any line or list row to move the time (`16:45`, `kl 13`, `in 45 minutes`, +10 min, tomorrow, next week) or change its reminder without opening the task panel; 🔔 on the pill means a reminder will go off, 🔕 that it is off. **Today** counts down to the next timed task and deadline; birthdays show on the calendar.
+* **Reminders:** Timed tasks trigger a persistent toast 10 minutes before (or via `remind::`). Click the time pill on any line or list row to move the time (`16:45`, `kl 13`, `in 45 minutes`, +10 min, tomorrow, next week) or change its reminder without opening the task panel; 🔔 on the pill means a reminder will go off, 🔕 that it is off. **Journal** counts down to the next timed task and deadline; birthdays show on the calendar.
 * **Built-in Timer:** Click `◷` in the sidebar for your default duration (`minutes::` on `pages/8/timer.md`), or press and drag for 1–60 minutes. Drag up for an alarm (stays on screen showing time elapsed until clicked); drag down or right for a quiet note.
 * **Backdating:** After closing a task or project, the toast offers **Done earlier?** to backdate completion.
 </details>
@@ -86,10 +86,10 @@ Every view reads the same Markdown; a change in one is a change everywhere.
 <details>
 <summary><b>🤝 Meetings, Email, Chat & External Check-ins</b></summary>
 
-* **Meetings & iCal:** Press `Alt+M` on a line to add attendees, time, and agenda. **📅 Calendars** on Today imports an iCal link every 30 minutes (requires `serve.py`). Deleted or moved meetings stay that way. A top bar pill shows the current meeting, counts down to the next, and triggers reminders.
+* **Meetings & iCal:** Press `Alt+M` on a line to add attendees, time, and agenda. **📅 Calendars** in Journal imports an iCal link every 30 minutes (requires `serve.py`). Deleted or moved meetings stay that way. A top bar pill shows the current meeting, counts down to the next, and triggers reminders.
 * **Calendar export:** **Add to calendar** exports a task as a private `.ics` file or an Outlook/Google link (timed tasks use their dot-duration or default to 1 hour; untimed tasks are all-day).
 * **Task threads:** Every task has a conversation thread; **Chat** gathers them all in one view.
-* **Email integration:** Paste an email copied from Gmail or Outlook into the top box to create a page under `m/` (Emails) with subject, sender, date, body, a linked *Follow up* task on Today, and a sender page. Use *Reply*, *Ask for news*, or *Forward* to draft text in your mail app, and *Add their answer* to log replies under today's date. Click *Make tasks instead* in the toast to convert lines directly into tasks.
+* **Email integration:** Paste an email copied from Gmail or Outlook into the top box to create a page under `m/` (Emails) with subject, sender, date, body, a linked *Follow up* task in Journal, and a sender page. Use *Reply*, *Ask for news*, or *Forward* to draft text in your mail app, and *Add their answer* to log replies under today's date. Click *Make tasks instead* in the toast to convert lines directly into tasks.
 * **Completion notifications:** When a project finishes, click *Notify* in the toast (or via **Done → History**) to draft an email in your mail app/Teams to everyone in `with::` and the client, listing the outcome and completed steps.
 * **Check-ins for outsiders:** **Waiting for → Ask … for an update** generates a self-contained HTML sheet ([mockup](docs/check-in-sheet-mockup.html)) and covering note. Recipients tick off completed items and return a small Markdown file; **Import a reply** closes those tasks in their name.
 </details>
@@ -110,9 +110,9 @@ Every view reads the same Markdown; a change in one is a change everywhere.
 * **Task clocks:** Click `⏱` under a task to edit time entries: drag on the day timeline, adjust box edges, or type times directly (`+` starts a new stretch where the last ended). Setting a task to *Doing* automatically starts/stops a clock in Logseq `:LOGBOOK:` format (toggleable in **Vault & sync → Time on tasks**).
 * **Client billing & splits:** A project's clients come from `org::` links on its page or area (excluding pages marked `role:: supplier`). Multi-client time splits via `client_split:: Alpha 60, Beta 40`, client `share::` properties, or evenly. **Projects → Hours → Clients** breaks down time by day, project, and month.
 * **Time on site:** Type `/in` and `/out` on any line to log a `#timelog` visit (who, project, in/out), or check in craftsmen via *Someone on site* in the new-tracker window. Viewed under **Projects → Hours**.
-* **Tap-to-count trackers:** Adds a **+1 Coffee** pill on Today (`tracker-coffee_i:: ☕☕☕`, reading `☕ × 14` past ten). Tap an icon to subtract, or `↺` to reset.
+* **Tap-to-count trackers:** Adds a **+1 Coffee** pill in Journal (`tracker-coffee_i:: ☕☕☕`, reading `☕ × 14` past ten). Tap an icon to subtract, or `↺` to reset.
 * **Hours, Amounts & Stock sheets:** Log inline on your day page:
-  * *Work hours:* `tracker-office_t:: 07:12 - 10:00, 10:30 - 12:30` (includes **Start/Stop** buttons on Today).
+  * *Work hours:* `tracker-office_t:: 07:12 - 10:00, 10:30 - 12:30` (includes **Start/Stop** buttons in Journal).
   * *Amounts:* `tracker-food_a:: 129,50 + 45`
   * *Stock:* `tracker-paint_q:: +3` (`-1` out, `=12` counted).
   * **Trackers → Hours / Amounts / Stock** totals the week by day, extra hours, flex against `hours_target::`, and year-by-month summaries (including commute days for tax deductions). Copyable as spreadsheet cells.
@@ -143,7 +143,7 @@ Every view reads the same Markdown; a change in one is a change everywhere.
 | `/` | Search |
 | `?` | Help |
 | `\` | Toggle sidebar |
-| `t` | Go to Today |
+| `t` | Go to Journal |
 | `Alt+←` / `Alt+→` | Navigate back / forward |
 | `Ctrl-Z` | Undo |
 
