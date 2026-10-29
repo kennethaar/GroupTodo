@@ -1589,6 +1589,9 @@ body.lselecting,body.lselecting *{user-select:none;-webkit-user-select:none;curs
 #editBar .eic{font-size:17px;line-height:1.1}
 #editBar .elb{font-size:11px;color:var(--fg2)}
 body.editbar-on #content{padding-bottom:140px}
+/* Room under the page while a phone writes in it, so the last line can come
+   up to the middle of what the keyboard leaves. */
+body #content.roomunder{padding-bottom:85vh}
 /* A phone gets every button in one row, sharing the width, none off the edge. */
 @media (max-width:560px){#editBar{gap:0;padding-left:max(2px,env(safe-area-inset-left));padding-right:max(2px,env(safe-area-inset-right))}
   #editBar .ebtn{flex:1 1 0;min-width:0;padding:4px 0}#editBar .elb{font-size:9.5px;letter-spacing:-.02em}}
@@ -2731,7 +2734,7 @@ body.solview #content{padding-bottom:14px}
    number for a fix, the middle one for a feature. CHANGELOG.md says what each
    one brought, and it is shown beside the name top left, so whoever is testing
    can see at a glance that they have the newest file open. */
-const APP_VERSION = "1.10.0";
+const APP_VERSION = "1.10.1";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 /* ============================================================
    00_BOOTSTRAP -- utilities
@@ -25529,6 +25532,38 @@ function focusBodyLine(id, i, atEnd = true) {
   });
 }
 
+/* On a phone the line Enter makes goes to the middle of what is left of the
+   page above the keyboard and the line toolbar, rather than wherever the
+   browser's own scrolling leaves it, which is the bottom edge or under the
+   keyboard. Called after the focus, so it runs in the frame after it, and
+   again when the keyboard has finished coming up. */
+function centerNewLine(sel) {
+  const c = $("#content"), vv = window.visualViewport;
+  if (!c || !matchMedia("(pointer:coarse)").matches) return;
+  c.classList.add("roomunder");
+  const go = () => {
+    const node = $(sel);
+    if (!node || document.activeElement !== node) return;
+    const cr = c.getBoundingClientRect(), bar = $("#editBar");
+    const top = Math.max(cr.top, vv ? vv.offsetTop : 0);
+    const bot = Math.min(cr.bottom, (vv ? vv.offsetTop + vv.height : innerHeight) -
+      (bar && !bar.hidden ? bar.offsetHeight : 0));
+    const r = node.getBoundingClientRect();
+    c.scrollTop += Math.round(r.top + Math.min(r.height, 40) / 2 - (top + bot) / 2);
+  };
+  requestAnimationFrame(go);
+  if (vv) {
+    const again = () => requestAnimationFrame(go);
+    vv.addEventListener("resize", again);
+    setTimeout(() => vv.removeEventListener("resize", again), 800);
+  }
+}
+/* The room goes once the writing does. */
+document.addEventListener("focusout", () => setTimeout(() => {
+  const a = document.activeElement, c = $("#content");
+  if (c && !(a && a.isContentEditable && c.contains(a))) c.classList.remove("roomunder");
+}, 300));
+
 function focusBlock(id, atEnd = true) {
   requestAnimationFrame(() => {
     if ($("#modalRoot").firstChild) return;   // a picker opened on the way; it owns the keys
@@ -26401,6 +26436,7 @@ function bodyLineEl(path, b, i) {
       txt.blur();
       b.body.splice(i + 1, 0, whole.slice(to));
       touch(path); render(); focusBodyLine(b.id, i + 1, false);
+      centerNewLine(`.blk[data-id="${b.id}"] > .bodyline[data-bi="${i + 1}"]`);
     } else if (e.key === "Backspace" && txt.textContent === "") {
       e.preventDefault();
       txt.blur();
@@ -26905,6 +26941,7 @@ function outlineBlock(path, page, b, opts = {}) {
       (b.body || (b.body = [])).unshift(trim(whole.slice(to)));
       touch(path); render();
       focusBodyLine(b.id, 0, false);
+      centerNewLine(`.blk[data-id="${b.id}"] > .bodyline[data-bi="0"]`);
       return;
     }
     if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
@@ -26927,6 +26964,7 @@ function outlineBlock(path, page, b, opts = {}) {
         if (nb.state) { applyTodoTemplate(nb); stampAddedIfMissing(path, nb); }
         sibs.splice(sibs.indexOf(b), 0, nb);
         touch(path); render(); focusBlock(nb.id);
+        centerNewLine(`.blk[data-id="${nb.id}"] .txt`);
         return;
       }
       // Blur is what writes a block's text back, so hand it the half that stays.
@@ -26940,6 +26978,7 @@ function outlineBlock(path, page, b, opts = {}) {
       touch(path); render();
       // Caret where the cut was, which is the start of what moved down.
       focusBlock(nb.id, false);
+      centerNewLine(`.blk[data-id="${nb.id}"] .txt`);
     } else if (e.key === "Tab") {
       e.preventDefault(); txt.blur();
       const sibs = siblingsOf(page, b), i = sibs.indexOf(b);

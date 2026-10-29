@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.10.1 - 2026-10-29
+
+- On a phone, Enter brings the new line to the middle of what the keyboard
+  and the line toolbar leave visible (#172), instead of leaving it at the
+  bottom edge or under the keyboard. While you write there is room under the
+  page, so the last line can come up to the middle too.
+
 ## 1.10.0 - 2026-10-29
 
 - A photo from the line toolbar is shrunk before it is kept (#170): at most

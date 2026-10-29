@@ -465,6 +465,30 @@ var GTD_TEST = (() => {
       }
     } finally { go("today"); }
   });
+  test("#172 on a phone Enter on the last line brings the new line to the middle", async () => {
+    const path = scratchProject("enter centre", Array.from({length: 60}, (_, i) => ["TODO", "Row " + i]));
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    const mm = window.matchMedia;
+    window.matchMedia = q => q === "(pointer:coarse)" ? {matches: true} : mm.call(window, q);
+    openPage(path);
+    await settle();
+    const last = getPage(path).blocks[59];
+    try {
+      focusBlock(last.id);
+      await frame();
+      const txt = document.querySelector('.blk[data-id="' + last.id + '"] .txt');
+      txt.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true, cancelable: true}));
+      await frame(); await frame();
+      const nb = getPage(path).blocks[60];
+      ok(nb, "Enter made no new line");
+      const node = document.querySelector('.blk[data-id="' + nb.id + '"] .txt');
+      eq(document.activeElement, node, "the caret is not in the new line");
+      const c = content(), cr = c.getBoundingClientRect(), bar = document.querySelector("#editBar");
+      const mid = (cr.top + cr.bottom - (bar && !bar.hidden ? bar.offsetHeight : 0)) / 2;
+      const r = node.getBoundingClientRect(), at = r.top + Math.min(r.height, 40) / 2;
+      ok(Math.abs(at - mid) < 4, "the new line is at " + Math.round(at) + ", the middle is " + Math.round(mid));
+    } finally { window.matchMedia = mm; go("today"); }
+  });
   test("#170 the toolbar's Image puts a picture in the line", async () => {
     const path = scratchProject("edit bar image", [["TODO", "Snap the whiteboard"]]);
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
