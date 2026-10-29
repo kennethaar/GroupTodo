@@ -23601,6 +23601,65 @@ function caretOffsets(host) {
   return [start, pre.toString().length];
 }
 
+/* ---------- the caret where the line was clicked ----------
+   A line is drawn with its links as names and its contexts as @words, and
+   turns into its raw text as it takes focus. The browser then puts the caret
+   where the mouse is over the raw text, which is somewhere else in it: a
+   click after "@office" landed inside "[[c/office]]". So the spot is read off
+   the line as drawn, found again in the raw text, and the caret moved there
+   once the click is over. A drag that selects is left alone (#138). */
+function keepClickCaret(host, raw) {
+  let want = null;
+  host.addEventListener("mousedown", e => {
+    want = e.button === 0 && !e.defaultPrevented && document.activeElement !== host
+      ? rawOffsetAt(host, e.clientX, e.clientY, raw()) : null;
+  });
+  host.addEventListener("mouseup", () => {
+    const at = want, sel = getSelection(), tn = host.firstChild;
+    want = null;
+    if (at == null || document.activeElement !== host || !sel || !sel.isCollapsed || !tn || tn.nodeType !== 3) return;
+    const r = document.createRange();
+    r.setStart(tn, Math.min(at, tn.length)); r.collapse(true);
+    sel.removeAllRanges(); sel.addRange(r);
+  });
+}
+/* Where in the raw text a point on the drawn line falls. Words drawn as they
+   are written are found again in the raw text, in order; a link drawn as
+   something else (@office for [[c/office]]) puts the caret before it or after
+   it, by which half was clicked. Nothing drawn after the point is the end. */
+function rawOffsetAt(host, x, y, raw) {
+  let node = null, off = 0;
+  if (document.caretPositionFromPoint) {
+    const p = document.caretPositionFromPoint(x, y);
+    if (p) { node = p.offsetNode; off = p.offset; }
+  } else if (document.caretRangeFromPoint) {
+    const r = document.caretRangeFromPoint(x, y);
+    if (r) { node = r.startContainer; off = r.startOffset; }
+  }
+  if (!node || !host.contains(node)) return null;
+  const part = document.createRange();
+  part.selectNodeContents(host);
+  part.setStart(node, off);
+  if (!trim(part.toString())) return raw.length;
+  part.selectNodeContents(host);
+  part.setEnd(node, off);
+  const want = part.toString().length;
+  const walk = document.createTreeWalker(host, NodeFilter.SHOW_TEXT);
+  let seen = 0, from = 0;
+  for (let t = walk.nextNode(); t; t = walk.nextNode()) {
+    const len = t.data.length, at = raw.indexOf(t.data, from);
+    if (want <= seen + len) {
+      const into = want - seen;
+      if (at >= 0) return at + into;
+      if (into * 2 < len) return from;
+      const close = raw.indexOf("]]", from);
+      return close >= 0 ? close + 2 : raw.length;
+    }
+    if (at >= 0) from = at + len;
+    seen += len;
+  }
+  return null;
+}
 
 /* ============================================================
    SUGGESTIONS AS YOU TYPE -- pages, names and dates
@@ -24289,6 +24348,7 @@ function bodyLineEl(path, b, i) {
   txt.addEventListener("mousedown", e => {
     if (e.target.closest("[data-link], [data-bref], a[href]")) e.preventDefault();
   });
+  keepClickCaret(txt, () => b.body[i]);
   txt.addEventListener("focus", () => { txt.textContent = b.body[i]; });
   txt.addEventListener("blur", () => {
     const val = lineText(txt);
@@ -24581,6 +24641,7 @@ function outlineBlock(path, page, b, opts = {}) {
   txt.addEventListener("mousedown", e => {
     if (e.target.closest("[data-link], [data-bref], a[href]")) e.preventDefault();
   });
+  keepClickCaret(txt, () => b.title);
   txt.addEventListener("focus", () => { line.classList.add("raw"); txt.textContent = b.title; flyShow(txt, path, page, b); });
   txt.addEventListener("input", () => {
     keepLineDraft(node.dataset.space, path, b, lineText(txt));
