@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.11.7 - 2026-10-29
+
+- The hint on Next says what to do (#182): pick a context (where you are or
+  what you have), and GroupTodo shows the actions that fit.
+
 ## 1.11.6 - 2026-10-29
 
 - A big folder opens fast (#181). Files are read 16 at a time instead of one
