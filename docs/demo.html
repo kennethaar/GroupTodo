@@ -25933,6 +25933,25 @@ document.addEventListener("mousedown", e => {
   lineSelClear();
 });
 
+/* A double click picks the word alone. Windows hands back the space after it
+   too, so typing over the word would swallow the gap to the next one. */
+document.addEventListener("dblclick", e => {
+  const t = e.target;
+  if (/^(INPUT|TEXTAREA)$/.test(t.tagName)) {
+    try {
+      const {selectionStart: a, selectionEnd: b, value} = t;
+      const s = value.slice(a, b), n = s.length - s.trimEnd().length;
+      if (n && n < s.length) t.setSelectionRange(a, b - n);
+    } catch {}                           // number and date fields keep no selection
+    return;
+  }
+  const sel = getSelection();
+  if (!sel || !sel.rangeCount) return;
+  const r = sel.getRangeAt(0), s = r.toString(), n = s.length - s.trimEnd().length;
+  if (!n || n === s.length || r.endContainer.nodeType !== 3 || r.endOffset < n) return;
+  sel.setBaseAndExtent(r.startContainer, r.startOffset, r.endContainer, r.endOffset - n);
+});
+
 /* ---------- focus ----------
    Clicking a bullet focuses on that line and what hangs under it: everything
    else leaves the column and only the trail back out stays above it. It is a
