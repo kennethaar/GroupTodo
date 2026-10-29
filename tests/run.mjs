@@ -96,6 +96,8 @@ try {
 
   await cdp("Runtime.enable");
   await cdp("Page.enable");
+  // A headless window never has the focus, so a line's focus and blur would not fire.
+  await cdp("Emulation.setFocusEmulationEnabled", {enabled: true});
   await cdp("Page.navigate", {url: pathToFileURL(demo).href});
 
   let ready = false;

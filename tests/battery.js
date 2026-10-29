@@ -410,6 +410,39 @@ var GTD_TEST = (() => {
       ok(d.documentElement.scrollWidth <= 390, "the section is wider than the phone");
     } finally { f.remove(); }
   });
+  test("the toolbar at the foot moves, indents and turns the line being written into a task", async () => {
+    const path = scratchProject("edit bar", [["TODO", "Alpha"], ["TODO", "Bravo"], ["TODO", "Charlie"]]);
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    const titles = () => getPage(path).blocks.map(b => b.title);
+    openPage(path);
+    await settle();
+    const bravo = getPage(path).blocks[1];
+    const bar = () => document.querySelector("#editBar");
+    const press = async k => { bar().querySelector('[data-k="' + k + '"]').click(); await frame(); await frame(); };
+    try {
+      focusBlock(bravo.id);
+      await frame();
+      ok(bar() && !bar().hidden, "no toolbar while a line is being written");
+      eq([...bar().querySelectorAll(".elb")].map(n => n.textContent),
+        ["Up", "Down", "Outdent", "Indent", "Note", "Zettel", "Project", "Area"]);
+      await press("down");
+      eq(titles(), ["Alpha", "Charlie", "Bravo"], "after down");
+      ok(document.activeElement && document.activeElement.closest('.blk[data-id="' + bravo.id + '"]'), "the caret left the line");
+      await press("up");
+      eq(titles(), ["Alpha", "Bravo", "Charlie"], "after up");
+      await press("in");
+      eq(titles(), ["Alpha", "Charlie"], "after indent");
+      eq(getPage(path).blocks[0].children.map(b => b.title), ["Bravo"], "indented under Alpha");
+      await press("out");
+      eq(titles(), ["Alpha", "Bravo", "Charlie"], "after outdent");
+      await press("kind");
+      eq(getPage(path).blocks[1].state, null, "Task/Note did not make it a note");
+      eq(bar().querySelector('[data-k="kind"] .elb').textContent, "Task");
+      document.activeElement.blur();
+      await frame();
+      ok(bar().hidden, "the toolbar stays after the line is let go");
+    } finally { go("today"); }
+  });
   test("renamePage rewrites the links to it", () => {
     const target = join(DIRS.pages, "Test rename me.md");
     putPage(target, {props: {title: "Test rename me"}, blocks: []});

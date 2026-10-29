@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.8.0 - 2026-10-29
+
+- While you write a line, a toolbar sits at the foot of the screen (#170):
+  move the line up or down, outdent or indent it, and make it a task (or back
+  to a note), a zettel, a project or a responsibility. It does what the keys
+  do, for a phone that has no Tab or Alt, and rides above the on-screen
+  keyboard. Pressing a button keeps the caret in the line.
+
 ## 1.7.3 - 2026-10-29
 
 - Linked References no longer squeeze a line to one word wide on a phone
