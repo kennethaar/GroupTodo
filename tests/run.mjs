@@ -47,7 +47,12 @@ const port = 9300 + Math.floor(Math.random() * 500);
 const browser = spawn(exe, [
   "--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
   "--remote-debugging-port=" + port, "--user-data-dir=" + profile,
-  "--window-size=1400,900", "about:blank",
+  "--window-size=1400,900",
+  // A headless browser with no mouse plugged in can read as a touch screen
+  // (hover:none), which always shows the upkeep that waits for the pointer.
+  // Test as a desktop with a mouse, wherever it runs.
+  "--blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4",
+  "about:blank",
 ], {stdio: "ignore"});
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));

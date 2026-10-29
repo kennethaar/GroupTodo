@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.10.2 - 2026-10-29
+
+- The regression battery starts its browser as a desktop with a mouse (#160).
+  A headless browser with no mouse plugged in reads as a touch screen, where
+  `+ tracker` is always shown, so the test that it waits for the pointer
+  failed on such machines although the app was right.
+
 ## 1.10.1 - 2026-10-29
 
 - On a phone, Enter brings the new line to the middle of what the keyboard
