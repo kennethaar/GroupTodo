@@ -11928,7 +11928,7 @@ function navPins() {
    pages/8/timer.md, 2 if there is no such page), or press and drag to pick
    1 to max:: minutes (60 if it says nothing), TIMER_PX pixels a minute. Which
    way you drag says how it ends: up rings, down or right is silent, only a
-   note in the corner. A click rings. Click it while it runs to stop it. The
+   note in the corner; with Ctrl held it rings whichever way. A click rings. Click it while it runs to stop it. The
    end time is kept per device, so a reload does not lose it. style:: dial on
    the same page shows it as a pie instead; see timerDialItem(). */
 const TIMER_PATH = join(DIRS.lists, "timer.md");
@@ -11958,7 +11958,7 @@ function timerVolume() {
   return (n >= 0 ? Math.min(n, 100) : 30) / 100;
 }
 /* The settings page, made with the default in it the first time it is asked for. */
-function openTimerPage() {
+function ensureTimerPage() {
   if (!V.pages.has(TIMER_PATH)) putPage(TIMER_PATH, {
     props: {title: "timer", minutes: "2", max: "60", style: "bar", volume: "30", created: todayStamp()},
     blocks: [newBlock({title: "The minutes above are what a click on the timer starts, 1 to the max."}),
@@ -11966,8 +11966,50 @@ function openTimerPage() {
              newBlock({title: "The style is bar, a strip in the sidebar, or dial, a pie that shrinks as time runs out."}),
              newBlock({title: "The volume is how loud the alarm rings, 0 to 100."})],
   });
-  openPage(TIMER_PATH);
 }
+function openTimerPage() { ensureTimerPage(); openPage(TIMER_PATH); }
+
+/* The settings are picked, not typed: each lists the values worth having,
+   with the one in use marked, and Take it off last. Another value is still
+   there for anything the list leaves out. */
+const TIMER_SETTINGS = {
+  minutes: {name: "Usual length", values: [1, 2, 3, 5, 10, 15, 20, 25, 30, 45, 60, 90, 120],
+            word: v => v + " min", about: "what a click starts"},
+  max:     {name: "Max", values: [10, 15, 20, 25, 30, 45, 60, 90, 120],
+            word: v => v + " min", about: "the longest you can set"},
+  style:   {name: "Style", values: ["bar", "dial"], about: "how it looks in the sidebar",
+            word: v => ({bar: "Bar", dial: "Dial"})[v] || v,
+            detail: v => ({bar: "a strip in the sidebar", dial: "a pie that shrinks as time runs out"})[v]},
+  volume:  {name: "Volume", values: [0, 10, 20, 30, 50, 70, 100],
+            word: v => +v ? v + " %" : "Silent", about: "how loud the alarm rings"},
+};
+function timerSettingNow(k) {
+  return {minutes: timerDefaultMinutes(), max: timerMax(), style: timerDialStyle() ? "dial" : "bar",
+          volume: Math.round(timerVolume() * 100)}[k];
+}
+function timerSettingMenu(k) {
+  const s = TIMER_SETTINGS[k], now = String(timerSettingNow(k));
+  const values = k === "minutes" ? s.values.filter(v => v <= timerMax()) : s.values;
+  const set = v => { ensureTimerPage(); saveRawProp(TIMER_PATH, k, k + ":: " + v); render(); };
+  const has = getPage(TIMER_PATH)?.props?.[k] != null;
+  chipMenu(s.name, s.about, lettered([
+    ...values.map(v => [s.word(v), [String(v) === now ? "in use" : "", s.detail?.(v)].filter(Boolean).join(", ") || null,
+      () => set(v)]),
+    ["Another value", null, () => { ensureTimerPage(); writePropValue(TIMER_PATH, k, has ? now : ""); }],
+    has ? ["Take it off", "back to the default", () => { saveRawProp(TIMER_PATH, k, ""); render(); }] : null,
+  ]));
+}
+/* The ⋯ on the timer: every setting with its value, each a list to pick from. */
+function timerSettingsMenu() {
+  chipMenu("Timer", "8/timer.md", lettered([
+    ...Object.entries(TIMER_SETTINGS).map(([k, s]) =>
+      [s.name + ": " + s.word(timerSettingNow(k)), s.about, () => timerSettingMenu(k)]),
+    ["Open the page", "8/timer.md", openTimerPage],
+  ]));
+}
+/* A drag rings when it went up, or with Ctrl held whichever way it went;
+   right or down is silent. */
+const timerDragRings = (e, dx, dy) => e.ctrlKey || e.metaKey || (dy < 0 && -dy > Math.abs(dx));
 const timerLeft = () => Math.max(0, TIMER_END - Date.now());
 const clock = ms => { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
 
@@ -11975,6 +12017,7 @@ function timerStart(minutes, sound = true) {
   timerAck();
   // Asked from the click that starts a timer, which is when browsers allow it.
   try { if (window.Notification?.permission === "default") Notification.requestPermission(); } catch (_) {}
+  if (sound) timerAudio();
   TIMER_SOUND = sound;
   safeLS.set("gtd.timerSound", sound ? "1" : "0");
   TIMER_LEN = minutes * 60000;
@@ -12028,10 +12071,10 @@ function timerDone(mins) {
 
 /* Until the alarm is clicked away, a click on the timer silences it and stops
    the count since it rang, instead of starting another one. */
-let TIMER_RING = null;   // the AudioContext still ringing, if any
+let TIMER_RING = null;   // the gain the chime still rings through, if any
 const timerRinging = () => !!(TIMER_RING || TIMER_FLASH || TIMER_DUE);
 function timerSilence() {
-  try { TIMER_RING?.close(); } catch (_) {}
+  try { TIMER_RING?.disconnect(); } catch (_) {}
   TIMER_RING = null;
   if (TIMER_FLASH) { clearInterval(TIMER_FLASH); TIMER_FLASH = null; document.title = TIMER_TITLE; }
   for (const sel of ["#brand", "#nav .nav-item.timer"]) $(sel)?.classList.remove("timerpulse");
@@ -12040,11 +12083,24 @@ function timerSilence() {
 /* A bell struck six times, loud: a fundamental and the inharmonic partials a
    real bell has, each dying away, alternating two notes so it reads as a
    chime rather than a beep. A compressor keeps the sum from clipping. */
+/* One AudioContext for the page, made or woken by the click that starts the
+   timer. A browser keeps a context made later, when the time is up and no
+   one has clicked, suspended, and the alarm rang in silence. */
+let TIMER_AUDIO = null;
+function timerAudio() {
+  try {
+    TIMER_AUDIO ??= new (window.AudioContext || window.webkitAudioContext)();
+    if (TIMER_AUDIO.state !== "running") TIMER_AUDIO.resume().catch(() => {});
+  } catch (_) {}
+  return TIMER_AUDIO;
+}
 function timerChime(times) {
   try {
-    const ac = new (window.AudioContext || window.webkitAudioContext)();
-    TIMER_RING = ac;
+    const ac = timerAudio();
+    if (!ac) return;
     const out = ac.createDynamicsCompressor(), level = ac.createGain();
+    try { TIMER_RING?.disconnect(); } catch (_) {}
+    TIMER_RING = level;
     level.gain.value = timerVolume();
     out.connect(level); level.connect(ac.destination);
     const gap = 0.8;
@@ -12060,7 +12116,7 @@ function timerChime(times) {
         o.start(t0); o.stop(t0 + len + 0.05);
       }
     }
-    setTimeout(() => { if (TIMER_RING === ac) { ac.close(); TIMER_RING = null; } }, (times * gap + 2.5) * 1000);
+    setTimeout(() => { if (TIMER_RING === level) { level.disconnect(); TIMER_RING = null; } }, (times * gap + 2.5) * 1000);
   } catch (_) {}
 }
 
@@ -12108,7 +12164,7 @@ function timerPaint(drag) {
       + ", " + clock(due) + " ago. Click to dismiss"
     : timerRinging() ? "Click to silence the alarm"
     : left > 0 ? "Click to stop, or drag to start over"
-    : "Click for " + timerDefaultMinutes() + " min. Drag up to ring, down or right to stay silent, up to " + timerMax() + " min";
+    : "Click for " + timerDefaultMinutes() + " min. Drag up or Ctrl-drag to ring, down or right to stay silent, up to " + timerMax() + " min";
 }
 
 function timerNavItem(it) {
@@ -12127,13 +12183,13 @@ function timerNavItem(it) {
     el("span", {class: "lbl"}, it.label),
     part("silent", "Usual length, silent",
       '<svg viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5"/><path d="M10 2.5h4"/><path d="M12 2.5V6"/><path d="M18.5 6.5l1.5-1.5"/></svg>'),
-    part("more", "Set the usual length (8/timer.md)",
+    part("more", "Timer settings: length, max, style, volume",
       '<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/></svg>'));
   let down = null;   // {x, y, picked} while the pointer is pressed
   const pick = e => {
     const dx = e.clientX - down.x, dy = e.clientY - down.y;
     return {minutes: Math.max(1, Math.min(timerMax(), Math.round(Math.hypot(dx, dy) / TIMER_PX))),
-            sound: dy < 0 && -dy > Math.abs(dx)};
+            sound: timerDragRings(e, dx, dy)};
   };
   b.addEventListener("pointerdown", e => {
     if (e.button) return;
@@ -12152,7 +12208,7 @@ function timerNavItem(it) {
     down = null;
     if (cancel) return timerPaint();
     if (picked == null && timerRinging()) return timerAck();
-    if (picked == null && part === "more") return openTimerPage();
+    if (picked == null && part === "more") return timerSettingsMenu();
     if (picked != null) timerStart(picked.minutes, picked.sound);
     else if (timerLeft() > 0) timerStop();
     else timerStart(timerDefaultMinutes(), part !== "silent");
@@ -12176,9 +12232,11 @@ function timerNavItem(it) {
    show while the pointer is on it. You set it three ways, and letting go
    starts it: press on the rim and drag round it (counter-clockwise adds), or
    press near the middle and drag like a knob (up or right adds), or roll the
-   wheel or press the arrow keys over it, which starts a moment after you
-   stop. A click does what a click on the bar does. The bell is a switch for
-   the sound, which lasts until you flip it. */
+   wheel down or press the arrow keys over it, which starts a moment after you
+   stop. A click does what a click on the bar does. The knob says how it ends
+   the way the bar does: dragged up it rings, dragged right it is silent, and
+   Ctrl makes any drag ring. Otherwise the bell is a switch for the sound,
+   which lasts until you flip it. */
 const DIAL_C = 28, DIAL_R = 25;
 function dialSector(f, r = DIAL_R) {
   if (!(f > 0)) return "";
@@ -12216,7 +12274,7 @@ function timerDialItem(it) {
     el("span", {class: "tread"}, el("span", {class: "lbl"}, it.label), el("span", {class: "tsub"})),
     part("sound", "",
       '<svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/><path d="M12 3v2"/></svg>'),
-    part("more", "Set the usual length, the max and the style (8/timer.md)",
+    part("more", "Timer settings: length, max, style, volume",
       '<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/></svg>'));
 
   const clamp = m => Math.max(1, Math.min(max, m));
@@ -12240,7 +12298,7 @@ function timerDialItem(it) {
   };
   const click = part => {
     if (timerRinging()) return timerAck();
-    if (part === "more") return openTimerPage();
+    if (part === "more") return timerSettingsMenu();
     if (part === "sound") {
       TIMER_SOUND = !TIMER_SOUND;
       safeLS.set("gtd.timerSound", TIMER_SOUND ? "1" : "0");
@@ -12248,11 +12306,12 @@ function timerDialItem(it) {
     }
     if (timerLeft() > 0) timerStop(); else timerStart(timerDefaultMinutes(), TIMER_SOUND);
   };
-  const show = m => { b._drag = m == null ? null : {minutes: m, sound: TIMER_SOUND}; timerPaint(); };
+  const show = (m, sound = TIMER_SOUND) => { b._drag = m == null ? null : {minutes: m, sound}; timerPaint(); };
 
-  let down = null;   // {x, y, mode, base, picked} while the pointer is pressed
+  let down = null;   // {x, y, mode, base, picked, sound} while the pointer is pressed
   b.addEventListener("pointerdown", e => {
     if (e.button || e.target.closest("[data-part]")) return;
+    timerAudio();   // a press is a gesture; the wheel that may start it later is not
     const onDial = dial.contains(e.target);
     down = {x: e.clientX, y: e.clientY, picked: null,
       mode: !onDial ? null : at(e).out > 0.45 ? "rim" : "knob", base: now()};
@@ -12268,19 +12327,21 @@ function timerDialItem(it) {
     }
     if (!down.mode) return;
     if (down.picked == null && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 4) return;
-    down.picked = down.mode === "rim" ? round(e, down.picked)
-      : clamp(down.base + Math.round((e.clientX - down.x - (e.clientY - down.y)) / TIMER_PX));
+    const dx = e.clientX - down.x, dy = e.clientY - down.y;
+    down.picked = down.mode === "rim" ? round(e, down.picked) : clamp(down.base + Math.round((dx - dy) / TIMER_PX));
+    // Round the rim the bell decides, unless Ctrl; as a knob, the way it went.
+    down.sound = down.mode === "rim" ? e.ctrlKey || e.metaKey || TIMER_SOUND : timerDragRings(e, dx, dy);
     b._hover = null;
-    show(down.picked);
+    show(down.picked, down.sound);
   });
   dial.addEventListener("pointerleave", () => { if (b._hover != null) { b._hover = null; timerPaint(); } });
   const end = cancel => {
     if (!down) return;
-    const {picked} = down;
+    const {picked, sound} = down;
     down = null;
     show(null);
     if (cancel) return;
-    if (picked != null) timerStart(picked, TIMER_SOUND); else click(null);
+    if (picked != null) timerStart(picked, sound); else click(null);
   };
   b.addEventListener("pointerup", () => end(false));
   b.addEventListener("pointercancel", () => end(true));
@@ -12291,6 +12352,7 @@ function timerDialItem(it) {
   });
 
   // The wheel and the arrow keys nudge it, and it starts once they stop.
+  // Rolling down adds, the way pulling a dial towards you would.
   let wait = null;
   const nudge = by => {
     show(clamp((b._drag?.minutes ?? (timerLeft() > 0 ? Math.ceil(timerLeft() / 60000) : 0)) + by));
@@ -12299,7 +12361,7 @@ function timerDialItem(it) {
   };
   dial.addEventListener("wheel", e => {
     e.preventDefault();
-    if (e.deltaY) nudge((e.deltaY < 0 ? 1 : -1) * (e.shiftKey ? 5 : 1));
+    if (e.deltaY) nudge((e.deltaY > 0 ? 1 : -1) * (e.shiftKey ? 5 : 1));
   }, {passive: false});
   dial.addEventListener("keydown", e => {
     const by = {ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1, PageUp: 5, PageDown: -5}[e.key];
@@ -12325,7 +12387,7 @@ function timerPaintDial(b, drag, left, due) {
   dial.setAttribute("aria-valuetext", dragging ? drag.minutes + " minutes" : left > 0 ? clock(left) + " left" : "not running");
   b.querySelector(".lbl").textContent = dragging ? drag.minutes + " min"
     : left > 0 ? clock(left) : due >= 0 ? "+" + clock(due) : "Timer";
-  b.querySelector(".tsub").textContent = dragging ? "starts when you let go"
+  b.querySelector(".tsub").textContent = dragging ? (drag.sound ? "rings" : "silent") + ", starts when you let go"
     : hover != null ? "set " + hover + " min"
     : left > 0 ? "of " + len + " min"
     : due >= 0 ? len + " min rang"
@@ -12337,8 +12399,8 @@ function timerPaintDial(b, drag, left, due) {
       + new Date(TIMER_DUE).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"})
       + ", " + clock(due) + " ago. Click to dismiss"
     : timerRinging() ? "Click to silence the alarm"
-    : left > 0 ? "Click to stop, or set it again: drag round the rim, drag from the middle, or roll the wheel"
-    : "Click for " + timerDefaultMinutes() + " min, or set it: drag round the rim, drag from the middle, or roll the wheel, up to " + max + " min";
+    : left > 0 ? "Click to stop, or set it again: drag round the rim, drag from the middle (up rings, right is silent, Ctrl rings), or roll the wheel down"
+    : "Click for " + timerDefaultMinutes() + " min, or set it: drag round the rim, drag from the middle (up rings, right is silent, Ctrl rings), or roll the wheel down, up to " + max + " min";
 }
 
 /* ---------- the sidebar, out of the way ----------
@@ -33046,6 +33108,14 @@ function birthdayFact(path, k, v) {
 
 function propFact(path, k, v) {
   if (k.toLowerCase() === BIRTHDAY_PROP && pageKind(path) === "person") return birthdayFact(path, k, v);
+  // The timer's settings: the pill lists the values, Take it off last.
+  const timerSetting = path === TIMER_PATH && TIMER_SETTINGS[k.toLowerCase()];
+  if (timerSetting) return {
+    key: k, raw: k + ":: " + v,
+    save: text => saveRawProp(path, k, text),
+    pills: () => [factPill(trim(v || "") ? timerSetting.word(trim(v)) : "+ pick " + k, trim(v || "") ? "fquiet" : "fwant",
+      timerSetting.name + ": " + timerSetting.about, () => timerSettingMenu(k.toLowerCase()))],
+  };
   // A tracker at the top of a page gets the same boxes it gets as a line.
   const trk = parseTracker(k + ":: " + v);
   if (trk) return {
