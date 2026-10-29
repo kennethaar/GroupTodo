@@ -146,8 +146,8 @@ body.sidebar-hidden #sidebar{display:none}
 #pagePane .panebar{position:sticky;top:0;z-index:2;display:flex;justify-content:flex-end;gap:4px;
   padding:8px 0 4px;background:var(--bg)}
 #pagePane .pcrumbs{margin-top:0}
-#pagePane .panepin{opacity:.45;filter:grayscale(1)}
-#pagePane .panepin.on,#pagePane .panepin:hover{opacity:1;filter:none}
+.panepin{opacity:.45;filter:grayscale(1)}
+.panepin.on,.panepin:hover{opacity:1;filter:none}
 /* Its left edge, dragged, makes it wider or narrower. */
 .panegrip{flex:none;width:6px;margin-right:-6px;position:relative;z-index:3;cursor:col-resize;touch-action:none}
 .panegrip::after{content:"";position:absolute;top:0;bottom:0;left:2px;width:2px;background:transparent;transition:background .1s}
@@ -33467,11 +33467,14 @@ function newFactLine(path) {
 
 /* The values fold away under one line, so the page starts with its lines and
    not a screen of key:: value. Whether a kind of page starts folded is a
-   setting (in Help); unfolding one page holds until the app is reloaded. */
+   setting (in Help); folding or unfolding one page is remembered, and every
+   other page opens the same way after it, through a reload. */
 const factsFoldKey = kind => "facts.fold." + kind;
 const factsFoldedByDefault = kind => PREF.get(factsFoldKey(kind), "1") !== "0";
-const FACTS_OPEN = new Map();
-const factsFolded = path => !(FACTS_OPEN.get(path) ?? !factsFoldedByDefault(pageKind(path)));
+const factsFolded = path => factsFoldedByDefault(pageKind(path));
+function setFactsFolded(folded) {
+  for (const kind of Object.keys(PAGE_KINDS)) PREF.set(factsFoldKey(kind), folded ? "1" : "0");
+}
 
 function pageFactsBlock(path, opts = {}) {
   if (opts.trackersOnly) return dayTrackersBlock(path);
@@ -33480,7 +33483,7 @@ function pageFactsBlock(path, opts = {}) {
   const all = pageFacts(path);
   const facts = all.filter(f => !isHidden(f)), tucked = all.filter(isHidden);
   const folded = factsFolded(path);
-  const toggle = () => { FACTS_OPEN.set(path, folded); render(); };
+  const toggle = () => { setFactsFolded(!folded); render(); };
   const keys = facts.map(f => f.key).filter(Boolean);
   const box = el("div", {class: "pfacts cols" + (folded ? " folded" : "")},
     el("button", {class: "pfhead", "aria-expanded": String(!folded),
@@ -33519,7 +33522,7 @@ function drawFactFoldPrefs() {
   box.replaceChildren(el("div", {class: "pfprefhead"}, "Fold the values at the top of:"),
     ...Object.keys(PAGE_KINDS).map(kind => {
       const input = el("input", {type: "checkbox",
-        onchange: e => { PREF.set(factsFoldKey(kind), e.target.checked ? "1" : "0"); FACTS_OPEN.clear(); render(); }});
+        onchange: e => { PREF.set(factsFoldKey(kind), e.target.checked ? "1" : "0"); render(); }});
       input.checked = factsFoldedByDefault(kind);
       return el("label", {}, input, " " + PAGE_KINDS[kind]);
     }));
@@ -33867,8 +33870,14 @@ function viewPage() {
     },
   }, pageTitle(path));
   c.append(parentLine(V.space, path) || "");
+  // The pane's 📌 on the full page too; drawn in the pane, its own bar has it.
+  const space = V.space, pinned = isSidePinned(space, path);
+  const pinLabel = pinned ? "Unpin from the right" : "Pin to the right: it stays while you move about";
   c.append(el("div", {class: "pagehead"}, icon ? el("span", {class: "picon"}, icon) : null, titleEl,
     el("div", {class: "acts"},
+      SIDE_DRAWING ? null : el("button", {class: "btn sm ghost panepin" + (pinned ? " on" : ""), title: pinLabel,
+        "aria-label": pinLabel, "aria-pressed": String(pinned),
+        onclick: () => pinned ? unpinSide() : pinToSide(space, path)}, "📌"),
       el("button", {class: "btn sm ghost", title: "A link you can paste into chat or email",
         onclick: () => copyLinkTo(deepLink(path), pageTitle(path))}, "Copy link"),
       el("button", {class: "btn sm ghost", title: "Show the file in Explorer: copies a line for Win+R",
