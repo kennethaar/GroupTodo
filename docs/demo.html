@@ -13819,6 +13819,17 @@ function pasteSwapper(path, roots, lineFor) {
   };
 }
 
+/* The lines as text with their shape: a step under a line indented under it. */
+function linesAsText(blocks) {
+  const out = [];
+  const rec = (list, depth) => list.forEach(b => {
+    out.push("  ".repeat(depth) + (b.state ? b.state + " " : "") + (b.title || ""));
+    rec(b.children || [], depth + 1);
+  });
+  rec(blocks, 0);
+  return out.join("\n");
+}
+
 function offerPasteAs(raw, ask, swap) {
   const mail = parseEmailText(raw), kindle = parseKindleNotes(raw);
   const t = el("div", {class: "toast pasteas"});
@@ -25880,6 +25891,16 @@ function lineSelHud() {
     lineSelClear();
     openPlanWithAI(src);
   }}, "Plan with AI"));
+  // Lines already in the page can become a page of their own, as a paste can.
+  hud.append(el("button", {class: "btn sm ghost", onclick: () => {
+    const got = lineSelBlocks();
+    if (!got) return;
+    const path = LINE_SEL.path;
+    lineSelClear();
+    offerPasteAs(linesAsText(got.blocks), "Make a page of the " + got.blocks.length +
+      (got.blocks.length === 1 ? " picked line:" : " picked lines:"),
+      pasteSwapper(path, got.blocks, (kind, link) => newBlock({title: link}, false)));
+  }}, "Make a page"));
   hud.append(el("button", {class: "btn sm ghost", onclick: () => lineSelClear()}, "Let go"));
   hud.append(el("span", {class: "k"}, "shift-↑↓ more · alt-shift-↑↓ move · ctrl-enter task state · . .. ... time · @ context · ctrl-c · ctrl-x · ctrl-v · del · esc"));
 }
