@@ -13345,6 +13345,35 @@ function parseEmailText(raw) {
       sent: sent ? mailDateISO(sent) : "",
     }, from);
   }
+
+  /* Outlook on the web: subject, sender, (date,) then the people it went to
+     with a ";" between them, and no "From:" or "To:" anywhere. The subject
+     has to be the first thing copied. */
+  const short = l => { l = trim(l); return l.length > 0 && l.length <= 80 && !BULLET_RE.test(l) && !/[.!?:]$/.test(l); };
+  for (let i = 0; i < head; i++) {
+    if (!lines[i].includes(";")) continue;
+    const names = [];
+    let k = i;
+    for (; k < lines.length && trim(lines[k]); k++) {
+      const l = trim(lines[k]);
+      if (MAIL_HEAD.cc.test(l)) continue;
+      if (k > i && !/;$/.test(trim(lines[k - 1]))) break;
+      names.push(...l.split(";").map(trim).filter(Boolean));
+    }
+    if (!names.length || !names.every(n => n.length <= 80 && !/[.!?]$/.test(n))) break;
+    let s = prev(i), sent = "";
+    while (s >= 0 && isMailDateLine(lines[s]) && !sent) { sent = lines[s]; s = prev(s); }
+    // Outlook leaves a gap between the sender and the people; a list does not.
+    if (s < 0 || !short(lines[s]) || !lines.slice(s + 1, i).some(l => !trim(l))) break;
+    let subj = prev(s);
+    if (subj < 0 || trim(lines[subj]).length > 200 || BULLET_RE.test(lines[subj])) break;
+    for (let j = prev(subj); j >= 0; j = prev(j)) if (!MAIL_LABELS.test(trim(lines[j]))) return null;
+    let from = k;
+    const after = next(k - 1);
+    if (!sent && after >= 0 && isMailDateLine(lines[after])) { sent = lines[after]; from = after + 1; }
+    return finish({from: trim(lines[s]), subject: trim(lines[subj]), to: names.join("; "),
+      sent: sent ? mailDateISO(sent) : ""}, from);
+  }
   return null;
 }
 
@@ -24927,24 +24956,31 @@ function outlineBlock(path, page, b, opts = {}) {
       sibs.splice(sibs.indexOf(b) + 1, 0, ...roots, ...(tail ? [tail] : []));
     }
     touch(path); noteTodoTouched(); render();
-    /* An email pasted into a line comes in as lines like anything else, and
-       is offered as a page of its own: the lines then make way for one link. */
+    /* An email pasted into a line becomes a page of its own, as it does in
+       the capture box: the lines make way for one link, and can come back. */
     const mail = lines.length >= 4 ? parseEmailText(raw) : null;
-    if (mail) notify("That reads as an email from " + (mail.name || "someone") + ".", "info", {
-      label: "Save as email page",
-      run: () => {
-        const at = sibs.indexOf(roots[0]);
-        if (at < 0) { notify("The pasted lines have moved, so they were left as they are.", "warn"); return; }
-        const saved = saveEmailPage(mail, {task: false});
-        const link = newBlock({state: inherit, title: "[[m/" + saved.name + "]]"});
-        if (link.state) { applyTodoTemplate(link); stampAddedIfMissing(path, link); }
-        for (const r of roots) { const i = sibs.indexOf(r); if (i >= 0) sibs.splice(i, 1); }
-        sibs.splice(at, 0, link);
-        touch(path); noteTodoTouched(); render();
-        notify("Saved as an email page; the line links to it.");
-      },
-    });
-    else notify(n + " lines pasted, one block each.");
+    if (mail) {
+      const at = sibs.indexOf(roots[0]);
+      const saved = saveEmailPage(mail, {task: false});
+      const link = newBlock({state: inherit, title: "[[m/" + saved.name + "]]"});
+      if (link.state) { applyTodoTemplate(link); stampAddedIfMissing(path, link); }
+      for (const r of roots) { const i = sibs.indexOf(r); if (i >= 0) sibs.splice(i, 1); }
+      sibs.splice(at, 0, link);
+      touch(path); noteTodoTouched(); render();
+      notify("Saved the email from " + (mail.name || "them") + " as a page; the line links to it.", "info", {
+        label: "Keep the lines",
+        run: () => {
+          const i = sibs.indexOf(link);
+          if (i < 0) { notify("The link has moved, so it was left as it is.", "warn"); return; }
+          sibs.splice(i, 1, ...roots);
+          for (const p of saved.made) removePage(p);
+          touch(path); noteTodoTouched(); render();
+        },
+      });
+      focusBlock((tail || link).id);
+      return;
+    }
+    notify(n + " lines pasted, one block each.");
     focusBlock((tail || roots[roots.length - 1]).id);
   });
   /* Names and dates as you type. A date taken from the list is the line's
