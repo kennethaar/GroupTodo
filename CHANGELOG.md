@@ -5,6 +5,17 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.4.1 - 2026-10-29
+
+- The Journal's tabs, finished by the design principles (#160). Due Today &
+  Late always shows open beside done, with its bar, "3 open · 0 done · 1
+  late", not a bare red 3 until the first thing is done; late is the one
+  word in colour. Next 7 Days and @context say "2 open", and an empty list
+  shows no 0. A day with no trackers says "Nothing tracked yet." and its
+  + tracker waits until you point at it, like the other upkeep. Calendars ·
+  add a link, Edit Markdown, the pin and + tracker are faded rather than
+  hidden while they wait, so Tab lands on them and shows them.
+
 ## 1.4.0 - 2026-10-29
 
 - The Journal is about doing (#160), by the design principles now in

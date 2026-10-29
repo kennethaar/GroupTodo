@@ -1505,11 +1505,13 @@ details>summary:hover{color:var(--fg2)}
   border-radius:20px;vertical-align:1px;color:var(--ctx);background:color-mix(in srgb,var(--ctx) 13%,transparent)}
 /* Upkeep waits until you point at it or tab to it: a calendar not yet
    linked, the day page's markdown and pin, another tracker. A touch screen
-   has no pointing, so there it is always shown. */
-.todayhead .upkeep,.jhead .upkeep,.tpanel .pfact:not(:only-child)>.trkadd{visibility:hidden}
+   has no pointing, so there it is always shown. Faded rather than hidden,
+   so Tab still lands on it and shows it. */
+.todayhead .upkeep,.jhead .upkeep,.tpanel .trkadd{opacity:0}
 .todayhead:hover .upkeep,.todayhead:focus-within .upkeep,.jhead:hover .upkeep,.jhead:focus-within .upkeep,
-.tpanel .space-journal:hover .trkadd,.tpanel .space-journal:focus-within .trkadd{visibility:visible}
-@media (hover:none){.todayhead .upkeep,.jhead .upkeep,.tpanel .pfact>.trkadd{visibility:visible}}
+.tpanel .space-journal:hover .trkadd,.tpanel .space-journal:focus-within .trkadd{opacity:1}
+@media (hover:none){.todayhead .upkeep,.jhead .upkeep,.tpanel .trkadd{opacity:1}}
+.tpanel .trknone{color:var(--fg3);font-size:13px;margin-right:8px;line-height:1.9}
 .space-journal .blk>.line>.linemenu{opacity:.7}
 /* The Due tab says what is done beside what is open. */
 .tratio{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--fg3);font-variant-numeric:tabular-nums}
@@ -2850,7 +2852,7 @@ body.solview #content{padding-bottom:14px}
    number for a fix, the middle one for a feature. CHANGELOG.md says what each
    one brought, and it is shown beside the name top left, so whoever is testing
    can see at a glance that they have the newest file open. */
-const APP_VERSION = "1.4.0";
+const APP_VERSION = "1.4.1";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 /* ============================================================
    00_BOOTSTRAP -- utilities
@@ -29961,13 +29963,17 @@ function viewToday() {
   /* What is due and the trackers are tabs: one open at a time, and pressing
      the open one again folds it away. */
   const tabs = sections.filter(s => !s.space);
-  /* Open beside done once something is done, so the tab shows the way down
-     the list, not only what is left of it; nothing tracked says no 0 (#160). */
-  const tabCount = s => s.done
-    ? el("span", {class: "tratio"},
-        el("span", {class: "pbar"}, el("i", {style: "width:" + Math.round(100 * s.done / (s.count + s.done)) + "%"})),
-        s.count + " open · " + s.done + " done", s.lateN ? el("span", {class: "tlate"}, " · " + s.lateN + " late") : null)
-    : s.id === "facts" && !s.count ? null : el("span", {class: "tcount"}, String(s.count || 0));
+  /* Open beside done, so the tab shows the way down the list, not only what
+     is left of it, and late is the one word in colour. The other lists say
+     what they hold in words; an empty one says no 0 (#160). */
+  const tabCount = s => s.id === "due"
+    ? s.count + s.done ? el("span", {class: "tratio"},
+        el("span", {class: "pbar", title: s.done + " of " + (s.count + s.done) + " done"},
+          el("i", {style: "width:" + Math.round(100 * s.done / (s.count + s.done)) + "%"})),
+        s.count + " open · " + s.done + " done", s.lateN ? el("span", {class: "tlate"}, " · " + s.lateN + " late") : null) : null
+    : !s.count ? null
+    : s.id === "facts" ? el("span", {class: "tcount"}, String(s.count))
+    : el("span", {class: "tratio"}, s.count + " open");
   const want = PREF.get("today.tab", "facts");
   const openTab = tabs.find(s => s.id === want);
   c.append(el("div", {class: "ttabs", role: "tablist"}, ...tabs.map(s => el("button", {
@@ -35553,6 +35559,8 @@ function dayTrackersBlock(path, {add = true, move = null} = {}) {
   }
   if (!add) return box;
   const line = el("div", {class: "pfact"});
+  // An empty day says so in words; the way to add one waits for the pointer (#160).
+  if (!box.childElementCount) line.append(el("span", {class: "trknone"}, "Nothing tracked yet."));
   line.append(el("button", {class: "textbtn trkadd", title: "Something to follow over time",
     onclick: () => openTrackerPicker((title, when) => insertTracker(path, newBlock({title: ""}, false), title, when), path)},
     "+ tracker"));

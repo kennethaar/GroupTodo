@@ -677,6 +677,39 @@ var GTD_TEST = (() => {
     has(content().querySelector(".ttab-due .tratio").textContent, "done");
     ok(content().querySelector(".donetoday"), "the done today row under the list");
   });
+  test("#160 the Due tab pairs open with done before anything is done", async () => {
+    await journalDue([["TODO", "Start the first thing"]]);
+    const tab = content().querySelector(".ttab-due");
+    ok(/\d+ open · \d+ done/.test(tab.querySelector(".tratio").textContent), "open beside done: " + tab.textContent);
+    ok(tab.querySelector(".tratio .pbar"), "with its bar");
+    ok(!tab.querySelector(".tcount"), "not a bare count");
+  });
+  test("#160 Next 7 days says how many are open in words", async () => {
+    await journalDue([["TODO", "Plan the thing next week"]], shiftISO(T(), 2));
+    has(content().querySelector(".ttab-week .tratio").textContent, " open");
+    ok(!content().querySelector(".ttab-week .tcount"), "not a bare count");
+  });
+  test("#160 a day with no trackers says so, and + tracker waits but is in reach of Tab", () => {
+    const path = "journals/2099_01_01.md";
+    putPage(path, {props: {}, blocks: [newBlock({title: "Nothing here is tracked"})]});
+    const box = el("div", {class: "tpanel"}, el("div", {class: "space-journal"}, dayTrackersBlock(path)));
+    document.body.append(box);
+    try {
+      has(box.textContent, "Nothing tracked yet.");
+      const add = box.querySelector(".trkadd");
+      eq(getComputedStyle(add).opacity, "0", "waits for the pointer");
+      ok(getComputedStyle(add).visibility !== "hidden", "Tab can still land on it");
+      add.focus();
+      eq(getComputedStyle(add).opacity, "1", "focused, it shows");
+    } finally { box.remove(); }
+  });
+  test("#160 the journal's upkeep can be reached with Tab", async () => {
+    go("today");
+    await settle();
+    const edit = content().querySelector(".jcard:not(.trkcol) .jhead .upkeep");
+    ok(edit, "Edit Markdown is there");
+    ok(getComputedStyle(edit).visibility !== "hidden", "not taken out of the tab order");
+  });
   test("#160 on the day page a context at the end goes in front of the words, as written elsewhere", () => {
     const b = {state: "TODO", title: "Reply to Bob [[c/computer]]"};
     const lead = lineHtml(b, true), plain = lineHtml(b);
