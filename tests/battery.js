@@ -75,6 +75,59 @@ var GTD_TEST = (() => {
       });
     }
   }
+  test("#166 the projects list draws no stray null", async () => {
+    go("projects", {sub: "list", statusCode: "1"});
+    await settle();
+    ok(![...content().childNodes].some(n => n.nodeType === 3 && n.textContent === "null"), "a bare null is drawn");
+  });
+  test("#166 projects list: search, filter and sort in one bar, the statuses in a row of their own", async () => {
+    go("projects", {sub: "list", statusCode: "1"});
+    await settle();
+    const bar = content().querySelector(".projbar");
+    ok(bar, "no projects bar");
+    ok(bar.querySelector(".searchbox svg") && bar.querySelector(".searchbox input[type=search]"), "no search box with its icon");
+    ok(bar.querySelector(".fchips .fchip[aria-pressed=true]"), "no status chips row");
+    eq(bar.querySelectorAll(".sheetbtn").length, 2, "filter and sort buttons");
+    ok(content().querySelector(".fab[aria-label='New project']"), "no round New project button");
+    ok(content().querySelector(".vsel select"), "no view dropdown");
+  });
+  test("#166 the filter sheet sets the organisation and counts it on the button", async () => {
+    try {
+      go("projects", {sub: "list", statusCode: "1", org: null});
+      await settle();
+      content().querySelector(".projbar .sheetbtn").click();
+      const opt = [...document.querySelectorAll("#modalRoot .sheetopt")].find(b => b.textContent === "Havbris Seafood");
+      ok(opt, "no organisation choices in the sheet");
+      opt.click();
+      await settle();
+      eq(state.org, "Havbris Seafood");
+      eq(document.querySelector("#modalRoot .sheetopt[aria-pressed=true]")?.textContent, "Havbris Seafood", "the sheet shows the choice");
+      closeModal();
+      eq(content().querySelector(".projbar .sheetbtn small")?.textContent, "1", "badge");
+    } finally { closeModal(); go("projects", {org: null}); await settle(); }
+  });
+  test("#166 the sort sheet sets the order", async () => {
+    const was = PREF.get("projects.sort", "urgency");
+    try {
+      go("projects", {sub: "list", statusCode: "1"});
+      await settle();
+      content().querySelectorAll(".projbar .sheetbtn")[1].click();
+      [...document.querySelectorAll("#modalRoot .sheetopt")].find(b => b.textContent === "By name, Z-A, 9-1").click();
+      eq(PREF.get("projects.sort"), "za");
+      ok(!document.querySelector("#modalRoot .modal"), "the sheet stays open");
+    } finally { PREF.set("projects.sort", was); closeModal(); }
+  });
+  test("#166 the view dropdown switches the reading", async () => {
+    go("projects", {sub: "list"});
+    await settle();
+    const s = content().querySelector(".vsel select");
+    s.value = "board";
+    s.dispatchEvent(new Event("change"));
+    await settle();
+    eq(subNow(), "board");
+    go("projects", {sub: "list"});
+    await settle();
+  });
   test("every kind of demo page opens", async () => {
     const seen = new Set();
     for (const path of allPages()) {

@@ -5,6 +5,18 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.6.0 - 2026-10-29
+
+- The Projects list fits a phone (#166). Search, a Filter button and a Sort
+  button share one row, the search with a magnifier; area and organisation,
+  and the order, open in a sheet from the bottom, and the Filter button says
+  how many are on. The statuses are one row that scrolls sideways. The view
+  is a "List ▾" dropdown beside the title, on every screen that has one. New
+  project is a round button at the bottom right, the look-alikes a tinted
+  banner you can put away until their number changes, and the subtitle is
+  gone. A wide screen keeps its chips and dropdowns, now with the magnifier.
+- A stray "null" no longer shows above the projects list (#166).
+
 ## 1.5.0 - 2026-10-29
 
 - Ask for an update can leave the projects out (#161): "Name the projects
