@@ -509,11 +509,12 @@ body:not(.pane-open) .panegrip{display:none}
 /* style:: dial: a small pie beside the time, the four quarters marked. While
    you set it their minutes are written just outside the rim, the way a Time
    Timer has them; the svg is that much bigger than the dial and spills over. */
-.nav-item.timer.dial{gap:16px;padding:4px 8px 4px 14px;cursor:default;overflow:visible}
-.nav-item.timer.dial .tdial{flex:none;width:56px;height:56px;border-radius:50%;cursor:pointer;touch-action:none}
+.nav-item.timer.dial{gap:14px;padding:4px 8px 4px 14px;cursor:default;overflow:visible}
+.nav-item.timer.dial .tdial{--d:40px;flex:none;width:var(--d);height:var(--d);border-radius:50%;cursor:pointer;touch-action:none}
 .nav-item.timer.dial .tdial:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.nav-item.timer.dial .tdial svg{display:block;width:74px;height:74px;margin:-9px;overflow:visible;pointer-events:none}
-.tdial .tnum{fill:var(--fg2);font-size:9px;font-variant-numeric:tabular-nums;text-anchor:middle;dominant-baseline:central;pointer-events:none;
+.nav-item.timer.dial .tdial svg{display:block;width:calc(var(--d) * 74 / 56);height:auto;margin:calc(var(--d) * -9 / 56);
+  overflow:visible;pointer-events:none}
+.tdial .tnum{fill:var(--fg2);font-size:12px;font-variant-numeric:tabular-nums;text-anchor:middle;dominant-baseline:central;pointer-events:none;
   opacity:0;transition:opacity .15s}
 .nav-item.timer.dial.dragging .tnum{opacity:1}
 .tdial .tface{fill:var(--bg);stroke:var(--border2);stroke-width:1.5}
@@ -525,6 +526,19 @@ body:not(.pane-open) .panegrip{display:none}
 .nav-item.timer.dial .tsub{font-size:11px;color:var(--fg3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nav-item.timer.dial .tpart[data-part=sound][aria-pressed=true]{opacity:1;color:var(--accent)}
 .nav-item.timer.dial .tpart[data-part=sound][aria-pressed=true] svg path:first-child{fill:currentColor}
+/* While a timer runs, silent or not, and until its ring is clicked away, the
+   dial moves up over the time and takes the sidebar's breadth, less some air,
+   so the countdown is hard to miss. Its rim is the width; the numbers move
+   inside it, so they do not spill out of the sidebar. */
+.nav-item.timer.dial.big{flex-wrap:wrap;gap:8px 10px;padding:10px 14px}
+.nav-item.timer.dial.big .tdial{flex:0 0 100%;width:100%;height:auto;aspect-ratio:1}
+.nav-item.timer.dial.big .tdial svg{width:calc(100% * 74 / 56);margin:calc(100% * -9 / 56)}
+.nav-item.timer.dial.big .tnums{transform:scale(.5);transform-origin:28px 28px}
+.nav-item.timer.dial.big .tnum{font-size:9px}
+.nav-item.timer.dial.big .tface{stroke-width:.6}
+.nav-item.timer.dial.big .tquart line{stroke-width:.9}
+.nav-item.timer.dial.big .thub{stroke-width:.5}
+.nav-item.timer.dial.big .lbl{font-size:24px;line-height:1.1}
 /* Time is up on the dial: a slow glow that breathes, not a strobe. */
 @keyframes dialpulse{0%,100%{filter:drop-shadow(0 0 0 transparent)}
   50%{filter:drop-shadow(0 0 6px var(--accent))}}
@@ -12540,7 +12554,7 @@ function timerDialItem(it) {
   dial.innerHTML = `<svg viewBox="${-DIAL_PAD} ${-DIAL_PAD} ${box} ${box}" aria-hidden="true"><circle class="tface" cx="${DIAL_C}" cy="${DIAL_C}" r="${DIAL_R + 1}"/>`
     + `<path class="tsector"/>`
     + `<g class="tquart">${quarters.map(f => dialTick(f, 5)).join("")}</g>`
-    + `<circle class="thub" cx="${DIAL_C}" cy="${DIAL_C}" r="2.5"/>${nums.join("")}</svg>`;
+    + `<circle class="thub" cx="${DIAL_C}" cy="${DIAL_C}" r="2.5"/><g class="tnums">${nums.join("")}</g></svg>`;
   const b = el("div", {class: "nav-item small timer dial"},
     dial,
     el("span", {class: "tread"}, el("span", {class: "lbl"}, it.label), el("span", {class: "tsub"})),
@@ -12618,6 +12632,8 @@ function timerDialItem(it) {
 function timerPaintDial(b, drag, left, due) {
   const max = timerMax(), dragging = drag != null, len = Math.round(TIMER_LEN / 60000);
   const dial = b.querySelector(".tdial");
+  // Big while a timer runs, with the alarm or without, and once it has rung until that is clicked away.
+  b.classList.toggle("big", left > 0 || due >= 0);
   dial.querySelector(".tsector").setAttribute("d",
     dialSector(dragging ? drag.minutes / max : Math.min(1, left / (max * 60000))));
   dial.setAttribute("aria-valuenow", String(dragging ? drag.minutes : Math.ceil(left / 60000)));
