@@ -389,6 +389,27 @@ var GTD_TEST = (() => {
     const hits = backlinksTo(personPath("Lars Haugen"));
     ok(hits.length >= 1, "no backlinks to Lars Haugen");
   });
+  test("#169 on a phone a linked reference's lines get the card's width", async () => {
+    const sec = backlinksSection(personPath("Lars Haugen"));
+    ok(sec, "no linked references to Lars Haugen");
+    sec.open = true;
+    const f = document.createElement("iframe");
+    f.style.cssText = "position:fixed;left:0;top:0;height:600px;border:0;width:390px";
+    const css = [...document.querySelectorAll("style")].map(s => s.textContent).join("\n");
+    f.srcdoc = "<!doctype html><html data-theme=\"" + (document.documentElement.dataset.theme || "") + "\"><style>" + css + "</style><body><main class=\"content\">" + sec.outerHTML;
+    document.body.append(f);
+    await new Promise(r => f.onload = r);
+    try {
+      const d = f.contentDocument;
+      const entry = d.querySelector(".backlink-entry"), src = d.querySelector(".bl-src");
+      const tree = d.querySelector(".backlink-subtree");
+      ok(entry && src && tree, "no backlink entry");
+      ok(tree.getBoundingClientRect().width >= entry.getBoundingClientRect().width - 30, "the lines are " + Math.round(tree.getBoundingClientRect().width) + "px wide");
+      ok(src.getBoundingClientRect().bottom <= tree.getBoundingClientRect().top + 0.5, "the source page is not above the lines");
+      eq(getComputedStyle(src).textTransform, "uppercase", "the source page is not an eyebrow");
+      ok(d.documentElement.scrollWidth <= 390, "the section is wider than the phone");
+    } finally { f.remove(); }
+  });
   test("renamePage rewrites the links to it", () => {
     const target = join(DIRS.pages, "Test rename me.md");
     putPage(target, {props: {title: "Test rename me"}, blocks: []});

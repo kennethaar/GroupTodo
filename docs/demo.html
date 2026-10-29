@@ -1611,6 +1611,12 @@ details>summary:hover{color:var(--fg2)}
 .bl-txt{flex:1;min-width:0;overflow-wrap:anywhere}
 .bl-trail>.bl-line{color:var(--fg3);font-size:12px}
 .bl-body{white-space:pre-wrap;color:var(--fg3);overflow-wrap:anywhere}
+.backlink-entry{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer}
+.backlink-entry:last-child{border-bottom:none}
+.backlink-entry:hover,.backlink-entry:focus-visible{background:var(--bg3)}
+.bl-src{align-self:flex-start;max-width:100%;text-align:left;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--fg3);overflow-wrap:anywhere}
+.backlink-entry:hover .bl-src,.bl-src:focus-visible{color:var(--accent)}
+.backlink-subtree{min-width:0;font-size:13px;color:var(--fg2);line-height:1.4}
 .bl-node>.bl-node::before{content:"";position:absolute;left:-10px;top:0;bottom:0;border-left:1px solid var(--border)}
 .blk>.line{display:flex;align-items:flex-start;gap:7px;padding:2px 0;border-radius:4px}
 .blk>.line:hover{background:var(--bg3)}
@@ -2950,7 +2956,7 @@ body.solview #content{padding-bottom:14px}
    number for a fix, the middle one for a feature. CHANGELOG.md says what each
    one brought, and it is shown beside the name top left, so whoever is testing
    can see at a glance that they have the newest file open. */
-const APP_VERSION = "1.7.2";
+const APP_VERSION = "1.7.3";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 /* ============================================================
    00_BOOTSTRAP -- utilities
@@ -9079,14 +9085,14 @@ function backlinksSection(path) {
       if ((e.ctrlKey || e.metaKey) && h.block?.id) jumpToSourceNode(h.path, h.block);
       else openPage(h.path);
     };
+    /* The page the link sits on is the container, so it is a quiet eyebrow
+       over the lines, which get the card's whole width on any screen. */
     card.append(el("div", {
-      class: "prow backlink-entry", style: "gap:12px;align-items:flex-start;cursor:pointer",
-      tabindex: "0", onclick: openSource,
+      class: "backlink-entry", tabindex: "0", onclick: openSource,
       onkeydown: e => { if (e.key === "Enter" || e.key === " ") openSource(e); }
     },
-      el("button", {class: "nm", style: "flex:0 0 160px;text-align:left;font-weight:600;color:var(--accent);white-space:normal;overflow-wrap:anywhere", onclick: openSource}, pageTitle(h.path)),
-      el("div", {class: "t-body backlink-subtree", style: "font-size:13px;color:var(--fg2);line-height:1.4;min-width:0;flex:1"},
-        backlinkWithTrail(h))
+      el("button", {class: "bl-src", tabindex: "-1", onclick: openSource}, pageTitle(h.path)),
+      el("div", {class: "backlink-subtree"}, backlinkWithTrail(h))
     ));
   }
   /* Folded under its heading until you open it. Opening or folding it once

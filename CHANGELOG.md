@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.7.3 - 2026-10-29
+
+- Linked References no longer squeeze a line to one word wide on a phone
+  (#169). The page a link sits on is a quiet eyebrow over its lines, which
+  get the card's whole width on any screen.
+
 ## 1.7.2 - 2026-10-29
 
 - On a phone the top bar no longer squeezes the Add a task field to a sliver
