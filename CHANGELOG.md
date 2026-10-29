@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.11.4 - 2026-10-29
+
+- Phones that open folders (#179). Chrome on Android has done so since
+  version 132, so the help, README and Vault & sync stop saying phones
+  cannot. The phone's Send button and its reminders now show on a phone
+  whose area has no folder and no linked vault file; they had vanished on
+  Chrome 132, even for a phone that still needs the vault file. A phone on
+  a folder is not asked to move a file at the start or end of the workday.
+
 ## 1.11.3 - 2026-10-29
 
 - The app is on GitHub Pages (#178), at

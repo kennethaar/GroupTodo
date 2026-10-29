@@ -190,7 +190,7 @@ docs/planner-sync.md     Sending projects to Microsoft Planner (experimental)
 |---|---|---|---|
 | **Desktop Chrome / Edge** | **Yes** | Auto-sync | When served |
 | **Desktop Firefox** | No | Save / Open | No |
-| **Android Chrome / Edge** | No | Share | When served |
+| **Android Chrome** | **Yes** (132+) | Share | When served |
 | **iOS Safari** | No | Share | When served |
 
 *Check **Vault & sync** (bottom of the sidebar) to see what your current device supports. Safari and Firefox are untested. On iOS, serve from a URL (Safari restricts storage for files opened from the Files app). Do not host the HTML file inside Teams/SharePoint libraries (they sandbox it without storage); instead, click **Sync** in Teams/SharePoint to map the folder to File Explorer and point an area at it.*
@@ -207,7 +207,7 @@ pages/8/                               Checklists, routines, templates, custom *
 pages/c/ p/ o/ z/ m/                   Contexts, people, organisations, notes, pasted emails
 ```
 
-* **Courier vault file (Mobile/Firefox):** A single `.md` file holding a copy of the whole area for devices that cannot open folders. Keep it *outside* the vault folder. Desktop auto-syncs via *Link vault file*; phones use *Send / Open vault file* (prompts automatically at start/end of day when `work_hours::` is set). Pictures the pages link to travel in it too, base64 below the pages: every one from a phone, the last month's from a computer. A photo from the line toolbar is shrunk to at most 1600 px first.
+* **Courier vault file (Firefox, iOS, phones in browser storage):** A single `.md` file holding a copy of the whole area for devices that cannot open folders. Keep it *outside* the vault folder. Desktop auto-syncs via *Link vault file*; phones use *Send / Open vault file* (prompts automatically at start/end of day when `work_hours::` is set). Pictures the pages link to travel in it too, base64 below the pages: every one from a phone, the last month's from a computer. A photo from the line toolbar is shrunk to at most 1600 px first.
 * **Conflict-free merging:** Pages carry `updated::` timestamps. When both sides change, blocks merge by text. Page deletions travel as tombstones. **Start afresh** wipes only the local browser copy.
 * **`serve.py` (Optional live server):** Lets one always-on machine (including Android Termux) serve everyone live without a courier file, and fetches iCal feeds:
 
@@ -247,7 +247,7 @@ Waiting for =>
 * **Single-task deletion:** Deleting a single task line does not propagate across sync; whole-page deletes do.
 * **Folder permissions:** Areas are separated, not encrypted—anyone with folder access can read all files in it.
 * **Shared password:** `serve.py` uses a single shared password rather than individual user accounts.
-* **Mobile folder access:** Mobile browsers cannot write directly to folders; phones must use the courier vault file or `serve.py`.
+* **Mobile folder access:** Chrome on Android (132 and later) opens a folder like desktop Chrome, though it may ask to be let in again each time the app opens. The Android OneDrive and Dropbox apps do not keep a phone folder in two-way sync, so use a sync app such as Syncthing or FolderSync to keep it in step with the shared folder. Safari, Firefox and older Chrome use the courier vault file or `serve.py`.
 * **Pull-only updates:** Updates appear when you open the area; nothing is pushed or emailed.
 * **Mouse-only boards:** Dragging cards on boards requires a mouse.
 * **Folder invites:** An invite file cannot carry a shared folder; the folder itself must be shared via your cloud/network drive.

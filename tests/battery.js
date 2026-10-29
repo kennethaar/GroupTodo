@@ -665,6 +665,30 @@ var GTD_TEST = (() => {
     eq(await mergeBundleAssets(moved), 0, "a picture it already has is kept twice");
     removePage(path);
   });
+  test("#179 Send shows on a phone with no folder, and not on a phone that opens one", () => {
+    const mm = window.matchMedia, be = V.backend, linked = LINKED;
+    window.matchMedia = q => ({matches: /coarse/.test(q), media: q, addEventListener() {}, removeEventListener() {}});
+    try {
+      LINKED = null;
+      V.backend = {kind: "local"};
+      ok(phoneLike(), "a phone in browser storage has no Send");
+      syncSendButton();
+      ok(!document.querySelector("#btnSend").hidden, "the Send button is hidden");
+      V.backend = {kind: "fs", label: "Phone"};
+      ok(!phoneLike(), "a phone on a folder still has Send, though Chrome on Android opens folders");
+      syncSendButton();
+      ok(document.querySelector("#btnSend").hidden, "the Send button shows on a folder");
+      V.backend = {kind: "local"};
+      LINKED = {};
+      ok(!phoneLike(), "a phone with a linked vault file still has Send");
+      window.matchMedia = q => ({matches: false, media: q, addEventListener() {}, removeEventListener() {}});
+      LINKED = null;
+      ok(!phoneLike(), "a computer has Send");
+    } finally {
+      window.matchMedia = mm; V.backend = be; LINKED = linked;
+      syncSendButton();
+    }
+  });
   test("an invite carries the area and reads back", () => {
     const text = inviteMarkdown();
     const cfg = parseInvite(text);
