@@ -323,6 +323,93 @@ var GTD_TEST = (() => {
   });
 
   /* ============================================================
+     Sending an update: the check-in sheet the other way round (#153)
+     ============================================================ */
+  const closeAll = () => { for (let i = 0; i < 4 && $("#modalRoot").firstChild; i++) closeModal(); };
+  const modalTitle = () => (document.querySelector("#modalRoot .modal") || {textContent: ""}).textContent;
+  test("#153 /inform is a slash command", () => {
+    ok(slashRows("inform").some(r => r.id === "inform"), "no /inform");
+    ok(slashRows("oppdater").some(r => r.id === "inform"), "not found by oppdater");
+  });
+  test("#153 informAbout finds my open tasks that name them", () => {
+    const path = scratchProject("inform about", [["TODO", "Call [[p/Lars Haugen]] about the depot"], ["DONE", "Met [[p/Lars Haugen]]"]]);
+    const hits = informAbout({name: "Lars Haugen"}).filter(a => a.path === path);
+    eq(hits.length, 1, "open tasks naming Lars in the scratch project");
+  });
+  test("#153 /inform on a line naming one person opens Send {name} an update, that line ticked", async () => {
+    const path = scratchProject("inform line", [["DOING", "Quote for [[p/Lars Haugen]]"], ["TODO", "Ring [[p/Lars Haugen]] back"]]);
+    informFromLine(path, getPage(path).blocks[0]);
+    await settle();
+    has(modalTitle(), "Send Lars Haugen an update");
+    const ticks = [...document.querySelectorAll("#modalRoot .spacetoggle")].filter(b => b.style.width !== "16px");
+    ok(ticks.length >= 2, "both lines offered");
+    eq(ticks.filter(b => b.classList.contains("on")).length, 1, "only the line it started from is ticked");
+    closeAll();
+  });
+  test("#153 /inform on a line naming nobody offers a search, and the pick is linked on the line", async () => {
+    const path = scratchProject("inform nobody", [["TODO", "Send the drawings"]]);
+    const b = getPage(path).blocks[0];
+    informFromLine(path, b);
+    await settle();
+    has(modalTitle(), "Send an update to");
+    has(modalTitle(), "Lars Haugen", "people offered");
+    has(modalTitle(), "Nordvik Shipping", "organisations offered");
+    closeAll();
+    // What the search hands back is linked on the line.
+    blockLinkAdd({space: V.space, path, block: b}, "p/Lars Haugen");
+    eq(inSpace(V.space, () => linePeople(b)), ["Lars Haugen"]);
+  });
+  test("#153 the mail and the sheet carry each line's status and comment", () => {
+    const items = [{t: "Quote for the depot", status: "DOING", core: "DOING", comment: "Waiting on board approval 12 Nov",
+      project: "Secret project", context: [{depth: 0, text: "two options"}]}];
+    const was = PREF.get("askLang", "");
+    PREF.set("askLang", "en");
+    try {
+      const note = informNote("Lars Haugen", "Kenneth Aar", items, null, false);
+      has(note.subject, "Quote for the depot");
+      has(note.body, "Status: In progress");
+      has(note.body, "Waiting on board approval 12 Nov");
+      has(note.body, "- two options");
+      ok(!note.body.includes("Secret project"), "project named without being asked to");
+      ok(informNote("Lars Haugen", "Kenneth Aar", items, null, true).body.includes("Secret project:"), "project not named when asked to");
+      const html = informSheetHtml({to: "Lars Haugen", from: "Kenneth Aar", items, named: false});
+      has(html, "Hi Lars");
+      has(html, "In progress");
+      has(html, "Waiting on board approval 12 Nov");
+      ok(!html.includes("Secret project"), "sheet names the project");
+      ok(!/<script/i.test(html), "the sheet is read-only, no script");
+      PREF.set("askLang", "no");
+      has(informNote("Lars Haugen", "Kenneth Aar", items, null, false).body, "Status: Pågår");
+    } finally { PREF.set("askLang", was); }
+  });
+  test("#153 sent lines get informed::, a Told line in the chat, and Undo takes it back", () => {
+    const path = scratchProject("inform sent", [["TODO", "Draft for [[p/Lars Haugen]]"]]);
+    const b = getPage(path).blocks[0];
+    const r = {a: {path, block: b, space: V.space, title: b.title}, was: "TODO"};
+    informSent("Lars Haugen", [r], [{status: "TODO", comment: "Starting Monday"}]);
+    const blk = getPage(path).blocks[0];
+    has(blockProp(blk, INFORMED_PROP), "Lars Haugen");
+    eq(informedDays(blk), 0);
+    const msgs = messagesOf(blk);
+    eq(msgs.length, 1, "messages");
+    eq(msgs[0].title, "Told Lars Haugen: Not started. Starting Monday");
+    undoLast();
+    ok(!blockProp(getPage(path).blocks[0], INFORMED_PROP), "informed:: still there after undo");
+    closeAll();
+  });
+  test("#153 a status changed in the update goes to the task once confirmed", async () => {
+    const path = scratchProject("inform status", [["TODO", "Order for [[p/Lars Haugen]]"]]);
+    const b = getPage(path).blocks[0];
+    informSent("Lars Haugen", [{a: {path, block: b, space: V.space, title: b.title}, was: "TODO"}], [{status: "DOING", comment: ""}]);
+    await settle();
+    has(modalTitle(), "Change the tasks too?");
+    eq(getPage(path).blocks[0].state, "TODO", "changed before confirming");
+    [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Change them").click();
+    eq(getPage(path).blocks[0].state, "DOING");
+    closeAll();
+  });
+
+  /* ============================================================
      Timer
      ============================================================ */
   test("timer starts and stops", () => {
