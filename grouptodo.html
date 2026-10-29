@@ -9244,8 +9244,12 @@ function openOutcomePrompt(path, then) {
    survives the app. The links go through findExistingPage, which falls back to
    the slug across every status directory, so moving a prerequisite from 1/ to
    0/ does not break the chain.
+
+   depends_on:: none says somebody has looked and nothing comes first, so the
+   weekly review does not ask again; no depends_on:: at all means not asked yet.
    ============================================================ */
 const DEPENDS_PROP = "depends_on";
+const NOTHING_FIRST = "none";
 
 /* The prerequisites of one project, as paths. Links that no longer resolve are
    dropped rather than reported: a page somebody deleted is not a blocker. */
@@ -9264,10 +9268,13 @@ function dependsOn(path) {
 function writeDependsOn(path, paths) {
   const page = getPage(path); if (!page) return;
   const links = paths.map(p => "[[" + pageRef(p) + "]]");
-  if (links.length) page.props[DEPENDS_PROP] = links.join(", ");
-  else for (const k of Object.keys(page.props)) if (k.toLowerCase() === DEPENDS_PROP) delete page.props[k];
+  for (const k of Object.keys(page.props)) if (k.toLowerCase() === DEPENDS_PROP) delete page.props[k];
+  page.props[DEPENDS_PROP] = links.length ? links.join(", ") : NOTHING_FIRST;
   touch(path);
 }
+
+/* Whether what comes first has been answered at all, "nothing" included. */
+const chainAnswered = path => !!trim(getPage(path)?.props?.[DEPENDS_PROP] || "");
 
 /* Everything that waits on this project. Only within the space: a chain that
    crossed spaces would be a chain you cannot see both ends of. */
@@ -30554,8 +30561,9 @@ function viewReview() {
    Everything a field sets is what the project page would say anyway:
    org:: and with:: links, area::, outcome::, deadline::, depends_on::, and
    the status folder. A card with every field answered is stamped reviewed::.
-   "None" and "Nothing comes first" are answers too; they are held for the
-   session rather than written, because an empty value says the same thing.
+   "None" is an answer too; it is held for the week rather than written,
+   because an empty value says the same thing. "Nothing comes first" is the
+   exception: it is written as depends_on:: none, so it is asked only once.
    ============================================================ */
 let SOL = {order: null, i: 0, focus: null, more: null};
 /* What this week's review has answered, kept on this device for the week: a
@@ -30765,12 +30773,9 @@ function solFields() {
     {k: "after", label: "Comes after", type: "one", scoped: true,
      opts: r => [["none", "Nothing comes first"], ...inS(r, () => [...projectsIn("1"), ...projectsIn("3")]
        .filter(p => p !== r.path && !wouldCycle(r.path, p)).map(p => [p, pageTitle(p)]))],
-     cur: r => inS(r, () => dependsOn(r.path)[0]) || (solAns(r).after ? "none" : null), rank: solKin,
-     filled: r => inS(r, () => dependsOn(r.path).length > 0) || !!solAns(r).after,
-     pick: (r, v) => {
-       if (v === "none") { inS(r, () => writeDependsOn(r.path, [])); solAns(r).after = true; return; }
-       inS(r, () => writeDependsOn(r.path, [v]));
-     }},
+     cur: r => inS(r, () => dependsOn(r.path)[0] || (chainAnswered(r.path) ? "none" : null)), rank: solKin,
+     filled: r => inS(r, () => chainAnswered(r.path)),
+     pick: (r, v) => inS(r, () => writeDependsOn(r.path, v === "none" ? [] : [v]))},
     {k: "status", label: "Still the right status?", type: "one",
      opts: () => [...STATUS_CHIPS.map(c => [c, STATUS_LABEL[c]]), ["hold", "On hold until a day"]],
      cur: r => solAns(r).status ? (solHeld(r) ? "hold" : inS(r, () => statusDirOf(r.path))) : null,

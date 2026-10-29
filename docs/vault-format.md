@@ -137,7 +137,7 @@ Where things are said on the line itself:
 
 | Folder | Kind | Typical page properties |
 |---|---|---|
-| `1/ 2/ 3/ 0/ -/` | project | `title`, `status` (e.g. `1 = active`), `outcome` (what done looks like), `area:: [[a/…]]`, `goal:: [[g/…]]`, `org:: [[o/…]]`, `with:: [[p/…]], [[p/…]]`, `depends_on:: [[1/…]], [[1/…]]`, `waiting_for::`, `planner_id::` (its Microsoft Planner card, written by the sync; keep it), `created`, `reviewed` |
+| `1/ 2/ 3/ 0/ -/` | project | `title`, `status` (e.g. `1 = active`), `outcome` (what done looks like), `area:: [[a/…]]`, `goal:: [[g/…]]`, `org:: [[o/…]]`, `with:: [[p/…]], [[p/…]]`, `depends_on:: [[1/…]], [[1/…]]` (or `none` once the weekly review has heard nothing comes first), `waiting_for::`, `planner_id::` (its Microsoft Planner card, written by the sync; keep it), `created`, `reviewed` |
 | `p/` | person | `title`, `type:: person`, `member:: true` (only for people who use GroupToDo in this area), `aliases:: JS, Johnny` (short names; `[[p/John Smith][JS]]` reads as JS) |
 | `o/` | organisation | `title`, `type:: org`, `aliases:: Storebrand` (short names, as for people), `role:: supplier` (left out of customers and time; default is client), `share:: 60` (a standard client: added to new projects, its share of their time) |
 | `c/` | context | `title`, `type:: context` |
