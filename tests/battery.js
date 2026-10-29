@@ -260,6 +260,31 @@ var GTD_TEST = (() => {
     eq(splitState("LATER maybe"), ["TODO", "maybe"]);
     eq(splitState("NASA launch"), [null, "NASA launch"]);
   });
+  test("#176 a sum is written the way its currency is, not the browser's language", () => {
+    eq(fmtPrice("DKK", 15000), "DKK 15.000");
+    eq(fmtPrice("DKK", 3480.95), "DKK 3.480,95");
+    eq(fmtPrice("NOK", 1200), "NOK 1 200");
+    eq(fmtPrice("USD", 1234567.5), "USD 1,234,567.50");
+    eq(fmtPrice("kr", 400), "400 kr");
+    eq(fmtPrice("DKK", -15000), "DKK -15.000");
+  });
+  test("#176 a minus or brackets make a price negative; a range is not a minus", () => {
+    const one = t => pricesIn(t).map(p => p.cur + " " + p.amount);
+    eq(one("Refund DKK -15000"), ["DKK -15000"]);
+    eq(one("Refund DKK (15000)"), ["DKK -15000"]);
+    eq(one("Refund (15.000,50) DKK"), ["DKK -15000.5"]);
+    eq(one("Credit −200 EUR"), ["EUR -200"]);
+    eq(one("Paint DKK 15.000"), ["DKK 15000"]);
+    eq(one("Quote 300-400 EUR"), ["EUR 400"]);
+    eq(one("Call 3 people"), []);
+  });
+  test("#176 a project's Cost heading says spent / planned once, and a refund takes off", () => {
+    const path = scratchProject("cost", [["DONE", "Paint DKK 15000"], ["DONE", "Refund DKK (2000)"],
+      ["TODO", "Floor DKK 3000"], ["CANCELLED", "Roof DKK 90000"]]);
+    const sec = projectCostSection(path);
+    eq(sec.querySelector("h3 .n").textContent, "DKK 13.000 spent / DKK 3.000 planned");
+    ok(!sec.textContent.includes("90.000"), "a cancelled task counts as neither");
+  });
   test("slugify keeps names but drops what a file name cannot hold", () => {
     eq(slugify("Q3: plan/budget?"), "Q3- plan-budget-");
     eq(slugify("  two   spaces "), "two spaces");

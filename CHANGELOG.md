@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.11.2 - 2026-10-29
+
+- Prices on a project read right (#176). A sum is written the way its
+  currency is at home, DKK 15.000 and USD 15,000, not with the browser's
+  language, which gave a narrow space. A minus or brackets make a price
+  negative, DKK -15000 or DKK (15000), so a refund takes off the total. The
+  Cost heading on a project now says spent / planned instead of repeating
+  the spent sum, and a new help topic, Prices and cost, explains both.
+
 ## 1.11.1 - 2026-10-29
 
 - The line menu scrolls on a phone (#175). With the on-screen keyboard up
