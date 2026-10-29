@@ -410,6 +410,116 @@ var GTD_TEST = (() => {
   });
 
   /* ============================================================
+     Stakeholders on responsibilities (#158)
+     ============================================================ */
+  let respN = 0;
+  // A responsibility of the test's own, with stakeholder:: and a project under it.
+  const scratchResp = (stake, tasks = []) => {
+    const title = "Test Resp " + (++respN);
+    const area = createArea(title);
+    getPage(area).props.stakeholder = stake;
+    touch(area);
+    const proj = scratchProject("under " + title, tasks);
+    setAreaOfProject(proj, baseName(area));
+    return {area, proj, name: baseName(area)};
+  };
+  test("#158 stakeholder:: on a responsibility is read, people and organisations", () => {
+    const {area} = scratchResp("[[p/Lars Haugen]], [[o/Nordvik Shipping]]");
+    eq(stakeholdersOfArea(area), [{name: "Lars Haugen", org: false}, {name: "Nordvik Shipping", org: true}]);
+    getPage(area).props = {title: getPage(area).props.title, stakeholders: "[[p/Emma Dahl]]"};
+    eq(stakeholdersOfArea(area).map(s => s.name), ["Emma Dahl"], "stakeholders:: read too");
+  });
+  test("#158 an organisation stakeholder is not a client of the projects under it", () => {
+    const {area, proj} = scratchResp("[[o/Nordvik Shipping]]");
+    eq(areaOrgsOf(proj), [], "stakeholder taken for a client");
+    getPage(area).props.org = "[[o/Nordvik Shipping]]";
+    eq(areaOrgsOf(proj), ["Nordvik Shipping"], "org:: on the responsibility still counts");
+  });
+  test("#158 a project reads as status, next action, done since, late and waiting", () => {
+    const {proj} = scratchResp("[[p/Lars Haugen]]", [["TODO", "Write the brief"], ["TODO", "Book the room"], ["WAIT", "Quote from the printer"], ["TODO", "Old thing"]]);
+    const b = getPage(proj).blocks;
+    setBlockState(proj, b[1], "DONE");
+    setDue(b[3], shiftISO(T(), -3)); touch(proj);
+    closeAll();
+    const s = projectSummary(V.space, proj, shiftISO(T(), -30));
+    eq(s.code, "1");
+    const lines = s.lines.map(l => l.label + " " + l.text);
+    ok(lines.some(l => l.startsWith("next ")), "no next action: " + lines);
+    ok(lines.includes("done Book the room"), "done since: " + lines);
+    ok(lines.includes("late Old thing"), "late: " + lines);
+    ok(lines.includes("wait Quote from the printer"), "waiting: " + lines);
+    eq(projectSummary(V.space, proj, shiftISO(T(), 1)).lines.filter(l => l.label === "done").length, 0, "done before the last update counted");
+  });
+  test("#158 Send {name} an update offers the responsibilities they are a stakeholder in", async () => {
+    const {name} = scratchResp("[[p/Lars Haugen]]", [["TODO", "Draft the budget"]]);
+    ok(stakeIn({name: "Lars Haugen"}).some(a => baseName(a.path) === name), "stakeIn misses it");
+    openSendUpdate({name: "Lars Haugen"});
+    await settle();
+    has(modalTitle(), "Send Lars Haugen an update");
+    has(modalTitle(), getPage(areaPathOf(name)).props.title || name);
+    has(modalTitle(), "responsibility");
+    closeAll();
+  });
+  test("#158 the mail heads each responsibility and labels the summary's lines", () => {
+    const was = PREF.get("askLang", "");
+    PREF.set("askLang", "en");
+    try {
+      const items = [
+        {t: "Budget 2027", status: "P:1", core: "DOING", head: "Finance", context: [{depth: 0, label: "next", text: "Draft the budget"}]},
+        {t: "Call about the depot", status: "TODO", head: "\u0001other", context: []}];
+      const body = informNote("Lars Haugen", "Kenneth Aar", items, null, false).body;
+      has(body, "Finance:");
+      has(body, "Status: Active");
+      has(body, "- Next: Draft the budget");
+      has(body, "Other:");
+      has(informSheetHtml({to: "Lars Haugen", from: "Kenneth Aar", items, named: false}), "Next: Draft the budget");
+    } finally { PREF.set("askLang", was); }
+  });
+  test("#158 telling a stakeholder stamps told:: and logs it on the responsibility, Undo takes it back", () => {
+    const {area, proj} = scratchResp("[[p/Lars Haugen]]", [["TODO", "Draft the budget"]]);
+    const a = {space: V.space, path: area, title: "R"};
+    const r = {kind: "proj", area: a, p: {code: "1", title: pageTitle(proj)}};
+    informSent("Lars Haugen", [r], [{t: "Budget", status: "P:1", comment: "On track"}], {name: "Lars Haugen"});
+    eq(toldOn(area, {name: "Lars Haugen"}), T());
+    const log = getPage(area).blocks.find(b => plainTitle(b.title) === "Updates sent");
+    ok(log, "no Updates sent line");
+    has(log.children[0].title, "Told [[p/Lars Haugen]]: Budget (Active): On track");
+    undoLast();
+    eq(toldOn(area, {name: "Lars Haugen"}), null);
+    closeAll();
+  });
+  test("#158 a stakeholder is due once their rhythm has passed, never if they said never", () => {
+    const who = {name: "Test Stakeholder " + Date.now()};
+    const {area} = scratchResp("[[p/" + who.name + "]]", [["TODO", "Something"]]);
+    clearMemo();
+    ok(stakeholdersDue().some(d => sameStake(d, who)), "never told is not due");
+    setToldOn(area, who, nowStamp()); clearMemo();
+    ok(!stakeholdersDue().some(d => sameStake(d, who)), "told today is due");
+    setToldOn(area, who, shiftISO(T(), -40) + "T09:00:00Z"); clearMemo();
+    ok(stakeholdersDue().some(d => sameStake(d, who)), "40 days with the monthly default is not due");
+    setUpdateEvery(who, "3 months"); clearMemo();
+    ok(!stakeholdersDue().some(d => sameStake(d, who)), "every 3 months, told 40 days ago, is due");
+    setUpdateEvery(who, "never"); clearMemo();
+    ok(!stakeholdersDue().some(d => sameStake(d, who)), "never is due");
+  });
+  test("#158 Notify on a finished project offers the responsibility's stakeholders", () => {
+    const {proj} = scratchResp("[[p/Lars Haugen]], [[o/Nordvik Shipping]]");
+    const names = stakeholdersOf(V.space, proj).map(s => s.name);
+    ok(names.includes("Lars Haugen") && names.includes("Nordvik Shipping"), "got " + names);
+  });
+  test("#158 the responsibility page lists its stakeholders, the person page says what they follow", async () => {
+    const {area} = scratchResp("[[p/Lars Haugen]]", [["TODO", "Something"]]);
+    openPage(area);
+    await settle();
+    has(content().textContent, "Stakeholders");
+    has(content().textContent, "+ stakeholder");
+    openPage(personPath("Lars Haugen"));
+    await settle();
+    has(content().textContent, "Stakeholder in");
+    go("today");
+  });
+
+  /* ============================================================
      Timer
      ============================================================ */
   test("timer starts and stops", () => {
