@@ -2252,6 +2252,8 @@ body.solview #content{padding-bottom:14px}
 .sdrank details ol{margin-top:6px}
 /* The loose actions pass: the action, then where it could go. */
 .lscard{height:auto;min-height:0}
+.lscard .lsopen{cursor:pointer}
+.lscard .lsopen:hover{color:var(--accent)}
 .lsopts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .lsopts li{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border);border-radius:10px;background:var(--bg2)}
 .lsopts li.on{border-color:var(--accent)}
@@ -32752,16 +32754,19 @@ function viewLoose(c, passList) {
   fill();
   const day = dateIn(a.added);
   const here = (a.space || "") === (V.space || "");
+  // The action itself, in the task panel, where its project, context and the rest can be set.
+  const open = () => inSpace(a.space, () => openTaskDetail(a.path, a.block, a.space));
   c.append(el("div", {class: "sdduel"},
     el("div", {class: "sdhead"}, el("span", {}, "Action 1 of " + deck.length), el("span", {}, LOOSE.filed ? LOOSE.filed + " filed now" : "")),
     el("h2", {class: "sdask"}, "Which project or responsibility does this belong to?"),
     el("div", {class: "solcard lscard"},
-      el("h3", {translate: "no"}, plainTitle(a.title)),
+      el("h3", {translate: "no", class: "lsopen", title: "Open the action", onclick: open}, plainTitle(a.title)),
       el("div", {class: "t-meta"}, spaceBadge(a.space),
         el("span", {class: "chip"}, day ? "from the day page of " + humanDate(day) : "on a day page"),
         a.age != null ? el("span", {class: "chip"}, a.age + " days old") : null,
         a.state !== "TODO" ? el("span", {class: "chip"}, a.state) : null),
-      el("div", {class: "t-meta"}, el("button", {class: "textbtn", onclick: () => previewPage(a.space, a.path)}, "Open the day page"))),
+      el("div", {class: "t-meta"}, el("button", {class: "textbtn", onclick: open}, "Open the action"),
+        el("button", {class: "textbtn", onclick: () => previewPage(a.space, a.path)}, "Open the day page"))),
     search, list,
     el("div", {class: "t-meta"},
       here ? el("button", {class: "btn", onclick: () => newProjectPrompt(p => looseFile(a, p))}, "＋ New project for it") : null,
