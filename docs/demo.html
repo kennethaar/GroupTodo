@@ -515,8 +515,9 @@ body:not(.pane-open) .panegrip{display:none}
 .nav-item.timer.dial .tdial svg{display:block;width:calc(var(--d) * 74 / 56);height:auto;margin:calc(var(--d) * -9 / 56);
   overflow:visible;pointer-events:none}
 .tdial .tnum{fill:var(--fg2);font-size:12px;font-variant-numeric:tabular-nums;text-anchor:middle;dominant-baseline:central;pointer-events:none;
-  opacity:0;transition:opacity .15s}
-.nav-item.timer.dial.dragging .tnum{opacity:1}
+  opacity:0;transition:opacity .9s ease-out}
+/* In quickly while you set it; once it starts they fade slowly away. */
+.nav-item.timer.dial.dragging .tnum{opacity:1;transition-duration:.15s}
 .tdial .tface{fill:var(--bg);stroke:var(--border2);stroke-width:1.5}
 .tdial .tquart line{stroke:var(--fg3);stroke-width:2;stroke-linecap:round}
 .tdial .tsector{fill:var(--accent);pointer-events:none}
