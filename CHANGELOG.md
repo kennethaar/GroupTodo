@@ -5,6 +5,18 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.12.0 - 2026-10-29
+
+- Sense where I am (#183). GroupToDo guesses your context, so Next shows
+  what fits. Press g l, or Sense it on Contexts or in the context picker.
+  The first time it asks what this device is, where you usually are on it
+  (a PC: @computer, a phone: @home) and where you are out and about
+  (@errand). Stand somewhere and press Save this spot to tie it to a
+  context. A saved place wins; a phone off wifi, or far from every place,
+  is out and about. A web page cannot read the wifi's name, so a saved
+  place does that job. When GroupToDo opens it offers the context it
+  senses, or switches by itself if you say so. Places stay on this device.
+
 ## 1.11.7 - 2026-10-29
 
 - The hint on Next says what to do (#182): pick a context (where you are or

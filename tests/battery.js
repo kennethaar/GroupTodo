@@ -1492,6 +1492,81 @@ var GTD_TEST = (() => {
   });
 
   /* ============================================================
+     Sense where I am (#183)
+     ============================================================ */
+  const home = {ctx: "home", lat: 59.9139, lon: 10.7522, r: 150};
+  const shop = {ctx: "shop", lat: 59.9200, lon: 10.7600, r: 150};
+  const sensed = over => guessContext(Object.assign(
+    {device: "phone", net: "", pos: null, places: [home, shop], here: "home", away: "errand"}, over));
+  test("#183 metres between two points", () => {
+    eq(Math.round(senseMetres(home, home)), 0);
+    const m = senseMetres(home, {lat: home.lat + 0.001, lon: home.lon});
+    ok(m > 105 && m < 117, "0.001 degrees north is about 111 m, got " + m);
+  });
+  test("#183 a saved place wins, the nearest one", () => {
+    eq(sensed({pos: {lat: 59.9140, lon: 10.7523, acc: 20}, net: "cellular"}).ctx, "home");
+    eq(sensed({pos: {lat: 59.9199, lon: 10.7599, acc: 20}}).ctx, "shop");
+    has(sensed({pos: {lat: 59.9140, lon: 10.7523, acc: 20}}).why, "@home");
+  });
+  test("#183 a phone off wifi, or far from every place, is out and about", () => {
+    eq(sensed({net: "cellular"}).ctx, "errand");
+    eq(sensed({net: "none"}).ctx, "errand");
+    eq(sensed({pos: {lat: 60.5, lon: 11, acc: 20}, net: "wifi"}).ctx, "errand");
+  });
+  test("#183 otherwise you are where you usually are on the device", () => {
+    eq(sensed({net: "wifi"}).ctx, "home");
+    eq(sensed({}).ctx, "home", "the browser does not say what network");
+    eq(sensed({device: "pc", here: "computer", net: "none"}).ctx, "computer", "a PC is never out and about");
+    eq(sensed({here: "", away: ""}), null);
+  });
+  test("#183 defaults follow the contexts you already have", () => {
+    const had = ["computer", "home", "errand"].filter(c => contextList().includes(c));
+    eq(senseDefault("pc"), had.includes("computer") ? "computer" : SENSE_DEFAULTS.pc.find(c => contextList().includes(c)) || "computer");
+    ok(SENSE_DEFAULTS.away.includes(senseDefault("away")), "away is one of the usual words");
+    eq(senseName(" @Garden "), "Garden");
+    eq(senseName("  "), "", "nothing typed is not Untitled");
+  });
+  test("#183 Sense it is on Contexts and g l, and the first time it asks", async () => {
+    const was = PREF.get("sense.set", "");
+    PREF.set("sense.set", "");
+    go("contexts");
+    await settle();
+    ok(content().querySelector(".vhead-r .sense"), "Sense it on Contexts");
+    ok(CHORDS["g l"], "g l");
+    CHORDS["g l"]();
+    await settle();
+    const dlg = document.querySelector("#modalRoot .modal");
+    ok(dlg, "the setup opens");
+    has(dlg.textContent, "Sense where I am");
+    has(dlg.textContent, "Save this spot");
+    eq(dlg.querySelectorAll("input")[0].value, senseHere(), "the device's context is filled in");
+    closeModal();
+    PREF.set("sense.set", was);
+    go("today");
+  });
+  test("#183 switching by itself sets the context without leaving the screen", async () => {
+    const keep = ["sense.on", "sense.auto", "sense.set", "sense.device", "sense.here", "sense.places"].map(k => [k, PREF.get(k, "")]);
+    const ctxWas = state.context;
+    try {
+      for (const [k, v] of [["sense.on", "1"], ["sense.auto", "1"], ["sense.set", T()], ["sense.device", "pc"], ["sense.here", "computer"], ["sense.places", "[]"]]) PREF.set(k, v);
+      state.context = null;
+      go("projects", {sub: "list"});
+      if (document.activeElement) document.activeElement.blur();
+      SENSE_AT = 0;
+      await senseQuietly();
+      eq(state.context, "computer");
+      eq(state.view, "projects", "the screen stays");
+      ok(!document.querySelector("#btnContext").hidden, "the chip shows it");
+    } finally {
+      for (const [k, v] of keep) PREF.set(k, v);
+      state.context = ctxWas;
+      setSetting("current_context", ctxWas || "");
+      renderContextChip();
+      go("today");
+    }
+  });
+
+  /* ============================================================
      Timer
      ============================================================ */
   test("timer starts and stops", () => {
