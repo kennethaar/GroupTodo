@@ -204,7 +204,7 @@ pages/8/                               Checklists, routines, templates, custom *
 pages/c/ p/ o/ z/ m/                   Contexts, people, organisations, notes, pasted emails
 ```
 
-* **Courier vault file (Mobile/Firefox):** A single `.md` file holding a copy of the whole area for devices that cannot open folders. Keep it *outside* the vault folder. Desktop auto-syncs via *Link vault file*; phones use *Send / Open vault file* (prompts automatically at start/end of day when `work_hours::` is set).
+* **Courier vault file (Mobile/Firefox):** A single `.md` file holding a copy of the whole area for devices that cannot open folders. Keep it *outside* the vault folder. Desktop auto-syncs via *Link vault file*; phones use *Send / Open vault file* (prompts automatically at start/end of day when `work_hours::` is set). Pictures the pages link to travel in it too, base64 below the pages: every one from a phone, the last month's from a computer. A photo from the line toolbar is shrunk to at most 1600 px first.
 * **Conflict-free merging:** Pages carry `updated::` timestamps. When both sides change, blocks merge by text. Page deletions travel as tombstones. **Start afresh** wipes only the local browser copy.
 * **`serve.py` (Optional live server):** Lets one always-on machine (including Android Termux) serve everyone live without a courier file, and fetches iCal feeds:
 

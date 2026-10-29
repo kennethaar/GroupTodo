@@ -539,6 +539,47 @@ var GTD_TEST = (() => {
   /* ============================================================
      Sharing
      ============================================================ */
+  test("#170 a photo is drawn again at most 1600 px, as a JPEG, before it is kept", async () => {
+    const cv = document.createElement("canvas");
+    cv.width = 3200; cv.height = 2400;
+    const cx = cv.getContext("2d");
+    for (let i = 0; i < 400; i++) { cx.fillStyle = "hsl(" + (i * 37 % 360) + ",70%,50%)"; cx.fillRect((i * 97) % 3200, (i * 61) % 2400, 160, 120); }
+    const big = new File([await new Promise(r => cv.toBlob(r, "image/png"))], "IMG_0001.png", {type: "image/png"});
+    const small = await shrinkPhoto(big);
+    eq(small.type, "image/jpeg");
+    eq(small.name, "IMG_0001.jpg");
+    ok(small.size < big.size, "it did not get smaller");
+    const bmp = await createImageBitmap(small);
+    eq([bmp.width, bmp.height], [1600, 1200]);
+    const text = new File(["not a picture"], "notes.txt", {type: "text/plain"});
+    eq(await shrinkPhoto(text), text, "a file that is not a picture is kept as it came");
+  });
+  test("#170 the vault file carries the pictures: all from a phone, the last month's from a computer", async () => {
+    const be = V.backend;
+    ok(be && typeof be.putAsset === "function", "the demo area keeps no files");
+    const stamp = d => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0") + "-101500";
+    const fresh = "assets/test-fresh-" + stamp(new Date()) + ".jpg", old = "assets/test-old-20200105-101500.jpg";
+    const loose = "assets/test-unlinked-" + stamp(new Date()) + ".jpg";
+    for (const p of [fresh, old, loose]) await be.putAsset(p, new Blob([new Uint8Array([255, 216, 255, p.length])], {type: "image/jpeg"}));
+    const path = scratchProject("bundle pictures", [["TODO", "Board ![a](" + fresh + ")"], ["TODO", "Old board ![b](" + old + ")"]]);
+    const pc = await bundleAssetsMarkdown(false), phone = await bundleAssetsMarkdown(true);
+    has(pc, "<!-- gtd:asset " + fresh + " image/jpeg -->");
+    ok(!pc.includes(old), "a computer sent a picture older than a month");
+    has(phone, old, "a phone left an old picture behind");
+    ok(!phone.includes(loose), "a picture no page links to went along");
+    // Pages still read as before, with the pictures below them.
+    const whole = bundleMarkdown() + "\n" + phone;
+    ok(parseBundle(whole).has(path), "the pages are not in the vault file");
+    // Read back on another device: a picture it lacks is kept, byte for byte.
+    const moved = whole.split(fresh).join("assets/test-arrived-20261029-101500.jpg");
+    eq(await mergeBundleAssets(moved), 1, "pictures kept");
+    const got = await be.getAsset("assets/test-arrived-20261029-101500.jpg");
+    ok(got, "the picture did not arrive");
+    eq([...new Uint8Array(await got.arrayBuffer())], [255, 216, 255, fresh.length]);
+    eq(got.type, "image/jpeg");
+    eq(await mergeBundleAssets(moved), 0, "a picture it already has is kept twice");
+    removePage(path);
+  });
   test("an invite carries the area and reads back", () => {
     const text = inviteMarkdown();
     const cfg = parseInvite(text);

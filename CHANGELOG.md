@@ -5,6 +5,17 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.10.0 - 2026-10-29
+
+- A photo from the line toolbar is shrunk before it is kept (#170): at most
+  1600 px on its longer side, as a JPEG, a few hundred KB instead of several
+  MB. A picture already small, or one the browser cannot draw, is kept as it
+  came.
+- The vault file carries the pictures the pages link to (#170), base64 below
+  the pages, so a photo taken on a phone shows on the computer too. From a
+  phone it holds every picture; from a computer only the last month's.
+  Opening or syncing a vault file keeps the pictures this device lacks.
+
 ## 1.9.0 - 2026-10-29
 
 - The line toolbar keeps your place (#170): after moving, indenting or

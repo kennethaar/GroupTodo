@@ -2731,7 +2731,7 @@ body.solview #content{padding-bottom:14px}
    number for a fix, the middle one for a feature. CHANGELOG.md says what each
    one brought, and it is shown beside the name top left, so whoever is testing
    can see at a glance that they have the newest file open. */
-const APP_VERSION = "1.9.0";
+const APP_VERSION = "1.10.0";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 /* ============================================================
    00_BOOTSTRAP -- utilities
@@ -11129,6 +11129,30 @@ async function saveAsset(file) {
   const old = ASSET_URLS.get(key);
   if (old) { try { URL.revokeObjectURL(old); } catch (_) {} ASSET_URLS.delete(key); }
   return path;
+}
+
+/* A phone's camera takes pictures of 3 to 8 MB, far more than a note needs
+   and too much to carry in a vault file. So a photo is drawn again at most
+   1600 px on its longer side, as a JPEG, before it is kept -- a few hundred
+   KB. A picture already small, or one the browser cannot draw (HEIC on most
+   of them), is kept as it came, and so is anything the redraw makes bigger. */
+const PHOTO_MAX_PX = 1600;
+async function shrinkPhoto(file) {
+  if (!/^image\/(jpeg|png|webp|heic|heif|avif|bmp)$/i.test(file.type || "")) return file;
+  let bmp;
+  try { bmp = await createImageBitmap(file); } catch (_) { return file; }
+  const scale = Math.min(1, PHOTO_MAX_PX / Math.max(bmp.width, bmp.height));
+  if (scale === 1 && file.size < 600 * 1024) { bmp.close && bmp.close(); return file; }
+  const cv = document.createElement("canvas");
+  cv.width = Math.round(bmp.width * scale); cv.height = Math.round(bmp.height * scale);
+  const cx = cv.getContext("2d");
+  cx.fillStyle = "#fff"; cx.fillRect(0, 0, cv.width, cv.height);   // a transparent PNG is not left black
+  cx.drawImage(bmp, 0, 0, cv.width, cv.height);
+  bmp.close && bmp.close();
+  const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", 0.82));
+  if (!blob || blob.size >= file.size) return file;
+  const stem = String(file.name || "photo").replace(/\.[A-Za-z0-9]{1,8}$/, "") || "photo";
+  return new File([blob], stem + ".jpg", {type: "image/jpeg", lastModified: file.lastModified || Date.now()});
 }
 
 /* What a dropped file becomes in the line: a picture shows itself, anything
@@ -27887,10 +27911,11 @@ function editBarPickImage(path, b, camera) {
     capture: camera ? "environment" : null, multiple: camera ? null : ""});
   const done = () => input.remove();
   input.addEventListener("cancel", done);
-  input.addEventListener("change", () => {
-    const files = Array.from(input.files || []);
+  input.addEventListener("change", async () => {
+    const picked = Array.from(input.files || []);
     done();
-    if (!files.length) return;
+    if (!picked.length) return;
+    const files = await Promise.all(picked.map(shrinkPhoto));
     const txt = $(`.blk[data-id="${b.id}"] .txt`);
     attachFilesToBlock(path, b, files, txt);
   });
@@ -40721,6 +40746,95 @@ function parseBundle(text) {
   return files;
 }
 
+/* ---------- pictures in the vault file ----------
+   A phone has no folder to put a photo in, only its own browser storage, so
+   a vault file of words alone left the picture behind and the computer drew a
+   broken image. So the pictures the pages link to ride along, base64 below the
+   pages, each in its own fenced section an older copy of the app skips over.
+   From a phone that is every picture: the phone may be the only place one is.
+   From a computer it is the last month's, because the computer keeps its
+   files in a folder that outlasts the browser, and years of pictures in every
+   sync would make a file nobody wants to send. */
+const BUNDLE_ASSET_DAYS = 31;
+const ASSET_B64 = new Map();         // space|path -> base64, so each sync encodes a picture once
+const onPhone = () => /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || "");
+
+function linkedAssetPaths() {
+  const out = new Set(), re = /\]\((assets\/[^)\s]+)\)/g;
+  for (const path of V.pages.keys()) {
+    const text = serializePage(getPage(path));
+    let m;
+    while ((m = re.exec(text))) out.add(m[1]);
+  }
+  return [...out].sort();
+}
+
+// When a picture was made: the stamp saveAsset put in its name, or the file's own date.
+function assetTime(path, blob) {
+  const m = /-(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})(?:-[a-z0-9]{4})?\.[A-Za-z0-9]+$/.exec(path);
+  if (m) return new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime();
+  return blob && blob.lastModified ? blob.lastModified : 0;
+}
+
+const blobBase64 = blob => new Promise((ok, bad) => {
+  const r = new FileReader();
+  r.onload = () => ok(String(r.result).replace(/^data:[^,]*,/, ""));
+  r.onerror = () => bad(r.error);
+  r.readAsDataURL(blob);
+});
+
+async function bundleAssetsMarkdown(phone = onPhone()) {
+  const be = V.backend;
+  if (!be || typeof be.getAsset !== "function") return "";
+  const since = Date.now() - BUNDLE_ASSET_DAYS * 864e5, out = [];
+  for (const path of linkedAssetPaths()) {
+    // Its name already says it is old: not even opened.
+    if (!phone && assetTime(path) && assetTime(path) < since) continue;
+    let blob = null;
+    try { blob = await be.getAsset(path); } catch (_) {}
+    if (!blob) continue;
+    if (!phone && assetTime(path, blob) < since) continue;
+    const key = (V.space || "") + "|" + path + "|" + blob.size;
+    let b64 = ASSET_B64.get(key);
+    if (b64 == null) { b64 = await blobBase64(blob); ASSET_B64.set(key, b64); }
+    out.push("<!-- gtd:asset " + path + " " + (blob.type || "application/octet-stream") + " -->",
+             ...(b64.match(/.{1,76}/g) || []), "<!-- gtd:endasset -->", "");
+  }
+  return out.join("\n");
+}
+async function bundleWithAssets() {
+  const pics = await bundleAssetsMarkdown();
+  return bundleMarkdown() + (pics ? "\n" + pics : "");
+}
+
+function parseBundleAssets(text) {
+  const out = new Map();
+  const re = /<!--\s*gtd:asset\s+(assets\/\S+)\s+(\S+)\s*-->\n([\s\S]*?)\n?<!--\s*gtd:endasset\s*-->/g;
+  let m;
+  while ((m = re.exec(String(text)))) out.set(m[1], {type: m[2], b64: m[3].replace(/\s+/g, "")});
+  return out;
+}
+
+/* A picture this area does not have yet is kept; one it has is left alone --
+   the names carry a stamp, so the same name is the same picture. */
+async function mergeBundleAssets(text) {
+  const be = V.backend;
+  const pics = parseBundleAssets(text);
+  if (!pics.size || !be || typeof be.putAsset !== "function") return 0;
+  let n = 0;
+  for (const [path, {type, b64}] of pics) {
+    if (!/^assets\/[^/]+$/.test(path)) continue;
+    try {
+      if (await be.getAsset(path)) continue;
+      const bin = atob(b64), bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      await be.putAsset(path, new Blob([bytes], {type}));
+      n++;
+    } catch (_) { /* a damaged picture does not stop the pages */ }
+  }
+  return n;
+}
+
 
 /* Settings must union rather than overwrite, or each sync would drop the
    other device's tombstones and we would resurrect deleted pages. */
@@ -40845,7 +40959,7 @@ function syncSummary(r) {
 /* ---------- moving the bundle in and out ---------- */
 async function saveBundleAsDownload() {
   const name = bundleName();
-  const how = await sendMarkdownOut(name, bundleMarkdown(),
+  const how = await sendMarkdownOut(name, await bundleWithAssets(),
     {title: (Spaces.active || "GroupToDo") + " vault"});
   setSetting("last_sync", nowStamp());
   markSent();
@@ -40867,6 +40981,7 @@ function openBundleFromFile(onDone) {
       const files = parseBundle(text);
       if (!files.size) { notify("That file has no GroupToDo pages in it.", "error"); return; }
       const report = mergeBundle(files);
+      await mergeBundleAssets(text);
       markImported();
       notify(syncSummary(report));
       render();
@@ -40930,9 +41045,10 @@ async function syncLinked({quiet = false} = {}) {
     const incoming = parseBundle(existing);
     const report = incoming.size ? mergeBundle(incoming)
                                  : {added: 0, updated: 0, merged: 0, kept: 0, conflicts: 0, deleted: 0};
+    await mergeBundleAssets(existing);
     await flush();
     const w = await h.createWritable();
-    await w.write(bundleMarkdown());
+    await w.write(await bundleWithAssets());
     await w.close();
     setSetting("last_sync", nowStamp());
     setSync("ok", V.backend ? V.backend.label : "synced");
@@ -42494,7 +42610,7 @@ function openVaultDialog() {
       for (const f of e.target.files) {
         const text = await f.text();
         const bundle = parseBundle(text);
-        if (bundle.size) { const r = mergeBundle(bundle); notify(syncSummary(r)); n += bundle.size; continue; }
+        if (bundle.size) { const r = mergeBundle(bundle); await mergeBundleAssets(text); notify(syncSummary(r)); n += bundle.size; continue; }
         const rel = (f.webkitRelativePath || f.name).replace(/^[^/]*\//, "");
         if (/\.org$/i.test(f.name)) putPage(rel.replace(/\.org$/i, ".md"), orgToPage(text));
         else putPage(rel, parsePage(text));
@@ -46003,6 +46119,7 @@ async function mergeIncomingText(text, label) {
     return false;
   }
   notify(syncSummary(mergeBundle(files)));
+  await mergeBundleAssets(text);
   markImported();
   render();
   return true;
