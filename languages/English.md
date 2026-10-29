@@ -4509,6 +4509,7 @@ your own area, {1}, could not be opened. Open it once from the area menu (a fold
 {1} broken link =>
 {1} calendars did not come in. =>
 {1} change(s) made on this device are being sent up now. =>
+{1} change(s) to {2} made while it was still loading could not be kept. Please make them again. =>
 {1} chore(s) here: 100% is all just done, 0% all due =>
 {1} chosen now =>
 {1} conflict copies kept =>

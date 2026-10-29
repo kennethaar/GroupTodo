@@ -301,6 +301,64 @@ var GTD_TEST = (() => {
     eq(pageKind(journalPath(T())), "journal");
   });
 
+  /* A folder handle in memory: a tree of names, a string for a file. A file in
+     `gate` waits for the promise before it opens. */
+  const fakeDir = (name, tree, writes, gate = {}) => ({
+    kind: "directory", name,
+    async *entries() {
+      for (const [k, v] of Object.entries(tree))
+        yield [k, typeof v === "string" ? fakeFile(k, tree, writes, gate) : fakeDir(k, v, writes, gate)];
+    },
+    async getDirectoryHandle(k, {create} = {}) {
+      if (!tree[k]) { if (!create) throw new DOMException("no", "NotFoundError"); tree[k] = {}; }
+      return fakeDir(k, tree[k], writes, gate);
+    },
+    async getFileHandle(k, {create} = {}) {
+      if (tree[k] == null) { if (!create) throw new DOMException("no", "NotFoundError"); tree[k] = ""; }
+      return fakeFile(k, tree, writes, gate);
+    },
+    async removeEntry(k) { writes.push("rm " + k); delete tree[k]; },
+  });
+  const fakeFile = (k, tree, writes, gate) => ({
+    kind: "file", name: k,
+    async getFile() { if (gate[k]) await gate[k]; const t = tree[k]; return {text: async () => t}; },
+    async createWritable() {
+      return {write: async t => { writes.push(k); tree[k] = t; }, close: async () => {}};
+    },
+  });
+
+  test("#181 a big folder shows today first, and a stand-in never overwrites its file", async () => {
+    const old = shiftISO(T(), -10);
+    let release;
+    const gate = {[old + ".md"]: new Promise(r => { release = r; })};
+    const tree = {
+      journals: {tester: {[T() + ".md"]: "- TODO today's line\n", [old + ".md"]: "- old line\n"}},
+      pages: {"GTD.md": "title:: GTD\n", "1": {"Boat.md": "title:: Boat\noutcome:: afloat\n\n- TODO Sand the hull\n"}},
+    };
+    const writes = [];
+    const rec = newRecord("Stage181", Backends.fs(fakeDir("Stage181", tree, writes, gate)));
+    let rested = false;
+    await readInto(rec, {stage: true, onRest: () => { rested = true; }});
+    const boat = join(DIRS.active, "Boat.md");
+    has(serializePage(rec.pages.get(join(JOURNALS, "tester", T() + ".md"))), "today's line", "today read first");
+    ok(!rec.pages.has(join(JOURNALS, "tester", old + ".md")), "an old day waits");
+    ok(rec.pages.has(boat) && !rec.pages.get(boat).blocks.length, "project there by name only");
+    ok(rec.pages.has(SETTINGS_PATH), "settings read first");
+    // Something marks the stand-in dirty: saving must leave the file alone.
+    rec.dirty.add(boat);
+    LOADED.set(rec.name, rec);
+    try { await doFlush(); } finally { LOADED.delete(rec.name); }
+    ok(!writes.includes("Boat.md"), "the stand-in was written over its file");
+    has(tree.pages["1"]["Boat.md"], "Sand the hull", "file intact");
+    release();
+    await filesLoaded();
+    ok(rested, "onRest ran");
+    ok(!rec.stubs, "no stand-ins left");
+    has(serializePage(rec.pages.get(boat)), "Sand the hull", "project read in full");
+    ok(rec.pages.has(join(JOURNALS, "tester", old + ".md")), "old day read");
+    ok(!rec.dirty.has(boat), "nothing left to send for the stand-in");
+  });
+
   /* ============================================================
      Dates, clocks and repeats
      ============================================================ */

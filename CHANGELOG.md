@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.11.6 - 2026-10-29
+
+- A big folder opens fast (#181). Files are read 16 at a time instead of one
+  by one. The first read is what the day needs: today's journal and the
+  three days before, the settings, lists and horizons. Projects, people,
+  contexts and organisations come in by file name only, and are read in
+  full behind your back. Until then nothing is written over their files,
+  and a vault file sync or export waits for the whole folder.
+
 ## 1.11.5 - 2026-10-29
 
 - Trackers on a phone (#180). Each tracker on the day has one ⋯ that shows

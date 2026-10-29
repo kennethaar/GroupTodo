@@ -2894,7 +2894,7 @@ body.solview #content{padding-bottom:14px}
    number for a fix, the middle one for a feature. CHANGELOG.md says what each
    one brought, and it is shown beside the name top left, so whoever is testing
    can see at a glance that they have the newest file open. */
-const APP_VERSION = "1.11.5";
+const APP_VERSION = "1.11.6";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 /* ============================================================
    00_BOOTSTRAP -- utilities
@@ -4079,21 +4079,41 @@ const Backends = {
       }
       return h;
     }
+    const fileCache = new Map();          // path -> file handle, from the last names()
     return {
       kind: "fs", label: rootHandle.name, writable: true, handle: rootHandle,
-      async list() {
-        const out = new Map();
+      /* Every file the app reads, by name only. Walking the folders is quick;
+         opening the files is what takes the time, so it is done apart. */
+      async names() {
+        fileCache.clear();
         const walk = async (dir, prefix) => {
+          const subs = [];
           for await (const [name, h] of dir.entries()) {
             if (name.startsWith(".")) continue;
             const p = prefix ? prefix + "/" + name : name;
-            if (h.kind === "directory") { dirCache.set(p, h); await walk(h, p); }
-            else if (/\.(md|org)$/i.test(name) || isVaultCssPath(p)) out.set(p, await (await h.getFile()).text());
+            if (h.kind === "directory") { dirCache.set(p, h); subs.push(walk(h, p)); }
+            else if (/\.(md|org)$/i.test(name) || isVaultCssPath(p)) fileCache.set(p, h);
           }
+          await Promise.all(subs);
         };
         await walk(rootHandle, "");
+        return Array.from(fileCache.keys());
+      },
+      /* Opened several at a time: one after another, a year of day pages on a
+         phone took minutes. */
+      async readMany(paths) {
+        const out = new Map(), queue = paths.slice();
+        const worker = async () => {
+          while (queue.length) {
+            const p = queue.shift();
+            const h = fileCache.get(p);
+            if (h) out.set(p, await (await h.getFile()).text());
+          }
+        };
+        await Promise.all(Array.from({length: Math.min(16, queue.length)}, worker));
         return out;
       },
+      async list() { return this.readMany(await this.names()); },
       async write(path, text) {
         const dir = await dirFor(path.split("/").slice(0, -1).join("/"), true);
         const fh = await dir.getFileHandle(path.split("/").pop(), {create: true});
@@ -4478,10 +4498,16 @@ async function doFlush() {
   for (const rec of Array.from(LOADED.values())) {
     if (rec.hold) continue;          // its folder looks emptied: see looksEmptied()
     if (!rec.backend || (!rec.dirty.size && !rec.removed.size)) continue;
-    const dirty = Array.from(rec.dirty); rec.dirty.clear();
-    const gone  = Array.from(rec.removed); rec.removed.clear();
+    let dirty = Array.from(rec.dirty); rec.dirty.clear();
+    let gone  = Array.from(rec.removed); rec.removed.clear();
     // A read of this area under way may have listed the files before these went.
     for (const edited of rec.readers || []) for (const p of [...dirty, ...gone]) edited.add(p);
+    // A page still loading is an empty stand-in, and must not overwrite its file.
+    if (rec.stubs) {
+      dirty = dirty.filter(p => !stillLoading(rec, p));
+      gone  = gone.filter(p => !stillLoading(rec, p));
+      if (!dirty.length && !gone.length) continue;
+    }
     wrote = true;
     V.syncing = true;
     setSync("sync", "saving...");
@@ -4891,24 +4917,108 @@ async function ensureGuides(record, files) {
    back over the file, and the meetings deleted there would come back. */
 const READING = new Set();
 async function filesLoaded() { while (READING.size) await Promise.allSettled([...READING]); }
-async function readInto(record) {
+async function readInto(record, {stage = false, onRest = null} = {}) {
   /* Every page edited while this read runs: dirty when it starts or ends, or
      saved in between (doFlush adds those here). The listing can be older than
      any of them. */
   const edited = new Set(record.dirty);
   (record.readers || (record.readers = new Set())).add(edited);
+  const done = () => record.readers.delete(edited);
+  if (stage && record.backend && record.backend.names && !record.pages.size) {
+    const p = readStaged(record, edited, onRest);
+    READING.add(p);
+    let rest = null;
+    try { rest = (await p)?.rest; } finally { READING.delete(p); if (!rest) done(); }
+    if (rest) { READING.add(rest); rest.finally(() => { READING.delete(rest); done(); }); }
+    return record;
+  }
   const p = readIntoNow(record, edited);
   READING.add(p);
-  try { return await p; } finally { READING.delete(p); record.readers.delete(edited); }
+  try { return await p; } finally { READING.delete(p); done(); }
 }
-async function readIntoNow(record, edited) {
+
+/* ---------- a big folder, read in two goes ----------
+   An area with years of day pages took minutes to open on a phone, and
+   nothing showed until the last file was read. So the first read is what the
+   day needs: today's journal and the three before it, the settings, lists
+   and horizons. Projects, people, contexts and organisations come in by
+   file name only, as empty pages, so links, pickers and lists have them.
+   The rest is read behind your back and replaces them.
+
+   An empty stand-in must never reach the disk: doFlush() leaves them alone,
+   and what was done to one while it loaded gives way to its file. */
+const STUB_DIRS = [DIRS.cancelled, DIRS.completed, DIRS.active, DIRS.someday, DIRS.waiting,
+                   DIRS.people, DIRS.contexts, DIRS.orgs];
+const STUB_PAGES = new WeakSet();
+const isStubPath = p => /\.md$/i.test(p) && STUB_DIRS.some(d => p.startsWith(d + "/"));
+const stillLoading = (rec, path) =>
+  !!rec.stubs && (rec.stubs.has(path) || STUB_PAGES.has(rec.pages.get(path)));
+
+async function readStaged(record, edited, onRest) {
+  let paths;
+  try { paths = await record.backend.names(); }
+  catch (e) {
+    if (!/NotFound/i.test((e && e.name) || "")) throw e;
+    holdRecord(record, "missing", 0);
+    return null;
+  }
+  const seen = paths.filter(p => !isGuidePath(p) && !isLangPath(p) && !isPromptPath(p) && /\.md$/i.test(p)).length;
+  if (looksEmptied(record, seen)) { holdRecord(record, "empty", seen); return null; }
+  const recent = new Set([0, 1, 2, 3].map(n => shiftISO(todayISO(), -n)));
+  const later = p => isStubPath(p) ||
+    (isJournalPath(p) && !recent.has((/(\d{4}-\d{2}-\d{2})\.md$/i.exec(p) || [])[1]));
+  const rest = paths.filter(later);
+  const first = await record.backend.readMany(paths.filter(p => !later(p)));
+  if (!rest.length) { await readIntoNow(record, edited, first); return null; }
+
+  record.hold = null;
+  record.stubs = new Set();
+  fillRecord(record, first);
+  for (const p of rest) {
+    if (!isStubPath(p)) continue;
+    const page = parsePage("");
+    STUB_PAGES.add(page);
+    record.pages.set(p, page);
+    record.stubs.add(p);
+  }
+  applyVaultCss(record);
+  // Wrapped: an async function hands back a promise it returns only once it settles.
+  return {rest: (async () => {
+    try {
+      const files = new Map([...first, ...await record.backend.readMany(rest)]);
+      await readIntoNow(record, edited, files);
+    } finally { record.stubs = null; }
+    if (onRest) onRest(record);
+  })().catch(e => { record.stubs = null; reportStorageTrouble(record, e); })};
+}
+
+/* The files of one read, laid into the record: pages, and the files beside
+   them that are not pages. */
+function fillRecord(record, files) {
+  record.pages.clear(); record.raw.clear();
+  record.langs = new Map();
+  record.prompts = new Map();
+  record.css = new Map();
+  let couriers = 0;
+  for (const [path, text] of files) {
+    if (isGuidePath(path)) continue;          // a folder's guide, not a page
+    if (isVaultCssPath(path)) { record.css.set(path, text); continue; }   // your own look, not a page
+    if (isLangPath(path)) { record.langs.set(path, text); continue; }   // the app's words, not a page
+    if (isPromptPath(path)) { record.prompts.set(path, text); continue; }   // a prompt for an AI, not a page
+    if (/\.org$/i.test(path)) { record.raw.set(path, text); continue; }
+    if (looksLikeBundle(text)) { couriers++; continue; }
+    record.pages.set(path, parsePage(text));
+  }
+  return couriers;
+}
+
+async function readIntoNow(record, edited, files = null) {
   /* A folder or template load can finish after the journal is already on screen,
      and an area is read again behind your back each time you switch to it --
      seconds, for a big synced folder. Every page edited meanwhile is laid back
      over the loaded snapshot, and one deleted meanwhile stays deleted: a line
      typed or taken out then is never replaced by the older file. */
-  let files;
-  try { files = await record.backend.list(); }
+  if (!files) try { files = await record.backend.list(); }
   catch (e) {
     // A folder that is not there any more is the same alarm as one that is empty.
     if (!(record.backend.kind === "fs" && /NotFound/i.test((e && e.name) || ""))) throw e;
@@ -4925,27 +5035,25 @@ async function readIntoNow(record, edited) {
   if (seen && (record.backend.kind === "fs" || record.backend.kind === "http"))
     PREF.set("pagecount:" + record.name, String(seen));
   for (const path of [...record.dirty, ...record.removed]) edited.add(path);
-  const localEdits = new Map([...edited].map(path => [path, record.pages.get(path)]));
-  record.pages.clear(); record.raw.clear();
-  record.langs = new Map();
-  record.prompts = new Map();
-  record.css = new Map();
-  let couriers = 0;
-  for (const [path, text] of files) {
-    if (isGuidePath(path)) continue;          // a folder's guide, not a page
-    if (isVaultCssPath(path)) { record.css.set(path, text); continue; }   // your own look, not a page
-    if (isLangPath(path)) { record.langs.set(path, text); continue; }   // the app's words, not a page
-    if (isPromptPath(path)) { record.prompts.set(path, text); continue; }   // a prompt for an AI, not a page
-    if (/\.org$/i.test(path)) { record.raw.set(path, text); continue; }
-    if (looksLikeBundle(text)) { couriers++; continue; }
-    record.pages.set(path, parsePage(text));
+  /* What was done to a stand-in while it loaded was done to an empty page:
+     its file wins, and is not sent again. */
+  let lost = 0;
+  for (const path of Array.from(edited)) {
+    if (!stillLoading(record, path)) continue;
+    edited.delete(path); record.dirty.delete(path); record.removed.delete(path);
+    const page = record.pages.get(path);
+    if (record.stubs.has(path) && (!page || serializePage(page) !== serializePage(parsePage("")))) lost++;
   }
+  const localEdits = new Map([...edited].map(path => [path, record.pages.get(path)]));
+  const couriers = fillRecord(record, files);
   /* Local edits win over files that completed loading later. Those still dirty
      are flushed normally to the selected backend. */
   for (const [path, page] of localEdits) {
     if (page) record.pages.set(path, page);
     else record.pages.delete(path);
   }
+  if (lost) notify(lost + " change(s) to " + spaceLabel(record.name) + " made while it was still loading " +
+                   "could not be kept. Please make them again.", "warn");
   ensureGuides(record, files).catch(() => {});
   langAfterLoad(record).catch(() => {});
   applyVaultCss(record);
@@ -5283,10 +5391,25 @@ async function loadSpaceRecord(name) {
   if (!sp) return null;
   const rec = LOADED.get(name) || newRecord(name, null);
   rec.backend = await spaceBackend(sp);
-  await readInto(rec);
+  await readInto(rec, {stage: true, onRest: restLoaded});
   LOADED.set(name, rec);
   reconcileSyncedPages(name);
   return rec;
+}
+
+/* The second half of a big folder is in: what ran on the first half runs
+   again over the whole, and the screen catches up. */
+function restLoaded(rec) {
+  if (rec.hold) { showHoldDialog(rec.name); setSync("warn", "not saving - folder looks empty"); return; }
+  if (!LOADED.has(rec.name)) return;
+  inSpace(rec.name, () => migrateVault());
+  reconcileSyncedPages(rec.name);
+  if (V.space === rec.name) bindActive(rec.name);
+  clearMemo();
+  scanVerbs();
+  if (rec.dirty.size || rec.removed.size) scheduleFlush();
+  const ed = document.activeElement;
+  if (!(ed?.isContentEditable || /^(INPUT|TEXTAREA)$/.test(ed?.tagName || "")) && !SPACE_TRANSITION) render();
 }
 
 async function loadFromBackend(backend, {quick = false} = {}) {
@@ -5311,7 +5434,7 @@ async function loadFromBackend(backend, {quick = false} = {}) {
   }
   const rec = LOADED.get(name) || newRecord(name, backend);
   rec.backend = backend;
-  await readInto(rec);
+  await readInto(rec, {stage: true, onRest: restLoaded});
   LOADED.set(name, rec);
   bindActive(name);
   setSync("ok", backend.label);
@@ -13933,7 +14056,7 @@ function helpTopicNode(id, {here = false, read = openHelp} = {}) {
    docs/build-help-news.py (tests/run.mjs runs it), since a page opened from a
    file may not read another file. */
 /* HELP_NEWS generated by docs/build-help-news.py -- do not edit by hand */
-const HELP_NEWS = "## 1.11.5 - 2026-10-29\n\n- Trackers on a phone (#180). Each tracker on the day has one ⋯ that shows\n  on a touch screen too, with When it comes round, Rename, Move to another\n  area, Remove from this day and Stop tracking. The bare ✕ is gone: it could\n  not be seen on a phone and was tapped by mistake. Removing one from the\n  day always offers Undo, also when a template puts it on new days. On a\n  narrow screen last time's value goes on its own line under the boxes\n  instead of showing through the box you type today's in.\n\n## 1.11.4 - 2026-10-29\n\n- Phones that open folders (#179). Chrome on Android has done so since\n  version 132, so the help, README and Vault & sync stop saying phones\n  cannot. The phone's Send button and its reminders now show on a phone\n  whose area has no folder and no linked vault file; they had vanished on\n  Chrome 132, even for a phone that still needs the vault file. A phone on\n  a folder is not asked to move a file at the start or end of the workday.\n\n## 1.11.3 - 2026-10-29\n\n- The app is on GitHub Pages (#178), at\n  https://kennethaar.github.io/GroupTodo/, so it opens and installs from a\n  link with no download and no serve.py. Every push to main publishes it.\n\n## 1.11.2 - 2026-10-29\n\n- Prices on a project read right (#176). A sum is written the way its\n  currency is at home, DKK 15.000 and USD 15,000, not with the browser's\n  language, which gave a narrow space. A minus or brackets make a price\n  negative, DKK -15000 or DKK (15000), so a refund takes off the total. The\n  Cost heading on a project now says spent / planned instead of repeating\n  the spent sum, and a new help topic, Prices and cost, explains both.\n\n## 1.11.1 - 2026-10-29\n\n- The line menu scrolls on a phone (#175). With the on-screen keyboard up\n  it ran on under the keyboard, so its lower rows could not be reached. It\n  now stops above the keyboard and the toolbar and scrolls inside, and a\n  swipe in it no longer scrolls the page behind.\n";
+const HELP_NEWS = "## 1.11.6 - 2026-10-29\n\n- A big folder opens fast (#181). Files are read 16 at a time instead of one\n  by one. The first read is what the day needs: today's journal and the\n  three days before, the settings, lists and horizons. Projects, people,\n  contexts and organisations come in by file name only, and are read in\n  full behind your back. Until then nothing is written over their files,\n  and a vault file sync or export waits for the whole folder.\n\n## 1.11.5 - 2026-10-29\n\n- Trackers on a phone (#180). Each tracker on the day has one ⋯ that shows\n  on a touch screen too, with When it comes round, Rename, Move to another\n  area, Remove from this day and Stop tracking. The bare ✕ is gone: it could\n  not be seen on a phone and was tapped by mistake. Removing one from the\n  day always offers Undo, also when a template puts it on new days. On a\n  narrow screen last time's value goes on its own line under the boxes\n  instead of showing through the box you type today's in.\n\n## 1.11.4 - 2026-10-29\n\n- Phones that open folders (#179). Chrome on Android has done so since\n  version 132, so the help, README and Vault & sync stop saying phones\n  cannot. The phone's Send button and its reminders now show on a phone\n  whose area has no folder and no linked vault file; they had vanished on\n  Chrome 132, even for a phone that still needs the vault file. A phone on\n  a folder is not asked to move a file at the start or end of the workday.\n\n## 1.11.3 - 2026-10-29\n\n- The app is on GitHub Pages (#178), at\n  https://kennethaar.github.io/GroupTodo/, so it opens and installs from a\n  link with no download and no serve.py. Every push to main publishes it.\n\n## 1.11.2 - 2026-10-29\n\n- Prices on a project read right (#176). A sum is written the way its\n  currency is at home, DKK 15.000 and USD 15,000, not with the browser's\n  language, which gave a narrow space. A minus or brackets make a price\n  negative, DKK -15000 or DKK (15000), so a refund takes off the total. The\n  Cost heading on a project now says spent / planned instead of repeating\n  the spent sum, and a new help topic, Prices and cost, explains both.\n";
 /* HELP_NEWS end */
 function helpNews() {
   const box = el("div", {class: "helpnews"}, el("p", {class: "quiet"}, "This is v" + APP_VERSION + "."));
@@ -42063,6 +42186,7 @@ async function bundleAssetsMarkdown(phone = onPhone()) {
   return out.join("\n");
 }
 async function bundleWithAssets() {
+  await filesLoaded();                 // never a vault file of half-read pages
   const pics = await bundleAssetsMarkdown();
   return bundleMarkdown() + (pics ? "\n" + pics : "");
 }
@@ -42300,6 +42424,7 @@ async function syncLinked({quiet = false} = {}) {
         return;
       }
     }
+    await filesLoaded();               // merge into whole pages, not stand-ins
     setSync("sync", "syncing...");
     const existing = await (await h.getFile()).text().catch(() => "");
     const incoming = parseBundle(existing);
