@@ -29527,8 +29527,8 @@ function todaySection(s) {
     el("button", {class: "sectog", title: folded ? "Show" : "Fold away", onclick: () => toggleSection(s.id)}, s.title),
     s.space ? spaceBadge(s.space) : null,
     el("span", {class: "plain"}, "· " + (s.count != null ? s.count : folded ? s.folded : s.hint)),
-    s.edit ? el("button", {class: "textbtn", style: "margin-left:auto;text-transform:none;letter-spacing:0", title: "The whole day page as text",
-      onclick: s.edit}, "Edit the markdown") : null);
+    s.edit ? el("button", {class: "jedit", style: "margin-left:auto", title: "The whole day page as text",
+      "aria-label": "Edit as Markdown", onclick: s.edit}, "✎") : null);
   const box = el("div", {}, head);
   if (!folded) box.append(s.body());
   return box;
