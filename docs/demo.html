@@ -18405,7 +18405,7 @@ function plexAddChild(nd, after) {
     promptInput({
       title: "Next action", hint: nd.label,
       label: "What is the very next physical action?",
-      value: "Call ", cta: "Add",
+      placeholder: "Call Anna about the quote", cta: "Add", suggest: true,
       onSave: text => {
         if (!trim(text)) return;
         const blk = inSpace(nd.space, () => addNextActionTo(nd.path, trim(text)));
@@ -38134,7 +38134,8 @@ function openAddNextAction(path) {
     hint: pageTitle(path),
     note: projectProvenance(path),
     label: "What is the very next physical action?",
-    value: "Call ", cta: "Add", suggest: true,
+    // An example, not a start: a word already in the box has to be deleted first.
+    placeholder: "Call Anna about the quote", cta: "Add", suggest: true,
     onSave: text => {
       const blk = addNextActionTo(path, text);
       render();
