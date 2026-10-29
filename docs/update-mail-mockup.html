@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Update Mail Mockup</title>
+<style>
+/* A UI draft for #159, before any code goes into grouptodo.html. Four panes:
+   the dialog as it would look in the app, the mail it makes (the same HTML
+   that goes on the clipboard), every link in the mail with the reply it
+   opens, and the import review of a reply. Generic data only. */
+:root{
+  --bg:#f6f6f3; --bg2:#ffffff; --bg3:#f0efea; --bg4:#e6e5df;
+  --fg:#1d1d1b; --fg2:#4d4d48; --fg3:#6b6b66;
+  --border:#e4e3de; --border2:#d3d2cc;
+  --accent:#2f6fde; --accent-fg:#ffffff; --accent-soft:#e7effc;
+  --todo:#2f6fde; --doing:#8b5cd6; --wait:#a8710f; --done:#2e8a57; --cancel:#8a8a84;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#161615; --bg2:#1f1f1d; --bg3:#272725; --bg4:#31312e;
+  --fg:#ecebe6; --fg2:#c3c2bc; --fg3:#9a9993;
+  --border:#33332f; --border2:#45453f;
+  --accent:#6c9cf0; --accent-fg:#0d1626; --accent-soft:#1f2b40;
+  --todo:#6c9cf0; --doing:#c792ea; --wait:#e0aa45; --done:#5fc08a;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#161615; --bg2:#1f1f1d; --bg3:#272725; --bg4:#31312e;
+  --fg:#ecebe6; --fg2:#c3c2bc; --fg3:#9a9993;
+  --border:#33332f; --border2:#45453f;
+  --accent:#6c9cf0; --accent-fg:#0d1626; --accent-soft:#1f2b40;
+  --todo:#6c9cf0; --doing:#c792ea; --wait:#e0aa45; --done:#5fc08a;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 var(--sans)}
+.page{max-width:820px;margin:0 auto;padding:28px 16px 80px}
+h1{font-size:22px;margin:0 0 4px}
+h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg3);margin:36px 0 10px}
+p.lead{color:var(--fg2);margin:0 0 8px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--border2);background:var(--bg2);color:var(--fg2);border-radius:999px;padding:4px 12px;font:inherit;font-size:13px;cursor:pointer}
+.chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--fg)}
+
+/* The dialog, in the app's own look. */
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.08)}
+.mhead{padding:16px 18px 8px}
+.mhead b{font-size:17px}
+.mhead .hint{color:var(--fg3);font-size:12.5px}
+.mbody{padding:4px 18px 8px}
+.mfoot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--border)}
+.btn{border:1px solid var(--border2);background:var(--bg2);color:var(--fg);border-radius:8px;padding:7px 14px;font:inherit;font-size:14px;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:600}
+.btn.ghost{background:transparent}
+.group{font-size:12px;color:var(--fg3);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 2px}
+.row{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border)}
+.row:last-child{border-bottom:0}
+.tick{width:22px;height:22px;flex:0 0 auto;border:1.5px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--accent-fg);font-size:13px;cursor:pointer;padding:0}
+.tick.on{background:var(--accent);border-color:var(--accent)}
+.tick.sm{width:16px;height:16px;font-size:10px;border-radius:4px}
+.row .main{flex:1;min-width:0}
+.num{color:var(--fg3);font-variant-numeric:tabular-nums;margin-right:4px}
+.state{font-size:12px;font-weight:600;border:1px solid currentColor;border-radius:999px;padding:0 8px;margin-left:6px;white-space:nowrap}
+.sub{color:var(--fg3);font-size:12.5px}
+.ctx{display:flex;gap:8px;align-items:center;margin:4px 0 0 2px;color:var(--fg2);font-size:12.5px}
+input.comment{width:100%;margin-top:6px;border:1px solid var(--border2);background:var(--bg);color:var(--fg);border-radius:8px;padding:6px 10px;font:inherit;font-size:13.5px}
+.opt{display:flex;gap:8px;align-items:center;margin:12px 0 4px;font-size:14px}
+.summary{color:var(--fg3);font-size:12.5px;margin-top:6px}
+
+/* The mail, framed like a mail window. Its inside is exactly what is copied. */
+.mailwin{border:1px solid var(--border2);border-radius:10px;overflow:hidden;background:var(--bg2)}
+.mailhead{padding:10px 14px;border-bottom:1px solid var(--border);font-size:13.5px;color:var(--fg2)}
+.mailhead div{display:flex;gap:8px}.mailhead span:first-child{width:56px;color:var(--fg3)}
+.mailbody{padding:18px;background:#ffffff;overflow-x:auto}
+.mailbody.dark{background:#1f1f1f}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px)}
+.toast.show{opacity:1}
+
+/* Links and the replies they open. */
+.link{border:1px solid var(--border);border-radius:10px;background:var(--bg2);padding:10px 14px;margin:8px 0}
+.link .what{font-weight:600}
+.link .len{color:var(--fg3);font-size:12px;float:right}
+pre{font:12.5px/1.5 var(--mono);background:var(--bg3);border-radius:8px;padding:10px 12px;margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.rule{color:var(--fg2);font-size:14px;margin:6px 0}
+.rule code{font-family:var(--mono);font-size:13px;background:var(--bg3);padding:1px 5px;border-radius:4px}
+textarea{width:100%;min-height:150px;border:1px solid var(--border2);background:var(--bg2);color:var(--fg);border-radius:8px;padding:10px;font:12.5px/1.5 var(--mono)}
+.verdict{display:inline-block;min-width:76px;font-size:11.5px;font-weight:700;text-align:center;border:1px solid currentColor;border-radius:999px;padding:0 6px}
+</style>
+
+<div class="page">
+  <h1>Update mail: UI draft for #159</h1>
+  <p class="lead">One mail model for both directions. Tasks are numbered, every button opens a short pre-filled reply,
+    and a reply typed by hand uses the same rule: <b>a number, then words</b>.</p>
+  <div class="chips" id="dir"></div>
+
+  <h2>1 · The dialog</h2>
+  <div class="modal">
+    <div class="mhead"><b id="mtitle"></b><div class="hint" id="mhint"></div></div>
+    <div class="mbody" id="rows"></div>
+    <div class="mfoot">
+      <button class="btn ghost">Close</button>
+      <button class="btn ghost" id="plain">Plain-text mail</button>
+      <button class="btn ghost" id="copyonly">Copy only</button>
+      <button class="btn primary" id="copyopen">Copy and open email</button>
+    </div>
+  </div>
+
+  <h2>2 · The new mail, before you paste</h2>
+  <p class="rule">Copy and open email opens a new mail with To and Subject filled in and one line in the body.
+    Your own signature lands under it, so the update has no sign-off of its own.</p>
+  <div class="mailwin">
+    <div class="mailhead">
+      <div><span>To</span><span>Jamie Lee &lt;jamie.lee@example.com&gt;</span></div>
+      <div><span>Subject</span><span id="hsubj0"></span></div>
+    </div>
+    <div class="mailbody" style="color:#15202b;font-family:'Segoe UI',Arial,sans-serif;font-size:15px">
+      <div id="pastehere" style="background:#fff3c4"></div><br><br>
+      <div style="color:#5b6875">Best regards<br>Alex Morgan<br><span style="font-size:13px">Example Ltd · +47 000 00 000</span></div>
+      <div style="color:#8190a0;font-size:12px;margin-top:6px">(your usual signature)</div>
+    </div>
+  </div>
+
+  <h2>3 · The mail they get</h2>
+  <div class="tools">
+    <div class="chips" id="look"></div>
+    <span class="sub">Outlook dark mode is a rough imitation: it flips the dark text light and the white background dark.</span>
+  </div>
+  <div class="mailwin">
+    <div class="mailhead">
+      <div><span>To</span><span id="hto"></span></div>
+      <div><span>Subject</span><span id="hsubj"></span></div>
+    </div>
+    <div class="mailbody" id="mail"></div>
+  </div>
+
+  <h2>4 · Every button and the reply it opens</h2>
+  <p class="rule">The cursor lands at the top, so their words come first. Under the <code>--</code> is one line saying which task,
+    then the reference. Click a button above to open the real thing.</p>
+  <div id="links"></div>
+  <details class="link"><summary class="what" style="cursor:pointer">The HTML put on the clipboard</summary><pre id="source"></pre></details>
+
+  <h2>5 · Importing a reply</h2>
+  <p class="rule">The rules, the same for clicked and typed replies:</p>
+  <p class="rule">· <code>Reference (leave as is):</code> lists the tasks in order, so <code>2</code> is the second one. It comes back in the quoted original even when they write at the top.<br>
+    · A line <code>2 done</code> closes task 2 (in an ask). <code>2: words</code> or <code>re 2 words</code> is a comment on it, or the answer if it is a question.<br>
+    · Words with no number go to the task in the footer line of a clicked reply. <code>ok</code> alone is <i>Got it</i> for every task.<br>
+    · Anything left over goes to a box in the review, where you pick the task.</p>
+  <div class="tools"><div class="chips" id="samples"></div></div>
+  <textarea id="reply"></textarea>
+  <div class="modal" style="margin-top:12px">
+    <div class="mhead"><b id="rtitle"></b></div>
+    <div class="mbody" id="review"></div>
+    <div class="mfoot"><button class="btn ghost">Cancel</button><button class="btn primary" id="apply"></button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const ME = {name: "Alex", email: "alex@example.com"};
+const THEM = {name: "Jamie", full: "Jamie Lee", email: "jamie.lee@example.com"};
+
+/* Colours that read the same on a white and a near-black mail. */
+const STATE = {
+  DONE:      {word: "Done",        c: "#1f9255"},
+  DOING:     {word: "In progress", c: "#2a7ae2"},
+  WAIT:      {word: "Waiting",     c: "#c07a12"},
+  TODO:      {word: "Not started", c: "#7b8794"},
+  CANCELLED: {word: "Cancelled",   c: "#c8504a"},
+};
+const KIND = {wait: {word: "Waiting for", c: "#c07a12"}, question: {word: "Question", c: "#2a7ae2"}};
+
+const DATA = {
+  inform: [
+    {group: "Open", ref: "Work-r7d2kq9m", title: "Quote for the new office chairs", state: "WAIT", on: "second supplier",
+     comment: "The first quote is in. Waiting for the second one, due Friday.", ctx: [], pick: true},
+    {group: "Open", ref: "Work-m4p8vt2c", title: "Plan the site visit", state: "DOING", comment: "",
+     ctx: ["Bus booked for 12 people", "Lunch still to sort"], pick: true},
+    {group: "Done since you last told them", ref: "Work-k3x9a2qd", title: "Fix the monthly KPI export", state: "DONE",
+     comment: "The filter left out planned jobs. Fixed, and October has been exported again.",
+     ctx: ["Planned jobs were missing from the filter"], pick: true},
+    {group: "Done since you last told them", ref: "Work-b6n1hs5e", title: "Order name badges", state: "CANCELLED",
+     comment: "Not needed now the event is online.", ctx: [], pick: false},
+  ],
+  ask: [
+    {group: "Waiting for", kind: "wait", ref: "Work-a8f2cd41", title: "Send the signed supplier contract", since: "14 Oct", days: 15,
+     ctx: ["Version 3, with the new payment terms"], pick: true},
+    {group: "Waiting for", kind: "wait", ref: "Work-r7d2kq9m", title: "Quote for the new office chairs", since: "20 Oct", days: 9,
+     ctx: [], pick: true},
+    {group: "Questions", kind: "question", ref: "Work-m4p8vt2c", title: "Which week works for the site visit?",
+     ctx: ["Week 46 or 47"], pick: true},
+  ],
+};
+let dir = "inform", dark = false, confirm = true;
+const ctxOn = {inform: DATA.inform.map(t => t.ctx.map(() => true)), ask: DATA.ask.map(t => t.ctx.map(() => true))};
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const cut = (s, n = 80) => s.length > n ? s.slice(0, n - 1) + "…" : s;
+const picked = () => DATA[dir].filter(t => t.pick);
+
+/* ---- the mail model: the same for the HTML, the plain text and the links ---- */
+function model() {
+  const items = picked();
+  const first = items[0] ? cut(items[0].title, 60) : "";
+  const more = items.length > 1 ? " + " + (items.length - 1) + " more" : "";
+  const refLine = "Reference (leave as is): " + items.map(t => t.ref).join(" ");
+  const subject = dir === "inform" ? 'Update: "' + first + '"' + more
+    : items.every(t => t.kind === "question") ? 'Question about "' + first + '"' + more
+    : 'Waiting for "' + first + '"' + more;
+  /* said is written in for them: Got it opens with the words, so they only press Send. */
+  const reply = (subj, line, said = "") => ({subject: subj, body: said + "\n\n\n--\n" + (line ? line + "\n" : "") + refLine});
+  return {items, subject, refLine, cards: items.map((t, i) => {
+    const n = i + 1, title = cut(t.title);
+    const buttons = dir === "inform"
+      ? [{label: "Ask about this ›", c: "#2a7ae2", ...reply('Question about "' + title + '"', n + ": " + title)}]
+      : t.kind === "question"
+        ? [{label: "Answer this ›", c: "#2a7ae2", ...reply('Answer: "' + title + '"', n + ": " + title)}]
+        : [{label: "✓ Mark as done", c: "#1f9255", ...reply('Done: "' + title + '"', n + " done: " + title)},
+           {label: "Write about this ›", c: "#2a7ae2", ...reply('About "' + title + '"', n + ": " + title)}];
+    const s = dir === "inform" ? STATE[t.state] : KIND[t.kind];
+    const meta = dir === "inform" ? (t.state === "WAIT" && t.on ? "on " + t.on : "")
+      : [t.since ? "since " + t.since : "", t.days ? "asked " + t.days + " days ago" : ""].filter(Boolean).join(" · ");
+    const status = s.word + (meta ? " · " + meta : "");
+    return {n, t, s, meta, status, buttons, ctx: t.ctx.filter((_, j) => ctxOn[dir][DATA[dir].indexOf(t)][j])};
+  }), ack: dir === "inform" && confirm
+    ? {label: "✓ Got it, thanks", c: "#1f9255", ...reply("Re: " + subject, "Got it", "Got it, thanks.")} : null};
+}
+
+const href = r => "mailto:" + ME.email + "?subject=" + encodeURIComponent(r.subject) +
+  "&body=" + encodeURIComponent(r.body).replace(/%0A/g, "%0D%0A");
+
+/* ---- HTML for the clipboard: inline styles and tables only. No light fills
+   behind text, since Outlook's dark mode turns them grey and the text white:
+   the pill is a coloured border, the comment has a coloured stripe beside it,
+   and the one filled cell is the Got it button, whose text is white anyway.
+   Outlook ignores padding on <a>, so the button's padding is on its cell. ---- */
+function mailHtml(m, look = {}) {
+  const ink = look.dark ? "#e6e6e6" : "#15202b", grey = "#8190a0";
+  const F = "font-family:Segoe UI,Arial,sans-serif;";
+  const pill = (label, c) => '<td style="' + F + 'border:1.5px solid ' + c + ';border-radius:10px;padding:1px 9px;font-size:11.5px;' +
+    'font-weight:bold;letter-spacing:.5px;text-transform:uppercase;color:' + c + ';">' + esc(label) + "</td>";
+  const link = b => '<a href="' + esc(href(b)) + '" style="color:#2a7ae2;font-weight:bold;text-decoration:none;">' +
+    esc(b.label).replace("›", "&rsaquo;") + "</a>";
+  const intro = dir === "inform"
+    ? "Here is a short update on " + (m.items.length === 1 ? "the task" : "the " + m.items.length + " tasks") + " I said I would get back to you about."
+    : m.items.every(t => t.kind === "question") ? "I have a quick question for you."
+    : "I am waiting for an update on the items below" + (m.items.some(t => t.kind === "question") ? ", and I have a question" : "") + ".";
+  const help = dir === "inform"
+    ? (m.ack ? "One click confirms the lot. " : "") + "Ask about this opens a reply about that task alone. Or just reply, e.g. <i>2: can we go with the cheaper one?</i>"
+    : "Each link opens a short reply: write a line if you like, and send. Or just reply, e.g. <i>1 done</i> or <i>2: next week</i>.";
+  const card = c => {
+    const gone = c.t.state === "CANCELLED" ? "text-decoration:line-through;" : "";
+    return '<tr><td style="padding:0 0 12px;">' +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #c9d1d9;border-radius:8px;">' +
+      '<tr><td style="' + F + 'padding:14px 16px 6px;font-size:16px;font-weight:bold;color:' + ink + ';' + gone + '">' +
+        '<span style="color:' + grey + ';">' + c.n + '.</span> ' + esc(c.t.title) + "</td></tr>" +
+      c.ctx.map(l => '<tr><td style="' + F + 'padding:0 16px 4px;font-size:13px;color:' + grey + ';">' + esc(l) + "</td></tr>").join("") +
+      '<tr><td style="padding:2px 16px 10px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>' +
+        pill(c.s.word, c.s.c) +
+        (c.meta ? '<td style="' + F + 'padding-left:10px;font-size:13px;color:' + grey + ';">' + esc(c.meta) + "</td>" : "") +
+      "</tr></table></td></tr>" +
+      (c.t.comment && dir === "inform" ? '<tr><td style="padding:0 16px 10px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>' +
+        '<td width="3" bgcolor="' + c.s.c + '" style="background:' + c.s.c + ';width:3px;font-size:0;line-height:0;">&nbsp;</td>' +
+        '<td style="' + F + 'padding:2px 0 2px 12px;font-size:14.5px;color:' + ink + ';">' + esc(c.t.comment) + "</td>" +
+      "</tr></table></td></tr>" : "") +
+      '<tr><td style="' + F + 'padding:0 16px 13px;font-size:13.5px;">' +
+        c.buttons.map(link).join('<span style="color:' + grey + ';">&nbsp;&nbsp;·&nbsp;&nbsp;</span>') + "</td></tr>" +
+      "</table></td></tr>";
+  };
+  return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="' + F + 'font-size:15px;line-height:1.5;color:' + ink + ';max-width:600px;">' +
+    '<tr><td style="' + F + 'padding:0 0 14px;">Hi ' + esc(THEM.name) + ",</td></tr>" +
+    '<tr><td style="' + F + 'padding:0 0 16px;">' + esc(intro) + "</td></tr>" +
+    m.cards.map(card).join("") +
+    (m.ack ? '<tr><td style="padding:8px 0;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>' +
+      '<td bgcolor="#1a7f4f" style="background:#1a7f4f;border:1px solid #1a7f4f;border-radius:6px;padding:10px 18px;mso-padding-alt:10px 18px;">' +
+      '<a href="' + esc(href(m.ack)) + '" style="color:#ffffff;' + F + 'font-size:15px;font-weight:bold;text-decoration:none;display:inline-block;">' +
+      esc(m.ack.label) + "</a></td></tr></table></td></tr>" : "") +
+    '<tr><td style="' + F + 'padding:' + (m.ack ? "4px" : "8px") + ' 0 8px;font-size:13px;color:#7d8c99;">' + help + "</td></tr>" +
+    '<tr><td style="padding:0 0 18px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>' +
+      '<td style="' + F + 'border:1px solid #8696a4;border-radius:10px;padding:2px 10px;font-size:12px;color:#6e7b88;">' +
+      'Powered by <a href="https://github.com/kennethaar/GroupTodo" style="color:#2a7ae2;font-weight:bold;text-decoration:none;">GroupToDo</a></td>' +
+    "</tr></table></td></tr>" +
+    '<tr><td style="' + F + 'font-size:11px;color:' + grey + ';">' + esc(m.refLine) + "</td></tr>" +
+    "</table>";
+}
+
+/* ---- plain text: same content, for mail programs that paste text only ---- */
+function mailText(m) {
+  const lines = ["Hi " + THEM.name + ",", "",
+    dir === "inform" ? "Here is where these stand:" : "Could you let me know where these stand?", ""];
+  m.cards.forEach(c => {
+    lines.push(c.n + ". " + c.t.title);
+    c.ctx.forEach(l => lines.push("   " + l));
+    lines.push("   " + c.status);
+    if (c.t.comment && dir === "inform") lines.push("   " + c.t.comment);
+    lines.push("");
+  });
+  lines.push(dir === "inform" ? 'Reply with a number and a few words, e.g. "2: can we go with the cheaper one?", or just "ok".'
+                              : 'Reply with a number, e.g. "1 done" or "2: next week".',
+    "", m.refLine);
+  return lines.join("\n");
+}
+
+/* ---- copy as text/html + text/plain: a copy event works on file:// too ---- */
+function copyRich(html, text) {
+  let done = false;
+  const on = e => { e.clipboardData.setData("text/html", html); e.clipboardData.setData("text/plain", text); e.preventDefault(); done = true; };
+  document.addEventListener("copy", on);
+  try { document.execCommand("copy"); } catch (e) {}
+  document.removeEventListener("copy", on);
+  if (done) return Promise.resolve(true);
+  if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write)
+    return navigator.clipboard.write([new ClipboardItem({
+      "text/html": new Blob([html], {type: "text/html"}), "text/plain": new Blob([text], {type: "text/plain"})})]).then(() => true, () => false);
+  return Promise.resolve(false);
+}
+function toast(s) { const t = document.getElementById("toast"); t.textContent = s; t.classList.add("show"); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("show"), 4200); }
+
+/* ---- the dialog ---- */
+function chipRow(id, opts, cur, set) {
+  const box = document.getElementById(id); box.innerHTML = "";
+  opts.forEach(([k, label]) => { const b = document.createElement("button"); b.className = "chip" + (k === cur ? " on" : "");
+    b.textContent = label; b.onclick = () => { set(k); render(); }; box.append(b); });
+}
+function h(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) k.startsWith("on") ? e[k] = v : e.setAttribute(k, v);
+  e.append(...kids.filter(k => k != null)); return e;
+}
+const tick = (on, flip, sm) => h("button", {class: "tick" + (sm ? " sm" : "") + (on ? " on" : ""), onclick: () => { flip(); render(); }}, on ? "✓" : "");
+
+function renderDialog() {
+  document.getElementById("mtitle").textContent = dir === "inform" ? "Send " + THEM.name + " an update" : "Ask " + THEM.name + " for an update";
+  document.getElementById("mhint").textContent = "To " + THEM.email + " (email:: on " + THEM.full + "'s page in Work)";
+  const rows = document.getElementById("rows"); rows.innerHTML = "";
+  let group = null, n = 0;
+  DATA[dir].forEach((t, i) => {
+    if (t.group !== group) { group = t.group; rows.append(h("div", {class: "group"}, group)); }
+    const s = dir === "inform" ? STATE[t.state] : KIND[t.kind];
+    const num = t.pick ? ++n : null;
+    const main = h("div", {class: "main"},
+      h("div", {}, num ? h("span", {class: "num"}, num + ".") : null, t.title,
+        h("span", {class: "state", style: "color:" + s.c}, dir === "inform" ? s.word + (t.on ? ": " + t.on : "") : s.word)),
+      dir === "ask" && t.days ? h("div", {class: "sub"}, "Asked " + t.days + "d ago") : null,
+      ...t.ctx.map((l, j) => h("div", {class: "ctx"}, tick(ctxOn[dir][i][j], () => ctxOn[dir][i][j] = !ctxOn[dir][i][j], true), l)));
+    if (dir === "inform") {
+      const inp = h("input", {class: "comment", placeholder: "The one sentence " + THEM.name + " should read (optional)"});
+      inp.value = t.comment; inp.oninput = () => { t.comment = inp.value; renderMail(); renderLinks(); };
+      main.append(inp);
+    }
+    rows.append(h("div", {class: "row"}, tick(t.pick, () => t.pick = !t.pick), main));
+  });
+  if (dir === "inform") rows.append(h("label", {class: "opt"}, tick(confirm, () => confirm = !confirm, true), "Ask them to confirm (adds ✓ Got it, thanks)"));
+  const k = picked().length;
+  rows.append(h("div", {class: "summary"}, k
+    ? k + (k === 1 ? " task goes" : " tasks go") + " to " + THEM.name + ", with the lines you leave ticked. Nothing else from your vault goes with them. " +
+      (dir === "inform" ? "The status is what the task says now: change the task to change it. Each one gets informed:: " + THEM.name + " when sent."
+                        : "They get asked:: as today.")
+    : "Nothing ticked."));
+}
+function renderMail() {
+  const m = model();
+  document.getElementById("hto").textContent = THEM.full + " <" + THEM.email + ">";
+  document.getElementById("hsubj").textContent = m.subject;
+  document.getElementById("hsubj0").textContent = m.subject;
+  document.getElementById("pastehere").textContent = PASTE_HERE;
+  const box = document.getElementById("mail"); box.className = "mailbody" + (dark ? " dark" : "");
+  box.innerHTML = mailHtml(m, {dark});
+  document.getElementById("source").textContent = mailHtml(m);
+}
+function renderLinks() {
+  const m = model(), box = document.getElementById("links"); box.innerHTML = "";
+  const all = m.cards.flatMap(c => c.buttons.map(b => [c.n + ". " + b.label, b])).concat(m.ack ? [["Mail-wide: " + m.ack.label, m.ack]] : []);
+  all.forEach(([what, b]) => box.append(h("div", {class: "link"},
+    h("span", {class: "len"}, href(b).length + " chars"),
+    h("div", {class: "what"}, what),
+    h("pre", {}, "Subject: " + b.subject + "\n" + "⟨cursor⟩" + b.body))));
+}
+
+/* ---- the parser, the whole of it ---- */
+function parse(text) {
+  const refs = (text.match(/Reference[^:\n]*:\s*((?:[A-Za-z0-9]+-[a-z0-9]{8}\s*)+)/) || [, ""])[1].trim().split(/\s+/).filter(Boolean);
+  const top = text.split(/^\s*(?:--\s*$|>|On .* wrote:|From: )/m)[0];
+  const foot = (text.match(/^--\s*\n(?:(\d+)( done)?:|(ok|got it)\s*$)/im) || []);
+  if (foot[3]) return {refs, out: [{act: "ack"}], rest: top.replace(/^\s*Got it, thanks\.?/i, "").replace(/\s+/g, " ").trim()};
+  const out = [], loose = [];
+  let current = null;
+  top.split("\n").forEach(raw => {
+    const line = raw.trim(); if (!line) { current = null; return; }
+    let m;
+    if ((m = line.match(/^(?:re\s*)?(\d+)\s*[.:)-]?\s*(done|ok|✓|ja|klar|fertig|færdig|ferdig)\s*[.!]?$/i))) { out.push({n: +m[1], act: "done", text: ""}); current = null; }
+    else if ((m = line.match(/^(?:re\s*)?(\d+)\s*[.:)-]\s*(.+)$/i)) || (m = line.match(/^re\s*(\d+)\s+(.+)$/i))) { current = {n: +m[1], act: "comment", text: m[2]}; out.push(current); }
+    else if (current) current.text += " " + line;
+    else loose.push(line);
+  });
+  /* Greetings, sign-offs and a lone name are not about any task. "ok" or
+     "thanks" on its own, with nothing numbered, is Got it. */
+  const THANKS = /^(ok|okay|got it|thanks|thank you|takk|tack|danke|cheers)[,.!\s]*$/i;
+  const said = loose.filter(l => !/^(hi|hello|dear|hej|hei|hallo)\b/i.test(l) &&
+    !/^(best|kind regards|regards|br|mvh|med vennlig hilsen|vh|gr(ü|u)(ß|ss)e)\b/i.test(l) && !/^[A-ZÆØÅÄÖ][\w-]*\.?$/.test(l));
+  const ack = !out.length && !foot[1] && said.length && said.every(l => THANKS.test(l));
+  let rest = said.filter(l => !THANKS.test(l)).join(" ").replace(/\s+/g, " ").trim();
+  if (foot[1]) {
+    if (foot[2]) out.push({n: +foot[1], act: "done", text: rest}); else if (rest) out.push({n: +foot[1], act: "comment", text: rest});
+    rest = "";
+  } else if (ack) out.push({act: "ack"});
+  return {refs, out, rest};
+}
+const REPLIES = () => {
+  const m = model(), r = m.refLine;
+  return dir === "inform" ? [
+    ["Clicked Got it", "Got it, thanks.\n\n\n--\nGot it\n" + r],
+    ["Clicked Ask about 1", "Which supplier is the second one?\n\n--\n1: Quote for the new office chairs\n" + r],
+    ["Typed at the top", "Hi Alex,\n\nThanks!\n2: can the bus leave at 8 instead?\n3 - great, I'll tell finance.\n\nJamie\n\n> Hi Jamie,\n> " + r],
+    ["No numbers", "Sounds good, but I'd like a word about the chairs.\n\nJamie\n\n> " + r],
+  ] : [
+    ["Clicked Mark as done 1", "Signed copy attached.\n\n--\n1 done: Send the signed supplier contract\n" + r],
+    ["Typed at the top", "Hi Alex\n\n1 done\n2: waiting for the second supplier, Friday\n3: week 47, Tuesday or Wednesday\n\nJamie\n\nOn 29 Oct, Alex wrote:\n> " + r],
+  ];
+};
+let sample = 0;
+function renderReview() {
+  const ta = document.getElementById("reply");
+  const items = picked(), {refs, out, rest} = parse(ta.value);
+  const box = document.getElementById("review"); box.innerHTML = "";
+  document.getElementById("rtitle").textContent = "Reply from " + THEM.full + " · " + refs.length + " tasks in the reference";
+  let closes = 0, comments = 0;
+  out.forEach(o => {
+    if (o.act === "ack") {
+      box.append(h("div", {class: "row"}, h("span", {class: "verdict", style: "color:#1f9255"}, "GOT IT"),
+        h("div", {class: "main"}, THEM.name + " confirmed " + refs.length + " updates", h("div", {class: "sub"}, "acknowledged:: " + THEM.name + " on each"))));
+      return;
+    }
+    const t = items.find(x => x.ref === refs[o.n - 1]);
+    const isQ = t && t.kind === "question";
+    const v = o.act === "done" ? (dir === "ask" ? ["DONE", "#1f9255"] : ["OK", "#1f9255"]) : isQ ? ["ANSWER", "#2a7ae2"] : ["COMMENT", "#2a7ae2"];
+    if (o.act === "done" && dir === "ask") closes++; else comments++;
+    box.append(h("div", {class: "row"}, h("span", {class: "verdict", style: "color:" + v[1]}, v[0]),
+      h("div", {class: "main"}, h("span", {class: "num"}, o.n + "."), t ? t.title : "(no task " + o.n + " in the reference)",
+        o.text ? h("div", {class: "sub"}, "“" + o.text + "”") : null,
+        dir === "inform" && o.act === "comment" ? h("div", {class: "sub"}, "Comment in " + THEM.name + "'s name · Make a task of it") : null)));
+  });
+  if (rest) {
+    const sel = h("select", {class: "comment"}, h("option", {}, "Pick a task…"), ...items.map((t, i) => h("option", {}, (i + 1) + ". " + t.title)), h("option", {}, "A new task"));
+    box.append(h("div", {class: "row"}, h("span", {class: "verdict", style: "color:#c07a12"}, "WHICH?"),
+      h("div", {class: "main"}, "“" + rest + "”", sel)));
+  }
+  if (!box.children.length) box.append(h("div", {class: "sub", style: "padding:8px 0"}, "Nothing to import."));
+  document.getElementById("apply").textContent = "Apply" + (closes || comments
+    ? ": " + [closes && closes + (closes === 1 ? " close" : " closes"), comments && comments + (comments === 1 ? " comment" : " comments")].filter(Boolean).join(", ") : "");
+}
+function setSample(i) { sample = i; document.getElementById("reply").value = REPLIES()[i][1]; }
+
+function render() {
+  chipRow("dir", [["inform", "Send an update (/inform)"], ["ask", "Ask for an update"]], dir, k => { if (k !== dir) { dir = k; setSample(0); } });
+  chipRow("look", [[false, "Light mail"], [true, "Outlook dark mode"]], dark, k => dark = k);
+  chipRow("samples", REPLIES().map((r, i) => [i, r[0]]), sample, setSample);
+  renderDialog(); renderMail(); renderLinks(); renderReview();
+}
+document.getElementById("reply").oninput = renderReview;
+/* What the mail opened by Copy and open email says before the paste. Their own
+   signature goes under it, as in any new mail. */
+const PASTE_HERE = "[ Paste the GroupToDo update here: select this line and press Ctrl+V ]";
+const send = open => () => {
+  const m = model();
+  copyRich(mailHtml(m), mailText(m)).then(ok => {
+    if (!ok) { toast("Could not copy. Select the mail below and press Ctrl+C."); return; }
+    if (open) { location.href = "mailto:" + THEM.email + "?subject=" + encodeURIComponent(m.subject) +
+        "&body=" + encodeURIComponent(PASTE_HERE + "\r\n\r\n");
+      toast("The update is on your clipboard. Select the paste line in the new mail and press Ctrl+V."); }
+    else toast("Copied. Paste it into any mail or chat. Subject: " + m.subject);
+  });
+};
+document.getElementById("copyopen").onclick = send(true);
+document.getElementById("copyonly").onclick = send(false);
+document.getElementById("plain").onclick = () => {
+  const m = model();
+  location.href = "mailto:" + THEM.email + "?subject=" + encodeURIComponent(m.subject) + "&body=" + encodeURIComponent(mailText(m)).replace(/%0A/g, "%0D%0A");
+};
+setSample(0); render();
+</script>
