@@ -1182,6 +1182,43 @@ var GTD_TEST = (() => {
       eq(getComputedStyle(add).opacity, "1", "focused, it shows");
     } finally { box.remove(); }
   });
+  test("#180 a tracker on the day has one menu, with edit and remove in it, not a bare cross", () => {
+    const path = "journals/2099_01_02.md";
+    putPage(path, {props: {"tracker-weight_k": "80"}, blocks: []});
+    const box = dayTrackersBlock(path, {move: V.space});
+    document.body.append(box);
+    try {
+      const btns = [...box.querySelectorAll(".trkx")];
+      eq(btns.length, 1, "one button per tracker");
+      eq(btns[0].textContent, "⋯");
+      btns[0].click();
+      const menu = document.querySelector(".modal").textContent;
+      for (const w of ["When it comes round", "Rename", "Move to another area", "Remove from this day", "Stop tracking"])
+        has(menu, w);
+    } finally { closeModal(); box.remove(); }
+  });
+  test("#180 removing a tracker a template brings in can still be undone", () => {
+    const path = "journals/2099_01_03.md", tpl = DIRS.lists + "/Test 180 every day.md";
+    putPage(path, {props: {"tracker-weight_k": "80"}, blocks: []});
+    putPage(tpl, {props: {"tracker-weight_k": ""}, blocks: []});
+    document.querySelectorAll("#toasts > *").forEach(n => n.remove());
+    try {
+      ok(trackerTemplatesWith("weight").length, "a template brings it in");
+      removeDayTracker(path, "tracker-weight_k");
+      ok(!("tracker-weight_k" in getPage(path).props), "off the day");
+      const toast = document.querySelector("#toasts > .toast:last-child");
+      has(toast.textContent, "will put it on new days");
+      const act = toast.querySelector(".act");
+      eq(act && act.textContent, "Undo");
+      act.click();
+      eq(getPage(path).props["tracker-weight_k"], "80", "back");
+    } finally { removePage(tpl); }
+  });
+  test("#180 on a phone last time's value goes under the boxes, not on top", () => {
+    const css = [...document.styleSheets].flatMap(sh => { try { return [...sh.cssRules]; } catch (_) { return []; } })
+      .filter(r => r.media && /max-width:\s*560px/.test(r.media.mediaText)).map(r => r.cssText).join(" ");
+    ok(/\.pfact\s*>\s*\.prevval\s*\{[^}]*flex-basis:\s*100%/.test(css), "prevval takes its own line");
+  });
   test("#160 the journal's upkeep can be reached with Tab", async () => {
     go("today");
     await settle();

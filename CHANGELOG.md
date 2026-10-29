@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.11.5 - 2026-10-29
+
+- Trackers on a phone (#180). Each tracker on the day has one ⋯ that shows
+  on a touch screen too, with When it comes round, Rename, Move to another
+  area, Remove from this day and Stop tracking. The bare ✕ is gone: it could
+  not be seen on a phone and was tapped by mistake. Removing one from the
+  day always offers Undo, also when a template puts it on new days. On a
+  narrow screen last time's value goes on its own line under the boxes
+  instead of showing through the box you type today's in.
+
 ## 1.11.4 - 2026-10-29
 
 - Phones that open folders (#179). Chrome on Android has done so since
