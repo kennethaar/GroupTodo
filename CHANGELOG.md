@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.11.3 - 2026-10-29
+
+- The app is on GitHub Pages (#178), at
+  https://kennethaar.github.io/GroupTodo/, so it opens and installs from a
+  link with no download and no serve.py. Every push to main publishes it.
+
 ## 1.11.2 - 2026-10-29
 
 - Prices on a project read right (#176). A sum is written the way its

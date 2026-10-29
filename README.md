@@ -2,6 +2,8 @@
 
 A shared to-do list built on GTD (Getting Things Done) that keeps everything as plain Markdown files in a folder you already have. **No install, no account, no server.**
 
+**Try it:** open <https://kennethaar.github.io/GroupTodo/> in Edge or Chrome. It is the same file as `grouptodo.html`, and your vault stays on your own disk.
+
 **Why it shares easily:** Most task apps keep your tasks on their servers, requiring an account and a paid seat for everyone. GroupToDo has nothing to join: share the folder the way you already share folders (OneDrive, Dropbox, or a network share) and you are done. Remove someone from the folder and they are out. Every file opens in Notepad, so the list outlives the tool.
 
 ---
