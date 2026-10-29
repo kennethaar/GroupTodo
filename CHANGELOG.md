@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.9.0 - 2026-10-29
+
+- The line toolbar keeps your place (#170): after moving, indenting or
+  changing a line, the page no longer jumps to the top. The line stays where
+  it was on the screen and the caret stays in it, so a phone keeps its
+  keyboard up.
+- The line toolbar can add a picture (#170): Photo opens the camera on a
+  phone, Image picks one or more pictures already taken. They are saved in
+  assets/, as a dropped file is, and linked in the line.
+
 ## 1.8.0 - 2026-10-29
 
 - While you write a line, a toolbar sits at the foot of the screen (#170):

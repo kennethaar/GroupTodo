@@ -424,7 +424,7 @@ var GTD_TEST = (() => {
       await frame();
       ok(bar() && !bar().hidden, "no toolbar while a line is being written");
       eq([...bar().querySelectorAll(".elb")].map(n => n.textContent),
-        ["Up", "Down", "Outdent", "Indent", "Note", "Zettel", "Project", "Area"]);
+        ["Up", "Down", "Outdent", "Indent", "Note", "Zettel", "Project", "Area", "Photo", "Image"]);
       await press("down");
       eq(titles(), ["Alpha", "Charlie", "Bravo"], "after down");
       ok(document.activeElement && document.activeElement.closest('.blk[data-id="' + bravo.id + '"]'), "the caret left the line");
@@ -441,6 +441,55 @@ var GTD_TEST = (() => {
       document.activeElement.blur();
       await frame();
       ok(bar().hidden, "the toolbar stays after the line is let go");
+    } finally { go("today"); }
+  });
+  test("#170 a toolbar move keeps the line where it was on the screen, caret in it", async () => {
+    const path = scratchProject("edit bar scroll", Array.from({length: 60}, (_, i) => ["TODO", "Row " + i]));
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    openPage(path);
+    await settle();
+    const row = getPage(path).blocks[40];
+    const txt = () => document.querySelector('.blk[data-id="' + row.id + '"] .txt');
+    try {
+      txt().scrollIntoView({block: "center"});
+      focusBlock(row.id);
+      await frame();
+      const c = content(), top = txt().getBoundingClientRect().top;
+      ok(c.scrollTop > 200, "the page did not scroll down to the line");
+      for (const k of ["down", "in", "out", "up"]) {
+        document.querySelector('#editBar [data-k="' + k + '"]').click();
+        eq(document.activeElement, txt(), "the caret is not back in the line at once after " + k);
+        await frame(); await frame();
+        ok(Math.abs(txt().getBoundingClientRect().top - top) < 2, "after " + k + " the line moved on screen from " +
+          Math.round(top) + " to " + Math.round(txt().getBoundingClientRect().top));
+      }
+    } finally { go("today"); }
+  });
+  test("#170 the toolbar's Image puts a picture in the line", async () => {
+    const path = scratchProject("edit bar image", [["TODO", "Snap the whiteboard"]]);
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    openPage(path);
+    await settle();
+    const b = getPage(path).blocks[0];
+    try {
+      focusBlock(b.id);
+      await frame();
+      const click = HTMLInputElement.prototype.click;
+      let input = null;
+      HTMLInputElement.prototype.click = function () { input = this; };
+      try { document.querySelector('#editBar [data-k="image"]').click(); }
+      finally { HTMLInputElement.prototype.click = click; }
+      ok(input && input.type === "file" && input.accept === "image/*", "no image picker");
+      const photo = document.querySelector('#editBar [data-k="photo"]');
+      HTMLInputElement.prototype.click = function () { this.remove(); eq(this.getAttribute("capture"), "environment", "Photo is not the camera"); };
+      try { photo.click(); } finally { HTMLInputElement.prototype.click = click; }
+      const dt = new DataTransfer();
+      dt.items.add(new File([new Uint8Array([137, 80, 78, 71])], "board.png", {type: "image/png"}));
+      input.files = dt.files;
+      input.dispatchEvent(new Event("change"));
+      for (let i = 0; i < 50 && !/!\[board\.png\]\(assets\//.test(getPage(path).blocks[0].title); i++) await frame();
+      has(getPage(path).blocks[0].title, "![board.png](assets/", "the line has no picture");
+      ok(!input.isConnected, "the picker is left behind");
     } finally { go("today"); }
   });
   test("renamePage rewrites the links to it", () => {
