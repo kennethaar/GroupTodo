@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.13.1 - 2026-10-29
+
+- The tour's "Tick off what you have done" prompt opens with every box
+  empty, and "Tick these off" waits until you tick one (#184). Going
+  somewhere is not the same as being done with it.
+
 ## 1.13.0 - 2026-10-29
 
 - Sense where I am knows work hours (#183). Set the days, from and to,

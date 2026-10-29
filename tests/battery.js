@@ -1439,6 +1439,20 @@ var GTD_TEST = (() => {
     await settle();
     eq(state.helpTopic, "repeat");
   });
+  test("#184 the tour's tick-off prompt starts with nothing ticked", async () => {
+    const step = {path: "x.md", block: {title: "Meet [[go/people]]", state: "TODO"}, dest: "people"};
+    askTourCheckoff([step]);
+    const toast = [...$("#toasts").children].pop();
+    try {
+      const box = toast.querySelector("input[type=checkbox]");
+      const ok = [...toast.querySelectorAll("button")].find(b => b.textContent === "Tick these off");
+      eq(box.checked, false);
+      eq(ok.disabled, true);
+      box.checked = true;
+      box.dispatchEvent(new Event("change"));
+      eq(ok.disabled, false);
+    } finally { toast.remove(); PREF.set("tour.asked", ""); }
+  });
   test("#171 a topic can be read beside the view", async () => {
     helpReset();
     go("projects", {sub: "list"});
