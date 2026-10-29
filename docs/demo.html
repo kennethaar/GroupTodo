@@ -534,16 +534,19 @@ body:not(.pane-open) .panegrip{display:none}
    squeeze the row when it is full (flex:none above stops that), and the dial
    takes its size from the row's own width, cqi, not from a percentage. Big,
    the svg drops the pad the numbers need outside the rim (timerPaintDial),
-   or it would reach past the row and scroll the sidebar sideways. */
-.nav-item.timer.dial.big{flex-wrap:wrap;gap:8px 10px;padding:10px 14px;container-type:inline-size}
-.nav-item.timer.dial.big .tdial{flex:none;width:100cqi;height:100cqi}
-.nav-item.timer.dial.big .tdial svg{width:100%;margin:0}
-.nav-item.timer.dial.big .tnums{transform:scale(.5);transform-origin:28px 28px}
-.nav-item.timer.dial.big .tnum{font-size:9px}
-.nav-item.timer.dial.big .tface{stroke-width:.6}
-.nav-item.timer.dial.big .tquart line{stroke-width:.9}
-.nav-item.timer.dial.big .thub{stroke-width:.5}
-.nav-item.timer.dial.big .lbl{font-size:24px;line-height:1.1}
+   or it would reach past the row and scroll the sidebar sideways. --fit
+   keeps it to the room the sidebar has, so it does not make it scroll. */
+.nav-item.timer.dial.grown{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;
+  gap:8px 10px;padding:10px 14px;container-type:inline-size}
+.nav-item.timer.dial.grown .tdial{grid-column:1/-1;justify-self:center;
+  width:min(100cqi, var(--fit, 100cqi));height:min(100cqi, var(--fit, 100cqi))}
+.nav-item.timer.dial.grown .tdial svg{width:100%;margin:0}
+.nav-item.timer.dial.grown .tnums{transform:scale(.5);transform-origin:28px 28px}
+.nav-item.timer.dial.grown .tnum{font-size:9px}
+.nav-item.timer.dial.grown .tface{stroke-width:.6}
+.nav-item.timer.dial.grown .tquart line{stroke-width:.9}
+.nav-item.timer.dial.grown .thub{stroke-width:.5}
+.nav-item.timer.dial.grown .lbl{font-size:24px;line-height:1.1}
 /* Time is up on the dial: a slow glow that breathes, not a strobe. */
 @keyframes dialpulse{0%,100%{filter:drop-shadow(0 0 0 transparent)}
   50%{filter:drop-shadow(0 0 6px var(--accent))}}
@@ -12638,12 +12641,21 @@ function timerPaintDial(b, drag, left, due) {
   const max = timerMax(), dragging = drag != null, len = Math.round(TIMER_LEN / 60000);
   const dial = b.querySelector(".tdial");
   // Big while a timer runs, with the alarm or without, and once it has rung until that is clicked away.
+  // "grown", not "big": .big is already the app's 64 px tile and would shrink it to that.
   const big = left > 0 || due >= 0;
-  if (big !== b.classList.contains("big")) {
-    b.classList.toggle("big", big);
+  if (big !== b.classList.contains("grown")) {
+    b.classList.toggle("grown", big);
     const pad = big ? 0 : DIAL_PAD, box = 2 * (DIAL_C + pad);
     dial.querySelector("svg").setAttribute("viewBox", `${-pad} ${-pad} ${box} ${box}`);
   }
+  /* Grown, no taller than the sidebar has room for: what the spacer above
+     holds beyond its 12 px, less whatever already overflows. Not under 80 px;
+     a sidebar too short for that scrolls. */
+  if (big) {
+    const nav = b.parentElement, grow = nav?.querySelector(".nav-grow");
+    const free = nav ? nav.clientHeight - nav.scrollHeight + (grow ? grow.offsetHeight - 12 : 0) : 0;
+    dial.style.setProperty("--fit", Math.max(80, dial.offsetHeight + free) + "px");
+  } else dial.style.removeProperty("--fit");
   dial.querySelector(".tsector").setAttribute("d",
     dialSector(dragging ? drag.minutes / max : Math.min(1, left / (max * 60000))));
   dial.setAttribute("aria-valuenow", String(dragging ? drag.minutes : Math.ceil(left / 60000)));
