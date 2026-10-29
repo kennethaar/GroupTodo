@@ -241,7 +241,7 @@ body:not(.pane-open) .panegrip{display:none}
 .clkrow{display:flex;align-items:center;gap:6px;font-size:12.5px;padding:1px 4px;border-radius:4px}
 .clkrow.on{background:var(--bg3)}
 .clkrow .textbtn:first-child{min-width:96px;text-align:left}
-.clkrow input[type=time]{width:auto}
+.clkrow input.clk{width:5.5em}
 .clkmin{flex:1;color:var(--fg3);text-align:right}
 .clksum{font-size:12px;color:var(--fg3)}
 .pfhidden>summary{font-size:11.5px;letter-spacing:.3px;padding:2px 4px}
@@ -1797,7 +1797,9 @@ button.prow{width:100%;text-align:left}
 .countdown .cd-left{color:var(--accent);white-space:nowrap;font-variant-numeric:tabular-nums}
 .dt{display:flex;gap:6px;flex-wrap:wrap}
 .dt input[type=date]{flex:1 1 9em;min-width:0}
-.dt input[type=time]{flex:1 1 6.5em;min-width:0}
+.dt input.clk{flex:1 1 6.5em;min-width:0}
+input.clk{width:5.5em;font-variant-numeric:tabular-nums}
+input.clk.bad{border-color:var(--late)}
 .grid2>.field{min-width:0}
 .cal-item.bday{font-style:italic}
 .chip.urg{font-variant-numeric:tabular-nums;color:var(--fg2)}
@@ -2457,7 +2459,7 @@ body.solview #content{padding-bottom:14px}
   </ul>
 
   <h3>Engage (Views)</h3>
-  <h4>Today</h4>
+  <h4>Journal</h4>
   <ul>
     <li><b>Overview:</b> Displays overdue and due-today items first, followed by the next 7 days, then your daily journals per Area. (On wide screens, journals appear side by side.)</li>
     <li><b>Focus (Zoom):</b> Click any bullet to focus exclusively on that branch. Use the breadcrumb trail at the top to zoom back out.</li>
@@ -3015,6 +3017,48 @@ function openDoneHistory() {
 
 /* ---------- dates ---------- */
 const pad2 = n => String(n).padStart(2, "0");
+/* A typed clock -> "HH:MM", or null: 08:43, 8:43 and 8.43 as written, and
+   0843 or 843 the way a number pad types it. */
+function readClock(s) {
+  const t = trim(String(s ?? ""));
+  const m = /^(\d{1,2})[:.](\d{2})$/.exec(t) || /^(\d{1,2})(\d{2})$/.exec(t);
+  if (!m || +m[1] > 23 || +m[2] > 59) return null;
+  return pad2(+m[1]) + ":" + m[2];
+}
+/* Every time field in the app, instead of the browser's own: that one has an
+   AM/PM part in some locales and a wheel on phones, and reads 0843 nowhere.
+   What was typed becomes HH:MM on leaving the field or on Enter, before the
+   dialog's own change handlers see it, so their split(":") keeps working. */
+function clockInput(value, attrs = {}) {
+  const ons = {}, rest = {};
+  for (const [k, v] of Object.entries(attrs)) (k.startsWith("on") ? ons : rest)[k] = v;
+  const n = el("input", Object.assign({type: "text", inputmode: "numeric", placeholder: "08:43",
+    autocomplete: "off", spellcheck: "false"}, rest, {class: "clk" + (rest.class ? " " + rest.class : "")}));
+  n.value = readClock(value) || trim(value || "");
+  let said = "";
+  const tidy = () => {
+    const v = trim(n.value), c = readClock(v);
+    if (c && c !== n.value) n.value = c;
+    const bad = !!v && !c;
+    n.classList.toggle("bad", bad);
+    if (bad) n.setAttribute("aria-invalid", "true"); else n.removeAttribute("aria-invalid");
+    if (bad && said !== v) notify("That is not a time I can read. Try 08:43, 0843 or 14:30.", "warn");
+    said = bad ? v : "";
+  };
+  n.tidy = tidy;
+  n.addEventListener("change", tidy);
+  n.addEventListener("keydown", e => { if (e.key === "Enter") tidy(); });
+  for (const [k, v] of Object.entries(ons)) n.addEventListener(k.slice(2), v);
+  return n;
+}
+/* True, with the field marked and focused, when one of these clock fields
+   holds something that is not a time: a save stops there rather than write it. */
+function badClock(...ins) {
+  for (const i of ins) i.tidy();
+  const bad = ins.find(i => i.classList.contains("bad"));
+  if (bad) bad.focus();
+  return !!bad;
+}
 const isoOf = d => d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate());
 
 /* Timestamps are written to the files in UTC so two people in different
@@ -7588,16 +7632,18 @@ function openClockEditor(path, block) {
     if (!order.length) list.append(el("div", {class: "empty"}, "No time on this task. Drag on the day above to add some."));
     for (const [c, i] of order) {
       const d = isoOf(c.start);
-      const from = el("input", {type: "time", value: hhmm(c.start), onchange: e => {
+      const from = clockInput(hhmm(c.start), {onchange: e => {
+        if (e.target.value && !readClock(e.target.value)) return;
         const [h, m] = (e.target.value || "00:00").split(":");
         const len = c.end ? c.end - c.start : 0;
         c.start = clockAt(d, h, m);
         if (c.end) c.end = new Date(c.start.getTime() + len);
         draw();
       }});
-      const to = el("input", {type: "time", value: c.end ? hhmm(c.end) : "", title: c.end ? "" : "Still running. Give it an end to stop it",
+      const to = clockInput(c.end ? hhmm(c.end) : "", {title: c.end ? "" : "Still running. Give it an end to stop it",
         onchange: e => {
           if (!e.target.value) { c.end = null; draw(); return; }
+          if (!readClock(e.target.value)) return;
           const [h, m] = e.target.value.split(":");
           let z = clockAt(d, h, m);
           if (z <= c.start) z = clockAt(shiftISO(d, 1), h, m);      // past midnight
@@ -9672,7 +9718,7 @@ function openRecurrenceDialog({title, spec = "", starts = null, ends = "", time 
   /* -- a routine's start, time and end -- */
   const startWhen = el("div", {class: "seg"});
   let startMode = starts && starts > today ? "on" : "today";
-  const timeIn = el("input", {type: "time", value: /^\d{1,2}:\d{2}/.test(time) ? time.padStart(5, "0") : "", style: "width:auto"});
+  const timeIn = clockInput(/^\d{1,2}:\d{2}/.test(time) ? time.padStart(5, "0") : "");
   const afterM = /^after\s+(\d+)/i.exec(ends || "");
   let endMode = afterM ? "after" : dateIn(ends) ? "on" : "never";
   const endIn = el("input", {type: "date", value: dateIn(ends) || shiftISO(today, 90), style: "width:auto"});
@@ -9732,6 +9778,7 @@ function openRecurrenceDialog({title, spec = "", starts = null, ends = "", time 
     foot: [
       el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
       el("button", {class: "btn primary", onclick: () => {
+        if (badClock(timeIn)) return;
         const r = current();
         const out = {spec: r ? formatRule(r) : ""};
         if (schedule && r) {
@@ -11827,11 +11874,11 @@ function renderNav() {
     },
       el("span", {class: "ic bw"}, it.icon),
       el("span", {class: "lbl"}, it.label),
-      n ? el("span", {class: "cnt" + (hot ? " hot" : "")}, String(n)) : null,
       folds ? el("span", {class: "fold", role: "button", "aria-expanded": String(open),
         title: open ? "Fold the contexts away" : "Show every context",
         onclick: e => { e.stopPropagation(); PREF.set("nav.ctxOpen", open ? "0" : "1"); renderNav(); }},
-        open ? "▾" : "▸") : null));
+        open ? "▾" : "▸") : null,
+      n ? el("span", {class: "cnt" + (hot ? " hot" : "")}, String(n)) : null));
     if (open) nav.append(...navContexts());
   }
 }
@@ -12846,11 +12893,14 @@ function whenDay(p, today, loose = 0) {
 }
 
 /* One phrase -> "HH:MM", or null. 14:00 is a time on its own; 2pm, at 2 and
-   kl 14 are times because of the word that came with them. */
+   kl 14 are times because of the word that came with them, and so are kl 0843
+   and at 1430: four digits alone are a year or a room as often as a time. */
 function whenClock(p) {
-  const m = /^(at|kl\.?|klokka|klokken)?\s*(\d{1,2})(?:([:.])(\d{2}))?\s*(am|pm)?$/.exec(p);
+  const m = /^(at|kl\.?|klokka|klokken)?\s*(?:(\d{1,2})(?:([:.])(\d{2}))?|(\d{1,2})(\d{2}))\s*(am|pm)?$/.exec(p);
   if (!m) return null;
-  const [, kw, hh, sep, mm, ap] = m;
+  const [, kw, h2, s2, m2, h4, m4, ap] = m;
+  if (h4 && !kw) return null;
+  const hh = h4 || h2, mm = h4 ? m4 : m2, sep = h4 ? ":" : s2;
   if (!kw && !ap && !sep) return null;
   /* 14.30 is how a time is written here too. Only where it cannot be a day
      and a month -- 10.12 stays the 10th of December unless kl says otherwise --
@@ -23065,7 +23115,8 @@ function remindRearm(block) {
 function whenFromBox(text, day) {
   const p = whenEnglish(trim(text).toLowerCase());
   if (!p) return {day, time: null};
-  const c = whenClock(p) || (/^\d{1,2}$/.test(p) ? whenClock("at " + p) : null);
+  // The box only ever holds a time, so 0843 and 8.43 need no kl in front.
+  const c = whenClock(p) || (/^\d{1,2}$/.test(p) ? whenClock("at " + p) : null) || readClock(p);
   if (c) return {day, time: c};
   const rel = whenFromNow(p);
   if (rel) return {day: rel.day, time: rel.time, now: true};
@@ -23114,7 +23165,7 @@ function openDueChipMenu(a, anchor) {
   });
   const save = () => {
     const got = whenFromBox(timeIn_.value, dateIn_.value || w.day);
-    if (!got) { notify("That is not a time I can read. Try 14:30, kl 13 or in 45 minutes.", "warn"); timeIn_.focus(); return; }
+    if (!got) { notify("That is not a time I can read. Try 14:30, 0843, kl 13 or in 45 minutes.", "warn"); timeIn_.focus(); return; }
     closeModal();
     apply(got.day, got.time, {now: got.now});
   };
@@ -26044,8 +26095,8 @@ function openMeetingForm(path, block) {
   const list = el("datalist", {id: "meetpeople"}, ...[...new Set(people)].map(n => el("option", {value: n})));
   const title = el("input", {value: meetingTitle(block), placeholder: "What the meeting is about"});
   const date = el("input", {type: "date", value: dateIn(blockProp(block, "date")) || day || todayISO()});
-  const from = el("input", {type: "time", value: trim(from0 || "")});
-  const to = el("input", {type: "time", value: trim(to0 || "")});
+  const from = clockInput(from0);
+  const to = clockInput(to0);
   const who = el("input", {value: linkWords(blockProp(block, "attendees") || ""), list: "meetpeople",
     placeholder: "Names, separated by commas"});
   const agenda = el("textarea", {placeholder: "One point per line", style: "min-height:120px"});
@@ -26058,6 +26109,7 @@ function openMeetingForm(path, block) {
   const shownIn = also ? calTargets(block, also) : [];
   const where = others.map(n => el("input", {type: "checkbox", value: n, checked: shownIn.includes(n) ? "" : null}));
   const save = () => {
+    if (badClock(from, to)) return;
     const words = trim(title.value);
     if (!words) { title.focus(); return; }
     const chosen = where.filter(t => t.checked).map(t => t.value);
@@ -26214,9 +26266,8 @@ function meetingNotesCard(path) {
 const TIMELOG_RE = /(^|\s)#timelog(?![\p{L}\p{N}_-])/iu;
 const isTimeLog = b => TIMELOG_RE.test(String(b?.title || ""));
 function clockMin(s) {
-  const m = /^(\d{1,2})[:.](\d{2})$/.exec(trim(String(s || "")));
-  if (!m || +m[1] > 23 || +m[2] > 59) return null;
-  return +m[1] * 60 + +m[2];
+  const c = readClock(s);
+  return c ? +c.slice(0, 2) * 60 + +c.slice(3) : null;
 }
 const nowClock = () => { const d = new Date(); return pad2(d.getHours()) + ":" + pad2(d.getMinutes()); };
 const timeLogWho  = b => trim((/\[\[p\/([^\]]+)/i.exec(b.title || "") || [])[1] || "");
@@ -26294,14 +26345,15 @@ function openTimeForm(path, entry, {leaving = false, from = null, project = "", 
     placeholder: "Which project"});
   const fromDay = from && from.path && dayOfPath(from.path);
   const day = el("input", {type: "date", value: (entry && dayOfPath(path)) || fromDay || todayISO()});
-  const tin = el("input", {type: "time", value: entry ? trim(blockProp(entry, "in") || "") : nowClock()});
-  const tout = el("input", {type: "time", value: leaving ? nowClock() : entry ? trim(blockProp(entry, "out") || "") : ""});
+  const tin = clockInput(entry ? blockProp(entry, "in") : nowClock());
+  const tout = clockInput(leaving ? nowClock() : entry ? blockProp(entry, "out") : "");
   const hrs = el("input", {inputmode: "decimal", value: entry ? trim(blockProp(entry, "hours") || "") : "",
     placeholder: "e.g. 3.5", style: "width:90px"});
   const note = el("input", {value: entry ? timeLogNote(entry) : "", placeholder: "What they did (optional)"});
   const sum = el("div", {class: "hint", style: "text-align:left;margin:0;padding:0 16px"});
   const draft = () => {
-    const b = {props: {in: tin.value, out: tout.value, hours: tin.value ? "" : hrs.value}};
+    // Read the way the fields will be, so a half-typed 084 sums to nothing yet.
+    const b = {props: {in: readClock(tin.value) || "", out: readClock(tout.value) || "", hours: tin.value ? "" : hrs.value}};
     const m = timeLogMinutes(b, day.value);
     sum.textContent = !tin.value && !trim(hrs.value) ? "Give the time they came, or the hours."
       : tin.value && !tout.value ? (m ? fmtMinutes(m) + " so far. " : "") + "Out stays empty while they are there."
@@ -26322,6 +26374,7 @@ function openTimeForm(path, entry, {leaving = false, from = null, project = "", 
   const save = () => {
     const name = trim(who.value), pname = trim(proj.value);
     if (!name) { who.focus(); return; }
+    if (badClock(tin, tout)) return;
     if (!tin.value && !trim(hrs.value)) { tin.focus(); return; }
     const date = day.value || todayISO();
     let target = null;
@@ -27918,6 +27971,13 @@ function viewToday() {
      body: () => tasksBy(now, "Nothing due. Nothing late.")},
     {id: "week", title: "Next 7 Days", count: week.length,
      body: () => tasksBy(week, "Nothing in the next seven days.")},
+    /* Where you said you are: the oldest few open there, drawn fresh each
+       time, so one ticked off makes room for the next. */
+    !who && state.context ? (() => {
+      const here = oldestTodosForContext(state.context);
+      return {id: "ctx", title: "@" + state.context, count: here.length,
+        body: () => tasksBy(here, "Nothing open in @" + state.context + ".")};
+    })() : null,
     ...spaces.map(sp => {
       const lines = inSpace(sp, () => {
         const pg = getPage(who ? journalPath(day, who) : journalPath(day));
@@ -27956,7 +28016,7 @@ function viewToday() {
      Another day changes nothing beside the date box, so the box stays where
      it was: the way back hangs under it, and past or ahead goes under the
      weekday (#139). */
-  const head = vhead(day === today ? "Today" : "Journal", dayName(day),
+  const head = vhead("Journal", dayName(day),
     el("div", {class: "dayhold"},
       el("div", {class: "daynav daybox"},
         el("button", {class: "dayarrow", title: "The day before", "aria-label": "The day before",
@@ -36283,10 +36343,11 @@ function pickRow(key, label, detail, onclick) {
    letter c means "phone" to one rule and "computer" to the other, and a picker
    you cannot predict is worse than either rule alone. A list whose names you
    know wants typeahead; a list of unfamiliar things wants the letters. */
-function listPicker({title, hint, items, label, detail, onPick, footer, typeahead = false}) {
+function listPicker({title, hint, items, label, detail, onPick, footer, typeahead = false, start = 0}) {
   const letters = "abcdefghijklmnopqrstuvwxyz";
   let filtered = items.slice();
-  let sel = 0, buf = "", bufAt = 0;
+  // start -1: nothing is chosen until you type or press an arrow.
+  let sel = start, buf = "", bufAt = 0;
   const body = el("div", {});
   const list = el("div", {});
   const input = el("input", {
@@ -36312,13 +36373,16 @@ function listPicker({title, hint, items, label, detail, onPick, footer, typeahea
   }
   const starts = () => filtered.map((it, i) => [i, plain(it)])
     .filter(([, name]) => name.startsWith(buf)).map(([i]) => i);
+  /* What you type shows in the box, so the keys are seen to land somewhere,
+     even though it aims rather than filters. */
+  const echo = () => { if (typeahead && document.activeElement !== input) input.value = buf; };
   function match() {
     const hit = buf ? starts() : [];
-    sel = buf ? (hit.length ? hit[0] : sel) : 0;
-    draw();
+    sel = buf ? (hit.length ? hit[0] : sel) : start;
+    echo(); draw();
   }
   function cycle(ch) {
-    buf = ch;
+    buf = ch; echo();
     const hit = starts();
     if (!hit.length) return;
     sel = hit[(hit.indexOf(sel) + 1) % hit.length];
@@ -36344,8 +36408,9 @@ function listPicker({title, hint, items, label, detail, onPick, footer, typeahea
       }
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         if (!filtered.length) return true;
-        sel = (sel + (e.key === "ArrowDown" ? 1 : -1) + filtered.length) % filtered.length;
-        buf = ""; draw(); return true;
+        sel = sel < 0 ? (e.key === "ArrowDown" ? 0 : filtered.length - 1)
+            : (sel + (e.key === "ArrowDown" ? 1 : -1) + filtered.length) % filtered.length;
+        buf = ""; echo(); draw(); return true;
       }
       if (e.key === "Backspace") { buf = buf.slice(0, -1); bufAt = Date.now(); match(); return true; }
       if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return false;
@@ -36416,6 +36481,9 @@ function openContextPicker(title, onPick) {
     typeahead: true,
     label: c => "@" + c,
     detail: c => leafActions().filter(a => a.context === c && OPEN_STATES[a.state]).length + " open",
+    // The first context in the alphabet is not an answer: nothing is chosen
+    // until you say, unless you are somewhere already.
+    start: items.indexOf(state.context),
     onPick,
     footer: el("button", {class: "btn ghost", onclick: () => { closeModal(); newContextPrompt(onPick); }}, "+ new context"),
   });
@@ -36753,6 +36821,7 @@ function surfaceContext(ctx) {
   state.surfaced = items.map(a => a.block.id);
   setSetting("current_context", ctx);
   renderContextChip();
+  PREF.set("today.tab", "ctx");
   go("today");
   notify(items.length
     ? `@${ctx}: ${items.length} oldest action(s) surfaced.`
@@ -37402,11 +37471,17 @@ function showTaskDetail(path, block, space) {
   };
   const titleInput = el("textarea", {}); titleInput.value = block.title;
   const notes = el("textarea", {placeholder: "Notes"}); notes.value = (block.body || []).join("\n");
-  const sched = el("input", {type: "date", value: dateIn(blockProp(block, "SCHEDULED")) || ""});
+  /* The same names, @ and [[ as the line itself. Tab takes one; Escape
+     closes the list, not the panel. */
+  for (const t of [titleInput, notes]) {
+    attachSuggest(t);
+    t.addEventListener("keydown", e => { if (suggestKey(e)) e.stopPropagation(); });
+  }
+  const sched =el("input", {type: "date", value: dateIn(blockProp(block, "SCHEDULED")) || ""});
   const dead  = el("input", {type: "date", value: dateIn(blockProp(block, "DEADLINE")) || ""});
   const timeOf = key => timeIn(String(blockProp(block, key) || "").replace(/\[\[[^\]]*\]\]/g, " ")) || "";
-  const schedAt = el("input", {type: "time", value: timeOf("SCHEDULED"), title: "Time, if it has one"});
-  const deadAt  = el("input", {type: "time", value: timeOf("DEADLINE"), title: "Time, if it has one"});
+  const schedAt = clockInput(timeOf("SCHEDULED"), {title: "Time, if it has one"});
+  const deadAt  = clockInput(timeOf("DEADLINE"), {title: "Time, if it has one"});
   const until = el("input", {type: "date", value: dateIn(blockProp(block, "until")) || ""});
   const priSel = el("select", {});
   for (const [v, label] of [["", "None"], ["H", "High"], ["M", "Medium"], ["L", "Low"]])
@@ -37479,6 +37554,7 @@ function showTaskDetail(path, block, space) {
   syncPanel();
 
   const save = () => {
+    if (badClock(schedAt, deadAt)) return;
     const val = trim(titleInput.value).replace(/\n/g, " ");
     const [st, rest] = splitState(val);
     if (st) { block.state = st; block.title = rest; } else { block.title = val; }
@@ -40023,10 +40099,11 @@ function openVaultDialog() {
     el("label", {}, "Your working hours"),
     (() => {
       const wh = workHours();
-      const from = el("input", {type: "time", value: wh ? wh.start : ""});
-      const to = el("input", {type: "time", value: wh ? wh.end : ""});
+      const from = clockInput(wh ? wh.start : "");
+      const to = clockInput(wh ? wh.end : "");
       const save = () => {
         if (!!from.value !== !!to.value) return;     // half a workday is not one yet
+        if ([from, to].some(i => i.classList.contains("bad"))) return;
         setWorkHours(from.value, to.value);
         notify(from.value ? "Working " + from.value + " to " + to.value + ", Monday to Friday." : "Working hours cleared.");
       };
