@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.11.1 - 2026-10-29
+
+- The line menu scrolls on a phone (#175). With the on-screen keyboard up
+  it ran on under the keyboard, so its lower rows could not be reached. It
+  now stops above the keyboard and the toolbar and scrolls inside, and a
+  swipe in it no longer scrolls the page behind.
+
 ## 1.11.0 - 2026-10-29
 
 - Help is now short topics with contents and search (#171). Search knows

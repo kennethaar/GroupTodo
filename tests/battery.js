@@ -489,6 +489,42 @@ var GTD_TEST = (() => {
       ok(Math.abs(at - mid) < 4, "the new line is at " + Math.round(at) + ", the middle is " + Math.round(mid));
     } finally { window.matchMedia = mm; go("today"); }
   });
+  test("#175 the line menu stops above a phone's keyboard and scrolls there", async () => {
+    const path = scratchProject("fly keyboard", [["TODO", "Scroll the menu"]]);
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    // A phone with its keyboard up: the window keeps its height, the visible part halves.
+    const kb = {offsetTop: 0, offsetLeft: 0, width: innerWidth, height: Math.round(innerHeight / 2),
+      addEventListener() {}, removeEventListener() {}};
+    Object.defineProperty(window, "visualViewport", {configurable: true, get: () => kb});
+    openPage(path);
+    await settle();
+    const b = getPage(path).blocks[0];
+    try {
+      focusBlock(b.id);
+      await frame();
+      const txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
+      ok(txt.getBoundingClientRect().bottom < kb.height - 100, "the line is not above the keyboard");
+      flySummon(txt);
+      await frame();
+      ok(FLY && FLY.box.isConnected, "the line menu did not open");
+      const box = FLY.box;
+      box.append(Object.assign(document.createElement("div"), {style: "height:3000px"}));
+      flyPlace();
+      const bar = document.querySelector("#editBar");
+      const floor = kb.height - (bar && !bar.hidden ? bar.offsetHeight : 0);
+      ok(box.getBoundingClientRect().bottom <= floor, "the menu ends at " + Math.round(box.getBoundingClientRect().bottom) +
+        ", under the keyboard and toolbar from " + floor);
+      ok(box.scrollHeight > box.clientHeight, "the menu does not scroll");
+      box.scrollTop = 200;
+      box.dispatchEvent(new Event("scroll"));
+      await frame();
+      eq(box.scrollTop, 200, "scroll position after the menu's own scroll");
+    } finally {
+      delete window.visualViewport;
+      document.activeElement && document.activeElement.blur();
+      go("today");
+    }
+  });
   test("#170 the toolbar's Image puts a picture in the line", async () => {
     const path = scratchProject("edit bar image", [["TODO", "Snap the whiteboard"]]);
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
