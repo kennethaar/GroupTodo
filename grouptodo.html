@@ -13306,6 +13306,41 @@ function parseEmailText(raw) {
   };
   const head = Math.min(lines.length, 25);
 
+  /* Outlook on the web: subject, sender, (date,) a gap, then the people it
+     went to with a ";" between them, and no "From:" or "To:" anywhere. It is
+     read from the top, ahead of the others: a reply carries the mails before
+     it further down, each with a "From:" of its own. */
+  const short = l => { l = trim(l); return l.length > 0 && l.length <= 80 && !BULLET_RE.test(l) && !/[.!?:]$/.test(l); };
+  const named = l => looksLikeEmail(trim(l)) || /^\p{Lu}[\p{L}'’.-]*(?:\s+[\p{L}'’.-]+){1,4}$/u.test(trim(l));
+  const fromWeb = () => {
+    let subj = next(-1);
+    while (subj >= 0 && MAIL_LABELS.test(trim(lines[subj]))) subj = next(subj);
+    const s = subj < 0 ? -1 : next(subj);
+    if (s < 0 || trim(lines[subj]).length > 200 || BULLET_RE.test(lines[subj]) || !short(lines[s])) return null;
+    let i = next(s), sent = "";
+    if (i >= 0 && isMailDateLine(lines[i])) { sent = lines[i]; i = next(i); }
+    // Outlook leaves a gap between the sender and the people; a list does not.
+    if (i < 0 || !lines.slice(s + 1, i).some(l => !trim(l))) return null;
+    const names = [];
+    let k = i;
+    for (; k < lines.length && trim(lines[k]); k++) {
+      const l = trim(lines[k]);
+      if (MAIL_HEAD.cc.test(l)) continue;
+      if (k > i && !/;$/.test(trim(lines[k - 1]))) break;
+      names.push(...l.split(";").map(trim).filter(Boolean));
+    }
+    if (!names.length || !names.every(n => n.length <= 80 && !/[.!?]$/.test(n))) return null;
+    // Sent to one person there is no ";", so both lines have to read as full names.
+    if (k === i + 1 && !lines[i].includes(";") && !(named(lines[s]) && named(names[0]))) return null;
+    let from = k;
+    const after = next(k - 1);
+    if (!sent && after >= 0 && isMailDateLine(lines[after])) { sent = lines[after]; from = after + 1; }
+    return finish({from: trim(lines[s]), subject: trim(lines[subj]), to: names.join("; "),
+      sent: sent ? mailDateISO(sent) : ""}, from);
+  };
+  const web = fromWeb();
+  if (web) return web;
+
   // Outlook and forwards: From: ... Sent: ... To: ... Subject: ...
   for (let i = 0; i < head; i++) {
     if (!MAIL_HEAD.from.test(trim(lines[i]))) continue;
@@ -13346,34 +13381,6 @@ function parseEmailText(raw) {
     }, from);
   }
 
-  /* Outlook on the web: subject, sender, (date,) then the people it went to
-     with a ";" between them, and no "From:" or "To:" anywhere. The subject
-     has to be the first thing copied. */
-  const short = l => { l = trim(l); return l.length > 0 && l.length <= 80 && !BULLET_RE.test(l) && !/[.!?:]$/.test(l); };
-  for (let i = 0; i < head; i++) {
-    if (!lines[i].includes(";")) continue;
-    const names = [];
-    let k = i;
-    for (; k < lines.length && trim(lines[k]); k++) {
-      const l = trim(lines[k]);
-      if (MAIL_HEAD.cc.test(l)) continue;
-      if (k > i && !/;$/.test(trim(lines[k - 1]))) break;
-      names.push(...l.split(";").map(trim).filter(Boolean));
-    }
-    if (!names.length || !names.every(n => n.length <= 80 && !/[.!?]$/.test(n))) break;
-    let s = prev(i), sent = "";
-    while (s >= 0 && isMailDateLine(lines[s]) && !sent) { sent = lines[s]; s = prev(s); }
-    // Outlook leaves a gap between the sender and the people; a list does not.
-    if (s < 0 || !short(lines[s]) || !lines.slice(s + 1, i).some(l => !trim(l))) break;
-    let subj = prev(s);
-    if (subj < 0 || trim(lines[subj]).length > 200 || BULLET_RE.test(lines[subj])) break;
-    for (let j = prev(subj); j >= 0; j = prev(j)) if (!MAIL_LABELS.test(trim(lines[j]))) return null;
-    let from = k;
-    const after = next(k - 1);
-    if (!sent && after >= 0 && isMailDateLine(lines[after])) { sent = lines[after]; from = after + 1; }
-    return finish({from: trim(lines[s]), subject: trim(lines[subj]), to: names.join("; "),
-      sent: sent ? mailDateISO(sent) : ""}, from);
-  }
   return null;
 }
 
