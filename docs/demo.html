@@ -13675,10 +13675,9 @@ function pasteAsTasks(raw) {
   if (!roots.length) return null;
   const path = ensureJournal(todayISO());
   const n = readyPastedBlocks(roots, {defaultState: "TODO", context: state.context, outlineRoots: true, when: true});
-  const sibs = getPage(path).blocks;
-  for (const blk of roots) sibs.push(blk);
+  for (const blk of roots) getPage(path).blocks.push(blk);
   touch(path); noteTodoTouched(); coachMark("add"); render();
-  return {path, sibs, roots, n};
+  return {path, roots, n};
 }
 
 /* ---------- Kindle's notes and highlights ----------
@@ -13748,9 +13747,11 @@ function pastedBody(raw) {
   readyPastedBlocks(roots);
   return roots;
 }
+// A picked task names its page by its words, not "TODO" and its [[c/...]].
 const pastedTitle = raw => {
-  const l = String(raw || "").split(/\r?\n/).map(trim).find(Boolean) || "";
-  return trim(l.replace(BULLET_RE, "$2"));
+  const l = trim((String(raw || "").split(/\r?\n/).map(trim).find(Boolean) || "").replace(BULLET_RE, "$2"));
+  const [st, rest] = splitState(l);
+  return plainTitle(st ? rest : l);
 };
 
 /* Not a layout it knows: the first line is the subject, the next one who
@@ -13780,27 +13781,45 @@ function saveReviewPage(raw, medium) {
   return {path, name, made: [path]};
 }
 
-/* Swaps the pasted lines for one line that links the page made of them, and
-   hands back what puts the lines back. lineFor(kind, link) makes the line. */
-function pasteSwapper(path, sibs, roots, lineFor) {
+/* A line on the page as it is now. A page read back from its folder after a
+   save is made of new blocks, so failing the block itself it is the last
+   line that reads the same -- the one just pasted, at the end -- and not one
+   already taken, since a mail can say "Kind regards" twice. */
+function findOnPage(page, want, taken = new Set()) {
+  let same = null, like = null;
+  const rec = list => list.forEach((b, i) => {
+    if (b === want) same = {list, i, b};
+    else if (!taken.has(b) && b.title === want.title && (b.state || null) === (want.state || null)) like = {list, i, b};
+    rec(b.children || []);
+  });
+  rec(page.blocks);
+  return same || like;
+}
+
+/* Swaps the lines for one line that links the page made of them, and hands
+   back what puts the lines back. lineFor(kind, link) makes the line. */
+function pasteSwapper(path, roots, lineFor) {
   return (kind, link) => {
-    const at = sibs.indexOf(roots[0]);
-    if (at < 0) return null;
+    const page = getPage(path);
+    const taken = new Set();
+    const spots = page ? roots.map(r => { const s = findOnPage(page, r, taken); if (s) taken.add(s.b); return s; }) : [];
+    if (!spots.length || spots.some(s => !s)) return null;
+    const gone = spots.map(s => s.b);
     const line = lineFor(kind, link);
-    for (const r of roots) { const i = sibs.indexOf(r); if (i >= 0) sibs.splice(i, 1); }
-    sibs.splice(at, 0, line);
+    spots[0].list.splice(spots[0].i, 0, line);
+    for (const b of gone) removeBlockFrom(page, b);
     touch(path); noteTodoTouched(); render();
     return () => {
-      const i = sibs.indexOf(line);
-      if (i < 0) return false;
-      sibs.splice(i, 1, ...roots);
+      const now = getPage(path), at = now && findOnPage(now, line);
+      if (!at) return false;
+      at.list.splice(at.i, 1, ...gone);
       touch(path); noteTodoTouched(); render();
       return true;
     };
   };
 }
 
-function offerPasteAs(raw, said, swap) {
+function offerPasteAs(raw, ask, swap) {
   const mail = parseEmailText(raw), kindle = parseKindleNotes(raw);
   const t = el("div", {class: "toast pasteas"});
   let timer = 0;
@@ -13838,7 +13857,7 @@ function offerPasteAs(raw, said, swap) {
   ];
   const first = mail ? "email" : kindle ? "review" : "note";
   choices.sort((a, b) => (b[0] === first) - (a[0] === first));
-  row(said + " Make a page of them instead:", choices.map(([, label, run]) => [label, run]));
+  row(ask, choices.map(([, label, run]) => [label, run]));
   $("#toasts").append(t);
   wait();
 }
@@ -14520,7 +14539,7 @@ function installCaptureBox() {
     if (!put) return;
     const said = put.n + " tasks added from what you pasted.";
     if (lines.length < PASTE_AS_LINES) { notify(said); return; }
-    offerPasteAs(raw, said, pasteSwapper(put.path, put.sibs, put.roots, (kind, link) => {
+    offerPasteAs(raw, said + " Make a page of them instead:", pasteSwapper(put.path, put.roots, (kind, link) => {
       if (kind !== "email") return newBlock({title: link}, false);
       let title = "Follow up " + link;
       if (state.context) title += " [[c/" + state.context + "]]";
@@ -25371,7 +25390,7 @@ function outlineBlock(path, page, b, opts = {}) {
        own instead: the lines then make way for one line that links it. */
     const said = n + " lines pasted, one block each.";
     if (lines.length < PASTE_AS_LINES) notify(said);
-    else offerPasteAs(raw, said, pasteSwapper(path, sibs, roots, (kind, link) => {
+    else offerPasteAs(raw, said + " Make a page of them instead:", pasteSwapper(path, roots, (kind, link) => {
       const line = newBlock({state: inherit, title: link});
       if (line.state) { applyTodoTemplate(line); stampAddedIfMissing(path, line); }
       return line;
@@ -25963,7 +25982,7 @@ function lineSelPaste(raw) {
   const said = n + (n === 1 ? " line pasted" : " lines pasted") + " over " + spots.length +
     (spots.length === 1 ? " line." : " lines.");
   if (n < PASTE_AS_LINES) notify(said);
-  else offerPasteAs(raw, said, pasteSwapper(path, sibs, roots, (kind, link) => newBlock({title: link}, false)));
+  else offerPasteAs(raw, said + " Make a page of them instead:", pasteSwapper(path, roots, (kind, link) => newBlock({title: link}, false)));
   pushUndo({run: () => {
     roots.forEach(r => { const i = sibs.indexOf(r); if (i >= 0) sibs.splice(i, 1); });
     spots.forEach(s => { if (s.i >= 0) s.list.splice(s.i, 0, s.b); });
