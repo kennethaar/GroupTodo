@@ -752,6 +752,10 @@ button.tick:hover{box-shadow:inset 0 0 0 1px currentColor}
 .toast .act{background:none;border:1px solid var(--border2);color:var(--accent);
   border-radius:6px;padding:2px 10px;font-size:12px;cursor:pointer;margin-left:8px}
 .toast .act:hover{background:var(--bg3)}
+/* What a long paste can become: the choices wrap under the words. */
+.toast.pasteas{flex-wrap:wrap;row-gap:6px}
+.toast.pasteas > span{flex-basis:100%}
+.toast.pasteas .act{margin-left:0}
 /* display on a class beats the user agent's [hidden]{display:none}, so without
    this the chip sat in the header as an empty 22px pill you could click. */
 .ctxnow[hidden]{display:none}
@@ -13391,10 +13395,18 @@ function parseEmailText(raw) {
 
 const isEmailPage = path => pageKind(path) === "email" || trim(getPage(path)?.props?.type || "").toLowerCase() === "email";
 
-/* The page, the sender's page (with their address, for the next time), and the
-   task. Hands back what it made, so "Make tasks instead" can take it away.
-   Pasted into a line, the line is what links it, so there is no task. */
-function saveEmailPage(mail, {task: withTask = true} = {}) {
+/* A free name in a folder, from a title: "Notes", "Notes 2", "Notes 3". */
+function freePageName(dir, title, fallback) {
+  const base = slugify(title).replace(/[\[\]#|]/g, "-").slice(0, 80).trim() || fallback;
+  let name = base, n = 2;
+  while (V.pages.has(join(dir, name + ".md"))) name = base + " " + n++;
+  return {name, path: join(dir, name + ".md")};
+}
+
+/* The page and the sender's page (with their address, for the next time).
+   Hands back what it made, so "Keep the lines" can take it away; the line
+   that links it is the paste's to put in. */
+function saveEmailPage(mail) {
   const made = [];
   const person = mail.name && !mail.name.includes("@") ? slugify(mail.name).replace(/[\[\]#|]/g, "-") : "";
   if (person && !findExistingPage("p/" + person)) {
@@ -13404,10 +13416,7 @@ function saveEmailPage(mail, {task: withTask = true} = {}) {
   }
   if (person && mail.email) setEmailOf(person, Spaces.active || "", mail.email);
 
-  const base = slugify(mail.subject).replace(/[\[\]#|]/g, "-").slice(0, 80).trim() || "Email";
-  let name = base, n = 2;
-  while (V.pages.has(join(DIRS.mail, name + ".md"))) name = base + " " + n++;
-  const path = join(DIRS.mail, name + ".md");
+  const {name, path} = freePageName(DIRS.mail, mail.subject, "Email");
   const props = {title: mail.subject, type: "email", from: person ? "[[p/" + person + "]]" : mail.name};
   if (mail.email) props[EMAIL_PROP] = mail.email;
   if (mail.to) props.to = mail.to;
@@ -13416,41 +13425,181 @@ function saveEmailPage(mail, {task: withTask = true} = {}) {
   putPage(path, {props, blocks});
   touch(path);
   made.push(path);
-  if (!withTask) return {path, name, made};
-
-  const day = ensureJournal(todayISO());
-  let title = "Follow up [[m/" + name + "]]";
-  if (state.context) title += " [[c/" + state.context + "]]";
-  const task = stampAuthor(newBlock({state: "TODO", title, props: {}}));
-  getPage(day).blocks.push(task);
-  touch(day);
-  noteTodoTouched();
-  return {path, name, made, day, task};
+  return {path, name, made};
 }
 
 /* A list pasted into a one-line box is still a list: one task per line. */
 function pasteAsTasks(raw) {
   const roots = parseOutlineText(raw);
-  if (!roots.length) return;
+  if (!roots.length) return null;
   const path = ensureJournal(todayISO());
   const n = readyPastedBlocks(roots, {defaultState: "TODO", context: state.context, outlineRoots: true, when: true});
-  for (const blk of roots) getPage(path).blocks.push(blk);
+  const sibs = getPage(path).blocks;
+  for (const blk of roots) sibs.push(blk);
   touch(path); noteTodoTouched(); coachMark("add"); render();
-  notify(n + " tasks added from what you pasted.");
+  return {path, sibs, roots, n};
 }
 
-function pasteEmail(raw, mail) {
-  const saved = saveEmailPage(mail);
-  coachMark("add"); render();
-  notify("Saved the email from " + (mail.name || "them") + " as a page, with a task to follow it up.", "info", {
-    label: "Make tasks instead",
-    run: () => {
-      const day = getPage(saved.day);
-      if (day && removeBlockFrom(day, saved.task)) touch(saved.day);
+/* ---------- Kindle's notes and highlights ----------
+   Three ways out of Kindle: the notebook on read.amazon.com ("Yellow
+   highlight | Location: 180"), the notebook the app mails you ("Highlight
+   (yellow) - Page 12 · Location 180") and My Clippings.txt ("- Your
+   Highlight on page 12 | Location 180-182 | Added on ...", each one ended by
+   a row of "="). The book and its author come first. Each highlight is a
+   line, and a note of your own goes under the highlight it was written at. */
+const KINDLE_MARK = /^-?\s*(?:your\s+)?(?:[a-z]+\s+)?(highlight|note|bookmark)\s*(?:\([^)]*\))?\s*(?:[|·:–-]|on\b).*\b(?:page|location|loc)\b/i;
+function parseKindleNotes(raw) {
+  const lines = String(raw || "").replace(/\r\n?/g, "\n").split("\n").map(trim).filter(l => l && l !== "Options");
+  const head = [], items = [];
+  let cur = null, marks = 0;
+  for (const l of lines) {
+    const m = KINDLE_MARK.exec(l);
+    if (m) {
+      marks++;
+      const kind = m[1].toLowerCase();
+      cur = kind === "bookmark" ? null : {kind, text: [], notes: []};
+      if (cur) items.push(cur);
+      continue;
+    }
+    if (/^={5,}$/.test(l)) { cur = null; continue; }
+    if (!marks) { head.push(l); continue; }
+    if (!cur) continue;                    // My Clippings names the book again before each one
+    // The notebook on the web puts your note under the highlight, as "Note: ...".
+    const note = /^note\s*:\s*(.*)$/i.exec(l);
+    if (note && cur.kind === "highlight") { cur.notes.push(note[1]); cur.inNote = true; continue; }
+    (cur.inNote ? cur.notes : cur.text).push(l);
+  }
+  if (marks < 2 || !head.length) return null;
+  // "Title (Author)" in My Clippings; the title, then "by Author" or the author, elsewhere.
+  let title = head[0], by = "";
+  const paren = /^(.*\S)\s*\(([^()]+)\)$/.exec(title);
+  if (paren) [title, by] = [paren[1], paren[2]];
+  else if (head[1] && head[1].length <= 80 && !/\d+\s+(?:highlight|note)/i.test(head[1])) by = head[1].replace(/^by\s+/i, "");
+  const blocks = [];
+  for (const it of items) {
+    const words = it.text.filter(Boolean);
+    if (it.kind === "note" && blocks.length) {
+      // A note goes under the highlight before it, which is where it was written.
+      blocks[blocks.length - 1].children.push(...words.map(w => newBlock({title: w}, false)));
+      continue;
+    }
+    if (!words.length) continue;
+    const b = newBlock({title: words[0]}, false);
+    b.children.push(...words.slice(1).concat(it.notes.filter(Boolean)).map(w => newBlock({title: w}, false)));
+    blocks.push(b);
+  }
+  return blocks.length ? {title, by, blocks} : null;
+}
+
+/* ---------- a long paste can become a page ----------
+   Four lines or more go in as lines at once, and a notice offers to make a
+   page of them instead: an email, a note or a review, the likeliest first.
+   Guessing on its own failed quietly the day a mail came in a layout it did
+   not know; asking costs a click and never makes the wrong thing. */
+const PASTE_AS_LINES = 4;
+const REVIEW_MEDIA = [["book", "Book"], ["film", "Film"], ["series", "Series"], ["video", "Video"]];
+
+/* What was pasted, less its first line, ready to be the body of a page. */
+function pastedBody(raw) {
+  const lines = String(raw || "").replace(/\r\n?/g, "\n").split("\n");
+  const first = lines.findIndex(l => trim(l));
+  const roots = parseOutlineText(lines.slice(first + 1).join("\n"));
+  readyPastedBlocks(roots);
+  return roots;
+}
+const pastedTitle = raw => {
+  const l = String(raw || "").split(/\r?\n/).map(trim).find(Boolean) || "";
+  return trim(l.replace(BULLET_RE, "$2"));
+};
+
+/* Not a layout it knows: the first line is the subject, the next one who
+   sent it, and the rest the words -- all of it put right on the page. */
+function mailFromLines(raw) {
+  const lines = String(raw || "").replace(/\r\n?/g, "\n").split("\n").map(trim).filter(Boolean);
+  const who = mailSender(lines[1] || "");
+  return {subject: lines[0] || "", name: who.name, email: who.email, to: "", sent: "", body: lines.slice(2)};
+}
+
+function saveNotePage(raw) {
+  const {name, path} = freePageName(DIRS.zettel, pastedTitle(raw), "Note");
+  const page = zettelTemplate(name);
+  page.blocks = pastedBody(raw);
+  putPage(path, page); touch(path);
+  return {path, name, made: [path]};
+}
+
+function saveReviewPage(raw, medium) {
+  const kindle = medium === "book" ? parseKindleNotes(raw) : null;
+  const {name, path} = freePageName(DIRS.reviews, kindle ? kindle.title : pastedTitle(raw), "Review");
+  const page = pageFromTemplate("r", name);
+  page.props.medium = medium;
+  if (kindle && kindle.by) page.props.by = kindle.by;
+  page.blocks = kindle ? kindle.blocks : pastedBody(raw);
+  putPage(path, page); touch(path);
+  return {path, name, made: [path]};
+}
+
+/* Swaps the pasted lines for one line that links the page made of them, and
+   hands back what puts the lines back. lineFor(kind, link) makes the line. */
+function pasteSwapper(path, sibs, roots, lineFor) {
+  return (kind, link) => {
+    const at = sibs.indexOf(roots[0]);
+    if (at < 0) return null;
+    const line = lineFor(kind, link);
+    for (const r of roots) { const i = sibs.indexOf(r); if (i >= 0) sibs.splice(i, 1); }
+    sibs.splice(at, 0, line);
+    touch(path); noteTodoTouched(); render();
+    return () => {
+      const i = sibs.indexOf(line);
+      if (i < 0) return false;
+      sibs.splice(i, 1, ...roots);
+      touch(path); noteTodoTouched(); render();
+      return true;
+    };
+  };
+}
+
+function offerPasteAs(raw, said, swap) {
+  const mail = parseEmailText(raw), kindle = parseKindleNotes(raw);
+  const t = el("div", {class: "toast pasteas"});
+  let timer = 0;
+  const close = () => { clearTimeout(timer); t.remove(); };
+  const wait = () => { clearTimeout(timer); timer = setTimeout(close, 20000); };
+  const make = (kind, prefix, save, what) => {
+    close();
+    const saved = save();
+    const undo = swap(kind, "[[" + prefix + "/" + saved.name + "]]");
+    if (!undo) {
       for (const p of saved.made) removePage(p);
-      pasteAsTasks(raw);
-    },
-  });
+      notify("The pasted lines have moved, so they were left as they are.", "warn");
+      return;
+    }
+    notify("Saved as " + what + "; the line links to it.", "info", {
+      label: "Keep the lines",
+      run: () => {
+        if (!undo()) { notify("The link has moved, so it was left as it is.", "warn"); return; }
+        for (const p of saved.made) removePage(p);
+      },
+    });
+  };
+  const row = (words, buttons) => {
+    t.replaceChildren(el("span", {}, words),
+      ...buttons.map(([label, run]) => el("button", {class: "act", onclick: run}, label)),
+      el("button", {class: "act", onclick: close}, "Keep as lines"));
+  };
+  const review = medium => make("review", "r", () => saveReviewPage(raw, medium), "a review");
+  const pickMedium = () => { wait(); row("A review of a", REVIEW_MEDIA.map(([m, label]) => [label, () => review(m)])); };
+  const choices = [
+    ["email", "Email page", () => make("email", "m", () => saveEmailPage(mail || mailFromLines(raw)), "an email page")],
+    ["note", "Note", () => make("note", "z", () => saveNotePage(raw), "a note")],
+    // Kindle's notes are a book's; anything else is asked what it was.
+    ["review", "Review", () => kindle ? review("book") : pickMedium()],
+  ];
+  const first = mail ? "email" : kindle ? "review" : "note";
+  choices.sort((a, b) => (b[0] === first) - (a[0] === first));
+  row(said + " Make a page of them instead:", choices.map(([, label, run]) => [label, run]));
+  $("#toasts").append(t);
+  wait();
 }
 
 /* ---------- writing back ----------
@@ -14118,15 +14267,24 @@ function installCaptureBox() {
     if (e.key === "Enter") { e.preventDefault(); captureFromBox(input); }
     else if (e.key === "Escape") { input.value = ""; input.blur(); }
   });
-  /* An email is a page and a task; any other list, one task per line. */
+  /* A list is one task per line. A long one can be a page instead, and an
+     email made a page still wants following up, so its line is a task. */
   input.addEventListener("paste", e => {
     const raw = e.clipboardData && e.clipboardData.getData("text/plain");
     if (raw == null) return;
     const lines = raw.replace(/\r\n?/g, "\n").split("\n").filter(l => trim(l) !== "");
     if (lines.length < 2) return;
     e.preventDefault();
-    const mail = lines.length >= 4 ? parseEmailText(raw) : null;
-    if (mail) pasteEmail(raw, mail); else pasteAsTasks(raw);
+    const put = pasteAsTasks(raw);
+    if (!put) return;
+    const said = put.n + " tasks added from what you pasted.";
+    if (lines.length < PASTE_AS_LINES) { notify(said); return; }
+    offerPasteAs(raw, said, pasteSwapper(put.path, put.sibs, put.roots, (kind, link) => {
+      if (kind !== "email") return newBlock({title: link}, false);
+      let title = "Follow up " + link;
+      if (state.context) title += " [[c/" + state.context + "]]";
+      return stampAuthor(newBlock({state: "TODO", title, props: {}}));
+    }));
   });
 }
 
@@ -24968,31 +25126,15 @@ function outlineBlock(path, page, b, opts = {}) {
       sibs.splice(sibs.indexOf(b) + 1, 0, ...roots, ...(tail ? [tail] : []));
     }
     touch(path); noteTodoTouched(); render();
-    /* An email pasted into a line becomes a page of its own, as it does in
-       the capture box: the lines make way for one link, and can come back. */
-    const mail = lines.length >= 4 ? parseEmailText(raw) : null;
-    if (mail) {
-      const at = sibs.indexOf(roots[0]);
-      const saved = saveEmailPage(mail, {task: false});
-      const link = newBlock({state: inherit, title: "[[m/" + saved.name + "]]"});
-      if (link.state) { applyTodoTemplate(link); stampAddedIfMissing(path, link); }
-      for (const r of roots) { const i = sibs.indexOf(r); if (i >= 0) sibs.splice(i, 1); }
-      sibs.splice(at, 0, link);
-      touch(path); noteTodoTouched(); render();
-      notify("Saved the email from " + (mail.name || "them") + " as a page; the line links to it.", "info", {
-        label: "Keep the lines",
-        run: () => {
-          const i = sibs.indexOf(link);
-          if (i < 0) { notify("The link has moved, so it was left as it is.", "warn"); return; }
-          sibs.splice(i, 1, ...roots);
-          for (const p of saved.made) removePage(p);
-          touch(path); noteTodoTouched(); render();
-        },
-      });
-      focusBlock((tail || link).id);
-      return;
-    }
-    notify(n + " lines pasted, one block each.");
+    /* A long paste -- an email, notes from a book -- can be a page of its
+       own instead: the lines then make way for one line that links it. */
+    const said = n + " lines pasted, one block each.";
+    if (lines.length < PASTE_AS_LINES) notify(said);
+    else offerPasteAs(raw, said, pasteSwapper(path, sibs, roots, (kind, link) => {
+      const line = newBlock({state: inherit, title: link});
+      if (line.state) { applyTodoTemplate(line); stampAddedIfMissing(path, line); }
+      return line;
+    }));
     focusBlock((tail || roots[roots.length - 1]).id);
   });
   /* Names and dates as you type. A date taken from the list is the line's
@@ -25577,8 +25719,10 @@ function lineSelPaste(raw) {
   touch(path); noteTodoTouched();
   lineSelClear();
   render();
-  notify(n + (n === 1 ? " line pasted" : " lines pasted") + " over " + spots.length +
-    (spots.length === 1 ? " line." : " lines."));
+  const said = n + (n === 1 ? " line pasted" : " lines pasted") + " over " + spots.length +
+    (spots.length === 1 ? " line." : " lines.");
+  if (n < PASTE_AS_LINES) notify(said);
+  else offerPasteAs(raw, said, pasteSwapper(path, sibs, roots, (kind, link) => newBlock({title: link}, false)));
   pushUndo({run: () => {
     roots.forEach(r => { const i = sibs.indexOf(r); if (i >= 0) sibs.splice(i, 1); });
     spots.forEach(s => { if (s.i >= 0) s.list.splice(s.i, 0, s.b); });
