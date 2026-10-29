@@ -9392,7 +9392,7 @@ function openOutcomePrompt(path, then) {
     note: projectProvenance(path),
     label: 'Write it as if it already happened - "Sink repaired, no drip"',
     value: outcomeOf(path) || "",
-    cta: "Save outcome",
+    cta: "Save outcome", suggest: true,
     onSave: text => { setOutcome(path, text); render(); if (then) then(); },
   });
 }
@@ -36382,6 +36382,8 @@ function modal({title, hint, body, foot, center = false, side = false, onKey = n
 function closeModal(opts = {}) {
   $("#modalRoot").textContent = "";
   MODAL_KEYS = null;
+  // A list for a box that went with the dialog would float on by itself.
+  if (SUGGEST && !SUGGEST.host.isConnected) suggestClose();
   usageDialogClosed();
   // Cleared before it runs: a dialog opened from inside the callback sets its own.
   const closer = MODAL_CLOSE;
@@ -36511,11 +36513,17 @@ function listPicker({title, hint, items, label, detail, onPick, footer, typeahea
 }
 
 function promptInput({title, label, value = "", placeholder = "", multiline = false,
-                     cta = "Save", onSave, hint = "", note = null}) {
+                     cta = "Save", onSave, hint = "", note = null, suggest = false}) {
   const input = multiline
     ? el("textarea", {placeholder})
     : el("input", {placeholder, value});
   if (multiline) input.value = value;
+  /* Words for a line -- a next action, an outcome -- get the same names, @
+     and [[ as a line does. Tab takes one; Escape closes the list, not the box. */
+  if (suggest) {
+    attachSuggest(input);
+    input.addEventListener("keydown", e => { if (suggestKey(e)) e.stopPropagation(); });
+  }
   const save = () => { const v = trim(input.value); closeModal(); if (v) onSave(v); };
   modal({
     center: true, title, hint,
@@ -37945,7 +37953,7 @@ function openAddNextAction(path) {
     hint: pageTitle(path),
     note: projectProvenance(path),
     label: "What is the very next physical action?",
-    value: "Call ", cta: "Add",
+    value: "Call ", cta: "Add", suggest: true,
     onSave: text => {
       const blk = addNextActionTo(path, text);
       render();
