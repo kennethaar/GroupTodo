@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.10.3 - 2026-10-29
+
+- The regression battery runs in a Claude Code cloud session (#173). With no
+  Edge or Chrome installed it uses the Chromium that Playwright installed, and
+  as root it starts the browser without its sandbox, which Chromium needs there.
+
 ## 1.10.2 - 2026-10-29
 
 - The regression battery starts its browser as a desktop with a mouse (#160).

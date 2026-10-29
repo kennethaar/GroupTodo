@@ -11,7 +11,7 @@
 
    Needs Node 22+ (built-in fetch and WebSocket) and Python for the demo build. */
 import {spawn, spawnSync} from "node:child_process";
-import {existsSync, mkdtempSync, readFileSync, rmSync} from "node:fs";
+import {existsSync, mkdtempSync, readdirSync, readFileSync, rmSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {dirname, join, resolve} from "node:path";
 import {fileURLToPath, pathToFileURL} from "node:url";
@@ -30,6 +30,15 @@ for (const py of ["python", "py", "python3"]) {
 const demo = join(ROOT, "docs", "demo.html");
 
 /* ---------- a browser ---------- */
+// A cloud session has no Edge or Chrome, only the Chromium that Playwright
+// installed, newest version last.
+function playwrightChromium() {
+  const dir = process.env.PLAYWRIGHT_BROWSERS_PATH || "/opt/pw-browsers";
+  let names;
+  try { names = readdirSync(dir).filter(n => /^chromium-\d+$/.test(n)); } catch { return []; }
+  names.sort((a, b) => b.split("-")[1] - a.split("-")[1]);
+  return names.flatMap(n => ["chrome-linux64", "chrome-linux"].map(d => join(dir, n, d, "chrome")));
+}
 const BROWSERS = [
   process.env.GTD_BROWSER,
   "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
@@ -38,6 +47,7 @@ const BROWSERS = [
   "/usr/bin/microsoft-edge", "/usr/bin/google-chrome", "/usr/bin/chromium",
   "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  ...playwrightChromium(),
 ].filter(Boolean);
 const exe = BROWSERS.find(p => existsSync(p));
 if (!exe) { console.error("No Edge or Chrome found. Set GTD_BROWSER to its path."); process.exit(1); }
@@ -52,6 +62,8 @@ const browser = spawn(exe, [
   // (hover:none), which always shows the upkeep that waits for the pointer.
   // Test as a desktop with a mouse, wherever it runs.
   "--blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4",
+  // Chromium will not start as root with its sandbox on, and a cloud session runs as root.
+  ...(process.platform === "linux" && process.getuid && process.getuid() === 0 ? ["--no-sandbox"] : []),
   "about:blank",
 ], {stdio: "ignore"});
 
