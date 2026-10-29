@@ -509,7 +509,7 @@ body:not(.pane-open) .panegrip{display:none}
 /* style:: dial: a small pie beside the time, the four quarters marked. While
    you set it their minutes are written just outside the rim, the way a Time
    Timer has them; the svg is that much bigger than the dial and spills over. */
-.nav-item.timer.dial{gap:14px;padding:4px 8px 4px 14px;cursor:default;overflow:visible}
+.nav-item.timer.dial{flex:none;gap:14px;padding:4px 8px 4px 14px;cursor:default;overflow:visible}
 .nav-item.timer.dial .tdial{--d:40px;flex:none;width:var(--d);height:var(--d);border-radius:50%;cursor:pointer;touch-action:none}
 .nav-item.timer.dial .tdial:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .nav-item.timer.dial .tdial svg{display:block;width:calc(var(--d) * 74 / 56);height:auto;margin:calc(var(--d) * -9 / 56);
@@ -530,10 +530,14 @@ body:not(.pane-open) .panegrip{display:none}
 /* While a timer runs, silent or not, and until its ring is clicked away, the
    dial moves up over the time and takes the sidebar's breadth, less some air,
    so the countdown is hard to miss. Its rim is the width; the numbers move
-   inside it, so they do not spill out of the sidebar. */
-.nav-item.timer.dial.big{flex-wrap:wrap;gap:8px 10px;padding:10px 14px}
-.nav-item.timer.dial.big .tdial{flex:0 0 100%;width:100%;height:auto;aspect-ratio:1}
-.nav-item.timer.dial.big .tdial svg{width:calc(100% * 74 / 56);margin:calc(100% * -9 / 56)}
+   inside it, so they do not spill out of the sidebar. The sidebar list would
+   squeeze the row when it is full (flex:none above stops that), and the dial
+   takes its size from the row's own width, cqi, not from a percentage. Big,
+   the svg drops the pad the numbers need outside the rim (timerPaintDial),
+   or it would reach past the row and scroll the sidebar sideways. */
+.nav-item.timer.dial.big{flex-wrap:wrap;gap:8px 10px;padding:10px 14px;container-type:inline-size}
+.nav-item.timer.dial.big .tdial{flex:none;width:100cqi;height:100cqi}
+.nav-item.timer.dial.big .tdial svg{width:100%;margin:0}
 .nav-item.timer.dial.big .tnums{transform:scale(.5);transform-origin:28px 28px}
 .nav-item.timer.dial.big .tnum{font-size:9px}
 .nav-item.timer.dial.big .tface{stroke-width:.6}
@@ -12634,7 +12638,12 @@ function timerPaintDial(b, drag, left, due) {
   const max = timerMax(), dragging = drag != null, len = Math.round(TIMER_LEN / 60000);
   const dial = b.querySelector(".tdial");
   // Big while a timer runs, with the alarm or without, and once it has rung until that is clicked away.
-  b.classList.toggle("big", left > 0 || due >= 0);
+  const big = left > 0 || due >= 0;
+  if (big !== b.classList.contains("big")) {
+    b.classList.toggle("big", big);
+    const pad = big ? 0 : DIAL_PAD, box = 2 * (DIAL_C + pad);
+    dial.querySelector("svg").setAttribute("viewBox", `${-pad} ${-pad} ${box} ${box}`);
+  }
   dial.querySelector(".tsector").setAttribute("d",
     dialSector(dragging ? drag.minutes / max : Math.min(1, left / (max * 60000))));
   dial.setAttribute("aria-valuenow", String(dragging ? drag.minutes : Math.ceil(left / 60000)));
