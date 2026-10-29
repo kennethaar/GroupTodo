@@ -1,5 +1,24 @@
 # GroupTodo
 
+## Version number on every change
+
+`APP_VERSION` near the top of `grouptodo.html` is shown beside the name, top
+left. Every change that is pushed raises it: PATCH for a fix, MINOR for a
+feature (PATCH back to 0), MAJOR only for a change that breaks existing
+vaults. Add the matching entry at the top of `CHANGELOG.md` in the same
+commit, and end every reply about a change with the version it is now, e.g.
+"Now at **v1.3.2**", so the user knows which file to test.
+
+## Regression battery
+
+`node tests/run.mjs` rebuilds `docs/demo.html`, opens it in headless Edge and
+runs `tests/battery.js` inside the page (`node tests/run.mjs <words>` runs
+only the tests whose name has them). Run it before every push. A new feature
+gets a test in the matching section of `tests/battery.js`; a fixed bug gets
+the test that would have caught it, named with its issue number. Never weaken
+a test to make it pass: if the app is wrong, fix the app, and if the test's
+expectation is out of date, say so to the user.
+
 ## GitHub issues for every change
 
 Log each fix or feature as an issue on `kennethaar/GroupTodo` and reference it

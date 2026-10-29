@@ -250,6 +250,21 @@ Waiting for =>
 
 ---
 
+## Versions and Tests
+
+The version is shown beside **GroupToDo**, top left; [CHANGELOG.md](CHANGELOG.md) says what each one brought. Include it in bug reports.
+
+The regression battery checks that every screen still draws and that the core logic (Markdown files, dates, repeats, capture, task states, links, mail, invites) still behaves. Run it every week or so, and before every push:
+
+```
+node tests/run.mjs          # or double-click tests/run.cmd
+node tests/run.mjs parse    # only the tests whose name has "parse" in it
+```
+
+It needs Node 22+, Python and Edge or Chrome. It runs on [docs/demo.html](docs/demo.html), whose vault lives in memory, so it never touches your own vault. Tests live in [tests/battery.js](tests/battery.js): every new feature adds one there.
+
+---
+
 ## Bugs and Ideas
 
 Report bugs and suggest features at [github.com/kennethaar/GroupTodo/issues](https://github.com/kennethaar/GroupTodo/issues) → **New issue** (search existing issues first and add a 👍 or comment if already raised).
