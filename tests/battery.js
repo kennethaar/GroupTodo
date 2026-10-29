@@ -36,6 +36,7 @@ var GTD_TEST = (() => {
     page.blocks = tasks.map(([state, t]) => stampAuthor(newBlock({state, title: t})));
     const path = join(STATUS_DIRS["1"], slugify(name) + ".md");
     putPage(path, page);
+    clearMemo();          // putPage, unlike an edit, leaves the lists as a render before it saw them
     return path;
   };
 
@@ -320,6 +321,31 @@ var GTD_TEST = (() => {
     eq(cfg.from, "Kenneth Aar");
     has(text, "gtd:file " + personPath("Lars Haugen"));
     eq(parseInvite("just some text"), null);
+  });
+
+  test("#164 an area kept in a folder that opens without it says so", async () => {
+    const b = await spaceBackend({name: "No folder here", kind: "fs"});
+    ok(b.kind !== "fs", "a folder backend with no folder");
+    ok(LOST_FOLDER.has("No folder here"), "not marked as without its folder");
+    LOST_FOLDER.delete("No folder here");
+  });
+  test("#164 a lost folder asks to be picked again, and the sync status says so", async () => {
+    LOST_FOLDER.add(V.space);
+    try {
+      setSync("ok", V.backend.label);
+      eq(document.querySelector("#syncTxt").textContent, "folder not connected");
+      ok(document.querySelector("#syncDot").classList.contains("warn"), "the dot does not warn");
+      if (CAP.dirPicker) {
+        offerFolderBack(V.space);
+        await settle();
+        has(document.querySelector("#modalRoot .modal").textContent, "folder");
+        ok([...document.querySelectorAll("#modalRoot button")].some(x => x.textContent.startsWith("Pick ")), "no Pick button");
+      }
+    } finally {
+      LOST_FOLDER.delete(V.space);
+      for (let i = 0; i < 4 && $("#modalRoot").firstChild; i++) closeModal();
+      setSync("ok", V.backend.label);
+    }
   });
 
   /* ============================================================
@@ -633,6 +659,83 @@ var GTD_TEST = (() => {
     await settle();
     eq(document.querySelector("#modalRoot .btn.primary").textContent, "Write the email");
     closeAll();
+  });
+
+  test("#163 Powered by GroupToDo stays in English in every language", () => {
+    const was = PREF.get("askLang", "");
+    try {
+      for (const code of ["sv", "no", "da", "de"]) {
+        PREF.set("askLang", code);
+        const m = updateMail({mode: "inform", them: "Lars Haugen", subject: "Update", replyTo: "me@example.com", greet: "Hej,",
+          items: [{ref: "Work-aaaa1111", t: "Quote", word: "x", color: MAIL_COLOR.DOING}]});
+        has(m.html, "Powered by <a", code);
+      }
+    } finally { PREF.set("askLang", was); }
+  });
+  test("#162 the words for one and for more make one line with {one|more}", () => {
+    eq(askOneMore(n => MAIL_WORDS.en.introAsk(0, n)), "I have {a quick question|%count% quick questions} for you.");
+    eq(askOneMore(MAIL_WORDS.en.intro), "Here is a short update on the {task|%count% tasks} I said I would get back to you about.");
+    eq(askOneMore(MAIL_WORDS.da.intro), "Her er en kort opdatering på {opgaven|de %count% opgaver}, jeg lovede at vende tilbage om.");
+  });
+  test("#162 Personalize text: the page has the email's words, and the email reads them", () => {
+    const was = PREF.get("askLang", ""), base = PREF.get("askLangBase", "");
+    const keep = [ASK_OWN_PATH, INFORM_OWN_PATH].map(p => [p, V.pages.has(p) ? structuredClone(getPage(p)) : null]);
+    const partText = (path, part) => (getPage(path).blocks.find(b => plainTitle(b.title).toLowerCase() === part)?.children || [])
+      .map(k => k.title).join("\n");
+    const wait = [{ref: "Work-aaaa1111", kind: "wait", t: "The signed contract", word: "Waiting for", color: MAIL_COLOR.wait}];
+    try {
+      PREF.set("askLangBase", "en"); PREF.set("askLang", "own");
+      // A page made before the email had parts of its own gets them, in the email's words.
+      for (const [p] of keep) if (V.pages.has(p)) removePage(p);
+      const old = askOwnPage();
+      old.blocks = old.blocks.filter(b => !/^email:/i.test(plainTitle(b.title)));
+      putPage(ASK_OWN_PATH, old);
+      ensureAskOwn();
+      eq(partText(ASK_OWN_PATH, "email: waiting for"), MAIL_WORDS.en.introAsk(2, 0));
+      eq(plainTitle(getPage(ASK_OWN_PATH).blocks[1].title), "Email: waiting for", "in its place, after the greeting");
+      const std = updateMail({mode: "ask", them: "Lars Haugen", subject: "S", replyTo: "me@example.com", greet: "Hi Lars,", items: wait});
+      has(std.html, MAIL_WORDS.en.introAsk(1, 0));
+      getPage(ASK_OWN_PATH).blocks[1].children = [newBlock({title: "Lars, %name%: where is this?"})];
+      getPage(ASK_OWN_PATH).blocks.find(b => /^email: help/i.test(plainTitle(b.title))).children = [newBlock({title: "Just click."})];
+      const mine = updateMail({mode: "ask", them: "Lars Haugen", subject: "S", replyTo: "me@example.com", greet: "Hi Lars,", items: wait});
+      has(mine.html, "Lars, Lars: where is this?");
+      has(mine.html, "Just click.");
+      ok(!mine.html.includes(MAIL_WORDS.en.helpAsk), "the standard help went");
+      // Telling, the same: the Inform note's email part is the mail's intro.
+      ensureInformOwn();
+      eq(partText(INFORM_OWN_PATH, "email: update"), askOneMore(MAIL_WORDS.en.intro));
+      const told = updateMail({mode: "inform", them: "Lars Haugen", subject: "S", replyTo: "me@example.com", greet: "Hi Lars,", ack: true,
+        items: [{ref: "Work-aaaa1111", t: "Quote", word: "In progress", color: MAIL_COLOR.DOING}]});
+      has(told.html, MAIL_WORDS.en.intro(1));
+      has(told.html, MAIL_WORDS.en.helpAck + " " + MAIL_WORDS.en.help);
+    } finally {
+      PREF.set("askLang", was); PREF.set("askLangBase", base);
+      for (const [p, page] of keep) { if (V.pages.has(p)) removePage(p); if (page) putPage(p, page); }
+    }
+  });
+  test("#161 Ask for an update can leave the projects unnamed", async () => {
+    const path = scratchProject("secret depot plan", [["TODO", "Ask [[p/Lars Haugen]] which crane goes first"]]);
+    const block = getPage(path).blocks[0], title = pageTitle(path);
+    const was = PREF.get("askNameProjects", "1"), mail = emailOf(whoAmI(), V.space);
+    try {
+      PREF.set("askNameProjects", "1");
+      openAskForUpdate("Lars Haugen", block);
+      await settle();
+      const row = [...document.querySelectorAll("#modalRoot span")].find(x => x.textContent === "Name the projects in what they get");
+      ok(row, "no choice to name the projects");
+      document.querySelector("#modalRoot input[type=email]").value = "me@example.com";
+      row.previousElementSibling.click();
+      eq(PREF.get("askNameProjects", "1"), "0", "the choice is remembered");
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Write the email").click();
+      await settle();
+      const note = document.querySelector("#modalRoot textarea").value;
+      has(note, "Which crane goes first");
+      ok(!note.includes(title), "the project is named: " + note);
+    } finally {
+      closeAll();
+      PREF.set("askNameProjects", was);
+      setEmailOf(whoAmI(), V.space, mail);
+    }
   });
 
   /* ============================================================

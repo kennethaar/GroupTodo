@@ -5,6 +5,24 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.5.0 - 2026-10-29
+
+- Ask for an update can leave the projects out (#161): "Name the projects
+  in what they get", on as before, and remembered. Off, the email, the
+  plain text and the sheet name no project, only the lines.
+- Personalize text is the text of the email too (#162). The Update note and
+  the Inform note have Email: parts, in the email's own words, and the email
+  reads them; the other parts stay the plain text's. A note made before
+  gets the Email: parts the next time you edit it.
+- "Powered by GroupToDo" in the email is in English in every language
+  (#163).
+- An area kept in a folder that opens without it says so (#164). When the
+  browser no longer has the folder at all, it asks you to pick it again,
+  at start and when you switch to the area, and the sync status reads
+  "folder not connected" rather than looking empty. Picking the same folder
+  again is a reconnect: no more "Bring the pages along?" naming one folder
+  twice.
+
 ## 1.4.1 - 2026-10-29
 
 - The Journal's tabs, finished by the design principles (#160). Due Today &

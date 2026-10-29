@@ -2611,7 +2611,7 @@ body.solview #content{padding-bottom:14px}
    number for a fix, the middle one for a feature. CHANGELOG.md says what each
    one brought, and it is shown beside the name top left, so whoever is testing
    can see at a glance that they have the newest file open. */
-const APP_VERSION = "1.4.1";
+const APP_VERSION = "1.5.0";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 /* ============================================================
    00_BOOTSTRAP -- utilities
@@ -3950,7 +3950,11 @@ function setSync(state, text) {
   // "browser storage" reads like a destination. It is not a folder, and people
   // go looking for files that were never written, so say so outright.
   const onDisk = V.backend && (V.backend.kind === "fs" || V.backend.kind === "http");
-  txt.textContent = (state === "ok" && !onDisk) ? "browser only - no files" : text;
+  // A folder area without its folder is not "browser only" by choice (#164).
+  const away = !onDisk && folderMissing(V.space);
+  if (away && state === "ok") dot.className = "dot warn";
+  txt.textContent = (state === "ok" && away) ? "folder not connected"
+    : (state === "ok" && !onDisk) ? "browser only - no files" : text;
   txt.title = onDisk ? "Saving to " + (V.backend.label || "")
                      : "Nothing in this area is written to disk";
 }
@@ -4331,7 +4335,7 @@ function offerLineDraft() {
   if (!Spaces.get(d.space)) { forgetLineDraft(); return; }
   const rec = LOADED.get(d.space);
   // Its area is not open, or not writable yet: keep the copy for when it is.
-  if (!rec || rec.hold || PENDING_GRANT.has(d.space)) return;
+  if (!rec || rec.hold || folderMissing(d.space)) return;
   if (document.querySelector("#modalRoot .modal")) return;
   const page = rec.pages.get(d.path);
   let target = null, landed = false;
@@ -5674,6 +5678,7 @@ const Spaces = {
     sp.name = clean;
     delete sp.placeholder;               // named on purpose: no longer scaffolding
     if (PENDING_GRANT.has(from)) { PENDING_GRANT.set(clean, PENDING_GRANT.get(from)); PENDING_GRANT.delete(from); }
+    if (LOST_FOLDER.delete(from)) LOST_FOLDER.add(clean);
     const rec = LOADED.get(from);
     if (rec) {
       LOADED.delete(from);
@@ -5814,11 +5819,11 @@ async function assignSpaceFolder(name, {join = false, invited = false} = {}) {
   const sp = Spaces.get(name);
   if (!sp) return false;
   let handle;
+  const prev = PENDING_GRANT.get(name) || await storedHandle(name);
   try {
     const opts = {mode: "readwrite", id: "gtd-space-" + name};
     // startIn makes the picker open on the folder this space last used, so
     // even a real re-pick starts where it ended rather than at Documents.
-    const prev = PENDING_GRANT.get(name) || await storedHandle(name);
     if (prev) opts.startIn = prev;
     // The browser's own dialog only says "where this site can save changes",
     // and a page cannot reword it -- so this says what it is about.
@@ -5833,6 +5838,14 @@ async function assignSpaceFolder(name, {join = false, invited = false} = {}) {
   if (clash) { notify(conflictMessage(name, clash), "error"); return false; }
 
   const wasFolder = sp.kind === "fs" ? (sp.label || "the old folder") : null;
+  /* The same folder again is a reconnect, not a move: there is nothing to
+     bring along, and asking named the one folder twice (#164). Without a
+     handle to compare, a lost folder is known by its name. */
+  let same = false;
+  if (wasFolder) {
+    if (prev) { try { same = await prev.isSameEntry(handle); } catch (_) {} }
+    if (!same && LOST_FOLDER.has(name)) same = handle.name === sp.label;
+  }
   const rec = newRecord(name, Backends.fs(handle));
   PREF.set("pagecount:" + name, "0");               // a folder chosen on purpose is never "the old one, emptied"
   await readInto(rec);                              // what the folder already has wins
@@ -5848,7 +5861,7 @@ async function assignSpaceFolder(name, {join = false, invited = false} = {}) {
   let carry = join ? !existing && !wasFolder && !invited : true;
   if (carry && wasFolder) {
     const loaded = LOADED.get(name);
-    carry = await askCarryPages(name, wasFolder, handle.name, loaded ? loaded.pages.size : 0);
+    carry = same ? false : await askCarryPages(name, wasFolder, handle.name, loaded ? loaded.pages.size : 0);
   }
   if (carry) {
     try {
@@ -5876,6 +5889,8 @@ async function assignSpaceFolder(name, {join = false, invited = false} = {}) {
   }
 
   await IDB.set("kv", "dir:" + name, handle);
+  PENDING_GRANT.delete(name);
+  LOST_FOLDER.delete(name);
   sp.kind = "fs"; sp.label = handle.name;
   /* placeholder is kept: a folder is a home, not a history. The spaces wizard
      reads that flag to tell auto-seeded scaffolding from a space somebody
@@ -5906,6 +5921,8 @@ async function assignSpaceFolder(name, {join = false, invited = false} = {}) {
   await flush();
   if (joined && existing)
     notify("Opened \u201C" + handle.name + "\u201D as it is: " + rec.pages.size + " pages, nothing of yours added.");
+  else if (same)
+    notify(name + " is back on \u201C" + handle.name + "\u201D.");
   else
     notify(name + " now lives in \u201C" + handle.name + "\u201D" +
            (moved ? ", with " + moved + " page" + (moved === 1 ? "" : "s") + " moved in." : "."));
@@ -5924,7 +5941,7 @@ const areaNameChosen = sp => !!sp && !sp.nameLocal &&
 function storeAreaName(name) {
   const sp = Spaces.get(name);
   const rec = LOADED.get(name);
-  if (!rec || rec.hold || PENDING_GRANT.has(name) || !areaNameChosen(sp)) return;
+  if (!rec || rec.hold || folderMissing(name) || !areaNameChosen(sp)) return;
   inSpace(name, () => { if (!trim(String(getSetting("area_name") || ""))) setSetting("area_name", sp.name); });
 }
 
@@ -6145,13 +6162,24 @@ function acrossSpaces(fn) {
    it in Vault & sync, which meant walking the folder picker to a folder the
    app already knew. These keep the handle and ask for the click instead. */
 const PENDING_GRANT = new Map();        // space name -> FileSystemDirectoryHandle
+/* A folder area whose folder this browser no longer has at all: the handle
+   is gone, or the browser would not ask for it. Only picking it again helps. */
+const LOST_FOLDER = new Set();          // space names
+const folderMissing = name => PENDING_GRANT.has(name) || LOST_FOLDER.has(name);
 let INIT_DONE = false;
 
 async function grantSpaceFolder(name) {
   const h = PENDING_GRANT.get(name);
   if (!h) return false;
   let ok = false;
-  try { ok = (await h.requestPermission({mode: "readwrite"})) === "granted"; } catch (_) {}
+  try { ok = (await h.requestPermission({mode: "readwrite"})) === "granted"; }
+  catch (_) {
+    // Not declined: the browser could not ask, so the folder has to be picked again.
+    PENDING_GRANT.delete(name);
+    LOST_FOLDER.add(name);
+    offerFolderPick(name);
+    return false;
+  }
   if (!ok) {
     notify("Permission to " + (h.name || "the folder") + " was declined. " +
            (Spaces.get(name) ? Spaces.get(name).name : name) + " stays in browser storage.", "warn");
@@ -6207,9 +6235,61 @@ function offerFolderReconnect(name) {
   });
 }
 
+/* The folder itself is gone from this browser, so the one way back is the
+   picker, which opens where this area's folder last was. */
+function offerFolderPick(name) {
+  if (!LOST_FOLDER.has(name)) return;
+  const sp = Spaces.get(name);
+  if (!CAP.dirPicker) {
+    notify((sp ? sp.name : name) + " is kept in a folder, and this browser cannot open folders: " +
+           "what you see here is browser storage, not the folder.", "warn");
+    return;
+  }
+  const label = sp ? sp.name : name;
+  const where = (sp && sp.label) ? "\u201C" + sp.label + "\u201D" : "its folder";
+  const others = Array.from(LOST_FOLDER).filter(n => n !== name);
+  modal({
+    center: true,
+    title: "Find " + label + "'s folder",
+    body: el("div", {},
+      el("div", {class: "field"},
+        el("div", {style: "font-size:13.5px"},
+          label + " is kept in " + where + ", but this browser no longer has that folder, " +
+          "so it cannot read it. Nothing is lost: the files are where they were. Pick " +
+          where + " again to open them.")),
+      el("div", {class: "field"},
+        el("div", {style: "font-size:13px;color:var(--fg2)"},
+          "Until then what you see in " + label + " is browser storage, not the folder, and " +
+          "nothing is written to " + where + ".")),
+      others.length
+        ? el("div", {class: "field"},
+            el("div", {style: "font-size:12.5px;color:var(--fg3)"},
+              "Also without their folder: " + others.join(", ") + "."))
+        : null),
+    foot: [
+      el("button", {class: "btn primary", onclick: async () => {
+        closeModal();
+        const ok = await assignSpaceFolder(name);
+        const next = ok && Array.from(LOST_FOLDER)[0];
+        if (next) offerFolderPick(next);
+      }}, "Pick " + (sp && sp.label ? sp.label : "the folder")),
+      el("button", {class: "btn ghost", onclick: () => {
+        closeModal();
+        notify("Pick it any time from Vault & sync \u2192 Connect folder.", "warn");
+      }}, "Not now"),
+    ],
+  });
+}
+/* Whichever of the two this area needs. */
+function offerFolderBack(name) {
+  if (PENDING_GRANT.has(name)) offerFolderReconnect(name);
+  else if (LOST_FOLDER.has(name)) offerFolderPick(name);
+}
+
 /* Build the storage this space asked for, degrading loudly rather than
    silently writing somewhere the user did not expect. */
 async function spaceBackend(sp) {
+  if (sp.kind !== "fs") LOST_FOLDER.delete(sp.name);   // no folder asked for, none missing
   if (sp.kind === "http" && sp.server) {
     try { const b = Backends.http(sp.server); await b.list(); return b; }
     catch (e) { notify(`"${sp.name}" server unreachable, using browser storage.`, "warn"); }
@@ -6228,8 +6308,13 @@ async function spaceBackend(sp) {
            park the handle and let offerFolderReconnect() ask for that one
            click -- there is nothing for anyone to go looking for. */
         PENDING_GRANT.set(sp.name, h);
+        LOST_FOLDER.delete(sp.name);
       }
     } catch (_) {}
+    /* No handle at all, or one the browser will not even ask about: the
+       folder is not remembered, and browser storage is not it. Without a
+       word the area just looks empty, as if its files were gone (#164). */
+    if (!PENDING_GRANT.has(sp.name)) LOST_FOLDER.add(sp.name);
   }
   const ns = sp.legacyFlat ? "" : sp.name;
   return CAP.idb ? Backends.idb(ns) : CAP.ls ? Backends.ls(ns) : Backends.memory(ns);
@@ -6287,7 +6372,7 @@ async function openSpace(name, destination = null) {
   autoSyncLinked();
   checkClaimable();
   // At startup init() does this once, after everything else it opens.
-  if (INIT_DONE && PENDING_GRANT.has(name)) offerFolderReconnect(name);
+  if (INIT_DONE && folderMissing(name)) offerFolderBack(name);
   else if (INIT_DONE && LOADED.get(name)?.hold) showHoldDialog(name);
   else if (INIT_DONE) offerLineDraft();
   } catch (error) {
@@ -22001,11 +22086,15 @@ function openAskForUpdate(name, only = null) {
   const summary = el("div", {style: "color:var(--fg3);font-size:12.5px;margin-top:8px"});
   const mixed = found.some(a => a.mention) && found.some(a => !a.mention);
   let split = false;
+  /* What a line is about goes with it, unless you would rather not share the
+     project's name (#161). Remembered for the next ask. */
+  const named = {on: PREF.get("askNameProjects", "1") === "1"};
   const refresh = () => {
     const both = mixed && found.some((a, i) => pick.has(i) && a.mention) && found.some((a, i) => pick.has(i) && !a.mention);
     summary.textContent = pick.size
       ? pick.size + (pick.size === 1 ? " line" : " lines") + " go to " + name +
         (both && split ? " in two emails" : "") + ", with the lines under them you leave ticked. " +
+        (named.on ? "" : "Their projects are not named. ") +
         "Nothing else about your vault goes with them." +
         (found.some((a, i) => pick.has(i) && a.mention && a.block.state !== "WAIT")
           ? " Your own to-dos among them wait on " + name + " once sent." : "")
@@ -22090,7 +22179,7 @@ function openAskForUpdate(name, only = null) {
       const d = a.age, i = found.indexOf(a);
       return {
         key: [a.space || "", a.path, id].join("\u0001"),
-        title: a.title, q: !!a.mention, project: aboutOf.get(a),
+        title: a.title, q: !!a.mention, project: named.on ? aboutOf.get(a) : "",
         context: (contexts[i] || []).filter((_, j) => ctxPick[i].has(j)),
         // How long it has been open, said on the sheet in the sheet's language.
         days: a.mention ? null : d != null && d > 0 ? d : null,
@@ -22141,6 +22230,10 @@ function openAskForUpdate(name, only = null) {
         el("label", {}, "What to ask about"),
         card, summary),
       mixed ? el("div", {class: "field"}, el("label", {}, "Send as"), howBox) : null,
+      found.some(a => aboutOf.get(a)) ? el("div", {class: "field"},
+        el("div", {style: "display:flex;gap:10px;align-items:center"},
+          toggle(() => named.on, () => { named.on = !named.on; PREF.set("askNameProjects", named.on ? "1" : "0"); }),
+          el("span", {}, "Name the projects in what they get"))) : null,
       el("div", {class: "field"},
         el("label", {}, "Your email in " + (area || "this area") + ", where their answers come back to"),
         email,
@@ -22316,8 +22409,11 @@ const ASK_SECTION_RE = new RegExp("^\\s*(?:" + [...new Set(Object.values(ASK_NOT
    Comment:, Reference: and the --- fences) stays as it is, in the language the
    page was made from (base::), so their answer still finds its way home. */
 const ASK_OWN_PATH = join(DIRS.lists, "Update note.md");
-const ASK_OWN_PARTS = [["greeting", "greet"], ["waiting for", "w"], ["questions", "q"],
-  ["both", "both"], ["comment", "add"], ["sign-off", "bye"]];
+/* The email: parts are the formatted mail's words, the others the plain
+   text's (Copy text, Teams, Plain-text mail and the sheet). */
+const ASK_OWN_PARTS = [["greeting", "greet"],
+  ["email: waiting for", "mw"], ["email: questions", "mq"], ["email: both", "mboth"], ["email: help", "mhelp"],
+  ["waiting for", "w"], ["questions", "q"], ["both", "both"], ["comment", "add"], ["sign-off", "bye"]];
 const askOwn = () => PREF.get("askLang", "") === "own";
 const askLang = () => {
   const code = askOwn()
@@ -22326,12 +22422,15 @@ const askLang = () => {
   return ASK_NOTE[code] ? code : "en";
 };
 function askOwnPage() {
-  const base = askLang(), t = ASK_NOTE[base], q = "{" + t.qWords.join("|") + "}";
-  const text = {greet: [t.greet("%name%")], w: [t.intro({q: 0, w: 2}, "%file%", q)], q: [t.intro({q: 2, w: 0}, "%file%", q)],
+  const base = askLang(), t = ASK_NOTE[base], q = "{" + t.qWords.join("|") + "}", m = mailWords();
+  const text = {greet: [t.greet("%name%")],
+    mw: [m.introAsk(2, 0)], mq: [askOneMore(n => m.introAsk(0, n))], mboth: [askOneMore(n => m.introAsk(2, n))], mhelp: [m.helpAsk],
+    w: [t.intro({q: 0, w: 2}, "%file%", q)], q: [t.intro({q: 2, w: 0}, "%file%", q)],
     both: [t.intro({q: 2, w: 2}, "%file%", q)], add: [t.add], bye: [t.bye, "%me%"]};
   return {
     props: {title: "Update note", base, created: todayStamp(),
-      help: "%name% their first name, %file% the sheet, %me% you, %count% how many, " +
+      help: "Email: is the email, the rest the plain text. " +
+            "%name% their first name, %file% the sheet, %me% you, %count% how many, " +
             "%questions% a question or a few, {one|more} by how many"},
     blocks: ASK_OWN_PARTS.map(([part, key]) => newBlock({title: part.charAt(0).toUpperCase() + part.slice(1),
       children: text[key].map(title => newBlock({title}))})),
@@ -22339,7 +22438,38 @@ function askOwnPage() {
 }
 function ensureAskOwn() {
   if (!V.pages.has(ASK_OWN_PATH)) putPage(ASK_OWN_PATH, askOwnPage());
+  else ownPageTopUp(ASK_OWN_PATH, ASK_OWN_PARTS, askOwnPage);
   return ASK_OWN_PATH;
+}
+/* A page made before a part existed gets that part, in the standard words,
+   in its place among the others: the email's parts came after the plain
+   text's, and editing the page should show what the email says (#162). */
+function ownPageTopUp(path, parts, seed) {
+  const page = getPage(path), blocks = [...(page.blocks || [])], fresh = seed().blocks;
+  const key = b => plainTitle(b.title).toLowerCase().replace(/:\s*$/, "");
+  let added = 0;
+  parts.forEach(([part], i) => {
+    if (blocks.some(b => key(b) === part)) return;
+    let at = 0;
+    for (let j = i - 1; j >= 0 && !at; j--) at = blocks.findIndex(b => key(b) === parts[j][0]) + 1;
+    blocks.splice(at, 0, fresh[i]);
+    added++;
+  });
+  if (added) putPage(path, Object.assign({}, page, {blocks}));
+}
+/* The words for one and for more as one line with {one|more} in it, and
+   %count% for the number: "I have {a quick question|%count% quick questions}
+   for you." Whole words go in the braces. */
+function askOneMore(f) {
+  const one = f(1), more = f(2).replace(/(^|\D)2(?!\d)/g, "$1%count%");
+  if (one === more) return one;
+  const word = c => /[\p{L}\p{N}%]/u.test(c || "");
+  let i = 0, j = 0;
+  while (i < one.length && one[i] === more[i]) i++;
+  while (j < one.length - i && j < more.length - i && one[one.length - 1 - j] === more[more.length - 1 - j]) j++;
+  while (i > 0 && word(one[i - 1])) i--;
+  while (j > 0 && word(one[one.length - j])) j--;
+  return one.slice(0, i) + "{" + one.slice(i, one.length - j) + "|" + more.slice(i, more.length - j) + "}" + one.slice(one.length - j);
 }
 /* {greet, w, q, both, add, bye}: each part's lines. A part the page leaves out
    keeps the standard text. */
@@ -22855,11 +22985,11 @@ const MAIL_WORDS = {
     intro: n => "Here is a short update on " + (n === 1 ? "the task" : "the " + n + " tasks") + " I said I would get back to you about.",
     introAsk: (w, q) => !w ? (q === 1 ? "I have a quick question for you." : "I have " + q + " quick questions for you.")
       : "I am waiting for an update on the items below" + (q ? ", and I have " + (q === 1 ? "a question" : q + " questions") : "") + ".",
-    help: ack => (ack ? "One click confirms the lot. " : "") + "Ask about this opens a reply about that task alone. " +
+    helpAck: "One click confirms the lot.",
+    help: "Ask about this opens a reply about that task alone. " +
       "Or just reply, with the number of the task: 2: can we go with the cheaper one?",
     helpAsk: "Each link opens a short reply: write a line if you like, and send. Or just reply, with the number: 1 done, or 2: next week.",
     paste: "[ Paste the GroupToDo update here: select this line and press Ctrl+V ]",
-    powered: "Powered by",
   },
   sv: {
     askAbout: "Fråga om detta ›", markDone: "✓ Markera som klar", writeAbout: "Skriv om detta ›", answer: "Svara på detta ›",
@@ -22870,11 +23000,11 @@ const MAIL_WORDS = {
     intro: n => "Här är en kort uppdatering om " + (n === 1 ? "uppgiften" : "de " + n + " uppgifterna") + " jag lovade att återkomma om.",
     introAsk: (w, q) => !w ? (q === 1 ? "Jag har en snabb fråga till dig." : "Jag har " + q + " snabba frågor till dig.")
       : "Jag väntar på en uppdatering om punkterna nedan" + (q ? ", och jag har " + (q === 1 ? "en fråga" : q + " frågor") : "") + ".",
-    help: ack => (ack ? "Ett klick bekräftar alltihop. " : "") + "Fråga om detta öppnar ett svar om just den uppgiften. " +
+    helpAck: "Ett klick bekräftar alltihop.",
+    help: "Fråga om detta öppnar ett svar om just den uppgiften. " +
       "Eller svara bara, med uppgiftens nummer: 2: kan vi ta den billigare?",
     helpAsk: "Varje länk öppnar ett kort svar: skriv en rad om du vill, och skicka. Eller svara bara, med numret: 1 klar, eller 2: nästa vecka.",
     paste: "[ Klistra in GroupToDo-uppdateringen här: markera raden och tryck Ctrl+V ]",
-    powered: "Skapat med",
   },
   no: {
     askAbout: "Spør om dette ›", markDone: "✓ Merk som ferdig", writeAbout: "Skriv om dette ›", answer: "Svar på dette ›",
@@ -22885,11 +23015,11 @@ const MAIL_WORDS = {
     intro: n => "Her er en kort oppdatering på " + (n === 1 ? "oppgaven" : "de " + n + " oppgavene") + " jeg lovet å komme tilbake til deg om.",
     introAsk: (w, q) => !w ? (q === 1 ? "Jeg har et kjapt spørsmål til deg." : "Jeg har " + q + " kjappe spørsmål til deg.")
       : "Jeg venter på en oppdatering på punktene under" + (q ? ", og jeg har " + (q === 1 ? "et spørsmål" : q + " spørsmål") : "") + ".",
-    help: ack => (ack ? "Ett klikk bekrefter alt. " : "") + "Spør om dette åpner et svar om akkurat den oppgaven. " +
+    helpAck: "Ett klikk bekrefter alt.",
+    help: "Spør om dette åpner et svar om akkurat den oppgaven. " +
       "Eller bare svar, med nummeret på oppgaven: 2: kan vi ta den billigste?",
     helpAsk: "Hver lenke åpner et kort svar: skriv en linje om du vil, og send. Eller bare svar, med nummeret: 1 ferdig, eller 2: neste uke.",
     paste: "[ Lim inn GroupToDo-oppdateringen her: merk linjen og trykk Ctrl+V ]",
-    powered: "Laget med",
   },
   da: {
     askAbout: "Spørg om dette ›", markDone: "✓ Markér som færdig", writeAbout: "Skriv om dette ›", answer: "Svar på dette ›",
@@ -22900,11 +23030,11 @@ const MAIL_WORDS = {
     intro: n => "Her er en kort opdatering på " + (n === 1 ? "opgaven" : "de " + n + " opgaver") + ", jeg lovede at vende tilbage om.",
     introAsk: (w, q) => !w ? (q === 1 ? "Jeg har et hurtigt spørgsmål til dig." : "Jeg har " + q + " hurtige spørgsmål til dig.")
       : "Jeg venter på en opdatering på punkterne nedenfor" + (q ? ", og jeg har " + (q === 1 ? "et spørgsmål" : q + " spørgsmål") : "") + ".",
-    help: ack => (ack ? "Ét klik bekræfter det hele. " : "") + "Spørg om dette åbner et svar om netop den opgave. " +
+    helpAck: "Ét klik bekræfter det hele.",
+    help: "Spørg om dette åbner et svar om netop den opgave. " +
       "Eller svar bare, med opgavens nummer: 2: kan vi tage den billigste?",
     helpAsk: "Hvert link åbner et kort svar: skriv en linje, hvis du vil, og send. Eller svar bare, med nummeret: 1 færdig, eller 2: næste uge.",
     paste: "[ Indsæt GroupToDo-opdateringen her: markér linjen og tryk Ctrl+V ]",
-    powered: "Lavet med",
   },
   de: {
     askAbout: "Dazu fragen ›", markDone: "✓ Als erledigt melden", writeAbout: "Dazu schreiben ›", answer: "Darauf antworten ›",
@@ -22915,11 +23045,11 @@ const MAIL_WORDS = {
     intro: n => "Hier ein kurzes Update zu " + (n === 1 ? "der Aufgabe" : "den " + n + " Aufgaben") + ", zu denen ich mich melden wollte.",
     introAsk: (w, q) => !w ? (q === 1 ? "Ich habe eine kurze Frage an dich." : "Ich habe " + q + " kurze Fragen an dich.")
       : "Ich warte auf ein Update zu den Punkten unten" + (q ? ", und ich habe " + (q === 1 ? "eine Frage" : q + " Fragen") : "") + ".",
-    help: ack => (ack ? "Ein Klick bestätigt alles. " : "") + "Dazu fragen öffnet eine Antwort nur zu dieser Aufgabe. " +
+    helpAck: "Ein Klick bestätigt alles.",
+    help: "Dazu fragen öffnet eine Antwort nur zu dieser Aufgabe. " +
       "Oder antworte einfach, mit der Nummer der Aufgabe: 2: können wir die günstigere nehmen?",
     helpAsk: "Jeder Link öffnet eine kurze Antwort: schreib eine Zeile, wenn du willst, und sende sie. Oder antworte einfach, mit der Nummer: 1 erledigt, oder 2: nächste Woche.",
     paste: "[ GroupToDo-Update hier einfügen: Zeile markieren und Strg+V drücken ]",
-    powered: "Erstellt mit",
   },
 };
 const mailWords = () => MAIL_WORDS[askLang()] || MAIL_WORDS.en;
@@ -22969,8 +23099,19 @@ function updateMail({mode, them, subject, items, ack, replyTo, greet}) {
       links.map(link).join('<span style="color:' + grey + ';">&nbsp;&nbsp;·&nbsp;&nbsp;</span>') + "</td></tr>" : "") +
     "</table></td></tr>";
   const k = {w: items.filter(it => it.kind !== "question").length, q: items.filter(it => it.kind === "question").length};
-  const intro = mode === "inform" ? w.intro(items.length) : w.introAsk(k.w, k.q);
-  const help = mode === "inform" ? w.help(!!gotIt) : w.helpAsk;
+  /* Personalize text reaches the mail too, part by part, so the page you
+     edit is the text they read (#162). A part the page leaves out keeps the
+     standard words. */
+  const own = !askOwn() ? {} : mode === "inform" ? informOwnParts() : askOwnParts();
+  const fill = (s, n) => s.replace(/%name%/gi, firstNameOf(them)).replace(/%me%/gi, whoAmI() || "")
+    .replace(/%count%/gi, String(n)).replace(/\{([^{}|]*)\|([^{}]*)\}/g, (_, one, more) => (n === 1 ? one : more));
+  const part = (key, built, n) => own[key] != null ? fill(own[key], n) : built;
+  const which = !k.q ? "mw" : !k.w ? "mq" : "mboth";
+  const intro = mode === "inform" ? part("mintro", w.intro(items.length), items.length)
+    : part(which, w.introAsk(k.w, k.q), which === "mw" ? k.w : k.q);
+  const help = mode === "inform"
+    ? [gotIt ? part("mack", w.helpAck, items.length) : "", part("mhelp", w.help, items.length)].filter(l => trim(l)).join(" ")
+    : part("mhelp", w.helpAsk, items.length);
   const html = '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="' + F +
       "font-size:15px;line-height:1.5;color:" + ink + ';max-width:600px;">' +
     '<tr><td style="' + F + 'padding:0 0 14px;">' + mailEsc(greet) + "</td></tr>" +
@@ -22983,7 +23124,8 @@ function updateMail({mode, them, subject, items, ack, replyTo, greet}) {
     '<tr><td style="' + F + "padding:" + (gotIt ? "4px" : "8px") + ' 0 8px;font-size:13px;color:#7d8c99;">' + mailEsc(help) + "</td></tr>" +
     '<tr><td style="padding:0 0 18px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>' +
       '<td style="' + F + 'border:1px solid #8696a4;border-radius:10px;padding:2px 10px;font-size:12px;color:#6e7b88;">' +
-      mailEsc(w.powered) + ' <a href="https://github.com/kennethaar/GroupTodo" style="color:#2a7ae2;font-weight:bold;text-decoration:none;">GroupToDo</a></td>' +
+      // In English whatever the mail's language: the name reads better that way (#163).
+      'Powered by <a href="https://github.com/kennethaar/GroupTodo" style="color:#2a7ae2;font-weight:bold;text-decoration:none;">GroupToDo</a></td>' +
     "</tr></table></td></tr>" +
     '<tr><td style="' + F + "font-size:11px;color:" + grey + ';">' + mailEsc(refLine) + "</td></tr>" +
     "</table>";
@@ -23177,19 +23319,24 @@ const informWords = () => INFORM_NOTE[askLang()] || INFORM_NOTE.en;
    pages/8/Inform note.md, used when Personalize text is picked. %name% is
    their first name, %me% you, %file% the sheet, %count% how many lines. */
 const INFORM_OWN_PATH = join(DIRS.lists, "Inform note.md");
-const INFORM_OWN_PARTS = [["greeting", "greet"], ["update", "intro"], ["with the sheet", "sheet"], ["sign-off", "bye"]];
+const INFORM_OWN_PARTS = [["greeting", "greet"],
+  ["email: update", "mintro"], ["email: got it", "mack"], ["email: help", "mhelp"],
+  ["update", "intro"], ["with the sheet", "sheet"], ["sign-off", "bye"]];
 function informOwnPage() {
-  const t = informWords();
+  const t = informWords(), m = mailWords();
   return {
     props: {title: "Inform note", base: askLang(), created: todayStamp(),
-      help: "%name% their first name, %me% you, %file% the sheet, %count% how many lines"},
+      help: "Email: is the email, the rest the plain text. " +
+            "%name% their first name, %me% you, %file% the sheet, %count% how many lines, {one|more} by how many"},
     blocks: INFORM_OWN_PARTS.map(([part, key]) => newBlock({title: part.charAt(0).toUpperCase() + part.slice(1),
-      children: ({greet: [t.greet("%name%")], intro: [t.intro(2)], sheet: [t.sheet("%file%")], bye: [t.bye, "%me%"]})[key]
+      children: ({greet: [t.greet("%name%")], mintro: [askOneMore(m.intro)], mack: [m.helpAck], mhelp: [m.help],
+        intro: [t.intro(2)], sheet: [t.sheet("%file%")], bye: [t.bye, "%me%"]})[key]
         .map(title => newBlock({title}))})),
   };
 }
 function ensureInformOwn() {
   if (!V.pages.has(INFORM_OWN_PATH)) putPage(INFORM_OWN_PATH, informOwnPage());
+  else ownPageTopUp(INFORM_OWN_PATH, INFORM_OWN_PARTS, informOwnPage);
   return INFORM_OWN_PATH;
 }
 function informOwnParts() {
@@ -28829,7 +28976,7 @@ let CAL_SYNCING = false;
 /* An area whose folder still waits for permission, or came back empty, is on
    browser storage for now; meetings written there would go over the folder's
    own day pages once it is back. */
-const calNotOnFolder = space => !!space && (PENDING_GRANT.has(space) || !!LOADED.get(space)?.hold);
+const calNotOnFolder = space => !!space && (folderMissing(space) || !!LOADED.get(space)?.hold);
 const calWindow = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return [d.getTime(), d.getTime() + CAL_DAYS_AHEAD * 864e5]; };
 const calSummary = s => !s.added && !s.changed && !s.gone ? "Calendars: nothing new."
   : "Calendars: " + [s.added && s.added + " new", s.changed && s.changed + " changed", s.gone && s.gone + " gone"]
@@ -42306,7 +42453,7 @@ async function seedIfEmpty() {
   /* Nor is one whose folder only wants its permission again, as it does after
      a fresh download: browser storage stands in until then, and starter verbs
      and templates seeded there were laid over the folder's own on reconnect. */
-  if (PENDING_GRANT.has(V.space)) return;
+  if (folderMissing(V.space)) return;
   const hadPages = V.pages.size > 0;
   ensureDefaultTemplates();
   scheduleTemplateRefresh();
@@ -45720,9 +45867,9 @@ function installServiceWorker() {
   }
   // A remembered folder that only needs permission again: ask here, where it
   // is one click, instead of leaving a picker to be found in Vault & sync.
-  if (PENDING_GRANT.size) {
-    offerFolderReconnect(PENDING_GRANT.has(Spaces.active)
-      ? Spaces.active : Array.from(PENDING_GRANT.keys())[0]);
+  if (PENDING_GRANT.size || LOST_FOLDER.size) {
+    offerFolderBack(folderMissing(Spaces.active) ? Spaces.active
+      : Array.from(PENDING_GRANT.keys())[0] || Array.from(LOST_FOLDER)[0]);
     return;
   }
   afterFirstRun();
