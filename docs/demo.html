@@ -1483,6 +1483,42 @@ details>summary:hover{color:var(--fg2)}
 .bcard:hover .chip.onhover,.bcard:focus .chip.onhover{display:inline-flex}
 .t-menu{width:22px;height:22px;font-size:15px;opacity:.45}
 .task:hover .t-menu,.task.sel .t-menu{opacity:1}
+/* The Journal's rows (#160): what you do, in the order you read it. The
+   project a quiet line above, then the state, the context and the words, the
+   row's ⋯ at the end of them, and the date and the rest under the words. */
+.task.jrow{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;column-gap:8px;row-gap:0;align-items:start}
+.jrow>.t-eyebrow{grid-column:1/-1;grid-row:1;justify-self:start;max-width:100%;margin:0 0 3px -7px;padding:0 7px;border-radius:20px;
+  font-size:11px;letter-spacing:.05em;text-transform:uppercase;line-height:1.5;color:var(--fg3);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+/* Pointed at, it is the project's pill again, and a click opens it. */
+.jrow>.t-eyebrow:hover,.jrow>.t-eyebrow:focus-visible{color:var(--proj);background:color-mix(in srgb,var(--proj) 13%,transparent);outline:none}
+.jrow>.t-chk{grid-column:1;grid-row:2;width:auto}
+.jrow>.chip.ctx{grid-column:2;grid-row:2;margin-top:2px}
+.jrow>.t-title{grid-column:3;grid-row:2}
+.jrow.noctx>.t-title{grid-column:2/4}
+.jrow>.t-meta{grid-column:3;grid-row:3;margin-top:3px}
+.jrow.noctx>.t-meta{grid-column:2/4}
+.jrow .t-info{margin-left:0;justify-content:flex-start}
+.jrow>.t-menu{grid-column:4;grid-row:2;opacity:.7}
+/* A context written inside the words stays where it was written, as a pill. */
+.jrow .t-title .wikilink.ctx,.space-journal .txt .wikilink.ctx{display:inline-block;font-size:11px;line-height:1.6;padding:0 7px;
+  border-radius:20px;vertical-align:1px;color:var(--ctx);background:color-mix(in srgb,var(--ctx) 13%,transparent)}
+/* Upkeep waits until you point at it or tab to it: a calendar not yet
+   linked, the day page's markdown and pin, another tracker. A touch screen
+   has no pointing, so there it is always shown. */
+.todayhead .upkeep,.jhead .upkeep,.tpanel .pfact:not(:only-child)>.trkadd{visibility:hidden}
+.todayhead:hover .upkeep,.todayhead:focus-within .upkeep,.jhead:hover .upkeep,.jhead:focus-within .upkeep,
+.tpanel .space-journal:hover .trkadd,.tpanel .space-journal:focus-within .trkadd{visibility:visible}
+@media (hover:none){.todayhead .upkeep,.jhead .upkeep,.tpanel .pfact>.trkadd{visibility:visible}}
+.space-journal .blk>.line>.linemenu{opacity:.7}
+/* The Due tab says what is done beside what is open. */
+.tratio{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--fg3);font-variant-numeric:tabular-nums}
+.ttab.on .tratio{color:var(--fg2)}
+.tratio .pbar{width:42px;height:5px}
+.tratio .tlate{color:var(--late);font-weight:600}
+.donetoday{display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border-top:1px solid var(--border);color:var(--fg3);font-size:13px}
+.donetoday:hover{color:var(--fg)}
+.donetoday .pbar{width:42px;height:5px}
 .t-pills,.t-info{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}
 .t-info{margin-left:auto;justify-content:flex-end}
 .chip.linger{color:var(--wait);background:rgba(224,176,80,.13);font-variant-numeric:tabular-nums}
@@ -2814,7 +2850,7 @@ body.solview #content{padding-bottom:14px}
    number for a fix, the middle one for a feature. CHANGELOG.md says what each
    one brought, and it is shown beside the name top left, so whoever is testing
    can see at a glance that they have the newest file open. */
-const APP_VERSION = "1.3.1";
+const APP_VERSION = "1.4.0";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 /* ============================================================
    00_BOOTSTRAP -- utilities
@@ -24999,7 +25035,9 @@ function anchorModal(sheet, anchor) {
   sheet.style.top = top + "px";
 }
 
-function chipsFor(a) {
+/* A date says what it is: "Due yesterday", not "Yesterday" (#160). */
+const dueWords = when => "Due " + when.replace(/^(Today|Tomorrow|Yesterday)\b/, w => w.toLowerCase());
+function chipsFor(a, opts = {}) {
   const out = [];
   if (a.context) out.push(el("span", {class: "chip ctx b",
     title: "@" + a.context + (contextInherited(a.block) ? " - from the line above. Go there, or give this line its own"
@@ -25007,11 +25045,13 @@ function chipsFor(a) {
     onclick: e => {e.stopPropagation(); openContextChipMenu(a);}}, "@" + a.context));
   if (a.project) out.push(el("span", {class: "chip proj b", title: a.project + " - open it, move this, take it out",
     onclick: e => {e.stopPropagation(); openProjectChipMenu(a);}}, a.project));
-  if (a.due) {
+  const w = a.due ? dueWhen(a.block) : null;
+  // Under Due today, today goes without saying: only a time or a late day is told.
+  if (a.due && !(opts.todayImplied && a.due === todayISO() && !(w && w.time))) {
     const cls = "when " + (a.due < todayISO() ? "late" : a.due === todayISO() ? "today" : "");
     const rel = OPEN_STATES[a.state] ? relDue(a.due) : "";
-    const w = dueWhen(a.block);
-    out.push(duePill(a, cls, humanWhen(a.due, w && w.time) + (rel ? " · " + rel : "")));
+    const when = humanWhen(a.due, w && w.time) + (rel ? " · " + rel : "");
+    out.push(duePill(a, cls, opts.journal ? dueWords(when) : when));
   }
   if (a.age != null && a.age > 0) out.push(el("span", {class: "chip age when"}, a.age + "d"));
   const fresh = freshnessBar(a);
@@ -25096,6 +25136,13 @@ function linkWords(text) {
   }).replace(/\s{2,}/g, " "));
 }
 function plainTitle(title) { return linkWords(titleForRow(title)); }
+/* A Journal row's words (#160): the project goes above them and a context at
+   the end goes in front of them, but a context written inside the sentence --
+   "ask Lars at the @office about it" -- stays where it was written. */
+const CTX_TAIL_RE = /((?:\s*\[\[c\/[^\]]+\]\])+)\s*$/;
+const titleForJournalRow = title => trim(trim(withoutEst(title)
+  .replace(/\[\[[_0123]\/[^\]]+\]\]/g, "")
+  .replace(/\s{2,}/g, " ")).replace(CTX_TAIL_RE, ""));
 
 
 /* A row in four corners: the circle and the row's one menu top left, the
@@ -25156,12 +25203,33 @@ function askWaitingOn(a, set = false) {
   });
   requestAnimationFrame(() => input.focus());
 }
-function taskRow(a) {
+function taskRow(a, opts) {
+  // A list in the Journal draws its rows the Journal's way (#160).
+  const jr = !!(opts && opts.journal);
   // An action shown from another space must be edited IN that space, or the
   // change would be written through the active space's backend.
-  const title = el("div", {class: "t-title", html: estHtml(a.title) + renderInline(titleForRow(a.title))});
-  const chips = chipsFor(a).filter(c => !(c.classList.contains("asg") && pillInTitle(title, c, a.assignee)));
-  const pills = [multiSpace() && a.space ? spaceBadge(a.space) : null, ...chips.filter(c => !c.classList.contains("when"))].filter(Boolean);
+  const title = el("div", {class: "t-title", html: estHtml(a.title) + renderInline(jr ? titleForJournalRow(a.title) : titleForRow(a.title))});
+  let chips = chipsFor(a, jr ? opts : {}).filter(c => !(c.classList.contains("asg") && pillInTitle(title, c, a.assignee)));
+  /* In the Journal the context stands in front of the words, unless the words
+     already have it inside them, and the project is the line above. Each is
+     the same chip as before, so a click on it does what it did. */
+  let lead = null, eyebrow = null;
+  if (jr) {
+    const ctx = chips.find(c => c.classList.contains("ctx"));
+    if (ctx && !title.querySelector(".wikilink.ctx")) lead = ctx;
+    eyebrow = chips.find(c => c.classList.contains("proj")) || null;
+    if (eyebrow) {
+      eyebrow.className = "t-eyebrow";
+      eyebrow.tabIndex = 0;
+      eyebrow.setAttribute("role", "button");
+      eyebrow.addEventListener("keydown", e => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); openProjectChipMenu(a); }
+      });
+    }
+    chips = chips.filter(c => !c.classList.contains("ctx") && c !== eyebrow);
+  }
+  // The Journal's columns already say the area.
+  const pills = [!jr && multiSpace() && a.space ? spaceBadge(a.space) : null, ...chips.filter(c => !c.classList.contains("when"))].filter(Boolean);
   const info = chips.filter(c => c.classList.contains("when"));
   const linger = a.state === "WAIT" && LINGER.get(a.block.id);
   if (linger) info.unshift(el("span", {class: "chip linger", data: {until: String(linger.until)}},
@@ -25170,7 +25238,7 @@ function taskRow(a) {
       LINGER.delete(a.block.id);
       inSpace(a.space, () => setBlockState(a.path, a.block, linger.was)); render(); }}, "Undo")));
   const row = el("div", {
-    class: "task" + (state.selected === a.block.id ? " sel" : ""),
+    class: "task" + (jr ? " jrow" + (lead ? "" : " noctx") : "") + (state.selected === a.block.id ? " sel" : ""),
     data: {state: a.state || "", id: a.block.id, space: a.space || V.space, path: a.path},
     // A link inside the title is the link's click, not the row's: pressing
     // [[go/todos]] has to go to Todos rather than open the action panel on top
@@ -25179,26 +25247,24 @@ function taskRow(a) {
       if (e.target.closest("[data-link]")) return;
       inSpace(a.space, () => openTaskDetail(a.path, a.block, a.space));
     },
-  },
-    el("div", {class: "t-lead"},
-      /* The same box as on the day page, its word always inside: whether a row
-         is a plain to do or a stage of a task type is the first thing to read. */
-      el("div", {class: "t-chk"},
-        holdable(el("button", {
-          class: "tick", data: {state: a.state || ""},
-          title: a.state === "DONE" ? "Not done after all (hold for every state)" : "Done (hold for every state)",
-        }, ...tickParts(a.state, a.block)), () => {
-          keepFocus(idSel(".task", a.block.id, ".tick"), null);
-          rowSetState(a, () => setBlockState(a.path, a.block, a.state === "DONE" ? "TODO" : "DONE"));
-        }, () => stateMenu(a))),
-      el("button", {class: "iconbtn t-menu", title: "More: the states, refile, open the page", "aria-label": "More",
-        onclick: e => { e.stopPropagation(); taskRowMenu(a); }}, "\u22EF")),
-    el("div", {class: "t-body t-one"},
-      title,
-      pills.length || info.length ? el("div", {class: "t-meta"},
-        el("span", {class: "t-pills"}, ...pills),
-        el("span", {class: "t-info"}, ...info)) : null)
-  );
+  });
+  /* The same box as on the day page, its word always inside: whether a row
+     is a plain to do or a stage of a task type is the first thing to read. */
+  const chk = el("div", {class: "t-chk"},
+    holdable(el("button", {
+      class: "tick", data: {state: a.state || ""},
+      title: a.state === "DONE" ? "Not done after all (hold for every state)" : "Done (hold for every state)",
+    }, ...tickParts(a.state, a.block)), () => {
+      keepFocus(idSel(".task", a.block.id, ".tick"), null);
+      rowSetState(a, () => setBlockState(a.path, a.block, a.state === "DONE" ? "TODO" : "DONE"));
+    }, () => stateMenu(a)));
+  const menu = el("button", {class: "iconbtn t-menu", title: "More: the states, refile, open the page", "aria-label": "More",
+    onclick: e => { e.stopPropagation(); taskRowMenu(a); }}, "\u22EF");
+  const meta = pills.length || info.length ? el("div", {class: "t-meta"},
+    el("span", {class: "t-pills"}, ...pills),
+    el("span", {class: "t-info"}, ...info)) : null;
+  if (jr) row.append(...[eyebrow, chk, lead, title, meta, menu].filter(Boolean));
+  else row.append(el("div", {class: "t-lead"}, chk, menu), el("div", {class: "t-body t-one"}, title, meta));
   return row;
 }
 /* A tap is the common thing, done; holding is the rest. A long press on a
@@ -25334,8 +25400,8 @@ function setHiddenStates(set) {
    at twenty thousand -- a to-do list that takes ten seconds to appear is
    broken, however correct the contents. The counts in the headings are still
    the true totals; only the rows are rationed. */
-function taskCard(actions, emptyText) {
-  return pagedCard(actions, taskRow, emptyText);
+function taskCard(actions, emptyText, rowOpts) {
+  return pagedCard(actions, rowOpts ? a => taskRow(a, rowOpts) : a => taskRow(a), emptyText);
 }
 
 /* The same rationing, for a list of anything that is not a task: pages,
@@ -26470,9 +26536,15 @@ function commitLine(txt, path, b) {
 /* A line as the outline draws it when you are not typing in it: a task's
    time as its dots, everything else as written. Focus puts the raw
    title back, #30m and all. */
-const lineHtml = b => b.state && estTier(b.title)
-  ? estHtml(b.title) + renderInline(withoutEst(b.title))
-  : renderInline(headLevel(b.title, b.state) ? b.title.replace(HEAD_RE, "") : b.title);
+/* On the Journal's day page (lead) a task's context at the end of the line is
+   drawn in front of its words, by the state; the file keeps it where it is (#160). */
+function lineHtml(b, lead) {
+  const tail = lead && b.state ? CTX_TAIL_RE.exec(withoutEst(b.title)) : null;
+  if (tail) return renderInline(trim(tail[1])) + " " + estHtml(b.title) + renderInline(trim(withoutEst(b.title).slice(0, tail.index)));
+  return b.state && estTier(b.title)
+    ? estHtml(b.title) + renderInline(withoutEst(b.title))
+    : renderInline(headLevel(b.title, b.state) ? b.title.replace(HEAD_RE, "") : b.title);
+}
 
 /* # , ## , ### in front of a note make it a heading, the markdown way. The
    marks stay in the file and show while you type in the line; a task is
@@ -26521,7 +26593,7 @@ function outlineBlock(path, page, b, opts = {}) {
 
   const txt = el("div", {
     class: "txt", contenteditable: ro ? "false" : "true", spellcheck: "false",
-    html: lineHtml(b),
+    html: lineHtml(b, opts.leadCtx),
   });
   if (ro) {
     line.append(txt);
@@ -26568,7 +26640,7 @@ function outlineBlock(path, page, b, opts = {}) {
     /* A line with a dropped picture in it comes back as a path, not a URL, so
        the same pass the redraw runs has to run over the line it just rebuilt --
        otherwise editing a line emptied the picture that was already in it. */
-    txt.innerHTML = lineHtml(b);
+    txt.innerHTML = lineHtml(b, opts.leadCtx);
     resolveAssets(txt);
   });
   /* ---------- pasting a list ----------
@@ -29759,7 +29831,27 @@ function viewToday() {
   const byArea = !who && spaces.length > 1;
   const areaCols = cell => journalWidths(el("div", {class: "jgrid"}, ...spaces.map(sp => el("section", {class: "jcard trkcol"},
     el("header", {class: "jhead"}, spaceBadge(sp)), cell(sp)))), spaces);
-  const tasksBy = (acts, empty) => byArea ? areaCols(sp => taskCard(acts.filter(a => a.space === sp), empty)) : taskCard(acts, empty);
+  const JROW = {journal: true}, DUEROW = {journal: true, todayImplied: true};
+  const inArea = (list, sp) => byArea ? list.filter(a => a.space === sp) : list;
+  const tasksBy = (acts, empty, rowOpts = JROW) => byArea
+    ? areaCols(sp => taskCard(inArea(acts, sp), empty, rowOpts)) : taskCard(acts, empty, rowOpts);
+  /* What was due and is done today, under what is still open: the count you
+     are working down, and the row to open them again (#160). */
+  const doneNow = who ? [] : doneToday().filter(a => a.due && a.due <= today);
+  const dueCard = (open, done, empty) => {
+    const card = taskCard(open, empty, DUEROW);
+    if (!done.length) return card;
+    const shown = PREF.get("today.done", "") === "1";
+    card.append(el("button", {class: "donetoday", "aria-expanded": String(shown),
+      onclick: () => { PREF.set("today.done", shown ? "" : "1"); render(); }},
+      el("span", {class: "pbar"}, el("i", {style: "width:" + Math.round(100 * done.length / (open.length + done.length)) + "%"})),
+      (shown ? "▾ " : "▸ ") + done.length + " done today"));
+    if (shown) card.append(...done.map(a => taskRow(a, DUEROW)));
+    return card;
+  };
+  const dueBy = empty => byArea
+    ? areaCols(sp => dueCard(inArea(now, sp), inArea(doneNow, sp), empty))
+    : dueCard(now, doneNow, empty);
 
   const sections = [
     byArea ? {id: "facts", title: "Trackers", count: trackers,
@@ -29780,7 +29872,8 @@ function viewToday() {
        return trkNode(sp, path, [factSpaces.length > 1 ? spaceBadge(sp) : null, dayTrackersBlock(path, {add: sp === trkHome})]);
      })), sheetsToday(day))} : null,
     {id: "due", title: "Due Today & Late", late: now.some(a => a.due < today), count: now.length,
-     body: () => tasksBy(now, "Nothing due. Nothing late.")},
+     done: doneNow.length, lateN: now.filter(a => a.due < today).length,
+     body: () => dueBy("Nothing due. Nothing late.")},
     {id: "week", title: "Next 7 Days", count: week.length,
      body: () => tasksBy(week, "Nothing in the next seven days.")},
     /* Where you said you are: the oldest few open there, drawn fresh each
@@ -29797,7 +29890,8 @@ function viewToday() {
       });
       const path = who ? null : dayPath(sp);
       return {id: "j:" + sp, title: jTitle(sp), space: sp, folded: lines + (lines === 1 ? " line" : " lines"),
-        label: (who ? firstNameOf(who) + "'s " : "") + capitalise(sp) + " Journal",
+        // The area's badge stands beside it, so the title does not say the area again (#160).
+        label: (who ? firstNameOf(who) + "'s journal" : "Journal"),
         edit: path ? () => editAllText({space: sp, path, id: null}) : null,
         hint: who ? "you can read it, fold it and focus on a line" : "click a line to write, a bullet to focus",
         body: () => journalColumn(sp, day, who, Object.assign({title: jTitle(sp), parentGo: ["today", {jz: "j:" + sp}],
@@ -29839,7 +29933,8 @@ function viewToday() {
       day !== today ? el("button", {class: "textbtn backtoday", onclick: () => toDay(null)}, "Back to today") : null),
     people.length ? wideOnly(fselect("Whose day page", who, [["", "Your page"], ...people.map(n => [n, firstNameOf(n) + "'s page"])],
       v => go("today", {todayWho: v || null})), !who) : null,
-    who ? null : wideOnly(calChip()),
+    // With no calendar linked yet, the way to add one waits for the pointer (#160).
+    who ? null : wideOnly((() => { const cal = calChip(); if (!calFeeds().length) cal.classList.add("upkeep"); return cal; })()),
     wideOnly(el("button", {class: "btn ghost", title: "Everything that happened, newest first", onclick: () => openHistory()}, "⏱ History")),
     /* On a phone the row above is icons: the day is what matters there, and
        the rest is a tap away instead of three rows of chrome. */
@@ -29866,22 +29961,29 @@ function viewToday() {
   /* What is due and the trackers are tabs: one open at a time, and pressing
      the open one again folds it away. */
   const tabs = sections.filter(s => !s.space);
+  /* Open beside done once something is done, so the tab shows the way down
+     the list, not only what is left of it; nothing tracked says no 0 (#160). */
+  const tabCount = s => s.done
+    ? el("span", {class: "tratio"},
+        el("span", {class: "pbar"}, el("i", {style: "width:" + Math.round(100 * s.done / (s.count + s.done)) + "%"})),
+        s.count + " open · " + s.done + " done", s.lateN ? el("span", {class: "tlate"}, " · " + s.lateN + " late") : null)
+    : s.id === "facts" && !s.count ? null : el("span", {class: "tcount"}, String(s.count || 0));
   const want = PREF.get("today.tab", "facts");
   const openTab = tabs.find(s => s.id === want);
   c.append(el("div", {class: "ttabs", role: "tablist"}, ...tabs.map(s => el("button", {
     class: "ttab ttab-" + s.id + (s === openTab ? " on" : "") + (s.late ? " late" : ""), role: "tab",
     "aria-selected": String(s === openTab), title: s === openTab ? "Fold away" : "Show",
     onclick: () => { PREF.set("today.tab", s === openTab ? "" : s.id); render(); },
-  }, s.title, el("span", {class: "tcount"}, String(s.count || 0))))));
+  }, s.title, tabCount(s)))));
   if (openTab) c.append(el("div", {class: "tpanel"}, openTab.body()));
   /* Side by side on a wide screen, one under the other otherwise. */
   const cols = sections.filter(s => s.space);
   c.append(journalWidths(el("div", {class: "jgrid"}, ...cols.map(s => el("section", {class: "jcard"},
     el("header", {class: "jhead"}, spaceBadge(s.space),
-      el("button", {class: "jtitle", title: "Focus on " + s.label, onclick: () => go("today", {jz: s.id})}, s.label),
+      el("button", {class: "jtitle", title: "Focus on " + s.title, onclick: () => go("today", {jz: s.id})}, s.label),
       el("div", {style: "flex:1"}),
-      s.edit ? el("button", {class: "jedit", title: "The whole day page as text", onclick: s.edit}, "Edit Markdown") : null,
-      s.edit ? el("button", {class: "jedit", title: "Pin this day page to the right: it stays open while you move about",
+      s.edit ? el("button", {class: "jedit upkeep", title: "The whole day page as text", onclick: s.edit}, "Edit Markdown") : null,
+      s.edit ? el("button", {class: "jedit upkeep", title: "Pin this day page to the right: it stays open while you move about",
         "aria-label": "Pin to the right", onclick: () => pinToSide(s.space, dayPath(s.space))}, "📌") : null),
     s.body(),
     // The lines elsewhere that name this day, as any page shows what links to it.
@@ -29966,7 +30068,7 @@ function journalColumn(space, day, who, trail) {
       who ? null : el("button", {class: "textbtn", onclick: () => { inSpace(space, () => ensureJournal(day)); render(); }},
         "Write on this day"));
     const node = el("div", {class: "space-journal", data: {space, path}},
-      pageOutline(path, Object.assign({readonly: !!who}, trail)));
+      pageOutline(path, Object.assign({readonly: !!who, leadCtx: true}, trail)));
     const activate = () => {
       activateJournalSpace(space);
       if (!SPACE_CONTEXT || SPACE_CONTEXT.space !== space) SPACE_CONTEXT = {space, path};
@@ -35451,7 +35553,7 @@ function dayTrackersBlock(path, {add = true, move = null} = {}) {
   }
   if (!add) return box;
   const line = el("div", {class: "pfact"});
-  line.append(el("button", {class: "textbtn", title: "Something to follow over time",
+  line.append(el("button", {class: "textbtn trkadd", title: "Something to follow over time",
     onclick: () => openTrackerPicker((title, when) => insertTracker(path, newBlock({title: ""}, false), title, when), path)},
     "+ tracker"));
   box.append(line);

@@ -636,6 +636,63 @@ var GTD_TEST = (() => {
   });
 
   /* ============================================================
+     The Journal, an execution view (#160)
+     ============================================================ */
+  const journalDue = async (tasks, day = T()) => {
+    const path = scratchProject("journal", tasks);
+    for (const b of getPage(path).blocks) setDue(b, day);
+    touch(path);
+    PREF.set("today.tab", "due");
+    go("today");
+    await settle();
+    return {path, blocks: getPage(path).blocks, row: b => content().querySelector('.task.jrow[data-id="' + b.id + '"]')};
+  };
+  test("#160 a Journal row: the project above, then the state, the context and the words", async () => {
+    const {path, blocks, row} = await journalDue([["TODO", "Call Bob about the quote [[c/phone]]"]]);
+    const r = row(blocks[0]);
+    ok(r, "the row is under Due today & late");
+    const kids = [...r.children].map(n => n.className.split(" ")[0]);
+    eq(kids.slice(0, 4), ["t-eyebrow", "t-chk", "chip", "t-title"], "order");
+    has(r.querySelector(".t-eyebrow").textContent, pageTitle(path));
+    eq(r.querySelector(":scope > .chip.ctx").textContent, "@phone");
+    ok(!r.querySelector(".t-title").textContent.includes("phone"), "the context is not said twice");
+    eq(r.lastElementChild.classList.contains("t-menu"), true, "the row's ⋯ ends it");
+    ok(!r.querySelector(".duepill"), "due today goes without saying under Due today");
+  });
+  test("#160 a context written inside the words stays there", async () => {
+    const {blocks, row} = await journalDue([["TODO", "Ask Ann at the [[c/office]] about the keys"]]);
+    const r = row(blocks[0]);
+    ok(r.classList.contains("noctx"), "no context in front");
+    eq(r.querySelector(".t-title .wikilink.ctx").textContent, "@office");
+  });
+  test("#160 a late row says Due yesterday", async () => {
+    const {blocks, row} = await journalDue([["TODO", "Send the late figures"]], shiftISO(T(), -1));
+    has(row(blocks[0]).querySelector(".duepill").textContent, "Due yesterday");
+  });
+  test("#160 the Due tab counts what is done today beside what is open", async () => {
+    const {path, blocks} = await journalDue([["TODO", "Finish the first thing"], ["TODO", "Finish the second thing"]]);
+    setBlockState(path, blocks[0], "DONE");
+    go("today");
+    await settle();
+    has(content().querySelector(".ttab-due .tratio").textContent, "done");
+    ok(content().querySelector(".donetoday"), "the done today row under the list");
+  });
+  test("#160 on the day page a context at the end goes in front of the words, as written elsewhere", () => {
+    const b = {state: "TODO", title: "Reply to Bob [[c/computer]]"};
+    const lead = lineHtml(b, true), plain = lineHtml(b);
+    ok(lead.indexOf("@computer") < lead.indexOf("Reply"), "in front on the Journal: " + lead);
+    ok(plain.indexOf("@computer") > plain.indexOf("Reply"), "where written elsewhere: " + plain);
+    const mid = lineHtml({state: "TODO", title: "Print it at the [[c/office]] for Ann"}, true);
+    ok(mid.indexOf("@office") > mid.indexOf("Print"), "inside the words it stays: " + mid);
+  });
+  test("#160 the journal's title does not repeat the area its badge names", async () => {
+    go("today");
+    await settle();
+    eq(content().querySelector(".jcard:not(.trkcol) .jtitle").textContent, "Journal");
+    ok(content().querySelector(".jcard:not(.trkcol) .jhead .sp"), "the area's coloured badge stays");
+  });
+
+  /* ============================================================
      Timer
      ============================================================ */
   test("timer starts and stops", () => {

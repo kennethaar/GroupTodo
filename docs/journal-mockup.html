@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Journal Mockup</title>
+<style>
+/* A UI draft of the Journal view against the design principles in CLAUDE.md,
+   before any code goes into grouptodo.html. Now is the view as it is in
+   v1.3.1; Proposed is the same day with the principles applied. Review mode
+   shows what Proposed keeps out of the way while you work. Generic data only. */
+
+/* The app's four themes, copied from 00_TOKENS in grouptodo.html. */
+:root{
+  --bg:#f6f6f3; --bg2:#ffffff; --bg3:#f0efea; --bg4:#e6e5df;
+  --fg:#1d1d1b; --fg2:#4d4d48; --fg3:#6b6b66;
+  --border:#e4e3de; --border2:#d3d2cc;
+  --accent:#2f6fde; --accent2:#2559b8; --accent-fg:#ffffff; --accent-soft:#e7effc;
+  --todo:#2f6fde; --doing:#8b5cd6; --wait:#a8710f; --done:#2e8a57; --cancel:#8a8a84;
+  --late:#c4402f; --today:#a8710f; --warn:#a8710f;
+  --late-soft:#fbeae7; --wait-soft:#fbf1dc; --ok-soft:#e3f3ea;
+  --ctx:#1f8a7a; --proj:#c25b1e; --zet:#8b5cd6;
+  --radius:12px; --radius-sm:8px;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#161615; --bg2:#1f1f1d; --bg3:#272725; --bg4:#31312e;
+    --fg:#ecebe6; --fg2:#c3c2bc; --fg3:#9a9993;
+    --border:#33332f; --border2:#45453f;
+    --accent:#6c9cf0; --accent2:#8bb0f4; --accent-fg:#0d1626; --accent-soft:#1f2b40;
+    --todo:#6c9cf0; --doing:#c792ea; --wait:#e0aa45; --done:#5fc08a; --cancel:#8a8a84;
+    --late:#ec7a68; --today:#e0aa45; --warn:#e0aa45;
+    --late-soft:#3a201c; --wait-soft:#3a2f18; --ok-soft:#1b3326;
+    --ctx:#5ecfc0; --proj:#ff9f6b; --zet:#c792ea;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161615; --bg2:#1f1f1d; --bg3:#272725; --bg4:#31312e;
+  --fg:#ecebe6; --fg2:#c3c2bc; --fg3:#9a9993;
+  --border:#33332f; --border2:#45453f;
+  --accent:#6c9cf0; --accent2:#8bb0f4; --accent-fg:#0d1626; --accent-soft:#1f2b40;
+  --todo:#6c9cf0; --doing:#c792ea; --wait:#e0aa45; --done:#5fc08a; --cancel:#8a8a84;
+  --late:#ec7a68; --today:#e0aa45; --warn:#e0aa45;
+  --late-soft:#3a201c; --wait-soft:#3a2f18; --ok-soft:#1b3326;
+  --ctx:#5ecfc0; --proj:#ff9f6b; --zet:#c792ea;
+  color-scheme:dark;
+}
+:root[data-light="linen"][data-theme="light"]{
+  --bg:#f4efe6; --bg2:#fbf8f2; --bg3:#ece5d8; --bg4:#e0d7c6;
+  --fg:#2b2620; --fg2:#574e43; --fg3:#7a6f62;
+  --border:#e3dacb; --border2:#d2c6b2;
+  --accent:#a34e24; --accent2:#87401d; --accent-fg:#ffffff; --accent-soft:#f3e2d6;
+  --todo:#a34e24;
+}
+:root[data-dark="night"][data-theme="dark"]{
+  --bg:#0f1420; --bg2:#161c2b; --bg3:#1d2536; --bg4:#273043;
+  --fg:#e3e8f2; --fg2:#b4bdcf; --fg3:#8590a6;
+  --border:#263045; --border2:#364158;
+  --accent:#7aa2ff; --accent2:#9ab8ff; --accent-fg:#0b1220; --accent-soft:#1c2a4a;
+  --todo:#7aa2ff;
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 var(--sans)}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+.page{max-width:1060px;margin:0 auto;padding:28px 16px 80px}
+h1{font-size:22px;margin:0 0 4px}
+h2{font-size:16px;margin:34px 0 8px}
+.lead{color:var(--fg2);margin:0 0 16px;max-width:760px}
+.tools{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:0 0 14px}
+.seg{display:inline-flex;border:1px solid var(--border2);border-radius:var(--radius-sm);overflow:hidden;background:var(--bg2)}
+.seg button{padding:5px 12px;font-size:13px;color:var(--fg2)}
+.seg button+button{border-left:1px solid var(--border2)}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--fg);font-weight:600}
+.seg button:focus-visible,.stage button:focus-visible,.stage [tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.tools .lbl{font-size:12px;color:var(--fg3);margin-right:6px}
+
+/* The stage: the app's content column, at the width the app gives it. */
+.stage{border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);padding:6px 24px 24px;margin:0 auto;max-width:860px;transition:max-width .2s}
+.stage.phone{max-width:390px;padding:6px 14px 18px}
+
+/* ---------- shared app pieces ---------- */
+.vhead{display:flex;align-items:baseline;gap:12px;margin:18px 0 10px;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.vhead h3{font-size:26px;margin:0;letter-spacing:-.2px}
+.vhead .sub{color:var(--fg3);font-size:14px}
+.vhead-r{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap;align-self:center}
+.daybox{display:flex;align-items:center;gap:2px;border:1px solid var(--border2);border-radius:var(--radius-sm);padding:2px 6px;background:var(--bg2)}
+.daybox b{font-size:14px;padding:0 10px}
+.dayarrow{padding:4px 8px;color:var(--fg2);font-size:12px;border-radius:6px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:var(--radius-sm);font-size:13px;color:var(--fg2);border:1px solid var(--border2)}
+.btn:hover{background:var(--bg4);color:var(--fg)}
+.ttabs{display:flex;gap:14px;flex-wrap:wrap;margin:18px 0 18px}
+.ttab{display:inline-flex;align-items:center;gap:10px;padding:8px 16px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg2);color:var(--fg2);font-size:14px}
+.ttab:hover{color:var(--fg);border-color:var(--fg3)}
+.ttab.on{color:var(--fg);border-color:var(--accent);background:var(--accent-soft)}
+.tcount{min-width:22px;padding:1px 7px;border-radius:999px;background:var(--bg4);font-size:12px;font-weight:600;text-align:center}
+.ttab.on .tcount{background:color-mix(in srgb,var(--accent) 30%,transparent);color:var(--fg)}
+.ttab.late .tcount{background:var(--late-soft);color:var(--late)}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:22px}
+.empty{padding:14px 22px;color:var(--fg3);font-size:14px}
+.textbtn{color:var(--accent);font-size:13px;padding:2px 4px}
+.textbtn:hover{text-decoration:underline}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:1px 7px;border-radius:20px;background:var(--bg3);color:var(--fg3);border:1px solid transparent;white-space:nowrap}
+.tick{display:inline-flex;align-items:center;justify-content:center;flex:none;width:58px;height:17px;margin-top:2px;border-radius:4px;
+  font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;line-height:1;
+  color:var(--todo);background:color-mix(in srgb,var(--todo) 16%,transparent)}
+.tick[data-state="DONE"]{color:var(--done);background:color-mix(in srgb,var(--done) 14%,transparent)}
+.tick[data-state="WAIT"]{color:var(--wait);background:color-mix(in srgb,var(--wait) 16%,transparent)}
+button.tick:hover{box-shadow:inset 0 0 0 1px currentColor}
+.link{color:var(--accent)}
+.porg{color:var(--fg3)}
+.jgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 20px}
+.stage.phone .jgrid{grid-template-columns:1fr}
+.jcard{min-width:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:20px;min-height:240px;display:flex;flex-direction:column}
+.jhead{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--border)}
+.jtitle{font-size:16px;font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jedit{font-size:13px;color:var(--fg3);white-space:nowrap}
+.jedit:hover{color:var(--fg)}
+.outline{padding:12px 16px}
+.line{display:flex;align-items:flex-start;gap:7px;padding:2px 4px;border-radius:4px;font-size:14px}
+.line:hover{background:var(--bg3)}
+.bullet{flex:none;width:6px;height:6px;border-radius:50%;background:var(--fg3);margin:9px 4px 0 0}
+.line .txt{flex:1;min-width:0;overflow-wrap:anywhere}
+.newline{font-style:italic;color:var(--fg3);font-size:14px;padding:10px 0 0 22px}
+.line .lmenu{flex:none;color:var(--fg3);padding:0 6px;border-radius:4px;line-height:20px}
+.line .lmenu:hover{background:var(--bg4);color:var(--fg)}
+/* Above the journals, one column per area, as wide as the journal under it. */
+.jcard.trkcol{min-height:0;margin-bottom:14px;overflow:hidden}
+.jcard.trkcol>.jhead{padding:10px 14px}
+.colempty{padding:10px 14px;color:var(--fg3);font-size:13px}
+
+/* ---------- Now: as v1.3.1 draws it ---------- */
+.now .task{display:flex;align-items:flex-start;gap:10px;padding:9px 12px;border-bottom:1px solid var(--border)}
+.now .task:last-child{border-bottom:0}
+.now .task:hover{background:var(--bg3)}
+.now .t-menu{color:var(--fg3);padding:0 4px;line-height:20px}
+.now .t-title{flex:1 1 auto;min-width:0;font-size:14px;overflow-wrap:anywhere}
+.now .t-meta{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;max-width:50%}
+.now.phoneish .task{flex-wrap:wrap}
+.now.phoneish .t-meta{max-width:none;justify-content:flex-start;flex-basis:100%;padding-left:92px}
+.now .chip.ctx{color:var(--ctx);background:rgba(94,207,192,.11)}
+.now .chip.proj{color:var(--proj);background:rgba(255,159,107,.11)}
+.now .chip.late{color:var(--late);background:rgba(255,107,107,.13)}
+.now .chip.today{color:var(--today);background:rgba(224,176,80,.13)}
+.now .chip.when{color:var(--fg2)}
+.pro .task>.eyebrow{justify-self:start;max-width:100%;margin-left:-7px;padding:0 7px;border-radius:20px;cursor:pointer}
+.pro .task>.eyebrow:hover{color:var(--proj);background:color-mix(in srgb,var(--proj) 13%,transparent)}
+.sp{text-transform:uppercase;letter-spacing:.08em;font-size:11px;padding:3px 9px;border-radius:5px;color:var(--accent);border:1px solid var(--accent);background:var(--accent-soft)}
+.sp.home{color:var(--done);border-color:var(--done);background:var(--ok-soft)}
+.now .ctxword{color:var(--ctx)}
+
+/* ---------- Proposed ---------- */
+/* Colour is kept for what you act on: the state, the context, and what is
+   wrong. Chip words are mixed toward --fg so they pass AA on every theme. */
+.pro .chip.ctx{flex:none;color:color-mix(in srgb,var(--ctx) 72%,var(--fg));background:color-mix(in srgb,var(--ctx) 13%,transparent);font-weight:600}
+.pro .chip.late{color:color-mix(in srgb,var(--late) 80%,var(--fg));background:color-mix(in srgb,var(--late) 14%,transparent);font-weight:600}
+.pro .chip.miss{color:color-mix(in srgb,var(--warn) 75%,var(--fg));background:color-mix(in srgb,var(--warn) 10%,transparent);border-color:color-mix(in srgb,var(--warn) 35%,transparent)}
+.pro .chip.urg{font-family:var(--mono);font-size:10.5px}
+.pro .when{font-size:12px;color:var(--fg3);white-space:nowrap;font-variant-numeric:tabular-nums}
+/* Where a row belongs is a quiet eyebrow, not a coloured pill. */
+.pro .eyebrow{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--fg3);line-height:1.3;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pro .task{display:grid;grid-template-columns:auto auto 1fr auto auto;column-gap:8px;row-gap:2px;align-items:start;
+  padding:9px 12px 10px;border-bottom:1px solid var(--border);position:relative}
+.pro .task:last-child{border-bottom:0}
+.pro .task:hover,.pro .task:focus-within{background:var(--bg3)}
+.pro .task>.eyebrow{grid-column:1 / -1}
+.pro .task>.chip.ctx{margin-top:1px}
+.pro .t-title{font-size:14px;min-width:0;overflow-wrap:anywhere}
+/* A context written inside the sentence stays where it was written. */
+.pro .t-title .chip.ctx,.pro .txt .chip.ctx{vertical-align:1px;margin:0 1px}
+.pro .t-end{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.pro .t-menu{color:var(--fg3);padding:0 4px;line-height:20px;border-radius:4px}
+.pro .t-menu:hover{background:var(--bg4);color:var(--fg)}
+/* A row with no context: the title takes the context's column too. */
+.pro .task.noctx>.t-title{grid-column:2 / 4}
+/* An area's column is narrow, so the date goes under the title instead of
+   squeezing it, and the ⋯ keeps the end of the action's line. */
+.pro .task{grid-template-columns:auto auto 1fr auto}
+.pro .task>.t-end{grid-column:3 / 4;justify-content:flex-start;grid-row:3}
+.pro .task>.t-end:empty{display:none}
+.pro .task.noctx>.t-end{grid-column:2 / 4}
+.pro .task>.t-menu{grid-column:4;grid-row:2}
+.pro .done-row{display:flex;gap:10px;align-items:center;padding:8px 12px;border-top:1px solid var(--border);color:var(--fg3);font-size:13px}
+.pro .done-row:hover{color:var(--fg)}
+.pro .task[data-state="DONE"] .t-title{color:var(--fg3);text-decoration:line-through}
+.pbar{display:inline-block;width:42px;height:5px;border-radius:3px;background:var(--bg4);overflow:hidden;vertical-align:middle}
+.pbar>i{display:block;height:100%;background:var(--done);border-radius:3px}
+.ttab .ratio{font-size:12px;color:var(--fg3);font-variant-numeric:tabular-nums}
+.ttab.on .ratio{color:var(--fg2)}
+.ttab .ratio .lt{color:var(--late);font-weight:600}
+.pro .jhead{padding:14px 22px 12px}
+.pro .jhead .eyebrow{display:block}
+.pro .jtitle{display:block}
+.pro .line .chip.ctx{margin-top:1px}
+.pro .addquiet{color:var(--fg3);font-size:13px;padding:2px 4px}
+.pro .addquiet:hover{color:var(--accent)}
+
+/* Kept out of the way while you work: shown on hover, on keyboard focus,
+   in Review mode, and always on a touch screen, where there is no hover. */
+.pro .rv{visibility:hidden}
+.pro .task:hover .rv,.pro .task:focus-within .rv,.pro .jhead:hover .rv,.pro .jhead:focus-within .rv,
+.pro .line:hover .rv,.pro .line:focus-within .rv,.pro .hoverzone:hover .rv,.pro .hoverzone:focus-within .rv{visibility:visible}
+.pro .rvonly{display:none}
+.review .pro .rv{visibility:visible}
+.review .pro .rvonly{display:inline-flex}
+@media (hover:none){.pro .rv{visibility:visible}}
+/* The chips beside the date take no room while hidden, so the date does not
+   float in a gap on a phone. */
+.pro .t-end .rv{display:none}
+.pro .task:hover .t-end .rv,.pro .task:focus-within .t-end .rv,.review .pro .t-end .rv{display:inline-flex}
+@media (hover:none){.pro .t-end .rv{display:inline-flex}}
+.review .pro .rvmark{outline:1px dashed color-mix(in srgb,var(--accent) 55%,transparent);outline-offset:2px;border-radius:5px}
+
+/* ---------- notes ---------- */
+.notes{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.notes li{display:grid;grid-template-columns:76px 1fr;gap:4px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px}
+.notes .n{font:700 13px/1.6 var(--mono);color:var(--accent);white-space:nowrap}
+.notes b{font-weight:650}
+.notes .why{grid-column:2;color:var(--fg3);font-size:13px}
+.notes code,.rule code{font-family:var(--mono);font-size:12.5px;background:var(--bg3);padding:1px 5px;border-radius:4px}
+.rule{color:var(--fg2);font-size:14px;margin:6px 0;max-width:820px}
+</style>
+
+<div class="page">
+  <h1>Journal: UI draft against the design principles</h1>
+  <p class="lead">The Journal is an execution view: the day's page, what is due, and what is coming. The draft keeps it about
+    <b>doing</b> (state, context, the action, what is late) and moves upkeep, empty slots and filing out of the way until you
+    hover, tab to it, or turn on Review mode. Switch between Now and Proposed to compare.</p>
+
+  <div class="tools">
+    <span><span class="lbl">View</span><span class="seg" id="segMode"></span></span>
+    <span><span class="lbl">Theme</span><span class="seg" id="segTheme"></span></span>
+    <span><span class="lbl">Width</span><span class="seg" id="segWidth"></span></span>
+    <span><span class="lbl">Review mode</span><span class="seg" id="segReview"></span></span>
+  </div>
+
+  <div class="stage" id="stage"></div>
+
+  <h2>What changes, and which principle it follows</h2>
+  <ol class="notes" id="notes"></ol>
+
+  <h2>Not in this view</h2>
+  <p class="rule">· The WIP cap on <code>1 / Active</code>, the 4-tier project card and <code>outcome::</code> under the title belong to the
+    Projects board, not the Journal. They need a draft of their own.<br>
+    · <code>stale 14d</code> review age: the Journal shows no review metadata at all, so there is nothing to hide here.</p>
+</div>
+
+<script>
+/* ---------- the day ---------- */
+const AREAS = ["Work", "Home"];
+const DUE = [
+  {area: "Work", proj: "Havbris first order", ctx: "phone", st: "TODO", due: -1, urg: 7.2,
+   why: "one day late, due date weighs most",
+   t: ["Call ", ["Oskar Nilsen", "Havbris Seafood"], " to follow up the trade fair"]},
+  {area: "Work", proj: "Brand refresh", ctx: "computer", st: "TODO", due: 0, urg: 5.6, noverb: true,
+   why: "due today",
+   t: ["Give ", ["Maja Strand", "Lumen Design"], " feedback on the three logo options"]},
+  {area: "Work", proj: "Nordvik freight portal", st: "TODO", due: 0, urg: 4.1,
+   why: "due today, project has been quiet a week",
+   t: ["Ask ", ["Lars Haugen", "Nordvik Shipping"], " at the ", {ctx: "office"}, " about the test accounts"]},
+  {area: "Home", proj: "Bathroom", ctx: "errands", st: "TODO", due: 0, urg: 3.0,
+   why: "due today",
+   t: ["Buy silicone for the sink"]},
+];
+const DONE_TODAY = [
+  {area: "Work", proj: "Q3 close", ctx: "computer", st: "DONE", t: ["Send the VAT figures to ", ["Mia Berg"]]},
+  {area: "Home", proj: "Car", ctx: "phone", st: "DONE", t: ["Book the car service"]},
+];
+const WEEK = [
+  {area: "Work", proj: "Depot guide", ctx: "computer", st: "TODO", role: "Due", day: "Mon 2 Nov", now: "man. 2. nov.", urg: 3.4,
+   why: "due in four days", t: ["Draft the rollout note for the depot guide"]},
+  {area: "Home", proj: "Bathroom", ctx: "home", st: "TODO", role: "Due", day: "Sat 31 Oct", now: "lør. 31. okt.", urg: 1.2,
+   why: "due in two days", t: ["Fix the dripping tap in the bathroom"]},
+];
+const JOURNAL = {
+  Work: [
+    {st: "TODO", ctx: "computer", t: ["Reply to the parking email"]},
+    {t: ["Lunch with ", ["Ingrid Solberg"], " - she wants the depot guide done before the rollout"]},
+    {st: "TODO", t: ["Print the depot guide at the ", {ctx: "office"}, " for Ingrid"]},
+    {st: "DONE", ctx: "computer", t: ["Send the VAT figures to ", ["Mia Berg"]]},
+  ],
+  Home: [
+    {t: ["Slept badly. Early night tonight."]},
+    {st: "WAIT", ctx: "phone", t: ["Plumber to call back about the tap"]},
+  ],
+};
+
+/* ---------- the controls ---------- */
+const S = {mode: "pro", theme: "auto", width: "wide", review: false, tab: "due"};
+try { Object.assign(S, JSON.parse(localStorage.getItem("journal-mockup") || "{}")); } catch (_) {}
+const save = () => { try { localStorage.setItem("journal-mockup", JSON.stringify(S)); } catch (_) {} };
+
+function h(tag, attrs, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if (k === "class") n.className = v;
+    else n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const k of kids.flat(Infinity)) if (k != null && k !== false) n.append(k.nodeType ? k : String(k));
+  return n;
+}
+function seg(id, key, opts) {
+  const box = document.getElementById(id);
+  box.replaceChildren(...opts.map(([v, label]) => h("button", {"aria-pressed": String(S[key] === v),
+    onclick: () => { S[key] = v; save(); draw(); }}, label)));
+}
+function applyTheme() {
+  const r = document.documentElement;
+  r.removeAttribute("data-theme"); r.removeAttribute("data-light"); r.removeAttribute("data-dark");
+  if (S.theme === "paper") r.dataset.theme = "light";
+  if (S.theme === "linen") { r.dataset.theme = "light"; r.dataset.light = "linen"; }
+  if (S.theme === "ink") r.dataset.theme = "dark";
+  if (S.theme === "night") { r.dataset.theme = "dark"; r.dataset.dark = "night"; }
+}
+
+/* A context inside the words is drawn where it stands: as the app shows it
+   now (coloured words), or as a pill in the draft. */
+const words = (t, pill) => t.map(p => typeof p === "string" ? p
+  : p.ctx ? (pill ? h("span", {class: "chip ctx", title: "@" + p.ctx + ": where you can do it"}, "@" + p.ctx)
+                  : h("span", {class: "ctxword"}, "@" + p.ctx))
+  : [h("span", {class: "link"}, p[0]), p[1] ? h("span", {class: "porg"}, " · " + p[1]) : null]);
+/* One column per area above the journals, each as wide as its journal. */
+const areaCols = cell => h("div", {class: "jgrid"}, AREAS.map(sp => h("section", {class: "jcard trkcol"}, cell(sp))));
+const STATE = {TODO: "to do", DOING: "doing", WAIT: "waiting", DONE: "done"};
+const tick = st => h("button", {class: "tick", "data-state": st, title: "Done (hold for every state)"}, STATE[st]);
+
+/* ---------- Now ---------- */
+function drawNow(phone) {
+  const root = h("div", {class: "now" + (phone ? " phoneish" : "")});
+  root.append(h("div", {class: "vhead"},
+    h("h3", {}, "Journal"), h("span", {class: "sub"}, "Torsdag"),
+    h("div", {class: "vhead-r"},
+      h("div", {class: "daybox"}, h("button", {class: "dayarrow"}, "◀"), h("b", {}, "29.10.2026"), h("button", {class: "dayarrow"}, "▶")),
+      phone ? null : h("button", {class: "btn"}, "📅 Calendars · add a link"),
+      phone ? null : h("button", {class: "btn"}, "⏱ History"))));
+  const tabs = [["facts", "Trackers", 0], ["due", "Due Today & Late", DUE.length, true], ["week", "Next 7 Days", WEEK.length]];
+  root.append(h("div", {class: "ttabs"}, tabs.map(([id, label, n, late]) =>
+    h("button", {class: "ttab" + (S.tab === id ? " on" : "") + (late ? " late" : ""), onclick: () => { S.tab = S.tab === id ? "" : id; save(); draw(); }},
+      label, h("span", {class: "tcount"}, n)))));
+  const row = a => h("div", {class: "task"},
+    tick(a.st), h("button", {class: "t-menu", title: "More"}, "⋯"),
+    h("div", {class: "t-title"}, words(a.t)),
+    h("div", {class: "t-meta"},
+      a.ctx ? h("span", {class: "chip ctx"}, "@" + a.ctx) : null,
+      h("span", {class: "chip proj"}, a.proj),
+      a.now ? h("span", {class: "chip when"}, a.now)
+        : h("span", {class: "chip " + (a.due < 0 ? "late" : "today")}, a.due < 0 ? "Yesterday" : "Today")));
+  const head = sp => h("header", {class: "jhead"}, h("span", {class: "sp" + (sp === "Home" ? " home" : "")}, sp));
+  const panel = (list, empty) => areaCols(sp => {
+    const mine = list.filter(a => a.area === sp);
+    return [head(sp), mine.length ? mine.map(row) : h("div", {class: "colempty"}, empty)];
+  });
+  if (S.tab === "facts") root.append(areaCols(sp => [head(sp), h("div", {class: "colempty"}, h("button", {class: "textbtn"}, "+ tracker"))]));
+  if (S.tab === "due") root.append(panel(DUE, "Nothing due. Nothing late."));
+  if (S.tab === "week") root.append(panel(WEEK, "Nothing in the next seven days."));
+  root.append(h("div", {class: "jgrid"}, AREAS.map(sp => h("section", {class: "jcard"},
+    h("header", {class: "jhead"}, h("span", {class: "sp" + (sp === "Home" ? " home" : "")}, sp),
+      h("button", {class: "jtitle"}, sp + " Journal"), h("div", {style: "flex:1"}),
+      phone ? null : h("button", {class: "jedit"}, "Edit Markdown"), h("button", {class: "jedit"}, "📌")),
+    h("div", {class: "outline"},
+      JOURNAL[sp].map(l => h("div", {class: "line"}, h("span", {class: "bullet"}),
+        l.st ? tick(l.st) : null,
+        h("span", {class: "txt"}, words(l.t), l.ctx ? [" ", h("span", {class: "ctxword"}, "@" + l.ctx)] : null))),
+      h("div", {class: "newline"}, "+ Click here to write a new line…"))))));
+  return root;
+}
+
+/* ---------- Proposed ---------- */
+function drawPro(phone) {
+  const root = h("div", {class: "pro"});
+  root.append(h("div", {class: "vhead"},
+    h("h3", {}, "Journal"), h("span", {class: "sub"}, "Thursday"),
+    h("div", {class: "vhead-r"},
+      h("div", {class: "daybox"}, h("button", {class: "dayarrow", "aria-label": "The day before"}, "◀"), h("b", {}, "29.10.2026"),
+        h("button", {class: "dayarrow", "aria-label": "The day after"}, "▶")),
+      phone ? null : h("button", {class: "btn rvonly rvmark", title: "No calendar linked yet"}, "📅 Calendars · add a link"),
+      phone ? null : h("button", {class: "btn"}, "⏱ History"))));
+
+  const open = DUE.length, done = DONE_TODAY.length, late = DUE.filter(a => a.due < 0).length;
+  const tabs = [
+    ["facts", "Trackers", null],
+    ["due", "Due today & late", h("span", {class: "ratio"},
+      h("span", {class: "pbar", title: done + " of " + (open + done) + " done"}, h("i", {style: "width:" + Math.round(100 * done / (open + done)) + "%"})),
+      " ", open, " open · ", done, " done", late ? [" · ", h("span", {class: "lt"}, late + " late")] : null)],
+    ["week", "Next 7 days", h("span", {class: "ratio"}, WEEK.length, " open")],
+  ];
+  root.append(h("div", {class: "ttabs", role: "tablist"}, tabs.map(([id, label, extra]) =>
+    h("button", {class: "ttab" + (S.tab === id ? " on" : ""), role: "tab", "aria-selected": String(S.tab === id),
+      onclick: () => { S.tab = S.tab === id ? "" : id; save(); draw(); }}, label, extra))));
+
+  /* The column says the area, so the eyebrow is just the project. */
+  const row = a => h("div", {class: "task" + (a.ctx ? "" : " noctx"), "data-state": a.st, tabindex: "0"},
+    h("div", {class: "eyebrow"}, a.proj),
+    tick(a.st),
+    a.ctx ? h("span", {class: "chip ctx", title: "@" + a.ctx + ": where you can do it"}, "@" + a.ctx) : null,
+    h("div", {class: "t-title"}, words(a.t, true)),
+    h("div", {class: "t-end"},
+      a.noverb ? h("span", {class: "chip miss rv rvmark", title: "The title does not start with a verb"}, "no verb") : null,
+      a.urg != null ? h("span", {class: "chip urg rv rvmark", title: "Urgency " + a.urg + ": " + a.why + ". The list is already in this order."}, "↑" + a.urg) : null,
+      a.st === "DONE" ? null
+        : a.role ? h("span", {class: "when"}, a.role + " " + a.day)
+        : a.due < 0 ? h("span", {class: "chip late"}, "Due yesterday") : null),
+    h("button", {class: "t-menu", title: "More: the states, refile, open the page", "aria-label": "More"}, "⋯"));
+
+  const head = sp => h("header", {class: "jhead"}, h("span", {class: "sp" + (sp === "Home" ? " home" : "")}, sp));
+  const panel = (list, empty) => areaCols(sp => {
+    const mine = list.filter(a => a.area === sp);
+    return [head(sp), mine.length ? mine.map(row) : h("div", {class: "colempty"}, empty)];
+  });
+  if (S.tab === "facts") root.append(areaCols(sp => [head(sp), h("div", {class: "colempty hoverzone"},
+    "Nothing tracked today. ", h("button", {class: "addquiet rv rvmark"}, "+ tracker"))]));
+  if (S.tab === "due") root.append(areaCols(sp => {
+    const mine = DUE.filter(a => a.area === sp), did = DONE_TODAY.filter(a => a.area === sp);
+    const pct = Math.round(100 * did.length / Math.max(1, mine.length + did.length));
+    return [head(sp),
+      mine.length ? mine.map(row) : h("div", {class: "colempty"}, "Nothing due. Nothing late."),
+      did.length ? h("button", {class: "done-row", style: "width:100%", "aria-expanded": String(!!S.showDone),
+        onclick: () => { S.showDone = !S.showDone; save(); draw(); }},
+        h("span", {class: "pbar"}, h("i", {style: "width:" + pct + "%"})),
+        (S.showDone ? "▾ " : "▸ ") + did.length + " done today") : null,
+      S.showDone ? did.map(row) : null];
+  }));
+  if (S.tab === "week") root.append(panel(WEEK, "Nothing in the next seven days."));
+
+  root.append(h("div", {class: "jgrid"}, AREAS.map(sp => h("section", {class: "jcard"},
+    h("header", {class: "jhead"},
+      h("span", {class: "sp" + (sp === "Home" ? " home" : "")}, sp),
+      h("button", {class: "jtitle"}, "Journal"),
+      h("div", {style: "flex:1"}),
+      h("button", {class: "jedit rv rvmark"}, "Edit Markdown"),
+      h("button", {class: "jedit rv rvmark", "aria-label": "Pin to the right", title: "Pin to the right"}, "📌")),
+    h("div", {class: "outline"},
+      JOURNAL[sp].map(l => h("div", {class: "line", tabindex: "0"}, h("span", {class: "bullet"}),
+        l.st ? tick(l.st) : null,
+        l.ctx ? h("span", {class: "chip ctx"}, "@" + l.ctx) : null,
+        h("span", {class: "txt", style: l.st === "DONE" ? "color:var(--fg3);text-decoration:line-through" : null}, words(l.t, true)),
+        h("button", {class: "lmenu", title: "More: the states, refile, open the page", "aria-label": "More"}, "⋯"))),
+      h("div", {class: "newline"}, "+ Click here to write a new line…"))))));
+  return root;
+}
+
+/* ---------- the notes ---------- */
+const NOTES = [
+  ["1.3", "The context comes straight after the state, before the verb", "[to do] [@phone] Call Oskar… instead of the context at the far right of the row. It never shrinks: the title wraps around it. The same on the day page's own lines, where @computer was the last word. A context written inside the sentence (Ask Lars at the @office about…) stays where it was written, as a pill."],
+  ["1.4", "The project is a quiet eyebrow over the row, not an orange pill", "Uppercase, 11px, --fg3. Trackers, Due and Next 7 days keep one column per area, as wide as that area's journal, so the area is said once, in its coloured badge at the top of its column, and the eyebrow is just the project. Pointed at, the eyebrow is the project's pill again and a click opens it. Each journal keeps its coloured badge and is titled just Journal, so the area is not said twice. Colour is otherwise kept for the state, the context, and late."],
+  ["2.2", "Dates say what they are", "Due yesterday, Due Mon 2 Nov, never a bare man. 2. nov. Under Due today & late, a row due today shows no date: the tab already says it, so only a late row is marked."],
+  ["1.5", "Open counts come with what is done", "The tab reads ▬ 4 open · 2 done · 1 late, and each area's column ends in ▸ 1 done today, which opens to the ticked rows. Trackers with nothing in them show no 0."],
+  ["1.1 · 2.3", "Upkeep waits for hover, focus or Review mode", "Calendars · add a link (with no calendar linked), + tracker, Edit Markdown, 📌, the ↑urgency score and no verb are hidden while you work. Turn on Review mode above to see them, outlined."],
+  ["2.3", "One control beside the title", "The ⋯ menu moves from beside the tick to the end of the row, so the state control stands alone where the eye starts. It is on every row and every journal line, always shown, in --fg3."],
+  ["2.2", "The urgency score only on hover, explained", "↑7.2 shows on hover with a sentence: Urgency 7.2: one day late, due date weighs most. The list is already in this order."],
+  ["4", "Keyboard and touch reach everything", "A row or a line is focusable; tabbing into it shows its scores as hover does. On a touch screen (no hover) they are always shown. Chip colours are mixed with color-mix() toward --fg, so @phone and Due yesterday pass AA on Paper, Linen, Ink and Night."],
+];
+function drawNotes() {
+  document.getElementById("notes").replaceChildren(...NOTES.map(([n, b, why]) =>
+    h("li", {}, h("span", {class: "n"}, n), h("b", {}, b), h("span", {class: "why"}, why))));
+}
+
+function draw() {
+  seg("segMode", "mode", [["now", "Now (v1.3.1)"], ["pro", "Proposed"]]);
+  seg("segTheme", "theme", [["auto", "System"], ["paper", "Paper"], ["linen", "Linen"], ["ink", "Ink"], ["night", "Night"]]);
+  seg("segWidth", "width", [["wide", "Wide"], ["phone", "Phone"]]);
+  seg("segReview", "review", [[false, "Off"], [true, "On"]]);
+  applyTheme();
+  const stage = document.getElementById("stage");
+  const phone = S.width === "phone";
+  stage.className = "stage" + (phone ? " phone" : "") + (S.review ? " review" : "");
+  stage.replaceChildren(S.mode === "now" ? drawNow(phone) : drawPro(phone));
+}
+drawNotes();
+draw();
+</script>

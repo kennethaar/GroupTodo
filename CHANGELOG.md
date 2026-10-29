@@ -5,6 +5,25 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.4.0 - 2026-10-29
+
+- The Journal is about doing (#160), by the design principles now in
+  CLAUDE.md. A row under Due today & late, Next 7 days or @context reads in
+  the order you act: the project as a quiet line above, which is the
+  project's pill again when you point at it, then the state, the context
+  and the words, with the row's ⋯ at the end of them. A context written
+  inside the sentence stays where it is. Dates say what they are, "Due
+  yesterday", and under Due today a row due today with no time shows no
+  date. The Due tab shows a bar and "2 open · 1 done · 1 late", and the
+  list ends in "1 done today", which opens to those rows. Trackers shows no
+  0. Calendars · add a link (with no calendar linked), Edit Markdown, the
+  pin and another + tracker wait until you point at them or tab to them,
+  and are always shown on a touch screen.
+- On the day page in the Journal, a task's context at the end of the line
+  is drawn in front of its words, as a pill; the file keeps it where it
+  was. Each line's ⋯ is shown. Each journal keeps its coloured area badge,
+  and its title is just Journal.
+
 ## 1.3.1 - 2026-10-29
 
 - The update mail (#159): a task linking an email ([[m/...]]) now shows the
