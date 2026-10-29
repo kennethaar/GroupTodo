@@ -841,7 +841,6 @@ Edit as text =>
 Edit children =>
 Edit steps =>
 Edit text =>
-Edit the markdown =>
 Edit the prompt =>
 Edit the query =>
 Edit the steps =>
