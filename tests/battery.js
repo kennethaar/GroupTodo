@@ -782,6 +782,31 @@ var GTD_TEST = (() => {
     }
   });
 
+  test("#164 a folder area opened without its folder shows the reconnect panel, not browser storage", async () => {
+    const view = state.view;
+    PENDING_GRANT.set(V.space, {name: "Vault folder", kind: "directory"});
+    try {
+      go("today");
+      await settle();
+      const panel = content().querySelector(".folderaway");
+      ok(panel, "no reconnect panel in place of the pages");
+      has(panel.textContent, "Vault folder");
+      const btns = [...panel.querySelectorAll("button")];
+      ok(btns.some(b => b.textContent === "Allow access to Vault folder"), "no Allow access button");
+      ok(!content().querySelector(".blk"), "browser storage's lines are shown under it");
+      eq(requireTemplate("no such template 164"), null);
+      ok(![...document.querySelectorAll(".toast, #toasts *")].some(t => t.textContent.includes("no such template 164")),
+        "browser storage offers to make a template the folder has");
+      btns.find(b => b.textContent.startsWith("Not now")).click();
+      await settle();
+      ok(!content().querySelector(".folderaway"), "Not now did not show the pages");
+    } finally {
+      PENDING_GRANT.delete(V.space);
+      AWAY_OK.delete(V.space);
+      go(view);
+    }
+  });
+
   /* ============================================================
      Sending an update: the check-in sheet the other way round (#153)
      ============================================================ */

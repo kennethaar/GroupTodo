@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.14.1 - 2026-10-30
+
+- An area whose folder the app cannot reach shows a reconnect panel in
+  place of its pages (#164). A phone drops the folder's permission each
+  time the app is closed, and the area then opened on browser storage: an
+  old copy, or next to nothing. A person added just before closing looked
+  lost, though it was safe in the folder. Allow access (or Pick the folder)
+  brings the pages back with one tap; Not now uses browser storage for the
+  session.
+
 ## 1.14.0 - 2026-10-30
 
 - A person's page picks the responsibilities they are a stakeholder in
