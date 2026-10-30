@@ -1072,6 +1072,58 @@ var GTD_TEST = (() => {
       has(getPage(path).blocks[0].title, "[[c/Testcrjad]]", "and its link");
     } finally { dropChores(path); document.querySelectorAll("#toasts .toast").forEach(x => x.remove()); }
   });
+  /* ---------- aliases on every page (#207) ---------- */
+  test("#207 a context's alias is that context, typed, captured or picked", () => {
+    makeContext("Testcomputer");
+    const cp = contextPath("Testcomputer");
+    getPage(cp).props.aliases = "tpc"; touch(cp); clearMemo();
+    try {
+      eq(contextByAlias("tpc"), "Testcomputer");
+      eq(contextByAlias("@TPC"), "Testcomputer", "any case, with or without @");
+      eq(ctxSlug("tpc"), "Testcomputer");
+      eq(makeContext("tpc"), "Testcomputer", "no new context called Tpc");
+      ok(!getPage(contextPath("Tpc")), "no page made for the alias");
+      const a = captureLine("Back up the laptop @tpc");
+      has(a.block.title, "[[c/Testcomputer]]");
+      const s = siblingsOf(getPage(a.path), a.block); s.splice(s.indexOf(a.block), 1); touch(a.path);
+      const rows = aliasRows(nameIndex().filter(n => n.kind === "context"), "tpc");
+      eq(rows[0]?.ref, "c/Testcomputer");
+      eq(rows[0]?.label, undefined, "a context link keeps its own name, so the line still knows it");
+    } finally { delete getPage(cp).props.aliases; touch(cp); clearMemo(); }
+  });
+  test("#207 a project or a note is found by its alias, and the link reads the alias with the name on hover", () => {
+    const path = scratchProject("alias project", [["TODO", "Something"]]);
+    const note = join(DIRS.zettel, "Test alias note.md");
+    putPage(note, {props: {title: "Test alias note", aliases: "tanote"}, blocks: []});
+    getPage(path).props.aliases = "tproj"; touch(path); clearMemo();
+    try {
+      eq(nameByRef(pageRef(path))?.aliases, ["tproj"]);
+      const hit = linkCandidates("tproj")[0];
+      eq([hit?.path, hit?.label], [path, "tproj"]);
+      ok(!linkCandidates("tproj").some(r => r.isNew), "no Make row for an alias");
+      eq(linkCandidates("tanote")[0]?.path, note);
+      const html = renderInline("[[" + pageRef(note) + "][tanote]]");
+      has(html, 'title="Test alias note"');
+    } finally { removePage(note); delete getPage(path).props.aliases; touch(path); clearMemo(); }
+  });
+  test("#207 a context's alias that names another context merges them, never with another kind of page", () => {
+    makeContext("Testlaptop");
+    const lp = contextPath("Testlaptop");
+    const path = choreProject("alias merge ctx", [stampAuthor(newBlock({state: "TODO", title: "Charge it [[c/Testlt]]"}))]);
+    putPage(join(DIRS.people, "Testlt.md"), {props: {title: "Testlt"}, blocks: []});
+    clearMemo();
+    try {
+      const before = pageAliases(lp);
+      getPage(lp).props.aliases = "Testlt"; touch(lp); clearMemo();
+      const twins = aliasTwins(lp, before);
+      eq(twins, [contextPath("Testlt")], "the context named on a task, not the person");
+      mergeContextInto("Testlt", "Testlaptop");
+      has(getPage(path).blocks[0].title, "[[c/Testlaptop]]");
+    } finally {
+      removePage(join(DIRS.people, "Testlt.md")); delete getPage(lp).props.aliases; touch(lp);
+      dropChores(path); document.querySelectorAll("#toasts .toast").forEach(x => x.remove()); clearMemo();
+    }
+  });
   test("#201 + New chore writes the line on the room's page", async () => {
     go("chores"); await settle();
     openNewChore("");

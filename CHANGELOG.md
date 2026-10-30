@@ -5,6 +5,19 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.27.0 - 2026-10-30
+
+- Any page can have aliases now, not only people, organisations and areas
+  (#207). Write aliases:: on a project, a context, a note or any other page,
+  and @, # and [[ find it by that name; a link written by an alias shows the
+  full name when you point at it. The Projects and Pages filters search
+  aliases too.
+- A context's alias is that context. aliases:: pc on @Computer makes @pc,
+  typed, captured or picked, the Computer context instead of a new @Pc, and
+  the line still links [[c/Computer]]. Giving a context an alias that is
+  another context's name offers to merge the two, and never merges it with
+  a person or project page of that name.
+
 ## 1.26.0 - 2026-10-30
 
 - Trackers of one kind can share a chart (#195). Give water and coffee the
