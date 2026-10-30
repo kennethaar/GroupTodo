@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.19.0 - 2026-10-30
+
+- A person on a line above counts for the tasks under it (#198), the way a
+  project, context or area already does. A WAIT under `[[p/Joe Newmann]]`
+  waits on Joe, shows in what he owes and goes in an update to him; a TODO
+  under him is something to raise with him. A name on the line itself still
+  wins over one above it.
+
 ## 1.18.1 - 2026-10-30
 
 - Natural planning (#189): the second purpose question asks “What must this

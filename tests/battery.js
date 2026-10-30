@@ -724,6 +724,35 @@ var GTD_TEST = (() => {
     }
     eq(seen, ["DOING", "WAIT", "DONE"]);
   });
+  test("#198 a person on a line above counts for the tasks under it", () => {
+    const day = journalPath("2003-03-03"), joe = personPath("Joe Newmann");
+    putPage(joe, {props: {title: "Joe Newmann"}, blocks: []});
+    putPage(day, parsePage([
+      "- |[[1/Kitchen renovated]]",
+      "  - [[p/Joe Newmann]]",
+      "    - DONE bought 50 lm 3x5 lekter 50 EUR",
+      "    - WAIT Will find paneling ties",
+      "      added:: [[2026-10-30]]",
+      "      by:: Kenneth Aar",
+      "    - TODO Ask about the colour",
+      "    - WAIT [[p/Lars Haugen]] sends the drawing",
+      "- WAIT [[p/Joe Newmann]]  Will find paneling ties [[1/Kitchen renovated]]",
+    ].join("\n")));
+    clearMemo();
+    try {
+      const row = t => leafActions().find(a => a.path === day && a.block.title === t);
+      const under = row("Will find paneling ties");
+      const flat = row("[[p/Joe Newmann]]  Will find paneling ties [[1/Kitchen renovated]]");
+      ok(under && flat, "both lines are actions");
+      for (const k of ["project", "assignee", "group", "mine"]) eq(under[k], flat[k], k);
+      eq(under.assignee, "Joe Newmann");
+      eq(waitsOn(under), ["Joe Newmann"], "waits on");
+      ok(waitingOnFrom("Joe Newmann").some(a => a.block === under.block), "in what Joe owes");
+      ok(globalPeopleRows().find(r => r.name === "Joe Newmann").items.some(a => a.block === under.block), "on Joe's row");
+      ok(askingAbout("Joe Newmann").some(a => a.block.title === "Ask about the colour"), "a TODO under Joe is to raise with him");
+      eq(row("[[p/Lars Haugen]] sends the drawing").assignee, "Lars Haugen", "the line's own name wins");
+    } finally { removePage(day); removePage(joe); clearMemo(); }
+  });
   test("urgencyOf gives a number for every open action", () => {
     const acts = allLeafActions();
     ok(acts.length > 10, "only " + acts.length + " actions in the demo");
