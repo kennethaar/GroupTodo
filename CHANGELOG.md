@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.17.2 - 2026-10-30
+
+- Check in is easier after the fact (#50). On an earlier day the In time
+  starts empty instead of at the time now, and a time can be just the hour:
+  8 is 08:00, 12 is 12:00. A visit you open has + Another time, for a second
+  stretch the same day, such as 08-12 and 13-16.
+
 ## 1.17.1 - 2026-10-30
 
 - The Timeline is quicker to read (#197). Zoom is one joined bar, and

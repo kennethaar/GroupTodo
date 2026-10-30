@@ -541,6 +541,39 @@ var GTD_TEST = (() => {
     eq(readClock("24:00"), null);
     eq(readClock("12:60"), null);
     eq(readClock("soon"), null);
+    eq(readClock("8"), "08:00", "#50 just the hour");
+    eq(readClock("12"), "12:00", "#50 just the hour");
+    eq(readClock("25"), null);
+  });
+  test("#50 a visit after the fact starts with no clock, and a day takes two", async () => {
+    const day = shiftISO(todayISO(), -3);
+    const form = () => document.querySelector("#modalRoot .modal");
+    const fill = (who, a, z) => {
+      const ins = form().querySelectorAll("input");
+      const set = (i, v) => { i.value = v; i.dispatchEvent(new Event("input")); i.dispatchEvent(new Event("change")); };
+      set(ins[0], who);
+      set(form().querySelector("input[type=date]"), day);
+      const clk = form().querySelectorAll("input.clk");
+      eq(clk[0].value, "", "no guessed clock on an earlier day");
+      set(clk[0], a); set(clk[1], z);
+      [...form().querySelectorAll(".foot button")].find(b => b.textContent === "Check in").click();
+    };
+    openTimeForm(null, null);
+    await settle();
+    ok(form().querySelector("input.clk").value, "today starts at now");
+    fill("Ola Battery", "8", "12");
+    await settle();
+    const mine = () => timeLogEntries().filter(e => e.who === "Ola Battery" && e.date === day);
+    eq(mine().map(e => blockProp(e.block, "in") + "-" + blockProp(e.block, "out")), ["08:00-12:00"]);
+    openTimeForm(mine()[0].path, mine()[0].block);
+    await settle();
+    [...form().querySelectorAll(".foot button")].find(b => b.textContent === "+ Another time").click();
+    await settle();
+    fill("Ola Battery", "13", "1600");
+    await settle();
+    eq(mine().map(e => blockProp(e.block, "in") + "-" + blockProp(e.block, "out")), ["08:00-12:00", "13:00-16:00"]);
+    eq(mine().reduce((s, e) => s + timeLogMin(e), 0), 420);
+    for (const e of mine()) { removeBlockFrom(getPage(e.path), e.block); touch(e.path); }
   });
   test("date arithmetic", () => {
     eq(shiftISO("2026-02-27", 2), "2026-03-01");
