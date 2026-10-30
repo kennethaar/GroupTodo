@@ -990,6 +990,33 @@ var GTD_TEST = (() => {
     go("today");
   });
 
+  test("#187 a person's page picks the responsibilities they are a stakeholder in, and the responsibility says so", async () => {
+    const who = "Test Stake Person " + Date.now();
+    const {area} = scratchResp("");
+    delete getPage(area).props.stakeholder;
+    createLinkedPages("[[p/" + who + "]]");
+    openPage(personPath(who));
+    await settle();
+    const row = () => content().querySelector(".stakein");
+    ok(row(), "no Stakeholder in row on a person who is in nothing");
+    const add = [...row().querySelectorAll("button")].find(b => b.textContent === "+ responsibility");
+    ok(add, "no + responsibility");
+    add.click();
+    await settle();
+    const item = [...document.querySelectorAll(".modal *")].find(x => x.children.length === 0 && x.textContent === pageTitle(area));
+    ok(item, "the responsibility is not in the picker");
+    item.click();
+    await settle();
+    eq(stakeholdersOfArea(area).map(s => s.name), [who], "not written on the responsibility");
+    has(row().textContent, pageTitle(area));
+    row().querySelector("button[aria-label^='No longer']").click();
+    await settle();
+    eq(stakeholdersOfArea(area), [], "× left them on the responsibility");
+    undoLast();
+    eq(stakeholdersOfArea(area).map(s => s.name), [who], "Ctrl-Z did not bring them back");
+    go("today");
+  });
+
   /* ============================================================
      The update mail, both directions (#159)
      ============================================================ */

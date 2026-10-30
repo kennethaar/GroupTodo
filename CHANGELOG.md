@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.14.0 - 2026-10-30
+
+- A person's page picks the responsibilities they are a stakeholder in
+  (#187). Stakeholder in, under Works at, has a pill per responsibility and
+  + responsibility to add one; × takes them off. It is written on the
+  responsibility's page as stakeholder::, so they show there too. An
+  organisation's page has the same line.
+
 ## 1.13.3 - 2026-10-30
 
 - A responsibility's values at the top of its page always have a
