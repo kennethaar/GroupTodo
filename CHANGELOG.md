@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.14.3 - 2026-10-30
+
+- A phone's folder is listed one folder at a time again (#188). Since 1.11.6
+  every subfolder was listed at once, and on a phone that came back short:
+  whole folders of people were left out, with no error, though the files
+  were there. A file that will not open while sixteen are read together
+  gets one more try on its own.
+
 ## 1.14.2 - 2026-10-30
 
 - Pages in a folder that did not show in the app (#188). On a phone, people

@@ -369,6 +369,36 @@ var GTD_TEST = (() => {
     ok(files.has("pages/p/Odd Kittelsen.md"), "the good file was lost with the bad one");
     ok(b.unread.has("pages/p/Bad.md"), "the file that would not open is not noted");
   });
+  test("#188 a folder is listed one folder at a time, so a phone does not leave any out", async () => {
+    // A phone's folder gives nothing to a listing started while another is open.
+    let open = 0;
+    const shy = (name, tree) => ({
+      kind: "directory", name,
+      async *entries() {
+        if (open) return;
+        open++;
+        try {
+          for (const [k, v] of Object.entries(tree))
+            yield [k, typeof v === "string" ? {kind: "file", name: k, getFile: async () => ({text: async () => v})} : shy(k, v)];
+        } finally { open--; }
+      },
+    });
+    const tree = {journals: {[T() + ".md"]: "- today\n"},
+      pages: {"GTD.md": "title:: GTD\n", p: {"Odd Kittelsen.md": "title:: Odd Kittelsen\n"}, o: {"CAB MEPS.md": "title:: CAB MEPS\n"}}};
+    const names = await Backends.fs(shy("Shy188", tree)).names();
+    eq(names.slice().sort(), ["journals/" + T() + ".md", "pages/GTD.md", "pages/o/CAB MEPS.md", "pages/p/Odd Kittelsen.md"]);
+  });
+  test("#188 a file that fails while sixteen are read together gets one more try", async () => {
+    let tries = 0;
+    const flaky = Promise.reject(new DOMException("busy", "NotReadableError"));
+    flaky.catch(() => {});
+    const tree = {pages: {p: {"Odd Kittelsen.md": "title:: Odd Kittelsen\n"}}};
+    const gate = {get "Odd Kittelsen.md"() { return tries++ ? undefined : flaky; }};
+    const b = Backends.fs(fakeDir("Retry188", tree, [], gate));
+    const files = await b.readMany(await b.names());
+    ok(files.has("pages/p/Odd Kittelsen.md"), "not read on the second try");
+    ok(!b.unread.size, "still noted as would not open");
+  });
   test("#188 a second listing does not lose files from a read under way", async () => {
     // More files than readers, so some are still to be opened when the folder is listed again.
     let release;
