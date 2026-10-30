@@ -5,6 +5,20 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.21.1 - 2026-10-30
+
+- Chores (#201) are only the repeats at @home or in a room inside it, like
+  @home/kitchen. A weekly report at the office is not a chore. A new room is
+  made inside @home, and the rooms are named without home/.
+- Contexts in folders work again. @home/kitchen typed in the box at the top
+  is one context, not @home and the words /kitchen, and @kitchen finds
+  home/kitchen when it is the only kitchen. New context keeps the folder
+  instead of making home-kitchen. A link to a context in a folder names the
+  folder: [[c/home/kitchen]].
+- A context's children are only other contexts: the ones in its folder, not
+  the tasks written on its page. + sub context picks from the contexts, and
+  the one picked moves into the folder, links and all. Undo moves it back.
+
 ## 1.21.0 - 2026-10-30
 
 - Chores (#201): the home at a glance, in the sidebar once any task repeats.

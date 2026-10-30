@@ -784,19 +784,20 @@ var GTD_TEST = (() => {
   const dropChores = path => { getPage(path).blocks = []; touch(path); clearMemo(); };
   test("#201 a chore is an open task with a repeat, grouped by how far it has come round", () => {
     const path = choreProject("chores group", [
-      chore("Wipe the counters [[c/kitchen]]", "daily", -2), chore("Scrub the shower [[c/bathroom]]", "weekly", 3),
-      chore("Clean the fridge [[c/kitchen]]", "monthly", 20), stampAuthor(newBlock({state: "TODO", title: "Not a chore"}))]);
+      chore("Wipe the counters [[c/home/kitchen]]", "daily", -2), chore("Scrub the shower [[c/home/bathroom]]", "weekly", 3),
+      chore("Clean the fridge [[c/home/kitchen]]", "monthly", 20), stampAuthor(newBlock({state: "TODO", title: "Not a chore"})),
+      chore("Send the weekly report [[c/office]]", "weekly", -1)]);
     try {
       const mine = choreRows().filter(a => a.path === path);
       eq(mine.map(a => plainTitle(a.title)), ["Wipe the counters", "Scrub the shower", "Clean the fridge"]);
       eq(mine.map(choreGroup), ["due", "soon", "fresh"]);
-      const kitchen = freshScore(mine.filter(a => a.context === "kitchen"));
+      const kitchen = freshScore(mine.filter(a => a.context === "home/kitchen"));
       ok(kitchen > 0 && kitchen < 50, "kitchen is " + kitchen + "% fresh");
       ok(NAV_ITEMS.find(it => it && it.id === "chores").when(), "Chores is in the sidebar once a task repeats");
     } finally { dropChores(path); }
   });
   test("#201 ticked in Chores, the next one is put in at once for whose turn it is, and Undo takes both back", async () => {
-    const path = choreProject("chores tick", [chore("Take out the bins", "weekly", 0)]);
+    const path = choreProject("chores tick", [chore("Take out the bins [[c/home]]", "weekly", 0)]);
     try {
       const b = getPage(path).blocks[0], turn = whoseTurn(b);
       go("chores"); await settle();
@@ -815,7 +816,7 @@ var GTD_TEST = (() => {
     } finally { closeDoneToast(); closeModal(); dropChores(path); }
   });
   test("#201 the Chores chip on Next hides and shows the chores", async () => {
-    const path = choreProject("chores chip", [chore("Water the plants", "weekly", 0)]);
+    const path = choreProject("chores chip", [chore("Water the plants [[c/home]]", "weekly", 0)]);
     try {
       go("next", {sub: "list"}); await settle();
       const chip = () => [...content().querySelectorAll(".fbar .fchip")].find(n => n.firstChild.textContent === "Chores");
@@ -839,7 +840,7 @@ var GTD_TEST = (() => {
     } finally { dropChores(path); }
   });
   test("#201 Away holds every chore, and Back now counts them from today", () => {
-    const path = choreProject("chores away", [chore("Vacuum the stairs", "weekly", -3)]);
+    const path = choreProject("chores away", [chore("Vacuum the stairs [[c/home]]", "weekly", -3)]);
     try {
       holdChores(shiftISO(T(), 7));
       ok(!choreRows().some(a => a.path === path), "held while away");
@@ -852,6 +853,43 @@ var GTD_TEST = (() => {
       eq(freshnessOf(a).rounds, 0, "counts from today");
     } finally { dropChores(path); }
   });
+  /* ---------- contexts in folders (#201) ---------- */
+  test("#201 @home/kitchen typed in the capture box is one context, and @kitchen finds it", () => {
+    makeContext("home/kitchen");
+    const a = captureLine("Wipe the hob @home/kitchen");
+    has(a.block.title, "[[c/home/kitchen]]");
+    ok(!a.block.title.includes("]]/"), "not @home and the words /kitchen");
+    const b = captureLine("Empty the bin @kitchen");
+    has(b.block.title, "[[c/home/kitchen]]");
+    for (const x of [a, b]) { const s = siblingsOf(getPage(x.path), x.block); s.splice(s.indexOf(x.block), 1); touch(x.path); }
+  });
+  test("#201 a new context keeps its folder, and its link names it", () => {
+    eq(makeContext("home/bath room"), "home/bath room");
+    ok(getPage(join(DIRS.contexts, "home", "bath room.md")), "the page is in the home folder");
+    eq(pageRef(join(DIRS.contexts, "home", "bath room.md")), "c/home/bath room");
+    eq(pageRef(join(DIRS.contexts, "phone.md")), "c/phone");
+  });
+  test("#201 a context's children are only contexts, and picking one moves it into the folder", () => {
+    makeContext("testhome"); makeContext("testgarden");
+    const path = choreProject("garden link", [stampAuthor(newBlock({state: "TODO", title: "Mow the lawn [[c/testgarden]]"}))]);
+    const home = {path: contextPath("testhome"), space: V.space};
+    const page = getPage(home.path);
+    page.blocks = [stampAuthor(newBlock({state: "TODO", title: "A task written on the context page [[c/testhome]]"}))];
+    touch(home.path); clearMemo();
+    try {
+      eq(relChildren(home, relAll()).length, 0, "the task on the page is not a child");
+      relChildPicker(home);
+      const items = [...document.querySelectorAll(".scrim .modal")].pop().textContent;
+      has(items, "@testgarden");
+      ok(!items.includes("Mow the lawn") && !items.includes("Nordvik"), "only contexts are offered");
+      closeModal();
+      relAddParent(home, {path: contextPath("testgarden"), space: V.space});
+      ok(getPage(contextPath("testhome/testgarden")), "moved into the folder");
+      ok(!getPage(contextPath("testgarden")), "and gone from where it was");
+      has(getPage(path).blocks[0].title, "[[c/testhome/testgarden]]");
+      eq(relChildren(home, relAll()).map(r => r.path), [contextPath("testhome/testgarden")]);
+    } finally { closeModal(); dropChores(path); }
+  });
   test("#201 + New chore writes the line on the room's page", async () => {
     go("chores"); await settle();
     openNewChore("");
@@ -863,14 +901,14 @@ var GTD_TEST = (() => {
     sel[1].value = "monthly"; sel[2].value = "1";
     [...m.querySelectorAll("button")].find(n => n.textContent === "Add chore").click();
     await settle();
-    const page = getPage(contextPath("testkitchen"));
+    const page = getPage(contextPath("home/testkitchen"));
     try {
       ok(page, "the room's page was made");
       const b = page.blocks.find(x => x.title.includes("Test descale the kettle"));
       ok(b, "the chore is on it");
       eq([b.state, repeatOf(b), estTier(b.title), dueDate(b)], ["TODO", "monthly", 1, T()]);
-      has(b.title, "[[c/testkitchen]]");
-    } finally { if (page) { page.blocks = []; touch(contextPath("testkitchen")); clearMemo(); } }
+      has(b.title, "[[c/home/testkitchen]]");
+    } finally { if (page) { page.blocks = []; touch(contextPath("home/testkitchen")); clearMemo(); } }
   });
 
   /* ============================================================
