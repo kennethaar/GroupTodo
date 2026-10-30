@@ -182,12 +182,42 @@ var GTD_TEST = (() => {
       await settle();
       has(rows(), "Loose plan");
       has(rows(), "Dated plan");
-      [...content().querySelectorAll(".statefilter .chip")].find(b => b.textContent.includes("Dated only")).click();
+      [...content().querySelectorAll(".gshowbox")].find(b => b.textContent.includes("Dated only")).querySelector("input").click();
       await settle();
       eq(state.ganttDated, true);
       ok(!rows().includes("Loose plan"), "an undated project is still drawn");
       has(rows(), "Dated plan");
     } finally { go("projects", {sub: "list", ganttDated: false}); await settle(); }
+  });
+  test("#197 timeline: zoom is one radio group, toggles are checkboxes, today is labelled, names are not cut", async () => {
+    const name = "NATURSKADERAPPORT Nordland 2026";
+    const path = scratchProject(name, [["TODO", "Draft the report"]]);
+    setBlockProp(getPage(path).blocks[0], "DEADLINE", whenValue(shiftISO(todayISO(), 5)));
+    clearMemo();
+    try {
+      go("projects", {sub: "timeline", ganttSpan: "3", ganttDated: false});
+      await settle();
+      const zoom = content().querySelector(".gzoomseg[role=radiogroup]");
+      ok(zoom, "the zoom is not a radio group");
+      eq([...zoom.querySelectorAll("[aria-checked=true]")].map(b => b.textContent).join(), "3 months");
+      eq(content().querySelectorAll(".gshow input[type=checkbox]").length, 2);
+      ok(!content().querySelector(".gzoomseg input, .gshow .chip"), "zoom and toggles still look alike");
+      has(content().querySelector(".gantt .ghead .gtoday").textContent, "Today");
+      ok(content().querySelector(".gantt .gfoot .glg"), "the colour key is outside the chart");
+      ok(content().querySelector(".gfoot .helpdot"), "the footer has no ? help");
+      ok(!/Drag a bar to move it/.test(content().textContent), "the long instruction line is back");
+      const row = content().querySelector('.grow.group[data-row="' + CSS.escape(path) + '"]');
+      const nm = row.querySelector(".gname .nm");
+      ok(nm.scrollWidth <= nm.clientWidth + 1 && nm.scrollHeight <= nm.clientHeight + 1, "the name is cut off");
+      ok(row.querySelector(".gname .n"), "the count is not under the name");
+      eq(getComputedStyle(nm).textTransform, "none");
+      eq(getComputedStyle(row).marginTop, "0px");
+      ok(row.querySelector(".gbar .ghandle") === null, "a project bar has end grips");
+      go("projects", {sub: "timeline", ganttOpen: path});
+      await settle();
+      const task = [...content().querySelectorAll(".grow.task .gbar.movable")];
+      ok(task.length && getComputedStyle(task[0].querySelector(".ghandle")).opacity > 0, "a task bar's grips are hidden");
+    } finally { go("projects", {sub: "list", ganttOpen: null}); await settle(); }
   });
   test("#167 a project card says each thing once: stats row, bar under it, field lines, faces at the foot", async () => {
     const path = scratchProject("Card anatomy", [["TODO", "Call the printer"], ["DONE", "Book the hall"], ["DONE", "Send the invite"]]);

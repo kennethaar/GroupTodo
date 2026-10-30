@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.17.1 - 2026-10-30
+
+- The Timeline is quicker to read (#197). Zoom is one joined bar, and
+  Dependencies and Dated only are checkboxes under Show, so it is clear which
+  choices undo each other. The line through the chart says Today, the first
+  month carries its year, and project names are no longer in capitals and get
+  the whole column, with the
+  count under them. The colour key sits inside the chart with a ? beside it,
+  and grip dots on the ends of a bar replace the long line on how to drag.
+
 ## 1.17.0 - 2026-10-30
 
 - The Timeline has a "Dated only" filter (#196). It shows only the projects
