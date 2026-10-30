@@ -575,6 +575,26 @@ var GTD_TEST = (() => {
     eq(mine().reduce((s, e) => s + timeLogMin(e), 0), 420);
     for (const e of mine()) { removeBlockFrom(getPage(e.path), e.block); touch(e.path); }
   });
+  test("#50 hours typed after a start on the clock are the hours", async () => {
+    const form = () => document.querySelector("#modalRoot .modal");
+    const set = (i, v) => { i.value = v; i.dispatchEvent(new Event("input")); i.dispatchEvent(new Event("change")); };
+    openTimeForm(null, null);
+    await settle();
+    const ins = form().querySelectorAll("input");
+    set(ins[0], "Kari Battery");
+    const [tin, tout] = form().querySelectorAll("input.clk");
+    set(tin, "08");
+    const hrs = form().querySelector("input[inputmode=decimal]");
+    set(hrs, "3.5");
+    eq([tin.value, tout.value], ["", ""], "the clock gives way");
+    ok(!tin.classList.contains("bad"), "and is not marked wrong");
+    [...form().querySelectorAll(".foot button")].find(b => b.textContent === "Check in").click();
+    await settle();
+    const mine = timeLogEntries().filter(e => e.who === "Kari Battery");
+    eq(mine.map(e => [blockProp(e.block, "in") || "", blockProp(e.block, "hours")]), [["", "3.5"]]);
+    eq(timeLogMin(mine[0]), 210);
+    for (const e of mine) { removeBlockFrom(getPage(e.path), e.block); touch(e.path); }
+  });
   test("date arithmetic", () => {
     eq(shiftISO("2026-02-27", 2), "2026-03-01");
     eq(shiftISO("2026-01-01", -1), "2025-12-31");

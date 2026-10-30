@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.17.3 - 2026-10-30
+
+- In Check in, the In/Out times or Hours, whichever you wrote last, is what
+  counts (#50). Hours typed after starting on In clear In and Out, and a time
+  typed after Hours clears Hours.
+
 ## 1.17.2 - 2026-10-30
 
 - Check in is easier after the fact (#50). On an earlier day the In time
