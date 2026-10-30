@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.17.0 - 2026-10-30
+
+- The Timeline has a "Dated only" filter (#196). It shows only the projects
+  with a task that has a SCHEDULED day or a deadline, and leaves out journals,
+  loose pages and projects whose bars come only from the day a task was added.
+
 ## 1.16.2 - 2026-10-30
 
 - An empty email, phone, address or web address now asks you to write it

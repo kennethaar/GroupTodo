@@ -171,6 +171,24 @@ var GTD_TEST = (() => {
     go("projects", {sub: "list"});
     await settle();
   });
+  test("timeline: Dated only keeps the projects with a SCHEDULED day or a deadline", async () => {
+    const loose = scratchProject("Loose plan", [["TODO", "Sketch the stand"]]);
+    const dated = scratchProject("Dated plan", [["TODO", "Print the banner"]]);
+    setBlockProp(getPage(dated).blocks[0], "DEADLINE", whenValue(shiftISO(todayISO(), 5)));
+    clearMemo();
+    const rows = () => [...content().querySelectorAll(".gantt")].map(g => g.textContent).join(" ");
+    try {
+      go("projects", {sub: "timeline", ganttSpan: "3", ganttDated: false});
+      await settle();
+      has(rows(), "Loose plan");
+      has(rows(), "Dated plan");
+      [...content().querySelectorAll(".statefilter .chip")].find(b => b.textContent.includes("Dated only")).click();
+      await settle();
+      eq(state.ganttDated, true);
+      ok(!rows().includes("Loose plan"), "an undated project is still drawn");
+      has(rows(), "Dated plan");
+    } finally { go("projects", {sub: "list", ganttDated: false}); await settle(); }
+  });
   test("#167 a project card says each thing once: stats row, bar under it, field lines, faces at the foot", async () => {
     const path = scratchProject("Card anatomy", [["TODO", "Call the printer"], ["DONE", "Book the hall"], ["DONE", "Send the invite"]]);
     const page = getPage(path);
