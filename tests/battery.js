@@ -889,6 +889,17 @@ var GTD_TEST = (() => {
     getPage(area).props = {title: getPage(area).props.title, stakeholders: "[[p/Emma Dahl]]"};
     eq(stakeholdersOfArea(area).map(s => s.name), ["Emma Dahl"], "stakeholders:: read too");
   });
+  test("#158 a responsibility's values always offer + stakeholder, and show each one", () => {
+    const {area} = scratchResp("");
+    delete getPage(area).props.stakeholder;
+    const empty = pageFacts(area).filter(f => f.key === "stakeholders");
+    eq(empty.length, 1, "no stakeholders line on a responsibility without one");
+    eq(empty[0].pills().map(p => p.textContent), ["+ stakeholder"]);
+    getPage(area).props.stakeholder = "[[p/Lars Haugen]], [[o/Nordvik Shipping]]";
+    const set = pageFacts(area).filter(f => /^stakeholders?$/.test(f.key));
+    eq(set.length, 1, "stakeholder:: shown twice");
+    eq(set[0].pills().map(p => p.textContent), ["Lars Haugen", "Nordvik Shipping", "+ stakeholder"]);
+  });
   test("#158 an organisation stakeholder is not a client of the projects under it", () => {
     const {area, proj} = scratchResp("[[o/Nordvik Shipping]]");
     eq(areaOrgsOf(proj), [], "stakeholder taken for a client");

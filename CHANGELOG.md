@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.13.3 - 2026-10-30
+
+- A responsibility's values at the top of its page always have a
+  stakeholders line (#158), with a pill per stakeholder and + stakeholder to
+  add one, the way a person always has a birthday line. Before, stakeholder::
+  only showed once it was written by hand, so there was nothing to fill in.
+
 ## 1.13.2 - 2026-10-30
 
 - Getting started stays until every step on it is done or crossed off
