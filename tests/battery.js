@@ -2150,6 +2150,109 @@ var GTD_TEST = (() => {
       .filter(r => r.media && /max-width:\s*560px/.test(r.media.mediaText)).map(r => r.cssText).join(" ");
     ok(/\.pfact\s*>\s*\.prevval\s*\{[^}]*flex-basis:\s*100%/.test(css), "prevval takes its own line");
   });
+  /* Trackers of the test's own on today and yesterday, and their pages, gone again after. */
+  const withTrackers = async (lines, fn) => {
+    const made = [], added = [], names = new Set();
+    for (const [days, key, value] of lines) {
+      const path = journalPath(shiftISO(T(), days));
+      if (!V.pages.has(path)) { putPage(path, {props: {}, blocks: []}); made.push(path); }
+      getPage(path).props[key] = value;
+      added.push([path, key]);
+      names.add(parseTracker(key + "::").name);
+      touch(path);
+    }
+    try { clearMemo(); return await fn(); }
+    finally {
+      for (const [path, key] of added) if (getPage(path)) { delete getPage(path).props[key]; touch(path); }
+      for (const p of made) removePage(p);
+      for (const n of names) if (V.pages.has(trackerPagePath(n))) removePage(trackerPagePath(n));
+      clearMemo();
+    }
+  };
+  const drinks = [[0, "tracker-t195water_i", "💧💧💧💧"], [0, "tracker-t195coffee_i", "☕☕"],
+    [-1, "tracker-t195water_i", "💧💧"], [-1, "tracker-t195coffee_i", "☕☕☕"]];
+  test("#195 trackers of one kind that name the same chart share one card, with each value and the total", () =>
+    withTrackers(drinks, () => {
+      setTrackerChart("t195water", "Drinks");
+      setTrackerChart("t195coffee", "drinks");
+      eq(trackerProp("t195coffee", "chart"), "Drinks", "takes the chart's own spelling");
+      const chart = trackerCharts(trackerList()).find(c => c.name === "Drinks");
+      ok(chart, "one Drinks chart");
+      eq(chart.groups.map(g => g.name), ["t195coffee", "t195water"]);
+      const card = trackerChartCard(chart);
+      has(card.textContent, "6 together today");
+      has(card.textContent, "2 trackers");
+      ok(!card.querySelector(".fbar"), "no style or stack buttons on the card");
+      ok(card.querySelectorAll(".trkdays .br").length >= 4, "stacked bars by default");
+      eq(card.querySelectorAll(".trkdays text.lbl").length, 2, "each named at its end");
+      const tip = [...card.querySelectorAll(".trkdays .hit title")].pop().textContent;
+      has(tip, "Together  6");
+      has(tip, "💧 T195water  4");
+    }));
+  test("#195 a tracker of another kind never shares the chart", () =>
+    withTrackers([...drinks, [0, "tracker-t195walk_m", "30"]], () => {
+      setTrackerChart("t195water", "Drinks");
+      setTrackerChart("t195coffee", "Drinks");
+      ok(!trackerChartNames("t195walk").includes("Drinks"), "not offered");
+      setTrackerChart("t195walk", "Drinks");
+      const charts = trackerCharts(trackerList());
+      eq(charts.find(c => c.name === "Drinks").groups.length, 2, "still the two drinks");
+      ok(charts.some(c => !c.name && c.groups[0].name === "t195walk"), "walk on its own card");
+    }));
+  test("#195 the style set on one tracker of a shared chart is the whole chart's, and leaving drops stacked", () =>
+    withTrackers(drinks, () => {
+      setTrackerChart("t195water", "Drinks");
+      setTrackerChart("t195coffee", "Drinks");
+      eq(trackerChartStyle(["t195coffee", "t195water"], true), "stacked-bar", "stacked by default");
+      setTrackerStyle("t195water", "line");
+      eq(trackerProp("t195coffee", "style"), "line", "the other one too");
+      setTrackerStyle("t195water", "stacked-bar");
+      setTrackerChart("t195coffee", "");
+      eq(trackerProp("t195coffee", "style"), "", "alone, stacked is gone");
+      eq(trackerChartStyle(["t195coffee"], false), "line");
+    }));
+  test("#195 a tracker's page is made when first opened, is not a template, and its icon:: wins over Settings", () =>
+    withTrackers(drinks, () => {
+      const at = ensureTrackerPage("t195water");
+      eq(at.path, DIRS.lists + "/Trackers/t195water.md");
+      ok(!isTemplatePath(at.path), "not a template");
+      ok(!checklistPages().includes(at.path), "not among the lists");
+      setTrackerProp("t195water", "icon", "🥤");
+      eq(tapIcon({name: "t195water", raw: ""}), "🥤");
+      eq(tapIcon({name: "t195water", raw: "💧"}), "💧", "a day's own icon still comes first");
+    }));
+  test("#195 the tracker's page shows its settings to pick from, the style under the chart, and a preview", () =>
+    withTrackers(drinks, async () => {
+      setTrackerChart("t195water", "Drinks");
+      setTrackerChart("t195coffee", "Drinks");
+      const at = ensureTrackerPage("t195coffee");
+      openPageIn(at.space, at.path);
+      await settle();
+      const box = content().querySelector(".pfacts.trkset");
+      ok(box && !box.classList.contains("folded"), "the settings are open");
+      ok(!box.querySelector(".pfhead"), "nothing to fold");
+      const keys = [...box.querySelectorAll(".pfact .fkey")].map(k => k.textContent);
+      for (const k of ["icon", "colour", "chart", "style"]) ok(keys.includes(k), k + " is there: " + keys);
+      const style = [...box.querySelectorAll(".pfact")].find(l => l.querySelector(".fkey").textContent === "style");
+      ok(style.classList.contains("fsub"), "style sits under the chart");
+      has(style.textContent, "Applies to the whole Drinks chart.");
+      eq([...style.querySelectorAll(".ftrk")].map(p => p.textContent), ["Stacked bar", "Side-by-side bar", "Line"]);
+      ok(!box.querySelector("[disabled]"), "nothing greyed out");
+      eq(box.querySelectorAll(".ftrk.fon").length, 4, "one in use for each");
+      has(content().querySelector(".trkpageline").textContent, "tracker-t195coffee_i");
+      ok(content().querySelector(".trkshared .trkdays"), "the Drinks chart as a preview");
+      go("today");
+    }));
+  test("#195 ⋯ on a tracker's card opens its page", () =>
+    withTrackers(drinks, async () => {
+      const card = trackerCard(trackerGroup("t195water"));
+      ok(!/Stop tracking|Rename/.test(card.textContent), "those are on the page now");
+      card.querySelector(".trkmore").click();
+      await settle();
+      eq(state.pagePath, trackerPagePath("t195water"));
+      ok(V.pages.has(trackerPagePath("t195water")), "made on the way");
+      go("today");
+    }));
   test("#160 the journal's upkeep can be reached with Tab", async () => {
     go("today");
     await settle();

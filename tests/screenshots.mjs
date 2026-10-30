@@ -41,10 +41,26 @@ const SETUP = {
       chore("Change the towels [[c/home/bathroom]]", "weekly", -1, {assigned: "Marcus Lind"}),
       done("Clean the sink #15m [[c/home/bathroom]]", "Ingrid Solberg")]}, {silent: true});
     clearMemo(); PREF.set("chores.who", "all"); go("chores");`,
+  // Two weeks of water and coffee on one Drinks chart, and a weight of its own.
+  trackers: `const w = [4,3,5,2,6,4,3,5,4,2,5,6,3,4], c = [2,3,1,3,2,2,4,1,2,3,2,1,3,2];
+    window.TRK_SHOT = {made: [], keys: ["tracker-water_i", "tracker-coffee_i", "tracker-weight_k"]};
+    for (let i = 0; i < 14; i++) {
+      const p = journalPath(shiftISO(todayISO(), i - 13));
+      if (!V.pages.has(p)) { putPage(p, {props: {}, blocks: []}, {silent: true}); TRK_SHOT.made.push(p); }
+      Object.assign(getPage(p).props, {"tracker-water_i": "💧".repeat(w[i]), "tracker-coffee_i": "☕".repeat(c[i]),
+        "tracker-weight_k": String(Math.round((81.4 - i * 0.15) * 10) / 10)});
+    }
+    clearMemo();
+    setTrackerChart("water", "Drinks"); setTrackerChart("coffee", "Drinks");
+    go("trackers");`,
 };
 /* Put back after the picture what SETUP added for it. */
 const AFTER = {
   chores: `for (const p of CHORE_SHOT) V.pages.delete(p); clearMemo(); PREF.set("chores.who", ""); render();`,
+  trackers: `for (const p of allPages(isJournalPath)) for (const k of TRK_SHOT.keys) delete getPage(p).props[k];
+    for (const p of TRK_SHOT.made) V.pages.delete(p);
+    for (const n of ["water", "coffee"]) V.pages.delete(trackerPagePath(n));
+    clearMemo(); render();`,
 };
 // Only part of the screen, for a topic about one strip of it.
 const CLIP = {topbar: {x: 0, y: 0, width: W, height: 140}};

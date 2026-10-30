@@ -5,6 +5,21 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.26.0 - 2026-10-30
+
+- Trackers of one kind can share a chart (#195). Give water and coffee the
+  same chart on their pages, and Trackers shows one Drinks card: both
+  stacked by day, each named at its end, "8 together today · 6 💧 · 2 ☕ ·
+  8.7 a day on average", and each value with the total when you point at a
+  day. Trackers with different units never share one.
+- Each tracker has a page of its own, pages/8/Trackers/coffee.md, made when
+  you first open it with ⋯ on its card. Its icon, colour, chart and style
+  are picked there, and anything you write under them is your notes. A
+  shared chart has one style, stacked bar, side-by-side bar or line, so
+  changing it on one tracker changes it for all of them. A tracker on its
+  own can be a line or bars. When, area, Rename and Stop are on the page
+  now, under the name, and the chart is shown at the bottom.
+
 ## 1.25.0 - 2026-10-30
 
 - Contexts is easier to read (#206). One button, Sense where I am, in place
