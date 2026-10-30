@@ -765,7 +765,7 @@ var GTD_TEST = (() => {
     eq(parseWhen("Plan the weekly meeting"), null, "only at the end");
     const c = captureLine("Vacuum @home weekly");
     eq([plainTitle(c.block.title), repeatOf(c.block)], ["Vacuum", "weekly"]);
-    has(c.block.title, "[[c/home]]", "the context is still on the line");
+    has(c.block.title, "[[c/Home]]", "the context is still on the line");
     const s = siblingsOf(getPage(c.path), c.block); s.splice(s.indexOf(c.block), 1); touch(c.path);
   });
   test("nextRepeatDate is always strictly later", () => {
@@ -869,43 +869,43 @@ var GTD_TEST = (() => {
   test("#201 @home/kitchen typed in the capture box is one context, and @kitchen finds it", () => {
     makeContext("home/kitchen");
     const a = captureLine("Wipe the hob @home/kitchen");
-    has(a.block.title, "[[c/home/kitchen]]");
+    has(a.block.title, "[[c/Home/Kitchen]]");
     ok(!a.block.title.includes("]]/"), "not @home and the words /kitchen");
     const b = captureLine("Empty the bin @kitchen");
-    has(b.block.title, "[[c/home/kitchen]]");
+    has(b.block.title, "[[c/Home/Kitchen]]");
     for (const x of [a, b]) { const s = siblingsOf(getPage(x.path), x.block); s.splice(s.indexOf(x.block), 1); touch(x.path); }
   });
   test("#201 a new context keeps its folder, and its link names it", () => {
-    eq(makeContext("home/bath room"), "home/bath room");
-    ok(getPage(join(DIRS.contexts, "home", "bath room.md")), "the page is in the home folder");
-    eq(pageRef(join(DIRS.contexts, "home", "bath room.md")), "c/home/bath room");
+    eq(makeContext("home/bath room"), "Home/Bath room");
+    ok(getPage(join(DIRS.contexts, "Home", "Bath room.md")), "the page is in the home folder");
+    eq(pageRef(join(DIRS.contexts, "Home", "Bath room.md")), "c/Home/Bath room");
     eq(pageRef(join(DIRS.contexts, "phone.md")), "c/phone");
   });
   test("#201 a context's children are only contexts, and picking one moves it into the folder", () => {
-    makeContext("testhome"); makeContext("testgarden");
-    const path = choreProject("garden link", [stampAuthor(newBlock({state: "TODO", title: "Mow the lawn [[c/testgarden]]"}))]);
-    const home = {path: contextPath("testhome"), space: V.space};
+    makeContext("Testhome"); makeContext("Testgarden");
+    const path = choreProject("garden link", [stampAuthor(newBlock({state: "TODO", title: "Mow the lawn [[c/Testgarden]]"}))]);
+    const home = {path: contextPath("Testhome"), space: V.space};
     const page = getPage(home.path);
-    page.blocks = [stampAuthor(newBlock({state: "TODO", title: "A task written on the context page [[c/testhome]]"}))];
+    page.blocks = [stampAuthor(newBlock({state: "TODO", title: "A task written on the context page [[c/Testhome]]"}))];
     touch(home.path); clearMemo();
     try {
       eq(relChildren(home, relAll()).length, 0, "the task on the page is not a child");
       relChildPicker(home);
       const items = [...document.querySelectorAll(".scrim .modal")].pop().textContent;
-      has(items, "@testgarden");
+      has(items, "@Testgarden");
       ok(!items.includes("Mow the lawn") && !items.includes("Nordvik"), "only contexts are offered");
       closeModal();
-      relAddParent(home, {path: contextPath("testgarden"), space: V.space});
-      ok(getPage(contextPath("testhome/testgarden")), "moved into the folder");
-      ok(!getPage(contextPath("testgarden")), "and gone from where it was");
-      has(getPage(path).blocks[0].title, "[[c/testhome/testgarden]]");
-      eq(relChildren(home, relAll()).map(r => r.path), [contextPath("testhome/testgarden")]);
+      relAddParent(home, {path: contextPath("Testgarden"), space: V.space});
+      ok(getPage(contextPath("Testhome/Testgarden")), "moved into the folder");
+      ok(!getPage(contextPath("Testgarden")), "and gone from where it was");
+      has(getPage(path).blocks[0].title, "[[c/Testhome/Testgarden]]");
+      eq(relChildren(home, relAll()).map(r => r.path), [contextPath("Testhome/Testgarden")]);
     } finally { closeModal(); dropChores(path); }
   });
   test("#201 + Put a context inside offers a context that is only named on tasks, and nests it", () => {
-    makeContext("testflat");
+    makeContext("Testflat");
     const path = choreProject("loose ctx", [stampAuthor(newBlock({state: "TODO", title: "Fix the shelf [[c/testshed]]"}))]);
-    const flat = {path: contextPath("testflat"), space: V.space};
+    const flat = {path: contextPath("Testflat"), space: V.space};
     try {
       ok(!getPage(contextPath("testshed")), "testshed has no page of its own");
       go("page", {pagePath: flat.path}); render();
@@ -917,43 +917,43 @@ var GTD_TEST = (() => {
       const pick = [...modal.querySelectorAll("button, [role=option], li, .row")].find(n => n.textContent.trim() === "@testshed");
       ok(pick, "testshed can be picked");
       pick.click();
-      ok(getPage(contextPath("testflat/testshed")), "it is inside testflat now");
-      has(getPage(path).blocks[0].title, "[[c/testflat/testshed]]");
-      eq(pageTitle(contextPath("testflat/testshed")), "testflat/testshed", "titled with its full name");
+      ok(getPage(contextPath("Testflat/testshed")), "it is inside Testflat now");
+      has(getPage(path).blocks[0].title, "[[c/Testflat/testshed]]");
+      eq(pageTitle(contextPath("Testflat/testshed")), "Testflat/testshed", "titled with its full name");
     } finally { closeModal(); dropChores(path); }
   });
   test("#201 renaming a context home/room moves it into the folder, and back out again, as Logseq does", () => {
-    makeContext("testroom"); makeContext("testhouse");
-    const path = choreProject("rename ns", [stampAuthor(newBlock({state: "TODO", title: "Dust [[c/testroom]]"}))]);
+    makeContext("Testroom"); makeContext("Testhouse");
+    const path = choreProject("rename ns", [stampAuthor(newBlock({state: "TODO", title: "Dust [[c/Testroom]]"}))]);
     try {
-      const into = renamePage(contextPath("testroom"), "testhouse/testroom");
-      eq(into, contextPath("testhouse/testroom"));
-      ok(!getPage(contextPath("testroom")), "gone from where it was");
-      has(getPage(path).blocks[0].title, "[[c/testhouse/testroom]]");
-      const out = renamePage(into, "testroom");
-      eq(out, contextPath("testroom"));
-      has(getPage(path).blocks[0].title, "[[c/testroom]]");
-      eq(renamePage(contextPath("testhouse"), "testhouse/inner"), contextPath("testhouse"), "a page cannot go inside itself");
+      const into = renamePage(contextPath("Testroom"), "Testhouse/Testroom");
+      eq(into, contextPath("Testhouse/Testroom"));
+      ok(!getPage(contextPath("Testroom")), "gone from where it was");
+      has(getPage(path).blocks[0].title, "[[c/Testhouse/Testroom]]");
+      const out = renamePage(into, "Testroom");
+      eq(out, contextPath("Testroom"));
+      has(getPage(path).blocks[0].title, "[[c/Testroom]]");
+      eq(renamePage(contextPath("Testhouse"), "Testhouse/inner"), contextPath("Testhouse"), "a page cannot go inside itself");
     } finally { dropChores(path); }
   });
   test("#201 the folder's contexts are written on its page as children::, as they come and go", () => {
-    makeContext("testabode"); makeContext("testden"); makeContext("testloft");
-    const abode = {path: contextPath("testabode"), space: V.space};
-    nestContext(abode, {path: contextPath("testden"), space: V.space});
-    nestContext(abode, {path: contextPath("testloft"), space: V.space});
-    eq(getPage(abode.path).props.children, "[[c/testabode/testden]], [[c/testabode/testloft]]");
-    renamePage(contextPath("testabode/testden"), "testden");
-    eq(getPage(abode.path).props.children, "[[c/testabode/testloft]]", "moved out, gone from the list");
-    makeContext("testabode/testattic");
-    eq(getPage(abode.path).props.children, "[[c/testabode/testattic]], [[c/testabode/testloft]]", "a new one in the folder is listed");
-    makeContext("testshack");
-    renamePage(contextPath("testshack"), "testhut/testshack");
-    ok(getPage(contextPath("testhut")), "renamed into a folder with no page, the page is made");
-    eq(getPage(contextPath("testhut")).props.children, "[[c/testhut/testshack]]");
+    makeContext("Testabode"); makeContext("Testden"); makeContext("Testloft");
+    const abode = {path: contextPath("Testabode"), space: V.space};
+    nestContext(abode, {path: contextPath("Testden"), space: V.space});
+    nestContext(abode, {path: contextPath("Testloft"), space: V.space});
+    eq(getPage(abode.path).props.children, "[[c/Testabode/Testden]], [[c/Testabode/Testloft]]");
+    renamePage(contextPath("Testabode/Testden"), "Testden");
+    eq(getPage(abode.path).props.children, "[[c/Testabode/Testloft]]", "moved out, gone from the list");
+    makeContext("Testabode/Testattic");
+    eq(getPage(abode.path).props.children, "[[c/Testabode/Testattic]], [[c/Testabode/Testloft]]", "a new one in the folder is listed");
+    makeContext("Testshack");
+    renamePage(contextPath("Testshack"), "Testhut/Testshack");
+    ok(getPage(contextPath("Testhut")), "renamed into a folder with no page, the page is made");
+    eq(getPage(contextPath("Testhut")).props.children, "[[c/Testhut/Testshack]]");
   });
   test("#201 + New context inside makes one in the folder, so a second room can be added", () => {
-    makeContext("testflat2");
-    const flat = {path: contextPath("testflat2"), space: V.space};
+    makeContext("Testflat2");
+    const flat = {path: contextPath("Testflat2"), space: V.space};
     for (const room of ["one", "two"]) {
       relChildPicker(flat);
       const m = [...document.querySelectorAll(".scrim .modal")].pop();
@@ -965,7 +965,54 @@ var GTD_TEST = (() => {
       [...box.querySelectorAll("button")].find(n => n.textContent === "Create").click();
     }
     closeModal();
-    eq(getPage(flat.path).props.children, "[[c/testflat2/one]], [[c/testflat2/two]]");
+    eq(getPage(flat.path).props.children, "[[c/Testflat2/One]], [[c/Testflat2/Two]]");
+  });
+  /* ---------- context names and look-alikes (#203) ---------- */
+  test("#203 a new context starts with a capital, and one already there keeps its spelling", () => {
+    eq(makeContext("testcap"), "Testcap");
+    eq(makeContext("testcap/inner"), "Testcap/Inner", "each part of the folder too");
+    eq(makeContext("TESTCAP"), "Testcap", "typed in another case, it is the one you have");
+    const a = captureLine("Ring the vet @@testcap");
+    has(a.block.title, "[[c/Testcap]]");
+    const s = siblingsOf(getPage(a.path), a.block); s.splice(s.indexOf(a.block), 1); touch(a.path);
+  });
+  test("#203 a context that looks like another is spotted, but not its own folder", () => {
+    eq(ctxLikeness("Phones", "phone"), 1);
+    eq(ctxLikeness("Errnd", "errand"), 1);
+    eq(ctxLikeness("Kitchen", "home/kitchen"), 3);
+    eq(ctxLikeness("Car", "Bar"), 0, "short names need more than one letter alike");
+    eq(ctxLikeness("Garden", "Office"), 0);
+    makeContext("testlook/testlookroom");
+    eq(contextLookalike("testlook/testlookroom"), null, "its folder is not a look-alike");
+  });
+  test("#203 a new look-alike context warns, and Merge folds it into the old one with its links", () => {
+    makeContext("Testwarehouse");
+    const before = document.querySelectorAll("#toasts .toast.warn").length;
+    const made = makeContext("testwarehouses");
+    eq(made, "Testwarehouses");
+    const toasts = [...document.querySelectorAll("#toasts .toast.warn")];
+    eq(toasts.length, before + 1, "a warning toast");
+    const t = toasts.pop();
+    has(t.textContent, "@Testwarehouses looks like @Testwarehouse");
+    const path = choreProject("lookalike ctx", [stampAuthor(newBlock({state: "TODO", title: "Count the boxes [[c/Testwarehouses]]"}))]);
+    try {
+      [...t.querySelectorAll("button")].find(b => b.textContent === "Merge into @Testwarehouse").click();
+      ok(!getPage(contextPath("Testwarehouses")), "the new one is gone");
+      ok(getPage(contextPath("Testwarehouse")), "the old one stays");
+      has(getPage(path).blocks[0].title, "[[c/Testwarehouse]]");
+    } finally { dropChores(path); document.querySelectorAll("#toasts .toast").forEach(x => x.remove()); }
+  });
+  test("#203 renaming a context onto one that is there, in any case, offers to merge into it", () => {
+    makeContext("Testconsume/Testread"); makeContext("Testcrjad");
+    const path = choreProject("rename merge ctx", [stampAuthor(newBlock({state: "TODO", title: "Read the paper [[c/Testcrjad]]"}))]);
+    try {
+      eq(renamePage(contextPath("Testcrjad"), "testconsume/testread"), contextPath("Testcrjad"), "not renamed yet");
+      const t = [...document.querySelectorAll("#toasts .toast.warn")].pop();
+      has(t.textContent, "is there already");
+      [...t.querySelectorAll("button")].find(b => b.textContent.startsWith("Merge into")).click();
+      ok(!getPage(contextPath("Testcrjad")), "merged away");
+      has(getPage(path).blocks[0].title, "[[c/Testconsume/Testread]]");
+    } finally { dropChores(path); document.querySelectorAll("#toasts .toast").forEach(x => x.remove()); }
   });
   test("#201 + New chore writes the line on the room's page", async () => {
     go("chores"); await settle();
@@ -978,14 +1025,14 @@ var GTD_TEST = (() => {
     sel[1].value = "monthly"; sel[2].value = "1";
     [...m.querySelectorAll("button")].find(n => n.textContent === "Add chore").click();
     await settle();
-    const page = getPage(contextPath("home/testkitchen"));
+    const page = getPage(contextPath("Home/Testkitchen"));
     try {
       ok(page, "the room's page was made");
       const b = page.blocks.find(x => x.title.includes("Test descale the kettle"));
       ok(b, "the chore is on it");
       eq([b.state, repeatOf(b), estTier(b.title), dueDate(b)], ["TODO", "monthly", 1, T()]);
-      has(b.title, "[[c/home/testkitchen]]");
-    } finally { if (page) { page.blocks = []; touch(contextPath("home/testkitchen")); clearMemo(); } }
+      has(b.title, "[[c/Home/Testkitchen]]");
+    } finally { if (page) { page.blocks = []; touch(contextPath("Home/Testkitchen")); clearMemo(); } }
   });
 
   /* ============================================================

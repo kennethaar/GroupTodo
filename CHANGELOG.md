@@ -5,6 +5,17 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.23.0 - 2026-10-30
+
+- A new context starts with a capital (#203): phone is @Phone, home/kitchen
+  is @Home/Kitchen. One already there keeps how it is written, whatever case
+  you type, so home is the @home you have, not a second @Home.
+- A new context that looks like one you have (@Phones beside @phone, @Errnd
+  beside @errand, @Kitchen beside @home/kitchen) brings a warning toast with
+  Merge into it, which merges the page and moves every link.
+- Renaming or nesting a page onto a name that is taken, in any case, offers
+  the same Merge instead of only saying it is there already.
+
 ## 1.22.1 - 2026-10-30
 
 - A context's page lists the contexts in its folder (#201): home.md says
