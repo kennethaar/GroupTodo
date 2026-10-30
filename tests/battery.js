@@ -993,6 +993,36 @@ var GTD_TEST = (() => {
       eq(oldestTodosForContext("Testparent", 10).length, 3, "Where am I now? surfaces them too");
     } finally { PREF.set("ctx.kids", ""); go("next", {ctxFilter: null}); go("contexts"); dropChores(path); }
   });
+  test("#206 Contexts puts a folder's contexts on its card, late in red, and no-context actions on top", () => {
+    makeContext("Testnest"); makeContext("Testnest/Room"); makeContext("Testidle");
+    const path = choreProject("nest ctx", [
+      stampAuthor(newBlock({state: "TODO", title: "Paint the wall [[c/Testnest/Room]]", props: {DEADLINE: "[[" + shiftISO(T(), -2) + "]]"}})),
+      stampAuthor(newBlock({state: "TODO", title: "Fold the clothes"}))]);
+    const was = PREF.get("contexts.idle", "");
+    try {
+      PREF.set("ctx.kids", ""); PREF.set("contexts.idle", ""); clearMemo();
+      go("contexts"); render();
+      const cards = [...content().querySelectorAll(".ctxcard")];
+      ok(!cards.some(c => c.querySelector("h4").textContent === "@Testnest/Room"), "Room is not a card of its own");
+      const card = cards.find(c => c.querySelector("h4").textContent === "@Testnest");
+      ok(card, "the folder's top has the card");
+      const kid = card.querySelector(".ctxkid");
+      ok(kid && kid.textContent.startsWith("/Room"), "Room is a row on it");
+      has(kid.querySelector(".chip.late").textContent, "1 late");
+      ok(!content().textContent.includes("Show in Next") && !content().textContent.includes("things you can do here"), "no repeated words");
+      ok(!content().querySelector(".ctxcard .big"), "no @ placeholder");
+      ok(!content().querySelector(".vhead-r .textbtn:not(.newbtn)"), "one Sense button, not two links");
+      has(content().querySelector(".ctxleak").textContent, "no context yet");
+      ok(content().querySelector(".ctxleak").compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING, "the leak is above the cards");
+      const fold = content().querySelector(".ctxfold");
+      eq(fold.getAttribute("aria-expanded"), "false", "nothing to do is folded");
+      ok(!content().textContent.includes("@Testidle"), "and its pills are hidden");
+      fold.click();
+      has(content().querySelector(".ctxpills").textContent, "@Testidle");
+      content().querySelector(".ctxleak .textbtn").click();
+      eq(state.view, "next"); eq(subNow(), "board");
+    } finally { PREF.set("contexts.idle", was); go("contexts"); dropChores(path); }
+  });
   /* ---------- context names and look-alikes (#203) ---------- */
   test("#203 a new context starts with a capital, and one already there keeps its spelling", () => {
     eq(makeContext("testcap"), "Testcap");

@@ -5,6 +5,18 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.25.0 - 2026-10-30
+
+- Contexts is easier to read (#206). One button, Sense where I am, in place
+  of two look-alike links; the context chip at the top still picks by hand.
+  Each card is one line: the context, how much is there, a red "N late"
+  when something is overdue, and a chevron; the whole card opens it, so
+  "things you can do here" and "Show in Next" are gone, and so is the big
+  @ when a context has no icon. A folder's contexts are rows on its card:
+  @Home/Kitchen sits under @Home. Actions with no context are a bar at the
+  top with a link to the Next board, and the contexts with nothing to do
+  are a quiet fold under the cards.
+
 ## 1.24.0 - 2026-10-30
 
 - A context shows what you can do in the ones inside it (#205): @home has
