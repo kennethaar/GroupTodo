@@ -5,6 +5,31 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.18.0 - 2026-10-30
+
+- Natural planning (#189): plan a project in six steps, one question at a
+  time, laid out like the weekly review. Purpose and the rules you play by,
+  what wild success looks like and the outcome as a finish line, a
+  brainstorm with prompts to draw from (and, after three ideas of your own,
+  three from an AI), sorting each idea on the numpad table into up to four
+  components or next action, support, later or not needed, the order the
+  components go in, a next action for each one that can start (who, where,
+  then the verb), and a last check: off your mind, or back up or down.
+- Finish writes the page in one change that Undo takes back: outcome::,
+  purpose::, with:: and planned::, and the headings Purpose & principles,
+  Outcome, Components (### 1. Name, after:: for one that waits), Support,
+  Later and Brainstorm. Planning again reads them back in and rewrites only
+  them.
+- The draft is saved as you go, on this device and in
+  _npm_for <project>.md beside the project, so another computer carries on.
+  In a shared area somebody else sees who is planning and can take over.
+- A new project asks: plan it now, just the outcome, or not now. Don't ask
+  again is per area. The weekly review's next-action question has
+  ✦ Re-plan it, which puts the project aside until the review is done.
+  A project page has ✦ Plan (w n), and once planned, a panel with the
+  outcome, purpose, principles, the next actions ready and each component's
+  progress. A board card shows its purpose when you point at it.
+
 ## 1.17.5 - 2026-10-30
 
 - Projects › Hours, Time on site, By project: a project's name in the week

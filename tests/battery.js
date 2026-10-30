@@ -1744,6 +1744,196 @@ var GTD_TEST = (() => {
   });
 
   /* ============================================================
+     Natural planning (#189)
+     ============================================================ */
+  const npmReset = () => { NPM = null; state.planPath = null; NPM_QUEUE = []; closeModal(); };
+  const npmPress = (key, code = key) => document.dispatchEvent(new KeyboardEvent("keydown", {key, code, bubbles: true}));
+  const npmEnter = box => box.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true}));
+  const npmTitles = blocks => (blocks || []).map(b => (b.state ? b.state + " " : "") + b.title);
+  test("#189 natural planning writes the page in one change, reads it back in, shows the plan on it, and Undo takes it back", async () => {
+    npmReset();
+    const path = scratchProject("Newsletter");
+    npmOpen(V.space, path);
+    await settle();
+    eq(state.view, "plan", "the wizard is open");
+    ok(content().querySelector(".solsteps"), "the steps down the side");
+    const box = content().querySelector(".npmin");
+    box.value = "Keep customers close";
+    npmEnter(box);
+    await settle();
+    eq(NPM.purpose, ["Keep customers close"], "Enter adds the line");
+    Object.assign(NPM, {onpurpose: ["They read it because it helps"], principles: ["Useful before promotional", "One a month"],
+      vision: ["Customers reply to it"], know: ["40% open it"], outcome: "A monthly newsletter goes out and 40% open it",
+      people: ["Sofia Berg"], peopleDone: true});
+    NPM.ideas = ["Export CRM emails", "Draft subject lines", "Order flowers", "Competitor examples", "Translate it", "Who writes it?"]
+      .map(t => ({id: uid(), t, to: null}));
+    npmGo(3);
+    await settle();
+    ok(content().querySelector(".npmsol"), "the numpad table");
+    const name = async (key, words) => {
+      npmPress(key, "Numpad" + key);
+      await settle();
+      const input = content().querySelector(".npmsol .npmin");
+      ok(input, "a box to name the component in " + key);
+      input.value = words;
+      npmEnter(input);
+      await settle();
+    };
+    await name("7", "Mailing list");
+    await name("8", "Template");
+    eq(NPM.comps.map(c => c.name), ["Mailing list", "Template"]);
+    npmPress("6", "Digit6");
+    await settle();
+    eq(NPM.ideas.find(i => i.t === "Order flowers").to, "next", "6 is a next action");
+    npmPress("Backspace");
+    await settle();
+    eq(NPM.ideas.find(i => i.t === "Order flowers").to, null, "Backspace undoes the sort");
+    for (const k of ["3", "1", "2", "6"]) { npmPress(k, "Numpad" + k); await settle(); }
+    eq(npmUnsorted().length, 0, "every idea has a place");
+    NPM.comps[1].after = NPM.comps[0].id;
+    eq(npmItems().map(it => it.kind === "comp" ? it.c.name : it.i.t), ["Mailing list", "Who writes it?"], "a component that waits gets no action yet");
+    const ctx = contextList()[0];
+    NPM.comps[0].act = {who: "", ctx, text: "Ask Sofia which field holds consent"};
+    NPM.ideas.find(i => i.t === "Who writes it?").act = {who: "Lars Haugen", text: "Lars says who writes it"};
+    npmWrite();
+    await settle();
+    eq(NPM, null, "the wizard closes");
+    eq(npmDraft(V.space, path), null, "and its draft goes");
+    const page = getPage(path);
+    eq(page.props.outcome, "A monthly newsletter goes out and 40% open it");
+    eq(page.props.purpose, "Keep customers close");
+    eq(page.props.with, "[[p/Sofia Berg]]");
+    eq(page.props.planned, T());
+    eq(npmTitles(page.blocks).filter(t => t.startsWith("## ")),
+      ["## Purpose & principles", "## Outcome", "## Components", "## Support", "## Later", "## Brainstorm"]);
+    const sec = h => page.blocks.find(b => b.title === h);
+    eq(npmTitles(sec("## Purpose & principles").children), ["Why: Keep customers close", "On purpose: They read it because it helps", "Principles"]);
+    eq(npmTitles(sec("## Purpose & principles").children[2].children), ["Useful before promotional", "One a month"]);
+    eq(npmTitles(sec("## Outcome").children), ["Wild success: Customers reply to it", "How I'll know: 40% open it"]);
+    const [c1, c2] = sec("## Components").children;
+    eq(c1.title, "### 1. Mailing list");
+    eq(npmTitles(c1.children), ["Export CRM emails", "TODO Ask Sofia which field holds consent [[c/" + ctx + "]]"]);
+    eq([c2.title, c2.props.after], ["### 2. Template", "1. Mailing list"]);
+    const wait = page.blocks.find(b => b.state === "WAIT");
+    ok(wait && wait.props.assigned === "Lars Haugen", "somebody else's step waits on them");
+    ok(sec("## Brainstorm").collapsed && sec("## Brainstorm").children.length === 6, "the brainstorm keeps every idea, folded");
+    eq(npmTitles(sec("## Later").children), ["Translate it"]);
+    // Planning again starts from the page.
+    const d = npmFromPage(V.space, path);
+    eq(d.comps.map(c => c.name), ["Mailing list", "Template"]);
+    eq(d.comps[1].after, d.comps[0].id, "after:: is read back");
+    eq([d.purpose, d.onpurpose, d.principles, d.know], [["Keep customers close"], ["They read it because it helps"], ["Useful before promotional", "One a month"], ["40% open it"]]);
+    eq(d.ideas.filter(i => !i.to).length, 0, "nothing is dealt again");
+    ok(d.ideas.some(i => i.t === "Order flowers" && i.to === "trash"), "what was not needed stays so");
+    eq(d.ideas.find(i => i.t === "Competitor examples").to, "support");
+    ok(npmKept(d.comps[0]), "its next action is kept as it is");
+    // The plan on the page.
+    openPage(path);
+    await settle();
+    const panel = content().querySelector(".npmpanel");
+    ok(panel, "the plan panel");
+    has(panel.textContent, "✓ A monthly newsletter goes out");
+    has(panel.textContent, "Useful before promotional · One a month");
+    has(panel.textContent, "Ask Sofia which field holds consent");
+    has(panel.textContent, "1. Mailing list");
+    has(panel.textContent, "after 1");
+    has(content().querySelector(".pagehead").textContent, "✦ Re-plan");
+    undoLast();
+    ok(!getPage(path).props.planned && getPage(path).props.outcome !== "A monthly newsletter goes out and 40% open it" &&
+      !getPage(path).blocks.some(b => npmHeadOf(b)), "Undo takes the whole plan back");
+    npmReset();
+  });
+  test("#189 Finish writes only what was answered, and leaves the page's other lines alone", async () => {
+    npmReset();
+    const path = scratchProject("Keep my lines", [["TODO", "Call the bank"]]);
+    npmOpen(V.space, path);
+    await settle();
+    NPM.outcome = "The bank account is moved over";
+    npmWrite();
+    const page = getPage(path);
+    eq(npmTitles(page.blocks), ["TODO Call the bank"]);
+    eq(page.props.outcome, "The bank account is moved over");
+    npmReset();
+  });
+  test("#189 the outcome box says when a line reads like a topic", async () => {
+    npmReset();
+    const path = scratchProject("Garden");
+    npmOpen(V.space, path);
+    await settle();
+    eq(npmOutcomeSay("Garden")[0], "warn");
+    eq(npmOutcomeSay(pageTitle(path))[0], "warn", "the project's own name");
+    eq(npmOutcomeSay("The garden is dug and sown")[0], "ok");
+    npmReset();
+  });
+  test("#189 the draft is kept beside the project, and in a shared area somebody else takes it over", async () => {
+    npmReset();
+    const path = scratchProject("Shared plan");
+    npmOpen(V.space, path);
+    await settle();
+    NPM.purpose = ["So we stop guessing"];
+    npmSave();
+    await npmFileWrite(JSON.parse(JSON.stringify(NPM)));
+    const rec = LOADED.get(V.space), file = npmDraftPath(path);
+    has(rec.drafts.get(file), "So we stop guessing");
+    ok(isNpmDraftPath(file) && !V.pages.has(file), "the draft is no page");
+    // Somebody else carried on with it later.
+    const theirs = Object.assign(npmDraftRead(rec.drafts.get(file)), {by: "Lars Haugen", at: "2999-01-01T00:00:00Z", step: 1});
+    rec.drafts.set(file, npmDraftText(theirs));
+    NPM = null;
+    npmOpen(V.space, path);
+    await settle();
+    ok(npmLocked(), "theirs until taken over");
+    const lock = content().querySelector(".npmlock");
+    has(lock.textContent, "Lars Haugen is planning this project");
+    ok(!content().querySelector(".npmfinish"), "no Finish on somebody else's draft");
+    lock.querySelector("button").click();
+    await settle();
+    ok(!npmLocked() && samePerson(NPM.by, whoAmI()), "taken over");
+    eq(NPM.step, 1, "where they were");
+    npmThrowAway();
+    eq(npmDraft(V.space, path), null, "thrown away");
+    ok(!rec.drafts.has(file), "the file too");
+    npmReset();
+  });
+  test("#189 a new project offers the plan: 1 plans it, Esc leaves the page open, Don't ask again goes to the outcome", async () => {
+    npmReset();
+    PREF.set("npm.ask:" + V.space, "1");
+    createProjectFlow("Test npm fresh one");
+    await settle();
+    has(document.querySelector("#modalRoot").textContent, "Plan it now");
+    eq(state.view, "page", "the page is open behind it");
+    npmPress("Escape");
+    await settle();
+    ok(!document.querySelector("#modalRoot").firstChild, "Esc closes it");
+    eq(state.view, "page", "and leaves the page");
+    createProjectFlow("Test npm fresh two");
+    await settle();
+    npmPress("1");
+    await settle();
+    eq(state.view, "plan", "1 plans it");
+    eq(pageTitle(NPM.path), "Test npm fresh two");
+    npmReset();
+    PREF.set("npm.ask:" + V.space, "0");
+    createProjectFlow("Test npm fresh three");
+    await settle();
+    has(document.querySelector("#modalRoot").textContent, "What does done look like?");
+    closeModal();
+    PREF.set("npm.ask:" + V.space, "1");
+  });
+  test("#189 the review's next-action question offers Re-plan it, which waits until the review is done", async () => {
+    npmReset();
+    const path = scratchProject("Fuzzy thing");
+    const acts = solDeal({space: V.space, path}, solFields().find(x => x.k === "next"));
+    ok(acts.some(a => a.label === "✦ Re-plan it"), "an answer of its own");
+    npmQueue(V.space, path);
+    go("plan", {planPath: null});
+    await settle();
+    has(content().querySelector(".npmqueue").textContent, pageTitle(path));
+    npmReset();
+    go("today");
+  });
+
+  /* ============================================================
      Help: the full help, "This page" and Show me (#171)
      ============================================================ */
   const keyDown = key => document.dispatchEvent(new KeyboardEvent("keydown", {key, bubbles: true}));

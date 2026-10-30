@@ -21,6 +21,10 @@ const SETUP = {
   topbar: `go("today"); helpBeside("topbar"); helpMarks(true);`,
   vault: `go("today"); openVaultDialog();`,
   task: `go("next", {sub: "list"}); const a = nextActions()[0]; showTaskDetail(a.path, a.block, a.space);`,
+  plan: `npmOpen(V.space, projectsIn("1")[0]); Object.assign(NPM, {step: 3, q: 0, last: [],
+    comps: [{id: "a", name: "Mailing list", after: null, keep: [], act: {}}, {id: "b", name: "Template", after: null, keep: [], act: {}}],
+    ideas: [["Export customer emails", "c:a"], ["Draft three subject lines", "c:b"], ["Translate it to Swedish", null], ["Check consent in the CRM", null]]
+      .map(([t, to], i) => ({id: "i" + i, t, to}))}); render();`,
 };
 // Only part of the screen, for a topic about one strip of it.
 const CLIP = {topbar: {x: 0, y: 0, width: W, height: 140}};

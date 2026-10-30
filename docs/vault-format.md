@@ -51,6 +51,7 @@ An *area* (Work, Home, …) is one folder. Areas never share or nest folders.
 - **File names are the page title**, with `/ \ : * ? " < > |` and control characters replaced by `-` and runs of whitespace collapsed to one space. Keep spaces and capitals; do not slugify further.
 - **Journals** are `journals/<Person Name>/YYYY-MM-DD.md`, with the person's full name as the folder name (max 40 characters, same character rules). A day page is linked as `[[2026-10-05]]`.
 - Files the app writes for itself and never reads as pages: `pages/**/_<x>_for ….md` and `_GroupToDo_for this folder.md`. Do not create these yourself.
+- `pages/<status>/_npm_for <Project>.md` is a natural planning draft for that project: who is planning it (`by::`), when (`at::`), and the answers so far as JSON. It goes once the plan is written to the page.
 - `pages/8/todo.md`, `pages/8/1.md` and similar are templates the app creates when they are missing. Do not create them yourself.
 - `planner/` (outbox.json, state.json, sent.json) is there only when the area is sent to Microsoft Planner (experimental): the app and a Power Automate flow write it, never by hand. See [planner-sync.md](planner-sync.md).
 - `pages/8/timer.md` holds the sidebar timer's usual length as `minutes:: 25`. Optional; without it the timer runs 2 minutes. `max:: 90` sets the longest timer in whole minutes (60 without it), `style:: dial` shows a small pie that shrinks instead of the bar, and `volume:: 30` sets the alarm, 0 to 100.
@@ -138,7 +139,7 @@ Where things are said on the line itself:
 
 | Folder | Kind | Typical page properties |
 |---|---|---|
-| `1/ 2/ 3/ 0/ -/` | project | `title`, `status` (e.g. `1 = active`), `outcome` (what done looks like), `area:: [[a/…]]`, `goal:: [[g/…]]`, `org:: [[o/…]]`, `with:: [[p/…]], [[p/…]]`, `depends_on:: [[1/…]], [[1/…]]` (or `none` once the weekly review has heard nothing comes first), `waiting_for::`, `planner_id::` (its Microsoft Planner card, written by the sync; keep it), `created`, `reviewed` |
+| `1/ 2/ 3/ 0/ -/` | project | `title`, `status` (e.g. `1 = active`), `outcome` (what done looks like), `area:: [[a/…]]`, `goal:: [[g/…]]`, `org:: [[o/…]]`, `with:: [[p/…]], [[p/…]]`, `depends_on:: [[1/…]], [[1/…]]` (or `none` once the weekly review has heard nothing comes first), `purpose::` (why, from natural planning), `planned::` (the day it was last planned), `waiting_for::`, `planner_id::` (its Microsoft Planner card, written by the sync; keep it), `created`, `reviewed` |
 | `p/` | person | `title`, `type:: person`, `member:: true` (only for people who use GroupToDo in this area), `aliases:: JS, Johnny` (short names; `[[p/John Smith][JS]]` reads as JS) |
 | `o/` | organisation | `title`, `type:: org`, `aliases:: Storebrand` (short names, as for people), `role:: supplier` (left out of customers and time; default is client), `share:: 60` (a standard client: added to new projects, its share of their time) |
 | `c/` | context | `title`, `type:: context` |
@@ -302,3 +303,31 @@ an outline** and **moving front matter into `key::` lines**.
 Things GroupToDo has no equivalent for, which the converter should flatten or
 drop: advanced (Datalog) queries, Canvas files, plugin-specific blocks and
 per-page CSS.
+
+## Natural planning sections
+
+A project planned with *Natural planning* gets these headings, and planning it
+again rewrites only them; every other line on the page is kept.
+
+```markdown
+- ## Purpose & principles
+  - Why: Keep customers close between orders
+  - On purpose: They read it because it helps them
+  - Principles
+    - Useful before promotional
+- ## Outcome
+  - Wild success: Customers reply to it
+  - How I'll know: 40% open it over three issues
+- ## Components
+  - ### 1. Mailing list
+    - Export customer e-mails from the CRM
+    - TODO Ask [[p/Sofia Berg]] which field holds consent [[c/agenda]]
+  - ### 2. Template
+    after:: 1. Mailing list
+- ## Support
+- ## Later
+- ## Brainstorm
+```
+
+`after::` on a component says it cannot start before the one named. Support
+is reference, Later is someday, and Brainstorm keeps every idea as it was typed.
