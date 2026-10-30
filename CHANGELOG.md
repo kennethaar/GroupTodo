@@ -5,6 +5,17 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.20.0 - 2026-10-30
+
+- A big folder reads what the day is planned from first (#181): the last
+  week's day pages, active projects, people, contexts and organisations. They
+  are on screen as soon as they are in, before the rest. People no longer
+  come in last. Waiting for and Someday come next, then done and cancelled
+  projects, then older day pages, newest first.
+- While the rest of a folder is read, a bar under Pages in the sidebar shows
+  how far it has come. Click it to see each file as it comes in, and how many
+  of how many are read. It goes once every file is in (#199).
+
 ## 1.19.1 - 2026-10-30
 
 - Natural planning (#189): Organise with no ideas no longer shows a table of

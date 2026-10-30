@@ -186,6 +186,7 @@ code:: en
 @ · Alt+P =>
 A PC: @computer. A phone: @home. =>
 A bare number is not a price, so Call 3 people costs nothing. =>
+A big folder opens in steps: this week, projects, people, contexts and organisations first. A bar under Pages shows how far it has come. Click it to see each file. =>
 A birthday task goes once the birthday has passed. =>
 A book, read the same way - and one line in it that turns out to be work: =>
 A calendar did not come in. =>
@@ -4642,6 +4643,7 @@ Question about "{1}" =>
 Question {1} of {2} =>
 Read {1} from the folder. It was there, but had not been read in. =>
 Read {1} pages from “{2}”. =>
+Reading pages: {1} of {2}. Click to see each file. =>
 Reminded {1} min before. =>
 Remove all {1} =>
 Remove the {1} stamps already here =>
@@ -4951,6 +4953,7 @@ your own area, {1}, could not be opened. Open it once from the area menu (a fold
 {1} of these were marked DONE without a done date, so they are placed on the day page they were =>
 {1} of {2} answered =>
 {1} of {2} done =>
+{1} of {2} files =>
 {1} of {2} lines translated. What is not translated shows in English. =>
 {1} of {2} times =>
 {1} old copies of moved projects were still in their old folders. They are gone now. =>

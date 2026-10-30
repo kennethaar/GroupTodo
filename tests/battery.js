@@ -378,7 +378,8 @@ var GTD_TEST = (() => {
   test("#181 a big folder shows today first, and a stand-in never overwrites its file", async () => {
     const old = shiftISO(T(), -10);
     let release;
-    const gate = {[old + ".md"]: new Promise(r => { release = r; })};
+    const held = new Promise(r => { release = r; });
+    const gate = {[old + ".md"]: held, "Boat.md": held};
     const tree = {
       journals: {tester: {[T() + ".md"]: "- TODO today's line\n", [old + ".md"]: "- old line\n"}},
       pages: {"GTD.md": "title:: GTD\n", "1": {"Boat.md": "title:: Boat\noutcome:: afloat\n\n- TODO Sand the hull\n"}},
@@ -405,6 +406,83 @@ var GTD_TEST = (() => {
     has(serializePage(rec.pages.get(boat)), "Sand the hull", "project read in full");
     ok(rec.pages.has(join(JOURNALS, "tester", old + ".md")), "old day read");
     ok(!rec.dirty.has(boat), "nothing left to send for the stand-in");
+  });
+
+  test("#181 the week, projects, people, contexts and orgs come in before the rest", async () => {
+    const old = shiftISO(T(), -10), five = shiftISO(T(), -5);
+    let release;
+    const held = new Promise(r => { release = r; });
+    const order = [];
+    const tree = {
+      journals: {[T() + ".md"]: "- today\n", [five + ".md"]: "- five days ago\n", [old + ".md"]: "- old\n"},
+      pages: {"GTD.md": "title:: GTD\n",
+        "0": {"Done.md": "title:: Done\n"}, "2": {"Later.md": "title:: Later\n"},
+        "1": {"Boat.md": "title:: Boat\n\n- TODO Sand the hull\n"},
+        p: {"Odd Kittelsen.md": "title:: Odd Kittelsen\n\n- met at the fair\n"},
+        c: {"phone.md": "title:: phone\n"}, o: {"CAB.md": "title:: CAB\n"}},
+    };
+    const b = Backends.fs(fakeDir("Soon181", tree, [], {[old + ".md"]: held, "Done.md": held, "Later.md": held}));
+    const read = b.readMany.bind(b);
+    b.readMany = (paths, onEach) => read(paths, p => { order.push(p); if (onEach) onEach(p); });
+    const rec = newRecord("Soon181", b);
+    let soon = false;
+    try {
+      await readInto(rec, {stage: true, onSoon: () => { soon = true; }});
+      for (let i = 0; i < 40 && !soon; i++) await settle();
+      ok(soon, "the first of the rest was not shown before the rest");
+      has(serializePage(rec.pages.get(personPath("Odd Kittelsen"))), "met at the fair", "the person, before the rest");
+      has(serializePage(rec.pages.get(join(DIRS.active, "Boat.md"))), "Sand the hull", "the project, before the rest");
+      ok(rec.pages.has(join(JOURNALS, five + ".md")), "a day this week, before the rest");
+      ok(!rec.stubs.has(join(DIRS.contexts, "phone.md")) && !rec.stubs.has(join(DIRS.orgs, "CAB.md")), "contexts and orgs still stand-ins");
+      ok(rec.stubs.has(join(DIRS.completed, "Done.md")), "a done project came in early");
+      ok(!rec.pages.has(join(JOURNALS, old + ".md")), "an old day came in early");
+      ok(navLoading(), "no bar while the rest is read");
+    } finally { release(); }
+    await filesLoaded();
+    ok(!rec.stubs, "no stand-ins left");
+    ok(!LOADING.has(rec.name), "the bar stays once all is in");
+    const at = p => order.indexOf(p);
+    ok(at(join(DIRS.someday, "Later.md")) < at(join(DIRS.completed, "Done.md")), "someday before done");
+    ok(at(join(DIRS.completed, "Done.md")) < at(join(JOURNALS, old + ".md")), "done before an old day");
+  });
+  test("#181 a stand-in edited while it loads gives way to its file when the first of the rest is in", () => {
+    const rec = newRecord("Lay181", null);
+    const path = personPath("Odd Kittelsen");
+    rec.stubs = new Set([path]);
+    rec.pages.set(path, parsePage(""));
+    rec.dirty.add(path);
+    const mine = join(JOURNALS, shiftISO(T(), -5) + ".md");
+    rec.pages.set(mine, parsePage("- typed here meanwhile\n"));
+    rec.dirty.add(mine);
+    layInSoon(rec, new Map([[path, "title:: Odd Kittelsen\n\n- met at the fair\n"], [mine, "- the file\n"]]), new Set());
+    has(serializePage(rec.pages.get(path)), "met at the fair", "the file");
+    ok(!rec.stubs.has(path) && !rec.dirty.has(path), "still a stand-in, or still to be sent");
+    has(serializePage(rec.pages.get(mine)), "typed here meanwhile", "a page made meanwhile");
+  });
+  test("#181 the bar under Pages shows how far, and a click lists each file", async () => {
+    const rec = {name: "Bar181"};
+    const tick = loadingTicker(rec, 4);
+    try {
+      tick("pages/p/Odd Kittelsen.md");
+      renderNav();
+      const bar = document.querySelector("#navLoad");
+      ok(bar, "no bar in the sidebar");
+      const pagesBtn = [...document.querySelectorAll("#nav .nav-item")].find(b => b.textContent.includes("Pages"));
+      eq(pagesBtn.nextElementSibling, bar, "the bar is not under Pages");
+      has(bar.textContent, "25%", "how far");
+      ok(!bar.querySelector(".nav-load-list"), "the files show before a click");
+      bar.querySelector("button").click();
+      await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+      const list = document.querySelector("#navLoad .nav-load-list");
+      ok(list, "a click does not list the files");
+      has(list.textContent, "1 of 4", "files read");
+      has(list.textContent, "p/Odd Kittelsen", "the file read");
+    } finally {
+      LOADING_OPEN = false;
+      loadingDone(rec);
+      await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    }
+    ok(!document.querySelector("#navLoad"), "the bar stays once all is in");
   });
 
   test("#188 one file that will not open is skipped, not the whole read", async () => {
@@ -499,7 +577,8 @@ var GTD_TEST = (() => {
     const tree = {journals: {[T() + ".md"]: "- today\n", [old + ".md"]: "- old\n"},
       pages: {"GTD.md": "title:: GTD\n", "8": {"p.md": "title:: %title%\ntype:: person\nphone:: \n"},
         p: {"Odd Kittelsen.md": "title:: Odd Kittelsen\nupdated:: 2026-01-01T00:00:00Z\n\n- met at the fair\n"}}};
-    const rec = newRecord("Tpl188", Backends.fs(fakeDir("Tpl188", tree, [], {[old + ".md"]: new Promise(r => { release = r; })})));
+    const held = new Promise(r => { release = r; });
+    const rec = newRecord("Tpl188", Backends.fs(fakeDir("Tpl188", tree, [], {[old + ".md"]: held, "Odd Kittelsen.md": held})));
     await readInto(rec, {stage: true});
     const path = personPath("Odd Kittelsen");
     ok(rec.stubs && rec.stubs.has(path), "the person is not a stand-in yet");
