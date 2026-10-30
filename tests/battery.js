@@ -359,6 +359,99 @@ var GTD_TEST = (() => {
     ok(!rec.dirty.has(boat), "nothing left to send for the stand-in");
   });
 
+  test("#188 one file that will not open is skipped, not the whole read", async () => {
+    // Bad.md fails when opened, the way a file the phone will not hand over does.
+    const refused = Promise.reject(new DOMException("no", "NotReadableError"));
+    refused.catch(() => {});
+    const tree = {pages: {p: {"Odd Kittelsen.md": "title:: Odd Kittelsen\n", "Bad.md": "x"}}};
+    const b = Backends.fs(fakeDir("R188", tree, [], {"Bad.md": refused}));
+    const files = await b.readMany(await b.names());
+    ok(files.has("pages/p/Odd Kittelsen.md"), "the good file was lost with the bad one");
+    ok(b.unread.has("pages/p/Bad.md"), "the file that would not open is not noted");
+  });
+  test("#188 a second listing does not lose files from a read under way", async () => {
+    // More files than readers, so some are still to be opened when the folder is listed again.
+    let release;
+    const hold = new Promise(r => { release = r; });
+    const people = {}, gate = {};
+    for (let i = 0; i < 40; i++) { people["P" + i + ".md"] = "title:: P" + i + "\n"; if (i < 16) gate["P" + i + ".md"] = hold; }
+    const b = Backends.fs(fakeDir("R188b", {pages: {p: people}}, [], gate));
+    const names = await b.names();
+    const reading = b.readMany(names);
+    const again = b.names();          // somebody looks at the folder while it is read
+    release();
+    await again;
+    const files = await reading;
+    eq(files.size, names.length, "files read");
+  });
+  test("#188 a link to a page in the folder that was not read in opens the file, not a blank page", async () => {
+    const tree = {pages: {p: {"Odd Kittelsen.md": "title:: Odd Kittelsen\nphone:: 12345678\n\n- met at the fair\n"}}};
+    const writes = [];
+    const rec = newRecord("Link188", Backends.fs(fakeDir("Link188", tree, writes)));
+    LOADED.set(rec.name, rec);
+    try {
+      inSpace(rec.name, () => openLinkTarget("p/Odd Kittelsen"));
+      for (let i = 0; i < 20 && !rec.pages.has(personPath("Odd Kittelsen")); i++) await settle();
+      const page = rec.pages.get(personPath("Odd Kittelsen"));
+      ok(page, "the page was not opened");
+      has(serializePage(page), "met at the fair", "the file's own lines");
+      ok(!rec.dirty.has(personPath("Odd Kittelsen")), "the page read is queued to be written back");
+      has(tree.pages.p["Odd Kittelsen.md"], "12345678", "the file was written over");
+    } finally { LOADED.delete(rec.name); }
+  });
+  test("#188 Check the folder names a linked page the folder has but did not list", async () => {
+    const tree = {pages: {"GTD.md": "title:: GTD\n", p: {}}, journals: {[T() + ".md"]: "- TODO call [[p/Odd Kittelsen]]\n"}};
+    const rec = newRecord("Check188", Backends.fs(fakeDir("Check188", tree, [])));
+    await readInto(rec);
+    // In the folder by name, but the listing leaves it out.
+    tree.pages.p["Odd Kittelsen.md"] = "title:: Odd Kittelsen\n";
+    const hide = rec.backend.names.bind(rec.backend);
+    rec.backend.names = async () => (await hide()).filter(n => !n.includes("Odd"));
+    LOADED.set(rec.name, rec);
+    try {
+      const r = await folderCheckReport(rec.name);
+      eq(r.unlisted, [personPath("Odd Kittelsen")], "linked and in the folder, not listed");
+      eq(r.notIn, [], "listed but not in the app");
+    } finally { LOADED.delete(rec.name); }
+  });
+
+  test("#188 the template pass leaves a page still being read alone", async () => {
+    let release;
+    const old = shiftISO(T(), -10);
+    const tree = {journals: {[T() + ".md"]: "- today\n", [old + ".md"]: "- old\n"},
+      pages: {"GTD.md": "title:: GTD\n", "8": {"p.md": "title:: %title%\ntype:: person\nphone:: \n"},
+        p: {"Odd Kittelsen.md": "title:: Odd Kittelsen\nupdated:: 2026-01-01T00:00:00Z\n\n- met at the fair\n"}}};
+    const rec = newRecord("Tpl188", Backends.fs(fakeDir("Tpl188", tree, [], {[old + ".md"]: new Promise(r => { release = r; })})));
+    await readInto(rec, {stage: true});
+    const path = personPath("Odd Kittelsen");
+    ok(rec.stubs && rec.stubs.has(path), "the person is not a stand-in yet");
+    LOADED.set(rec.name, rec);
+    try {
+      inSpace(rec.name, () => backfillUpdatedTemplates(rec.pages));
+      ok(!rec.dirty.has(path), "the stand-in was filled in from its template");
+      eq(serializePage(rec.pages.get(path)), serializePage(parsePage("")), "the stand-in");
+      release();
+      await filesLoaded();
+      has(serializePage(rec.pages.get(path)), "met at the fair", "the file, once read");
+    } finally { release(); LOADED.delete(rec.name); }
+  });
+  test("#188 a file that would not open is never written over", async () => {
+    const refused = Promise.reject(new DOMException("no", "NotReadableError"));
+    refused.catch(() => {});
+    const tree = {pages: {"GTD.md": "title:: GTD\n", p: {"Odd Kittelsen.md": "title:: Odd Kittelsen\n\n- met at the fair\n"}}};
+    const writes = [];
+    const rec = newRecord("Unread188", Backends.fs(fakeDir("Unread188", tree, writes, {"Odd Kittelsen.md": refused})));
+    await readInto(rec);
+    const path = personPath("Odd Kittelsen");
+    ok(rec.backend.unread.has(path), "not noted as would not open");
+    rec.pages.set(path, pageTemplateFor("p", "Odd Kittelsen"));
+    rec.dirty.add(path);
+    LOADED.set(rec.name, rec);
+    try { await doFlush(); } finally { LOADED.delete(rec.name); }
+    ok(!writes.includes("Odd Kittelsen.md"), "a blank page went over the file");
+    has(tree.pages.p["Odd Kittelsen.md"], "met at the fair", "the file");
+  });
+
   /* ============================================================
      Dates, clocks and repeats
      ============================================================ */

@@ -5,6 +5,24 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.14.2 - 2026-10-30
+
+- Pages in a folder that did not show in the app (#188). On a phone, people
+  the app had written into the folder were missing from it, though the
+  files were there.
+  - A big folder reads people and projects second. Meanwhile the template
+    pass filled those empty stand-ins in and stamped them as changed, which
+    is where "163 changes could not be kept" came from. It leaves them alone
+    now.
+  - A second read that stops keeps the stand-ins from being saved over
+    their files, and one file that will not open no longer stops the rest.
+  - A second look at the folder can no longer lose files from a read under
+    way, and a file that would not open is never written over.
+  - A link to a page the app has not read opens the file instead of making
+    a blank page over it.
+  - Vault & sync → More → Check the folder says what the folder holds that
+    the app does not, and reads it all again.
+
 ## 1.14.1 - 2026-10-30
 
 - An area whose folder the app cannot reach shows a reconnect panel in
