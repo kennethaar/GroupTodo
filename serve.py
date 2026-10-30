@@ -144,9 +144,10 @@ def is_vault_css(rel):
 
 
 class Vault:
-    def __init__(self, root):
+    def __init__(self, root, create=True):
         self.root = os.path.abspath(os.path.expanduser(root))
-        os.makedirs(self.root, exist_ok=True)
+        if create:
+            os.makedirs(self.root, exist_ok=True)
 
     def resolve(self, rel):
         """Map a client-supplied relative path to an absolute path inside the vault."""
@@ -251,6 +252,10 @@ def open_in_editor(full, command=None):
 class Handler(BaseHTTPRequestHandler):
     server_version = "GroupToDo/1.0"
     vault = None
+    # A folder somebody named, or the default one already holding a vault. Only
+    # then does the app offer to keep an area here: the default made up on the
+    # spot is a folder nobody chose.
+    vault_chosen = False
     password = None        # None = open; anything else = HTTP Basic required
     realm = "GroupToDo"
     allow_open = False     # --open-in-editor: may launch an editor on this box
@@ -384,6 +389,7 @@ class Handler(BaseHTTPRequestHandler):
             if self.vault is None:
                 return self._json(200, {"ok": True, "calendarsOnly": True})
             return self._json(200, {"ok": True, "vault": self.vault.root,
+                                    "vaultChosen": bool(self.vault_chosen),
                                     "files": len(self.vault.list()),
                                     "open_in_editor": bool(self.allow_open)})
         if self.vault is None and route.startswith("/api/") and route != "/api/calendar":
@@ -615,7 +621,7 @@ def read_password(args):
 
 def main():
     ap = argparse.ArgumentParser(description="Serve GroupToDo over a markdown vault.")
-    ap.add_argument("--vault", default=os.environ.get("GTD_VAULT", DEFAULT_VAULT))
+    ap.add_argument("--vault", default=os.environ.get("GTD_VAULT"))
     ap.add_argument("--port", type=int, default=int(os.environ.get("GTD_PORT", 8777)))
     ap.add_argument("--host", default=os.environ.get("GTD_HOST", "127.0.0.1"))
     ap.add_argument("--password", help="shared password (see --password-file)")
@@ -666,7 +672,10 @@ def main():
         Handler.vault = None
         print("mode  : calendars only - fetches calendar links, keeps no files")
     else:
-        Handler.vault = Vault(args.vault)
+        Handler.vault_chosen = bool(args.vault) or os.path.isdir(os.path.expanduser(DEFAULT_VAULT))
+        Handler.vault = Vault(args.vault or DEFAULT_VAULT, create=Handler.vault_chosen)
+        if not Handler.vault_chosen:
+            print("note  : no --vault given, so the app keeps its areas itself (a folder or the browser)")
         count = len(Handler.vault.list())
         print(f"vault : {Handler.vault.root}  ({count} markdown files)")
     print(f"open  : http://{args.host}:{args.port}/")

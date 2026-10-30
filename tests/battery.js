@@ -930,6 +930,70 @@ var GTD_TEST = (() => {
     }
   });
 
+  /* ---------- areas: one place, removing, onboarding (#193) ---------- */
+  const closeModals = () => { for (let i = 0; i < 4 && $("#modalRoot").firstChild; i++) closeModal(); };
+  test("#193 the welcome screen offers coming back with your folders", () => {
+    try {
+      openOnboarding();
+      has(document.querySelector("#modalRoot .modal").textContent, "I have used GroupToDo before");
+    } finally { closeModals(); }
+  });
+  test("#193 Your areas holds every area's colour, Remove, New area and Invite", () => {
+    const n = "Test193 dialog";
+    return (async () => {
+      await createSpace(n, "local");
+      try {
+        openSpaceStorageSetup();
+        const m = document.querySelector("#modalRoot .modal");
+        has(m.textContent, "Your areas");
+        const cards = [...m.querySelectorAll(".afcard")];
+        eq(cards.length, Spaces.list.length, "one card per area");
+        ok(cards.every(c => c.querySelector(".afdot")), "a card without its colour dot");
+        ok(cards.every(c => [...c.querySelectorAll("button")].some(b => b.textContent === "Remove")), "a card without Remove");
+        const foot = [...m.querySelectorAll("button")].map(b => b.textContent);
+        ok(foot.includes("+ New area") && foot.includes("Invite somebody"), "no New area or Invite: " + foot);
+        ok(!m.textContent.includes("null"), "a null written as text");
+      } finally { closeModals(); await removeArea(n); }
+    })();
+  });
+  test("#193 removing an area forgets it and its browser pages, and keeps the rest", async () => {
+    const n = "Test193 gone", before = Spaces.list.length, active = Spaces.active;
+    await createSpace(n, "local");
+    LS.set(n + "|pages/x.md", "- TODO x");      // IndexedDB is not open in the test page
+    ok(await removeArea(n), "removeArea said no");
+    eq(Spaces.get(n), null, "still listed");
+    eq(Spaces.list.length, before, "other areas lost or kept");
+    eq(LS.all().has(n + "|pages/x.md"), false, "its browser pages are left behind");
+    eq(Spaces.active, active, "the active area changed");
+  });
+  test("#193 Set up several areas adds to the area just set up, never a second one", async () => {
+    const sp = Spaces.get(Spaces.active), named = sp.named;
+    sp.placeholder = true;
+    const before = Spaces.list.length;
+    try {
+      await finishSpaceSetup([sp.name, "Test193 extra"]);
+      eq(Spaces.list.length, before + 1, "areas made");
+      ok(Spaces.get(sp.name) && !sp.placeholder, "the area set up first was replaced");
+      ok(Spaces.get("Test193 extra"), "the new area is missing");
+    } finally {
+      delete sp.placeholder; if (named) sp.named = named; else delete sp.named;
+      closeModals(); await removeArea("Test193 extra");
+    }
+  });
+  test("#193 serve.py's folder is offered only when serve.py was given one", async () => {
+    const f = window.fetch, served = CAP.served, base = SERVER_BASE;
+    const ping = j => { window.fetch = async () => ({ok: true, json: async () => j}); SERVER_BASE = null; };
+    try {
+      CAP.served = true;
+      ping({ok: true, vault: "/x", vaultChosen: false});
+      eq(await detectServer(), "", "a made-up default offered");
+      ping({ok: true, calendarsOnly: true});
+      eq(await detectServer(), "", "a calendars-only helper offered");
+      ping({ok: true, vault: "/x", vaultChosen: true});
+      ok(await detectServer(), "a chosen folder not offered");
+    } finally { window.fetch = f; CAP.served = served; SERVER_BASE = base; }
+  });
+
   /* ============================================================
      Sending an update: the check-in sheet the other way round (#153)
      ============================================================ */

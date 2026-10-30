@@ -5,6 +5,23 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.16.0 - 2026-10-30
+
+- Areas are clearer to set up, and all their settings sit in one place
+  (#193). The welcome screen has a third choice, I have used GroupToDo
+  before, for a new web address (the file on disk to GitHub Pages or
+  serve.py) or a new computer: each address starts empty in the browser,
+  so you pick the folders you already have, one area each. Set up several
+  areas now starts from the area you just set up, so it is no longer
+  doubled (Personal beside Private). Your areas, once A folder for each
+  area, holds each area's folder, name, colour (the dot by its name),
+  order and Remove, with New area and Invite below. The area menu's
+  Manage areas and Vault & sync both open it. Removing an area forgets it
+  here: a folder keeps its files, an area kept only in the browser loses
+  its pages, and the dialog says which. Use server is now Keep in
+  serve.py's folder, offered only when serve.py was started with --vault
+  (or its default folder already exists).
+
 ## 1.15.0 - 2026-10-30
 
 - A person's page lists what you are waiting for from them, and their
