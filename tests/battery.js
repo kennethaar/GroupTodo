@@ -980,6 +980,17 @@ var GTD_TEST = (() => {
       closeModals(); await removeArea("Test193 extra");
     }
   });
+  test("#193 setting up areas offers a folder or this browser, never a server", () => {
+    const base = SERVER_BASE;
+    SERVER_BASE = "http://127.0.0.1:8777";          // as if served by serve.py with a folder
+    try {
+      for (const open of [() => openSpaceStorageSetup(), () => openOnboardBack()]) {
+        closeModals(); open();
+        const text = document.querySelector("#modalRoot .modal").textContent;
+        ok(!/server|serve\.py/i.test(text), "a server is offered: " + text.slice(0, 200));
+      }
+    } finally { SERVER_BASE = base; closeModals(); }
+  });
   test("#193 serve.py's folder is offered only when serve.py was given one", async () => {
     const f = window.fetch, served = CAP.served, base = SERVER_BASE;
     const ping = j => { window.fetch = async () => ({ok: true, json: async () => j}); SERVER_BASE = null; };
