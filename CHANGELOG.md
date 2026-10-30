@@ -5,6 +5,17 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.24.0 - 2026-10-30
+
+- A context shows what you can do in the ones inside it (#205): @home has
+  what is at @home/kitchen and at any context its children:: names. Its
+  page, Next narrowed to it, its card on Contexts, its count in the sidebar
+  and Where am I now? all count them. The Contexts inside chip takes them
+  off, everywhere at once, and the choice is kept.
+- A new context that looks like one you have is merged into it straight
+  away (#203), and renaming a context to a name that is taken merges the
+  two. The toast's Undo puts the context back with its links.
+
 ## 1.23.0 - 2026-10-30
 
 - A new context starts with a capital (#203): phone is @Phone, home/kitchen

@@ -967,6 +967,32 @@ var GTD_TEST = (() => {
     closeModal();
     eq(getPage(flat.path).props.children, "[[c/Testflat2/One]], [[c/Testflat2/Two]]");
   });
+  test("#205 a parent context shows what is in the ones inside it, and Contexts inside takes them off", () => {
+    makeContext("Testparent"); makeContext("Testparent/Testkid"); makeContext("Testlinked");
+    const parent = getPage(contextPath("Testparent"));
+    parent.props.children = [parent.props.children, "[[c/Testlinked]]"].filter(Boolean).join(", ");
+    touch(contextPath("Testparent")); clearMemo();
+    const path = choreProject("parent ctx", ["Own [[c/Testparent]]", "In the folder [[c/Testparent/Testkid]]", "Named [[c/Testlinked]]"]
+      .map(t => stampAuthor(newBlock({state: "TODO", title: t}))));
+    const titles = () => [...content().querySelectorAll(".section")].find(s => s.textContent.includes("Things you can do here")).textContent;
+    try {
+      PREF.set("ctx.kids", ""); clearMemo();
+      go("page", {pagePath: contextPath("Testparent")}); render();
+      for (const t of ["Own", "In the folder", "Named"]) has(titles(), t);
+      const chip = [...content().querySelectorAll(".fchip")].find(b => b.textContent.startsWith("Contexts inside"));
+      ok(chip, "the page has the Contexts inside chip");
+      eq(chip.getAttribute("aria-pressed"), "true", "on by default");
+      chip.click();
+      ok(!titles().includes("In the folder") && !titles().includes("Named"), "taken off");
+      has(titles(), "Own");
+      go("next", {sub: "list", ctxFilter: "Testparent"}); render();
+      ok(!content().textContent.includes("In the folder"), "Next follows the same choice");
+      [...content().querySelectorAll(".fchip")].find(b => b.textContent.startsWith("Contexts inside")).click();
+      has(content().textContent, "In the folder");
+      has(content().textContent, "Named");
+      eq(oldestTodosForContext("Testparent", 10).length, 3, "Where am I now? surfaces them too");
+    } finally { PREF.set("ctx.kids", ""); go("next", {ctxFilter: null}); go("contexts"); dropChores(path); }
+  });
   /* ---------- context names and look-alikes (#203) ---------- */
   test("#203 a new context starts with a capital, and one already there keeps its spelling", () => {
     eq(makeContext("testcap"), "Testcap");
@@ -985,33 +1011,35 @@ var GTD_TEST = (() => {
     makeContext("testlook/testlookroom");
     eq(contextLookalike("testlook/testlookroom"), null, "its folder is not a look-alike");
   });
-  test("#203 a new look-alike context warns, and Merge folds it into the old one with its links", () => {
+  test("#203 a new look-alike context is merged into the old one, links and all, and Undo splits it out", async () => {
     makeContext("Testwarehouse");
-    const before = document.querySelectorAll("#toasts .toast.warn").length;
-    const made = makeContext("testwarehouses");
-    eq(made, "Testwarehouses");
-    const toasts = [...document.querySelectorAll("#toasts .toast.warn")];
-    eq(toasts.length, before + 1, "a warning toast");
-    const t = toasts.pop();
-    has(t.textContent, "@Testwarehouses looks like @Testwarehouse");
-    const path = choreProject("lookalike ctx", [stampAuthor(newBlock({state: "TODO", title: "Count the boxes [[c/Testwarehouses]]"}))]);
+    const path = choreProject("lookalike ctx", []);
     try {
-      [...t.querySelectorAll("button")].find(b => b.textContent === "Merge into @Testwarehouse").click();
-      ok(!getPage(contextPath("Testwarehouses")), "the new one is gone");
-      ok(getPage(contextPath("Testwarehouse")), "the old one stays");
-      has(getPage(path).blocks[0].title, "[[c/Testwarehouse]]");
+      const made = makeContext("testwarehouses");
+      eq(made, "Testwarehouses");
+      const b = stampAuthor(newBlock({state: "TODO", title: "Count the boxes [[c/" + made + "]]"}));
+      getPage(path).blocks.push(b); touch(path);
+      await settle();
+      ok(!getPage(contextPath("Testwarehouses")), "merged away");
+      has(b.title, "[[c/Testwarehouse]]");
+      const t = [...document.querySelectorAll("#toasts .toast")].pop();
+      has(t.textContent, "@Testwarehouses looks like @Testwarehouse");
+      [...t.querySelectorAll("button")].find(x => x.textContent === "Undo").click();
+      ok(getPage(contextPath("Testwarehouses")), "Undo brings it back");
+      has(getPage(path).blocks[0].title, "[[c/Testwarehouses]]", "and its link");
     } finally { dropChores(path); document.querySelectorAll("#toasts .toast").forEach(x => x.remove()); }
   });
-  test("#203 renaming a context onto one that is there, in any case, offers to merge into it", () => {
+  test("#203 renaming a context onto one that is there, in any case, merges into it, and Undo splits it out", () => {
     makeContext("Testconsume/Testread"); makeContext("Testcrjad");
     const path = choreProject("rename merge ctx", [stampAuthor(newBlock({state: "TODO", title: "Read the paper [[c/Testcrjad]]"}))]);
     try {
-      eq(renamePage(contextPath("Testcrjad"), "testconsume/testread"), contextPath("Testcrjad"), "not renamed yet");
-      const t = [...document.querySelectorAll("#toasts .toast.warn")].pop();
-      has(t.textContent, "is there already");
-      [...t.querySelectorAll("button")].find(b => b.textContent.startsWith("Merge into")).click();
+      eq(renamePage(contextPath("Testcrjad"), "testconsume/testread"), contextPath("Testconsume/Testread"));
       ok(!getPage(contextPath("Testcrjad")), "merged away");
       has(getPage(path).blocks[0].title, "[[c/Testconsume/Testread]]");
+      const t = [...document.querySelectorAll("#toasts .toast")].pop();
+      [...t.querySelectorAll("button")].find(x => x.textContent === "Undo").click();
+      ok(getPage(contextPath("Testcrjad")), "Undo brings it back");
+      has(getPage(path).blocks[0].title, "[[c/Testcrjad]]", "and its link");
     } finally { dropChores(path); document.querySelectorAll("#toasts .toast").forEach(x => x.remove()); }
   });
   test("#201 + New chore writes the line on the room's page", async () => {
