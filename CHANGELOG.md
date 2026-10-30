@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.19.1 - 2026-10-30
+
+- Natural planning (#189): Organise with no ideas no longer shows a table of
+  boxes that do nothing and "0 of 0 left". It says there is nothing to sort and
+  offers a button back to the brainstorm. A step you skipped no longer gets a
+  ✓ in the step list.
+
 ## 1.19.0 - 2026-10-30
 
 - A person on a line above counts for the tasks under it (#198), the way a

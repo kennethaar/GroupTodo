@@ -1884,6 +1884,23 @@ var GTD_TEST = (() => {
     eq(page.props.outcome, "The bank account is moved over");
     npmReset();
   });
+  test("#189 Organise with no ideas says so and goes back to the brainstorm; a skipped step has no ✓", async () => {
+    npmReset();
+    const path = scratchProject("Nothing to sort");
+    npmOpen(V.space, path);
+    await settle();
+    npmGo(3);
+    await settle();
+    ok(!content().querySelector(".npmsol"), "no table of boxes that do nothing");
+    ok(content().querySelector(".npmnone"), "it says there is nothing to sort");
+    ok(!/0 of 0/.test(content().querySelector(".npmq").textContent), "no 0 of 0 left");
+    const steps = [...content().querySelectorAll(".solstep")];
+    ok(!steps[2].classList.contains("done"), "the skipped brainstorm has no ✓");
+    [...content().querySelectorAll("button")].find(b => b.textContent === "‹ Brainstorm").click();
+    await settle();
+    eq(NPM_STEPS[NPM.step].k, "brainstorm");
+    npmReset();
+  });
   test("#189 the outcome box says when a line reads like a topic", async () => {
     npmReset();
     const path = scratchProject("Garden");
