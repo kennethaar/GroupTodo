@@ -756,6 +756,18 @@ var GTD_TEST = (() => {
     eq(parseRepeat("every 0 days"), null);
     eq(parseRepeat("whenever"), null);
   });
+  test("#202 weekly, daily, monthly at the end of a line make it a repeat", () => {
+    const w = parseWhen("Vacuum the stairs weekly");
+    eq([w.title, w.repeat], ["Vacuum the stairs", "weekly"]);
+    eq(parseWhen("Pay the rent monthly").repeat, "monthly");
+    eq(parseWhen("Water the plants weekly on mon, thu").repeat, "weekly on mon, thu");
+    eq(parseWhen("Weekly"), null, "a task called Weekly stays one");
+    eq(parseWhen("Plan the weekly meeting"), null, "only at the end");
+    const c = captureLine("Vacuum @home weekly");
+    eq([plainTitle(c.block.title), repeatOf(c.block)], ["Vacuum", "weekly"]);
+    has(c.block.title, "[[c/home]]", "the context is still on the line");
+    const s = siblingsOf(getPage(c.path), c.block); s.splice(s.indexOf(c.block), 1); touch(c.path);
+  });
   test("nextRepeatDate is always strictly later", () => {
     const base = shiftISO(T(), 10);
     eq(nextRepeatDate("daily", base), shiftISO(base, 1));
@@ -889,6 +901,40 @@ var GTD_TEST = (() => {
       has(getPage(path).blocks[0].title, "[[c/testhome/testgarden]]");
       eq(relChildren(home, relAll()).map(r => r.path), [contextPath("testhome/testgarden")]);
     } finally { closeModal(); dropChores(path); }
+  });
+  test("#201 + Put a context inside offers a context that is only named on tasks, and nests it", () => {
+    makeContext("testflat");
+    const path = choreProject("loose ctx", [stampAuthor(newBlock({state: "TODO", title: "Fix the shelf [[c/testshed]]"}))]);
+    const flat = {path: contextPath("testflat"), space: V.space};
+    try {
+      ok(!getPage(contextPath("testshed")), "testshed has no page of its own");
+      go("page", {pagePath: flat.path}); render();
+      const btn = [...content().querySelectorAll(".ctxnest")][0];
+      ok(btn, "the context page has + Put a context inside");
+      btn.click();
+      const modal = [...document.querySelectorAll(".scrim .modal")].pop();
+      has(modal.textContent, "@testshed");
+      const pick = [...modal.querySelectorAll("button, [role=option], li, .row")].find(n => n.textContent.trim() === "@testshed");
+      ok(pick, "testshed can be picked");
+      pick.click();
+      ok(getPage(contextPath("testflat/testshed")), "it is inside testflat now");
+      has(getPage(path).blocks[0].title, "[[c/testflat/testshed]]");
+      eq(pageTitle(contextPath("testflat/testshed")), "testflat/testshed", "titled with its full name");
+    } finally { closeModal(); dropChores(path); }
+  });
+  test("#201 renaming a context home/room moves it into the folder, and back out again, as Logseq does", () => {
+    makeContext("testroom"); makeContext("testhouse");
+    const path = choreProject("rename ns", [stampAuthor(newBlock({state: "TODO", title: "Dust [[c/testroom]]"}))]);
+    try {
+      const into = renamePage(contextPath("testroom"), "testhouse/testroom");
+      eq(into, contextPath("testhouse/testroom"));
+      ok(!getPage(contextPath("testroom")), "gone from where it was");
+      has(getPage(path).blocks[0].title, "[[c/testhouse/testroom]]");
+      const out = renamePage(into, "testroom");
+      eq(out, contextPath("testroom"));
+      has(getPage(path).blocks[0].title, "[[c/testroom]]");
+      eq(renamePage(contextPath("testhouse"), "testhouse/inner"), contextPath("testhouse"), "a page cannot go inside itself");
+    } finally { dropChores(path); }
   });
   test("#201 + New chore writes the line on the room's page", async () => {
     go("chores"); await settle();

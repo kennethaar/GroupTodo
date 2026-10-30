@@ -5,6 +5,20 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.22.0 - 2026-10-30
+
+- Daily, weekly, fortnightly, monthly, quarterly and yearly at the end of a
+  line make it a repeat (#202), the way every week already did: "Vacuum
+  @home weekly" repeats weekly. So does a rule that starts with one, like
+  weekly on mon, thu. Only at the end, and never the whole line: a task
+  called Weekly stays one.
+- A context page has + Put a context inside (#201). It lists every context,
+  also one only named on tasks with no page yet, and moves the one picked
+  into the folder: @kitchen in @home is @home/kitchen.
+- Rename a context or a plain page home/kitchen and it moves into home's
+  folder, links and all, the way Logseq does with a namespace. Rename it
+  kitchen and it comes back out.
+
 ## 1.21.1 - 2026-10-30
 
 - Chores (#201) are only the repeats at @home or in a room inside it, like
