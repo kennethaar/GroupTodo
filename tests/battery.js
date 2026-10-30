@@ -1212,6 +1212,20 @@ var GTD_TEST = (() => {
     has(content().textContent, "Stakeholder in");
     go("today");
   });
+  test("#194 an empty email asks for one, and never offers another person's", async () => {
+    const saved = [];
+    const f = {key: "email", save: t => saved.push(t)};
+    eq(blankFactPill(personPath("Lars Haugen"), f).textContent.trim(), "+ write email");
+    try {
+      blankFactPicker(personPath("Lars Haugen"), f);
+      await settle();
+      const m = document.querySelector("#modalRoot .modal");
+      ok(m?.querySelector(".field input"), "no box to write the email in");
+      ok(!m.querySelector(".filterbox"), "a list of emails already in the vault");
+    } finally { closeModal(); }
+    eq(blankFactPill(personPath("Lars Haugen"), {key: "role", save: () => {}}).textContent.trim(), "+ choose role",
+      "a key whose values repeat still offers them");
+  });
   test("#191 a waiting-for naming two people is on both their pages, and your tasks naming them are their agenda", async () => {
     const path = scratchProject("two waits", [["WAIT", "[[p/Lars Haugen]] og [[p/Emma Dahl]] skriver to artikler"],
       ["TODO", "Ask [[p/Lars Haugen]] about the depot"]]);

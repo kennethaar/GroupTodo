@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.16.2 - 2026-10-30
+
+- An empty email, phone, address or web address now asks you to write it
+  (#194). It used to offer every email already in the vault to choose from,
+  but those belong to other people.
+
 ## 1.16.1 - 2026-10-30
 
 - Setting up areas no longer offers a server (#193). Your areas and
