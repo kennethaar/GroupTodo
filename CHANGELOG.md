@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.18.1 - 2026-10-30
+
+- Natural planning (#189): the second purpose question asks “What must this
+  project achieve?” instead of the abstract “What would on purpose really
+  mean?”. The page says Must achieve:.
+
 ## 1.18.0 - 2026-10-30
 
 - Natural planning (#189): plan a project in six steps, one question at a

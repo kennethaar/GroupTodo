@@ -1807,7 +1807,7 @@ var GTD_TEST = (() => {
     eq(npmTitles(page.blocks).filter(t => t.startsWith("## ")),
       ["## Purpose & principles", "## Outcome", "## Components", "## Support", "## Later", "## Brainstorm"]);
     const sec = h => page.blocks.find(b => b.title === h);
-    eq(npmTitles(sec("## Purpose & principles").children), ["Why: Keep customers close", "On purpose: They read it because it helps", "Principles"]);
+    eq(npmTitles(sec("## Purpose & principles").children), ["Why: Keep customers close", "Must achieve: They read it because it helps", "Principles"]);
     eq(npmTitles(sec("## Purpose & principles").children[2].children), ["Useful before promotional", "One a month"]);
     eq(npmTitles(sec("## Outcome").children), ["Wild success: Customers reply to it", "How I'll know: 40% open it"]);
     const [c1, c2] = sec("## Components").children;

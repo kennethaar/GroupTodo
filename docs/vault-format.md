@@ -312,7 +312,7 @@ again rewrites only them; every other line on the page is kept.
 ```markdown
 - ## Purpose & principles
   - Why: Keep customers close between orders
-  - On purpose: They read it because it helps them
+  - Must achieve: They read it because it helps them
   - Principles
     - Useful before promotional
 - ## Outcome
