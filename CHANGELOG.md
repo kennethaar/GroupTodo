@@ -5,6 +5,18 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.15.0 - 2026-10-30
+
+- A person's page lists what you are waiting for from them, and their
+  agenda (#191). A waiting-for that names two people, "[[p/Juta]] og
+  [[p/Ola]] skriver to artikler", was handed to neither, so it showed in
+  their Linked References but on nobody's list; it now waits on both of
+  them, on their pages, in Ask for an update and in the People counts. The
+  list once called Open is GTD's Waiting for, or Next actions for you and
+  for somebody in the area, and under it comes Agenda: your own tasks that
+  name them, the things to raise next time you talk, shown only when there
+  is something on it.
+
 ## 1.14.3 - 2026-10-30
 
 - A phone's folder is listed one folder at a time again (#188). Since 1.11.6

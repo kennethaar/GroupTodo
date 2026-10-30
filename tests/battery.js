@@ -1137,6 +1137,26 @@ var GTD_TEST = (() => {
     has(content().textContent, "Stakeholder in");
     go("today");
   });
+  test("#191 a waiting-for naming two people is on both their pages, and your tasks naming them are their agenda", async () => {
+    const path = scratchProject("two waits", [["WAIT", "[[p/Lars Haugen]] og [[p/Emma Dahl]] skriver to artikler"],
+      ["TODO", "Ask [[p/Lars Haugen]] about the depot"]]);
+    const w = getPage(path).blocks[0];
+    clearMemo();
+    for (const name of ["Lars Haugen", "Emma Dahl"]) {
+      ok(waitingOnFrom(name).some(a => a.block === w), "not waiting on " + name);
+      ok(openActionsOf(name).some(a => a.block === w), "not on " + name + "'s list");
+    }
+    openPage(personPath("Lars Haugen"));
+    await settle();
+    const lists = Object.fromEntries([...content().querySelectorAll(".section>h3")]
+      .map(h => [h.firstChild.textContent, h.parentNode.textContent]));
+    const own = isMember("Lars Haugen") ? "Next actions" : "Waiting for";
+    ok(!("Open" in lists), "still called Open");
+    has(lists[own] || "", "skriver to artikler");
+    has(lists.Agenda || "", "about the depot");
+    ok(!(lists.Agenda || "").includes("skriver to artikler"), "the waiting-for is shown twice");
+    go("today");
+  });
 
   test("#187 a person's page picks the responsibilities they are a stakeholder in, and the responsibility says so", async () => {
     const who = "Test Stake Person " + Date.now();
