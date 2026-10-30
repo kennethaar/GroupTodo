@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.22.1 - 2026-10-30
+
+- A context's page lists the contexts in its folder (#201): home.md says
+  children:: [[c/home/kitchen]], [[c/home/bathroom]], and it changes as they
+  are put in or taken out. Opening + Put a context inside writes in the ones
+  that were there before.
+- + Put a context inside has + New context inside @home, so a room that is
+  not a context yet is made right there, as many as you like. Renamed into a
+  folder with no page, the page for the folder is made.
+
 ## 1.22.0 - 2026-10-30
 
 - Daily, weekly, fortnightly, monthly, quarterly and yearly at the end of a

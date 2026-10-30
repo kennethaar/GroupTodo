@@ -936,6 +936,37 @@ var GTD_TEST = (() => {
       eq(renamePage(contextPath("testhouse"), "testhouse/inner"), contextPath("testhouse"), "a page cannot go inside itself");
     } finally { dropChores(path); }
   });
+  test("#201 the folder's contexts are written on its page as children::, as they come and go", () => {
+    makeContext("testabode"); makeContext("testden"); makeContext("testloft");
+    const abode = {path: contextPath("testabode"), space: V.space};
+    nestContext(abode, {path: contextPath("testden"), space: V.space});
+    nestContext(abode, {path: contextPath("testloft"), space: V.space});
+    eq(getPage(abode.path).props.children, "[[c/testabode/testden]], [[c/testabode/testloft]]");
+    renamePage(contextPath("testabode/testden"), "testden");
+    eq(getPage(abode.path).props.children, "[[c/testabode/testloft]]", "moved out, gone from the list");
+    makeContext("testabode/testattic");
+    eq(getPage(abode.path).props.children, "[[c/testabode/testattic]], [[c/testabode/testloft]]", "a new one in the folder is listed");
+    makeContext("testshack");
+    renamePage(contextPath("testshack"), "testhut/testshack");
+    ok(getPage(contextPath("testhut")), "renamed into a folder with no page, the page is made");
+    eq(getPage(contextPath("testhut")).props.children, "[[c/testhut/testshack]]");
+  });
+  test("#201 + New context inside makes one in the folder, so a second room can be added", () => {
+    makeContext("testflat2");
+    const flat = {path: contextPath("testflat2"), space: V.space};
+    for (const room of ["one", "two"]) {
+      relChildPicker(flat);
+      const m = [...document.querySelectorAll(".scrim .modal")].pop();
+      const add = [...m.querySelectorAll("button")].find(n => n.textContent.startsWith("+ New context inside"));
+      ok(add, "the picker has + New context inside");
+      add.click();
+      const box = [...document.querySelectorAll(".scrim .modal")].pop();
+      box.querySelector("input").value = room;
+      [...box.querySelectorAll("button")].find(n => n.textContent === "Create").click();
+    }
+    closeModal();
+    eq(getPage(flat.path).props.children, "[[c/testflat2/one]], [[c/testflat2/two]]");
+  });
   test("#201 + New chore writes the line on the room's page", async () => {
     go("chores"); await settle();
     openNewChore("");
