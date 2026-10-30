@@ -25,6 +25,26 @@ const SETUP = {
     comps: [{id: "a", name: "Mailing list", after: null, keep: [], act: {}}, {id: "b", name: "Template", after: null, keep: [], act: {}}],
     ideas: [["Export customer emails", "c:a"], ["Draft three subject lines", "c:b"], ["Translate it to Swedish", null], ["Check consent in the CRM", null]]
       .map(([t, to], i) => ({id: "i" + i, t, to}))}); render();`,
+  // A few chores in two rooms, some of them somebody else's, gone again after the picture.
+  chores: `const day = n => "[[" + shiftISO(todayISO(), n) + "]]";
+    const chore = (t, repeat, n, props = {}) => stampAuthor(newBlock({state: "TODO", title: t, props: Object.assign({repeat, SCHEDULED: day(n)}, props)}));
+    const done = (t, who) => stampAuthor(newBlock({state: "DONE", title: t, props: {repeat: "weekly", done_by: who + " " + todayISO() + "T12:00:00.000Z"}}));
+    window.CHORE_SHOT = [join(DIRS.contexts, "kitchen.md"), join(DIRS.contexts, "bathroom.md")];
+    putPage(CHORE_SHOT[0], {props: {title: "kitchen"}, blocks: [
+      chore("Wipe the counters #15m [[c/kitchen]]", "daily", -2),
+      chore("Empty the dishwasher [[c/kitchen]]", "daily", 0, {assigned: "Ingrid Solberg"}),
+      chore("Clean the fridge #45m [[c/kitchen]]", "monthly", 9),
+      done("Wipe the counters #15m [[c/kitchen]]", "Kenneth Aar"), done("Mop the floor #30m [[c/kitchen]]", "Ingrid Solberg"),
+      done("Take out the bins [[c/kitchen]]", "Marcus Lind")]}, {silent: true});
+    putPage(CHORE_SHOT[1], {props: {title: "bathroom"}, blocks: [
+      chore("Scrub the shower #30m [[c/bathroom]]", "weekly", 3),
+      chore("Change the towels [[c/bathroom]]", "weekly", -1, {assigned: "Marcus Lind"}),
+      done("Clean the sink #15m [[c/bathroom]]", "Ingrid Solberg")]}, {silent: true});
+    clearMemo(); PREF.set("chores.who", "all"); go("chores");`,
+};
+/* Put back after the picture what SETUP added for it. */
+const AFTER = {
+  chores: `for (const p of CHORE_SHOT) V.pages.delete(p); clearMemo(); PREF.set("chores.who", ""); render();`,
 };
 // Only part of the screen, for a topic about one strip of it.
 const CLIP = {topbar: {x: 0, y: 0, width: W, height: 140}};
@@ -56,6 +76,7 @@ try {
     const shot = await cdp("Page.captureScreenshot", {format: "jpeg", quality: 72, clip});
     writeFileSync(join(dir, id + ".jpg"), Buffer.from(shot.data, "base64"));
     console.log("  " + id + ".jpg");
+    if (AFTER[id]) await evaluate(`(() => { ${AFTER[id]} return true; })()`);
   }
   await evaluate(`closeModal(); setHelp(false); true`);
   if (app.pageErrors.length) { console.error("errors in the page:\n" + app.pageErrors.join("\n")); }

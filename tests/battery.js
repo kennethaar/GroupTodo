@@ -772,6 +772,107 @@ var GTD_TEST = (() => {
     eq(parseRule("now and then"), null);
   });
 
+  /* ---------- Chores (#201) ---------- */
+  const chore = (t, repeat, n, props = {}) => stampAuthor(newBlock({state: "TODO", title: t,
+    props: Object.assign({repeat, SCHEDULED: "[[" + shiftISO(T(), n) + "]]"}, props)}));
+  const choreProject = (title, blocks) => {
+    const path = scratchProject(title);
+    getPage(path).blocks = blocks;
+    touch(path); clearMemo();
+    return path;
+  };
+  const dropChores = path => { getPage(path).blocks = []; touch(path); clearMemo(); };
+  test("#201 a chore is an open task with a repeat, grouped by how far it has come round", () => {
+    const path = choreProject("chores group", [
+      chore("Wipe the counters [[c/kitchen]]", "daily", -2), chore("Scrub the shower [[c/bathroom]]", "weekly", 3),
+      chore("Clean the fridge [[c/kitchen]]", "monthly", 20), stampAuthor(newBlock({state: "TODO", title: "Not a chore"}))]);
+    try {
+      const mine = choreRows().filter(a => a.path === path);
+      eq(mine.map(a => plainTitle(a.title)), ["Wipe the counters", "Scrub the shower", "Clean the fridge"]);
+      eq(mine.map(choreGroup), ["due", "soon", "fresh"]);
+      const kitchen = freshScore(mine.filter(a => a.context === "kitchen"));
+      ok(kitchen > 0 && kitchen < 50, "kitchen is " + kitchen + "% fresh");
+      ok(NAV_ITEMS.find(it => it && it.id === "chores").when(), "Chores is in the sidebar once a task repeats");
+    } finally { dropChores(path); }
+  });
+  test("#201 ticked in Chores, the next one is put in at once for whose turn it is, and Undo takes both back", async () => {
+    const path = choreProject("chores tick", [chore("Take out the bins", "weekly", 0)]);
+    try {
+      const b = getPage(path).blocks[0], turn = whoseTurn(b);
+      go("chores"); await settle();
+      const row = content().querySelector(idSel(".task", b.id, ".tick"));
+      ok(row, "the chore is under Due now");
+      row.click(); await settle();
+      ok(!document.querySelector(".scrim .modal"), "no Again? dialog");
+      const blocks = getPage(path).blocks;
+      eq(blocks.map(x => x.state), ["DONE", "TODO"]);
+      eq(dueDate(blocks[1]), shiftISO(T(), 7), "next one a week on");
+      if (turn) ok(samePerson(assigneeOf(blocks[1], getPage(path)) || whoAmI(), turn), "for " + turn);
+      const undo = [...document.querySelectorAll("#toasts button")].find(n => n.textContent === "Undo");
+      ok(undo, "the done toast has Undo");
+      undo.click(); await settle();
+      eq(getPage(path).blocks.map(x => x.state), ["TODO"]);
+    } finally { closeDoneToast(); closeModal(); dropChores(path); }
+  });
+  test("#201 the Chores chip on Next hides and shows the chores", async () => {
+    const path = choreProject("chores chip", [chore("Water the plants", "weekly", 0)]);
+    try {
+      go("next", {sub: "list"}); await settle();
+      const chip = () => [...content().querySelectorAll(".fbar .fchip")].find(n => n.firstChild.textContent === "Chores");
+      ok(chip(), "Next has a Chores chip");
+      ok(content().textContent.includes("Water the plants"), "shown by default");
+      chip().click(); await settle();
+      ok(!content().textContent.includes("Water the plants"), "hidden after the chip");
+      chip().click(); await settle();
+      ok(content().textContent.includes("Water the plants"), "back again");
+    } finally { PREF.set("next.chores", ""); dropChores(path); }
+  });
+  test("#201 points: a point per 15 minutes, one for a chore with no size, this week only", () => {
+    const done = (t, who, day) => stampAuthor(newBlock({state: "DONE", title: t, props: {repeat: "weekly", done_by: who + " " + day + "T12:00:00.000Z"}}));
+    const path = choreProject("chores points", [done("Mop the floor #30m", "Test Pointsperson", T()),
+      done("Take out the bins", "Test Pointsperson", T()), done("Clean the oven #60m", "Test Pointsperson", shiftISO(weekStartISO(T()), -1))]);
+    try {
+      const row = choreTally(weekStartISO(T()), T()).find(([n]) => n === "Test Pointsperson");
+      eq(row && row[1], {pts: 3, n: 2});
+      const last = choreTally(shiftISO(weekStartISO(T()), -7), shiftISO(weekStartISO(T()), -1)).find(([n]) => n === "Test Pointsperson");
+      eq(last && last[1], {pts: 4, n: 1});
+    } finally { dropChores(path); }
+  });
+  test("#201 Away holds every chore, and Back now counts them from today", () => {
+    const path = choreProject("chores away", [chore("Vacuum the stairs", "weekly", -3)]);
+    try {
+      holdChores(shiftISO(T(), 7));
+      ok(!choreRows().some(a => a.path === path), "held while away");
+      const held = allChores().filter(a => a.held && a.path === path);
+      eq(held.length, 1);
+      choresBack(held);
+      clearMemo();
+      const a = choreRows().find(a => a.path === path);
+      ok(a, "back on the list");
+      eq(freshnessOf(a).rounds, 0, "counts from today");
+    } finally { dropChores(path); }
+  });
+  test("#201 + New chore writes the line on the room's page", async () => {
+    go("chores"); await settle();
+    openNewChore("");
+    const m = document.querySelector(".scrim .modal");
+    m.querySelector('input[aria-label="What"]').value = "Test descale the kettle";
+    const sel = m.querySelectorAll("select");
+    sel[0].value = "\u0002"; sel[0].dispatchEvent(new Event("change"));
+    m.querySelector('input[aria-label="New room"]').value = "testkitchen";
+    sel[1].value = "monthly"; sel[2].value = "1";
+    [...m.querySelectorAll("button")].find(n => n.textContent === "Add chore").click();
+    await settle();
+    const page = getPage(contextPath("testkitchen"));
+    try {
+      ok(page, "the room's page was made");
+      const b = page.blocks.find(x => x.title.includes("Test descale the kettle"));
+      ok(b, "the chore is on it");
+      eq([b.state, repeatOf(b), estTier(b.title), dueDate(b)], ["TODO", "monthly", 1, T()]);
+      has(b.title, "[[c/testkitchen]]");
+    } finally { if (page) { page.blocks = []; touch(contextPath("testkitchen")); clearMemo(); } }
+  });
+
   /* ============================================================
      Tasks: capture, state, undo
      ============================================================ */

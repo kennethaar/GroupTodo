@@ -5,6 +5,21 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.21.0 - 2026-10-30
+
+- Chores (#201): the home at a glance, in the sidebar once any task repeats.
+  How fresh the home is and one bar per room (a room is a context); click a
+  room to see only it. Mine or Everyone. Due now, worst first, then Coming up
+  this week and Fresh, folded.
+- A chore ticked in Chores puts the next one in at once, for whose turn it
+  is, with no Again? dialog. Undo in the done toast takes both back.
+- + New chore: what, room, how often, how long and the first one, each picked
+  from a list. Away until… holds every chore until you are back, and they
+  count from that day.
+- Points: a point for each 15 minutes of chores done, one for a chore with no
+  size. The board shows this week or last week, from done_by:: on the lines.
+- Next has a Chores chip to hide the chores while you work.
+
 ## 1.20.0 - 2026-10-30
 
 - A big folder reads what the day is planned from first (#181): the last
