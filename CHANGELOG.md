@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.17.4 - 2026-10-30
+
+- A project's Time on site leads with its total (#50): one large figure,
+  then the number of visits and who came. The bars carry their own hours in
+  the same h and m, every week with time is labelled, the weeks read W37 to
+  W44, and this week is marked (now). The This week and last week text and
+  the repeated total are gone, since the bars show them.
+
 ## 1.17.3 - 2026-10-30
 
 - In Check in, the In/Out times or Hours, whichever you wrote last, is what

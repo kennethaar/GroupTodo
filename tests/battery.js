@@ -575,6 +575,35 @@ var GTD_TEST = (() => {
     eq(mine().reduce((s, e) => s + timeLogMin(e), 0), 420);
     for (const e of mine()) { removeBlockFrom(getPage(e.path), e.block); touch(e.path); }
   });
+  test("#50 a project's time on site leads with the total, and the bars name their weeks", async () => {
+    const p = projectsIn("1")[0];
+    const made = [];
+    const add = (days, a, z, who) => {
+      const d = shiftISO(todayISO(), -days), t = ensureJournal(d), b = newBlock({}, false);
+      b.title = "#timelog [[p/" + who + "]] [[" + pageRef(p) + "]]";
+      setOrDropProp(b, "in", a); setOrDropProp(b, "out", z);
+      getPage(t).blocks.push(b); touch(t); made.push([t, b]);
+    };
+    add(0, "08:00", "12:00", "Kari Battery");
+    add(14, "13:00", "14:30", "Per Battery");
+    try {
+      const s = projectTimeSection(p);
+      const card = s.querySelector(".sitetime");
+      eq(s.querySelector("h3 .n"), null, "no total badge beside the heading");
+      has(card.querySelector(".st-total").textContent, "5 h 30 m");
+      has(card.querySelector(".st-who").textContent, "2 visits");
+      has(card.querySelector(".st-who").textContent, "Kari Battery 4 h");
+      ok(!/this week/i.test(card.textContent), "the bars say what the week text said");
+      const bars = [...card.querySelectorAll(".hbar")];
+      eq(bars.length, 8);
+      eq(bars[7].querySelector(".w").textContent, "W" + isoWeek(todayISO())[0] + " (now)");
+      eq(bars[7].querySelector(".v").textContent, "4 h");
+      eq(bars[5].querySelector(".v").textContent, "1 h 30 m", "every week with time is labelled");
+      eq(bars[6].querySelector(".v").textContent, "", "an empty week says nothing");
+    } finally {
+      for (const [t, b] of made) { removeBlockFrom(getPage(t), b); touch(t); }
+    }
+  });
   test("#50 hours typed after a start on the clock are the hours", async () => {
     const form = () => document.querySelector("#modalRoot .modal");
     const set = (i, v) => { i.value = v; i.dispatchEvent(new Event("input")); i.dispatchEvent(new Event("change")); };
