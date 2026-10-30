@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.13.2 - 2026-10-30
+
+- Getting started stays until every step on it is done or crossed off
+  (#186). It used to close as soon as your name, folder and first task
+  were done, and took the optional steps with it, so ticking one off could
+  make the whole strip vanish. The count now covers every step shown, and
+  a note says when it is done. ✕ still hides it for good.
+
 ## 1.13.1 - 2026-10-29
 
 - The tour's "Tick off what you have done" prompt opens with every box

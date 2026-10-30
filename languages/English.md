@@ -1191,6 +1191,7 @@ Get one from GitHub =>
 Getting Things Done has five steps. Each one has a place here. =>
 Getting it out of your head and into GroupToDo. The system will grow with your needs. =>
 Getting started =>
+Getting started is done. Press ? on any screen for help. =>
 Give a bigger job a project =>
 Give a context an icon on its page. =>
 Give it a context =>

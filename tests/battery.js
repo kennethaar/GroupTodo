@@ -1453,6 +1453,33 @@ var GTD_TEST = (() => {
       eq(ok.disabled, false);
     } finally { toast.remove(); PREF.set("tour.asked", ""); }
   });
+  test("#186 Getting started stays while a step it shows is still open", async () => {
+    const keys = ["coach", "coach.who", "coach.where", "coach.add", "coach.project", "coach.tour"];
+    const was = keys.map(k => PREF.get(k, ""));
+    const had = !!tourProjectPath();
+    const tour = seedTourProject();
+    TOUR_PATH_CACHE = undefined;
+    try {
+      PREF.set("coach", "1");
+      for (const k of ["who", "where", "add"]) PREF.set("coach." + k, "1");
+      PREF.set("coach.tour", "");
+      go("today");
+      await settle();
+      ok(content().querySelector(".coach:not(.tip)"), "the strip went while the tour step was open");
+      eq(PREF.get("coach"), "1");
+      PREF.set("coach.project", "1");
+      PREF.set("coach.tour", "1");
+      render();
+      await settle();
+      ok(!content().querySelector(".coach:not(.tip)"), "the strip stayed with every step done");
+      eq(PREF.get("coach"), "0");
+    } finally {
+      keys.forEach((k, i) => PREF.set(k, was[i]));
+      if (!had) removePage(tour);
+      TOUR_PATH_CACHE = undefined;
+      render();
+    }
+  });
   test("#171 a topic can be read beside the view", async () => {
     helpReset();
     go("projects", {sub: "list"});
