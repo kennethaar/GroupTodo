@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.17.5 - 2026-10-30
+
+- Projects › Hours, Time on site, By project: a project's name in the week
+  table opens the project (#50), in whichever area it is.
+
 ## 1.17.4 - 2026-10-30
 
 - A project's Time on site leads with its total (#50): one large figure,

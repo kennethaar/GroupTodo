@@ -604,6 +604,25 @@ var GTD_TEST = (() => {
       for (const [t, b] of made) { removeBlockFrom(getPage(t), b); touch(t); }
     }
   });
+  test("#50 Hours by project: the project's name opens the project", async () => {
+    const p = projectsIn("1")[0];
+    const t = ensureJournal(todayISO()), b = newBlock({}, false);
+    b.title = "#timelog [[p/Kari Battery]] [[" + pageRef(p) + "]]";
+    setOrDropProp(b, "in", "08:00"); setOrDropProp(b, "out", "09:00");
+    getPage(t).blocks.push(b); touch(t);
+    try {
+      const items = timeLogEntries().filter(e => e.block === b);
+      const link = hoursTable(weekStartISO(todayISO()), items, "project").querySelector("tbody .hlink");
+      ok(link, "the name is a link");
+      link.click();
+      await settle();
+      eq(state.view, "page");
+      eq(state.pagePath, p);
+      eq(hoursTable(weekStartISO(todayISO()), items, "person").querySelector(".hlink"), null, "people stay plain");
+    } finally {
+      removeBlockFrom(getPage(t), b); touch(t);
+    }
+  });
   test("#50 hours typed after a start on the clock are the hours", async () => {
     const form = () => document.querySelector("#modalRoot .modal");
     const set = (i, v) => { i.value = v; i.dispatchEvent(new Event("input")); i.dispatchEvent(new Event("change")); };
