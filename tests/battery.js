@@ -3321,15 +3321,36 @@ var GTD_TEST = (() => {
     content().querySelectorAll(".wkdayhead")[0].click();
     eq([state.sub, state.todayDay], [null, weekMonday(now) === T() ? null : weekMonday(now)], "a day's name opens the day");
   });
-  test("#192 the weekly review: what is left from past weeks, oldest first, then this week and the two after", async () => {
+  test("#192 the review's calendar step goes to the weeks on the review page, also in a list written before it", async () => {
+    const step = () => reviewSteps().flatMap(g => g.steps).find(s => /^Calendar/.test(s.text));
+    const had = V.pages.has(REVIEW_LIST_PATH) ? getPage(REVIEW_LIST_PATH) : null;
+    V.pages.delete(REVIEW_LIST_PATH);
+    clearMemo();
+    eq(step().doors, ["weeks", "agenda"], "the list the app starts with");
+    putPage(REVIEW_LIST_PATH, parsePage("- CURRENT\n  - Calendar two weeks back and four weeks forward [[go/agenda]]\n"), {silent: true});
+    try {
+      eq(step().doors, ["weeks", "agenda"], "an older list");
+      go("review", {sub: "steps"});
+      await settle();
+      const row = [...content().querySelectorAll(".rstep")].find(n => /Calendar/.test(n.textContent));
+      row.click();
+      await settle();
+      eq([state.view, state.sub], ["review", "steps"]);
+      ok(content().querySelector("#rsec-weeks .wkgrid"), "the weeks are on the review page");
+    } finally { if (had) putPage(REVIEW_LIST_PATH, had, {silent: true}); else V.pages.delete(REVIEW_LIST_PATH); clearMemo(); }
+  });
+  test("#192 the weekly review page: what is left from past weeks, oldest first, then this week and the two after, above the steps", async () => {
     const old = shiftWeek(weekOf(T()), -3), path = journalPath(old);
     const ahead = [0, 1, 2].map(n => journalPath(shiftWeek(weekOf(T()), n))).filter(p => !V.pages.has(p));
     const proj = scratchProject("review weeks", [["TODO", "Reply to the parking email"]]);
     dated(getPage(proj).blocks[0], shiftISO(T(), -2));
     await withPages({[path]: "- TODO Send board tax receipts\n- DONE Water the plants every week\n"}, async () => {
       try {
-        go("review", {sub: "weeks"});
+        go("review", {sub: "steps"});
         await settle();
+        const weeks = content().querySelector("#rsec-weeks"), first = content().querySelector(".rstep");
+        ok(weeks && first && weeks.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING, "the weeks come before the steps");
+        ok(!SUBS.review.some(s => s[0] === "weeks"), "no tab of their own");
         const rows = [...content().querySelectorAll(".card > .wkitem")].map(n => n.textContent);
         const at = t => rows.findIndex(r => r.includes(t));
         ok(at("Send board tax receipts") >= 0 && at("Reply to the parking email") > at("Send board tax receipts"), "oldest first: " + rows.join(" | "));

@@ -78,7 +78,7 @@ const WEEK_PAGES = `const wk = n => shiftWeek(weekOf(todayISO()), n);
     putPage(journalPath(wk(-1)), parsePage("title:: " + wk(-1) + "\\n\\n- TODO Send the board tax receipts\\n- DONE Water the plants every week\\n"), {silent: true});
     clearMemo();`;
 SETUP["journal-week"] = WEEK_PAGES + ` go("today", {sub: "week", todayWeek: null});`;
-SETUP["review-weeks"] = WEEK_PAGES + ` REVIEW_WEEK = 0; go("review", {sub: "weeks"});`;
+SETUP["review-steps"] = WEEK_PAGES + ` REVIEW_WEEK = 0; go("review", {sub: "steps"});`;
 /* Put back after the picture what SETUP added for it. */
 const AFTER = {
   chores: `for (const p of CHORE_SHOT) V.pages.delete(p); clearMemo(); PREF.set("chores.who", ""); render();`,
@@ -89,7 +89,7 @@ const AFTER = {
   "review-reflect": `for (const [p, page] of REF_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
     clearMemo(); render();`,
 };
-AFTER["journal-week"] = AFTER["review-weeks"] = `for (const [p, page] of WEEK_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
+AFTER["journal-week"] = AFTER["review-steps"] = `for (const [p, page] of WEEK_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
     clearMemo(); render();`;
 // Only part of the screen, for a topic about one strip of it.
 const CLIP = {topbar: {x: 0, y: 0, width: W, height: 140}};

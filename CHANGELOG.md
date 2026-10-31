@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.32.1 - 2026-10-31
+
+- The look back and the look ahead are on the Weekly review page itself,
+  under its title and above the steps, instead of in a Weeks tab of their
+  own (#192): what is left from past weeks, then This week, Next week and
+  the week after, each with its week page and its days. The step "Calendar
+  two weeks back and four weeks forward" takes you there, and says how many
+  things are left from past weeks; the calendar is its second button, for a
+  longer look. That works in a review list you have already edited too.
+
 ## 1.32.0 - 2026-10-31
 
 - Week pages in the Journal (#192). Day | Week beside the date switches
