@@ -2191,17 +2191,63 @@ var GTD_TEST = (() => {
     await settle();
     return {path, blocks: getPage(path).blocks, row: b => content().querySelector('.task.jrow[data-id="' + b.id + '"]')};
   };
-  test("#160 a Journal row: the project above, then the state, the context and the words", async () => {
+  test("#160 #209 a Journal row: the state, the context, the words, then the project", async () => {
     const {path, blocks, row} = await journalDue([["TODO", "Call Bob about the quote [[c/phone]]"]]);
     const r = row(blocks[0]);
     ok(r, "the row is under Due today & late");
     const kids = [...r.children].map(n => n.className.split(" ")[0]);
-    eq(kids.slice(0, 4), ["t-eyebrow", "t-chk", "chip", "t-title"], "order");
+    eq(kids.slice(0, 4), ["t-chk", "chip", "t-title", "t-eyebrow"], "order");
     has(r.querySelector(".t-eyebrow").textContent, pageTitle(path));
     eq(r.querySelector(":scope > .chip.ctx").textContent, "@phone");
     ok(!r.querySelector(".t-title").textContent.includes("phone"), "the context is not said twice");
     eq(r.lastElementChild.classList.contains("t-menu"), true, "the row's ⋯ ends it");
     ok(!r.querySelector(".duepill"), "due today goes without saying under Due today");
+  });
+  test("#209 a Journal row is one line, its chips at the right edge before ⋯", async () => {
+    const {blocks, row} = await journalDue([["TODO", "Write up the long and winding minutes of the meeting about the quarterly figures and what came of them [[c/pc]]"]],
+      shiftISO(T(), -1));
+    const r = row(blocks[0]);
+    ok(r.offsetHeight <= 48, "one line, not " + r.offsetHeight + "px");
+    const t = r.querySelector(".t-title");
+    eq(getComputedStyle(t).whiteSpace, "nowrap", "long words end in …");
+    eq(r.lastElementChild.previousElementSibling.className, "t-meta", "the chips just before ⋯");
+    const meta = r.querySelector(".t-meta").getBoundingClientRect(), menu = r.querySelector(".t-menu").getBoundingClientRect();
+    ok(menu.left - meta.right < 16, "the chips sit at the right edge");
+  });
+  test("#209 a chore on its room's own page says the room once under Due today", async () => {
+    const path = contextPath("Testroom209");
+    const b = stampAuthor(newBlock({state: "TODO", title: "Wipe the counters [[c/Testroom209]]"}));
+    putPage(path, {props: {}, blocks: [b]});
+    setDue(b, T()); touch(path); clearMemo();
+    PREF.set("today.tab", "due");
+    go("today");
+    await settle();
+    const r = content().querySelector('.task.jrow[data-id="' + b.id + '"]');
+    ok(r, "the chore is under Due today");
+    ok(!r.querySelector(".t-eyebrow"), "no project line naming the room again");
+    eq(r.querySelector(":scope > .chip.ctx").textContent, "@Testroom209");
+  });
+  test("#209 on a phone, Due today is grouped by context, late first", async () => {
+    const was = Object.getOwnPropertyDescriptor(PHONE, "matches");
+    Object.defineProperty(PHONE, "matches", {value: true, configurable: true});
+    try {
+      const path = scratchProject("phone209", [["TODO", "Ring the plumber [[c/phone]]"], ["TODO", "Print the form [[c/office]]"],
+        ["TODO", "Ring the bank [[c/phone]]"]]);
+      const bs = getPage(path).blocks;
+      setDue(bs[0], T()); setDue(bs[1], shiftISO(T(), -2)); setDue(bs[2], T());
+      touch(path); clearMemo();
+      PREF.set("today.tab", "due");
+      go("today");
+      await settle();
+      const heads = [...content().querySelectorAll(".jgroup .chip.ctx")].map(h => h.textContent);
+      ok(heads.includes("@office") && heads.indexOf("@office") < heads.indexOf("@phone"), "the late one's group first: " + heads);
+      eq(heads.filter(h => h === "@phone").length, 1, "each context said once");
+      const r = content().querySelector('.task.jrow[data-id="' + bs[0].id + '"]');
+      ok(!r.querySelector(":scope > .chip.ctx"), "the row does not say the context again");
+      eq(r.previousElementSibling.classList.contains("jgroup") || r.previousElementSibling.dataset.id === bs[2].id || r.nextElementSibling.dataset.id === bs[2].id, true, "both phone rows together");
+    } finally {
+      if (was) Object.defineProperty(PHONE, "matches", was); else delete PHONE.matches;
+    }
   });
   test("#160 a context written inside the words stays there", async () => {
     const {blocks, row} = await journalDue([["TODO", "Ask Ann at the [[c/office]] about the keys"]]);

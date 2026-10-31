@@ -5,6 +5,19 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.30.0 - 2026-10-31
+
+- Journal rows are one line each (#209): the state, the context, the words,
+  then the project in quiet capitals, and the dates and other chips lined up
+  at the right edge before ⋯. Short of room, the project gives way first and
+  then the words end in "…". A row is about 36 px instead of 80, so a day of
+  due tasks fits on the screen. A chore on its room's own page names the room
+  once, by its pill, in every Journal list.
+- On a phone, Due Today & Late is grouped by context: each context once, as
+  its pill above its rows, the group with the most urgent task first. The
+  project is left out there, so the words get the width. On a touch screen
+  each row is at least 44 px high, so it is easy to hit.
+
 ## 1.29.0 - 2026-10-31
 
 - A bullet journal in every area (#185). A line that starts with `o ` is an
