@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.35.1 - 2026-10-31
+
+- A new project made from a line starts with the line's words as its name
+  (#95): Refile's + new project, the loose action's New project for it, and
+  the weekly review's New project for it box when you click into it.
+
 ## 1.35.0 - 2026-10-31
 
 - The weekly review follows David Allen's three parts (#95): Get clear, Get

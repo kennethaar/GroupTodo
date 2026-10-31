@@ -3448,6 +3448,22 @@ var GTD_TEST = (() => {
       } finally { V.pages.delete(proj); }
     });
   });
+  test("#95 a project made from a line is offered the line's words as its name", async () => {
+    await withDays([[2, "- Plan the summer party\n"]], async () => {
+      const day = journalPath(shiftISO(T(), -2)), block = getPage(day).blocks[0];
+      try {
+        (await showClarify()).querySelectorAll(".clans")[2].click();
+        await settle();
+        has(document.querySelector("#modalRoot").textContent, "“Plan the summer party”", "Clarify's Project offers the line first");
+        closeModal();
+        openRefile(day, block);
+        await settle();
+        [...document.querySelectorAll("#modalRoot button")].find(b => b.textContent === "+ new project").click();
+        await settle();
+        eq(document.querySelector("#modalRoot input").value, "Plan the summer party", "refile's + new project");
+      } finally { closeModal(); CL.pending = null; }
+    });
+  });
   test("#95 the review's tabs follow its steps, and only the step you are on says what it means", async () => {
     eq(SUBS.review.map(s => s[0]), ["steps", "days", "actions", "projects", "reflect"]);
     eq(SUBS.review[1][1], "Clarify");
