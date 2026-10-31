@@ -5,6 +5,23 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.35.0 - 2026-10-31
+
+- The weekly review follows David Allen's three parts (#95): Get clear, Get
+  current, Get creative, each one fold holding its steps and then the lists
+  done in it, in his order. Get clear: loose actions on the day pages. Get
+  current: the action lists (no verb, no context), what is left from past
+  weeks and the coming weeks, birthdays, waiting for, then the projects.
+  Get creative: someday/maybe. Worth a look and a new Housekeeping fold
+  (broken links, lines written twice) come after; nothing is left open
+  between the folds, and "Edit the steps" sits beside "Mark the review done".
+- The built-in steps are in Allen's order too: papers and inboxes before the
+  mind dump; action lists before the calendar; someday/maybe before the
+  higher horizons.
+- New vaults start with that list. The five-line list earlier vaults were
+  started with ("Empty the inbox", ...) is read as the built-in one as long
+  as nobody has changed it; a list you have edited stays yours.
+
 ## 1.34.1 - 2026-10-31
 
 - Every headline on the weekly review's Steps page folds (#95), not only

@@ -3112,12 +3112,15 @@ var GTD_TEST = (() => {
     await withWeek([[2, "- o Ran 5 km\n  - = Light\n"]], async () => {
       ok(step(), "no Reflect step with an event this week");
       // A list of its own without the step gets it last; the built-in one has it under CREATIVE.
-      const all = reviewSteps().flatMap(g => g.steps);
-      eq(all[all.length - 1], step(), "last in the vault's own list");
       const own = getPage(REVIEW_LIST_PATH);
-      V.pages.delete(REVIEW_LIST_PATH);
-      try { eq(reviewSteps().find(g => g.steps.some(s => s.doors.includes("reflect"))).title, "CREATIVE"); }
-      finally { if (own) putPage(REVIEW_LIST_PATH, own, {silent: true}); clearMemo(); }
+      try {
+        putPage(REVIEW_LIST_PATH, parsePage("- Empty the inboxes\n- Read the calendar\n"), {silent: true});
+        clearMemo();
+        const all = reviewSteps().flatMap(g => g.steps);
+        eq(all[all.length - 1], step(), "last in the vault's own list");
+        V.pages.delete(REVIEW_LIST_PATH);
+        eq(reviewSteps().find(g => g.steps.some(s => s.doors.includes("reflect"))).title, "CREATIVE");
+      } finally { if (own) putPage(REVIEW_LIST_PATH, own, {silent: true}); else V.pages.delete(REVIEW_LIST_PATH); clearMemo(); }
       ok(subShown("review", "reflect"), "no Reflect tab");
       eq(reviewDoorCount("reflect"), "1 this week");
     });
@@ -3339,7 +3342,7 @@ var GTD_TEST = (() => {
       ok(content().querySelector("#rsec-weeks .wkgrid"), "the weeks are on the review page");
     } finally { if (had) putPage(REVIEW_LIST_PATH, had, {silent: true}); else V.pages.delete(REVIEW_LIST_PATH); clearMemo(); }
   });
-  test("#192 the weekly review page: what is left from past weeks, oldest first, then this week and the two after, above the steps", async () => {
+  test("#192 the weekly review page: what is left from past weeks, oldest first, then this week and the two after, in Get current (#95)", async () => {
     const old = shiftWeek(weekOf(T()), -3), path = journalPath(old);
     const ahead = [0, 1, 2].map(n => journalPath(shiftWeek(weekOf(T()), n))).filter(p => !V.pages.has(p));
     const proj = scratchProject("review weeks", [["TODO", "Reply to the parking email"]]);
@@ -3348,8 +3351,9 @@ var GTD_TEST = (() => {
       try {
         go("review", {sub: "steps"});
         await settle();
-        const weeks = content().querySelector("#rsec-weeks"), first = content().querySelector(".rstep");
-        ok(weeks && first && weeks.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING, "the weeks come before the steps");
+        // David Allen's order: the calendar is looked at in get current, after the action lists (#95).
+        const weeks = content().querySelector("#rsec-weeks");
+        has(weeks && weeks.closest(".rphase").querySelector("summary").textContent, "Get current", "the weeks are in get current");
         ok(!SUBS.review.some(s => s[0] === "weeks"), "no tab of their own");
         const rows = [...content().querySelectorAll(".card > .wkitem")].map(n => n.textContent);
         const at = t => rows.findIndex(r => r.includes(t));
@@ -3454,6 +3458,30 @@ var GTD_TEST = (() => {
     ok(content().querySelectorAll(".rstep.now").length <= 1, "one step at a time");
     eq(content().querySelectorAll(".rstep:not(.now) .textbtn").length, 0, "buttons on a step you are not on");
     go("today");
+  });
+  test("#95 the review follows David Allen: get clear, get current, get creative, each with its lists", async () => {
+    const had = V.pages.has(REVIEW_LIST_PATH) ? getPage(REVIEW_LIST_PATH) : null;
+    try {
+      putPage(REVIEW_LIST_PATH, {props: {title: "Weekly review"}, blocks: OLD_STARTER_STEPS.map(t => newBlock({title: t}))}, {silent: true});
+      clearMemo();
+      ok(!ownReviewList(), "the old starter list is read as somebody's own");
+      eq(reviewSteps().map(g => g.title), ["CLEAR", "CURRENT", "CREATIVE"]);
+      go("review", {sub: "steps"});
+      await settle();
+      eq([...content().querySelectorAll(".rphase > summary")].map(s => s.firstChild.textContent), ["Get clear", "Get current", "Get creative"]);
+      const fold = t => [...content().querySelectorAll(".rgroup")].find(f => f.querySelector("summary").textContent.startsWith(t));
+      const part = t => fold(t)?.parentElement.closest(".rphase")?.querySelector("summary").firstChild.textContent;
+      for (const [t, p] of [["Journal actions", "Get clear"], ["Actions without", "Get current"], ["Waiting for", "Get current"],
+        ["Someday / maybe", "Get creative"]]) if (fold(t)) eq(part(t), p, t);
+      eq(content().querySelectorAll(".wrap > p.hint").length, 0, "a line left open between the folds");
+      getPage(REVIEW_LIST_PATH).blocks[0].title = "Empty the inboxes";
+      clearMemo();
+      ok(ownReviewList(), "a changed list is not somebody's own");
+    } finally {
+      if (had) putPage(REVIEW_LIST_PATH, had, {silent: true}); else V.pages.delete(REVIEW_LIST_PATH);
+      clearMemo();
+      go("today");
+    }
   });
   test("#95 every headline of the review folds, all folded until you open one", async () => {
     const keep = PREF.get("review.open", "");
