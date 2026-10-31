@@ -1072,6 +1072,15 @@ var GTD_TEST = (() => {
       has(getPage(path).blocks[0].title, "[[c/Testcrjad]]", "and its link");
     } finally { dropChores(path); document.querySelectorAll("#toasts .toast").forEach(x => x.remove()); }
   });
+  test("#208 @ finds a child context by its own name, and offers no new one when typed in full", () => {
+    makeContext("Testabode2"); makeContext("Testabode2/Testoutside");
+    clearMemo();
+    const at = text => suggestFor({value: text, selectionStart: text.length}, {});
+    const refs = s => (s?.rows || []).filter(r => !r.isNew).map(r => r.ref);
+    ok(refs(at("Rake the leaves @testout")).includes("c/Testabode2/Testoutside"), "@testout missed Testabode2/Testoutside");
+    ok(refs(at("Rake @testabode2/testo")).includes("c/Testabode2/Testoutside"), "the full path still finds it");
+    ok(!at("Rake @testoutside").rows.some(r => r.isNew), "offered a new context with its name");
+  });
   /* ---------- aliases on every page (#207) ---------- */
   test("#207 a context's alias is that context, typed, captured or picked", () => {
     makeContext("Testcomputer");

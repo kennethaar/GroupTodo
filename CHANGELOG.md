@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.30.1 - 2026-10-31
+
+- Typing @ finds a child context by its own name (#208): "@out" offers
+  Home/Outside, and "@outside" typed in full is that context, not a new one.
+
 ## 1.30.0 - 2026-10-31
 
 - Journal rows are one line each (#209): the state, the context, the words,
