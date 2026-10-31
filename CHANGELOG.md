@@ -5,6 +5,21 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.38.0 - 2026-10-31
+
+- Syncthing's conflict copies are merged into their page (#221). When two
+  devices saved one page before they had synced, Syncthing kept one version
+  beside it as `Name.sync-conflict-....md`, and the app showed it as a second
+  page with half the work in it.
+  - A conflict copy is no longer a page. Its lines go into the page it is a
+    copy of, and the copy is deleted from the folder.
+  - The same line in both comes out once. A task done in one copy and open
+    in the other is kept once, as done, with the fields and notes of both.
+  - Lines a page already had twice on purpose stay twice.
+  - A copy whose page is gone becomes the page.
+- A line both devices changed while saving (#220) also comes out once now,
+  instead of twice.
+
 ## 1.37.0 - 2026-10-31
 
 - A folder synced with Syncthing or another sync app no longer has its

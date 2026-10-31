@@ -723,6 +723,69 @@ var GTD_TEST = (() => {
     has(s.disk(), "Fit the mast", "their line");
     has(s.disk(), "Buy 20 m rope", "our edit");
   });
+  test("#221 a line both devices changed, ticked on one, comes out once and done", async () => {
+    const s = await synced("Sync221a", "Boat.md", BOAT);
+    s.setDisk(BOAT.replace("- TODO Buy rope\n", "- TODO Buy rope\n  shop:: chandler\n"));
+    s.page().blocks[2].state = "DONE";
+    await s.save();
+    const rope = s.page().blocks.filter(b => b.title === "Buy rope");
+    eq(rope.length, 1, "Buy rope lines");
+    eq([rope[0].state, blockProp(rope[0], "shop")], ["DONE", "chandler"]);
+  });
+
+  /* #221: Syncthing keeps the losing version beside the page as a conflict copy. */
+  const COPY = "Boat.sync-conflict-20261031-101500-ABCDEFG.md";
+  const withCopy = async (name, page, copy, more = {}) => {
+    const tree = {pages: {"GTD.md": "title:: GTD\n", "1": Object.assign(page == null ? {} : {"Boat.md": page}, {[COPY]: copy}, more)}};
+    const writes = [];
+    const rec = newRecord(name, Backends.fs(fakeDir(name, tree, writes)));
+    const said = [];
+    const was = window.notify;
+    window.notify = m => { said.push(m); };
+    try { await readInto(rec); } finally { window.notify = was; }
+    const path = join(DIRS.active, "Boat.md");
+    const save = async () => {
+      LOADED.set(rec.name, rec);
+      try { await doFlush(); } finally { LOADED.delete(rec.name); }
+    };
+    return {tree, rec, path, said, save, page: () => rec.pages.get(path), folder: () => tree.pages["1"]};
+  };
+  test("#221 a Syncthing conflict copy is merged into its page and deleted, not shown as a page", async () => {
+    const s = await withCopy("Copy221a", BOAT, BOAT.replace("updated:: 2026-10-01T00:00:00Z", "updated:: 2026-10-02T00:00:00Z") + "- TODO Fit the mast\n");
+    ok(![...s.rec.pages.keys()].some(p => /sync-conflict/.test(p)), "the copy is a page");
+    eq(s.page().blocks.map(b => b.title), ["Sand the hull", "Paint the hull", "Buy rope", "Fit the mast"]);
+    ok(s.said.some(m => /conflict copy of .Boat./.test(m)), "not told: " + JSON.stringify(s.said));
+    await s.save();
+    ok(!(COPY in s.folder()), "the copy is still in the folder");
+    has(s.folder()["Boat.md"], "Fit the mast", "the page in the folder");
+    eq(s.page().props.updated, "2026-10-02T00:00:00Z", "the copy edited last leads");
+  });
+  test("#221 the same line in a page and its copy comes out once, done if either ticked it", async () => {
+    const s = await withCopy("Copy221b",
+      BOAT.replace("TODO Sand", "DONE Sand") + "- TODO Varnish the deck\n",
+      BOAT.replace("TODO Paint the hull", "TODO Paint the hull\n  colour:: blue") + "- TODO Fit the mast\n- TODO  sand   the HULL\n");
+    const titles = s.page().blocks.map(b => b.state + " " + b.title);
+    // A line only in the copy goes in after the line it followed there.
+    eq(titles, ["DONE Sand the hull", "TODO Paint the hull", "TODO Buy rope", "TODO Fit the mast", "TODO Varnish the deck"]);
+    eq(blockProp(s.page().blocks[1], "colour"), "blue", "a field from the copy");
+  });
+  test("#221 lines a page has twice on purpose stay twice", async () => {
+    const page = "title:: Boat\n\n- Check\n- Check\n- TODO Buy rope\n";
+    const s = await withCopy("Copy221c", page, page + "- TODO Fit the mast\n");
+    eq(s.page().blocks.map(b => b.title), ["Check", "Check", "Buy rope", "Fit the mast"]);
+  });
+  test("#221 a conflict copy whose page is gone becomes the page", async () => {
+    const s = await withCopy("Copy221d", null, BOAT);
+    eq(s.page().blocks.length, 3, "the copy's lines");
+    await s.save();
+    ok(!(COPY in s.folder()), "the copy is still in the folder");
+    has(s.folder()["Boat.md"], "Sand the hull");
+  });
+  test("#221 Check the folder does not list a conflict copy as missing from the app", async () => {
+    const s = await withCopy("Copy221e", BOAT, BOAT);
+    LOADED.set(s.rec.name, s.rec);
+    try { eq((await folderCheckReport(s.rec.name)).notIn, []); } finally { LOADED.delete(s.rec.name); }
+  });
 
   /* ============================================================
      Dates, clocks and repeats
