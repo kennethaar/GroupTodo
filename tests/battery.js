@@ -609,6 +609,121 @@ var GTD_TEST = (() => {
     has(tree.pages.p["Odd Kittelsen.md"], "met at the fair", "the file");
   });
 
+  /* #220: a sync app (Syncthing) changes a file behind the app's back. The
+     page is saved merged with it, against the file as this device read it. */
+  const synced = async (name, file, text) => {
+    const tree = {pages: {"GTD.md": "title:: GTD\n", "1": {[file]: text}}};
+    const writes = [];
+    const rec = newRecord(name, Backends.fs(fakeDir(name, tree, writes)));
+    await readInto(rec);
+    const path = join(DIRS.active, file);
+    const save = async () => {
+      rec.dirty.add(path);
+      LOADED.set(rec.name, rec);
+      try { await doFlush(); } finally { LOADED.delete(rec.name); }
+    };
+    return {tree, writes, rec, path, save, page: () => rec.pages.get(path),
+            disk: () => tree.pages["1"][file], setDisk: t => { tree.pages["1"][file] = t; }};
+  };
+  const BOAT = "title:: Boat\nupdated:: 2026-10-01T00:00:00Z\n\n- TODO Sand the hull\n- TODO Paint the hull\n- TODO Buy rope\n";
+  test("#220 a page another device changed is merged before it is saved, not written over", async () => {
+    const s = await synced("Sync220a", "Boat.md", BOAT);
+    // The other device adds a line and ticks one off.
+    s.setDisk(BOAT.replace("TODO Sand", "DONE Sand") + "- TODO Fit the mast\n");
+    // This device, still holding the old copy, changes another line.
+    s.page().blocks[2].title = "Buy 20 m rope";
+    const said = [];
+    const was = window.notify;
+    window.notify = (m, l) => { said.push([m, l]); };
+    try { await s.save(); } finally { window.notify = was; }
+    ok(said.some(([m, l]) => /Boat/.test(m) && l !== "warn"), "not told calmly: " + JSON.stringify(said));
+    const d = s.disk();
+    has(d, "DONE Sand the hull", "their tick");
+    has(d, "Fit the mast", "their new line");
+    has(d, "TODO Buy 20 m rope", "our change");
+    ok(!/Buy rope/.test(d), "our old line came back");
+    eq(serializePage(s.page()), d, "the page here is the merged one");
+  });
+  test("#220 a line taken out on either device stays out", async () => {
+    const s = await synced("Sync220b", "Boat.md", BOAT);
+    s.setDisk(BOAT.replace("- TODO Paint the hull\n", ""));
+    s.page().blocks.splice(2, 1);          // Buy rope, here
+    await s.save();
+    eq(s.page().blocks.map(b => b.title), ["Sand the hull"], "both deletes stand");
+  });
+  test("#220 a line both devices changed keeps both versions, and says so", async () => {
+    const s = await synced("Sync220c", "Boat.md", BOAT);
+    s.setDisk(BOAT.replace("Paint the hull", "Paint the hull blue"));
+    s.page().blocks[1].title = "Paint the hull red";
+    const said = [];
+    const was = window.notify;
+    window.notify = (m, l) => { said.push([m, l]); };
+    try { await s.save(); } finally { window.notify = was; }
+    const d = s.disk();
+    has(d, "Paint the hull red", "ours");
+    has(d, "Paint the hull blue", "theirs");
+    ok(said.some(([m, l]) => l === "warn" && /both versions/.test(m) && /Boat/.test(m)), "not told: " + JSON.stringify(said));
+  });
+  test("#220 the page's fields merge one by one, the newer edit winning a clash", async () => {
+    const s = await synced("Sync220d", "Boat.md", "title:: Boat\noutcome:: afloat\nupdated:: 2026-10-01T00:00:00Z\n\n- TODO Sand the hull\n");
+    s.setDisk("title:: Boat\noutcome:: afloat by May\nupdated:: 2026-10-02T00:00:00Z\nowner:: Kari\n\n- TODO Sand the hull\n");
+    s.page().props.updated = "2026-10-03T00:00:00Z";
+    s.page().props.review = "weekly";
+    await s.save();
+    const p = s.page().props;
+    eq([p.outcome, p.owner, p.review, p.updated], ["afloat by May", "Kari", "weekly", "2026-10-03T00:00:00Z"]);
+  });
+  test("#220 a file nobody else touched is written as it is, with no merge", async () => {
+    const s = await synced("Sync220e", "Boat.md", BOAT);
+    s.page().blocks.splice(0, 1);
+    await s.save();
+    eq(s.disk(), serializePage(s.page()));
+    ok(!/Sand/.test(s.disk()), "the line taken out came back");
+    // And the next save is measured against what was written.
+    s.page().blocks.splice(0, 1);
+    await s.save();
+    ok(!/Paint/.test(s.disk()), "the second delete came back");
+  });
+  test("#220 a page made on both devices keeps the lines of both", async () => {
+    const s = await synced("Sync220f", "Boat.md", BOAT);
+    const path = join(DIRS.active, "Kayak.md");
+    s.rec.pages.set(path, parsePage("title:: Kayak\n\n- TODO Find a paddle\n"));
+    s.tree.pages["1"]["Kayak.md"] = "title:: Kayak\n\n- TODO Book the trip\n";
+    s.rec.dirty.add(path);
+    LOADED.set(s.rec.name, s.rec);
+    try { await doFlush(); } finally { LOADED.delete(s.rec.name); }
+    const d = s.tree.pages["1"]["Kayak.md"];
+    has(d, "Find a paddle"); has(d, "Book the trip");
+  });
+  test("#220 while you type, the merge waits rather than swap the page under the line", async () => {
+    const s = await synced("Sync220g", "Boat.md", BOAT);
+    s.setDisk(BOAT + "- TODO Fit the mast\n");
+    s.page().blocks[2].title = "Buy 20 m rope";
+    const typing = el("div", {contenteditable: "true"});
+    document.body.append(typing);
+    typing.focus();
+    const page = s.page();
+    try {
+      await s.save();
+      ok(s.page() === page, "the page was swapped while typing");
+      ok(s.rec.dirty.has(s.path), "no longer waiting to be saved");
+      ok(!/20 m/.test(s.disk()), "written over the other device's file");
+    } finally { typing.remove(); }
+    await s.save();
+    has(s.disk(), "Fit the mast"); has(s.disk(), "Buy 20 m rope");
+    ok(!s.rec.dirty.has(s.path), "still waiting after the typing stopped");
+  });
+  test("#220 a page edited while the folder is read again is merged against the file it was edited from", async () => {
+    const s = await synced("Sync220h", "Boat.md", BOAT);
+    s.page().blocks[2].title = "Buy 20 m rope";
+    s.rec.dirty.add(s.path);
+    s.setDisk(BOAT + "- TODO Fit the mast\n");
+    await readInto(s.rec);                // Check the folder, or switching back to the area
+    await s.save();
+    has(s.disk(), "Fit the mast", "their line");
+    has(s.disk(), "Buy 20 m rope", "our edit");
+  });
+
   /* ============================================================
      Dates, clocks and repeats
      ============================================================ */
