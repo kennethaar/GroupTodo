@@ -2964,6 +2964,156 @@ var GTD_TEST = (() => {
   });
 
   /* ============================================================
+     Events, feelings and Reflect: the bullet journal (#185)
+     ============================================================ */
+  // Day pages n days back with these lines on them, and no intentions, put back afterwards.
+  const withWeek = async (days, fn) => {
+    const saved = new Map([[INTENTIONS_PATH, null]].concat(days.map(([n]) => [journalPath(shiftISO(T(), -n)), null])));
+    for (const p of saved.keys()) saved.set(p, V.pages.has(p) ? structuredClone(getPage(p)) : null);
+    try {
+      V.pages.delete(INTENTIONS_PATH);
+      for (const [n, text] of days) putPage(journalPath(shiftISO(T(), -n)), parsePage(text));
+      clearMemo();
+      await fn();
+    } finally {
+      for (const [p, page] of saved) if (page) putPage(p, page); else V.pages.delete(p);
+      clearMemo();
+      go("today");
+    }
+  };
+  test("#185 o and = start an event and a feeling, never a to do", () => {
+    eq(bujoKind("o Ran 5 km"), "ev");
+    eq(bujoKind("○ Ran 5 km"), "ev");
+    eq(bujoKind("= Light, proud"), "feel");
+    eq(bujoKind("o Ran", "TODO"), null, "a task is a task");
+    for (const t of ["only words", "o", "=12 counted", "obvious"]) eq(bujoKind(t), null, t);
+    eq(bujoText("o Ran 5 km"), "Ran 5 km");
+    eq(bujoText("= o Light"), "o Light", "only the first mark");
+    ok(!dayCandidate(newBlock({title: "o Ran 5 km"})), "an event is offered as a to do");
+    ok(!dayCandidate(newBlock({title: "= Drained"})), "a feeling is offered as a to do");
+    ok(dayCandidate(newBlock({title: "Ran 5 km"})), "a plain line is still asked about");
+  });
+  test("#185 an event and a feeling draw a quiet dot, without their mark", async () => {
+    const path = join(PAGES, "Test bujo lines.md");
+    putPage(path, parsePage("- o Ran 5 km\n  - = Light, proud\n- Plain line\n"));
+    clearMemo();
+    try {
+      openPage(path);
+      await settle();
+      const [ev] = getPage(path).blocks, feel = ev.children[0];
+      const line = b => document.querySelector('.blk[data-id="' + b.id + '"] > .line');
+      ok(line(ev).classList.contains("ev"), "the event's line is .ev");
+      eq(line(ev).querySelector(".txt").textContent, "Ran 5 km");
+      ok(line(feel).classList.contains("feel"), "the feeling's line is .feel");
+      eq(line(feel).querySelector(".txt").textContent, "Light, proud");
+      ok(!line(ev).querySelector(".tick"), "no tick on an event");
+      has(serializePage(getPage(path)), "\n- o Ran 5 km\n  - = Light, proud", "the file keeps the marks");
+    } finally { V.pages.delete(path); clearMemo(); go("today"); }
+  });
+  test("#185 · and a space turns a note into a to do as it is typed", async () => {
+    const path = join(PAGES, "Test bujo dot.md");
+    putPage(path, parsePage("- \n"));
+    clearMemo();
+    try {
+      openPage(path);
+      await settle();
+      const b = getPage(path).blocks[0];
+      const txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
+      txt.focus();
+      txt.textContent = "· Book next week's run";
+      txt.dispatchEvent(new Event("input"));
+      eq(b.state, "TODO", "a to do at once");
+      eq(b.title, "Book next week's run");
+      ok(document.querySelector('.blk[data-id="' + b.id + '"] > .line > .tick'), "with its tick");
+    } finally { V.pages.delete(path); clearMemo(); go("today"); }
+  });
+  test("#185 Reflect is a step and a tab only with something to reflect on", async () => {
+    const step = () => reviewSteps().flatMap(g => g.steps).find(s => s.doors.includes("reflect"));
+    await withWeek([], async () => {
+      ok(!reflectWanted(), "no intentions and no events, yet Reflect is wanted");
+      ok(!step(), "the step is there with nothing to reflect on");
+      ok(!subShown("review", "reflect"), "the tab is there with nothing to reflect on");
+    });
+    await withWeek([[2, "- o Ran 5 km\n  - = Light\n"]], async () => {
+      ok(step(), "no Reflect step with an event this week");
+      // A list of its own without the step gets it last; the built-in one has it under CREATIVE.
+      const all = reviewSteps().flatMap(g => g.steps);
+      eq(all[all.length - 1], step(), "last in the vault's own list");
+      const own = getPage(REVIEW_LIST_PATH);
+      V.pages.delete(REVIEW_LIST_PATH);
+      try { eq(reviewSteps().find(g => g.steps.some(s => s.doors.includes("reflect"))).title, "CREATIVE"); }
+      finally { if (own) putPage(REVIEW_LIST_PATH, own, {silent: true}); clearMemo(); }
+      ok(subShown("review", "reflect"), "no Reflect tab");
+      eq(reviewDoorCount("reflect"), "1 this week");
+    });
+  });
+  test("#185 the week: events with what is under them, lone feelings, and lines a feeling hangs under", async () => {
+    await withWeek([
+      [1, "- o Budget meeting with Ola\n  - = Drained\n  - TODO Block Friday afternoons\n- Lunch\n  - = Restless\n" +
+          "- = Tired all morning\n- Plain note\n  - plain under it\n"],
+      [8, "- o Too long ago\n"],
+    ], async () => {
+      const log = reflectLog();
+      eq(log.map(d => d.day), [shiftISO(T(), -1)], "only the last seven days");
+      eq(log[0].items.map(b => b.title), ["o Budget meeting with Ola", "Lunch", "= Tired all morning"]);
+      go("review", {sub: "reflect"});
+      await settle();
+      eq(content().querySelectorAll(".reflog .refitem").length, 3, "one row per entry");
+      ok(content().querySelector(".reflog .bl-line.ev"), "the event drawn as one");
+    });
+  });
+  test("#185 Toward and Away are one pick, written under this week's #reflection line", async () => {
+    await withWeek([[0, "- o Ran 5 km with Alice\n"]], async () => {
+      const today = journalPath(T()), ev = getPage(today).blocks[0];
+      const pills = async () => { go("review", {sub: "reflect"}); await settle(); return [...content().querySelectorAll(".refpick .fchip")]; };
+      const picks = () => (reflectionBlock(false)?.block.children || []).map(b => b.title);
+      (await pills())[0].click();
+      const id = blockProp(ev, "id");
+      ok(id, "the event got an id:: to be pointed at");
+      eq(reflectionBlock(false).block.title, "#reflection Week " + isoWeek(T())[0]);
+      eq(picks(), ["toward:: ((" + id + "))"]);
+      eq((await pills())[0].getAttribute("aria-pressed"), "true", "Toward is shown as picked");
+      eq(content().querySelector(".refnotes .bref").textContent, "Ran 5 km with Alice", "the pick reads as the event, without its o");
+      (await pills())[1].click();
+      eq(picks(), ["away:: ((" + id + "))"], "Away takes its place");
+      (await pills())[1].click();
+      eq(picks(), [], "picking Away again takes it back");
+      ok(content().querySelector(".refnotes .blk"), "the week's line is there to write under");
+      has(serializePage(parsePage(serializePage(getPage(today)))), "#reflection Week", "kept in the file");
+    });
+  });
+  test("#185 an intention typed in Reflect is a horizon page, and shows in Horizons", async () => {
+    await withWeek([], async () => {
+      go("review", {sub: "reflect"});
+      await settle();
+      const input = content().querySelector(".refaims input");
+      input.value = "Protect deep-work energy";
+      input.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter"}));
+      eq(intentions(), ["Protect deep-work energy"]);
+      ok(isHorizonPage(INTENTIONS_PATH), "Intentions.md is type:: horizon");
+      ok(reflectWanted(), "intentions alone make Reflect a step");
+      delete getPage(INTENTIONS_PATH).props.type;
+      migrateCancelled();
+      ok(V.pages.has(INTENTIONS_PATH), "a hand-written Intentions.md was moved to cancelled");
+      go("horizons", {horizonArea: Spaces.active});
+      await settle();
+      has(content().textContent, "Protect deep-work energy", "Horizons");
+    });
+  });
+  test("#185 an event and its feeling show under the person it links to", () => {
+    const path = join(PAGES, "Test bujo backlink.md");
+    putPage(path, parsePage("- o Lunch with [[p/Lars Haugen]]\n  - = Glad we talked\n"));
+    clearMemo();
+    try {
+      const sec = backlinksSection(personPath("Lars Haugen"));
+      ok(sec && sec.querySelector(".bl-line.ev"), "the event among the linked references");
+      const feel = sec.querySelector(".bl-line.feel");
+      ok(feel, "its feeling under it");
+      eq(feel.querySelector(".bl-txt").textContent, "Glad we talked");
+    } finally { V.pages.delete(path); clearMemo(); }
+  });
+
+  /* ============================================================
      Timer
      ============================================================ */
   test("timer starts and stops", () => {

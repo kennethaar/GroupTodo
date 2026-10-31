@@ -5,6 +5,21 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.29.0 - 2026-10-31
+
+- A bullet journal in every area (#185). A line that starts with `o ` is an
+  event and one that starts with `= ` is a feeling; under another line, a
+  feeling is about that line. Their dot turns into a quiet ○ or =, they are
+  never offered as to dos when you go through your day pages, and they show
+  with their feelings under the person or project they link to. Typing `· `
+  at the start of a line makes it a to do. Nothing to switch on.
+- The weekly review has a Reflect step and tab once an area has intentions
+  (`pages/_/Intentions.md`) or an event or a feeling this week. It shows your
+  intentions, the week's events and feelings day by day, and Toward and Away
+  on each. A pick is written as `toward:: ((id))` or `away:: ((id))` under a
+  `#reflection Week N` line on your day page, and you write notes and to dos
+  under that line. Intentions also show in the area's Horizons.
+
 ## 1.28.0 - 2026-10-30
 
 - Enter takes a suggestion now (#190): a [[ link, an @ person or context, a

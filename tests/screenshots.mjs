@@ -53,6 +53,19 @@ const SETUP = {
     clearMemo();
     setTrackerChart("water", "Drinks"); setTrackerChart("coffee", "Drinks");
     go("trackers");`,
+  // Two intentions and three days of events and feelings, one of them picked.
+  "review-reflect": `window.REF_SHOT = new Map([[INTENTIONS_PATH, null]].concat([2, 1, 0].map(n => [journalPath(shiftISO(todayISO(), -n)), null])));
+    for (const p of REF_SHOT.keys()) REF_SHOT.set(p, V.pages.has(p) ? structuredClone(getPage(p)) : null);
+    putPage(INTENTIONS_PATH, parsePage("type:: horizon\\n\\n- Protect deep-work energy\\n- Build a steady running habit\\n"), {silent: true});
+    const day = (n, text) => putPage(journalPath(shiftISO(todayISO(), -n)), parsePage(text), {silent: true});
+    day(2, "- o Budget meeting with [[p/Lars Haugen]]\\n  - = Drained, and annoyed that I said yes to more work\\n" +
+      "  - I say yes before I have looked at my week\\n  - TODO Block Friday afternoons for my own projects\\n");
+    day(1, "- o Ran 5 km with [[p/Ingrid Solberg]]\\n  - = Light, proud, warm in the body\\n");
+    day(0, "- = Restless all morning, no clear reason\\n");
+    clearMemo();
+    setReflectPick(journalPath(shiftISO(todayISO(), -1)), getPage(journalPath(shiftISO(todayISO(), -1))).blocks[0], "toward");
+    reflectionBlock(false).block.children.push(newBlock({title: "In bed by 22:30 on weekdays"}, false));
+    clearMemo(); go("review", {sub: "reflect"});`,
 };
 /* Put back after the picture what SETUP added for it. */
 const AFTER = {
@@ -60,6 +73,8 @@ const AFTER = {
   trackers: `for (const p of allPages(isJournalPath)) for (const k of TRK_SHOT.keys) delete getPage(p).props[k];
     for (const p of TRK_SHOT.made) V.pages.delete(p);
     for (const n of ["water", "coffee"]) V.pages.delete(trackerPagePath(n));
+    clearMemo(); render();`,
+  "review-reflect": `for (const [p, page] of REF_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
     clearMemo(); render();`,
 };
 // Only part of the screen, for a topic about one strip of it.
