@@ -3189,6 +3189,170 @@ var GTD_TEST = (() => {
   });
 
   /* ============================================================
+     The week: a week page and the days under it (#192)
+     ============================================================ */
+  // Pages put in for one test and taken out after it, whatever happens.
+  const withPages = async (pages, fn) => {
+    const saved = new Map(Object.keys(pages).map(p => [p, getPage(p) || null]));
+    for (const [p, text] of Object.entries(pages)) putPage(p, parsePage(text), {silent: true});
+    clearMemo();
+    try { await fn(); } finally {
+      for (const [p, page] of saved) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
+      clearMemo();
+    }
+  };
+  const dated = (b, d, time) => { setDue(b, d, time); return b; };
+  test("#192 a week by its ISO name: its Monday, its days, and a 53rd week", () => {
+    eq(weekOf("2026-10-30"), "2026-W44");
+    eq(weekMonday("2026-W44"), "2026-10-26");
+    eq(weekDays("2026-W44"), ["2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31", "2026-11-01"]);
+    eq(weekOf("2027-01-01"), "2026-W53", "1 Jan 2027 is in the last week of 2026");
+    eq(shiftWeek("2026-W53", 1), "2027-W01");
+    eq(weekMonday("2025-W53"), null, "2025 has 52 weeks");
+    const range = new Intl.DateTimeFormat(undefined, {day: "numeric", month: "short", year: "numeric"});
+    eq(weekRange("2026-W44"), range.formatRange(parseISO("2026-10-26"), parseISO("2026-11-01")));
+    ok(!weekRange("2026-W46", false).includes("2026"), "without the year");
+  });
+  test("#192 a week page lives beside the day pages, and [[2026-W44]] opens the Journal's week", () => {
+    const path = journalPath("2003-W10");
+    eq(path, join(JOURNALS, journalOwner(), "2003-W10.md"));
+    ok(isWeekPath(path) && !isWeekPath(journalPath("2003-03-03")), "a week page, not a day page");
+    eq(resolveWikiPath("2003-W10"), path);
+    eq(pageRef(path), "2003-W10");
+    eq(journalDate(path), "2003-03-03", "it stands for its Monday");
+    openLinkTarget("2003-W10");
+    eq([state.view, state.sub, state.todayWeek], ["today", "week", "2003-W10"]);
+    ok(!V.pages.has(path), "looking at a past week makes no file");
+    go("next");
+  });
+  test("#192 a new week page takes last week's every week lines, unticked, and leaves the rest", async () => {
+    const prev = journalPath("2099-W09"), next = journalPath("2099-W10");
+    await withPages({[prev]: "- DONE Water the plants every week\n  closed:: [[2099-03-01]]\n" +
+        "- DONE Send the report\n- TODO Back up the vault\n  repeat:: weekly\n" +
+        "- Home\n  - DOING Wash the car (every week)\n    SCHEDULED:: [[2099-02-27]]\n- TODO Fix the gate every 2 weeks\n"}, async () => {
+      try {
+        eq(ensureWeek("2099-W10"), next);
+        const page = getPage(next);
+        eq(page.props.title, "2099-W10");
+        eq(page.blocks.map(b => [b.state, b.title]), [["TODO", "Water the plants every week"], ["TODO", "Back up the vault"],
+          ["TODO", "Wash the car (every week)"]]);
+        ok(!blockProp(page.blocks[0], "closed") && !dueDate(page.blocks[2]), "no done date, no old date");
+        eq(blockProp(page.blocks[1], "repeat"), "weekly", "still a routine");
+        eq(getPage(prev).blocks[1].state, "DONE", "last week is left as it was");
+        eq(ensureWeek("2099-W10"), next);
+        eq(getPage(next).blocks.length, 3, "made once");
+      } finally { V.pages.delete(next); }
+    });
+  });
+  test("#192 ticking a weekly routine on a week page asks for no next one", async () => {
+    const path = journalPath("2099-W20");
+    await withPages({[path]: "- TODO Back up the vault\n  repeat:: weekly\n"}, async () => {
+      setBlockState(path, getPage(path).blocks[0], "DONE");
+      await settle();
+      eq(getPage(path).blocks.length, 1, "no copy made");
+      ok(!document.querySelector(".modal"), "no question asked");
+    });
+  });
+  test("#192 a task on a week page is a next action, dated from its Monday", async () => {
+    const id = weekOf(T()), path = journalPath(id);
+    await withPages({[path]: "- TODO Book next week's site visits [[c/phone]]\n"}, () => {
+      const a = myOpen().find(x => x.path === path);
+      ok(a, "on the lists");
+      eq(a.added, weekMonday(id));
+      eq(a.context, "phone");
+    });
+  });
+  test("#192 the week: its page, then seven days with only what is dated, a word only when out of the ordinary", async () => {
+    const id = shiftWeek(weekOf(T()), -1), [mon, tue, wed, thu] = weekDays(id);
+    const path = scratchProject("week", [["TODO", "Reply to the parking email [[c/computer]]"], ["TODO", "Clean the gutters"],
+      ["WAIT", "Quote from Havbris Seafood"], ["TODO", "Send the depot guide"], ["DONE", "Send minutes to the board"]]);
+    const [late, span, wait, timed, done] = getPage(path).blocks;
+    dated(late, mon); dated(wait, wed); dated(timed, wed, "15:00"); dated(done, tue);
+    span.props.SCHEDULED = "[[" + tue + "]]"; span.props.DEADLINE = "[[" + thu + "]]";
+    const day = journalPath(wed);
+    await withPages({[day]: "- #meeting Dentist\n  time:: 14:00\n"}, async () => {
+      try {
+        go("today", {sub: "week", todayWeek: id});
+        await settle();
+        eq(content().querySelector(".todayhead h1").textContent, id);
+        has(content().querySelector(".todayhead .sub").textContent, "late");
+        ok(content().querySelector(".wkcard"), "the week page");
+        const days = [...content().querySelectorAll(".wkday")];
+        eq(days.length, 7);
+        const words = d => [...days[weekDays(id).indexOf(d)].querySelectorAll(".wkitem")]
+          .map(n => [n.querySelector(".wktext").textContent.trim(), (n.querySelector(".wksub") || {}).textContent || ""]);
+        const daysLate = n => "! " + dateDiffDays(n, T()) + "d late";
+        eq(words(mon).find(w => /parking/.test(w[0])), ["@computer Reply to the parking email", daysLate(mon)]);
+        eq(words(tue).filter(w => /gutters|minutes/.test(w[0])), [["Send minutes to the board", ""], ["Clean the gutters", "starts"]]);
+        eq(words(wed).filter(w => /Dentist|depot|Havbris/.test(w[0])),
+          [["14:00 Dentist", ""], ["Send the depot guide", daysLate(wed)], ["Quote from Havbris Seafood", "waiting"]]);
+        eq(words(thu).find(w => /gutters/.test(w[0])), ["Clean the gutters", daysLate(thu)]);
+        const tick = [...days[1].querySelectorAll(".wkitem")].find(n => /minutes/.test(n.textContent)).querySelector(".tick");
+        tick.click();
+        eq(done.state, "TODO", "ticked again in place");
+      } finally { V.pages.delete(path); clearMemo(); }
+    });
+  });
+  test("#192 Day and Week: the week of the day, and back to today or the week's Monday", async () => {
+    const past = shiftISO(T(), -21), id = weekOf(past);
+    go("today", {sub: null, todayDay: past});
+    await settle();
+    content().querySelector(".jmode button:nth-child(2)").click();
+    eq([state.sub, state.todayWeek], ["week", id]);
+    content().querySelector(".jmode button:first-child").click();
+    eq([state.sub, state.todayDay], [null, weekMonday(id)]);
+    go("today", {sub: "week", todayWeek: null});
+    await settle();
+    content().querySelector(".jmode button:first-child").click();
+    eq([state.sub, state.todayDay], [null, null], "this week's Day is today");
+  });
+  test("#192 the arrows step a week, and Today comes back to this week", async () => {
+    const now = weekOf(T());
+    go("today", {sub: "week", todayWeek: null});
+    await settle();
+    content().querySelector(".weeknav .dayarrow:last-child").click();
+    eq(state.todayWeek, shiftWeek(now, 1));
+    content().querySelector(".weeknav .dayarrow:first-child").click();
+    content().querySelector(".weeknav .dayarrow:first-child").click();
+    eq(state.todayWeek, shiftWeek(now, -1));
+    content().querySelector(".weeknav .wkjump").click();
+    eq(state.todayWeek, null);
+    eq(content().querySelector(".todayhead h1").textContent, now);
+    content().querySelectorAll(".wkdayhead")[0].click();
+    eq([state.sub, state.todayDay], [null, weekMonday(now) === T() ? null : weekMonday(now)], "a day's name opens the day");
+  });
+  test("#192 the weekly review: what is left from past weeks, oldest first, then this week and the two after", async () => {
+    const old = shiftWeek(weekOf(T()), -3), path = journalPath(old);
+    const ahead = [0, 1, 2].map(n => journalPath(shiftWeek(weekOf(T()), n))).filter(p => !V.pages.has(p));
+    const proj = scratchProject("review weeks", [["TODO", "Reply to the parking email"]]);
+    dated(getPage(proj).blocks[0], shiftISO(T(), -2));
+    await withPages({[path]: "- TODO Send board tax receipts\n- DONE Water the plants every week\n"}, async () => {
+      try {
+        go("review", {sub: "weeks"});
+        await settle();
+        const rows = [...content().querySelectorAll(".card > .wkitem")].map(n => n.textContent);
+        const at = t => rows.findIndex(r => r.includes(t));
+        ok(at("Send board tax receipts") >= 0 && at("Reply to the parking email") > at("Send board tax receipts"), "oldest first: " + rows.join(" | "));
+        ok(at("Water the plants") < 0, "done is not left over");
+        has(rows[at("Send board tax receipts")], old + " ↗");
+        has(rows[at("Reply to the parking email")], "! 2d late");
+        const tabs = [...content().querySelectorAll(".wkseg button")];
+        eq(tabs.length, 3);
+        has(tabs[1].textContent, "W" + weekNo(shiftWeek(weekOf(T()), 1)));
+        tabs[1].click();
+        await settle();
+        ok(V.pages.has(journalPath(shiftWeek(weekOf(T()), 1))), "next week's page is there to plan in");
+        eq(content().querySelectorAll(".wkday").length, 7);
+      } finally {
+        REVIEW_WEEK = 0;
+        V.pages.delete(proj);
+        for (const p of ahead) V.pages.delete(p);
+        clearMemo();
+      }
+    });
+  });
+
+  /* ============================================================
      Timer
      ============================================================ */
   test("timer starts and stops", () => {

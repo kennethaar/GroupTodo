@@ -67,6 +67,18 @@ const SETUP = {
     reflectionBlock(false).block.children.push(newBlock({title: "In bed by 22:30 on weekdays"}, false));
     clearMemo(); go("review", {sub: "reflect"});`,
 };
+/* This week's page with its routines and a focus line, and last week's with
+   what was left open on it, gone again after the picture (#192). */
+const WEEK_PAGES = `const wk = n => shiftWeek(weekOf(todayISO()), n);
+    window.WEEK_SHOT = new Map([0, -1].map(n => [journalPath(wk(n)), null]));
+    for (const p of WEEK_SHOT.keys()) WEEK_SHOT.set(p, V.pages.has(p) ? structuredClone(getPage(p)) : null);
+    putPage(journalPath(wk(0)), parsePage("title:: " + wk(0) + "\\n\\n- DONE Water the plants every week [[c/home]]\\n" +
+      "- TODO Back up the vault every week [[c/computer]]\\n- TODO Weekly review every week\\n" +
+      "- TODO Book next week's site visits [[c/phone]]\\n- Focus: get the depot guide to [[p/Ingrid Solberg]] before the rollout\\n"), {silent: true});
+    putPage(journalPath(wk(-1)), parsePage("title:: " + wk(-1) + "\\n\\n- TODO Send the board tax receipts\\n- DONE Water the plants every week\\n"), {silent: true});
+    clearMemo();`;
+SETUP["journal-week"] = WEEK_PAGES + ` go("today", {sub: "week", todayWeek: null});`;
+SETUP["review-weeks"] = WEEK_PAGES + ` REVIEW_WEEK = 0; go("review", {sub: "weeks"});`;
 /* Put back after the picture what SETUP added for it. */
 const AFTER = {
   chores: `for (const p of CHORE_SHOT) V.pages.delete(p); clearMemo(); PREF.set("chores.who", ""); render();`,
@@ -77,6 +89,8 @@ const AFTER = {
   "review-reflect": `for (const [p, page] of REF_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
     clearMemo(); render();`,
 };
+AFTER["journal-week"] = AFTER["review-weeks"] = `for (const [p, page] of WEEK_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
+    clearMemo(); render();`;
 // Only part of the screen, for a topic about one strip of it.
 const CLIP = {topbar: {x: 0, y: 0, width: W, height: 140}};
 

@@ -5,6 +5,27 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.32.0 - 2026-10-31
+
+- Week pages in the Journal (#192). Day | Week beside the date switches
+  between a day and its ISO week, 2026-W44; ◀ and ▶ step a week, Today comes
+  back to this one. The week has a page of its own,
+  journals/<your name>/2026-W44.md, for what belongs to the week and to no
+  one day: routines, goals, a focus. Under it the seven days show only what
+  is dated on them: meetings and times first, then what is due, what you
+  wait for, what starts. A word shows under a line only when it is out of
+  the ordinary: "! 2d late", a time, "starts", "waiting". Tick a task off in
+  its day; a day's name opens that day. On a phone the days stand one under
+  the other, an empty day as one line. The title says how many are late.
+- A new week page takes the lines saying "every week" (or repeating weekly)
+  from the last week page, unticked. Ticking one off on a week page no longer
+  asks about the next one: next week's page brings it.
+- [[2026-W44]] opens that week in the Journal.
+- The weekly review has a Weeks tab: what is still open on a past week page,
+  and what is late, in one list, oldest first, each with a pill to where it
+  was written. Under it This week, Next week and the week after, each with
+  its week page and its days, to plan in without leaving the review.
+
 ## 1.31.0 - 2026-10-31
 
 - In the sidebar, a context with contexts inside it folds them away (#204):
