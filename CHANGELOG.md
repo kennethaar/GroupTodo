@@ -5,6 +5,21 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.15.0 - 2026-10-31
+
+- A folder synced with Syncthing or another sync app no longer has its
+  pages written over by an old copy (#220). The app reads a folder when it
+  opens, so a tab left open kept the old version of a page that another
+  device changed, and the next save put the old version back. That also
+  made Syncthing leave conflict copies.
+  - Before a page is saved, its file is read again. If another device has
+    changed it, the two are merged against the version both started from:
+    a line added, changed or taken out on either side carries over, and
+    each field of the page keeps the latest edit.
+  - Where both devices changed the same line, both versions are kept and
+    the app says which page to check. Nothing is lost.
+  - While you are typing, the merge waits until you stop.
+
 ## 1.14.3 - 2026-10-30
 
 - A phone's folder is listed one folder at a time again (#188). Since 1.11.6
