@@ -3455,14 +3455,17 @@ var GTD_TEST = (() => {
     eq(content().querySelectorAll(".rstep:not(.now) .textbtn").length, 0, "buttons on a step you are not on");
     go("today");
   });
-  test("#95 the review's sections fold to one line each, all folded until you open one", async () => {
+  test("#95 every headline of the review folds, all folded until you open one", async () => {
     const keep = PREF.get("review.open", "");
     try {
       PREF.set("review.open", "");
       go("review", {sub: "steps"});
       await settle();
       const folds = () => [...content().querySelectorAll(".rgroup")];
-      ok(folds().length && folds().every(f => !f.open), "a section open by itself");
+      ok(folds().length && folds().every(f => !f.open), "a headline open by itself");
+      const loose = [...content().querySelectorAll(".group")].filter(g => g.tagName !== "SUMMARY").map(g => g.textContent);
+      eq(loose, [], "headlines that do not fold");
+      ok(content().querySelector("#rsec-weeks .rgroup"), "the weeks fold too");
       eq(folds().reduce((k, f) => k + f.querySelectorAll(".rstep").length, 0),
         reviewSteps().reduce((k, g) => k + g.steps.length, 0), "every step is in a section");
       const now = content().querySelector(".rstep.now");
@@ -3472,6 +3475,10 @@ var GTD_TEST = (() => {
       render();
       await settle();
       ok(folds()[0].open, "an opened section stays open");
+      goReviewSection("weeks");
+      await settle();
+      await new Promise(r => requestAnimationFrame(() => setTimeout(r, 20)));
+      ok([...content().querySelectorAll("#rsec-weeks details")].every(d => d.open), "going to a headline opens it");
     } finally { PREF.set("review.open", keep); go("today"); }
   });
 

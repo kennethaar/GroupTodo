@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.34.1 - 2026-10-31
+
+- Every headline on the weekly review's Steps page folds (#95), not only
+  the step sections: Unfinished from past weeks, Calendar and coming weeks,
+  Worth a look and each list under it. All are folded until you open one,
+  and one you open stays open on this device. A step or a nudge that takes
+  you to one of them opens it.
+
 ## 1.34.0 - 2026-10-31
 
 - The weekly review's steps fold (#95): each section (Clear, Current,
