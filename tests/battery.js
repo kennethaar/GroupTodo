@@ -1560,6 +1560,88 @@ var GTD_TEST = (() => {
     }
   });
 
+  /* ---------- the key that takes a suggestion (#190) ---------- */
+  {
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    // Writes "Ring [[Lars Hau" on a fresh line, as if typed, so the list opens.
+    const typeLink = async (title) => {
+      const path = scratchProject(title, [["TODO", "x"]]);
+      openPage(path);
+      await settle();
+      const b = getPage(path).blocks[0];
+      focusBlock(b.id);
+      await frame();
+      const txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
+      txt.textContent = "Ring [[Lars Hau";
+      const r = document.createRange(); r.selectNodeContents(txt); r.collapse(false);
+      getSelection().removeAllRanges(); getSelection().addRange(r);
+      txt.dispatchEvent(new Event("input", {bubbles: true}));
+      await frame();
+      ok(SUGGEST && SUGGEST.host === txt, "the [[ list did not open");
+      return {path, txt};
+    };
+    const press = async (txt, key) => {
+      txt.dispatchEvent(new KeyboardEvent("keydown", {key, bubbles: true, cancelable: true}));
+      await frame(); await frame();
+    };
+    const withKeys = async (k, fn) => {
+      PREF.set("suggest.accept", k);
+      try { await fn(); } finally { PREF.set("suggest.accept", "enter"); suggestClose(); go("today"); }
+    };
+    test("#190 Enter takes a suggestion by default", async () => {
+      eq(suggestKeys(), "enter", "the default");
+      await withKeys("enter", async () => {
+        const {path, txt} = await typeLink("enter takes");
+        has(SUGGEST.box.textContent, "Enter takes it", "the hint");
+        await press(txt, "Enter");
+        has(txt.textContent, "[[p/Lars Haugen]]", "the link went in");
+        eq(getPage(path).blocks.length, 1, "Enter also made a new line");
+      });
+    });
+    test("#190 with Enter chosen, Tab closes the list and does not take the suggestion", async () => {
+      await withKeys("enter", async () => {
+        const {txt} = await typeLink("tab indents");
+        await press(txt, "Tab");
+        ok(!txt.textContent.includes("Lars Haugen]]"), "Tab took the suggestion");
+        ok(!SUGGEST, "the list stayed open");
+      });
+    });
+    test("#190 with Tab chosen, Enter ends the line and Tab takes it", async () => {
+      await withKeys("tab", async () => {
+        const {path, txt} = await typeLink("tab takes");
+        has(SUGGEST.box.textContent, "Tab takes it", "the hint");
+        await press(txt, "Enter");
+        ok(!txt.textContent.includes("Lars Haugen]]"), "Enter took the suggestion");
+        eq(getPage(path).blocks.length, 2, "Enter made no new line");
+        const again = await typeLink("tab takes 2");
+        await press(again.txt, "Tab");
+        has(again.txt.textContent, "[[p/Lars Haugen]]", "Tab took nothing");
+      });
+    });
+    test("#190 a word completion takes only Tab, whatever is chosen", () => {
+      for (const k of ["enter", "tab", "both"]) {
+        PREF.set("suggest.accept", k);
+        eq(suggestTakes("Enter", "word"), false, k + ": Enter took a word");
+        eq(suggestTakes("Tab", "word"), true, k + ": Tab did not take a word");
+        eq(suggestTakes("Enter", "slash"), k !== "tab", k + ": Enter on a command");
+        eq(suggestTakes("Tab", "link"), k !== "enter", k + ": Tab on a link");
+      }
+      PREF.set("suggest.accept", "enter");
+    });
+    test("#190 Settings has a Writing pick for the key", async () => {
+      go("checklists");
+      await settle();
+      const seg = content().querySelector(".writeset .seg");
+      ok(seg, "no Writing pick on Settings");
+      eq([...seg.children].map(b => b.textContent), ["Enter", "Tab", "Tab or Enter"]);
+      eq(seg.querySelector(".on").textContent, "Enter", "the default is picked");
+      seg.children[1].click();
+      eq(PREF.get("suggest.accept"), "tab", "picking Tab");
+      seg.children[0].click();
+      eq(PREF.get("suggest.accept"), "enter", "picking Enter");
+    });
+  }
+
   /* ---------- areas: one place, removing, onboarding (#193) ---------- */
   const closeModals = () => { for (let i = 0; i < 4 && $("#modalRoot").firstChild; i++) closeModal(); };
   test("#193 the welcome screen offers coming back with your folders", () => {

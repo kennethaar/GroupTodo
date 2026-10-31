@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.28.0 - 2026-10-30
+
+- Enter takes a suggestion now (#190): a [[ link, an @ person or context, a
+  # project, a date or a / command. Tab indents again while a list is open.
+  Settings > Writing picks Enter, Tab or Tab or Enter for every list on this
+  device. Shift+Enter still ends the line without taking it, and a word
+  completion only ever takes Tab, so Enter after a word is still a new line.
+
 ## 1.27.0 - 2026-10-30
 
 - Any page can have aliases now, not only people, organisations and areas
