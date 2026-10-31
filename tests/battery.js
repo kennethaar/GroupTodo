@@ -3455,6 +3455,25 @@ var GTD_TEST = (() => {
     eq(content().querySelectorAll(".rstep:not(.now) .textbtn").length, 0, "buttons on a step you are not on");
     go("today");
   });
+  test("#95 the review's sections fold to one line each, all folded until you open one", async () => {
+    const keep = PREF.get("review.open", "");
+    try {
+      PREF.set("review.open", "");
+      go("review", {sub: "steps"});
+      await settle();
+      const folds = () => [...content().querySelectorAll(".rgroup")];
+      ok(folds().length && folds().every(f => !f.open), "a section open by itself");
+      eq(folds().reduce((k, f) => k + f.querySelectorAll(".rstep").length, 0),
+        reviewSteps().reduce((k, g) => k + g.steps.length, 0), "every step is in a section");
+      const now = content().querySelector(".rstep.now");
+      if (now) has(now.closest(".rgroup").querySelector("summary").textContent, "next: ", "the folded line says the next step");
+      folds()[0].open = true;
+      folds()[0].dispatchEvent(new Event("toggle"));
+      render();
+      await settle();
+      ok(folds()[0].open, "an opened section stays open");
+    } finally { PREF.set("review.open", keep); go("today"); }
+  });
 
   /* ============================================================
      Timer

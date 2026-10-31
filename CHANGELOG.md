@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.34.0 - 2026-10-31
+
+- The weekly review's steps fold (#95): each section (Clear, Current,
+  Creative) is one line, all folded until you open one. The line says how
+  many of its steps are done and, in the section you are on, the next step.
+  A section you open stays open on this device. A list without sections
+  folds as one, under Steps.
+
 ## 1.33.0 - 2026-10-31
 
 - Clarify, one line at a time (#95). The weekly review's Day pages tab is
