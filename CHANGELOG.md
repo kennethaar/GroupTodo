@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.31.0 - 2026-10-31
+
+- In the sidebar, a context with contexts inside it folds them away (#204):
+  ▸ beside @home shows Home/Kitchen and the rest, ▾ folds them again. They
+  start folded, so a long list stays short, and the one you are looking at
+  shows anyway. Which ones are open is remembered on this device.
+
 ## 1.30.1 - 2026-10-31
 
 - Typing @ finds a child context by its own name (#208): "@out" offers
