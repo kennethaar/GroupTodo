@@ -1669,6 +1669,24 @@ var GTD_TEST = (() => {
       seg.children[0].click();
       eq(PREF.get("suggest.accept"), "enter", "picking Enter");
     });
+    test("#218 Calendars are in a private area's Settings, not on the Journal", async () => {
+      go("today");
+      await settle();
+      ok(!content().querySelector(".calchip"), "no Calendars button on the Journal");
+      ok(!content().querySelector('.todayicon[aria-label="Calendars"], .todayicon[title="Calendars"]'), "no Calendars icon on the Journal");
+      go("checklists");
+      await settle();
+      ok(calAreaShared(Spaces.active), "the demo's area is shared");
+      ok(!content().querySelector(".calset"), "not in a shared area's Settings");
+      const n = "Test218 private", back = Spaces.active;
+      await createSpace(n, "local");
+      try {
+        await openSpace(n);
+        go("checklists");
+        await settle();
+        ok(content().querySelector(".calset .calchip"), "Calendars in a private area's Settings");
+      } finally { await openSpace(back); await removeArea(n); go("today"); }
+    });
   }
 
   /* ---------- areas: one place, removing, onboarding (#193) ---------- */

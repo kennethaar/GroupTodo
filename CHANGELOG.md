@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.36.0 - 2026-10-31
+
+- Calendars moved from the Journal header to Settings (#218), and show there
+  only in a private area: the one place a calendar comes into. The ↻ to fetch
+  now goes with it. The phone's 📅 icon on the Journal is gone too; a
+  calendar that did not come in is still said on Today.
+
 ## 1.35.1 - 2026-10-31
 
 - A new project made from a line starts with the line's words as its name
