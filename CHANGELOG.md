@@ -5,6 +5,23 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.33.0 - 2026-10-31
+
+- Clarify, one line at a time (#95). The weekly review's Day pages tab is
+  now Clarify: instead of a whole day page at once, it shows one loose line
+  from your day pages, oldest first, and asks what it is. Seven answers in
+  three groups: something to do (to do, waiting for, project), not now
+  (someday/maybe, an idea to explore as a note of its own), nothing to do
+  (done already, leave it as a note). Each answer says what it writes and
+  the key that does the same on a page (Alt+1, Alt+2, Alt+Z, Ctrl+Enter).
+  Click an answer, or aim with its number or first letter and press Enter;
+  Backspace undoes the last one. A day is marked gone through when each of
+  its lines has an answer.
+- The Steps list is quieter: only the step you are on shows what it means
+  and its buttons; the others are one line each.
+- The review's tabs follow the order of the steps: Steps, Clarify, Actions,
+  Projects, Reflect.
+
 ## 1.32.1 - 2026-10-31
 
 - The look back and the look ahead are on the Weekly review page itself,

@@ -3374,6 +3374,89 @@ var GTD_TEST = (() => {
   });
 
   /* ============================================================
+     Clarify: the day pages' loose lines, one at a time (#95)
+     ============================================================ */
+  // Day pages n days back with these lines; every other day put aside, and the deck fresh.
+  const withDays = async (days, fn) => {
+    const mine = days.map(([n]) => journalPath(shiftISO(T(), -n)));
+    const others = daysToClarify().filter(p => !mine.includes(p));
+    const keep = [PREF.get("clarify.dealt", ""), CL];
+    try {
+      for (const p of others) getPage(p).props.clarified = "test";
+      PREF.set("clarify.dealt", "");
+      CL = {pending: null, skip: new Set(), undo: null, aim: 0};
+      await withPages(Object.fromEntries(days.map(([n, text]) => [journalPath(shiftISO(T(), -n)), text])), fn);
+    } finally {
+      for (const p of others) if (getPage(p)) delete getPage(p).props.clarified;
+      PREF.set("clarify.dealt", keep[0]);
+      CL = keep[1];
+      clearMemo();
+      go("today");
+    }
+  };
+  const showClarify = async () => { go("review", {sub: "days"}); await settle(); return content(); };
+  const press = k => document.body.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true}));
+  test("#95 Clarify deals one loose line at a time, oldest day first, and says what each answer writes", async () => {
+    await withDays([[3, "- Call the plumber\n- o Ran 5 km\n- Meeting notes\n  - Ask Kari about the budget\n"],
+      [1, "- TODO Already a task\n- Plan the summer party\n"]], async () => {
+      const d3 = journalPath(shiftISO(T(), -3));
+      eq(clarifyDeck().map(r => plainTitle(r.block.title)),
+        ["Call the plumber", "Meeting notes", "Ask Kari about the budget", "Plan the summer party"]);
+      let c = await showClarify();
+      eq(c.querySelectorAll(".clcard").length, 1, "one line on the table");
+      eq(c.querySelector(".clcard h3").textContent, "Call the plumber");
+      eq(c.querySelectorAll(".clgroup").length, 3, "to do, not now, nothing to do");
+      eq([...c.querySelectorAll(".clans b")].map(n => n.textContent), CL_ANSWERS.map(a => a.label));
+      has(c.querySelector(".clhow").textContent, "Ctrl+Enter", "the answer teaches its key");
+      c.querySelector(".clans").click();
+      eq(getPage(d3).blocks[0].state, "TODO", "To do");
+      c = await showClarify();
+      eq(c.querySelector(".clcard h3").textContent, "Meeting notes");
+      c.querySelectorAll(".clans")[6].click();
+      c = await showClarify();
+      ok(!getPage(d3).blocks[2].state, "left as a note");
+      eq(c.querySelector(".clcard h3").textContent, "Ask Kari about the budget");
+      has(c.querySelector(".cleye").textContent, "Meeting notes", "says what it is written under");
+      press("d");
+      ok(content().querySelectorAll(".clans")[5].classList.contains("on"), "a letter aims at Done already");
+      press("Enter");
+      await settle();
+      eq(getPage(d3).blocks[2].children[0].state, "DONE");
+      ok(getPage(d3).props.clarified, "the day is stamped when each line on it has an answer");
+      eq(content().querySelector(".clcard h3").textContent, "Plan the summer party", "on to the next day");
+      press("Backspace");
+      await settle();
+      ok(!getPage(d3).blocks[2].children[0].state, "Backspace takes the answer back");
+      ok(!getPage(d3).props.clarified, "and the day is open again");
+      eq(content().querySelector(".clcard h3").textContent, "Ask Kari about the budget");
+    });
+  });
+  test("#95 Someday/maybe is Alt+2 on the line: a project on that shelf, linked from it", async () => {
+    await withDays([[2, "- Learn to sail\n"]], async () => {
+      const day = journalPath(shiftISO(T(), -2)), proj = join(DIRS.someday, slugify("Learn to sail") + ".md");
+      try {
+        (await showClarify()).querySelectorAll(".clans")[3].click();
+        await settle();
+        ok(V.pages.has(proj), "a someday/maybe project");
+        has(getPage(day).blocks[0].title, "[[2/");
+        ok(getPage(day).props.clarified, "nothing left on the day");
+        has(content().textContent, "Every loose line", "and nothing left to clarify");
+      } finally { V.pages.delete(proj); }
+    });
+  });
+  test("#95 the review's tabs follow its steps, and only the step you are on says what it means", async () => {
+    eq(SUBS.review.map(s => s[0]), ["steps", "days", "actions", "projects", "reflect"]);
+    eq(SUBS.review[1][1], "Clarify");
+    go("review", {sub: "steps"});
+    await settle();
+    const notes = [...content().querySelectorAll(".rstep .rnote")];
+    ok(notes.length <= 1 && notes.every(n => n.closest(".rstep.now")), "a note on a step you are not on");
+    ok(content().querySelectorAll(".rstep.now").length <= 1, "one step at a time");
+    eq(content().querySelectorAll(".rstep:not(.now) .textbtn").length, 0, "buttons on a step you are not on");
+    go("today");
+  });
+
+  /* ============================================================
      Timer
      ============================================================ */
   test("timer starts and stops", () => {

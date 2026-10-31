@@ -66,6 +66,15 @@ const SETUP = {
     setReflectPick(journalPath(shiftISO(todayISO(), -1)), getPage(journalPath(shiftISO(todayISO(), -1))).blocks[0], "toward");
     reflectionBlock(false).block.children.push(newBlock({title: "In bed by 22:30 on weekdays"}, false));
     clearMemo(); go("review", {sub: "reflect"});`,
+  // Two day pages with loose lines, the first one dealt with a note under it (#95).
+  "review-days": `window.DAY_SHOT = new Map([4, 2].map(n => [journalPath(shiftISO(todayISO(), -n)), null]));
+    for (const p of DAY_SHOT.keys()) DAY_SHOT.set(p, V.pages.has(p) ? structuredClone(getPage(p)) : null);
+    const day = (n, text) => putPage(journalPath(shiftISO(todayISO(), -n)), parsePage(text), {silent: true});
+    day(4, "- Supplier meeting with [[p/Lars Haugen]]\\n  - New price list for the cold store before Christmas\\n" +
+      "    - They want two quotes, ours and Havbris\\n- Idea: a shared tool shelf at the depot\\n");
+    day(2, "- Ring the electrician about the gate\\n- Read up on heat pumps\\n");
+    PREF.set("clarify.dealt", ""); CL = {pending: null, skip: new Set(), undo: null, aim: 0};
+    clearMemo(); go("review", {sub: "days"});`,
 };
 /* This week's page with its routines and a focus line, and last week's with
    what was left open on it, gone again after the picture (#192). */
@@ -87,6 +96,8 @@ const AFTER = {
     for (const n of ["water", "coffee"]) V.pages.delete(trackerPagePath(n));
     clearMemo(); render();`,
   "review-reflect": `for (const [p, page] of REF_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
+    clearMemo(); render();`,
+  "review-days": `for (const [p, page] of DAY_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
     clearMemo(); render();`,
 };
 AFTER["journal-week"] = AFTER["review-steps"] = `for (const [p, page] of WEEK_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
