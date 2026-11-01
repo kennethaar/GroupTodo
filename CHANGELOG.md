@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.42.4 - 2026-11-01
+
+- Next's heading is one row on a phone (#224). The line beside the title
+  reads with it, "Next on your plate", and ⤓ Export to Excel moves into the
+  area menu, as on Waiting for and Projects. A wider screen keeps ⤓ in the
+  heading.
+
 ## 1.42.3 - 2026-11-01
 
 - On a phone ⇧ Send the vault file moves from the top bar into the area
