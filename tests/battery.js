@@ -3934,6 +3934,7 @@ var GTD_TEST = (() => {
     const path = choreProject("next sides", [chore("Dust the side shelf [[c/home/kitchen]]", "daily", -1),
       stampAuthor(newBlock({state: "TODO", title: "Write the side report"}))]);
     const was = Object.getOwnPropertyDescriptor(PHONE, "matches"), side = PREF.get("next.side", ""), wh = PREF.get("work_hours", "");
+    const learnt = PREF.get("sense.learn", "[]"); PREF.set("sense.learn", "[]");
     const at = (d, h, m = 0) => { const x = new Date(2026, 10, d, h, m); return x; };   // 2 Nov 2026 is a Monday
     try {
       ok(!choreTime(at(2, 10)), "Monday 10:00 is work");
@@ -3964,9 +3965,90 @@ var GTD_TEST = (() => {
       eq(nextSide(at(2, 10)), "todo", "and Monday at 10 to-dos");
     } finally {
       delete PHONE.matches; if (was) Object.defineProperty(PHONE, "matches", was);
-      PREF.set("next.side", side); PREF.set("work_hours", wh);
+      PREF.set("next.side", side); PREF.set("work_hours", wh); PREF.set("sense.learn", learnt);
       dropChores(path); render();
     }
+  });
+  test("#226 the context is learnt from what you pick: the hour, the day, the place", () => {
+    const learnt = PREF.get("sense.learn", "[]");
+    const at = (d, h, m = 0) => new Date(2026, 10, d, h, m);   // 2 Nov 2026 is a Monday
+    const f = (now, more = {}) => Object.assign(senseFeatures(now, null), more);
+    try {
+      PREF.set("sense.learn", "[]");
+      eq(senseLearned("ctx", at(9, 18), f(at(9, 18))), null, "nothing learnt, no guess");
+      senseLearn("ctx", "gym", at(2, 18), f(at(2, 18)));
+      eq(senseLearned("ctx", at(9, 18), f(at(9, 18))), null, "one pick is not sure enough");
+      senseLearn("ctx", "gym", at(2, 18, 1), f(at(2, 18, 1)));
+      eq(senseLog().length, 1, "two picks a minute apart are one");
+      senseLearn("ctx", "gym", at(3, 18), f(at(3, 18)));
+      senseLearn("ctx", "gym", at(4, 18, 30), f(at(4, 18, 30)));
+      eq(senseLearned("ctx", at(9, 18), f(at(9, 18)))?.v, "gym", "weekday evenings: @gym");
+      eq(senseLearned("ctx", at(10, 7), f(at(10, 7))), null, "not at seven in the morning");
+      senseLearn("ctx", "garden", at(7, 11), f(at(7, 11)));
+      senseLearn("ctx", "garden", at(8, 11), f(at(8, 11)));
+      eq(senseLearned("ctx", at(14, 11), f(at(14, 11)))?.v, "garden", "weekend mornings: @garden");
+      // A place is the strongest clue.
+      PREF.set("sense.learn", "[]");
+      for (const d of [2, 3, 4]) senseLearn("ctx", "office", at(d, 10), f(at(d, 10), {place: "1,1"}));
+      for (const d of [5, 6]) senseLearn("ctx", "cafe", at(d, 10), f(at(d, 10), {place: "2,2"}));
+      eq(senseLearned("ctx", at(9, 10), f(at(9, 10), {place: "2,2"}))?.v, "cafe", "at the café's square: @cafe");
+      eq(senseLearned("ctx", at(9, 10), f(at(9, 10), {place: "1,1"}))?.v, "office", "at the office's: @office");
+      eq(guessContext({device: "phone", net: "", pos: null, places: [], here: "home", away: "", learned: "gym"}).ctx, "gym",
+        "a learnt context beats the device's usual one");
+      // To do or Chores is learnt the same way.
+      PREF.set("sense.learn", "[]");
+      for (const d of [2, 3, 4]) senseLearn("side", "todo", at(d, 19), f(at(d, 19)));
+      eq(senseLearned("side", at(9, 19), f(at(9, 19)))?.v, "todo", "to-dos on weekday evenings, if that is what you pick");
+    } finally { PREF.set("sense.learn", learnt); }
+  });
+  test("#226 on a phone Next shows the guessed context, and Show all puts it away for the hour", async () => {
+    const path = scratchProject("guess ctx");
+    getPage(path).blocks = [stampAuthor(newBlock({state: "TODO", title: "Lift the test weights [[c/testgym]]"})),
+      stampAuthor(newBlock({state: "TODO", title: "Read the test paper"}))];
+    touch(path); clearMemo();
+    const was = Object.getOwnPropertyDescriptor(PHONE, "matches"), learnt = PREF.get("sense.learn", "[]");
+    try {
+      PREF.set("sense.learn", "[]"); NEXT_GUESS_OFF = "";
+      const now = Date.now();
+      for (const days of [7, 14, 21]) senseLearn("ctx", "testgym", new Date(now - days * 864e5));
+      Object.defineProperty(PHONE, "matches", {value: true, configurable: true});
+      PREF.set("next.side", JSON.stringify({slot: choreSlot(), side: "todo"}));
+      go("next", {sub: "list", ctxFilter: null}); await settle();
+      const bar = content().querySelector(".nguess");
+      ok(bar, "a guessed context");
+      has(bar.textContent, "testgym");
+      const titles = () => [...content().querySelectorAll(".task .t-title")].map(n => n.textContent);
+      ok(titles().some(t => t.includes("Lift the test weights")) && !titles().some(t => t.includes("Read the test paper")), "only what fits it");
+      [...bar.querySelectorAll("button")].find(b => b.textContent === "Show all").click(); await settle();
+      ok(!content().querySelector(".nguess"), "Show all puts it away");
+      eq(senseLog().at(-1).v, "*", "and is learnt");
+      Object.defineProperty(PHONE, "matches", {value: false, configurable: true});
+      NEXT_GUESS_OFF = ""; render(); await settle();
+      ok(!content().querySelector(".nguess"), "a wide screen shows everything, as before");
+    } finally {
+      delete PHONE.matches; if (was) Object.defineProperty(PHONE, "matches", was);
+      PREF.set("sense.learn", learnt); PREF.set("next.side", ""); NEXT_GUESS_OFF = "";
+      getPage(path).blocks = []; touch(path); clearMemo(); render();
+    }
+  });
+  test("#227 a folder a sync app keeps (Syncthing) is not nagged to send or bring in a file", () => {
+    const backend = V.backend, said = PREF.get("sync.carried", ""), key = "import.day." + (Spaces.active || ""), imp = PREF.get(key, "");
+    try {
+      PREF.set("sync.carried", "");
+      V.backend = Object.assign({}, backend, {kind: "idb"});
+      ok(!carriedBySync(), "browser storage carries nothing by itself");
+      for (const kind of ["fs", "http"]) {
+        V.backend = Object.assign({}, backend, {kind});
+        ok(!phoneLike(), kind + ": a phone on it has no file to send");
+        PREF.set(key, "");
+        ok(carriedBySync(), kind + ": never a file brought in, so the folder syncs");
+        PREF.set(key, shiftISO(todayISO(), -3));
+        ok(!carriedBySync(), kind + ": a file brought in this week is still how work moves");
+        PREF.set("sync.carried", "1");
+        ok(carriedBySync(), kind + ": said so, it is so");
+        PREF.set("sync.carried", "");
+      }
+    } finally { V.backend = backend; PREF.set("sync.carried", said); PREF.set(key, imp); }
   });
   test("#224 on a phone ⤓ is in the area menu, and saves what the view shows", async () => {
     go("next", {sub: "list"});

@@ -5,6 +5,20 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.45.0 - 2026-11-01
+
+- Next on a phone shows the context you seem to be in (#226), with Show all
+  beside it for the hour. The guess is learnt on this device from what you
+  pick, a context or To do or Chores: the hour, the day, work hours or not,
+  the phone upright or on its side, wifi or not, and the place, if the
+  browser may say. It speaks once it is fairly sure; before that, Sense
+  where I am's rules, if set up. Sense where I am uses what it learnt too.
+- No nagging to send or bring in the vault file on a folder a sync app
+  such as Syncthing keeps (#227): a folder or a GroupTodo server on a phone
+  has no file to send, and a PC on a folder no longer asks for the phone's
+  file unless one was brought in within two weeks. The start-of-day nudge
+  has "The folder syncs itself" to stop it for good.
+
 ## 1.44.0 - 2026-11-01
 
 - Next on a phone is To do or Chores (#225): two halves at the top, each
