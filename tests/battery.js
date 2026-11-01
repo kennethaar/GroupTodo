@@ -1418,6 +1418,62 @@ var GTD_TEST = (() => {
       eq(last && last[1], {pts: 4, n: 1});
     } finally { dropChores(path); }
   });
+  /* Household people (#236): at home, not in the app. */
+  const householder = name => {
+    const path = personPath(name);
+    putPage(path, {props: {title: name, household: "true"}, blocks: []});
+    clearMemo();
+    return path;
+  };
+  test("#236 a household person takes turns, keeps a chore handed to them a task, and gets the points", async () => {
+    const mia = householder("Mia Testhome"), leo = householder("Leo Testhome");
+    const path = choreProject("chores household", [chore("Empty the dishwasher #15m [[c/home/kitchen]]", "daily", 0)]);
+    try {
+      ok(isHousehold("Mia Testhome") && !isMember("Mia Testhome"), "household:: true makes a household person");
+      ok(choreCrew().some(m => m.name === "Leo Testhome"), "they take turns");
+      eq(assignKind("Mia Testhome"), "household");
+      const b = getPage(path).blocks[0];
+      assignBlock(path, b, "Mia Testhome", true); clearMemo();
+      eq(b.state, "TODO", "handed to the household it stays a task");
+      ok(!waitingRows().some(a => a.block === b), "not in Waiting for");
+      go("chores"); await settle();
+      setBlockState(path, b, "DONE", {nextNow: true}); await settle();
+      eq(closedBy(b), "Mia Testhome", "ticked by me, credited to Mia");
+      const next = getPage(path).blocks[1];
+      ok(next && next.state === "TODO", "the next one is in");
+      ok(!samePerson(assigneeOf(next) || whoAmI(), "Mia Testhome"), "and it is not Mia's turn again: " + assigneeOf(next));
+      const pick = document.querySelector("#toasts .donecredit");
+      ok(pick, "the done toast asks who did it");
+      eq(pick.value, "Mia Testhome", "Mia to start with");
+      pick.value = "Leo Testhome"; pick.dispatchEvent(new Event("change")); await settle();
+      eq(closedBy(b), "Leo Testhome", "By Leo moves the credit");
+      ok(!samePerson(assigneeOf(next) || whoAmI(), "Leo Testhome"), "and the next turn is worked out again");
+      const row = choreTally(T(), T()).find(([n]) => n === "Leo Testhome");
+      eq(row && row[1], {pts: 1, n: 1}, "the point is Leo's");
+    } finally { closeDoneToast(); dropChores(path); removePage(mia); removePage(leo); clearMemo(); }
+  });
+  test("#236 Chores shows one person's chores, and a person page marks them Household", async () => {
+    const mia = householder("Mia Testhome");
+    const path = choreProject("chores filter", [chore("Feed the cat [[c/home]]", "daily", 0, {assigned: "Mia Testhome"}),
+      chore("Water the ferns [[c/home]]", "daily", 0)]);
+    const was = PREF.get("chores.who", "");
+    try {
+      go("chores"); await settle();
+      const chip = name => [...content().querySelectorAll(".chorewho .fchip")].find(n => n.firstChild.textContent === name);
+      ok(chip("Mia"), "a chip for Mia");
+      chip("Mia").click(); await settle();
+      ok(content().textContent.includes("Feed the cat") && !content().textContent.includes("Water the ferns"), "only Mia's");
+      chip("Everyone").click(); await settle();
+      ok(content().textContent.includes("Water the ferns"), "everyone's again");
+      setHousehold(mia, false);
+      ok(!isHousehold("Mia Testhome"), "off again");
+      openPersonPage("Mia Testhome"); await settle();
+      const btn = content().querySelector(".householdbtn");
+      ok(btn && btn.getAttribute("aria-pressed") === "false", "the person page has a Household toggle");
+      btn.click(); await settle();
+      eq(getPage(mia).props.household, "true", "it writes household:: true");
+    } finally { PREF.set("chores.who", was); dropChores(path); removePage(mia); clearMemo(); }
+  });
   test("#201 Away holds every chore, and Back now counts them from today", () => {
     const path = choreProject("chores away", [chore("Vacuum the stairs [[c/home]]", "weekly", -3)]);
     try {

@@ -5,6 +5,19 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.47.0 - 2026-11-01
+
+- Chores work for the people at home who never open GroupToDo (#236).
+  Mark somebody Household on their person page (it writes `household:: true`)
+  and they take turns at the chores with the members.
+- A chore handed to a household person stays a task, on Chores, instead of
+  going to Waiting for: somebody in the house ticks it off for them.
+- Ticking off a chore handed to somebody gives them the points, whoever
+  ticks it: `done_by::` gets their name. "By ..." in the Done box says it
+  was somebody else, and the next one's turn is worked out again.
+- Chores has a chip for each person beside Mine and Everyone, so a child can
+  be shown just their own chores on a shared tablet.
+
 ## 1.46.9 - 2026-11-01
 
 - On a phone the "Done" toast is a thin strip along the top edge, the full
