@@ -895,6 +895,64 @@ var GTD_TEST = (() => {
     has(s.disk(), "Fit the mast", "their line");
     has(s.disk(), "Buy 20 m rope", "our edit");
   });
+  /* #233: the installed app and a tab share one browser storage (localStorage
+     here, as the demo has no IndexedDB; both take the same path). The window
+     left open with an old copy must not put it over the other's save. */
+  const twoWindows = async (name, file, text) => {
+    const back = Backends.ls(name);
+    const path = join(DIRS.active, file);
+    for (const p of await back.names()) await back.remove(p);
+    await back.write("pages/GTD.md", "title:: GTD\n");
+    await back.write(path, text);
+    const rec = newRecord(name, Backends.ls(name));
+    await readInto(rec);
+    await filesLoaded();
+    const save = async () => {
+      rec.dirty.add(path);
+      LOADED.set(rec.name, rec);
+      try { await doFlush(); } finally { LOADED.delete(rec.name); }
+    };
+    const stored = () => back.readText(path);
+    const clean = async () => { for (const p of await back.names()) await back.remove(p); };
+    return {back, rec, path, save, stored, clean, page: () => rec.pages.get(path)};
+  };
+  test("#233 a page the other window saved to browser storage is merged, not written over", async () => {
+    const w = await twoWindows("Win233a", "Boat.md", BOAT);
+    try {
+      // The other window (the installed app) adds a line and saves.
+      await w.back.write(w.path, BOAT + "- TODO Fit the mast\n");
+      // This window, still holding the old copy, changes another line.
+      w.page().blocks[2].title = "Buy 20 m rope";
+      const was = window.notify;
+      window.notify = () => {};
+      try { await w.save(); } finally { window.notify = was; }
+      const d = await w.stored();
+      has(d, "Fit the mast", "the other window's line");
+      has(d, "Buy 20 m rope", "this window's change");
+      ok(!/Buy rope\n/.test(d), "the old line came back");
+    } finally { await w.clean(); }
+  });
+  test("#233 a page saved in another window is read in here, unless it has unsaved work", async () => {
+    const w = await twoWindows("Win233b", "Boat.md", BOAT);
+    const kayak = join(DIRS.active, "Kayak.md");
+    try {
+      await w.back.write(w.path, BOAT + "- TODO Fit the mast\n");
+      await w.back.write(kayak, "title:: Kayak\n\n- TODO Find a paddle\n");
+      eq(await takeSiblingSaves(w.rec, [w.path, kayak]), 2, "pages read in");
+      has(serializePage(w.page()), "Fit the mast");
+      has(serializePage(w.rec.pages.get(kayak)), "Find a paddle");
+      // Unsaved work here stays as it is; it goes up merged.
+      w.page().blocks[0].title = "Sand the hull twice";
+      w.rec.dirty.add(w.path);
+      await w.back.write(w.path, BOAT + "- TODO Fit the mast\n- TODO Varnish\n");
+      await takeSiblingSaves(w.rec, [w.path]);
+      has(serializePage(w.page()), "Sand the hull twice", "unsaved work replaced");
+      // A page the other window deleted goes here too.
+      await w.back.remove(kayak);
+      await takeSiblingSaves(w.rec, null);
+      ok(!w.rec.pages.has(kayak), "deleted page still here");
+    } finally { await w.clean(); }
+  });
   test("#221 a line both devices changed, ticked on one, comes out once and done", async () => {
     const s = await synced("Sync221a", "Boat.md", BOAT);
     s.setDisk(BOAT.replace("- TODO Buy rope\n", "- TODO Buy rope\n  shop:: chandler\n"));
