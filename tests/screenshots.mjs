@@ -79,9 +79,9 @@ const SETUP = {
 // A book of four chapters at three stages, gone again after the picture (#240).
 SETUP.book = `window.BOOK_SHOT = [BOOK_PATH, ...["The storm", "Harbour", "After the flood", "Coda"].map(t => join(PAGES, t + ".md"))];
     const para = n => Array.from({length: n}, () => "The water came up the road and nobody moved the cars.").join(" ");
-    putPage(BOOK_PATH, parsePage("title:: book\\ntarget:: 80000\\n\\n- [[The storm]]\\n- [[Harbour]]\\n- [[After the flood]]\\n- [[Coda]]\\n"), {silent: true});
+    putPage(BOOK_PATH, parsePage("title:: The long road\\nsubtitle:: A novel\\nsynopsis:: Two sisters cross the hills to find their father, and the flood finds them first.\\ntarget:: 80000\\n\\n- [[The storm]]\\n- [[Harbour]]\\n- [[After the flood]]\\n- [[Coda]]\\n"), {silent: true});
     [["Done", 380], ["Revise", 260], ["Draft", 90], ["Outline", 3]].forEach(([stage, n], i) =>
-      putPage(BOOK_SHOT[i + 1], parsePage("stage:: " + stage + "\\n\\n- " + para(n) + "\\n"), {silent: true}));
+      putPage(BOOK_SHOT[i + 1], parsePage("stage:: " + stage + (i < 2 ? "\\nsynopsis:: " + ["The river breaks its banks.", "They wait out the night by the boats."][i] : "") + "\\n\\n- " + para(n) + "\\n"), {silent: true}));
     clearMemo(); renderNav(); go("book");`;
 /* This week's page with its routines and a focus line, and last week's with
    what was left open on it, gone again after the picture (#192). */

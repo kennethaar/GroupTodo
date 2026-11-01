@@ -5040,7 +5040,7 @@ var GTD_TEST = (() => {
     go("book");
     await settle();
     eq([...content().querySelectorAll(".bookch .nm")].map(n => n.textContent), ["Harbour", "The storm", "Not yet"]);
-    has(content().querySelector(".vhead").textContent, "13 of " + fmtWords(1000) + " words");
+    has(content().querySelector(".bookgoal").textContent, "13 of " + fmtWords(1000) + " words");
     has(content().querySelector(".bookgoal").textContent, "1/3 chapters done");
     content().querySelector(".bookch .bookstage").click();
     await settle();
@@ -5079,9 +5079,15 @@ var GTD_TEST = (() => {
     await settle();
     content().querySelector(".bookset .btn").click();
     await settle();
+    ok(!getPage(BOOK_PATH), "nothing is made before it has a name");
+    const dlg = $("#modalRoot");
+    dlg.querySelector("input").value = "The long road";
+    [...dlg.querySelectorAll("button")].find(b => b.textContent === "Create").click();
+    await settle();
     const page = getPage(BOOK_PATH);
     ok(page, "the page is made");
     eq(page.props.stages, "[[8/Chapter]]");
+    eq(page.props.title, "The long road", "the name asked for");
     eq(bookStages().map(s => s.name), BOOK_STAGES, "the Chapter type has the built-in stages");
     ok(pageHasTracker(getPage(join(DIRS.lists, todayISO().slice(0, 4) + ".md")), "words"), "a Words tracker on every day");
     renderNav(); ok(navLabels().includes("Book"), "Book is in the sidebar");
@@ -5127,6 +5133,119 @@ var GTD_TEST = (() => {
     has(items, "Gulls", "a note");
     ok(!items.includes("Harbour"), "not a chapter already in the book");
   }));
+
+  test("#242 a book has a name, a subtitle under it, then its synopsis", () => withBookVault({
+    [BOOK_PATH]: "title:: The long road\nsubtitle:: A novel\nsynopsis:: Two sisters cross the hills.\n\n- [[Harbour]]\n",
+    [join(PAGES, "Harbour.md")]: "- Boats\n",
+  }, async () => {
+    go("book");
+    await settle();
+    eq(content().querySelector(".vhead h1").textContent, "The long road");
+    const after = [...content().querySelector(".wrap").children];
+    const at = after.indexOf(content().querySelector(".vhead"));
+    eq(after[at + 1].className, "booksub", "the subtitle is the first line under the name");
+    eq(after[at + 1].textContent, "A novel");
+    eq(after[at + 2].textContent, "Two sisters cross the hills.", "then the synopsis");
+    ok(bookManuscript().startsWith("# The long road\n\nA novel\n\n## Harbour"), bookManuscript());
+    content().querySelector(".bookedit").click();
+    await settle();
+    const dlg = $("#modalRoot"), inputs = dlg.querySelectorAll("input");
+    eq(inputs[0].value, "The long road");
+    inputs[1].value = "";
+    dlg.querySelector("textarea").value = "Two sisters\ncross the hills.";
+    [...dlg.querySelectorAll("button")].find(b => b.textContent === "Save").click();
+    await settle();
+    ok(!("subtitle" in getPage(BOOK_PATH).props), "an empty subtitle comes off");
+    eq(getPage(BOOK_PATH).props.synopsis, "Two sisters cross the hills.", "one line");
+    ok(!content().querySelector(".booksub"), "and is not shown");
+  }));
+  test("#242 a chapter has a synopsis, written on its page", () => withBookVault(BOOK_PAGES, async () => {
+    go("book");
+    await settle();
+    const syn = () => [...content().querySelectorAll(".bookch .chsyn")];
+    eq(syn().map(b => b.textContent), ["+ synopsis", "+ synopsis"], "for each chapter with a page");
+    syn()[1].click();
+    await settle();
+    $("#modalRoot textarea").value = "The storm hits the harbour.";
+    [...$("#modalRoot").querySelectorAll("button")].find(b => b.textContent === "Save").click();
+    await settle();
+    const storm = join(PAGES, "The storm.md");
+    eq(getPage(storm).props.synopsis, "The storm hits the harbour.");
+    eq(syn()[1].textContent, "The storm hits the harbour.", "shown under its name");
+    eq(chapterWords(storm), 11, "not counted as words");
+    ok(!bookManuscript().includes("hits the harbour"), "nor exported");
+    setChapterSynopsis(storm, "  ");
+    ok(!("synopsis" in getPage(storm).props), "an empty one comes off");
+  }));
+  test("#242 chapters move by drag and drop, and by Alt+Shift+arrow", () => withBookVault(BOOK_PAGES, async () => {
+    go("book");
+    await settle();
+    const rows = () => [...content().querySelectorAll(".bookch")];
+    const drag = (from, to) => {
+      const dt = new DataTransfer();
+      rows()[from].dispatchEvent(new DragEvent("dragstart", {bubbles: true, dataTransfer: dt}));
+      rows()[to].dispatchEvent(new DragEvent("dragover", {bubbles: true, cancelable: true, dataTransfer: dt}));
+      rows()[to].dispatchEvent(new DragEvent("drop", {bubbles: true, cancelable: true, dataTransfer: dt}));
+    };
+    ok(rows().every(r => r.draggable), "every chapter can be dragged");
+    drag(0, 2);
+    await settle();
+    eq(bookChapters().map(c => c.name), ["The storm", "Not yet", "Harbour"], "dropped on the last, it goes last");
+    drag(2, 0);
+    await settle();
+    eq(bookChapters().map(c => c.name), ["Harbour", "The storm", "Not yet"], "dropped on the first, it goes first");
+    rows()[1].querySelector(".nm").dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowUp", altKey: true, shiftKey: true, bubbles: true}));
+    await settle();
+    await new Promise(r => requestAnimationFrame(() => setTimeout(r, 20)));
+    eq(bookChapters().map(c => c.name), ["The storm", "Harbour", "Not yet"]);
+    eq(document.activeElement.closest(".bookch")?.dataset.ch, "The storm", "focus stays with the chapter moved");
+    eq(rows().map(r => r.querySelector(".n").textContent), ["1", "2", "3"], "numbered again");
+  }));
+  test("#242 a new book asks for its name and area; a tab per book when there are more", async () => {
+    const rec = newRecord("Book242", Backends.memory("Book242"));
+    rec.pages.set(BOOK_PATH, parsePage("title:: Second book\n\n- [[Gulls]]\n"));
+    const was = PREF.get("bookAreas", "");
+    await withBookVault({}, async () => {
+      try {
+        go("book");
+        await settle();
+        ok(!content().querySelector(".booktabs"), "no tabs with no other book");
+        content().querySelector(".btn.primary").click();
+        await settle();
+        const dlg = $("#modalRoot");
+        const areas = [...dlg.querySelectorAll(".seg button")].map(b => b.textContent);
+        eq([areas[0], areas[areas.length - 1]], [V.space, "+ New area"], "this area first, or a new one");
+        [...dlg.querySelectorAll("button")].find(b => b.textContent === "Create").click();
+        await settle();
+        ok(!getPage(BOOK_PATH), "not without a name");
+        dlg.querySelector("input").value = "First book";
+        dlg.querySelectorAll("input")[1].value = "A novel";
+        [...dlg.querySelectorAll("button")].find(b => b.textContent === "Create").click();
+        await settle();
+        eq(getPage(BOOK_PATH).props.title, "First book");
+        eq(getPage(BOOK_PATH).props.subtitle, "A novel");
+        ok(!content().querySelector(".booktabs"), "one book, no tabs");
+        LOADED.set(rec.name, rec);
+        Spaces.list.push({name: rec.name, kind: "memory"});
+        render();
+        await settle();
+        const tabs = [...content().querySelectorAll(".booktabs .fchip")];
+        eq(tabs.map(t => t.textContent), ["First book", "Second book"], "a tab per book");
+        eq(tabs[0].getAttribute("aria-pressed"), "true", "the one shown");
+        eq(tabs[1].title, "In Book242");
+        openBookInfo({create: true});
+        await settle();
+        ok(![...$("#modalRoot").querySelectorAll(".seg button")].some(b => b.textContent === V.space || b.textContent === "Book242"),
+          "an area with a book is not offered");
+        closeModal();
+      } finally {
+        LOADED.delete(rec.name);
+        const at = Spaces.list.findIndex(s => s.name === rec.name);
+        if (at >= 0) Spaces.list.splice(at, 1);
+        PREF.set("bookAreas", was);
+      }
+    });
+  });
 
   test("#241 in a book's area the names offered are that area's own, its pages too", async () => {
     const rec = newRecord("Book241", Backends.memory("Book241"));

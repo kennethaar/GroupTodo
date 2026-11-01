@@ -5,6 +5,19 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.55.0 - 2026-11-01
+
+- A book has a name, a subtitle and a synopsis (#242). The Book view shows
+  the name, the subtitle on the first line under it, then the synopsis; Edit
+  changes them. Setting a book up asks for its name and the area it goes in
+  (this one, another without a book, or a new one). One book per area.
+- Each chapter can have a synopsis, under its name in the Book view. It is
+  kept on the chapter page as `synopsis::`, and is not counted or exported.
+- Drag a chapter onto another to move it, or press Alt+Shift+↑ ↓.
+- With books in more than one area, the Book view has a tab per book.
+- Export starts with the book's name and subtitle. The words so far are now
+  beside the bar, not in the heading.
+
 ## 1.54.1 - 2026-11-01
 
 - Add a chapter offers plain pages again, not only notes (#240).
