@@ -125,6 +125,25 @@ var GTD_TEST = (() => {
       } finally { f.remove(); }
     }
   });
+  test("#168 on a phone ⇧ Send is not in the bar but first in the area menu", async () => {
+    const {f, d} = await phoneBar(390, "at 12:00", "home");
+    try {
+      const send = d.querySelector("#btnSend");
+      send.hidden = false;
+      eq(getComputedStyle(send).display, "none", "no ⇧ in the bar on a phone");
+    } finally { f.remove(); }
+    const was = window.sendInAreaMenu;
+    window.sendInAreaMenu = () => true;
+    try {
+      openSpacesMenu();
+      const first = $("#spop").firstElementChild;
+      ok(first.classList.contains("spsend"), "Send is the menu's first row");
+      has(first.textContent, "Send the vault file");
+      window.sendInAreaMenu = () => false;
+      openSpacesMenu();
+      ok(!$("#spop .spsend"), "not in the menu where the bar has ⇧");
+    } finally { window.sendInAreaMenu = was; closeSpacesMenu(); }
+  });
   test("#168 on a phone with no meeting or context the bar is one row", async () => {
     const {f, d} = await phoneBar(390, null, null);
     try {
