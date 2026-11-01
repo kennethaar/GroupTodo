@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.42.2 - 2026-11-01
+
+- On a phone the area button sits at the right end of the row with the next
+  meeting and the @context, instead of on a row of its own (#168). With
+  nothing on now it stays on the top row.
+
 ## 1.42.1 - 2026-11-01
 
 - On a phone the day pager stands beside "Journal", on the heading's row, so

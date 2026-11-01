@@ -111,6 +111,20 @@ var GTD_TEST = (() => {
       ok(d.documentElement.scrollWidth <= 390, "the bar is wider than the phone");
     } finally { f.remove(); }
   });
+  test("#168 on a phone the area button sits at the end of the meeting's row, not on a row of its own", async () => {
+    for (const w of [390, 340]) {
+      const {f, d} = await phoneBar(w, "at 12:00", "home");
+      try {
+        const sp = d.querySelector("#spacesBtn").getBoundingClientRect(), mt = d.querySelector("#nextMeet").getBoundingClientRect();
+        const cap = d.querySelector(".capture").getBoundingClientRect();
+        ok(sp.top < mt.bottom && sp.bottom > mt.top, w + "px: the area button is on the meeting's row");
+        ok(sp.left >= d.querySelector("#btnContext").getBoundingClientRect().right, w + "px: after the @context");
+        ok(mt.top >= cap.bottom, w + "px: under the capture field");
+        ok(d.querySelector("header.top").getBoundingClientRect().height < 110, w + "px: two rows, not three");
+        ok(d.documentElement.scrollWidth <= w, w + "px: nothing wider than the phone");
+      } finally { f.remove(); }
+    }
+  });
   test("#168 on a phone with no meeting or context the bar is one row", async () => {
     const {f, d} = await phoneBar(390, null, null);
     try {
