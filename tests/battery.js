@@ -618,6 +618,68 @@ var GTD_TEST = (() => {
     } finally { await b.remove(today); }
   });
 
+  test("#232 no day page is made while the area's folder waits for its permission", async () => {
+    // The demo's storage has today's file, so what is counted is the page being made.
+    await flush();
+    const name = V.space, real = ensureJournal, made = [];
+    ensureJournal = function (d) { made.push(d); return real.apply(this, arguments); };
+    PENDING_GRANT.set(name, {name: "Folder232"});
+    try {
+      await openSpace(name, null, {draw: false});
+      eq(made, [], "a day page was made before the folder was read");
+      ok(folderWaiting(name), "not waiting");
+      AWAY_OK.add(name);
+      ok(!folderWaiting(name), "\"Not now\" still waits");
+    } finally {
+      ensureJournal = real;
+      PENDING_GRANT.delete(name); AWAY_OK.delete(name);
+      await filesLoaded();
+      render();
+    }
+  });
+
+  test("#232 a page kept in browser storage is merged into the folder's, not laid over it", async () => {
+    const name = "Mir232", today = join(JOURNALS, T() + ".md"), realIdb = Backends.idb;
+    Backends.idb = ns => Backends.ls(ns);          // the demo has no IndexedDB
+    const m = Backends.idb(name);
+    await m.write(today, "updated:: 2999-01-01\n\n- from the template\n");
+    try {
+      const rec = newRecord(name, {kind: "fs"});
+      rec.pages.set(today, parsePage("- written in the folder\n"));
+      await mergeMirror(rec);
+      const text = serializePage(rec.pages.get(today));
+      has(text, "written in the folder", "the folder's day was replaced by the browser copy");
+      has(text, "from the template", "the browser copy was dropped");
+      ok(rec.dirty.has(today), "the merged page is not saved");
+    } finally { await m.remove(today); Backends.idb = realIdb; }
+  });
+
+  test("#232 allowed back, the folder is read today first, not shown as the browser copy", async () => {
+    await flush();
+    const name = V.space, kept = LOADED.get(name), ns = "Ls232d";
+    const today = journalPath(todayISO()), old = join(JOURNALS, shiftISO(T(), -10) + ".md");
+    const b = Backends.ls(ns);
+    b.kind = "fs";
+    const files = {[today]: "- written in the folder\n", [old]: "- old line\n",
+                   [join(DIRS.active, "Boat.md")]: "title:: Boat\n\n- TODO Sand the hull\n"};
+    for (const [p, t] of Object.entries(files)) await b.write(p, t);
+    let release, calls = 0;
+    const held = new Promise(r => { release = r; }), read = b.readMany.bind(b);
+    b.readMany = async (paths, onEach) => { if (calls++) await held; return read(paths, onEach); };
+    LOADED.set(name, newRecord(name, Backends.memory("Old232")));
+    try {
+      await loadFromBackend(b, {quick: true});
+      has(serializePage(V.pages.get(today)), "written in the folder", "today is not the folder's");
+      ok(LOADED.get(name).stubs, "the whole folder was read before today showed");
+    } finally {
+      release();
+      await filesLoaded();
+      LOADED.set(name, kept); bindActive(name);
+      for (const p of Object.keys(files)) await b.remove(p);
+      render();
+    }
+  });
+
   test("#231 start-up draws the first screen once, not twice", async () => {
     const real = render;
     const drawn = [];

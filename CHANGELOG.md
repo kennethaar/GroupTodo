@@ -5,6 +5,18 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.46.4 - 2026-11-01
+
+- No day page is made while an area waits for its folder (#232). After a
+  fresh download the folder needs your permission again, and browser
+  storage holds only what the folder has not taken yet. So today's page was
+  made from its templates alone. Now the day waits for the folder, and is
+  made from the templates only if the folder has none.
+- On "Allow access" the folder is read today first, as at start-up, not
+  shown behind the browser copy.
+- What browser storage kept for a folder is merged into the folder's page,
+  line by line. Before, a newer browser copy replaced the page whole.
+
 ## 1.46.3 - 2026-11-01
 
 - Today's journal shows what is written in it, not only its templates
