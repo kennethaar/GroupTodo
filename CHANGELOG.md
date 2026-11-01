@@ -5,6 +5,19 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.49.0 - 2026-11-01
+
+- A chore's next round goes on the Journal, not beside the last one on the
+  room page (#212). Daily chores and ones tied to a day (every monday,
+  weekly on mon, thu, monthly on the 15th) go on that day's page. Weekly,
+  every 2 weeks and monthly go on that week's page. The done line stays
+  where it was ticked, so a room page no longer fills with done lines.
+- The next round says its room, `[[c/home/kitchen]]`, so Chores, room
+  freshness and whose turn still find every round.
+- A chore ticked on a week page puts its next round in at once, like any
+  other chore. A new week page no longer copies last week's chores, so a
+  chore is never there twice.
+
 ## 1.48.0 - 2026-11-01
 
 - Chores has a Print button beside Away until... (#235). It prints what is

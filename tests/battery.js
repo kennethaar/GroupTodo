@@ -1334,13 +1334,28 @@ var GTD_TEST = (() => {
   /* ---------- Chores (#201) ---------- */
   const chore = (t, repeat, n, props = {}) => stampAuthor(newBlock({state: "TODO", title: t,
     props: Object.assign({repeat, SCHEDULED: "[[" + shiftISO(T(), n) + "]]"}, props)}));
+  /* A chore's next round goes on a journal page (#212), so a chore test puts
+     the journal back as it found it when it drops its chores. */
+  let journalsBefore = null;
+  const journalSnap = () => new Map(allPages(isJournalPath).map(p => [p, serializePage(getPage(p))]));
+  const journalRestore = () => {
+    if (!journalsBefore) return;
+    for (const p of allPages(isJournalPath)) {
+      const was = journalsBefore.get(p);
+      if (was == null) V.pages.delete(p);
+      else if (serializePage(getPage(p)) !== was) putPage(p, parsePage(was), {silent: true});
+    }
+    journalsBefore = null;
+    clearMemo();
+  };
   const choreProject = (title, blocks) => {
+    journalsBefore = journalsBefore || journalSnap();
     const path = scratchProject(title);
     getPage(path).blocks = blocks;
     touch(path); clearMemo();
     return path;
   };
-  const dropChores = path => { getPage(path).blocks = []; touch(path); clearMemo(); };
+  const dropChores = path => { getPage(path).blocks = []; touch(path); clearMemo(); journalRestore(); };
   test("#201 a chore is an open task with a repeat, grouped by how far it has come round", () => {
     const path = choreProject("chores group", [
       chore("Wipe the counters [[c/home/kitchen]]", "daily", -2), chore("Scrub the shower [[c/home/bathroom]]", "weekly", 3),
@@ -1364,14 +1379,48 @@ var GTD_TEST = (() => {
       ok(row, "the chore is under Due now");
       row.click(); await settle();
       ok(!document.querySelector(".scrim .modal"), "no Again? dialog");
-      const blocks = getPage(path).blocks;
-      eq(blocks.map(x => x.state), ["DONE", "TODO"]);
-      eq(dueDate(blocks[1]), shiftISO(T(), 7), "next one a week on");
-      if (turn) ok(samePerson(assigneeOf(blocks[1], getPage(path)) || whoAmI(), turn), "for " + turn);
+      eq(getPage(path).blocks.map(x => x.state), ["DONE"], "the room page keeps only the done one (#212)");
+      const next = allChores().find(a => a.block !== b && choreKey(a.title) === choreKey(b.title));
+      ok(next, "the next one is in");
+      eq(next.path, journalPath(weekOf(shiftISO(T(), 7))), "on next week's page");
+      eq(dueDate(next.block), shiftISO(T(), 7), "next one a week on");
+      if (turn) ok(samePerson(assigneeOf(next.block) || whoAmI(), turn), "for " + turn);
       const undo = [...document.querySelectorAll("#toasts button")].find(n => n.textContent === "Undo");
       ok(undo, "the done toast has Undo");
       undo.click(); await settle();
       eq(getPage(path).blocks.map(x => x.state), ["TODO"]);
+      ok(!findBlock(next.block.id), "and the next one is gone");
+    } finally { closeDoneToast(); closeModal(); dropChores(path); }
+  });
+  test("#212 a chore's next round goes on the day or week page it is due, saying its room", async () => {
+    const day = shiftISO(T(), 1), wk = weekOf(shiftISO(T(), 14));
+    const dayPage = journalPath(day), weekPage = journalPath(wk);
+    const path = choreProject("chores journal", [
+      newBlock({title: "[[c/home/kitchen]]", children: [chore("Empty the dishwasher", "daily", 0)]}),
+      chore("Vacuum the hall [[c/home/hall]]", "every 2 weeks", 0)]);
+    try {
+      eq([choreRepeatOnWeek("weekly"), choreRepeatOnWeek("every 2 weeks"), choreRepeatOnWeek("monthly"),
+        choreRepeatOnWeek("daily"), choreRepeatOnWeek("every monday"), choreRepeatOnWeek("weekly on mon, thu"),
+        choreRepeatOnWeek("monthly on the 15th")], [true, true, true, false, false, false, false]);
+      const page = getPage(path), [head, hall] = page.blocks, dish = head.children[0];
+      flattenBlocks(page.blocks);
+      setBlockState(path, dish, "DONE", {nextNow: true}); await settle();
+      setBlockState(path, hall, "DONE", {nextNow: true}); await settle();
+      eq(head.children.length, 1, "nothing new under the room heading");
+      eq(page.blocks.length, 2, "nothing new on the room page");
+      const onDay = getPage(dayPage).blocks.find(b => b.state === "TODO" && /Empty the dishwasher/.test(b.title));
+      ok(onDay, "daily goes on tomorrow's page");
+      has(onDay.title, "[[c/home/kitchen]]", "it says its room");
+      eq(dueDate(onDay), day);
+      const onWeek = getPage(weekPage).blocks.find(b => b.state === "TODO" && /Vacuum the hall/.test(b.title));
+      ok(onWeek, "every 2 weeks goes on the week page " + wk);
+      clearMemo();
+      ok(allChores().some(a => a.block === onDay && a.context === "home/kitchen"), "Chores finds it in its room");
+      ok(whoseTurn(onDay) === null || typeof whoseTurn(onDay) === "string", "whose turn still reads");
+      getPage(weekPage).blocks.push(chore("Wipe the fridge [[c/home/kitchen]]", "weekly", 14));
+      ensureWeek(shiftWeek(wk, 1));
+      ok(!getPage(journalPath(shiftWeek(wk, 1))).blocks.some(b => /Wipe the fridge/.test(b.title)),
+        "a new week page does not copy the chore again");
     } finally { closeDoneToast(); closeModal(); dropChores(path); }
   });
   test("#80 the done toast sits at the top edge, one item's Backdate and Undo beside History", async () => {
@@ -1439,7 +1488,7 @@ var GTD_TEST = (() => {
       go("chores"); await settle();
       setBlockState(path, b, "DONE", {nextNow: true}); await settle();
       eq(closedBy(b), "Mia Testhome", "ticked by me, credited to Mia");
-      const next = getPage(path).blocks[1];
+      const next = findBlock(allChores().find(a => a.block !== b && /Empty the dishwasher/.test(a.title))?.block?.id || "")?.block;
       ok(next && next.state === "TODO", "the next one is in");
       ok(!samePerson(assigneeOf(next) || whoAmI(), "Mia Testhome"), "and it is not Mia's turn again: " + assigneeOf(next));
       const pick = document.querySelector("#toasts .donecredit");
@@ -1517,7 +1566,8 @@ var GTD_TEST = (() => {
       // Done already in the review puts the next round in, as a tick on Chores does.
       still.pick(r, "done"); await settle();
       ok(!document.querySelector(".scrim .modal"), "no Again? dialog");
-      eq(getPage(path).blocks.filter(b => b.title.startsWith("Clean the oven")).map(b => b.state), ["DONE", "TODO"]);
+      eq(getPage(path).blocks.filter(b => b.title.startsWith("Clean the oven")).map(b => b.state), ["DONE"]);
+      ok(allChores().some(a => a.path !== path && plainTitle(a.title).startsWith("Clean the oven")), "the next round is on the Journal (#212)");
     } finally { PREF.set("review.chores", ""); closeDoneToast(); closeModal(); dropChores(path); }
   });
   test("#213 Chores sorts the rooms by freshness, and the board puts them in red, yellow and green", async () => {
