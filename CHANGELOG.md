@@ -5,6 +5,24 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.40.0 - 2026-11-01
+
+- Chores sorts the rooms by freshness, and has a board (#213). With 20 rooms,
+  finding the ones that need you meant scanning every bar for its colour.
+  - A sort beside the rooms: Name, Stalest first or Freshest first. This
+    device keeps it, as it keeps the room you picked.
+  - Grid or Board. The board has a column for each band the bars already
+    use: red under 25%, yellow to 49%, green from 50%, each with its count.
+    The columns and the cards in them follow the sort. A long column shows
+    five rooms and a "+ n more" line.
+  - A card per room: how fresh it is, how many are due, soon and ok, the
+    time the due ones take by their size, and whose turn is next. Click it
+    to see only that room's chores, as a room chip does.
+  - A room picked on the board gets a close-up: the same facts with labels,
+    the stalest chore, the next one up, the last one done and how many are
+    on hold.
+  - On a phone the columns stack, red first.
+
 ## 1.39.0 - 2026-10-31
 
 - The weekly review's Actions leaves chores on track out (#215). Every open

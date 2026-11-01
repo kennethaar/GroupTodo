@@ -1075,6 +1075,59 @@ var GTD_TEST = (() => {
       eq(getPage(path).blocks.filter(b => b.title.startsWith("Clean the oven")).map(b => b.state), ["DONE", "TODO"]);
     } finally { PREF.set("review.chores", ""); closeDoneToast(); closeModal(); dropChores(path); }
   });
+  test("#213 Chores sorts the rooms by freshness, and the board puts them in red, yellow and green", async () => {
+    const path = choreProject("chores board", [
+      chore("Wipe the counters #30m [[c/home/testred]]", "daily", -2),
+      chore("Scrub the shower [[c/home/testyellow]]", "weekly", 3),
+      chore("Clean the fridge [[c/home/testgreen]]", "monthly", 20)]);
+    const was = ["chores.layout", "chores.sort", "chores.room"].map(k => [k, PREF.get(k, "")]);
+    try {
+      const mine = n => "@home/test" + n;
+      const chips = () => [...content().querySelectorAll(".choreroom .choreroom-n")].map(n => n.textContent)
+        .filter(t => /test(red|yellow|green)/.test(t));
+      PREF.set("chores.layout", ""); PREF.set("chores.room", "");
+      PREF.set("chores.sort", ""); go("chores"); await settle();
+      eq(chips().map(t => t.replace(/^\W*/, "")), ["testgreen", "testred", "testyellow"], "by name");
+      PREF.set("chores.sort", "stale"); render(); await settle();
+      eq(chips().map(t => t.replace(/^\W*/, "")), ["testred", "testyellow", "testgreen"], "stalest first");
+      PREF.set("chores.sort", "fresh"); render(); await settle();
+      eq(chips().map(t => t.replace(/^\W*/, "")), ["testgreen", "testyellow", "testred"], "freshest first");
+
+      [...content().querySelectorAll(".chorelayout .fchip")].find(n => n.textContent === "Board").click(); await settle();
+      eq(PREF.get("chores.layout", ""), "board", "the board is remembered");
+      ok(!content().querySelector(".chorerooms"), "no chips on the board");
+      eq([...content().querySelectorAll(".chorecol")].map(n => n.classList[1]), ["green", "yellow", "red"], "freshest first: green first");
+      const colOf = n => [...content().querySelectorAll(".chorecol")].find(col =>
+        [...col.querySelectorAll(".chorecard .choreroom-n")].some(x => x.textContent.endsWith("test" + n)));
+      for (const n of ["red", "yellow", "green"]) ok(colOf(n) && colOf(n).classList.contains(n), "test" + n + " is in " + n);
+      const card = [...content().querySelectorAll(".chorecard")].find(x => x.textContent.includes("testred"));
+      ok(/1 due/.test(card.textContent) && /30 min/.test(card.textContent), "the card says what is due and how long: " + card.textContent);
+      PREF.set("chores.sort", "stale"); render(); await settle();
+      eq([...content().querySelectorAll(".chorecol")].map(n => n.classList[1]), ["red", "yellow", "green"], "stalest first: red first");
+
+      [...content().querySelectorAll(".chorecard")].find(x => x.textContent.includes("testred")).click(); await settle();
+      eq(PREF.get("chores.room", ""), mine("red"), "a card picks its room, as a chip does");
+      const up = content().querySelector(".chorecloseup");
+      ok(up && up.textContent.includes("Stalest") && up.textContent.includes("Wipe the counters"), "the close-up shows the stalest");
+      ok(up.textContent.includes("Time due now") && up.textContent.includes("30 min"), "and the time due now");
+      ok(content().textContent.includes("Wipe the counters") && !content().textContent.includes("Scrub the shower"),
+        "only that room's chores below");
+    } finally { for (const [k, v] of was) PREF.set(k, v); CHORE_COLS_OPEN.clear(); dropChores(path); render(); }
+  });
+  test("#213 a long board column shows the first rooms and + n more", async () => {
+    const path = choreProject("chores long", Array.from({length: CHORE_COL_MAX + 3}, (_, i) =>
+      chore("Dust [[c/home/testlong" + i + "]]", "daily", -3)));
+    const was = ["chores.layout", "chores.sort"].map(k => [k, PREF.get(k, "")]);
+    try {
+      PREF.set("chores.layout", "board"); PREF.set("chores.sort", "stale"); go("chores"); await settle();
+      const red = () => content().querySelector(".chorecol.red");
+      ok(red().querySelectorAll(".chorecard").length === CHORE_COL_MAX, "only the first " + CHORE_COL_MAX);
+      const more = red().querySelector(".chorecol-more");
+      ok(more && /^\+ \d+ more$/.test(more.textContent), "a + n more line");
+      more.click(); await settle();
+      ok(red().querySelectorAll(".chorecard").length >= CHORE_COL_MAX + 3, "all of them after it");
+    } finally { for (const [k, v] of was) PREF.set(k, v); CHORE_COLS_OPEN.clear(); dropChores(path); render(); }
+  });
   /* ---------- contexts in folders (#201) ---------- */
   test("#201 @home/kitchen typed in the capture box is one context, and @kitchen finds it", () => {
     makeContext("home/kitchen");
