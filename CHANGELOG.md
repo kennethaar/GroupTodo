@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.46.7 - 2026-11-01
+
+- After "Allow access" the area no longer says "browser only - no files"
+  while its folder is read (#232). Since 1.46.6 the folder is read behind
+  the screen, and each save meanwhile put that back. Now it says "reading
+  the folder..." until the folder's pages take over.
+- A folder that cannot be read is asked for again, so "Allow access" can
+  try once more. Before, the area stayed on browser storage without a word.
+
 ## 1.46.6 - 2026-11-01
 
 - "Allow access" no longer hangs on "Opening area..." (#232). Since 1.46.4

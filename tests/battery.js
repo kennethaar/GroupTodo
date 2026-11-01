@@ -693,6 +693,33 @@ var GTD_TEST = (() => {
     }
   });
 
+  test("#232 while the folder is read behind, the status says so, not browser only", async () => {
+    await flush();
+    const name = V.space, kept = LOADED.get(name);
+    const b = Backends.memory("Rd232");
+    b.kind = "fs"; b.handle = {name: "Folder232"};
+    let listed, fail;
+    const listing = new Promise((r, no) => { listed = r; fail = no; });
+    b.names = async () => { await listing; return []; };
+    const copy = newRecord(name, Backends.memory("Old232e"));
+    LOADED.set(name, copy); bindActive(name);
+    try {
+      await loadFromBackend(b, {quick: true});
+      setSync("ok", V.backend.label);                 // what every save does when it is done
+      eq($("#syncTxt").textContent, "reading the folder...", "the status said browser only while the folder was read");
+      fail(Object.assign(new Error("gone"), {name: "NotReadableError"}));
+      for (let i = 0; i < 50 && FOLDER_READING.has(name); i++) await new Promise(r => setTimeout(r, 20));
+      ok(PENDING_GRANT.has(name), "a folder that could not be read is not asked for again");
+      setSync("ok", V.backend.label);
+      eq($("#syncTxt").textContent, "folder not connected", "a folder that could not be read reads as browser only");
+    } finally {
+      listed(); await filesLoaded();
+      FOLDER_READING.delete(name); PENDING_GRANT.delete(name);
+      LOADED.set(name, kept); bindActive(name);
+      setSync("ok", V.backend.label); render();
+    }
+  });
+
   test("#232 a file that never answers is left unread, and does not hold the folder", async () => {
     const was = FILE_READ_MS;
     FILE_READ_MS = 50;
