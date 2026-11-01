@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.45.7 - 2026-11-01
+
+- A todo made into a project loses its TODO (#234). The line became the
+  project's link but stayed a task, so it was counted twice. The project
+  carries the status now. Making it a task again puts the TODO back.
+
 ## 1.45.6 - 2026-11-01
 
 - Work is no longer lost when the installed app and a tab are open at the
