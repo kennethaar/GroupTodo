@@ -1986,6 +1986,7 @@ Name the projects in what they get =>
 Name the same chart on two of one kind to see them on one card. =>
 Name, as it is written in the language: Norsk, Deutsch… =>
 Names and percent, each a column of its own. =>
+Names you are offered as you type come from this area only, and its pages too: Vary, not a Victor from work. =>
 Names, separated by commas =>
 Namespace =>
 Narrow =>

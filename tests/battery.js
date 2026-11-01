@@ -5115,6 +5115,35 @@ var GTD_TEST = (() => {
     ok(getPage(join(DIRS.lists, "Chapter.md")), "the Chapter type stays");
   }));
 
+  test("#241 in a book's area the names offered are that area's own, its pages too", async () => {
+    const rec = newRecord("Book241", Backends.memory("Book241"));
+    for (const [p, text] of Object.entries({
+      [BOOK_PATH]: "title:: book\n\n- [[Varyhall]]\n",
+      [join(PAGES, "Vary.md")]: "role:: healer\n\n- Old, kind, tired.\n",
+      [join(PAGES, "Varyhall.md")]: "- Chapter one\n",
+      [join(DIRS.people, "Varyn Book.md")]: "title:: Varyn Book\n",
+    })) rec.pages.set(p, parsePage(text));
+    const vb = join(DIRS.people, "Varyo Borge.md");
+    const was = PREF.get("visibleSpaces", "");
+    const box = el("div", {data: {space: "Book241"}}), input = el("input");
+    box.append(input); document.body.append(box);
+    const offered = text => { input.value = text; input.setSelectionRange(text.length, text.length);
+      return (suggestFor(input, {})?.rows || []).filter(r => !r.isNew).map(r => r.ref); };
+    try {
+      putPage(vb, parsePage("title:: Varyo Borge\n"), {silent: true});
+      LOADED.set(rec.name, rec);
+      setVisibleSpaces([V.space, rec.name]); clearMemo();
+      eq(offered("She looked at Vary").sort(), ["Vary", "p/Varyn Book"], "a page of the book's area, and no Varyo from the other area, nor the chapter");
+      eq(offered("[[Vary"), ["Vary", "Varyhall", "p/Varyn Book"], "[[ lists the book's area only");
+      ok(!linkKnownNames("Varyo Borge and Vary met", "", namesFor(input)).includes("[["), "nothing linked from another area, and a page is never linked unasked");
+      box.dataset.space = V.space; clearMemo();
+      ok(offered("She looked at Vary").includes("p/Varyo Borge"), "an area without a book offers every area's names, as before");
+    } finally {
+      box.remove(); LOADED.delete(rec.name); PREF.set("visibleSpaces", was);
+      V.pages.delete(vb); V.removed.delete(vb); clearMemo(); renderNav();
+    }
+  });
+
   /* ============================================================
      Timer
      ============================================================ */
