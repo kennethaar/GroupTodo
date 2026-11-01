@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.46.5 - 2026-11-01
+
+- A phone on a folder no longer asks you to send the vault file (#179). The
+  phone drops the folder's permission each time the app closes, and until
+  "Allow access" the area reads from browser storage, so it was taken for a
+  phone with no folder. A folder area is now a folder area while it waits:
+  what you do meanwhile goes up to the folder once it is allowed.
+
 ## 1.46.4 - 2026-11-01
 
 - No day page is made while an area waits for its folder (#232). After a

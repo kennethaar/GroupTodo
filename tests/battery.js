@@ -2121,6 +2121,23 @@ var GTD_TEST = (() => {
       syncSendButton();
     }
   });
+  test("#179 a phone whose folder waits for Allow access has no file to send", () => {
+    const mm = window.matchMedia, be = V.backend, linked = LINKED, get = Spaces.get;
+    window.matchMedia = q => ({matches: /coarse/.test(q), media: q, addEventListener() {}, removeEventListener() {}});
+    try {
+      LINKED = null;
+      V.backend = {kind: "idb"};
+      Spaces.get = () => ({name: Spaces.active, kind: "local"});
+      ok(phoneLike(), "a browser-storage area on a phone sends the file");
+      Spaces.get = () => ({name: Spaces.active, kind: "fs", label: "Phone"});
+      ok(!phoneLike(), "a folder area reading from browser storage until allowed asks to send the file");
+      syncSendButton();
+      ok(document.querySelector("#btnSend").hidden, "the Send button shows on a folder area");
+    } finally {
+      window.matchMedia = mm; V.backend = be; LINKED = linked; Spaces.get = get;
+      syncSendButton();
+    }
+  });
   test("an invite carries the area and reads back", () => {
     const text = inviteMarkdown();
     const cfg = parseInvite(text);
