@@ -4422,6 +4422,40 @@ var GTD_TEST = (() => {
     content().querySelectorAll(".wkdayhead")[0].click();
     eq([state.sub, state.todayDay], [null, weekMonday(now) === T() ? null : weekMonday(now)], "a day's name opens the day");
   });
+  test("#211 the week and the lists use a wide screen, and Content width can keep them narrow", async () => {
+    const was = PREF.get("style.width", "wide");
+    try {
+      PREF.set("style.width", "wide"); applyStyles();
+      eq(document.documentElement.dataset.width, "wide");
+      go("today", {sub: "week", todayWeek: null});
+      await settle();
+      const wk = content().querySelector(".wrap");
+      ok(wk.classList.contains("jweek"), "the week is wide with one space too");
+      const wide = innerWidth >= 1100;
+      if (wide) ok(wk.getBoundingClientRect().width > 820, "the week is wider than the reading column, got " + wk.getBoundingClientRect().width);
+      const txt = content().querySelector(".wkgrid .wktext");
+      if (wide && txt) eq(getComputedStyle(txt).webkitLineClamp, "8", "a task in a day wraps rather than ends in ...");
+      for (const [view, sub] of [["next", "list"], ["waiting", "list"], ["people", "list"], ["orgs", "list"], ["projects", "list"]]) {
+        go(view, {sub});
+        await settle();
+        ok(content().querySelector(".wrap").classList.contains("lwide"), view + " list spreads on a wide screen");
+      }
+      go("pages", {sub: "list"});
+      await settle();
+      ok(!content().querySelector(".wrap.lwide"), "pages keep their line length");
+      PREF.set("style.width", "narrow"); applyStyles();
+      go("today", {sub: "week", todayWeek: null});
+      await settle();
+      if (wide) ok(content().querySelector(".wrap").getBoundingClientRect().width <= 820, "Narrow keeps the reading column");
+      go("checklists");
+      await settle();
+      eq(content().querySelector(".stylewidth").value, "narrow", "Settings shows the width picked");
+    } finally {
+      PREF.set("style.width", was); applyStyles();
+      go("today", {sub: null, todayWeek: null});
+      await settle();
+    }
+  });
   test("#192 the review's calendar step goes to the weeks on the review page, also in a list written before it", async () => {
     const step = () => reviewSteps().flatMap(g => g.steps).find(s => /^Calendar/.test(s.text));
     const had = V.pages.has(REVIEW_LIST_PATH) ? getPage(REVIEW_LIST_PATH) : null;

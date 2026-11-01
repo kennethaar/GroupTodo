@@ -5,6 +5,18 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.50.0 - 2026-11-01
+
+- The Journal's week fills a wide screen, with one area too, not only with
+  several (#211). The seven days share the window, and a task in a day wraps
+  over more lines instead of ending in "...".
+- Next, Waiting for, People, Organisations and the Projects list spread out
+  on a wide screen, and a long list of rows flows into columns, as the boards
+  do. Pages and the help keep their line length.
+- Settings > Styles has Content width: Narrow keeps the one reading column
+  everywhere, Wide is the default, and Full takes the whole window. Under
+  1100 px nothing changes, so a phone keeps its one column.
+
 ## 1.49.0 - 2026-11-01
 
 - A chore's next round goes on the Journal, not beside the last one on the
