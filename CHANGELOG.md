@@ -5,6 +5,28 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.42.0 - 2026-11-01
+
+- The Journal on a phone, after a "Don't make me think" review (#222).
+  - The day is said in words over the date box, "Sun, Nov 1 · Today", on a
+    row of its own; a tap on it opens the date box. The weekday was hidden
+    and the box too narrow to show its date.
+  - Trackers, History and People are words, not 📊 ⏱ 👥.
+  - The Due tab is one line: "Due", its bar, done of all ("0/3") and what is
+    late. A wide screen still says "Due Today & Late" and "open · done".
+  - An empty @context tab goes; the @context chip at the top says it already.
+  - With one area the card does not say "Journal" again; the area's name is
+    the way to focus on it.
+- The area over a day page is a quiet eyebrow with a dot of its colour, not a
+  coloured pill, so red is left for what is late. ✎ and 📌 there are grey.
+- A meeting on its day page starts with its time, "12:00–13:00 Lunch", and
+  two meetings that share time are marked "⚠ Overlaps …".
+- A #tag is grey: the teal is the @context's alone.
+- The next meeting at the top says "at 12:00" while it is more than an hour
+  off, and counts down in the last hour.
+- On a phone the capture field says "Capture" instead of a cut-off example,
+  and the ⋯ line menu is a bigger target on a touch screen.
+
 ## 1.41.0 - 2026-11-01
 
 - The weekly review walks on from Projects to Reflect, and from Reflect back
