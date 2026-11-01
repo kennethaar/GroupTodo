@@ -3097,7 +3097,7 @@ body.solview #content{padding-bottom:14px}
    number for a fix, the middle one for a feature. CHANGELOG.md says what each
    one brought, and it is shown beside the name top left, so whoever is testing
    can see at a glance that they have the newest file open. */
-const APP_VERSION = "1.45.5";
+const APP_VERSION = "1.45.6";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 /* ============================================================
    00_BOOTSTRAP -- utilities
@@ -4292,6 +4292,12 @@ const Backends = {
       },
       async write(path, text) { await IDB.set("files", pre + path, text); },
       async remove(path)      { await IDB.del("files", pre + path); },
+      /* One page as it is stored now. The installed app and a tab share this
+         storage, so what is here may not be what this window read (#233). */
+      async readText(path) {
+        const t = await IDB.get("files", pre + path);
+        return t == null ? null : String(t);
+      },
       async putAsset(path, blob) { await IDB.set("assets", pre + path, blob); },
       async getAsset(path)       { return (await IDB.get("assets", pre + path)) || null; },
     };
@@ -4325,6 +4331,7 @@ const Backends = {
       },
       async write(path, text) { LS.set(pre + path, text); },
       async remove(path) { LS.del(pre + path); },
+      async readText(path) { return localStorage.getItem(LS.k(pre + path)); },
       /* No room in localStorage for a photograph, so a dropped file lives for
          this session only and the drop says so. Choose a folder and it becomes
          a real file like everything else. */
@@ -4807,8 +4814,12 @@ function retryFlush() {
    line against that last version, the one both started from: a line added,
    changed or taken out on either side carries over. Where both changed the
    same lines both are kept, this device's first, so nothing is lost. */
+/* Browser storage is shared the same way: the installed app and a tab open on
+   the same site are two windows on one store, and the one left open with an
+   old copy put it over what the other had just saved (#233). */
+const MERGED_KINDS = new Set(["fs", "idb", "ls"]);
 const noteBase = (rec, path, text) => {
-  if (rec && rec.backend && rec.backend.kind === "fs") (rec.base || (rec.base = new Map())).set(path, text);
+  if (rec && rec.backend && MERGED_KINDS.has(rec.backend.kind)) (rec.base || (rec.base = new Map())).set(path, text);
 };
 
 /* For each line of a, the index of the same line in b, or -1: the longest run
@@ -4922,7 +4933,7 @@ function mergePageText(path, baseText, diskText, ourText) {
 async function writePageChecked(rec, path, page, merged) {
   const b = rec.backend;
   let text = serializePage(page);
-  if (b.kind === "fs" && b.readText) {
+  if (MERGED_KINDS.has(b.kind) && b.readText) {
     const now = await b.readText(path);
     const base = rec.base ? rec.base.get(path) : undefined;
     if (now != null && now !== base && now !== text) {
@@ -5097,7 +5108,7 @@ async function doFlush() {
     wrote = true;
     V.syncing = true;
     setSync("sync", "saving...");
-    const merged = [], held = [];
+    const merged = [], held = [], put = [];
     // The mirror goes first: after this line the work cannot be lost, whatever
     // the real backend does next.
     await writeMirror(rec, dirty);
@@ -5121,7 +5132,7 @@ async function doFlush() {
           }
           continue;
         }
-        try { if (!(await writePageChecked(rec, p, page, merged))) held.push(p); }
+        try { if (await writePageChecked(rec, p, page, merged)) put.push(p); else held.push(p); }
         catch (e) {
           if (!(e instanceof TypeError) || !/name is not allowed/i.test(e.message || "")) throw e;
           rec.badNames = rec.badNames || new Set();
@@ -5153,6 +5164,7 @@ async function doFlush() {
       held.forEach(p => rec.dirty.add(p));
       if (held.length) waiting = true;
       await confirmMirror(rec, dirty.filter(p => !held.includes(p)));
+      tellSiblings(rec, put, gone);
       if (merged.length) { sayMerged(rec, merged); if (rec.name === V.space) render(); }
       V.error = null;
       if (rec.offline) {            // it came back; say so once and stop warning
@@ -5199,6 +5211,102 @@ const flushIfDirty = () => {
 };
 document.addEventListener("visibilitychange", () => { if (document.hidden) flushIfDirty(); });
 window.addEventListener("pagehide", flushIfDirty);
+
+/* ---------- the same vault open twice (#233) ----------
+   The installed app and a tab on the same site share one browser storage,
+   and so do two tabs; two windows on one folder share its files. Each held
+   the copy it read at the start, so the one left open showed old pages and,
+   the next time it saved one, put its old copy over the other's work. Saves
+   are merged with what is stored now (writePageChecked), and each window
+   tells the others which pages it saved, so they read them again. A window
+   that was asleep and missed that looks at the stamp each save leaves when
+   it is shown again. */
+const WINDOW_ID = Math.random().toString(36).slice(2) + Date.now().toString(36);
+const SIBLINGS = (() => {
+  try { return typeof BroadcastChannel === "function" ? new BroadcastChannel("grouptodo.saved") : null; }
+  catch (_) { return null; }
+})();
+const siblingStampKey = name => "gtd.saved:" + name;
+const SIBLING_SEEN = new Map();          // area -> the last stamp this window has caught up with
+
+function tellSiblings(rec, wrote, gone) {
+  const b = rec && rec.backend;
+  if (!b || !MERGED_KINDS.has(b.kind) || (!wrote.length && !gone.length)) return;
+  const at = Date.now();
+  SIBLING_SEEN.set(rec.name, at);
+  try { localStorage.setItem(siblingStampKey(rec.name), JSON.stringify({at, by: WINDOW_ID})); } catch (_) {}
+  try { if (SIBLINGS) SIBLINGS.postMessage({by: WINDOW_ID, space: rec.name, kind: b.kind, wrote, gone}); } catch (_) {}
+}
+
+/* Pages another window saved, read in. One with unsaved work here is left:
+   it goes up merged with theirs. The page being typed in is left too, and
+   is merged when the line is written back. Paths null means every page. */
+async function takeSiblingSaves(rec, wrote, gone = []) {
+  const b = rec && rec.backend;
+  if (!b || !b.readText || !MERGED_KINDS.has(b.kind) || rec.hold || WIPING) return 0;
+  const typing = typingPath(rec.name);
+  const mine = p => rec.dirty.has(p) || rec.removed.has(p) || p === typing || stillLoading(rec, p);
+  let got;
+  if (wrote) {
+    got = new Map();
+    for (const p of wrote) {
+      if (mine(p)) continue;
+      const t = await b.readText(p);
+      if (t != null) got.set(p, t); else gone = gone.concat(p);
+    }
+  } else {
+    if (!b.names || !b.readMany) return 0;
+    const names = (await b.names()).filter(p => /\.md$/i.test(p) && !isGuidePath(p) && !isLangPath(p) &&
+                                                !isPromptPath(p) && !isNpmDraftPath(p) && !syncCopyOf(p));
+    got = await b.readMany(names.filter(p => !mine(p)));
+    const there = new Set(names);
+    gone = [...(rec.base || new Map()).keys()].filter(p => !there.has(p) && rec.pages.has(p));
+  }
+  let changed = 0;
+  for (const [p, t] of got) {
+    if (mine(p) || looksLikeBundle(t)) continue;
+    const had = rec.pages.get(p);
+    if (had && (rec.base?.get(p) === t || PAGE_SRC.get(had) === t)) continue;
+    const page = parsePage(t);
+    PAGE_SRC.set(page, t);
+    rec.pages.set(p, page);
+    noteBase(rec, p, t);
+    changed++;
+  }
+  for (const p of gone) {
+    if (mine(p) || !rec.pages.has(p)) continue;
+    rec.pages.delete(p); rec.base?.delete(p);
+    changed++;
+  }
+  if (changed && rec.name === V.space) {
+    try { scanVerbs(); } catch (_) {}
+    renderUnlessTyping();
+  }
+  return changed;
+}
+
+if (SIBLINGS) SIBLINGS.onmessage = e => {
+  const m = e.data || {};
+  if (m.by === WINDOW_ID) return;
+  const rec = LOADED.get(m.space);
+  if (!rec || !rec.backend || rec.backend.kind !== m.kind) return;
+  SIBLING_SEEN.set(m.space, Date.now());
+  takeSiblingSaves(rec, Array.isArray(m.wrote) ? m.wrote : [], Array.isArray(m.gone) ? m.gone : []).catch(() => {});
+};
+
+/* Shown again: a save by another window this one did not hear of means its
+   pages are read again. Browser storage only -- a whole folder is the
+   folder's own check. */
+async function catchUpWithSiblings() {
+  for (const rec of LOADED.values()) {
+    if (!rec.backend || !["idb", "ls"].includes(rec.backend.kind) || READING.size) continue;
+    let stamp = null;
+    try { stamp = JSON.parse(localStorage.getItem(siblingStampKey(rec.name)) || "null"); } catch (_) {}
+    if (!stamp || stamp.by === WINDOW_ID || !(stamp.at > (SIBLING_SEEN.get(rec.name) || 0))) continue;
+    SIBLING_SEEN.set(rec.name, stamp.at);
+    await takeSiblingSaves(rec, null).catch(() => {});
+  }
+}
 
 /* ---------- the line you were typing ----------
    A line is written back to its page when you leave it, so the words in the
@@ -15343,7 +15451,7 @@ function helpTopicNode(id, {here = false, read = openHelp} = {}) {
    docs/build-help-news.py (tests/run.mjs runs it), since a page opened from a
    file may not read another file. */
 /* HELP_NEWS generated by docs/build-help-news.py -- do not edit by hand */
-const HELP_NEWS = "## 1.45.5 - 2026-11-01\n\n- A line typed in the journal while the area was still loading is kept\n  (#232). When the rest of the area came in, the page was swapped for a\n  fresh copy of its file, and the line went into the old copy and was lost\n  when you left it. Now a page whose file has not changed stays the same\n  page, the page you are typing in is never swapped, and the screen catches\n  up once you stop typing.\n\n## 1.45.4 - 2026-11-01\n\n- The first screen is drawn once at start, not twice in a row (#231). On a\n  big vault each drawing takes a second on a phone.\n\n## 1.45.3 - 2026-11-01\n\n- A big area kept in browser storage opens quickly (#230). It read and\n  sorted every page before showing anything. Now it opens on today's pages,\n  as a folder does, and the projects, people and older days come in behind.\n\n## 1.45.2 - 2026-11-01\n\n- An area on a GroupTodo server opens quickly (#229). It used to fetch every\n  file just to see that the server was there, then fetch them all again to\n  open the area. Now a ping says it is there, and a big vault opens on\n  today's pages while the rest comes in behind, as a folder does. A server\n  that has gone quiet is given up on after a few seconds instead of holding\n  the start.\n\n## 1.45.1 - 2026-11-01\n\n- Opens quickly on a weak network (#228). The installed app used to wait\n  for the network on every start, as long as the browser would, before it\n  used the copy it keeps. Now the network gets 2.5 seconds; after that the\n  kept copy opens and the new one is fetched for next time. serve.py says\n  \"not changed\" instead of sending the 3 MB app again, and sends it zipped\n  (0.9 MB) when it has changed.\n";
+const HELP_NEWS = "## 1.45.6 - 2026-11-01\n\n- Work is no longer lost when the installed app and a tab are open at the\n  same time (#233). Both use the same browser storage, and each kept the\n  copy it read at start. The one left open with an old copy saved that copy\n  over what the other had just saved. Now a save is merged with what is\n  stored, as a folder's is, so nothing either window wrote is lost. And each\n  window tells the others what it saved, so they show it too.\n\n## 1.45.5 - 2026-11-01\n\n- A line typed in the journal while the area was still loading is kept\n  (#232). When the rest of the area came in, the page was swapped for a\n  fresh copy of its file, and the line went into the old copy and was lost\n  when you left it. Now a page whose file has not changed stays the same\n  page, the page you are typing in is never swapped, and the screen catches\n  up once you stop typing.\n\n## 1.45.4 - 2026-11-01\n\n- The first screen is drawn once at start, not twice in a row (#231). On a\n  big vault each drawing takes a second on a phone.\n\n## 1.45.3 - 2026-11-01\n\n- A big area kept in browser storage opens quickly (#230). It read and\n  sorted every page before showing anything. Now it opens on today's pages,\n  as a folder does, and the projects, people and older days come in behind.\n\n## 1.45.2 - 2026-11-01\n\n- An area on a GroupTodo server opens quickly (#229). It used to fetch every\n  file just to see that the server was there, then fetch them all again to\n  open the area. Now a ping says it is there, and a big vault opens on\n  today's pages while the rest comes in behind, as a folder does. A server\n  that has gone quiet is given up on after a few seconds instead of holding\n  the start.\n";
 /* HELP_NEWS end */
 function helpNews() {
   const box = el("div", {class: "helpnews"}, el("p", {class: "quiet"}, "This is v" + APP_VERSION + "."));
@@ -47016,7 +47124,7 @@ function pageSignature(rec) {
 }
 
 function installAutoSync() {
-  const onReturn = () => { autoSyncLinked(); refreshFromServer(); maybeSyncCalendars(CAL_RETURN_MIN); };
+  const onReturn = () => { catchUpWithSiblings().catch(() => {}); autoSyncLinked(); refreshFromServer(); maybeSyncCalendars(CAL_RETURN_MIN); };
   window.addEventListener("focus", onReturn);
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) onReturn();

@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.45.6 - 2026-11-01
+
+- Work is no longer lost when the installed app and a tab are open at the
+  same time (#233). Both use the same browser storage, and each kept the
+  copy it read at start. The one left open with an old copy saved that copy
+  over what the other had just saved. Now a save is merged with what is
+  stored, as a folder's is, so nothing either window wrote is lost. And each
+  window tells the others what it saved, so they show it too.
+
 ## 1.45.5 - 2026-11-01
 
 - A line typed in the journal while the area was still loading is kept
