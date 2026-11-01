@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.48.0 - 2026-11-01
+
+- Chores has a Print button beside Away until... (#235). It prints what is
+  due now and this week on one sheet for the fridge, by room in the order of
+  the room sort: a box to tick, the chore, LATE or its day, how often, the
+  time from its size and whose turn it is. Nothing to set: it takes the room
+  and whose chores the view shows.
+- The browser's own Print now gives the whole view on every screen, not just
+  what fits on it: no sidebar, top bar or buttons, and the closed folds open.
+
 ## 1.47.0 - 2026-11-01
 
 - Chores work for the people at home who never open GroupToDo (#236).

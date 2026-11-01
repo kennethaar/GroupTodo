@@ -1573,6 +1573,64 @@ var GTD_TEST = (() => {
       ok(red().querySelectorAll(".chorecard").length >= CHORE_COL_MAX + 3, "all of them after it");
     } finally { for (const [k, v] of was) PREF.set(k, v); CHORE_COLS_OPEN.clear(); dropChores(path); render(); }
   });
+  test("#235 Print puts what is due now and this week on one sheet, by room, as the view shows it", async () => {
+    const path = choreProject("chores print", [
+      chore("Wipe the testprint counters #15m [[c/home/testprintk]]", "daily", -3),
+      chore("Clean the testprint sink [[c/home/testprintb]]", "weekly", 2),
+      chore("Wash the testprint mats [[c/home/testprintb]]", "monthly", 25)]);
+    const was = ["chores.room", "chores.who", "chores.layout"].map(k => [k, PREF.get(k, "")]);
+    const print = window.print;
+    let printed = 0;
+    window.print = () => { printed++; };
+    try {
+      PREF.set("chores.room", ""); PREF.set("chores.who", "all"); PREF.set("chores.layout", "");
+      go("chores"); await settle();
+      const btn = content().querySelector(".vhead .printbtn");
+      ok(btn && btn.textContent === "Print", "a Print button in the Chores header");
+      btn.click(); await settle();
+      eq(printed, 1, "the browser's print is opened");
+      ok(document.body.classList.contains("printsheet"), "only the sheet is printed");
+      const sheet = document.querySelector("#printsheet");
+      ok(sheet && sheet.parentNode === document.body, "the sheet is outside the app");
+      const text = sheet.textContent;
+      has(text, "week " + isoWeek(T())[0], "the week");
+      has(text, "Wipe the testprint counters", "due now");
+      has(text, "Clean the testprint sink", "coming up this week");
+      ok(!text.includes("Wash the testprint mats"), "fresh ones are left out");
+      const row = [...sheet.querySelectorAll("tr")].find(r => r.textContent.includes("counters"));
+      has(row.textContent, "LATE", "late in capitals");
+      has(row.textContent, "daily", "how often");
+      has(row.textContent, "15 min", "the time from the size");
+      ok(row.querySelector(".ps-box"), "a box to tick");
+      const rooms = [...sheet.querySelectorAll(".ps-room th:first-child")].map(n => n.textContent);
+      ok(rooms.findIndex(t => t.includes("testprintb")) < rooms.findIndex(t => t.includes("testprintk")), "rooms by name: " + rooms);
+      window.dispatchEvent(new Event("afterprint"));
+      ok(!document.querySelector("#printsheet") && !document.body.classList.contains("printsheet"), "gone after printing");
+
+      PREF.set("chores.room", "@home/testprintk"); render(); await settle();
+      content().querySelector(".printbtn").click(); await settle();
+      const one = document.querySelector("#printsheet").textContent;
+      ok(one.includes("counters") && !one.includes("testprint sink"), "the room picked is the room printed");
+      window.dispatchEvent(new Event("afterprint"));
+    } finally {
+      window.print = print;
+      window.dispatchEvent(new Event("afterprint"));
+      for (const [k, v] of was) PREF.set(k, v); dropChores(path); render();
+    }
+  });
+  test("#235 the browser's own Print opens the folds, and closes them again after", async () => {
+    const path = choreProject("chores fold", [chore("Dust the testfold shelf [[c/home]]", "weekly", 3)]);
+    const was = PREF.get("chores.who", "");
+    try {
+      PREF.set("chores.who", "all"); go("chores"); await settle();
+      const fold = content().querySelector("details.fold");
+      ok(fold && !fold.open, "Coming up this week starts closed");
+      window.dispatchEvent(new Event("beforeprint"));
+      ok(fold.open, "open on paper");
+      window.dispatchEvent(new Event("afterprint"));
+      ok(!fold.open, "closed again after");
+    } finally { PREF.set("chores.who", was); dropChores(path); render(); }
+  });
   /* ---------- contexts in folders (#201) ---------- */
   test("#201 @home/kitchen typed in the capture box is one context, and @kitchen finds it", () => {
     makeContext("home/kitchen");
