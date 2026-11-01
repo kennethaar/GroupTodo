@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.50.1 - 2026-11-01
+
+- The Journal no longer shows the @context chip in the top bar (#168). The day
+  page is not filtered by context, and on a phone the chip took a row of its
+  own; now the area button sits in the top row beside ?. Next and the other
+  views still show it.
+
 ## 1.50.0 - 2026-11-01
 
 - The Journal's week fills a wide screen, with one area too, not only with

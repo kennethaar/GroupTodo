@@ -151,6 +151,16 @@ var GTD_TEST = (() => {
       ok(d.querySelector("header.top").getBoundingClientRect().height < 70, "the bar is one row");
     } finally { f.remove(); }
   });
+  test("#168 the Journal shows no @context chip, so on a phone the area button is on the top row", async () => {
+    const was = state.context;
+    try {
+      state.context = "home";
+      go("today"); await settle();
+      ok($("#btnContext").hidden, "the @context chip shows on the Journal");
+      go("next"); await settle();
+      ok(!$("#btnContext").hidden, "the @context chip is gone from Next too");
+    } finally { state.context = was; go("today"); await settle(); }
+  });
   test("#166 the projects list draws no stray null", async () => {
     go("projects", {sub: "list", statusCode: "1"});
     await settle();

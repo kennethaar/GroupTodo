@@ -3981,7 +3981,7 @@ Your answers stay on this device until you finish. Next time, the page is read b
 Your area =>
 Your areas =>
 Your calendars. Only in a private area. =>
-Your context now. Next puts its actions first. =>
+Your context now. Next puts its actions first. Not shown on the Journal. =>
 Your day page is yours. Others can read it but not type over it. =>
 Your email in =>
 Your email is opening with the note. Press Send. =>
