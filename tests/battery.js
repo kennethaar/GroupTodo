@@ -478,6 +478,145 @@ var GTD_TEST = (() => {
     ok(at(join(DIRS.someday, "Later.md")) < at(join(DIRS.completed, "Done.md")), "someday before done");
     ok(at(join(DIRS.completed, "Done.md")) < at(join(JOURNALS, old + ".md")), "done before an old day");
   });
+  /* A pretend serve.py: fetch() is swapped for one that answers from a tree
+     of paths, keeps a log of what was asked, and can hold a file back. */
+  const fakeServer = async (files, body, {gate = {}, hang = false} = {}) => {
+    const real = window.fetch, asked = [];
+    window.fetch = async (url, opts = {}) => {
+      const u = new URL(url, location.href), path = u.searchParams.get("path");
+      asked.push(u.pathname.replace(/^.*\/api\//, "") + (path ? " " + path : ""));
+      if (hang) return new Promise((_, rej) => opts.signal?.addEventListener("abort", () => rej(new DOMException("aborted", "AbortError"))));
+      if (/\/api\/ping$/.test(u.pathname)) return new Response(JSON.stringify({ok: true}));
+      if (/\/api\/list$/.test(u.pathname)) return new Response(JSON.stringify(Object.keys(files)));
+      if (gate[path]) await gate[path];
+      return path in files ? new Response(files[path]) : new Response("not found", {status: 404});
+    };
+    try { return await body(asked); } finally { window.fetch = real; }
+  };
+
+  test("#229 a server area is checked with a ping, not by downloading the vault", async () => {
+    await fakeServer({[join(JOURNALS, T() + ".md")]: "- TODO today\n"}, async asked => {
+      const b = await spaceBackend({name: "Srv229", kind: "http", server: "http://srv.test"});
+      eq(b.kind, "http", "kept the server");
+      eq(asked, ["ping"], "asked");
+    });
+  });
+
+  test("#229 a big vault on a server shows today first, the rest behind", async () => {
+    const old = shiftISO(T(), -10);
+    let release;
+    const held = new Promise(r => { release = r; });
+    const files = {[join(JOURNALS, T() + ".md")]: "- TODO today's line\n", [join(JOURNALS, old + ".md")]: "- old line\n",
+                   [join(DIRS.active, "Boat.md")]: "title:: Boat\n\n- TODO Sand the hull\n"};
+    await fakeServer(files, async () => {
+      const rec = newRecord("Srv229b", Backends.http("http://srv.test"));
+      try {
+        await readInto(rec, {stage: true});
+        has(serializePage(rec.pages.get(join(JOURNALS, T() + ".md"))), "today's line", "today read first");
+        ok(!rec.pages.has(join(JOURNALS, old + ".md")), "an old day waits");
+      } finally { release(); }
+      await filesLoaded();
+      ok(rec.pages.has(join(JOURNALS, old + ".md")), "old day read");
+      has(serializePage(rec.pages.get(join(DIRS.active, "Boat.md"))), "Sand the hull", "project read in full");
+    }, {gate: {[join(JOURNALS, old + ".md")]: held}});
+  });
+
+  test("#229 a server that never answers gives up instead of holding the start", async () => {
+    await fakeServer({}, async () => {
+      let err = null;
+      try { await fetchWithin("http://srv.test/api/ping", {}, 30); } catch (e) { err = e; }
+      ok(err, "a silent server did not fail");
+      has(err.message, "no answer", "says why");
+    }, {hang: true});
+  });
+
+  /* The demo has no IndexedDB (docs/demo.js), so this goes through the
+     localStorage backend, which the demo keeps in memory. */
+  test("#230 a big area in browser storage shows today first, the rest behind", async () => {
+    const old = shiftISO(T(), -10), ns = "Ls230";
+    const files = {[join(JOURNALS, T() + ".md")]: "- TODO today's line\n", [join(JOURNALS, old + ".md")]: "- old line\n",
+                   [join(DIRS.active, "Boat.md")]: "title:: Boat\n\n- TODO Sand the hull\n"};
+    const b = Backends.ls(ns);
+    for (const [p, t] of Object.entries(files)) await b.write(p, t);
+    try {
+      eq((await b.names()).sort(), Object.keys(files).sort(), "names() lists this area's pages only");
+      eq([...(await b.readMany([join(DIRS.active, "Boat.md"), "pages/none.md"])).keys()], [join(DIRS.active, "Boat.md")], "readMany() skips what is not there");
+      const batches = [], read = b.readMany.bind(b);
+      b.readMany = (paths, onEach) => { batches.push(paths.slice()); return read(paths, onEach); };
+      const rec = newRecord(ns, b);
+      await readInto(rec, {stage: true});
+      ok(batches[0].includes(join(JOURNALS, T() + ".md")), "today read first");
+      ok(!batches[0].includes(join(JOURNALS, old + ".md")) && !batches[0].includes(join(DIRS.active, "Boat.md")),
+         "the first read took more than the day needs: " + batches[0].join(", "));
+      await filesLoaded();
+      ok(!rec.stubs, "no stand-ins left");
+      ok(rec.pages.has(join(JOURNALS, old + ".md")), "old day read");
+      has(serializePage(rec.pages.get(join(DIRS.active, "Boat.md"))), "Sand the hull", "project read in full");
+    } finally { for (const p of Object.keys(files)) await b.remove(p); }
+  });
+
+  test("#232 a line typed in today's journal while the rest loads is kept", async () => {
+    const old = shiftISO(T(), -10), ns = "Ls232", today = join(JOURNALS, T() + ".md");
+    const files = {[today]: "- first line\n", [join(JOURNALS, old + ".md")]: "- old line\n",
+                   [join(DIRS.active, "Boat.md")]: "title:: Boat\n\n- TODO Sand the hull\n"};
+    const b = Backends.ls(ns);
+    for (const [p, t] of Object.entries(files)) await b.write(p, t);
+    try {
+      // The first read goes through; the rest waits until the line is on screen.
+      let release, calls = 0;
+      const held = new Promise(r => { release = r; }), read = b.readMany.bind(b);
+      b.readMany = async (paths, onEach) => { if (calls++) await held; return read(paths, onEach); };
+      const rec = newRecord(ns, b);
+      await readInto(rec, {stage: true});
+      ok(rec.stubs, "the rest was already in");
+      // The line on screen is bound to this block; it is written back when you leave it.
+      const line = rec.pages.get(today).blocks[0];
+      release();
+      await filesLoaded();
+      ok(!rec.stubs, "no stand-ins left");
+      ok(rec.pages.get(today).blocks[0] === line, "the read swapped the page under the line");
+      line.title = "first line, and more typed while it loaded";
+      has(serializePage(rec.pages.get(today)), "more typed while it loaded", "the read swapped the page under the line");
+    } finally { for (const p of Object.keys(files)) await b.remove(p); }
+  });
+
+  test("#232 the page being typed in is not swapped, even when its file changed", async () => {
+    const ns = "Ls232b", today = join(JOURNALS, T() + ".md");
+    const b = Backends.ls(ns);
+    await b.write(today, "- first line\n");
+    const host = el("div", {data: {space: ns, path: today}}, el("div", {contenteditable: "true"}, "typing"));
+    document.body.append(host);
+    try {
+      const rec = newRecord(ns, b);
+      await readInto(rec);
+      const line = rec.pages.get(today).blocks[0];
+      await b.write(today, "- first line\n- added on another device\n");
+      host.firstChild.focus();
+      await readInto(rec);
+      host.firstChild.blur();
+      ok(rec.pages.get(today).blocks[0] === line, "the page being typed in was swapped");
+    } finally { host.remove(); await b.remove(today); }
+  });
+
+  test("#231 start-up draws the first screen once, not twice", async () => {
+    const real = render;
+    const drawn = [];
+    render = function () { drawn.push(new Error().stack.split("\n").slice(2, 5).join(" < ")); return real.apply(this, arguments); };
+    // As at start-up: nothing read in yet. (An area already in memory is read
+    // again behind your back, and that read draws when it is done, rightly.)
+    await flush();
+    const name = V.space, kept = LOADED.get(name);
+    LOADED.delete(name);
+    try { await openSpace(name, null, {draw: false}); }
+    catch (e) { LOADED.set(name, kept); throw e; }
+    finally { render = real; }
+    ok(V.pages.size > 50, "the area read back in");
+    eq(drawn, [], "openSpace with draw: false drew");
+    const init = [...document.scripts].map(x => x.textContent).find(t => t.includes("(async function init()")) || "";
+    has(init, "await openSpace(start, null, {draw: false})", "init leaves the drawing to itself");
+    render();
+  });
+
   test("#181 a stand-in edited while it loads gives way to its file when the first of the rest is in", () => {
     const rec = newRecord("Lay181", null);
     const path = personPath("Odd Kittelsen");

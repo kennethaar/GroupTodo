@@ -5,6 +5,44 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.45.5 - 2026-11-01
+
+- A line typed in the journal while the area was still loading is kept
+  (#232). When the rest of the area came in, the page was swapped for a
+  fresh copy of its file, and the line went into the old copy and was lost
+  when you left it. Now a page whose file has not changed stays the same
+  page, the page you are typing in is never swapped, and the screen catches
+  up once you stop typing.
+
+## 1.45.4 - 2026-11-01
+
+- The first screen is drawn once at start, not twice in a row (#231). On a
+  big vault each drawing takes a second on a phone.
+
+## 1.45.3 - 2026-11-01
+
+- A big area kept in browser storage opens quickly (#230). It read and
+  sorted every page before showing anything. Now it opens on today's pages,
+  as a folder does, and the projects, people and older days come in behind.
+
+## 1.45.2 - 2026-11-01
+
+- An area on a GroupTodo server opens quickly (#229). It used to fetch every
+  file just to see that the server was there, then fetch them all again to
+  open the area. Now a ping says it is there, and a big vault opens on
+  today's pages while the rest comes in behind, as a folder does. A server
+  that has gone quiet is given up on after a few seconds instead of holding
+  the start.
+
+## 1.45.1 - 2026-11-01
+
+- Opens quickly on a weak network (#228). The installed app used to wait
+  for the network on every start, as long as the browser would, before it
+  used the copy it keeps. Now the network gets 2.5 seconds; after that the
+  kept copy opens and the new one is fetched for next time. serve.py says
+  "not changed" instead of sending the 3 MB app again, and sends it zipped
+  (0.9 MB) when it has changed.
+
 ## 1.45.0 - 2026-11-01
 
 - Next on a phone shows the context you seem to be in (#226), with Show all

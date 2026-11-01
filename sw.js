@@ -73,20 +73,35 @@ self.addEventListener("fetch", e => {
                   /\/(grouptodo\.html|index\.html|manifest\.webmanifest|icon\.svg|sw\.js)$/.test(url.pathname);
   if (!isShell) return;
 
-  // Network first, so a newer grouptodo.html is picked up whenever a host answers.
-  e.respondWith(
-    fetch(e.request)
-      .then(r => {
-        if (r && r.ok) {
-          const copy = r.clone();
-          caches.open(SHELL).then(c => c.put(e.request, copy)).catch(() => {});
-        }
-        return r;
-      })
-      .catch(async () => {
-        const hit = await caches.match(e.request, {ignoreSearch: true});
-        return hit || (await caches.match("./grouptodo.html", {ignoreSearch: true})) ||
-               new Response("Offline and nothing cached yet.", {status: 503});
-      })
-  );
+  e.respondWith(shell(e));
 });
+
+/* Network first, so a newer grouptodo.html is picked up whenever a host answers
+   -- but not at any price. A weak signal, a captive portal or a half-asleep
+   server used to hold the start for as long as the browser would wait, tens of
+   seconds, with a perfectly good copy right here. Now the network gets
+   NETWORK_WAIT to deliver the whole file; after that the copy opens and the
+   download carries on in the background, ready for the next start. */
+const NETWORK_WAIT = 2500;
+
+async function shell(e) {
+  const net = fetch(e.request).then(async r => {
+    if (r && r.ok) {
+      // Read to the end before answering: headers in time and three megabytes
+      // trickling after them is just as slow as no answer.
+      const copy = r.clone();
+      await r.clone().arrayBuffer();
+      await caches.open(SHELL).then(c => c.put(e.request, copy)).catch(() => {});
+    }
+    return r;
+  });
+  e.waitUntil(net.then(() => {}, () => {}));       // let the update finish after we answer
+  const slow = new Promise(res => setTimeout(res, NETWORK_WAIT, "slow"));
+  const first = await Promise.race([net.catch(() => "down"), slow]);
+  if (first !== "slow" && first !== "down") return first;
+  const hit = (await caches.match(e.request, {ignoreSearch: true})) ||
+              (await caches.match("./grouptodo.html", {ignoreSearch: true}));
+  if (hit) return hit;
+  if (first === "slow") { try { return await net; } catch (_) {} }   // nothing kept yet: wait it out
+  return new Response("Offline and nothing cached yet.", {status: 503});
+}
