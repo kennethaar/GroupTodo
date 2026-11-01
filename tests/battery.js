@@ -598,38 +598,24 @@ var GTD_TEST = (() => {
     } finally { host.remove(); await b.remove(today); }
   });
 
-  test("#232 an area back on its folder opens on the folder's today, not the browser copy", async () => {
-    /* After a fresh download the folder waits for its permission, so the area
-       is read from browser storage first. Allowed, it must not stay on that copy
-       until the whole folder is read and a line has been typed. */
-    const name = V.space, kept = LOADED.get(name), ns = "Ls232c";
-    const today = join(JOURNALS, T() + ".md"), old = join(JOURNALS, shiftISO(T(), -10) + ".md");
-    const files = {[today]: "- written in the folder\n", [old]: "- old line\n",
-                   [join(DIRS.active, "Boat.md")]: "title:: Boat\n\n- TODO Sand the hull\n"};
+  test("#232 today's page made from templates before its file was read takes in the file", async () => {
+    /* After a fresh download the folder waits for its permission, and today's
+       page is poured from its templates. Read from the folder, the day showed
+       only the templates until a line was typed and saved. */
+    const ns = "Ls232c", today = join(JOURNALS, T() + ".md");
     const b = Backends.ls(ns);
-    for (const [p, t] of Object.entries(files)) await b.write(p, t);
-    let release, calls = 0;
-    const held = new Promise(r => { release = r; }), read = b.readMany.bind(b);
-    b.readMany = async (paths, onEach) => { if (calls++) await held; return read(paths, onEach); };
-    await flush();
-    const stale = newRecord(name, Backends.memory("Old232"));
-    stale.pages.set(today, parsePage("- browser copy\n"));
-    LOADED.set(name, stale);
+    await b.write(today, "- written in the folder\n");
     try {
-      await loadFromBackend(b, {quick: true});
-      ok(LOADED.get(name) !== stale, "the browser copy was kept as the folder");
-      has(serializePage(V.pages.get(today)), "written in the folder", "today is not the folder's");
-      ok(LOADED.get(name).stubs, "the whole folder was read before today showed");
-      release();
-      await filesLoaded();
-      has(serializePage(V.pages.get(join(DIRS.active, "Boat.md"))), "Sand the hull", "the rest came in");
-    } finally {
-      release();
-      await filesLoaded();
-      LOADED.set(name, kept); bindActive(name);
-      for (const p of Object.keys(files)) await b.remove(p);
-      render();
-    }
+      const rec = newRecord(ns, b);
+      rec.pages.set(today, parsePage("- from the template\n"));
+      rec.dirty.add(today);                       // as ensureJournal leaves it
+      await readInto(rec);
+      const text = serializePage(rec.pages.get(today));
+      has(text, "written in the folder", "the file's lines are not on the page");
+      has(text, "from the template", "the template's lines were dropped");
+      ok(rec.dirty.has(today), "the merged page is not saved");
+      eq(rec.base.get(today), "- written in the folder\n", "saved against the file it took in");
+    } finally { await b.remove(today); }
   });
 
   test("#231 start-up draws the first screen once, not twice", async () => {
