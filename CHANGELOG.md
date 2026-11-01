@@ -5,6 +5,20 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.53.0 - 2026-11-01
+
+- An area can be set up for writing a book (#240): Settings > Book > Set
+  up for writing a book. A Book view (g b) lists the chapters in order, each
+  with its stage (Outline, Draft, Revise, Done) and its words, and a bar
+  for the words against the goal and the chapters done. Click a stage to
+  move it on; Export puts the whole book in one markdown file. Settings picks
+  the goal and the stages and moves the chapters with ↑ ↓. It is all kept in
+  `pages/8/book.md` (a `[[page]]` per chapter, `target::`, `stages::`), and
+  each chapter page says `stage:: Draft`. Task lines in a chapter are work on
+  it, so they are not counted or exported. Set up also adds a Chapter task
+  type and a Words tracker. Back to the default takes the page away; the
+  chapters stay as pages. Without the page nothing changes.
+
 ## 1.52.0 - 2026-11-01
 
 - The sidebar can be shaped per area (#238): Settings has a Sidebar section,

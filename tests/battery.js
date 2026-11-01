@@ -4993,6 +4993,129 @@ var GTD_TEST = (() => {
   }));
 
   /* ============================================================
+     A book, as a page in 8/ (#240)
+     ============================================================ */
+  // Every page put back as it was, since setting a book up also writes a type and a tracker.
+  const withBookVault = async (pages, fn) => {
+    const was = new Map([...V.pages].map(([p, page]) => [p, structuredClone(page)]));
+    try {
+      V.pages.delete(BOOK_PATH);
+      for (const [p, text] of Object.entries(pages)) putPage(p, parsePage(text), {silent: true});
+      clearMemo(); renderNav();
+      await fn();
+    } finally {
+      closeModal();
+      V.pages.clear();
+      for (const [p, page] of was) { V.pages.set(p, page); V.removed.delete(p); }
+      clearMemo(); go("today"); renderNav();
+    }
+  };
+  const BOOK_PAGES = {
+    [BOOK_PATH]: "title:: book\ntarget:: 1000\nstages:: Idea, Write, Polish, Done\n\n- [[Harbour]]\n- The storm\n- [[Not yet]]\n",
+    [join(PAGES, "The storm.md")]: "stage:: Polish\n\n- It was a dark and stormy night.\n  - The [[Harbour]] lay still.\n" +
+      "- TODO Check the tide tables\n  - not counted either\n",
+    [join(PAGES, "Harbour.md")]: "stage:: done\n\n- Two words\n",
+  };
+  test("#240 without 8/book.md there is no Book view and Settings only offers to set one up", () => withBookVault({}, async () => {
+    ok(!navLabels().includes("Book"), "no Book in the sidebar");
+    eq(bookChapters(), []);
+    go("checklists");
+    await settle();
+    const card = content().querySelector(".bookset");
+    eq([...card.querySelectorAll("button")].map(b => b.textContent), ["Set up for writing a book"]);
+    go("book");
+    await settle();
+    has(content().textContent, "No book in this area yet.");
+  }));
+  test("#240 8/book.md orders the chapters, reads their stages and counts their words", () => withBookVault(BOOK_PAGES, async () => {
+    renderNav(); ok(navLabels().includes("Book"), "Book is in the sidebar");
+    eq(bookChapters().map(c => c.name), ["Harbour", "The storm", "Not yet"], "a bare name is a chapter too");
+    eq(bookChapters()[2].path, null, "a page not made yet");
+    eq(bookStages().map(s => s.name), ["Idea", "Write", "Polish", "Done"]);
+    eq(bookTarget(), 1000);
+    const storm = join(PAGES, "The storm.md");
+    eq(chapterStage(storm).name, "Polish");
+    eq(chapterStage(join(PAGES, "Harbour.md")).core, "DONE", "a stage matches whatever its case");
+    eq(chapterWords(storm), 11, "the task and what is under it are not counted");
+    go("book");
+    await settle();
+    eq([...content().querySelectorAll(".bookch .nm")].map(n => n.textContent), ["Harbour", "The storm", "Not yet"]);
+    has(content().querySelector(".vhead").textContent, "13 of " + fmtWords(1000) + " words");
+    has(content().querySelector(".bookgoal").textContent, "1/3 chapters done");
+    content().querySelector(".bookch .bookstage").click();
+    await settle();
+    ok($("#modalRoot").textContent.includes("Polish"), "the stages to pick from");
+    closeModal();
+    setChapterStage(storm, "Done");
+    eq(getPage(storm).props.stage, "Done", "written on the chapter page");
+    has(bookManuscript(), "## Harbour\n\nTwo words\n\n## The storm\n\nIt was a dark and stormy night.\n\nThe Harbour lay still.\n\n## Not yet");
+    ok(!bookManuscript().includes("tide"), "no tasks in the manuscript");
+  }));
+  test("#240 what 8/book.md leaves out is the built-in", () => withBookVault({
+    [BOOK_PATH]: "title:: book\nstages:: Only one\n\n- [[A chapter]]\n",
+    [join(PAGES, "A chapter.md")]: "stage:: Typo\n\n- Words\n",
+  }, () => {
+    eq(bookStages().map(s => s.name), BOOK_STAGES, "fewer than two stages");
+    eq(bookTarget(), null, "no goal");
+    eq(chapterStage(join(PAGES, "A chapter.md")).name, "Outline", "a stage nobody listed is the first");
+    // A task type, as a link or by its name.
+    const type = createStateList("Draft steps", ["Sketch (to do)", "Write (doing)", "Final (done)"]);
+    for (const said of ["[[8/Draft steps]]", "Draft steps"]) {
+      getPage(BOOK_PATH).props.stages = said; clearMemo();
+      eq(bookStages().map(s => s.name), ["Sketch", "Write", "Final"], said);
+    }
+    ok(isStateList(type));
+    ok(!checklistPages().includes(BOOK_PATH), "not listed as a checklist");
+    ok(!isTemplatePath(BOOK_PATH), "not a template");
+  }));
+  test("#240 8/book.md survives a write and a read", () => {
+    const t = "title:: book\ntarget:: 80000\nstages:: [[8/Chapter]]\n\n- [[The storm]]\n- [[Harbour]]\n  - the one set at sea\n";
+    eq(serializePage(parsePage(t)), t);
+  });
+  test("#240 Settings > Book sets up, picks, moves and goes back to the default", () => withBookVault({
+    [join(PAGES, "The storm.md")]: "- Rain\n", [join(PAGES, "Harbour.md")]: "- Boats\n",
+  }, async () => {
+    go("checklists");
+    await settle();
+    content().querySelector(".bookset .btn").click();
+    await settle();
+    const page = getPage(BOOK_PATH);
+    ok(page, "the page is made");
+    eq(page.props.stages, "[[8/Chapter]]");
+    eq(bookStages().map(s => s.name), BOOK_STAGES, "the Chapter type has the built-in stages");
+    ok(pageHasTracker(getPage(join(DIRS.lists, todayISO().slice(0, 4) + ".md")), "words"), "a Words tracker on every day");
+    renderNav(); ok(navLabels().includes("Book"), "Book is in the sidebar");
+    const seg = label => [...content().querySelectorAll(".bookset .seg button")].find(b => b.textContent === label);
+    seg((100000).toLocaleString()).click();
+    await settle();
+    eq(page.props.target, "100000");
+    eq(content().querySelector(".bookset .seg [aria-checked=true]").textContent, (100000).toLocaleString(), "the goal in use is marked");
+    seg("Built in").click();
+    await settle();
+    ok(!("stages" in page.props), "Built in takes stages:: off");
+    addBookChapter("The storm"); addBookChapter("Harbour"); addBookChapter("Harbour");
+    await settle();
+    eq(bookChapters().map(c => c.name), ["The storm", "Harbour"], "once each");
+    const row = name => [...content().querySelectorAll(".bookset .prow")].find(r => r.dataset.ch === name);
+    row("Harbour").querySelector('[data-dir="-1"]').click();
+    await settle();
+    await new Promise(r => requestAnimationFrame(() => setTimeout(r, 20)));
+    eq(bookChapters().map(c => c.name), ["Harbour", "The storm"]);
+    eq(document.activeElement.closest(".prow")?.dataset.ch, "Harbour", "focus stays with the chapter moved");
+    row("Harbour").querySelector("[data-drop]").click();
+    await settle();
+    eq(bookChapters().map(c => c.name), ["The storm"]);
+    ok(getPage(join(PAGES, "Harbour.md")), "the page stays");
+    const back = [...content().querySelectorAll(".bookset .helpsee .textbtn")];
+    eq(back[back.length - 1].textContent, "Back to the default", "last");
+    back[back.length - 1].click();
+    await settle();
+    ok(!getPage(BOOK_PATH), "the page is gone");
+    renderNav(); ok(!navLabels().includes("Book"), "and Book with it");
+    ok(getPage(join(DIRS.lists, "Chapter.md")), "the Chapter type stays");
+  }));
+
+  /* ============================================================
      Timer
      ============================================================ */
   test("timer starts and stops", () => {
