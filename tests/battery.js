@@ -4929,6 +4929,70 @@ var GTD_TEST = (() => {
   });
 
   /* ============================================================
+     The sidebar, as a page in 8/ (#238)
+     ============================================================ */
+  const navLabels = () => [...document.querySelectorAll("#nav > .nav-item:not(.pin) .lbl")].map(n => n.textContent);
+  const withSidebarPage = async (text, fn) => {
+    const was = getPage(SIDEBAR_PATH);
+    try {
+      if (text == null) { if (was) V.pages.delete(SIDEBAR_PATH); }
+      else putPage(SIDEBAR_PATH, parsePage(text));
+      clearMemo(); renderNav();
+      await fn();
+    } finally {
+      if (was) putPage(SIDEBAR_PATH, was); else V.pages.delete(SIDEBAR_PATH);
+      clearMemo(); go("today"); renderNav();
+    }
+  };
+  test("#238 without 8/sidebar.md the sidebar is the built-in one", () => withSidebarPage(null, () => {
+    eq(navItems().filter(it => it && it.id).map(it => it.id),
+      NAV_ITEMS.filter(it => it && it.id).map(it => it.id));
+    eq(navItems().filter(it => typeof it === "string"), ["sep", "pins", "grow"]);
+  }));
+  test("#238 8/sidebar.md orders and hides; Settings stays; an unnamed view still shows", () => withSidebarPage(
+    "title:: sidebar\nhide:: Waiting for, Settings, contexts\n\n- Next\n- Journal\n- ---\n- Projects\n- Pages\n- People\n- ---\n- Weekly review\n- Timer\n",
+    () => {
+      const l = navLabels();
+      ok(l.indexOf("Next") < l.indexOf("Journal"), "Next first: " + l);
+      ok(!l.includes("Waiting for") && !l.includes("Contexts"), "hidden ones left out: " + l);
+      ok(l.includes("Settings"), "Settings cannot be hidden");
+      ok(l.indexOf("Pages") < l.indexOf("People"), "Pages before People: " + l);
+      // Organisations is not named: it comes after People, where it sits by default.
+      eq(l[l.indexOf("People") + 1], "Organisations");
+      eq(navOrder().slice(-3), [NAV_SEP, "review", "timer"], "the foot group");
+      ok(!checklistPages().includes(SIDEBAR_PATH), "not listed as a checklist");
+    }));
+  test("#238 the --- lines survive a write and a read", () => {
+    const t = "title:: sidebar\n\n- Journal\n- ---\n- Projects\n- ---\n- Timer\n";
+    eq(serializePage(parsePage(t)), t);
+  });
+  test("#238 Settings > Sidebar hides, moves and goes back to the default", () => withSidebarPage(null, async () => {
+    go("checklists");
+    await settle();
+    const row = label => [...content().querySelectorAll(".navset .prow")].find(r => r.textContent.includes(label));
+    ok(row("Settings").querySelector("input").disabled, "Settings has no box to untick");
+    const box = row("Organisations").querySelector("input");
+    box.checked = false; box.dispatchEvent(new Event("change"));
+    await settle();
+    has(getPage(SIDEBAR_PATH).props.hide, "Organisations", "written as hide::");
+    ok(!navLabels().includes("Organisations"), "gone from the sidebar");
+    row("Next").querySelector('[data-dir="-1"]').click();
+    await settle();
+    eq(navOrder()[0], "next", "Next moved to the top");
+    eq(navLabels()[0], "Next");
+    // Up from the top of the second group crosses the line into the first.
+    const i = navOrder().indexOf("projects");
+    eq(navOrder()[i - 1], NAV_SEP);
+    row("Projects").querySelector('[data-dir="-1"]').click();
+    await settle();
+    ok(navOrder().indexOf("projects") < navOrder().indexOf(NAV_SEP), "Projects is in the first group");
+    content().querySelector(".navset .helpsee .textbtn").click();
+    await settle();
+    ok(!getPage(SIDEBAR_PATH), "the page is gone");
+    eq(navOrder(), navDefaultOrder());
+  }));
+
+  /* ============================================================
      Timer
      ============================================================ */
   test("timer starts and stops", () => {

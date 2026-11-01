@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.52.0 - 2026-11-01
+
+- The sidebar can be shaped per area (#238): Settings has a Sidebar section,
+  a box per view to show or hide it and ↑ ↓ to move it, past a line into the
+  next group. It is kept in `pages/8/sidebar.md` (one line per view, `---`
+  between the groups, `hide::` for the ones left out), so everyone in the
+  area sees the same. Settings is always shown, keys like g n still open a
+  hidden view, and Back to the default takes the page away. Without the page
+  the sidebar is as before.
+
 ## 1.51.1 - 2026-11-01
 
 - Projects comes up sooner when a big folder opens (#181). The active
