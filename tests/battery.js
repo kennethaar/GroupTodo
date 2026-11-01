@@ -3511,6 +3511,152 @@ var GTD_TEST = (() => {
     }
   };
   const dated = (b, d, time) => { setDue(b, d, time); return b; };
+
+  /* ============================================================
+     The Journal on a phone (#222)
+     ============================================================ */
+  // The Journal's top, laid out again in a phone-wide frame with the app's own styles.
+  const phoneJournal = async (width = 390) => {
+    const f = document.createElement("iframe");
+    f.style.cssText = "position:fixed;left:0;top:0;height:900px;border:0;width:" + width + "px";
+    const css = [...document.querySelectorAll("style")].map(s => s.textContent).join("\n");
+    const wrap = content().querySelector(".wrap").cloneNode(true);
+    f.srcdoc = "<!doctype html><html data-theme=\"" + (document.documentElement.dataset.theme || "") + "\"><style>" + css +
+      "</style><body><div id=\"content\">" + wrap.outerHTML + "</div>";
+    document.body.append(f);
+    await new Promise(r => f.onload = r);
+    return {f, d: f.contentDocument};
+  };
+  test("#222 on a phone the Journal says the day in words, over the date box", async () => {
+    PREF.set("today.tab", "due");
+    go("today");
+    await settle();
+    const label = content().querySelector(".todayhead .daypick .daylabel");
+    ok(label, "the day in words");
+    has(label.textContent, "Today");
+    ok(content().querySelector(".todayhead .daypick input[type=date]"), "the date box is under the words");
+    const {f, d} = await phoneJournal();
+    try {
+      const l = d.querySelector(".daylabel"), lr = l.getBoundingClientRect();
+      ok(getComputedStyle(l).display !== "none" && lr.width > 40, "the words show: " + Math.round(lr.width) + "px");
+      ok(l.scrollWidth <= l.clientWidth + 0.5, "the day is not clipped: " + l.textContent);
+      const box = d.querySelector(".daypick input").getBoundingClientRect(), pick = d.querySelector(".daypick").getBoundingClientRect();
+      ok(box.width >= pick.width - 1 && box.height >= pick.height - 1, "a tap on the words opens the date box");
+      ok(parseFloat(getComputedStyle(d.querySelector(".todayhead h1")).fontSize) <= 20, "the page name is smaller than the day");
+      const h = d.querySelector(".todayhead h1").getBoundingClientRect(), db = d.querySelector(".daybox").getBoundingClientRect();
+      ok(db.top < h.bottom && db.bottom > h.top && db.left >= h.right, "the day is beside the page name, on its row");
+      const seg = d.querySelector(".todayhead .jmode").getBoundingClientRect();
+      ok(seg.top >= Math.max(h.bottom, db.bottom), "Day and Week go under");
+      ok(d.documentElement.scrollWidth <= 390, "nothing wider than the phone");
+    } finally { f.remove(); }
+  });
+  test("#222 on a phone the Journal's buttons say what they are, in words", async () => {
+    go("today");
+    await settle();
+    const icons = [...content().querySelectorAll(".todayicon")];
+    ok(icons.length >= 2, "Trackers and History");
+    for (const b of icons) {
+      ok(/^[A-Za-z]/.test(b.textContent.trim()), "a word, not an icon: " + b.textContent);
+      ok(!/\p{Extended_Pictographic}/u.test(b.textContent), "no colour emoji: " + b.textContent);
+    }
+    ok(icons.some(b => b.textContent === "Trackers") && icons.some(b => b.textContent === "History"), "Trackers and History");
+  });
+  test("#222 on a phone the Due tab is one line, and still pairs done with open", async () => {
+    await journalDue([["TODO", "Send the late thing"]], shiftISO(T(), -1));
+    const tab = content().querySelector(".ttab-due");
+    has(tab.querySelector(".tshort").textContent, "Due");
+    const {f, d} = await phoneJournal();
+    try {
+      const t = d.querySelector(".ttab-due");
+      ok(t.getBoundingClientRect().height <= 40, "one line: " + Math.round(t.getBoundingClientRect().height) + "px");
+      const shown = [...t.querySelectorAll("span")].filter(n => getComputedStyle(n).display !== "none").map(n => n.textContent).join("");
+      ok(!shown.includes("Today & Late"), "the short name: " + shown);
+      ok(/\d+\/\d+/.test(shown), "done of all: " + shown);
+      ok(t.querySelector(".pbar") && getComputedStyle(t.querySelector(".pbar")).display !== "none", "with its bar");
+      has(shown, "late");
+    } finally { f.remove(); }
+  });
+  test("#222 an empty @context tab goes; the @context chip at the top says it", async () => {
+    const was = state.context;
+    state.context = "nowhere-at-all";
+    try {
+      go("today");
+      await settle();
+      ok(!content().querySelector(".ttab-ctx"), "no empty @context tab");
+    } finally { state.context = was; go("today"); await settle(); }
+  });
+  test("#222 the area over a journal is a quiet eyebrow, not a coloured pill", async () => {
+    go("today");
+    await settle();
+    const sp = content().querySelector(".jcard:not(.trkcol) .jhead .sp");
+    ok(sp, "the area is named");
+    const cs = getComputedStyle(sp), fg3 = getComputedStyle(document.documentElement).getPropertyValue("--fg3").trim();
+    eq(cs.backgroundColor, "rgba(0, 0, 0, 0)", "no fill");
+    eq(cs.borderTopWidth, "0px", "no border");
+    const probe = el("span", {style: "color:" + fg3});
+    document.body.append(probe);
+    try { eq(cs.color, getComputedStyle(probe).color, "muted"); } finally { probe.remove(); }
+  });
+  test("#222 one area on a phone: the card does not say Journal again, and its area is the way to focus", async () => {
+    go("today");
+    await settle();
+    const card = content().querySelector(".jcard:not(.trkcol)");
+    if (!card.classList.contains("solo")) return;   // several areas on: each card keeps its title
+    const sp = card.querySelector(".jhead .sp");
+    eq(sp.getAttribute("role"), "button");
+    eq(sp.tabIndex, 0);
+    const {f, d} = await phoneJournal();
+    try {
+      eq(getComputedStyle(d.querySelector(".jcard.solo .jtitle")).display, "none", "the title goes on a phone");
+    } finally { f.remove(); }
+    sp.click();
+    await settle();
+    ok(content().querySelector(".crumbz"), "focused on the journal");
+    go("today", {jz: null});
+    await settle();
+  });
+  test("#222 a meeting on its day starts with its time, and two at once are marked", async () => {
+    const day = "journals/2099_02_03.md";
+    await withPages({[day]: "- #meeting Ring the doorbell man\n  time:: 12:00–13:00\n- #meeting Order the food\n  time:: 12:30\n" +
+      "- #meeting Later on\n  time:: 15:00\n- #meeting Elsewhere\n  date:: [[2099-02-04]]\n  time:: 12:00\n"}, async () => {
+      const box = el("div", {}, pageOutline(day, {leadCtx: true}));
+      document.body.append(box);
+      try {
+        const line = t => [...box.querySelectorAll(".blk>.line")].find(n => n.querySelector(".txt").textContent.includes(t));
+        const first = line("doorbell");
+        const kids = [...first.children].map(n => n.className.split(" ")[0]);
+        ok(kids.indexOf("ltime") >= 0 && kids.indexOf("ltime") < kids.indexOf("txt"), "the time before the words: " + kids.join(","));
+        eq(first.querySelector(".ltime").textContent, "12:00–13:00");
+        ok(!/🕒/.test(first.querySelector(".props")?.textContent || ""), "the time is not said again in a chip");
+        has(first.querySelector(".chip.clash").textContent, "Order the food");
+        has(line("Order the food").querySelector(".chip.clash").textContent, "doorbell");
+        ok(!line("Later on").querySelector(".chip.clash"), "no clash at 15:00");
+        ok(!line("Elsewhere").querySelector(".ltime"), "a meeting dated elsewhere keeps its date chip");
+        has(line("Elsewhere").querySelector(".props").textContent, "12:00");
+      } finally { box.remove(); }
+    });
+  });
+  test("#222 a #tag is quiet: the teal is the @context's alone", () => {
+    const box = el("div", {html: renderInline("#meeting at the [[c/office]]")});
+    document.body.append(box);
+    try {
+      ok(getComputedStyle(box.querySelector(".tag")).color !== getComputedStyle(box.querySelector(".wikilink.ctx")).color,
+        "a tag is not the colour of a context");
+    } finally { box.remove(); }
+  });
+  test("#222 the next meeting says its time while more than an hour off, and counts down after", () => {
+    const now = Date.now(), m = (start, title) => ({space: V.space, path: "x.md", block: {}, title, start, end: start + 36e5});
+    try {
+      paintNextMeeting([m(now + 3 * 36e5, "Far off")]);
+      ok(/^at \d\d:\d\d$/.test($("#nextMeet .w").textContent), "a time: " + $("#nextMeet .w").textContent);
+      paintNextMeeting([m(now + 20 * 6e4, "Soon")]);
+      has($("#nextMeet .w").textContent, "in ");
+    } finally { paintNextMeeting(); }
+  });
+  test("#222 on a touch screen the line menu is big enough for a thumb", () => {
+    const css = [...document.querySelectorAll("style")].map(s => s.textContent).join("\n");
+    ok(/@media \(hover:none\)\{ \.blk>\.line>\.linemenu\{min-width:40px;min-height:32px/.test(css), "a 40×32 target without hover");
+  });
   test("#192 a week by its ISO name: its Monday, its days, and a 53rd week", () => {
     eq(weekOf("2026-10-30"), "2026-W44");
     eq(weekMonday("2026-W44"), "2026-10-26");
