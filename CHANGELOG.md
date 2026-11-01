@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.51.0 - 2026-11-01
+
+- On a phone the app opens on Next, the list of what to do now, instead of
+  the Journal. Switching area on a phone lands there too. A wider screen
+  still opens on the Journal, and a link still opens what it points at.
+
 ## 1.50.1 - 2026-11-01
 
 - The Journal no longer shows the @context chip in the top bar (#168). The day

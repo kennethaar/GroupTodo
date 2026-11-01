@@ -161,6 +161,19 @@ var GTD_TEST = (() => {
       ok(!$("#btnContext").hidden, "the @context chip is gone from Next too");
     } finally { state.context = was; go("today"); await settle(); }
   });
+  test("on a phone the app opens on Next, on a wide screen on the Journal", async () => {
+    const was = state.view;
+    try {
+      Object.defineProperty(PHONE, "matches", {configurable: true, get: () => true});
+      eq(startView(), "next", "phone");
+      await openSpace(V.space); await settle();
+      eq(state.view, "next", "a phone opens the area on");
+      delete PHONE.matches;
+      eq(startView(), "today", "wide screen");
+      await openSpace(V.space); await settle();
+      eq(state.view, "today", "a wide screen opens the area on");
+    } finally { delete PHONE.matches; go(was); await settle(); }
+  });
   test("#166 the projects list draws no stray null", async () => {
     go("projects", {sub: "list", statusCode: "1"});
     await settle();
