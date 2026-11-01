@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.43.0 - 2026-11-01
+
+- Next on a phone is a plain to-do list (#224). The filters, sort and
+  context chips fold behind one Filter button in the heading, which counts
+  what is filtered away. A row is a round tick, the @context before the
+  words, and one quiet line with the project and "Due …". The ⋯ goes:
+  tap the row, or hold the tick, for the rest. A wider screen is as before.
+
 ## 1.42.4 - 2026-11-01
 
 - Next's heading is one row on a phone (#224). The line beside the title

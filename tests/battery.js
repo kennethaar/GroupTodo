@@ -3874,9 +3874,61 @@ var GTD_TEST = (() => {
     try {
       const h = d.querySelector(".vhead h1").getBoundingClientRect(), sw = d.querySelector(".vhead .vsel").getBoundingClientRect();
       eq(getComputedStyle(d.querySelector(".vhead .csvbtn")).display, "none", "no ⤓ in the heading on a phone");
-      ok(sw.width > 0 && sw.top < h.bottom && sw.bottom > h.top, "List ▾ is on the title's row");
+      ok(sw.width > 0 && sw.top < h.bottom && sw.bottom > h.top, "List ▾ is on the title's row, look-alikes or not");
+      if (d.querySelector(".ntwins")) ok(getComputedStyle(d.querySelector(".vhead .twinbtn")).display === "none" && getComputedStyle(d.querySelector(".nfiltbtn"), "::after").content.includes("⚠"), "look-alikes wait behind Filter");
       ok(d.documentElement.scrollWidth <= 390, "nothing wider than the phone");
     } finally { f.remove(); }
+  });
+  test("#224 on a phone Next's filters fold behind Filter, which counts what is filtered", async () => {
+    const wasHidden = PREF.get("hideStates:" + (Spaces.active || ""), "[]");
+    NEXT_FILTERS_OPEN = false;
+    try {
+      setHiddenStates(new Set());
+      go("next", {sub: "list", ctxFilter: null}); await settle();
+      const btn = content().querySelector(".vhead .nfiltbtn");
+      ok(btn, "a Filter button in the heading");
+      ok(!/\d/.test(btn.textContent), "nothing filtered, no number: " + btn.textContent);
+      let {f, d} = await phoneJournal();
+      try {
+        eq(getComputedStyle(d.querySelector(".nfold")).display, "none", "the filters are folded on a phone");
+        ok(getComputedStyle(d.querySelector(".nfiltbtn")).display !== "none", "Filter shows on a phone");
+        ok(d.querySelector(".task").getBoundingClientRect().top - d.querySelector(".vhead").getBoundingClientRect().bottom < 40,
+          "the list starts right under the heading");
+      } finally { f.remove(); }
+      eq(getComputedStyle(content().querySelector(".nfiltbtn")).display, "none", "a wide screen has no Filter button");
+      ok(getComputedStyle(content().querySelector(".fbar")).display !== "none", "and shows the filters as before");
+      setHiddenStates(new Set(["DOING"]));
+      render(); await settle();
+      has(content().querySelector(".nfiltbtn").textContent, "1", "one state hidden counts");
+      ok(content().querySelector(".nfiltbtn").classList.contains("on"), "and stands out");
+      content().querySelector(".nfiltbtn").click(); await settle();
+      ok(content().querySelector(".nfold.open"), "Filter opens them");
+      ({f, d} = await phoneJournal());
+      try { ok(getComputedStyle(d.querySelector(".nfold")).display !== "none", "open on a phone too"); } finally { f.remove(); }
+    } finally {
+      NEXT_FILTERS_OPEN = false;
+      PREF.set("hideStates:" + (Spaces.active || ""), wasHidden); render();
+    }
+  });
+  test("#224 on a phone a Next row is a round tick, its @context before the words, and one quiet line", async () => {
+    go("next", {sub: "list", ctxFilter: null}); await settle();
+    const {f, d} = await phoneJournal();
+    try {
+      const row = [...d.querySelectorAll(".task")].find(r => r.querySelector(".nlead") && r.querySelector(".duepill"));
+      ok(row, "a row with a context and a day");
+      const tick = row.querySelector(".tick"), tr = tick.getBoundingClientRect();
+      ok(Math.abs(tr.width - tr.height) < 1 && tr.width <= 24, "the tick is a round button: " + tr.width + "x" + tr.height);
+      eq(getComputedStyle(row.querySelector(".t-menu")).display, "none", "no ⋯ on a phone");
+      const lead = row.querySelector(".nlead");
+      eq(lead.parentElement, row.querySelector(".t-title"), "the @context is in the words' line");
+      eq(row.querySelector(".t-title").firstElementChild, lead, "before the words");
+      eq(getComputedStyle(row.querySelector(".t-body .chip.ctx")).display, "none", "and not said twice");
+      ok(getComputedStyle(row.querySelector(".duepill"), "::before").content.includes("Due"), "a day says it is when it is due");
+      eq(getComputedStyle(row.querySelector(".duepill")).backgroundColor, "rgba(0, 0, 0, 0)", "a quiet line, not pills");
+      ok(tick.getBoundingClientRect().right + 20 > row.querySelector(".t-title").getBoundingClientRect().left, "the words start right after the tick");
+      ok(d.documentElement.scrollWidth <= 390, "nothing wider than the phone");
+    } finally { f.remove(); }
+    eq(getComputedStyle(content().querySelector(".task .nlead")).display, "none", "a wide screen keeps the pills");
   });
   test("#224 on a phone ⤓ is in the area menu, and saves what the view shows", async () => {
     go("next", {sub: "list"});
