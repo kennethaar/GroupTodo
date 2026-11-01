@@ -501,6 +501,34 @@ var GTD_TEST = (() => {
     ok(at(join(DIRS.someday, "Later.md")) < at(join(DIRS.completed, "Done.md")), "someday before done");
     ok(at(join(DIRS.completed, "Done.md")) < at(join(JOURNALS, old + ".md")), "done before an old day");
   });
+  test("#181 the active projects are read and shown on their own, before the week, people and contexts", async () => {
+    const five = shiftISO(T(), -5);
+    let release;
+    const held = new Promise(r => { release = r; });
+    const tree = {
+      journals: {[T() + ".md"]: "- today\n", [five + ".md"]: "- five days ago\n"},
+      pages: {"GTD.md": "title:: GTD\n",
+        "1": {"Boat.md": "title:: The boat\noutcome:: afloat\n\n- TODO Sand the hull\n"},
+        p: {"Odd Kittelsen.md": "title:: Odd Kittelsen\n"}},
+    };
+    const rec = newRecord("Names181", Backends.fs(fakeDir("Names181", tree, [], {"Odd Kittelsen.md": held})));
+    const boat = join(DIRS.active, "Boat.md");
+    let shown = 0;
+    try {
+      await readInto(rec, {stage: true, onSoon: () => { shown++; }});
+      for (let i = 0; i < 40 && !shown; i++) await settle();
+      eq(shown, 1, "times shown before the person is in");
+      ok(!rec.stubs.has(boat), "the project is still a stand-in");
+      eq(rec.pages.get(boat).props.title, "The boat", "the project's name");
+      has(serializePage(rec.pages.get(boat)), "Sand the hull", "the project's next action");
+      ok(rec.stubs.has(personPath("Odd Kittelsen")), "the person came in with the projects");
+      ok(!rec.pages.has(join(JOURNALS, five + ".md")), "a day this week came in with the projects");
+    } finally { release(); }
+    await filesLoaded();
+    ok(!rec.stubs, "no stand-ins left");
+    eq(shown, 2, "times shown before the rest");
+  });
+
   /* A pretend serve.py: fetch() is swapped for one that answers from a tree
      of paths, keeps a log of what was asked, and can hold a file back. */
   const fakeServer = async (files, body, {gate = {}, hang = false} = {}) => {

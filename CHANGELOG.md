@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.51.1 - 2026-11-01
+
+- Projects comes up sooner when a big folder opens (#181). The active
+  projects (folder 1) are read on their own, first, and shown as soon as
+  they are in; the week's day pages, people, contexts and organisations
+  follow, then the rest. Projects also skips the look-alike check until the
+  whole folder is read, instead of redoing it at every step.
+
 ## 1.51.0 - 2026-11-01
 
 - On a phone the app opens on Next, the list of what to do now, instead of
