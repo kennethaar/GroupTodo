@@ -5,6 +5,18 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.41.0 - 2026-11-01
+
+- The weekly review walks on from Projects to Reflect, and from Reflect back
+  to Steps (#216). When the last Projects pass was done there was no button
+  onward, so the review lost its flow right before looking back.
+  - When the Someday pass has nothing left to weigh, its end card has a
+    primary **Reflect ›**, and says what is next. With nothing to reflect on
+    (no intentions, no events or feelings this week), it is **Steps ›**
+    instead, where the review is marked done.
+  - Reflect ends with **Steps ›**, so Clarify › Actions › Projects › Reflect ›
+    Steps can be walked without looking for the next tab.
+
 ## 1.40.0 - 2026-11-01
 
 - Chores sorts the rooms by freshness, and has a board (#213). With 20 rooms,
