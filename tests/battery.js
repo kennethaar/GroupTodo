@@ -3863,6 +3863,51 @@ var GTD_TEST = (() => {
   });
 
   /* ============================================================
+     Next on a phone (#224)
+     ============================================================ */
+  test("#224 on a phone Next's heading is one row: Next, a short line, List ▾", async () => {
+    go("next", {sub: "list"});
+    await settle();
+    has(content().querySelector(".vhead .sub").textContent, "on your plate");
+    ok(content().querySelector(".vhead .csvbtn"), "a wide screen keeps ⤓ in the heading");
+    const {f, d} = await phoneJournal();
+    try {
+      const h = d.querySelector(".vhead h1").getBoundingClientRect(), sw = d.querySelector(".vhead .vsel").getBoundingClientRect();
+      eq(getComputedStyle(d.querySelector(".vhead .csvbtn")).display, "none", "no ⤓ in the heading on a phone");
+      ok(sw.width > 0 && sw.top < h.bottom && sw.bottom > h.top, "List ▾ is on the title's row");
+      ok(d.documentElement.scrollWidth <= 390, "nothing wider than the phone");
+    } finally { f.remove(); }
+  });
+  test("#224 on a phone ⤓ is in the area menu, and saves what the view shows", async () => {
+    go("next", {sub: "list"});
+    await settle();
+    const csv = content().querySelector(".vhead .csvbtn");
+    const was = Object.getOwnPropertyDescriptor(PHONE, "matches"), click = csv.click;
+    let clicked = 0;
+    Object.defineProperty(PHONE, "matches", {value: true, configurable: true});
+    csv.click = () => clicked++;
+    try {
+      openSpacesMenu();
+      const row = $("#spop .spcsv");
+      ok(row, "a ⤓ row in the area menu");
+      has(row.textContent, "Export to Excel");
+      row.click();
+      eq(clicked, 1, "the row runs the view's own ⤓");
+      ok($("#spop").hidden, "and closes the menu");
+      Object.defineProperty(PHONE, "matches", {value: false, configurable: true});
+      openSpacesMenu();
+      ok(!$("#spop .spcsv"), "not in the menu where the heading has ⤓");
+      go("today"); await settle();
+      Object.defineProperty(PHONE, "matches", {value: true, configurable: true});
+      openSpacesMenu();
+      ok(!$("#spop .spcsv"), "a view with no ⤓ adds no row");
+    } finally {
+      delete PHONE.matches; if (was) Object.defineProperty(PHONE, "matches", was);
+      csv.click = click; closeSpacesMenu();
+    }
+  });
+
+  /* ============================================================
      Clarify: the day pages' loose lines, one at a time (#95)
      ============================================================ */
   // Day pages n days back with these lines; every other day put aside, and the deck fresh.
