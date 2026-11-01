@@ -3706,6 +3706,33 @@ var GTD_TEST = (() => {
       has(content().textContent, "Protect deep-work energy", "Horizons");
     });
   });
+  test("#177 a page opened from the review card follows the next card, until the pane is closed", async () => {
+    const pane = document.querySelector("#pagePane");
+    const until = async cond => { for (let i = 0; i < 200 && !cond(); i++) await new Promise(r => setTimeout(r, 10)); };
+    const card = () => SOL.order[SOL.i];
+    const shows = r => { const s = SIDE_SHOWN; return !pane.hidden && !!s && s.path === r.path && (s.space || "") === (r.space || V.space || ""); };
+    const skip = async () => { solOp(card(), "skip"); await until(() => !SOL.moving); await settle(); };
+    try {
+      go("review", {sub: "projects"}); solGoPass(0); await settle();
+      ok(SOL.order && SOL.order.length >= 2, "two cards to review");
+      const open = [...content().querySelectorAll(".solcard .textbtn")].find(b => b.textContent === "Open the page");
+      ok(open, "no Open the page on the card");
+      open.click(); await settle();
+      ok(shows(card()), "the card's page is on the right");
+      const first = card();
+      await skip();
+      ok(card() !== first, "a new card is dealt");
+      ok(shows(card()), "the pane shows the next card's page");
+      closeSidePage(); await settle();
+      await skip();
+      ok(pane.hidden, "closed, the pane stays closed");
+      previewPage(card().space, card().path, true); await settle();
+      go("next"); await settle();
+      go("review", {sub: "projects"}); await settle();
+      await skip();
+      ok(!shows(card()), "leaving the review stops the pane following");
+    } finally { closeSidePage(); solGoPass(0); }
+  });
   test("#216 the last Projects pass hands on to Reflect, or to Steps, and Reflect back to Steps", async () => {
     const onward = async () => {
       go("review", {sub: "projects"}); solGoPass(SD_PASS); await settle();
@@ -3792,10 +3819,42 @@ var GTD_TEST = (() => {
       ok(parseFloat(getComputedStyle(d.querySelector(".todayhead h1")).fontSize) <= 20, "the page name is smaller than the day");
       const h = d.querySelector(".todayhead h1").getBoundingClientRect(), db = d.querySelector(".daybox").getBoundingClientRect();
       ok(db.top < h.bottom && db.bottom > h.top && db.left >= h.right, "the day is beside the page name, on its row");
-      const seg = d.querySelector(".todayhead .jmode").getBoundingClientRect();
-      ok(seg.top >= Math.max(h.bottom, db.bottom), "Day and Week go under");
+      ok(getComputedStyle(d.querySelector(".todayhead .jmode")).display === "none", "Day and Week are not in the heading");
       ok(d.documentElement.scrollWidth <= 390, "nothing wider than the phone");
     } finally { f.remove(); }
+  });
+  test("#222 on a phone the Journal's heading is one row, the rest behind ⋯", async () => {
+    JOURNAL_MORE_OPEN = false;
+    PREF.set("today.tab", "due");
+    await journalDue([["TODO", "Send the late thing"]], shiftISO(T(), -1));
+    const more = content().querySelector(".todayhead .jmorebtn");
+    ok(more, "a ⋯ in the heading");
+    ok(more.classList.contains("late"), "late work marks it");
+    eq(getComputedStyle(more).display, "none", "a wide screen has no ⋯");
+    ok(getComputedStyle(content().querySelector(".ttabs")).display !== "none", "and shows the tabs as before");
+    let {f, d} = await phoneJournal();
+    try {
+      const h = d.querySelector(".todayhead h1").getBoundingClientRect(), m = d.querySelector(".jmorebtn").getBoundingClientRect();
+      ok(m.width > 0 && m.top < h.bottom && m.bottom > h.top, "⋯ is on the title's row");
+      for (const sel of [".jfoldbar", ".ttabs", ".tpanel"]) {
+        const n = d.querySelector(sel);
+        ok(!n || !n.getClientRects().length, sel + " is folded away");
+      }
+      // A news or countdown box may stand between; nothing folded away does.
+      const grid = d.querySelector(".jcard").closest(".jgrid");
+      let above = grid.previousElementSibling;
+      while (above && !above.getClientRects().length) above = above.previousElementSibling;
+      ok(grid.getBoundingClientRect().top - above.getBoundingClientRect().bottom < 30, "the day page starts right under what is above it");
+      const l = d.querySelector(".daylabel");
+      ok(l.scrollWidth <= l.clientWidth + 0.5, "the day still fits beside ⋯: " + l.textContent);
+    } finally { f.remove(); }
+    more.click(); await settle();
+    ok(content().querySelector(".jfold.open"), "⋯ opens it");
+    ({f, d} = await phoneJournal());
+    try {
+      for (const sel of [".jfoldbar .jmode", ".ttab-due", ".tpanel"]) ok(d.querySelector(sel).getClientRects().length, sel + " shows when open");
+      ok(d.documentElement.scrollWidth <= 390, "nothing wider than the phone");
+    } finally { f.remove(); JOURNAL_MORE_OPEN = false; render(); await settle(); }
   });
   test("#222 on a phone the Journal's buttons say what they are, in words", async () => {
     go("today");
@@ -4079,16 +4138,18 @@ var GTD_TEST = (() => {
   /* ============================================================
      Next on a phone (#224)
      ============================================================ */
-  test("#224 on a phone Next's heading is one row: Next, a short line, List ▾", async () => {
+  test("#224 on a phone Next's heading is one row: Next, Filter ▾, List ▾", async () => {
     go("next", {sub: "list"});
     await settle();
-    has(content().querySelector(".vhead .sub").textContent, "on your plate");
+    ok(!content().querySelector(".vhead .sub"), "no line beside the title");
     ok(content().querySelector(".vhead .csvbtn"), "a wide screen keeps ⤓ in the heading");
     const {f, d} = await phoneJournal();
     try {
       const h = d.querySelector(".vhead h1").getBoundingClientRect(), sw = d.querySelector(".vhead .vsel").getBoundingClientRect();
       eq(getComputedStyle(d.querySelector(".vhead .csvbtn")).display, "none", "no ⤓ in the heading on a phone");
       ok(sw.width > 0 && sw.top < h.bottom && sw.bottom > h.top, "List ▾ is on the title's row, look-alikes or not");
+      const fb = d.querySelector(".vhead .nfiltbtn").getBoundingClientRect();
+      ok(Math.abs(fb.top + fb.height / 2 - (sw.top + sw.height / 2)) < 6, "Filter ▾ and List ▾ share one line");
       if (d.querySelector(".ntwins")) ok(getComputedStyle(d.querySelector(".vhead .twinbtn")).display === "none" && getComputedStyle(d.querySelector(".nfiltbtn"), "::after").content.includes("⚠"), "look-alikes wait behind Filter");
       ok(d.documentElement.scrollWidth <= 390, "nothing wider than the phone");
     } finally { f.remove(); }
