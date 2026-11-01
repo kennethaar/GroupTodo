@@ -3097,7 +3097,7 @@ body.solview #content{padding-bottom:14px}
    number for a fix, the middle one for a feature. CHANGELOG.md says what each
    one brought, and it is shown beside the name top left, so whoever is testing
    can see at a glance that they have the newest file open. */
-const APP_VERSION = "1.45.4";
+const APP_VERSION = "1.45.5";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 /* ============================================================
    00_BOOTSTRAP -- utilities
@@ -4935,6 +4935,7 @@ async function writePageChecked(rec, path, page, merged) {
   }
   await b.write(path, text);
   noteBase(rec, path, text);
+  if (rec.pages.get(path)) PAGE_SRC.set(rec.pages.get(path), text);
   return true;
 }
 
@@ -5648,9 +5649,45 @@ async function readStaged(record, edited, onRest, onSoon) {
     .finally(() => loadingDone(record))};
 }
 
+/* The file text each page in memory was read from, or last written as. A
+   read that finds the same text keeps the page it has: a line on screen is
+   bound to its page, and a line typed while the area was still loading went
+   into a page the read had swapped for a fresh copy of the file, so it was
+   lost when you left the line (#232). */
+const PAGE_SRC = new WeakMap();
+
+/* The page a line is being typed into, in this area: the read must not swap it. */
+function typingPath(name) {
+  const a = document.activeElement;
+  if (!a || !(a.isContentEditable || /^(INPUT|TEXTAREA)$/.test(a.tagName || ""))) return null;
+  const host = a.closest && a.closest("[data-path]");
+  if (!host) return null;
+  return (host.dataset.space || V.space) === name ? host.dataset.path : null;
+}
+
+/* A read that finishes while you type draws the screen once you stop: the
+   lines on it are still the ones from before the read (#232). */
+let RENDER_OWED = false;
+function renderUnlessTyping() {
+  const ed = document.activeElement;
+  if ((ed?.isContentEditable || /^(INPUT|TEXTAREA)$/.test(ed?.tagName || "")) || SPACE_TRANSITION) { RENDER_OWED = true; return; }
+  RENDER_OWED = false;
+  render();
+}
+document.addEventListener("focusout", () => {
+  if (!RENDER_OWED) return;
+  setTimeout(() => {
+    const ed = document.activeElement;
+    if (!RENDER_OWED || ed?.isContentEditable || /^(INPUT|TEXTAREA)$/.test(ed?.tagName || "") || SPACE_TRANSITION) return;
+    RENDER_OWED = false;
+    render();
+  }, 0);
+});
+
 /* The files of one read, laid into the record: pages, and the files beside
-   them that are not pages. */
-function fillRecord(record, files) {
+   them that are not pages. A page already held whose file has not changed
+   since stays the same page (#232). */
+function fillRecord(record, files, held = null) {
   record.pages.clear(); record.raw.clear();
   record.base = new Map();
   record.copies = new Map();
@@ -5668,7 +5705,9 @@ function fillRecord(record, files) {
     if (/\.org$/i.test(path)) { record.raw.set(path, text); continue; }
     if (syncCopyOf(path)) { record.copies.set(path, text); continue; }   // Syncthing's, folded in later
     if (looksLikeBundle(text)) { couriers++; continue; }
-    record.pages.set(path, parsePage(text));
+    const had = held && held.get(path);
+    if (had && PAGE_SRC.get(had) === text) record.pages.set(path, had);
+    else { const page = parsePage(text); PAGE_SRC.set(page, text); record.pages.set(path, page); }
     noteBase(record, path, text);
   }
   return couriers;
@@ -5697,6 +5736,10 @@ async function readIntoNow(record, edited, files = null) {
   if (seen && (record.backend.kind === "fs" || record.backend.kind === "http"))
     PREF.set("pagecount:" + record.name, String(seen));
   for (const path of [...record.dirty, ...record.removed]) edited.add(path);
+  /* The page a line is being typed into keeps what is on screen, and is
+     merged with its file when the line is written back (#232). */
+  const typing = typingPath(record.name);
+  if (typing && record.pages.has(typing)) edited.add(typing);
   /* What was done to a stand-in while it loaded was done to an empty page:
      its file wins, and is not sent again. */
   let lost = 0;
@@ -5708,7 +5751,7 @@ async function readIntoNow(record, edited, files = null) {
   }
   const localEdits = new Map([...edited].map(path => [path, record.pages.get(path)]));
   const oldBase = record.base || new Map();
-  const couriers = fillRecord(record, files);
+  const couriers = fillRecord(record, files, new Map(record.pages));
   // Every file is in: nothing is a stand-in any more.
   record.stubs = null; record.restError = null;
   /* Local edits win over files that completed loading later. Those still dirty
@@ -6088,8 +6131,7 @@ function restLoaded(rec) {
   clearMemo();
   scanVerbs();
   if (rec.dirty.size || rec.removed.size) scheduleFlush();
-  const ed = document.activeElement;
-  if (!(ed?.isContentEditable || /^(INPUT|TEXTAREA)$/.test(ed?.tagName || "")) && !SPACE_TRANSITION) render();
+  renderUnlessTyping();
 }
 
 /* The week's day pages, the active projects, people, contexts and
@@ -6098,8 +6140,7 @@ function soonLoaded(rec) {
   if (!LOADED.has(rec.name)) return;
   if (V.space === rec.name) bindActive(rec.name);
   clearMemo();
-  const ed = document.activeElement;
-  if (!(ed?.isContentEditable || /^(INPUT|TEXTAREA)$/.test(ed?.tagName || "")) && !SPACE_TRANSITION) render();
+  renderUnlessTyping();
 }
 
 async function loadFromBackend(backend, {quick = false} = {}) {
@@ -6117,8 +6158,7 @@ async function loadFromBackend(backend, {quick = false} = {}) {
       if (rec.hold) { showHoldDialog(name); setSync("warn", "not saving - folder looks empty"); }
       if (V.space !== name) return;
       bindActive(name); clearMemo();
-      const ed = document.activeElement;
-      if (!(ed?.isContentEditable || /^(INPUT|TEXTAREA)$/.test(ed?.tagName || ""))) render();
+      renderUnlessTyping();
     }).catch(() => {});
     return;
   }
@@ -15303,7 +15343,7 @@ function helpTopicNode(id, {here = false, read = openHelp} = {}) {
    docs/build-help-news.py (tests/run.mjs runs it), since a page opened from a
    file may not read another file. */
 /* HELP_NEWS generated by docs/build-help-news.py -- do not edit by hand */
-const HELP_NEWS = "## 1.45.4 - 2026-11-01\n\n- The first screen is drawn once at start, not twice in a row (#231). On a\n  big vault each drawing takes a second on a phone.\n\n## 1.45.3 - 2026-11-01\n\n- A big area kept in browser storage opens quickly (#230). It read and\n  sorted every page before showing anything. Now it opens on today's pages,\n  as a folder does, and the projects, people and older days come in behind.\n\n## 1.45.2 - 2026-11-01\n\n- An area on a GroupTodo server opens quickly (#229). It used to fetch every\n  file just to see that the server was there, then fetch them all again to\n  open the area. Now a ping says it is there, and a big vault opens on\n  today's pages while the rest comes in behind, as a folder does. A server\n  that has gone quiet is given up on after a few seconds instead of holding\n  the start.\n\n## 1.45.1 - 2026-11-01\n\n- Opens quickly on a weak network (#228). The installed app used to wait\n  for the network on every start, as long as the browser would, before it\n  used the copy it keeps. Now the network gets 2.5 seconds; after that the\n  kept copy opens and the new one is fetched for next time. serve.py says\n  \"not changed\" instead of sending the 3 MB app again, and sends it zipped\n  (0.9 MB) when it has changed.\n\n## 1.45.0 - 2026-11-01\n\n- Next on a phone shows the context you seem to be in (#226), with Show all\n  beside it for the hour. The guess is learnt on this device from what you\n  pick, a context or To do or Chores: the hour, the day, work hours or not,\n  the phone upright or on its side, wifi or not, and the place, if the\n  browser may say. It speaks once it is fairly sure; before that, Sense\n  where I am's rules, if set up. Sense where I am uses what it learnt too.\n- No nagging to send or bring in the vault file on a folder a sync app\n  such as Syncthing keeps (#227): a folder or a GroupTodo server on a phone\n  has no file to send, and a PC on a folder no longer asks for the phone's\n  file unless one was brought in within two weeks. The start-of-day nudge\n  has \"The folder syncs itself\" to stop it for good.\n";
+const HELP_NEWS = "## 1.45.5 - 2026-11-01\n\n- A line typed in the journal while the area was still loading is kept\n  (#232). When the rest of the area came in, the page was swapped for a\n  fresh copy of its file, and the line went into the old copy and was lost\n  when you left it. Now a page whose file has not changed stays the same\n  page, the page you are typing in is never swapped, and the screen catches\n  up once you stop typing.\n\n## 1.45.4 - 2026-11-01\n\n- The first screen is drawn once at start, not twice in a row (#231). On a\n  big vault each drawing takes a second on a phone.\n\n## 1.45.3 - 2026-11-01\n\n- A big area kept in browser storage opens quickly (#230). It read and\n  sorted every page before showing anything. Now it opens on today's pages,\n  as a folder does, and the projects, people and older days come in behind.\n\n## 1.45.2 - 2026-11-01\n\n- An area on a GroupTodo server opens quickly (#229). It used to fetch every\n  file just to see that the server was there, then fetch them all again to\n  open the area. Now a ping says it is there, and a big vault opens on\n  today's pages while the rest comes in behind, as a folder does. A server\n  that has gone quiet is given up on after a few seconds instead of holding\n  the start.\n\n## 1.45.1 - 2026-11-01\n\n- Opens quickly on a weak network (#228). The installed app used to wait\n  for the network on every start, as long as the browser would, before it\n  used the copy it keeps. Now the network gets 2.5 seconds; after that the\n  kept copy opens and the new one is fetched for next time. serve.py says\n  \"not changed\" instead of sending the 3 MB app again, and sends it zipped\n  (0.9 MB) when it has changed.\n";
 /* HELP_NEWS end */
 function helpNews() {
   const box = el("div", {class: "helpnews"}, el("p", {class: "quiet"}, "This is v" + APP_VERSION + "."));

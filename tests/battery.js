@@ -555,6 +555,49 @@ var GTD_TEST = (() => {
     } finally { for (const p of Object.keys(files)) await b.remove(p); }
   });
 
+  test("#232 a line typed in today's journal while the rest loads is kept", async () => {
+    const old = shiftISO(T(), -10), ns = "Ls232", today = join(JOURNALS, T() + ".md");
+    const files = {[today]: "- first line\n", [join(JOURNALS, old + ".md")]: "- old line\n",
+                   [join(DIRS.active, "Boat.md")]: "title:: Boat\n\n- TODO Sand the hull\n"};
+    const b = Backends.ls(ns);
+    for (const [p, t] of Object.entries(files)) await b.write(p, t);
+    try {
+      // The first read goes through; the rest waits until the line is on screen.
+      let release, calls = 0;
+      const held = new Promise(r => { release = r; }), read = b.readMany.bind(b);
+      b.readMany = async (paths, onEach) => { if (calls++) await held; return read(paths, onEach); };
+      const rec = newRecord(ns, b);
+      await readInto(rec, {stage: true});
+      ok(rec.stubs, "the rest was already in");
+      // The line on screen is bound to this block; it is written back when you leave it.
+      const line = rec.pages.get(today).blocks[0];
+      release();
+      await filesLoaded();
+      ok(!rec.stubs, "no stand-ins left");
+      ok(rec.pages.get(today).blocks[0] === line, "the read swapped the page under the line");
+      line.title = "first line, and more typed while it loaded";
+      has(serializePage(rec.pages.get(today)), "more typed while it loaded", "the read swapped the page under the line");
+    } finally { for (const p of Object.keys(files)) await b.remove(p); }
+  });
+
+  test("#232 the page being typed in is not swapped, even when its file changed", async () => {
+    const ns = "Ls232b", today = join(JOURNALS, T() + ".md");
+    const b = Backends.ls(ns);
+    await b.write(today, "- first line\n");
+    const host = el("div", {data: {space: ns, path: today}}, el("div", {contenteditable: "true"}, "typing"));
+    document.body.append(host);
+    try {
+      const rec = newRecord(ns, b);
+      await readInto(rec);
+      const line = rec.pages.get(today).blocks[0];
+      await b.write(today, "- first line\n- added on another device\n");
+      host.firstChild.focus();
+      await readInto(rec);
+      host.firstChild.blur();
+      ok(rec.pages.get(today).blocks[0] === line, "the page being typed in was swapped");
+    } finally { host.remove(); await b.remove(today); }
+  });
+
   test("#231 start-up draws the first screen once, not twice", async () => {
     const real = render;
     const drawn = [];

@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.45.5 - 2026-11-01
+
+- A line typed in the journal while the area was still loading is kept
+  (#232). When the rest of the area came in, the page was swapped for a
+  fresh copy of its file, and the line went into the old copy and was lost
+  when you left it. Now a page whose file has not changed stays the same
+  page, the page you are typing in is never swapped, and the screen catches
+  up once you stop typing.
+
 ## 1.45.4 - 2026-11-01
 
 - The first screen is drawn once at start, not twice in a row (#231). On a
