@@ -39,6 +39,17 @@ try {
   }
   /* Every screen the help shows a picture of has one, and no picture is left
      over from a topic that went. tests/screenshots.mjs makes them. */
+  /* The service worker runs in no page, so it is run here, in a sandbox with a
+     network that never answers and a kept copy of the app. */
+  const swTest = "#228 the service worker opens its kept copy when the network hangs";
+  if (!only || swTest.toLowerCase().includes(only.toLowerCase())) {
+    results.push(await serviceWorkerTest(swTest));
+  }
+  const serveTest = "#228 serve.py answers an unchanged app with 304, and gzips it";
+  if (!only || serveTest.toLowerCase().includes(only.toLowerCase())) {
+    results.push(await serveCacheTest(serveTest));
+  }
+
   const shotsTest = "#171 every help screenshot is in docs/help, and none is left over";
   if (!only || shotsTest.toLowerCase().includes(only.toLowerCase())) {
     const want = await evaluate("Object.keys(HELP).filter(id => HELP[id].shot)");
@@ -73,3 +84,64 @@ try {
   if (app) await app.close();
 }
 process.exit(exitCode);
+
+async function serviceWorkerTest(name) {
+  const {runInNewContext} = await import("node:vm");
+  const listeners = {};
+  const kept = new Response("kept copy");
+  let waited = null;
+  const self = {
+    location: new URL("http://host/app/sw.js"),
+    addEventListener: (type, fn) => { listeners[type] = fn; },
+    skipWaiting: async () => {}, clients: {claim: async () => {}},
+  };
+  const caches = {
+    match: async () => kept.clone(),
+    open: async () => ({put: async () => {}, add: async () => {}}),
+    keys: async () => [],
+  };
+  const timers = [];
+  const sandbox = {self, caches, URL, Response, Promise,
+    fetch: () => new Promise(() => {}),                          // a network that never answers
+    setTimeout: (fn, ms, ...a) => { timers.push(ms); return setTimeout(fn, Math.min(ms, 50), ...a); }};
+  try {
+    runInNewContext(readFileSync(join(ROOT, "sw.js"), "utf-8"), sandbox);
+    let answer = null;
+    listeners.fetch({
+      request: {url: "http://host/app/grouptodo.html", method: "GET", mode: "navigate"},
+      respondWith: p => { answer = p; },
+      waitUntil: p => { waited = p; },
+    });
+    if (!answer) return {name, ok: false, error: "the worker did not answer the app's own page"};
+    const r = await Promise.race([answer, new Promise(res => setTimeout(res, 2000, null))]);
+    if (!r) return {name, ok: false, error: "still waiting for the network after 2 s (sandbox time)"};
+    if (await r.text() !== "kept copy") return {name, ok: false, error: "answered with something other than the kept copy"};
+    if (!timers.some(ms => ms >= 1000 && ms <= 5000)) return {name, ok: false, error: "no 1-5 s limit on the network: " + timers.join(", ")};
+    if (!waited) return {name, ok: false, error: "the download is not kept alive to update the copy"};
+    return {name, ok: true};
+  } catch (e) { return {name, ok: false, error: String(e && e.stack || e)}; }
+}
+
+async function serveCacheTest(name) {
+  const {spawn} = await import("node:child_process");
+  const port = 18000 + Math.floor(Math.random() * 2000);
+  const py = process.platform === "win32" ? "python" : "python3";
+  const server = spawn(py, [join(ROOT, "serve.py"), "--port", String(port), "--calendars-only"], {stdio: "ignore"});
+  const url = `http://127.0.0.1:${port}/grouptodo.html`;
+  try {
+    let first = null;
+    for (let i = 0; i < 50 && !first; i++) {
+      try { first = await fetch(url, {headers: {"Accept-Encoding": "gzip"}}); }
+      catch (_) { await new Promise(r => setTimeout(r, 100)); }
+    }
+    if (!first) return {name, ok: false, error: "serve.py did not start"};
+    await first.arrayBuffer();
+    if (first.headers.get("content-encoding") !== "gzip") return {name, ok: false, error: "not gzipped"};
+    const tag = first.headers.get("etag");
+    if (!tag) return {name, ok: false, error: "no ETag"};
+    const again = await fetch(url, {headers: {"If-None-Match": tag}});
+    if (again.status !== 304) return {name, ok: false, error: "unchanged file answered " + again.status};
+    return {name, ok: true};
+  } catch (e) { return {name, ok: false, error: String(e)}; }
+  finally { server.kill(); }
+}

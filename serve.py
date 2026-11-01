@@ -73,6 +73,8 @@ intended shape is this server on localhost with TLS terminated in front of it:
 
 import argparse
 import base64
+import email.utils
+import gzip
 import hmac
 import ipaddress
 import json
@@ -519,18 +521,21 @@ self.addEventListener("fetch", e => {
   if (url.pathname.indexOf("/api/") !== -1) return;
   if (e.request.mode !== "navigate" &&
       url.pathname !== "/" && !/grouptodo\\.html$/.test(url.pathname)) return;
-  e.respondWith(
-    fetch(e.request)
-      .then(r => {
-        if (r && r.ok) {
-          const copy = r.clone();
-          caches.open(SHELL).then(c => c.put(e.request, copy)).catch(() => {});
-        }
-        return r;
-      })
-      .catch(() => caches.match(e.request, {ignoreSearch: true})
-        .then(m => m || caches.match("./grouptodo.html", {ignoreSearch: true})))
-  );
+  // As sw.js: the network gets 2.5 s for the whole file, then the copy opens.
+  const net = fetch(e.request).then(async r => {
+    if (r && r.ok) {
+      const copy = r.clone();
+      await r.clone().arrayBuffer();
+      await caches.open(SHELL).then(c => c.put(e.request, copy)).catch(() => {});
+    }
+    return r;
+  });
+  e.waitUntil(net.then(() => {}, () => {}));
+  const kept = () => caches.match(e.request, {ignoreSearch: true})
+    .then(m => m || caches.match("./grouptodo.html", {ignoreSearch: true}));
+  e.respondWith(Promise.race([net.catch(() => "down"), new Promise(r => setTimeout(r, 2500, "slow"))])
+    .then(f => (f !== "slow" && f !== "down") ? f
+      : kept().then(m => m || (f === "slow" ? net : Response.error()))));
 });
 """
 
@@ -556,18 +561,62 @@ self.addEventListener("fetch", e => {
         ".zip": "application/zip",
     }
 
+    # The app is one 3 MB file, fetched again on every start (the service
+    # worker asks the network first). Sent whole each time, a start over a weak
+    # link waited for all of it. Now an unchanged file is a 304 of a few bytes,
+    # and a changed one goes compressed to anyone who takes gzip.
+    _GZ = {}                                  # full path -> (mtime_ns, gzipped bytes)
+    _GZ_TYPES = ("text/", "application/javascript", "application/json",
+                 "application/manifest+json", "image/svg+xml")
+
     def _file(self, full, ctype, extra=()):
+        st = os.stat(full)
+        etag = '"%x-%x"' % (st.st_size, st.st_mtime_ns)
+        modified = email.utils.formatdate(st.st_mtime, usegmt=True)
+
+        def head(code):
+            self.send_response(code)
+            self.send_header("Content-Type", ctype)
+            for k, v in extra:
+                self.send_header(k, v)
+            self.send_header("ETag", etag)
+            self.send_header("Last-Modified", modified)
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Vary", "Accept-Encoding")
+
+        if self._unchanged(etag, st.st_mtime):
+            head(304)
+            self.end_headers()
+            return
         with open(full, "rb") as fh:
             body = fh.read()
-        self.send_response(200)
-        self.send_header("Content-Type", ctype)
-        for k, v in extra:
-            self.send_header(k, v)
+        zipped = False
+        if (len(body) > 1024 and ctype.startswith(self._GZ_TYPES)
+                and "gzip" in (self.headers.get("Accept-Encoding") or "")):
+            hit = self._GZ.get(full)
+            if not hit or hit[0] != st.st_mtime_ns:
+                hit = (st.st_mtime_ns, gzip.compress(body, 6))
+                self._GZ[full] = hit
+            body, zipped = hit[1], True
+        head(200)
+        if zipped:
+            self.send_header("Content-Encoding", "gzip")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-cache")
         self.end_headers()
         if self.command != "HEAD":
             self.wfile.write(body)
+
+    def _unchanged(self, etag, mtime):
+        tags = self.headers.get("If-None-Match")
+        if tags:
+            return etag in [t.strip() for t in tags.split(",")] or tags.strip() == "*"
+        since = self.headers.get("If-Modified-Since")
+        if not since:
+            return False
+        try:
+            return int(mtime) <= email.utils.parsedate_to_datetime(since).timestamp()
+        except (TypeError, ValueError, OverflowError):
+            return False
 
     def _static(self, route):
         # "/" is the app itself, not the redirect stub that exists for static hosts.

@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.45.1 - 2026-11-01
+
+- Opens quickly on a weak network (#228). The installed app used to wait
+  for the network on every start, as long as the browser would, before it
+  used the copy it keeps. Now the network gets 2.5 seconds; after that the
+  kept copy opens and the new one is fetched for next time. serve.py says
+  "not changed" instead of sending the 3 MB app again, and sends it zipped
+  (0.9 MB) when it has changed.
+
 ## 1.45.0 - 2026-11-01
 
 - Next on a phone shows the context you seem to be in (#226), with Show all
