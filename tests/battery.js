@@ -5115,6 +5115,19 @@ var GTD_TEST = (() => {
     ok(getPage(join(DIRS.lists, "Chapter.md")), "the Chapter type stays");
   }));
 
+  test("#240 Add a chapter offers plain pages and notes, not what is in the book", () => withBookVault({
+    ...BOOK_PAGES, [join(PAGES, "Lighthouse.md")]: "- A light\n", [join(DIRS.zettel, "Gulls.md")]: "- Noisy\n",
+  }, async () => {
+    go("book");
+    await settle();
+    openAddChapter();
+    await settle();
+    const items = [...document.querySelectorAll(".scrim .modal")].pop().textContent;
+    has(items, "Lighthouse", "a plain page");
+    has(items, "Gulls", "a note");
+    ok(!items.includes("Harbour"), "not a chapter already in the book");
+  }));
+
   test("#241 in a book's area the names offered are that area's own, its pages too", async () => {
     const rec = newRecord("Book241", Backends.memory("Book241"));
     for (const [p, text] of Object.entries({

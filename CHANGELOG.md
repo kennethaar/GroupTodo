@@ -5,6 +5,10 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.54.1 - 2026-11-01
+
+- Add a chapter offers plain pages again, not only notes (#240).
+
 ## 1.54.0 - 2026-11-01
 
 - In an area with a book, the names offered as you type are that area's own
