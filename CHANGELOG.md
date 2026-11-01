@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.46.2 - 2026-11-01
+
+- After a fresh download the journal shows the folder's pages again as soon
+  as you allow the folder (#232). Until then the area is read from browser
+  storage, and on "Allow access" it stayed on that old copy while the whole
+  folder was read behind it. The screen only caught up once you had typed a
+  line and left it. Now it starts over from the folder, today first.
+
 ## 1.46.1 - 2026-11-01
 
 - The Journal on a phone is the day page, as Next is its list (#222). The
