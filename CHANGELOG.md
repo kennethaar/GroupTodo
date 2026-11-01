@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.42.3 - 2026-11-01
+
+- On a phone ⇧ Send the vault file moves from the top bar into the area
+  menu, as its first row (#168). The area button carries the dot for changes
+  not sent yet. A wider screen keeps ⇧ in the bar.
+
 ## 1.42.2 - 2026-11-01
 
 - On a phone the area button sits at the right end of the row with the next
