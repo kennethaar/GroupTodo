@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.46.1 - 2026-11-01
+
+- The Journal on a phone is the day page, as Next is its list (#222). The
+  heading is one row: Journal, the day and ⋯. Day or Week, the trackers,
+  what is due, Next 7 days and History fold behind the ⋯, and a red dot on
+  it says something is late.
+- Next says no "on your plate" beside its name, and on a phone Filter ▾ and
+  List ▾ always stay on one line (#224).
+
 ## 1.46.0 - 2026-11-01
 
 - The page on the right follows the review (#177). Open the page on a card in
