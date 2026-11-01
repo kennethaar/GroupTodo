@@ -3459,6 +3459,31 @@ var GTD_TEST = (() => {
       has(content().textContent, "Protect deep-work energy", "Horizons");
     });
   });
+  test("#216 the last Projects pass hands on to Reflect, or to Steps, and Reflect back to Steps", async () => {
+    const onward = async () => {
+      go("review", {sub: "projects"}); solGoPass(SD_PASS); await settle();
+      return sdOnward().filter(n => n && n.nodeType === 1).pop();
+    };
+    try {
+      await withWeek([], async () => {
+        const b = await onward();
+        eq(b.textContent, "Steps ›", "nothing to reflect on: back to the steps");
+        b.click(); await settle();
+        eq(subNow(), "steps");
+      });
+      await withWeek([[0, "- o Ran 5 km\n"]], async () => {
+        const b = await onward();
+        eq(b.textContent, "Reflect ›", "an event this week: on to Reflect");
+        b.click(); await settle();
+        eq(subNow(), "reflect");
+        const back = content().querySelector(".review-onward");
+        ok(back, "Reflect has no way on");
+        eq(back.textContent, "Steps ›");
+        back.click(); await settle();
+        eq(subNow(), "steps");
+      });
+    } finally { solGoPass(0); }
+  });
   test("#185 an event and its feeling show under the person it links to", () => {
     const path = join(PAGES, "Test bujo backlink.md");
     putPage(path, parsePage("- o Lunch with [[p/Lars Haugen]]\n  - = Glad we talked\n"));
