@@ -3108,7 +3108,7 @@ body.solview #content{padding-bottom:14px}
    number for a fix, the middle one for a feature. CHANGELOG.md says what each
    one brought, and it is shown beside the name top left, so whoever is testing
    can see at a glance that they have the newest file open. */
-const APP_VERSION = "1.46.5";
+const APP_VERSION = "1.46.6";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 /* ============================================================
    00_BOOTSTRAP -- utilities
@@ -4270,6 +4270,16 @@ async function fetchWithin(url, opts = {}, ms = 10000) {
   finally { clearTimeout(timer); }
 }
 
+/* One file that has not answered in this long is left unread, and said so,
+   like one that would not open. */
+let FILE_READ_MS = 20000;
+function withTimeout(promise, ms, what) {
+  let timer;
+  return Promise.race([promise, new Promise((_, no) => {
+    timer = setTimeout(() => no(Object.assign(new Error((what || "a file") + " did not answer in " +
+      Math.round(ms / 1000) + " s"), {name: "TimeoutError"})), ms);
+  })]).finally(() => clearTimeout(timer));
+}
 const Backends = {
   /* ---------- IndexedDB (always available) ---------- */
   idb(space = "") {
@@ -4423,7 +4433,9 @@ const Backends = {
           try {
             const h = fileCache.get(p) ||
               await (await dirFor(p.split("/").slice(0, -1).join("/"))).getFileHandle(p.split("/").pop());
-            out.set(p, await (await h.getFile()).text());
+            /* A file a sync app has not brought down can leave getFile()
+               hanging for good, and the read of the whole folder with it. */
+            out.set(p, await withTimeout((async () => (await h.getFile()).text())(), FILE_READ_MS, p));
             unread.delete(p);
           } catch (e) { unread.set(p, ((e && e.name) || "Error") + ": " + ((e && e.message) || e)); }
         };
@@ -6282,6 +6294,42 @@ function soonLoaded(rec) {
   renderUnlessTyping();
 }
 
+/* "Allow access" on a phone: listing a big folder there can take minutes, and
+   one file a sync app has not brought down may never open. Read before the
+   screen was drawn, the area sat on "Opening area..." all that time, so the
+   copy from browser storage stays on screen, and the folder is read into a
+   fresh record behind it, today first. No day page is made from the copy
+   meanwhile (folderWaiting). Once today is in, the folder's record takes
+   over; anything done to the copy meanwhile was saved to browser storage and
+   is merged into the folder's pages, line by line (mergeMirror). */
+const FOLDER_READING = new Set();
+function readFolderBehind(held, backend) {
+  const name = held.name, rec = newRecord(name, backend);
+  FOLDER_READING.add(name);
+  setSync("sync", "reading the folder...");
+  readInto(rec, {stage: true, onRest: restLoaded, onSoon: soonLoaded}).then(async () => {
+    if (LOADED.get(name) !== held) return;           // the area was opened again or removed meanwhile
+    await flush();                                   // what was done to the copy, into browser storage
+    LOADED.set(name, rec);
+    FOLDER_READING.delete(name);
+    await mergeMirror(rec);
+    reconcileSyncedPages(name);
+    if (V.space === name) bindActive(name);
+    if (rec.hold) { showHoldDialog(name); setSync("warn", "not saving - folder looks empty"); }
+    else {
+      inSpace(name, () => { migrateVault(); ensureJournal(todayISO()); });
+      if (V.space === name) setSync("ok", backend.label);
+    }
+    if (rec.dirty.size || rec.removed.size) scheduleFlush();
+    clearMemo(); scanVerbs();
+    renderUnlessTyping();
+  }).catch(e => {
+    FOLDER_READING.delete(name);
+    reportStorageTrouble(rec, e);
+    setSync("warn", "folder not read");
+  });
+}
+
 async function loadFromBackend(backend, {quick = false} = {}) {
   setSync("sync", "loading...");
   const name = Spaces.active || "Personal";
@@ -6294,7 +6342,7 @@ async function loadFromBackend(backend, {quick = false} = {}) {
      outstanding keeps the old way (#232). */
   const held = LOADED.get(name);
   if (held && held.backend && backend.kind === "fs" && held.backend.kind !== "fs" &&
-      !held.dirty.size && !held.removed.size) LOADED.delete(name);
+      !held.dirty.size && !held.removed.size) { readFolderBehind(held, backend); return; }
   /* An area already read in -- shown beside another, or looked at from
      Horizons -- opens from what is in memory at once, and is read again from
      its folder behind your back, so a big folder no longer holds the door. */
@@ -7536,7 +7584,8 @@ const AWAY_OK = new Set();              // areas used without their folder this 
    is made until the folder is read. Browser storage holds only what the
    folder has not taken yet, so today's page made from it was its templates
    alone, laid over the day written in the folder (#232). */
-const folderWaiting = name => !!name && folderMissing(name) && !AWAY_OK.has(name);
+const folderWaiting = name => !!name &&
+  ((folderMissing(name) && !AWAY_OK.has(name)) || FOLDER_READING.has(name));
 const folderAwayShown = () =>
   !!V.space && folderMissing(V.space) && !AWAY_OK.has(V.space) && state.view !== "help";
 
@@ -15501,7 +15550,7 @@ function helpTopicNode(id, {here = false, read = openHelp} = {}) {
    docs/build-help-news.py (tests/run.mjs runs it), since a page opened from a
    file may not read another file. */
 /* HELP_NEWS generated by docs/build-help-news.py -- do not edit by hand */
-const HELP_NEWS = "## 1.46.5 - 2026-11-01\n\n- A phone on a folder no longer asks you to send the vault file (#179). The\n  phone drops the folder's permission each time the app closes, and until\n  \"Allow access\" the area reads from browser storage, so it was taken for a\n  phone with no folder. A folder area is now a folder area while it waits:\n  what you do meanwhile goes up to the folder once it is allowed.\n\n## 1.46.4 - 2026-11-01\n\n- No day page is made while an area waits for its folder (#232). After a\n  fresh download the folder needs your permission again, and browser\n  storage holds only what the folder has not taken yet. So today's page was\n  made from its templates alone. Now the day waits for the folder, and is\n  made from the templates only if the folder has none.\n- On \"Allow access\" the folder is read today first, as at start-up, not\n  shown behind the browser copy.\n- What browser storage kept for a folder is merged into the folder's page,\n  line by line. Before, a newer browser copy replaced the page whole.\n\n## 1.46.3 - 2026-11-01\n\n- Today's journal shows what is written in it, not only its templates\n  (#232). Read before its file was in, the day was poured from its\n  templates, and that page was kept over the file until a line typed and\n  saved merged the two. Now the two are merged as soon as the file is read,\n  and nothing of either is dropped. The fix in 1.46.2, which started the\n  area over from the folder, is taken out again.\n\n## 1.46.2 - 2026-11-01\n\n- After a fresh download the journal shows the folder's pages again as soon\n  as you allow the folder (#232). Until then the area is read from browser\n  storage, and on \"Allow access\" it stayed on that old copy while the whole\n  folder was read behind it. The screen only caught up once you had typed a\n  line and left it. Now it starts over from the folder, today first.\n\n## 1.46.1 - 2026-11-01\n\n- The Journal on a phone is the day page, as Next is its list (#222). The\n  heading is one row: Journal, the day and ⋯. Day or Week, the trackers,\n  what is due, Next 7 days and History fold behind the ⋯, and a red dot on\n  it says something is late.\n- Next says no \"on your plate\" beside its name, and on a phone Filter ▾ and\n  List ▾ always stay on one line (#224).\n";
+const HELP_NEWS = "## 1.46.6 - 2026-11-01\n\n- \"Allow access\" no longer hangs on \"Opening area...\" (#232). Since 1.46.4\n  the screen waited until the folder was listed and today's files were read,\n  and on a phone that can take minutes. One file a sync app has not\n  downloaded yet could hold it forever. Now the area shows at once, the\n  folder is read behind it, and today's page from the folder takes over\n  when it is in.\n- A file that does not answer in 20 seconds is skipped and left as it is in\n  the folder, like a file that will not open.\n\n## 1.46.5 - 2026-11-01\n\n- A phone on a folder no longer asks you to send the vault file (#179). The\n  phone drops the folder's permission each time the app closes, and until\n  \"Allow access\" the area reads from browser storage, so it was taken for a\n  phone with no folder. A folder area is now a folder area while it waits:\n  what you do meanwhile goes up to the folder once it is allowed.\n\n## 1.46.4 - 2026-11-01\n\n- No day page is made while an area waits for its folder (#232). After a\n  fresh download the folder needs your permission again, and browser\n  storage holds only what the folder has not taken yet. So today's page was\n  made from its templates alone. Now the day waits for the folder, and is\n  made from the templates only if the folder has none.\n- On \"Allow access\" the folder is read today first, as at start-up, not\n  shown behind the browser copy.\n- What browser storage kept for a folder is merged into the folder's page,\n  line by line. Before, a newer browser copy replaced the page whole.\n\n## 1.46.3 - 2026-11-01\n\n- Today's journal shows what is written in it, not only its templates\n  (#232). Read before its file was in, the day was poured from its\n  templates, and that page was kept over the file until a line typed and\n  saved merged the two. Now the two are merged as soon as the file is read,\n  and nothing of either is dropped. The fix in 1.46.2, which started the\n  area over from the folder, is taken out again.\n\n## 1.46.2 - 2026-11-01\n\n- After a fresh download the journal shows the folder's pages again as soon\n  as you allow the folder (#232). Until then the area is read from browser\n  storage, and on \"Allow access\" it stayed on that old copy while the whole\n  folder was read behind it. The screen only caught up once you had typed a\n  line and left it. Now it starts over from the folder, today first.\n";
 /* HELP_NEWS end */
 function helpNews() {
   const box = el("div", {class: "helpnews"}, el("p", {class: "quiet"}, "This is v" + APP_VERSION + "."));

@@ -5,6 +5,17 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.46.6 - 2026-11-01
+
+- "Allow access" no longer hangs on "Opening area..." (#232). Since 1.46.4
+  the screen waited until the folder was listed and today's files were read,
+  and on a phone that can take minutes. One file a sync app has not
+  downloaded yet could hold it forever. Now the area shows at once, the
+  folder is read behind it, and today's page from the folder takes over
+  when it is in.
+- A file that does not answer in 20 seconds is skipped and left as it is in
+  the folder, like a file that will not open.
+
 ## 1.46.5 - 2026-11-01
 
 - A phone on a folder no longer asks you to send the vault file (#179). The

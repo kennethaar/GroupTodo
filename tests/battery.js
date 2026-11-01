@@ -654,7 +654,7 @@ var GTD_TEST = (() => {
     } finally { await m.remove(today); Backends.idb = realIdb; }
   });
 
-  test("#232 allowed back, the folder is read today first, not shown as the browser copy", async () => {
+  test("#232 allowed back, the area shows at once and the folder's today takes over when read", async () => {
     await flush();
     const name = V.space, kept = LOADED.get(name), ns = "Ls232d";
     const today = journalPath(todayISO()), old = join(JOURNALS, shiftISO(T(), -10) + ".md");
@@ -663,21 +663,51 @@ var GTD_TEST = (() => {
     const files = {[today]: "- written in the folder\n", [old]: "- old line\n",
                    [join(DIRS.active, "Boat.md")]: "title:: Boat\n\n- TODO Sand the hull\n"};
     for (const [p, t] of Object.entries(files)) await b.write(p, t);
-    let release, calls = 0;
-    const held = new Promise(r => { release = r; }), read = b.readMany.bind(b);
+    // A phone listing a big folder: nothing comes back until it is let go.
+    let listed, release, calls = 0;
+    const listing = new Promise(r => { listed = r; }), held = new Promise(r => { release = r; });
+    const names = b.names.bind(b), read = b.readMany.bind(b);
+    b.names = async () => { await listing; return names(); };
     b.readMany = async (paths, onEach) => { if (calls++) await held; return read(paths, onEach); };
-    LOADED.set(name, newRecord(name, Backends.memory("Old232")));
+    const copy = newRecord(name, Backends.memory("Old232"));
+    LOADED.set(name, copy); bindActive(name);
     try {
-      await loadFromBackend(b, {quick: true});
+      const back = await Promise.race([loadFromBackend(b, {quick: true}).then(() => "back"),
+                                       new Promise(r => setTimeout(() => r("waiting"), 1500))]);
+      eq(back, "back", "the screen waited for the folder (Opening area... #232)");
+      ok(V.pages === copy.pages, "the browser copy is not on screen while the folder is read");
+      ok(folderWaiting(name), "a day page could be made from the browser copy meanwhile");
+      listed();
+      for (let i = 0; i < 100 && LOADED.get(name) === copy; i++) await new Promise(r => setTimeout(r, 20));
+      ok(LOADED.get(name) !== copy, "the folder never took over");
       has(serializePage(V.pages.get(today)), "written in the folder", "today is not the folder's");
       ok(LOADED.get(name).stubs, "the whole folder was read before today showed");
+      ok(!folderWaiting(name), "still waiting after the folder was read");
     } finally {
-      release();
+      listed(); release();
       await filesLoaded();
+      FOLDER_READING.delete(name);
       LOADED.set(name, kept); bindActive(name);
       for (const p of Object.keys(files)) await b.remove(p);
       render();
     }
+  });
+
+  test("#232 a file that never answers is left unread, and does not hold the folder", async () => {
+    const was = FILE_READ_MS;
+    FILE_READ_MS = 50;
+    const dir = {kind: "directory", name: "t232",
+      async *entries() {
+        yield ["fine.md", {kind: "file", name: "fine.md", getFile: async () => ({text: async () => "- fine\n"})}];
+        yield ["stuck.md", {kind: "file", name: "stuck.md", getFile: () => new Promise(() => {})}];
+      }};
+    try {
+      const b = Backends.fs(dir);
+      const got = await b.readMany(await b.names());
+      eq(got.get("fine.md"), "- fine\n");
+      ok(!got.has("stuck.md"), "a file that never answered was read");
+      has(b.unread.get("stuck.md") || "", "TimeoutError", "the stuck file is not marked unread");
+    } finally { FILE_READ_MS = was; }
   });
 
   test("#231 start-up draws the first screen once, not twice", async () => {
