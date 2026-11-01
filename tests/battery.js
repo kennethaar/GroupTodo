@@ -3706,6 +3706,33 @@ var GTD_TEST = (() => {
       has(content().textContent, "Protect deep-work energy", "Horizons");
     });
   });
+  test("#177 a page opened from the review card follows the next card, until the pane is closed", async () => {
+    const pane = document.querySelector("#pagePane");
+    const until = async cond => { for (let i = 0; i < 200 && !cond(); i++) await new Promise(r => setTimeout(r, 10)); };
+    const card = () => SOL.order[SOL.i];
+    const shows = r => { const s = SIDE_SHOWN; return !pane.hidden && !!s && s.path === r.path && (s.space || "") === (r.space || V.space || ""); };
+    const skip = async () => { solOp(card(), "skip"); await until(() => !SOL.moving); await settle(); };
+    try {
+      go("review", {sub: "projects"}); solGoPass(0); await settle();
+      ok(SOL.order && SOL.order.length >= 2, "two cards to review");
+      const open = [...content().querySelectorAll(".solcard .textbtn")].find(b => b.textContent === "Open the page");
+      ok(open, "no Open the page on the card");
+      open.click(); await settle();
+      ok(shows(card()), "the card's page is on the right");
+      const first = card();
+      await skip();
+      ok(card() !== first, "a new card is dealt");
+      ok(shows(card()), "the pane shows the next card's page");
+      closeSidePage(); await settle();
+      await skip();
+      ok(pane.hidden, "closed, the pane stays closed");
+      previewPage(card().space, card().path, true); await settle();
+      go("next"); await settle();
+      go("review", {sub: "projects"}); await settle();
+      await skip();
+      ok(!shows(card()), "leaving the review stops the pane following");
+    } finally { closeSidePage(); solGoPass(0); }
+  });
   test("#216 the last Projects pass hands on to Reflect, or to Steps, and Reflect back to Steps", async () => {
     const onward = async () => {
       go("review", {sub: "projects"}); solGoPass(SD_PASS); await settle();

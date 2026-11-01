@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.46.0 - 2026-11-01
+
+- The page on the right follows the review (#177). Open the page on a card in
+  Weekly review › Projects or › Actions, and each next card dealt shows its
+  page there too. Closing the pane, looking at another page there, pinning
+  or leaving the review stops it.
+
 ## 1.45.7 - 2026-11-01
 
 - A todo made into a project loses its TODO (#234). The line became the
