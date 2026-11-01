@@ -3543,6 +3543,10 @@ var GTD_TEST = (() => {
       const box = d.querySelector(".daypick input").getBoundingClientRect(), pick = d.querySelector(".daypick").getBoundingClientRect();
       ok(box.width >= pick.width - 1 && box.height >= pick.height - 1, "a tap on the words opens the date box");
       ok(parseFloat(getComputedStyle(d.querySelector(".todayhead h1")).fontSize) <= 20, "the page name is smaller than the day");
+      const h = d.querySelector(".todayhead h1").getBoundingClientRect(), db = d.querySelector(".daybox").getBoundingClientRect();
+      ok(db.top < h.bottom && db.bottom > h.top && db.left >= h.right, "the day is beside the page name, on its row");
+      const seg = d.querySelector(".todayhead .jmode").getBoundingClientRect();
+      ok(seg.top >= Math.max(h.bottom, db.bottom), "Day and Week go under");
       ok(d.documentElement.scrollWidth <= 390, "nothing wider than the phone");
     } finally { f.remove(); }
   });

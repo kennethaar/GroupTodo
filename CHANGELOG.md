@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.42.1 - 2026-11-01
+
+- On a phone the day pager stands beside "Journal", on the heading's row, so
+  the Journal's top is a line shorter (#222). Day, Week, Trackers and History
+  go on the row under it.
+
 ## 1.42.0 - 2026-11-01
 
 - The Journal on a phone, after a "Don't make me think" review (#222).
