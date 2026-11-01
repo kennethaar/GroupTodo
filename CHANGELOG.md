@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.46.9 - 2026-11-01
+
+- On a phone the "Done" toast is a thin strip along the top edge, the full
+  width of the screen, with tighter padding and buttons (#80). Before, it
+  was narrower than the toasts below it and stood out more.
+
 ## 1.46.8 - 2026-11-01
 
 - The "Done" toast sits at the very top edge, above any other toast, so it
