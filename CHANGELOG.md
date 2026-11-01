@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.46.3 - 2026-11-01
+
+- Today's journal shows what is written in it, not only its templates
+  (#232). Read before its file was in, the day was poured from its
+  templates, and that page was kept over the file until a line typed and
+  saved merged the two. Now the two are merged as soon as the file is read,
+  and nothing of either is dropped. The fix in 1.46.2, which started the
+  area over from the folder, is taken out again.
+
 ## 1.46.2 - 2026-11-01
 
 - After a fresh download the journal shows the folder's pages again as soon
