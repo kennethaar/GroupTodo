@@ -555,6 +555,25 @@ var GTD_TEST = (() => {
     } finally { for (const p of Object.keys(files)) await b.remove(p); }
   });
 
+  test("#231 start-up draws the first screen once, not twice", async () => {
+    const real = render;
+    const drawn = [];
+    render = function () { drawn.push(new Error().stack.split("\n").slice(2, 5).join(" < ")); return real.apply(this, arguments); };
+    // As at start-up: nothing read in yet. (An area already in memory is read
+    // again behind your back, and that read draws when it is done, rightly.)
+    await flush();
+    const name = V.space, kept = LOADED.get(name);
+    LOADED.delete(name);
+    try { await openSpace(name, null, {draw: false}); }
+    catch (e) { LOADED.set(name, kept); throw e; }
+    finally { render = real; }
+    ok(V.pages.size > 50, "the area read back in");
+    eq(drawn, [], "openSpace with draw: false drew");
+    const init = [...document.scripts].map(x => x.textContent).find(t => t.includes("(async function init()")) || "";
+    has(init, "await openSpace(start, null, {draw: false})", "init leaves the drawing to itself");
+    render();
+  });
+
   test("#181 a stand-in edited while it loads gives way to its file when the first of the rest is in", () => {
     const rec = newRecord("Lay181", null);
     const path = personPath("Odd Kittelsen");
