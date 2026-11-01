@@ -1374,6 +1374,26 @@ var GTD_TEST = (() => {
       eq(getPage(path).blocks.map(x => x.state), ["TODO"]);
     } finally { closeDoneToast(); closeModal(); dropChores(path); }
   });
+  test("#80 the done toast sits at the top edge, one item's Backdate and Undo beside History", async () => {
+    closeDoneToast();
+    const mk = n => ({kind: "todo", label: "toast item " + n, day: T(), at: Date.now() + n, undo: () => {}});
+    try {
+      offerDone(mk(1)); await settle();
+      const head = document.querySelector("#toasts .toast.done .donehead");
+      ok(head, "the done toast has a top row");
+      const btns = () => [...head.querySelectorAll("button")].map(b => b.textContent);
+      ok(["Backdate", "Undo", "History"].every(x => btns().includes(x)), "Backdate, Undo and History share the top row: " + btns());
+      ok(parseFloat(getComputedStyle($("#toasts")).top) < 20, "at the very top");
+      offerDone(mk(2)); await settle();
+      ok(!btns().includes("Undo"), "with two, each Undo goes back beside its own name");
+      eq(document.querySelectorAll("#toasts .toast.done button").length - head.querySelectorAll("button").length >= 4, true);
+      [...document.querySelectorAll("#toasts .toast.done button")].filter(b => b.textContent === "Undo")[1].click(); await settle();
+      ok(btns().includes("Undo"), "back to one: its Undo is up top again");
+    } finally {
+      closeDoneToast();
+      PREF.set("done.history", JSON.stringify(doneHistory().filter(x => !/^toast item /.test(x.label))));
+    }
+  });
   test("#201 the Chores chip on Next hides and shows the chores", async () => {
     const path = choreProject("chores chip", [chore("Water the plants [[c/home]]", "weekly", 0)]);
     try {

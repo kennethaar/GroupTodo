@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.46.8 - 2026-11-01
+
+- The "Done" toast sits at the very top edge, above any other toast, so it
+  covers less of the page (#80). With one thing in it, Backdate, Undo and
+  the rest share the top row with History, and the name gets the whole
+  line below. With more, each keeps its buttons beside its own name.
+
 ## 1.46.7 - 2026-11-01
 
 - After "Allow access" the area no longer says "browser only - no files"
