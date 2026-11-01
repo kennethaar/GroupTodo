@@ -530,6 +530,31 @@ var GTD_TEST = (() => {
     }, {hang: true});
   });
 
+  /* The demo has no IndexedDB (docs/demo.js), so this goes through the
+     localStorage backend, which the demo keeps in memory. */
+  test("#230 a big area in browser storage shows today first, the rest behind", async () => {
+    const old = shiftISO(T(), -10), ns = "Ls230";
+    const files = {[join(JOURNALS, T() + ".md")]: "- TODO today's line\n", [join(JOURNALS, old + ".md")]: "- old line\n",
+                   [join(DIRS.active, "Boat.md")]: "title:: Boat\n\n- TODO Sand the hull\n"};
+    const b = Backends.ls(ns);
+    for (const [p, t] of Object.entries(files)) await b.write(p, t);
+    try {
+      eq((await b.names()).sort(), Object.keys(files).sort(), "names() lists this area's pages only");
+      eq([...(await b.readMany([join(DIRS.active, "Boat.md"), "pages/none.md"])).keys()], [join(DIRS.active, "Boat.md")], "readMany() skips what is not there");
+      const batches = [], read = b.readMany.bind(b);
+      b.readMany = (paths, onEach) => { batches.push(paths.slice()); return read(paths, onEach); };
+      const rec = newRecord(ns, b);
+      await readInto(rec, {stage: true});
+      ok(batches[0].includes(join(JOURNALS, T() + ".md")), "today read first");
+      ok(!batches[0].includes(join(JOURNALS, old + ".md")) && !batches[0].includes(join(DIRS.active, "Boat.md")),
+         "the first read took more than the day needs: " + batches[0].join(", "));
+      await filesLoaded();
+      ok(!rec.stubs, "no stand-ins left");
+      ok(rec.pages.has(join(JOURNALS, old + ".md")), "old day read");
+      has(serializePage(rec.pages.get(join(DIRS.active, "Boat.md"))), "Sand the hull", "project read in full");
+    } finally { for (const p of Object.keys(files)) await b.remove(p); }
+  });
+
   test("#181 a stand-in edited while it loads gives way to its file when the first of the rest is in", () => {
     const rec = newRecord("Lay181", null);
     const path = personPath("Odd Kittelsen");
