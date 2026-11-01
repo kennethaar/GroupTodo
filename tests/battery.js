@@ -478,6 +478,58 @@ var GTD_TEST = (() => {
     ok(at(join(DIRS.someday, "Later.md")) < at(join(DIRS.completed, "Done.md")), "someday before done");
     ok(at(join(DIRS.completed, "Done.md")) < at(join(JOURNALS, old + ".md")), "done before an old day");
   });
+  /* A pretend serve.py: fetch() is swapped for one that answers from a tree
+     of paths, keeps a log of what was asked, and can hold a file back. */
+  const fakeServer = async (files, body, {gate = {}, hang = false} = {}) => {
+    const real = window.fetch, asked = [];
+    window.fetch = async (url, opts = {}) => {
+      const u = new URL(url, location.href), path = u.searchParams.get("path");
+      asked.push(u.pathname.replace(/^.*\/api\//, "") + (path ? " " + path : ""));
+      if (hang) return new Promise((_, rej) => opts.signal?.addEventListener("abort", () => rej(new DOMException("aborted", "AbortError"))));
+      if (/\/api\/ping$/.test(u.pathname)) return new Response(JSON.stringify({ok: true}));
+      if (/\/api\/list$/.test(u.pathname)) return new Response(JSON.stringify(Object.keys(files)));
+      if (gate[path]) await gate[path];
+      return path in files ? new Response(files[path]) : new Response("not found", {status: 404});
+    };
+    try { return await body(asked); } finally { window.fetch = real; }
+  };
+
+  test("#229 a server area is checked with a ping, not by downloading the vault", async () => {
+    await fakeServer({[join(JOURNALS, T() + ".md")]: "- TODO today\n"}, async asked => {
+      const b = await spaceBackend({name: "Srv229", kind: "http", server: "http://srv.test"});
+      eq(b.kind, "http", "kept the server");
+      eq(asked, ["ping"], "asked");
+    });
+  });
+
+  test("#229 a big vault on a server shows today first, the rest behind", async () => {
+    const old = shiftISO(T(), -10);
+    let release;
+    const held = new Promise(r => { release = r; });
+    const files = {[join(JOURNALS, T() + ".md")]: "- TODO today's line\n", [join(JOURNALS, old + ".md")]: "- old line\n",
+                   [join(DIRS.active, "Boat.md")]: "title:: Boat\n\n- TODO Sand the hull\n"};
+    await fakeServer(files, async () => {
+      const rec = newRecord("Srv229b", Backends.http("http://srv.test"));
+      try {
+        await readInto(rec, {stage: true});
+        has(serializePage(rec.pages.get(join(JOURNALS, T() + ".md"))), "today's line", "today read first");
+        ok(!rec.pages.has(join(JOURNALS, old + ".md")), "an old day waits");
+      } finally { release(); }
+      await filesLoaded();
+      ok(rec.pages.has(join(JOURNALS, old + ".md")), "old day read");
+      has(serializePage(rec.pages.get(join(DIRS.active, "Boat.md"))), "Sand the hull", "project read in full");
+    }, {gate: {[join(JOURNALS, old + ".md")]: held}});
+  });
+
+  test("#229 a server that never answers gives up instead of holding the start", async () => {
+    await fakeServer({}, async () => {
+      let err = null;
+      try { await fetchWithin("http://srv.test/api/ping", {}, 30); } catch (e) { err = e; }
+      ok(err, "a silent server did not fail");
+      has(err.message, "no answer", "says why");
+    }, {hang: true});
+  });
+
   test("#181 a stand-in edited while it loads gives way to its file when the first of the rest is in", () => {
     const rec = newRecord("Lay181", null);
     const path = personPath("Odd Kittelsen");

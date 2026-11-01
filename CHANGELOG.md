@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.45.2 - 2026-11-01
+
+- An area on a GroupTodo server opens quickly (#229). It used to fetch every
+  file just to see that the server was there, then fetch them all again to
+  open the area. Now a ping says it is there, and a big vault opens on
+  today's pages while the rest comes in behind, as a folder does. A server
+  that has gone quiet is given up on after a few seconds instead of holding
+  the start.
+
 ## 1.45.1 - 2026-11-01
 
 - Opens quickly on a weak network (#228). The installed app used to wait
