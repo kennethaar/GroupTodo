@@ -1043,6 +1043,38 @@ var GTD_TEST = (() => {
       eq(freshnessOf(a).rounds, 0, "counts from today");
     } finally { dropChores(path); }
   });
+  test("#215 the weekly review leaves chores on track out of Actions, and deals one missed for 2 rounds", async () => {
+    const path = choreProject("chores review", [chore("Empty the dishwasher [[c/home/kitchen]]", "weekly", 2),
+      chore("Clean the oven [[c/home/kitchen]]", "weekly", -15)]);
+    const [fresh, stale] = getPage(path).blocks;
+    const inDeck = b => actDeck().some(a => a.block === b);
+    try {
+      PREF.set("review.chores", "");
+      ok(!inDeck(fresh), "a chore on track is left out");
+      ok(inDeck(stale), "a chore 3 rounds behind is dealt");
+      ok(!ACT_PASSES.some((p, n) => actOrder(n).some(a => a.block === fresh)), "in no pass at all");
+      ok(actChoresOut() >= 1, "counted as left out");
+      PREF.set("review.chores", "0");
+      ok(!inDeck(stale), "0 leaves every chore out");
+      PREF.set("review.chores", "4");
+      ok(!inDeck(stale), "4 rounds: not yet");
+      PREF.set("review.chores", "");
+      const still = actFields().find(f => f.k === "still");
+      const r = actDeck().find(a => a.block === stale);
+      const opts = still.opts(r).map(([v]) => v);
+      ok(opts.includes("often") && !opts.includes("note") && !opts.includes("wait"), "a chore is asked how often: " + opts);
+      ok(!still.opts(actDeck().find(a => !isChore(a)) || {block: newBlock({title: "x"})}).map(([v]) => v).includes("often"), "an action is not");
+      go("review", {sub: "actions"}); await settle();
+      ok(content().querySelector(".actchores"), "the review says chores are left out");
+      still.pick(r, "often"); await settle();
+      ok(document.querySelector(".scrim .modal"), "Change how often opens the repeat dialog");
+      closeModal(); await settle();
+      // Done already in the review puts the next round in, as a tick on Chores does.
+      still.pick(r, "done"); await settle();
+      ok(!document.querySelector(".scrim .modal"), "no Again? dialog");
+      eq(getPage(path).blocks.filter(b => b.title.startsWith("Clean the oven")).map(b => b.state), ["DONE", "TODO"]);
+    } finally { PREF.set("review.chores", ""); closeDoneToast(); closeModal(); dropChores(path); }
+  });
   /* ---------- contexts in folders (#201) ---------- */
   test("#201 @home/kitchen typed in the capture box is one context, and @kitchen finds it", () => {
     makeContext("home/kitchen");

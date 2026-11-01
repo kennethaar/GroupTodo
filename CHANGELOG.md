@@ -5,6 +5,22 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.39.0 - 2026-10-31
+
+- The weekly review's Actions leaves chores on track out (#215). Every open
+  chore used to be dealt as a card, so an area with 60 chores had 60 cards to
+  sort before the actions that matter.
+  - A chore that comes round by itself needs no decision: it is in none of
+    the four passes, and the side says how many were left out, with a link
+    to Chores.
+  - A chore missed for 2 whole rounds or more (the measure the Chores bars
+    use) is dealt, with its repeat and how many rounds it is behind. Vault & sync
+    › Chores in the weekly review sets the number; 0 leaves every chore out.
+  - Its answers are Still to do, Done already, Change how often (the
+    repeat:: dialog), Not this week, Not before next month and Let it go.
+  - Done already on a chore puts the next round in at once, for whose turn
+    it is, the way a tick on the Chores page does, instead of asking Again?.
+
 ## 1.38.0 - 2026-10-31
 
 - Syncthing's conflict copies are merged into their page (#221). When two
