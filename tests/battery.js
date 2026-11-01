@@ -3930,6 +3930,44 @@ var GTD_TEST = (() => {
     } finally { f.remove(); }
     eq(getComputedStyle(content().querySelector(".task .nlead")).display, "none", "a wide screen keeps the pills");
   });
+  test("#225 on a phone Next is To do or Chores: chores before and after work and on days off, each with a count", async () => {
+    const path = choreProject("next sides", [chore("Dust the side shelf [[c/home/kitchen]]", "daily", -1),
+      stampAuthor(newBlock({state: "TODO", title: "Write the side report"}))]);
+    const was = Object.getOwnPropertyDescriptor(PHONE, "matches"), side = PREF.get("next.side", ""), wh = PREF.get("work_hours", "");
+    const at = (d, h, m = 0) => { const x = new Date(2026, 10, d, h, m); return x; };   // 2 Nov 2026 is a Monday
+    try {
+      ok(!choreTime(at(2, 10)), "Monday 10:00 is work");
+      ok(choreTime(at(2, 7, 30)) && choreTime(at(2, 16)) && choreTime(at(2, 21)), "before 8 and from 16 is chore time");
+      ok(choreTime(at(7, 10)) && choreTime(at(8, 10)), "Saturday and Sunday are chore time");
+      ok(choreSlot(at(2, 7)) !== choreSlot(at(2, 18)), "before and after work are two stretches");
+      PREF.set("next.side", ""); setNextSide("todo");
+      go("next", {sub: "list", ctxFilter: null}); await settle();
+      ok(!content().querySelector(".nside"), "a wide screen has no sides");
+      ok(content().querySelector(".fbar .fchip") && [...content().querySelectorAll(".fchip")].some(c => c.textContent.startsWith("Chores")), "but the Chores chip");
+      Object.defineProperty(PHONE, "matches", {value: true, configurable: true});
+      render(); await settle();
+      const box = content().querySelector(".nside");
+      ok(box, "a phone has To do and Chores");
+      ok(![...content().querySelectorAll(".nfold .fchip")].some(c => c.textContent.startsWith("Chores")), "and no Chores chip as well");
+      const [todo, chores] = box.querySelectorAll(".nsidebtn");
+      eq(todo.getAttribute("aria-pressed"), "true", "the pick holds");
+      const titles = () => [...content().querySelectorAll(".task .t-title")].map(n => n.textContent);
+      ok(titles().length && !titles().some(t => t.includes("Dust the side shelf")), "To do has no chores");
+      const n = b => +b.querySelector(".nbadge").textContent;
+      ok(n(todo) >= titles().length && n(todo) > 0, "To do counts what it holds");
+      ok(n(chores) >= 1, "Chores counts its own");
+      chores.click(); await settle();
+      ok(titles().some(t => t.includes("Dust the side shelf")) && !titles().some(t => t.includes("Write the side report")), "Chores has only chores");
+      ok(titles().length <= n(content().querySelector(".nsidebtn[aria-pressed=true]")), "and counts them");
+      PREF.set("next.side", JSON.stringify({slot: "2000-01-01:work", side: "todo"}));
+      eq(nextSide(at(7, 10)), "chores", "an old pick lapses: Saturday is chores");
+      eq(nextSide(at(2, 10)), "todo", "and Monday at 10 to-dos");
+    } finally {
+      delete PHONE.matches; if (was) Object.defineProperty(PHONE, "matches", was);
+      PREF.set("next.side", side); PREF.set("work_hours", wh);
+      dropChores(path); render();
+    }
+  });
   test("#224 on a phone ⤓ is in the area menu, and saves what the view shows", async () => {
     go("next", {sub: "list"});
     await settle();

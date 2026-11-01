@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.44.0 - 2026-11-01
+
+- Next on a phone is To do or Chores (#225): two halves at the top, each
+  with a badge of how many are open. Before and after work hours, and on
+  days off, it opens on Chores; in work hours, on To do. Work hours are your
+  work_hours::, else weekdays 8 to 16. A tap picks the other side until the
+  next change of shift. A wider screen keeps the Chores chip.
+
 ## 1.43.0 - 2026-11-01
 
 - Next on a phone is a plain to-do list (#224). The filters, sort and
