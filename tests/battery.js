@@ -1921,6 +1921,23 @@ var GTD_TEST = (() => {
     if (typeof closeModal === "function") closeModal();
   });
 
+  test("#234 a todo made into a project loses its TODO; the way back puts it on again", () => {
+    const from = scratchProject("todo to project", [["TODO", "Test paint the fence"], ["DOING", "Test fix the gate"]]);
+    const [a, b] = getPage(from).blocks;
+    insertMakeLink(from, a, "1/" + slugify(bareLineName(a)));
+    eq(a.state, null, "the line is no task any more");
+    eq(a.title, "[[1/Test paint the fence]]");
+    ok(findExistingPage("1/Test paint the fence"), "the project is there");
+    insertMakeLink(from, b, "2/" + slugify(bareLineName(b)));
+    eq(b.state, null, "someday too");
+    ok(projectLineToTask(from, a), "back to a task");
+    eq(a.state, "TODO", "and the TODO is back");
+    const c = newBlock({state: "TODO", title: "Test call the painter"});
+    getPage(from).blocks.push(c);
+    insertMakeLink(from, c, "1/Test paint the fence");
+    eq(c.state, "TODO", "a task that only links a project stays a task");
+  });
+
   /* ============================================================
      Mail, pastes, notes and reviews
      ============================================================ */
