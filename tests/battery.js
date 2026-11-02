@@ -5529,6 +5529,61 @@ var GTD_TEST = (() => {
     } finally { PREF.set("sub.book", was); }
   }));
 
+  test("#248 a script becomes prose, with said only where it is needed, and reads back to the same speakers", () => withBookVault({
+    [BOOK_PATH]: "title:: book\ndialogue:: english\n\n- [[Harbour]]\n",
+    [join(PAGES, "Harbour.md")]: "- ## Quay\n  with:: [[Anna]], [[Bo]], [[Cai]]\n",
+    [join(PAGES, "Anna.md")]: "type:: character\n", [join(PAGES, "Bo.md")]: "type:: character\n", [join(PAGES, "Cai.md")]: "type:: character\n",
+  }, () => {
+    const rows = [["Anna", "We should go."], ["Bo", "Not yet"], ["Anna", "Now!"], ["Bo", ""], ["Bo", "Fine."], ["Cai", "Wait."]]
+      .map(([who, text]) => ({who, text}));
+    const prose = scriptToProse(rows);
+    eq(prose, ["“We should go,” said Anna.", "“Not yet,” said Bo.", "“Now!”", "“Fine.”", "“Wait,” said Cai."]);
+    eq(scriptToProse(rows.slice(0, 2), "guillemets"), ["«We should go», sa Anna.", "«Not yet», sa Bo."]);
+    eq(scriptToProse(rows.slice(0, 3), "dash"), ["– We should go, sa Anna.", "– Not yet, sa Bo.", "– Now!"]);
+    eq(scriptToProse(rows.slice(0, 1), "german"), ["„We should go“, sagte Anna."]);
+    getPage(BOOK_PATH).props.said = "says"; clearMemo();
+    eq(scriptToProse(rows.slice(0, 1)), ["“We should go,” says Anna."], "said:: is the word");
+    delete getPage(BOOK_PATH).props.said;
+    getPage(join(PAGES, "Harbour.md")).blocks[0].children = prose.map(t => newBlock({title: t}, false));
+    clearMemo();
+    const who = k => castEntries().find(e => e.key === k).name;
+    eq(bookAnalysis().scenes[0].speeches.map(x => who(x.speaker)), ["Anna", "Bo", "Anna", "Bo", "Cai"], "read back as written");
+  }));
+  test("#248 the Script dialog: Enter for the next speaker, Tab to change, Ctrl+Enter puts it in", () => withBookVault({
+    [BOOK_PATH]: "title:: book\ndialogue:: english\n\n- [[Harbour]]\n",
+    [join(PAGES, "Harbour.md")]: "- ## Quay\n  pov:: [[Anna Berg]]\n  with:: [[Bo]]\n  - She waited.\n  -\n",
+    [join(PAGES, "Anna Berg.md")]: "type:: character\n", [join(PAGES, "Bo.md")]: "type:: character\n", [join(PAGES, "Cai.md")]: "type:: character\n",
+  }, async () => {
+    const harbour = join(PAGES, "Harbour.md"), empty = getPage(harbour).blocks[0].children[1];
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    openScript({path: harbour, after: empty});
+    await frame();
+    const dlg = $("#modalRoot");
+    eq([...dlg.querySelectorAll(".scriptwho .fchip[aria-pressed=true]")].map(b => b.textContent), ["Anna Berg", "Bo"], "the scene's people talk");
+    const key = (input, k, more = {}) => input.dispatchEvent(new KeyboardEvent("keydown", Object.assign({key: k, bubbles: true, cancelable: true}, more)));
+    let inputs = () => [...dlg.querySelectorAll(".scriptrow input")];
+    const type = (input, text) => { input.value = text; input.dispatchEvent(new Event("input", {bubbles: true})); };
+    type(inputs()[0], "Are you coming?");
+    key(inputs()[0], "Enter");
+    await frame();
+    eq([...dlg.querySelectorAll(".scriptname")].map(b => b.textContent), ["Anna", "Bo"], "the next row is the next speaker's");
+    eq(document.activeElement, inputs()[1], "and has the caret");
+    type(inputs()[1], "No.");
+    key(inputs()[1], "Enter");
+    await frame();
+    key(inputs()[2], "Tab");
+    await frame();
+    eq(dlg.querySelectorAll(".scriptname")[2].textContent, "Bo", "Tab changes who speaks");
+    key(inputs()[2], "Backspace");
+    await frame();
+    eq(inputs().length, 2, "Backspace on an empty row takes it away");
+    key(inputs()[1], "Enter", {ctrlKey: true});
+    await frame();
+    ok(!dlg.querySelector(".scriptdlg"), "Ctrl+Enter closes it");
+    eq(getPage(harbour).blocks[0].children.map(b => b.title), ["She waited.", "“Are you coming?” said Anna.", "“No,” said Bo."],
+      "in place of the empty line it was opened from");
+  }));
+
   test("#241 in a book's area the names offered are that area's own, its pages too", async () => {
     const rec = newRecord("Book241", Backends.memory("Book241"));
     for (const [p, text] of Object.entries({

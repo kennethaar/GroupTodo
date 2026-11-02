@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.61.0 - 2026-11-02
+
+- Script mode (#248): Script on a chapter, or `/script` on a line, writes
+  talk fast, as a play. A row per line with the speaker in front: Enter
+  starts the next row with the next speaker, Tab changes who speaks, and the
+  chips pick who is talking (the scene's people first). Ctrl+Enter puts it
+  in the chapter as prose, in the book's dialogue marks, with "said Anna"
+  only where a reader could not tell who speaks. `said::` in 8/book.md is
+  the word used (said, sa, sagte by style).
+
 ## 1.60.0 - 2026-11-02
 
 - Book has tabs: Chapters, and now Cast (#247), the story bible. A page in
