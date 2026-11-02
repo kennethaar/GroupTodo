@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.67.0 - 2026-11-02
+
+- Book › Read (#253): the whole book as one text, each chapter under its
+  name, in Prose. Change it as you read: it is the chapters' own pages.
+  Beats and Focus work as on a chapter.
+
 ## 1.66.0 - 2026-11-02
 
 - Kill your darlings (#252): `/darling` on a line in a chapter cuts the

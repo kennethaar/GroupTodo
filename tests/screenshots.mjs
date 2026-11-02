@@ -111,6 +111,7 @@ SETUP["book-cast"] = BOOK_SEED + ` go("book", {sub: "cast"});`;
 SETUP["book-relations"] = BOOK_SEED + ` go("book", {sub: "relations"});`;
 SETUP["book-timeline"] = BOOK_SEED + ` go("book", {sub: "timeline"});`;
 SETUP["book-plot"] = BOOK_SEED + ` go("book", {sub: "plot"});`;
+SETUP["book-read"] = BOOK_SEED + ` go("book", {sub: "read"});`;
 /* This week's page with its routines and a focus line, and last week's with
    what was left open on it, gone again after the picture (#192). */
 const WEEK_PAGES = `const wk = n => shiftWeek(weekOf(todayISO()), n);
@@ -137,7 +138,7 @@ const AFTER = {
   "review-days": `for (const [p, page] of DAY_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
     clearMemo(); render();`,
 };
-AFTER.book = AFTER["book-cast"] = AFTER["book-relations"] = AFTER["book-timeline"] = AFTER["book-plot"] = `for (const p of BOOK_SHOT) V.pages.delete(p);
+AFTER.book = AFTER["book-cast"] = AFTER["book-relations"] = AFTER["book-timeline"] = AFTER["book-plot"] = AFTER["book-read"] = `for (const p of BOOK_SHOT) V.pages.delete(p);
     for (const [p, page] of BOOK_ASIDE) V.pages.set(p, page); PREF.set("sub.book", ""); clearMemo(); renderNav(); render();`;
 AFTER["journal-week"] = AFTER["review-steps"] = `for (const [p, page] of WEEK_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
     clearMemo(); render();`;

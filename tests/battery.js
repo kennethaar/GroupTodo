@@ -5734,6 +5734,22 @@ var GTD_TEST = (() => {
     ok(!isTemplatePath(DARLINGS_PATH) && pageKind(DARLINGS_PATH) === "page", "the page is no template");
   }));
 
+  test("#253 Read shows the whole book as prose, and a change there is a change to the chapter", () => withBookVault(BOOK_PAGES, async () => {
+    const was = PREF.get("sub.book", "");
+    try {
+      go("book", {sub: "read"});
+      await settle();
+      eq([...content().querySelectorAll(".readhead .nm")].map(n => n.textContent), ["Harbour", "The storm"], "the chapters with a page, in order");
+      eq(content().querySelectorAll(".readch .outline.prose").length, 2);
+      const storm = join(PAGES, "The storm.md"), b = getPage(storm).blocks[0];
+      const txt = content().querySelector('.readch .blk[data-id="' + b.id + '"] .txt');
+      txt.focus();
+      txt.textContent = "It was a quiet night.";
+      txt.blur();
+      eq(getPage(storm).blocks[0].title, "It was a quiet night.");
+    } finally { PREF.set("sub.book", was); }
+  }));
+
   test("#241 in a book's area the names offered are that area's own, its pages too", async () => {
     const rec = newRecord("Book241", Backends.memory("Book241"));
     for (const [p, text] of Object.entries({
