@@ -5,6 +5,19 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.70.0 - 2026-11-02
+
+- Updates (#256): once a day the app looks on GitHub for a new version.
+  When one is out, a note in the corner says what it brings, with Download
+  now (or Update now on the hosted copy) and See what's new. New vN beside
+  the name, top left, stays until you have it.
+- What's new: the first time a new version starts, it shows what has come
+  since the version you ran last, each with How it works for its help topic.
+- Still missing a key feature? What's new and the help end with Suggest a
+  feature, Report a bug and Star on GitHub, the version filled in.
+- Vault & sync › More › Updates turns the daily check off, or checks now.
+  Only the list of changes is fetched; nothing about you is sent.
+
 ## 1.69.0 - 2026-11-02
 
 - One world, several books (#255): an area can hold a series. Each book is

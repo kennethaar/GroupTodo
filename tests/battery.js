@@ -50,6 +50,85 @@ var GTD_TEST = (() => {
   });
 
   /* ============================================================
+     Updates and what's new (#256)
+     ============================================================ */
+  const fakeLog = v => "# Changelog\n\n## " + v + " - 2026-12-01\n\n- Shiny thing (#999): it shines.\n- Another: it also does.\n\n" +
+    "## " + APP_VERSION + " - 2026-11-02\n\n- Old news: already here.\n";
+  const withFetch = async (text, fn) => {
+    const real = window.fetch;
+    const asked = [];
+    window.fetch = async url => { asked.push(String(url)); return new Response(text, {status: 200}); };
+    try { return await fn(asked); } finally { window.fetch = real; }
+  };
+  const clearNews = () => { document.querySelectorAll("#toasts .toast.update, #toasts .toast.whatsnew").forEach(t => t.remove()); closeModal(); };
+  test("#256 versions compare by number, not by text", () => {
+    ok(verCmp("1.10.0", "1.9.9") > 0, "1.10.0 > 1.9.9");
+    ok(verCmp("2.0.0", "2.0.0") === 0, "equal");
+    ok(verCmp("1.69.0", "1.70.0") < 0, "1.69.0 < 1.70.0");
+  });
+  test("#256 the news reads this version first, with its heads and issues", () => {
+    const e = newsEntries(HELP_NEWS);
+    eq(e[0].version, APP_VERSION);
+    ok(e.length > 5, "more than five versions kept, so a gap can be bridged");
+    const it = newsEntries(fakeLog("9.0.0"))[0].items[0];
+    eq([it.head, it.issue], ["Shiny thing", "999"]);
+  });
+  test("#256 the demo never asks GitHub", () => ok(!updatesPossible(), "updatesPossible() in the demo"));
+  test("#256 a newer version on GitHub gets a toast and a badge", async () => {
+    clearNews();
+    await withFetch(fakeLog("9.0.0"), async asked => {
+      const u = await checkForUpdate();
+      has(asked[0], "raw.githubusercontent.com/kennethaar/GroupTodo/main/CHANGELOG.md");
+      eq(u && u.version, "9.0.0");
+      eq(u.entries.length, 1, "only the versions newer than this one");
+    });
+    const t = document.querySelector("#toasts .toast.update");
+    ok(t, "update toast");
+    has(t.textContent, "v9.0.0");
+    has(t.textContent, "Shiny thing");
+    has(t.textContent, "Download now");
+    const b = document.querySelector("#appUpdate");
+    ok(!b.hidden, "badge shown");
+    has(b.textContent, "New v9.0.0");
+    eq(PREF.get("update.checked"), T(), "checked today, so not again until tomorrow");
+    clearNews();
+  });
+  test("#256 the newest version gets no toast, and the badge goes", async () => {
+    clearNews();
+    await withFetch(fakeLog("1.0.0"), () => checkForUpdate());
+    eq(UPDATE, null);
+    ok(document.querySelector("#appUpdate").hidden, "badge hidden");
+    ok(!document.querySelector("#toasts .toast.update"), "no toast");
+  });
+  test("#256 a new version's first start says what came since the last one", () => {
+    clearNews();
+    const before = newsEntries(HELP_NEWS)[3].version;
+    PREF.set("onboarded", PREF.get("onboarded") || T());
+    PREF.set("ran.version", before);
+    maybeShowWhatsNew();
+    const t = document.querySelector("#toasts .toast.whatsnew");
+    ok(t, "what's new toast");
+    has(t.textContent, "since v" + before);
+    eq(PREF.get("ran.version"), APP_VERSION);
+    t.remove();
+    maybeShowWhatsNew();
+    ok(!document.querySelector("#toasts .toast.whatsnew"), "only once per version");
+  });
+  test("#256 what's new lists each version since, with help and a way to give feedback", () => {
+    const all = newsEntries(HELP_NEWS);
+    whatsNewDialog(all.slice(0, 3), {since: all[3].version});
+    const m = document.querySelector(".modal .whatsnew");
+    ok(m, "dialog");
+    for (const e of all.slice(0, 3)) has(m.textContent, "v" + e.version);
+    ok(!m.textContent.includes("v" + all[3].version + " ·"), "not the version you had");
+    ok(m.querySelectorAll(".newsacts button").length > 0, "How it works for at least one new thing");
+    const idea = m.querySelector('.feedback a[href*="/issues/new"]');
+    ok(idea, "suggest a feature");
+    has(decodeURIComponent(idea.href), "GroupToDo v" + APP_VERSION);
+    closeModal();
+  });
+
+  /* ============================================================
      Start-up and the demo vault
      ============================================================ */
   test("app finished starting with the demo vault", () => {
