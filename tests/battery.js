@@ -4998,8 +4998,10 @@ var GTD_TEST = (() => {
   // Every page put back as it was, since setting a book up also writes a type and a tracker.
   const withBookVault = async (pages, fn) => {
     const was = new Map([...V.pages].map(([p, page]) => [p, structuredClone(page)]));
+    const prefs = ["book.scope", curBookKey()].map(k => [k, PREF.get(k, "")]);
     try {
-      V.pages.delete(BOOK_PATH);
+      for (const p of allPages(isBookPath)) V.pages.delete(p);
+      for (const [k] of prefs) PREF.set(k, "");
       for (const [p, text] of Object.entries(pages)) putPage(p, parsePage(text), {silent: true});
       clearMemo(); renderNav();
       await fn();
@@ -5007,6 +5009,7 @@ var GTD_TEST = (() => {
       closeModal();
       V.pages.clear();
       for (const [p, page] of was) { V.pages.set(p, page); V.removed.delete(p); }
+      for (const [k, v] of prefs) PREF.set(k, v);
       clearMemo(); go("today"); renderNav();
     }
   };
@@ -5085,13 +5088,14 @@ var GTD_TEST = (() => {
     await settle();
     content().querySelector(".bookset .btn").click();
     await settle();
-    ok(!getPage(BOOK_PATH), "nothing is made before it has a name");
+    ok(!hasBook(), "nothing is made before it has a name");
     const dlg = $("#modalRoot");
     dlg.querySelector("input").value = "The long road";
     [...dlg.querySelectorAll("button")].find(b => b.textContent === "Create").click();
     await settle();
-    const page = getPage(BOOK_PATH);
-    ok(page, "the page is made");
+    const made = join(BOOK_DIR, "The long road.md"), page = getPage(made);
+    ok(page, "the page is made, in 8/book/ (#255)");
+    eq(bookPath(), made);
     eq(page.props.stages, "[[8/Chapter]]");
     eq(page.props.title, "The long road", "the name asked for");
     eq(bookStages().map(s => s.name), BOOK_STAGES, "the Chapter type has the built-in stages");
@@ -5122,7 +5126,7 @@ var GTD_TEST = (() => {
     eq(back[back.length - 1].textContent, "Back to the default", "last");
     back[back.length - 1].click();
     await settle();
-    ok(!getPage(BOOK_PATH), "the page is gone");
+    ok(!getPage(made), "the page is gone");
     renderNav(); ok(!navLabels().includes("Book"), "and Book with it");
     ok(getPage(join(DIRS.lists, "Chapter.md")), "the Chapter type stays");
   }));
@@ -5210,7 +5214,7 @@ var GTD_TEST = (() => {
   test("#242 a new book asks for its name and area; a tab per book when there are more", async () => {
     const rec = newRecord("Book242", Backends.memory("Book242"));
     rec.pages.set(BOOK_PATH, parsePage("title:: Second book\n\n- [[Gulls]]\n"));
-    const was = PREF.get("bookAreas", "");
+    const was = PREF.get("bookList", "");
     await withBookVault({}, async () => {
       try {
         go("book");
@@ -5223,13 +5227,13 @@ var GTD_TEST = (() => {
         eq([areas[0], areas[areas.length - 1]], [V.space, "+ New area"], "this area first, or a new one");
         [...dlg.querySelectorAll("button")].find(b => b.textContent === "Create").click();
         await settle();
-        ok(!getPage(BOOK_PATH), "not without a name");
+        ok(!hasBook(), "not without a name");
         dlg.querySelector("input").value = "First book";
         dlg.querySelectorAll("input")[1].value = "A novel";
         [...dlg.querySelectorAll("button")].find(b => b.textContent === "Create").click();
         await settle();
-        eq(getPage(BOOK_PATH).props.title, "First book");
-        eq(getPage(BOOK_PATH).props.subtitle, "A novel");
+        eq(getPage(bookPath()).props.title, "First book");
+        eq(getPage(bookPath()).props.subtitle, "A novel");
         ok(!content().querySelector(".booktabs"), "one book, no tabs");
         LOADED.set(rec.name, rec);
         Spaces.list.push({name: rec.name, kind: "memory"});
@@ -5241,17 +5245,99 @@ var GTD_TEST = (() => {
         eq(tabs[1].title, "In Book242");
         openBookInfo({create: true});
         await settle();
-        ok(![...$("#modalRoot").querySelectorAll(".seg button")].some(b => b.textContent === V.space || b.textContent === "Book242"),
-          "an area with a book is not offered");
+        const offered = [...$("#modalRoot").querySelectorAll(".seg button")].map(b => b.textContent);
+        ok(offered[0] === V.space && offered.includes("Book242"), "an area with a book is offered too: it can hold more (#255)");
         closeModal();
       } finally {
         LOADED.delete(rec.name);
         const at = Spaces.list.findIndex(s => s.name === rec.name);
         if (at >= 0) Spaces.list.splice(at, 1);
-        PREF.set("bookAreas", was);
+        PREF.set("bookList", was);
       }
     });
   });
+
+  /* Several books in one area, one world (#255) */
+  const SERIES_PAGES = {
+    [BOOK_PATH]: "title:: First\ndialogue:: english\nprotagonist:: [[Anna]]\n\n- [[Harbour]]\n",
+    [join(BOOK_DIR, "Second.md")]: "title:: Second\norder:: 2\ndialogue:: guillemets\n\n- [[Gulls]]\n",
+    [join(PAGES, "Harbour.md")]: "- ## Quay\n  pov:: [[Anna]]\n  plot:: The search\n  when:: Day 1\n- Anna ran.\n",
+    [join(PAGES, "Gulls.md")]: "- ## Cliff\n  pov:: [[Bo]]\n  plot:: The search\n  when:: Day 5\n- Bo waited.\n",
+    [personPath("Anna")]: "- In the story.\n", [personPath("Bo")]: "- In the story.\n", [personPath("Cai")]: "- Not written in yet.\n",
+  };
+  test("#255 an area holds several books, in series order, and one is shown", () => withCastVault(SERIES_PAGES, async () => {
+    eq(bookPaths(), [BOOK_PATH, join(BOOK_DIR, "Second.md")], "8/book.md is a book too; order:: 2 puts Second after it");
+    eq(bookPath(), BOOK_PATH, "the first is shown");
+    eq(bookChapters().map(c => c.name), ["Harbour"]);
+    eq(seriesChapters().map(c => c.name), ["Harbour", "Gulls"]);
+    ok(!isTemplatePath(join(BOOK_DIR, "Second.md")) && pageKind(join(BOOK_DIR, "Second.md")) === "page", "a book is a page, not a template");
+    go("book");
+    await settle();
+    eq([...content().querySelectorAll(".booktabs .fchip")].map(t => t.textContent), ["First", "Second"], "a tab per book");
+    content().querySelectorAll(".booktabs .fchip")[1].click();
+    await settle();
+    eq(bookPath(), join(BOOK_DIR, "Second.md"));
+    eq(content().querySelector(".vhead h1").textContent, "Second");
+    eq(dialogueStyle(), "guillemets", "its own settings");
+    eq(dialogueStyle(BOOK_PATH), "english");
+    eq(bookOfChapter(join(PAGES, "Harbour.md")), BOOK_PATH);
+    openPage(join(PAGES, "Harbour.md"));
+    await settle();
+    eq(bookPath(), BOOK_PATH, "writing in a chapter shows its book");
+    go("checklists");
+    await settle();
+    const seg = (cls, label) => [...content().querySelectorAll(".bookset ." + cls + " .seg button")].find(b => b.textContent === label);
+    seg("bookorder", "2").click();
+    await settle();
+    eq(bookPaths(), [join(BOOK_DIR, "Second.md"), BOOK_PATH], "First moved to second place");
+    eq([getPage(bookPaths()[0]).props.order, getPage(BOOK_PATH).props.order], ["1", "2"], "numbered");
+    seg("bookpick", "Second").click();
+    await settle();
+    eq(bookPath(), join(BOOK_DIR, "Second.md"), "Settings picks the book");
+  }));
+  test("#255 a new book joins the area's world: last in the series, shown, sharing the cast", () => withCastVault(SERIES_PAGES, async () => {
+    setupBook({name: "Third"});
+    await settle();
+    const third = join(BOOK_DIR, "Third.md");
+    eq(bookPath(), third, "the new book is shown");
+    eq(bookPaths(), [BOOK_PATH, join(BOOK_DIR, "Second.md"), third]);
+    eq(bookPaths().map(p => getPage(p).props.order), ["1", "2", "3"]);
+    eq(castEntries().filter(e => e.type === "character").map(e => e.name).sort(), ["Anna", "Bo", "Cai"], "the same cast");
+    setupBook({name: "Third"});
+    ok(getPage(join(BOOK_DIR, "Third 2.md")), "a name taken gets a number");
+    bookDefault();
+    await settle();
+    ok(!getPage(join(BOOK_DIR, "Third 2.md")) && hasBook(), "Back to the default takes only the book shown");
+  }));
+  test("#255 Cast shows this book's people and those in no book yet, or all books", () => withCastVault(SERIES_PAGES, async () => {
+    const was = PREF.get("sub.book", "");
+    try {
+      go("book", {sub: "cast"});
+      await settle();
+      const names = () => [...content().querySelectorAll(".castrow .casttop .nm")].map(n => n.textContent);
+      eq(names(), ["Anna", "Cai"], "Bo is only in Second; Cai is in no book yet");
+      const scope = label => [...content().querySelectorAll(".bookscope button")].find(b => b.textContent === label);
+      scope("All books").click();
+      await settle();
+      eq(names().sort(), ["Anna", "Bo", "Cai"]);
+      eq(castStats("all").get(castEntryOf("Bo").key).scenes, 1, "counted across the series");
+    } finally { PREF.set("sub.book", was); }
+  }));
+  test("#255 Timeline and Plot read all books as one story", () => withCastVault(SERIES_PAGES, async () => {
+    eq(bookTimeline("book").rows.map(r => r.scene.name), ["Quay"]);
+    eq(bookTimeline("all").rows.map(r => r.scene.name), ["Quay", "Cliff"]);
+    const plot = bookPlot("all");
+    eq(plot.chapters.map(c => c.name), ["Harbour", "Gulls"]);
+    eq(plot.lines.map(l => l.cells.map(c => c.length)), [[1, 1]], "one plotline through both books");
+    const was = PREF.get("sub.book", "");
+    try {
+      PREF.set("book.scope", "all");
+      go("book", {sub: "plot"});
+      await settle();
+      eq([...content().querySelectorAll(".tlhead .tlbook")].map(b => b.textContent), ["First", "Second"], "each book's name over its first chapter");
+      eq([...content().querySelectorAll(".tlhead")].map(h => h.textContent), ["First1. Harbour", "Second1. Gulls"]);
+    } finally { PREF.set("sub.book", was); }
+  }));
 
   const SCENE_PAGES = {
     [BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n- [[The storm]]\n",

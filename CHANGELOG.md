@@ -5,6 +5,20 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.69.0 - 2026-11-02
+
+- One world, several books (#255): an area can hold a series. Each book is
+  a page in `8/book/` with its own chapters, stages, goals, dialogue and
+  protagonist, and all of them share the area's people, places and things.
+  `8/book.md` still counts as a book. A tab per book switches between them,
+  and Settings › Book picks the book and its place in the series
+  (`order::`). A new book can go in an area that has one already.
+- Cast shows who is in this book's scenes, and anyone in no book yet; All
+  books shows the whole series. Timeline and Plot can read all the books as
+  one story too.
+- Open a chapter, and its book is the one shown, with its own dialogue style
+  and words a day.
+
 ## 1.68.0 - 2026-11-02
 
 - Book › Revise (#254): where the text could be tighter, a row per chapter:
