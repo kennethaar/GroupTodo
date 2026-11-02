@@ -39,7 +39,12 @@ const SETUP = {
     putPage(CHORE_SHOT[1], {props: {title: "home/bathroom"}, blocks: [
       chore("Scrub the shower #30m [[c/home/bathroom]]", "weekly", 3),
       chore("Change the towels [[c/home/bathroom]]", "weekly", -1, {assigned: "Marcus Lind"}),
-      done("Clean the sink #15m [[c/home/bathroom]]", "Ingrid Solberg")]}, {silent: true});
+      done("Clean the sink #15m [[c/home/bathroom]]", "Ingrid Solberg"),
+      newBlock({title: "Laundry #30m [[c/home/bathroom]]", props: {repeat: "as needed"}}),
+      newBlock({title: "Change the bed linen #15m [[c/home/bathroom]]", props: {repeat: "as needed"}}),
+      done("Laundry #30m [[c/home/bathroom]]", "Marcus Lind"),
+    ]}, {silent: true});
+    getPage(CHORE_SHOT[1]).blocks.at(-1).props.repeat = "as needed"; // logged, not a weekly one
     clearMemo(); PREF.set("chores.who", "all"); go("chores");`,
   // Two weeks of water and coffee on one Drinks chart, and a weight of its own.
   trackers: `const w = [4,3,5,2,6,4,3,5,4,2,5,6,3,4], c = [2,3,1,3,2,2,4,1,2,3,2,1,3,2];

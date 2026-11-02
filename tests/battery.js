@@ -1592,9 +1592,9 @@ var GTD_TEST = (() => {
       done("Take out the bins", "Test Pointsperson", T()), done("Clean the oven #60m", "Test Pointsperson", shiftISO(weekStartISO(T()), -1))]);
     try {
       const row = choreTally(weekStartISO(T()), T()).find(([n]) => n === "Test Pointsperson");
-      eq(row && row[1], {pts: 3, n: 2});
+      eq(row && row[1], {pts: 3, n: 2, logged: 0});
       const last = choreTally(shiftISO(weekStartISO(T()), -7), shiftISO(weekStartISO(T()), -1)).find(([n]) => n === "Test Pointsperson");
-      eq(last && last[1], {pts: 4, n: 1});
+      eq(last && last[1], {pts: 4, n: 1, logged: 0});
     } finally { dropChores(path); }
   });
   /* Household people (#236): at home, not in the app. */
@@ -1604,6 +1604,60 @@ var GTD_TEST = (() => {
     clearMemo();
     return path;
   };
+  test("#239 an as-needed chore is no task: never late or on Next, and Did it logs a done line that counts", async () => {
+    const path = choreProject("chores as needed", [newBlock({title: "Laundry #30m [[c/home/laundry]]", props: {repeat: "as needed"}})]);
+    const b = getPage(path).blocks[0];
+    const logged = () => (getPage(journalPath(T()))?.blocks || []).filter(x => isLoggedChore(x) && /^Laundry/.test(x.title));
+    try {
+      eq(nextRepeatDate("as needed", T()), null, "it has no next round");
+      ok(asNeededChores().some(a => a.block === b), "an as-needed chore");
+      ok(!allChores().some(a => a.block === b), "not a scheduled chore, so no bar and never late");
+      ok(!nextActions().some(a => a.block === b), "not on Next");
+      ok(NAV_ITEMS.find(it => it && it.id === "chores").when(), "Chores is in the sidebar");
+      go("chores"); await settle();
+      const row = () => [...content().querySelectorAll(".asneeded .asneeded-row")].find(r => r.textContent.includes("Laundry"));
+      ok(row(), "in the As needed fold");
+      ok(/not done yet/.test(row().textContent), row().textContent);
+      eq(logged().length, 0);
+      row().querySelector(".didit").click(); await settle();
+      const done = logged()[0];
+      ok(done, "Did it writes a done line on today's page");
+      eq([blockContext(done), estTier(done.title), closedBy(done), closedOn(done)], ["home/laundry", 2, "Kenneth Aar", T()]);
+      ok(!b.state && isAsNeeded(repeatOf(b)), "the chore itself stays, for next time");
+      ok(/today/.test(row().textContent), "last done today: " + row().textContent);
+      const mine = choreTally(T(), T()).find(([n]) => n === "Kenneth Aar");
+      ok(mine && mine[1].logged >= 1, "Points counts it as logged");
+      ok(/logged/.test(content().querySelector(".choreboard").textContent), "the board says how many were logged");
+      undoLast(); await settle();
+      eq(logged().length, 0, "Undo takes it back");
+    } finally { dropChores(path); }
+  });
+  test("#239 Log a chore writes a done line on the day's page for who did it, in a new room", async () => {
+    const leo = householder("Leo Testlog");
+    const path = choreProject("chores log", []);
+    // Written as @home is written in this vault: Home/Testlogroom here.
+    const ctx = ctxSlug("home/testlogroom"), room = contextPath(ctx), had = !!getPage(room);
+    const day = shiftISO(T(), -1);
+    try {
+      openLogChore(""); await settle();
+      const m = document.querySelector(".scrim .modal");
+      const set = (sel, v) => { const n = m.querySelector(sel); n.value = v; n.dispatchEvent(new Event("change")); n.dispatchEvent(new Event("input")); };
+      set('input[aria-label="What"]', "Change the bed");
+      set('select[aria-label="Room"]', "\u0002");
+      set('input[aria-label="New room"]', "testlogroom");
+      set('select[aria-label="How long"]', "2");
+      set('select[aria-label="Who did it"]', "Leo Testlog");
+      set('select[aria-label="When"]', "yesterday");
+      eq(m.querySelector(".logchore-line").textContent, "DONE Change the bed #30m [[c/" + ctx + "]]  done_by:: Leo Testlog");
+      [...m.querySelectorAll("button")].find(n => n.textContent === "Log it").click(); await settle();
+      const done = getPage(journalPath(day)).blocks.find(x => isLoggedChore(x) && /^Change the bed/.test(x.title));
+      ok(done, "a done line on yesterday's page");
+      eq([blockContext(done), closedBy(done), closedOn(done)], [ctx, "Leo Testlog", day]);
+      ok(getPage(room), "the new room has its page");
+      eq(choreTally(day, day).find(([n]) => n === "Leo Testlog")?.[1], {pts: 2, n: 1, logged: 1});
+      ok(choreRecent().some(r => r.words === "Change the bed" && r.ctx === ctx && r.size === 2), "offered next time, with its room and size");
+    } finally { closeModal(); dropChores(path); if (!had) removePage(room); removePage(leo); clearMemo(); }
+  });
   test("#236 a household person takes turns, keeps a chore handed to them a task, and gets the points", async () => {
     const mia = householder("Mia Testhome"), leo = householder("Leo Testhome");
     const path = choreProject("chores household", [chore("Empty the dishwasher #15m [[c/home/kitchen]]", "daily", 0)]);
@@ -1628,7 +1682,7 @@ var GTD_TEST = (() => {
       eq(closedBy(b), "Leo Testhome", "By Leo moves the credit");
       ok(!samePerson(assigneeOf(next) || whoAmI(), "Leo Testhome"), "and the next turn is worked out again");
       const row = choreTally(T(), T()).find(([n]) => n === "Leo Testhome");
-      eq(row && row[1], {pts: 1, n: 1}, "the point is Leo's");
+      eq(row && row[1], {pts: 1, n: 1, logged: 0}, "the point is Leo's");
     } finally { closeDoneToast(); dropChores(path); removePage(mia); removePage(leo); clearMemo(); }
   });
   test("#236 Chores shows one person's chores, and a person page marks them Household", async () => {
@@ -2118,6 +2172,23 @@ var GTD_TEST = (() => {
       eq([b.state, repeatOf(b), estTier(b.title), dueDate(b)], ["TODO", "monthly", 1, T()]);
       has(b.title, "[[c/Home/Testkitchen]]");
     } finally { if (page) { page.blocks = []; touch(contextPath("Home/Testkitchen")); clearMemo(); } }
+  });
+  test("#239 + New chore, As needed: a plain line with no first day", async () => {
+    openNewChore("");
+    const m = document.querySelector(".scrim .modal");
+    m.querySelector('input[aria-label="What"]').value = "Test sort the recycling";
+    const freq = m.querySelector('select[aria-label="How often"]');
+    freq.value = "as needed"; freq.dispatchEvent(new Event("change"));
+    ok(m.querySelector('select[aria-label="First one"]').closest(".field").hidden, "no First one to pick");
+    [...m.querySelectorAll("button")].find(n => n.textContent === "Add chore").click();
+    await settle();
+    const path = contextPath(ctxSlug("home")), page = getPage(path);
+    const b = page.blocks.find(x => x.title.includes("Test sort the recycling"));
+    try {
+      ok(b, "on the @home page");
+      eq([b.state || "", repeatOf(b), dueDate(b)], ["", "as needed", null]);
+      ok(asNeededChores().some(a => a.block === b), "an as-needed chore");
+    } finally { if (b) { page.blocks.splice(page.blocks.indexOf(b), 1); touch(path); clearMemo(); } }
   });
 
   /* ============================================================

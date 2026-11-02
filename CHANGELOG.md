@@ -5,6 +5,19 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.71.0 - 2026-11-02
+
+- Chores › + Log a chore (#239): count work done at home that has no
+  rhythm, like laundry or a sick child's bed. Pick what (what you did before
+  is offered, with its room and size), room, how long, who did it and when.
+  It writes one done line on that day's page, with done_by::, so Points,
+  whose turn and the Report's "who carried what" count it.
+- + New chore › How often › As needed: a chore with no rhythm. It never gets
+  a bar, never turns late and never goes on Next or the Journal. It sits in
+  its own As needed fold on Chores, with when it was last done and Did it,
+  which logs it in one tap.
+- Points says how many of each person's chores were logged.
+
 ## 1.70.0 - 2026-11-02
 
 - Updates (#256): once a day the app looks on GitHub for a new version.
