@@ -5357,6 +5357,67 @@ var GTD_TEST = (() => {
     ok(!("daily" in getPage(BOOK_PATH).props), "None takes it off");
   }));
 
+  test("#245 quotes, dashes and dots are set in the book's style as they are typed", () => {
+    const typed = (text, style) => { const r = typeSet(text, text.length, style); return r ? r.text : text; };
+    eq(typed("\"", "english"), "“");
+    eq(typed("“Go,\"", "english"), "“Go,”");
+    eq(typed("she said, \"", "english"), "she said, “");
+    eq(typed("\"", "guillemets"), "«");
+    eq(typed("«Hei\"", "guillemets"), "«Hei»");
+    eq(typed("\"", "german"), "„");
+    eq(typed("„Ja\"", "german"), "„Ja“");
+    eq(typed("don'", "english"), "don’", "an apostrophe");
+    eq(typed("'", "english"), "‘");
+    eq(typed("Wait..", "english"), "Wait..", "two dots are two dots");
+    eq(typed("Wait...", "english"), "Wait…");
+    eq(typed("so--", "english"), "so—");
+    eq(typed("so--", "guillemets"), "so–");
+    eq(typed("- ", "dash"), "– ", "a line of speech starts with a dash");
+    eq(typed("- ", "english"), "- ", "only with Dash");
+    eq(typeSet("ab\"cd", 3, "english"), {text: "ab”cd", caret: 3}, "where the caret is, not at the end");
+    eq(typeSet("\"", 1, "nope"), null, "no style, no change");
+    eq(tidyLine("\"Go,\" she said. 'Now' -- don't wait...", "english"), "“Go,” she said. ‘Now’ — don’t wait…");
+    eq(tidyLine("“Go,” she said.", "guillemets"), "«Go,» she said.", "another style's marks become this one's");
+    eq(tidyLine("«Ja», sa hun.", "german"), "„Ja“, sa hun.");
+    eq(tidyLine("- Kom, sa hun.", "dash"), "– Kom, sa hun.");
+  });
+  test("#245 in a chapter, typing sets the marks; Settings picks the style and tidies the book", () => withBookVault({
+    [BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n",
+    [join(PAGES, "Harbour.md")]: "- \"Go,\" she said.\n  - TODO fix \"this\"\n",
+    [join(PAGES, "Elsewhere.md")]: "- Not a chapter\n",
+  }, async () => {
+    const harbour = join(PAGES, "Harbour.md");
+    const typeInto = async (path, text) => {
+      openPage(path);
+      await settle();
+      const txt = content().querySelector(".blk .txt");
+      txt.focus();
+      setHostText(txt, text, text.length);
+      txt.dispatchEvent(new InputEvent("input", {inputType: "insertText", data: text.slice(-1), bubbles: true}));
+      return lineText(txt);
+    };
+    eq(await typeInto(harbour, "Say \""), "Say \"", "as typed, before a style is picked");
+    setDialogueStyle("english");
+    eq(await typeInto(harbour, "Say \""), "Say “");
+    eq(await typeInto(join(PAGES, "Elsewhere.md"), "Say \""), "Say \"", "only in a chapter");
+    closeModal(); go("checklists");
+    await settle();
+    [...content().querySelectorAll(".bookdialogue .seg button")].find(b => b.textContent === DIALOGUE.guillemets.label).click();
+    await settle();
+    eq(getPage(BOOK_PATH).props.dialogue, "guillemets");
+    getPage(harbour).blocks[0].title = "\"Go,\" she said.";
+    content().querySelector(".booktidy").click();
+    await settle();
+    eq(getPage(harbour).blocks[0].title, "«Go,» she said.");
+    eq(getPage(harbour).blocks[0].children[0].title, "fix \"this\"", "a task is left as it is");
+    [...document.querySelectorAll("#toasts .toast")].pop().querySelector(".act").click();
+    eq(getPage(harbour).blocks[0].title, "\"Go,\" she said.", "Undo");
+    [...content().querySelectorAll(".bookdialogue .seg button")].find(b => b.textContent === "As typed").click();
+    await settle();
+    ok(!("dialogue" in getPage(BOOK_PATH).props), "As typed takes it off");
+    ok(!content().querySelector(".booktidy"), "and there is nothing to tidy to");
+  }));
+
   test("#241 in a book's area the names offered are that area's own, its pages too", async () => {
     const rec = newRecord("Book241", Backends.memory("Book241"));
     for (const [p, text] of Object.entries({

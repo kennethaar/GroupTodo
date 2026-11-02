@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.58.0 - 2026-11-02
+
+- A book can say how its speech is set (#245): Settings > Book > Dialogue
+  picks “English”, ‘British’, «Guillemets», „German“ or – Dash
+  (`dialogue::`). In its chapters a `"` you type becomes the right opening
+  or closing mark, `'` an apostrophe or single quote, `--` a dash and `...`
+  an ellipsis. With Dash, `- ` at the start of a line becomes `– `.
+- Tidy the book sets what is already written the same way; Undo puts it back.
+
 ## 1.57.0 - 2026-11-02
 
 - A chapter page has Outline and Prose (#244). Prose shows plain paragraphs:
