@@ -76,14 +76,34 @@ const SETUP = {
     PREF.set("clarify.dealt", ""); CL = {pending: null, skip: new Set(), undo: null, aim: 0};
     clearMemo(); go("review", {sub: "days"});`,
 };
-// A book of four chapters at three stages, gone again after the picture (#240).
-SETUP.book = `window.BOOK_SHOT = [BOOK_PATH, ...["The storm", "Harbour", "After the flood", "Coda"].map(t => join(PAGES, t + ".md"))];
+/* A book of four chapters at three stages, with scenes, talk and a cast,
+   gone again after the picture (#240, #243, #247). Each page is its lines. */
+const BOOK_SEED = `window.BOOK_SHOT = [BOOK_PATH, ...["The storm", "Harbour", "After the flood", "Coda",
+      "Anna Berg", "Mira Berg", "Jon Berg", "The harbour", "The letter"].map(t => join(PAGES, t + ".md"))];
     const para = n => Array.from({length: n}, () => "The water came up the road and nobody moved the cars.").join(" ");
-    putPage(BOOK_PATH, parsePage("title:: The long road\\nsubtitle:: A novel\\nsynopsis:: Two sisters cross the hills to find their father, and the flood finds them first.\\ntarget:: 80000\\n\\n- [[The storm]]\\n- [[Harbour]]\\n- [[After the flood]]\\n- [[Coda]]\\n"), {silent: true});
-    [["Done", 380], ["Revise", 260], ["Draft", 90], ["Outline", 3]].forEach(([stage, n], i) =>
-      putPage(BOOK_SHOT[i + 1], parsePage("stage:: " + stage + (i < 2 ? "\\nsynopsis:: " + ["The river breaks its banks.", "They wait out the night by the boats."][i] : "") + "\\n\\n- " + para(n) + "\\n" +
-        (i === 1 ? "- ## The quay\\n  pov:: [[Anna]]\\n  when:: Day 3\\n- " + para(40) + "\\n- ## Night watch\\n  pov:: [[Mira]]\\n  when:: Day 3, night\\n- " + para(25) + "\\n" : "")), {silent: true}));
-    clearMemo(); renderNav(); go("book");`;
+    const put = (i, lines) => putPage(BOOK_SHOT[i], parsePage(lines.join(String.fromCharCode(10))), {silent: true});
+    put(0, ["title:: The long road", "subtitle:: A novel", "synopsis:: Two sisters cross the hills to find their father, and the flood finds them first.",
+      "target:: 80000", "dialogue:: english", "protagonist:: [[Anna Berg]]", "", "- [[The storm]]", "- [[Harbour]]", "- [[After the flood]]", "- [[Coda]]"]);
+    put(1, ["stage:: Done", "synopsis:: The river breaks its banks.", "",
+      "- ## The road", "  pov:: [[Anna Berg]]", "  with:: [[Mira Berg]]", "  when:: Day 1", "- " + para(300),
+      "- “We should go,” said Mira.", "- “Not yet.”", "- “Anna, the water.”",
+      "- ## The bridge", "  pov:: [[Mira Berg]]", "  with:: [[Old Tomas]]", "  when:: Day 1, evening", "- " + para(80),
+      "- “Is it safe?” Mira asked.", "- “Nothing is safe,” said Tomas. “Cross at the north end, where the rope is.”"]);
+    put(2, ["stage:: Revise", "synopsis:: They wait out the night by the boats.", "", "- " + para(220),
+      "- ## The quay", "  pov:: [[Anna Berg]]", "  place:: [[The harbour]]", "  when:: Day 3", "- " + para(40),
+      "- Anna found [[The letter]] in the boat.",
+      "- ## Night watch", "  pov:: [[Mira Berg]]", "  with:: [[Jon Berg]]", "  when:: Day 3, night", "- " + para(25),
+      "- “You came,” said Jon.", "- “Of course I came. Tell me about the mill.”"]);
+    put(3, ["stage:: Draft", "", "- " + para(90)]);
+    put(4, ["stage:: Outline", "", "- %% They go home"]);
+    put(5, ["type:: character", "wants:: To find her father", "arc:: From waiting to leading"]);
+    put(6, ["type:: character", "wants:: To keep Anna safe"]);
+    put(7, ["type:: character"]);
+    put(8, ["type:: place"]);
+    put(9, ["type:: thing"]);
+    clearMemo(); renderNav();`;
+SETUP.book = BOOK_SEED + ` go("book", {sub: "chapters"});`;
+SETUP["book-cast"] = BOOK_SEED + ` go("book", {sub: "cast"});`;
 /* This week's page with its routines and a focus line, and last week's with
    what was left open on it, gone again after the picture (#192). */
 const WEEK_PAGES = `const wk = n => shiftWeek(weekOf(todayISO()), n);
@@ -110,7 +130,7 @@ const AFTER = {
   "review-days": `for (const [p, page] of DAY_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
     clearMemo(); render();`,
 };
-AFTER.book = `for (const p of BOOK_SHOT) V.pages.delete(p); clearMemo(); renderNav(); render();`;
+AFTER.book = AFTER["book-cast"] = `for (const p of BOOK_SHOT) V.pages.delete(p); PREF.set("sub.book", ""); clearMemo(); renderNav(); render();`;
 AFTER["journal-week"] = AFTER["review-steps"] = `for (const [p, page] of WEEK_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
     clearMemo(); render();`;
 AFTER["review-steps"] = `PREF.set("review.open", OPEN_SHOT); ` + AFTER["review-steps"];

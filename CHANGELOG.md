@@ -5,6 +5,22 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.60.0 - 2026-11-02
+
+- Book has tabs: Chapters, and now Cast (#247), the story bible. A page in
+  the book's area with `type:: character`, `place` or `thing` is in it, and
+  so is anybody a scene names in `pov::` or `with::`, with + Make a page.
+- Each one shows the scenes they are in, those seen through their eyes, their
+  share of the talk, and their first and last chapter.
+- A character shows four signs of depth, whatever their sex or love: a goal
+  of their own (`wants::`), a change (`arc::`), scenes without the
+  protagonist, and talk with others about something other than the
+  protagonist. Missing ones show in the warning colour; the first two can be
+  written from there. The protagonist is `protagonist::` in 8/book.md, or
+  the one who sees the most scenes.
+- Who speaks a line is read from the text: the name outside the quotes, or
+  else back and forth between the two talking.
+
 ## 1.59.0 - 2026-11-02
 
 - Marks for what is not plain prose (#246): `/thought`, `/sound` and
