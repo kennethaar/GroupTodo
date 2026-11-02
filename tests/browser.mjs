@@ -7,6 +7,7 @@
    throwaway profile, opens the demo and waits for the app to finish starting.
    Needs Node 22+ (built-in fetch and WebSocket) and Python for the builds. */
 import {spawn, spawnSync} from "node:child_process";
+import {get} from "node:http";
 import {existsSync, mkdtempSync, readdirSync, rmSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {dirname, join, resolve} from "node:path";
@@ -14,6 +15,12 @@ import {fileURLToPath, pathToFileURL} from "node:url";
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
+/* JSON over plain http. Node 24's fetch can fail an internal assert, outside
+   any catch, when the browser drops a connection while it is starting up. */
+const getJSON = url => new Promise((ok, bad) => {
+  get(url, res => { let s = ""; res.setEncoding("utf8"); res.on("data", d => s += d);
+    res.on("end", () => { try { ok(JSON.parse(s)); } catch (e) { bad(e); } }); res.on("error", bad); }).on("error", bad);
+});
 
 /* ---------- the demo, fresh from the app ----------
    What's new in the help is copied from CHANGELOG.md first, so the version
@@ -82,7 +89,7 @@ export async function openDemo({width = 1400, height = 900} = {}) {
     let target;
     for (let i = 0; i < 100 && !target; i++) {
       try {
-        const list = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
+        const list = await getJSON(`http://127.0.0.1:${port}/json/list`);
         target = list.find(t => t.type === "page");
       } catch { /* not listening yet */ }
       if (!target) await sleep(100);

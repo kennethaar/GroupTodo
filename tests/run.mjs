@@ -129,18 +129,20 @@ async function serveCacheTest(name) {
   const server = spawn(py, [join(ROOT, "serve.py"), "--port", String(port), "--calendars-only"], {stdio: "ignore"});
   const url = `http://127.0.0.1:${port}/grouptodo.html`;
   try {
+    /* Plain http, not fetch: Node 24's fetch can fail an internal assert,
+       outside any catch, on a connection serve.py closes. */
+    const {get} = await import("node:http");
+    const ask = headers => new Promise(ok => get(url, {headers, agent: false}, res => {
+      res.resume(); res.on("end", () => ok(res));
+    }).on("error", () => ok(null)));
     let first = null;
-    for (let i = 0; i < 50 && !first; i++) {
-      try { first = await fetch(url, {headers: {"Accept-Encoding": "gzip"}}); }
-      catch (_) { await new Promise(r => setTimeout(r, 100)); }
-    }
+    for (let i = 0; i < 50 && !first; i++) if (!(first = await ask({"Accept-Encoding": "gzip"}))) await new Promise(r => setTimeout(r, 100));
     if (!first) return {name, ok: false, error: "serve.py did not start"};
-    await first.arrayBuffer();
-    if (first.headers.get("content-encoding") !== "gzip") return {name, ok: false, error: "not gzipped"};
-    const tag = first.headers.get("etag");
+    if (first.headers["content-encoding"] !== "gzip") return {name, ok: false, error: "not gzipped"};
+    const tag = first.headers.etag;
     if (!tag) return {name, ok: false, error: "no ETag"};
-    const again = await fetch(url, {headers: {"If-None-Match": tag}});
-    if (again.status !== 304) return {name, ok: false, error: "unchanged file answered " + again.status};
+    const again = await ask({"If-None-Match": tag});
+    if (!again || again.statusCode !== 304) return {name, ok: false, error: "unchanged file answered " + (again && again.statusCode)};
     return {name, ok: true};
   } catch (e) { return {name, ok: false, error: String(e)}; }
   finally { server.kill(); }
