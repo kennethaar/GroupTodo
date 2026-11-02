@@ -5689,6 +5689,51 @@ var GTD_TEST = (() => {
     } finally { PREF.set("sub.book", was); }
   }));
 
+  test("#252 darlings: a sentence, a paragraph, a scene and a chapter are cut, kept and put back", () => withBookVault({
+    [BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n- [[The storm]]\n",
+    [join(PAGES, "Harbour.md")]: "- First line.\n- She ran. “Wait!” he said. The end\n  - under it\n- Last line.\n- ## Night\n- Dark.\n- Darker.\n- ## Dawn\n- Light.\n",
+    [join(PAGES, "The storm.md")]: "- Rain.\n",
+  }, async () => {
+    const harbour = join(PAGES, "Harbour.md"), titles = () => getPage(harbour).blocks.map(b => b.title);
+    const t = "She ran. “Wait!” he said. The end";
+    eq(sentenceAt(t, 2), {start: 0, end: 9});
+    eq(t.slice(...Object.values(sentenceAt(t, 12))), "“Wait!” he said. ");
+    eq(t.slice(...Object.values(sentenceAt(t, t.length))), "The end", "at the end, the last one");
+    eq(sentenceAt("No stop here", 3), {start: 0, end: 12});
+    const ran = getPage(harbour).blocks[1];
+    cutSentenceToDarlings(harbour, ran, t, 12);
+    eq(ran.title, "She ran. The end");
+    eq(darlings()[0].title, "“Wait!” he said.");
+    eq(darlingWords(), 3);
+    eq(chapterWords(harbour), 13, "not counted in the book");
+    putDarlingBack(darlings()[0]);
+    eq(ran.title, "She ran. The end “Wait!” he said.", "back at the end of its line");
+    cutLineToDarlings(harbour, ran);
+    eq(titles(), ["First line.", "Last line.", "## Night", "Dark.", "Darker.", "## Dawn", "Light."]);
+    eq(darlings()[0].children.map(b => b.title), ["under it"], "with what is under it");
+    putDarlingBack(darlings()[0]);
+    eq(titles()[1], ran.title, "after the line it followed");
+    ok(!("from" in ran.props) && !("cut" in ran.props), "with nothing left of its time away");
+    const night = getPage(harbour).blocks[3];
+    cutLineToDarlings(harbour, night);
+    eq(titles(), ["First line.", ran.title, "Last line.", "## Dawn", "Light."], "a scene goes with its lines");
+    eq(chapterScenes(harbour).map(s => s.name), ["", "Dawn"]);
+    putDarlingBack(darlings()[0]);
+    eq(titles(), ["First line.", ran.title, "Last line.", "## Night", "Dark.", "Darker.", "## Dawn", "Light."], "and comes back as written");
+    go("book", {sub: "chapters"});
+    await settle();
+    content().querySelectorAll(".bookch .chcut")[1].click();
+    await settle();
+    eq(bookChapters().map(c => c.name), ["Harbour"]);
+    ok(getPage(join(PAGES, "The storm.md")), "the chapter's page stays");
+    content().querySelector(".bookdarlings").click();
+    await settle();
+    [...$("#modalRoot").querySelectorAll(".darling .textbtn")][0].click();
+    eq(bookChapters().map(c => c.name), ["Harbour", "The storm"], "Put back: in its place again");
+    closeModal();
+    ok(!isTemplatePath(DARLINGS_PATH) && pageKind(DARLINGS_PATH) === "page", "the page is no template");
+  }));
+
   test("#241 in a book's area the names offered are that area's own, its pages too", async () => {
     const rec = newRecord("Book241", Backends.memory("Book241"));
     for (const [p, text] of Object.entries({

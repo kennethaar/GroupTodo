@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.66.0 - 2026-11-02
+
+- Kill your darlings (#252): `/darling` on a line in a chapter cuts the
+  sentence the caret is in, or at the start of the line the whole paragraph,
+  or on a scene's `##` line the scene. ✂ on a chapter in the Book view takes
+  the chapter out of the book. What is cut goes to `8/darlings.md` with where
+  it came from, and is not counted. Darlings in the Book view lists them;
+  Put back returns each where it was. The words cut show beside the goal.
+
 ## 1.65.0 - 2026-11-02
 
 - Book › Plot (#251): each plotline across the chapters. A plotline is a name
