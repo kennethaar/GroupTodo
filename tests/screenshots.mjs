@@ -134,8 +134,13 @@ SETUP["journal-week"] = WEEK_PAGES + ` go("today", {sub: "week", todayWeek: null
 // Get current opened, so the picture shows a part with its steps and lists (#95).
 SETUP["review-steps"] = WEEK_PAGES + ` REVIEW_WEEK = 0; window.OPEN_SHOT = PREF.get("review.open", "");
     PREF.set("review.open", "phase:current"); go("review", {sub: "steps"});`;
+// A home with two rooms in it and one still on its own, to show the stacking.
+SETUP["contexts-sort"] = `window.CTX_SHOT = ["home", "home/kitchen", "home/garden", "kitchen table"].map(n => contextPath(n));
+  for (const p of CTX_SHOT) putPage(p, pageTemplateFor("c", ctxNameOf(p)), {silent: true});
+  clearMemo(); go("contexts", {sub: "sort"});`;
 /* Put back after the picture what SETUP added for it. */
 const AFTER = {
+  "contexts-sort": `for (const p of CTX_SHOT) V.pages.delete(p); clearMemo(); render();`,
   chores: `for (const p of CHORE_SHOT) V.pages.delete(p); clearMemo(); PREF.set("chores.who", ""); render();`,
   trackers: `for (const p of allPages(isJournalPath)) for (const k of TRK_SHOT.keys) delete getPage(p).props[k];
     for (const p of TRK_SHOT.made) V.pages.delete(p);

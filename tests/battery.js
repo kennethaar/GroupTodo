@@ -2027,6 +2027,42 @@ var GTD_TEST = (() => {
       eq(state.view, "next"); eq(subNow(), "board");
     } finally { PREF.set("contexts.idle", was); go("contexts"); dropChores(path); }
   });
+  test("#257 Contexts › Sort stacks a context on another by drag, and Move… takes it out again", () => {
+    makeContext("Testsorthome");
+    const path = choreProject("sort ctx", [stampAuthor(newBlock({state: "TODO", title: "Wipe the bench [[c/testsortroom]]"}))]);
+    const row = n => [...content().querySelectorAll(".ctxsrow")].find(r => r.dataset.ctx === n);
+    const drag = (from, to) => {
+      from.dispatchEvent(new DragEvent("dragstart", {bubbles: true}));
+      to.dispatchEvent(new DragEvent("dragover", {bubbles: true, cancelable: true}));
+      to.dispatchEvent(new DragEvent("drop", {bubbles: true, cancelable: true}));
+    };
+    try {
+      pickSub("contexts", "sort"); render();
+      ok(row("testsortroom"), "a context only named on a task is a row too");
+      ok(content().querySelector(".ctxtop"), "the top line to take one out");
+      drag(row("testsortroom"), row("Testsorthome"));
+      ok(getPage(contextPath("Testsorthome/testsortroom")), "it is inside now");
+      has(getPage(path).blocks[0].title, "[[c/Testsorthome/testsortroom]]");
+      const kid = row("Testsorthome/testsortroom");
+      ok(kid, "it is drawn under its new home");
+      eq(kid.style.getPropertyValue("--d"), "1", "one step in");
+      eq(kid.querySelector(".ctxsname").textContent, "@testsortroom", "named by its own part");
+      drag(row("Testsorthome"), kid);
+      ok(getPage(contextPath("Testsorthome")), "a context cannot go inside one of its own");
+      kid.querySelector(".ctxmove").click();
+      const modal = [...document.querySelectorAll(".scrim .modal")].pop();
+      const top = [...modal.querySelectorAll("button, [role=option], li, .row")].find(n => n.textContent.trim().endsWith("On its own, at the top"));
+      ok(top, "Move… offers the top");
+      top.click();
+      ok(getPage(contextPath("testsortroom")) && !getPage(contextPath("Testsorthome/testsortroom")), "out again");
+      has(getPage(path).blocks[0].title, "[[c/testsortroom]]");
+      undoLast();
+      has(getPage(path).blocks[0].title, "[[c/Testsorthome/testsortroom]]", "Undo puts it back inside");
+    } finally {
+      closeModal(); PREF.set("sub.contexts", "cards"); go("contexts"); dropChores(path);
+      for (const n of ["Testsorthome/testsortroom", "testsortroom", "Testsorthome"]) if (getPage(contextPath(n))) removePage(contextPath(n));
+    }
+  });
   /* ---------- context names and look-alikes (#203) ---------- */
   test("#203 a new context starts with a capital, and one already there keeps its spelling", () => {
     eq(makeContext("testcap"), "Testcap");

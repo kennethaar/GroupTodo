@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.72.0 - 2026-11-02
+
+- Contexts › Sort (#257): every context as a tree, to stack one on another.
+  Drag @kitchen onto @home and it is @home/kitchen, its tasks and links with
+  it; drag it to the top line and it is on its own again. Move… on each row
+  does the same without dragging, on a phone or with the keyboard, and Undo
+  puts it back. Contexts › Cards is the page as it was.
+
 ## 1.71.2 - 2026-11-02
 
 - Contexts: a card with contexts inside, like @home, takes the whole row and
