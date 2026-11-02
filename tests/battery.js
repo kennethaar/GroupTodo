@@ -5418,6 +5418,38 @@ var GTD_TEST = (() => {
     ok(!content().querySelector(".booktidy"), "and there is nothing to tidy to");
   }));
 
+  test("#246 a thought, a sound and what is written are marked Pandoc's way", () => withBookVault({
+    [BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n",
+    [join(PAGES, "Harbour.md")]: "- She stopped. [I must go]{.thought} [Bang]{.sound}\n",
+  }, async () => {
+    const h = renderInline("She stopped. [I must go]{.thought} and [[Harbour]] [Bang]{.sound} [EXIT]{.written} [x]{.other}");
+    has(h, '<span class="mk mk-thought" title="Thought">I must go</span>');
+    has(h, '<span class="mk mk-sound" title="Sound">Bang</span>');
+    has(h, '<span class="mk mk-written" title="Written">EXIT</span>');
+    has(h, "[x]{.other}", "a class it does not know is left as written");
+    ok(h.includes("data-link") || h.includes("Harbour"), "a link still works beside it");
+    eq(countWords("[I must go]{.thought}"), 3, "the mark itself is not a word");
+    eq(chapterWords(join(PAGES, "Harbour.md")), 6);
+    has(bookManuscript(), "[I must go]{.thought}", "exported as written");
+    ok(["thought", "sound", "written"].every(id => slashRows(id.slice(0, 4)).some(r => r.id === id)), "a command each");
+    // Typed and taken from the slash menu, as a person does it.
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    openPage(join(PAGES, "Harbour.md"));
+    await settle();
+    const b = getPage(join(PAGES, "Harbour.md")).blocks[0];
+    focusBlock(b.id);
+    await frame();
+    const txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
+    setHostText(txt, "He said /thou", 13);
+    txt.dispatchEvent(new Event("input", {bubbles: true}));
+    await frame();
+    ok(SUGGEST && SUGGEST.host === txt, "the slash menu opened");
+    txt.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true, cancelable: true}));
+    await frame();
+    eq(lineText(txt), "He said []{.thought}");
+    eq(caretOffsets(txt)[0], 9, "the caret inside the mark");
+  }));
+
   test("#241 in a book's area the names offered are that area's own, its pages too", async () => {
     const rec = newRecord("Book241", Backends.memory("Book241"));
     for (const [p, text] of Object.entries({

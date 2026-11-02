@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.59.0 - 2026-11-02
+
+- Marks for what is not plain prose (#246): `/thought`, `/sound` and
+  `/written` (a letter, a sign, a message) put an empty mark at the caret to
+  write in. They are kept as Pandoc spans, `[I must go]{.thought}`, so a tool
+  that makes a book of the file keeps them. In the app a thought is in
+  italics, a sound in spaced italics and what is written in type. The marks
+  are not counted as words.
+
 ## 1.58.0 - 2026-11-02
 
 - A book can say how its speech is set (#245): Settings > Book > Dialogue
