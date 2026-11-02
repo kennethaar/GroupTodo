@@ -5633,6 +5633,37 @@ var GTD_TEST = (() => {
     } finally { REL.sel = null; PREF.set("sub.book", was[0]); PREF.set("book.rel.from", was[1]); PREF.set("book.rel.to", was[2]); }
   }));
 
+  test("#250 the timeline reads when::, marks what is told out of order, and finds a character in two places", () => withCastVault({
+    [BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n- [[The storm]]\n",
+    [join(PAGES, "Harbour.md")]: "- ## A\n  pov:: [[Anna]]\n  with:: [[Bo]]\n  place:: [[Mill]]\n  when:: Day 2\n" +
+      "- ## B\n  pov:: [[Bo]]\n  when:: Day 1, evening\n",
+    [join(PAGES, "The storm.md")]: "- ## C\n  pov:: [[Mira]]\n  with:: [[Bo]]\n  place:: [[Quay]]\n  when:: day 2\n" +
+      "- ## D\n  when:: two weeks later\n- ## E\n  when:: 1990\n",
+    [personPath("Anna")]: "- In the story.\n", [personPath("Bo")]: "- In the story.\n",
+  }, async () => {
+    eq(storyTime("Day 3"), {kind: "day", at: 3});
+    eq(storyTime("Dag 3, kveld"), {kind: "day", at: 3.8});
+    eq(storyTime("3, morning"), {kind: "day", at: 3.2});
+    eq(storyTime("1987-06-14"), {kind: "date", at: 19870614});
+    eq(storyTime("1987"), {kind: "date", at: 19870000});
+    eq(storyTime("two weeks later"), null);
+    const {rows, clock, clashes} = bookTimeline();
+    eq(clock, "day", "the kind most scenes use");
+    eq(rows.map(r => r.scene.name + (r.back ? "↶" : "") + (r.t ? "" : "?")), ["A", "B↶", "C", "D?", "E?"]);
+    eq(clashes.map(x => castEntries().find(e => e.key === x.who).name + " " + x.a.scene.name + x.b.scene.name), ["Bo AC"],
+      "Bo at the mill and on the quay on day 2");
+    const was = PREF.get("sub.book", "");
+    try {
+      go("book", {sub: "timeline"});
+      await settle();
+      eq([...content().querySelectorAll(".tlhead")].map(h => h.textContent), ["Day 1, evening", "Day 2"]);
+      eq([...content().querySelectorAll(".tllane")].map(h => h.textContent), ["Anna", "Bo", "Mira"]);
+      eq([...content().querySelectorAll(".tlscene.back")].map(b => b.textContent), ["2B"]);
+      has(content().textContent, "In two places at once");
+      has(content().textContent, "“two weeks later” is not read as a time");
+    } finally { PREF.set("sub.book", was); }
+  }));
+
   test("#241 in a book's area the names offered are that area's own, its pages too", async () => {
     const rec = newRecord("Book241", Backends.memory("Book241"));
     for (const [p, text] of Object.entries({

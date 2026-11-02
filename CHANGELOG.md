@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.64.0 - 2026-11-02
+
+- Book › Timeline (#250): when each scene happens in the story, against the
+  order the book tells them. `when::` under a scene's `##` line is read as a
+  day (`Day 3`, `Day 3, evening`) or a date (`1987`, `1987-06-14`). Time runs
+  across, a row per point of view, and each scene carries its number in the
+  book. A scene told after one that happens later is marked ↶.
+- Under it: the scenes told out of order, a character in two places at the
+  same time, and the scenes with no time yet.
+
 ## 1.63.0 - 2026-11-02
 
 - A book's characters are the people of its area (#247): person pages, made
