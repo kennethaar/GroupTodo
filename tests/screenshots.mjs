@@ -96,6 +96,8 @@ const BOOK_SEED = `window.BOOK_SHOT = [BOOK_PATH, ...["The storm", "Harbour", "A
     put(2, ["stage:: Revise", "synopsis:: They wait out the night by the boats.", "", "- " + para(220),
       "- ## The quay", "  pov:: [[Anna Berg]]", "  place:: [[The harbour]]", "  when:: Day 3", "  plot:: The search, The letter", "- " + para(40),
       "- Anna found [[The letter]] in the boat.",
+      "- Anna felt the cold and saw the river slowly rising over the stones while the dogs barked and the wind pulled at her coat and the long night came down over the valley and nobody in the town slept at all.",
+      "- She realised the boats were gone. The boats had gone in the night.",
       "- ## Night watch", "  pov:: [[Mira Berg]]", "  with:: [[Jon Berg]]", "  when:: Day 3, night", "  plot:: The search", "- " + para(25),
       "- “You came,” said Jon.", "- “Of course I came. Tell me about the mill.”"]);
     put(3, ["stage:: Draft", "", "- " + para(90)]);
@@ -112,6 +114,7 @@ SETUP["book-relations"] = BOOK_SEED + ` go("book", {sub: "relations"});`;
 SETUP["book-timeline"] = BOOK_SEED + ` go("book", {sub: "timeline"});`;
 SETUP["book-plot"] = BOOK_SEED + ` go("book", {sub: "plot"});`;
 SETUP["book-read"] = BOOK_SEED + ` go("book", {sub: "read"});`;
+SETUP["book-revise"] = BOOK_SEED + ` REV.open = BOOK_SHOT[2]; go("book", {sub: "revise"});`;
 /* This week's page with its routines and a focus line, and last week's with
    what was left open on it, gone again after the picture (#192). */
 const WEEK_PAGES = `const wk = n => shiftWeek(weekOf(todayISO()), n);
@@ -138,7 +141,7 @@ const AFTER = {
   "review-days": `for (const [p, page] of DAY_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
     clearMemo(); render();`,
 };
-AFTER.book = AFTER["book-cast"] = AFTER["book-relations"] = AFTER["book-timeline"] = AFTER["book-plot"] = AFTER["book-read"] = `for (const p of BOOK_SHOT) V.pages.delete(p);
+AFTER.book = AFTER["book-cast"] = AFTER["book-relations"] = AFTER["book-timeline"] = AFTER["book-plot"] = AFTER["book-read"] = AFTER["book-revise"] = `for (const p of BOOK_SHOT) V.pages.delete(p); REV.open = null;
     for (const [p, page] of BOOK_ASIDE) V.pages.set(p, page); PREF.set("sub.book", ""); clearMemo(); renderNav(); render();`;
 AFTER["journal-week"] = AFTER["review-steps"] = `for (const [p, page] of WEEK_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
     clearMemo(); render();`;

@@ -5,6 +5,18 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.68.0 - 2026-11-02
+
+- Book › Revise (#254): where the text could be tighter, a row per chapter:
+  how hard it reads (LIX), words a sentence, sentences over 30 words, the
+  share that is talk, telling words (felt, saw, realised), adverbs, and a
+  word used twice within a few words. Click a chapter for the sentences, and
+  one of them to go to it. Under it: the words you use most, and a fact on a
+  person page (`eyes:: green`) the text says otherwise.
+- Snapshots: when a chapter moves on a stage, a copy of it as it was is kept
+  in `8/snapshots/`, archived. Revise shows the paragraphs new and gone
+  since.
+
 ## 1.67.0 - 2026-11-02
 
 - Book › Read (#253): the whole book as one text, each chapter under its

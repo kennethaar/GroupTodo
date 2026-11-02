@@ -5750,6 +5750,51 @@ var GTD_TEST = (() => {
     } finally { PREF.set("sub.book", was); }
   }));
 
+  test("#254 Revise measures a chapter: LIX, long sentences, talk, telling words, adverbs and repeats", () => {
+    const long = Array.from({length: 31}, (_, i) => "Word" + i).join(" ") + ".";
+    const look = proseLook(["She felt cold. He walked slowly home.", "“Go now,” she said. " + long, "The harbour was dark and the harbour was still."], "english");
+    eq(look.sentences, 5);
+    eq(look.long.map(x => x.n), [31]);
+    eq(look.filters.map(x => x.word), ["felt"]);
+    eq(look.adverbs.map(x => x.word), ["slowly"]);
+    eq(look.repeats.map(x => x.word), ["harbour"]);
+    eq(look.said, 2, "Go now");
+    ok(look.lix > 0 && look.avg > 0);
+    eq(sentencesOf("“Wait!” he said. Then she left."), ["“Wait!” he said.", "Then she left."]);
+    eq(lixWord(25), "very easy");
+    eq(lixWord(55), "hard");
+  });
+  test("#254 a chapter that moves on a stage is kept as a snapshot; Revise shows what changed since", () => withCastVault({
+    [BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n",
+    [join(PAGES, "Harbour.md")]: "stage:: Draft\n\n- First.\n  id:: abc123\n- Second.\n- Anna's eyes were blue.\n",
+    [personPath("Anna")]: "eyes:: green\n",
+  }, async () => {
+    const harbour = join(PAGES, "Harbour.md");
+    setChapterStage(harbour, "Revise");
+    const snaps = chapterSnapshots(harbour);
+    eq(snaps.length, 1);
+    const snap = getPage(snaps[0]);
+    eq([snap.props.stage, snap.props.archived], ["Draft", "true"], "the stage it was in, archived");
+    ok(!blockProp(snap.blocks[0], "id"), "no ids in the copy");
+    ok(pageKind(snaps[0]) === "page" && !isTemplatePath(snaps[0]), "a page, not a template");
+    setChapterStage(harbour, "Revise");
+    eq(chapterSnapshots(harbour).length, 1, "the same stage again is no new copy");
+    getPage(harbour).blocks[1].title = "Second, better.";
+    getPage(harbour).blocks.push(newBlock({title: "Third."}, false));
+    eq(sinceSnapshot(harbour, snaps[0]), {gone: ["Second."], added: ["Second, better.", "Third."]});
+    eq(factClashes().map(x => x.who + " " + x.fact + "/" + x.said), ["Anna green/blue"]);
+    const was = PREF.get("sub.book", "");
+    try {
+      REV.open = null;
+      go("book", {sub: "revise"});
+      await settle();
+      content().querySelector("button.revrow").click();
+      await settle();
+      has(content().querySelector(".revsnap").textContent, "2 new, 1 gone");
+      has(content().textContent, "Not as their page says");
+    } finally { REV.open = null; PREF.set("sub.book", was); }
+  }));
+
   test("#241 in a book's area the names offered are that area's own, its pages too", async () => {
     const rec = newRecord("Book241", Backends.memory("Book241"));
     for (const [p, text] of Object.entries({
