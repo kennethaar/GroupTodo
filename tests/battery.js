@@ -2009,6 +2009,10 @@ var GTD_TEST = (() => {
       const kid = card.querySelector(".ctxkid");
       ok(kid && kid.textContent.startsWith("/Room"), "Room is a row on it");
       has(kid.querySelector(".chip.late").textContent, "1 late");
+      ok(card.classList.contains("wide"), "a card with contexts inside takes the whole row");
+      const kn = kid.querySelector(".ctxkn");
+      ok(getComputedStyle(kn).whiteSpace === "nowrap" && kid.getBoundingClientRect().height < 32, "the row is one line, the name never wraps");
+      eq(kid.children.length, 4, "a row keeps every column, so the numbers line up");
       ok(!content().textContent.includes("Show in Next") && !content().textContent.includes("things you can do here"), "no repeated words");
       ok(!content().querySelector(".ctxcard .big"), "no @ placeholder");
       ok(!content().querySelector(".vhead-r .textbtn:not(.newbtn)"), "one Sense button, not two links");

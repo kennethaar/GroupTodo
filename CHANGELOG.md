@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.71.2 - 2026-11-02
+
+- Contexts: a card with contexts inside, like @home, takes the whole row and
+  lists them in columns (#206). Each is one line: a long name is cut short,
+  and to do, late and fresh line up under each other.
+
 ## 1.71.1 - 2026-11-02
 
 - informed::, which an update you send writes on each task, no longer shows
