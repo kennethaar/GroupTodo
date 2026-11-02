@@ -77,9 +77,13 @@ const SETUP = {
     clearMemo(); go("review", {sub: "days"});`,
 };
 /* A book of four chapters at three stages, with scenes, talk and a cast,
-   gone again after the picture (#240, #243, #247). Each page is its lines. */
-const BOOK_SEED = `window.BOOK_SHOT = [BOOK_PATH, ...["The storm", "Harbour", "After the flood", "Coda",
-      "Anna Berg", "Mira Berg", "Jon Berg", "The harbour", "The letter"].map(t => join(PAGES, t + ".md"))];
+   gone again after the picture (#240, #243, #247). Each page is its lines.
+   A book has an area of its own, so the demo's people step aside meanwhile:
+   everybody on People is in the cast. */
+const BOOK_SEED = `window.BOOK_SHOT = [BOOK_PATH, ...["The storm", "Harbour", "After the flood", "Coda"].map(t => join(PAGES, t + ".md")),
+      ...["Anna Berg", "Mira Berg", "Jon Berg"].map(personPath), ...["The harbour", "The letter"].map(t => join(PAGES, t + ".md"))];
+    window.BOOK_ASIDE = allPeople().filter(p => !isMemberPage(p)).map(p => [p, getPage(p)]);
+    for (const [p] of BOOK_ASIDE) V.pages.delete(p);
     const para = n => Array.from({length: n}, () => "The water came up the road and nobody moved the cars.").join(" ");
     const put = (i, lines) => putPage(BOOK_SHOT[i], parsePage(lines.join(String.fromCharCode(10))), {silent: true});
     put(0, ["title:: The long road", "subtitle:: A novel", "synopsis:: Two sisters cross the hills to find their father, and the flood finds them first.",
@@ -96,9 +100,9 @@ const BOOK_SEED = `window.BOOK_SHOT = [BOOK_PATH, ...["The storm", "Harbour", "A
       "- “You came,” said Jon.", "- “Of course I came. Tell me about the mill.”"]);
     put(3, ["stage:: Draft", "", "- " + para(90)]);
     put(4, ["stage:: Outline", "", "- %% They go home"]);
-    put(5, ["type:: character", "wants:: To find her father", "arc:: From waiting to leading"]);
-    put(6, ["type:: character", "wants:: To keep Anna safe", "sister:: [[Anna Berg]]"]);
-    put(7, ["type:: character", "father:: [[Anna Berg]], [[Mira Berg]]"]);
+    put(5, ["type:: person", "wants:: To find her father", "arc:: From waiting to leading"]);
+    put(6, ["type:: person", "wants:: To keep Anna safe", "sister:: [[Anna Berg]]"]);
+    put(7, ["type:: person", "father:: [[Anna Berg]], [[Mira Berg]]"]);
     put(8, ["type:: place"]);
     put(9, ["type:: thing"]);
     clearMemo(); renderNav();`;
@@ -131,7 +135,8 @@ const AFTER = {
   "review-days": `for (const [p, page] of DAY_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
     clearMemo(); render();`,
 };
-AFTER.book = AFTER["book-cast"] = AFTER["book-relations"] = `for (const p of BOOK_SHOT) V.pages.delete(p); PREF.set("sub.book", ""); clearMemo(); renderNav(); render();`;
+AFTER.book = AFTER["book-cast"] = AFTER["book-relations"] = `for (const p of BOOK_SHOT) V.pages.delete(p);
+    for (const [p, page] of BOOK_ASIDE) V.pages.set(p, page); PREF.set("sub.book", ""); clearMemo(); renderNav(); render();`;
 AFTER["journal-week"] = AFTER["review-steps"] = `for (const [p, page] of WEEK_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
     clearMemo(); render();`;
 AFTER["review-steps"] = `PREF.set("review.open", OPEN_SHOT); ` + AFTER["review-steps"];

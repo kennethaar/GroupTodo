@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.63.0 - 2026-11-02
+
+- A book's characters are the people of its area (#247): person pages, made
+  and kept as People does, with their aliases. + New character is People's
+  New person, and + Make a page makes a person page. Somebody who uses the
+  app is a writer, not a character. `type:: character` is no longer read.
+- Setting up a book writes `8/place.md` and `8/thing.md`, the templates a new
+  place or thing starts from.
+
 ## 1.62.0 - 2026-11-02
 
 - Book › Relations (#249): the characters and what ties them. A line joins

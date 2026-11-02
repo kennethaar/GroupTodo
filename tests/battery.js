@@ -5010,6 +5010,12 @@ var GTD_TEST = (() => {
       clearMemo(); go("today"); renderNav();
     }
   };
+  // A book's area of its own: no people but those the test brings.
+  const withCastVault = (pages, fn) => withBookVault(pages, async () => {
+    for (const p of allPeople()) if (!(p in pages)) V.pages.delete(p);
+    clearMemo();
+    await fn();
+  });
   const BOOK_PAGES = {
     [BOOK_PATH]: "title:: book\ntarget:: 1000\nstages:: Idea, Write, Polish, Done\n\n- [[Harbour]]\n- The storm\n- [[Not yet]]\n",
     [join(PAGES, "The storm.md")]: "stage:: Polish\n\n- It was a dark and stormy night.\n  - The [[Harbour]] lay still.\n" +
@@ -5456,12 +5462,12 @@ var GTD_TEST = (() => {
       "  - “We should go,” said Bo.\n  - “Not yet.”\n  - “Anna, now.”\n" +
       "- ## Night\n  pov:: [[Mira]]\n  with:: [[Bobby]]\n  - Mira lit the lamp. “The boats are loose,” she said.\n  - “Then we row,” Bo said.\n",
     [join(PAGES, "The storm.md")]: "- ## Rain\n  pov:: [[Anna Berg]]\n  - Anna ran to the [[Old mill]].\n",
-    [join(PAGES, "Anna Berg.md")]: "type:: character\nwants:: To find her father\n\n- The eldest.\n",
-    [join(PAGES, "Bo.md")]: "type:: Character\naliases:: Bobby\n",
+    [personPath("Anna Berg")]: "wants:: To find her father\n\n- The eldest.\n",
+    [personPath("Bo")]: "aliases:: Bobby\n",
     [join(PAGES, "Old mill.md")]: "type:: place\n",
     [join(PAGES, "Gulls.md")]: "- Not in the cast\n",
   };
-  test("#247 the cast: pages typed character, place or thing, and names a scene gives", () => withBookVault(CAST_PAGES, () => {
+  test("#247 the cast: the area's people, pages typed place or thing, and names a scene gives", () => withCastVault(CAST_PAGES, () => {
     const cast = castEntries();
     eq(cast.map(e => e.name + ":" + e.type).sort(), ["Anna Berg:character", "Bo:character", "Mira:character", "Old mill:place"]);
     eq(cast.find(e => e.name === "Anna Berg").names, ["Anna Berg", "Anna"], "a full name is also its first word");
@@ -5472,20 +5478,37 @@ var GTD_TEST = (() => {
     eq(castNamesOf("The harbour", [], "place"), ["The harbour"], "a place only by its whole name");
     eq(castMentions("Bobby met Anna; will Will?").map(m => castEntries().find(e => e.key === m.key).name), ["Bo", "Anna Berg"]);
   }));
-  test("#247 who speaks each line: the name outside the quotes, or back and forth", () => withBookVault(CAST_PAGES, () => {
+  test("#247 a character is a person page; a writer is not cast; a place or thing comes from its template", () => withCastVault({
+    ...CAST_PAGES, [personPath("Kari Writer")]: "member:: true\n",
+  }, () => {
+    ok(!castEntries().some(e => e.name === "Kari Writer"), "somebody who uses the app is a writer");
+    setupBook();
+    ok(getPage(join(DIRS.lists, "place.md")) && getPage(join(DIRS.lists, "thing.md")), "setting up writes the templates");
+    clearMemo();
+    ok(!castEntries().some(e => e.path && isTemplatePath(e.path)), "a template is not in the cast");
+    const mira = makeCastPage("Mira");
+    eq(mira, personPath("Mira"), "Make a page makes a person page");
+    eq(castEntries().find(e => e.name === "Mira").path, mira);
+    getPage(join(DIRS.lists, "place.md")).props.climate = "";
+    const quay = makeCastPage("The quay", "place");
+    eq(getPage(quay).props.type, "place");
+    ok("climate" in getPage(quay).props, "from the template, as it is in 8/");
+    eq(castEntries().find(e => e.name === "The quay").type, "place");
+  }));
+  test("#247 who speaks each line: the name outside the quotes, or back and forth", () => withCastVault(CAST_PAGES, () => {
     const {scenes} = bookAnalysis(), who = k => k ? castEntries().find(e => e.key === k).name : null;
     eq(scenes.map(sc => sc.scene.name), ["The quay", "Night", "Rain"]);
     eq(scenes[0].speeches.map(x => who(x.speaker)), ["Bo", "Anna Berg", "Bo"], "untagged, the other of the two; then back again");
     eq(scenes[0].speeches.map(x => who(x.to)), [null, "Bo", "Anna Berg"]);
     eq(scenes[1].speeches.map(x => who(x.speaker)), ["Mira", "Bo"], "a name before the quotes, then after");
-    ok(scenes[0].speeches[2].names.has(join(PAGES, "Anna Berg.md")), "Anna is named in what Bo says");
+    ok(scenes[0].speeches[2].names.has(personPath("Anna Berg")), "Anna is named in what Bo says");
     ok(scenes[2].present.has(join(PAGES, "Old mill.md")), "a place named in the text is in the scene");
     eq(speechParts("He said “go” and “now”.", "english").said, ["go", "now"]);
     eq(speechParts("– Kom, sa Mira. – Nå.", "dash"), {said: ["Kom, Nå."], rest: "sa Mira. "});
     eq(speechParts("– Anna, kom hit!", "dash"), {said: ["Anna, kom hit!"], rest: ""}, "a tag that names nobody is speech");
   }));
-  test("#247 the protagonist, and the four signs of depth for any character", () => withBookVault(CAST_PAGES, () => {
-    const anna = join(PAGES, "Anna Berg.md"), bo = join(PAGES, "Bo.md");
+  test("#247 the protagonist, and the four signs of depth for any character", () => withCastVault(CAST_PAGES, () => {
+    const anna = personPath("Anna Berg"), bo = personPath("Bo");
     eq(bookProtagonist(), anna, "the one who sees the most scenes");
     const st = castStats(), mira = [...st.values()].find(s => s.entry.name === "Mira");
     eq(st.get(bo).spoken, 8);
@@ -5503,7 +5526,7 @@ var GTD_TEST = (() => {
     eq(bookProtagonist(), bo, "protagonist:: says whose story it is");
     eq(depth(castStats().get(anna)).talk, false, "Anna never talks with anybody but Bo");
   }));
-  test("#247 Book › Cast lists the cast, the protagonist first, and writes what is missing", () => withBookVault(CAST_PAGES, async () => {
+  test("#247 Book › Cast lists the cast, the protagonist first, and writes what is missing", () => withCastVault(CAST_PAGES, async () => {
     const was = PREF.get("sub.book", "");
     try {
       go("book", {sub: "cast"});
@@ -5520,19 +5543,19 @@ var GTD_TEST = (() => {
       $("#modalRoot input").value = "From afraid to brave";
       [...$("#modalRoot").querySelectorAll("button")].find(b => b.textContent === "Save").click();
       await settle();
-      eq(getPage(join(PAGES, "Anna Berg.md")).props.arc, "From afraid to brave");
+      eq(getPage(personPath("Anna Berg")).props.arc, "From afraid to brave");
       eq(content().querySelector(".castrow .castscore .ratio").textContent, "2/2");
       [...content().querySelectorAll(".castrow")].find(r => r.dataset.key.includes("mira")).querySelector(".castmake").click();
       await settle();
-      eq(getPage(findExistingPage("Mira")).props.type, "character", "+ Make a page writes one");
+      ok(getPage(personPath("Mira")), "+ Make a page writes a person page");
       ok(![...content().querySelectorAll(".castmake")].length, "and Mira has one now");
     } finally { PREF.set("sub.book", was); }
   }));
 
-  test("#248 a script becomes prose, with said only where it is needed, and reads back to the same speakers", () => withBookVault({
+  test("#248 a script becomes prose, with said only where it is needed, and reads back to the same speakers", () => withCastVault({
     [BOOK_PATH]: "title:: book\ndialogue:: english\n\n- [[Harbour]]\n",
     [join(PAGES, "Harbour.md")]: "- ## Quay\n  with:: [[Anna]], [[Bo]], [[Cai]]\n",
-    [join(PAGES, "Anna.md")]: "type:: character\n", [join(PAGES, "Bo.md")]: "type:: character\n", [join(PAGES, "Cai.md")]: "type:: character\n",
+    [personPath("Anna")]: "- In the story.\n", [personPath("Bo")]: "- In the story.\n", [personPath("Cai")]: "- In the story.\n",
   }, () => {
     const rows = [["Anna", "We should go."], ["Bo", "Not yet"], ["Anna", "Now!"], ["Bo", ""], ["Bo", "Fine."], ["Cai", "Wait."]]
       .map(([who, text]) => ({who, text}));
@@ -5549,10 +5572,10 @@ var GTD_TEST = (() => {
     const who = k => castEntries().find(e => e.key === k).name;
     eq(bookAnalysis().scenes[0].speeches.map(x => who(x.speaker)), ["Anna", "Bo", "Anna", "Bo", "Cai"], "read back as written");
   }));
-  test("#248 the Script dialog: Enter for the next speaker, Tab to change, Ctrl+Enter puts it in", () => withBookVault({
+  test("#248 the Script dialog: Enter for the next speaker, Tab to change, Ctrl+Enter puts it in", () => withCastVault({
     [BOOK_PATH]: "title:: book\ndialogue:: english\n\n- [[Harbour]]\n",
     [join(PAGES, "Harbour.md")]: "- ## Quay\n  pov:: [[Anna Berg]]\n  with:: [[Bo]]\n  - She waited.\n  -\n",
-    [join(PAGES, "Anna Berg.md")]: "type:: character\n", [join(PAGES, "Bo.md")]: "type:: character\n", [join(PAGES, "Cai.md")]: "type:: character\n",
+    [personPath("Anna Berg")]: "- In the story.\n", [personPath("Bo")]: "- In the story.\n", [personPath("Cai")]: "- In the story.\n",
   }, async () => {
     const harbour = join(PAGES, "Harbour.md"), empty = getPage(harbour).blocks[0].children[1];
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
@@ -5584,10 +5607,10 @@ var GTD_TEST = (() => {
       "in place of the empty line it was opened from");
   }));
 
-  test("#249 relations: shared scenes, talk and ties the pages name, between two chapters", () => withBookVault({
-    ...CAST_PAGES, [join(PAGES, "Bo.md")]: "type:: character\naliases:: Bobby\nbrother:: [[Anna Berg]]\nrole:: [[Anna Berg]]\n",
+  test("#249 relations: shared scenes, talk and ties the pages name, between two chapters", () => withCastVault({
+    ...CAST_PAGES, [personPath("Bo")]: "aliases:: Bobby\nbrother:: [[Anna Berg]]\nrole:: [[Anna Berg]]\n",
   }, async () => {
-    const anna = join(PAGES, "Anna Berg.md"), bo = join(PAGES, "Bo.md");
+    const anna = personPath("Anna Berg"), bo = personPath("Bo");
     const rel = bookRelations(), ab = rel.pairs.find(p => [p.a, p.b].includes(anna) && [p.a, p.b].includes(bo));
     eq([ab.scenes, ab.talk, ab.said], [1, 2, ["brother"]], "one scene, two answers, and a tie on Bo's page; role:: is about Bo");
     eq(rel.seen.get(anna), 2);
