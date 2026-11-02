@@ -5247,6 +5247,56 @@ var GTD_TEST = (() => {
     });
   });
 
+  const SCENE_PAGES = {
+    [BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n- [[The storm]]\n",
+    [join(PAGES, "Harbour.md")]: "- The gulls woke her.\n- ## The quay\n  pov:: [[Anna]]\n  with:: [[Bo]], [[Cai]]\n  when:: Day 3\n" +
+      "  - Boats knocked together.\n- She ran.\n- ## Night\n  synopsis:: They wait.\n- Dark now.\n  - TODO check the moon\n",
+    [join(PAGES, "The storm.md")]: "- Rain all day.\n",
+  };
+  test("#243 a ## line starts a scene, which runs to the next one", () => withBookVault(SCENE_PAGES, () => {
+    const harbour = join(PAGES, "Harbour.md");
+    const scenes = chapterScenes(harbour);
+    eq(scenes.map(s => s.name), ["", "The quay", "Night"], "the words before the first ## are the opening");
+    eq(scenes[1].lines.map(b => b.title), ["Boats knocked together.", "She ran."], "the lines under it and after it");
+    eq(namesIn(sceneProp(scenes[1], "pov")), ["Anna"]);
+    eq(namesIn(sceneProp(scenes[1], "with")), ["Bo", "Cai"]);
+    eq(namesIn("Bo, Cai"), ["Bo", "Cai"], "names with commas between");
+    eq(sceneProp(scenes[1], "when"), "Day 3");
+    eq(sceneWords(scenes[1]), 5);
+    eq(sceneWords(scenes[2]), 2, "no task");
+    eq(chapterWords(harbour), 11, "the ## line is not counted");
+    eq(chapterScenes(join(PAGES, "The storm.md")).map(s => s.name), [""], "no ## line is one scene with no name");
+    has(bookManuscript(), "## Harbour\n\nThe gulls woke her.\n\n* * *\n\nBoats knocked together.\n\nShe ran.\n\n* * *\n\nDark now.\n\n## The storm\n\nRain all day.");
+    ok(!bookManuscript().includes("The quay"), "a scene's name is not in the manuscript");
+  }));
+  test("#243 the Book view lists the scenes; ✎ sets their values; + scene adds one", () => withBookVault(SCENE_PAGES, async () => {
+    go("book");
+    await settle();
+    const rows = () => [...content().querySelectorAll(".bookch")];
+    eq([...rows()[0].querySelectorAll(".bookscene .scn")].map(b => b.textContent), ["Opening", "The quay", "Night"]);
+    has(rows()[0].querySelectorAll(".bookscene")[1].textContent, "Anna");
+    has(rows()[0].querySelectorAll(".bookscene")[1].textContent, "Day 3");
+    ok(!rows()[1].querySelector(".bookscenes"), "a chapter with no scene lists none");
+    ok(rows()[1].querySelector(".scenenew"), "but can have one added");
+    rows()[0].querySelectorAll(".bookscene button.scedit")[1].click();
+    await settle();
+    const dlg = $("#modalRoot"), inputs = [...dlg.querySelectorAll("input, textarea")];
+    eq(inputs[0].value, "Night");
+    inputs[0].value = "Late night";
+    inputs[1].value = "[[Bo]]";
+    inputs[6].value = "";
+    [...dlg.querySelectorAll("button")].find(b => b.textContent === "Save").click();
+    await settle();
+    const b = chapterScenes(join(PAGES, "Harbour.md"))[2].block;
+    eq(b.title, "## Late night");
+    eq(b.props.pov, "[[Bo]]");
+    ok(!("synopsis" in b.props), "an emptied value comes off");
+    const storm = join(PAGES, "The storm.md");
+    addScene(storm, "Flood");
+    eq(chapterScenes(storm).map(s => s.name), ["", "Flood"]);
+    eq(serializeBlocks(getPage(storm).blocks), "- Rain all day.\n- ## Flood\n-");
+  }));
+
   test("#241 in a book's area the names offered are that area's own, its pages too", async () => {
     const rec = newRecord("Book241", Backends.memory("Book241"));
     for (const [p, text] of Object.entries({

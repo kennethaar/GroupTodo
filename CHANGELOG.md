@@ -5,6 +5,17 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.56.0 - 2026-11-02
+
+- A chapter can be cut into scenes (#243). A line that starts `## ` starts
+  one, and it runs to the next. Values on that line say who sees it
+  (`pov::`), who else is in it (`with::`), where (`place::`), when in the
+  story (`when::`), its plotlines (`plot::`) and what happens (`synopsis::`).
+- The Book view lists a chapter's scenes under it, with who sees it, when and
+  its words. Click one to write in it; ✎ sets its name and values; + scene
+  adds one at the end.
+- The `## ` line is not counted as words. Export puts `* * *` between scenes.
+
 ## 1.55.0 - 2026-11-01
 
 - A book has a name, a subtitle and a synopsis (#242). The Book view shows
