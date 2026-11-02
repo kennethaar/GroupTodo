@@ -89,17 +89,17 @@ const BOOK_SEED = `window.BOOK_SHOT = [BOOK_PATH, ...["The storm", "Harbour", "A
     put(0, ["title:: The long road", "subtitle:: A novel", "synopsis:: Two sisters cross the hills to find their father, and the flood finds them first.",
       "target:: 80000", "dialogue:: english", "protagonist:: [[Anna Berg]]", "", "- [[The storm]]", "- [[Harbour]]", "- [[After the flood]]", "- [[Coda]]"]);
     put(1, ["stage:: Done", "synopsis:: The river breaks its banks.", "",
-      "- ## The road", "  pov:: [[Anna Berg]]", "  with:: [[Mira Berg]]", "  when:: Day 1", "- " + para(300),
+      "- ## The road", "  pov:: [[Anna Berg]]", "  with:: [[Mira Berg]]", "  when:: Day 1", "  plot:: The search, The flood", "- " + para(300),
       "- “We should go,” said Mira.", "- “Not yet.”", "- “Anna, the water.”",
-      "- ## The bridge", "  pov:: [[Mira Berg]]", "  with:: [[Old Tomas]]", "  when:: Day 1, evening", "- " + para(80),
+      "- ## The bridge", "  pov:: [[Mira Berg]]", "  with:: [[Old Tomas]]", "  when:: Day 1, evening", "  plot:: The flood", "- " + para(80),
       "- “Is it safe?” Mira asked.", "- “Nothing is safe,” said Tomas. “Cross at the north end, where the rope is.”"]);
     put(2, ["stage:: Revise", "synopsis:: They wait out the night by the boats.", "", "- " + para(220),
-      "- ## The quay", "  pov:: [[Anna Berg]]", "  place:: [[The harbour]]", "  when:: Day 3", "- " + para(40),
+      "- ## The quay", "  pov:: [[Anna Berg]]", "  place:: [[The harbour]]", "  when:: Day 3", "  plot:: The search, The letter", "- " + para(40),
       "- Anna found [[The letter]] in the boat.",
-      "- ## Night watch", "  pov:: [[Mira Berg]]", "  with:: [[Jon Berg]]", "  when:: Day 3, night", "- " + para(25),
+      "- ## Night watch", "  pov:: [[Mira Berg]]", "  with:: [[Jon Berg]]", "  when:: Day 3, night", "  plot:: The search", "- " + para(25),
       "- “You came,” said Jon.", "- “Of course I came. Tell me about the mill.”"]);
     put(3, ["stage:: Draft", "", "- " + para(90)]);
-    put(4, ["stage:: Outline", "", "- ## Before the rain", "  pov:: [[Anna Berg]]", "  when:: Day 0, evening", "- %% They go home"]);
+    put(4, ["stage:: Outline", "", "- ## Before the rain", "  pov:: [[Anna Berg]]", "  when:: Day 0, evening", "  plot:: The letter", "- %% They go home"]);
     put(5, ["type:: person", "wants:: To find her father", "arc:: From waiting to leading"]);
     put(6, ["type:: person", "wants:: To keep Anna safe", "sister:: [[Anna Berg]]"]);
     put(7, ["type:: person", "father:: [[Anna Berg]], [[Mira Berg]]"]);
@@ -110,6 +110,7 @@ SETUP.book = BOOK_SEED + ` go("book", {sub: "chapters"});`;
 SETUP["book-cast"] = BOOK_SEED + ` go("book", {sub: "cast"});`;
 SETUP["book-relations"] = BOOK_SEED + ` go("book", {sub: "relations"});`;
 SETUP["book-timeline"] = BOOK_SEED + ` go("book", {sub: "timeline"});`;
+SETUP["book-plot"] = BOOK_SEED + ` go("book", {sub: "plot"});`;
 /* This week's page with its routines and a focus line, and last week's with
    what was left open on it, gone again after the picture (#192). */
 const WEEK_PAGES = `const wk = n => shiftWeek(weekOf(todayISO()), n);
@@ -136,7 +137,7 @@ const AFTER = {
   "review-days": `for (const [p, page] of DAY_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
     clearMemo(); render();`,
 };
-AFTER.book = AFTER["book-cast"] = AFTER["book-relations"] = AFTER["book-timeline"] = `for (const p of BOOK_SHOT) V.pages.delete(p);
+AFTER.book = AFTER["book-cast"] = AFTER["book-relations"] = AFTER["book-timeline"] = AFTER["book-plot"] = `for (const p of BOOK_SHOT) V.pages.delete(p);
     for (const [p, page] of BOOK_ASIDE) V.pages.set(p, page); PREF.set("sub.book", ""); clearMemo(); renderNav(); render();`;
 AFTER["journal-week"] = AFTER["review-steps"] = `for (const [p, page] of WEEK_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
     clearMemo(); render();`;

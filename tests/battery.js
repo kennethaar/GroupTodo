@@ -5267,6 +5267,7 @@ var GTD_TEST = (() => {
     eq(namesIn(sceneProp(scenes[1], "pov")), ["Anna"]);
     eq(namesIn(sceneProp(scenes[1], "with")), ["Bo", "Cai"]);
     eq(namesIn("Bo, Cai"), ["Bo", "Cai"], "names with commas between");
+    eq(namesIn("The search, [[The letter]], [[A]] and [[B]]"), ["The search", "The letter", "A", "B"], "names and links mixed");
     eq(sceneProp(scenes[1], "when"), "Day 3");
     eq(sceneWords(scenes[1]), 5);
     eq(sceneWords(scenes[2]), 2, "no task");
@@ -5661,6 +5662,30 @@ var GTD_TEST = (() => {
       eq([...content().querySelectorAll(".tlscene.back")].map(b => b.textContent), ["2B"]);
       has(content().textContent, "In two places at once");
       has(content().textContent, "“two weeks later” is not read as a time");
+    } finally { PREF.set("sub.book", was); }
+  }));
+
+  test("#251 the plot grid: a row per plotline, its scenes by chapter, and its long gaps", () => withCastVault({
+    [BOOK_PATH]: "title:: book\n\n- [[One]]\n- [[Two]]\n- [[Three]]\n- [[Four]]\n- [[Five]]\n",
+    [join(PAGES, "One.md")]: "- ## Start\n  plot:: The search, [[The letter]]\n",
+    [join(PAGES, "Two.md")]: "- ## Middle\n  plot:: the search\n",
+    [join(PAGES, "Three.md")]: "- ## Lost\n",
+    [join(PAGES, "Four.md")]: "- Words.\n",
+    [join(PAGES, "Five.md")]: "- ## End\n  plot:: The letter\n",
+  }, async () => {
+    const {lines, loose} = bookPlot();
+    eq(lines.map(l => l.name), ["The search", "The letter"], "one row each, whatever the case");
+    eq(lines[0].cells.map(c => c.map(sc => sc.scene.name).join()), ["Start", "Middle", "", "", ""]);
+    eq([...lines[0].gaps], [], "nothing after its last chapter is a gap");
+    eq([...lines[1].gaps], [1, 2, 3], "three chapters without The letter");
+    eq(loose.map(sc => sc.scene.name), ["Lost"], "a scene with no plotline; an opening is not asked for one");
+    const was = PREF.get("sub.book", "");
+    try {
+      go("book", {sub: "plot"});
+      await settle();
+      eq([...content().querySelectorAll(".tllane")].map(n => n.textContent), ["The search", "The letter"]);
+      eq(content().querySelectorAll(".plotgap").length, 3);
+      has(content().textContent, "Scenes with no plotline");
     } finally { PREF.set("sub.book", was); }
   }));
 

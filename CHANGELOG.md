@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.65.0 - 2026-11-02
+
+- Book › Plot (#251): each plotline across the chapters. A plotline is a name
+  in a scene's `plot::`; it gets a row, each chapter a column, and the
+  scenes that move it on sit in their chapter. A plotline left alone for
+  three chapters or more is tinted there. Scenes with no plotline are listed
+  under it, a click away from giving them one.
+
 ## 1.64.0 - 2026-11-02
 
 - Book › Timeline (#250): when each scene happens in the story, against the
