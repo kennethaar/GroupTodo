@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.71.1 - 2026-11-02
+
+- informed::, which an update you send writes on each task, no longer shows
+  under the task line (#174). It stays in the file, and Inform still counts
+  from it.
+
 ## 1.71.0 - 2026-11-02
 
 - Chores › + Log a chore (#239): count work done at home that has no

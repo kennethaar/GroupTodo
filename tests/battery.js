@@ -2901,6 +2901,14 @@ var GTD_TEST = (() => {
     eq(getPage(path).blocks[0].state, "DOING");
     closeAll();
   });
+  test("#174 informed:: is bookkeeping and does not show under the line", () => {
+    const path = scratchProject("inform shown", [["TODO", "Report for [[p/Lars Haugen]]"]]);
+    const b = getPage(path).blocks[0];
+    informSent("Lars Haugen", [{a: {path, block: b, space: V.space, title: b.title}, was: "TODO"}], [{status: "TODO", comment: ""}]);
+    const meta = lineMeta(getPage(path).blocks[0], path);
+    ok(!(meta && meta.textContent.includes("informed::")), "informed:: shown on the line");
+    closeAll();
+  });
 
   /* ============================================================
      Stakeholders on responsibilities (#158)
