@@ -1,0 +1,7 @@
+#!/bin/sh
+# Builds grouptodo.html (and icon.svg) from src/ and adds them to the commit,
+# so the monolith is never edited by hand and never stale.
+# Turned on once per clone with:  git config core.hooksPath .githooks
+cd "$(git rev-parse --show-toplevel)" || exit 1
+node build.mjs || { echo "pre-commit: the build failed, nothing committed" >&2; exit 1; }
+git add grouptodo.html icon.svg

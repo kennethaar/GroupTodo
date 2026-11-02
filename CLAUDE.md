@@ -19,6 +19,10 @@
   `const` before the code that reads it). **A new file must be added here**;
   the build fails on a file that is not listed.
 
+A pre-commit hook (`.githooks/pre-commit`) builds `grouptodo.html` and
+`icon.svg` and adds them to every commit, so only `src/` is ever edited. Turn
+it on once per clone: `git config core.hooksPath .githooks`.
+
 The built `grouptodo.html` is committed as before. Do not edit it by hand: the
 next build overwrites it. The generated lines (`HELP_NEWS`, `LANG_CATALOG`) are
 written into their `src/js` files by the scripts in `docs/`.

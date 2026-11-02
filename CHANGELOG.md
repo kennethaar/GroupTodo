@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.46.11 - 2026-11-02
+
+- `grouptodo.html` is built on every commit by a pre-commit hook
+  (`.githooks/pre-commit`, turned on with
+  `git config core.hooksPath .githooks`), so only `src/` is edited.
+
 ## 1.46.10 - 2026-11-02
 
 - The source is split up (no change to what the app does). The stylesheet is
