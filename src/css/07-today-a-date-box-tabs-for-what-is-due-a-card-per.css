@@ -1,0 +1,119 @@
+/* ---------- Today: a date box, tabs for what is due, a card per journal ---------- */
+.todayhead{padding-bottom:16px;border-bottom:1px solid var(--border);margin-bottom:22px}
+.todayhead h1{font-size:30px;letter-spacing:-.4px}
+.todayhead .sub{font-size:15px;position:relative}
+/* Another day hangs its notes under the weekday and under the date box, so
+   the header keeps its height and the box does not move */
+.todayhead .sub .when{position:absolute;top:100%;left:0;font-size:13px;white-space:nowrap}
+.todayhead.offday{padding-bottom:28px}
+.dayhold{position:relative;display:flex}
+.dayhold .backtoday{position:absolute;top:100%;left:0;margin-top:4px;padding-left:0;white-space:nowrap}
+.todayicon{display:none;font-size:17px;line-height:1;padding:6px 10px}
+/* The phone's ⋯ and what folds behind it; a wide screen shows it all as before. */
+.jmorebtn,.jfoldbar{display:none}
+.jfold{display:contents}
+@media (max-width:640px){
+  .todayhead .sub,.todayhead .wideonly{display:none}
+  .jfoldbar .todayicon{display:inline-flex}
+  .todayicon.on{border-color:var(--accent);background:var(--accent-soft)}
+  .ttabs .ttab-facts{display:none}
+  .todayhead .vhead-r{gap:6px;margin-left:0;width:100%}
+  .todayhead.offday{padding-bottom:16px}
+  .todayhead .dayhold{flex:1;min-width:0;flex-wrap:wrap}
+  .todayhead .backtoday{position:static;order:-1;margin-top:0;flex-basis:100%;text-align:left;padding-left:0}
+  .todayhead .daybox{flex:1;min-width:0;justify-content:space-between}
+  .todayhead .daybox input[type=date]{min-width:0;flex:1}
+  /* The day is what a phone shows first: in words beside the page's name, with
+     the native date box laid invisibly over the words so a tap still opens it.
+     One row: the page's name, the day, and ⋯ for the rest. */
+  .todayhead h1{font-size:20px}
+  .todayhead:not(.weekhead){align-items:center;row-gap:4px;column-gap:8px;padding-bottom:0;border-bottom:0;margin-bottom:12px}
+  .todayhead:not(.weekhead) .vhead-r,.todayhead:not(.weekhead) .dayhold{display:contents}
+  .todayhead:not(.weekhead) h1{flex:none}
+  .todayhead:not(.weekhead) .daybox{flex:1 1 0}
+  .todayhead:not(.weekhead) .jmode{display:none}
+  .todayhead:not(.weekhead) .backtoday{order:2;flex-basis:100%;padding-left:4px}
+  .todayhead .jmorebtn{display:inline-block;flex:none;position:relative;min-width:36px;min-height:36px;padding:0 6px;
+    font-size:20px;line-height:1;color:var(--fg2)}
+  .todayhead .jmorebtn[aria-expanded="true"]{color:var(--accent)}
+  .todayhead .jmorebtn.late::after{content:"";position:absolute;top:6px;right:4px;width:8px;height:8px;border-radius:50%;background:var(--late)}
+  .jfold{display:none}
+  .jfold.open{display:block}
+  .jfoldbar{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+  .jfoldbar .jmode{display:flex;margin-left:0}
+  .todayhead .daybox{padding:2px 2px}
+  .todayhead .daypick{position:relative;flex:1;min-width:0;display:flex;justify-content:center;align-items:center;min-height:36px}
+  .todayhead .daylabel{display:block;font-size:15px;font-weight:650;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .todayhead .daylabel .rel{color:var(--accent);font-weight:600}
+  .todayhead .daypick input[type=date]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+  .todayhead .daypick:focus-within{outline:2px solid var(--accent);outline-offset:1px;border-radius:6px}
+  .todayhead .dayarrow{min-width:30px;min-height:36px;padding:4px}
+  .jfoldbar .todayicon{font-size:13px;padding:6px 10px;color:var(--fg2)}
+}
+.daylabel{display:none}
+.daybox{border:1px solid var(--border2);border-radius:var(--radius-sm);padding:2px 6px;background:var(--bg2);gap:2px}
+.daybox input[type=date]{border:0;background:none;font-size:14px;font-weight:600;color:var(--fg)}
+.dayarrow{padding:4px 8px;color:var(--fg2);font-size:12px;border-radius:6px}
+.dayarrow:hover{background:var(--bg3);color:var(--fg)}
+.ttabs{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 18px}
+.ttab{display:inline-flex;align-items:center;gap:10px;padding:8px 16px;border:1px solid var(--border2);
+  border-radius:var(--radius-sm);background:var(--bg2);color:var(--fg2);font-size:14px}
+.ttab:hover{color:var(--fg);border-color:var(--fg3)}
+.ttab.on{color:var(--fg);border-color:var(--accent);background:var(--accent-soft)}
+.ttab.late .tcount{background:var(--late-soft);color:var(--late)}
+.tcount{min-width:22px;padding:1px 7px;border-radius:999px;background:var(--bg4);font-size:12px;font-weight:600;text-align:center}
+.ttab.on .tcount{background:color-mix(in srgb,var(--accent) 30%,transparent);color:var(--fg)}
+.tpanel{margin:0 0 22px}
+.tpanel .pfacts{margin:0;padding:12px 20px;border:0}
+.tpanel .pfact{padding:4px 0}
+.jcard{min-width:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:20px;
+  min-height:320px;display:flex;flex-direction:column}
+/* An area's trackers, in the column its journal has below: only as tall as they are. */
+.jcard.trkcol{min-height:0;margin-bottom:12px}
+.trkcol .jhead{padding:8px 20px}
+.jhead{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--border)}
+/* The area is structure, not news: a quiet eyebrow with a dot of its colour,
+   so red stays free for what is late. */
+.jhead .sp{text-transform:uppercase;letter-spacing:.05em;font-size:11px;padding:0;border-radius:0;
+  background:none;border:0;color:var(--fg3)}
+.jhead .sp::before{width:8px;height:8px;border-radius:50%}
+.jtitle{font-size:16px;font-weight:600;color:var(--fg);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jtitle:hover{color:var(--accent)}
+.jedit{font-size:13px;color:var(--fg3);white-space:nowrap}
+.jedit:hover{color:var(--fg)}
+/* ✎ and 📌 are upkeep: grey like the rest, so the red pin does not read as an alarm. */
+.jhead .jedit{filter:grayscale(1);opacity:.75}
+.jhead .jedit:hover,.jhead .jedit:focus-visible{opacity:1}
+.jcard .card{border:0;background:none;border-radius:0}
+.jcard .outline{padding-top:12px}
+.jcard .newline{font-style:italic;padding-left:22px}
+/* Area folders: one card per area, side by side like the journals. */
+.modal:has(.afolders){width:min(960px,100%)}
+.afolders{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.afcard{display:flex;flex-direction:column;gap:10px;padding:16px 18px;border-radius:var(--radius);
+  background:color-mix(in srgb,var(--sc) 6%,var(--bg2));border:1px solid color-mix(in srgb,var(--sc) 45%,var(--border));
+  border-top:4px solid var(--sc)}
+.afcard .afname{font-size:18px;font-weight:650;color:var(--fg)}
+.afcard{cursor:grab}
+.afcard.dragging,.sprow.dragging{opacity:.45}
+.afcard.over{outline:2px dashed var(--sc);outline-offset:2px}
+.sprow.over{box-shadow:inset 0 2px 0 var(--accent)}
+.afhead{display:flex;align-items:center;gap:8px}
+.afhead .afname{flex:1;min-width:0}
+.afmoves{display:flex;gap:2px}
+.afmove{width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--fg2);font-size:16px;line-height:1;cursor:pointer}
+.afmove:hover:not(:disabled){border-color:var(--sc);color:var(--fg)}
+.afmove:disabled{opacity:.35;cursor:default}
+.afcard .afwhere{font-size:13px;color:var(--fg2);word-break:break-word}
+.afcard .afwhere.off{color:var(--warn)}
+.afcard .afbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:4px}
+.afnote{color:var(--fg3);font-size:12.5px;margin-top:14px}
+.afdot{width:18px;height:18px;flex:none;border-radius:50%;border:2px solid color-mix(in srgb,var(--fg) 25%,transparent);cursor:pointer;padding:0}
+.afdot:hover,.afdot:focus-visible{outline:2px solid var(--sc);outline-offset:2px}
+@media (min-width:1100px){ .jwide .jgrid{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+  .jwide .jgrid.sized{grid-template-columns:var(--jcols)} }
+/* The line between two day pages side by side, to drag their widths. */
+.jcard{position:relative}
+.jsplit{display:none;position:absolute;top:0;bottom:0;right:-15px;width:10px;cursor:col-resize;z-index:3;touch-action:none}
+.jsplit::after{content:"";position:absolute;top:0;bottom:0;left:4px;width:2px;border-radius:1px;background:transparent;transition:background .1s}
+.jsplit:hover::after,.jsplit.on::after{background:var(--accent)}

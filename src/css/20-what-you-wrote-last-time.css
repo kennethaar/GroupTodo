@@ -1,0 +1,8 @@
+/* ---------- what you wrote last time ---------- */
+.prevval{color:var(--fg3);opacity:.75;font-size:11.5px;font-style:italic;margin-left:8px;white-space:nowrap;align-self:center}
+.pkv .prevval{margin-left:5px}
+/* On a phone last time's value goes under the boxes, not on top of them (#180). */
+@media (max-width:560px){
+  .pfact{flex-wrap:wrap}
+  .pfact>.prevval{order:2;flex-basis:100%;margin:0 0 3px 82px;white-space:normal}
+}

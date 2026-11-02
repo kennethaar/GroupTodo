@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.46.10 - 2026-11-02
+
+- The source is split up (no change to what the app does). The stylesheet is
+  `src/css/` in pieces, every function is its own file under `src/js/`, and
+  the icons are SVG files in `src/assets/`. `node build.mjs` joins them into
+  `grouptodo.html`, which is still the one file that ships and still opens
+  from a folder, a share or a phone. Edit `src/`, never the built file.
+
 ## 1.46.9 - 2026-11-01
 
 - On a phone the "Done" toast is a thin strip along the top edge, the full

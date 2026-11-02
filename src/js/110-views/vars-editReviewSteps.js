@@ -1,0 +1,1 @@
+const editReviewSteps = () => openPage(ensureReviewList());

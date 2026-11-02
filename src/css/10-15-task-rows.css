@@ -1,0 +1,352 @@
+/* ============================================================
+   15_TASK ROWS
+   ============================================================ */
+.section{margin:20px 0 0}
+.section>h3{
+  display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:0 2px;
+  font-size:12px;font-weight:650;letter-spacing:.7px;text-transform:uppercase;color:var(--fg3);
+}
+.section>h3 .n{background:var(--bg3);border-radius:20px;padding:0 7px;font-size:11px;color:var(--fg2)}
+/* What a list is for, said once beside its name in plain words. */
+.section>h3 .h3aside{font-weight:400;letter-spacing:0;text-transform:none}
+
+/* Quiet sections: background material. They are here when you go looking for
+   them, and they stay out of the way of the thing you are meant to act on. */
+.section.quiet{margin-top:28px;opacity:.55;transition:opacity .15s ease}
+.section.quiet:hover,.section.quiet:focus-within{opacity:1}
+.section.quiet>h3{font-weight:550;letter-spacing:.6px;color:var(--fg3)}
+.section.quiet>h3 .n{background:transparent;padding:0 2px;color:var(--fg3)}
+.section.quiet>.card{background:transparent;border-style:dashed}
+
+/* Folded sections: a record rather than the day's work. The heading is the
+   disclosure, so "done today" and "captured today" are one line each until you
+   actually want to look, instead of two full lists competing with what is open. */
+.section.fold>summary{
+  display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:2px;cursor:pointer;
+  font-size:12px;font-weight:550;letter-spacing:.6px;text-transform:uppercase;color:var(--fg3);
+  list-style:none;
+}
+.section.fold>summary::-webkit-details-marker{display:none}
+.section.fold>summary::before{
+  content:"\203A";display:inline-block;font-size:13px;line-height:1;
+  transition:transform .12s ease;color:var(--fg3);
+}
+.section.fold[open]>summary::before{transform:rotate(90deg)}
+.section.fold>summary:hover{color:var(--fg2)}
+.section.fold>summary .n{padding:0 2px;font-size:11px;color:var(--fg3)}
+/* Opened on purpose, so it is no longer background material. */
+.section.fold[open]{opacity:1}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.empty{padding:16px;color:var(--fg3);font-size:13px;text-align:center}
+
+.task{
+  display:flex;align-items:flex-start;gap:10px;padding:9px 12px;
+  border-bottom:1px solid var(--border);position:relative;
+}
+.task:last-child{border-bottom:none}
+.task:hover{background:var(--bg3)}
+.task.sel{background:var(--bg4)}
+.chk{
+  width:19px;height:19px;border-radius:50%;border:1.6px solid var(--fg3);flex:none;margin-top:1px;
+  display:grid;place-items:center;font-size:11px;color:transparent;transition:.12s;
+}
+.chk:hover{border-color:var(--done);color:var(--fg3)}
+/* The state is on the tick itself, so it reads the same in a row, on a line,
+   in an embed or a backlink. */
+.chk[data-state="DONE"]{background:var(--done);border-color:var(--done);color:#06210f}
+.chk[data-state="CANCELLED"]{background:var(--cancel);border-color:var(--cancel);color:#fff}
+.chk[data-state="WAIT"]{border-color:var(--wait);color:var(--wait)}
+.chk[data-state="DOING"]{border-color:var(--doing);color:var(--doing)}
+/* The same state in a line of text: a square in the state's colour with its
+   word inside, no taller than the words, so a task's line is as high as a
+   note's. Always a word, to do included, since a task type's stages are told
+   apart by it. The same width whatever it says, so the words of the lines
+   at one depth start in one place. */
+.tick{display:inline-flex;align-items:center;justify-content:center;flex:none;width:58px;height:17px;padding:0 3px;margin-top:2px;
+  border:0;border-radius:4px;background:rgba(106,163,255,.16);color:var(--todo);font:inherit;line-height:1;cursor:pointer;
+  -webkit-touch-callout:none;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.tick[data-state="DOING"]{background:rgba(199,146,234,.16);color:var(--doing)}
+.tick[data-state="WAIT"]{background:rgba(224,176,80,.16);color:var(--wait)}
+.tick[data-state="DONE"]{background:rgba(79,191,123,.14);color:var(--done)}
+.tick[data-state="CANCELLED"]{background:var(--bg4);color:var(--cancel)}
+span.tick{cursor:inherit}
+button.tick:hover{box-shadow:inset 0 0 0 1px currentColor}
+.tick .t-state{padding:0;color:inherit}
+.tick:focus-visible{outline:1.5px solid var(--accent);outline-offset:1px}
+.t-body{flex:1;min-width:0}
+.t-title{font-size:14px;word-wrap:break-word;overflow-wrap:anywhere}
+.task[data-state="DONE"] .t-title,.task[data-state="CANCELLED"] .t-title{color:var(--fg3);text-decoration:line-through}
+.t-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;align-items:center}
+/* A task row's pills sit beside its title, at the right, as on a page's lines;
+   on a phone they go under it. */
+.t-body.t-one{display:flex;align-items:flex-start;gap:10px}
+.t-body.t-one>.t-title{flex:1 1 auto;min-width:0}
+.t-body.t-one>.t-meta{flex:0 1 auto;max-width:50%;margin-top:0;justify-content:flex-end}
+@media (max-width:600px){
+  .t-body.t-one{display:block}
+  .t-body.t-one>.t-meta{max-width:none;margin-top:4px;justify-content:flex-start}
+}
+/* Next on a phone: the list is the screen. The filters fold behind Filter;
+   a row is a round tick, its @context just before the words, and one quiet
+   line under them with the project and the day. Holding the tick or tapping
+   the row reaches what the ⋯ did. */
+.vhead .nfiltbtn,.t-title .nlead,.nfold .ntwins{display:none}
+.nfold{display:contents}
+@media (max-width:640px){
+  .nextlist .vhead .nfiltbtn{display:inline-block;color:var(--fg2)}
+  .nextlist .nfiltbtn.on{color:var(--accent)}
+  .nextlist .nfold{display:none}
+  /* To do or Chores: two halves, each with how many are open. */
+  .nside{display:flex;gap:3px;margin:0 0 10px;padding:3px;border:1px solid var(--border);border-radius:10px;background:var(--bg2)}
+  .nsidebtn{flex:1 1 0;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:7px 10px;border:0;
+    border-radius:7px;background:none;color:var(--fg2);font:inherit;font-size:14px;cursor:pointer}
+  .nsidebtn[aria-pressed="true"]{background:var(--bg);color:var(--fg);font-weight:600;
+    box-shadow:0 1px 2px color-mix(in srgb,var(--fg) 18%,transparent)}
+  .nbadge{min-width:20px;padding:0 6px;border-radius:10px;font-family:var(--mono);font-size:11.5px;font-weight:600;
+    line-height:20px;text-align:center;font-variant-numeric:tabular-nums;color:var(--fg2);
+    background:color-mix(in srgb,var(--fg) 12%,transparent)}
+  .nsidebtn[aria-pressed="true"] .nbadge{background:var(--accent);color:var(--bg)}
+  /* The guessed context: one quiet line, and the way back to all of them. */
+  .nguess{display:flex;align-items:baseline;gap:8px;margin:0 2px 8px;font-size:13px;color:var(--fg2)}
+  .nguess strong{color:var(--ctx);font-weight:600}
+  .nguess-why{color:var(--fg3);font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .nguess .textbtn{margin-left:auto;white-space:nowrap}
+  .nextlist .nfold.open{display:block}
+  .nextlist .vhead{flex-wrap:nowrap;align-items:center}
+  .nextlist .vhead-r{flex-wrap:nowrap;gap:12px}
+  .nextlist .vhead-r > *{flex:none;white-space:nowrap}
+  .nextlist .vhead .twinbtn{display:none}
+  .nextlist .nfold .ntwins{display:block;margin:4px 0 8px}
+  .nextlist .nfiltbtn.twins::after{content:" ⚠";color:var(--warn)}
+  .nextlist .task{gap:10px;padding:11px 12px}
+  .nextlist .t-lead .t-menu{display:none}
+  .nextlist .t-lead,.nextlist .t-chk{width:auto;min-width:0}
+  .nextlist .task .tick{width:22px;height:22px;margin:0;padding:0;border-radius:50%;background:none;
+    box-shadow:inset 0 0 0 1.8px currentColor}
+  .nextlist .task .tick .t-state{display:none}
+  .nextlist .task .tick[data-state="DOING"]::after{content:"";width:10px;height:10px;border-radius:50%;background:currentColor}
+  .nextlist .t-body.t-one{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:12px;row-gap:3px}
+  .nextlist .t-body.t-one>.t-title{flex:1 1 100%;font-size:15px;line-height:1.35}
+  .nextlist .t-body.t-one>.t-meta,.nextlist .t-meta>.t-pills,.nextlist .t-meta>.t-info{display:contents}
+  .nextlist .t-body .chip{order:2;background:none;padding:0;font-size:12.5px;color:var(--fg3);border-radius:0}
+  .nextlist .t-body .chip.ctx{display:none}
+  .nextlist .t-title .nlead{display:inline;color:var(--ctx);font-weight:600;font-size:14px;margin-right:.45em}
+  .nextlist .t-body .chip.late{color:var(--late)}
+  .nextlist .t-body .duepill::before{content:"Due "}
+  .nextlist.onectx .t-title .nlead{display:none}
+  .nextlist .t-body .chip.today{color:var(--warn)}
+}
+.chip{
+  display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:1px 7px;border-radius:20px;
+  background:var(--bg3);color:var(--fg3);border:1px solid transparent;white-space:nowrap;
+}
+.chip.ctx{color:var(--ctx);background:rgba(94,207,192,.11)}
+.chip.proj{color:var(--proj);background:rgba(255,159,107,.11)}
+.chip.late{color:var(--late);background:rgba(255,107,107,.13)}
+.chip.today{color:var(--today);background:rgba(224,176,80,.13)}
+.chip.miss{color:var(--warn);background:rgba(224,176,80,.1);border-color:rgba(224,176,80,.3)}
+.chip.age{font-family:var(--mono);font-size:10.5px}
+/* How far a chore has come round: fills over one round, the chip's colour past it. */
+.chip.fresh{font-family:var(--mono);font-size:10.5px}
+.freshbar{display:inline-block;width:34px;height:5px;border-radius:3px;background:var(--border);overflow:hidden}
+.freshbar>i{display:block;height:100%;background:var(--ok)}
+.chip.fresh.today .freshbar>i{background:var(--today)}
+.chip.fresh.late .freshbar>i{background:var(--late)}
+.fresh-score{font-family:var(--mono);font-size:11px;margin-left:6px}
+/* Chores: the home and its rooms at a glance, then the points. */
+.chorehome{padding:12px 14px;margin-bottom:12px}
+.chorehome-h{display:flex;align-items:baseline;gap:10px;font-size:15px;font-weight:650;color:var(--fg)}
+.chorehome-h strong{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chorerooms{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.choreroom{display:inline-flex;align-items:center;gap:8px;padding:5px 10px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--border);background:var(--bg2);color:var(--fg2);font:inherit;font-size:12.5px}
+.choreroom:hover,.choreroom:focus-visible{border-color:var(--border2)}
+.choreroom[aria-pressed="true"]{border-color:var(--ctx);background:color-mix(in srgb,var(--ctx) 10%,var(--bg2))}
+.choreroom-n{color:var(--ctx)}
+.choreroom .freshbar{width:60px}
+.choreroom-p{font-family:var(--mono);font-size:11px;color:var(--fg3);font-variant-numeric:tabular-nums}
+.chorehome-tools{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:400}
+.chorelayout{display:inline-flex;gap:4px}
+/* The board (#213): a column per band of freshness, a card per room. */
+.chorecols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.chorecol{display:flex;flex-direction:column;gap:6px;min-width:0}
+.chorecol-h{display:flex;align-items:baseline;gap:6px;padding:0 2px 4px;border-bottom:2px solid;
+  font-size:11px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--fg2)}
+.chorecol-h .say{text-transform:none;letter-spacing:0;font-weight:400}
+.chorecol-h .n{margin-left:auto;font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--fg3)}
+.chorecard{display:flex;flex-direction:column;gap:5px;text-align:left;padding:8px 10px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--border);background:var(--bg2);color:var(--fg2);font:inherit;font-size:12.5px}
+.chorecard:hover,.chorecard:focus-visible{border-color:var(--border2)}
+.chorecard[aria-pressed="true"]{border-color:var(--ctx);background:color-mix(in srgb,var(--ctx) 10%,var(--bg2))}
+.chorecard-h{display:flex;align-items:baseline;gap:8px}
+.chorecard-h .choreroom-n{flex:1;min-width:0;overflow-wrap:anywhere;font-weight:600}
+.chorecard .freshbar,.chorecloseup .freshbar{width:100%}
+.chorecard-n{display:flex;gap:8px;font-size:12px;font-variant-numeric:tabular-nums}
+.chorecard-n .due{color:var(--fg);font-weight:600}
+.chorecard-t,.chorecol-none{font-size:12px;color:var(--fg3)}
+.chorecol-more{align-self:center}
+.chorecloseup{padding:12px 14px;margin-bottom:12px;display:flex;flex-direction:column;gap:8px}
+.closeup-n{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;font-variant-numeric:tabular-nums}
+.closeup-r{display:flex;gap:10px;font-size:12.5px;color:var(--fg)}
+.closeup-k{color:var(--fg3)}
+.closeup-r .closeup-k{min-width:9em;flex-shrink:0}
+@media (max-width:640px){
+  .chorecols{grid-template-columns:1fr}
+  .chorecol.red{order:0} .chorecol.yellow{order:1} .chorecol.green{order:2}
+}
+.choreboard-row{gap:8px}
+.choreboard-at{min-width:1.6em;text-align:center;font-variant-numeric:tabular-nums;color:var(--fg3)}
+.choreboard-who{min-width:9em}
+.choreboard-row .freshbar{width:120px}
+.chip.who{color:var(--zet);background:rgba(199,146,234,.12)}
+/* The person who has a task, drawn in its title where the title names them. */
+.t-title .chip.who,.bcard-title .chip.who{font-size:inherit;white-space:normal;display:inline;padding:0 7px}
+/* A task's time, its #15m / #30m / #45m tag, drawn as one, two or three dots. */
+.trkevery{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0}
+.est{display:inline-block;min-width:1.4em;text-align:center;font-weight:800;font-size:.95em;
+  padding:0 5px;border-radius:6px;background:var(--bg3);color:var(--fg2);line-height:1.4;vertical-align:1px}
+.est[data-est="4"]{color:var(--warn);background:rgba(224,176,80,.13)}
+/* State filters: checkboxes, so several can be on at once. Off is legible
+   rather than invisible -- a filter you cannot see is a bug report later. */
+.statefilter{display:flex;gap:8px;flex-wrap:wrap}
+.chip.filter{cursor:pointer;font-size:13px;padding:2px 11px;border:1px solid var(--border);border-radius:14px;
+  background:var(--bg2);color:var(--fg3);user-select:none}
+.chip.filter:hover{color:var(--fg)}
+.chip.filter.on{color:var(--bg2);background:var(--fg);border-color:var(--fg)}
+/* Where you are, kept on screen. Picking a context changed what the app showed
+   and then said nothing about it, so it was impossible to tell you had one or
+   to get rid of it. */
+/* A thread reads as a conversation, not as more task rows: no checkboxes, the
+   author and the time on top, and unread marked on the edge so a glance finds it. */
+.thread{display:flex;flex-direction:column;gap:2px;max-height:300px;overflow-y:auto;padding-right:4px}
+/* Bubbles, with the name and time OUTSIDE them: a bubble holds what was said.
+   Mine sit on the right in the accent, theirs on the left in the panel grey --
+   the two-sided arrangement everybody already reads without being taught. */
+.msg{display:flex;gap:9px;align-items:flex-end;padding:1px 2px}
+.msg.cont{margin-top:1px}
+.msg.mine{flex-direction:row-reverse}
+.msg-main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.msg.mine .msg-main{align-items:flex-end}
+.msg-head{display:flex;align-items:baseline;gap:7px;font-size:11px;color:var(--fg3);
+  margin:6px 0 2px;padding:0 4px}
+.msg-head .who{font-weight:600;color:var(--fg2);font-size:12.5px}
+.msg-head .seen{color:var(--fg3);opacity:.8}
+.bubble{position:relative;display:flex;align-items:flex-start;gap:4px;
+  background:var(--bg3);border-radius:14px 14px 14px 4px;padding:8px 12px;max-width:min(46ch,88%)}
+.msg.cont .bubble{border-radius:14px 14px 14px 14px}
+.msg.mine .bubble{background:var(--accent);border-radius:14px 14px 4px 14px}
+.msg.mine .msg-body{color:var(--accent-fg)}
+.msg-body{font-size:13.5px;color:var(--fg);line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.mine .msg-body .wikilink{color:inherit;text-decoration:underline}
+.msg-flags{font-size:11px;color:var(--warn);margin:3px 4px 0}
+/* One face per speaker; a run of messages from the same person keeps the
+   indent but drops the repeat. */
+.avatar{width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-size:10.5px;font-weight:700;color:#06101f;letter-spacing:.02em;
+  object-fit:cover;background:var(--bg3)}
+.avatar.ghost{background:none}
+/* A day line and an unread line, both rules with a word sitting on them. */
+.msg-day,.msg-new{display:flex;align-items:center;gap:10px;margin:10px 0 4px;
+  font-size:10.5px;letter-spacing:.08em;text-transform:uppercase}
+.msg-day{color:var(--fg3)}
+.msg-new{color:var(--accent)}
+.msg-day::before,.msg-day::after,.msg-new::before,.msg-new::after{
+  content:"";flex:1;height:1px;background:var(--border)}
+.msg-new::before,.msg-new::after{background:var(--accent);opacity:.45}
+.flagbtn{background:none;border:0;cursor:pointer;color:transparent;font-size:12px;padding:0;
+  flex:none;line-height:1.5;align-self:flex-start}
+.msg:hover .flagbtn{color:var(--fg3)}
+.msg.mine:hover .flagbtn{color:rgba(6,16,31,.55)}
+.flagbtn:hover{color:var(--warn)}
+.flagbtn.on,.msg.mine .flagbtn.on{color:var(--warn)}
+/* The all-conversations list. */
+/* Anybody who has asked their system for less movement gets less movement. */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;scroll-behavior:auto !important}
+}
+/* display on a class beats the user agent's [hidden]{display:none}, so without
+   this a hidden "show all" stays in the row as an empty strip you can press --
+   the same trap the context chip fell into. */
+.showmore[hidden]{display:none}
+.showmore{display:block;width:100%;text-align:center;background:none;border:0;cursor:pointer;
+  border-top:1px solid var(--border);color:var(--accent);font-size:12.5px;padding:10px}
+.showmore:hover{background:var(--bg3)}
+/* One more page, or the lot. Two buttons side by side rather than one that
+   changes meaning, so neither press is a surprise. */
+.showmorerow{display:flex;width:100%;border-top:1px solid var(--border)}
+/* width:100% from .showmore would make both buttons claim the whole row, so
+   the first one ends up a one-word-wide column. Inside the row, width is the
+   flex box's business. */
+.showmorerow .showmore{border-top:0;width:auto;min-width:0;flex:1 1 auto}
+.showmorerow .showmore.all{flex:0 0 auto;padding-left:18px;padding-right:18px;color:var(--fg3);
+  border-left:1px solid var(--border);white-space:nowrap}
+.showmorerow .showmore.all:hover{color:var(--accent)}
+.chatrow{display:flex;gap:11px;align-items:flex-start;width:100%;text-align:left;cursor:pointer;
+  padding:11px 12px;background:none;border:0;border-top:1px solid var(--border);color:inherit}
+.chatrow:first-child{border-top:0}
+.chatrow:hover{background:var(--bg3)}
+.chatrow-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.chatrow-top{display:flex;align-items:baseline;gap:8px}
+.chatrow-top .task{font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chatrow-top .when{margin-left:auto;font-size:11px;color:var(--fg3);flex:none}
+.chatrow-last{font-size:12.5px;color:var(--fg2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chatrow-last .who{color:var(--fg3)}
+.chatrow-where{font-size:11px;color:var(--fg3)}
+.chatrow.unread .chatrow-last{color:var(--fg)}
+.chatrow-marks{display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex:none}
+@media (max-width:560px){.chatrow-where{display:none}}
+.chip.msg{color:var(--fg3)}
+.chip.msg.unread{color:var(--accent);background:rgba(106,163,255,.14)}
+.chip.flagged{color:var(--warn);background:rgba(224,176,80,.13)}
+.toast .act{background:none;border:1px solid var(--border2);color:var(--accent);
+  border-radius:6px;padding:2px 10px;font-size:12px;cursor:pointer;margin-left:8px}
+.toast .act:hover{background:var(--bg3)}
+/* What a long paste can become: the choices wrap under the words. */
+.toast.pasteas{flex-wrap:wrap;row-gap:6px}
+.toast.pasteas > span{flex-basis:100%}
+.toast.pasteas .act{margin-left:0}
+/* display on a class beats the user agent's [hidden]{display:none}, so without
+   this the chip sat in the header as an empty 22px pill you could click. */
+.ctxnow[hidden]{display:none}
+.ctxnow{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 10px;
+  border-radius:20px;cursor:pointer;white-space:nowrap;
+  color:var(--ctx);background:rgba(94,207,192,.12);border:1px solid rgba(94,207,192,.35)}
+.ctxnow:hover{background:rgba(94,207,192,.2)}
+.ctxnow .x{color:var(--fg3);font-size:13px;line-height:1}
+.ctxnow .x:hover{color:var(--fg)}
+/* The next meeting, counting down, at the top of every screen. */
+.nextmeet[hidden]{display:none}
+.nextmeet{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;padding:4px 10px;border-radius:20px;
+  cursor:pointer;white-space:nowrap;min-width:0;max-width:22rem;color:var(--fg2);background:var(--bg3);border:1px solid var(--border)}
+.nextmeet:hover{border-color:var(--border2);color:var(--fg)}
+.nextmeet .t{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.nextmeet .w{color:var(--fg3);flex:none}
+.nextmeet.soon{color:var(--today);background:rgba(224,176,80,.13);border-color:rgba(224,176,80,.4)}
+.nextmeet.soon .w{color:inherit}
+.nextmeet.now{color:var(--ok);background:rgba(79,191,123,.12);border-color:rgba(79,191,123,.4)}
+.nextmeet.now .w{color:inherit}
+.nextmeet .n{color:var(--fg3);flex:none}
+.nextmeet .n.soon{color:var(--today)}
+@media (max-width:760px){.nextmeet{max-width:11rem}}
+/* Beside the capture field on a wide screen; on a phone a row of its own
+   under the bar, where the time and the @context are never clipped (#168). */
+.hnow{display:contents}
+@media (max-width:560px){
+  header.top{flex-wrap:wrap;row-gap:8px}
+  header.top .capture{flex:1 1 7rem;margin-left:0;height:36px}
+  /* The row under the bar holds what is on now and, at its right end, the
+     area button, so the button does not take a row of its own (#168). */
+  header.top::before{content:"";order:1;flex-basis:100%;height:0}
+  header.top:not(:has(.hnow > :not([hidden])))::before{display:none}
+  .hnow{display:flex;order:2;flex:1 1 0;gap:6px;min-width:0}
+  header.top .spacesbtn{order:3}
+  .hnow:not(:has(> :not([hidden]))){display:none}
+  .hnow .nextmeet{max-width:none;flex:0 1 auto}
+  .hnow .ctxnow{flex:none}
+  .spop{top:calc(100% + 4px)}
+}
+.toast.meetrem strong{display:block;margin-bottom:2px}
+.toast.meetrem p{margin:0 0 8px;color:var(--fg2)}
+.chip.st{font-family:var(--mono);font-size:10px;letter-spacing:.5px}
+

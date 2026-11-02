@@ -1,0 +1,1 @@
+const lineSelDelete = () => { lineSelRemove("deleted"); };

@@ -1,0 +1,74 @@
+/* ---------- gantt ----------
+   A label column and a track, with the bar placed by percentage across the
+   track. Today is a CSS variable rather than one overlay, so each row draws its
+   own slice of the same line and it lands in the right place. */
+.gantt{--glabelw:250px;margin-top:14px;border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--bg2);overflow:hidden}
+.ghead{display:flex;align-items:stretch;height:44px;border-bottom:1px solid var(--border);
+  background:var(--bg3)}
+.gbody{display:flex;flex-direction:column}
+.grow{display:flex;align-items:stretch;width:100%;text-align:left;background:none;border:0;
+  border-top:1px solid var(--border);cursor:pointer;color:inherit;padding:0;min-height:30px}
+.gbody .grow:first-child{border-top:0}
+.grow:hover{background:var(--bg3)}
+.glabel{flex:0 0 var(--glabelw);min-width:0;display:flex;gap:6px;align-items:center;
+  padding:5px 10px;font-size:12.5px;color:var(--fg);overflow:hidden}
+/* text-overflow does nothing on a flex container, so the name needs a box of
+   its own to be clipped in. */
+.glabel .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.glabel .caret{color:var(--fg3);font-size:10px;flex:none}
+/* A project's name over its count. The name may take three lines before it is
+   cut, and the count never shares its line. */
+.gname{display:flex;flex-direction:column;min-width:0;flex:1 1 auto;line-height:1.3}
+.gname .nm{white-space:normal;overflow-wrap:anywhere;display:-webkit-box;
+  -webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3}
+.glabel .n{font-size:10.5px;color:var(--fg3);font-family:var(--mono);flex:none}
+.glabel.ghcol{font-size:11px;color:var(--fg3);text-transform:uppercase;letter-spacing:.05em}
+.glabel.sub{padding-left:28px;color:var(--fg2);font-size:12px}
+/* overflow:hidden so the last month label does not hang off the right edge;
+   every bar is already clamped to 0-100%, so nothing real is cut. */
+.gtrack{position:relative;flex:1 1 auto;min-width:0;overflow:hidden}
+.gtrack::before{content:"";position:absolute;top:0;bottom:0;left:var(--gnow,-10%);width:1px;
+  background:var(--accent);opacity:.45}
+.gtick{position:absolute;top:0;bottom:0;width:1px;background:var(--border)}
+.gmon{position:absolute;top:6px;font-size:10.5px;color:var(--fg3);padding-left:5px;
+  white-space:nowrap;letter-spacing:.3px}
+.gbar{position:absolute;top:50%;margin-top:-8px;height:16px;border-radius:4px;background:var(--fg3);
+  overflow:hidden;display:flex;align-items:center}
+.gbar.TODO{background:var(--todo)}
+.gbar.DOING{background:var(--doing)}
+.gbar.WAIT{background:var(--wait)}
+.gbar.DONE{background:var(--done);opacity:.65}
+.gbar.CANCELLED{background:var(--cancel);opacity:.5}
+.gbar.late{background:var(--late)}
+.glabelin{font-size:10.5px;color:var(--accent-fg);padding:0 6px;white-space:nowrap;
+  min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* A project row also carries .group, which elsewhere is a section heading:
+   margin, capitals and letter-spacing. None of that belongs on a chart row, and
+   the capitals were what pushed long names out of the label column. */
+.grow.group{margin:0;font-size:inherit;letter-spacing:normal;text-transform:none;color:inherit;
+  font-weight:inherit;flex-wrap:nowrap;gap:0;align-items:stretch}
+.grow.group .glabel .nm{font-weight:600}
+.grow.group .gbar{height:11px;margin-top:-5.5px;border-radius:3px;opacity:.85}
+/* The label on the today line, in the header, so the line is never a guess. */
+.gtoday{position:absolute;bottom:4px;transform:translateX(-50%);font-size:10.5px;font-weight:650;
+  white-space:nowrap;padding:1px 6px;border-radius:9px;background:var(--accent);color:var(--accent-fg);
+  line-height:1.4;z-index:1}
+.gtoday.l{transform:none}
+.gtoday.r{transform:translateX(-100%)}
+/* The legend and keys, inside the chart's frame, under the bars. */
+.gfoot{margin-top:0;padding:7px 10px;border-top:1px solid var(--border);background:var(--bg3)}
+.gkeys{gap:5px}
+/* Zoom is one joined bar: pick a part and the rest let go. The toggles beside
+   it are checkboxes, because they never affect each other. */
+.gtools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.glbl{font-size:11px;color:var(--fg3);text-transform:uppercase;letter-spacing:.05em}
+.gzoomseg{display:inline-flex;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+.gzoomseg button{padding:4px 11px;font-size:12.5px;background:var(--bg2);color:var(--fg2);border:0;
+  border-left:1px solid var(--border);cursor:pointer}
+.gzoomseg button:first-child{border-left:0}
+.gzoomseg button:hover{background:var(--bg3);color:var(--fg)}
+.gzoomseg button.on{background:var(--accent);color:var(--accent-fg);font-weight:650}
+.gshow{display:inline-flex;align-items:center;gap:12px;margin-left:auto;flex-wrap:wrap}
+.gshowbox{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--fg2);cursor:pointer}
+.gshowbox input{margin:0}

@@ -1,0 +1,18 @@
+const TASK_CSV_COLUMNS = [
+  ["Area",        a => a.space || V.space || ""],
+  ["Task",        a => plainTitle(a.title)],
+  ["State",       a => a.state || ""],
+  ["Project",     a => a.project || ""],
+  ["Customer",    a => a.org ?? inSpace(a.space, () => orgOfBlock(a.path, a.block, a.projectPath))],
+  ["Context",     a => a.context || ""],
+  ["Tags",        a => tagsIn(a.title).map(t => "#" + t).join(" ")],
+  ["Assigned to", a => a.assignee || ""],
+  ["Written by",  a => a.by || a.owner || ""],
+  ["Starts",      a => dateIn(blockProp(a.block, "SCHEDULED")) || ""],
+  ["Due",         a => dateIn(blockProp(a.block, "DEADLINE")) || dateIn(blockProp(a.block, "due")) || ""],
+  ["Added",       a => a.added || addedDate(a.block) || ""],
+  ["Finished",    a => a.state === "DONE" ? closedOn(a.block) || "" : ""],
+  ["Finished by", a => a.state === "DONE" ? closedBy(a.block) || "" : ""],
+  ["Messages",    a => messagesOf(a.block).length || ""],
+  ["File",        a => a.path],
+];

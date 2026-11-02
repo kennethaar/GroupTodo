@@ -1,0 +1,116 @@
+/* ---------- space colours ---------- */
+.swatches{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.swatch{
+  width:26px;height:26px;border-radius:50%;flex:none;padding:0;
+  display:grid;place-items:center;font-size:12px;font-weight:700;
+  border:2px solid transparent;box-shadow:inset 0 0 0 1px rgba(0,0,0,.28);
+}
+.swatch:hover{border-color:var(--border2)}
+.swatch.on{border-color:var(--fg)}
+.swatches .sep{width:1px;height:20px;flex:none;background:var(--border2);margin:0 3px}
+/* A native colour well, cropped to the same round chip as the swatches. */
+.colorwell{
+  position:relative;width:26px;height:26px;border-radius:50%;flex:none;overflow:hidden;
+  box-shadow:inset 0 0 0 1px var(--border2);
+}
+.colorwell.on{box-shadow:inset 0 0 0 1px rgba(0,0,0,.28);border:2px solid var(--fg)}
+/* Unselected, the well advertises itself as "some other colour". */
+.colorwell:not(.on)::after{
+  content:"+";position:absolute;inset:0;display:grid;place-items:center;
+  font-size:14px;color:#fff;mix-blend-mode:difference;pointer-events:none;
+}
+.colorwell input[type=color]{
+  position:absolute;left:-25%;top:-25%;width:150%;height:150%;
+  padding:0;border:none;background:none;cursor:pointer;
+}
+.colorwell input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+.colorwell input[type=color]::-webkit-color-swatch{border:none}
+.colorwell input[type=color]::-moz-color-swatch{border:none}
+.cpreview{display:flex;align-items:center;gap:9px;margin-top:10px}
+.cpreview .avatar{
+  width:26px;height:26px;border-radius:7px;flex:none;display:grid;place-items:center;
+  font-size:13px;font-weight:700;
+}
+.swatches .hexinput{
+  width:94px;font-family:var(--mono);font-size:12px;padding:5px 8px;text-transform:lowercase;
+}
+.chip.b{cursor:pointer}
+.chip.b:hover{border-color:var(--border2);color:var(--fg2)}
+.t-act{display:flex;gap:2px;opacity:0;flex:none;transition:.12s}
+.task:hover .t-act,.task.sel .t-act{opacity:1}
+.t-lead{display:flex;align-items:flex-start;gap:2px;flex:none}
+.t-chk{display:flex;align-items:center;width:58px}
+.t-chk .tick{margin-top:1px}
+.t-state{padding:2px 0;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.2px;line-height:1;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
+.t-state.DOING{color:var(--doing)}.t-state.WAIT{color:var(--wait)}.t-state.DONE{color:var(--done)}
+.t-state.CANCELLED{color:var(--cancel)}.t-state.TODO{color:var(--todo)}
+/* Shown on the row you point at or are on, not on every row of a list. */
+.task .chip.onhover,.bcard .chip.onhover{display:none}
+.task:hover .chip.onhover,.task:focus-within .chip.onhover,.task.sel .chip.onhover,
+.bcard:hover .chip.onhover,.bcard:focus .chip.onhover{display:inline-flex}
+.bcard .bcard-purpose{display:none;font-size:12px;color:var(--fg3);line-height:1.35}
+.bcard:hover .bcard-purpose,.bcard:focus .bcard-purpose{display:block}
+.t-menu{width:22px;height:22px;font-size:15px;opacity:.45}
+.task:hover .t-menu,.task.sel .t-menu{opacity:1}
+/* The Journal's rows (#160, #209): one line, read in the order you act --
+   the state, the context, the words, the project quietly after them, and
+   the chips at the right edge before the row's ⋯, so they line up down the
+   list. Short of room, the project gives way first, then the words end in
+   "…"; the row opens the task, so the rest is a click away. */
+.task.jrow{align-items:center;gap:8px;padding:5px 12px;min-height:36px;box-sizing:border-box}
+.jrow>.t-chk{width:auto}
+.jrow>.t-chk,.jrow>.chip.ctx,.jrow>.t-meta,.jrow>.t-menu{flex:none}
+.jrow>.t-title{flex:0 1 auto;min-width:3em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}
+.jrow>.t-title .chip.who{white-space:nowrap}
+.jrow>.t-eyebrow{flex:0 1000 auto;min-width:0;padding:0 7px;border-radius:20px;
+  font-size:11px;letter-spacing:.05em;text-transform:uppercase;line-height:1.6;color:var(--fg3);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+/* Pointed at, it is the project's pill again, and a click opens it. */
+.jrow:hover>.t-eyebrow,.jrow>.t-eyebrow:focus-visible{color:var(--proj);background:color-mix(in srgb,var(--proj) 13%,transparent);outline:none}
+.jrow>.t-meta{margin:0 0 0 auto;flex-wrap:nowrap}
+.jrow>.t-meta>.t-pills,.jrow .t-info{flex-wrap:nowrap;margin-left:0}
+.jrow>.t-menu{margin-left:auto;opacity:.7}
+.jrow>.t-meta~.t-menu{margin-left:0}
+/* A finger needs more than a pointer does. */
+@media (pointer:coarse){.task.jrow{min-height:44px}}
+/* On a phone the project is left out: the words get the width. */
+@media (max-width:640px){.jrow>.t-eyebrow{display:none}}
+/* ... and Due Today & Late is grouped by context, each said once above its
+   rows, the group with the most urgent row first. */
+.jgroup{display:flex;align-items:center;gap:6px;padding:10px 12px 4px;border-bottom:1px solid var(--border);
+  font-size:11px;color:var(--fg3);font-variant-numeric:tabular-nums}
+.jgroup:first-child{padding-top:8px}
+.jgroup .none{letter-spacing:.05em;text-transform:uppercase}
+/* A context written inside the words stays where it was written, as a pill. */
+.jrow .t-title .wikilink.ctx,.space-journal .txt .wikilink.ctx{display:inline-block;font-size:11px;line-height:1.6;padding:0 7px;
+  border-radius:20px;vertical-align:1px;color:var(--ctx);background:color-mix(in srgb,var(--ctx) 13%,transparent)}
+/* Upkeep waits until you point at it or tab to it: a calendar not yet
+   linked, the day page's markdown and pin, another tracker. A touch screen
+   has no pointing, so there it is always shown. Faded rather than hidden,
+   so Tab still lands on it and shows it. */
+.todayhead .upkeep,.jhead .upkeep,.tpanel .trkadd{opacity:0}
+.todayhead:hover .upkeep,.todayhead:focus-within .upkeep,.jhead:hover .upkeep,.jhead:focus-within .upkeep,
+.tpanel .space-journal:hover .trkadd,.tpanel .space-journal:focus-within .trkadd{opacity:1}
+@media (hover:none){.todayhead .upkeep,.jhead .upkeep,.tpanel .trkadd{opacity:1}}
+.tpanel .trknone{color:var(--fg3);font-size:13px;margin-right:8px;line-height:1.9}
+.space-journal .blk>.line>.linemenu{opacity:.7}
+/* The Due tab says what is done beside what is open. */
+.tratio{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--fg3);font-variant-numeric:tabular-nums}
+.ttab.on .tratio{color:var(--fg2)}
+.tratio .pbar{width:42px;height:5px}
+.tratio .tlate{color:var(--late);font-weight:600}
+.donetoday{display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border-top:1px solid var(--border);color:var(--fg3);font-size:13px}
+.donetoday:hover{color:var(--fg)}
+.donetoday .pbar{width:42px;height:5px}
+.t-pills,.t-info{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}
+.t-info{margin-left:auto;justify-content:flex-end}
+.chip.linger{color:var(--wait);background:rgba(224,176,80,.13);font-variant-numeric:tabular-nums}
+.chip.linger .textbtn{font-size:11px;padding:0 2px}
+.iconbtn{
+  width:26px;height:26px;border-radius:var(--radius-sm);display:grid;place-items:center;
+  color:var(--fg3);font-size:13px;
+}
+.iconbtn:hover{background:var(--bg4);color:var(--fg)}
+@media (hover:none){.t-act{opacity:1}}
+

@@ -1,0 +1,55 @@
+/* ---------- dragging a bar, and the chain between projects ----------
+   A bar you can move has to look like one before it is touched: the grab
+   cursor and the two end handles are the whole affordance. touch-action is
+   what stops a drag on a phone from scrolling the page instead. */
+.gbar.movable{cursor:grab;touch-action:none}
+.gbar.movable:active,.gbar.dragging{cursor:grabbing}
+.gbar.dragging{box-shadow:0 0 0 2px var(--accent);z-index:4;opacity:.95}
+.grow.movable:focus-visible .gbar{box-shadow:0 0 0 2px var(--accent)}
+/* Grip dots at each end, always there, so a bar reads as something you can
+   take hold of before the pointer finds out. */
+.ghandle{position:absolute;top:0;bottom:0;width:9px;cursor:ew-resize;touch-action:none;opacity:.75;
+  background:radial-gradient(circle,color-mix(in srgb,var(--accent-fg) 85%,transparent) 1px,transparent 1.4px)
+    center/4px 4px repeat-y}
+.ghandle.l{left:0}
+.ghandle.r{right:0}
+.gbar.movable:hover .ghandle,.gbar.dragging .ghandle{opacity:1;
+  background-color:color-mix(in srgb,var(--accent) 45%,transparent)}
+.ghandle:hover{background-color:var(--accent)!important}
+/* The dates follow the pointer while the bar moves, because a bar halfway
+   between two month ticks does not tell you which day you have landed on. It
+   is fixed to the window rather than parented to the bar: .gtrack clips, so a
+   label sitting above a bar would be sliced off at the row boundary. */
+.gtip{position:fixed;z-index:80;transform:translate(-50%,-150%);
+  font-family:var(--mono);font-size:11px;white-space:nowrap;padding:3px 7px;
+  border-radius:5px;background:var(--fg);color:var(--bg);pointer-events:none;
+  box-shadow:0 2px 8px rgba(0,0,0,.3)}
+/* The part of a bar standing to the left of its gate: it is scheduled during
+   something it is supposed to be waiting for. */
+.gbar.clash{background-image:repeating-linear-gradient(135deg,
+  rgba(0,0,0,0) 0 5px, rgba(255,255,255,.38) 5px 10px)}
+.ggate{position:absolute;top:2px;bottom:2px;width:2px;background:var(--fg3);opacity:.7}
+.ggate::after{content:"";position:absolute;top:0;left:-3px;border-left:4px solid transparent;
+  border-right:4px solid transparent;border-top:5px solid var(--fg3)}
+.ggate.bad,.ggate.bad::after{background:var(--late);border-top-color:var(--late)}
+.gdep{color:var(--fg3);font-size:11px;flex:none;cursor:help}
+.glinks{position:absolute;inset:0;pointer-events:none;z-index:3}
+.gbody{position:relative}
+.garrows{position:absolute;top:0;left:0;overflow:visible}
+.garrow{fill:none;stroke:var(--fg3);stroke-width:1.2;opacity:.75}
+.garrow.bad{stroke:var(--late);opacity:.95}
+.garrowhead{fill:var(--fg3);opacity:.75}
+.garrowhead.bad{fill:var(--late);opacity:.95}
+
+@media (max-width:700px){
+  /* A 230px label beside a track leaves no track. Half the width, smaller type. */
+  .gantt{--glabelw:118px}
+  .glabel{font-size:11.5px;padding:5px 6px}
+  .glabel.sub{padding-left:14px}
+  .glabelin{display:none}
+  .gshow{margin-left:0}
+  /* Fingers, not a mouse: the handles stay out but the bar itself is the
+     target, and 11px of grab area either side of a 16px bar is a trap. */
+  .ghandle{display:none}
+}
+

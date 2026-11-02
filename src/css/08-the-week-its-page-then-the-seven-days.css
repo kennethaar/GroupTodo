@@ -1,0 +1,62 @@
+/* ---------- the week: its page, then the seven days ---------- */
+.todayhead .jmode{margin-left:0}
+.jcard.wkcard{min-height:0;margin-bottom:14px}
+.wkjump{padding:3px 10px;font-size:13px;font-weight:600;color:var(--fg2);border-radius:6px}
+.wkjump:hover{background:var(--bg3);color:var(--fg)}
+.wkjump[aria-pressed="true"]{color:var(--accent)}
+.wkgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin:0 0 22px}
+.wkday{min-width:0;min-height:120px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 5px 8px}
+.wkday.today{border:2px solid var(--accent);padding:5px 4px 7px}
+.wkdayhead{display:flex;align-items:center;gap:4px;width:100%;padding:2px 4px 6px;text-align:left;font-size:12.5px;font-weight:600;color:var(--fg2)}
+.wkdayhead:hover{color:var(--accent)}
+.wkmon{display:none}
+.wktoday{margin-left:auto;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.wkitem{display:flex;gap:6px;align-items:flex-start;padding:5px 4px;border-radius:6px;font-size:13px;color:var(--fg);cursor:pointer}
+.wkitem:hover,.wkitem:focus-visible{background:var(--bg3)}
+.wkbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.wktext{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;overflow-wrap:anywhere}
+.wkitem[data-state="DONE"] .wktext{color:var(--fg3)}
+.wksub{font-size:11.5px;color:var(--fg3)}
+.wksub.late{color:var(--late);font-weight:600}
+.wksub.wait{color:var(--wait)}
+.wkmark{flex:none;width:15px;text-align:center;font-weight:700;color:var(--fg3)}
+.wktime{font-weight:600;font-variant-numeric:tabular-nums}
+.wkwhere{flex:none;align-self:center;margin-left:auto;padding:1px 9px;border:1px solid var(--border);border-radius:999px;
+  font-size:12px;color:var(--fg3);white-space:nowrap}
+.wkwhere:hover{color:var(--accent);border-color:var(--accent)}
+.card > .wkitem{padding:7px 14px;border-radius:0;border-bottom:1px solid var(--border);align-items:center}
+/* In a day seven wide, the state is a small box: its colour, and ✓ when done. */
+/* The context pill takes the first line of a narrow day, so the words get two more. */
+.wkgrid .wktext{-webkit-line-clamp:3}
+.wkgrid .t-chk{width:auto;padding-top:2px}
+.wkgrid .tick{width:15px;height:15px;padding:0;margin:0;background:none;box-shadow:inset 0 0 0 1.5px currentColor;font-size:11px;font-weight:700}
+.wkgrid .tick .t-state{display:none}
+.wkgrid .tick[data-state="DOING"],.wkgrid .tick[data-state="WAIT"]{background:color-mix(in srgb,currentColor 30%,transparent)}
+.wkgrid .tick[data-state="DONE"]::after{content:"✓"}
+.wkseg{display:flex;width:max-content;max-width:100%;margin:0 0 14px;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg2)}
+.wkseg button{padding:6px 14px;font-size:13px;color:var(--fg3);white-space:nowrap}
+.wkseg button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+@media (max-width:767px){
+  .wkgrid{grid-template-columns:1fr;gap:6px}
+  .wkday{min-height:0}
+  .wkday.empty{padding-bottom:0}
+  .wkmon{display:inline}
+  .wkseg{width:100%}
+  .wkseg button{flex:1;padding:6px;white-space:normal}
+}
+@media (max-width:640px){
+  .todayhead .jmode{display:flex}
+  .todayhead.weekhead .sub{display:inline}
+}
+@media (min-width:1100px){ .jwide .jgrid.sized .jsplit{display:block} }
+@media (max-width:640px){ .ttabs{gap:8px} .ttab{padding:6px 10px;font-size:13px;white-space:nowrap} .jhead{padding:12px 14px;gap:10px} }
+/* A phone says the short name and the short count, so a tab is one line. */
+.ttab .tshort{display:none}
+@media (max-width:640px){
+  .ttab .tlong{display:none} .ttab .tshort{display:inline}
+  .ttab .tratio{gap:5px} .ttab .tratio .pbar{width:28px}
+  /* One area on a phone: the card is the page, so "Journal" is not said twice. */
+  .jcard.solo .jtitle{display:none}
+  .jcard.solo .jhead .sp{cursor:zoom-in}
+}
+

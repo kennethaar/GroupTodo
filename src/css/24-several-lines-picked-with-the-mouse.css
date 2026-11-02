@@ -1,0 +1,36 @@
+/* ---------- several lines picked with the mouse ----------
+   The whole line lights up, children included, because a line and what hangs
+   under it travel together. */
+.blk.lsel .line{background:color-mix(in srgb,var(--accent) 22%,var(--bg3))}
+.blk.lsel .bodyline,.blk.lsel .props{background:color-mix(in srgb,var(--accent) 12%,var(--bg3))}
+/* While the drag is on, nothing else on the page should be selecting text. */
+body.lselecting,body.lselecting *{user-select:none;-webkit-user-select:none;cursor:default}
+#lselHud{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:70;
+  display:flex;gap:7px;align-items:center;background:var(--bg2);color:var(--fg);
+  border:1px solid var(--accent);border-radius:999px;padding:6px 12px;font-size:12.5px;
+  box-shadow:0 8px 28px rgba(0,0,0,.35);max-width:94vw;flex-wrap:wrap}
+#lselHud .k{color:var(--fg3);font-family:var(--mono);font-size:11px}
+/* The line tools at the foot of the screen while a line is being written. */
+#editBar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;justify-content:center;gap:2px;
+  background:var(--bg2);border-top:1px solid var(--border);overflow-x:auto;scrollbar-width:none;
+  padding:4px max(8px,env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+#editBar[hidden]{display:none}
+#editBar .ebtn{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:52px;padding:4px 8px;
+  background:none;border:0;border-radius:8px;color:var(--fg);font:inherit;cursor:pointer}
+#editBar .ebtn:hover{background:var(--bg3)}
+#editBar .eic{font-size:17px;line-height:1.1}
+#editBar .elb{font-size:11px;color:var(--fg2)}
+body.editbar-on #content{padding-bottom:140px}
+/* Room under the page while a phone writes in it, so the last line can come
+   up to the middle of what the keyboard leaves. */
+body #content.roomunder{padding-bottom:85vh}
+/* A phone gets every button in one row, sharing the width, none off the edge. */
+@media (max-width:560px){#editBar{gap:0;padding-left:max(2px,env(safe-area-inset-left));padding-right:max(2px,env(safe-area-inset-right))}
+  #editBar .ebtn{flex:1 1 0;min-width:0;padding:4px 0}#editBar .elb{font-size:9.5px;letter-spacing:-.02em}}
+/* A camera of its own is a phone's; a computer picks a picture from its files. */
+@media (pointer:fine){#editBar .ebtn[data-k="photo"]{display:none}}
+.blk .bodyline{font-size:13px;color:var(--fg2);white-space:pre-wrap;min-height:1.3em;
+  padding:1px 3px;border-radius:4px;cursor:text}
+.blk .bodyline[contenteditable]{outline:none}
+.blk .bodyline:focus{background:var(--bg3);box-shadow:inset 0 0 0 1px var(--border2)}
+

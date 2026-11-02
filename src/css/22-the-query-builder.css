@@ -1,0 +1,18 @@
+/* ---------- the query builder ---------- */
+.qb{display:flex;flex-direction:column;gap:10px;min-width:0}
+.qbmode{display:flex;gap:14px;flex-wrap:wrap}
+.qbrows{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.qbrows[hidden]{display:none}
+.qbrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%}
+.qbrow select,.qbrow input:not([type]){font:inherit;font-size:13px;padding:4px 7px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--fg);min-width:0}
+.qbwhat{display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex:1;min-width:0}
+.qbwhat input{flex:1;min-width:8em}
+.qbstate,.qbnot{display:inline-flex;align-items:center;gap:4px;font-size:13px;cursor:pointer}
+.qbeq{color:var(--fg3);font-size:12px}
+.qbtext{width:100%;box-sizing:border-box;font-family:var(--mono);font-size:12.5px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--fg);resize:vertical}
+.qbtext.ro{background:var(--bg3);color:var(--fg2)}
+.qbpreview{font-size:13px;color:var(--fg2);min-height:2.6em}
+.qbpreview .bad{color:var(--late)}
+.qbhit{display:flex;gap:7px;align-items:baseline;padding:2px 0;min-width:0}
+.qbhit>span:not(.state):not(.p){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qbhit .p{color:var(--fg3);font-size:12px;margin-left:auto;flex:none;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

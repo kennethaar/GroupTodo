@@ -1,0 +1,106 @@
+/* ---------- a page's values, in its document ----------
+   One line per key:: value, at the top of the outline. The pill is the
+   control; the space around it is the line, and clicking there puts the raw
+   "area:: [[a/Health]]" under the caret. Dashed underneath, so it reads as the
+   page's own frontmatter rather than as another bullet. */
+.pfacts{margin:0 0 8px;padding:0 0 7px;border-bottom:1px dashed var(--line,var(--border))}
+.pfact{display:flex;align-items:flex-start;border-radius:4px}
+.pfact:hover{background:var(--bg3)}
+.ftxt{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px;
+  padding:3px 4px;font-size:13px;line-height:1.5;cursor:text;
+  font-family:var(--mono);color:var(--fg2);word-wrap:break-word;overflow-wrap:anywhere}
+.ftxt[contenteditable]{outline:none}
+.ftxt:focus{background:var(--bg3);box-shadow:inset 0 0 0 1px var(--border2)}
+.ftxt.ro{cursor:default}
+.fkey{color:var(--fg3);font-size:11.5px;letter-spacing:.3px;min-width:74px;flex:none}
+/* Two or three values to a row, however wide the page is; folded, one line. */
+.pfacts.cols .pfgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));column-gap:14px}
+/* A tracker's settings: one to a row, the chart's style tucked under the chart. */
+.pfacts.trkset .pfgrid{grid-template-columns:1fr}
+.pfact.fsub{margin-left:22px}
+.fpill.ftrk{cursor:pointer}
+.fpill.ftrk:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.fpill.fon{color:var(--fg);background:var(--bg4);border-color:var(--border2);font-weight:600}
+.fpill .fswatch{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.fnote{color:var(--fg3);font-size:11.5px;font-family:var(--sans,inherit)}
+.pfacts.folded{padding-bottom:2px}
+.pfhead{display:flex;align-items:center;gap:6px;width:100%;min-width:0;padding:2px 4px;border-radius:4px;
+  font-size:11.5px;color:var(--fg3);text-align:left;letter-spacing:.3px}
+.pfhead:hover{background:var(--bg3)}
+.pftog{width:10px;flex:none}
+.pfkeys{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.7}
+.pfprefs{display:flex;flex-wrap:wrap;gap:4px 12px;margin:8px 0;font-size:13.5px}
+.pfprefhead{flex-basis:100%}
+.pfprefs label{display:flex;gap:5px;align-items:center}
+.ftxt.new .fkey{min-width:0;opacity:.55}
+.fpill{
+  display:inline-flex;align-items:center;gap:4px;max-width:100%;
+  font-family:var(--sans,inherit);font-size:12px;padding:1px 9px;border-radius:20px;
+  background:var(--bg3);color:var(--fg2);border:1px solid var(--border);white-space:normal;
+}
+.fpill.b{cursor:pointer}
+.fpill.fbday{position:relative}
+.fpill.fbday input{position:absolute;inset:0;width:100%;opacity:0;pointer-events:none}
+.fpill.b:hover{border-color:var(--border2);color:var(--fg)}
+.fpill.fquiet{color:var(--fg3);background:transparent}
+.fpill.fout{color:var(--fg);background:rgba(79,191,123,.1);border-color:rgba(79,191,123,.28)}
+.fpill.farea{color:var(--zet);background:rgba(199,146,234,.12);border-color:rgba(199,146,234,.26)}
+.fpill.fdep{color:var(--proj);background:rgba(255,159,107,.11);border-color:rgba(255,159,107,.26)}
+.fpill.fok{color:var(--ok);background:rgba(79,191,123,.1);border-color:rgba(79,191,123,.28)}
+.fpill.fwant,.fpill.fbad{color:var(--warn);background:rgba(224,176,80,.12);border-color:rgba(224,176,80,.3)}
+.fpill.fst{font-weight:600;color:var(--fg);background:var(--bg4)}
+.fpill.fst.s1{color:var(--todo);background:rgba(106,163,255,.14);border-color:rgba(106,163,255,.3)}
+.fpill.fst.s3{color:var(--wait);background:rgba(224,176,80,.13);border-color:rgba(224,176,80,.3)}
+.fpill.fst.s0{color:var(--done);background:rgba(79,191,123,.12);border-color:rgba(79,191,123,.28)}
+.fpill.fst.sx,.fpill.fst.s2{color:var(--fg3)}
+.twins{display:flex;flex-direction:column;gap:16px}
+.twingroup{display:flex;flex-direction:column;gap:6px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.twingroup:last-child{border-bottom:0;padding-bottom:0}
+.twinwhy{font-size:12.5px;color:var(--fg3)}
+.twinrows{display:flex;flex-direction:column;gap:4px}
+.twinrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:5px 8px;border:1px solid var(--border);border-radius:8px;cursor:pointer}
+.twinrow select{font-size:12px;max-width:100%}
+.twinrow.keep{border-color:var(--accent);background:var(--accent-soft)}
+.twint{flex:1;min-width:0;overflow-wrap:anywhere}
+.twinacts{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:2px;font-size:12.5px}
+.twinacts .space-transfer-choice{cursor:pointer}
+.twinarea{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;font-size:12.5px}
+.twinarea .space-transfer-choice{cursor:pointer}
+.twinwarn{font-size:12.5px;color:var(--warn)}
+.twinxfers:empty{display:none}
+.twinxfer{font-size:12.5px;padding:6px 8px;border-left:2px solid var(--accent);margin:2px 0}
+.twinxfer .field{margin:4px 0 0}
+.twinwarn:empty{display:none}
+.twinbtn{color:var(--warn)}
+.fpill.fst.fmove{font-weight:500;border-style:dashed;opacity:.85}
+.fpill.fst.fmove:hover{opacity:1;border-style:solid}
+.state{
+  font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.6px;
+  padding:1px 5px;border-radius:4px;flex:none;margin-top:2px;cursor:pointer;
+}
+.state.TODO{background:rgba(106,163,255,.16);color:var(--todo)}
+.state.DOING{background:rgba(199,146,234,.16);color:var(--doing)}
+.state.WAIT{background:rgba(224,176,80,.16);color:var(--wait)}
+.state.DONE{background:rgba(79,191,123,.14);color:var(--done)}
+.state.CANCELLED{background:var(--bg4);color:var(--cancel)}
+/* The badge is a control wherever it is clickable, and it keeps the focus ring
+   after the redraw so the next space bar cycles it again. */
+.state.stage{font-family:inherit;letter-spacing:0;font-weight:600;white-space:nowrap}   /* a task type's stage, in its own words */
+.state:focus-visible{outline:1.5px solid var(--accent);outline-offset:1px}
+.tag{color:var(--fg3);cursor:pointer}   /* the teal is the @context's alone */
+.price{background:var(--bg3);border-radius:4px;padding:0 3px;white-space:nowrap}
+.tag:hover{text-decoration:underline;color:var(--fg2)}
+.wikilink{color:var(--accent);cursor:pointer}
+.wikilink:hover{text-decoration:underline}
+.wikilink .mailico{color:var(--fg);font-family:"Segoe UI Symbol","Noto Sans Symbols",sans-serif;font-variant-emoji:text;margin-right:.25em}
+.wikilink.ctx{color:var(--ctx)} .wikilink.zet{color:var(--zet)} .wikilink.proj{color:var(--proj)}
+.wikilink .porg{color:var(--fg3)}
+/* A door into the app rather than a page: [[go/todos]]. Drawn as something to
+   press, because that is what it is. */
+.wikilink.go{
+  display:inline-flex;align-items:center;gap:3px;font-size:12px;padding:1px 8px;border-radius:20px;
+  background:var(--bg3);border:1px solid var(--border2);white-space:nowrap;
+}
+.wikilink.go:hover{background:var(--bg4);text-decoration:none}
+code{font-family:var(--mono);font-size:.9em;background:var(--bg3);padding:1px 4px;border-radius:4px}
+

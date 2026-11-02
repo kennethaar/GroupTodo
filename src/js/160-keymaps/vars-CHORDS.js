@@ -1,0 +1,41 @@
+/* ============================================================
+   160_KEYMAPS -- leader chords, same shape as the Neovim config
+   ============================================================ */
+const CHORDS = {
+  "g x": () => openContextPicker("Where are you now?", surfaceContext),
+  "g l": () => senseNow(),
+  "g d": () => state.context ? surfaceContext(state.context) : openContextPicker("Where are you now?", surfaceContext),
+  "g n": () => go("next"),
+  "g w": () => go("waiting"),
+  "g p": () => go("projects"),
+  "g c": () => go("chat"),
+  "g r": () => go("review"),
+  "g h": () => openDoneHistory(),
+  "g M": () => morningRoutine(),
+  "g m": () => state.view === "page" && statusDirOf(state.pagePath) && openStatusPicker(state.pagePath),
+  "f t": () => go("today"),
+  "f p": () => openPage(ensureJournal(shiftISO(todayISO(), -1))),
+  "f n": () => openPage(ensureJournal(shiftISO(todayISO(), 1))),
+  "f d": () => state.view === "page" && deletePrompt(state.pagePath),
+  "f r": () => state.view === "page" && renamePrompt(state.pagePath),
+  "f f": () => toggleSidebar(),
+  "z n": () => newZettelPrompt(),
+  "h c": () => go("review", {sub: "health"}),
+  "w u": () => state.view === "page" && (updateReviewed(state.pagePath), render()),
+  "w p": () => go("projects", {sub: "list", statusCode: "1"}),
+  "w w": () => go("projects", {sub: "list", statusCode: "3"}),
+  "w m": () => go("projects", {sub: "list", statusCode: "2"}),
+  "w n": () => state.view === "page" && statusDirOf(state.pagePath) ? npmOpen(V.space, state.pagePath) : go("plan", {planPath: null}),
+  "v b": () => pickSub("next", "board"),
+  "v c": () => pickSub("next", "calendar"),
+  "v p": () => pickSub("projects", "board"),
+  "v t": () => pickSub("projects", "timeline"),
+  "v r": () => pickSub("projects", "report"),
+  "v h": () => pickSub("projects", "hours"),
+  "v g": () => pickSub("pages", "mindmap"),
+  "v m": () => pickSub("pages", "graph"),
+  "v d": () => pickSub("pages", "board"),
+  "g ?": () => openHelp(helpTopicHere()),
+};
+let chordBuf = "";
+let chordTimer = null;

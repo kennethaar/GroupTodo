@@ -1,0 +1,44 @@
+/* ---------- top bar ---------- */
+header.top{display:flex;gap:8px;align-items:center;padding:12px 22px;border-bottom:1px solid var(--border);
+  background:var(--bg2);flex:none;position:relative}
+header.top .burger{display:none}
+body.sidebar-hidden header.top .burger{display:grid}
+.tbtn{border:1px solid var(--border);background:var(--bg2);border-radius:8px;width:36px;height:36px;
+  flex:none;display:grid;place-items:center;color:var(--fg2)}
+.tbtn:hover{background:var(--bg3);color:var(--fg)}
+.tbtn:disabled{opacity:.35;cursor:default}
+.tbtn:disabled:hover{background:var(--bg2)}
+.h-hist{display:flex;gap:4px;flex:none}
+.capture{flex:1;display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);
+  border-radius:10px;padding:0 12px;margin-left:4px;min-width:0;color:var(--fg3)}
+.capture:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.capture input{flex:1;min-width:0;border:0;background:none;padding:9px 0;outline:none;color:var(--fg)}
+.capture .where{font-size:12px;white-space:nowrap}
+kbd{font:11px var(--mono);border:1px solid var(--border);border-radius:4px;padding:0 5px;color:var(--fg3)}
+.help-btn{border:1px solid var(--border);background:var(--bg2);border-radius:8px;padding:0 12px;height:36px;
+  font-size:13px;font-weight:600;flex:none;color:var(--fg2)}
+.help-btn:hover{background:var(--bg3);color:var(--fg)}
+.spacesbtn{display:flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--bg2);
+  border-radius:8px;height:36px;padding:0 10px 0 14px;font-size:13px;flex:none;color:var(--fg)}
+.spacesbtn:hover{background:var(--bg3)}
+.spacesbtn .sqs{display:flex}
+.sq{width:20px;height:20px;border-radius:5px;color:#fff;font-size:10px;display:grid;place-items:center;
+  font-weight:700;margin-left:-5px;border:2px solid var(--bg2);flex:none}
+.spop{position:absolute;right:22px;top:58px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:12px;box-shadow:var(--shadow);padding:8px;width:340px;max-width:calc(100vw - 32px);z-index:50}
+.spop h4{margin:4px 8px 6px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3)}
+.sprow{display:flex;gap:10px;align-items:center;padding:8px;border-radius:8px}
+.sprow:hover{background:var(--bg3)}
+.sprow .sq{margin:0;width:26px;height:26px;font-size:12px;border:0}
+.sprow .nm{flex:1;min-width:0;text-align:left}
+.sprow small{display:block;color:var(--fg3);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sprow .cur{font-size:11px;color:var(--accent);font-weight:600}
+.sprow input{width:18px;height:18px;accent-color:var(--accent);flex:none}
+.spop .foot{display:flex;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--fg3);padding:8px 8px 2px;
+  border-top:1px solid var(--border);margin-top:4px}
+/* Which space a thing lives in */
+.sp{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:1px 8px 1px 6px;border-radius:10px;
+  background:color-mix(in srgb,var(--sc) 15%,transparent);color:var(--sc);font-weight:600;white-space:nowrap;flex:none}
+.sp::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--sc)}
+.sp.lg{font-size:13px;padding:3px 10px 3px 8px}
+

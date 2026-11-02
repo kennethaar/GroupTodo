@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<!-- No external resources, ever. This policy is the proof: the page cannot
+     load a script, font or image from anywhere, and cannot send data to any
+     host but the optional sync server on this machine. Safe to drop onto a
+     corporate file share, intranet or managed laptop. -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'none';
+  script-src 'unsafe-inline';
+  style-src 'unsafe-inline';
+  img-src 'self' data: blob:;
+  media-src data: blob:;
+  connect-src 'self' http://127.0.0.1:* http://localhost:*;
+  worker-src 'self';
+  manifest-src 'self' blob:;
+  form-action 'none';
+  base-uri 'none'">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GroupToDo">
+<meta name="theme-color" content="#f6f6f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161615" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="<!--@svg-uri:favicon-->">
+<title>GroupToDo</title>
+<!--@css-->
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar" aria-label="Places">
+    <div class="sidehead">
+      <button class="brand" id="brand" title="Your page: picture, notes and everything that links to you">
+        <span class="logo" id="brandLogo">G</span>
+        <span style="min-width:0">GroupToDo<span class="appver" id="appVersion"></span><small id="brandName"></small></span>
+      </button>
+      <button class="hideside" id="hideSide" title="Hide the sidebar (\)" aria-label="Hide the sidebar">&#8676;</button>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <button class="sync" id="syncLine" title="Where this is saved, and how it syncs"><span class="dot" id="syncDot"></span><span id="syncTxt">local only</span></button>
+  </aside>
+
+  <div id="main">
+    <header class="top">
+      <button class="tbtn burger" id="burger" title="Show the sidebar (\)" aria-label="Show the sidebar">&#9776;</button>
+      <!-- Installed as an app there is no browser chrome, so the two arrows
+           everybody reaches for first have to live here. -->
+      <div class="h-hist">
+        <button class="tbtn" id="btnBack" title="Back (alt+←)" aria-label="Back" disabled>&#8592;</button>
+        <button class="tbtn" id="btnFwd" title="Forward (alt+→)" aria-label="Forward" disabled>&#8594;</button>
+      </div>
+      <label class="capture">
+        <span aria-hidden="true">&#65291;</span>
+        <input id="cap" autocomplete="off" spellcheck="false" aria-label="Add a task"
+               placeholder="Add a task. Try: &quot;Call Mia about the VAT phone tomorrow&quot;">
+        <span class="where" id="capWhere"></span>
+        <kbd>N</kbd>
+      </label>
+      <!-- What is on now: the meeting and the @context. A row of its own on a
+           phone, so neither squeezes the capture field nor is clipped. -->
+      <div class="hnow">
+        <button class="nextmeet" id="nextMeet" hidden></button>
+        <button class="ctxnow" id="btnContext" hidden></button>
+      </div>
+      <button class="tbtn" id="btnSearch" title="Search (/)" aria-label="Search">&#8981;</button>
+      <button class="tbtn" id="btnTheme" title="Light or dark (pick which under Settings &gt; Styles)" aria-label="Light or dark">&#9680;</button>
+      <button class="tbtn sendbtn" id="btnSend" hidden aria-label="Send the vault file">&#8679;</button>
+      <button class="help-btn" id="btnHelp" title="Help (?)">?<span class="long"> Help</span></button>
+      <button class="spacesbtn" id="spacesBtn" aria-haspopup="true" aria-expanded="false" title="Which areas to show"></button>
+      <div class="spop" id="spop" role="dialog" aria-label="Areas" hidden></div>
+    </header>
+    <div id="work">
+      <div id="content"></div>
+      <aside id="pagePane" aria-label="Page beside the view" hidden></aside>
+    </div>
+  </div>
+</div>
+
+
+<div id="toasts"></div>
+<div id="modalRoot"></div>
+<!--@js:1-->
+<!--@js:2-->
+<!--@js:3-->
+<!--@js:4-->
+<!--@js:5-->
+<!--@js:6-->
+
+
+</body>
+</html>

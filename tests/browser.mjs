@@ -19,7 +19,13 @@ export const sleep = ms => new Promise(r => setTimeout(r, ms));
    What's new in the help is copied from CHANGELOG.md first, so the version
    that is pushed carries its own news. */
 function buildDemo() {
-  for (const script of ["build-help-news.py", "build-demo.py"]) {
+  /* grouptodo.html is built from src/ by build.mjs, after the news is written. */
+  for (const script of ["build-help-news.py", "BUILD", "build-demo.py"]) {
+    if (script === "BUILD") {
+      const r = spawnSync(process.execPath, [join(ROOT, "build.mjs")], {encoding: "utf-8"});
+      if (r.status !== 0) { console.error(r.stderr || r.stdout); process.exit(1); }
+      continue;
+    }
     for (const py of ["python", "py", "python3"]) {
       const r = spawnSync(py, [join(ROOT, "docs", script)], {encoding: "utf-8"});
       if (r.error) continue;

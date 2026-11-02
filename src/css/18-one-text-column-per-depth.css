@@ -1,0 +1,11 @@
+/* ---------- one text column per depth ----------
+   The state tick sits at the start of the line, where a plain note has only
+   its dot, so a TODO used to push its own words further right than the words
+   of the note above it -- and a todo indented under a note began to the LEFT
+   of that note's text, which reads as less indented rather than more. The
+   badge gets a column of its own instead, the same width whatever it says, so
+   every line at a depth starts its words in the same place. The badge is still
+   in the line, not in the gutter: it is the first thing on it.
+   53px = the 46px column plus the 7px the line puts between its parts, which
+   is what the body lines and the key:: value line under a block line up on. */
+.blk .bodyline{margin-left:0}

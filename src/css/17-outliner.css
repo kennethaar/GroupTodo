@@ -1,0 +1,65 @@
+/* ---------- outliner ---------- */
+.outline{padding:10px 12px}
+.blk{padding-left:18px;position:relative}
+.bl-node{position:relative;padding-left:16px}
+.bl-line{display:flex;align-items:flex-start;gap:7px;padding:1px 0}
+.bl-bullet{position:absolute;left:3px;top:8px;width:6px;height:6px;border-radius:50%;background:var(--fg3)}
+.bl-node.has-kids>.bl-line>.bl-bullet{box-shadow:0 0 0 3px var(--bg4)}
+.bl-line.blank>.bl-bullet{visibility:hidden}
+.bl-txt{flex:1;min-width:0;overflow-wrap:anywhere}
+.bl-trail>.bl-line{color:var(--fg3);font-size:12px}
+.bl-body{white-space:pre-wrap;color:var(--fg3);overflow-wrap:anywhere}
+.backlink-entry{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer}
+.backlink-entry:last-child{border-bottom:none}
+.backlink-entry:hover,.backlink-entry:focus-visible{background:var(--bg3)}
+.bl-src{align-self:flex-start;max-width:100%;text-align:left;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--fg3);overflow-wrap:anywhere}
+.backlink-entry:hover .bl-src,.bl-src:focus-visible{color:var(--accent)}
+.backlink-subtree{min-width:0;font-size:13px;color:var(--fg2);line-height:1.4}
+.bl-node>.bl-node::before{content:"";position:absolute;left:-10px;top:0;bottom:0;border-left:1px solid var(--border)}
+.blk>.line{display:flex;align-items:flex-start;gap:7px;padding:2px 0;border-radius:4px}
+.blk>.line:hover{background:var(--bg3)}
+.bullet{
+  position:absolute;left:4px;top:9px;width:7px;height:7px;border-radius:50%;
+  background:var(--fg3);flex:none;cursor:pointer;
+}
+.blk.has-kids>.bullet{box-shadow:0 0 0 3.5px var(--bg4)}
+.blk.collapsed>.bullet{box-shadow:0 0 0 3.5px var(--bg4)}
+/* The line menu is asked for, never pushed: a quiet ⋯ at the end of the line
+   you are on or pointing at, and Ctrl+. from the keyboard. */
+.blk>.line>.linemenu{order:99;flex:none;align-self:center;padding:0 6px;border-radius:4px;color:var(--fg3);
+  font-size:14px;line-height:18px;opacity:0;transition:opacity .1s}
+.blk>.line:hover>.linemenu,.blk>.line.raw>.linemenu{opacity:1}
+.blk>.line>.linemenu:hover,.blk>.line>.linemenu[aria-expanded="true"]{background:var(--bg4);color:var(--fg)}
+/* With no pointer to hover, the ⋯ is the way into a line: big enough for a thumb. */
+@media (hover:none){ .blk>.line>.linemenu{min-width:40px;min-height:32px;color:var(--fg2);font-size:16px} }
+/* A meeting on its day starts with its time, the way a day is scanned. */
+.blk>.line>.ltime{flex:none;padding:1px 0;font-size:14px;font-weight:600;color:var(--fg2);font-variant-numeric:tabular-nums}
+.blk>.line>.ltime .lend{font-weight:400;color:var(--fg3)}
+.chip.clash{color:var(--warn);background:color-mix(in srgb,var(--warn) 12%,transparent);border-color:color-mix(in srgb,var(--warn) 40%,transparent)}
+.blk .txt{flex:1;min-width:0;word-wrap:break-word;overflow-wrap:anywhere;font-size:14px;padding:1px 0}
+/* A task's words go on under its state, not under its own first word: the
+   words start back at the badge's left edge and only their first line steps
+   past it (58px badge + the line's 7px gap). The badge sits above them so the
+   first line's indent is still the badge to a click. */
+.blk>.line>.tick{position:relative;z-index:1}
+.blk>.line>.tick~.txt{margin-left:-65px;text-indent:65px}
+.blk>.line>.tick~.txt *{text-indent:0}
+/* A dropped picture shows at a size you can read a line around, and clicking
+   it opens the file itself. */
+.txt img.asset,.note img.asset{display:block;max-width:min(100%,520px);max-height:360px;
+  margin:6px 0;border:1px solid var(--line);border-radius:8px;background:var(--card);cursor:zoom-in}
+.asset-file{display:inline-flex;align-items:center;gap:4px;max-width:100%}
+.asset-missing{color:var(--warn,#b45309);font-size:12px;word-break:break-all}
+.blk .txt.dropping{outline:2px dashed var(--accent,#2563eb);outline-offset:2px;border-radius:4px}
+.blk .txt[contenteditable]{outline:none}
+.blk .props{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--fg3);margin:2px 0 4px}
+.blk .props .pkv{font-family:var(--mono)}
+/* A line's pills sit at its right end, beside the words rather than under
+   them, so a page of tasks keeps one row a line. Long values wrap in their own
+   half; on a phone there is no room beside the words, and they go under. */
+.blk>.line>.props{order:98;flex:0 1 auto;max-width:50%;margin:0;align-self:center;justify-content:flex-end;
+  padding-top:1px}
+@media (max-width:600px){
+  .blk>.line:has(>.props){flex-wrap:wrap}
+  .blk>.line>.props{order:100;max-width:none;flex-basis:100%;justify-content:flex-start}
+}

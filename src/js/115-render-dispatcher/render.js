@@ -1,0 +1,36 @@
+function render() {
+  if (RENDER_HOLD) { RENDER_MISSED = true; return; }
+  if (!V.loaded) return;
+  if (SPACE_TRANSITION) return;
+  refreshVisiblePageTemplate();
+  flyHide();                 // it hangs off a line this redraw is about to replace
+  suggestClose();
+  captureScroll();
+  clearMemo();
+  QUIET_CACHE = null;
+  TOUR_PATH_CACHE = undefined;
+  if (!VIEWS[state.view]) state.view = "today";
+  renderNav();
+  renderSpacesButton();
+  renderContextChip();
+  scheduleMeetPaint();
+  const c = $("#content");
+  c.textContent = "";
+  c.removeAttribute("aria-busy");
+  FOCUS_NODE = null;
+  let node = folderAwayShown() ? folderAwayPanel(V.space) : VIEWS[state.view]();
+  if (FOCUS_NODE) node = el("div", {class: "wrap"}, FOCUS_NODE);
+  c.append(node);
+  document.body.classList.toggle("solview", node.classList.contains("solwrap"));
+  if (state.view !== "review") SIDE_FOLLOW = false;
+  restoreScroll();
+  const title = state.view === "page" && state.pagePath ? pageTitle(state.pagePath) : VIEW_TITLE[state.view];
+  document.title = (title ? title + " · " : "") + "GroupToDo";
+  resolveAssets(c);
+  drawSidePage();
+  helpHintDraw();
+  usageNoteView();
+  syncNavArrows();
+  syncSendButton();
+  applyRefocus();
+}

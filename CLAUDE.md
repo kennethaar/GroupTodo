@@ -1,5 +1,28 @@
 # GroupTodo
 
+## Source layout and the build
+
+`grouptodo.html` is built, not written. Edit the pieces in `src/` and run
+`node build.mjs` (`node tests/run.mjs` does it for you).
+
+- `src/css/NN-name.css`: the stylesheet in pieces, joined in file order.
+- `src/js/<part>/<name>.js`: one file per function; a run of constants that
+  belong together is one `vars-<first name>.js`. `<part>` is the numbered part
+  of the app (`15-storage`, `110-views`, ...).
+- `src/assets/*.svg`: the icons. In code `SVG("name")` becomes the markup as a
+  string and `SVG_URI("name")` a `data:` address; `<!--@svg-uri:name-->` does
+  the same in `src/index.html`. Pictures built from data (charts, the timer
+  dial, the QR code) stay in their functions.
+- `src/index.html`: the page, with a marker where the CSS and each of the six
+  scripts go.
+- `src/build-order.txt`: the order the files are joined in. Order matters (a
+  `const` before the code that reads it). **A new file must be added here**;
+  the build fails on a file that is not listed.
+
+The built `grouptodo.html` is committed as before. Do not edit it by hand: the
+next build overwrites it. The generated lines (`HELP_NEWS`, `LANG_CATALOG`) are
+written into their `src/js` files by the scripts in `docs/`.
+
 ## Version number on every change
 
 `APP_VERSION` near the top of `grouptodo.html` is shown beside the name, top

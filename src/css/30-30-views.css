@@ -1,0 +1,594 @@
+/* ============================================================
+   30_VIEWS -- the pieces the views are built from
+   ============================================================ */
+/* Rows that are not tasks: projects, people, organisations, pages */
+.task .rnum{font-size:13px;color:var(--fg3);font-variant-numeric:tabular-nums;white-space:nowrap;align-self:center}
+.task>.avatar{align-self:center}
+.task .textbtn{align-self:center;flex:none}
+.card>.task{cursor:pointer}
+button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1px solid var(--border)}
+.card>button.task:last-child{border-bottom:none}
+.avs{display:flex;align-self:center}
+.avs .avatar{margin-left:-6px;border:2px solid var(--bg2)}
+.pbar{width:110px;height:6px;border-radius:3px;background:var(--border);overflow:hidden;flex:none;align-self:center}
+.pbar i{display:block;height:100%;background:var(--ok)}
+/* A project row on a phone: the name and its fields take the width, the
+   faces and the progress bar go underneath. */
+@media (max-width:560px){
+  .task.prow2{flex-wrap:wrap}
+  .task.prow2>.t-body{flex-basis:100%}
+  .task.prow2>.pbar{flex:1 1 auto;width:auto}
+}
+/* A project in the list: name, then where it sits and its numbers in one row,
+   the bar right under them, a line per field and the faces at the foot. */
+.task.pcard{padding:12px 14px}
+.pcard .t-title{font-size:15px;line-height:1.3}
+.pcard .t-title b{font-weight:650;color:var(--fg)}
+.pstats{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin-top:6px;font-size:12px;color:var(--fg2);
+  font-variant-numeric:tabular-nums}
+.pstats .sep{color:var(--fg3)}
+.pprog{display:flex;align-items:center;gap:8px;margin-top:6px}
+.pprog .pbar{flex:1 1 auto;width:auto;max-width:280px}
+.pprog .pct{font-size:11.5px;color:var(--fg3);font-variant-numeric:tabular-nums;min-width:3ch;text-align:right}
+.pfields.lines{flex-direction:column;align-items:flex-start;gap:3px;margin-top:8px}
+.pfields.lines .pfield{border:0;background:none;padding:1px 0;font-size:12.5px;max-width:100%;white-space:normal;
+  overflow-wrap:anywhere;display:inline-flex;gap:6px;align-items:baseline;border-radius:4px}
+.pfields.lines .pfield:hover,.pfields.lines .pfield:focus-visible{color:var(--accent)}
+.pfields.lines .fi{flex:none;width:16px;text-align:center;font-size:12px;color:var(--fg3)}
+/* What is still to be set shows once you reach for the card, not before. */
+.pfields.lines .pfield.miss{display:none;border:1px dashed var(--border);padding:0 8px;font-size:11px}
+.pcard:hover .pfields.lines,.pcard:focus-within .pfields.lines{flex-flow:row wrap}
+.pcard:hover .pfield.miss,.pcard:focus-within .pfield.miss{display:inline-flex}
+.pcard:hover .pfields.lines .pfield:not(.miss),.pcard:focus-within .pfields.lines .pfield:not(.miss){flex-basis:100%}
+.pfields.lines:not(:has(.pfield:not(.miss))){margin-top:0}
+.pfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.pfoot .avs{padding-left:6px;min-height:24px}
+.pfoot .avs .more{font-size:11px;color:var(--fg3);margin-left:4px;align-self:center}
+.pfoot .btn{flex:none}
+.chip.ok{color:var(--ok);background:var(--ok-soft)}
+.kdot{width:10px;height:10px;border-radius:50%;flex:none;display:inline-block;margin-top:5px}
+.odot{width:26px;height:26px;border-radius:50%;background:var(--wait);color:#fff;display:grid;place-items:center;
+  font-size:12px;font-weight:700;flex:none;align-self:center}
+.odot.sm{width:16px;height:16px;font-size:9px}
+.stepn{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;
+  background:var(--bg3);color:var(--fg2);flex:none}
+.task.attn .attn-n{min-width:28px;height:22px;border-radius:11px;display:grid;place-items:center;font-size:12px;
+  font-weight:700;background:var(--bg3);color:var(--fg2);padding:0 7px;flex:none}
+.task.attn.danger .attn-n{background:var(--late-soft);color:var(--late)}
+.task.attn.warn .attn-n{background:var(--wait-soft);color:var(--wait)}
+.ricon{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;flex:none;
+  background:var(--bg3);color:var(--fg3)}
+.ricon.done{background:var(--ok);color:#fff}
+.ricon.said{background:var(--accent-soft);color:var(--accent)}
+
+/* Cards: people, contexts */
+.cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.cardbox{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;
+  text-align:left;display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+.cardbox:hover{border-color:var(--accent)}
+.rstep{cursor:pointer}
+.rtick{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--border);flex:none;
+  font-size:12px;color:var(--fg3);display:grid;place-items:center;font-variant-numeric:tabular-nums}
+.rtick:hover{border-color:var(--accent);color:var(--accent)}
+.rstep.done .rtick{background:var(--done);border-color:var(--done);color:#fff}
+.rstep.done .t-title{color:var(--fg3);text-decoration:line-through}
+.rstep.now{background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.rstep.now .rtick{border-color:var(--accent);color:var(--accent)}
+.rstep.now .t-title{font-weight:650}
+.rgroup>summary{cursor:pointer;list-style:none;padding:4px 0;border-radius:6px}
+.rgroup>summary::-webkit-details-marker{display:none}
+.rgroup>summary::before{content:"\25B8";font-size:11px;transition:transform .15s}
+.rgroup[open]>summary::before{transform:rotate(90deg)}
+.rgroup>summary:hover{color:var(--fg)}
+.rgroup>summary .rnext{color:var(--accent);font-weight:600}
+.rgroup>summary + .card{margin-bottom:4px}
+/* The three parts of the review lead; what is done in a part sits in under it */
+.rphase{border-top:1px solid var(--border);padding-top:4px;margin-top:6px}
+.rphase>summary{font-size:13.5px;color:var(--fg)}
+.rphase>.rgroup,.rphase>.rweeks{margin-left:18px}
+.rphase>.rgroup>summary,.rphase>.rweeks>.rgroup>summary{margin:8px 0 4px}
+.rnote{color:var(--fg3);font-size:12.5px}
+.cardbox h4{margin:8px 0 2px;font-size:15px}
+.cardbox p{margin:0;color:var(--fg3);font-size:13px}
+.cardbox .textbtn{margin-top:8px;padding-left:0}
+/* Contexts: one row per context, its folder's contexts under it; the whole card opens it. */
+.ctxgrid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));align-items:start}
+.ctxcard{gap:4px;padding:12px 14px}
+.ctxhead{display:flex;align-items:center;gap:8px;width:100%;flex-wrap:wrap}
+.ctxcard h4{margin:0;flex:1;min-width:0;display:flex;align-items:center;gap:6px}
+.ctxic{font-size:18px;line-height:1}
+.ctxn{color:var(--fg3);font-size:12.5px;font-variant-numeric:tabular-nums}
+.ctxgo{color:var(--fg3);font-size:18px;line-height:1}
+.ctxcard:hover .ctxgo,.ctxcard:focus-visible .ctxgo{color:var(--accent)}
+.ctxkid{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border-radius:6px;padding:3px 4px;font-size:13px;color:var(--fg2)}
+.ctxkid:hover,.ctxkid:focus-visible{background:var(--bg3);color:var(--fg)}
+.ctxkn{flex:1;min-width:0}
+.ctxleak{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:8px 12px;border-radius:10px;
+  color:var(--fg);background:color-mix(in srgb,var(--warn) 12%,var(--bg2));border:1px solid color-mix(in srgb,var(--warn) 45%,var(--border))}
+.ctxleak > span{flex:1}
+.ctxidle{margin-top:14px}
+.ctxfold{color:var(--fg3);padding-left:0}
+.ctxfold:hover{color:var(--fg)}
+.ctxpills{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.big{font-size:40px;line-height:1;display:grid;place-items:center;width:64px;height:64px;border-radius:16px;background:var(--bg3)}
+.big.fallback{font-size:28px;color:var(--fg3);font-weight:700}
+
+/* Boards you drag people and organisations onto */
+.tray{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--bg2);border:1px solid var(--border);
+  border-radius:12px;padding:10px 12px;margin-bottom:12px;position:sticky;top:0;z-index:3}
+.tray .say,.stakes .say{font-size:13px;color:var(--fg3);margin-right:4px}
+.pchip{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--border);background:var(--bg);
+  border-radius:16px;padding:3px 11px 3px 3px;font-size:13px;cursor:grab;user-select:none}
+.pchip:hover{border-color:var(--accent)}
+.stakes{display:flex;gap:4px;flex-wrap:wrap;padding:8px 10px 0}
+.stake{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--border);border-radius:12px;
+  padding:1px 4px 1px 2px;font-size:12px;background:var(--bg2)}
+.stake button{color:var(--fg3);padding:0 2px;font-size:13px;line-height:1}
+.pcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.pcard{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px;min-height:100px}
+.pcard h4{margin:0 0 4px;font-size:15px;cursor:pointer}
+.pcard .stakes{padding:8px 0 0}
+.assign{display:grid;grid-template-columns:250px minmax(0,1fr);gap:16px;align-items:start}
+.picker{position:sticky;top:8px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px;
+  display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 110px)}
+.picker .say{font-size:12px;color:var(--fg3);line-height:1.4}
+.picker input,.assign-bar input{width:100%;min-width:0}
+.plist{overflow-y:auto;display:flex;flex-direction:column;gap:1px;margin:0 -4px;padding:0 4px}
+.plist .pchip{border:1px solid transparent;border-radius:8px;padding:4px 6px;background:transparent;width:100%}
+.plist .pchip:hover{background:var(--bg3);border-color:transparent}
+.plist .pchip.armed{background:var(--accent-soft);border-color:var(--accent)}
+.plist .pchip .pn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.plist .pchip .ps{font-size:11px;color:var(--fg3);flex:none}
+.plist .gh{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);padding:8px 6px 2px}
+.assign-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.assign-bar input{flex:1 1 200px;max-width:320px}
+.armed-on .pcard,.armed-on .pact{cursor:copy}
+.pcard .pacts{display:flex;flex-direction:column;gap:2px;margin-top:8px;border-top:1px solid var(--border);padding-top:6px}
+.pact{display:flex;gap:6px;align-items:center;font-size:13px;padding:3px 4px;border-radius:6px;min-height:26px}
+.pact:hover{background:var(--bg3)}
+.pact .pt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pact .nobody{width:20px;height:20px;border-radius:50%;border:1px dashed var(--fg3);flex:none}
+.stake.inh{opacity:.7;padding-right:8px}
+.gopen{margin-left:4px;padding:0 4px;border-radius:4px;color:var(--fg3);cursor:pointer}
+.gopen:hover,.gopen:focus{color:var(--accent);background:var(--bg3)}
+@media (max-width:760px){.assign{grid-template-columns:1fr}.picker{position:static;max-height:260px}}
+.over{outline:2px dashed var(--accent);outline-offset:-2px;background:var(--accent-soft)!important}
+/* A board of as many columns as it needs, scrolling sideways */
+.boardscroll{overflow-x:auto;padding-bottom:6px}
+.board.ctxboard{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(220px,1fr);grid-template-columns:none;margin-top:0}
+.board .bcol.pin{position:sticky;left:0;z-index:2;box-shadow:8px 0 14px -10px rgba(0,0,0,.3)}
+.bcol-sub{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--fg3);padding:8px 12px 0}
+.bcol-head .avatar{flex:none}
+@media (max-width:860px){ .board.ctxboard{grid-auto-flow:row;grid-template-columns:1fr} }
+
+/* The review, played as solitaire */
+/* The heading and how to play in a column on the left, the table filling the
+   rest of the window: as wide as it goes, and exactly as tall as the window. */
+.solwrap{display:grid;grid-template-columns:220px minmax(0,1fr);gap:22px;align-items:start;padding-top:14px}
+.solside{display:flex;flex-direction:column;gap:10px;align-items:flex-start;font-size:13px;color:var(--fg3)}
+.solside .vhead{margin:0;flex-direction:column;align-items:flex-start;gap:8px}
+.solside .vhead-r{margin-left:0}
+/* Four readings do not fit across the side column: two by two, like the passes. */
+@media (min-width:1001px){
+  .solside .vhead-r{width:100%}
+  .solside .vseg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+}
+.solside .solfilt{display:flex;flex-wrap:wrap;gap:6px}
+.solside .textbtn{padding-left:0}
+.solside .solhow{margin:0;font-size:12px;line-height:1.45}
+/* Nothing is added to the list from here, so the capture bar steps aside */
+body.solview header.top .capture{visibility:hidden}
+body.solview #content{padding-bottom:14px}
+/* Three rows of playing cards fit the window's height, so the table is as
+   wide as that allows and no wider. */
+@media (min-width:761px){
+  /* The cards are the size of real ones, 91 x 59 mm, and smaller only when
+     the window cannot hold four across (the deck and three columns) and three
+     down. The table is a container, so the width it has is what it measures. */
+  .soltable{container-type:inline-size;display:flex;gap:14px;align-items:flex-start}
+  .soltable>*{--cw:min(120mm,calc((100dvh - 120px) / 3 * var(--card-w) / var(--card-h)),calc((100cqw - 42px) / 4));
+    /* A window too narrow for the cards' width still has the height: the
+       cards stand taller into it, as far as a card stood on its end, so a
+       long name has room. */
+    --ch:max(calc(var(--cw) * var(--card-h) / var(--card-w)),min(calc((100dvh - 130px) / 3),calc(var(--cw) * var(--card-w) / var(--card-h))))}
+  .soltable .sol{grid-template-columns:repeat(3,var(--cw));max-width:none;margin:0}
+  .soltable .sol .slot,.soltable .sol .solpile{aspect-ratio:auto;height:var(--ch)}
+  .soltable .soldecks.big{display:flex;flex-direction:column;gap:14px;margin:0;width:var(--cw);flex:0 0 auto}
+  .solside .soldecks{display:none}
+}
+@media (max-width:1000px){
+  .solwrap{grid-template-columns:1fr;gap:12px}
+  .solside{flex-direction:row;flex-wrap:wrap;align-items:center}
+  .solside .vhead{flex-direction:row;align-items:center;width:100%}
+  .solside .vhead-r{margin-left:auto}
+  .solside .solhow{display:none}
+}
+@media (max-width:760px){ .soltable .soldecks.big{display:none} }
+/* The someday pass: two cards side by side, and the ranking they make beside them */
+.sdtable{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:22px;align-items:start}
+.sdduel{display:flex;flex-direction:column;gap:12px;min-width:0}
+.sdhead{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--fg3)}
+.sdprog{height:6px;border-radius:3px;background:var(--border);overflow:hidden}
+.sdprog i{display:block;height:100%;background:var(--accent);transition:width .2s}
+.sdask{margin:4px 0 0;font-size:20px}
+.sdpair{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:14px;align-items:stretch}
+.sdvs{align-self:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--border2);
+  display:grid;place-items:center;font-weight:700;color:var(--fg3);background:var(--bg2)}
+.sdside{display:flex;flex-direction:column;gap:10px;min-width:0}
+.sdside .solcard{cursor:pointer;min-height:190px;height:auto;flex:1;transition:opacity .2s,transform .2s,border-color .15s}
+.sdside .solcard:hover{border-color:var(--accent)}
+.sdside .solcard>.solkey{align-self:flex-start}
+.sdside>.btn{width:100%}
+.sdside.won .solcard{border-color:var(--ok)}
+.sdside.gone .solcard{opacity:0;transform:translateY(28px) rotate(-4deg)}
+.sdside.gone[data-side="1"] .solcard{transform:translateY(28px) rotate(4deg)}
+.sdskip{align-self:center}
+.sdrank{padding:14px;display:flex;flex-direction:column;gap:10px}
+.sdrank-h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.sdrank .solhow{margin:0;font-size:12px;line-height:1.45;color:var(--fg3)}
+.sdrank ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.sdrank li{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border);border-radius:10px;background:var(--bg2)}
+.sdrank li.open{border-style:dashed;color:var(--fg3);background:none}
+.sdrank .n{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;
+  background:var(--bg3);font-size:12px;font-weight:700}
+.sdrank>ol>li:first-child:not(.open) .n{background:var(--accent);color:var(--accent-fg)}
+.sdrank .nm{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sdrank details summary{cursor:pointer;font-size:13px;color:var(--fg3)}
+.sdrank details ol{margin-top:6px}
+/* The loose actions pass: the action, then where it could go. */
+.lscard{height:auto;min-height:0}
+.lscard .lsopen{cursor:pointer}
+.lscard .lsopen:hover{color:var(--accent)}
+.lsopts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.lsopts li{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border);border-radius:10px;background:var(--bg2)}
+.lsopts li.on{border-color:var(--accent)}
+.lsopts li.open{border-style:dashed;color:var(--fg3);background:none}
+.lsopts .nm{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* The actions deck's last pass: the projects and the responsibilities side by side under the card */
+.actcols{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.actcols h4{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3)}
+.actcols .lsopts li{cursor:pointer}
+.actcols .lsopts li:hover{border-color:var(--accent)}
+@media (max-width:600px){ .actcols{grid-template-columns:1fr} }
+@media (max-width:1000px){ .sdtable{grid-template-columns:1fr} }
+@media (max-width:600px){ .sdpair{grid-template-columns:1fr} .sdvs{display:none} .sdask{font-size:17px} }
+/* Every card is a playing card of the European standard size (59 x 91 mm)
+   on its side, in a 3 x 3 laid out like the
+   numpad: the key is the place, and the project is 5, in the middle. The
+   width is capped so all three rows fit the window's height. */
+.sol{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;
+  max-width:max(600px,calc((100vh - 258px) * var(--card-w) / var(--card-h) + 28px));margin:0 auto}
+/* One box enlarged at a time, by transform only, so nothing inside re-wraps */
+.sol .slot,.sol .solpile{position:relative;transition:transform 180ms cubic-bezier(.2,.8,.2,1),box-shadow 180ms}
+.sol .slot.solzoom{transform:scale(1.45);z-index:50;border-style:solid;border-color:var(--accent);
+  box-shadow:0 22px 60px rgba(0,0,0,.45),0 0 0 1px var(--accent)}
+/* Zoomed, a box reaches down far enough to show every option it has */
+.sol .slot.solzoom{overflow:visible}
+.sol .slot.solzoom .solmore{max-height:none;overflow:visible}
+.sol .slot .fchip,.sol .slot .datepick{transition:transform 120ms cubic-bezier(.2,.8,.2,1),box-shadow 120ms}
+.sol .slot .solmag{transform:scale(1.35);position:relative;z-index:3;border-color:var(--accent);color:var(--accent);
+  background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent),0 0 16px 3px color-mix(in srgb,var(--accent) 50%,transparent)}
+.sol .slot .solnear{transform:scale(1.1);position:relative;z-index:2}
+.sol .slot.soltype::after{content:"+ Drop to type";position:absolute;inset:6px;display:flex;align-items:center;justify-content:center;
+  border:2px dashed var(--accent);border-radius:9px;background:color-mix(in srgb,var(--accent-soft) 94%,transparent);
+  color:var(--accent);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:13px;pointer-events:none;z-index:4}
+.calwarn{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 18px;padding:10px 14px;border-radius:var(--radius-sm);
+  border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);background:var(--wait-soft);color:var(--fg)}
+.calwarn .ic{font-size:18px}
+.calstatus{font-size:13px;color:var(--fg2);margin:4px 0 12px;min-height:1em}
+.calstatus.ok{color:var(--ok)}
+.calstatus.bad{color:var(--late)}
+.calwarn .say{flex:1;min-width:240px;font-size:13.5px}
+.calwarn code{font-family:var(--mono);font-size:12.5px;padding:1px 6px;border-radius:5px;background:var(--bg2);user-select:all}
+/* Calendars on Today: what was fetched when, and a button to fetch now */
+.calgroup{display:inline-flex;align-items:stretch}
+.calgroup .calchip{border-top-right-radius:0;border-bottom-right-radius:0}
+.calgroup .calrefresh{border-top-left-radius:0;border-bottom-left-radius:0;border-left:0;padding-left:9px;padding-right:9px}
+.calgroup .calrefresh[hidden]{display:none}
+.calgroup:has(.calrefresh[hidden]) .calchip{border-radius:var(--radius-sm)}
+.calsub{color:var(--fg2);font-weight:400}
+.calsub.bad{color:var(--late)}
+.calspin{display:inline-block}
+.calgroup.busy .calspin{animation:calspin 1s linear infinite}
+@keyframes calspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.calgroup.busy .calspin{animation:none;opacity:.5}}
+.solarrow{position:fixed;left:0;top:0;width:100vw;height:100vh;pointer-events:none;z-index:95;overflow:visible}
+.solarrow-lbl{position:fixed;z-index:96;pointer-events:none;background:var(--accent);color:var(--accent-fg);font-size:12.5px;
+  font-weight:650;padding:3px 10px;border-radius:999px;white-space:nowrap;box-shadow:var(--shadow);transform:translate(-50%,-50%)}
+.solcard:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
+.slot{border:2px dashed var(--border2);border-radius:12px;padding:10px;background:var(--bg2);
+  display:flex;flex-direction:column;gap:7px;aspect-ratio:var(--card-w) / var(--card-h);overflow-y:auto;min-width:0;min-height:0;box-sizing:border-box}
+.slot.solempty{border:1.5px dashed var(--border);background:transparent;opacity:.45}
+/* One answer to the question on the table, one to a box: big words, a line on what it does */
+.slot.solopt{border-style:solid;border-color:var(--border2);cursor:pointer;justify-content:center;align-items:flex-start;gap:4px;padding:14px 14px 12px}
+.slot.solopt:hover{border-color:var(--accent)}
+.slot.solopt .lbl{position:absolute;top:8px;left:10px}
+.solopt-t{font-size:17px;font-weight:650;line-height:1.25;color:var(--fg);overflow-wrap:anywhere}
+.solopt-s{font-size:12.5px;color:var(--fg3)}
+.slot.solopt.on{border-color:var(--ok);background:var(--ok-soft)}
+.slot.solopt.on .solopt-t::before{content:"\2713\a0";color:var(--ok)}
+.slot.solopt.now .solopt-s{color:var(--accent)}
+.slot.solopt.more{border-style:dashed}
+.slot.solopt.more .solopt-t{color:var(--accent)}
+.slot.solopt.write{cursor:text;justify-content:flex-end}
+.slot.solopt .slotform,.slot.solopt input{width:100%;box-sizing:border-box}
+.slot.solopt input.newopt,.slot.solopt input[type=date]{border-radius:8px;padding:5px 8px}
+/* The question the card is on, and the steps beside the table */
+.solcard .solq{margin-top:auto;display:flex;flex-direction:column;gap:2px;padding-top:8px;border-top:1px solid var(--border)}
+.solcard .solq span{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);font-weight:600}
+.solcard .solq b{font-size:17px;color:var(--accent)}
+.solcard .solq + .prog{margin-top:0}
+.solsteps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px;width:100%}
+.solstep{display:grid;grid-template-columns:20px minmax(0,1fr);column-gap:8px;width:100%;text-align:left;padding:4px 6px;
+  border:0;border-radius:6px;background:none;color:var(--fg3);font:inherit;font-size:12.5px;cursor:pointer}
+.solstep:hover{background:var(--bg2);color:var(--fg)}
+.solstep .n{grid-row:span 2;font-family:var(--mono);font-size:11px;line-height:18px;text-align:center}
+.solstep .v{grid-column:2;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.solstep.done{color:var(--fg2)}
+.solstep.done .n{color:var(--ok)}
+.solstep.now{background:var(--accent-soft);color:var(--accent);font-weight:600}
+/* The three passes through the deck, above the questions of the one you are on */
+.solpasses{list-style:none;margin:0 0 8px;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;width:100%}
+.solpasses li{min-width:0}
+@media (max-width:560px){ .solpasses{grid-template-columns:repeat(2,minmax(0,1fr))} }
+/* Four passes do not fit across the narrow side column: two by two there. */
+@media (min-width:1001px){ .solpasses{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.solpass{display:flex;align-items:center;gap:5px;width:100%;padding:5px 6px;border:1px solid var(--border);border-radius:8px;
+  background:none;color:var(--fg3);font:inherit;font-size:12px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.solpass:hover{color:var(--fg);background:var(--bg2)}
+.solpass .n{font-family:var(--mono);font-size:11px}
+.solpass.done{color:var(--fg2)}
+.solpass.done .n{color:var(--ok)}
+.solpass.now{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+@media (max-width:1000px){
+  .solsteps{flex-direction:row;flex-wrap:wrap;gap:4px}
+  .solstep{width:auto;grid-template-columns:auto auto;column-gap:5px}
+  .solstep .n{grid-row:auto}
+  .solstep .v{display:none}
+}
+.solpile{position:relative;aspect-ratio:var(--card-w) / var(--card-h)}
+/* An answer that is a stack: its edges under it, one per project sorted onto
+   it, and the count. An empty one is the place a stack will go. */
+.slot.solopt.stack{overflow:visible}
+.slot.solopt.stack.bare{border-style:dashed;background:transparent}
+.solpilen{margin-top:auto;font-size:12px;font-weight:600;color:var(--fg3)}
+.slot.solopt.stack:not(.bare) .solpilen{color:var(--fg2)}
+.slot.sollanded{animation:sollanded 520ms cubic-bezier(.2,.7,.2,1)}
+.slot.sollanded .solpilen{color:var(--ok)}
+@keyframes sollanded{0%{transform:translate(-3px,-3px) scale(1.04)}100%{transform:none}}
+/* The deck still to play, face down, and the pile this pass has finished. */
+.soldecks{display:flex;gap:18px;align-items:flex-start;margin:4px 0 2px}
+.soldeckpile{display:flex;flex-direction:column;gap:6px;align-items:center;width:96px;text-align:center;font-size:11.5px;line-height:1.3}
+.soldeckcard{width:84px;aspect-ratio:var(--card-w) / var(--card-h);border-radius:8px;border:1.5px solid var(--border2);display:grid;place-items:center;
+  background:var(--bg2);box-sizing:border-box}
+.soldeckcard b{font-size:20px;color:var(--fg);background:var(--bg2);border-radius:6px;padding:0 6px}
+.soldeckcard.deck{background:repeating-linear-gradient(45deg,var(--accent-soft) 0 6px,var(--bg2) 6px 12px);border-color:var(--accent)}
+.soldeckcard.donepile{border-color:var(--ok);background:var(--ok-soft)}
+@media (max-width:1000px){ .soldecks:not(.big){margin:0} .soldecks:not(.big) .soldeckpile{flex-direction:row;width:auto;gap:8px}
+  .soldecks:not(.big) .soldeckcard{width:56px} .soldecks:not(.big) .soldeckcard b{font-size:15px} }
+/* The deck on the table: a card like the others, face down, its edges
+   thinning as it is played, the count and what it is written on it. */
+.soldecks.big .soldeckpile{width:100%;display:block}
+.soldecks.big .soldeckcard{width:100%;border-radius:12px;border-width:2px;align-content:center;gap:4px}
+.soldecks.big .soldeckcard b{font-size:34px;line-height:1.1;padding:0 10px}
+.soldecks.big .soldeckcard span{font-size:12.5px;font-weight:600;color:var(--fg2);background:var(--bg2);border-radius:6px;padding:1px 8px}
+.solpile .under{position:absolute;inset:0;border-radius:14px;background:var(--bg3);border:1.5px solid var(--border2)}
+.solfly{position:fixed;margin:0;z-index:90;pointer-events:none;overflow:hidden;box-shadow:var(--shadow)}
+.slot .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);font-weight:600;
+  display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.slot .lbl .sp{text-transform:none;letter-spacing:0;font-size:11px}
+/* The numpad key for each box, written on it */
+.solkey{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:5px;
+  font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;
+  color:var(--fg2);background:var(--bg2);border:1px solid var(--border2);border-bottom-width:2px;line-height:1}
+.slot.solzoom .solkey{color:var(--accent);border-color:var(--accent)}
+.solpile>.solkey{position:absolute;top:-9px;left:-9px;z-index:3}
+@media (hover:none){.solkey{display:none}}
+.slot .val{font-size:14px}
+.slot.filled{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+.slot.filled .lbl::after{content:"\2713";color:var(--ok)}
+.slot.focus{border-style:solid;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.slot .opts{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.slot .opts .fchip{font-size:12px;padding:2px 9px}
+.slot .opts .fchip.more{border-style:dashed;color:var(--accent)}
+.solmorewrap{flex-basis:100%;display:flex;flex-direction:column;gap:6px}
+.solmorewrap input[type=search]{width:100%;font-size:13px;padding:5px 8px}
+.solmore{display:flex;flex-wrap:wrap;gap:5px;align-content:flex-start;max-height:180px;overflow-y:auto;
+  padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--bg)}
+.solmore .fchip[hidden],.solmorewrap .say[hidden]{display:none}
+.solmorewrap .textbtn{align-self:flex-start;padding-left:0}
+.fchip.now{border-color:var(--accent);color:var(--accent)}
+.fchip.hi{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.slotform{display:flex;gap:6px}
+.slotsuggest{display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--fg2)}
+.slotsuggest .say{font-size:11.5px;color:var(--fg3)}
+.sol .slot .slotform{position:relative;border-radius:9px;transition:transform 120ms cubic-bezier(.2,.8,.2,1),box-shadow 120ms}
+/* The write row is as wide as its box, so it grows less than a pill */
+.sol .slot .slotform.solmag{transform:scale(1.08);background:var(--accent-soft)}
+.sol .slot .slotform.solnear{transform:none}
+.slotform input{flex:1;min-width:0;border:1px solid var(--border);border-radius:8px;padding:5px 8px;background:var(--bg2);font-size:13px}
+.slot input.newopt{width:160px;border:1px dashed var(--border2);border-radius:14px;padding:2px 10px;font-size:12px;background:var(--bg2)}
+.datepick{position:relative;overflow:hidden;cursor:pointer}
+.datepick input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.solcard{background:var(--bg2);border:2px solid var(--fg);border-radius:14px;padding:12px;box-shadow:var(--shadow);
+  cursor:grab;touch-action:none;user-select:none;display:flex;flex-direction:column;gap:6px;
+  position:relative;z-index:1;height:100%;box-sizing:border-box;overflow-y:auto}
+/* A playing card is short: what does not fit scrolls rather than being cut
+   off half way through a line, and the question stays at the bottom. */
+.sol .solcard{overflow-x:hidden;overflow-y:auto}
+.sol .solcard>*{flex-shrink:0}
+.sol .solcard .solq{position:sticky;bottom:-12px;margin-bottom:-12px;padding-bottom:12px;background:var(--bg2)}
+/* Natural planning: the review's side column and numpad table, one question to a screen */
+.npmmain{display:flex;flex-direction:column;gap:12px;min-width:0;max-width:820px}
+.npmq{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:3px}
+.npmq .eyebrow,.npmh{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);font-weight:600}
+.npmq h2{margin:4px 0 0;font-size:20px;line-height:1.3;color:var(--fg)}
+.npmq .sub{font-size:13px;color:var(--fg2)}
+.npmin{width:100%;box-sizing:border-box;font-size:15px;padding:9px 12px;border:1px solid var(--border2);border-radius:10px;background:var(--bg);color:var(--fg)}
+.npmin:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+.npmsay{font-size:12.5px;color:var(--fg3)}
+.npmsay.ok{color:var(--ok)}
+.npmsay.warn{color:var(--warn)}
+.npmnav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px}
+.npmnav .npmgap{flex:1}
+.npmchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.npmlines{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.npmline{width:100%;text-align:left;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);
+  color:var(--fg);font:inherit;font-size:14px;cursor:text}
+.npmline:hover{border-color:var(--accent)}
+.npmlines.plain li{font-size:13.5px;color:var(--fg2);padding:2px 0}
+.npmnotes{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px;color:var(--fg2)}
+.npmcap{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:14px;align-items:start}
+.npmpile{max-height:46vh;overflow-y:auto}
+.npmdeck{border:2px solid var(--accent);border-radius:12px;padding:12px;background:var(--bg2);display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.npmdeck b{font-size:16px;color:var(--fg)}
+.npmdeck .textbtn{padding-left:0}
+.npmact{display:flex;gap:8px;align-items:center}
+.npmact .chip.ctx{flex:none}
+.npmsol{margin:0}
+.npmsol .slot.solopt{font:inherit;text-align:left;color:var(--fg)}
+.npmsol .slot.solopt:disabled{opacity:.5;cursor:default}
+.npmsol .solcard.npmidea{cursor:default;justify-content:safe center}
+.npmsol .solcard.npmidea h3{margin:4px 0;font-size:17px;line-height:1.3;overflow-wrap:anywhere;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.npmsol .slot.solopt.write .npmin{font-size:13px;padding:5px 8px}
+.npmorder{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.npmorder li{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border);border-radius:10px;background:var(--bg2)}
+.npmorder .n{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--bg3);font-size:12px;font-weight:700}
+.npmorder .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.npmsubq{list-style:none;margin:2px 0 4px 28px;padding:0;display:flex;flex-direction:column;gap:1px}
+.npmsubq button,.npmsubq .wait{border:0;background:none;padding:2px 4px;font:inherit;font-size:12px;color:var(--fg3);cursor:pointer;text-align:left}
+.npmsubq button:hover{color:var(--fg)}
+.npmsubq button.done{color:var(--fg2)}
+.npmsubq button.now{color:var(--accent);font-weight:600}
+.npmsubq .wait{cursor:default;font-style:italic}
+.npmproj{font-size:15px;font-weight:650;color:var(--fg)}
+.npmfinish{width:100%}
+.npmqueue{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+.npmqueue .textbtn{padding-left:0}
+.npmpick{list-style:none;margin:0;padding:0}
+.npmlock{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 14px;border-radius:10px;
+  border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);background:var(--wait-soft);color:var(--fg);font-size:14px}
+.npmai{display:flex;flex-direction:column;gap:6px;width:100%}
+.npmai textarea{font-size:13px;resize:vertical}
+.npmpanel .card{margin:0}
+.npmnever{display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--fg3);cursor:pointer}
+@media (max-width:1000px){ .npmsubq{display:none} }
+@media (max-width:700px){ .npmcap{grid-template-columns:1fr} }
+/* The plan on a project's page: where it is going, why, and what to do now */
+.npmpanel{margin:6px 0 14px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--bg2);display:flex;flex-direction:column;gap:6px}
+.npmrow{display:grid;grid-template-columns:90px minmax(0,1fr);gap:10px;font-size:13.5px;align-items:baseline}
+.npmrow .k,.npmcomps .frac{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);font-weight:600}
+.npmrow .v{color:var(--fg2)}
+.npmrow:first-child .v{color:var(--fg);font-weight:600}
+.npmcomps{display:flex;flex-direction:column;gap:4px;margin-top:4px;padding-top:8px;border-top:1px solid var(--border)}
+.npmcomp{display:flex;gap:10px;align-items:center;font-size:13px;flex-wrap:wrap}
+.npmcomp .nm{font-weight:600;min-width:140px}
+.npmcomp .pbar{width:70px;height:5px}
+.npmcomps .frac{font-variant-numeric:tabular-nums;text-transform:none;letter-spacing:0}
+.npmcomp .act{color:var(--fg2);flex:1;min-width:0}
+.npmcomp .act.quiet{color:var(--fg3);font-style:italic}
+.solcard.back{background:repeating-linear-gradient(45deg,var(--accent-soft) 0 8px,var(--bg2) 8px 16px);border-color:var(--accent)}
+.solcard.back>*{visibility:hidden}
+.solcard h3{margin:0;font-size:17px}
+.solcard p{margin:0;font-size:13px;color:var(--fg3)}
+.solcard .textbtn{align-self:flex-start;padding-left:0}
+.solcard .prog{height:6px;border-radius:3px;background:var(--border);overflow:hidden;margin-top:auto}
+.solcard .prog i{display:block;height:100%;background:var(--ok);transition:width .2s}
+.solcard.won{border-color:var(--ok);cursor:default}
+.solcard.dragging{opacity:.3}
+/* The card in your hand: under the enlarged box, so it never hides the pill you are aiming at */
+.solghost{position:fixed;pointer-events:none;z-index:40;margin:0;opacity:.8}
+@media (max-width:760px){
+  .sol{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-width:none}
+  .sol>*{grid-column:auto}
+  .sol .solpile{grid-column:1 / -1;order:-1;justify-self:center;width:min(340px,100%)}
+  .sol .slot.solempty{display:none}
+}
+
+/* Your page, and a person's */
+.mehead{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:22px 0 6px}
+.areaface{display:flex;gap:12px;align-items:center;margin:4px 0 12px}
+.areaface .sub{color:var(--fg3);font-size:12.5px}
+.areaface .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.mehead h1{margin:0;font-size:26px}
+.mehead .sub,.personhead .sub{color:var(--fg3);font-size:13px}
+.mehead .acts,.personhead .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.personhead{display:flex;gap:14px;align-items:center;margin-bottom:6px}
+.colhead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:18px 0 2px}
+
+/* A page, previewed in the drawer */
+.pv{padding:4px 16px 12px;display:flex;flex-direction:column;gap:10px}
+.pv-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pv-path{font:12px var(--mono);color:var(--fg3);overflow-wrap:anywhere}
+
+/* The full page */
+.pcrumbs{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--fg3);margin:22px 0 4px}
+/* What a project is part of, on its own line above the title */
+.parentline{display:flex;gap:5px;align-items:baseline;flex-wrap:wrap;font-size:12px;line-height:1.3;color:var(--fg3);
+  margin:0 0 2px;min-width:0}
+.parentline .up{font-size:11px}
+.parentline .pl{color:var(--fg2);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.parentline .pl:hover,.parentline .pl:focus-visible{color:var(--accent);text-decoration:underline;outline:none}
+.parentline .sep{opacity:.6}
+.parentline .pl.none{cursor:default;text-decoration:none;color:var(--fg2)}
+/* Every line is plain until it says otherwise: # , ## and ### at the start
+   of a line make it a heading, as in any markdown, whatever its depth. The
+   heading's dot moves down to sit on its line. Anything more is yours to
+   write in a .css file in pages/8/ (applyVaultCss). */
+.line.hd1 .txt{font-size:20px;font-weight:650;line-height:1.3}
+.line.hd2 .txt{font-size:17px;font-weight:650;line-height:1.35}
+.line.hd3 .txt{font-size:15px;font-weight:650}
+.line.hd4 .txt,.line.hd5 .txt,.line.hd6 .txt{font-weight:650}
+.line.hd1>.bullet{top:12px}
+.line.hd2>.bullet{top:11px}
+.pagehead+.parentline,.pcrumbs+.parentline{margin-top:4px}
+.pagehead{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:8px}
+.ptitle{margin:0;font-size:26px;flex:1;min-width:200px;outline:none;border-radius:var(--radius-sm);cursor:text}
+.ptitle:focus{box-shadow:0 0 0 3px var(--accent-soft)}
+.picon{font-size:26px;line-height:1.2}
+.pagehead .acts{display:flex;gap:6px;align-self:center}
+
+/* The side drawer: a preview, a task, the history */
+.scrim.side{justify-content:flex-end;align-items:stretch;background:rgba(0,0,0,.25);backdrop-filter:none}
+.scrim.side .modal{border-radius:0;height:100%;max-height:none;width:min(480px,100%);border-width:0 0 0 1px}
+/* A whole page beside the view needs the room of one. */
+.suggest-hint{font-size:11px;color:var(--fg3);padding:5px 11px 2px;border-top:1px solid var(--border);margin-top:4px}
+
+/* The menu under the line you are editing */
+.fly{position:fixed;width:min(360px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow-y:auto;background:var(--bg2);
+  border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:6px;z-index:230;
+  overscroll-behavior:contain;touch-action:pan-y;animation:flyin .14s ease-out}
+@keyframes flyin{from{opacity:0;transform:translateY(-6px) scale(.98)}}
+.askcard{position:fixed;z-index:240;background:var(--bg2);border:1px solid var(--border);border-radius:10px;
+  box-shadow:var(--shadow);padding:8px 10px;display:flex;flex-direction:column;gap:6px;font-size:13px;
+  max-width:calc(100vw - 24px);animation:flyin .12s ease-out}
+.fhint{font-size:11px;color:var(--fg3);padding:4px 8px}
+.frow{border-radius:8px}
+.fhead{display:flex;width:100%;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;text-align:left;font-size:13px}
+.fhead:hover,.frow.open .fhead{background:var(--bg3)}
+.frow.hi .fhead{background:var(--bg3);box-shadow:inset 2px 0 0 var(--accent)}
+.frow.lit .fhead{background:var(--accent-soft);color:var(--accent);animation:lit .5s ease-out}
+.frow.lit kbd{border-color:var(--accent);color:var(--accent)}
+@keyframes lit{from{box-shadow:0 0 0 0 var(--accent)}to{box-shadow:0 0 0 7px transparent}}
+.fic{width:18px;text-align:center;flex:none}
+.fl{font-weight:600;flex:none}
+.fv{color:var(--fg3);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.fhead kbd{flex:none}
+.fopts{display:flex;flex-wrap:wrap;gap:5px;padding:4px 8px 8px 34px}
+.fopts .fchip{font-size:12px;padding:2px 9px}
+.fopts{align-items:flex-start}
+.fcol{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:2px 0 2px 8px;border-left:2px solid var(--border)}
+.fcol>.fchip:not(:first-child){margin-left:10px}
+.ctxdrops{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-start;margin:0 0 12px}
+.ctxdrops>.say{flex-basis:100%;font-size:12px;color:var(--fg3)}
+.ctxdrops .fchip{font-size:12px;padding:2px 9px}
+.fcolhead{font-size:12px;color:var(--fg3);font-weight:600;padding:2px 0}
+
+/* The outline: a line to add a line, and somebody else's page to read */
+.newline{display:flex;gap:10px;align-items:center;width:100%;padding:6px 14px 8px 34px;color:var(--fg3);font-size:14px;text-align:left}
+.newline:hover{color:var(--fg2)}
+.newline .bul{width:12px;text-align:center}
+.outline.readonly .txt{cursor:default}
+.space-journal .card{margin:0}
+

@@ -1,0 +1,97 @@
+function viewChores() {
+  const c = el("div", {class: "wrap"});
+  const all = choreRows(), held = allChores().filter(a => a.held);
+  c.append(vhead("Chores", "The home at a glance",
+    all.length ? el("button", {class: "textbtn awaybtn", title: "Hold every chore until you are back",
+      onclick: () => openChoresAway()}, "Away until…") : null,
+    newBtn("chore", () => openNewChore(PREF.get("chores.room", "")))));
+  if (!all.length && held.length) {
+    const back = held.map(a => a.held).sort().pop();
+    c.append(el("div", {class: "card"}, el("div", {class: "empty"},
+      "You are away until " + humanDate(back) + ". Every chore waits until then. ",
+      el("button", {class: "btn sm primary", onclick: () => choresBack(held)}, "Back now"))));
+    return c;
+  }
+  if (!all.length) {
+    c.append(emptyCard("No chores yet. A chore is a task that repeats at @home or a room in it, like @home/kitchen. ",
+      el("button", {class: "textbtn", onclick: () => openNewChore("")}, "+ Add one")));
+    return c;
+  }
+
+  /* A room is the first folder inside @home: @home/kitchen/fridge is in the
+     kitchen. A chore at @home itself is "@", in no room. */
+  const roomOf = a => {
+    const top = a.context.split("/").slice(0, 2).join("/");
+    return top.includes("/") ? "@" + top : "@";
+  };
+  const byName = [...new Set(all.map(roomOf))].sort((x, y) => (x === "@") - (y === "@") || x.localeCompare(y));
+  const room = byName.includes(PREF.get("chores.room", "")) ? PREF.get("chores.room", "") : "";
+  const pick = k => { PREF.set("chores.room", room === k ? "" : k); render(); };
+  const home = freshScore(all);
+  const nameOf = k => k === "@" ? "Rest of home" : roomLabel(k.slice(1));
+  const sum = new Map(byName.map(k => [k, roomSummary(all.filter(a => roomOf(a) === k),
+    ctx => (ctx.includes("/") ? "@" + ctx.split("/").slice(0, 2).join("/") : "@") === k)]));
+  /* Sorted by name, or by freshness either way; the board's columns follow it. */
+  const sort = ["stale", "fresh"].includes(PREF.get("chores.sort", "")) ? PREF.get("chores.sort", "") : "";
+  const pctOf = k => sum.get(k).pct ?? 100;
+  const rooms = sort ? [...byName].sort((x, y) => (sort === "stale" ? pctOf(x) - pctOf(y) : pctOf(y) - pctOf(x))) : byName;
+  const several = byName.length > 1 || byName[0] !== "@";
+  const board = several && PREF.get("chores.layout", "") === "board";
+  const layout = v => { PREF.set("chores.layout", v); render(); };
+  c.append(el("div", {class: "card chorehome"},
+    el("div", {class: "chorehome-h"}, el("span", {}, "Home"),
+      home == null ? null : el("strong", {style: "color:" + freshColor(home),
+        title: "100% is every chore just done, 0% all due"}, home + "% fresh"),
+      several ? el("div", {class: "chorehome-tools"},
+        el("span", {class: "chorelayout"}, fchip("Grid", !board, () => layout("")), fchip("Board", board, () => layout("board"))),
+        fselect("Sort rooms", sort, [["", "Name"], ["stale", "Stalest first"], ["fresh", "Freshest first"]],
+          v => { PREF.set("chores.sort", v); render(); })) : null),
+    several && !board ? el("div", {class: "chorerooms"}, ...rooms.map(k => {
+      const pct = sum.get(k).pct;
+      return el("button", {class: "choreroom", "aria-pressed": String(room === k),
+        title: room === k ? "Show every room again" : "Show only this room", onclick: () => pick(k)},
+        el("span", {class: "choreroom-n"}, nameOf(k)),
+        el("span", {class: "freshbar"}, el("i", {style: "width:" + (pct ?? 0) + "%;background:" + freshColor(pct ?? 0)})),
+        el("span", {class: "choreroom-p"}, pct == null ? "–" : pct + "%"));
+    })) : null));
+  /* The board: a column for each band, red, yellow and green, in the order of
+     the sort. A room's column comes from its freshness, so nothing is dragged. */
+  if (board) {
+    const bands = sort === "fresh" ? [...CHORE_BANDS].reverse() : CHORE_BANDS;
+    c.append(el("div", {class: "chorecols"}, ...bands.map(band => {
+      const list = rooms.filter(k => CHORE_BANDS[freshBand(pctOf(k))] === band);
+      const open = CHORE_COLS_OPEN.has(band.id), shown = open ? list : list.slice(0, CHORE_COL_MAX);
+      return el("div", {class: "chorecol " + band.id},
+        el("div", {class: "chorecol-h", style: "border-color:var(--" + band.tone + ")"},
+          el("span", {style: "color:var(--" + band.tone + ")"}, band.label), " ",
+          el("span", {class: "say"}, band.range), el("span", {class: "n"}, String(list.length))),
+        ...shown.map(k => roomCard(nameOf(k), sum.get(k), room === k, () => pick(k))),
+        list.length > shown.length ? el("button", {class: "textbtn chorecol-more",
+          onclick: () => { CHORE_COLS_OPEN.add(band.id); render(); }}, "+ " + (list.length - shown.length) + " more") : null,
+        !list.length ? el("div", {class: "say chorecol-none"}, "No room") : null);
+    })));
+    if (room) c.append(roomCloseup(nameOf(room), sum.get(room), held.filter(a => roomOf(a) === room)));
+  }
+
+  // Mine or everyone's, once there is more than one of you.
+  const shared = members().length > 1;
+  const everyone = !shared || PREF.get("chores.who", "") === "all";
+  const inRoom = all.filter(a => !room || roomOf(a) === room);
+  if (shared) c.append(fbar(
+    fchip("Mine", !everyone, () => { PREF.set("chores.who", ""); render(); }, inRoom.filter(a => a.mine).length),
+    fchip("Everyone", everyone, () => { PREF.set("chores.who", "all"); render(); }, inRoom.length)));
+  const rows = inRoom.filter(a => everyone || a.mine);
+  const by = {due: [], soon: [], fresh: []};
+  for (const a of rows) by[choreGroup(a)].push(a);
+  const rounds = a => (freshnessOf(a) || {rounds: 0}).rounds;
+  const byDay = (x, y) => (x.due || "9").localeCompare(y.due || "9");
+  by.due.sort((x, y) => rounds(y) - rounds(x));
+  by.soon.sort(byDay); by.fresh.sort(byDay);
+  const opts = {journal: true, nextNow: true};
+  c.append(section("Due now", by.due.length, taskCard(by.due, "Nothing due. The home is on top of things.", opts)));
+  const fold = (title, list) => list.length ? el("details", {class: "section fold"},
+    el("summary", {}, title, el("span", {class: "n"}, String(list.length))), taskCard(list, null, opts)) : null;
+  c.append(...[fold("Coming up this week", by.soon), fold("Fresh", by.fresh), fold("On hold", held)].filter(Boolean));
+  c.append(choreBoard());
+  return c;
+}

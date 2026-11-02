@@ -1,0 +1,181 @@
+/* ---------- hours: a week as a table, a project as bars ---------- */
+.htable-wrap{overflow-x:auto}
+.htable{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.htable th,.htable td{padding:7px 8px;text-align:right;border-top:1px solid var(--border);white-space:nowrap}
+.htable thead th{border-top:0;font-weight:500;color:var(--fg3);font-size:11px}
+.htable th small{display:block;font-size:10.5px;color:var(--fg3)}
+.htable th:first-child,.htable td:first-child{text-align:left;white-space:normal;min-width:110px;color:var(--fg)}
+.htable td{color:var(--fg2)}
+.htable .now{background:var(--bg3)}
+.htable .hlink{all:unset;cursor:pointer;color:var(--fg);text-decoration:underline;text-decoration-color:var(--border2);text-underline-offset:3px}
+.htable .hlink:hover,.htable .hlink:focus-visible{text-decoration-color:currentColor}
+.htable .hlink:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+.htable td.neg,.reportsum .neg,.cd-left.neg{color:var(--late)}
+.htable td.pos,.reportsum .pos{color:var(--done, var(--accent))}
+.htable.sheet td:first-child .chip{margin-left:6px}
+.sheetsum{margin:10px 12px 12px}
+.htable tr.tot td{color:var(--fg)}
+.hlist>summary{cursor:pointer;padding:8px 12px;font-size:12px;color:var(--fg3);border-top:1px solid var(--border)}
+.hlist>.card{border:0;border-radius:0}
+.hbars{display:flex;align-items:flex-end;gap:2px;height:110px;padding:8px 14px 10px}
+.hbar{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:stretch;min-width:0}
+.hbar i{display:block;background:var(--proj);border-radius:4px 4px 0 0;min-height:1px}
+.hbar:hover i{opacity:.8}
+.hbar .v{font-size:10.5px;color:var(--fg2);text-align:center;min-height:14px;font-variant-numeric:tabular-nums;
+  white-space:nowrap;overflow:visible}
+.hbar .w{font-size:10.5px;color:var(--fg3);text-align:center;border-top:1px solid var(--border);padding-top:3px}
+.hbar.now .w{color:var(--fg);font-weight:600}
+/* A project's time on site: the total first, the weeks under it. */
+.sitetime .st-top{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;padding:14px 14px 4px}
+.sitetime .st-top>div{flex:1;min-width:0}
+.sitetime .st-total{font-size:24px;font-weight:650;color:var(--fg);font-variant-numeric:tabular-nums;line-height:1.25}
+.sitetime .st-total span{font-size:14px;font-weight:400;color:var(--fg2)}
+.sitetime .st-who{font-size:12.5px;color:var(--fg2)}
+.sitetime .st-who span{white-space:nowrap}
+.sitetime .st-acts{display:flex;gap:6px}
+@media (max-width:520px){.hbar .v{font-size:9px}}
+button.chip{cursor:pointer;font-family:inherit}
+.reprow{display:flex;gap:10px;align-items:baseline;width:100%;text-align:left;background:none;
+  border:0;border-top:1px solid var(--border);padding:8px 12px;cursor:pointer;color:inherit}
+.reprow:first-child{border-top:0}
+.reprow:hover{background:var(--bg3)}
+.reprow .when{flex:0 0 92px;font-size:11px;color:var(--fg3);font-family:var(--mono)}
+.reprow .what{flex:1 1 auto;min-width:0;font-size:13px;color:var(--fg2);overflow-wrap:anywhere}
+.reprow .marks{flex:0 0 auto;display:flex;gap:5px;flex-wrap:wrap}
+@media (max-width:700px){
+  .reprow{flex-wrap:wrap;gap:4px}
+  .reprow .when{flex:0 0 100%}
+  .reprow .what{flex:0 0 100%}
+}
+/* The surroundings grid: three columns, four rows, the todo in the middle of
+   the middle. Each cell is a hit area and not a decoration, so the whole thing
+   is the navigation as well as the picture. */
+.around{display:grid;gap:6px;
+  grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1fr);
+  grid-template-rows:auto auto auto auto;
+  grid-template-areas:
+    "tags project sibs"
+    "tags parent  sibs"
+    "tags self    sibs"
+    "kids kids    kids"}
+.acell{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:6px 8px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.acell.a-project{grid-area:project}
+.acell.a-parent{grid-area:parent}
+.acell.a-self{grid-area:self;border-color:var(--accent);
+  background:color-mix(in srgb, var(--bg2) 88%, var(--accent) 12%)}
+.acell.a-tags{grid-area:tags}
+.acell.a-sibs{grid-area:sibs;justify-content:center}
+.acell.a-kids{grid-area:kids;flex-direction:row;flex-wrap:wrap;align-items:center}
+.acell.a-kids .alab{flex:0 0 100%}
+.alab{font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--fg3)}
+.achip{display:block;text-align:left;font-size:12.5px;color:var(--fg2);
+  background:var(--bg);border:1px solid var(--border);border-radius:6px;
+  padding:3px 7px;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;cursor:pointer}
+.achip:hover{color:var(--fg);border-color:var(--border2)}
+.acell.a-kids .achip{display:inline-block;width:auto}
+/* A project further up the chain is the setting, not the thing: quieter, so the
+   one this todo actually sits in is the one you read first. */
+.achip.up{color:var(--fg3);font-size:11.5px}
+.achip.ctx{color:var(--ctx);border-color:color-mix(in srgb, var(--ctx) 45%, var(--border))}
+.achip.want{color:var(--fg3);border-style:dashed}
+.achip.done{opacity:.55;text-decoration:line-through}
+.around:focus{outline:none}
+.around.picking{box-shadow:0 0 0 1px var(--accent) inset;border-radius:var(--radius)}
+.achip:focus-visible,.around.picking .achip:focus{outline:none;
+  border-color:var(--accent);color:var(--fg);
+  box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent)}
+/* What the question is about, above the box you answer it in. */
+.prov{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:9px 11px;margin-bottom:12px}
+.provhead{display:flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:13.5px;color:var(--fg)}
+.provnote{font-size:12.5px;color:var(--fg3);margin-top:6px}
+.provlist{display:flex;flex-direction:column;gap:3px;margin-top:7px}
+.provrow{display:flex;gap:9px;align-items:baseline;text-align:left;width:100%;
+  padding:4px 7px;border-radius:6px;font-size:12.5px;color:var(--fg2);cursor:pointer}
+.provrow:hover{background:var(--bg3);color:var(--fg)}
+.provrow .nm{flex:1;overflow-wrap:anywhere}
+.provrow .p{color:var(--fg3);font-size:11.5px;white-space:nowrap}
+.around{position:relative}
+/* One ring that travels, rather than a highlight that teleports. */
+.aring{position:absolute;left:0;top:0;pointer-events:none;opacity:0;border-radius:7px;
+  border:1.5px solid var(--accent);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  transition:transform .16s cubic-bezier(.2,.8,.3,1), width .16s, height .16s, opacity .12s}
+.aring.on{opacity:1}
+.achip{transition:transform .22s cubic-bezier(.2,.8,.3,1)}
+.achip.aself{font-size:13.5px;font-weight:600;color:var(--fg);white-space:normal;
+  overflow-wrap:anywhere;text-overflow:clip;background:transparent;border:none;padding:0}
+.achip.aself:hover{border:none}
+@media (prefers-reduced-motion: reduce){
+  .aring,.achip{transition:none}
+}
+.aself{font-size:13.5px;font-weight:600;color:var(--fg);overflow-wrap:anywhere}
+.anone{font-size:12px;color:var(--fg3)}
+/* On a phone the three columns are a row of slivers, so the same cells stack in
+   reading order instead: what it belongs to, what it is, what is around it. */
+@media (max-width:620px){
+  .around{grid-template-columns:1fr;
+    grid-template-areas:"project" "parent" "self" "tags" "sibs" "kids"}
+  .acell.a-tags,.acell.a-sibs,.acell.a-kids{flex-direction:row;flex-wrap:wrap;align-items:center}
+  .acell.a-tags .alab,.acell.a-sibs .alab,.acell.a-kids .alab{flex:0 0 100%}
+  .achip{display:inline-block;width:auto}
+}
+.graph{margin-top:14px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);height:min(66vh,620px);overflow:hidden}
+.graphcv{display:block;width:100%;height:100%}
+/* The plex leans on depth rather than on a legend: a light middle and dark
+   edges, so the dots that are small and faint read as further away instead of
+   just smaller. */
+.graph.plex{background:
+  radial-gradient(ellipse at 50% 50%, color-mix(in srgb, var(--bg2) 72%, var(--fg) 6%) 0%,
+                  var(--bg2) 58%, color-mix(in srgb, var(--bg2) 86%, #000 14%) 100%)}
+.graph.plex .graphcv{user-select:none}
+.graph-legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:9px;
+  font-size:11.5px;color:var(--fg3)}
+.glg{display:inline-flex;gap:5px;align-items:center}
+.glg i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.glg.quiet{margin-left:auto}
+/* The map: the picture, and beside it the panel that says what it means. */
+.gmap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
+.gmap .graph{margin-top:0;position:relative}
+.gzoom{position:absolute;top:8px;right:8px;display:flex;flex-direction:column;gap:4px}
+.gzoom button{width:28px;height:28px;border:1px solid var(--border);background:var(--bg2);border-radius:7px;
+  color:var(--fg2);font-size:15px;line-height:1}
+.gzoom button:hover{color:var(--fg);border-color:var(--border2)}
+.gnote{position:absolute;left:10px;bottom:8px;right:50px;font-size:11.5px;color:var(--fg3)}
+.gclock{position:absolute;left:12px;top:10px;font-size:13px;font-weight:600;color:var(--fg2);
+  background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:3px 9px;font-variant-numeric:tabular-nums}
+.gside{border:1px solid var(--border);background:var(--bg2);border-radius:var(--radius);padding:12px 14px 14px;
+  height:min(66vh,620px);overflow:auto}
+.gside .gtitle{font-size:17px;margin:6px 0 2px;overflow-wrap:anywhere}
+.gside .hint{margin:0 0 10px;text-align:left}
+.gside .acts{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}
+.gside .fbar{margin:0}
+.gside .section{margin-top:14px}
+.gside .dash-item{padding:5px 10px;align-items:center}
+.gside .pv-top{display:flex;gap:6px;align-items:center}
+.gclose{margin-left:auto;font-size:18px;line-height:1;color:var(--fg3);padding:0 4px}
+.gclose:hover{color:var(--fg)}
+@media (max-width:900px){.gmap{grid-template-columns:1fr}.gside{height:auto;max-height:none}}
+.pagelist{display:flex;flex-direction:column;margin-top:6px;
+  border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.pagelist .nm{flex:1;overflow-wrap:anywhere}
+details>summary{cursor:pointer;font-size:12.5px;color:var(--fg3);padding:2px 0}
+details>summary:hover{color:var(--fg2)}
+@media (max-width:700px){.graph{height:min(52vh,430px)}.glg.quiet{margin-left:0}}
+.chip.spacechip{border-style:solid;border-width:1px;background:transparent;font-weight:600}
+.spacetoggle{
+  width:19px;height:19px;border-radius:5px;border:1.6px solid var(--border2);flex:none;
+  display:grid;place-items:center;font-size:11px;color:transparent;margin-right:2px;
+}
+.spacetoggle.on{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.spacetoggle:hover{border-color:var(--accent)}
+/* Places saved for Sense where I am: the context, how wide, and a way to forget it. */
+.senseplace{display:flex;align-items:center;gap:10px;padding:2px 0}
+.senseplace .sub{color:var(--fg3);font-size:12px;font-variant-numeric:tabular-nums}
+.senseplace .iconbtn{margin-left:auto}
+.seg.sensedays{margin-top:6px;flex-wrap:wrap;gap:4px}
+.seg.sensedays button{padding:4px 8px;min-width:0}
+

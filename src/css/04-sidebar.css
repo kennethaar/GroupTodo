@@ -1,0 +1,169 @@
+/* ---------- sidebar ---------- */
+.sidehead{display:flex;align-items:flex-start;gap:4px;margin-bottom:8px}
+.brand{display:flex;align-items:center;gap:8px;padding:6px 8px;font-weight:700;border-radius:8px;
+  text-align:left;flex:1;min-width:0}
+.brand:hover{background:var(--bg3)}
+.brand.active{background:var(--accent-soft)}
+.brand .logo{width:22px;height:22px;border-radius:6px;background:var(--fg);color:var(--bg2);
+  display:grid;place-items:center;font-size:12px;flex:none;overflow:hidden}
+.brand .logo img{width:100%;height:100%;object-fit:cover}
+.brand .appver{font-weight:400;font-size:11px;color:var(--fg3);margin-left:5px}
+.brand small{display:block;font-weight:400;font-size:12px;color:var(--fg3);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hideside{color:var(--fg3);border-radius:6px;width:28px;height:28px;margin-top:6px;flex:none}
+.hideside:hover{background:var(--bg3);color:var(--fg)}
+.nav{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.nav-sep{height:1px;background:var(--border);margin:8px 6px}
+.nav-grow{flex:1;min-height:12px}
+.nav-item{display:flex;align-items:center;gap:10px;width:100%;padding:7px 10px;border-radius:8px;
+  color:var(--fg);font-size:14px;text-align:left}
+.nav-item:hover{background:var(--bg3)}
+.nav-item.active{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.nav-item .ic{width:18px;text-align:center;flex:none;opacity:.8}
+/* Black and white emoji: the monochrome symbol fonts where the system has them,
+   and the colour drained out where it does not, so the pictures read as type. */
+.bw{font-family:"Segoe UI Symbol","Noto Emoji","Apple Symbols",system-ui,sans-serif;
+  font-variant-emoji:text;filter:grayscale(1);font-style:normal}
+.nav-item .lbl{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-item .cnt{font-size:12px;font-variant-numeric:tabular-nums;color:var(--fg3)}
+.nav-item .cnt.hot{color:#fff;background:var(--late);border-radius:10px;padding:0 6px}
+.nav-item.small{font-size:13px;padding:5px 10px;color:var(--fg2)}
+/* Contexts unfold into one row each, under the item. */
+.nav-item .fold{width:18px;height:18px;margin-right:-6px;flex:none;display:inline-flex;align-items:center;
+  justify-content:center;border-radius:4px;color:var(--fg3);font-size:11px}
+.nav-item .fold:hover{background:var(--bg2);color:var(--fg)}
+.nav-item.nav-sub{padding-left:24px}
+/* Pinned pages: the ✕ that unpins shows on hover. */
+.nav-item.pin .unpin{opacity:0;color:var(--fg3);font-size:11px;padding:0 2px;flex:none}
+.nav-item.pin:hover .unpin,.nav-item.pin .unpin:focus{opacity:1}
+.nav-item.pin .unpin:hover{color:var(--late)}
+.nav-item.pin.dragging{opacity:.45}
+.nav-item.pin.over{box-shadow:inset 0 2px 0 var(--accent)}
+.nav-item.nav-sub.deep{padding-left:38px}
+.nav-load .pbar{flex:1;width:auto;height:5px}
+.nav-load-list{padding:2px 10px 6px 38px;font-size:11px;color:var(--fg3);font-family:var(--mono);
+  font-variant-numeric:tabular-nums;max-height:200px;overflow:hidden}
+.nav-load-n{color:var(--fg2);margin-bottom:2px}
+.nav-load-file{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* The timer: a bar fills behind it as you drag out the minutes, and drains as
+   they run down. */
+.nav-item.timer{position:relative;overflow:hidden;touch-action:none;user-select:none}
+.nav-item.timer .fill{position:absolute;left:0;top:0;bottom:0;background:var(--accent-soft);
+  pointer-events:none;transition:width .2s linear}
+.nav-item.timer.dragging .fill{transition:none}
+.nav-item.timer > :not(.fill){position:relative}
+.pfact .trkx{opacity:0;color:var(--fg3);padding:0 6px;flex:none}
+.pfact:hover .trkx,.pfact .trkx:focus{opacity:1}
+.pfact .trkx:hover{color:var(--fg)}
+/* A touch screen has no hover to show it (#180). */
+@media (hover:none){.pfact .trkx{opacity:1}}
+.pfact .pfhide{opacity:0;color:var(--fg3);padding:0 6px;flex:none;font-size:11px}
+.pfact:hover .pfhide,.pfact .pfhide:focus{opacity:1}
+.pfact .pfhide:hover{color:var(--fg)}
+.pfhidden{margin-top:2px}
+/* The clock's stretches, a day at a time, as boxes on the hours. */
+.clked{min-width:min(460px,86vw)}
+.clkscroll{position:relative;display:flex;height:min(46vh,400px);overflow-y:auto;border:1px solid var(--border);border-radius:6px;background:var(--bg)}
+.clkhours{position:relative;width:46px;flex:none;height:960px}
+.clkhours span{position:absolute;right:6px;transform:translateY(-50%);font-size:10.5px;color:var(--fg3);font-family:var(--mono)}
+.clkday{position:relative;flex:1;height:960px;cursor:crosshair;touch-action:none;
+  background:repeating-linear-gradient(to bottom,var(--border) 0 1px,transparent 1px 40px)}
+.clkbox{position:absolute;left:4px;right:4px;box-sizing:border-box;padding:1px 22px 1px 6px;border:1px solid var(--accent);border-radius:4px;
+  background:color-mix(in srgb,var(--accent) 22%,var(--bg));color:var(--fg);font-size:11px;cursor:grab;overflow:hidden;user-select:none}
+.clkbox.run{border-style:dashed}
+/* Other tasks' time that day, beside this one's and not to be dragged */
+.clkday.shared .clkbox:not(.other),.clkday.shared .clkgap{left:42%}
+.clkbox.other{right:auto;width:calc(42% - 10px);padding-right:6px;cursor:default;border-color:var(--border2);
+  background:var(--bg3);color:var(--fg3);white-space:nowrap;text-overflow:ellipsis}
+.clkgap{position:absolute;left:4px;right:4px;display:flex;align-items:center;justify-content:center}
+.clkfill{opacity:0;width:24px;height:24px;border-radius:50%;border:1px dashed var(--accent);color:var(--accent);
+  background:var(--bg);font-size:15px;line-height:1;transition:opacity .12s}
+.clkgap:hover .clkfill,.clkfill:focus-visible{opacity:1}
+.clkbox .x{position:absolute;top:0;right:2px;padding:0 4px;color:var(--fg3);font-size:11px}
+.clkbox .x:hover{color:var(--late)}
+.clkh{position:absolute;left:0;right:0;height:6px;cursor:ns-resize}
+.clkh.top{top:-1px}
+.clkh.bot{bottom:-1px}
+.clklist{display:flex;flex-direction:column;gap:2px;max-height:24vh;overflow:auto}
+.clkrow{display:flex;align-items:center;gap:6px;font-size:12.5px;padding:1px 4px;border-radius:4px}
+.clkrow.on{background:var(--bg3)}
+.clkrow .textbtn:first-child{min-width:96px;text-align:left}
+.clkrow input.clk{width:5.5em}
+.clkmin{flex:1;color:var(--fg3);text-align:right}
+.clksum{font-size:12px;color:var(--fg3)}
+.pfhidden>summary{font-size:11.5px;letter-spacing:.3px;padding:2px 4px}
+.pfacts.cols .pfhidden .pfgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));column-gap:14px}
+.nav-item.timer .tpart{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;
+  flex:none;border-radius:4px;opacity:.8}
+.nav-item.timer .tpart:hover{opacity:1;color:var(--accent);background:var(--bg2)}
+.nav-item.timer .tpart svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round}
+/* Time is up: the logo and the timer pulse, ten times. */
+@keyframes timerpulse{0%,100%{box-shadow:0 0 0 0 transparent;background:transparent}
+  50%{box-shadow:0 0 0 4px var(--accent);background:var(--accent-soft)}}
+.timerpulse{animation:timerpulse .6s ease-in-out 10}
+/* And three rings run out from the timer across the whole screen, a tint
+   inside each and a bright band at its edge, so it cannot be missed. */
+.timer-ripple{position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden}
+.timer-ripple i{position:absolute;border-radius:50%;opacity:0;transform:translate(-50%,-50%) scale(0);
+  background:radial-gradient(circle,color-mix(in srgb,var(--accent) 14%,transparent) 0 62%,
+    var(--accent) 68%,transparent 74%);animation:timerripple 1.6s cubic-bezier(.2,.6,.4,1) forwards}
+@keyframes timerripple{0%{transform:translate(-50%,-50%) scale(0);opacity:.85}
+  70%{opacity:.6}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
+.nav-item.timer.running .lbl,.nav-item.timer.dragging .lbl{font-variant-numeric:tabular-nums;color:var(--accent)}
+.nav-item.timer.overdue .lbl{font-variant-numeric:tabular-nums;color:var(--late)}
+/* style:: dial: a small pie beside the time, the four quarters marked. While
+   you set it their minutes are written just outside the rim, the way a Time
+   Timer has them; the svg is that much bigger than the dial and spills over. */
+.nav-item.timer.dial{flex:none;gap:14px;padding:4px 8px 4px 14px;cursor:default;overflow:visible}
+.nav-item.timer.dial .tdial{--d:40px;flex:none;width:var(--d);height:var(--d);border-radius:50%;cursor:pointer;touch-action:none}
+.nav-item.timer.dial .tdial:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.nav-item.timer.dial .tdial svg{display:block;width:calc(var(--d) * 74 / 56);height:auto;margin:calc(var(--d) * -9 / 56);
+  overflow:visible;pointer-events:none}
+.tdial .tnum{fill:var(--fg2);font-size:12px;font-variant-numeric:tabular-nums;text-anchor:middle;dominant-baseline:central;pointer-events:none;
+  opacity:0;transition:opacity .9s ease-out}
+/* In quickly while you set it; once it starts they fade slowly away. */
+.nav-item.timer.dial.dragging .tnum{opacity:1;transition-duration:.15s}
+.tdial .tface{fill:var(--bg);stroke:var(--border2);stroke-width:1.5}
+.tdial .tquart line{stroke:var(--fg3);stroke-width:2;stroke-linecap:round}
+.tdial .tsector{fill:var(--accent);pointer-events:none}
+.tdial .thub{fill:var(--bg);stroke:var(--border2)}
+.nav-item.timer.dial .tread{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
+.nav-item.timer.dial .lbl{font-size:15px;font-variant-numeric:tabular-nums}
+.nav-item.timer.dial .tsub{font-size:11px;color:var(--fg3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-item.timer.dial .tpart[data-part=sound][aria-pressed=true]{opacity:1;color:var(--accent)}
+.nav-item.timer.dial .tpart[data-part=sound][aria-pressed=true] svg path:first-child{fill:currentColor}
+/* While a timer runs, silent or not, and until its ring is clicked away, the
+   dial moves up over the time and takes the sidebar's breadth, less some air,
+   so the countdown is hard to miss. Its rim is the width; the numbers move
+   inside it, so they do not spill out of the sidebar. The sidebar list would
+   squeeze the row when it is full (flex:none above stops that), and the dial
+   takes its size from the row's own width, cqi, not from a percentage. Big,
+   the svg drops the pad the numbers need outside the rim (timerPaintDial),
+   or it would reach past the row and scroll the sidebar sideways. --fit
+   keeps it to the room the sidebar has, so it does not make it scroll. */
+.nav-item.timer.dial.grown{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;
+  gap:8px 10px;padding:10px 14px;container-type:inline-size}
+.nav-item.timer.dial.grown .tdial{grid-column:1/-1;justify-self:center;
+  width:min(100cqi, var(--fit, 100cqi));height:min(100cqi, var(--fit, 100cqi))}
+.nav-item.timer.dial.grown .tdial svg{width:100%;margin:0}
+.nav-item.timer.dial.grown .tnums{transform:scale(.5);transform-origin:28px 28px}
+.nav-item.timer.dial.grown .tnum{font-size:9px}
+.nav-item.timer.dial.grown .tface{stroke-width:.6}
+.nav-item.timer.dial.grown .tquart line{stroke-width:.9}
+.nav-item.timer.dial.grown .thub{stroke-width:.5}
+.nav-item.timer.dial.grown .lbl{font-size:24px;line-height:1.1}
+/* Time is up on the dial: a slow glow that breathes, not a strobe. */
+@keyframes dialpulse{0%,100%{filter:drop-shadow(0 0 0 transparent)}
+  50%{filter:drop-shadow(0 0 6px var(--accent))}}
+.nav-item.timer.dial.timerpulse{animation:none}
+.nav-item.timer.dial.timerpulse .tdial svg{animation:dialpulse 1.2s ease-in-out 5}
+.nav-item.timer.dial.timerpulse .tface{stroke:var(--accent)}
+.sync{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--fg3);padding:8px 10px;
+  border-radius:8px;width:100%;text-align:left}
+.sync:hover{background:var(--bg3);color:var(--fg2)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--fg3);flex:none}
+.dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.err{background:var(--danger)}
+.dot.sync{background:var(--accent);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.25}}
+

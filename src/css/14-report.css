@@ -1,0 +1,4 @@
+/* ---------- report ---------- */
+.reportsum{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--fg2);
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:11px 14px}
+.reportsum b{color:var(--fg);font-size:17px}

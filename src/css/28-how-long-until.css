@@ -1,0 +1,36 @@
+/* ---------- how long until ----------
+   One quiet line on Today: the next task with a time, the next deadline. Each
+   is a button into the task itself. */
+.countdown{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.countdown .cd{display:flex;gap:8px;align-items:baseline;min-width:0;max-width:100%;color:inherit;cursor:pointer;
+  background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12.5px;text-align:left}
+.countdown .cd-k{font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--fg3);font-weight:600}
+.countdown .cd-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.countdown .cd-left{color:var(--accent);white-space:nowrap;font-variant-numeric:tabular-nums}
+.dt{display:flex;gap:6px;flex-wrap:wrap}
+.dt input[type=date]{flex:1 1 9em;min-width:0}
+.dt input.clk{flex:1 1 6.5em;min-width:0}
+input.clk{width:5.5em;font-variant-numeric:tabular-nums}
+input.clk.bad{border-color:var(--late)}
+.grid2>.field{min-width:0}
+.cal-item.bday{font-style:italic}
+.chip.urg{font-variant-numeric:tabular-nums;color:var(--fg2)}
+.sendbtn{position:relative}
+.sendbtn.dot::after{content:"";position:absolute;top:-3px;right:-3px;width:7px;height:7px;border-radius:50%;
+  background:var(--accent);box-shadow:0 0 0 2px var(--bg)}
+/* On a phone ⇧ lives in the area menu, so the bar keeps to one row; the
+   area button carries its dot for changes not sent yet. */
+.spop .spsend{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;height:auto;margin:0 0 8px;
+  padding:8px 10px;text-align:left;font:inherit;font-size:14px;font-weight:600;color:var(--fg);cursor:pointer;
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm)}
+.spop .spsend:hover,.spop .spsend:focus-visible{border-color:var(--accent)}
+.spop .spsend small{color:var(--fg3);font-weight:400;font-size:12px}
+.spop .spsend.dot small{color:var(--accent)}
+@media (max-width:640px){
+  header.top #btnSend{display:none}
+  .vhead .csvbtn{display:none}
+  #spacesBtn{position:relative}
+  #spacesBtn.unsent::after{content:"";position:absolute;top:-3px;right:-3px;width:7px;height:7px;border-radius:50%;
+    background:var(--accent);box-shadow:0 0 0 2px var(--bg)}
+}
+

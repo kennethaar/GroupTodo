@@ -1,0 +1,204 @@
+/* ============================================================
+   20_MODALS
+   ============================================================ */
+.scrim{
+  position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;
+  display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(3px);
+}
+.scrim.center{align-items:center}
+.modal{
+  background:var(--bg2);border:1px solid var(--border2);border-radius:14px 14px 0 0;
+  width:min(640px,100%);max-height:86dvh;display:flex;flex-direction:column;
+  box-shadow:var(--shadow);overflow:hidden;
+}
+.scrim.center .modal{border-radius:14px}
+/* Beside the thing that opened it, like a menu: see anchorModal. */
+.scrim.anchored{background:transparent;backdrop-filter:none;display:block}
+.scrim.anchored .modal{position:fixed;width:min(400px,calc(100vw - 16px));max-height:calc(100dvh - 16px)}
+.whenpop .field{padding:0 16px;margin-bottom:10px}
+.whenpop .whenrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.whenpop .whenrow input:not([type=date]),.whenpop .whenrow select{flex:1;min-width:0}
+.whenpop .whenrow input[type=date]{width:auto;flex:1;min-width:140px}
+.duepill{cursor:pointer}
+.duepill .bell{margin-left:4px;font-size:.85em}
+.duepill .bell.off{opacity:.7}
+.modal header{
+  display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--border);flex:none;
+}
+.modal header h2{margin:0;font-size:15px;font-weight:650}
+.modal header .hint{font-size:11.5px;color:var(--fg3);font-family:var(--mono)}
+.modal .body{overflow-y:auto;padding:10px 0;flex:1}
+.qrbox{text-align:center}
+.qrbox .qrwhat{font-weight:600;overflow-wrap:anywhere}
+.qrbox .qrpic svg{display:block;width:min(280px,70vw);height:auto;margin:10px auto;border-radius:6px}
+.modal .foot{padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;flex:none}
+.pick{
+  display:flex;align-items:center;gap:11px;width:100%;padding:9px 16px;text-align:left;font-size:14px;color:var(--fg2);
+}
+.pick:hover,.pick.cur{background:var(--bg3);color:var(--fg)}
+/* The row the keys are pointing at. A list you type into has to show you where
+   it thinks you are, or Enter is a guess. */
+.pick.on{background:var(--bg3);color:var(--fg);box-shadow:inset 2px 0 0 var(--accent)}
+.pick.on .k{color:var(--accent)}
+.pick .k{
+  font-family:var(--mono);font-size:11px;width:20px;height:20px;border-radius:5px;flex:none;
+  background:var(--bg4);color:var(--fg3);display:grid;place-items:center;
+}
+.pick:hover .k,.pick.cur .k{background:var(--accent);color:var(--accent-fg)}
+/* In a list you type the name into, the rows have no letters, so the badge
+   keeps the gutter and stops being a thing: an empty box in every row reads as
+   a checkbox nobody ticked. */
+.pick .k:empty{background:transparent;box-shadow:none}
+.pick .d{margin-left:auto;font-size:11.5px;color:var(--fg3)}
+/* The state menu with task types: one column per set of states, side by side
+   while they fit and under each other on a phone. Narrow columns put what a
+   row counts as under its name rather than beside it. */
+.state-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:4px 0}
+.state-col{min-width:0}
+.state-col + .state-col{border-left:1px solid var(--border)}
+.state-col h3{margin:0;padding:4px 16px 6px;font-size:11.5px;font-weight:650;color:var(--fg3);text-transform:uppercase;letter-spacing:.04em}
+.state-col.cur h3{color:var(--accent)}
+.state-col .pick{flex-wrap:wrap;gap:2px 11px;padding:7px 16px}
+.state-col .pick .d{margin-left:0;flex-basis:100%;padding-left:31px}
+/* On a phone: the title gets the header's width and any hint goes under it;
+   what a row does goes under its name rather than squeezing it. */
+@media (max-width:560px){
+  .modal header{flex-wrap:wrap;row-gap:2px}
+  .modal header h2{flex:1 1 0;min-width:0}
+  .modal header .hint{order:3;flex-basis:100%;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pick{flex-wrap:wrap;row-gap:1px}
+  .pick>span:nth-child(2){flex:1 1 0;min-width:0}
+  .pick .d{margin-left:31px;flex-basis:calc(100% - 31px)}
+}
+@media (hover:none){ .modal header .hint.keys{display:none} }
+/* The [[ list. Fixed rather than absolute so it is positioned against the
+   caret's own viewport rectangle, and above everything, because it hangs over
+   whatever line you are typing on. */
+.linkpop{
+  position:fixed;z-index:240;min-width:230px;max-width:330px;max-height:244px;overflow-y:auto;
+  background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-sm);
+  box-shadow:var(--shadow);padding:4px 0;
+}
+.linkpop .pick{padding:6px 11px;font-size:13px}
+.linkpop .pick .k{width:22px;height:18px;font-size:10px}
+.filterbox{padding:0 16px 8px}
+/* The search box and its Enter button, side by side, the box taking the room. */
+.filterbox{display:flex;gap:8px;align-items:center}
+.filterbox input{flex:1 1 auto;min-width:0}
+.filterbox input,.field input,.field textarea,.field select{
+  width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);
+  padding:9px 11px;font-size:14px;outline:none;
+}
+.filterbox input:focus,.field input:focus,.field textarea:focus{border-color:var(--accent)}
+.field{padding:8px 16px}
+.field>label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--fg3);margin-bottom:5px}
+.field textarea{resize:vertical;min-height:70px;font-family:inherit}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{
+  padding:6px 11px;border-radius:var(--radius-sm);background:var(--bg3);font-size:12.5px;
+  font-family:var(--mono);color:var(--fg3);border:1px solid transparent;
+}
+.seg button.on{background:var(--accent);color:var(--accent-fg);font-weight:650}
+.seg button:hover{border-color:var(--border2)}
+/* the recurrence dialog's small inputs sit in the sentence they belong to */
+.rrule input,.rrule select{width:auto;display:inline-block;padding:6px 8px}
+.rrline{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:4px 0;font-size:13.5px}
+
+/* review / dashboards */
+.dash-sec{border-bottom:1px solid var(--border)}
+.dash-sec:last-child{border-bottom:none}
+.dash-sec>h4{
+  margin:0;padding:11px 16px 5px;font-size:12.5px;font-weight:650;display:flex;gap:8px;align-items:center;
+}
+.dash-sec>h4 .n{font-size:11px;background:var(--bg4);border-radius:20px;padding:0 7px;color:var(--fg3)}
+.dash-sec>h4 .n.z{background:rgba(79,191,123,.15);color:var(--ok)}
+.dash-item{display:flex;gap:9px;align-items:flex-start;padding:6px 16px;font-size:13px;color:var(--fg2);width:100%;text-align:left}
+.dash-item:hover{background:var(--bg3);color:var(--fg)}
+.dash-item .p{font-size:11px;color:var(--fg3);font-family:var(--mono);min-width:0;max-width:45%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* On a phone the text keeps the width and where it is goes under it. */
+@media (max-width:560px){
+  .dash-item{flex-wrap:wrap;row-gap:2px}
+  .dash-item .p{order:3;flex-basis:100%;max-width:none;padding-left:0}
+}
+.dash-item .fix{margin-left:auto;font-size:11px;color:var(--accent);flex:none}
+
+.coach{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:12px 14px;margin:14px 0 4px;
+}
+.coach-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px}
+.coach-head .iconbtn{margin-left:auto}
+.coach-step{display:flex;align-items:flex-start;gap:10px;padding:5px 0;font-size:13.5px}
+.coach-step.done{color:var(--fg3)}
+.coach-step.done>div>div:first-child{text-decoration:line-through}
+.coach-dot.can{cursor:pointer}
+.coach-dot.can:hover{border-color:var(--ok);color:var(--ok)}
+.coach-dot{
+  width:18px;height:18px;border-radius:50%;border:1.6px solid var(--border2);flex:none;
+  display:grid;place-items:center;font-size:11px;color:transparent;margin-top:1px;
+}
+.coach-step.done .coach-dot{background:var(--ok);border-color:var(--ok);color:#06210f}
+/* The one reason, for the one step you are on. Set apart so it reads as an aside
+   and not as another instruction. */
+.coach-why{
+  color:var(--fg3);font-size:12.5px;line-height:1.55;margin-top:7px;
+  border-left:2px solid var(--border2);padding-left:9px;
+}
+.coach.tip .coach-head b{font-size:13.5px}
+/* A worked example, written the way it is written in the day page -- the
+   indentation is half of what it is teaching, so it has to survive. */
+.coach-ex{
+  font-family:var(--mono);font-size:12px;line-height:1.6;white-space:pre;
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);
+  padding:9px 11px;margin:7px 0 0;overflow-x:auto;color:var(--fg2);
+}
+.coach-ex b{color:var(--fg);font-weight:600}
+.coach-exlab{color:var(--fg3);font-size:12px;margin-top:9px}
+.listblurb{color:var(--fg3);font-size:12.5px;line-height:1.5;padding:10px 16px 2px}
+/* Styles: the four looks side by side, each drawn in its own colours. */
+.themes{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;padding:12px 16px 14px}
+.themecard{display:flex;flex-direction:column;gap:6px;text-align:left;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;background:var(--bg)}
+.themecard:hover{border-color:var(--border2)}
+.themecard.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.themecard .sw{height:46px;border-radius:6px;display:flex;align-items:flex-end;gap:4px;padding:6px;border:1px solid rgba(128,128,128,.25)}
+.themecard .sw i{display:block;height:6px;border-radius:3px}
+.themecard .tn{font-size:13.5px;font-weight:600}
+.themecard .ta{font-size:12px;color:var(--fg3);line-height:1.4}
+.stylerow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px;border-top:1px solid var(--border)}
+.writeset > .listblurb + div{padding:8px 16px 12px}
+.stylerow label{font-size:13.5px;min-width:110px}
+.stylerow select{background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px}
+
+/* toast */
+#toasts{position:fixed;right:14px;top:60px;z-index:200;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none;width:min(420px,calc(100vw - 28px))}
+/* What was just done waits at the very top edge, out of the way of the work. */
+#toasts:has(> .toast.done){top:6px}
+#toasts > .toast.done{order:-1}
+/* A page open in the side panel is what you are reading: the toasts, the
+   list of what was just done among them, move over to its left. */
+@media (min-width:761px){
+  body:has(.scrim.side) #toasts{right:calc(min(480px,100vw) + 14px);width:min(430px,calc(100vw - min(480px,100vw) - 28px))}
+  body.pane-open:not(:has(.scrim.side)) #toasts{right:calc(min(var(--panew,400px),70vw) + 14px)}
+  body:has(.scrim.side) .toast.reminder{width:100%;box-sizing:border-box}
+  /* The review's table fills the window: they wait bottom left, over the help. */
+  body.solview:not(:has(.scrim)) #toasts{top:auto;bottom:14px;left:14px;right:auto;align-items:flex-start}
+}
+.toast{
+  background:var(--bg4);border:1px solid var(--border2);border-radius:10px;padding:10px 14px;
+  font-size:13px;box-shadow:var(--shadow);pointer-events:auto;display:flex;gap:10px;align-items:center;width:100%;
+}
+.toast.warn{border-color:rgba(224,176,80,.5)} .hint.warn{color:var(--warn)}.toast.err{border-color:rgba(255,107,107,.5)}
+.toast .x{margin-left:auto;color:var(--fg3)}
+/* A reminder you asked for stays until it is answered, so it is marked as one. */
+.toast.remind{border-color:var(--accent)}
+/* A move or merge being saved: a bar that fills as the files go, sliding
+   while there is nothing yet to count. */
+.toast.job .job-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.toast.job .job-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jbar{height:5px;border-radius:3px;background:var(--border);overflow:hidden;position:relative}
+.jbar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.jbar.wait i{width:35%;position:absolute;animation:jslide 1.1s ease-in-out infinite}
+@keyframes jslide{from{left:-35%}to{left:100%}}
+@media (prefers-reduced-motion:reduce){.jbar.wait i{animation:none;width:100%;opacity:.4}}

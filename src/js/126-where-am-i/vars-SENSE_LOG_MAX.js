@@ -1,0 +1,1 @@
+const SENSE_LOG_MAX = 300;

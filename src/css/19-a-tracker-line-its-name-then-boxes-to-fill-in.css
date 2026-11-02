@@ -1,0 +1,29 @@
+/* ---------- a tracker line: its name, then boxes to fill in ---------- */
+.line.trkline:not(.raw)>.txt{flex:none}
+.line.trkline.raw>.trkw{display:none}
+.trkname{font-weight:600}
+.trkw{display:inline-flex;flex-wrap:wrap;align-items:center;gap:5px;flex:1;min-width:0;font-size:13px}
+.trkw .tv{width:4.4em;font:inherit;padding:1px 6px;border:1px solid var(--border);border-radius:6px;
+  background:var(--bg2);color:var(--fg);text-align:center}
+.trkw .tv:focus{outline:none;border-color:var(--accent)}
+.trkw .tu{color:var(--fg3);font-size:12px}
+.trkw .tchk{width:16px;height:16px;accent-color:var(--ok);cursor:pointer}
+.tstars{display:inline-flex}
+.tstar{background:none;border:0;padding:0 1px;cursor:pointer;color:var(--fg3);font-size:16px;line-height:1;opacity:.5}
+.tstar.on{color:var(--warn);opacity:1}
+.tstar:hover{opacity:1}
+.trkw .tadd{font-size:12px}
+/* tap to count: a +1 pill, then one icon a tap */
+.trktap{gap:2px}
+.trktap .tapadd{padding:2px 10px;margin-right:6px;border-radius:999px;background:var(--accent-soft);color:var(--accent);
+  border:1px solid transparent;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.trktap .tapadd:hover{border-color:var(--accent)}
+.trktap .tapadd:active{transform:scale(.96)}
+.tapicon{background:none;border:0;padding:0 1px;font-size:17px;line-height:1.2;cursor:pointer}
+.trktap .tapicon:hover{opacity:.45}
+.trktap .tapmany{font-size:15px;margin-right:4px}
+.trktap .tapreset{margin-left:6px;font-size:13px}
+.tapicons{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.tapicons .tapicon{font-size:20px;padding:2px 4px;border-radius:6px}
+.tapicons .tapicon:hover{background:var(--bg3)}
+.trkw .tv.tvw{width:auto;flex:1 1 14em;min-width:min(9em,100%);text-align:left}

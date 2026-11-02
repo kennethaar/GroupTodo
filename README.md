@@ -168,7 +168,8 @@ Every view reads the same Markdown; a change in one is a change everywhere.
 ### Repository Files
 
 ```text
-grouptodo.html           The whole app
+grouptodo.html           The whole app, built from src/ by `node build.mjs`
+src/                     css/ (pieces), js/ (one file per function), assets/ (SVGs)
 GroupToDo-Importer.html  Converts an Obsidian or Logseq vault into a new folder
 sw.js                    Offline support + Share button (when served from a URL)
 manifest.webmanifest     Home-screen install manifest

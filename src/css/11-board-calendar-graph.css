@@ -1,0 +1,146 @@
+/* ---------- board, calendar, graph ----------
+   Three more ways to look at exactly the same blocks. Nothing here holds its
+   own copy of anything: a card, a calendar entry and a dot are all the same
+   line in the same markdown file, seen from a different angle. */
+/* A board is columns side by side, so it is the one screen that wants all the
+   width there is: 900px of it means four slivers with the titles wrapped to
+   three lines on a monitor with room for twice that. The board wrap grows with
+   the window and stops where a card would get wider than it is worth reading. */
+.wrap.wide{max-width:min(1800px,100%)}
+@media (min-width:1100px){ .wrap.wide{padding:0 28px} }
+.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px;
+  align-items:start}
+/* Space tabs: which vaults are on screen, and where a project is dropped to
+   move it into one. */
+.btabs{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.btab{display:inline-flex;gap:6px;align-items:center;background:var(--bg3);
+  border:1px solid var(--border);border-radius:999px;padding:4px 11px;font-size:12px;
+  color:var(--fg2);cursor:pointer}
+.btab:hover{border-color:var(--border2);color:var(--fg)}
+.btab.on{background:var(--bg4);border-color:var(--accent);color:var(--fg)}
+.btab.over{border-color:var(--accent);border-style:dashed;color:var(--fg);
+  background:color-mix(in srgb,var(--accent) 18%,var(--bg3))}
+/* A copy is a different promise from a move, so it does not look the same. */
+.btab.over.copying{border-style:solid;box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent)}
+.btab.over.copying::after{content:"+ copy";font-size:10px;opacity:.8}
+.btab-dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+/* Holds the board and the rubber band drawn over it. */
+.boardwrap{position:relative}
+.bmarquee{position:absolute;z-index:5;pointer-events:none;border:1px solid var(--accent);
+  background:color-mix(in srgb,var(--accent) 14%,transparent);border-radius:3px}
+/* While a band is being drawn, nothing on the way should turn into selected
+   text under the cursor. */
+body.marquee{user-select:none;-webkit-user-select:none}
+body.marquee .bcard{cursor:default}
+/* The project board has one column per status, and there are five of those. */
+.board.five{grid-template-columns:repeat(5,minmax(0,1fr))}
+/* The directory board has three: orgs, people, contexts. */
+.board.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+/* On a phone five columns in a row are five letters wide. Each keeps a card's
+   width and the board is swiped sideways, a column at a time. */
+@media (max-width:760px){
+  .board:not(.ctxboard){grid-auto-flow:column;grid-template-columns:none;grid-auto-columns:minmax(240px,82%);
+    overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:8px;overscroll-behavior-x:contain}
+  .board:not(.ctxboard)>.bcol{scroll-snap-align:start}
+}
+.bcol{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  min-height:120px;display:flex;flex-direction:column;overflow:hidden}
+.bcol.over{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.bcol-head{display:flex;gap:8px;align-items:center;padding:10px 12px;
+  border-bottom:1px solid var(--border);background:var(--bg3)}
+/* A head that can be dragged moves its column; the edge it lands on is lit. */
+.bcol-head[draggable=true]{cursor:grab}
+.bcol.coldrag{opacity:.5}
+.bcol.colbefore{box-shadow:inset 3px 0 0 var(--accent)}
+.bcol.colafter{box-shadow:inset -3px 0 0 var(--accent)}
+.bcol-head .n{margin-left:auto;font-size:11px;color:var(--fg3);font-family:var(--mono)}
+.bcol-head .colhide{width:20px;height:20px;margin:-4px -6px -4px -4px;flex:none}
+@media (hover:hover){.bcol-head .colhide{opacity:0}.bcol:hover .colhide,.bcol-head .colhide:focus-visible{opacity:1}}
+.bcol-body{display:flex;flex-direction:column;gap:8px;padding:10px;overflow:auto;
+  max-height:min(68vh,760px)}
+/* Inside a board column the row sits among the cards, so it keeps the padding
+   but loses the divider that separates it from a card list. */
+.bcol-body .showmorerow{border-top:0}
+.bcol-body .showmore{font-size:11.5px;padding:6px 4px}
+.bcard{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:9px 10px;cursor:pointer;text-align:left;width:100%;display:block}
+.bcard:hover{border-color:var(--border2);background:var(--bg4)}
+.bcard-title{font-size:13px;color:var(--fg);line-height:1.35;overflow-wrap:anywhere}
+.bcard-meta{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.bcard-meta:empty{display:none}
+/* The review's fields on a project card or row: set ones say their value,
+   missing ones are a dim "+ field". Each opens that field's chooser. */
+.pfields{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.pfield{font-size:11px;padding:1px 8px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);
+  color:var(--fg2);cursor:pointer;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pfield:hover{border-color:var(--accent);color:var(--fg)}
+.pfield.miss{background:transparent;border-style:dashed;color:var(--fg3)}
+.solone{display:block}
+.slotsuggest{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px;font-size:11px;color:var(--fg3)}
+.slotsuggest .fchip{font-size:12px;padding:2px 9px;border-style:dashed;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.solone .slot{min-height:0}
+.bcard.dragging{opacity:.4}
+/* Ctrl-click (cmd on a Mac) picks cards out without opening them, so several
+   can travel in one drag. A picked card says so plainly enough to count at a
+   glance, and every card going along with the drag fades like the one under the
+   cursor -- otherwise a four-card drag looks like a one-card drag. */
+.bcard.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);
+  background:var(--bg4)}
+.bcard.sel:hover{border-color:var(--accent)}
+.bcard.dragging-with{opacity:.4}
+/* The count of what is picked, with the way to let go of it. */
+.bsel{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;
+  color:var(--fg2);margin-top:8px}
+/* A project card carries its status letter, so the card still says where it is
+   once it has been dragged somewhere. */
+.bcard-top{display:flex;gap:6px;align-items:flex-start}
+.bcard-top .bcard-title{flex:1 1 auto}
+/* On a screen with room the columns share the width by how much they hold,
+   and a column wide enough lays its cards out side by side rather than in one
+   long thin strip with the rest of the screen empty. */
+@media (min-width:861px){
+  .wrap.wide:has(.board){max-width:100%}
+  .board:not(.ctxboard){display:flex;align-items:flex-start}
+  .board:not(.ctxboard)>.bcol{flex:var(--grow,1) 1 0;min-width:180px}
+  .board:not(.ctxboard) .bcol-body{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr));align-content:start}
+  .board:not(.ctxboard) .bcol-body>.showmorerow,.board:not(.ctxboard) .bcol-body>.empty{grid-column:1/-1}
+}
+@media (max-width:860px){
+  /* Four columns on a phone is four slivers. One column each, stacked, and the
+     state buttons in the detail panel do the moving -- dragging on a touch
+     screen fights the scroll. */
+  .board{grid-template-columns:1fr}
+  .bcol-body{max-height:none}
+}
+
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;margin-top:4px;
+  background:var(--border);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden}
+.cal-dow{background:var(--bg3);color:var(--fg3);font-size:11px;letter-spacing:.5px;
+  text-transform:uppercase;padding:6px 8px;text-align:center}
+.cal-day{background:var(--bg2);min-height:92px;padding:5px 5px 7px;display:flex;
+  flex-direction:column;gap:3px;width:100%;text-align:left;cursor:pointer}
+.cal-day:hover{background:var(--bg3)}
+.cal-day.out{background:var(--bg);opacity:.5}
+.cal-day.today{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.cal-day.picked{background:var(--bg4)}
+.cal-num{font-size:11px;color:var(--fg3);font-family:var(--mono);text-align:right}
+.cal-day.today .cal-num{color:var(--accent);font-weight:700}
+.cal-items{display:flex;flex-direction:column;gap:3px;min-width:0}
+.cal-item{display:block;font-size:11.5px;line-height:1.25;
+  padding:3px 5px;border-radius:5px;background:var(--bg3);color:var(--fg2);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal-item.late{color:var(--late);background:rgba(255,107,107,.12)}
+.cal-more{font-size:10.5px;color:var(--fg3);padding-left:5px}
+@media (max-width:700px){
+  /* Seven columns of readable titles do not fit on a phone, and a line of text
+     shrunk until it fits is not readable either. The squares become dots --
+     how many, and whether any are late -- and tapping a day lists it below. */
+  .cal-day{min-height:54px;gap:4px}
+  .cal-items{flex-direction:row;flex-wrap:wrap;gap:3px;justify-content:flex-end}
+  .cal-item{font-size:0;width:7px;height:7px;padding:0;border-radius:50%;
+    background:var(--todo)}
+  .cal-item.late{background:var(--late)}
+  .cal-more{font-size:9.5px;padding:0}
+}
+
