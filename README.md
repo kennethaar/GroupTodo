@@ -1,8 +1,8 @@
 # GroupToDo
 
-**The local-first Markdown workspace where GTD, networked notes, and team collaboration work out of the box.** 
+**The local-first Markdown workspace where GTD, networked notes, team and family collaboration work out of the box.** 
 
-GroupToDo combines the daily journals, with `[[backlinks]]`, live queries, and graph views of tools like **Logseq, Obsidian, and Roam** with a complete **Getting Things Done (GTD)** project engine—all inside a single HTML file. Everything lives as plain Markdown files in a folder on your disk. No install, no plugins to wire up, no account, and no server.
+GroupToDo combines the daily journals, with `[[backlinks]]`, live queries, and graph views of tools like **Logseq, Obsidian, and Roam** with a complete **Getting Things Done (GTD)** project engine. In short a complete system to manage everything digital in one place. Your files stay as plain Markdown files in a folder on your disk. No install, no plugins to wire up, no account, and no server, just a single HTML-file that can run anywhere.
 
 **Try it right now:** Open **[kennethaar.github.io/GroupTodo](https://kennethaar.github.io/GroupTodo/)** in Chrome or Edge (or download and double-click `grouptodo.html`). Your data never leaves your machine, and `GroupToDo-Importer.html` can preview and migrate an existing Obsidian or Logseq vault in seconds.
 
@@ -15,8 +15,9 @@ Most team task apps lock your data on their servers and charge per seat. Local M
 
 In Edge or Chrome, double-click `grouptodo.html`. It first asks how you are starting:
 
-* **Somebody invited me** — Your full name, then what you were sent: the shared folder, or an invite or vault file. The folder is opened as it is (none of your starter pages go into it) and the area takes the name stored in the folder, or else the folder's own name. *You are in …* then shows who else is there, the projects and open tasks you now share, and how to hand a task to somebody.
-* **I am starting my own** — Your full name, what to call the area, and optionally a folder of your own (skip to keep everything in the browser for now). The name you give is written into the folder, so people you invite later see the same name.
+* **Somebody invited me** - Your full name, then what you were sent: the shared folder, or an invite or vault file. The folder is opened as it is (none of your starter pages go into it) and the area takes the name stored in the folder, or else the folder's own name. *You are in …* then shows who else is there, the projects and open tasks you now share, and how to hand a task to somebody.
+* **I am starting my own** - Your full name, what to call the area, and optionally a folder of your own (skip to keep everything in the browser for now). The name you give is written into the folder, so people you invite later see the same name.
+* **I'm back** - Choose this if you are setting up the system again for example in a different browser.
 
 > **Tip:** Click *Set up several areas* on the second path to split your list into separate folders (e.g., Work, Home) before you begin.
 
