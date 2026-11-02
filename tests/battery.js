@@ -5297,6 +5297,66 @@ var GTD_TEST = (() => {
     eq(serializeBlocks(getPage(storm).blocks), "- Rain all day.\n- ## Flood\n-");
   }));
 
+  test("#244 a %% line is a beat: not counted, not exported, and /beat puts it on and off", () => withBookVault({
+    [BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n",
+    [join(PAGES, "Harbour.md")]: "- %% She finds the letter\n  - The envelope was wet.\n- Night fell.\n",
+  }, () => {
+    const harbour = join(PAGES, "Harbour.md");
+    ok(isBeat("%% She finds it") && isBeat("%%x") && !isBeat("50 %% off") && !isBeat("%% x", "TODO"));
+    eq(chapterText(harbour), ["The envelope was wet.", "Night fell."], "the prose under a beat is counted, the beat is not");
+    ok(!bookManuscript().includes("letter"), "nor exported");
+    eq(lineHtml(getPage(harbour).blocks[0]), "She finds the letter", "drawn without its marks");
+    ok(slashRows("beat").some(r => r.id === "beat"), "/beat in an area with a book");
+    V.pages.delete(BOOK_PATH); clearMemo();
+    ok(!slashRows("beat").some(r => r.id === "beat"), "and not without one");
+  }));
+  test("#244 a chapter page has Outline and Prose, beats to hide, Focus, and today's words", () => withBookVault({
+    [BOOK_PATH]: "title:: book\ndaily:: 500\n\n- [[Harbour]]\n",
+    [join(PAGES, "Harbour.md")]: "- %% She finds the letter\n  - The envelope was wet.\n- Night fell.\n",
+    [join(PAGES, "Elsewhere.md")]: "- Not a chapter\n",
+  }, async () => {
+    const harbour = join(PAGES, "Harbour.md"), was = [PREF.get("book.mode", ""), PREF.get("book.beats", "")];
+    const dayKey = "book.day." + (V.space || "");
+    try {
+      PREF.set(dayKey, JSON.stringify({d: todayISO(), w: 2}));
+      eq(bookToday(), 4, "six words now, two when the day began");
+      PREF.set(dayKey, JSON.stringify({d: "2001-01-01", w: 0}));
+      eq(bookToday(), 0, "a new day starts from what is there");
+      eq(bookDaily(), 500);
+      openPage(join(PAGES, "Elsewhere.md"));
+      await settle();
+      ok(!content().querySelector(".chapterbar"), "no bar on a page that is not a chapter");
+      PREF.set("book.mode", "outline");
+      openPage(harbour);
+      await settle();
+      has(content().querySelector(".chapterbar").textContent, "0 of 500 today");
+      ok(!content().querySelector(".outline.prose"), "Outline first");
+      ok(content().querySelector(".blk .line.beat"), "the beat is marked");
+      [...content().querySelectorAll(".chapterbar .vseg button")].find(b => b.textContent === "Prose").click();
+      await settle();
+      ok(content().querySelector(".outline.prose:not(.nobeats)"), "Prose, beats shown");
+      [...content().querySelectorAll(".chapterbar .fchip")].find(b => b.textContent === "Beats").click();
+      await settle();
+      ok(content().querySelector(".outline.prose.nobeats"), "beats hidden");
+      content().querySelector(".chapterbar .focusbtn").click();
+      ok(document.body.classList.contains("bookfocus") && $("#focusLeave"), "Focus");
+      document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+      ok(!document.body.classList.contains("bookfocus") && !$("#focusLeave"), "Esc leaves it");
+    } finally {
+      PREF.set("book.mode", was[0]); PREF.set("book.beats", was[1]); setWritingFocus(false);
+    }
+  }));
+  test("#244 Settings > Book picks the words a day", () => withBookVault({[BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n"}, async () => {
+    go("checklists");
+    await settle();
+    [...content().querySelectorAll(".bookdaily .seg button")].find(b => b.textContent === fmtWords(1000)).click();
+    await settle();
+    eq(getPage(BOOK_PATH).props.daily, "1000");
+    [...content().querySelectorAll(".bookdaily .seg button")].find(b => b.textContent === "None").click();
+    await settle();
+    ok(!("daily" in getPage(BOOK_PATH).props), "None takes it off");
+  }));
+
   test("#241 in a book's area the names offered are that area's own, its pages too", async () => {
     const rec = newRecord("Book241", Backends.memory("Book241"));
     for (const [p, text] of Object.entries({

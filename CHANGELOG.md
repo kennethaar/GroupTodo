@@ -5,6 +5,17 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.57.0 - 2026-11-02
+
+- A chapter page has Outline and Prose (#244). Prose shows plain paragraphs:
+  no bullets, no steps in, and the line you write in stays in the middle of
+  the screen. Focus hides everything but the page; Esc brings it back.
+- A line that starts `%%` is a beat: what happens, the outline the prose is
+  written under. `/beat` puts the `%%` on or takes it off. Beats are not
+  counted or exported, and Prose can hide them.
+- The words you wrote today show on the chapter and in the Book view.
+  Settings > Book sets a goal a day (`daily::`).
+
 ## 1.56.0 - 2026-11-02
 
 - A chapter can be cut into scenes (#243). A line that starts `## ` starts
