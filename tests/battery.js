@@ -5584,6 +5584,32 @@ var GTD_TEST = (() => {
       "in place of the empty line it was opened from");
   }));
 
+  test("#249 relations: shared scenes, talk and ties the pages name, between two chapters", () => withBookVault({
+    ...CAST_PAGES, [join(PAGES, "Bo.md")]: "type:: character\naliases:: Bobby\nbrother:: [[Anna Berg]]\nrole:: [[Anna Berg]]\n",
+  }, async () => {
+    const anna = join(PAGES, "Anna Berg.md"), bo = join(PAGES, "Bo.md");
+    const rel = bookRelations(), ab = rel.pairs.find(p => [p.a, p.b].includes(anna) && [p.a, p.b].includes(bo));
+    eq([ab.scenes, ab.talk, ab.said], [1, 2, ["brother"]], "one scene, two answers, and a tie on Bo's page; role:: is about Bo");
+    eq(rel.seen.get(anna), 2);
+    const late = bookRelations(1, 1);
+    eq(late.pairs.find(p => p === late.pairs.find(q => [q.a, q.b].includes(anna) && [q.a, q.b].includes(bo))).scenes, 0, "not in The storm");
+    eq(late.seen.get(bo), undefined);
+    const was = [PREF.get("sub.book", ""), PREF.get("book.rel.from", ""), PREF.get("book.rel.to", "")];
+    try {
+      REL.sel = null;
+      go("book", {sub: "relations"});
+      await settle();
+      eq([...content().querySelectorAll(".relnode")].map(g => g.getAttribute("aria-label")), ["Anna Berg", "Bo", "Mira"], "the protagonist first");
+      ok(content().querySelector(".relnode.hero"), "in the middle");
+      has(content().querySelector(".rellist").textContent, "brother");
+      content().querySelectorAll(".relnode")[2].dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true}));
+      await settle();
+      eq(REL.sel, [...castEntries()].find(e => e.name === "Mira").key, "Enter picks a character");
+      has(content().querySelector(".section h3").textContent, "Ties of Mira");
+      eq(content().querySelectorAll(".relrow").length, 1, "only Mira's ties: Bo");
+    } finally { REL.sel = null; PREF.set("sub.book", was[0]); PREF.set("book.rel.from", was[1]); PREF.set("book.rel.to", was[2]); }
+  }));
+
   test("#241 in a book's area the names offered are that area's own, its pages too", async () => {
     const rec = newRecord("Book241", Backends.memory("Book241"));
     for (const [p, text] of Object.entries({

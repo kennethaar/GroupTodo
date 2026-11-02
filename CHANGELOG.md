@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.62.0 - 2026-11-02
+
+- Book › Relations (#249): the characters and what ties them. A line joins
+  two who share a scene, thicker for more scenes and talk; a dashed line is a
+  tie only their pages name (`sister:: [[Mira Berg]]`), with its name on it.
+  The protagonist sits in the middle. Click a character to see only their
+  ties; pick two chapters to see a part of the book. The ties are listed in
+  words under it, strongest first.
+
 ## 1.61.0 - 2026-11-02
 
 - Script mode (#248): Script on a chapter, or `/script` on a line, writes

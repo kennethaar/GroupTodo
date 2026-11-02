@@ -97,13 +97,14 @@ const BOOK_SEED = `window.BOOK_SHOT = [BOOK_PATH, ...["The storm", "Harbour", "A
     put(3, ["stage:: Draft", "", "- " + para(90)]);
     put(4, ["stage:: Outline", "", "- %% They go home"]);
     put(5, ["type:: character", "wants:: To find her father", "arc:: From waiting to leading"]);
-    put(6, ["type:: character", "wants:: To keep Anna safe"]);
-    put(7, ["type:: character"]);
+    put(6, ["type:: character", "wants:: To keep Anna safe", "sister:: [[Anna Berg]]"]);
+    put(7, ["type:: character", "father:: [[Anna Berg]], [[Mira Berg]]"]);
     put(8, ["type:: place"]);
     put(9, ["type:: thing"]);
     clearMemo(); renderNav();`;
 SETUP.book = BOOK_SEED + ` go("book", {sub: "chapters"});`;
 SETUP["book-cast"] = BOOK_SEED + ` go("book", {sub: "cast"});`;
+SETUP["book-relations"] = BOOK_SEED + ` go("book", {sub: "relations"});`;
 /* This week's page with its routines and a focus line, and last week's with
    what was left open on it, gone again after the picture (#192). */
 const WEEK_PAGES = `const wk = n => shiftWeek(weekOf(todayISO()), n);
@@ -130,7 +131,7 @@ const AFTER = {
   "review-days": `for (const [p, page] of DAY_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
     clearMemo(); render();`,
 };
-AFTER.book = AFTER["book-cast"] = `for (const p of BOOK_SHOT) V.pages.delete(p); PREF.set("sub.book", ""); clearMemo(); renderNav(); render();`;
+AFTER.book = AFTER["book-cast"] = AFTER["book-relations"] = `for (const p of BOOK_SHOT) V.pages.delete(p); PREF.set("sub.book", ""); clearMemo(); renderNav(); render();`;
 AFTER["journal-week"] = AFTER["review-steps"] = `for (const [p, page] of WEEK_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
     clearMemo(); render();`;
 AFTER["review-steps"] = `PREF.set("review.open", OPEN_SHOT); ` + AFTER["review-steps"];
