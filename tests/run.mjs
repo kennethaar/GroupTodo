@@ -50,6 +50,11 @@ try {
     results.push(await serveCacheTest(serveTest));
   }
 
+  const stripTest = "#259 the build takes out comments and indentation and nothing else";
+  if (!only || stripTest.toLowerCase().includes(only.toLowerCase())) {
+    results.push(await stripBuildTest(stripTest));
+  }
+
   const shotsTest = "#171 every help screenshot is in docs/help, and none is left over";
   if (!only || shotsTest.toLowerCase().includes(only.toLowerCase())) {
     const want = await evaluate("Object.keys(HELP).filter(id => HELP[id].shot)");
@@ -146,4 +151,32 @@ async function serveCacheTest(name) {
     return {name, ok: true};
   } catch (e) { return {name, ok: false, error: String(e)}; }
   finally { server.kill(); }
+}
+
+async function stripBuildTest(name) {
+  const {stripJs, stripCss, stripHtml} = await import("../strip.mjs");
+  const {Script} = await import("node:vm");
+  const cases = [
+    ["a comment and the indentation go", "  // note\n  const a = 1;   /* x */\n\n    b();  \n", "const a = 1;\nb();\n"],
+    ["// and /* inside strings stay", 'const u = "http://x/*y*/"; const v = \'//\';\n', 'const u = "http://x/*y*/"; const v = \'//\';\n'],
+    ["a regex holding // and /* stays", "const r = /\\/\\/|\\/\\*|[/*]/g;  // c\n", "const r = /\\/\\/|\\/\\*|[/*]/g;\n"],
+    ["a division is not a regex", "const h = (a + b) / 2 / 3; // c\n", "const h = (a + b) / 2 / 3;\n"],
+    ["a template keeps its lines and its indentation", "const t = `a\n    // not a comment\n  ${x ? `i\n  j` : \"}\"} /* k */\n`;\n  f();\n", "const t = `a\n    // not a comment\n  ${x ? `i\n  j` : \"}\"} /* k */\n`;\nf();\n"],
+    ["a string continued over a line keeps its indentation", 'const s = "a\\\n   b";\n', 'const s = "a\\\n   b";\n'],
+    ["the line break that ends a statement stays", "let a = 1\n  /* c */\nlet b = 2\n", "let a = 1\nlet b = 2\n"],
+  ];
+  for (const [what, from, want] of cases) {
+    const got = stripJs(from);
+    if (got !== want) return {name, ok: false, error: what + ": " + JSON.stringify(got) + " is not " + JSON.stringify(want)};
+  }
+  const css = stripCss("/* c */\n.a {\n  color: red; /* d */\n  content: \"/* e */\";\n}\n");
+  if (css !== '.a {\ncolor: red;\ncontent: "/* e */";\n}\n') return {name, ok: false, error: "css: " + JSON.stringify(css)};
+  if (stripHtml("<!-- c -->\n<div>\n  <!--@css-->\n</div>\n") !== "<div>\n<!--@css-->\n</div>\n") return {name, ok: false, error: "html"};
+  /* The file that ships: every script still compiles. */
+  const app = readFileSync(join(ROOT, "grouptodo.html"), "utf-8");
+  const blocks = [...app.matchAll(/<script>\n([\s\S]*?)\n<\/script>/g)].map(m => m[1]);
+  if (blocks.length !== 6) return {name, ok: false, error: blocks.length + " scripts, not 6"};
+  try { blocks.forEach((b, i) => new Script(b, {filename: "script" + (i + 1)})); }
+  catch (e) { return {name, ok: false, error: String(e)}; }
+  return {name, ok: true};
 }

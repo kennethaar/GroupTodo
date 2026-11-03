@@ -7,6 +7,7 @@ grouptodo.html changes:
 
     python docs/build-demo.py
 """
+import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -25,8 +26,11 @@ def replace_once(text, old, new):
 # Before any of the app's scripts, so storage is swapped before it is probed.
 out = replace_once(app, "<head>", "<head>\n<script>\n" + demo + "</script>")
 # Straight after the app seeds an empty vault, and before the first render.
-out = replace_once(out, "  await seedIfEmpty();\n  scanVerbs();\n",
-                   "  await seedIfEmpty();\n  GTD_DEMO.seed();\n  scanVerbs();\n")
+# (the built file has no indentation, so it is found by the line that follows)
+out, found = re.subn(r"await seedIfEmpty\(\);\n(scanVerbs\(\);\ntopUpTrackerSeries\(\);)",
+                     lambda m: "await seedIfEmpty();\nGTD_DEMO.seed();\n" + m.group(1), out, count=1)
+if not found:
+    raise SystemExit("could not find the seedIfEmpty() / scanVerbs() / topUpTrackerSeries() lines in grouptodo.html")
 out = replace_once(out, "<title>GroupToDo</title>", "<title>GroupToDo Demo</title>")
 # The demo sits in docs/, beside the help's pictures rather than above them.
 out = replace_once(out, 'src: "docs/help/" + id', 'src: "help/" + id')

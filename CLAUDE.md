@@ -24,7 +24,12 @@ A pre-commit hook (`.githooks/pre-commit`) builds `grouptodo.html` and
 it on once per clone: `git config core.hooksPath .githooks`.
 
 The built `grouptodo.html` is committed as before. Do not edit it by hand: the
-next build overwrites it. The generated lines (`HELP_NEWS`, `LANG_CATALOG`) are
+next build overwrites it. The build leaves out comments, indentation and blank
+lines (`strip.mjs`), so the built file is hard to read and its line numbers are
+not the source's: `node build.mjs --readable` writes it with them in, and
+`node build.mjs --print` prints that text for a tool to read (the language
+catalog does). A tool that matches text in the built file must not rely on
+indentation. The generated lines (`HELP_NEWS`, `LANG_CATALOG`) are
 written into their `src/js` files by the scripts in `docs/`.
 
 ## Version number on every change

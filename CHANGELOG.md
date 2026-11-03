@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.72.2 - 2026-11-03
+
+- The built `grouptodo.html` is 23% smaller (no change to what the app does):
+  the build leaves out comments, indentation and blank lines, 3.17 MB down to
+  2.42 MB. The source in `src/` is as it was. `node build.mjs --readable`
+  builds the file with them in, for reading it or matching an error to a line
+  (#259).
+
 ## 1.72.1 - 2026-11-03
 
 - The source is split up (no change to what the app does). The stylesheet is

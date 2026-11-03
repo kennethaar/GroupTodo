@@ -13,6 +13,7 @@
 import {readFileSync, writeFileSync, existsSync, readdirSync} from "node:fs";
 import {dirname, join} from "node:path";
 import {fileURLToPath} from "node:url";
+import {stripJs, stripCss, stripHtml} from "./strip.mjs";
 
 export const ROOT = dirname(fileURLToPath(import.meta.url));
 const SRC = join(ROOT, "src");
@@ -28,7 +29,10 @@ const withAssets = code => code
   .replace(/SVG_URI\("([\w-]+)"\)/g, (_, n) => JSON.stringify(svgUri(n)))
   .replace(/SVG\("([\w-]+)"\)/g, (_, n) => JSON.stringify(svgText(n)));
 
-export function buildApp() {
+/* strip: comments, indentation and blank lines are left out of the built file
+   (strip.mjs). Tools that read the readable text, like the language catalog,
+   ask for strip: false. */
+export function buildApp({strip = true} = {}) {
   const parts = {css: [], js: {}};
   let into = null;
   for (const raw of read("build-order.txt").split("\n")) {
@@ -46,18 +50,26 @@ export function buildApp() {
     d.isDirectory() ? onDisk(dir + "/" + d.name) : /\.(js|css)$/.test(d.name) ? [dir + "/" + d.name] : []);
   const loose = ["css", "js"].flatMap(onDisk).filter(f => !listed.has(f));
   if (loose.length) throw new Error("not in build-order.txt, so not in the app: " + loose.join(", "));
-  const css = parts.css.map(read).join("");
-  let html = read("index.html").replace("<!--@css-->", () => "<style>" + css + "</style>");
+  const css = parts.css.map(f => strip ? stripCss(read(f)) : read(f)).join("");
+  let html = (strip ? stripHtml(read("index.html")) : read("index.html")).replace("<!--@css-->", () => "<style>" + css + "</style>");
   html = html.replace(/<!--@js:(\d+)-->/g, (_, n) => {
     if (!parts.js[n]) throw new Error("index.html wants script " + n + ", build-order.txt has none");
-    return "<script>\n" + parts.js[n].map(f => withAssets(read(f)).replace(/\s+$/, "")).join("\n\n") + "\n</script>";
+    return "<script>\n" + parts.js[n].map(f => withAssets(strip ? stripJs(read(f)) : read(f)).replace(/\s+$/, "")).join(strip ? "\n" : "\n\n") + "\n</script>";
   });
   return html.replace(/<!--@svg-uri:([\w-]+)-->/g, (_, n) => svgUri(n));
 }
 
+/*  node build.mjs               grouptodo.html, without comments and indentation
+    node build.mjs --readable    the same with them in, to read the built file
+    node build.mjs --print       the readable text on stdout, nothing written */
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  const html = buildApp();
-  writeFileSync(join(ROOT, "grouptodo.html"), html);
-  writeFileSync(join(ROOT, "icon.svg"), read("assets/app-icon.svg"));   // the served copy the manifest points at
-  console.log("grouptodo.html built, " + html.length + " characters");
+  const flag = process.argv[2];
+  if (flag === "--print") {
+    process.stdout.write(buildApp({strip: false}));    // no process.exit: a pipe still has to drain
+  } else {
+    const html = buildApp({strip: flag !== "--readable"});
+    writeFileSync(join(ROOT, "grouptodo.html"), html);
+    writeFileSync(join(ROOT, "icon.svg"), read("assets/app-icon.svg"));   // the served copy the manifest points at
+    console.log("grouptodo.html built, " + html.length + " characters");
+  }
 }
