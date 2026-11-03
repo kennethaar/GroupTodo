@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.73.1 - 2026-11-03
+
+- CLAUDE.md: the rest of the code navigation rules (#264). Do not explore
+  directories to learn the architecture, reuse what the session has found,
+  and run the targeted test before widening the search.
+
 ## 1.73.0 - 2026-11-03
 
 - Names as you type (#258): with several areas on, a person's row in the

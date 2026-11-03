@@ -7,6 +7,10 @@ Application source belongs under `src/`.
 
 Use symbol, reference or Tree-sitter search first. Read only the relevant
 source, direct dependencies, test and help topic. Expand only when necessary.
+Do not explore directories recursively to learn the architecture. Reuse
+findings already made in the session.
+
+Run the targeted test first. Widen the investigation only if it fails.
 
 - `src/css/NN-name.css`: joined in filename order.
 - `src/js/<part>/<name>.js`: one file per function. Related constants may use
