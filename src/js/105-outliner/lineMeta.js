@@ -8,7 +8,7 @@ function lineMeta(b, path = null, readonly = false) {
     out.push(path && !readonly ? duePill({path, block: b, space: V.space, due}, cls, words)
       : el("span", {class: "chip " + cls}, words));
   }
-  if (repeatOf(b)) out.push(el("span", {class: "chip"}, "\u21BB " + repeatOf(b)));
+  if (repeatOf(b)) out.push(path && !readonly ? repeatPill(path, b) : el("span", {class: "chip"}, "\u21BB " + repeatOf(b)));
   const who = b.state ? assigneeOf(b) : "";
   if (who && !samePerson(who, whoAmI())) out.push(el("span", {class: "chip who"}, "\u2192 " + who));
   const said = messagesOf(b).length;

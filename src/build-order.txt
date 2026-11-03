@@ -1445,6 +1445,8 @@ js/105-outliner/pullUpLine.js
 js/105-outliner/bodyLineEl.js
 js/105-outliner/attachOutlineUndo.js
 js/105-outliner/vars-BOOKKEEPING.js
+js/105-outliner/openLineRepeat.js
+js/105-outliner/repeatPill.js
 js/105-outliner/lineMeta.js
 js/105-outliner/vars-personLinksOf.js
 js/105-outliner/dropUnlinkedAssignee.js

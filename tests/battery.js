@@ -2522,6 +2522,29 @@ var GTD_TEST = (() => {
       ok(Math.abs(at - mid) < 4, "the new line is at " + Math.round(at) + ", the middle is " + Math.round(mid));
     } finally { window.matchMedia = mm; go("today"); }
   });
+  test("#267 the ↻ chip and Alt+R open the Repeats dialog", async () => {
+    const path = scratchProject("repeat chip", [["TODO", "Water the plants"]]);
+    const b = getPage(path).blocks[0];
+    setBlockProp(b, REPEAT_PROP, "weekly"); touch(path);
+    openPage(path); await settle();
+    const title = () => document.querySelector(".scrim .modal h2, .scrim .modal .mhead")?.textContent || "";
+    try {
+      const pill = document.querySelector('.blk[data-id="' + b.id + '"] .reppill');
+      ok(pill, "the repeat is a button");
+      pill.click(); await settle();
+      has(title(), "Repeats");
+      const m = document.querySelector(".scrim .modal");
+      [...m.querySelectorAll(".seg button")].find(n => n.textContent === "Daily").click();
+      [...m.querySelectorAll("button")].find(n => n.textContent === "Save").click(); await settle();
+      eq(repeatOf(getPage(path).blocks[0]), "daily");
+      focusBlock(b.id); await settle();
+      const txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
+      flySummon(txt); await settle();
+      txt.dispatchEvent(new KeyboardEvent("keydown", {key: "r", code: "KeyR", altKey: true, bubbles: true, cancelable: true}));
+      await settle();
+      has(title(), "Repeats");
+    } finally { closeModal(); go("today"); }
+  });
   test("#175 the line menu stops above a phone's keyboard and scrolls there", async () => {
     const path = scratchProject("fly keyboard", [["TODO", "Scroll the menu"]]);
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));

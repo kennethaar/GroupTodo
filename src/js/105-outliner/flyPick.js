@@ -44,12 +44,7 @@ function flyPick(k, v) {
   }
   if (k === "rep" && v === "\u0002") {
     FLY.txt.blur();
-    openRecurrenceDialog({title: "Repeats", spec: repeatOf(block), onSave: ({spec}) => {
-      flyMakeTask(path, block);
-      if (spec) setBlockProp(block, REPEAT_PROP, spec);
-      else for (const key of Object.keys(block.props)) if (key.toLowerCase() === REPEAT_PROP) delete block.props[key];
-      touch(path); render();
-    }});
+    openLineRepeat(path, block);
     return;
   }
   if (k === "rep") {

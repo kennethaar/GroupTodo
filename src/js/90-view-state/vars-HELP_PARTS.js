@@ -931,7 +931,7 @@ const HELP = {
       "A repeat comes back once you tick it.",
       "A routine copies its steps to the days it falls on.",
       "Type /run on a line to run a list by hand.",
-      "Alt+R sets a repeat."],
+      "Alt+R, or a click on the ↻ of a line, opens Repeats."],
     keys: [["Alt+R", "Repeat"]],
     code: [["repeat:: weekly", "Back a week after you tick it"], ["cadence:: every 2 weeks on fri", "A routine's rule"]],
     more: ["Repeats never pile up: the next one shows only once you tick the last.",
