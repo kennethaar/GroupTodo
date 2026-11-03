@@ -1884,6 +1884,8 @@ Keys: ← takes the left one, → the right one, ↓ skips the pair, Backspace u
 Keys: ↑ ↓ go down a column, ← → across to the other, a letter to the name starting with it, Enter files the action there. =>
 Kids who don't use GroupToDo? Mark them Household on their person page. =>
 Kill your darlings: /darling on a line cuts the sentence the caret is in, or at its start the whole line, or on a ## line the scene. =>
+Kind =>
+Kind of date =>
 Kind of page, and how many. =>
 Kinds of page shown. =>
 Klar =>
@@ -3645,6 +3647,7 @@ The people to drag. =>
 The person, how many, and × to hide. =>
 The phone asks for the folder each time the app starts. Tap Allow access to see your pages. =>
 The pile is empty =>
+The pill says Due or Scheduled. Pick the other to switch. =>
 The place or tool all of them need =>
 The plan =>
 The plan is taken back off the page. =>

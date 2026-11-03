@@ -2383,6 +2383,25 @@ var GTD_TEST = (() => {
       has(toasts(), "Draft summary");
     } finally { $("#toasts").replaceChildren(); removePage(path); clearMemo(); }
   });
+  test("#265 the date popover says Due or Scheduled and switches between them", () => {
+    const path = scratchProject("date kind");
+    getPage(path).blocks = parsePage("- TODO Book the venue").blocks;
+    const [b] = getPage(path).blocks, fri = shiftISO(todayISO(), 5);
+    setBlockProp(b, "DEADLINE", fri);
+    const anchor = document.body;
+    try {
+      openDueChipMenu({path, block: b, space: null, due: fri}, anchor);
+      const pop = () => $("#modalRoot .whenpop");
+      const kindBtn = k => [...pop().querySelectorAll(".vseg button")].find(x => x.textContent === k);
+      ok(/^Due · /.test($("#modalRoot .modal h2").textContent), "the title names the kind");
+      eq(kindBtn("Due").getAttribute("aria-pressed"), "true", "Due is pressed");
+      kindBtn("Scheduled").click();
+      ok(/^Scheduled · /.test($("#modalRoot .modal h2").textContent), "the title follows the switch");
+      [...$("#modalRoot .foot").querySelectorAll("button")].find(x => x.textContent === "Save").click();
+      ok(!blockProp(b, "DEADLINE"), "the deadline is gone");
+      eq(dateIn(blockProp(b, "SCHEDULED")), fri, "the same day is now scheduled");
+    } finally { closeModal(); $("#toasts").replaceChildren(); removePage(path); clearMemo(); }
+  });
   test("urgencyOf gives a number for every open action", () => {
     const acts = allLeafActions();
     ok(acts.length > 10, "only " + acts.length + " actions in the demo");

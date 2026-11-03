@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.74.2 - 2026-11-03
+
+- Dates and reminders (#265): a click on a date now says if it is Due or
+  Scheduled. Pick the other one to switch it, then Save.
+
 ## 1.74.1 - 2026-11-03
 
 - Links and aliases (#262): a name offered while you type now follows the

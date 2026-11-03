@@ -13,13 +13,26 @@ function openDueChipMenu(a, anchor) {
   let remindTouched = false;
   remindSel.addEventListener("change", () => { remindTouched = true; });
 
+  /* Due is a deadline; Scheduled is the day to start. The one it is now is
+     pressed, and Save moves the date to the one picked. */
+  let kind = w.key === "DEADLINE" ? "DEADLINE" : "SCHEDULED";
+  const kindName = k => k === "DEADLINE" ? "Due" : "Scheduled";
+  const kindBtns = ["SCHEDULED", "DEADLINE"].map(k => el("button", {type: "button", "aria-pressed": String(k === kind),
+    onclick: () => { kind = k; for (const b of kindBtns) b.setAttribute("aria-pressed", String(b.dataset.k === kind)); m.root.querySelector("h2").replaceChildren(kindName(kind) + " · " + humanWhen(w.day, w.time)); },
+    "data-k": k}, kindName(k)));
+
   /* Every change goes through here: the props as they were are kept for
      ctrl-z, and the reminder is armed afresh for the new time. */
   const apply = (day, time, opts = {}) => inSpace(space, () => {
     const before = structuredClone(block.props || {});
     if (day === null) clearDates(path, block);
     else {
+      const wrote = blockProp(block, "DEADLINE") && !blockProp(block, "SCHEDULED") ? "DEADLINE" : "SCHEDULED";
       setDue(block, day, time);
+      if (kind !== wrote) {
+        for (const k of Object.keys(block.props)) if (/^(scheduled|deadline|due)$/i.test(k)) delete block.props[k];
+        setBlockProp(block, kind, whenValue(day, time));
+      }
       const r = remindTouched ? remindSel.value : opts.now ? (had || "0") : had;
       if (r) setBlockProp(block, "remind", r);
       else for (const k of Object.keys(block.props)) if (k.toLowerCase() === "remind") delete block.props[k];
@@ -56,6 +69,7 @@ function openDueChipMenu(a, anchor) {
   const dayBtn = (label, iso) => btn(label, () => { dateIn_.value = iso; timeIn_.focus(); });
   const row = (label, ...kids) => el("div", {class: "field"}, el("label", {}, label), el("div", {class: "whenrow"}, ...kids));
   const body = el("div", {class: "whenpop"},
+    row("Kind", el("div", {class: "vseg", role: "group", "aria-label": "Kind of date", style: "margin-left:0"}, ...kindBtns)),
     row("Time", timeIn_),
     row("Day", dayBtn("Today", today), dayBtn("Tomorrow", shiftISO(today, 1)), dateIn_),
     row("Move it", btn("+10 min", () => shift(10)), btn("+1 h", () => shift(60)),
@@ -63,7 +77,7 @@ function openDueChipMenu(a, anchor) {
       btn("Next week", () => { closeModal(); apply(shiftISO(w.day < today ? today : w.day, 7), w.time); })),
     row("Reminder, when it has a time", remindSel));
   const m = modal({
-    title: humanWhen(w.day, w.time), center: true, body,
+    title: kindName(kind) + " · " + humanWhen(w.day, w.time), center: true, body,
     hint: "enter saves · esc closes",
     foot: [
       el("button", {class: "btn ghost", onclick: () => { closeModal(); apply(null); }}, "Clear"),
