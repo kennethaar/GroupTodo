@@ -6369,6 +6369,39 @@ var GTD_TEST = (() => {
     eq(TIMER_END, 0);
   });
 
+  test("#270 the dial: the angle is the minutes, outside the ring rings, the bell toggles", () => {
+    const b = timerDialItem({label: "Timer"}), wasSound = TIMER_SOUND;
+    b.style.cssText = "position:fixed;left:0;top:0";
+    document.body.append(b);
+    try {
+      const box = b.querySelector(".tface").getBoundingClientRect(), R = box.width / 2;
+      const cx = box.left + R, cy = box.top + R;
+      // Left of the middle is a quarter of max, counter-clockwise from the top.
+      const press = (x, y) => {
+        for (const type of ["pointerdown", "pointerup"])
+          b.querySelector(".tdial svg").dispatchEvent(new PointerEvent(type, {bubbles: true, clientX: x, clientY: y, pointerId: 1}));
+      };
+      const quarter = Math.round(timerMax() / 4) * 60000;
+      press(cx - R * 0.4, cy);
+      eq(TIMER_LEN, quarter, "inside: a quarter");
+      eq(TIMER_SOUND, false, "inside the ring is silent");
+      press(cx - R * 0.9, cy);
+      eq(TIMER_LEN, quarter, "outside: the same quarter");
+      eq(TIMER_SOUND, true, "outside the ring rings");
+      const end = TIMER_END;
+      b.querySelector('[data-part="sound"]').click();
+      eq(TIMER_SOUND, false, "the bell turns it off");
+      eq(TIMER_END, end, "and the time left is kept");
+      b.querySelector('[data-part="sound"]').click();
+      eq(TIMER_SOUND, true, "and on again");
+      eq(TIMER_END, end);
+      press(cx, cy);
+      eq(TIMER_END, 0, "the middle stops it");
+    } finally {
+      b.remove(); timerStop(); TIMER_SOUND = wasSound;
+    }
+  });
+
   /* ============================================================
      The runner
      ============================================================ */

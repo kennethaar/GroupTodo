@@ -786,6 +786,8 @@ js/90-view-state/vars-DIAL_C.js
 js/90-view-state/dialSector.js
 js/90-view-state/dialTick.js
 js/90-view-state/dialNumber.js
+js/90-view-state/timerDialPoint.js
+js/90-view-state/timerSoundToggle.js
 js/90-view-state/timerDialItem.js
 js/90-view-state/timerPaintDial.js
 js/90-view-state/vars-isNarrow.js

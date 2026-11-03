@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.78.0 - 2026-11-03
+
+- Timer (#270): click or drag round the dial. Where you point is the
+  minutes. Inside the ring it is silent; outside it rings. The middle starts
+  the usual length or stops. The bell turns the alarm on or off, even while
+  it runs, and keeps the time left.
+
 ## 1.77.0 - 2026-11-03
 
 - Keys on a line (#269): write |Name|Phone| and press Enter to start a

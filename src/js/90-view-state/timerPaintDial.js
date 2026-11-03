@@ -28,14 +28,15 @@ function timerPaintDial(b, drag, left, due) {
     : due >= 0 ? len + " min rang"
     : timerDefaultMinutes() + " min, up to " + max;
   const sound = b.querySelector('[data-part="sound"]');
-  // Solid while the alarm is on: the timer running, or being set, rings.
-  const rings = dragging ? drag.sound : left > 0 && TIMER_SOUND;
+  // Solid, and the wedge amber, while the alarm is on.
+  const rings = dragging ? drag.sound : TIMER_SOUND;
   sound.setAttribute("aria-pressed", String(rings));
-  sound.title = (rings ? "The alarm is on. " : "") + timerDefaultMinutes() + " min with the alarm";
+  b.classList.toggle("rings", rings);
+  sound.title = rings ? "The alarm is on. Click to turn it off" : "The alarm is off. Click to turn it on";
   dial.title = due >= 0 ? "The " + len + " min alarm rang at "
       + new Date(TIMER_DUE).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"})
       + ", " + clock(due) + " ago. Click to dismiss"
     : timerRinging() ? "Click to silence the alarm"
-    : left > 0 ? "Click to stop, or drag to start over: up rings, left is silent, Ctrl rings"
-    : "Click for " + timerDefaultMinutes() + " min, silent. Drag for up to " + max + " min: up rings, left is silent, Ctrl rings";
+    : "Click or drag round the face for up to " + max + " min. Inside the ring is silent, outside rings. "
+      + (left > 0 ? "The middle stops it" : "The middle starts " + timerDefaultMinutes() + " min");
 }

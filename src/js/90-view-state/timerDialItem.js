@@ -12,14 +12,15 @@ function timerDialItem(it) {
   const nums = quarters.map(f => dialNumber(Math.round(f * max * 10) / 10, max));
   const box = 2 * (DIAL_C + DIAL_PAD);
   dial.innerHTML = `<svg viewBox="${-DIAL_PAD} ${-DIAL_PAD} ${box} ${box}" aria-hidden="true"><circle class="tface" cx="${DIAL_C}" cy="${DIAL_C}" r="${DIAL_R + 1}"/>`
-    + `<path class="tsector"/>`
+    + `<path class="tsector"/><circle class="tring" cx="${DIAL_C}" cy="${DIAL_C}" r="${DIAL_R * DIAL_RING}"/>`
     + `<g class="tquart">${quarters.map(f => dialTick(f, 5)).join("")}</g>`
     + `<circle class="thub" cx="${DIAL_C}" cy="${DIAL_C}" r="2.5"/><g class="tnums">${nums.join("")}</g></svg>`;
   const b = el("div", {class: "nav-item small timer dial"},
     dial,
     el("span", {class: "tread"}, el("span", {class: "lbl"}, it.label), el("span", {class: "tsub"})),
+    // Struck through while the alarm is off.
     part("sound", "",
-      SVG("icon-bell")),
+      SVG("icon-bell").replace("</svg>", '<path class="tslash" d="M4 3l16 18"/></svg>')),
     part("more", "Timer settings: length, max, style, volume",
       SVG("icon-dots")));
 
@@ -27,26 +28,33 @@ function timerDialItem(it) {
   const click = part => {
     if (timerRinging()) return timerAck();
     if (part === "more") return timerSettingsMenu();
-    if (part === "sound") return timerStart(timerDefaultMinutes(), true);
-    if (timerLeft() > 0) timerStop(); else timerStart(timerDefaultMinutes(), false);
+    if (part === "sound") return timerSoundToggle();
+    if (timerLeft() > 0) timerStop(); else timerStart(timerDefaultMinutes(), TIMER_SOUND);
   };
   const show = (m, sound = TIMER_SOUND) => { b._drag = m == null ? null : {minutes: m, sound}; timerPaint(); };
+  // Past 0 at the top, a drag stays at the end it came from.
+  const pick = (f, prev) => {
+    const m = clamp(Math.round(f * max));
+    return prev != null && Math.abs(m - prev) > max / 2 ? (prev > max / 2 ? max : 1) : m;
+  };
 
-  let down = null;   // {x, y, picked, sound} while the pointer is pressed
+  let down = null;   // {face, picked, sound} while the pointer is pressed
+  const aim = e => {
+    const p = timerDialPoint(dial, e);
+    // A press must land on the face; a drag may leave it.
+    if (p.r < DIAL_HUB || (down.picked == null && p.r > 1)) return;
+    down.picked = pick(p.f, down.picked);
+    down.sound = p.r > DIAL_RING;
+    show(down.picked, down.sound);
+  };
   b.addEventListener("pointerdown", e => {
     if (e.button || e.target.closest("[data-part]")) return;
     timerAudio();   // a press is a gesture; the wheel that may start it later is not
-    down = {x: e.clientX, y: e.clientY, picked: null, sound: false};
+    down = {face: dial.contains(e.target), picked: null, sound: false};
+    if (down.face) aim(e);
     e.preventDefault(); dial.focus({preventScroll: true}); b.setPointerCapture(e.pointerId);
   });
-  b.addEventListener("pointermove", e => {
-    if (!down) return;
-    const dx = e.clientX - down.x, dy = e.clientY - down.y;
-    if (down.picked == null && Math.hypot(dx, dy) < 5) return;
-    down.picked = clamp(Math.round(Math.hypot(dx, dy) / TIMER_PX));
-    down.sound = timerDragRings(e, dx, dy);
-    show(down.picked, down.sound);
-  });
+  b.addEventListener("pointermove", e => { if (down?.face) aim(e); });
   const end = cancel => {
     if (!down) return;
     const {picked, sound} = down;
@@ -65,10 +73,10 @@ function timerDialItem(it) {
 
   // The wheel and the arrow keys nudge it, and it starts once they stop.
   // Rolling down adds, the way pulling a dial towards you would.
-  // A running timer keeps its sound; a new one is silent, like a click.
+  // It rings the way the bell says.
   let wait = null;
   const nudge = by => {
-    const sound = b._drag?.sound ?? (timerLeft() > 0 && TIMER_SOUND);
+    const sound = b._drag?.sound ?? TIMER_SOUND;
     show(clamp((b._drag?.minutes ?? (timerLeft() > 0 ? Math.ceil(timerLeft() / 60000) : 0)) + by), sound);
     clearTimeout(wait);
     wait = setTimeout(() => { const d = b._drag; show(null); if (d) timerStart(d.minutes, d.sound); }, 1200);
