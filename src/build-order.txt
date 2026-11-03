@@ -1492,6 +1492,7 @@ js/105-outliner/lineSelRemove.js
 js/105-outliner/lineSelCut.js
 js/105-outliner/vars-lineSelDelete.js
 js/105-outliner/lineSelPaste.js
+js/105-outliner/lineSelToggle.js
 js/105-outliner/attachLineSelect.js
 js/105-outliner/run-5-2.js
 js/105-outliner/lineSelOwnsClipboard.js

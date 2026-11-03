@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.79.0 - 2026-11-03
+
+- Keys on a line (#272): Ctrl+click picks a line, or drops it again, so you
+  can pick every other line. Drag to pick now also starts on plain lines
+  that do not begin with "- ".
+
 ## 1.78.1 - 2026-11-03
 
 - Natural planning (#266): in Who it is for, a person is found by an alias

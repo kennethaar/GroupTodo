@@ -1057,6 +1057,7 @@ Ctrl+Enter cycles the state. =>
 Ctrl+Enter on a line cycles its state. =>
 Ctrl+Enter puts it in as prose, in the book's marks, with a said only where a reader could not tell who speaks. =>
 Ctrl+Z =>
+Ctrl+click =>
 Ctrl-Z brings the project back. =>
 Ctrl-Z brings them back =>
 Current ranking =>
@@ -2803,6 +2804,7 @@ Pick how speech is set under Settings > Book > Dialogue. Then a straight quote y
 Pick it any time from Vault & sync → Connect folder. =>
 Pick more lines =>
 Pick one =>
+Pick or drop one line =>
 Pick someone =>
 Pick the folder your list lives in - a shared one, or a new one of your own. =>
 Pick the line =>

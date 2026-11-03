@@ -1053,7 +1053,7 @@ const HELP = {
       ["Alt+D", "Due date"], ["Alt+C", "Context"], ["Alt+P", "Person"], ["Alt+O", "Organisation"], ["Alt+J", "Project"],
       ["Alt+R", "Repeat"], ["Alt+S", "Move to an area"], ["Alt+I", "Responsibility"], ["Alt+G", "Refile"],
       ["Enter", "Accept or new line"], ["Tab", "Indent"], ["Shift+Tab", "Outdent"], ["Esc", "Pick the line"], ["Shift+↑ ↓", "Pick more lines"],
-      ["Alt+Shift+↑ ↓", "Move lines"], ["Ctrl+.", "Line menu"], ["( [ {", "Brackets in pairs"],
+      ["Ctrl+click", "Pick or drop one line"], ["Alt+Shift+↑ ↓", "Move lines"], ["Ctrl+.", "Line menu"], ["( [ {", "Brackets in pairs"],
       ["|a|b| Enter", "Start a table"]],
     more: ["With words picked, Alt+1, 2, 3, 8, Z, P, O or C links just those words.",
       "An opening bracket puts in the closing one too. In a word, or on picked words, the brackets go around them.",

@@ -8,17 +8,31 @@ function attachLineSelect(outline, path) {
     // A press on a control, a link or the bullet is that thing's press.
     if (e.target.closest("button, a, input, textarea, select, [data-link], .bullet, .pfacts")) return;
 
+    // Ctrl picks this one line, besides whatever is picked already.
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      const sel = getSelection();
+      if (sel) sel.removeAllRanges();
+      lineSelToggle(outline, path, start);
+      return;
+    }
+
     const y0 = e.clientY;
+    // A plain line under a bullet is a line too: leaving it is leaving the line.
+    const unitOf = n => n && n.closest ? n.closest(".txt, .bodyline") : null;
+    const startUnit = unitOf(e.target);
     let live = false;
 
     const move = ev => {
       /* Every layer under the pointer, not just the top one: the toolbar that
          floats by the line being edited can lie over the next line, and the
          line under it is still the one being dragged onto. */
-      const blk = document.elementsFromPoint(ev.clientX, ev.clientY)
-        .map(n => n.closest ? n.closest(".blk") : null).find(n => n && outline.contains(n)) || null;
+      const layers = document.elementsFromPoint(ev.clientX, ev.clientY);
+      const blk = layers.map(n => n.closest ? n.closest(".blk") : null).find(n => n && outline.contains(n)) || null;
+      const unit = layers.map(unitOf).find(n => n && outline.contains(n)) || null;
       if (!live) {
-        if (!blk || blk === start || !outline.contains(blk)) return;
+        if (!blk || !outline.contains(blk) || (blk === start && (!unit || unit === startUnit))) return;
         if (Math.abs(ev.clientY - y0) < 6) return;
         live = true;
         document.body.classList.add("lselecting");

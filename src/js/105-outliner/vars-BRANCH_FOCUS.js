@@ -30,6 +30,8 @@ document.addEventListener("mousedown", e => {
   if (e.target.closest("#lselHud")) return;
   // A right click opens the menu that copies them: the pick has to outlast it.
   if (e.button === 2 && e.target.closest?.(".blk.lsel")) return;
+  // Ctrl on a line adds it to the pick, which attachLineSelect has just done.
+  if ((e.ctrlKey || e.metaKey) && e.defaultPrevented) return;
   lineSelClear();
 });
 

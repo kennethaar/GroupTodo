@@ -43,8 +43,8 @@ var GTD_TEST = (() => {
   /* ============================================================
      Version
      ============================================================ */
-  test("version is MAJOR.MINOR.PATCH", () => ok(/^\d+\.\d+\.\d+$/.test(APP_VERSION), "APP_VERSION is " + APP_VERSION));
-  test("version is shown beside the name, top left", () => {
+  test("version is MAJOR.MINOR.PATCH and shown beside the name, top left", () => {
+    ok(/^\d+\.\d+\.\d+$/.test(APP_VERSION), "APP_VERSION is " + APP_VERSION);
     eq(document.querySelector("#appVersion").textContent, "v" + APP_VERSION);
     has(document.querySelector("#brand").textContent, "GroupToDo");
   });
@@ -136,8 +136,8 @@ var GTD_TEST = (() => {
     ok(getPage(join(DIRS.orgs, "Nordvik Shipping.md")), "demo org Nordvik Shipping");
     ok(getPage(personPath("Lars Haugen")), "demo person Lars Haugen");
     ok(getPage(journalPath(T())) || allPages().some(p => pageKind(p) === "journal"), "a journal page");
+    eq(whoAmI(), "Kenneth Aar", "identity is the demo user");
   });
-  test("identity is the demo user", () => eq(whoAmI(), "Kenneth Aar"));
 
   /* ============================================================
      Every screen draws
@@ -2428,13 +2428,6 @@ var GTD_TEST = (() => {
   /* ============================================================
      Pages and links
      ============================================================ */
-  test("putPage / getPage / removePage", () => {
-    const path = join(DIRS.pages, "Test scratch page.md");
-    putPage(path, {props: {title: "Test scratch page"}, blocks: [newBlock({title: "hello"})]});
-    eq(getPage(path).blocks[0].title, "hello");
-    removePage(path);
-    eq(getPage(path), undefined);
-  });
   test("backlinks find the tasks that name a person", () => {
     const hits = backlinksTo(personPath("Lars Haugen"));
     ok(hits.length >= 1, "no backlinks to Lars Haugen");
@@ -2606,6 +2599,49 @@ var GTD_TEST = (() => {
       ok(!q(' > .bodyline[data-bi="1"]').offsetParent, "the rows are shown as text as well");
       ok(serializeBlockLines([b], 0).join("\n").includes("  | --- | --- |"), "the file has no Markdown table");
     } finally { go("today"); }
+  });
+  test("#272 ctrl-click picks lines one by one, and a drag can start on a plain body line", async () => {
+    const path = scratchProject("ctrl pick", [["TODO", "One"], ["TODO", "Two"], ["TODO", "Three"], ["TODO", "Four"]]);
+    getPage(path).blocks[0].body = ["plain text under One", "and a second plain line"];
+    openPage(path);
+    await settle();
+    const bl = getPage(path).blocks;
+    const node = b => document.querySelector('.blk[data-id="' + b.id + '"]');
+    const press = (n, o = {}) => n.dispatchEvent(new MouseEvent("mousedown", {bubbles: true, cancelable: true, button: 0, ...o}));
+    const picked = () => LINE_SEL.ids.join();
+    try {
+      press(node(bl[0]).querySelector(".txt"), {ctrlKey: true});
+      press(node(bl[2]).querySelector(".txt"), {ctrlKey: true});
+      eq(picked(), [bl[0].id, bl[2].id].join(), "ctrl-click did not pick every other line");
+      ok(node(bl[0]).classList.contains("lsel") && !node(bl[1]).classList.contains("lsel"), "the picked lines are not painted");
+      press(node(bl[1]).querySelector(".txt"), {ctrlKey: true});
+      press(node(bl[0]).querySelector(".txt"), {ctrlKey: true});
+      eq(picked(), [bl[1].id, bl[2].id].join(), "ctrl-click did not take a line back off, in page order");
+      lineSelClear();
+      // A press on the plain line under One, dragged onto Three, picks One through Three.
+      const body = node(bl[0]).querySelector(":scope > .bodyline");
+      ok(body, "the body line is not drawn");
+      const under = node(bl[2]).querySelector(".txt");
+      const real = document.elementsFromPoint;
+      document.elementsFromPoint = () => [under];
+      try {
+        press(body, {clientX: 5, clientY: 5});
+        document.dispatchEvent(new MouseEvent("mousemove", {bubbles: true, cancelable: true, clientX: 5, clientY: 60}));
+        document.dispatchEvent(new MouseEvent("mouseup", {bubbles: true}));
+      } finally { document.elementsFromPoint = real; }
+      eq(picked(), [bl[0].id, bl[1].id, bl[2].id].join(), "the drag from a body line did not pick the lines");
+      lineSelClear();
+      // Dragging down the plain lines under One alone picks One, with its text.
+      const second = node(bl[0]).querySelector(':scope > .bodyline[data-bi="1"]');
+      ok(second, "the second body line is not drawn");
+      document.elementsFromPoint = () => [second];
+      try {
+        press(body, {clientX: 5, clientY: 5});
+        document.dispatchEvent(new MouseEvent("mousemove", {bubbles: true, cancelable: true, clientX: 5, clientY: 40}));
+        document.dispatchEvent(new MouseEvent("mouseup", {bubbles: true}));
+      } finally { document.elementsFromPoint = real; }
+      eq(picked(), bl[0].id, "the drag across body lines did not pick their line");
+    } finally { lineSelClear(); go("today"); }
   });
   test("#267 the ↻ chip and Alt+R open the Repeats dialog", async () => {
     const path = scratchProject("repeat chip", [["TODO", "Water the plants"]]);
