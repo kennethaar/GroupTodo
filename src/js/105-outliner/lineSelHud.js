@@ -9,6 +9,16 @@ function lineSelHud() {
   hud.append(el("button", {class: "btn sm ghost", onclick: () => lineSelCut()}, "Cut"));
   hud.append(el("button", {class: "btn sm ghost", onclick: () => lineSelDelete()}, "Delete"));
   hud.append(el("button", {class: "btn sm ghost", onclick: () => lineSelContext()}, "@ Context"));
+  if (Spaces.list.length > 1) hud.append(el("button", {class: "btn sm ghost", onclick: () => {
+    const got = lineSelBlocks();
+    if (!got) return;
+    // A picked line's children are picked too, but they travel with it.
+    const inner = new Set();
+    for (const b of got.blocks) walkBlocks(b.children, c => { inner.add(c); });
+    const items = got.blocks.filter(b => !inner.has(b)).map(b => ({space: V.space, path: LINE_SEL.path, id: b.id}));
+    lineSelClear();
+    openMoveLinesToArea(items);
+  }}, "To area"));
   hud.append(el("button", {class: "btn sm ghost", onclick: () => {
     const got = lineSelBlocks();
     if (!got) return;

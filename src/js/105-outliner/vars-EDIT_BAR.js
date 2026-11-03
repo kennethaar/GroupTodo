@@ -13,7 +13,8 @@ const EDIT_BAR = [
   {k: "kind", ic: "\u2610", label: "Task", tip: "Make it a task (Alt+T)"},
   {k: "mkzet", ic: "\u25C7", label: "Zettel", tip: "Turn into zettel (Alt+Z)"},
   {k: "mkproj", ic: ICON.projects, label: "Project", tip: "Make it a project (Alt+1)"},
-  {k: "mkarea", ic: "\u25CE", label: "Area", tip: "Make it a responsibility (Alt+I)"},
+  {k: "mkarea", ic: "\u25CE", label: "Responsibility", tip: "Make it a responsibility (Alt+I)"},
+  {k: "area", ic: "⇄", label: "To area", tip: "Move the line to another area, with the pages it links to"},
   {k: "photo", ic: "\uD83D\uDCF7", label: "Photo", tip: "Take a photo for this line"},
   {k: "image", ic: "\uD83D\uDDBC", label: "Image", tip: "Add an image to this line"},
 ];

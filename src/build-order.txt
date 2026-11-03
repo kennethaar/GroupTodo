@@ -2560,6 +2560,9 @@ js/168-spaces-side-by-side/vars-PERSON_AWAY.js
 js/168-spaces-side-by-side/peopleElsewhere.js
 js/168-spaces-side-by-side/carryPerson.js
 js/168-spaces-side-by-side/runItemTransfer.js
+js/168-spaces-side-by-side/linkedMoveKinds.js
+js/168-spaces-side-by-side/moveLinesToArea.js
+js/168-spaces-side-by-side/openMoveLinesToArea.js
 js/168-spaces-side-by-side/openItemSpacePicker.js
 js/168-spaces-side-by-side/itemContext.js
 js/168-spaces-side-by-side/rememberItemContext.js

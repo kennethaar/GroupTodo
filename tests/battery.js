@@ -3085,6 +3085,33 @@ var GTD_TEST = (() => {
       closeModals(); await removeArea("Test193 extra");
     }
   });
+  test("#273 lines move to another area with the pages they link; a page others link to is mirrored", async () => {
+    const n = "Test273 work", back = Spaces.active, day = journalPath("2031-05-06");
+    await createSpace(n, "local");
+    await openSpace(back);
+    try {
+      putPage(day, parsePage("- Dentist [[Clinic273]] [[Shared273]]\n- Stays here\n"));
+      putPage(join(PAGES, "Clinic273.md"), parsePage("- Opening hours\n"));
+      putPage(join(PAGES, "Shared273.md"), parsePage("- Also used elsewhere\n"));
+      putPage(join(PAGES, "Other273.md"), parsePage("- See [[Shared273]]\n"));
+      const id = getPage(day).blocks[0].id;
+      eq(linkedMoveKinds([{space: back, path: day, id}]).mirror, [join(PAGES, "Shared273.md")], "only the page others link to is mirrored");
+      ok(await moveLinesToArea([{space: back, path: day, id}], n), "the move said no");
+      eq(getPage(day).blocks.map(b => b.title), ["Stays here"], "the line left");
+      ok(!getPage(join(PAGES, "Clinic273.md")), "a page only the line linked to moved");
+      ok(getPage(join(PAGES, "Shared273.md")), "the shared page stayed");
+      inSpace(n, () => {
+        eq(getPage(day).blocks.map(b => b.title), ["Dentist [[Clinic273]] [[Shared273]]"], "the line arrived on the same day");
+        ok(getPage(join(PAGES, "Clinic273.md")), "the moved page arrived");
+        ok(getPage(join(PAGES, "Shared273.md")).props.space_sync_id, "the shared page is mirrored");
+      });
+      has(document.querySelector("#toasts").textContent, "Other pages link to Shared273");
+    } finally {
+      document.querySelectorAll("#toasts .toast").forEach(t => t.remove());
+      for (const p of [day, "Clinic273", "Shared273", "Other273"]) removePage(p.includes("/") ? p : join(PAGES, p + ".md"));
+      await openSpace(back); await removeArea(n);
+    }
+  });
   test("#193 setting up areas offers a folder or this browser, never a server", () => {
     const base = SERVER_BASE;
     SERVER_BASE = "http://127.0.0.1:8777";          // as if served by serve.py with a folder

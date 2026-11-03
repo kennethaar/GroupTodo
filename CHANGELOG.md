@@ -5,6 +5,18 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.80.0 - 2026-11-03
+
+- Keys on a line (#273): a "To area" button on the picked-lines bar and on the
+  line toolbar moves the lines to another area. Pages they link to move
+  along. A page other pages also link to is mirrored instead, and a message
+  says so.
+
+## 1.79.1 - 2026-11-03
+
+- Keys on a line: the button at the foot of the page that makes a line a
+  responsibility now says "Responsibility", not "Area".
+
 ## 1.79.0 - 2026-11-03
 
 - Keys on a line (#272): Ctrl+click picks a line, or drops it again, so you
