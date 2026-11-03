@@ -876,7 +876,7 @@ const HELP = {
       "A date at the end of a task is its due date.",
       "Write a time: kl 13, 14:30, in 45 minutes.",
       "Click the time pill to move it or change its reminder.",
-      "The pill says Due or Scheduled. Pick the other to switch."],
+      "A new date is Due. Pick Scheduled to make it a start day."],
     keys: [["Alt+D", "Due date"]],
     more: ["The box at the top reads Call Bob fri 2pm and Pay rent by the 1st.",
       "It reads English and Norwegian, and due:, until: and remind:.",

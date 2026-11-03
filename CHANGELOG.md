@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.75.1 - 2026-11-03
+
+- Dates and reminders (#265): a new date is Due by default, from Alt+D and
+  everywhere else. Pick Scheduled in the date box to make it a start day.
+
 ## 1.75.0 - 2026-11-03
 
 - Repeat and routines (#267): click the ↻ on a line, or press Alt+R, to open

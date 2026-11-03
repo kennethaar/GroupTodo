@@ -14,10 +14,10 @@ function openDueChipMenu(a, anchor) {
   remindSel.addEventListener("change", () => { remindTouched = true; });
 
   /* Due is a deadline; Scheduled is the day to start. The one it is now is
-     pressed, and Save moves the date to the one picked. */
-  let kind = w.key === "DEADLINE" ? "DEADLINE" : "SCHEDULED";
+     pressed -- Due for a new date -- and Save moves the date to the one picked. */
+  let kind = w.key === "SCHEDULED" ? "SCHEDULED" : "DEADLINE";
   const kindName = k => k === "DEADLINE" ? "Due" : "Scheduled";
-  const kindBtns = ["SCHEDULED", "DEADLINE"].map(k => el("button", {type: "button", "aria-pressed": String(k === kind),
+  const kindBtns = ["DEADLINE", "SCHEDULED"].map(k => el("button", {type: "button", "aria-pressed": String(k === kind),
     onclick: () => { kind = k; for (const b of kindBtns) b.setAttribute("aria-pressed", String(b.dataset.k === kind)); m.root.querySelector("h2").replaceChildren(kindName(kind) + " · " + humanWhen(w.day, w.time)); },
     "data-k": k}, kindName(k)));
 
@@ -27,7 +27,7 @@ function openDueChipMenu(a, anchor) {
     const before = structuredClone(block.props || {});
     if (day === null) clearDates(path, block);
     else {
-      const wrote = blockProp(block, "DEADLINE") && !blockProp(block, "SCHEDULED") ? "DEADLINE" : "SCHEDULED";
+      const wrote = blockProp(block, "SCHEDULED") && !blockProp(block, "DEADLINE") ? "SCHEDULED" : "DEADLINE";
       setDue(block, day, time);
       if (kind !== wrote) {
         for (const k of Object.keys(block.props)) if (/^(scheduled|deadline|due)$/i.test(k)) delete block.props[k];

@@ -2402,6 +2402,23 @@ var GTD_TEST = (() => {
       eq(dateIn(blockProp(b, "SCHEDULED")), fri, "the same day is now scheduled");
     } finally { closeModal(); $("#toasts").replaceChildren(); removePage(path); clearMemo(); }
   });
+  test("#265 a new date is Due by default; Scheduled stays Scheduled", () => {
+    const path = scratchProject("date default");
+    getPage(path).blocks = parsePage("- TODO Book the venue\n- TODO Call the caterer").blocks;
+    const [b, c] = getPage(path).blocks, fri = shiftISO(todayISO(), 5);
+    setBlockProp(c, "SCHEDULED", todayISO());
+    try {
+      openDueChipMenu({path, block: b, space: null}, document.body);
+      eq([...$("#modalRoot .whenpop .vseg button")].find(x => x.textContent === "Due").getAttribute("aria-pressed"), "true", "Due is pressed for a new date");
+      closeModal();
+      setDue(b, fri);
+      eq(dateIn(blockProp(b, "DEADLINE")), fri, "setDue writes a deadline");
+      ok(!blockProp(b, "SCHEDULED"), "and no scheduled day");
+      setDue(c, fri);
+      eq(dateIn(blockProp(c, "SCHEDULED")), fri, "a scheduled day stays scheduled");
+      ok(!blockProp(c, "DEADLINE"), "and gains no deadline");
+    } finally { closeModal(); $("#toasts").replaceChildren(); removePage(path); clearMemo(); }
+  });
   test("urgencyOf gives a number for every open action", () => {
     const acts = allLeafActions();
     ok(acts.length > 10, "only " + acts.length + " actions in the demo");
