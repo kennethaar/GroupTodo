@@ -998,7 +998,7 @@ const HELP = {
       "Chrome on Android opens a folder too. It may ask to be let in again each time.",
       "The vault file also carries the pictures pages link to.",
       "Pages missing? More, then Check the folder, shows what the app cannot read.",
-      "A big folder opens in steps: this week, projects, people, contexts and organisations first. A bar under Pages shows how far it has come. Click it to see each file.",
+      "A big folder opens in steps: today, then the month, then projects, contexts, people and organisations. Until a file is read, a page shows its file name. A bar under Pages shows how far it has come. Click it to see each file.",
       "A page changed on another device is merged with yours when it is saved, not written over.",
       "A Syncthing conflict copy is merged into its page, with no line twice, and then deleted.",
       "More, then Updates: look for a new version once a day, or check now."],

@@ -2,6 +2,7 @@
 function stalestActiveProjects(n = CFG.weedCount) {
   const rows = [];
   for (const path of projectsIn("1")) {
+    if (isStandIn(path)) continue;            // its file is not in yet
     const page = getPage(path);
     const todos = [];
     let noContext = false, noVerb = false, anyTodo = false;

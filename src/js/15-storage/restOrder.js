@@ -1,5 +1,5 @@
 function restOrder(paths) {
-  const weekAgo = shiftISO(todayISO(), -7);
-  const rank = new Map(paths.map(p => [p, restRank(p, weekAgo)]));
+  const monthAgo = shiftISO(todayISO(), -SHOWN_DAYS);
+  const rank = new Map(paths.map(p => [p, restRank(p, monthAgo)]));
   return paths.slice().sort((a, b) => rank.get(a) - rank.get(b) || (dayOfPath(b) || "").localeCompare(dayOfPath(a) || ""));
 }

@@ -543,44 +543,58 @@ var GTD_TEST = (() => {
     ok(!rec.dirty.has(boat), "nothing left to send for the stand-in");
   });
 
-  test("#181 the week, projects, people, contexts and orgs come in before the rest", async () => {
-    const old = shiftISO(T(), -10), five = shiftISO(T(), -5);
+  test("#181 the month, then projects, contexts, people and orgs come in before the rest", async () => {
+    const jp = d => join(JOURNALS, d + ".md");
+    const old = shiftISO(T(), -40), five = shiftISO(T(), -5), yest = shiftISO(T(), -1);
     let release;
     const held = new Promise(r => { release = r; });
     const order = [];
     const tree = {
-      journals: {[T() + ".md"]: "- today\n", [five + ".md"]: "- five days ago\n", [old + ".md"]: "- old\n"},
+      journals: {[T() + ".md"]: "- today\n", [yest + ".md"]: "- yesterday\n", [five + ".md"]: "- five days ago\n", [old + ".md"]: "- old\n"},
       pages: {"GTD.md": "title:: GTD\n",
         "0": {"Done.md": "title:: Done\n"}, "2": {"Later.md": "title:: Later\n"},
         "1": {"Boat.md": "title:: Boat\n\n- TODO Sand the hull\n"},
         p: {"Odd Kittelsen.md": "title:: Odd Kittelsen\n\n- met at the fair\n"},
         c: {"phone.md": "title:: phone\n"}, o: {"CAB.md": "title:: CAB\n"}},
     };
-    const b = Backends.fs(fakeDir("Soon181", tree, [], {[old + ".md"]: held, "Done.md": held, "Later.md": held}));
+    /* The contexts are held: what is in before them is shown, what follows is not. */
+    const b = Backends.fs(fakeDir("Soon181", tree, [], {[old + ".md"]: held, "Done.md": held, "Later.md": held, "phone.md": held}));
     const read = b.readMany.bind(b);
     b.readMany = (paths, onEach) => read(paths, p => { order.push(p); if (onEach) onEach(p); });
     const rec = newRecord("Soon181", b);
-    let soon = false;
+    let shown = 0;
     try {
-      await readInto(rec, {stage: true, onSoon: () => { soon = true; }});
-      for (let i = 0; i < 40 && !soon; i++) await settle();
-      ok(soon, "the first of the rest was not shown before the rest");
-      has(serializePage(rec.pages.get(personPath("Odd Kittelsen"))), "met at the fair", "the person, before the rest");
-      has(serializePage(rec.pages.get(join(DIRS.active, "Boat.md"))), "Sand the hull", "the project, before the rest");
-      ok(rec.pages.has(join(JOURNALS, five + ".md")), "a day this week, before the rest");
-      ok(!rec.stubs.has(join(DIRS.contexts, "phone.md")) && !rec.stubs.has(join(DIRS.orgs, "CAB.md")), "contexts and orgs still stand-ins");
+      await readInto(rec, {stage: true, onSoon: () => { shown++; }});
+      has(serializePage(rec.pages.get(jp(T()))), "today", "today, in the first read");
+      ok(!rec.pages.has(jp(yest)), "yesterday came in with today");
+      for (let i = 0; i < 40 && shown < 2; i++) await settle();
+      eq(shown, 2, "times shown: the month, then the projects");
+      has(serializePage(rec.pages.get(jp(yest))), "yesterday", "yesterday, before the projects");
+      ok(rec.pages.has(jp(five)), "a day this month, before the projects");
+      has(serializePage(rec.pages.get(join(DIRS.active, "Boat.md"))), "Sand the hull", "the project, before the contexts");
+      ok(rec.stubs.has(join(DIRS.contexts, "phone.md")), "the context is not a stand-in");
+      ok(rec.stubs.has(personPath("Odd Kittelsen")) && rec.stubs.has(join(DIRS.orgs, "CAB.md")), "people and orgs came in before the contexts");
+      ok(rec.pages.has(personPath("Odd Kittelsen")) && !rec.pages.get(personPath("Odd Kittelsen")).blocks.length, "the person is there by name");
       ok(rec.stubs.has(join(DIRS.completed, "Done.md")), "a done project came in early");
-      ok(!rec.pages.has(join(JOURNALS, old + ".md")), "an old day came in early");
+      ok(!rec.pages.has(jp(old)), "a day from over a month ago came in early");
       ok(navLoading(), "no bar while the rest is read");
     } finally { release(); }
     await filesLoaded();
     ok(!rec.stubs, "no stand-ins left");
     ok(!LOADING.has(rec.name), "the bar stays once all is in");
+    has(serializePage(rec.pages.get(personPath("Odd Kittelsen"))), "met at the fair", "the person, read in full");
     const at = p => order.indexOf(p);
-    ok(at(join(DIRS.someday, "Later.md")) < at(join(DIRS.completed, "Done.md")), "someday before done");
-    ok(at(join(DIRS.completed, "Done.md")) < at(join(JOURNALS, old + ".md")), "done before an old day");
+    const dir = (d, n) => join(d, n);
+    ok(at(jp(yest)) < at(dir(DIRS.active, "Boat.md")), "a day before the projects");
+    ok(at(dir(DIRS.active, "Boat.md")) < at(dir(DIRS.contexts, "phone.md")), "projects before contexts");
+    ok(at(dir(DIRS.contexts, "phone.md")) < at(personPath("Odd Kittelsen")), "contexts before people");
+    ok(at(personPath("Odd Kittelsen")) < at(dir(DIRS.orgs, "CAB.md")), "people before orgs");
+    ok(at(dir(DIRS.orgs, "CAB.md")) < at(dir(DIRS.someday, "Later.md")), "orgs before someday");
+    ok(at(dir(DIRS.someday, "Later.md")) < at(dir(DIRS.completed, "Done.md")), "someday before done");
+    ok(at(dir(DIRS.completed, "Done.md")) < at(jp(old)), "done before an old day");
   });
-  test("#181 the active projects are read and shown on their own, before the week, people and contexts", async () => {
+  test("#181 the month's days are read and shown on their own, before the projects and the people", async () => {
+    const jp = d => join(JOURNALS, d + ".md");
     const five = shiftISO(T(), -5);
     let release;
     const held = new Promise(r => { release = r; });
@@ -595,17 +609,36 @@ var GTD_TEST = (() => {
     let shown = 0;
     try {
       await readInto(rec, {stage: true, onSoon: () => { shown++; }});
-      for (let i = 0; i < 40 && !shown; i++) await settle();
-      eq(shown, 1, "times shown before the person is in");
+      for (let i = 0; i < 40 && shown < 2; i++) await settle();
+      eq(shown, 2, "times shown before the person is in");
       ok(!rec.stubs.has(boat), "the project is still a stand-in");
       eq(rec.pages.get(boat).props.title, "The boat", "the project's name");
       has(serializePage(rec.pages.get(boat)), "Sand the hull", "the project's next action");
       ok(rec.stubs.has(personPath("Odd Kittelsen")), "the person came in with the projects");
-      ok(!rec.pages.has(join(JOURNALS, five + ".md")), "a day this week came in with the projects");
+      has(serializePage(rec.pages.get(jp(five))), "five days ago", "a day this week came in first");
     } finally { release(); }
     await filesLoaded();
     ok(!rec.stubs, "no stand-ins left");
-    eq(shown, 2, "times shown before the rest");
+    eq(shown, 3, "times shown before the rest");
+  });
+  test("#181 a project still a stand-in is a name, not a stuck project", async () => {
+    const rec = newRecord("Stuck181", Backends.memory());
+    const boat = join(DIRS.active, "Boat.md");
+    const page = parsePage("");
+    STUB_PAGES.add(page);
+    rec.pages.set(boat, page); rec.stubs = new Set([boat]);
+    LOADED.set(rec.name, rec);
+    try {
+      await inSpace(rec.name, async () => {
+        eq(pageTitle(boat), "Boat", "the file name, without .md");
+        ok(isStandIn(boat), "not seen as a stand-in");
+        ok(!stuckActiveProjects().some(s => s.path === boat), "a stand-in is called stuck");
+        ok(!stalestActiveProjects(99).some(s => s.path === boat), "a stand-in is called stale");
+        rec.stubs = null; rec.pages.set(boat, parsePage("title:: Boat\n"));
+        ok(!isStandIn(boat), "the real page is still a stand-in");
+        ok(stuckActiveProjects().some(s => s.path === boat), "a project with nothing to do is not stuck");
+      });
+    } finally { LOADED.delete(rec.name); }
   });
 
   /* A pretend serve.py: fetch() is swapped for one that answers from a tree
@@ -880,7 +913,9 @@ var GTD_TEST = (() => {
     catch (e) { LOADED.set(name, kept); throw e; }
     finally { render = real; }
     ok(V.pages.size > 50, "the area read back in");
-    eq(drawn, [], "openSpace with draw: false drew");
+    /* The rest of a big folder draws when it is in (restLoaded, soonLoaded),
+       rightly, and on a fast store that can land before openSpace returns. */
+    eq(drawn.filter(d => !/restLoaded|soonLoaded/.test(d)), [], "openSpace with draw: false drew");
     const init = [...document.scripts].map(x => x.textContent).find(t => t.includes("(async function init()")) || "";
     has(init, "await openSpace(start, null, {draw: false})", "init leaves the drawing to itself");
     render();

@@ -6,6 +6,6 @@ function projectTags(r) {
   if (open.some(a => a.due && a.due < todayISO())) out.push(el("span", {class: "chip late"}, "late"));
   if (blockers.length) out.push(el("span", {class: "chip late"}, "blocked by " + blockers.join(", ")));
   if (autoWaiting(r)) out.push(el("span", {class: "chip today", title: "Every open step is waiting on somebody"}, "Waiting for · auto"));
-  if ((code === "1" || code === "3") && !open.length) out.push(el("span", {class: "chip miss"}, "no next step"));
+  if ((code === "1" || code === "3") && !open.length && !inSpace(r.space, () => isStandIn(r.path))) out.push(el("span", {class: "chip miss"}, "no next step"));
   return out;
 }

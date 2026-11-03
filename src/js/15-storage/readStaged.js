@@ -8,9 +8,9 @@ async function readStaged(record, edited, onRest, onSoon) {
   }
   const seen = paths.filter(p => !isGuidePath(p) && !isLangPath(p) && !isPromptPath(p) && /\.md$/i.test(p)).length;
   if (looksEmptied(record, seen)) { holdRecord(record, "empty", seen); return null; }
-  const recent = new Set([0, 1, 2, 3].map(n => shiftISO(todayISO(), -n)));
+  const today = todayISO();   // the first read is today alone: the rest of the month follows
   const later = p => isStubPath(p) ||
-    (isJournalPath(p) && !recent.has((/(\d{4}-\d{2}-\d{2})\.md$/i.exec(p) || [])[1]));
+    (isJournalPath(p) && (/(\d{4}-\d{2}-\d{2})\.md$/i.exec(p) || [])[1] !== today);
   const rest = restOrder(paths.filter(later));
   const first = await record.backend.readMany(paths.filter(p => !later(p)));
   if (!rest.length) { await readIntoNow(record, edited, first); return null; }
@@ -31,8 +31,8 @@ async function readStaged(record, edited, onRest, onSoon) {
      taken for pages, an empty one went over its file at the next save (#188).
      A full read again (Check the folder) puts them right; readIntoNow lets
      them go once every file is in. */
-  const weekAgo = shiftISO(todayISO(), -7);
-  const rankOf = new Map(rest.map(p => [p, restRank(p, weekAgo)]));
+  const monthAgo = shiftISO(todayISO(), -SHOWN_DAYS);
+  const rankOf = new Map(rest.map(p => [p, restRank(p, monthAgo)]));
   const soon = Array.from({length: SHOWN_RANKS}, (_, n) => rest.filter(p => rankOf.get(p) === n));
   const after = rest.filter(p => rankOf.get(p) >= SHOWN_RANKS);
   const tick = loadingTicker(record, rest.length);

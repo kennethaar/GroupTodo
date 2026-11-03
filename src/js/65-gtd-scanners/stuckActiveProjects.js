@@ -10,6 +10,7 @@ function stuckActiveProjects() {
   const stuck = [];
   for (const path of projectsIn("1")) {
     if (projectHold(path)) continue;          // nobody is meant to be doing it yet
+    if (isStandIn(path)) continue;            // its file is not in yet
     const page = getPage(path);
     const flat = flattenBlocks(page.blocks);
     let leafTodo = false, waiting = false, parentTodos = false;

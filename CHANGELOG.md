@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.72.3 - 2026-11-03
+
+- Vault and sync (#181): a big folder opens in a new order. Today's journal
+  is read alone and shown first. Then come yesterday back to a month, the
+  active projects, the contexts, the people and the organisations, each on
+  screen as soon as it is in. Until a file is read, a project, context,
+  person or organisation is there by its file name, and a project waiting for
+  its file is not called stuck. Waiting, someday, done and older days follow
+  as before.
+
 ## 1.72.2 - 2026-11-03
 
 - The built `grouptodo.html` is 23% smaller (no change to what the app does):
