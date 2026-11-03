@@ -2326,6 +2326,63 @@ var GTD_TEST = (() => {
       eq(row("[[p/Lars Haugen]] sends the drawing").assignee, "Lars Haugen", "the line's own name wins");
     } finally { removePage(day); removePage(joe); clearMemo(); }
   });
+  test("#263 an undated step takes the date of the nearest dated line above it", () => {
+    const path = scratchProject("inherit due");
+    const late = shiftISO(todayISO(), -2), wed = shiftISO(todayISO(), 3), fri = shiftISO(todayISO(), 5);
+    getPage(path).blocks = parsePage([
+      "- TODO Send quarterly report",
+      "  - TODO Collect figures",
+      "  - TODO Draft summary",
+      "  - Notes from Ann",
+      "    - TODO Check the totals",
+      "- DONE Closed parent",
+      "  - TODO Loose step",
+    ].join("\n")).blocks;
+    const [top, closed] = getPage(path).blocks;
+    setDue(top, fri); setDue(top.children[0], wed); setDue(closed, late);
+    clearMemo();
+    try {
+      const row = t => leafActions().find(a => a.path === path && a.block.title === t);
+      ok(!row("Send quarterly report"), "the parent is still not an action");      eq(row("Collect figures").due, wed, "its own date wins");
+      eq(row("Draft summary").due, fri, "inherited");
+      eq(row("Check the totals").due, fri, "through a line with no date");
+      eq(row("Loose step").due, null, "a closed line gives no date");
+      ok(!dueDate(row("Draft summary").block), "nothing is written to the step");
+      setDue(getPage(path).blocks[0], late);
+      clearMemo();
+      eq(row("Draft summary").due, late, "moves with the parent");
+      eq(row("Draft summary").group, "LATE", "late with the parent");
+      // Every step done: the parent is the action again, with its own date.
+      for (const b of flattenBlocks(getPage(path).blocks[0].children)) if (b.state === "TODO") b.state = "DONE";
+      clearMemo();
+      eq(row("Send quarterly report").due, late);
+    } finally { removePage(path); clearMemo(); }
+  });
+  test("#263 a step dated after its parent is warned about, once, and kept", () => {
+    const path = scratchProject("due conflict");
+    const wed = shiftISO(todayISO(), 3), fri = shiftISO(todayISO(), 5), mon = shiftISO(todayISO(), 8);
+    getPage(path).blocks = parsePage([
+      "- TODO Send quarterly report",
+      "  - TODO Collect figures",
+      "  - TODO Draft summary",
+    ].join("\n")).blocks;
+    const [parent] = getPage(path).blocks, [undated, dated] = parent.children;
+    setDue(parent, fri); setDue(dated, wed);
+    const toasts = () => [...document.querySelectorAll("#toasts .toast.warn")].map(t => t.textContent).join("|");
+    $("#toasts").replaceChildren();
+    try {
+      ok(!warnDueConflict(path, undated), "an inherited date never warns");
+      ok(!warnDueConflict(path, dated), "before the parent is fine");
+      setDue(dated, mon);
+      ok(warnDueConflict(path, dated), "a step after its parent");
+      has(toasts(), "Send quarterly report");
+      eq(dueDate(dated), mon, "the date stays as given");
+      setDue(dated, wed); setDue(parent, shiftISO(todayISO(), 1));
+      $("#toasts").replaceChildren();
+      ok(warnDueConflict(path, parent), "a parent moved before its step");
+      has(toasts(), "Draft summary");
+    } finally { $("#toasts").replaceChildren(); removePage(path); clearMemo(); }
+  });
   test("urgencyOf gives a number for every open action", () => {
     const acts = allLeafActions();
     ok(acts.length > 10, "only " + acts.length + " actions in the demo");

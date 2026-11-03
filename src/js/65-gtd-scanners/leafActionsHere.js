@@ -51,7 +51,8 @@ function leafActionsHere() {
       // The household's is still a task here: somebody in the house ticks it off.
       if (!mine && assignee && !isHousehold(assignee)) group = "WAITING";
 
-      const due = dueDate(b);
+      // An undated step answers to its parent's date: it is what is due now.
+      const due = effectiveDue(b);
       if (due) {
         if (due < todayISO()) group = "LATE";
         else if (due === todayISO()) group = "TODAY";

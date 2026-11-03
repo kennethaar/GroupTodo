@@ -2,7 +2,8 @@
 function duePill(a, cls, words) {
   const r = remindInfo(a.block);
   const pill = el("span", {class: "chip b duepill " + cls, tabindex: "0", role: "button",
-    title: (r ? r.title + " · " : "") + "Change the time, the reminder, or clear it",
+    title: (r ? r.title + " · " : "") + (dueDate(a.block) ? "Change the time, the reminder, or clear it"
+                                                          : "From the line above. Give this step its own date"),
     onclick: e => { e.stopPropagation(); e.preventDefault(); openDueChipMenu(a, pill); },
     onkeydown: e => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); openDueChipMenu(a, pill); } }},
     words, r ? el("span", {class: "bell" + (r.off ? " off" : "")}, r.off ? "\u{1F515}" : "\u{1F514}") : null);

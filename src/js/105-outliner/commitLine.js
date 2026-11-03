@@ -31,6 +31,7 @@ function commitLine(txt, path, b) {
       const d = trailingDate(b.title);
       if (d) { b.title = trim(b.title.slice(0, d.start)); setDue(b, d.iso); }
     }
+    if (dueDate(b)) warnDueConflict(path, b);
   }
   dropUnlinkedAssignee(b, before);
   createLinkedPages(b.title);

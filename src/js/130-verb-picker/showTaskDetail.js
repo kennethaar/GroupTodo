@@ -91,6 +91,7 @@ function showTaskDetail(path, block, space) {
 
   const save = () => {
     if (badClock(schedAt, deadAt)) return;
+    const dueWas = dueDate(block);
     const val = trim(titleInput.value).replace(/\n/g, " ");
     const [st, rest] = splitState(val);
     if (st) { block.state = st; block.title = rest; } else { block.title = val; }
@@ -113,6 +114,7 @@ function showTaskDetail(path, block, space) {
     else if (hold.value) setBlockProp(block, "hold", "[[" + hold.value + "]]");
     else if (holdWas) endHold(block.props, holdWas > todayISO() && hasRepeatUnder([block]));
     touch(path); noteTodoTouched(); closeModal(); render();
+    if (dueDate(block) !== dueWas) warnDueConflict(path, block);
   };
 
   modal({

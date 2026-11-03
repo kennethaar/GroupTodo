@@ -382,7 +382,9 @@ A shared to-do list that is really just text files in a folder you already have.
 A short name on their page =>
 A starting stylesheet =>
 A status: Active, Waiting, Someday, Done, Cancelled. =>
+A step due after the task above it gets a warning. The date stays. =>
 A step under this one =>
+A step with no date of its own takes the date of the task above it. =>
 A step you skip has no ✓. With no ideas, Organise has nothing to sort. =>
 A step. Tick it when done. =>
 A stretch on this day has no end, and counts nothing =>
@@ -808,6 +810,7 @@ Change the responsibility =>
 Change the status, or see the shelf =>
 Change the synopsis =>
 Change the tasks too? =>
+Change the time, the reminder, or clear it =>
 Change them =>
 Change what comes first =>
 Change what it looks for =>
@@ -1487,6 +1490,7 @@ From OneDrive, Dropbox or a network drive. Your browser will ask “where this s
 From chapter =>
 From the day pages =>
 From the days =>
+From the line above. Give this step its own date =>
 From this device, wifi or not, and places you saved. This device. =>
 Fråga =>
 Fråga om =>
@@ -5878,6 +5882,7 @@ your own area, {1}, could not be opened. Open it once from the area menu (a fold
 {1} so far. =>
 {1} starts after =>
 {1} stays as it is =>
+{1} steps are due =>
 {1} steps, each a link to the part it is about =>
 {1} still loose =>
 {1} synced with {2} =>
@@ -5953,6 +5958,8 @@ your own area, {1}, could not be opened. Open it once from the area menu (a fold
 “{1}” is a task now; its page stays, without the 1/, and the task links to it. =>
 “{1}” is a verb now, but this line does not start with it. =>
 “{1}” is a verb now, in {2}. =>
+“{1}” is due =>
+“{1}” is due {2}, after “{3}” ({4}). =>
 “{1}” is in {2}, and everybody who can open that folder can read it. Making it private means putting it somewhere they cannot, so pick where it should live. =>
 “{1}” is merged into =>
 “{1}” is next to plan, once the review is done. =>

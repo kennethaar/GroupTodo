@@ -9,7 +9,7 @@ function flyPick(k, v) {
   }
   if (k === "ask") { FLY.txt.blur(); openAskForUpdate(v, block); return; }
   if (k === "state") { setBlockState(path, block, v || null); if (v === "WAIT" && !assigneeOf(block)) { FLY_OPEN_AFTER = {id: block.id, k: "who"}; } focusBlock(block.id); return; }
-  if (k === "due") { flyMakeTask(path, block); setDue(block, v || null); touch(path); return flyAfter(k); }
+  if (k === "due") { flyMakeTask(path, block); setDue(block, v || null); touch(path); warnDueConflict(path, block); return flyAfter(k); }
   if (k === "ctx") {
     flyMakeTask(path, block);
     if (v) { if (hasContextLink(block.title)) block.title = trim(block.title.replace(/\[\[c\/[^\]]+\]\]/, "[[c/" + v + "]]")); else block.title = trim(block.title) + " [[c/" + v + "]]"; }

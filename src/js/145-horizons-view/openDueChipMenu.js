@@ -33,7 +33,7 @@ function openDueChipMenu(a, anchor) {
       return true;
     })});
     touch(path); noteTodoTouched(); render();
-    if (day !== null) notify((block.state ? "Now " : "") + humanWhen(day, time) + ".");
+    if (day !== null && !warnDueConflict(path, block)) notify((block.state ? "Now " : "") + humanWhen(day, time) + ".");
   });
   const save = () => {
     const got = whenFromBox(timeIn_.value, dateIn_.value || w.day);

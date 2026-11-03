@@ -19,7 +19,7 @@ function journalActionsIndex() {
         if (!b.state || isMessage(b) || hasOpenDescendant(b)) continue;
         const link = nearestProjectAncestor(b); if (!link) continue;
         const row = {path, block: b, state: b.state, title: b.title,
-                     context: blockContext(b), due: dueDate(b),
+                     context: blockContext(b), due: effectiveDue(b),
                      age: blockAge(b) ?? dateDiffDays(journalDate(path), todayISO()),
                      added: addedDate(b) || journalDate(path),
                      assignee: assigneeOf(b), by: blockProp(b, "by"),

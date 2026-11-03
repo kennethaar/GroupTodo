@@ -5,6 +5,17 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.74.0 - 2026-11-03
+
+- Dates and reminders (#263): a step takes its parent's date. An open step
+  with no date of its own answers to the nearest dated line above it, so it
+  shows under Due
+  Today & Late and Next 7 days, sorts by that date and turns late with it.
+  Nothing is written to the step; move the parent's date and its steps move
+  too. A step's own date always wins, and a done line above gives no date.
+  Setting a date that puts a step after the task above it, or a task before
+  one of its steps, shows a warning; the date stays as given.
+
 ## 1.73.1 - 2026-11-03
 
 - CLAUDE.md: the rest of the code navigation rules (#264). Do not explore

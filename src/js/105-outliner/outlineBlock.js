@@ -291,7 +291,8 @@ function outlineBlock(path, page, b, opts = {}) {
     setDue(b, iso, r && r.time);
     if (r && r.now) setBlockProp(b, "remind", "0");
     touch(path); render(); focusBlock(b.id);
-    notify("Due " + humanWhen(iso, r && r.time).toLowerCase() + (r && r.now ? ", reminded then." : "."));
+    if (!warnDueConflict(path, b))
+      notify("Due " + humanWhen(iso, r && r.time).toLowerCase() + (r && r.now ? ", reminded then." : "."));
   },
   /* "tracker-" at the start of a line offers the trackers already in use,
      and the wizard for a new one. */
