@@ -94,8 +94,22 @@ Writing test fixtures:
 - A task with an open child is not a leaf action. Keep leaf steps childless.
 - Edit `tests/battery.js` with Edit, not with ad hoc Node rewrite scripts.
 
-Add or update a regression test for every behavioral change. A bug test
-includes its issue number.
+Test first. For every behavioral change, write or update the test before
+the code, from the requirement or the bug report, never from the
+implementation. Run it and see it fail for the expected reason. Then write
+the code until it passes. Do not edit the test afterwards to fit the code;
+change it only if the requirement itself changed. A bug test includes its
+issue number.
+
+Keep the battery lean:
+
+- Search `tests/battery.js` for an existing test of the same behavior first.
+  Extend or tighten it instead of adding a near-duplicate.
+- One test per behavior. Do not add a test that repeats what another asserts.
+- Cover each rule once, with the cases that can fail differently (edge,
+  error, regression). Skip cases that follow the same code path.
+- When touching an area, merge or delete redundant tests you find there.
+  Deleting a duplicate is allowed; weakening a test is not.
 
 Never weaken or bypass a test to make it pass. Fix the application unless the
 expectation is demonstrably obsolete.
