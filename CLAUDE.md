@@ -12,6 +12,14 @@ findings already made in the session.
 
 Run the targeted test first. Widen the investigation only if it fails.
 
+Known entry points:
+
+- `flattenBlocks` sets `_parent` on each block.
+- `dueDate(b)` is a line's own date; `effectiveDue(b)` adds the inherited one.
+- A date is set from `openDueChipMenu`, `flyPick`, `outlineBlock`,
+  `commitLine` and `showTaskDetail`. Change all five together.
+- User messages go through `notify(text, kind)`.
+
 - `src/css/NN-name.css`: joined in filename order.
 - `src/js/<part>/<name>.js`: one file per function. Related constants may use
   `vars-<first-name>.js`.
@@ -34,7 +42,19 @@ Enable the pre-commit build hook once per clone:
     git config core.hooksPath .githooks
 
 Do not edit generated `HELP_NEWS` or `LANG_CATALOG` values directly. Run the
-corresponding script in `docs/`.
+corresponding script in `docs/`:
+
+- `python docs/build-help-news.py` after editing `CHANGELOG.md`.
+- `python docs/build-language-catalog.py` after changing user-facing text.
+
+Then build once. These scripts rewrite `vars-HELP_NEWS.js`,
+`vars-nextSpaceColor.js` (holds `LANG_CATALOG`), `languages/English.md` and
+`docs/demo.html`. Those diffs are expected. Never `git diff` them in full; use
+`git diff --stat`.
+
+Do not use `git stash` to check whether a failure is pre-existing. It leaves
+new untracked files behind and breaks the build. Rerun the failing test alone
+instead.
 
 ## Versioning
 
@@ -44,7 +64,10 @@ Every pushed change updates `APP_VERSION` in its source file:
 - MINOR for new user-facing capabilities, resetting PATCH to `0`.
 - MAJOR only when existing vaults become incompatible.
 
-Add the matching entry at the top of `CHANGELOG.md` in the same commit.
+Add the matching entry at the top of `CHANGELOG.md` in the same commit. Start
+the entry's head with the name of the help topic it belongs to, such as
+`Dates and reminders`. What's new links to that topic, and test #256 fails
+otherwise.
 
 End every reply about a completed change with:
 
@@ -56,9 +79,20 @@ Run focused tests while developing:
 
     node tests/run.mjs <words>
 
-Run the full battery before every push:
+Run the full battery once before every push, filtered to failures:
 
-    node tests/run.mjs
+    node tests/run.mjs 2>&1 | Select-String "FAIL|passed"
+
+Do not repeat full runs to be sure. If a test fails, rerun only that test.
+#172 (phone Enter scroll) is timing-flaky in the full run; if it passes alone,
+report it and move on.
+
+Writing test fixtures:
+
+- Set dates with `setDue(block, date)`. `SCHEDULED:` lines in fixture text are
+  not parsed as dates.
+- A task with an open child is not a leaf action. Keep leaf steps childless.
+- Edit `tests/battery.js` with Edit, not with ad hoc Node rewrite scripts.
 
 Add or update a regression test for every behavioral change. A bug test
 includes its issue number.
