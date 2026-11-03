@@ -55,6 +55,20 @@ An *area* (Work, Home, …) is one folder. Areas never share or nest folders.
 - `pages/8/todo.md`, `pages/8/1.md` and similar are templates the app creates when they are missing. Do not create them yourself.
 - `planner/` (outbox.json, state.json, sent.json) is there only when the area is sent to Microsoft Planner (experimental): the app and a Power Automate flow write it, never by hand. See [planner-sync.md](planner-sync.md).
 - `pages/8/timer.md` holds the sidebar timer's usual length as `minutes:: 25`. Optional; without it the timer runs 2 minutes. `max:: 90` sets the longest timer in whole minutes (60 without it), `style:: dial` shows a small pie that shrinks instead of the bar, and `volume:: 30` sets the alarm, 0 to 100.
+- `pages/8/sidebar.md` shapes the sidebar for the area: one line per view by its name (`- Next`), top to bottom, with `- ---` between the three groups, and `hide:: Waiting for, Contexts` for the ones left out. A view it does not name shows where it sits by default; Settings is never hidden. Optional; without it the sidebar is the built-in one.
+- `pages/8/book.md` makes the area a place to write a book in, and adds the Book view. One line per chapter, in order, each a link to its page (`- [[The storm]]`; a bare name works too). `target:: 80000` is the word goal (none without it). `stages::` is what a chapter goes through: a task type (`[[8/Chapter]]`, or just `Chapter`) or names with commas (`Outline, Draft, Revise, Done`, the first to do and the last done). Without `stages::`, or with fewer than two, it is Outline, Draft, Revise, Done. Each chapter page says where it is with a page property, `stage:: Draft`; a stage not in the list counts as the first. Task lines in a chapter (and what is under them) are not counted as words or exported. `title::` is the book's name (`title:: book` is none yet), `subtitle::` and `synopsis::` say what it is, each on one line; a chapter page may say `synopsis::` too. An area holds one book. Optional; without it there is no Book view.
+
+  ```
+  title:: The long road
+  subtitle:: A novel
+  synopsis:: Two sisters cross the hills to find their father.
+  target:: 80000
+  stages:: [[8/Chapter]]
+
+  - [[The storm]]
+  - [[Harbour]]
+  - [[After the flood]]
+  ```
 - `pages/8/Languages/<Language>.md` are the app's words in other languages, one `English => translation` line each. They are not pages; the app writes `English.md` itself.
 - `pages/8/Prompts/<name>.md` are prompts for an AI, kept as plain text, not pages: `GTD project.md` is the one *Plan it with an AI* uses, with `{name}`, `{contexts}`, `{people}`, `{project}`, `{projects}` and `{text}` filled in each time. Optional; without it the app's own wording is used.
 - `pages/8/*.css` are your own stylesheets, laid over the app's look in file-name order (for example a monospace font: `.blk .txt{font-family:monospace}`). The app reads them and never writes them. They work from a chosen folder or the sync server, not from browser storage.

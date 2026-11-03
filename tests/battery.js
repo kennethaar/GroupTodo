@@ -50,6 +50,85 @@ var GTD_TEST = (() => {
   });
 
   /* ============================================================
+     Updates and what's new (#256)
+     ============================================================ */
+  const fakeLog = v => "# Changelog\n\n## " + v + " - 2026-12-01\n\n- Shiny thing (#999): it shines.\n- Another: it also does.\n\n" +
+    "## " + APP_VERSION + " - 2026-11-02\n\n- Old news: already here.\n";
+  const withFetch = async (text, fn) => {
+    const real = window.fetch;
+    const asked = [];
+    window.fetch = async url => { asked.push(String(url)); return new Response(text, {status: 200}); };
+    try { return await fn(asked); } finally { window.fetch = real; }
+  };
+  const clearNews = () => { document.querySelectorAll("#toasts .toast.update, #toasts .toast.whatsnew").forEach(t => t.remove()); closeModal(); };
+  test("#256 versions compare by number, not by text", () => {
+    ok(verCmp("1.10.0", "1.9.9") > 0, "1.10.0 > 1.9.9");
+    ok(verCmp("2.0.0", "2.0.0") === 0, "equal");
+    ok(verCmp("1.69.0", "1.70.0") < 0, "1.69.0 < 1.70.0");
+  });
+  test("#256 the news reads this version first, with its heads and issues", () => {
+    const e = newsEntries(HELP_NEWS);
+    eq(e[0].version, APP_VERSION);
+    ok(e.length > 5, "more than five versions kept, so a gap can be bridged");
+    const it = newsEntries(fakeLog("9.0.0"))[0].items[0];
+    eq([it.head, it.issue], ["Shiny thing", "999"]);
+  });
+  test("#256 the demo never asks GitHub", () => ok(!updatesPossible(), "updatesPossible() in the demo"));
+  test("#256 a newer version on GitHub gets a toast and a badge", async () => {
+    clearNews();
+    await withFetch(fakeLog("9.0.0"), async asked => {
+      const u = await checkForUpdate();
+      has(asked[0], "raw.githubusercontent.com/kennethaar/GroupTodo/main/CHANGELOG.md");
+      eq(u && u.version, "9.0.0");
+      eq(u.entries.length, 1, "only the versions newer than this one");
+    });
+    const t = document.querySelector("#toasts .toast.update");
+    ok(t, "update toast");
+    has(t.textContent, "v9.0.0");
+    has(t.textContent, "Shiny thing");
+    has(t.textContent, "Download now");
+    const b = document.querySelector("#appUpdate");
+    ok(!b.hidden, "badge shown");
+    has(b.textContent, "New v9.0.0");
+    eq(PREF.get("update.checked"), T(), "checked today, so not again until tomorrow");
+    clearNews();
+  });
+  test("#256 the newest version gets no toast, and the badge goes", async () => {
+    clearNews();
+    await withFetch(fakeLog("1.0.0"), () => checkForUpdate());
+    eq(UPDATE, null);
+    ok(document.querySelector("#appUpdate").hidden, "badge hidden");
+    ok(!document.querySelector("#toasts .toast.update"), "no toast");
+  });
+  test("#256 a new version's first start says what came since the last one", () => {
+    clearNews();
+    const before = newsEntries(HELP_NEWS)[3].version;
+    PREF.set("onboarded", PREF.get("onboarded") || T());
+    PREF.set("ran.version", before);
+    maybeShowWhatsNew();
+    const t = document.querySelector("#toasts .toast.whatsnew");
+    ok(t, "what's new toast");
+    has(t.textContent, "since v" + before);
+    eq(PREF.get("ran.version"), APP_VERSION);
+    t.remove();
+    maybeShowWhatsNew();
+    ok(!document.querySelector("#toasts .toast.whatsnew"), "only once per version");
+  });
+  test("#256 what's new lists each version since, with help and a way to give feedback", () => {
+    const all = newsEntries(HELP_NEWS);
+    whatsNewDialog(all.slice(0, 3), {since: all[3].version});
+    const m = document.querySelector(".modal .whatsnew");
+    ok(m, "dialog");
+    for (const e of all.slice(0, 3)) has(m.textContent, "v" + e.version);
+    ok(!m.textContent.includes("v" + all[3].version + " ·"), "not the version you had");
+    ok(m.querySelectorAll(".newsacts button").length > 0, "How it works for at least one new thing");
+    const idea = m.querySelector('.feedback a[href*="/issues/new"]');
+    ok(idea, "suggest a feature");
+    has(decodeURIComponent(idea.href), "GroupToDo v" + APP_VERSION);
+    closeModal();
+  });
+
+  /* ============================================================
      Start-up and the demo vault
      ============================================================ */
   test("app finished starting with the demo vault", () => {
@@ -150,6 +229,29 @@ var GTD_TEST = (() => {
       eq(getComputedStyle(d.querySelector(".hnow")).display, "none", "the empty row");
       ok(d.querySelector("header.top").getBoundingClientRect().height < 70, "the bar is one row");
     } finally { f.remove(); }
+  });
+  test("#168 the Journal shows no @context chip, so on a phone the area button is on the top row", async () => {
+    const was = state.context;
+    try {
+      state.context = "home";
+      go("today"); await settle();
+      ok($("#btnContext").hidden, "the @context chip shows on the Journal");
+      go("next"); await settle();
+      ok(!$("#btnContext").hidden, "the @context chip is gone from Next too");
+    } finally { state.context = was; go("today"); await settle(); }
+  });
+  test("on a phone the app opens on Next, on a wide screen on the Journal", async () => {
+    const was = state.view;
+    try {
+      Object.defineProperty(PHONE, "matches", {configurable: true, get: () => true});
+      eq(startView(), "next", "phone");
+      await openSpace(V.space); await settle();
+      eq(state.view, "next", "a phone opens the area on");
+      delete PHONE.matches;
+      eq(startView(), "today", "wide screen");
+      await openSpace(V.space); await settle();
+      eq(state.view, "today", "a wide screen opens the area on");
+    } finally { delete PHONE.matches; go(was); await settle(); }
   });
   test("#166 the projects list draws no stray null", async () => {
     go("projects", {sub: "list", statusCode: "1"});
@@ -478,6 +580,34 @@ var GTD_TEST = (() => {
     ok(at(join(DIRS.someday, "Later.md")) < at(join(DIRS.completed, "Done.md")), "someday before done");
     ok(at(join(DIRS.completed, "Done.md")) < at(join(JOURNALS, old + ".md")), "done before an old day");
   });
+  test("#181 the active projects are read and shown on their own, before the week, people and contexts", async () => {
+    const five = shiftISO(T(), -5);
+    let release;
+    const held = new Promise(r => { release = r; });
+    const tree = {
+      journals: {[T() + ".md"]: "- today\n", [five + ".md"]: "- five days ago\n"},
+      pages: {"GTD.md": "title:: GTD\n",
+        "1": {"Boat.md": "title:: The boat\noutcome:: afloat\n\n- TODO Sand the hull\n"},
+        p: {"Odd Kittelsen.md": "title:: Odd Kittelsen\n"}},
+    };
+    const rec = newRecord("Names181", Backends.fs(fakeDir("Names181", tree, [], {"Odd Kittelsen.md": held})));
+    const boat = join(DIRS.active, "Boat.md");
+    let shown = 0;
+    try {
+      await readInto(rec, {stage: true, onSoon: () => { shown++; }});
+      for (let i = 0; i < 40 && !shown; i++) await settle();
+      eq(shown, 1, "times shown before the person is in");
+      ok(!rec.stubs.has(boat), "the project is still a stand-in");
+      eq(rec.pages.get(boat).props.title, "The boat", "the project's name");
+      has(serializePage(rec.pages.get(boat)), "Sand the hull", "the project's next action");
+      ok(rec.stubs.has(personPath("Odd Kittelsen")), "the person came in with the projects");
+      ok(!rec.pages.has(join(JOURNALS, five + ".md")), "a day this week came in with the projects");
+    } finally { release(); }
+    await filesLoaded();
+    ok(!rec.stubs, "no stand-ins left");
+    eq(shown, 2, "times shown before the rest");
+  });
+
   /* A pretend serve.py: fetch() is swapped for one that answers from a tree
      of paths, keeps a log of what was asked, and can hold a file back. */
   const fakeServer = async (files, body, {gate = {}, hang = false} = {}) => {
@@ -1334,13 +1464,28 @@ var GTD_TEST = (() => {
   /* ---------- Chores (#201) ---------- */
   const chore = (t, repeat, n, props = {}) => stampAuthor(newBlock({state: "TODO", title: t,
     props: Object.assign({repeat, SCHEDULED: "[[" + shiftISO(T(), n) + "]]"}, props)}));
+  /* A chore's next round goes on a journal page (#212), so a chore test puts
+     the journal back as it found it when it drops its chores. */
+  let journalsBefore = null;
+  const journalSnap = () => new Map(allPages(isJournalPath).map(p => [p, serializePage(getPage(p))]));
+  const journalRestore = () => {
+    if (!journalsBefore) return;
+    for (const p of allPages(isJournalPath)) {
+      const was = journalsBefore.get(p);
+      if (was == null) V.pages.delete(p);
+      else if (serializePage(getPage(p)) !== was) putPage(p, parsePage(was), {silent: true});
+    }
+    journalsBefore = null;
+    clearMemo();
+  };
   const choreProject = (title, blocks) => {
+    journalsBefore = journalsBefore || journalSnap();
     const path = scratchProject(title);
     getPage(path).blocks = blocks;
     touch(path); clearMemo();
     return path;
   };
-  const dropChores = path => { getPage(path).blocks = []; touch(path); clearMemo(); };
+  const dropChores = path => { getPage(path).blocks = []; touch(path); clearMemo(); journalRestore(); };
   test("#201 a chore is an open task with a repeat, grouped by how far it has come round", () => {
     const path = choreProject("chores group", [
       chore("Wipe the counters [[c/home/kitchen]]", "daily", -2), chore("Scrub the shower [[c/home/bathroom]]", "weekly", 3),
@@ -1364,14 +1509,48 @@ var GTD_TEST = (() => {
       ok(row, "the chore is under Due now");
       row.click(); await settle();
       ok(!document.querySelector(".scrim .modal"), "no Again? dialog");
-      const blocks = getPage(path).blocks;
-      eq(blocks.map(x => x.state), ["DONE", "TODO"]);
-      eq(dueDate(blocks[1]), shiftISO(T(), 7), "next one a week on");
-      if (turn) ok(samePerson(assigneeOf(blocks[1], getPage(path)) || whoAmI(), turn), "for " + turn);
+      eq(getPage(path).blocks.map(x => x.state), ["DONE"], "the room page keeps only the done one (#212)");
+      const next = allChores().find(a => a.block !== b && choreKey(a.title) === choreKey(b.title));
+      ok(next, "the next one is in");
+      eq(next.path, journalPath(weekOf(shiftISO(T(), 7))), "on next week's page");
+      eq(dueDate(next.block), shiftISO(T(), 7), "next one a week on");
+      if (turn) ok(samePerson(assigneeOf(next.block) || whoAmI(), turn), "for " + turn);
       const undo = [...document.querySelectorAll("#toasts button")].find(n => n.textContent === "Undo");
       ok(undo, "the done toast has Undo");
       undo.click(); await settle();
       eq(getPage(path).blocks.map(x => x.state), ["TODO"]);
+      ok(!findBlock(next.block.id), "and the next one is gone");
+    } finally { closeDoneToast(); closeModal(); dropChores(path); }
+  });
+  test("#212 a chore's next round goes on the day or week page it is due, saying its room", async () => {
+    const day = shiftISO(T(), 1), wk = weekOf(shiftISO(T(), 14));
+    const dayPage = journalPath(day), weekPage = journalPath(wk);
+    const path = choreProject("chores journal", [
+      newBlock({title: "[[c/home/kitchen]]", children: [chore("Empty the dishwasher", "daily", 0)]}),
+      chore("Vacuum the hall [[c/home/hall]]", "every 2 weeks", 0)]);
+    try {
+      eq([choreRepeatOnWeek("weekly"), choreRepeatOnWeek("every 2 weeks"), choreRepeatOnWeek("monthly"),
+        choreRepeatOnWeek("daily"), choreRepeatOnWeek("every monday"), choreRepeatOnWeek("weekly on mon, thu"),
+        choreRepeatOnWeek("monthly on the 15th")], [true, true, true, false, false, false, false]);
+      const page = getPage(path), [head, hall] = page.blocks, dish = head.children[0];
+      flattenBlocks(page.blocks);
+      setBlockState(path, dish, "DONE", {nextNow: true}); await settle();
+      setBlockState(path, hall, "DONE", {nextNow: true}); await settle();
+      eq(head.children.length, 1, "nothing new under the room heading");
+      eq(page.blocks.length, 2, "nothing new on the room page");
+      const onDay = getPage(dayPage).blocks.find(b => b.state === "TODO" && /Empty the dishwasher/.test(b.title));
+      ok(onDay, "daily goes on tomorrow's page");
+      has(onDay.title, "[[c/home/kitchen]]", "it says its room");
+      eq(dueDate(onDay), day);
+      const onWeek = getPage(weekPage).blocks.find(b => b.state === "TODO" && /Vacuum the hall/.test(b.title));
+      ok(onWeek, "every 2 weeks goes on the week page " + wk);
+      clearMemo();
+      ok(allChores().some(a => a.block === onDay && a.context === "home/kitchen"), "Chores finds it in its room");
+      ok(whoseTurn(onDay) === null || typeof whoseTurn(onDay) === "string", "whose turn still reads");
+      getPage(weekPage).blocks.push(chore("Wipe the fridge [[c/home/kitchen]]", "weekly", 14));
+      ensureWeek(shiftWeek(wk, 1));
+      ok(!getPage(journalPath(shiftWeek(wk, 1))).blocks.some(b => /Wipe the fridge/.test(b.title)),
+        "a new week page does not copy the chore again");
     } finally { closeDoneToast(); closeModal(); dropChores(path); }
   });
   test("#80 the done toast sits at the top edge, one item's Backdate and Undo beside History", async () => {
@@ -1413,10 +1592,120 @@ var GTD_TEST = (() => {
       done("Take out the bins", "Test Pointsperson", T()), done("Clean the oven #60m", "Test Pointsperson", shiftISO(weekStartISO(T()), -1))]);
     try {
       const row = choreTally(weekStartISO(T()), T()).find(([n]) => n === "Test Pointsperson");
-      eq(row && row[1], {pts: 3, n: 2});
+      eq(row && row[1], {pts: 3, n: 2, logged: 0});
       const last = choreTally(shiftISO(weekStartISO(T()), -7), shiftISO(weekStartISO(T()), -1)).find(([n]) => n === "Test Pointsperson");
-      eq(last && last[1], {pts: 4, n: 1});
+      eq(last && last[1], {pts: 4, n: 1, logged: 0});
     } finally { dropChores(path); }
+  });
+  /* Household people (#236): at home, not in the app. */
+  const householder = name => {
+    const path = personPath(name);
+    putPage(path, {props: {title: name, household: "true"}, blocks: []});
+    clearMemo();
+    return path;
+  };
+  test("#239 an as-needed chore is no task: never late or on Next, and Did it logs a done line that counts", async () => {
+    const path = choreProject("chores as needed", [newBlock({title: "Laundry #30m [[c/home/laundry]]", props: {repeat: "as needed"}})]);
+    const b = getPage(path).blocks[0];
+    const logged = () => (getPage(journalPath(T()))?.blocks || []).filter(x => isLoggedChore(x) && /^Laundry/.test(x.title));
+    try {
+      eq(nextRepeatDate("as needed", T()), null, "it has no next round");
+      ok(asNeededChores().some(a => a.block === b), "an as-needed chore");
+      ok(!allChores().some(a => a.block === b), "not a scheduled chore, so no bar and never late");
+      ok(!nextActions().some(a => a.block === b), "not on Next");
+      ok(NAV_ITEMS.find(it => it && it.id === "chores").when(), "Chores is in the sidebar");
+      go("chores"); await settle();
+      const row = () => [...content().querySelectorAll(".asneeded .asneeded-row")].find(r => r.textContent.includes("Laundry"));
+      ok(row(), "in the As needed fold");
+      ok(/not done yet/.test(row().textContent), row().textContent);
+      eq(logged().length, 0);
+      row().querySelector(".didit").click(); await settle();
+      const done = logged()[0];
+      ok(done, "Did it writes a done line on today's page");
+      eq([blockContext(done), estTier(done.title), closedBy(done), closedOn(done)], ["home/laundry", 2, "Kenneth Aar", T()]);
+      ok(!b.state && isAsNeeded(repeatOf(b)), "the chore itself stays, for next time");
+      ok(/today/.test(row().textContent), "last done today: " + row().textContent);
+      const mine = choreTally(T(), T()).find(([n]) => n === "Kenneth Aar");
+      ok(mine && mine[1].logged >= 1, "Points counts it as logged");
+      ok(/logged/.test(content().querySelector(".choreboard").textContent), "the board says how many were logged");
+      undoLast(); await settle();
+      eq(logged().length, 0, "Undo takes it back");
+    } finally { dropChores(path); }
+  });
+  test("#239 Log a chore writes a done line on the day's page for who did it, in a new room", async () => {
+    const leo = householder("Leo Testlog");
+    const path = choreProject("chores log", []);
+    // Written as @home is written in this vault: Home/Testlogroom here.
+    const ctx = ctxSlug("home/testlogroom"), room = contextPath(ctx), had = !!getPage(room);
+    const day = shiftISO(T(), -1);
+    try {
+      openLogChore(""); await settle();
+      const m = document.querySelector(".scrim .modal");
+      const set = (sel, v) => { const n = m.querySelector(sel); n.value = v; n.dispatchEvent(new Event("change")); n.dispatchEvent(new Event("input")); };
+      set('input[aria-label="What"]', "Change the bed");
+      set('select[aria-label="Room"]', "\u0002");
+      set('input[aria-label="New room"]', "testlogroom");
+      set('select[aria-label="How long"]', "2");
+      set('select[aria-label="Who did it"]', "Leo Testlog");
+      set('select[aria-label="When"]', "yesterday");
+      eq(m.querySelector(".logchore-line").textContent, "DONE Change the bed #30m [[c/" + ctx + "]]  done_by:: Leo Testlog");
+      [...m.querySelectorAll("button")].find(n => n.textContent === "Log it").click(); await settle();
+      const done = getPage(journalPath(day)).blocks.find(x => isLoggedChore(x) && /^Change the bed/.test(x.title));
+      ok(done, "a done line on yesterday's page");
+      eq([blockContext(done), closedBy(done), closedOn(done)], [ctx, "Leo Testlog", day]);
+      ok(getPage(room), "the new room has its page");
+      eq(choreTally(day, day).find(([n]) => n === "Leo Testlog")?.[1], {pts: 2, n: 1, logged: 1});
+      ok(choreRecent().some(r => r.words === "Change the bed" && r.ctx === ctx && r.size === 2), "offered next time, with its room and size");
+    } finally { closeModal(); dropChores(path); if (!had) removePage(room); removePage(leo); clearMemo(); }
+  });
+  test("#236 a household person takes turns, keeps a chore handed to them a task, and gets the points", async () => {
+    const mia = householder("Mia Testhome"), leo = householder("Leo Testhome");
+    const path = choreProject("chores household", [chore("Empty the dishwasher #15m [[c/home/kitchen]]", "daily", 0)]);
+    try {
+      ok(isHousehold("Mia Testhome") && !isMember("Mia Testhome"), "household:: true makes a household person");
+      ok(choreCrew().some(m => m.name === "Leo Testhome"), "they take turns");
+      eq(assignKind("Mia Testhome"), "household");
+      const b = getPage(path).blocks[0];
+      assignBlock(path, b, "Mia Testhome", true); clearMemo();
+      eq(b.state, "TODO", "handed to the household it stays a task");
+      ok(!waitingRows().some(a => a.block === b), "not in Waiting for");
+      go("chores"); await settle();
+      setBlockState(path, b, "DONE", {nextNow: true}); await settle();
+      eq(closedBy(b), "Mia Testhome", "ticked by me, credited to Mia");
+      const next = findBlock(allChores().find(a => a.block !== b && /Empty the dishwasher/.test(a.title))?.block?.id || "")?.block;
+      ok(next && next.state === "TODO", "the next one is in");
+      ok(!samePerson(assigneeOf(next) || whoAmI(), "Mia Testhome"), "and it is not Mia's turn again: " + assigneeOf(next));
+      const pick = document.querySelector("#toasts .donecredit");
+      ok(pick, "the done toast asks who did it");
+      eq(pick.value, "Mia Testhome", "Mia to start with");
+      pick.value = "Leo Testhome"; pick.dispatchEvent(new Event("change")); await settle();
+      eq(closedBy(b), "Leo Testhome", "By Leo moves the credit");
+      ok(!samePerson(assigneeOf(next) || whoAmI(), "Leo Testhome"), "and the next turn is worked out again");
+      const row = choreTally(T(), T()).find(([n]) => n === "Leo Testhome");
+      eq(row && row[1], {pts: 1, n: 1, logged: 0}, "the point is Leo's");
+    } finally { closeDoneToast(); dropChores(path); removePage(mia); removePage(leo); clearMemo(); }
+  });
+  test("#236 Chores shows one person's chores, and a person page marks them Household", async () => {
+    const mia = householder("Mia Testhome");
+    const path = choreProject("chores filter", [chore("Feed the cat [[c/home]]", "daily", 0, {assigned: "Mia Testhome"}),
+      chore("Water the ferns [[c/home]]", "daily", 0)]);
+    const was = PREF.get("chores.who", "");
+    try {
+      go("chores"); await settle();
+      const chip = name => [...content().querySelectorAll(".chorewho .fchip")].find(n => n.firstChild.textContent === name);
+      ok(chip("Mia"), "a chip for Mia");
+      chip("Mia").click(); await settle();
+      ok(content().textContent.includes("Feed the cat") && !content().textContent.includes("Water the ferns"), "only Mia's");
+      chip("Everyone").click(); await settle();
+      ok(content().textContent.includes("Water the ferns"), "everyone's again");
+      setHousehold(mia, false);
+      ok(!isHousehold("Mia Testhome"), "off again");
+      openPersonPage("Mia Testhome"); await settle();
+      const btn = content().querySelector(".householdbtn");
+      ok(btn && btn.getAttribute("aria-pressed") === "false", "the person page has a Household toggle");
+      btn.click(); await settle();
+      eq(getPage(mia).props.household, "true", "it writes household:: true");
+    } finally { PREF.set("chores.who", was); dropChores(path); removePage(mia); clearMemo(); }
   });
   test("#201 Away holds every chore, and Back now counts them from today", () => {
     const path = choreProject("chores away", [chore("Vacuum the stairs [[c/home]]", "weekly", -3)]);
@@ -1461,7 +1750,8 @@ var GTD_TEST = (() => {
       // Done already in the review puts the next round in, as a tick on Chores does.
       still.pick(r, "done"); await settle();
       ok(!document.querySelector(".scrim .modal"), "no Again? dialog");
-      eq(getPage(path).blocks.filter(b => b.title.startsWith("Clean the oven")).map(b => b.state), ["DONE", "TODO"]);
+      eq(getPage(path).blocks.filter(b => b.title.startsWith("Clean the oven")).map(b => b.state), ["DONE"]);
+      ok(allChores().some(a => a.path !== path && plainTitle(a.title).startsWith("Clean the oven")), "the next round is on the Journal (#212)");
     } finally { PREF.set("review.chores", ""); closeDoneToast(); closeModal(); dropChores(path); }
   });
   test("#213 Chores sorts the rooms by freshness, and the board puts them in red, yellow and green", async () => {
@@ -1516,6 +1806,64 @@ var GTD_TEST = (() => {
       more.click(); await settle();
       ok(red().querySelectorAll(".chorecard").length >= CHORE_COL_MAX + 3, "all of them after it");
     } finally { for (const [k, v] of was) PREF.set(k, v); CHORE_COLS_OPEN.clear(); dropChores(path); render(); }
+  });
+  test("#235 Print puts what is due now and this week on one sheet, by room, as the view shows it", async () => {
+    const path = choreProject("chores print", [
+      chore("Wipe the testprint counters #15m [[c/home/testprintk]]", "daily", -3),
+      chore("Clean the testprint sink [[c/home/testprintb]]", "weekly", 2),
+      chore("Wash the testprint mats [[c/home/testprintb]]", "monthly", 25)]);
+    const was = ["chores.room", "chores.who", "chores.layout"].map(k => [k, PREF.get(k, "")]);
+    const print = window.print;
+    let printed = 0;
+    window.print = () => { printed++; };
+    try {
+      PREF.set("chores.room", ""); PREF.set("chores.who", "all"); PREF.set("chores.layout", "");
+      go("chores"); await settle();
+      const btn = content().querySelector(".vhead .printbtn");
+      ok(btn && btn.textContent === "Print", "a Print button in the Chores header");
+      btn.click(); await settle();
+      eq(printed, 1, "the browser's print is opened");
+      ok(document.body.classList.contains("printsheet"), "only the sheet is printed");
+      const sheet = document.querySelector("#printsheet");
+      ok(sheet && sheet.parentNode === document.body, "the sheet is outside the app");
+      const text = sheet.textContent;
+      has(text, "week " + isoWeek(T())[0], "the week");
+      has(text, "Wipe the testprint counters", "due now");
+      has(text, "Clean the testprint sink", "coming up this week");
+      ok(!text.includes("Wash the testprint mats"), "fresh ones are left out");
+      const row = [...sheet.querySelectorAll("tr")].find(r => r.textContent.includes("counters"));
+      has(row.textContent, "LATE", "late in capitals");
+      has(row.textContent, "daily", "how often");
+      has(row.textContent, "15 min", "the time from the size");
+      ok(row.querySelector(".ps-box"), "a box to tick");
+      const rooms = [...sheet.querySelectorAll(".ps-room th:first-child")].map(n => n.textContent);
+      ok(rooms.findIndex(t => t.includes("testprintb")) < rooms.findIndex(t => t.includes("testprintk")), "rooms by name: " + rooms);
+      window.dispatchEvent(new Event("afterprint"));
+      ok(!document.querySelector("#printsheet") && !document.body.classList.contains("printsheet"), "gone after printing");
+
+      PREF.set("chores.room", "@home/testprintk"); render(); await settle();
+      content().querySelector(".printbtn").click(); await settle();
+      const one = document.querySelector("#printsheet").textContent;
+      ok(one.includes("counters") && !one.includes("testprint sink"), "the room picked is the room printed");
+      window.dispatchEvent(new Event("afterprint"));
+    } finally {
+      window.print = print;
+      window.dispatchEvent(new Event("afterprint"));
+      for (const [k, v] of was) PREF.set(k, v); dropChores(path); render();
+    }
+  });
+  test("#235 the browser's own Print opens the folds, and closes them again after", async () => {
+    const path = choreProject("chores fold", [chore("Dust the testfold shelf [[c/home]]", "weekly", 3)]);
+    const was = PREF.get("chores.who", "");
+    try {
+      PREF.set("chores.who", "all"); go("chores"); await settle();
+      const fold = content().querySelector("details.fold");
+      ok(fold && !fold.open, "Coming up this week starts closed");
+      window.dispatchEvent(new Event("beforeprint"));
+      ok(fold.open, "open on paper");
+      window.dispatchEvent(new Event("afterprint"));
+      ok(!fold.open, "closed again after");
+    } finally { PREF.set("chores.who", was); dropChores(path); render(); }
   });
   /* ---------- contexts in folders (#201) ---------- */
   test("#201 @home/kitchen typed in the capture box is one context, and @kitchen finds it", () => {
@@ -1661,6 +2009,10 @@ var GTD_TEST = (() => {
       const kid = card.querySelector(".ctxkid");
       ok(kid && kid.textContent.startsWith("/Room"), "Room is a row on it");
       has(kid.querySelector(".chip.late").textContent, "1 late");
+      ok(card.classList.contains("wide"), "a card with contexts inside takes the whole row");
+      const kn = kid.querySelector(".ctxkn");
+      ok(getComputedStyle(kn).whiteSpace === "nowrap" && kid.getBoundingClientRect().height < 32, "the row is one line, the name never wraps");
+      eq(kid.children.length, 4, "a row keeps every column, so the numbers line up");
       ok(!content().textContent.includes("Show in Next") && !content().textContent.includes("things you can do here"), "no repeated words");
       ok(!content().querySelector(".ctxcard .big"), "no @ placeholder");
       ok(!content().querySelector(".vhead-r .textbtn:not(.newbtn)"), "one Sense button, not two links");
@@ -1674,6 +2026,42 @@ var GTD_TEST = (() => {
       content().querySelector(".ctxleak .textbtn").click();
       eq(state.view, "next"); eq(subNow(), "board");
     } finally { PREF.set("contexts.idle", was); go("contexts"); dropChores(path); }
+  });
+  test("#257 Contexts › Sort stacks a context on another by drag, and Move… takes it out again", () => {
+    makeContext("Testsorthome");
+    const path = choreProject("sort ctx", [stampAuthor(newBlock({state: "TODO", title: "Wipe the bench [[c/testsortroom]]"}))]);
+    const row = n => [...content().querySelectorAll(".ctxsrow")].find(r => r.dataset.ctx === n);
+    const drag = (from, to) => {
+      from.dispatchEvent(new DragEvent("dragstart", {bubbles: true}));
+      to.dispatchEvent(new DragEvent("dragover", {bubbles: true, cancelable: true}));
+      to.dispatchEvent(new DragEvent("drop", {bubbles: true, cancelable: true}));
+    };
+    try {
+      pickSub("contexts", "sort"); render();
+      ok(row("testsortroom"), "a context only named on a task is a row too");
+      ok(content().querySelector(".ctxtop"), "the top line to take one out");
+      drag(row("testsortroom"), row("Testsorthome"));
+      ok(getPage(contextPath("Testsorthome/testsortroom")), "it is inside now");
+      has(getPage(path).blocks[0].title, "[[c/Testsorthome/testsortroom]]");
+      const kid = row("Testsorthome/testsortroom");
+      ok(kid, "it is drawn under its new home");
+      eq(kid.style.getPropertyValue("--d"), "1", "one step in");
+      eq(kid.querySelector(".ctxsname").textContent, "@testsortroom", "named by its own part");
+      drag(row("Testsorthome"), kid);
+      ok(getPage(contextPath("Testsorthome")), "a context cannot go inside one of its own");
+      kid.querySelector(".ctxmove").click();
+      const modal = [...document.querySelectorAll(".scrim .modal")].pop();
+      const top = [...modal.querySelectorAll("button, [role=option], li, .row")].find(n => n.textContent.trim().endsWith("On its own, at the top"));
+      ok(top, "Move… offers the top");
+      top.click();
+      ok(getPage(contextPath("testsortroom")) && !getPage(contextPath("Testsorthome/testsortroom")), "out again");
+      has(getPage(path).blocks[0].title, "[[c/testsortroom]]");
+      undoLast();
+      has(getPage(path).blocks[0].title, "[[c/Testsorthome/testsortroom]]", "Undo puts it back inside");
+    } finally {
+      closeModal(); PREF.set("sub.contexts", "cards"); go("contexts"); dropChores(path);
+      for (const n of ["Testsorthome/testsortroom", "testsortroom", "Testsorthome"]) if (getPage(contextPath(n))) removePage(contextPath(n));
+    }
   });
   /* ---------- context names and look-alikes (#203) ---------- */
   test("#203 a new context starts with a capital, and one already there keeps its spelling", () => {
@@ -1824,6 +2212,23 @@ var GTD_TEST = (() => {
       eq([b.state, repeatOf(b), estTier(b.title), dueDate(b)], ["TODO", "monthly", 1, T()]);
       has(b.title, "[[c/Home/Testkitchen]]");
     } finally { if (page) { page.blocks = []; touch(contextPath("Home/Testkitchen")); clearMemo(); } }
+  });
+  test("#239 + New chore, As needed: a plain line with no first day", async () => {
+    openNewChore("");
+    const m = document.querySelector(".scrim .modal");
+    m.querySelector('input[aria-label="What"]').value = "Test sort the recycling";
+    const freq = m.querySelector('select[aria-label="How often"]');
+    freq.value = "as needed"; freq.dispatchEvent(new Event("change"));
+    ok(m.querySelector('select[aria-label="First one"]').closest(".field").hidden, "no First one to pick");
+    [...m.querySelectorAll("button")].find(n => n.textContent === "Add chore").click();
+    await settle();
+    const path = contextPath(ctxSlug("home")), page = getPage(path);
+    const b = page.blocks.find(x => x.title.includes("Test sort the recycling"));
+    try {
+      ok(b, "on the @home page");
+      eq([b.state || "", repeatOf(b), dueDate(b)], ["", "as needed", null]);
+      ok(asNeededChores().some(a => a.block === b), "an as-needed chore");
+    } finally { if (b) { page.blocks.splice(page.blocks.indexOf(b), 1); touch(path); clearMemo(); } }
   });
 
   /* ============================================================
@@ -2534,6 +2939,14 @@ var GTD_TEST = (() => {
     eq(getPage(path).blocks[0].state, "TODO", "changed before confirming");
     [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Change them").click();
     eq(getPage(path).blocks[0].state, "DOING");
+    closeAll();
+  });
+  test("#174 informed:: is bookkeeping and does not show under the line", () => {
+    const path = scratchProject("inform shown", [["TODO", "Report for [[p/Lars Haugen]]"]]);
+    const b = getPage(path).blocks[0];
+    informSent("Lars Haugen", [{a: {path, block: b, space: V.space, title: b.title}, was: "TODO"}], [{status: "TODO", comment: ""}]);
+    const meta = lineMeta(getPage(path).blocks[0], path);
+    ok(!(meta && meta.textContent.includes("informed::")), "informed:: shown on the line");
     closeAll();
   });
 
@@ -4258,6 +4671,40 @@ var GTD_TEST = (() => {
     content().querySelectorAll(".wkdayhead")[0].click();
     eq([state.sub, state.todayDay], [null, weekMonday(now) === T() ? null : weekMonday(now)], "a day's name opens the day");
   });
+  test("#211 the week and the lists use a wide screen, and Content width can keep them narrow", async () => {
+    const was = PREF.get("style.width", "wide");
+    try {
+      PREF.set("style.width", "wide"); applyStyles();
+      eq(document.documentElement.dataset.width, "wide");
+      go("today", {sub: "week", todayWeek: null});
+      await settle();
+      const wk = content().querySelector(".wrap");
+      ok(wk.classList.contains("jweek"), "the week is wide with one space too");
+      const wide = innerWidth >= 1100;
+      if (wide) ok(wk.getBoundingClientRect().width > 820, "the week is wider than the reading column, got " + wk.getBoundingClientRect().width);
+      const txt = content().querySelector(".wkgrid .wktext");
+      if (wide && txt) eq(getComputedStyle(txt).webkitLineClamp, "8", "a task in a day wraps rather than ends in ...");
+      for (const [view, sub] of [["next", "list"], ["waiting", "list"], ["people", "list"], ["orgs", "list"], ["projects", "list"]]) {
+        go(view, {sub});
+        await settle();
+        ok(content().querySelector(".wrap").classList.contains("lwide"), view + " list spreads on a wide screen");
+      }
+      go("pages", {sub: "list"});
+      await settle();
+      ok(!content().querySelector(".wrap.lwide"), "pages keep their line length");
+      PREF.set("style.width", "narrow"); applyStyles();
+      go("today", {sub: "week", todayWeek: null});
+      await settle();
+      if (wide) ok(content().querySelector(".wrap").getBoundingClientRect().width <= 820, "Narrow keeps the reading column");
+      go("checklists");
+      await settle();
+      eq(content().querySelector(".stylewidth").value, "narrow", "Settings shows the width picked");
+    } finally {
+      PREF.set("style.width", was); applyStyles();
+      go("today", {sub: null, todayWeek: null});
+      await settle();
+    }
+  });
   test("#192 the review's calendar step goes to the weeks on the review page, also in a list written before it", async () => {
     const step = () => reviewSteps().flatMap(g => g.steps).find(s => /^Calendar/.test(s.text));
     const had = V.pages.has(REVIEW_LIST_PATH) ? getPage(REVIEW_LIST_PATH) : null;
@@ -4677,6 +5124,988 @@ var GTD_TEST = (() => {
       await new Promise(r => requestAnimationFrame(() => setTimeout(r, 20)));
       ok([...content().querySelectorAll("#rsec-weeks details")].every(d => d.open), "going to a headline opens it");
     } finally { PREF.set("review.open", keep); go("today"); }
+  });
+
+  /* ============================================================
+     The sidebar, as a page in 8/ (#238)
+     ============================================================ */
+  const navLabels = () => [...document.querySelectorAll("#nav > .nav-item:not(.pin) .lbl")].map(n => n.textContent);
+  const withSidebarPage = async (text, fn) => {
+    const was = getPage(SIDEBAR_PATH);
+    try {
+      if (text == null) { if (was) V.pages.delete(SIDEBAR_PATH); }
+      else putPage(SIDEBAR_PATH, parsePage(text));
+      clearMemo(); renderNav();
+      await fn();
+    } finally {
+      if (was) putPage(SIDEBAR_PATH, was); else V.pages.delete(SIDEBAR_PATH);
+      clearMemo(); go("today"); renderNav();
+    }
+  };
+  test("#238 without 8/sidebar.md the sidebar is the built-in one", () => withSidebarPage(null, () => {
+    eq(navItems().filter(it => it && it.id).map(it => it.id),
+      NAV_ITEMS.filter(it => it && it.id).map(it => it.id));
+    eq(navItems().filter(it => typeof it === "string"), ["sep", "pins", "grow"]);
+  }));
+  test("#238 8/sidebar.md orders and hides; Settings stays; an unnamed view still shows", () => withSidebarPage(
+    "title:: sidebar\nhide:: Waiting for, Settings, contexts\n\n- Next\n- Journal\n- ---\n- Projects\n- Pages\n- People\n- ---\n- Weekly review\n- Timer\n",
+    () => {
+      const l = navLabels();
+      ok(l.indexOf("Next") < l.indexOf("Journal"), "Next first: " + l);
+      ok(!l.includes("Waiting for") && !l.includes("Contexts"), "hidden ones left out: " + l);
+      ok(l.includes("Settings"), "Settings cannot be hidden");
+      ok(l.indexOf("Pages") < l.indexOf("People"), "Pages before People: " + l);
+      // Organisations is not named: it comes after People, where it sits by default.
+      eq(l[l.indexOf("People") + 1], "Organisations");
+      eq(navOrder().slice(-3), [NAV_SEP, "review", "timer"], "the foot group");
+      ok(!checklistPages().includes(SIDEBAR_PATH), "not listed as a checklist");
+    }));
+  test("#238 the --- lines survive a write and a read", () => {
+    const t = "title:: sidebar\n\n- Journal\n- ---\n- Projects\n- ---\n- Timer\n";
+    eq(serializePage(parsePage(t)), t);
+  });
+  test("#238 Settings > Sidebar hides, moves and goes back to the default", () => withSidebarPage(null, async () => {
+    go("checklists");
+    await settle();
+    const row = label => [...content().querySelectorAll(".navset .prow")].find(r => r.textContent.includes(label));
+    ok(row("Settings").querySelector("input").disabled, "Settings has no box to untick");
+    const box = row("Organisations").querySelector("input");
+    box.checked = false; box.dispatchEvent(new Event("change"));
+    await settle();
+    has(getPage(SIDEBAR_PATH).props.hide, "Organisations", "written as hide::");
+    ok(!navLabels().includes("Organisations"), "gone from the sidebar");
+    row("Next").querySelector('[data-dir="-1"]').click();
+    await settle();
+    eq(navOrder()[0], "next", "Next moved to the top");
+    eq(navLabels()[0], "Next");
+    // Up from the top of the second group crosses the line into the first.
+    const i = navOrder().indexOf("projects");
+    eq(navOrder()[i - 1], NAV_SEP);
+    row("Projects").querySelector('[data-dir="-1"]').click();
+    await settle();
+    ok(navOrder().indexOf("projects") < navOrder().indexOf(NAV_SEP), "Projects is in the first group");
+    content().querySelector(".navset .helpsee .textbtn").click();
+    await settle();
+    ok(!getPage(SIDEBAR_PATH), "the page is gone");
+    eq(navOrder(), navDefaultOrder());
+  }));
+
+  /* ============================================================
+     A book, as a page in 8/ (#240)
+     ============================================================ */
+  // Every page put back as it was, since setting a book up also writes a type and a tracker.
+  const withBookVault = async (pages, fn) => {
+    const was = new Map([...V.pages].map(([p, page]) => [p, structuredClone(page)]));
+    const prefs = ["book.scope", curBookKey()].map(k => [k, PREF.get(k, "")]);
+    try {
+      for (const p of allPages(isBookPath)) V.pages.delete(p);
+      for (const [k] of prefs) PREF.set(k, "");
+      for (const [p, text] of Object.entries(pages)) putPage(p, parsePage(text), {silent: true});
+      clearMemo(); renderNav();
+      await fn();
+    } finally {
+      closeModal();
+      V.pages.clear();
+      for (const [p, page] of was) { V.pages.set(p, page); V.removed.delete(p); }
+      for (const [k, v] of prefs) PREF.set(k, v);
+      clearMemo(); go("today"); renderNav();
+    }
+  };
+  // A book's area of its own: no people but those the test brings.
+  const withCastVault = (pages, fn) => withBookVault(pages, async () => {
+    for (const p of allPeople()) if (!(p in pages)) V.pages.delete(p);
+    clearMemo();
+    await fn();
+  });
+  const BOOK_PAGES = {
+    [BOOK_PATH]: "title:: book\ntarget:: 1000\nstages:: Idea, Write, Polish, Done\n\n- [[Harbour]]\n- The storm\n- [[Not yet]]\n",
+    [join(PAGES, "The storm.md")]: "stage:: Polish\n\n- It was a dark and stormy night.\n  - The [[Harbour]] lay still.\n" +
+      "- TODO Check the tide tables\n  - not counted either\n",
+    [join(PAGES, "Harbour.md")]: "stage:: done\n\n- Two words\n",
+  };
+  test("#240 without 8/book.md there is no Book view and Settings only offers to set one up", () => withBookVault({}, async () => {
+    ok(!navLabels().includes("Book"), "no Book in the sidebar");
+    eq(bookChapters(), []);
+    go("checklists");
+    await settle();
+    const card = content().querySelector(".bookset");
+    eq([...card.querySelectorAll("button")].map(b => b.textContent), ["Set up for writing a book"]);
+    go("book");
+    await settle();
+    has(content().textContent, "No book in this area yet.");
+  }));
+  test("#240 8/book.md orders the chapters, reads their stages and counts their words", () => withBookVault(BOOK_PAGES, async () => {
+    renderNav(); ok(navLabels().includes("Book"), "Book is in the sidebar");
+    eq(bookChapters().map(c => c.name), ["Harbour", "The storm", "Not yet"], "a bare name is a chapter too");
+    eq(bookChapters()[2].path, null, "a page not made yet");
+    eq(bookStages().map(s => s.name), ["Idea", "Write", "Polish", "Done"]);
+    eq(bookTarget(), 1000);
+    const storm = join(PAGES, "The storm.md");
+    eq(chapterStage(storm).name, "Polish");
+    eq(chapterStage(join(PAGES, "Harbour.md")).core, "DONE", "a stage matches whatever its case");
+    eq(chapterWords(storm), 11, "the task and what is under it are not counted");
+    go("book");
+    await settle();
+    eq([...content().querySelectorAll(".bookch .nm")].map(n => n.textContent), ["Harbour", "The storm", "Not yet"]);
+    has(content().querySelector(".bookgoal").textContent, "13 of " + fmtWords(1000) + " words");
+    has(content().querySelector(".bookgoal").textContent, "1/3 chapters done");
+    content().querySelector(".bookch .bookstage").click();
+    await settle();
+    ok($("#modalRoot").textContent.includes("Polish"), "the stages to pick from");
+    closeModal();
+    setChapterStage(storm, "Done");
+    eq(getPage(storm).props.stage, "Done", "written on the chapter page");
+    has(bookManuscript(), "## Harbour\n\nTwo words\n\n## The storm\n\nIt was a dark and stormy night.\n\nThe Harbour lay still.\n\n## Not yet");
+    ok(!bookManuscript().includes("tide"), "no tasks in the manuscript");
+  }));
+  test("#240 what 8/book.md leaves out is the built-in", () => withBookVault({
+    [BOOK_PATH]: "title:: book\nstages:: Only one\n\n- [[A chapter]]\n",
+    [join(PAGES, "A chapter.md")]: "stage:: Typo\n\n- Words\n",
+  }, () => {
+    eq(bookStages().map(s => s.name), BOOK_STAGES, "fewer than two stages");
+    eq(bookTarget(), null, "no goal");
+    eq(chapterStage(join(PAGES, "A chapter.md")).name, "Outline", "a stage nobody listed is the first");
+    // A task type, as a link or by its name.
+    const type = createStateList("Draft steps", ["Sketch (to do)", "Write (doing)", "Final (done)"]);
+    for (const said of ["[[8/Draft steps]]", "Draft steps"]) {
+      getPage(BOOK_PATH).props.stages = said; clearMemo();
+      eq(bookStages().map(s => s.name), ["Sketch", "Write", "Final"], said);
+    }
+    ok(isStateList(type));
+    ok(!checklistPages().includes(BOOK_PATH), "not listed as a checklist");
+    ok(!isTemplatePath(BOOK_PATH), "not a template");
+  }));
+  test("#240 8/book.md survives a write and a read", () => {
+    const t = "title:: book\ntarget:: 80000\nstages:: [[8/Chapter]]\n\n- [[The storm]]\n- [[Harbour]]\n  - the one set at sea\n";
+    eq(serializePage(parsePage(t)), t);
+  });
+  test("#240 Settings > Book sets up, picks, moves and goes back to the default", () => withBookVault({
+    [join(PAGES, "The storm.md")]: "- Rain\n", [join(PAGES, "Harbour.md")]: "- Boats\n",
+  }, async () => {
+    go("checklists");
+    await settle();
+    content().querySelector(".bookset .btn").click();
+    await settle();
+    ok(!hasBook(), "nothing is made before it has a name");
+    const dlg = $("#modalRoot");
+    dlg.querySelector("input").value = "The long road";
+    [...dlg.querySelectorAll("button")].find(b => b.textContent === "Create").click();
+    await settle();
+    const made = join(BOOK_DIR, "The long road.md"), page = getPage(made);
+    ok(page, "the page is made, in 8/book/ (#255)");
+    eq(bookPath(), made);
+    eq(page.props.stages, "[[8/Chapter]]");
+    eq(page.props.title, "The long road", "the name asked for");
+    eq(bookStages().map(s => s.name), BOOK_STAGES, "the Chapter type has the built-in stages");
+    ok(pageHasTracker(getPage(join(DIRS.lists, todayISO().slice(0, 4) + ".md")), "words"), "a Words tracker on every day");
+    renderNav(); ok(navLabels().includes("Book"), "Book is in the sidebar");
+    const seg = label => [...content().querySelectorAll(".bookset .seg button")].find(b => b.textContent === label);
+    seg((100000).toLocaleString()).click();
+    await settle();
+    eq(page.props.target, "100000");
+    eq(content().querySelector(".bookset .seg [aria-checked=true]").textContent, (100000).toLocaleString(), "the goal in use is marked");
+    seg("Built in").click();
+    await settle();
+    ok(!("stages" in page.props), "Built in takes stages:: off");
+    addBookChapter("The storm"); addBookChapter("Harbour"); addBookChapter("Harbour");
+    await settle();
+    eq(bookChapters().map(c => c.name), ["The storm", "Harbour"], "once each");
+    const row = name => [...content().querySelectorAll(".bookset .prow")].find(r => r.dataset.ch === name);
+    row("Harbour").querySelector('[data-dir="-1"]').click();
+    await settle();
+    await new Promise(r => requestAnimationFrame(() => setTimeout(r, 20)));
+    eq(bookChapters().map(c => c.name), ["Harbour", "The storm"]);
+    eq(document.activeElement.closest(".prow")?.dataset.ch, "Harbour", "focus stays with the chapter moved");
+    row("Harbour").querySelector("[data-drop]").click();
+    await settle();
+    eq(bookChapters().map(c => c.name), ["The storm"]);
+    ok(getPage(join(PAGES, "Harbour.md")), "the page stays");
+    const back = [...content().querySelectorAll(".bookset .helpsee .textbtn")];
+    eq(back[back.length - 1].textContent, "Back to the default", "last");
+    back[back.length - 1].click();
+    await settle();
+    ok(!getPage(made), "the page is gone");
+    renderNav(); ok(!navLabels().includes("Book"), "and Book with it");
+    ok(getPage(join(DIRS.lists, "Chapter.md")), "the Chapter type stays");
+  }));
+
+  test("#240 Add a chapter offers plain pages and notes, not what is in the book", () => withBookVault({
+    ...BOOK_PAGES, [join(PAGES, "Lighthouse.md")]: "- A light\n", [join(DIRS.zettel, "Gulls.md")]: "- Noisy\n",
+  }, async () => {
+    go("book");
+    await settle();
+    openAddChapter();
+    await settle();
+    const items = [...document.querySelectorAll(".scrim .modal")].pop().textContent;
+    has(items, "Lighthouse", "a plain page");
+    has(items, "Gulls", "a note");
+    ok(!items.includes("Harbour"), "not a chapter already in the book");
+  }));
+
+  test("#242 a book has a name, a subtitle under it, then its synopsis", () => withBookVault({
+    [BOOK_PATH]: "title:: The long road\nsubtitle:: A novel\nsynopsis:: Two sisters cross the hills.\n\n- [[Harbour]]\n",
+    [join(PAGES, "Harbour.md")]: "- Boats\n",
+  }, async () => {
+    go("book");
+    await settle();
+    eq(content().querySelector(".vhead h1").textContent, "The long road");
+    const after = [...content().querySelector(".wrap").children];
+    const at = after.indexOf(content().querySelector(".vhead"));
+    eq(after[at + 1].className, "booksub", "the subtitle is the first line under the name");
+    eq(after[at + 1].textContent, "A novel");
+    eq(after[at + 2].textContent, "Two sisters cross the hills.", "then the synopsis");
+    ok(bookManuscript().startsWith("# The long road\n\nA novel\n\n## Harbour"), bookManuscript());
+    content().querySelector(".bookedit").click();
+    await settle();
+    const dlg = $("#modalRoot"), inputs = dlg.querySelectorAll("input");
+    eq(inputs[0].value, "The long road");
+    inputs[1].value = "";
+    dlg.querySelector("textarea").value = "Two sisters\ncross the hills.";
+    [...dlg.querySelectorAll("button")].find(b => b.textContent === "Save").click();
+    await settle();
+    ok(!("subtitle" in getPage(BOOK_PATH).props), "an empty subtitle comes off");
+    eq(getPage(BOOK_PATH).props.synopsis, "Two sisters cross the hills.", "one line");
+    ok(!content().querySelector(".booksub"), "and is not shown");
+  }));
+  test("#242 a chapter has a synopsis, written on its page", () => withBookVault(BOOK_PAGES, async () => {
+    go("book");
+    await settle();
+    const syn = () => [...content().querySelectorAll(".bookch .chsyn")];
+    eq(syn().map(b => b.textContent), ["+ synopsis", "+ synopsis"], "for each chapter with a page");
+    syn()[1].click();
+    await settle();
+    $("#modalRoot textarea").value = "The storm hits the harbour.";
+    [...$("#modalRoot").querySelectorAll("button")].find(b => b.textContent === "Save").click();
+    await settle();
+    const storm = join(PAGES, "The storm.md");
+    eq(getPage(storm).props.synopsis, "The storm hits the harbour.");
+    eq(syn()[1].textContent, "The storm hits the harbour.", "shown under its name");
+    eq(chapterWords(storm), 11, "not counted as words");
+    ok(!bookManuscript().includes("hits the harbour"), "nor exported");
+    setChapterSynopsis(storm, "  ");
+    ok(!("synopsis" in getPage(storm).props), "an empty one comes off");
+  }));
+  test("#242 chapters move by drag and drop, and by Alt+Shift+arrow", () => withBookVault(BOOK_PAGES, async () => {
+    go("book");
+    await settle();
+    const rows = () => [...content().querySelectorAll(".bookch")];
+    const drag = (from, to) => {
+      const dt = new DataTransfer();
+      rows()[from].dispatchEvent(new DragEvent("dragstart", {bubbles: true, dataTransfer: dt}));
+      rows()[to].dispatchEvent(new DragEvent("dragover", {bubbles: true, cancelable: true, dataTransfer: dt}));
+      rows()[to].dispatchEvent(new DragEvent("drop", {bubbles: true, cancelable: true, dataTransfer: dt}));
+    };
+    ok(rows().every(r => r.draggable), "every chapter can be dragged");
+    drag(0, 2);
+    await settle();
+    eq(bookChapters().map(c => c.name), ["The storm", "Not yet", "Harbour"], "dropped on the last, it goes last");
+    drag(2, 0);
+    await settle();
+    eq(bookChapters().map(c => c.name), ["Harbour", "The storm", "Not yet"], "dropped on the first, it goes first");
+    rows()[1].querySelector(".nm").dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowUp", altKey: true, shiftKey: true, bubbles: true}));
+    await settle();
+    await new Promise(r => requestAnimationFrame(() => setTimeout(r, 20)));
+    eq(bookChapters().map(c => c.name), ["The storm", "Harbour", "Not yet"]);
+    eq(document.activeElement.closest(".bookch")?.dataset.ch, "The storm", "focus stays with the chapter moved");
+    eq(rows().map(r => r.querySelector(".n").textContent), ["1", "2", "3"], "numbered again");
+  }));
+  test("#242 a new book asks for its name and area; a tab per book when there are more", async () => {
+    const rec = newRecord("Book242", Backends.memory("Book242"));
+    rec.pages.set(BOOK_PATH, parsePage("title:: Second book\n\n- [[Gulls]]\n"));
+    const was = PREF.get("bookList", "");
+    await withBookVault({}, async () => {
+      try {
+        go("book");
+        await settle();
+        ok(!content().querySelector(".booktabs"), "no tabs with no other book");
+        content().querySelector(".btn.primary").click();
+        await settle();
+        const dlg = $("#modalRoot");
+        const areas = [...dlg.querySelectorAll(".seg button")].map(b => b.textContent);
+        eq([areas[0], areas[areas.length - 1]], [V.space, "+ New area"], "this area first, or a new one");
+        [...dlg.querySelectorAll("button")].find(b => b.textContent === "Create").click();
+        await settle();
+        ok(!hasBook(), "not without a name");
+        dlg.querySelector("input").value = "First book";
+        dlg.querySelectorAll("input")[1].value = "A novel";
+        [...dlg.querySelectorAll("button")].find(b => b.textContent === "Create").click();
+        await settle();
+        eq(getPage(bookPath()).props.title, "First book");
+        eq(getPage(bookPath()).props.subtitle, "A novel");
+        ok(!content().querySelector(".booktabs"), "one book, no tabs");
+        LOADED.set(rec.name, rec);
+        Spaces.list.push({name: rec.name, kind: "memory"});
+        render();
+        await settle();
+        const tabs = [...content().querySelectorAll(".booktabs .fchip")];
+        eq(tabs.map(t => t.textContent), ["First book", "Second book"], "a tab per book");
+        eq(tabs[0].getAttribute("aria-pressed"), "true", "the one shown");
+        eq(tabs[1].title, "In Book242");
+        openBookInfo({create: true});
+        await settle();
+        const offered = [...$("#modalRoot").querySelectorAll(".seg button")].map(b => b.textContent);
+        ok(offered[0] === V.space && offered.includes("Book242"), "an area with a book is offered too: it can hold more (#255)");
+        closeModal();
+      } finally {
+        LOADED.delete(rec.name);
+        const at = Spaces.list.findIndex(s => s.name === rec.name);
+        if (at >= 0) Spaces.list.splice(at, 1);
+        PREF.set("bookList", was);
+      }
+    });
+  });
+
+  /* Several books in one area, one world (#255) */
+  const SERIES_PAGES = {
+    [BOOK_PATH]: "title:: First\ndialogue:: english\nprotagonist:: [[Anna]]\n\n- [[Harbour]]\n",
+    [join(BOOK_DIR, "Second.md")]: "title:: Second\norder:: 2\ndialogue:: guillemets\n\n- [[Gulls]]\n",
+    [join(PAGES, "Harbour.md")]: "- ## Quay\n  pov:: [[Anna]]\n  plot:: The search\n  when:: Day 1\n- Anna ran.\n",
+    [join(PAGES, "Gulls.md")]: "- ## Cliff\n  pov:: [[Bo]]\n  plot:: The search\n  when:: Day 5\n- Bo waited.\n",
+    [personPath("Anna")]: "- In the story.\n", [personPath("Bo")]: "- In the story.\n", [personPath("Cai")]: "- Not written in yet.\n",
+  };
+  test("#255 an area holds several books, in series order, and one is shown", () => withCastVault(SERIES_PAGES, async () => {
+    eq(bookPaths(), [BOOK_PATH, join(BOOK_DIR, "Second.md")], "8/book.md is a book too; order:: 2 puts Second after it");
+    eq(bookPath(), BOOK_PATH, "the first is shown");
+    eq(bookChapters().map(c => c.name), ["Harbour"]);
+    eq(seriesChapters().map(c => c.name), ["Harbour", "Gulls"]);
+    ok(!isTemplatePath(join(BOOK_DIR, "Second.md")) && pageKind(join(BOOK_DIR, "Second.md")) === "page", "a book is a page, not a template");
+    go("book");
+    await settle();
+    eq([...content().querySelectorAll(".booktabs .fchip")].map(t => t.textContent), ["First", "Second"], "a tab per book");
+    content().querySelectorAll(".booktabs .fchip")[1].click();
+    await settle();
+    eq(bookPath(), join(BOOK_DIR, "Second.md"));
+    eq(content().querySelector(".vhead h1").textContent, "Second");
+    eq(dialogueStyle(), "guillemets", "its own settings");
+    eq(dialogueStyle(BOOK_PATH), "english");
+    eq(bookOfChapter(join(PAGES, "Harbour.md")), BOOK_PATH);
+    openPage(join(PAGES, "Harbour.md"));
+    await settle();
+    eq(bookPath(), BOOK_PATH, "writing in a chapter shows its book");
+    go("checklists");
+    await settle();
+    const seg = (cls, label) => [...content().querySelectorAll(".bookset ." + cls + " .seg button")].find(b => b.textContent === label);
+    seg("bookorder", "2").click();
+    await settle();
+    eq(bookPaths(), [join(BOOK_DIR, "Second.md"), BOOK_PATH], "First moved to second place");
+    eq([getPage(bookPaths()[0]).props.order, getPage(BOOK_PATH).props.order], ["1", "2"], "numbered");
+    seg("bookpick", "Second").click();
+    await settle();
+    eq(bookPath(), join(BOOK_DIR, "Second.md"), "Settings picks the book");
+  }));
+  test("#255 a new book joins the area's world: last in the series, shown, sharing the cast", () => withCastVault(SERIES_PAGES, async () => {
+    setupBook({name: "Third"});
+    await settle();
+    const third = join(BOOK_DIR, "Third.md");
+    eq(bookPath(), third, "the new book is shown");
+    eq(bookPaths(), [BOOK_PATH, join(BOOK_DIR, "Second.md"), third]);
+    eq(bookPaths().map(p => getPage(p).props.order), ["1", "2", "3"]);
+    eq(castEntries().filter(e => e.type === "character").map(e => e.name).sort(), ["Anna", "Bo", "Cai"], "the same cast");
+    setupBook({name: "Third"});
+    ok(getPage(join(BOOK_DIR, "Third 2.md")), "a name taken gets a number");
+    bookDefault();
+    await settle();
+    ok(!getPage(join(BOOK_DIR, "Third 2.md")) && hasBook(), "Back to the default takes only the book shown");
+  }));
+  test("#255 Cast shows this book's people and those in no book yet, or all books", () => withCastVault(SERIES_PAGES, async () => {
+    const was = PREF.get("sub.book", "");
+    try {
+      go("book", {sub: "cast"});
+      await settle();
+      const names = () => [...content().querySelectorAll(".castrow .casttop .nm")].map(n => n.textContent);
+      eq(names(), ["Anna", "Cai"], "Bo is only in Second; Cai is in no book yet");
+      const scope = label => [...content().querySelectorAll(".bookscope button")].find(b => b.textContent === label);
+      scope("All books").click();
+      await settle();
+      eq(names().sort(), ["Anna", "Bo", "Cai"]);
+      eq(castStats("all").get(castEntryOf("Bo").key).scenes, 1, "counted across the series");
+    } finally { PREF.set("sub.book", was); }
+  }));
+  test("#255 Timeline and Plot read all books as one story", () => withCastVault(SERIES_PAGES, async () => {
+    eq(bookTimeline("book").rows.map(r => r.scene.name), ["Quay"]);
+    eq(bookTimeline("all").rows.map(r => r.scene.name), ["Quay", "Cliff"]);
+    const plot = bookPlot("all");
+    eq(plot.chapters.map(c => c.name), ["Harbour", "Gulls"]);
+    eq(plot.lines.map(l => l.cells.map(c => c.length)), [[1, 1]], "one plotline through both books");
+    const was = PREF.get("sub.book", "");
+    try {
+      PREF.set("book.scope", "all");
+      go("book", {sub: "plot"});
+      await settle();
+      eq([...content().querySelectorAll(".tlhead .tlbook")].map(b => b.textContent), ["First", "Second"], "each book's name over its first chapter");
+      eq([...content().querySelectorAll(".tlhead")].map(h => h.textContent), ["First1. Harbour", "Second1. Gulls"]);
+    } finally { PREF.set("sub.book", was); }
+  }));
+
+  const SCENE_PAGES = {
+    [BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n- [[The storm]]\n",
+    [join(PAGES, "Harbour.md")]: "- The gulls woke her.\n- ## The quay\n  pov:: [[Anna]]\n  with:: [[Bo]], [[Cai]]\n  when:: Day 3\n" +
+      "  - Boats knocked together.\n- She ran.\n- ## Night\n  synopsis:: They wait.\n- Dark now.\n  - TODO check the moon\n",
+    [join(PAGES, "The storm.md")]: "- Rain all day.\n",
+  };
+  test("#243 a ## line starts a scene, which runs to the next one", () => withBookVault(SCENE_PAGES, () => {
+    const harbour = join(PAGES, "Harbour.md");
+    const scenes = chapterScenes(harbour);
+    eq(scenes.map(s => s.name), ["", "The quay", "Night"], "the words before the first ## are the opening");
+    eq(scenes[1].lines.map(b => b.title), ["Boats knocked together.", "She ran."], "the lines under it and after it");
+    eq(namesIn(sceneProp(scenes[1], "pov")), ["Anna"]);
+    eq(namesIn(sceneProp(scenes[1], "with")), ["Bo", "Cai"]);
+    eq(namesIn("Bo, Cai"), ["Bo", "Cai"], "names with commas between");
+    eq(namesIn("The search, [[The letter]], [[A]] and [[B]]"), ["The search", "The letter", "A", "B"], "names and links mixed");
+    eq(sceneProp(scenes[1], "when"), "Day 3");
+    eq(sceneWords(scenes[1]), 5);
+    eq(sceneWords(scenes[2]), 2, "no task");
+    eq(chapterWords(harbour), 11, "the ## line is not counted");
+    eq(chapterScenes(join(PAGES, "The storm.md")).map(s => s.name), [""], "no ## line is one scene with no name");
+    has(bookManuscript(), "## Harbour\n\nThe gulls woke her.\n\n* * *\n\nBoats knocked together.\n\nShe ran.\n\n* * *\n\nDark now.\n\n## The storm\n\nRain all day.");
+    ok(!bookManuscript().includes("The quay"), "a scene's name is not in the manuscript");
+  }));
+  test("#243 the Book view lists the scenes; ✎ sets their values; + scene adds one", () => withBookVault(SCENE_PAGES, async () => {
+    go("book");
+    await settle();
+    const rows = () => [...content().querySelectorAll(".bookch")];
+    eq([...rows()[0].querySelectorAll(".bookscene .scn")].map(b => b.textContent), ["Opening", "The quay", "Night"]);
+    has(rows()[0].querySelectorAll(".bookscene")[1].textContent, "Anna");
+    has(rows()[0].querySelectorAll(".bookscene")[1].textContent, "Day 3");
+    ok(!rows()[1].querySelector(".bookscenes"), "a chapter with no scene lists none");
+    ok(rows()[1].querySelector(".scenenew"), "but can have one added");
+    rows()[0].querySelectorAll(".bookscene button.scedit")[1].click();
+    await settle();
+    const dlg = $("#modalRoot"), inputs = [...dlg.querySelectorAll("input, textarea")];
+    eq(inputs[0].value, "Night");
+    inputs[0].value = "Late night";
+    inputs[1].value = "[[Bo]]";
+    inputs[6].value = "";
+    [...dlg.querySelectorAll("button")].find(b => b.textContent === "Save").click();
+    await settle();
+    const b = chapterScenes(join(PAGES, "Harbour.md"))[2].block;
+    eq(b.title, "## Late night");
+    eq(b.props.pov, "[[Bo]]");
+    ok(!("synopsis" in b.props), "an emptied value comes off");
+    const storm = join(PAGES, "The storm.md");
+    addScene(storm, "Flood");
+    eq(chapterScenes(storm).map(s => s.name), ["", "Flood"]);
+    eq(serializeBlocks(getPage(storm).blocks), "- Rain all day.\n- ## Flood\n-");
+  }));
+
+  test("#244 a %% line is a beat: not counted, not exported, and /beat puts it on and off", () => withBookVault({
+    [BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n",
+    [join(PAGES, "Harbour.md")]: "- %% She finds the letter\n  - The envelope was wet.\n- Night fell.\n",
+  }, () => {
+    const harbour = join(PAGES, "Harbour.md");
+    ok(isBeat("%% She finds it") && isBeat("%%x") && !isBeat("50 %% off") && !isBeat("%% x", "TODO"));
+    eq(chapterText(harbour), ["The envelope was wet.", "Night fell."], "the prose under a beat is counted, the beat is not");
+    ok(!bookManuscript().includes("letter"), "nor exported");
+    eq(lineHtml(getPage(harbour).blocks[0]), "She finds the letter", "drawn without its marks");
+    ok(slashRows("beat").some(r => r.id === "beat"), "/beat in an area with a book");
+    V.pages.delete(BOOK_PATH); clearMemo();
+    ok(!slashRows("beat").some(r => r.id === "beat"), "and not without one");
+  }));
+  test("#244 a chapter page has Outline and Prose, beats to hide, Focus, and today's words", () => withBookVault({
+    [BOOK_PATH]: "title:: book\ndaily:: 500\n\n- [[Harbour]]\n",
+    [join(PAGES, "Harbour.md")]: "- %% She finds the letter\n  - The envelope was wet.\n- Night fell.\n",
+    [join(PAGES, "Elsewhere.md")]: "- Not a chapter\n",
+  }, async () => {
+    const harbour = join(PAGES, "Harbour.md"), was = [PREF.get("book.mode", ""), PREF.get("book.beats", "")];
+    const dayKey = "book.day." + (V.space || "");
+    try {
+      PREF.set(dayKey, JSON.stringify({d: todayISO(), w: 2}));
+      eq(bookToday(), 4, "six words now, two when the day began");
+      PREF.set(dayKey, JSON.stringify({d: "2001-01-01", w: 0}));
+      eq(bookToday(), 0, "a new day starts from what is there");
+      eq(bookDaily(), 500);
+      openPage(join(PAGES, "Elsewhere.md"));
+      await settle();
+      ok(!content().querySelector(".chapterbar"), "no bar on a page that is not a chapter");
+      PREF.set("book.mode", "outline");
+      openPage(harbour);
+      await settle();
+      has(content().querySelector(".chapterbar").textContent, "0 of 500 today");
+      ok(!content().querySelector(".outline.prose"), "Outline first");
+      ok(content().querySelector(".blk .line.beat"), "the beat is marked");
+      [...content().querySelectorAll(".chapterbar .vseg button")].find(b => b.textContent === "Prose").click();
+      await settle();
+      ok(content().querySelector(".outline.prose:not(.nobeats)"), "Prose, beats shown");
+      [...content().querySelectorAll(".chapterbar .fchip")].find(b => b.textContent === "Beats").click();
+      await settle();
+      ok(content().querySelector(".outline.prose.nobeats"), "beats hidden");
+      content().querySelector(".chapterbar .focusbtn").click();
+      ok(document.body.classList.contains("bookfocus") && $("#focusLeave"), "Focus");
+      document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+      ok(!document.body.classList.contains("bookfocus") && !$("#focusLeave"), "Esc leaves it");
+    } finally {
+      PREF.set("book.mode", was[0]); PREF.set("book.beats", was[1]); setWritingFocus(false);
+    }
+  }));
+  test("#244 Settings > Book picks the words a day", () => withBookVault({[BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n"}, async () => {
+    go("checklists");
+    await settle();
+    [...content().querySelectorAll(".bookdaily .seg button")].find(b => b.textContent === fmtWords(1000)).click();
+    await settle();
+    eq(getPage(BOOK_PATH).props.daily, "1000");
+    [...content().querySelectorAll(".bookdaily .seg button")].find(b => b.textContent === "None").click();
+    await settle();
+    ok(!("daily" in getPage(BOOK_PATH).props), "None takes it off");
+  }));
+
+  test("#245 quotes, dashes and dots are set in the book's style as they are typed", () => {
+    const typed = (text, style) => { const r = typeSet(text, text.length, style); return r ? r.text : text; };
+    eq(typed("\"", "english"), "“");
+    eq(typed("“Go,\"", "english"), "“Go,”");
+    eq(typed("she said, \"", "english"), "she said, “");
+    eq(typed("\"", "guillemets"), "«");
+    eq(typed("«Hei\"", "guillemets"), "«Hei»");
+    eq(typed("\"", "german"), "„");
+    eq(typed("„Ja\"", "german"), "„Ja“");
+    eq(typed("don'", "english"), "don’", "an apostrophe");
+    eq(typed("'", "english"), "‘");
+    eq(typed("Wait..", "english"), "Wait..", "two dots are two dots");
+    eq(typed("Wait...", "english"), "Wait…");
+    eq(typed("so--", "english"), "so—");
+    eq(typed("so--", "guillemets"), "so–");
+    eq(typed("- ", "dash"), "– ", "a line of speech starts with a dash");
+    eq(typed("- ", "english"), "- ", "only with Dash");
+    eq(typeSet("ab\"cd", 3, "english"), {text: "ab”cd", caret: 3}, "where the caret is, not at the end");
+    eq(typeSet("\"", 1, "nope"), null, "no style, no change");
+    eq(tidyLine("\"Go,\" she said. 'Now' -- don't wait...", "english"), "“Go,” she said. ‘Now’ — don’t wait…");
+    eq(tidyLine("“Go,” she said.", "guillemets"), "«Go,» she said.", "another style's marks become this one's");
+    eq(tidyLine("«Ja», sa hun.", "german"), "„Ja“, sa hun.");
+    eq(tidyLine("- Kom, sa hun.", "dash"), "– Kom, sa hun.");
+  });
+  test("#245 in a chapter, typing sets the marks; Settings picks the style and tidies the book", () => withBookVault({
+    [BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n",
+    [join(PAGES, "Harbour.md")]: "- \"Go,\" she said.\n  - TODO fix \"this\"\n",
+    [join(PAGES, "Elsewhere.md")]: "- Not a chapter\n",
+  }, async () => {
+    const harbour = join(PAGES, "Harbour.md");
+    const typeInto = async (path, text) => {
+      openPage(path);
+      await settle();
+      const txt = content().querySelector(".blk .txt");
+      txt.focus();
+      setHostText(txt, text, text.length);
+      txt.dispatchEvent(new InputEvent("input", {inputType: "insertText", data: text.slice(-1), bubbles: true}));
+      return lineText(txt);
+    };
+    eq(await typeInto(harbour, "Say \""), "Say \"", "as typed, before a style is picked");
+    setDialogueStyle("english");
+    eq(await typeInto(harbour, "Say \""), "Say “");
+    eq(await typeInto(join(PAGES, "Elsewhere.md"), "Say \""), "Say \"", "only in a chapter");
+    closeModal(); go("checklists");
+    await settle();
+    [...content().querySelectorAll(".bookdialogue .seg button")].find(b => b.textContent === DIALOGUE.guillemets.label).click();
+    await settle();
+    eq(getPage(BOOK_PATH).props.dialogue, "guillemets");
+    getPage(harbour).blocks[0].title = "\"Go,\" she said.";
+    content().querySelector(".booktidy").click();
+    await settle();
+    eq(getPage(harbour).blocks[0].title, "«Go,» she said.");
+    eq(getPage(harbour).blocks[0].children[0].title, "fix \"this\"", "a task is left as it is");
+    [...document.querySelectorAll("#toasts .toast")].pop().querySelector(".act").click();
+    eq(getPage(harbour).blocks[0].title, "\"Go,\" she said.", "Undo");
+    [...content().querySelectorAll(".bookdialogue .seg button")].find(b => b.textContent === "As typed").click();
+    await settle();
+    ok(!("dialogue" in getPage(BOOK_PATH).props), "As typed takes it off");
+    ok(!content().querySelector(".booktidy"), "and there is nothing to tidy to");
+  }));
+
+  test("#246 a thought, a sound and what is written are marked Pandoc's way", () => withBookVault({
+    [BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n",
+    [join(PAGES, "Harbour.md")]: "- She stopped. [I must go]{.thought} [Bang]{.sound}\n",
+  }, async () => {
+    const h = renderInline("She stopped. [I must go]{.thought} and [[Harbour]] [Bang]{.sound} [EXIT]{.written} [x]{.other}");
+    has(h, '<span class="mk mk-thought" title="Thought">I must go</span>');
+    has(h, '<span class="mk mk-sound" title="Sound">Bang</span>');
+    has(h, '<span class="mk mk-written" title="Written">EXIT</span>');
+    has(h, "[x]{.other}", "a class it does not know is left as written");
+    ok(h.includes("data-link") || h.includes("Harbour"), "a link still works beside it");
+    eq(countWords("[I must go]{.thought}"), 3, "the mark itself is not a word");
+    eq(chapterWords(join(PAGES, "Harbour.md")), 6);
+    has(bookManuscript(), "[I must go]{.thought}", "exported as written");
+    ok(["thought", "sound", "written"].every(id => slashRows(id.slice(0, 4)).some(r => r.id === id)), "a command each");
+    // Typed and taken from the slash menu, as a person does it.
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    openPage(join(PAGES, "Harbour.md"));
+    await settle();
+    const b = getPage(join(PAGES, "Harbour.md")).blocks[0];
+    focusBlock(b.id);
+    await frame();
+    const txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
+    setHostText(txt, "He said /thou", 13);
+    txt.dispatchEvent(new Event("input", {bubbles: true}));
+    await frame();
+    ok(SUGGEST && SUGGEST.host === txt, "the slash menu opened");
+    txt.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true, cancelable: true}));
+    await frame();
+    eq(lineText(txt), "He said []{.thought}");
+    eq(caretOffsets(txt)[0], 9, "the caret inside the mark");
+  }));
+
+  const CAST_PAGES = {
+    [BOOK_PATH]: "title:: book\ndialogue:: english\n\n- [[Harbour]]\n- [[The storm]]\n",
+    [join(PAGES, "Harbour.md")]: "- ## The quay\n  pov:: [[Anna Berg]]\n  with:: [[Bo]]\n" +
+      "  - “We should go,” said Bo.\n  - “Not yet.”\n  - “Anna, now.”\n" +
+      "- ## Night\n  pov:: [[Mira]]\n  with:: [[Bobby]]\n  - Mira lit the lamp. “The boats are loose,” she said.\n  - “Then we row,” Bo said.\n",
+    [join(PAGES, "The storm.md")]: "- ## Rain\n  pov:: [[Anna Berg]]\n  - Anna ran to the [[Old mill]].\n",
+    [personPath("Anna Berg")]: "wants:: To find her father\n\n- The eldest.\n",
+    [personPath("Bo")]: "aliases:: Bobby\n",
+    [join(PAGES, "Old mill.md")]: "type:: place\n",
+    [join(PAGES, "Gulls.md")]: "- Not in the cast\n",
+  };
+  test("#247 the cast: the area's people, pages typed place or thing, and names a scene gives", () => withCastVault(CAST_PAGES, () => {
+    const cast = castEntries();
+    eq(cast.map(e => e.name + ":" + e.type).sort(), ["Anna Berg:character", "Bo:character", "Mira:character", "Old mill:place"]);
+    eq(cast.find(e => e.name === "Anna Berg").names, ["Anna Berg", "Anna"], "a full name is also its first word");
+    eq(cast.find(e => e.name === "Bo").names, ["Bo", "Bobby"], "and its aliases");
+    eq(cast.find(e => e.name === "Mira").path, null, "named in a scene, no page");
+    eq(castEntryOf("Bobby").name, "Bo", "an alias in with:: is that page");
+    eq(castNamesOf("Old Tomas"), ["Old Tomas", "Tomas"], "past a title");
+    eq(castNamesOf("The harbour", [], "place"), ["The harbour"], "a place only by its whole name");
+    eq(castMentions("Bobby met Anna; will Will?").map(m => castEntries().find(e => e.key === m.key).name), ["Bo", "Anna Berg"]);
+  }));
+  test("#247 a character is a person page; a writer is not cast; a place or thing comes from its template", () => withCastVault({
+    ...CAST_PAGES, [personPath("Kari Writer")]: "member:: true\n",
+  }, () => {
+    ok(!castEntries().some(e => e.name === "Kari Writer"), "somebody who uses the app is a writer");
+    setupBook();
+    ok(getPage(join(DIRS.lists, "place.md")) && getPage(join(DIRS.lists, "thing.md")), "setting up writes the templates");
+    clearMemo();
+    ok(!castEntries().some(e => e.path && isTemplatePath(e.path)), "a template is not in the cast");
+    const mira = makeCastPage("Mira");
+    eq(mira, personPath("Mira"), "Make a page makes a person page");
+    eq(castEntries().find(e => e.name === "Mira").path, mira);
+    getPage(join(DIRS.lists, "place.md")).props.climate = "";
+    const quay = makeCastPage("The quay", "place");
+    eq(getPage(quay).props.type, "place");
+    ok("climate" in getPage(quay).props, "from the template, as it is in 8/");
+    eq(castEntries().find(e => e.name === "The quay").type, "place");
+  }));
+  test("#247 who speaks each line: the name outside the quotes, or back and forth", () => withCastVault(CAST_PAGES, () => {
+    const {scenes} = bookAnalysis(), who = k => k ? castEntries().find(e => e.key === k).name : null;
+    eq(scenes.map(sc => sc.scene.name), ["The quay", "Night", "Rain"]);
+    eq(scenes[0].speeches.map(x => who(x.speaker)), ["Bo", "Anna Berg", "Bo"], "untagged, the other of the two; then back again");
+    eq(scenes[0].speeches.map(x => who(x.to)), [null, "Bo", "Anna Berg"]);
+    eq(scenes[1].speeches.map(x => who(x.speaker)), ["Mira", "Bo"], "a name before the quotes, then after");
+    ok(scenes[0].speeches[2].names.has(personPath("Anna Berg")), "Anna is named in what Bo says");
+    ok(scenes[2].present.has(join(PAGES, "Old mill.md")), "a place named in the text is in the scene");
+    eq(speechParts("He said “go” and “now”.", "english").said, ["go", "now"]);
+    eq(speechParts("– Kom, sa Mira. – Nå.", "dash"), {said: ["Kom, Nå."], rest: "sa Mira. "});
+    eq(speechParts("– Anna, kom hit!", "dash"), {said: ["Anna, kom hit!"], rest: ""}, "a tag that names nobody is speech");
+  }));
+  test("#247 the protagonist, and the four signs of depth for any character", () => withCastVault(CAST_PAGES, () => {
+    const anna = personPath("Anna Berg"), bo = personPath("Bo");
+    eq(bookProtagonist(), anna, "the one who sees the most scenes");
+    const st = castStats(), mira = [...st.values()].find(s => s.entry.name === "Mira");
+    eq(st.get(bo).spoken, 8);
+    eq(st.get(anna).lines, 1);
+    eq(Math.round(100 * st.get(bo).share), 57, "8 of 14 words said");
+    eq(st.get(bo).without, 1, "Night has no Anna");
+    eq(st.get(bo).talks.get(anna), 2, "with Anna in The quay");
+    const depth = s => Object.fromEntries(s.depth.map(d => [d.k, d.na ? "na" : d.ok]));
+    eq(depth(st.get(anna)), {wants: true, arc: false, alone: "na", talk: "na"}, "the protagonist is not measured against herself");
+    eq(depth(st.get(bo)), {wants: false, arc: false, alone: true, talk: true});
+    eq(st.get(bo).other.with, mira.entry.key, "Bo and Mira talk of the boats");
+    eq(depth(mira).talk, true);
+    eq(st.get(join(PAGES, "Old mill.md")).depth, null, "a place has no depth to measure");
+    getPage(BOOK_PATH).props.protagonist = "[[Bo]]"; clearMemo();
+    eq(bookProtagonist(), bo, "protagonist:: says whose story it is");
+    eq(depth(castStats().get(anna)).talk, false, "Anna never talks with anybody but Bo");
+  }));
+  test("#247 Book › Cast lists the cast, the protagonist first, and writes what is missing", () => withCastVault(CAST_PAGES, async () => {
+    const was = PREF.get("sub.book", "");
+    try {
+      go("book", {sub: "cast"});
+      await settle();
+      const names = () => [...content().querySelectorAll(".castrow .nm")].map(n => n.textContent);
+      eq(names(), ["Anna Berg", "Bo", "Mira", "Old mill"]);
+      has(content().querySelector(".casthero").textContent, "Anna Berg");
+      const anna = content().querySelector(".castrow");
+      has(anna.querySelector(".castfacts").textContent, "2 scenes");
+      has(anna.querySelector(".castfacts").textContent, "Harbour – The storm");
+      eq(anna.querySelector(".castscore .ratio").textContent, "1/2");
+      [...anna.querySelectorAll("button.dep")].find(b => b.textContent.includes("Changes")).click();
+      await settle();
+      $("#modalRoot input").value = "From afraid to brave";
+      [...$("#modalRoot").querySelectorAll("button")].find(b => b.textContent === "Save").click();
+      await settle();
+      eq(getPage(personPath("Anna Berg")).props.arc, "From afraid to brave");
+      eq(content().querySelector(".castrow .castscore .ratio").textContent, "2/2");
+      [...content().querySelectorAll(".castrow")].find(r => r.dataset.key.includes("mira")).querySelector(".castmake").click();
+      await settle();
+      ok(getPage(personPath("Mira")), "+ Make a page writes a person page");
+      ok(![...content().querySelectorAll(".castmake")].length, "and Mira has one now");
+    } finally { PREF.set("sub.book", was); }
+  }));
+
+  test("#248 a script becomes prose, with said only where it is needed, and reads back to the same speakers", () => withCastVault({
+    [BOOK_PATH]: "title:: book\ndialogue:: english\n\n- [[Harbour]]\n",
+    [join(PAGES, "Harbour.md")]: "- ## Quay\n  with:: [[Anna]], [[Bo]], [[Cai]]\n",
+    [personPath("Anna")]: "- In the story.\n", [personPath("Bo")]: "- In the story.\n", [personPath("Cai")]: "- In the story.\n",
+  }, () => {
+    const rows = [["Anna", "We should go."], ["Bo", "Not yet"], ["Anna", "Now!"], ["Bo", ""], ["Bo", "Fine."], ["Cai", "Wait."]]
+      .map(([who, text]) => ({who, text}));
+    const prose = scriptToProse(rows);
+    eq(prose, ["“We should go,” said Anna.", "“Not yet,” said Bo.", "“Now!”", "“Fine.”", "“Wait,” said Cai."]);
+    eq(scriptToProse(rows.slice(0, 2), "guillemets"), ["«We should go», sa Anna.", "«Not yet», sa Bo."]);
+    eq(scriptToProse(rows.slice(0, 3), "dash"), ["– We should go, sa Anna.", "– Not yet, sa Bo.", "– Now!"]);
+    eq(scriptToProse(rows.slice(0, 1), "german"), ["„We should go“, sagte Anna."]);
+    getPage(BOOK_PATH).props.said = "says"; clearMemo();
+    eq(scriptToProse(rows.slice(0, 1)), ["“We should go,” says Anna."], "said:: is the word");
+    delete getPage(BOOK_PATH).props.said;
+    getPage(join(PAGES, "Harbour.md")).blocks[0].children = prose.map(t => newBlock({title: t}, false));
+    clearMemo();
+    const who = k => castEntries().find(e => e.key === k).name;
+    eq(bookAnalysis().scenes[0].speeches.map(x => who(x.speaker)), ["Anna", "Bo", "Anna", "Bo", "Cai"], "read back as written");
+  }));
+  test("#248 the Script dialog: Enter for the next speaker, Tab to change, Ctrl+Enter puts it in", () => withCastVault({
+    [BOOK_PATH]: "title:: book\ndialogue:: english\n\n- [[Harbour]]\n",
+    [join(PAGES, "Harbour.md")]: "- ## Quay\n  pov:: [[Anna Berg]]\n  with:: [[Bo]]\n  - She waited.\n  -\n",
+    [personPath("Anna Berg")]: "- In the story.\n", [personPath("Bo")]: "- In the story.\n", [personPath("Cai")]: "- In the story.\n",
+  }, async () => {
+    const harbour = join(PAGES, "Harbour.md"), empty = getPage(harbour).blocks[0].children[1];
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    openScript({path: harbour, after: empty});
+    await frame();
+    const dlg = $("#modalRoot");
+    eq([...dlg.querySelectorAll(".scriptwho .fchip[aria-pressed=true]")].map(b => b.textContent), ["Anna Berg", "Bo"], "the scene's people talk");
+    const key = (input, k, more = {}) => input.dispatchEvent(new KeyboardEvent("keydown", Object.assign({key: k, bubbles: true, cancelable: true}, more)));
+    let inputs = () => [...dlg.querySelectorAll(".scriptrow input")];
+    const type = (input, text) => { input.value = text; input.dispatchEvent(new Event("input", {bubbles: true})); };
+    type(inputs()[0], "Are you coming?");
+    key(inputs()[0], "Enter");
+    await frame();
+    eq([...dlg.querySelectorAll(".scriptname")].map(b => b.textContent), ["Anna", "Bo"], "the next row is the next speaker's");
+    eq(document.activeElement, inputs()[1], "and has the caret");
+    type(inputs()[1], "No.");
+    key(inputs()[1], "Enter");
+    await frame();
+    key(inputs()[2], "Tab");
+    await frame();
+    eq(dlg.querySelectorAll(".scriptname")[2].textContent, "Bo", "Tab changes who speaks");
+    key(inputs()[2], "Backspace");
+    await frame();
+    eq(inputs().length, 2, "Backspace on an empty row takes it away");
+    key(inputs()[1], "Enter", {ctrlKey: true});
+    await frame();
+    ok(!dlg.querySelector(".scriptdlg"), "Ctrl+Enter closes it");
+    eq(getPage(harbour).blocks[0].children.map(b => b.title), ["She waited.", "“Are you coming?” said Anna.", "“No,” said Bo."],
+      "in place of the empty line it was opened from");
+  }));
+
+  test("#249 relations: shared scenes, talk and ties the pages name, between two chapters", () => withCastVault({
+    ...CAST_PAGES, [personPath("Bo")]: "aliases:: Bobby\nbrother:: [[Anna Berg]]\nrole:: [[Anna Berg]]\n",
+  }, async () => {
+    const anna = personPath("Anna Berg"), bo = personPath("Bo");
+    const rel = bookRelations(), ab = rel.pairs.find(p => [p.a, p.b].includes(anna) && [p.a, p.b].includes(bo));
+    eq([ab.scenes, ab.talk, ab.said], [1, 2, ["brother"]], "one scene, two answers, and a tie on Bo's page; role:: is about Bo");
+    eq(rel.seen.get(anna), 2);
+    const late = bookRelations(1, 1);
+    eq(late.pairs.find(p => p === late.pairs.find(q => [q.a, q.b].includes(anna) && [q.a, q.b].includes(bo))).scenes, 0, "not in The storm");
+    eq(late.seen.get(bo), undefined);
+    const was = [PREF.get("sub.book", ""), PREF.get("book.rel.from", ""), PREF.get("book.rel.to", "")];
+    try {
+      REL.sel = null;
+      go("book", {sub: "relations"});
+      await settle();
+      eq([...content().querySelectorAll(".relnode")].map(g => g.getAttribute("aria-label")), ["Anna Berg", "Bo", "Mira"], "the protagonist first");
+      ok(content().querySelector(".relnode.hero"), "in the middle");
+      has(content().querySelector(".rellist").textContent, "brother");
+      content().querySelectorAll(".relnode")[2].dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true}));
+      await settle();
+      eq(REL.sel, [...castEntries()].find(e => e.name === "Mira").key, "Enter picks a character");
+      has(content().querySelector(".section h3").textContent, "Ties of Mira");
+      eq(content().querySelectorAll(".relrow").length, 1, "only Mira's ties: Bo");
+    } finally { REL.sel = null; PREF.set("sub.book", was[0]); PREF.set("book.rel.from", was[1]); PREF.set("book.rel.to", was[2]); }
+  }));
+
+  test("#250 the timeline reads when::, marks what is told out of order, and finds a character in two places", () => withCastVault({
+    [BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n- [[The storm]]\n",
+    [join(PAGES, "Harbour.md")]: "- ## A\n  pov:: [[Anna]]\n  with:: [[Bo]]\n  place:: [[Mill]]\n  when:: Day 2\n" +
+      "- ## B\n  pov:: [[Bo]]\n  when:: Day 1, evening\n",
+    [join(PAGES, "The storm.md")]: "- ## C\n  pov:: [[Mira]]\n  with:: [[Bo]]\n  place:: [[Quay]]\n  when:: day 2\n" +
+      "- ## D\n  when:: two weeks later\n- ## E\n  when:: 1990\n",
+    [personPath("Anna")]: "- In the story.\n", [personPath("Bo")]: "- In the story.\n",
+  }, async () => {
+    eq(storyTime("Day 3"), {kind: "day", at: 3});
+    eq(storyTime("Dag 3, kveld"), {kind: "day", at: 3.8});
+    eq(storyTime("3, morning"), {kind: "day", at: 3.2});
+    eq(storyTime("1987-06-14"), {kind: "date", at: 19870614});
+    eq(storyTime("1987"), {kind: "date", at: 19870000});
+    eq(storyTime("two weeks later"), null);
+    const {rows, clock, clashes} = bookTimeline();
+    eq(clock, "day", "the kind most scenes use");
+    eq(rows.map(r => r.scene.name + (r.back ? "↶" : "") + (r.t ? "" : "?")), ["A", "B↶", "C", "D?", "E?"]);
+    eq(clashes.map(x => castEntries().find(e => e.key === x.who).name + " " + x.a.scene.name + x.b.scene.name), ["Bo AC"],
+      "Bo at the mill and on the quay on day 2");
+    const was = PREF.get("sub.book", "");
+    try {
+      go("book", {sub: "timeline"});
+      await settle();
+      eq([...content().querySelectorAll(".tlhead")].map(h => h.textContent), ["Day 1, evening", "Day 2"]);
+      eq([...content().querySelectorAll(".tllane")].map(h => h.textContent), ["Anna", "Bo", "Mira"]);
+      eq([...content().querySelectorAll(".tlscene.back")].map(b => b.textContent), ["2B"]);
+      has(content().textContent, "In two places at once");
+      has(content().textContent, "“two weeks later” is not read as a time");
+    } finally { PREF.set("sub.book", was); }
+  }));
+
+  test("#251 the plot grid: a row per plotline, its scenes by chapter, and its long gaps", () => withCastVault({
+    [BOOK_PATH]: "title:: book\n\n- [[One]]\n- [[Two]]\n- [[Three]]\n- [[Four]]\n- [[Five]]\n",
+    [join(PAGES, "One.md")]: "- ## Start\n  plot:: The search, [[The letter]]\n",
+    [join(PAGES, "Two.md")]: "- ## Middle\n  plot:: the search\n",
+    [join(PAGES, "Three.md")]: "- ## Lost\n",
+    [join(PAGES, "Four.md")]: "- Words.\n",
+    [join(PAGES, "Five.md")]: "- ## End\n  plot:: The letter\n",
+  }, async () => {
+    const {lines, loose} = bookPlot();
+    eq(lines.map(l => l.name), ["The search", "The letter"], "one row each, whatever the case");
+    eq(lines[0].cells.map(c => c.map(sc => sc.scene.name).join()), ["Start", "Middle", "", "", ""]);
+    eq([...lines[0].gaps], [], "nothing after its last chapter is a gap");
+    eq([...lines[1].gaps], [1, 2, 3], "three chapters without The letter");
+    eq(loose.map(sc => sc.scene.name), ["Lost"], "a scene with no plotline; an opening is not asked for one");
+    const was = PREF.get("sub.book", "");
+    try {
+      go("book", {sub: "plot"});
+      await settle();
+      eq([...content().querySelectorAll(".tllane")].map(n => n.textContent), ["The search", "The letter"]);
+      eq(content().querySelectorAll(".plotgap").length, 3);
+      has(content().textContent, "Scenes with no plotline");
+    } finally { PREF.set("sub.book", was); }
+  }));
+
+  test("#252 darlings: a sentence, a paragraph, a scene and a chapter are cut, kept and put back", () => withBookVault({
+    [BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n- [[The storm]]\n",
+    [join(PAGES, "Harbour.md")]: "- First line.\n- She ran. “Wait!” he said. The end\n  - under it\n- Last line.\n- ## Night\n- Dark.\n- Darker.\n- ## Dawn\n- Light.\n",
+    [join(PAGES, "The storm.md")]: "- Rain.\n",
+  }, async () => {
+    const harbour = join(PAGES, "Harbour.md"), titles = () => getPage(harbour).blocks.map(b => b.title);
+    const t = "She ran. “Wait!” he said. The end";
+    eq(sentenceAt(t, 2), {start: 0, end: 9});
+    eq(t.slice(...Object.values(sentenceAt(t, 12))), "“Wait!” he said. ");
+    eq(t.slice(...Object.values(sentenceAt(t, t.length))), "The end", "at the end, the last one");
+    eq(sentenceAt("No stop here", 3), {start: 0, end: 12});
+    const ran = getPage(harbour).blocks[1];
+    cutSentenceToDarlings(harbour, ran, t, 12);
+    eq(ran.title, "She ran. The end");
+    eq(darlings()[0].title, "“Wait!” he said.");
+    eq(darlingWords(), 3);
+    eq(chapterWords(harbour), 13, "not counted in the book");
+    putDarlingBack(darlings()[0]);
+    eq(ran.title, "She ran. The end “Wait!” he said.", "back at the end of its line");
+    cutLineToDarlings(harbour, ran);
+    eq(titles(), ["First line.", "Last line.", "## Night", "Dark.", "Darker.", "## Dawn", "Light."]);
+    eq(darlings()[0].children.map(b => b.title), ["under it"], "with what is under it");
+    putDarlingBack(darlings()[0]);
+    eq(titles()[1], ran.title, "after the line it followed");
+    ok(!("from" in ran.props) && !("cut" in ran.props), "with nothing left of its time away");
+    const night = getPage(harbour).blocks[3];
+    cutLineToDarlings(harbour, night);
+    eq(titles(), ["First line.", ran.title, "Last line.", "## Dawn", "Light."], "a scene goes with its lines");
+    eq(chapterScenes(harbour).map(s => s.name), ["", "Dawn"]);
+    putDarlingBack(darlings()[0]);
+    eq(titles(), ["First line.", ran.title, "Last line.", "## Night", "Dark.", "Darker.", "## Dawn", "Light."], "and comes back as written");
+    go("book", {sub: "chapters"});
+    await settle();
+    content().querySelectorAll(".bookch .chcut")[1].click();
+    await settle();
+    eq(bookChapters().map(c => c.name), ["Harbour"]);
+    ok(getPage(join(PAGES, "The storm.md")), "the chapter's page stays");
+    content().querySelector(".bookdarlings").click();
+    await settle();
+    [...$("#modalRoot").querySelectorAll(".darling .textbtn")][0].click();
+    eq(bookChapters().map(c => c.name), ["Harbour", "The storm"], "Put back: in its place again");
+    closeModal();
+    ok(!isTemplatePath(DARLINGS_PATH) && pageKind(DARLINGS_PATH) === "page", "the page is no template");
+  }));
+
+  test("#253 Read shows the whole book as prose, and a change there is a change to the chapter", () => withBookVault(BOOK_PAGES, async () => {
+    const was = PREF.get("sub.book", "");
+    try {
+      go("book", {sub: "read"});
+      await settle();
+      eq([...content().querySelectorAll(".readhead .nm")].map(n => n.textContent), ["Harbour", "The storm"], "the chapters with a page, in order");
+      eq(content().querySelectorAll(".readch .outline.prose").length, 2);
+      const storm = join(PAGES, "The storm.md"), b = getPage(storm).blocks[0];
+      const txt = content().querySelector('.readch .blk[data-id="' + b.id + '"] .txt');
+      txt.focus();
+      txt.textContent = "It was a quiet night.";
+      txt.blur();
+      eq(getPage(storm).blocks[0].title, "It was a quiet night.");
+    } finally { PREF.set("sub.book", was); }
+  }));
+
+  test("#254 Revise measures a chapter: LIX, long sentences, talk, telling words, adverbs and repeats", () => {
+    const long = Array.from({length: 31}, (_, i) => "Word" + i).join(" ") + ".";
+    const look = proseLook(["She felt cold. He walked slowly home.", "“Go now,” she said. " + long, "The harbour was dark and the harbour was still."], "english");
+    eq(look.sentences, 5);
+    eq(look.long.map(x => x.n), [31]);
+    eq(look.filters.map(x => x.word), ["felt"]);
+    eq(look.adverbs.map(x => x.word), ["slowly"]);
+    eq(look.repeats.map(x => x.word), ["harbour"]);
+    eq(look.said, 2, "Go now");
+    ok(look.lix > 0 && look.avg > 0);
+    eq(sentencesOf("“Wait!” he said. Then she left."), ["“Wait!” he said.", "Then she left."]);
+    eq(lixWord(25), "very easy");
+    eq(lixWord(55), "hard");
+  });
+  test("#254 a chapter that moves on a stage is kept as a snapshot; Revise shows what changed since", () => withCastVault({
+    [BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n",
+    [join(PAGES, "Harbour.md")]: "stage:: Draft\n\n- First.\n  id:: abc123\n- Second.\n- Anna's eyes were blue.\n",
+    [personPath("Anna")]: "eyes:: green\n",
+  }, async () => {
+    const harbour = join(PAGES, "Harbour.md");
+    setChapterStage(harbour, "Revise");
+    const snaps = chapterSnapshots(harbour);
+    eq(snaps.length, 1);
+    const snap = getPage(snaps[0]);
+    eq([snap.props.stage, snap.props.archived], ["Draft", "true"], "the stage it was in, archived");
+    ok(!blockProp(snap.blocks[0], "id"), "no ids in the copy");
+    ok(pageKind(snaps[0]) === "page" && !isTemplatePath(snaps[0]), "a page, not a template");
+    setChapterStage(harbour, "Revise");
+    eq(chapterSnapshots(harbour).length, 1, "the same stage again is no new copy");
+    getPage(harbour).blocks[1].title = "Second, better.";
+    getPage(harbour).blocks.push(newBlock({title: "Third."}, false));
+    eq(sinceSnapshot(harbour, snaps[0]), {gone: ["Second."], added: ["Second, better.", "Third."]});
+    eq(factClashes().map(x => x.who + " " + x.fact + "/" + x.said), ["Anna green/blue"]);
+    const was = PREF.get("sub.book", "");
+    try {
+      REV.open = null;
+      go("book", {sub: "revise"});
+      await settle();
+      content().querySelector("button.revrow").click();
+      await settle();
+      has(content().querySelector(".revsnap").textContent, "2 new, 1 gone");
+      has(content().textContent, "Not as their page says");
+    } finally { REV.open = null; PREF.set("sub.book", was); }
+  }));
+
+  test("#241 in a book's area the names offered are that area's own, its pages too", async () => {
+    const rec = newRecord("Book241", Backends.memory("Book241"));
+    for (const [p, text] of Object.entries({
+      [BOOK_PATH]: "title:: book\n\n- [[Varyhall]]\n",
+      [join(PAGES, "Vary.md")]: "role:: healer\n\n- Old, kind, tired.\n",
+      [join(PAGES, "Varyhall.md")]: "- Chapter one\n",
+      [join(DIRS.people, "Varyn Book.md")]: "title:: Varyn Book\n",
+    })) rec.pages.set(p, parsePage(text));
+    const vb = join(DIRS.people, "Varyo Borge.md");
+    const was = PREF.get("visibleSpaces", "");
+    const box = el("div", {data: {space: "Book241"}}), input = el("input");
+    box.append(input); document.body.append(box);
+    const offered = text => { input.value = text; input.setSelectionRange(text.length, text.length);
+      return (suggestFor(input, {})?.rows || []).filter(r => !r.isNew).map(r => r.ref); };
+    try {
+      putPage(vb, parsePage("title:: Varyo Borge\n"), {silent: true});
+      LOADED.set(rec.name, rec);
+      setVisibleSpaces([V.space, rec.name]); clearMemo();
+      eq(offered("She looked at Vary").sort(), ["Vary", "p/Varyn Book"], "a page of the book's area, and no Varyo from the other area, nor the chapter");
+      eq(offered("[[Vary"), ["Vary", "Varyhall", "p/Varyn Book"], "[[ lists the book's area only");
+      ok(!linkKnownNames("Varyo Borge and Vary met", "", namesFor(input)).includes("[["), "nothing linked from another area, and a page is never linked unasked");
+      box.dataset.space = V.space; clearMemo();
+      ok(offered("She looked at Vary").includes("p/Varyo Borge"), "an area without a book offers every area's names, as before");
+    } finally {
+      box.remove(); LOADED.delete(rec.name); PREF.set("visibleSpaces", was);
+      V.pages.delete(vb); V.removed.delete(vb); clearMemo(); renderNav();
+    }
   });
 
   /* ============================================================

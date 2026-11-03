@@ -76,20 +76,3 @@
 .areahead .sub{color:var(--fg3);font-size:13px}
 
 /* nudges that wait in the corner */
-.toast.reminder{display:block;max-height:45vh;overflow:auto;width:min(430px,90vw)}
-.toast.reminder .acts{display:flex;gap:6px;flex-wrap:wrap}
-
-/* the relationship board */
-.rel-board{grid-template-columns:repeat(3,minmax(280px,1fr))!important}
-.rel-search{padding:8px;display:grid;gap:6px}
-.rel-search input,.rel-search select{width:100%;min-width:0}
-.rel-nest-toggle{display:inline-flex;gap:6px;margin:10px;align-items:center}
-.rel-children{margin-left:18px;border-left:2px solid var(--border);padding-left:8px}
-.rel-card-wrap{margin-bottom:8px}
-.rel-card-wrap>.bcard{width:100%;margin-bottom:5px}
-.rel-over{outline:2px solid var(--accent)}
-.rel-ancestor{opacity:.65}
-[hidden]{display:none!important}
-@media(max-width:700px){
-  .rel-board{grid-template-columns:repeat(3,280px)!important}
-}

@@ -10,6 +10,7 @@ const CHORDS = {
   "g p": () => go("projects"),
   "g c": () => go("chat"),
   "g r": () => go("review"),
+  "g b": () => go("book"),
   "g h": () => openDoneHistory(),
   "g M": () => morningRoutine(),
   "g m": () => state.view === "page" && statusDirOf(state.pagePath) && openStatusPicker(state.pagePath),

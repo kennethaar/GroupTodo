@@ -29,6 +29,12 @@ function styleSection() {
   size.addEventListener("change", () => { PREF.set("style.size", size.value); applyStyles(); });
   card.append(el("div", {class: "stylerow"}, el("label", {}, "Font"), font));
   card.append(el("div", {class: "stylerow"}, el("label", {}, "Text size"), size));
+  const width = el("select", {"aria-label": "Content width", class: "stylewidth",
+    title: "On a wide screen: Narrow keeps one reading column, Wide spreads the week and the lists, Full takes the whole window"},
+    ...WIDTHS.map(([v, t]) => el("option", {value: v}, t)));
+  width.value = PREF.get("style.width", "wide");
+  width.addEventListener("change", () => { PREF.set("style.width", width.value); applyStyles(); });
+  card.append(el("div", {class: "stylerow"}, el("label", {}, "Content width"), width));
 
   // Anything further is a .css file in pages/8/, and that goes with the area.
   const rec = langRecord();

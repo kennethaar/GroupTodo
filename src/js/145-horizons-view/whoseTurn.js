@@ -1,5 +1,5 @@
 function whoseTurn(block) {
-  const people = members().map(m => m.name);
+  const people = choreCrew().map(m => m.name);
   if (people.length < 2) return null;
   const key = choreKey(block.title), since = shiftISO(todayISO(), -120);
   const tally = new Map(people.map(n => [n, {n: 0, last: ""}]));

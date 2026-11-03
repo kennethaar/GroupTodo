@@ -53,6 +53,14 @@ function outlineBlock(path, page, b, opts = {}) {
   });
   keepClickCaret(txt, () => b.title);
   txt.addEventListener("focus", () => { line.classList.add("raw"); txt.textContent = b.title; flyShow(txt, path, page, b); });
+  // In a chapter, quotes and dashes are set in the book's style as they are typed (#245).
+  const style = memo("chapterStyle\u0000" + V.space + "\u0000" + path, () => { const book = bookOfChapter(path); return book ? dialogueStyle(book) : null; });
+  if (style) txt.addEventListener("input", e => {
+    if (e.isComposing || e.inputType !== "insertText") return;
+    const [from, to] = caretOffsets(txt);
+    const set = from === to ? typeSet(lineText(txt), from, style) : null;
+    if (set) setHostText(txt, set.text, set.caret);
+  });
   txt.addEventListener("input", () => {
     /* "· " in front of a note is written out as TODO, which the state words
        below then make a to do there and then (#185). */
@@ -243,6 +251,33 @@ function outlineBlock(path, page, b, opts = {}) {
         else if (isTimeLog(b)) openTimeForm(path, b);
         else openTimeForm(null, null, {from: {path, block: b}});
       }, 0);
+      return;
+    }
+    // Kill your darlings (#252): at the start of the line the line, else the sentence here.
+    if (id === "darling") {
+      const t = lineText(txt), [at] = caretOffsets(txt);
+      txt.blur();
+      if (!trim(t.slice(0, at))) cutLineToDarlings(path, b); else cutSentenceToDarlings(path, b, t, at);
+      return;
+    }
+    // Talk written as a script, put in after this line (#248).
+    if (id === "script") {
+      commitLine(txt, path, b);
+      txt.blur();
+      setTimeout(() => openScript({path, after: b}), 0);
+      return;
+    }
+    // A mark, empty, with the caret in it to write in (#246).
+    if (BOOK_MARKS[id]) {
+      const t = lineText(txt), [at] = caretOffsets(txt), open = "[", close = "]{." + id + "}";
+      setHostText(txt, t.slice(0, at) + open + close + t.slice(at), at + open.length);
+      return;
+    }
+    // A beat, or a line again (#244): the %% in front goes on or comes off.
+    if (id === "beat") {
+      const t = lineText(txt), next = isBeat(t) ? t.replace(BEAT_RE, "") : "%% " + t;
+      setHostText(txt, next, next.length);
+      paintHeadLine(line, next, b.state);
       return;
     }
     if (!FLY || FLY.txt !== txt) flyShow(txt, path, page, b);

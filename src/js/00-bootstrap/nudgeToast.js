@@ -1,5 +1,7 @@
-function nudgeToast({title, hint, body, foot, onClose}) {
-  const t = el("div", {class: "toast reminder", role: "status"},
+function nudgeToast({title, hint, body, foot, onClose, stay = false, kind = ""}) {
+  const t = el("div", {class: "toast reminder" + (kind ? " " + kind : ""), role: "status"},
+    stay ? el("button", {class: "x", title: "Close", "aria-label": "Close",
+      onclick: () => { t.remove(); if (onClose) onClose(); }}, "✕") : null,
     el("strong", {}, title), hint ? el("p", {}, hint) : null, body);
   const acts = el("div", {class: "acts"});
   for (const b of (foot || []).flat().filter(Boolean)) {
@@ -9,5 +11,5 @@ function nudgeToast({title, hint, body, foot, onClose}) {
   }
   t.append(acts);
   $("#toasts").append(t);
-  setTimeout(() => { t.remove(); if (onClose) onClose(); }, 15000);
+  if (!stay) setTimeout(() => { t.remove(); if (onClose) onClose(); }, 15000);
 }

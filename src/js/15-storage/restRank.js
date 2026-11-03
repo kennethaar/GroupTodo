@@ -1,5 +1,6 @@
 function restRank(p, weekAgo) {
-  if (isJournalPath(p)) return dayOfPath(p) >= weekAgo ? 0 : 3;
-  if (SOON_DIRS.some(d => p.startsWith(d + "/"))) return 0;
-  return [DIRS.waiting, DIRS.someday].some(d => p.startsWith(d + "/")) ? 1 : 2;
+  if (p.startsWith(DIRS.active + "/")) return 0;
+  if (isJournalPath(p)) return dayOfPath(p) >= weekAgo ? 1 : 4;
+  if (SOON_DIRS.some(d => p.startsWith(d + "/"))) return 1;
+  return [DIRS.waiting, DIRS.someday].some(d => p.startsWith(d + "/")) ? 2 : 3;
 }

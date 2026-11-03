@@ -2,6 +2,7 @@ function applyStyles() {
   const r = document.documentElement;
   r.dataset.light = themeOf("light");
   r.dataset.dark = themeOf("dark");
+  r.dataset.width = PREF.get("style.width", "wide");
   const font = FONTS.find(f => f.id === PREF.get("style.font", "system"));
   const size = Number(PREF.get("style.size", "15")) || 15;
   const rules = [];

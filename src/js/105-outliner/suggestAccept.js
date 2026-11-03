@@ -12,8 +12,9 @@ function suggestAccept(n) {
   if (r.accept === "command") {
     // The "/wait" that was typed has done its job: it goes, and so does the
     // space before it when it was the end of the line, or every trip through
-    // the menu would leave one more behind.
-    const cut = !trim(after) && at > 0 && /\s/.test(text[at - 1]) ? at - 1 : at;
+    // the menu would leave one more behind. A command that writes into the
+    // sentence (inline) keeps the space: it is the sentence's.
+    const cut = !r.inline && !trim(after) && at > 0 && /\s/.test(text[at - 1]) ? at - 1 : at;
     setHostText(host, text.slice(0, cut) + after, cut);
     if (opts.onCommand) opts.onCommand(r.id);
     return;

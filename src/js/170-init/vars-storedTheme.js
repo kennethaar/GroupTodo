@@ -12,6 +12,7 @@ $("#syncLine").onclick   = () => {
   openVaultDialog();
 };
 $("#brand").onclick      = () => go("me");
+$("#appUpdate").onclick  = () => UPDATE && whatsNewDialog(UPDATE.entries, {update: UPDATE});
 $("#hideSide").onclick   = () => isNarrow() ? document.body.classList.remove("nav-open") : setSidebarHidden(true);
 $("#burger").onclick     = () => toggleSidebar();
 $("#btnBack").onclick    = () => navGo(-1);

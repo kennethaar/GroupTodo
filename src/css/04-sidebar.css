@@ -1,5 +1,5 @@
 /* ---------- sidebar ---------- */
-.sidehead{display:flex;align-items:flex-start;gap:4px;margin-bottom:8px}
+.sidehead{display:flex;flex-wrap:wrap;align-items:flex-start;gap:4px;margin-bottom:8px}
 .brand{display:flex;align-items:center;gap:8px;padding:6px 8px;font-weight:700;border-radius:8px;
   text-align:left;flex:1;min-width:0}
 .brand:hover{background:var(--bg3)}

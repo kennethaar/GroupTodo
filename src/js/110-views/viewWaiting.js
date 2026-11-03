@@ -3,7 +3,7 @@
    ============================================================ */
 function viewWaiting() {
   const sub = subNow();
-  const c = el("div", {class: "wrap" + (sub === "board" ? " wide" : "")});
+  const c = el("div", {class: "wrap" + (sub === "board" ? " wide" : " lwide")});
   c.append(vhead("Waiting for", "What you handed over and are owed back",
     csvBtn(() => rows, "waiting-for"), viewSeg("waiting")));
   const due = stakeholdersDue();

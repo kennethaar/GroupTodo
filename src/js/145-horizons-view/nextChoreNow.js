@@ -6,6 +6,6 @@ function nextChoreNow(path, block) {
   const who = whoseTurn(block);
   const copy = makeNextOccurrence(path, block, when);
   if (!copy) return null;
-  if (who) assignBlock(path, copy, who);
+  if (who) assignBlock(pathOfBlock(copy, path), copy, who);
   return {copy, when, who};
 }

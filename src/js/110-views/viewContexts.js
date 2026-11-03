@@ -7,7 +7,7 @@ function viewContexts() {
   c.append(vhead("Contexts", "Where are you? See what you can do there.",
     el("button", {class: "btn ghost sense", title: "Guess from this device, its network and your places (g l)",
       onclick: () => senseNow()}, "📍 Sense where I am"),
-    newBtn("context", () => newContextPrompt())));
+    newBtn("context", () => newContextPrompt()), viewSeg("contexts")));
   const acts = nextActions();
   const names = allContextNames();
   if (!names.length) {
@@ -16,6 +16,7 @@ function viewContexts() {
       el("button", {class: "textbtn", onclick: () => openContextsWizard()}, "Set some up")));
     return c;
   }
+  if (subNow() === "sort") { c.append(viewContextSort(acts)); return c; }
   // Actions with no context are a leak in the system, so they lead the page.
   const none = acts.filter(a => !a.context).length;
   if (none) c.append(el("div", {class: "ctxleak"},
@@ -41,31 +42,34 @@ function viewContexts() {
   const idle = names.filter(n => !shown.has(n));
   /* What a context's row says: how much, how much is late, and how fresh its
      chores are -- of each, how far from its next round, averaged. */
-  const facts = n => {
+  /* A row keeps an empty cell where a fact is missing, so its columns line up
+     with the rows above and below. */
+  const facts = (n, row) => {
     const here = acts.filter(a => inContext(a, n));
     const late = here.filter(a => a.due && a.due < todayISO()).length;
     const rounds = here.map(freshnessOf).filter(Boolean);
     const fresh = freshScore(here);
+    const gap = row ? el("span", {}) : null;
     return [
       el("span", {class: "ctxn"}, here.length ? here.length + " to do" : "none of its own"),
-      late ? el("span", {class: "chip late"}, late + " late") : null,
-      fresh == null ? null : el("span", {class: "fresh-score", style: "color:" + freshColor(fresh),
+      late ? el("span", {class: "chip late"}, late + " late") : gap,
+      fresh == null ? (row ? el("span", {}) : null) : el("span", {class: "fresh-score", style: "color:" + freshColor(fresh),
         title: rounds.length + " chore(s) here: 100% is all just done, 0% all due"}, fresh + "% fresh")];
   };
   if ([...busy].some(n => ctxHasKids(n))) c.append(fbar(ctxKidsChip()));
   if (roots.length) c.append(el("div", {class: "cardgrid ctxgrid"}, ...roots.map(n => {
-    const icon = contextIcon(n);
-    return el("div", {class: "cardbox ctxcard", role: "button", tabindex: "0", title: "Open " + contextPath(n),
+    const icon = contextIcon(n), kids = kidsOf.get(n) || [];
+    return el("div", {class: "cardbox ctxcard" + (kids.length ? " wide" : ""), role: "button", tabindex: "0", title: "Open " + contextPath(n),
       onclick: () => openContextPage(n),
       onkeydown: e => { if (e.key === "Enter" && e.target === e.currentTarget) { e.preventDefault(); openContextPage(n); } }},
       el("div", {class: "ctxhead"},
         el("h4", {}, icon ? el("span", {class: "ctxic", title: "From icon:: on the page"}, icon) : null, "@" + n),
         ...facts(n), el("span", {class: "ctxgo", "aria-hidden": "true"}, "›")),
-      ...(kidsOf.get(n) || []).map(k => el("button", {class: "ctxkid", title: "Open " + contextPath(k),
-        style: "padding-left:" + (k.split("/").length - n.split("/").length) * 14 + "px",
+      kids.length ? el("div", {class: "ctxkids"}, ...kids.map(k => el("button", {class: "ctxkid", title: "Open " + contextPath(k),
+        style: "padding-left:" + ((k.split("/").length - n.split("/").length) * 14 - 10) + "px",
         onclick: e => { e.stopPropagation(); openContextPage(k); }},
         el("span", {class: "ctxkn"}, (contextIcon(k) ? contextIcon(k) + " " : "") + "/" + k.slice(n.length + 1)),
-        ...facts(k))));
+        ...facts(k, true)))) : null);
   })));
   if (idle.length) {
     const open = !roots.length || PREF.get("contexts.idle", "") === "1";

@@ -5,7 +5,14 @@
 function pageOutline(path, opts = {}) {
   const page = getPage(path);
   const box = el("div", {class: "card"});
-  const outline = el("div", {class: "outline" + (opts.readonly ? " readonly" : "")});
+  const outline = el("div", {class: "outline" + (opts.readonly ? " readonly" : "") +
+    (opts.prose ? " prose" + (beatsHidden() ? " nobeats" : "") : "")});
+  /* Prose keeps the line you write in at the middle of the screen, as a
+     typewriter keeps its line in one place (#244). */
+  if (opts.prose) outline.addEventListener("focusin", e => {
+    const blk = e.target.closest(".blk");
+    if (blk) requestAnimationFrame(() => blk.scrollIntoView({block: "center", behavior: "smooth"}));
+  });
   // The pane at the right has its own focus, whatever the view beside it is focused on.
   const focusId = opts.branch || (SIDE_DRAWING ? null : BRANCH_FOCUS.get(page));
   const trail = focusId ? branchTrail(page.blocks, focusId) : null;

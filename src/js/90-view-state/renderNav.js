@@ -8,7 +8,7 @@ function renderNav() {
 
   const nav = $("#nav");
   nav.textContent = "";
-  for (const it of NAV_ITEMS) {
+  for (const it of navItems()) {
     if (it === "sep") { nav.append(el("div", {class: "nav-sep"})); continue; }
     if (it === "grow") { nav.append(el("div", {class: "nav-grow"})); continue; }
     if (it === "pins") { nav.append(...navPins()); continue; }

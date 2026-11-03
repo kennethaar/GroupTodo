@@ -48,7 +48,8 @@ function leafActionsHere() {
       const owner = journalOwnerOf(path) || null;
       const mine = assignee ? samePerson(assignee, whoAmI())
                  : !(journal && owner && owner !== journalOwner());
-      if (!mine && assignee) group = "WAITING";
+      // The household's is still a task here: somebody in the house ticks it off.
+      if (!mine && assignee && !isHousehold(assignee)) group = "WAITING";
 
       const due = dueDate(b);
       if (due) {

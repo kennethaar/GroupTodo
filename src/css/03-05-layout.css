@@ -37,4 +37,20 @@ body:not(.pane-open) .panegrip{display:none}
 .folderaway .row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
 .folderaway .quiet{color:var(--fg3);font-size:12.5px}
 @media (min-width:1100px){ .wrap.jwide{max-width:1600px} }
+/* Content width (Styles, #211). Wide, the default: the week's seven days share
+   the window and the lists of cards flow into columns, as the boards do. Full
+   takes every pixel; Narrow keeps the reading column for every view. Pages and
+   the help keep their line length whatever is picked. Under 1100px nothing
+   changes, so a phone stays one column. */
+@media (min-width:1100px){
+  :root:not([data-width="narrow"]) .wrap.jweek{max-width:min(1800px,100%);padding:0 28px}
+  :root:not([data-width="narrow"]) .wrap.lwide{max-width:min(1500px,100%);padding:0 28px}
+  :root[data-width="full"] .wrap.jweek,:root[data-width="full"] .wrap.lwide,
+  :root[data-width="full"] .wrap.jwide,:root[data-width="full"] .wrap.wide{max-width:100%}
+  /* A day has room now, so its tasks wrap rather than end in "...". */
+  :root:not([data-width="narrow"]) .jweek .wkgrid .wktext{-webkit-line-clamp:8}
+  :root:not([data-width="narrow"]) .wrap.lwide .card:has(> .task + .task){columns:auto 440px;column-gap:0;column-rule:1px solid var(--border)}
+  :root:not([data-width="narrow"]) .wrap.lwide .card:has(> .task + .task) > *{break-inside:avoid}
+  :root:not([data-width="narrow"]) .wrap.lwide .card:has(> .task + .task) > .showmorerow{column-span:all}
+}
 

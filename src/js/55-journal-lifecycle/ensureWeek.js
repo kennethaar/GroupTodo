@@ -18,6 +18,8 @@ function ensureWeek(id) {
   };
   const take = blocks => {
     for (const b of blocks || []) {
+      // A chore's next round is put on its page when it is ticked (#212).
+      if (b.state && isChoreBlock(b)) continue;
       if (isWeekRoutine(b)) page.blocks.push(fresh(b));
       else take(b.children);
     }

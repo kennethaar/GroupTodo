@@ -66,7 +66,11 @@ function viewPage() {
   if (kind === "person") c.append(personPanel(personName(path), path));
   if (code) { const plan = npmPanel(path); if (plan) c.append(plan); }
 
-  c.append(el("div", {class: "section"}, outlineFor(path, {facts: true})));
+  // A chapter of the book (#244): Outline or Prose, and today's words.
+  const chapter = !SIDE_DRAWING && isChapterPage(path), prose = chapter && bookMode() === "prose";
+  if (chapter) followChapter(path);
+  if (chapter) c.append(chapterBar(path));
+  c.append(el("div", {class: "section"}, outlineFor(path, prose ? {prose: true, newText: "New paragraph"} : {facts: true})));
   if (tracker) c.append(trackerPreview(tracker));
   if (isStateList(path)) c.append(...tasksOfTypeSections(path));
   /* The outline shows this page's own lines. A task written in a day page with

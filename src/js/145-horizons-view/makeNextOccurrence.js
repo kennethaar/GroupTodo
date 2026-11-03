@@ -1,7 +1,10 @@
-/* Build the next occurrence beside the one just finished. */
+/* Build the next occurrence beside the one just finished -- or, for a
+   chore, on the Journal page for when it is due (#212). */
 function makeNextOccurrence(path, block, when) {
   const page = getPage(path);
   if (!page) return null;
+  const ctx = blockContext(block);
+  const home = choreNextPath(block, when);
   const copy = newBlock({
     state: "TODO",
     title: block.title,
@@ -17,6 +20,13 @@ function makeNextOccurrence(path, block, when) {
   setBlockProp(copy, "SCHEDULED", whenValue(when, dueWhen(block)?.time));
   stampAuthor(copy);
 
+  if (home && home !== path && getPage(home)) {
+    // Off the heading it sat under, so it says its room itself.
+    if (ctx && !hasContextLink(copy.title)) copy.title = trim(copy.title + " [[c/" + ctx + "]]");
+    getPage(home).blocks.push(copy);
+    touch(home);
+    return copy;
+  }
   const sibs = siblingsOf(page, block);
   const at = sibs.indexOf(block);
   sibs.splice(at < 0 ? sibs.length : at + 1, 0, copy);

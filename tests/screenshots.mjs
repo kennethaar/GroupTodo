@@ -39,7 +39,12 @@ const SETUP = {
     putPage(CHORE_SHOT[1], {props: {title: "home/bathroom"}, blocks: [
       chore("Scrub the shower #30m [[c/home/bathroom]]", "weekly", 3),
       chore("Change the towels [[c/home/bathroom]]", "weekly", -1, {assigned: "Marcus Lind"}),
-      done("Clean the sink #15m [[c/home/bathroom]]", "Ingrid Solberg")]}, {silent: true});
+      done("Clean the sink #15m [[c/home/bathroom]]", "Ingrid Solberg"),
+      newBlock({title: "Laundry #30m [[c/home/bathroom]]", props: {repeat: "as needed"}}),
+      newBlock({title: "Change the bed linen #15m [[c/home/bathroom]]", props: {repeat: "as needed"}}),
+      done("Laundry #30m [[c/home/bathroom]]", "Marcus Lind"),
+    ]}, {silent: true});
+    getPage(CHORE_SHOT[1]).blocks.at(-1).props.repeat = "as needed"; // logged, not a weekly one
     clearMemo(); PREF.set("chores.who", "all"); go("chores");`,
   // Two weeks of water and coffee on one Drinks chart, and a weight of its own.
   trackers: `const w = [4,3,5,2,6,4,3,5,4,2,5,6,3,4], c = [2,3,1,3,2,2,4,1,2,3,2,1,3,2];
@@ -76,6 +81,45 @@ const SETUP = {
     PREF.set("clarify.dealt", ""); CL = {pending: null, skip: new Set(), undo: null, aim: 0};
     clearMemo(); go("review", {sub: "days"});`,
 };
+/* A book of four chapters at three stages, with scenes, talk and a cast,
+   gone again after the picture (#240, #243, #247). Each page is its lines.
+   A book has an area of its own, so the demo's people step aside meanwhile:
+   everybody on People is in the cast. */
+const BOOK_SEED = `window.BOOK_SHOT = [BOOK_PATH, ...["The storm", "Harbour", "After the flood", "Coda"].map(t => join(PAGES, t + ".md")),
+      ...["Anna Berg", "Mira Berg", "Jon Berg"].map(personPath), ...["The harbour", "The letter"].map(t => join(PAGES, t + ".md"))];
+    window.BOOK_ASIDE = allPeople().filter(p => !isMemberPage(p)).map(p => [p, getPage(p)]);
+    for (const [p] of BOOK_ASIDE) V.pages.delete(p);
+    const para = n => Array.from({length: n}, () => "The water came up the road and nobody moved the cars.").join(" ");
+    const put = (i, lines) => putPage(BOOK_SHOT[i], parsePage(lines.join(String.fromCharCode(10))), {silent: true});
+    put(0, ["title:: The long road", "subtitle:: A novel", "synopsis:: Two sisters cross the hills to find their father, and the flood finds them first.",
+      "target:: 80000", "dialogue:: english", "protagonist:: [[Anna Berg]]", "", "- [[The storm]]", "- [[Harbour]]", "- [[After the flood]]", "- [[Coda]]"]);
+    put(1, ["stage:: Done", "synopsis:: The river breaks its banks.", "",
+      "- ## The road", "  pov:: [[Anna Berg]]", "  with:: [[Mira Berg]]", "  when:: Day 1", "  plot:: The search, The flood", "- " + para(300),
+      "- “We should go,” said Mira.", "- “Not yet.”", "- “Anna, the water.”",
+      "- ## The bridge", "  pov:: [[Mira Berg]]", "  with:: [[Old Tomas]]", "  when:: Day 1, evening", "  plot:: The flood", "- " + para(80),
+      "- “Is it safe?” Mira asked.", "- “Nothing is safe,” said Tomas. “Cross at the north end, where the rope is.”"]);
+    put(2, ["stage:: Revise", "synopsis:: They wait out the night by the boats.", "", "- " + para(220),
+      "- ## The quay", "  pov:: [[Anna Berg]]", "  place:: [[The harbour]]", "  when:: Day 3", "  plot:: The search, The letter", "- " + para(40),
+      "- Anna found [[The letter]] in the boat.",
+      "- Anna felt the cold and saw the river slowly rising over the stones while the dogs barked and the wind pulled at her coat and the long night came down over the valley and nobody in the town slept at all.",
+      "- She realised the boats were gone. The boats had gone in the night.",
+      "- ## Night watch", "  pov:: [[Mira Berg]]", "  with:: [[Jon Berg]]", "  when:: Day 3, night", "  plot:: The search", "- " + para(25),
+      "- “You came,” said Jon.", "- “Of course I came. Tell me about the mill.”"]);
+    put(3, ["stage:: Draft", "", "- " + para(90)]);
+    put(4, ["stage:: Outline", "", "- ## Before the rain", "  pov:: [[Anna Berg]]", "  when:: Day 0, evening", "  plot:: The letter", "- %% They go home"]);
+    put(5, ["type:: person", "wants:: To find her father", "arc:: From waiting to leading"]);
+    put(6, ["type:: person", "wants:: To keep Anna safe", "sister:: [[Anna Berg]]"]);
+    put(7, ["type:: person", "father:: [[Anna Berg]], [[Mira Berg]]"]);
+    put(8, ["type:: place"]);
+    put(9, ["type:: thing"]);
+    clearMemo(); renderNav();`;
+SETUP.book = BOOK_SEED + ` go("book", {sub: "chapters"});`;
+SETUP["book-cast"] = BOOK_SEED + ` go("book", {sub: "cast"});`;
+SETUP["book-relations"] = BOOK_SEED + ` go("book", {sub: "relations"});`;
+SETUP["book-timeline"] = BOOK_SEED + ` go("book", {sub: "timeline"});`;
+SETUP["book-plot"] = BOOK_SEED + ` go("book", {sub: "plot"});`;
+SETUP["book-read"] = BOOK_SEED + ` go("book", {sub: "read"});`;
+SETUP["book-revise"] = BOOK_SEED + ` REV.open = BOOK_SHOT[2]; go("book", {sub: "revise"});`;
 /* This week's page with its routines and a focus line, and last week's with
    what was left open on it, gone again after the picture (#192). */
 const WEEK_PAGES = `const wk = n => shiftWeek(weekOf(todayISO()), n);
@@ -90,8 +134,13 @@ SETUP["journal-week"] = WEEK_PAGES + ` go("today", {sub: "week", todayWeek: null
 // Get current opened, so the picture shows a part with its steps and lists (#95).
 SETUP["review-steps"] = WEEK_PAGES + ` REVIEW_WEEK = 0; window.OPEN_SHOT = PREF.get("review.open", "");
     PREF.set("review.open", "phase:current"); go("review", {sub: "steps"});`;
+// A home with two rooms in it and one still on its own, to show the stacking.
+SETUP["contexts-sort"] = `window.CTX_SHOT = ["home", "home/kitchen", "home/garden", "kitchen table"].map(n => contextPath(n));
+  for (const p of CTX_SHOT) putPage(p, pageTemplateFor("c", ctxNameOf(p)), {silent: true});
+  clearMemo(); go("contexts", {sub: "sort"});`;
 /* Put back after the picture what SETUP added for it. */
 const AFTER = {
+  "contexts-sort": `for (const p of CTX_SHOT) V.pages.delete(p); clearMemo(); render();`,
   chores: `for (const p of CHORE_SHOT) V.pages.delete(p); clearMemo(); PREF.set("chores.who", ""); render();`,
   trackers: `for (const p of allPages(isJournalPath)) for (const k of TRK_SHOT.keys) delete getPage(p).props[k];
     for (const p of TRK_SHOT.made) V.pages.delete(p);
@@ -102,6 +151,8 @@ const AFTER = {
   "review-days": `for (const [p, page] of DAY_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
     clearMemo(); render();`,
 };
+AFTER.book = AFTER["book-cast"] = AFTER["book-relations"] = AFTER["book-timeline"] = AFTER["book-plot"] = AFTER["book-read"] = AFTER["book-revise"] = `for (const p of BOOK_SHOT) V.pages.delete(p); REV.open = null;
+    for (const [p, page] of BOOK_ASIDE) V.pages.set(p, page); PREF.set("sub.book", ""); clearMemo(); renderNav(); render();`;
 AFTER["journal-week"] = AFTER["review-steps"] = `for (const [p, page] of WEEK_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
     clearMemo(); render();`;
 AFTER["review-steps"] = `PREF.set("review.open", OPEN_SHOT); ` + AFTER["review-steps"];

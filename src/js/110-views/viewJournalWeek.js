@@ -2,7 +2,7 @@ function viewJournalWeek() {
   const now = weekOf(todayISO());
   const id = weekMonday(state.todayWeek) ? state.todayWeek : now;
   const toWeek = w => go("today", {sub: "week", todayDay: null, todayWeek: w === now ? null : w});
-  const c = el("div", {class: "wrap" + (visibleSpaces().length > 1 ? " jwide" : "")});
+  const c = el("div", {class: "wrap jweek" + (visibleSpaces().length > 1 ? " jwide" : "")});
   const late = weekLate(id);
   const head = vhead(id, weekRange(id), journalModes(true, null, id),
     el("div", {class: "daynav daybox weeknav"},

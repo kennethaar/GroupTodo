@@ -4,7 +4,7 @@ function outsidersOwingMe() {
   const by = new Map();
   for (const a of leafActions()) {
     if (!OPEN_STATES[a.state] || !a.assignee) continue;
-    if (isMember(a.assignee) || samePerson(a.assignee, whoAmI())) continue;
+    if (isMember(a.assignee) || isHousehold(a.assignee) || samePerson(a.assignee, whoAmI())) continue;
     const k = slugPerson(a.assignee);
     if (!by.has(k)) by.set(k, {name: a.assignee, items: []});
     by.get(k).items.push(a);

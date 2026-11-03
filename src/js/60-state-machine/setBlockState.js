@@ -26,6 +26,8 @@ function setBlockState(path, block, state, opts = {}) {
     if (prev !== state) runTemplateRules(block,"status",state);
     stampAddedIfMissing(path, block);
   }
+  // Ticked off for somebody who takes turns: the credit is theirs (#236).
+  if (state === "DONE" && prev !== "DONE" && choreDoer(block)) setDoneBy(block, choreDoer(block));
   /* Doing it is the clock running: started on DOING, stopped on whatever
      comes next -- Logseq's way, in its :LOGBOOK:, so it reads them too. */
   if (prev !== state) {
@@ -49,13 +51,22 @@ function setBlockState(path, block, state, opts = {}) {
   /* Ticked in Chores, a chore's next one is put in there and then, for
      whoever's turn it is: nothing to answer each time the bins go out. */
   const again = state === "DONE" && prev !== "DONE" && opts.nextNow && !opts.skipRepeat &&
-    templateFeature(block, "repeat_prompt") && repeatOf(block) && !isWeekPath(path) ? nextChoreNow(path, block) : null;
+    templateFeature(block, "repeat_prompt") && repeatOf(block) && (!isWeekPath(path) || isChoreBlock(block)) ? nextChoreNow(path, block) : null;
   /* The undo is found by the line's id, not the snapshot, so whatever else
      changed on the page since stays. */
   if (state === "DONE" && prev !== "DONE") {
     const id = block.id, was = prev || "TODO";
-    offerDone({kind: "todo", space: V.space, path, title: block.title,
-      label: plainTitle(block.title) + (again ? " · next " + humanDate(again.when) + (again.who ? ", " + firstNameOf(again.who) : "") : ""),
+    const nextSays = () => again ? " · next " + humanDate(again.when) + (again.who ? ", " + firstNameOf(again.who) : "") : "";
+    // A chore, with more than one to take turns: who did it can be changed.
+    const credit = isChoreBlock(block) && choreCrew().length > 1 ? {label: plainTitle(block.title),
+      who: closedBy(block) || whoAmI(), set: who => {
+        if (!recreditChore(space, id, who, again)) return;
+        credit.who = who;
+        render();
+        notify(firstNameOf(who) + " gets the points" + (again && again.who ? ". Next one: " + firstNameOf(again.who) + "." : "."));
+      }} : null;
+    offerDone({kind: "todo", space: V.space, path, title: block.title, credit,
+      label: plainTitle(block.title) + nextSays(),
       day: todayISO(), at: Date.now(), undo: () => inSpace(space, () => {
         if (again) dropBlockById(again.copy.id);
         const f = findBlock(id);
@@ -65,9 +76,10 @@ function setBlockState(path, block, state, opts = {}) {
   if (state === "DONE" || state === "CANCELLED") {
     if (prev !== state) noteTodoTouched();
     // Asked, never assumed, and only on the tick that actually finished it.
-    // On a week page the next one comes with next week's page.
+    // On a week page the next one comes with next week's page -- except a
+    // chore's, which is put on the page for its day or week (#212).
     if (state === "DONE" && prev !== "DONE" && templateFeature(block,"repeat_prompt") && repeatOf(block) && !opts.skipRepeat && !again &&
-        !isWeekPath(path)) {
+        (!isWeekPath(path) || isChoreBlock(block))) {
       render();
       offerNextOccurrence(path, block);
       return;

@@ -3,7 +3,7 @@ function commitLine(txt, path, b) {
   if (val === b.title) return false;
   const before = b.title;
   // A tracker's line is a key and its numbers; a name in it is not a person.
-  if (!parseTracker(val)) val = linkKnownNames(val, before);
+  if (!parseTracker(val)) val = linkKnownNames(val, before, namesFor(txt));
   if (!b.state) val = val.replace(ACTION_DOT_RE, "TODO ");
   const [st, rest] = splitState(val);
   if (st) {

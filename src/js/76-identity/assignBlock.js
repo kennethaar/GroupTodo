@@ -1,4 +1,4 @@
-function assignBlock(path, block, name) {
+function assignBlock(path, block, name, quiet) {
   const kind = assignKind(name);
   if (kind === "mine") {
     delete block.props[ASSIGN_PROP];
@@ -11,13 +11,15 @@ function assignBlock(path, block, name) {
       // Nobody here can act on it, so for this vault it is a waiting-for.
       if (OPEN_STATES[block.state]) block.state = "WAIT";
     } else if (block.state === "WAIT") {
-      block.state = "TODO";                 // a member can actually do it
+      block.state = "TODO";                 // a member, or the household, can actually do it
     }
   }
   if (!blockProp(block, "by")) stampAuthor(block);
   touch(path);
+  if (quiet) return;
   render();
   notify(kind === "mine" ? "Back to you."
        : kind === "member" ? trim(name) + " has it. It is in your Waiting for."
+       : kind === "household" ? trim(name) + " has it. Tick it off for them when it is done."
        : "Waiting on " + trim(name) + ".");
 }

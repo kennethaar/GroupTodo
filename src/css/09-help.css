@@ -62,6 +62,195 @@ body.helpmarking #content{cursor:help}
 .helpdot{font-size:13px;color:var(--fg3);padding:0 3px;line-height:1}
 .helpdot:hover,.helpdot:focus-visible{color:var(--accent)}
 .helpset{display:flex;gap:8px;align-items:center;margin:6px 0;font-size:14px}
+.navset .prow{padding:6px 12px}
+.navset .prow .nm{display:flex;align-items:center;gap:6px;cursor:pointer}
+.navset-line{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--fg3);
+  padding:6px 12px 4px;border-top:1px dashed var(--border2);border-bottom:1px solid var(--border)}
+/* Settings > Book and the Book view (#240). */
+.bookset .prow{padding:6px 12px}
+.bookset-h{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--fg3);padding:10px 12px 4px}
+.bookset-row{padding:0 12px 6px}
+.bookgoal{display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:12px}
+.bookgoal .pbar{flex:1;width:auto}
+.bookgoal .ratio{font-size:12.5px;color:var(--fg2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.bookch .n{min-width:2ch;text-align:right;font-size:12px;color:var(--fg3);font-variant-numeric:tabular-nums}
+.bookch button.nm{background:none;border:0;padding:0;font:inherit;font-size:14px;color:var(--fg);text-align:left;cursor:pointer}
+.bookch button.nm:hover,.bookch button.nm:focus-visible{color:var(--accent)}
+.booktabs{margin:18px 0 0}
+.booksub{font-size:15px;color:var(--fg2);margin:-4px 0 8px}
+.booksyn{font-size:13.5px;line-height:1.5;color:var(--fg2);max-width:68ch;margin:0 0 14px}
+.bookch-main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+.bookch-main .nm{flex:none;max-width:100%}
+.bookch .chsyn{background:none;border:0;padding:0;font:inherit;font-size:12.5px;line-height:1.4;color:var(--fg2);text-align:left;cursor:pointer}
+.bookch .chsyn:hover,.bookch .chsyn:focus-visible{color:var(--fg)}
+.bookch .chsyn.add{color:var(--fg3);opacity:0}
+.bookch:hover .chsyn.add,.bookch:focus-within .chsyn.add{opacity:1}
+@media (hover:none){.bookch .chsyn.add{opacity:1}}
+/* Book › Timeline (#250): the story's time across, whose eyes down; a scene
+   told after a later one is marked, as an exception. */
+.tlcard{overflow-x:auto}
+.tlgrid{display:grid;gap:0;min-width:min-content}
+.tlgrid>div{padding:8px 10px;border-bottom:1px solid var(--border)}
+.tlhead{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--fg3);border-left:1px solid var(--border)}
+.tlbook{display:block;color:var(--fg2);font-weight:650}
+.tllane{font-size:13px;color:var(--fg2);white-space:nowrap}
+.tlcell{display:flex;flex-direction:column;gap:4px;border-left:1px solid var(--border)}
+.tlscene{display:flex;gap:6px;align-items:baseline;text-align:left;font:inherit;font-size:12.5px;color:var(--fg);
+  background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 7px;cursor:pointer}
+.tlscene:hover,.tlscene:focus-visible{border-color:var(--accent)}
+.tlscene .tln{font-size:11px;color:var(--fg3);font-variant-numeric:tabular-nums}
+.tlscene.back{border-color:var(--warn)}
+.tlscene.back .tln::after{content:" ↶";color:var(--warn)}
+.tlclash .nm{color:var(--late)}
+/* Book › Revise (#254): a row per chapter, numbers in columns; one to look
+   again at in the warning colour; a row opens to its sentences. */
+.revtable .revrow{display:grid;grid-template-columns:minmax(120px,2fr) repeat(7,minmax(52px,1fr));gap:8px;align-items:baseline;
+  width:100%;padding:8px 14px;border:0;border-bottom:1px solid var(--border);background:none;font:inherit;font-size:13px;
+  color:var(--fg);text-align:left;font-variant-numeric:tabular-nums}
+.revtable button.revrow{cursor:pointer}
+.revtable button.revrow:hover,.revtable button.revrow:focus-visible{background:var(--bg3)}
+.revtable .revhead{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--fg3)}
+.revtable .warn{color:var(--warn)}
+.revdetail{padding:6px 14px 12px;border-bottom:1px solid var(--border);background:var(--bg3)}
+.revgroup{margin:8px 0}
+.revgh{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--fg3);margin-bottom:4px}
+.revhit{display:flex;gap:10px;align-items:baseline;width:100%;background:none;border:0;padding:3px 0;font:inherit;font-size:12.5px;
+  color:var(--fg2);text-align:left;cursor:pointer}
+.revhit .revlab{flex:none;white-space:nowrap}
+.revhit .sub{color:var(--fg3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.revhit:hover,.revhit:focus-visible{color:var(--accent)}
+.revdiff{font-size:12.5px;padding:2px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.revdiff.gone{color:var(--fg3);text-decoration:line-through}
+.revdiff.added{color:var(--fg)}
+.revwords{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px}
+@media (max-width:700px){.revtable .revrow{grid-template-columns:minmax(90px,2fr) repeat(7,minmax(34px,1fr));font-size:12px;gap:4px;padding:8px}}
+/* Book › Read (#253): a chapter's name over its prose, as in a printed book. */
+.readch{margin:0 0 22px}
+.readhead{display:flex;align-items:baseline;justify-content:center;gap:10px;margin:18px 0 4px}
+.readhead .n{font-size:11px;color:var(--fg3);font-variant-numeric:tabular-nums}
+.readhead .nm{background:none;border:0;padding:0;font:inherit;font-size:19px;font-weight:650;color:var(--fg);cursor:pointer}
+.readhead .nm:hover,.readhead .nm:focus-visible{color:var(--accent)}
+.readhead .bookstage{font-size:11px}
+/* Book › Plot (#251): a gap in a plotline, faintly, in the warning colour. */
+.plotgrid .tlcell.plotgap{background:color-mix(in srgb,var(--warn) 10%,transparent)}
+/* Book › Relations (#249): quiet lines, thicker for more, dashed for a tie
+   only their pages name; the picked one and its ties stand out. */
+.relcard{padding:8px}
+.relsvg{display:block;width:100%;height:auto;max-height:62vh}
+.relsvg .reledge{stroke:var(--fg3);stroke-linecap:round;opacity:.55}
+.relsvg .reledge.talk{stroke:var(--fg2)}
+.relsvg .reledge.said{stroke-dasharray:4 4}
+.relsvg .reledge.dim,.relsvg .relnode.dim{opacity:.15}
+.relsvg .rellabel{font-size:11px;fill:var(--fg3);letter-spacing:.05em;text-transform:uppercase}
+.relsvg .relnode{cursor:pointer;outline:none}
+.relsvg .relnode circle{fill:var(--bg3);stroke:var(--fg2);stroke-width:1.5}
+.relsvg .relnode.hero circle{stroke-width:3}
+.relsvg .relnode.sel circle,.relsvg .relnode:focus-visible circle{stroke:var(--accent);stroke-width:3}
+.relsvg .relnode text{font-size:12.5px;fill:var(--fg)}
+/* A halo in the card's colour, so a name stays readable over a line. */
+.relsvg text{paint-order:stroke;stroke:var(--bg2);stroke-width:4px;stroke-linejoin:round}
+.relrow{display:flex;align-items:baseline;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.relrow:last-child{border-bottom:0}
+.relrow .nm{font-size:13.5px;color:var(--fg)}
+.relrow .relsaid{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--fg3)}
+.relrow .sub{margin-left:auto;font-size:12px;color:var(--fg3)}
+/* Book › Cast (#247): a row per member, the signs of depth under the facts. */
+.castbar .casthero{font-weight:600}
+.castrow{display:flex;align-items:center;gap:14px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.castrow:last-child{border-bottom:0}
+.castmain{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.casttop{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.castrow .nm{background:none;border:0;padding:0;font:inherit;font-size:14.5px;font-weight:600;color:var(--fg);text-align:left;cursor:pointer}
+.castrow button.nm:hover,.castrow button.nm:focus-visible{color:var(--accent)}
+.castrow .casttag{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--fg3)}
+.castfacts{font-size:12px;color:var(--fg3)}
+.castdepth{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:2px}
+.castdepth .dep{font-size:12px;background:none;border:0;padding:0;font-family:inherit;color:var(--fg2);text-align:left}
+.castdepth button.dep{cursor:pointer}
+.castdepth button.dep:hover,.castdepth button.dep:focus-visible{text-decoration:underline}
+.castdepth .dep.miss{color:var(--warn)}
+.castdepth .dep.na{color:var(--fg3)}
+.castscore{display:flex;align-items:center;gap:8px;flex:none}
+.castscore .pbar{width:60px}
+.castscore .ratio{font-size:12.5px;color:var(--fg2);font-variant-numeric:tabular-nums}
+/* A chapter's scenes (#243): quiet, under its synopsis. */
+.bookscenes{display:flex;flex-direction:column;gap:1px;width:100%;margin-top:4px}
+.bookscene{display:flex;align-items:baseline;gap:8px;font-size:12.5px;padding:1px 0;min-width:0}
+.bookscene::before{content:"§";color:var(--fg3);font-size:11px}
+.bookscene .scn{background:none;border:0;padding:0;font:inherit;color:var(--fg2);text-align:left;cursor:pointer;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.bookscene .scn:hover,.bookscene .scn:focus-visible{color:var(--accent)}
+.bookscene .scmeta{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--fg3);white-space:nowrap}
+.bookscene .scw{margin-left:auto;color:var(--fg3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.bookscene .scedit{background:none;border:0;padding:0 2px;font:inherit;color:var(--fg3);cursor:pointer;opacity:0}
+.bookscene span.scedit{visibility:hidden}
+.bookscene:hover .scedit,.bookscene:focus-within .scedit{opacity:1}
+@media (hover:none){.bookscene .scedit{opacity:1}}
+.bookscene .scedit:hover,.bookscene .scedit:focus-visible{color:var(--accent)}
+/* Marks (#246): a thought in italics, a sound in italics and spaced out, and
+   what is written in the story as type, each with a faint line under it. */
+.mk{text-decoration:underline dotted color-mix(in srgb,var(--fg3) 60%,transparent);text-underline-offset:3px}
+.mk-thought{font-style:italic}
+.mk-sound{font-style:italic;letter-spacing:.06em}
+.mk-written{font-family:var(--mono);font-size:.92em}
+/* Script (#248): the speaker's name in a column, the line beside it. */
+.scriptdlg{padding:4px 16px 6px}
+.scriptwho{margin:0 0 10px}
+.scriptrows{display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow:auto}
+.scriptrow{display:flex;align-items:center;gap:10px}
+.scriptname{flex:none;width:9ch;text-align:right;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--fg2);background:none;border:0;padding:0;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scriptname:hover{color:var(--accent)}
+.scriptrow input{flex:1;min-width:0}
+/* A beat (#244): the outline under the prose, quiet and in italics. */
+.blk>.line.beat:not(.raw)>.txt{color:var(--fg3);font-style:italic}
+.blk>.line.beat:not(.raw)>.txt::before{content:"◇ ";font-style:normal;font-size:11px}
+/* Prose (#244): paragraphs, no bullets, no steps in, a line at a time. */
+.chapterbar{margin:0 0 6px}
+/* Its own two buttons on a phone too: there is no dropdown for them. */
+.chapterbar .vseg{margin-left:0;display:flex}
+.chapterbar .booktoday{display:flex;align-items:center;gap:8px;margin-left:auto}
+.chapterbar .booktoday .pbar{width:90px}
+.chapterbar .booktoday .ratio{font-size:12.5px;color:var(--fg2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.outline.prose{padding:18px 8px 8px;max-width:68ch;margin:0 auto}
+.outline.prose .blk{padding-left:0}
+.outline.prose .branch-toggle,.outline.prose .bullet{display:none}
+.outline.prose .blk>.line{padding:0 0 .6em}
+.outline.prose .blk>.line:hover{background:none}
+.outline.prose .blk .txt,.outline.prose .blk .bodyline{font-size:16px;line-height:1.75;color:var(--fg)}
+.outline.prose .blk>.line.hd2:not(.raw)>.txt{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--fg3);text-align:center;padding-top:1.2em}
+.outline.prose .blk>.line.beat:not(.raw)>.txt{font-size:13px;line-height:1.5}
+/* A scene's values while you write are clutter: they show on hover. */
+.outline.prose .blk>.line:not(.raw):not(:hover)>.props{display:none}
+.outline.prose.nobeats .blk>.line.beat:not(.raw){display:none}
+.outline.prose+.newline{max-width:68ch;margin:0 auto;padding-left:8px}
+/* Focus: the page and nothing else, until Esc. */
+body.bookfocus #app{grid-template-columns:minmax(0,1fr)}
+body.bookfocus #sidebar,body.bookfocus header.top,body.bookfocus .pcrumbs,body.bookfocus .pagehead .acts,
+body.bookfocus .chapterbar .focusbtn{display:none}
+#focusLeave{position:fixed;top:10px;right:14px;z-index:30;opacity:.5}
+#focusLeave:hover,#focusLeave:focus-visible{opacity:1}
+.bookch .scenenew{background:none;border:0;padding:0;font:inherit;font-size:12.5px;color:var(--fg3);cursor:pointer;opacity:0}
+.bookch:hover .scenenew,.bookch:focus-within .scenenew{opacity:1}
+@media (hover:none){.bookch .scenenew{opacity:1}}
+.bookch .scenenew:hover,.bookch .scenenew:focus-visible{color:var(--fg)}
+.bookch .chcut{background:none;border:0;padding:0 2px;font:inherit;color:var(--fg3);cursor:pointer;opacity:0}
+.bookch:hover .chcut,.bookch:focus-within .chcut{opacity:1}
+@media (hover:none){.bookch .chcut{opacity:1}}
+.bookch .chcut:hover,.bookch .chcut:focus-visible{color:var(--late)}
+.darlinglist{padding:0 4px}
+.darlinglist .darling .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bookch[draggable=true]{cursor:grab}
+.bookch.dragging{opacity:.45}
+.bookch.over-before{box-shadow:inset 0 2px 0 var(--accent)}
+.bookch.over-after{box-shadow:inset 0 -2px 0 var(--accent)}
+.bookch .wc{min-width:7ch;text-align:right;font-size:12.5px;color:var(--fg2);font-variant-numeric:tabular-nums}
+.bookstage{cursor:pointer;font:inherit;font-size:11px}
+.bookstage[data-core="TODO"]{color:var(--todo);background:color-mix(in srgb,var(--todo) 12%,transparent)}
+.bookstage[data-core="DOING"]{color:var(--doing);background:color-mix(in srgb,var(--doing) 12%,transparent)}
+.bookstage[data-core="WAIT"]{color:var(--wait);background:color-mix(in srgb,var(--wait) 12%,transparent)}
+.bookstage[data-core="DONE"]{color:var(--done);background:color-mix(in srgb,var(--done) 12%,transparent)}
 @media (max-width:820px){
   .helpgrid{grid-template-columns:1fr;gap:12px}
   .helpside{position:static;max-height:none}

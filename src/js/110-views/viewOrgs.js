@@ -3,7 +3,7 @@
    ============================================================ */
 function viewOrgs() {
   const sub = subNow();
-  const c = el("div", {class: "wrap" + (sub === "board" ? " wide" : "")});
+  const c = el("div", {class: "wrap" + (sub === "board" ? " wide" : " lwide")});
   c.append(vhead("Organisations", "Whose work it is",
     newBtn("organisation", () => pickName({title: "Organisation", items: [], prefix: "o",
       onPick: n => { followLink("o/" + n); }})), viewSeg("orgs")));

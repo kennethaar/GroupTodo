@@ -1,3 +1,15 @@
+/* The browser's own Print shows the whole view: the folds closed on screen
+   are opened for the paper, and closed again after. */
+let PRINT_OPENED = [];
+window.addEventListener("beforeprint", () => {
+  PRINT_OPENED = [...document.querySelectorAll("#content details:not([open])")];
+  for (const d of PRINT_OPENED) d.open = true;
+});
+window.addEventListener("afterprint", () => {
+  for (const d of PRINT_OPENED) d.open = false;
+  PRINT_OPENED = [];
+});
+
 /* ============================================================
    PUTTING A DATED TASK IN A CALENDAR
    Two routes, and the difference matters.

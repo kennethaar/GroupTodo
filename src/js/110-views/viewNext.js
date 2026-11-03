@@ -153,7 +153,7 @@ function viewNext() {
     onclick: () => { NEXT_FILTERS_OPEN = !NEXT_FILTERS_OPEN; render(); }},
     "Filter" + (filtered ? " · " + filtered : "") + (NEXT_FILTERS_OPEN ? " ▴" : " ▾"));
   c.querySelector(".vhead-r").prepend(fbtn);
-  c.classList.add("nextlist");
+  c.classList.add("nextlist", "lwide");
   if (ctx && side !== "chores") c.classList.add("onectx");
   const guessBar = guess ? el("div", {class: "nguess"},
     el("span", {}, "📍 ", el("strong", {}, contextLabel(guess.ctx))), el("span", {class: "nguess-why"}, guess.why),

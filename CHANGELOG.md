@@ -5,19 +5,322 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
-## 1.46.11 - 2026-11-02
-
-- `grouptodo.html` is built on every commit by a pre-commit hook
-  (`.githooks/pre-commit`, turned on with
-  `git config core.hooksPath .githooks`), so only `src/` is edited.
-
-## 1.46.10 - 2026-11-02
+## 1.72.1 - 2026-11-03
 
 - The source is split up (no change to what the app does). The stylesheet is
   `src/css/` in pieces, every function is its own file under `src/js/`, and
   the icons are SVG files in `src/assets/`. `node build.mjs` joins them into
   `grouptodo.html`, which is still the one file that ships and still opens
-  from a folder, a share or a phone. Edit `src/`, never the built file.
+  from a folder, a share or a phone. A pre-commit hook
+  (`git config core.hooksPath .githooks`) builds it on every commit, so only
+  `src/` is edited (#259).
+
+## 1.72.0 - 2026-11-02
+
+- Contexts › Sort (#257): every context as a tree, to stack one on another.
+  Drag @kitchen onto @home and it is @home/kitchen, its tasks and links with
+  it; drag it to the top line and it is on its own again. Move… on each row
+  does the same without dragging, on a phone or with the keyboard, and Undo
+  puts it back. Contexts › Cards is the page as it was.
+
+## 1.71.2 - 2026-11-02
+
+- Contexts: a card with contexts inside, like @home, takes the whole row and
+  lists them in columns (#206). Each is one line: a long name is cut short,
+  and to do, late and fresh line up under each other.
+
+## 1.71.1 - 2026-11-02
+
+- informed::, which an update you send writes on each task, no longer shows
+  under the task line (#174). It stays in the file, and Inform still counts
+  from it.
+
+## 1.71.0 - 2026-11-02
+
+- Chores › + Log a chore (#239): count work done at home that has no
+  rhythm, like laundry or a sick child's bed. Pick what (what you did before
+  is offered, with its room and size), room, how long, who did it and when.
+  It writes one done line on that day's page, with done_by::, so Points,
+  whose turn and the Report's "who carried what" count it.
+- + New chore › How often › As needed: a chore with no rhythm. It never gets
+  a bar, never turns late and never goes on Next or the Journal. It sits in
+  its own As needed fold on Chores, with when it was last done and Did it,
+  which logs it in one tap.
+- Points says how many of each person's chores were logged.
+
+## 1.70.0 - 2026-11-02
+
+- Updates (#256): once a day the app looks on GitHub for a new version.
+  When one is out, a note in the corner says what it brings, with Download
+  now (or Update now on the hosted copy) and See what's new. New vN beside
+  the name, top left, stays until you have it.
+- What's new: the first time a new version starts, it shows what has come
+  since the version you ran last, each with How it works for its help topic.
+- Still missing a key feature? What's new and the help end with Suggest a
+  feature, Report a bug and Star on GitHub, the version filled in.
+- Vault & sync › More › Updates turns the daily check off, or checks now.
+  Only the list of changes is fetched; nothing about you is sent.
+
+## 1.69.0 - 2026-11-02
+
+- One world, several books (#255): an area can hold a series. Each book is
+  a page in `8/book/` with its own chapters, stages, goals, dialogue and
+  protagonist, and all of them share the area's people, places and things.
+  `8/book.md` still counts as a book. A tab per book switches between them,
+  and Settings › Book picks the book and its place in the series
+  (`order::`). A new book can go in an area that has one already.
+- Cast shows who is in this book's scenes, and anyone in no book yet; All
+  books shows the whole series. Timeline and Plot can read all the books as
+  one story too.
+- Open a chapter, and its book is the one shown, with its own dialogue style
+  and words a day.
+
+## 1.68.0 - 2026-11-02
+
+- Book › Revise (#254): where the text could be tighter, a row per chapter:
+  how hard it reads (LIX), words a sentence, sentences over 30 words, the
+  share that is talk, telling words (felt, saw, realised), adverbs, and a
+  word used twice within a few words. Click a chapter for the sentences, and
+  one of them to go to it. Under it: the words you use most, and a fact on a
+  person page (`eyes:: green`) the text says otherwise.
+- Snapshots: when a chapter moves on a stage, a copy of it as it was is kept
+  in `8/snapshots/`, archived. Revise shows the paragraphs new and gone
+  since.
+
+## 1.67.0 - 2026-11-02
+
+- Book › Read (#253): the whole book as one text, each chapter under its
+  name, in Prose. Change it as you read: it is the chapters' own pages.
+  Beats and Focus work as on a chapter.
+
+## 1.66.0 - 2026-11-02
+
+- Kill your darlings (#252): `/darling` on a line in a chapter cuts the
+  sentence the caret is in, or at the start of the line the whole paragraph,
+  or on a scene's `##` line the scene. ✂ on a chapter in the Book view takes
+  the chapter out of the book. What is cut goes to `8/darlings.md` with where
+  it came from, and is not counted. Darlings in the Book view lists them;
+  Put back returns each where it was. The words cut show beside the goal.
+
+## 1.65.0 - 2026-11-02
+
+- Book › Plot (#251): each plotline across the chapters. A plotline is a name
+  in a scene's `plot::`; it gets a row, each chapter a column, and the
+  scenes that move it on sit in their chapter. A plotline left alone for
+  three chapters or more is tinted there. Scenes with no plotline are listed
+  under it, a click away from giving them one.
+
+## 1.64.0 - 2026-11-02
+
+- Book › Timeline (#250): when each scene happens in the story, against the
+  order the book tells them. `when::` under a scene's `##` line is read as a
+  day (`Day 3`, `Day 3, evening`) or a date (`1987`, `1987-06-14`). Time runs
+  across, a row per point of view, and each scene carries its number in the
+  book. A scene told after one that happens later is marked ↶.
+- Under it: the scenes told out of order, a character in two places at the
+  same time, and the scenes with no time yet.
+
+## 1.63.0 - 2026-11-02
+
+- A book's characters are the people of its area (#247): person pages, made
+  and kept as People does, with their aliases. + New character is People's
+  New person, and + Make a page makes a person page. Somebody who uses the
+  app is a writer, not a character. `type:: character` is no longer read.
+- Setting up a book writes `8/place.md` and `8/thing.md`, the templates a new
+  place or thing starts from.
+
+## 1.62.0 - 2026-11-02
+
+- Book › Relations (#249): the characters and what ties them. A line joins
+  two who share a scene, thicker for more scenes and talk; a dashed line is a
+  tie only their pages name (`sister:: [[Mira Berg]]`), with its name on it.
+  The protagonist sits in the middle. Click a character to see only their
+  ties; pick two chapters to see a part of the book. The ties are listed in
+  words under it, strongest first.
+
+## 1.61.0 - 2026-11-02
+
+- Script mode (#248): Script on a chapter, or `/script` on a line, writes
+  talk fast, as a play. A row per line with the speaker in front: Enter
+  starts the next row with the next speaker, Tab changes who speaks, and the
+  chips pick who is talking (the scene's people first). Ctrl+Enter puts it
+  in the chapter as prose, in the book's dialogue marks, with "said Anna"
+  only where a reader could not tell who speaks. `said::` in 8/book.md is
+  the word used (said, sa, sagte by style).
+
+## 1.60.0 - 2026-11-02
+
+- Book has tabs: Chapters, and now Cast (#247), the story bible. A page in
+  the book's area with `type:: character`, `place` or `thing` is in it, and
+  so is anybody a scene names in `pov::` or `with::`, with + Make a page.
+- Each one shows the scenes they are in, those seen through their eyes, their
+  share of the talk, and their first and last chapter.
+- A character shows four signs of depth, whatever their sex or love: a goal
+  of their own (`wants::`), a change (`arc::`), scenes without the
+  protagonist, and talk with others about something other than the
+  protagonist. Missing ones show in the warning colour; the first two can be
+  written from there. The protagonist is `protagonist::` in 8/book.md, or
+  the one who sees the most scenes.
+- Who speaks a line is read from the text: the name outside the quotes, or
+  else back and forth between the two talking.
+
+## 1.59.0 - 2026-11-02
+
+- Marks for what is not plain prose (#246): `/thought`, `/sound` and
+  `/written` (a letter, a sign, a message) put an empty mark at the caret to
+  write in. They are kept as Pandoc spans, `[I must go]{.thought}`, so a tool
+  that makes a book of the file keeps them. In the app a thought is in
+  italics, a sound in spaced italics and what is written in type. The marks
+  are not counted as words.
+
+## 1.58.0 - 2026-11-02
+
+- A book can say how its speech is set (#245): Settings > Book > Dialogue
+  picks “English”, ‘British’, «Guillemets», „German“ or – Dash
+  (`dialogue::`). In its chapters a `"` you type becomes the right opening
+  or closing mark, `'` an apostrophe or single quote, `--` a dash and `...`
+  an ellipsis. With Dash, `- ` at the start of a line becomes `– `.
+- Tidy the book sets what is already written the same way; Undo puts it back.
+
+## 1.57.0 - 2026-11-02
+
+- A chapter page has Outline and Prose (#244). Prose shows plain paragraphs:
+  no bullets, no steps in, and the line you write in stays in the middle of
+  the screen. Focus hides everything but the page; Esc brings it back.
+- A line that starts `%%` is a beat: what happens, the outline the prose is
+  written under. `/beat` puts the `%%` on or takes it off. Beats are not
+  counted or exported, and Prose can hide them.
+- The words you wrote today show on the chapter and in the Book view.
+  Settings > Book sets a goal a day (`daily::`).
+
+## 1.56.0 - 2026-11-02
+
+- A chapter can be cut into scenes (#243). A line that starts `## ` starts
+  one, and it runs to the next. Values on that line say who sees it
+  (`pov::`), who else is in it (`with::`), where (`place::`), when in the
+  story (`when::`), its plotlines (`plot::`) and what happens (`synopsis::`).
+- The Book view lists a chapter's scenes under it, with who sees it, when and
+  its words. Click one to write in it; ✎ sets its name and values; + scene
+  adds one at the end.
+- The `## ` line is not counted as words. Export puts `* * *` between scenes.
+
+## 1.55.0 - 2026-11-01
+
+- A book has a name, a subtitle and a synopsis (#242). The Book view shows
+  the name, the subtitle on the first line under it, then the synopsis; Edit
+  changes them. Setting a book up asks for its name and the area it goes in
+  (this one, another without a book, or a new one). One book per area.
+- Each chapter can have a synopsis, under its name in the Book view. It is
+  kept on the chapter page as `synopsis::`, and is not counted or exported.
+- Drag a chapter onto another to move it, or press Alt+Shift+↑ ↓.
+- With books in more than one area, the Book view has a tab per book.
+- Export starts with the book's name and subtitle. The words so far are now
+  beside the bar, not in the heading.
+
+## 1.54.1 - 2026-11-01
+
+- Add a chapter offers plain pages again, not only notes (#240).
+
+## 1.54.0 - 2026-11-01
+
+- In an area with a book, the names offered as you type are that area's own
+  (#241): after `[[`, `@` or `#`, and while typing a word. Its pages and
+  notes (characters, places) are offered too, but not its chapters. Names
+  that link by themselves come from that area only, and a page is never
+  linked unasked. Other areas are as before.
+
+## 1.53.0 - 2026-11-01
+
+- An area can be set up for writing a book (#240): Settings > Book > Set
+  up for writing a book. A Book view (g b) lists the chapters in order, each
+  with its stage (Outline, Draft, Revise, Done) and its words, and a bar
+  for the words against the goal and the chapters done. Click a stage to
+  move it on; Export puts the whole book in one markdown file. Settings picks
+  the goal and the stages and moves the chapters with ↑ ↓. It is all kept in
+  `pages/8/book.md` (a `[[page]]` per chapter, `target::`, `stages::`), and
+  each chapter page says `stage:: Draft`. Task lines in a chapter are work on
+  it, so they are not counted or exported. Set up also adds a Chapter task
+  type and a Words tracker. Back to the default takes the page away; the
+  chapters stay as pages. Without the page nothing changes.
+
+## 1.52.0 - 2026-11-01
+
+- The sidebar can be shaped per area (#238): Settings has a Sidebar section,
+  a box per view to show or hide it and ↑ ↓ to move it, past a line into the
+  next group. It is kept in `pages/8/sidebar.md` (one line per view, `---`
+  between the groups, `hide::` for the ones left out), so everyone in the
+  area sees the same. Settings is always shown, keys like g n still open a
+  hidden view, and Back to the default takes the page away. Without the page
+  the sidebar is as before.
+
+## 1.51.1 - 2026-11-01
+
+- Projects comes up sooner when a big folder opens (#181). The active
+  projects (folder 1) are read on their own, first, and shown as soon as
+  they are in; the week's day pages, people, contexts and organisations
+  follow, then the rest. Projects also skips the look-alike check until the
+  whole folder is read, instead of redoing it at every step.
+
+## 1.51.0 - 2026-11-01
+
+- On a phone the app opens on Next, the list of what to do now, instead of
+  the Journal. Switching area on a phone lands there too. A wider screen
+  still opens on the Journal, and a link still opens what it points at.
+
+## 1.50.1 - 2026-11-01
+
+- The Journal no longer shows the @context chip in the top bar (#168). The day
+  page is not filtered by context, and on a phone the chip took a row of its
+  own; now the area button sits in the top row beside ?. Next and the other
+  views still show it.
+
+## 1.50.0 - 2026-11-01
+
+- The Journal's week fills a wide screen, with one area too, not only with
+  several (#211). The seven days share the window, and a task in a day wraps
+  over more lines instead of ending in "...".
+- Next, Waiting for, People, Organisations and the Projects list spread out
+  on a wide screen, and a long list of rows flows into columns, as the boards
+  do. Pages and the help keep their line length.
+- Settings > Styles has Content width: Narrow keeps the one reading column
+  everywhere, Wide is the default, and Full takes the whole window. Under
+  1100 px nothing changes, so a phone keeps its one column.
+
+## 1.49.0 - 2026-11-01
+
+- A chore's next round goes on the Journal, not beside the last one on the
+  room page (#212). Daily chores and ones tied to a day (every monday,
+  weekly on mon, thu, monthly on the 15th) go on that day's page. Weekly,
+  every 2 weeks and monthly go on that week's page. The done line stays
+  where it was ticked, so a room page no longer fills with done lines.
+- The next round says its room, `[[c/home/kitchen]]`, so Chores, room
+  freshness and whose turn still find every round.
+- A chore ticked on a week page puts its next round in at once, like any
+  other chore. A new week page no longer copies last week's chores, so a
+  chore is never there twice.
+
+## 1.48.0 - 2026-11-01
+
+- Chores has a Print button beside Away until... (#235). It prints what is
+  due now and this week on one sheet for the fridge, by room in the order of
+  the room sort: a box to tick, the chore, LATE or its day, how often, the
+  time from its size and whose turn it is. Nothing to set: it takes the room
+  and whose chores the view shows.
+- The browser's own Print now gives the whole view on every screen, not just
+  what fits on it: no sidebar, top bar or buttons, and the closed folds open.
+
+## 1.47.0 - 2026-11-01
+
+- Chores work for the people at home who never open GroupToDo (#236).
+  Mark somebody Household on their person page (it writes `household:: true`)
+  and they take turns at the chores with the members.
+- A chore handed to a household person stays a task, on Chores, instead of
+  going to Waiting for: somebody in the house ticks it off for them.
+- Ticking off a chore handed to somebody gives them the points, whoever
+  ticks it: `done_by::` gets their name. "By ..." in the Done box says it
+  was somebody else, and the next one's turn is worked out again.
+- Chores has a chip for each person beside Mine and Everyone, so a child can
+  be shown just their own chores on a shared tablet.
 
 ## 1.46.9 - 2026-11-01
 

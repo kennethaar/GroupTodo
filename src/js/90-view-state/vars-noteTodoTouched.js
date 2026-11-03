@@ -17,7 +17,9 @@ const SUBS = {
   projects: [["list", "List"], ["board", "Board"], ["timeline", "Timeline"], ["report", "Report"], ["hours", "Hours"]],
   people:   [["list", "List"], ["cards", "Cards"], ["board", "Board"]],
   orgs:     [["list", "List"], ["board", "Board"]],
-  pages:    [["list", "List"], ["board", "Board"], ["mindmap", "Mind map"], ["graph", "Graph"], ["tree", "Hierarchy"]],
+  contexts: [["cards", "Cards"], ["sort", "Sort"]],
+  pages:   [["list", "List"], ["board", "Board"], ["mindmap", "Mind map"], ["graph", "Graph"], ["tree", "Hierarchy"]],
+  book:     [["chapters", "Chapters"], ["read", "Read"], ["plot", "Plot"], ["timeline", "Timeline"], ["cast", "Cast"], ["relations", "Relations"], ["revise", "Revise"]],
   // In the order of the steps they are done in: clarify, then actions, then projects.
   review:   [["steps", "Steps"], ["days", "Clarify"], ["actions", "Actions"], ["projects", "Projects"], ["reflect", "Reflect"]],
 };
@@ -54,8 +56,10 @@ const NAV_ITEMS = [
   {id: "orgs",     icon: ICON.orgs, label: "Organisations"},
   {id: "contexts", icon: "@",      label: "Contexts"},
   // Once any task repeats: the home's chores, room by room.
-  {id: "chores",   icon: "↻",      label: "Chores", when: () => allChores().length > 0},
+  {id: "chores",   icon: "↻",      label: "Chores", when: () => allChores().length > 0 || asNeededChores().length > 0},
   {id: "pages",    icon: ICON.pages, label: "Pages"},
+  // Only in an area with a book (#240, #255).
+  {id: "book",     icon: "✎︎", label: "Book", when: () => hasBook()},
   // Your areas are Horizon 2, so there is always something here to look at.
   {id: "horizons", icon: ICON.horizons, label: "Horizons", small: true},
   // The weekly review is a routine itself, so this is never empty.
@@ -70,12 +74,16 @@ const NAV_ITEMS = [
   {id: "review",   icon: "✓", label: "Weekly review"},
 ];
 
-/* The counts are true totals across the spaces on screen. */
-const myOpen = () => memo("myOpen", () => leafActions().filter(a => OPEN_STATES[a.state] && a.mine));
-const dueNow = () => myOpen().filter(a => a.due && a.due <= todayISO());
-/* What you are owed: anything handed to somebody else, and anything of yours
-   that is waiting on somebody nobody named. Somebody else's own work is not
-   something you are waiting for. */
-const waitingRows = () => memo("waitingRows", () => leafActions().filter(a => OPEN_STATES[a.state] &&
-  ((a.assignee && !samePerson(a.assignee, whoAmI())) || (a.state === "WAIT" && a.mine))));
-const visibleProjects = code => projectsInVisible(code);
+/* ---------- the sidebar, as a page ----------
+   pages/8/sidebar.md says what the sidebar holds and in what order, so an
+   area can be shaped for what it is used for (#238). One line per item, top to
+   bottom, by its name; --- between the three groups (the pins come after the
+   second, the last group sits at the foot). hide:: names the items left out.
+   Without the page the sidebar is NAV_ITEMS. An item the page does not name --
+   one a later version added -- still shows, next to where it sits by default.
+   Settings cannot be hidden: it is the way back. */
+const SIDEBAR_PATH = join(DIRS.lists, "sidebar.md");
+const NAV_SEP = "---";
+const NAV_KEEP = "checklists";
+const navEntries = () => NAV_ITEMS.filter(it => it && it.id);
+const navEntry = id => navEntries().find(it => it.id === id);

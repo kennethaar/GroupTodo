@@ -1,6 +1,6 @@
 function viewPeople() {
   const sub = subNow();
-  const c = el("div", {class: "wrap" + (sub === "board" ? " wide" : "")});
+  const c = el("div", {class: "wrap" + (sub === "board" ? " wide" : " lwide")});
   c.append(vhead("People", "Who is carrying what",
     newBtn("person", () => pickName({title: "Person", items: [], prefix: "p",
       onPick: n => { if (n) openPersonPage(n); }})), viewSeg("people")));

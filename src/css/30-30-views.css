@@ -100,9 +100,17 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 .ctxn{color:var(--fg3);font-size:12.5px;font-variant-numeric:tabular-nums}
 .ctxgo{color:var(--fg3);font-size:18px;line-height:1}
 .ctxcard:hover .ctxgo,.ctxcard:focus-visible .ctxgo{color:var(--accent)}
-.ctxkid{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border-radius:6px;padding:3px 4px;font-size:13px;color:var(--fg2)}
+/* A card with contexts inside takes the whole row and lays them out in
+   columns, top to bottom, so a long @home is not one tall strip. Each row is
+   one line: the name gives way, the numbers keep their own columns. */
+.ctxcard.wide{grid-column:1/-1}
+.ctxkids{width:100%;column-width:300px;column-gap:20px}
+.ctxkid{display:grid;grid-template-columns:minmax(0,1fr) 5.5em 4.5em 6.5em;align-items:center;gap:6px;width:100%;
+  break-inside:avoid;text-align:left;border-radius:6px;padding:3px 4px;font-size:13px;color:var(--fg2)}
 .ctxkid:hover,.ctxkid:focus-visible{background:var(--bg3);color:var(--fg)}
-.ctxkn{flex:1;min-width:0}
+.ctxkn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctxkid>.ctxn,.ctxkid>.fresh-score{text-align:right;white-space:nowrap;margin:0}
+.ctxkid>.chip.late{justify-self:start}
 .ctxleak{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:8px 12px;border-radius:10px;
   color:var(--fg);background:color-mix(in srgb,var(--warn) 12%,var(--bg2));border:1px solid color-mix(in srgb,var(--warn) 45%,var(--border))}
 .ctxleak > span{flex:1}
@@ -110,6 +118,19 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 .ctxfold{color:var(--fg3);padding-left:0}
 .ctxfold:hover{color:var(--fg)}
 .ctxpills{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+/* Contexts › Sort: a tree to drag contexts into each other. */
+.ctxsort>.hint{text-align:left;margin:0 0 8px}
+.ctxtree{display:flex;flex-direction:column;gap:2px;max-width:640px;margin-bottom:16px}
+.ctxtop{padding:8px 12px;margin-bottom:6px;border:1px dashed var(--border2);border-radius:8px;color:var(--fg3);font-size:12.5px}
+.ctxsrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:8px;
+  margin-left:calc(var(--d,0) * 22px);padding:4px 8px;border:1px solid transparent;border-radius:8px;background:var(--bg2);cursor:grab}
+.ctxsrow:hover{border-color:var(--border)}
+.ctxsrow.dragging{opacity:.45}
+.ctxtop.over,.ctxsrow.over{border:1px solid var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--bg2));color:var(--fg)}
+.ctxgrip{color:var(--fg3);font-size:14px;line-height:1}
+.ctxsname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;font-size:13.5px;color:var(--fg)}
+.ctxsname:hover,.ctxsname:focus-visible{text-decoration:underline}
+.ctxsrow .ctxmove{margin:0;padding:2px 6px}
 .big{font-size:40px;line-height:1;display:grid;place-items:center;width:64px;height:64px;border-radius:16px;background:var(--bg3)}
 .big.fallback{font-size:28px;color:var(--fg3);font-weight:700}
 

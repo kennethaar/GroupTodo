@@ -30,6 +30,9 @@ function renderInline(text) {
           : FILE_LINK_RE.test(href)
             ? hold(fileLinkHTML(href, label))
             : all);
+  // A mark (#246): its words stay text, for the rules below; its brackets are held.
+  h = h.replace(MARK_RE, (all, pre, words, kind) => pre +
+    hold(`<span class="mk mk-${kind}" title="${BOOK_MARKS[kind]}">`) + words + hold("</span>"));
   // A price shows that it was read as one, before links are drawn round the words.
   h = h.replace(PRICE_SHOW_RE, all => /^(\[\[|https?:|`)/.test(all) ? all
     : hold(`<span class="price" title="A price: counts toward its project once the task is done">${all}</span>`));

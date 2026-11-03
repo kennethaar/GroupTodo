@@ -1,19 +1,26 @@
 function viewChores() {
   const c = el("div", {class: "wrap"});
-  const all = choreRows(), held = allChores().filter(a => a.held);
+  const all = choreRows(), held = allChores().filter(a => a.held), needed = asNeededChores();
   c.append(vhead("Chores", "The home at a glance",
     all.length ? el("button", {class: "textbtn awaybtn", title: "Hold every chore until you are back",
       onclick: () => openChoresAway()}, "Away until…") : null,
+    all.length ? el("button", {class: "textbtn printbtn", title: "Print what is due now and this week, by room",
+      onclick: () => printChores([...by.due, ...by.soon], rooms, roomOf, nameOf,
+        [room ? nameOf(room) : "", person ? firstNameOf(person) : everyone ? "" : firstNameOf(whoAmI())])}, "Print") : null,
+    el("button", {class: "textbtn logchore", title: "Count something done at home that has no rhythm, like the laundry",
+      onclick: () => openLogChore(PREF.get("chores.room", ""))}, "+ Log a chore"),
     newBtn("chore", () => openNewChore(PREF.get("chores.room", "")))));
   if (!all.length && held.length) {
     const back = held.map(a => a.held).sort().pop();
     c.append(el("div", {class: "card"}, el("div", {class: "empty"},
       "You are away until " + humanDate(back) + ". Every chore waits until then. ",
       el("button", {class: "btn sm primary", onclick: () => choresBack(held)}, "Back now"))));
+    if (needed.length) c.append(asNeededFold(needed));
     return c;
   }
   if (!all.length) {
-    c.append(emptyCard("No chores yet. A chore is a task that repeats at @home or a room in it, like @home/kitchen. ",
+    if (needed.length) c.append(asNeededFold(needed), choreBoard());
+    else c.append(emptyCard("No chores yet. A chore is a task that repeats at @home or a room in it, like @home/kitchen. ",
       el("button", {class: "textbtn", onclick: () => openNewChore("")}, "+ Add one")));
     return c;
   }
@@ -73,14 +80,22 @@ function viewChores() {
     if (room) c.append(roomCloseup(nameOf(room), sum.get(room), held.filter(a => roomOf(a) === room)));
   }
 
-  // Mine or everyone's, once there is more than one of you.
-  const shared = members().length > 1;
-  const everyone = !shared || PREF.get("chores.who", "") === "all";
+  /* Mine, one person's or everyone's, once there is more than one of you.
+     A person's is what is handed to them, so a child can be shown just
+     theirs on the family tablet (#236). */
+  const crew = choreCrew(), shared = crew.length > 1, whoPref = PREF.get("chores.who", "");
+  const others = crew.filter(m => !m.me);
+  const person = (others.find(m => samePerson(m.name, whoPref)) || {}).name || "";
+  const everyone = !shared || whoPref === "all";
   const inRoom = all.filter(a => !room || roomOf(a) === room);
-  if (shared) c.append(fbar(
-    fchip("Mine", !everyone, () => { PREF.set("chores.who", ""); render(); }, inRoom.filter(a => a.mine).length),
-    fchip("Everyone", everyone, () => { PREF.set("chores.who", "all"); render(); }, inRoom.length)));
-  const rows = inRoom.filter(a => everyone || a.mine);
+  const keep = a => everyone || (person ? !!a.assignee && samePerson(a.assignee, person) : a.mine);
+  const setWho = v => { PREF.set("chores.who", v); render(); };
+  if (shared) c.append(Object.assign(fbar(
+    fchip("Mine", !everyone && !person, () => setWho(""), inRoom.filter(a => a.mine).length),
+    ...others.map(m => fchip(firstNameOf(m.name), person === m.name, () => setWho(m.name),
+      inRoom.filter(a => a.assignee && samePerson(a.assignee, m.name)).length)),
+    fchip("Everyone", everyone, () => setWho("all"), inRoom.length)), {className: "fbar chorewho"}));
+  const rows = inRoom.filter(keep);
   const by = {due: [], soon: [], fresh: []};
   for (const a of rows) by[choreGroup(a)].push(a);
   const rounds = a => (freshnessOf(a) || {rounds: 0}).rounds;
@@ -92,6 +107,8 @@ function viewChores() {
   const fold = (title, list) => list.length ? el("details", {class: "section fold"},
     el("summary", {}, title, el("span", {class: "n"}, String(list.length))), taskCard(list, null, opts)) : null;
   c.append(...[fold("Coming up this week", by.soon), fold("Fresh", by.fresh), fold("On hold", held)].filter(Boolean));
+  const neededHere = needed.filter(a => !room || (a.ctx.includes("/") ? "@" + a.ctx.split("/").slice(0, 2).join("/") : "@") === room);
+  if (neededHere.length) c.append(asNeededFold(neededHere));
   c.append(choreBoard());
   return c;
 }

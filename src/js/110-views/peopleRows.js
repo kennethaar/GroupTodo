@@ -19,6 +19,7 @@ function peopleRows() {
         const r = add(personName(p), V.space);
         for (const a of pageAliases(p)) r.aliases.add(a);
         if (isMemberPage(p)) r.member = true;
+        if (isHouseholdPage(p)) r.household = true;
       }
       for (const m of members()) add(m.name, V.space).member = true;
       return [];

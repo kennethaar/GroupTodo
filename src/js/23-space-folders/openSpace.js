@@ -1,6 +1,3 @@
-/* draw: false is for start-up, which draws once itself when everything it
-   opens is in. Drawn here as well, the first screen of a big vault was drawn
-   twice in a row (#231). */
 async function openSpace(name, destination = null, {draw = true} = {}) {
   const sp = Spaces.get(name);
   if (!sp) { notify("No such area: " + name, "error"); return; }
@@ -39,7 +36,7 @@ async function openSpace(name, destination = null, {draw = true} = {}) {
     PENDING_PROFILE.delete(name);
     if (!getSetting("horizon_profile") && HORIZON_PROFILES[want]) setSetting("horizon_profile", want);
   }
-  state.view = destination?.view || "today";
+  state.view = destination?.view || startView();
   state.pagePath = destination?.pagePath || null;
   if (destination) for (const key of NAV_FIELDS) if (key in destination) state[key]=destination[key];
   if (destination && "branch" in destination) applyBranchSnap(destination.branch);

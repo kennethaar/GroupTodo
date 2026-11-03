@@ -8,6 +8,6 @@
    weekly report at the office repeats too, and is not a chore. */
 const CHORE_HOME = "home";
 const atHome = ctx => !!ctx && (ctx.toLowerCase() === CHORE_HOME || ctx.toLowerCase().startsWith(CHORE_HOME + "/"));
-const isChore = a => !!(a.block && OPEN_STATES[a.state] && repeatOf(a.block) && atHome(a.context));
+const isChore = a => !!(a.block && OPEN_STATES[a.state] && repeatOf(a.block) && !isAsNeeded(repeatOf(a.block)) && atHome(a.context));
 const allChores = () => memo("allChores", () => allLeafActions().filter(isChore));
 const choreRows = () => allChores().filter(a => !a.held);

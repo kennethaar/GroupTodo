@@ -128,7 +128,7 @@ function showTaskDetail(path, block, space) {
           const row = el("div", {class: "seg"});
           const current = assigneeOf(block);
           const choices = [["", "Me"]].concat(
-            members().filter(m => !m.me).map(m => [m.name, m.name]));
+            choreCrew().filter(m => !m.me).map(m => [m.name, m.name]));
           for (const [val, label] of choices) {
             const on = val ? samePerson(val, current) : !current;
             row.append(el("button", {class: on ? "on" : "", onclick: () => {
@@ -137,12 +137,13 @@ function showTaskDetail(path, block, space) {
           }
           row.append(el("button", {onclick: () => {
             closeModal(); openAssignOther(path, block);
-          }}, current && !isMember(current) ? current : "someone else\u2026"));
+          }}, current && !isMember(current) && !isHousehold(current) ? current : "someone else\u2026"));
           return row;
         })(),
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
           "Somebody in this area gets it as their task, and you get it in your " +
-          "Waiting for. Anybody else is only a waiting-for - they cannot see this.")),
+          "Waiting for. The household's stays a task you tick off for them. " +
+          "Anybody else is only a waiting-for - they cannot see this.")),
       el("div", {class: "field"},
         el("label", {}, "Chat" + (messagesOf(block).length ? " \u00B7 " + messagesOf(block).length : "")),
         threadPanel(path, block),

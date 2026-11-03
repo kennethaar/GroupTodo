@@ -13,12 +13,13 @@
    `before` is what the line said until now. A name it already had as plain
    words stays plain: you took the link off, or never wanted it, and writing
    something else on the line is no reason to put it back. */
-function linkKnownNames(text, before = "") {
+function linkKnownNames(text, before = "", pool = nameIndex()) {
   const src = String(text || "");
   if (!src) return src;
   // A responsibility is offered as you type, never linked unasked: Health and
-  // Home are words in a sentence far more often than the page.
-  const names = nameIndex().filter(n => n.kind !== "context" && n.kind !== "area");
+  // Home are words in a sentence far more often than the page. A plain page
+  // is only offered too.
+  const names = pool.filter(n => n.kind !== "context" && n.kind !== "area" && n.kind !== "page");
   const plainBefore = String(before || "").replace(/\[\[[^\]]*(?:\]\[[^\]]*)?\]\]/g, " ");
   const wants = names.map(n => ({word: n.title, ref: n.ref, label: null}));
   wants.sort((a, b) => b.word.length - a.word.length);

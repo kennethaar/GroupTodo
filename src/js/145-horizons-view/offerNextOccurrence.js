@@ -5,7 +5,7 @@ function offerNextOccurrence(path, block) {
   /* Who does the next one: whoever's turn it is, or the same person again. */
   const turn = whoseTurn(block);
   const forSel = turn ? el("select", {},
-    ...members().map(m => el("option", {value: m.name}, m.me ? m.name + " (you)" : m.name))) : null;
+    ...choreCrew().map(m => el("option", {value: m.name}, m.me ? m.name + " (you)" : m.name))) : null;
   if (forSel) forSel.value = turn;
   nudgeToast({
     center: true, title: "Again?",
@@ -15,6 +15,9 @@ function offerNextOccurrence(path, block) {
           "\u201C" + titleForRow(block.title) + "\u201D repeats " + spec + "."),
         el("div", {style: "color:var(--fg2);font-size:13px;margin-top:6px"},
           "Put the next one on " + humanDate(when) + "?"),
+        choreNextRef(block, when) ? el("div", {style: "color:var(--fg2);font-size:13px;margin-top:6px"},
+          "It goes on the Journal, on the page for " + (WEEK_RE.test(choreNextRef(block, when))
+            ? "week " + choreNextRef(block, when) : "that day") + ".") : null,
         forSel ? el("div", {class: "field", style: "margin-top:8px"},
           el("label", {}, "Whose turn (fewest lately)"), forSel) : null,
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:8px"},
@@ -26,7 +29,7 @@ function offerNextOccurrence(path, block) {
       el("button", {class: "btn primary", onclick: () => {
         closeModal();
         const copy = makeNextOccurrence(path, block, when);
-        if (copy && forSel) assignBlock(path, copy, forSel.value);
+        if (copy && forSel) assignBlock(pathOfBlock(copy, path), copy, forSel.value);
         render();
         notify(forSel ? "Next one on " + humanDate(when) + ", for " + forSel.value + "."
           : "Next one on " + humanDate(when) + ".");

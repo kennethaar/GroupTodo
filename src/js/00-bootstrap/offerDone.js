@@ -37,6 +37,7 @@ function offerDone(e) {
       e.kind === "project" && stakeholdersOf(e.space, e.path).length
         ? el("button", {class: "btn sm ghost", title: "Email the people and organisations on it that it is done",
             onclick: () => { closeDoneToast(); openDoneNote(e.space, e.path); }}, "Notify") : null,
+      e.credit ? choreCreditPick(e) : null,
       e.change ? doneChangePick(e, code => { e.change(code); drop(); }) : null,
       e.undo ? el("button", {class: "btn sm ghost", onclick: () => { e.undo(); drop(); }}, "Undo") : null);
   const row = el("div", {style: "display:flex;gap:8px;align-items:center;margin-bottom:4px"}, name);

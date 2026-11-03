@@ -1,0 +1,67 @@
+/* ---------- print (#235) ----------
+   The page is a fixed-height shell that scrolls inside #content, which on
+   paper cuts the view off at the fold. Printed, it grows to its full height,
+   without the sidebar, the top bar and the buttons. A sheet made to print
+   (#printsheet) is printed on its own. */
+#printsheet{display:none}
+@media print{
+  html,body,#app,#main,#work,#content{height:auto!important;overflow:visible!important}
+  body{background:#fff;color:#000}
+  #app{display:block}
+  #sidebar,header.top,#pagePane,#toasts,#helpHint,.vhead-r,.fbar,.newbtn{display:none!important}
+  #content{padding:0}
+  body.printsheet > :not(#printsheet){display:none!important}
+  body.printsheet #printsheet{display:block}
+}
+.ps{font-family:var(--sans);font-size:11pt;line-height:1.35;color:#000;background:#fff}
+.ps-h{display:flex;justify-content:space-between;align-items:baseline;gap:12pt;border-bottom:1.5pt solid #000;padding-bottom:4pt}
+.ps-h h1{margin:0;font-size:16pt;letter-spacing:.04em;text-transform:uppercase}
+.ps-h span{font-size:10pt}
+.ps-sub{margin:3pt 0 6pt;font-size:10pt}
+.ps table{width:100%;border-collapse:collapse}
+.ps th,.ps td{text-align:left;padding:2pt 8pt 2pt 0;vertical-align:top}
+.ps tr{break-inside:avoid}
+.ps-room th{padding-top:10pt;font-size:9pt;font-weight:400;letter-spacing:.05em;text-transform:uppercase;border-bottom:.75pt solid #000}
+.ps-room th:first-child{font-weight:700}
+.ps-tick{width:16pt}
+.ps-box{display:inline-block;width:10pt;height:10pt;border:1pt solid #000;vertical-align:-1pt}
+.ps-when,.ps-time{white-space:nowrap;font-variant-numeric:tabular-nums}
+.ps-time{text-align:right!important}
+.ps-late{font-weight:700}
+.ps-notes{margin-top:14pt;font-size:10pt}
+.ps-notes i{display:block;height:18pt;border-bottom:.75pt solid #000}
+.toast.reminder{display:block;max-height:45vh;overflow:auto;width:min(430px,90vw)}
+.toast.reminder > .x{float:right;margin:0 0 4px 8px;background:none;border:0;cursor:pointer}
+/* A new version, and what it brings (#256). */
+.newslist{margin:4px 0 10px;padding-left:18px;color:var(--fg2)}
+.newslist li{margin:2px 0}
+.toast.update,.toast.whatsnew{border-color:var(--accent)}
+/* On a line of its own under the name: the sidebar has no room beside it. */
+.appupdate{order:3;flex:0 0 calc(100% - 38px);margin:-6px 0 0 38px;padding:2px 0;text-align:left;background:none;border:0;
+  color:var(--accent);font-size:11.5px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.appupdate:hover,.appupdate:focus-visible{text-decoration:underline}
+.whatsnew{padding:0 16px 6px}
+.whatsnew h3{margin:14px 0 4px;font-size:13px}
+.whatsnew ul{margin:0;padding-left:18px}
+.whatsnew li{margin:6px 0;line-height:1.45}
+.whatsnew .newsacts{display:inline-flex;gap:10px;margin-left:8px;font-size:12px}
+.feedback{margin-top:16px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg2)}
+.feedback p{margin:4px 0 10px;color:var(--fg2);font-size:12.5px}
+.feedback .acts{display:flex;gap:6px;flex-wrap:wrap}
+.feedback .acts a{text-decoration:none}
+.toast.reminder .acts{display:flex;gap:6px;flex-wrap:wrap}
+
+/* the relationship board */
+.rel-board{grid-template-columns:repeat(3,minmax(280px,1fr))!important}
+.rel-search{padding:8px;display:grid;gap:6px}
+.rel-search input,.rel-search select{width:100%;min-width:0}
+.rel-nest-toggle{display:inline-flex;gap:6px;margin:10px;align-items:center}
+.rel-children{margin-left:18px;border-left:2px solid var(--border);padding-left:8px}
+.rel-card-wrap{margin-bottom:8px}
+.rel-card-wrap>.bcard{width:100%;margin-bottom:5px}
+.rel-over{outline:2px solid var(--accent)}
+.rel-ancestor{opacity:.65}
+[hidden]{display:none!important}
+@media(max-width:700px){
+  .rel-board{grid-template-columns:repeat(3,280px)!important}
+}

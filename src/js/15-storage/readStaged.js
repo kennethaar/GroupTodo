@@ -32,12 +32,15 @@ async function readStaged(record, edited, onRest, onSoon) {
      A full read again (Check the folder) puts them right; readIntoNow lets
      them go once every file is in. */
   const weekAgo = shiftISO(todayISO(), -7);
-  const soon = rest.filter(p => restRank(p, weekAgo) === 0), after = rest.filter(p => restRank(p, weekAgo) > 0);
+  const rankOf = new Map(rest.map(p => [p, restRank(p, weekAgo)]));
+  const soon = Array.from({length: SHOWN_RANKS}, (_, n) => rest.filter(p => rankOf.get(p) === n));
+  const after = rest.filter(p => rankOf.get(p) >= SHOWN_RANKS);
   const tick = loadingTicker(record, rest.length);
   return {rest: (async () => {
     const files = new Map(first);
-    if (soon.length) {
-      const got = await record.backend.readMany(soon, tick);
+    for (const group of soon) {
+      if (!group.length) continue;
+      const got = await record.backend.readMany(group, tick);
       for (const [p, t] of got) files.set(p, t);
       if (record.stubs) { layInSoon(record, got, edited); if (onSoon) onSoon(record); }
     }

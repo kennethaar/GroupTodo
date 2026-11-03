@@ -10,7 +10,8 @@ function personRow(r) {
       el("div", {class: "t-meta"},
         el("span", {class: "t-pills"},
           ...personOrgs(r.name).map(o => el("span", {class: "chip"}, o)),
-          el("span", {class: "chip" + (r.member ? "" : " today")}, r.member ? "In the area" : "Outside the area"),
+          el("span", {class: "chip" + (r.member || r.household ? "" : " today")},
+            r.member ? "In the area" : r.household && !r.me ? "Household" : "Outside the area"),
           // Outside the area is all there is to say about when they were seen.
           r.member || r.me ? el("span", {class: "chip"}, r.seen) : null, ...[...r.spaces].map(spaceTag)),
         el("span", {class: "t-info"},

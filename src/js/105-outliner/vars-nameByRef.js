@@ -22,3 +22,6 @@ const contextByAlias = name => memo("contextByAlias", () => {
     for (const a of n.aliases) if (!m.has(a.toLowerCase())) m.set(a.toLowerCase(), n.title);
   return m;
 }).get(trim(String(name || "")).replace(/^@/, "").toLowerCase()) || null;
+
+/* Every name worth offering, across the spaces on screen. */
+const nameIndex = () => memo("nameIndex", () => namesHere());

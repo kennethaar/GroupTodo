@@ -1,8 +1,11 @@
 function viewProjects() {
   const sub = subNow();
-  const c = el("div", {class: "wrap" + (sub === "list" || sub === "report" || sub === "hours" ? "" : " wide")});
+  const c = el("div", {class: "wrap" + (sub === "list" ? " lwide" : sub === "report" || sub === "hours" ? "" : " wide")});
   const org = state.org || "";
-  const twins = projectTwins().length;
+  /* Every name against every other, while the names are still coming in from
+     the folder, would be paid again at each step of the read: the look-alikes
+     wait until it is done. */
+  const twins = LOADING.size ? 0 : projectTwins().length;
   const head = vhead("Projects", org || "What you have committed to finishing",
     org ? el("button", {class: "textbtn", onclick: () => go("projects", {org: null})}, "× clear") : null,
     twins ? el("button", {class: "textbtn twinbtn", title: "Projects with the same or nearly the same name",

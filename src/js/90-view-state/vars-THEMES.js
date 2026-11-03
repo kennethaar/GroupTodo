@@ -20,4 +20,5 @@ const FONTS = [
   {id: "mono",     name: "Monospace", css: "var(--mono)"},
 ];
 const FONT_SIZES = [13, 14, 15, 16, 17, 18];
+const WIDTHS = [["narrow", "Narrow"], ["wide", "Wide (default)"], ["full", "Full"]];
 const styleCssPath = () => join(DIRS.lists, "style.css");

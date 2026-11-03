@@ -24,6 +24,14 @@ const SLASH_COMMANDS = [
   {id: "inform",    title: "Send an update",  detail: "tell somebody where it stands", kw: ["inform", "update", "tell", "report", "oppdater", "orienter", "informer"]},
   {id: "more",      title: "Open in the side panel", detail: "dates, chat, history", kw: ["open", "side", "more", "details", "panel", "mer", "åpne"]},
   {id: "ttype",     title: "Task type",       detail: "stages of its own",     kw: ["type", "kind", "stages", "slag"]},
+  // Only in an area with a book (#244).
+  {id: "beat",      title: "Beat",            detail: "what happens here, not counted", kw: ["beat", "outline", "plan", "plot"], when: () => hasBook()},
+  // A mark round words, Pandoc's way, so tools that make a book of the file keep it (#246).
+  {id: "darling",   title: "Cut to darlings",  detail: "the sentence here, or at the start the whole line", kw: ["darling", "darlings", "cut", "kill", "stryk"], when: () => hasBook()},
+  {id: "script",    title: "Script",          detail: "talk written fast, a line per speaker", kw: ["script", "dialogue", "dialog", "talk", "manus", "replikk"], when: () => hasBook()},
+  {id: "thought",   title: "Thought",         detail: "what somebody thinks", kw: ["thought", "think", "tanke", "inner"], inline: true, when: () => hasBook()},
+  {id: "sound",     title: "Sound",           detail: "a noise, set apart", kw: ["sound", "noise", "lyd"], inline: true, when: () => hasBook()},
+  {id: "written",   title: "Written",         detail: "a letter, a sign, a message", kw: ["written", "letter", "message", "sms", "sign", "brev", "melding"], inline: true, when: () => hasBook()},
 ];
 /* Every task type's stages are commands too, found by the stage's words or the
    type's: "/deliv" and "/purchase" both find Awaiting delivery. */

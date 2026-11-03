@@ -18,6 +18,6 @@ function helpHintDraw() {
       el("button", {class: "btn sm ghost", onclick: () => { done(); setHelp(true); }}, "Explain this page"),
       el("button", {class: "btn sm ghost", onclick: done}, "Got it"),
       el("button", {class: "textbtn", title: "No more of these notes. Settings > Help turns them back on",
-        onclick: () => { PREF.set("help.hints", "0"); done(); }}, "No more notes")));
+        onclick: () => { PREF.set("help.hints", "0"); done(); }}, "No more hints")));
   $("#main").append(box);
 }

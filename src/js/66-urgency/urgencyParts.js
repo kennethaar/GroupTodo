@@ -18,7 +18,7 @@ function urgencyParts(a) {
   const chain = chainTerms(a.projectPath, a.space);
   if (chain.blocking) add("another project waits on this one", URGENCY.blocking);
   if (chain.blocked) add("its project waits on another", URGENCY.blocked);
-  if (b.state === "WAIT" || a.mine === false) add("waiting for somebody", URGENCY.waiting);
+  if (b.state === "WAIT" || (a.mine === false && !isHousehold(a.assignee))) add("waiting for somebody", URGENCY.waiting);
   const fresh = freshnessOf(a);
   if (fresh && fresh.rounds > 1) add(Math.round(fresh.rounds * 100) + "% of the way round", URGENCY.chore * Math.min(fresh.rounds - 1, 1));
   return parts;

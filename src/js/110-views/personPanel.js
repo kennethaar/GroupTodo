@@ -9,13 +9,23 @@ function personPanel(name, path) {
   const open = openActionsOf(name);
   const agenda = mine ? [] : askingAbout(name).filter(a => !open.some(w => w.block === a.block));
   const seen = lastSeenOf(name);
+  // At home but not in the app: their tasks stay tasks, ticked off for them (#236).
+  const home = !mine && !isMember(name) && isHousehold(name);
   const box = el("div", {class: "section"});
   box.append(el("div", {class: "personhead"}, avatarNode(name, 48),
     el("div", {style: "min-width:0;flex:1"},
       el("div", {class: "sub"}, mine ? "This is you." : isMember(name) ? "In this area" + (seen ? " · last seen " + seen : "")
+        : home ? "Household: takes turns at the chores and gets the points. Tick theirs off for them."
         : "Not using this area, so everything with their name on it is something you are waiting for."),
       mine ? null : el("div", {class: "acts"},
-        isMember(name) ? null : el("button", {class: "btn sm" + (open.length + agenda.length ? " primary" : " ghost"),
+        isMember(name) ? null : el("button", {class: "btn sm ghost householdbtn", "aria-pressed": String(home),
+          title: "Somebody at home who does not use GroupToDo. They take turns at the chores and get the points.",
+          onclick: () => {
+            const at = path || personPath(name);
+            if (!getPage(at)) putPage(at, pageTemplateFor("p", name));
+            setHousehold(at, !home);
+          }}, home ? "✓ Household" : "Household"),
+        isMember(name) || home ? null : el("button", {class: "btn sm" + (open.length + agenda.length ? " primary" : " ghost"),
           onclick: () => openAskForUpdate(name)}, "Ask " + firstNameOf(name) + " for an update"),
         informAbout({name}).length || stakeIn({name}).length ? el("button", {class: "btn sm ghost",
           onclick: () => openSendUpdate({name})}, "Send " + firstNameOf(name) + " an update") : null,
@@ -24,7 +34,7 @@ function personPanel(name, path) {
   if (path) box.append(personWorksAt(name, path));
   if (!mine) box.append(el("div", {class: "section"}, stakeholderLine({name})));
   const first = firstNameOf(name);
-  box.append(mine || isMember(name)
+  box.append(mine || isMember(name) || home
     ? section("Next actions", open.length, taskCard(open, mine ? "Nothing on your plate." : "Nothing on " + first + "'s plate."))
     : section("Waiting for", open.length, taskCard(open, "Not waiting for anything from " + first + ".")));
   if (agenda.length) box.append(section("Agenda", agenda.length, taskCard(agenda, ""),

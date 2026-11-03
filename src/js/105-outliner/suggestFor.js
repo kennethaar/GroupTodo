@@ -12,9 +12,10 @@ function suggestFor(host, opts) {
     // Its values are numbers like 100/8/4, not dates or names to look up.
     if (/^tracker-[^:]*::/i.test(before)) return null;
   }
+  const book = bookSpaceOf(host), names = () => book ? bookNames(book) : nameIndex();
   const link = openLinkAt(before);
   if (link) {
-    const rows = linkCandidates(link.query).map(r => Object.assign({kind: r.kind || "page", accept: "link"}, r));
+    const rows = inSpace(book, () => linkCandidates(link.query)).map(r => Object.assign({kind: r.kind || "page", accept: "link"}, r));
     return rows.length ? {mode: "link", at: link.at, rows} : null;
   }
   if (insideLink(before)) return null;
@@ -26,7 +27,7 @@ function suggestFor(host, opts) {
     const kind = trig[2] === "#" ? "project" : "context";
     const q = trig[3].toLowerCase();
     const kinds = [kind];
-    const pool = nameIndex().filter(n => kinds.includes(n.kind))
+    const pool = names().filter(n => kinds.includes(n.kind))
       .sort((a, b) => kinds.indexOf(a.kind) - kinds.indexOf(b.kind));
     /* A child context is found by its own name too: "@out" is Home/Outside,
        and "@outside" is that context, not a new one. */
@@ -49,15 +50,15 @@ function suggestFor(host, opts) {
     const frag = words.slice(words.length - n).join(" ");
     if (frag.length < 2 || frag.toLowerCase() === SUGGEST_DISMISSED) continue;
     const f = frag.toLowerCase();
-    const names = nameIndex().filter(x => x.kind !== "context" && (
+    const found = names().filter(x => x.kind !== "context" && (
       x.title.toLowerCase().startsWith(f) ||
       (n === 1 && f.length >= 3 && x.title.toLowerCase().split(/\s+/).some(w => w.startsWith(f)))))
       .filter(x => x.title.toLowerCase() !== f || x.kind !== "context")
       .slice(0, 5).map(x => Object.assign({accept: "link"}, x));
     // "storebrand" is Storebrand Forsikring AS, written the way it was said.
-    const aliased = aliasRows(nameIndex().filter(x => x.kind !== "context"), f).slice(0, 3);
+    const aliased = aliasRows(names().filter(x => x.kind !== "context"), f).slice(0, 3);
     const dates = opts.dates ? dateSuggestions(frag).map(r => Object.assign({accept: "date"}, r)) : [];
-    const rows = dates.concat(aliased, names);
+    const rows = dates.concat(aliased, found);
     if (rows.length) return {mode: "word", at: before.length - frag.length, rows};
   }
   return null;
