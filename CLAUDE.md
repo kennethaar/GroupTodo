@@ -1,191 +1,149 @@
 # GroupTodo
 
-## Source layout and the build
+## Source and navigation
 
-`grouptodo.html` is built, not written. Edit the pieces in `src/` and run
-`node build.mjs` (`node tests/run.mjs` does it for you).
+`grouptodo.html` and `icon.svg` are generated. Never edit them directly.
+Application source belongs under `src/`.
 
-- `src/css/NN-name.css`: the stylesheet in pieces, joined in file order.
-- `src/js/<part>/<name>.js`: one file per function; a run of constants that
-  belong together is one `vars-<first name>.js`. `<part>` is the numbered part
-  of the app (`15-storage`, `110-views`, ...).
-- `src/assets/*.svg`: the icons. In code `SVG("name")` becomes the markup as a
-  string and `SVG_URI("name")` a `data:` address; `<!--@svg-uri:name-->` does
-  the same in `src/index.html`. Pictures built from data (charts, the timer
-  dial, the QR code) stay in their functions.
-- `src/index.html`: the page, with a marker where the CSS and each of the six
-  scripts go.
-- `src/build-order.txt`: the order the files are joined in. Order matters (a
-  `const` before the code that reads it). **A new file must be added here**;
-  the build fails on a file that is not listed.
+Use symbol, reference or Tree-sitter search first. Read only the relevant
+source, direct dependencies, test and help topic. Expand only when necessary.
 
-A pre-commit hook (`.githooks/pre-commit`) builds `grouptodo.html` and
-`icon.svg` and adds them to every commit, so only `src/` is ever edited. Turn
-it on once per clone: `git config core.hooksPath .githooks`.
+- `src/css/NN-name.css`: joined in filename order.
+- `src/js/<part>/<name>.js`: one file per function. Related constants may use
+  `vars-<first-name>.js`.
+- `src/assets/*.svg`: use through `SVG("name")`, `SVG_URI("name")` or
+  `<!--@svg-uri:name-->`.
+- `src/index.html`: page structure and build markers.
+- `src/build-order.txt`: JavaScript assembly order. Add every new JavaScript
+  file in dependency order.
 
-The built `grouptodo.html` is committed as before. Do not edit it by hand: the
-next build overwrites it. The build leaves out comments, indentation and blank
-lines (`strip.mjs`), so the built file is hard to read and its line numbers are
-not the source's: `node build.mjs --readable` writes it with them in, and
-`node build.mjs --print` prints that text for a tool to read (the language
-catalog does). A tool that matches text in the built file must not rely on
-indentation. The generated lines (`HELP_NEWS`, `LANG_CATALOG`) are
-written into their `src/js` files by the scripts in `docs/`.
+Build with:
 
-## Version number on every change
+    node build.mjs
 
-`APP_VERSION` near the top of `grouptodo.html` is shown beside the name, top
-left. Every change that is pushed raises it: PATCH for a fix, MINOR for a
-feature (PATCH back to 0), MAJOR only for a change that breaks existing
-vaults. Add the matching entry at the top of `CHANGELOG.md` in the same
-commit, and end every reply about a change with the version it is now, e.g.
-"Now at **v1.3.2**", so the user knows which file to test.
+Use `node build.mjs --print` to inspect assembled source and
+`node build.mjs --readable` for readable generated output. Generated line
+numbers do not match source.
 
-## Regression battery
+Enable the pre-commit build hook once per clone:
 
-`node tests/run.mjs` rebuilds `docs/demo.html`, opens it in headless Edge and
-runs `tests/battery.js` inside the page (`node tests/run.mjs <words>` runs
-only the tests whose name has them). Run it before every push. A new feature
-gets a test in the matching section of `tests/battery.js`; a fixed bug gets
-the test that would have caught it, named with its issue number. Never weaken
-a test to make it pass: if the app is wrong, fix the app, and if the test's
-expectation is out of date, say so to the user.
+    git config core.hooksPath .githooks
 
-## Help and its screenshots
+Do not edit generated `HELP_NEWS` or `LANG_CATALOG` values directly. Run the
+corresponding script in `docs/`.
 
-The help is data: `HELP` in `grouptodo.html`, one short topic per view,
-sub-view and feature. The full help, its search and "This page" (`?`) all
-read it. When a change adds or alters a screen, update its topic in the same
-commit: `what`, `steps`, `keys`, and the `legend` selectors that "Show me"
-points at. A new view or sub-view needs a topic with its `view`/`sub`; the
-battery fails without one, and when a legend selector finds nothing.
+## Versioning
 
-Help text is short and plain. Use GTD terms when in doubt (capture, clarify,
-organise, reflect, engage, next action, context, waiting for, someday/maybe).
-Don't use two words when one will do. Keep each topic's LIX below 30 unless a
-term requires it; the battery measures it. Then run
-`python docs/build-language-catalog.py` so the new words can be translated.
+Every pushed change updates `APP_VERSION` in its source file:
 
-**Screenshots:** topics marked `shot: 1` show `docs/help/<id>.jpg`. Whenever a
-page or dialog shown in the help changes, run `node tests/screenshots.mjs`
-(or `node tests/screenshots.mjs <id>` for one) and commit the new pictures
-with the change. A dialog's topic needs a `SETUP` entry in
-`tests/screenshots.mjs` that opens it. The battery fails when a topic has no
-picture or a picture has no topic.
+- PATCH for fixes and small behavior adjustments.
+- MINOR for new user-facing capabilities, resetting PATCH to `0`.
+- MAJOR only when existing vaults become incompatible.
 
-## GitHub issues for every change
+Add the matching entry at the top of `CHANGELOG.md` in the same commit.
 
-Log each fix or feature as an issue on `kennethaar/GroupTodo` and reference it
-in the commit. Work on `main`, the default branch.
+End every reply about a completed change with:
 
-1. Create the issue first, so the commit can say `Fixes #N`.
-2. Commit with `Fixes #N` (one per issue, as in earlier commits), then push to
-   `main`. GitHub closes the issue on the push.
-3. Comment `Fixed in <short-sha>.` on the issue. Close it by hand only when the
-   commit went to another branch, since only the default branch auto-closes.
+    Now at **vX.Y.Z**
 
-Revisiting something an earlier issue covered (a follow-up fix, a regression,
-a tweak to the same behaviour) reuses that issue: search for it, reopen it,
-comment on what is being changed, and commit with `Fixes #N` for the same N.
-Open a new issue only when the work adds a new feature.
+## Tests
 
-The `gh` CLI is not installed. Use the REST API with the token git already has
-stored, never printing it:
+Run focused tests while developing:
+
+    node tests/run.mjs <words>
+
+Run the full battery before every push:
+
+    node tests/run.mjs
+
+Add or update a regression test for every behavioral change. A bug test
+includes its issue number.
+
+Never weaken or bypass a test to make it pass. Fix the application unless the
+expectation is demonstrably obsolete.
+
+## Help and screenshots
+
+When user-facing behavior changes, update the matching `HELP` source topic in
+the same commit. Update relevant `what`, `steps`, `keys` and `legend` fields.
+Use `view` and `sub` only for view-specific topics.
+
+Use short, plain GTD language and keep LIX below 30 when practical. Then run:
+
+    python docs/build-language-catalog.py
+
+If a topic marked `shot: 1` changes visually, update its screenshot:
+
+    node tests/screenshots.mjs <id>
+
+Run the full screenshot suite only when several screens changed. Dialog topics
+need a deterministic `SETUP` entry in `tests/screenshots.mjs`.
+
+## GitHub workflow
+
+Every user-requested change needs an issue in `kennethaar/GroupTodo`.
+
+1. Search existing issues first.
+2. Reopen and reuse an issue for a follow-up, regression or related correction.
+3. Create a new issue only for distinct new behavior.
+4. Each commit references one issue with `Fixes #N`.
+5. Push to `main`.
+6. Comment `Fixed in <short-sha>.` on the issue.
+
+The `gh` CLI is unavailable. Use the GitHub REST API with Git's stored token.
+Never print or commit the token.
 
 ```bash
 TOKEN=$(printf "protocol=https\nhost=github.com\n\n" | git credential fill | sed -n 's/^password=//p')
 H=(-H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json")
 API=https://api.github.com/repos/kennethaar/GroupTodo
-
-# create: build the JSON with node so quotes and newlines are escaped
-node -e 'process.stdout.write(JSON.stringify({title:process.argv[1],body:process.argv[2]}))' "Title" "Body" > issue.json
-curl -s -X POST "${H[@]}" $API/issues --data-binary @issue.json | grep -m1 '"number"'
-
-# find an earlier issue (open or closed) to revisit
-curl -s -G "${H[@]}" https://api.github.com/search/issues --data-urlencode "q=repo:kennethaar/GroupTodo is:issue <words>" | grep -E '"(number|title|state)"'
-
-# reopen and comment
-curl -s -X PATCH "${H[@]}" $API/issues/N -d '{"state":"open"}'
-curl -s -X POST  "${H[@]}" $API/issues/N/comments --data-binary @comment.json
-
-# after the push: comment, and close only if the push did not
-curl -s -X POST  "${H[@]}" $API/issues/N/comments -d '{"body":"Fixed in <sha>."}'
-curl -s -X PATCH "${H[@]}" $API/issues/N -d '{"state":"closed","state_reason":"completed"}'
+SCRATCH="${TMPDIR:-/tmp}/grouptodo-claude"
+mkdir -p "$SCRATCH"
 ```
 
-Write `issue.json` and `comment.json` (`{"body":"..."}`, built with node the
-same way) to the scratchpad, not the repo.
+Create issue and comment payloads with `JSON.stringify()`. Store temporary JSON only in `$SCRATCH`, never in the repository.
 
-## Design principles
+## Product and design rules
 
-Act as a Principal UI/UX Architect and Cognitive Ergonomics Engineer for
-GroupToDo (a local-first, zero-dependency, single-file GTD + Kanban
-application). Every UI/UX decision, component layout, and CSS rule must
-strictly enforce Getting Things Done (GTD) methodology, Steve Krug's usability
-principles ("Don't Make Me Think"), and empirical findings from cognitive
-psychology.
+Apply GTD, `Don't Make Me Think`, progressive disclosure, accessibility and management by exception. Do not redesign unrelated parts during a focused change.
 
-### 1. Cognitive psychology constraints
+## Execution views
 
-1. **Separate Execution Mode from Review Mode (Context Switching & Attention Residue)**
-   - **Rule:** Never mix Weekly Review metadata with Daily Execution views.
-   - **Application:** In execution views (`Active` projects, `Next` actions, `Journal`), hide project maintenance metadata (`reviewed Xd ago`, review dates, raw urgency floats like `↑5.6`, and empty field placeholders like `+ people` or `+ organisations`). Expose maintenance metadata only on hover/focus, inside the Weekly Review (`solitaire`) view, or when an explicit "Review Mode" toggle is active.
+In `Active`, `Next` and `Journal`, hide review metadata, raw urgency and empty fields by default. Show them on focus, hover, Review Mode or when they represent an exception.
 
-2. **Cowan's Law of Working Memory (4 ± 1 WIP Limit)**
-   - **Rule:** Human working memory holds ~4 chunks concurrently. More than 4–5 active projects induces attention residue (Sophie Leroy) and turns an active column into a vertical backlog.
-   - **Application:** Enforce a visual WIP cap (3–5 items) on the `1 / Active` column. Visually warn when exceeded and encourage demoting excess projects to `2 / Someday` or `hold::`.
+Hover-only information must also be available through focus or an explicit touch-accessible action.
 
-3. **Implementation Intentions (Gollwitzer's Cue-Action Pairing)**
-   - **Rule:** Task execution probability increases significantly when the situational trigger (`@context`) is visually paired right before the physical verb.
-   - **Application:** Never bury or truncate `@context` tags at the end of a task string. Render the context pill (`.chip.ctx`) immediately adjacent to the state control (`.tick`) and before the verb-first action title. Never allow CSS `text-overflow: ellipsis` to clip a `@context` pill while empty horizontal space exists on the card.
+Use a visual WIP target of three to five projects in `1 / Active`. Warn when exceeded, but never move user data automatically.
 
-4. **Von Restorff Effect (Isolation Effect for Color)**
-   - **Rule:** When every card carries the same high-contrast colored badge (e.g., amber/orange Area pills), nothing stands out and the brain reads the board as a wall of warnings.
-   - **Application:** Render structural categorization (Responsibility `a/`, Area, Parent Project) as quiet, low-contrast uppercase eyebrows (`--fg3`, `11px`, `letter-spacing: .05em`). Reserve saturated semantic colors exclusively for:
-     - Interactive task states (`--todo`, `--doing`, `--wait`, `--done`)
-     - Situational contexts (`--ctx`)
-     - True exceptions (`--late` for overdue, `--warn` for missing next action / blocked).
+## Next actions and cards
 
-5. **Endowed Progress Effect vs. Zeigarnik Tension**
-   - **Rule:** Showing only `6 open` highlights unfinished burden (Zeigarnik open-loop tension) without showing momentum.
-   - **Application:** Pair open counts with completed progress using a compact progress bar (`.pbar`) and ratio (`8/14` or `4 open · 8 done`) so approaching completion accelerates motivation.
+Render a next action in this order:
 
-### 2. Steve Krug's usability principles ("Don't Make Me Think")
+1. `.tick`
+2. `.chip.ctx`
+3. Verb-first action title
 
-1. **Fix Inverted Visual Hierarchy**
-   - In an execution column, the **Next Action** is what the user physically does; the **Project** is the container.
-   - Give the physical Next Action row a distinct surface, interactive `.tick` affordance, and high-contrast legibility.
-   - Display the project's `outcome::` (what "Done" looks like) directly beneath the project title so topics are never mistaken for finite outcomes.
+Do not truncate the context while horizontal space remains.
 
-2. **Eliminate "Question Mark" Metrics & Ambiguous Dates**
-   - If a column or list is already sorted by urgency, do not display raw mathematical floats (`↑5.6`, `↑1.2`) by default. Show them only on hover (`.chip.onhover`) with a plain-language tooltip explaining the score.
-   - Never display a bare date pill (`søn. 1. nov.`) without its semantic role (`Due Nov 1`, `Starts Nov 1`, or `Hold until Nov 1`).
+An Active Project card follows this hierarchy:
 
-3. **Management by Exception (Omit Needless Words)**
-   - Do not repeat `reviewed 0d ago` on every card. Only surface review age when `idleDays > CFG.reviewEveryDays` (e.g., `stale 14d`).
-   - Hide empty-state edit triggers (`+ people`, `+ orgs`, `+ comes after`) from cards until the user hovers, focuses, or enters Review Mode.
-   - Never place two competing visual affordances side-by-side for the same action (e.g., a checkbox `[ ]` AND an arrow `→`). Use a single clear state control (`.tick`).
+1. Status, quiet area or responsibility, and `done/total` progress.
+2. Project title and finite `outcome::`.
+3. Distinct next-action surface, or `+ Add physical next action`.
+4. Exceptions such as overdue, blocked, collaborators or stale review.
 
-### 3. Card & component anatomy (hierarchy spec)
+Use saturated colors only for task states, contexts and true exceptions. Render structural metadata quietly.
 
-Every Active Project card (`.bcard`) must follow this 4-tier scannable anatomy from top to bottom:
+Label dates by purpose, such as `Due`, `Starts` or `Hold until`. Do not show unexplained urgency scores. Show review age only when stale.
 
-- **Tier 1 — Eyebrow (Context & Progress):**
-  - Left: Status badge (`.st-1`) + Muted uppercase Responsibility/Area breadcrumb (`--fg3`, `11px`).
-  - Right: Micro progress bar (`.pbar`) + `done/total` fraction (`font-variant-numeric: tabular-nums`).
-- **Tier 2 — Project Title & Finite Outcome:**
-  - Title: `15px`, `font-weight: 650`, `--fg`.
-  - Outcome (`outcome::`): `12.5px`, `--fg2`, prefixed with `✓` (or a `.chip.miss` warning if `outcome::` is missing).
-- **Tier 3 — Primary Action Zone (The Physical Next Action):**
-  - Contained box (`background: var(--bg2)`, `border: 1px solid var(--border)`).
-  - Left-to-right order: Interactive `.tick` button → Non-truncated `.chip.ctx` (`@pc`, `@home`, `@phone`) → Verb-first task title (`13.5px`, `--fg`).
-  - If the project has no open next action, render a high-visibility `.chip.miss` prompt (`+ Add physical next action`) so stuck projects are immediately obvious.
-- **Tier 4 — Exception-Only Footer:**
-  - Hidden by default if nothing is wrong or delegated.
-  - Only renders active exceptions (`late`, `blocked by X`), active collaborators (`avatarNode`), or hover/review-mode metadata (`reviewed Xd ago`, `↑urgency`, `.pfields`).
+Use one clear control per action.
 
-### 4. Technical & CSS constraints
+## Technical constraints
 
-- **Zero External Dependencies:** Rely strictly on system font stacks (`--sans`, `--mono`) and native CSS variables (`--bg`, `--bg2`, `--bg3`, `--bg4`, `--fg`, `--fg2`, `--fg3`, `--border`, `--border2`, `--accent`, `--todo`, `--doing`, `--wait`, `--done`, `--late`, `--warn`, `--ctx`, `--proj`, `--zet`).
-- **Theme Parity:** Every visual state must maintain WCAG AA contrast across all four built-in themes (`Paper`, `Linen`, `Ink`, `Night`) using `color-mix(in srgb, ...)` rather than hardcoded hex alphas.
-- **Keyboard & Pointer Parity:** Every card action must be reachable via keyboard (`tabindex="0"`, `Enter`/`Space`, and single-key shortcuts) without requiring hover-only discovery on touch devices.
+1. No external runtime dependencies.
+2. Preserve compatibility with existing vaults.
+3. Maintain WCAG AA across Paper, Linen, Ink and Night.
+4. Prefer existing CSS variables and `color-mix(in srgb, ...)`.
+5. Prefer native interactive elements over `tabindex` on non-interactive ones.
+6. Support pointer, keyboard and touch.
+7. Add migration and regression coverage when changing stored data.
