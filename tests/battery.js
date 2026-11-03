@@ -3827,6 +3827,23 @@ var GTD_TEST = (() => {
   const npmPress = (key, code = key) => document.dispatchEvent(new KeyboardEvent("keydown", {key, code, bubbles: true}));
   const npmEnter = box => box.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true}));
   const npmTitles = blocks => (blocks || []).map(b => (b.state ? b.state + " " : "") + b.title);
+  test("#266 the people step finds a person by an alias and offers no new name for it", async () => {
+    npmReset();
+    const lp = personPath("Lars Haugen");
+    getPage(lp).props.aliases = "lhaug"; touch(lp); clearMemo();
+    try {
+      const path = scratchProject("Alias plan");
+      npmOpen(V.space, path);
+      NPM.people = [];
+      const root = el("div", {}, ...npmPeopleQ());
+      const box = root.querySelector(".npmin");
+      box.value = "lhaug";
+      box.dispatchEvent(new Event("input"));
+      const chips = [...root.querySelectorAll(".fchip")].map(c => c.textContent);
+      ok(chips.some(t => t.includes("Lars Haugen")), "the alias finds the person");
+      ok(!chips.some(t => t.includes("+ New")), "no new person for the alias");
+    } finally { delete getPage(lp).props.aliases; touch(lp); clearMemo(); npmReset(); }
+  });
   test("#189 natural planning writes the page in one change, reads it back in, shows the plan on it, and Undo takes it back", async () => {
     npmReset();
     const path = scratchProject("Newsletter");

@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.78.1 - 2026-11-03
+
+- Natural planning (#266): in Who it is for, a person is found by an alias
+  too, and an alias is never offered as a new name.
+
 ## 1.78.0 - 2026-11-03
 
 - Timer (#270): click or drag round the dial. Where you point is the

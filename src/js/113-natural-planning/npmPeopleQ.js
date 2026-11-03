@@ -1,6 +1,8 @@
 function npmPeopleQ() {
   const mine = NPM.people;
   const all = npmIn(() => allPeople().map(personName)).filter(n => !samePerson(n, whoAmI()));
+  const aliasOf = new Map(npmIn(() => allPeople().map(p => [personName(p), pageAliases(p)])));
+  const calls = n => [n, ...(aliasOf.get(n) || [])].map(a => a.toLowerCase());
   const memberNames = npmIn(() => members().map(m => m.name));
   const filter = el("input", {class: "npmin", placeholder: "Find a person, or type a new name", "aria-label": "Find a person"});
   const chips = el("div", {class: "npmchips"});
@@ -9,10 +11,10 @@ function npmPeopleQ() {
     const q = trim(filter.value).toLowerCase();
     const list = [...mine, ...all.filter(n => !mine.some(x => samePerson(x, n)))
       .sort((a, b) => (memberNames.includes(b) - memberNames.includes(a)) || a.localeCompare(b))]
-      .filter(n => !q || n.toLowerCase().includes(q)).slice(0, 16);
+      .filter(n => !q || calls(n).some(a => a.includes(q))).slice(0, 16);
     chips.replaceChildren(...list.map(n => fchip(n, mine.some(x => samePerson(x, n)), () => toggle(n))));
     const name = trim(filter.value);
-    if (name && !all.some(n => n.toLowerCase() === name.toLowerCase()) && !mine.some(n => n.toLowerCase() === name.toLowerCase()))
+    if (name && !all.some(n => calls(n).includes(name.toLowerCase())) && !mine.some(n => n.toLowerCase() === name.toLowerCase()))
       chips.append(el("button", {class: "fchip more", onclick: () => toggle(slugify(name))}, "+ New: " + name));
   };
   filter.addEventListener("input", draw);
