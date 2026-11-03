@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.74.1 - 2026-11-03
+
+- Links and aliases (#262): a name offered while you type now follows the
+  key chosen in Settings > Writing. With Enter chosen, Enter takes it, in
+  every place that offers names.
+
 ## 1.74.0 - 2026-11-03
 
 - Dates and reminders (#263): a step takes its parent's date. An open step

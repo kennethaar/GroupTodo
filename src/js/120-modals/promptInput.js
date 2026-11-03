@@ -5,7 +5,7 @@ function promptInput({title, label, value = "", placeholder = "", multiline = fa
     : el("input", {placeholder, value});
   if (multiline) input.value = value;
   /* Words for a line -- a next action, an outcome -- get the same names, @
-     and [[ as a line does. Tab takes one; Escape closes the list, not the box. */
+     and [[ as a line does. The chosen key takes one; Escape closes the list, not the box. */
   if (suggest) {
     attachSuggest(input);
     input.addEventListener("keydown", e => { if (suggestKey(e)) e.stopPropagation(); });

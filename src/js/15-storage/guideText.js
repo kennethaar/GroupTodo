@@ -22,7 +22,7 @@ function guideText(dir, code, name, about) {
     "",
     "## Linking as you type",
     "",
-    "- Start typing a name you have used before, a person, an organisation or a project, and GroupToDo offers it. Tab takes it and makes it a link.",
+    "- Start typing a name you have used before, a person, an organisation or a project, and GroupToDo offers it. Enter takes it and makes it a link.",
     "- A full name typed out is linked by itself when you leave the line, and so is a first name nobody else has.",
     "- @ lists contexts, # lists projects, [[ lists every page. People come up as you type their name.",
     "- Dates are words: tomorrow, friday, next week, end of month, in 3 days, 15 oct. Tab makes it the due date, " +

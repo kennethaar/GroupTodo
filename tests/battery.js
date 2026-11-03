@@ -2830,11 +2830,11 @@ var GTD_TEST = (() => {
         has(again.txt.textContent, "[[p/Lars Haugen]]", "Tab took nothing");
       });
     });
-    test("#190 a word completion takes only Tab, whatever is chosen", () => {
+    test("#262 a name offered while typing follows the chosen key", () => {
       for (const k of ["enter", "tab", "both"]) {
         PREF.set("suggest.accept", k);
-        eq(suggestTakes("Enter", "word"), false, k + ": Enter took a word");
-        eq(suggestTakes("Tab", "word"), true, k + ": Tab did not take a word");
+        eq(suggestTakes("Enter", "word"), k !== "tab", k + ": Enter on a word");
+        eq(suggestTakes("Tab", "word"), k !== "enter", k + ": Tab on a word");
         eq(suggestTakes("Enter", "slash"), k !== "tab", k + ": Enter on a command");
         eq(suggestTakes("Tab", "link"), k !== "enter", k + ": Tab on a link");
       }

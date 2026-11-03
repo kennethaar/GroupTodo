@@ -22,9 +22,9 @@ function suggestDraw() {
       r.kind === "person" && r.space ? spaceBadge(r.space) : null,
       el("span", {class: "d"}, detail)));
   });
-  const keys = mode === "word" ? "Tab" : SUGGEST_KEYS[suggestKeys()].label;
+  const keys = SUGGEST_KEYS[suggestKeys()].label;
   box.append(el("div", {class: "suggest-hint"},
-    mode === "word" ? "Tab takes it · keep typing to ignore"
+    mode === "word" ? keys + " takes it · keep typing to ignore"
     : keys + (mode === "slash" ? " runs it" : " takes it") + " · Esc closes"));
   const cur = box.children[i];
   if (cur) cur.scrollIntoView({block: "nearest"});

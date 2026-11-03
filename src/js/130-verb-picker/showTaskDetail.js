@@ -7,7 +7,7 @@ function showTaskDetail(path, block, space) {
   };
   const titleInput = el("textarea", {}); titleInput.value = block.title;
   const notes = el("textarea", {placeholder: "Notes"}); notes.value = (block.body || []).join("\n");
-  /* The same names, @ and [[ as the line itself. Tab takes one; Escape
+  /* The same names, @ and [[ as the line itself. The chosen key takes one; Escape
      closes the list, not the panel. */
   for (const t of [titleInput, notes]) {
     attachSuggest(t);

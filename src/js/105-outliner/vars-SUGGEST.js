@@ -10,8 +10,9 @@
    Five ways in, one list:
      [[        every page, the way it always worked
      @  #      contexts, projects
-     a name    the start of any name you have used -- Tab takes it
-     a date    tomorrow, friday, next week, in 3 days -- Tab takes it
+     a name    the start of any name you have used
+     a date    tomorrow, friday, next week, in 3 days
+   The key that takes a row is the one chosen in Settings > Writing.
 
    Nothing is written by the list itself. Taking a row inserts the same
    [[ref]] you could have typed, and the page behind it is created on blur by

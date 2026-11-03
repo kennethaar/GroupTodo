@@ -110,7 +110,7 @@ code:: en
 - @ lists contexts, # lists projects, [[ lists every page. People come up as you type their name. =>
 - A full name typed out is linked by itself when you leave the line, and so is a first name nobody else has. =>
 - Dates are words: tomorrow, friday, next week, end of month, in 3 days, 15 oct. Tab makes it the due date, and a date at the end of a task becomes its due date when you leave the line. =>
-- Start typing a name you have used before, a person, an organisation or a project, and GroupToDo offers it. Tab takes it and makes it a link. =>
+- Start typing a name you have used before, a person, an organisation or a project, and GroupToDo offers it. Enter takes it and makes it a link. =>
 - TODO Call the plumber about the leak [[c/phone]] #urgent =>
 - after =>
 - from the line above. Go there, or give this line its own =>
@@ -3434,7 +3434,6 @@ TODO. ctrl-enter again for DOING, WAIT, DONE. =>
 TRANSP:TRANSPARENT =>
 Tab =>
 Tab or Enter =>
-Tab takes it · keep typing to ignore =>
 Tab takes it. Enter ends the line. =>
 Tack, =>
 Tagged # =>
@@ -5887,6 +5886,7 @@ your own area, {1}, could not be opened. Open it once from the area menu (a fold
 {1} still loose =>
 {1} synced with {2} =>
 {1} taken off. =>
+{1} takes it · keep typing to ignore =>
 {1} task(s) have no date at all, so they have no bar - a span invented for them would read exactly like a real one. =>
 {1} tasks added from what you pasted. =>
 {1} tasks cancelled: =>
