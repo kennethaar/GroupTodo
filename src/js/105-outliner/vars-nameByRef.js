@@ -1,6 +1,10 @@
-/* The name behind a link, by its ref: "p/John Smith" -> its row in nameIndex. */
-const nameByRef = ref => memo("nameByRef", () =>
-  new Map(nameIndex().map(n => [n.ref.toLowerCase(), n]))).get(trim(String(ref || "")).toLowerCase());
+/* The name behind a link, by its ref: "p/John Smith" -> its row in nameIndex.
+   A person in several areas is several rows there; the first area's is the one. */
+const nameByRef = ref => memo("nameByRef", () => {
+  const m = new Map();
+  for (const n of nameIndex()) if (!m.has(n.ref.toLowerCase())) m.set(n.ref.toLowerCase(), n);
+  return m;
+}).get(trim(String(ref || "")).toLowerCase());
 const isAliasOf = (ref, label) => !!label &&
   (nameByRef(ref)?.aliases || pageAliasesByRef(ref)).some(a => a.toLowerCase() === trim(label).toLowerCase());
 /* Any page's aliases by its ref, for the pages nameIndex does not list:

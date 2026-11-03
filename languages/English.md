@@ -4299,6 +4299,7 @@ Wipe the counters =>
 With more books here, All books follows a plotline through the series. =>
 With more books here, All books puts the whole series on one time line. =>
 With more books here, This book shows who is in its scenes, and those in no book yet. All books shows all. =>
+With several areas on, a person's row shows their area. The link is the same. =>
 With several areas on, journals stand side by side. Double-click a border to even them out. =>
 With tasks =>
 With words picked, Alt+1, 2, 3, 8, Z, P, O or C links just those words. =>

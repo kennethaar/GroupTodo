@@ -14,6 +14,12 @@ function suggestDraw() {
       el("span", {class: "k"}, r.mark || (r.isNew && r.kind !== "context" ? "+" : (KIND_MARK[r.kind] || (r.ref || "").split("/")[0] || "·"))),
       el("span", {style: "min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"},
         r.isNew && mode === "link" ? "Make " + r.ref : r.title),
+      /* With several areas on, the same name can be a person in each, and
+         the area is what tells them apart (#258). A row has one only then:
+         acrossSpaces marks the rows, and leaves them alone with one area. The
+         badge is the area's own name and colour, so renaming it renames this,
+         and nothing of it goes into the line: taking the row writes [[p/...]]. */
+      r.kind === "person" && r.space ? spaceBadge(r.space) : null,
       el("span", {class: "d"}, detail)));
   });
   const keys = mode === "word" ? "Tab" : SUGGEST_KEYS[suggestKeys()].label;

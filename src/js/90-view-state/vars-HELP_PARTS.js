@@ -838,6 +838,7 @@ const HELP = {
       ["aliases:: pc", "On @Computer: @pc is Computer"]],
     more: ["Full names link by themselves when you leave the line. A first name or alias waits for Enter.",
       "Settings > Writing can make Tab take it instead.",
+      "With several areas on, a person's row shows their area. The link is the same.",
       "A project, context or person on a line counts for the lines under it. A line's own link wins.",
       "Any page can have short names, its aliases: a person, a project, a context, a note.",
       "A context's alias is that context, not a new one.",

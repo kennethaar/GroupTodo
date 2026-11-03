@@ -6143,6 +6143,38 @@ var GTD_TEST = (() => {
     }
   });
 
+  test("#258 with several areas on, a person offered as you type shows their area, and the link written does not", async () => {
+    const n = "Test258 Home", was = PREF.get("visibleSpaces", "");
+    const path = join(DIRS.people, "Testarea Person.md");
+    const input = el("input"); document.body.append(input);
+    const offer = text => { input.value = text; input.setSelectionRange(text.length, text.length); suggestSync(input, {}); return SUGGEST; };
+    const personRows = () => [...SUGGEST.box.querySelectorAll(".pick")].filter(b => b.textContent.includes("Testarea Person"));
+    await createSpace(n, "local");
+    try {
+      if (!LOADED.has(n)) LOADED.set(n, newRecord(n, Backends.memory(n)));
+      LOADED.get(n).pages.set(path, parsePage("title:: Testarea Person\n"));
+      putPage(path, parsePage("title:: Testarea Person\n"), {silent: true});
+      setVisibleSpaces([V.space, n]); clearMemo();
+      const s = offer("Call Testarea P");
+      ok(s, "no list for the name");
+      const rows = personRows();
+      eq(rows.length, 2, "one row per area");
+      eq(rows.map(b => b.querySelector(".sp")?.textContent).sort(), [V.space, n].sort(), "each row names its area, in full");
+      const home = rows.find(b => b.querySelector(".sp")?.textContent === n);
+      has(home.querySelector(".sp").getAttribute("style"), spaceColor(n), "the area's own colour");
+      suggestAccept(s.rows.findIndex(r => r.kind === "person" && r.space === n));
+      has(input.value, "Call [[p/Testarea Person]]", "the person link as before");
+      ok(!input.value.includes(n), "the area went into the line");
+      setVisibleSpaces([V.space]); clearMemo();
+      offer("Call Testarea P");
+      eq(personRows().length, 1, "one area on: its own person once");
+      ok(!SUGGEST.box.querySelector(".sp"), "one area on, and the area is still shown");
+    } finally {
+      suggestClose(); input.remove(); PREF.set("visibleSpaces", was);
+      V.pages.delete(path); V.removed.delete(path); await removeArea(n); clearMemo(); renderNav();
+    }
+  });
+
   /* ============================================================
      Timer
      ============================================================ */

@@ -81,6 +81,8 @@
 }
 .linkpop .pick{padding:6px 11px;font-size:13px}
 .linkpop .pick .k{width:22px;height:18px;font-size:10px}
+/* The area a person is in, when several are on: slimmer than the top bar's. */
+.linkpop .pick .sp{font-size:11px;padding:0 6px 0 5px;font-weight:600}
 .filterbox{padding:0 16px 8px}
 /* The search box and its Enter button, side by side, the box taking the room. */
 .filterbox{display:flex;gap:8px;align-items:center}

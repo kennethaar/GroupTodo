@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.73.0 - 2026-11-03
+
+- Names as you type (#258): with several areas on, a person's row in the
+  list shows their area, in the area's colour, so Kenneth from Work and
+  Kenneth from Home are told apart before one is taken. The link written is
+  [[Kenneth Aar]] as before, with nothing about the area. With one area on,
+  nothing is added. Wherever names are offered: a line, the capture box, a
+  comment, a waiting-for.
+
 ## 1.72.3 - 2026-11-03
 
 - Vault and sync (#181): a big folder opens in a new order. Today's journal
