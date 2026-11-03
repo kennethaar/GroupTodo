@@ -44,6 +44,7 @@ function flyRows() {
     {k: "refile", ic: "↦", label: "Refile", val: "to a project, responsibility or context", key: "Alt+G"},
     {k: "aiplan", ic: "✦", label: "Plan it with an AI", val: "a prompt for your AI; its answer becomes a project", key: ""},
     {k: "embedref", ic: "⧉", label: "Copy as embed", val: "paste it on another line to show this one there", key: ""},
+    {k: "plaincopy", ic: "⎘", label: "Copy as plain text", val: "the words only, no links or tags", key: ""},
     {k: "more", ic: "⤢", label: "Open in the side panel", val: "dates, chat, history", key: ""},
   ];
 }

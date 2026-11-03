@@ -5,6 +5,17 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.81.0 - 2026-11-03
+
+- Keys on a line: "Copy as plain text" in the line menu, and a "Copy text"
+  button on the line toolbar, copy the line as plain words: the state and the
+  title, without links, brackets, #tags, properties or the lines below.
+
+## 1.80.1 - 2026-11-03
+
+- Keys on a line: Ctrl+Enter now passes through Cancelled after Done and
+  before turning the line back into a note.
+
 ## 1.80.0 - 2026-11-03
 
 - Keys on a line (#273): a "To area" button on the picked-lines bar and on the

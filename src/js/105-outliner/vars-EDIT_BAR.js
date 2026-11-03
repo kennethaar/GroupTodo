@@ -15,6 +15,7 @@ const EDIT_BAR = [
   {k: "mkproj", ic: ICON.projects, label: "Project", tip: "Make it a project (Alt+1)"},
   {k: "mkarea", ic: "\u25CE", label: "Responsibility", tip: "Make it a responsibility (Alt+I)"},
   {k: "area", ic: "⇄", label: "To area", tip: "Move the line to another area, with the pages it links to"},
+  {k: "plaincopy", ic: "⎘", label: "Copy text", tip: "Copy the line as plain text, without links or tags"},
   {k: "photo", ic: "\uD83D\uDCF7", label: "Photo", tip: "Take a photo for this line"},
   {k: "image", ic: "\uD83D\uDDBC", label: "Image", tip: "Add an image to this line"},
 ];

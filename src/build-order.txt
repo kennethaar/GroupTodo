@@ -2610,6 +2610,7 @@ js/169-embeds-queries-namespaces-and-meetings/linkRefTo.js
 js/169-embeds-queries-namespaces-and-meetings/putMacroLine.js
 js/169-embeds-queries-namespaces-and-meetings/openEmbedPicker.js
 js/169-embeds-queries-namespaces-and-meetings/copyEmbedOf.js
+js/169-embeds-queries-namespaces-and-meetings/plainLineText.js
 js/169-embeds-queries-namespaces-and-meetings/vars-NS_KIND_DIRS.js
 js/169-embeds-queries-namespaces-and-meetings/nsPlace.js
 js/169-embeds-queries-namespaces-and-meetings/namespaceMembers.js

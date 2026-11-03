@@ -415,7 +415,11 @@ function outlineBlock(path, page, b, opts = {}) {
       lineSelMove(e.key === "ArrowUp" ? -1 : 1, true);
     } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       // Back into the same line afterwards, so ctrl-enter twice means two steps.
-      e.preventDefault(); txt.blur(); cycleState(path, b); focusBlock(b.id);
+      // The line stays where it is on the screen; the page does not follow it.
+      e.preventDefault();
+      const top = txt.getBoundingClientRect().top;
+      txt.blur(); cycleState(path, b);
+      if ($(`.blk[data-id="${b.id}"] .txt`)) editBarRefocus(b.id, top); else focusBlock(b.id);
     } else if (e.key === "Backspace" && txt.textContent === "" && !(b.children || []).length) {
       e.preventDefault();
       const sibs = siblingsOf(page, b), i = sibs.indexOf(b);

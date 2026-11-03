@@ -2287,15 +2287,15 @@ var GTD_TEST = (() => {
     eq(getPage(path).blocks[0].state, "TODO");
     if (typeof closeModal === "function") closeModal();
   });
-  test("cycleState walks TODO -> DOING -> WAIT -> DONE", () => {
+  test("cycleState walks TODO -> DOING -> WAIT -> DONE -> CANCELLED -> note", () => {
     const path = scratchProject("cycle", [["TODO", "Cycle me"]]);
     const seen = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
       cycleState(path, getPage(path).blocks[0]);
       seen.push(getPage(path).blocks[0].state);
       if (typeof closeModal === "function") closeModal();
     }
-    eq(seen, ["DOING", "WAIT", "DONE"]);
+    eq(seen, ["DOING", "WAIT", "DONE", "CANCELLED", null]);
   });
   test("#198 a person on a line above counts for the tasks under it", () => {
     const day = journalPath("2003-03-03"), joe = personPath("Joe Newmann");
@@ -6442,6 +6442,14 @@ var GTD_TEST = (() => {
   /* ============================================================
      Timer
      ============================================================ */
+  test("Copy as plain text: state and words only, no links, tags, properties or children", () => {
+    const b = newBlock({state: "WAIT", title: "New date for meeting [[p/Håkon Moe]] #mail [[2026-11-03]]",
+      children: [newBlock({state: "TODO", title: "See e-mail"})]});
+    eq(plainLineText(b), "WAIT New date for meeting Håkon Moe 2026-11-03");
+    eq(plainLineText(newBlock({title: "A note [[Some page]]"})), "A note Some page");
+    eq(EDIT_BAR.some(r => r.k === "plaincopy"), true, "on the bar");
+  });
+
   test("timer starts and stops", () => {
     timerStart(5, false);
     ok(TIMER_END > Date.now(), "TIMER_END not in the future");
