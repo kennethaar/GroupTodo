@@ -38,7 +38,9 @@ function outlineBlock(path, page, b, opts = {}) {
   if (ro) {
     line.append(txt);
     node.append(line);
-    (b.body || []).forEach(l => node.append(el("div", {class: "bodyline", translate: "no", html: renderInline(l)})));
+    const rows = tableRows(b);
+    if (rows) node.classList.add("mdtbl");
+    (b.body || []).forEach((l, i) => node.append(el("div", {class: "bodyline" + (i < rows ? " tblrow" : ""), translate: "no", html: renderInline(l)})));
     const shown = liveMacros(path, b);
     if (shown) node.append(shown);
     if (!b.collapsed) for (const k of kids) node.append(outlineBlock(path, page, k, opts));
@@ -321,6 +323,9 @@ function outlineBlock(path, page, b, opts = {}) {
     if (flyKey(e)) return;
     if (suggestKey(e)) return;
     if (autoPairKey(e, txt)) return;
+    // In a table row Enter makes the next row and Tab goes to the next cell (#269).
+    if (tableTab(e, path, b, -1, txt)) return;
+    if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && tableEnter(path, b, -1, txt)) { e.preventDefault(); return; }
     /* Shift+Enter writes a line under the bullet instead of a new bullet: one
        block, several lines, the way a note under a task belongs to it. What is
        after the caret moves down with you, as Enter does with a new bullet. */
@@ -447,6 +452,7 @@ function outlineBlock(path, page, b, opts = {}) {
   const meta = lineMeta(b, path, ro);
   if (meta) line.append(meta);
   (b.body || []).forEach((l, i) => node.append(bodyLineEl(path, b, i)));
+  tableWatch(node, txt, b);
   const shown = liveMacros(path, b);
   if (shown) node.append(shown);
 

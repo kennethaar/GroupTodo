@@ -4,6 +4,7 @@
 /* On the Journal's day page (lead) a task's context at the end of the line is
    drawn in front of its words, by the state; the file keeps it where it is (#160). */
 function lineHtml(b, lead) {
+  if (tableRows(b)) return tableHtml(b);
   const tail = lead && b.state ? CTX_TAIL_RE.exec(withoutEst(b.title)) : null;
   if (tail) return renderInline(trim(tail[1])) + " " + estHtml(b.title) + renderInline(trim(withoutEst(b.title).slice(0, tail.index)));
   if (bujoKind(b.title, b.state)) return renderInline(bujoText(b.title));

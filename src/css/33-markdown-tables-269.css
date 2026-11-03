@@ -1,0 +1,7 @@
+/* Markdown tables (#269): drawn as a table, written as rows while open. */
+.blk.mdtbl:not(.tbl-open) > .bodyline.tblrow{display:none}
+.blk.mdtbl.tbl-open > .bodyline.tblrow{font-family:var(--mono,ui-monospace,monospace);font-size:12.5px;white-space:pre}
+.mdtable{border-collapse:collapse;margin:2px 0;font-size:inherit;max-width:100%;display:block;overflow-x:auto}
+.mdtable th,.mdtable td{border:1px solid var(--border);padding:4px 10px;text-align:left;vertical-align:top}
+.mdtable th{font-weight:600;background:color-mix(in srgb,var(--fg) 5%,transparent)}
+.mdtable td{cursor:text}

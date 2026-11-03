@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.77.0 - 2026-11-03
+
+- Keys on a line (#269): write |Name|Phone| and press Enter to start a
+  table. Enter adds a row, Tab goes to the next cell, and Enter on an empty
+  last row leaves the table. The file keeps it as a Markdown table.
+
 ## 1.76.0 - 2026-11-03
 
 - Keys on a line (#268): ( [ or { puts in the closing bracket too, with the

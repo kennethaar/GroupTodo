@@ -2566,6 +2566,47 @@ var GTD_TEST = (() => {
       eq(lineText(txt), "Call ", "Backspace did not take the pair");
     } finally { go("today"); }
   });
+  test("#269 |a|b| and Enter makes a Markdown table with a new row", async () => {
+    const path = scratchProject("md table", [[null, ""]]);
+    openPage(path);
+    await settle();
+    const b = getPage(path).blocks[0];
+    const q = s => document.querySelector('.blk[data-id="' + b.id + '"]' + s);
+    const key = (node, k, o = {}) => node.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true, ...o}));
+    try {
+      focusBlock(b.id);
+      await settle();
+      const txt = q(" .txt");
+      txt.focus();
+      setHostText(txt, "|Name|Phone|", 12);
+      eq(lineText(txt), "|Name|Phone|");
+      key(txt, "Enter");
+      await settle();
+      eq(b.title, "| Name | Phone |", "the header is not set out");
+      eq(b.body.join("\n"), "| --- | --- |\n|  |  |", "no | --- | line and empty row under it");
+      const row = q(' > .bodyline[data-bi="1"]');
+      eq(document.activeElement, row, "the caret is not in the new row");
+      eq(caretOffsets(row).join(), "2,2", "the caret is not in the first cell");
+      setHostText(row, "| Anna |  |", 6);
+      key(row, "Tab");
+      eq(caretOffsets(row).join(), "9,9", "Tab did not go to the next cell");
+      setHostText(row, "| Anna | 555 |", 14);
+      key(row, "Enter");
+      await settle();
+      eq(b.body.length, 3, "Enter did not add a row");
+      key(q(' > .bodyline[data-bi="2"]'), "Enter");
+      await settle();
+      eq(b.body.length, 2, "Enter on the empty last row did not leave the table");
+      eq(getPage(path).blocks.length, 2, "no new bullet after the table");
+      document.activeElement.blur();
+      await settle();
+      const t = q(" .txt table.mdtable");
+      ok(t, "the table is not drawn");
+      eq([...t.querySelectorAll("th,td")].map(c => c.textContent).join(), "Name,Phone,Anna,555");
+      ok(!q(' > .bodyline[data-bi="1"]').offsetParent, "the rows are shown as text as well");
+      ok(serializeBlockLines([b], 0).join("\n").includes("  | --- | --- |"), "the file has no Markdown table");
+    } finally { go("today"); }
+  });
   test("#267 the ↻ chip and Alt+R open the Repeats dialog", async () => {
     const path = scratchProject("repeat chip", [["TODO", "Water the plants"]]);
     const b = getPage(path).blocks[0];

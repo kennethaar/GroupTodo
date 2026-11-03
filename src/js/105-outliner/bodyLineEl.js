@@ -9,7 +9,7 @@
    paragraph, and backspacing an empty one away lands you on the line above. */
 function bodyLineEl(path, b, i) {
   const txt = el("div", {
-    class: "bodyline", contenteditable: "true", spellcheck: "false",
+    class: "bodyline" + (i < tableRows(b) ? " tblrow" : ""), contenteditable: "true", spellcheck: "false",
     data: {bi: String(i)}, translate: "no", html: renderInline(b.body[i]),
   });
   // Same bargain as a bullet's own line: a click on a [[link]] follows it
@@ -44,6 +44,8 @@ function bodyLineEl(path, b, i) {
   attachSuggest(txt);
   txt.addEventListener("keydown", e => {
     if (suggestKey(e)) return;
+    if (tableTab(e, path, b, i, txt)) return;
+    if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && tableEnter(path, b, i, txt)) { e.preventDefault(); return; }
     // Shift+Enter is another line here too, as it is on the bullet.
     if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();

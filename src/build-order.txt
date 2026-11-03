@@ -33,6 +33,7 @@ css/29-burndown.css
 css/30-30-views.css
 css/31-25-responsive.css
 css/32-print-235.css
+css/33-markdown-tables-269.css
 # script 1
 js/00-bootstrap/vars-APP_VERSION.js
 js/00-bootstrap/keepFocus.js
@@ -1445,6 +1446,15 @@ js/105-outliner/caretAtEdge.js
 js/105-outliner/moveToBlock.js
 js/105-outliner/focusLineAt.js
 js/105-outliner/pullUpLine.js
+js/105-outliner/vars-tableCells.js
+js/105-outliner/tableCells.js
+js/105-outliner/tableRowText.js
+js/105-outliner/tableRows.js
+js/105-outliner/tableHtml.js
+js/105-outliner/tableFocusRow.js
+js/105-outliner/tableEnter.js
+js/105-outliner/tableTab.js
+js/105-outliner/tableWatch.js
 js/105-outliner/bodyLineEl.js
 js/105-outliner/attachOutlineUndo.js
 js/105-outliner/vars-BOOKKEEPING.js
