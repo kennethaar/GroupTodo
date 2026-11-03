@@ -2409,7 +2409,7 @@ var GTD_TEST = (() => {
     setBlockProp(c, "SCHEDULED", todayISO());
     try {
       openDueChipMenu({path, block: b, space: null}, document.body);
-      eq([...$("#modalRoot .whenpop .vseg button")].find(x => x.textContent === "Due").getAttribute("aria-pressed"), "true", "Due is pressed for a new date");
+      eq([...document.querySelectorAll("#modalRoot .whenpop .vseg button")].find(x => x.textContent === "Due").getAttribute("aria-pressed"), "true", "Due is pressed for a new date");
       closeModal();
       setDue(b, fri);
       eq(dateIn(blockProp(b, "DEADLINE")), fri, "setDue writes a deadline");
