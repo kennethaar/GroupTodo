@@ -320,6 +320,7 @@ function outlineBlock(path, page, b, opts = {}) {
     // The menu under the line, then the suggestion list, own their keys first.
     if (flyKey(e)) return;
     if (suggestKey(e)) return;
+    if (autoPairKey(e, txt)) return;
     /* Shift+Enter writes a line under the bullet instead of a new bullet: one
        block, several lines, the way a note under a task belongs to it. What is
        after the caret moves down with you, as Enter does with a new bullet. */

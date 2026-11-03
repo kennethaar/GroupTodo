@@ -2539,6 +2539,33 @@ var GTD_TEST = (() => {
       ok(Math.abs(at - mid) < 4, "the new line is at " + Math.round(at) + ", the middle is " + Math.round(mid));
     } finally { window.matchMedia = mm; go("today"); }
   });
+  test("#268 brackets come in pairs and wrap the word the caret is in", async () => {
+    const path = scratchProject("auto pair", [["TODO", "Call Anna"]]);
+    openPage(path);
+    await settle();
+    const b = getPage(path).blocks[0];
+    try {
+      focusBlock(b.id);
+      const txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
+      const key = k => txt.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true}));
+      setHostText(txt, "Call Anna", 7);
+      key("[");
+      eq(lineText(txt), "Call [Anna]", "the word was not wrapped");
+      eq(caretOffsets(txt).join(), "6,10", "the word is not still picked");
+      key("[");
+      eq(lineText(txt), "Call [[Anna]]", "[ twice did not make a link");
+      setHostText(txt, "Call ", 5);
+      key("(");
+      eq(lineText(txt), "Call ()", "( did not close");
+      eq(caretOffsets(txt).join(), "6,6", "the caret is not between");
+      key(")");
+      eq(lineText(txt), "Call ()", ") did not step over");
+      eq(caretOffsets(txt).join(), "7,7");
+      setHostText(txt, "Call {}", 6);
+      key("Backspace");
+      eq(lineText(txt), "Call ", "Backspace did not take the pair");
+    } finally { go("today"); }
+  });
   test("#267 the ↻ chip and Alt+R open the Repeats dialog", async () => {
     const path = scratchProject("repeat chip", [["TODO", "Water the plants"]]);
     const b = getPage(path).blocks[0];

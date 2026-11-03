@@ -1402,6 +1402,9 @@ js/105-outliner/textBeforeCaret.js
 js/105-outliner/vars-hostText.js
 js/105-outliner/setHostText.js
 js/105-outliner/caretOffsets.js
+js/105-outliner/setHostSelection.js
+js/105-outliner/vars-autoPairKey.js
+js/105-outliner/autoPairKey.js
 js/105-outliner/keepClickCaret.js
 js/105-outliner/rawOffsetAt.js
 js/105-outliner/vars-SUGGEST.js

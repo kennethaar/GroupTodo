@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.76.0 - 2026-11-03
+
+- Keys on a line (#268): ( [ or { puts in the closing bracket too, with the
+  caret between. In a word, or on picked words, the brackets go around them.
+
 ## 1.75.1 - 2026-11-03
 
 - Dates and reminders (#265): a new date is Due by default, from Alt+D and
