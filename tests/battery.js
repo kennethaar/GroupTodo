@@ -74,6 +74,10 @@ var GTD_TEST = (() => {
     eq([it.head, it.issue], ["Shiny thing", "999"]);
   });
   test("#256 the demo never asks GitHub", () => ok(!updatesPossible(), "updatesPossible() in the demo"));
+  test("#256 the page policy lets the update check reach GitHub", () => {
+    const csp = document.querySelector('meta[http-equiv="Content-Security-Policy"]').content;
+    has(csp.match(/connect-src[^;]*/)[0], new URL(REPO_RAW).origin);
+  });
   test("#256 a newer version on GitHub gets a toast and a badge", async () => {
     clearNews();
     await withFetch(fakeLog("9.0.0"), async asked => {

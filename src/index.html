@@ -6,7 +6,8 @@
 <meta name="color-scheme" content="light dark">
 <!-- No external resources, ever. This policy is the proof: the page cannot
      load a script, font or image from anywhere, and cannot send data to any
-     host but the optional sync server on this machine. Safe to drop onto a
+     host but the optional sync server on this machine. The one outside read is
+     the update check, which fetches CHANGELOG.md from GitHub. Safe to drop onto a
      corporate file share, intranet or managed laptop. -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'none';
@@ -14,7 +15,7 @@
   style-src 'unsafe-inline';
   img-src 'self' data: blob:;
   media-src data: blob:;
-  connect-src 'self' http://127.0.0.1:* http://localhost:*;
+  connect-src 'self' http://127.0.0.1:* http://localhost:* https://raw.githubusercontent.com;
   worker-src 'self';
   manifest-src 'self' blob:;
   form-action 'none';
