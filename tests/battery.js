@@ -3079,6 +3079,21 @@ var GTD_TEST = (() => {
       seg.children[0].click();
       eq(PREF.get("suggest.accept"), "enter", "picking Enter");
     });
+    test("Settings is grouped rows; Integrations and Advanced open one level down and back", async () => {
+      openVaultDialog();
+      const groups = () => [...document.querySelectorAll(".modal .sgroup h3")].map(h => h.textContent);
+      eq(groups(), ["Vault & sync", "You", "Preferences", "Personal", "GroupToDo"]);
+      ok([...document.querySelectorAll(".modal .srow")].every(r => r.querySelector(".slabel")), "every row has a label");
+      const open = label => [...document.querySelectorAll(".modal .srow")]
+        .find(r => r.querySelector(".slabel").textContent === label).querySelector("button").click();
+      open("Integrations");
+      ok(document.querySelector(".modal").textContent.includes("Planner"), "Planner is under Integrations");
+      closeModal();
+      openVaultDialog();
+      open("Advanced");
+      ok(document.querySelector(".modal"), "Advanced opens");
+      closeModal();
+    });
     test("#218 Calendars are in a private area's Settings, not on the Journal", async () => {
       go("today");
       await settle();

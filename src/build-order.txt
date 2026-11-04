@@ -34,6 +34,7 @@ css/30-30-views.css
 css/31-25-responsive.css
 css/32-print-235.css
 css/33-markdown-tables-269.css
+css/34-settings-rows.css
 # script 1
 js/00-bootstrap/vars-APP_VERSION.js
 js/00-bootstrap/keepFocus.js
@@ -2468,8 +2469,17 @@ js/149-usage/vars-usagePerVisit.js
 js/149-usage/usageSummary.js
 js/149-usage/vars-usageSorted.js
 js/149-usage/openUsageReport.js
-js/149-usage/usageField.js
 js/150-vault-dialog-2/capLine.js
+js/150-vault-dialog-2/settingsRow.js
+js/150-vault-dialog-2/settingsGroup.js
+js/150-vault-dialog-2/settingsToggle.js
+js/150-vault-dialog-2/settingsSelect.js
+js/150-vault-dialog-2/settingsDialog.js
+js/150-vault-dialog-2/openProfileDialog.js
+js/150-vault-dialog-2/openAreaSettings.js
+js/150-vault-dialog-2/openIntegrationsDialog.js
+js/150-vault-dialog-2/openPlannerDialog.js
+js/150-vault-dialog-2/openAdvancedDialog.js
 js/150-vault-dialog-2/openVaultDialog.js
 js/150-vault-dialog-2/folderCheckReport.js
 js/150-vault-dialog-2/openFolderCheck.js

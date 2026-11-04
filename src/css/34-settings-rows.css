@@ -1,0 +1,10 @@
+/* Settings: label, current value, one action per row. */
+.sgroup{padding:6px 0 4px;border-top:1px solid var(--line)}
+.sgroup:first-child{border-top:0}
+.sgroup>h3{margin:6px 16px 2px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3);font-weight:600}
+.srow{display:flex;align-items:center;gap:10px;padding:7px 16px;min-height:38px}
+.srow>.slabel{flex:1;min-width:0}
+.srow>.sval{color:var(--fg2);font-size:13px;text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.srow select{max-width:55%}
+.srow.warn .sval{color:var(--warn)}
+.sgroup.danger{margin-top:8px}

@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.87.0 - 2026-11-04
+
+- Vault and sync: Settings is now rows of label, value and one action, in
+  groups (Vault & sync, You, Preferences, Personal, GroupToDo). Planner and
+  usage statistics moved to Integrations, the sync server and Check folder to
+  Advanced, name and photo to Profile, area type and colour to Area. Chores,
+  phone/place links and context check are single lists of choices. Signing with
+  by:: and done_by:: is always automatic. Nothing stored is changed.
+
 ## 1.86.0 - 2026-11-04
 
 - Weekly review: now a reading of Projects (Weekly review in its switch) rather

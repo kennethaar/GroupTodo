@@ -2,10 +2,10 @@
    the outbox where OneDrive or SharePoint has put it. */
 function plannerField(hint, toggle) {
   const area = Spaces.active || "this area";
-  const box = el("div", {class: "field"}, el("label", {}, "Microsoft Planner (experimental)"));
+  const box = el("div", {class: "field"}, el("label", {}, "Send projects to Planner"));
   if (!(V.backend && V.backend.kind === "fs")) {
     box.append(hint("Needs a folder on this computer, in Chrome or Edge, that OneDrive or SharePoint syncs. " +
-      "Choose one above first.", 0));
+      "Connect a folder first.", 0));
     return box;
   }
   const body = el("div");
@@ -41,7 +41,6 @@ function plannerField(hint, toggle) {
       el("a", {class: "btn sm ghost", href: PLANNER_DOC, target: "_blank", rel: "noopener"}, "How to set up the flow")));
   };
   draw();
-  box.append(body, hint("Experimental. Writes planner/outbox.json in the folder and reads the flow's planner/state.json; " +
-    "new cards are remembered as planner_id:: on the project page."));
+  box.append(body);
   return box;
 }

@@ -44,7 +44,8 @@ function openSpacesMenu() {
   box.append(el("div", {class: "foot"},
     el("button", {class: "btn sm ghost", onclick: () => { closeSpacesMenu(); newSpacePrompt(); }}, "+ New area"),
     el("button", {class: "btn sm ghost", onclick: () => { closeSpacesMenu(); openSpaceStorageSetup(); }}, "Manage areas"),
-    el("button", {class: "btn sm ghost", onclick: () => { closeSpacesMenu(); openShareSpaceInvite(); }}, "Invite somebody")));
+    el("button", {class: "btn sm ghost", onclick: () => { closeSpacesMenu(); openShareSpaceInvite(); }}, "Invite somebody"),
+    el("button", {class: "btn sm ghost", onclick: () => { closeSpacesMenu(); openVaultDialog(); }}, "Vault & sync")));
   box.hidden = false;
   $("#spacesBtn").setAttribute("aria-expanded", "true");
 }
