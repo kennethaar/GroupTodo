@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.83.3 - 2026-11-04
+
+- Book › Revise: a chapter that moves on a stage is no longer copied to
+  8/snapshots, and Revise no longer shows what changed since. Part of the
+  outliner-roots clean-up. Refs #254.
+
 ## 1.83.2 - 2026-11-04
 
 - Chores: the help topic is shorter, six steps. Fixes #217.

@@ -2145,10 +2145,6 @@ js/110-views/vars-DAY_PARTS.js
 js/110-views/storyTime.js
 js/110-views/bookTimeline.js
 js/110-views/viewBookTimeline.js
-js/110-views/vars-SNAP_DIR.js
-js/110-views/snapshotChapter.js
-js/110-views/vars-chapterSnapshots.js
-js/110-views/sinceSnapshot.js
 js/110-views/vars-LONG_SENTENCE.js
 js/110-views/proseLook.js
 js/110-views/vars-lixWord.js

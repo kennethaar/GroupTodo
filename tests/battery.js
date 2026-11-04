@@ -6393,24 +6393,15 @@ var GTD_TEST = (() => {
     eq(lixWord(25), "very easy");
     eq(lixWord(55), "hard");
   });
-  test("#254 a chapter that moves on a stage is kept as a snapshot; Revise shows what changed since", () => withCastVault({
+  test("#254 a chapter that moves on a stage is not copied; Revise still flags facts a page disagrees with", () => withCastVault({
     [BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n",
-    [join(PAGES, "Harbour.md")]: "stage:: Draft\n\n- First.\n  id:: abc123\n- Second.\n- Anna's eyes were blue.\n",
+    [join(PAGES, "Harbour.md")]: "stage:: Draft\n\n- First.\n- Anna's eyes were blue.\n",
     [personPath("Anna")]: "eyes:: green\n",
   }, async () => {
-    const harbour = join(PAGES, "Harbour.md");
+    const harbour = join(PAGES, "Harbour.md"), pagesBefore = V.pages.size;
     setChapterStage(harbour, "Revise");
-    const snaps = chapterSnapshots(harbour);
-    eq(snaps.length, 1);
-    const snap = getPage(snaps[0]);
-    eq([snap.props.stage, snap.props.archived], ["Draft", "true"], "the stage it was in, archived");
-    ok(!blockProp(snap.blocks[0], "id"), "no ids in the copy");
-    ok(pageKind(snaps[0]) === "page" && !isTemplatePath(snaps[0]), "a page, not a template");
-    setChapterStage(harbour, "Revise");
-    eq(chapterSnapshots(harbour).length, 1, "the same stage again is no new copy");
-    getPage(harbour).blocks[1].title = "Second, better.";
-    getPage(harbour).blocks.push(newBlock({title: "Third."}, false));
-    eq(sinceSnapshot(harbour, snaps[0]), {gone: ["Second."], added: ["Second, better.", "Third."]});
+    eq(getPage(harbour).props.stage, "Revise");
+    eq(V.pages.size, pagesBefore, "no copy of the chapter is made");
     eq(factClashes().map(x => x.who + " " + x.fact + "/" + x.said), ["Anna green/blue"]);
     const was = PREF.get("sub.book", "");
     try {
@@ -6419,7 +6410,7 @@ var GTD_TEST = (() => {
       await settle();
       content().querySelector("button.revrow").click();
       await settle();
-      has(content().querySelector(".revsnap").textContent, "2 new, 1 gone");
+      ok(!content().querySelector(".revsnap"), "no snapshot block");
       has(content().textContent, "Not as their page says");
     } finally { REV.open = null; PREF.set("sub.book", was); }
   }));

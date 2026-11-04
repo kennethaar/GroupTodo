@@ -12,7 +12,7 @@ function pageKind(path) {
   if (path.startsWith(DIRS.goals     + "/")) return "goal";
   // A tracker's page is its settings and your notes, not a list you run.
   // The sidebar's page likewise (#238), and the book's (#240).
-  if (isTrackerPage(path) || path === SIDEBAR_PATH || isBookPath(path) || path === DARLINGS_PATH || isSnapshotPath(path)) return "page";
+  if (isTrackerPage(path) || path === SIDEBAR_PATH || isBookPath(path) || path === DARLINGS_PATH) return "page";
   // Both folders answer "checklist": the old one empties on load, and until it
   // has, what is in it is a list like any other rather than a second species.
   if (path.startsWith(DIRS.lists     + "/")) return "checklist";

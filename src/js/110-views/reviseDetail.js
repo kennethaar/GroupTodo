@@ -9,16 +9,6 @@ function reviseDetail(path, look) {
   group("Telling, not showing", look.filters, x => x.word);
   group("Adverbs", look.adverbs, x => x.word);
   group("The same word twice, close", look.repeats, x => x.word);
-  const snaps = chapterSnapshots(path);
-  if (snaps.length) {
-    const snap = snaps[snaps.length - 1], {gone, added} = sinceSnapshot(path, snap);
-    box.append(el("div", {class: "revgroup revsnap"},
-      el("div", {class: "revgh"}, "Since " + getPage(snap).props.stage + ", " + humanDate(String(getPage(snap).props.created).slice(0, 10)) +
-        " · " + added.length + " new, " + gone.length + " gone"),
-      ...gone.slice(0, 10).map(t => el("div", {class: "revdiff gone"}, "− " + t)),
-      ...added.slice(0, 10).map(t => el("div", {class: "revdiff added"}, "+ " + t)),
-      el("button", {class: "textbtn", onclick: () => openPage(snap)}, "Open the snapshot")));
-  }
   if (!box.children.length) box.append(el("p", {class: "sub"}, "Nothing to look at again here."));
   return box;
 }

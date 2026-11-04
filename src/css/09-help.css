@@ -119,9 +119,6 @@ body.helpmarking #content{cursor:help}
 .revhit .revlab{flex:none;white-space:nowrap}
 .revhit .sub{color:var(--fg3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .revhit:hover,.revhit:focus-visible{color:var(--accent)}
-.revdiff{font-size:12.5px;padding:2px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.revdiff.gone{color:var(--fg3);text-decoration:line-through}
-.revdiff.added{color:var(--fg)}
 .revwords{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px}
 @media (max-width:700px){.revtable .revrow{grid-template-columns:minmax(90px,2fr) repeat(7,minmax(34px,1fr));font-size:12px;gap:4px;padding:8px}}
 /* Book › Read (#253): a chapter's name over its prose, as in a printed book. */
