@@ -5387,6 +5387,25 @@ var GTD_TEST = (() => {
       } finally { closeModal(); CL.pending = null; }
     });
   });
+  test("#278 refile lists the pages the line links to first, in line order, the first one chosen", async () => {
+    const a = join(DIRS.active, "Refile linked A.md"), b = join(DIRS.active, "Refile linked B.md");
+    const day = journalPath(shiftISO(T(), -2));
+    await withPages({[a]: "# Refile linked A\n", [b]: "# Refile linked B\n",
+      [day]: "- TODO Call [[Refile linked B]] then [[Refile linked A]], [[Refile linked B]] and [[Nobody here]]\n- TODO No links\n"}, async () => {
+      const [one, none] = getPage(day).blocks;
+      try {
+        eq(refileLinked(day, one), [b, a], "linked targets, in line order, once each");
+        eq(refileLinked(day, none), [], "no links: as before");
+        openRefile(day, one);
+        await settle();
+        const rows = [...document.querySelectorAll("#modalRoot button.pick")];
+        has(rows[0].textContent, "Refile linked B"); has(rows[0].textContent, "linked");
+        has(rows[1].textContent, "Refile linked A"); has(rows[1].textContent, "linked");
+        eq(rows.filter(r => r.textContent.includes("Refile linked B")).length, 1, "listed once");
+        ok(rows[0].classList.contains("on"), "the first link is chosen");
+      } finally { closeModal(); }
+    });
+  });
   test("#95 the review's tabs follow its steps, and only the step you are on says what it means", async () => {
     eq(SUBS.review.map(s => s[0]), ["steps", "days", "actions", "projects", "reflect"]);
     eq(SUBS.review[1][1], "Clarify");

@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.83.0 - 2026-11-04
+
+- Refile (Alt+G) lists the projects, responsibilities and contexts the line
+  already links to first, in the order they appear, marked linked. The first
+  one is chosen, so Alt+G then Enter files it there. (#278)
+
 ## 1.82.0 - 2026-11-04
 
 - Chores: + New chore suggests the chores you already have, so Vacuum is the

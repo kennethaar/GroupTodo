@@ -2329,6 +2329,7 @@ js/130-verb-picker/prependVerb.js
 js/130-verb-picker/openVerbPicker.js
 js/130-verb-picker/refileTargets.js
 js/130-verb-picker/vars-refileKind.js
+js/130-verb-picker/refileLinked.js
 js/130-verb-picker/openRefile.js
 js/130-verb-picker/aroundNodes.js
 js/130-verb-picker/aroundRing.js
