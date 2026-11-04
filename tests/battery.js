@@ -2491,7 +2491,7 @@ var GTD_TEST = (() => {
       await frame();
       ok(bar() && !bar().hidden, "no toolbar while a line is being written");
       eq([...bar().querySelectorAll(".elb")].map(n => n.textContent),
-        ["Up", "Down", "Outdent", "Indent", "Note", "Zettel", "Project", "Area", "Photo", "Image"]);
+        ["Up", "Down", "Outdent", "Indent", "Note", "Zettel", "Project", "Responsibility", "To area", "Copy text", "Photo", "Image"]);
       await press("down");
       eq(titles(), ["Alpha", "Charlie", "Bravo"], "after down");
       ok(document.activeElement && document.activeElement.closest('.blk[data-id="' + bravo.id + '"]'), "the caret left the line");

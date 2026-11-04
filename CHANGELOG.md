@@ -5,6 +5,10 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.83.2 - 2026-11-04
+
+- Chores: the help topic is shorter, six steps. Fixes #217.
+
 ## 1.83.1 - 2026-11-04
 
 - Weekly review: the #reflection line is written on the week page, not on a
