@@ -33,7 +33,7 @@ function viewReflect() {
 
   const r = reflectionBlock(false);
   c.append(el("div", {class: "group"}, "Reflection",
-    el("span", {class: "plain"}, "· notes and to dos, on " + (r ? dayLong(baseName(r.path)) : "today's page"))));
+    el("span", {class: "plain"}, "· notes and to dos, on " + (r && !isWeekPath(r.path) ? dayLong(baseName(r.path)) : "this week's page"))));
   c.append(el("div", {class: "refnotes"}, r ? pageOutline(r.path, {branch: r.block.id})
     : el("div", {class: "card"}, el("button", {class: "newline", onclick: () => {
         const at = reflectionBlock(true), nb = newBlock({title: ""});

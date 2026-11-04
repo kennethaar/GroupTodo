@@ -37,7 +37,7 @@ const dayLong = iso => capitalise(parseISO(iso).toLocaleDateString(undefined, {w
    read off your own day pages of the last seven days: each event with what
    is under it, a feeling on its own, and a line with a feeling under it.
 
-   A pick is written on the day page you reflect on, under one line per
+   A pick is written on the week page, under one line per
    week -- "#reflection Week 44" -- as toward:: ((id)) or away:: ((id)), so it
    points back at the line it is about. What you write under that line is an
    ordinary note or to do: there is no plan of its own beside the to dos. */

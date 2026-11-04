@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.83.1 - 2026-11-04
+
+- Weekly review: the #reflection line is written on the week page, not on a
+  day page. A line an older version put on a day page is still found. Fixes
+  #217.
+
 ## 1.83.0 - 2026-11-04
 
 - Refile (Alt+G) lists the projects, responsibilities and contexts the line

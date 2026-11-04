@@ -4483,7 +4483,7 @@ var GTD_TEST = (() => {
      ============================================================ */
   // Day pages n days back with these lines on them, and no intentions, put back afterwards.
   const withWeek = async (days, fn) => {
-    const saved = new Map([[INTENTIONS_PATH, null]].concat(days.map(([n]) => [journalPath(shiftISO(T(), -n)), null])));
+    const saved = new Map([[INTENTIONS_PATH, null], [journalPath(weekOf(T())), null]].concat(days.map(([n]) => [journalPath(shiftISO(T(), -n)), null])));
     for (const p of saved.keys()) saved.set(p, V.pages.has(p) ? structuredClone(getPage(p)) : null);
     try {
       V.pages.delete(INTENTIONS_PATH);
@@ -4597,7 +4597,10 @@ var GTD_TEST = (() => {
       (await pills())[1].click();
       eq(picks(), [], "picking Away again takes it back");
       ok(content().querySelector(".refnotes .blk"), "the week's line is there to write under");
-      has(serializePage(parsePage(serializePage(getPage(today)))), "#reflection Week", "kept in the file");
+      const wk = journalPath(weekOf(T()));
+      eq(reflectionBlock(false).path, wk, "#217 the line is on the week page");
+      has(serializePage(parsePage(serializePage(getPage(wk)))), "#reflection Week", "kept in the file");
+      ok(!getPage(today).blocks.some(b => /^#reflection/i.test(b.title || "")), "#217 not on a day page");
     });
   });
   test("#185 an intention typed in Reflect is a horizon page, and shows in Horizons", async () => {

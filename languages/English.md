@@ -5054,6 +5054,7 @@ this link =>
 this page, without the rest of the area =>
 this project can start whenever you like =>
 this task =>
+this week's page =>
 this weekend =>
 tick an area under “Also show in” for all of a calendar's meetings, or open one meeting (Alt+M) and choose where that one shows. Each is a synced copy of that meeting alone, so the notes written under it are kept in step both ways; the rest of your calendar stays yours. =>
 to a project, responsibility or context =>
