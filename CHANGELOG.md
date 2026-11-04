@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.84.0 - 2026-11-04
+
+- Writing a chapter: Put back is no longer only for darlings. Add
+  putback:: yes to any page and a line refiled there remembers where it came
+  from; the page gets a Put back button that returns it. Darlings is now just
+  such a page. Part of the outliner-roots clean-up. Refs #254.
+
 ## 1.83.4 - 2026-11-04
 
 - Writing a chapter: Beats (%%), Script, the thought, sound and written

@@ -54,6 +54,8 @@ function viewPage() {
         onclick: () => npmOpen(space, path)}, "✦ " + npmLabel(space, path)[0]) : null,
       isJournalPath(path) ? null : el("button", {class: "btn sm ghost",
         onclick: () => go("pages", {sub: "mindmap", graphFocus: (V.space || "") + "\u0000" + path})}, "Mind map"),
+      putsBack(path) && getPage(path).blocks.length ? el("button", {class: "btn sm ghost", title: "What was refiled here, to put back",
+        onclick: () => openPutBack(path)}, "Put back") : null,
       el("button", {class: "btn sm ghost", title: "More", "aria-label": "More", onclick: () => openPageMenu(path)}, "⋯"))));
 
   if (tracker) c.append(trackerPageLine(tracker));

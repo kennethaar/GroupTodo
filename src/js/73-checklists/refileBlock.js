@@ -3,6 +3,7 @@
 function refileBlock(fromPath, block, toPath) {
   const from = getPage(fromPath), to = getPage(toPath);
   if (!from || !to) return;
+  if (putsBack(toPath)) for (const [k, v] of Object.entries(rememberPlace(fromPath, block))) if (v) setBlockProp(block, k, v);
   removeBlockFrom(from, block);
   to.blocks.push(block);
   if (isJournalPath(fromPath)) {

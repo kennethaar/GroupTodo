@@ -6240,19 +6240,19 @@ var GTD_TEST = (() => {
     eq(darlings()[0].title, "“Wait!” he said.");
     eq(darlingWords(), 3);
     eq(chapterWords(harbour), 13, "not counted in the book");
-    putDarlingBack(darlings()[0]);
+    putBack(DARLINGS_PATH, darlings()[0]);
     eq(ran.title, "She ran. The end “Wait!” he said.", "back at the end of its line");
     cutLineToDarlings(harbour, ran);
     eq(titles(), ["First line.", "Last line.", "## Night", "Dark.", "Darker.", "## Dawn", "Light."]);
     eq(darlings()[0].children.map(b => b.title), ["under it"], "with what is under it");
-    putDarlingBack(darlings()[0]);
+    putBack(DARLINGS_PATH, darlings()[0]);
     eq(titles()[1], ran.title, "after the line it followed");
     ok(!("from" in ran.props) && !("cut" in ran.props), "with nothing left of its time away");
     const night = getPage(harbour).blocks[3];
     cutLineToDarlings(harbour, night);
     eq(titles(), ["First line.", ran.title, "Last line.", "## Dawn", "Light."], "a scene goes with its lines");
     eq(chapterScenes(harbour).map(s => s.name), ["", "Dawn"]);
-    putDarlingBack(darlings()[0]);
+    putBack(DARLINGS_PATH, darlings()[0]);
     eq(titles(), ["First line.", ran.title, "Last line.", "## Night", "Dark.", "Darker.", "## Dawn", "Light."], "and comes back as written");
     go("book", {sub: "chapters"});
     await settle();
@@ -6268,7 +6268,26 @@ var GTD_TEST = (() => {
     ok(!isTemplatePath(DARLINGS_PATH) && pageKind(DARLINGS_PATH) === "page", "the page is no template");
   }));
 
-  test("#253 Read shows the whole book as prose, and a change there is a change to the chapter", () => withBookVault(BOOK_PAGES, async () => {
+  test("#252 refile to a page with putback:: remembers the place, and Put back returns the line", () => withBookVault({
+    [join(PAGES, "Shelf.md")]: "putback:: yes\n\n- Old idea\n",
+    [join(PAGES, "Plain.md")]: "- Old idea\n",
+    [join(PAGES, "Notes.md")]: "- One\n- Two\n- Three\n",
+  }, () => {
+    const notes = join(PAGES, "Notes.md"), shelf = join(PAGES, "Shelf.md"), plain = join(PAGES, "Plain.md");
+    const titles = () => getPage(notes).blocks.map(b => b.title);
+    const two = getPage(notes).blocks[1];
+    refileBlock(notes, two, shelf);
+    eq(titles(), ["One", "Three"]);
+    ok(blockProp(two, "from").includes("Notes") && blockProp(two, "cut"), "it says where it came from");
+    putBack(shelf, two);
+    eq(titles(), ["One", "Two", "Three"], "back after the line it followed");
+    ok(!("from" in two.props), "nothing left of its time away");
+    const one = getPage(notes).blocks[0];
+    refileBlock(notes, one, plain);
+    ok(!blockProp(one, "from"), "a page without putback:: remembers nothing");
+  }));
+
+  test("#253 Read shows the whole book as prose,and a change there is a change to the chapter", () => withBookVault(BOOK_PAGES, async () => {
     const was = PREF.get("sub.book", "");
     try {
       go("book", {sub: "read"});

@@ -2150,7 +2150,8 @@ js/110-views/reviseDetail.js
 js/110-views/viewBookRead.js
 js/110-views/vars-DARLINGS_PATH.js
 js/110-views/darlingsPage.js
-js/110-views/vars-DARLING_PROPS.js
+js/110-views/vars-PUTBACK_PROPS.js
+js/110-views/vars-putsBack.js
 js/110-views/keepDarling.js
 js/110-views/darlingCut.js
 js/110-views/cutLineToDarlings.js
@@ -2158,8 +2159,9 @@ js/110-views/sentenceAt.js
 js/110-views/cutSentenceToDarlings.js
 js/110-views/cutChapterToDarlings.js
 js/110-views/vars-blockWithId.js
-js/110-views/putDarlingBack.js
-js/110-views/openDarlings.js
+js/110-views/putBack.js
+js/110-views/rememberPlace.js
+js/110-views/openPutBack.js
 js/110-views/vars-PLOT_GAP.js
 js/110-views/bookPlot.js
 js/110-views/viewBookPlot.js

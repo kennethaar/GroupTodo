@@ -23,7 +23,7 @@ function viewBook() {
     newBtn("chapter", newChapterPrompt),
     el("button", {class: "textbtn bookedit", title: "Name, subtitle and synopsis", onclick: () => openBookInfo()}, "Edit"),
     rows.length ? el("button", {class: "textbtn bookexport", title: "The whole book as one markdown file", onclick: exportBook}, "Export") : null,
-    darlings().length ? el("button", {class: "textbtn bookdarlings", title: "What you cut, kept to put back", onclick: openDarlings},
+    darlings().length ? el("button", {class: "textbtn bookdarlings", title: "What you cut, kept to put back", onclick: () => openPutBack(DARLINGS_PATH)},
       "Darlings " + darlings().length) : null,
     viewSeg("book")));
   if (info.subtitle) c.append(el("div", {class: "booksub"}, info.subtitle));
