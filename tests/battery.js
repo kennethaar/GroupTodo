@@ -2248,6 +2248,46 @@ var GTD_TEST = (() => {
       has(b.title, "[[c/Home/Testkitchen]]");
     } finally { if (page) { page.blocks = []; touch(contextPath("Home/Testkitchen")); clearMemo(); } }
   });
+  test("#279 + New chore: Custom... and Pick a date... come back with the answer", async () => {
+    const pick = (label, value) => {
+      const s = document.querySelector('.scrim .modal select[aria-label="' + label + '"]');
+      s.value = value; s.dispatchEvent(new Event("change"));
+    };
+    openNewChore("");
+    document.querySelector('.scrim .modal input[aria-label="What"]').value = "Test wipe the shelf";
+    pick("How often", "\u0003");
+    has(document.querySelector(".scrim .modal h2").textContent, "How often");
+    [...document.querySelectorAll(".scrim .modal button")].find(n => n.textContent === "Cancel").click();
+    await settle();
+    let m = document.querySelector(".scrim .modal");
+    eq([m.querySelector('input[aria-label="What"]').value, m.querySelector('select[aria-label="How often"]').value], ["Test wipe the shelf", "weekly"], "Cancel keeps the choices");
+    pick("How often", "\u0003");
+    [...document.querySelectorAll(".scrim .modal .seg button")].find(n => n.textContent === "Custom…").click();
+    document.querySelector(".scrim .modal input[type=number]").value = "3";
+    document.querySelector(".scrim .modal input[type=number]").dispatchEvent(new Event("input"));
+    [...document.querySelectorAll(".scrim .modal button")].find(n => n.textContent === "Save").click();
+    await settle();
+    m = document.querySelector(".scrim .modal");
+    const freq = m.querySelector('select[aria-label="How often"]');
+    has(freq.selectedOptions[0].textContent.toLowerCase(), "3");
+    eq(m.querySelector('input[aria-label="What"]').value, "Test wipe the shelf");
+    pick("First one", "\u0003");
+    const d = document.querySelector('.scrim .modal input[type=date]');
+    const day = shiftISO(todayISO(), 9); d.value = day;
+    [...document.querySelectorAll(".scrim .modal button")].find(n => n.textContent === "Save").click();
+    await settle();
+    m = document.querySelector(".scrim .modal");
+    eq(m.querySelector('select[aria-label="First one"]').value, "on:" + day);
+    [...m.querySelectorAll("button")].find(n => n.textContent === "Add chore").click();
+    await settle();
+    const path = contextPath(ctxSlug("home")), page = getPage(path);
+    const b = page.blocks.find(x => x.title.includes("Test wipe the shelf"));
+    try {
+      ok(b, "the chore was added");
+      eq(dueDate(b), day);
+      ok(!REPEAT_CHOICES.includes(repeatOf(b)), "a custom rhythm, not a preset");
+    } finally { if (b) { page.blocks.splice(page.blocks.indexOf(b), 1); touch(path); clearMemo(); } }
+  });
   test("#260 chores reuse a name, group by chore, and print the grouping in view", async () => {
     const path = choreProject("chores reuse", [
       chore(choreLine("Testvacuum", "home/kitchen", 2), "weekly", 0), chore(choreLine("Testvacuum", "home/bedroom", 1), "weekly", 2),

@@ -38,7 +38,7 @@ code:: en
 + Make a page =>
 + New area =>
 + New book =>
-+ New chore adds one. Pick a name you have, or type one. As needed has no rhythm. =>
++ New chore adds one. Pick or type a name. As needed has no rhythm. Custom… and Pick a date… set more. =>
 + New component =>
 + New note adds a page. =>
 + New organisation adds one. =>
@@ -2790,6 +2790,7 @@ Pick a context for this action =>
 Pick a context for this line =>
 Pick a date =>
 Pick a date, a person, a context or a state. =>
+Pick a date… =>
 Pick a folder, or keep it in the browser. =>
 Pick a line, a page or a card first. =>
 Pick a status: Active, Waiting, Someday and more. =>

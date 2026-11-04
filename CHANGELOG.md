@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.85.0 - 2026-11-04
+
+- Chores: + New chore has Custom... in How often (opens Repeats, so every
+  2nd tuesday or every 3 weeks work) and Pick a date... in First one. Fixes #279.
+
 ## 1.84.1 - 2026-11-04
 
 - Writing a chapter: the page's ... menu has Put back, which turns

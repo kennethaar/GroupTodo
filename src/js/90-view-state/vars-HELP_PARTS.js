@@ -492,7 +492,7 @@ const HELP = {
     steps: [["Tick a chore when done. The next one is set up at once.", ".task .tick"],
       ["Click a room to see only its chores. Board shows rooms in columns.", "?.choreroom"],
       ["Away until… holds every chore while you are gone.", "?.awaybtn"],
-      ["+ New chore adds one. Pick a name you have, or type one. As needed has no rhythm.", ".newbtn"],
+      ["+ New chore adds one. Pick or type a name. As needed has no rhythm. Custom… and Pick a date… set more.", ".newbtn"],
       ["Group by Chore shows rooms and total time.", "?.chorehome-tools select"],
       ["+ Log a chore counts other work done at home.", ".logchore"]],
     legend: [[".vhead h1", "Chores: the tasks that repeat."],
