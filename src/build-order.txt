@@ -2360,6 +2360,8 @@ js/146-spaces-wizard/openSpacesWizard.js
 js/146-spaces-wizard/clearFlatStorage.js
 js/146-spaces-wizard/finishSpaceSetup.js
 js/149-export-one-project/collectExport.js
+js/149-export-one-project/handoverData.js
+js/149-export-one-project/handoverSheetHtml.js
 js/149-export-one-project/stripAttributionFrom.js
 js/149-export-one-project/exportMarkdown.js
 js/149-export-one-project/openExportPage.js

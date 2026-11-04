@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.88.0 - 2026-11-05
+
+- Projects: ⋯ → Share has a third shape, Readable page (HTML), for a project
+  that moves to someone outside GroupToDo. One file with the outcome, where it
+  stands, open and done steps, and one history, oldest first: chats, Told
+  entries, and the lines from day pages that link to the project (only those
+  lines). Links and properties are plain words. It prints, saves as PDF, and
+  has buttons to take the steps and history out as CSV or markdown. Fixes #276.
+
 ## 1.87.1 - 2026-11-04
 
 - Updates: Check now no longer says it could not reach GitHub. The page policy

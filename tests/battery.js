@@ -3280,6 +3280,31 @@ var GTD_TEST = (() => {
       has(informNote("Lars Haugen", "Kenneth Aar", items, null, false).body, "Status: Pågår");
     } finally { PREF.set("askLang", was); }
   });
+  test("#276 the readable handover page: one file, plain words, history oldest first", () => {
+    const path = scratchProject("Storage room", [["TODO", "Order shelving"], ["TODO", "Quote for lighting"], ["DONE", "Clear out the old room"]]);
+    const page = getPage(path), title = pageTitle(path);
+    page.props.outcome = "The storage room is in use";
+    page.props.org = "[[o/Example Org]]";
+    const [order, quote, cleared] = page.blocks;
+    setDue(order, shiftISO(T(), -3));
+    quote.state = "WAIT";
+    setBlockProp(cleared, "done_by", "Person C 2026-10-20T10:00:00Z");
+    postMessageAs(path, quote, "Asked Person A", "Person C", "2026-10-28T09:00:00Z");
+    putPage(journalPath("2026-10-15"), parsePage("- Talked to supplier about [[" + title + "]], 3 weeks lead time\n- Unrelated lunch\n"));
+    clearMemo();
+    const html = handoverSheetHtml(path, {includeRefs: false, strip: false});
+    has(html, "The storage room is in use");
+    has(html, "Example Org");
+    ok(!html.includes("[[") && !html.includes("::"), "syntax shown as written");
+    ok(!html.includes("Unrelated lunch"), "the rest of the day page went out");
+    has(html, "3 weeks lead time");
+    ok(!/src=|href="http/i.test(html), "fetches something");
+    ok(html.indexOf("3 weeks lead time") < html.indexOf("Asked Person A"), "history not oldest first");
+    const shown = html.slice(0, html.indexOf('<script id="d"'));
+    ok(shown.indexOf("3 weeks lead time") < shown.lastIndexOf("Clear out the old room") &&
+       shown.lastIndexOf("Clear out the old room") < shown.indexOf("Asked Person A"), "done step is in the history by date");
+    ok(!handoverSheetHtml(path, {includeRefs: false, strip: true}).includes("Person C"), "who did what kept");
+  });
   test("#153 sent lines get informed::, a Told line in the chat, and Undo takes it back", () => {
     const path = scratchProject("inform sent", [["TODO", "Draft for [[p/Lars Haugen]]"]]);
     const b = getPage(path).blocks[0];
