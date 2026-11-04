@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.88.1 - 2026-11-05
+
+- Projects: Share → Readable page (HTML) now saves the file. The share sheet
+  was offered for a page type the browser would not send, and nothing came out.
+  It is checked against the real file type now, and falls back to a download.
+
 ## 1.88.0 - 2026-11-05
 
 - Projects: ⋯ → Share has a third shape, Readable page (HTML), for a project

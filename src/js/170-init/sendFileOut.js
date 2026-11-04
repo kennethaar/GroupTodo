@@ -12,7 +12,7 @@
    they are not, an unwanted file in Downloads is a smaller harm than a button
    that silently does nothing. */
 async function sendFileOut(name, text, type = "text/markdown", {title = name} = {}) {
-  if (canShareFiles()) {
+  if (canShareFiles(type, name)) {
     try {
       await navigator.share({files: [new File([text], name, {type})], title});
       return "shared";
