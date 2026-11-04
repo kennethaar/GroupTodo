@@ -16,5 +16,5 @@ const STOP_WORDS = new Set(("the a an and or but of to in on at for with as by f
   "his her their him them i you we me my your our not no so then there here what which who when where how all one had have has do did " +
   "said says would could will can into out up down over just like if than too very og i på at er var en et det den de han hun som med " +
   "for til av seg sin sitt sine ikke men så har hadde jeg du vi dem meg deg om fra da nå der her hva hvem når hvor kan skal vil ble blir").split(/\s+/));
-const wordList = text => String(text).replace(MARK_ATTR_RE, "").match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) || [];
+const wordList = text => String(text).match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) || [];
 const sentencesOf = text => String(text).split(/(?<=[.!?…]["”»’']*)\s+(?!\p{Ll})/u).filter(s => wordList(s).length);

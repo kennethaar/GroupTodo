@@ -184,24 +184,6 @@ body.helpmarking #content{cursor:help}
 .bookscene:hover .scedit,.bookscene:focus-within .scedit{opacity:1}
 @media (hover:none){.bookscene .scedit{opacity:1}}
 .bookscene .scedit:hover,.bookscene .scedit:focus-visible{color:var(--accent)}
-/* Marks (#246): a thought in italics, a sound in italics and spaced out, and
-   what is written in the story as type, each with a faint line under it. */
-.mk{text-decoration:underline dotted color-mix(in srgb,var(--fg3) 60%,transparent);text-underline-offset:3px}
-.mk-thought{font-style:italic}
-.mk-sound{font-style:italic;letter-spacing:.06em}
-.mk-written{font-family:var(--mono);font-size:.92em}
-/* Script (#248): the speaker's name in a column, the line beside it. */
-.scriptdlg{padding:4px 16px 6px}
-.scriptwho{margin:0 0 10px}
-.scriptrows{display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow:auto}
-.scriptrow{display:flex;align-items:center;gap:10px}
-.scriptname{flex:none;width:9ch;text-align:right;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
-  color:var(--fg2);background:none;border:0;padding:0;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.scriptname:hover{color:var(--accent)}
-.scriptrow input{flex:1;min-width:0}
-/* A beat (#244): the outline under the prose, quiet and in italics. */
-.blk>.line.beat:not(.raw)>.txt{color:var(--fg3);font-style:italic}
-.blk>.line.beat:not(.raw)>.txt::before{content:"◇ ";font-style:normal;font-size:11px}
 /* Prose (#244): paragraphs, no bullets, no steps in, a line at a time. */
 .chapterbar{margin:0 0 6px}
 /* Its own two buttons on a phone too: there is no dropdown for them. */
@@ -217,10 +199,8 @@ body.helpmarking #content{cursor:help}
 .outline.prose .blk .txt,.outline.prose .blk .bodyline{font-size:16px;line-height:1.75;color:var(--fg)}
 .outline.prose .blk>.line.hd2:not(.raw)>.txt{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
   color:var(--fg3);text-align:center;padding-top:1.2em}
-.outline.prose .blk>.line.beat:not(.raw)>.txt{font-size:13px;line-height:1.5}
 /* A scene's values while you write are clutter: they show on hover. */
 .outline.prose .blk>.line:not(.raw):not(:hover)>.props{display:none}
-.outline.prose.nobeats .blk>.line.beat:not(.raw){display:none}
 .outline.prose+.newline{max-width:68ch;margin:0 auto;padding-left:8px}
 /* Focus: the page and nothing else, until Esc. */
 body.bookfocus #app{grid-template-columns:minmax(0,1fr)}

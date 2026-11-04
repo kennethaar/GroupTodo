@@ -262,26 +262,6 @@ function outlineBlock(path, page, b, opts = {}) {
       if (!trim(t.slice(0, at))) cutLineToDarlings(path, b); else cutSentenceToDarlings(path, b, t, at);
       return;
     }
-    // Talk written as a script, put in after this line (#248).
-    if (id === "script") {
-      commitLine(txt, path, b);
-      txt.blur();
-      setTimeout(() => openScript({path, after: b}), 0);
-      return;
-    }
-    // A mark, empty, with the caret in it to write in (#246).
-    if (BOOK_MARKS[id]) {
-      const t = lineText(txt), [at] = caretOffsets(txt), open = "[", close = "]{." + id + "}";
-      setHostText(txt, t.slice(0, at) + open + close + t.slice(at), at + open.length);
-      return;
-    }
-    // A beat, or a line again (#244): the %% in front goes on or comes off.
-    if (id === "beat") {
-      const t = lineText(txt), next = isBeat(t) ? t.replace(BEAT_RE, "") : "%% " + t;
-      setHostText(txt, next, next.length);
-      paintHeadLine(line, next, b.state);
-      return;
-    }
     if (!FLY || FLY.txt !== txt) flyShow(txt, path, page, b);
     flyHead(id);
   },

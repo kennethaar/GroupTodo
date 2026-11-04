@@ -1,5 +1,5 @@
 function offerPasteAs(raw, ask, swap) {
-  const mail = parseEmailText(raw), kindle = parseKindleNotes(raw);
+  const mail = parseEmailText(raw);
   const t = el("div", {class: "toast pasteas"});
   let timer = 0;
   const close = () => { clearTimeout(timer); t.remove(); };
@@ -31,10 +31,9 @@ function offerPasteAs(raw, ask, swap) {
   const choices = [
     ["email", "Email page", () => make("email", "m", () => saveEmailPage(mail || mailFromLines(raw)), "an email page")],
     ["note", "Note", () => make("note", "z", () => saveNotePage(raw), "a note")],
-    // Kindle's notes are a book's; anything else is asked what it was.
-    ["review", "Review", () => kindle ? review("book") : pickMedium()],
+    ["review", "Review", pickMedium],
   ];
-  const first = mail ? "email" : kindle ? "review" : "note";
+  const first = mail ? "email" : "note";
   choices.sort((a, b) => (b[0] === first) - (a[0] === first));
   row(ask, choices.map(([, label, run]) => [label, run]));
   $("#toasts").append(t);

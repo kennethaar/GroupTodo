@@ -664,7 +664,6 @@ js/90-view-state/bookScopeBar.js
 js/90-view-state/proseOf.js
 js/90-view-state/vars-chapterText.js
 js/90-view-state/chapterScenes.js
-js/90-view-state/vars-BEAT_RE.js
 js/90-view-state/bookToday.js
 js/90-view-state/vars-BOOK_DAILY.js
 js/90-view-state/bookDaily.js
@@ -710,10 +709,6 @@ js/90-view-state/bookProtagonist.js
 js/90-view-state/setProtagonist.js
 js/90-view-state/vars-DEPTH.js
 js/90-view-state/castStats.js
-js/90-view-state/vars-SAID_WORD.js
-js/90-view-state/scriptToProse.js
-js/90-view-state/sceneOfBlock.js
-js/90-view-state/openScript.js
 js/90-view-state/makeCastPage.js
 js/90-view-state/newCastPrompt.js
 js/90-view-state/askCastValue.js
@@ -882,8 +877,6 @@ js/90-view-state/vars-isEmailPage.js
 js/90-view-state/freePageName.js
 js/90-view-state/saveEmailPage.js
 js/90-view-state/pasteAsTasks.js
-js/90-view-state/vars-KINDLE_MARK.js
-js/90-view-state/parseKindleNotes.js
 js/90-view-state/vars-PASTE_AS_LINES.js
 js/90-view-state/pastedBody.js
 js/90-view-state/vars-pastedTitle.js

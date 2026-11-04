@@ -6,7 +6,7 @@ function pageOutline(path, opts = {}) {
   const page = getPage(path);
   const box = el("div", {class: "card"});
   const outline = el("div", {class: "outline" + (opts.readonly ? " readonly" : "") +
-    (opts.prose ? " prose" + (beatsHidden() ? " nobeats" : "") : "")});
+    (opts.prose ? " prose" : "")});
   /* Prose keeps the line you write in at the middle of the screen, as a
      typewriter keeps its line in one place (#244). */
   if (opts.prose) outline.addEventListener("focusin", e => {

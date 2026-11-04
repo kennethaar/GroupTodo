@@ -8,5 +8,4 @@ function paintHeadLine(line, title, isTask) {
   const k = bujoKind(title, isTask);
   line.classList.toggle("ev", k === "ev");
   line.classList.toggle("feel", k === "feel");
-  line.classList.toggle("beat", isBeat(title, isTask));
 }

@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.83.4 - 2026-11-04
+
+- Writing a chapter: Beats (%%), Script, the thought, sound and written
+  marks and Kindle notes import are gone. A line that starts with %% or holds
+  a {.thought} mark is now an ordinary line, counted like the rest. Part of the
+  outliner-roots clean-up. Refs #254.
+
 ## 1.83.3 - 2026-11-04
 
 - Book › Revise: a chapter that moves on a stage is no longer copied to

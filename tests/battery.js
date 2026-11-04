@@ -5933,25 +5933,21 @@ var GTD_TEST = (() => {
     eq(serializeBlocks(getPage(storm).blocks), "- Rain all day.\n- ## Flood\n-");
   }));
 
-  test("#244 a %% line is a beat: not counted, not exported, and /beat puts it on and off", () => withBookVault({
+  test("#244 a %% line is an ordinary line: counted and exported, with no beat or mark commands", () => withBookVault({
     [BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n",
     [join(PAGES, "Harbour.md")]: "- %% She finds the letter\n  - The envelope was wet.\n- Night fell.\n",
   }, () => {
     const harbour = join(PAGES, "Harbour.md");
-    ok(isBeat("%% She finds it") && isBeat("%%x") && !isBeat("50 %% off") && !isBeat("%% x", "TODO"));
-    eq(chapterText(harbour), ["The envelope was wet.", "Night fell."], "the prose under a beat is counted, the beat is not");
-    ok(!bookManuscript().includes("letter"), "nor exported");
-    eq(lineHtml(getPage(harbour).blocks[0]), "She finds the letter", "drawn without its marks");
-    ok(slashRows("beat").some(r => r.id === "beat"), "/beat in an area with a book");
-    V.pages.delete(BOOK_PATH); clearMemo();
-    ok(!slashRows("beat").some(r => r.id === "beat"), "and not without one");
+    eq(chapterText(harbour), ["%% She finds the letter", "The envelope was wet.", "Night fell."]);
+    has(bookManuscript(), "letter");
+    ok(["beat", "script", "thought", "sound", "written"].every(id => !slashRows(id).some(r => r.id === id)), "no command for them");
   }));
-  test("#244 a chapter page has Outline and Prose, beats to hide, Focus, and today's words", () => withBookVault({
+  test("#244 a chapter page has Outline and Prose, Focus, and today's words", () => withBookVault({
     [BOOK_PATH]: "title:: book\ndaily:: 500\n\n- [[Harbour]]\n",
-    [join(PAGES, "Harbour.md")]: "- %% She finds the letter\n  - The envelope was wet.\n- Night fell.\n",
+    [join(PAGES, "Harbour.md")]: "- The envelope was wet.\n- Night fell.\n",
     [join(PAGES, "Elsewhere.md")]: "- Not a chapter\n",
   }, async () => {
-    const harbour = join(PAGES, "Harbour.md"), was = [PREF.get("book.mode", ""), PREF.get("book.beats", "")];
+    const harbour = join(PAGES, "Harbour.md"), was = [PREF.get("book.mode", "")];
     const dayKey = "book.day." + (V.space || "");
     try {
       PREF.set(dayKey, JSON.stringify({d: todayISO(), w: 2}));
@@ -5967,19 +5963,15 @@ var GTD_TEST = (() => {
       await settle();
       has(content().querySelector(".chapterbar").textContent, "0 of 500 today");
       ok(!content().querySelector(".outline.prose"), "Outline first");
-      ok(content().querySelector(".blk .line.beat"), "the beat is marked");
       [...content().querySelectorAll(".chapterbar .vseg button")].find(b => b.textContent === "Prose").click();
       await settle();
-      ok(content().querySelector(".outline.prose:not(.nobeats)"), "Prose, beats shown");
-      [...content().querySelectorAll(".chapterbar .fchip")].find(b => b.textContent === "Beats").click();
-      await settle();
-      ok(content().querySelector(".outline.prose.nobeats"), "beats hidden");
+      ok(content().querySelector(".outline.prose"), "Prose");
       content().querySelector(".chapterbar .focusbtn").click();
       ok(document.body.classList.contains("bookfocus") && $("#focusLeave"), "Focus");
       document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
       ok(!document.body.classList.contains("bookfocus") && !$("#focusLeave"), "Esc leaves it");
     } finally {
-      PREF.set("book.mode", was[0]); PREF.set("book.beats", was[1]); setWritingFocus(false);
+      PREF.set("book.mode", was[0]); setWritingFocus(false);
     }
   }));
   test("#244 Settings > Book picks the words a day", () => withBookVault({[BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n"}, async () => {
@@ -6052,38 +6044,6 @@ var GTD_TEST = (() => {
     await settle();
     ok(!("dialogue" in getPage(BOOK_PATH).props), "As typed takes it off");
     ok(!content().querySelector(".booktidy"), "and there is nothing to tidy to");
-  }));
-
-  test("#246 a thought, a sound and what is written are marked Pandoc's way", () => withBookVault({
-    [BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n",
-    [join(PAGES, "Harbour.md")]: "- She stopped. [I must go]{.thought} [Bang]{.sound}\n",
-  }, async () => {
-    const h = renderInline("She stopped. [I must go]{.thought} and [[Harbour]] [Bang]{.sound} [EXIT]{.written} [x]{.other}");
-    has(h, '<span class="mk mk-thought" title="Thought">I must go</span>');
-    has(h, '<span class="mk mk-sound" title="Sound">Bang</span>');
-    has(h, '<span class="mk mk-written" title="Written">EXIT</span>');
-    has(h, "[x]{.other}", "a class it does not know is left as written");
-    ok(h.includes("data-link") || h.includes("Harbour"), "a link still works beside it");
-    eq(countWords("[I must go]{.thought}"), 3, "the mark itself is not a word");
-    eq(chapterWords(join(PAGES, "Harbour.md")), 6);
-    has(bookManuscript(), "[I must go]{.thought}", "exported as written");
-    ok(["thought", "sound", "written"].every(id => slashRows(id.slice(0, 4)).some(r => r.id === id)), "a command each");
-    // Typed and taken from the slash menu, as a person does it.
-    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
-    openPage(join(PAGES, "Harbour.md"));
-    await settle();
-    const b = getPage(join(PAGES, "Harbour.md")).blocks[0];
-    focusBlock(b.id);
-    await frame();
-    const txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
-    setHostText(txt, "He said /thou", 13);
-    txt.dispatchEvent(new Event("input", {bubbles: true}));
-    await frame();
-    ok(SUGGEST && SUGGEST.host === txt, "the slash menu opened");
-    txt.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true, cancelable: true}));
-    await frame();
-    eq(lineText(txt), "He said []{.thought}");
-    eq(caretOffsets(txt)[0], 9, "the caret inside the mark");
   }));
 
   const CAST_PAGES = {
@@ -6180,61 +6140,6 @@ var GTD_TEST = (() => {
       ok(getPage(personPath("Mira")), "+ Make a page writes a person page");
       ok(![...content().querySelectorAll(".castmake")].length, "and Mira has one now");
     } finally { PREF.set("sub.book", was); }
-  }));
-
-  test("#248 a script becomes prose, with said only where it is needed, and reads back to the same speakers", () => withCastVault({
-    [BOOK_PATH]: "title:: book\ndialogue:: english\n\n- [[Harbour]]\n",
-    [join(PAGES, "Harbour.md")]: "- ## Quay\n  with:: [[Anna]], [[Bo]], [[Cai]]\n",
-    [personPath("Anna")]: "- In the story.\n", [personPath("Bo")]: "- In the story.\n", [personPath("Cai")]: "- In the story.\n",
-  }, () => {
-    const rows = [["Anna", "We should go."], ["Bo", "Not yet"], ["Anna", "Now!"], ["Bo", ""], ["Bo", "Fine."], ["Cai", "Wait."]]
-      .map(([who, text]) => ({who, text}));
-    const prose = scriptToProse(rows);
-    eq(prose, ["“We should go,” said Anna.", "“Not yet,” said Bo.", "“Now!”", "“Fine.”", "“Wait,” said Cai."]);
-    eq(scriptToProse(rows.slice(0, 2), "guillemets"), ["«We should go», sa Anna.", "«Not yet», sa Bo."]);
-    eq(scriptToProse(rows.slice(0, 3), "dash"), ["– We should go, sa Anna.", "– Not yet, sa Bo.", "– Now!"]);
-    eq(scriptToProse(rows.slice(0, 1), "german"), ["„We should go“, sagte Anna."]);
-    getPage(BOOK_PATH).props.said = "says"; clearMemo();
-    eq(scriptToProse(rows.slice(0, 1)), ["“We should go,” says Anna."], "said:: is the word");
-    delete getPage(BOOK_PATH).props.said;
-    getPage(join(PAGES, "Harbour.md")).blocks[0].children = prose.map(t => newBlock({title: t}, false));
-    clearMemo();
-    const who = k => castEntries().find(e => e.key === k).name;
-    eq(bookAnalysis().scenes[0].speeches.map(x => who(x.speaker)), ["Anna", "Bo", "Anna", "Bo", "Cai"], "read back as written");
-  }));
-  test("#248 the Script dialog: Enter for the next speaker, Tab to change, Ctrl+Enter puts it in", () => withCastVault({
-    [BOOK_PATH]: "title:: book\ndialogue:: english\n\n- [[Harbour]]\n",
-    [join(PAGES, "Harbour.md")]: "- ## Quay\n  pov:: [[Anna Berg]]\n  with:: [[Bo]]\n  - She waited.\n  -\n",
-    [personPath("Anna Berg")]: "- In the story.\n", [personPath("Bo")]: "- In the story.\n", [personPath("Cai")]: "- In the story.\n",
-  }, async () => {
-    const harbour = join(PAGES, "Harbour.md"), empty = getPage(harbour).blocks[0].children[1];
-    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
-    openScript({path: harbour, after: empty});
-    await frame();
-    const dlg = $("#modalRoot");
-    eq([...dlg.querySelectorAll(".scriptwho .fchip[aria-pressed=true]")].map(b => b.textContent), ["Anna Berg", "Bo"], "the scene's people talk");
-    const key = (input, k, more = {}) => input.dispatchEvent(new KeyboardEvent("keydown", Object.assign({key: k, bubbles: true, cancelable: true}, more)));
-    let inputs = () => [...dlg.querySelectorAll(".scriptrow input")];
-    const type = (input, text) => { input.value = text; input.dispatchEvent(new Event("input", {bubbles: true})); };
-    type(inputs()[0], "Are you coming?");
-    key(inputs()[0], "Enter");
-    await frame();
-    eq([...dlg.querySelectorAll(".scriptname")].map(b => b.textContent), ["Anna", "Bo"], "the next row is the next speaker's");
-    eq(document.activeElement, inputs()[1], "and has the caret");
-    type(inputs()[1], "No.");
-    key(inputs()[1], "Enter");
-    await frame();
-    key(inputs()[2], "Tab");
-    await frame();
-    eq(dlg.querySelectorAll(".scriptname")[2].textContent, "Bo", "Tab changes who speaks");
-    key(inputs()[2], "Backspace");
-    await frame();
-    eq(inputs().length, 2, "Backspace on an empty row takes it away");
-    key(inputs()[1], "Enter", {ctrlKey: true});
-    await frame();
-    ok(!dlg.querySelector(".scriptdlg"), "Ctrl+Enter closes it");
-    eq(getPage(harbour).blocks[0].children.map(b => b.title), ["She waited.", "“Are you coming?” said Anna.", "“No,” said Bo."],
-      "in place of the empty line it was opened from");
   }));
 
   test("#249 relations: shared scenes, talk and ties the pages name, between two chapters", () => withCastVault({

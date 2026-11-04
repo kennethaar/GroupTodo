@@ -5,7 +5,7 @@ function proseOf(blocks) {
   const rec = list => {
     for (const b of list || []) {
       if (b.state || parseTracker(b.title)) continue;
-      if (!isSceneHead(b) && !isBeat(b.title, b.state)) for (const t of [b.title, ...(b.body || [])]) if (trim(t || "")) out.push(linkWords(trim(t)));
+      if (!isSceneHead(b)) for (const t of [b.title, ...(b.body || [])]) if (trim(t || "")) out.push(linkWords(trim(t)));
       rec(b.children);
     }
   };
