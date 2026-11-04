@@ -1,7 +1,8 @@
 /* What, where, how often and how long: each picked from a list. As needed
    (#239) has no first one: it waits on Chores for Did it. */
 function openNewChore(roomKey) {
-  const what = el("input", {placeholder: "Wipe the counters", "aria-label": "What"});
+  const names = el("datalist", {id: "newchore-names"}, ...choreRecent().map(r => el("option", {value: r.words})));
+  const what = el("input", {placeholder: "Wipe the counters", "aria-label": "What", list: "newchore-names"});
   const room = choreRoomPick(roomKey);
   const firstField = el("div", {class: "field"});
   const freq = fselect("How often", "weekly", [...REPEAT_CHOICES.filter(Boolean).map(r => [r, r[0].toUpperCase() + r.slice(1)]),
@@ -38,7 +39,7 @@ function openNewChore(roomKey) {
   what.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); save(); } });
   modal({
     center: true, title: "New chore",
-    body: el("div", {},
+    body: el("div", {}, names,
       el("div", {class: "field"}, el("label", {}, "What"), what),
       el("div", {class: "field"}, el("label", {}, "Room"), room.sel, room.input),
       el("div", {class: "field"}, el("label", {}, "How often"), freq),

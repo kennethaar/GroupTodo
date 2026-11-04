@@ -4,23 +4,26 @@
    now and this week on one sheet, by room, in the order of the room sort.
    Nothing to set: change the view to change the sheet. Black on white, so
    LATE is said in capitals rather than in red. */
-function choreSheet(rows, rooms, roomOf, nameOf, picked) {
+function choreSheet(rows, rooms, roomOf, nameOf, picked, by) {
   const t = todayISO(), weekday = new Intl.DateTimeFormat(undefined, {weekday: "short"});
   const when = a => !a.due ? "now" : a.due < t ? "LATE" : a.due === t ? "today" : weekday.format(parseISO(a.due));
   const turns = choreCrew().length > 1;
   const order = (x, y) => (x.due || "").localeCompare(y.due || "") || choreRounds(y) - choreRounds(x);
   const body = [];
-  for (const k of rooms) {
-    const list = rows.filter(a => roomOf(a) === k).sort(order);
+  /* By chore (#260) the heading is the chore and each line a room. */
+  const parts = by === "chore" ? choreByChore(rows, roomOf).map(g => ({head: g.name + " · " + g.says, list: g.list}))
+    : rooms.map(k => ({head: nameOf(k).replace(/^@/, ""), list: rows.filter(a => roomOf(a) === k)}));
+  for (const {head, list} of parts) {
+    list.sort(order);
     if (!list.length) continue;
     const first = !body.length, th = (cls, text) => el("th", {class: cls}, first ? text : "");
-    body.push(el("tr", {class: "ps-room"}, el("th", {colspan: "2"}, nameOf(k).replace(/^@/, "")),
+    body.push(el("tr", {class: "ps-room"}, el("th", {colspan: "2"}, head),
       th("ps-when", "when"), th("", "how often"), th("ps-time", "time"), turns ? th("", "whose") : null));
     for (const a of list) {
       const mins = estMinutes(a.title), who = turns ? turnFor(a) : "";
       body.push(el("tr", {},
         el("td", {class: "ps-tick"}, el("span", {class: "ps-box"})),
-        el("td", {}, titleForRow(a.title)),
+        el("td", {}, by === "chore" ? nameOf(roomOf(a)).replace(/^@/, "") : titleForRow(a.title)),
         el("td", {class: "ps-when" + (a.due && a.due < t ? " ps-late" : "")}, when(a)),
         el("td", {}, repeatOf(a.block)),
         el("td", {class: "ps-time"}, mins ? minutesText(mins) : ""),

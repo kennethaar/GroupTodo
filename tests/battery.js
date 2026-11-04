@@ -2248,6 +2248,30 @@ var GTD_TEST = (() => {
       has(b.title, "[[c/Home/Testkitchen]]");
     } finally { if (page) { page.blocks = []; touch(contextPath("Home/Testkitchen")); clearMemo(); } }
   });
+  test("#260 chores reuse a name, group by chore, and print the grouping in view", async () => {
+    const path = choreProject("chores reuse", [
+      chore(choreLine("Testvacuum", "home/kitchen", 2), "weekly", 0), chore(choreLine("Testvacuum", "home/bedroom", 1), "weekly", 2),
+      chore(choreLine("Testvacuum", "home/hall", 1), "monthly", 4), chore(choreLine("Testdust", "home/hall", 1), "weekly", 1)]);
+    try {
+      for (const open of [() => openNewChore(""), () => openLogChore("")]) {
+        open();
+        const m = document.querySelector(".scrim .modal"), what = m.querySelector('input[aria-label="What"]');
+        const opts = [...document.querySelectorAll("datalist#" + what.getAttribute("list") + " option")].map(o => o.value);
+        eq(opts.filter(v => v === "Testvacuum").length, 1, "an existing chore is offered once");
+        closeModal();
+      }
+      PREF.set("chores.group", "chore"); go("chores"); await settle();
+      const g = [...content().querySelectorAll(".choregroup")].find(x => /Testvacuum/.test(x.textContent));
+      ok(g, "a group for the chore");
+      has(g.textContent, "3 rooms"); has(g.textContent, "1 h");
+      eq(g.querySelectorAll(".task").length, 3, "one line per room");
+      const mine = choreRows().filter(a => a.path === path);
+      const sheet = choreSheet(mine, [], () => "@", () => "", [], "chore");
+      ok([...sheet.querySelectorAll(".ps-room th")].some(th => th.textContent.startsWith("Testvacuum")), "print groups by chore");
+      PREF.set("chores.group", ""); go("chores"); await settle();
+      ok(!content().querySelector(".choregroup"), "Room is the default");
+    } finally { PREF.set("chores.group", ""); dropChores(path); }
+  });
   test("#239 + New chore, As needed: a plain line with no first day", async () => {
     openNewChore("");
     const m = document.querySelector(".scrim .modal");

@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.82.0 - 2026-11-04
+
+- Chores: + New chore suggests the chores you already have, so Vacuum is the
+  same chore in every room. A new name is offered next time, in New chore and
+  Log a chore. Group by Room or Chore: by chore shows how many rooms and how
+  long in all, and Print follows the grouping. Fixes #260.
+
 ## 1.81.0 - 2026-11-03
 
 - Keys on a line: "Copy as plain text" in the line menu, and a "Copy text"

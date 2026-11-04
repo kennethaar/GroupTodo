@@ -6,7 +6,7 @@ function viewChores() {
       onclick: () => openChoresAway()}, "Away until…") : null,
     all.length ? el("button", {class: "textbtn printbtn", title: "Print what is due now and this week, by room",
       onclick: () => printChores([...by.due, ...by.soon], rooms, roomOf, nameOf,
-        [room ? nameOf(room) : "", person ? firstNameOf(person) : everyone ? "" : firstNameOf(whoAmI())])}, "Print") : null,
+        [room ? nameOf(room) : "", PREF.get("chores.group", "") === "chore" ? "by chore" : "", person ? firstNameOf(person) : everyone ? "" : firstNameOf(whoAmI())])}, "Print") : null,
     el("button", {class: "textbtn logchore", title: "Count something done at home that has no rhythm, like the laundry",
       onclick: () => openLogChore(PREF.get("chores.room", ""))}, "+ Log a chore"),
     newBtn("chore", () => openNewChore(PREF.get("chores.room", "")))));
@@ -98,15 +98,25 @@ function viewChores() {
   const rows = inRoom.filter(keep);
   const by = {due: [], soon: [], fresh: []};
   for (const a of rows) by[choreGroup(a)].push(a);
-  const rounds = a => (freshnessOf(a) || {rounds: 0}).rounds;
-  const byDay = (x, y) => (x.due || "9").localeCompare(y.due || "9");
-  by.due.sort((x, y) => rounds(y) - rounds(x));
-  by.soon.sort(byDay); by.fresh.sort(byDay);
+  /* Group by Room (the sections below) or by Chore (#260); Print follows it. */
+  const byChore = PREF.get("chores.group", "") === "chore";
+  c.append(el("div", {class: "chorehome-tools"}, fselect("Group by", byChore ? "chore" : "", [["", "Room"], ["chore", "Chore"]],
+    v => { PREF.set("chores.group", v); render(); })));
   const opts = {journal: true, nextNow: true};
-  c.append(section("Due now", by.due.length, taskCard(by.due, "Nothing due. The home is on top of things.", opts)));
-  const fold = (title, list) => list.length ? el("details", {class: "section fold"},
-    el("summary", {}, title, el("span", {class: "n"}, String(list.length))), taskCard(list, null, opts)) : null;
-  c.append(...[fold("Coming up this week", by.soon), fold("Fresh", by.fresh), fold("On hold", held)].filter(Boolean));
+  if (byChore) {
+    c.append(...choreByChore(rows, roomOf).map(g => section(g.name, null, taskCard(g.list, null, opts),
+      el("span", {class: "say", style: "margin-left:8px;font-weight:400"}, g.says), "choregroup")));
+    if (!rows.length) c.append(emptyCard("Nothing to group here."));
+  } else {
+    const rounds = a => (freshnessOf(a) || {rounds: 0}).rounds;
+    const byDay = (x, y) => (x.due || "9").localeCompare(y.due || "9");
+    by.due.sort((x, y) => rounds(y) - rounds(x));
+    by.soon.sort(byDay); by.fresh.sort(byDay);
+    c.append(section("Due now", by.due.length, taskCard(by.due, "Nothing due. The home is on top of things.", opts)));
+    const fold = (title, list) => list.length ? el("details", {class: "section fold"},
+      el("summary", {}, title, el("span", {class: "n"}, String(list.length))), taskCard(list, null, opts)) : null;
+    c.append(...[fold("Coming up this week", by.soon), fold("Fresh", by.fresh), fold("On hold", held)].filter(Boolean));
+  }
   const neededHere = needed.filter(a => !room || (a.ctx.includes("/") ? "@" + a.ctx.split("/").slice(0, 2).join("/") : "@") === room);
   if (neededHere.length) c.append(asNeededFold(neededHere));
   c.append(choreBoard());
