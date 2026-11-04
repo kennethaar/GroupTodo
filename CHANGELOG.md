@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.84.1 - 2026-11-04
+
+- Writing a chapter: the page's ... menu has Put back, which turns
+  putback:: yes on or off for that page. Refs #254.
+
 ## 1.84.0 - 2026-11-04
 
 - Writing a chapter: Put back is no longer only for darlings. Add

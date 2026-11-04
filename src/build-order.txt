@@ -2160,6 +2160,7 @@ js/110-views/cutSentenceToDarlings.js
 js/110-views/cutChapterToDarlings.js
 js/110-views/vars-blockWithId.js
 js/110-views/putBack.js
+js/110-views/togglePutBack.js
 js/110-views/rememberPlace.js
 js/110-views/openPutBack.js
 js/110-views/vars-PLOT_GAP.js

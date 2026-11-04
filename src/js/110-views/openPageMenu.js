@@ -32,6 +32,7 @@ function openPageMenu(path) {
     isJournalPath(path) ? null : ["Make private", "move it to an area the others cannot open", () => makePrivatePrompt(path)],
     isArchived(path) ? ["Unarchive", "its tasks count again", () => toggleArchived(path)]
                      : ["Archive", "kept, but its tasks leave the lists and search shows it last", () => toggleArchived(path)],
+    ["Put back", putsBack(path) ? "on: lines refiled here can be put back; click to turn off" : "off: turn on to keep where refiled lines came from", () => togglePutBack(path)],
     dedupWritable(path) ? ["Remove duplicate lines", "a line written twice under the same parent goes; what was under it stays", () => removeDuplicateLines([path])] : null,
     ["Delete", null, () => deletePrompt(path)],
   ]));

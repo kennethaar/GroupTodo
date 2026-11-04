@@ -6287,6 +6287,17 @@ var GTD_TEST = (() => {
     ok(!blockProp(one, "from"), "a page without putback:: remembers nothing");
   }));
 
+  test("#254 togglePutBack turns putback:: on and off for any page", () => withBookVault({
+    [join(PAGES, "Plain.md")]: "- One\n",
+  }, () => {
+    const plain = join(PAGES, "Plain.md");
+    ok(!putsBack(plain));
+    togglePutBack(plain);
+    ok(putsBack(plain), "on");
+    togglePutBack(plain);
+    ok(!putsBack(plain) && !("putback" in getPage(plain).props), "off, and the property is gone");
+  }));
+
   test("#253 Read shows the whole book as prose,and a change there is a change to the chapter", () => withBookVault(BOOK_PAGES, async () => {
     const was = PREF.get("sub.book", "");
     try {
