@@ -96,8 +96,12 @@ function viewReview() {
     el("button", {class: "btn primary", onclick: () => {
       setSetting("last_review", todayStamp());
       notify("Weekly review logged for " + humanDate(todayISO()) + ".");
-      render();
+      if (!celebrateReview()) render();
     }}, done === all.length && all.length ? "All done - mark the review done" : "Mark the review done"),
-    el("button", {class: "textbtn", title: "The steps are the routine Weekly review in Settings", onclick: editReviewSteps}, "Edit the steps")));
+    el("button", {class: "textbtn", title: "The steps are the routine Weekly review in Settings", onclick: editReviewSteps}, "Edit the steps"),
+    // Off is the whole celebration; quiet is the starfield without sound.
+    el("button", {class: "textbtn", title: "The starfield after the review is marked done",
+      onclick: () => { PREF.set("review.celebrate", {on: "quiet", quiet: "off", off: "on"}[PREF.get("review.celebrate", "on")] || "on"); render(); }},
+      "Celebration: " + {on: "on", quiet: "no sound", off: "off"}[PREF.get("review.celebrate", "on")])));
   return c;
 }

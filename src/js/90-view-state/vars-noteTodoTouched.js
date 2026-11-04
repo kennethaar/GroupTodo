@@ -71,7 +71,6 @@ const NAV_ITEMS = [
   "grow",
   // Not a view: a countdown you start from the sidebar. See timerNavItem().
   {id: "timer",    icon: "◷", label: "Timer", small: true},
-  {id: "review",   icon: "✓", label: "Weekly review"},
 ];
 
 /* ---------- the sidebar, as a page ----------

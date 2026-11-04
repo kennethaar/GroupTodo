@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.86.0 - 2026-11-04
+
+- Weekly review: now a reading of Projects (Weekly review in its switch) rather
+  than a place in the sidebar, with a way back to Projects. Marking the review
+  done flies you through a starfield of your project cards: click one to make a
+  star, and music builds up to a finale at 50. Celebration in the review turns
+  it to no sound or off, and reduced motion gets a still card. Fixes #223.
+
 ## 1.85.0 - 2026-11-04
 
 - Chores: + New chore has Custom... in How often (opens Repeats, so every

@@ -5533,7 +5533,7 @@ var GTD_TEST = (() => {
     eq(navItems().filter(it => typeof it === "string"), ["sep", "pins", "grow"]);
   }));
   test("#238 8/sidebar.md orders and hides; Settings stays; an unnamed view still shows", () => withSidebarPage(
-    "title:: sidebar\nhide:: Waiting for, Settings, contexts\n\n- Next\n- Journal\n- ---\n- Projects\n- Pages\n- People\n- ---\n- Weekly review\n- Timer\n",
+    "title:: sidebar\nhide:: Waiting for, Settings, contexts\n\n- Next\n- Journal\n- ---\n- Projects\n- Pages\n- People\n- ---\n- Trackers\n- Timer\n",
     () => {
       const l = navLabels();
       ok(l.indexOf("Next") < l.indexOf("Journal"), "Next first: " + l);
@@ -5542,7 +5542,7 @@ var GTD_TEST = (() => {
       ok(l.indexOf("Pages") < l.indexOf("People"), "Pages before People: " + l);
       // Organisations is not named: it comes after People, where it sits by default.
       eq(l[l.indexOf("People") + 1], "Organisations");
-      eq(navOrder().slice(-3), [NAV_SEP, "review", "timer"], "the foot group");
+      eq(navOrder().slice(-3), [NAV_SEP, "trackers", "timer"], "the foot group");
       ok(!checklistPages().includes(SIDEBAR_PATH), "not listed as a checklist");
     }));
   test("#238 the --- lines survive a write and a read", () => {

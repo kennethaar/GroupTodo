@@ -13,11 +13,11 @@ function renderNav() {
     if (it === "grow") { nav.append(el("div", {class: "nav-grow"})); continue; }
     if (it === "pins") { nav.append(...navPins()); continue; }
     if (it.id === "timer") { nav.append(timerNavItem(it)); continue; }
-    const here = state.view === it.id;
+    const here = state.view === it.id || (it.id === "projects" && state.view === "review");
     if (it.when && !here && !it.when()) continue;
     const n = navCount(it.id);
     const hot = (it.id === "today" && dueNow().some(a => a.due < todayISO())) ||
-                (it.id === "review" && reviewDue());
+                (it.id === "projects" && reviewDue());
     const folds = it.id === "contexts" && n > 0;
     const open = folds && PREF.get("nav.ctxOpen", "0") === "1";
     nav.append(el("button", {

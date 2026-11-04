@@ -3071,7 +3071,62 @@ color:var(--accent);font-size:11.5px;cursor:pointer;white-space:nowrap;overflow:
 .mdtable th,.mdtable td{border:1px solid var(--border);padding:4px 10px;text-align:left;vertical-align:top}
 .mdtable th{font-weight:600;background:color-mix(in srgb,var(--fg) 5%,transparent)}
 .mdtable td{cursor:text}
-</style>
+/* Space */
+.sfspace{position:fixed;inset:0;z-index:60;background:var(--space);opacity:0;transition:opacity .9s ease;color:var(--space-fg)}
+.sfspace.on{opacity:1}
+.sfspace canvas{position:absolute;inset:0;width:100%;height:100%;cursor:default;touch-action:manipulation;outline:none}
+/* In the lowest third, centred on it, so the cards have the middle to themselves */
+.smsg{position:absolute;left:0;right:0;top:83.3%;transform:translateY(-60%);text-align:center;pointer-events:none;opacity:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.smsg h2{margin:0;font-size:clamp(26px,5vw,44px);font-weight:300;letter-spacing:.04em;text-wrap:balance}
+.smsg p{margin:6px 0 0;color:var(--space-fg2);font-size:14px;letter-spacing:.02em}
+/* The ending, after the opening crawl of a certain space saga: a pale blue
+   line on black, then the words rising up and away into the stars. */
+.sfinal{position:absolute;inset:0;display:grid;place-items:center;text-align:center;pointer-events:none;opacity:0;transition:opacity 1.2s ease;
+  font-size:clamp(17px,2.3vw,24px);font-weight:400;letter-spacing:.02em;color:var(--crawl-blue);line-height:1.5;
+  padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+.sfinal.on{opacity:1}
+.crawlwrap{position:absolute;inset:0;overflow:hidden;pointer-events:none;opacity:0;transition:opacity 1.5s ease;perspective:340px;perspective-origin:50% 25%;
+  -webkit-mask-image:linear-gradient(to top,#000 55%,transparent 96%);mask-image:linear-gradient(to top,#000 55%,transparent 96%)}
+.crawlwrap.on{opacity:1}
+.crawl{position:absolute;left:50%;top:100%;width:min(660px,86vw);transform-origin:50% 0;transform:translateX(-50%) rotateX(25deg) translateY(0);
+  color:var(--crawl);text-align:center;font-weight:700}
+.crawl.go{animation:crawl 22s linear forwards}
+@keyframes crawl{to{transform:translateX(-50%) rotateX(25deg) translateY(var(--dist,-2000px))}}
+.crawl .ep{font-size:clamp(18px,2.6vw,28px);letter-spacing:.14em}
+.crawl h3{margin:.25em 0 1.1em;font-size:clamp(30px,5vw,58px);letter-spacing:.08em;line-height:1.05}
+.crawl p{margin:0;font-size:clamp(24px,4vw,46px);line-height:1.35;letter-spacing:.02em;text-wrap:balance}
+.sfspace.slow{transition-duration:2.6s}
+@media (prefers-reduced-motion: reduce){ .crawl.go{animation-duration:40s} }
+.sexit{transition:opacity 1.5s ease}
+.sbar{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:center;gap:12px;pointer-events:none;
+  padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));padding-top:14px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.score{font-size:13px;color:var(--star);font-variant-numeric:tabular-nums;letter-spacing:.04em;transition:opacity .6s}
+.score.hint{color:var(--space-fg2);opacity:.85}
+.sleft{display:flex;flex-direction:column;gap:3px;min-width:0}
+.level{font-size:12px;color:var(--space-fg2);letter-spacing:.04em;opacity:.8}
+/* "Pads unlocked!": in the middle of the sky */
+.unlock{position:absolute;left:0;right:0;top:50%;text-align:center;pointer-events:none;opacity:0;transform:translateY(calc(-50% + 6px));
+  transition:opacity .8s ease,transform .8s ease;font-size:clamp(18px,2.4vw,24px);letter-spacing:.24em;text-transform:uppercase;color:var(--star);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.unlock.on{opacity:1;transform:translateY(-50%)}
+.sexit{pointer-events:auto;font-size:12.5px;color:var(--space-fg2);border:1px solid #3a3a37;border-radius:99px;padding:5px 12px;background:rgba(0,0,0,.5)}
+.sexit:hover{color:var(--space-fg);border-color:#6a6a65}
+.sexit kbd{font-family:inherit;font-size:11px;opacity:.7;margin-left:4px}
+
+/* The reduced-motion ending */
+.finale{position:fixed;inset:0;z-index:70;display:grid;place-items:center;background:var(--scrim);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.fcard{width:min(420px,100%);background:var(--bg2);border:2px solid var(--fg);border-radius:18px;box-shadow:var(--shadow);
+  padding:20px 22px;display:flex;flex-direction:column;gap:8px}
+.fcard .eye{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--ok);font-weight:700}
+.fcard h2{margin:0;font-size:24px;letter-spacing:-.015em;line-height:1.15}
+.fcard p{margin:0;color:var(--fg2);font-size:13.5px}
+.fcard .rm{font-size:12px;color:var(--fg3)}
+.fcard .row{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:6px}
+
+#sf-space,#sf-finale{--space:#010102; --space-fg:#eeeef2; --space-fg2:#9a9aa8; --star:#e8dcc6; --crawl:#e7cf7a; --crawl-blue:#7fc0d4;;--scrim:rgba(0,0,0,.6)}</style>
 </head>
 <body>
 <div id="app">
@@ -3125,9 +3180,904 @@ placeholder="Add a task. Try: &quot;Call Mia about the VAT phone tomorrow&quot;"
 
 <div id="toasts"></div>
 <div id="modalRoot"></div>
+<div class="sfspace" id="sf-space" hidden>
+  <canvas id="sf-sky" tabindex="-1" aria-label="Starfield made of your project cards. Click a card to turn it into a star."></canvas>
+  <div class="smsg"><h2>Weekly review done</h2><p>12 projects reviewed · next review Sunday 8 November</p></div>
+  <div class="sfinal" id="sf-sfinal">A short time ago, in a weekly review not so far away....</div>
+  <div class="crawlwrap" id="sf-crawlwrap"><div class="crawl" id="sf-crawl"><div class="ep">EPISODE L</div><h3>A NEW WEEK</h3><p id="sf-crawltext"></p></div></div>
+  <div class="unlock" id="sf-unlock" aria-live="polite"></div>
+  <div class="sbar"><div class="sleft"><span class="score" id="sf-score"></span><span class="level" id="sf-level"></span></div><button class="sexit" id="sf-exit" type="button">Back to the review <kbd>Esc</kbd></button></div>
+</div>
+
+<div class="finale" id="sf-finale" hidden>
+  <div class="fcard" role="dialog" aria-modal="true" aria-labelledby="ftitle">
+    <span class="eye">✓ Weekly review logged</span>
+    <h2 id="sf-ftitle">Weekly review done</h2>
+    <p id="sf-fsub"></p>
+    <p class="rm">Your device is set to reduce motion, so the starfield was left out.</p>
+    <div class="row"><button class="btn" id="sf-anyway" type="button">Play it anyway</button><button class="btn primary" id="sf-close" type="button">Back to the review</button></div>
+  </div>
+</div>
+
+
 <script>
+(() => {
+  let PROJECTS = [], onEnd = () => {};
+  const $ = s => document.querySelector(s);
+  
+  const space = $("#sf-space"), sky = $("#sf-sky"), ctx = sky.getContext("2d"), msg = $(".smsg");
+  const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let W = 0, H = 0, DPR = 1, CX = 0, CY = 0;
+  function size() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight; CX = W / 2; CY = H / 2;
+    sky.width = Math.round(W * DPR); sky.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+
+  /* The cards, painted once at full size. In space they are always the
+     light cards: white on black is what makes them read as stars. */
+  const CARD_W = 182, CARD_H = 118, INK = {bg: "#ffffff", fg: "#1d1d1b", fg2: "#4d4d48", fg3: "#6b6b66", proj: "#c25b1e", ok: "#2e8a57"};
+  const SANS = getComputedStyle(document.documentElement).getPropertyValue("--sans").trim();
+  function rr(c, x, y, w, h, r) {
+    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+  }
+  function wrap(c, text, maxW, lines) {
+    const out = []; let line = "";
+    for (const w of text.split(" ")) {
+      const test = line ? line + " " + w : w;
+      if (c.measureText(test).width > maxW && line) { out.push(line); line = w; if (out.length === lines) return out; }
+      else line = test;
+    }
+    if (line) out.push(line);
+    return out.slice(0, lines);
+  }
+  function paintCard([area, title, na]) {
+    const S = 2, cv = document.createElement("canvas");
+    cv.width = CARD_W * S; cv.height = CARD_H * S;
+    const c = cv.getContext("2d"); c.scale(S, S);
+    rr(c, 1, 1, CARD_W - 2, CARD_H - 2, 14);
+    c.fillStyle = INK.bg; c.fill(); c.lineWidth = 2; c.strokeStyle = INK.fg; c.stroke();
+    let y = 22;
+    c.fillStyle = INK.proj; c.beginPath(); c.arc(15.5, y - 3.5, 3.5, 0, 7); c.fill();
+    c.fillStyle = INK.fg3; c.font = "600 10.5px " + SANS; c.fillText(area.toUpperCase(), 25, y);
+    c.fillStyle = INK.fg; c.font = "650 14.5px " + SANS;
+    for (const l of wrap(c, title, CARD_W - 24, 2)) { y += 19; c.fillText(l, 12, y); }
+    c.fillStyle = INK.fg2; c.font = "12px " + SANS;
+    for (const l of wrap(c, "next: " + na, CARD_W - 24, 2)) { y += 16; if (y < CARD_H - 22) c.fillText(l, 12, y); }
+    c.fillStyle = INK.ok; c.font = "600 11px " + SANS; c.textAlign = "right"; c.fillText("✓ reviewed", CARD_W - 12, CARD_H - 11);
+    return cv;
+  }
+  let IMGS = null;
+
+  /* The look of the sky, after a night photograph of the Milky Way: an
+     almost black ground, a faint band of haze crossing it with dark dust lanes
+     and patches of different colour, fine unresolved stars, and for each star
+     a small, tight glow in its own colour, from ice blue to red-orange,
+     always pale. Painted once per showing; each frame only scales it a touch. */
+  const TINTS = [[196, 214, 255], [216, 228, 255], [238, 242, 255], [255, 250, 244], [255, 236, 216], [255, 218, 192], [255, 200, 176]];
+  let SPRITES = null, NEB = null, DUST = null, BGG = null, PW = 0, PH = 0;
+  function buildSky() {
+    if (!SPRITES) SPRITES = TINTS.map(([r, g, b]) => {
+      const cv = document.createElement("canvas"); cv.width = cv.height = 48;
+      const sp = cv.getContext("2d"), gr = sp.createRadialGradient(24, 24, 0, 24, 24, 24), c = r + "," + g + "," + b;
+      gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(.07, "rgba(" + c + ",.95)");
+      gr.addColorStop(.18, "rgba(" + c + ",.26)"); gr.addColorStop(.42, "rgba(" + c + ",.05)"); gr.addColorStop(1, "rgba(" + c + ",0)");
+      sp.fillStyle = gr; sp.fillRect(0, 0, 48, 48);
+      return cv;
+    });
+    BGG = ctx.createRadialGradient(CX, CY * .9, 0, CX, CY, Math.max(W, H) * .75);
+    BGG.addColorStop(0, "#06070c"); BGG.addColorStop(.5, "#030307"); BGG.addColorStop(1, "#010102");
+    // The sky is a tile two and a half screens each way that repeats without a seam,
+    // so that steering can go on forever: everything painted near an edge is
+    // painted again on the opposite edge.
+    PW = Math.ceil(W * 2.5); PH = Math.ceil(H * 2.5);
+    const mk = () => { const c = document.createElement("canvas"); c.width = PW; c.height = PH; return c; };
+    const wrapAt = (x, y, r, f) => {
+      x = ((x % PW) + PW) % PW; y = ((y % PH) + PH) % PH;
+      for (const ox of [-PW, 0, PW]) for (const oy of [-PH, 0, PH]) {
+        const X = x + ox, Y = y + oy;
+        if (X + r >= 0 && X - r <= PW && Y + r >= 0 && Y - r <= PH) f(X, Y);
+      }
+    };
+    NEB = mk(); DUST = mk();
+    const n = NEB.getContext("2d"), d = DUST.getContext("2d"), M = Math.max(W, H);
+    n.globalCompositeOperation = d.globalCompositeOperation = "lighter";
+    const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
+    const hsl = (h, sat, l, a) => "hsla(" + h.toFixed(0) + "," + sat + "%," + l.toFixed(0) + "%," + a + ")";
+    const blob = (x, y, r, h, sat, l, a) => wrapAt(x, y, r, (X, Y) => {
+      const g = n.createRadialGradient(X, Y, 0, X, Y, r);
+      g.addColorStop(0, hsl(h, sat, l, a)); g.addColorStop(1, hsl(h, sat, l, 0));
+      n.fillStyle = g; n.fillRect(X - r, Y - r, 2 * r, 2 * r);
+    });
+    // Mostly blue haze, some violet, a little teal and a little warm dust; never saturated.
+    const pickHue = () => {
+      const q = Math.random();
+      return q < .55 ? [215 + Math.random() * 35, 30] : q < .75 ? [265 + Math.random() * 30, 22]
+        : q < .88 ? [185 + Math.random() * 15, 25] : [20 + Math.random() * 20, 30];
+    };
+    // The band runs corner to corner across the tile, so it joins itself where the tile repeats.
+    const ax = 0, ay = PH, bx = PW, by = 0;
+    const len = Math.hypot(bx - ax, by - ay), ux = (bx - ax) / len, uy = (by - ay) / len, px = -uy, py = ux;
+    const bandW = M * .13, along = s => [ax + ux * s, ay + uy * s];
+    for (let i = 0; i < 620; i++) {
+      const sAt = Math.random() * len, o = gauss() * bandW * (.6 + .4 * Math.sin(sAt / len * 6.283 * 3));
+      const [x0, y0] = along(sAt), [h, sat] = pickHue();
+      blob(x0 + px * o, y0 + py * o, M * (.025 + Math.random() * .09), h, sat, 35 + Math.random() * 25, .008 + Math.random() * .02);
+    }
+    // Dark dust lanes winding along the middle of the band take some of the glow away.
+    n.globalCompositeOperation = "destination-out";
+    for (let i = 0; i < 220; i++) {
+      const sAt = Math.random() * len, o = gauss() * bandW * .35 + Math.sin(sAt / len * 6.283 * 5) * bandW * .25;
+      const [x0, y0] = along(sAt), r = M * (.012 + Math.random() * .035), dark = (.25 + Math.random() * .3).toFixed(2);
+      wrapAt(x0 + px * o, y0 + py * o, r, (X, Y) => {
+        const g = n.createRadialGradient(X, Y, 0, X, Y, r);
+        g.addColorStop(0, "rgba(0,0,0," + dark + ")"); g.addColorStop(1, "rgba(0,0,0,0)");
+        n.fillStyle = g; n.fillRect(X - r, Y - r, 2 * r, 2 * r);
+      });
+    }
+    n.globalCompositeOperation = "lighter";
+    // Faint patches of other colours away from the band.
+    for (let k = 0; k < 14; k++) {
+      const cx = Math.random() * PW, cy = Math.random() * PH, [h, sat] = pickHue();
+      for (let i = 0; i < 10; i++) blob(cx + gauss() * M * .1, cy + gauss() * M * .08, M * (.05 + Math.random() * .1), h, sat, 30 + Math.random() * 15, .004 + Math.random() * .008);
+    }
+    // Unresolved stars: fine specks in every tint, thickest in the band.
+    const speck = (x, y, a, r) => {
+      d.fillStyle = "rgba(" + TINTS[(Math.random() * TINTS.length) | 0].join(",") + "," + a.toFixed(3) + ")";
+      wrapAt(x, y, r, (X, Y) => { d.beginPath(); d.arc(X, Y, r, 0, 7); d.fill(); });
+    };
+    for (let i = 0; i < 5200; i++) {
+      const sAt = Math.random() * len, o = gauss() * bandW * 1.1, [x0, y0] = along(sAt);
+      speck(x0 + px * o, y0 + py * o, .03 + Math.random() * .13, .3 + Math.random() * .5);
+    }
+    for (let i = 0; i < 4500; i++) speck(Math.random() * PW, Math.random() * PH, .02 + Math.random() * .08, .3 + Math.random() * .4);
+  }
+
+  /* Diffraction spikes, as a telescope draws them on a bright star: thin
+     lines that fade out from the centre, four straight and, fainter, four diagonal. */
+  function spike(x, y, ang, len, wid, rgb, alpha) {
+    const dx = Math.cos(ang) * len, dy = Math.sin(ang) * len;
+    const g = ctx.createLinearGradient(x, y, x + dx, y + dy);
+    g.addColorStop(0, "rgba(" + rgb + "," + alpha.toFixed(3) + ")"); g.addColorStop(1, "rgba(" + rgb + ",0)");
+    ctx.strokeStyle = g; ctx.lineWidth = wid; ctx.lineCap = "butt";
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + dx, y + dy); ctx.stroke();
+  }
+  function spikes(x, y, len, wid, rgb, alpha, diag) {
+    for (let k = 0; k < 4; k++) spike(x, y, k * Math.PI / 2, len, wid, rgb, alpha);
+    if (diag) for (let k = 0; k < 4; k++) spike(x, y, Math.PI / 4 + k * Math.PI / 2, len * diag, wid * .7, rgb, alpha * .55);
+  }
+
+  /* The world: a point (x, y, z) is drawn at the centre + (x, y) / z, and a
+     card is CW x CH / z pixels, so at z = 1 it is a 4 px speck and at
+     z = 0.02 a full card. Depth sets the pace, smoothly and without any
+     sudden change: up close (below Z0) a card's distance shrinks by
+     the same share each second, and far beyond Z0 the share gets smaller, so
+     the most distant stars hardly move and the near ones glide past them.
+     That parallax is what gives the depth. Beyond FAR a card is too far away to see; it brightens out
+     of the dark as it comes in from there. */
+  // There is no lane down the middle: every card is spread evenly over the view.
+  // Cards are large in this world (CW) so that the ones that come near are
+  // readable wherever they are on screen, while far off each is drawn as a star
+  // of size SW, so the distant sky stays fine-grained.
+  const CW = 9, CH = CW * 59 / 91, SW = 3.6, COUNT = 900, K = .32, Z0 = .6, FAR = 2.2;
+  // VN is a small steady speed added to every card, so that one heading straight
+  // for you does not just keep swelling: it reaches you, and at ZPASS you fly through it.
+  const VN = .008, ZPASS = .006;
+  let flash = null;
+  let cards = [], sparks = [], score = 0, textOp = 0;
+  function spawn(c, z) {
+    // Spread evenly over the whole view at its depth, so the sky looks the same whichever way you steer.
+    c.z = z;
+    c.x = (Math.random() * 2 - 1) * W * .5 * z * 1.05;
+    c.y = (Math.random() * 2 - 1) * H * .5 * z * 1.05;
+    c.img = (Math.random() * IMGS.length) | 0;
+    c.star = false; c.px = null; c.rot = Math.random() * 6.283;
+    // Most stars are faint, a few are bright and wear spikes. Each has its own pale colour, mostly near white.
+    c.bright = Math.random() < .06 ? 1.8 + Math.random() * .8 : .6 + Math.random() * .7;
+    c.tint = Math.round((Math.random() + Math.random()) / 2 * (TINTS.length - 1));
+  }
+  function seed() {
+    cards = Array.from({length: COUNT}, () => { const c = {}; spawn(c, .3 + Math.random() * 2.9); return c; });
+  }
+
+  /* Clicking inside a card's outline turns it into a star. Far-off specks
+     get a 10 px target so they can be hit at all. */
+  function cardAt(px, py) {
+    // The sky is drawn banked while you turn, so turn the click back first.
+    const ca = Math.cos(bankNow), sa = Math.sin(bankNow), dx = px - CX, dy = py - CY;
+    px = CX + dx * ca - dy * sa; py = CY + dx * sa + dy * ca;
+    let best = null;
+    for (const c of cards) {
+      if (c.star || c.z >= FAR) continue;
+      const w = CW / c.z, h = CH / c.z, sx = CX + c.x / c.z, sy = CY + c.y / c.z;
+      if (Math.abs(px - sx) <= Math.max(w / 2 + 2, 10) && Math.abs(py - sy) <= Math.max(h / 2 + 2, 10) && (!best || c.z < best.z)) best = c;
+    }
+    return best;
+  }
+  /* The levels: each one brings in a part of the music. */
+  const LEVELS = [
+    {at: 5, name: "Pads"}, {at: 10, name: "Congas"}, {at: 20, name: "Beat"}, {at: 30, name: "Voice"},
+    {at: 40, name: "Bass"}, {at: 45, name: "Second voice"}, {at: 50, name: "The finale"},
+  ];
+  function showLevel() {
+    const next = LEVELS.find(l => l.at > score);
+    $("#sf-level").textContent = next ? "Next level: " + next.at + " stars" : "";   // what it brings stays a surprise
+  }
+  function showUnlock(text) {
+    const el = $("#sf-unlock");
+    el.textContent = text; el.classList.add("on");
+    clearTimeout(showUnlock.t); showUnlock.t = setTimeout(() => el.classList.remove("on"), 2800);
+  }
+
+  function hit(c) {
+    c.star = true;
+    score++;
+    $("#sf-score").classList.remove("hint");
+    $("#sf-score").textContent = "★ " + score + (score === 1 ? " star made" : " stars made");
+    const got = LEVELS.find(l => l.at === score);
+    if (got && got.at < 50) showUnlock(got.name + " unlocked!");
+    showLevel();
+    const sx = CX + c.x / c.z, sy = CY + c.y / c.z;
+    for (let i = 0; i < 28; i++) {
+      const a = Math.random() * 6.283, v = 40 + Math.random() * 160;
+      sparks.push({x: sx, y: sy, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1, r: 1 + Math.random() * 2});
+    }
+    handpan((sx - CX) / CX);
+    if (score === 50) startFinale();
+  }
+
+  // A card you turned into a star: a small glow in its own colour and long, thin spikes.
+  function drawStar(x, y, z, c, t) {
+    const r = Math.min(Math.max(3 / z, 2.5), 70);
+    const tw = .9 + .1 * Math.sin(t * 2.2 + c.rot * 3), rgb = TINTS[c.tint].join(",");
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r * 1.6);
+    g.addColorStop(0, "rgba(255,252,246,.95)"); g.addColorStop(.2, "rgba(" + rgb + ",.32)"); g.addColorStop(1, "rgba(" + rgb + ",0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 1.6, 0, 7); ctx.fill();
+    spikes(x, y, r * 3 * tw, Math.max(1, r * .05), rgb, .85, .75);
+    ctx.fillStyle = "#fffcf6"; ctx.beginPath(); ctx.arc(x, y, Math.max(1.2, r * .18), 0, 7); ctx.fill();
+  }
+
+  /* Steering: W/S dip the nose and pull it up, like a flight stick, A/D turn left and right (the
+     arrow keys too). Turning slides the whole sky across the screen by the same
+     amount at every depth, as turning your head does, with a little inertia,
+     and the craft banks gently into a left or right turn. */
+  const TURN = 150, BANK = .06;                    // screen px per second at full turn; bank in radians
+  const STEER = {KeyW: "w", ArrowUp: "w", KeyA: "a", ArrowLeft: "a", KeyS: "s", ArrowDown: "s", KeyD: "d", ArrowRight: "d"};
+  const keys = {w: false, a: false, s: false, d: false};
+  let turnX = 0, turnY = 0, panX = 0, panY = 0, bankNow = 0;
+
+  let phase = "idle", raf = 0, t0 = 0, last = 0;
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, .05); last = now;
+    const t = now / 1000;
+    const ease = Math.min(1, dt * 2.5);
+    turnX += (((keys.d ? 1 : 0) - (keys.a ? 1 : 0)) * TURN - turnX) * ease;
+    turnY += (((keys.s ? 1 : 0) - (keys.w ? 1 : 0)) * TURN - turnY) * ease;   // flight-stick style: W dips the nose, S pulls it up
+    const shx = -turnX * dt, shy = turnY * dt;      // how far the sky slides this frame
+    panX += shx; panY += shy;
+    bankNow = turnX / TURN * BANK;
+
+    ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1;
+    ctx.save();
+    ctx.translate(CX, CY); ctx.rotate(-bankNow); ctx.translate(-CX, -CY);
+    ctx.fillStyle = BGG; ctx.fillRect(-W, -H, W * 3, H * 3);
+    // The nebula is far behind everything and grows very slowly; the dust a little faster.
+    // Both repeat as tiles, so the sky slides on for as long as you turn.
+    const el = (now - t0) / 1000;
+    ctx.globalCompositeOperation = "lighter";
+    for (const [layer, grow] of [[NEB, .004], [DUST, .01]]) {
+      const k = 1.04 + el * grow, tw = PW * k, th = PH * k;
+      const x0 = (((CX - tw / 2 + panX) % tw) + tw) % tw - tw, y0 = (((CY - th / 2 + panY) % th) + th) % th - th;
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+        const x = x0 + (i - 1) * tw, y = y0 + (j - 1) * th;
+        if (x > W * 1.2 || x + tw < -W * .2 || y > H * 1.2 || y + th < -H * .2) continue;
+        ctx.drawImage(layer, x, y, tw, th);
+      }
+    }
+    ctx.globalCompositeOperation = "source-over";
+
+    let biggest = 0;
+    cards.sort((a, b) => b.z - a.z);
+    for (const c of cards) {
+      c.z -= (K * c.z / (1 + c.z / Z0) + VN) * dt;
+      c.x += shx * c.z; c.y += shy * c.z;            // turning moves every star by the same amount on screen
+      const sx = CX + c.x / c.z, sy = CY + c.y / c.z, w = CW / c.z, h = CH / c.z;
+      if (c.z <= ZPASS) {
+        // It has reached you. If it covers the middle of the view, you went through it.
+        if (Math.abs(sx - CX) < w / 2 && Math.abs(sy - CY) < h / 2) passThrough(c);
+        spawn(c, FAR + Math.random() * .6); continue;
+      }
+      if (sx < -w || sx > W + w || sy < -h || sy > H + h) {
+        // A distant star that the turn pushed off one side comes back in on the other,
+        // so the side you turn towards is never empty.
+        if (c.z > .25) {
+          let nx = sx, ny = sy;
+          if (sx < -w && shx < 0) nx = sx + W + 2 * w; else if (sx > W + w && shx > 0) nx = sx - W - 2 * w;
+          if (sy < -h && shy < 0) ny = sy + H + 2 * h; else if (sy > H + h && shy > 0) ny = sy - H - 2 * h;
+          if (nx !== sx || ny !== sy) { c.x = (nx - CX) * c.z; c.y = (ny - CY) * c.z; c.px = null; continue; }
+        }
+        spawn(c, FAR + Math.random() * .6); continue;
+      }
+      if (c.z >= FAR) { c.px = null; continue; }
+      const a = Math.min(1, (FAR - c.z) / 1.2);
+      const pass = c.z < ZPASS * 2 ? (c.z - ZPASS) / ZPASS : 1;   // the last moment before you pass through
+      if (c.star) {
+        ctx.globalAlpha = a * pass; ctx.globalCompositeOperation = "lighter";
+        drawStar(sx, sy, c.z, c, t);
+        ctx.globalCompositeOperation = "source-over";
+      } else {
+        // Far off a card is a small star in its own colour; as it grows, the card shows through.
+        const ws = SW / c.z;
+        if (w < 58) {
+          const tw = .88 + .12 * Math.sin(t * 1.3 + c.rot * 5);
+          const D = (Math.min(ws, 6) + 1.2) * 2.3 * c.bright, out = w < 44 ? 1 : 1 - (w - 44) / 14;
+          ctx.globalCompositeOperation = "lighter";
+          ctx.globalAlpha = a * Math.min(1, .5 + .3 * c.bright) * tw * out;
+          ctx.drawImage(SPRITES[c.tint], sx - D / 2, sy - D / 2, D, D);
+          if (c.bright > 1.7) { ctx.globalAlpha = 1; spikes(sx, sy, D * .75, .8, TINTS[c.tint].join(","), a * .45 * tw * out, .55); }
+          ctx.globalCompositeOperation = "source-over";
+        }
+        if (w >= 44) {
+          ctx.globalAlpha = a * (w < 58 ? (w - 44) / 14 : 1) * pass;
+          ctx.drawImage(IMGS[c.img], sx - w / 2, sy - h / 2, w, h);
+          biggest = Math.max(biggest, w);
+        }
+      }
+      ctx.globalAlpha = 1;
+      c.px = sx; c.py = sy;
+    }
+
+    ctx.globalCompositeOperation = "lighter";
+    for (const p of sparks) {
+      p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .97; p.vy *= .97; p.life -= dt * .9;
+      ctx.fillStyle = "rgba(255,238,215," + Math.max(p.life, 0).toFixed(2) + ")";
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+    }
+    sparks = sparks.filter(p => p.life > 0);
+    ctx.globalCompositeOperation = "source-over";
+    ctx.restore();
+
+    // Passing through a card leaves a soft white wash for a moment; a star, a brighter one in its colour.
+    if (flash) {
+      ctx.fillStyle = "rgba(" + flash.rgb + "," + (flash.peak * flash.life * flash.life).toFixed(3) + ")";
+      ctx.fillRect(0, 0, W, H);
+      flash.life -= dt * 1.8;
+      if (flash.life <= 0) flash = null;
+    }
+
+    // The end: the sky goes to black, then the words come up and the way out comes back.
+    const fin = finaleAt ? Math.min(1, (now - finaleAt) / FINALE_MS) : 0;
+    if (fin > 0) {
+      ctx.fillStyle = "rgba(0,0,0," + fin.toFixed(3) + ")"; ctx.fillRect(0, 0, W, H);
+      $(".sbar").style.opacity = finalShown ? "" : (1 - fin).toFixed(3);
+      if (fin >= 1 && !finalShown) {
+        finalShown = true;
+        $("#sf-exit").style.opacity = "0"; $(".sbar").style.opacity = "";
+        $("#sf-score").textContent = ""; $("#sf-level").textContent = ""; $("#sf-unlock").classList.remove("on");
+        crawlSequence();
+      }
+    }
+
+    // It opens on black and the stars come up out of it over three seconds.
+    const fade = Math.min(1, Math.max(0, (now - t0 - 400) / 3000));
+    if (fade < 1) { ctx.fillStyle = "rgba(0,0,0," + (1 - fade).toFixed(3) + ")"; ctx.fillRect(0, 0, W, H); }
+    // The words come up as the first cards grow big enough to read, and stay.
+    textOp = Math.max(textOp, Math.min(1, Math.max(0, (biggest - 50) / 110)) * fade);
+    msg.style.opacity = (textOp * (1 - fin)).toFixed(3);
+
+    music();
+    if (phase !== "idle") raf = requestAnimationFrame(frame);
+  }
+
+  /* Sound, synthesised, and only while the starfield is on screen. */
+  let soundOn = true;
+  let AC = null, NOISE = null, bus = null;
+  function ac() {
+    if (!soundOn) return null;
+    try {
+      if (!AC) {
+        AC = new (window.AudioContext || window.webkitAudioContext)();
+        const comp = AC.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 6;
+        comp.connect(AC.destination); AC._out = comp;
+        NOISE = AC.createBuffer(1, AC.sampleRate, AC.sampleRate);
+        const d = NOISE.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        // A made-up room: 2.8 s of decaying noise as the impulse, for the handpan to ring in.
+        const len = Math.round(AC.sampleRate * 2.8), ir = AC.createBuffer(2, len, AC.sampleRate);
+        for (let ch = 0; ch < 2; ch++) {
+          const r = ir.getChannelData(ch);
+          for (let i = 0; i < len; i++) r[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2);
+        }
+        const conv = AC.createConvolver(), wet = AC.createGain();
+        conv.buffer = ir; wet.gain.value = .3; conv.connect(wet); wet.connect(comp); AC._verb = conv;
+      }
+      if (AC.state === "suspended") AC.resume();
+      return AC;
+    } catch (_) { return null; }
+  }
+  function fadeBus() {
+    if (!bus || !AC) return;
+    const b = bus; bus = null;
+    b.gain.cancelScheduledValues(AC.currentTime); b.gain.setTargetAtTime(0, AC.currentTime, .3);
+    setTimeout(() => b.disconnect(), 2500);
+  }
+  function newBus() {
+    fadeBus();
+    const a = ac(); if (!a) return;
+    bus = a.createGain(); bus.gain.value = .6; bus.connect(a._out); bus.connect(a._verb);
+  }
+  function panTo(p, dest) {
+    if (!AC.createStereoPanner) return dest;
+    const n = AC.createStereoPanner(); n.pan.value = Math.max(-1, Math.min(1, p)); n.connect(dest); return n;
+  }
+  /* Each star rings a random note of a D Ashakiran handpan: the ding D3,
+     then G3 A3 B3 C#4 D4 E4 F#4 A4 B4. A handpan note is three tuned
+     partials (the note, its octave and the fifth above that), each a pair of
+     sines a few cents apart for the shimmer, with a soft hand-strike at the start
+     and a long ring, plus the room above. */
+  const ASHAKIRAN = [146.83, 196.00, 220.00, 246.94, 277.18, 293.66, 329.63, 369.99, 440.00, 493.88];
+  function handpan(pan, fixed) {
+    if (!bus) return;
+    const f = fixed || ASHAKIRAN[(Math.random() * ASHAKIRAN.length) | 0];
+    const t = AC.currentTime + .005, out = panTo(pan * .6, bus), vel = .8 + Math.random() * .2;
+    // [partial, level, how slowly it dies away (s), detune of the pair in cents]
+    for (const [m, v, tau, cents] of [[1, .45, 1.7, 1.5], [2, .2, 1.1, 3], [3, .07, .55, 4]]) {
+      for (const s of [-1, 1]) {
+        const o = AC.createOscillator(), g = AC.createGain(), peak = v * vel / 2;
+        o.frequency.value = f * m; o.detune.value = s * cents;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(peak, t + .008);
+        g.gain.setTargetAtTime(peak * .55, t + .008, .12);    // the strike settles…
+        g.gain.setTargetAtTime(0, t + .35, tau);              // …then a long ring
+        o.connect(g); g.connect(out); o.start(t); o.stop(t + .35 + tau * 6);
+      }
+    }
+    // The hand on the steel: a short, soft knock around four times the note.
+    const s = AC.createBufferSource(), bp = AC.createBiquadFilter(), ng = AC.createGain();
+    s.buffer = NOISE; bp.type = "bandpass"; bp.frequency.value = Math.min(f * 4, 3000); bp.Q.value = 1.2;
+    ng.gain.setValueAtTime(.0001, t); ng.gain.exponentialRampToValueAtTime(.08 * vel, t + .003); ng.gain.exponentialRampToValueAtTime(.0001, t + .06);
+    s.connect(bp); bp.connect(ng); ng.connect(out); s.start(t, Math.random() * .5); s.stop(t + .08);
+  }
+
+  /* A quiet hum on D, the scale's ding: D2 as a slightly detuned pair for a slow
+     beat, D3 an octave above, softened by a filter and breathing very slowly.
+     It swells in over five seconds and runs for as long as you fly. */
+  const humRoot = 73.42;   // D2
+  let hum = null;
+  function startHum() {
+    stopHum();
+    if (!bus) return;
+    const t = AC.currentTime, out = AC.createGain(), lp = AC.createBiquadFilter(), nodes = [], oscs = [];
+    // Two low-pass filters in a row cut the treble steeply above about 260 Hz.
+    const lp2 = AC.createBiquadFilter();
+    lp.type = lp2.type = "lowpass"; lp.frequency.value = lp2.frequency.value = 260; lp.Q.value = lp2.Q.value = .5;
+    out.gain.setValueAtTime(0, t); out.gain.linearRampToValueAtTime(.14, t + 5);
+    lp.connect(lp2); lp2.connect(out); out.connect(bus);
+    for (const [m, v, det] of [[1, .9, -3], [1, .9, 3], [2, .9, 2]]) {
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.type = "sine"; o.frequency.value = humRoot * m; o.detune.value = det; g.gain.value = v;
+      o.connect(g); g.connect(lp); o.start(t); nodes.push(o); oscs.push({o, m});
+    }
+    const lfo = AC.createOscillator(), lg = AC.createGain();
+    lfo.frequency.value = .08; lg.gain.value = .04;
+    lfo.connect(lg); lg.connect(out.gain); lfo.start(t); nodes.push(lfo);
+    hum = {nodes, out, oscs};
+  }
+
+  /* The music: one piece, built up layer by layer as you make stars.
+     Everything runs on one clock at 72 beats a minute, a bar is 16 sixteenths,
+     and the harmony is the same twelve-bar progression in D major, looped:
+
+       | D  | D  | Bm | Bm | G  | G  | Em | A  | F#m | Bm | G  | A7sus |
+
+     Layers join on the first beat of a bar: from 5 stars the pads play that
+     progression, from 10 the congas, from 20 the beat, from 30 the voice sings
+     the melody (it waits for the start of a four-bar phrase), from 40 a bass
+     line replaces the hum, and from 45 a second, softer voice sings a third
+     below the first. Notes are scheduled a moment ahead from the animation
+     loop, so they stay exactly in time. */
+  const STEP = 60 / 72 / 4, BAR = STEP * 16;
+  const PROG = ["D", "D", "Bm", "Bm", "G", "G", "Em", "A", "F#m", "Bm", "G", "A7sus"];
+  // Pad voicings, rootless and close together so each chord flows into the next.
+  const PAD = {
+    D:      [185.00, 220.00, 277.18, 329.63],   // F#3 A3 C#4 E4   (Dmaj9)
+    Bm:     [185.00, 220.00, 277.18, 293.66],   // F#3 A3 C#4 D4   (Bm9)
+    G:      [185.00, 220.00, 246.94, 293.66],   // F#3 A3 B3 D4    (Gmaj9)
+    Em:     [196.00, 246.94, 293.66, 369.99],   // G3 B3 D4 F#4    (Em9)
+    A:      [164.81, 220.00, 277.18, 329.63],   // E3 A3 C#4 E4
+    "F#m":  [185.00, 220.00, 277.18, 329.63],   // F#3 A3 C#4 E4   (F#m7)
+    A7sus:  [164.81, 196.00, 220.00, 293.66],   // E3 G3 A3 D4, leaning back home to D
+  };
+  // The bass's notes for each chord: root, fifth, third (or the 4th of the sus) and a colour note.
+  const BASS = {
+    D:      {root: 73.42, fifth: 110.00, third: 92.50, color: 82.41},
+    Bm:     {root: 61.74, fifth: 92.50, third: 73.42, color: 110.00},
+    G:      {root: 98.00, fifth: 73.42, third: 123.47, color: 92.50},
+    Em:     {root: 82.41, fifth: 61.74, third: 98.00, color: 73.42},
+    A:      {root: 55.00, fifth: 82.41, third: 69.30, color: 61.74},
+    "F#m":  {root: 92.50, fifth: 69.30, third: 110.00, color: 82.41},
+    A7sus:  {root: 55.00, fifth: 82.41, third: 73.42, color: 98.00},
+  };
+  // The melody, twelve bars long: [sixteenth from the top, note, length in sixteenths].
+  // Kept simple: fourteen long notes, mostly stepwise, easy to hum. The falling
+  // F#, E, D opens it, comes back over G, and echoes in the last line before it
+  // settles on A, which leads back to the top.
+  const A4 = 440, B4 = 493.88, Cs5 = 554.37, D5 = 587.33, E5 = 659.25, Fs5 = 739.99;
+  const MELODY = [
+    [0, Fs5, 12], [12, E5, 4],    [16, D5, 16],     // D   D
+    [32, D5, 8], [40, Cs5, 8],    [48, B4, 16],     // Bm  Bm
+    [64, Fs5, 12], [76, E5, 4],   [80, D5, 16],     // G   G
+    [96, E5, 8], [104, D5, 8],    [112, Cs5, 16],   // Em  A
+    [128, Fs5, 16],               [144, D5, 16],    // F#m Bm
+    [160, E5, 8], [168, D5, 8],   [176, A4, 16],    // G   A7sus
+  ];
+  const MEL_AT = new Map(MELODY.map(([at, f, len]) => [at, [f, len]]));
+  // The notes of D major from A3 up, for finding the note a third below.
+  const SCALE = [220, 246.94, 277.18, 293.66, 329.63, 369.99, 392, 440, 493.88, 554.37, 587.33, 659.25, 739.99, 783.99, 880];
+  const thirdBelow = f => { const i = SCALE.findIndex(s => Math.abs(s - f) < 1); return i >= 2 ? SCALE[i - 2] : f / 2; };
+  const GROOVE = {0: ["low", .75], 3: ["high", .3], 6: ["high", .55], 8: ["low", .5], 10: ["high", .42], 11: ["high", .28], 14: ["low", .45]};
+
+  let gridAt = 0, gridStep = 0, gridBar = 0;
+  let padsOn = false, congasOn = false, congaFrom = 0, melodyOn = false, harmonyOn = false, sung = 0;
+  function music() {
+    if (!bus || phase !== "run") return;
+    if (finaleAt && performance.now() - finaleAt > SOUND_FADE_MS) return;   // silence after the end
+    const now = AC.currentTime, ahead = now + .35;
+    if (!gridAt || gridAt < now - 1) { gridAt = now + .15; gridStep = 0; gridBar = 0; padsOn = false; }
+    while (gridAt < ahead) {
+      tick(gridStep, gridBar % PROG.length, gridAt);
+      gridAt += STEP;
+      if (++gridStep === 16) { gridStep = 0; gridBar++; }
+    }
+  }
+  function tick(step, bar, t) {
+    if (step === 0) {
+      // Pads: a chord starts where the progression changes chord and lasts as many bars as that chord does.
+      if (score >= 5 && (PROG[bar] !== PROG[(bar + 11) % 12] || !padsOn)) {
+        let len = 1; while (bar + len < 12 && PROG[bar + len] === PROG[bar]) len++;
+        padChord(PAD[PROG[bar]], t, len * BAR + 1.6, !padsOn);
+        padsOn = true;
+      }
+      if (score >= 10 && !congasOn) { congasOn = true; congaFrom = t; }
+      if (score >= 20 && !beatOn) { beatOn = true; beatFrom = t; }
+      if (score >= 30 && !melodyOn && bar % 4 === 0) melodyOn = true;
+      if (score >= 40 && !bassOn) { bassOn = true; stopHum(); }   // the hum hands over to the bass
+      if (score >= 45 && !harmonyOn && bar % 4 === 0) harmonyOn = true;
+    }
+    if (congasOn) congaHit(step, t);
+    if (beatOn) beatHit(step, t);
+    if (bassOn) bassHit(step, bar, t);
+    if (melodyOn) {
+      const n = MEL_AT.get(bar * 16 + step);
+      if (n) {
+        const [f, len] = n, dur = len * STEP, long = len >= 8;
+        // Long notes open from "ah" to "oo"; shorter ones move between "oh" and "ah".
+        const va = long ? VOWELS.ah : len >= 4 ? VOWELS.oh : VOWELS.oo, vb = long ? VOWELS.oo : VOWELS.ah;
+        const level = Math.min(1, .45 + sung++ * .1);   // the first notes come in softly
+        voice(f, t, dur, va, vb, level);
+        if (harmonyOn) voice(thirdBelow(f), t + .02, dur, VOWELS.oo, VOWELS.oh, level * .42);
+      }
+    }
+  }
+  function padChord(freqs, t, dur, first) {
+    const out = AC.createGain(), lp = AC.createBiquadFilter(), att = first ? 3 : 1.2;
+    lp.type = "lowpass"; lp.Q.value = .7;
+    lp.frequency.setValueAtTime(450, t); lp.frequency.linearRampToValueAtTime(720, t + dur / 2); lp.frequency.linearRampToValueAtTime(480, t + dur);
+    out.gain.setValueAtTime(0, t); out.gain.linearRampToValueAtTime(1, t + att);
+    out.gain.setValueAtTime(1, t + dur - 1.6); out.gain.linearRampToValueAtTime(0, t + dur);
+    lp.connect(out); out.connect(bus);
+    for (const f of freqs) for (const det of [-6, 6]) {
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.type = "sawtooth"; o.frequency.value = f; o.detune.value = det + (Math.random() - .5) * 4; g.gain.value = .026;
+      o.connect(g); g.connect(lp); o.start(t); o.stop(t + dur + .1);
+    }
+  }
+  function congaHit(step, t) {
+    let p = GROOVE[step];
+    if (!p && step === 13 && Math.random() < .25) p = ["high", .25];   // an occasional extra touch
+    if (!p) return;
+    if (step !== 0 && Math.random() < .12) return;                      // and now and then a beat left out
+    const swell = Math.min(1, (t - congaFrom) / (BAR * 2));            // comes in over two bars
+    drum(p[0] === "low" ? 110 : 146.83, t + (Math.random() - .5) * .02, p[1] * (.85 + Math.random() * .3) * (.25 + .75 * swell));
+  }
+  function drum(f, t, vel) {
+    const low = f < 120, out = panTo(low ? -.25 : .25, bus);
+    // The drum's note: it lands a little sharp and settles, with a faint overtone for the shell.
+    for (const [m, v, d] of [[1, .45, low ? .55 : .38], [2.4, .085, .12]]) {
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.frequency.setValueAtTime(f * m * 1.5, t); o.frequency.exponentialRampToValueAtTime(f * m, t + .03);
+      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(v * vel, t + .004); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+      o.connect(g); g.connect(out); o.start(t); o.stop(t + d + .05);
+    }
+    // The hand on the skin.
+    const s = AC.createBufferSource(), bp = AC.createBiquadFilter(), ng = AC.createGain();
+    s.buffer = NOISE; bp.type = "bandpass"; bp.frequency.value = f * 6; bp.Q.value = 1;
+    ng.gain.setValueAtTime(.0001, t); ng.gain.exponentialRampToValueAtTime(.085 * vel, t + .002); ng.gain.exponentialRampToValueAtTime(.0001, t + .04);
+    s.connect(bp); bp.connect(ng); ng.connect(out); s.start(t, Math.random() * .5); s.stop(t + .05);
+  }
+
+  /* The beat: a round kick on one and three (with an extra push every other
+     bar), a soft clap on two and four, and a faint open hi-hat on the "and"s.
+     Nothing on the sixteenths and no click on the kick, so nothing ticks.
+     It swells in over two bars. */
+  let beatOn = false, beatFrom = 0, beatBar = 0, lofi = null;
+  function ensureLofi() {
+    if (lofi && lofi.bus === bus) return lofi;
+    const g = AC.createGain(); g.gain.value = 1; g.connect(bus);
+    lofi = {bus, in: g};
+    return lofi;
+  }
+  function stopLofi() { lofi = null; }
+  function beatHit(step, t) {
+    const L = ensureLofi().in, swell = Math.min(1, (t - beatFrom) / (BAR * 2));
+    if (step === 0) beatBar++;
+    if (step === 0 || step === 8 || (step === 14 && beatBar % 2 === 0)) kick(L, t, (step === 14 ? .6 : step ? .85 : 1) * swell);
+    if (step === 4 || step === 12) clap(L, t, swell);
+    if (step % 4 === 2) openHat(L, t, .4 * swell);
+  }
+  function kick(L, t, v) {
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(50, t + .1);
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.55 * v + .0001, t + .004); g.gain.exponentialRampToValueAtTime(.0001, t + .5);
+    o.connect(g); g.connect(L); o.start(t); o.stop(t + .55);
+  }
+  function clap(L, t, v) {
+    // Three quick slaps a hair apart and a short tail: a clap, softened.
+    const s = AC.createBufferSource(), bp = AC.createBiquadFilter(), g = AC.createGain();
+    s.buffer = NOISE; bp.type = "bandpass"; bp.frequency.value = 1300; bp.Q.value = .9;
+    g.gain.setValueAtTime(.0001, t);
+    for (const d of [0, .011, .022]) { g.gain.setValueAtTime(.2 * v + .0001, t + d); g.gain.exponentialRampToValueAtTime(.03 * v + .0001, t + d + .009); }
+    g.gain.setValueAtTime(.16 * v + .0001, t + .033); g.gain.exponentialRampToValueAtTime(.0001, t + .25);
+    s.connect(bp); bp.connect(g); g.connect(L); s.start(t, Math.random() * .5); s.stop(t + .27);
+  }
+  function openHat(L, t, v) {
+    const s = AC.createBufferSource(), hp = AC.createBiquadFilter(), g = AC.createGain();
+    s.buffer = NOISE; hp.type = "highpass"; hp.frequency.value = 7000;
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.022 * v + .0001, t + .003); g.gain.exponentialRampToValueAtTime(.0001, t + .2);
+    s.connect(hp); hp.connect(g); g.connect(L); s.start(t, Math.random() * .5); s.stop(t + .22);
+  }
+
+  /* The voice, far off and ethereal: a soft buzz at the note's pitch with a
+     gentle vibrato that grows into each note, shaped by three resonances (the
+     formants of a vowel), with a little breath on top, through a long echo and
+     the room so it seems to come from everywhere. */
+  // Formants (Hz) of a woman's open vowels.
+  const VOWELS = {ah: [800, 1150, 2900], oh: [450, 800, 2830], oo: [350, 650, 2700]};
+  let chant = null;
+  function ensureChant() {
+    if (chant && chant.bus === bus) return chant.in;
+    const g = AC.createGain(), dl = AC.createDelay(2), fb = AC.createGain(), lp = AC.createBiquadFilter();
+    g.gain.value = .9; dl.delayTime.value = BAR / 8 * 3; fb.gain.value = .36; lp.type = "lowpass"; lp.frequency.value = 2400;   // the echo falls on a dotted eighth
+    g.connect(bus); g.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); fb.connect(bus);
+    chant = {bus, in: g};
+    return g;
+  }
+  function voice(f, t, dur, va, vb, level) {
+    const L = ensureChant(), out = AC.createGain(), src = AC.createGain(), soft = AC.createBiquadFilter();
+    const att = Math.min(.7, dur * .35), end = t + dur;
+    out.gain.setValueAtTime(0, t); out.gain.linearRampToValueAtTime(level, t + att);
+    out.gain.setValueAtTime(level, end - .2); out.gain.linearRampToValueAtTime(0, end + .6);
+    out.connect(L);
+    soft.type = "lowpass"; soft.frequency.value = 2500; src.connect(soft);
+    // The buzz: two saw waves a hair apart, with vibrato that grows into the note.
+    const vib = AC.createOscillator(), vg = AC.createGain();
+    vib.frequency.value = 5.2; vg.gain.setValueAtTime(0, t); vg.gain.linearRampToValueAtTime(f * .007, t + att + .6);
+    vib.connect(vg); vib.start(t); vib.stop(end + .7);
+    for (const det of [-4, 4]) {
+      const o = AC.createOscillator(), og = AC.createGain();
+      o.type = "sawtooth"; o.frequency.value = f; o.detune.value = det; og.gain.value = .5;
+      vg.connect(o.frequency); o.connect(og); og.connect(src); o.start(t); o.stop(end + .7);
+    }
+    // The vowel: three resonances, gliding from one vowel to the next over the note.
+    [1, .45, .08].forEach((amp, k) => {
+      const bp = AC.createBiquadFilter(), bg = AC.createGain();
+      bp.type = "bandpass"; bp.Q.value = va[k] / (k ? 110 : 90);
+      bp.frequency.setValueAtTime(va[k], t); bp.frequency.linearRampToValueAtTime(vb[k], end);
+      bg.gain.value = amp * .24;
+      soft.connect(bp); bp.connect(bg); bg.connect(out);
+    });
+    // A little breath.
+    const n = AC.createBufferSource(), nb = AC.createBiquadFilter(), ng = AC.createGain();
+    n.buffer = NOISE; n.loop = true; nb.type = "bandpass"; nb.frequency.value = 2600; nb.Q.value = .7; ng.gain.value = .004;
+    n.connect(nb); nb.connect(ng); ng.connect(out); n.start(t, Math.random() * .5); n.stop(end + .7);
+  }
+
+  /* The bass, from forty stars: the chord of the bar it is in gives the notes,
+     the root on one, then the fifth, the third and a colour note, with a
+     slightly different figure every other bar. Same dark, rounded sound as the hum. */
+  const BASS_A = {0: ["root", 5], 6: ["fifth", 2], 8: ["root", 2], 10: ["third", 3], 14: ["fifth", 2]};
+  const BASS_B = {0: ["root", 3], 3: ["root", 2], 6: ["color", 3], 10: ["fifth", 2], 12: ["third", 2], 14: ["root", 2]};
+  let bassOn = false;
+  function bassHit(step, bar, t) {
+    const n = (bar % 2 ? BASS_B : BASS_A)[step];
+    if (!n) return;
+    const f = BASS[PROG[bar]][n[0]], len = n[1] * STEP;
+    const out = AC.createGain(), lp = AC.createBiquadFilter();
+    lp.type = "lowpass"; lp.frequency.value = 380; lp.Q.value = .6;
+    out.gain.setValueAtTime(.0001, t); out.gain.exponentialRampToValueAtTime(.34, t + .02);
+    out.gain.setTargetAtTime(.2, t + .02, .25); out.gain.setTargetAtTime(.0001, t + len - .04, .06);
+    lp.connect(out); out.connect(bus);
+    for (const [m, v] of [[1, 1], [2, .35], [3, .08]]) {
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.frequency.value = f * m; g.gain.value = v;
+      o.connect(g); g.connect(lp); o.start(t); o.stop(t + len + .4);
+    }
+  }
+
+  /* At fifty stars it is over: over eight seconds the sky goes to black and
+     the music slowly fades out, and then the words come up. Esc, or the button that
+     returns after them, takes you back to the review. */
+  let finaleAt = 0, finalShown = false;
+  // The picture is black after eight seconds; the music plays on and fades out during the crawl.
+  const FINALE_MS = 8000, SOUND_FADE_MS = 37000;   // music is scheduled until the very end of the crawl
+  /* The last words, a different one each time, told the way a certain space
+     saga opens: a pale blue line on black, then a title and the words rising
+     up into the distance. Then back to the app. */
+  const FINALE_LINES = [
+    "That was not a two-minute task.",
+    "50 stars made. 0 next actions done.",
+    "What's the next action? (It's not making stars.)",
+    "Inbox Zero achieved. In space. Now try it on Earth.",
+    "Someday/Maybe is over. Today/Definitely starts now.",
+    "Your projects are reviewed. They're still not doing themselves.",
+    "You can do anything, but not everything. Pick one.",
+    "The universe is in order. Your calendar is waiting.",
+    "Those stars won't move your projects forward. You will.",
+    "Weekly review: done. Weekly doing: pending.",
+    "You've now spent more time celebrating than reviewing.",
+    "Your trusted system trusts you to get back to it.",
+    "That counted as reflecting. Next up: engaging.",
+    "Every project needs a next action. Yours is 'close this window'.",
+    "Your Waiting For list is waiting for you.",
+    "Space is infinite. Your workday is not.",
+    "Open loops detected. Return to base.",
+    "Nice fly-through. Now fly through your inbox.",
+    "The only star that matters now is your next action.",
+    "Fun fact: stars don't file themselves. Neither do receipts.",
+    "Mission complete. Your @Computer context is calling.",
+    "Your someday list called. It's still someday.",
+    "Achievement unlocked: Procrastination, Expert level.",
+    "Houston, we have a Next Actions list.",
+    "All systems clear. Now clear your desk.",
+    "You've reached the edge of the universe. Your inbox is on the other side.",
+    "That was your horizon of focus. This is your actual desk.",
+    "The weekly review is over. The weekly part starts now.",
+    "Inbox: stuff. You: done with stars. Coincidence? Go.",
+    "The best time to do it was before the starfield. The second best is now.",
+    "You can't 'do' a project. But you can do the next action.",
+  ];
+  let finTimers = [];
+  function crawlSequence() {
+    const later = (ms, f) => finTimers.push(setTimeout(f, ms));
+    $("#sf-crawltext").textContent = FINALE_LINES[(Math.random() * FINALE_LINES.length) | 0];
+    $("#sf-crawl").style.setProperty("--dist", -(window.innerHeight * 1.75) + "px");
+    later(500, () => $("#sf-sfinal").classList.add("on"));
+    later(5000, () => $("#sf-sfinal").classList.remove("on"));
+    later(6600, () => { $("#sf-crawlwrap").classList.add("on"); $("#sf-crawl").classList.add("go"); fadeMusic(21.8); });
+    later(10000, () => { $("#sf-exit").style.opacity = ""; });
+    later(27000, () => $("#sf-crawlwrap").classList.remove("on"));
+    later(29000, end);
+  }
+
+  function startFinale() { finaleAt = performance.now(); }   // the music plays on until the crawl
+  // The music fades out while the crawl rises: an even fade in loudness, gone just before the app comes back.
+  function fadeMusic(seconds) {
+    if (!bus) return;
+    const g = bus.gain, t = AC.currentTime, v = Math.max(g.value, .0001);
+    // Pin the current level as the ramp's starting point; a ramp otherwise starts from the last scheduled event.
+    g.cancelScheduledValues(t); g.setValueAtTime(v, t);
+    g.exponentialRampToValueAtTime(.0001, t + seconds);
+  }
+
+  function stopHum() {
+    if (!hum || !AC) return;
+    const h = hum, t = AC.currentTime; hum = null;
+    // Hold the level it has reached (it may still be swelling in), then let it die away.
+    const g = h.out.gain;
+    if (g.cancelAndHoldAtTime) g.cancelAndHoldAtTime(t); else { const v = g.value; g.cancelScheduledValues(t); g.setValueAtTime(v, t); }
+    g.setTargetAtTime(0, t, .4);
+    for (const o of h.nodes) o.stop(t + 2.5);
+  }
+
+  /* Flying through: a breath of air for a card; for a star the same, and its
+     light, and the ding of the handpan. */
+  function passThrough(c) {
+    flash = c.star ? {rgb: TINTS[c.tint].join(","), peak: .38, life: 1} : {rgb: "250,248,242", peak: .14, life: 1};
+    whoosh(c.star);
+    if (c.star) handpan(0, ASHAKIRAN[0]);
+  }
+  function whoosh(strong) {
+    if (!bus) return;
+    const t = AC.currentTime + .005, s = AC.createBufferSource(), bp = AC.createBiquadFilter(), g = AC.createGain();
+    s.buffer = NOISE; s.loop = true;
+    bp.type = "bandpass"; bp.Q.value = 1.4;
+    bp.frequency.setValueAtTime(250, t); bp.frequency.exponentialRampToValueAtTime(1100, t + .35); bp.frequency.exponentialRampToValueAtTime(180, t + 1.1);
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(strong ? .22 : .14, t + .3); g.gain.exponentialRampToValueAtTime(.0001, t + 1.2);
+    s.connect(bp); bp.connect(g); g.connect(bus); s.start(t); s.stop(t + 1.25);
+  }
+
+  
+  function start(force) {
+    if (phase !== "idle") return;
+    if (reduced() && force !== true) { $("#sf-finale").hidden = false; $("#sf-close").focus(); return; }
+    size();
+    IMGS = IMGS || PROJECTS.map(paintCard);
+    buildSky();
+    seed();
+    sparks = []; score = 0; textOp = 0; flash = null;
+    gridAt = gridStep = gridBar = 0; padsOn = congasOn = melodyOn = harmonyOn = false; sung = 0;
+    beatOn = false; beatBar = 0; lofi = null; chant = null; bassOn = false; finaleAt = 0; finalShown = false;
+    $("#sf-sfinal").classList.remove("on"); $(".sbar").style.opacity = ""; $("#sf-exit").style.opacity = "";
+    $("#sf-crawlwrap").classList.remove("on"); $("#sf-crawl").classList.remove("go");
+    turnX = turnY = panX = panY = bankNow = 0; for (const k in keys) keys[k] = false;
+    $("#sf-score").textContent = "Click a card to make a star" + (matchMedia("(hover: hover)").matches ? " · W A S D to steer" : "");
+    $("#sf-score").classList.add("hint");
+    $("#sf-unlock").classList.remove("on"); showLevel();
+    msg.style.opacity = 0;
+    newBus(); startHum();
+    space.hidden = false;
+    space.classList.remove("on");
+    void space.offsetWidth;
+    space.classList.add("on");
+    t0 = last = performance.now();     // no time limit: only Esc or the button ends it
+    phase = "run";
+    raf = requestAnimationFrame(frame);
+    sky.focus({preventScroll: true});      // keys go to the sky, and the exit button shows no focus ring
+  }
+  function end() {
+    if (phase !== "run") return;
+    phase = "out";
+    stopHum(); stopLofi(); fadeBus();
+    finTimers.forEach(clearTimeout); finTimers = [];
+    const slow = finalShown;                      // after the crawl, the app comes back slowly
+    if (slow) space.classList.add("slow");
+    space.classList.remove("on");
+    setTimeout(() => {
+      phase = "idle"; cancelAnimationFrame(raf);
+      space.hidden = true; space.classList.remove("slow");
+      
+      onEnd();
+    }, slow ? 2650 : 950);
+  }
+  function closeFinale() { $("#sf-finale").hidden = true;  onEnd(); }
+
+  sky.addEventListener("pointerdown", e => {
+    if (phase !== "run" || finaleAt) return;
+    e.preventDefault();
+    const c = cardAt(e.clientX, e.clientY);
+    if (c) hit(c);
+  });
+  sky.addEventListener("pointermove", e => {
+    sky.style.cursor = phase === "run" && cardAt(e.clientX, e.clientY) ? "pointer" : "default";
+  });
+  $("#sf-exit").addEventListener("click", end);
+  $("#sf-anyway").addEventListener("click", () => { $("#sf-finale").hidden = true; start(true); });
+  $("#sf-close").addEventListener("click", closeFinale);
+  $("#sf-finale").addEventListener("click", e => { if (e.target.id === "finale") closeFinale(); });
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Escape") return;
+    if (phase === "run") end(); else if (!$("#sf-finale").hidden) closeFinale();
+  });
+  window.addEventListener("resize", () => { if (phase !== "idle") { size(); buildSky(); } });
+  document.addEventListener("keydown", e => {
+    const k = STEER[e.code];
+    if (!k || phase !== "run") return;
+    e.preventDefault();
+    keys[k] = true;
+  });
+  document.addEventListener("keyup", e => { const k = STEER[e.code]; if (k) keys[k] = false; });
+  window.addEventListener("blur", () => { for (const k in keys) keys[k] = false; });
+  window.starfieldPlay = (projects, o) => {
+    if (phase !== "idle") return;
+    PROJECTS = projects; IMGS = null; onEnd = o.onEnd || (() => {}); soundOn = o.sound !== false;
+    $(".smsg h2").textContent = o.title; $(".smsg p").textContent = o.sub; $("#sf-fsub").textContent = o.sub;
+    start(false);
+  };
+})();
+
 "use strict";
-const APP_VERSION = "1.85.0";
+const APP_VERSION = "1.86.0";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -11381,7 +12331,6 @@ const NAV_ITEMS = [
 "pins",
 "grow",
 {id: "timer",    icon: "◷", label: "Timer", small: true},
-{id: "review",   icon: "✓", label: "Weekly review"},
 ];
 const SIDEBAR_PATH = join(DIRS.lists, "sidebar.md");
 const NAV_SEP = "---";
@@ -12172,11 +13121,11 @@ if (it === "sep") { nav.append(el("div", {class: "nav-sep"})); continue; }
 if (it === "grow") { nav.append(el("div", {class: "nav-grow"})); continue; }
 if (it === "pins") { nav.append(...navPins()); continue; }
 if (it.id === "timer") { nav.append(timerNavItem(it)); continue; }
-const here = state.view === it.id;
+const here = state.view === it.id || (it.id === "projects" && state.view === "review");
 if (it.when && !here && !it.when()) continue;
 const n = navCount(it.id);
 const hot = (it.id === "today" && dueNow().some(a => a.due < todayISO())) ||
-(it.id === "review" && reviewDue());
+(it.id === "projects" && reviewDue());
 const folds = it.id === "contexts" && n > 0;
 const open = folds && PREF.get("nav.ctxOpen", "0") === "1";
 nav.append(el("button", {
@@ -12239,6 +13188,7 @@ last.map(([name, p]) => el("div", {class: "nav-load-file", title: p},
 let NAV_PENDING = 0;
 function goFromNav(view, btn) {
 if (view === state.view) { go(view); return; }
+if (view === "projects" && state.view === "review") { go(view); return; }
 const ticket = ++NAV_PENDING;
 for (const b of document.querySelectorAll("#nav .nav-item.active")) {
 b.classList.remove("active"); b.removeAttribute("aria-current");
@@ -14060,7 +15010,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.85.0 - 2026-11-04\n\n- Chores: + New chore has Custom... in How often (opens Repeats, so every\n  2nd tuesday or every 3 weeks work) and Pick a date... in First one. Fixes #279.\n\n## 1.84.1 - 2026-11-04\n\n- Writing a chapter: the page's ... menu has Put back, which turns\n  putback:: yes on or off for that page. Refs #254.\n\n## 1.84.0 - 2026-11-04\n\n- Writing a chapter: Put back is no longer only for darlings. Add\n  putback:: yes to any page and a line refiled there remembers where it came\n  from; the page gets a Put back button that returns it. Darlings is now just\n  such a page. Part of the outliner-roots clean-up. Refs #254.\n\n## 1.83.4 - 2026-11-04\n\n- Writing a chapter: Beats (%%), Script, the thought, sound and written\n  marks and Kindle notes import are gone. A line that starts with %% or holds\n  a {.thought} mark is now an ordinary line, counted like the rest. Part of the\n  outliner-roots clean-up. Refs #254.\n\n## 1.83.3 - 2026-11-04\n\n- Book › Revise: a chapter that moves on a stage is no longer copied to\n  8/snapshots, and Revise no longer shows what changed since. Part of the\n  outliner-roots clean-up. Refs #254.\n\n## 1.83.2 - 2026-11-04\n\n- Chores: the help topic is shorter, six steps. Fixes #217.\n\n## 1.83.1 - 2026-11-04\n\n- Weekly review: the #reflection line is written on the week page, not on a\n  day page. A line an older version put on a day page is still found. Fixes\n  #217.\n\n## 1.83.0 - 2026-11-04\n\n- Refile (Alt+G) lists the projects, responsibilities and contexts the line\n  already links to first, in the order they appear, marked linked. The first\n  one is chosen, so Alt+G then Enter files it there. (#278)\n\n## 1.82.0 - 2026-11-04\n\n- Chores: + New chore suggests the chores you already have, so Vacuum is the\n  same chore in every room. A new name is offered next time, in New chore and\n  Log a chore. Group by Room or Chore: by chore shows how many rooms and how\n  long in all, and Print follows the grouping. Fixes #260.\n\n## 1.81.0 - 2026-11-03\n\n- Keys on a line: \"Copy as plain text\" in the line menu, and a \"Copy text\"\n  button on the line toolbar, copy the line as plain words: the state and the\n  title, without links, brackets, #tags, properties or the lines below.\n\n## 1.80.1 - 2026-11-03\n\n- Keys on a line: Ctrl+Enter now passes through Cancelled after Done and\n  before turning the line back into a note.\n\n## 1.80.0 - 2026-11-03\n\n- Keys on a line (#273): a \"To area\" button on the picked-lines bar and on the\n  line toolbar moves the lines to another area. Pages they link to move\n  along. A page other pages also link to is mirrored instead, and a message\n  says so.\n";
+const HELP_NEWS = "## 1.86.0 - 2026-11-04\n\n- Weekly review: now a reading of Projects (Weekly review in its switch) rather\n  than a place in the sidebar, with a way back to Projects. Marking the review\n  done flies you through a starfield of your project cards: click one to make a\n  star, and music builds up to a finale at 50. Celebration in the review turns\n  it to no sound or off, and reduced motion gets a still card. Fixes #223.\n\n## 1.85.0 - 2026-11-04\n\n- Chores: + New chore has Custom... in How often (opens Repeats, so every\n  2nd tuesday or every 3 weeks work) and Pick a date... in First one. Fixes #279.\n\n## 1.84.1 - 2026-11-04\n\n- Writing a chapter: the page's ... menu has Put back, which turns\n  putback:: yes on or off for that page. Refs #254.\n\n## 1.84.0 - 2026-11-04\n\n- Writing a chapter: Put back is no longer only for darlings. Add\n  putback:: yes to any page and a line refiled there remembers where it came\n  from; the page gets a Put back button that returns it. Darlings is now just\n  such a page. Part of the outliner-roots clean-up. Refs #254.\n\n## 1.83.4 - 2026-11-04\n\n- Writing a chapter: Beats (%%), Script, the thought, sound and written\n  marks and Kindle notes import are gone. A line that starts with %% or holds\n  a {.thought} mark is now an ordinary line, counted like the rest. Part of the\n  outliner-roots clean-up. Refs #254.\n\n## 1.83.3 - 2026-11-04\n\n- Book › Revise: a chapter that moves on a stage is no longer copied to\n  8/snapshots, and Revise no longer shows what changed since. Part of the\n  outliner-roots clean-up. Refs #254.\n\n## 1.83.2 - 2026-11-04\n\n- Chores: the help topic is shorter, six steps. Fixes #217.\n\n## 1.83.1 - 2026-11-04\n\n- Weekly review: the #reflection line is written on the week page, not on a\n  day page. A line an older version put on a day page is still found. Fixes\n  #217.\n\n## 1.83.0 - 2026-11-04\n\n- Refile (Alt+G) lists the projects, responsibilities and contexts the line\n  already links to first, in the order they appear, marked linked. The first\n  one is chosen, so Alt+G then Enter files it there. (#278)\n\n## 1.82.0 - 2026-11-04\n\n- Chores: + New chore suggests the chores you already have, so Vacuum is the\n  same chore in every room. A new name is offered next time, in New chore and\n  Log a chore. Group by Room or Chore: by chore shows how many rooms and how\n  long in all, and Print follows the grouping. Fixes #260.\n\n## 1.81.0 - 2026-11-03\n\n- Keys on a line: \"Copy as plain text\" in the line menu, and a \"Copy text\"\n  button on the line toolbar, copy the line as plain words: the state and the\n  title, without links, brackets, #tags, properties or the lines below.\n\n## 1.80.1 - 2026-11-03\n\n- Keys on a line: Ctrl+Enter now passes through Cancelled after Done and\n  before turning the line back into a note.\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {
@@ -29101,13 +30051,16 @@ const subShown = (view, k) => view === "review" ? k !== "reflect" || reflectWant
 function viewSeg(view) {
 const cur = subNow();
 const subs = SUBS[view].filter(([k]) => k === cur || subShown(view, k));
+if (view === "projects") subs.push(["@review", "Weekly review" + (reviewDue() ? " •" : "")]);
+if (view === "review") subs.unshift(["@projects", "‹ Projects"]);
+const pick = k => k === "@review" ? go("review") : k === "@projects" ? go("projects") : pickSub(view, k);
 const now = subs.find(([k]) => k === cur);
 return el("span", {class: "vswitch"},
 el("div", {class: "vseg", role: "group", "aria-label": "View as"},
 ...subs.map(([k, label]) => el("button", {"aria-pressed": String(cur === k),
-onclick: () => pickSub(view, k)}, label))),
+onclick: () => pick(k)}, label))),
 el("span", {class: "vsel"}, el("span", {"aria-hidden": "true"}, (now ? now[1] : "") + " ▾"),
-fselect("View as", cur, subs, k => pickSub(view, k))));
+fselect("View as", cur, subs, pick)));
 }
 const fbar = (...kids) => el("div", {class: "fbar"}, ...kids);
 function fchip(label, on, onclick, count) {
@@ -32384,10 +33337,35 @@ c.append(el("div", {style: "display:flex;gap:8px;margin-top:18px;align-items:cen
 el("button", {class: "btn primary", onclick: () => {
 setSetting("last_review", todayStamp());
 notify("Weekly review logged for " + humanDate(todayISO()) + ".");
-render();
+if (!celebrateReview()) render();
 }}, done === all.length && all.length ? "All done - mark the review done" : "Mark the review done"),
-el("button", {class: "textbtn", title: "The steps are the routine Weekly review in Settings", onclick: editReviewSteps}, "Edit the steps")));
+el("button", {class: "textbtn", title: "The steps are the routine Weekly review in Settings", onclick: editReviewSteps}, "Edit the steps"),
+el("button", {class: "textbtn", title: "The starfield after the review is marked done",
+onclick: () => { PREF.set("review.celebrate", {on: "quiet", quiet: "off", off: "on"}[PREF.get("review.celebrate", "on")] || "on"); render(); }},
+"Celebration: " + {on: "on", quiet: "no sound", off: "off"}[PREF.get("review.celebrate", "on")])));
 return c;
+}
+function celebrateReview() {
+const mode = PREF.get("review.celebrate", "on");
+if (mode === "off" || typeof window.starfieldPlay !== "function") return false;
+const rows = ["1", "3"].flatMap(code => projectsInVisible(code));
+const thisWeek = rows.filter(r => {
+const d = dateIn(inS(r, () => getPage(r.path)?.props?.reviewed));
+return d && dateDiffDays(d, todayISO()) < 7;
+});
+const cards = (thisWeek.length ? thisWeek : rows).map(r => {
+const next = openOf(projectActions(r))[0];
+return [areaOfRow(r) || "Project", inS(r, () => pageTitle(r.path)), next ? next.title : "Add a next action"];
+});
+if (!cards.length) return false;
+const nextOn = shiftISO(todayISO(), CFG.reviewEveryDays);
+window.starfieldPlay(cards, {
+title: "Weekly review done",
+sub: cards.length + (cards.length === 1 ? " project" : " projects") + " reviewed · next review " + humanDate(nextOn),
+sound: mode === "on",
+onEnd: () => render(),
+});
+return true;
 }
 let SOL = {order: null, i: 0, focus: null, more: null};
 const solWeek = () => { const d = new Date(); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return isoOf(d); };

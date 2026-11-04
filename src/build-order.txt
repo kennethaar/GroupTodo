@@ -1803,6 +1803,7 @@ js/110-views/viewReflect.js
 js/110-views/vars-REVIEW_PHASES.js
 js/110-views/reviewFold.js
 js/110-views/viewReview.js
+js/110-views/celebrateReview.js
 js/110-views/vars-SOL.js
 js/110-views/solSaveAns.js
 js/110-views/vars-solKey.js

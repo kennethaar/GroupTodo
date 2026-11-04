@@ -1,5 +1,6 @@
 function goFromNav(view, btn) {
   if (view === state.view) { go(view); return; }
+  if (view === "projects" && state.view === "review") { go(view); return; }
   const ticket = ++NAV_PENDING;
   for (const b of document.querySelectorAll("#nav .nav-item.active")) {
     b.classList.remove("active"); b.removeAttribute("aria-current");
