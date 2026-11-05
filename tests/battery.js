@@ -3176,6 +3176,12 @@ var GTD_TEST = (() => {
         go("checklists");
         await settle();
         ok(content().querySelector(".calset .calchip"), "Calendars in a private area's Settings");
+        const was = PREF.get(CAL_HOME_KEY, ""), sp = Spaces.get(back), j = sp.joined, o = sp.onlyMe;
+        try {
+          PREF.set(CAL_HOME_KEY, back);
+          sp.joined = true; delete sp.onlyMe;
+          eq(calHome(), n, "#218 a remembered shared area does not win over the private area you are on");
+        } finally { sp.joined = j; if (o) sp.onlyMe = o; PREF.set(CAL_HOME_KEY, was); }
       } finally { await openSpace(back); await removeArea(n); go("today"); }
     });
   }
