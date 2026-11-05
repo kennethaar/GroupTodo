@@ -4,7 +4,7 @@
 
 GroupToDo combines the daily journals, with `[[backlinks]]`, live queries, and graph views of tools like **Logseq, Obsidian, and Roam** with a complete **Getting Things Done (GTD)** project engine. In short a complete system to manage everything digital in one place. Your files stay as plain Markdown files in a folder on your disk. No install, no plugins to wire up, no account, and no server, just a single HTML-file that can run anywhere.
 
-**Try it right now:** Open **[kennethaar.github.io/GroupTodo](https://kennethaar.github.io/GroupTodo/)** in Chrome or Edge (or download and double-click `grouptodo.html`). Your data never leaves your machine, and `GroupToDo-Importer.html` can preview and migrate an existing Obsidian or Logseq vault in seconds.
+**Try it right now:** Open **[kennethaar.github.io/GroupTodo](https://kennethaar.github.io/GroupTodo/)** in Chrome or Edge (or download and double-click `grouptodo.html`). Your data never leaves your machine, and [GroupToDo-Importer.html](https://github.com/kennethaar/GroupTodo/blob/main/GroupToDo-Importer.html) can preview and migrate an existing Obsidian or Logseq vault in seconds.
 
 **Multiplayer without the SaaS tax—or sync conflicts:** 
 Most team task apps lock your data on their servers and charge per seat. Local Markdown apps break when two people edit the same shared folder. GroupToDo solves both: share a folder over OneDrive, Dropbox, or a network drive and you are in. Because every teammate writes to their own daily journal file and changes merge by timestamp, nobody overwrites anyone else. Remove someone from the folder and their access is gone. Every task and project is just a plain `.md` file, so your work outlives the tool.
