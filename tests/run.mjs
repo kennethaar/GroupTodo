@@ -163,7 +163,7 @@ async function importerTest(name, file = join(ROOT, "GroupToDo-Importer.html")) 
   const {runInNewContext} = await import("node:vm");
   try {
     const src = readFileSync(file, "utf-8").split("<script>")[1].split("/* ---------- the page")[0]
-      .split("window.GTDImport =")[0] + ";this.G = {analyze, ruleChoices, convert, startRules};";
+      .split("window.GTDImport =")[0] + ";this.G = {analyze, ruleChoices, convert, startRules, outlineFiles};";
     const box = {};
     runInNewContext(src, box);
     const G = box.G;
@@ -215,6 +215,24 @@ async function importerTest(name, file = join(ROOT, "GroupToDo-Importer.html")) 
     const hf = G.convert(h, {me: "Me", rules: hr}).files;
     for (const w of ["pages/_/Purpose.md", "pages/_/Vision.md", "pages/m/Quote.md", "pages/r/GTD.md"])
       if (!hf.has(w)) return {name, ok: false, error: "expected " + w + "; got " + [...hf.keys()].join(", ")};
+    // Dynalist and Workflowy export OPML: each document is a page, a folder is
+    // a namespace, a checkbox or checkmark is a task, a note stays under its line.
+    const opml = '<?xml version="1.0"?><opml version="2.0"><head><title>Trip</title><flavor>dynalist</flavor></head><body>' +
+      '<outline text="**Plan** the trip" heading="2" _note="Line one&#xD;&#xA;Line two"><outline text="Book tickets !(2026-12-01)" checkbox="true"/>' +
+      '<outline text="Pack" checkbox="true" complete="true"/><outline text="Ask [[Anna]] &amp; Bo !(2026-11-30)"/></outline></body></opml>';
+    const o = G.outlineFiles([{rel: "Someday _ Maybe/Trip.opml", text: opml}, {rel: "Someday _ Maybe/Trip.txt", text: "dup"},
+      {rel: "Ideas.txt", text: "- Buy milk\n    - Whole\n- Call Bo"}].map(f => ({mtime: 0, ...f})));
+    if (o.origin !== "Dynalist" || o.files.length !== 2) return {name, ok: false, error: "outline files: " + o.origin + " " + o.files.map(f => f.rel)};
+    const oa = G.analyze("logseq", o.files);
+    const orules = G.startRules(G.ruleChoices(oa));
+    orules.groups["Someday _ Maybe"] = "2";
+    const oo = G.convert(oa, {me: "Me", area: "Work", rules: orules}).files;
+    const trip = oo.get("Work/pages/2/Trip.md") || "";
+    for (const s of ["- ## **Plan** the trip", "  Line one", "  Line two", "  - TODO Book tickets", "DEADLINE:: [[2026-12-01]]",
+      "  - DONE Pack", "Ask [[Anna]] & Bo [[2026-11-30]]"])
+      if (!trip.includes(s)) return {name, ok: false, error: "the OPML page lacks " + s + ":\n" + trip};
+    const ideas = oo.get("Work/pages/Ideas.md") || "";
+    if (!/- Buy milk\n {2}- Whole\n- Call Bo/.test(ideas)) return {name, ok: false, error: "the text outline lost its shape:\n" + ideas};
     const vision = hf.get("pages/_/Vision.md");
     if (!/type:: horizon/.test(vision) || !/^- 2030\n {2}- bigger/m.test(vision) || !/^- 2032\n {2}- calmer/m.test(vision))
       return {name, ok: false, error: "the vision page lost a source or its title:\n" + vision};

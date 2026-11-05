@@ -120,7 +120,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   <section class="step" id="s1">
     <h2><span class="n">1</span>Source and owner</h2>
     <div class="row">
-      <button class="btn primary" id="pickSource">Choose vault folder…</button>
+      <button class="btn primary" id="pickSource">Choose vault or export folder…</button>
       <span class="found" id="sourceInfo"></span>
     </div>
     <div id="who" hidden>
@@ -169,7 +169,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 "use strict";
 /* ============================================================
    GroupToDo Importer
-   Reads a Logseq or Obsidian vault and writes the same notes in the
+   Reads a Logseq or Obsidian vault, or a Dynalist or Workflowy export, and writes the same notes in the
    GroupToDo vault format (docs/vault-format.md). Two halves:
 
    - CONVERT is pure: lists of {rel, text, mtime} in, a map of output paths
@@ -934,7 +934,7 @@ function reportText(a, res, opts) {
   const kindName = k => (KINDS.find(x => x[0] === k) || [k, "", k])[2];
   const L = [];
   L.push("# GroupToDo import report", "");
-  L.push("From " + (a.kind === "logseq" ? "a Logseq" : "an Obsidian") + " vault, " + new Date().toLocaleString() + ".", "");
+  L.push("From " + (a.origin ? "a " + a.origin + " export" : a.kind === "logseq" ? "a Logseq vault" : "an Obsidian vault") + ", " + new Date().toLocaleString() + ".", "");
   L.push("## Counts", "");
   L.push("- Day pages: " + R.journals + (R.journalCopies ? " (" + R.journalCopies + " made from more than one file)" : ""));
   L.push("- Pages: " + R.pages);
@@ -959,6 +959,83 @@ function reportText(a, res, opts) {
   L.push(...(any.length ? any : ["Nothing."]));
   L.push("");
   return L.join("\n");
+}
+
+/* ---------- outliners: Dynalist, Workflowy and other OPML ---------- */
+const xmlText = s => String(s || "").replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos);/gi, (m, e) => {
+  const k = e.toLowerCase();
+  if (k[0] === "#") return String.fromCodePoint(k[1] === "x" ? parseInt(k.slice(2), 16) : +k.slice(1));
+  return {amp: "&", lt: "<", gt: ">", quot: '"', apos: "'"}[k];
+});
+// OPML into {title, flavor, nodes}; a node is {text, note, complete, checkbox, heading, kids}.
+function parseOpml(xml) {
+  const root = {kids: []}, stack = [root];
+  for (const m of String(xml).matchAll(/<outline((?:\s+[\w:.-]+="[^"]*")*)\s*(\/?)>|<\/outline>/g)) {
+    if (!m[0].startsWith("<outline")) { if (stack.length > 1) stack.pop(); continue; }
+    const at = {};
+    for (const x of m[1].matchAll(/([\w:.-]+)="([^"]*)"/g)) at[x[1]] = xmlText(x[2]);
+    const n = {text: at.text || "", note: at._note || "", kids: [],
+      complete: at.complete === "true" || at._complete === "true", checkbox: at.checkbox === "true",
+      heading: +at.heading || 0};
+    stack[stack.length - 1].kids.push(n);
+    if (!m[2]) stack.push(n);
+  }
+  const tag = k => { const x = new RegExp("<" + k + ">([^<]*)</" + k + ">").exec(xml); return x ? xmlText(x[1]).trim() : ""; };
+  return {title: tag("title"), flavor: lc(tag("flavor")), nodes: root.kids};
+}
+// A plain-text outline: one line per item, indented by tabs or spaces, "- " optional.
+function parseTextOutline(text) {
+  const rows = String(text).split(/\r?\n/).filter(l => l.trim()).map(l => {
+    const ws = /^[ \t]*/.exec(l)[0];
+    return {w: ws.replace(/\t/g, "    ").length, text: l.slice(ws.length).replace(/^[-*+]\s+/, "")};
+  });
+  const unit = Math.min(...rows.map(r => r.w).filter(w => w > 0), 4);
+  const root = {kids: []}, stack = [[-1, root]];
+  for (const r of rows) {
+    const n = {text: r.text, note: "", kids: [], complete: false, checkbox: false, heading: 0};
+    while (stack.length > 1 && stack[stack.length - 1][0] >= r.w) stack.pop();
+    stack[stack.length - 1][1].kids.push(n);
+    stack.push([r.w, n]);
+  }
+  return {title: "", flavor: "", nodes: root.kids};
+}
+// The outline as a Logseq page, so the rest of the importer reads it as it is.
+function outlineMarkdown(nodes) {
+  const out = [];
+  const walk = (n, d) => {
+    const ind = "  ".repeat(d), task = n.complete || n.checkbox;
+    let text = n.text.trim(), due = "";
+    // Dynalist's !(2026-12-01): the deadline of a task, a link to the day otherwise.
+    text = text.replace(/\s*!\((\d{4}-\d{2}-\d{2})[^)]*\)/g, (m, day) => {
+      if (task && !due) { due = day; return ""; }
+      return " [[" + day + "]]";
+    }).trim();
+    const head = n.heading ? "#".repeat(Math.min(n.heading, 6)) + " " : "";
+    out.push(ind + "- " + (n.complete ? "DONE " : n.checkbox ? "TODO " : "") + head + text);
+    if (due) out.push(ind + "  DEADLINE:: [[" + due + "]]");
+    for (const l of n.note.split(/\r?\n/)) if (l.trim()) out.push(ind + "  " + l.trim());
+    for (const k of n.kids) walk(k, d + 1);
+  };
+  for (const n of nodes) walk(n, 0);
+  return out.join("\n") + "\n";
+}
+/* Every .opml (and every .txt with no .opml beside it) becomes a page named
+   by its folders and file: "Someday _ Maybe/Trip.opml" is the page
+   "Someday _ Maybe/Trip". Returns {files, origin} for analyze("logseq", …). */
+function outlineFiles(files) {
+  const have = new Set(files.map(f => f.rel.toLowerCase()));
+  const out = []; let origin = "";
+  for (const f of files) {
+    const m = /^(.*)\.(opml|txt)$/i.exec(f.rel);
+    if (!m || typeof f.text !== "string") continue;
+    const opml = m[2].toLowerCase() === "opml";
+    if (!opml && have.has((m[1] + ".opml").toLowerCase())) continue;
+    const doc = opml ? parseOpml(f.text) : parseTextOutline(f.text);
+    if (opml && !origin) origin = doc.flavor === "dynalist" ? "Dynalist" : "Workflowy or other OPML";
+    if (!opml && !origin) origin = "Text outline";
+    out.push({rel: "pages/" + m[1].split("/").map(s => s.replace(/%/g, "%25")).join("%2F") + ".md", text: outlineMarkdown(doc.nodes), mtime: f.mtime || 0});
+  }
+  return {files: out, origin};
 }
 
 /* ---------- one page, one row ---------- */
@@ -1046,7 +1123,7 @@ function syncGroups(A, rules) {
   for (const p of A.pages) if (p.group && (p.via === "group" || p.groupCode)) rules.groups[p.group] = rules.rows[p.row] || "page";
 }
 
-window.GTDImport = {buildRows, startRowRules, syncGroups, analyze, ruleChoices, placePages, convert, reportText, dateOf, startRules, readFrontMatter};
+window.GTDImport = {outlineFiles, buildRows, startRowRules, syncGroups, analyze, ruleChoices, placePages, convert, reportText, dateOf, startRules, readFrontMatter};
 
 /* ============================================================
    THE PAGE
@@ -1090,7 +1167,7 @@ async function readTree(dir) {
       if (child.kind === "directory") {
         if (name === ".git" || name === "node_modules") continue;
         await walk(child, rel);
-      } else if (/\.md$/i.test(name)) {
+      } else if (/\.(md|opml|txt)$/i.test(name)) {
         const f = await child.getFile();
         files.push({rel, text: await f.text(), mtime: f.lastModified, handle: child});
       } else {
@@ -1138,11 +1215,16 @@ $("#pickSource").onclick = async () => {
 };
 
 function analyzeNow() {
-  const A = S.analysis = analyze(detectKind(S.files), S.files);
+  // Dynalist and Workflowy folders hold outlines, not notes: read them as pages.
+  const outline = S.files.some(f => /\.opml$/i.test(f.rel)) && !S.files.some(f => /\.md$/i.test(f.rel));
+  let origin = "";
+  if (outline) { const o = outlineFiles(S.files); S.files = o.files; origin = o.origin; }
+  const A = S.analysis = analyze(outline ? "logseq" : detectKind(S.files), S.files);
+  A.origin = origin;
   S.result = null;
   const md = S.files.filter(f => /\.md$/i.test(f.rel)).length;
   const left = md - A.pages.length - [...A.journals.values()].flat().length;
-  $("#sourceInfo").replaceChildren("✓ ", el("b", {}, A.kind === "logseq" ? "Logseq" : "Obsidian"), " vault: ",
+  $("#sourceInfo").replaceChildren("✓ ", el("b", {}, origin || (A.kind === "logseq" ? "Logseq" : "Obsidian")), outline ? " export: " : " vault: ",
     A.journals.size + " day pages, " + A.pages.length + " pages, " + A.assets.length + " other files" +
     (left > 0 ? " (" + left + " skipped)" : ""));
 

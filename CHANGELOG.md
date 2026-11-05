@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.95.0 - 2026-11-05
+
+- Vault and sync: the importer reads Dynalist and Workflowy exports. Pick the
+  folder of .opml files (a .txt with no .opml beside it works too). Each
+  document becomes a page, a folder a namespace you give a meaning, a checkbox
+  or checkmark a task, and a note stays under its line.
+
 ## 1.94.1 - 2026-11-05
 
 - Vault and sync: the importer puts every page in exactly one row, so the row
