@@ -2720,6 +2720,7 @@ js/169-project-hold/remindMeeting.js
 js/169-project-hold/meetingTick.js
 js/169-project-hold/installMeetingReminders.js
 js/169-project-hold/drawMeetRemind.js
+js/169-project-hold/drawMeetRemindCustom.js
 js/169-project-hold/meetRemindLabel.js
 js/170-init/vars-storedTheme.js
 js/170-init/installManifest.js

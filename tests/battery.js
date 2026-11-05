@@ -3186,7 +3186,7 @@ var GTD_TEST = (() => {
     });
   }
 
-  test("Calendars: one reminder choice saves at once, with Off and At start apart; a calendar row says who sees it", async () => {
+  test("Calendars: reminder presets save at once, Custom… holds any times and several, a calendar can have its own (#292); a calendar row says who sees it", async () => {
     const was = PREF.get(MEET_REMIND_KEY, "10"), feeds = PREF.get(CAL_FEEDS_KEY, "[]");
     try {
       PREF.set(MEET_REMIND_KEY, "0");
@@ -3199,7 +3199,41 @@ var GTD_TEST = (() => {
       eq(meetRemindLead(), 0, "At start is 0 minutes before");
       radios[0].checked = true; radios[0].dispatchEvent(new Event("change"));
       eq(meetRemindLead(), null, "Off turns reminders off");
+      // Custom… (#292): any number of minutes, hours, days or weeks, several at once.
+      PREF.set(MEET_REMIND_KEY, "20");
+      eq(meetRemindLeads(), [20], "an old custom value is kept");
+      drawMeetRemind();
+      ok(![...document.querySelectorAll(".modal input[type=radio]")].some(r => r.checked), "no preset checked for 20 minutes");
+      const cust = [...document.querySelectorAll(".modal button")].find(b => /Custom…/.test(b.textContent));
+      has(cust?.textContent || "", "20 min before", "Custom… shows the custom reminder");
+      cust.click();
+      const q = s => document.querySelector(".modal " + s);
+      has(q(".remlist").textContent, "20 minutes before");
+      const add = (n, unit) => {
+        q(".remnum").value = n; q(".remunit").value = unit;
+        [...document.querySelectorAll(".modal button")].find(b => /Add reminder/.test(b.textContent)).click();
+      };
+      add("0", "minutes");
+      ok(q(".remerr")?.textContent, "a bad number says why beside the input");
+      add("45", "minutes"); add("1", "days"); add("10", "minutes"); add("45", "minutes");
+      eq([...document.querySelectorAll(".modal .remlist li")].map(li => li.querySelector("span").textContent),
+        ["10 minutes before", "20 minutes before", "45 minutes before", "1 day before"], "sorted, no duplicate");
+      document.querySelectorAll(".modal .remlist li button")[1].click();
+      [...document.querySelectorAll(".modal button")].find(b => b.textContent === "Done").click();
+      eq(meetRemindLeads(), [10, 45, 1440], "Done saves the list");
+      has(meetRemindLabel(), "3 reminders");
+      drawMeetRemind();
+      ok(![...document.querySelectorAll(".modal input[type=radio]")].some(r => r.checked), "several reminders do not check presets");
       setCalFeeds([{url: "https://x.example/a.ics", label: "Work", space: calHome(), also: []}]);
+      // Each calendar can have its own reminders after import.
+      drawCalendarSettings("https://x.example/a.ics");
+      const rrow = [...document.querySelectorAll(".modal .calrow")].find(b => /Reminders/.test(b.textContent));
+      has(rrow?.textContent || "", "3 reminders", "a calendar follows Meeting reminders until changed");
+      rrow.click();
+      const rs = [...document.querySelectorAll(".modal input[type=radio]")];
+      rs[6].checked = true; rs[6].dispatchEvent(new Event("change"));
+      eq(meetRemindLeads(calFeedId("https://x.example/a.ics")), [60], "the calendar's own reminder");
+      eq(meetRemindLeads(), [10, 45, 1440], "other meetings keep theirs");
       drawCalendars();
       const row = document.querySelector(".modal .calrow:nth-of-type(2)")?.textContent || document.querySelector(".modal").textContent;
       has(row, "Private");

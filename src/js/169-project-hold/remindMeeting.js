@@ -1,5 +1,8 @@
 function remindMeeting(m) {
-  const lead = untilWords(m.start - Date.now());
+  // A day or more ahead says the day; nearer, how long until.
+  const lead = m.start - Date.now() >= 12 * 36e5
+    ? "on " + new Date(m.start).toLocaleDateString(undefined, {weekday: "long", day: "numeric", month: "short"}) + " at " + hhmm(m.start)
+    : untilWords(m.start - Date.now());
   const who = trim(blockProp(m.block, "attendees") || "");
   const body = hhmm(m.start) + "–" + hhmm(m.end) + (who ? " · " + linkWords(who) : "");
   const t = el("div", {class: "toast reminder meetrem", role: "alert"},

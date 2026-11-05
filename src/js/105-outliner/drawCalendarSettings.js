@@ -1,4 +1,4 @@
-/* One calendar: who else sees it, where it comes from, and its own Sync and Remove. */
+/* One calendar: its reminders, who else sees it, where it comes from, and its own Sync and Remove. */
 function drawCalendarSettings(url) {
   const f = calFeeds().find(x => x.url === url);
   if (!f) return drawCalendars();
@@ -13,6 +13,7 @@ function drawCalendarSettings(url) {
   const m = calScreen({
     title: name, back: "Calendars", backTo: drawCalendars,
     body: el("div", {},
+      calRow("Reminders", meetRemindLabel(feed), () => drawMeetRemind(url)),
       calRow("Shared with", also.length ? also.join(", ") : "No other areas", () => drawCalendarSharing(url)),
       calFact("Calendar link", calMaskUrl(f.url)),
       calFact("Last synced", at ? calClock(at) : "Not yet"),

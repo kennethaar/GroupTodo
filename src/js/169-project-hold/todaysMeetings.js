@@ -1,5 +1,5 @@
-function todaysMeetings() {
-  const today = todayISO();
+function todaysMeetings(day = todayISO()) {
+  const today = day;
   const out = [];
   for (const name of LOADED.keys()) inSpace(name, () => {
     for (const m of memo("meetings\u0000" + name + "\u0000" + today + "\u0000" + V.pages.size, () => {

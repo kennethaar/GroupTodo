@@ -12,15 +12,17 @@ function paintNextMeeting(list = todaysMeetings()) {
   btn.textContent = "";
   if (!m) { btn.hidden = true; btn.onclick = null; return; }
   btn.hidden = false;
-  const lead = meetRemindLead();
-  const soon = next && lead != null && next.start - now <= lead * 6e4;
+  const leads = next ? meetRemindLeads(blockProp(next.block, "cal_feed")) : [], lead = leads.length ? 0 : null;
+  // Marked soon within the last hour's reminder; a day ahead is not soon.
+  const near = leads.filter(l => l <= 60).pop();
+  const soon = next && near != null && next.start - now <= near * 6e4;
   btn.classList.toggle("now", !!on);
   btn.classList.toggle("soon", !on && soon);
   // Counted down only in the last hour; further off, the time says it plainly.
   const when = on ? "now, until " + hhmm(m.end) : m.start - now > 36e5 ? "at " + hhmm(m.start) : untilWords(m.start - now);
   btn.title = m.title + ", " + hhmm(m.start) + "–" + hhmm(m.end) + (on ? " (on now)" : " (" + when + ")") +
     (on && next ? ". Next: " + next.title + ", " + hhmm(next.start) + " (" + untilWords(next.start - now) + ")" : "") +
-    ". Click to open it." + (lead == null ? " Reminders are off (Calendars)." : lead ? " Reminded " + lead + " min before." : " Reminded at the start.");
+    ". Click to open it." + (m === next && lead == null ? " Reminders are off (Calendars)." : m === next ? " Reminder: " + meetRemindLabel(blockProp(m.block, "cal_feed")) + "." : "");
   btn.append(el("span", {class: "ic", "aria-hidden": "true"}, "\u{1F552}"),
     el("span", {class: "t"}, m.title), el("span", {class: "w"}, when));
   if (on && next) btn.append(el("span", {class: "n" + (soon ? " soon" : "")}, "· next " + untilWords(next.start - now)));

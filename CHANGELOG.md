@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.100.0 - 2026-11-05
+
+- Settings: meeting reminders keep the one-click times and add Custom…: any
+  number of minutes, hours, days or weeks before, and as many reminders as you
+  like. Each calendar can have its own reminders, under its name in Calendars
+  (#292).
+
 ## 1.99.2 - 2026-11-05
 
 - Calendars: Add calendar uses the private area you are on, instead of a
