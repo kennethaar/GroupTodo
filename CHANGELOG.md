@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.90.1 - 2026-11-05
+
+- Chores: the help topic is shorter again, six steps and under 90 words before
+  its More fold. Refs #282.
+
 ## 1.90.0 - 2026-11-05
 
 - Chores: Due now and Coming up this week show the time they take, such as
