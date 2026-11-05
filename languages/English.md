@@ -5598,6 +5598,7 @@ Now @{1} ({2}). =>
 Now @{1}. =>
 Now {1}. =>
 On hold until {1}… =>
+Only I use {1} =>
 Only {1}, or drop a page here to move it into {2} (hold ctrl to copy it instead) =>
 Opdatering: "{1}" =>
 Open tasks per day, from {1} to =>
@@ -5941,6 +5942,7 @@ your own area, {1}, could not be opened. Open it once from the area menu (a fold
 {1} is removed. =>
 {1} is saving to its own storage again. Everything written while it was away has gone up. =>
 {1} is there already. =>
+{1} is {2}, so everyone in it could read your calendar. If the others are just you on your other devices, say so. =>
 {1} kept their own. =>
 {1} left from past weeks =>
 {1} lines already have a context =>

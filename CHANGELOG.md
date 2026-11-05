@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.99.1 - 2026-11-05
+
+- Calendars: when your area counts as shared, Add calendar says why and offers
+  "Only I use this area" instead of asking you to make a new one.
+
 ## 1.99.0 - 2026-11-05
 
 - Calendars: simpler. A list with Sync now, each calendar showing who sees it
