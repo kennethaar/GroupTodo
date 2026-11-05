@@ -19,7 +19,7 @@ function commitLine(txt, path, b) {
   if (b.state) {
     const typed = dotsToEst(b.title);
     if (typed !== b.title) b.title = typed;
-    else if (!estTier(b.title)) estHint();
+    else if (!estBand(b.title)) estHint();
   }
   if (b.state && OPEN_STATES[b.state] && !dueDate(b)) {
     /* The same reading the capture box gives a line -- "neste onsdag kl 13",

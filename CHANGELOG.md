@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.88.2 - 2026-11-05
+
+- Chores: a task can take any time, not just 15, 30, 45 or 60 minutes (#283).
+  Type #5m, #90m, #1h30m or #2h15m, and every total, the calendar end time and
+  I have 20 min use the real minutes. The dots stay as a rough size. In
+  + New chore and Log a chore, How long is now one Duration field: type a time
+  or pick 15m, 30m, 45m or 1h. Points are unchanged.
+
 ## 1.88.1 - 2026-11-05
 
 - Projects: Share → Readable page (HTML) now saves the file. The share sheet

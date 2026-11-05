@@ -41,7 +41,7 @@ function chipsFor(a, opts = {}) {
     out.push(el("span", {class: "chip who"}, a.by));
   /* An hour or more is not done in a gap between other things, so until it
      has a day it asks for one. */
-  if (estTier(a.title) === 4 && OPEN_STATES[a.state] && a.state !== "WAIT" && !a.due)
+  if (estBand(a.title) === 4 && OPEN_STATES[a.state] && a.state !== "WAIT" && !a.due)
     out.push(el("span", {class: "chip miss b when", title: "An hour or more wants its own slot in the calendar. Click to give it a day.",
       onclick: e => {e.stopPropagation(); inSpace(a.space, () => openTaskDetail(a.path, a.block, a.space, "date"));}}, "book a slot"));
   /* Tidying a task is the weekly review's work, and it lists these same tasks.

@@ -1684,7 +1684,7 @@ var GTD_TEST = (() => {
       set('input[aria-label="What"]', "Change the bed");
       set('select[aria-label="Room"]', "\u0002");
       set('input[aria-label="New room"]', "testlogroom");
-      set('select[aria-label="How long"]', "2");
+      set('input[aria-label="Duration"]', "30m");
       set('select[aria-label="Who did it"]', "Leo Testlog");
       set('select[aria-label="When"]', "yesterday");
       eq(m.querySelector(".logchore-line").textContent, "DONE Change the bed #30m [[c/" + ctx + "]]  done_by:: Leo Testlog");
@@ -1694,7 +1694,7 @@ var GTD_TEST = (() => {
       eq([blockContext(done), closedBy(done), closedOn(done)], [ctx, "Leo Testlog", day]);
       ok(getPage(room), "the new room has its page");
       eq(choreTally(day, day).find(([n]) => n === "Leo Testlog")?.[1], {pts: 2, n: 1, logged: 1});
-      ok(choreRecent().some(r => r.words === "Change the bed" && r.ctx === ctx && r.size === 2), "offered next time, with its room and size");
+      ok(choreRecent().some(r => r.words === "Change the bed" && r.ctx === ctx && r.size === "30m"), "offered next time, with its room and size");
     } finally { closeModal(); dropChores(path); if (!had) removePage(room); removePage(leo); clearMemo(); }
   });
   test("#236 a household person takes turns, keeps a chore handed to them a task, and gets the points", async () => {
@@ -2240,7 +2240,8 @@ var GTD_TEST = (() => {
     const sel = m.querySelectorAll("select");
     sel[0].value = "\u0002"; sel[0].dispatchEvent(new Event("change"));
     m.querySelector('input[aria-label="New room"]').value = "testkitchen";
-    sel[1].value = "monthly"; sel[2].value = "1";
+    sel[1].value = "monthly";
+    const dur = m.querySelector('input[aria-label="Duration"]'); dur.value = "15m";
     [...m.querySelectorAll("button")].find(n => n.textContent === "Add chore").click();
     await settle();
     const page = getPage(contextPath("Home/Testkitchen"));
@@ -3280,6 +3281,24 @@ var GTD_TEST = (() => {
       has(informNote("Lars Haugen", "Kenneth Aar", items, null, false).body, "Status: Pågår");
     } finally { PREF.set("askLang", was); }
   });
+  test("#283 a duration tag is exact minutes; dots are only its band; points stay as they were", () => {
+    const mins = {"x #5m": 5, "x #20m": 20, "x #90m": 90, "x #1h": 60, "x #1H30m": 90, "x #2h15m": 135,
+      "x #15m": 15, "x #30m": 30, "x #45m": 45, "x #60m": 60, "x #0m": null, "x #h": null, "x": null};
+    for (const [t, m] of Object.entries(mins)) eq(estMinutes(t), m, t);
+    eq([5, 16, 31, 46, 135].map(m => estBand("x #" + m + "m")).join(), "1,2,3,4,4", "bands");
+    eq(chorePoints("x #5m"), 1, "points unchanged");
+    eq(chorePoints("x #45m"), 3, "points unchanged for a standard tag");
+    eq(estFits("p20", estOfRow({title: "x #20m"})), true, "20 min fits 20");
+    eq(estFits("p20", estOfRow({title: "x #30m"})), false, "30 min does not");
+    eq(estFits("p120", estOfRow({title: "x #2h15m"})), false, "135 min needs more than 2 hours");
+    eq(withoutEst("Wipe #2h15m it"), "Wipe it", "custom tag stripped for the dots");
+    eq(withEst("Wipe #2h15m", 2), "Wipe #30m", "a dot replaces the custom tag");
+    eq(calWhen({title: "x #5m", due: "2026-11-05", time: "09:00"}).endTime, "09:05", "calendar end");
+    const size = choreSizePick();
+    size.value = "1h30m";
+    eq(choreLine("Wipe", "Kitchen", size.value), "Wipe #1h30m [[c/Kitchen]]", "the form takes a duration");
+  });
+
   test("#276 the readable handover page: one file, plain words, history oldest first", () => {
     const path = scratchProject("Storage room", [["TODO", "Order shelving"], ["TODO", "Quote for lighting"], ["DONE", "Clear out the old room"]]);
     const page = getPage(path), title = pageTitle(path);

@@ -8,7 +8,7 @@ function lineHtml(b, lead) {
   const tail = lead && b.state ? CTX_TAIL_RE.exec(withoutEst(b.title)) : null;
   if (tail) return renderInline(trim(tail[1])) + " " + estHtml(b.title) + renderInline(trim(withoutEst(b.title).slice(0, tail.index)));
   if (bujoKind(b.title, b.state)) return renderInline(bujoText(b.title));
-  return b.state && estTier(b.title)
+  return b.state && estBand(b.title)
     ? estHtml(b.title) + renderInline(withoutEst(b.title))
     : renderInline(headLevel(b.title, b.state) ? b.title.replace(HEAD_RE, "") : b.title);
 }

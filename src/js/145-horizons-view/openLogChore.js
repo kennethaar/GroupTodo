@@ -21,12 +21,12 @@ function openLogChore(roomKey) {
   function show() {
     const day = dayOf(), by = who ? who.value : me;
     where.textContent = day === todayISO() ? "Goes on today's page" : "Goes on the page for " + humanDate(day);
-    line.textContent = "DONE " + choreLine(trim(what.value) || "…", room.ctx(), Number(size.value)) +
+    line.textContent = "DONE " + choreLine(trim(what.value) || "…", room.ctx(), size.value) +
       (by ? "  done_by:: " + by : "");
   }
   what.addEventListener("input", () => {
     const r = recent.find(r => r.words.toLowerCase() === trim(what.value).toLowerCase());
-    if (r) { room.set(r.ctx); size.value = String(r.size || 0); }
+    if (r) { room.set(r.ctx); size.value = r.size; }
     show();
   });
   for (const n of [room.sel, room.input, size, dayInput]) { n.addEventListener("input", show); n.addEventListener("change", show); }
@@ -36,7 +36,7 @@ function openLogChore(roomKey) {
     const ctx = room.ctx();
     closeModal();
     ensureRoomPage(ctx);
-    logChore(words, ctx, Number(size.value), who ? who.value : me, dayOf());
+    logChore(words, ctx, size.value, who ? who.value : me, dayOf());
   };
   what.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); save(); } });
   modal({
@@ -44,7 +44,7 @@ function openLogChore(roomKey) {
     body: el("div", {}, list,
       el("div", {class: "field"}, el("label", {}, "What"), what),
       el("div", {class: "field"}, el("label", {}, "Room"), room.sel, room.input),
-      el("div", {class: "field"}, el("label", {}, "How long"), size),
+      el("div", {class: "field"}, el("label", {}, "Duration"), size),
       who ? el("div", {class: "field"}, el("label", {}, "Who did it"), who) : null,
       el("div", {class: "field"}, el("label", {}, "When"), when, dayInput),
       el("div", {class: "field"}, where, line)),

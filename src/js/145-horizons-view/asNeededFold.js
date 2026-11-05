@@ -10,6 +10,6 @@ function asNeededFold(list) {
         el("span", {class: "asneeded-l", title: l && l.who ? "Last done by " + l.who : ""},
           l && l.day ? "done " + daysAgoText(l.day) : "not done yet"),
         el("button", {class: "btn sm didit", title: "Log it as done by you, today",
-          onclick: () => logChore(choreWords(a.title), a.ctx, estTier(a.title), inSpace(a.space || V.space, whoAmI), todayISO(), a.space)}, "Did it"));
+          onclick: () => logChore(choreWords(a.title), a.ctx, estTagOf(a.title), inSpace(a.space || V.space, whoAmI), todayISO(), a.space)}, "Did it"));
     })));
 }

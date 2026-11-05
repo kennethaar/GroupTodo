@@ -9,6 +9,6 @@ const EST_FILTERS = [["", "Any length"], ["1", "Fits in 15 min"], ["2", "Fits in
    is the order. */
 const EST_PLANS = [["p20", "I have 20 min"], ["p30", "I have 30 min"], ["p60", "I have 1 hour"], ["p120", "I have 2 hours"]];
 const estPlan = v => /^p\d+$/.test(v || "") ? +v.slice(1) : 0;
-const estOfRow = a => estTier(a.block ? a.block.title : a.title);
-const estFits = (v, n) => !v || (estPlan(v) ? n > 0 && n * 15 <= estPlan(v)
-  : v === "-" ? !n : v === "4" ? n === 4 : n > 0 && n <= +v);
+const estOfRow = a => estMinutes(a.block ? a.block.title : a.title) || 0;
+const estFits = (v, n) => !v || (estPlan(v) ? n > 0 && n <= estPlan(v)
+  : v === "-" ? !n : v === "4" ? n > 45 : n > 0 && n <= +v * 15);

@@ -54,7 +54,7 @@ function openNewChore(roomKey, draft = {}) {
     const path = ensureRoomPage(ctx);
     const needed = isAsNeeded(freq.value);
     // As needed is a plain line, not a task: never late, never on Next.
-    const b = newBlock({state: needed ? "" : "TODO", title: choreLine(words, ctx, Number(size.value))});
+    const b = newBlock({state: needed ? "" : "TODO", title: choreLine(words, ctx, size.value)});
     setBlockProp(b, REPEAT_PROP, freq.value);
     const day = first.value === "today" ? todayISO() : first.value === "tomorrow" ? shiftISO(todayISO(), 1)
       : /^on:/.test(first.value) ? first.value.slice(3) : nextRepeatDate(freq.value, todayISO());
@@ -79,7 +79,7 @@ function openNewChore(roomKey, draft = {}) {
       el("div", {class: "field"}, el("label", {}, "What"), what),
       el("div", {class: "field"}, el("label", {}, "Room"), room.sel, room.input),
       el("div", {class: "field"}, el("label", {}, "How often"), freq),
-      el("div", {class: "field"}, el("label", {}, "How long"), size),
+      el("div", {class: "field"}, el("label", {}, "Duration"), size),
       firstField),
     foot: [el("button", {class: "btn ghost", onclick: () => closeModal()}, "Cancel"),
       el("div", {style: "flex:1"}),
