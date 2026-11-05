@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.93.1 - 2026-11-05
+
+- Vault and sync: GroupToDo-Importer.html asks instead of guessing. Every
+  folder and namespace starts on Choose…, the area has no default, and @word
+  as a context is off until you tick it; it shows how many it found. A short
+  code such as PR/A still gets its own row (#288).
+
 ## 1.93.0 - 2026-11-05
 
 - Vault and sync: GroupToDo-Importer.html reads PR/A, PR/X and PR/C as

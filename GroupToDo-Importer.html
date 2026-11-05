@@ -136,6 +136,7 @@ code{font-family:var(--mono);font-size:.92em;background:var(--bg3);padding:1px 5
       <input type="text" id="me" placeholder="Kari Nordmann" autocomplete="name"></label>
     <label class="field"><span>Which area this vault belongs to (its own folder in GroupToDo)</span>
       <select id="area">
+        <option value="?" disabled selected>Choose…</option>
         <option value="Work">Work</option>
         <option value="Personal">Personal</option>
         <option value="Home">Home</option>
@@ -152,15 +153,15 @@ code{font-family:var(--mono);font-size:.92em;background:var(--bg3);padding:1px 5
       </select></label>
     <label class="check"><input type="checkbox" id="atContext">
       <span>Read <code>@word</code> as a context, so <code>@phone</code> becomes <code>[[c/phone]]</code>.
-        Leave it off if you write e-mail addresses or @names in your notes.</span></label>
+        Leave it off if your @words are names or something else. <span id="atFound"></span></span></label>
   </section>
 
   <section class="step off" id="s3">
     <h2><span class="n">3</span>What each kind of page becomes</h2>
     <p class="hint">In GroupToDo the folder a page sits in says what it is: a person, a project, a context.
-      Say what your folders, namespaces and tags mean. <code>PR/A</code>, <code>PR/X</code> and <code>PR/C</code>
-      are projects that are active, done and cancelled; <code>&amp;/</code> is people, <code>#/</code> companies and
-      <code>@/</code> contexts. A plain <code>#Work</code> stays a tag. A tag wins over a folder. Anything left as
+      Say what each of your folders and namespaces means; nothing is chosen for you. A short code after the
+      first part, such as <code>PR/A</code>, gets its own row, so it can say the state of a project.
+      Tags stay tags unless you give them a meaning. A tag wins over a folder. Anything left as
       <i>Plain page</i> comes in under its own name.</p>
     <div id="rules"></div>
   </section>
@@ -224,44 +225,20 @@ const KIND_PROPS = {
 const STATE_MAP = {TODO: "TODO", DOING: "DOING", DONE: "DONE", LATER: "TODO", NOW: "DOING",
   WAITING: "WAIT", WAIT: "WAIT", CANCELED: "CANCELLED", CANCELLED: "CANCELLED", "IN-PROGRESS": "DOING"};
 
-/* What a folder, namespace or tag most likely means, from its name. Only a
-   first guess: every one of them is a choice on the screen. */
-function guessKind(word) {
-  // "PR/A": a project namespace with its state as the second part.
-  const two = String(word || "").split("/");
-  if (two.length === 2) return guessState(two[1]) || guessKind(two[0]);
-  const w = String(word || "").toLowerCase().replace(/[\s_-]+/g, "");
-  if (w === "&" || /^(people|persons?|personer|contacts?|kontakter?|folk)$/.test(w)) return "p";
-  if (w === "#") return "o";
-  if (w === "@") return "c";
-  if (/^(projects?|prosjekt(er)?|proj|pr)$/.test(w)) return "1";
-  if (/^(someday|somedaymaybe|maybe|kanskje)$/.test(w)) return "2";
-  if (/^(companies|company|orgs?|organi[sz]ations?|organisasjon(er)?|firma|kunder?|clients?|customers?)$/.test(w)) return "o";
-  if (/^(contexts?|kontekst(er)?)$/.test(w)) return "c";
-  if (/^(areas?|responsibilit(y|ies)|ansvar|omr[aå]der?)$/.test(w)) return "a";
-  if (/^(goals?|m[aå]l)$/.test(w)) return "g";
-  if (/^(templates?|maler?|checklists?|sjekklister?|routines?|rutiner?)$/.test(w)) return "8";
-  if (/^(zettel|zettelkasten|notes?|notater|permanent|literature)$/.test(w)) return "z";
-  if (/^(trash|\.trash|archive)$/.test(w)) return "page";
-  return "page";
-}
-
-/* A project state written as a code or a word: A = active, X = done,
-   C = cancelled, S = someday, W = waiting. Null when it is not one. */
-function guessState(word) {
-  const w = String(word || "").toLowerCase().trim();
-  if (/^(a|1|aktiv|active|doing|now)$/.test(w)) return "1";
-  if (/^(x|0|ferdig|done|completed?|fullf[øo]rt)$/.test(w)) return "0";
-  if (/^(c|-|kansellert|cancell?ed|avlyst)$/.test(w)) return "-";
-  if (/^(s|m|2|someday|maybe|kanskje|senere)$/.test(w)) return "2";
-  if (/^(w|v|3|waiting|venter|vent)$/.test(w)) return "3";
-  return null;
+/* Where every answer starts. A namespace or folder means what its owner
+   says, so none is chosen for them: each waits for a pick. A tag stays a
+   plain tag until it is given a meaning. */
+function startRules(C) {
+  const rules = {groups: {}, tags: {}};
+  for (const g of C.groups) rules.groups[g.key] = g.key ? "" : "page";
+  for (const x of C.tags) rules.tags[x.key] = "page";
+  return rules;
 }
 
 /* The group a page name or folder path belongs to: its first part, or its
-   first two when the second is a state ("PR/A/Prosjekt" -> "PR/A"). The
-   last part is the page itself and never counts. */
-const groupOf = segs => segs.length > 2 && guessState(segs[1]) ? segs[0] + "/" + segs[1]
+   first two when the second is a short code ("PR/A/Kitchen" -> "PR/A"), so
+   each code is its own question. The last part is the page itself. */
+const groupOf = segs => segs.length > 2 && /^[^s]{1,3}$/.test(segs[1]) ? segs[0] + "/" + segs[1]
   : segs.length > 1 ? segs[0] : "";
 
 /* ---------- names ---------- */
@@ -961,7 +938,7 @@ function reportText(a, res, opts) {
   return L.join("\n");
 }
 
-window.GTDImport = {analyze, ruleChoices, placePages, convert, reportText, dateOf, guessKind, readFrontMatter};
+window.GTDImport = {analyze, ruleChoices, placePages, convert, reportText, dateOf, startRules, readFrontMatter};
 
 /* ============================================================
    THE PAGE
@@ -1052,15 +1029,14 @@ function analyzeNow() {
     md - A.pages.length - [...A.journals.values()].flat().length > 0
       ? " (" + (md - A.pages.length - [...A.journals.values()].flat().length) + " left out, listed in the report)" : "");
   const C = ruleChoices(A);
-  S.rules = {groups: {}, tags: {}};
-  for (const g of C.groups) S.rules.groups[g.key] = g.key ? guessKind(g.key) : "page";
-  for (const t of C.tags) S.rules.tags[t.key] = guessKind(t.key);
+  S.rules = startRules(C);
   drawRules(C);
-  // @computer, @phone written in notes: likely contexts, unless they are mostly e-mail addresses.
+  // Say how many @words there are, with examples; the user decides what they mean.
   const md2 = S.files.filter(f => /\.md$/i.test(f.rel)).map(f => f.text).join("\n");
-  const ats = (md2.match(/(^|\s)@[\p{L}][\p{L}\p{N}_-]{1,30}(?![\p{L}\p{N}@.])/gmu) || []).length;
-  const mails = (md2.match(/\S@\S+\.\w/g) || []).length;
-  $("#atContext").checked = ats >= 3 && ats > mails;
+  const ats = md2.match(/(?:^|\s)@[\p{L}][\p{L}\p{N}_-]{1,30}(?![\p{L}\p{N}@.])/gmu) || [];
+  const seen = [...new Set(ats.map(x => x.trim()))];
+  $("#atFound").textContent = ats.length ? "Found " + ats.length + " in your notes, such as " + seen.slice(0, 4).join(", ") + "." : "None found in your notes.";
+  $("#atContext").checked = false;
   unlock("#s2", "#s3", "#s4");
   lock("#s5");
   $("#preview").textContent = "";
@@ -1068,6 +1044,7 @@ function analyzeNow() {
 
 function kindSelect(value, onchange) {
   const s = el("select", {onchange: e => onchange(e.target.value)},
+    ...(value === "" ? [el("option", {value: "", disabled: ""}, "Choose…")] : []),
     ...KINDS.map(([k, , label]) => el("option", {value: k}, label)));
   s.value = value;
   return s;
@@ -1083,13 +1060,19 @@ function drawRules(C) {
       el("h3", {style: "font-size:13px;margin:10px 0 0;color:var(--fg2)"}, title),
       el("div", {class: "tablewrap"}, el("table", {},
         el("thead", {}, el("tr", {}, el("th", {}, label), el("th", {}, "Pages"), el("th", {}, "Becomes"))),
-        el("tbody", {}, ...rows.slice(0, 60).map(r => el("tr", {},
+        el("tbody", {}, ...(which === "groups" ? rows : rows.slice(0, 60)).map(r => el("tr", {},
           el("td", {}, el("b", {}, r.key || (which === "groups" ? (A.kind === "logseq" ? "(no namespace)" : "(top folder)") : r.key)),
             el("span", {class: "ex"}, r.ex.join(" · "))),
           el("td", {class: "num"}, String(r.n)),
-          el("td", {}, kindSelect(S.rules[which][r.key], v => { S.rules[which][r.key] = v; S.result = null; lock("#s5"); }))))))));
+          el("td", {}, kindSelect(S.rules[which][r.key], v => { S.rules[which][r.key] = v; S.result = null; lock("#s5"); left(); }))))))));
   };
-  host.append(
+  const status = el("p", {class: "hint", role: "status"});
+  const left = () => {
+    const n = Object.values(S.rules.groups).filter(v => v === "").length;
+    status.textContent = n ? n + " left to choose." : "All chosen.";
+  };
+  left();
+  host.append(status,
     table(A.kind === "logseq" ? "Namespaces (the part before the first / in a page name)" : "Top folders",
       C.groups, "groups", A.kind === "logseq" ? "Namespace" : "Folder") || el("p", {class: "hint"}, "No folders or namespaces."),
     table("Tags and types (tags::, type::, category::)", C.tags, "tags", "Tag") || null);
@@ -1098,6 +1081,9 @@ function drawRules(C) {
 $("#runTest").onclick = () => {
   const me = $("#me").value.trim();
   if (!me) { $("#me").focus(); $("#preview").replaceChildren(el("div", {class: "msg err"}, "Write your name in step 2 first.")); return; }
+  if (!$("#area").value || $("#area").value === "?") { $("#area").focus(); $("#preview").replaceChildren(el("div", {class: "msg err"}, "Choose the area in step 2 first.")); return; }
+  const open = Object.keys(S.rules.groups).filter(k => S.rules.groups[k] === "");
+  if (open.length) { $("#preview").replaceChildren(el("div", {class: "msg err"}, "Say what these mean in step 3 first: " + open.join(", "))); return; }
   const opts = {me, area: $("#area").value, rules: S.rules, archiveYears: +$("#archiveYears").value, atContext: $("#atContext").checked};
   let res;
   try { res = convert(S.analysis, opts); }

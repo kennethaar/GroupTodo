@@ -163,7 +163,7 @@ async function importerTest(name, file = join(ROOT, "GroupToDo-Importer.html")) 
   const {runInNewContext} = await import("node:vm");
   try {
     const src = readFileSync(file, "utf-8").split("<script>")[1].split("/* ---------- the page")[0]
-      .split("window.GTDImport =")[0] + ";this.G = {analyze, ruleChoices, convert, guessKind};";
+      .split("window.GTDImport =")[0] + ";this.G = {analyze, ruleChoices, convert, startRules};";
     const box = {};
     runInNewContext(src, box);
     const G = box.G;
@@ -175,8 +175,12 @@ async function importerTest(name, file = join(ROOT, "GroupToDo-Importer.html")) 
       ["pages/#%2FAcme.md", "- supplier"],
     ].map(([rel, text]) => ({rel, text, mtime: 0}));
     const a = G.analyze("logseq", files);
-    const rules = {groups: {}, tags: {}};
-    for (const g of G.ruleChoices(a).groups) rules.groups[g.key] = g.key ? G.guessKind(g.key) : "page";
+    // Nobody's naming is assumed: every namespace starts unanswered.
+    const rules = G.startRules(G.ruleChoices(a));
+    const preset = Object.entries(rules.groups).filter(([k, v]) => k && v);
+    if (preset.length) return {name, ok: false, error: "chosen before the user was asked: " + JSON.stringify(preset)};
+    // The user's own answers.
+    Object.assign(rules.groups, {"PR/A": "1", "PR/X": "0", "PR/C": "-", "&": "p", "#": "o"});
     const out = G.convert(a, {me: "Me", area: "Work", rules, atContext: true}).files;
     const want = ["Work/pages/1/New kitchen.md", "Work/pages/0/Old shed.md", "Work/pages/-/Dropped.md",
       "Work/pages/p/Anna Berg.md", "Work/pages/o/Acme.md", "Work/pages/c/computer.md"];
