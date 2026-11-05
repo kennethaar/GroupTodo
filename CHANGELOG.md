@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.93.2 - 2026-11-05
+
+- Vault and sync: GroupToDo-Importer.html also asks about a #tag on a page's
+  first line and short page properties such as status:: Active, in front
+  matter or as key:: value. Give #Active or status: active a meaning, such
+  as Project, active, and those pages are filed that way. A #tag further down
+  stays on its line (#288).
+
 ## 1.93.1 - 2026-11-05
 
 - Vault and sync: GroupToDo-Importer.html asks instead of guessing. Every

@@ -48,7 +48,7 @@ try {
     results.push(await serviceWorkerTest(swTest));
   }
   /* The importer is its own page; its pure half is run here. */
-  const importTest = "#288 the importer reads PR/A, PR/X, PR/C, &/, #/ and @ and writes into the area";
+  const importTest = "#288 the importer asks what PR/A, &/, #/, @, a first-line #tag and status:: mean, and writes into the area";
   if (!only || importTest.toLowerCase().includes(only.toLowerCase())) {
     results.push(await importerTest(importTest));
   }
@@ -189,6 +189,22 @@ async function importerTest(name, file = join(ROOT, "GroupToDo-Importer.html")) 
     const line = (out.get("Work/pages/1/New kitchen.md") || "");
     for (const s of ["[[p/Anna Berg]]", "[[c/computer]]", "#Work", "[[o/Acme]]", "[[0/Old shed]]", "status:: 1 = active"])
       if (!line.includes(s)) return {name, ok: false, error: "the project page lacks " + s + ":\n" + line};
+    // A page says what it is with #Active on its first line, in front matter
+    // or as status:: Active; each is a row the user can give a meaning.
+    for (const [kind, pages] of [
+      ["logseq", [["pages/Roof.md", "- #Active\n- fix it"], ["pages/Shed.md", "status:: Active\n\n- paint"],
+        ["pages/Barn.md", "- one\n- a task #Active"]]],
+      ["obsidian", [["Roof.md", "#Active\n\n- fix it"], ["Shed.md", "---\nstatus: Active\n---\npaint"],
+        ["Barn.md", "one\n\n- a task #Active"]]]]) {
+      const b = G.analyze(kind, pages.map(([rel, text]) => ({rel, text, mtime: 0})));
+      const r = G.startRules(G.ruleChoices(b));
+      if (!("active" in r.tags) || !("status: active" in r.tags))
+        return {name, ok: false, error: kind + ": no row for #Active or status: Active; rows " + Object.keys(r.tags).join(", ")};
+      r.tags.active = "1"; r.tags["status: active"] = "1";
+      const got = [...G.convert(b, {me: "Me", rules: r}).files.keys()];
+      for (const w of ["pages/1/Roof.md", "pages/1/Shed.md", "pages/Barn.md"])
+        if (!got.includes(w)) return {name, ok: false, error: kind + ": expected " + w + "; got " + got.join(", ")};
+    }
     return {name, ok: true};
   } catch (e) { return {name, ok: false, error: String(e && e.stack || e)}; }
 }

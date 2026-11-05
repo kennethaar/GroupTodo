@@ -161,7 +161,8 @@ code{font-family:var(--mono);font-size:.92em;background:var(--bg3);padding:1px 5
     <p class="hint">In GroupToDo the folder a page sits in says what it is: a person, a project, a context.
       Say what each of your folders and namespaces means; nothing is chosen for you. A short code after the
       first part, such as <code>PR/A</code>, gets its own row, so it can say the state of a project.
-      Tags stay tags unless you give them a meaning. A tag wins over a folder. Anything left as
+      Tags and properties stay as they are unless you give them a meaning, so <code>#Active</code> or
+      <code>status:: Active</code> can say a page is an active project. A tag wins over a folder. Anything left as
       <i>Plain page</i> comes in under its own name.</p>
     <div id="rules"></div>
   </section>
@@ -366,6 +367,26 @@ function preambleProps(text) {
 // "[[Project]], person" -> ["project", "person"]
 const tagValues = v => String(v || "").split(/,/).map(x => lc(x.replace(/[\[\]#"]/g, "").trim())).filter(Boolean);
 
+/* What else a page says about itself: #tags on its first line, and a short
+   word in any other page property, as "status: active". Each becomes a row
+   the user can give a meaning; nothing is read into it here. */
+const OWN_KEYS = /^(tags?|type|category|alias(es)?|title|id|collapsed|created|updated|date|cssclass(es)?|public|icon)$/i;
+function pageMarks(props, firstLine) {
+  const out = [];
+  for (const m of String(firstLine || "").matchAll(/(?:^|\s)#(?:\[\[([^\]]+)\]\]|([\p{L}\p{N}][\p{L}\p{N}_\-\/]*))/gu))
+    out.push(lc(m[1] || m[2]));
+  for (const [k, v] of props) {
+    const s = String(Array.isArray(v) ? v.join(", ") : v).trim();
+    if (OWN_KEYS.test(k) || !s || s.length > 30 || /\[\[|\(\(|\d{4}-\d{2}|https?:/.test(s)) continue;
+    out.push(lc(k) + ": " + lc(s.replace(/^["']|["']$/g, "")));
+  }
+  return out;
+}
+// The first line of words: a page's first bullet in Logseq, its first text in Obsidian.
+const firstLineOf = text => (String(text || "").split(/\r?\n/)
+  .find(l => l.trim() && !/^\s*[\p{L}][\p{L}\p{N}_-]*::/u.test(l.replace(/^\s*[-*+]\s+/, ""))) || "")
+  .replace(/^\s*[-*+]\s+/, "");
+
 /* Every source file sorted into journal days and pages, with what the
    classification screen needs: the group it is in, its tags and type. */
 function analyze(kind, files) {
@@ -392,7 +413,8 @@ function analyze(kind, files) {
       const name = logseqName(f.rel, f.text);
       const props = preambleProps(f.text);
       pages.push({file: f, name, group: groupOf(name.split("/")),
-        tags: [...tagValues(props.tags), ...tagValues(props.type), ...tagValues(props.category)],
+        tags: [...tagValues(props.tags), ...tagValues(props.type), ...tagValues(props.category),
+          ...pageMarks(Object.entries(props), firstLineOf(f.text))],
         aliases: (props.alias || "").split(",").map(a => a.replace(/[\[\]]/g, "").trim()).filter(Boolean)});
     } else {
       if (/^(\.obsidian|\.trash|\.git)\//.test(f.rel) || f.rel.split("/").some(s => s.startsWith("."))) { skipped.push(f.rel); continue; }
@@ -408,7 +430,8 @@ function analyze(kind, files) {
       pages.push({file: f, name: base, folder: parts.slice(0, -1).join("/"),
         group: groupOf(parts),
         tags: [...fmv("tags"), ...fmv("type"), ...fmv("category"), ...tagValues(inline.tags), ...tagValues(inline.type)]
-          .flatMap(t => tagValues(t)),
+          .flatMap(t => tagValues(t))
+          .concat(pageMarks([...fm.props, ...Object.entries(inline)], firstLineOf(fm.rest))),
         aliases: fmv("aliases").concat(fmv("alias")).map(String)});
     }
   }
@@ -1075,7 +1098,7 @@ function drawRules(C) {
   host.append(status,
     table(A.kind === "logseq" ? "Namespaces (the part before the first / in a page name)" : "Top folders",
       C.groups, "groups", A.kind === "logseq" ? "Namespace" : "Folder") || el("p", {class: "hint"}, "No folders or namespaces."),
-    table("Tags and types (tags::, type::, category::)", C.tags, "tags", "Tag") || null);
+    table("Tags and properties (tags, type, a #tag on the first line, and short values such as status: active)", C.tags, "tags", "Tag") || null);
 }
 
 $("#runTest").onclick = () => {
