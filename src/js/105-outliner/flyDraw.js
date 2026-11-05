@@ -12,7 +12,7 @@ function flyDraw() {
     const hi = FLY.summoned && !FLY.open && i === (FLY.row || 0);
     const row = el("div", {class: "frow" + (open ? " open" : "") + (lit ? " lit" : "") + (hi ? " hi" : "")},
       el("button", {class: "fhead", tabindex: "-1", onclick: () => flyHead(r.k)},
-        el("span", {class: "fic bw"}, r.ic), el("span", {class: "fl"}, r.label),
+        el("span", {class: "fic bw"}, r.ic.startsWith("<") ? svgIcon(r.ic) : r.ic), el("span", {class: "fl"}, r.label),
         el("span", {class: "fv"}, r.val || ""), r.key ? el("kbd", {}, r.key) : null));
     if (open && r.opts) {
       const os = flyOptsOf(r), hi = Math.min(FLY.hi || 0, os.length - 1);
@@ -40,7 +40,7 @@ function flyDraw() {
       if (r.date) {
         const d = el("input", {type: "date", tabindex: "-1", "aria-label": "Pick a date",
           onchange: e => { if (e.target.value) flyPick("due", e.target.value); }});
-        opts.append(el("label", {class: "fchip datepick"}, "📅 Pick a date", d));
+        opts.append(el("label", {class: "fchip datepick"}, svgIcon(FLY_DATE), " Pick a date", d));
       }
       row.append(opts);
     }

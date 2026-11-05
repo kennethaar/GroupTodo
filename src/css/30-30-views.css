@@ -592,7 +592,9 @@ body.solview #content{padding-bottom:14px}
 .frow.lit .fhead{background:var(--accent-soft);color:var(--accent);animation:lit .5s ease-out}
 .frow.lit kbd{border-color:var(--accent);color:var(--accent)}
 @keyframes lit{from{box-shadow:0 0 0 0 var(--accent)}to{box-shadow:0 0 0 7px transparent}}
-.fic{width:18px;text-align:center;flex:none}
+.fic{width:18px;text-align:center;flex:none;display:flex;align-items:center;justify-content:center}
+.fic svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.fchip.datepick svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px}
 .fl{font-weight:600;flex:none}
 .fv{color:var(--fg3);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
 .fhead kbd{flex:none}

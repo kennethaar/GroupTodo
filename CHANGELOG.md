@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.102.1 - 2026-11-05
+
+- The line menu and toolbar: the line's own menu (right-click or long-press)
+  used a mix of flat glyphs and colour emoji for Person, Organisation and
+  Meeting. Every icon there is now the same kind of monochrome SVG the foot
+  toolbar uses, and the two menus draw the same icon for the same action
+  (#301).
+
 ## 1.102.0 - 2026-11-05
 
 - The line menu and toolbar: the phone toolbar's 15 flat buttons are now 8.

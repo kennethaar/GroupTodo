@@ -2974,7 +2974,9 @@ max-width:calc(100vw - 24px);animation:flyin .12s ease-out}
 .frow.lit .fhead{background:var(--accent-soft);color:var(--accent);animation:lit .5s ease-out}
 .frow.lit kbd{border-color:var(--accent);color:var(--accent)}
 @keyframes lit{from{box-shadow:0 0 0 0 var(--accent)}to{box-shadow:0 0 0 7px transparent}}
-.fic{width:18px;text-align:center;flex:none}
+.fic{width:18px;text-align:center;flex:none;display:flex;align-items:center;justify-content:center}
+.fic svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.fchip.datepick svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px}
 .fl{font-weight:600;flex:none}
 .fv{color:var(--fg3);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
 .fhead kbd{flex:none}
@@ -4136,7 +4138,7 @@ placeholder="Add a task. Try: &quot;Call Mia about the VAT phone tomorrow&quot;"
 })();
 
 "use strict";
-const APP_VERSION = "1.102.0";
+const APP_VERSION = "1.102.1";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -15104,7 +15106,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.102.0 - 2026-11-05\n\n- The line menu and toolbar: the phone toolbar's 15 flat buttons are now 8.\n  Up, Down, Outdent and Indent stay direct; Task/Zettel/Project/\n  Responsibility sit behind one Type button, Context/Person/Organisation\n  behind one Tag button, and Photo/Image behind one Media button (Photo\n  drops out on a mouse, with nothing to take a photo with). To area and\n  Copy text moved to a trailing More button. Every icon on the bar is now a\n  monochrome SVG at one stroke weight, instead of mixing those with colour\n  emoji for Person, Organisation, Photo and Image (#300).\n\n## 1.101.2 - 2026-11-05\n\n- Keys on a line: the phone toolbar's sideways scroll now actually works on\n  Android; an explicit touch-action that was meant to let it swipe was\n  silently disabling the scroll instead (#298).\n\n## 1.101.1 - 2026-11-05\n\n- Keys on a line: the phone toolbar's sideways scroll now actually swipes on\n  Android, instead of holding still because the tap-focus guard mistook the\n  swipe for a tap (#298).\n\n## 1.101.0 - 2026-11-05\n\n- Keys on a line: the phone toolbar at the foot of the screen can now add a\n  context, person or organisation too, and scrolls sideways instead of\n  squeezing its buttons when it has more than fit (#297).\n\n## 1.100.2 - 2026-11-05\n\n- Getting started: the first-run screens lead with writing a note, with\n  folder and naming pushed down as optional (#296).\n\n## 1.100.1 - 2026-11-05\n\n- Calendars: fix an import crashing with \"Cannot read properties of\n  undefined\" when a meeting has an attendee or organizer, such as on Proton\n  Calendar (#294).\n\n## 1.100.0 - 2026-11-05\n\n- Settings: meeting reminders keep the one-click times and add Custom…: any\n  number of minutes, hours, days or weeks before, and as many reminders as you\n  like. Each calendar can have its own reminders, under its name in Calendars\n  (#292).\n\n## 1.99.2 - 2026-11-05\n\n- Calendars: Add calendar uses the private area you are on, instead of a\n  shared area it remembered from before.\n\n## 1.99.1 - 2026-11-05\n\n- Calendars: when your area counts as shared, Add calendar says why and offers\n  \"Only I use this area\" instead of asking you to make a new one.\n\n## 1.99.0 - 2026-11-05\n\n- Calendars: simpler. A list with Sync now, each calendar showing who sees it\n  and when it last synced; add a calendar with just a link and a name (private\n  by default); sharing, sync and remove live on the calendar itself; one\n  reminder choice (Off to 1 hour, saved at once); meetings left by removed\n  calendars are reviewed in one place. On the Journal, \"Import calendar\"\n  shows when you open the date picker.\n\n## 1.98.0 - 2026-11-05\n\n- Settings: a folder shared only with yourself on other devices can be marked\n  \"Only I use this folder\", so Calendars works in it.\n\n## 1.97.0 - 2026-11-05\n\n- Settings: the Journal's date box has a 📅 button that opens Calendars, so a\n  calendar can be imported from where the meetings land.\n";
+const HELP_NEWS = "## 1.102.1 - 2026-11-05\n\n- The line menu and toolbar: the line's own menu (right-click or long-press)\n  used a mix of flat glyphs and colour emoji for Person, Organisation and\n  Meeting. Every icon there is now the same kind of monochrome SVG the foot\n  toolbar uses, and the two menus draw the same icon for the same action\n  (#301).\n\n## 1.102.0 - 2026-11-05\n\n- The line menu and toolbar: the phone toolbar's 15 flat buttons are now 8.\n  Up, Down, Outdent and Indent stay direct; Task/Zettel/Project/\n  Responsibility sit behind one Type button, Context/Person/Organisation\n  behind one Tag button, and Photo/Image behind one Media button (Photo\n  drops out on a mouse, with nothing to take a photo with). To area and\n  Copy text moved to a trailing More button. Every icon on the bar is now a\n  monochrome SVG at one stroke weight, instead of mixing those with colour\n  emoji for Person, Organisation, Photo and Image (#300).\n\n## 1.101.2 - 2026-11-05\n\n- Keys on a line: the phone toolbar's sideways scroll now actually works on\n  Android; an explicit touch-action that was meant to let it swipe was\n  silently disabling the scroll instead (#298).\n\n## 1.101.1 - 2026-11-05\n\n- Keys on a line: the phone toolbar's sideways scroll now actually swipes on\n  Android, instead of holding still because the tap-focus guard mistook the\n  swipe for a tap (#298).\n\n## 1.101.0 - 2026-11-05\n\n- Keys on a line: the phone toolbar at the foot of the screen can now add a\n  context, person or organisation too, and scrolls sideways instead of\n  squeezing its buttons when it has more than fit (#297).\n\n## 1.100.2 - 2026-11-05\n\n- Getting started: the first-run screens lead with writing a note, with\n  folder and naming pushed down as optional (#296).\n\n## 1.100.1 - 2026-11-05\n\n- Calendars: fix an import crashing with \"Cannot read properties of\n  undefined\" when a meeting has an attendee or organizer, such as on Proton\n  Calendar (#294).\n\n## 1.100.0 - 2026-11-05\n\n- Settings: meeting reminders keep the one-click times and add Custom…: any\n  number of minutes, hours, days or weeks before, and as many reminders as you\n  like. Each calendar can have its own reminders, under its name in Calendars\n  (#292).\n\n## 1.99.2 - 2026-11-05\n\n- Calendars: Add calendar uses the private area you are on, instead of a\n  shared area it remembered from before.\n\n## 1.99.1 - 2026-11-05\n\n- Calendars: when your area counts as shared, Add calendar says why and offers\n  \"Only I use this area\" instead of asking you to make a new one.\n\n## 1.99.0 - 2026-11-05\n\n- Calendars: simpler. A list with Sync now, each calendar showing who sees it\n  and when it last synced; add a calendar with just a link and a name (private\n  by default); sharing, sync and remove live on the calendar itself; one\n  reminder choice (Off to 1 hour, saved at once); meetings left by removed\n  calendars are reviewed in one place. On the Journal, \"Import calendar\"\n  shows when you open the date picker.\n\n## 1.98.0 - 2026-11-05\n\n- Settings: a folder shared only with yourself on other devices can be marked\n  \"Only I use this folder\", so Calendars works in it.\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {
@@ -28542,6 +28544,17 @@ const who = assigneeOf(block);
 if (who) names.unshift(who);
 return names.filter((n, i) => !samePerson(n, whoAmI()) && names.findIndex(m => samePerson(m, n)) === i);
 }
+const FLY_STATE   = '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" stroke="none"/>';
+const FLY_TYPE    = '<path d="M4 7h16M4 12h16M4 17h16"/>';
+const FLY_DATE    = '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/>';
+const FLY_MAIL    = '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M4 7l8 6 8-6"/>';
+const FLY_REPEAT  = '<path d="M4 12a8 8 0 0 1 14-5.3M20 4v4h-4"/><path d="M20 12a8 8 0 0 1-14 5.3M4 20v-4h4"/>';
+const FLY_MEETING = '<circle cx="9" cy="8" r="3.3"/><path d="M3.5 20v-1.5A6 6 0 0 1 9 13"/><circle cx="16.3" cy="9" r="3"/><path d="M12.4 20v-1.2A5.3 5.3 0 0 1 16.3 13.6"/>';
+const FLY_TRACKER = '<path d="M7 17L17 7M9 7h8v8"/>';
+const FLY_REFILE  = '<path d="M5 5v14M9 12h11M16 7l4 5-4 5"/>';
+const FLY_PLAN    = '<path d="M12 3l1.8 6.2L20 11l-6.2 1.8L12 19l-1.8-6.2L4 11l6.2-1.8z"/>';
+const FLY_EMBED   = '<rect x="3" y="10" width="11" height="11" rx="2"/><rect x="10" y="3" width="11" height="11" rx="2"/>';
+const FLY_PANEL   = '<path d="M4 15v5h5M20 9V4h-5M4 4l6 6M20 20l-6-6"/>';
 function flyRows() {
 const {path, block} = FLY;
 const t = block.state, waiting = t === "WAIT";
@@ -28553,41 +28566,41 @@ const people = acrossNames(() => [...allPeople().map(personName), ...members().m
 .filter(n => !(waiting && samePerson(n, whoAmI())));
 const onLine = linePeople(block);
 return [
-{k: "kind", ic: t ? "•" : "☐", label: t ? "Make it a note" : "Make it a task", key: "Alt+T"},
-{k: "mkproj", ic: ICON.projects, label: "Make it a project", key: "Alt+1"},
-{k: "mkzet", ic: "◇", label: "Turn into zettel", val: "a note of its own", key: "Alt+Z"},
-{k: "mkarea", ic: "◎", label: statusDirOf(path) && !isJournalPath(path) ? "Turn the project into a responsibility" : "Make it a responsibility",
+{k: "kind", ic: t ? EB_NOTE : EB_TASK, label: t ? "Make it a note" : "Make it a task", key: "Alt+T"},
+{k: "mkproj", ic: EB_PROJECT, label: "Make it a project", key: "Alt+1"},
+{k: "mkzet", ic: EB_ZETTEL, label: "Turn into zettel", val: "a note of its own", key: "Alt+Z"},
+{k: "mkarea", ic: EB_AREA, label: statusDirOf(path) && !isJournalPath(path) ? "Turn the project into a responsibility" : "Make it a responsibility",
 val: "new, or one already there", key: "Alt+I"},
-{k: "state", ic: "◐", label: typed ? "Stage" : "State",
+{k: "state", ic: FLY_STATE, label: typed ? "Stage" : "State",
 val: typed && typed.stage ? typed.stage.name : t ? STATE_WORD[t] : "Note", key: "Ctrl+Enter",
 opts: typed ? [...typed.stages.map(s => ["\u0001" + s.name, s.name + " · " + CORE_WORD[s.core]]), ["", "Note"]]
 : [["TODO", "To do"], ["DOING", "Doing"], ["WAIT", "Waiting"], ["DONE", "Done"], ["", "Note"]]},
-{k: "ttype", ic: "☰", label: "Type", val: typed ? pageTitle(typed.list) : "stages of its own", key: ""},
-{k: "due", ic: "📅", label: "Due", val: dueDate(block) ? humanDate(dueDate(block)) : "None", key: "Alt+D", date: true,
+{k: "ttype", ic: FLY_TYPE, label: "Type", val: typed ? pageTitle(typed.list) : "stages of its own", key: ""},
+{k: "due", ic: FLY_DATE, label: "Due", val: dueDate(block) ? humanDate(dueDate(block)) : "None", key: "Alt+D", date: true,
 opts: [[todayISO(), "Today"], [shiftISO(todayISO(), 1), "Tomorrow"], [nextWeekday(1), "Monday"],
 [shiftISO(todayISO(), 7), "In a week"], ["", "No date"]]},
 {k: "ctx", ic: "@", label: "Context", val: contextOf(block.title) ? "@" + contextOf(block.title) : blockContext(block) ? "@" + blockContext(block) + " (from above)" : "None", key: "@ · Alt+C",
 opts: [...ctxFolderOrder(allContextNames()).map(c => [c, contextLabel(c)]), ["", "No context"]]},
-{k: "who", ic: ICON.people, label: waiting ? "Waiting on" : "Person",
+{k: "who", ic: EB_PERSON, label: waiting ? "Waiting on" : "Person",
 val: waiting && (!who || samePerson(who, whoAmI())) ? "Pick someone" : who || "Me", key: "@ · Alt+P",
 opts: [...(waiting ? [] : [["", "Me"]]), ...people.filter(n => !samePerson(n, whoAmI())).map(n => [n, n])]},
-...(onLine.length ? [{k: "ask", ic: "✉", label: "Ask for an update", val: onLine.join(", "), key: "Alt+E",
+...(onLine.length ? [{k: "ask", ic: FLY_MAIL, label: "Ask for an update", val: onLine.join(", "), key: "Alt+E",
 opts: onLine.map(n => [n, n])}] : []),
-{k: "tell", ic: "✉", label: "Send an update", val: onLine.length ? onLine.join(", ") : "tell somebody where it stands", key: "Alt+U"},
-{k: "org", ic: ICON.orgs, label: "Organisation", val: org || "None", key: "Alt+O",
+{k: "tell", ic: FLY_MAIL, label: "Send an update", val: onLine.length ? onLine.join(", ") : "tell somebody where it stands", key: "Alt+U"},
+{k: "org", ic: EB_ORG, label: "Organisation", val: org || "None", key: "Alt+O",
 opts: [...allOrgNames().map(o => [o, o]), ["", "No organisation"]]},
 {k: "proj", ic: "#", label: "Project", val: proj ? proj.title : "None", key: "# · Alt+J",
 opts: [...["1", "3", "2"].flatMap(c => projectsIn(c)).map(p => [p, pageTitle(p)]), ["", "No project"]]},
-{k: "rep", ic: "↻", label: "Repeat", val: repeatOf(block) || "No", key: "Alt+R",
-opts: [...REPEAT_CHOICES.map(c => [c, c || "No repeat"]), ["\u0002", "Custom\u2026"]]},
-{k: "meet", ic: "👥", label: isMeeting(block) ? "Meeting" : "Make it a meeting",
+{k: "rep", ic: FLY_REPEAT, label: "Repeat", val: repeatOf(block) || "No", key: "Alt+R",
+opts: [...REPEAT_CHOICES.map(c => [c, c || "No repeat"]), ["\u0002", "Custom…"]]},
+{k: "meet", ic: FLY_MEETING, label: isMeeting(block) ? "Meeting" : "Make it a meeting",
 val: isMeeting(block) ? blockProp(block, "time") || "attendees, agenda" : "attendees, agenda", key: "Alt+M"},
-{k: "trk", ic: "↗", label: "Insert tracker", val: "something to follow over time", key: "tracker-"},
-{k: "refile", ic: "↦", label: "Refile", val: "to a project, responsibility or context", key: "Alt+G"},
-{k: "aiplan", ic: "✦", label: "Plan it with an AI", val: "a prompt for your AI; its answer becomes a project", key: ""},
-{k: "embedref", ic: "⧉", label: "Copy as embed", val: "paste it on another line to show this one there", key: ""},
-{k: "plaincopy", ic: "⎘", label: "Copy as plain text", val: "the words only, no links or tags", key: ""},
-{k: "more", ic: "⤢", label: "Open in the side panel", val: "dates, chat, history", key: ""},
+{k: "trk", ic: FLY_TRACKER, label: "Insert tracker", val: "something to follow over time", key: "tracker-"},
+{k: "refile", ic: FLY_REFILE, label: "Refile", val: "to a project, responsibility or context", key: "Alt+G"},
+{k: "aiplan", ic: FLY_PLAN, label: "Plan it with an AI", val: "a prompt for your AI; its answer becomes a project", key: ""},
+{k: "embedref", ic: FLY_EMBED, label: "Copy as embed", val: "paste it on another line to show this one there", key: ""},
+{k: "plaincopy", ic: EB_COPY, label: "Copy as plain text", val: "the words only, no links or tags", key: ""},
+{k: "more", ic: FLY_PANEL, label: "Open in the side panel", val: "dates, chat, history", key: ""},
 ];
 }
 const ctxTop = n => String(n).split("/")[0];
@@ -28616,7 +28629,7 @@ const lit = FLY_LIT && FLY_LIT.id === block.id && FLY_LIT.k === r.k;
 const hi = FLY.summoned && !FLY.open && i === (FLY.row || 0);
 const row = el("div", {class: "frow" + (open ? " open" : "") + (lit ? " lit" : "") + (hi ? " hi" : "")},
 el("button", {class: "fhead", tabindex: "-1", onclick: () => flyHead(r.k)},
-el("span", {class: "fic bw"}, r.ic), el("span", {class: "fl"}, r.label),
+el("span", {class: "fic bw"}, r.ic.startsWith("<") ? svgIcon(r.ic) : r.ic), el("span", {class: "fl"}, r.label),
 el("span", {class: "fv"}, r.val || ""), r.key ? el("kbd", {}, r.key) : null));
 if (open && r.opts) {
 const os = flyOptsOf(r), hi = Math.min(FLY.hi || 0, os.length - 1);
@@ -28643,7 +28656,7 @@ if (!os.length) opts.append(el("span", {class: "fv"}, "Nothing called “" + FLY
 if (r.date) {
 const d = el("input", {type: "date", tabindex: "-1", "aria-label": "Pick a date",
 onchange: e => { if (e.target.value) flyPick("due", e.target.value); }});
-opts.append(el("label", {class: "fchip datepick"}, "📅 Pick a date", d));
+opts.append(el("label", {class: "fchip datepick"}, svgIcon(FLY_DATE), " Pick a date", d));
 }
 row.append(opts);
 }
