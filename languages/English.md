@@ -1255,8 +1255,10 @@ Each subfolder is a kind of page, and the folder name is the first part of a lin
 Each web address keeps its own copy in the browser, so a new one starts empty. Your files are still in their folders. Pick each area's folder, one at a time. =>
 Eastern Standard Time =>
 Edit =>
+Edit / remove links =>
 Edit as Markdown =>
 Edit as text =>
+Edit children =>
 Edit in the page =>
 Edit lets a drag make a link. =>
 Edit sets the name, subtitle and synopsis. ✂ cuts a chapter to your darlings. =>

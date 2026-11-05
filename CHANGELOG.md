@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.94.0 - 2026-11-05
+
+- Vault and sync: GroupToDo-Importer.html is now three steps. It detects Logseq
+  or Obsidian itself, fills in your name and area from the vault, and picks
+  what each folder, tag and status becomes. Signals that mean the same thing
+  share one row. The summary updates as you change a row, and Preview diffs
+  opens a dialog. An @word becomes a context only if it names a context page
+  or a usual context such as @home (#288).
+
 ## 1.93.3 - 2026-11-05
 
 - Vault and sync: GroupToDo-Importer.html can file pages as Vision (horizon 4),

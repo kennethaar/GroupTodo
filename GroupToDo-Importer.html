@@ -106,86 +106,65 @@ td .ex{display:block;font-size:12px;color:var(--fg3);overflow:hidden;text-overfl
 .progress i{display:block;height:100%;width:0;background:var(--accent);transition:width .15s}
 code{font-family:var(--mono);font-size:.92em;background:var(--bg3);padding:1px 5px;border-radius:4px}
 .theme{position:fixed;top:12px;right:12px}
+.count{font-size:13px;font-weight:400;color:var(--fg3)}
+.summary{font-size:15px;margin:0 0 12px}
+dialog{width:min(960px,94vw);max-height:90vh;overflow:auto;background:var(--bg2);color:var(--fg);border:1px solid var(--border2);border-radius:var(--radius);padding:16px 18px}
+dialog::backdrop{background:rgba(0,0,0,.45)}
 </style>
 </head>
 <body>
 <button class="btn theme" id="theme" title="Light or dark">◐</button>
 <div class="wrap">
   <h1>GroupToDo Importer</h1>
-  <p class="lede">Turns a Logseq or Obsidian vault into a GroupToDo folder. Your old vault is only read, never
-    changed: everything is written into a new, empty folder you choose at the end.</p>
 
   <section class="step" id="s1">
-    <h2><span class="n">1</span>Your old vault</h2>
-    <p class="hint">The folder Logseq or Obsidian opens: for Logseq the one with <code>journals</code> and
-      <code>pages</code> in it, for Obsidian the one with <code>.obsidian</code>.</p>
+    <h2><span class="n">1</span>Source and owner</h2>
     <div class="row">
-      <button class="btn primary" id="pickSource">Choose the folder…</button>
-      <select id="kind" hidden>
-        <option value="logseq">It is a Logseq vault</option>
-        <option value="obsidian">It is an Obsidian vault</option>
-      </select>
+      <button class="btn primary" id="pickSource">Choose vault folder…</button>
+      <span class="found" id="sourceInfo"></span>
     </div>
-    <div class="found" id="sourceInfo"></div>
+    <div id="who" hidden>
+      <label class="field"><span>Your name</span>
+        <input type="text" id="me" placeholder="Kari Nordmann" autocomplete="name"></label>
+      <label class="field"><span>Area</span>
+        <select id="area">
+          <option value="?" disabled selected>Choose…</option>
+          <option value="Work">Work</option>
+          <option value="Personal">Personal</option>
+          <option value="Home">Home</option>
+          <option value="Family">Family</option>
+          <option value="">Root / None</option>
+        </select></label>
+    </div>
   </section>
 
   <section class="step off" id="s2">
-    <h2><span class="n">2</span>You</h2>
-    <p class="hint">Day pages in GroupToDo belong to a person, so your journal goes into a folder with your name.</p>
-    <label class="field"><span>Your full name, as you want it shown</span>
-      <input type="text" id="me" placeholder="Kari Nordmann" autocomplete="name"></label>
-    <label class="field"><span>Which area this vault belongs to (its own folder in GroupToDo)</span>
-      <select id="area">
-        <option value="?" disabled selected>Choose…</option>
-        <option value="Work">Work</option>
-        <option value="Personal">Personal</option>
-        <option value="Home">Home</option>
-        <option value="Family">Family</option>
-        <option value="">None, write it at the top of the folder</option>
-      </select></label>
-    <label class="field"><span>Pages nobody has touched for a long time</span>
-      <select id="archiveYears">
-        <option value="0">Bring them in as they are</option>
-        <option value="1">Mark archived if untouched for 1 year</option>
-        <option value="2">Mark archived if untouched for 2 years</option>
-        <option value="3">Mark archived if untouched for 3 years</option>
-        <option value="5">Mark archived if untouched for 5 years</option>
-      </select></label>
-    <label class="check"><input type="checkbox" id="atContext">
-      <span>Read <code>@word</code> as a context, so <code>@phone</code> becomes <code>[[c/phone]]</code>.
-        Leave it off if your @words are names or something else. <span id="atFound"></span></span></label>
-  </section>
-
-  <section class="step off" id="s3">
-    <h2><span class="n">3</span>What each kind of page becomes</h2>
-    <p class="hint">In GroupToDo the folder a page sits in says what it is: a person, a project, a context.
-      Say what each of your folders and namespaces means; nothing is chosen for you. A short code after the
-      first part, such as <code>PR/A</code>, gets its own row, so it can say the state of a project.
-      Tags and properties stay as they are unless you give them a meaning, so <code>#Active</code> or
-      <code>status:: Active</code> can say a page is an active project. A tag wins over a folder. Anything left as
-      <i>Plain page</i> comes in under its own name.</p>
+    <h2><span class="n">2</span>Page types <span class="count" id="autoCount"></span></h2>
     <div id="rules"></div>
   </section>
 
-  <section class="step off" id="s4">
-    <h2><span class="n">4</span>Test the conversion</h2>
-    <p class="hint">Nothing is written. You see what would happen, what could not be carried over, and any page
-      side by side, before and after.</p>
-    <button class="btn primary" id="runTest">Run a test conversion</button>
-    <div id="preview"></div>
-  </section>
-
-  <section class="step off" id="s5">
-    <h2><span class="n">5</span>Write the new vault</h2>
-    <p class="hint">Choose an <b>empty</b> folder. Everything is written there; the old vault stays as it is.</p>
-    <div class="row">
-      <button class="btn primary" id="write">Choose an empty folder and write…</button>
-      <button class="btn" id="report" disabled>Download the report</button>
+  <section class="step off" id="s3">
+    <h2><span class="n">3</span>Preview and export</h2>
+    <p class="summary" id="summary" role="status"></p>
+    <div class="row"><button class="btn" id="showDiff">Preview diffs</button></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" id="pickTarget">Choose empty target folder…</button>
+      <span class="found" id="targetInfo"></span>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn primary" id="write" disabled>Import to new folder</button>
+      <button class="btn" id="report" hidden>Download log</button>
     </div>
     <div id="writeOut"></div>
   </section>
 </div>
 
+<dialog id="diff">
+  <div class="row" style="justify-content:space-between;margin-bottom:8px">
+    <b>Preview diffs</b><button class="btn" id="diffClose">Close</button>
+  </div>
+  <div id="preview"></div>
+</dialog>
 <script>
 "use strict";
 /* ============================================================
@@ -628,6 +607,8 @@ function convert(a, opts) {
     });
     if (opts.atContext) {
       s = s.replace(/(^|\s)@([\p{L}][\p{L}\p{N}_-]{1,30})(?![\p{L}\p{N}@.])/gu, (all, lead, w) => {
+        // A set names the only @words that are contexts; true means all of them.
+        if (opts.atContext instanceof Set && !opts.atContext.has(lc(w))) return all;
         R.contexts.add(lc(w)); R.links++;
         return lead + "[[c/" + lc(w) + "]]";
       });
@@ -988,7 +969,7 @@ const el = (tag, attrs = {}, ...kids) => {
   for (const c of kids.flat()) if (c != null && c !== false) n.append(c instanceof Node ? c : String(c));
   return n;
 };
-const S = {source: null, files: [], analysis: null, rules: {groups: {}, tags: {}}, result: null};
+const S = {source: null, files: [], analysis: null, rules: {groups: {}, tags: {}}, rows: [], result: null, opts: null, target: null};
 
 const themeBtn = $("#theme");
 themeBtn.onclick = () => {
@@ -1001,10 +982,10 @@ if (!window.showDirectoryPicker) {
   $("#s1").append(el("div", {class: "msg err"},
     "This browser cannot open folders. Open this file in Microsoft Edge or Google Chrome on a computer."));
   $("#pickSource").disabled = true;
+  $("#pickTarget").disabled = true;
 }
 
 const unlock = (...ids) => ids.forEach(id => $(id).classList.remove("off"));
-const lock = (...ids) => ids.forEach(id => $(id).classList.add("off"));
 
 /* Every file under the folder, text read for markdown, a handle kept for the rest. */
 async function readTree(dir) {
@@ -1027,11 +1008,91 @@ async function readTree(dir) {
   return files;
 }
 
+/* The filesystem already says which app made the vault. */
 function detectKind(files) {
   if (files.some(f => f.rel.startsWith(".obsidian/"))) return "obsidian";
   if (files.some(f => f.rel.startsWith("logseq/")) ||
       (files.some(f => f.rel.startsWith("journals/")) && files.some(f => f.rel.startsWith("pages/")))) return "logseq";
   return "obsidian";
+}
+
+/* ---------- reading the obvious from the vault ---------- */
+// The most common value of a page property, e.g. updated_by:: kenneth aar.
+function commonProp(files, keys) {
+  const count = new Map();
+  const re = new RegExp("^\\s*(?:[-*+]\\s+)?(?:" + keys + ")\\s*::?\\s*(.+)$", "gim");
+  for (const f of files) {
+    if (!f.text) continue;
+    for (const m of f.text.matchAll(re)) {
+      const v = m[1].trim().replace(/^["'\[]+|["'\]]+$/g, "");
+      if (v && v.length < 40 && !/[%@]/.test(v)) count.set(v, (count.get(v) || 0) + 1);
+    }
+  }
+  return [...count].sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+}
+const titleCase = s => s.replace(/\p{L}[\p{L}\p{N}'’-]*/gu, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
+
+/* ---------- one code, one row ---------- */
+const WORD_CODE = {active: "1", someday: "2", maybe: "2", waiting: "3", wait: "3", done: "0", completed: "0",
+  complete: "0", cancelled: "-", canceled: "-", person: "p", people: "p", org: "o", organisation: "o",
+  organization: "o", context: "c", area: "a", responsibility: "a", goal: "g", checklist: "8", template: "8",
+  email: "m", "e-mail": "m", review: "r", note: "z", verb: "verbs"};
+const GROUP_CODE = {"1": "1", "2": "2", "3": "3", "0": "0", "-": "-", p: "p", o: "o", c: "c", a: "a", g: "g",
+  _: "_", "8": "8", m: "m", r: "r", z: "z", verbs: "verbs", "&": "p", pc: "c", home: "c",
+  "pr/m": "2", "pr/s": "2", "pr/xc": "0", "pr/a": "1", "pr/x": "0", "pr/c": "-"};
+const CODE_KIND = {"1": "1", "2": "2", "3": "3", "0": "0", "-": "-", p: "p", o: "o", c: "c", a: "a", g: "g",
+  _: "h5", "8": "8", m: "m", r: "r", z: "z", verbs: "skip"};
+
+/* The type signal of a namespace, tag or property, or null when it is none.
+   Instance data (updated_by, email, wr, stakeholders …) is not a type. */
+function codeOf(which, key) {
+  const k = lc(key).trim();
+  if (which === "groups") return GROUP_CODE[k] || null;
+  if (/%/.test(k)) return null;
+  const m = /^(status|type|category|template_source|template)\s*:\s*(.+)$/.exec(k);
+  if (!m) return /: /.test(k) ? null : (WORD_CODE[k] || null);
+  const v = m[2];
+  if (m[1] === "template_source") {
+    const t = /(?:^|\/)8\/([^/]+?)(?:\.md)?$/.exec(v);
+    return t ? (t[1] === "page" ? "8" : GROUP_CODE[t[1]] || null) : null;
+  }
+  if (m[1] === "status") return /^[0-3-]/.test(v) ? v[0] : WORD_CODE[v.split(/\W+/)[0]] || null;
+  return WORD_CODE[v.split(/\W+/)[0]] || null;
+}
+const isTypeKey = key => /^(status|type|category|template_source|template)\s*:/i.test(key) || !/: /.test(key);
+
+/* Merge the signals that mean the same thing into one row each. */
+function buildRows(A, C) {
+  const byCode = new Map(), rows = [];
+  const add = (which, r) => {
+    const code = codeOf(which, r.key);
+    if (code && !(which === "groups" && !r.key)) {
+      if (!byCode.has(code)) { const row = {code, members: [], ex: []}; byCode.set(code, row); rows.push(row); }
+      const row = byCode.get(code);
+      row.members.push({which, key: r.key});
+      for (const e of r.ex) if (row.ex.length < 3 && !row.ex.includes(e)) row.ex.push(e);
+    } else if (which === "groups" || isTypeKey(r.key)) {
+      rows.push({code: null, members: [{which, key: r.key}], ex: r.ex.slice(0, 3)});
+    }
+  };
+  for (const g of C.groups) add("groups", g);
+  for (const t of C.tags) add("tags", t);
+  for (const row of rows) {
+    const mem = row.members;
+    row.n = A.pages.filter(p => mem.some(m => m.which === "groups" ? p.group === m.key : p.tags.includes(m.key))).length;
+    row.label = mem.map(m => m.which === "groups"
+      ? (m.key ? (A.kind === "logseq" ? "namespace " : "folder ") + m.key + "/" : (A.kind === "logseq" ? "(no namespace)" : "(top folder)"))
+      : m.key).join(" · ");
+  }
+  return rows.sort((x, y) => y.n - x.n);
+}
+
+function startRules2(C, rows) {
+  const rules = {groups: {}, tags: {}};
+  for (const g of C.groups) rules.groups[g.key] = "page";
+  for (const t of C.tags) rules.tags[t.key] = "page";
+  for (const row of rows) if (row.code) for (const m of row.members) rules[m.which][m.key] = CODE_KIND[row.code];
+  return rules;
 }
 
 $("#pickSource").onclick = async () => {
@@ -1042,111 +1103,123 @@ $("#pickSource").onclick = async () => {
   try { S.files = await readTree(dir); }
   catch (e) { $("#sourceInfo").textContent = "Could not read it: " + e.message; return; }
   S.source = dir;
-  $("#kind").value = detectKind(S.files);
-  $("#kind").hidden = false;
   analyzeNow();
 };
-$("#kind").onchange = analyzeNow;
 
 function analyzeNow() {
-  S.analysis = analyze($("#kind").value, S.files);
+  const A = S.analysis = analyze(detectKind(S.files), S.files);
   S.result = null;
-  const A = S.analysis;
   const md = S.files.filter(f => /\.md$/i.test(f.rel)).length;
-  $("#sourceInfo").replaceChildren(
-    el("b", {}, S.source.name), " — ",
-    A.kind === "logseq" ? "Logseq" : "Obsidian", " vault: ",
-    el("b", {}, String(A.journals.size)), " day pages, ",
-    el("b", {}, String(A.pages.length)), " pages, ",
-    el("b", {}, String(A.assets.length)), " other files",
-    md - A.pages.length - [...A.journals.values()].flat().length > 0
-      ? " (" + (md - A.pages.length - [...A.journals.values()].flat().length) + " left out, listed in the report)" : "");
+  const left = md - A.pages.length - [...A.journals.values()].flat().length;
+  $("#sourceInfo").replaceChildren("✓ ", el("b", {}, A.kind === "logseq" ? "Logseq" : "Obsidian"), " vault: ",
+    A.journals.size + " day pages, " + A.pages.length + " pages, " + A.assets.length + " other files" +
+    (left > 0 ? " (" + left + " skipped)" : ""));
+
+  const owner = commonProp(S.files, "updated_by|author");
+  if (owner && !$("#me").value) $("#me").value = titleCase(owner);
+  const area = lc(commonProp(S.files, "area|area_name"));
+  const hit = [...$("#area").options].find(o => o.value && lc(o.value) === area);
+  $("#area").value = hit ? hit.value : "?";
+  $("#who").hidden = false;
+
   const C = ruleChoices(A);
-  S.rules = startRules(C);
-  drawRules(C);
-  // Say how many @words there are, with examples; the user decides what they mean.
-  const md2 = S.files.filter(f => /\.md$/i.test(f.rel)).map(f => f.text).join("\n");
-  const ats = md2.match(/(?:^|\s)@[\p{L}][\p{L}\p{N}_-]{1,30}(?![\p{L}\p{N}@.])/gmu) || [];
-  const seen = [...new Set(ats.map(x => x.trim()))];
-  $("#atFound").textContent = ats.length ? "Found " + ats.length + " in your notes, such as " + seen.slice(0, 4).join(", ") + "." : "None found in your notes.";
-  $("#atContext").checked = false;
-  unlock("#s2", "#s3", "#s4");
-  lock("#s5");
-  $("#preview").textContent = "";
+  S.rows = buildRows(A, C);
+  S.rules = startRules2(C, S.rows);
+  drawRules();
+  unlock("#s2", "#s3");
+  update();
 }
 
 function kindSelect(value, onchange) {
   const s = el("select", {onchange: e => onchange(e.target.value)},
-    ...(value === "" ? [el("option", {value: "", disabled: ""}, "Choose…")] : []),
     ...KINDS.map(([k, , label]) => el("option", {value: k}, label)));
   s.value = value;
   return s;
 }
 
-function drawRules(C) {
+function drawRules() {
   const host = $("#rules");
-  host.textContent = "";
-  const A = S.analysis;
-  const table = (title, rows, which, label) => {
-    if (!rows.length) return null;
-    return el("div", {},
-      el("h3", {style: "font-size:13px;margin:10px 0 0;color:var(--fg2)"}, title),
-      el("div", {class: "tablewrap"}, el("table", {},
-        el("thead", {}, el("tr", {}, el("th", {}, label), el("th", {}, "Pages"), el("th", {}, "Becomes"))),
-        el("tbody", {}, ...(which === "groups" ? rows : rows.slice(0, 60)).map(r => el("tr", {},
-          el("td", {}, el("b", {}, r.key || (which === "groups" ? (A.kind === "logseq" ? "(no namespace)" : "(top folder)") : r.key)),
-            el("span", {class: "ex"}, r.ex.join(" · "))),
-          el("td", {class: "num"}, String(r.n)),
-          el("td", {}, kindSelect(S.rules[which][r.key], v => { S.rules[which][r.key] = v; S.result = null; lock("#s5"); left(); }))))))));
-  };
-  const status = el("p", {class: "hint", role: "status"});
-  const left = () => {
-    const n = Object.values(S.rules.groups).filter(v => v === "").length;
-    status.textContent = n ? n + " left to choose." : "All chosen.";
-  };
-  left();
-  host.append(status,
-    table(A.kind === "logseq" ? "Namespaces (the part before the first / in a page name)" : "Top folders",
-      C.groups, "groups", A.kind === "logseq" ? "Namespace" : "Folder") || el("p", {class: "hint"}, "No folders or namespaces."),
-    table("Tags and properties (tags, type, a #tag on the first line, and short values such as status: active)", C.tags, "tags", "Tag") || null);
+  const auto = S.rows.filter(r => r.code).length;
+  $("#autoCount").textContent = "(auto-matched " + auto + " of " + S.rows.length + ")";
+  host.replaceChildren(el("div", {class: "tablewrap"}, el("table", {},
+    el("thead", {}, el("tr", {}, el("th", {}, "Source pattern"), el("th", {}, "Pages"), el("th", {}, "Becomes"))),
+    el("tbody", {}, ...S.rows.map(r => el("tr", {},
+      el("td", {}, el("b", {}, r.label), el("span", {class: "ex"}, r.ex.join(" · "))),
+      el("td", {class: "num"}, String(r.n)),
+      el("td", {}, kindSelect(S.rules[r.members[0].which][r.members[0].key], v => {
+        for (const m of r.members) S.rules[m.which][m.key] = v;
+        update();
+      }))))))));
 }
 
-$("#runTest").onclick = () => {
-  const me = $("#me").value.trim();
-  if (!me) { $("#me").focus(); $("#preview").replaceChildren(el("div", {class: "msg err"}, "Write your name in step 2 first.")); return; }
-  if (!$("#area").value || $("#area").value === "?") { $("#area").focus(); $("#preview").replaceChildren(el("div", {class: "msg err"}, "Choose the area in step 2 first.")); return; }
-  const open = Object.keys(S.rules.groups).filter(k => S.rules.groups[k] === "");
-  if (open.length) { $("#preview").replaceChildren(el("div", {class: "msg err"}, "Say what these mean in step 3 first: " + open.join(", "))); return; }
-  const opts = {me, area: $("#area").value, rules: S.rules, archiveYears: +$("#archiveYears").value, atContext: $("#atContext").checked};
-  let res;
-  try { res = convert(S.analysis, opts); }
-  catch (e) { $("#preview").replaceChildren(el("div", {class: "msg err"}, "The conversion stopped: " + e.message)); console.error(e); return; }
+/* Contexts an @word may become: pages filed as contexts, plus the usual ones. */
+const STANDARD_CONTEXTS = ["home", "office", "pc", "phone", "computer", "errands", "anywhere"];
+function contextWords(placed) {
+  const set = new Set(STANDARD_CONTEXTS);
+  for (const p of placed) if (p.ref.startsWith("c/")) set.add(lc(p.title));
+  return set;
+}
+
+const GROUP_LABEL = {projects: "Projects", p: "People", o: "Organisations", c: "Contexts", page: "Pages"};
+function countsText(placed) {
+  const n = {};
+  for (const p of placed) {
+    const g = ["1", "2", "3", "0", "-"].includes(p.kind) ? "projects" : (p.kind in GROUP_LABEL ? p.kind : "page");
+    n[g] = (n[g] || 0) + 1;
+  }
+  return Object.entries(n).map(([k, v]) => v + " " + GROUP_LABEL[k]).join(", ");
+}
+
+/* Everything on the page that depends on the answers, recomputed on every change. */
+function update() {
+  S.result = null;
+  const A = S.analysis;
+  if (!A) return;
+  const placed = placePages(A, S.rules);
+  $("#summary").textContent = "Ready to write: " + (countsText(placed) || "nothing") +
+    (A.journals.size ? ", and " + A.journals.size + " day pages." : ".");
+  gate();
+}
+function gate() {
+  const ok = S.analysis && $("#me").value.trim() && $("#area").value !== "?" && S.target;
+  $("#write").disabled = !ok;
+}
+$("#me").oninput = gate;
+$("#area").onchange = gate;
+
+/* The full conversion runs only when it is needed: the diff dialog and the write. */
+function convertNow() {
+  const placed = placePages(S.analysis, S.rules);
+  const opts = {me: $("#me").value.trim() || "Me", area: $("#area").value === "?" ? "" : $("#area").value,
+    rules: S.rules, archiveYears: 0, atContext: contextWords(placed)};
+  const res = convert(S.analysis, opts);
   S.result = res; S.opts = opts;
+  return res;
+}
+
+$("#showDiff").onclick = () => {
+  let res;
+  try { res = convertNow(); }
+  catch (e) { $("#preview").replaceChildren(el("div", {class: "msg err"}, "The conversion stopped: " + e.message)); $("#diff").showModal(); console.error(e); return; }
   drawPreview(res);
-  unlock("#s5");
-  $("#report").disabled = false;
+  $("#diff").showModal();
 };
+$("#diffClose").onclick = () => $("#diff").close();
 
 function drawPreview(res) {
   const R = res.report;
-  const tasks = Object.values(R.tasks).reduce((x, y) => x + y, 0);
-  const cards = el("div", {class: "cards"},
-    ...[["Day pages", R.journals], ["Pages", R.pages], ["Tasks", tasks], ["Dates", R.dates],
-        ["Links", R.links], ["Contexts", R.contexts.size], ["Attachments", R.assets]]
-      .map(([k, n]) => el("div", {class: "card"}, el("b", {}, String(n)), el("span", {}, k))));
   const issues = el("ul", {class: "issues"});
   const add = (text, list) => issues.append(el("li", {}, text,
     list && list.length ? el("details", {}, el("summary", {}, "Show " + list.length), el("pre", {}, list.slice(0, 200).join("\n"))) : null));
-  if (R.blockRefsMissing.length) add(R.blockRefsMissing.length + " block reference(s) or embed(s) point at nothing and are left as ((id)).");
-  if (R.queries.length) add(R.queries.length + " Logseq query/queries carried over as live lists; check they find what they did.", R.queries);
-  if (R.assetsMissing.size) add(R.assetsMissing.size + " attachment link(s) point at a file that is not in the vault.", [...R.assetsMissing]);
+  if (R.skipped.length) add(R.skipped.length + " file(s) skipped.", R.skipped);
+  if (R.blockRefsMissing.length) add(R.blockRefsMissing.length + " block reference(s) point at nothing.", R.blockRefsMissing);
+  if (R.queries.length) add(R.queries.length + " query/queries carried over as live lists.", R.queries);
+  if (R.assetsMissing.size) add(R.assetsMissing.size + " attachment link(s) point at a missing file.", [...R.assetsMissing]);
   if (R.merged.length) add(R.merged.length + " page(s) made from more than one file.", R.merged);
-  if (R.oddFrontMatter.length) add(R.oddFrontMatter.length + " page(s) with front matter that was only partly read.", R.oddFrontMatter);
+  if (R.oddFrontMatter.length) add(R.oddFrontMatter.length + " page(s) with front matter only partly read.", R.oddFrontMatter);
   if (R.plainRoots.length) add(R.plainRoots.length + " plain page(s) start like a GroupToDo folder letter.", R.plainRoots);
-  if (R.skipped.length) add(R.skipped.length + " file(s) left out.", R.skipped);
   if (!issues.children.length) issues.append(el("li", {class: "ok"}, "Nothing needs a look."));
 
-  // Before and after, for any file.
   const pairs = [];
   for (const p of res.placed) pairs.push([p.out, p.file.text, p.file.rel]);
   const me = cleanName(S.opts.me).slice(0, 40);
@@ -1160,19 +1233,12 @@ function drawPreview(res) {
     before.textContent = src || ""; after.textContent = res.files.get(o) || "";
     from.textContent = rel ? "From " + rel : "";
   };
-  // Start on a page that shows something happening: the one with the most tasks.
   let best = 0, bestN = -1;
   pairs.forEach(([o], i) => { const n = ((res.files.get(o) || "").match(/^\s*- (TODO|DONE|DOING|WAIT)/gm) || []).length; if (n > bestN) { bestN = n; best = i; } });
   pick.value = String(best);
   show(best);
 
-  $("#preview").replaceChildren(
-    el("div", {class: "msg ok"}, "Test done. Nothing has been written."),
-    cards,
-    el("h3", {style: "font-size:13px;color:var(--fg2);margin:0 0 6px"}, "Needs a look"),
-    issues,
-    el("h3", {style: "font-size:13px;color:var(--fg2);margin:0 0 6px"}, "Any page, before and after"),
-    pick, from,
+  $("#preview").replaceChildren(issues, pick, from,
     el("div", {class: "compare", style: "margin-top:8px"},
       el("div", {}, el("h3", {}, "Before"), before),
       el("div", {}, el("h3", {}, "After"), after)));
@@ -1181,31 +1247,34 @@ function drawPreview(res) {
 $("#report").onclick = () => {
   if (!S.result) return;
   const blob = new Blob([reportText(S.analysis, S.result, S.opts)], {type: "text/markdown"});
-  const a = el("a", {href: URL.createObjectURL(blob), download: "GroupToDo import report.md"});
+  const a = el("a", {href: URL.createObjectURL(blob), download: "GroupToDo import log.md"});
   document.body.append(a); a.click(); a.remove();
 };
 
-/* Writing. The folder has to be empty: converting over something that is
-   already there is how two vaults end up mixed into one. */
-$("#write").onclick = async () => {
-  if (!S.result) return;
-  const outBox = $("#writeOut");
+/* The target has to be empty: converting over something that is already
+   there is how two vaults end up mixed into one. Checked when it is chosen. */
+$("#pickTarget").onclick = async () => {
+  const info = $("#targetInfo");
+  S.target = null; gate();
   let dir;
   try { dir = await window.showDirectoryPicker({mode: "readwrite", id: "gtd-import-target"}); }
-  catch (e) { if (e.name !== "AbortError") outBox.replaceChildren(el("div", {class: "msg err"}, "Could not open it: " + e.message)); return; }
-  try { if (S.source && await S.source.isSameEntry(dir)) {
-    outBox.replaceChildren(el("div", {class: "msg err"}, "That is the old vault itself. Choose a new, empty folder."));
-    return;
-  } } catch (_) {}
+  catch (e) { if (e.name !== "AbortError") info.textContent = "Could not open it: " + e.message; return; }
+  try { if (S.source && await S.source.isSameEntry(dir)) { info.textContent = "That is the old vault itself. Choose a new, empty folder."; return; } } catch (_) {}
   const there = [];
   for await (const [name] of dir.entries()) if (!/^(\.|desktop\.ini$|thumbs\.db$)/i.test(name)) there.push(name);
-  if (there.length) {
-    outBox.replaceChildren(el("div", {class: "msg err"},
-      "That folder is not empty (" + there.slice(0, 5).join(", ") + (there.length > 5 ? ", …" : "") + "). " +
-      "Make a new folder and choose that one."));
-    return;
-  }
-  const res = S.result;
+  if (there.length) { info.textContent = "Not empty (" + there.slice(0, 4).join(", ") + (there.length > 4 ? ", …" : "") + "). Choose a new folder."; return; }
+  S.target = dir;
+  info.textContent = "✓ " + dir.name;
+  gate();
+};
+
+$("#write").onclick = async () => {
+  const outBox = $("#writeOut"), dir = S.target;
+  if (!dir) return;
+  let res;
+  try { res = convertNow(); }
+  catch (e) { outBox.replaceChildren(el("div", {class: "msg err"}, "The conversion stopped: " + e.message)); console.error(e); return; }
+  $("#write").disabled = true;
   const total = res.files.size + res.assets.length;
   const bar = el("i"), label = el("div", {style: "font-size:13px;color:var(--fg2)"});
   outBox.replaceChildren(el("div", {class: "progress"}, bar), label);
@@ -1237,11 +1306,12 @@ $("#write").onclick = async () => {
     try { await put(out, await file.handle.getFile()); } catch (e) { failed.push(out + ": " + e.message); }
     step(out);
   }
+  $("#report").hidden = false;
   outBox.append(failed.length
     ? el("div", {class: "msg warn"}, failed.length + " file(s) could not be written:", el("pre", {style: "white-space:pre-wrap;font:12px var(--mono)"}, failed.join("\n")))
     : el("div", {class: "msg ok"},
         "Done: " + res.files.size + " pages and " + res.assets.length + " attachments written to “" + dir.name + "”. ",
-        "Open GroupToDo, choose ", el("b", {}, "Vault & sync → Connect folder"), " (or Choose folder on the welcome screen) and point it at that folder."));
+        "In GroupToDo choose ", el("b", {}, "Vault & sync → Connect folder"), " and point it at that folder."));
 };
 </script>
 </body>
