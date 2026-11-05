@@ -46,7 +46,7 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
       }
       // Deleted, or cut to somewhere else: not brought back.
       if (!hit && (o.cancelled || skip.has(o.key) || skip.has(lookDay))) continue;
-      const att = o.people.map(linkKnownNames).join(", ");
+      const att = o.people.map(p => linkKnownNames(p)).join(", ");
       const path = ensureJournal(isoOf(new Date(o.start))), page = getPage(path);
       days.add(path);
       if (!hit) {

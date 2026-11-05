@@ -3241,6 +3241,24 @@ var GTD_TEST = (() => {
       ok(!/serve\.py|Alt\+M/.test(document.querySelector(".modal").textContent), "no technical explanation");
     } finally { closeModals(); PREF.set(MEET_REMIND_KEY, was); PREF.set(CAL_FEEDS_KEY, feeds); }
   });
+  test("#294 an attendee on an imported meeting does not crash the import", async () => {
+    const ics = "BEGIN:VCALENDAR\nBEGIN:VEVENT\nUID:test294\nDTSTART:20261110T090000Z\nDTEND:20261110T093000Z\n" +
+      "SUMMARY:Test meeting\nATTENDEE;CN=Alice:mailto:alice@example.com\nEND:VEVENT\nEND:VCALENDAR";
+    const from = new Date("2026-11-09T00:00:00Z").getTime(), to = new Date("2026-11-12T00:00:00Z").getTime();
+    const before = new Set(allPages(isJournalPath));
+    try {
+      const r = importCalendarText(ics, calHome(), "test294feed", from, to);
+      eq(r.added, 1, "the meeting with an attendee still comes in");
+      let found = null;
+      inSpace(calHome(), () => { for (const p of allPages(isJournalPath)) walkBlocks(getPage(p).blocks, b => {
+        if (/Test meeting/.test(b.title)) found = b; }); });
+      has(found?.props.attendees || "", "Alice", "the attendee is still linked in");
+    } finally {
+      inSpace(calHome(), () => { for (const p of allPages(isJournalPath)) if (!before.has(p)) V.pages.delete(p);
+        else walkBlocks(getPage(p).blocks, b => { if (blockProp(b, "cal_feed") === "test294feed") removeBlockFrom(getPage(p), b); }); });
+      clearMemo();
+    }
+  });
 
   /* ---------- areas: one place, removing, onboarding (#193) ---------- */
   const closeModals = () => { for (let i = 0; i < 4 && $("#modalRoot").firstChild; i++) closeModal(); };

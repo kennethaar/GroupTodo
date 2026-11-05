@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.100.1 - 2026-11-05
+
+- Calendars: fix an import crashing with "Cannot read properties of
+  undefined" when a meeting has an attendee or organizer, such as on Proton
+  Calendar (#294).
+
 ## 1.100.0 - 2026-11-05
 
 - Settings: meeting reminders keep the one-click times and add Custom…: any
