@@ -51,14 +51,15 @@ function openOnboardOwn() {
     else requestAnimationFrame(() => focusCapture());
   };
   modal({
-    center: true, title: "Start your own list",
+    center: true, title: "Start writing",
     body: el("div", {},
       who.field,
       el("div", {class: "field"},
         el("label", {}, "What to call it"),
         areaInput,
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px;line-height:1.5"},
-          "The name of this area. Anybody you invite later sees it too.")),
+          "Skip this if you just want to start writing - you can name it later. " +
+          "Anybody you invite gets to see whatever name you settle on.")),
       el("div", {class: "field"},
         el("label", {}, "Where the files live"),
         whereBtn,

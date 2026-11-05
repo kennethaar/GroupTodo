@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.100.2 - 2026-11-05
+
+- Getting started: the first-run screens lead with writing a note, with
+  folder and naming pushed down as optional (#296).
+
 ## 1.100.1 - 2026-11-05
 
 - Calendars: fix an import crashing with "Cannot read properties of

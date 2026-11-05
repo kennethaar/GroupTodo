@@ -18,9 +18,9 @@ function openOnboarding() {
          using it. */
       el("div", {class: "field"},
         el("div", {style: "color:var(--fg2);font-size:13.5px;line-height:1.55"},
-          "A shared to-do list that is really just text files in a folder you already have."),
+          "Write notes and tasks as you go. GroupToDo sorts them into projects, people and dates for you - no filing first."),
         el("div", {style: "color:var(--fg3);font-size:12.5px;line-height:1.55;margin-top:6px"},
-          "No server, no accounts. Share the folder and you have shared the list."),
+          "It is really just text files in a folder you already have. No server, no accounts."),
         /* Said here rather than in a notify this very dialog covers -- and with
            no storage the answers below cannot be remembered either, so this
            screen is what every reload opens on until the file is saved. */
@@ -34,7 +34,7 @@ function openOnboarding() {
         "A colleague shared a folder with you, or sent you an invite or a vault file.",
         () => { closeModal(); openOnboardJoin(); }),
       pick("2", "I am starting my own",
-        "A new list - for you alone, or to share with others later.",
+        "Just start writing - for you alone, or to share with others later.",
         () => { closeModal(); openOnboardOwn(); }),
       pick("3", "I have used GroupToDo before",
         "At another web address or on another computer. Pick the folders you already have.",

@@ -1,32 +1,113 @@
 # GroupToDo
 
-**The local-first Markdown workspace where GTD, networked notes, team and family collaboration work out of the box.** 
+## Write naturally. Stay organised.
 
-GroupToDo combines the daily journals, with `[[backlinks]]`, live queries, and graph views of tools like **Logseq, Obsidian, and Roam** with a complete **Getting Things Done (GTD)** project engine. In short a complete system to manage everything digital in one place. Your files stay as plain Markdown files in a folder on your disk. No install, no plugins to wire up, no account, and no server, just a single HTML-file that can run anywhere.
+Write notes and tasks in your daily journal. GroupToDo connects them to the right projects, people, contexts, dates, and conversations.
 
-**Try it right now:** Open **[kennethaar.github.io/GroupTodo](https://kennethaar.github.io/GroupTodo/)** in Chrome or Edge (or download and double-click `grouptodo.html`). Your data never leaves your machine, and [GroupToDo-Importer.html](https://github.com/kennethaar/GroupTodo/blob/main/GroupToDo-Importer.html) can preview and migrate an existing Obsidian, Logseq, Dynalist or Workflowy vault in seconds.
+No filing first. No system to maintain. Just write.
 
-**Multiplayer without the SaaS tax—or sync conflicts:** 
-Most team task apps lock your data on their servers and charge per seat. Local Markdown apps break when two people edit the same shared folder. GroupToDo solves both: share a folder over OneDrive, Dropbox, or a network drive and you are in. Because every teammate writes to their own daily journal file and changes merge by timestamp, nobody overwrites anyone else. Remove someone from the folder and their access is gone. Every task and project is just a plain `.md` file, so your work outlives the tool.
+* See today's notes, tasks, meetings, and deadlines together
+* Track projects as you work
+* Find every note linked to a person, project, or context
+* Turn notes into tasks without copying them
+* Review what is next, late, delegated, or stuck
+* Share work without moving it to a SaaS platform
+
+Your data stays in plain Markdown files on your device.
+
+**[Try GroupToDo](https://kennethaar.github.io/GroupTodo)** in Chrome or Edge, or download `grouptodo.html` and double-click it.
 
 ---
 
-## Quick Start
+## Write first. Organise automatically.
 
-In Edge or Chrome, double-click `grouptodo.html`. It first asks how you are starting:
+Start in today's journal:
 
-* **Somebody invited me** - Your full name, then what you were sent: the shared folder, or an invite or vault file. The folder is opened as it is (none of your starter pages go into it) and the area takes the name stored in the folder, or else the folder's own name. *You are in …* then shows who else is there, the projects and open tasks you now share, and how to hand a task to somebody.
-* **I am starting my own** - Your full name, what to call the area, and optionally a folder of your own (skip to keep everything in the browser for now). The name you give is written into the folder, so people you invite later see the same name.
-* **I'm back** - Choose this if you are setting up the system again for example in a different browser.
+```text
+- Call Bob about [[Kitchen renovation]] friday
+- Ask @Anna for the revised quote
+- Idea for [[Website redesign]]
+- Buy paint @Errands
+```
+
+GroupToDo connects the same notes across your work:
+
+```text
+Next
+├── Call Bob about Kitchen renovation
+└── Ask Anna for the revised quote
+
+Projects
+├── Kitchen renovation
+└── Website redesign
+
+People
+└── Anna
+    └── Revised quote
+
+Contexts
+└── Errands
+    └── Buy paint
+
+Waiting for
+└── Anna: Revised quote
+```
+
+The journal stays the source. GroupToDo shows the same work wherever you need it — see [Screens & Views](#screens--views) below.
+
+---
+
+## GTD without the setup
+
+Getting Things Done works out of the box, no plugins, formulas, or custom dashboards required:
+
+* **Next** shows available actions.
+* **Waiting for** shows delegated work.
+* **Projects** shows outcomes and progress.
+* **Contexts** shows what you can do where you are.
+* **Weekly review** helps you close, cancel, defer, or define the next action.
+
+---
+
+## Local first
+
+GroupToDo is one HTML file. There is no install, no account, no server, no database, no telemetry, no subscription, and no vendor lock-in.
+
+Your work stays as plain Markdown in a folder you control. Use a local folder, OneDrive, Dropbox, or a network drive — your files stay readable without GroupToDo.
+
+---
+
+## Work alone or together
+
+An area is a shared folder. Each person writes in their own daily journal, so sharing the work does not mean everyone editing the same file — changes merge by timestamp and nobody overwrites anyone else.
+
+Delegate a task and it moves to the other person's work while remaining in your **Waiting for** list: one task, never two copies.
+
+Folder access controls access. Remove someone from the folder and their access is gone.
+
+---
+
+## Try it
+
+Open **[kennethaar.github.io/GroupTodo](https://kennethaar.github.io/GroupTodo/)** in Chrome or Edge, or download and double-click `grouptodo.html`. It first asks how you are starting:
+
+* **Somebody invited me** — Your full name, then what you were sent: the shared folder, or an invite or vault file. The folder opens as it is (none of your starter pages go into it) and the area takes the name stored in the folder, or else the folder's own name. *You are in …* then shows who else is there, the projects and open tasks you now share, and how to hand a task to somebody.
+* **I am starting my own** — Your full name, what to call the area, and optionally a folder of your own (skip to keep everything in the browser for now). The name you give is written into the folder, so people you invite later see the same name.
+* **I'm back** — Choose this if you are setting up the system again, for example in a different browser.
+
+Write your first note or task — the app guides you from there.
 
 > **Tip:** Click *Set up several areas* on the second path to split your list into separate folders (e.g., Work, Home) before you begin.
 
-### First Steps
+### First steps
 * **Onboarding:** **Journal** opens with the cursor in the top input box and a *Getting started* strip that ticks itself off as you add your name, folder, and first task. It then points you to the *Find your way round GroupToDo* tour project. If colleagues already put your name on tasks, those are offered when you arrive.
 * **Inviting others:** Go to **Areas menu (top right) → Invite somebody**, or send them `grouptodo.html`, the folder name, and [docs/setup-sheet-group.html](docs/setup-sheet-group.html).
 * **Wrong folder or name:** **Areas menu → Folders** renames an area — *just for me*, or *for everyone*, which writes the name into the folder for whoever joins from now on — or changes its folder. Changing from one folder to another asks before copying any pages, and leaves them where they are by default.
 * **Solo use across groups:** Using it on your own with several groups around you? See [docs/setup-sheet-personal.html](docs/setup-sheet-personal.html).
-* **Migrating from Obsidian or Logseq:** Open `GroupToDo-Importer.html` in Edge or Chrome. It reads your old vault without changing it, asks what your folders/namespaces/tags mean, previews every page before and after, and writes a new GroupToDo folder. (Format details: [docs/vault-format.md](docs/vault-format.md)).
+
+## Bring your existing notes
+
+`GroupToDo-Importer.html` can preview and convert data from Obsidian, Logseq, Dynalist, and Workflowy. It reads your old vault without changing it, asks what your folders/namespaces/tags mean, previews every page before and after, and writes a new GroupToDo folder. (Format details: [docs/vault-format.md](docs/vault-format.md)).
 
 ---
 
