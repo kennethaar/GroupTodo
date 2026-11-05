@@ -3152,11 +3152,17 @@ var GTD_TEST = (() => {
       ok(document.querySelector(".modal"), "Advanced opens");
       closeModal();
     });
-    test("#218 Calendars are in a private area's Settings, not on the Journal", async () => {
+    test("#218 Calendars are in a private area's Settings; the Journal only has an import button by its date box", async () => {
       go("today");
       await settle();
-      ok(!content().querySelector(".calchip"), "no Calendars button on the Journal");
+      ok(!content().querySelector(".calchip"), "no Calendars status chip on the Journal");
       ok(!content().querySelector('.todayicon[aria-label="Calendars"], .todayicon[title="Calendars"]'), "no Calendars icon on the Journal");
+      const imp = content().querySelector(".daybox .dayimport");
+      ok(imp, "an import-calendar button sits with the date box");
+      imp.click();
+      await settle();
+      ok(document.querySelector(".modal"), "it opens the Calendars dialog");
+      closeModals();
       go("checklists");
       await settle();
       ok(calAreaShared(Spaces.active), "the demo's area is shared");

@@ -1,8 +1,10 @@
 // You, under whatever name, plus everybody else there.
 const calAreaPeople = space => LOADED.has(space) ? 1 + areaOthers(space).length : 0;
 /* A folder you joined is somebody else's as well, whether or not anybody in
-   it has written their name down yet. */
-const calAreaShared = space => !!Spaces.get(space)?.joined || calAreaPeople(space) > 1;
+   it has written their name down yet. Unless you have said the others are
+   only you, on your other devices. */
+const calAreaShared = space => !Spaces.get(space)?.onlyMe &&
+  (!!Spaces.get(space)?.joined || calAreaPeople(space) > 1);
 const calSharedNote = space => calAreaPeople(space) > 1
   ? "shared with " + calAreaPeople(space) + " people" : "a folder you joined";
 const calSharedWhy = space => space + " is " + calSharedNote(space) + ", so calendars do not come into it: " +

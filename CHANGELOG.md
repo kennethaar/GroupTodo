@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.98.0 - 2026-11-05
+
+- Settings: a folder shared only with yourself on other devices can be marked
+  "Only I use this folder", so Calendars works in it.
+
+## 1.97.0 - 2026-11-05
+
+- Settings: the Journal's date box has a 📅 button that opens Calendars, so a
+  calendar can be imported from where the meetings land.
+
 ## 1.96.1 - 2026-11-05
 
 - Settings: Calendars no longer vanishes in a shared area. It stays and says
