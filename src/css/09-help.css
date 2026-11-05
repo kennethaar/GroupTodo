@@ -236,3 +236,19 @@ body.bookfocus .chapterbar .focusbtn{display:none}
   .helphint{left:10px;right:10px;bottom:10px}
 }
 
+.helprun fieldset{border:1px solid var(--border);border-radius:8px;margin:10px 0;padding:6px 12px 10px}
+.helprun legend{font-size:13px;font-weight:600;color:var(--fg2);padding:0 4px}
+.helprun label{display:flex;gap:8px;align-items:baseline;font-size:15px;line-height:1.5;padding:3px 0;cursor:pointer}
+.runbest{border-left:3px solid var(--accent);padding:2px 0 2px 12px;margin:14px 0}
+.runbest h3{margin-top:4px}
+.runbest p{margin:4px 0}
+.runmiss{color:var(--fg2)}
+.runscroll{overflow-x:auto;max-width:100%;position:relative}
+.runtable{border-collapse:collapse;font-size:13.5px}
+.runtable th,.runtable td{border-bottom:1px solid var(--border);padding:6px 8px;text-align:center;vertical-align:top}
+.runtable thead th{font-weight:600;color:var(--fg2);font-size:12px}
+.runtable tbody th{text-align:left;font-weight:500;min-width:9em}
+.runtable td.no{color:var(--fg3)}
+.runtable tr.now{background:var(--bg2)}
+.runnow{color:var(--fg2);font-weight:400}
+.runsr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}

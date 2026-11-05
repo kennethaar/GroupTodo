@@ -4641,6 +4641,30 @@ var GTD_TEST = (() => {
       ok(d.documentElement.scrollWidth <= 390, "nothing is wider than the phone");
     } finally { f.remove(); }
   });
+  test("#290 Ways to run: what you tick picks the way, and a limit rules a way out", async () => {
+    const best = (needs, limits) => runWayPick(needs, limits)[0];
+    eq(best([], []).id, "pages", "with nothing ticked, the web address: nothing to install");
+    eq(best(["cal"], []).id, "vault", "calendar links need serve.py");
+    eq(best(["cal", "noask"], []).id, "vault");
+    eq(best(["any"], []).id, "vault", "only the server's folder works in any browser");
+    const noPy = best(["cal"], ["nopy"]);
+    ok(!["serve", "vault"].includes(noPy.id), "no Python rules serve.py out");
+    eq(noPy.missing, ["cal"], "and it says what the pick cannot do");
+    eq(best([], ["nopy", "noweb"]).id, "file", "no Python and no web address leaves the file");
+    ok(runWayPick([], ["norun"]).every(w => !RUN_WAYS[w.id].run), "a way that must keep running is ruled out");
+    helpReset();
+    openHelp("run");
+    await settle();
+    const box = content().querySelector(".helprun");
+    ok(box, "the topic has the chooser");
+    has(box.querySelector(".runbest").textContent, RUN_WAYS.pages.title);
+    const tick = box.querySelector("input[value=cal]");
+    tick.checked = true;
+    tick.dispatchEvent(new Event("change"));
+    has(box.querySelector(".runbest").textContent, RUN_WAYS.vault.title, "ticking calendar links changes the advice");
+    eq(box.querySelectorAll("table.runtable tbody tr").length, Object.keys(RUN_WAYS).length, "every way is in the table");
+    helpReset();
+  });
 
   /* ============================================================
      Sense where I am (#183)

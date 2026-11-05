@@ -27,6 +27,7 @@ function helpTopicNode(id, {here = false, read = openHelp} = {}) {
   if (t.more && t.more.length) box.append(el("details", {class: "helpmore"}, el("summary", {}, "More"),
     el("ul", {}, ...t.more.map(m => el("li", {}, m)))));
   if (id === "news") box.append(helpNews());
+  if (id === "run") box.append(helpRun());
   const see = (t.see || []).filter(s => HELP[s]);
   box.append(el("h3", {}, here ? "Learn more" : "See also"), el("div", {class: "helpsee"},
     ...see.map(s => helpLink(s, read)),

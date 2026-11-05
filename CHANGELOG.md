@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.96.0 - 2026-11-05
+
+- Ways to run GroupToDo: a new help topic sets the four ways side by side:
+  the web address, the downloaded file, and serve.py with or without a folder
+  of its own. Tick what matters, such as calendar links, and what you cannot
+  do, such as install Python, and it names the way that fits and how to start
+  it. The way you use now is marked.
+
 ## 1.95.0 - 2026-11-05
 
 - Vault and sync: the importer reads Dynalist and Workflowy exports. Pick the

@@ -808,6 +808,10 @@ js/90-view-state/helpTopicNode.js
 js/90-view-state/vars-HELP_NEWS.js
 js/90-view-state/newsEntries.js
 js/90-view-state/helpNews.js
+js/90-view-state/vars-RUN_WAYS.js
+js/90-view-state/runWayPick.js
+js/90-view-state/runWayNow.js
+js/90-view-state/helpRun.js
 js/90-view-state/vars-REPO.js
 js/90-view-state/installUpdateCheck.js
 js/90-view-state/checkForUpdate.js
