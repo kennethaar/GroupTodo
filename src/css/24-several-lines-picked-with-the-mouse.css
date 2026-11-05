@@ -15,7 +15,7 @@ body.lselecting,body.lselecting *{user-select:none;-webkit-user-select:none;curs
   background:var(--bg2);border-top:1px solid var(--border);overflow-x:auto;scrollbar-width:none;
   padding:4px max(8px,env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
 #editBar[hidden]{display:none}
-#editBar .ebtn{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:52px;padding:4px 8px;
+#editBar .ebtn{display:flex;flex-direction:column;align-items:center;gap:1px;flex:none;min-width:56px;padding:6px 8px;
   background:none;border:0;border-radius:8px;color:var(--fg);font:inherit;cursor:pointer}
 #editBar .ebtn:hover{background:var(--bg3)}
 #editBar .eic{font-size:17px;line-height:1.1}
@@ -24,9 +24,11 @@ body.editbar-on #content{padding-bottom:140px}
 /* Room under the page while a phone writes in it, so the last line can come
    up to the middle of what the keyboard leaves. */
 body #content.roomunder{padding-bottom:85vh}
-/* A phone gets every button in one row, sharing the width, none off the edge. */
-@media (max-width:560px){#editBar{gap:0;padding-left:max(2px,env(safe-area-inset-left));padding-right:max(2px,env(safe-area-inset-right))}
-  #editBar .ebtn{flex:1 1 0;min-width:0;padding:4px 0}#editBar .elb{font-size:9.5px;letter-spacing:-.02em}}
+/* More buttons than fit a phone's width scroll sideways rather than shrinking
+   below a size a thumb can reliably hit. */
+@media (max-width:560px){#editBar{justify-content:flex-start;gap:0;
+    padding-left:max(2px,env(safe-area-inset-left));padding-right:max(2px,env(safe-area-inset-right))}
+  #editBar .ebtn{min-width:50px;padding:6px 4px}#editBar .elb{font-size:9.5px;letter-spacing:-.02em}}
 /* A camera of its own is a phone's; a computer picks a picture from its files. */
 @media (pointer:fine){#editBar .ebtn[data-k="photo"]{display:none}}
 .blk .bodyline{font-size:13px;color:var(--fg2);white-space:pre-wrap;min-height:1.3em;

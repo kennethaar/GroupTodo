@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.101.0 - 2026-11-05
+
+- Keys on a line: the phone toolbar at the foot of the screen can now add a
+  context, person or organisation too, and scrolls sideways instead of
+  squeezing its buttons when it has more than fit (#297).
+
 ## 1.100.2 - 2026-11-05
 
 - Getting started: the first-run screens lead with writing a note, with

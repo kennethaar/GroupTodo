@@ -2557,7 +2557,8 @@ var GTD_TEST = (() => {
       await frame();
       ok(bar() && !bar().hidden, "no toolbar while a line is being written");
       eq([...bar().querySelectorAll(".elb")].map(n => n.textContent),
-        ["Up", "Down", "Outdent", "Indent", "Note", "Zettel", "Project", "Responsibility", "To area", "Copy text", "Photo", "Image"]);
+        ["Up", "Down", "Outdent", "Indent", "Note", "Zettel", "Project", "Responsibility", "Context", "Person",
+         "Organisation", "To area", "Copy text", "Photo", "Image"]);
       await press("down");
       eq(titles(), ["Alpha", "Charlie", "Bravo"], "after down");
       ok(document.activeElement && document.activeElement.closest('.blk[data-id="' + bravo.id + '"]'), "the caret left the line");
@@ -6810,6 +6811,22 @@ var GTD_TEST = (() => {
     eq(plainLineText(b), "WAIT New date for meeting Håkon Moe 2026-11-03");
     eq(plainLineText(newBlock({title: "A note [[Some page]]"})), "A note Some page");
     eq(EDIT_BAR.some(r => r.k === "plaincopy"), true, "on the bar");
+  });
+
+  test("#297 the mobile line toolbar can add a context, person or organisation", () => {
+    const path = scratchProject("editbar tag", [["TODO", "Buy paint"]]);
+    const page = getPage(path), block = page.blocks[0];
+    const box = el("div"), txt = el("textarea");
+    document.body.append(box, txt);
+    FLY = {txt, path, page, block, box, open: null, hi: 0, q: ""};
+    try {
+      for (const k of ["ctx", "who", "org"]) {
+        ok(EDIT_BAR.some(r => r.k === k), k + " is on the bar");
+        FLY.open = null;
+        editBarAct(k);
+        eq(FLY.open, k, k + " opens its own picker, not another action");
+      }
+    } finally { FLY = null; box.remove(); txt.remove(); }
   });
 
   test("timer starts and stops", () => {
