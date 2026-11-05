@@ -28,7 +28,7 @@ Everything goes as plain words, the way people read it in Planner: `[[c/PC]]`
 is *PC*, `[[1/Fix sink]]` is *Fix sink*, `#urgent` is *urgent*, `[[page][label]]`
 is *label*, `((id))` is the line it points at, and bold, italics and code keep
 only their words. A person is written out with where they work and their
-address: `[[p/Ken Jenkins]]` is *Ken Jenkins, CAB Group AS (ken.jenkins@cab.no)*,
+address: `[[p/Nora Eklund]]` is *Nora Eklund, Harbour Bakery AS (nora@harbourbakery.example)*,
 from `organisation::` and `email::` on their page.
 
 ## How it travels

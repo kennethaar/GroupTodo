@@ -182,36 +182,36 @@ button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;paddin
 
 <script>
 /* ======================= sample data ======================= */
-const PEOPLE = {"Linus Eberhart":9,"Alexander Breznik":6,"Sara Holm":5,"Ingrid Solberg":4,"Petter Nilsen":4,"Mats Lindqvist":3,"Henrik Dahl":3,"Jonas Berg":2,"Maria Svensson":2,"Karin Ek":2,"Eva Strand":1,"Ola Hansen":1};
+const PEOPLE = {"Nora Eklund":9,"Tobias Brann":6,"Sara Holm":5,"Ingrid Solberg":4,"Petter Nilsen":4,"Mats Lindqvist":3,"Henrik Dahl":3,"Jonas Berg":2,"Maria Svensson":2,"Karin Ek":2,"Eva Strand":1,"Ola Hansen":1};
 const CONTEXTS = ["@Computer","@Phone","@Agendas","@Office","@Home","@Errands","@Online","@Anywhere"];
 const DECK = [
-  {id:"api", name:"API for befaringskladd", parent:"Takstgruppen · webhooks, statistikk, API", idle:41, status:"active",
-   tasks:[{t:"Spør Alexander når API-et blir klart",ctx:null},{t:"Skriv kravspek for feltene i kladden",ctx:"@Computer"},{t:"Sjekk webhook-payload mot befaring-id",ctx:"@Computer"}],
-   suggest:"Takstgruppen sender data rett inn i befaringskladden via API",
-   people:{"Alexander Breznik":[5,"asked on 16 Oct"],"Linus Eberhart":[2,"through CodeBase"]}},
-  {id:"web", name:"Webhooks for befaringsstatus", parent:"Takstgruppen · webhooks, statistikk, API", idle:36, status:"active",
-   outcome:"Takstgruppen får varsel når en befaring endrer status", next:{t:"Test webhook mot Takstgruppens test-endepunkt",ctx:"@Computer"},
-   tasks:[{t:"Dokumenter payload for statusendring",ctx:"@Computer"}]},
-  {id:"dyn", name:"Koble kundekontakt til Dynamics", parent:"Monthly Property NO", idle:33, status:"active",
-   tasks:[{t:"Finn ut hvordan Teams-kontakt kommer inn i Dynamics",ctx:null},{t:"Book møte med CRM-ansvarlig",ctx:"@Computer"}],
-   suggest:"Kundekontakt via Teams logges automatisk i Dynamics",
+  {id:"order", name:"Online orders for the bakery", parent:"Harbour Bakery · website, orders, delivery", idle:41, status:"active",
+   tasks:[{t:"Ask Tobias when the order form is ready",ctx:null},{t:"Write the list of fields for the order form",ctx:"@Computer"},{t:"Check the order mail against the kitchen list",ctx:"@Computer"}],
+   suggest:"Customers order bread online and the kitchen sees it the next morning",
+   people:{"Tobias Brann":[5,"asked on 16 Oct"],"Nora Eklund":[2,"through the web shop"]}},
+  {id:"notify", name:"Order status by text message", parent:"Harbour Bakery · website, orders, delivery", idle:36, status:"active",
+   outcome:"Customers get a text when their order is ready", next:{t:"Send a test text from the shop system",ctx:"@Computer"},
+   tasks:[{t:"Write the wording for the ready text",ctx:"@Computer"}]},
+  {id:"crm", name:"Keep customer contacts in one list", parent:"Harbour Bakery · customers", idle:33, status:"active",
+   tasks:[{t:"Find out where phone orders are written down",ctx:null},{t:"Book a meeting with the shop manager",ctx:"@Computer"}],
+   suggest:"Every customer contact is in the same list",
    people:{"Sara Holm":[4,"her page links here"],"Henrik Dahl":[3,"in a note on 16 Oct"]}},
-  {id:"meps", name:"Market Demo MEPS", idle:28, status:"active",
-   outcome:"Demoen er holdt med varslinger og standardtekster på plass", next:{t:"Beskriv varslinger i Userflow",ctx:"@Computer"},
-   tasks:[{t:"Sjekk standardtekster på firmanivå",ctx:"@Computer"},{t:"Lag demo-script",ctx:"@Computer"},{t:"Ring Ingrid om demodato",ctx:"@Phone"}]},
-  {id:"notif", name:"Beskrive varslinger i Userflow", parent:"Userflow · low hanging fruit", idle:19, status:"waiting",
-   outcome:"Hver varsling har en kort beskrivelse i Userflow",
-   people:{"Petter Nilsen":[5,"named on this project"],"Linus Eberhart":[3,"in a note on 16 Oct"]}},
-  {id:"std", name:"Standardtekster på firmanivå", parent:"Market Demo MEPS", idle:12, status:"active",
-   outcome:"Et firma kan lagre egne standardtekster i MEPS"},
-  {id:"vat", name:"Våtromsbelegg skal legges inn netto", idle:1, status:"waiting",
-   outcome:"Materialet beregner hulkil og oppbrett slik MEPS gjør", waitingFor:"Linus Eberhart", since:"16 Oct"},
+  {id:"fair", name:"Stand at the summer fair", idle:28, status:"active",
+   outcome:"The stand is open with signs and price cards in place", next:{t:"Draw the stand layout",ctx:"@Computer"},
+   tasks:[{t:"Print the price cards",ctx:"@Computer"},{t:"Write the tasting plan",ctx:"@Computer"},{t:"Call Ingrid about the fair date",ctx:"@Phone"}]},
+  {id:"signs", name:"Signs for the stand", parent:"Stand at the summer fair", idle:19, status:"waiting",
+   outcome:"Each product has a short sign at the stand",
+   people:{"Petter Nilsen":[5,"named on this project"],"Nora Eklund":[3,"in a note on 16 Oct"]}},
+  {id:"prices", name:"Price cards for the fair", parent:"Stand at the summer fair", idle:12, status:"active",
+   outcome:"Every product at the stand has a price card"},
+  {id:"oven", name:"Service the big oven", idle:1, status:"waiting",
+   outcome:"The oven holds its heat through a full bake", waitingFor:"Nora Eklund", since:"16 Oct"},
 ];
 const SOMEDAY = [
-  {id:"pris", name:"Ny prismodell 2027", idle:84, status:"someday", suggest:"Prismodell 2027 er vedtatt og publisert"},
-  {id:"onb", name:"Onboarding Norsk Takst", idle:61, status:"someday", outcome:"Norsk Takst bruker MEPS i alle avdelinger",
-   tasks:[{t:"Ring Norsk Takst om en pilot",ctx:"@Phone"}]},
-  {id:"app", name:"Mobilapp for befaring offline", idle:120, status:"someday", suggest:"Takstmenn kan gjøre en hel befaring uten nett"},
+  {id:"menu", name:"New menu for 2027", idle:84, status:"someday", suggest:"The 2027 menu is chosen and printed"},
+  {id:"cafe", name:"Second café by the harbour", idle:61, status:"someday", outcome:"The second café opens for the summer",
+   tasks:[{t:"Call the landlord about the empty shop",ctx:"@Phone"}]},
+  {id:"van", name:"Delivery van for the villages", idle:120, status:"someday", suggest:"Bread reaches the villages twice a week"},
 ];
 /* What already lies on the piles: the projects you finished and cancelled this year */
 const PILES_BEFORE = {active:0, waiting:0, someday:0, done:23, dropped:9};
@@ -614,7 +614,7 @@ document.addEventListener("mouseover",e=>{
   aim=b.dataset.pos; paintAim();
 });
 setInterval(()=>{ if(S.over||S.bonus) return; elapsed=Math.round((Date.now()-started)/1000); const c=$("#clock"); if(c) c.textContent=mmss(elapsed); },1000);
-/* for showing a given project first: solitaire-two-cards-mockup.html#meps */
+/* for showing a given project first: solitaire-two-cards-mockup.html#fair */
 { const h=location.hash.slice(1), i=S.deck.indexOf(h); if(i>0){ S.deck.splice(i,1); S.deck.unshift(h); } }
 render("deal");
 </script>

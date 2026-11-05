@@ -1,6 +1,6 @@
 /* A person as the people reading the card need them, not as a link: the
    name, where they work and how to reach them --
-   Ken Jenkins, CAB Group AS (ken.jenkins@cab.no). */
+   Nora Eklund, Harbour Bakery AS (nora@harbourbakery.example). */
 function plannerPerson(name) {
   name = trim(name || "");
   if (!name) return "";

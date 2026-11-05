@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.91.1 - 2026-11-05
+
+- Pages › Mind map: the name box suggests p/Anna. Examples in the help, docs,
+  mockups and tests now use made-up people and made-up work (#286).
+
 ## 1.91.0 - 2026-11-05
 
 - Journal: feedback is reviewed one item at a time. Since you were last here

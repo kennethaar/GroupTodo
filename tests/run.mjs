@@ -13,6 +13,8 @@
    Needs Node 22+ (built-in fetch and WebSocket) and Python for the demo build. */
 import {existsSync, readFileSync, readdirSync} from "node:fs";
 import {dirname, join} from "node:path";
+import {createHash} from "node:crypto";
+import {execFileSync} from "node:child_process";
 import {fileURLToPath} from "node:url";
 import {openDemo, ROOT} from "./browser.mjs";
 
@@ -53,6 +55,31 @@ try {
   const stripTest = "#259 the build takes out comments and indentation and nothing else";
   if (!only || stripTest.toLowerCase().includes(only.toLowerCase())) {
     results.push(await stripBuildTest(stripTest));
+  }
+
+  /* Examples are made up. The real names they replaced are kept out by their
+     hashes, so this test does not repeat them (#286). */
+  const namesTest = "#286 examples use made-up names and work, not real ones";
+  if (!only || namesTest.toLowerCase().includes(only.toLowerCase())) {
+    const BANNED = new Set(["b8f46005bc568403", "c0f2eda8a1fb7fb0", "078b217927e73bc4", "c4c4e84c9bc3137d",
+      "95a7d3389112ab19", "a7843d403be47ee2", "3436d74d54ce795a", "c5668d09aed9281b", "dc60c1479f41fcfd",
+      "981c7e6b7f4e65cd", "97315cbd8688e5d9", "e6b8083ba1fd0b4f", "9a11dc7a235cdc26", "f06f9ef3650cf04e",
+      "9b57b544cc50ae5c"]);
+    const hash = w => createHash("sha256").update(w).digest("hex").slice(0, 16);
+    const hits = [];
+    const files = execFileSync("git", ["ls-files"], {cwd: ROOT, encoding: "utf-8"}).split("\n")
+      .filter(f => /\.(html|js|mjs|md|txt|css|py|json|svg)$/.test(f));
+    for (const f of files) {
+      if (!existsSync(join(ROOT, f))) continue;
+      const words = readFileSync(join(ROOT, f), "utf-8").toLowerCase().match(/\p{L}+/gu) || [];
+      for (let i = 0; i < words.length; i++)
+        if (BANNED.has(hash(words[i])) || (i && BANNED.has(hash(words[i - 1] + " " + words[i])))) {
+          hits.push(f + " (word " + (i + 1) + ")");
+          break;
+        }
+    }
+    results.push(!hits.length ? {name: namesTest, ok: true}
+      : {name: namesTest, ok: false, error: "a real name or project is back in: " + hits.join(", ")});
   }
 
   const shotsTest = "#171 every help screenshot is in docs/help, and none is left over";

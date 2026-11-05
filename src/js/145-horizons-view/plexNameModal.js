@@ -2,7 +2,7 @@
    The page is made in the space the node you dragged from lives in, which is
    the only space it could sensibly belong to. */
 function plexNameModal(fromNode, after) {
-  const input = el("input", {placeholder: "c/phone, p/Niclas, or just a name"});
+  const input = el("input", {placeholder: "c/phone, p/Anna, or just a name"});
   const done = () => {
     const name = trim(input.value);
     if (!name) { closeModal(); return; }

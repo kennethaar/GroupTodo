@@ -558,8 +558,8 @@ var GTD_TEST = (() => {
       pages: {"GTD.md": "title:: GTD\n",
         "0": {"Done.md": "title:: Done\n"}, "2": {"Later.md": "title:: Later\n"},
         "1": {"Boat.md": "title:: Boat\n\n- TODO Sand the hull\n"},
-        p: {"Odd Kittelsen.md": "title:: Odd Kittelsen\n\n- met at the fair\n"},
-        c: {"phone.md": "title:: phone\n"}, o: {"CAB.md": "title:: CAB\n"}},
+        p: {"Tor Vik.md": "title:: Tor Vik\n\n- met at the fair\n"},
+        c: {"phone.md": "title:: phone\n"}, o: {"Bakery.md": "title:: Bakery\n"}},
     };
     /* The contexts are held: what is in before them is shown, what follows is not. */
     const b = Backends.fs(fakeDir("Soon181", tree, [], {[old + ".md"]: held, "Done.md": held, "Later.md": held, "phone.md": held}));
@@ -577,8 +577,8 @@ var GTD_TEST = (() => {
       ok(rec.pages.has(jp(five)), "a day this month, before the projects");
       has(serializePage(rec.pages.get(join(DIRS.active, "Boat.md"))), "Sand the hull", "the project, before the contexts");
       ok(rec.stubs.has(join(DIRS.contexts, "phone.md")), "the context is not a stand-in");
-      ok(rec.stubs.has(personPath("Odd Kittelsen")) && rec.stubs.has(join(DIRS.orgs, "CAB.md")), "people and orgs came in before the contexts");
-      ok(rec.pages.has(personPath("Odd Kittelsen")) && !rec.pages.get(personPath("Odd Kittelsen")).blocks.length, "the person is there by name");
+      ok(rec.stubs.has(personPath("Tor Vik")) && rec.stubs.has(join(DIRS.orgs, "Bakery.md")), "people and orgs came in before the contexts");
+      ok(rec.pages.has(personPath("Tor Vik")) && !rec.pages.get(personPath("Tor Vik")).blocks.length, "the person is there by name");
       ok(rec.stubs.has(join(DIRS.completed, "Done.md")), "a done project came in early");
       ok(!rec.pages.has(jp(old)), "a day from over a month ago came in early");
       ok(navLoading(), "no bar while the rest is read");
@@ -586,14 +586,14 @@ var GTD_TEST = (() => {
     await filesLoaded();
     ok(!rec.stubs, "no stand-ins left");
     ok(!LOADING.has(rec.name), "the bar stays once all is in");
-    has(serializePage(rec.pages.get(personPath("Odd Kittelsen"))), "met at the fair", "the person, read in full");
+    has(serializePage(rec.pages.get(personPath("Tor Vik"))), "met at the fair", "the person, read in full");
     const at = p => order.indexOf(p);
     const dir = (d, n) => join(d, n);
     ok(at(jp(yest)) < at(dir(DIRS.active, "Boat.md")), "a day before the projects");
     ok(at(dir(DIRS.active, "Boat.md")) < at(dir(DIRS.contexts, "phone.md")), "projects before contexts");
-    ok(at(dir(DIRS.contexts, "phone.md")) < at(personPath("Odd Kittelsen")), "contexts before people");
-    ok(at(personPath("Odd Kittelsen")) < at(dir(DIRS.orgs, "CAB.md")), "people before orgs");
-    ok(at(dir(DIRS.orgs, "CAB.md")) < at(dir(DIRS.someday, "Later.md")), "orgs before someday");
+    ok(at(dir(DIRS.contexts, "phone.md")) < at(personPath("Tor Vik")), "contexts before people");
+    ok(at(personPath("Tor Vik")) < at(dir(DIRS.orgs, "Bakery.md")), "people before orgs");
+    ok(at(dir(DIRS.orgs, "Bakery.md")) < at(dir(DIRS.someday, "Later.md")), "orgs before someday");
     ok(at(dir(DIRS.someday, "Later.md")) < at(dir(DIRS.completed, "Done.md")), "someday before done");
     ok(at(dir(DIRS.completed, "Done.md")) < at(jp(old)), "done before an old day");
   });
@@ -606,9 +606,9 @@ var GTD_TEST = (() => {
       journals: {[T() + ".md"]: "- today\n", [five + ".md"]: "- five days ago\n"},
       pages: {"GTD.md": "title:: GTD\n",
         "1": {"Boat.md": "title:: The boat\noutcome:: afloat\n\n- TODO Sand the hull\n"},
-        p: {"Odd Kittelsen.md": "title:: Odd Kittelsen\n"}},
+        p: {"Tor Vik.md": "title:: Tor Vik\n"}},
     };
-    const rec = newRecord("Names181", Backends.fs(fakeDir("Names181", tree, [], {"Odd Kittelsen.md": held})));
+    const rec = newRecord("Names181", Backends.fs(fakeDir("Names181", tree, [], {"Tor Vik.md": held})));
     const boat = join(DIRS.active, "Boat.md");
     let shown = 0;
     try {
@@ -618,7 +618,7 @@ var GTD_TEST = (() => {
       ok(!rec.stubs.has(boat), "the project is still a stand-in");
       eq(rec.pages.get(boat).props.title, "The boat", "the project's name");
       has(serializePage(rec.pages.get(boat)), "Sand the hull", "the project's next action");
-      ok(rec.stubs.has(personPath("Odd Kittelsen")), "the person came in with the projects");
+      ok(rec.stubs.has(personPath("Tor Vik")), "the person came in with the projects");
       has(serializePage(rec.pages.get(jp(five))), "five days ago", "a day this week came in first");
     } finally { release(); }
     await filesLoaded();
@@ -927,14 +927,14 @@ var GTD_TEST = (() => {
 
   test("#181 a stand-in edited while it loads gives way to its file when the first of the rest is in", () => {
     const rec = newRecord("Lay181", null);
-    const path = personPath("Odd Kittelsen");
+    const path = personPath("Tor Vik");
     rec.stubs = new Set([path]);
     rec.pages.set(path, parsePage(""));
     rec.dirty.add(path);
     const mine = join(JOURNALS, shiftISO(T(), -5) + ".md");
     rec.pages.set(mine, parsePage("- typed here meanwhile\n"));
     rec.dirty.add(mine);
-    layInSoon(rec, new Map([[path, "title:: Odd Kittelsen\n\n- met at the fair\n"], [mine, "- the file\n"]]), new Set());
+    layInSoon(rec, new Map([[path, "title:: Tor Vik\n\n- met at the fair\n"], [mine, "- the file\n"]]), new Set());
     has(serializePage(rec.pages.get(path)), "met at the fair", "the file");
     ok(!rec.stubs.has(path) && !rec.dirty.has(path), "still a stand-in, or still to be sent");
     has(serializePage(rec.pages.get(mine)), "typed here meanwhile", "a page made meanwhile");
@@ -943,7 +943,7 @@ var GTD_TEST = (() => {
     const rec = {name: "Bar181"};
     const tick = loadingTicker(rec, 4);
     try {
-      tick("pages/p/Odd Kittelsen.md");
+      tick("pages/p/Tor Vik.md");
       renderNav();
       const bar = document.querySelector("#navLoad");
       ok(bar, "no bar in the sidebar");
@@ -956,7 +956,7 @@ var GTD_TEST = (() => {
       const list = document.querySelector("#navLoad .nav-load-list");
       ok(list, "a click does not list the files");
       has(list.textContent, "1 of 4", "files read");
-      has(list.textContent, "p/Odd Kittelsen", "the file read");
+      has(list.textContent, "p/Tor Vik", "the file read");
     } finally {
       LOADING_OPEN = false;
       loadingDone(rec);
@@ -969,10 +969,10 @@ var GTD_TEST = (() => {
     // Bad.md fails when opened, the way a file the phone will not hand over does.
     const refused = Promise.reject(new DOMException("no", "NotReadableError"));
     refused.catch(() => {});
-    const tree = {pages: {p: {"Odd Kittelsen.md": "title:: Odd Kittelsen\n", "Bad.md": "x"}}};
+    const tree = {pages: {p: {"Tor Vik.md": "title:: Tor Vik\n", "Bad.md": "x"}}};
     const b = Backends.fs(fakeDir("R188", tree, [], {"Bad.md": refused}));
     const files = await b.readMany(await b.names());
-    ok(files.has("pages/p/Odd Kittelsen.md"), "the good file was lost with the bad one");
+    ok(files.has("pages/p/Tor Vik.md"), "the good file was lost with the bad one");
     ok(b.unread.has("pages/p/Bad.md"), "the file that would not open is not noted");
   });
   test("#188 a folder is listed one folder at a time, so a phone does not leave any out", async () => {
@@ -990,19 +990,19 @@ var GTD_TEST = (() => {
       },
     });
     const tree = {journals: {[T() + ".md"]: "- today\n"},
-      pages: {"GTD.md": "title:: GTD\n", p: {"Odd Kittelsen.md": "title:: Odd Kittelsen\n"}, o: {"CAB MEPS.md": "title:: CAB MEPS\n"}}};
+      pages: {"GTD.md": "title:: GTD\n", p: {"Tor Vik.md": "title:: Tor Vik\n"}, o: {"Harbour Bakery.md": "title:: Harbour Bakery\n"}}};
     const names = await Backends.fs(shy("Shy188", tree)).names();
-    eq(names.slice().sort(), ["journals/" + T() + ".md", "pages/GTD.md", "pages/o/CAB MEPS.md", "pages/p/Odd Kittelsen.md"]);
+    eq(names.slice().sort(), ["journals/" + T() + ".md", "pages/GTD.md", "pages/o/Harbour Bakery.md", "pages/p/Tor Vik.md"]);
   });
   test("#188 a file that fails while sixteen are read together gets one more try", async () => {
     let tries = 0;
     const flaky = Promise.reject(new DOMException("busy", "NotReadableError"));
     flaky.catch(() => {});
-    const tree = {pages: {p: {"Odd Kittelsen.md": "title:: Odd Kittelsen\n"}}};
-    const gate = {get "Odd Kittelsen.md"() { return tries++ ? undefined : flaky; }};
+    const tree = {pages: {p: {"Tor Vik.md": "title:: Tor Vik\n"}}};
+    const gate = {get "Tor Vik.md"() { return tries++ ? undefined : flaky; }};
     const b = Backends.fs(fakeDir("Retry188", tree, [], gate));
     const files = await b.readMany(await b.names());
-    ok(files.has("pages/p/Odd Kittelsen.md"), "not read on the second try");
+    ok(files.has("pages/p/Tor Vik.md"), "not read on the second try");
     ok(!b.unread.size, "still noted as would not open");
   });
   test("#188 a second listing does not lose files from a read under way", async () => {
@@ -1021,32 +1021,32 @@ var GTD_TEST = (() => {
     eq(files.size, names.length, "files read");
   });
   test("#188 a link to a page in the folder that was not read in opens the file, not a blank page", async () => {
-    const tree = {pages: {p: {"Odd Kittelsen.md": "title:: Odd Kittelsen\nphone:: 12345678\n\n- met at the fair\n"}}};
+    const tree = {pages: {p: {"Tor Vik.md": "title:: Tor Vik\nphone:: 12345678\n\n- met at the fair\n"}}};
     const writes = [];
     const rec = newRecord("Link188", Backends.fs(fakeDir("Link188", tree, writes)));
     LOADED.set(rec.name, rec);
     try {
-      inSpace(rec.name, () => openLinkTarget("p/Odd Kittelsen"));
-      for (let i = 0; i < 20 && !rec.pages.has(personPath("Odd Kittelsen")); i++) await settle();
-      const page = rec.pages.get(personPath("Odd Kittelsen"));
+      inSpace(rec.name, () => openLinkTarget("p/Tor Vik"));
+      for (let i = 0; i < 20 && !rec.pages.has(personPath("Tor Vik")); i++) await settle();
+      const page = rec.pages.get(personPath("Tor Vik"));
       ok(page, "the page was not opened");
       has(serializePage(page), "met at the fair", "the file's own lines");
-      ok(!rec.dirty.has(personPath("Odd Kittelsen")), "the page read is queued to be written back");
-      has(tree.pages.p["Odd Kittelsen.md"], "12345678", "the file was written over");
+      ok(!rec.dirty.has(personPath("Tor Vik")), "the page read is queued to be written back");
+      has(tree.pages.p["Tor Vik.md"], "12345678", "the file was written over");
     } finally { LOADED.delete(rec.name); }
   });
   test("#188 Check the folder names a linked page the folder has but did not list", async () => {
-    const tree = {pages: {"GTD.md": "title:: GTD\n", p: {}}, journals: {[T() + ".md"]: "- TODO call [[p/Odd Kittelsen]]\n"}};
+    const tree = {pages: {"GTD.md": "title:: GTD\n", p: {}}, journals: {[T() + ".md"]: "- TODO call [[p/Tor Vik]]\n"}};
     const rec = newRecord("Check188", Backends.fs(fakeDir("Check188", tree, [])));
     await readInto(rec);
     // In the folder by name, but the listing leaves it out.
-    tree.pages.p["Odd Kittelsen.md"] = "title:: Odd Kittelsen\n";
+    tree.pages.p["Tor Vik.md"] = "title:: Tor Vik\n";
     const hide = rec.backend.names.bind(rec.backend);
-    rec.backend.names = async () => (await hide()).filter(n => !n.includes("Odd"));
+    rec.backend.names = async () => (await hide()).filter(n => !n.includes("Tor Vik"));
     LOADED.set(rec.name, rec);
     try {
       const r = await folderCheckReport(rec.name);
-      eq(r.unlisted, [personPath("Odd Kittelsen")], "linked and in the folder, not listed");
+      eq(r.unlisted, [personPath("Tor Vik")], "linked and in the folder, not listed");
       eq(r.notIn, [], "listed but not in the app");
     } finally { LOADED.delete(rec.name); }
   });
@@ -1056,11 +1056,11 @@ var GTD_TEST = (() => {
     const old = shiftISO(T(), -10);
     const tree = {journals: {[T() + ".md"]: "- today\n", [old + ".md"]: "- old\n"},
       pages: {"GTD.md": "title:: GTD\n", "8": {"p.md": "title:: %title%\ntype:: person\nphone:: \n"},
-        p: {"Odd Kittelsen.md": "title:: Odd Kittelsen\nupdated:: 2026-01-01T00:00:00Z\n\n- met at the fair\n"}}};
+        p: {"Tor Vik.md": "title:: Tor Vik\nupdated:: 2026-01-01T00:00:00Z\n\n- met at the fair\n"}}};
     const held = new Promise(r => { release = r; });
-    const rec = newRecord("Tpl188", Backends.fs(fakeDir("Tpl188", tree, [], {[old + ".md"]: held, "Odd Kittelsen.md": held})));
+    const rec = newRecord("Tpl188", Backends.fs(fakeDir("Tpl188", tree, [], {[old + ".md"]: held, "Tor Vik.md": held})));
     await readInto(rec, {stage: true});
-    const path = personPath("Odd Kittelsen");
+    const path = personPath("Tor Vik");
     ok(rec.stubs && rec.stubs.has(path), "the person is not a stand-in yet");
     LOADED.set(rec.name, rec);
     try {
@@ -1075,18 +1075,18 @@ var GTD_TEST = (() => {
   test("#188 a file that would not open is never written over", async () => {
     const refused = Promise.reject(new DOMException("no", "NotReadableError"));
     refused.catch(() => {});
-    const tree = {pages: {"GTD.md": "title:: GTD\n", p: {"Odd Kittelsen.md": "title:: Odd Kittelsen\n\n- met at the fair\n"}}};
+    const tree = {pages: {"GTD.md": "title:: GTD\n", p: {"Tor Vik.md": "title:: Tor Vik\n\n- met at the fair\n"}}};
     const writes = [];
-    const rec = newRecord("Unread188", Backends.fs(fakeDir("Unread188", tree, writes, {"Odd Kittelsen.md": refused})));
+    const rec = newRecord("Unread188", Backends.fs(fakeDir("Unread188", tree, writes, {"Tor Vik.md": refused})));
     await readInto(rec);
-    const path = personPath("Odd Kittelsen");
+    const path = personPath("Tor Vik");
     ok(rec.backend.unread.has(path), "not noted as would not open");
-    rec.pages.set(path, pageTemplateFor("p", "Odd Kittelsen"));
+    rec.pages.set(path, pageTemplateFor("p", "Tor Vik"));
     rec.dirty.add(path);
     LOADED.set(rec.name, rec);
     try { await doFlush(); } finally { LOADED.delete(rec.name); }
-    ok(!writes.includes("Odd Kittelsen.md"), "a blank page went over the file");
-    has(tree.pages.p["Odd Kittelsen.md"], "met at the fair", "the file");
+    ok(!writes.includes("Tor Vik.md"), "a blank page went over the file");
+    has(tree.pages.p["Tor Vik.md"], "met at the fair", "the file");
   });
 
   /* #220: a sync app (Syncthing) changes a file behind the app's back. The
@@ -3806,15 +3806,15 @@ var GTD_TEST = (() => {
     ok(!box.textContent.includes("Which shelf?"), "the comment itself waits for the review");
   }));
   test("#159 a linked email reads as its subject, without the m/", () => {
-    eq(plainTitle("Svar om [[m/Forespørsel om revisjonsrapport – MEPS 3]]"), "Svar om Forespørsel om revisjonsrapport – MEPS 3");
+    eq(plainTitle("Svar om [[m/Forespørsel om revisjonsrapport – Lager 3]]"), "Svar om Forespørsel om revisjonsrapport – Lager 3");
   });
   test("#159 taking the name out of a question takes its 'fra' too", () => {
     const was = PREF.get("askLang", "");
     PREF.set("askLang", "no");
     try {
-      const {ask} = askQuestionParts({title: "Venter på svar fra [[p/Lars Haugen]] om [[m/Forespørsel om revisjonsrapport – MEPS 3]]",
-        project: "MEPS"}, "Lars Haugen");
-      eq(ask, "Venter på svar om Forespørsel om revisjonsrapport – MEPS 3");
+      const {ask} = askQuestionParts({title: "Venter på svar fra [[p/Lars Haugen]] om [[m/Forespørsel om revisjonsrapport – Lager 3]]",
+        project: "Lager"}, "Lars Haugen");
+      eq(ask, "Venter på svar om Forespørsel om revisjonsrapport – Lager 3");
     } finally { PREF.set("askLang", was); }
   });
   test("#159 the send step offers Copy and open email, the plain text and the sheet second", async () => {

@@ -1,5 +1,5 @@
 /* A link you type is a page you meant. Writing
-   "Chase the quote [[1/Userflow]] [[p/Niclas]] [[c/computer]]" is how a
+   "Chase the quote [[1/Garden shed]] [[p/Anna]] [[c/computer]]" is how a
    project, a person and a context get started here, so the pages behind a line
    are made as the line is written -- rather than left as broken links for the
    health check to find weeks later. Dates and [[go/...]] doors are not pages,

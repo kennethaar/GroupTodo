@@ -1,6 +1,6 @@
 /* Journal lines that name a project. The line lives in somebody's day page,
    but the project is what it belongs to -- so a project started by writing
-   [[1/Userflow]] in a task reads as having that task, rather than looking
+   [[1/Garden shed]] in a task reads as having that task, rather than looking
    empty. Indexed under both the link's own ref and its bare title, which is how
    nearestProjectAncestor finds them written. */
 function journalActionsIndex() {
