@@ -85,8 +85,9 @@ Run the full battery once before every push, filtered to failures:
     node tests/run.mjs 2>&1 | Select-String "FAIL|passed"
 
 Do not repeat full runs to be sure. If a test fails, rerun only that test.
-#172 (phone Enter scroll) is timing-flaky in the full run; if it passes alone,
-report it and move on.
+#172 (phone Enter scroll) and the trio #267/#268/#269 (Repeats dialog /
+bracket wrap / table Enter) are timing-flaky in the full run; if they pass
+alone, report it and move on.
 
 Writing test fixtures:
 
