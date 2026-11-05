@@ -8,20 +8,16 @@ function editBarSync() {
   if (!bar) {
     bar = el("div", {id: "editBar", role: "toolbar", "aria-label": "Line tools"});
     bar.addEventListener("mousedown", e => e.preventDefault());
-    for (const r of EDIT_BAR) bar.append(el("button", {
-      class: "ebtn", tabindex: "-1", data: {k: r.k}, onclick: () => editBarAct(r.k),
-    }, el("span", {class: "eic"}, r.ic), el("span", {class: "elb"}, r.label)));
+    for (const r of EDIT_BAR.filter(r => !r.group)) bar.append(el("button", {
+      class: "ebtn", tabindex: "-1", title: r.tip, "aria-label": r.tip, data: {k: r.k}, onclick: () => editBarAct(r.k),
+    }, el("span", {class: "eic"}, r.ic.startsWith("<") ? svgIcon(r.ic) : r.ic), el("span", {class: "elb"}, r.label)));
+    for (const g of EDIT_BAR_GROUPS) bar.append(el("button", {
+      class: "ebtn ebgrp", tabindex: "-1", title: g.label, "aria-label": g.label, "aria-haspopup": "menu",
+      "aria-expanded": "false", data: {k: g.g}, onclick: e => editBarGroupToggle(g.g, e.currentTarget),
+    }, el("span", {class: "eic"}, svgIcon(g.ic)), el("span", {class: "elb"}, g.label)));
     document.body.append(bar);
   }
-  const {path, block} = FLY;
-  for (const btn of bar.children) {
-    const r = EDIT_BAR.find(x => x.k === btn.dataset.k);
-    let label = r.label, tip = r.tip;
-    if (r.k === "kind" && block.state) { label = "Note"; tip = "Make it a note (Alt+T)"; }
-    if (r.k === "mkarea" && statusDirOf(path) && !isJournalPath(path)) tip = "Turn the project into a responsibility (Alt+I)";
-    btn.title = tip; btn.setAttribute("aria-label", tip);
-    btn.querySelector(".elb").textContent = label;
-  }
+  editBarGroupClose();
   bar.hidden = false;
   document.body.classList.add("editbar-on");
   editBarPlace();

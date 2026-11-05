@@ -980,7 +980,7 @@ const HELP = {
       "Ctrl+. opens it from the keyboard.",
       "Pick a date, a person, a context or a state.",
       "Refile lists the pages the line links to first.",
-      "On a phone, the toolbar moves, indents and adds photos."],
+      "On a phone, the toolbar moves and indents, with Type, Tag and Media grouped under one button each."],
     keys: [["Ctrl+.", "Line menu"], ["Alt+S", "Move to an area"], ["Alt+G", "Refile"], ["Alt+I", "Responsibility"]],
     more: ["Settings › Help can show the menu under the line you edit."],
     see: ["keys-line", "links", "dates"],

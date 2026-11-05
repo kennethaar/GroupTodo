@@ -2556,9 +2556,8 @@ var GTD_TEST = (() => {
       focusBlock(bravo.id);
       await frame();
       ok(bar() && !bar().hidden, "no toolbar while a line is being written");
-      eq([...bar().querySelectorAll(".elb")].map(n => n.textContent),
-        ["Up", "Down", "Outdent", "Indent", "Note", "Zettel", "Project", "Responsibility", "Context", "Person",
-         "Organisation", "To area", "Copy text", "Photo", "Image"]);
+      eq([...bar().querySelectorAll(":scope > .ebtn .elb")].map(n => n.textContent),
+        ["Up", "Down", "Outdent", "Indent", "Type", "Tag", "Media", "More"], "the top-level bar is 8 buttons");
       await press("down");
       eq(titles(), ["Alpha", "Charlie", "Bravo"], "after down");
       ok(document.activeElement && document.activeElement.closest('.blk[data-id="' + bravo.id + '"]'), "the caret left the line");
@@ -2569,13 +2568,52 @@ var GTD_TEST = (() => {
       eq(getPage(path).blocks[0].children.map(b => b.title), ["Bravo"], "indented under Alpha");
       await press("out");
       eq(titles(), ["Alpha", "Bravo", "Charlie"], "after outdent");
+      await press("type");
+      eq([...bar().querySelectorAll(".ebpop .elb")].map(n => n.textContent),
+        ["Note", "Zettel", "Project", "Responsibility"], "Type opens to the four kinds");
       await press("kind");
       eq(getPage(path).blocks[1].state, null, "Task/Note did not make it a note");
-      eq(bar().querySelector('[data-k="kind"] .elb').textContent, "Task");
+      ok(!bar().querySelector(".ebpop"), "picking a leaf closes the popover");
+      await press("type");
+      eq(bar().querySelector('[data-k="kind"] .elb').textContent, "Task", "now offers to make it a task again");
+      await press("type");
       document.activeElement.blur();
       await frame();
       ok(bar().hidden, "the toolbar stays after the line is let go");
     } finally { go("today"); }
+  });
+  test("#300 the toolbar's Tag and Media buttons open to their three or two leaves", async () => {
+    const path = scratchProject("edit bar groups", [["TODO", "Buy paint"]]);
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    openPage(path);
+    await settle();
+    const b = getPage(path).blocks[0];
+    const bar = () => document.querySelector("#editBar");
+    const mm = window.matchMedia;
+    try {
+      focusBlock(b.id);
+      await frame();
+      bar().querySelector('[data-k="tag"]').click();
+      await frame();
+      eq([...bar().querySelectorAll(".ebpop .elb")].map(n => n.textContent), ["Context", "Person", "Organisation"]);
+      bar().querySelector('[data-k="tag"]').click();
+      await frame();
+      ok(!bar().querySelector(".ebpop"), "a second tap on the open group closes it");
+      window.matchMedia = q => q === "(pointer:fine)" ? {matches: false} : mm.call(window, q);
+      bar().querySelector('[data-k="media"]').click();
+      await frame();
+      eq([...bar().querySelectorAll(".ebpop .elb")].map(n => n.textContent), ["Photo", "Image"], "a phone offers both");
+      bar().querySelector('[data-k="media"]').click();
+      await frame();
+      window.matchMedia = q => q === "(pointer:fine)" ? {matches: true} : mm.call(window, q);
+      const click = HTMLInputElement.prototype.click;
+      HTMLInputElement.prototype.click = function () { this.remove(); };
+      try { bar().querySelector('[data-k="media"]').click(); } finally { HTMLInputElement.prototype.click = click; }
+      await frame();
+      ok(!bar().querySelector(".ebpop"), "a mouse has no camera, so Media with one leaf acts instead of opening");
+      const icons = [...bar().querySelectorAll(":scope > .ebtn .eic")];
+      ok(icons.every(n => !/[\u{1F300}-\u{1FAFF}☀-➿]/u.test(n.textContent)), "no emoji icon on the bar");
+    } finally { window.matchMedia = mm; document.activeElement && document.activeElement.blur(); go("today"); }
   });
   test("#170 a toolbar move keeps the line where it was on the screen, caret in it", async () => {
     const path = scratchProject("edit bar scroll", Array.from({length: 60}, (_, i) => ["TODO", "Row " + i]));
@@ -2831,8 +2869,12 @@ var GTD_TEST = (() => {
     openPage(path);
     await settle();
     const b = getPage(path).blocks[0];
+    const mm = window.matchMedia;
+    window.matchMedia = q => q === "(pointer:fine)" ? {matches: false} : mm.call(window, q);
     try {
       focusBlock(b.id);
+      await frame();
+      document.querySelector('#editBar [data-k="media"]').click();
       await frame();
       const click = HTMLInputElement.prototype.click;
       let input = null;
@@ -2840,6 +2882,8 @@ var GTD_TEST = (() => {
       try { document.querySelector('#editBar [data-k="image"]').click(); }
       finally { HTMLInputElement.prototype.click = click; }
       ok(input && input.type === "file" && input.accept === "image/*", "no image picker");
+      document.querySelector('#editBar [data-k="media"]').click();
+      await frame();
       const photo = document.querySelector('#editBar [data-k="photo"]');
       HTMLInputElement.prototype.click = function () { this.remove(); eq(this.getAttribute("capture"), "environment", "Photo is not the camera"); };
       try { photo.click(); } finally { HTMLInputElement.prototype.click = click; }
@@ -2850,7 +2894,7 @@ var GTD_TEST = (() => {
       for (let i = 0; i < 50 && !/!\[board\.png\]\(assets\//.test(getPage(path).blocks[0].title); i++) await frame();
       has(getPage(path).blocks[0].title, "![board.png](assets/", "the line has no picture");
       ok(!input.isConnected, "the picker is left behind");
-    } finally { go("today"); }
+    } finally { window.matchMedia = mm; go("today"); }
   });
   test("renamePage rewrites the links to it", () => {
     const target = join(DIRS.pages, "Test rename me.md");

@@ -5,6 +5,17 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.102.0 - 2026-11-05
+
+- The line menu and toolbar: the phone toolbar's 15 flat buttons are now 8.
+  Up, Down, Outdent and Indent stay direct; Task/Zettel/Project/
+  Responsibility sit behind one Type button, Context/Person/Organisation
+  behind one Tag button, and Photo/Image behind one Media button (Photo
+  drops out on a mouse, with nothing to take a photo with). To area and
+  Copy text moved to a trailing More button. Every icon on the bar is now a
+  monochrome SVG at one stroke weight, instead of mixing those with colour
+  emoji for Person, Organisation, Photo and Image (#300).
+
 ## 1.101.2 - 2026-11-05
 
 - Keys on a line: the phone toolbar's sideways scroll now actually works on

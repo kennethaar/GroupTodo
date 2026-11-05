@@ -1525,6 +1525,8 @@ js/105-outliner/vars-EDIT_BAR.js
 js/105-outliner/editBarAct.js
 js/105-outliner/editBarRefocus.js
 js/105-outliner/editBarPickImage.js
+js/105-outliner/editBarGroupClose.js
+js/105-outliner/editBarGroupToggle.js
 js/105-outliner/editBarSync.js
 js/105-outliner/editBarPlace.js
 js/105-outliner/vars-flyOn.js
