@@ -2082,11 +2082,11 @@ border:1px solid var(--accent);border-radius:999px;padding:6px 12px;font-size:12
 box-shadow:0 8px 28px rgba(0,0,0,.35);max-width:94vw;flex-wrap:wrap}
 #lselHud .k{color:var(--fg3);font-family:var(--mono);font-size:11px}
 #editBar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;justify-content:center;gap:2px;
-background:var(--bg2);border-top:1px solid var(--border);overflow-x:auto;scrollbar-width:none;
+background:var(--bg2);border-top:1px solid var(--border);overflow-x:auto;scrollbar-width:none;touch-action:pan-x;
 padding:4px max(8px,env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
 #editBar[hidden]{display:none}
 #editBar .ebtn{display:flex;flex-direction:column;align-items:center;gap:1px;flex:none;min-width:56px;padding:6px 8px;
-background:none;border:0;border-radius:8px;color:var(--fg);font:inherit;cursor:pointer}
+background:none;border:0;border-radius:8px;color:var(--fg);font:inherit;cursor:pointer;touch-action:manipulation}
 #editBar .ebtn:hover{background:var(--bg3)}
 #editBar .eic{font-size:17px;line-height:1.1}
 #editBar .elb{font-size:11px;color:var(--fg2)}
@@ -4131,7 +4131,7 @@ placeholder="Add a task. Try: &quot;Call Mia about the VAT phone tomorrow&quot;"
 })();
 
 "use strict";
-const APP_VERSION = "1.101.0";
+const APP_VERSION = "1.101.1";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -15099,7 +15099,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.101.0 - 2026-11-05\n\n- Keys on a line: the phone toolbar at the foot of the screen can now add a\n  context, person or organisation too, and scrolls sideways instead of\n  squeezing its buttons when it has more than fit (#297).\n\n## 1.100.2 - 2026-11-05\n\n- Getting started: the first-run screens lead with writing a note, with\n  folder and naming pushed down as optional (#296).\n\n## 1.100.1 - 2026-11-05\n\n- Calendars: fix an import crashing with \"Cannot read properties of\n  undefined\" when a meeting has an attendee or organizer, such as on Proton\n  Calendar (#294).\n\n## 1.100.0 - 2026-11-05\n\n- Settings: meeting reminders keep the one-click times and add Custom…: any\n  number of minutes, hours, days or weeks before, and as many reminders as you\n  like. Each calendar can have its own reminders, under its name in Calendars\n  (#292).\n\n## 1.99.2 - 2026-11-05\n\n- Calendars: Add calendar uses the private area you are on, instead of a\n  shared area it remembered from before.\n\n## 1.99.1 - 2026-11-05\n\n- Calendars: when your area counts as shared, Add calendar says why and offers\n  \"Only I use this area\" instead of asking you to make a new one.\n\n## 1.99.0 - 2026-11-05\n\n- Calendars: simpler. A list with Sync now, each calendar showing who sees it\n  and when it last synced; add a calendar with just a link and a name (private\n  by default); sharing, sync and remove live on the calendar itself; one\n  reminder choice (Off to 1 hour, saved at once); meetings left by removed\n  calendars are reviewed in one place. On the Journal, \"Import calendar\"\n  shows when you open the date picker.\n\n## 1.98.0 - 2026-11-05\n\n- Settings: a folder shared only with yourself on other devices can be marked\n  \"Only I use this folder\", so Calendars works in it.\n\n## 1.97.0 - 2026-11-05\n\n- Settings: the Journal's date box has a 📅 button that opens Calendars, so a\n  calendar can be imported from where the meetings land.\n\n## 1.96.1 - 2026-11-05\n\n- Settings: Calendars no longer vanishes in a shared area. It stays and says\n  why calendars do not come in there, and to switch to a private area. Help\n  finds Settings by calendar, import, ics, ical and outlook.\n\n## 1.96.0 - 2026-11-05\n\n- Ways to run GroupToDo: a new help topic sets the four ways side by side:\n  the web address, the downloaded file, and serve.py with or without a folder\n  of its own. Tick what matters, such as calendar links, and what you cannot\n  do, such as install Python, and it names the way that fits and how to start\n  it. The way you use now is marked.\n\n## 1.95.0 - 2026-11-05\n\n- Vault and sync: the importer reads Dynalist and Workflowy exports. Pick the\n  folder of .opml files (a .txt with no .opml beside it works too). Each\n  document becomes a page, a folder a namespace you give a meaning, a checkbox\n  or checkmark a task, and a note stays under its line.\n";
+const HELP_NEWS = "## 1.101.1 - 2026-11-05\n\n- Keys on a line: the phone toolbar's sideways scroll now actually swipes on\n  Android, instead of holding still because the tap-focus guard mistook the\n  swipe for a tap (#298).\n\n## 1.101.0 - 2026-11-05\n\n- Keys on a line: the phone toolbar at the foot of the screen can now add a\n  context, person or organisation too, and scrolls sideways instead of\n  squeezing its buttons when it has more than fit (#297).\n\n## 1.100.2 - 2026-11-05\n\n- Getting started: the first-run screens lead with writing a note, with\n  folder and naming pushed down as optional (#296).\n\n## 1.100.1 - 2026-11-05\n\n- Calendars: fix an import crashing with \"Cannot read properties of\n  undefined\" when a meeting has an attendee or organizer, such as on Proton\n  Calendar (#294).\n\n## 1.100.0 - 2026-11-05\n\n- Settings: meeting reminders keep the one-click times and add Custom…: any\n  number of minutes, hours, days or weeks before, and as many reminders as you\n  like. Each calendar can have its own reminders, under its name in Calendars\n  (#292).\n\n## 1.99.2 - 2026-11-05\n\n- Calendars: Add calendar uses the private area you are on, instead of a\n  shared area it remembered from before.\n\n## 1.99.1 - 2026-11-05\n\n- Calendars: when your area counts as shared, Add calendar says why and offers\n  \"Only I use this area\" instead of asking you to make a new one.\n\n## 1.99.0 - 2026-11-05\n\n- Calendars: simpler. A list with Sync now, each calendar showing who sees it\n  and when it last synced; add a calendar with just a link and a name (private\n  by default); sharing, sync and remove live on the calendar itself; one\n  reminder choice (Off to 1 hour, saved at once); meetings left by removed\n  calendars are reviewed in one place. On the Journal, \"Import calendar\"\n  shows when you open the date picker.\n\n## 1.98.0 - 2026-11-05\n\n- Settings: a folder shared only with yourself on other devices can be marked\n  \"Only I use this folder\", so Calendars works in it.\n\n## 1.97.0 - 2026-11-05\n\n- Settings: the Journal's date box has a 📅 button that opens Calendars, so a\n  calendar can be imported from where the meetings land.\n\n## 1.96.1 - 2026-11-05\n\n- Settings: Calendars no longer vanishes in a shared area. It stays and says\n  why calendars do not come in there, and to switch to a private area. Help\n  finds Settings by calendar, import, ics, ical and outlook.\n\n## 1.96.0 - 2026-11-05\n\n- Ways to run GroupToDo: a new help topic sets the four ways side by side:\n  the web address, the downloaded file, and serve.py with or without a folder\n  of its own. Tick what matters, such as calendar links, and what you cannot\n  do, such as install Python, and it names the way that fits and how to start\n  it. The way you use now is marked.\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {
@@ -28738,7 +28738,16 @@ return;
 }
 if (!bar) {
 bar = el("div", {id: "editBar", role: "toolbar", "aria-label": "Line tools"});
-bar.addEventListener("mousedown", e => e.preventDefault());
+let tx = 0, ty = 0, swiping = false;
+bar.addEventListener("touchstart", e => {
+swiping = false;
+const t = e.touches[0]; tx = t.clientX; ty = t.clientY;
+}, {passive: true});
+bar.addEventListener("touchmove", e => {
+const t = e.touches[0];
+if (Math.abs(t.clientX - tx) > 4 || Math.abs(t.clientY - ty) > 4) swiping = true;
+}, {passive: true});
+bar.addEventListener("mousedown", e => { if (!swiping) e.preventDefault(); });
 for (const r of EDIT_BAR) bar.append(el("button", {
 class: "ebtn", tabindex: "-1", data: {k: r.k}, onclick: () => editBarAct(r.k),
 }, el("span", {class: "eic"}, r.ic), el("span", {class: "elb"}, r.label)));

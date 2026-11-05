@@ -7,7 +7,19 @@ function editBarSync() {
   }
   if (!bar) {
     bar = el("div", {id: "editBar", role: "toolbar", "aria-label": "Line tools"});
-    bar.addEventListener("mousedown", e => e.preventDefault());
+    // A swipe along the bar is scrolling it, not pressing a button: once the
+    // touch has moved, the bar must get out of the way and let it scroll,
+    // not hold the caret in place for a tap that was never made.
+    let tx = 0, ty = 0, swiping = false;
+    bar.addEventListener("touchstart", e => {
+      swiping = false;
+      const t = e.touches[0]; tx = t.clientX; ty = t.clientY;
+    }, {passive: true});
+    bar.addEventListener("touchmove", e => {
+      const t = e.touches[0];
+      if (Math.abs(t.clientX - tx) > 4 || Math.abs(t.clientY - ty) > 4) swiping = true;
+    }, {passive: true});
+    bar.addEventListener("mousedown", e => { if (!swiping) e.preventDefault(); });
     for (const r of EDIT_BAR) bar.append(el("button", {
       class: "ebtn", tabindex: "-1", data: {k: r.k}, onclick: () => editBarAct(r.k),
     }, el("span", {class: "eic"}, r.ic), el("span", {class: "elb"}, r.label)));

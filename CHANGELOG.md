@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.101.1 - 2026-11-05
+
+- Keys on a line: the phone toolbar's sideways scroll now actually swipes on
+  Android, instead of holding still because the tap-focus guard mistook the
+  swipe for a tap (#298).
+
 ## 1.101.0 - 2026-11-05
 
 - Keys on a line: the phone toolbar at the foot of the screen can now add a
