@@ -205,6 +205,19 @@ async function importerTest(name, file = join(ROOT, "GroupToDo-Importer.html")) 
       for (const w of ["pages/1/Roof.md", "pages/1/Shed.md", "pages/Barn.md"])
         if (!got.includes(w)) return {name, ok: false, error: kind + ": expected " + w + "; got " + got.join(", ")};
     }
+    // Every kind of page GroupToDo has can be chosen: purpose and vision are
+    // one page each, so two vision pages become one, each under its old title.
+    const h = G.analyze("logseq", [["pages/Why%2FMission.md", "- serve"], ["pages/Future%2F2030.md", "- bigger"],
+      ["pages/Future%2F2032.md", "- calmer"], ["pages/Mail%2FQuote.md", "- hello"], ["pages/Books%2FGTD.md", "- 5 stars"]]
+      .map(([rel, text]) => ({rel, text, mtime: 0})));
+    const hr = G.startRules(G.ruleChoices(h));
+    Object.assign(hr.groups, {Why: "h5", Future: "h4", Mail: "m", Books: "r"});
+    const hf = G.convert(h, {me: "Me", rules: hr}).files;
+    for (const w of ["pages/_/Purpose.md", "pages/_/Vision.md", "pages/m/Quote.md", "pages/r/GTD.md"])
+      if (!hf.has(w)) return {name, ok: false, error: "expected " + w + "; got " + [...hf.keys()].join(", ")};
+    const vision = hf.get("pages/_/Vision.md");
+    if (!/type:: horizon/.test(vision) || !/^- 2030\n {2}- bigger/m.test(vision) || !/^- 2032\n {2}- calmer/m.test(vision))
+      return {name, ok: false, error: "the vision page lost a source or its title:\n" + vision};
     return {name, ok: true};
   } catch (e) { return {name, ok: false, error: String(e && e.stack || e)}; }
 }

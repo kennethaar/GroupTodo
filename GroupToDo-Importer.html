@@ -213,7 +213,11 @@ const KINDS = [
   ["-",     "-", "Project, cancelled"],
   ["a",     "a", "Responsibility (area of focus)"],
   ["g",     "g", "Goal"],
+  ["h4",    "_", "Vision (horizon 4)"],
+  ["h5",    "_", "Purpose and principles (horizon 5)"],
   ["8",     "8", "Checklist or template"],
+  ["m",     "m", "E-mail"],
+  ["r",     "r", "Review (book, film, video)"],
   ["skip",  null, "Leave it out"],
 ];
 const KIND_PREFIX = Object.fromEntries(KINDS.map(([k, p]) => [k, p]));
@@ -222,7 +226,10 @@ const STATUS_TEXT = {"-": "- = cancelled", "0": "0 = completed", "1": "1 = activ
 const KIND_PROPS = {
   p: {type: "person"}, o: {type: "org"}, c: {type: "context"}, a: {type: "area"},
   g: {type: "goal", horizon: "3"}, "8": {type: "checklist"},
+  h4: {type: "horizon"}, h5: {type: "horizon"},
 };
+// Purpose and vision are one page each, whatever they were made from.
+const HORIZON_PAGE = {h4: "Vision", h5: "Purpose"};
 const STATE_MAP = {TODO: "TODO", DOING: "DOING", DONE: "DONE", LATER: "TODO", NOW: "DOING",
   WAITING: "WAIT", WAIT: "WAIT", CANCELED: "CANCELLED", CANCELLED: "CANCELLED", "IN-PROGRESS": "DOING"};
 
@@ -468,7 +475,7 @@ function placePages(a, rules) {
     if (a.kind === "logseq" && !byTag && byGroup && byGroup !== "page" && segs.length > 1) segs = segs.slice(p.group.split("/").length);
     const title = segs.map(s => s.trim()).filter(Boolean).join(" - ") || p.name;
     const prefix = KIND_PREFIX[kind];
-    const fileName = cleanName(title);
+    const fileName = HORIZON_PAGE[kind] || cleanName(title);
     const ref = prefix ? prefix + "/" + fileName : fileName;
     placed.push(Object.assign({}, p, {kind, title, ref, out: "pages/" + ref + ".md"}));
   }
@@ -894,8 +901,11 @@ function convert(a, opts) {
     const p = group[0];
     if (group.length > 1) R.merged.push(p.ref + ": " + group.map(g => g.file.rel).join(" + "));
     const parts = group.map(g => bodyOf(g.file.text, g.file));
+    // On a horizon page each source keeps its old title, as a line over its words.
+    if (HORIZON_PAGE[p.kind]) parts.forEach((part, i) =>
+      part.body = ["- " + group[i].title, ...part.body.map(l => l ? "  " + l : l)]);
     const props = [];
-    props.push(["title", p.title]);
+    props.push(["title", HORIZON_PAGE[p.kind] || p.title]);
     for (const [k, v] of Object.entries(KIND_PROPS[p.kind] || {})) props.push([k, v]);
     if (STATUS_TEXT[p.kind]) props.push(["status", STATUS_TEXT[p.kind]]);
     if (cutoff && group.every(g => (g.file.mtime || Date.now()) < cutoff)) { props.push(["archived", "true"]); R.archived++; }

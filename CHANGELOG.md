@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.93.3 - 2026-11-05
+
+- Vault and sync: GroupToDo-Importer.html can file pages as Vision (horizon 4),
+  Purpose and principles (horizon 5), E-mail and Review. Purpose and vision
+  are one page each, so several pages chosen as Vision become one, each under
+  its old title (#288).
+
 ## 1.93.2 - 2026-11-05
 
 - Vault and sync: GroupToDo-Importer.html also asks about a #tag on a page's
