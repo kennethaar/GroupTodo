@@ -3160,7 +3160,9 @@ var GTD_TEST = (() => {
       go("checklists");
       await settle();
       ok(calAreaShared(Spaces.active), "the demo's area is shared");
-      ok(!content().querySelector(".calset"), "not in a shared area's Settings");
+      ok(!content().querySelector(".calset .calchip"), "no way to add a calendar in a shared area's Settings");
+      has(content().querySelector(".calset")?.textContent || "", "private area", "a shared area's Settings says where calendars go");
+      ok(HELP.settings.words.includes("calendar") && HELP.settings.words.includes("import"), "Settings help is found by calendar and import");
       const n = "Test218 private", back = Spaces.active;
       await createSpace(n, "local");
       try {

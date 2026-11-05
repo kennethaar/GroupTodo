@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.96.1 - 2026-11-05
+
+- Settings: Calendars no longer vanishes in a shared area. It stays and says
+  why calendars do not come in there, and to switch to a private area. Help
+  finds Settings by calendar, import, ics, ical and outlook.
+
 ## 1.96.0 - 2026-11-05
 
 - Ways to run GroupToDo: a new help topic sets the four ways side by side:
