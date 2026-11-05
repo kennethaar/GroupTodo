@@ -103,11 +103,18 @@
 .btn.sm{padding:3px 8px;font-size:12px}
 .btn kbd{font-family:var(--mono);font-size:10px;opacity:.6}
 
-/* "Since you were last here": dismissible, and History keeps it all anyway */
-.news{display:flex;gap:10px;align-items:flex-start;background:var(--accent-soft);border-radius:10px;
+/* "Since you were last here": the feedback count and one way into the review (#285) */
+.news{display:flex;gap:10px;align-items:center;background:var(--accent-soft);border-radius:10px;
   padding:10px 14px;margin-bottom:16px;font-size:14px}
 .news b{color:var(--accent)}
-.news ul{margin:4px 0 0;padding-left:18px}
+.newsrow{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;flex:1;min-width:0}
+.newsrow .btn{margin-left:auto}
+/* The feedback review: the comment, then what it is about, then the outcome */
+.fbquote{margin:6px 0 0;padding:6px 12px;border-left:3px solid var(--border2);color:var(--fg);overflow-wrap:anywhere}
+.fbitem{border-top:1px solid var(--border);padding-top:10px}
+.fbtitle{font-weight:600;overflow-wrap:anywhere}
+.fbnote{color:var(--fg2);font-size:13px;margin-top:2px}
+.fbrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 /* Clarify: one line of a day page on the table, the answers under it in three groups (#95) */
 .clcard{background:var(--bg2);border:2px solid var(--fg);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);
   display:flex;flex-direction:column;gap:8px;max-width:640px}
@@ -130,8 +137,6 @@
 .clans.on .n{border-color:var(--accent);color:var(--accent)}
 .clhow{margin:0;font-size:12.5px;color:var(--fg2);max-width:820px}
 @media (max-width:640px){ .clgroups{grid-template-columns:1fr} }
-.news li button,.news .go{color:inherit;text-decoration:underline;text-align:left}
-.news .x{margin-left:auto;color:var(--fg3)}
 
 /* Today's sections, and focus: the trail is all that stays above the work */
 .group{margin:18px 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg3);

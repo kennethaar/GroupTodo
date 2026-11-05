@@ -14,6 +14,7 @@ function openHistory(days = 90) {
       el("span", {style: "flex:1;min-width:0", translate: "no", html: renderInline(r.kind === "said"
         ? (r.who ? r.who + " on “" + plainTitle(r.block.title) + "”: " : "") + r.text
         : titleForRow(r.text))}),
+      r.decided ? el("span", {class: "chip"}, r.decided) : null,
       spaceTag(r.space),
       r.who && r.kind !== "said" ? el("span", {class: "chip who"}, r.who) : null), "", 25)));
   }

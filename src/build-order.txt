@@ -1332,7 +1332,6 @@ js/145-horizons-view/stakeholderLine.js
 js/145-horizons-view/parseUpdateReply.js
 js/145-horizons-view/splitReplyRef.js
 js/145-horizons-view/resolveReplyItem.js
-js/145-horizons-view/closeOnTheirWord.js
 js/145-horizons-view/postMessageAs.js
 js/145-horizons-view/openUpdateArrived.js
 js/145-horizons-view/importUpdatePasted.js
@@ -1662,6 +1661,13 @@ js/110-views/unfinishedPast.js
 js/110-views/vars-REVIEW_WEEK.js
 js/110-views/reviewWeeks.js
 js/110-views/vars-seenKey.js
+js/110-views/vars-HANDLED_PROP.js
+js/110-views/feedbackQueue.js
+js/110-views/feedbackSubject.js
+js/110-views/feedbackOutcomes.js
+js/110-views/projectNextAction.js
+js/110-views/decideFeedback.js
+js/110-views/openFeedbackReview.js
 js/110-views/newsBox.js
 js/110-views/birthdayBox.js
 js/110-views/activityHere.js

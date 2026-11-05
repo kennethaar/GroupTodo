@@ -3658,19 +3658,20 @@ var GTD_TEST = (() => {
     const d = parseUpdateReply("---\n1. [x] Send the contract\n   Comment: signed\n\n   Reference (leave as is): Work-zzzz9999\n---");
     eq(d.items.map(i => [i.ref, i.done, i.note]), [["Work-zzzz9999", true, "signed"]]);
   });
-  test("#159 Got it stamps acknowledged::, done on a task you told them closes nothing, done on one you asked closes it", async () => {
+  test("#159 #285 Got it stamps acknowledged::; done on one you asked is filed as their word and reviewed, not closed", async () => {
     const path = scratchProject("update mail ack", [["DOING", "Quote for [[p/Lars Haugen]]"], ["WAIT", "Contract from [[p/Lars Haugen]]"]]);
     const [a, b] = getPage(path).blocks;
     const ra = V.space + "-" + ensureBlockId(path, a), rb = V.space + "-" + ensureBlockId(path, b);
     setBlockProp(b, ASKED_PROP, "Kenneth Aar " + nowStamp());
     openUpdateArrived(parseUpdateReply("1 done\n2 done\n\n> " + REF_LINE([ra, rb])));
     await settle();
-    [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent.startsWith("Apply")).click();
     const [a2, b2] = getPage(path).blocks;
     ok(blockProp(a2, ACK_PROP), "no acknowledged:: on the task you told them about");
     eq(ackedDays(a2), 0);
     eq(a2.state, "DOING", "their done closed your own task");
-    eq(b2.state, "DONE", "their done did not close what you asked about");
+    eq(b2.state, "WAIT", "their done closed what you asked about without a decision");
+    eq(messagesOf(b2).map(m => [m.title, msgAuthor(m)]), [["Done.", "Lars Haugen"]]);
+    has($("#modalRoot").textContent, "Contract from", "the review opens on it");
     closeAll();
   });
   test("#159 words with no number go to the task you pick, the only one by itself", async () => {
@@ -3679,10 +3680,131 @@ var GTD_TEST = (() => {
     const ra = V.space + "-" + ensureBlockId(path, a);
     openUpdateArrived(parseUpdateReply("Sounds good, but call me first.\n\nLars\n\n> " + REF_LINE([ra])));
     await settle();
-    [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent.startsWith("Apply")).click();
     eq(messagesOf(getPage(path).blocks[0]).map(m => m.title), ["Sounds good, but call me first."]);
     closeAll();
   });
+  /* Feedback is reviewed one item at a time and handled only by an outcome on
+     the project or to-do it is about (#285). */
+  const withFeedbackSince = async fn => {
+    const was = lastSeen();
+    PREF.set(seenKey(), "2000-01-01T00:00:00Z");
+    try { return await fn(); } finally { PREF.set(seenKey(), was); }
+  };
+  const feedbackOn = path => feedbackQueue().filter(f => f.path === path);
+  test("#285 the review queue holds new comments from others, not status events, your own words or handled ones", () => withFeedbackSince(() => {
+    const path = scratchProject("feedback queue", [["WAIT", "Contract from [[p/Lars Haugen]]"], ["TODO", "Send the quote"]]);
+    const [wait, todo] = getPage(path).blocks;
+    postMessageAs(path, wait, "Signed, it is in the post.", "Lars Haugen", nowStamp());
+    postMessage(path, wait, "Thanks");
+    setBlockState(path, todo, "DONE");
+    setBlockProp(todo, "done_by", "Lars Haugen " + nowStamp());
+    eq(feedbackOn(path).map(f => [f.who, f.text]), [["Lars Haugen", "Signed, it is in the post."]]);
+    ok(decideFeedback(feedbackOn(path)[0], "close"), "an outcome is taken");
+    eq(feedbackOn(path).length, 0, "handled feedback leaves the queue");
+  }));
+  test("#285 a waiting-for or finished line asks about its project, an open to-do about itself", () => withFeedbackSince(() => {
+    const path = scratchProject("feedback kinds", [["WAIT", "Answer from [[p/Lars Haugen]]"], ["TODO", "Draft the plan"]]);
+    const [wait, todo] = getPage(path).blocks;
+    postMessageAs(path, wait, "Not from me, ask Anna.", "Lars Haugen", nowStamp());
+    postMessageAs(path, todo, "Use the old one.", "Lars Haugen", nowStamp());
+    const [fw, ft] = feedbackOn(path);
+    eq(feedbackOutcomes(fw), ["continue", "close", "cancel", "someday"]);
+    eq(feedbackSubject(fw).project, path);
+    eq(feedbackOutcomes(ft), ["keep", "complete", "cancel", "someday"]);
+  }));
+  test("#285 Continue needs a next action and records it; Close, Cancel and Someday/Maybe move the project", () => withFeedbackSince(() => {
+    const path = scratchProject("feedback continue", [["WAIT", "Status from [[p/Lars Haugen]]"]]);
+    const wait = getPage(path).blocks[0];
+    setBlockProp(wait, ASKED_PROP, "Kenneth Aar " + nowStamp());
+    postMessageAs(path, wait, "Who does this come from?", "Lars Haugen", nowStamp());
+    const f = feedbackOn(path)[0];
+    ok(!decideFeedback(f, "continue", {next: "  "}), "Continue without a next action is taken");
+    eq(feedbackOn(path).length, 1, "and the feedback stays open");
+    ok(decideFeedback(f, "continue", {next: "Confirm the source with Lars", due: "2026-12-01"}));
+    const next = getPage(path).blocks.find(b => b.title === "Confirm the source with Lars");
+    ok(next && next.state === "TODO", "the next action is on the project");
+    eq(dueDate(next), "2026-12-01");
+    ok(!blockProp(getPage(path).blocks[0], ASKED_PROP), "the question still counts as unanswered");
+    const m = messagesOf(getPage(path).blocks[0])[0];
+    has(blockProp(m, DECIDED_PROP), "Confirm the source with Lars", "the outcome and change are on record");
+    ok(splitStamp(blockProp(m, HANDLED_PROP)).iso, "with who handled it and when");
+    const row = activityHere(todayISO()).find(r => r.kind === "said" && r.path === path);
+    has(row.decided, "Continue: Confirm the source with Lars", "History shows the outcome");
+    for (const [outcome, dir] of [["someday", "2"], ["cancel", "-"], ["close", "0"]]) {
+      const p = scratchProject("feedback " + outcome, [["WAIT", "Reply from [[p/Lars Haugen]]"]]);
+      postMessageAs(p, getPage(p).blocks[0], "Not now.", "Lars Haugen", nowStamp());
+      ok(decideFeedback(feedbackOn(p)[0], outcome), outcome);
+      const moved = join(STATUS_DIRS[dir], baseName(p) + ".md");
+      ok(getPage(moved), outcome + " moved the project to " + dir);
+    }
+    closeAll();
+  }));
+  test("#285 Keep, Complete, Cancel and Someday/Maybe settle a to-do", () => withFeedbackSince(() => {
+    const path = scratchProject("feedback todo", [["TODO", "Book the room"], ["TODO", "Print the deck"], ["TODO", "Ask about catering"]]);
+    const [keep, done, gone] = getPage(path).blocks;
+    for (const b of [keep, done, gone]) postMessageAs(path, b, "Ok?", "Lars Haugen", nowStamp());
+    const [fk, fd, fg] = feedbackOn(path);
+    ok(decideFeedback(fk, "keep", {next: "Book the big room"}));
+    eq([keep.title, keep.state], ["Book the big room", "TODO"]);
+    ok(decideFeedback(fd, "complete"));
+    eq(done.state, "DONE");
+    ok(decideFeedback(fg, "cancel"));
+    eq(gone.state, "CANCELLED");
+    eq(feedbackOn(path).length, 0);
+    closeAll();
+  }));
+  test("#285 one item at a time; Reply and Edit keep it open at the same place; destructive outcomes ask first", () => withFeedbackSince(async () => {
+      const path = scratchProject("feedback review", [["WAIT", "Plan from [[p/Lars Haugen]]"], ["WAIT", "Quote from [[p/Anna Berg]]"]]);
+      const other = scratchProject("feedback review venue", [["TODO", "Check the venue"]]);
+      const wait = getPage(path).blocks[0], venue = getPage(other).blocks[0];
+      postMessageAs(path, wait, "Is this a thing?", "Lars Haugen", nowStamp());
+      postMessageAs(other, venue, "It is booked.", "Lars Haugen", nowStamp());
+      const items = feedbackOn(path).concat(feedbackOn(other));
+      const btn = t => [...document.querySelectorAll("#modalRoot button")].find(x => trim(x.textContent) === t);
+      openFeedbackReview(items);
+      const root = () => $("#modalRoot").textContent;
+      has(root(), "1 of 2"); has(root(), "Lars Haugen"); has(root(), "Is this a thing?");
+      has(root(), "No next action", "the project's missing next action shows");
+      ok(!btn("Keep") && btn("Continue"), "only the project's outcomes");
+      ok(!btn("Done"), "no vague Done");
+      btn("Reply").click();
+      $("#modalRoot textarea").value = "From the board meeting.";
+      btn("Send").click();
+      await settle();
+      has(root(), "1 of 2", "a reply is not an outcome");
+      eq(messagesOf(wait).map(m => m.title), ["Is this a thing?", "From the board meeting."]);
+      btn("Edit").click();
+      await settle();
+      ok(!root().includes("1 of 2"), "Edit opens the item");
+      closeModal();
+      await settle(); await settle();
+      has(root(), "1 of 2", "back on the same feedback after the edit");
+      btn("Close").click();
+      has(root(), "Close project?", "closing a project with an open task asks first");
+      btn("Back").click();
+      has(root(), "1 of 2", "Back returns to the item, nothing handled");
+      btn("Close").click();
+      btn("Close and next").click();
+      await settle();
+      has(root(), "2 of 2");
+      ok(btn("Keep") && btn("Complete") && !btn("Continue"), "only the to-do's outcomes");
+      btn("Complete").click();
+      await settle();
+      has(root(), "caught up");
+      closeAll();
+  }));
+  test("#285 Since you were last here shows the feedback count and Review, not a list", () => withFeedbackSince(() => {
+    const path = scratchProject("feedback box", [["TODO", "Tidy the shelf"]]);
+    postMessageAs(path, getPage(path).blocks[0], "Which shelf?", "Lars Haugen", nowStamp());
+    const n = feedbackQueue().length;
+    const box = newsBox();
+    ok(box, "the box shows");
+    has(box.textContent, "Feedback");
+    has(box.textContent, String(n));
+    ok(!box.querySelector("li"), "no list of comments");
+    ok([...box.querySelectorAll("button")].some(b => trim(b.textContent) === "Review"), "one Review button");
+    ok(!box.textContent.includes("Which shelf?"), "the comment itself waits for the review");
+  }));
   test("#159 a linked email reads as its subject, without the m/", () => {
     eq(plainTitle("Svar om [[m/Forespørsel om revisjonsrapport – MEPS 3]]"), "Svar om Forespørsel om revisjonsrapport – MEPS 3");
   });

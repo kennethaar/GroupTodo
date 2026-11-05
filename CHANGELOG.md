@@ -5,6 +5,18 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.91.0 - 2026-11-05
+
+- Journal: feedback is reviewed one item at a time. Since you were last here
+  shows only how many comments wait, and Review opens the first. Each shows
+  who wrote it, the project or to-do it is about, and Edit and Reply. It stays
+  open until you choose an outcome: Continue (with a next action), Close,
+  Cancel or Someday/Maybe for a project; Keep, Complete, Cancel or
+  Someday/Maybe for a to-do. Ending work with open tasks asks first. An
+  imported reply closes nothing by itself: its words are filed as comments and
+  the review starts. History shows the outcome. Status changes stay in
+  History (#285).
+
 ## 1.90.1 - 2026-11-05
 
 - Chores: the help topic is shorter again, six steps and under 90 words before

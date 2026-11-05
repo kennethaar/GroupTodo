@@ -20,7 +20,7 @@ function activityHere(fromDay) {
       for (const m of messagesOf(b)) {
         const day = dateIn(msgAt(m));
         if (day && day >= fromDay) out.push({kind: "said", day, at: msgAt(m), path, block: b,
-          who: msgAuthor(m), text: m.title});
+          who: msgAuthor(m), text: m.title, decided: trim(blockProp(m, DECIDED_PROP) || "")});
       }
     });
   }

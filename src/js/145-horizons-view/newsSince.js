@@ -19,12 +19,14 @@ function newsSince(since) {
         // "Mine" is wider than by::, which is only stamped on a state change:
         // a task you simply typed carries no author at all. It is yours if it
         // is on your day page, if you wrote it, if it is assigned to you, or
-        // if you have already said something in the thread.
+        // if you have already said something in the thread, or if you asked
+        // them about it.
         const involved = samePerson(assigneeOf(b), me) || samePerson(by, me) ||
                          (isJournalPath(path) && myJournal(path)) ||
+                         samePerson(splitStamp(blockProp(b, ASKED_PROP) || "").who, me) ||
                          messagesOf(b).some(x => samePerson(msgAuthor(x), me));
         if (!involved) continue;
-        out.push({kind: "said", path, block: b, at: msgAt(m), who: msgAuthor(m), text: m.title});
+        out.push({kind: "said", path, block: b, msg: m, at: msgAt(m), who: msgAuthor(m), text: m.title});
       }
       // Something I handed over, now done by them.
       const raw = trim(blockProp(b, "done_by") || "");
