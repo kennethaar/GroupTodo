@@ -2317,6 +2317,27 @@ var GTD_TEST = (() => {
       ok(!content().querySelector(".choregroup"), "Room is the default");
     } finally { PREF.set("chores.group", ""); dropChores(path); }
   });
+  test("#282 chore time totals: Due now, This week, Print; unsized never guessed", async () => {
+    const t = (title, extra) => ({title, ...extra});
+    eq(choreTotal([t("A #45m"), t("B #15m"), t("C")]), "1 h + 1 unsized");
+    eq(choreTotal([t("A #45m")]), "45 min");
+    eq(choreTotal([t("C"), t("D")]), "2 unsized");
+    eq(choreTotal([]), "");
+    const path = choreProject("chores time", [
+      chore(choreLine("Testmop", "home/kitchen", "30m"), "weekly", 0), chore(choreLine("Testwipe", "home/kitchen", 0), "weekly", 0)]);
+    try {
+      go("chores"); await settle();
+      const due = [...content().querySelectorAll(".section h3")].find(h => /^Due now/.test(h.textContent));
+      ok(due, "Due now section");
+      has(due.textContent, "30 min + 1 unsized");
+      const mine = choreRows().filter(a => a.path === path);
+      const sheet = choreSheet(mine, ["@"], () => "@", () => "", [], "");
+      const tot = sheet.querySelector(".ps-total");
+      ok(tot, "print total");
+      has(tot.textContent, "This week · 30 min + 1 unsized · 2 chores");
+      ok(!sheet.querySelector(".ps-room + tr .ps-sub, .ps-subtotal"), "no room subtotals");
+    } finally { dropChores(path); }
+  });
   test("#239 + New chore, As needed: a plain line with no first day", async () => {
     openNewChore("");
     const m = document.querySelector(".scrim .modal");

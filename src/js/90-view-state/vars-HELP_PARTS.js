@@ -495,6 +495,7 @@ const HELP = {
       ["Away until… holds every chore while you are gone.", "?.awaybtn"],
       ["+ New chore adds one. Pick or type a name. As needed has no rhythm. Custom… and Pick a date… set more.", ".newbtn"],
       ["Group by Chore shows rooms and total time.", "?.chorehome-tools select"],
+      ["Due now and Coming up show the time they take. Print adds the week total.", ".section h3"],
       ["+ Log a chore counts other work done at home.", ".logchore"]],
     legend: [[".vhead h1", "Chores: the tasks that repeat."],
       ["?.chorehome", "How fresh the home is. 100% is all just done."],

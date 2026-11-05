@@ -30,11 +30,18 @@ function choreSheet(rows, rooms, roomOf, nameOf, picked, by) {
         turns ? el("td", {}, who ? firstNameOf(who) : "") : null));
     }
   }
+  const all = parts.flatMap(p => p.list);
+  const who = new Map();
+  if (turns) for (const a of all) { const n = turnFor(a); if (n) who.set(firstNameOf(n), [...(who.get(firstNameOf(n)) || []), a]); }
+  const totals = all.length ? el("div", {class: "ps-total"},
+    el("div", {}, "This week · " + [choreTotal(all), all.length + (all.length === 1 ? " chore" : " chores")].filter(Boolean).join(" · ")),
+    who.size ? el("div", {}, [...who].map(([n, l]) => n + " · " + choreTotal(l)).join("    ")) : null) : null;
   const sub = ["Tick it here, then tick it in the app.", ...picked.filter(Boolean)].join(" · ");
   return el("div", {class: "ps"},
     el("div", {class: "ps-h"}, el("h1", {}, "Chores · week " + isoWeek(t)[0]),
       el("span", {}, "Printed " + dateFormat(false).format(new Date()))),
     el("div", {class: "ps-sub"}, sub),
     el("table", {}, el("tbody", {}, ...body)),
+    totals,
     el("div", {class: "ps-notes"}, "Notes", el("i"), el("i"), el("i")));
 }

@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.90.0 - 2026-11-05
+
+- Chores: Due now and Coming up this week show the time they take, such as
+  1 h 15 min + 1 unsized. Chores without a time are counted, never guessed.
+  Print ends with the week total and chore count, and a line per person when
+  whose is shown (#282).
+
 ## 1.89.0 - 2026-11-05
 
 - Keys on a line (#281, #280): in a Markdown table, a Table button opens Row,

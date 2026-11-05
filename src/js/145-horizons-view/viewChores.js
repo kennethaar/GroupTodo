@@ -108,14 +108,15 @@ function viewChores() {
       el("span", {class: "say", style: "margin-left:8px;font-weight:400"}, g.says), "choregroup")));
     if (!rows.length) c.append(emptyCard("Nothing to group here."));
   } else {
+    const total = list => { const t = choreTotal(list); return t ? el("span", {class: "say", style: "margin-left:8px;font-weight:400"}, "· " + t) : null; };
     const rounds = a => (freshnessOf(a) || {rounds: 0}).rounds;
     const byDay = (x, y) => (x.due || "9").localeCompare(y.due || "9");
     by.due.sort((x, y) => rounds(y) - rounds(x));
     by.soon.sort(byDay); by.fresh.sort(byDay);
-    c.append(section("Due now", by.due.length, taskCard(by.due, "Nothing due. The home is on top of things.", opts)));
-    const fold = (title, list) => list.length ? el("details", {class: "section fold"},
-      el("summary", {}, title, el("span", {class: "n"}, String(list.length))), taskCard(list, null, opts)) : null;
-    c.append(...[fold("Coming up this week", by.soon), fold("Fresh", by.fresh), fold("On hold", held)].filter(Boolean));
+    c.append(section("Due now", by.due.length, taskCard(by.due, "Nothing due. The home is on top of things.", opts), total(by.due)));
+    const fold = (title, list, sum) => list.length ? el("details", {class: "section fold"},
+      el("summary", {}, title, el("span", {class: "n"}, String(list.length)), sum || null), taskCard(list, null, opts)) : null;
+    c.append(...[fold("Coming up this week", by.soon, total(by.soon)), fold("Fresh", by.fresh), fold("On hold", held)].filter(Boolean));
   }
   const neededHere = needed.filter(a => !room || (a.ctx.includes("/") ? "@" + a.ctx.split("/").slice(0, 2).join("/") : "@") === room);
   if (neededHere.length) c.append(asNeededFold(neededHere));
