@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.101.2 - 2026-11-05
+
+- Keys on a line: the phone toolbar's sideways scroll now actually works on
+  Android; an explicit touch-action that was meant to let it swipe was
+  silently disabling the scroll instead (#298).
+
 ## 1.101.1 - 2026-11-05
 
 - Keys on a line: the phone toolbar's sideways scroll now actually swipes on
