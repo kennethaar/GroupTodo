@@ -29984,8 +29984,15 @@ drawCalendars();
 const m = calScreen({
 title: "Add calendar",
 body: !usable ? el("div", {style: "margin:0 16px"},
-el("p", {class: "hint", style: "text-align:left"}, "Calendars come into an area that is yours alone. Make one first."),
-el("button", {class: "btn primary", onclick: () => { closeModal(); newSpacePrompt(async sp => { await openSpace(sp.name); openCalendars(); }); }}, "+ Create a private area"))
+el("p", {class: "hint", style: "text-align:left"},
+home ? home + " is " + calSharedNote(home) + ", so everyone in it could read your calendar. If the others are just you on your other devices, say so."
+: "Calendars come into an area that is yours alone. Make one first."),
+home ? el("button", {class: "btn primary", onclick: async () => {
+Spaces.get(home).onlyMe = todayISO();
+await Spaces.save(); clearMemo(); render(); drawAddCalendar();
+}}, "Only I use " + home)
+: null,
+el("button", {class: home ? "textbtn" : "btn primary", onclick: () => { closeModal(); newSpacePrompt(async sp => { await openSpace(sp.name); openCalendars(); }); }}, "+ Create a private area"))
 : el("div", {},
 el("div", {class: "field"}, el("label", {}, "Calendar link"), url),
 el("div", {class: "field"}, el("label", {}, "Name"), label),
