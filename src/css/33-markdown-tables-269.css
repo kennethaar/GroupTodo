@@ -5,3 +5,8 @@
 .mdtable th,.mdtable td{border:1px solid var(--border);padding:4px 10px;text-align:left;vertical-align:top}
 .mdtable th{font-weight:600;background:color-mix(in srgb,var(--fg) 5%,transparent)}
 .mdtable td{cursor:text}
+/* The Table menu button: only while a row of the table is open for writing. */
+.blk>.line>.tablemenu{display:none;order:98;flex:none;align-self:center;padding:0 6px;border-radius:4px;color:var(--fg2);font-size:12px;line-height:18px}
+.blk.tbl-open>.line>.tablemenu{display:block}
+.blk>.line>.tablemenu:hover{background:var(--bg4);color:var(--fg)}
+@media (hover:none){ .blk>.line>.tablemenu{min-height:32px} }

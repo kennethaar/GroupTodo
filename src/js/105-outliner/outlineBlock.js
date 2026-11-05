@@ -436,7 +436,7 @@ function outlineBlock(path, page, b, opts = {}) {
   const meta = lineMeta(b, path, ro);
   if (meta) line.append(meta);
   (b.body || []).forEach((l, i) => node.append(bodyLineEl(path, b, i)));
-  tableWatch(node, txt, b);
+  tableWatch(node, txt, b, path);
   const shown = liveMacros(path, b);
   if (shown) node.append(shown);
 

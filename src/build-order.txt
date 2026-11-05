@@ -1449,6 +1449,13 @@ js/105-outliner/tableRowText.js
 js/105-outliner/tableRows.js
 js/105-outliner/tableHtml.js
 js/105-outliner/tableFocusRow.js
+js/105-outliner/tableCol.js
+js/105-outliner/tableAlign.js
+js/105-outliner/tableCan.js
+js/105-outliner/tableCellAt.js
+js/105-outliner/tableEdit.js
+js/105-outliner/tableRun.js
+js/105-outliner/tableMenu.js
 js/105-outliner/tableEnter.js
 js/105-outliner/tableTab.js
 js/105-outliner/tableWatch.js

@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.89.0 - 2026-11-05
+
+- Keys on a line (#281, #280): in a Markdown table, a Table button opens Row,
+  Column and Alignment. Insert a row or column, move it, delete it, and set a
+  column left, centre or right, without typing a |. Only the commands that fit
+  the caret are shown, the header and the |---| line stay put, and each
+  command is one Undo.
+
 ## 1.88.2 - 2026-11-05
 
 - Chores: a task can take any time, not just 15, 30, 45 or 60 minutes (#283).

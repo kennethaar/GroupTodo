@@ -2669,6 +2669,38 @@ var GTD_TEST = (() => {
       ok(serializeBlockLines([b], 0).join("\n").includes("  | --- | --- |"), "the file has no Markdown table");
     } finally { go("today"); }
   });
+  test("#280 #281 the Table menu edits rows, columns and alignment, one Undo each", async () => {
+    const path = scratchProject("md table menu", [[null, "| Item | Qty | Note |"]]);
+    const b = getPage(path).blocks[0];
+    b.body = ["|------|----:|:----:|", "| A | 1 | x |", "| B | 2 | y |"];
+    openPage(path);
+    await settle();
+    const run = (cmd, bi, col) => tableRun(path, b, cmd, bi, col);
+    const lines = () => [b.title, ...b.body].join("\n");
+    try {
+      ok(!tableCan(b, -1, 0).includes("row-del") && !tableCan(b, -1, 0).includes("row-up"), "the header can move or go");
+      ok(!tableCan(b, 1, 0).includes("row-up") && !tableCan(b, 2, 0).includes("row-down"), "a row moves past the ends");
+      ok(!tableCan(b, 1, 1).includes("al-right") && tableCan(b, 1, 1).includes("al-left"), "the alignment it has is offered");
+      run("col-mvright", 1, 1);
+      eq(lines(), ["| Item | Note | Qty |", "| --- | :---: | ---: |", "| A | x | 1 |", "| B | y | 2 |"].join("\n"), "the column did not take its alignment along");
+      undoLast();
+      eq(b.title, "| Item | Qty | Note |", "one Undo did not take the move back");
+      eq(b.body[0], "|------|----:|:----:|", "one Undo did not bring the | --- | line back");
+      run("row-up", 2, 0);
+      eq(b.body[1], "| B | 2 | y |", "the row did not move up");
+      run("row-below", -1, 0);
+      eq(b.body[0], "|------|----:|:----:|", "the | --- | line moved");
+      eq(b.body[1], "|  |  |  |", "no empty row under the header");
+      run("col-del", 1, 2);
+      eq(b.title, "| Item | Qty |");
+      eq(b.body[0], "| --- | ---: |");
+      run("al-center", 1, 1);
+      eq(b.body[0], "| --- | :---: |");
+      run("al-left", 1, 1);
+      eq(b.body[0], "| --- | --- |", "left is not saved as ---");
+      ok(serializeBlockLines([b], 0).join("\n").includes("  | --- | --- |"), "the file has no Markdown table");
+    } finally { go("today"); }
+  });
   test("#272 ctrl-click picks lines one by one, and a drag can start on a plain body line", async () => {
     const path = scratchProject("ctrl pick", [["TODO", "One"], ["TODO", "Two"], ["TODO", "Three"], ["TODO", "Four"]]);
     getPage(path).blocks[0].body = ["plain text under One", "and a second plain line"];

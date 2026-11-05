@@ -1,7 +1,7 @@
 /* A table block shows its rows as written while the caret is in one of
    them, and as a table again once it leaves. A click on a cell opens the
    row it is in. */
-function tableWatch(node, txt, b) {
+function tableWatch(node, txt, b, path) {
   const own = t => t === txt || (t && t.parentNode === node && t.classList.contains("tblrow"));
   const open = on => {
     node.classList.toggle("tbl-open", on);
@@ -12,6 +12,10 @@ function tableWatch(node, txt, b) {
   };
   if (!tableRows(b)) return;
   node.classList.add("mdtbl");
+  // Asked for, never pushed: only while a row is open, and it keeps the caret where it is.
+  txt.after(el("button", {class: "tablemenu", tabindex: "-1", title: "Table", "aria-label": "Table",
+    "aria-haspopup": "menu", onmousedown: e => e.preventDefault(),
+    onclick: e => { e.stopPropagation(); tableMenu(path, b, txt); }}, "Table ▾"));
   if (TABLE_OPEN === b.id) { node.classList.add("tbl-open"); txt.textContent = b.title; }
   node.addEventListener("focusin", e => { if (own(e.target) && tableRows(b)) open(true); });
   node.addEventListener("focusout", e => { if (own(e.target) && !own(e.relatedTarget)) open(false); });
