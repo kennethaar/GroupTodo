@@ -50,7 +50,8 @@ corresponding script in `docs/`:
 Then build once. These scripts rewrite `vars-HELP_NEWS.js`,
 `vars-nextSpaceColor.js` (holds `LANG_CATALOG`), `languages/English.md` and
 `docs/demo.html`. Those diffs are expected. Never `git diff` them in full; use
-`git diff --stat`.
+`git diff --stat`. The `LF will be replaced by CRLF` warnings on those files
+are harmless line-ending noise; ignore them and do not try to fix them.
 
 Do not use `git stash` to check whether a failure is pre-existing. It leaves
 new untracked files behind and breaks the build. Rerun the failing test alone
@@ -123,7 +124,11 @@ When user-facing behavior changes, update the matching `HELP` source topic in
 the same commit. Update relevant `what`, `steps`, `keys` and `legend` fields.
 Use `view` and `sub` only for view-specific topics.
 
-Use short, plain GTD language and keep LIX below 30 when practical. Then run:
+Use short, plain GTD language and keep LIX below 30 when practical.
+
+A topic has at most 6 `steps` and under 90 words before its More fold.
+Test #171 enforces both. Count them before building, and when a topic
+grows, merge steps instead of adding one. Then run:
 
     python docs/build-language-catalog.py
 
