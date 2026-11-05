@@ -1,5 +1,5 @@
-async function syncCalendars({quiet = true} = {}) {
-  const feeds = calFeeds();
+async function syncCalendars({quiet = true, only = ""} = {}) {
+  const feeds = calFeeds().filter(f => !only || f.url === only);
   if (!feeds.length || CAL_SYNCING) return null;
   CAL_SYNCING = true;
   updateCalChips();
@@ -25,6 +25,7 @@ async function syncCalendars({quiet = true} = {}) {
         await filesLoaded();               // an area may have started reading while the link was fetched
         const r = importCalendarText(text, home, feed, from, to);
         for (const k in sum) sum[k] += r[k];
+        calStamp(CAL_SYNCED_KEY, feed);
       } catch (e) { failed.push(name + ": " + (e.message || e)); continue; }
       // Every area a meeting of this calendar is to show in is read in first.
       const areas = new Set(calAlso(f));

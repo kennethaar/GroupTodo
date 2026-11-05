@@ -3180,6 +3180,28 @@ var GTD_TEST = (() => {
     });
   }
 
+  test("Calendars: one reminder choice saves at once, with Off and At start apart; a calendar row says who sees it", async () => {
+    const was = PREF.get(MEET_REMIND_KEY, "10"), feeds = PREF.get(CAL_FEEDS_KEY, "[]");
+    try {
+      PREF.set(MEET_REMIND_KEY, "0");
+      eq(meetRemindLead(), null, "a 0 from before means off");
+      drawMeetRemind();
+      const radios = [...document.querySelectorAll(".modal input[type=radio]")];
+      eq(radios.length, 7, "Off, At start and five times");
+      ok(!document.querySelector(".modal .foot"), "no Save button");
+      radios[1].checked = true; radios[1].dispatchEvent(new Event("change"));
+      eq(meetRemindLead(), 0, "At start is 0 minutes before");
+      radios[0].checked = true; radios[0].dispatchEvent(new Event("change"));
+      eq(meetRemindLead(), null, "Off turns reminders off");
+      setCalFeeds([{url: "https://x.example/a.ics", label: "Work", space: calHome(), also: []}]);
+      drawCalendars();
+      const row = document.querySelector(".modal .calrow:nth-of-type(2)")?.textContent || document.querySelector(".modal").textContent;
+      has(row, "Private");
+      has(row, "Not synced yet");
+      ok(!/serve\.py|Alt\+M/.test(document.querySelector(".modal").textContent), "no technical explanation");
+    } finally { closeModals(); PREF.set(MEET_REMIND_KEY, was); PREF.set(CAL_FEEDS_KEY, feeds); }
+  });
+
   /* ---------- areas: one place, removing, onboarding (#193) ---------- */
   const closeModals = () => { for (let i = 0; i < 4 && $("#modalRoot").firstChild; i++) closeModal(); };
   test("#193 the welcome screen offers coming back with your folders", () => {

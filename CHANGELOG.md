@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.99.0 - 2026-11-05
+
+- Calendars: simpler. A list with Sync now, each calendar showing who sees it
+  and when it last synced; add a calendar with just a link and a name (private
+  by default); sharing, sync and remove live on the calendar itself; one
+  reminder choice (Off to 1 hour, saved at once); meetings left by removed
+  calendars are reviewed in one place. On the Journal, "Import calendar"
+  shows when you open the date picker.
+
 ## 1.98.0 - 2026-11-05
 
 - Settings: a folder shared only with yourself on other devices can be marked

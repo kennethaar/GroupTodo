@@ -2,8 +2,8 @@ function meetingTick() {
   if (!V.loaded) return;
   const list = todaysMeetings();
   paintNextMeeting(list);
-  const lead = meetRemindMin();
-  if (!lead) return;
+  const lead = meetRemindLead();
+  if (lead == null) return;
   const now = Date.now(), done = meetReminded();
   let changed = false;
   for (const m of list) {

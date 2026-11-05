@@ -182,7 +182,7 @@ function viewToday() {
         el("button", {class: "dayarrow", title: "The day after", "aria-label": "The day after",
           onclick: () => toDay(shiftISO(day, 1))}, "▶"),
         who ? null : el("button", {class: "dayarrow dayimport", title: "Import a calendar into your day pages",
-          "aria-label": "Import a calendar", onclick: () => openCalendars()}, "\u{1F4C5}")),
+          onclick: () => openCalendars()}, "\u{1F4C5} Import calendar")),
       day !== today ? el("button", {class: "textbtn backtoday", onclick: () => toDay(null)}, "Back to today") : null),
     people.length ? wideOnly(fselect("Whose day page", who, [["", "Your page"], ...people.map(n => [n, firstNameOf(n) + "'s page"])],
       v => go("today", {todayWho: v || null})), !who) : null,
