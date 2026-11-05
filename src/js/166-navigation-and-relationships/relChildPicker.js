@@ -33,9 +33,41 @@ function relChildPicker(parent) {
   listPicker({
     title: "Children of " + relTitle(parent), items: rows, typeahead: true,
     label: relTitle, detail: r => relRef(r), onPick: r => relAddParent(parent, r),
-    footer: el("button", {class: "btn ghost", onclick: () => promptInput({
-      title: "Edit children", label: "children::", value: relChildrenRaw(parent), cta: "Save",
-      onSave: v => { childrenFact(parent).save(v); render(); },
-    })}, "Edit / remove links"),
+    footer: el("div", {class: "row"}, [
+      // A task gets a step under it, or a task above it, stamped with today.
+      parent.block ? el("button", {class: "btn ghost", onclick: () => { closeModal(); promptInput({
+        title: "New child of " + relTitle(parent), label: "Child", cta: "Add",
+        onSave: v => {
+          const body = trim(String(v).replace(/\s+/g, " "));
+          if (!body) return;
+          inSpace(parent.space, () => {
+            const kid = stampAuthor(newBlock({state: "TODO", props: {}, title: todayStamp() + " " + linkKnownNames(body)}));
+            (parent.block.children || (parent.block.children = [])).push(kid);
+            touch(parent.path); noteTodoTouched();
+          });
+          render();
+        },
+      }); }}, "+ New child") : null,
+      parent.block ? el("button", {class: "btn ghost", onclick: () => { closeModal(); promptInput({
+        title: "New parent of " + relTitle(parent), label: "Parent", cta: "Add",
+        onSave: v => {
+          const body = trim(String(v).replace(/\s+/g, " "));
+          if (!body) return;
+          inSpace(parent.space, () => {
+            const list = siblingsOf(getPage(parent.path), parent.block);
+            const up = stampAuthor(newBlock({state: "TODO", props: {}, children: [parent.block],
+              title: todayStamp() + " " + linkKnownNames(body)}));
+            list.splice(list.indexOf(parent.block), 1, up);
+            touch(parent.path); noteTodoTouched();
+          });
+          render();
+        },
+      }); }}, "+ New parent") : null,
+
+      el("button", {class: "btn ghost", onclick: () => promptInput({
+        title: "Edit children", label: "children::", value: relChildrenRaw(parent), cta: "Save",
+        onSave: v => { childrenFact(parent).save(v); render(); },
+      })}, "Edit / remove links"),
+    ]),
   });
 }

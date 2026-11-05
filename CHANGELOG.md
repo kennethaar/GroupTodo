@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.92.0 - 2026-11-05
+
+- Pages › Mind map: Children on a task has + New child (a next action) and + New parent (a task above it in the project). Each is a line
+  that starts with a link to today.
+
 ## 1.91.1 - 2026-11-05
 
 - Pages › Mind map: the name box suggests p/Anna. Examples in the help, docs,
