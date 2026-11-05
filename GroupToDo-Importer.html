@@ -356,7 +356,7 @@ const tagValues = v => String(v || "").split(/,/).map(x => lc(x.replace(/[\[\]#"
 /* What else a page says about itself: #tags on its first line, and a short
    word in any other page property, as "status: active". Each becomes a row
    the user can give a meaning; nothing is read into it here. */
-const OWN_KEYS = /^(tags?|type|category|alias(es)?|title|id|collapsed|created|updated|date|cssclass(es)?|public|icon)$/i;
+const OWN_KEYS = /^(tags?|type|category|alias(es)?|title|id|collapsed|created|updated|date|cssclass(es)?|public|icon|settings|area|area_name|updated_by|author)$/i;
 function pageMarks(props, firstLine) {
   const out = [];
   for (const m of String(firstLine || "").matchAll(/(?:^|\s)#(?:\[\[([^\]]+)\]\]|([\p{L}\p{N}][\p{L}\p{N}_\-\/]*))/gu))
@@ -387,14 +387,22 @@ function analyze(kind, files) {
       continue;
     }
     const base = f.rel.split("/").pop().replace(/\.md$/i, "");
+    // GroupToDo writes these folder guides itself and rewrites them; they are
+    // never pages, so they are not carried over.
+    if (/^_[^/ ]+_for /.test(base) || /^\s*<!-- Written by GroupToDo/.test(f.text || "")) continue;
     if (kind === "logseq") {
       if (/^(logseq|\.recycle|bak|version-files|draws)\//.test(f.rel)) { skipped.push(f.rel); continue; }
       if (f.rel.startsWith("journals/")) {
-        const d = dateOf(base.replace(/\s*\(\d+\)$/, "")) ;
+        // GroupToDo's own folder notes (_journals_for Day pages) are not days.
+        if (/^_[^/ ]+_for /.test(base)) continue;
+        const clean = base.replace(/\s*\(\d+\)$/, "");
+        // A week page keeps its name: 2026-W44.
+        const d = /^\d{4}-W\d{2}$/.test(clean) ? clean : dateOf(clean);
         if (d) { (journals.get(d) || journals.set(d, []).get(d)).push(f); continue; }
         skipped.push(f.rel + " (journal file without a date in its name)");
         continue;
       }
+      if (!f.rel.includes("/") && /^_[^/ ]+_for /.test(base)) continue;
       if (!f.rel.startsWith("pages/")) { skipped.push(f.rel + " (outside journals/ and pages/)"); continue; }
       const name = logseqName(f.rel, f.text);
       const props = preambleProps(f.text);
@@ -421,6 +429,7 @@ function analyze(kind, files) {
         aliases: fmv("aliases").concat(fmv("alias")).map(String)});
     }
   }
+  for (const p of pages) classify(p);
   return {kind, journals, pages, skipped, assets};
 }
 
@@ -444,9 +453,9 @@ function ruleChoices(a) {
 function placePages(a, rules) {
   const placed = [];
   for (const p of a.pages) {
-    const byTag = p.tags.map(t => rules.tags[t]).find(k => k && k !== "page");
-    const byGroup = rules.groups[p.group];
-    const kind = byTag || byGroup || "page";
+    const byTag = rules.rows ? "" : p.tags.map(t => rules.tags[t]).find(k => k && k !== "page");
+    const byGroup = rules.rows ? (p.via === "group" || p.groupCode ? rules.rows[p.row] : "") : rules.groups[p.group];
+    const kind = rules.rows ? (rules.rows[p.row] || "page") : (byTag || byGroup || "page");
     if (kind === "skip") continue;
     // A namespace or folder that names the kind is not part of the name:
     // "&/Kari Nordmann" filed as a person is p/Kari Nordmann.
@@ -952,7 +961,92 @@ function reportText(a, res, opts) {
   return L.join("\n");
 }
 
-window.GTDImport = {analyze, ruleChoices, placePages, convert, reportText, dateOf, startRules, readFrontMatter};
+/* ---------- one page, one row ---------- */
+const WORD_CODE = {active: "1", someday: "2", maybe: "2", hold: "1", waiting: "3", wait: "3", done: "0", completed: "0",
+  complete: "0", cancelled: "-", canceled: "-", person: "p", people: "p", org: "o", organisation: "o",
+  organization: "o", context: "c", responsibility: "a", goal: "g", checklist: "8", template: "8",
+  email: "m", "e-mail": "m", review: "r", note: "z", verb: "verbs", horizon: "_"};
+const GROUP_CODE = {"1": "1", "2": "2", "3": "3", "0": "0", "-": "-", p: "p", o: "o", c: "c", a: "a", g: "g",
+  _: "_", "8": "8", m: "m", r: "r", z: "z", verbs: "verbs", "&": "p", ppl: "p", pc: "c", home: "c",
+  "pr/m": "2", "pr/s": "2", "pr/xc": "0", "pr/a": "1", "pr/x": "0", "pr/c": "-"};
+const CODE_KIND = {"1": "1", "2": "2", "3": "3", "0": "0", "-": "-", p: "p", o: "o", c: "c", a: "a", g: "g",
+  _: "h5", "8": "8", m: "m", r: "r", z: "z", verbs: "skip"};
+const CODE_STATUS = {"0": "completed", "1": "active", "2": "someday", "3": "waiting", "-": "cancelled"};
+// Not page types: they describe a page, whatever it is.
+const NOT_TYPES = /^(alias(es)?|title|settings|pri\d*|area|area_name|updated_by|author)$/;
+
+/* The type signal of a tag or property, or null when it is none.
+   Instance data (updated_by, email, wr, stakeholders …) is not a type. */
+function codeOf(which, key) {
+  const k = lc(key).trim();
+  if (which === "groups") return GROUP_CODE[k] || null;
+  if (/%/.test(k) || NOT_TYPES.test(k)) return null;
+  const m = /^(status|type|category|template_source|template)\s*:\s*(.+)$/.exec(k);
+  if (!m) return /: /.test(k) ? null : (WORD_CODE[k] || null);
+  const v = m[2];
+  if (m[1] === "template_source") {
+    const t = /(?:^|\/)8\/([^/]+?)(?:\.md)?$/.exec(v);
+    return t ? (t[1] === "page" ? "8" : GROUP_CODE[t[1]] || null) : null;
+  }
+  if (m[1] === "status") return /^[0-3-]/.test(v) ? v[0] : WORD_CODE[v.split(/\W+/)[0]] || null;
+  return WORD_CODE[v.split(/\W+/)[0]] || null;
+}
+
+/* The one row a page belongs to. Strongest first: an unfilled template,
+   status, a type tag, the template it was made from, the namespace or
+   folder. What none of them names is a plain page. Sets p.row (the row's
+   key), p.code, p.signal (its label in the row) and p.via. */
+function classify(p) {
+  const text = String(p.file && p.file.text || "");
+  const tagCode = test => { for (const t of p.tags) if (test(t)) { const c = codeOf("tags", t); if (c) return [c, t]; } return null; };
+  const groupCode = codeOf("groups", p.group);
+  p.groupCode = groupCode;
+  let code = null, signal = "", via = "tag", hit;
+  if (p.group === "8") { code = "8"; signal = "8/"; via = "group"; }
+  else if (/%(title|status)%/.test(text) || /(^|\/)_[^/ ]+_for /.test(p.name)) { code = "8"; }
+  else if ((hit = tagCode(t => /^status:/.test(t)))) { code = hit[0]; signal = "status: " + CODE_STATUS[code]; }
+  else if ((hit = tagCode(t => !/^(status|template_source):/.test(t)))) { code = hit[0]; signal = "#" + hit[1]; }
+  else if ((hit = tagCode(t => /^template_source:/.test(t)))) { code = hit[0]; }
+  else if (groupCode) { code = groupCode; signal = p.group + "/"; via = "group"; }
+  if (code) { p.code = code; p.row = code; }
+  else if (p.group) { p.code = null; p.row = "g:" + p.group; signal = p.group + "/"; via = "group"; }
+  else { p.code = null; p.row = ""; via = ""; }
+  p.signal = signal; p.via = via;
+}
+
+const isSampleName = n => !/%|^test$/i.test(n) && !/(^|\/)_[^/ ]+_for /.test(n);
+
+/* One row per kind of page; every page is in exactly one. */
+function buildRows(A) {
+  const byKey = new Map();
+  for (const p of A.pages) {
+    if (!byKey.has(p.row)) byKey.set(p.row, {key: p.row, code: p.code, n: 0, pages: [], signals: new Map()});
+    const r = byKey.get(p.row); r.n++; r.pages.push(p);
+    if (p.signal) r.signals.set(p.signal, (r.signals.get(p.signal) || 0) + 1);
+  }
+  const rows = [...byKey.values()];
+  for (const r of rows) {
+    const good = r.pages.filter(p => isSampleName(p.name)), pool = good.length ? good : r.pages;
+    r.ex = pool.slice(0, 3).map(p => p.name);
+    r.label = r.key === "" ? "(No type signal)"
+      : [...r.signals].sort((x, y) => y[1] - x[1]).map(x => x[0]).join(", ") || CODE_STATUS[r.code] || r.key;
+  }
+  return rows.sort((x, y) => (x.key === "") - (y.key === "") || y.n - x.n);
+}
+
+/* Each row starts as what its code means; a namespace nobody knows starts as a plain page. */
+function startRowRules(rows) {
+  const rules = {groups: {}, tags: {}, rows: {}};
+  for (const r of rows) rules.rows[r.key] = r.code ? CODE_KIND[r.code] : "page";
+  return rules;
+}
+// Links to a namespace follow the row its pages are in.
+function syncGroups(A, rules) {
+  rules.groups = {};
+  for (const p of A.pages) if (p.group && (p.via === "group" || p.groupCode)) rules.groups[p.group] = rules.rows[p.row] || "page";
+}
+
+window.GTDImport = {buildRows, startRowRules, syncGroups, analyze, ruleChoices, placePages, convert, reportText, dateOf, startRules, readFrontMatter};
 
 /* ============================================================
    THE PAGE
@@ -969,7 +1063,7 @@ const el = (tag, attrs = {}, ...kids) => {
   for (const c of kids.flat()) if (c != null && c !== false) n.append(c instanceof Node ? c : String(c));
   return n;
 };
-const S = {source: null, files: [], analysis: null, rules: {groups: {}, tags: {}}, rows: [], result: null, opts: null, target: null};
+const S = {source: null, files: [], analysis: null, rules: {groups: {}, tags: {}, rows: {}}, rows: [], result: null, opts: null, target: null};
 
 const themeBtn = $("#theme");
 themeBtn.onclick = () => {
@@ -1032,69 +1126,6 @@ function commonProp(files, keys) {
 }
 const titleCase = s => s.replace(/\p{L}[\p{L}\p{N}'’-]*/gu, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
 
-/* ---------- one code, one row ---------- */
-const WORD_CODE = {active: "1", someday: "2", maybe: "2", waiting: "3", wait: "3", done: "0", completed: "0",
-  complete: "0", cancelled: "-", canceled: "-", person: "p", people: "p", org: "o", organisation: "o",
-  organization: "o", context: "c", area: "a", responsibility: "a", goal: "g", checklist: "8", template: "8",
-  email: "m", "e-mail": "m", review: "r", note: "z", verb: "verbs"};
-const GROUP_CODE = {"1": "1", "2": "2", "3": "3", "0": "0", "-": "-", p: "p", o: "o", c: "c", a: "a", g: "g",
-  _: "_", "8": "8", m: "m", r: "r", z: "z", verbs: "verbs", "&": "p", pc: "c", home: "c",
-  "pr/m": "2", "pr/s": "2", "pr/xc": "0", "pr/a": "1", "pr/x": "0", "pr/c": "-"};
-const CODE_KIND = {"1": "1", "2": "2", "3": "3", "0": "0", "-": "-", p: "p", o: "o", c: "c", a: "a", g: "g",
-  _: "h5", "8": "8", m: "m", r: "r", z: "z", verbs: "skip"};
-
-/* The type signal of a namespace, tag or property, or null when it is none.
-   Instance data (updated_by, email, wr, stakeholders …) is not a type. */
-function codeOf(which, key) {
-  const k = lc(key).trim();
-  if (which === "groups") return GROUP_CODE[k] || null;
-  if (/%/.test(k)) return null;
-  const m = /^(status|type|category|template_source|template)\s*:\s*(.+)$/.exec(k);
-  if (!m) return /: /.test(k) ? null : (WORD_CODE[k] || null);
-  const v = m[2];
-  if (m[1] === "template_source") {
-    const t = /(?:^|\/)8\/([^/]+?)(?:\.md)?$/.exec(v);
-    return t ? (t[1] === "page" ? "8" : GROUP_CODE[t[1]] || null) : null;
-  }
-  if (m[1] === "status") return /^[0-3-]/.test(v) ? v[0] : WORD_CODE[v.split(/\W+/)[0]] || null;
-  return WORD_CODE[v.split(/\W+/)[0]] || null;
-}
-const isTypeKey = key => /^(status|type|category|template_source|template)\s*:/i.test(key) || !/: /.test(key);
-
-/* Merge the signals that mean the same thing into one row each. */
-function buildRows(A, C) {
-  const byCode = new Map(), rows = [];
-  const add = (which, r) => {
-    const code = codeOf(which, r.key);
-    if (code && !(which === "groups" && !r.key)) {
-      if (!byCode.has(code)) { const row = {code, members: [], ex: []}; byCode.set(code, row); rows.push(row); }
-      const row = byCode.get(code);
-      row.members.push({which, key: r.key});
-      for (const e of r.ex) if (row.ex.length < 3 && !row.ex.includes(e)) row.ex.push(e);
-    } else if (which === "groups" || isTypeKey(r.key)) {
-      rows.push({code: null, members: [{which, key: r.key}], ex: r.ex.slice(0, 3)});
-    }
-  };
-  for (const g of C.groups) add("groups", g);
-  for (const t of C.tags) add("tags", t);
-  for (const row of rows) {
-    const mem = row.members;
-    row.n = A.pages.filter(p => mem.some(m => m.which === "groups" ? p.group === m.key : p.tags.includes(m.key))).length;
-    row.label = mem.map(m => m.which === "groups"
-      ? (m.key ? (A.kind === "logseq" ? "namespace " : "folder ") + m.key + "/" : (A.kind === "logseq" ? "(no namespace)" : "(top folder)"))
-      : m.key).join(" · ");
-  }
-  return rows.sort((x, y) => y.n - x.n);
-}
-
-function startRules2(C, rows) {
-  const rules = {groups: {}, tags: {}};
-  for (const g of C.groups) rules.groups[g.key] = "page";
-  for (const t of C.tags) rules.tags[t.key] = "page";
-  for (const row of rows) if (row.code) for (const m of row.members) rules[m.which][m.key] = CODE_KIND[row.code];
-  return rules;
-}
-
 $("#pickSource").onclick = async () => {
   let dir;
   try { dir = await window.showDirectoryPicker({mode: "read", id: "gtd-import-source"}); }
@@ -1118,13 +1149,14 @@ function analyzeNow() {
   const owner = commonProp(S.files, "updated_by|author");
   if (owner && !$("#me").value) $("#me").value = titleCase(owner);
   const area = lc(commonProp(S.files, "area|area_name"));
-  const hit = [...$("#area").options].find(o => o.value && lc(o.value) === area);
+  let hit = [...$("#area").options].find(o => o.value && lc(o.value) === area);
+  if (!hit && area) { hit = el("option", {value: titleCase(area)}, titleCase(area)); $("#area").append(hit); }
   $("#area").value = hit ? hit.value : "?";
   $("#who").hidden = false;
 
-  const C = ruleChoices(A);
-  S.rows = buildRows(A, C);
-  S.rules = startRules2(C, S.rows);
+  S.rows = buildRows(A);
+  S.rules = startRowRules(S.rows);
+  syncGroups(A, S.rules);
   drawRules();
   unlock("#s2", "#s3");
   update();
@@ -1142,12 +1174,13 @@ function drawRules() {
   const auto = S.rows.filter(r => r.code).length;
   $("#autoCount").textContent = "(auto-matched " + auto + " of " + S.rows.length + ")";
   host.replaceChildren(el("div", {class: "tablewrap"}, el("table", {},
-    el("thead", {}, el("tr", {}, el("th", {}, "Source pattern"), el("th", {}, "Pages"), el("th", {}, "Becomes"))),
+    el("thead", {}, el("tr", {}, el("th", {}, "Detected signals"), el("th", {}, "Pages"), el("th", {}, "Becomes"))),
     el("tbody", {}, ...S.rows.map(r => el("tr", {},
       el("td", {}, el("b", {}, r.label), el("span", {class: "ex"}, r.ex.join(" · "))),
       el("td", {class: "num"}, String(r.n)),
-      el("td", {}, kindSelect(S.rules[r.members[0].which][r.members[0].key], v => {
-        for (const m of r.members) S.rules[m.which][m.key] = v;
+      el("td", {}, kindSelect(S.rules.rows[r.key], v => {
+        S.rules.rows[r.key] = v;
+        syncGroups(S.analysis, S.rules);
         update();
       }))))))));
 }

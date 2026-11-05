@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.94.1 - 2026-11-05
+
+- Vault and sync: the importer puts every page in exactly one row, so the row
+  counts add up to the pages in the vault. area, alias, title and settings are
+  no longer page types. ppl/ becomes people, hold becomes active, and week
+  journals (2026-W44) come across. GroupToDo's own folder guides are left out.
+
 ## 1.94.0 - 2026-11-05
 
 - Vault and sync: GroupToDo-Importer.html is now three steps. It detects Logseq
