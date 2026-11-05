@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.93.0 - 2026-11-05
+
+- Vault and sync: GroupToDo-Importer.html reads PR/A, PR/X and PR/C as
+  active, completed and cancelled projects (1/, 0/, -/; S and W as someday and
+  waiting), &/ as people, #/ as organisations and @word as a context. A plain
+  #Work stays a tag. It asks which area the vault is, such as Work or Personal,
+  and writes into that folder (#288).
+
 ## 1.92.0 - 2026-11-05
 
 - Pages › Mind map: Children on a task has + New child (a next action) and + New parent (a task above it in the project). Each is a line

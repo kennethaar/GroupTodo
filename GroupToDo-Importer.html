@@ -134,6 +134,14 @@ code{font-family:var(--mono);font-size:.92em;background:var(--bg3);padding:1px 5
     <p class="hint">Day pages in GroupToDo belong to a person, so your journal goes into a folder with your name.</p>
     <label class="field"><span>Your full name, as you want it shown</span>
       <input type="text" id="me" placeholder="Kari Nordmann" autocomplete="name"></label>
+    <label class="field"><span>Which area this vault belongs to (its own folder in GroupToDo)</span>
+      <select id="area">
+        <option value="Work">Work</option>
+        <option value="Personal">Personal</option>
+        <option value="Home">Home</option>
+        <option value="Family">Family</option>
+        <option value="">None, write it at the top of the folder</option>
+      </select></label>
     <label class="field"><span>Pages nobody has touched for a long time</span>
       <select id="archiveYears">
         <option value="0">Bring them in as they are</option>
@@ -150,7 +158,9 @@ code{font-family:var(--mono);font-size:.92em;background:var(--bg3);padding:1px 5
   <section class="step off" id="s3">
     <h2><span class="n">3</span>What each kind of page becomes</h2>
     <p class="hint">In GroupToDo the folder a page sits in says what it is: a person, a project, a context.
-      Say what your folders, namespaces and tags mean. A tag wins over a folder. Anything left as
+      Say what your folders, namespaces and tags mean. <code>PR/A</code>, <code>PR/X</code> and <code>PR/C</code>
+      are projects that are active, done and cancelled; <code>&amp;/</code> is people, <code>#/</code> companies and
+      <code>@/</code> contexts. A plain <code>#Work</code> stays a tag. A tag wins over a folder. Anything left as
       <i>Plain page</i> comes in under its own name.</p>
     <div id="rules"></div>
   </section>
@@ -217,9 +227,14 @@ const STATE_MAP = {TODO: "TODO", DOING: "DOING", DONE: "DONE", LATER: "TODO", NO
 /* What a folder, namespace or tag most likely means, from its name. Only a
    first guess: every one of them is a choice on the screen. */
 function guessKind(word) {
+  // "PR/A": a project namespace with its state as the second part.
+  const two = String(word || "").split("/");
+  if (two.length === 2) return guessState(two[1]) || guessKind(two[0]);
   const w = String(word || "").toLowerCase().replace(/[\s_-]+/g, "");
   if (w === "&" || /^(people|persons?|personer|contacts?|kontakter?|folk)$/.test(w)) return "p";
-  if (/^(projects?|prosjekt(er)?|proj)$/.test(w)) return "1";
+  if (w === "#") return "o";
+  if (w === "@") return "c";
+  if (/^(projects?|prosjekt(er)?|proj|pr)$/.test(w)) return "1";
   if (/^(someday|somedaymaybe|maybe|kanskje)$/.test(w)) return "2";
   if (/^(companies|company|orgs?|organi[sz]ations?|organisasjon(er)?|firma|kunder?|clients?|customers?)$/.test(w)) return "o";
   if (/^(contexts?|kontekst(er)?)$/.test(w)) return "c";
@@ -230,6 +245,24 @@ function guessKind(word) {
   if (/^(trash|\.trash|archive)$/.test(w)) return "page";
   return "page";
 }
+
+/* A project state written as a code or a word: A = active, X = done,
+   C = cancelled, S = someday, W = waiting. Null when it is not one. */
+function guessState(word) {
+  const w = String(word || "").toLowerCase().trim();
+  if (/^(a|1|aktiv|active|doing|now)$/.test(w)) return "1";
+  if (/^(x|0|ferdig|done|completed?|fullf[øo]rt)$/.test(w)) return "0";
+  if (/^(c|-|kansellert|cancell?ed|avlyst)$/.test(w)) return "-";
+  if (/^(s|m|2|someday|maybe|kanskje|senere)$/.test(w)) return "2";
+  if (/^(w|v|3|waiting|venter|vent)$/.test(w)) return "3";
+  return null;
+}
+
+/* The group a page name or folder path belongs to: its first part, or its
+   first two when the second is a state ("PR/A/Prosjekt" -> "PR/A"). The
+   last part is the page itself and never counts. */
+const groupOf = segs => segs.length > 2 && guessState(segs[1]) ? segs[0] + "/" + segs[1]
+  : segs.length > 1 ? segs[0] : "";
 
 /* ---------- names ---------- */
 // The format's own rule: / \ : * ? " < > | and control characters become "-".
@@ -381,7 +414,7 @@ function analyze(kind, files) {
       if (!f.rel.startsWith("pages/")) { skipped.push(f.rel + " (outside journals/ and pages/)"); continue; }
       const name = logseqName(f.rel, f.text);
       const props = preambleProps(f.text);
-      pages.push({file: f, name, group: name.includes("/") ? name.split("/")[0] : "",
+      pages.push({file: f, name, group: groupOf(name.split("/")),
         tags: [...tagValues(props.tags), ...tagValues(props.type), ...tagValues(props.category)],
         aliases: (props.alias || "").split(",").map(a => a.replace(/[\[\]]/g, "").trim()).filter(Boolean)});
     } else {
@@ -396,7 +429,7 @@ function analyze(kind, files) {
       const inline = preambleProps(fm.rest);
       const parts = f.rel.split("/");
       pages.push({file: f, name: base, folder: parts.slice(0, -1).join("/"),
-        group: parts.length > 1 ? parts[0] : "",
+        group: groupOf(parts),
         tags: [...fmv("tags"), ...fmv("type"), ...fmv("category"), ...tagValues(inline.tags), ...tagValues(inline.type)]
           .flatMap(t => tagValues(t)),
         aliases: fmv("aliases").concat(fmv("alias")).map(String)});
@@ -432,7 +465,7 @@ function placePages(a, rules) {
     // A namespace or folder that names the kind is not part of the name:
     // "&/Kari Nordmann" filed as a person is p/Kari Nordmann.
     let segs = a.kind === "logseq" ? p.name.split("/") : [p.name];
-    if (a.kind === "logseq" && !byTag && byGroup && byGroup !== "page" && segs.length > 1) segs = segs.slice(1);
+    if (a.kind === "logseq" && !byTag && byGroup && byGroup !== "page" && segs.length > 1) segs = segs.slice(p.group.split("/").length);
     const title = segs.map(s => s.trim()).filter(Boolean).join(" - ") || p.name;
     const prefix = KIND_PREFIX[kind];
     const fileName = cleanName(title);
@@ -468,8 +501,9 @@ function convert(a, opts) {
     if (hit) return hit;
     if (a.kind === "logseq" && t.includes("/")) {
       const segs = t.split("/");
-      const k = opts.rules.groups[segs[0]];
-      if (k && k !== "page" && k !== "skip" && KIND_PREFIX[k]) return KIND_PREFIX[k] + "/" + cleanName(segs.slice(1).join(" - "));
+      const g = groupOf(segs);
+      const k = opts.rules.groups[g];
+      if (k && k !== "page" && k !== "skip" && KIND_PREFIX[k]) return KIND_PREFIX[k] + "/" + cleanName(segs.slice(g.split("/").length).join(" - "));
       return cleanName(segs.join(" - "));
     }
     if (a.kind === "obsidian") return linkMap.get(lc(t.split("/").pop())) || cleanName(t.split("/").pop());
@@ -569,7 +603,8 @@ function convert(a, opts) {
     }
     // [[target]], [[target|label]], [[target#heading]]: the target moves, the rest stays.
     s = s.replace(/(#?)\[\[([^\]]+?)\]\]/g, (all, hash, inner) => {
-      const m = /^([^|#]+)((?:#[^|]*)?)((?:\|.*)?)$/.exec(inner);
+      // "#/Acme" is a namespace, not a heading: a leading "#/" belongs to the name.
+      const m = /^((?:#\/)?[^|#]+)((?:#[^|]*)?)((?:\|.*)?)$/.exec(inner);
       if (!m) return all;
       const target = mapTarget(m[1]);
       R.links++;
@@ -886,7 +921,11 @@ function convert(a, opts) {
     if (!/^member::/m.test(text)) out.set(mePath, "member:: true\n" + text);
   } else out.set(mePath, serialize([["title", me], ["type", "person"], ["member", "true"]], []));
 
-  return {files: out, assets: assetsOut, report: R, placed};
+  // An area is one folder; everything above lives inside it.
+  const root = opts.area ? cleanName(opts.area) + "/" : "";
+  const files = root ? new Map([...out].map(([k, v]) => [root + k, v])) : out;
+  if (root) for (const x of assetsOut) x.out = root + x.out;
+  return {files, assets: assetsOut, report: R, placed: root ? placed.map(p => Object.assign({}, p, {out: root + p.out})) : placed, root};
 }
 
 /* ---------- the report, as text ---------- */
@@ -1017,6 +1056,11 @@ function analyzeNow() {
   for (const g of C.groups) S.rules.groups[g.key] = g.key ? guessKind(g.key) : "page";
   for (const t of C.tags) S.rules.tags[t.key] = guessKind(t.key);
   drawRules(C);
+  // @computer, @phone written in notes: likely contexts, unless they are mostly e-mail addresses.
+  const md2 = S.files.filter(f => /\.md$/i.test(f.rel)).map(f => f.text).join("\n");
+  const ats = (md2.match(/(^|\s)@[\p{L}][\p{L}\p{N}_-]{1,30}(?![\p{L}\p{N}@.])/gmu) || []).length;
+  const mails = (md2.match(/\S@\S+\.\w/g) || []).length;
+  $("#atContext").checked = ats >= 3 && ats > mails;
   unlock("#s2", "#s3", "#s4");
   lock("#s5");
   $("#preview").textContent = "";
@@ -1054,7 +1098,7 @@ function drawRules(C) {
 $("#runTest").onclick = () => {
   const me = $("#me").value.trim();
   if (!me) { $("#me").focus(); $("#preview").replaceChildren(el("div", {class: "msg err"}, "Write your name in step 2 first.")); return; }
-  const opts = {me, rules: S.rules, archiveYears: +$("#archiveYears").value, atContext: $("#atContext").checked};
+  const opts = {me, area: $("#area").value, rules: S.rules, archiveYears: +$("#archiveYears").value, atContext: $("#atContext").checked};
   let res;
   try { res = convert(S.analysis, opts); }
   catch (e) { $("#preview").replaceChildren(el("div", {class: "msg err"}, "The conversion stopped: " + e.message)); console.error(e); return; }
@@ -1087,7 +1131,7 @@ function drawPreview(res) {
   const pairs = [];
   for (const p of res.placed) pairs.push([p.out, p.file.text, p.file.rel]);
   const me = cleanName(S.opts.me).slice(0, 40);
-  for (const [date, files] of S.analysis.journals) pairs.push(["journals/" + me + "/" + date + ".md", files.map(f => f.text).join("\n"), files.map(f => f.rel).join(" + ")]);
+  for (const [date, files] of S.analysis.journals) pairs.push([res.root + "journals/" + me + "/" + date + ".md", files.map(f => f.text).join("\n"), files.map(f => f.rel).join(" + ")]);
   pairs.sort((x, y) => x[0].localeCompare(y[0]));
   const before = el("pre"), after = el("pre"), from = el("div", {style: "font-size:12px;color:var(--fg3);margin-top:4px"});
   const pick = el("select", {onchange: e => show(e.target.value), style: "width:100%"},

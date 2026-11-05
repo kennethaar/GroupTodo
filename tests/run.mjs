@@ -47,6 +47,11 @@ try {
   if (!only || swTest.toLowerCase().includes(only.toLowerCase())) {
     results.push(await serviceWorkerTest(swTest));
   }
+  /* The importer is its own page; its pure half is run here. */
+  const importTest = "#288 the importer reads PR/A, PR/X, PR/C, &/, #/ and @ and writes into the area";
+  if (!only || importTest.toLowerCase().includes(only.toLowerCase())) {
+    results.push(await importerTest(importTest));
+  }
   const serveTest = "#228 serve.py answers an unchanged app with 304, and gzips it";
   if (!only || serveTest.toLowerCase().includes(only.toLowerCase())) {
     results.push(await serveCacheTest(serveTest));
@@ -150,6 +155,36 @@ async function serviceWorkerTest(name) {
     if (await r.text() !== "kept copy") return {name, ok: false, error: "answered with something other than the kept copy"};
     if (!timers.some(ms => ms >= 1000 && ms <= 5000)) return {name, ok: false, error: "no 1-5 s limit on the network: " + timers.join(", ")};
     if (!waited) return {name, ok: false, error: "the download is not kept alive to update the copy"};
+    return {name, ok: true};
+  } catch (e) { return {name, ok: false, error: String(e && e.stack || e)}; }
+}
+
+async function importerTest(name, file = join(ROOT, "GroupToDo-Importer.html")) {
+  const {runInNewContext} = await import("node:vm");
+  try {
+    const src = readFileSync(file, "utf-8").split("<script>")[1].split("/* ---------- the page")[0]
+      .split("window.GTDImport =")[0] + ";this.G = {analyze, ruleChoices, convert, guessKind};";
+    const box = {};
+    runInNewContext(src, box);
+    const G = box.G;
+    const files = [
+      ["pages/PR%2FA%2FNew kitchen.md", "- TODO Call [[&/Anna Berg]] @computer #Work [[#/Acme]]\n- see [[PR/X/Old shed]]"],
+      ["pages/PR%2FX%2FOld shed.md", "- DONE paint"],
+      ["pages/PR%2FC%2FDropped.md", "- idea"],
+      ["pages/&%2FAnna Berg.md", "- hi"],
+      ["pages/#%2FAcme.md", "- supplier"],
+    ].map(([rel, text]) => ({rel, text, mtime: 0}));
+    const a = G.analyze("logseq", files);
+    const rules = {groups: {}, tags: {}};
+    for (const g of G.ruleChoices(a).groups) rules.groups[g.key] = g.key ? G.guessKind(g.key) : "page";
+    const out = G.convert(a, {me: "Me", area: "Work", rules, atContext: true}).files;
+    const want = ["Work/pages/1/New kitchen.md", "Work/pages/0/Old shed.md", "Work/pages/-/Dropped.md",
+      "Work/pages/p/Anna Berg.md", "Work/pages/o/Acme.md", "Work/pages/c/computer.md"];
+    const missing = want.filter(w => !out.has(w));
+    if (missing.length) return {name, ok: false, error: "missing " + missing.join(", ") + "; got " + [...out.keys()].join(", ")};
+    const line = (out.get("Work/pages/1/New kitchen.md") || "");
+    for (const s of ["[[p/Anna Berg]]", "[[c/computer]]", "#Work", "[[o/Acme]]", "[[0/Old shed]]", "status:: 1 = active"])
+      if (!line.includes(s)) return {name, ok: false, error: "the project page lacks " + s + ":\n" + line};
     return {name, ok: true};
   } catch (e) { return {name, ok: false, error: String(e && e.stack || e)}; }
 }
