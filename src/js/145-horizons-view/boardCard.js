@@ -1,6 +1,10 @@
 function boardCard(a) {
   const title = el("div", {class: "bcard-title", html: estHtml(a.title) + renderInline(titleForRow(a.title))});
-  const who = a.assignee ? el("span", {class: "chip who"}, "\u2192 " + a.assignee) : null;
+  const who = a.assignee ? el("span", {class: "chip who", tabindex: "0", role: "button",
+    title: "Ask " + firstNameOf(a.assignee) + " for an update",
+    onclick: e => { e.stopPropagation(); openAskForUpdate(a.assignee, a.block); },
+    onkeydown: e => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); openAskForUpdate(a.assignee, a.block); } }},
+    "\u2192 " + a.assignee) : null;
   const whoInTitle = pillInTitle(title, who, a.assignee);
   /* The same box as the list rows, so a card is ticked off where it stands:
      a tap is done, holding is every state. */

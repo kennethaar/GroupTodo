@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.109.4 - 2026-11-06
+
+- Waiting for › Board: the → Name pill on a card named who had the task but
+  did nothing when clicked, opening the card underneath it instead (#311). It
+  now opens Ask for an update for that person and that task.
+
 ## 1.109.3 - 2026-11-06
 
 - The line menu and toolbar: Copy embed, Copy text, Insert tracker and Plan

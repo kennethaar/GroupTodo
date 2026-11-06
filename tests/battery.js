@@ -4444,6 +4444,21 @@ var GTD_TEST = (() => {
     }
   });
 
+  test("#311 A board card's assignee pill opens Ask for an update, not the task", async () => {
+    const path = scratchProject("crane order", [["WAIT", "Snakket med [[p/Lars Haugen]] om arbeidsordre"]]);
+    const block = getPage(path).blocks[0];
+    const card = boardCard({path, space: V.space, block, state: block.state, title: block.title, assignee: assigneeOf(block)});
+    document.body.append(card);
+    try {
+      card.querySelector(".chip.who").click();
+      await settle();
+      eq(document.querySelector("#modalRoot h2")?.textContent, "Ask Lars Haugen for an update");
+    } finally {
+      closeAll();
+      card.remove();
+    }
+  });
+
   /* ============================================================
      The Journal, an execution view (#160)
      ============================================================ */
