@@ -2413,15 +2413,54 @@ var GTD_TEST = (() => {
     eq(getPage(path).blocks[0].state, "TODO");
     if (typeof closeModal === "function") closeModal();
   });
-  test("cycleState walks TODO -> DOING -> WAIT -> DONE -> CANCELLED -> note", () => {
+  test("cycleState walks TODO -> DOING -> WAIT -> HOLD -> DONE -> CANCELLED -> note", () => {
     const path = scratchProject("cycle", [["TODO", "Cycle me"]]);
     const seen = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       cycleState(path, getPage(path).blocks[0]);
       seen.push(getPage(path).blocks[0].state);
       if (typeof closeModal === "function") closeModal();
     }
-    eq(seen, ["DOING", "WAIT", "DONE", "CANCELLED", null]);
+    eq(seen, ["DOING", "WAIT", "HOLD", "DONE", "CANCELLED", null]);
+  });
+  test("#305 HOLD is a state: parses, serializes and counts as open", () => {
+    const path = scratchProject("hold-state", [["HOLD", "Wait out the rain"]]);
+    const b = getPage(path).blocks[0];
+    eq(b.state, "HOLD", "parsed as a state, not swallowed as text");
+    eq(serializeBlockLines([b])[0], "- HOLD Wait out the rain");
+    ok(OPEN_STATES.HOLD, "a held task is open, not done or cancelled");
+    setBlockState(path, b, "DONE");
+    eq(getPage(path).blocks[0].state, "DONE", "HOLD -> DONE works like any other state change");
+  });
+  test("#305 task detail panel: HOLD in the state bar, autosave, no footer, overflow menu", () => {
+    const path = scratchProject("panel", [["TODO", "Finish the thing"]]);
+    const b = getPage(path).blocks[0];
+    try {
+      showTaskDetail(path, b, V.space);
+      const m = document.querySelector("#modalRoot .modal");
+      const seg = [...m.querySelectorAll(".seg")][0];
+      const states = [...seg.querySelectorAll("button")].map(x => x.textContent);
+      eq(states, ["TODO", "DOING", "WAIT", "HOLD", "DONE"], "Cancelled and Not a task are not in the main bar");
+      ok(!m.querySelector(".foot"), "no Save/Cancel footer left to batch changes into");
+
+      const title = m.querySelector("textarea");
+      title.value = "Finish the other thing";
+      title.dispatchEvent(new Event("blur"));
+      eq(b.title, "Finish the other thing", "title autosaves on blur, with no Save click");
+
+      [...seg.querySelectorAll("button")].find(x => x.textContent === "HOLD").click();
+      eq(getPage(path).blocks[0].state, "HOLD", "picking HOLD autosaves the state");
+
+      const menuBtn = [...m.querySelectorAll(".tdhead button")].find(x => x.textContent === "⋯");
+      menuBtn.click();
+      const menu = document.querySelector(".linkpop");
+      ok(menu, "the overflow menu opens");
+      const items = [...menu.querySelectorAll(".pick")].map(x => x.textContent);
+      eq(items, ["Cancel task", "Convert to note", "Delete task"]);
+      [...menu.querySelectorAll(".pick")].find(x => x.textContent === "Cancel task").click();
+      eq(getPage(path).blocks[0].state, "CANCELLED");
+      ok(!document.querySelector(".linkpop"), "the menu closes after acting");
+    } finally { closeModal(); }
   });
   test("#198 a person on a line above counts for the tasks under it", () => {
     const day = journalPath("2003-03-03"), joe = personPath("Joe Newmann");

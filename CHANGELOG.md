@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.105.0 - 2026-11-06
+
+- A task's panel: a new Hold state sits beside To do, Doing, Waiting and
+  Done, so parking a task no longer needs a separate on-hold field read
+  apart from the rest. Every change in the panel now saves itself the
+  moment you make it — there is no more Save or Cancel to click, or to
+  forget to click. Cancelling a task, turning it into a note and deleting
+  it moved off the main state row into a small ⋯ menu at the top, so the
+  row only ever shows the states an open task can be in. (Fixes #305)
+
 ## 1.104.0 - 2026-11-06
 
 - Contexts › Sort: each visible area is now its own column, side by side,

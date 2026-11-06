@@ -40,8 +40,8 @@ const DIRS = {
   mail     : join(PAGES, "m"),   // emails pasted in, each with what came of it
   reviews  : join(PAGES, "r"),   // books, films, series and videos, and what you made of them
 };
-const TODO_STATES  = ["TODO", "DOING", "WAIT", "DONE", "CANCELLED"];
-const OPEN_STATES  = {TODO:true, DOING:true, WAIT:true};
+const TODO_STATES  = ["TODO", "DOING", "WAIT", "HOLD", "DONE", "CANCELLED"];
+const OPEN_STATES  = {TODO:true, DOING:true, WAIT:true, HOLD:true};
 const openOf = list => list.filter(a => OPEN_STATES[a.state]);
 const STATE_ALIAS  = {WAITING:"WAIT", CANCELED:"CANCELLED", NOW:"DOING", LATER:"TODO"};
 const STATUS_DIRS  = {"-":DIRS.cancelled, "0":DIRS.completed, "1":DIRS.active, "2":DIRS.someday, "3":DIRS.waiting};

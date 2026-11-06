@@ -13,22 +13,22 @@ function showTaskDetail(path, block, space) {
     attachSuggest(t);
     t.addEventListener("keydown", e => { if (suggestKey(e)) e.stopPropagation(); });
   }
-  const sched =el("input", {type: "date", value: dateIn(blockProp(block, "SCHEDULED")) || ""});
-  const dead  = el("input", {type: "date", value: dateIn(blockProp(block, "DEADLINE")) || ""});
+  const sched =el("input", {type: "date", value: dateIn(blockProp(block, "SCHEDULED")) || "", onchange: () => saveSched()});
+  const dead  = el("input", {type: "date", value: dateIn(blockProp(block, "DEADLINE")) || "", onchange: () => saveDead()});
   const timeOf = key => timeIn(String(blockProp(block, key) || "").replace(/\[\[[^\]]*\]\]/g, " ")) || "";
-  const schedAt = clockInput(timeOf("SCHEDULED"), {title: "Time, if it has one"});
-  const deadAt  = clockInput(timeOf("DEADLINE"), {title: "Time, if it has one"});
-  const until = el("input", {type: "date", value: dateIn(blockProp(block, "until")) || ""});
-  const priSel = el("select", {});
+  const schedAt = clockInput(timeOf("SCHEDULED"), {title: "Time, if it has one", onchange: () => saveSched()});
+  const deadAt  = clockInput(timeOf("DEADLINE"), {title: "Time, if it has one", onchange: () => saveDead()});
+  const until = el("input", {type: "date", value: dateIn(blockProp(block, "until")) || "", onchange: () => saveUntil()});
+  const priSel = el("select", {onchange: () => savePriority()});
   for (const [v, label] of [["", "None"], ["H", "High"], ["M", "Medium"], ["L", "Low"]])
     priSel.append(el("option", {value: v}, label));
   priSel.value = priorityOf(block) || "";
   const holdWas = holdValue(blockProp(block, "hold"));
-  const hold = el("input", {type: "date", value: holdWas && holdWas !== HOLD_OPEN ? holdWas : ""});
+  const hold = el("input", {type: "date", value: holdWas && holdWas !== HOLD_OPEN ? holdWas : "", onchange: () => saveHold()});
   const holdOpen = el("input", {type: "checkbox", checked: holdWas === HOLD_OPEN,
-    onchange: () => { hold.disabled = holdOpen.checked; }});
+    onchange: () => { hold.disabled = holdOpen.checked; saveHold(); }});
   hold.disabled = holdOpen.checked;
-  const remindSel = el("select", {});
+  const remindSel = el("select", {onchange: () => saveRemind()});
   const usualLabel = () => (remindUsual() ? leadWords(remindUsual()) + " before" : "At the time") + " (usual)";
   for (const [v, label] of [["", usualLabel()], ["0", "At the time"], ["5m", "5 min before"],
                             ["10m", "10 min before"], ["15m", "15 min before"], ["30m", "30 min before"],
@@ -52,21 +52,26 @@ function showTaskDetail(path, block, space) {
 
   // Picking a state leaves the panel open: moving TODO -> DOING -> WAIT used to
   // cost one trip through the panel per step, because the first pick closed it.
-  // The last entry is the way back out: stop being a task, keep the words.
+  // Cancelled and "not a task" are not in this bar -- they are one-way exits,
+  // handled from the overflow menu, so the bar only ever shows where an open
+  // task's work actually is.
+  const PRIMARY_STATES = ["TODO", "DOING", "WAIT", "HOLD", "DONE"];
   const seg = el("div", {class: "seg"});
   const stateBtns = [];
-  for (const st of [...TODO_STATES, null]) {
+  for (const st of PRIMARY_STATES) {
     const btn = el("button", {
-      title: st ? null : "Keep the text as a plain note",
       onclick: () => {
         if ((block.state ?? null) === st) return;
         setBlockState(path, block, st);
         syncPanel();                 // the panel outlives the redraw; its badges must keep up
       },
-    }, st || "Not a task");
+    }, st);
     stateBtns.push([st, btn]);
     seg.append(btn);
   }
+  const cancelledNote = el("span", {style: "color:var(--fg3);font-size:12.5px;margin-left:8px"}, "Cancelled");
+  const reopenBtn = el("button", {class: "btn ghost sm", style: "margin-left:8px",
+    onclick: () => { setBlockState(path, block, "TODO"); syncPanel(); }}, "Reopen");
 
   // The trail is the one part of the panel a state change rewrites, so it is
   // built as a function rather than once.
@@ -76,52 +81,118 @@ function showTaskDetail(path, block, space) {
     const age = blockAge(block);
     trail.append((blockProp(block, "by") ? "Added by " + blockProp(block, "by") : "Added") +
       (addedDate(block) ? " on " + addedDate(block) : "") +
-      (age != null ? " \u00B7 " + age + " days ago" : ""));
+      (age != null ? " · " + age + " days ago" : ""));
     const raw = blockProp(block, "done_by");
     if (raw) {
       const {who, iso} = splitStamp(raw);
-      trail.append(el("div", {}, "Closed by " + (who || "someone") + (iso ? " \u00B7 " + formatStamp(iso) : "")));
+      trail.append(el("div", {}, "Closed by " + (who || "someone") + (iso ? " · " + formatStamp(iso) : "")));
     }
   };
   const syncPanel = () => {
     for (const [st, btn] of stateBtns) btn.className = (block.state ?? null) === st ? "on" : "";
+    const cancelled = block.state === "CANCELLED";
+    cancelledNote.style.display = cancelled ? "" : "none";
+    reopenBtn.style.display = cancelled ? "" : "none";
     fillTrail();
   };
   syncPanel();
 
-  const save = () => {
-    if (badClock(schedAt, deadAt)) return;
-    const dueWas = dueDate(block);
+  const drop = key => { for (const k of Object.keys(block.props)) if (k.toLowerCase() === key) delete block.props[k]; };
+  // Every field saves itself the moment it changes -- on blur for text, on
+  // change for selects/dates/pills -- so there is nothing left to lose by
+  // closing the panel and nothing a footer button needs to batch up.
+  const saveTitle = () => {
     const val = trim(titleInput.value).replace(/\n/g, " ");
     const [st, rest] = splitState(val);
     if (st) { block.state = st; block.title = rest; } else { block.title = val; }
     if (block.state) block.title = dotsToEst(block.title);
     createLinkedPages(block.title);
+    touch(path); noteTodoTouched(); render(); syncPanel();
+  };
+  const saveNotes = () => {
     block.body = notes.value.split("\n");
     while (block.body.length && !trim(block.body[block.body.length - 1])) block.body.pop();
-    const drop = key => { for (const k of Object.keys(block.props)) if (k.toLowerCase() === key) delete block.props[k]; };
+    touch(path); noteTodoTouched();
+  };
+  const saveSched = () => {
+    if (badClock(schedAt)) return;
+    const dueWas = dueDate(block);
     if (sched.value) setBlockProp(block, "SCHEDULED", whenValue(sched.value, schedAt.value));
     else drop("scheduled");
+    touch(path); noteTodoTouched(); render();
+    if (dueDate(block) !== dueWas) warnDueConflict(path, block);
+  };
+  const saveDead = () => {
+    if (badClock(deadAt)) return;
+    const dueWas = dueDate(block);
     if (dead.value) setBlockProp(block, "DEADLINE", whenValue(dead.value, deadAt.value));
     else drop("deadline");
+    touch(path); noteTodoTouched(); render();
+    if (dueDate(block) !== dueWas) warnDueConflict(path, block);
+  };
+  const saveUntil = () => {
     if (until.value) setBlockProp(block, "until", "[[" + until.value + "]]");
     else drop("until");
+    touch(path); noteTodoTouched(); render();
+  };
+  const saveRemind = () => {
     if (remindSel.value) setBlockProp(block, "remind", remindSel.value);
     else drop("remind");
+    touch(path); noteTodoTouched();
+  };
+  const savePriority = () => {
     if (priSel.value) setBlockProp(block, "priority", priSel.value);
     else drop("priority");
+    touch(path); noteTodoTouched(); render();
+  };
+  const saveHold = () => {
     if (holdOpen.checked) setBlockProp(block, "hold", HOLD_OPEN);
     else if (hold.value) setBlockProp(block, "hold", "[[" + hold.value + "]]");
     else if (holdWas) endHold(block.props, holdWas > todayISO() && hasRepeatUnder([block]));
-    touch(path); noteTodoTouched(); closeModal(); render();
-    if (dueDate(block) !== dueWas) warnDueConflict(path, block);
+    touch(path); noteTodoTouched(); render();
   };
+  titleInput.addEventListener("blur", saveTitle);
+  notes.addEventListener("blur", saveNotes);
+
+  // The header's overflow menu: a small anchored list, built and torn down on
+  // demand like the @ and [[ suggest list, not a nested dialog -- opening one
+  // of those would close this very panel, since that is what a new dialog does.
+  let menuBox = null;
+  const onDocDown = e => { if (menuBox && !menuBox.contains(e.target) && e.target !== menuBtn) closeMenu(); };
+  const onDocKey = e => { if (e.key === "Escape") { closeMenu(); e.stopPropagation(); } };
+  const closeMenu = () => {
+    if (!menuBox) return;
+    menuBox.remove(); menuBox = null;
+    document.removeEventListener("mousedown", onDocDown, true);
+    document.removeEventListener("keydown", onDocKey, true);
+  };
+  const menuBtn = el("button", {class: "iconbtn", title: "More", onclick: () => {
+    if (menuBox) { closeMenu(); return; }
+    menuBox = el("div", {class: "linkpop", role: "menu"},
+      el("button", {class: "pick", onclick: () => { closeMenu(); setBlockState(path, block, "CANCELLED"); syncPanel(); }}, "Cancel task"),
+      el("button", {class: "pick", onclick: () => { closeMenu(); setBlockState(path, block, null); syncPanel(); }}, "Convert to note"),
+      el("button", {class: "pick", style: "color:var(--bad,#c0392b)", onclick: () => {
+        closeMenu(); closeModal();
+        deleteBlockWithUndo(path, block, "Deleted “" + titleForRow(block.title) + "”");
+      }}, "Delete task"));
+    document.body.append(menuBox);
+    const r = menuBtn.getBoundingClientRect();
+    menuBox.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 230)) + "px";
+    menuBox.style.top = (r.bottom + 4) + "px";
+    document.addEventListener("mousedown", onDocDown, true);
+    document.addEventListener("keydown", onDocKey, true);
+  }}, "⋯");
+  const srcBtn = el("button", {class: "btn ghost sm", onclick: () => { closeModal(); openPage(path); }}, path);
+  const copyBtn = el("button", {class: "iconbtn", title: "A link you can paste into chat or email",
+    onclick: () => copyLinkTo(deepLink(path, block), "this task")}, "\u{1F517}");
+  const toolbar = el("div", {class: "tdhead"}, srcBtn, el("div", {style: "flex:1"}), copyBtn, menuBtn);
 
   modal({
     title: "", hint: "", side: true,
-    body: el("div", {},
+    body: el("div", {}, toolbar,
       el("div", {class: "field"}, el("label", {}, "Title"), titleInput),
-      el("div", {class: "field"}, el("label", {}, "State"), seg),
+      el("div", {class: "field"}, el("label", {}, "State"),
+        el("div", {style: "display:flex;align-items:center;flex-wrap:wrap"}, seg, cancelledNote, reopenBtn)),
       el("div", {class: "field"}, el("label", {}, "Where it sits"), surroundingsGrid(path, block, space)),
       el("div", {class: "field"}, factLine(path, childrenFact({path, block, space}))),
       el("div", {class: "field"},
@@ -139,7 +210,7 @@ function showTaskDetail(path, block, space) {
           }
           row.append(el("button", {onclick: () => {
             closeModal(); openAssignOther(path, block);
-          }}, current && !isMember(current) && !isHousehold(current) ? current : "someone else\u2026"));
+          }}, current && !isMember(current) && !isHousehold(current) ? current : "someone else…"));
           return row;
         })(),
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
@@ -147,11 +218,11 @@ function showTaskDetail(path, block, space) {
           "Waiting for. The household's stays a task you tick off for them. " +
           "Anybody else is only a waiting-for - they cannot see this.")),
       el("div", {class: "field"},
-        el("label", {}, "Chat" + (messagesOf(block).length ? " \u00B7 " + messagesOf(block).length : "")),
+        el("label", {}, "Chat" + (messagesOf(block).length ? " · " + messagesOf(block).length : "")),
         threadPanel(path, block),
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
           "Everyone in this area sees it, with who said it and when. Flag one with " +
-          "\u2691 to come back to it - that carries your name, so it follows you between " +
+          "⚑ to come back to it - that carries your name, so it follows you between " +
           "devices. Read is per device and stays out of the files."),
         el("div", {style: "margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"},
           el("button", {class: "btn sm ghost", onclick: () => { closeModal(); informFromLine(path, block, space); }}, svgIcon(ICON_MAIL), " Send an update"),
@@ -217,7 +288,7 @@ function showTaskDetail(path, block, space) {
               touch(path); render();
               notify(spec ? "Repeats " + spec + ". You will be asked when you tick it off." : "No longer repeats.");
             },
-          })}, own ? cur : "custom\u2026"));
+          })}, own ? cur : "custom…"));
           return row;
         })(),
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
@@ -245,23 +316,8 @@ function showTaskDetail(path, block, space) {
           "The file route sends nothing anywhere. A link opens your calendar with the " +
           "title and date in the web address.")),
       el("div", {class: "field"}, el("label", {}, "Notes"), notes),
-      el("div", {class: "field"}, el("label", {}, "Trail"), trail),
-      el("div", {class: "field"}, el("label", {}, "Source"),
-        el("div", {style: "display:flex;gap:8px;flex-wrap:wrap;align-items:center"},
-          el("button", {class: "btn ghost sm", onclick: () => { closeModal(); openPage(path); }}, path),
-          el("button", {class: "btn ghost sm", title: "A link you can paste into chat or email",
-            onclick: () => copyLinkTo(deepLink(path, block), "this task")}, "\u{1F517} Copy link")))),
-    foot: [
-      el("button", {class: "btn ghost", onclick: () => {
-        closeModal();
-        deleteBlockWithUndo(path, block, "Deleted \u201C" + titleForRow(block.title) + "\u201D");
-      }}, "Delete"),
-      el("div", {style: "flex:1"}),
-      el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
-      el("button", {class: "btn primary", onclick: save}, "Save"),
-    ],
+      el("div", {class: "field"}, el("label", {}, "Trail"), trail)),
     onKey: e => {
-      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { save(); return true; }
       /* Escape hands the panel over to the grid rather than closing it. Once
          the grid has it, the grid's own Escape hands it back, and the one after
          that closes the panel as it always did, so nothing is taken away. */
@@ -271,5 +327,6 @@ function showTaskDetail(path, block, space) {
       }
       return false;
     },
+    onClose: () => closeMenu(),
   });
 }

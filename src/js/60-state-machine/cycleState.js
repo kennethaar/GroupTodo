@@ -4,7 +4,7 @@
 function cycleState(path, block) {
   if (block.state && nextStage(path, block)) return;
   if (projectLineToTask(path, block)) return;
-  const order = ["TODO", "DOING", "WAIT", "DONE", "CANCELLED", null];
+  const order = ["TODO", "DOING", "WAIT", "HOLD", "DONE", "CANCELLED", null];
   const i = order.indexOf(block.state ?? null);
   setBlockState(path, block, order[(i + 1) % order.length]);
 }
