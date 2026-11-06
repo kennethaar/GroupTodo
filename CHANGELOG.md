@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.109.5 - 2026-11-06
+
+- Waiting for › Board and Journal: the → Name pill jumped straight to Ask
+  for an update (#311). Clicking it now offers Open task as well, since the
+  pill still sits in front of the task it names.
+
 ## 1.109.4 - 2026-11-06
 
 - Waiting for › Board: the → Name pill on a card named who had the task but

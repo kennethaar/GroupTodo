@@ -1368,6 +1368,7 @@ js/145-horizons-view/remindRearm.js
 js/145-horizons-view/whenFromBox.js
 js/145-horizons-view/openDueChipMenu.js
 js/145-horizons-view/anchorModal.js
+js/145-horizons-view/openWhoMenu.js
 js/145-horizons-view/vars-dueWords.js
 js/145-horizons-view/chipsFor.js
 js/145-horizons-view/pillInTitle.js

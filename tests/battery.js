@@ -4444,7 +4444,7 @@ var GTD_TEST = (() => {
     }
   });
 
-  test("#311 A board card's assignee pill opens Ask for an update, not the task", async () => {
+  test("#311 A board card's assignee pill offers Open task and Ask for an update, not the card underneath", async () => {
     const path = scratchProject("crane order", [["WAIT", "Snakket med [[p/Lars Haugen]] om arbeidsordre"]]);
     const block = getPage(path).blocks[0];
     const card = boardCard({path, space: V.space, block, state: block.state, title: block.title, assignee: assigneeOf(block)});
@@ -4452,10 +4452,48 @@ var GTD_TEST = (() => {
     try {
       card.querySelector(".chip.who").click();
       await settle();
+      eq(document.querySelector("#modalRoot h2")?.textContent, "Lars Haugen");
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Ask for an update").click();
+      await settle();
       eq(document.querySelector("#modalRoot h2")?.textContent, "Ask Lars Haugen for an update");
     } finally {
       closeAll();
       card.remove();
+    }
+  });
+
+  test("#311 The same pill's Open task opens the task", async () => {
+    const path = scratchProject("crane order 1b", [["WAIT", "Snakket med [[p/Lars Haugen]] om arbeidsordre"]]);
+    const block = getPage(path).blocks[0];
+    const card = boardCard({path, space: V.space, block, state: block.state, title: block.title, assignee: assigneeOf(block)});
+    document.body.append(card);
+    try {
+      card.querySelector(".chip.who").click();
+      await settle();
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Open task").click();
+      await settle();
+      has(document.querySelector("#modalRoot .tdbody textarea.titlebox")?.value, "arbeidsordre");
+    } finally {
+      closeAll();
+      card.remove();
+    }
+  });
+
+  test("#311 A Waiting for chip on an outliner line offers the same menu", async () => {
+    const path = scratchProject("crane order 2", [["WAIT", "Snakket med [[p/Lars Haugen]] om arbeidsordre"]]);
+    const block = getPage(path).blocks[0];
+    const meta = lineMeta(block, path);
+    document.body.append(meta);
+    try {
+      meta.querySelector(".chip.who").click();
+      await settle();
+      eq(document.querySelector("#modalRoot h2")?.textContent, "Lars Haugen");
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Ask for an update").click();
+      await settle();
+      eq(document.querySelector("#modalRoot h2")?.textContent, "Ask Lars Haugen for an update");
+    } finally {
+      closeAll();
+      meta.remove();
     }
   });
 

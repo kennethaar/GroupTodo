@@ -1,9 +1,10 @@
 function boardCard(a) {
   const title = el("div", {class: "bcard-title", html: estHtml(a.title) + renderInline(titleForRow(a.title))});
   const who = a.assignee ? el("span", {class: "chip who", tabindex: "0", role: "button",
-    title: "Ask " + firstNameOf(a.assignee) + " for an update",
-    onclick: e => { e.stopPropagation(); openAskForUpdate(a.assignee, a.block); },
-    onkeydown: e => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); openAskForUpdate(a.assignee, a.block); } }},
+    title: firstNameOf(a.assignee) + " has it - open the task or ask for an update",
+    onclick: e => { e.stopPropagation(); openWhoMenu({name: a.assignee, path: a.path, block: a.block, space: a.space}, e.currentTarget); },
+    onkeydown: e => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault();
+      openWhoMenu({name: a.assignee, path: a.path, block: a.block, space: a.space}, e.currentTarget); } }},
     "\u2192 " + a.assignee) : null;
   const whoInTitle = pillInTitle(title, who, a.assignee);
   /* The same box as the list rows, so a card is ticked off where it stands:

@@ -10,7 +10,14 @@ function lineMeta(b, path = null, readonly = false) {
   }
   if (repeatOf(b)) out.push(path && !readonly ? repeatPill(path, b) : el("span", {class: "chip"}, svgIcon(ICON_REPEAT), " " + repeatOf(b)));
   const who = b.state ? assigneeOf(b) : "";
-  if (who && !samePerson(who, whoAmI())) out.push(el("span", {class: "chip who"}, svgIcon(ICON_ARROW_RIGHT), " " + who));
+  if (who && !samePerson(who, whoAmI())) out.push(path && !readonly
+    ? el("span", {class: "chip who", tabindex: "0", role: "button",
+        title: firstNameOf(who) + " has it - open the task or ask for an update",
+        onclick: e => { e.stopPropagation(); openWhoMenu({name: who, path, block: b, space: V.space}, e.currentTarget); },
+        onkeydown: e => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault();
+          openWhoMenu({name: who, path, block: b, space: V.space}, e.currentTarget); } }},
+        svgIcon(ICON_ARROW_RIGHT), " " + who)
+    : el("span", {class: "chip who"}, svgIcon(ICON_ARROW_RIGHT), " " + who));
   const said = messagesOf(b).length;
   if (said) out.push(el("span", {class: "chip msg" + (unreadCount(b) ? " unread" : "")}, svgIcon(ICON_CHAT), " " + said));
   // A meeting says when and with whom as chips of its own.
