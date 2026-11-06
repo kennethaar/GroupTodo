@@ -5,6 +5,17 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.109.0 - 2026-11-06
+
+- The line menu and toolbar: the ⋯ menu listed about twenty rows and two
+  lines of instructions above and below them (#310). It now shows five:
+  State, Due and Project (hidden with nothing set), then Copy embed and Open
+  side panel. Everything else still has its Alt+ key, or sits behind the
+  foot toolbar's Type, Tag or More button — Type gained Meeting, Tag gained
+  Project, and More now holds Side panel, Move to…, Copy text, Copy embed
+  and Plan with AI, with "To area" and "Refile" merged into that one
+  "Move to…" entry.
+
 ## 1.108.1 - 2026-11-06
 
 - A task's panel: a capture line that is nothing but a link to its project —

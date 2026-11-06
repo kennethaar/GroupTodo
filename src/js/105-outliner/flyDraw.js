@@ -1,15 +1,17 @@
 function flyDraw() {
   if (!FLY) return;
   const {box, block} = FLY;
-  const rows = flyRows();
-  const waitingNobody = block.state === "WAIT" && (!assigneeOf(block) || samePerson(assigneeOf(block), whoAmI()));
+  // Summoned (the "..." line menu) shows the short list of core properties and
+  // actions. Opened directly -- an Alt+ key, or a leaf of the foot toolbar's
+  // Type/Tag/More groups -- shows only that one row, with its own picker.
+  const all = flyRows();
+  const rows = FLY.summoned ? all.filter(r => r.menu) : FLY.open ? all.filter(r => r.k === FLY.open) : [];
   box.textContent = "";
-  box.append(el("div", {class: "fhint"}, waitingNobody ? el("b", {}, "Waiting on whom? Pick the person below")
-    : (block.state ? "Task" : "Note") + " · setting any of these makes the line a task"));
   rows.forEach((r, i) => {
     const open = FLY.open === r.k;
     const lit = FLY_LIT && FLY_LIT.id === block.id && FLY_LIT.k === r.k;
     const hi = FLY.summoned && !FLY.open && i === (FLY.row || 0);
+    if (r.div) box.append(el("div", {class: "fdiv"}));
     const row = el("div", {class: "frow" + (open ? " open" : "") + (lit ? " lit" : "") + (hi ? " hi" : "")},
       el("button", {class: "fhead", tabindex: "-1", onclick: () => flyHead(r.k)},
         el("span", {class: "fic bw"}, r.ic.startsWith("<") ? svgIcon(r.ic) : r.ic), el("span", {class: "fl"}, r.label),
@@ -46,9 +48,6 @@ function flyDraw() {
     }
     box.append(row);
   });
-  box.append(el("div", {class: "fhint"}, FLY.open ? "↑ ↓ choose · Enter picks · Esc closes it"
-    : FLY.summoned ? "↑ ↓ choose · Enter opens · Esc or Ctrl+. closes the menu"
-    : "Enter new line · Tab indent · Shift+Tab outdent · Esc done"));
   box.hidden = flyHidden();
   const handle = FLY.txt.closest(".line")?.querySelector(":scope > .linemenu");
   if (handle) handle.setAttribute("aria-expanded", String(!box.hidden));

@@ -604,6 +604,7 @@ body.solview #content{padding-bottom:14px}
   box-shadow:var(--shadow);padding:8px 10px;display:flex;flex-direction:column;gap:6px;font-size:13px;
   max-width:calc(100vw - 24px);animation:flyin .12s ease-out}
 .fhint{font-size:11px;color:var(--fg3);padding:4px 8px}
+.fdiv{border-top:1px solid var(--border);margin:4px 6px}
 .frow{border-radius:8px}
 .fhead{display:flex;width:100%;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;text-align:left;font-size:13px}
 .fhead:hover,.frow.open .fhead{background:var(--bg3)}

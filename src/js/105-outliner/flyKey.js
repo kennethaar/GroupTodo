@@ -18,7 +18,7 @@ function flyKey(e) {
   }
   /* Asked for, the menu's rows take the arrows until one is opened. */
   if (FLY.summoned && !FLY.open) {
-    const rows = flyRows();
+    const rows = flyRows().filter(r => r.menu);
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
       FLY.row = ((FLY.row || 0) + (e.key === "ArrowUp" ? -1 : 1) + rows.length) % rows.length;

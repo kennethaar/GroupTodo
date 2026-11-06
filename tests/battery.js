@@ -2921,6 +2921,12 @@ var GTD_TEST = (() => {
       ok(bar() && !bar().hidden, "no toolbar while a line is being written");
       eq([...bar().querySelectorAll(":scope > .ebtn .elb")].map(n => n.textContent),
         ["Up", "Down", "Outdent", "Indent", "Type", "Tag", "Media", "More"], "the top-level bar is 8 buttons");
+      bar().querySelector('[data-k="more"]').click();
+      await frame();
+      eq([...bar().querySelectorAll(".ebpop .elb")].map(n => n.textContent),
+        ["Side panel", "Move to…", "Copy text", "Copy embed", "Plan with AI"], "More opens to its five leaves");
+      bar().querySelector('[data-k="more"]').click();
+      await frame();
       await press("down");
       eq(titles(), ["Alpha", "Charlie", "Bravo"], "after down");
       ok(document.activeElement && document.activeElement.closest('.blk[data-id="' + bravo.id + '"]'), "the caret left the line");
@@ -2933,7 +2939,7 @@ var GTD_TEST = (() => {
       eq(titles(), ["Alpha", "Bravo", "Charlie"], "after outdent");
       await press("type");
       eq([...bar().querySelectorAll(".ebpop .elb")].map(n => n.textContent),
-        ["Note", "Zettel", "Project", "Responsibility"], "Type opens to the four kinds");
+        ["Note", "Zettel", "Project", "Responsibility", "Meeting"], "Type opens to the five kinds");
       await press("kind");
       eq(getPage(path).blocks[1].state, null, "Task/Note did not make it a note");
       ok(!bar().querySelector(".ebpop"), "picking a leaf closes the popover");
@@ -2958,7 +2964,7 @@ var GTD_TEST = (() => {
       await frame();
       bar().querySelector('[data-k="tag"]').click();
       await frame();
-      eq([...bar().querySelectorAll(".ebpop .elb")].map(n => n.textContent), ["Context", "Person", "Organisation"]);
+      eq([...bar().querySelectorAll(".ebpop .elb")].map(n => n.textContent), ["Context", "Person", "Organisation", "Project"]);
       bar().querySelector('[data-k="tag"]').click();
       await frame();
       ok(!bar().querySelector(".ebpop"), "a second tap on the open group closes it");
@@ -7304,7 +7310,7 @@ var GTD_TEST = (() => {
     document.body.append(box, txt);
     FLY = {txt, path, page, block, box, open: null, hi: 0, q: ""};
     try {
-      for (const k of ["ctx", "who", "org"]) {
+      for (const k of ["ctx", "who", "org", "proj"]) {
         ok(EDIT_BAR.some(r => r.k === k), k + " is on the bar");
         FLY.open = null;
         editBarAct(k);

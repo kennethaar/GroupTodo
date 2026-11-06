@@ -6,9 +6,10 @@
    on-screen keyboard. Pressing one does not take the caret out of the line,
    so the next press acts on the same line, wherever it went.
    Up, Down, Outdent and Indent stay direct buttons -- a thumb reaches for them
-   constantly. Everything else that turns the line into something, tags it, or
-   attaches a picture sits one tap deeper, behind a Type, Tag or Media button,
-   so the bar itself stays short. Every icon here is a monochrome SVG path for
+   constantly. Everything else that turns the line into something, tags it,
+   attaches a picture, or is otherwise rarer, sits one tap deeper, behind a
+   Type, Tag, Media or More button, so the bar itself stays short. Every icon
+   here is a monochrome SVG path for
    svgIcon() (vars-svgIcon.js), 24x24, drawn at one stroke weight -- except "@",
    which is already plain text and already inherits the button's colour. */
 const EB_UP      = '<path d="M12 19V5M5 11l7-7 7 7"/>';
@@ -38,13 +39,18 @@ const EDIT_BAR = [
   {k: "mkzet", ic: EB_ZETTEL, label: "Zettel", tip: "Turn into zettel (Alt+Z)", group: "type"},
   {k: "mkproj", ic: EB_PROJECT, label: "Project", tip: "Make it a project (Alt+1)", group: "type"},
   {k: "mkarea", ic: EB_AREA, label: "Responsibility", tip: "Make it a responsibility (Alt+I)", group: "type"},
+  {k: "meet", ic: FLY_MEETING, label: "Meeting", tip: "Make it a meeting (Alt+M)", group: "type"},
   {k: "ctx", ic: "@", label: "Context", tip: "Add a context (Alt+C)", group: "tag"},
   {k: "who", ic: EB_PERSON, label: "Person", tip: "Add a person (Alt+P)", group: "tag"},
   {k: "org", ic: EB_ORG, label: "Organisation", tip: "Add an organisation (Alt+O)", group: "tag"},
+  {k: "proj", ic: "#", label: "Project", tip: "Add a project (Alt+J)", group: "tag"},
   {k: "photo", ic: EB_CAMERA, label: "Photo", tip: "Take a photo for this line", group: "media", pointerFineOff: true},
   {k: "image", ic: EB_IMAGE, label: "Image", tip: "Add an image to this line", group: "media"},
-  {k: "area", ic: EB_MOVE, label: "To area", tip: "Move the line to another area, with the pages it links to", group: "more"},
+  {k: "more", ic: FLY_PANEL, label: "Side panel", tip: "Open in the side panel", group: "more"},
+  {k: "refile", ic: FLY_REFILE, label: "Move to…", tip: "Move to a project, responsibility or context (Alt+G)", group: "more"},
   {k: "plaincopy", ic: EB_COPY, label: "Copy text", tip: "Copy the line as plain text, without links or tags", group: "more"},
+  {k: "embedref", ic: FLY_EMBED, label: "Copy embed", tip: "Copy as embed, to paste on another line", group: "more"},
+  {k: "aiplan", ic: FLY_PLAN, label: "Plan with AI", tip: "Plan it with an AI; its answer becomes a project", group: "more"},
 ];
 
 /* One button per group: its own label and a fallback icon for when nothing

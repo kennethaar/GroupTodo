@@ -2,7 +2,6 @@ function editBarAct(k) {
   if (!FLY) return;
   const {txt, path, page, block: b} = FLY;
   if (k === "photo" || k === "image") { editBarPickImage(path, b, k === "photo"); return; }
-  if (k === "area") { txt.blur(); openMoveLinesToArea([{space: V.space, path, id: b.id}]); return; }
   const top = txt.getBoundingClientRect().top;
   if (k === "up" || k === "down" || k === "in" || k === "out") {
     txt.blur();
