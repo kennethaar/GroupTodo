@@ -5,6 +5,18 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.107.0 - 2026-11-06
+
+- A task's panel: Scheduled, Deadline, Priority and Assign now start as a
+  quiet "+" pill when a task has none of them, instead of four empty
+  fields — click one to fill it in. Scheduled still opens by itself for
+  Waiting and Hold, since those always need a day. The Urgency readout is
+  gone (urgency already shows on the board and planner); the paragraphs
+  explaining Assign, Chat, Repeats and Calendar are gone too, with what
+  still matters left as a tip on hover. "Make it my usual" and "Choose
+  where" for the calendar moved out of the panel; Add to calendar still
+  asks where to send it the first time. (Fixes #307)
+
 ## 1.106.0 - 2026-11-06
 
 - A task's panel: Scheduled, Follow up and Hold until are now one date field,

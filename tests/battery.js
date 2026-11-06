@@ -2462,16 +2462,61 @@ var GTD_TEST = (() => {
       ok(!document.querySelector(".linkpop"), "the menu closes after acting");
     } finally { closeModal(); }
   });
+  test("#307 task detail panel: Scheduled/Deadline/Assign/Priority start as + pills when unset", () => {
+    const path = scratchProject("progressive", [["TODO", "File the taxes"]]);
+    const b = getPage(path).blocks[0];
+    try {
+      showTaskDetail(path, b, V.space);
+      const m = document.querySelector("#modalRoot .modal");
+      const pillText = t => [...m.querySelectorAll(".fpill")].find(x => x.textContent === t);
+
+      ok(pillText("+ Scheduled"), "Scheduled starts as a pill");
+      ok(pillText("+ Deadline"), "Deadline starts as a pill");
+      ok(pillText("+ Priority"), "Priority starts as a pill");
+      ok(pillText("+ Assign"), "Assign starts as a pill");
+      ok(!m.querySelector(".dt"), "no date input mounted until a pill is clicked");
+
+      pillText("+ Deadline").click();
+      const dead = m.querySelectorAll(".dt")[0].querySelector('input[type="date"]');
+      ok(document.activeElement === dead, "clicking the pill mounts and focuses the real control");
+      dead.value = "2027-05-01";
+      dead.dispatchEvent(new Event("change"));
+      eq(dateIn(blockProp(b, "DEADLINE")), "2027-05-01", "the mounted field still saves normally");
+
+      pillText("+ Priority").click();
+      const pri = [...m.querySelectorAll("select")].find(s => [...s.options].some(o => o.textContent === "High"));
+      pri.value = "H";
+      pri.dispatchEvent(new Event("change"));
+      eq(priorityOf(b), "H");
+
+      pillText("+ Assign").click();
+      ok([...m.querySelectorAll("label")].some(x => x.textContent === "Who is doing it"),
+        "the assign pill mounts the real row");
+
+      ok(![...m.querySelectorAll("button")].some(x => x.textContent === "Make it my usual"),
+        "the per-task reminder-default button is gone");
+      ok(![...m.querySelectorAll("button")].some(x => x.textContent === "Choose where"),
+        "the calendar provider picker button is gone");
+      ok(![...m.querySelectorAll("label")].some(x => x.textContent === "Urgency"), "the Urgency readout is gone");
+      ok(!/Somebody in this area gets it as their task/.test(m.textContent),
+        "the instructional paragraph under Assign is gone");
+      ok(!/The file route sends nothing anywhere/.test(m.textContent),
+        "the instructional paragraph under Calendar is gone");
+    } finally { closeModal(); }
+  });
   test("#305 task detail panel: one date row, labeled and backed by state", () => {
     const path = scratchProject("sched-unify", [["TODO", "Call the plumber"]]);
     const b = getPage(path).blocks[0];
     try {
       showTaskDetail(path, b, V.space);
       const m = document.querySelector("#modalRoot .modal");
+      const seg = [...m.querySelectorAll(".seg")][0];
+      const pill = [...m.querySelectorAll(".fpill")].find(x => x.textContent === "+ Scheduled");
+      ok(pill, "an unset Scheduled date starts as a + pill, not an empty field");
+      pill.click();
       const schedField = m.querySelectorAll(".dt")[0].parentNode;
       const label = schedField.querySelector("label");
       const input = schedField.querySelector('input[type="date"]');
-      const seg = [...m.querySelectorAll(".seg")][0];
       eq(label.textContent, "Scheduled", "TODO shows Scheduled");
 
       input.value = "2027-01-02";

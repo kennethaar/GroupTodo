@@ -40,6 +40,67 @@ function showTaskDetail(path, block, space) {
     schedAt.style.display = isHold ? "none" : "";
     holdOpenRow.style.display = isHold ? "" : "none";
   };
+  // Scheduled/Deadline/Priority/Assign start as a quiet "+" pill when unset, so
+  // a task with none of these shows four short rows, not four empty fields.
+  // Clicking the pill mounts the real control in its place, focused.
+  let schedManualOpen = false, deadManualOpen = false, priManualOpen = false, assignManualOpen = false;
+  const schedBox = el("div", {class: "field"});
+  const renderSchedField = () => {
+    schedBox.textContent = "";
+    const isHold = block.state === "HOLD";
+    const forcedOpen = isHold || block.state === "WAIT";
+    const hasValue = isHold ? !!holdValue(blockProp(block, "hold")) : !!sched.value;
+    if (!forcedOpen && !hasValue && !schedManualOpen) {
+      schedBox.append(factPill("+ " + schedLabel.textContent, "fwant", "Give it a day",
+        () => { schedManualOpen = true; renderSchedField(); sched.focus(); }));
+      return;
+    }
+    schedBox.append(schedLabel, el("div", {class: "dt"}, sched, schedAt), holdOpenRow);
+  };
+  const deadBox = el("div", {class: "field"});
+  const renderDeadField = () => {
+    deadBox.textContent = "";
+    if (!dead.value && !deadManualOpen) {
+      deadBox.append(factPill("+ Deadline", "fwant", "The day it must be done by",
+        () => { deadManualOpen = true; renderDeadField(); dead.focus(); }));
+      return;
+    }
+    deadBox.append(el("label", {}, "Deadline"), el("div", {class: "dt"}, dead, deadAt));
+  };
+  const priBox = el("div", {class: "field"});
+  const renderPriField = () => {
+    priBox.textContent = "";
+    if (!priSel.value && !priManualOpen) {
+      priBox.append(factPill("+ Priority", "fwant", "High, medium or low",
+        () => { priManualOpen = true; renderPriField(); priSel.focus(); }));
+      return;
+    }
+    priBox.append(el("label", {}, "Priority"), priSel);
+  };
+  const assignBox = el("div", {class: "field"});
+  const renderAssignField = () => {
+    assignBox.textContent = "";
+    const current = assigneeOf(block);
+    if (!current && !assignManualOpen) {
+      assignBox.append(factPill("+ Assign", "fwant", "Give this to someone else in the area",
+        () => { assignManualOpen = true; renderAssignField(); }));
+      return;
+    }
+    const row = el("div", {class: "seg"});
+    const choices = [["", "Me"]].concat(choreCrew().filter(m => !m.me).map(m => [m.name, m.name]));
+    for (const [val, label] of choices) {
+      const on = val ? samePerson(val, current) : !current;
+      row.append(el("button", {class: on ? "on" : "", onclick: () => {
+        closeModal(); assignBlock(path, block, val);
+      }}, label));
+    }
+    row.append(el("button", {onclick: () => {
+      closeModal(); openAssignOther(path, block);
+    }}, current && !isMember(current) && !isHousehold(current) ? current : "someone else…"));
+    assignBox.append(el("label", {
+      title: "You get this in Waiting for; the household's stays yours to tick off.",
+    }, "Who is doing it"), row);
+  };
   const remindSel = el("select", {onchange: () => saveRemind()});
   const usualLabel = () => (remindUsual() ? leadWords(remindUsual()) + " before" : "At the time") + " (usual)";
   for (const [v, label] of [["", usualLabel()], ["0", "At the time"], ["5m", "5 min before"],
@@ -47,16 +108,6 @@ function showTaskDetail(path, block, space) {
                             ["1h", "1 hour before"], ["2h", "2 hours before"], ["1d", "A day before"],
                             ["none", "No reminder"]])
     remindSel.append(el("option", {value: v}, label));
-  /* The one picked here, made the usual for every timed task without its own.
-     This device only, like the meeting reminders: it is about where you are. */
-  const remindUsualBtn = el("button", {class: "textbtn", style: "margin-top:4px", onclick: () => {
-    const lead = remindLead(remindSel.value);
-    if (!remindSel.value || lead == null) { notify("Pick a time before the task first, then make it the usual.", "warn"); return; }
-    PREF.set(REMIND_LEAD_KEY, String(lead));
-    remindSel.value = "";
-    remindSel.options[0].textContent = usualLabel();
-    notify("Timed tasks now remind you " + (lead ? leadWords(lead) + " before" : "at the time") + ", on this device.");
-  }}, "Make it my usual");
   remindSel.value = trim(blockProp(block, "remind") || "");
   if (remindSel.value !== trim(blockProp(block, "remind") || ""))
     remindSel.append(el("option", {value: blockProp(block, "remind")}, blockProp(block, "remind") + " before"));
@@ -107,6 +158,10 @@ function showTaskDetail(path, block, space) {
     reopenBtn.style.display = cancelled ? "" : "none";
     fillTrail();
     loadSchedField();
+    renderSchedField();
+    renderDeadField();
+    renderPriField();
+    renderAssignField();
   };
   syncPanel();
 
@@ -210,35 +265,12 @@ function showTaskDetail(path, block, space) {
         el("div", {style: "display:flex;align-items:center;flex-wrap:wrap"}, seg, cancelledNote, reopenBtn)),
       el("div", {class: "field"}, el("label", {}, "Where it sits"), surroundingsGrid(path, block, space)),
       el("div", {class: "field"}, factLine(path, childrenFact({path, block, space}))),
+      assignBox,
       el("div", {class: "field"},
-        el("label", {}, "Who is doing it"),
-        (() => {
-          const row = el("div", {class: "seg"});
-          const current = assigneeOf(block);
-          const choices = [["", "Me"]].concat(
-            choreCrew().filter(m => !m.me).map(m => [m.name, m.name]));
-          for (const [val, label] of choices) {
-            const on = val ? samePerson(val, current) : !current;
-            row.append(el("button", {class: on ? "on" : "", onclick: () => {
-              closeModal(); assignBlock(path, block, val);
-            }}, label));
-          }
-          row.append(el("button", {onclick: () => {
-            closeModal(); openAssignOther(path, block);
-          }}, current && !isMember(current) && !isHousehold(current) ? current : "someone else…"));
-          return row;
-        })(),
-        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          "Somebody in this area gets it as their task, and you get it in your " +
-          "Waiting for. The household's stays a task you tick off for them. " +
-          "Anybody else is only a waiting-for - they cannot see this.")),
-      el("div", {class: "field"},
-        el("label", {}, "Chat" + (messagesOf(block).length ? " · " + messagesOf(block).length : "")),
+        el("label", {
+          title: "Everyone in this area sees it. Flag one with ⚑ to follow it across devices.",
+        }, "Chat" + (messagesOf(block).length ? " · " + messagesOf(block).length : "")),
         threadPanel(path, block),
-        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          "Everyone in this area sees it, with who said it and when. Flag one with " +
-          "⚑ to come back to it - that carries your name, so it follows you between " +
-          "devices. Read is per device and stays out of the files."),
         el("div", {style: "margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"},
           el("button", {class: "btn sm ghost", onclick: () => { closeModal(); informFromLine(path, block, space); }}, svgIcon(ICON_MAIL), " Send an update"),
           el("span", {style: "color:var(--fg3);font-size:12px"},
@@ -251,30 +283,13 @@ function showTaskDetail(path, block, space) {
           startsWithVerb(block.title) ? "verb ok" : "add physical verb"),
         el("button", {onclick: () => { closeModal(); openRefile(path, block); }}, "refile"),
       )),
+      el("div", {class: "grid2"}, schedBox, deadBox),
       el("div", {class: "grid2"},
-        el("div", {class: "field"}, schedLabel, el("div", {class: "dt"}, sched, schedAt), holdOpenRow),
-        el("div", {class: "field"}, el("label", {}, "Deadline"), el("div", {class: "dt"}, dead, deadAt))),
-      el("div", {class: "grid2"},
-        el("div", {class: "field"}, el("label", {}, "Reminder, when it has a time"), remindSel, remindUsualBtn),
+        el("div", {class: "field"}, el("label", {}, "Reminder, when it has a time"), remindSel),
         el("div", {class: "field"}, el("label", {}, "Cancel it if still open after"), until)),
-      el("div", {class: "grid2"},
-        el("div", {class: "field"}, el("label", {}, "Priority"), priSel),
-        el("div", {class: "field"}, el("label", {}, "Urgency"),
-          (() => {
-            const who = assigneeOf(block);
-            const row = {block, state: block.state, title: block.title, context: contextOf(block.title),
-                         project: (nearestProjectAncestor(block) || {}).title || (statusDirOf(path) ? pageTitle(path) : null),
-                         projectPath: statusDirOf(path) ? path : null, space,
-                         mine: !who || samePerson(who, whoAmI())};
-            const parts = urgencyParts(row);
-            const urgIcon = svgIcon(ICON_ARROW_UP);
-            urgIcon.setAttribute("style", "width:12px;height:12px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round");
-            return el("div", {style: "font-size:12.5px;color:var(--fg2);line-height:1.6"},
-              el("div", {style: "font-weight:600;color:var(--fg)"}, urgIcon, " " + urgencyOf(row)),
-              ...parts.map(([why, n]) => el("div", {}, (n > 0 ? "+" : "") + n + "  " + why)));
-          })())),
+      priBox,
       el("div", {class: "field"},
-        el("label", {}, "Repeats"),
+        el("label", {title: "Nothing is created until you tick it off; you'll be asked first."}, "Repeats"),
         (() => {
           const row = el("div", {class: "seg"});
           const cur = repeatOf(block);
@@ -301,31 +316,19 @@ function showTaskDetail(path, block, space) {
             },
           })}, own ? cur : "custom…"));
           return row;
-        })(),
-        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          repeatOf(block)
-            ? "Nothing is created until you tick this one off, and you are asked first. " +
-              "Skip a " + repeatOf(block).replace(/ly$/, "") + " and it stays skipped."
-            : "Any of these, or write your own in the file - repeat:: every 2 weeks, " +
-              "repeat:: every monday.")),
+        })()),
       el("div", {class: "field"},
         el("label", {}, "Calendar"),
-        el("div", {style: "display:flex;gap:8px;flex-wrap:wrap"},
-          el("button", {class: "btn ghost sm", onclick: () => {
+        el("button", {
+          class: "btn ghost sm",
+          title: "Opens your calendar with the title and date. Nothing is sent anywhere.",
+          onclick: () => {
             const when = trim(sched.value) || trim(dead.value) || dueDate(block);
             if (!when) { notify("Give it a date first.", "warn"); return; }
             const time = (trim(sched.value) ? schedAt.value : trim(dead.value) ? deadAt.value : null) || null;
             addToCalendar([Object.assign({}, a, {due: when, time, title: block.title, block})]);
-          }}, "Add to calendar"),
-          el("button", {class: "btn ghost sm", onclick: () => {
-            const when = trim(sched.value) || trim(dead.value) || dueDate(block);
-            if (!when) { notify("Give it a date first.", "warn"); return; }
-            const time = (trim(sched.value) ? schedAt.value : trim(dead.value) ? deadAt.value : null) || null;
-            openCalendarPicker([Object.assign({}, a, {due: when, time, title: block.title, block})]);
-          }}, "Choose where")),
-        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          "The file route sends nothing anywhere. A link opens your calendar with the " +
-          "title and date in the web address.")),
+          },
+        }, "Add to calendar")),
       el("div", {class: "field"}, el("label", {}, "Notes"), notes),
       el("div", {class: "field"}, el("label", {}, "Trail"), trail)),
     onKey: e => {
