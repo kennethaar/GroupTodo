@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.102.3 - 2026-11-06
+
+- Keys on a line: on an iPhone, the foot toolbar now clears the keyboard's
+  own accessory bar and Safari's floating address pill while a line is being
+  edited (#299). Neither shrinks the visible page the way the keyboard
+  itself does, so the toolbar reserves extra room above the keyboard on an
+  iPhone browser tab; an app added to the home screen has no pill to clear.
+
 ## 1.102.2 - 2026-11-06
 
 - The line menu and toolbar: every other emoji or Unicode symbol left in the

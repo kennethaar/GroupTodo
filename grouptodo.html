@@ -3947,7 +3947,7 @@ placeholder="Add a task. Try: &quot;Call Mia about the VAT phone tomorrow&quot;"
 })();
 
 "use strict";
-const APP_VERSION = "1.102.2";
+const APP_VERSION = "1.102.3";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -28698,8 +28698,13 @@ editBarPlace();
 function editBarPlace() {
 const bar = $("#editBar"), vv = window.visualViewport, main = $("#main");
 if (!bar || bar.hidden) return;
-bar.style.bottom = (vv ? Math.max(0, innerHeight - vv.height - vv.offsetTop) : 0) + "px";
+const keyboardUp = vv && vv.height < innerHeight;
+bar.style.bottom = (vv ? Math.max(0, innerHeight - vv.height - vv.offsetTop) : 0) +
+(keyboardUp ? editBarIOSChromeGap() : 0) + "px";
 bar.style.left = (main ? Math.max(0, main.getBoundingClientRect().left) : 0) + "px";
+}
+function editBarIOSChromeGap() {
+return /iPhone|iPad|iPod/.test(navigator.userAgent) && !navigator.standalone ? 56 : 0;
 }
 addEventListener("resize", editBarPlace);
 if (window.visualViewport) for (const ev of ["resize", "scroll"]) visualViewport.addEventListener(ev, editBarPlace);

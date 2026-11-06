@@ -2864,6 +2864,39 @@ var GTD_TEST = (() => {
       go("today");
     }
   });
+  test("#299 the toolbar clears an iPhone's floating keyboard chrome", async () => {
+    const path = scratchProject("edit bar ios gap", [["TODO", "Mind the pill"]]);
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    // A phone with its keyboard up: the window keeps its height, the visible part halves.
+    const kb = {offsetTop: 0, offsetLeft: 0, width: innerWidth, height: Math.round(innerHeight / 2),
+      addEventListener() {}, removeEventListener() {}};
+    Object.defineProperty(window, "visualViewport", {configurable: true, get: () => kb});
+    const ua = Object.getOwnPropertyDescriptor(Navigator.prototype, "userAgent") ||
+      Object.getOwnPropertyDescriptor(navigator, "userAgent");
+    openPage(path);
+    await settle();
+    const b = getPage(path).blocks[0];
+    const bar = () => document.querySelector("#editBar");
+    try {
+      Object.defineProperty(navigator, "userAgent",
+        {configurable: true, get: () => "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15"});
+      Object.defineProperty(navigator, "standalone", {configurable: true, value: false});
+      focusBlock(b.id);
+      await frame();
+      editBarPlace();
+      const plain = innerHeight - kb.height - kb.offsetTop;
+      eq(parseFloat(bar().style.bottom), plain + 56, "an iPhone tab gets no extra room above the keyboard");
+      Object.defineProperty(navigator, "standalone", {configurable: true, value: true});
+      editBarPlace();
+      eq(parseFloat(bar().style.bottom), plain, "an installed app has no pill to clear, so no extra room");
+    } finally {
+      delete window.visualViewport;
+      Object.defineProperty(navigator, "userAgent", ua);
+      delete navigator.standalone;
+      document.activeElement && document.activeElement.blur();
+      go("today");
+    }
+  });
   test("#170 the toolbar's Image puts a picture in the line", async () => {
     const path = scratchProject("edit bar image", [["TODO", "Snap the whiteboard"]]);
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
