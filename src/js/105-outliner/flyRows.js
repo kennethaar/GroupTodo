@@ -39,10 +39,10 @@ function flyRows() {
     // One person on the line goes straight to the ask; several are picked from.
     ...(onLine.length ? [{k: "ask", ic: FLY_MAIL, label: "Ask for an update", val: onLine.join(", "), key: "Alt+E",
      opts: onLine.map(n => [n, n])}] : []),
-    {k: "embedref", ic: FLY_EMBED, label: "Copy embed", key: "", menu: true, div: true},
-    {k: "plaincopy", ic: EB_COPY, label: "Copy text", key: "", menu: true},
+    {k: "embedref", ic: FLY_EMBED, label: "Copy embed", key: "Alt+B", menu: true, div: true},
+    {k: "plaincopy", ic: EB_COPY, label: "Copy text", key: "Alt+X", menu: true},
     {k: "refile", ic: FLY_REFILE, label: "Refile", key: "Alt+G", menu: true},
-    {k: "trk", ic: FLY_TRACKER, label: "Insert tracker", key: "", menu: true},
-    {k: "aiplan", ic: FLY_PLAN, label: "Plan with AI", key: "", menu: true},
+    {k: "trk", ic: FLY_TRACKER, label: "Insert tracker", key: "Alt+K", menu: true},
+    {k: "aiplan", ic: FLY_PLAN, label: "Plan with AI", key: "Alt+A", menu: true},
   ];
 }

@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.109.3 - 2026-11-06
+
+- The line menu and toolbar: Copy embed, Copy text, Insert tracker and Plan
+  with AI were the only rows on the ⋯ menu without their own Alt+ key (#310).
+  They now have one each: Alt+B, Alt+X, Alt+K and Alt+A.
+
 ## 1.109.2 - 2026-11-06
 
 - The line menu and toolbar: Repeat, Refile and Insert tracker dropped out

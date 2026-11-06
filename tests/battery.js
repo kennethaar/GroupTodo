@@ -7321,6 +7321,44 @@ var GTD_TEST = (() => {
     } finally { FLY = null; }
   });
 
+  test("#310 Alt+A, Alt+B, Alt+K and Alt+X reach Plan with AI, Copy embed, Insert tracker and Copy text", async () => {
+    const path = scratchProject("line menu shortcuts", [["TODO", "Buy paint"]]);
+    const b = getPage(path).blocks[0];
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    openPage(path); await settle();
+    const title = () => document.querySelector(".scrim .modal h2, .scrim .modal .mhead")?.textContent || "";
+    const press = code => document.querySelector('.blk[data-id="' + b.id + '"] .txt')
+      .dispatchEvent(new KeyboardEvent("keydown", {code, altKey: true, bubbles: true, cancelable: true}));
+    const realClipboard = navigator.clipboard;
+    let copied = "";
+    Object.defineProperty(navigator, "clipboard", {configurable: true,
+      value: {writeText: async t => { copied = t; }}});
+    try {
+      focusBlock(b.id); await frame();
+      press("KeyK"); await settle();
+      // No tracker exists yet in this scratch area, so the wizard opens straight away.
+      ok(["Insert tracker", "New tracker"].includes(title()), "Alt+K did not open the tracker picker: " + title());
+      closeModal();
+
+      focusBlock(b.id); await frame();
+      press("KeyA"); await settle();
+      has(title(), "Plan it with an AI", "Alt+A did not open Plan with AI");
+      closeModal();
+
+      focusBlock(b.id); await frame();
+      press("KeyB"); await settle();
+      has(copied, "{{embed ((", "Alt+B did not copy the embed");
+
+      copied = "";
+      focusBlock(b.id); await frame();
+      press("KeyX"); await settle();
+      eq(copied, "TODO Buy paint", "Alt+X did not copy the plain text");
+    } finally {
+      Object.defineProperty(navigator, "clipboard", {configurable: true, value: realClipboard});
+      closeModal(); go("today");
+    }
+  });
+
   test("#297 the mobile line toolbar can add a context, person or organisation", () => {
     const path = scratchProject("editbar tag", [["TODO", "Buy paint"]]);
     const page = getPage(path), block = page.blocks[0];
