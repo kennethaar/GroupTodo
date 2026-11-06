@@ -917,6 +917,7 @@ const HELP = {
       "Set a start day, a due day or until.",
       "Set its priority and reminder.",
       "⋯ in the panel cancels, deletes or makes it a note."],
+    more: ["Pick Hold and the date field becomes its hold date. It comes back as a task by itself once the day arrives."],
     see: ["dates", "hold", "states"],
     words: ["details", "panel", "properties", "priority", "notes"]},
   hold: {part: "write", title: "Hold and until", gtd: "organise",

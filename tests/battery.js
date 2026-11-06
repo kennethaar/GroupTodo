@@ -2462,6 +2462,61 @@ var GTD_TEST = (() => {
       ok(!document.querySelector(".linkpop"), "the menu closes after acting");
     } finally { closeModal(); }
   });
+  test("#305 task detail panel: one date row, labeled and backed by state", () => {
+    const path = scratchProject("sched-unify", [["TODO", "Call the plumber"]]);
+    const b = getPage(path).blocks[0];
+    try {
+      showTaskDetail(path, b, V.space);
+      const m = document.querySelector("#modalRoot .modal");
+      const schedField = m.querySelectorAll(".dt")[0].parentNode;
+      const label = schedField.querySelector("label");
+      const input = schedField.querySelector('input[type="date"]');
+      const seg = [...m.querySelectorAll(".seg")][0];
+      eq(label.textContent, "Scheduled", "TODO shows Scheduled");
+
+      input.value = "2027-01-02";
+      input.dispatchEvent(new Event("change"));
+      eq(dateIn(blockProp(b, "SCHEDULED")), "2027-01-02", "writes SCHEDULED while open");
+
+      [...seg.querySelectorAll("button")].find(x => x.textContent === "WAIT").click();
+      eq(label.textContent, "Follow up", "WAIT relabels the same row");
+
+      [...seg.querySelectorAll("button")].find(x => x.textContent === "HOLD").click();
+      eq(label.textContent, "Hold until", "HOLD relabels the same row");
+      ok(!input.value, "no SCHEDULED date leaks into the hold field");
+
+      input.value = "2027-03-04";
+      input.dispatchEvent(new Event("change"));
+      eq(holdValue(blockProp(b, "hold")), "2027-03-04", "HOLD writes hold:: from the same field");
+      eq(dateIn(blockProp(b, "SCHEDULED")), "2027-01-02", "the old SCHEDULED date is left alone, not overwritten");
+
+      const openRow = schedField.querySelectorAll("label")[1];
+      const checkbox = openRow.querySelector("input[type=checkbox]");
+      checkbox.checked = true;
+      checkbox.dispatchEvent(new Event("change"));
+      eq(blockProp(b, "hold"), HOLD_OPEN, "no date: until I take it off writes HOLD_OPEN");
+
+      ok(![...m.querySelectorAll("label")].some(x => x.textContent === "On hold until"),
+        "the separate On hold until field is gone");
+    } finally { closeModal(); }
+  });
+  test("#305 a HOLD task resumes to TODO once its hold:: day arrives", () => {
+    const path = scratchProject("resume-hold", [["HOLD", "Call back in spring"]]);
+    const b = getPage(path).blocks[0];
+    setBlockProp(b, "hold", "[[" + shiftISO(todayISO(), -1) + "]]");
+    touch(path); clearMemo();
+    resumeHeldTasks();
+    eq(getPage(path).blocks[0].state, "TODO", "the day has passed, so it is a task again");
+    ok(!blockProp(getPage(path).blocks[0], "hold"), "the hold:: prop is cleared");
+  });
+  test("#305 an indefinite hold (no date) never auto-resumes", () => {
+    const path = scratchProject("resume-hold-open", [["HOLD", "Someday"]]);
+    const b = getPage(path).blocks[0];
+    setBlockProp(b, "hold", HOLD_OPEN);
+    touch(path); clearMemo();
+    resumeHeldTasks();
+    eq(getPage(path).blocks[0].state, "HOLD", "no date means no day to resume on");
+  });
   test("#198 a person on a line above counts for the tasks under it", () => {
     const day = journalPath("2003-03-03"), joe = personPath("Joe Newmann");
     putPage(joe, {props: {title: "Joe Newmann"}, blocks: []});

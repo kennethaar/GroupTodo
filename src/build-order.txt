@@ -401,6 +401,8 @@ js/65-gtd-scanners/endHold.js
 js/65-gtd-scanners/vars-hasRepeatUnder.js
 js/65-gtd-scanners/releaseTaskHold.js
 js/65-gtd-scanners/leafActionsHere.js
+js/65-gtd-scanners/resumeHeldHere.js
+js/65-gtd-scanners/resumeHeldTasks.js
 js/65-gtd-scanners/stuckActiveProjects.js
 js/65-gtd-scanners/stalestActiveProjects.js
 js/65-gtd-scanners/oldestTodosForContext.js

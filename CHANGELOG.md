@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.106.0 - 2026-11-06
+
+- A task's panel: Scheduled, Follow up and Hold until are now one date field,
+  not three — its label and what it writes follow the state you already
+  picked at the top. Putting a task on Hold with a date no longer just hides
+  it: it comes back as a task by itself once that day arrives, the same as
+  any other state change. (Fixes #306)
+
 ## 1.105.0 - 2026-11-06
 
 - A task's panel: a new Hold state sits beside To do, Doing, Waiting and

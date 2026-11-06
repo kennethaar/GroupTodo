@@ -13,21 +13,33 @@ function showTaskDetail(path, block, space) {
     attachSuggest(t);
     t.addEventListener("keydown", e => { if (suggestKey(e)) e.stopPropagation(); });
   }
-  const sched =el("input", {type: "date", value: dateIn(blockProp(block, "SCHEDULED")) || "", onchange: () => saveSched()});
+  const sched = el("input", {type: "date", onchange: () => saveSched()});
   const dead  = el("input", {type: "date", value: dateIn(blockProp(block, "DEADLINE")) || "", onchange: () => saveDead()});
   const timeOf = key => timeIn(String(blockProp(block, key) || "").replace(/\[\[[^\]]*\]\]/g, " ")) || "";
-  const schedAt = clockInput(timeOf("SCHEDULED"), {title: "Time, if it has one", onchange: () => saveSched()});
+  const schedAt = clockInput("", {title: "Time, if it has one", onchange: () => saveSched()});
   const deadAt  = clockInput(timeOf("DEADLINE"), {title: "Time, if it has one", onchange: () => saveDead()});
   const until = el("input", {type: "date", value: dateIn(blockProp(block, "until")) || "", onchange: () => saveUntil()});
   const priSel = el("select", {onchange: () => savePriority()});
   for (const [v, label] of [["", "None"], ["H", "High"], ["M", "Medium"], ["L", "Low"]])
     priSel.append(el("option", {value: v}, label));
   priSel.value = priorityOf(block) || "";
-  const holdWas = holdValue(blockProp(block, "hold"));
-  const hold = el("input", {type: "date", value: holdWas && holdWas !== HOLD_OPEN ? holdWas : "", onchange: () => saveHold()});
-  const holdOpen = el("input", {type: "checkbox", checked: holdWas === HOLD_OPEN,
-    onchange: () => { hold.disabled = holdOpen.checked; saveHold(); }});
-  hold.disabled = holdOpen.checked;
+  // One date row, not three: what it is backed by -- SCHEDULED or hold:: -- follows
+  // from the state already chosen above, so there is nothing extra to pick here.
+  const schedLabel = el("label", {}, "Scheduled");
+  const holdOpen = el("input", {type: "checkbox", onchange: () => { sched.disabled = holdOpen.checked; saveSched(); }});
+  const holdOpenRow = el("label", {style: "display:flex;gap:6px;align-items:center;font-size:12px;margin-top:4px"},
+    holdOpen, "No date: until I take it off");
+  const loadSchedField = () => {
+    const isHold = block.state === "HOLD";
+    schedLabel.textContent = isHold ? "Hold until" : block.state === "WAIT" ? "Follow up" : "Scheduled";
+    const val = isHold ? holdValue(blockProp(block, "hold")) : dateIn(blockProp(block, "SCHEDULED"));
+    holdOpen.checked = isHold && val === HOLD_OPEN;
+    sched.value = val && val !== HOLD_OPEN ? val : "";
+    sched.disabled = holdOpen.checked;
+    schedAt.value = isHold ? "" : timeOf("SCHEDULED");
+    schedAt.style.display = isHold ? "none" : "";
+    holdOpenRow.style.display = isHold ? "" : "none";
+  };
   const remindSel = el("select", {onchange: () => saveRemind()});
   const usualLabel = () => (remindUsual() ? leadWords(remindUsual()) + " before" : "At the time") + " (usual)";
   for (const [v, label] of [["", usualLabel()], ["0", "At the time"], ["5m", "5 min before"],
@@ -94,6 +106,7 @@ function showTaskDetail(path, block, space) {
     cancelledNote.style.display = cancelled ? "" : "none";
     reopenBtn.style.display = cancelled ? "" : "none";
     fillTrail();
+    loadSchedField();
   };
   syncPanel();
 
@@ -115,6 +128,14 @@ function showTaskDetail(path, block, space) {
     touch(path); noteTodoTouched();
   };
   const saveSched = () => {
+    if (block.state === "HOLD") {
+      const prevHold = holdValue(blockProp(block, "hold"));
+      if (holdOpen.checked) setBlockProp(block, "hold", HOLD_OPEN);
+      else if (sched.value) setBlockProp(block, "hold", "[[" + sched.value + "]]");
+      else if (prevHold) endHold(block.props, prevHold > todayISO() && hasRepeatUnder([block]));
+      touch(path); noteTodoTouched(); render();
+      return;
+    }
     if (badClock(schedAt)) return;
     const dueWas = dueDate(block);
     if (sched.value) setBlockProp(block, "SCHEDULED", whenValue(sched.value, schedAt.value));
@@ -143,12 +164,6 @@ function showTaskDetail(path, block, space) {
   const savePriority = () => {
     if (priSel.value) setBlockProp(block, "priority", priSel.value);
     else drop("priority");
-    touch(path); noteTodoTouched(); render();
-  };
-  const saveHold = () => {
-    if (holdOpen.checked) setBlockProp(block, "hold", HOLD_OPEN);
-    else if (hold.value) setBlockProp(block, "hold", "[[" + hold.value + "]]");
-    else if (holdWas) endHold(block.props, holdWas > todayISO() && hasRepeatUnder([block]));
     touch(path); noteTodoTouched(); render();
   };
   titleInput.addEventListener("blur", saveTitle);
@@ -237,17 +252,13 @@ function showTaskDetail(path, block, space) {
         el("button", {onclick: () => { closeModal(); openRefile(path, block); }}, "refile"),
       )),
       el("div", {class: "grid2"},
-        el("div", {class: "field"}, el("label", {}, "Scheduled"), el("div", {class: "dt"}, sched, schedAt)),
+        el("div", {class: "field"}, schedLabel, el("div", {class: "dt"}, sched, schedAt), holdOpenRow),
         el("div", {class: "field"}, el("label", {}, "Deadline"), el("div", {class: "dt"}, dead, deadAt))),
       el("div", {class: "grid2"},
         el("div", {class: "field"}, el("label", {}, "Reminder, when it has a time"), remindSel, remindUsualBtn),
         el("div", {class: "field"}, el("label", {}, "Cancel it if still open after"), until)),
       el("div", {class: "grid2"},
         el("div", {class: "field"}, el("label", {}, "Priority"), priSel),
-        el("div", {class: "field"}, el("label", {}, "On hold until"), hold,
-          el("label", {style: "display:flex;gap:6px;align-items:center;font-size:12px;margin-top:4px"},
-            holdOpen, "No date: until I take it off"))),
-      el("div", {class: "grid2"},
         el("div", {class: "field"}, el("label", {}, "Urgency"),
           (() => {
             const who = assigneeOf(block);

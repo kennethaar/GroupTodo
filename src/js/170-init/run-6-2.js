@@ -81,6 +81,7 @@
   scheduleContextPrompts();
   installSensing();
   expireOverdue();
+  resumeHeldTasks();
   remindTick();
   setInterval(remindTick, 30000);
   if (updatesPossible()) { maybeShowWhatsNew(); installUpdateCheck(); }
