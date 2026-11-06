@@ -4479,6 +4479,75 @@ var GTD_TEST = (() => {
     }
   });
 
+  test("#311 Take it back on the pill's menu clears the assignee", async () => {
+    const path = scratchProject("crane order 1c", [["WAIT", "Snakket med [[p/Lars Haugen]] om arbeidsordre"]]);
+    const block = getPage(path).blocks[0];
+    const card = boardCard({path, space: V.space, block, state: block.state, title: block.title, assignee: assigneeOf(block)});
+    document.body.append(card);
+    try {
+      card.querySelector(".chip.who").click();
+      await settle();
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Take it back").click();
+      await settle();
+      eq(block.state, "TODO", "back to a task of your own");
+      ok(!assigneeOf(block), "no longer waiting on anybody");
+    } finally {
+      closeAll();
+      card.remove();
+    }
+  });
+
+  test("#311 Change person on the pill's menu hands it to somebody else", async () => {
+    const path = scratchProject("crane order 1d", [["WAIT", "Snakket med [[p/Lars Haugen]] om arbeidsordre"]]);
+    const block = getPage(path).blocks[0];
+    const card = boardCard({path, space: V.space, block, state: block.state, title: block.title, assignee: assigneeOf(block)});
+    document.body.append(card);
+    try {
+      card.querySelector(".chip.who").click();
+      await settle();
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Change person").click();
+      await settle();
+      eq(document.querySelector("#modalRoot h2")?.textContent, "Change person");
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "someone else…").click();
+      await settle();
+      eq(document.querySelector("#modalRoot h2")?.textContent, "Waiting on somebody");
+      document.querySelector("#modalRoot input").value = "Nora Testerson";
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Waiting on them").click();
+      await settle();
+      eq(assigneeOf(block), "Nora Testerson");
+    } finally {
+      closeAll();
+      card.remove();
+    }
+  });
+
+  test("#311 Change person leads with a shared name and can be filtered", async () => {
+    const tomas = householder("Tomas Haugen"), anna = householder("Anna Olsen");
+    const path = scratchProject("crane order 1e", [["WAIT", "Snakket med [[p/Lars Haugen]] om arbeidsordre"]]);
+    const block = getPage(path).blocks[0];
+    const card = boardCard({path, space: V.space, block, state: block.state, title: block.title, assignee: assigneeOf(block)});
+    document.body.append(card);
+    try {
+      card.querySelector(".chip.who").click();
+      await settle();
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Change person").click();
+      await settle();
+      const names = () => [...document.querySelectorAll("#modalRoot button")].map(x => x.textContent);
+      ok(names().indexOf("Tomas Haugen") < names().indexOf("Anna Olsen"), "the shared surname leads, ahead of the alphabet");
+      const filterIn = document.querySelector("#modalRoot input");
+      filterIn.value = "Olsen";
+      filterIn.dispatchEvent(new Event("input"));
+      ok(names().includes("Anna Olsen") && !names().includes("Tomas Haugen"), "filtered down to the match");
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Anna Olsen").click();
+      await settle();
+      eq(assigneeOf(block), "Anna Olsen");
+    } finally {
+      closeAll();
+      card.remove();
+      removePage(tomas); removePage(anna); clearMemo();
+    }
+  });
+
   test("#311 A Waiting for chip on an outliner line offers the same menu", async () => {
     const path = scratchProject("crane order 2", [["WAIT", "Snakket med [[p/Lars Haugen]] om arbeidsordre"]]);
     const block = getPage(path).blocks[0];

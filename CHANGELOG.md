@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.110.0 - 2026-11-06
+
+- Waiting for › Board and Journal: the → Name pill's menu now also offers
+  Take it back and Change person (#311), so handing a task to someone else
+  no longer needs the task panel. Change person leads with anybody sharing
+  a first or last name with who has it now, then the rest alphabetically,
+  and can be filtered by typing.
+
 ## 1.109.5 - 2026-11-06
 
 - Waiting for › Board and Journal: the → Name pill jumped straight to Ask
