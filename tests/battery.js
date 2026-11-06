@@ -2451,12 +2451,13 @@ var GTD_TEST = (() => {
       [...seg.querySelectorAll("button")].find(x => x.textContent === "HOLD").click();
       eq(getPage(path).blocks[0].state, "HOLD", "picking HOLD autosaves the state");
 
-      const menuBtn = [...m.querySelectorAll(".tdhead button")].find(x => x.textContent === "⋯");
+      const menuBtn = [...m.querySelectorAll("header button")].find(x => x.textContent === "⋯");
       menuBtn.click();
       const menu = document.querySelector(".linkpop");
       ok(menu, "the overflow menu opens");
       const items = [...menu.querySelectorAll(".pick")].map(x => x.textContent);
-      eq(items, ["Cancel task", "Convert to note", "Delete task"]);
+      eq(items, ["Cancel task", "Convert to note", "Move to another area", "Delete task"],
+        "#308 folds the tab bar's separate Move action into this one menu");
       [...menu.querySelectorAll(".pick")].find(x => x.textContent === "Cancel task").click();
       eq(getPage(path).blocks[0].state, "CANCELLED");
       ok(!document.querySelector(".linkpop"), "the menu closes after acting");
@@ -2561,6 +2562,72 @@ var GTD_TEST = (() => {
     touch(path); clearMemo();
     resumeHeldTasks();
     eq(getPage(path).blocks[0].state, "HOLD", "no date means no day to resume on");
+  });
+  test("#308 task detail panel: one header, no duplicate tab bar", () => {
+    const path = scratchProject("one-header", [["TODO", "Pack for the trip"]]);
+    const b = getPage(path).blocks[0];
+    try {
+      openTaskDetail(path, b, V.space);
+      const m = document.querySelector("#modalRoot .modal");
+      eq(m.querySelectorAll("header").length, 1, "a single header bar, not a stacked pair");
+      ok(!m.querySelector(".detail-tools"), "the icon-only tab bar is gone");
+      ok(!m.querySelector(".detail-pane"), "nothing is hidden behind a tab anymore");
+      const header = m.querySelector("header");
+      has(header.textContent, path, "the source path lives in the one remaining header");
+      ok([...header.querySelectorAll("button")].some(x => x.textContent === "✕"), "close stays in that same header");
+    } finally { closeModal(); }
+  });
+  test("#308 task detail panel: WHERE IT SITS trimmed to Project/Parent/Tags", () => {
+    const path = scratchProject("trim-sits", [["TODO", "Mow the lawn"]]);
+    const b = getPage(path).blocks[0];
+    try {
+      showTaskDetail(path, b, V.space);
+      const m = document.querySelector("#modalRoot .modal");
+      const cells = [...m.querySelectorAll(".acell")].map(c => [...c.classList].find(cl => cl.startsWith("a-")));
+      eq(cells.sort(), ["a-parent", "a-project", "a-tags"], "This todo, Siblings and Children boxes are gone");
+    } finally { closeModal(); }
+  });
+  test("#308 task detail panel: one Subtasks section, checklist of actual children", () => {
+    const path = scratchProject("subtasks", [["TODO", "Plan the trip"]]);
+    const b = getPage(path).blocks[0];
+    const kid = stampAuthor(newBlock({state: "TODO", title: "Book flights", props: {}}));
+    b.children = [kid];
+    try {
+      showTaskDetail(path, b, V.space);
+      const m = document.querySelector("#modalRoot .modal");
+      ok(!m.querySelector(".acell.a-kids"), "the bordered Children box is gone");
+      ok(![...m.querySelectorAll("label")].some(x => x.textContent === "children"), "the separate lowercase children row is gone");
+      const row = [...m.querySelectorAll(".subkid")].find(r => r.textContent.includes("Book flights"));
+      ok(row, "the nested child shows as a checklist row");
+      const cb = row.querySelector('input[type="checkbox"]');
+      ok(!cb.checked, "open child starts unchecked");
+      cb.checked = true;
+      cb.dispatchEvent(new Event("change"));
+      eq(kid.state, "DONE", "checking it off marks the subtask done");
+    } finally { closeModal(); }
+  });
+  test("#308 task detail panel: unset +pills share one flex-wrap row", () => {
+    const path = scratchProject("pillrow", [["TODO", "Renew the passport"]]);
+    const b = getPage(path).blocks[0];
+    try {
+      showTaskDetail(path, b, V.space);
+      const m = document.querySelector("#modalRoot .modal");
+      const row = m.querySelector(".pillrow");
+      ok(row, "Scheduled/Deadline/Assign/Priority share a pillrow container");
+      const texts = [...row.querySelectorAll(".fpill")].map(x => x.textContent);
+      eq(texts, ["+ Scheduled", "+ Deadline", "+ Assign", "+ Priority"]);
+    } finally { closeModal(); }
+  });
+  test("#308 task detail panel: no Title or State labels", () => {
+    const path = scratchProject("no-labels", [["TODO", "Clean the garage"]]);
+    const b = getPage(path).blocks[0];
+    try {
+      showTaskDetail(path, b, V.space);
+      const m = document.querySelector("#modalRoot .modal");
+      const labels = [...m.querySelectorAll("label")].map(x => x.textContent);
+      ok(!labels.includes("Title"), "Title label is gone, the textarea speaks for itself");
+      ok(!labels.includes("State"), "State label is gone, the segmented control speaks for itself");
+    } finally { closeModal(); }
   });
   test("#198 a person on a line above counts for the tasks under it", () => {
     const day = journalPath("2003-03-03"), joe = personPath("Joe Newmann");

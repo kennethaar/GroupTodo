@@ -51,3 +51,4 @@ const ICON_DATE        = '<rect x="4" y="5" width="16" height="15" rx="2"/><path
 const ICON_CLOCK        = '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/>';
 const ICON_MEETING      = '<circle cx="9" cy="8" r="3.3"/><path d="M3.5 20v-1.5A6 6 0 0 1 9 13"/><circle cx="16.3" cy="9" r="3"/><path d="M12.4 20v-1.2A5.3 5.3 0 0 1 16.3 13.6"/>';
 const ICON_CHAIN        = '<path d="M9 15l6-6"/><path d="M8 11l-2 2a3 3 0 0 0 4 4l2-2M16 13l2-2a3 3 0 0 0-4-4l-2 2"/>';
+const ICON_CHECKLIST  = '<rect x="4" y="5" width="4" height="4" rx="1"/><path d="M11 7h9"/><rect x="4" y="14" width="4" height="4" rx="1"/><path d="M11 16h9"/>';

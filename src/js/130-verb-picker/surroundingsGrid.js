@@ -64,17 +64,6 @@ function surroundingsGrid(path, block, space) {
     par ? chip(words(par.title), par.title, toTask(par), "", "b:" + par.id)
         : quiet("none, it sits at the top")));
 
-  /* The middle is a node like any other, so the arrows can land on it, and
-     Enter there is the one thing the grid cannot do by moving: make something
-     new under what you are looking at. Two presses, two meanings, and neither
-     is a key to remember separately. Enter on a node you have walked to centres
-     it; Enter on the one already in the middle grows it. */
-  grid.append(cell("a-self", "This todo",
-    el("button", {class: "achip aself", data: {node: "b:" + block.id},
-      title: "Enter adds a step under this one",
-      onclick: () => addChildTodo(path, block, space)},
-      (block.state ? block.state + " " : "") + words(block.title))));
-
   /* The tags are the links in the title, and the context goes first because it
      is the one that decides whether you can do the thing where you are. */
   const refs = linksIn(block.title).map(r => trim(r.split("][")[0]))
@@ -93,17 +82,5 @@ function surroundingsGrid(path, block, space) {
   if (!ctx.length) tagBox.unshift(chip("add context", "A todo with no context cannot be filtered to where you are",
     () => { closeModal(); promptAndInsertContext(path, block); }, "want"));
   grid.append(cell("a-tags", "Tags", tagBox));
-
-  const sibs = (page ? siblingsOf(page, block) : []).filter(b => b !== block && !isMessage(b));
-  grid.append(cell("a-sibs", "Siblings" + (sibs.length > 6 ? " · " + sibs.length : ""),
-    sibs.length ? sibs.slice(0, 6).map(b => chip(words(b.title), b.title, toTask(b),
-                    OPEN_STATES[b.state] ? "" : "done", "b:" + b.id))
-                : quiet("nothing beside it")));
-
-  const kids = (block.children || []).filter(b => !isMessage(b));
-  grid.append(cell("a-kids", "Children",
-    kids.length ? kids.map(b => chip(words(b.title), b.title, toTask(b),
-                    OPEN_STATES[b.state] ? "" : "done", "b:" + b.id))
-                : quiet("nothing under it")));
   return grid;
 }

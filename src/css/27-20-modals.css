@@ -97,11 +97,23 @@
 /* The task detail panel's own header row, inside the body so the shared modal
    chrome above it (title, hint, close) stays untouched by every dialog that
    wants its own breadcrumb or overflow menu. */
-.tdhead{display:flex;align-items:center;gap:6px;padding:4px 16px 10px}
-.tdhead .btn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%}
+.modal header .btn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:50%}
 .field{padding:8px 16px}
 .field>label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--fg3);margin-bottom:5px}
+.field>label svg{width:12px;height:12px;vertical-align:-1px}
 .field textarea{resize:vertical;min-height:70px;font-family:inherit}
+/* The task panel: tighter rhythm than a generic dialog's fields, and the
+   title grows with what is typed instead of starting three lines tall (#308). */
+.tdbody{display:flex;flex-direction:column;gap:2px}
+.tdbody>.field{padding:6px 16px}
+.field textarea.titlebox{resize:none;min-height:0;overflow:hidden}
+.field.pillrow{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
+.field.pillrow>.field{padding:0;flex:0 1 auto}
+.subkids{display:flex;flex-direction:column;gap:4px;margin:2px 0 6px}
+.subkid{display:flex;align-items:center;gap:8px}
+.subkid.done .subkidtitle{color:var(--fg3);text-decoration:line-through}
+.subkidtitle{background:none;border:none;padding:2px 0;color:var(--fg2);font-size:13px;text-align:left;cursor:pointer}
+.subkidtitle:hover{color:var(--fg);text-decoration:underline}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0}
 .seg{display:flex;gap:6px;flex-wrap:wrap}
 .seg button{

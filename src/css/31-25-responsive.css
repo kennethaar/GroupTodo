@@ -55,12 +55,6 @@
 .refaims input{width:100%;border:0;background:transparent;color:var(--fg);font:inherit;font-size:14px;padding:10px 14px}
 @media (max-width:560px){.refitem{flex-direction:column}}
 
-/* the task panel's sections behind icons */
-.detail-tools{display:flex;gap:4px;flex-wrap:wrap;margin-right:8px}
-.detail-tools button svg{width:18px;height:18px;display:block}
-.detail-tools button[aria-pressed=true]{background:var(--bg3);outline:1px solid var(--fg3)}
-.detail-tools button:disabled{opacity:.35;cursor:not-allowed}
-.detail-pane[hidden]{display:none!important}
 .space-transfer-list{max-height:220px;overflow:auto;font-size:12px}
 .space-transfer-choice{display:block;margin:12px 0}
 

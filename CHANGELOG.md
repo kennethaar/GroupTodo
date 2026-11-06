@@ -5,6 +5,22 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.108.0 - 2026-11-06
+
+- A task's panel: the icon bar that hid Dates, Repeats, Chat, Who and History
+  behind tabs is gone, along with the duplicate header it sat on top of —
+  there is one header now, with the close button beside the source link and
+  overflow menu. Where it sits is Project, Parent and Tags only; This todo,
+  Siblings and the bordered Children box are gone (the project page's own
+  "where it sits" picture is the same shape now, for the same reason). The
+  nested steps under a task and the children:: link picker are one Subtasks
+  section, with a checklist you can tick off directly. The Title and State
+  labels are gone — the box and the buttons under them already say what they
+  are — and the title grows with what you type instead of starting three
+  lines tall. Scheduled, Deadline, Assign and Priority share one row when
+  unset, instead of a two-column grid with a gap between them. Moving a task
+  to another area is now in the ⋯ menu, not a second one. (Fixes #308)
+
 ## 1.107.0 - 2026-11-06
 
 - A task's panel: Scheduled, Deadline, Priority and Assign now start as a

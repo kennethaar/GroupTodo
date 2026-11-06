@@ -2375,7 +2375,7 @@ js/130-verb-picker/surroundingsGrid.js
 js/130-verb-picker/projectGrid.js
 js/130-verb-picker/openTaskDetail.js
 js/130-verb-picker/showTaskDetail.js
-js/130-verb-picker/vars-DETAIL_ICONS.js
+js/130-verb-picker/focusTaskDetailDate.js
 js/130-verb-picker/arrangeTaskDetail.js
 js/140-project-lifecycle/openStatusPicker.js
 js/140-project-lifecycle/newProjectPrompt.js

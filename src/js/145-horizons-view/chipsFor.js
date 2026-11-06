@@ -22,7 +22,7 @@ function chipsFor(a, opts = {}) {
   if (a.held) out.push(el("span", {class: "chip b when", title: "Hidden from your lists until then",
     onclick: e => { e.stopPropagation(); chipMenu(holdWords(a.held), "hold", [
       ["a", "Bring it back now", null, () => inSpace(a.space, () => releaseTaskHold(a.path, a.block))],
-      ["b", "Change the date", null, () => inSpace(a.space, () => openTaskDetail(a.path, a.block, a.space, "gtd"))],
+      ["b", "Change the date", null, () => inSpace(a.space, () => openTaskDetail(a.path, a.block, a.space, "date"))],
     ]); }}, holdArrow(a.held)));
   const msgs = messagesOf(a.block).length;
   if (msgs) {

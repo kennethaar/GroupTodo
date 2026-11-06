@@ -5,7 +5,9 @@ function showTaskDetail(path, block, space) {
     context: blockContext(block), due: dueDate(block),
     age: blockAge(block), added: addedDate(block),
   };
-  const titleInput = el("textarea", {}); titleInput.value = block.title;
+  const titleInput = el("textarea", {rows: 1, class: "titlebox"}); titleInput.value = block.title;
+  const autoGrow = () => { titleInput.style.height = "auto"; titleInput.style.height = titleInput.scrollHeight + "px"; };
+  titleInput.addEventListener("input", autoGrow);
   const notes = el("textarea", {placeholder: "Notes"}); notes.value = (block.body || []).join("\n");
   /* The same names, @ and [[ as the line itself. The chosen key takes one; Escape
      closes the list, not the panel. */
@@ -165,6 +167,27 @@ function showTaskDetail(path, block, space) {
   };
   syncPanel();
 
+  // The checklist of actual nested steps (block.children), not to be confused
+  // with children:: below it -- a link to another page or task entirely. Both
+  // are "subtasks" to someone reading the panel, so they share one section.
+  const kidsList = el("div", {class: "subkids"});
+  const renderKids = () => {
+    kidsList.textContent = "";
+    for (const kid of (block.children || []).filter(b => !isMessage(b))) {
+      const done = !OPEN_STATES[kid.state];
+      const cb = el("input", {type: "checkbox", checked: done, onchange: () => {
+        setBlockState(path, kid, cb.checked ? "DONE" : "TODO");
+        touch(path); noteTodoTouched(); render(); renderKids();
+      }});
+      kidsList.append(el("div", {class: "subkid" + (done ? " done" : "")}, cb,
+        el("button", {class: "subkidtitle", onclick: () => { closeModal(); openTaskDetail(path, kid, space); }},
+          linkWords(kid.title) || "(untitled)")));
+    }
+  };
+  renderKids();
+  const addSubtaskPill = factPill("+ Add subtask", "fwant", "A new step under this one",
+    () => addChildTodo(path, block, space));
+
   const drop = key => { for (const k of Object.keys(block.props)) if (k.toLowerCase() === key) delete block.props[k]; };
   // Every field saves itself the moment it changes -- on blur for text, on
   // change for selects/dates/pills -- so there is nothing left to lose by
@@ -241,6 +264,10 @@ function showTaskDetail(path, block, space) {
     menuBox = el("div", {class: "linkpop", role: "menu"},
       el("button", {class: "pick", onclick: () => { closeMenu(); setBlockState(path, block, "CANCELLED"); syncPanel(); }}, "Cancel task"),
       el("button", {class: "pick", onclick: () => { closeMenu(); setBlockState(path, block, null); syncPanel(); }}, "Convert to note"),
+      el("button", {class: "pick", onclick: () => {
+        closeMenu(); closeModal();
+        openItemSpacePicker({path, space, id: block.id});
+      }}, "Move to another area"),
       el("button", {class: "pick", style: "color:var(--bad,#c0392b)", onclick: () => {
         closeMenu(); closeModal();
         deleteBlockWithUndo(path, block, "Deleted “" + titleForRow(block.title) + "”");
@@ -255,21 +282,23 @@ function showTaskDetail(path, block, space) {
   const srcBtn = el("button", {class: "btn ghost sm", onclick: () => { closeModal(); openPage(path); }}, path);
   const copyBtn = el("button", {class: "iconbtn", title: "A link you can paste into chat or email",
     onclick: () => copyLinkTo(deepLink(path, block), "this task")}, "\u{1F517}");
-  const toolbar = el("div", {class: "tdhead"}, srcBtn, el("div", {style: "flex:1"}), copyBtn, menuBtn);
 
-  modal({
+  const result = modal({
     title: "", hint: "", side: true,
-    body: el("div", {}, toolbar,
-      el("div", {class: "field"}, el("label", {}, "Title"), titleInput),
-      el("div", {class: "field"}, el("label", {}, "State"),
+    body: el("div", {class: "tdbody"},
+      el("div", {class: "field"}, titleInput),
+      el("div", {class: "field"},
         el("div", {style: "display:flex;align-items:center;flex-wrap:wrap"}, seg, cancelledNote, reopenBtn)),
-      el("div", {class: "field"}, el("label", {}, "Where it sits"), surroundingsGrid(path, block, space)),
-      el("div", {class: "field"}, factLine(path, childrenFact({path, block, space}))),
-      assignBox,
+      el("div", {class: "field"}, surroundingsGrid(path, block, space)),
+      el("div", {class: "field"},
+        el("label", {}, svgIcon(ICON_CHECKLIST), " Subtasks"),
+        kidsList, addSubtaskPill,
+        factLine(path, childrenFact({path, block, space}))),
+      el("div", {class: "field pillrow"}, schedBox, deadBox, assignBox, priBox),
       el("div", {class: "field"},
         el("label", {
           title: "Everyone in this area sees it. Flag one with ⚑ to follow it across devices.",
-        }, "Chat" + (messagesOf(block).length ? " · " + messagesOf(block).length : "")),
+        }, svgIcon(ICON_CHAT), " Chat" + (messagesOf(block).length ? " · " + messagesOf(block).length : "")),
         threadPanel(path, block),
         el("div", {style: "margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"},
           el("button", {class: "btn sm ghost", onclick: () => { closeModal(); informFromLine(path, block, space); }}, svgIcon(ICON_MAIL), " Send an update"),
@@ -283,11 +312,9 @@ function showTaskDetail(path, block, space) {
           startsWithVerb(block.title) ? "verb ok" : "add physical verb"),
         el("button", {onclick: () => { closeModal(); openRefile(path, block); }}, "refile"),
       )),
-      el("div", {class: "grid2"}, schedBox, deadBox),
       el("div", {class: "grid2"},
         el("div", {class: "field"}, el("label", {}, "Reminder, when it has a time"), remindSel),
         el("div", {class: "field"}, el("label", {}, "Cancel it if still open after"), until)),
-      priBox,
       el("div", {class: "field"},
         el("label", {title: "Nothing is created until you tick it off; you'll be asked first."}, "Repeats"),
         (() => {
@@ -343,4 +370,13 @@ function showTaskDetail(path, block, space) {
     },
     onClose: () => closeMenu(),
   });
+
+  // One header, not two: the source path takes the title's place and the
+  // close button gains the copy-link and overflow-menu buttons beside it,
+  // instead of a second row repeating them under a bare icon bar (#308).
+  const header = result.root.querySelector("header");
+  header.replaceChild(srcBtn, header.querySelector("h2"));
+  header.insertBefore(copyBtn, header.lastElementChild);
+  header.insertBefore(menuBtn, header.lastElementChild);
+  autoGrow();
 }
