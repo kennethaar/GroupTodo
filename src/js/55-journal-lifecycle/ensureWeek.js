@@ -2,6 +2,8 @@ function ensureWeek(id) {
   const path = journalPath(id);
   if (V.pages.has(path) || !weekMonday(id)) return path;
   const page = {props: {title: id, created: todayStamp()}, blocks: []};
+  const tplPath = readTemplate("week");
+  if (tplPath) page.blocks.push(...instantiateTemplate(tplPath, {title: id}).blocks);
   let prev = null;
   for (let n = 1; n <= 12 && !prev; n++) {
     const p = journalPath(shiftWeek(id, -n));

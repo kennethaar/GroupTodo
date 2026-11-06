@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.103.0 - 2026-11-06
+
+- Journal › Week: a new week page now starts from `pages/8/week.md`, if
+  present, with `%title%` filled in as the week's ISO id, before the every
+  week lines carried from last week and the weekly reflection line. An
+  existing week page is never touched again, and with no `8/week.md` file
+  a new week looks as it always has (#302).
+
 ## 1.102.3 - 2026-11-06
 
 - Keys on a line: on an iPhone, the foot toolbar now clears the keyboard's

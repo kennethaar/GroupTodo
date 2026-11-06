@@ -21,7 +21,7 @@ function templateHelp() {
     el(
       "p",
       {},
-      "Projects use their folder name, for example 8/1.md. Tasks use 8/todo.md. Other types: p person, o organisation, c context, z note, a responsibility, g goal, k checklist, page generic, journals journal. Relation choices retain ^ for up and _ for down. Use feature_repeat_prompt:: true to offer the next recurring task, and feature_completion_prompt:: true to check project completion when closing a task. Set false to disable. Template updates add missing fields and new rules to existing items. Existing values, including blank fields, are preserved. Opening a page does not rerun status or review rules. Existing notes and child nodes are not duplicated.",
+      "Projects use their folder name, for example 8/1.md. Tasks use 8/todo.md. Other types: p person, o organisation, c context, z note, a responsibility, g goal, k checklist, page generic, journals journal, week week page. Relation choices retain ^ for up and _ for down. Use feature_repeat_prompt:: true to offer the next recurring task, and feature_completion_prompt:: true to check project completion when closing a task. Set false to disable. Template updates add missing fields and new rules to existing items. Existing values, including blank fields, are preserved. Opening a page does not rerun status or review rules. Existing notes and child nodes are not duplicated.",
     ),
   );
 }

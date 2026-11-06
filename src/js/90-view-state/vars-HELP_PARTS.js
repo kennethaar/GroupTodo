@@ -116,7 +116,7 @@ const HELP = {
       ["?.wksub.late", "Late, and by how many days."],
       ["?.wksub.wait", "Waiting for: due back that day."]],
     more: ["A week page is a file: journals, your name, 2026-W44.md. Link to it as [[2026-W44]].",
-      "A new week takes the every week lines from the last week, not ticked.",
+      "A new week starts from 8/week.md, if you have one, then takes the every week lines from the last week, not ticked.",
       "What is left open on a week stays there. The weekly review lists it.",
       "On a wide screen the days fill the window. Content width in Settings sets how much.",
       "On a phone the days stand one under the other."],

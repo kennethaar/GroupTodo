@@ -5389,6 +5389,26 @@ var GTD_TEST = (() => {
       } finally { V.pages.delete(next); }
     });
   });
+  test("#302 a new week page starts from pages/8/week.md, title filled in, once", async () => {
+    const tpl = join(DIRS.lists, "week.md"), next = journalPath("2099-W11");
+    await withPages({[tpl]: "# %title%\n\n## Notes\n\nSomething for %title%\n"}, async () => {
+      try {
+        eq(ensureWeek("2099-W11"), next);
+        const page = getPage(next);
+        eq(page.blocks[0].title, "# 2099-W11");
+        eq(page.blocks[0].body, ["## Notes", "", "Something for 2099-W11"]);
+        eq(ensureWeek("2099-W11"), next);
+        eq(getPage(next).blocks.length, 1, "the template is not poured twice");
+      } finally { V.pages.delete(next); }
+    });
+  });
+  test("#302 a missing or empty week template leaves a new week page as before", async () => {
+    const next = journalPath("2099-W12");
+    try {
+      eq(ensureWeek("2099-W12"), next);
+      eq(getPage(next).blocks.length, 0, "nothing poured in with no template");
+    } finally { V.pages.delete(next); }
+  });
   test("#192 ticking a weekly routine on a week page asks for no next one", async () => {
     const path = journalPath("2099-W20");
     await withPages({[path]: "- TODO Back up the vault\n  repeat:: weekly\n"}, async () => {
