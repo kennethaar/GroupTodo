@@ -7309,6 +7309,18 @@ var GTD_TEST = (() => {
     } finally { FLY = null; }
   });
 
+  test("#310 the line menu holds Repeat, Refile and Insert tracker, not a second Open side panel", () => {
+    const path = scratchProject("line menu rows", [["TODO", "Buy paint"]]);
+    const page = getPage(path), block = page.blocks[0];
+    FLY = {txt: el("textarea"), path, page, block, box: el("div"), open: null, hi: 0, q: ""};
+    try {
+      const rows = flyRows();
+      for (const k of ["rep", "refile", "trk"])
+        ok(rows.find(r => r.k === k)?.menu, k + " is on the line's own menu");
+      ok(!rows.some(r => r.k === "more"), "Open side panel is not duplicated there -- the foot toolbar has it direct");
+    } finally { FLY = null; }
+  });
+
   test("#297 the mobile line toolbar can add a context, person or organisation", () => {
     const path = scratchProject("editbar tag", [["TODO", "Buy paint"]]);
     const page = getPage(path), block = page.blocks[0];

@@ -11,9 +11,11 @@ function flyRows() {
   // The three core properties, then every action that is not a quick tag or
   // an entity change, sit together in the line's own quick menu
   // (`menu: true`) -- copy and move actions in one place, not split between
-  // this menu and the foot toolbar's own More. Context/Person/Organisation
-  // stay off it: they are quick tags, reached by their Alt+ key or the foot
-  // toolbar's Tag group (vars-EDIT_BAR.js) instead.
+  // this menu and the foot toolbar. Context/Person/Organisation stay off it:
+  // they are quick tags, reached by their Alt+ key or the foot toolbar's Tag
+  // group (vars-EDIT_BAR.js) instead. Open side panel is left off too -- the
+  // foot toolbar already has it as a direct button, so it needs no second
+  // way in from here.
   return [
     {k: "state", ic: FLY_STATE, label: typed ? "Stage" : "State", menu: true,
      val: typed && typed.stage ? typed.stage.name : t ? STATE_WORD[t] : "Note", key: "Ctrl+Enter",
@@ -25,6 +27,8 @@ function flyRows() {
             [shiftISO(todayISO(), 7), "In a week"], ["", "No date"]]},
     {k: "proj", ic: "#", label: "Project", val: proj ? proj.title : "None", key: "# · Alt+J", menu: !!proj,
      opts: [...["1", "3", "2"].flatMap(c => projectsIn(c)).map(p => [p, pageTitle(p)]), ["", "No project"]]},
+    {k: "rep", ic: FLY_REPEAT, label: "Repeat", val: repeatOf(block) || "No", key: "Alt+R", menu: true,
+     opts: [...REPEAT_CHOICES.map(c => [c, c || "No repeat"]), ["\u0002", "Custom…"]]},
     {k: "ctx", ic: "@", label: "Context", val: contextOf(block.title) ? "@" + contextOf(block.title) : blockContext(block) ? "@" + blockContext(block) + " (from above)" : "None", key: "@ · Alt+C",
      opts: [...ctxFolderOrder(allContextNames()).map(c => [c, contextLabel(c)]), ["", "No context"]]},
     {k: "who", ic: EB_PERSON, label: waiting ? "Waiting on" : "Person",
@@ -37,8 +41,8 @@ function flyRows() {
      opts: onLine.map(n => [n, n])}] : []),
     {k: "embedref", ic: FLY_EMBED, label: "Copy embed", key: "", menu: true, div: true},
     {k: "plaincopy", ic: EB_COPY, label: "Copy text", key: "", menu: true},
-    {k: "refile", ic: FLY_REFILE, label: "Move to…", key: "Alt+G", menu: true},
+    {k: "refile", ic: FLY_REFILE, label: "Refile", key: "Alt+G", menu: true},
+    {k: "trk", ic: FLY_TRACKER, label: "Insert tracker", key: "", menu: true},
     {k: "aiplan", ic: FLY_PLAN, label: "Plan with AI", key: "", menu: true},
-    {k: "more", ic: FLY_PANEL, label: "Open side panel", key: "", menu: true},
   ];
 }

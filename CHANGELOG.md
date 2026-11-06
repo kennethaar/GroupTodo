@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.109.2 - 2026-11-06
+
+- The line menu and toolbar: Repeat, Refile and Insert tracker dropped out
+  of the ⋯ menu in the cut from twenty rows to a handful (#310) without a
+  new home. They are back on it, next to Due and the other actions. Open
+  side panel came out again the other way: the foot toolbar already has it
+  as a direct button, so the ⋯ menu does not need a second way to it.
+
 ## 1.109.1 - 2026-11-06
 
 - The line menu and toolbar: Copy text sat behind the foot toolbar's More
