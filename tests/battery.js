@@ -4946,6 +4946,30 @@ var GTD_TEST = (() => {
       go("today");
     }
   });
+  test("#303 merging a context updates Sense where I am, so it does not come back", () => {
+    const keep = ["sense.here", "sense.away", "sense.work", "sense.places", "sense.learn"].map(k => [k, PREF.get(k, "")]);
+    makeContext("Testoldpc"); makeContext("Testnewpc");
+    try {
+      PREF.set("sense.here", "testoldpc");
+      PREF.set("sense.away", "Testelsewhere");
+      PREF.set("sense.work", JSON.stringify({ctx: "testoldpc", days: [1], from: "08:00", to: "16:00"}));
+      PREF.set("sense.places", JSON.stringify([{ctx: "testoldpc", lat: 1, lon: 1, r: 150}]));
+      PREF.set("sense.learn", JSON.stringify([{k: "ctx", v: "testoldpc", t: Date.now(), f: null}]));
+      mergeContextInto("Testoldpc", "Testnewpc");
+      eq(PREF.get("sense.here", ""), "Testnewpc");
+      eq(PREF.get("sense.away", ""), "Testelsewhere", "a name that was not merged is left alone");
+      eq(JSON.parse(PREF.get("sense.work", "{}")).ctx, "Testnewpc");
+      eq(JSON.parse(PREF.get("sense.places", "[]"))[0].ctx, "Testnewpc");
+      eq(JSON.parse(PREF.get("sense.learn", "[]"))[0].v, "Testnewpc");
+      ok(!getPage(contextPath("Testoldpc")), "not recreated by makeContext");
+      eq(makeContext(senseHere()), "Testnewpc", "sensing now would not revive the old name");
+    } finally {
+      for (const [k, v] of keep) PREF.set(k, v);
+      removePage(contextPath("Testoldpc")); removePage(contextPath("Testnewpc"));
+      document.querySelectorAll("#toasts .toast").forEach(x => x.remove());
+      clearMemo();
+    }
+  });
 
   /* ============================================================
      Events, feelings and Reflect: the bullet journal (#185)

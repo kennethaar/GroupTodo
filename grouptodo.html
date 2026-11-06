@@ -3947,7 +3947,7 @@ placeholder="Add a task. Try: &quot;Call Mia about the VAT phone tomorrow&quot;"
 })();
 
 "use strict";
-const APP_VERSION = "1.103.0";
+const APP_VERSION = "1.103.1";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -14960,7 +14960,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.103.0 - 2026-11-06\n\n- Journal › Week: a new week page now starts from `pages/8/week.md`, if\n  present, with `%title%` filled in as the week's ISO id, before the every\n  week lines carried from last week and the weekly reflection line. An\n  existing week page is never touched again, and with no `8/week.md` file\n  a new week looks as it always has (#302).\n\n## 1.102.3 - 2026-11-06\n\n- Keys on a line: on an iPhone, the foot toolbar now clears the keyboard's\n  own accessory bar and Safari's floating address pill while a line is being\n  edited (#299). Neither shrinks the visible page the way the keyboard\n  itself does, so the toolbar reserves extra room above the keyboard on an\n  iPhone browser tab; an app added to the home screen has no pill to clear.\n\n## 1.102.2 - 2026-11-06\n\n- The line menu and toolbar: every other emoji or Unicode symbol left in the\n  app as an icon -- the sidebar's nav icons, pins, the pencil and scissors on\n  book and journal rows, close buttons, checkmarks, warnings, envelopes,\n  fold carets, move/urgency arrows, week and day arrows, and the handful of\n  one-off icons on trackers, chores, birthdays and the feedback links -- is\n  now the same kind of monochrome SVG the foot toolbar and line menu already\n  use (#301). Two kinds of spot were left alone: the update-reply email,\n  where an inline picture is not reliable across mail clients, and a small\n  set of CSS checkmarks on dense table and grid cells, where the glyph is a\n  pseudo-element rather than a real node.\n\n## 1.102.1 - 2026-11-05\n\n- The line menu and toolbar: the line's own menu (right-click or long-press)\n  used a mix of flat glyphs and colour emoji for Person, Organisation and\n  Meeting. Every icon there is now the same kind of monochrome SVG the foot\n  toolbar uses, and the two menus draw the same icon for the same action\n  (#301).\n\n## 1.102.0 - 2026-11-05\n\n- The line menu and toolbar: the phone toolbar's 15 flat buttons are now 8.\n  Up, Down, Outdent and Indent stay direct; Task/Zettel/Project/\n  Responsibility sit behind one Type button, Context/Person/Organisation\n  behind one Tag button, and Photo/Image behind one Media button (Photo\n  drops out on a mouse, with nothing to take a photo with). To area and\n  Copy text moved to a trailing More button. Every icon on the bar is now a\n  monochrome SVG at one stroke weight, instead of mixing those with colour\n  emoji for Person, Organisation, Photo and Image (#300).\n\n## 1.101.2 - 2026-11-05\n\n- Keys on a line: the phone toolbar's sideways scroll now actually works on\n  Android; an explicit touch-action that was meant to let it swipe was\n  silently disabling the scroll instead (#298).\n\n## 1.101.1 - 2026-11-05\n\n- Keys on a line: the phone toolbar's sideways scroll now actually swipes on\n  Android, instead of holding still because the tap-focus guard mistook the\n  swipe for a tap (#298).\n\n## 1.101.0 - 2026-11-05\n\n- Keys on a line: the phone toolbar at the foot of the screen can now add a\n  context, person or organisation too, and scrolls sideways instead of\n  squeezing its buttons when it has more than fit (#297).\n\n## 1.100.2 - 2026-11-05\n\n- Getting started: the first-run screens lead with writing a note, with\n  folder and naming pushed down as optional (#296).\n\n## 1.100.1 - 2026-11-05\n\n- Calendars: fix an import crashing with \"Cannot read properties of\n  undefined\" when a meeting has an attendee or organizer, such as on Proton\n  Calendar (#294).\n\n## 1.100.0 - 2026-11-05\n\n- Settings: meeting reminders keep the one-click times and add Custom…: any\n  number of minutes, hours, days or weeks before, and as many reminders as you\n  like. Each calendar can have its own reminders, under its name in Calendars\n  (#292).\n\n## 1.99.2 - 2026-11-05\n\n- Calendars: Add calendar uses the private area you are on, instead of a\n  shared area it remembered from before.\n";
+const HELP_NEWS = "## 1.103.1 - 2026-11-06\n\n- Sense where I am: merging a context (by rename, alias or look-alike) now\n  renames it everywhere Sense had remembered it by name too -- \"here\",\n  \"away\", work hours, a saved place, what it learned -- so the merged\n  context no longer comes back on its own the next time GroupToDo senses\n  where you are (#303).\n\n## 1.103.0 - 2026-11-06\n\n- Journal › Week: a new week page now starts from `pages/8/week.md`, if\n  present, with `%title%` filled in as the week's ISO id, before the every\n  week lines carried from last week and the weekly reflection line. An\n  existing week page is never touched again, and with no `8/week.md` file\n  a new week looks as it always has (#302).\n\n## 1.102.3 - 2026-11-06\n\n- Keys on a line: on an iPhone, the foot toolbar now clears the keyboard's\n  own accessory bar and Safari's floating address pill while a line is being\n  edited (#299). Neither shrinks the visible page the way the keyboard\n  itself does, so the toolbar reserves extra room above the keyboard on an\n  iPhone browser tab; an app added to the home screen has no pill to clear.\n\n## 1.102.2 - 2026-11-06\n\n- The line menu and toolbar: every other emoji or Unicode symbol left in the\n  app as an icon -- the sidebar's nav icons, pins, the pencil and scissors on\n  book and journal rows, close buttons, checkmarks, warnings, envelopes,\n  fold carets, move/urgency arrows, week and day arrows, and the handful of\n  one-off icons on trackers, chores, birthdays and the feedback links -- is\n  now the same kind of monochrome SVG the foot toolbar and line menu already\n  use (#301). Two kinds of spot were left alone: the update-reply email,\n  where an inline picture is not reliable across mail clients, and a small\n  set of CSS checkmarks on dense table and grid cells, where the glyph is a\n  pseudo-element rather than a real node.\n\n## 1.102.1 - 2026-11-05\n\n- The line menu and toolbar: the line's own menu (right-click or long-press)\n  used a mix of flat glyphs and colour emoji for Person, Organisation and\n  Meeting. Every icon there is now the same kind of monochrome SVG the foot\n  toolbar uses, and the two menus draw the same icon for the same action\n  (#301).\n\n## 1.102.0 - 2026-11-05\n\n- The line menu and toolbar: the phone toolbar's 15 flat buttons are now 8.\n  Up, Down, Outdent and Indent stay direct; Task/Zettel/Project/\n  Responsibility sit behind one Type button, Context/Person/Organisation\n  behind one Tag button, and Photo/Image behind one Media button (Photo\n  drops out on a mouse, with nothing to take a photo with). To area and\n  Copy text moved to a trailing More button. Every icon on the bar is now a\n  monochrome SVG at one stroke weight, instead of mixing those with colour\n  emoji for Person, Organisation, Photo and Image (#300).\n\n## 1.101.2 - 2026-11-05\n\n- Keys on a line: the phone toolbar's sideways scroll now actually works on\n  Android; an explicit touch-action that was meant to let it swipe was\n  silently disabling the scroll instead (#298).\n\n## 1.101.1 - 2026-11-05\n\n- Keys on a line: the phone toolbar's sideways scroll now actually swipes on\n  Android, instead of holding still because the tap-focus guard mistook the\n  swipe for a tap (#298).\n\n## 1.101.0 - 2026-11-05\n\n- Keys on a line: the phone toolbar at the foot of the screen can now add a\n  context, person or organisation too, and scrolls sideways instead of\n  squeezing its buttons when it has more than fit (#297).\n\n## 1.100.2 - 2026-11-05\n\n- Getting started: the first-run screens lead with writing a note, with\n  folder and naming pushed down as optional (#296).\n\n## 1.100.1 - 2026-11-05\n\n- Calendars: fix an import crashing with \"Cannot read properties of\n  undefined\" when a meeting has an attendee or organizer, such as on Proton\n  Calendar (#294).\n\n## 1.100.0 - 2026-11-05\n\n- Settings: meeting reminders keep the one-click times and add Custom…: any\n  number of minutes, hours, days or weeks before, and as many reminders as you\n  like. Each calendar can have its own reminders, under its name in Calendars\n  (#292).\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {
@@ -40537,18 +40537,22 @@ const snaps = [...V.pages].filter(([p]) => p === from || p === into || p === par
 .concat([...V.pages].filter(([p]) => p !== from && p !== into && p !== parent)
 .map(([p, page]) => [p, serializePage(page)]).filter(([, t]) => t.toLowerCase().includes(needle)));
 const hadInto = V.pages.has(into);
+const senseKeys = ["sense.here", "sense.away", "sense.work", "sense.places", "sense.learn"];
+const senseWas = senseKeys.map(k => [k, PREF.get(k, "")]);
 NOTIFY_MUTE++;
 try {
 if (!hadInto) putPage(into, pageTemplateFor("c", old));
 if (V.pages.has(from)) mergePageInto(from, into, {undo: false});
 else rewriteLinksEverywhere("c/" + name, "c/" + old);
 syncCtxChildren(parent);
+senseRenameContext(name, old);
 } finally { NOTIFY_MUTE--; }
 if (state.view === "page" && state.pagePath === from) state.pagePath = into;
 const space = V.space;
 const undo = () => inSpace(space, () => {
 if (!hadInto && V.pages.has(into)) removePage(into);
 for (const [p, t] of snaps) { putPage(p, parsePage(t)); V.removed.delete(p); dropTombstone(p); touchHere(p); }
+for (const [k, v] of senseWas) PREF.set(k, v);
 if (state.view === "page" && state.pagePath === into && !hadInto) state.pagePath = from;
 clearMemo(); render();
 return true;
@@ -41005,6 +41009,25 @@ total += w;
 }
 const best = [...by].sort((x, y) => y[1] - x[1])[0];
 return best && best[1] >= 1.5 && best[1] / total >= 0.6 ? {v: best[0], share: best[1] / total} : null;
+}
+function senseRenameContext(from, to) {
+const hit = v => !!v && v.toLowerCase() === from.toLowerCase();
+if (hit(PREF.get("sense.here", ""))) PREF.set("sense.here", to);
+if (hit(PREF.get("sense.away", ""))) PREF.set("sense.away", to);
+try {
+const w = JSON.parse(PREF.get("sense.work", "{}"));
+if (hit(w.ctx)) PREF.set("sense.work", JSON.stringify({...w, ctx: to}));
+} catch (_) {}
+try {
+const places = JSON.parse(PREF.get("sense.places", "[]"));
+if (Array.isArray(places) && places.some(p => hit(p && p.ctx)))
+PREF.set("sense.places", JSON.stringify(places.map(p => p && hit(p.ctx) ? {...p, ctx: to} : p)));
+} catch (_) {}
+try {
+const log = JSON.parse(PREF.get("sense.learn", "[]"));
+if (Array.isArray(log) && log.some(o => o && o.k === "ctx" && hit(o.v)))
+PREF.set("sense.learn", JSON.stringify(log.map(o => o && o.k === "ctx" && hit(o.v) ? {...o, v: to} : o)));
+} catch (_) {}
 }
 const senseName = v => { const t = trim(v).replace(/^@/, ""); return t ? slugify(t) : ""; };
 function openSenseSetup() {

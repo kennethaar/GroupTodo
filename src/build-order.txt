@@ -2344,6 +2344,7 @@ js/126-where-am-i/vars-SENSE_LOG_MAX.js
 js/126-where-am-i/senseLearn.js
 js/126-where-am-i/senseLike.js
 js/126-where-am-i/senseLearned.js
+js/126-where-am-i/senseRenameContext.js
 js/126-where-am-i/vars-senseName.js
 js/126-where-am-i/openSenseSetup.js
 js/130-verb-picker/seedVerbs.js

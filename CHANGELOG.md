@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.103.1 - 2026-11-06
+
+- Sense where I am: merging a context (by rename, alias or look-alike) now
+  renames it everywhere Sense had remembered it by name too -- "here",
+  "away", work hours, a saved place, what it learned -- so the merged
+  context no longer comes back on its own the next time GroupToDo senses
+  where you are (#303).
+
 ## 1.103.0 - 2026-11-06
 
 - Journal › Week: a new week page now starts from `pages/8/week.md`, if

@@ -9,18 +9,22 @@ function mergeContextInto(name, old, said = "@" + name + " is now @" + old + "."
     .concat([...V.pages].filter(([p]) => p !== from && p !== into && p !== parent)
       .map(([p, page]) => [p, serializePage(page)]).filter(([, t]) => t.toLowerCase().includes(needle)));
   const hadInto = V.pages.has(into);
+  const senseKeys = ["sense.here", "sense.away", "sense.work", "sense.places", "sense.learn"];
+  const senseWas = senseKeys.map(k => [k, PREF.get(k, "")]);
   NOTIFY_MUTE++;
   try {
     if (!hadInto) putPage(into, pageTemplateFor("c", old));
     if (V.pages.has(from)) mergePageInto(from, into, {undo: false});
     else rewriteLinksEverywhere("c/" + name, "c/" + old);
     syncCtxChildren(parent);
+    senseRenameContext(name, old);
   } finally { NOTIFY_MUTE--; }
   if (state.view === "page" && state.pagePath === from) state.pagePath = into;
   const space = V.space;
   const undo = () => inSpace(space, () => {
     if (!hadInto && V.pages.has(into)) removePage(into);
     for (const [p, t] of snaps) { putPage(p, parsePage(t)); V.removed.delete(p); dropTombstone(p); touchHere(p); }
+    for (const [k, v] of senseWas) PREF.set(k, v);
     if (state.view === "page" && state.pagePath === into && !hadInto) state.pagePath = from;
     clearMemo(); render();
     return true;
