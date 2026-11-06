@@ -2373,6 +2373,7 @@ js/130-verb-picker/projectChainOf.js
 js/130-verb-picker/addChildTodo.js
 js/130-verb-picker/surroundingsGrid.js
 js/130-verb-picker/projectGrid.js
+js/130-verb-picker/bareProjectLink.js
 js/130-verb-picker/openTaskDetail.js
 js/130-verb-picker/showTaskDetail.js
 js/130-verb-picker/focusTaskDetailDate.js

@@ -303,6 +303,7 @@ A line cannot go inside itself. =>
 A line could not be saved. =>
 A line joins two who share a scene. The more scenes and talk, the thicker. =>
 A line of speech is the speaker's whose name comes first outside the quotes. Without one, the talk goes back and forth. =>
+A line that is only a link to its project opens that project instead; it has nothing of its own to show. =>
 A line you were typing was not saved =>
 A link that reads JS =>
 A link you can paste into chat or email =>
