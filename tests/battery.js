@@ -2187,25 +2187,27 @@ var GTD_TEST = (() => {
       has(getPage(path).blocks[0].title, "[[c/Testcrjad]]", "and its link");
     } finally { dropChores(path); document.querySelectorAll("#toasts .toast").forEach(x => x.remove()); }
   });
-  test("#204 in the sidebar a context folds away the contexts inside it", () => {
-    makeContext("Testfoldtop"); makeContext("Testfoldtop/Testfoldkid");
+  test("#204 the sidebar lists contexts under Next, busiest first, with None for the rest", () => {
+    makeContext("Testfolda"); makeContext("Testfoldb");
+    const path = choreProject("fold ctx", [
+      stampAuthor(newBlock({state: "TODO", title: "One [[c/Testfolda]]"})),
+      stampAuthor(newBlock({state: "TODO", title: "Two [[c/Testfoldb]]"})),
+      stampAuthor(newBlock({state: "TODO", title: "Three [[c/Testfoldb]]"})),
+      stampAuthor(newBlock({state: "TODO", title: "No context here"}))]);
     clearMemo();
-    const was = [PREF.get("nav.ctxOpen", "0"), PREF.get("nav.ctxKids", "[]")];
-    const row = name => [...document.querySelectorAll("#nav .nav-sub")].find(b => b.querySelector(".lbl")?.textContent === name);
+    const was = PREF.get("nav.ctxOpen", "0");
+    const rows = () => [...document.querySelectorAll("#nav .nav-sub")];
+    const row = name => rows().find(b => b.querySelector(".lbl")?.textContent === name);
     try {
-      PREF.set("nav.ctxOpen", "1"); PREF.set("nav.ctxKids", "[]"); renderNav();
-      const top = row("Testfoldtop");
-      ok(top, "the parent is not in the sidebar");
-      ok(!row("Testfoldkid"), "the child shows while folded");
-      const fold = top.querySelector(".fold");
-      eq(fold?.querySelector("svg path")?.getAttribute("d"), ICON_CHEVRON_RIGHT.match(/d="([^"]+)"/)[1], "no fold on the parent");
-      fold.click();
-      ok(row("Testfoldkid"), "unfolding did not show the child");
-      eq(row("Testfoldtop").querySelector(".fold").querySelector("svg path")?.getAttribute("d"), ICON_CARET.match(/d="([^"]+)"/)[1]);
-      ok(!row("Testfoldkid").querySelector(".fold"), "a context with nothing inside has no fold");
-      row("Testfoldtop").querySelector(".fold").click();
-      ok(!row("Testfoldkid"), "folding did not hide the child");
-    } finally { PREF.set("nav.ctxOpen", was[0]); PREF.set("nav.ctxKids", was[1]); renderNav(); }
+      PREF.set("nav.ctxOpen", "1"); renderNav();
+      const labels = rows().map(b => b.querySelector(".lbl")?.textContent);
+      eq(labels[0], "None", "no-context leads the list");
+      ok(labels.indexOf("Testfoldb") < labels.indexOf("Testfolda"), "the busier context sorts first");
+      eq(row("Testfoldb").querySelector(".cnt")?.textContent, "2");
+      eq(row("Testfolda").querySelector(".cnt")?.textContent, "1");
+      row("Testfoldb").click();
+      eq(state.view, "next"); eq(state.ctxFilter, "Testfoldb");
+    } finally { PREF.set("nav.ctxOpen", was); go("next", {ctxFilter: null}); dropChores(path); renderNav(); }
   });
   test("#208 @ finds a child context by its own name, and offers no new one when typed in full", () => {
     makeContext("Testabode2"); makeContext("Testabode2/Testoutside");

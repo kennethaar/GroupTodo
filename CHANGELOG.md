@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.111.0 - 2026-11-06
+
+- Next: the sidebar no longer has its own Contexts entry. Its context list
+  now sits under Next, busiest first, with a None row for actions that have
+  no context yet, and the Context filter in Next offers the same None
+  choice (#312).
+
 ## 1.110.0 - 2026-11-06
 
 - Waiting for › Board and Journal: the → Name pill's menu now also offers

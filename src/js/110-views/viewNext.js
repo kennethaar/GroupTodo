@@ -30,7 +30,7 @@ function viewNext() {
   let acts = all.filter(a => stateOn(a.state)).filter(types.keep).filter(est.keep).filter(a => choresOn || !isChore(a));
   // Only the contexts something open is waiting in, plus the one you are filtered to.
   const ctxs = Array.from(new Set([...all.map(a => a.context).filter(Boolean),
-    ...(state.ctxFilter ? [state.ctxFilter] : [])])).sort();
+    ...(state.ctxFilter && state.ctxFilter !== CTX_NONE ? [state.ctxFilter] : [])])).sort();
   const {sel: sortSel, apply: sortActs, dot: sortDot} = taskSort("next", "urgency");
 
   if (sub === "board") {
@@ -110,9 +110,11 @@ function viewNext() {
   const side = sided ? nextSide() : null;
   const guess = PHONE.matches && !state.ctxFilter && side !== "chores" ? nextGuessCtx(acts) : null;
   const ctx = state.ctxFilter || (guess && guess.ctx) || null;
-  const kidsChip = ctx && ctxHasKids(ctx) ? ctxKidsChip(acts.filter(a => inContext(a, ctx, true) && a.context !== ctx).length) : null;
+  const kidsChip = ctx && ctx !== CTX_NONE && ctxHasKids(ctx)
+    ? ctxKidsChip(acts.filter(a => inContext(a, ctx, true) && a.context !== ctx).length) : null;
   // A guess leaves the chores be: they have their own side.
-  if (ctx) acts = acts.filter(a => (guess && isChore(a)) || inContext(a, ctx));
+  if (ctx === CTX_NONE) acts = acts.filter(a => !a.context);
+  else if (ctx) acts = acts.filter(a => (guess && isChore(a)) || inContext(a, ctx));
   /* The contexts the board has put away are left off the list as well: one
      chip each, pressed while it is shown, so the two views agree. */
   const putAway = hiddenCols("ctx");
@@ -127,6 +129,7 @@ function viewNext() {
   sortSel.classList.add("right");
   const f = textFilter("next", "Filter next actions", acts, taskHay,
     (hits, q) => taskCard(hits, noMatch(q, side === "chores" ? "No chores now." :
+      ctx === CTX_NONE ? "Nothing to do with no context." :
       ctx ? "Nothing to do at " + contextLabel(ctx) + "." : "Nothing on your plate. Add one at the top.")));
   const sideBtn = (id, label) => el("button", {class: "nsidebtn", "aria-pressed": String(side === id),
     title: id === "chores" ? "Chores at home: shown first before and after work, and on days off" : "Next actions: shown first in work hours",
@@ -142,7 +145,9 @@ function viewNext() {
   const fold = el("div", {class: "nfold" + (NEXT_FILTERS_OPEN ? " open" : "")}, fbar(f.input,
     fchip("To do", stateOn("TODO"), () => toggleState("TODO")),
     fchip("Doing", stateOn("DOING"), () => toggleState("DOING")), choreChip(),
-    ctxs.length ? fselect("Context", ctx || "", [["", "Anywhere"], ...ctxs.map(k => [k, contextLabel(k)])],
+    (ctxs.length || all.some(a => !a.context)) ? fselect("Context", ctx || "", [["", "Anywhere"],
+      ...(all.some(a => !a.context) ? [[CTX_NONE, "No context"]] : []),
+      ...ctxs.map(k => [k, contextLabel(k)])],
       v => { senseLearn("ctx", v || "*"); if (!v) NEXT_GUESS_OFF = hourKey(); go("next", {ctxFilter: v || null}); }) : null, kidsChip,
     types.sel, est.sel, sortSel, sortDot), ctxChips,
     // Look-alikes are upkeep, not doing: on a phone they wait in here.

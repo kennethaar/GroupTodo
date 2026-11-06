@@ -744,8 +744,6 @@ js/90-view-state/paintLoading.js
 js/90-view-state/navLoading.js
 js/90-view-state/vars-NAV_PENDING.js
 js/90-view-state/goFromNav.js
-js/90-view-state/navCtxOpen.js
-js/90-view-state/toggleNavCtx.js
 js/90-view-state/navContexts.js
 js/90-view-state/pins.js
 js/90-view-state/setPins.js

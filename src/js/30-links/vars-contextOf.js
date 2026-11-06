@@ -8,5 +8,8 @@ const hasContextLink = text => /\[\[c\/[^\]]+\]\]/.test(text || "");
    what its children:: names. Its lists show them unless the Contexts inside
    chip takes them off; kids says which. */
 const ctxKidsOn = () => PREF.get("ctx.kids", "") !== "0";
+/* Picked from the Next sidebar or its Context filter to mean "no @context at
+   all" -- never a real context name, so it can share state.ctxFilter with one. */
+const CTX_NONE = "\u0000none";
 const inContext = (a, ctx, kids = ctxKidsOn()) => !!a.context && !!ctx &&
   (a.context === ctx || kids && (a.context.startsWith(ctx + "/") || ctxFamily(ctx).has(a.context)));

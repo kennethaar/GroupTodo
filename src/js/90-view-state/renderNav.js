@@ -18,7 +18,7 @@ function renderNav() {
     const n = navCount(it.id);
     const hot = (it.id === "today" && dueNow().some(a => a.due < todayISO())) ||
                 (it.id === "projects" && reviewDue());
-    const folds = it.id === "contexts" && n > 0;
+    const folds = it.id === "next" && allContextNames().length > 0;
     const open = folds && PREF.get("nav.ctxOpen", "0") === "1";
     nav.append(el("button", {
       class: "nav-item" + (here ? " active" : "") + (it.small ? " small" : ""),

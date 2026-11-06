@@ -55,7 +55,6 @@ const NAV_ITEMS = [
   {id: "projects", icon: ICON.projects, label: "Projects"},
   {id: "people",   icon: ICON.people, label: "People"},
   {id: "orgs",     icon: ICON.orgs, label: "Organisations"},
-  {id: "contexts", icon: "@",      label: "Contexts"},
   // Once any task repeats: the home's chores, room by room.
   {id: "chores",   icon: ICON_REPEAT, label: "Chores", when: () => allChores().length > 0 || asNeededChores().length > 0},
   {id: "pages",    icon: ICON.pages, label: "Pages"},
