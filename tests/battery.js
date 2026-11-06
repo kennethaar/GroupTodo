@@ -2920,12 +2920,12 @@ var GTD_TEST = (() => {
       await frame();
       ok(bar() && !bar().hidden, "no toolbar while a line is being written");
       eq([...bar().querySelectorAll(":scope > .ebtn .elb")].map(n => n.textContent),
-        ["Up", "Down", "Outdent", "Indent", "Type", "Tag", "Media", "More"], "the top-level bar is 8 buttons");
+        ["Up", "Down", "Outdent", "Indent", "Type", "Tag", "Media", "Side panel"], "the top-level bar is 8 buttons");
       bar().querySelector('[data-k="more"]').click();
       await frame();
-      eq([...bar().querySelectorAll(".ebpop .elb")].map(n => n.textContent),
-        ["Side panel", "Move to…", "Copy text", "Copy embed", "Plan with AI"], "More opens to its five leaves");
-      bar().querySelector('[data-k="more"]').click();
+      ok(document.querySelector("#modalRoot .modal"), "Side panel opens the task detail panel directly, not a popover");
+      closeModal();
+      focusBlock(bravo.id);
       await frame();
       await press("down");
       eq(titles(), ["Alpha", "Charlie", "Bravo"], "after down");
@@ -7300,7 +7300,13 @@ var GTD_TEST = (() => {
       children: [newBlock({state: "TODO", title: "See e-mail"})]});
     eq(plainLineText(b), "WAIT New date for meeting Håkon Moe 2026-11-03");
     eq(plainLineText(newBlock({title: "A note [[Some page]]"})), "A note Some page");
-    eq(EDIT_BAR.some(r => r.k === "plaincopy"), true, "on the bar");
+    const path = scratchProject("plain copy on the menu", [["TODO", "Buy paint"]]);
+    const page = getPage(path), block = page.blocks[0];
+    FLY = {txt: el("textarea"), path, page, block, box: el("div"), open: null, hi: 0, q: ""};
+    try {
+      const row = flyRows().find(r => r.k === "plaincopy");
+      ok(row && row.menu, "Copy text is on the line's own menu");
+    } finally { FLY = null; }
   });
 
   test("#297 the mobile line toolbar can add a context, person or organisation", () => {

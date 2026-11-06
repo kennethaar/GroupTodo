@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.109.1 - 2026-11-06
+
+- The line menu and toolbar: Copy text sat behind the foot toolbar's More
+  button while Copy embed sat on the line's own ⋯ menu, splitting one kind
+  of action across two places (#310). Move to…, Copy text, Copy embed and
+  Plan with AI all moved onto the ⋯ menu now, next to Copy embed and the
+  line's own properties. The foot toolbar's More button is gone; Side panel
+  takes its place directly, since the ⋯ menu now covers everything else More
+  used to.
+
 ## 1.109.0 - 2026-11-06
 
 - The line menu and toolbar: the ⋯ menu listed about twenty rows and two
