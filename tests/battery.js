@@ -2629,6 +2629,64 @@ var GTD_TEST = (() => {
       ok(!labels.includes("State"), "State label is gone, the segmented control speaks for itself");
     } finally { closeModal(); }
   });
+  test("#308 task detail panel: no standalone GTD hygiene row; verb nudge inline on Title", () => {
+    const path = scratchProject("verb-nudge", [["TODO", "the garage"]]);
+    const b = getPage(path).blocks[0];
+    try {
+      showTaskDetail(path, b, V.space);
+      const m = document.querySelector("#modalRoot .modal");
+      ok(![...m.querySelectorAll("label")].some(x => x.textContent === "GTD hygiene"),
+        "the standalone GTD hygiene row is gone");
+      const nudge = [...m.querySelectorAll(".achip.want")].find(x => x.textContent === "! add a verb");
+      ok(nudge && nudge.style.display !== "none", "a verb-less title shows the inline nudge");
+
+      const title = m.querySelector("textarea");
+      title.value = "Clean the garage";
+      title.dispatchEvent(new Event("blur"));
+      eq(nudge.style.display, "none", "the nudge hides once the title starts with a verb");
+    } finally { closeModal(); }
+  });
+  test("#308 task detail panel: Project cell nudges a refile when the task is unfiled", () => {
+    const day = journalPath("2026-06-01");
+    putPage(day, parsePage(["- TODO Sort the recycling"]));
+    const b = getPage(day).blocks[0];
+    try {
+      showTaskDetail(day, b, V.space);
+      const m = document.querySelector("#modalRoot .modal");
+      const nudge = m.querySelector(".acell.a-project .achip.want");
+      ok(nudge, "an unfiled task's Project cell is a refile nudge");
+      has(nudge.textContent, "!");
+    } finally { closeModal(); }
+  });
+  test("#308 task detail panel: Subtasks has one add/link control, not two", () => {
+    const path = scratchProject("one-subtask-control", [["TODO", "Ship the release"]]);
+    const b = getPage(path).blocks[0];
+    try {
+      showTaskDetail(path, b, V.space);
+      const m = document.querySelector("#modalRoot .modal");
+      ok(![...m.querySelectorAll(".fpill")].some(x => x.textContent === "+ Add subtask"),
+        "no separate + Add subtask pill beside the children:: picker");
+    } finally { closeModal(); }
+  });
+  test("#308 task detail panel: Auto-cancel after lives in the Deadline row; Add to calendar in Scheduled", () => {
+    const path = scratchProject("merge-until-cal", [["TODO", "Chase the invoice"]]);
+    const b = getPage(path).blocks[0];
+    try {
+      showTaskDetail(path, b, V.space);
+      const m = document.querySelector("#modalRoot .modal");
+      ok(![...m.querySelectorAll("label")].some(x => x.textContent === "Cancel it if still open after"),
+        "the standalone until field is gone");
+      ok(![...m.querySelectorAll("label")].some(x => x.textContent === "Calendar"),
+        "the standalone Calendar field is gone");
+
+      [...m.querySelectorAll(".fpill")].find(x => x.textContent === "+ Deadline").click();
+      has([...m.querySelectorAll("label")].map(x => x.textContent).join(" "), "Auto-cancel after");
+
+      [...m.querySelectorAll(".fpill")].find(x => x.textContent === "+ Scheduled").click();
+      ok([...m.querySelectorAll("button")].some(x => x.textContent === "Add to calendar"),
+        "Add to calendar sits inside the open Scheduled field");
+    } finally { closeModal(); }
+  });
   test("#198 a person on a line above counts for the tasks under it", () => {
     const day = journalPath("2003-03-03"), joe = personPath("Joe Newmann");
     putPage(joe, {props: {title: "Joe Newmann"}, blocks: []});

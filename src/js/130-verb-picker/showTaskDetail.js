@@ -8,6 +8,13 @@ function showTaskDetail(path, block, space) {
   const titleInput = el("textarea", {rows: 1, class: "titlebox"}); titleInput.value = block.title;
   const autoGrow = () => { titleInput.style.height = "auto"; titleInput.style.height = titleInput.scrollHeight + "px"; };
   titleInput.addEventListener("input", autoGrow);
+  // The verb check used to live in a standalone "GTD hygiene" row below the
+  // fold. It is a fact about the title, so it sits on the title now: a quiet
+  // nudge that is simply gone once the title starts with a physical verb.
+  const verbNudge = el("button", {class: "achip want", style: "margin-top:4px",
+    title: "GTD hygiene: start with a physical action verb, e.g. Call, Draft, Buy.",
+    onclick: () => { closeModal(); openVerbPicker(path, block); }}, "! add a verb");
+  const syncVerbNudge = () => { verbNudge.style.display = startsWithVerb(block.title) ? "none" : ""; };
   const notes = el("textarea", {placeholder: "Notes"}); notes.value = (block.body || []).join("\n");
   /* The same names, @ and [[ as the line itself. The chosen key takes one; Escape
      closes the list, not the panel. */
@@ -57,7 +64,17 @@ function showTaskDetail(path, block, space) {
         () => { schedManualOpen = true; renderSchedField(); sched.focus(); }));
       return;
     }
-    schedBox.append(schedLabel, el("div", {class: "dt"}, sched, schedAt), holdOpenRow);
+    schedBox.append(schedLabel, el("div", {class: "dt"}, sched, schedAt), holdOpenRow,
+      el("button", {
+        class: "btn ghost sm", style: "margin-top:4px",
+        title: "Opens your calendar with the title and date. Nothing is sent anywhere.",
+        onclick: () => {
+          const when = trim(sched.value) || trim(dead.value) || dueDate(block);
+          if (!when) { notify("Give it a date first.", "warn"); return; }
+          const time = (trim(sched.value) ? schedAt.value : trim(dead.value) ? deadAt.value : null) || null;
+          addToCalendar([Object.assign({}, a, {due: when, time, title: block.title, block})]);
+        },
+      }, "Add to calendar"));
   };
   const deadBox = el("div", {class: "field"});
   const renderDeadField = () => {
@@ -67,7 +84,9 @@ function showTaskDetail(path, block, space) {
         () => { deadManualOpen = true; renderDeadField(); dead.focus(); }));
       return;
     }
-    deadBox.append(el("label", {}, "Deadline"), el("div", {class: "dt"}, dead, deadAt));
+    deadBox.append(el("label", {}, "Deadline"), el("div", {class: "dt"}, dead, deadAt),
+      el("label", {style: "display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;" +
+        "text-transform:none;letter-spacing:normal;margin-top:4px"}, "Auto-cancel after", until));
   };
   const priBox = el("div", {class: "field"});
   const renderPriField = () => {
@@ -164,6 +183,7 @@ function showTaskDetail(path, block, space) {
     renderDeadField();
     renderPriField();
     renderAssignField();
+    syncVerbNudge();
   };
   syncPanel();
 
@@ -185,8 +205,6 @@ function showTaskDetail(path, block, space) {
     }
   };
   renderKids();
-  const addSubtaskPill = factPill("+ Add subtask", "fwant", "A new step under this one",
-    () => addChildTodo(path, block, space));
 
   const drop = key => { for (const k of Object.keys(block.props)) if (k.toLowerCase() === key) delete block.props[k]; };
   // Every field saves itself the moment it changes -- on blur for text, on
@@ -286,13 +304,13 @@ function showTaskDetail(path, block, space) {
   const result = modal({
     title: "", hint: "", side: true,
     body: el("div", {class: "tdbody"},
-      el("div", {class: "field"}, titleInput),
+      el("div", {class: "field"}, titleInput, verbNudge),
       el("div", {class: "field"},
         el("div", {style: "display:flex;align-items:center;flex-wrap:wrap"}, seg, cancelledNote, reopenBtn)),
       el("div", {class: "field"}, surroundingsGrid(path, block, space)),
       el("div", {class: "field"},
         el("label", {}, svgIcon(ICON_CHECKLIST), " Subtasks"),
-        kidsList, addSubtaskPill,
+        kidsList,
         factLine(path, childrenFact({path, block, space}))),
       el("div", {class: "field pillrow"}, schedBox, deadBox, assignBox, priBox),
       el("div", {class: "field"},
@@ -305,16 +323,7 @@ function showTaskDetail(path, block, space) {
           el("span", {style: "color:var(--fg3);font-size:12px"},
             informedAt(block) ? "Last told " + trim(blockProp(block, INFORMED_PROP)).replace(/\s+\S+$/, "") + " on " + informedAt(block) + "."
                               : "Tell whoever it names where it stands. Alt+U on the line."))),
-      el("div", {class: "field"}, el("label", {}, "GTD hygiene"), el("div", {class: "seg"},
-        el("button", {onclick: () => { closeModal(); promptAndInsertContext(path, block); }},
-          a.context ? "@" + a.context : "add context"),
-        el("button", {onclick: () => { closeModal(); openVerbPicker(path, block); }},
-          startsWithVerb(block.title) ? "verb ok" : "add physical verb"),
-        el("button", {onclick: () => { closeModal(); openRefile(path, block); }}, "refile"),
-      )),
-      el("div", {class: "grid2"},
-        el("div", {class: "field"}, el("label", {}, "Reminder, when it has a time"), remindSel),
-        el("div", {class: "field"}, el("label", {}, "Cancel it if still open after"), until)),
+      el("div", {class: "field"}, el("label", {}, "Reminder, when it has a time"), remindSel),
       el("div", {class: "field"},
         el("label", {title: "Nothing is created until you tick it off; you'll be asked first."}, "Repeats"),
         (() => {
@@ -344,20 +353,8 @@ function showTaskDetail(path, block, space) {
           })}, own ? cur : "custom…"));
           return row;
         })()),
-      el("div", {class: "field"},
-        el("label", {}, "Calendar"),
-        el("button", {
-          class: "btn ghost sm",
-          title: "Opens your calendar with the title and date. Nothing is sent anywhere.",
-          onclick: () => {
-            const when = trim(sched.value) || trim(dead.value) || dueDate(block);
-            if (!when) { notify("Give it a date first.", "warn"); return; }
-            const time = (trim(sched.value) ? schedAt.value : trim(dead.value) ? deadAt.value : null) || null;
-            addToCalendar([Object.assign({}, a, {due: when, time, title: block.title, block})]);
-          },
-        }, "Add to calendar")),
       el("div", {class: "field"}, el("label", {}, "Notes"), notes),
-      el("div", {class: "field"}, el("label", {}, "Trail"), trail)),
+      el("div", {class: "field"}, trail)),
     onKey: e => {
       /* Escape hands the panel over to the grid rather than closing it. Once
          the grid has it, the grid's own Escape hands it back, and the one after

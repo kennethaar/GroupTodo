@@ -42,10 +42,17 @@ function surroundingsGrid(path, block, space) {
           () => { closeModal(); if (to) openPageIn(space, to); else inSpace(space, () => followLink(ref)); },
           i === all.length - 1 ? "" : "up", "p:" + ref);
       })));
-  } else {
-    grid.append(cell("a-project", kind === "project" ? "Project" : LINK_KIND_WORD[kind] || "Page",
+  } else if (kind === "project") {
+    grid.append(cell("a-project", "Project",
       chip(pageTitle(path), path, () => { closeModal(); openPageIn(space, path); },
         "", "p:" + path)));
+  } else {
+    // Nothing fewer than a project link says where this belongs: the GTD
+    // hygiene nudge to refile it, right where Project already sits, instead
+    // of a separate standalone "refile" button elsewhere in the panel.
+    grid.append(cell("a-project", LINK_KIND_WORD[kind] || "Page",
+      chip("! " + pageTitle(path), "GTD hygiene: refile this into a project or responsibility",
+        () => { closeModal(); openRefile(path, block); }, "want", "p:" + path)));
   }
 
   /* The line above, unless the line above is nothing but the project link that

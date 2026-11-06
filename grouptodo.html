@@ -41516,10 +41516,14 @@ return chip(ref.replace(/^[^/]+\//, ""), ref,
 () => { closeModal(); if (to) openPageIn(space, to); else inSpace(space, () => followLink(ref)); },
 i === all.length - 1 ? "" : "up", "p:" + ref);
 })));
-} else {
-grid.append(cell("a-project", kind === "project" ? "Project" : LINK_KIND_WORD[kind] || "Page",
+} else if (kind === "project") {
+grid.append(cell("a-project", "Project",
 chip(pageTitle(path), path, () => { closeModal(); openPageIn(space, path); },
 "", "p:" + path)));
+} else {
+grid.append(cell("a-project", LINK_KIND_WORD[kind] || "Page",
+chip("! " + pageTitle(path), "GTD hygiene: refile this into a project or responsibility",
+() => { closeModal(); openRefile(path, block); }, "want", "p:" + path)));
 }
 let par = page ? parentOf(page, block) : null;
 const scaffold = b => {
@@ -41626,6 +41630,10 @@ age: blockAge(block), added: addedDate(block),
 const titleInput = el("textarea", {rows: 1, class: "titlebox"}); titleInput.value = block.title;
 const autoGrow = () => { titleInput.style.height = "auto"; titleInput.style.height = titleInput.scrollHeight + "px"; };
 titleInput.addEventListener("input", autoGrow);
+const verbNudge = el("button", {class: "achip want", style: "margin-top:4px",
+title: "GTD hygiene: start with a physical action verb, e.g. Call, Draft, Buy.",
+onclick: () => { closeModal(); openVerbPicker(path, block); }}, "! add a verb");
+const syncVerbNudge = () => { verbNudge.style.display = startsWithVerb(block.title) ? "none" : ""; };
 const notes = el("textarea", {placeholder: "Notes"}); notes.value = (block.body || []).join("\n");
 for (const t of [titleInput, notes]) {
 attachSuggest(t);
@@ -41668,7 +41676,17 @@ schedBox.append(factPill("+ " + schedLabel.textContent, "fwant", "Give it a day"
 () => { schedManualOpen = true; renderSchedField(); sched.focus(); }));
 return;
 }
-schedBox.append(schedLabel, el("div", {class: "dt"}, sched, schedAt), holdOpenRow);
+schedBox.append(schedLabel, el("div", {class: "dt"}, sched, schedAt), holdOpenRow,
+el("button", {
+class: "btn ghost sm", style: "margin-top:4px",
+title: "Opens your calendar with the title and date. Nothing is sent anywhere.",
+onclick: () => {
+const when = trim(sched.value) || trim(dead.value) || dueDate(block);
+if (!when) { notify("Give it a date first.", "warn"); return; }
+const time = (trim(sched.value) ? schedAt.value : trim(dead.value) ? deadAt.value : null) || null;
+addToCalendar([Object.assign({}, a, {due: when, time, title: block.title, block})]);
+},
+}, "Add to calendar"));
 };
 const deadBox = el("div", {class: "field"});
 const renderDeadField = () => {
@@ -41678,7 +41696,9 @@ deadBox.append(factPill("+ Deadline", "fwant", "The day it must be done by",
 () => { deadManualOpen = true; renderDeadField(); dead.focus(); }));
 return;
 }
-deadBox.append(el("label", {}, "Deadline"), el("div", {class: "dt"}, dead, deadAt));
+deadBox.append(el("label", {}, "Deadline"), el("div", {class: "dt"}, dead, deadAt),
+el("label", {style: "display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;" +
+"text-transform:none;letter-spacing:normal;margin-top:4px"}, "Auto-cancel after", until));
 };
 const priBox = el("div", {class: "field"});
 const renderPriField = () => {
@@ -41766,6 +41786,7 @@ renderSchedField();
 renderDeadField();
 renderPriField();
 renderAssignField();
+syncVerbNudge();
 };
 syncPanel();
 const kidsList = el("div", {class: "subkids"});
@@ -41783,8 +41804,6 @@ linkWords(kid.title) || "(untitled)")));
 }
 };
 renderKids();
-const addSubtaskPill = factPill("+ Add subtask", "fwant", "A new step under this one",
-() => addChildTodo(path, block, space));
 const drop = key => { for (const k of Object.keys(block.props)) if (k.toLowerCase() === key) delete block.props[k]; };
 const saveTitle = () => {
 const val = trim(titleInput.value).replace(/\n/g, " ");
@@ -41875,13 +41894,13 @@ onclick: () => copyLinkTo(deepLink(path, block), "this task")}, "\u{1F517}");
 const result = modal({
 title: "", hint: "", side: true,
 body: el("div", {class: "tdbody"},
-el("div", {class: "field"}, titleInput),
+el("div", {class: "field"}, titleInput, verbNudge),
 el("div", {class: "field"},
 el("div", {style: "display:flex;align-items:center;flex-wrap:wrap"}, seg, cancelledNote, reopenBtn)),
 el("div", {class: "field"}, surroundingsGrid(path, block, space)),
 el("div", {class: "field"},
 el("label", {}, svgIcon(ICON_CHECKLIST), " Subtasks"),
-kidsList, addSubtaskPill,
+kidsList,
 factLine(path, childrenFact({path, block, space}))),
 el("div", {class: "field pillrow"}, schedBox, deadBox, assignBox, priBox),
 el("div", {class: "field"},
@@ -41894,16 +41913,7 @@ el("button", {class: "btn sm ghost", onclick: () => { closeModal(); informFromLi
 el("span", {style: "color:var(--fg3);font-size:12px"},
 informedAt(block) ? "Last told " + trim(blockProp(block, INFORMED_PROP)).replace(/\s+\S+$/, "") + " on " + informedAt(block) + "."
 : "Tell whoever it names where it stands. Alt+U on the line."))),
-el("div", {class: "field"}, el("label", {}, "GTD hygiene"), el("div", {class: "seg"},
-el("button", {onclick: () => { closeModal(); promptAndInsertContext(path, block); }},
-a.context ? "@" + a.context : "add context"),
-el("button", {onclick: () => { closeModal(); openVerbPicker(path, block); }},
-startsWithVerb(block.title) ? "verb ok" : "add physical verb"),
-el("button", {onclick: () => { closeModal(); openRefile(path, block); }}, "refile"),
-)),
-el("div", {class: "grid2"},
 el("div", {class: "field"}, el("label", {}, "Reminder, when it has a time"), remindSel),
-el("div", {class: "field"}, el("label", {}, "Cancel it if still open after"), until)),
 el("div", {class: "field"},
 el("label", {title: "Nothing is created until you tick it off; you'll be asked first."}, "Repeats"),
 (() => {
@@ -41932,20 +41942,8 @@ notify(spec ? "Repeats " + spec + ". You will be asked when you tick it off." : 
 })}, own ? cur : "custom…"));
 return row;
 })()),
-el("div", {class: "field"},
-el("label", {}, "Calendar"),
-el("button", {
-class: "btn ghost sm",
-title: "Opens your calendar with the title and date. Nothing is sent anywhere.",
-onclick: () => {
-const when = trim(sched.value) || trim(dead.value) || dueDate(block);
-if (!when) { notify("Give it a date first.", "warn"); return; }
-const time = (trim(sched.value) ? schedAt.value : trim(dead.value) ? deadAt.value : null) || null;
-addToCalendar([Object.assign({}, a, {due: when, time, title: block.title, block})]);
-},
-}, "Add to calendar")),
 el("div", {class: "field"}, el("label", {}, "Notes"), notes),
-el("div", {class: "field"}, el("label", {}, "Trail"), trail)),
+el("div", {class: "field"}, trail)),
 onKey: e => {
 if (e.key === "Escape" && !e.aroundLeft) {
 const grid = $("#modalRoot") && $("#modalRoot").querySelector(".around");
