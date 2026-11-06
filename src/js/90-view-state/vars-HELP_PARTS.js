@@ -920,7 +920,7 @@ const HELP = {
     more: ["Pick Hold and the date field becomes its hold date. It comes back as a task by itself once the day arrives.",
       "Add subtasks under Subtasks; check one off to mark it done, or click its words to open it.",
       "A missing verb or project nudges you on Title or Project; no fix needed if neither applies.",
-      "A line that is only a link to its project opens that project instead; it has nothing of its own to show."],
+      "A line that is only a link to its project shows that project in the side pane instead; it has nothing of its own to show."],
     see: ["dates", "hold", "states"],
     words: ["details", "panel", "properties", "priority", "notes", "subtasks", "checklist", "nudge", "refile"]},
   hold: {part: "write", title: "Hold and until", gtd: "organise",

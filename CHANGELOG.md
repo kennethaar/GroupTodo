@@ -9,9 +9,10 @@ that breaks existing vaults. Newest first.
 
 - A task's panel: a capture line that is nothing but a link to its project —
   the normal way to file a todo under one, with the real steps nested below
-  it — opens the project page now (#309), not the task panel. It had no task
-  of its own to show: the raw `[[1/…]]` link sat in the title box, task
-  states it cannot take lined up above it, and Project pointed right back at
+  it — shows the project in the side pane now (#309), not the task panel. It
+  had no task of its own to show: the raw `[[1/…]]` link sat in the title
+  box, task states it cannot take lined up above it, and Project pointed
+  right back at
   the same link already in the title.
 
 ## 1.108.0 - 2026-11-06

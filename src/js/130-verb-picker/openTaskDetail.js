@@ -3,7 +3,7 @@
 function openTaskDetail(path, block, space, focus) {
   const home = space || V.space;
   const projectPage = inSpace(home, () => bareProjectLink(path, block));
-  if (projectPage) { closeModal(); openPageIn(home, projectPage); return; }
+  if (projectPage) { closeModal(); previewPage(home, projectPage); return; }
   SPACE_CONTEXT = {path, space: home, id: block.id};
   inSpace(home, () => showTaskDetail(path, block, home));
   arrangeTaskDetail(path, block, home, focus);

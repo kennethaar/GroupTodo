@@ -2658,17 +2658,21 @@ var GTD_TEST = (() => {
       has(nudge.textContent, "!");
     } finally { closeModal(); }
   });
-  test("#309 opening a bare project-link capture line goes to the project page, not the task panel", () => {
+  test("#309 opening a bare project-link capture line shows the project in the side pane, not the task panel", () => {
     const projectPath = scratchProject("bare link target", [["TODO", "Pull the cable"]]);
     const day = journalPath("2026-06-02");
     putPage(day, parsePage(["- [[" + pageRef(projectPath) + "]]"]));
     const b = getPage(day).blocks[0];
+    const pane = document.querySelector("#pagePane");
+    go("page", {pagePath: day}); render();
     try {
       openTaskDetail(day, b, V.space);
       ok(!document.querySelector("#modalRoot .modal"), "no task panel opens for a bare project link");
-      eq(state.view, "page", "navigation went straight to the project page");
-      eq(state.pagePath, projectPath);
-    } finally { closeModal(); }
+      eq(state.view, "page", "the current view is not navigated away from");
+      eq(state.pagePath, day, "still looking at the day, not the project");
+      ok(!pane.hidden, "the project shows in the side pane");
+      eq(SIDE_SHOWN && SIDE_SHOWN.path, projectPath, "the side pane shows the project");
+    } finally { closeSidePage(); closeModal(); }
   });
   test("#309 a task that merely links a project, with words of its own, still opens the task panel", () => {
     const projectPath = scratchProject("not bare", [["TODO", "Pull the cable"]]);
