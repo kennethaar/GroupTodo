@@ -32,20 +32,31 @@ function surroundingsGrid(path, block, space) {
   const kind = pageKind(path);
   const chain = page ? projectChainOf(page, block) : [];
   const near = chain[0] || null;
+  // The nearest project's own chip always offers a way out, not just a way
+  // there -- the GTD hygiene "refile" action used to be a standalone button
+  // that worked regardless of whether a task was already filed; it still
+  // needs to, now that it lives on the Project chip instead.
+  const goTo = (ref, to) => () => { closeModal(); if (to) openPageIn(space, to); else inSpace(space, () => followLink(ref)); };
   if (near) {
     /* Outermost first, so the column reads downward the way the plan nests:
        the project, its milestone, the line above this one, this one. */
     grid.append(cell("a-project", chain.length > 1 ? "Project and milestone" : "Project",
       chain.slice().reverse().map((ref, i, all) => {
         const to = findExistingPage(ref);
+        const last = i === all.length - 1;
         return chip(ref.replace(/^[^/]+\//, ""), ref,
-          () => { closeModal(); if (to) openPageIn(space, to); else inSpace(space, () => followLink(ref)); },
-          i === all.length - 1 ? "" : "up", "p:" + ref);
+          !last ? goTo(ref, to) : () => chipMenu(ref, "where it's filed", [
+            ["a", "Go to " + ref.replace(/^[^/]+\//, ""), "", goTo(ref, to)],
+            ["b", "Refile to another project", "moves it", () => openRefile(path, block)],
+          ]),
+          last ? "" : "up", "p:" + ref);
       })));
   } else if (kind === "project") {
     grid.append(cell("a-project", "Project",
-      chip(pageTitle(path), path, () => { closeModal(); openPageIn(space, path); },
-        "", "p:" + path)));
+      chip(pageTitle(path), path, () => chipMenu(pageTitle(path), "this project", [
+        ["a", "Go to " + pageTitle(path), "", goTo(path, path)],
+        ["b", "Refile to another project", "moves it", () => openRefile(path, block)],
+      ]), "", "p:" + path)));
   } else {
     // Nothing fewer than a project link says where this belongs: the GTD
     // hygiene nudge to refile it, right where Project already sits, instead

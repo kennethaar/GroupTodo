@@ -19,7 +19,14 @@ that breaks existing vaults. Newest first.
   are — and the title grows with what you type instead of starting three
   lines tall. Scheduled, Deadline, Assign and Priority share one row when
   unset, instead of a two-column grid with a gap between them. Moving a task
-  to another area is now in the ⋯ menu, not a second one. (Fixes #308)
+  to another area is now in the ⋯ menu, not a second one. The standalone GTD
+  hygiene row is gone too: a missing verb is a quiet nudge on the title
+  itself, and an unfiled task's Project cell doubles as the refile nudge (a
+  filed task's Project chip still offers Refile, from its own menu). Cancel
+  it if still open after moved into the Deadline row as Auto-cancel after,
+  and Add to calendar moved inside Scheduled. Repeats and Reminder are no
+  longer always-on rows — Repeats shows once Scheduled has a day, Reminder
+  once it has a time. (Fixes #308)
 
 ## 1.107.0 - 2026-11-06
 

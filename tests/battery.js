@@ -2687,6 +2687,43 @@ var GTD_TEST = (() => {
         "Add to calendar sits inside the open Scheduled field");
     } finally { closeModal(); }
   });
+  test("#308 task detail panel: a filed task's Project chip still offers Refile", () => {
+    const path = scratchProject("filed-refile", [["TODO", "Draft the brief"]]);
+    const b = getPage(path).blocks[0];
+    try {
+      showTaskDetail(path, b, V.space);
+      const m = document.querySelector("#modalRoot .modal");
+      m.querySelector(".acell.a-project .achip").click();
+      const menu = [...document.querySelectorAll(".pick")].map(x => x.textContent);
+      ok(menu.some(x => x.includes("Refile to another project")),
+        "an already-filed task can still be refiled, not only an unfiled one");
+      [...document.querySelectorAll(".pick")].find(x => x.textContent.includes("Refile")).click();
+      has(document.querySelector("#modalRoot")?.textContent || "", "Refile to a project");
+    } finally { closeModal(); }
+  });
+  test("#308 task detail panel: Repeats and Reminder only show once Scheduled has a day/time", () => {
+    const path = scratchProject("sched-reveals", [["TODO", "Water the plants"]]);
+    const b = getPage(path).blocks[0];
+    try {
+      showTaskDetail(path, b, V.space);
+      const m = document.querySelector("#modalRoot .modal");
+      const labels = () => [...m.querySelectorAll("label")].map(x => x.textContent);
+      ok(!labels().includes("Repeats"), "Repeats is hidden with no Scheduled day yet");
+      ok(!labels().includes("Reminder"), "Reminder is hidden with no time yet");
+
+      [...m.querySelectorAll(".fpill")].find(x => x.textContent === "+ Scheduled").click();
+      const day = m.querySelector(".dt input[type=date]");
+      day.value = "2027-02-01";
+      day.dispatchEvent(new Event("change"));
+      ok(labels().includes("Repeats"), "Repeats appears once a Scheduled day is set");
+      ok(!labels().includes("Reminder"), "Reminder still hidden with no time");
+
+      const time = m.querySelector(".dt input.clk");
+      time.value = "08:30";
+      time.dispatchEvent(new Event("change"));
+      ok(labels().includes("Reminder"), "Reminder appears once a time is set");
+    } finally { closeModal(); }
+  });
   test("#198 a person on a line above counts for the tasks under it", () => {
     const day = journalPath("2003-03-03"), joe = personPath("Joe Newmann");
     putPage(joe, {props: {title: "Joe Newmann"}, blocks: []});

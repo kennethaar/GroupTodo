@@ -22,10 +22,10 @@ function showTaskDetail(path, block, space) {
     attachSuggest(t);
     t.addEventListener("keydown", e => { if (suggestKey(e)) e.stopPropagation(); });
   }
-  const sched = el("input", {type: "date", onchange: () => saveSched()});
+  const sched = el("input", {type: "date", onchange: () => { saveSched(); renderSchedField(); }});
   const dead  = el("input", {type: "date", value: dateIn(blockProp(block, "DEADLINE")) || "", onchange: () => saveDead()});
   const timeOf = key => timeIn(String(blockProp(block, key) || "").replace(/\[\[[^\]]*\]\]/g, " ")) || "";
-  const schedAt = clockInput("", {title: "Time, if it has one", onchange: () => saveSched()});
+  const schedAt = clockInput("", {title: "Time, if it has one", onchange: () => { saveSched(); renderSchedField(); }});
   const deadAt  = clockInput(timeOf("DEADLINE"), {title: "Time, if it has one", onchange: () => saveDead()});
   const until = el("input", {type: "date", value: dateIn(blockProp(block, "until")) || "", onchange: () => saveUntil()});
   const priSel = el("select", {onchange: () => savePriority()});
@@ -35,7 +35,7 @@ function showTaskDetail(path, block, space) {
   // One date row, not three: what it is backed by -- SCHEDULED or hold:: -- follows
   // from the state already chosen above, so there is nothing extra to pick here.
   const schedLabel = el("label", {}, "Scheduled");
-  const holdOpen = el("input", {type: "checkbox", onchange: () => { sched.disabled = holdOpen.checked; saveSched(); }});
+  const holdOpen = el("input", {type: "checkbox", onchange: () => { sched.disabled = holdOpen.checked; saveSched(); renderSchedField(); }});
   const holdOpenRow = el("label", {style: "display:flex;gap:6px;align-items:center;font-size:12px;margin-top:4px"},
     holdOpen, "No date: until I take it off");
   const loadSchedField = () => {
@@ -54,6 +54,38 @@ function showTaskDetail(path, block, space) {
   // Clicking the pill mounts the real control in its place, focused.
   let schedManualOpen = false, deadManualOpen = false, priManualOpen = false, assignManualOpen = false;
   const schedBox = el("div", {class: "field"});
+  // Repeat and Reminder are facts about a date that is actually set -- a
+  // reminder needs a time, a repeat needs a day to repeat from -- so both
+  // live in the Scheduled section now and are simply absent otherwise,
+  // instead of two always-visible rows asking about a date that may not
+  // exist yet.
+  const buildRepeatRow = () => {
+    const row = el("div", {class: "seg"});
+    const cur = repeatOf(block);
+    for (const choice of REPEAT_CHOICES) {
+      const on = trim(cur).toLowerCase() === choice;
+      row.append(el("button", {class: on ? "on" : "", onclick: () => {
+        if (choice) setBlockProp(block, REPEAT_PROP, choice);
+        else for (const k of Object.keys(block.props)) if (k.toLowerCase() === REPEAT_PROP) delete block.props[k];
+        touch(path);
+        closeModal(); render();
+        notify(choice ? "Repeats " + choice + ". You will be asked when you tick it off."
+                      : "No longer repeats.");
+      }}, choice || "never"));
+    }
+    // Anything the row does not have -- weekly on mon, thu; the last friday of the month.
+    const own = trim(cur) && !REPEAT_CHOICES.includes(trim(cur).toLowerCase());
+    row.append(el("button", {class: own ? "on" : "", onclick: () => openRecurrenceDialog({
+      title: "Repeats", spec: cur,
+      onSave: ({spec}) => {
+        if (spec) setBlockProp(block, REPEAT_PROP, spec);
+        else for (const k of Object.keys(block.props)) if (k.toLowerCase() === REPEAT_PROP) delete block.props[k];
+        touch(path); render();
+        notify(spec ? "Repeats " + spec + ". You will be asked when you tick it off." : "No longer repeats.");
+      },
+    })}, own ? cur : "custom…"));
+    return row;
+  };
   const renderSchedField = () => {
     schedBox.textContent = "";
     const isHold = block.state === "HOLD";
@@ -75,6 +107,13 @@ function showTaskDetail(path, block, space) {
           addToCalendar([Object.assign({}, a, {due: when, time, title: block.title, block})]);
         },
       }, "Add to calendar"));
+    if (!isHold && trim(sched.value)) {
+      schedBox.append(el("label", {style: "margin-top:4px", title: "Nothing is created until you tick it off; you'll be asked first."},
+        "Repeats"), buildRepeatRow());
+    }
+    if (!isHold && trim(schedAt.value)) {
+      schedBox.append(el("label", {style: "margin-top:4px"}, "Reminder"), remindSel);
+    }
   };
   const deadBox = el("div", {class: "field"});
   const renderDeadField = () => {
@@ -323,36 +362,6 @@ function showTaskDetail(path, block, space) {
           el("span", {style: "color:var(--fg3);font-size:12px"},
             informedAt(block) ? "Last told " + trim(blockProp(block, INFORMED_PROP)).replace(/\s+\S+$/, "") + " on " + informedAt(block) + "."
                               : "Tell whoever it names where it stands. Alt+U on the line."))),
-      el("div", {class: "field"}, el("label", {}, "Reminder, when it has a time"), remindSel),
-      el("div", {class: "field"},
-        el("label", {title: "Nothing is created until you tick it off; you'll be asked first."}, "Repeats"),
-        (() => {
-          const row = el("div", {class: "seg"});
-          const cur = repeatOf(block);
-          for (const choice of REPEAT_CHOICES) {
-            const on = trim(cur).toLowerCase() === choice;
-            row.append(el("button", {class: on ? "on" : "", onclick: () => {
-              if (choice) setBlockProp(block, REPEAT_PROP, choice);
-              else for (const k of Object.keys(block.props)) if (k.toLowerCase() === REPEAT_PROP) delete block.props[k];
-              touch(path);
-              closeModal(); render();
-              notify(choice ? "Repeats " + choice + ". You will be asked when you tick it off."
-                            : "No longer repeats.");
-            }}, choice || "never"));
-          }
-          // Anything the row does not have -- weekly on mon, thu; the last friday of the month.
-          const own = trim(cur) && !REPEAT_CHOICES.includes(trim(cur).toLowerCase());
-          row.append(el("button", {class: own ? "on" : "", onclick: () => openRecurrenceDialog({
-            title: "Repeats", spec: cur,
-            onSave: ({spec}) => {
-              if (spec) setBlockProp(block, REPEAT_PROP, spec);
-              else for (const k of Object.keys(block.props)) if (k.toLowerCase() === REPEAT_PROP) delete block.props[k];
-              touch(path); render();
-              notify(spec ? "Repeats " + spec + ". You will be asked when you tick it off." : "No longer repeats.");
-            },
-          })}, own ? cur : "custom…"));
-          return row;
-        })()),
       el("div", {class: "field"}, el("label", {}, "Notes"), notes),
       el("div", {class: "field"}, trail)),
     onKey: e => {
