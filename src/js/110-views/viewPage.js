@@ -45,13 +45,13 @@ function viewPage() {
     el("div", {class: "acts"},
       SIDE_DRAWING ? null : el("button", {class: "btn sm ghost panepin" + (pinned ? " on" : ""), title: pinLabel,
         "aria-label": pinLabel, "aria-pressed": String(pinned),
-        onclick: () => pinned ? unpinSide() : pinToSide(space, path)}, "📌"),
+        onclick: () => pinned ? unpinSide() : pinToSide(space, path)}, svgIcon(ICON_PIN)),
       el("button", {class: "btn sm ghost", title: "A link you can paste into chat or email",
         onclick: () => copyLinkTo(deepLink(path), pageTitle(path))}, "Copy link"),
       el("button", {class: "btn sm ghost", title: "Show the file in Explorer: copies a line for Win+R",
         onclick: () => revealInExplorer(path)}, "Explorer"),
       code && !SIDE_DRAWING ? el("button", {class: "btn sm ghost npmbtn", title: "Natural planning: why, outcome, ideas, next actions (w n)",
-        onclick: () => npmOpen(space, path)}, "✦ " + npmLabel(space, path)[0]) : null,
+        onclick: () => npmOpen(space, path)}, svgIcon(ICON_SPARKLE), " " + npmLabel(space, path)[0]) : null,
       isJournalPath(path) ? null : el("button", {class: "btn sm ghost",
         onclick: () => go("pages", {sub: "mindmap", graphFocus: (V.space || "") + "\u0000" + path})}, "Mind map"),
       putsBack(path) && getPage(path).blocks.length ? el("button", {class: "btn sm ghost", title: "What was refiled here, to put back",
@@ -116,7 +116,7 @@ function viewPage() {
     c.append(section("Open", open.length, taskCard(open, "Nothing open names " + name + " or its people.")));
     const tell = informAbout({name, org: true}).length || stakeIn({name, org: true}).length;
     c.append(el("div", {class: "section"},
-      tell ? el("button", {class: "btn sm ghost", onclick: () => openSendUpdate({name, org: true})}, "✉ Send " + name + " an update") : null,
+      tell ? el("button", {class: "btn sm ghost", onclick: () => openSendUpdate({name, org: true})}, svgIcon(ICON_MAIL), " Send " + name + " an update") : null,
       el("div", {style: tell ? "margin-top:8px" : ""}, stakeholderLine({name, org: true}))));
   }
   // The other pages in its namespace, when it has one: Work, Work/Clients, Work/Clients/Acme.

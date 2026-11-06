@@ -34,43 +34,44 @@ const subNow = () => subOk(state.view, state.sub) ? state.sub : defaultSub(state
 
 /* ---------- the sidebar ---------- */
 /* One picture per kind of thing, the same in the sidebar and in the line menu.
-   ︎ asks for the plain text glyph rather than the colour emoji. */
+   Every value is a monochrome SVG path for svgIcon() (vars-UI_ICON.js), except
+   "@", which is already plain text and already inherits the button's colour. */
 const ICON = {
-  projects: "⚑",               // flag
-  next:     "⚡︎",         // lightning bolt
-  orgs:     "\u{1F3E2}︎",      // the tall office building
-  people:   "\u{1F464}︎",      // bust
-  pages:    "\u{1F4C4}︎",      // page
-  horizons: "\u{1F52D}︎",      // telescope
+  projects: ICON_FLAG,
+  next:     ICON_BOLT,
+  orgs:     ICON_ORG,
+  people:   ICON_PERSON,
+  pages:    ICON_PAGE,
+  horizons: ICON_TELESCOPE,
 };
 const NAV_ITEMS = [
-  {id: "today",    icon: "☀", label: "Journal"},
+  {id: "today",    icon: ICON_SUN, label: "Journal"},
   {id: "next",     icon: ICON.next, label: "Next"},
-  {id: "waiting",  icon: "⏳", label: "Waiting for"},
+  {id: "waiting",  icon: ICON_HOURGLASS, label: "Waiting for"},
   // Talking to yourself is not a feature: Chat waits for somebody else to be
   // in one of your spaces, and stays once there are threads.
-  {id: "chat",     icon: "○", label: "Chat", when: () => anySpaceShared() || allThreads().length > 0},
+  {id: "chat",     icon: ICON_CHAT, label: "Chat", when: () => anySpaceShared() || allThreads().length > 0},
   "sep",
   {id: "projects", icon: ICON.projects, label: "Projects"},
   {id: "people",   icon: ICON.people, label: "People"},
   {id: "orgs",     icon: ICON.orgs, label: "Organisations"},
   {id: "contexts", icon: "@",      label: "Contexts"},
   // Once any task repeats: the home's chores, room by room.
-  {id: "chores",   icon: "↻",      label: "Chores", when: () => allChores().length > 0 || asNeededChores().length > 0},
+  {id: "chores",   icon: ICON_REPEAT, label: "Chores", when: () => allChores().length > 0 || asNeededChores().length > 0},
   {id: "pages",    icon: ICON.pages, label: "Pages"},
   // Only in an area with a book (#240, #255).
-  {id: "book",     icon: "✎︎", label: "Book", when: () => hasBook()},
+  {id: "book",     icon: ICON_PENCIL, label: "Book", when: () => hasBook()},
   // Your areas are Horizon 2, so there is always something here to look at.
   {id: "horizons", icon: ICON.horizons, label: "Horizons", small: true},
   // The weekly review is a routine itself, so this is never empty.
-  {id: "checklists", icon: "⚙︎", label: "Settings", small: true},
+  {id: "checklists", icon: ICON_GEAR, label: "Settings", small: true},
   // Only once a day page has a tracker line on it.
-  {id: "trackers", icon: "↗", label: "Trackers", small: true, when: () => trackerList().length > 0},
+  {id: "trackers", icon: ICON_TRENDUP, label: "Trackers", small: true, when: () => trackerList().length > 0},
   // The pages you pinned, from the ⋯ beside a page's title. See navPins().
   "pins",
   "grow",
   // Not a view: a countdown you start from the sidebar. See timerNavItem().
-  {id: "timer",    icon: "◷", label: "Timer", small: true},
+  {id: "timer",    icon: ICON_STOPWATCH, label: "Timer", small: true},
 ];
 
 /* ---------- the sidebar, as a page ----------

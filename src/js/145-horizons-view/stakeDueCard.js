@@ -5,5 +5,5 @@ function stakeDueCard(due) {
       ...due.map(d => el("div", {style: "display:flex;gap:10px;align-items:center;margin:4px 0;flex-wrap:wrap"},
         el("span", {style: "flex:1;min-width:0"}, (d.org ? "\u{1F3E2} " : "") + d.name,
           el("span", {style: "color:var(--fg3);font-size:12.5px"}, " · " + d.areas.map(a => a.title + " " + toldWords(a.days)).join(", "))),
-        el("button", {class: "btn sm ghost", onclick: () => openSendUpdate({name: d.name, org: d.org})}, "✉ Send an update")))));
+        el("button", {class: "btn sm ghost", onclick: () => openSendUpdate({name: d.name, org: d.org})}, svgIcon(ICON_MAIL), " Send an update")))));
 }

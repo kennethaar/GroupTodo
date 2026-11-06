@@ -9,7 +9,7 @@ function npmOrderQ() {
       above ? fchip(waits ? "After " + npmComp(c.after).name : "Can start now", waits, () => {
         c.after = waits ? null : above.id; NPM.ordered = true; npmSave(); render();
       }) : el("span", {class: "npmsay"}, "Starts first"),
-      el("button", {class: "iconbtn", title: "Up", "aria-label": "Move " + c.name + " up", disabled: n ? null : "disabled", onclick: () => move(n, -1)}, "↑"),
-      el("button", {class: "iconbtn", title: "Down", "aria-label": "Move " + c.name + " down", disabled: n < NPM.comps.length - 1 ? null : "disabled", onclick: () => move(n, 1)}, "↓"));
+      el("button", {class: "iconbtn", title: "Up", "aria-label": "Move " + c.name + " up", disabled: n ? null : "disabled", onclick: () => move(n, -1)}, svgIcon(ICON_ARROW_UP)),
+      el("button", {class: "iconbtn", title: "Down", "aria-label": "Move " + c.name + " down", disabled: n < NPM.comps.length - 1 ? null : "disabled", onclick: () => move(n, 1)}, svgIcon(ICON_ARROW_DOWN)));
   })), el("div", {class: "npmsay"}, "A component that waits gets its next action once the one before is done.")];
 }

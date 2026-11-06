@@ -24,7 +24,7 @@ function openExportPage(rootPath) {
   const toggle = (key, label, hint) => {
     const box = el("button", {class: "spacetoggle" + (opts[key] ? " on" : ""),
       onclick: () => { opts[key] = !opts[key]; box.classList.toggle("on", opts[key]); refresh(); }},
-      opts[key] ? "✓" : "");
+      opts[key] ? svgIcon(ICON_CHECK) : null);
     return el("div", {style: "display:flex;gap:10px;align-items:flex-start;margin:6px 0"},
       box, el("div", {}, el("div", {}, label),
         el("div", {style: "color:var(--fg3);font-size:12px"}, hint)));

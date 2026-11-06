@@ -28,6 +28,7 @@
   font-size:11.5px;color:var(--fg3);text-align:left;letter-spacing:.3px}
 .pfhead:hover{background:var(--bg3)}
 .pftog{width:10px;flex:none}
+.pftog svg{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .pfkeys{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.7}
 .pfprefs{display:flex;flex-wrap:wrap;gap:4px 12px;margin:8px 0;font-size:13.5px}
 .pfprefhead{flex-basis:100%}
@@ -71,6 +72,7 @@
 .twinxfer{font-size:12.5px;padding:6px 8px;border-left:2px solid var(--accent);margin:2px 0}
 .twinxfer .field{margin:4px 0 0}
 .twinwarn:empty{display:none}
+.twinwarn svg{width:12px;height:12px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .twinbtn{color:var(--warn)}
 .fpill.fst.fmove{font-weight:500;border-style:dashed;opacity:.85}
 .fpill.fst.fmove:hover{opacity:1;border-style:solid}
@@ -92,7 +94,8 @@
 .tag:hover{text-decoration:underline;color:var(--fg2)}
 .wikilink{color:var(--accent);cursor:pointer}
 .wikilink:hover{text-decoration:underline}
-.wikilink .mailico{color:var(--fg);font-family:"Segoe UI Symbol","Noto Sans Symbols",sans-serif;font-variant-emoji:text;margin-right:.25em}
+.wikilink .mailico{color:var(--fg);margin-right:.25em;display:inline-flex;vertical-align:-2px}
+.wikilink .mailico svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .wikilink.ctx{color:var(--ctx)} .wikilink.zet{color:var(--zet)} .wikilink.proj{color:var(--proj)}
 .wikilink .porg{color:var(--fg3)}
 /* A door into the app rather than a page: [[go/todos]]. Drawn as something to

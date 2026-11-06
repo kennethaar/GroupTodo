@@ -15,7 +15,7 @@ function choreBoard() {
       "Then they take turns and get the points."),
     fbar(fchip("This week", !last, () => flip("")), fchip("Last week", last, () => flip("last"))),
     rows.length ? el("div", {class: "card"}, ...rows.map(([name, t], i) => el("div", {class: "reportsum choreboard-row"},
-      el("span", {class: "choreboard-at"}, i === 0 ? "🏆" : String(i + 1)),
+      el("span", {class: "choreboard-at"}, i === 0 ? svgIcon(ICON_TROPHY) : String(i + 1)),
       el("span", {class: "choreboard-who"}, name),
       el("span", {class: "freshbar"}, el("i", {style: "width:" + Math.round(t.pts / most * 100) + "%"})),
       el("span", {class: "say"}, t.pts + (t.pts === 1 ? " point · " : " points · ") + t.n + " done" +

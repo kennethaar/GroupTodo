@@ -33,7 +33,7 @@ function coachStrip() {
         title: !st.done ? "Cross it off" : byHand ? "Not done after all" : "Done",
         onclick: !st.done ? () => { PREF.set("coach." + st.k, "1"); render(); }
                : byHand ? () => { PREF.set("coach." + st.k, ""); render(); } : null},
-        st.done ? "✓" : ""),
+        st.done ? svgIcon(ICON_CHECK) : null),
       el("div", {},
         el("div", {}, st.label,
           st.optional ? el("span", {class: "chip", style: "margin-left:6px"}, "optional") : null),

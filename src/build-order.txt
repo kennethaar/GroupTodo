@@ -641,6 +641,7 @@ js/90-view-state/navApply.js
 js/90-view-state/navGo.js
 js/90-view-state/syncNavArrows.js
 js/90-view-state/navWhere.js
+js/90-view-state/vars-UI_ICON.js
 js/90-view-state/vars-noteTodoTouched.js
 js/90-view-state/navIdOf.js
 js/90-view-state/vars-navDefaultOrder.js

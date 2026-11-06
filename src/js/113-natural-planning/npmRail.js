@@ -8,11 +8,11 @@ function npmRail() {
       "aria-current": now ? "step" : null, disabled: NPM ? null : "disabled",
       title: NPM && i < NPM.step && !done ? "Skipped" : null,
       onclick: () => { if (NPM) { npmCommit(); npmGo(i); } }},
-      el("span", {class: "n"}, done ? "✓" : String(i + 1)), el("span", {class: "q"}, s.name)));
+      el("span", {class: "n"}, done ? svgIcon(ICON_CHECK) : String(i + 1)), el("span", {class: "q"}, s.name)));
     if (now && qs.length > 1) li.append(el("ol", {class: "npmsubq"}, ...qs.map((q, n) =>
       el("li", {}, el("button", {class: (n === NPM.q ? "now" : "") + (q.done() ? " done" : ""),
         onclick: () => { npmCommit(); npmGo(NPM.step, n); }},
-        n === NPM.q ? "▸ " : q.done() ? "✓ " : "◦ ", q.label)))));
+        n === NPM.q ? svgIcon(ICON_CHEVRON_RIGHT) : q.done() ? svgIcon(ICON_CHECK) : "◦ ", q.label)))));
     if (now && NPM_STEPS[i].k === "next") {
       const waits = NPM.comps.filter(c => c.after && npmComp(c.after));
       if (waits.length) li.append(el("ol", {class: "npmsubq"}, ...waits.map(c =>
@@ -27,7 +27,7 @@ function npmRail() {
     steps);
   if (NPM && !npmLocked()) side.append(
     el("button", {class: "btn primary npmfinish", title: "Writes what you have now. Undo takes it back.",
-      onclick: npmWrite}, "✓ Finish & write page"),
+      onclick: npmWrite}, svgIcon(ICON_CHECK), " Finish & write page"),
     el("p", {class: "solhow"}, "Draft saved as you go."),
     el("p", {class: "solhow"}, NPM_STEPS[NPM.step].how));
   if (NPM) side.append(...[el("button", {class: "textbtn", title: "Esc", onclick: npmClose}, "Close: the draft is kept"),

@@ -1,7 +1,7 @@
 function updateToast(u) {
   $("#toasts .toast.update")?.remove();
   nudgeToast({stay: true, kind: "update",
-    title: "✨ GroupToDo v" + u.version + " is ready",
+    title: [svgIcon(ICON_SPARKLE), " GroupToDo v" + u.version + " is ready"],
     hint: thingsCount(u.entries) + " since your v" + APP_VERSION + ":",
     body: newsList(u.entries),
     foot: [el("button", {class: "btn primary sm", onclick: () => getUpdate(u.version)},

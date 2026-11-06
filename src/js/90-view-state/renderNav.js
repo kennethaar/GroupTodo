@@ -25,12 +25,12 @@ function renderNav() {
       "aria-current": here ? "page" : null,
       onclick: e => goFromNav(it.id, e.currentTarget),
     },
-      el("span", {class: "ic bw"}, it.icon),
+      el("span", {class: "ic bw"}, it.icon.startsWith("<") ? svgIcon(it.icon) : it.icon),
       el("span", {class: "lbl"}, it.label),
       folds ? el("span", {class: "fold", role: "button", "aria-expanded": String(open),
         title: open ? "Fold the contexts away" : "Show every context",
         onclick: e => { e.stopPropagation(); PREF.set("nav.ctxOpen", open ? "0" : "1"); renderNav(); }},
-        open ? "▾" : "▸") : null,
+        svgIcon(open ? ICON_CARET : ICON_CHEVRON_RIGHT)) : null,
       n ? el("span", {class: "cnt" + (hot ? " hot" : "")}, String(n)) : null));
     if (open) nav.append(...navContexts());
     if (it.id === "pages") { const load = navLoading(); if (load) nav.append(load); }

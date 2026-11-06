@@ -12,7 +12,7 @@ function viewActSolitaire() {
   const passList = el("ol", {class: "solpasses", "aria-label": "Passes"}, ...ACT_PASSES.map((p, n) =>
     el("li", {}, el("button", {class: "solpass" + (n === pass ? " now" : "") + (n < pass ? " done" : ""),
       "aria-current": n === pass ? "step" : null, title: p.say, onclick: () => { if (n !== pass) actGoPass(n); }},
-      el("span", {class: "n"}, n < pass && !left[n] ? "✓" : String(n + 1)),
+      el("span", {class: "n"}, n < pass && !left[n] ? svgIcon(ICON_CHECK) : String(n + 1)),
       el("span", {class: "q"}, p.name + (left[n] ? " · " + left[n] : ""))))));
   if (SOL.i >= SOL.order.length) {
     const any = solDeckAns().some(a => a["p" + pass]);

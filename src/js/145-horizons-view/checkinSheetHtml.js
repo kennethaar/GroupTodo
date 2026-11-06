@@ -59,6 +59,7 @@ h1{font-size:25px;margin:0 0 8px;line-height:1.2}
 .hit:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .box{width:23px;height:23px;border-radius:6px;border:1.7px solid var(--faint);display:grid;
   place-items:center;font-size:14px;color:transparent;margin-top:1px}
+.box svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .row.done .box{background:var(--good);border-color:var(--good);color:#fff}
 .t{min-width:0}
 .row.done .t>span:first-child{text-decoration:line-through;color:var(--faint)}
@@ -160,7 +161,11 @@ function draw(){
     if (it.q) hit.className = "hit ask";
     else { hit.type = "button"; hit.className = "hit"; hit.setAttribute("aria-pressed", String(!!s.done)); }
     var box = document.createElement("span");
-    box.className = "box"; box.textContent = "✓"; box.setAttribute("aria-hidden", "true");
+    box.className = "box"; box.setAttribute("aria-hidden", "true");
+    var boxSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    boxSvg.setAttribute("viewBox", "0 0 24 24");
+    boxSvg.innerHTML = '<path d="M4 12l6 6L20 6"/>';
+    box.appendChild(boxSvg);
     var t = document.createElement("span"); t.className = "t";
     var name = document.createElement("span"); name.textContent = it.t;
     t.appendChild(name);

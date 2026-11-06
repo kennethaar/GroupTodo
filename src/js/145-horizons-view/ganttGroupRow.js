@@ -42,7 +42,7 @@ function ganttGroupRow(row, pct) {
     },
   },
     el("span", {class: "glabel"},
-      el("span", {class: "caret"}, open ? "▾" : "▸"),
+      el("span", {class: "caret"}, svgIcon(open ? ICON_CARET : ICON_CHEVRON_RIGHT)),
       // The name gets the whole width and may wrap to three lines; the count
       // goes under it rather than beside it, so it never eats the name.
       el("span", {class: "gname"},

@@ -37,10 +37,10 @@ function sidebarSettingsSection() {
       "aria-label": "Move " + it.label + " " + word, title: "Move " + word,
       disabled: (d < 0 ? i === 0 : i === order.length - 1) ? "" : null, onclick: () => move(i, d)}, sym);
     card.append(el("div", {class: "prow"},
-      el("label", {class: "nm"}, box, " ", el("span", {class: "ic bw"}, it.icon), " ", it.label),
+      el("label", {class: "nm"}, box, " ", el("span", {class: "ic bw"}, it.icon.startsWith("<") ? svgIcon(it.icon) : it.icon), " ", it.label),
       keep ? el("span", {class: "sub"}, "always: the way back here")
         : it.when ? el("span", {class: "sub"}, "once there is something in it") : null,
-      arrow(-1, "↑", "up"), arrow(1, "↓", "down")));
+      arrow(-1, svgIcon(ICON_ARROW_UP), "up"), arrow(1, svgIcon(ICON_ARROW_DOWN), "down")));
   });
   if (getPage(SIDEBAR_PATH)) card.append(el("div", {class: "helpsee"},
     el("button", {class: "textbtn", onclick: sidebarDefault}, "Back to the default")));

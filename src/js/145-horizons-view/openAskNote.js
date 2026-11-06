@@ -91,7 +91,7 @@ function openAskNote(name, items, file, sheetOf = null, area = Spaces.active || 
                 if (code === "own" && !askOwn()) PREF.set("askLangBase", askLang());
                 PREF.set("askLang", code);
                 closeModal(); openAskNote(name, items, file, sheetOf, area, next, sent);
-              }}, (on ? "✓ " : "") + label);
+              }}, on ? [svgIcon(ICON_CHECK), " " + label] : label);
           })),
         askOwn() ? el("div", {style: "margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"},
           el("button", {class: "btn sm ghost", onclick: () => { remember(); closeModal(); openPage(ensureAskOwn()); }},

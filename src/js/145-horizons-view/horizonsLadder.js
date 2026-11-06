@@ -65,7 +65,7 @@ function horizonsLadder() {
   const gr = horizonMeta("ground");
   c.append(horizonRow(gr, el("div", {class: "card"},
     el("button", {class: "prow", onclick: () => go("next")},
-      el("span", {class: "st st-1"}, "▸"),
+      el("span", {class: "st st-1"}, svgIcon(ICON_CHEVRON_RIGHT)),
       el("span", {class: "nm"}, "Your next actions"),
       el("span", {class: "sub"}, myOpen().length + "")))));
   c.append(el("p", {class: "hint"}, multiSpace()

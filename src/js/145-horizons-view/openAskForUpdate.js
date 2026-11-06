@@ -60,8 +60,8 @@ function openAskForUpdate(name, only = null) {
   const toggle = (on, flip, size = 22) => {
     const box = el("button", {class: "spacetoggle" + (on() ? " on" : ""),
       style: size < 22 ? "width:" + size + "px;height:" + size + "px;font-size:11px;flex:0 0 auto" : "",
-      onclick: () => { flip(); box.className = "spacetoggle" + (on() ? " on" : ""); box.textContent = on() ? "✓" : ""; refresh(); }},
-      on() ? "✓" : "");
+      onclick: () => { flip(); box.className = "spacetoggle" + (on() ? " on" : ""); box.replaceChildren(...(on() ? [svgIcon(ICON_CHECK)] : [])); refresh(); }},
+      on() ? svgIcon(ICON_CHECK) : null);
     return box;
   };
   const pickRowFor = (a, i) => {

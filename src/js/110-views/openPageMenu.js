@@ -23,7 +23,7 @@ function openPageMenu(path) {
     ["Show in Explorer", "a line for Win+R that opens the folder with this file selected", () => revealInExplorer(path)],
     ["Where the folder is", "on this computer, for Show in Explorer", () => askDiskRoot(space)],
     V.backend && V.backend.openFile ? ["Open the file", "in the editor on the machine running the server", () => openSourceFile(path)] : null,
-    ["✎", "the whole file as text", () => editAllText({space, path, id: null})],
+    [svgIcon(ICON_PENCIL), "the whole file as text", () => editAllText({space, path, id: null})],
     isJournalPath(path) ? null : ["Rename", "and the folder it is in", () => renamePrompt(path)],
     ["Move", "to another folder", () => movePrompt(path)],
     code ? ["Turn into a todo", "one line, with this page's lines under it", () => projectToTodo(path)] : null,

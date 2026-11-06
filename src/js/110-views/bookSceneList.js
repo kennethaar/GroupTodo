@@ -14,6 +14,6 @@ function bookSceneList(path) {
       when ? el("span", {class: "scmeta", title: "When in the story"}, when) : null,
       el("span", {class: "scw"}, fmtWords(sceneWords(s))),
       s.block ? el("button", {class: "scedit", title: "Its name, who sees it, where and when", "aria-label": "Edit the scene " + s.name,
-        onclick: () => editScene(s)}, "✎") : el("span", {class: "scedit", "aria-hidden": "true"}, "✎"));
+        onclick: () => editScene(s)}, svgIcon(ICON_PENCIL)) : el("span", {class: "scedit", "aria-hidden": "true"}, svgIcon(ICON_PENCIL)));
   }), add);
 }

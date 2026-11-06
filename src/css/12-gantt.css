@@ -17,6 +17,7 @@
    its own to be clipped in. */
 .glabel .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .glabel .caret{color:var(--fg3);font-size:10px;flex:none}
+.glabel .caret svg{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 /* A project's name over its count. The name may take three lines before it is
    cut, and the count never shares its line. */
 .gname{display:flex;flex-direction:column;min-width:0;flex:1 1 auto;line-height:1.3}

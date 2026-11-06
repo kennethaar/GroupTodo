@@ -6,9 +6,9 @@ function viewJournalWeek() {
   const late = weekLate(id);
   const head = vhead(id, weekRange(id), journalModes(true, null, id),
     el("div", {class: "daynav daybox weeknav"},
-      el("button", {class: "dayarrow", title: "The week before", "aria-label": "The week before", onclick: () => toWeek(shiftWeek(id, -1))}, "◀"),
+      el("button", {class: "dayarrow", title: "The week before", "aria-label": "The week before", onclick: () => toWeek(shiftWeek(id, -1))}, svgIcon(ICON_CHEVRON_LEFT)),
       el("button", {class: "wkjump", title: "This week", "aria-pressed": String(id === now), onclick: () => toWeek(now)}, "Today"),
-      el("button", {class: "dayarrow", title: "The week after", "aria-label": "The week after", onclick: () => toWeek(shiftWeek(id, 1))}, "▶")));
+      el("button", {class: "dayarrow", title: "The week after", "aria-label": "The week after", onclick: () => toWeek(shiftWeek(id, 1))}, svgIcon(ICON_CHEVRON_RIGHT))));
   head.classList.add("todayhead", "weekhead");
   if (late) head.querySelector(".sub").append(" ", el("span", {class: "chip late"}, late + " late"));
   c.append(head, weekSection(id));

@@ -14,7 +14,7 @@ function embedLine(path, b, seen, depth, budget) {
   const inner = liveMacros(path, b, seen, depth);
   if (inner) node.append(inner);
   const kids = b.children || [];
-  if (kids.length && b.collapsed) node.append(el("div", {class: "eempty"}, "▸ " + kids.length + " folded"));
+  if (kids.length && b.collapsed) node.append(el("div", {class: "eempty"}, svgIcon(ICON_CHEVRON_RIGHT), " " + kids.length + " folded"));
   else for (const k of kids) node.append(embedLine(path, k, seen, depth, budget));
   return node;
 }

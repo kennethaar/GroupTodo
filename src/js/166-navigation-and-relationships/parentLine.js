@@ -8,7 +8,7 @@ function parentLine(space, path) {
   if (!up.length) return null;
   const name = x => x.path ? inSpace(space, () => pageTitle(x.path)) : x.title;
   const line = el("div", {class: "parentline", title: "Part of " + up.map(name).join(", ")},
-    el("span", {class: "up", "aria-hidden": "true"}, "↑"));
+    el("span", {class: "up", "aria-hidden": "true"}, svgIcon(ICON_ARROW_UP)));
   up.forEach((x, i) => {
     if (i) line.append(el("span", {class: "sep"}, "·"));
     if (!x.path) { line.append(el("span", {class: "pl none", title: "A folder, with no page of its own"}, x.title)); return; }

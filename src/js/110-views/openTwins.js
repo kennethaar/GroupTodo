@@ -82,12 +82,11 @@ function openTwins(only = null) {
       // Folded where the kept one is, then moved on: only the areas folded from keep a synced copy.
       const away = areas.includes(dest) ? null : keep.space;
       const warns = areas.filter(a => a !== dest && a !== away).map(a => [a, othersIn(a)]).filter(([, who]) => who.length)
-        .map(([a, who]) => "⚠ " + (who.length > 3 ? who.slice(0, 3).join(", ") + " and " + (who.length - 3) + " more"
+        .map(([a, who]) => (who.length > 3 ? who.slice(0, 3).join(", ") + " and " + (who.length - 3) + " more"
           : who.join(", ").replace(/, ([^,]*)$/, " and $1")) + " also work in " + a +
           ". The project stays there as a synced copy, so they keep it: an edit in one area is the edit in both.");
-      if (away) warns.push("It is folded in " + away + ", then moved to " + dest + ".");
-      warnEl.textContent = warns.join("\n");
-      warnEl.style.whiteSpace = "pre-line";
+      if (away) warns.push({plain: "It is folded in " + away + ", then moved to " + dest + "."});
+      warnEl.append(...warns.map(w => el("div", {}, w.plain ? w.plain : [svgIcon(ICON_WARN), " " + w])));
     };
     const draw = () => {
       rowsEl.textContent = "";

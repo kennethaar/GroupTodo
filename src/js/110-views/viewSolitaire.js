@@ -19,7 +19,7 @@ function viewSolitaire() {
   const passList = el("ol", {class: "solpasses", "aria-label": "Passes"}, ...SOL_PASSES.map((p, n) =>
     el("li", {}, el("button", {class: "solpass" + (n === pass ? " now" : "") + (n < pass ? " done" : ""),
       "aria-current": n === pass ? "step" : null, title: p.say, onclick: () => { if (n !== pass) solGoPass(n); }},
-      el("span", {class: "n"}, n < pass ? "✓" : String(n + 1)), el("span", {class: "q"}, p.name)))));
+      el("span", {class: "n"}, n < pass ? svgIcon(ICON_CHECK) : String(n + 1)), el("span", {class: "q"}, p.name)))));
   // The someday pass is a game of its own: two cards, not a card and its answers.
   if (pass === SD_PASS || pass === HD_PASS) return viewSomeday(c, passList);
   // So is the loose actions pass: the card is an action, the answers where it goes.
@@ -38,9 +38,9 @@ function viewSolitaire() {
         : reviewOnward().btn,
       " ",
       NPM_QUEUE.length ? el("button", {class: "btn", onclick: () => npmOpen(NPM_QUEUE[0].space, NPM_QUEUE[0].path)},
-        "✦ Plan " + NPM_QUEUE.length + (NPM_QUEUE.length === 1 ? " project" : " projects") + " again") : null,
+        svgIcon(ICON_SPARKLE), " Plan " + NPM_QUEUE.length + (NPM_QUEUE.length === 1 ? " project" : " projects") + " again") : null,
       " ",
-      SOL.past && SOL.past.length ? el("button", {class: "textbtn", title: "Backspace", onclick: () => solBack()}, "‹ Back to the last card") : null,
+      SOL.past && SOL.past.length ? el("button", {class: "textbtn", title: "Backspace", onclick: () => solBack()}, svgIcon(ICON_CHEVRON_LEFT), " Back to the last card") : null,
       " ",
       el("button", {class: "textbtn", onclick: () => { solClearDeck(); solGoPass(0); }}, "Start over")));
     c.firstChild.after(passList);
@@ -75,7 +75,7 @@ function viewSolitaire() {
       return el("li", {}, el("button", {class: "solstep" + (s === f ? " now" : "") + (text ? " done" : ""),
         "aria-current": s === f ? "step" : null, title: text ? s.label + ": " + text + ". Click to change it." : SOL_ASK[s.k],
         onclick: () => { SOL.step = s.k; SOL.hold = s.type === "multi" && s.filled(r) ? s.k : null; SOL.more = null; SOL_KB = null; render(); }},
-        el("span", {class: "n"}, text ? "✓" : String(i + 1)), el("span", {class: "q"}, s.label),
+        el("span", {class: "n"}, text ? svgIcon(ICON_CHECK) : String(i + 1)), el("span", {class: "q"}, s.label),
         text ? el("span", {class: "v"}, text) : null));
     })),
     el("button", {class: "textbtn", onclick: () => solOp(r, "skip")}, "Skip this project ›"),

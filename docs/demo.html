@@ -416,6 +416,8 @@ color:var(--fg);font-size:14px;text-align:left}
 .nav-item:hover{background:var(--bg3)}
 .nav-item.active{background:var(--accent-soft);color:var(--accent);font-weight:600}
 .nav-item .ic{width:18px;text-align:center;flex:none;opacity:.8}
+.nav-item .ic svg,.fold svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;
+stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px}
 .bw{font-family:"Segoe UI Symbol","Noto Emoji","Apple Symbols",system-ui,sans-serif;
 font-variant-emoji:text;filter:grayscale(1);font-style:normal}
 .nav-item .lbl{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -546,6 +548,7 @@ header.top .burger{display:none}
 body.sidebar-hidden header.top .burger{display:grid}
 .tbtn{border:1px solid var(--border);background:var(--bg2);border-radius:8px;width:36px;height:36px;
 flex:none;display:grid;place-items:center;color:var(--fg2)}
+.tbtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .tbtn:hover{background:var(--bg3);color:var(--fg)}
 .tbtn:disabled{opacity:.35;cursor:default}
 .tbtn:disabled:hover{background:var(--bg2)}
@@ -563,6 +566,7 @@ font-size:13px;font-weight:600;flex:none;color:var(--fg2)}
 border-radius:8px;height:36px;padding:0 10px 0 14px;font-size:13px;flex:none;color:var(--fg)}
 .spacesbtn:hover{background:var(--bg3)}
 .spacesbtn .sqs{display:flex}
+.spacesbtn svg{width:11px;height:11px;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .sq{width:20px;height:20px;border-radius:5px;color:#fff;font-size:10px;display:grid;place-items:center;
 font-weight:700;margin-left:-5px;border:2px solid var(--bg2);flex:none}
 .spop{position:absolute;right:22px;top:58px;background:var(--bg2);border:1px solid var(--border);
@@ -606,11 +610,13 @@ border-radius:8px;padding:4px 8px;font-size:13px;color:var(--fg2)}
 font-size:13px;color:var(--fg3)}
 .fchip:hover{color:var(--fg)}
 .fchip[aria-pressed="true"]{background:var(--fg);border-color:var(--fg);color:var(--bg2)}
+.fchip svg{width:12px;height:12px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .fchip small{opacity:.7;margin-left:3px;font-variant-numeric:tabular-nums}
 .vswitch{display:contents}
 .vsel{display:none;position:relative;align-self:center;font-size:14px;font-weight:600;color:var(--accent);
 padding:6px 4px;white-space:nowrap}
 .vsel select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.vsel svg{width:11px;height:11px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .searchbox{position:relative;display:flex;align-items:center;min-width:180px;flex:1 1 180px;max-width:320px}
 .searchbox svg{position:absolute;left:9px;width:15px;height:15px;fill:none;stroke:var(--fg3);stroke-width:2;
 stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
@@ -646,6 +652,7 @@ background:color-mix(in srgb,var(--warn) 12%,var(--bg2))}
 .twingo{flex:1;display:flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;text-align:left;
 color:var(--fg);font-size:14px;font-weight:550}
 .twingo>span:first-child{flex:1}
+.twingo svg{width:13px;height:13px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .twingo .chev{font-size:20px;line-height:1;color:var(--fg3)}
 .twinbanner .iconbtn{min-width:40px;min-height:40px}
 .projbar{flex-wrap:wrap;gap:8px}
@@ -667,6 +674,7 @@ border-radius:8px;background:var(--bg2);color:var(--fg2);font-size:15px;flex:non
 .iconsel:hover{color:var(--fg)}
 .iconsel select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
 .textbtn{color:var(--accent);font-size:13px;padding:2px 4px}
+.textbtn svg{width:12px;height:12px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .textbtn:hover{text-decoration:underline}
 .hint{color:var(--fg3);font-size:12px;margin-top:14px;text-align:center}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:var(--radius-sm);
@@ -684,6 +692,7 @@ background:var(--bg3);color:var(--fg2);font-size:13px;border:1px solid transpare
 .news{display:flex;gap:10px;align-items:center;background:var(--accent-soft);border-radius:10px;
 padding:10px 14px;margin-bottom:16px;font-size:14px}
 .news b{color:var(--accent)}
+.news > svg,.news > span svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;color:var(--accent)}
 .newsrow{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;flex:1;min-width:0}
 .newsrow .btn{margin-left:auto}
 .fbquote{margin:6px 0 0;padding:6px 12px;border-left:3px solid var(--border2);color:var(--fg);overflow-wrap:anywhere}
@@ -719,6 +728,7 @@ font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .group .plain{font-weight:400}
 .group .textbtn{text-transform:none;letter-spacing:0;font-weight:600;margin-left:auto}
 .sectog{font:inherit;color:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer}
+.sectog svg{width:11px;height:11px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .secbul{padding:0 2px;font-size:15px;line-height:1;color:var(--fg3);cursor:zoom-in}
 .secbul:hover{color:var(--accent)}
 .crumbz{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:14px;color:var(--fg3);
@@ -776,6 +786,8 @@ font-size:20px;line-height:1;color:var(--fg2)}
 .daybox input[type=date]{border:0;background:none;font-size:14px;font-weight:600;color:var(--fg)}
 .dayarrow{padding:4px 8px;color:var(--fg2);font-size:12px;border-radius:6px}
 .dayarrow:hover{background:var(--bg3);color:var(--fg)}
+.dayarrow svg,.jedit svg{width:13px;height:13px;vertical-align:-2px;fill:none;stroke:currentColor;
+stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .ttabs{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 18px}
 .ttab{display:inline-flex;align-items:center;gap:10px;padding:8px 16px;border:1px solid var(--border2);
 border-radius:var(--radius-sm);background:var(--bg2);color:var(--fg2);font-size:14px}
@@ -1042,6 +1054,7 @@ color:var(--fg2);text-align:left;cursor:pointer}
 .castdepth button.dep:hover,.castdepth button.dep:focus-visible{text-decoration:underline}
 .castdepth .dep.miss{color:var(--warn)}
 .castdepth .dep.na{color:var(--fg3)}
+.castdepth .dep svg{width:11px;height:11px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .castscore{display:flex;align-items:center;gap:8px;flex:none}
 .castscore .pbar{width:60px}
 .castscore .ratio{font-size:12.5px;color:var(--fg2);font-variant-numeric:tabular-nums}
@@ -1058,6 +1071,7 @@ overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .bookscene:hover .scedit,.bookscene:focus-within .scedit{opacity:1}
 @media (hover:none){.bookscene .scedit{opacity:1}}
 .bookscene .scedit:hover,.bookscene .scedit:focus-visible{color:var(--accent)}
+.bookscene .scedit svg{width:12px;height:12px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .chapterbar{margin:0 0 6px}
 .chapterbar .vseg{margin-left:0;display:flex}
 .chapterbar .booktoday{display:flex;align-items:center;gap:8px;margin-left:auto}
@@ -1086,6 +1100,7 @@ body.bookfocus .chapterbar .focusbtn{display:none}
 .bookch:hover .chcut,.bookch:focus-within .chcut{opacity:1}
 @media (hover:none){.bookch .chcut{opacity:1}}
 .bookch .chcut:hover,.bookch .chcut:focus-visible{color:var(--late)}
+.bookch .chcut svg{width:12px;height:12px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .darlinglist{padding:0 4px}
 .darlinglist .darling .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bookch[draggable=true]{cursor:grab}
@@ -1118,6 +1133,7 @@ body.bookfocus .chapterbar .focusbtn{display:none}
 .runtable thead th{font-weight:600;color:var(--fg2);font-size:12px}
 .runtable tbody th{text-align:left;font-weight:500;min-width:9em}
 .runtable td.no{color:var(--fg3)}
+.runtable td.yes svg{width:14px;height:14px;fill:none;stroke:var(--ok);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .runtable tr.now{background:var(--bg2)}
 .runnow{color:var(--fg2);font-weight:400}
 .runsr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -1235,6 +1251,7 @@ box-shadow:inset 0 0 0 1.8px currentColor}
 display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:1px 7px;border-radius:20px;
 background:var(--bg3);color:var(--fg3);border:1px solid transparent;white-space:nowrap;
 }
+.chip svg{width:11px;height:11px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .chip.ctx{color:var(--ctx);background:rgba(94,207,192,.11)}
 .chip.proj{color:var(--proj);background:rgba(255,159,107,.11)}
 .chip.late{color:var(--late);background:rgba(255,107,107,.13)}
@@ -1288,6 +1305,7 @@ border:1px solid var(--border);background:var(--bg2);color:var(--fg2);font:inher
 }
 .choreboard-row{gap:8px}
 .choreboard-at{min-width:1.6em;text-align:center;font-variant-numeric:tabular-nums;color:var(--fg3)}
+.choreboard-at svg{width:14px;height:14px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .choreboard-who{min-width:9em}
 .choreboard-row .freshbar{width:120px}
 .asneeded-row{display:flex;align-items:center;gap:10px;padding:7px 12px;border-top:1px solid var(--border);font-size:13.5px}
@@ -1532,6 +1550,7 @@ border-top:1px solid var(--border);cursor:pointer;color:inherit;padding:0;min-he
 padding:5px 10px;font-size:12.5px;color:var(--fg);overflow:hidden}
 .glabel .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .glabel .caret{color:var(--fg3);font-size:10px;flex:none}
+.glabel .caret svg{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .gname{display:flex;flex-direction:column;min-width:0;flex:1 1 auto;line-height:1.3}
 .gname .nm{white-space:normal;overflow-wrap:anywhere;display:-webkit-box;
 -webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3}
@@ -1748,6 +1767,7 @@ font-size:11.5px;color:var(--fg3)}
 .gzoom button{width:28px;height:28px;border:1px solid var(--border);background:var(--bg2);border-radius:7px;
 color:var(--fg2);font-size:15px;line-height:1}
 .gzoom button:hover{color:var(--fg);border-color:var(--border2)}
+.gzoom button svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .gnote{position:absolute;left:10px;bottom:8px;right:50px;font-size:11.5px;color:var(--fg3)}
 .gclock{position:absolute;left:12px;top:10px;font-size:13px;font-weight:600;color:var(--fg2);
 background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:3px 9px;font-variant-numeric:tabular-nums}
@@ -1776,6 +1796,7 @@ display:grid;place-items:center;font-size:11px;color:transparent;margin-right:2p
 }
 .spacetoggle.on{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 .spacetoggle:hover{border-color:var(--accent)}
+.spacetoggle svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .senseplace{display:flex;align-items:center;gap:10px;padding:2px 0}
 .senseplace .sub{color:var(--fg3);font-size:12px;font-variant-numeric:tabular-nums}
 .senseplace .iconbtn{margin-left:auto}
@@ -1866,6 +1887,7 @@ border-radius:20px;vertical-align:1px;color:var(--ctx);background:color-mix(in s
 .donetoday{display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border-top:1px solid var(--border);color:var(--fg3);font-size:13px}
 .donetoday:hover{color:var(--fg)}
 .donetoday .pbar{width:42px;height:5px}
+.donetoday svg{width:12px;height:12px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .t-pills,.t-info{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}
 .t-info{margin-left:auto;justify-content:flex-end}
 .chip.linger{color:var(--wait);background:rgba(224,176,80,.13);font-variant-numeric:tabular-nums}
@@ -1875,6 +1897,8 @@ width:26px;height:26px;border-radius:var(--radius-sm);display:grid;place-items:c
 color:var(--fg3);font-size:13px;
 }
 .iconbtn:hover{background:var(--bg4);color:var(--fg)}
+.iconbtn svg,.toast .x svg,button.x svg,.btn svg{width:13px;height:13px;flex:none;fill:none;stroke:currentColor;
+stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 @media (hover:none){.t-act{opacity:1}}
 .outline{padding:10px 12px}
 .blk{padding-left:18px;position:relative}
@@ -1941,6 +1965,7 @@ background:var(--bg2);color:var(--fg);text-align:center}
 .tstar{background:none;border:0;padding:0 1px;cursor:pointer;color:var(--fg3);font-size:16px;line-height:1;opacity:.5}
 .tstar.on{color:var(--warn);opacity:1}
 .tstar:hover{opacity:1}
+.tstar svg{width:14px;height:14px;vertical-align:-2px}
 .trkw .tadd{font-size:12px}
 .trktap{gap:2px}
 .trktap .tapadd{padding:2px 10px;margin-right:6px;border-radius:999px;background:var(--accent-soft);color:var(--accent);
@@ -1981,6 +2006,7 @@ background:var(--bg2);padding:6px 10px 8px;font-size:13.5px;min-width:0}
 .etxt{min-width:0;overflow-wrap:anywhere}
 .ebodyline{margin-left:19px;color:var(--fg2);font-size:13px}
 .eempty{color:var(--fg3);font-size:12.5px;font-style:italic;padding:2px 4px}
+.eempty svg{width:10px;height:10px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .qpage{display:block;background:none;border:0;padding:6px 4px 1px;font:inherit;font-size:12px;font-weight:600;color:var(--accent);cursor:pointer;text-align:left}
 .qpage:first-child{padding-top:0}
 .qtrail{color:var(--fg3);font-size:12px;flex:none;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -2128,6 +2154,7 @@ font-family:var(--mono);color:var(--fg2);word-wrap:break-word;overflow-wrap:anyw
 font-size:11.5px;color:var(--fg3);text-align:left;letter-spacing:.3px}
 .pfhead:hover{background:var(--bg3)}
 .pftog{width:10px;flex:none}
+.pftog svg{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .pfkeys{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.7}
 .pfprefs{display:flex;flex-wrap:wrap;gap:4px 12px;margin:8px 0;font-size:13.5px}
 .pfprefhead{flex-basis:100%}
@@ -2171,6 +2198,7 @@ background:var(--bg3);color:var(--fg2);border:1px solid var(--border);white-spac
 .twinxfer{font-size:12.5px;padding:6px 8px;border-left:2px solid var(--accent);margin:2px 0}
 .twinxfer .field{margin:4px 0 0}
 .twinwarn:empty{display:none}
+.twinwarn svg{width:12px;height:12px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .twinbtn{color:var(--warn)}
 .fpill.fst.fmove{font-weight:500;border-style:dashed;opacity:.85}
 .fpill.fst.fmove:hover{opacity:1;border-style:solid}
@@ -2190,7 +2218,8 @@ padding:1px 5px;border-radius:4px;flex:none;margin-top:2px;cursor:pointer;
 .tag:hover{text-decoration:underline;color:var(--fg2)}
 .wikilink{color:var(--accent);cursor:pointer}
 .wikilink:hover{text-decoration:underline}
-.wikilink .mailico{color:var(--fg);font-family:"Segoe UI Symbol","Noto Sans Symbols",sans-serif;font-variant-emoji:text;margin-right:.25em}
+.wikilink .mailico{color:var(--fg);margin-right:.25em;display:inline-flex;vertical-align:-2px}
+.wikilink .mailico svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .wikilink.ctx{color:var(--ctx)} .wikilink.zet{color:var(--zet)} .wikilink.proj{color:var(--proj)}
 .wikilink .porg{color:var(--fg3)}
 .wikilink.go{
@@ -2207,6 +2236,7 @@ button.prow{width:100%;text-align:left}
 width:22px;height:22px;border-radius:6px;display:grid;place-items:center;flex:none;
 font-family:var(--mono);font-size:11px;font-weight:700;
 }
+.prow .st svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .st-1{background:rgba(106,163,255,.16);color:var(--todo)}
 .st-3{background:rgba(224,176,80,.16);color:var(--wait)}
 .st-2{background:var(--bg4);color:var(--fg3)}
@@ -2259,6 +2289,8 @@ font-family:var(--mono);font-size:11px;width:20px;height:20px;border-radius:5px;
 background:var(--bg4);color:var(--fg3);display:grid;place-items:center;
 }
 .pick:hover .k,.pick.cur .k{background:var(--accent);color:var(--accent-fg)}
+.pick .k svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.pick svg{width:14px;height:14px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .pick .k:empty{background:transparent;box-shadow:none}
 .pick .d{margin-left:auto;font-size:11.5px;color:var(--fg3)}
 .state-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:4px 0}
@@ -2338,6 +2370,7 @@ width:18px;height:18px;border-radius:50%;border:1.6px solid var(--border2);flex:
 display:grid;place-items:center;font-size:11px;color:transparent;margin-top:1px;
 }
 .coach-step.done .coach-dot{background:var(--ok);border-color:var(--ok);color:#06210f}
+.coach-dot svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .coach-why{
 color:var(--fg3);font-size:12.5px;line-height:1.55;margin-top:7px;
 border-left:2px solid var(--border2);padding-left:9px;
@@ -2377,6 +2410,7 @@ background:var(--bg4);border:1px solid var(--border2);border-radius:10px;padding
 font-size:13px;box-shadow:var(--shadow);pointer-events:auto;display:flex;gap:10px;align-items:center;width:100%;
 }
 .toast.warn{border-color:rgba(224,176,80,.5)} .hint.warn{color:var(--warn)}.toast.err{border-color:rgba(255,107,107,.5)}
+.toast strong svg{width:13px;height:13px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .toast .x{margin-left:auto;color:var(--fg3)}
 .toast.remind{border-color:var(--accent)}
 .toast.job .job-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
@@ -2485,6 +2519,7 @@ font-variant-numeric:tabular-nums}
 overflow-wrap:anywhere;display:inline-flex;gap:6px;align-items:baseline;border-radius:4px}
 .pfields.lines .pfield:hover,.pfields.lines .pfield:focus-visible{color:var(--accent)}
 .pfields.lines .fi{flex:none;width:16px;text-align:center;font-size:12px;color:var(--fg3)}
+.pfields.lines .fi svg{width:12px;height:12px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .pfields.lines .pfield.miss{display:none;border:1px dashed var(--border);padding:0 8px;font-size:11px}
 .pcard:hover .pfields.lines,.pcard:focus-within .pfields.lines{flex-flow:row wrap}
 .pcard:hover .pfield.miss,.pcard:focus-within .pfield.miss{display:inline-flex}
@@ -2509,6 +2544,7 @@ font-weight:700;background:var(--bg3);color:var(--fg2);padding:0 7px;flex:none}
 background:var(--bg3);color:var(--fg3)}
 .ricon.done{background:var(--ok);color:#fff}
 .ricon.said{background:var(--accent-soft);color:var(--accent)}
+.ricon svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
 .cardbox{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;
 text-align:left;display:flex;flex-direction:column;align-items:flex-start;gap:2px}
@@ -2517,6 +2553,8 @@ text-align:left;display:flex;flex-direction:column;align-items:flex-start;gap:2p
 .rtick{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--border);flex:none;
 font-size:12px;color:var(--fg3);display:grid;place-items:center;font-variant-numeric:tabular-nums}
 .rtick:hover{border-color:var(--accent);color:var(--accent)}
+.rtick svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.plain svg{width:11px;height:11px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .rstep.done .rtick{background:var(--done);border-color:var(--done);color:#fff}
 .rstep.done .t-title{color:var(--fg3);text-decoration:line-through}
 .rstep.now{background:color-mix(in srgb,var(--accent) 7%,transparent)}
@@ -2556,6 +2594,7 @@ break-inside:avoid;text-align:left;border-radius:6px;padding:3px 4px;font-size:1
 .ctxleak{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:8px 12px;border-radius:10px;
 color:var(--fg);background:color-mix(in srgb,var(--warn) 12%,var(--bg2));border:1px solid color-mix(in srgb,var(--warn) 45%,var(--border))}
 .ctxleak > span{flex:1}
+.ctxleak svg{width:13px;height:13px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .ctxidle{margin-top:14px}
 .ctxfold{color:var(--fg3);padding-left:0}
 .ctxfold:hover{color:var(--fg)}
@@ -2563,6 +2602,7 @@ color:var(--fg);background:color-mix(in srgb,var(--warn) 12%,var(--bg2));border:
 .ctxsort>.hint{text-align:left;margin:0 0 8px}
 .ctxtree{display:flex;flex-direction:column;gap:2px;max-width:640px;margin-bottom:16px}
 .ctxtop{padding:8px 12px;margin-bottom:6px;border:1px dashed var(--border2);border-radius:8px;color:var(--fg3);font-size:12.5px}
+.ctxtop svg{width:11px;height:11px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .ctxsrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:8px;
 margin-left:calc(var(--d,0) * 22px);padding:4px 8px;border:1px solid transparent;border-radius:8px;background:var(--bg2);cursor:grab}
 .ctxsrow:hover{border-color:var(--border)}
@@ -2724,6 +2764,7 @@ border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);background:var(-
 .calsub{color:var(--fg2);font-weight:400}
 .calsub.bad{color:var(--late)}
 .calspin{display:inline-block}
+.calspin svg{width:14px;height:14px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .calgroup.busy .calspin{animation:calspin 1s linear infinite}
 @keyframes calspin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.calgroup.busy .calspin{animation:none;opacity:.5}}
@@ -2738,6 +2779,7 @@ display:flex;flex-direction:column;gap:7px;aspect-ratio:var(--card-w) / var(--ca
 .slot.solopt:hover{border-color:var(--accent)}
 .slot.solopt .lbl{position:absolute;top:8px;left:10px}
 .solopt-t{font-size:17px;font-weight:650;line-height:1.25;color:var(--fg);overflow-wrap:anywhere}
+.solopt-t svg{width:15px;height:15px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .solopt-s{font-size:12.5px;color:var(--fg3)}
 .slot.solopt.on{border-color:var(--ok);background:var(--ok-soft)}
 .slot.solopt.on .solopt-t::before{content:"\2713\a0";color:var(--ok)}
@@ -2756,6 +2798,7 @@ display:flex;flex-direction:column;gap:7px;aspect-ratio:var(--card-w) / var(--ca
 border:0;border-radius:6px;background:none;color:var(--fg3);font:inherit;font-size:12.5px;cursor:pointer}
 .solstep:hover{background:var(--bg2);color:var(--fg)}
 .solstep .n{grid-row:span 2;font-family:var(--mono);font-size:11px;line-height:18px;text-align:center}
+.solstep .n svg{width:11px;height:11px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .solstep .v{grid-column:2;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .solstep.done{color:var(--fg2)}
 .solstep.done .n{color:var(--ok)}
@@ -2768,6 +2811,7 @@ border:0;border-radius:6px;background:none;color:var(--fg3);font:inherit;font-si
 background:none;color:var(--fg3);font:inherit;font-size:12px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .solpass:hover{color:var(--fg);background:var(--bg2)}
 .solpass .n{font-family:var(--mono);font-size:11px}
+.solpass .n svg{width:11px;height:11px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .solpass.done{color:var(--fg2)}
 .solpass.done .n{color:var(--ok)}
 .solpass.now{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
@@ -2803,6 +2847,7 @@ background:var(--bg2);box-sizing:border-box}
 .slot .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);font-weight:600;
 display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .slot .lbl .sp{text-transform:none;letter-spacing:0;font-size:11px}
+.slot .lbl svg{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .solkey{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:5px;
 font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;
 color:var(--fg2);background:var(--bg2);border:1px solid var(--border2);border-bottom-width:2px;line-height:1}
@@ -2850,6 +2895,7 @@ position:relative;z-index:1;height:100%;box-sizing:border-box;overflow-y:auto}
 .npmsay{font-size:12.5px;color:var(--fg3)}
 .npmsay.ok{color:var(--ok)}
 .npmsay.warn{color:var(--warn)}
+.npmsay svg{width:11px;height:11px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .npmnav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px}
 .npmnav .npmgap{flex:1}
 .npmchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
@@ -2879,6 +2925,7 @@ display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hi
 .npmorder .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .npmsubq{list-style:none;margin:2px 0 4px 28px;padding:0;display:flex;flex-direction:column;gap:1px}
 .npmsubq button,.npmsubq .wait{border:0;background:none;padding:2px 4px;font:inherit;font-size:12px;color:var(--fg3);cursor:pointer;text-align:left}
+.npmsubq button svg{width:10px;height:10px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .npmsubq button:hover{color:var(--fg)}
 .npmsubq button.done{color:var(--fg2)}
 .npmsubq button.now{color:var(--accent);font-weight:600}
@@ -2901,6 +2948,7 @@ border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);background:var(-
 .npmrow .k,.npmcomps .frac{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);font-weight:600}
 .npmrow .v{color:var(--fg2)}
 .npmrow:first-child .v{color:var(--fg);font-weight:600}
+.npmrow .v svg{width:11px;height:11px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .npmcomps{display:flex;flex-direction:column;gap:4px;margin-top:4px;padding-top:8px;border-top:1px solid var(--border)}
 .npmcomp{display:flex;gap:10px;align-items:center;font-size:13px;flex-wrap:wrap}
 .npmcomp .nm{font-weight:600;min-width:140px}
@@ -2940,6 +2988,7 @@ border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);background:var(-
 .parentline{display:flex;gap:5px;align-items:baseline;flex-wrap:wrap;font-size:12px;line-height:1.3;color:var(--fg3);
 margin:0 0 2px;min-width:0}
 .parentline .up{font-size:11px}
+.parentline .up svg{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .parentline .pl{color:var(--fg2);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .parentline .pl:hover,.parentline .pl:focus-visible{color:var(--accent);text-decoration:underline;outline:none}
 .parentline .sep{opacity:.6}
@@ -3089,6 +3138,7 @@ body.printsheet #printsheet{display:block}
 .appupdate{order:3;flex:0 0 calc(100% - 38px);margin:-6px 0 0 38px;padding:2px 0;text-align:left;background:none;border:0;
 color:var(--accent);font-size:11.5px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .appupdate:hover,.appupdate:focus-visible{text-decoration:underline}
+.appupdate svg{width:12px;height:12px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .whatsnew{padding:0 16px 6px}
 .whatsnew h3{margin:14px 0 4px;font-size:13px}
 .whatsnew ul{margin:0;padding-left:18px}
@@ -3209,8 +3259,8 @@ color:var(--accent);font-size:11.5px;cursor:pointer;white-space:nowrap;overflow:
 <button class="tbtn burger" id="burger" title="Show the sidebar (\)" aria-label="Show the sidebar">&#9776;</button>
 
 <div class="h-hist">
-<button class="tbtn" id="btnBack" title="Back (alt+←)" aria-label="Back" disabled>&#8592;</button>
-<button class="tbtn" id="btnFwd" title="Forward (alt+→)" aria-label="Forward" disabled>&#8594;</button>
+<button class="tbtn" id="btnBack" title="Back (alt+←)" aria-label="Back" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+<button class="tbtn" id="btnFwd" title="Forward (alt+→)" aria-label="Forward" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
 </div>
 <label class="capture">
 <span aria-hidden="true">&#65291;</span>
@@ -4138,7 +4188,7 @@ placeholder="Add a task. Try: &quot;Call Mia about the VAT phone tomorrow&quot;"
 })();
 
 "use strict";
-const APP_VERSION = "1.102.1";
+const APP_VERSION = "1.102.2";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -9483,7 +9533,7 @@ function urgencyChip(a) {
 const parts = urgencyParts(a);
 return el("span", {class: "chip urg when onhover", title: "Urgency " + urgencyOf(a) + (parts.length ? ":\n" +
 parts.map(([why, n]) => (n > 0 ? "+" : "") + n + "  " + why).join("\n") : "")},
-"↑" + urgencyOf(a));
+svgIcon(ICON_ARROW_UP), " " + urgencyOf(a));
 }
 function healthScan() {
 const issues = [];
@@ -10416,7 +10466,7 @@ shown.forEach((p, i) => {
 const on = pick.has(p);
 const row = el("div", {style: "display:flex;gap:10px;align-items:center;margin:6px 0;padding:2px 4px;border-radius:6px" +
 (i === sel ? ";background:var(--bg3)" : "")},
-el("button", {class: "spacetoggle" + (on ? " on" : ""), onclick: () => { sel = i; toggle(p); }}, on ? "✓" : ""),
+el("button", {class: "spacetoggle" + (on ? " on" : ""), onclick: () => { sel = i; toggle(p); }}, on ? svgIcon(ICON_CHECK) : null),
 el("div", {style: "min-width:0;flex:1"},
 el("div", {}, pageTitle(p)),
 el("div", {style: "color:var(--fg3);font-size:12px"},
@@ -12214,7 +12264,7 @@ return `<span class="wikilink go" data-link="${target}">${shown} ↗</span>`;
 const known = pfx === "c" || pfx === "z" || pfx === "p" || pfx === "o" || (pfx && STATUS_DIRS[pfx]);
 let label = given != null ? given : (known || pfx === "m" ? raw.slice(pfx.length + 1) : raw);
 if (pfx === "c") label = "@" + label;
-const env = pfx === "m" ? `<span class="mailico" aria-label="Email">✉︎</span>` : "";
+const env = pfx === "m" ? `<span class="mailico" aria-label="Email"><svg viewBox="0 0 24 24" aria-hidden="true">${ICON_MAIL}</svg></span>` : "";
 let at = "", tip = "";
 const short = given != null && isAliasOf(raw, given);
 if (pfx === "p") {
@@ -12357,6 +12407,48 @@ if (snap.view === "page" && snap.pagePath) return pageTitle(snap.pagePath);
 if (snap.view === "help" && HELP[snap.helpTopic]) return "Help: " + HELP[snap.helpTopic].title;
 return VIEW_TITLE[snap.view] || snap.view || "Journal";
 }
+const ICON_PERSON    = '<circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>';
+const ICON_ORG        = '<path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-6h6v6"/><path d="M9 11h.01M9 15h.01M15 11h.01M15 15h.01"/>';
+const ICON_PAGE        = '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/>';
+const ICON_TELESCOPE  = '<path d="M4 15l13-6 1.5 3-13 6z"/><circle cx="7.5" cy="13" r="1.3"/><path d="M8 18l-1.5 3M17 12l2 2"/>';
+const ICON_FLAG        = '<path d="M6 3v18"/><path d="M6 4h11l-3 4 3 4H6"/>';
+const ICON_BOLT        = '<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>';
+const ICON_SUN          = '<circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>';
+const ICON_HOURGLASS  = '<path d="M6 3h12M6 21h12M6 3c0 6 5 7.5 6 9 1-1.5 6-3 6-9M6 21c0-6 5-7.5 6-9 1 1.5 6 3 6 9"/>';
+const ICON_CHAT        = '<path d="M4 5h16v11H9l-4 4V5z"/><path d="M8 9h8M8 12.5h5"/>';
+const ICON_REPEAT      = '<path d="M4 12a8 8 0 0 1 14-5.3M20 4v4h-4"/><path d="M20 12a8 8 0 0 1-14 5.3M4 20v-4h4"/>';
+const ICON_PENCIL      = '<path d="M4 20l1-4.5L16 4.5l3.5 3.5L8.5 19z"/><path d="M14 6.5l3.5 3.5"/>';
+const ICON_GEAR        = '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M4.2 7.5l2.2 1.3M17.6 15.2l2.2 1.3M3 12h2.5M18.5 12H21M4.2 16.5l2.2-1.3M17.6 8.8l2.2-1.3M7.5 4.2l1.3 2.2M15.2 17.6l1.3 2.2M7.5 19.8l1.3-2.2M15.2 6.4l1.3-2.2"/>';
+const ICON_TRENDUP    = '<path d="M4 17l6-6 4 4 7-8"/><path d="M15 6h6v6"/>';
+const ICON_STOPWATCH  = '<circle cx="12" cy="13" r="8"/><path d="M12 13V8M9 3h6M12 3v2"/>';
+const ICON_PIN          = '<path d="M9 4h6v4l3 3v2h-6v6l-1 1-1-1v-6H4v-2l3-3z"/>';
+const ICON_LOCATION    = '<path d="M12 2a6 6 0 0 0-6 6c0 4.5 6 12 6 12s6-7.5 6-12a6 6 0 0 0-6-6z"/><circle cx="12" cy="8" r="2"/>';
+const ICON_SCISSORS    = '<circle cx="6" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><path d="M20 4L7.5 16.5M20 20L7.5 7.5"/>';
+const ICON_CLOSE        = '<path d="M5 5l14 14M19 5L5 19"/>';
+const ICON_CHECK        = '<path d="M4 12l6 6L20 6"/>';
+const ICON_WARN        = '<path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/>';
+const ICON_MAIL        = '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M4 7l8 6 8-6"/>';
+const ICON_CARET        = '<path d="M5 9l7 7 7-7"/>';
+const ICON_CHEVRON_UP    = '<path d="M5 15l7-7 7 7"/>';
+const ICON_CHEVRON_LEFT  = '<path d="M15 5l-7 7 7 7"/>';
+const ICON_CHEVRON_RIGHT = '<path d="M9 5l7 7-7 7"/>';
+const ICON_ARROW_UP      = '<path d="M12 19V5M5 11l7-7 7 7"/>';
+const ICON_ARROW_DOWN    = '<path d="M12 5v14M5 13l7 7 7-7"/>';
+const ICON_ARROW_RIGHT  = '<path d="M4 12h14M13 6l6 6-6 6"/>';
+const ICON_PLAY          = '<path d="M6 4l15 8-15 8z" fill="currentColor" stroke="none"/>';
+const ICON_STOP          = '<rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor" stroke="none"/>';
+const ICON_CAKE        = '<path d="M4 21v-7a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v7z"/><path d="M4 17h16"/><path d="M8 11V8M12 11V7M16 11V8"/><path d="M12 3.5a1 1 0 1 0 0 2 1 1 0 1 0 0-2"/>';
+const ICON_TROPHY      = '<path d="M7 4h10v6a5 5 0 0 1-10 0z"/><path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/><path d="M12 15v3M8 21h8M9 18h6"/>';
+const ICON_SPARKLE      = '<path d="M12 3l1.8 6.2L20 11l-6.2 1.8L12 19l-1.8-6.2L4 11l6.2-1.8z"/>';
+const ICON_CONFETTI    = '<path d="M4 20l6-14M9 20l4-11M14 20l3-8"/><circle cx="18" cy="5" r="1.2" fill="currentColor" stroke="none"/><circle cx="14" cy="4" r="1" fill="currentColor" stroke="none"/><circle cx="20" cy="9" r="1" fill="currentColor" stroke="none"/>';
+const ICON_LIGHTBULB  = '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3 11.2V16h6v-1.8A6 6 0 0 0 12 3z"/>';
+const ICON_BUG          = '<circle cx="12" cy="13" r="5"/><path d="M9 9l-2-2M15 9l2-2M7 13H3M21 13h-4M9 18l-2 2M15 18l2 2M12 8V5"/>';
+const ICON_STAR        = '<path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.2-5.4 3.2 1.3-6-4.6-4.1 6.1-.6z"/>';
+const ICON_STAR_FILL  = '<path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.2-5.4 3.2 1.3-6-4.6-4.1 6.1-.6z" fill="currentColor" stroke="none"/>';
+const ICON_DATE        = '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/>';
+const ICON_CLOCK        = '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/>';
+const ICON_MEETING      = '<circle cx="9" cy="8" r="3.3"/><path d="M3.5 20v-1.5A6 6 0 0 1 9 13"/><circle cx="16.3" cy="9" r="3"/><path d="M12.4 20v-1.2A5.3 5.3 0 0 1 16.3 13.6"/>';
+const ICON_CHAIN        = '<path d="M9 15l6-6"/><path d="M8 11l-2 2a3 3 0 0 0 4 4l2-2M16 13l2-2a3 3 0 0 0-4-4l-2 2"/>';
 const noteTodoTouched = () => { state.lastTodoTouch = Date.now(); };
 const SUBS = {
 next:     [["list", "List"], ["board", "Board"], ["calendar", "Calendar"]],
@@ -12378,32 +12470,32 @@ return subOk(view, kept) ? kept : SUBS[view][0][0];
 const pickSub = (view, sub) => { PREF.set("sub." + view, sub); go(view, {sub}); };
 const subNow = () => subOk(state.view, state.sub) ? state.sub : defaultSub(state.view);
 const ICON = {
-projects: "⚑",
-next:     "⚡︎",
-orgs:     "\u{1F3E2}︎",
-people:   "\u{1F464}︎",
-pages:    "\u{1F4C4}︎",
-horizons: "\u{1F52D}︎",
+projects: ICON_FLAG,
+next:     ICON_BOLT,
+orgs:     ICON_ORG,
+people:   ICON_PERSON,
+pages:    ICON_PAGE,
+horizons: ICON_TELESCOPE,
 };
 const NAV_ITEMS = [
-{id: "today",    icon: "☀", label: "Journal"},
+{id: "today",    icon: ICON_SUN, label: "Journal"},
 {id: "next",     icon: ICON.next, label: "Next"},
-{id: "waiting",  icon: "⏳", label: "Waiting for"},
-{id: "chat",     icon: "○", label: "Chat", when: () => anySpaceShared() || allThreads().length > 0},
+{id: "waiting",  icon: ICON_HOURGLASS, label: "Waiting for"},
+{id: "chat",     icon: ICON_CHAT, label: "Chat", when: () => anySpaceShared() || allThreads().length > 0},
 "sep",
 {id: "projects", icon: ICON.projects, label: "Projects"},
 {id: "people",   icon: ICON.people, label: "People"},
 {id: "orgs",     icon: ICON.orgs, label: "Organisations"},
 {id: "contexts", icon: "@",      label: "Contexts"},
-{id: "chores",   icon: "↻",      label: "Chores", when: () => allChores().length > 0 || asNeededChores().length > 0},
+{id: "chores",   icon: ICON_REPEAT, label: "Chores", when: () => allChores().length > 0 || asNeededChores().length > 0},
 {id: "pages",    icon: ICON.pages, label: "Pages"},
-{id: "book",     icon: "✎︎", label: "Book", when: () => hasBook()},
+{id: "book",     icon: ICON_PENCIL, label: "Book", when: () => hasBook()},
 {id: "horizons", icon: ICON.horizons, label: "Horizons", small: true},
-{id: "checklists", icon: "⚙︎", label: "Settings", small: true},
-{id: "trackers", icon: "↗", label: "Trackers", small: true, when: () => trackerList().length > 0},
+{id: "checklists", icon: ICON_GEAR, label: "Settings", small: true},
+{id: "trackers", icon: ICON_TRENDUP, label: "Trackers", small: true, when: () => trackerList().length > 0},
 "pins",
 "grow",
-{id: "timer",    icon: "◷", label: "Timer", small: true},
+{id: "timer",    icon: ICON_STOPWATCH, label: "Timer", small: true},
 ];
 const SIDEBAR_PATH = join(DIRS.lists, "sidebar.md");
 const NAV_SEP = "---";
@@ -13206,12 +13298,12 @@ class: "nav-item" + (here ? " active" : "") + (it.small ? " small" : ""),
 "aria-current": here ? "page" : null,
 onclick: e => goFromNav(it.id, e.currentTarget),
 },
-el("span", {class: "ic bw"}, it.icon),
+el("span", {class: "ic bw"}, it.icon.startsWith("<") ? svgIcon(it.icon) : it.icon),
 el("span", {class: "lbl"}, it.label),
 folds ? el("span", {class: "fold", role: "button", "aria-expanded": String(open),
 title: open ? "Fold the contexts away" : "Show every context",
 onclick: e => { e.stopPropagation(); PREF.set("nav.ctxOpen", open ? "0" : "1"); renderNav(); }},
-open ? "▾" : "▸") : null,
+svgIcon(open ? ICON_CARET : ICON_CHEVRON_RIGHT)) : null,
 n ? el("span", {class: "cnt" + (hot ? " hot" : "")}, String(n)) : null));
 if (open) nav.append(...navContexts());
 if (it.id === "pages") { const load = navLoading(); if (load) nav.append(load); }
@@ -13302,7 +13394,7 @@ el("span", {class: "ic bw"}, contextIcon(k) || "@"),
 el("span", {class: "lbl"}, k === top ? k : k.slice(top.length + 1)),
 folds ? el("span", {class: "fold", role: "button", "aria-expanded": String(unfolded),
 title: unfolded ? "Fold away the contexts inside " + k : "Show the contexts inside " + k,
-onclick: e => { e.stopPropagation(); toggleNavCtx(k); }}, unfolded ? "▾" : "▸") : null,
+onclick: e => { e.stopPropagation(); toggleNavCtx(k); }}, svgIcon(unfolded ? ICON_CARET : ICON_CHEVRON_RIGHT)) : null,
 n ? el("span", {class: "cnt"}, String(n)) : null);
 });
 }
@@ -13326,7 +13418,7 @@ if (pinAt(V.space, newPath) >= 0) list.splice(i, 1); else list[i] = {...list[i],
 setPins(list);
 }
 const PIN_ICON = {project: ICON.projects, person: ICON.people, org: ICON.orgs, context: "@",
-horizon: ICON.horizons, area: ICON.horizons, goal: ICON.horizons, checklist: "↻", journal: "☀"};
+horizon: ICON.horizons, area: ICON.horizons, goal: ICON.horizons, checklist: ICON_REPEAT, journal: ICON_SUN};
 let PIN_DRAG = null;
 function navPins() {
 const shown = [];
@@ -13342,7 +13434,8 @@ class: "nav-item small pin" + (here ? " active" : ""),
 title: title + (multiSpace() && space ? " · " + space : "") + " · drag to reorder",
 onclick: () => openPageIn(space, pin.path),
 },
-el("span", {class: "ic bw"}, PIN_ICON[inSpace(space, () => pageKind(pin.path))] || ICON.pages),
+el("span", {class: "ic bw"}, (() => { const ic = PIN_ICON[inSpace(space, () => pageKind(pin.path))] || ICON.pages;
+return ic.startsWith("<") ? svgIcon(ic) : ic; })()),
 el("span", {class: "lbl"}, title),
 el("span", {class: "unpin", role: "button", title: "Unpin", "aria-label": "Unpin " + title,
 onclick: e => {
@@ -15106,7 +15199,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.102.1 - 2026-11-05\n\n- The line menu and toolbar: the line's own menu (right-click or long-press)\n  used a mix of flat glyphs and colour emoji for Person, Organisation and\n  Meeting. Every icon there is now the same kind of monochrome SVG the foot\n  toolbar uses, and the two menus draw the same icon for the same action\n  (#301).\n\n## 1.102.0 - 2026-11-05\n\n- The line menu and toolbar: the phone toolbar's 15 flat buttons are now 8.\n  Up, Down, Outdent and Indent stay direct; Task/Zettel/Project/\n  Responsibility sit behind one Type button, Context/Person/Organisation\n  behind one Tag button, and Photo/Image behind one Media button (Photo\n  drops out on a mouse, with nothing to take a photo with). To area and\n  Copy text moved to a trailing More button. Every icon on the bar is now a\n  monochrome SVG at one stroke weight, instead of mixing those with colour\n  emoji for Person, Organisation, Photo and Image (#300).\n\n## 1.101.2 - 2026-11-05\n\n- Keys on a line: the phone toolbar's sideways scroll now actually works on\n  Android; an explicit touch-action that was meant to let it swipe was\n  silently disabling the scroll instead (#298).\n\n## 1.101.1 - 2026-11-05\n\n- Keys on a line: the phone toolbar's sideways scroll now actually swipes on\n  Android, instead of holding still because the tap-focus guard mistook the\n  swipe for a tap (#298).\n\n## 1.101.0 - 2026-11-05\n\n- Keys on a line: the phone toolbar at the foot of the screen can now add a\n  context, person or organisation too, and scrolls sideways instead of\n  squeezing its buttons when it has more than fit (#297).\n\n## 1.100.2 - 2026-11-05\n\n- Getting started: the first-run screens lead with writing a note, with\n  folder and naming pushed down as optional (#296).\n\n## 1.100.1 - 2026-11-05\n\n- Calendars: fix an import crashing with \"Cannot read properties of\n  undefined\" when a meeting has an attendee or organizer, such as on Proton\n  Calendar (#294).\n\n## 1.100.0 - 2026-11-05\n\n- Settings: meeting reminders keep the one-click times and add Custom…: any\n  number of minutes, hours, days or weeks before, and as many reminders as you\n  like. Each calendar can have its own reminders, under its name in Calendars\n  (#292).\n\n## 1.99.2 - 2026-11-05\n\n- Calendars: Add calendar uses the private area you are on, instead of a\n  shared area it remembered from before.\n\n## 1.99.1 - 2026-11-05\n\n- Calendars: when your area counts as shared, Add calendar says why and offers\n  \"Only I use this area\" instead of asking you to make a new one.\n\n## 1.99.0 - 2026-11-05\n\n- Calendars: simpler. A list with Sync now, each calendar showing who sees it\n  and when it last synced; add a calendar with just a link and a name (private\n  by default); sharing, sync and remove live on the calendar itself; one\n  reminder choice (Off to 1 hour, saved at once); meetings left by removed\n  calendars are reviewed in one place. On the Journal, \"Import calendar\"\n  shows when you open the date picker.\n\n## 1.98.0 - 2026-11-05\n\n- Settings: a folder shared only with yourself on other devices can be marked\n  \"Only I use this folder\", so Calendars works in it.\n";
+const HELP_NEWS = "## 1.102.2 - 2026-11-06\n\n- The line menu and toolbar: every other emoji or Unicode symbol left in the\n  app as an icon -- the sidebar's nav icons, pins, the pencil and scissors on\n  book and journal rows, close buttons, checkmarks, warnings, envelopes,\n  fold carets, move/urgency arrows, week and day arrows, and the handful of\n  one-off icons on trackers, chores, birthdays and the feedback links -- is\n  now the same kind of monochrome SVG the foot toolbar and line menu already\n  use (#301). Two kinds of spot were left alone: the update-reply email,\n  where an inline picture is not reliable across mail clients, and a small\n  set of CSS checkmarks on dense table and grid cells, where the glyph is a\n  pseudo-element rather than a real node.\n\n## 1.102.1 - 2026-11-05\n\n- The line menu and toolbar: the line's own menu (right-click or long-press)\n  used a mix of flat glyphs and colour emoji for Person, Organisation and\n  Meeting. Every icon there is now the same kind of monochrome SVG the foot\n  toolbar uses, and the two menus draw the same icon for the same action\n  (#301).\n\n## 1.102.0 - 2026-11-05\n\n- The line menu and toolbar: the phone toolbar's 15 flat buttons are now 8.\n  Up, Down, Outdent and Indent stay direct; Task/Zettel/Project/\n  Responsibility sit behind one Type button, Context/Person/Organisation\n  behind one Tag button, and Photo/Image behind one Media button (Photo\n  drops out on a mouse, with nothing to take a photo with). To area and\n  Copy text moved to a trailing More button. Every icon on the bar is now a\n  monochrome SVG at one stroke weight, instead of mixing those with colour\n  emoji for Person, Organisation, Photo and Image (#300).\n\n## 1.101.2 - 2026-11-05\n\n- Keys on a line: the phone toolbar's sideways scroll now actually works on\n  Android; an explicit touch-action that was meant to let it swipe was\n  silently disabling the scroll instead (#298).\n\n## 1.101.1 - 2026-11-05\n\n- Keys on a line: the phone toolbar's sideways scroll now actually swipes on\n  Android, instead of holding still because the tap-focus guard mistook the\n  swipe for a tap (#298).\n\n## 1.101.0 - 2026-11-05\n\n- Keys on a line: the phone toolbar at the foot of the screen can now add a\n  context, person or organisation too, and scrolls sideways instead of\n  squeezing its buttons when it has more than fit (#297).\n\n## 1.100.2 - 2026-11-05\n\n- Getting started: the first-run screens lead with writing a note, with\n  folder and naming pushed down as optional (#296).\n\n## 1.100.1 - 2026-11-05\n\n- Calendars: fix an import crashing with \"Cannot read properties of\n  undefined\" when a meeting has an attendee or organizer, such as on Proton\n  Calendar (#294).\n\n## 1.100.0 - 2026-11-05\n\n- Settings: meeting reminders keep the one-click times and add Custom…: any\n  number of minutes, hours, days or weeks before, and as many reminders as you\n  like. Each calendar can have its own reminders, under its name in Calendars\n  (#292).\n\n## 1.99.2 - 2026-11-05\n\n- Calendars: Add calendar uses the private area you are on, instead of a\n  shared area it remembered from before.\n\n## 1.99.1 - 2026-11-05\n\n- Calendars: when your area counts as shared, Add calendar says why and offers\n  \"Only I use this area\" instead of asking you to make a new one.\n\n## 1.99.0 - 2026-11-05\n\n- Calendars: simpler. A list with Sync now, each calendar showing who sees it\n  and when it last synced; add a calendar with just a link and a name (private\n  by default); sharing, sync and remove live on the calendar itself; one\n  reminder choice (Off to 1 hour, saved at once); meetings left by removed\n  calendars are reviewed in one place. On the Journal, \"Import calendar\"\n  shows when you open the date picker.\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {
@@ -15193,7 +15286,7 @@ pick.missing.length ? el("p", {class: "runmiss"}, "It cannot give you: " +
 pick.missing.map(n => RUN_NEEDS.find(x => x[0] === n)[1]).join("; ") + ".") : null,
 el("p", {}, el("b", {}, "Start: "), w.start));
 }
-const mark = yes => el("td", {class: yes ? "yes" : "no"}, el("span", {"aria-hidden": "true"}, yes ? "✓" : "–"),
+const mark = yes => el("td", {class: yes ? "yes" : "no"}, el("span", {"aria-hidden": "true"}, yes ? svgIcon(ICON_CHECK) : "–"),
 el("span", {class: "runsr"}, yes ? "Yes" : "No"));
 const table = el("div", {class: "runscroll"}, el("table", {class: "runtable"},
 el("thead", {}, el("tr", {}, el("th", {scope: "col"}, "Way"), ...RUN_NEEDS.map(n => el("th", {scope: "col", title: n[1]}, n[2])),
@@ -15256,7 +15349,7 @@ return n === 1 ? "1 new thing" : n + " new things";
 function updateToast(u) {
 $("#toasts .toast.update")?.remove();
 nudgeToast({stay: true, kind: "update",
-title: "✨ GroupToDo v" + u.version + " is ready",
+title: [svgIcon(ICON_SPARKLE), " GroupToDo v" + u.version + " is ready"],
 hint: thingsCount(u.entries) + " since your v" + APP_VERSION + ":",
 body: newsList(u.entries),
 foot: [el("button", {class: "btn primary sm", onclick: () => getUpdate(u.version)},
@@ -15268,7 +15361,7 @@ const b = $("#appUpdate");
 if (!b) return;
 b.hidden = !UPDATE;
 if (UPDATE) {
-b.textContent = "✨ New v" + UPDATE.version + " is ready";
+b.replaceChildren(svgIcon(ICON_SPARKLE), " New v" + UPDATE.version + " is ready");
 b.title = "See what's new in v" + UPDATE.version + ", and get it";
 }
 }
@@ -15304,7 +15397,7 @@ const entries = newsEntries(HELP_NEWS).filter(e => verCmp(e.version, APP_VERSION
 (last ? verCmp(e.version, last) > 0 : e.version === APP_VERSION));
 if (!entries.length) return;
 nudgeToast({stay: true, kind: "whatsnew",
-title: "🎉 Welcome to v" + APP_VERSION + "!",
+title: [svgIcon(ICON_CONFETTI), " Welcome to v" + APP_VERSION + "!"],
 hint: thingsCount(entries) + (last ? " since v" + last : "") + ". Take a look:",
 body: newsList(entries),
 foot: [el("button", {class: "btn primary sm", onclick: () => whatsNewDialog(entries, {since: last})}, "See what's new")]});
@@ -15357,14 +15450,14 @@ const [title, body] = kind === "bug"
 return REPO_URL + "/issues/new?title=" + encodeURIComponent(title) + "&body=" + encodeURIComponent(body);
 }
 function feedbackBox() {
-const link = (href, text) => el("a", {class: "btn ghost sm", href, target: "_blank", rel: "noopener"}, text);
+const link = (href, icon, text) => el("a", {class: "btn ghost sm", href, target: "_blank", rel: "noopener"}, svgIcon(icon), " " + text);
 return el("div", {class: "feedback"},
 el("strong", {}, "Still missing a key feature?"),
 el("p", {}, "Tell us what would make GroupToDo better for you. It takes a minute on GitHub."),
 el("div", {class: "acts"},
-link(issueUrl("idea"), "💡 Suggest a feature"),
-link(issueUrl("bug"), "🐞 Report a bug"),
-link(REPO_URL, "⭐ Star on GitHub")));
+link(issueUrl("idea"), ICON_LIGHTBULB, "Suggest a feature"),
+link(issueUrl("bug"), ICON_BUG, "Report a bug"),
+link(REPO_URL, ICON_STAR, "Star on GitHub")));
 }
 let HELP_Q = "";
 function openHelp(id) {
@@ -15620,10 +15713,10 @@ const arrow = (d, sym, word) => el("button", {class: "btn sm ghost", "data-nav":
 "aria-label": "Move " + it.label + " " + word, title: "Move " + word,
 disabled: (d < 0 ? i === 0 : i === order.length - 1) ? "" : null, onclick: () => move(i, d)}, sym);
 card.append(el("div", {class: "prow"},
-el("label", {class: "nm"}, box, " ", el("span", {class: "ic bw"}, it.icon), " ", it.label),
+el("label", {class: "nm"}, box, " ", el("span", {class: "ic bw"}, it.icon.startsWith("<") ? svgIcon(it.icon) : it.icon), " ", it.label),
 keep ? el("span", {class: "sub"}, "always: the way back here")
 : it.when ? el("span", {class: "sub"}, "once there is something in it") : null,
-arrow(-1, "↑", "up"), arrow(1, "↓", "down")));
+arrow(-1, svgIcon(ICON_ARROW_UP), "up"), arrow(1, svgIcon(ICON_ARROW_DOWN), "down")));
 });
 if (getPage(SIDEBAR_PATH)) card.append(el("div", {class: "helpsee"},
 el("button", {class: "textbtn", onclick: sidebarDefault}, "Back to the default")));
@@ -15688,7 +15781,7 @@ onclick: () => { moveBookChapter(i, d); refocus(ch.name, '[data-dir="' + d + '"]
 const row = el("div", {class: "prow"},
 el("span", {class: "nm"}, (i + 1) + ". " + (ch.path ? pageTitle(ch.path) : ch.name)),
 el("span", {class: "sub"}, ch.path ? chapterStage(ch.path).name : "no page yet"),
-arrow(-1, "↑", "up"), arrow(1, "↓", "down"),
+arrow(-1, svgIcon(ICON_ARROW_UP), "up"), arrow(1, svgIcon(ICON_ARROW_DOWN), "down"),
 el("button", {class: "btn sm ghost", "aria-label": "Take " + ch.name + " out of the book", title: "Out of the book (the page stays)",
 onclick: () => { dropBookChapter(i); const next = chapters[i + 1] || chapters[i - 1]; refocus(next ? next.name : "", "[data-drop]"); }}, "×"));
 row.lastChild.dataset.drop = "";
@@ -15730,7 +15823,7 @@ btn.append(
 el("span", {class: "sqs"}, ...on.map(n => el("span", {class: "sq",
 style: "background:" + spaceColor(n) + ";color:" + inkOn(spaceColor(n))}, n[0].toUpperCase()))),
 el("span", {class: "lab"}, on.length === 1 ? on[0] : on.length + " areas"),
-el("span", {"aria-hidden": "true"}, "▾"));
+el("span", {"aria-hidden": "true"}, svgIcon(ICON_CARET)));
 $("#capWhere").textContent = multiSpace() && Spaces.active ? "→ " + Spaces.active : "";
 }
 function closeSpacesMenu() {
@@ -17074,7 +17167,7 @@ tabindex: !st.done || byHand ? "0" : null,
 title: !st.done ? "Cross it off" : byHand ? "Not done after all" : "Done",
 onclick: !st.done ? () => { PREF.set("coach." + st.k, "1"); render(); }
 : byHand ? () => { PREF.set("coach." + st.k, ""); render(); } : null},
-st.done ? "✓" : ""),
+st.done ? svgIcon(ICON_CHECK) : null),
 el("div", {},
 el("div", {}, st.label,
 st.optional ? el("span", {class: "chip", style: "margin-left:6px"}, "optional") : null),
@@ -17563,7 +17656,7 @@ c.append(horizonRow(ph, pcard));
 const gr = horizonMeta("ground");
 c.append(horizonRow(gr, el("div", {class: "card"},
 el("button", {class: "prow", onclick: () => go("next")},
-el("span", {class: "st st-1"}, "▸"),
+el("span", {class: "st st-1"}, svgIcon(ICON_CHEVRON_RIGHT)),
 el("span", {class: "nm"}, "Your next actions"),
 el("span", {class: "sub"}, myOpen().length + "")))));
 c.append(el("p", {class: "hint"}, multiSpace()
@@ -17675,7 +17768,7 @@ c.append(horizonRow(h, card));
 const open = openOf(leafActions());
 const card = el("div", {class: "card"},
 el("button", {class: "prow", onclick: () => go("next")},
-el("span", {class: "st st-1"}, "▸"),
+el("span", {class: "st st-1"}, svgIcon(ICON_CHEVRON_RIGHT)),
 el("span", {class: "nm"}, "Open next actions"),
 el("span", {class: "sub"}, open.length + "")));
 c.append(horizonRow(h, card));
@@ -17740,7 +17833,7 @@ const steps = reviewSteps().reduce((k, g) => k + g.steps.length, 0);
 c.append(section("The weekly review", null, el("div", {class: "card"},
 el("div", {class: "listblurb"}, "The steps the weekly review walks you through. Add your own, reword or drop any."),
 el("div", {class: "prow"},
-el("span", {class: "st st-2"}, "↻"),
+el("span", {class: "st st-2"}, svgIcon(ICON_REPEAT)),
 el("button", {class: "nm", style: "text-align:left", onclick: editReviewSteps}, "Weekly review"),
 el("span", {class: "chip"}, "weekly"),
 el("span", {class: "sub"}, steps + " steps" + (ownReviewList() ? "" : ", built in")),
@@ -17752,12 +17845,12 @@ c.append(section("The update note", null, el("div", {class: "card"},
 el("div", {class: "listblurb"}, "The words around the list when you ask for an update, and when you send one. " +
 "Make them more your own, or write them in another language, and pick Personalize text when you send."),
 el("div", {class: "prow"},
-el("span", {class: "st st-2"}, "\u2709"),
+el("span", {class: "st st-2"}, svgIcon(ICON_MAIL)),
 el("button", {class: "nm", style: "text-align:left", onclick: editAskOwn}, "Update note"),
 el("span", {class: "sub"}, V.pages.has(ASK_OWN_PATH) ? "personalized" : "built in"),
 el("button", {class: "btn sm ghost", onclick: editAskOwn}, "Edit text")),
 el("div", {class: "prow"},
-el("span", {class: "st st-2"}, "✉"),
+el("span", {class: "st st-2"}, svgIcon(ICON_MAIL)),
 el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(ensureInformOwn())}, "Inform note"),
 el("span", {class: "sub"}, V.pages.has(INFORM_OWN_PATH) ? "personalized" : "built in"),
 el("button", {class: "btn sm ghost", onclick: () => openPage(ensureInformOwn())}, "Edit text")))));
@@ -18851,7 +18944,7 @@ twin ? el("span", {class: "chip late b",
 title: "Looks like " + twin.rows.filter(x => !(x.space === space && x.path === path)).map(x => x.title).join(", "),
 onclick: e => { e.stopPropagation(); openTwins(twin); }}, "looks alike") : null,
 r._urg != null ? el("span", {class: "chip urg", title: "Urgency of its most urgent open action, " +
-"or of its own deadline and chain when it has none"}, "↑" + r._urg) : null),
+"or of its own deadline and chain when it has none"}, svgIcon(ICON_ARROW_UP), " " + r._urg) : null),
 projectFieldPills(r, {skip: ["status"]}));
 return makeCardDraggable(card, "project", {project: r}, space + "|" + path);
 }
@@ -20554,11 +20647,11 @@ glide({scale, ox: cv.clientWidth / 2 - nd.x * scale, oy: cv.clientHeight / 2 - n
 };
 const fit = () => { autoFit = true; heat(0.05); };
 stage.append(el("div", {class: "gzoom"},
-zoomBtn("▶", "Watch it grow, oldest first", () => grow()),
+zoomBtn(svgIcon(ICON_PLAY), "Watch it grow, oldest first", () => grow()),
 zoomBtn("+", "Zoom in", () => zoomBy(1.4)),
 zoomBtn("−", "Zoom out", () => zoomBy(1 / 1.4)),
 zoomBtn("⤢", "Fit everything", fit),
-zoomBtn("↻", "Lay it out again", () => { graphPosClear(); render(); })));
+zoomBtn(svgIcon(ICON_REPEAT), "Lay it out again", () => { graphPosClear(); render(); })));
 const more = n => { PREF.set("map.cap", n ? String(n) : "all"); render(); };
 if (g.dropped) stage.append(el("div", {class: "gnote"},
 "The " + g.nodes.length + " best-connected of " + (g.nodes.length + g.dropped) + ". ",
@@ -21190,7 +21283,7 @@ go("projects", {sub: "timeline", ganttOpen: open ? null : g.path});
 },
 },
 el("span", {class: "glabel"},
-el("span", {class: "caret"}, open ? "▾" : "▸"),
+el("span", {class: "caret"}, svgIcon(open ? ICON_CARET : ICON_CHEVRON_RIGHT)),
 el("span", {class: "gname"},
 el("span", {class: "nm", title: g.label +
 (g.deps && g.deps.length
@@ -22158,7 +22251,7 @@ household().length || rows.length > 1 ? null : el("div", {class: "say choreboard
 "Then they take turns and get the points."),
 fbar(fchip("This week", !last, () => flip("")), fchip("Last week", last, () => flip("last"))),
 rows.length ? el("div", {class: "card"}, ...rows.map(([name, t], i) => el("div", {class: "reportsum choreboard-row"},
-el("span", {class: "choreboard-at"}, i === 0 ? "🏆" : String(i + 1)),
+el("span", {class: "choreboard-at"}, i === 0 ? svgIcon(ICON_TROPHY) : String(i + 1)),
 el("span", {class: "choreboard-who"}, name),
 el("span", {class: "freshbar"}, el("i", {style: "width:" + Math.round(t.pts / most * 100) + "%"})),
 el("span", {class: "say"}, t.pts + (t.pts === 1 ? " point · " : " points · ") + t.n + " done" +
@@ -23407,6 +23500,7 @@ h1{font-size:25px;margin:0 0 8px;line-height:1.2}
 .hit:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .box{width:23px;height:23px;border-radius:6px;border:1.7px solid var(--faint);display:grid;
   place-items:center;font-size:14px;color:transparent;margin-top:1px}
+.box svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .row.done .box{background:var(--good);border-color:var(--good);color:#fff}
 .t{min-width:0}
 .row.done .t>span:first-child{text-decoration:line-through;color:var(--faint)}
@@ -23508,7 +23602,11 @@ function draw(){
     if (it.q) hit.className = "hit ask";
     else { hit.type = "button"; hit.className = "hit"; hit.setAttribute("aria-pressed", String(!!s.done)); }
     var box = document.createElement("span");
-    box.className = "box"; box.textContent = "✓"; box.setAttribute("aria-hidden", "true");
+    box.className = "box"; box.setAttribute("aria-hidden", "true");
+    var boxSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    boxSvg.setAttribute("viewBox", "0 0 24 24");
+    boxSvg.innerHTML = '<path d="M4 12l6 6L20 6"/>';
+    box.appendChild(boxSvg);
     var t = document.createElement("span"); t.className = "t";
     var name = document.createElement("span"); name.textContent = it.t;
     t.appendChild(name);
@@ -23753,8 +23851,8 @@ const ctxPick = contexts.map(lines => new Set(lines.map((_, j) => j)));
 const toggle = (on, flip, size = 22) => {
 const box = el("button", {class: "spacetoggle" + (on() ? " on" : ""),
 style: size < 22 ? "width:" + size + "px;height:" + size + "px;font-size:11px;flex:0 0 auto" : "",
-onclick: () => { flip(); box.className = "spacetoggle" + (on() ? " on" : ""); box.textContent = on() ? "✓" : ""; refresh(); }},
-on() ? "✓" : "");
+onclick: () => { flip(); box.className = "spacetoggle" + (on() ? " on" : ""); box.replaceChildren(...(on() ? [svgIcon(ICON_CHECK)] : [])); refresh(); }},
+on() ? svgIcon(ICON_CHECK) : null);
 return box;
 };
 const pickRowFor = (a, i) => {
@@ -24288,9 +24386,9 @@ const list = el("div", {style: "max-height:46vh;overflow:auto"},
 const box = el("button", {class: "spacetoggle on", onclick: () => {
 c.take = !c.take;
 box.className = "spacetoggle" + (c.take ? " on" : "");
-box.textContent = c.take ? "✓" : "";
+box.replaceChildren(...(c.take ? [svgIcon(ICON_CHECK)] : []));
 label();
-}}, "✓");
+}}, svgIcon(ICON_CHECK));
 return el("div", {style: "display:flex;gap:10px;align-items:flex-start;margin:9px 0"},
 box,
 el("div", {style: "min-width:0;flex:1"},
@@ -24395,7 +24493,7 @@ remember();
 if (code === "own" && !askOwn()) PREF.set("askLangBase", askLang());
 PREF.set("askLang", code);
 closeModal(); openAskNote(name, items, file, sheetOf, area, next, sent);
-}}, (on ? "✓ " : "") + label);
+}}, on ? [svgIcon(ICON_CHECK), " " + label] : label);
 })),
 askOwn() ? el("div", {style: "margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"},
 el("button", {class: "btn sm ghost", onclick: () => { remember(); closeModal(); openPage(ensureAskOwn()); }},
@@ -25001,8 +25099,8 @@ summary.textContent = n
 const toggle = (on, flip, size = 22) => {
 const box = el("button", {class: "spacetoggle" + (on() ? " on" : ""),
 style: size < 22 ? "width:" + size + "px;height:" + size + "px;font-size:11px;flex:0 0 auto" : "flex:0 0 auto",
-onclick: () => { flip(); box.className = "spacetoggle" + (on() ? " on" : ""); box.textContent = on() ? "✓" : ""; refresh(); }},
-on() ? "✓" : "");
+onclick: () => { flip(); box.className = "spacetoggle" + (on() ? " on" : ""); box.replaceChildren(...(on() ? [svgIcon(ICON_CHECK)] : [])); refresh(); }},
+on() ? svgIcon(ICON_CHECK) : null);
 return box;
 };
 const rowNode = r => {
@@ -25183,8 +25281,8 @@ if (opts.ack == null) opts.ack = true;
 const ackBox = el("button", {class: "spacetoggle" + (opts.ack ? " on" : ""), style: "flex:0 0 auto", onclick: () => {
 opts.ack = !opts.ack;
 ackBox.className = "spacetoggle" + (opts.ack ? " on" : "");
-ackBox.textContent = opts.ack ? "✓" : "";
-}}, opts.ack ? "✓" : "");
+ackBox.replaceChildren(...(opts.ack ? [svgIcon(ICON_CHECK)] : []));
+}}, opts.ack ? svgIcon(ICON_CHECK) : null);
 const mailNow = () => {
 const t = informWords();
 return updateMail({mode: "inform", them: name, subject: box.value.split("\n")[0], replyTo: trim(mine.value),
@@ -25444,7 +25542,7 @@ el("div", {style: "font-weight:600;margin-bottom:4px"}, "Due an update on their 
 ...due.map(d => el("div", {style: "display:flex;gap:10px;align-items:center;margin:4px 0;flex-wrap:wrap"},
 el("span", {style: "flex:1;min-width:0"}, (d.org ? "\u{1F3E2} " : "") + d.name,
 el("span", {style: "color:var(--fg3);font-size:12.5px"}, " · " + d.areas.map(a => a.title + " " + toldWords(a.days)).join(", "))),
-el("button", {class: "btn sm ghost", onclick: () => openSendUpdate({name: d.name, org: d.org})}, "✉ Send an update")))));
+el("button", {class: "btn sm ghost", onclick: () => openSendUpdate({name: d.name, org: d.org})}, svgIcon(ICON_MAIL), " Send an update")))));
 }
 function areaStakeholdersSection(path) {
 const space = V.space, list = stakeholdersOfArea(path);
@@ -25455,7 +25553,7 @@ card.append(el("div", {style: "display:flex;gap:10px;align-items:center;margin:5
 s.org ? el("span", {}, "\u{1F3E2}") : avatarNode(s.name, 22),
 el("button", {class: "textbtn", style: "font-weight:600", onclick: () => s.org ? followLink("o/" + s.name) : openPersonPage(s.name)}, s.name),
 el("span", {style: "flex:1;color:var(--fg3);font-size:12.5px"}, toldWords(days) + " · " + everyWords(updateEvery(s))),
-el("button", {class: "btn sm ghost", onclick: () => openSendUpdate(s)}, "✉ Send an update"),
+el("button", {class: "btn sm ghost", onclick: () => openSendUpdate(s)}, svgIcon(ICON_MAIL), " Send an update"),
 el("button", {class: "textbtn", title: "No longer a stakeholder here", onclick: () => {
 const was = structuredClone(getPage(path).props);
 dropStakeholder(path, s);
@@ -26656,7 +26754,7 @@ out.push(n);
 }
 return out;
 }
-const KIND_MARK = {person: "p", org: "o", project: "1", area: "a", context: "@", page: "·", date: "📅"};
+const KIND_MARK = {person: "p", org: "o", project: "1", area: "a", context: "@", page: "·", date: ICON_DATE};
 const LINK_KIND_WORD = {context: "context", person: "person", org: "org", zettel: "note", email: "email", review: "review",
 area: "responsibility", goal: "goal", checklist: "routine", project: "project", journal: "day",
 horizon: "horizon", page: "page"};
@@ -26969,7 +27067,8 @@ class: "pick" + (n === i ? " cur" : ""),
 onmousedown: e => e.preventDefault(),
 onclick: () => suggestAccept(n),
 },
-el("span", {class: "k"}, r.mark || (r.isNew && r.kind !== "context" ? "+" : (KIND_MARK[r.kind] || (r.ref || "").split("/")[0] || "·"))),
+el("span", {class: "k"}, (() => { const m = r.mark || (r.isNew && r.kind !== "context" ? "+" : (KIND_MARK[r.kind] || (r.ref || "").split("/")[0] || "·"));
+return m.startsWith("<") ? svgIcon(m) : m; })()),
 el("span", {style: "min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"},
 r.isNew && mode === "link" ? "Make " + r.ref : r.title),
 r.kind === "person" && r.space ? spaceBadge(r.space) : null,
@@ -27354,7 +27453,7 @@ if (!tableRows(b)) return;
 node.classList.add("mdtbl");
 txt.after(el("button", {class: "tablemenu", tabindex: "-1", title: "Table", "aria-label": "Table",
 "aria-haspopup": "menu", onmousedown: e => e.preventDefault(),
-onclick: e => { e.stopPropagation(); tableMenu(path, b, txt); }}, "Table ▾"));
+onclick: e => { e.stopPropagation(); tableMenu(path, b, txt); }}, "Table ", svgIcon(ICON_CARET)));
 if (TABLE_OPEN === b.id) { node.classList.add("tbl-open"); txt.textContent = b.title; }
 node.addEventListener("focusin", e => { if (own(e.target) && tableRows(b)) open(true); });
 node.addEventListener("focusout", e => { if (own(e.target) && !own(e.relatedTarget)) open(false); });
@@ -27505,7 +27604,7 @@ function repeatPill(path, block) {
 const open = e => { e.stopPropagation(); e.preventDefault(); openLineRepeat(path, block); };
 const pill = el("span", {class: "chip b reppill", tabindex: "0", role: "button", title: "Change how often it repeats",
 onclick: open, onkeydown: e => { if (e.key === "Enter" || e.key === " ") open(e); }},
-"↻ " + repeatOf(block));
+svgIcon(ICON_REPEAT), " " + repeatOf(block));
 pill.addEventListener("mousedown", e => e.stopPropagation());
 return pill;
 }
@@ -27518,20 +27617,20 @@ const words = humanWhen(due, dueWhen(b)?.time) + (relDue(due) ? " · " + relDue(
 out.push(path && !readonly ? duePill({path, block: b, space: V.space, due}, cls, words)
 : el("span", {class: "chip " + cls}, words));
 }
-if (repeatOf(b)) out.push(path && !readonly ? repeatPill(path, b) : el("span", {class: "chip"}, "\u21BB " + repeatOf(b)));
+if (repeatOf(b)) out.push(path && !readonly ? repeatPill(path, b) : el("span", {class: "chip"}, svgIcon(ICON_REPEAT), " " + repeatOf(b)));
 const who = b.state ? assigneeOf(b) : "";
-if (who && !samePerson(who, whoAmI())) out.push(el("span", {class: "chip who"}, "\u2192 " + who));
+if (who && !samePerson(who, whoAmI())) out.push(el("span", {class: "chip who"}, svgIcon(ICON_ARROW_RIGHT), " " + who));
 const said = messagesOf(b).length;
-if (said) out.push(el("span", {class: "chip msg" + (unreadCount(b) ? " unread" : "")}, "\u25CB " + said));
+if (said) out.push(el("span", {class: "chip msg" + (unreadCount(b) ? " unread" : "")}, svgIcon(ICON_CHAT), " " + said));
 const meet = isMeeting(b);
 if (meet) {
 const when = [blockProp(b, "date") ? humanDate(dateIn(blockProp(b, "date"))) : "",
 meetLeads(b) ? "" : blockProp(b, "time") || ""].filter(Boolean).join(" ");
-if (when) out.push(el("span", {class: "chip"}, "🕒 " + when));
+if (when) out.push(el("span", {class: "chip"}, svgIcon(ICON_CLOCK), " " + when));
 const clash = meetLeads(b) && path ? meetClashes(b, getPage(path)) : [];
 if (clash.length) out.push(el("span", {class: "chip clash", title: "At the same time as " + clash.join(", ")},
-"⚠ Overlaps " + clash[0] + (clash.length > 1 ? " +" + (clash.length - 1) : "")));
-if (blockProp(b, "attendees")) out.push(el("span", {class: "chip who"}, "👥 " + linkWords(blockProp(b, "attendees"))));
+svgIcon(ICON_WARN), " Overlaps " + clash[0] + (clash.length > 1 ? " +" + (clash.length - 1) : "")));
+if (blockProp(b, "attendees")) out.push(el("span", {class: "chip who"}, svgIcon(ICON_MEETING), " " + linkWords(blockProp(b, "attendees"))));
 }
 const visit = isTimeLog(b);
 if (visit) out.push(timeLogChip(b, path));
@@ -28523,7 +28622,7 @@ crumbs.append(el("span", {}, "›"),
 el("button", {class: "textbtn", onclick: () => setBranchFocus(page, b.id, path)}, branchLabel(b)));
 crumbs.append(el("span", {}, "›"), el("b", {}, branchLabel(root)),
 el("button", {class: "textbtn", style: "margin-left:auto", title: "This line and what is under it stay open at the right while you move about",
-onclick: () => pinToSide(space, path, ensureBlockId(path, root))}, "📌 Pin to the right"));
+onclick: () => pinToSide(space, path, ensureBlockId(path, root))}, svgIcon(ICON_PIN), " Pin to the right"));
 FOCUS_NODE = el("div", {}, crumbs, box);
 return el("div", {});
 }
@@ -30184,7 +30283,7 @@ drawRemovedCalendars();
 function calChip() {
 const open = el("button", {class: "btn ghost calchip", onclick: openCalendars});
 const now = el("button", {class: "btn ghost calrefresh", "aria-label": "Fetch calendars now",
-onclick: () => syncCalendars({quiet: false})}, el("span", {class: "calspin", "aria-hidden": "true"}, "↻"));
+onclick: () => syncCalendars({quiet: false})}, el("span", {class: "calspin", "aria-hidden": "true"}, svgIcon(ICON_REPEAT)));
 const wrap = el("span", {class: "calgroup"}, open, now);
 fillCalChip(wrap);
 return wrap;
@@ -30359,7 +30458,7 @@ return el("span", {class: "vswitch"},
 el("div", {class: "vseg", role: "group", "aria-label": "View as"},
 ...subs.map(([k, label]) => el("button", {"aria-pressed": String(cur === k),
 onclick: () => pick(k)}, label))),
-el("span", {class: "vsel"}, el("span", {"aria-hidden": "true"}, (now ? now[1] : "") + " ▾"),
+el("span", {class: "vsel"}, el("span", {"aria-hidden": "true"}, (now ? now[1] : "") + " ", svgIcon(ICON_CARET)),
 fselect("View as", cur, subs, pick)));
 }
 const fbar = (...kids) => el("div", {class: "fbar"}, ...kids);
@@ -30494,12 +30593,12 @@ pane.replaceChildren(el("div", {class: "panebar"},
 el("button", {class: "iconbtn panepin" + (s.pinned ? " on" : ""), title: label, "aria-label": label,
 "aria-pressed": String(!!s.pinned),
 onclick: () => s.pinned ? unpinSide()
-: pinToSide(s.space, s.path, s.branch ? inSpace(s.space, () => ensureBlockId(s.path, sideBranch(getPage(s.path), s.branch))) : "")}, "📌"),
+: pinToSide(s.space, s.path, s.branch ? inSpace(s.space, () => ensureBlockId(s.path, sideBranch(getPage(s.path), s.branch))) : "")}, svgIcon(ICON_PIN)),
 el("div", {style: "flex:1"}),
 el("button", {class: "iconbtn", title: "Expand to the full page", "aria-label": "Expand to the full page",
 onclick: () => { const {space, path} = s; SIDE_PAGE = null; SIDE_FOLLOW = false; openPageIn(space, path); }}, "⤢"),
 el("button", {class: "iconbtn", title: s.pinned ? "Unpin and close" : "Close", "aria-label": s.pinned ? "Unpin and close" : "Close",
-onclick: s.pinned ? unpinSide : closeSidePage}, "✕")), node);
+onclick: s.pinned ? unpinSide : closeSidePage}, svgIcon(ICON_CLOSE))), node);
 pane.classList.toggle("pinned", !!s.pinned);
 pane.hidden = false;
 document.body.classList.add("pane-open");
@@ -30592,14 +30691,14 @@ function todaySection(s) {
 const folded = sectionFolded(s.id);
 const head = el("div", {class: "group" + (s.late ? " late" : "")},
 el("button", {class: "sectog", "aria-expanded": String(!folded), title: folded ? "Show" : "Fold away",
-onclick: () => toggleSection(s.id)}, folded ? "▸" : "▾"),
+onclick: () => toggleSection(s.id)}, svgIcon(folded ? ICON_CHEVRON_RIGHT : ICON_CARET)),
 el("button", {class: "secbul", title: "Focus on " + s.title, "aria-label": "Focus on " + s.title,
 onclick: () => go("today", {jz: s.id})}, "•"),
 el("button", {class: "sectog", title: folded ? "Show" : "Fold away", onclick: () => toggleSection(s.id)}, s.title),
 s.space ? spaceBadge(s.space) : null,
 el("span", {class: "plain"}, "· " + (s.count != null ? s.count : folded ? s.folded : s.hint)),
 s.edit ? el("button", {class: "jedit", style: "margin-left:auto", title: "The whole day page as text",
-"aria-label": "Edit as Markdown", onclick: s.edit}, "✎") : null);
+"aria-label": "Edit as Markdown", onclick: s.edit}, svgIcon(ICON_PENCIL)) : null);
 const box = el("div", {}, head);
 if (!folded) box.append(s.body());
 return box;
@@ -30682,7 +30781,7 @@ const shown = PREF.get("today.done", "") === "1";
 card.append(el("button", {class: "donetoday", "aria-expanded": String(shown),
 onclick: () => { PREF.set("today.done", shown ? "" : "1"); render(); }},
 el("span", {class: "pbar"}, el("i", {style: "width:" + Math.round(100 * done.length / (open.length + done.length)) + "%"})),
-(shown ? "▾ " : "▸ ") + done.length + " done today"));
+svgIcon(shown ? ICON_CARET : ICON_CHEVRON_RIGHT), " " + done.length + " done today"));
 if (shown) card.append(...done.map(a => taskRow(a, DUEROW)));
 return card;
 };
@@ -30754,12 +30853,12 @@ who ? null : journalModes(false, day),
 el("div", {class: "dayhold"},
 el("div", {class: "daynav daybox"},
 el("button", {class: "dayarrow", title: "The day before", "aria-label": "The day before",
-onclick: () => toDay(shiftISO(day, -1))}, "◀"),
+onclick: () => toDay(shiftISO(day, -1))}, svgIcon(ICON_CHEVRON_LEFT)),
 el("label", {class: "daypick"}, dayWords, picker),
 el("button", {class: "dayarrow", title: "The day after", "aria-label": "The day after",
-onclick: () => toDay(shiftISO(day, 1))}, "▶"),
+onclick: () => toDay(shiftISO(day, 1))}, svgIcon(ICON_CHEVRON_RIGHT)),
 who ? null : el("button", {class: "dayarrow dayimport", title: "Import a calendar into your day pages",
-onclick: () => openCalendars()}, "\u{1F4C5} Import calendar")),
+onclick: () => openCalendars()}, svgIcon(ICON_DATE), " Import calendar")),
 day !== today ? el("button", {class: "textbtn backtoday", onclick: () => toDay(null)}, "Back to today") : null),
 people.length ? wideOnly(fselect("Whose day page", who, [["", "Your page"], ...people.map(n => [n, firstNameOf(n) + "'s page"])],
 v => go("today", {todayWho: v || null})), !who) : null,
@@ -30828,9 +30927,9 @@ el("header", {class: "jhead"}, focusBadge(s),
 el("button", {class: "jtitle", title: "Focus on " + s.title, onclick: () => go("today", {jz: s.id})}, s.label),
 el("div", {style: "flex:1"}),
 s.edit ? el("button", {class: "jedit upkeep", title: "The whole day page as text",
-"aria-label": "Edit as Markdown", onclick: s.edit}, "✎") : null,
+"aria-label": "Edit as Markdown", onclick: s.edit}, svgIcon(ICON_PENCIL)) : null,
 s.edit ? el("button", {class: "jedit upkeep", title: "Pin this day page to the right: it stays open while you move about",
-"aria-label": "Pin to the right", onclick: () => pinToSide(s.space, dayPath(s.space))}, "📌") : null),
+"aria-label": "Pin to the right", onclick: () => pinToSide(s.space, dayPath(s.space))}, svgIcon(ICON_PIN)) : null),
 s.body(),
 who ? null : inSpace(s.space, () => backlinksSection(journalPath(day)))))), cols.map(s => s.space)));
 return c;
@@ -31058,9 +31157,9 @@ const c = el("div", {class: "wrap jweek" + (visibleSpaces().length > 1 ? " jwide
 const late = weekLate(id);
 const head = vhead(id, weekRange(id), journalModes(true, null, id),
 el("div", {class: "daynav daybox weeknav"},
-el("button", {class: "dayarrow", title: "The week before", "aria-label": "The week before", onclick: () => toWeek(shiftWeek(id, -1))}, "◀"),
+el("button", {class: "dayarrow", title: "The week before", "aria-label": "The week before", onclick: () => toWeek(shiftWeek(id, -1))}, svgIcon(ICON_CHEVRON_LEFT)),
 el("button", {class: "wkjump", title: "This week", "aria-pressed": String(id === now), onclick: () => toWeek(now)}, "Today"),
-el("button", {class: "dayarrow", title: "The week after", "aria-label": "The week after", onclick: () => toWeek(shiftWeek(id, 1))}, "▶")));
+el("button", {class: "dayarrow", title: "The week after", "aria-label": "The week after", onclick: () => toWeek(shiftWeek(id, 1))}, svgIcon(ICON_CHEVRON_RIGHT))));
 head.classList.add("todayhead", "weekhead");
 if (late) head.querySelector(".sub").append(" ", el("span", {class: "chip late"}, late + " late"));
 c.append(head, weekSection(id));
@@ -31283,7 +31382,7 @@ function birthdayBox() {
 const soon = upcomingBirthdays(7);
 if (!soon.length) return null;
 return el("div", {class: "news"},
-el("span", {"aria-hidden": "true"}, "🎂"),
+el("span", {"aria-hidden": "true"}, svgIcon(ICON_CAKE)),
 el("div", {}, el("b", {}, soon.some(x => !x.days) ? "Birthday today" : "Birthdays this week"),
 el("ul", {}, ...soon.map(x => el("li", {},
 el("button", {onclick: () => openPageIn(x.space, x.path)}, x.name), " " + birthdayWhen(x))))));
@@ -31318,14 +31417,14 @@ const rows = acrossSpaces(() => activityHere(shiftISO(todayISO(), -days)))
 .sort((a, b) => String(b.at).localeCompare(String(a.at)));
 const byDay = new Map();
 for (const r of rows) { if (!byDay.has(r.day)) byDay.set(r.day, []); byDay.get(r.day).push(r); }
-const mark = {done: "✓", added: "+", said: "○"};
+const mark = {done: ICON_CHECK, added: "+", said: ICON_CHAT};
 const body = el("div", {});
 body.append(el("div", {class: "field", style: "color:var(--fg2);font-size:13.5px"},
 "Everything that happened in the areas you are showing, newest first."));
 for (const [day, list] of byDay) {
 body.append(section(chatDayLabel(day), list.length, pagedCard(list, r => el("button", {class: "dash-item",
 onclick: () => { closeModal(); inSpace(r.space, () => openTaskDetail(r.path, r.block, r.space)); }},
-el("span", {class: "ricon " + r.kind}, mark[r.kind]),
+el("span", {class: "ricon " + r.kind}, mark[r.kind].startsWith("<") ? svgIcon(mark[r.kind]) : mark[r.kind]),
 el("span", {style: "flex:1;min-width:0", translate: "no", html: renderInline(r.kind === "said"
 ? (r.who ? r.who + " on “" + plainTitle(r.block.title) + "”: " : "") + r.text
 : titleForRow(r.text))}),
@@ -31583,7 +31682,7 @@ const c = el("div", {class: "wrap" + (sub === "board" ? " wide" : "")});
 const twins = nextTwins().length;
 c.append(vhead("Next", null,
 twins ? el("button", {class: "textbtn twinbtn", title: "Next actions with the same or nearly the same words",
-onclick: () => openNextTwins()}, "⚠ " + twins + " look alike") : null,
+onclick: () => openNextTwins()}, svgIcon(ICON_WARN), " " + twins + " look alike") : null,
 csvBtn(() => sub === "calendar" ? all : acts, "next"), viewSeg("next")));
 const all = nextActions();
 if (sub === "calendar") { c.append(viewCalendar()); return c; }
@@ -31704,7 +31803,7 @@ ctxs.length ? fselect("Context", ctx || "", [["", "Anywhere"], ...ctxs.map(k => 
 v => { senseLearn("ctx", v || "*"); if (!v) NEXT_GUESS_OFF = hourKey(); go("next", {ctxFilter: v || null}); }) : null, kidsChip,
 types.sel, est.sel, sortSel, sortDot), ctxChips,
 twins ? el("div", {class: "ntwins"}, el("button", {class: "textbtn twinbtn", onclick: () => openNextTwins()},
-"⚠ " + twins + " look alike")) : null);
+svgIcon(ICON_WARN), " " + twins + " look alike")) : null);
 const fbtn = el("button", {class: "textbtn nfiltbtn" + (filtered ? " on" : "") + (twins ? " twins" : ""), "aria-expanded": String(NEXT_FILTERS_OPEN),
 title: filtered ? filtered + " filters on" : "Filter, sort and pick contexts",
 onclick: () => { NEXT_FILTERS_OPEN = !NEXT_FILTERS_OPEN; render(); }},
@@ -31966,7 +32065,7 @@ parentLine(r.space, r.path),
 el("div", {class: "t-title"}, el("b", {}, info.title)),
 el("div", {class: "pstats"}, ...stats,
 r._urg != null ? el("span", {class: "chip urg onhover", title: "Urgency of its most urgent open action, " +
-"or of its own deadline and chain when it has none. The list is sorted by it."}, "↑" + r._urg) : null,
+"or of its own deadline and chain when it has none. The list is sorted by it."}, svgIcon(ICON_ARROW_UP), " " + r._urg) : null,
 ...projectTags(r), spaceTag(r.space)),
 el("div", {class: "pprog", title: done + " of " + total + " done"},
 el("div", {class: "pbar"}, el("i", {style: "width:" + pct + "%"})),
@@ -32190,12 +32289,11 @@ const dest = destOf();
 areaEl.append(el("span", {}, "Ends up in " + dest + ": change it with Move on the kept one."));
 const away = areas.includes(dest) ? null : keep.space;
 const warns = areas.filter(a => a !== dest && a !== away).map(a => [a, othersIn(a)]).filter(([, who]) => who.length)
-.map(([a, who]) => "⚠ " + (who.length > 3 ? who.slice(0, 3).join(", ") + " and " + (who.length - 3) + " more"
+.map(([a, who]) => (who.length > 3 ? who.slice(0, 3).join(", ") + " and " + (who.length - 3) + " more"
 : who.join(", ").replace(/, ([^,]*)$/, " and $1")) + " also work in " + a +
 ". The project stays there as a synced copy, so they keep it: an edit in one area is the edit in both.");
-if (away) warns.push("It is folded in " + away + ", then moved to " + dest + ".");
-warnEl.textContent = warns.join("\n");
-warnEl.style.whiteSpace = "pre-line";
+if (away) warns.push({plain: "It is folded in " + away + ", then moved to " + dest + "."});
+warnEl.append(...warns.map(w => el("div", {}, w.plain ? w.plain : [svgIcon(ICON_WARN), " " + w])));
 };
 const draw = () => {
 rowsEl.textContent = "";
@@ -32301,7 +32399,7 @@ const twins = LOADING.size ? 0 : projectTwins().length;
 const head = vhead("Projects", org || "What you have committed to finishing",
 org ? el("button", {class: "textbtn", onclick: () => go("projects", {org: null})}, "× clear") : null,
 twins ? el("button", {class: "textbtn twinbtn", title: "Projects with the same or nearly the same name",
-onclick: () => openTwins()}, "⚠ " + twins + " look alike") : null,
+onclick: () => openTwins()}, svgIcon(ICON_WARN), " " + twins + " look alike") : null,
 csvBtn(allTasks, "all-tasks", "Export all tasks"),
 newBtn("project", () => newProjectPrompt()), viewSeg("projects"));
 head.classList.add("projhead");
@@ -32310,9 +32408,9 @@ c.append(head);
 if (twins && PREF.get("projects.twinsHidden", 0) !== twins) {
 const banner = el("div", {class: "twinbanner"},
 el("button", {class: "twingo", title: "Projects with the same or nearly the same name", onclick: () => openTwins()},
-el("span", {}, "⚠ " + twins + " projects look alike"), el("span", {class: "chev", "aria-hidden": "true"}, "›")),
+el("span", {}, svgIcon(ICON_WARN), " " + twins + " projects look alike"), el("span", {class: "chev", "aria-hidden": "true"}, "›")),
 el("button", {class: "iconbtn", "aria-label": "Put away", title: "Put away until the number changes",
-onclick: () => { PREF.set("projects.twinsHidden", twins); banner.remove(); }}, "✕"));
+onclick: () => { PREF.set("projects.twinsHidden", twins); banner.remove(); }}, svgIcon(ICON_CLOSE)));
 c.append(banner);
 }
 c.append(el("button", {class: "fab", "aria-label": "New project", title: "New project",
@@ -32940,7 +33038,7 @@ function viewContexts() {
 const c = el("div", {class: "wrap"});
 c.append(vhead("Contexts", "Where are you? See what you can do there.",
 el("button", {class: "btn ghost sense", title: "Guess from this device, its network and your places (g l)",
-onclick: () => senseNow()}, "📍 Sense where I am"),
+onclick: () => senseNow()}, svgIcon(ICON_LOCATION), " Sense where I am"),
 newBtn("context", () => newContextPrompt()), viewSeg("contexts")));
 const acts = nextActions();
 const names = allContextNames();
@@ -32953,7 +33051,7 @@ return c;
 if (subNow() === "sort") { c.append(viewContextSort(acts)); return c; }
 const none = acts.filter(a => !a.context).length;
 if (none) c.append(el("div", {class: "ctxleak"},
-el("span", {}, "⚠ " + none + (none === 1 ? " action has" : " actions have") + " no context yet."),
+el("span", {}, svgIcon(ICON_WARN), " " + none + (none === 1 ? " action has" : " actions have") + " no context yet."),
 el("button", {class: "textbtn", onclick: () => go("next", {sub: "board"})}, "Give them one ›")));
 const has = new Set(names);
 const busy = new Set(names.filter(n => acts.some(a => inContext(a, n))));
@@ -33002,7 +33100,7 @@ const open = !roots.length || PREF.get("contexts.idle", "") === "1";
 const toggle = () => { PREF.set("contexts.idle", open ? "" : "1"); render(); };
 c.append(el("div", {class: "ctxidle"},
 roots.length ? el("button", {class: "textbtn ctxfold", "aria-expanded": String(open), onclick: toggle},
-(open ? "▾ " : "▸ ") + "Nothing to do (" + idle.length + ")") : null,
+svgIcon(open ? ICON_CARET : ICON_CHEVRON_RIGHT), " Nothing to do (" + idle.length + ")") : null,
 open ? el("div", {class: "ctxpills"}, ...idle.map(n => el("button", {class: "fchip", title: "Open " + contextPath(n),
 onclick: () => openContextPage(n)}, (contextIcon(n) ? contextIcon(n) + " " : "") + "@" + n))) : null));
 }
@@ -33053,7 +33151,7 @@ const depth = n => n.split("/").slice(0, -1).filter((_, i, a) => has.has(a.slice
 const label = n => has.has(parentOf(n)) ? n.slice(parentOf(n).length + 1) : n;
 if (spaces.length > 1) box.append(el("div", {class: "group"}, space));
 const tree = el("div", {class: "ctxtree"},
-target(el("div", {class: "ctxtop"}, "↑ Top: drop here to take a context out"), space, "", n => n.includes("/")));
+target(el("div", {class: "ctxtop"}, svgIcon(ICON_ARROW_UP), " Top: drop here to take a context out"), space, "", n => n.includes("/")));
 for (const n of names) {
 const here = acts.filter(a => (a.space || V.space) === space && a.context === n).length;
 const icon = contextIcon(n);
@@ -33516,11 +33614,13 @@ function viewDayReview() {
 clSettle();
 const deck = clarifyDeck();
 const head = vhead("Weekly review", deck.length ? deck.length + (deck.length === 1 ? " line" : " lines") + " to clarify" : "Clarify", viewSeg("review"));
-const undo = CL.undo ? el("button", {class: "textbtn", title: "Backspace", onclick: clUndo}, "‹ Undo the last answer") : null;
+const undo = CL.undo ? el("button", {class: "textbtn", title: "Backspace", onclick: clUndo}, svgIcon(ICON_CHEVRON_LEFT), " Undo the last answer") : null;
 if (!deck.length) {
 CL.shown = null;
 const c = el("div", {class: "wrap"});
-c.append(head, emptyCard(el("div", {style: "font-size:34px"}, "✓"),
+const bigCheck = svgIcon(ICON_CHECK);
+bigCheck.setAttribute("style", "width:34px;height:34px;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round");
+c.append(head, emptyCard(el("div", {}, bigCheck),
 el("b", {}, "Every loose line of the last two weeks is clarified."), el("br"), el("br"),
 el("button", {class: "btn primary", onclick: () => go("review", {sub: "actions"})}, "On to the next actions ›"), " ", undo));
 return c;
@@ -33735,7 +33835,7 @@ n++;
 return el("div", {class: "task rstep" + (on ? " done" : "") + (cur ? " now" : ""),
 onclick: () => s.doors.length ? goTour(s.doors[0]) : setReviewTick(s.key, !on)},
 el("button", {class: "rtick", role: "checkbox", "aria-checked": String(on), "aria-label": "Done: " + s.text,
-onclick: e => { e.stopPropagation(); setReviewTick(s.key, !on); }}, on ? "✓" : String(n)),
+onclick: e => { e.stopPropagation(); setReviewTick(s.key, !on); }}, on ? svgIcon(ICON_CHECK) : String(n)),
 el("div", {class: "t-body", style: "text-align:left"},
 el("div", {class: "t-title", translate: "no", html: renderInline(s.text)}),
 (cur && s.note) || (count && !on) ? el("div", {class: "t-meta"},
@@ -33746,7 +33846,7 @@ tourLabel(id) + " ›")));
 }));
 const progress = steps => {
 const left = steps.filter(s => !ticks.has(s.key)).length;
-return [el("span", {class: "plain"}, left ? "· " + (steps.length - left) + " of " + steps.length : "· ✓ all done"),
+return [el("span", {class: "plain"}, left ? "· " + (steps.length - left) + " of " + steps.length : [svgIcon(ICON_CHECK), " all done"]),
 steps.includes(now) ? el("span", {class: "plain rnext", translate: "no"}, "· next: " + now.text) : null];
 };
 const listFold = s => reviewFold("@" + s.title, {id: s.id ? "rsec-" + s.id : null},
@@ -34112,7 +34212,7 @@ if (f.k === "status") return STATUS_LABEL[inS(r, () => statusDirOf(r.path))];
 return f.val ? f.val(r) : "";
 }
 const fieldWord = f => f.label.replace(/\?$/, "").toLowerCase();
-const FIELD_ICON = {orgs: ICON.orgs, next: ICON.next, outcome: "✓", deadline: "📅", after: "⛓"};
+const FIELD_ICON = {orgs: ICON.orgs, next: ICON.next, outcome: ICON_CHECK, deadline: ICON_DATE, after: ICON_CHAIN};
 function projectFieldPills(r, {skip = [], lines = false} = {}) {
 const box = el("div", {class: "pfields" + (lines ? " lines" : "")});
 for (const f of solFields()) {
@@ -34129,7 +34229,8 @@ box.append(el("span", {class: "pfield" + (text ? "" : " miss"), role: "button", 
 title: f.label + (text ? ": " + text : " - not set"),
 onclick: open, onkeydown: e => { if (e.key === "Enter" || e.key === " ") open(e); },
 onmousedown: e => e.stopPropagation()},
-lines && text ? el("span", {class: "fi", "aria-hidden": "true"}, FIELD_ICON[f.k] || "•") : null,
+lines && text ? el("span", {class: "fi", "aria-hidden": "true"},
+(FIELD_ICON[f.k] || "•").startsWith("<") ? svgIcon(FIELD_ICON[f.k]) : (FIELD_ICON[f.k] || "•")) : null,
 text || "+ " + fieldWord(f)));
 }
 return box;
@@ -34200,10 +34301,12 @@ const shown = all ? keys : keys.slice(0, 3);
 modal({title: "Reviewed in this pass", center: true,
 body: el("div", {style: "display:flex;flex-direction:column;gap:6px"},
 keys.length ? null : el("p", {}, "Nothing reviewed in this pass yet."),
-...shown.map(k => el("div", {style: "display:flex;gap:8px;align-items:center"},
-el("span", {style: "flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"}, "✓ " + name(k)),
+...shown.map(k => { const chk = svgIcon(ICON_CHECK);
+chk.setAttribute("style", "width:12px;height:12px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round");
+return el("div", {style: "display:flex;gap:8px;align-items:center"},
+el("span", {style: "flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"}, chk, " " + name(k)),
 el("button", {class: "btn sm ghost", title: "Deal this card again, to change what it was given",
-onclick: () => { closeModal(); solBack(k); }}, "‹ Back to it"))),
+onclick: () => { closeModal(); solBack(k); }}, svgIcon(ICON_CHEVRON_LEFT), " Back to it")); }),
 keys.length > shown.length ? el("button", {class: "textbtn", style: "align-self:flex-start",
 onclick: () => solDoneList(pass, true)}, "Show all " + keys.length) : null)});
 }
@@ -34288,9 +34391,9 @@ slot.append(el("div", {class: "slotsuggest"},
 el("span", {}, "Suggestion: “" + name + "”"),
 el("div", {class: "opts"},
 el("button", {class: "fchip", data: {solPick: "accept"}, title: "Save the suggestion as it is",
-onclick: e => { e.stopPropagation(); f.submit(r, name); solAfter(r, f.k); }}, "✓ Accept"),
+onclick: e => { e.stopPropagation(); f.submit(r, name); solAfter(r, f.k); }}, svgIcon(ICON_CHECK), " Accept"),
 el("button", {class: "fchip", data: {solPick: "edit"}, title: "Put the suggestion in the box to change before saving",
-onclick: e => { e.stopPropagation(); input.value = name; input.focus(); input.select(); }}, "✎ Edit")),
+onclick: e => { e.stopPropagation(); input.value = name; input.focus(); input.select(); }}, svgIcon(ICON_PENCIL), " Edit")),
 el("span", {class: "say"}, "or write your own in the box")));
 if (name && trim(input.value) !== name) slot.querySelector(".slotform").dataset.solPick = "write";
 return slot;
@@ -34440,7 +34543,7 @@ SOL.order = SOL.order.filter(r => !gone(r));
 const passList = el("ol", {class: "solpasses", "aria-label": "Passes"}, ...SOL_PASSES.map((p, n) =>
 el("li", {}, el("button", {class: "solpass" + (n === pass ? " now" : "") + (n < pass ? " done" : ""),
 "aria-current": n === pass ? "step" : null, title: p.say, onclick: () => { if (n !== pass) solGoPass(n); }},
-el("span", {class: "n"}, n < pass ? "✓" : String(n + 1)), el("span", {class: "q"}, p.name)))));
+el("span", {class: "n"}, n < pass ? svgIcon(ICON_CHECK) : String(n + 1)), el("span", {class: "q"}, p.name)))));
 if (pass === SD_PASS || pass === HD_PASS) return viewSomeday(c, passList);
 if (P.k === "loose") return viewLoose(c, passList);
 if (SOL.i >= SOL.order.length) {
@@ -34457,9 +34560,9 @@ next ? el("button", {class: "btn primary", onclick: () => solGoPass(pass + 1)}, 
 : reviewOnward().btn,
 " ",
 NPM_QUEUE.length ? el("button", {class: "btn", onclick: () => npmOpen(NPM_QUEUE[0].space, NPM_QUEUE[0].path)},
-"✦ Plan " + NPM_QUEUE.length + (NPM_QUEUE.length === 1 ? " project" : " projects") + " again") : null,
+svgIcon(ICON_SPARKLE), " Plan " + NPM_QUEUE.length + (NPM_QUEUE.length === 1 ? " project" : " projects") + " again") : null,
 " ",
-SOL.past && SOL.past.length ? el("button", {class: "textbtn", title: "Backspace", onclick: () => solBack()}, "‹ Back to the last card") : null,
+SOL.past && SOL.past.length ? el("button", {class: "textbtn", title: "Backspace", onclick: () => solBack()}, svgIcon(ICON_CHEVRON_LEFT), " Back to the last card") : null,
 " ",
 el("button", {class: "textbtn", onclick: () => { solClearDeck(); solGoPass(0); }}, "Start over")));
 c.firstChild.after(passList);
@@ -34491,7 +34594,7 @@ const text = projectFieldText(r, s);
 return el("li", {}, el("button", {class: "solstep" + (s === f ? " now" : "") + (text ? " done" : ""),
 "aria-current": s === f ? "step" : null, title: text ? s.label + ": " + text + ". Click to change it." : SOL_ASK[s.k],
 onclick: () => { SOL.step = s.k; SOL.hold = s.type === "multi" && s.filled(r) ? s.k : null; SOL.more = null; SOL_KB = null; render(); }},
-el("span", {class: "n"}, text ? "✓" : String(i + 1)), el("span", {class: "q"}, s.label),
+el("span", {class: "n"}, text ? svgIcon(ICON_CHECK) : String(i + 1)), el("span", {class: "q"}, s.label),
 text ? el("span", {class: "v"}, text) : null));
 })),
 el("button", {class: "textbtn", onclick: () => solOp(r, "skip")}, "Skip this project ›"),
@@ -34569,13 +34672,13 @@ return c;
 function solDeal(r, f) {
 const out = [];
 if (SOL.step === f.k && f.type !== "multi" && f.filled(r))
-out.push({label: "Keep it", sub: projectFieldText(r, f) || "", word: "✓ Keep it",
+out.push({label: "Keep it", sub: projectFieldText(r, f) || "", word: "Keep it",
 take: () => solAfter(r, f.k)});
 if (f.type === "text") {
 const input = el("input", {placeholder: f.ph, "aria-label": f.label});
 if (f.k === "outcome") input.value = f.val(r);
 attachSuggest(input);
-const write = {label: f.k === "next" ? "Write the next action" : "Write it yourself", input, word: "✎ Write", stay: true,
+const write = {label: f.k === "next" ? "Write the next action" : "Write it yourself", input, word: "Write", stay: true,
 take: () => input.focus()};
 write.send = () => { const v = trim(input.value); if (!v) return; SOL.took = write.k; f.submit(r, v); solAfter(r, f.k); };
 input.addEventListener("keydown", e => { if (suggestKey(e)) return; if (e.key === "Enter") { e.preventDefault(); write.send(); } });
@@ -34583,9 +34686,9 @@ out.push(write);
 if (f.k === "outcome") {
 const name = inS(r, () => pageTitle(r.path));
 if (trim(input.value) !== name) {
-out.push({label: "“" + name + "”", sub: "The project's name, as it is", word: "✓ Use the name",
+out.push({label: "“" + name + "”", sub: "The project's name, as it is", word: "Use the name",
 take: () => { f.submit(r, name); solAfter(r, f.k); }});
-out.push({label: "Start from the name", sub: "Put it in the box to change it", word: "✎ Edit the name", stay: true,
+out.push({label: "Start from the name", sub: "Put it in the box to change it", word: "Edit the name", stay: true,
 take: () => { input.value = name; input.focus(); input.select(); }});
 }
 }
@@ -34595,10 +34698,10 @@ const end = v => () => {
 st.pick(r, v);
 if (v === "3") solAskWaiting(r, () => solOp(r, "done")); else solOp(r, "done");
 };
-out.push({label: "Waiting on someone", sub: "Move it to Waiting for", word: "→ Waiting for", take: end("3")});
-out.push({label: "Not now", sub: "Move it to Someday/Maybe", word: "→ Someday/Maybe", take: end("2")});
-out.push({label: "It is done", sub: "Move it to Completed", word: "→ Completed", take: end("0")});
-out.push({label: "✦ Re-plan it", sub: "Needs clarity. Plan it after the review", word: "✦ Re-plan it",
+out.push({label: "Waiting on someone", sub: "Move it to Waiting for", word: "Waiting for", take: end("3")});
+out.push({label: "Not now", sub: "Move it to Someday/Maybe", word: "Someday/Maybe", take: end("2")});
+out.push({label: "It is done", sub: "Move it to Completed", word: "Completed", take: end("0")});
+out.push({label: [svgIcon(ICON_SPARKLE), " Re-plan it"], sub: "Needs clarity. Plan it after the review", word: "Re-plan it",
 take: () => { npmQueue(r.space, r.path); solOp(r, "done"); }});
 }
 return out;
@@ -34609,17 +34712,17 @@ const isOn = v => f.type === "multi" ? cur.includes(v) : cur === v;
 const list = f.opts(r);
 const first = [], last = [];
 if (f.type === "multi") {
-if (cur.length) first.push({label: "That's all", sub: cur.join(", "), word: "✓ Done", take: () => solAfter(r, f.k)});
-else first.push({label: f.none, word: "→ " + f.none, on: !!solAns(r)[f.k], take: pick("none")});
+if (cur.length) first.push({label: "That's all", sub: cur.join(", "), word: "Done", take: () => solAfter(r, f.k)});
+else first.push({label: f.none, word: f.none, on: !!solAns(r)[f.k], take: pick("none")});
 }
 for (const [v, label] of list.filter(([v]) => v === "none"))
-(f.k === "deadline" ? last : first).push({label, word: "→ " + label, on: isOn(v), take: pick(v)});
+(f.k === "deadline" ? last : first).push({label, word: label, on: isOn(v), take: pick(v)});
 if (f.tail) for (const [v, label] of f.tail(r))
-last.push({v, label, word: "→ " + label, sub: f.sub ? f.sub(r, v) : "", take: pick(v)});
+last.push({v, label, word: label, sub: f.sub ? f.sub(r, v) : "", take: pick(v)});
 if (f.type === "date") {
 const input = el("input", {type: "date", min: todayISO(), "aria-label": "Pick a date",
 onchange: e => { if (e.target.value) { SOL.took = date.k; f.pick(r, e.target.value); solAfter(r, f.k); } }});
-const date = {label: f.dateLabel || "Pick a date", sub: f.dateSub || "Any day you like", word: "📅 " + (f.dateLabel || "Pick a date"), date: input, stay: true,
+const date = {label: f.dateLabel || "Pick a date", sub: f.dateSub || "Any day you like", word: f.dateLabel || "Pick a date", date: input, stay: true,
 take: () => { try { input.showPicker(); } catch (_) { input.focus(); } }};
 last.push(date);
 }
@@ -35297,7 +35400,9 @@ duel.append(emptyCard(el("b", {}, "Every pair left was skipped."), el("br"),
 "; the rest are too close to call today.", el("br"), el("br"),
 el("button", {class: "btn", onclick: () => { SD.skipped.clear(); render(); }}, "Ask the skipped pairs again")));
 } else {
-duel.append(emptyCard(el("div", {style: "font-size:34px"}, "🏆"),
+const trophy = svgIcon(ICON_TROPHY);
+trophy.setAttribute("style", "fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round");
+duel.append(emptyCard(el("div", {style: "width:34px;height:34px;margin:0 auto"}, trophy),
 el("b", {}, S.target === 1 ? K.one : "The top " + S.target + " are settled."), el("br"), K.done,
 ...sdOnward()));
 }
@@ -35637,7 +35742,7 @@ const left = ACT_PASSES.map((p, n) => n === pass ? Math.max(0, SOL.order.length 
 const passList = el("ol", {class: "solpasses", "aria-label": "Passes"}, ...ACT_PASSES.map((p, n) =>
 el("li", {}, el("button", {class: "solpass" + (n === pass ? " now" : "") + (n < pass ? " done" : ""),
 "aria-current": n === pass ? "step" : null, title: p.say, onclick: () => { if (n !== pass) actGoPass(n); }},
-el("span", {class: "n"}, n < pass && !left[n] ? "✓" : String(n + 1)),
+el("span", {class: "n"}, n < pass && !left[n] ? svgIcon(ICON_CHECK) : String(n + 1)),
 el("span", {class: "q"}, p.name + (left[n] ? " · " + left[n] : ""))))));
 if (SOL.i >= SOL.order.length) {
 const any = solDeckAns().some(a => a["p" + pass]);
@@ -36401,7 +36506,7 @@ const keys = facts.map(f => f.key).filter(Boolean);
 const box = el("div", {class: "pfacts cols" + (folded ? " folded" : "") + (tracker ? " trkset" : "")},
 tracker ? null : el("button", {class: "pfhead", "aria-expanded": String(!folded),
 title: folded ? "Show the page's values" : "Fold the values away", onclick: toggle},
-el("span", {class: "pftog"}, folded ? "▸" : "▾"),
+el("span", {class: "pftog"}, svgIcon(folded ? ICON_CHEVRON_RIGHT : ICON_CARET)),
 el("span", {}, keys.length + (keys.length === 1 ? " value" : " values")),
 folded ? el("span", {class: "pfkeys"}, keys.join(" · ")) : null));
 if (folded) return box;
@@ -36484,7 +36589,7 @@ isJournalPath(path) ? null : ["Share", "this page, without the rest of the area"
 ["Show in Explorer", "a line for Win+R that opens the folder with this file selected", () => revealInExplorer(path)],
 ["Where the folder is", "on this computer, for Show in Explorer", () => askDiskRoot(space)],
 V.backend && V.backend.openFile ? ["Open the file", "in the editor on the machine running the server", () => openSourceFile(path)] : null,
-["✎", "the whole file as text", () => editAllText({space, path, id: null})],
+[svgIcon(ICON_PENCIL), "the whole file as text", () => editAllText({space, path, id: null})],
 isJournalPath(path) ? null : ["Rename", "and the folder it is in", () => renamePrompt(path)],
 ["Move", "to another folder", () => movePrompt(path)],
 code ? ["Turn into a todo", "one line, with this page's lines under it", () => projectToTodo(path)] : null,
@@ -36667,7 +36772,7 @@ onclick: () => {
 const at = path || personPath(name);
 if (!getPage(at)) putPage(at, pageTemplateFor("p", name));
 setHousehold(at, !home);
-}}, home ? "✓ Household" : "Household"),
+}}, home ? [svgIcon(ICON_CHECK), " Household"] : "Household"),
 isMember(name) || home ? null : el("button", {class: "btn sm" + (open.length + agenda.length ? " primary" : " ghost"),
 onclick: () => openAskForUpdate(name)}, "Ask " + firstNameOf(name) + " for an update"),
 informAbout({name}).length || stakeIn({name}).length ? el("button", {class: "btn sm ghost",
@@ -36758,13 +36863,13 @@ c.append(el("div", {class: "pagehead"}, icon ? el("span", {class: "picon"}, icon
 el("div", {class: "acts"},
 SIDE_DRAWING ? null : el("button", {class: "btn sm ghost panepin" + (pinned ? " on" : ""), title: pinLabel,
 "aria-label": pinLabel, "aria-pressed": String(pinned),
-onclick: () => pinned ? unpinSide() : pinToSide(space, path)}, "📌"),
+onclick: () => pinned ? unpinSide() : pinToSide(space, path)}, svgIcon(ICON_PIN)),
 el("button", {class: "btn sm ghost", title: "A link you can paste into chat or email",
 onclick: () => copyLinkTo(deepLink(path), pageTitle(path))}, "Copy link"),
 el("button", {class: "btn sm ghost", title: "Show the file in Explorer: copies a line for Win+R",
 onclick: () => revealInExplorer(path)}, "Explorer"),
 code && !SIDE_DRAWING ? el("button", {class: "btn sm ghost npmbtn", title: "Natural planning: why, outcome, ideas, next actions (w n)",
-onclick: () => npmOpen(space, path)}, "✦ " + npmLabel(space, path)[0]) : null,
+onclick: () => npmOpen(space, path)}, svgIcon(ICON_SPARKLE), " " + npmLabel(space, path)[0]) : null,
 isJournalPath(path) ? null : el("button", {class: "btn sm ghost",
 onclick: () => go("pages", {sub: "mindmap", graphFocus: (V.space || "") + "\u0000" + path})}, "Mind map"),
 putsBack(path) && getPage(path).blocks.length ? el("button", {class: "btn sm ghost", title: "What was refiled here, to put back",
@@ -36817,7 +36922,7 @@ const open = orgOpenWork(name);
 c.append(section("Open", open.length, taskCard(open, "Nothing open names " + name + " or its people.")));
 const tell = informAbout({name, org: true}).length || stakeIn({name, org: true}).length;
 c.append(el("div", {class: "section"},
-tell ? el("button", {class: "btn sm ghost", onclick: () => openSendUpdate({name, org: true})}, "✉ Send " + name + " an update") : null,
+tell ? el("button", {class: "btn sm ghost", onclick: () => openSendUpdate({name, org: true})}, svgIcon(ICON_MAIL), " Send " + name + " an update") : null,
 el("div", {style: tell ? "margin-top:8px" : ""}, stakeholderLine({name, org: true}))));
 }
 const ns = namespaceSection(path);
@@ -37124,7 +37229,7 @@ const cur = trackerNum(vals[i]) || 0;
 const stars = el("span", {class: "tstars", role: "radiogroup", "aria-label": "Rating 1 to 10"});
 for (let j = 1; j <= 10; j++) stars.append(el("button", {class: "tstar" + (j <= cur ? " on" : ""),
 type: "button", title: j + " of 10", "aria-label": j + " of 10",
-onclick: e => { e.stopPropagation(); vals[i] = cur === j ? "" : String(j); write(); build(); }}, "★"));
+onclick: e => { e.stopPropagation(); vals[i] = cur === j ? "" : String(j); write(); build(); }}, svgIcon(ICON_STAR_FILL)));
 box.append(stars);
 if (cur) box.append(el("span", {class: "tu"}, cur + "/10"));
 return;
@@ -37169,7 +37274,7 @@ if (v.value || v.open) box.append(el("span", {class: "tu"}, fmtMinutes(v.value))
 if (v.stale) box.append(el("span", {class: "chip late", title: "A stretch with no end counts nothing"}, "no end"));
 if (date && date === todayISO()) box.append(el("button", {class: "textbtn tadd", type: "button",
 onclick: e => { e.stopPropagation(); save(trackerText(t, [v.open ? stopClock(t.raw) : startClock(t.raw)])); render(); }},
-v.open ? "■ Stop" : "▶ Start"));
+svgIcon(v.open ? ICON_STOP : ICON_PLAY), v.open ? " Stop" : " Start"));
 }
 box.addEventListener("mousedown", e => e.stopPropagation());
 return box;
@@ -38700,9 +38805,9 @@ const monday = state.sheetWeek ? weekStartISO(state.sheetWeek) : lastMon;
 const to = patch => sheetNav(S, Object.assign({sheetWeek: monday}, patch));
 const w = sheetWeek(S, monday), unit = sheetUnit(S);
 c.append(fbar(
-el("button", {class: "dayarrow", title: "The week before", "aria-label": "The week before", onclick: () => to({sheetWeek: shiftISO(monday, -7)})}, "◀"),
+el("button", {class: "dayarrow", title: "The week before", "aria-label": "The week before", onclick: () => to({sheetWeek: shiftISO(monday, -7)})}, svgIcon(ICON_CHEVRON_LEFT)),
 el("b", {style: "font-size:13px"}, weekLabel(monday)),
-el("button", {class: "dayarrow", title: "The week after", "aria-label": "The week after", onclick: () => to({sheetWeek: shiftISO(monday, 7)})}, "▶"),
+el("button", {class: "dayarrow", title: "The week after", "aria-label": "The week after", onclick: () => to({sheetWeek: shiftISO(monday, 7)})}, svgIcon(ICON_CHEVRON_RIGHT)),
 monday !== lastMon ? el("button", {class: "textbtn", onclick: () => to({sheetWeek: lastMon})}, "Last week") : null,
 monday !== thisMon ? el("button", {class: "textbtn", onclick: () => to({sheetWeek: thisMon})}, "This week") : null,
 el("span", {class: "gap"}),
@@ -38791,11 +38896,12 @@ e.path ? null : el("button", {class: "textbtn castmake", title: "Named in a scen
 onclick: () => { makeCastPage(e.name, e.type); render(); }}, "+ Make a page")),
 el("div", {class: "castfacts"}, facts.join(" · ")),
 depth ? el("div", {class: "castdepth"}, ...depth.map(d => {
-const cls = "dep " + (d.na ? "na" : d.ok ? "ok" : "miss"), mark = d.na ? "– " : d.ok ? "✓ " : "✗ ";
+const cls = "dep " + (d.na ? "na" : d.ok ? "ok" : "miss");
+const mark = d.na ? "– " : [svgIcon(d.ok ? ICON_CHECK : ICON_CLOSE), " "];
 const tip = d.na ? "The protagonist" : d.said || d.tip || d.label;
 return d.prop && e.path && !d.na
-? el("button", {class: cls, title: d.said || d.ask, onclick: () => askCastValue(e.path, d.prop, d.ask)}, mark + d.label)
-: el("span", {class: cls, title: tip}, mark + d.label);
+? el("button", {class: cls, title: d.said || d.ask, onclick: () => askCastValue(e.path, d.prop, d.ask)}, mark, d.label)
+: el("span", {class: cls, title: tip}, mark, d.label);
 })) : null),
 depth ? el("span", {class: "castscore", title: "Signs of depth"},
 el("span", {class: "pbar"}, el("i", {style: "width:" + Math.round(100 * apply.filter(d => d.ok).length / Math.max(1, apply.length)) + "%"})),
@@ -39285,7 +39391,7 @@ pov ? el("span", {class: "scmeta", title: "Who sees it"}, pov) : null,
 when ? el("span", {class: "scmeta", title: "When in the story"}, when) : null,
 el("span", {class: "scw"}, fmtWords(sceneWords(s))),
 s.block ? el("button", {class: "scedit", title: "Its name, who sees it, where and when", "aria-label": "Edit the scene " + s.name,
-onclick: () => editScene(s)}, "✎") : el("span", {class: "scedit", "aria-hidden": "true"}, "✎"));
+onclick: () => editScene(s)}, svgIcon(ICON_PENCIL)) : el("span", {class: "scedit", "aria-hidden": "true"}, svgIcon(ICON_PENCIL)));
 }), add);
 }
 let BOOK_DRAG = null;
@@ -39377,7 +39483,7 @@ r.stage ? el("button", {class: "chip bookstage", "data-core": r.stage.core, titl
 onclick: () => pickChapterStage(r.path)}, r.stage.name) : el("span", {class: "sub"}, "no page yet"),
 el("span", {class: "wc"}, fmtWords(r.words)),
 el("button", {class: "chcut", title: "Cut it to your darlings: out of the book, kept to put back", "aria-label": "Cut " + r.name + " to the darlings",
-onclick: () => cutChapterToDarlings(i)}, "✂")), i, r.name));
+onclick: () => cutChapterToDarlings(i)}, svgIcon(ICON_SCISSORS))), i, r.name));
 });
 c.append(list);
 return c;
@@ -39756,11 +39862,11 @@ const li = el("li", {}, el("button", {class: "solstep" + (now ? " now" : "") + (
 "aria-current": now ? "step" : null, disabled: NPM ? null : "disabled",
 title: NPM && i < NPM.step && !done ? "Skipped" : null,
 onclick: () => { if (NPM) { npmCommit(); npmGo(i); } }},
-el("span", {class: "n"}, done ? "✓" : String(i + 1)), el("span", {class: "q"}, s.name)));
+el("span", {class: "n"}, done ? svgIcon(ICON_CHECK) : String(i + 1)), el("span", {class: "q"}, s.name)));
 if (now && qs.length > 1) li.append(el("ol", {class: "npmsubq"}, ...qs.map((q, n) =>
 el("li", {}, el("button", {class: (n === NPM.q ? "now" : "") + (q.done() ? " done" : ""),
 onclick: () => { npmCommit(); npmGo(NPM.step, n); }},
-n === NPM.q ? "▸ " : q.done() ? "✓ " : "◦ ", q.label)))));
+n === NPM.q ? svgIcon(ICON_CHEVRON_RIGHT) : q.done() ? svgIcon(ICON_CHECK) : "◦ ", q.label)))));
 if (now && NPM_STEPS[i].k === "next") {
 const waits = NPM.comps.filter(c => c.after && npmComp(c.after));
 if (waits.length) li.append(el("ol", {class: "npmsubq"}, ...waits.map(c =>
@@ -39775,7 +39881,7 @@ NPM ? el("div", {class: "solcount"}, "Step " + (NPM.step + 1) + " of " + NPM_STE
 steps);
 if (NPM && !npmLocked()) side.append(
 el("button", {class: "btn primary npmfinish", title: "Writes what you have now. Undo takes it back.",
-onclick: npmWrite}, "✓ Finish & write page"),
+onclick: npmWrite}, svgIcon(ICON_CHECK), " Finish & write page"),
 el("p", {class: "solhow"}, "Draft saved as you go."),
 el("p", {class: "solhow"}, NPM_STEPS[NPM.step].how));
 if (NPM) side.append(...[el("button", {class: "textbtn", title: "Esc", onclick: npmClose}, "Close: the draft is kept"),
@@ -39878,7 +39984,7 @@ if (!t) return null;
 const name = npmIn(() => pageTitle(NPM.path));
 if (t.toLowerCase() === trim(name).toLowerCase() || t.split(/\s+/).length < 3)
 return ["warn", "That reads like a topic. Say what is true once it is done."];
-return ["ok", "✓ Reads like a finish line."];
+return ["ok", "Reads like a finish line."];
 }
 function npmOutcomeQ() {
 const input = el("input", {class: "npmin", value: NPM.outcome || "", placeholder: "A monthly newsletter goes out and 40% open it",
@@ -39887,7 +39993,8 @@ const say = el("div", {class: "npmsay"});
 const tell = () => {
 const s = npmOutcomeSay(input.value);
 say.className = "npmsay" + (s ? " " + s[0] : "");
-say.textContent = s ? s[1] : "Not a topic like “Newsletter”, but what is true when it is done.";
+say.replaceChildren(...(s ? (s[0] === "ok" ? [svgIcon(ICON_CHECK), " " + s[1]] : [s[1]])
+: ["Not a topic like “Newsletter”, but what is true when it is done."]));
 };
 input.addEventListener("input", () => { NPM.outcome = input.value; npmSave(); tell(); });
 input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) { e.preventDefault(); npmNext(); } });
@@ -40035,8 +40142,8 @@ el("span", {class: "nm"}, c.name),
 above ? fchip(waits ? "After " + npmComp(c.after).name : "Can start now", waits, () => {
 c.after = waits ? null : above.id; NPM.ordered = true; npmSave(); render();
 }) : el("span", {class: "npmsay"}, "Starts first"),
-el("button", {class: "iconbtn", title: "Up", "aria-label": "Move " + c.name + " up", disabled: n ? null : "disabled", onclick: () => move(n, -1)}, "↑"),
-el("button", {class: "iconbtn", title: "Down", "aria-label": "Move " + c.name + " down", disabled: n < NPM.comps.length - 1 ? null : "disabled", onclick: () => move(n, 1)}, "↓"));
+el("button", {class: "iconbtn", title: "Up", "aria-label": "Move " + c.name + " up", disabled: n ? null : "disabled", onclick: () => move(n, -1)}, svgIcon(ICON_ARROW_UP)),
+el("button", {class: "iconbtn", title: "Down", "aria-label": "Move " + c.name + " down", disabled: n < NPM.comps.length - 1 ? null : "disabled", onclick: () => move(n, 1)}, svgIcon(ICON_ARROW_DOWN)));
 })), el("div", {class: "npmsay"}, "A component that waits gets its next action once the one before is done.")];
 }
 function npmItemQ(it) {
@@ -40047,7 +40154,7 @@ const ideas = NPM.ideas.filter(i => i.to === "c:" + it.c.id);
 if (ideas.length) out.push(el("div", {class: "npmnotes"}, el("span", {class: "npmh"}, "Ideas inside"),
 ...ideas.map(i => el("button", {class: "fchip", title: "Start the action from this", onclick: () => { a.text = i.t; npmSave(); render(); }}, i.t))));
 }
-if (kept) out.push(el("div", {class: "npmsay ok"}, "✓ Already has a next action: " + plainTitle(kept.replace(/^- (TODO|DOING|WAIT)\s+/, "").split("\n")[0])));
+if (kept) out.push(el("div", {class: "npmsay ok"}, svgIcon(ICON_CHECK), " Already has a next action: " + plainTitle(kept.replace(/^- (TODO|DOING|WAIT)\s+/, "").split("\n")[0])));
 const people = [...NPM.people, ...npmIn(() => members().map(m => m.name)).filter(n => !samePerson(n, whoAmI()) && !NPM.people.some(x => samePerson(x, n)))].slice(0, 8);
 const set = (k, v) => { a[k] = v; npmSave(); render(); };
 out.push(el("div", {class: "npmh"}, "1 · Who does it?"),
@@ -40068,10 +40175,11 @@ attachSuggest(input);
 const say = el("div", {class: "npmsay"});
 const tell = () => {
 const t = trim(input.value);
-if (!t) { say.className = "npmsay"; say.textContent = a.who ? "It goes to Waiting for." : "Start with a verb you can do: call, draft, buy."; return; }
+if (!t) { say.className = "npmsay"; say.replaceChildren(a.who ? "It goes to Waiting for." : "Start with a verb you can do: call, draft, buy."); return; }
 const v = a.who || startsWithVerb(t);
 say.className = "npmsay " + (v ? "ok" : "warn");
-say.textContent = a.who ? "✓ Waiting for " + a.who : v ? "✓ Starts with a verb" : "Start with a verb you can do: call, draft, buy.";
+say.replaceChildren(...(a.who ? [svgIcon(ICON_CHECK), " Waiting for " + a.who]
+: v ? [svgIcon(ICON_CHECK), " Starts with a verb"] : ["Start with a verb you can do: call, draft, buy."]));
 };
 input.addEventListener("input", () => { a.text = input.value; npmSave(); tell(); });
 input.addEventListener("keydown", e => {
@@ -40088,9 +40196,9 @@ return out.filter(Boolean);
 function npmFocusQ() {
 const ready = npmItems().filter(it => trim(it.act.text || "") || (it.kind === "comp" && npmKept(it.c))).length;
 const boxes = new Map([
-["8", {lbl: "↑ Needs clarity", t: "Still fuzzy", s: "Back to why and the outcome", go: () => npmGo(0)}],
-["6", {lbl: "✓ Off my mind", t: "Write the page", s: "One change; Undo takes it back", go: npmWrite, ok: true}],
-["2", {lbl: "↓ Needs action", t: "Missing a step", s: "Back to the next actions", go: () => npmGo(4)}],
+["8", {lbl: [svgIcon(ICON_ARROW_UP), " Needs clarity"], t: "Still fuzzy", s: "Back to why and the outcome", go: () => npmGo(0)}],
+["6", {lbl: [svgIcon(ICON_CHECK), " Off my mind"], t: "Write the page", s: "One change; Undo takes it back", go: npmWrite, ok: true}],
+["2", {lbl: [svgIcon(ICON_ARROW_DOWN), " Needs action"], t: "Missing a step", s: "Back to the next actions", go: () => npmGo(4)}],
 ]);
 const grid = el("div", {class: "sol npmsol"});
 for (const g of NPM_GRID) {
@@ -40107,7 +40215,7 @@ grid.append(!b ? el("div", {class: "slot solempty", "aria-hidden": "true"})
 : el("button", {class: "slot solopt npmbox" + (b.ok ? " on" : ""), data: {key: g}, title: "Press " + g, onclick: b.go},
 el("span", {class: "lbl"}, solKeycap(g), b.lbl), el("span", {class: "solopt-t"}, b.t), el("span", {class: "solopt-s"}, b.s)));
 }
-return [grid, el("div", {class: "npmnav"}, el("button", {class: "btn ghost", onclick: npmBack}, "‹ Back"))];
+return [grid, el("div", {class: "npmnav"}, el("button", {class: "btn ghost", onclick: npmBack}, svgIcon(ICON_CHEVRON_LEFT), " Back"))];
 }
 window.addEventListener("keydown", e => {
 if (state.view !== "plan" || !NPM || $("#modalRoot").firstChild) return;
@@ -40153,7 +40261,7 @@ const rules = (why.find(b => /^principles:?$/i.test(trim(b.title)))?.children ||
 const outcome = outcomeOf(path);
 const rows = [];
 rows.push(el("div", {class: "npmrow"}, el("span", {class: "k"}, "Outcome"),
-outcome ? el("span", {class: "v"}, "✓ " + outcome) : el("span", {class: "chip miss"}, "No outcome yet")));
+outcome ? el("span", {class: "v"}, svgIcon(ICON_CHECK), " " + outcome) : el("span", {class: "chip miss"}, "No outcome yet")));
 if (purpose) rows.push(el("div", {class: "npmrow"}, el("span", {class: "k"}, "Purpose"), el("span", {class: "v"}, purpose)));
 if (rules.length) rows.push(el("div", {class: "npmrow"}, el("span", {class: "k"}, "Principles"), el("span", {class: "v"}, rules.join(" · "))));
 const comps = (heads.get("comps")?.children || []).filter(b => /^###\s+/.test(trim(b.title)));
@@ -40418,7 +40526,7 @@ const line = blockBehind(link);
 const box = el("div", {class: "askcard", role: "dialog", "aria-label": name},
 el("b", {}, name),
 el("button", {class: "btn sm", onclick: () => { askCardHide(); openAskForUpdate(name, line && line.block); }},
-"✉ Ask for an update"));
+svgIcon(ICON_MAIL), " Ask for an update"));
 document.body.append(box);
 const r = link.getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight;
 box.style.left = Math.min(Math.max(12, r.left), innerWidth - w - 12) + "px";
@@ -41157,7 +41265,7 @@ places.forEach((p, i) => placeRows.append(el("div", {class: "senseplace"},
 el("span", {}, "@" + p.ctx),
 el("span", {class: "sub"}, (p.r || 150) + " m"),
 el("button", {class: "iconbtn", title: "Forget this place", "aria-label": "Forget @" + p.ctx,
-onclick: () => { places.splice(i, 1); drawPlaces(); }}, "✕"))));
+onclick: () => { places.splice(i, 1); drawPlaces(); }}, svgIcon(ICON_CLOSE)))));
 };
 drawPlaces();
 const placeCtx = ctxBox(here.value);
@@ -41178,9 +41286,9 @@ const b = el("button", {type: "button", role: "checkbox", "aria-checked": on ? "
 class: "spacetoggle" + (on ? " on" : ""), onclick: () => {
 b.classList.toggle("on");
 const now = b.classList.contains("on");
-b.textContent = now ? "✓" : "";
+b.replaceChildren(...(now ? [svgIcon(ICON_CHECK)] : []));
 b.setAttribute("aria-checked", now ? "true" : "false");
-}}, on ? "✓" : "");
+}}, on ? svgIcon(ICON_CHECK) : null);
 return {b, row: el("div", {style: "display:flex;gap:10px;align-items:center;margin-top:6px"}, b, el("span", {}, label))};
 };
 const work = senseWork();
@@ -41821,7 +41929,7 @@ el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
 "\u2691 to come back to it - that carries your name, so it follows you between " +
 "devices. Read is per device and stays out of the files."),
 el("div", {style: "margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"},
-el("button", {class: "btn sm ghost", onclick: () => { closeModal(); informFromLine(path, block, space); }}, "✉ Send an update"),
+el("button", {class: "btn sm ghost", onclick: () => { closeModal(); informFromLine(path, block, space); }}, svgIcon(ICON_MAIL), " Send an update"),
 el("span", {style: "color:var(--fg3);font-size:12px"},
 informedAt(block) ? "Last told " + trim(blockProp(block, INFORMED_PROP)).replace(/\s+\S+$/, "") + " on " + informedAt(block) + "."
 : "Tell whoever it names where it stands. Alt+U on the line."))),
@@ -41852,8 +41960,10 @@ project: (nearestProjectAncestor(block) || {}).title || (statusDirOf(path) ? pag
 projectPath: statusDirOf(path) ? path : null, space,
 mine: !who || samePerson(who, whoAmI())};
 const parts = urgencyParts(row);
+const urgIcon = svgIcon(ICON_ARROW_UP);
+urgIcon.setAttribute("style", "width:12px;height:12px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round");
 return el("div", {style: "font-size:12.5px;color:var(--fg2);line-height:1.6"},
-el("div", {style: "font-weight:600;color:var(--fg)"}, "↑" + urgencyOf(row)),
+el("div", {style: "font-weight:600;color:var(--fg)"}, urgIcon, " " + urgencyOf(row)),
 ...parts.map(([why, n]) => el("div", {}, (n > 0 ? "+" : "") + n + "  " + why)));
 })())),
 el("div", {class: "field"},
@@ -42064,7 +42174,7 @@ center: true, title: "Plan “" + pageTitle(p) + "” now?", hint: "1 / 2 / 3 ·
 body: el("div", {},
 pickRow("1", "Plan it now", "6 short steps: why, outcome, ideas, next actions", plan),
 pickRow("2", "Just the outcome", "what done looks like, then a next action", outcome),
-pickRow("3", "Not now", "the page is ready; ✦ Plan is on it", later)),
+pickRow("3", "Not now", "the page is ready; Plan is on it", later)),
 foot: el("label", {class: "npmnever"}, el("input", {type: "checkbox",
 onchange: e => PREF.set("npm.ask:" + (space || ""), e.target.checked ? "0" : "1")}),
 " Don't ask again" + (Spaces.list.length > 1 ? " in " + space : "") + ": go straight to the outcome"),
@@ -42557,7 +42667,7 @@ summary.textContent = paths.length + (paths.length === 1 ? " page, " : " pages, 
 const toggle = (key, label, hint) => {
 const box = el("button", {class: "spacetoggle" + (opts[key] ? " on" : ""),
 onclick: () => { opts[key] = !opts[key]; box.classList.toggle("on", opts[key]); refresh(); }},
-opts[key] ? "✓" : "");
+opts[key] ? svgIcon(ICON_CHECK) : null);
 return el("div", {style: "display:flex;gap:10px;align-items:flex-start;margin:6px 0"},
 box, el("div", {}, el("div", {}, label),
 el("div", {style: "color:var(--fg3);font-size:12px"}, hint)));
@@ -44075,8 +44185,10 @@ el("button", {class: "btn primary", onclick: closeModal}, "Close"),
 });
 }
 function capLine(ok, text) {
+const mark = svgIcon(ok ? ICON_CHECK : ICON_CLOSE);
+mark.setAttribute("style", "width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round");
 return el("div", {style: "display:flex;gap:8px;align-items:flex-start;font-size:12.5px;margin:3px 0;color:var(--fg2)"},
-el("span", {style: "color:" + (ok ? "var(--ok)" : "var(--fg3)") + ";flex:none"}, ok ? "✓" : "✕"),
+el("span", {style: "color:" + (ok ? "var(--ok)" : "var(--fg3)") + ";flex:none;display:inline-flex"}, mark),
 el("span", {}, text));
 }
 function settingsRow(label, value, action, cls) {
@@ -44094,10 +44206,10 @@ const box = el("button", {type: "button", role: "checkbox", "aria-checked": on ?
 "aria-label": label, class: "spacetoggle" + (on ? " on" : ""), onclick: () => {
 on = !on;
 box.classList.toggle("on", on);
-box.textContent = on ? "✓" : "";
+box.replaceChildren(...(on ? [svgIcon(ICON_CHECK)] : []));
 box.setAttribute("aria-checked", on ? "true" : "false");
 flip(on);
-}}, on ? "✓" : "");
+}}, on ? svgIcon(ICON_CHECK) : null);
 return box;
 }
 function settingsSelect(label, options, current, pick) {
@@ -44929,7 +45041,7 @@ for (const p of parentsOfPage(space, path)) if (!up.some(x => x.path === p)) up.
 if (!up.length) return null;
 const name = x => x.path ? inSpace(space, () => pageTitle(x.path)) : x.title;
 const line = el("div", {class: "parentline", title: "Part of " + up.map(name).join(", ")},
-el("span", {class: "up", "aria-hidden": "true"}, "↑"));
+el("span", {class: "up", "aria-hidden": "true"}, svgIcon(ICON_ARROW_UP)));
 up.forEach((x, i) => {
 if (i) line.append(el("span", {class: "sep"}, "·"));
 if (!x.path) { line.append(el("span", {class: "pl none", title: "A folder, with no page of its own"}, x.title)); return; }
@@ -46249,7 +46361,7 @@ for (const l of b.body || []) node.append(el("div", {class: "ebodyline", transla
 const inner = liveMacros(path, b, seen, depth);
 if (inner) node.append(inner);
 const kids = b.children || [];
-if (kids.length && b.collapsed) node.append(el("div", {class: "eempty"}, "▸ " + kids.length + " folded"));
+if (kids.length && b.collapsed) node.append(el("div", {class: "eempty"}, svgIcon(ICON_CHEVRON_RIGHT), " " + kids.length + " folded"));
 else for (const k of kids) node.append(embedLine(path, k, seen, depth, budget));
 return node;
 }

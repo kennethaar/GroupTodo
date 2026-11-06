@@ -4,5 +4,5 @@ function urgencyChip(a) {
   const parts = urgencyParts(a);
   return el("span", {class: "chip urg when onhover", title: "Urgency " + urgencyOf(a) + (parts.length ? ":\n" +
     parts.map(([why, n]) => (n > 0 ? "+" : "") + n + "  " + why).join("\n") : "")},
-    "↑" + urgencyOf(a));
+    svgIcon(ICON_ARROW_UP), " " + urgencyOf(a));
 }

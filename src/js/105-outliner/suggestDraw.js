@@ -11,7 +11,8 @@ function suggestDraw() {
       onmousedown: e => e.preventDefault(),          // keep the caret where it is
       onclick: () => suggestAccept(n),
     },
-      el("span", {class: "k"}, r.mark || (r.isNew && r.kind !== "context" ? "+" : (KIND_MARK[r.kind] || (r.ref || "").split("/")[0] || "·"))),
+      el("span", {class: "k"}, (() => { const m = r.mark || (r.isNew && r.kind !== "context" ? "+" : (KIND_MARK[r.kind] || (r.ref || "").split("/")[0] || "·"));
+        return m.startsWith("<") ? svgIcon(m) : m; })()),
       el("span", {style: "min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"},
         r.isNew && mode === "link" ? "Make " + r.ref : r.title),
       /* With several areas on, the same name can be a person in each, and

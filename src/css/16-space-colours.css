@@ -103,6 +103,7 @@
 .donetoday{display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border-top:1px solid var(--border);color:var(--fg3);font-size:13px}
 .donetoday:hover{color:var(--fg)}
 .donetoday .pbar{width:42px;height:5px}
+.donetoday svg{width:12px;height:12px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .t-pills,.t-info{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}
 .t-info{margin-left:auto;justify-content:flex-end}
 .chip.linger{color:var(--wait);background:rgba(224,176,80,.13);font-variant-numeric:tabular-nums}
@@ -112,5 +113,7 @@
   color:var(--fg3);font-size:13px;
 }
 .iconbtn:hover{background:var(--bg4);color:var(--fg)}
+.iconbtn svg,.toast .x svg,button.x svg,.btn svg{width:13px;height:13px;flex:none;fill:none;stroke:currentColor;
+  stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 @media (hover:none){.t-act{opacity:1}}
 

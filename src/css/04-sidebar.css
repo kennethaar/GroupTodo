@@ -20,6 +20,8 @@
 .nav-item:hover{background:var(--bg3)}
 .nav-item.active{background:var(--accent-soft);color:var(--accent);font-weight:600}
 .nav-item .ic{width:18px;text-align:center;flex:none;opacity:.8}
+.nav-item .ic svg,.fold svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px}
 /* Black and white emoji: the monochrome symbol fonts where the system has them,
    and the colour drained out where it does not, so the pictures read as type. */
 .bw{font-family:"Segoe UI Symbol","Noto Emoji","Apple Symbols",system-ui,sans-serif;

@@ -29,7 +29,7 @@ function projectRow(r) {
       el("div", {class: "t-title"}, el("b", {}, info.title)),
       el("div", {class: "pstats"}, ...stats,
         r._urg != null ? el("span", {class: "chip urg onhover", title: "Urgency of its most urgent open action, " +
-          "or of its own deadline and chain when it has none. The list is sorted by it."}, "↑" + r._urg) : null,
+          "or of its own deadline and chain when it has none. The list is sorted by it."}, svgIcon(ICON_ARROW_UP), " " + r._urg) : null,
         ...projectTags(r), spaceTag(r.space)),
       el("div", {class: "pprog", title: done + " of " + total + " done"},
         el("div", {class: "pbar"}, el("i", {style: "width:" + pct + "%"})),

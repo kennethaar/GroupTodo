@@ -5,5 +5,5 @@ function npmOutcomeSay(text) {
   const name = npmIn(() => pageTitle(NPM.path));
   if (t.toLowerCase() === trim(name).toLowerCase() || t.split(/\s+/).length < 3)
     return ["warn", "That reads like a topic. Say what is true once it is done."];
-  return ["ok", "✓ Reads like a finish line."];
+  return ["ok", "Reads like a finish line."];
 }

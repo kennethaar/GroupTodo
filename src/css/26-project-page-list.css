@@ -7,6 +7,7 @@ button.prow{width:100%;text-align:left}
   width:22px;height:22px;border-radius:6px;display:grid;place-items:center;flex:none;
   font-family:var(--mono);font-size:11px;font-weight:700;
 }
+.prow .st svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .st-1{background:rgba(106,163,255,.16);color:var(--todo)}
 .st-3{background:rgba(224,176,80,.16);color:var(--wait)}
 .st-2{background:var(--bg4);color:var(--fg3)}

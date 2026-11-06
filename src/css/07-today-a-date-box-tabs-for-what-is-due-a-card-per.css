@@ -55,6 +55,8 @@
 .daybox input[type=date]{border:0;background:none;font-size:14px;font-weight:600;color:var(--fg)}
 .dayarrow{padding:4px 8px;color:var(--fg2);font-size:12px;border-radius:6px}
 .dayarrow:hover{background:var(--bg3);color:var(--fg)}
+.dayarrow svg,.jedit svg{width:13px;height:13px;vertical-align:-2px;fill:none;stroke:currentColor;
+  stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .ttabs{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 18px}
 .ttab{display:inline-flex;align-items:center;gap:10px;padding:8px 16px;border:1px solid var(--border2);
   border-radius:var(--radius-sm);background:var(--bg2);color:var(--fg2);font-size:14px}

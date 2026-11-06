@@ -14,7 +14,8 @@ function projectFieldPills(r, {skip = [], lines = false} = {}) {
       title: f.label + (text ? ": " + text : " - not set"),
       onclick: open, onkeydown: e => { if (e.key === "Enter" || e.key === " ") open(e); },
       onmousedown: e => e.stopPropagation()},
-      lines && text ? el("span", {class: "fi", "aria-hidden": "true"}, FIELD_ICON[f.k] || "•") : null,
+      lines && text ? el("span", {class: "fi", "aria-hidden": "true"},
+        (FIELD_ICON[f.k] || "•").startsWith("<") ? svgIcon(FIELD_ICON[f.k]) : (FIELD_ICON[f.k] || "•")) : null,
       text || "+ " + fieldWord(f)));
   }
   return box;

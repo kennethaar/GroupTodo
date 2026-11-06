@@ -18,7 +18,7 @@ function trackerLineWidget(t, save, {date = null} = {}) {
     if (v.stale) box.append(el("span", {class: "chip late", title: "A stretch with no end counts nothing"}, "no end"));
     if (date && date === todayISO()) box.append(el("button", {class: "textbtn tadd", type: "button",
       onclick: e => { e.stopPropagation(); save(trackerText(t, [v.open ? stopClock(t.raw) : startClock(t.raw)])); render(); }},
-      v.open ? "■ Stop" : "▶ Start"));
+      svgIcon(v.open ? ICON_STOP : ICON_PLAY), v.open ? " Stop" : " Start"));
   }
   box.addEventListener("mousedown", e => e.stopPropagation());
   return box;

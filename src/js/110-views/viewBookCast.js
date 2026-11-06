@@ -33,11 +33,12 @@ function viewBookCast(c) {
             onclick: () => { makeCastPage(e.name, e.type); render(); }}, "+ Make a page")),
         el("div", {class: "castfacts"}, facts.join(" · ")),
         depth ? el("div", {class: "castdepth"}, ...depth.map(d => {
-          const cls = "dep " + (d.na ? "na" : d.ok ? "ok" : "miss"), mark = d.na ? "– " : d.ok ? "✓ " : "✗ ";
+          const cls = "dep " + (d.na ? "na" : d.ok ? "ok" : "miss");
+          const mark = d.na ? "– " : [svgIcon(d.ok ? ICON_CHECK : ICON_CLOSE), " "];
           const tip = d.na ? "The protagonist" : d.said || d.tip || d.label;
           return d.prop && e.path && !d.na
-            ? el("button", {class: cls, title: d.said || d.ask, onclick: () => askCastValue(e.path, d.prop, d.ask)}, mark + d.label)
-            : el("span", {class: cls, title: tip}, mark + d.label);
+            ? el("button", {class: cls, title: d.said || d.ask, onclick: () => askCastValue(e.path, d.prop, d.ask)}, mark, d.label)
+            : el("span", {class: cls, title: tip}, mark, d.label);
         })) : null),
       depth ? el("span", {class: "castscore", title: "Signs of depth"},
         el("span", {class: "pbar"}, el("i", {style: "width:" + Math.round(100 * apply.filter(d => d.ok).length / Math.max(1, apply.length)) + "%"})),

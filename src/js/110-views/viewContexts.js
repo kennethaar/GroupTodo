@@ -6,7 +6,7 @@ function viewContexts() {
   // One clear button: picking by hand is the context chip at the top (@ @).
   c.append(vhead("Contexts", "Where are you? See what you can do there.",
     el("button", {class: "btn ghost sense", title: "Guess from this device, its network and your places (g l)",
-      onclick: () => senseNow()}, "📍 Sense where I am"),
+      onclick: () => senseNow()}, svgIcon(ICON_LOCATION), " Sense where I am"),
     newBtn("context", () => newContextPrompt()), viewSeg("contexts")));
   const acts = nextActions();
   const names = allContextNames();
@@ -20,7 +20,7 @@ function viewContexts() {
   // Actions with no context are a leak in the system, so they lead the page.
   const none = acts.filter(a => !a.context).length;
   if (none) c.append(el("div", {class: "ctxleak"},
-    el("span", {}, "⚠ " + none + (none === 1 ? " action has" : " actions have") + " no context yet."),
+    el("span", {}, svgIcon(ICON_WARN), " " + none + (none === 1 ? " action has" : " actions have") + " no context yet."),
     el("button", {class: "textbtn", onclick: () => go("next", {sub: "board"})}, "Give them one ›")));
   /* A context in a folder is a row on the card of the folder's top, so @home
      is read once and kitchen and garden sit under it. A context with nothing
@@ -76,7 +76,7 @@ function viewContexts() {
     const toggle = () => { PREF.set("contexts.idle", open ? "" : "1"); render(); };
     c.append(el("div", {class: "ctxidle"},
       roots.length ? el("button", {class: "textbtn ctxfold", "aria-expanded": String(open), onclick: toggle},
-        (open ? "▾ " : "▸ ") + "Nothing to do (" + idle.length + ")") : null,
+        svgIcon(open ? ICON_CARET : ICON_CHEVRON_RIGHT), " Nothing to do (" + idle.length + ")") : null,
       open ? el("div", {class: "ctxpills"}, ...idle.map(n => el("button", {class: "fchip", title: "Open " + contextPath(n),
         onclick: () => openContextPage(n)}, (contextIcon(n) ? contextIcon(n) + " " : "") + "@" + n))) : null));
   }

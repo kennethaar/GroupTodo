@@ -88,7 +88,7 @@ function viewToday() {
     card.append(el("button", {class: "donetoday", "aria-expanded": String(shown),
       onclick: () => { PREF.set("today.done", shown ? "" : "1"); render(); }},
       el("span", {class: "pbar"}, el("i", {style: "width:" + Math.round(100 * done.length / (open.length + done.length)) + "%"})),
-      (shown ? "▾ " : "▸ ") + done.length + " done today"));
+      svgIcon(shown ? ICON_CARET : ICON_CHEVRON_RIGHT), " " + done.length + " done today"));
     if (shown) card.append(...done.map(a => taskRow(a, DUEROW)));
     return card;
   };
@@ -177,12 +177,12 @@ function viewToday() {
     el("div", {class: "dayhold"},
       el("div", {class: "daynav daybox"},
         el("button", {class: "dayarrow", title: "The day before", "aria-label": "The day before",
-          onclick: () => toDay(shiftISO(day, -1))}, "◀"),
+          onclick: () => toDay(shiftISO(day, -1))}, svgIcon(ICON_CHEVRON_LEFT)),
         el("label", {class: "daypick"}, dayWords, picker),
         el("button", {class: "dayarrow", title: "The day after", "aria-label": "The day after",
-          onclick: () => toDay(shiftISO(day, 1))}, "▶"),
+          onclick: () => toDay(shiftISO(day, 1))}, svgIcon(ICON_CHEVRON_RIGHT)),
         who ? null : el("button", {class: "dayarrow dayimport", title: "Import a calendar into your day pages",
-          onclick: () => openCalendars()}, "\u{1F4C5} Import calendar")),
+          onclick: () => openCalendars()}, svgIcon(ICON_DATE), " Import calendar")),
       day !== today ? el("button", {class: "textbtn backtoday", onclick: () => toDay(null)}, "Back to today") : null),
     people.length ? wideOnly(fselect("Whose day page", who, [["", "Your page"], ...people.map(n => [n, firstNameOf(n) + "'s page"])],
       v => go("today", {todayWho: v || null})), !who) : null,
@@ -264,9 +264,9 @@ function viewToday() {
       el("button", {class: "jtitle", title: "Focus on " + s.title, onclick: () => go("today", {jz: s.id})}, s.label),
       el("div", {style: "flex:1"}),
       s.edit ? el("button", {class: "jedit upkeep", title: "The whole day page as text",
-        "aria-label": "Edit as Markdown", onclick: s.edit}, "✎") : null,
+        "aria-label": "Edit as Markdown", onclick: s.edit}, svgIcon(ICON_PENCIL)) : null,
       s.edit ? el("button", {class: "jedit upkeep", title: "Pin this day page to the right: it stays open while you move about",
-        "aria-label": "Pin to the right", onclick: () => pinToSide(s.space, dayPath(s.space))}, "📌") : null),
+        "aria-label": "Pin to the right", onclick: () => pinToSide(s.space, dayPath(s.space))}, svgIcon(ICON_PIN)) : null),
     s.body(),
     // The lines elsewhere that name this day, as any page shows what links to it.
     who ? null : inSpace(s.space, () => backlinksSection(journalPath(day)))))), cols.map(s => s.space)));

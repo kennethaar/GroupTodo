@@ -9,7 +9,7 @@ function maybeShowWhatsNew() {
     (last ? verCmp(e.version, last) > 0 : e.version === APP_VERSION));
   if (!entries.length) return;
   nudgeToast({stay: true, kind: "whatsnew",
-    title: "🎉 Welcome to v" + APP_VERSION + "!",
+    title: [svgIcon(ICON_CONFETTI), " Welcome to v" + APP_VERSION + "!"],
     hint: thingsCount(entries) + (last ? " since v" + last : "") + ". Take a look:",
     body: newsList(entries),
     foot: [el("button", {class: "btn primary sm", onclick: () => whatsNewDialog(entries, {since: last})}, "See what's new")]});

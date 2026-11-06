@@ -30,7 +30,7 @@ function viewReview() {
     return el("div", {class: "task rstep" + (on ? " done" : "") + (cur ? " now" : ""),
       onclick: () => s.doors.length ? goTour(s.doors[0]) : setReviewTick(s.key, !on)},
       el("button", {class: "rtick", role: "checkbox", "aria-checked": String(on), "aria-label": "Done: " + s.text,
-        onclick: e => { e.stopPropagation(); setReviewTick(s.key, !on); }}, on ? "✓" : String(n)),
+        onclick: e => { e.stopPropagation(); setReviewTick(s.key, !on); }}, on ? svgIcon(ICON_CHECK) : String(n)),
       el("div", {class: "t-body", style: "text-align:left"},
         el("div", {class: "t-title", translate: "no", html: renderInline(s.text)}),
         (cur && s.note) || (count && !on) ? el("div", {class: "t-meta"},
@@ -42,7 +42,7 @@ function viewReview() {
   // How far the steps have come and, where you are, the next one: said on the folded line.
   const progress = steps => {
     const left = steps.filter(s => !ticks.has(s.key)).length;
-    return [el("span", {class: "plain"}, left ? "· " + (steps.length - left) + " of " + steps.length : "· ✓ all done"),
+    return [el("span", {class: "plain"}, left ? "· " + (steps.length - left) + " of " + steps.length : [svgIcon(ICON_CHECK), " all done"]),
       steps.includes(now) ? el("span", {class: "plain rnext", translate: "no"}, "· next: " + now.text) : null];
   };
   const listFold = s => reviewFold("@" + s.title, {id: s.id ? "rsec-" + s.id : null},

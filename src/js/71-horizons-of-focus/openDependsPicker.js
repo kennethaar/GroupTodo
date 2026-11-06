@@ -32,7 +32,7 @@ function openDependsPicker(path) {
       const on = pick.has(p);
       const row = el("div", {style: "display:flex;gap:10px;align-items:center;margin:6px 0;padding:2px 4px;border-radius:6px" +
                                      (i === sel ? ";background:var(--bg3)" : "")},
-        el("button", {class: "spacetoggle" + (on ? " on" : ""), onclick: () => { sel = i; toggle(p); }}, on ? "✓" : ""),
+        el("button", {class: "spacetoggle" + (on ? " on" : ""), onclick: () => { sel = i; toggle(p); }}, on ? svgIcon(ICON_CHECK) : null),
         el("div", {style: "min-width:0;flex:1"},
           el("div", {}, pageTitle(p)),
           el("div", {style: "color:var(--fg3);font-size:12px"},

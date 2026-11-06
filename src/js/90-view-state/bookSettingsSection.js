@@ -64,7 +64,7 @@ function bookSettingsSection() {
     const row = el("div", {class: "prow"},
       el("span", {class: "nm"}, (i + 1) + ". " + (ch.path ? pageTitle(ch.path) : ch.name)),
       el("span", {class: "sub"}, ch.path ? chapterStage(ch.path).name : "no page yet"),
-      arrow(-1, "↑", "up"), arrow(1, "↓", "down"),
+      arrow(-1, svgIcon(ICON_ARROW_UP), "up"), arrow(1, svgIcon(ICON_ARROW_DOWN), "down"),
       el("button", {class: "btn sm ghost", "aria-label": "Take " + ch.name + " out of the book", title: "Out of the book (the page stays)",
         onclick: () => { dropBookChapter(i); const next = chapters[i + 1] || chapters[i - 1]; refocus(next ? next.name : "", "[data-drop]"); }}, "×"));
     row.lastChild.dataset.drop = "";

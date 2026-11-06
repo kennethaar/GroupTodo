@@ -82,7 +82,7 @@ function renderInline(text) {
     let label = given != null ? given : (known || pfx === "m" ? raw.slice(pfx.length + 1) : raw);
     if (pfx === "c") label = "@" + label;
     // An email reads with an envelope, plain black and white, where the m/ was.
-    const env = pfx === "m" ? `<span class="mailico" aria-label="Email">✉︎</span>` : "";
+    const env = pfx === "m" ? `<span class="mailico" aria-label="Email"><svg viewBox="0 0 24 24" aria-hidden="true">${ICON_MAIL}</svg></span>` : "";
     // A person reads with where they work, so two Anna Bergs are never one.
     // Written by an alias it is only the alias, with the whole name on hover.
     let at = "", tip = "";

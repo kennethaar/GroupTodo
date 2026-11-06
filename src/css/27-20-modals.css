@@ -45,6 +45,8 @@
   background:var(--bg4);color:var(--fg3);display:grid;place-items:center;
 }
 .pick:hover .k,.pick.cur .k{background:var(--accent);color:var(--accent-fg)}
+.pick .k svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.pick svg{width:14px;height:14px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 /* In a list you type the name into, the rows have no letters, so the badge
    keeps the gutter and stops being a thing: an empty box in every row reads as
    a checkbox nobody ticked. */
@@ -142,6 +144,7 @@
   display:grid;place-items:center;font-size:11px;color:transparent;margin-top:1px;
 }
 .coach-step.done .coach-dot{background:var(--ok);border-color:var(--ok);color:#06210f}
+.coach-dot svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 /* The one reason, for the one step you are on. Set apart so it reads as an aside
    and not as another instruction. */
 .coach-why{
@@ -192,6 +195,7 @@
   font-size:13px;box-shadow:var(--shadow);pointer-events:auto;display:flex;gap:10px;align-items:center;width:100%;
 }
 .toast.warn{border-color:rgba(224,176,80,.5)} .hint.warn{color:var(--warn)}.toast.err{border-color:rgba(255,107,107,.5)}
+.toast strong svg{width:13px;height:13px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .toast .x{margin-left:auto;color:var(--fg3)}
 /* A reminder you asked for stays until it is answered, so it is marked as one. */
 .toast.remind{border-color:var(--accent)}

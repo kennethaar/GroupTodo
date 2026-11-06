@@ -24,7 +24,7 @@ function personPanel(name, path) {
             const at = path || personPath(name);
             if (!getPage(at)) putPage(at, pageTemplateFor("p", name));
             setHousehold(at, !home);
-          }}, home ? "✓ Household" : "Household"),
+          }}, home ? [svgIcon(ICON_CHECK), " Household"] : "Household"),
         isMember(name) || home ? null : el("button", {class: "btn sm" + (open.length + agenda.length ? " primary" : " ghost"),
           onclick: () => openAskForUpdate(name)}, "Ask " + firstNameOf(name) + " for an update"),
         informAbout({name}).length || stakeIn({name}).length ? el("button", {class: "btn sm ghost",

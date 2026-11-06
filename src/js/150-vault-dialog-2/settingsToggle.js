@@ -4,9 +4,9 @@ function settingsToggle(on, label, flip) {
     "aria-label": label, class: "spacetoggle" + (on ? " on" : ""), onclick: () => {
       on = !on;
       box.classList.toggle("on", on);
-      box.textContent = on ? "✓" : "";
+      box.replaceChildren(...(on ? [svgIcon(ICON_CHECK)] : []));
       box.setAttribute("aria-checked", on ? "true" : "false");
       flip(on);
-    }}, on ? "✓" : "");
+    }}, on ? svgIcon(ICON_CHECK) : null);
   return box;
 }

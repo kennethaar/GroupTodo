@@ -5,7 +5,7 @@ function askCardShow(link, name) {
   const box = el("div", {class: "askcard", role: "dialog", "aria-label": name},
     el("b", {}, name),
     el("button", {class: "btn sm", onclick: () => { askCardHide(); openAskForUpdate(name, line && line.block); }},
-      "✉ Ask for an update"));
+      svgIcon(ICON_MAIL), " Ask for an update"));
   document.body.append(box);
   // Under the name, or over it when there is no room under.
   const r = link.getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight;

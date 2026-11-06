@@ -2,11 +2,13 @@ function viewDayReview() {
   clSettle();
   const deck = clarifyDeck();
   const head = vhead("Weekly review", deck.length ? deck.length + (deck.length === 1 ? " line" : " lines") + " to clarify" : "Clarify", viewSeg("review"));
-  const undo = CL.undo ? el("button", {class: "textbtn", title: "Backspace", onclick: clUndo}, "‹ Undo the last answer") : null;
+  const undo = CL.undo ? el("button", {class: "textbtn", title: "Backspace", onclick: clUndo}, svgIcon(ICON_CHEVRON_LEFT), " Undo the last answer") : null;
   if (!deck.length) {
     CL.shown = null;
     const c = el("div", {class: "wrap"});
-    c.append(head, emptyCard(el("div", {style: "font-size:34px"}, "✓"),
+    const bigCheck = svgIcon(ICON_CHECK);
+    bigCheck.setAttribute("style", "width:34px;height:34px;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round");
+    c.append(head, emptyCard(el("div", {}, bigCheck),
       el("b", {}, "Every loose line of the last two weeks is clarified."), el("br"), el("br"),
       el("button", {class: "btn primary", onclick: () => go("review", {sub: "actions"})}, "On to the next actions ›"), " ", undo));
     return c;

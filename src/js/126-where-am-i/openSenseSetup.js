@@ -26,7 +26,7 @@ function openSenseSetup() {
       el("span", {}, "@" + p.ctx),
       el("span", {class: "sub"}, (p.r || 150) + " m"),
       el("button", {class: "iconbtn", title: "Forget this place", "aria-label": "Forget @" + p.ctx,
-        onclick: () => { places.splice(i, 1); drawPlaces(); }}, "✕"))));
+        onclick: () => { places.splice(i, 1); drawPlaces(); }}, svgIcon(ICON_CLOSE)))));
   };
   drawPlaces();
   const placeCtx = ctxBox(here.value);
@@ -48,9 +48,9 @@ function openSenseSetup() {
       class: "spacetoggle" + (on ? " on" : ""), onclick: () => {
         b.classList.toggle("on");
         const now = b.classList.contains("on");
-        b.textContent = now ? "✓" : "";
+        b.replaceChildren(...(now ? [svgIcon(ICON_CHECK)] : []));
         b.setAttribute("aria-checked", now ? "true" : "false");
-      }}, on ? "✓" : "");
+      }}, on ? svgIcon(ICON_CHECK) : null);
     return {b, row: el("div", {style: "display:flex;gap:10px;align-items:center;margin-top:6px"}, b, el("span", {}, label))};
   };
   const work = senseWork();

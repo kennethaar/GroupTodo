@@ -54,7 +54,7 @@ function viewBook() {
         onclick: () => pickChapterStage(r.path)}, r.stage.name) : el("span", {class: "sub"}, "no page yet"),
       el("span", {class: "wc"}, fmtWords(r.words)),
       el("button", {class: "chcut", title: "Cut it to your darlings: out of the book, kept to put back", "aria-label": "Cut " + r.name + " to the darlings",
-        onclick: () => cutChapterToDarlings(i)}, "✂")), i, r.name));
+        onclick: () => cutChapterToDarlings(i)}, svgIcon(ICON_SCISSORS))), i, r.name));
   });
   c.append(list);
   return c;

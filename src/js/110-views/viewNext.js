@@ -5,7 +5,7 @@ function viewNext() {
   const twins = nextTwins().length;
   c.append(vhead("Next", null,
     twins ? el("button", {class: "textbtn twinbtn", title: "Next actions with the same or nearly the same words",
-      onclick: () => openNextTwins()}, "⚠ " + twins + " look alike") : null,
+      onclick: () => openNextTwins()}, svgIcon(ICON_WARN), " " + twins + " look alike") : null,
     csvBtn(() => sub === "calendar" ? all : acts, "next"), viewSeg("next")));
   const all = nextActions();
   if (sub === "calendar") { c.append(viewCalendar()); return c; }
@@ -147,7 +147,7 @@ function viewNext() {
     types.sel, est.sel, sortSel, sortDot), ctxChips,
     // Look-alikes are upkeep, not doing: on a phone they wait in here.
     twins ? el("div", {class: "ntwins"}, el("button", {class: "textbtn twinbtn", onclick: () => openNextTwins()},
-      "⚠ " + twins + " look alike")) : null);
+      svgIcon(ICON_WARN), " " + twins + " look alike")) : null);
   const fbtn = el("button", {class: "textbtn nfiltbtn" + (filtered ? " on" : "") + (twins ? " twins" : ""), "aria-expanded": String(NEXT_FILTERS_OPEN),
     title: filtered ? filtered + " filters on" : "Filter, sort and pick contexts",
     onclick: () => { NEXT_FILTERS_OPEN = !NEXT_FILTERS_OPEN; render(); }},

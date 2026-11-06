@@ -5,7 +5,7 @@ function showUpdateBadge() {
   if (!b) return;
   b.hidden = !UPDATE;
   if (UPDATE) {
-    b.textContent = "✨ New v" + UPDATE.version + " is ready";
+    b.replaceChildren(svgIcon(ICON_SPARKLE), " New v" + UPDATE.version + " is ready");
     b.title = "See what's new in v" + UPDATE.version + ", and get it";
   }
 }

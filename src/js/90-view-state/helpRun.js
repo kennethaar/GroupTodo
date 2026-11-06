@@ -19,7 +19,7 @@ function helpRun() {
         pick.missing.map(n => RUN_NEEDS.find(x => x[0] === n)[1]).join("; ") + ".") : null,
       el("p", {}, el("b", {}, "Start: "), w.start));
   }
-  const mark = yes => el("td", {class: yes ? "yes" : "no"}, el("span", {"aria-hidden": "true"}, yes ? "✓" : "–"),
+  const mark = yes => el("td", {class: yes ? "yes" : "no"}, el("span", {"aria-hidden": "true"}, yes ? svgIcon(ICON_CHECK) : "–"),
     el("span", {class: "runsr"}, yes ? "Yes" : "No"));
   const table = el("div", {class: "runscroll"}, el("table", {class: "runtable"},
     el("thead", {}, el("tr", {}, el("th", {scope: "col"}, "Way"), ...RUN_NEEDS.map(n => el("th", {scope: "col", title: n[1]}, n[2])),

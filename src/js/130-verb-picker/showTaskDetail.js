@@ -154,7 +154,7 @@ function showTaskDetail(path, block, space) {
           "\u2691 to come back to it - that carries your name, so it follows you between " +
           "devices. Read is per device and stays out of the files."),
         el("div", {style: "margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"},
-          el("button", {class: "btn sm ghost", onclick: () => { closeModal(); informFromLine(path, block, space); }}, "✉ Send an update"),
+          el("button", {class: "btn sm ghost", onclick: () => { closeModal(); informFromLine(path, block, space); }}, svgIcon(ICON_MAIL), " Send an update"),
           el("span", {style: "color:var(--fg3);font-size:12px"},
             informedAt(block) ? "Last told " + trim(blockProp(block, INFORMED_PROP)).replace(/\s+\S+$/, "") + " on " + informedAt(block) + "."
                               : "Tell whoever it names where it stands. Alt+U on the line."))),
@@ -185,8 +185,10 @@ function showTaskDetail(path, block, space) {
                          projectPath: statusDirOf(path) ? path : null, space,
                          mine: !who || samePerson(who, whoAmI())};
             const parts = urgencyParts(row);
+            const urgIcon = svgIcon(ICON_ARROW_UP);
+            urgIcon.setAttribute("style", "width:12px;height:12px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round");
             return el("div", {style: "font-size:12.5px;color:var(--fg2);line-height:1.6"},
-              el("div", {style: "font-weight:600;color:var(--fg)"}, "↑" + urgencyOf(row)),
+              el("div", {style: "font-weight:600;color:var(--fg)"}, urgIcon, " " + urgencyOf(row)),
               ...parts.map(([why, n]) => el("div", {}, (n > 0 ? "+" : "") + n + "  " + why)));
           })())),
       el("div", {class: "field"},

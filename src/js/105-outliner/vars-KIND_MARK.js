@@ -1,4 +1,4 @@
-const KIND_MARK = {person: "p", org: "o", project: "1", area: "a", context: "@", page: "·", date: "📅"};
+const KIND_MARK = {person: "p", org: "o", project: "1", area: "a", context: "@", page: "·", date: ICON_DATE};
 const LINK_KIND_WORD = {context: "context", person: "person", org: "org", zettel: "note", email: "email", review: "review",
   area: "responsibility", goal: "goal", checklist: "routine", project: "project", journal: "day",
   horizon: "horizon", page: "page"};

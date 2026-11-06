@@ -24,6 +24,7 @@
   font-size:13px;color:var(--fg3)}
 .fchip:hover{color:var(--fg)}
 .fchip[aria-pressed="true"]{background:var(--fg);border-color:var(--fg);color:var(--bg2)}
+.fchip svg{width:12px;height:12px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .fchip small{opacity:.7;margin-left:3px;font-variant-numeric:tabular-nums}
 /* The projects list: on a wide screen one row of chips and dropdowns; on a
    phone search, filter and sort in one row, the statuses in one row that
@@ -32,6 +33,7 @@
 .vsel{display:none;position:relative;align-self:center;font-size:14px;font-weight:600;color:var(--accent);
   padding:6px 4px;white-space:nowrap}
 .vsel select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.vsel svg{width:11px;height:11px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .searchbox{position:relative;display:flex;align-items:center;min-width:180px;flex:1 1 180px;max-width:320px}
 .searchbox svg{position:absolute;left:9px;width:15px;height:15px;fill:none;stroke:var(--fg3);stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
@@ -67,6 +69,7 @@
   .twingo{flex:1;display:flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;text-align:left;
     color:var(--fg);font-size:14px;font-weight:550}
   .twingo>span:first-child{flex:1}
+  .twingo svg{width:13px;height:13px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
   .twingo .chev{font-size:20px;line-height:1;color:var(--fg3)}
   .twinbanner .iconbtn{min-width:40px;min-height:40px}
   .projbar{flex-wrap:wrap;gap:8px}
@@ -88,6 +91,7 @@
 .iconsel:hover{color:var(--fg)}
 .iconsel select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
 .textbtn{color:var(--accent);font-size:13px;padding:2px 4px}
+.textbtn svg{width:12px;height:12px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .textbtn:hover{text-decoration:underline}
 .hint{color:var(--fg3);font-size:12px;margin-top:14px;text-align:center}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:var(--radius-sm);
@@ -107,6 +111,7 @@
 .news{display:flex;gap:10px;align-items:center;background:var(--accent-soft);border-radius:10px;
   padding:10px 14px;margin-bottom:16px;font-size:14px}
 .news b{color:var(--accent)}
+.news > svg,.news > span svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;color:var(--accent)}
 .newsrow{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;flex:1;min-width:0}
 .newsrow .btn{margin-left:auto}
 /* The feedback review: the comment, then what it is about, then the outcome */
@@ -146,6 +151,7 @@
 .group .plain{font-weight:400}
 .group .textbtn{text-transform:none;letter-spacing:0;font-weight:600;margin-left:auto}
 .sectog{font:inherit;color:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer}
+.sectog svg{width:11px;height:11px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .secbul{padding:0 2px;font-size:15px;line-height:1;color:var(--fg3);cursor:zoom-in}
 .secbul:hover{color:var(--accent)}
 .crumbz{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:14px;color:var(--fg3);

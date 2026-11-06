@@ -12,7 +12,8 @@ function navPins() {
       title: title + (multiSpace() && space ? " · " + space : "") + " · drag to reorder",
       onclick: () => openPageIn(space, pin.path),
     },
-      el("span", {class: "ic bw"}, PIN_ICON[inSpace(space, () => pageKind(pin.path))] || ICON.pages),
+      el("span", {class: "ic bw"}, (() => { const ic = PIN_ICON[inSpace(space, () => pageKind(pin.path))] || ICON.pages;
+        return ic.startsWith("<") ? svgIcon(ic) : ic; })()),
       el("span", {class: "lbl"}, title),
       el("span", {class: "unpin", role: "button", title: "Unpin", "aria-label": "Unpin " + title,
         onclick: e => {

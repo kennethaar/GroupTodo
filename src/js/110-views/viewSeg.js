@@ -13,6 +13,6 @@ function viewSeg(view) {
     el("div", {class: "vseg", role: "group", "aria-label": "View as"},
       ...subs.map(([k, label]) => el("button", {"aria-pressed": String(cur === k),
         onclick: () => pick(k)}, label))),
-    el("span", {class: "vsel"}, el("span", {"aria-hidden": "true"}, (now ? now[1] : "") + " ▾"),
+    el("span", {class: "vsel"}, el("span", {"aria-hidden": "true"}, (now ? now[1] : "") + " ", svgIcon(ICON_CARET)),
       fselect("View as", cur, subs, pick)));
 }

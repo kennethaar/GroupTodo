@@ -5,7 +5,8 @@ function npmOutcomeQ() {
   const tell = () => {
     const s = npmOutcomeSay(input.value);
     say.className = "npmsay" + (s ? " " + s[0] : "");
-    say.textContent = s ? s[1] : "Not a topic like “Newsletter”, but what is true when it is done.";
+    say.replaceChildren(...(s ? (s[0] === "ok" ? [svgIcon(ICON_CHECK), " " + s[1]] : [s[1]])
+      : ["Not a topic like “Newsletter”, but what is true when it is done."]));
   };
   input.addEventListener("input", () => { NPM.outcome = input.value; npmSave(); tell(); });
   input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) { e.preventDefault(); npmNext(); } });

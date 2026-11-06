@@ -9,7 +9,7 @@ function viewProjects() {
   const head = vhead("Projects", org || "What you have committed to finishing",
     org ? el("button", {class: "textbtn", onclick: () => go("projects", {org: null})}, "× clear") : null,
     twins ? el("button", {class: "textbtn twinbtn", title: "Projects with the same or nearly the same name",
-      onclick: () => openTwins()}, "⚠ " + twins + " look alike") : null,
+      onclick: () => openTwins()}, svgIcon(ICON_WARN), " " + twins + " look alike") : null,
     csvBtn(allTasks, "all-tasks", "Export all tasks"),
     newBtn("project", () => newProjectPrompt()), viewSeg("projects"));
   head.classList.add("projhead");
@@ -21,9 +21,9 @@ function viewProjects() {
   if (twins && PREF.get("projects.twinsHidden", 0) !== twins) {
     const banner = el("div", {class: "twinbanner"},
       el("button", {class: "twingo", title: "Projects with the same or nearly the same name", onclick: () => openTwins()},
-        el("span", {}, "⚠ " + twins + " projects look alike"), el("span", {class: "chev", "aria-hidden": "true"}, "›")),
+        el("span", {}, svgIcon(ICON_WARN), " " + twins + " projects look alike"), el("span", {class: "chev", "aria-hidden": "true"}, "›")),
       el("button", {class: "iconbtn", "aria-label": "Put away", title: "Put away until the number changes",
-        onclick: () => { PREF.set("projects.twinsHidden", twins); banner.remove(); }}, "✕"));
+        onclick: () => { PREF.set("projects.twinsHidden", twins); banner.remove(); }}, svgIcon(ICON_CLOSE)));
     c.append(banner);
   }
   c.append(el("button", {class: "fab", "aria-label": "New project", title: "New project",

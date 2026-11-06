@@ -19,6 +19,7 @@
 .etxt{min-width:0;overflow-wrap:anywhere}
 .ebodyline{margin-left:19px;color:var(--fg2);font-size:13px}
 .eempty{color:var(--fg3);font-size:12.5px;font-style:italic;padding:2px 4px}
+.eempty svg{width:10px;height:10px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .qpage{display:block;background:none;border:0;padding:6px 4px 1px;font:inherit;font-size:12px;font-weight:600;color:var(--accent);cursor:pointer;text-align:left}
 .qpage:first-child{padding-top:0}
 .qtrail{color:var(--fg3);font-size:12px;flex:none;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

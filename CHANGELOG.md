@@ -5,6 +5,19 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.102.2 - 2026-11-06
+
+- The line menu and toolbar: every other emoji or Unicode symbol left in the
+  app as an icon -- the sidebar's nav icons, pins, the pencil and scissors on
+  book and journal rows, close buttons, checkmarks, warnings, envelopes,
+  fold carets, move/urgency arrows, week and day arrows, and the handful of
+  one-off icons on trackers, chores, birthdays and the feedback links -- is
+  now the same kind of monochrome SVG the foot toolbar and line menu already
+  use (#301). Two kinds of spot were left alone: the update-reply email,
+  where an inline picture is not reliable across mail clients, and a small
+  set of CSS checkmarks on dense table and grid cells, where the glyph is a
+  pseudo-element rather than a real node.
+
 ## 1.102.1 - 2026-11-05
 
 - The line menu and toolbar: the line's own menu (right-click or long-press)

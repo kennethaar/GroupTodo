@@ -38,7 +38,9 @@ function viewSomeday(c, passList) {
         "; the rest are too close to call today.", el("br"), el("br"),
       el("button", {class: "btn", onclick: () => { SD.skipped.clear(); render(); }}, "Ask the skipped pairs again")));
   } else {
-    duel.append(emptyCard(el("div", {style: "font-size:34px"}, "🏆"),
+    const trophy = svgIcon(ICON_TROPHY);
+    trophy.setAttribute("style", "fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round");
+    duel.append(emptyCard(el("div", {style: "width:34px;height:34px;margin:0 auto"}, trophy),
       el("b", {}, S.target === 1 ? K.one : "The top " + S.target + " are settled."), el("br"), K.done,
       ...sdOnward()));
   }

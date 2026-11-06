@@ -16,7 +16,7 @@ function createProjectFlow(name, then) {
     body: el("div", {},
       pickRow("1", "Plan it now", "6 short steps: why, outcome, ideas, next actions", plan),
       pickRow("2", "Just the outcome", "what done looks like, then a next action", outcome),
-      pickRow("3", "Not now", "the page is ready; ✦ Plan is on it", later)),
+      pickRow("3", "Not now", "the page is ready; Plan is on it", later)),
     foot: el("label", {class: "npmnever"}, el("input", {type: "checkbox",
       onchange: e => PREF.set("npm.ask:" + (space || ""), e.target.checked ? "0" : "1")}),
       " Don't ask again" + (Spaces.list.length > 1 ? " in " + space : "") + ": go straight to the outcome"),

@@ -8,22 +8,22 @@ function lineMeta(b, path = null, readonly = false) {
     out.push(path && !readonly ? duePill({path, block: b, space: V.space, due}, cls, words)
       : el("span", {class: "chip " + cls}, words));
   }
-  if (repeatOf(b)) out.push(path && !readonly ? repeatPill(path, b) : el("span", {class: "chip"}, "\u21BB " + repeatOf(b)));
+  if (repeatOf(b)) out.push(path && !readonly ? repeatPill(path, b) : el("span", {class: "chip"}, svgIcon(ICON_REPEAT), " " + repeatOf(b)));
   const who = b.state ? assigneeOf(b) : "";
-  if (who && !samePerson(who, whoAmI())) out.push(el("span", {class: "chip who"}, "\u2192 " + who));
+  if (who && !samePerson(who, whoAmI())) out.push(el("span", {class: "chip who"}, svgIcon(ICON_ARROW_RIGHT), " " + who));
   const said = messagesOf(b).length;
-  if (said) out.push(el("span", {class: "chip msg" + (unreadCount(b) ? " unread" : "")}, "\u25CB " + said));
+  if (said) out.push(el("span", {class: "chip msg" + (unreadCount(b) ? " unread" : "")}, svgIcon(ICON_CHAT), " " + said));
   // A meeting says when and with whom as chips of its own.
   const meet = isMeeting(b);
   if (meet) {
     // On its own day the time leads the line (meetLead), so it is not said again here.
     const when = [blockProp(b, "date") ? humanDate(dateIn(blockProp(b, "date"))) : "",
       meetLeads(b) ? "" : blockProp(b, "time") || ""].filter(Boolean).join(" ");
-    if (when) out.push(el("span", {class: "chip"}, "🕒 " + when));
+    if (when) out.push(el("span", {class: "chip"}, svgIcon(ICON_CLOCK), " " + when));
     const clash = meetLeads(b) && path ? meetClashes(b, getPage(path)) : [];
     if (clash.length) out.push(el("span", {class: "chip clash", title: "At the same time as " + clash.join(", ")},
-      "⚠ Overlaps " + clash[0] + (clash.length > 1 ? " +" + (clash.length - 1) : "")));
-    if (blockProp(b, "attendees")) out.push(el("span", {class: "chip who"}, "👥 " + linkWords(blockProp(b, "attendees"))));
+      svgIcon(ICON_WARN), " Overlaps " + clash[0] + (clash.length > 1 ? " +" + (clash.length - 1) : "")));
+    if (blockProp(b, "attendees")) out.push(el("span", {class: "chip who"}, svgIcon(ICON_MEETING), " " + linkWords(blockProp(b, "attendees"))));
   }
   // A visit says its clock and its hours as one chip, which opens it again.
   const visit = isTimeLog(b);

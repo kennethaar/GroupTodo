@@ -43,7 +43,7 @@ function boardProjectCard(r, stuck) {
         title: "Looks like " + twin.rows.filter(x => !(x.space === space && x.path === path)).map(x => x.title).join(", "),
         onclick: e => { e.stopPropagation(); openTwins(twin); }}, "looks alike") : null,
       r._urg != null ? el("span", {class: "chip urg", title: "Urgency of its most urgent open action, " +
-        "or of its own deadline and chain when it has none"}, "↑" + r._urg) : null),
+        "or of its own deadline and chain when it has none"}, svgIcon(ICON_ARROW_UP), " " + r._urg) : null),
     projectFieldPills(r, {skip: ["status"]}));
   // Two spaces can hold the same path, so what makes a project card itself is
   // the space it is in as well as the file it is.

@@ -9,7 +9,7 @@ function areaStakeholdersSection(path) {
       s.org ? el("span", {}, "\u{1F3E2}") : avatarNode(s.name, 22),
       el("button", {class: "textbtn", style: "font-weight:600", onclick: () => s.org ? followLink("o/" + s.name) : openPersonPage(s.name)}, s.name),
       el("span", {style: "flex:1;color:var(--fg3);font-size:12.5px"}, toldWords(days) + " · " + everyWords(updateEvery(s))),
-      el("button", {class: "btn sm ghost", onclick: () => openSendUpdate(s)}, "✉ Send an update"),
+      el("button", {class: "btn sm ghost", onclick: () => openSendUpdate(s)}, svgIcon(ICON_MAIL), " Send an update"),
       el("button", {class: "textbtn", title: "No longer a stakeholder here", onclick: () => {
         const was = structuredClone(getPage(path).props);
         dropStakeholder(path, s);

@@ -35,6 +35,7 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
   overflow-wrap:anywhere;display:inline-flex;gap:6px;align-items:baseline;border-radius:4px}
 .pfields.lines .pfield:hover,.pfields.lines .pfield:focus-visible{color:var(--accent)}
 .pfields.lines .fi{flex:none;width:16px;text-align:center;font-size:12px;color:var(--fg3)}
+.pfields.lines .fi svg{width:12px;height:12px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 /* What is still to be set shows once you reach for the card, not before. */
 .pfields.lines .pfield.miss{display:none;border:1px dashed var(--border);padding:0 8px;font-size:11px}
 .pcard:hover .pfields.lines,.pcard:focus-within .pfields.lines{flex-flow:row wrap}
@@ -60,6 +61,7 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
   background:var(--bg3);color:var(--fg3)}
 .ricon.done{background:var(--ok);color:#fff}
 .ricon.said{background:var(--accent-soft);color:var(--accent)}
+.ricon svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 /* Cards: people, contexts */
 .cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
@@ -70,6 +72,8 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 .rtick{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--border);flex:none;
   font-size:12px;color:var(--fg3);display:grid;place-items:center;font-variant-numeric:tabular-nums}
 .rtick:hover{border-color:var(--accent);color:var(--accent)}
+.rtick svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.plain svg{width:11px;height:11px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .rstep.done .rtick{background:var(--done);border-color:var(--done);color:#fff}
 .rstep.done .t-title{color:var(--fg3);text-decoration:line-through}
 .rstep.now{background:color-mix(in srgb,var(--accent) 7%,transparent)}
@@ -114,6 +118,7 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 .ctxleak{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:8px 12px;border-radius:10px;
   color:var(--fg);background:color-mix(in srgb,var(--warn) 12%,var(--bg2));border:1px solid color-mix(in srgb,var(--warn) 45%,var(--border))}
 .ctxleak > span{flex:1}
+.ctxleak svg{width:13px;height:13px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .ctxidle{margin-top:14px}
 .ctxfold{color:var(--fg3);padding-left:0}
 .ctxfold:hover{color:var(--fg)}
@@ -122,6 +127,7 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 .ctxsort>.hint{text-align:left;margin:0 0 8px}
 .ctxtree{display:flex;flex-direction:column;gap:2px;max-width:640px;margin-bottom:16px}
 .ctxtop{padding:8px 12px;margin-bottom:6px;border:1px dashed var(--border2);border-radius:8px;color:var(--fg3);font-size:12.5px}
+.ctxtop svg{width:11px;height:11px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .ctxsrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:8px;
   margin-left:calc(var(--d,0) * 22px);padding:4px 8px;border:1px solid transparent;border-radius:8px;background:var(--bg2);cursor:grab}
 .ctxsrow:hover{border-color:var(--border)}
@@ -310,6 +316,7 @@ body.solview #content{padding-bottom:14px}
 .calsub{color:var(--fg2);font-weight:400}
 .calsub.bad{color:var(--late)}
 .calspin{display:inline-block}
+.calspin svg{width:14px;height:14px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .calgroup.busy .calspin{animation:calspin 1s linear infinite}
 @keyframes calspin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.calgroup.busy .calspin{animation:none;opacity:.5}}
@@ -325,6 +332,7 @@ body.solview #content{padding-bottom:14px}
 .slot.solopt:hover{border-color:var(--accent)}
 .slot.solopt .lbl{position:absolute;top:8px;left:10px}
 .solopt-t{font-size:17px;font-weight:650;line-height:1.25;color:var(--fg);overflow-wrap:anywhere}
+.solopt-t svg{width:15px;height:15px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .solopt-s{font-size:12.5px;color:var(--fg3)}
 .slot.solopt.on{border-color:var(--ok);background:var(--ok-soft)}
 .slot.solopt.on .solopt-t::before{content:"\2713\a0";color:var(--ok)}
@@ -344,6 +352,7 @@ body.solview #content{padding-bottom:14px}
   border:0;border-radius:6px;background:none;color:var(--fg3);font:inherit;font-size:12.5px;cursor:pointer}
 .solstep:hover{background:var(--bg2);color:var(--fg)}
 .solstep .n{grid-row:span 2;font-family:var(--mono);font-size:11px;line-height:18px;text-align:center}
+.solstep .n svg{width:11px;height:11px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .solstep .v{grid-column:2;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .solstep.done{color:var(--fg2)}
 .solstep.done .n{color:var(--ok)}
@@ -358,6 +367,7 @@ body.solview #content{padding-bottom:14px}
   background:none;color:var(--fg3);font:inherit;font-size:12px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .solpass:hover{color:var(--fg);background:var(--bg2)}
 .solpass .n{font-family:var(--mono);font-size:11px}
+.solpass .n svg{width:11px;height:11px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .solpass.done{color:var(--fg2)}
 .solpass.done .n{color:var(--ok)}
 .solpass.now{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
@@ -398,6 +408,7 @@ body.solview #content{padding-bottom:14px}
 .slot .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);font-weight:600;
   display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .slot .lbl .sp{text-transform:none;letter-spacing:0;font-size:11px}
+.slot .lbl svg{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 /* The numpad key for each box, written on it */
 .solkey{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:5px;
   font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;
@@ -450,6 +461,7 @@ body.solview #content{padding-bottom:14px}
 .npmsay{font-size:12.5px;color:var(--fg3)}
 .npmsay.ok{color:var(--ok)}
 .npmsay.warn{color:var(--warn)}
+.npmsay svg{width:11px;height:11px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .npmnav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px}
 .npmnav .npmgap{flex:1}
 .npmchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
@@ -479,6 +491,7 @@ body.solview #content{padding-bottom:14px}
 .npmorder .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .npmsubq{list-style:none;margin:2px 0 4px 28px;padding:0;display:flex;flex-direction:column;gap:1px}
 .npmsubq button,.npmsubq .wait{border:0;background:none;padding:2px 4px;font:inherit;font-size:12px;color:var(--fg3);cursor:pointer;text-align:left}
+.npmsubq button svg{width:10px;height:10px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .npmsubq button:hover{color:var(--fg)}
 .npmsubq button.done{color:var(--fg2)}
 .npmsubq button.now{color:var(--accent);font-weight:600}
@@ -502,6 +515,7 @@ body.solview #content{padding-bottom:14px}
 .npmrow .k,.npmcomps .frac{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);font-weight:600}
 .npmrow .v{color:var(--fg2)}
 .npmrow:first-child .v{color:var(--fg);font-weight:600}
+.npmrow .v svg{width:11px;height:11px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .npmcomps{display:flex;flex-direction:column;gap:4px;margin-top:4px;padding-top:8px;border-top:1px solid var(--border)}
 .npmcomp{display:flex;gap:10px;align-items:center;font-size:13px;flex-wrap:wrap}
 .npmcomp .nm{font-weight:600;min-width:140px}
@@ -549,6 +563,7 @@ body.solview #content{padding-bottom:14px}
 .parentline{display:flex;gap:5px;align-items:baseline;flex-wrap:wrap;font-size:12px;line-height:1.3;color:var(--fg3);
   margin:0 0 2px;min-width:0}
 .parentline .up{font-size:11px}
+.parentline .up svg{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .parentline .pl{color:var(--fg2);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .parentline .pl:hover,.parentline .pl:focus-visible{color:var(--accent);text-decoration:underline;outline:none}
 .parentline .sep{opacity:.6}

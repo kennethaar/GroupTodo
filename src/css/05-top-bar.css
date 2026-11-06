@@ -5,6 +5,7 @@ header.top .burger{display:none}
 body.sidebar-hidden header.top .burger{display:grid}
 .tbtn{border:1px solid var(--border);background:var(--bg2);border-radius:8px;width:36px;height:36px;
   flex:none;display:grid;place-items:center;color:var(--fg2)}
+.tbtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .tbtn:hover{background:var(--bg3);color:var(--fg)}
 .tbtn:disabled{opacity:.35;cursor:default}
 .tbtn:disabled:hover{background:var(--bg2)}
@@ -22,6 +23,7 @@ kbd{font:11px var(--mono);border:1px solid var(--border);border-radius:4px;paddi
   border-radius:8px;height:36px;padding:0 10px 0 14px;font-size:13px;flex:none;color:var(--fg)}
 .spacesbtn:hover{background:var(--bg3)}
 .spacesbtn .sqs{display:flex}
+.spacesbtn svg{width:11px;height:11px;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .sq{width:20px;height:20px;border-radius:5px;color:#fff;font-size:10px;display:grid;place-items:center;
   font-weight:700;margin-left:-5px;border:2px solid var(--bg2);flex:none}
 .spop{position:absolute;right:22px;top:58px;background:var(--bg2);border:1px solid var(--border);

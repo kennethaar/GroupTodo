@@ -44,7 +44,7 @@ function viewContextSort(acts) {
     const label = n => has.has(parentOf(n)) ? n.slice(parentOf(n).length + 1) : n;
     if (spaces.length > 1) box.append(el("div", {class: "group"}, space));
     const tree = el("div", {class: "ctxtree"},
-      target(el("div", {class: "ctxtop"}, "↑ Top: drop here to take a context out"), space, "", n => n.includes("/")));
+      target(el("div", {class: "ctxtop"}, svgIcon(ICON_ARROW_UP), " Top: drop here to take a context out"), space, "", n => n.includes("/")));
     for (const n of names) {
       const here = acts.filter(a => (a.space || V.space) === space && a.context === n).length;
       const icon = contextIcon(n);

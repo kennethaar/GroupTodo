@@ -27,8 +27,8 @@ function openInformNote(to, items, opts) {
   const ackBox = el("button", {class: "spacetoggle" + (opts.ack ? " on" : ""), style: "flex:0 0 auto", onclick: () => {
     opts.ack = !opts.ack;
     ackBox.className = "spacetoggle" + (opts.ack ? " on" : "");
-    ackBox.textContent = opts.ack ? "✓" : "";
-  }}, opts.ack ? "✓" : "");
+    ackBox.replaceChildren(...(opts.ack ? [svgIcon(ICON_CHECK)] : []));
+  }}, opts.ack ? svgIcon(ICON_CHECK) : null);
   const mailNow = () => {
     const t = informWords();
     return updateMail({mode: "inform", them: name, subject: box.value.split("\n")[0], replyTo: trim(mine.value),

@@ -13,7 +13,7 @@ function npmPanel(path) {
   const outcome = outcomeOf(path);
   const rows = [];
   rows.push(el("div", {class: "npmrow"}, el("span", {class: "k"}, "Outcome"),
-    outcome ? el("span", {class: "v"}, "✓ " + outcome) : el("span", {class: "chip miss"}, "No outcome yet")));
+    outcome ? el("span", {class: "v"}, svgIcon(ICON_CHECK), " " + outcome) : el("span", {class: "chip miss"}, "No outcome yet")));
   if (purpose) rows.push(el("div", {class: "npmrow"}, el("span", {class: "k"}, "Purpose"), el("span", {class: "v"}, purpose)));
   if (rules.length) rows.push(el("div", {class: "npmrow"}, el("span", {class: "k"}, "Principles"), el("span", {class: "v"}, rules.join(" · "))));
   // The first open step of each component, and the steps of its own: what can be done now.

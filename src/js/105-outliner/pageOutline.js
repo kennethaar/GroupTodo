@@ -54,7 +54,7 @@ function pageOutline(path, opts = {}) {
       el("button", {class: "textbtn", onclick: () => setBranchFocus(page, b.id, path)}, branchLabel(b)));
   crumbs.append(el("span", {}, "›"), el("b", {}, branchLabel(root)),
     el("button", {class: "textbtn", style: "margin-left:auto", title: "This line and what is under it stay open at the right while you move about",
-      onclick: () => pinToSide(space, path, ensureBlockId(path, root))}, "📌 Pin to the right"));
+      onclick: () => pinToSide(space, path, ensureBlockId(path, root))}, svgIcon(ICON_PIN), " Pin to the right"));
   FOCUS_NODE = el("div", {}, crumbs, box);
   return el("div", {});      // the focused outline lives in FOCUS_NODE now
 }

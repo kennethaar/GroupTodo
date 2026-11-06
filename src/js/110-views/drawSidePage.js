@@ -27,12 +27,12 @@ function drawSidePage() {
     el("button", {class: "iconbtn panepin" + (s.pinned ? " on" : ""), title: label, "aria-label": label,
       "aria-pressed": String(!!s.pinned),
       onclick: () => s.pinned ? unpinSide()
-        : pinToSide(s.space, s.path, s.branch ? inSpace(s.space, () => ensureBlockId(s.path, sideBranch(getPage(s.path), s.branch))) : "")}, "📌"),
+        : pinToSide(s.space, s.path, s.branch ? inSpace(s.space, () => ensureBlockId(s.path, sideBranch(getPage(s.path), s.branch))) : "")}, svgIcon(ICON_PIN)),
     el("div", {style: "flex:1"}),
     el("button", {class: "iconbtn", title: "Expand to the full page", "aria-label": "Expand to the full page",
       onclick: () => { const {space, path} = s; SIDE_PAGE = null; SIDE_FOLLOW = false; openPageIn(space, path); }}, "⤢"),
     el("button", {class: "iconbtn", title: s.pinned ? "Unpin and close" : "Close", "aria-label": s.pinned ? "Unpin and close" : "Close",
-      onclick: s.pinned ? unpinSide : closeSidePage}, "✕")), node);
+      onclick: s.pinned ? unpinSide : closeSidePage}, svgIcon(ICON_CLOSE))), node);
   pane.classList.toggle("pinned", !!s.pinned);
   pane.hidden = false;
   document.body.classList.add("pane-open");

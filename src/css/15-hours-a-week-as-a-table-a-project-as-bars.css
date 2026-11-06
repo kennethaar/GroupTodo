@@ -144,6 +144,7 @@ button.chip{cursor:pointer;font-family:inherit}
 .gzoom button{width:28px;height:28px;border:1px solid var(--border);background:var(--bg2);border-radius:7px;
   color:var(--fg2);font-size:15px;line-height:1}
 .gzoom button:hover{color:var(--fg);border-color:var(--border2)}
+.gzoom button svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .gnote{position:absolute;left:10px;bottom:8px;right:50px;font-size:11.5px;color:var(--fg3)}
 .gclock{position:absolute;left:12px;top:10px;font-size:13px;font-weight:600;color:var(--fg2);
   background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:3px 9px;font-variant-numeric:tabular-nums}
@@ -172,6 +173,7 @@ details>summary:hover{color:var(--fg2)}
 }
 .spacetoggle.on{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 .spacetoggle:hover{border-color:var(--accent)}
+.spacetoggle svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 /* Places saved for Sense where I am: the context, how wide, and a way to forget it. */
 .senseplace{display:flex;align-items:center;gap:10px;padding:2px 0}
 .senseplace .sub{color:var(--fg3);font-size:12px;font-variant-numeric:tabular-nums}

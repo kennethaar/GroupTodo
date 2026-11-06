@@ -7,9 +7,9 @@ function viewSheet(S) {
   const to = patch => sheetNav(S, Object.assign({sheetWeek: monday}, patch));
   const w = sheetWeek(S, monday), unit = sheetUnit(S);
   c.append(fbar(
-    el("button", {class: "dayarrow", title: "The week before", "aria-label": "The week before", onclick: () => to({sheetWeek: shiftISO(monday, -7)})}, "◀"),
+    el("button", {class: "dayarrow", title: "The week before", "aria-label": "The week before", onclick: () => to({sheetWeek: shiftISO(monday, -7)})}, svgIcon(ICON_CHEVRON_LEFT)),
     el("b", {style: "font-size:13px"}, weekLabel(monday)),
-    el("button", {class: "dayarrow", title: "The week after", "aria-label": "The week after", onclick: () => to({sheetWeek: shiftISO(monday, 7)})}, "▶"),
+    el("button", {class: "dayarrow", title: "The week after", "aria-label": "The week after", onclick: () => to({sheetWeek: shiftISO(monday, 7)})}, svgIcon(ICON_CHEVRON_RIGHT)),
     monday !== lastMon ? el("button", {class: "textbtn", onclick: () => to({sheetWeek: lastMon})}, "Last week") : null,
     monday !== thisMon ? el("button", {class: "textbtn", onclick: () => to({sheetWeek: thisMon})}, "This week") : null,
     el("span", {class: "gap"}),

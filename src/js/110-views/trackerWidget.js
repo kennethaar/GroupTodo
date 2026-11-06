@@ -20,7 +20,7 @@ function trackerWidget(t, save, opts = {}) {
         const stars = el("span", {class: "tstars", role: "radiogroup", "aria-label": "Rating 1 to 10"});
         for (let j = 1; j <= 10; j++) stars.append(el("button", {class: "tstar" + (j <= cur ? " on" : ""),
           type: "button", title: j + " of 10", "aria-label": j + " of 10",
-          onclick: e => { e.stopPropagation(); vals[i] = cur === j ? "" : String(j); write(); build(); }}, "★"));
+          onclick: e => { e.stopPropagation(); vals[i] = cur === j ? "" : String(j); write(); build(); }}, svgIcon(ICON_STAR_FILL)));
         box.append(stars);
         if (cur) box.append(el("span", {class: "tu"}, cur + "/10"));
         return;

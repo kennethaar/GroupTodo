@@ -84,11 +84,11 @@ function viewGraphMap() {
   };
   const fit = () => { autoFit = true; heat(0.05); };
   stage.append(el("div", {class: "gzoom"},
-    zoomBtn("▶", "Watch it grow, oldest first", () => grow()),
+    zoomBtn(svgIcon(ICON_PLAY), "Watch it grow, oldest first", () => grow()),
     zoomBtn("+", "Zoom in", () => zoomBy(1.4)),
     zoomBtn("−", "Zoom out", () => zoomBy(1 / 1.4)),
     zoomBtn("⤢", "Fit everything", fit),
-    zoomBtn("↻", "Lay it out again", () => { graphPosClear(); render(); })));
+    zoomBtn(svgIcon(ICON_REPEAT), "Lay it out again", () => { graphPosClear(); render(); })));
   const more = n => { PREF.set("map.cap", n ? String(n) : "all"); render(); };
   if (g.dropped) stage.append(el("div", {class: "gnote"},
     "The " + g.nodes.length + " best-connected of " + (g.nodes.length + g.dropped) + ". ",

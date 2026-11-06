@@ -7,7 +7,7 @@ function npmItemQ(it) {
     if (ideas.length) out.push(el("div", {class: "npmnotes"}, el("span", {class: "npmh"}, "Ideas inside"),
       ...ideas.map(i => el("button", {class: "fchip", title: "Start the action from this", onclick: () => { a.text = i.t; npmSave(); render(); }}, i.t))));
   }
-  if (kept) out.push(el("div", {class: "npmsay ok"}, "✓ Already has a next action: " + plainTitle(kept.replace(/^- (TODO|DOING|WAIT)\s+/, "").split("\n")[0])));
+  if (kept) out.push(el("div", {class: "npmsay ok"}, svgIcon(ICON_CHECK), " Already has a next action: " + plainTitle(kept.replace(/^- (TODO|DOING|WAIT)\s+/, "").split("\n")[0])));
   const people = [...NPM.people, ...npmIn(() => members().map(m => m.name)).filter(n => !samePerson(n, whoAmI()) && !NPM.people.some(x => samePerson(x, n)))].slice(0, 8);
   const set = (k, v) => { a[k] = v; npmSave(); render(); };
   out.push(el("div", {class: "npmh"}, "1 · Who does it?"),
@@ -28,10 +28,11 @@ function npmItemQ(it) {
   const say = el("div", {class: "npmsay"});
   const tell = () => {
     const t = trim(input.value);
-    if (!t) { say.className = "npmsay"; say.textContent = a.who ? "It goes to Waiting for." : "Start with a verb you can do: call, draft, buy."; return; }
+    if (!t) { say.className = "npmsay"; say.replaceChildren(a.who ? "It goes to Waiting for." : "Start with a verb you can do: call, draft, buy."); return; }
     const v = a.who || startsWithVerb(t);
     say.className = "npmsay " + (v ? "ok" : "warn");
-    say.textContent = a.who ? "✓ Waiting for " + a.who : v ? "✓ Starts with a verb" : "Start with a verb you can do: call, draft, buy.";
+    say.replaceChildren(...(a.who ? [svgIcon(ICON_CHECK), " Waiting for " + a.who]
+      : v ? [svgIcon(ICON_CHECK), " Starts with a verb"] : ["Start with a verb you can do: call, draft, buy."]));
   };
   input.addEventListener("input", () => { a.text = input.value; npmSave(); tell(); });
   input.addEventListener("keydown", e => {

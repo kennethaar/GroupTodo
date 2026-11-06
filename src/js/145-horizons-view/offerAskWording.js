@@ -41,9 +41,9 @@ function offerAskWording(name, items, lines, edited, then = null) {
       const box = el("button", {class: "spacetoggle on", onclick: () => {
         c.take = !c.take;
         box.className = "spacetoggle" + (c.take ? " on" : "");
-        box.textContent = c.take ? "✓" : "";
+        box.replaceChildren(...(c.take ? [svgIcon(ICON_CHECK)] : []));
         label();
-      }}, "✓");
+      }}, svgIcon(ICON_CHECK));
       return el("div", {style: "display:flex;gap:10px;align-items:flex-start;margin:9px 0"},
         box,
         el("div", {style: "min-width:0;flex:1"},

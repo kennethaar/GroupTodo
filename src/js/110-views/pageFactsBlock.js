@@ -12,7 +12,7 @@ function pageFactsBlock(path, opts = {}) {
   const box = el("div", {class: "pfacts cols" + (folded ? " folded" : "") + (tracker ? " trkset" : "")},
     tracker ? null : el("button", {class: "pfhead", "aria-expanded": String(!folded),
       title: folded ? "Show the page's values" : "Fold the values away", onclick: toggle},
-      el("span", {class: "pftog"}, folded ? "▸" : "▾"),
+      el("span", {class: "pftog"}, svgIcon(folded ? ICON_CHEVRON_RIGHT : ICON_CARET)),
       el("span", {}, keys.length + (keys.length === 1 ? " value" : " values")),
       folded ? el("span", {class: "pfkeys"}, keys.join(" · ")) : null));
   if (folded) return box;

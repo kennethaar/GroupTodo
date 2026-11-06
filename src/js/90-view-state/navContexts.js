@@ -18,7 +18,7 @@ function navContexts() {
       el("span", {class: "lbl"}, k === top ? k : k.slice(top.length + 1)),
       folds ? el("span", {class: "fold", role: "button", "aria-expanded": String(unfolded),
         title: unfolded ? "Fold away the contexts inside " + k : "Show the contexts inside " + k,
-        onclick: e => { e.stopPropagation(); toggleNavCtx(k); }}, unfolded ? "▾" : "▸") : null,
+        onclick: e => { e.stopPropagation(); toggleNavCtx(k); }}, svgIcon(unfolded ? ICON_CARET : ICON_CHEVRON_RIGHT)) : null,
       n ? el("span", {class: "cnt"}, String(n)) : null);
   });
 }

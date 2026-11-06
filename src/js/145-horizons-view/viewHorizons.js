@@ -95,7 +95,7 @@ function viewHorizons(){
       const open = openOf(leafActions());
       const card = el("div", {class: "card"},
         el("button", {class: "prow", onclick: () => go("next")},
-          el("span", {class: "st st-1"}, "▸"),
+          el("span", {class: "st st-1"}, svgIcon(ICON_CHEVRON_RIGHT)),
           el("span", {class: "nm"}, "Open next actions"),
           el("span", {class: "sub"}, open.length + "")));
       c.append(horizonRow(h, card));

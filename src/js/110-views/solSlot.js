@@ -22,9 +22,9 @@ function solSlot(r, f) {
         el("span", {}, "Suggestion: “" + name + "”"),
         el("div", {class: "opts"},
           el("button", {class: "fchip", data: {solPick: "accept"}, title: "Save the suggestion as it is",
-            onclick: e => { e.stopPropagation(); f.submit(r, name); solAfter(r, f.k); }}, "✓ Accept"),
+            onclick: e => { e.stopPropagation(); f.submit(r, name); solAfter(r, f.k); }}, svgIcon(ICON_CHECK), " Accept"),
           el("button", {class: "fchip", data: {solPick: "edit"}, title: "Put the suggestion in the box to change before saving",
-            onclick: e => { e.stopPropagation(); input.value = name; input.focus(); input.select(); }}, "✎ Edit")),
+            onclick: e => { e.stopPropagation(); input.value = name; input.focus(); input.select(); }}, svgIcon(ICON_PENCIL), " Edit")),
         el("span", {class: "say"}, "or write your own in the box")));
     // With a suggestion the box offers three targets: the write row, Accept and Edit.
     if (name && trim(input.value) !== name) slot.querySelector(".slotform").dataset.solPick = "write";

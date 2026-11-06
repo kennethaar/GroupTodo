@@ -3,14 +3,14 @@ function openHistory(days = 90) {
     .sort((a, b) => String(b.at).localeCompare(String(a.at)));
   const byDay = new Map();
   for (const r of rows) { if (!byDay.has(r.day)) byDay.set(r.day, []); byDay.get(r.day).push(r); }
-  const mark = {done: "✓", added: "+", said: "○"};
+  const mark = {done: ICON_CHECK, added: "+", said: ICON_CHAT};
   const body = el("div", {});
   body.append(el("div", {class: "field", style: "color:var(--fg2);font-size:13.5px"},
     "Everything that happened in the areas you are showing, newest first."));
   for (const [day, list] of byDay) {
     body.append(section(chatDayLabel(day), list.length, pagedCard(list, r => el("button", {class: "dash-item",
       onclick: () => { closeModal(); inSpace(r.space, () => openTaskDetail(r.path, r.block, r.space)); }},
-      el("span", {class: "ricon " + r.kind}, mark[r.kind]),
+      el("span", {class: "ricon " + r.kind}, mark[r.kind].startsWith("<") ? svgIcon(mark[r.kind]) : mark[r.kind]),
       el("span", {style: "flex:1;min-width:0", translate: "no", html: renderInline(r.kind === "said"
         ? (r.who ? r.who + " on “" + plainTitle(r.block.title) + "”: " : "") + r.text
         : titleForRow(r.text))}),

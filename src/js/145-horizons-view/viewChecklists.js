@@ -39,7 +39,7 @@ function viewChecklists() {
   c.append(section("The weekly review", null, el("div", {class: "card"},
     el("div", {class: "listblurb"}, "The steps the weekly review walks you through. Add your own, reword or drop any."),
     el("div", {class: "prow"},
-      el("span", {class: "st st-2"}, "↻"),
+      el("span", {class: "st st-2"}, svgIcon(ICON_REPEAT)),
       el("button", {class: "nm", style: "text-align:left", onclick: editReviewSteps}, "Weekly review"),
       el("span", {class: "chip"}, "weekly"),
       el("span", {class: "sub"}, steps + " steps" + (ownReviewList() ? "" : ", built in")),
@@ -52,12 +52,12 @@ function viewChecklists() {
     el("div", {class: "listblurb"}, "The words around the list when you ask for an update, and when you send one. " +
       "Make them more your own, or write them in another language, and pick Personalize text when you send."),
     el("div", {class: "prow"},
-      el("span", {class: "st st-2"}, "\u2709"),
+      el("span", {class: "st st-2"}, svgIcon(ICON_MAIL)),
       el("button", {class: "nm", style: "text-align:left", onclick: editAskOwn}, "Update note"),
       el("span", {class: "sub"}, V.pages.has(ASK_OWN_PATH) ? "personalized" : "built in"),
       el("button", {class: "btn sm ghost", onclick: editAskOwn}, "Edit text")),
     el("div", {class: "prow"},
-      el("span", {class: "st st-2"}, "✉"),
+      el("span", {class: "st st-2"}, svgIcon(ICON_MAIL)),
       el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(ensureInformOwn())}, "Inform note"),
       el("span", {class: "sub"}, V.pages.has(INFORM_OWN_PATH) ? "personalized" : "built in"),
       el("button", {class: "btn sm ghost", onclick: () => openPage(ensureInformOwn())}, "Edit text")))));

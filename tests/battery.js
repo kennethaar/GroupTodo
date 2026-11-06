@@ -375,9 +375,10 @@ var GTD_TEST = (() => {
     ok(card.querySelector(".pstats").nextElementSibling.classList.contains("pprog"), "the bar is right under the numbers");
     const lines = [...card.querySelectorAll(".pfields.lines .pfield:not(.miss)")].map(x => x.textContent);
     ok(lines.some(t => t.includes("Nordvik Shipping")), "no organisations line");
-    const icon = k => [...card.querySelectorAll(".pfields.lines .pfield")].find(x => x.title.startsWith(k))?.querySelector(".fi")?.textContent;
-    eq(icon("Organisations"), ICON.orgs, "organisations use the sidebar's building");
-    eq(icon("Next action"), ICON.next, "the next action uses the sidebar's lightning bolt");
+    const icon = k => [...card.querySelectorAll(".pfields.lines .pfield")].find(x => x.title.startsWith(k))
+      ?.querySelector(".fi svg path")?.getAttribute("d");
+    eq(icon("Organisations"), ICON.orgs.match(/d="([^"]+)"/)[1], "organisations use the sidebar's building");
+    eq(icon("Next action"), ICON.next.match(/d="([^"]+)"/)[1], "the next action uses the sidebar's lightning bolt");
     ok(lines.some(t => t.includes("“Call the printer”")), "no next action line");
     ok(!lines.some(t => t.includes("Lars")), "the people are a line of names as well as faces");
     ok(card.querySelector(".pfoot .avs .avatar"), "no faces at the foot");
@@ -2162,10 +2163,10 @@ var GTD_TEST = (() => {
       ok(top, "the parent is not in the sidebar");
       ok(!row("Testfoldkid"), "the child shows while folded");
       const fold = top.querySelector(".fold");
-      eq(fold?.textContent, "▸", "no fold on the parent");
+      eq(fold?.querySelector("svg path")?.getAttribute("d"), ICON_CHEVRON_RIGHT.match(/d="([^"]+)"/)[1], "no fold on the parent");
       fold.click();
       ok(row("Testfoldkid"), "unfolding did not show the child");
-      eq(row("Testfoldtop").querySelector(".fold").textContent, "▾");
+      eq(row("Testfoldtop").querySelector(".fold").querySelector("svg path")?.getAttribute("d"), ICON_CARET.match(/d="([^"]+)"/)[1]);
       ok(!row("Testfoldkid").querySelector(".fold"), "a context with nothing inside has no fold");
       row("Testfoldtop").querySelector(".fold").click();
       ok(!row("Testfoldkid"), "folding did not hide the child");
@@ -4424,12 +4425,12 @@ var GTD_TEST = (() => {
     await settle();
     const panel = content().querySelector(".npmpanel");
     ok(panel, "the plan panel");
-    has(panel.textContent, "✓ A monthly newsletter goes out");
+    has(panel.textContent, "A monthly newsletter goes out");
     has(panel.textContent, "Useful before promotional · One a month");
     has(panel.textContent, "Ask Sofia which field holds consent");
     has(panel.textContent, "1. Mailing list");
     has(panel.textContent, "after 1");
-    has(content().querySelector(".pagehead").textContent, "✦ Re-plan");
+    has(content().querySelector(".pagehead").textContent, "Re-plan");
     undoLast();
     ok(!getPage(path).props.planned && getPage(path).props.outcome !== "A monthly newsletter goes out and 40% open it" &&
       !getPage(path).blocks.some(b => npmHeadOf(b)), "Undo takes the whole plan back");
@@ -4533,7 +4534,7 @@ var GTD_TEST = (() => {
     npmReset();
     const path = scratchProject("Fuzzy thing");
     const acts = solDeal({space: V.space, path}, solFields().find(x => x.k === "next"));
-    ok(acts.some(a => a.label === "✦ Re-plan it"), "an answer of its own");
+    ok(acts.some(a => a.word === "Re-plan it"), "an answer of its own");
     npmQueue(V.space, path);
     go("plan", {planPath: null});
     await settle();
