@@ -123,12 +123,14 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 .ctxfold{color:var(--fg3);padding-left:0}
 .ctxfold:hover{color:var(--fg)}
 .ctxpills{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-/* Contexts › Sort: a tree to drag contexts into each other. */
-.ctxsort>.hint{text-align:left;margin:0 0 8px}
-.ctxtree{display:flex;flex-direction:column;gap:2px;max-width:640px;margin-bottom:16px}
-.ctxtop{padding:8px 12px;margin-bottom:6px;border:1px dashed var(--border2);border-radius:8px;color:var(--fg3);font-size:12.5px}
+/* Contexts › Sort: areas as side-by-side columns, each a tree to drag
+   contexts into each other, or across into another column. */
+.ctxcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;align-items:start}
+.ctxcol>.group{margin:0 0 8px}
+.ctxtree{display:flex;flex-direction:column;gap:2px}
+.ctxtop{padding:6px 12px;margin-bottom:6px;border:1px dashed var(--border2);border-radius:8px;color:var(--fg3);font-size:12.5px}
 .ctxtop svg{width:11px;height:11px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.ctxsrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:8px;
+.ctxsrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;
   margin-left:calc(var(--d,0) * 22px);padding:4px 8px;border:1px solid transparent;border-radius:8px;background:var(--bg2);cursor:grab}
 .ctxsrow:hover{border-color:var(--border)}
 .ctxsrow.dragging{opacity:.45}
@@ -136,7 +138,9 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 .ctxgrip{color:var(--fg3);font-size:14px;line-height:1}
 .ctxsname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;font-size:13.5px;color:var(--fg)}
 .ctxsname:hover,.ctxsname:focus-visible{text-decoration:underline}
-.ctxsrow .ctxmove{margin:0;padding:2px 6px}
+.ctxsrow .ctxmore{margin:0;color:var(--fg3)}
+.ctxsrow:hover .ctxmore,.ctxsrow .ctxmore:hover,.ctxsrow .ctxmore:focus-visible{color:var(--fg)}
+.sense[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
 .big{font-size:40px;line-height:1;display:grid;place-items:center;width:64px;height:64px;border-radius:16px;background:var(--bg3)}
 .big.fallback{font-size:28px;color:var(--fg3);font-weight:700}
 

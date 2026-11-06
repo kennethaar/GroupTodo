@@ -4,11 +4,12 @@
 function viewContexts() {
   const c = el("div", {class: "wrap"});
   // One clear button: picking by hand is the context chip at the top (@ @).
-  c.append(vhead("Contexts", "Where are you? See what you can do there.",
-    el("button", {class: "btn ghost sense", title: "Guess from this device, its network and your places (g l)",
-      onclick: () => senseNow()}, svgIcon(ICON_LOCATION), " Sense where I am"),
+  c.append(vhead("Contexts", null,
+    el("button", {class: "btn ghost sense", "aria-pressed": senseAuto() ? "true" : "false",
+      title: senseAuto() ? "Switches by itself. Click to sense again now. (g l)"
+                          : "Guess from this device, its network and your places (g l)",
+      onclick: () => senseNow()}, svgIcon(ICON_LOCATION), senseAuto() ? " Auto-sensing" : " Sense where I am"),
     newBtn("context", () => newContextPrompt()), viewSeg("contexts")));
-  const acts = nextActions();
   const names = allContextNames();
   if (!names.length) {
     c.append(emptyCard(
@@ -16,7 +17,8 @@ function viewContexts() {
       el("button", {class: "textbtn", onclick: () => openContextsWizard()}, "Set some up")));
     return c;
   }
-  if (subNow() === "sort") { c.append(viewContextSort(acts)); return c; }
+  if (subNow() === "sort") { c.append(viewContextSort()); return c; }
+  const acts = nextActions();
   // Actions with no context are a leak in the system, so they lead the page.
   const none = acts.filter(a => !a.context).length;
   if (none) c.append(el("div", {class: "ctxleak"},

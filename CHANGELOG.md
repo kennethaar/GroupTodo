@@ -5,6 +5,18 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.104.0 - 2026-11-06
+
+- Contexts › Sort: each visible area is now its own column, side by side,
+  instead of one long stacked list. Dragging a context into another area's
+  column moves it there, children and all; holding Alt (Option on a Mac)
+  copies it instead. The always-on "Move…" link is now a quiet ⋯ button
+  that opens on hover, focus or tap, and offers moving or copying into
+  another area too. The permanent instructional lines are gone in favour of
+  what each control already says when you reach it. Sense where I am now
+  shows, as a pressed toggle, whether it is currently switching by itself
+  (#304).
+
 ## 1.103.1 - 2026-11-06
 
 - Sense where I am: merging a context (by rename, alias or look-alike) now

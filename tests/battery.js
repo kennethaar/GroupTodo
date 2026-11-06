@@ -2067,7 +2067,7 @@ var GTD_TEST = (() => {
       eq(state.view, "next"); eq(subNow(), "board");
     } finally { PREF.set("contexts.idle", was); go("contexts"); dropChores(path); }
   });
-  test("#257 Contexts › Sort stacks a context on another by drag, and Move… takes it out again", () => {
+  test("#257 Contexts › Sort stacks a context on another by drag, and ⋯ takes it out again", () => {
     makeContext("Testsorthome");
     const path = choreProject("sort ctx", [stampAuthor(newBlock({state: "TODO", title: "Wipe the bench [[c/testsortroom]]"}))]);
     const row = n => [...content().querySelectorAll(".ctxsrow")].find(r => r.dataset.ctx === n);
@@ -2089,10 +2089,10 @@ var GTD_TEST = (() => {
       eq(kid.querySelector(".ctxsname").textContent, "@testsortroom", "named by its own part");
       drag(row("Testsorthome"), kid);
       ok(getPage(contextPath("Testsorthome")), "a context cannot go inside one of its own");
-      kid.querySelector(".ctxmove").click();
+      kid.querySelector(".ctxmore").click();
       const modal = [...document.querySelectorAll(".scrim .modal")].pop();
       const top = [...modal.querySelectorAll("button, [role=option], li, .row")].find(n => n.textContent.trim().endsWith("On its own, at the top"));
-      ok(top, "Move… offers the top");
+      ok(top, "⋯ offers the top");
       top.click();
       ok(getPage(contextPath("testsortroom")) && !getPage(contextPath("Testsorthome/testsortroom")), "out again");
       has(getPage(path).blocks[0].title, "[[c/testsortroom]]");
@@ -2101,6 +2101,41 @@ var GTD_TEST = (() => {
     } finally {
       closeModal(); PREF.set("sub.contexts", "cards"); go("contexts"); dropChores(path);
       for (const n of ["Testsorthome/testsortroom", "testsortroom", "Testsorthome"]) if (getPage(contextPath(n))) removePage(contextPath(n));
+    }
+  });
+  test("#304 Contexts › Sort draws each area as its own column, and a context moves or copies into another area", async () => {
+    const other = "Test304 Other", wasVisible = PREF.get("visibleSpaces", "");
+    LOADED.set(other, newRecord(other, Backends.memory(other)));
+    Spaces.list.push({name: other, kind: "memory"});
+    makeContext("Test304cp"); makeContext("Test304cp/Test304kid");
+    makeContext("Test304mv");
+    try {
+      setVisibleSpaces([V.space, other]); clearMemo();
+      pickSub("contexts", "sort"); render();
+      const cols = content().querySelectorAll(".ctxcol");
+      eq(cols.length, 2, "one column per visible area");
+      ok(cols[0].textContent.includes(V.space) || cols[1].textContent.includes(V.space), "a column names its area");
+      const here = V.space;
+      await transferContextBranch(here, "Test304cp", other, {mode: "copy"});
+      ok(getPage(contextPath("Test304cp")), "left behind: it was a copy");
+      ok(getPage(contextPath("Test304cp/Test304kid")), "its child left behind too");
+      inSpace(other, () => {
+        ok(getPage(contextPath("Test304cp")), "copied into the other area");
+        ok(getPage(contextPath("Test304cp/Test304kid")), "the nested child came with it");
+      });
+      await transferContextBranch(here, "Test304mv", other, {mode: "move"});
+      ok(!getPage(contextPath("Test304mv")), "moved: gone from here");
+      inSpace(other, () => ok(getPage(contextPath("Test304mv")), "moved: arrived in the other area"));
+    } finally {
+      removePage(contextPath("Test304cp")); removePage(contextPath("Test304cp/Test304kid")); removePage(contextPath("Test304mv"));
+      inSpace(other, () => {
+        removePage(contextPath("Test304cp")); removePage(contextPath("Test304cp/Test304kid")); removePage(contextPath("Test304mv"));
+      });
+      LOADED.delete(other);
+      Spaces.list = Spaces.list.filter(s => s.name !== other);
+      setVisibleSpaces(wasVisible ? JSON.parse(wasVisible) : []);
+      document.querySelectorAll("#toasts .toast").forEach(x => x.remove());
+      PREF.set("sub.contexts", "cards"); go("contexts"); clearMemo();
     }
   });
   /* ---------- context names and look-alikes (#203) ---------- */
