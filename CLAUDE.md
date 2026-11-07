@@ -168,6 +168,11 @@ Create issue and comment payloads with `JSON.stringify()`. Store temporary JSON 
 
 Apply GTD, `Don't Make Me Think`, progressive disclosure, accessibility and management by exception. Do not redesign unrelated parts during a focused change.
 
+Before any UX change, read `docs/ux/principles.md` and follow it; add a new
+decision there when it applies beyond one screen. The UX audit runs with
+`/ux-audit` (state in `docs/ux/battery.md` and `findings.md`). Check a screen
+with `node tests/ux-shot.mjs <help-topic>`.
+
 ## Execution views
 
 In `Active`, `Next` and `Journal`, hide review metadata, raw urgency and empty fields by default. Show them on focus, hover, Review Mode or when they represent an exception.
