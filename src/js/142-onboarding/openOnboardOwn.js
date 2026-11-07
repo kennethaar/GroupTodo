@@ -58,15 +58,14 @@ function openOnboardOwn() {
         el("label", {}, "What to call it"),
         areaInput,
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px;line-height:1.5"},
-          "Skip this if you just want to start writing - you can name it later. " +
-          "Anybody you invite gets to see whatever name you settle on.")),
+          "Anybody you invite sees this name.")),
       el("div", {class: "field"},
         el("label", {}, "Where the files live"),
         whereBtn,
         whereLine),
       /* The app cannot open the importer for them -- it is a separate file -- so
          this only says where it is. */
-      el("div", {style: "color:var(--fg3);font-size:12px;margin-top:10px;line-height:1.5"},
+      el("div", {class: "field", style: "color:var(--fg3);font-size:12px;line-height:1.5"},
         "Coming from Obsidian or Logseq? Open GroupToDo-Importer.html, next to this file " +
         "on GitHub. It copies your vault into a new folder to choose above.")),
     foot: [

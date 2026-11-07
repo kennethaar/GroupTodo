@@ -20,6 +20,7 @@ function go(view, opts = {}) {
   const leaving = tourPending();
   tourNoteView(view, opts);
   state.view = view;
+  if (view === "next") coachMark("next");
   Object.assign(state, opts);
   document.body.classList.remove("nav-open");
   closeSpacesMenu();

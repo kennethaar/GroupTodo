@@ -22,14 +22,15 @@ function coachStrip() {
   // a leaflet, and nobody reads the leaflet.
   const current = steps.find(st => !st.done);
   for (const st of steps) {
-    /* The dot is a checkbox, not a bullet: a step you did your own way, or do
+    /* The dot is a button, not a bullet, so Enter and Space work (UX-001): a step you did your own way, or do
        not want, is yours to cross off -- and to take back, when crossing it off
        was a mistake. A step that is done by itself (a full name, a folder) has
        nothing to take back; its button below is still there to change it. */
     const byHand = st.done && coachDone(st.k) && !st.auto;
     box.append(el("div", {class: "coach-step" + (st.done ? " done" : "")},
-      el("span", {class: "coach-dot" + (!st.done || byHand ? " can" : ""), role: "checkbox", "aria-checked": String(!!st.done),
-        tabindex: !st.done || byHand ? "0" : null,
+      el("button", {type: "button", class: "coach-dot" + (!st.done || byHand ? " can" : ""), "aria-pressed": String(!!st.done),
+        disabled: !st.done || byHand ? null : "",
+        "aria-label": (!st.done ? "Cross it off: " : byHand ? "Not done after all: " : "Done: ") + st.label,
         title: !st.done ? "Cross it off" : byHand ? "Not done after all" : "Done",
         onclick: !st.done ? () => { PREF.set("coach." + st.k, "1"); render(); }
                : byHand ? () => { PREF.set("coach." + st.k, ""); render(); } : null},

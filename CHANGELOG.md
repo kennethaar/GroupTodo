@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.112.0 - 2026-11-07
+
+- Getting started: once your first task is in, a new step, Pick your next
+  action, opens Next and ticks itself there (#314). Each tick is now a real
+  button, so Enter and Space cross a step off. The folder step says what
+  picking a folder gives. The Start writing dialog is shorter and tidier.
+  The dialog reached from Vault & sync is now titled Vault & sync, and
+  Working hours start at 08:00 to 16:00 on weekdays, with From and To in
+  empty boxes.
+
 ## 1.111.1 - 2026-11-07
 
 - Next: the Contexts view's two readings, lost with its sidebar entry, are

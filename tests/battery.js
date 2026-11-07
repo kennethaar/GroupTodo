@@ -5265,6 +5265,66 @@ var GTD_TEST = (() => {
       render();
     }
   });
+  test("#314 Getting started: ticks are buttons, and the strip leads on to Next", async () => {
+    const keys = ["coach", "coach.who", "coach.where", "coach.add", "coach.next", "coach.project", "coach.tour"];
+    const was = keys.map(k => PREF.get(k, ""));
+    try {
+      keys.forEach(k => PREF.set(k, ""));
+      PREF.set("coach", "1");
+      go("today");
+      await settle();
+      const strip = () => content().querySelector(".coach:not(.tip)");
+      const dots = [...strip().querySelectorAll(".coach-dot")];
+      ok(dots.length && dots.every(d => d.tagName === "BUTTON"), "a tick that is not a native button");
+      const open = dots.find(d => !d.disabled);
+      eq(open.getAttribute("aria-pressed"), "false");
+      ok(!strip().textContent.includes("Pick your next action"), "the Next step waits for a first task");
+      ok(!strip().textContent.includes("a folder you picked"), "the folder step speaks as if a folder was picked");
+      PREF.set("coach.add", "1");
+      render();
+      await settle();
+      const step = [...strip().querySelectorAll(".coach-step")].find(s => s.textContent.includes("Pick your next action"));
+      ok(step, "no Pick your next action step after the first task");
+      const btn = [...step.querySelectorAll("button")].find(b => b.textContent === "Open Next");
+      ok(btn, "no Open Next button");
+      btn.click();
+      await settle();
+      eq(state.view, "next");
+      eq(PREF.get("coach.next"), "1", "opening Next ticks the step");
+    } finally {
+      keys.forEach((k, i) => PREF.set(k, was[i]));
+      go("today");
+    }
+  });
+  test("#314 Vault & sync is titled so, and Working hours start at 08:00 – 16:00 with From and To", async () => {
+    const wh = PREF.get("work_hours", ""), me = whoAmI(), page = me && getPage(personPath(me));
+    const own = page && page.props.work_hours;
+    if (page) delete page.props.work_hours;
+    PREF.set("work_hours", "");
+    const shut = () => { for (let i = 0; i < 4 && $("#modalRoot").firstChild; i++) closeModal(); };
+    try {
+      const d = workHours();
+      ok(d && d.start === "08:00" && d.end === "16:00", "no 08:00 – 16:00 default");
+      eq(d.days.join(), "1,2,3,4,5");
+      openVaultDialog();
+      const m = document.querySelector("#modalRoot .modal");
+      eq(m.querySelector("header h2").textContent, "Vault & sync - " + (Spaces.active || "area"));
+      const row = [...m.querySelectorAll(".srow")].find(r => r.querySelector(".slabel").textContent === "Working hours");
+      const [from, to] = row.querySelectorAll("input");
+      eq([from.value, to.value].join(), "08:00,16:00");
+      eq([from.placeholder, to.placeholder].join(), "From,To");
+      shut();
+      openOnboardOwn();
+      const o = document.querySelector("#modalRoot .modal");
+      has(o.textContent, "Anybody you invite sees this name.");
+      ok(!o.textContent.includes("Skip this if"), "the area note repeats its field");
+      ok([...o.querySelectorAll(".field")].some(f => f.textContent.includes("Obsidian or Logseq")), "the importer note sits outside a field");
+    } finally {
+      shut();
+      PREF.set("work_hours", wh);
+      if (page && own) page.props.work_hours = own;
+    }
+  });
   test("#171 a topic can be read beside the view", async () => {
     helpReset();
     go("projects", {sub: "list"});

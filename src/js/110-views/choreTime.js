@@ -3,6 +3,6 @@
    to-dos. Work hours are your work_hours::, else weekdays 8 to 16. A tap
    picks the other side until the next change of shift. */
 function choreTime(now = new Date()) {
-  const wh = workHours() || {start: "08:00", end: "16:00", days: [1, 2, 3, 4, 5]};
+  const wh = workHours();
   return !inWorkHours({ctx: "work", from: wh.start, to: wh.end, days: wh.days}, now);
 }

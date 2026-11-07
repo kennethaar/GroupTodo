@@ -17,12 +17,19 @@ function coachSteps() {
     {k: "where", done: coachDone("where") || onDisk, auto: onDisk,
      label: "Where the files live", cta: "Choose folder", redo: "Change folder",
      hint: onDisk ? "" : "right now they live in this browser only",
-     why: "Plain .md files in a folder you picked. Share the folder and you have shared the list.",
+     why: "Pick a folder and they become plain .md files there. Share the folder to share the list.",
      act: () => openSpaceStorageSetup()},
     {k: "add", done: coachDone("add"), label: "Add your first task",
      hint: "type it in the box at the top and press Enter",
      why: "Getting it out of your head and into GroupToDo. The system will grow with your needs."},
   ];
+  /* Once there is a task, the payoff: Next, where you pick what to do. Opening
+     Next ticks it, so it is never a lesson in ticking (UX-002). */
+  if (coachDone("add"))
+    steps.push({k: "next", done: coachDone("next"), label: "Pick your next action", cta: "Open Next",
+      hint: "Next lists what you can do now, by context",
+      why: "This is where the list pays off. Pick what fits where you are and what time you have.",
+      act: () => go("next")});
   /* Filing waits until there is something to file. */
   if (coachDone("add")) {
     // The tour project was put there by the app, so it cannot stand in for one

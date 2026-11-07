@@ -1,6 +1,6 @@
 function workdayNudge() {
   const wh = workHours();
-  if (!wh || !wh.days.includes(weekdayOf(todayISO()))) return;
+  if (wh.assumed || !wh.days.includes(weekdayOf(todayISO()))) return;
   const phone = phoneLike();
   if (!phone && touchFirst() && onFolderNow()) return;    // a phone on a folder moves no file
   if (!phone && carriedBySync()) return;

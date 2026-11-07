@@ -36,14 +36,14 @@ function openVaultDialog() {
   /* You */
   const who = whoAmI();
   const wh = workHours();
-  const from = clockInput(wh ? wh.start : "");
-  const to = clockInput(wh ? wh.end : "");
+  const from = clockInput(wh.start, {placeholder: "From", "aria-label": "Working hours from"});
+  const to = clockInput(wh.end, {placeholder: "To", "aria-label": "Working hours to"});
   const saveHours = () => {
     if (!!from.value !== !!to.value) return;     // half a workday is not one yet
     if ([from, to].some(i => i.classList.contains("bad"))) return;
     if (from.value && from.value === to.value) { notify("Start and finish cannot be the same time.", "warn"); return; }
     setWorkHours(from.value, to.value);
-    notify(from.value ? "Working " + from.value + " to " + to.value + "." : "Working hours cleared.");
+    notify(from.value ? "Working " + from.value + " to " + to.value + "." : "Working hours back to 08:00 to 16:00.");
   };
   from.addEventListener("change", saveHours);
   to.addEventListener("change", saveHours);
@@ -146,7 +146,7 @@ function openVaultDialog() {
     fileInput));
 
   modal({
-    center: true, title: "Settings - " + (Spaces.active || "space"),
+    center: true, title: "Vault & sync - " + (Spaces.active || "area"),
     body: el("div", {},
       settingsGroup("Vault & sync", [memoryRow, folderRow, phoneRow, autoRow, inviteRow]),
       settingsGroup("You", [profileRow, hoursRow]),

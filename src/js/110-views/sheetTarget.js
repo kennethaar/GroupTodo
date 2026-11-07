@@ -10,7 +10,7 @@ function sheetTarget(S) {
     if (any) return per;
   }
   const wh = S.id === "hours" && workHours();
-  if (!wh) return null;
+  if (!wh || wh.assumed) return null;
   const len = (hmMinutes(wh.end) - hmMinutes(wh.start) + 1440) % 1440;
   return WEEKDAY_KEYS.map((_, d) => wh.days.includes(d) ? len : 0);
 }
