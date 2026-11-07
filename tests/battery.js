@@ -2254,9 +2254,12 @@ var GTD_TEST = (() => {
       eq(state.view, "next"); eq(state.ctxFilter, "Testfoldb");
     } finally { PREF.set("nav.ctxOpen", was); go("next", {ctxFilter: null}); dropChores(path); renderNav(); }
   });
-  test("#312 Next's view switch offers List contexts and Sort contexts, and Contexts leads back", () => {
+  test("#312 #318 Next's view switch offers List contexts and Sort contexts; the way back sits above the title", () => {
     makeContext("Testswitchctx");
     const segBtn = label => [...document.querySelectorAll("#content .vseg button")].find(b => b.textContent === label);
+    const back = () => document.querySelector("#content .vback button");
+    const backAbove = () => { const b = back(), h = document.querySelector("#content .vhead h1");
+      return b && h && (b.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING) && b.getBoundingClientRect().bottom <= h.getBoundingClientRect().top + 1; };
     try {
       go("next", {sub: "list"}); render();
       ok(segBtn("List contexts"), "List contexts is in Next's switch");
@@ -2266,8 +2269,18 @@ var GTD_TEST = (() => {
       eq(segBtn("Sort contexts")?.getAttribute("aria-pressed"), "true", "the Contexts switch names it the same");
       segBtn("List contexts").click(); render();
       eq(state.view, "contexts"); eq(subNow(), "cards");
-      segBtn("‹ Next").click(); render();
+      ok(![...document.querySelectorAll("#content .vseg button")].some(b => /‹/.test(b.textContent)), "a way back inside the switch");
+      ok(backAbove(), "no ‹ Next link above the Contexts title");
+      eq(back().textContent, "‹ Next");
+      back().click(); render();
       eq(state.view, "next");
+      ok(!back(), "Next has no way back of its own");
+      // The weekly review: its switch holds its steps only, and Projects is above the title.
+      go("review"); render();
+      ok(![...document.querySelectorAll("#content .vseg button")].some(b => /‹/.test(b.textContent)), "‹ Projects inside the review switch");
+      ok(backAbove(), "no ‹ Projects link above the review title");
+      back().click(); render();
+      eq(state.view, "projects");
     } finally { PREF.set("sub.contexts", "cards"); go("next", {sub: "list"}); }
   });
   test("#208 @ finds a child context by its own name, and offers no new one when typed in full", () => {

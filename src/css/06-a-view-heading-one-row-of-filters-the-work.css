@@ -3,6 +3,8 @@
 .vhead h1{font-size:22px;margin:0;letter-spacing:-.2px}
 .vhead .sub{color:var(--fg3);font-size:13px}
 .vhead .push{margin-left:auto}
+.vhead .vback{flex-basis:100%;margin:0 0 -8px -4px}
+.vhead .vback .textbtn{font-size:12.5px;color:var(--fg2);min-height:24px}
 .vhead-r{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap;align-self:center}
 .vhead-r .vseg{margin-left:0}
 .vseg{margin-left:auto;display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;
