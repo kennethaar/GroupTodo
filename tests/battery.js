@@ -3415,6 +3415,33 @@ var GTD_TEST = (() => {
       putPage(day, parsePage("")); clearMemo(); go("today");
     }
   });
+  test("#322 a project's lines on day pages show once, in Linked References, and tick there", async () => {
+    const path = scratchProject("one linked refs", [["TODO", "Draw the plan"]]);
+    const ref = pageRef(path), day = journalPath("2026-06-05");
+    putPage(day, parsePage(["- TODO Book the plumber [[" + ref + "]]", "- Meeting about [[" + ref + "]]", "  - TODO Order the pipes"].join("\n")));
+    clearMemo();
+    const wasRefs = PREF.get("backlinks.open");
+    const refs = async () => { await settle(); for (let i = 0; i < 40 && !content().querySelector(".deferred-backlinks details"); i++) await new Promise(r => setTimeout(r, 50)); return content().querySelector(".deferred-backlinks"); };
+    try {
+      PREF.set("backlinks.open", "1");
+      openPage(path); await settle();
+      ok(![...content().querySelectorAll(".section")].some(s => /From the day pages/.test(s.textContent)), "a separate From the day pages section is still drawn");
+      const box = await refs();
+      const text = box?.textContent || "";
+      eq((content().textContent.match(/Book the plumber/g) || []).length, 1, "a day-page task does not show exactly once on the page");
+      has(text, "Book the plumber", "the day-page task is not in Linked References");
+      has(text, "Order the pipes", "a step under a line that names the project is not in Linked References");
+      const line = [...box.querySelectorAll(".bl-line")].find(l => /Book the plumber/.test(l.textContent));
+      const tick = line?.querySelector("button.tick");
+      ok(tick, "the day-page task has no tick to press in Linked References");
+      tick.click(); await settle();
+      eq(state.pagePath, path, "pressing the tick left the page");
+      eq(getPage(day).blocks[0].state, "DONE", "pressing the tick did not mark the day-page task done");
+    } finally {
+      PREF.set("backlinks.open", wasRefs == null ? "0" : wasRefs);
+      putPage(day, parsePage("")); clearMemo(); go("today");
+    }
+  });
   test("#267 the ↻ chip and Alt+R open the Repeats dialog", async () => {
     const path = scratchProject("repeat chip", [["TODO", "Water the plants"]]);
     const b = getPage(path).blocks[0];

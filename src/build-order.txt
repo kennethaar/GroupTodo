@@ -432,6 +432,7 @@ js/66-urgency/offerMergeInto.js
 js/66-urgency/projectTwin.js
 js/66-urgency/askRenameOntoTwin.js
 js/66-urgency/moveChildrenOf.js
+js/66-urgency/backlinkTick.js
 js/66-urgency/backlinkSubtree.js
 js/66-urgency/backlinkWithTrail.js
 js/66-urgency/jumpToSourceNode.js

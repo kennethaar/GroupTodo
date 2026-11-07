@@ -1,7 +1,7 @@
 /* The lines the hit hangs under come first, greyed and without their other
    children, so a link deep in a branch still says what it was about. */
 function backlinkWithTrail(hit) {
-  let tree = backlinkSubtree(hit.block);
+  let tree = backlinkSubtree(hit.block, hit.path);
   for (const a of (hit.trail || []).slice().reverse()) {
     const kind = bujoKind(a.title, a.state);
     const up = el("div", {class: "bl-node has-kids bl-trail"},

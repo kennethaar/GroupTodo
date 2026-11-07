@@ -83,11 +83,9 @@ function viewPage() {
   if (tracker) c.append(trackerPreview(tracker));
   if (isStateList(path)) c.append(...tasksOfTypeSections(path));
   /* The outline shows this page's own lines. A task written in a day page with
-     [[1/this project]] is this project's too, so it gets its own section --
-     edited where it lives. */
+     [[1/this project]] is this project's too; it shows once, in Linked
+     References at the foot, ticked there and edited where it lives (#322). */
   if (code) {
-    const fromDays = journalActionsFor(path);
-    if (fromDays.length) c.append(section("From the day pages", fromDays.length, taskCard(fromDays)));
     const time = projectTimeSection(path);
     if (time) c.append(time);
     const clocked = projectClockSection(path);

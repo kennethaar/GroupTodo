@@ -803,7 +803,7 @@ const HELP = {
 
   page: {part: "views", title: "A page", view: "page", gtd: "organise",
     what: "One page: a project, a person, a note or a day.",
-    steps: ["Click a line to write.", "⋯ beside the title: pin, make private, tidy.", "The values at the top fold away.", "Hide done is a switch: only what is left on this page.", "Linked references show what points here."],
+    steps: ["Click a line to write.", "⋯ beside the title: pin, make private, tidy.", "The values at the top fold away.", "Hide done is a switch: only what is left on this page.", "Linked references show what points here, day-page tasks too. Tick them there."],
     keys: [["Ctrl+.", "Line menu"], ["Alt+T", "Task or note"]],
     legend: [[".vhead h1, .ptitle, h1", "The page title."], ["?.outline", "The lines. Click one to write."], ["?.fbar .switch", "Hide done: this page's done and cancelled lines go."],
       ["?.stakein", "On a person: the responsibilities they hear about."]],
