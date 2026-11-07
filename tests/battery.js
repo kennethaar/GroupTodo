@@ -7449,6 +7449,7 @@ var GTD_TEST = (() => {
       const [first, second] = content().querySelectorAll(".outline.prose .blk > .line > .txt");
       const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
       second.focus(); await frame(); await frame();
+      await new Promise(r => setTimeout(r, 250));   // the light fades over 150 ms (#324)
       eq(getComputedStyle(second).color, colorOf("var(--fg)"), "the paragraph you write in stays full");
       eq(getComputedStyle(first).color, colorOf("var(--fg3)"), "the other paragraphs go quiet");
       for (const sel of [".deferred-backlinks", ".parentline", ".nstree"])
