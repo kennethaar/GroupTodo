@@ -126,6 +126,12 @@ var GTD_TEST = (() => {
     for (const e of all.slice(0, 3)) has(m.textContent, "v" + e.version);
     ok(!m.textContent.includes("v" + all[3].version + " ·"), "not the version you had");
     ok(m.querySelectorAll(".newsacts button").length > 0, "How it works for at least one new thing");
+    // The bold line says what the new thing is, not only where it lives ("A page").
+    const firstItem = all[0].items[0], bold = m.querySelector("li strong");
+    ok(firstItem.head && bold, "a new thing with a bold line");
+    ok(!bold.textContent.includes(firstItem.head), "the bold line is not the help topic's name");
+    const plain = s => s.toLowerCase().replace(/\s*\(#\d+\)/g, "").trim();
+    ok(bold.textContent.length > 15 && plain(firstItem.text).includes(plain(bold.textContent)), "it is the thing's own first sentence");
     const idea = m.querySelector('.feedback a[href*="/issues/new"]');
     ok(idea, "suggest a feature");
     has(decodeURIComponent(idea.href), "GroupToDo v" + APP_VERSION);

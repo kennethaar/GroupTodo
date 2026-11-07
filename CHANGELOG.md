@@ -10,7 +10,10 @@ that breaks existing vaults. Newest first.
 - A page: in the Focus teleprompter, the text now slides to the middle
   instead of jumping (#324). The light fades from one paragraph to the next.
   The lit paragraph grows a little larger, and the ones just above and below
-  it half as much. The words keep their lines as it grows.
+  it half as much. The words keep their lines as it grows, and nothing is cut
+  off at the edge.
+- What's new: each new thing now starts with a bold line that says what it
+  is, not only which part of the app it belongs to (#256).
 
 ## 1.118.0 - 2026-11-07
 

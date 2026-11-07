@@ -1,6 +1,7 @@
 /* The entries of a changelog, newest first: {version, date, items}. An item's
    head is the name before its colon ("Book › Revise (#254): ..."), when it
-   has a short one, and issue the number it closed. */
+   has a short one, and issue the number it closed. lead is the first sentence
+   after the head, which says what the new thing is; rest is the remainder. */
 function newsEntries(text) {
   const out = [];
   for (const e of String(text || "").split(/^## /m).slice(1)) {
@@ -11,7 +12,11 @@ function newsEntries(text) {
       const text = x.replace(/\s+/g, " ").replace(/[`*]/g, "").trim();
       const h = /^([^:]{3,60}?)(?:\s*\(#\d+\))?:\s/.exec(text);
       const issue = (/\(#(\d+)\)/.exec(text) || [])[1] || null;
-      return {text, head: h ? h[1] : null, issue};
+      const body = h ? text.slice(h[0].length) : text;
+      const s = /^(.+?[.!?])(?:\s+|$)/.exec(body);
+      const lead = (s ? s[1] : body).replace(/\s*\(#\d+\)/g, "");
+      return {text, head: h ? h[1] : null, issue,
+        lead: lead.charAt(0).toUpperCase() + lead.slice(1), rest: s ? body.slice(s[0].length) : ""};
     });
     out.push({version: m[1], date: m[2] || "", items});
   }

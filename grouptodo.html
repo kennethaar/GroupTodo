@@ -15196,7 +15196,11 @@ const items = rest.join("\n").split(/^- /m).slice(1).map(x => {
 const text = x.replace(/\s+/g, " ").replace(/[`*]/g, "").trim();
 const h = /^([^:]{3,60}?)(?:\s*\(#\d+\))?:\s/.exec(text);
 const issue = (/\(#(\d+)\)/.exec(text) || [])[1] || null;
-return {text, head: h ? h[1] : null, issue};
+const body = h ? text.slice(h[0].length) : text;
+const s = /^(.+?[.!?])(?:\s+|$)/.exec(body);
+const lead = (s ? s[1] : body).replace(/\s*\(#\d+\)/g, "");
+return {text, head: h ? h[1] : null, issue,
+lead: lead.charAt(0).toUpperCase() + lead.slice(1), rest: s ? body.slice(s[0].length) : ""};
 });
 out.push({version: m[1], date: m[2] || "", items});
 }
@@ -15409,8 +15413,7 @@ body.append(el("h3", {}, "v" + e.version, e.date ? el("span", {class: "quiet"}, 
 body.append(el("ul", {}, ...e.items.map(x => {
 const topic = update ? null : newsTopic(x);
 return el("li", {},
-x.head ? el("strong", {}, x.head + ":") : null,
-x.head ? " " + x.text.slice(x.text.indexOf(":") + 1).trim() : x.text,
+el("strong", {}, x.lead), x.rest ? " " + x.rest : "",
 el("span", {class: "newsacts"},
 topic ? el("button", {class: "textbtn", title: HELP[topic].title,
 onclick: () => { closeModal(); openHelp(topic); }}, "How it works") : null,

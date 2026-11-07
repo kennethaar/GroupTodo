@@ -10,8 +10,7 @@ function whatsNewDialog(entries, {update = null, since = null} = {}) {
     body.append(el("ul", {}, ...e.items.map(x => {
       const topic = update ? null : newsTopic(x);
       return el("li", {},
-        x.head ? el("strong", {}, x.head + ":") : null,
-        x.head ? " " + x.text.slice(x.text.indexOf(":") + 1).trim() : x.text,
+        el("strong", {}, x.lead), x.rest ? " " + x.rest : "",
         el("span", {class: "newsacts"},
           topic ? el("button", {class: "textbtn", title: HELP[topic].title,
             onclick: () => { closeModal(); openHelp(topic); }}, "How it works") : null,
