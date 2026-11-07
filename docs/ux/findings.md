@@ -1,4 +1,4 @@
-# UX findings
+| accepted, issue #317, fixed v1.113.3 || accepted, issue #319, fixed v1.113.1 || accepted, issue #318, fixed v1.113.2 || accepted, issue #317, fixed v1.113.3 || accepted, issue #317, fixed v1.113.3 || accepted (user: rich line editor), issue #317, fixed v1.113.3 |# UX findings
 
 Every problem the audit found, newest last. Ids never change or get reused.
 
