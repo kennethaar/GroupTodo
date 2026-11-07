@@ -63,6 +63,8 @@ function viewSearch() {
       onclick: () => h.block ? inSpace(h.space, () => openTaskDetail(h.path, h.block, h.space))
                              : openPageIn(h.space, h.path)},
       h.block ? stateChip(h.block.state, h.block) : null,
+      // The context leads, as in the Journal and Next (#315).
+      h.block && contextOf(h.block.title) ? el("span", {class: "chip ctx"}, "@" + contextOf(h.block.title)) : null,
       el("span", {translate: "no", html: renderInline(label)}),
       multiSpace() && h.space ? spaceBadge(h.space) : null,
       h.archived ? el("span", {class: "chip"}, "archived") : null,

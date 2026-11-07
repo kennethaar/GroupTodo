@@ -407,6 +407,9 @@ var GTD_TEST = (() => {
     ok(where.length, "no place under the hits");
     ok(where.every(w => !/\.md$|\//.test(w)), "a file path under a hit: " + where.find(w => /\.md$|\//.test(w)));
     eq(placeName("journals/Kenneth Aar/" + todayISO() + ".md"), "Journal · Today");
+    // #315: a hit leads with its context, the same as in the Journal and Next.
+    const hit = [...content().querySelectorAll(".dash-item")].find(i => /@computer/.test(i.textContent));
+    ok(hit && hit.querySelector(".chip.ctx"), "a hit with a context has no context chip");
   });
   test("#316 the late badge and the @context pill reach AA in Paper, Linen, Ink and Night", async () => {
     const root = document.documentElement, keep = ["data-theme", "data-light", "data-dark"].map(a => [a, root.getAttribute(a)]);
@@ -2457,6 +2460,17 @@ var GTD_TEST = (() => {
     has(made.block.title, "[[c/phone]]");
     has(JSON.stringify(made.block.props), shiftISO(T(), 1), "scheduled tomorrow");
     ok(getPage(made.path).blocks.includes(made.block), "on the page");
+    // #315: a plain word is never a context, even one you have; only @ makes one.
+    makeContext("office");
+    const plain = captureLine("Buy milk for the office");
+    const placed = captureLine("Call Mia @phone about the VAT");
+    try {
+      eq(plain.block.title, "Buy milk for the office", "a plain word became a context");
+      eq(placed.block.title.replace(/\[\[c\/phone\]\]/, "@phone"), "Call Mia @phone about the VAT", "the sentence is kept whole, the @ where typed");
+      eq($("#cap").placeholder, "Add a task. Try: \"Call Mia about the VAT @phone tomorrow\"");
+    } finally {
+      for (const x of [made, plain, placed]) { const s = siblingsOf(getPage(x.path), x.block); s.splice(s.indexOf(x.block), 1); touch(x.path); }
+    }
   });
   test("setBlockState to DONE, and undo puts it back", () => {
     const path = scratchProject("state", [["TODO", "Finish the thing"]]);
@@ -4640,7 +4654,8 @@ var GTD_TEST = (() => {
     eq(kids.slice(0, 4), ["t-chk", "chip", "t-title", "t-eyebrow"], "order");
     has(r.querySelector(".t-eyebrow").textContent, pageTitle(path));
     eq(r.querySelector(":scope > .chip.ctx").textContent, "@phone");
-    ok(!r.querySelector(".t-title").textContent.includes("phone"), "the context is not said twice");
+    // #315: the sentence stays whole, the @phone where it was written.
+    eq(r.querySelector(".t-title").textContent.trim(), "Call Bob about the quote @phone");
     eq(r.lastElementChild.classList.contains("t-menu"), true, "the row's ⋯ ends it");
     ok(!r.querySelector(".duepill"), "due today goes without saying under Due today");
   });
@@ -4690,11 +4705,20 @@ var GTD_TEST = (() => {
       if (was) Object.defineProperty(PHONE, "matches", was); else delete PHONE.matches;
     }
   });
-  test("#160 a context written inside the words stays there", async () => {
+  test("#160 #315 a context written inside the words stays there, and its chip still leads", async () => {
     const {blocks, row} = await journalDue([["TODO", "Ask Ann at the [[c/office]] about the keys"]]);
     const r = row(blocks[0]);
-    ok(r.classList.contains("noctx"), "no context in front");
-    eq(r.querySelector(".t-title .wikilink.ctx").textContent, "@office");
+    eq(r.querySelector(":scope > .chip.ctx").textContent, "@office", "the chip in front");
+    eq(r.querySelector(".t-title").textContent.trim(), "Ask Ann at the @office about the keys");
+    eq(getComputedStyle(r.querySelector(".t-title .wikilink.ctx")).backgroundColor, "rgba(0, 0, 0, 0)", "a quiet link, not a second pill");
+    go("next", {sub: "list", ctxFilter: null});
+    await settle();
+    const n = content().querySelector('.task[data-id="' + blocks[0].id + '"]');
+    ok(n, "the row is on Next");
+    const t = n.querySelector(".t-title");
+    eq(t.querySelector(".chip.ctx").textContent, "@office", "Next leads with the context too");
+    ok(t.firstElementChild.classList.contains("chip"), "before the words");
+    has(t.textContent, "Ask Ann at the @office about the keys");
   });
   test("#160 a late row says Due yesterday", async () => {
     const {blocks, row} = await journalDue([["TODO", "Send the late figures"]], shiftISO(T(), -1));
@@ -4881,13 +4905,14 @@ var GTD_TEST = (() => {
     ok(edit, "Edit Markdown is there");
     ok(getComputedStyle(edit).visibility !== "hidden", "not taken out of the tab order");
   });
-  test("#160 on the day page a context at the end goes in front of the words, as written elsewhere", () => {
+  test("#160 #315 on the day page a task's context leads as a chip, and the words keep it where written", () => {
     const b = {state: "TODO", title: "Reply to Bob [[c/computer]]"};
     const lead = lineHtml(b, true), plain = lineHtml(b);
-    ok(lead.indexOf("@computer") < lead.indexOf("Reply"), "in front on the Journal: " + lead);
-    ok(plain.indexOf("@computer") > plain.indexOf("Reply"), "where written elsewhere: " + plain);
+    ok(/^<span class="chip ctx[^"]*"[^>]*>@computer<\/span>/.test(lead), "the chip in front on the Journal: " + lead);
+    ok(lead.lastIndexOf("@computer") > lead.indexOf("Reply"), "and still at the end of the words: " + lead);
+    ok(plain.indexOf("@computer") > plain.indexOf("Reply") && !plain.includes("chip"), "as written elsewhere: " + plain);
     const mid = lineHtml({state: "TODO", title: "Print it at the [[c/office]] for Ann"}, true);
-    ok(mid.indexOf("@office") > mid.indexOf("Print"), "inside the words it stays: " + mid);
+    ok(mid.lastIndexOf("@office") > mid.indexOf("Print"), "inside the words it stays: " + mid);
   });
   test("#160 the journal's title does not repeat the area its badge names", async () => {
     go("today");
@@ -6255,21 +6280,21 @@ var GTD_TEST = (() => {
     go("next", {sub: "list", ctxFilter: null}); await settle();
     const {f, d} = await phoneJournal();
     try {
-      const row = [...d.querySelectorAll(".task")].find(r => r.querySelector(".nlead") && r.querySelector(".duepill"));
+      const row = [...d.querySelectorAll(".task")].find(r => r.querySelector(".t-title > .chip.ctx") && r.querySelector(".duepill"));
       ok(row, "a row with a context and a day");
       const tick = row.querySelector(".tick"), tr = tick.getBoundingClientRect();
       ok(Math.abs(tr.width - tr.height) < 1 && tr.width <= 24, "the tick is a round button: " + tr.width + "x" + tr.height);
       eq(getComputedStyle(row.querySelector(".t-menu")).display, "none", "no ⋯ on a phone");
-      const lead = row.querySelector(".nlead");
-      eq(lead.parentElement, row.querySelector(".t-title"), "the @context is in the words' line");
-      eq(row.querySelector(".t-title").firstElementChild, lead, "before the words");
-      eq(getComputedStyle(row.querySelector(".t-body .chip.ctx")).display, "none", "and not said twice");
+      const lead = row.querySelector(".t-title > .chip.ctx");
+      eq(row.querySelector(".t-title").firstElementChild, lead, "the @context is in the words' line, before the words");
+      ok(getComputedStyle(lead).display !== "none", "and shown");
+      eq(row.querySelectorAll(".t-meta .chip.ctx").length, 0, "and not said twice");
       ok(getComputedStyle(row.querySelector(".duepill"), "::before").content.includes("Due"), "a day says it is when it is due");
       eq(getComputedStyle(row.querySelector(".duepill")).backgroundColor, "rgba(0, 0, 0, 0)", "a quiet line, not pills");
       ok(tick.getBoundingClientRect().right + 20 > row.querySelector(".t-title").getBoundingClientRect().left, "the words start right after the tick");
       ok(d.documentElement.scrollWidth <= 390, "nothing wider than the phone");
     } finally { f.remove(); }
-    eq(getComputedStyle(content().querySelector(".task .nlead")).display, "none", "a wide screen keeps the pills");
+    ok(getComputedStyle(content().querySelector(".task .t-title > .chip.ctx")).backgroundColor !== "rgba(0, 0, 0, 0)", "a wide screen keeps the pill");
   });
   test("#225 on a phone Next is To do or Chores: chores before and after work and on days off, each with a count", async () => {
     const path = choreProject("next sides", [chore("Dust the side shelf [[c/home/kitchen]]", "daily", -1),

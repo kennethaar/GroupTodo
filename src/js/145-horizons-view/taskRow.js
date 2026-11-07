@@ -3,11 +3,11 @@ function taskRow(a, opts) {
   const jr = !!(opts && opts.journal);
   // An action shown from another space must be edited IN that space, or the
   // change would be written through the active space's backend.
-  const title = el("div", {class: "t-title", html: estHtml(a.title) + renderInline(jr ? titleForJournalRow(a.title) : titleForRow(a.title))});
+  const title = el("div", {class: "t-title", html: estHtml(a.title) + renderInline(titleForLine(a.title))});
   let chips = chipsFor(a, jr ? opts : {}).filter(c => !(c.classList.contains("asg") && pillInTitle(title, c, a.assignee)));
-  /* In the Journal the context stands in front of the words, unless the words
-     already have it inside them, and the project is the line above. Each is
-     the same chip as before, so a click on it does what it did. */
+  /* The context stands in front of the words, everywhere, and the words keep
+     it where it was written (#315). In the Journal the project is the line
+     above. Each is the same chip as before, so a click on it does what it did. */
   let lead = null, eyebrow = null;
   // A chore written on its room's own page: the room is said once, by its pill (#209).
   if (opts && (opts.nextNow || jr) && a.context && a.projectPath === contextPath(a.context))
@@ -15,7 +15,7 @@ function taskRow(a, opts) {
   if (jr) {
     const ctx = chips.find(c => c.classList.contains("ctx"));
     // Grouped by context, the group's head says it (#209).
-    if (ctx && !opts.grouped && !title.querySelector(".wikilink.ctx")) lead = ctx;
+    if (ctx && !opts.grouped) lead = ctx;
     eyebrow = chips.find(c => c.classList.contains("proj")) || null;
     if (eyebrow) {
       eyebrow.className = "t-eyebrow";
@@ -26,6 +26,10 @@ function taskRow(a, opts) {
       });
     }
     chips = chips.filter(c => !c.classList.contains("ctx") && c !== eyebrow);
+  }
+  else {
+    const ctx = chips.find(c => c.classList.contains("ctx"));
+    if (ctx) { title.prepend(ctx); chips = chips.filter(c => c !== ctx); }
   }
   // The Journal's columns already say the area.
   const pills = [!jr && multiSpace() && a.space ? spaceBadge(a.space) : null, ...chips.filter(c => !c.classList.contains("when"))].filter(Boolean);
@@ -63,12 +67,6 @@ function taskRow(a, opts) {
     el("span", {class: "t-pills"}, ...pills),
     el("span", {class: "t-info"}, ...info)) : null;
   if (jr) row.append(...[chk, lead, title, eyebrow, meta, menu].filter(Boolean));
-  else {
-    /* Where there is room for little, the @context leads the words, in their
-       line: the cue, then the verb (Next on a phone). */
-    if (a.context && !title.querySelector(".wikilink.ctx"))
-      title.prepend(el("span", {class: "nlead", "aria-hidden": "true"}, "@" + a.context));
-    row.append(el("div", {class: "t-lead"}, chk, menu), el("div", {class: "t-body t-one"}, title, meta));
-  }
+  else row.append(el("div", {class: "t-lead"}, chk, menu), el("div", {class: "t-body t-one"}, title, meta));
   return row;
 }

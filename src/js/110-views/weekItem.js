@@ -14,8 +14,8 @@ function weekItem(it) {
         el("span", {translate: "no", html: renderInline(it.title)}))));
   }
   const a = it.a.space ? it.a : Object.assign({}, it.a, {space: V.space});
-  const text = el("span", {translate: "no", html: renderInline(titleForJournalRow(a.title))});
-  const ctx = a.context && !text.querySelector(".wikilink.ctx") ? el("span", {class: "chip ctx"}, "@" + a.context) : null;
+  const text = el("span", {translate: "no", html: renderInline(titleForLine(a.title))});
+  const ctx = a.context ? el("span", {class: "chip ctx"}, "@" + a.context) : null;
   const sub = it.late ? el("span", {class: "wksub late"}, "! " + it.late + "d late")
     : it.time ? el("span", {class: "wksub"}, it.time)
     : it.kind === "start" ? el("span", {class: "wksub"}, "starts")

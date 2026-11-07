@@ -82,9 +82,8 @@
   font-size:11px;color:var(--fg3);font-variant-numeric:tabular-nums}
 .jgroup:first-child{padding-top:8px}
 .jgroup .none{letter-spacing:.05em;text-transform:uppercase}
-/* A context written inside the words stays where it was written, as a pill. */
-.jrow .t-title .wikilink.ctx,.space-journal .txt .wikilink.ctx{display:inline-block;font-size:11px;line-height:1.6;padding:0 7px;
-  border-radius:20px;vertical-align:1px;color:var(--ctx);background:color-mix(in srgb,var(--ctx) 13%,transparent)}
+/* A context inside the words stays where it was written, as a quiet link:
+   the chip in front already says it loudly (#315). */
 /* Upkeep waits until you point at it or tab to it: a calendar not yet
    linked, the day page's markdown and pin, another tracker. A touch screen
    has no pointing, so there it is always shown. Faded rather than hidden,

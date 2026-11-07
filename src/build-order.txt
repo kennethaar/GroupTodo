@@ -1373,7 +1373,8 @@ js/145-horizons-view/pillInTitle.js
 js/145-horizons-view/titleForRow.js
 js/145-horizons-view/linkWords.js
 js/145-horizons-view/plainTitle.js
-js/145-horizons-view/vars-CTX_TAIL_RE.js
+js/145-horizons-view/titleForLine.js
+js/145-horizons-view/vars-LINGER.js
 js/145-horizons-view/armLinger.js
 js/145-horizons-view/askWaitingOn.js
 js/145-horizons-view/taskRow.js

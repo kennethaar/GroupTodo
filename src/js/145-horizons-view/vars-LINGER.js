@@ -1,10 +1,3 @@
-/* A Journal row's words (#160): the project goes above them and a context at
-   the end goes in front of them, but a context written inside the sentence --
-   "ask Lars at the @office about it" -- stays where it was written. */
-const CTX_TAIL_RE = /((?:\s*\[\[c\/[^\]]+\]\])+)\s*$/;
-const titleForJournalRow = title => trim(trim(withoutEst(title)
-  .replace(/\[\[[_0123]\/[^\]]+\]\]/g, "")
-  .replace(/\s{2,}/g, " ")).replace(CTX_TAIL_RE, ""));
 
 
 /* A row in four corners: the circle and the row's one menu top left, the

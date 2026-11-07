@@ -3,9 +3,9 @@
    in. The same reading a line gets in the outline: names you have used are
    linked, @ is a context (or hands it to somebody, when no context is called
    that and a person is), # a project, and a date
-   at the end is when it is due. A context you already have, as the last word
-   before the date, is where it can be done -- "Call Mia about the VAT phone
-   tomorrow" -- and so is @phone when nobody is called that. A pasted list is
+   at the end is when it is due. Only a symbol is a command: a plain word is
+   never read as a context, even one you have, and no word is cut out of the
+   sentence -- "milk for the office" stays that (#315, P13). A pasted list is
    a list of tasks. */
 function captureLine(raw) {
   let text = trim(raw);
@@ -23,8 +23,7 @@ function captureLine(raw) {
   // @phone, #rollup and @mia, typed out rather than picked from the list.
   // @@phone still means the context, the way it was written before @ did.
   text = text.replace(/(^|\s)@@([\p{L}\p{N}_-]+(?:\/[\p{L}\p{N}_-]+)*)/gu, (m, sp, c) => sp + "[[c/" + ctxSlug(c) + "]]");
-  /* Only the last word, so "Buy a phone charger" is still about a phone. A
-     room's own name finds it in its folder: kitchen is home/kitchen when
+  /* A room's own name finds it in its folder: @kitchen is home/kitchen when
      that is the only kitchen. */
   const known = w => {
     const all = contextList(), lw = w.toLowerCase();
@@ -33,11 +32,6 @@ function captureLine(raw) {
     const inFolder = all.filter(c => c.toLowerCase().endsWith("/" + lw));
     return inFolder.length === 1 ? inFolder[0] : undefined;
   };
-  if (!contextOf(text)) {
-    const last = /(^|\s)([\p{L}\p{N}_-]+)$/u.exec(text);
-    const ctx = last && last.index > 0 && known(last[2]);
-    if (ctx) text = text.slice(0, last.index) + last[1] + "[[c/" + ctx + "]]";
-  }
   text = text.replace(/(^|\s)#([\p{L}\p{N}_-]+)/gu, (m, sp, q) => {
     const hit = nameIndex().find(n => n.kind === "project" && n.title.toLowerCase().includes(q.toLowerCase()));
     return hit ? sp + "[[" + hit.ref + "]]" : m;

@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.112.2 - 2026-11-07
+
+- The top bar: only @ makes a context. A plain word is never read as one,
+  so "Buy milk for the office" stays exactly that, instead of turning into
+  @office and "Buy milk for the" (#315). The words always stay as you typed
+  them, @context where you wrote it, and the context also leads the line as
+  a chip in the Journal, Next and Search alike.
+
 ## 1.112.1 - 2026-11-07
 
 - Search: each hit says where it is in words, such as Journal · Today or the
