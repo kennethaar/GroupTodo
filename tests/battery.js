@@ -7458,6 +7458,34 @@ var GTD_TEST = (() => {
       PREF.set("book.mode", was[0]); setWritingFocus(false);
     }
   }));
+  test("#323 Focus is on every page and in the Journal, one button each", () => withBookVault({
+    [BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n",
+    [join(PAGES, "Harbour.md")]: "- The envelope was wet.\n",
+    [join(PAGES, "Garden.md")]: "- Dig the bed\n- Water the roses\n",
+    [join(PAGES, "Notes.md")]: "- Ask about [[Garden]]\n",
+  }, async () => {
+    const shown = n => !!n && n.getClientRects().length > 0;   // hidden by itself or by what holds it
+    try {
+      openPage(join(PAGES, "Harbour.md")); await settle();
+      eq(content().querySelectorAll(".focusbtn").length, 1, "a chapter keeps its one Focus, in the chapter bar");
+      openPage(join(PAGES, "Garden.md")); await settle();
+      const btn = content().querySelector(".pagehead .focusbtn");
+      ok(btn, "a plain page has Focus in its head");
+      btn.click(); await settle();
+      ok(document.body.classList.contains("bookfocus"), "Focus on a page");
+      ok(!shown(content().querySelector(".pagehead .acts")), "the page's buttons go");
+      ok(!shown(content().querySelector(".deferred-backlinks")), "Linked References go");
+      setWritingFocus(false);
+      go("today"); await settle();
+      const jbtn = content().querySelector(".todayhead .focusbtn");
+      ok(jbtn, "the Journal has Focus beside History");
+      jbtn.click(); await settle();
+      ok(document.body.classList.contains("bookfocus"), "Focus in the Journal");
+      ok(!shown(content().querySelector(".jfold")), "the tabs and trackers go");
+      ok(!shown(jbtn), "and the head's buttons");
+      ok(shown(content().querySelector(".jgrid")), "the day page stays");
+    } finally { setWritingFocus(false); }
+  }));
   test("#244 Settings > Book picks the words a day", () => withBookVault({[BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n"}, async () => {
     go("checklists");
     await settle();

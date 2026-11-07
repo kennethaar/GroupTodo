@@ -6,8 +6,7 @@ function viewBookRead(c) {
   c.append(vhead(bookName(), null, el("span", {class: "booktoday"}, fmtWords(bookTotal()) + " words"), viewSeg("book")));
   const chapters = bookChapters().filter(ch => ch.path);
   if (!chapters.length) { c.append(emptyCard("No chapter has a page yet. Add one under Chapters.")); return c; }
-  c.append(fbar(
-    el("button", {class: "textbtn focusbtn", title: "Only the book: no sidebar, no bar (Esc leaves)", onclick: () => setWritingFocus(true)}, "Focus")));
+  c.append(fbar(focusButton("book")));
   chapters.forEach((ch, i) => {
     const stage = chapterStage(ch.path);
     c.append(el("div", {class: "readch"},

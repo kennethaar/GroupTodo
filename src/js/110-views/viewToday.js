@@ -132,7 +132,7 @@ function viewToday() {
       z.body());
   }
 
-  const c = el("div", {class: "wrap" + (spaces.length > 1 ? " jwide" : "")});
+  const c = el("div", {class: "wrap jview" + (spaces.length > 1 ? " jwide" : "")});
   /* Somebody else's day page is only worth offering if there is one: a member
      who has never written a day here, or nobody but you, and the picker goes. */
   const writers = new Set(acrossSpaces(() => allJournals().map(journalOwnerOf)).filter(Boolean));
@@ -166,6 +166,7 @@ function viewToday() {
       day !== today ? el("button", {class: "textbtn backtoday", onclick: () => toDay(null)}, "Back to today") : null),
     people.length ? wideOnly(fselect("Whose day page", who, [["", "Your page"], ...people.map(n => [n, firstNameOf(n) + "'s page"])],
       v => go("today", {todayWho: v || null})), !who) : null,
+    wideOnly(focusButton("day", "btn ghost")),
     wideOnly(el("button", {class: "btn ghost", title: "Everything that happened, newest first", onclick: () => openHistory()}, "⏱ History")));
   head.classList.add("todayhead");
   /* On a phone the day is the screen, as Next's list is: the heading is one

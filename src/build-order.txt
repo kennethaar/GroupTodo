@@ -677,6 +677,7 @@ js/90-view-state/setBookDaily.js
 js/90-view-state/vars-bookMode.js
 js/90-view-state/chapterBar.js
 js/90-view-state/setWritingFocus.js
+js/90-view-state/focusButton.js
 js/90-view-state/vars-DIALOGUE.js
 js/90-view-state/setDialogueStyle.js
 js/90-view-state/vars-OPENS_AFTER.js

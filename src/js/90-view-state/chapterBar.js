@@ -8,7 +8,7 @@ function chapterBar(path) {
       ...[["outline", "Outline"], ["prose", "Prose"]].map(([k, label]) =>
         el("button", {"aria-pressed": String(bookMode() === k), title: k === "prose" ? "Paragraphs, no bullets" : "Lines and bullets",
           onclick: () => setMode(k)}, label))),
-    el("button", {class: "textbtn focusbtn", title: "Only the page: no sidebar, no bar (Esc leaves)", onclick: () => setWritingFocus(true)}, "Focus"),
+    focusButton("page"),
     el("span", {class: "booktoday", title: daily ? "Today, against your goal a day" : "Words written today"},
       daily ? el("span", {class: "pbar"}, el("i", {style: "width:" + Math.min(100, Math.round(100 * today / daily)) + "%"})) : null,
       el("span", {class: "ratio"}, fmtWords(today) + (daily ? " of " + fmtWords(daily) : "") + " today")));

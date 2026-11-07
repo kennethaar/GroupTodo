@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.117.0 - 2026-11-07
+
+- A page: Focus is on every page now, not only a book's chapters (#323).
+  It sits beside the title, and in the Journal beside History. Focus hides
+  the sidebar, the bar and everything round the page or the day. The
+  paragraph you write in stays bright. Esc or Leave focus brings it all back.
+
 ## 1.116.1 - 2026-11-07
 
 - Writing a chapter: in Focus, the paragraph you write in stays bright and

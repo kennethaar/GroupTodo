@@ -209,6 +209,9 @@ body.bookfocus #app{grid-template-columns:minmax(0,1fr)}
 body.bookfocus #sidebar,body.bookfocus header.top,body.bookfocus .pcrumbs,body.bookfocus .pagehead .acts,
 body.bookfocus .chapterbar .focusbtn,body.bookfocus .parentline,body.bookfocus .deferred-backlinks,
 body.bookfocus .nstree{display:none}
+/* The Journal in Focus (#323): the day and its date, nothing round them. */
+body.bookfocus .jview>:not(.todayhead):not(.jgrid),body.bookfocus .todayhead .vhead-r>:not(.dayhold),
+body.bookfocus .todayhead .dayimport,body.bookfocus .jcard>.section.fold{display:none}
 /* While you write, the paragraph you are in is the one at full strength; the
    rest stay readable (--fg3 keeps AA) but step back. Reading, all is full. */
 body.bookfocus .outline:focus-within :is(.txt,.bodyline):not(:focus),

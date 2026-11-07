@@ -54,6 +54,8 @@ function viewPage() {
         onclick: () => npmOpen(space, path)}, svgIcon(ICON_SPARKLE), " " + npmLabel(space, path)[0]) : null,
       isJournalPath(path) ? null : el("button", {class: "btn sm ghost",
         onclick: () => go("pages", {sub: "mindmap", graphFocus: (V.space || "") + "\u0000" + path})}, "Mind map"),
+      // A chapter has Focus in its own bar; one button per page (#323).
+      SIDE_DRAWING || isChapterPage(path) ? null : focusButton("page", "btn sm ghost"),
       putsBack(path) && getPage(path).blocks.length ? el("button", {class: "btn sm ghost", title: "What was refiled here, to put back",
         onclick: () => openPutBack(path)}, "Put back") : null,
       el("button", {class: "btn sm ghost", title: "More", "aria-label": "More", onclick: () => openPageMenu(path)}, "⋯"))));
