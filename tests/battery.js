@@ -3339,6 +3339,28 @@ var GTD_TEST = (() => {
       eq(picked(), bl[0].id, "the drag across body lines did not pick their line");
     } finally { lineSelClear(); go("today"); }
   });
+  test("#320 a click on a picture opens the picture; a click beside it on the line edits the line", async () => {
+    const path = scratchProject("picture click", [[null, "Look ![pic](https://example.invalid/p.png) here"]]);
+    const b = getPage(path).blocks[0];
+    b.body = ["![body pic](https://example.invalid/q.png)"]; touch(path);
+    openPage(path);
+    await settle();
+    const node = document.querySelector('.blk[data-id="' + b.id + '"]');
+    const press = n => { const e = new MouseEvent("mousedown", {bubbles: true, cancelable: true, button: 0}); n.dispatchEvent(e); return e.defaultPrevented; };
+    const opened = [], real = window.open;
+    window.open = u => { opened.push(u); return null; };
+    try {
+      const img = node.querySelector(":scope > .line .txt img.asset");
+      ok(img, "the picture on the line is not drawn");
+      ok(press(img), "pressing the picture still drops the caret into the line");
+      img.click();
+      eq(opened, ["https://example.invalid/p.png"], "clicking the picture did not open it");
+      ok(!press(node.querySelector(":scope > .line .txt")), "pressing the line beside the picture no longer edits it");
+      const bodyImg = node.querySelector(":scope > .bodyline img.asset");
+      ok(bodyImg, "the picture on the line under it is not drawn");
+      ok(press(bodyImg), "pressing the picture under the line still edits that line");
+    } finally { window.open = real; go("today"); }
+  });
   test("#267 the ↻ chip and Alt+R open the Repeats dialog", async () => {
     const path = scratchProject("repeat chip", [["TODO", "Water the plants"]]);
     const b = getPage(path).blocks[0];

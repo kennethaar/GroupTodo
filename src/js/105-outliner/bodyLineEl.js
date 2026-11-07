@@ -13,9 +13,9 @@ function bodyLineEl(path, b, i) {
     data: {bi: String(i)}, translate: "no", html: renderInline(b.body[i]),
   });
   // Same bargain as a bullet's own line: a click on a [[link]] follows it
-  // instead of dropping the caret into the raw text behind it.
+  // instead of dropping the caret into the raw text behind it; a picture opens.
   txt.addEventListener("mousedown", e => {
-    if (e.target.closest("[data-link], [data-bref], a[href]")) e.preventDefault();
+    if (e.target.closest("[data-link], [data-bref], a[href], img.asset")) e.preventDefault();
   });
   keepClickCaret(txt, () => b.body[i]);
   txt.addEventListener("focus", () => { txt.textContent = b.body[i]; });

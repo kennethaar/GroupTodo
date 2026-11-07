@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.113.6 - 2026-11-07
+
+- A page: a click on a picture in a line opens the picture full size (#320).
+  It used to open the line for editing instead. A click beside the picture,
+  on the same line, still opens the line to write.
+
 ## 1.113.5 - 2026-11-07
 
 - Next › List: a wide screen reads like the phone (#315). One column, each

@@ -47,11 +47,11 @@ function outlineBlock(path, page, b, opts = {}) {
     return node;
   }
   attachOutlineUndo(txt,path,b);
-  // Clicking a [[link]] must follow it, not drop into the editor. Focus would
+  // Clicking a [[link]] or a picture must follow it, not drop into the editor. Focus would
   // replace this line with its raw text and destroy the span mid-click, so
   // refuse focus for that one gesture and let the delegated handler navigate.
   txt.addEventListener("mousedown", e => {
-    if (e.target.closest("[data-link], [data-bref], a[href]")) e.preventDefault();
+    if (e.target.closest("[data-link], [data-bref], a[href], img.asset")) e.preventDefault();
   });
   keepClickCaret(txt, () => b.title);
   txt.addEventListener("focus", () => { line.classList.add("raw"); txt.textContent = b.title; flyShow(txt, path, page, b); });
