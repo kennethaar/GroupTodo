@@ -18,7 +18,7 @@ function setWritingFocus(on) {
     // A new page drawn while in Focus gets its light at once.
     TELEPROMPT.obs = new MutationObserver(tpSoon);
     TELEPROMPT.obs.observe(box, {childList: true});
-    if (at) tpCentre(at);
+    if (at) tpCentre(at, true);
     tpLight();
   } else {
     tpLight();

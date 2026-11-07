@@ -221,6 +221,13 @@ body.bookfocus:not(.teleprompt) .outline:focus-within :is(.txt,.bodyline):not(:f
 body.bookfocus.teleprompt #content{padding-top:45vh;padding-bottom:50vh}
 body.teleprompt #content .outline :is(.txt,.bodyline):not(.tp-lit),
 body.teleprompt #content .outline :is(.txt,.bodyline):not(.tp-lit) *{color:var(--fg3)}
+/* The light fades from one paragraph to the next as the text slides past,
+   and the lit one grows a little larger. */
+body.teleprompt #content .outline :is(.txt,.bodyline){transition:color .35s ease,font-size .35s ease}
+body.teleprompt #content .outline :is(.txt,.bodyline) *{transition:color .35s ease}
+body.teleprompt #content .outline :is(.txt,.bodyline).tp-lit{font-size:1.12em}
+@media (prefers-reduced-motion:reduce){body.teleprompt #content .outline :is(.txt,.bodyline),
+body.teleprompt #content .outline :is(.txt,.bodyline) *{transition:none}}
 #focusLeave{position:fixed;top:10px;right:14px;z-index:30;color:var(--fg3);border-color:transparent}
 #focusLeave:hover,#focusLeave:focus-visible{color:var(--fg);border-color:var(--border2)}
 .bookch .scenenew{background:none;border:0;padding:0;font:inherit;font-size:12.5px;color:var(--fg3);cursor:pointer;opacity:0}

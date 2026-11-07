@@ -7507,9 +7507,15 @@ var GTD_TEST = (() => {
       const r = document.createRange(); r.setStart(p30.firstChild, 3); r.collapse(true);
       getSelection().removeAllRanges(); getSelection().addRange(r);
       box.scrollTop = 0; document.dispatchEvent(new Event("selectionchange"));
-      await frame(); await frame(); await frame();
+      await new Promise(r => setTimeout(r, 120));
+      const far = Math.abs(centreOf(p30) - mid());
+      ok(box.scrollTop > 0 && far > 4 * p30.getBoundingClientRect().height, "the text slides to the middle, it does not jump");
+      await new Promise(r => setTimeout(r, 700)); await frame();
       ok(Math.abs(centreOf(p30) - mid()) < p30.getBoundingClientRect().height + 4, "the line you write in sits at the middle");
       ok(p30.classList.contains("tp-lit") && lit().length === 1, "and it is the lit one");
+      ok(parseFloat(getComputedStyle(units()[3]).transitionDuration) > 0, "the light fades from one paragraph to the next");
+      ok(parseFloat(getComputedStyle(p30).fontSize) > parseFloat(getComputedStyle(units()[3]).fontSize), "the lit paragraph is set larger");
+      ok(/font-size|all/.test(getComputedStyle(p30).transitionProperty), "and it grows, it does not jump");
       eq(getComputedStyle(units()[3]).color, colorOf("var(--fg3)"), "the rest step back");
       box.scrollTop += 10 * p30.getBoundingClientRect().height + 40;
       box.dispatchEvent(new Event("scroll")); await frame(); await frame();

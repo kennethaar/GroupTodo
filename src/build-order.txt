@@ -679,6 +679,7 @@ js/90-view-state/chapterBar.js
 js/90-view-state/vars-TELEPROMPT.js
 js/90-view-state/tpNearest.js
 js/90-view-state/tpLight.js
+js/90-view-state/tpGlide.js
 js/90-view-state/tpCentre.js
 js/90-view-state/setWritingFocus.js
 js/90-view-state/focusButton.js

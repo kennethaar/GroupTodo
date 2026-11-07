@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.118.1 - 2026-11-07
+
+- A page: in the Focus teleprompter, the text now slides to the middle
+  instead of jumping (#324). The light fades from one paragraph to the next,
+  and the lit paragraph grows a little larger.
+
 ## 1.118.0 - 2026-11-07
 
 - A page: on a computer, Focus is a teleprompter (#324). The line you write
