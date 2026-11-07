@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.114.1 - 2026-11-07
+
+- A page: a click on a picture opens it full size over the page, not in a
+  new tab without a word (#320). ✕, Esc or a click on the picture closes it.
+  Open in new tab is below it, for zooming or saving.
+
 ## 1.114.0 - 2026-11-07
 
 - A page: Hide done above the lines shows only what is left (#321). Done

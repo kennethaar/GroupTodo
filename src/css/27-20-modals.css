@@ -249,3 +249,7 @@ button.coach-dot{background:none;padding:0;font:inherit;color:transparent}
 .remlist{list-style:none;margin:0;padding:0}
 .remlist li{display:flex;align-items:center;justify-content:space-between;padding:4px 0}
 .remlist li .textbtn{font-size:18px;min-width:32px;min-height:32px}
+/* A picture opened from a line (#320): as large as the screen allows. */
+.pictureview-wrap{display:flex;justify-content:center}
+.pictureview{display:block;max-width:100%;max-height:70dvh;object-fit:contain;border-radius:8px;cursor:zoom-out}
+.modal:has(.pictureview){width:min(1000px,100%)}

@@ -630,6 +630,7 @@ js/84-assets/pricesIn.js
 js/84-assets/vars-PRICE_MARKS.js
 js/84-assets/fmtPrice.js
 js/84-assets/vars-fmtPrices.js
+js/84-assets/openPicture.js
 js/84-assets/renderInline.js
 js/90-view-state/vars-state.js
 js/90-view-state/go.js

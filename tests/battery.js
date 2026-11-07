@@ -3339,7 +3339,7 @@ var GTD_TEST = (() => {
       eq(picked(), bl[0].id, "the drag across body lines did not pick their line");
     } finally { lineSelClear(); go("today"); }
   });
-  test("#320 a click on a picture opens the picture; a click beside it on the line edits the line", async () => {
+  test("#320 a click on a picture opens it in a view with a close button; a click beside it on the line edits the line", async () => {
     const path = scratchProject("picture click", [[null, "Look ![pic](https://example.invalid/p.png) here"]]);
     const b = getPage(path).blocks[0];
     b.body = ["![body pic](https://example.invalid/q.png)"]; touch(path);
@@ -3354,7 +3354,14 @@ var GTD_TEST = (() => {
       ok(img, "the picture on the line is not drawn");
       ok(press(img), "pressing the picture still drops the caret into the line");
       img.click();
-      eq(opened, ["https://example.invalid/p.png"], "clicking the picture did not open it");
+      eq(opened, [], "clicking the picture left the app for a new tab without saying so");
+      const view = document.querySelector("#modalRoot .modal img.pictureview");
+      ok(view && view.src === "https://example.invalid/p.png", "clicking the picture did not open it full size in the app");
+      const sheet = view.closest(".modal");
+      ok([...sheet.querySelectorAll("button")].some(x => x.textContent.trim() === "✕"), "the picture view has no close button");
+      const tab = sheet.querySelector('a[target="_blank"]');
+      ok(tab && /new tab/i.test(tab.textContent) && tab.href === "https://example.invalid/p.png", "the picture view does not offer a labelled way to open it in a new tab");
+      closeModal();
       ok(!press(node.querySelector(":scope > .line .txt")), "pressing the line beside the picture no longer edits it");
       const bodyImg = node.querySelector(":scope > .bodyline img.asset");
       ok(bodyImg, "the picture on the line under it is not drawn");

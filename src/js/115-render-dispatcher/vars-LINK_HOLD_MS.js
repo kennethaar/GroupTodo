@@ -4,10 +4,10 @@
    surroundings grid either did nothing or jumped straight to the page. The
    document is the one container all of them are in. */
 document.addEventListener("click", e => {
-  // A dropped picture opens full size in a tab of its own, and clicking it
+  // A dropped picture opens full size over the app (openPicture), and clicking it
   // must not drop the caret into the line behind it.
   const img = e.target.closest("img.asset");
-  if (img && img.src) { e.preventDefault(); e.stopPropagation(); window.open(img.src, "_blank", "noopener"); return; }
+  if (img && img.src) { e.preventDefault(); e.stopPropagation(); openPicture(img.src, img.alt); return; }
   const link = e.target.closest("[data-link]");
   if (!link) return;
   /* Taken on the way down and kept: a pill sitting inside a row that opens

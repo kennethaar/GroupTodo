@@ -806,7 +806,7 @@ const HELP = {
     keys: [["Ctrl+.", "Line menu"], ["Alt+T", "Task or note"]],
     legend: [[".vhead h1, .ptitle, h1", "The page title."], ["?.outline", "The lines. Click one to write."], ["?.fbar .fchip", "Hide done: done and cancelled lines go, on every page."],
       ["?.stakein", "On a person: the responsibilities they hear about."]],
-    more: ["Click a picture to open it full size. Click beside it to write.",
+    more: ["Click a picture to see it full size; ✕ or Esc closes it. Click beside it to write.",
       "A page in a family, like Work/Clients/Acme, lists the rest of it at the bottom.",
       "Remove duplicate lines is in ⋯ beside the title.",
       "On a responsibility, + stakeholder names who hears how it goes.",
