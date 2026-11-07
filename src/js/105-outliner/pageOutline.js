@@ -10,6 +10,7 @@ function pageOutline(path, opts = {}) {
   /* Prose keeps the line you write in at the middle of the screen, as a
      typewriter keeps its line in one place (#244). */
   if (opts.prose) outline.addEventListener("focusin", e => {
+    if (tpActive()) return;   // the teleprompter holds the caret's line there itself (#324)
     const blk = e.target.closest(".blk");
     if (blk) requestAnimationFrame(() => blk.scrollIntoView({block: "center", behavior: "smooth"}));
   });

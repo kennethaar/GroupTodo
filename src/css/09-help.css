@@ -214,8 +214,13 @@ body.bookfocus .jview>:not(.todayhead):not(.jgrid),body.bookfocus .todayhead .vh
 body.bookfocus .todayhead .dayimport,body.bookfocus .jcard>.section.fold{display:none}
 /* While you write, the paragraph you are in is the one at full strength; the
    rest stay readable (--fg3 keeps AA) but step back. Reading, all is full. */
-body.bookfocus .outline:focus-within :is(.txt,.bodyline):not(:focus),
-body.bookfocus .outline:focus-within :is(.txt,.bodyline):not(:focus) *{color:var(--fg3)}
+body.bookfocus:not(.teleprompt) .outline:focus-within :is(.txt,.bodyline):not(:focus),
+body.bookfocus:not(.teleprompt) .outline:focus-within :is(.txt,.bodyline):not(:focus) *{color:var(--fg3)}
+/* The teleprompter (#324): the lit paragraph is the one at the middle of the
+   screen; room above and below lets the first and last lines get there. */
+body.bookfocus.teleprompt #content{padding-top:45vh;padding-bottom:50vh}
+body.teleprompt #content .outline :is(.txt,.bodyline):not(.tp-lit),
+body.teleprompt #content .outline :is(.txt,.bodyline):not(.tp-lit) *{color:var(--fg3)}
 #focusLeave{position:fixed;top:10px;right:14px;z-index:30;color:var(--fg3);border-color:transparent}
 #focusLeave:hover,#focusLeave:focus-visible{color:var(--fg);border-color:var(--border2)}
 .bookch .scenenew{background:none;border:0;padding:0;font:inherit;font-size:12.5px;color:var(--fg3);cursor:pointer;opacity:0}

@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.118.0 - 2026-11-07
+
+- A page: on a computer, Focus is a teleprompter (#324). The line you write
+  in stays in the middle of the screen, and the text moves past it. Scroll,
+  and the paragraph in the middle lights up while the rest step back. On a
+  phone, Focus stays as it was.
+
 ## 1.117.0 - 2026-11-07
 
 - A page: Focus is on every page now, not only a book's chapters (#323).

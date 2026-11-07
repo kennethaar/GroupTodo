@@ -676,6 +676,10 @@ js/90-view-state/bookDaily.js
 js/90-view-state/setBookDaily.js
 js/90-view-state/vars-bookMode.js
 js/90-view-state/chapterBar.js
+js/90-view-state/vars-TELEPROMPT.js
+js/90-view-state/tpNearest.js
+js/90-view-state/tpLight.js
+js/90-view-state/tpCentre.js
 js/90-view-state/setWritingFocus.js
 js/90-view-state/focusButton.js
 js/90-view-state/vars-DIALOGUE.js

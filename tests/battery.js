@@ -7441,8 +7441,8 @@ var GTD_TEST = (() => {
       const colorOf = v => { const p = el("span", {style: "color:" + v}); document.body.append(p);
         const c = getComputedStyle(p).color; p.remove(); return c; };
       const [first, second] = content().querySelectorAll(".outline.prose .blk > .line > .txt");
-      eq(getComputedStyle(first).color, colorOf("var(--fg)"), "nothing is quieter before you write");
-      second.focus();
+      const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+      second.focus(); await frame(); await frame();
       eq(getComputedStyle(second).color, colorOf("var(--fg)"), "the paragraph you write in stays full");
       eq(getComputedStyle(first).color, colorOf("var(--fg3)"), "the other paragraphs go quiet");
       for (const sel of [".deferred-backlinks", ".parentline", ".nstree"])
@@ -7485,6 +7485,49 @@ var GTD_TEST = (() => {
       ok(!shown(jbtn), "and the head's buttons");
       ok(shown(content().querySelector(".jgrid")), "the day page stays");
     } finally { setWritingFocus(false); }
+  }));
+  test("#324 Focus is a teleprompter on a computer: the line you write at the middle, scrolling lights the middle one", () => withBookVault({
+    [join(PAGES, "Long.md")]: Array.from({length: 60}, (_, i) => "- Paragraph " + (i + 1) + " of the long page.").join("\n") + "\n",
+  }, async () => {
+    const box = $("#content"), mm = window.matchMedia;
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    const mid = () => { const r = box.getBoundingClientRect(); return r.top + r.height / 2; };
+    const centreOf = n => { const r = n.getBoundingClientRect(); return r.top + r.height / 2; };
+    const units = () => [...content().querySelectorAll(".outline .blk > .line > .txt")];
+    const lit = () => content().querySelectorAll(".tp-lit");
+    const colorOf = v => { const p = el("span", {style: "color:" + v}); document.body.append(p);
+      const c = getComputedStyle(p).color; p.remove(); return c; };
+    try {
+      openPage(join(PAGES, "Long.md")); await settle();
+      setWritingFocus(true); await frame(); await frame();
+      ok(document.body.classList.contains("teleprompt"), "a computer gets the teleprompter");
+      eq(lit().length, 1, "one paragraph is lit before you write: the one in the middle");
+      const p30 = units()[29];
+      p30.focus();
+      const r = document.createRange(); r.setStart(p30.firstChild, 3); r.collapse(true);
+      getSelection().removeAllRanges(); getSelection().addRange(r);
+      box.scrollTop = 0; document.dispatchEvent(new Event("selectionchange"));
+      await frame(); await frame(); await frame();
+      ok(Math.abs(centreOf(p30) - mid()) < p30.getBoundingClientRect().height + 4, "the line you write in sits at the middle");
+      ok(p30.classList.contains("tp-lit") && lit().length === 1, "and it is the lit one");
+      eq(getComputedStyle(units()[3]).color, colorOf("var(--fg3)"), "the rest step back");
+      box.scrollTop += 10 * p30.getBoundingClientRect().height + 40;
+      box.dispatchEvent(new Event("scroll")); await frame(); await frame();
+      const now = lit()[0];
+      ok(now && now !== p30, "scrolling moves the light");
+      ok(Math.abs(centreOf(now) - mid()) < now.getBoundingClientRect().height + 30, "to the paragraph in the middle");
+      box.scrollTop = 0; await frame();
+      ok(centreOf(units()[0]) >= mid() - 30, "the first line can come down to the middle");
+      box.scrollTop = box.scrollHeight; await frame();
+      ok(centreOf(units()[59]) <= mid() + 30, "the last line can come up to it");
+      setWritingFocus(false);
+      ok(!document.body.classList.contains("teleprompt") && !lit().length, "leaving Focus takes it away");
+      document.activeElement.blur();
+      window.matchMedia = q => /max-width:\s*640px/.test(q) ? {matches: true, addEventListener() {}} : mm.call(window, q);
+      setWritingFocus(true); await frame();
+      ok(!document.body.classList.contains("teleprompt"), "a phone keeps Focus as it was");
+      eq(getComputedStyle(units()[3]).color, colorOf("var(--fg)"), "on a phone nothing is quieter before you write");
+    } finally { window.matchMedia = mm; setWritingFocus(false); document.activeElement && document.activeElement.blur(); }
   }));
   test("#244 Settings > Book picks the words a day", () => withBookVault({[BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n"}, async () => {
     go("checklists");
