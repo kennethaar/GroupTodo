@@ -2236,6 +2236,9 @@ js/113-natural-planning/npmLoad.js
 js/113-natural-planning/npmFromPage.js
 js/113-natural-planning/vars-npmComp.js
 js/113-natural-planning/npmItems.js
+js/113-natural-planning/npmLoose.js
+js/113-natural-planning/vars-npmBefore.js
+js/113-natural-planning/npmSkips.js
 js/113-natural-planning/vars-npmKept.js
 js/113-natural-planning/npmQs.js
 js/113-natural-planning/vars-npmQ.js
@@ -2270,6 +2273,10 @@ js/113-natural-planning/npmUndoSort.js
 js/113-natural-planning/npmSortQ.js
 js/113-natural-planning/npmOrderQ.js
 js/113-natural-planning/npmItemQ.js
+js/113-natural-planning/npmFirstBoxes.js
+js/113-natural-planning/npmFirstTake.js
+js/113-natural-planning/npmUndoFirst.js
+js/113-natural-planning/npmFirstQ.js
 js/113-natural-planning/npmFocusQ.js
 js/113-natural-planning/run-5-8.js
 js/113-natural-planning/npmQueueList.js

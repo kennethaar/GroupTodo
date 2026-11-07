@@ -4,7 +4,7 @@ function npmFocusQ() {
   const boxes = new Map([
     ["8", {lbl: [svgIcon(ICON_ARROW_UP), " Needs clarity"], t: "Still fuzzy", s: "Back to why and the outcome", go: () => npmGo(0)}],
     ["6", {lbl: [svgIcon(ICON_CHECK), " Off my mind"], t: "Write the page", s: "One change; Undo takes it back", go: npmWrite, ok: true}],
-    ["2", {lbl: [svgIcon(ICON_ARROW_DOWN), " Needs action"], t: "Missing a step", s: "Back to the next actions", go: () => npmGo(4)}],
+    ["2", {lbl: [svgIcon(ICON_ARROW_DOWN), " Needs action"], t: "Missing a step", s: "Back to the next actions", go: () => npmGo(NPM_STEPS.findIndex(s => s.k === "next"))}],
   ]);
   const grid = el("div", {class: "sol npmsol"});
   for (const g of NPM_GRID) {

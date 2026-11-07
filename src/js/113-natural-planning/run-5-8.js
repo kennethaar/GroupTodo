@@ -22,6 +22,12 @@ window.addEventListener("keydown", e => {
     if (b) { take(); if (!e.repeat) npmSortTake(b.to); }
     return;
   }
+  if (k === "first") {
+    if (e.key === "Backspace") { take(); npmUndoFirst(); return; }
+    const b = m && document.querySelector('.npmbox[data-key="' + m[1] + '"]');
+    if (b) { take(); if (!e.repeat && !b.disabled) b.click(); }
+    return;
+  }
   if (k === "focus" && m && ["8", "6", "2"].includes(m[1])) {
     take();
     if (!e.repeat) document.querySelector('.npmbox[data-key="' + m[1] + '"]')?.click();

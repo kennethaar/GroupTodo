@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.116.0 - 2026-11-07
+
+- Natural planning: a new step, What comes first, says which next action
+  waits for another (#275). The actions are dealt one at a time onto the
+  card, the others round it. Press the one that can't start until it is
+  done, or 6 if nothing waits; Backspace undoes. Finish writes it under the
+  action that waits for it, so Next shows only what can start.
+
 ## 1.115.3 - 2026-11-07
 
 - A page: Linked References has its own Hide done switch (#321). Each page

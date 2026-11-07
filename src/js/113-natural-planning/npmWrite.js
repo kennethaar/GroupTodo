@@ -34,8 +34,14 @@ function npmWrite() {
       if (a) h.props.after = num(a);
       return h;
     })));
-    const direct = [...d.ideas.filter(i => i.to === "next").map(i => action(i.act && trim(i.act.text || "") ? i.act : {text: i.t})),
-      action(d.free)].filter(Boolean);
+    // An action that must come first goes under the one that waits for it (#275).
+    const loose = npmLoose(), made = new Map(loose.map(x => [x.key, action(x.act)])), direct = [];
+    for (const x of loose) {
+      const b = made.get(x.key), p = npmParent(x.key, loose);
+      if (!b) continue;
+      const pb = p && !npmLoops(x.key, p, loose) ? made.get(p) : null;
+      (pb ? pb.children : direct).push(b);
+    }
     for (const k of ["support", "later"]) { const kids = ideas(k); if (kids.length) out.push(head(k, kids, true)); }
     if (d.ideas.length) out.push(head("brainstorm", d.ideas.map(i => line(i.t)), true));
     page.blocks = [...out, ...direct, ...(page.blocks || []).filter(b => !npmHeadOf(b)

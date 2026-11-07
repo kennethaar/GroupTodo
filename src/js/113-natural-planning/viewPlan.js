@@ -25,6 +25,7 @@ function viewPlan() {
   else if (q.k === "sort") main.append(...npmSortQ());
   else if (q.k === "order") main.append(...npmOrderQ());
   else if (q.k === "item") main.append(...npmItemQ(q.it));
+  else if (q.k === "first") main.append(...npmFirstQ());
   else main.append(...npmFocusQ());
   if (k !== "focus") main.append(npmNav(q));
   // Typing carries on in the box after every redraw.

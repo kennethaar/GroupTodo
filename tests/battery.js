@@ -5313,6 +5313,58 @@ var GTD_TEST = (() => {
     eq(page.props.outcome, "The bank account is moved over");
     npmReset();
   });
+  test("#275 What comes first: an action goes under the one that waits for it, so only what can start shows in Next", async () => {
+    npmReset();
+    const path = scratchProject("Website relaunch");
+    npmOpen(V.space, path);
+    await settle();
+    NPM.ideas = ["Write the new About text", "Publish the site", "Email the site map", "Take the photos"].map(t => ({id: uid(), t, to: "next"}));
+    const first = NPM_STEPS.findIndex(s => s.k === "first");
+    ok(first > 0 && NPM_STEPS[first + 1].k === "focus", "What comes first is not the step before Off your mind?");
+    npmGo(first);
+    await settle();
+    const card = () => content().querySelector(".npmsol .npmidea h3").textContent;
+    const box = k => content().querySelector('.npmbox[data-key="' + k + '"]');
+    const press = async k => { npmPress(k, "Numpad" + k); await settle(); };
+    eq(card(), "Write the new About text");
+    eq([7, 8, 9].map(k => box(k).textContent.includes(["Publish the site", "Email the site map", "Take the photos"][k - 7])), [true, true, true],
+      "the other actions are not on 7, 8 and 9");
+    await press("7");                       // About must be done before Publish
+    eq(card(), "Publish the site");
+    ok(box(7).disabled, "About waits under Publish, so Publish before About would be a loop");
+    await press("7");
+    eq(card(), "Publish the site", "a loop was taken");
+    await press("6");                       // nothing waits for Publish
+    await press("7");                       // Email before About
+    eq(card(), "Take the photos");
+    await press("8");                       // Photos before Publish
+    npmPress("Backspace");
+    await settle();
+    eq(card(), "Take the photos", "Backspace does not undo the last one");
+    await press("8");
+    ok(npmQ().done(), "every action placed, and the step is not done");
+    npmWrite();
+    const top = getPage(path).blocks.filter(b => b.state);
+    eq(npmTitles(top), ["TODO Publish the site"], "only the action that waits for others is at the top");
+    eq(npmTitles(top[0].children), ["TODO Write the new About text", "TODO Take the photos"]);
+    eq(npmTitles(top[0].children[0].children), ["TODO Email the site map"]);
+    clearMemo();
+    eq(leafActionsHere().filter(a => a.path === path).map(a => a.title).sort(), ["Email the site map", "Take the photos"],
+      "Next shows an action that still waits");
+    // One loose action: nothing can wait, so the step is passed by.
+    const one = scratchProject("One step");
+    npmOpen(V.space, one);
+    await settle();
+    NPM.ideas = [{id: uid(), t: "Call the printer", to: "next"}];
+    npmGo(NPM_STEPS.findIndex(s => s.k === "next"));
+    npmNext();
+    eq(NPM_STEPS[NPM.step].k, "focus", "one action is still asked what comes first");
+    await settle();
+    box(2).click();
+    await settle();
+    eq(NPM_STEPS[NPM.step].k, "next", "Needs action does not go back to the next actions");
+    npmReset();
+  });
   test("#189 Organise with no ideas says so and goes back to the brainstorm; a skipped step has no ✓", async () => {
     npmReset();
     const path = scratchProject("Nothing to sort");

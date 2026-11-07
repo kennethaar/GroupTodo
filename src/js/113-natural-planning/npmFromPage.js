@@ -2,7 +2,7 @@ function npmFromPage(space, path) {
   const page = getPage(path) || {props: {}, blocks: []};
   const d = {space, path, step: 0, q: 0, purpose: [], onpurpose: [], principles: [], vision: [], know: [],
     outcome: outcomeOf(path) || "", people: projectPeople({space, path}), peopleDone: false,
-    ideas: [], comps: [], ordered: false, free: {}, deck: 0, ruleDeck: 0, ruleSuggest: [], hideDeck: false, last: [], naming: false, ai: false};
+    ideas: [], comps: [], ordered: false, free: {}, deck: 0, ruleDeck: 0, ruleSuggest: [], hideDeck: false, last: [], naming: false, ai: false, before: {}, firstLast: []};
   const known = new Set();
   const idea = (t, to) => { known.add(t.toLowerCase()); d.ideas.push({id: uid(), t, to}); };
   for (const b of page.blocks || []) {

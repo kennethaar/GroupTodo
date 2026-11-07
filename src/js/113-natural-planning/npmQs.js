@@ -17,5 +17,8 @@ function npmQs(step) {
   if (k === "next") return npmItems().map((it, n, all) => ({k: "item", it, n, of: all.length,
     label: it.kind === "comp" ? it.c.name : it.kind === "idea" ? it.i.t : "Next action",
     ask: "What is the very next physical action?", sub: "", done: () => !!trim(it.act.text || "") || (it.kind === "comp" && !!npmKept(it.c))}));
+  if (k === "first") return [{k: "first", label: "What comes first", ask: "What can't start until this one is done?",
+    sub: "It goes under that action on the page, so Next shows only what can start.",
+    done: () => { const l = npmLoose(); return l.length > 1 && !npmUnplaced(l).length; }}];
   return [{k: "focus", label: "Check", ask: "Is this project off your mind now?", sub: "", done: () => false}];
 }

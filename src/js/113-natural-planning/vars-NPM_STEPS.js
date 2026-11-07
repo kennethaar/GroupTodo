@@ -26,6 +26,7 @@
          - ### 2. Template
            after:: 1. Mailing list             cannot start before it
        - TODO ...                              next actions of their own
+         - TODO ...                            one that must be done before it (#275)
        - ## Support / ## Later / ## Brainstorm  folded; Brainstorm is every idea, as typed
    ============================================================ */
 const NPM_STEPS = [
@@ -34,6 +35,7 @@ const NPM_STEPS = [
   {k: "brainstorm", name: "Brainstorm", how: "More is better. Don't judge yet: you sort in the next step."},
   {k: "organise", name: "Organise", how: "Press 1–9 to sort the idea in the middle. Backspace undoes."},
   {k: "next", name: "Next actions", how: "Who, then where, then the verb."},
+  {k: "first", name: "What comes first", how: "Press the action that waits for the one in the middle. 6 if none does."},
   {k: "focus", name: "Off your mind?", how: "8 goes back up, 2 back to the actions, 6 writes the page."},
 ];
 // The headings the plan owns on the page. Planning again replaces these and nothing else.
@@ -51,6 +53,8 @@ const NPM_RULES = ["What will we never do to get it done?", "What do we owe the 
   "What did we learn last time?", "What must stay simple?"];
 // Where the components go on the numpad, in order: the top row, then 4. Four at most (Cowan).
 const NPM_COMP_KEYS = ["7", "8", "9", "4"];
+// Where the other next actions go round the one on the card in What comes first: 6 is "nothing waits".
+const NPM_FIRST_KEYS = ["7", "8", "9", "4", "1", "2", "3"];
 const NPM_GRID = ["7", "8", "9", "4", "CARD", "6", "1", "2", "3"];
 
 let NPM = null;          // the plan on screen
