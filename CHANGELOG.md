@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.116.1 - 2026-11-07
+
+- Writing a chapter: in Focus, the paragraph you write in stays bright and
+  the others step back (#244). Linked References and the way up to the book
+  go too, so only the chapter is left. Esc while you write now leaves only
+  the line, not Focus.
+
 ## 1.116.0 - 2026-11-07
 
 - Natural planning: a new step, What comes first, says which next action

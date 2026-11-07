@@ -1,6 +1,7 @@
 document.addEventListener("keydown", e => {
   if (e.key !== "Escape" || !document.body.classList.contains("bookfocus")) return;
-  if (document.activeElement && document.activeElement.isContentEditable) return;
+  // Esc in a line only leaves the line. The line blurs itself first, so ask where the key was pressed.
+  if (e.target && e.target.isContentEditable) return;
   setWritingFocus(false);
 });
 /* ---------- how dialogue is written (#245) ----------

@@ -7437,6 +7437,21 @@ var GTD_TEST = (() => {
       ok(content().querySelector(".outline.prose"), "Prose");
       content().querySelector(".chapterbar .focusbtn").click();
       ok(document.body.classList.contains("bookfocus") && $("#focusLeave"), "Focus");
+      // Only the paragraph being written is at full strength; the rest go quiet, and so does nothing below the page.
+      const colorOf = v => { const p = el("span", {style: "color:" + v}); document.body.append(p);
+        const c = getComputedStyle(p).color; p.remove(); return c; };
+      const [first, second] = content().querySelectorAll(".outline.prose .blk > .line > .txt");
+      eq(getComputedStyle(first).color, colorOf("var(--fg)"), "nothing is quieter before you write");
+      second.focus();
+      eq(getComputedStyle(second).color, colorOf("var(--fg)"), "the paragraph you write in stays full");
+      eq(getComputedStyle(first).color, colorOf("var(--fg3)"), "the other paragraphs go quiet");
+      for (const sel of [".deferred-backlinks", ".parentline", ".nstree"])
+        for (const n of content().querySelectorAll(sel)) eq(getComputedStyle(n).display, "none", sel + " goes in Focus");
+      // The first Esc leaves the words, as anywhere in the outline; the next leaves Focus.
+      second.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+      ok(document.body.classList.contains("bookfocus"), "Esc in a line only leaves the line");
+      document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+      ok(!LINE_SEL.ids.length && document.body.classList.contains("bookfocus"), "the next lets go of the picked line");
       document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
       ok(!document.body.classList.contains("bookfocus") && !$("#focusLeave"), "Esc leaves it");
     } finally {

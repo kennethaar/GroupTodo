@@ -207,9 +207,14 @@ body.helpmarking #content{cursor:help}
 /* Focus: the page and nothing else, until Esc. */
 body.bookfocus #app{grid-template-columns:minmax(0,1fr)}
 body.bookfocus #sidebar,body.bookfocus header.top,body.bookfocus .pcrumbs,body.bookfocus .pagehead .acts,
-body.bookfocus .chapterbar .focusbtn{display:none}
-#focusLeave{position:fixed;top:10px;right:14px;z-index:30;opacity:.5}
-#focusLeave:hover,#focusLeave:focus-visible{opacity:1}
+body.bookfocus .chapterbar .focusbtn,body.bookfocus .parentline,body.bookfocus .deferred-backlinks,
+body.bookfocus .nstree{display:none}
+/* While you write, the paragraph you are in is the one at full strength; the
+   rest stay readable (--fg3 keeps AA) but step back. Reading, all is full. */
+body.bookfocus .outline:focus-within :is(.txt,.bodyline):not(:focus),
+body.bookfocus .outline:focus-within :is(.txt,.bodyline):not(:focus) *{color:var(--fg3)}
+#focusLeave{position:fixed;top:10px;right:14px;z-index:30;color:var(--fg3);border-color:transparent}
+#focusLeave:hover,#focusLeave:focus-visible{color:var(--fg);border-color:var(--border2)}
 .bookch .scenenew{background:none;border:0;padding:0;font:inherit;font-size:12.5px;color:var(--fg3);cursor:pointer;opacity:0}
 .bookch:hover .scenenew,.bookch:focus-within .scenenew{opacity:1}
 @media (hover:none){.bookch .scenenew{opacity:1}}
