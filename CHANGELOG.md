@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.115.1 - 2026-11-07
+
+- A page: Hide done hides only the page's own done lines again (#321). Done
+  tasks written on day pages and done lines in Linked References stay, as
+  they were written. The count is this page's only.
+
 ## 1.115.0 - 2026-11-07
 
 - Natural planning: Rules we play by now helps when the mind goes blank

@@ -3373,8 +3373,8 @@ var GTD_TEST = (() => {
     getPage(path).blocks[1].children = [newBlock({state: "TODO", title: "Under the finished one"})]; touch(path);
     const other = scratchProject("hide done other", [["DONE", "Another finished"], ["TODO", "Email the other"]]);
     const clean = scratchProject("hide done clean", [["TODO", "Nothing done here"]]);
-    /* #321 follow-up: the switch covers this project's tasks written on a day
-       page and the lines on other pages that link here, not only its own. */
+    /* #321 follow-up: the switch is about this page's own lines. What day
+       pages and other pages wrote about it stays as written. */
     const ref = pageRef(path), day = journalPath("2026-06-04");
     putPage(day, parsePage(["- DONE Paid the deposit [[" + ref + "]]", "- TODO Book the plumber [[" + ref + "]]"].join("\n")));
     const linker = scratchProject("hide done linker", [["DONE", "Ordered the tiles [[" + ref + "]]"], ["TODO", "Measure the floor [[" + ref + "]]"]]);
@@ -3384,7 +3384,6 @@ var GTD_TEST = (() => {
     const was = PREF.get("page.hideDone"), wasRefs = PREF.get("backlinks.open");
     const chip = () => [...content().querySelectorAll("[role=switch]")].find(c => /Hide done/.test(c.textContent));
     const shown = () => [...content().querySelectorAll(".outline .blk > .line .txt")].map(t => t.textContent);
-    const fromDays = () => [...content().querySelectorAll(".section")].filter(s => /From the day pages/.test(s.textContent)).map(s => s.textContent).join(" ");
     const refs = async () => { await settle(); for (let i = 0; i < 40 && !content().querySelector(".deferred-backlinks details"); i++) await new Promise(r => setTimeout(r, 50)); return content().querySelector(".deferred-backlinks")?.textContent || ""; };
     try {
       PREF.set("page.hideDone", "0"); PREF.set("backlinks.open", "1");
@@ -3392,30 +3391,24 @@ var GTD_TEST = (() => {
       ok(chip(), "no Hide done switch on a page with done lines");
       eq(chip().tagName, "BUTTON", "the switch is not a native button");
       eq(chip().getAttribute("aria-checked"), "false");
-      eq(chip().querySelector("small")?.textContent, "4", "the count is not the page's, the day pages' and the linked done lines");
+      eq(chip().querySelector("small")?.textContent, "2", "the count is not this page's own done and cancelled lines");
       ok(shown().some(t => /Finished one/.test(t)), "a done line is hidden while Hide done is off");
-      has(fromDays(), "Paid the deposit", "a done day-page task is hidden while Hide done is off");
-      has(await refs(), "Ordered the tiles", "a done linked line is hidden while Hide done is off");
       chip().click(); await settle();
       eq(chip().getAttribute("aria-checked"), "true", "Hide done did not stay on");
       const now = shown();
       ok(now.some(t => /Call the open one/.test(t)), "the open task went too");
       ok(!now.some(t => /Finished one|Dropped one|Under the finished one/.test(t)), "a done or cancelled line, or a step under it, is still shown: " + now.join(" | "));
-      ok(!/Paid the deposit/.test(fromDays()), "a done task from a day page is still shown");
-      has(fromDays(), "Book the plumber", "the open task from a day page went too");
       const linked = await refs();
-      ok(!/Ordered the tiles|Paid the deposit/.test(linked), "a done linked line is still shown: " + linked);
-      has(linked, "Measure the floor", "the open linked line went too");
+      ok(/Paid the deposit/.test(linked) && /Ordered the tiles/.test(linked), "Hide done hid a done line written about this page elsewhere: " + linked);
       openPage(other); await settle();
       ok(!shown().some(t => /Another finished/.test(t)), "another page does not open with done lines hidden");
       openPage(clean); await settle();
       ok(!chip(), "Hide done is offered on a page with nothing done");
       openPage(onlyLinked); await settle();
-      ok(chip(), "no Hide done on a page whose only done line links to it from elsewhere");
+      ok(!chip(), "Hide done is offered on a page whose only done line is on another page");
       openPage(path); await settle();
       chip().click(); await settle();
       ok(shown().some(t => /Finished one/.test(t)), "turning Hide done off did not bring the done line back");
-      has(fromDays(), "Paid the deposit", "turning Hide done off did not bring the day-page task back");
       eq(String(PREF.get("page.hideDone")), "0");
     } finally {
       PREF.set("page.hideDone", was == null ? "0" : was); PREF.set("backlinks.open", wasRefs == null ? "0" : wasRefs);

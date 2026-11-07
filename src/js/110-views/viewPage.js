@@ -72,18 +72,9 @@ function viewPage() {
   const chapter = !SIDE_DRAWING && isChapterPage(path), prose = chapter && bookMode() === "prose";
   if (chapter) followChapter(path);
   if (chapter) c.append(chapterBar(path));
-  /* Hide done (#321), offered only where something is done: on the page, among
-     its tasks on day pages or among the lines that link here. Each done line
-     counts once, wherever it shows. A day page shows every area side by side
-     and keeps what was written as it was written. */
-  const fromDaysAll = code ? journalActionsFor(path) : [];
-  let closed = 0;
-  if (!prose && !isJournalPath(path)) {
-    const lines = closedLines(getPage(path).blocks);
-    for (const r of fromDaysAll) if (isClosedLine(r)) lines.add(r.block);
-    for (const h of backlinksTo(path) || []) if (isClosedHit(h)) lines.add(h.block);
-    closed = lines.size;
-  }
+  /* Hide done (#321), offered only where something is done. A day page shows
+     every area side by side and keeps what was written as it was written. */
+  const closed = prose || isJournalPath(path) ? 0 : closedLineCount(getPage(path).blocks);
   const hideDone = closed > 0 && doneHidden();
   if (closed) c.append(fbar(switchBtn("Hide done", hideDone,
     () => { PREF.set("page.hideDone", doneHidden() ? "0" : "1"); render(); }, closed)));
@@ -95,7 +86,7 @@ function viewPage() {
      [[1/this project]] is this project's too, so it gets its own section --
      edited where it lives. */
   if (code) {
-    const fromDays = hideDone ? fromDaysAll.filter(r => !isClosedLine(r)) : fromDaysAll;
+    const fromDays = journalActionsFor(path);
     if (fromDays.length) c.append(section("From the day pages", fromDays.length, taskCard(fromDays)));
     const time = projectTimeSection(path);
     if (time) c.append(time);
@@ -140,6 +131,6 @@ function viewPage() {
   if (ns) c.append(ns);
   const linkedReferences = el("div", {class: "deferred-backlinks"});
   c.append(linkedReferences);
-  deferPageSection(linkedReferences, () => backlinksSection(path, {hideDone}));
+  deferPageSection(linkedReferences, () => backlinksSection(path));
   return c;
 }

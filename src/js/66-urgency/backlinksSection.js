@@ -1,6 +1,5 @@
-function backlinksSection(path, opts = {}) {
-  // Hide done (#321) leaves out a linked line that is done, and done steps under one.
-  const hits = (backlinksTo(path) || []).filter(h => !opts.hideDone || !isClosedHit(h));
+function backlinksSection(path) {
+  const hits = backlinksTo(path);
   if (!hits || !hits.length) return null;
   const card = el("div", {class: "card"});
   for (const h of hits) {
@@ -17,7 +16,7 @@ function backlinksSection(path, opts = {}) {
       onkeydown: e => { if (e.key === "Enter" || e.key === " ") openSource(e); }
     },
       el("button", {class: "bl-src", tabindex: "-1", onclick: openSource}, pageTitle(h.path)),
-      el("div", {class: "backlink-subtree"}, backlinkWithTrail(h, opts))
+      el("div", {class: "backlink-subtree"}, backlinkWithTrail(h))
     ));
   }
   /* Folded under its heading until you open it. Opening or folding it once
