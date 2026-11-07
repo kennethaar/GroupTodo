@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.114.2 - 2026-11-07
+
+- A page: Hide done is now a switch you turn on and off (#321). It also
+  hides done tasks from the day pages and done lines in Linked References,
+  and its count takes them all in.
+
 ## 1.114.1 - 2026-11-07
 
 - A page: a click on a picture opens it full size over the page, not in a

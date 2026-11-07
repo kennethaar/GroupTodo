@@ -215,6 +215,7 @@ code:: en
 ?.castdepth button.dep =>
 ?.chorehome-tools select =>
 ?.fbar .fchip =>
+?.fbar .switch =>
 ?.fbar input[type=search] =>
 ?.fbar select =>
 ?.group .textbtn =>
@@ -1665,8 +1666,8 @@ Hide =>
 Hide - it carries on =>
 Hide a task or project until a day. Let it go after one. =>
 Hide done =>
-Hide done shows only what is left, on every page. =>
-Hide done: done and cancelled lines go, on every page. =>
+Hide done is a switch: only what is left, here, from day pages and in links. =>
+Hide done: done and cancelled lines go, also from day pages and links. =>
 Hide empty =>
 Hide organisation tasks =>
 Hide people with an organisation =>

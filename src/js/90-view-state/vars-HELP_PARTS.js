@@ -802,9 +802,9 @@ const HELP = {
 
   page: {part: "views", title: "A page", view: "page", gtd: "organise",
     what: "One page: a project, a person, a note or a day.",
-    steps: ["Click a line to write.", "⋯ beside the title: pin, make private, tidy.", "The values at the top fold away.", "Hide done shows only what is left, on every page.", "Linked references show what points here."],
+    steps: ["Click a line to write.", "⋯ beside the title: pin, make private, tidy.", "The values at the top fold away.", "Hide done is a switch: only what is left, here, from day pages and in links.", "Linked references show what points here."],
     keys: [["Ctrl+.", "Line menu"], ["Alt+T", "Task or note"]],
-    legend: [[".vhead h1, .ptitle, h1", "The page title."], ["?.outline", "The lines. Click one to write."], ["?.fbar .fchip", "Hide done: done and cancelled lines go, on every page."],
+    legend: [[".vhead h1, .ptitle, h1", "The page title."], ["?.outline", "The lines. Click one to write."], ["?.fbar .switch", "Hide done: done and cancelled lines go, also from day pages and links."],
       ["?.stakein", "On a person: the responsibilities they hear about."]],
     more: ["Click a picture to see it full size; ✕ or Esc closes it. Click beside it to write.",
       "A page in a family, like Work/Clients/Acme, lists the rest of it at the bottom.",

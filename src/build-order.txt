@@ -1638,6 +1638,7 @@ js/110-views/vars-taskHay.js
 js/110-views/viewSeg.js
 js/110-views/vars-fbar.js
 js/110-views/fchip.js
+js/110-views/switchBtn.js
 js/110-views/fselect.js
 js/110-views/iconSelect.js
 js/110-views/vars-openTasksOn.js
