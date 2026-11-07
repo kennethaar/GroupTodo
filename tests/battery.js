@@ -7524,6 +7524,12 @@ var GTD_TEST = (() => {
         ok(grow(n) > 1.01 && grow(n) < grow(p30), "the paragraphs just above and below are halfway in size");
       ok(above.getBoundingClientRect().bottom <= p30.getBoundingClientRect().top + 1
         && below.getBoundingClientRect().top >= p30.getBoundingClientRect().bottom - 1, "and none of them runs over the next");
+      // Nothing round it may clip it: not the page, not an outline, not its line.
+      for (let a = p30.parentElement; a && a !== box; a = a.parentElement)
+        eq(getComputedStyle(a).overflowX, "visible", "nothing between the page and the paragraph cuts it: " + a.className);
+      ok(p30.getBoundingClientRect().right <= box.getBoundingClientRect().left + box.clientWidth + 1,
+        "the grown paragraph stays inside the page, nothing is cut off");
+      ok(box.scrollWidth <= box.clientWidth + 1, "and the page does not scroll sideways");
       eq(getComputedStyle(units()[3]).color, colorOf("var(--fg3)"), "the rest step back");
       box.scrollTop += 10 * p30.getBoundingClientRect().height + 40;
       box.dispatchEvent(new Event("scroll")); await frame(); await frame();
