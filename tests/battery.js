@@ -3368,7 +3368,7 @@ var GTD_TEST = (() => {
       ok(press(bodyImg), "pressing the picture under the line still edits that line");
     } finally { window.open = real; go("today"); }
   });
-  test("#321 Hide done on a page hides done and cancelled lines, and every page opens that way until it is turned off", async () => {
+  test("#321 Hide done on a page, and its own switch in Linked References, hide done lines and are remembered on that page", async () => {
     const path = scratchProject("hide done", [["TODO", "Call the open one"], ["DONE", "Finished one"], ["CANCELLED", "Dropped one"]]);
     getPage(path).blocks[1].children = [newBlock({state: "TODO", title: "Under the finished one"})]; touch(path);
     const other = scratchProject("hide done other", [["DONE", "Another finished"], ["TODO", "Email the other"]]);
@@ -3381,12 +3381,13 @@ var GTD_TEST = (() => {
     const onlyLinked = scratchProject("hide done only linked", [["TODO", "Nothing done on this one"]]);
     getPage(linker).blocks.push(newBlock({state: "DONE", title: "Sanded the door [[" + pageRef(onlyLinked) + "]]"}));
     touch(linker); clearMemo();
-    const was = PREF.get("page.hideDone"), wasRefs = PREF.get("backlinks.open");
-    const chip = () => [...content().querySelectorAll("[role=switch]")].find(c => /Hide done/.test(c.textContent));
+    const wasRefs = PREF.get("backlinks.open");
+    const chip = () => [...content().querySelectorAll("[role=switch]")].find(c => /Hide done/.test(c.textContent) && !c.closest(".deferred-backlinks"));
+    const linkChip = () => [...content().querySelectorAll(".deferred-backlinks [role=switch]")].find(c => /Hide done/.test(c.textContent));
     const shown = () => [...content().querySelectorAll(".outline .blk > .line .txt")].map(t => t.textContent);
     const refs = async () => { await settle(); for (let i = 0; i < 40 && !content().querySelector(".deferred-backlinks details"); i++) await new Promise(r => setTimeout(r, 50)); return content().querySelector(".deferred-backlinks")?.textContent || ""; };
     try {
-      PREF.set("page.hideDone", "0"); PREF.set("backlinks.open", "1");
+      PREF.set("backlinks.open", "1");
       openPage(path); await settle();
       ok(chip(), "no Hide done switch on a page with done lines");
       eq(chip().tagName, "BUTTON", "the switch is not a native button");
@@ -3398,20 +3399,32 @@ var GTD_TEST = (() => {
       const now = shown();
       ok(now.some(t => /Call the open one/.test(t)), "the open task went too");
       ok(!now.some(t => /Finished one|Dropped one|Under the finished one/.test(t)), "a done or cancelled line, or a step under it, is still shown: " + now.join(" | "));
-      const linked = await refs();
-      ok(/Paid the deposit/.test(linked) && /Ordered the tiles/.test(linked), "Hide done hid a done line written about this page elsewhere: " + linked);
+      eq(getPage(path).props.hide_done, "page", "the page's Hide done is not written to the page");
+      let linked = await refs();
+      ok(/Paid the deposit/.test(linked) && /Ordered the tiles/.test(linked), "the page's Hide done hid a done line written about this page elsewhere: " + linked);
+      // Linked References has its own switch, the same filter, remembered beside the page's.
+      ok(linkChip(), "Linked References has no Hide done switch of its own");
+      eq(linkChip().getAttribute("aria-checked"), "false", "the links switch followed the page's switch");
+      eq(linkChip().querySelector("small")?.textContent, "2", "the count is not the done lines in Linked References");
+      linkChip().click(); linked = await refs();
+      ok(!/Paid the deposit|Ordered the tiles/.test(linked), "Hide done in Linked References left a done linked line: " + linked);
+      ok(/Book the plumber/.test(linked) && /Measure the floor/.test(linked), "Hide done in Linked References hid an open linked line: " + linked);
+      eq(getPage(path).props.hide_done, "page, links", "the links switch is not written to the page");
       openPage(other); await settle();
-      ok(!shown().some(t => /Another finished/.test(t)), "another page does not open with done lines hidden");
+      ok(shown().some(t => /Another finished/.test(t)), "another page opens with done lines hidden");
       openPage(clean); await settle();
       ok(!chip(), "Hide done is offered on a page with nothing done");
       openPage(onlyLinked); await settle();
       ok(!chip(), "Hide done is offered on a page whose only done line is on another page");
-      openPage(path); await settle();
-      chip().click(); await settle();
+      openPage(path); linked = await refs();
+      ok(!shown().some(t => /Finished one/.test(t)) && !/Paid the deposit/.test(linked), "reopening the page forgot its switches");
+      chip().click(); await refs();
       ok(shown().some(t => /Finished one/.test(t)), "turning Hide done off did not bring the done line back");
-      eq(String(PREF.get("page.hideDone")), "0");
+      linkChip().click(); linked = await refs();
+      ok(/Paid the deposit/.test(linked), "turning the links switch off did not bring the done linked line back");
+      ok(!("hide_done" in getPage(path).props), "both switches off still leaves hide_done:: on the page");
     } finally {
-      PREF.set("page.hideDone", was == null ? "0" : was); PREF.set("backlinks.open", wasRefs == null ? "0" : wasRefs);
+      PREF.set("backlinks.open", wasRefs == null ? "0" : wasRefs);
       putPage(day, parsePage("")); clearMemo(); go("today");
     }
   });

@@ -1777,6 +1777,7 @@ js/110-views/orgDropCards.js
 js/110-views/personDropCards.js
 js/110-views/vars-placedHidden.js
 js/110-views/vars-doneHidden.js
+js/110-views/setDoneHidden.js
 js/110-views/ontoTabs.js
 js/110-views/run-5-5.js
 js/110-views/assignTargets.js

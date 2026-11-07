@@ -73,11 +73,12 @@ function viewPage() {
   if (chapter) followChapter(path);
   if (chapter) c.append(chapterBar(path));
   /* Hide done (#321), offered only where something is done. A day page shows
-     every area side by side and keeps what was written as it was written. */
+     every area side by side and keeps what was written as it was written.
+     Linked References has its own switch; the page remembers both. */
   const closed = prose || isJournalPath(path) ? 0 : closedLineCount(getPage(path).blocks);
-  const hideDone = closed > 0 && doneHidden();
+  const hideDone = closed > 0 && doneHidden(path, "page");
   if (closed) c.append(fbar(switchBtn("Hide done", hideDone,
-    () => { PREF.set("page.hideDone", doneHidden() ? "0" : "1"); render(); }, closed)));
+    () => setDoneHidden(path, "page", !doneHidden(path, "page")), closed)));
   c.append(el("div", {class: "section"}, outlineFor(path, prose ? {prose: true, newText: "New paragraph"}
     : {facts: true, hideDone})));
   if (tracker) c.append(trackerPreview(tracker));

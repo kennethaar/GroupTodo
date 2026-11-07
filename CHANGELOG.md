@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.115.3 - 2026-11-07
+
+- A page: Linked References has its own Hide done switch (#321). Each page
+  remembers its switches in hide_done::, so it opens the way you left it.
+  Other pages keep their own choice.
+
 ## 1.115.2 - 2026-11-07
 
 - A page: a project's tasks written on day pages show once, in Linked

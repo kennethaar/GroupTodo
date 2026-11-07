@@ -1,9 +1,10 @@
-/* Hide done (#321): a project page read for what is left shows only that.
-   A done or cancelled line goes with everything under it. It is about the
-   page's own lines: what day pages and other pages wrote about it stays as it
-   was written. The choice is the app's, on this device, so every page opens
-   the way the last one was left. */
-const doneHidden = () => String(PREF.get("page.hideDone", "0")) === "1";
+/* Hide done (#321): a page read for what is left shows only that. A done or
+   cancelled line goes with everything under it. The page and its Linked
+   References each have a switch, and the page remembers both in hide_done::
+   (page, links), so it opens the way it was left, on every device. */
+const HIDE_DONE_PROP = "hide_done";
+const doneHidden = (path, part) => String(getPage(path)?.props?.[HIDE_DONE_PROP] || "")
+  .split(",").map(s => trim(s).toLowerCase()).includes(part);
 const isClosedLine = b => b.state === "DONE" || b.state === "CANCELLED";
 // What Hide done takes away: a closed line counts once, with what is under it.
 const closedLineCount = blocks => (blocks || []).reduce((n, b) => n + (isClosedLine(b) ? 1 : closedLineCount(b.children)), 0);
