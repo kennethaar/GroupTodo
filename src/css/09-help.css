@@ -222,15 +222,21 @@ body.bookfocus.teleprompt #content{padding-top:45vh;padding-bottom:50vh}
 body.teleprompt #content .outline :is(.txt,.bodyline):not(.tp-lit),
 body.teleprompt #content .outline :is(.txt,.bodyline):not(.tp-lit) *{color:var(--fg3)}
 /* The light fades from one paragraph to the next as the text slides past,
-   and the lit one grows a little larger; the ones beside it halfway. It is
-   scaled, not set in a larger font, so the words keep their lines. --tp-h
-   (its height, from tpLight) buys room above and below for the growth, and
-   every paragraph keeps 11% free on the right, so the grown one is not cut. */
+   and the lit one grows a little larger; the ones beside it a little less,
+   just after it, so the change ripples out. It is scaled, not set in a
+   larger font, so the words keep their lines. Only transform and colour
+   move, on one curve that starts quick and settles softly (ease-out quint).
+   Every paragraph keeps the same room above and below (--tp-room), and
+   tpLight holds each one's growth (--tp-s) to it, so the layout never
+   changes as the light moves: a margin opening up would push the text about
+   while it scrolls. Every paragraph keeps 11% free on the right, so the
+   grown one is not cut. */
+body.teleprompt #content{--tp-room:6px;--tp-ease:cubic-bezier(.22,1,.36,1)}
 body.teleprompt #content .outline :is(.txt,.bodyline){transform-origin:left center;padding-right:11%;
-  transition:color .15s ease,transform .15s ease,margin .15s ease}
-body.teleprompt #content .outline :is(.txt,.bodyline) *{transition:color .15s ease}
-body.teleprompt #content .outline :is(.txt,.bodyline).tp-lit{transform:scale(1.12);margin-block:calc(var(--tp-h,0px) * .06)}
-body.teleprompt #content .outline :is(.txt,.bodyline).tp-near{transform:scale(1.06);margin-block:calc(var(--tp-h,0px) * .03)}
+  margin-block:var(--tp-room);transition:color .28s var(--tp-ease),transform .28s var(--tp-ease)}
+body.teleprompt #content .outline :is(.txt,.bodyline) *{transition:color .28s var(--tp-ease)}
+body.teleprompt #content .outline :is(.txt,.bodyline).tp-lit{transform:scale(var(--tp-s,1.08))}
+body.teleprompt #content .outline :is(.txt,.bodyline).tp-near{transform:scale(var(--tp-s,1.03));transition-delay:.04s}
 /* A card round the page would cut the grown paragraph at its edge. */
 body.teleprompt #content .card:has(.outline){overflow:visible}
 @media (prefers-reduced-motion:reduce){body.teleprompt #content .outline :is(.txt,.bodyline),

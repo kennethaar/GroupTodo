@@ -7449,7 +7449,7 @@ var GTD_TEST = (() => {
       const [first, second] = content().querySelectorAll(".outline.prose .blk > .line > .txt");
       const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
       second.focus(); await frame(); await frame();
-      await new Promise(r => setTimeout(r, 250));   // the light fades over 150 ms (#324)
+      await new Promise(r => setTimeout(r, 450));   // the light fades over 280 ms (#324)
       eq(getComputedStyle(second).color, colorOf("var(--fg)"), "the paragraph you write in stays full");
       eq(getComputedStyle(first).color, colorOf("var(--fg3)"), "the other paragraphs go quiet");
       for (const sel of [".deferred-backlinks", ".parentline", ".nstree"])
@@ -7526,6 +7526,9 @@ var GTD_TEST = (() => {
       eq(getComputedStyle(p30).fontSize, getComputedStyle(units()[3]).fontSize, "the lit paragraph keeps its font size, so its lines do not change");
       ok(grow(p30) > 1.05, "but it is shown larger");
       ok(/transform|all/.test(getComputedStyle(p30).transitionProperty), "and it grows, it does not jump");
+      const curves = getComputedStyle(p30).transitionTimingFunction.split(/,\s*(?![^(]*\))/);
+      ok(new Set(curves).size === 1 && curves[0] !== "ease",
+        "the size and the light move on one curve that starts quick and settles softly, not on two out of step");
       const [above, below] = [units()[28], units()[30]];
       for (const n of [above, below])
         ok(grow(n) > 1.01 && grow(n) < grow(p30), "the paragraphs just above and below are halfway in size");
@@ -7543,6 +7546,10 @@ var GTD_TEST = (() => {
       const now = lit()[0];
       ok(now && now !== p30, "scrolling moves the light");
       ok(Math.abs(centreOf(now) - mid()) < now.getBoundingClientRect().height + 30, "to the paragraph in the middle");
+      // One motion, not three: the room to grow is made at once, and nothing slides the page after the growth.
+      const at = centreOf(now);
+      await new Promise(r => setTimeout(r, 450)); await frame();
+      ok(Math.abs(centreOf(now) - at) < 1, "the paragraph that lights up holds still while it grows");
       box.scrollTop = 0; await frame();
       ok(centreOf(units()[0]) >= mid() - 30, "the first line can come down to the middle");
       box.scrollTop = box.scrollHeight; await frame();

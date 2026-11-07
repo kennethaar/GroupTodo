@@ -20,8 +20,6 @@ const tpFollowCaret = () => {
 };
 document.addEventListener("selectionchange", tpFollowCaret);
 document.addEventListener("focusin", tpFollowCaret);
-// The paragraph you write in has grown: bring its line back to the middle.
-document.addEventListener("transitionend", e => { if (e.propertyName === "transform" && e.target.classList?.contains("tp-lit")) tpFollowCaret(); });
 // Your own scrolling wins over a slide still under way.
 for (const ev of ["wheel", "pointerdown", "touchstart"]) document.addEventListener(ev, () => {
   if (TELEPROMPT.glide) { cancelAnimationFrame(TELEPROMPT.glide); TELEPROMPT.glide = 0; }
