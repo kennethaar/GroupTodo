@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.111.1 - 2026-11-07
+
+- Next: the Contexts view's two readings, lost with its sidebar entry, are
+  back at the end of Next's view switch as List contexts and Sort contexts.
+  Their own switch leads back to Next.
+
 ## 1.111.0 - 2026-11-06
 
 - Next: the sidebar no longer has its own Contexts entry. Its context list

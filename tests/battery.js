@@ -2209,6 +2209,22 @@ var GTD_TEST = (() => {
       eq(state.view, "next"); eq(state.ctxFilter, "Testfoldb");
     } finally { PREF.set("nav.ctxOpen", was); go("next", {ctxFilter: null}); dropChores(path); renderNav(); }
   });
+  test("#312 Next's view switch offers List contexts and Sort contexts, and Contexts leads back", () => {
+    makeContext("Testswitchctx");
+    const segBtn = label => [...document.querySelectorAll("#content .vseg button")].find(b => b.textContent === label);
+    try {
+      go("next", {sub: "list"}); render();
+      ok(segBtn("List contexts"), "List contexts is in Next's switch");
+      ok(segBtn("Sort contexts"), "Sort contexts is in Next's switch");
+      segBtn("Sort contexts").click(); render();
+      eq(state.view, "contexts"); eq(subNow(), "sort");
+      eq(segBtn("Sort contexts")?.getAttribute("aria-pressed"), "true", "the Contexts switch names it the same");
+      segBtn("List contexts").click(); render();
+      eq(state.view, "contexts"); eq(subNow(), "cards");
+      segBtn("‹ Next").click(); render();
+      eq(state.view, "next");
+    } finally { PREF.set("sub.contexts", "cards"); go("next", {sub: "list"}); }
+  });
   test("#208 @ finds a child context by its own name, and offers no new one when typed in full", () => {
     makeContext("Testabode2"); makeContext("Testabode2/Testoutside");
     clearMemo();

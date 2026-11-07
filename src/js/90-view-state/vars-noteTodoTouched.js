@@ -17,7 +17,7 @@ const SUBS = {
   projects: [["list", "List"], ["board", "Board"], ["timeline", "Timeline"], ["report", "Report"], ["hours", "Hours"]],
   people:   [["list", "List"], ["cards", "Cards"], ["board", "Board"]],
   orgs:     [["list", "List"], ["board", "Board"]],
-  contexts: [["cards", "Cards"], ["sort", "Sort"]],
+  contexts: [["cards", "List contexts"], ["sort", "Sort contexts"]],
   pages:   [["list", "List"], ["board", "Board"], ["mindmap", "Mind map"], ["graph", "Graph"], ["tree", "Hierarchy"]],
   book:     [["chapters", "Chapters"], ["read", "Read"], ["plot", "Plot"], ["timeline", "Timeline"], ["cast", "Cast"], ["relations", "Relations"], ["revise", "Revise"]],
   // In the order of the steps they are done in: clarify, then actions, then projects.

@@ -7,7 +7,12 @@ function viewSeg(view) {
      it opens as its own view, and its switch leads back here. */
   if (view === "projects") subs.push(["@review", "Weekly review" + (reviewDue() ? " •" : "")]);
   if (view === "review") subs.unshift(["@projects", "‹ Projects"]);
-  const pick = k => k === "@review" ? go("review") : k === "@projects" ? go("projects") : pickSub(view, k);
+  /* The contexts have no sidebar entry of their own (#312): their two readings
+     are at the end of Next's switch, and theirs leads back to Next. */
+  if (view === "next") subs.push(...SUBS.contexts.map(([k, label]) => ["@ctx:" + k, label]));
+  if (view === "contexts") subs.unshift(["@next", "‹ Next"]);
+  const pick = k => k === "@review" ? go("review") : k === "@projects" ? go("projects")
+    : k === "@next" ? go("next") : k.startsWith("@ctx:") ? pickSub("contexts", k.slice(5)) : pickSub(view, k);
   const now = subs.find(([k]) => k === cur);
   return el("span", {class: "vswitch"},
     el("div", {class: "vseg", role: "group", "aria-label": "View as"},

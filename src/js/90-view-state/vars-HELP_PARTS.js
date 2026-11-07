@@ -385,7 +385,7 @@ const HELP = {
     more: ["Each context is a page under c/.", "A folder of contexts, like @home/kitchen, nests on the @home card.",
       "To put kitchen in home: rename it home/kitchen, or use + Put a context inside on the home page.",
       "The home page lists them too, under children.",
-      "In the sidebar, ▸ beside @home shows the contexts inside it.",
+      "Open this from Next: List contexts and Sort contexts end its switch.",
       "A context shows what you can do in the ones inside it too.",
       "Press Contexts inside to see only its own.",
       "Rename it kitchen again to take it back out.",
