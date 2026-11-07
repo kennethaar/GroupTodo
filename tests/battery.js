@@ -1638,6 +1638,40 @@ var GTD_TEST = (() => {
         "a new week page does not copy the chore again");
     } finally { closeDoneToast(); closeModal(); dropChores(path); }
   });
+  test("#313 Done, Doing, Done again puts one next occurrence, not one per tick", async () => {
+    const path = choreProject("chores twice", [chore("Vacuum the hallway [[c/home/hallway]]", "weekly", 0),
+      chore("Wipe the counters [[c/home/kitchen]]", "daily", 0),
+      stampAuthor(newBlock({state: "TODO", title: "Water the plants",
+        props: {repeat: "weekly", SCHEDULED: "[[" + T() + "]]"}}))]);
+    const said = [], was = window.notify;
+    window.notify = (m, l) => { said.push(m); };
+    const copies = t => allPages().flatMap(p => flattenBlocks(getPage(p).blocks))
+      .filter(b => b.state === "TODO" && choreKey(b.title) === t && dueDate(b) !== T());
+    const yes = () => [...document.querySelectorAll("#toasts .toast.reminder button")].find(n => /^Yes/.test(n.textContent));
+    try {
+      const page = getPage(path), [hall, wipe, plants] = page.blocks;
+      for (const b of [hall, plants]) {
+        setBlockState(path, b, "DONE"); await settle();
+        ok(yes(), "Again? asks the first time");
+        yes().click(); await settle(); closeDoneToast();
+        setBlockState(path, b, "DOING"); await settle();
+        said.length = 0;
+        setBlockState(path, b, "DONE"); await settle();
+        ok(!yes(), "no second Again? for " + b.title);
+        ok(said.some(m => /already on/.test(m)), "told the next one is already there: " + JSON.stringify(said));
+        eq(copies(choreKey(b.title)).length, 1, "one next " + plainTitle(b.title));
+        closeDoneToast();
+      }
+      setBlockState(path, wipe, "DONE", {nextNow: true}); await settle(); closeDoneToast();
+      setBlockState(path, wipe, "DOING"); await settle();
+      setBlockState(path, wipe, "DONE", {nextNow: true}); await settle();
+      ok(!yes(), "no Again? in Chores either");
+      eq(copies("wipe the counters").length, 1, "one next chore when ticked in Chores");
+      const undo = [...document.querySelectorAll("#toasts button")].find(n => n.textContent === "Undo");
+      undo.click(); await settle();
+      eq(copies("wipe the counters").length, 1, "Undo of the second tick keeps the next one the first tick put in");
+    } finally { window.notify = was; closeDoneToast(); closeModal(); dropChores(path); }
+  });
   test("#80 the done toast sits at the top edge, one item's Backdate and Undo beside History", async () => {
     closeDoneToast();
     const mk = n => ({kind: "todo", label: "toast item " + n, day: T(), at: Date.now() + n, undo: () => {}});

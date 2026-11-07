@@ -2,6 +2,7 @@ function offerNextOccurrence(path, block) {
   const spec = repeatOf(block);
   const when = nextRepeatDate(spec, dueDate(block) || todayISO());
   if (!when) return;
+  if (nextOccurrenceThere(path, block, when)) { notify("Next one is already on " + humanDate(when) + "."); return; }
   /* Who does the next one: whoever's turn it is, or the same person again. */
   const turn = whoseTurn(block);
   const forSel = turn ? el("select", {},

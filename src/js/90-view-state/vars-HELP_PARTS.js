@@ -951,6 +951,7 @@ const HELP = {
     keys: [["Alt+R", "Repeat"]],
     code: [["repeat:: weekly", "Back a week after you tick it"], ["cadence:: every 2 weeks on fri", "A routine's rule"]],
     more: ["Repeats never pile up: the next one shows only once you tick the last.",
+      "Tick it again after Doing, and the next one is not added twice.",
       "A chore shows a bar for how far it has come round.",
       "Again? suggests whose turn the next one is.",
       "Chores shows them room by room."],

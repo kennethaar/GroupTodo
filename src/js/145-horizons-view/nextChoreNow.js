@@ -2,7 +2,7 @@
    same person again when nobody's turn can be told. */
 function nextChoreNow(path, block) {
   const when = nextRepeatDate(repeatOf(block), dueDate(block) || todayISO());
-  if (!when) return null;
+  if (!when || nextOccurrenceThere(path, block, when)) return null;
   const who = whoseTurn(block);
   const copy = makeNextOccurrence(path, block, when);
   if (!copy) return null;

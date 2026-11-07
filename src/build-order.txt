@@ -1176,6 +1176,7 @@ js/145-horizons-view/ruleDates.js
 js/145-horizons-view/choreRepeatOnWeek.js
 js/145-horizons-view/choreNextPath.js
 js/145-horizons-view/choreNextRef.js
+js/145-horizons-view/nextOccurrenceThere.js
 js/145-horizons-view/makeNextOccurrence.js
 js/145-horizons-view/vars-pathOfBlock.js
 js/145-horizons-view/repeatSpan.js
