@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.114.0 - 2026-11-07
+
+- A page: Hide done above the lines shows only what is left (#321). Done
+  and cancelled lines go, with the steps under them; the chip counts them.
+  The choice stays on this device, so every page opens that way until you
+  turn it off. It shows only on a page with something done.
+
 ## 1.113.6 - 2026-11-07
 
 - A page: a click on a picture in a line opens the picture full size (#320).

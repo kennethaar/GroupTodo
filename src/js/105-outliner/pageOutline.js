@@ -20,7 +20,7 @@ function pageOutline(path, opts = {}) {
   const root = trail ? trail[trail.length - 1] : null;
   if (opts.facts && !root) outline.append(pageFactsBlock(path, {trackersOnly: opts.facts === "trackers"}));
   if (opts.facts && !root && isEmailPage(path)) outline.append(emailActions(path));
-  for (const b of root ? [root] : page.blocks) outline.append(outlineBlock(path, page, b, opts));
+  for (const b of root ? [root] : shownLines(page.blocks, opts)) outline.append(outlineBlock(path, page, b, opts));
   box.append(opts.readonly ? outline : attachLineSelect(outline, path));
   /* A pick belongs to the outline that made it, and this one has just been
      rebuilt, so anything picked in another page's outline is let go of. */

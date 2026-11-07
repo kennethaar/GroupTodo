@@ -43,7 +43,7 @@ function outlineBlock(path, page, b, opts = {}) {
     (b.body || []).forEach((l, i) => node.append(el("div", {class: "bodyline" + (i < rows ? " tblrow" : ""), translate: "no", html: renderInline(l)})));
     const shown = liveMacros(path, b);
     if (shown) node.append(shown);
-    if (!b.collapsed) for (const k of kids) node.append(outlineBlock(path, page, k, opts));
+    if (!b.collapsed) for (const k of shownLines(kids, opts)) node.append(outlineBlock(path, page, k, opts));
     return node;
   }
   attachOutlineUndo(txt,path,b);
@@ -440,6 +440,6 @@ function outlineBlock(path, page, b, opts = {}) {
   const shown = liveMacros(path, b);
   if (shown) node.append(shown);
 
-  if (!b.collapsed) for (const k of kids) node.append(outlineBlock(path, page, k, opts));
+  if (!b.collapsed) for (const k of shownLines(kids, opts)) node.append(outlineBlock(path, page, k, opts));
   return node;
 }

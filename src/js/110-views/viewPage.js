@@ -72,7 +72,13 @@ function viewPage() {
   const chapter = !SIDE_DRAWING && isChapterPage(path), prose = chapter && bookMode() === "prose";
   if (chapter) followChapter(path);
   if (chapter) c.append(chapterBar(path));
-  c.append(el("div", {class: "section"}, outlineFor(path, prose ? {prose: true, newText: "New paragraph"} : {facts: true})));
+  /* Hide done (#321), offered only where something is done. A day page shows
+     every area side by side and keeps what was written as it was written. */
+  const closed = prose || isJournalPath(path) ? 0 : closedLineCount(getPage(path).blocks);
+  if (closed) c.append(fbar(fchip("Hide done", doneHidden(),
+    () => { PREF.set("page.hideDone", doneHidden() ? "0" : "1"); render(); }, closed)));
+  c.append(el("div", {class: "section"}, outlineFor(path, prose ? {prose: true, newText: "New paragraph"}
+    : {facts: true, hideDone: closed > 0 && doneHidden()})));
   if (tracker) c.append(trackerPreview(tracker));
   if (isStateList(path)) c.append(...tasksOfTypeSections(path));
   /* The outline shows this page's own lines. A task written in a day page with

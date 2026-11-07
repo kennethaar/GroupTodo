@@ -3361,6 +3361,36 @@ var GTD_TEST = (() => {
       ok(press(bodyImg), "pressing the picture under the line still edits that line");
     } finally { window.open = real; go("today"); }
   });
+  test("#321 Hide done on a page hides done and cancelled lines, and every page opens that way until it is turned off", async () => {
+    const path = scratchProject("hide done", [["TODO", "Call the open one"], ["DONE", "Finished one"], ["CANCELLED", "Dropped one"]]);
+    getPage(path).blocks[1].children = [newBlock({state: "TODO", title: "Under the finished one"})]; touch(path);
+    const other = scratchProject("hide done other", [["DONE", "Another finished"], ["TODO", "Email the other"]]);
+    const clean = scratchProject("hide done clean", [["TODO", "Nothing done here"]]);
+    const was = PREF.get("page.hideDone");
+    const chip = () => [...content().querySelectorAll(".fchip")].find(c => /Hide done/.test(c.textContent));
+    const shown = () => [...content().querySelectorAll(".outline .blk > .line .txt")].map(t => t.textContent);
+    try {
+      PREF.set("page.hideDone", "0");
+      openPage(path); await settle();
+      ok(chip(), "no Hide done on a page with done lines");
+      eq(chip().getAttribute("aria-pressed"), "false");
+      eq(chip().querySelector("small")?.textContent, "2", "the count is not the done and cancelled lines");
+      ok(shown().some(t => /Finished one/.test(t)), "a done line is hidden while Hide done is off");
+      chip().click(); await settle();
+      eq(chip().getAttribute("aria-pressed"), "true", "Hide done did not stay on");
+      const now = shown();
+      ok(now.some(t => /Call the open one/.test(t)), "the open task went too");
+      ok(!now.some(t => /Finished one|Dropped one|Under the finished one/.test(t)), "a done or cancelled line, or a step under it, is still shown: " + now.join(" | "));
+      openPage(other); await settle();
+      ok(!shown().some(t => /Another finished/.test(t)), "another page does not open with done lines hidden");
+      openPage(clean); await settle();
+      ok(!chip(), "Hide done is offered on a page with nothing done");
+      openPage(path); await settle();
+      chip().click(); await settle();
+      ok(shown().some(t => /Finished one/.test(t)), "turning Hide done off did not bring the done line back");
+      eq(String(PREF.get("page.hideDone")), "0");
+    } finally { PREF.set("page.hideDone", was == null ? "0" : was); go("today"); }
+  });
   test("#267 the ↻ chip and Alt+R open the Repeats dialog", async () => {
     const path = scratchProject("repeat chip", [["TODO", "Water the plants"]]);
     const b = getPage(path).blocks[0];
