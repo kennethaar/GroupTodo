@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.113.0 - 2026-11-07
+
+- Next › List: actions are grouped by context, one header each with its
+  count, the group with the most urgent action first (#315). Click a header
+  to see only that context. A row says its context once, in its own words,
+  as you typed it; the Journal shows the words only and never groups, not
+  even on a phone. Typing a plain word in the capture box or on a line now
+  offers the contexts it could be, beside people, organisations, projects
+  and dates, and a pick becomes a link.
+
 ## 1.112.2 - 2026-11-07
 
 - The top bar: only @ makes a context. A plain word is never read as one,

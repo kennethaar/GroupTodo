@@ -33,7 +33,7 @@ function outlineBlock(path, page, b, opts = {}) {
   if (lead) line.append(lead);
   const txt = el("div", {
     class: "txt", contenteditable: ro ? "false" : "true", spellcheck: "false",
-    html: lineHtml(b, opts.leadCtx),
+    html: lineHtml(b),
   });
   if (ro) {
     line.append(txt);
@@ -94,7 +94,7 @@ function outlineBlock(path, page, b, opts = {}) {
     /* A line with a dropped picture in it comes back as a path, not a URL, so
        the same pass the redraw runs has to run over the line it just rebuilt --
        otherwise editing a line emptied the picture that was already in it. */
-    txt.innerHTML = lineHtml(b, opts.leadCtx);
+    txt.innerHTML = lineHtml(b);
     resolveAssets(txt);
   });
   /* ---------- pasting a list ----------

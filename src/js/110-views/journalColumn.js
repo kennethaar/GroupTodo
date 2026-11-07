@@ -13,7 +13,7 @@ function journalColumn(space, day, who, trail) {
       who ? null : el("button", {class: "textbtn", onclick: () => { inSpace(space, () => ensureJournal(day)); render(); }},
         "Write on this day"));
     const node = el("div", {class: "space-journal", data: {space, path}},
-      pageOutline(path, Object.assign({readonly: !!who, leadCtx: true}, trail)));
+      pageOutline(path, Object.assign({readonly: !!who}, trail)));
     const activate = () => {
       activateJournalSpace(space);
       if (!SPACE_CONTEXT || SPACE_CONTEXT.space !== space) SPACE_CONTEXT = {space, path};

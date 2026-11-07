@@ -76,14 +76,20 @@
 @media (pointer:coarse){.task.jrow{min-height:44px}}
 /* On a phone the project is left out: the words get the width. */
 @media (max-width:640px){.jrow>.t-eyebrow{display:none}}
-/* ... and Due Today & Late is grouped by context, each said once above its
-   rows, the group with the most urgent row first. */
+/* Next is grouped by context, each said once above its rows, the group with
+   the most urgent row first (#315). The Journal never groups. */
 .jgroup{display:flex;align-items:center;gap:6px;padding:10px 12px 4px;border-bottom:1px solid var(--border);
   font-size:11px;color:var(--fg3);font-variant-numeric:tabular-nums}
 .jgroup:first-child{padding-top:8px}
 .jgroup .none{letter-spacing:.05em;text-transform:uppercase}
-/* A context inside the words stays where it was written, as a quiet link:
-   the chip in front already says it loudly (#315). */
+button.ngroup{width:100%;min-height:32px;background:none;border:0;border-bottom:1px solid var(--border);
+  text-align:left;font:inherit;font-size:12px;cursor:pointer}
+/* In Next's columns a header never ends a column without its rows. */
+button.ngroup{break-after:avoid;break-inside:avoid}
+button.ngroup .ngname{color:var(--ctx);font-weight:600;font-size:13.5px}
+button.ngroup:hover{background:var(--bg3)}
+button.ngroup:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+/* A context inside the words stays where it was written, as a quiet link. */
 /* Upkeep waits until you point at it or tab to it: a calendar not yet
    linked, the day page's markdown and pin, another tracker. A touch screen
    has no pointing, so there it is always shown. Faded rather than hidden,

@@ -1852,6 +1852,12 @@ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 font-size:11px;color:var(--fg3);font-variant-numeric:tabular-nums}
 .jgroup:first-child{padding-top:8px}
 .jgroup .none{letter-spacing:.05em;text-transform:uppercase}
+button.ngroup{width:100%;min-height:32px;background:none;border:0;border-bottom:1px solid var(--border);
+text-align:left;font:inherit;font-size:12px;cursor:pointer}
+button.ngroup{break-after:avoid;break-inside:avoid}
+button.ngroup .ngname{color:var(--ctx);font-weight:600;font-size:13.5px}
+button.ngroup:hover{background:var(--bg3)}
+button.ngroup:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .todayhead .upkeep,.jhead .upkeep,.tpanel .trkadd{opacity:0}
 .todayhead:hover .upkeep,.todayhead:focus-within .upkeep,.jhead:hover .upkeep,.jhead:focus-within .upkeep,
 .tpanel .space-journal:hover .trkadd,.tpanel .space-journal:focus-within .trkadd{opacity:1}
@@ -26371,9 +26377,11 @@ let chips = chipsFor(a, jr ? opts : {}).filter(c => !(c.classList.contains("asg"
 let lead = null, eyebrow = null;
 if (opts && (opts.nextNow || jr) && a.context && a.projectPath === contextPath(a.context))
 chips = chips.filter(c => !c.classList.contains("proj"));
+const ctxChip = chips.find(c => c.classList.contains("ctx"));
+const ctxShown = ctxChip && !(opts && opts.grouped) && !title.querySelector(".wikilink.ctx") ? ctxChip : null;
+if (ctxChip) chips = chips.filter(c => c !== ctxChip);
 if (jr) {
-const ctx = chips.find(c => c.classList.contains("ctx"));
-if (ctx && !opts.grouped) lead = ctx;
+lead = ctxShown;
 eyebrow = chips.find(c => c.classList.contains("proj")) || null;
 if (eyebrow) {
 eyebrow.className = "t-eyebrow";
@@ -26383,12 +26391,9 @@ eyebrow.addEventListener("keydown", e => {
 if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); openProjectChipMenu(a); }
 });
 }
-chips = chips.filter(c => !c.classList.contains("ctx") && c !== eyebrow);
+chips = chips.filter(c => c !== eyebrow);
 }
-else {
-const ctx = chips.find(c => c.classList.contains("ctx"));
-if (ctx) { title.prepend(ctx); chips = chips.filter(c => c !== ctx); }
-}
+else if (ctxShown) title.prepend(ctxShown);
 const pills = [!jr && multiSpace() && a.space ? spaceBadge(a.space) : null, ...chips.filter(c => !c.classList.contains("when"))].filter(Boolean);
 const info = chips.filter(c => c.classList.contains("when"));
 const linger = a.state === "WAIT" && LINGER.get(a.block.id);
@@ -26529,6 +26534,25 @@ PREF.set("hideStates:" + (Spaces.active || ""), JSON.stringify(Array.from(set)))
 }
 function taskCard(actions, emptyText, rowOpts) {
 return pagedCard(actions, rowOpts ? a => taskRow(a, rowOpts) : a => taskRow(a), emptyText);
+}
+function contextGroupedCard(list, emptyText, rowOpts = {}) {
+const at = new Map();
+list.forEach(a => { if (!at.has(a.context || "")) at.set(a.context || "", at.size); });
+if (at.size < 2) return taskCard(list, emptyText, Object.assign({grouped: at.size === 1 && list.length > 0}, rowOpts));
+const n = new Map([...at.keys()].map(k => [k, list.filter(a => (a.context || "") === k).length]));
+const sorted = list.map((a, i) => [a, i]).sort((x, y) => at.get(x[0].context || "") - at.get(y[0].context || "") || x[1] - y[1]).map(x => x[0]);
+const opts = Object.assign({grouped: true}, rowOpts);
+return pagedCard(sorted, (a, i) => {
+const row = taskRow(a, opts), k = a.context || "";
+if (i && (sorted[i - 1].context || "") === k) return row;
+const head = el("button", {type: "button", class: "jgroup ngroup", title: "Show only " + (k ? "@" + k : "actions with no context"),
+onclick: () => go("next", {ctxFilter: k || CTX_NONE})},
+k ? el("span", {class: "ngname"}, contextLabel(k)) : el("span", {class: "none"}, "No context"),
+el("span", {class: "n"}, String(n.get(k))));
+const both = document.createDocumentFragment();
+both.append(head, row);
+return both;
+}, emptyText);
 }
 const emptyCard = (...why) => el("div", {class: "card"}, el("div", {class: "empty"}, ...why));
 const rowTitle = r => inSpace(r.space, () => pageTitle(r.path));
@@ -27122,7 +27146,10 @@ x.title.toLowerCase().startsWith(f) ||
 .slice(0, 5).map(x => Object.assign({accept: "link"}, x));
 const aliased = aliasRows(names().filter(x => x.kind !== "context"), f).slice(0, 3);
 const dates = opts.dates ? dateSuggestions(frag).map(r => Object.assign({accept: "date"}, r)) : [];
-const rows = dates.concat(aliased, found);
+const ctxs = n === 1 ? names().filter(x => x.kind === "context" &&
+(x.title.toLowerCase().split("/").some(w => w.startsWith(f)) || x.aliases.some(a => a.toLowerCase().startsWith(f))))
+.slice(0, 3).map(x => Object.assign({accept: "link"}, x)) : [];
+const rows = dates.concat(aliased, ctxs, found);
 if (rows.length) return {mode: "word", at: before.length - frag.length, rows};
 }
 return null;
@@ -27774,10 +27801,8 @@ createLinkedPages(b.title);
 touch(path); noteTodoTouched();
 return true;
 }
-function lineHtml(b, lead) {
+function lineHtml(b) {
 if (tableRows(b)) return tableHtml(b);
-const ctx = lead && b.state ? contextOf(withoutEst(b.title)) : null;
-if (ctx) return '<span class="chip ctx" aria-hidden="true">@' + esc(ctx) + "</span> " + lineHtml(b, false);
 if (bujoKind(b.title, b.state)) return renderInline(bujoText(b.title));
 return b.state && estBand(b.title)
 ? estHtml(b.title) + renderInline(withoutEst(b.title))
@@ -27836,7 +27861,7 @@ const lead = meetLead(b);
 if (lead) line.append(lead);
 const txt = el("div", {
 class: "txt", contenteditable: ro ? "false" : "true", spellcheck: "false",
-html: lineHtml(b, opts.leadCtx),
+html: lineHtml(b),
 });
 if (ro) {
 line.append(txt);
@@ -27885,7 +27910,7 @@ dropLineDraft(b.id);
 line.classList.remove("raw");
 paintHeadLine(line, b.title, b.state);
 if (paintTrackerLine(line, txt, path, b)) return;
-txt.innerHTML = lineHtml(b, opts.leadCtx);
+txt.innerHTML = lineHtml(b);
 resolveAssets(txt);
 });
 txt.addEventListener("dragover", e => {
@@ -30855,7 +30880,7 @@ const tasksBy = (acts, empty, rowOpts = JROW) => byArea
 ? areaCols(sp => taskCard(inArea(acts, sp), empty, rowOpts)) : taskCard(acts, empty, rowOpts);
 const doneNow = who ? [] : doneToday().filter(a => a.due && a.due <= today);
 const dueCard = (open, done, empty) => {
-const card = open.length && PHONE.matches ? byContext(open) : taskCard(open, empty, DUEROW);
+const card = taskCard(open, empty, DUEROW);
 if (!done.length) return card;
 const shown = PREF.get("today.done", "") === "1";
 card.append(el("button", {class: "donetoday", "aria-expanded": String(shown),
@@ -31080,7 +31105,7 @@ who ? firstNameOf(who) + " has not written anything " + when + "."
 who ? null : el("button", {class: "textbtn", onclick: () => { inSpace(space, () => ensureJournal(day)); render(); }},
 "Write on this day"));
 const node = el("div", {class: "space-journal", data: {space, path}},
-pageOutline(path, Object.assign({readonly: !!who, leadCtx: true}, trail)));
+pageOutline(path, Object.assign({readonly: !!who}, trail)));
 const activate = () => {
 activateJournalSpace(space);
 if (!SPACE_CONTEXT || SPACE_CONTEXT.space !== space) SPACE_CONTEXT = {space, path};
@@ -31174,7 +31199,7 @@ el("span", {translate: "no", html: renderInline(it.title)}))));
 }
 const a = it.a.space ? it.a : Object.assign({}, it.a, {space: V.space});
 const text = el("span", {translate: "no", html: renderInline(titleForLine(a.title))});
-const ctx = a.context ? el("span", {class: "chip ctx"}, "@" + a.context) : null;
+const ctx = a.context && !text.querySelector(".wikilink.ctx") ? el("span", {class: "chip ctx"}, "@" + a.context) : null;
 const sub = it.late ? el("span", {class: "wksub late"}, "! " + it.late + "d late")
 : it.time ? el("span", {class: "wksub"}, it.time)
 : it.kind === "start" ? el("span", {class: "wksub"}, "starts")
@@ -31210,7 +31235,7 @@ const path = id >= weekOf(todayISO()) ? ensureWeek(id) : journalPath(id);
 if (!getPage(path)) return emptyCard("Nothing written in week " + weekNo(id) + ". ",
 el("button", {class: "textbtn", onclick: () => { inSpace(space, () => ensureWeek(id)); render(); }}, "Write in this week"));
 const node = el("div", {class: "space-journal", data: {space, path}},
-pageOutline(path, {leadCtx: true, newText: "+ Write a line…", title: id,
+pageOutline(path, {newText: "+ Write a line…", title: id,
 parentGo: ["today", {sub: "week", jz: null}], root: "Journal", rootGo: ["today", {sub: "week", jz: null}]}));
 const activate = () => {
 activateJournalSpace(space);
@@ -31868,7 +31893,7 @@ if (est.plan) acts = planFill(acts, est.plan);
 sortActs(acts);
 sortSel.classList.add("right");
 const f = textFilter("next", "Filter next actions", acts, taskHay,
-(hits, q) => taskCard(hits, noMatch(q, side === "chores" ? "No chores now." :
+(hits, q) => (ctx ? taskCard : contextGroupedCard)(hits, noMatch(q, side === "chores" ? "No chores now." :
 ctx === CTX_NONE ? "Nothing to do with no context." :
 ctx ? "Nothing to do at " + contextLabel(ctx) + "." : "Nothing on your plate. Add one at the top.")));
 const sideBtn = (id, label) => el("button", {class: "nsidebtn", "aria-pressed": String(side === id),
@@ -37179,7 +37204,6 @@ card.append(el("button", {class: "dash-item",
 onclick: () => h.block ? inSpace(h.space, () => openTaskDetail(h.path, h.block, h.space))
 : openPageIn(h.space, h.path)},
 h.block ? stateChip(h.block.state, h.block) : null,
-h.block && contextOf(h.block.title) ? el("span", {class: "chip ctx"}, "@" + contextOf(h.block.title)) : null,
 el("span", {translate: "no", html: renderInline(label)}),
 multiSpace() && h.space ? spaceBadge(h.space) : null,
 h.archived ? el("span", {class: "chip"}, "archived") : null,

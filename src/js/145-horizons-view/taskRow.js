@@ -5,17 +5,19 @@ function taskRow(a, opts) {
   // change would be written through the active space's backend.
   const title = el("div", {class: "t-title", html: estHtml(a.title) + renderInline(titleForLine(a.title))});
   let chips = chipsFor(a, jr ? opts : {}).filter(c => !(c.classList.contains("asg") && pillInTitle(title, c, a.assignee)));
-  /* The context stands in front of the words, everywhere, and the words keep
-     it where it was written (#315). In the Journal the project is the line
-     above. Each is the same chip as before, so a click on it does what it did. */
+  /* The words are shown as written, @context and all, and that says the
+     context (#315). A chip is drawn only when the words do not say it -- a
+     context from the line above -- and never under a context's own header.
+     In the Journal the project is the line above. */
   let lead = null, eyebrow = null;
   // A chore written on its room's own page: the room is said once, by its pill (#209).
   if (opts && (opts.nextNow || jr) && a.context && a.projectPath === contextPath(a.context))
     chips = chips.filter(c => !c.classList.contains("proj"));
+  const ctxChip = chips.find(c => c.classList.contains("ctx"));
+  const ctxShown = ctxChip && !(opts && opts.grouped) && !title.querySelector(".wikilink.ctx") ? ctxChip : null;
+  if (ctxChip) chips = chips.filter(c => c !== ctxChip);
   if (jr) {
-    const ctx = chips.find(c => c.classList.contains("ctx"));
-    // Grouped by context, the group's head says it (#209).
-    if (ctx && !opts.grouped) lead = ctx;
+    lead = ctxShown;
     eyebrow = chips.find(c => c.classList.contains("proj")) || null;
     if (eyebrow) {
       eyebrow.className = "t-eyebrow";
@@ -25,12 +27,9 @@ function taskRow(a, opts) {
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); openProjectChipMenu(a); }
       });
     }
-    chips = chips.filter(c => !c.classList.contains("ctx") && c !== eyebrow);
+    chips = chips.filter(c => c !== eyebrow);
   }
-  else {
-    const ctx = chips.find(c => c.classList.contains("ctx"));
-    if (ctx) { title.prepend(ctx); chips = chips.filter(c => c !== ctx); }
-  }
+  else if (ctxShown) title.prepend(ctxShown);
   // The Journal's columns already say the area.
   const pills = [!jr && multiSpace() && a.space ? spaceBadge(a.space) : null, ...chips.filter(c => !c.classList.contains("when"))].filter(Boolean);
   const info = chips.filter(c => c.classList.contains("when"));

@@ -407,9 +407,9 @@ var GTD_TEST = (() => {
     ok(where.length, "no place under the hits");
     ok(where.every(w => !/\.md$|\//.test(w)), "a file path under a hit: " + where.find(w => /\.md$|\//.test(w)));
     eq(placeName("journals/Kenneth Aar/" + todayISO() + ".md"), "Journal · Today");
-    // #315: a hit leads with its context, the same as in the Journal and Next.
+    // #315: a hit says its context in its words, once, as in the Journal.
     const hit = [...content().querySelectorAll(".dash-item")].find(i => /@computer/.test(i.textContent));
-    ok(hit && hit.querySelector(".chip.ctx"), "a hit with a context has no context chip");
+    ok(hit && !hit.querySelector(".chip.ctx"), "a hit says its context twice");
   });
   test("#316 the late badge and the @context pill reach AA in Paper, Linen, Ink and Night", async () => {
     const root = document.documentElement, keep = ["data-theme", "data-light", "data-dark"].map(a => [a, root.getAttribute(a)]);
@@ -2272,6 +2272,14 @@ var GTD_TEST = (() => {
     ok(refs(at("Rake the leaves @testout")).includes("c/Testabode2/Testoutside"), "@testout missed Testabode2/Testoutside");
     ok(refs(at("Rake @testabode2/testo")).includes("c/Testabode2/Testoutside"), "the full path still finds it");
     ok(!at("Rake @testoutside").rows.some(r => r.isNew), "offered a new context with its name");
+    // #315: a plain word is not read as a context, so the context is offered to pick, beside a same-named org.
+    const org = join(DIRS.orgs, "Testoutside AS.md");
+    putPage(org, {props: {}, blocks: []}); clearMemo();
+    try {
+      const rows = refs(at("Rake the leaves testoutsi"));
+      ok(rows.includes("c/Testabode2/Testoutside"), "the plain word missed the context: " + rows);
+      eq(at("Rake the leaves testoutsi").rows.find(r => r.ref === "c/Testabode2/Testoutside").accept, "link", "picked, it is a link");
+    } finally { removePage(org); clearMemo(); }
   });
   /* ---------- aliases on every page (#207) ---------- */
   test("#207 a context's alias is that context, typed, captured or picked", () => {
@@ -4646,15 +4654,15 @@ var GTD_TEST = (() => {
     await settle();
     return {path, blocks: getPage(path).blocks, row: b => content().querySelector('.task.jrow[data-id="' + b.id + '"]')};
   };
-  test("#160 #209 a Journal row: the state, the context, the words, then the project", async () => {
+  test("#160 #315 a Journal row: the state, the words as written, then the project", async () => {
     const {path, blocks, row} = await journalDue([["TODO", "Call Bob about the quote [[c/phone]]"]]);
     const r = row(blocks[0]);
     ok(r, "the row is under Due today & late");
     const kids = [...r.children].map(n => n.className.split(" ")[0]);
-    eq(kids.slice(0, 4), ["t-chk", "chip", "t-title", "t-eyebrow"], "order");
+    eq(kids.slice(0, 3), ["t-chk", "t-title", "t-eyebrow"], "order");
     has(r.querySelector(".t-eyebrow").textContent, pageTitle(path));
-    eq(r.querySelector(":scope > .chip.ctx").textContent, "@phone");
-    // #315: the sentence stays whole, the @phone where it was written.
+    // #315: the words say the context, once, where it was written.
+    ok(!r.querySelector(".chip.ctx"), "the context said again as a chip");
     eq(r.querySelector(".t-title").textContent.trim(), "Call Bob about the quote @phone");
     eq(r.lastElementChild.classList.contains("t-menu"), true, "the row's ⋯ ends it");
     ok(!r.querySelector(".duepill"), "due today goes without saying under Due today");
@@ -4681,44 +4689,46 @@ var GTD_TEST = (() => {
     const r = content().querySelector('.task.jrow[data-id="' + b.id + '"]');
     ok(r, "the chore is under Due today");
     ok(!r.querySelector(".t-eyebrow"), "no project line naming the room again");
-    eq(r.querySelector(":scope > .chip.ctx").textContent, "@Testroom209");
+    has(r.querySelector(".t-title").textContent, "@Testroom209");
+    ok(!r.querySelector(".chip.ctx"), "the room said again as a chip");
   });
-  test("#209 on a phone, Due today is grouped by context, late first", async () => {
+  test("#315 the Journal never groups by context, not even on a phone", async () => {
     const was = Object.getOwnPropertyDescriptor(PHONE, "matches");
     Object.defineProperty(PHONE, "matches", {value: true, configurable: true});
     try {
-      const path = scratchProject("phone209", [["TODO", "Ring the plumber [[c/phone]]"], ["TODO", "Print the form [[c/office]]"],
-        ["TODO", "Ring the bank [[c/phone]]"]]);
+      const path = scratchProject("phone209", [["TODO", "Ring the plumber [[c/phone]]"], ["TODO", "Print the form [[c/office]]"]]);
       const bs = getPage(path).blocks;
-      setDue(bs[0], T()); setDue(bs[1], shiftISO(T(), -2)); setDue(bs[2], T());
+      setDue(bs[0], T()); setDue(bs[1], shiftISO(T(), -2));
       touch(path); clearMemo();
       PREF.set("today.tab", "due");
       go("today");
       await settle();
-      const heads = [...content().querySelectorAll(".jgroup .chip.ctx")].map(h => h.textContent);
-      ok(heads.includes("@office") && heads.indexOf("@office") < heads.indexOf("@phone"), "the late one's group first: " + heads);
-      eq(heads.filter(h => h === "@phone").length, 1, "each context said once");
-      const r = content().querySelector('.task.jrow[data-id="' + bs[0].id + '"]');
-      ok(!r.querySelector(":scope > .chip.ctx"), "the row does not say the context again");
-      eq(r.previousElementSibling.classList.contains("jgroup") || r.previousElementSibling.dataset.id === bs[2].id || r.nextElementSibling.dataset.id === bs[2].id, true, "both phone rows together");
+      ok(content().querySelector('.task.jrow[data-id="' + bs[0].id + '"]'), "the row is under Due today");
+      ok(!content().querySelector(".jgroup"), "the Journal grouped by context");
     } finally {
       if (was) Object.defineProperty(PHONE, "matches", was); else delete PHONE.matches;
     }
   });
-  test("#160 #315 a context written inside the words stays there, and its chip still leads", async () => {
-    const {blocks, row} = await journalDue([["TODO", "Ask Ann at the [[c/office]] about the keys"]]);
-    const r = row(blocks[0]);
-    eq(r.querySelector(":scope > .chip.ctx").textContent, "@office", "the chip in front");
-    eq(r.querySelector(".t-title").textContent.trim(), "Ask Ann at the @office about the keys");
-    eq(getComputedStyle(r.querySelector(".t-title .wikilink.ctx")).backgroundColor, "rgba(0, 0, 0, 0)", "a quiet link, not a second pill");
+  test("#315 Next has a header per context, and the rows say it only in their words", async () => {
+    const {blocks} = await journalDue([["TODO", "Ask Ann at the [[c/office]] about the keys"]]);
+    const r0 = content().querySelector('.task.jrow[data-id="' + blocks[0].id + '"]');
+    eq(r0.querySelector(".t-title").textContent.trim(), "Ask Ann at the @office about the keys", "the Journal keeps the words");
+    eq(getComputedStyle(r0.querySelector(".t-title .wikilink.ctx")).backgroundColor, "rgba(0, 0, 0, 0)", "a quiet link, not a pill");
     go("next", {sub: "list", ctxFilter: null});
     await settle();
     const n = content().querySelector('.task[data-id="' + blocks[0].id + '"]');
     ok(n, "the row is on Next");
-    const t = n.querySelector(".t-title");
-    eq(t.querySelector(".chip.ctx").textContent, "@office", "Next leads with the context too");
-    ok(t.firstElementChild.classList.contains("chip"), "before the words");
-    has(t.textContent, "Ask Ann at the @office about the keys");
+    ok(!n.querySelector(".chip.ctx"), "the row repeats its context as a chip");
+    has(n.querySelector(".t-title").textContent, "Ask Ann at the @office about the keys");
+    let h = n.previousElementSibling;
+    while (h && !h.classList.contains("ngroup")) h = h.previousElementSibling;
+    ok(h && h.tagName === "BUTTON", "no header above the row");
+    has(h.textContent, "@office");
+    eq([...content().querySelectorAll(".ngroup")].filter(x => x.textContent.startsWith("@office")).length, 1, "each context said once");
+    h.click();
+    await settle();
+    eq(state.ctxFilter, "office", "a header shows that context alone");
+    go("next", {sub: "list", ctxFilter: null});
   });
   test("#160 a late row says Due yesterday", async () => {
     const {blocks, row} = await journalDue([["TODO", "Send the late figures"]], shiftISO(T(), -1));
@@ -4905,14 +4915,12 @@ var GTD_TEST = (() => {
     ok(edit, "Edit Markdown is there");
     ok(getComputedStyle(edit).visibility !== "hidden", "not taken out of the tab order");
   });
-  test("#160 #315 on the day page a task's context leads as a chip, and the words keep it where written", () => {
-    const b = {state: "TODO", title: "Reply to Bob [[c/computer]]"};
-    const lead = lineHtml(b, true), plain = lineHtml(b);
-    ok(/^<span class="chip ctx[^"]*"[^>]*>@computer<\/span>/.test(lead), "the chip in front on the Journal: " + lead);
-    ok(lead.lastIndexOf("@computer") > lead.indexOf("Reply"), "and still at the end of the words: " + lead);
-    ok(plain.indexOf("@computer") > plain.indexOf("Reply") && !plain.includes("chip"), "as written elsewhere: " + plain);
-    const mid = lineHtml({state: "TODO", title: "Print it at the [[c/office]] for Ann"}, true);
-    ok(mid.lastIndexOf("@office") > mid.indexOf("Print"), "inside the words it stays: " + mid);
+  test("#160 #315 on the day page a task's words keep their context where it was written, said once", () => {
+    const end = lineHtml({state: "TODO", title: "Reply to Bob [[c/computer]]"});
+    ok(end.indexOf("@computer") > end.indexOf("Reply") && !end.includes("chip"), "at the end, as written: " + end);
+    eq(end.split("@computer").length, 2, "said once");
+    const mid = lineHtml({state: "TODO", title: "Print it at the [[c/office]] for Ann"});
+    ok(mid.indexOf("@office") > mid.indexOf("Print") && mid.indexOf("@office") < mid.indexOf("Ann"), "inside the words it stays: " + mid);
   });
   test("#160 the journal's title does not repeat the area its badge names", async () => {
     go("today");
@@ -6276,25 +6284,22 @@ var GTD_TEST = (() => {
       PREF.set("hideStates:" + (Spaces.active || ""), wasHidden); render();
     }
   });
-  test("#224 on a phone a Next row is a round tick, its @context before the words, and one quiet line", async () => {
+  test("#224 #315 on a phone a Next row is a round tick, its words under its context's header, and one quiet line", async () => {
     go("next", {sub: "list", ctxFilter: null}); await settle();
     const {f, d} = await phoneJournal();
     try {
-      const row = [...d.querySelectorAll(".task")].find(r => r.querySelector(".t-title > .chip.ctx") && r.querySelector(".duepill"));
+      const row = [...d.querySelectorAll(".task")].find(r => r.querySelector(".t-title .wikilink.ctx") && r.querySelector(".duepill"));
       ok(row, "a row with a context and a day");
       const tick = row.querySelector(".tick"), tr = tick.getBoundingClientRect();
       ok(Math.abs(tr.width - tr.height) < 1 && tr.width <= 24, "the tick is a round button: " + tr.width + "x" + tr.height);
       eq(getComputedStyle(row.querySelector(".t-menu")).display, "none", "no ⋯ on a phone");
-      const lead = row.querySelector(".t-title > .chip.ctx");
-      eq(row.querySelector(".t-title").firstElementChild, lead, "the @context is in the words' line, before the words");
-      ok(getComputedStyle(lead).display !== "none", "and shown");
-      eq(row.querySelectorAll(".t-meta .chip.ctx").length, 0, "and not said twice");
+      ok(d.querySelector(".ngroup"), "grouped by context on a phone too");
+      eq(row.querySelectorAll(".chip.ctx").length, 0, "the context not said again on the row");
       ok(getComputedStyle(row.querySelector(".duepill"), "::before").content.includes("Due"), "a day says it is when it is due");
       eq(getComputedStyle(row.querySelector(".duepill")).backgroundColor, "rgba(0, 0, 0, 0)", "a quiet line, not pills");
       ok(tick.getBoundingClientRect().right + 20 > row.querySelector(".t-title").getBoundingClientRect().left, "the words start right after the tick");
       ok(d.documentElement.scrollWidth <= 390, "nothing wider than the phone");
     } finally { f.remove(); }
-    ok(getComputedStyle(content().querySelector(".task .t-title > .chip.ctx")).backgroundColor !== "rgba(0, 0, 0, 0)", "a wide screen keeps the pill");
   });
   test("#225 on a phone Next is To do or Chores: chores before and after work and on days off, each with a count", async () => {
     const path = choreProject("next sides", [chore("Dust the side shelf [[c/home/kitchen]]", "daily", -1),

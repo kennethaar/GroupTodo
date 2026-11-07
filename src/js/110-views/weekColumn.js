@@ -7,7 +7,7 @@ function weekColumn(space, id) {
     if (!getPage(path)) return emptyCard("Nothing written in week " + weekNo(id) + ". ",
       el("button", {class: "textbtn", onclick: () => { inSpace(space, () => ensureWeek(id)); render(); }}, "Write in this week"));
     const node = el("div", {class: "space-journal", data: {space, path}},
-      pageOutline(path, {leadCtx: true, newText: "+ Write a line…", title: id,
+      pageOutline(path, {newText: "+ Write a line…", title: id,
         parentGo: ["today", {sub: "week", jz: null}], root: "Journal", rootGo: ["today", {sub: "week", jz: null}]}));
     const activate = () => {
       activateJournalSpace(space);

@@ -1392,6 +1392,7 @@ js/145-horizons-view/openPageIn.js
 js/145-horizons-view/hiddenStates.js
 js/145-horizons-view/setHiddenStates.js
 js/145-horizons-view/taskCard.js
+js/145-horizons-view/contextGroupedCard.js
 js/145-horizons-view/vars-emptyCard.js
 js/145-horizons-view/pagedCard.js
 js/145-horizons-view/section.js

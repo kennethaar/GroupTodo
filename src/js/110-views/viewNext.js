@@ -128,7 +128,7 @@ function viewNext() {
   sortActs(acts);
   sortSel.classList.add("right");
   const f = textFilter("next", "Filter next actions", acts, taskHay,
-    (hits, q) => taskCard(hits, noMatch(q, side === "chores" ? "No chores now." :
+    (hits, q) => (ctx ? taskCard : contextGroupedCard)(hits, noMatch(q, side === "chores" ? "No chores now." :
       ctx === CTX_NONE ? "Nothing to do with no context." :
       ctx ? "Nothing to do at " + contextLabel(ctx) + "." : "Nothing on your plate. Add one at the top.")));
   const sideBtn = (id, label) => el("button", {class: "nsidebtn", "aria-pressed": String(side === id),

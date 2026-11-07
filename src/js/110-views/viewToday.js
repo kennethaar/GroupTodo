@@ -54,27 +54,7 @@ function viewToday() {
   const areaCols = cell => journalWidths(el("div", {class: "jgrid"}, ...spaces.map(sp => el("section", {class: "jcard trkcol"},
     el("header", {class: "jhead"}, spaceBadge(sp)), cell(sp)))), spaces);
   const JROW = {journal: true}, DUEROW = {journal: true, todayImplied: true};
-  /* On a phone, what is due is grouped by context (#209): each context said
-     once, as its pill above its rows, so the words get the width. The list is
-     late first, so a group stands where its most urgent row would. */
-  const byContext = list => {
-    const at = new Map();
-    list.forEach(a => { if (!at.has(a.context || "")) at.set(a.context || "", at.size); });
-    const n = new Map([...at.keys()].map(k => [k, list.filter(a => (a.context || "") === k).length]));
-    const sorted = list.map((a, i) => [a, i]).sort((x, y) => at.get(x[0].context || "") - at.get(y[0].context || "") || x[1] - y[1]).map(x => x[0]);
-    const GROUPED = Object.assign({grouped: true}, DUEROW);
-    return pagedCard(sorted, (a, i) => {
-      const row = taskRow(a, GROUPED), k = a.context || "";
-      if (i && (sorted[i - 1].context || "") === k) return row;
-      const head = el("div", {class: "jgroup"}, k
-        ? el("span", {class: "chip ctx b", title: "@" + k + " - the oldest few, surfaced",
-            onclick: e => { e.stopPropagation(); surfaceContext(k); }}, "@" + k)
-        : el("span", {class: "none"}, "No context"), String(n.get(k)));
-      const both = document.createDocumentFragment();
-      both.append(head, row);
-      return both;
-    }, "");
-  };
+  // The Journal is for capture: it never groups by context (#315). Next does.
   const inArea = (list, sp) => byArea ? list.filter(a => a.space === sp) : list;
   const tasksBy = (acts, empty, rowOpts = JROW) => byArea
     ? areaCols(sp => taskCard(inArea(acts, sp), empty, rowOpts)) : taskCard(acts, empty, rowOpts);
@@ -82,7 +62,7 @@ function viewToday() {
      are working down, and the row to open them again (#160). */
   const doneNow = who ? [] : doneToday().filter(a => a.due && a.due <= today);
   const dueCard = (open, done, empty) => {
-    const card = open.length && PHONE.matches ? byContext(open) : taskCard(open, empty, DUEROW);
+    const card = taskCard(open, empty, DUEROW);
     if (!done.length) return card;
     const shown = PREF.get("today.done", "") === "1";
     card.append(el("button", {class: "donetoday", "aria-expanded": String(shown),

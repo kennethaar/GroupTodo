@@ -58,7 +58,13 @@ function suggestFor(host, opts) {
     // "storebrand" is Storebrand Forsikring AS, written the way it was said.
     const aliased = aliasRows(names().filter(x => x.kind !== "context"), f).slice(0, 3);
     const dates = opts.dates ? dateSuggestions(frag).map(r => Object.assign({accept: "date"}, r)) : [];
-    const rows = dates.concat(aliased, found);
+    /* A plain word is never read as a context by itself (#315), so the pick
+       is how "home" becomes @home: offered with the people, organisations and
+       projects, by its own name or the name inside its folder. */
+    const ctxs = n === 1 ? names().filter(x => x.kind === "context" &&
+      (x.title.toLowerCase().split("/").some(w => w.startsWith(f)) || x.aliases.some(a => a.toLowerCase().startsWith(f))))
+      .slice(0, 3).map(x => Object.assign({accept: "link"}, x)) : [];
+    const rows = dates.concat(aliased, ctxs, found);
     if (rows.length) return {mode: "word", at: before.length - frag.length, rows};
   }
   return null;
