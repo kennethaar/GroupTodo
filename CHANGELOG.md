@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.112.1 - 2026-11-07
+
+- Search: each hit says where it is in words, such as Journal · Today or the
+  page's title, instead of a file path (#316). The late count in the sidebar
+  and the @context pill now reach AA contrast in every theme, and the Phone
+  and PC help says where Send really is on a phone: the area menu.
+
 ## 1.112.0 - 2026-11-07
 
 - Getting started: once your first task is in, a new step, Pick your next

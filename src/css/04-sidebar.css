@@ -28,7 +28,9 @@
   font-variant-emoji:text;filter:grayscale(1);font-style:normal}
 .nav-item .lbl{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nav-item .cnt{font-size:12px;font-variant-numeric:tabular-nums;color:var(--fg3)}
-.nav-item .cnt.hot{color:#fff;background:var(--late);border-radius:10px;padding:0 6px}
+/* --bg2 on --late is AA in every theme: white on the light red, near-black
+   on the pale red of the dark themes (UX-010). */
+.nav-item .cnt.hot{color:var(--bg2);background:var(--late);border-radius:10px;padding:0 6px}
 .nav-item.small{font-size:13px;padding:5px 10px;color:var(--fg2)}
 /* Contexts unfold into one row each, under the item. */
 .nav-item .fold{width:18px;height:18px;margin-right:-6px;flex:none;display:inline-flex;align-items:center;

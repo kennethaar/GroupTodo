@@ -57,6 +57,8 @@ function viewSearch() {
   }
   for (const h of hits.slice(0, 300)) {
     const label = inSpace(h.space, () => h.block ? h.block.title : pageTitle(h.path));
+    // A page hit is already named by its title; a line says which page it is on.
+    const where = h.block || /^journals\//i.test(h.path) ? inSpace(h.space, () => placeName(h.path)) : null;
     card.append(el("button", {class: "dash-item",
       onclick: () => h.block ? inSpace(h.space, () => openTaskDetail(h.path, h.block, h.space))
                              : openPageIn(h.space, h.path)},
@@ -64,7 +66,7 @@ function viewSearch() {
       el("span", {translate: "no", html: renderInline(label)}),
       multiSpace() && h.space ? spaceBadge(h.space) : null,
       h.archived ? el("span", {class: "chip"}, "archived") : null,
-      el("span", {class: "p"}, h.path)));
+      where ? el("span", {class: "p where"}, where) : null));
   }
   c.append(section("Results", hits.length, card));
   return c;

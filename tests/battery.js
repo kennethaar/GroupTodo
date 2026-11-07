@@ -399,10 +399,46 @@ var GTD_TEST = (() => {
     for (const k of ["journal", "project", "person", "org", "context"]) ok(seen.has(k), "no " + k + " page in the demo");
     go("today");
   });
-  test("search finds a demo task", async () => {
+  test("search finds a demo task, and says where in words, never as a file path (#316)", async () => {
     go("search", {searchDraft: "depot", query: "depot"});
     await settle();
     has(content().textContent, "depot");
+    const where = [...content().querySelectorAll(".dash-item .p")].map(n => n.textContent);
+    ok(where.length, "no place under the hits");
+    ok(where.every(w => !/\.md$|\//.test(w)), "a file path under a hit: " + where.find(w => /\.md$|\//.test(w)));
+    eq(placeName("journals/Kenneth Aar/" + todayISO() + ".md"), "Journal · Today");
+  });
+  test("#316 the late badge and the @context pill reach AA in Paper, Linen, Ink and Night", async () => {
+    const root = document.documentElement, keep = ["data-theme", "data-light", "data-dark"].map(a => [a, root.getAttribute(a)]);
+    const rgb = s => {
+      const m = /color\(srgb ([\d.]+) ([\d.]+) ([\d.]+)(?: \/ ([\d.]+))?\)/.exec(s);
+      if (m) return [+m[1] * 255, +m[2] * 255, +m[3] * 255, m[4] == null ? 1 : +m[4]];
+      const n = s.match(/[\d.]+/g).map(Number);
+      return [n[0], n[1], n[2], n[3] == null ? 1 : n[3]];
+    };
+    const over = (top, bot) => top.slice(0, 3).map((c, i) => c * top[3] + bot[i] * (1 - top[3])).concat(1);
+    const lum = c => { const [r, g, b] = c.slice(0, 3).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return .2126 * r + .7152 * g + .0722 * b; };
+    const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + .05) / (y + .05); };
+    const probe = (cls, inner) => { const d = el("div", {class: cls}); d.innerHTML = inner; content().append(d); return d; };
+    const nav = probe("nav-item", '<span class="cnt hot">3</span>');
+    const row = probe("jrow", '<span class="t-title"><a class="wikilink ctx">@office</a></span>');
+    try {
+      for (const [theme, light, dark] of [["light", "paper", null], ["light", "linen", null], ["dark", null, "ink"], ["dark", null, "night"]]) {
+        root.setAttribute("data-theme", theme);
+        light ? root.setAttribute("data-light", light) : root.removeAttribute("data-light");
+        dark ? root.setAttribute("data-dark", dark) : root.removeAttribute("data-dark");
+        const page = rgb(getComputedStyle(document.body).backgroundColor);
+        const badge = getComputedStyle(nav.querySelector(".cnt"));
+        const bb = over(rgb(badge.backgroundColor), page);
+        ok(ratio(rgb(badge.color), bb) >= 4.5, theme + " " + (light || dark) + ": late badge " + ratio(rgb(badge.color), bb).toFixed(2));
+        const pill = getComputedStyle(row.querySelector(".ctx"));
+        const pb = over(rgb(pill.backgroundColor), page);
+        ok(ratio(over(rgb(pill.color), pb), pb) >= 4.5, theme + " " + (light || dark) + ": @context " + ratio(rgb(pill.color), pb).toFixed(2));
+      }
+    } finally {
+      nav.remove(); row.remove();
+      for (const [a, v] of keep) v == null ? root.removeAttribute(a) : root.setAttribute(a, v);
+    }
   });
 
   /* ============================================================

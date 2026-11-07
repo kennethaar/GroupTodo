@@ -2037,6 +2037,7 @@ js/110-views/wordScore.js
 js/110-views/searchScore.js
 js/110-views/searchHits.js
 js/110-views/vars-SEARCH_KEEP.js
+js/110-views/placeName.js
 js/110-views/viewSearch.js
 js/110-views/vars-TRACKER_LETTERS.js
 js/110-views/parseTracker.js

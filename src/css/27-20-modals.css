@@ -143,6 +143,7 @@
   .dash-item{flex-wrap:wrap;row-gap:2px}
   .dash-item .p{order:3;flex-basis:100%;max-width:none;padding-left:0}
 }
+.dash-item .p.where{font-family:inherit}
 .dash-item .fix{margin-left:auto;font-size:11px;color:var(--accent);flex:none}
 
 .coach{
