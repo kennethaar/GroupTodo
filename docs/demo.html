@@ -1111,9 +1111,11 @@ body.bookfocus:not(.teleprompt) .outline:focus-within :is(.txt,.bodyline):not(:f
 body.bookfocus.teleprompt #content{padding-top:45vh;padding-bottom:50vh}
 body.teleprompt #content .outline :is(.txt,.bodyline):not(.tp-lit),
 body.teleprompt #content .outline :is(.txt,.bodyline):not(.tp-lit) *{color:var(--fg3)}
-body.teleprompt #content .outline :is(.txt,.bodyline){transition:color .35s ease,font-size .35s ease}
-body.teleprompt #content .outline :is(.txt,.bodyline) *{transition:color .35s ease}
-body.teleprompt #content .outline :is(.txt,.bodyline).tp-lit{font-size:1.12em}
+body.teleprompt #content .outline :is(.txt,.bodyline){transform-origin:left center;
+transition:color .15s ease,transform .15s ease,margin .15s ease}
+body.teleprompt #content .outline :is(.txt,.bodyline) *{transition:color .15s ease}
+body.teleprompt #content .outline :is(.txt,.bodyline).tp-lit{transform:scale(1.12);margin-block:calc(var(--tp-h,0px) * .06)}
+body.teleprompt #content .outline :is(.txt,.bodyline).tp-near{transform:scale(1.06);margin-block:calc(var(--tp-h,0px) * .03)}
 @media (prefers-reduced-motion:reduce){body.teleprompt #content .outline :is(.txt,.bodyline),
 body.teleprompt #content .outline :is(.txt,.bodyline) *{transition:none}}
 #focusLeave{position:fixed;top:10px;right:14px;z-index:30;color:var(--fg3);border-color:transparent}
@@ -12801,7 +12803,7 @@ el("span", {class: "booktoday", title: daily ? "Today, against your goal a day" 
 daily ? el("span", {class: "pbar"}, el("i", {style: "width:" + Math.min(100, Math.round(100 * today / daily)) + "%"})) : null,
 el("span", {class: "ratio"}, fmtWords(today) + (daily ? " of " + fmtWords(daily) : "") + " today")));
 }
-const TELEPROMPT = {obs: null, raf: 0, glide: 0};
+const TELEPROMPT = {obs: null, raf: 0, glide: 0, to: 0};
 const TP_UNITS = ".outline :is(.txt,.bodyline)";
 const tpWanted = () => !matchMedia("(max-width:640px)").matches;
 const tpActive = () => document.body.classList.contains("teleprompt");
@@ -12818,7 +12820,7 @@ tpLight();
 };
 document.addEventListener("selectionchange", tpFollowCaret);
 document.addEventListener("focusin", tpFollowCaret);
-document.addEventListener("transitionend", e => { if (e.propertyName === "font-size" && e.target.classList?.contains("tp-lit")) tpFollowCaret(); });
+document.addEventListener("transitionend", e => { if (e.propertyName === "transform" && e.target.classList?.contains("tp-lit")) tpFollowCaret(); });
 for (const ev of ["wheel", "pointerdown", "touchstart"]) document.addEventListener(ev, () => {
 if (TELEPROMPT.glide) { cancelAnimationFrame(TELEPROMPT.glide); TELEPROMPT.glide = 0; }
 }, {passive: true, capture: true});
@@ -12839,25 +12841,39 @@ return {node, gap};
 function tpLight() {
 const box = $("#content");
 if (!box) return;
-for (const n of box.querySelectorAll(".tp-lit")) n.classList.remove("tp-lit");
-if (!tpActive()) return;
+const want = new Map();
+if (tpActive()) {
 const r = box.getBoundingClientRect(), mid = r.top + r.height / 2;
 for (const o of box.querySelectorAll(".outline:not(.outline .outline)")) {
 const {node, gap} = tpNearest(o, mid);
-if (node && gap < r.height / 2) node.classList.add("tp-lit");
+if (!node || gap >= r.height / 2) continue;
+const all = [...o.querySelectorAll(TP_UNITS)], i = all.indexOf(node);
+for (const n of [all[i - 1], all[i + 1]]) if (n) want.set(n, "tp-near");
+want.set(node, "tp-lit");
+}
+}
+const heights = new Map([...want.keys()].map(n => [n, n.offsetHeight]));
+for (const n of box.querySelectorAll(".tp-lit,.tp-near"))
+if (!want.has(n)) n.classList.remove("tp-lit", "tp-near");
+for (const [n, cls] of want) {
+n.style.setProperty("--tp-h", heights.get(n) + "px");
+n.classList.remove(cls === "tp-lit" ? "tp-near" : "tp-lit");
+n.classList.add(cls);
 }
 }
 function tpGlide(box, to) {
 const g = TELEPROMPT;
+to = Math.max(0, Math.min(to, box.scrollHeight - box.clientHeight));
+if (g.glide && Math.abs(to - g.to) < 2) return;
 cancelAnimationFrame(g.glide);
 g.glide = 0;
-to = Math.max(0, Math.min(to, box.scrollHeight - box.clientHeight));
+g.to = to;
 const from = box.scrollTop, d = to - from;
 if (Math.abs(d) < 2) return;
 if (matchMedia("(prefers-reduced-motion: reduce)").matches) { box.scrollTop = to; return; }
-const t0 = performance.now(), ms = 320;
-const step = now => {
-const t = Math.max(0, Math.min(1, (now - t0) / ms)), ease = 1 - Math.pow(1 - t, 3);
+const t0 = performance.now(), ms = 160;
+const step = () => {
+const t = Math.min(1, (performance.now() - t0) / ms), ease = 1 - Math.pow(1 - t, 3);
 box.scrollTop = from + d * ease;
 g.glide = t < 1 ? requestAnimationFrame(step) : 0;
 };
@@ -15409,7 +15425,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.118.1 - 2026-11-07\n\n- A page: in the Focus teleprompter, the text now slides to the middle\n  instead of jumping (#324). The light fades from one paragraph to the next,\n  and the lit paragraph grows a little larger.\n\n## 1.118.0 - 2026-11-07\n\n- A page: on a computer, Focus is a teleprompter (#324). The line you write\n  in stays in the middle of the screen, and the text moves past it. Scroll,\n  and the paragraph in the middle lights up while the rest step back. On a\n  phone, Focus stays as it was.\n\n## 1.117.0 - 2026-11-07\n\n- A page: Focus is on every page now, not only a book's chapters (#323).\n  It sits beside the title, and in the Journal beside History. Focus hides\n  the sidebar, the bar and everything round the page or the day. The\n  paragraph you write in stays bright. Esc or Leave focus brings it all back.\n\n## 1.116.1 - 2026-11-07\n\n- Writing a chapter: in Focus, the paragraph you write in stays bright and\n  the others step back (#244). Linked References and the way up to the book\n  go too, so only the chapter is left. Esc while you write now leaves only\n  the line, not Focus.\n\n## 1.116.0 - 2026-11-07\n\n- Natural planning: a new step, What comes first, says which next action\n  waits for another (#275). The actions are dealt one at a time onto the\n  card, the others round it. Press the one that can't start until it is\n  done, or 6 if nothing waits; Backspace undoes. Finish writes it under the\n  action that waits for it, so Next shows only what can start.\n\n## 1.115.3 - 2026-11-07\n\n- A page: Linked References has its own Hide done switch (#321). Each page\n  remembers its switches in hide_done::, so it opens the way you left it.\n  Other pages keep their own choice.\n\n## 1.115.2 - 2026-11-07\n\n- A page: a project's tasks written on day pages show once, in Linked\n  References, instead of twice (#322). From the day pages is gone. Tick a\n  task there to mark it done; the tick does not open the day page.\n\n## 1.115.1 - 2026-11-07\n\n- A page: Hide done hides only the page's own done lines again (#321). Done\n  tasks written on day pages and done lines in Linked References stay, as\n  they were written. The count is this page's only.\n\n## 1.115.0 - 2026-11-07\n\n- Natural planning: Rules we play by now helps when the mind goes blank\n  (#277). A card shows one prompt at a time, such as \"What will we never do\n  to get it done?\". Draw another, or press Space in an empty box. Once there\n  is a Why or Must achieve, Ask AI for 3 rules copies a prompt for your AI.\n  Paste its answer back, and its rules are offered to pick: click one to\n  keep it. Hide prompts hides the cards here and in Brainstorm.\n\n## 1.114.2 - 2026-11-07\n\n- A page: Hide done is now a switch you turn on and off (#321). It also\n  hides done tasks from the day pages and done lines in Linked References,\n  and its count takes them all in.\n\n## 1.114.1 - 2026-11-07\n\n- A page: a click on a picture opens it full size over the page, not in a\n  new tab without a word (#320). ✕, Esc or a click on the picture closes it.\n  Open in new tab is below it, for zooming or saving.\n\n## 1.114.0 - 2026-11-07\n\n- A page: Hide done above the lines shows only what is left (#321). Done\n  and cancelled lines go, with the steps under them; the chip counts them.\n  The choice stays on this device, so every page opens that way until you\n  turn it off. It shows only on a page with something done.\n";
+const HELP_NEWS = "## 1.118.1 - 2026-11-07\n\n- A page: in the Focus teleprompter, the text now slides to the middle\n  instead of jumping (#324). The light fades from one paragraph to the next.\n  The lit paragraph grows a little larger, and the ones just above and below\n  it half as much. The words keep their lines as it grows.\n\n## 1.118.0 - 2026-11-07\n\n- A page: on a computer, Focus is a teleprompter (#324). The line you write\n  in stays in the middle of the screen, and the text moves past it. Scroll,\n  and the paragraph in the middle lights up while the rest step back. On a\n  phone, Focus stays as it was.\n\n## 1.117.0 - 2026-11-07\n\n- A page: Focus is on every page now, not only a book's chapters (#323).\n  It sits beside the title, and in the Journal beside History. Focus hides\n  the sidebar, the bar and everything round the page or the day. The\n  paragraph you write in stays bright. Esc or Leave focus brings it all back.\n\n## 1.116.1 - 2026-11-07\n\n- Writing a chapter: in Focus, the paragraph you write in stays bright and\n  the others step back (#244). Linked References and the way up to the book\n  go too, so only the chapter is left. Esc while you write now leaves only\n  the line, not Focus.\n\n## 1.116.0 - 2026-11-07\n\n- Natural planning: a new step, What comes first, says which next action\n  waits for another (#275). The actions are dealt one at a time onto the\n  card, the others round it. Press the one that can't start until it is\n  done, or 6 if nothing waits; Backspace undoes. Finish writes it under the\n  action that waits for it, so Next shows only what can start.\n\n## 1.115.3 - 2026-11-07\n\n- A page: Linked References has its own Hide done switch (#321). Each page\n  remembers its switches in hide_done::, so it opens the way you left it.\n  Other pages keep their own choice.\n\n## 1.115.2 - 2026-11-07\n\n- A page: a project's tasks written on day pages show once, in Linked\n  References, instead of twice (#322). From the day pages is gone. Tick a\n  task there to mark it done; the tick does not open the day page.\n\n## 1.115.1 - 2026-11-07\n\n- A page: Hide done hides only the page's own done lines again (#321). Done\n  tasks written on day pages and done lines in Linked References stay, as\n  they were written. The count is this page's only.\n\n## 1.115.0 - 2026-11-07\n\n- Natural planning: Rules we play by now helps when the mind goes blank\n  (#277). A card shows one prompt at a time, such as \"What will we never do\n  to get it done?\". Draw another, or press Space in an empty box. Once there\n  is a Why or Must achieve, Ask AI for 3 rules copies a prompt for your AI.\n  Paste its answer back, and its rules are offered to pick: click one to\n  keep it. Hide prompts hides the cards here and in Brainstorm.\n\n## 1.114.2 - 2026-11-07\n\n- A page: Hide done is now a switch you turn on and off (#321). It also\n  hides done tasks from the day pages and done lines in Linked References,\n  and its count takes them all in.\n\n## 1.114.1 - 2026-11-07\n\n- A page: a click on a picture opens it full size over the page, not in a\n  new tab without a word (#320). ✕, Esc or a click on the picture closes it.\n  Open in new tab is below it, for zooming or saving.\n\n## 1.114.0 - 2026-11-07\n\n- A page: Hide done above the lines shows only what is left (#321). Done\n  and cancelled lines go, with the steps under them; the chip counts them.\n  The choice stays on this device, so every page opens that way until you\n  turn it off. It shows only on a page with something done.\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {

@@ -2,7 +2,7 @@
    stays at the middle of the screen and the text moves past it; scroll, and
    whatever paragraph crosses the middle is the lit one. A phone keeps Focus
    as it was: its screen is too short to give half of it away. */
-const TELEPROMPT = {obs: null, raf: 0, glide: 0};
+const TELEPROMPT = {obs: null, raf: 0, glide: 0, to: 0};
 const TP_UNITS = ".outline :is(.txt,.bodyline)";
 const tpWanted = () => !matchMedia("(max-width:640px)").matches;
 const tpActive = () => document.body.classList.contains("teleprompt");
@@ -21,7 +21,7 @@ const tpFollowCaret = () => {
 document.addEventListener("selectionchange", tpFollowCaret);
 document.addEventListener("focusin", tpFollowCaret);
 // The paragraph you write in has grown: bring its line back to the middle.
-document.addEventListener("transitionend", e => { if (e.propertyName === "font-size" && e.target.classList?.contains("tp-lit")) tpFollowCaret(); });
+document.addEventListener("transitionend", e => { if (e.propertyName === "transform" && e.target.classList?.contains("tp-lit")) tpFollowCaret(); });
 // Your own scrolling wins over a slide still under way.
 for (const ev of ["wheel", "pointerdown", "touchstart"]) document.addEventListener(ev, () => {
   if (TELEPROMPT.glide) { cancelAnimationFrame(TELEPROMPT.glide); TELEPROMPT.glide = 0; }

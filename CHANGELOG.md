@@ -8,8 +8,9 @@ that breaks existing vaults. Newest first.
 ## 1.118.1 - 2026-11-07
 
 - A page: in the Focus teleprompter, the text now slides to the middle
-  instead of jumping (#324). The light fades from one paragraph to the next,
-  and the lit paragraph grows a little larger.
+  instead of jumping (#324). The light fades from one paragraph to the next.
+  The lit paragraph grows a little larger, and the ones just above and below
+  it half as much. The words keep their lines as it grows.
 
 ## 1.118.0 - 2026-11-07
 

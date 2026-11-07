@@ -222,10 +222,14 @@ body.bookfocus.teleprompt #content{padding-top:45vh;padding-bottom:50vh}
 body.teleprompt #content .outline :is(.txt,.bodyline):not(.tp-lit),
 body.teleprompt #content .outline :is(.txt,.bodyline):not(.tp-lit) *{color:var(--fg3)}
 /* The light fades from one paragraph to the next as the text slides past,
-   and the lit one grows a little larger. */
-body.teleprompt #content .outline :is(.txt,.bodyline){transition:color .35s ease,font-size .35s ease}
-body.teleprompt #content .outline :is(.txt,.bodyline) *{transition:color .35s ease}
-body.teleprompt #content .outline :is(.txt,.bodyline).tp-lit{font-size:1.12em}
+   and the lit one grows a little larger; the ones beside it halfway. It is
+   scaled, not set in a larger font, so the words keep their lines. --tp-h
+   (its height, from tpLight) buys room above and below for the growth. */
+body.teleprompt #content .outline :is(.txt,.bodyline){transform-origin:left center;
+  transition:color .15s ease,transform .15s ease,margin .15s ease}
+body.teleprompt #content .outline :is(.txt,.bodyline) *{transition:color .15s ease}
+body.teleprompt #content .outline :is(.txt,.bodyline).tp-lit{transform:scale(1.12);margin-block:calc(var(--tp-h,0px) * .06)}
+body.teleprompt #content .outline :is(.txt,.bodyline).tp-near{transform:scale(1.06);margin-block:calc(var(--tp-h,0px) * .03)}
 @media (prefers-reduced-motion:reduce){body.teleprompt #content .outline :is(.txt,.bodyline),
 body.teleprompt #content .outline :is(.txt,.bodyline) *{transition:none}}
 #focusLeave{position:fixed;top:10px;right:14px;z-index:30;color:var(--fg3);border-color:transparent}
