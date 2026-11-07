@@ -106,7 +106,9 @@
    title grows with what is typed instead of starting three lines tall (#308). */
 .tdbody{display:flex;flex-direction:column;gap:2px}
 .tdbody>.field{padding:6px 16px}
-.field textarea.titlebox{resize:none;min-height:0;overflow:hidden}
+.field .titlebox{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);
+  padding:9px 11px;font-size:14px;outline:none;white-space:pre-wrap;overflow-wrap:anywhere;min-height:2.6em}
+.field .titlebox:focus{border-color:var(--accent)}
 .field.pillrow{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
 .field.pillrow>.field{padding:0;flex:0 1 auto}
 .subkids{display:flex;flex-direction:column;gap:4px;margin:2px 0 6px}
@@ -118,7 +120,7 @@
 .seg{display:flex;gap:6px;flex-wrap:wrap}
 .seg button{
   padding:6px 11px;border-radius:var(--radius-sm);background:var(--bg3);font-size:12.5px;
-  font-family:var(--mono);color:var(--fg3);border:1px solid transparent;
+  color:var(--fg3);border:1px solid transparent;
 }
 .seg button.on{background:var(--accent);color:var(--accent-fg);font-weight:650}
 .seg button:hover{border-color:var(--border2)}

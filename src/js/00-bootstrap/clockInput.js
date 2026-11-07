@@ -5,7 +5,7 @@
 function clockInput(value, attrs = {}) {
   const ons = {}, rest = {};
   for (const [k, v] of Object.entries(attrs)) (k.startsWith("on") ? ons : rest)[k] = v;
-  const n = el("input", Object.assign({type: "text", inputmode: "numeric", placeholder: "08:43",
+  const n = el("input", Object.assign({type: "text", inputmode: "numeric", placeholder: "Time",
     autocomplete: "off", spellcheck: "false"}, rest, {class: "clk" + (rest.class ? " " + rest.class : "")}));
   n.value = readClock(value) || trim(value || "");
   let said = "";

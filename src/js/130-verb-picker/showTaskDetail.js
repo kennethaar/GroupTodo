@@ -5,9 +5,19 @@ function showTaskDetail(path, block, space) {
     context: blockContext(block), due: dueDate(block),
     age: blockAge(block), added: addedDate(block),
   };
-  const titleInput = el("textarea", {rows: 1, class: "titlebox"}); titleInput.value = block.title;
-  const autoGrow = () => { titleInput.style.height = "auto"; titleInput.style.height = titleInput.scrollHeight + "px"; };
-  titleInput.addEventListener("input", autoGrow);
+  /* The title is edited the way a Journal line is: names and @context read as
+     words until it takes focus, then it is the text as written (P12, #317). */
+  const titleInput = el("div", {class: "titlebox", contenteditable: "true", spellcheck: "true",
+    role: "textbox", "aria-label": "Title", translate: "no", html: lineHtml(block)});
+  // A click on a name edits the title here; following it would close the panel.
+  keepClickCaret(titleInput, () => block.title);
+  titleInput.addEventListener("focus", () => {
+    if (titleInput.classList.contains("raw")) return;
+    titleInput.classList.add("raw"); titleInput.textContent = block.title;
+  });
+  titleInput.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.isComposing && !(SUGGEST && SUGGEST.host === titleInput)) { e.preventDefault(); titleInput.blur(); }
+  });
   // The verb check used to live in a standalone "GTD hygiene" row below the
   // fold. It is a fact about the title, so it sits on the title now: a quiet
   // nudge that is simply gone once the title starts with a physical verb.
@@ -34,13 +44,13 @@ function showTaskDetail(path, block, space) {
   priSel.value = priorityOf(block) || "";
   // One date row, not three: what it is backed by -- SCHEDULED or hold:: -- follows
   // from the state already chosen above, so there is nothing extra to pick here.
-  const schedLabel = el("label", {}, "Scheduled");
+  const schedLabel = el("label", {}, "Starts");
   const holdOpen = el("input", {type: "checkbox", onchange: () => { sched.disabled = holdOpen.checked; saveSched(); renderSchedField(); }});
   const holdOpenRow = el("label", {style: "display:flex;gap:6px;align-items:center;font-size:12px;margin-top:4px"},
     holdOpen, "No date: until I take it off");
   const loadSchedField = () => {
     const isHold = block.state === "HOLD";
-    schedLabel.textContent = isHold ? "Hold until" : block.state === "WAIT" ? "Follow up" : "Scheduled";
+    schedLabel.textContent = isHold ? "Hold until" : block.state === "WAIT" ? "Follow up" : "Starts";
     const val = isHold ? holdValue(blockProp(block, "hold")) : dateIn(blockProp(block, "SCHEDULED"));
     holdOpen.checked = isHold && val === HOLD_OPEN;
     sched.value = val && val !== HOLD_OPEN ? val : "";
@@ -71,7 +81,7 @@ function showTaskDetail(path, block, space) {
         closeModal(); render();
         notify(choice ? "Repeats " + choice + ". You will be asked when you tick it off."
                       : "No longer repeats.");
-      }}, choice || "never"));
+      }}, choice ? choice[0].toUpperCase() + choice.slice(1) : "Never"));
     }
     // Anything the row does not have -- weekly on mon, thu; the last friday of the month.
     const own = trim(cur) && !REPEAT_CHOICES.includes(trim(cur).toLowerCase());
@@ -83,7 +93,7 @@ function showTaskDetail(path, block, space) {
         touch(path); render();
         notify(spec ? "Repeats " + spec + ". You will be asked when you tick it off." : "No longer repeats.");
       },
-    })}, own ? cur : "custom…"));
+    })}, own ? cur : "Custom…"));
     return row;
   };
   const renderSchedField = () => {
@@ -119,11 +129,11 @@ function showTaskDetail(path, block, space) {
   const renderDeadField = () => {
     deadBox.textContent = "";
     if (!dead.value && !deadManualOpen) {
-      deadBox.append(factPill("+ Deadline", "fwant", "The day it must be done by",
+      deadBox.append(factPill("+ Due", "fwant", "The day it must be done by",
         () => { deadManualOpen = true; renderDeadField(); dead.focus(); }));
       return;
     }
-    deadBox.append(el("label", {}, "Deadline"), el("div", {class: "dt"}, dead, deadAt),
+    deadBox.append(el("label", {}, "Due"), el("div", {class: "dt"}, dead, deadAt),
       el("label", {style: "display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;" +
         "text-transform:none;letter-spacing:normal;margin-top:4px"}, "Auto-cancel after", until));
   };
@@ -188,7 +198,7 @@ function showTaskDetail(path, block, space) {
         setBlockState(path, block, st);
         syncPanel();                 // the panel outlives the redraw; its badges must keep up
       },
-    }, st);
+    }, STATE_WORD[st]);
     stateBtns.push([st, btn]);
     seg.append(btn);
   }
@@ -250,12 +260,15 @@ function showTaskDetail(path, block, space) {
   // change for selects/dates/pills -- so there is nothing left to lose by
   // closing the panel and nothing a footer button needs to batch up.
   const saveTitle = () => {
-    const val = trim(titleInput.value).replace(/\n/g, " ");
+    const val = trim(lineText(titleInput)).replace(/\n/g, " ");
+    titleInput.classList.remove("raw");
+    if (val === block.title) { titleInput.innerHTML = lineHtml(block); return; }
     const [st, rest] = splitState(val);
     if (st) { block.state = st; block.title = rest; } else { block.title = val; }
     if (block.state) block.title = dotsToEst(block.title);
     createLinkedPages(block.title);
     touch(path); noteTodoTouched(); render(); syncPanel();
+    titleInput.innerHTML = lineHtml(block);
   };
   const saveNotes = () => {
     block.body = notes.value.split("\n");
@@ -336,7 +349,7 @@ function showTaskDetail(path, block, space) {
     document.addEventListener("mousedown", onDocDown, true);
     document.addEventListener("keydown", onDocKey, true);
   }}, "⋯");
-  const srcBtn = el("button", {class: "btn ghost sm", onclick: () => { closeModal(); openPage(path); }}, path);
+  const srcBtn = el("button", {class: "btn ghost sm", title: "Open where it is written", onclick: () => { closeModal(); openPage(path); }}, placeName(path));
   const copyBtn = el("button", {class: "iconbtn", title: "A link you can paste into chat or email",
     onclick: () => copyLinkTo(deepLink(path, block), "this task")}, "\u{1F517}");
 
@@ -384,5 +397,5 @@ function showTaskDetail(path, block, space) {
   header.replaceChild(srcBtn, header.querySelector("h2"));
   header.insertBefore(copyBtn, header.lastElementChild);
   header.insertBefore(menuBtn, header.lastElementChild);
-  autoGrow();
+
 }

@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.113.3 - 2026-11-07
+
+- A task's panel says words, not how the file stores them (#317). The top
+  names the page or the journal day, not its file. The title reads like the
+  Journal line, names and @context as words, until you click to edit it.
+  Tags show the name without p/. The states read To do, Doing, Waiting, On
+  hold and Done, repeats read Never, Daily, Weekly, and the dates are Starts
+  and Due. An empty time field says Time instead of a time that looked set.
+
 ## 1.113.2 - 2026-11-07
 
 - Weekly review › Steps: the way back to Projects is a quiet link above the

@@ -2535,15 +2535,17 @@ var GTD_TEST = (() => {
       const m = document.querySelector("#modalRoot .modal");
       const seg = [...m.querySelectorAll(".seg")][0];
       const states = [...seg.querySelectorAll("button")].map(x => x.textContent);
-      eq(states, ["TODO", "DOING", "WAIT", "HOLD", "DONE"], "Cancelled and Not a task are not in the main bar");
+      eq(states, ["To do", "Doing", "Waiting", "On hold", "Done"], "Cancelled and Not a task are not in the main bar; #317 words, not codes");
+      ok(![...seg.querySelectorAll("button")].some(x => /monospace|Consolas|Menlo/i.test(getComputedStyle(x).fontFamily)),
+        "#317 the state words are in the normal font");
       ok(!m.querySelector(".foot"), "no Save/Cancel footer left to batch changes into");
 
-      const title = m.querySelector("textarea");
-      title.value = "Finish the other thing";
+      const title = m.querySelector(".titlebox");
+      title.textContent = "Finish the other thing";
       title.dispatchEvent(new Event("blur"));
       eq(b.title, "Finish the other thing", "title autosaves on blur, with no Save click");
 
-      [...seg.querySelectorAll("button")].find(x => x.textContent === "HOLD").click();
+      [...seg.querySelectorAll("button")].find(x => x.textContent === "On hold").click();
       eq(getPage(path).blocks[0].state, "HOLD", "picking HOLD autosaves the state");
 
       const menuBtn = [...m.querySelectorAll("header button")].find(x => x.textContent === "⋯");
@@ -2566,13 +2568,13 @@ var GTD_TEST = (() => {
       const m = document.querySelector("#modalRoot .modal");
       const pillText = t => [...m.querySelectorAll(".fpill")].find(x => x.textContent === t);
 
-      ok(pillText("+ Scheduled"), "Scheduled starts as a pill");
-      ok(pillText("+ Deadline"), "Deadline starts as a pill");
+      ok(pillText("+ Starts"), "Scheduled starts as a pill");
+      ok(pillText("+ Due"), "Deadline starts as a pill");
       ok(pillText("+ Priority"), "Priority starts as a pill");
       ok(pillText("+ Assign"), "Assign starts as a pill");
       ok(!m.querySelector(".dt"), "no date input mounted until a pill is clicked");
 
-      pillText("+ Deadline").click();
+      pillText("+ Due").click();
       const dead = m.querySelectorAll(".dt")[0].querySelector('input[type="date"]');
       ok(document.activeElement === dead, "clicking the pill mounts and focuses the real control");
       dead.value = "2027-05-01";
@@ -2607,22 +2609,22 @@ var GTD_TEST = (() => {
       showTaskDetail(path, b, V.space);
       const m = document.querySelector("#modalRoot .modal");
       const seg = [...m.querySelectorAll(".seg")][0];
-      const pill = [...m.querySelectorAll(".fpill")].find(x => x.textContent === "+ Scheduled");
+      const pill = [...m.querySelectorAll(".fpill")].find(x => x.textContent === "+ Starts");
       ok(pill, "an unset Scheduled date starts as a + pill, not an empty field");
       pill.click();
       const schedField = m.querySelectorAll(".dt")[0].parentNode;
       const label = schedField.querySelector("label");
       const input = schedField.querySelector('input[type="date"]');
-      eq(label.textContent, "Scheduled", "TODO shows Scheduled");
+      eq(label.textContent, "Starts", "#317 TODO shows Starts, a purpose, not Scheduled");
 
       input.value = "2027-01-02";
       input.dispatchEvent(new Event("change"));
       eq(dateIn(blockProp(b, "SCHEDULED")), "2027-01-02", "writes SCHEDULED while open");
 
-      [...seg.querySelectorAll("button")].find(x => x.textContent === "WAIT").click();
+      [...seg.querySelectorAll("button")].find(x => x.textContent === "Waiting").click();
       eq(label.textContent, "Follow up", "WAIT relabels the same row");
 
-      [...seg.querySelectorAll("button")].find(x => x.textContent === "HOLD").click();
+      [...seg.querySelectorAll("button")].find(x => x.textContent === "On hold").click();
       eq(label.textContent, "Hold until", "HOLD relabels the same row");
       ok(!input.value, "no SCHEDULED date leaks into the hold field");
 
@@ -2668,9 +2670,44 @@ var GTD_TEST = (() => {
       ok(!m.querySelector(".detail-tools"), "the icon-only tab bar is gone");
       ok(!m.querySelector(".detail-pane"), "nothing is hidden behind a tab anymore");
       const header = m.querySelector("header");
-      has(header.textContent, path, "the source path lives in the one remaining header");
+      // #317: it names the page in words; the file path is storage (P12).
+      has(header.textContent, placeName(path), "the page's name lives in the one remaining header");
+      ok(!/\.md|\//.test(header.textContent), "a file path in the header: " + header.textContent);
       ok([...header.querySelectorAll("button")].some(x => x.textContent === "✕"), "close stays in that same header");
     } finally { closeModal(); }
+  });
+  test("#317 task panel shows words, not storage: the title, tags, repeats and an empty time", () => {
+    const path = scratchProject("words-not-storage", [["TODO", "Email [[p/Nora Vik]] the draft terms [[c/computer]]"]]);
+    const b = getPage(path).blocks[0];
+    try {
+      showTaskDetail(path, b, V.space);
+      const m = document.querySelector("#modalRoot .modal");
+      const title = m.querySelector(".titlebox");
+      eq(title.innerHTML, lineHtml(b), "the title is drawn as the Journal line draws it");
+      ok(!/\[\[|p\/|c\//.test(title.textContent), "storage in the title: " + title.textContent);
+      has(title.textContent, "Nora Vik"); has(title.textContent, "@computer");
+      ok(title.querySelector(".wikilink"), "the names are links, as on the Journal line");
+      title.focus(); title.dispatchEvent(new Event("focus"));
+      eq(title.textContent, b.title, "editing shows what is written, as the Journal line does");
+      title.textContent = "Email [[p/Nora Vik]] the signed terms [[c/computer]]";
+      title.dispatchEvent(new Event("blur"));
+      eq(b.title, "Email [[p/Nora Vik]] the signed terms [[c/computer]]", "the title saves on leaving it");
+      eq(title.innerHTML, lineHtml(b), "and reads as words again");
+
+      const tags = [...m.querySelectorAll(".acell.a-tags .achip")].map(x => trim(x.textContent));
+      ok(tags.includes("Nora Vik"), "a person tag reads as the name: " + tags.join(", "));
+      ok(!tags.some(t => /^[pocz]\//.test(t)), "a tag shows its folder: " + tags.join(", "));
+
+      [...m.querySelectorAll(".fpill")].find(x => x.textContent === "+ Starts").click();
+      const day = m.querySelector(".dt input[type=date]");
+      day.value = "2027-02-01"; day.dispatchEvent(new Event("change"));
+      const repeat = [...m.querySelectorAll("label")].find(x => x.textContent === "Repeats").nextElementSibling;
+      const words = [...repeat.querySelectorAll("button")].map(x => x.textContent);
+      eq(words.slice(0, 3), ["Never", "Daily", "Weekly"], "repeats in words");
+      ok(!words.some(w => /^[a-z]/.test(w)), "a stored value on a repeat button: " + words.join(", "));
+    } finally { closeModal(); }
+    // An empty time field says what goes there, never a time that looks set (P11).
+    eq(clockInput("").placeholder, "Time");
   });
   test("#308 task detail panel: WHERE IT SITS trimmed to Project/Parent/Tags", () => {
     const path = scratchProject("trim-sits", [["TODO", "Mow the lawn"]]);
@@ -2710,7 +2747,7 @@ var GTD_TEST = (() => {
       const row = m.querySelector(".pillrow");
       ok(row, "Scheduled/Deadline/Assign/Priority share a pillrow container");
       const texts = [...row.querySelectorAll(".fpill")].map(x => x.textContent);
-      eq(texts, ["+ Scheduled", "+ Deadline", "+ Assign", "+ Priority"]);
+      eq(texts, ["+ Starts", "+ Due", "+ Assign", "+ Priority"]);
     } finally { closeModal(); }
   });
   test("#308 task detail panel: no Title or State labels", () => {
@@ -2735,8 +2772,8 @@ var GTD_TEST = (() => {
       const nudge = [...m.querySelectorAll(".achip.want")].find(x => x.textContent === "! add a verb");
       ok(nudge && nudge.style.display !== "none", "a verb-less title shows the inline nudge");
 
-      const title = m.querySelector("textarea");
-      title.value = "Clean the garage";
+      const title = m.querySelector(".titlebox");
+      title.textContent = "Clean the garage";
       title.dispatchEvent(new Event("blur"));
       eq(nudge.style.display, "none", "the nudge hides once the title starts with a verb");
     } finally { closeModal(); }
@@ -2800,10 +2837,10 @@ var GTD_TEST = (() => {
       ok(![...m.querySelectorAll("label")].some(x => x.textContent === "Calendar"),
         "the standalone Calendar field is gone");
 
-      [...m.querySelectorAll(".fpill")].find(x => x.textContent === "+ Deadline").click();
+      [...m.querySelectorAll(".fpill")].find(x => x.textContent === "+ Due").click();
       has([...m.querySelectorAll("label")].map(x => x.textContent).join(" "), "Auto-cancel after");
 
-      [...m.querySelectorAll(".fpill")].find(x => x.textContent === "+ Scheduled").click();
+      [...m.querySelectorAll(".fpill")].find(x => x.textContent === "+ Starts").click();
       ok([...m.querySelectorAll("button")].some(x => x.textContent === "Add to calendar"),
         "Add to calendar sits inside the open Scheduled field");
     } finally { closeModal(); }
@@ -2832,7 +2869,7 @@ var GTD_TEST = (() => {
       ok(!labels().includes("Repeats"), "Repeats is hidden with no Scheduled day yet");
       ok(!labels().includes("Reminder"), "Reminder is hidden with no time yet");
 
-      [...m.querySelectorAll(".fpill")].find(x => x.textContent === "+ Scheduled").click();
+      [...m.querySelectorAll(".fpill")].find(x => x.textContent === "+ Starts").click();
       const day = m.querySelector(".dt input[type=date]");
       day.value = "2027-02-01";
       day.dispatchEvent(new Event("change"));
@@ -4567,7 +4604,7 @@ var GTD_TEST = (() => {
       await settle();
       [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Open task").click();
       await settle();
-      has(document.querySelector("#modalRoot .tdbody textarea.titlebox")?.value, "arbeidsordre");
+      has(document.querySelector("#modalRoot .tdbody .titlebox")?.textContent, "arbeidsordre");
     } finally {
       closeAll();
       card.remove();

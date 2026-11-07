@@ -94,7 +94,8 @@ function surroundingsGrid(path, block, space) {
   /* A tag here is the same handle it is in the line: going there is one of the
      things it offers, and not the one you want most often. */
   for (const r of ctx.concat(rest))
-    tagBox.push(chip(/^c\//i.test(r) ? "@" + r.slice(2) : r, r,
+    // A tag says the name, as the line does, never its folder (P12, #317).
+    tagBox.push(chip(/^c\//i.test(r) ? "@" + r.slice(2) : linkWords("[[" + r + "]]"), r,
       () => linkMenu(r, {path, block, space}, space),
       /^c\//i.test(r) ? "ctx" : "", "p:" + r));
   if (!ctx.length) tagBox.unshift(chip("add context", "A todo with no context cannot be filtered to where you are",
