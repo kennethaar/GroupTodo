@@ -158,7 +158,8 @@ function viewNext() {
     onclick: () => { NEXT_FILTERS_OPEN = !NEXT_FILTERS_OPEN; render(); }},
     "Filter" + (filtered ? " · " + filtered : "") + (NEXT_FILTERS_OPEN ? " ▴" : " ▾"));
   c.querySelector(".vhead-r").prepend(fbtn);
-  c.classList.add("nextlist", "lwide");
+  // One reading column at every width: groups read top down, most urgent first (#315).
+  c.classList.add("nextlist");
   if (ctx && side !== "chores") c.classList.add("onectx");
   const guessBar = guess ? el("div", {class: "nguess"},
     el("span", {}, "📍 ", el("strong", {}, contextLabel(guess.ctx))), el("span", {class: "nguess-why"}, guess.why),

@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.113.5 - 2026-11-07
+
+- Next › List: a wide screen reads like the phone (#315). One column, each
+  context with its actions under it, never split in two. A row is a round
+  tick, the words, and one quiet line with the project and Due. The text
+  filter stays in sight; Filter opens the states, contexts and order.
+
 ## 1.113.4 - 2026-11-07
 
 - Repeat and routines: a repeat ticked Done, then Doing, then Done again gets

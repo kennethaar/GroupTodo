@@ -6250,14 +6250,17 @@ var GTD_TEST = (() => {
       if (wide) ok(wk.getBoundingClientRect().width > 820, "the week is wider than the reading column, got " + wk.getBoundingClientRect().width);
       const txt = content().querySelector(".wkgrid .wktext");
       if (wide && txt) eq(getComputedStyle(txt).webkitLineClamp, "8", "a task in a day wraps rather than ends in ...");
-      for (const [view, sub] of [["next", "list"], ["waiting", "list"], ["people", "list"], ["orgs", "list"], ["projects", "list"]]) {
+      for (const [view, sub] of [["waiting", "list"], ["people", "list"], ["orgs", "list"], ["projects", "list"]]) {
         go(view, {sub});
         await settle();
         ok(content().querySelector(".wrap").classList.contains("lwide"), view + " list spreads on a wide screen");
       }
-      go("pages", {sub: "list"});
-      await settle();
-      ok(!content().querySelector(".wrap.lwide"), "pages keep their line length");
+      // Next is read top down, its most urgent context first (#315), so it keeps one column as pages do.
+      for (const view of ["pages", "next"]) {
+        go(view, {sub: "list", ctxFilter: null});
+        await settle();
+        ok(!content().querySelector(".wrap.lwide"), view + " keeps its line length");
+      }
       PREF.set("style.width", "narrow"); applyStyles();
       go("today", {sub: "week", todayWeek: null});
       await settle();
@@ -6374,22 +6377,34 @@ var GTD_TEST = (() => {
       PREF.set("hideStates:" + (Spaces.active || ""), wasHidden); render();
     }
   });
-  test("#224 #315 on a phone a Next row is a round tick, its words under its context's header, and one quiet line", async () => {
+  test("#224 #315 on a phone and a wide screen a Next row is a round tick, its words under its context's header, and one quiet line", async () => {
     go("next", {sub: "list", ctxFilter: null}); await settle();
-    const {f, d} = await phoneJournal();
-    try {
-      const row = [...d.querySelectorAll(".task")].find(r => r.querySelector(".t-title .wikilink.ctx") && r.querySelector(".duepill"));
-      ok(row, "a row with a context and a day");
-      const tick = row.querySelector(".tick"), tr = tick.getBoundingClientRect();
-      ok(Math.abs(tr.width - tr.height) < 1 && tr.width <= 24, "the tick is a round button: " + tr.width + "x" + tr.height);
-      eq(getComputedStyle(row.querySelector(".t-menu")).display, "none", "no ⋯ on a phone");
-      ok(d.querySelector(".ngroup"), "grouped by context on a phone too");
-      eq(row.querySelectorAll(".chip.ctx").length, 0, "the context not said again on the row");
-      ok(getComputedStyle(row.querySelector(".duepill"), "::before").content.includes("Due"), "a day says it is when it is due");
-      eq(getComputedStyle(row.querySelector(".duepill")).backgroundColor, "rgba(0, 0, 0, 0)", "a quiet line, not pills");
-      ok(tick.getBoundingClientRect().right + 20 > row.querySelector(".t-title").getBoundingClientRect().left, "the words start right after the tick");
-      ok(d.documentElement.scrollWidth <= 390, "nothing wider than the phone");
-    } finally { f.remove(); }
+    for (const width of [390, 1280]) {
+      const {f, d} = await phoneJournal(width), at = " at " + width + "px";
+      const shown = n => n && d.defaultView.getComputedStyle(n).display !== "none" && n.getBoundingClientRect().width > 0;
+      try {
+        const row = [...d.querySelectorAll(".task")].find(r => r.querySelector(".t-title .wikilink.ctx") && r.querySelector(".duepill"));
+        ok(row, "a row with a context and a day" + at);
+        const tick = row.querySelector(".tick"), tr = tick.getBoundingClientRect();
+        ok(Math.abs(tr.width - tr.height) < 1 && tr.width <= 24, "the tick is a round button" + at + ": " + tr.width + "x" + tr.height);
+        ok(!shown(row.querySelector(".t-menu")), "no ⋯" + at);
+        ok(!shown(row.querySelector(".t-state")), "no TO DO word" + at);
+        ok(d.querySelector(".ngroup"), "grouped by context" + at);
+        eq(row.querySelectorAll(".chip.ctx").length, 0, "the context not said again on the row" + at);
+        ok(d.defaultView.getComputedStyle(row.querySelector(".duepill"), "::before").content.includes("Due"), "a day says it is when it is due" + at);
+        eq(d.defaultView.getComputedStyle(row.querySelector(".duepill")).backgroundColor, "rgba(0, 0, 0, 0)", "a quiet line, not pills" + at);
+        ok(tick.getBoundingClientRect().right + 20 > row.querySelector(".t-title").getBoundingClientRect().left, "the words start right after the tick" + at);
+        ok(d.documentElement.scrollWidth <= width, "nothing wider than the screen" + at);
+        // One column: a context's rows never continue at the top of a second column without their header.
+        const lefts = new Set([...d.querySelectorAll(".task")].map(r => Math.round(r.getBoundingClientRect().left)));
+        eq(lefts.size, 1, "every row in one column" + at);
+        if (width > 640) {
+          ok(shown(d.querySelector(".nfold input[type=search]")), "a wide screen keeps the text filter in sight");
+          ok(shown(d.querySelector(".nfiltbtn")), "and Filter for the rest");
+          ok(![...d.querySelectorAll(".nfold .fchip")].some(shown), "the state and context chips wait behind Filter");
+        }
+      } finally { f.remove(); }
+    }
   });
   test("#225 on a phone Next is To do or Chores: chores before and after work and on days off, each with a count", async () => {
     const path = choreProject("next sides", [chore("Dust the side shelf [[c/home/kitchen]]", "daily", -1),
