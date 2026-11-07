@@ -5126,6 +5126,55 @@ var GTD_TEST = (() => {
       ok(!chips.some(t => t.includes("+ New")), "no new person for the alias");
     } finally { delete getPage(lp).props.aliases; touch(lp); clearMemo(); npmReset(); }
   });
+  test("#277 Rules we play by draws prompts, and the AI's rules are offered to pick, not added", async () => {
+    npmReset();
+    const path = scratchProject("Rules plan");
+    const copied = [], realCopy = window.copyText, realOpen = window.open;
+    window.copyText = t => { copied.push(t); return Promise.resolve(true); };
+    window.open = () => null;
+    try {
+      npmOpen(V.space, path);
+      Object.assign(NPM, {purpose: [], onpurpose: [], principles: [], hideDeck: false});
+      npmGo(0, 2);
+      await settle();
+      const deck = () => content().querySelector(".npmdeck");
+      ok(deck(), "Rules we play by has no prompts for a mind gone blank");
+      const first = deck().querySelector("b").textContent;
+      ok(NPM_RULES.includes(first), "the prompt is not about rules: " + first);
+      content().querySelector(".npmin").dispatchEvent(new KeyboardEvent("keydown", {key: " ", bubbles: true, cancelable: true}));
+      await settle();
+      ok(deck().querySelector("b").textContent !== first, "Space in an empty box does not draw another prompt");
+      const aiBtn = () => [...deck().querySelectorAll("button")].find(b => /Ask AI for 3 rules/.test(b.textContent));
+      ok(!aiBtn(), "the AI is offered before there is a Why or Must achieve to tell it");
+      NPM.purpose = ["Keep customers close"];
+      render();
+      await settle();
+      ok(aiBtn(), "no AI help once there is a Why");
+      aiBtn().click();
+      await settle();
+      ok(copied.length === 1 && copied[0].includes("Rules plan") && copied[0].includes("Keep customers close") && /rules/i.test(copied[0]),
+        "the copied prompt does not ask for rules with the title and the Why");
+      ok(!content().querySelector(".npmdeck").textContent.includes("Draw 3 AI triggers"), "the brainstorm's AI button shows on Rules");
+      const paste = content().querySelector(".npmai textarea");
+      paste.value = "- Ask before we change the price\n2. Every decision is written down\nSay no early";
+      [...content().querySelectorAll(".npmai button")].find(b => b.textContent === "Add them").click();
+      await settle();
+      eq(NPM.principles, [], "the AI's rules went straight into the list");
+      const picks = () => [...content().querySelectorAll(".npmsuggest button")];
+      eq(picks().map(b => b.textContent), ["✧ Ask before we change the price", "✧ Every decision is written down", "✧ Say no early"]);
+      picks()[1].click();
+      await settle();
+      eq(NPM.principles, ["Every decision is written down"], "a picked rule is not kept as an ordinary line");
+      eq(picks().length, 2, "a picked rule is still offered");
+      // One Hide prompts for both decks.
+      [...deck().querySelectorAll("button")].find(b => b.textContent === "Hide prompts").click();
+      await settle();
+      ok(!deck(), "Hide prompts leaves the rule prompts on screen");
+      npmGo(2, 0);
+      await settle();
+      ok(!deck(), "hiding the rule prompts did not hide the brainstorm prompts too");
+    } finally { window.copyText = realCopy; window.open = realOpen; npmReset(); }
+  });
   test("#189 natural planning writes the page in one change, reads it back in, shows the plan on it, and Undo takes it back", async () => {
     npmReset();
     const path = scratchProject("Newsletter");

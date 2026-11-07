@@ -2252,6 +2252,8 @@ js/113-natural-planning/npmRail.js
 js/113-natural-planning/npmPicker.js
 js/113-natural-planning/npmHead.js
 js/113-natural-planning/npmNav.js
+js/113-natural-planning/npmDraw.js
+js/113-natural-planning/npmDeck.js
 js/113-natural-planning/npmListQ.js
 js/113-natural-planning/npmPeopleQ.js
 js/113-natural-planning/npmOutcomeSay.js

@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.115.0 - 2026-11-07
+
+- Natural planning: Rules we play by now helps when the mind goes blank
+  (#277). A card shows one prompt at a time, such as "What will we never do
+  to get it done?". Draw another, or press Space in an empty box. Once there
+  is a Why or Must achieve, Ask AI for 3 rules copies a prompt for your AI.
+  Paste its answer back, and its rules are offered to pick: click one to
+  keep it. Hide prompts hides the cards here and in Brainstorm.
+
 ## 1.114.2 - 2026-11-07
 
 - A page: Hide done is now a switch you turn on and off (#321). It also

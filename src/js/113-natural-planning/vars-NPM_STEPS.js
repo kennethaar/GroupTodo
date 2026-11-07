@@ -45,6 +45,10 @@ const NPM_LINES = [["purpose", "Why"], ["onpurpose", "Must achieve"], ["vision",
 const NPM_TRIGGERS = ["Who has to know?", "What could go wrong?", "Money and costs", "Legal and risks",
   "Tools and materials", "Who could help?", "Dates and deadlines", "What does it replace?",
   "Loose ends from last time", "What is the first draft?", "Where will it live?", "How will you know it worked?"];
+// The same for Rules we play by: rules are taken for granted, so they rarely come to mind on their own (#277).
+const NPM_RULES = ["What will we never do to get it done?", "What do we owe the people it touches?", "How good is good enough?",
+  "What may it cost, at most?", "Who decides when we disagree?", "What have we already promised?",
+  "What did we learn last time?", "What must stay simple?"];
 // Where the components go on the numpad, in order: the top row, then 4. Four at most (Cowan).
 const NPM_COMP_KEYS = ["7", "8", "9", "4"];
 const NPM_GRID = ["7", "8", "9", "4", "CARD", "6", "1", "2", "3"];

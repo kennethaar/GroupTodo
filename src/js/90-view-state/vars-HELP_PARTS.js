@@ -794,6 +794,7 @@ const HELP = {
       "In the review, Re-plan it puts a fuzzy project aside till you are done.",
       "In a shared area, the draft says who is planning. Take over to carry on yourself.",
       "Your answers stay on this device until you finish. Next time, the page is read back in.",
+      "Stuck on the rules? Draw a prompt, or ask your AI for 3 and pick the ones to keep.",
       "Four parts at most. More is a second project.",
       "A step you skip has no ✓. With no ideas, Organise has nothing to sort.",
       "✦ Plan on a project page opens it too."],
