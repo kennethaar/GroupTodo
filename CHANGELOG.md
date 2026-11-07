@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.113.1 - 2026-11-07
+
+- Settings: in Paper, blue text such as "Open the day page", "Skip this
+  line" and the pressed tab is a little darker, so it is easy to read on the
+  page and on light blue (#319).
+
 ## 1.113.0 - 2026-11-07
 
 - Next › List: actions are grouped by context, one header each with its

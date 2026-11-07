@@ -128,7 +128,7 @@ code:: en
 - yours =>
 ---- from GroupToDo, replaced on every sync ---- =>
 ---------- Forwarded message ---------- From: =>
---accent #2f6fde --accent2 #2559b8 --accent-fg #ffffff --accent-soft #e7effc =>
+--accent #2a64cc --accent2 #2559b8 --accent-fg #ffffff --accent-soft #e7effc =>
 --bg #f6f6f3 --bg2 #ffffff --bg3 #f0efea --bg4 #e6e5df surfaces =>
 --border #e4e3de --border2 #d3d2cc =>
 --ctx --proj --zet contexts, projects, notes =>
@@ -137,7 +137,7 @@ code:: en
 --todo --doing --wait --done --cancel task states =>
 . Click to change the times =>
 . The same are on the ⋯ at the end of the line (Ctrl+.). =>
-/* --accent: #2f6fde; */ /* buttons, links, focus */ =>
+/* --accent: #2a64cc; */ /* buttons, links, focus */ =>
 /* --line-height: 1.6; */ =>
 /* --sans: Georgia, serif; */ /* the font of everything */ =>
 /* Dark only (Ink and Night). */ =>
@@ -5380,7 +5380,6 @@ your full name =>
 : {1} late =>
 ; {1} you wrote under stayed, as plain #meeting lines =>
 @{1} (from above) =>
-@{1} - the oldest few, surfaced =>
 @{1} is now @{2}. =>
 @{1} is now inside @{2}. =>
 @{1} looks like @{2}, so it is @{3} now. =>

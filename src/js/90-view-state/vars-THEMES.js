@@ -4,7 +4,7 @@
    in pages/8/, which is laid on top last and still wins (applyVaultCss). */
 const THEMES = [
   {id: "paper", side: "light", name: "Paper", about: "Grey-white and blue. The default.",
-   sw: ["#f6f6f3", "#ffffff", "#1d1d1b", "#2f6fde"]},
+   sw: ["#f6f6f3", "#ffffff", "#1d1d1b", "#2a64cc"]},
   {id: "linen", side: "light", name: "Linen", about: "Warm cream and terracotta, easy on the eyes.",
    sw: ["#f4efe6", "#fbf8f2", "#2b2620", "#a34e24"]},
   {id: "ink",   side: "dark",  name: "Ink",   about: "Soft charcoal. The default dark.",

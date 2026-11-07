@@ -411,7 +411,7 @@ var GTD_TEST = (() => {
     const hit = [...content().querySelectorAll(".dash-item")].find(i => /@computer/.test(i.textContent));
     ok(hit && !hit.querySelector(".chip.ctx"), "a hit says its context twice");
   });
-  test("#316 the late badge and the @context pill reach AA in Paper, Linen, Ink and Night", async () => {
+  test("#316 #319 the late badge, the @context pill and accent text reach AA in Paper, Linen, Ink and Night", async () => {
     const root = document.documentElement, keep = ["data-theme", "data-light", "data-dark"].map(a => [a, root.getAttribute(a)]);
     const rgb = s => {
       const m = /color\(srgb ([\d.]+) ([\d.]+) ([\d.]+)(?: \/ ([\d.]+))?\)/.exec(s);
@@ -425,6 +425,7 @@ var GTD_TEST = (() => {
     const probe = (cls, inner) => { const d = el("div", {class: cls}); d.innerHTML = inner; content().append(d); return d; };
     const nav = probe("nav-item", '<span class="cnt hot">3</span>');
     const row = probe("jrow", '<span class="t-title"><a class="wikilink ctx">@office</a></span>');
+    const link = probe("", '<button class="textbtn">Open the day page</button>');
     try {
       for (const [theme, light, dark] of [["light", "paper", null], ["light", "linen", null], ["dark", null, "ink"], ["dark", null, "night"]]) {
         root.setAttribute("data-theme", theme);
@@ -437,9 +438,14 @@ var GTD_TEST = (() => {
         const pill = getComputedStyle(row.querySelector(".ctx"));
         const pb = over(rgb(pill.backgroundColor), page);
         ok(ratio(over(rgb(pill.color), pb), pb) >= 4.5, theme + " " + (light || dark) + ": @context " + ratio(rgb(pill.color), pb).toFixed(2));
+        // #319: accent as text (every .textbtn, a pressed tab) on the page and on --accent-soft.
+        const accent = rgb(getComputedStyle(link.querySelector(".textbtn")).color);
+        const soft = rgb(getComputedStyle(link).getPropertyValue("--accent-soft").trim().replace(/^#(..)(..)(..)$/, (_, r, g, b) => "rgb(" + [r, g, b].map(h => parseInt(h, 16)) + ")"));
+        for (const [where, bg] of [["page", page], ["accent-soft", soft]])
+          ok(ratio(accent, bg) >= 4.5, theme + " " + (light || dark) + ": accent text on " + where + " " + ratio(accent, bg).toFixed(2));
       }
     } finally {
-      nav.remove(); row.remove();
+      nav.remove(); row.remove(); link.remove();
       for (const [a, v] of keep) v == null ? root.removeAttribute(a) : root.setAttribute(a, v);
     }
   });
