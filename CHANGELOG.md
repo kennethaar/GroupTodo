@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.126.0 - 2026-11-08
+
+- Projects › List: open Projects in the sidebar to see every area, with how
+  many active projects each has. Click an area to see only its projects (#330).
+
 ## 1.125.0 - 2026-11-08
 
 - Chores: open Chores in the sidebar to see every room, with how

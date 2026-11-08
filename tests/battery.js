@@ -2399,6 +2399,37 @@ var GTD_TEST = (() => {
       ok(!row("testnavb"), "folded away");
     } finally { for (const [k, v] of was) PREF.set(k, v); dropChores(path); go("next"); renderNav(); }
   });
+  test("#330 the sidebar lists the areas under Projects, most active projects first, and one opens Projects narrowed to it", async () => {
+    const inArea = (title, area) => {
+      const path = scratchProject(title);
+      getPage(path).props = {...getPage(path).props, area: "[[a/" + area + "]]"};
+      touch(path); clearMemo();
+      return path;
+    };
+    const paths = [inArea("Paint the fence", "Testnavhome"), inArea("Fix the gutter", "Testnavhome"),
+      inArea("Run a 10k", "Testnavhealth")];
+    const was = ["nav.projOpen", "projects.area"].map(k => [k, PREF.get(k, "")]);
+    const rows = () => [...document.querySelectorAll("#nav .nav-sub")];
+    const row = name => rows().find(r => r.querySelector(".lbl")?.textContent === name);
+    try {
+      PREF.set("projects.area", ""); PREF.set("nav.projOpen", "1"); renderNav();
+      const labels = rows().map(r => r.querySelector(".lbl")?.textContent);
+      ok(labels.indexOf("Testnavhome") >= 0 && labels.indexOf("Testnavhome") < labels.indexOf("Testnavhealth"), "the area with most active projects sorts first: " + labels);
+      eq(row("Testnavhome").querySelector(".cnt")?.textContent, "2");
+      eq(row("Testnavhealth").querySelector(".cnt")?.textContent, "1");
+      row("Testnavhealth").click(); await settle();
+      eq(state.view, "projects");
+      const shown = document.querySelector("#content").textContent;
+      has(shown, "Run a 10k"); ok(!shown.includes("Paint the fence"), "only that area's projects");
+      eq(row("Testnavhealth").getAttribute("aria-current"), "page");
+      PREF.set("nav.projOpen", "0"); renderNav();
+      ok(!row("Testnavhealth"), "folded away");
+    } finally {
+      for (const [k, v] of was) PREF.set(k, v);
+      for (const p of paths) { delete getPage(p).props.area; touch(p); }
+      clearMemo(); go("next"); renderNav();
+    }
+  });
   test("#312 #318 Next's view switch offers List contexts and Sort contexts; the way back sits above the title", () => {
     makeContext("Testswitchctx");
     const segBtn = label => [...document.querySelectorAll("#content .vseg button")].find(b => b.textContent === label);

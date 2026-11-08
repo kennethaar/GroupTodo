@@ -761,6 +761,7 @@ js/90-view-state/goFromNav.js
 js/90-view-state/navContexts.js
 js/90-view-state/navWaiting.js
 js/90-view-state/navChores.js
+js/90-view-state/navProjects.js
 js/90-view-state/pins.js
 js/90-view-state/setPins.js
 js/90-view-state/vars-pinAt.js
