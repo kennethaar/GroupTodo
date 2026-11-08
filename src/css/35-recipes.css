@@ -1,0 +1,6 @@
+/* A recipe's Cook for bar, and its ingredients scaled (#327). */
+.recipebar .fbar { align-items: center; gap: 8px; }
+.recipebar input[type=number] { width: 4.5em; flex: none; text-align: center; }
+.recipescaled h2 { font-size: 15px; margin: 0 0 6px; }
+.recipescaled ul { margin: 0 0 6px; padding-left: 20px; line-height: 1.6; }
+.recipebar .hint { text-align: left; margin: 0; }

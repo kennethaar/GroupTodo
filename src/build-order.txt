@@ -35,6 +35,7 @@ css/31-25-responsive.css
 css/32-print-235.css
 css/33-markdown-tables-269.css
 css/34-settings-rows.css
+css/35-recipes.css
 # script 1
 js/00-bootstrap/vars-APP_VERSION.js
 js/00-bootstrap/keepFocus.js
@@ -914,6 +915,8 @@ js/90-view-state/vars-PLAN_PROMPT_PATH.js
 js/90-view-state/planAiSaved.js
 js/90-view-state/planAiRemember.js
 js/90-view-state/vars-planAiName.js
+js/90-view-state/aiPicker.js
+js/90-view-state/openPromptEditor.js
 js/90-view-state/planTemplate.js
 js/90-view-state/planTemplateWrite.js
 js/90-view-state/vars-planEmailText.js
@@ -2433,6 +2436,20 @@ js/145-weeding-review-dashboards/reviewSections.js
 js/146-spaces-wizard/openSpacesWizard.js
 js/146-spaces-wizard/clearFlatStorage.js
 js/146-spaces-wizard/finishSpaceSetup.js
+js/147-recipes/vars-RECIPE_PROMPT_PATH.js
+js/147-recipes/vars-RECIPE_AMOUNT_RE.js
+js/147-recipes/recipePromptFor.js
+js/147-recipes/recipeAmount.js
+js/147-recipes/recipeAmountText.js
+js/147-recipes/scaleIngredient.js
+js/147-recipes/recipeServings.js
+js/147-recipes/recipeIngredientLines.js
+js/147-recipes/recipeScaledLines.js
+js/147-recipes/nextRecipeNo.js
+js/147-recipes/mendRecipeAnswer.js
+js/147-recipes/applyRecipeAnswer.js
+js/147-recipes/recipeBar.js
+js/147-recipes/openRecipeWithAI.js
 js/149-export-one-project/collectExport.js
 js/149-export-one-project/handoverData.js
 js/149-export-one-project/handoverSheetHtml.js

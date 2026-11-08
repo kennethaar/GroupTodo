@@ -8,6 +8,7 @@ function pageKind(path) {
   if (path.startsWith(DIRS.zettel    + "/")) return "zettel";
   if (path.startsWith(DIRS.mail      + "/")) return "email";
   if (path.startsWith(DIRS.reviews   + "/")) return "review";
+  if (path.startsWith(DIRS.recipes   + "/")) return "recipe";
   if (path.startsWith(DIRS.areas     + "/")) return "area";
   if (path.startsWith(DIRS.goals     + "/")) return "goal";
   // A tracker's page is its settings and your notes, not a list you run.

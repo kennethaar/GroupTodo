@@ -2,7 +2,7 @@ function viewPages() {
   const sub = subNow();
   const c = el("div", {class: "wrap" + (sub === "list" ? "" : " wide")});
   c.append(vhead("Pages", multiSpace() ? "Everything in the areas you are showing" : "Everything in " + (Spaces.active || "this area"),
-    newBtn("note", () => newZettelPrompt()), viewSeg("pages")));
+    newBtn("note", () => newZettelPrompt()), newBtn("recipe", () => openRecipeWithAI()), viewSeg("pages")));
   if (sub === "mindmap") { c.append(viewPlex()); return c; }
   if (sub === "graph") { c.append(viewGraphMap()); return c; }
   if (sub === "tree") { c.append(viewRelationshipBoard()); return c; }

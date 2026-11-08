@@ -36,10 +36,10 @@ $("#pagePane").addEventListener("click", e => {
   pane.before(grip);
 })();
 const PAGE_KIND_ONE = {project: "Project", person: "Person", org: "Organisation", context: "Context",
-  area: "Responsibility", goal: "Goal", zettel: "Note", email: "Email", review: "Review", checklist: "Routine or list", journal: "Day page",
+  area: "Responsibility", goal: "Goal", zettel: "Note", email: "Email", review: "Review", recipe: "Recipe", checklist: "Routine or list", journal: "Day page",
   horizon: "Horizon", page: "Page", verb: "Verb"};
 const PAGE_KINDS = {project: "Projects", person: "People", org: "Organisations", context: "Contexts",
-  area: "Responsibilities", goal: "Goals", zettel: "Notes", email: "Emails", review: "Reviews", checklist: "Settings", journal: "Journals",
+  area: "Responsibilities", goal: "Goals", zettel: "Notes", email: "Emails", review: "Reviews", recipe: "Recipes", checklist: "Settings", journal: "Journals",
   horizon: "Horizons", page: "Other pages"};
 
 /* ============================================================

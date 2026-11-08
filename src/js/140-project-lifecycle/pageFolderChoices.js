@@ -10,7 +10,7 @@ function pageFolderChoices(path) {
     [DIRS.cancelled, "Project, cancelled (-/)"],
     [DIRS.areas, "Responsibility (a/)"], [DIRS.goals, "Goal (g/)"],
     [DIRS.people, "Person (p/)"], [DIRS.orgs, "Organisation (o/)"], [DIRS.contexts, "Context (c/)"],
-    [DIRS.lists, "Routine or list (8/)"], [DIRS.zettel, "Note (z/)"], [DIRS.mail, "Email (m/)"], [DIRS.reviews, "Review (r/)"], [DIRS.pages, "Other page (pages/)"],
+    [DIRS.lists, "Routine or list (8/)"], [DIRS.zettel, "Note (z/)"], [DIRS.mail, "Email (m/)"], [DIRS.reviews, "Review (r/)"], [DIRS.recipes, "Recipe (k/)"],[DIRS.pages, "Other page (pages/)"],
   ];
   if (!list.some(([d]) => d === here))
     list.unshift([here, "Where it is now (" + here.replace(/^pages\/?/, "") + "/)"]);

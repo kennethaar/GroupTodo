@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.123.0 - 2026-11-08
+
+- Recipes: a recipe page in k/, numbered and in metric, for as many as you
+  cook for (#327). In Pages, *+ New recipe* takes a link or the recipe's
+  text and makes a prompt for your AI. Paste its answer back to get the
+  page, *k/42 Lasagne*, with the next number to file a print by. The AI
+  turns cups, ounces and °F into grams, litres and °C. On the recipe, set
+  *Cook for* and the ingredients show for that many: 400 g for 4 is 600 g
+  for 6. The page keeps the amounts it was written with.
+
 ## 1.122.0 - 2026-11-08
 
 - States and Waiting for: a day-page line that starts with a verb can become

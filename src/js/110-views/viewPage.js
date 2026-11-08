@@ -68,6 +68,7 @@ function viewPage() {
      the app offers about writing lines lives where the writing happens. */
   if (kind === "journal") { const mc = meetingNotesCard(path); if (mc) c.append(mc); }
   if (kind === "person") c.append(personPanel(personName(path), path));
+  if (kind === "recipe") c.append(recipeBar(path));
   if (code) { const plan = npmPanel(path); if (plan) c.append(plan); }
 
   // A chapter of the book (#244): Outline or Prose, and today's words.

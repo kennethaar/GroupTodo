@@ -39,6 +39,7 @@ const DIRS = {
   lists    : join(PAGES, "8"),   // 8 = eternity: checklists you run again and again
   mail     : join(PAGES, "m"),   // emails pasted in, each with what came of it
   reviews  : join(PAGES, "r"),   // books, films, series and videos, and what you made of them
+  recipes  : join(PAGES, "k"),   // recipes, numbered to file a print by (#327)
 };
 const TODO_STATES  = ["TODO", "DOING", "WAIT", "HOLD", "DONE", "CANCELLED"];
 const OPEN_STATES  = {TODO:true, DOING:true, WAIT:true, HOLD:true};

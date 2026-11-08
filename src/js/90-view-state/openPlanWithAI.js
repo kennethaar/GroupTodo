@@ -10,32 +10,7 @@ function openPlanWithAI(src) {
   if (PLAN_DRAFT.key === key) answer.value = PLAN_DRAFT.answer;
   answer.addEventListener("input", () => { PLAN_DRAFT = {key, answer: answer.value}; });
 
-  const ai = el("select", {"aria-label": "Your AI", style: "width:auto"});
-  const own = planAiOf(src.space);
-  const saved = [...planAiSaved(), own].filter((u, i, l) => u && l.indexOf(u) === i && !PLAN_AIS.some(([k]) => k === u));
-  const choices = [...PLAN_AIS, ...saved.map(u => [u, planAiName(u)])];
-  for (const [u, n] of [...choices, ["\u0001", "Another, by its address…"]]) {
-    const o = el("option", {value: u}, n);
-    if (u === own) o.selected = true;
-    ai.append(o);
-  }
-  const copyBtn = el("button", {class: "btn ghost"});
-  const label = () => { copyBtn.textContent = ai.value ? "Copy and open " + planAiName(ai.value) : "Copy the prompt"; };
-  ai.addEventListener("change", () => {
-    if (ai.value === "\u0001") {
-      promptInput({title: "Your AI", label: "The address of its chat page", value: "https://", cta: "Use it",
-        hint: "Opened in a new tab each time you copy a prompt in this area.",
-        onSave: url => {
-          if (/^https?:\/\/\S+\.\S+/.test(url)) { PREF.set("plan.ai:" + (src.space || ""), url); planAiRemember(url); }
-          else notify("That is not a web address: it starts with https://", "warn");
-          openPlanWithAI(src);
-        }});
-      return;
-    }
-    PREF.set("plan.ai:" + (src.space || ""), ai.value);
-    label();
-  });
-  label();
+  const {select: ai, button: copyBtn} = aiPicker(src.space, promptBox, () => openPlanWithAI(src));
 
   const back = el("select", {"aria-label": "How far back", style: "width:auto"});
   for (const [v, n] of PLAN_BACK) {
@@ -56,13 +31,6 @@ function openPlanWithAI(src) {
   sendProjects.addEventListener("change", () => { PREF.set(projPref, sendProjects.checked ? "1" : "0"); draw(); });
   draw();
 
-  const copy = async () => {
-    try { await navigator.clipboard.writeText(promptBox.value); }
-    catch (_) { promptBox.focus(); promptBox.select(); notify("The browser would not copy it: press Ctrl+C, the prompt is selected.", "warn"); return; }
-    notify("Copied " + promptBox.value.length.toLocaleString() + " characters. Paste it into " +
-      (ai.value ? planAiName(ai.value) : "your AI") + ", then its answer here.");
-    if (ai.value) window.open(ai.value, "_blank", "noopener");
-  };
   modal({
     center: true, title: "Plan it with an AI",
     body: el("div", {},
@@ -88,5 +56,4 @@ function openPlanWithAI(src) {
       }}, src.project ? "Add to the project" : "Make the project"),
     ],
   });
-  copyBtn.addEventListener("click", copy);
 }

@@ -3703,6 +3703,65 @@ var GTD_TEST = (() => {
   });
 
   /* ============================================================
+     Recipes (#327)
+     ============================================================ */
+  test("#327 an ingredient line scales by the amount it starts with", () => {
+    eq(scaleIngredient("400 g minced beef", 1.5), "600 g minced beef");
+    eq(scaleIngredient("750 g flour", 2), "1.5 kg flour", "1000 g and up is shown in kg");
+    eq(scaleIngredient("6 dl stock", 2), "1.2 l stock", "10 dl and up is shown in l");
+    eq(scaleIngredient("1,5 dl melk", 3), "4,5 dl melk", "a decimal comma stays a comma");
+    eq(scaleIngredient("2 eggs", 1.25), "2½ eggs", "a count rounds to quarters");
+    eq(scaleIngredient("1/2 tsp salt", 3), "1½ tsp salt");
+    eq(scaleIngredient("1 1/2 tbsp oil", 2), "3 tbsp oil");
+    eq(scaleIngredient("½ lemon", 2), "1 lemon");
+    eq(scaleIngredient("2-3 cloves garlic", 2), "4-6 cloves garlic", "both ends of a range");
+    eq(scaleIngredient("Salt to taste", 2), "Salt to taste", "no amount, no change");
+    eq(scaleIngredient("400 g minced beef", 1), "400 g minced beef");
+  });
+  test("#327 an AI's recipe answer becomes a numbered k/ page, its ingredients under their heading", () => {
+    const answer = "```\n# Lasagne\nservings:: 4\ntime:: 75 min\nsource:: https://example.com/lasagne\n\n" +
+      "## Ingredients\n- 500 g minced beef\n- 2 onions\n\n## Steps\n1. Brown the meat.\n2. Bake 40 min at 200 °C.\n\n## Notes\n- Freezes well.\n```";
+    const first = applyRecipeAnswer(answer);
+    const second = applyRecipeAnswer(answer);
+    ok(first && second, "no page made");
+    try {
+      ok(first.startsWith(DIRS.recipes + "/"), first);
+      eq(pageKind(first), "recipe");
+      const a = getPage(first), b = getPage(second);
+      eq(Number(b.props.no), Number(a.props.no) + 1, "each recipe takes the next number");
+      eq(pageTitle(first), a.props.no + " Lasagne", "the number is in the title, to file a print by");
+      eq(Object.keys(a.props)[0], "no");
+      eq(a.props.servings, "4");
+      eq(a.props.source, "https://example.com/lasagne");
+      eq(a.blocks.map(x => x.title), ["## Ingredients", "## Steps", "## Notes"]);
+      eq(a.blocks[0].children.map(x => x.title), ["500 g minced beef", "2 onions"]);
+      eq(a.blocks[1].children.map(x => x.title), ["Brown the meat.", "Bake 40 min at 200 °C."]);
+      eq(applyRecipeAnswer("   "), null, "an empty answer makes nothing");
+    } finally { removePage(first); removePage(second); }
+  });
+  test("#327 cooking for 6 from a recipe for 4 shows its ingredients times 1.5", () => {
+    const path = applyRecipeAnswer("Dal\nservings:: 4\n- ## Ingredients\n  - 300 g red lentils\n  - For the tadka\n    - 2 tbsp butter\n- ## Steps\n  - 3 cloves of garlic, crushed");
+    try {
+      eq(recipeScaledLines(path, 6), ["450 g red lentils", "For the tadka", "3 tbsp butter"], "only the Ingredients heading, nested lines too");
+      eq(recipeScaledLines(path, 4), ["300 g red lentils", "For the tadka", "2 tbsp butter"]);
+      const none = applyRecipeAnswer("Toast\n- ## Ingredients\n  - 2 slices bread");
+      try { eq(recipeScaledLines(none, 6), null, "without servings:: there is nothing to scale from"); }
+      finally { removePage(none); }
+    } finally { removePage(path); }
+  });
+  test("#327 the recipe prompt asks for metric and carries the text; 8/Prompts/Recipe.md replaces it", () => {
+    const p = recipePromptFor("https://example.com/pancakes");
+    has(p, "https://example.com/pancakes");
+    has(p, "metric");
+    has(p, "servings::");
+    const rec = LOADED.get(V.space);
+    const before = rec.prompts?.get(RECIPE_PROMPT_PATH);
+    (rec.prompts || (rec.prompts = new Map())).set(RECIPE_PROMPT_PATH, "Mine: {text}");
+    try { eq(recipePromptFor("soup"), "Mine: soup"); }
+    finally { if (before == null) rec.prompts.delete(RECIPE_PROMPT_PATH); else rec.prompts.set(RECIPE_PROMPT_PATH, before); }
+  });
+
+  /* ============================================================
      Sharing
      ============================================================ */
   test("#170 a photo is drawn again at most 1600 px, as a JPEG, before it is kept", async () => {

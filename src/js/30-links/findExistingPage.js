@@ -7,7 +7,7 @@ function findExistingPage(target) {
   if (/^\d{4}-\d{2}-\d{2}$/.test(target) || WEEK_RE.test(target)) return null;
   const slug = slugify(target.includes("/") ? target.split("/").pop() : target);
   const roots = [PAGES, DIRS.active, DIRS.someday, DIRS.waiting, DIRS.completed,
-                 DIRS.cancelled, DIRS.people, DIRS.contexts, DIRS.orgs, DIRS.zettel, DIRS.mail, DIRS.reviews];
+                 DIRS.cancelled, DIRS.people, DIRS.contexts, DIRS.orgs, DIRS.zettel, DIRS.mail, DIRS.reviews, DIRS.recipes];
   for (const r of roots) {
     const p = join(r, slug + ".md");
     if (V.pages.has(p)) return p;
