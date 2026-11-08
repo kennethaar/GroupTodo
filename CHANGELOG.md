@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.125.0 - 2026-11-08
+
+- Chores: open Chores in the sidebar to see every room, with how
+  many chores are due now in each. Click a room to see only its chores (#329).
+
 ## 1.124.0 - 2026-11-08
 
 - Waiting for › List: open Waiting for in the sidebar to see everyone you

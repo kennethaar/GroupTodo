@@ -29,19 +29,13 @@ function viewChores() {
     return c;
   }
 
-  /* A room is the first folder inside @home: @home/kitchen/fridge is in the
-     kitchen. A chore at @home itself is "@", in no room. */
-  const roomOf = a => {
-    const top = a.context.split("/").slice(0, 2).join("/");
-    return top.includes("/") ? "@" + top : "@";
-  };
+  const roomOf = a => choreRoom(a.context);
   const byName = [...new Set(all.map(roomOf))].sort((x, y) => (x === "@") - (y === "@") || x.localeCompare(y));
   const room = byName.includes(PREF.get("chores.room", "")) ? PREF.get("chores.room", "") : "";
   const pick = k => { PREF.set("chores.room", room === k ? "" : k); render(); };
   const home = freshScore(all);
-  const nameOf = k => k === "@" ? "Rest of home" : roomLabel(k.slice(1));
-  const sum = new Map(byName.map(k => [k, roomSummary(all.filter(a => roomOf(a) === k),
-    ctx => (ctx.includes("/") ? "@" + ctx.split("/").slice(0, 2).join("/") : "@") === k)]));
+  const nameOf = choreRoomName;
+  const sum = new Map(byName.map(k => [k, roomSummary(all.filter(a => roomOf(a) === k), ctx => choreRoom(ctx) === k)]));
   /* Sorted by name, or by freshness either way; the board's columns follow it. */
   const sort = ["stale", "fresh"].includes(PREF.get("chores.sort", "")) ? PREF.get("chores.sort", "") : "";
   const pctOf = k => sum.get(k).pct ?? 100;
@@ -122,7 +116,7 @@ function viewChores() {
       el("summary", {}, title, el("span", {class: "n"}, String(list.length)), sum || null), taskCard(list, null, opts)) : null;
     c.append(...[fold("Coming up this week", by.soon, total(by.soon)), fold("Fresh", by.fresh), fold("On hold", held)].filter(Boolean));
   }
-  const neededHere = needed.filter(a => !room || (a.ctx.includes("/") ? "@" + a.ctx.split("/").slice(0, 2).join("/") : "@") === room);
+  const neededHere = needed.filter(a => !room || choreRoom(a.ctx) === room);
   if (neededHere.length) c.append(asNeededFold(neededHere));
   c.append(choreBoard());
   return c;

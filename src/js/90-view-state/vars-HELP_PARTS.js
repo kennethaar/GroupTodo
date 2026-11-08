@@ -503,7 +503,7 @@ const HELP = {
     what: "The home at a glance: how fresh each room is, and what is due.",
     hint: "This is Chores. Tick one off and the next one is set up for whose turn it is.",
     steps: [["Tick a chore when done. The next one is set up at once.", ".task .tick"],
-      ["Click a room to see only its chores. Board shows rooms in columns.", "?.choreroom"],
+      ["Click a room, here or in the side bar, to see only it.", "?.choreroom"],
       ["Away until… holds every chore while you are gone.", "?.awaybtn"],
       ["+ New chore adds one. Pick or type a name. As needed has no rhythm.", ".newbtn"],
       ["Due now and Coming up show the time. Print adds the total.", ".section h3"],

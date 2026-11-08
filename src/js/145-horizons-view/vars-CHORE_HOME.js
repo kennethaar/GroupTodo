@@ -11,3 +11,8 @@ const atHome = ctx => !!ctx && (ctx.toLowerCase() === CHORE_HOME || ctx.toLowerC
 const isChore = a => !!(a.block && OPEN_STATES[a.state] && repeatOf(a.block) && !isAsNeeded(repeatOf(a.block)) && atHome(a.context));
 const allChores = () => memo("allChores", () => allLeafActions().filter(isChore));
 const choreRows = () => allChores().filter(a => !a.held);
+/* A room is the first folder inside @home: @home/kitchen/fridge is in the
+   kitchen. A chore at @home itself is "@", in no room. Chores and the rooms
+   under it in the sidebar both read it. */
+const choreRoom = ctx => ctx && ctx.includes("/") ? "@" + ctx.split("/").slice(0, 2).join("/") : "@";
+const choreRoomName = k => k === "@" ? "Rest of home" : roomLabel(k.slice(1));

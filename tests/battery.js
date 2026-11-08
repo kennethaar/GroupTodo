@@ -2375,6 +2375,30 @@ var GTD_TEST = (() => {
       ok(!row("Testwait Berg"), "folded away");
     } finally { PREF.set("nav.waitOpen", was); go("waiting", {waitWho: null}); dropChores(path); renderNav(); }
   });
+  test("#329 the sidebar lists the rooms under Chores, most due first, and one opens Chores narrowed to it", async () => {
+    const path = choreProject("fold rooms", [
+      chore("Wipe the counters [[c/home/testnavk]]", "daily", -2),
+      chore("Empty the bin [[c/home/testnavk]]", "daily", -1),
+      chore("Water the plants [[c/home/testnavb]]", "daily", -1),
+      chore("Scrub the shower [[c/home/testnavb]]", "monthly", 20)]);
+    const was = ["nav.choreOpen", "chores.room"].map(k => [k, PREF.get(k, "")]);
+    const rows = () => [...document.querySelectorAll("#nav .nav-sub")];
+    const row = name => rows().find(r => r.querySelector(".lbl")?.textContent === name);
+    try {
+      PREF.set("chores.room", ""); PREF.set("nav.choreOpen", "1"); renderNav();
+      const labels = rows().map(r => r.querySelector(".lbl")?.textContent);
+      ok(labels.indexOf("testnavk") >= 0 && labels.indexOf("testnavk") < labels.indexOf("testnavb"), "the room with most due sorts first: " + labels);
+      eq(row("testnavk").querySelector(".cnt")?.textContent, "2");
+      eq(row("testnavb").querySelector(".cnt")?.textContent, "1", "only what is due now counts");
+      row("testnavb").click(); await settle();
+      eq(state.view, "chores");
+      const shown = document.querySelector("#content").textContent;
+      has(shown, "Water the plants"); ok(!shown.includes("Wipe the counters"), "only that room's chores");
+      eq(row("testnavb").getAttribute("aria-current"), "page");
+      PREF.set("nav.choreOpen", "0"); renderNav();
+      ok(!row("testnavb"), "folded away");
+    } finally { for (const [k, v] of was) PREF.set(k, v); dropChores(path); go("next"); renderNav(); }
+  });
   test("#312 #318 Next's view switch offers List contexts and Sort contexts; the way back sits above the title", () => {
     makeContext("Testswitchctx");
     const segBtn = label => [...document.querySelectorAll("#content .vseg button")].find(b => b.textContent === label);

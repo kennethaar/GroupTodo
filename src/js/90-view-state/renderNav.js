@@ -19,11 +19,13 @@ function renderNav() {
     const hot = (it.id === "today" && dueNow().some(a => a.due < todayISO())) ||
                 (it.id === "projects" && reviewDue());
     /* Next unfolds into its contexts, Waiting for into the people you are
-       waiting on; each remembers whether it was left open. */
+       waiting on, Chores into its rooms; each remembers whether it was left open. */
     const fold = it.id === "next" && allContextNames().length > 0
       ? {pref: "nav.ctxOpen", rows: navContexts, shut: "Fold the contexts away", show: "Show every context"}
       : it.id === "waiting" && n > 0
       ? {pref: "nav.waitOpen", rows: navWaiting, shut: "Fold the people away", show: "Show everyone you are waiting on"}
+      : it.id === "chores" && choreRows().length > 0
+      ? {pref: "nav.choreOpen", rows: navChores, shut: "Fold the rooms away", show: "Show every room"}
       : null;
     const folds = !!fold;
     const open = folds && PREF.get(fold.pref, "0") === "1";
