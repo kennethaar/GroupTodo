@@ -6095,6 +6095,36 @@ var GTD_TEST = (() => {
       ok(document.querySelector('.blk[data-id="' + b.id + '"] > .line > .tick'), "with its tick");
     } finally { V.pages.delete(path); clearMemo(); go("today"); }
   });
+  test("#326 a journal line that starts with a verb becomes a to do, only where the area says so", () => {
+    if (!startsWithVerb("Call Bob")) seedVerbs();
+    const day = journalPath("2020-01-06"), note = join(PAGES, "Test verb lines.md");
+    const set = settingsPage(), had = set.props.verb_tasks;
+    const line = (path, title, text) => {
+      const b = newBlock({title});
+      putPage(path, {props: {}, blocks: [b]});
+      commitLine(el("div", {}, text), path, b);
+      return b;
+    };
+    try {
+      delete set.props.verb_tasks; clearMemo();
+      eq(line(day, "", "Call Bob about the quote").state, null, "off unless the area turns it on");
+      setSetting("verb_tasks", "on"); clearMemo();
+      const b = line(day, "", "Call Bob about the quote");
+      eq(b.state, "TODO", "a verb first makes a to do");
+      eq(b.title, "Call Bob about the quote");
+      eq(line(day, "", "call Bob").state, "TODO", "in any case");
+      for (const t of ["Call", "Call Bob?", "Called Bob about it", "The call went well",
+                       "# Call notes", "o Call with Bob", "= Call went fine", "> Call me, she said",
+                       "%% Call scene", "{{query call}}"])
+        eq(line(day, "", t).state, null, t);
+      eq(line(day, "Call Bob", "Call Bob today").state, null, "a line kept as a note stays one");
+      eq(line(day, "Bob", "Call Bob").state, "TODO", "the verb written in now counts");
+      eq(line(note, "", "Call Bob about the quote").state, null, "only day pages");
+    } finally {
+      if (had === undefined) delete set.props.verb_tasks; else set.props.verb_tasks = had;
+      V.pages.delete(day); V.pages.delete(note); clearMemo();
+    }
+  });
   test("#185 Reflect is a step and a tab only with something to reflect on", async () => {
     const step = () => reviewSteps().flatMap(g => g.steps).find(s => s.doors.includes("reflect"));
     await withWeek([], async () => {

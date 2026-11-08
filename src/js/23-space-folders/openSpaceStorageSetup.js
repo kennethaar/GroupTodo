@@ -27,6 +27,7 @@ function openSpaceStorageSetup({firstRun = false} = {}) {
           el("div", {class: "afname"}, sp.name),
           Spaces.list.length > 1 ? el("span", {class: "afmoves"}, shift(-1), shift(1)) : null),
         el("div", {class: "afwhere" + (placed || sp.kind === "http" ? "" : " off")}, where),
+        verbTasksToggle(sp.name),
         el("div", {class: "afbtns"},
           CAP.dirPicker ? el("button", {class: "btn sm " + (placed ? "ghost" : "primary"),
             // The bring-the-pages question replaces this dialog; open it again after.

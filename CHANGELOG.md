@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.122.0 - 2026-11-08
+
+- States and Waiting for: a day-page line that starts with a verb can become
+  a to do by itself (#326). *Call Bob about the quote* is a to do once you
+  leave the line, and *Keep as note* in the toast undoes it. It is off by
+  default. Turn it on per area in *Your areas*, so a book area can keep it
+  off. One word, a question, a heading, an event, a quote or a line you kept
+  as a note stays a note.
+
 ## 1.121.0 - 2026-11-08
 
 - Weekly review › Reflect: each Toward or Away now says which intention it

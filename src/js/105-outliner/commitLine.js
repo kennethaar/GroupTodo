@@ -5,6 +5,9 @@ function commitLine(txt, path, b) {
   // A tracker's line is a key and its numbers; a name in it is not a person.
   if (!parseTracker(val)) val = linkKnownNames(val, before, namesFor(txt));
   if (!b.state) val = val.replace(ACTION_DOT_RE, "TODO ");
+  const space = txt?.closest?.("[data-space]")?.dataset.space || V.space;
+  const byVerb = !b.state && !splitState(val)[0] && verbTaskLine(path, val, before, space);
+  if (byVerb) val = "TODO " + val;
   const [st, rest] = splitState(val);
   if (st) {
     const prev = b.state;
@@ -33,6 +36,9 @@ function commitLine(txt, path, b) {
     }
     if (dueDate(b)) warnDueConflict(path, b);
   }
+  if (byVerb) notify("A to do: it starts with a verb.", "info", {label: "Keep as note", run: () => {
+    setBlockState(path, b, null); render();
+  }});
   dropUnlinkedAssignee(b, before);
   createLinkedPages(b.title);
   touch(path); noteTodoTouched();

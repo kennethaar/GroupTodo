@@ -262,6 +262,7 @@ js/23-space-folders/checkFolderConflicts.js
 js/23-space-folders/spacesNeedingStorage.js
 js/23-space-folders/removeArea.js
 js/23-space-folders/openRemoveArea.js
+js/23-space-folders/verbTasksToggle.js
 js/23-space-folders/openSpaceStorageSetup.js
 js/23-space-folders/storedVisible.js
 js/23-space-folders/vars-AREA_DRAG.js
@@ -1493,6 +1494,7 @@ js/105-outliner/dropUnlinkedAssignee.js
 js/105-outliner/commitLine.js
 js/105-outliner/lineHtml.js
 js/105-outliner/vars-EVENT_RE.js
+js/105-outliner/verbTaskLine.js
 js/105-outliner/paintHeadLine.js
 js/105-outliner/outlineBlock.js
 js/105-outliner/vars-LINE_SEL.js
