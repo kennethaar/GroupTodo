@@ -14,7 +14,7 @@ function verbTaskLine(path, text, before = "", space = V.space) {
   const t = trim(String(text || ""));
   if (t.split(/\s+/).length < 2 || /\?\s*$/.test(t)) return false;
   if (HEAD_RE.test(t) || EVENT_RE.test(t) || FEEL_RE.test(t) || /^(>|%%|\{\{|\|)/.test(t)) return false;
-  if (wordListMarks().some(m => t.startsWith(m + " "))) return false;
+  if ([...wordListMarks()].some(m => t.startsWith(m + " "))) return false;
   if (parseTracker(t)) return false;
   if (!startsWithVerb(t)) return false;
   const was = String(before || "").replace(/\[\[[^\]]*(?:\]\[[^\]]*)?\]\]/g, " ");
