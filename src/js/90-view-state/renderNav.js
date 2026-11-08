@@ -18,8 +18,15 @@ function renderNav() {
     const n = navCount(it.id);
     const hot = (it.id === "today" && dueNow().some(a => a.due < todayISO())) ||
                 (it.id === "projects" && reviewDue());
-    const folds = it.id === "next" && allContextNames().length > 0;
-    const open = folds && PREF.get("nav.ctxOpen", "0") === "1";
+    /* Next unfolds into its contexts, Waiting for into the people you are
+       waiting on; each remembers whether it was left open. */
+    const fold = it.id === "next" && allContextNames().length > 0
+      ? {pref: "nav.ctxOpen", rows: navContexts, shut: "Fold the contexts away", show: "Show every context"}
+      : it.id === "waiting" && n > 0
+      ? {pref: "nav.waitOpen", rows: navWaiting, shut: "Fold the people away", show: "Show everyone you are waiting on"}
+      : null;
+    const folds = !!fold;
+    const open = folds && PREF.get(fold.pref, "0") === "1";
     nav.append(el("button", {
       class: "nav-item" + (here ? " active" : "") + (it.small ? " small" : ""),
       "aria-current": here ? "page" : null,
@@ -28,11 +35,11 @@ function renderNav() {
       el("span", {class: "ic bw"}, it.icon.startsWith("<") ? svgIcon(it.icon) : it.icon),
       el("span", {class: "lbl"}, it.label),
       folds ? el("span", {class: "fold", role: "button", "aria-expanded": String(open),
-        title: open ? "Fold the contexts away" : "Show every context",
-        onclick: e => { e.stopPropagation(); PREF.set("nav.ctxOpen", open ? "0" : "1"); renderNav(); }},
+        title: open ? fold.shut : fold.show,
+        onclick: e => { e.stopPropagation(); PREF.set(fold.pref, open ? "0" : "1"); renderNav(); }},
         svgIcon(open ? ICON_CARET : ICON_CHEVRON_RIGHT)) : null,
       n ? el("span", {class: "cnt" + (hot ? " hot" : "")}, String(n)) : null));
-    if (open) nav.append(...navContexts());
+    if (open) nav.append(...fold.rows());
     if (it.id === "pages") { const load = navLoading(); if (load) nav.append(load); }
   }
 }

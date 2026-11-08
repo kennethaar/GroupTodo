@@ -20,6 +20,7 @@ const state = {
   todayWeek: null,      // the week the Journal shows with sub "week", or null for this week
   org: null,            // the organisation Projects is narrowed to
   ctxFilter: null,      // the context Next is narrowed to
+  waitWho: null,        // the person Waiting for is narrowed to, as slugPerson
   horizonArea: null,    // the one area Horizons is showing, or null for the ladder
   helpTopic: null,      // the topic the full help is open at
   planPath: null,       // the project Natural planning is on

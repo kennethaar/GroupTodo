@@ -15,9 +15,16 @@ function viewWaiting() {
   const est = estFilter(all, "waiting.est");
   // By date by default, the order Waiting for always had.
   const {sel: sortSel, apply: sortRows, dot: sortDot} = taskSort("waiting", "date");
+  const nameOf = waitName;
+  /* Narrowed to one person from the sidebar: the Person picker names them
+     and takes you back to everyone. */
+  const who = state.waitWho && all.some(a => slugPerson(nameOf(a)) === state.waitWho) ? state.waitWho : null;
   const rows = sortRows(all.filter(a => (!f.late || (a.due && a.due < todayISO())) && (!f.asked || askedDays(a.block) == null))
-    .filter(types.keep).filter(est.keep));
-  const nameOf = a => a.mention || a.assignee || "Nobody named";
+    .filter(types.keep).filter(est.keep).filter(a => !who || slugPerson(nameOf(a)) === who));
+  const whoNames = new Map(all.map(a => [slugPerson(nameOf(a)), nameOf(a)]));
+  const whoSel = whoNames.size > 1 || who ? fselect("Person", who || "", [["", "Everyone"],
+    ...Array.from(whoNames).sort((x, y) => x[1].localeCompare(y[1]))],
+    v => go("waiting", {waitWho: v || null})) : null;
   const groupBy = list => {
     const by = new Map();
     for (const a of list) { const k = slugPerson(nameOf(a)); if (!by.has(k)) by.set(k, {name: nameOf(a), items: []}); by.get(k).items.push(a); }
@@ -33,7 +40,7 @@ function viewWaiting() {
   };
   const askBtn = name => name === "Nobody named" ? null : personActionBtn(name, isMember(name));
   const chips = [fchip("Overdue", f.late, () => flip("waiting.late"), all.filter(a => a.due && a.due < todayISO()).length),
-    fchip("Not asked yet", f.asked, () => flip("waiting.notAsked")), types.sel, est.sel, sortSel, sortDot,
+    fchip("Not asked yet", f.asked, () => flip("waiting.notAsked")), whoSel, types.sel, est.sel, sortSel, sortDot,
     el("span", {class: "right"}, ...replyActions(),
       el("button", {class: "textbtn", onclick: showWaitingFeedback}, "As text"))];
 
@@ -94,10 +101,10 @@ function viewWaiting() {
   }
   /* Grouped by who owes it; the filter keeps the grouping. A person put away
      on the board is left off the list too, with a chip to bring them back. */
-  const putAway = hiddenCols("waiting.person");
+  const putAway = who ? new Set() : hiddenCols("waiting.person");
   const groups = Array.from(by.values()).concat(Array.from(putAway).filter(k => !by.has(k))
     .map(k => ({name: (peopleRows().find(p => slugPerson(p.name) === k) || {name: k}).name, items: []})));
-  const peopleChips = shownChips("waiting.person", "People shown",
+  const peopleChips = who ? null : shownChips("waiting.person", "People shown",
     groups.sort((x, y) => (x.name === "Nobody named" ? 0 : 1) - (y.name === "Nobody named" ? 0 : 1) || x.name.localeCompare(y.name))
       .map(g => slugPerson(g.name)),
     k => (groups.find(g => slugPerson(g.name) === k) || {name: k}).name, k => (by.get(k) || {items: []}).items.length);

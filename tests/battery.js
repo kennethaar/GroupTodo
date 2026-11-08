@@ -2350,6 +2350,31 @@ var GTD_TEST = (() => {
       eq(state.view, "next"); eq(state.ctxFilter, "Testfoldb");
     } finally { PREF.set("nav.ctxOpen", was); go("next", {ctxFilter: null}); dropChores(path); renderNav(); }
   });
+  test("#328 the sidebar lists the people you are waiting on under Waiting for, most owed first, and one opens it narrowed", async () => {
+    const path = choreProject("fold wait", [
+      stampAuthor(newBlock({state: "TODO", title: "Send the quote"})),
+      stampAuthor(newBlock({state: "TODO", title: "Check the plans"})),
+      stampAuthor(newBlock({state: "TODO", title: "Sign the lease"}))]);
+    const [a, b, c] = getPage(path).blocks;
+    assignBlock(path, a, "Testwait Olsen", true); assignBlock(path, b, "Testwait Olsen", true);
+    assignBlock(path, c, "Testwait Berg", true); clearMemo();
+    const was = PREF.get("nav.waitOpen", "0");
+    const rows = () => [...document.querySelectorAll("#nav .nav-sub")];
+    const row = name => rows().find(r => r.querySelector(".lbl")?.textContent === name);
+    try {
+      PREF.set("nav.waitOpen", "1"); renderNav();
+      const labels = rows().map(r => r.querySelector(".lbl")?.textContent);
+      ok(labels.indexOf("Testwait Olsen") >= 0 && labels.indexOf("Testwait Olsen") < labels.indexOf("Testwait Berg"), "the one owing most sorts first");
+      eq(row("Testwait Olsen").querySelector(".cnt")?.textContent, "2");
+      row("Testwait Berg").click(); await settle();
+      eq(state.view, "waiting");
+      const shown = document.querySelector("#content").textContent;
+      has(shown, "Sign the lease"); ok(!shown.includes("Send the quote"), "only what Berg owes");
+      eq(row("Testwait Berg").getAttribute("aria-current"), "page");
+      PREF.set("nav.waitOpen", "0"); renderNav();
+      ok(!row("Testwait Berg"), "folded away");
+    } finally { PREF.set("nav.waitOpen", was); go("waiting", {waitWho: null}); dropChores(path); renderNav(); }
+  });
   test("#312 #318 Next's view switch offers List contexts and Sort contexts; the way back sits above the title", () => {
     makeContext("Testswitchctx");
     const segBtn = label => [...document.querySelectorAll("#content .vseg button")].find(b => b.textContent === label);

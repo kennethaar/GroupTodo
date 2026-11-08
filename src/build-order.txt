@@ -639,6 +639,7 @@ js/84-assets/vars-fmtPrices.js
 js/84-assets/openPicture.js
 js/84-assets/renderInline.js
 js/90-view-state/vars-state.js
+js/90-view-state/vars-WAIT_NOBODY.js
 js/90-view-state/go.js
 js/90-view-state/openPage.js
 js/90-view-state/vars-NAV_FIELDS.js
@@ -758,6 +759,7 @@ js/90-view-state/navLoading.js
 js/90-view-state/vars-NAV_PENDING.js
 js/90-view-state/goFromNav.js
 js/90-view-state/navContexts.js
+js/90-view-state/navWaiting.js
 js/90-view-state/pins.js
 js/90-view-state/setPins.js
 js/90-view-state/vars-pinAt.js

@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.124.0 - 2026-11-08
+
+- Waiting for › List: open Waiting for in the sidebar to see everyone you
+  are waiting on, with how much each owes you. Click a person to see only
+  what they owe; the Person picker shows everyone again (#328).
+
 ## 1.123.2 - 2026-11-08
 
 - Next actions: the contexts under Next in the sidebar show only those with

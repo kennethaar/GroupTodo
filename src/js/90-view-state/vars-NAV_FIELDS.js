@@ -9,5 +9,5 @@
    the way, the same as clicking the link did. A line you focused on is part of
    the place, so Back walks out of it. */
 const NAV_FIELDS = ["view", "sub", "pagePath", "context", "statusCode", "query", "searchFilter",
-                    "graphFocus", "jz", "todayWho", "todayDay", "todayWeek", "org", "ctxFilter", "horizonArea", "helpTopic"];
+                    "graphFocus", "jz", "todayWho", "todayDay", "todayWeek", "org", "ctxFilter", "waitWho", "horizonArea", "helpTopic"];
 let NAV_HIST = [], NAV_AT = -1, NAV_JUMPING = false;

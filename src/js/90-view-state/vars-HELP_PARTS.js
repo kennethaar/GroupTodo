@@ -199,7 +199,7 @@ const HELP = {
     what: "What you handed over, and who owes it back.",
     hint: "This is Waiting for. Chase what is late.",
     steps: [["Ask for an update. It makes a sheet for them.", "?.group .textbtn"],
-      ["Click a person chip to hide or show them.", ".ctxdrops"],
+      ["Click a person chip to hide or show them. Open Waiting for in the side bar to see one person.", ".ctxdrops"],
       "Tick a task when it comes back.",
       "Import a reply, then review each answer and choose an outcome."],
     keys: [["g w", "Waiting for"]],
