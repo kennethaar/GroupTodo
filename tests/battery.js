@@ -5676,14 +5676,15 @@ var GTD_TEST = (() => {
     } finally { toast.remove(); PREF.set("tour.asked", ""); }
   });
   test("#186 Getting started stays while a step it shows is still open", async () => {
-    const keys = ["coach", "coach.who", "coach.where", "coach.add", "coach.project", "coach.tour"];
+    const keys = ["coach", "coach.who", "coach.where", "coach.add", "coach.next", "coach.project", "coach.tour"];
     const was = keys.map(k => PREF.get(k, ""));
     const had = !!tourProjectPath();
     const tour = seedTourProject();
     TOUR_PATH_CACHE = undefined;
     try {
       PREF.set("coach", "1");
-      for (const k of ["who", "where", "add"]) PREF.set("coach." + k, "1");
+      // "next" is a step since #314: it shows once a task is added.
+      for (const k of ["who", "where", "add", "next"]) PREF.set("coach." + k, "1");
       PREF.set("coach.tour", "");
       go("today");
       await settle();
