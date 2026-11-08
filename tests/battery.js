@@ -6477,7 +6477,7 @@ var GTD_TEST = (() => {
         const words = d => [...days[weekDays(id).indexOf(d)].querySelectorAll(".wkitem")]
           .map(n => [n.querySelector(".wktext").textContent.trim(), (n.querySelector(".wksub") || {}).textContent || ""]);
         const daysLate = n => "! " + dateDiffDays(n, T()) + "d late";
-        eq(words(mon).find(w => /parking/.test(w[0])), ["@computer Reply to the parking email", daysLate(mon)]);
+        eq(words(mon).find(w => /parking/.test(w[0])), ["Reply to the parking email @computer", daysLate(mon)], "the words as typed, no second chip (#315)");
         eq(words(tue).filter(w => /gutters|minutes/.test(w[0])), [["Send minutes to the board", ""], ["Clean the gutters", "starts"]]);
         eq(words(wed).filter(w => /Dentist|depot|Havbris/.test(w[0])),
           [["14:00 Dentist", ""], ["Send the depot guide", daysLate(wed)], ["Quote from Havbris Seafood", "waiting"]]);
@@ -6638,11 +6638,14 @@ var GTD_TEST = (() => {
       try {
         eq(getComputedStyle(d.querySelector(".nfold")).display, "none", "the filters are folded on a phone");
         ok(getComputedStyle(d.querySelector(".nfiltbtn")).display !== "none", "Filter shows on a phone");
-        ok(d.querySelector(".task").getBoundingClientRect().top - d.querySelector(".vhead").getBoundingClientRect().bottom < 40,
+        /* The list starts with its first context header since #315, or a row when there is one context. */
+        ok(d.querySelector(".ngroup, .task").getBoundingClientRect().top - d.querySelector(".vhead").getBoundingClientRect().bottom < 40,
           "the list starts right under the heading");
       } finally { f.remove(); }
-      eq(getComputedStyle(content().querySelector(".nfiltbtn")).display, "none", "a wide screen has no Filter button");
-      ok(getComputedStyle(content().querySelector(".fbar")).display !== "none", "and shows the filters as before");
+      /* Since #315 Filter is there at every width; a wide screen keeps only the text filter in sight. */
+      ok(getComputedStyle(content().querySelector(".nfiltbtn")).display !== "none", "a wide screen has Filter too");
+      ok(content().querySelector('.fbar input[type=search]').getBoundingClientRect().width > 0, "and the text filter in sight");
+      ok([...content().querySelectorAll(".fbar > :not(input[type=search])")].every(n => getComputedStyle(n).display === "none"), "the rest folded");
       setHiddenStates(new Set(["DOING"]));
       render(); await settle();
       has(content().querySelector(".nfiltbtn").textContent, "1", "one state hidden counts");
