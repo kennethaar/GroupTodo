@@ -6133,6 +6133,26 @@ var GTD_TEST = (() => {
       ok(content().querySelector(".reflog .bl-line.ev"), "the event drawn as one");
     });
   });
+  test("#214 Reflect counts the week's feelings by their core feeling, found from the word alone", async () => {
+    eq(feelingCore("= Betrayed"), "Angry", "the outer ring");
+    eq(feelingCore("= let down, after the meeting"), "Angry", "the word first, words after it");
+    eq(feelingCore("= Happy"), "Happy", "a core feeling is its own");
+    eq(feelingCore("= Weird"), null, "a word not on the wheel");
+    eq(feelingCore("= Madness"), null, "only whole words");
+    await withWeek([
+      [1, "- = Betrayed\n- o Budget meeting\n  - = Annoyed\n- = Hopeful about it\n- = Weird\n"],
+    ], async () => {
+      eq(weekFeelings(reflectLog()), [["Angry", 2], ["Happy", 1]]);
+      go("review", {sub: "reflect"});
+      await settle();
+      eq(content().querySelector(".reffeel")?.textContent, "Angry 2 · Happy 1");
+    });
+    await withWeek([[1, "- o Ran 5 km\n"]], async () => {
+      go("review", {sub: "reflect"});
+      await settle();
+      ok(!content().querySelector(".reffeel"), "a count with no feelings");
+    });
+  });
   test("#185 Toward and Away are one pick, written under this week's #reflection line", async () => {
     await withWeek([[0, "- o Ran 5 km with Alice\n"]], async () => {
       const today = journalPath(T()), ev = getPage(today).blocks[0];

@@ -46,6 +46,7 @@
 .bjm{display:inline-block;width:7px;height:7px;border-radius:50%;vertical-align:middle}
 /* The weekly review's Reflect: the week's entries, each with Toward and Away. */
 .refday{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--fg3);margin:12px 0 4px}
+.reffeel{font-size:12.5px;color:var(--fg2);margin:0 0 6px}
 .refitem{display:flex;gap:10px;align-items:flex-start;padding:8px 14px;border-bottom:1px solid var(--border)}
 .refitem:last-child{border-bottom:none}
 .refitem>.backlink-subtree{flex:1;min-width:0;cursor:pointer;border-radius:4px}

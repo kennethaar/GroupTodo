@@ -771,6 +771,7 @@ const HELP = {
       "Click an entry to open its day.",
       ["Steps › takes you back to mark the review done.", ".review-onward"]],
     legend: [[".refaims", "Your intentions: what this journal is for."],
+      ["?.reffeel", "How the week felt: each feeling counted under its core feeling."],
       ["?.reflog", "This week's events and feelings, day by day."],
       ["?.refpick", "Did it move you toward your intentions, or away?"],
       [".refnotes", "This week's line on your day page."]],

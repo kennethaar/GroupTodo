@@ -13,6 +13,8 @@ that breaks existing vaults. Newest first.
   outside it: Angry, then Let down, then Betrayed. Esc keeps the word you
   have. Edit the words in Settings, under Feelings. Any list can be a word
   list for lines of its own: kind:: words, and lines:: for their mark.
+  The weekly review's Reflect counts the week's feelings by core feeling,
+  such as Angry 2 · Happy 1, from the word alone.
 
 ## 1.119.0 - 2026-11-08
 

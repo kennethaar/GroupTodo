@@ -1817,6 +1817,7 @@ How often? =>
 How the Timeline works =>
 How the app looks on this device. The theme button in the top bar flips between the light and the dark you pick here. =>
 How the chart is drawn =>
+How the week felt: each feeling counted under its core feeling. =>
 How this folder works =>
 How to read it. =>
 How to set up the flow =>

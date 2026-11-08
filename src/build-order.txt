@@ -1851,6 +1851,8 @@ js/110-views/viewDayReview.js
 js/110-views/vars-dayLong.js
 js/110-views/addIntention.js
 js/110-views/reflectLog.js
+js/110-views/feelingCore.js
+js/110-views/weekFeelings.js
 js/110-views/vars-reflectWanted.js
 js/110-views/reflectionBlock.js
 js/110-views/reflectPicks.js

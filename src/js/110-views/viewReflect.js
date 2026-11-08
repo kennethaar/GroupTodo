@@ -12,6 +12,9 @@ function viewReflect() {
 
   c.append(el("div", {class: "group"}, "This week",
     el("span", {class: "plain"}, "· " + humanDate(shiftISO(today, 1 - REFLECT_DAYS)) + " – " + humanDate(today))));
+  // How the week felt, by core feeling: the words are already in the shown language.
+  const felt = weekFeelings(log);
+  if (felt.length) c.append(el("p", {class: "reffeel", translate: "no"}, felt.map(([w, n]) => w + " " + n).join(" · ")));
   if (!log.length) c.append(emptyCard("No events or feelings on your day pages this week. " +
     "Start a line with o and a space for what happened, = and a space for how it felt."));
   const feed = el("div", {class: "reflog"});
