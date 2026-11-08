@@ -2327,8 +2327,8 @@ var GTD_TEST = (() => {
       has(getPage(path).blocks[0].title, "[[c/Testcrjad]]", "and its link");
     } finally { dropChores(path); document.querySelectorAll("#toasts .toast").forEach(x => x.remove()); }
   });
-  test("#204 the sidebar lists contexts under Next, busiest first, with None for the rest", () => {
-    makeContext("Testfolda"); makeContext("Testfoldb");
+  test("#204 the sidebar lists only contexts with actions under Next, busiest first, with No context for the rest", () => {
+    makeContext("Testfolda"); makeContext("Testfoldb"); makeContext("Testfoldempty");
     const path = choreProject("fold ctx", [
       stampAuthor(newBlock({state: "TODO", title: "One [[c/Testfolda]]"})),
       stampAuthor(newBlock({state: "TODO", title: "Two [[c/Testfoldb]]"})),
@@ -2341,7 +2341,8 @@ var GTD_TEST = (() => {
     try {
       PREF.set("nav.ctxOpen", "1"); renderNav();
       const labels = rows().map(b => b.querySelector(".lbl")?.textContent);
-      eq(labels[0], "None", "no-context leads the list");
+      eq(labels[0], "No context", "no-context leads the list");
+      ok(!labels.includes("Testfoldempty"), "a context with nothing to do is left out");
       ok(labels.indexOf("Testfoldb") < labels.indexOf("Testfolda"), "the busier context sorts first");
       eq(row("Testfoldb").querySelector(".cnt")?.textContent, "2");
       eq(row("Testfolda").querySelector(".cnt")?.textContent, "1");

@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.123.2 - 2026-11-08
+
+- Next actions: the contexts under Next in the sidebar show only those with
+  actions to do. Actions with no context gather under No context (#204).
+
 ## 1.123.1 - 2026-11-08
 
 - Calendars: in the Journal, one click on the date opens the picker, and one

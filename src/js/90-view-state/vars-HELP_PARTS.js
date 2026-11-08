@@ -147,7 +147,7 @@ const HELP = {
       ["?.chip.proj", "The project it moves forward."],
       ["?.duepill", "When it is due. Red is late."],
       ["?.t-meta .chip.urg, .t-info", "Urgency. Point at a row to see why."]],
-    more: ["The sidebar under Next lists every context, busiest first, with None for actions that have none yet.",
+    more: ["The sidebar under Next lists the contexts that have actions, busiest first, with No context for actions that have none yet.",
       "Urgency counts the deadline, the scheduled day, priority, age, the context you are in and the project chain.",
       "On a phone with chores, pick To do or Chores. Before and after work, and on days off, it starts on Chores.",
       "On a phone Next shows the context you seem to be in. It learns from what you pick.",
