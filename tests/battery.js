@@ -1935,10 +1935,10 @@ var GTD_TEST = (() => {
       ok(red().querySelectorAll(".chorecard").length >= CHORE_COL_MAX + 3, "all of them after it");
     } finally { for (const [k, v] of was) PREF.set(k, v); CHORE_COLS_OPEN.clear(); dropChores(path); render(); }
   });
-  test("#235 Print puts what is due now and this week on one sheet, by room, as the view shows it", async () => {
+  test("#235 Print puts what is due on one sheet, by room, as the view shows it", async () => {
     const path = choreProject("chores print", [
       chore("Wipe the testprint counters #15m [[c/home/testprintk]]", "daily", -3),
-      chore("Clean the testprint sink [[c/home/testprintb]]", "weekly", 2),
+      chore("Clean the testprint sink [[c/home/testprintb]]", "weekly", 0),
       chore("Wash the testprint mats [[c/home/testprintb]]", "monthly", 25)]);
     const was = ["chores.room", "chores.who", "chores.layout"].map(k => [k, PREF.get(k, "")]);
     const print = window.print;
@@ -1955,9 +1955,8 @@ var GTD_TEST = (() => {
       const sheet = document.querySelector("#printsheet");
       ok(sheet && sheet.parentNode === document.body, "the sheet is outside the app");
       const text = sheet.textContent;
-      has(text, "week " + isoWeek(T())[0], "the week");
       has(text, "Wipe the testprint counters", "due now");
-      has(text, "Clean the testprint sink", "coming up this week");
+      has(text, "Clean the testprint sink", "due today");
       ok(!text.includes("Wash the testprint mats"), "fresh ones are left out");
       const row = [...sheet.querySelectorAll("tr")].find(r => r.textContent.includes("counters"));
       has(row.textContent, "LATE", "late in capitals");
@@ -1978,6 +1977,59 @@ var GTD_TEST = (() => {
       window.print = print;
       window.dispatchEvent(new Event("afterprint"));
       for (const [k, v] of was) PREF.set(k, v); dropChores(path); render();
+    }
+  });
+  test("#325 Print covers This week or Next week, and every round in those days has its own line", async () => {
+    eq(choreRange("week", "2026-11-10"), {from: "2026-11-10", to: "2026-11-15"}, "this week: today to Sunday");
+    eq(choreRange("week", "2026-11-08"), {from: "2026-11-08", to: "2026-11-08"}, "on a Sunday, just today");
+    eq(choreRange("next", "2026-11-08"), {from: "2026-11-09", to: "2026-11-15"}, "next week from a Sunday: Mon to Sun");
+    eq(choreRange("next", "2026-11-10"), {from: "2026-11-16", to: "2026-11-22"}, "next week from a Tuesday");
+    const mia = householder("Mia Testround"), leo = householder("Leo Testround");
+    const path = choreProject("chores rounds", [
+      chore("Wipe the testround counters #10m [[c/home/kitchen]]", "daily", -2),
+      chore("Clean the testround sink [[c/home/kitchen]]", "every 3 days", 1),
+      chore("Water the testround plants [[c/home/kitchen]]", "weekly", 0),
+      chore("Clean the testround fridge [[c/home/kitchen]]", "monthly", 3),
+      chore("Wash the testround mats [[c/home/kitchen]]", "monthly", 10)]);
+    const was = PREF.get("chores.printDays", ""), whoWas = PREF.get("chores.who", ""), print = window.print;
+    window.print = () => {};
+    try {
+      clearMemo();
+      const mine = choreRows().filter(a => a.path === path);
+      const range = {from: shiftISO(T(), 1), to: shiftISO(T(), 7)};
+      const sheet = choreSheet(mine, ["@"], () => "@", () => "", [], "", range);
+      const lines = w => [...sheet.querySelectorAll("tr")].filter(r => r.textContent.includes(w));
+      eq(lines("counters").length, 8, "daily: the late one, then a line for each of the 7 days");
+      has(lines("counters")[0].textContent, "LATE", "the late round comes first");
+      eq(lines("counters").filter(r => r.querySelector(".ps-box")).length, 8, "a box to tick on each");
+      eq(lines("sink").length, 3, "every 3 days from day 1: days 1, 4 and 7");
+      eq(lines("plants").length, 2, "due today is always on, and its next round is in the days");
+      has(lines("plants")[0].textContent, "today");
+      eq(lines("fridge").length, 1, "a monthly one inside the days, once");
+      eq(lines("mats").length, 0, "one past the days is left out");
+      const h = sheet.querySelector(".ps-h h1").textContent;
+      ok(!/week \d/.test(h), "the heading is not a week number: " + h);
+      const day = iso => new Intl.DateTimeFormat(undefined, {weekday: "short", day: "numeric", month: "short"}).format(parseISO(iso));
+      has(h, day(range.from), "the heading names the first day");
+      has(h, day(range.to), "and the last");
+      has(sheet.querySelector(".ps-total").textContent, "In all · ", "the total is for the days printed");
+      has(sheet.querySelector(".ps-total").textContent, "14 chores", "it counts every round");
+      const whose = r => r.lastElementChild.textContent;
+      ok(whose(lines("counters")[0]), "whose turn on the first round");
+      ok(lines("counters").slice(1).every(r => !whose(r)), "later rounds are left to write in, not guessed");
+
+      PREF.set("chores.printDays", "next"); PREF.set("chores.who", "all"); go("chores"); await settle();
+      const pick = content().querySelector('.vhead select[aria-label="Print"]');
+      ok(pick, "a Print pick beside the Print button");
+      eq([...pick.options].map(o => o.textContent), ["This week", "Next week"]);
+      eq(pick.value, "next", "the device keeps the last pick");
+      content().querySelector(".vhead .printbtn").click(); await settle();
+      const next = choreRange("next", T());
+      has(document.querySelector("#printsheet .ps-h h1").textContent, day(next.to), "Print uses the days picked");
+      window.dispatchEvent(new Event("afterprint"));
+    } finally {
+      window.print = print; window.dispatchEvent(new Event("afterprint"));
+      PREF.set("chores.printDays", was); PREF.set("chores.who", whoWas); dropChores(path); removePage(mia); removePage(leo); clearMemo(); render();
     }
   });
   test("#235 the browser's own Print opens the folds, and closes them again after", async () => {
@@ -2497,7 +2549,7 @@ var GTD_TEST = (() => {
       const sheet = choreSheet(mine, ["@"], () => "@", () => "", [], "");
       const tot = sheet.querySelector(".ps-total");
       ok(tot, "print total");
-      has(tot.textContent, "This week · 30 min + 1 unsized · 2 chores");
+      has(tot.textContent, "In all · 30 min + 1 unsized · 2 chores");
       ok(!sheet.querySelector(".ps-room + tr .ps-sub, .ps-subtotal"), "no room subtotals");
     } finally { dropChores(path); }
   });

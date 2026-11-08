@@ -1231,6 +1231,8 @@ js/145-horizons-view/choresBack.js
 js/145-horizons-view/openChoresAway.js
 js/145-horizons-view/choreByChore.js
 js/145-horizons-view/choreTotal.js
+js/145-horizons-view/choreRange.js
+js/145-horizons-view/choreRoundsIn.js
 js/145-horizons-view/choreSheet.js
 js/145-horizons-view/printChores.js
 js/145-horizons-view/printSheet.js

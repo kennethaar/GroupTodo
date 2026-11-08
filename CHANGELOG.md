@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.119.0 - 2026-11-08
+
+- Chores: Print now covers the days you pick (#325). Choose This week (today
+  to Sunday) or Next week (Monday to Sunday) beside Print. Your device
+  remembers the choice. The sheet's heading names the days, not a week
+  number. Late chores and chores due now are always on it. A chore that is
+  due more than once in those days, such as a daily one, gets a line and a
+  box each time. Whose turn is shown for the first time only, unless the
+  chore is handed to someone.
+
 ## 1.118.3 - 2026-11-08
 
 - What's new: the toast that welcomes a new version, or offers one, now
