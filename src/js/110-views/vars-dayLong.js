@@ -39,11 +39,13 @@ const dayLong = iso => capitalise(parseISO(iso).toLocaleDateString(undefined, {w
 
    A pick is written on the week page, under one line per
    week -- "#reflection Week 44" -- as toward:: ((id)) or away:: ((id)), so it
-   points back at the line it is about. What you write under that line is an
+   points back at the line it is about. A second ((id)) is the intention it
+   moved (#210); the score is counted from these, never stored. What you write under that line is an
    ordinary note or to do: there is no plan of its own beside the to dos. */
 const INTENTIONS_PATH = join(DIR_HORIZONS, "Intentions.md");
 const REFLECT_DAYS = 7;
 const REFLECTION_RE = /^#reflection\b/i;
-const PICK_RE = /^(toward|away)::\s*\(\(([A-Za-z0-9_-]{4,64})\)\)/i;
-const intentions = () => V.pages.has(INTENTIONS_PATH)
-  ? getPage(INTENTIONS_PATH).blocks.map(b => trim(b.title || "")).filter(Boolean) : [];
+const PICK_RE = /^(toward|away)::\s*\(\(([A-Za-z0-9_-]{4,64})\)\)(?:\s*\(\(([A-Za-z0-9_-]{4,64})\)\))?/i;
+const intentionBlocks = () => V.pages.has(INTENTIONS_PATH)
+  ? getPage(INTENTIONS_PATH).blocks.filter(b => trim(b.title || "")) : [];
+const intentions = () => intentionBlocks().map(b => trim(b.title));

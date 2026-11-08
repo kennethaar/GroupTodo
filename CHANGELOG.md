@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.121.0 - 2026-11-08
+
+- Weekly review › Reflect: each Toward or Away now says which intention it
+  moved (#210). With more than one intention, a pick asks which one. Each
+  intention has a score, toward adds one and away takes one, and a chart
+  shows every intention's score over the weeks. An entry picked in two
+  weeks counts once.
+
 ## 1.120.0 - 2026-11-08
 
 - Events and feelings: a = line now helps you name the feeling (#214). Type

@@ -52,7 +52,11 @@
 .refitem>.backlink-subtree{flex:1;min-width:0;cursor:pointer;border-radius:4px}
 .refitem>.backlink-subtree:hover,.refitem>.backlink-subtree:focus-visible{background:var(--bg3)}
 .refpick{display:flex;gap:6px;flex:none}
-.refpick .fchip{font-size:12px;padding:2px 9px}
+.refpick .fchip{font-size:12px;padding:2px 9px;max-width:16em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.refaims .dash-item{display:flex;gap:10px}
+.refaims .dash-item>:first-child{flex:1;min-width:0}
+.refscore{font-variant-numeric:tabular-nums;color:var(--fg2)}
+.refchart{padding:8px 10px}
 .refaims input{width:100%;border:0;background:transparent;color:var(--fg);font:inherit;font-size:14px;padding:10px 14px}
 @media (max-width:560px){.refitem{flex-direction:column}}
 

@@ -1856,6 +1856,9 @@ js/110-views/weekFeelings.js
 js/110-views/vars-reflectWanted.js
 js/110-views/reflectionBlock.js
 js/110-views/reflectPicks.js
+js/110-views/pickReflectAim.js
+js/110-views/intentionScores.js
+js/110-views/intentionChart.js
 js/110-views/setReflectPick.js
 js/110-views/viewReflect.js
 js/110-views/vars-REVIEW_PHASES.js

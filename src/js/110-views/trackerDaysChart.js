@@ -1,22 +1,24 @@
 /* Several trackers on one scale. Hovering a day says each one's value and
    the total; clicking it opens that day. With more than one, each is named
-   at its end, so colour is never the only clue. */
-function trackerDaysChart(series, days, style, measure, openDay) {
+   at its end, so colour is never the only clue. A signed chart (#210) keeps
+   values below 0, on a scale with 0 in the middle. */
+function trackerDaysChart(series, days, style, measure, openDay, signed = false) {
   const many = series.length > 1, stacked = many && style === "stacked-bar";
   const W = 600, H = 170, L = 40, R = many ? 110 : 12, T = 12, B = 24;
-  const val = (s, d) => { const v = s.by.get(d)?.v; return v == null ? null : Math.max(0, v); };
+  const val = (s, d) => { const v = s.by.get(d)?.v; return v == null ? null : signed ? v : Math.max(0, v); };
   const sum = d => series.reduce((n, s) => n + (val(s, d) || 0), 0);
-  const hi = niceTop(Math.max(1, ...days.map(d => stacked ? sum(d) : Math.max(0, ...series.map(s => val(s, d) || 0)))));
+  const hi = niceTop(Math.max(1, ...days.map(d => stacked ? sum(d) : Math.max(0, ...series.map(s => Math.abs(val(s, d) || 0))))));
+  const lo = signed ? -hi : 0;
   const slot = (W - L - R) / days.length, bw = Math.min(30, slot * 0.7);
   const X = i => L + slot * (i + 0.5);
-  const Y = v => T + (1 - v / hi) * (H - T - B);
+  const Y = v => T + (hi - v) / (hi - lo) * (H - T - B);
   const unit = TRACKER_MEASURES[measure].unit ? " " + TRACKER_MEASURES[measure].unit : "";
   const hex = s => s.colour ? TRACKER_COLOURS[s.colour] : "var(--trkc,var(--accent))";
   const name = s => (s.icon ? s.icon + " " : "") + s.label;
   const f = n => n.toFixed(1);
   let svg = '<svg viewBox="0 0 ' + W + " " + H + '" class="trkchart trkdays" role="img" aria-label="' +
     esc(series.map(s => s.label).join(", ") + ", day by day") + '">';
-  for (const v of [0, hi / 2, hi]) svg += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + f(Y(v)) + '" y2="' + f(Y(v)) + '" class="grid"/>' +
+  for (const v of signed ? [lo, 0, hi] : [0, hi / 2, hi]) svg += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + f(Y(v)) + '" y2="' + f(Y(v)) + '" class="grid"/>' +
     '<text x="' + (L - 6) + '" y="' + f(Y(v) + 4) + '" text-anchor="end">' + fmtNum(v) + "</text>";
   svg += '<text x="' + L + '" y="' + (H - 6) + '">' + esc(humanDate(days[0])) + "</text>" +
     '<text x="' + (W - R) + '" y="' + (H - 6) + '" text-anchor="end">' + esc(humanDate(days[days.length - 1])) + "</text>";
@@ -58,7 +60,7 @@ function trackerDaysChart(series, days, style, measure, openDay) {
   }
   days.forEach((d, i) => {
     const tip = [humanDate(d), ...series.map(s => name(s) + "  " + fmtNum(val(s, d) || 0) + unit),
-      ...(many ? ["Together  " + fmtNum(sum(d)) + unit] : [])].join("\n");
+      ...(many && !signed ? ["Together  " + fmtNum(sum(d)) + unit] : [])].join("\n");
     svg += '<rect data-i="' + i + '" x="' + f(X(i) - slot / 2) + '" y="' + T + '" width="' + f(slot) + '" height="' + (H - T - B) +
       '" class="hit"><title>' + esc(tip) + "</title></rect>";
   });

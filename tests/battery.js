@@ -6176,6 +6176,60 @@ var GTD_TEST = (() => {
       ok(!getPage(today).blocks.some(b => /^#reflection/i.test(b.title || "")), "#217 not on a day page");
     });
   });
+  test("#210 each Toward or Away is for one intention, and each intention gets a score", async () => {
+    const lastWk = journalPath(weekOf(shiftISO(T(), -7)));
+    const kept = V.pages.has(lastWk) ? structuredClone(getPage(lastWk)) : null;
+    try {
+      await withWeek([[0, "- o Played games with the kids\n"]], async () => {
+        putPage(INTENTIONS_PATH, parsePage("- Be present at home\n- Move my body\n"));
+        clearMemo();
+        const ev = getPage(journalPath(T())).blocks[0];
+        const [home, body] = getPage(INTENTIONS_PATH).blocks;
+        const pills = async () => { go("review", {sub: "reflect"}); await settle(); return [...content().querySelectorAll(".refpick .fchip")]; };
+        const picks = () => (reflectionBlock(false)?.block.children || []).map(b => b.title);
+        const menu = () => [...document.querySelectorAll("#modalRoot .pick")];
+        const choose = async label => { menu().find(b => b.textContent.includes(label)).click(); await settle(); };
+        const score = name => [...content().querySelectorAll(".refaims .dash-item")]
+          .find(r => r.textContent.includes(name))?.querySelector(".refscore")?.textContent;
+
+        (await pills())[0].click(); await settle();
+        eq(menu().map(b => b.querySelector("span:nth-child(2)").textContent), ["Be present at home", "Move my body"],
+          "with two intentions, Toward asks which one");
+        await choose("Move my body");
+        const id = blockProp(ev, "id"), bid = blockProp(body, "id");
+        ok(bid, "the intention got an id:: to be pointed at");
+        eq(picks(), ["toward:: ((" + id + ")) ((" + bid + "))"], "the intention is a second ref on the pick");
+        has((await pills())[0].textContent, "Move my body", "the chip names the intention");
+        eq(score("Move my body"), "+1", "a Toward adds one");
+        eq(score("Be present at home"), "0", "every intention starts at 0");
+
+        (await pills())[1].click(); await settle();
+        await choose("Move my body");
+        eq(picks(), ["away:: ((" + id + ")) ((" + bid + "))"], "Away takes its place");
+        eq(score("Move my body"), "−1", "an Away takes one");
+
+        (await pills())[1].click(); await settle();
+        eq(menu().pop().textContent.includes("Take it off"), true, "Take it off comes last");
+        await choose("Take it off");
+        eq(picks(), [], "taken back");
+
+        // Last week picked the same event Toward; this week's Away is the one that counts.
+        putPage(lastWk, parsePage("- #reflection Week " + isoWeek(shiftISO(T(), -7))[0] + "\n  - toward:: ((" + id + ")) ((" + bid + "))\n"));
+        clearMemo(); await pills();
+        eq(score("Move my body"), "+1", "last week's pick counts");
+        (await pills())[1].click(); await settle();
+        await choose("Move my body");
+        eq(score("Move my body"), "−1", "an event counts once: its latest pick");
+        ok(content().querySelector(".refchart .trkdays"), "two weeks of picks draw one chart, a line per intention");
+
+        // One intention: no question to ask.
+        getPage(INTENTIONS_PATH).blocks.splice(1, 1); touch(INTENTIONS_PATH); clearMemo();
+        (await pills())[0].click(); await settle();
+        eq(menu().length, 0, "with one intention, no picker");
+        eq(picks(), ["toward:: ((" + id + ")) ((" + ensureBlockId(INTENTIONS_PATH, home) + "))"]);
+      });
+    } finally { if (kept) putPage(lastWk, kept); else V.pages.delete(lastWk); clearMemo(); closeModal(); }
+  });
   test("#185 an intention typed in Reflect is a horizon page, and shows in Horizons", async () => {
     await withWeek([], async () => {
       go("review", {sub: "reflect"});

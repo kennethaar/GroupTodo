@@ -1,14 +1,18 @@
 function viewReflect() {
   const c = el("div", {class: "wrap"});
-  const today = todayISO(), aims = intentions(), log = reflectLog(), picks = reflectPicks();
+  const today = todayISO(), log = reflectLog(), picks = reflectPicks(), sc = intentionScores();
+  const aims = intentionBlocks().map(b => ({id: trim(blockProp(b, "id") || "").toLowerCase(), title: trim(b.title)}));
+  const signed = n => n > 0 ? "+" + n : n < 0 ? "−" + -n : "0";
   c.append(vhead("Weekly review", "Reflect · week " + reflectWeek(), viewSeg("review")));
 
   c.append(el("div", {class: "group"}, "Intentions", el("span", {class: "plain"}, "· what this journal is for"),
     V.pages.has(INTENTIONS_PATH) ? el("button", {class: "textbtn", onclick: () => openPage(INTENTIONS_PATH)}, "Edit in the page") : null));
   c.append(el("div", {class: "card refaims"}, ...aims.length
-    ? aims.map(t => el("div", {class: "dash-item", translate: "no", html: renderInline(t)}))
+    ? aims.map(a => el("div", {class: "dash-item"}, el("span", {translate: "no", html: renderInline(a.title)}),
+        el("span", {class: "refscore", title: "Toward adds one, away takes one"}, signed(a.id ? sc.total(a.id) : 0))))
     : [el("input", {placeholder: "Add an intention for this area…", "aria-label": "Add an intention for this area",
         onkeydown: e => { if (e.key === "Enter" && trim(e.target.value)) { addIntention(e.target.value); render(); } }})]));
+  if (aims.length && sc.weeks.length > 1) c.append(el("div", {class: "card refchart"}, intentionChart(aims, sc)));
 
   c.append(el("div", {class: "group"}, "This week",
     el("span", {class: "plain"}, "· " + humanDate(shiftISO(today, 1 - REFLECT_DAYS)) + " – " + humanDate(today))));
@@ -21,15 +25,18 @@ function viewReflect() {
   for (const d of log) {
     feed.append(el("div", {class: "refday"}, dayLong(d.day)));
     feed.append(el("div", {class: "card"}, ...d.items.map(b => {
-      const way = picks.get(trim(blockProp(b, "id") || "").toLowerCase()) || null;
+      const pick = picks.get(trim(blockProp(b, "id") || "").toLowerCase()) || null;
+      const aim = pick?.aim && aims.find(a => a.id === pick.aim)?.title;
+      const chip = (w, label) => { const on = pick?.way === w, ch = fchip(on && aim ? label + ": " + aim : label, on, () => pickReflectAim(d.path, b, w, pick));
+        if (on && aim) ch.title = aim;
+        return ch; };
       const open = () => openBlockAt(V.space, d.path, b);
       return el("div", {class: "refitem"},
         el("div", {class: "backlink-subtree", tabindex: "0", title: "Open the day page at this line",
           onclick: e => { if (!e.target.closest("[data-link], [data-bref], a[href]")) open(); },
           onkeydown: e => { if (e.key === "Enter") open(); }}, backlinkSubtree(b)),
         el("div", {class: "refpick", role: "group", "aria-label": "Toward or away from your intentions"},
-          fchip("+ Toward", way === "toward", () => setReflectPick(d.path, b, "toward")),
-          fchip("− Away", way === "away", () => setReflectPick(d.path, b, "away"))));
+          chip("toward", "+ Toward"), chip("away", "− Away")));
     })));
   }
   c.append(feed);
