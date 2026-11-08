@@ -242,12 +242,13 @@ button.coach-dot{background:none;padding:0;font:inherit;color:transparent}
 .calpick{display:flex;gap:8px;align-items:center;padding:7px 0}
 .calnote{flex:1;font-size:13px;color:var(--fg2)}
 .textbtn.danger{color:var(--bad,#c0392b)}
-/* Import calendar shows only while the browser's calendar is open, out of the
-   flow under it, so it never moves the date or the arrows (#291). The
-   calendar is the browser's own: its height is the usual one, not measured.
-   A phone's calendar is a sheet over the page, so there it hangs under the box. */
+/* Import calendar shows only while the browser's calendar is open, beside the
+   box and out of the flow, so it never moves the date or the arrows (#291).
+   The browser draws its calendar over the page below the box, at a size the
+   page cannot know, so the button keeps to the box's row. A phone's calendar
+   is a sheet over the page, so there it hangs under the box. */
 .daybox{position:relative}
-.daybox .dayimport{display:none;position:absolute;top:calc(100% + 292px);left:var(--pickx,0);z-index:3;font-size:12px;
+.daybox .dayimport{display:none;position:absolute;top:0;bottom:0;left:100%;margin-left:6px;z-index:3;font-size:12px;
   white-space:nowrap;align-items:center;gap:4px;background:var(--bg2);border:1px solid var(--border2)}
 .daybox.picking .dayimport{display:inline-flex}
 @media (max-width:640px){.daybox .dayimport{top:100%;left:auto;right:0;margin-top:4px}}

@@ -4001,7 +4001,7 @@ var GTD_TEST = (() => {
       ok(document.querySelector(".modal"), "Advanced opens");
       closeModal();
     });
-    test("#291 one click on the Journal's date box or its arrows works; Import calendar shows under the open calendar", async () => {
+    test("#291 one click on the Journal's date box or its arrows works; Import calendar shows beside it while the calendar is open", async () => {
       go("today", {todayDay: shiftISO(T(), -1)});
       await settle();
       const q = s => content().querySelector(s);
@@ -4018,8 +4018,9 @@ var GTD_TEST = (() => {
       ok(shown(), "Import calendar shows while the calendar is open");
       eq(rects(), before, "the date box and arrows stay where they were clicked");
       const imp = q(".dayimport").getBoundingClientRect(), box = q(".daybox").getBoundingClientRect();
-      ok(imp.top >= box.bottom + 250, "it sits under the calendar, not under the date box: " + Math.round(imp.top - box.bottom) + "px down");
-      eq(Math.round(imp.left), Math.round(pick.getBoundingClientRect().left), "it starts where the calendar does, under the date");
+      ok(imp.left >= box.right && imp.top < box.bottom && imp.bottom > box.top, "it sits beside the date box, where the calendar cannot cover it");
+      const top = document.elementFromPoint(imp.left + imp.width / 2, imp.top + imp.height / 2);
+      ok(q(".dayimport").contains(top), "nothing on the page covers it: " + (top && (top.className || top.tagName)));
       q(".dayimport").focus();
       ok(shown(), "it stays while you reach for it");
       prev.focus();
