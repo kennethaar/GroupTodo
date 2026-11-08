@@ -89,7 +89,8 @@ var GTD_TEST = (() => {
     const t = document.querySelector("#toasts .toast.update");
     ok(t, "update toast");
     has(t.textContent, "v9.0.0");
-    has(t.textContent, "Shiny thing");
+    // Each line says what the new thing is, not only where it lives ("Shiny thing", "A page").
+    eq([...t.querySelectorAll(".newslist li")].map(li => li.textContent), ["It shines.", "It also does."]);
     has(t.textContent, "Download now");
     const b = document.querySelector("#appUpdate");
     ok(!b.hidden, "badge shown");
@@ -113,6 +114,8 @@ var GTD_TEST = (() => {
     const t = document.querySelector("#toasts .toast.whatsnew");
     ok(t, "what's new toast");
     has(t.textContent, "since v" + before);
+    const first = newsEntries(HELP_NEWS)[0].items[0];
+    eq(t.querySelector(".newslist li").textContent, first.lead, "the first line says what the newest thing is, not " + first.head);
     eq(PREF.get("ran.version"), APP_VERSION);
     t.remove();
     maybeShowWhatsNew();

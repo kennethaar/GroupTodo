@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.118.3 - 2026-11-08
+
+- What's new: the toast that welcomes a new version, or offers one, now
+  says what each new thing is (#256). Before, it showed only which part of
+  the app it belongs to, such as "A page".
+
 ## 1.118.2 - 2026-11-08
 
 - A page: the Focus teleprompter now moves smoothly (#324). Typing fast no
