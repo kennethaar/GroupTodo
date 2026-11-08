@@ -4019,6 +4019,7 @@ var GTD_TEST = (() => {
       eq(rects(), before, "the date box and arrows stay where they were clicked");
       const imp = q(".dayimport").getBoundingClientRect(), box = q(".daybox").getBoundingClientRect();
       ok(imp.top >= box.bottom + 250, "it sits under the calendar, not under the date box: " + Math.round(imp.top - box.bottom) + "px down");
+      eq(Math.round(imp.left), Math.round(pick.getBoundingClientRect().left), "it starts where the calendar does, under the date");
       q(".dayimport").focus();
       ok(shown(), "it stays while you reach for it");
       prev.focus();

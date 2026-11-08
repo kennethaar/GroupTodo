@@ -247,7 +247,7 @@ button.coach-dot{background:none;padding:0;font:inherit;color:transparent}
    calendar is the browser's own: its height is the usual one, not measured.
    A phone's calendar is a sheet over the page, so there it hangs under the box. */
 .daybox{position:relative}
-.daybox .dayimport{display:none;position:absolute;top:calc(100% + 310px);left:0;z-index:3;font-size:12px;
+.daybox .dayimport{display:none;position:absolute;top:calc(100% + 292px);left:var(--pickx,0);z-index:3;font-size:12px;
   white-space:nowrap;align-items:center;gap:4px;background:var(--bg2);border:1px solid var(--border2)}
 .daybox.picking .dayimport{display:inline-flex}
 @media (max-width:640px){.daybox .dayimport{top:100%;left:auto;right:0;margin-top:4px}}

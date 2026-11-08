@@ -2228,7 +2228,7 @@ font-size:13px;box-shadow:var(--shadow);pointer-events:auto;display:flex;gap:10p
 .calnote{flex:1;font-size:13px;color:var(--fg2)}
 .textbtn.danger{color:var(--bad,#c0392b)}
 .daybox{position:relative}
-.daybox .dayimport{display:none;position:absolute;top:calc(100% + 310px);left:0;z-index:3;font-size:12px;
+.daybox .dayimport{display:none;position:absolute;top:calc(100% + 292px);left:var(--pickx,0);z-index:3;font-size:12px;
 white-space:nowrap;align-items:center;gap:4px;background:var(--bg2);border:1px solid var(--border2)}
 .daybox.picking .dayimport{display:inline-flex}
 @media (max-width:640px){.daybox .dayimport{top:100%;left:auto;right:0;margin-top:4px}}
@@ -31119,7 +31119,9 @@ const picker = el("input", {type: "date", value: day, "aria-label": "Go to a day
 title: "Go to a day", onchange: e => { if (parseISO(e.target.value)) toDay(e.target.value); },
 onclick: e => {
 try { e.currentTarget.showPicker(); } catch (_) {}
-e.currentTarget.closest(".daybox")?.classList.add("picking");
+const box = e.currentTarget.closest(".daybox");
+box?.style.setProperty("--pickx", e.currentTarget.offsetLeft + "px");
+box?.classList.add("picking");
 },
 onkeydown: e => { if (e.key === "Escape") e.currentTarget.closest(".daybox")?.classList.remove("picking"); }});
 const rel = ["Today", "Yesterday", "Tomorrow"].includes(humanDate(day)) ? humanDate(day) : "";

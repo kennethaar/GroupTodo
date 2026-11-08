@@ -143,7 +143,10 @@ function viewToday() {
     title: "Go to a day", onchange: e => { if (parseISO(e.target.value)) toDay(e.target.value); },
     onclick: e => {
       try { e.currentTarget.showPicker(); } catch (_) {}
-      e.currentTarget.closest(".daybox")?.classList.add("picking");
+      const box = e.currentTarget.closest(".daybox");
+      // The browser's calendar opens under the date itself, so the button lines up with it.
+      box?.style.setProperty("--pickx", e.currentTarget.offsetLeft + "px");
+      box?.classList.add("picking");
     },
     onkeydown: e => { if (e.key === "Escape") e.currentTarget.closest(".daybox")?.classList.remove("picking"); }});
   /* On a phone the box is too narrow to show its date, so the day is said in
