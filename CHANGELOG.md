@@ -8,8 +8,8 @@ that breaks existing vaults. Newest first.
 ## 1.123.1 - 2026-11-08
 
 - Calendars: in the Journal, one click on the date opens the picker, and one
-  click on an arrow changes the day (#291). Import calendar now shows under
-  the date box, so nothing moves under the pointer.
+  click on an arrow changes the day (#291). Import calendar shows only while
+  the calendar is open, under it, so nothing moves under the pointer.
 
 ## 1.123.0 - 2026-11-08
 

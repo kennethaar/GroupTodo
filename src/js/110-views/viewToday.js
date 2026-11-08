@@ -141,7 +141,11 @@ function viewToday() {
   const toDay = iso => go("today", {sub: null, todayWeek: null, todayDay: iso && iso !== today ? iso : null});
   const picker = el("input", {type: "date", value: day, "aria-label": "Go to a day",
     title: "Go to a day", onchange: e => { if (parseISO(e.target.value)) toDay(e.target.value); },
-    onclick: e => { try { e.currentTarget.showPicker(); } catch (_) {} }});
+    onclick: e => {
+      try { e.currentTarget.showPicker(); } catch (_) {}
+      e.currentTarget.closest(".daybox")?.classList.add("picking");
+    },
+    onkeydown: e => { if (e.key === "Escape") e.currentTarget.closest(".daybox")?.classList.remove("picking"); }});
   /* On a phone the box is too narrow to show its date, so the day is said in
      words over it, and a tap on the words opens the same box. */
   const rel = ["Today", "Yesterday", "Tomorrow"].includes(humanDate(day)) ? humanDate(day) : "";
@@ -156,7 +160,11 @@ function viewToday() {
   const head = vhead("Journal", dayName(day),
     who ? null : journalModes(false, day),
     el("div", {class: "dayhold"},
-      el("div", {class: "daynav daybox"},
+      /* Import calendar shows only while the calendar is open, and goes when
+         focus leaves for anything but itself (#291). */
+      el("div", {class: "daynav daybox", onfocusout: e => {
+        if (!e.relatedTarget?.classList?.contains("dayimport")) e.currentTarget.classList.remove("picking");
+      }},
         el("button", {class: "dayarrow", title: "The day before", "aria-label": "The day before",
           onclick: () => toDay(shiftISO(day, -1))}, svgIcon(ICON_CHEVRON_LEFT)),
         el("label", {class: "daypick"}, dayWords, picker),

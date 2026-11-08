@@ -4001,24 +4001,28 @@ var GTD_TEST = (() => {
       ok(document.querySelector(".modal"), "Advanced opens");
       closeModal();
     });
-    test("#291 one click on the Journal's date box or its arrows works: Import calendar shows without moving them", async () => {
+    test("#291 one click on the Journal's date box or its arrows works; Import calendar shows under the open calendar", async () => {
       go("today", {todayDay: shiftISO(T(), -1)});
       await settle();
       const q = s => content().querySelector(s);
       const pick = q(".daybox input[type=date]"), [prev, next] = content().querySelectorAll(".daybox .dayarrow:not(.dayimport)");
       const rects = () => [pick, prev, next].map(e => { const r = e.getBoundingClientRect(); return [r.left, r.top, r.width].map(Math.round).join(","); });
+      const shown = () => getComputedStyle(q(".dayimport")).display !== "none";
       const before = rects();
-      ok(getComputedStyle(q(".dayimport")).display === "none", "Import calendar is hidden until the box is used");
       let opened = 0;
       pick.showPicker = () => { opened++; };
       pick.focus();
-      eq(rects(), before, "the date box and arrows stay where they were clicked");
-      const imp = q(".dayimport").getBoundingClientRect(), back = q(".backtoday").getBoundingClientRect();
-      ok(imp.width > 0, "Import calendar shows");
-      ok(imp.right <= back.left || imp.left >= back.right || imp.bottom <= back.top || imp.top >= back.bottom, "it does not cover Back to today");
+      ok(!shown(), "Import calendar is hidden while the calendar is closed");
       pick.click();
-      eq(opened, 1, "one click on the date opens the picker");
+      eq(opened, 1, "one click on the date opens the calendar");
+      ok(shown(), "Import calendar shows while the calendar is open");
+      eq(rects(), before, "the date box and arrows stay where they were clicked");
+      const imp = q(".dayimport").getBoundingClientRect(), box = q(".daybox").getBoundingClientRect();
+      ok(imp.top >= box.bottom + 250, "it sits under the calendar, not under the date box: " + Math.round(imp.top - box.bottom) + "px down");
+      q(".dayimport").focus();
+      ok(shown(), "it stays while you reach for it");
       prev.focus();
+      ok(!shown(), "it goes when you leave the calendar");
       eq(rects(), before, "an arrow does not move when it takes focus");
       prev.click();
       await settle();
