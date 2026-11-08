@@ -4001,6 +4001,31 @@ var GTD_TEST = (() => {
       ok(document.querySelector(".modal"), "Advanced opens");
       closeModal();
     });
+    test("#291 one click on the Journal's date box or its arrows works: Import calendar shows without moving them", async () => {
+      go("today", {todayDay: shiftISO(T(), -1)});
+      await settle();
+      const q = s => content().querySelector(s);
+      const pick = q(".daybox input[type=date]"), [prev, next] = content().querySelectorAll(".daybox .dayarrow:not(.dayimport)");
+      const rects = () => [pick, prev, next].map(e => { const r = e.getBoundingClientRect(); return [r.left, r.top, r.width].map(Math.round).join(","); });
+      const before = rects();
+      ok(getComputedStyle(q(".dayimport")).display === "none", "Import calendar is hidden until the box is used");
+      let opened = 0;
+      pick.showPicker = () => { opened++; };
+      pick.focus();
+      eq(rects(), before, "the date box and arrows stay where they were clicked");
+      const imp = q(".dayimport").getBoundingClientRect(), back = q(".backtoday").getBoundingClientRect();
+      ok(imp.width > 0, "Import calendar shows");
+      ok(imp.right <= back.left || imp.left >= back.right || imp.bottom <= back.top || imp.top >= back.bottom, "it does not cover Back to today");
+      pick.click();
+      eq(opened, 1, "one click on the date opens the picker");
+      prev.focus();
+      eq(rects(), before, "an arrow does not move when it takes focus");
+      prev.click();
+      await settle();
+      eq(q(".daybox input[type=date]").value, shiftISO(T(), -2), "one click on the arrow goes a day back");
+      go("today", {todayDay: null});
+      await settle();
+    });
     test("#218 Calendars are in a private area's Settings; the Journal only has an import button by its date box", async () => {
       go("today");
       await settle();

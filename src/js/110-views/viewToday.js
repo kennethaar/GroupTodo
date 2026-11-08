@@ -140,7 +140,8 @@ function viewToday() {
     .filter(n => !samePerson(n, me) && !isMe(n) && (writers.has(slugPerson(n)) || samePerson(n, who)));
   const toDay = iso => go("today", {sub: null, todayWeek: null, todayDay: iso && iso !== today ? iso : null});
   const picker = el("input", {type: "date", value: day, "aria-label": "Go to a day",
-    title: "Go to a day", onchange: e => { if (parseISO(e.target.value)) toDay(e.target.value); }});
+    title: "Go to a day", onchange: e => { if (parseISO(e.target.value)) toDay(e.target.value); },
+    onclick: e => { try { e.currentTarget.showPicker(); } catch (_) {} }});
   /* On a phone the box is too narrow to show its date, so the day is said in
      words over it, and a tap on the words opens the same box. */
   const rel = ["Today", "Yesterday", "Tomorrow"].includes(humanDate(day)) ? humanDate(day) : "";

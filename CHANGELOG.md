@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.123.1 - 2026-11-08
+
+- Calendars: in the Journal, one click on the date opens the picker, and one
+  click on an arrow changes the day (#291). Import calendar now shows under
+  the date box, so nothing moves under the pointer.
+
 ## 1.123.0 - 2026-11-08
 
 - Recipes: a recipe page in k/, numbered and in metric, for as many as you
