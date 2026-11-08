@@ -1,6 +1,8 @@
 function suggestDraw() {
-  const {box, rows, i, mode} = SUGGEST;
+  const {box, rows, i, mode, head} = SUGGEST;
   box.textContent = "";
+  // The ring being offered says what it is under: Angry › Let down ›
+  if (mode === "words" && head) box.append(el("div", {class: "suggest-head", translate: "no"}, head + " ›"));
   rows.forEach((r, n) => {
     const detail = r.detail != null ? r.detail
       : r.accept === "date" ? humanWhen(r.iso, r.time)
@@ -13,7 +15,8 @@ function suggestDraw() {
     },
       el("span", {class: "k"}, (() => { const m = r.mark || (r.isNew && r.kind !== "context" ? "+" : (KIND_MARK[r.kind] || (r.ref || "").split("/")[0] || "·"));
         return m.startsWith("<") ? svgIcon(m) : m; })()),
-      el("span", {style: "min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"},
+      el("span", {style: "min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap",
+        translate: mode === "words" ? "no" : null},
         r.isNew && mode === "link" ? "Make " + r.ref : r.title),
       /* With several areas on, the same name can be a person in each, and
          the area is what tells them apart (#258). A row has one only then:
@@ -26,7 +29,9 @@ function suggestDraw() {
   const keys = SUGGEST_KEYS[suggestKeys()].label;
   box.append(el("div", {class: "suggest-hint"},
     mode === "word" ? keys + " takes it · keep typing to ignore"
+    : mode === "words" ? keys + " takes it" + (rows.some(r => r.mark === "›") ? ", then a closer word" : "") +
+      " · Esc keeps " + (head ? head.split(" › ").pop() : "what you typed")
     : keys + (mode === "slash" ? " runs it" : " takes it") + " · Esc closes"));
-  const cur = box.children[i];
+  const cur = box.querySelectorAll(".pick")[i];
   if (cur) cur.scrollIntoView({block: "nearest"});
 }

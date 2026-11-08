@@ -25,6 +25,12 @@ function suggestAccept(n) {
     host.dispatchEvent(new Event("input", {bubbles: true}));
     return;
   }
+  if (r.accept === "word") {
+    // The word takes the place of what was typed; input then offers the next ring.
+    setHostText(host, text.slice(0, at) + r.title + after, at + r.title.length);
+    host.dispatchEvent(new Event("input", {bubbles: true}));
+    return;
+  }
   if (r.accept === "date") {
     // The words stay where the hand wrote them in a box that reads them on
     // Enter; on a line they become the line's due date and leave the words.

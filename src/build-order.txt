@@ -510,6 +510,9 @@ js/73-checklists/saveRoutineSchedule.js
 js/73-checklists/openRoutineSchedule.js
 js/73-checklists/openRecurrenceDialog.js
 js/73-checklists/vars-isStateList.js
+js/73-checklists/vars-FEELINGS_WHEEL.js
+js/73-checklists/wordsForLines.js
+js/73-checklists/ensureFeelings.js
 js/73-checklists/typeChoices.js
 js/73-checklists/vars-typeTitle.js
 js/73-checklists/typeHere.js
@@ -1451,6 +1454,7 @@ js/105-outliner/vars-SLASH_COMMANDS.js
 js/105-outliner/slashRows.js
 js/105-outliner/aliasRows.js
 js/105-outliner/suggestFor.js
+js/105-outliner/wordSuggest.js
 js/105-outliner/suggestClose.js
 js/105-outliner/suggestDraw.js
 js/105-outliner/suggestAccept.js

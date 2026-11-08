@@ -6007,6 +6007,60 @@ var GTD_TEST = (() => {
     ok(!dayCandidate(newBlock({title: "= Drained"})), "a feeling is offered as a to do");
     ok(dayCandidate(newBlock({title: "Ran 5 km"})), "a plain line is still asked about");
   });
+  test("#214 a = line offers Feelings Wheel words, ring by ring, from any word list", () => {
+    const at = text => suggestFor({value: text, selectionStart: text.length}, {dates: true});
+    const words = s => s && s.mode === "words" ? s.rows.map(r => r.title) : [];
+    const own = V.pages.has(FEELINGS_PATH) ? structuredClone(getPage(FEELINGS_PATH)) : null;
+    const bang = join(DIRS.lists, "Test energy words.md");
+    const input = document.body.appendChild(el("input"));
+    try {
+      V.pages.delete(FEELINGS_PATH); clearMemo();
+      eq(words(at("= ")), [], "nothing for = alone");
+      eq(words(at("= a")), [], "nothing for one letter");
+      eq(words(at("fru")), [], "an ordinary line gets no wheel words");
+      const fru = at("= fru");
+      eq(words(fru), ["Frustrated", "Infuriated", "Annoyed"], "any ring, the word and the words under it");
+      eq(fru.rows[0].detail, "Angry");
+      eq(at("= ang").rows.find(r => r.title === "Angry").detail, "core feeling");
+      eq(at("= infu").rows[0].detail, "Angry › Frustrated");
+      eq(words(at("= Angry")), ["Let down", "Humiliated", "Bitter", "Mad", "Aggressive", "Frustrated", "Distant", "Critical"],
+        "a whole word offers the ring outside it");
+      eq(at("= Angry").head, "Angry");
+      eq(words(at("= let down")), ["Betrayed", "Resentful"], "in any case");
+      eq(words(at("= Betrayed")), [], "an outer word offers nothing more");
+      eq(words(at("= Angry about the board")), [], "typing on leaves the word");
+      // Picking writes the word and opens the next ring; an outer word closes the box.
+      input.value = "= fru"; input.focus(); input.setSelectionRange(5, 5);
+      suggestSync(input, {});
+      suggestAccept(0);
+      eq(input.value, "= Frustrated");
+      suggestSync(input, {});
+      eq(SUGGEST && SUGGEST.rows.map(r => r.title), ["Infuriated", "Annoyed"]);
+      suggestAccept(1);
+      eq(input.value, "= Annoyed");
+      suggestSync(input, {});
+      ok(!SUGGEST, "the box stays open after an outer word");
+      // The list is a page of your own once you edit it, and replaces the built-in one.
+      const p = ensureFeelings();
+      eq(p, FEELINGS_PATH);
+      eq(trim(getPage(p).props.kind), "words");
+      eq(trim(getPage(p).props.lines), "=");
+      const happy = getPage(p).blocks.find(b => b.title === "Happy");
+      happy.children.push(newBlock({title: "Testelated"}, false)); touch(p); clearMemo();
+      eq(words(at("= testel")), ["Testelated"], "the page's own word");
+      ok(!canSchedule(p), "a word list is not a routine");
+      // Any list of words can belong to a line start of its own.
+      putPage(bang, parsePage("kind:: words\nlines:: !\n\n- Testdrained\n  - Testflat\n"));
+      clearMemo();
+      eq(words(at("! testdr")), ["Testdrained", "Testflat"]);
+      eq(words(at("! Testdrained")), ["Testflat"]);
+      eq(words(at("= testdr")), [], "only on its own lines");
+    } finally {
+      suggestClose(); input.remove(); V.pages.delete(bang);
+      if (own) putPage(FEELINGS_PATH, own); else V.pages.delete(FEELINGS_PATH);
+      clearMemo();
+    }
+  });
   test("#185 an event and a feeling draw a quiet dot, without their mark", async () => {
     const path = join(PAGES, "Test bujo lines.md");
     putPage(path, parsePage("- o Ran 5 km\n  - = Light, proud\n- Plain line\n"));

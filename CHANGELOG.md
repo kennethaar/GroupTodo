@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.120.0 - 2026-11-08
+
+- Events and feelings: a = line now helps you name the feeling (#214). Type
+  a few letters, and the box lists the Feelings Wheel words that match, from
+  any ring, each with where it sits. Pick one, and it lists the closer words
+  outside it: Angry, then Let down, then Betrayed. Esc keeps the word you
+  have. Edit the words in Settings, under Feelings. Any list can be a word
+  list for lines of its own: kind:: words, and lines:: for their mark.
+
 ## 1.119.0 - 2026-11-08
 
 - Chores: Print now covers the days you pick (#325). Choose This week (today

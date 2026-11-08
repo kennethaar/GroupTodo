@@ -20,12 +20,16 @@ function viewChecklists() {
      test: pth => isStateList(pth),
      blurb: "The stages one task goes through - a purchase is ordered, awaited, delivered. " +
             "Give a task a type from its line menu, and Ctrl+Enter walks it through them."},
+    {label: "Word lists", icon: "\u2261", cta: "Open", run: pth => openPage(pth),
+     test: pth => isWordList(pth),
+     blurb: "Words to pick from on lines that start with the mark in lines::. " +
+            "A broad word first, and the closer ones under it."},
     {label: "Routines", icon: "\u21bb", cta: "Run",
-     test: pth => isRoutine(pth) && !isProjectTemplate(pth) && !isStateList(pth),
+     test: pth => isRoutine(pth) && !isProjectTemplate(pth) && !isStateList(pth) && !isWordList(pth),
      blurb: "Comes back and never finishes - the weekly accounts, the monthly report, " +
             "everything you pack before a trip. Not a project, because there is nothing to tick off."},
     {label: "Checklists", icon: "\u2611", cta: "Run",
-     test: pth => !isRoutine(pth) && !isProjectTemplate(pth) && !isStateList(pth),
+     test: pth => !isRoutine(pth) && !isProjectTemplate(pth) && !isStateList(pth) && !isWordList(pth),
      blurb: "Steps you would rather not think through twice. Run one into today, or into a " +
             "project you already have."},
     {label: "Project templates", icon: "\u221e", cta: "New project",
@@ -45,7 +49,7 @@ function viewChecklists() {
       el("span", {class: "sub"}, steps + " steps" + (ownReviewList() ? "" : ", built in")),
       el("button", {class: "btn sm ghost", onclick: editReviewSteps}, "Edit steps"),
       el("button", {class: "btn sm primary", onclick: () => go("review", {sub: "steps"})}, "Review")))));
-  lists.splice(0, lists.length, ...lists.filter(p => p !== REVIEW_LIST_PATH && p !== ASK_OWN_PATH && p !== INFORM_OWN_PATH));
+  lists.splice(0, lists.length, ...lists.filter(p => p !== REVIEW_LIST_PATH && p !== ASK_OWN_PATH && p !== INFORM_OWN_PATH && p !== FEELINGS_PATH));
   // The words around an update sheet: a page of its own kind, not a list you run.
   const editAskOwn = () => openPage(ensureAskOwn());
   c.append(section("The update note", null, el("div", {class: "card"},
@@ -61,6 +65,16 @@ function viewChecklists() {
       el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(ensureInformOwn())}, "Inform note"),
       el("span", {class: "sub"}, V.pages.has(INFORM_OWN_PATH) ? "personalized" : "built in"),
       el("button", {class: "btn sm ghost", onclick: () => openPage(ensureInformOwn())}, "Edit text")))));
+  // The words a = line offers: the Feelings Wheel until you make them your own (#214).
+  const editFeelings = () => openPage(ensureFeelings());
+  c.append(section("Feelings", null, el("div", {class: "card"},
+    el("div", {class: "listblurb"}, "The words offered as you type a feeling on a = line, from a broad feeling to a closer one. " +
+      "Add your own, or write them in another language."),
+    el("div", {class: "prow"},
+      el("span", {class: "st st-2"}, "="),
+      el("button", {class: "nm", style: "text-align:left", onclick: editFeelings}, "Feelings"),
+      el("span", {class: "sub"}, V.pages.has(FEELINGS_PATH) ? "your own" : "Feelings Wheel, built in"),
+      el("button", {class: "btn sm ghost", onclick: editFeelings}, "Edit words")))));
 
   // Empty, the three descriptions ARE the content: this is the one screen where
   // the difference between them is worth a paragraph.
@@ -90,6 +104,7 @@ function viewChecklists() {
           canSchedule(pth) ? el("button", {class: "chip", title: "When it comes round", onclick: () => openRoutineSchedule(pth)}, routineSummary(pth))
             : isRoutine(pth) && !isStateList(pth) ? el("span", {class: "chip"}, cadenceOf(pth)) : null,
           el("span", {class: "sub"}, isStateList(pth) ? stagesOf(pth).map(s => s.name).join(" → ")
+            : isWordList(pth) ? "on " + (trim(getPage(pth).props.lines || "") || "no") + " lines"
             : items + (items === 1 ? " step" : " steps")),
           el("button", {class: "btn sm primary", onclick: () => g.run ? g.run(pth) : openRunChecklist(pth)}, g.cta)));
       }

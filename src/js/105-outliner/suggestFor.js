@@ -41,6 +41,9 @@ function suggestFor(host, opts) {
     return rows.length ? {mode: "trigger", at: before.length - trig[2].length - trig[3].length, rows} : null;
   }
   if (opts.typed === false) return null;
+  // On a = line, the Feelings Wheel's words before any name (#214).
+  const wl = wordSuggest(before);
+  if (wl) return wl.stop ? null : wl;
   // A name or a date being typed, word by word: the last four words at most,
   // so "neste onsdag kl 13" is read whole.
   const tail = /(?:^|\s)((?:[\p{L}\p{N}][\p{L}\p{N}'._-]*\s){0,3}[\p{L}\p{N}][\p{L}\p{N}'._-]*)$/u.exec(before);

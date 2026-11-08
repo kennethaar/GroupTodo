@@ -19,4 +19,4 @@ const cadenceOf = path => trim(getPage(path)?.props?.cadence || "");
 const ROUTINE_OWN_PROPS = ["cadence", "starts", "ends", "time", "runs", "last_run"];
 /* A list that can come round: not a task type, not a project template, and not
    the weekly review, which has its own screen. */
-const canSchedule = path => pageKind(path) === "checklist" && !isStateList(path) && !isProjectTemplate(path) && path !== REVIEW_LIST_PATH;
+const canSchedule = path => pageKind(path) === "checklist" && !isStateList(path) && !isWordList(path) && !isProjectTemplate(path) && path !== REVIEW_LIST_PATH;

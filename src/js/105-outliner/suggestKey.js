@@ -4,7 +4,7 @@
 function suggestKey(e) {
   if (!SUGGEST || SUGGEST.host !== e.target) return false;
   const n = SUGGEST.rows.length;
-  const word = SUGGEST.mode === "word";
+  const word = SUGGEST.mode === "word" || SUGGEST.mode === "words";
   if (e.key === "Enter" && !e.shiftKey && suggestTakes("Enter", SUGGEST.mode)) {
     suggestAccept(); e.preventDefault(); return true;
   }

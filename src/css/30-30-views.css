@@ -597,6 +597,7 @@ body.solview #content{padding-bottom:14px}
 .scrim.side .modal{border-radius:0;height:100%;max-height:none;width:min(480px,100%);border-width:0 0 0 1px}
 /* A whole page beside the view needs the room of one. */
 .suggest-hint{font-size:11px;color:var(--fg3);padding:5px 11px 2px;border-top:1px solid var(--border);margin-top:4px}
+.suggest-head{font-size:11.5px;color:var(--fg3);padding:4px 11px 5px;border-bottom:1px solid var(--border);margin-bottom:4px}
 
 /* The menu under the line you are editing */
 .fly{position:fixed;width:min(360px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow-y:auto;background:var(--bg2);

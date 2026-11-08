@@ -11,7 +11,7 @@ function openPageMenu(path) {
     isEmailPage(path) ? ["Forward", "the email, to whoever you type", () => openMailNote(path, "forward")] : null,
     isEmailPage(path) ? ["Add their answer", "paste the reply; it goes on the page with today's date", () => openMailAnswer(path)] : null,
     isEmailPage(path) ? ["Plan it with an AI", "a prompt for your AI; its answer becomes a project", () => openPlanWithAI(planSourceOfEmail(path))] : null,
-    kind === "checklist" && !isStateList(path) ? [isProjectTemplate(path) ? "New project from this" : "Add this to a page", null, () => openRunChecklist(path)] : null,
+    kind === "checklist" && !isStateList(path) && !isWordList(path) ? [isProjectTemplate(path) ? "New project from this" : "Add this to a page", null, () => openRunChecklist(path)] : null,
     canSchedule(path) ? ["When it comes round", routineSummary(path), () => openRoutineSchedule(path)] : null,
     isPinned(path) ? ["Unpin from the sidebar", null, () => togglePin(path)]
                    : ["Pin to the sidebar", "as many pages as you like; drag them there to reorder", () => togglePin(path)],
