@@ -1306,6 +1306,7 @@ js/145-horizons-view/setEmailOf.js
 js/145-horizons-view/waitOnAsked.js
 js/145-horizons-view/openAskForUpdate.js
 js/145-horizons-view/vars-ASK_PROMPT_PATH.js
+js/145-horizons-view/askPageForAi.js
 js/145-horizons-view/askAiPrompt.js
 js/145-horizons-view/askAiApply.js
 js/145-horizons-view/openAskAI.js

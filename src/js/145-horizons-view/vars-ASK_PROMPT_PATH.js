@@ -6,7 +6,7 @@
    never talks to the AI: the prompt is copied, you paste it into your own,
    and paste its answer back. Only what you see in the prompt leaves. */
 const ASK_PROMPT_PATH = join(PROMPT_DIR, "Update questions.md");
-const ASK_PROMPT_DEFAULT = `I am asking {person} for an update by email. {person} has not seen my notes below. For each numbered item, write in {language}:
+const ASK_PROMPT_DEFAULT = `I am asking {person} for an update by email. {person} has not seen my notes or the project pages below. Read the project pages for background: the lines marked <- item N are what the items are about. Then, for each numbered item, write in {language}:
 
 Question: one specific question {person} can answer in one sentence. Ask for a date, a yes or no, or a name where that fits. Never just "what is the status".
 Summary: one short line, so {person} recognises what it is about. Leave out my internal notes.
@@ -17,4 +17,6 @@ Keep the labels Question:, Summary:, Why: and Same as: in English and the number
 
 {items}`;
 // The language the AI writes in: the language of the note it goes into.
+// A project page's bookkeeping, left out of the prompt (askPageForAi).
+const ASK_PAGE_SKIP = /^(id|added|by|started|closed|done_by|created|updated|modified|asked|acknowledged|msg|at|handled|decided|flagged_by|template_hidden|base|order|color|icon)$/i;
 const ASK_AI_LANG = {en: "English", sv: "Swedish", no: "Norwegian", da: "Danish", de: "German"};

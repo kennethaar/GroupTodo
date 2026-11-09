@@ -33,7 +33,7 @@ function openAskAI(name, entries, done = null) {
         el("div", {style: "display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap"},
           el("span", {class: "hint"}, "Your AI in this area:"), select, button),
         el("div", {class: "hint", style: "text-align:left;margin-top:6px"},
-          "It has your notes on " + (many ? "these tasks" : "this task") + ". Nothing leaves this app " +
+          "It has " + (many ? "these tasks" : "this task") + " and the project page" + (many ? "s" : "") + " with your notes. Nothing leaves this app " +
           "unless you paste it. " + name + " gets only the question and summary.")),
       el("div", {class: "field"}, el("label", {}, "2. Paste its answer here"), answer,
         el("div", {class: "hint", style: "text-align:left;margin-top:6px"},
@@ -41,7 +41,7 @@ function openAskAI(name, entries, done = null) {
     foot: [
       el("button", {class: "btn ghost", onclick: () => openPromptEditor({space, path: ASK_PROMPT_PATH,
         standard: ASK_PROMPT_DEFAULT, back: again,
-        hint: "{person} is who you ask, {language} the language of the note, {items} the numbered tasks with your notes. " +
+        hint: "{person} is who you ask, {language} the language of the note, {items} the project pages and then the numbered tasks. " +
           "Kept in 8/Prompts/Update questions.md in this area. The answer is read by its numbers and the lines " +
           "Question:, Summary:, Why: and Same as: under each."})}, "Edit the prompt"),
       el("div", {style: "flex:1"}),

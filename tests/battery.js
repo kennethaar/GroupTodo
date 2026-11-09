@@ -5326,14 +5326,21 @@ var GTD_TEST = (() => {
     closeAll();
   });
   test("#344 Let AI write it: the prompt carries each task and its notes, the answer fills each line, Same as leaves one out", () => {
-    const path = scratchProject("ai ask", [["WAIT", "Hva er status på dette [[p/Lars Haugen]]"], ["WAIT", "Background: status? [[p/Lars Haugen]]"]]);
-    const [a, b] = getPage(path).blocks;
+    const path = scratchProject("ai ask", [["WAIT", "Hva er status på dette [[p/Lars Haugen]]"], ["WAIT", "Background: status? [[p/Lars Haugen]]"],
+      ["TODO", "Draft the new wording"]]);
+    const [a, b, sibling] = getPage(path).blocks;
     a.children = [newBlock({state: null, title: "Users need clearer guidance"})];
+    getPage(path).props.outcome = "Clearer agreement text in MEPS";
+    setBlockProp(sibling, "added", "[[2026-10-20]]");
     const entries = [a, b].map(block => ({space: V.space, path, block}));
     const prompt = askAiPrompt(entries, "Lars Haugen");
     has(prompt, "Hva er status på dette");
     has(prompt, "Users need clearer guidance");
     has(prompt, "Same as:");
+    // The project page goes along, once for both, without its bookkeeping.
+    has(prompt, "Clearer agreement text in MEPS");
+    eq(prompt.split("Draft the new wording").length - 1, 1, "the project page is in the prompt once");
+    ok(!prompt.includes("added::"), "the page's bookkeeping went along");
     const r = askAiApply(entries, "1.\n**Question:** Is the new text in?\nSummary: New wording.\n- Why: Customers misread it.\n\n2. Same as: 1");
     eq([blockProp(a, ASK_Q_PROP), blockProp(a, ASK_BRIEF_PROP), blockProp(a, ASK_WHY_PROP)],
       ["Is the new text in?", "New wording.", "Customers misread it."]);

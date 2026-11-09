@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.134.1 - 2026-11-09
+
+- Waiting for › List: Let AI write it now sends the project page with the
+  prompt, once for every line on it, with the lines asked about marked, so
+  the AI knows what the question is really about. Ids, dates added and
+  other bookkeeping are left out, and a very long page is cut. (#344)
+
 ## 1.134.0 - 2026-11-09
 
 - Waiting for › List: Ask for an update reads right to somebody who has
