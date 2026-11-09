@@ -5323,6 +5323,21 @@ var GTD_TEST = (() => {
     const {blocks, row} = await journalDue([["TODO", "Send the late figures"]], shiftISO(T(), -1));
     has(row(blocks[0]).querySelector(".duepill").textContent, "Due yesterday");
   });
+  test("#336 a task days late says only how late; the date is on hover", async () => {
+    const day = shiftISO(T(), -6);
+    const {path, blocks, row} = await journalDue([["TODO", "Send the old figures"]], day);
+    const check = (pill, where) => {
+      ok(pill, "a due pill " + where);
+      eq(pill.textContent.trim(), "6 d late", where);
+      has(pill.title, humanDate(day), "the date on hover " + where);
+      eq(getComputedStyle(pill, "::before").content, "none", "no Due before it " + where);
+    };
+    check(row(blocks[0]).querySelector(".duepill"), "in the Journal");
+    go("next", {sub: "list", ctxFilter: null}); await settle();
+    check(content().querySelector('.task[data-id="' + blocks[0].id + '"] .duepill'), "in Next");
+    openPage(path); await settle();
+    check(content().querySelector(".props .duepill"), "on the page");
+  });
   test("#160 the Due tab counts what is done today beside what is open", async () => {
     const {path, blocks} = await journalDue([["TODO", "Finish the first thing"], ["TODO", "Finish the second thing"]]);
     setBlockState(path, blocks[0], "DONE");

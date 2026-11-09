@@ -9,10 +9,9 @@ function chipsFor(a, opts = {}) {
   const w = a.due ? dueWhen(a.block) : null;
   // Under Due today, today goes without saying: only a time or a late day is told.
   if (a.due && !(opts.todayImplied && a.due === todayISO() && !(w && w.time))) {
-    const cls = "when " + (a.due < todayISO() ? "late" : a.due === todayISO() ? "today" : "");
-    const rel = OPEN_STATES[a.state] ? relDue(a.due) : "";
-    const when = humanWhen(a.due, w && w.time) + (rel ? " · " + rel : "");
-    out.push(duePill(a, cls, opts.journal ? dueWords(when) : when));
+    const {words, ago} = dueText(a.due, w && w.time, !!OPEN_STATES[a.state]);
+    const cls = "when " + (a.due < todayISO() ? "late" : a.due === todayISO() ? "today" : "") + (ago ? " ago" : "");
+    out.push(duePill(a, cls, opts.journal && !ago ? dueWords(words) : words));
   }
   if (a.age != null && a.age > 0) out.push(el("span", {class: "chip age when"}, a.age + "d"));
   const fresh = freshnessBar(a);

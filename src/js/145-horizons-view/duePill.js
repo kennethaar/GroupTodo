@@ -1,8 +1,10 @@
 /* The pill itself, on a line and in a list alike, so the two cannot disagree. */
 function duePill(a, cls, words) {
   const r = remindInfo(a.block);
+  // The pill may say only how late it is, so the date itself is always on hover.
+  const when = a.due ? "Due " + humanWhen(a.due, dueWhen(a.block)?.time) + " · " : "";
   const pill = el("span", {class: "chip b duepill " + cls, tabindex: "0", role: "button",
-    title: (r ? r.title + " · " : "") + (dueDate(a.block) ? "Change the time, the reminder, or clear it"
+    title: when + (r ? r.title + " · " : "") + (dueDate(a.block) ? "Change the time, the reminder, or clear it"
                                                           : "From the line above. Give this step its own date"),
     onclick: e => { e.stopPropagation(); e.preventDefault(); openDueChipMenu(a, pill); },
     onkeydown: e => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); openDueChipMenu(a, pill); } }},

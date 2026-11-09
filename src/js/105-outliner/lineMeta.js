@@ -2,11 +2,11 @@ function lineMeta(b, path = null, readonly = false) {
   const out = [];
   const due = dueDate(b);
   if (b.state && due && OPEN_STATES[b.state]) {
-    const cls = due < todayISO() ? "late" : due === todayISO() ? "today" : "";
-    const words = humanWhen(due, dueWhen(b)?.time) + (relDue(due) ? " · " + relDue(due) : "");
+    const {words, ago} = dueText(due, dueWhen(b)?.time);
+    const cls = (due < todayISO() ? "late" : due === todayISO() ? "today" : "") + (ago ? " ago" : "");
     // A page shown read-only, or a line with no page to write to, keeps the plain pill.
     out.push(path && !readonly ? duePill({path, block: b, space: V.space, due}, cls, words)
-      : el("span", {class: "chip " + cls}, words));
+      : el("span", {class: "chip " + cls, title: "Due " + humanWhen(due, dueWhen(b)?.time)}, words));
   }
   if (repeatOf(b)) out.push(path && !readonly ? repeatPill(path, b) : el("span", {class: "chip"}, svgIcon(ICON_REPEAT), " " + repeatOf(b)));
   const who = b.state ? assigneeOf(b) : "";

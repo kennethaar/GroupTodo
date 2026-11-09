@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.131.2 - 2026-11-09
+
+- Dates and reminders: a task due days ago says only how late it is, such
+  as `6 d late`. Point at the pill or click it to see the date (#336).
+
 ## 1.131.1 - 2026-11-09
 
 - Projects › List: under Projects in the sidebar, each responsibility wears

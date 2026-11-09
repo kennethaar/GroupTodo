@@ -420,6 +420,7 @@ A stylesheet lives in a chosen folder. Pick a folder for this area first. =>
 A sum with its currency on a task adds up on its project. =>
 A target. =>
 A target. × takes a person off. =>
+A task days late says only how late, such as 6 d late. Point at it or click it to see the date. =>
 A task in Doing runs a clock until it leaves Doing. =>
 A task in a chapter is work to do on it. Its words are not counted. =>
 A task is To do, Doing, Waiting, On hold, Done or a note. =>

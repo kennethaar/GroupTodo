@@ -77,6 +77,7 @@ js/00-bootstrap/splitStamp.js
 js/00-bootstrap/vars-parseISO.js
 js/00-bootstrap/dateDiffDays.js
 js/00-bootstrap/relDue.js
+js/00-bootstrap/dueText.js
 js/00-bootstrap/humanDate.js
 js/00-bootstrap/vars-DATE_FORMATS.js
 js/00-bootstrap/isoWeek.js

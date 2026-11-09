@@ -903,6 +903,7 @@ const HELP = {
       "It reads English and Norwegian, and due:, until: and remind:.",
       "A reminder goes off 10 minutes before. It stays until you answer it.",
       "🔔 on a pill means a reminder is set. 🔕 means it is off.",
+      "A task days late says only how late, such as 6 d late. Point at it or click it to see the date.",
       "A step with no date of its own takes the date of the task above it.",
       "A step due after the task above it gets a warning. The date stays."],
     see: ["next-calendar", "repeat", "hold"],
