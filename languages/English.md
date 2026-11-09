@@ -223,7 +223,6 @@ code:: en
 ?.fbar input[type=search] =>
 ?.fbar select =>
 ?.group .textbtn =>
-?.jhead .switch =>
 ?.jrow .t-eyebrow =>
 ?.pagehead .focusbtn =>
 ?.readhead .nm =>
@@ -237,6 +236,7 @@ code:: en
 ?.t-meta .chip.urg, .t-info =>
 ?.task .tick =>
 ?.todayhead .focusbtn =>
+?.todayhead .switch =>
 ?.trkdays .hit =>
 ?.weekhead .chip.late =>
 ?.wkgrid .tick =>
@@ -1758,7 +1758,7 @@ Hide a task or project until a day. Let it go after one. =>
 Hide done =>
 Hide done is a switch: only what is left. The page remembers it. =>
 Hide done: done and cancelled lines go. Saved on the page. =>
-Hide done: done and cancelled lines go. The file keeps them. Kept for every day. =>
+Hide done: one switch for all journals. Done and cancelled lines go; the file keeps them. =>
 Hide empty =>
 Hide organisation tasks =>
 Hide people with an organisation =>

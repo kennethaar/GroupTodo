@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.127.1 - 2026-11-09
+
+- Journal: Hide done is now one switch for every day page, at the top
+  beside the date. It shows on every day, so it is always in the same place,
+  and it hides done lines in every area at once (#332).
+
 ## 1.127.0 - 2026-11-09
 
 - Journal: a day page has a Hide done switch, in each area's column and when

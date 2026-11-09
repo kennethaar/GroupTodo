@@ -1,7 +1,7 @@
 /* Turns one of a page's Hide done switches (#321), written on the page itself.
    A day's Linked References can be drawn for another area's column, so the
-   write goes to the area the page is in. A day page's own switch is kept for
-   all day pages of that area instead (#332), so the file is left as written. */
+   write goes to the area the page is in. A day page's own switch is one for
+   all journals instead (#332), so the file is left as written. */
 function setDoneHidden(path, part, on, space) {
   inSpace(space, () => {
     const day = isJournalPath(path);

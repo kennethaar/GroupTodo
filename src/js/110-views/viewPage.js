@@ -77,13 +77,16 @@ function viewPage() {
   if (chapter) c.append(chapterBar(path));
   /* Hide done (#321), offered only where something is done. Linked References
      has its own switch; the page remembers both. A day page only hides: its
-     switch is the Journal column's, kept for every day (#332), and stands in
-     each area's column when the day is drawn side by side. */
-  const columns = !SIDE_DRAWING && state.view === "page" && isJournalPath(path);
-  const closed = prose || columns ? 0 : closedLineCount(getPage(path).blocks);
-  const hideDone = closed > 0 && doneHidden(path, "page");
-  if (closed) c.append(fbar(switchBtn("Hide done", hideDone,
-    () => setDoneHidden(path, "page", !doneHidden(path, "page")), closed)));
+     switch is the one for all journals (#332), shown on every day, and one
+     switch serves all areas when the day is drawn side by side. */
+  const day = isJournalPath(path);
+  const columns = !SIDE_DRAWING && state.view === "page" && day;
+  const closed = prose ? 0 : columns
+    ? visibleSpaces().filter(n => LOADED.has(n)).reduce((n, sp) => n + inSpace(sp, () => closedLineCount(getPage(journalPath(journalDate(path)))?.blocks || [])), 0)
+    : closedLineCount(getPage(path).blocks);
+  const hideDone = (closed > 0 || day) && doneHidden(path, "page");
+  if (closed || (day && !prose)) c.append(fbar(switchBtn("Hide done", hideDone,
+    () => setDoneHidden(path, "page", !doneHidden(path, "page")), closed || null)));
   c.append(el("div", {class: "section"}, outlineFor(path, prose ? {prose: true, newText: "New paragraph"}
     : {facts: true, hideDone})));
   if (tracker) c.append(trackerPreview(tracker));

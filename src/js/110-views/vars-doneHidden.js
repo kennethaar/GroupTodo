@@ -2,11 +2,11 @@
    cancelled line goes with everything under it. The page and its Linked
    References each have a switch, and the page remembers both in hide_done::
    (page, links), so it opens the way it was left, on every device.
-   A day page is a new file each day, so its own switch (#332) is remembered
-   for day pages as a whole, per area on this device, and the day page itself
-   keeps every line as it was written. */
+   A day page is a new file each day, so its own switch (#332) is one switch
+   for every journal, every area and every day on this device, and the day
+   page itself keeps every line as it was written. */
 const HIDE_DONE_PROP = "hide_done";
-const dayHideDoneKey = () => "journal.hide_done." + V.space;
+const dayHideDoneKey = () => "journal.hide_done";
 const doneHidden = (path, part) => part === "page" && isJournalPath(path) ? PREF.get(dayHideDoneKey()) === "1"
   : String(getPage(path)?.props?.[HIDE_DONE_PROP] || "")
   .split(",").map(s => trim(s).toLowerCase()).includes(part);

@@ -85,7 +85,7 @@ const HELP = {
       ["?.jrow .t-eyebrow", "The project. Click to open it."],
       ["?.ttab-week", "Next 7 days."],
       [".jhead", "One journal per area. Drag the edge to resize."],
-      ["?.jhead .switch", "Hide done: done and cancelled lines go. The file keeps them. Kept for every day."],
+      ["?.todayhead .switch", "Hide done: one switch for all journals. Done and cancelled lines go; the file keeps them."],
       ["?.ltime", "A meeting starts with its time."],
       ["?.chip.clash", "Two meetings at the same time."],
       [".tick", "The state. Click to tick it off."],

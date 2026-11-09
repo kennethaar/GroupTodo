@@ -3570,7 +3570,7 @@ var GTD_TEST = (() => {
       putPage(day, parsePage("")); clearMemo(); go("today");
     }
   });
-  test("#332 Hide done on day pages: a switch in the Journal column and on the day page, only a view, remembered across days", async () => {
+  test("#332 Hide done on day pages: one switch for all journals, in the Journal heading and on the day page, only a view, remembered across days", async () => {
     const d1 = "2026-06-08", d2 = "2026-06-09", d3 = "2026-06-10";
     const p1 = journalPath(d1), p2 = journalPath(d2), p3 = journalPath(d3);
     const text1 = ["- DONE Call the supplier", "- TODO Book a room for Thursday", "- DONE 09:00 Stand-up", "  - notes from the meeting",
@@ -3579,14 +3579,17 @@ var GTD_TEST = (() => {
     putPage(p2, parsePage(["- DONE Sent the report", "- TODO Reply to the invoice"].join("\n")));
     putPage(p3, parsePage("- TODO Nothing done yet"));
     clearMemo();
-    const key = "journal.hide_done." + Spaces.active, was = PREF.get(key);
+    const key = "journal.hide_done", was = PREF.get(key);
     const col = () => [...content().querySelectorAll(".jcard:not(.trkcol)")].find(c => c.querySelector(".space-journal"));
-    const sw = () => col()?.querySelector(".jhead [role=switch]");
+    const hides = () => [...content().querySelectorAll("[role=switch]")].filter(c => /Hide done/.test(c.textContent)
+      && !c.closest(".deferred-backlinks") && c.getClientRects().length);
+    const sw = () => content().querySelector(".vhead [role=switch]");
     const shown = () => [...col().querySelectorAll(".outline .blk > .line .txt")].map(t => t.textContent);
     try {
       PREF.set(key, "");
       go("today", {todayDay: d1}); await settle();
-      ok(sw() && /Hide done/.test(sw().textContent), "no Hide done switch in the day column's header");
+      ok(sw() && /Hide done/.test(sw().textContent), "no Hide done switch in the Journal's heading");
+      eq(hides().length, 1, "the Journal has more than one Hide done switch, or none");
       eq(sw().tagName, "BUTTON", "the switch is not a native button");
       eq(sw().getAttribute("aria-checked"), "false", "Hide done is on by default");
       eq(sw().querySelector("small")?.textContent, "3", "the count is not the day's done and cancelled lines");
@@ -3602,10 +3605,11 @@ var GTD_TEST = (() => {
       eq(sw()?.getAttribute("aria-checked"), "true", "another day forgot Hide done");
       ok(!shown().some(t => /Sent the report/.test(t)), "another day shows its done lines with Hide done on");
       go("today", {todayDay: d3}); await settle();
-      ok(!sw(), "Hide done is offered on a day with nothing done");
+      ok(sw(), "the Journal's Hide done switch went on a day with nothing done, so it cannot be found");
+      eq(sw().getAttribute("aria-checked"), "true", "a day with nothing done forgot Hide done");
       openPage(p2); await settle();
-      const pageSw = [...content().querySelectorAll(".fbar [role=switch]")].find(c => /Hide done/.test(c.textContent) && !c.closest(".deferred-backlinks"));
-      ok(pageSw, "a day page opened as a page has no Hide done switch");
+      eq(hides().length, 1, "a day page opened as a page has more than one Hide done switch, or none");
+      const pageSw = hides()[0];
       eq(pageSw.getAttribute("aria-checked"), "true", "the day page opened as a page does not follow the Journal's switch");
       ok(![...content().querySelectorAll(".outline .blk > .line .txt")].some(t => /Sent the report/.test(t.textContent)), "the day page opened as a page shows its done line");
       pageSw.click(); await settle();

@@ -7,12 +7,10 @@ function spaceJournalColumns(day) {
     }
     host.append(inSpace(name, () => {
       const path = ensureJournal(day);
-      // Hide done (#332): the same switch as the Journal's column for this area.
-      const closed = closedLineCount(getPage(path).blocks), hideDone = closed > 0 && doneHidden(path, "page");
+      // Hide done (#332): the one switch for all journals, above the columns.
       const node = el("section", {class: "space-journal" + (name === Spaces.active ? " active-space" : ""),
         data: {space: name, path}}, el("h3", {}, name),
-        closed ? fbar(switchBtn("Hide done", hideDone, () => setDoneHidden(path, "page", !hideDone, name), closed)) : null,
-        pageOutline(path, {facts: "trackers", hideDone}));
+        pageOutline(path, {facts: "trackers", hideDone: doneHidden(path, "page")}));
       const activate = () => {
         activateJournalSpace(name);
         if (!SPACE_CONTEXT || SPACE_CONTEXT.space !== name) SPACE_CONTEXT = {space: name, path};
