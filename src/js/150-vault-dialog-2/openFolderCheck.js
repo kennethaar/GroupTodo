@@ -18,6 +18,8 @@ async function openFolderCheck() {
     r.restError ? el("div", {class: "field", style: "color:var(--warn)"}, "The last read stopped: " + r.restError) : null,
     list("In the folder, not in the app", r.notIn),
     list("Would not open", r.unread),
+    r.timing ? el("div", {class: "field"}, el("label", {}, "How long the last read took"),
+      el("div", {style: "font:12px var(--mono);color:var(--fg2);white-space:pre-wrap"}, readTimingText(r.timing))) : null,
     list("Linked and in the folder, but not listed by it", r.unlisted),
     list("Linked, with no file", r.absent),
     el("div", {class: "field"},

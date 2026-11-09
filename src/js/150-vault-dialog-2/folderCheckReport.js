@@ -8,7 +8,9 @@ async function folderCheckReport(name) {
   const rec = LOADED.get(name);
   const b = rec && rec.backend;
   if (!b || b.kind !== "fs") return null;
-  const listed = (await b.names()).filter(p => /\.md$/i.test(p) && !isGuidePath(p) && !isLangPath(p) && !isPromptPath(p) && !syncCopyOf(p));
+  // Taken before this check lists the folder itself: it is the last read that is timed (#342).
+  const timing = b.timing ? {...b.timing, slowest: b.timing.slowest.slice()} : null;
+  const listed = (await b.names({quiet: true})).filter(p => /\.md$/i.test(p) && !isGuidePath(p) && !isLangPath(p) && !isPromptPath(p) && !syncCopyOf(p));
   const notIn = listed.filter(p => !rec.pages.has(p));
   const linked = new Set();
   for (const page of rec.pages.values()) walkBlocks(page.blocks, blk => {
@@ -24,5 +26,5 @@ async function folderCheckReport(name) {
     ((await b.readText(path)) != null ? unlisted : absent).push(path);
   }
   return {label: b.label, listed: listed.length, pages: rec.pages.size, notIn, unlisted, absent,
-          unread: [...(b.unread || new Map())], restError: rec.restError ? String(rec.restError) : ""};
+          unread: [...(b.unread || new Map())], restError: rec.restError ? String(rec.restError) : "", timing};
 }

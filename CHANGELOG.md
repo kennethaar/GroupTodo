@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.133.0 - 2026-11-09
+
+- Vault and sync: Check the folder shows how long the last read of the
+  folder took - the listing, the reading of the files, opening and reading
+  the text apart, and the five slowest files - so a slow read on a phone can
+  be traced to what takes the time.
+
 ## 1.132.2 - 2026-11-09
 
 - Phone and PC: back in the app, today and the page that is open are read

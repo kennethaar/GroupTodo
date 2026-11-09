@@ -2599,6 +2599,7 @@ js/150-vault-dialog-2/openPlannerDialog.js
 js/150-vault-dialog-2/openAdvancedDialog.js
 js/150-vault-dialog-2/openVaultDialog.js
 js/150-vault-dialog-2/folderCheckReport.js
+js/150-vault-dialog-2/readTimingText.js
 js/150-vault-dialog-2/openFolderCheck.js
 js/151-start-afresh/deleteDatabase.js
 js/151-start-afresh/wipeLocalState.js

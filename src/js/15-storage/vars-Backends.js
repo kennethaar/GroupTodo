@@ -115,8 +115,13 @@ const Backends = {
     }
     let fileCache = new Map();            // path -> file handle, from the last names()
     const unread = new Map();             // path -> why it could not be read, from the last readMany()
+    /* How long the last read took, for Check the folder (#342): the listing,
+       then every file read since, opening and reading its text apart. Which
+       of those takes the time on a phone says what would make it quicker. */
+    let timing = null;
     return {
       kind: "fs", label: rootHandle.name, writable: true, handle: rootHandle, unread,
+      get timing() { return timing; },
       /* Every file the app reads, by name only. Walking the folders is quick;
          opening the files is what takes the time, so it is done apart. The
          list is swapped in whole when the walk is done: emptied first, a
@@ -125,10 +130,12 @@ const Backends = {
          One folder is listed at a time, to the end, before any folder inside
          it. Listed all at once, a phone's folder came back short -- whole
          subfolders of people missing -- with no error to say so (#188). */
-      async names() {
-        const found = new Map();
+      async names({quiet = false} = {}) {
+        const found = new Map(), began = performance.now();
+        let dirs = 0;
         const walk = async (dir, prefix) => {
           const subs = [];
+          dirs++;
           for await (const [name, h] of dir.entries()) {
             if (name.startsWith(".")) continue;
             const p = prefix ? prefix + "/" + name : name;
@@ -139,6 +146,8 @@ const Backends = {
         };
         await walk(rootHandle, "");
         fileCache = found;
+        if (!quiet) timing = {at: Date.now(), dirs, listMs: performance.now() - began, files: 0, kb: 0,
+                              readMs: 0, openMs: 0, textMs: 0, slowest: [], atOnce: 16};
         return Array.from(found.keys());
       },
       /* Opened several at a time: one after another, a year of day pages on a
@@ -147,14 +156,29 @@ const Backends = {
          They are opened in the order given, and onEach hears of each one. */
       async readMany(paths, onEach = null) {
         const out = new Map();
+        const began = performance.now();
         const readOne = async p => {
           try {
+            const t0 = performance.now();
             const h = fileCache.get(p) ||
               await (await dirFor(p.split("/").slice(0, -1).join("/"))).getFileHandle(p.split("/").pop());
             /* A file a sync app has not brought down can leave getFile()
                hanging for good, and the read of the whole folder with it. */
-            out.set(p, await withTimeout((async () => (await h.getFile()).text())(), FILE_READ_MS, p));
+            let t1 = t0;
+            const text = await withTimeout((async () => {
+              const file = await h.getFile();
+              t1 = performance.now();
+              return file.text();
+            })(), FILE_READ_MS, p);
+            out.set(p, text);
             unread.delete(p);
+            if (timing) {
+              const t2 = performance.now();
+              timing.files++; timing.kb += text.length / 1024;
+              timing.openMs += t1 - t0; timing.textMs += t2 - t1;
+              timing.slowest.push([p, t2 - t0]);
+              timing.slowest = timing.slowest.sort((a, b) => b[1] - a[1]).slice(0, 5);
+            }
           } catch (e) { unread.set(p, ((e && e.name) || "Error") + ": " + ((e && e.message) || e)); }
         };
         const queue = paths.slice();
@@ -164,6 +188,7 @@ const Backends = {
         await Promise.all(Array.from({length: Math.min(16, queue.length)}, worker));
         // What would not open in the crowd gets one more try on its own.
         for (const p of paths) if (!out.has(p) && unread.has(p)) await readOne(p);
+        if (timing) timing.readMs += performance.now() - began;
         return out;
       },
       async list() { return this.readMany(await this.names()); },

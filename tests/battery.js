@@ -1143,6 +1143,26 @@ var GTD_TEST = (() => {
     } finally { LOADED.delete(rec.name); }
   });
 
+  test("#342 Check the folder says how long the last read took and which files were slowest", async () => {
+    const tree = {pages: {"GTD.md": "title:: GTD\n", "Slow.md": "title:: Slow\n"}, journals: {[T() + ".md"]: "- a line\n"}};
+    const gate = {"Slow.md": new Promise(r => setTimeout(r, 80))};
+    const rec = newRecord("Time342", Backends.fs(fakeDir("Time342", tree, [], gate)));
+    await readInto(rec, {stage: true});
+    await filesLoaded();
+    LOADED.set(rec.name, rec);
+    try {
+      const t = (await folderCheckReport(rec.name)).timing;
+      ok(t, "no timing in the report");
+      eq(t.files, 3, "every file read is counted");
+      eq(t.dirs, 3, "the folders listed, the top one with them");
+      ok(t.listMs >= 0 && t.readMs >= 70, "the listing and the reading are timed: " + JSON.stringify(t));
+      eq(t.slowest[0][0], join(DIRS.pages, "Slow.md"), "the slowest file comes first");
+      ok(t.slowest[0][1] >= 70 && t.openMs >= 70, "opening the slow file is what took the time");
+      has(readTimingText(t), "3 files", "the dialog's text");
+      has(readTimingText(t), "Slow.md", "the slowest file named");
+    } finally { LOADED.delete(rec.name); }
+  });
+
   test("#188 the template pass leaves a page still being read alone", async () => {
     let release;
     const old = shiftISO(T(), -10);
