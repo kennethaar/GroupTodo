@@ -2417,6 +2417,10 @@ var GTD_TEST = (() => {
       ok(labels.indexOf("Testnavhome") >= 0 && labels.indexOf("Testnavhome") < labels.indexOf("Testnavhealth"), "the area with most active projects sorts first: " + labels);
       eq(row("Testnavhome").querySelector(".cnt")?.textContent, "2");
       eq(row("Testnavhealth").querySelector(".cnt")?.textContent, "1");
+      const badge = row("Testnavhome").querySelector(".ic"), sp = Spaces.active;
+      eq(badge?.textContent, sp.slice(0, 1).toUpperCase(), "the badge is the area's capital, not the responsibility's");
+      const probe = el("span", {style: "color:" + spaceColor(sp)}); document.body.append(probe);
+      eq(getComputedStyle(badge).backgroundColor, getComputedStyle(probe).color, "on the area's colour"); probe.remove();
       row("Testnavhealth").click(); await settle();
       eq(state.view, "projects");
       const shown = document.querySelector("#content").textContent;

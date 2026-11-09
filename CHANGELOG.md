@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.131.1 - 2026-11-09
+
+- Projects › List: under Projects in the sidebar, each responsibility wears
+  its area's capital letter on the area's colour (#330).
+
 ## 1.131.0 - 2026-11-09
 
 - Links and aliases: select words, then Tag › Person, Organisation or Context (#335).

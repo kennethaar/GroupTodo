@@ -20,6 +20,8 @@
 .nav-item:hover{background:var(--bg3)}
 .nav-item.active{background:var(--accent-soft);color:var(--accent);font-weight:600}
 .nav-item .ic{width:18px;text-align:center;flex:none;opacity:.8}
+/* A responsibility row under Projects wears its area's capital on the area's colour. */
+.nav-item .ic.area-ic{height:18px;line-height:18px;border-radius:4px;opacity:1;font-size:11px;font-weight:700}
 .nav-item .ic svg,.fold svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;
   stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px}
 /* Black and white emoji: the monochrome symbol fonts where the system has them,

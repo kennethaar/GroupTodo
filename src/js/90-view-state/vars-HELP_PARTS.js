@@ -248,7 +248,7 @@ const HELP = {
     hint: "These are your projects. Each needs one next action.",
     steps: [["Pick a status: Active, Waiting, Someday and more.", ".projbar"],
       "Add the missing next action where it asks.",
-      "Click a project to open it. Pick an area under Projects in the side bar to see only it.",
+      "Click a project to open it. Pick a responsibility under Projects in the side bar to see only it. Its letter is its area.",
       "+ New project starts one."],
     keys: [["g p", "Projects"], ["v p", "Board"]],
     legend: [[".vhead h1", "Projects: what you have committed to finish."],
