@@ -5336,7 +5336,7 @@ var GTD_TEST = (() => {
       ["TODO", "Draft the new wording"]]);
     const [a, b, sibling] = getPage(path).blocks;
     a.children = [newBlock({state: null, title: "Users need clearer guidance"})];
-    getPage(path).props.outcome = "Clearer agreement text in MEPS";
+    getPage(path).props.outcome = "Clearer agreement text in ORBIX";
     setBlockProp(sibling, "added", "[[2026-10-20]]");
     const entries = [a, b].map(block => ({space: V.space, path, block}));
     const prompt = askAiPrompt(entries, "Lars Haugen");
@@ -5344,7 +5344,7 @@ var GTD_TEST = (() => {
     has(prompt, "Users need clearer guidance");
     has(prompt, "Same as:");
     // The project page goes along, once for both, without its bookkeeping.
-    has(prompt, "Clearer agreement text in MEPS");
+    has(prompt, "Clearer agreement text in ORBIX");
     eq(prompt.split("Draft the new wording").length - 1, 1, "the project page is in the prompt once");
     ok(!prompt.includes("added::"), "the page's bookkeeping went along");
     const r = askAiApply(entries, "1.\n**Question:** Is the new text in?\nSummary: New wording.\n- Why: Customers misread it.\n\n2. Same as: 1");
@@ -5369,27 +5369,27 @@ var GTD_TEST = (() => {
     }
   });
   test("#345 Let AI write it hides people, organisations, addresses and listed names, and puts them back in the answer", async () => {
-    const path = scratchProject("hide names", [["WAIT", "Ask [[p/Lars Haugen]] about the MEPS invoice, lars@acme.no"]]);
+    const path = scratchProject("hide names", [["WAIT", "Ask [[p/Lars Haugen]] about the ORBIX invoice, lars@acme.no"]]);
     const block = getPage(path).blocks[0];
     block.children = [newBlock({state: null, title: "Lars said it is close"})];
     const entries = [{space: V.space, path, block}];
     const kept = V.pages.has(ASK_HIDE_PATH) ? structuredClone(getPage(ASK_HIDE_PATH)) : null;
     try {
       if (kept) removePage(ASK_HIDE_PATH);
-      askHideAdd("MEPS");
+      askHideAdd("ORBIX");
       const raw = askAiPrompt(entries, "Lars Haugen");
       const {text, map} = askHide(raw, "Lars Haugen");
-      ok(!/Lars|Haugen|MEPS|acme\.no/.test(text), "a name went along: " + text);
+      ok(!/Lars|Haugen|ORBIX|acme\.no/.test(text), "a name went along: " + text);
       eq(map.get("[P1]"), "Lars Haugen", "the person asked is [P1]");
       eq(askUnhide(text, map).text.replace(/Lars Haugen said/, "Lars said"), raw, "every name comes back");
       eq(askUnhide("Ask [P9] and P1.", map).unknown, ["[P9]", "P1"], "a token the prompt did not use, or without brackets, is reported");
-      const meps = [...map].find(([, v]) => v === "MEPS")[0];
-      const r = askAiApply(entries, "Question: Is the " + meps + " invoice sent?", map);
-      eq(blockProp(block, ASK_Q_PROP), "Is the MEPS invoice sent?");
+      const orbix = [...map].find(([, v]) => v === "ORBIX")[0];
+      const r = askAiApply(entries, "Question: Is the " + orbix + " invoice sent?", map);
+      eq(blockProp(block, ASK_Q_PROP), "Is the ORBIX invoice sent?");
       eq(r.unknown, []);
       const bad = askAiApply(entries, "Question: Ask [P9].", map);
       eq([bad.filled, bad.unknown], [0, ["[P9]"]], "nothing is saved from an answer with a stray token");
-      eq(blockProp(block, ASK_Q_PROP), "Is the MEPS invoice sent?");
+      eq(blockProp(block, ASK_Q_PROP), "Is the ORBIX invoice sent?");
       openAskAI("Lars Haugen", entries);
       await settle();
       const box = document.querySelector("#modalRoot textarea");
@@ -5398,9 +5398,9 @@ var GTD_TEST = (() => {
       has(document.querySelector("#modalRoot details").textContent, "[P1] Lars Haugen", "no list of who is who");
       // The pasted answer shows the names at once, so you see who is who before Use it.
       const pasted = document.querySelectorAll("#modalRoot textarea")[1];
-      pasted.value = "Question: Is the " + meps + " invoice with [P1]?";
+      pasted.value = "Question: Is the " + orbix + " invoice with [P1]?";
       pasted.dispatchEvent(new Event("input"));
-      eq(pasted.value, "Question: Is the MEPS invoice with Lars Haugen?");
+      eq(pasted.value, "Question: Is the ORBIX invoice with Lars Haugen?");
     } finally {
       closeAll();
       if (V.pages.has(ASK_HIDE_PATH)) removePage(ASK_HIDE_PATH);
