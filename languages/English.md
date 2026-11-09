@@ -742,6 +742,7 @@ Back (alt+←) =>
 Back a week after you tick it =>
 Back and forward move between topics. =>
 Back and forward. =>
+Back in the app, today and the open page are read again. A change made on the PC shows then. =>
 Back now =>
 Back on =>
 Back on hold. =>

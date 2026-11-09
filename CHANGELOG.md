@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.132.2 - 2026-11-09
+
+- Phone and PC: back in the app, today and the page that is open are read
+  again from the folder. A change made on the PC and brought over by a sync
+  app such as Syncthing shows at once, without opening the whole folder
+  again. A page with unsaved work here is merged when it is saved (#341).
+
 ## 1.132.1 - 2026-11-09
 
 - Vault and sync: after Allow on a phone, only pages that really changed are

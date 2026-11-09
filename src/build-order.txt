@@ -166,6 +166,7 @@ js/15-storage/tellSiblings.js
 js/15-storage/takeSiblingSaves.js
 js/15-storage/run-2-1.js
 js/15-storage/catchUpWithSiblings.js
+js/15-storage/catchUpWithFolder.js
 js/15-storage/vars-DRAFT_KEY.js
 js/15-storage/keepLineDraft.js
 js/15-storage/readLineDraft.js

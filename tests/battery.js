@@ -1280,6 +1280,39 @@ var GTD_TEST = (() => {
       ok(!s.rec.dirty.has(s.path) && s.rec.dirty.has(kayak), "what is left to send: " + [...s.rec.dirty]);
     } finally { Backends.idb = realIdb; }
   });
+  test("#341 back on screen, today and the open page are read again from the folder, and nothing else", async () => {
+    await flush();
+    const name = V.space, kept = LOADED.get(name), was = {view: state.view, pagePath: state.pagePath};
+    const today = journalPath(todayISO()), boat = join(DIRS.active, "Boat.md"), kayak = join(DIRS.active, "Kayak.md");
+    const tree = {};
+    const put = (p, t) => { const parts = p.split("/"); let d = tree; for (const k of parts.slice(0, -1)) d = d[k] || (d[k] = {}); d[parts.at(-1)] = t; };
+    put(today, "- written on the phone\n");
+    put(boat, "title:: Boat\n\n- TODO Sand the hull\n");
+    put(kayak, "title:: Kayak\n\n- TODO Find a paddle\n");
+    const writes = [];
+    const rec = newRecord(name, Backends.fs(fakeDir(name, tree, writes)));
+    await readInto(rec);
+    LOADED.set(name, rec); bindActive(name);
+    try {
+      state.view = "page"; state.pagePath = boat;
+      await new Promise(r => setTimeout(r, 300));
+      writes.length = 0;                       // the folder's guides, written on load
+      // The PC changed all three, and Syncthing brought them down.
+      put(today, "- written on the phone\n- written on the PC\n");
+      put(boat, "title:: Boat\n\n- DONE Sand the hull\n");
+      put(kayak, "title:: Kayak\n\n- TODO Find a paddle\n- TODO Book the trip\n");
+      window.dispatchEvent(new Event("focus"));
+      const text = p => serializePage(V.pages.get(p) || parsePage(""));
+      for (let i = 0; i < 100 && !/written on the PC/.test(text(today)); i++) await new Promise(r => setTimeout(r, 20));
+      has(text(today), "written on the PC", "today was not read again");
+      has(text(boat), "DONE Sand the hull", "the open page was not read again");
+      ok(!/Book the trip/.test(text(kayak)), "a page not on screen was read too");
+      eq(writes, [], "coming back wrote to the folder");
+    } finally {
+      state.view = was.view; state.pagePath = was.pagePath;
+      LOADED.set(name, kept); bindActive(name); render();
+    }
+  });
   test("#220 a page made on both devices keeps the lines of both", async () => {
     const s = await synced("Sync220f", "Boat.md", BOAT);
     const path = join(DIRS.active, "Kayak.md");

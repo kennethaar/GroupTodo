@@ -1071,6 +1071,7 @@ const HELP = {
     more: ["Chrome on Android can open the folder itself. Then there is no file to send.",
       "The phone asks for the folder each time the app starts. Tap Allow access to see your pages.",
       "Keep that folder in step with the PC with a sync app, such as Syncthing.",
+      "Back in the app, today and the open page are read again. A change made on the PC shows then.",
       "Until you set your hours, they are 08:00 to 16:00 on weekdays, and the PC does not ask."],
     see: ["vault"],
     words: ["phone", "mobile", "android", "iphone", "send", "share"]},
