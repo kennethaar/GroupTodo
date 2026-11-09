@@ -73,6 +73,15 @@ button in the switch. *Why:* the review switch read "‹ Projects · … ·
 Projects", one word for two jobs side by side. *Apply:* Weekly review,
 Contexts, and any view opened from another. *Source:* UX-015.
 
+## Phone
+
+**P16. On a phone the words get the width.** A row's title wraps over
+the full width and is never cut to "…"; its chips go on a line under it.
+Tools get a row of their own, and anything tapped is a full-width row or
+at least 44px. Show a bar, not a bare number. *Why:* Chores on a phone
+showed "Gi m…" beside a "1000%" chip that ran off the edge. *Apply:* any
+list read on a phone. Check at 390px. *Source:* #343.
+
 ## Keyboard
 
 **P6. Letters search, arrows move.** Letters jump to the option whose name
