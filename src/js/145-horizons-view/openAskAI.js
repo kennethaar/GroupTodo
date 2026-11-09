@@ -14,6 +14,28 @@ function openAskAI(name, entries, done = null) {
   promptBox.value = hide ? ASK_HIDE_NOTE + hidden.text : raw;
   const answer = el("textarea", {rows: 8, placeholder: "Paste the AI's answer here", "aria-label": "The AI's answer",
     style: "width:100%;font-size:12.5px;line-height:1.5"});
+  /* The answer reads with the names as soon as it is pasted, so you see who is
+     who before anything is saved; a token the prompt did not use is said
+     under it (#345). */
+  const answerSays = el("div", {class: "hint", role: "status", style: "text-align:left;margin-top:6px"},
+    "The words go on the task" + (entries.length > 1 ? "s" : "") + ", to check and change before you send.");
+  if (hidden.map) answer.addEventListener("input", () => {
+    const b = askUnhide(answer.value, hidden.map);
+    if (b.text !== answer.value) {
+      const end = answer.value.length - answer.selectionEnd;
+      answer.value = b.text;
+      answer.selectionStart = answer.selectionEnd = Math.max(0, b.text.length - end);
+    }
+    answerSays.textContent = b.unknown.length
+      ? b.unknown.join(", ") + (b.unknown.length === 1 ? " is" : " are") + " not from this prompt. Change " +
+        (b.unknown.length === 1 ? "it" : "them") + " to the name before Use it."
+      : "The names are back. The words go on the task" + (entries.length > 1 ? "s" : "") + ", to check and change before you send.";
+  });
+  // Which token is which name, for reading the prompt.
+  const legend = hidden.map && hidden.map.size ? el("details", {style: "margin-top:8px;font-size:12.5px"},
+    el("summary", {}, "Who is who (" + hidden.map.size + ")"),
+    el("div", {style: "margin-top:4px;color:var(--fg2);line-height:1.6"},
+      ...[...hidden.map].map(([t, real]) => el("div", {}, t + " " + real)))) : null;
   const again = () => openAskAI(name, entries, done);
   const {select, button} = aiPicker(space, promptBox, again);
   const back = () => { closeModal(); if (done) done(null); };
@@ -68,13 +90,12 @@ function openAskAI(name, entries, done = null) {
       el("div", {class: "field"}, el("label", {}, "1. Copy this to your AI"), promptBox,
         el("div", {style: "display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap"},
           el("span", {class: "hint"}, "Your AI in this area:"), select, button),
+        legend,
         el("div", {class: "hint", style: "text-align:left;margin-top:6px"},
           "It has " + (many ? "these tasks" : "this task") + " and the project page" + (many ? "s" : "") + " with your notes. " +
           "Edit it freely before you copy. Nothing leaves this app unless you paste it. " +
           name + " gets only the question and summary.")),
-      el("div", {class: "field"}, el("label", {}, "2. Paste its answer here"), answer,
-        el("div", {class: "hint", style: "text-align:left;margin-top:6px"},
-          "The words go on the task" + (many ? "s" : "") + ", with the names back, to check and change before you send."))),
+      el("div", {class: "field"}, el("label", {}, "2. Paste its answer here"), answer, answerSays)),
     foot: [
       el("button", {class: "btn ghost", onclick: () => openPromptEditor({space, path: ASK_PROMPT_PATH,
         standard: ASK_PROMPT_DEFAULT, back: again,

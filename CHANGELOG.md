@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.135.2 - 2026-11-09
+
+- Waiting for › List: Let AI write it no longer garbles the prompt. A name
+  is hidden only as a whole word, and a one-word name only with its capital,
+  so a person called Per leaves "per day" alone. The answer shows the names
+  again as soon as you paste it, and Who is who under the prompt says which
+  token is which name. (#345)
+
 ## 1.135.1 - 2026-11-09
 
 - Waiting for › List: Let AI write the questions opens again in a vault

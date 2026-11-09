@@ -41,7 +41,11 @@ function askHide(text, recipient = "") {
   for (const o of [...orgs, ...askHideNames()]) terms.push({words: o, kind: "O", real: o});
 
   terms.sort((a, b) => b.words.length - a.words.length);
+  /* Only a whole word, never part of another. A one-word name is matched with
+     its capital, so a person called Per, Even or Ask leaves "per", "even" and
+     "ask" alone; a longer name is a name in any case. */
   for (const {words, kind, real} of terms)
-    out = out.replace(new RegExp("(?<![\p{L}\p{N}@.])" + askEsc(words) + "(?![\p{L}\p{N}])", "giu"), () => token(kind, real));
+    out = out.replace(new RegExp("(?<![\\p{L}\\p{N}@.])" + askEsc(words) + "(?![\\p{L}\\p{N}])",
+      /\s/.test(words) ? "giu" : "gu"), () => token(kind, real));
   return {text: out, map};
 }

@@ -5354,13 +5354,15 @@ var GTD_TEST = (() => {
     eq(r.same, [1]);
   });
   test("#345 three people with one first name do not stop Let AI write it from opening", () => {
-    const paths = ["Lars Berg", "Lars Dahl", "Lars Eng"].map(n => join(DIRS.people, n + ".md"));
+    const paths = ["Lars Berg", "Lars Dahl", "Lars Eng", "Per Olsen"].map(n => join(DIRS.people, n + ".md"));
     try {
       for (const p of paths) putPage(p, {props: {title: baseName(p)}, blocks: []});
       clearMemo();
       const {text, map} = askHide("Lars Dahl met Lars about it.", "Anna Holm");
       has(text, "[P2] met Lars", "a first name three people share is left as it is");
       eq(map.get("[P2]"), "Lars Dahl");
+      // A name that is also a word is hidden only as a name, with its capital.
+      eq(askHide("Twice per day, Per said.", "Anna Holm").text, "Twice per day, [P2] said.");
     } finally {
       for (const p of paths) if (V.pages.has(p)) removePage(p);
       clearMemo();
@@ -5393,6 +5395,12 @@ var GTD_TEST = (() => {
       const box = document.querySelector("#modalRoot textarea");
       ok(!box.readOnly, "the prompt cannot be edited");
       ok(!box.value.includes("Haugen"), "the dialog does not hide names by default");
+      has(document.querySelector("#modalRoot details").textContent, "[P1] Lars Haugen", "no list of who is who");
+      // The pasted answer shows the names at once, so you see who is who before Use it.
+      const pasted = document.querySelectorAll("#modalRoot textarea")[1];
+      pasted.value = "Question: Is the " + meps + " invoice with [P1]?";
+      pasted.dispatchEvent(new Event("input"));
+      eq(pasted.value, "Question: Is the MEPS invoice with Lars Haugen?");
     } finally {
       closeAll();
       if (V.pages.has(ASK_HIDE_PATH)) removePage(ASK_HIDE_PATH);
