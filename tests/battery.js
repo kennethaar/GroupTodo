@@ -8639,6 +8639,49 @@ var GTD_TEST = (() => {
     } finally { FLY = null; box.remove(); txt.remove(); }
   });
 
+  test("#335 Tag with words selected offers to create them first, then likely names, and links the words", () => {
+    const person = personPath("Jonas Testberg"), org = join(DIRS.orgs, "Testorgx.md"), ctx = contextPath("Testctxq");
+    putPage(person, parsePage("aliases:: JT\n"), {silent: true});
+    putPage(ctx, parsePage(""), {silent: true});
+    clearMemo();
+    const path = scratchProject("tag selection", [["TODO", "Call JT about Jonas Testbreg"]]);
+    const page = getPage(path), block = page.blocks[0];
+    const box = el("div"), txt = el("textarea");
+    document.body.append(box, txt);
+    const open = (text, word, k) => {
+      block.title = text; txt.textContent = text; txt.value = text;
+      const at = text.indexOf(word);
+      txt.focus(); txt.setSelectionRange(at, at + word.length);
+      FLY = {txt, path, page, block, box, open: null, hi: 0, q: ""};
+      editBarAct(k);
+      eq(FLY.open, k, k + " opens its picker");
+      return flyOptsOf(flyRows().find(r => r.k === k));
+    };
+    try {
+      let opts = open("Call JT about it", "JT", "who");
+      eq(opts[0], ["JT", "Create “JT”"], "creating the selected words comes first");
+      eq(opts[1][0], "Jonas Testberg", "then the person known as JT");
+      ok(!opts.some(o => o[0] === ""), "not Me or None: the words are a name to link");
+      flyPick("who", opts[1][0]);
+      eq(block.title, "Call [[p/Jonas Testberg][JT]] about it", "the words become the link and still read JT");
+
+      opts = open("Ask Jonas Testbreg", "Jonas Testbreg", "who");
+      ok(opts.slice(1).some(o => o[0] === "Jonas Testberg"), "a near spelling is offered: " + JSON.stringify(opts));
+
+      opts = open("Meet Testorgx people", "Testorgx", "org");
+      eq(opts[0], ["Testorgx", "Create “Testorgx”"], "a new organisation is offered first");
+      flyPick("org", opts[0][0]);
+      eq(block.title, "Meet [[o/Testorgx]] people", "linked where the words were");
+      ok(getPage(org), "and its page made");
+
+      opts = open("Work at testctxq today", "testctxq", "ctx");
+      eq(opts[0][0], "Testctxq", "a name that exists is first, not made again");
+      ok(!opts.some(o => /^Create/.test(o[1])), "no Create for a name that exists");
+      flyPick("ctx", opts[0][0]);
+      eq(block.title, "Work at [[c/Testctxq]] today", "a context is written by its own name");
+    } finally { FLY = null; box.remove(); txt.remove(); removePage(person); removePage(org); removePage(ctx); clearMemo(); }
+  });
+
   test("timer starts and stops", () => {
     timerStart(5, false);
     ok(TIMER_END > Date.now(), "TIMER_END not in the future");

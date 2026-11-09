@@ -21,7 +21,7 @@ function flyDraw() {
       const chip = ([v, l], i, text) => el("button", {class: "fchip" + (i === hi ? " hi" : ""), tabindex: "-1",
         onclick: () => flyPick(r.k, v)}, text || l);
       const opts = el("div", {class: "fopts"});
-      if (r.k === "ctx") {
+      if (r.k === "ctx" && !FLY.sel) {
         /* A folder of contexts is a column: @PC on top, its children under it. */
         const folders = new Set((r.opts || []).map(o => o[0]).filter(v => v.includes("/")).map(ctxTop));
         const cols = new Map();

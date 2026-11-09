@@ -24,5 +24,6 @@ function flyHead(k) {
   }
   FLY.open = FLY.open === k ? null : k;
   FLY.hi = 0; FLY.q = "";
+  FLY.sel = FLY.open && TAG_SEL_PREFIX[k] ? flySelWords(FLY.txt) : null;
   flyDraw();
 }

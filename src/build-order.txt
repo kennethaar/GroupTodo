@@ -1549,6 +1549,10 @@ js/105-outliner/lineProject.js
 js/105-outliner/vars-lineOrg.js
 js/105-outliner/linePeople.js
 js/105-outliner/vars-FLY_ICON.js
+js/105-outliner/vars-TAG_SEL_PREFIX.js
+js/105-outliner/editDistance.js
+js/105-outliner/flySelWords.js
+js/105-outliner/tagSelOpts.js
 js/105-outliner/flyRows.js
 js/105-outliner/vars-ctxTop.js
 js/105-outliner/ctxFolderOrder.js
@@ -1573,6 +1577,7 @@ js/105-outliner/flyCommit.js
 js/105-outliner/flyAfter.js
 js/105-outliner/vars-flyMakeTask.js
 js/105-outliner/flyHead.js
+js/105-outliner/flyLinkSel.js
 js/105-outliner/flyPick.js
 js/105-outliner/vars-FLY_OPEN_AFTER.js
 js/105-outliner/setOrDropProp.js

@@ -16,7 +16,7 @@ function flyRows() {
   // group (vars-EDIT_BAR.js) instead. Open side panel is left off too -- the
   // foot toolbar already has it as a direct button, so it needs no second
   // way in from here.
-  return [
+  const rows = [
     {k: "state", ic: FLY_STATE, label: typed ? "Stage" : "State", menu: true,
      val: typed && typed.stage ? typed.stage.name : t ? STATE_WORD[t] : "Note", key: "Ctrl+Enter",
      // A stage is told from a state by the mark in front of it.
@@ -45,4 +45,8 @@ function flyRows() {
     {k: "trk", ic: FLY_TRACKER, label: "Insert tracker", key: "Alt+K", menu: true},
     {k: "aiplan", ic: FLY_PLAN, label: "Plan with AI", key: "Alt+A", menu: true},
   ];
+  // Words selected in the line are the name: make it, or the names it likely means (#335).
+  const sel = FLY.sel, open = sel && rows.find(r => r.k === FLY.open && TAG_SEL_PREFIX[r.k]);
+  if (open) open.opts = tagSelOpts(open.opts, TAG_SEL_PREFIX[open.k], sel.text);
+  return rows;
 }

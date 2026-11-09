@@ -2,6 +2,7 @@ function flyPick(k, v) {
   if (!FLY) return;
   flyCommit();
   const {path, block} = FLY;
+  if (v && FLY.sel && FLY.open === k && TAG_SEL_PREFIX[k] && flyLinkSel(k, v)) return flyAfter(k);
   if (k === "state" && v && v[0] === "\u0001") {
     const ts = taskStage(block);
     if (ts) setTaskStage(path, block, ts.list, v.slice(1));

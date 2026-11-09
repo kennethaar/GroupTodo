@@ -857,6 +857,7 @@ const HELP = {
     what: "Link a line to a context, a project, a person or a page.",
     steps: ["Type @ for a context, # for a project, [[ for a page.",
       "Start a name and Enter takes it.",
+      "Or select words and use Tag. Make a page of them, or pick a name like them.",
       "Click a link to go there.",
       "Hold a link half a second to open it beside."],
     keys: [["Enter", "Accept"], ["Alt+C", "Context"], ["Alt+P", "Person"], ["Alt+O", "Organisation"], ["Alt+J", "Project"]],

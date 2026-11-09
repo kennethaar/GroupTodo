@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.131.0 - 2026-11-09
+
+- Links and aliases: select words, then Tag › Person, Organisation or Context (#335).
+  Making a page of the words comes first. Under it are the names they likely
+  mean: by alias, by the start of a word, or spelled a little differently.
+  The pick links the words where they stand, so "JT" reads JT and goes to Jonas.
+
 ## 1.130.0 - 2026-11-09
 
 - Hold and until: On hold is in the state menu, next to Waiting for (#334).
