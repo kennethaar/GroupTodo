@@ -637,6 +637,12 @@ js/84-assets/vars-PRICE_MARKS.js
 js/84-assets/fmtPrice.js
 js/84-assets/vars-fmtPrices.js
 js/84-assets/openPicture.js
+js/84-assets/vars-PDF_RE.js
+js/84-assets/assetFileHTML.js
+js/84-assets/pdfViews.js
+js/84-assets/openPdf.js
+js/84-assets/openPdfTab.js
+js/84-assets/run-pdfFold.js
 js/84-assets/renderInline.js
 js/90-view-state/vars-state.js
 js/90-view-state/vars-WAIT_NOBODY.js

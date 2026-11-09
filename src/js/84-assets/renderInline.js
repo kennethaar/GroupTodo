@@ -16,13 +16,18 @@ function renderInline(text) {
     const hit = blockById(id);
     return hit ? hold(blockRefHTML(id, hit)) : all;
   });
+  /* ![name](x.pdf), or any other file that is not a picture, reads as the
+     paperclip as in Obsidian, not as a broken picture. A PDF so written
+     starts unfolded under the line (#331). */
   h = h.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (all, alt, src) =>
-    isAssetPath(src) || /^(blob|data|https?):/.test(src)
+    isAssetPath(src) && /\.[a-z0-9]+$/i.test(src) && !ASSET_IMAGE_RE.test(src)
+      ? hold(assetFileHTML(src, alt || esc(unesc(src).split("/").pop()), true))
+      : isAssetPath(src) || /^(blob|data|https?):/.test(src)
       ? hold(`<img class="asset" alt="${alt}" title="${alt}" ${isAssetPath(src) ? `data-asset="${src}"` : `src="${src}"`}>`)
       : all);
   h = h.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (all, label, href) =>
     isAssetPath(href)
-      ? hold(`<a class="asset-file" data-asset="${href}" href="#" contenteditable="false" title="Download attachment">\u{1F4CE} ${label}</a>`)
+      ? hold(assetFileHTML(href, label, false))
       : /^https?:/.test(href)
         ? hold(`<a class="asset-file" href="${href}" target="_blank" rel="noopener">${label}</a>`)
         : APP_LINK_RE.test(href)

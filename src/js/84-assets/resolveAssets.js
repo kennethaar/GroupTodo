@@ -11,7 +11,7 @@ function resolveAssets(root) {
                             "\u2298 " + path.split("/").pop()));
         return;
       }
-      if (node.tagName === "IMG") node.src = url;
+      if (node.tagName === "IMG" || node.tagName === "IFRAME") node.src = url;
       else {
         node.href = url; node.target = "_blank"; node.rel = "noopener";
         node.download = path.split("/").pop();

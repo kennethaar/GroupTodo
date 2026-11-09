@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.129.0 - 2026-11-09
+
+- A page: a PDF in a line can be read where it is (#331). The caret beside
+  its paperclip shows it under the line, and folds it away again; this
+  device remembers which. Written ![name](file.pdf), as Obsidian does, it
+  shows from the start. Full size opens it over the page, Download saves
+  it. A browser that cannot show a PDF in a page offers a new tab instead.
+  Another file written with ! is now a paperclip link, not a broken picture.
+
 ## 1.128.0 - 2026-11-09
 
 - Links and aliases: a file path in quotes, as Explorer's Copy as path gives

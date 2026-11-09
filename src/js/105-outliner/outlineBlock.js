@@ -43,6 +43,7 @@ function outlineBlock(path, page, b, opts = {}) {
     (b.body || []).forEach((l, i) => node.append(el("div", {class: "bodyline" + (i < rows ? " tblrow" : ""), translate: "no", html: renderInline(l)})));
     const shown = liveMacros(path, b);
     if (shown) node.append(shown);
+    node.append(...pdfViews(b));
     if (!b.collapsed) for (const k of shownLines(kids, opts)) node.append(outlineBlock(path, page, k, opts));
     return node;
   }
@@ -51,7 +52,7 @@ function outlineBlock(path, page, b, opts = {}) {
   // replace this line with its raw text and destroy the span mid-click, so
   // refuse focus for that one gesture and let the delegated handler navigate.
   txt.addEventListener("mousedown", e => {
-    if (e.target.closest("[data-link], [data-bref], a[href], img.asset")) e.preventDefault();
+    if (e.target.closest("[data-link], [data-bref], a[href], img.asset, .pdf-fold")) e.preventDefault();
   });
   keepClickCaret(txt, () => b.title);
   txt.addEventListener("focus", () => { line.classList.add("raw"); txt.textContent = b.title; flyShow(txt, path, page, b); });
@@ -439,6 +440,7 @@ function outlineBlock(path, page, b, opts = {}) {
   tableWatch(node, txt, b, path);
   const shown = liveMacros(path, b);
   if (shown) node.append(shown);
+  node.append(...pdfViews(b));
 
   if (!b.collapsed) for (const k of shownLines(kids, opts)) node.append(outlineBlock(path, page, k, opts));
   return node;

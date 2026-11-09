@@ -3510,6 +3510,59 @@ var GTD_TEST = (() => {
       ok(press(bodyImg), "pressing the picture under the line still edits that line");
     } finally { window.open = real; go("today"); }
   });
+  test("#331 a PDF in assets/ unfolds under its line from a caret, ![name](x.pdf) shows it unfolded, and another file with ! stays a paperclip link", async () => {
+    const quote = "assets/quote-331.pdf", manual = "assets/manual-331.pdf", doc = "assets/notes-331.docx";
+    for (const p of [quote, manual, doc]) await V.backend.putAsset(p, new Blob(["%PDF-1.4 test"], {type: ""}));
+    const lines = ["Check the quote [Supplier quote](" + quote + ")", "Read ![Manual](" + manual + ")", "See ![Notes](" + doc + ")"];
+    const path = scratchProject("pdf fold", lines.map(t => [null, t]));
+    const [bq, bm, bd] = getPage(path).blocks;
+    const realPdf = Object.getOwnPropertyDescriptor(navigator, "pdfViewerEnabled");
+    Object.defineProperty(navigator, "pdfViewerEnabled", {value: true, configurable: true});
+    const node = b => content().querySelector('.blk[data-id="' + b.id + '"]');
+    const caret = b => node(b).querySelector(":scope > .line .txt button.pdf-fold");
+    const view = b => node(b).querySelector(":scope > .pdfview");
+    const press = n => { const e = new MouseEvent("mousedown", {bubbles: true, cancelable: true, button: 0}); n.dispatchEvent(e); return e.defaultPrevented; };
+    try {
+      openPage(path); await settle();
+      ok(node(bq).querySelector(":scope > .line .txt a.asset-file[data-asset]"), "the PDF is no longer a paperclip link");
+      ok(caret(bq), "no fold caret beside a PDF attachment");
+      eq(caret(bq).getAttribute("aria-expanded"), "false", "a PDF written without ! starts unfolded");
+      ok(!view(bq), "a PDF written without ! shows its viewer before it is unfolded");
+      ok(press(caret(bq)), "pressing the caret drops the caret into the line");
+      caret(bq).click(); await settle();
+      eq(caret(bq).getAttribute("aria-expanded"), "true", "the caret did not unfold the PDF");
+      const v = view(bq);
+      ok(v, "unfolding did not draw the PDF under the line");
+      ok(v.querySelector("iframe[data-asset='" + quote + "']"), "the viewer does not show the PDF from assets/");
+      const frames = (document.querySelector('meta[http-equiv="Content-Security-Policy"]').content.match(/frame-src([^;]*)/) || [])[1];
+      eq(trim(frames || ""), "blob:", "the page policy blocks the frame, or lets it load from outside the folder");
+      ok(/Supplier quote/.test(v.textContent), "the viewer does not name the PDF");
+      ok([...v.querySelectorAll("button, a")].some(x => /Full size/.test(x.textContent)), "the viewer has no Full size");
+      ok([...v.querySelectorAll("button, a")].some(x => /Download/.test(x.textContent)), "the viewer has no Download");
+      eq(getPage(path).blocks[0].title, lines[0], "unfolding changed the line's markdown");
+      go("today"); openPage(path); await settle();
+      ok(view(bq), "the fold was not kept when the page was opened again");
+      caret(bq).click(); await settle();
+      ok(!view(bq), "the caret did not fold the PDF away");
+
+      ok(!node(bm).querySelector("img.asset"), "![name](x.pdf) is drawn as a broken picture");
+      ok(view(bm), "![name](x.pdf) does not show the PDF from the start");
+      eq(caret(bm).getAttribute("aria-expanded"), "true", "an unfolded PDF's caret does not say so");
+
+      ok(!node(bd).querySelector("img.asset"), "![name](x.docx) is drawn as a broken picture");
+      ok(node(bd).querySelector("a.asset-file[data-asset='" + doc + "']"), "![name](x.docx) is not a paperclip link");
+      ok(!caret(bd) && !view(bd), "a file that is not a PDF gets a PDF viewer");
+
+      // A browser that draws no PDF in a page (Android Chrome) says so and offers the file instead.
+      Object.defineProperty(navigator, "pdfViewerEnabled", {value: false, configurable: true});
+      render(); await settle();
+      ok(!view(bm).querySelector("iframe"), "a browser without a PDF viewer gets an empty frame");
+      ok([...view(bm).querySelectorAll("button, a")].some(x => /new tab/i.test(x.textContent)), "without a PDF viewer there is no Open in new tab");
+    } finally {
+      if (realPdf) Object.defineProperty(navigator, "pdfViewerEnabled", realPdf); else delete navigator.pdfViewerEnabled;
+      go("today");
+    }
+  });
   test("#321 Hide done on a page, and its own switch in Linked References, hide done lines and are remembered on that page", async () => {
     const path = scratchProject("hide done", [["TODO", "Call the open one"], ["DONE", "Finished one"], ["CANCELLED", "Dropped one"]]);
     getPage(path).blocks[1].children = [newBlock({state: "TODO", title: "Under the finished one"})]; touch(path);

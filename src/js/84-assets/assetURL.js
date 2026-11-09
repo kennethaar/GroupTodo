@@ -6,7 +6,9 @@ async function assetURL(path, space) {
   if (!be || typeof be.getAsset !== "function") return null;
   const blob = (await be.getAsset(path)) || await adoptAsset(path, space || V.space, be);
   if (!blob) return null;
-  const url = URL.createObjectURL(blob);
+  // A browser draws a PDF in a frame only when the file says it is one (#331).
+  const typed = !blob.type && PDF_RE.test(path) ? new Blob([blob], {type: "application/pdf"}) : blob;
+  const url = URL.createObjectURL(typed);
   ASSET_URLS.set(key, url);
   return url;
 }

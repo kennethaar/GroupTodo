@@ -817,6 +817,7 @@ const HELP = {
       ["?.stakein", "On a person: the responsibilities they hear about."]],
     more: ["On a computer, Focus is a teleprompter. The line you write in stays in the middle of the screen. Scroll, and the paragraph in the middle lights up.",
       "Click a picture to see it full size; ✕ or Esc closes it. Click beside it to write.",
+      "A PDF has a caret beside it: it shows the PDF under the line. Written ![name](file.pdf), it shows from the start.",
       "A page in a family, like Work/Clients/Acme, lists the rest of it at the bottom.",
       "Remove duplicate lines is in ⋯ beside the title.",
       "On a responsibility, + stakeholder names who hears how it goes.",
