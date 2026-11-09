@@ -6,8 +6,7 @@ function stateColumns(a, extra = []) {
   const types = inSpace(a.space, typeChoices);
   if (!types.length) return null;
   const t = inSpace(a.space, () => taskStage(a.block));
-  const plain = [["t", "To do", "TODO"], ["d", "Doing", "DOING"], ["w", "Waiting for…", "WAIT"], ["x", "Done", "DONE"], ["c", "Cancelled", "CANCELLED"]]
-    .map(([k, label, st]) => {
+  const plain = PLAIN_STATES.map(([k, label, st]) => {
       const now = !t && a.state === st;
       return [k, label, now ? "now" : null,
         () => now ? null : rowSetState(a, () => setBlockState(a.path, a.block, st, {stage: {list: null}}))];

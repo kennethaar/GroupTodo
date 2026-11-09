@@ -5185,6 +5185,38 @@ var GTD_TEST = (() => {
     }
   });
 
+  test("#334 the state menu has On hold…, which asks for the day it comes back or No date", async () => {
+    const path = scratchProject("hold from menu", [["TODO", "Call the supplier about the quote"], ["TODO", "Paint the shed"]]);
+    const [b1, b2] = getPage(path).blocks;
+    const row = b => ({path, block: b, state: b.state, title: b.title, space: V.space});
+    const day = (() => { const d = new Date(); d.setDate(d.getDate() + 14); return isoOf(d); })();
+    try {
+      const hold = stateRows(row(b1)).find(r => r[0] === "h");
+      ok(hold && hold[1] === "On hold…", "h is On hold…: " + JSON.stringify(stateRows(row(b1)).map(r => r[1])));
+      const labels = stateRows(row(b1)).map(r => r[1]);
+      eq(labels.indexOf("On hold…"), labels.indexOf("Waiting for…") + 1, "next to Waiting for");
+      hold[3]();
+      await settle();
+      eq(b1.state, "HOLD");
+      eq(document.querySelector("#modalRoot h2")?.textContent, "On hold until when?");
+      const input = document.querySelector('#modalRoot input[type="date"]');
+      input.value = day;
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Save").click();
+      await settle();
+      eq(holdValue(blockProp(b1, "hold")), day, "the day it comes back");
+      eq(stateRows(row(b1)).find(r => r[0] === "h")[2], "now", "marked as the state it is in");
+
+      stateRows(row(b2)).find(r => r[0] === "h")[3]();
+      await settle();
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "No date").click();
+      await settle();
+      eq(b2.state, "HOLD");
+      eq(holdValue(blockProp(b2, "hold")), HOLD_OPEN, "No date is hold:: open");
+    } finally {
+      closeAll();
+    }
+  });
+
   /* ============================================================
      The Journal, an execution view (#160)
      ============================================================ */

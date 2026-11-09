@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.130.0 - 2026-11-09
+
+- Hold and until: On hold is in the state menu, next to Waiting for (#334).
+  Right-click or long-press a task's state, or use its ⋯, and pick On hold.
+  It asks for the day it comes back, or No date.
+
 ## 1.129.1 - 2026-11-09
 
 - Links and aliases: a project name inside a Windows path stays part of the path (#333).

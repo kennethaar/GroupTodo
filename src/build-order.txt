@@ -1405,6 +1405,8 @@ js/145-horizons-view/titleForLine.js
 js/145-horizons-view/vars-LINGER.js
 js/145-horizons-view/armLinger.js
 js/145-horizons-view/askWaitingOn.js
+js/145-horizons-view/askHoldUntil.js
+js/145-horizons-view/vars-PLAIN_STATES.js
 js/145-horizons-view/taskRow.js
 js/145-horizons-view/holdable.js
 js/145-horizons-view/rowSetState.js
