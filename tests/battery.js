@@ -494,6 +494,13 @@ var GTD_TEST = (() => {
     const t = "- first\n-\n- third\n";
     eq(serializePage(parsePage(t)), t);
   });
+  test("a link whose text is the page's own name is written without it (#338)", () => {
+    const t = "who:: [[p/Jane Doe][Jane Doe]]\n\n- TODO Call [[p/Jane Doe][Jane Doe]] and [[Kitchen][Kitchen]]\n" +
+              "  with:: [[o/Acme][Acme]]\n- Ask [[p/John Smith][JS]] and [[p/Jane Doe][jane doe]] about [[go/todos][todos]]\n";
+    eq(serializePage(parsePage(t)),
+      "who:: [[p/Jane Doe]]\n\n- TODO Call [[p/Jane Doe]] and [[Kitchen]]\n" +
+      "  with:: [[o/Acme]]\n- Ask [[p/John Smith][JS]] and [[p/Jane Doe][jane doe]] about [[go/todos][todos]]\n");
+  });
   test("splitState knows the states and their aliases", () => {
     eq(splitState("TODO Buy milk"), ["TODO", "Buy milk"]);
     eq(splitState("WAITING on Bob"), ["WAIT", "on Bob"]);

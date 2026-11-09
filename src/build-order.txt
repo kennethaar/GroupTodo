@@ -96,6 +96,7 @@ js/10-markdown/parseOutlineText.js
 js/10-markdown/readyPastedBlocks.js
 js/10-markdown/serializePage.js
 js/10-markdown/serializeBlockLines.js
+js/10-markdown/dropSameLabels.js
 js/10-markdown/vars-serializeBlocks.js
 js/10-markdown/walkBlocks.js
 js/10-markdown/flattenBlocks.js

@@ -6,8 +6,8 @@ function serializeBlockLines(blocks, level = 0) {
   const out = [];
   for (const b of blocks || []) {
     const pad = "  ".repeat(level);
-    out.push((pad + "- " + (b.state ? b.state + " " : "") + b.title).replace(/\s+$/, ""));
-    for (const [k, v] of Object.entries(b.props || {})) out.push(pad + "  " + k + ":: " + v);
+    out.push((pad + "- " + (b.state ? b.state + " " : "") + dropSameLabels(b.title)).replace(/\s+$/, ""));
+    for (const [k, v] of Object.entries(b.props || {})) out.push(pad + "  " + k + ":: " + dropSameLabels(v));
     for (const l of b.body || []) out.push(l === "" ? "" : pad + "  " + l);
     for (const d of b.drawers || []) for (const l of d) out.push(l === "" ? "" : pad + "  " + l);
     if (b.children && b.children.length) out.push(...serializeBlockLines(b.children, level + 1));

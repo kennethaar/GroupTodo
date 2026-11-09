@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.131.3 - 2026-11-09
+
+- Links and aliases: a link whose text is the page's own name is saved
+  without it, so `[[p/Jane Doe][Jane Doe]]` becomes `[[p/Jane Doe]]`. A
+  link that reads an alias, such as JS, keeps it (#338).
+
 ## 1.131.2 - 2026-11-09
 
 - Dates and reminders: a task due days ago says only how late it is, such
