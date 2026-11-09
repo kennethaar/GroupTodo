@@ -213,6 +213,7 @@ const HELP = {
     more: ["A project waits by itself when all its actions wait on someone. It reads Waiting for (auto).",
       "Name someone outside the area and it becomes a plain waiting-for.",
       "A question and summary on the task go out in place of your notes. The ask also says when you last asked and what they last said.",
+      "Let AI write it hides names in the prompt and puts them back in the answer. Add more names in Hidden names.",
       "A reply closes nothing by itself. Their words become comments, and each stays open until you pick an outcome."],
     see: ["waiting-board", "states", "people-list"],
     words: ["delegate", "delegated", "handoff", "chase", "owed", "follow", "assigned"]},

@@ -5347,6 +5347,39 @@ var GTD_TEST = (() => {
     eq(blockProp(b, ASK_Q_PROP) || "", "", "a line the same as another is left alone");
     eq(r.same, [1]);
   });
+  test("#345 Let AI write it hides people, organisations, addresses and listed names, and puts them back in the answer", async () => {
+    const path = scratchProject("hide names", [["WAIT", "Ask [[p/Lars Haugen]] about the MEPS invoice, lars@acme.no"]]);
+    const block = getPage(path).blocks[0];
+    block.children = [newBlock({state: null, title: "Lars said it is close"})];
+    const entries = [{space: V.space, path, block}];
+    const kept = V.pages.has(ASK_HIDE_PATH) ? structuredClone(getPage(ASK_HIDE_PATH)) : null;
+    try {
+      if (kept) removePage(ASK_HIDE_PATH);
+      askHideAdd("MEPS");
+      const raw = askAiPrompt(entries, "Lars Haugen");
+      const {text, map} = askHide(raw, "Lars Haugen");
+      ok(!/Lars|Haugen|MEPS|acme\.no/.test(text), "a name went along: " + text);
+      eq(map.get("[P1]"), "Lars Haugen", "the person asked is [P1]");
+      eq(askUnhide(text, map).text.replace(/Lars Haugen said/, "Lars said"), raw, "every name comes back");
+      eq(askUnhide("Ask [P9] and P1.", map).unknown, ["[P9]", "P1"], "a token the prompt did not use, or without brackets, is reported");
+      const meps = [...map].find(([, v]) => v === "MEPS")[0];
+      const r = askAiApply(entries, "Question: Is the " + meps + " invoice sent?", map);
+      eq(blockProp(block, ASK_Q_PROP), "Is the MEPS invoice sent?");
+      eq(r.unknown, []);
+      const bad = askAiApply(entries, "Question: Ask [P9].", map);
+      eq([bad.filled, bad.unknown], [0, ["[P9]"]], "nothing is saved from an answer with a stray token");
+      eq(blockProp(block, ASK_Q_PROP), "Is the MEPS invoice sent?");
+      openAskAI("Lars Haugen", entries);
+      await settle();
+      const box = document.querySelector("#modalRoot textarea");
+      ok(!box.readOnly, "the prompt cannot be edited");
+      ok(!box.value.includes("Haugen"), "the dialog does not hide names by default");
+    } finally {
+      closeAll();
+      if (V.pages.has(ASK_HIDE_PATH)) removePage(ASK_HIDE_PATH);
+      if (kept) putPage(ASK_HIDE_PATH, kept);
+    }
+  });
 
   test("#311 A board card's assignee pill offers Open task and Ask for an update, not the card underneath", async () => {
     const path = scratchProject("crane order", [["WAIT", "Snakket med [[p/Lars Haugen]] om arbeidsordre"]]);

@@ -2,8 +2,15 @@
    number go on that task as ask::, brief:: and why::. With one line the
    number may be left out. An AI dresses its answers in bold and bullets, so
    those are read past. Gives {filled, same}: how many tasks got words, and
-   the places in entries of those that are the same as another. */
-function askAiApply(entries, text) {
+   the places in entries of those that are the same as another. map: the
+   tokens names were hidden as (#345), put back first; with a token the
+   prompt did not use nothing is saved, and unknown says which. */
+function askAiApply(entries, text, map = null) {
+  if (map) {
+    const back = askUnhide(text, map);
+    if (back.unknown.length) return {filled: 0, same: [], unknown: back.unknown};
+    text = back.text;
+  }
   const KEY = {question: ASK_Q_PROP, summary: ASK_BRIEF_PROP, why: ASK_WHY_PROP, "same as": "same"};
   const got = entries.map(() => ({}));
   let at = entries.length === 1 ? 0 : -1;
@@ -25,5 +32,5 @@ function askAiApply(entries, text) {
     inSpace(e.space, () => { for (const k of keys) setBlockProp(e.block, k, g[k]); touch(e.path); });
     filled++;
   });
-  return {filled, same};
+  return {filled, same, unknown: []};
 }

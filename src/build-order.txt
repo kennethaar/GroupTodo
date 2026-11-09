@@ -1309,6 +1309,13 @@ js/145-horizons-view/vars-ASK_PROMPT_PATH.js
 js/145-horizons-view/askPageForAi.js
 js/145-horizons-view/askAiPrompt.js
 js/145-horizons-view/askAiApply.js
+js/145-horizons-view/vars-ASK_HIDE_PATH.js
+js/145-horizons-view/askHideNames.js
+js/145-horizons-view/askHideEnsure.js
+js/145-horizons-view/askHideAdd.js
+js/145-horizons-view/askHide.js
+js/145-horizons-view/askUnhide.js
+js/145-horizons-view/askHideSuggest.js
 js/145-horizons-view/openAskAI.js
 js/145-horizons-view/vars-askKinds.js
 js/145-horizons-view/askOwnPage.js

@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.135.0 - 2026-11-09
+
+- Waiting for › List: Let AI write it hides names before the prompt leaves.
+  People, organisations, email addresses and phone numbers go as [P1], [O1],
+  [E1] and [T1], and the answer gets them back before anything is saved. An
+  answer with a token the prompt did not use is not saved. The prompt can be
+  edited before you copy it, Hidden names in 8/ holds other names to hide,
+  and words that look like names are offered to add. Hide names can be
+  turned off. What the work is about still goes along. (#345)
+
 ## 1.134.1 - 2026-11-09
 
 - Waiting for › List: Let AI write it now sends the project page with the
