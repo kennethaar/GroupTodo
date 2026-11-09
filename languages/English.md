@@ -2979,6 +2979,7 @@ Park a job that comes round again rather than finishing - [[go/checklists]] =>
 Part of =>
 Passes =>
 Past birthday tasks =>
+Paste a file path in quotes, as Copy as path gives it. It shows only the file name. Click it to open the file. Edit the line to see the whole path. =>
 Paste a file path to open it. =>
 Paste a reply =>
 Paste a translation =>

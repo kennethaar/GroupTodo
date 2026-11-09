@@ -30,6 +30,15 @@ function renderInline(text) {
           : FILE_LINK_RE.test(href)
             ? hold(fileLinkHTML(href, label))
             : all);
+  /* "C:\...\Report.pptx" or "\\server\share\..." -- what Explorer's Copy as
+     path gives. The quotes are what tell where a path with spaces ends. Read
+     it shows only the name after the last backslash; the line being written
+     keeps the whole path as it was typed. */
+  h = h.replace(/(?:&quot;|\u201C)((?:[A-Za-z]:|\\\\[^\\\s<]+)\\(?:(?!&quot;)[^<\n\u201C\u201D\u0000])*?)(?:&quot;|\u201D)/g, (all, p) => {
+    const path = unesc(p);
+    const name = path.replace(/\\+$/, "").split("\\").pop() || path;
+    return hold(fileLinkHTML(esc(fileHref(path)), esc(name)));
+  });
   // A price shows that it was read as one, before links are drawn round the words.
   h = h.replace(PRICE_SHOW_RE, all => /^(\[\[|https?:|`)/.test(all) ? all
     : hold(`<span class="price" title="A price: counts toward its project once the task is done">${all}</span>`));

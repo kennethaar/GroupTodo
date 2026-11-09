@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.128.0 - 2026-11-09
+
+- Links and aliases: a file path in quotes, as Explorer's Copy as path gives
+  it, is a link. It shows only the file name; hover for the whole path, and
+  edit the line to change it. Click it to open the file (#333).
+
 ## 1.127.1 - 2026-11-09
 
 - Journal: Hide done is now one switch for every day page, at the top

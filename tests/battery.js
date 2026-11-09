@@ -6737,6 +6737,21 @@ var GTD_TEST = (() => {
       } finally { box.remove(); }
     });
   });
+  test("#333 a quoted Windows path is a file link that reads only its name", () => {
+    const p = "C:\\Users\\U\\OneDrive - Co\\Nordic Lights\\Kvartalsmøte Q3 & plan.pptx";
+    const box = el("div", {html: renderInline(`See "${p}", then call`)});
+    try {
+      const a = box.querySelector("a.filelink");
+      ok(a, "the quoted path is a link");
+      eq(a.textContent.replace(/^\S+\s/, ""), "Kvartalsmøte Q3 & plan.pptx", "only what comes after the last backslash");
+      has(a.title, p, "the whole path on hover");
+      eq(a.getAttribute("href"), fileHref(p));
+      eq(box.textContent.replace(a.textContent, "|"), "See |, then call", "the quotes go, the words round it stay");
+      const share = el("div", {html: renderInline('"\\\\srv\\share\\Folder\\"')}).querySelector("a.filelink");
+      eq(share?.textContent.replace(/^\S+\s/, ""), "Folder", "a share, and a folder ending in a backslash");
+      eq(el("div", {html: renderInline('he said "hi there" twice')}).querySelector("a"), null, "plain quotes stay text");
+    } finally { box.remove(); }
+  });
   test("#222 a #tag is quiet: the teal is the @context's alone", () => {
     const box = el("div", {html: renderInline("#meeting at the [[c/office]]")});
     document.body.append(box);
