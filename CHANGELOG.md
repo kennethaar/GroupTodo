@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.129.1 - 2026-11-09
+
+- Links and aliases: a project name inside a Windows path stays part of the path (#333).
+  "C:\...\Nordic Lights\Meetings\..." no longer turns the folder into a link
+  to the project, quoted or not.
+
 ## 1.129.0 - 2026-11-09
 
 - A page: a PDF in a line can be read where it is (#331). The caret beside

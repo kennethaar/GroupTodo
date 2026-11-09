@@ -23,8 +23,9 @@ function linkKnownNames(text, before = "", pool = nameIndex()) {
   const plainBefore = String(before || "").replace(/\[\[[^\]]*(?:\]\[[^\]]*)?\]\]/g, " ");
   const wants = names.map(n => ({word: n.title, ref: n.ref, label: null}));
   wants.sort((a, b) => b.word.length - a.word.length);
-  // Only plain words are touched: not what is already a link, code or an address.
-  const parts = src.split(/(\[\[[^\]]*(?:\]\[[^\]]*)?\]\]|`[^`]*`|https?:\/\/\S+|file:\S+|(?:tel|telto|sms):(?:\/\/)?\+?\d[\d\s\-.()]*\d|mapto:[^|;\[\]#\n]+|(?:mailto|tel|telto|sms|geo|msteams|teams):\S+|\]\])/i);
+  // Only plain words are touched: not what is already a link, code, an address
+  // or a quoted Windows path ("C:\...\Nordic Lights\..." is a folder, #333).
+  const parts = src.split(/(\[\[[^\]]*(?:\]\[[^\]]*)?\]\]|`[^`]*`|["\u201C](?:[A-Za-z]:|\\\\[^\\\s"\u201D]+)\\[^"\u201D\n]*["\u201D]|https?:\/\/\S+|file:\S+|(?:tel|telto|sms):(?:\/\/)?\+?\d[\d\s\-.()]*\d|mapto:[^|;\[\]#\n]+|(?:mailto|tel|telto|sms|geo|msteams|teams):\S+|\]\])/i);
   const linked = new Set(linksIn(src).map(l => trim(l.split("][")[0]).toLowerCase()));
   for (let i = 0; i < parts.length; i += 2) {
     let seg = parts[i];
@@ -33,7 +34,8 @@ function linkKnownNames(text, before = "", pool = nameIndex()) {
       const multi = /\s/.test(w.word);
       if (!multi && w.word.length < 3) continue;
       const esc_ = w.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const re = new RegExp("(^|[^\\p{L}\\p{N}_/])(" + esc_ + ")(?![\\p{L}\\p{N}_])", multi ? "giu" : "gu");
+      // Next to a backslash the name is a folder in an unquoted path.
+      const re = new RegExp("(^|[^\\p{L}\\p{N}_/\\\\])(" + esc_ + ")(?![\\p{L}\\p{N}_\\\\])", multi ? "giu" : "gu");
       if (plainBefore && new RegExp(re.source, re.flags).test(plainBefore)) continue;
       /* A sentence starts with a capital whatever the word is, so there the
          capital says nothing: "Review the budget" is not the page Review. A

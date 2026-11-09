@@ -6803,6 +6803,12 @@ var GTD_TEST = (() => {
       const share = el("div", {html: renderInline('"\\\\srv\\share\\Folder\\"')}).querySelector("a.filelink");
       eq(share?.textContent.replace(/^\S+\s/, ""), "Folder", "a share, and a folder ending in a backslash");
       eq(el("div", {html: renderInline('he said "hi there" twice')}).querySelector("a"), null, "plain quotes stay text");
+      const pool = [{title: "Nordic Lights", ref: "o/Nordic Lights", kind: "project"}];
+      const quoted = `"${p}"`;
+      eq(linkKnownNames(quoted, "", pool), quoted, "a known name inside a quoted path stays part of the path");
+      const bare = "C:\\Projects\\Nordic Lights\\Meetings";
+      eq(linkKnownNames(bare, "", pool), bare, "and inside an unquoted one");
+      has(linkKnownNames("Call Nordic Lights", "", pool), "[[o/Nordic Lights]]", "the name in a sentence still links");
     } finally { box.remove(); }
   });
   test("#222 a #tag is quiet: the teal is the @context's alone", () => {
