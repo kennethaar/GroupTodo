@@ -103,11 +103,19 @@ function openAskForUpdate(name, only = null, keep = null) {
     const entries = idx.map(i => found[i]).filter(a => a.block);
     if (!entries.length) { notify("Tick a line to write the question for.", "warn"); return; }
     const picked = found.filter((_, i) => pick.has(i)).map(a => a.block);
-    closeModal();
-    openAskAI(name, entries, r => {
+    const back = r => {
       const same = new Set((r ? r.same : []).map(j => entries[j].block));
       openAskForUpdate(name, null, {picked: picked.filter(b => !same.has(b))});
-    });
+    };
+    closeModal();
+    /* Should the AI's dialog fail on something in the vault, say so and come
+       back here, rather than leave you with no dialog at all (#345). */
+    try { openAskAI(name, entries, back); }
+    catch (e) {
+      closeModal();
+      back(null);
+      notify("Let AI write it could not open: " + (e && e.message || e), "warn");
+    }
   };
   const pickRowFor = (a, i) => {
     const box = toggle(() => pick.has(i), () => { if (pick.has(i)) pick.delete(i); else pick.add(i); });

@@ -30,7 +30,9 @@ function askHide(text, recipient = "") {
     const f = personBareName(n).split(/\s+/)[0];
     if (f.length < 3 || f === personBareName(n)) continue;
     const k = f.toLowerCase();
-    firsts.set(k, firsts.has(k) && !samePerson(firsts.get(k).real, n) ? null : {words: f, kind: "P", real: n});
+    // null once two people share it, and it stays null for a third (#345).
+    const had = firsts.get(k);
+    firsts.set(k, firsts.has(k) && (!had || !samePerson(had.real, n)) ? null : {words: f, kind: "P", real: n});
   }
   // The person asked keeps their first name whoever else shares it.
   const rf = trim(recipient).split(/\s+/)[0];

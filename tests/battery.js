@@ -5292,7 +5292,13 @@ var GTD_TEST = (() => {
       eq(askFacts(fresh, "Lars Haugen"), "", "nothing to say on a first ask");
       openAskForUpdate("Lars Haugen", block);
       await settle();
-      ok([...document.querySelectorAll("#modalRoot button")].some(x => x.textContent === "Let AI write the questions"), "no AI button for the request");
+      // Let AI write the questions opens the AI's dialog, and Back returns here.
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Let AI write the questions").click();
+      await settle();
+      eq(document.querySelector("#modalRoot h2")?.textContent, "Let AI write the question");
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Back").click();
+      await settle();
+      eq(document.querySelector("#modalRoot h2")?.textContent, "Ask Lars Haugen for an update");
       document.querySelector("#modalRoot input[type=email]").value = "me@example.com";
       [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Write the email").click();
       await settle();
@@ -5346,6 +5352,19 @@ var GTD_TEST = (() => {
       ["Is the new text in?", "New wording.", "Customers misread it."]);
     eq(blockProp(b, ASK_Q_PROP) || "", "", "a line the same as another is left alone");
     eq(r.same, [1]);
+  });
+  test("#345 three people with one first name do not stop Let AI write it from opening", () => {
+    const paths = ["Lars Berg", "Lars Dahl", "Lars Eng"].map(n => join(DIRS.people, n + ".md"));
+    try {
+      for (const p of paths) putPage(p, {props: {title: baseName(p)}, blocks: []});
+      clearMemo();
+      const {text, map} = askHide("Lars Dahl met Lars about it.", "Anna Holm");
+      has(text, "[P2] met Lars", "a first name three people share is left as it is");
+      eq(map.get("[P2]"), "Lars Dahl");
+    } finally {
+      for (const p of paths) if (V.pages.has(p)) removePage(p);
+      clearMemo();
+    }
   });
   test("#345 Let AI write it hides people, organisations, addresses and listed names, and puts them back in the answer", async () => {
     const path = scratchProject("hide names", [["WAIT", "Ask [[p/Lars Haugen]] about the MEPS invoice, lars@acme.no"]]);

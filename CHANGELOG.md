@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.135.1 - 2026-11-09
+
+- Waiting for › List: Let AI write the questions opens again in a vault
+  where three or more people share a first name. Before, the dialog closed
+  and nothing opened. Should it ever fail to open, it now says why and
+  returns to Ask for an update. (#345)
+
 ## 1.135.0 - 2026-11-09
 
 - Waiting for › List: Let AI write it hides names before the prompt leaves.

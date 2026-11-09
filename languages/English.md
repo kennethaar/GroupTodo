@@ -2171,6 +2171,7 @@ Left =>
 Legal and risks =>
 Legg til en merknad =>
 Let AI write it =>
+Let AI write it could not open: =>
 Let AI write it hides names in the prompt and puts them back in the answer. Add more names in Hidden names. =>
 Let AI write the question =>
 Let AI write the questions =>
