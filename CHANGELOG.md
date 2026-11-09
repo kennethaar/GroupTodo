@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.135.3 - 2026-11-10
+
+- Waiting for › List: Let AI write it shows the AI the exact shape of the
+  answer, each item starting with its number. If the AI still leaves the
+  numbers out, the answers go on the lines in order. An edited prompt keeps
+  your own words; choose The standard one to get the new one. (#344)
+
 ## 1.135.2 - 2026-11-09
 
 - Waiting for › List: Let AI write it no longer garbles the prompt. A name

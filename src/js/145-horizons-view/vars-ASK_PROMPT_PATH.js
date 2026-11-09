@@ -13,7 +13,16 @@ Summary: one short line, so {person} recognises what it is about. Leave out my i
 Why: one short line on why it matters now. Leave it out if the notes do not say.
 
 If an item is about the same thing as an earlier one, write only "Same as: <its number>".
-Keep the labels Question:, Summary:, Why: and Same as: in English and the numbers as they are. Nothing else.
+
+Answer in exactly this shape. Start every item with its number from the list, then a full stop:
+
+1. Question: ...
+Summary: ...
+Why: ...
+
+2. Same as: 1
+
+Keep the numbers and the labels Question:, Summary:, Why: and Same as: in English. Nothing else.
 
 {items}`;
 // The language the AI writes in: the language of the note it goes into.

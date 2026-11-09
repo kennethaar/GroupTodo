@@ -1,6 +1,6 @@
 /* The AI's answer, pasted back: Question:, Summary: and Why: under each
    number go on that task as ask::, brief:: and why::. With one line the
-   number may be left out. An AI dresses its answers in bold and bullets, so
+   number may be left out; with none at all they go on in order (#344). An AI dresses its answers in bold and bullets, so
    those are read past. Gives {filled, same}: how many tasks got words, and
    the places in entries of those that are the same as another. map: the
    tokens names were hidden as (#345), put back first; with a token the
@@ -13,14 +13,21 @@ function askAiApply(entries, text, map = null) {
   }
   const KEY = {question: ASK_Q_PROP, summary: ASK_BRIEF_PROP, why: ASK_WHY_PROP, "same as": "same"};
   const got = entries.map(() => ({}));
+  const lines = String(text || "").split(/\r?\n/).map(line => line.replace(/\*\*|__/g, "").replace(/^\s*(?:[-*•>]|#+)\s*/, ""));
+  const HEAD = /^\s*(\d+)\s*[.)]\s*(.*)$/;
+  // An AI that drops the numbers still answers in order: a label the current
+  // item already has starts the next one.
+  const inOrder = entries.length > 1 && !lines.some(line => HEAD.test(line));
   let at = entries.length === 1 ? 0 : -1;
-  for (let line of String(text || "").split(/\r?\n/)) {
-    line = line.replace(/\*\*|__/g, "").replace(/^\s*(?:[-*•>]|#+)\s*/, "");
-    const head = /^\s*(\d+)\s*[.)]\s*(.*)$/.exec(line);
+  for (let line of lines) {
+    const head = HEAD.exec(line);
     if (head) { at = +head[1] - 1; line = head[2]; }
     const kv = /^\s*(question|summary|why|same\s+as)\s*:\s*(.*)$/i.exec(line);
-    if (!kv || !got[at]) continue;
-    got[at][KEY[kv[1].toLowerCase().replace(/\s+/, " ")]] = trim(kv[2]).replace(/^["“](.*)["”]$/, "$1");
+    if (!kv) continue;
+    const key = KEY[kv[1].toLowerCase().replace(/\s+/, " ")];
+    if (inOrder && (at < 0 || got[at][key] || got[at].same)) at++;
+    if (!got[at]) continue;
+    got[at][key] = trim(kv[2]).replace(/^["“](.*)["”]$/, "$1");
   }
   const same = [];
   let filled = 0;

@@ -5353,6 +5353,16 @@ var GTD_TEST = (() => {
     eq(blockProp(b, ASK_Q_PROP) || "", "", "a line the same as another is left alone");
     eq(r.same, [1]);
   });
+  test("#344 Let AI write it: the prompt shows the numbered answer shape, and an answer without numbers fills the lines in order", () => {
+    const path = scratchProject("ai order", [["WAIT", "Selg inn sanering og avfukting"], ["WAIT", "Heldagskurs"]]);
+    const [a, b] = getPage(path).blocks;
+    const entries = [a, b].map(block => ({space: V.space, path, block}));
+    has(askAiPrompt(entries, "Lars Haugen"), "1. Question:", "the prompt shows each answer starting with its number");
+    const r = askAiApply(entries, "Question: Is the offer sent?\nSummary: Sanering.\n\nQuestion: Which day is the course?\nSummary: Full-day course.");
+    eq(r.filled, 2);
+    eq([blockProp(a, ASK_Q_PROP), blockProp(b, ASK_Q_PROP)], ["Is the offer sent?", "Which day is the course?"]);
+    eq(blockProp(b, ASK_BRIEF_PROP), "Full-day course.");
+  });
   test("#345 three people with one first name do not stop Let AI write it from opening", () => {
     const paths = ["Lars Berg", "Lars Dahl", "Lars Eng", "Per Olsen"].map(n => join(DIRS.people, n + ".md"));
     try {
