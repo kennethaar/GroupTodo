@@ -11059,9 +11059,9 @@ const lines = inSpace(t.space, () => (getPage(t.path)?.blocks || []).filter(b =>
 b.state && !/\([^)]+\)\s*$/.test(b.title) ? trim(b.title) + " (" + CORE_WORD[b.state] + ")" : trim(b.title)));
 return createStateList(baseName(t.path), lines);
 }
-const STAGE_CORE = {"to do": "TODO", todo: "TODO", doing: "DOING", waiting: "WAIT", wait: "WAIT",
+const STAGE_CORE = {"to do": "TODO", todo: "TODO", doing: "DOING", waiting: "WAIT", wait: "WAIT", "on hold": "HOLD", hold: "HOLD",
 done: "DONE", cancelled: "CANCELLED", canceled: "CANCELLED"};
-const CORE_WORD = {TODO: "to do", DOING: "doing", WAIT: "waiting", DONE: "done", CANCELLED: "cancelled"};
+const CORE_WORD = {TODO: "to do", DOING: "doing", WAIT: "waiting", HOLD: "on hold", DONE: "done", CANCELLED: "cancelled"};
 function stagesOf(listPath) {
 const lines = (getPage(listPath)?.blocks || []).filter(b => trim(b.title));
 return lines.map((b, i) => {

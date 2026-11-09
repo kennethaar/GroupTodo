@@ -10,6 +10,7 @@ that breaks existing vaults. Newest first.
 - Hold and until: On hold is in the state menu, next to Waiting for (#334).
   Right-click or long-press a task's state, or use its ⋯, and pick On hold.
   It asks for the day it comes back, or No date.
+  A task type's stage can count as on hold too: write "Paused (on hold)".
 
 ## 1.129.1 - 2026-11-09
 

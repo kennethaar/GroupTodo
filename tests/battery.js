@@ -5217,6 +5217,16 @@ var GTD_TEST = (() => {
     }
   });
 
+  test("#334 a type's stage can be On hold: every state has a stage word that reads back to it", () => {
+    for (const st of TODO_STATES) eq(STAGE_CORE[CORE_WORD[st]], st, st + " → " + CORE_WORD[st]);
+    const path = createStateList("Supplier order 334", ["Ordered", "Paused (on hold)", "Shelved (hold)", "Delivered"]);
+    try {
+      eq(stagesOf(path).map(s => s.core), ["TODO", "HOLD", "HOLD", "DONE"]);
+    } finally {
+      V.pages.delete(path);
+    }
+  });
+
   /* ============================================================
      The Journal, an execution view (#160)
      ============================================================ */
