@@ -75,10 +75,12 @@ function viewPage() {
   const chapter = !SIDE_DRAWING && isChapterPage(path), prose = chapter && bookMode() === "prose";
   if (chapter) followChapter(path);
   if (chapter) c.append(chapterBar(path));
-  /* Hide done (#321), offered only where something is done. A day page shows
-     every area side by side and keeps what was written as it was written.
-     Linked References has its own switch; the page remembers both. */
-  const closed = prose || isJournalPath(path) ? 0 : closedLineCount(getPage(path).blocks);
+  /* Hide done (#321), offered only where something is done. Linked References
+     has its own switch; the page remembers both. A day page only hides: its
+     switch is the Journal column's, kept for every day (#332), and stands in
+     each area's column when the day is drawn side by side. */
+  const columns = !SIDE_DRAWING && state.view === "page" && isJournalPath(path);
+  const closed = prose || columns ? 0 : closedLineCount(getPage(path).blocks);
   const hideDone = closed > 0 && doneHidden(path, "page");
   if (closed) c.append(fbar(switchBtn("Hide done", hideDone,
     () => setDoneHidden(path, "page", !doneHidden(path, "page")), closed)));

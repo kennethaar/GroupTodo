@@ -3570,6 +3570,54 @@ var GTD_TEST = (() => {
       putPage(day, parsePage("")); clearMemo(); go("today");
     }
   });
+  test("#332 Hide done on day pages: a switch in the Journal column and on the day page, only a view, remembered across days", async () => {
+    const d1 = "2026-06-08", d2 = "2026-06-09", d3 = "2026-06-10";
+    const p1 = journalPath(d1), p2 = journalPath(d2), p3 = journalPath(d3);
+    const text1 = ["- DONE Call the supplier", "- TODO Book a room for Thursday", "- DONE 09:00 Stand-up", "  - notes from the meeting",
+      "- CANCELLED Order new labels", "- TODO Draft the agenda"].join("\n");
+    putPage(p1, parsePage(text1));
+    putPage(p2, parsePage(["- DONE Sent the report", "- TODO Reply to the invoice"].join("\n")));
+    putPage(p3, parsePage("- TODO Nothing done yet"));
+    clearMemo();
+    const key = "journal.hide_done." + Spaces.active, was = PREF.get(key);
+    const col = () => [...content().querySelectorAll(".jcard:not(.trkcol)")].find(c => c.querySelector(".space-journal"));
+    const sw = () => col()?.querySelector(".jhead [role=switch]");
+    const shown = () => [...col().querySelectorAll(".outline .blk > .line .txt")].map(t => t.textContent);
+    try {
+      PREF.set(key, "");
+      go("today", {todayDay: d1}); await settle();
+      ok(sw() && /Hide done/.test(sw().textContent), "no Hide done switch in the day column's header");
+      eq(sw().tagName, "BUTTON", "the switch is not a native button");
+      eq(sw().getAttribute("aria-checked"), "false", "Hide done is on by default");
+      eq(sw().querySelector("small")?.textContent, "3", "the count is not the day's done and cancelled lines");
+      ok(shown().some(t => /Call the supplier/.test(t)), "a done line is hidden while the switch is off");
+      sw().click(); await settle();
+      eq(sw().getAttribute("aria-checked"), "true", "Hide done did not stay on");
+      const now = shown();
+      ok(now.some(t => /Book a room/.test(t)) && now.some(t => /Draft the agenda/.test(t)), "an open line went too: " + now.join(" | "));
+      ok(!now.some(t => /Call the supplier|Stand-up|notes from the meeting|Order new labels/.test(t)), "a done or cancelled line, or a line under it, is still shown: " + now.join(" | "));
+      eq(serializePage(getPage(p1)).trim(), serializePage(parsePage(text1)).trim(), "Hide done changed the day page's file");
+      ok(!getPage(p1).props?.hide_done, "Hide done was written on the day page, where tomorrow would forget it");
+      go("today", {todayDay: d2}); await settle();
+      eq(sw()?.getAttribute("aria-checked"), "true", "another day forgot Hide done");
+      ok(!shown().some(t => /Sent the report/.test(t)), "another day shows its done lines with Hide done on");
+      go("today", {todayDay: d3}); await settle();
+      ok(!sw(), "Hide done is offered on a day with nothing done");
+      openPage(p2); await settle();
+      const pageSw = [...content().querySelectorAll(".fbar [role=switch]")].find(c => /Hide done/.test(c.textContent) && !c.closest(".deferred-backlinks"));
+      ok(pageSw, "a day page opened as a page has no Hide done switch");
+      eq(pageSw.getAttribute("aria-checked"), "true", "the day page opened as a page does not follow the Journal's switch");
+      ok(![...content().querySelectorAll(".outline .blk > .line .txt")].some(t => /Sent the report/.test(t.textContent)), "the day page opened as a page shows its done line");
+      pageSw.click(); await settle();
+      go("today", {todayDay: d1}); await settle();
+      eq(sw().getAttribute("aria-checked"), "false", "turning it off on the day page did not turn it off in the Journal");
+      ok(shown().some(t => /Call the supplier/.test(t)), "turning Hide done off did not bring the done line back");
+    } finally {
+      PREF.set(key, was == null ? "" : was);
+      for (const p of [p1, p2, p3]) putPage(p, parsePage(""));
+      clearMemo(); go("today", {todayDay: null});
+    }
+  });
   test("#322 a project's lines on day pages show once, in Linked References, and tick there", async () => {
     const path = scratchProject("one linked refs", [["TODO", "Draw the plan"]]);
     const ref = pageRef(path), day = journalPath("2026-06-05");

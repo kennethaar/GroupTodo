@@ -1,9 +1,14 @@
 /* Hide done (#321): a page read for what is left shows only that. A done or
    cancelled line goes with everything under it. The page and its Linked
    References each have a switch, and the page remembers both in hide_done::
-   (page, links), so it opens the way it was left, on every device. */
+   (page, links), so it opens the way it was left, on every device.
+   A day page is a new file each day, so its own switch (#332) is remembered
+   for day pages as a whole, per area on this device, and the day page itself
+   keeps every line as it was written. */
 const HIDE_DONE_PROP = "hide_done";
-const doneHidden = (path, part) => String(getPage(path)?.props?.[HIDE_DONE_PROP] || "")
+const dayHideDoneKey = () => "journal.hide_done." + V.space;
+const doneHidden = (path, part) => part === "page" && isJournalPath(path) ? PREF.get(dayHideDoneKey()) === "1"
+  : String(getPage(path)?.props?.[HIDE_DONE_PROP] || "")
   .split(",").map(s => trim(s).toLowerCase()).includes(part);
 const isClosedLine = b => b.state === "DONE" || b.state === "CANCELLED";
 // What Hide done takes away: a closed line counts once, with what is under it.

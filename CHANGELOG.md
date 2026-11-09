@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.127.0 - 2026-11-09
+
+- Journal: a day page has a Hide done switch, in each area's column and when
+  the day is opened as a page. Done and cancelled lines go from view; the day
+  page keeps every line as written. The choice is kept for every day (#332).
+
 ## 1.126.0 - 2026-11-08
 
 - Projects › List: open Projects in the sidebar to see every area, with how

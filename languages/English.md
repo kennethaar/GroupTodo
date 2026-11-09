@@ -223,6 +223,7 @@ code:: en
 ?.fbar input[type=search] =>
 ?.fbar select =>
 ?.group .textbtn =>
+?.jhead .switch =>
 ?.jrow .t-eyebrow =>
 ?.pagehead .focusbtn =>
 ?.readhead .nm =>
@@ -1757,6 +1758,7 @@ Hide a task or project until a day. Let it go after one. =>
 Hide done =>
 Hide done is a switch: only what is left. The page remembers it. =>
 Hide done: done and cancelled lines go. Saved on the page. =>
+Hide done: done and cancelled lines go. The file keeps them. Kept for every day. =>
 Hide empty =>
 Hide organisation tasks =>
 Hide people with an organisation =>
@@ -3073,7 +3075,7 @@ Picture =>
 Picture it done. Then say it in one line. =>
 Picture it done. What do you see? =>
 Picture set =>
-Pin a journal to the right with 📌. Focus hides all but the day. Esc brings it back. =>
+Pin a journal to the right with 📌. Hide done shows only what is left, every day. =>
 Pin and open beside =>
 Pin this day page to the right: it stays open while you move about =>
 Pin to the right =>

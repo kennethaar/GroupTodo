@@ -112,13 +112,17 @@ function viewToday() {
         return pg ? flattenBlocks(pg.blocks).filter(b => trim(b.title)).length : 0;
       });
       const path = who ? null : dayPath(sp);
+      // Hide done (#332): only on my own day page, and only when something on it is done.
+      const closed = path ? inSpace(sp, () => closedLineCount(getPage(path).blocks)) : 0;
+      const hideDone = closed > 0 && inSpace(sp, () => doneHidden(path, "page"));
       return {id: "j:" + sp, title: jTitle(sp), space: sp, folded: lines + (lines === 1 ? " line" : " lines"),
         // The area's badge stands beside it, so the title does not say the area again (#160).
         label: (who ? firstNameOf(who) + "'s journal" : "Journal"),
         edit: path ? () => editAllText({space: sp, path, id: null}) : null,
+        hide: closed ? () => switchBtn("Hide done", hideDone, () => setDoneHidden(path, "page", !hideDone, sp), closed) : null,
         hint: who ? "you can read it, fold it and focus on a line" : "click a line to write, a bullet to focus",
         body: () => journalColumn(sp, day, who, Object.assign({title: jTitle(sp), parentGo: ["today", {jz: "j:" + sp}],
-          newText: "+ Click here to write a new line…"}, TODAY_TRAIL))};
+          newText: "+ Click here to write a new line…", hideDone}, TODAY_TRAIL))};
     }),
   ].filter(Boolean);
 
@@ -128,7 +132,8 @@ function viewToday() {
     return el("div", {class: "wrap"},
       el("div", {class: "crumbz"},
         el("button", {class: "textbtn", onclick: () => go("today", {jz: null})}, "⤶ Journal"),
-        el("span", {}, "›"), z.space ? spaceBadge(z.space) : null, el("b", {}, z.title)),
+        el("span", {}, "›"), z.space ? spaceBadge(z.space) : null, el("b", {}, z.title),
+        z.hide ? el("span", {style: "margin-left:auto"}, z.hide()) : null),
       z.body());
   }
 
@@ -253,6 +258,7 @@ function viewToday() {
     el("header", {class: "jhead"}, focusBadge(s),
       el("button", {class: "jtitle", title: "Focus on " + s.title, onclick: () => go("today", {jz: s.id})}, s.label),
       el("div", {style: "flex:1"}),
+      s.hide ? s.hide() : null,
       s.edit ? el("button", {class: "jedit upkeep", title: "The whole day page as text",
         "aria-label": "Edit as Markdown", onclick: s.edit}, svgIcon(ICON_PENCIL)) : null,
       s.edit ? el("button", {class: "jedit upkeep", title: "Pin this day page to the right: it stays open while you move about",
