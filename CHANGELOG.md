@@ -8,7 +8,8 @@ that breaks existing vaults. Newest first.
 ## 1.131.2 - 2026-11-09
 
 - Dates and reminders: a task due days ago says only how late it is, such
-  as `6 d late`. Point at the pill or click it to see the date (#336).
+  as `6 d late`. Point at the pill or click it to see the date. Under Due
+  today & late a task no longer shows how many days old it is (#336).
 
 ## 1.131.1 - 2026-11-09
 

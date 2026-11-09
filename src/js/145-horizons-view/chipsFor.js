@@ -13,7 +13,8 @@ function chipsFor(a, opts = {}) {
     const cls = "when " + (a.due < todayISO() ? "late" : a.due === todayISO() ? "today" : "") + (ago ? " ago" : "");
     out.push(duePill(a, cls, opts.journal && !ago ? dueWords(words) : words));
   }
-  if (a.age != null && a.age > 0) out.push(el("span", {class: "chip age when"}, a.age + "d"));
+  // Under Due today & late the day it is due is what counts; how old it is shows where it was written.
+  if (a.age != null && a.age > 0 && !opts.todayImplied) out.push(el("span", {class: "chip age when"}, a.age + "d"));
   const fresh = freshnessBar(a);
   if (fresh) out.push(fresh);
   // Only where the list is in that order: the row objects are shared with every other view.

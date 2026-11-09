@@ -5326,6 +5326,9 @@ var GTD_TEST = (() => {
   test("#336 a task days late says only how late; the date is on hover", async () => {
     const day = shiftISO(T(), -6);
     const {path, blocks, row} = await journalDue([["TODO", "Send the old figures"]], day);
+    setBlockProp(blocks[0], "added", "[[" + shiftISO(T(), -10) + "]]"); touch(path); render(); await settle();
+    eq(blockAge(blocks[0]), 10, "the task is ten days old");
+    ok(!row(blocks[0]).querySelector(".chip.age"), "Due today & late leaves out how old it is");
     const check = (pill, where) => {
       ok(pill, "a due pill " + where);
       eq(pill.textContent.trim(), "6 d late", where);
