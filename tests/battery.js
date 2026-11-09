@@ -5359,10 +5359,13 @@ var GTD_TEST = (() => {
     }
   });
   test("#315 Next has a header per context, and the rows say it only in their words", async () => {
-    const {blocks} = await journalDue([["TODO", "Ask Ann at the [[c/office]] about the keys"]]);
+    const {blocks} = await journalDue([["TODO", "Ask Ann at the [[c/office]] about the keys"], ["TODO", "Ring Ann [[c/phone]] about the keys"]]);
     const r0 = content().querySelector('.task.jrow[data-id="' + blocks[0].id + '"]');
     eq(r0.querySelector(".t-title").textContent.trim(), "Ask Ann at the @office about the keys", "the Journal keeps the words");
     eq(getComputedStyle(r0.querySelector(".t-title .wikilink.ctx")).backgroundColor, "rgba(0, 0, 0, 0)", "a quiet link, not a pill");
+    /* Next is paged, and earlier tests leave many actions on it: the words
+       narrow it to these two, in two contexts, so it still groups. */
+    LIST_Q.set("next", "Ann about the keys");
     go("next", {sub: "list", ctxFilter: null});
     await settle();
     const n = content().querySelector('.task[data-id="' + blocks[0].id + '"]');
@@ -5377,6 +5380,7 @@ var GTD_TEST = (() => {
     h.click();
     await settle();
     eq(state.ctxFilter, "office", "a header shows that context alone");
+    LIST_Q.delete("next");
     go("next", {sub: "list", ctxFilter: null});
   });
   test("#160 a late row says Due yesterday", async () => {
@@ -7289,7 +7293,8 @@ var GTD_TEST = (() => {
       ok(![...content().querySelectorAll(".nfold .fchip")].some(c => c.textContent.startsWith("Chores")), "and no Chores chip as well");
       const [todo, chores] = box.querySelectorAll(".nsidebtn");
       eq(todo.getAttribute("aria-pressed"), "true", "the pick holds");
-      const titles = () => [...content().querySelectorAll(".task .t-title")].map(n => n.textContent);
+      // The list's rows, not the On hold fold under it, which earlier tests may have filled.
+      const titles = () => [...content().querySelectorAll(".task .t-title")].filter(n => !n.closest("details.fold")).map(n => n.textContent);
       ok(titles().length && !titles().some(t => t.includes("Dust the side shelf")), "To do has no chores");
       const n = b => +b.querySelector(".nbadge").textContent;
       ok(n(todo) >= titles().length && n(todo) > 0, "To do counts what it holds");
