@@ -14,6 +14,13 @@ async function writePageChecked(rec, path, page, merged) {
       text = serializePage(m.page);
       merged.push({path, clashes: m.clashes});
     }
+    /* The file already says this: writing it again changes nothing but its
+       date, and a sync app carries every such write to the other devices (#340). */
+    if (now === text) {
+      noteBase(rec, path, text);
+      if (rec.pages.get(path)) PAGE_SRC.set(rec.pages.get(path), text);
+      return true;
+    }
   }
   await b.write(path, text);
   noteBase(rec, path, text);

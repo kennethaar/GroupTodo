@@ -4254,7 +4254,7 @@ placeholder="Add a task. Try: &quot;Call Mia about the VAT @phone tomorrow&quot;
 })();
 
 "use strict";
-const APP_VERSION = "1.132.0";
+const APP_VERSION = "1.132.1";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -5740,6 +5740,11 @@ rec.pages.set(path, m.page);
 text = serializePage(m.page);
 merged.push({path, clashes: m.clashes});
 }
+if (now === text) {
+noteBase(rec, path, text);
+if (rec.pages.get(path)) PAGE_SRC.set(rec.pages.get(path), text);
+return true;
+}
 }
 await b.write(path, text);
 noteBase(rec, path, text);
@@ -5876,7 +5881,10 @@ notify("\"" + p.split("/").pop() + "\" is in the folder but would not open, so i
 }
 continue;
 }
-try { if (await writePageChecked(rec, p, page, merged)) put.push(p); else held.push(p); }
+try {
+if (await writePageChecked(rec, p, page, merged)) { put.push(p); await confirmMirror(rec, [p]); }
+else held.push(p);
+}
 catch (e) {
 if (!(e instanceof TypeError) || !/name is not allowed/i.test(e.message || "")) throw e;
 rec.badNames = rec.badNames || new Set();
@@ -5901,7 +5909,7 @@ throw new Error("could not remove " + stuck.map(([p]) => p).join(", ") + " (" + 
 }
 held.forEach(p => rec.dirty.add(p));
 if (held.length) waiting = true;
-await confirmMirror(rec, dirty.filter(p => !held.includes(p)));
+await confirmMirror(rec, dirty.filter(p => !held.includes(p) && !put.includes(p)));
 tellSiblings(rec, put, gone);
 if (merged.length) { sayMerged(rec, merged); if (rec.name === V.space) render(); }
 V.error = null;
@@ -5911,7 +5919,7 @@ notify(spaceLabel(rec.name) + " is saving to its own storage again. " +
 "Everything written while it was away has gone up.");
 }
 } catch (e) {
-dirty.forEach(p => rec.dirty.add(p));
+dirty.filter(p => !put.includes(p)).forEach(p => rec.dirty.add(p));
 V.error = e;
 const left = [...LOADED.values()].reduce((n, r) => n + (r.backend ? r.dirty.size + r.removed.size : 0), 0);
 setSync("warn", "NOT on disk - " + left + (left === 1 ? " file" : " files") + " kept in this browser until the " +
@@ -6151,16 +6159,21 @@ const m = mirrorFor(rec);
 const open = mode === "full" ? await unconfirmed(rec) : null;
 let pruned = false;
 for (const [path, text] of await m.list()) {
-const local = parsePage(text);
 const fromBackend = rec.pages.get(path);
+if (rec.stubs && (!fromBackend || stillLoading(rec, path))) continue;
+const local = parsePage(text);
 if (!fromBackend && mode === "full" && !open.has(path)) {
 try { await m.remove(path); pruned = true; } catch (_) {}
 continue;
 }
 const a = local.props?.updated || "";
 const b = fromBackend?.props?.updated || "";
-if (!fromBackend || a > b) {
 const theirs = fromBackend && serializePage(fromBackend);
+if (mode === "pending" && fromBackend && (theirs === text || a <= b)) {
+try { await m.remove(path); } catch (_) {}
+continue;
+}
+if (!fromBackend || a > b) {
 if (theirs === text) continue;
 rec.pages.set(path, fromBackend ? mergePageText(path, undefined, theirs, text).page : local);
 rec.dirty.add(path);
@@ -15744,7 +15757,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.132.0 - 2026-11-09\n\n- Vault and sync: the line at the bottom of the sidebar says when it is safe\n  to close: All saved to disk and the time, 1 line being typed - not saved\n  yet, Saving 2 of 3 files..., or NOT on disk with how many files wait in\n  this browser. Ctrl+S writes the line you are in and saves every open area\n  now, and closing the tab warns for a line still being typed (#337).\n\n## 1.131.3 - 2026-11-09\n\n- Links and aliases: a link whose text is the page's own name is saved\n  without it, so `[[p/Jane Doe][Jane Doe]]` becomes `[[p/Jane Doe]]`. A\n  link that reads an alias, such as JS, keeps it (#338).\n\n## 1.131.2 - 2026-11-09\n\n- Dates and reminders: a task due days ago says only how late it is, such\n  as `6 d late`. Point at the pill or click it to see the date. Under Due\n  today & late a task no longer shows how many days old it is (#336).\n\n## 1.131.1 - 2026-11-09\n\n- Projects › List: under Projects in the sidebar, each responsibility wears\n  its area's capital letter on the area's colour (#330).\n\n## 1.131.0 - 2026-11-09\n\n- Links and aliases: select words, then Tag › Person, Organisation or Context (#335).\n  Making a page of the words comes first. Under it are the names they likely\n  mean: by alias, by the start of a word, or spelled a little differently.\n  The pick links the words where they stand, so \"JT\" reads JT and goes to Jonas.\n\n## 1.130.0 - 2026-11-09\n\n- Hold and until: On hold is in the state menu, next to Waiting for (#334).\n  Right-click or long-press a task's state, or use its ⋯, and pick On hold.\n  It asks for the day it comes back, or No date.\n  A task type's stage can count as on hold too: write \"Paused (on hold)\".\n\n## 1.129.1 - 2026-11-09\n\n- Links and aliases: a project name inside a Windows path stays part of the path (#333).\n  \"C:\\...\\Nordic Lights\\Meetings\\...\" no longer turns the folder into a link\n  to the project, quoted or not.\n\n## 1.129.0 - 2026-11-09\n\n- A page: a PDF in a line can be read where it is (#331). The caret beside\n  its paperclip shows it under the line, and folds it away again; this\n  device remembers which. Written ![name](file.pdf), as Obsidian does, it\n  shows from the start. Full size opens it over the page, Download saves\n  it. A browser that cannot show a PDF in a page offers a new tab instead.\n  Another file written with ! is now a paperclip link, not a broken picture.\n\n## 1.128.0 - 2026-11-09\n\n- Links and aliases: a file path in quotes, as Explorer's Copy as path gives\n  it, is a link. It shows only the file name; hover for the whole path, and\n  edit the line to change it. Click it to open the file (#333).\n\n## 1.127.1 - 2026-11-09\n\n- Journal: Hide done is now one switch for every day page, at the top\n  beside the date. It shows on every day, so it is always in the same place,\n  and it hides done lines in every area at once (#332).\n\n## 1.127.0 - 2026-11-09\n\n- Journal: a day page has a Hide done switch, in each area's column and when\n  the day is opened as a page. Done and cancelled lines go from view; the day\n  page keeps every line as written. The choice is kept for every day (#332).\n\n## 1.126.0 - 2026-11-08\n\n- Projects › List: open Projects in the sidebar to see every area, with how\n  many active projects each has. Click an area to see only its projects (#330).\n";
+const HELP_NEWS = "## 1.132.1 - 2026-11-09\n\n- Vault and sync: after Allow on a phone, only pages that really changed are\n  saved. A page kept in this browser waits until the folder has read its\n  file, and is let go of when the folder has it. A file that already says\n  the same is not written again, so a sync app such as Syncthing has nothing\n  to carry. A save that stops half way goes on with what is left (#340).\n\n## 1.132.0 - 2026-11-09\n\n- Vault and sync: the line at the bottom of the sidebar says when it is safe\n  to close: All saved to disk and the time, 1 line being typed - not saved\n  yet, Saving 2 of 3 files..., or NOT on disk with how many files wait in\n  this browser. Ctrl+S writes the line you are in and saves every open area\n  now, and closing the tab warns for a line still being typed (#337).\n\n## 1.131.3 - 2026-11-09\n\n- Links and aliases: a link whose text is the page's own name is saved\n  without it, so `[[p/Jane Doe][Jane Doe]]` becomes `[[p/Jane Doe]]`. A\n  link that reads an alias, such as JS, keeps it (#338).\n\n## 1.131.2 - 2026-11-09\n\n- Dates and reminders: a task due days ago says only how late it is, such\n  as `6 d late`. Point at the pill or click it to see the date. Under Due\n  today & late a task no longer shows how many days old it is (#336).\n\n## 1.131.1 - 2026-11-09\n\n- Projects › List: under Projects in the sidebar, each responsibility wears\n  its area's capital letter on the area's colour (#330).\n\n## 1.131.0 - 2026-11-09\n\n- Links and aliases: select words, then Tag › Person, Organisation or Context (#335).\n  Making a page of the words comes first. Under it are the names they likely\n  mean: by alias, by the start of a word, or spelled a little differently.\n  The pick links the words where they stand, so \"JT\" reads JT and goes to Jonas.\n\n## 1.130.0 - 2026-11-09\n\n- Hold and until: On hold is in the state menu, next to Waiting for (#334).\n  Right-click or long-press a task's state, or use its ⋯, and pick On hold.\n  It asks for the day it comes back, or No date.\n  A task type's stage can count as on hold too: write \"Paused (on hold)\".\n\n## 1.129.1 - 2026-11-09\n\n- Links and aliases: a project name inside a Windows path stays part of the path (#333).\n  \"C:\\...\\Nordic Lights\\Meetings\\...\" no longer turns the folder into a link\n  to the project, quoted or not.\n\n## 1.129.0 - 2026-11-09\n\n- A page: a PDF in a line can be read where it is (#331). The caret beside\n  its paperclip shows it under the line, and folds it away again; this\n  device remembers which. Written ![name](file.pdf), as Obsidian does, it\n  shows from the start. Full size opens it over the page, Download saves\n  it. A browser that cannot show a PDF in a page offers a new tab instead.\n  Another file written with ! is now a paperclip link, not a broken picture.\n\n## 1.128.0 - 2026-11-09\n\n- Links and aliases: a file path in quotes, as Explorer's Copy as path gives\n  it, is a link. It shows only the file name; hover for the whole path, and\n  edit the line to change it. Click it to open the file (#333).\n\n## 1.127.1 - 2026-11-09\n\n- Journal: Hide done is now one switch for every day page, at the top\n  beside the date. It shows on every day, so it is always in the same place,\n  and it hides done lines in every area at once (#332).\n\n## 1.127.0 - 2026-11-09\n\n- Journal: a day page has a Hide done switch, in each area's column and when\n  the day is opened as a page. Done and cancelled lines go from view; the day\n  page keeps every line as written. The choice is kept for every day (#332).\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {

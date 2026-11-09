@@ -883,6 +883,36 @@ var GTD_TEST = (() => {
     } finally { await m.remove(today); Backends.idb = realIdb; }
   });
 
+  test("#340 after Allow, a page in browser storage the folder has not delivered yet is not saved again", async () => {
+    const name = "Mir340", old = shiftISO(T(), -10), realIdb = Backends.idb;
+    const OLD = "- old line\n", BOAT = "title:: Boat\nupdated:: 2026-10-01T00:00:00Z\n\n- TODO Sand the hull\n";
+    let release;
+    const held = new Promise(r => { release = r; });
+    const tree = {journals: {tester: {[T() + ".md"]: "- today\n", [old + ".md"]: OLD}},
+                  pages: {"GTD.md": "title:: GTD\n", "1": {"Boat.md": BOAT}}};
+    const writes = [];
+    const rec = newRecord(name, Backends.fs(fakeDir(name, tree, writes, {[old + ".md"]: held, "Boat.md": held})));
+    const oldPath = join(JOURNALS, "tester", old + ".md"), boat = join(DIRS.active, "Boat.md");
+    Backends.idb = ns => Backends.memory("Mirror|" + ns);
+    const m = Backends.idb(name);
+    await m.write(oldPath, OLD);                                         // the same as its file
+    await m.write(boat, BOAT.replace("2026-10-01", "2026-10-02") + "- TODO Buy rope\n");   // a real edit, never sent
+    try {
+      await readInto(rec, {stage: true});
+      await mergeMirror(rec);
+      ok(!rec.dirty.has(oldPath) && !rec.dirty.has(boat), "a page not read yet was queued to be saved: " + [...rec.dirty]);
+      release();
+      await filesLoaded();
+      ok(!rec.dirty.has(oldPath), "a page the same as its file was queued to be saved");
+      ok(!(await m.list()).has(oldPath), "a page the folder has is still kept in browser storage");
+      ok(rec.dirty.has(boat), "the edit never sent is not queued");
+      LOADED.set(name, rec);
+      try { await doFlush(); } finally { LOADED.delete(name); }
+      ok(!writes.includes(old + ".md"), "the old day was written again");
+      has(tree.pages["1"]["Boat.md"], "Buy rope", "the edit never sent did not reach the folder");
+    } finally { release(); Backends.idb = realIdb; }
+  });
+
   test("#232 allowed back, the area shows at once and the folder's today takes over when read", async () => {
     await flush();
     const name = V.space, kept = LOADED.get(name), ns = "Ls232d";
@@ -1225,6 +1255,30 @@ var GTD_TEST = (() => {
     s.page().blocks.splice(0, 1);
     await s.save();
     ok(!/Paint/.test(s.disk()), "the second delete came back");
+  });
+  test("#340 a file that already holds the page is not written, and a save cut off keeps what went", async () => {
+    const realIdb = Backends.idb;
+    Backends.idb = ns => Backends.memory("Mirror|" + ns);
+    try {
+      const s = await synced("Sync340", "Boat.md", BOAT);
+      await s.save();
+      ok(!s.writes.includes("Boat.md"), "a file with the same text was written again");
+      // Two pages to save; the folder fails on the second.
+      const kayak = join(DIRS.active, "Kayak.md");
+      s.rec.pages.set(kayak, parsePage("title:: Kayak\n\n- TODO Find a paddle\n"));
+      s.page().blocks[0].title = "Sand the keel";
+      const write = s.rec.backend.write.bind(s.rec.backend);
+      s.rec.backend.write = async (p, t) => { if (p === kayak) throw new Error("gone"); return write(p, t); };
+      s.rec.dirty.add(s.path); s.rec.dirty.add(kayak);   // Boat goes first
+      const realRetry = retryFlush;
+      retryFlush = () => {};
+      try { await s.save(); } finally { retryFlush = realRetry; V.error = null; }
+      has(s.disk(), "Sand the keel", "the first page did not go");
+      const kept = await Backends.idb(s.rec.name).list();
+      ok(!kept.has(s.path), "a page the folder took is still waiting in browser storage");
+      ok(kept.has(kayak), "the page that did not go is not kept in browser storage");
+      ok(!s.rec.dirty.has(s.path) && s.rec.dirty.has(kayak), "what is left to send: " + [...s.rec.dirty]);
+    } finally { Backends.idb = realIdb; }
   });
   test("#220 a page made on both devices keeps the lines of both", async () => {
     const s = await synced("Sync220f", "Boat.md", BOAT);

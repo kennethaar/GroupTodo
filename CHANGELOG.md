@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.132.1 - 2026-11-09
+
+- Vault and sync: after Allow on a phone, only pages that really changed are
+  saved. A page kept in this browser waits until the folder has read its
+  file, and is let go of when the folder has it. A file that already says
+  the same is not written again, so a sync app such as Syncthing has nothing
+  to carry. A save that stops half way goes on with what is left (#340).
+
 ## 1.132.0 - 2026-11-09
 
 - Vault and sync: the line at the bottom of the sidebar says when it is safe

@@ -50,7 +50,12 @@ async function doFlush() {
           }
           continue;
         }
-        try { if (await writePageChecked(rec, p, page, merged)) put.push(p); else held.push(p); }
+        /* Each page is let go of as soon as the folder has it: a save of many
+           files cut off half way goes on with what is left, not all again (#340). */
+        try {
+          if (await writePageChecked(rec, p, page, merged)) { put.push(p); await confirmMirror(rec, [p]); }
+          else held.push(p);
+        }
         catch (e) {
           if (!(e instanceof TypeError) || !/name is not allowed/i.test(e.message || "")) throw e;
           rec.badNames = rec.badNames || new Set();
@@ -81,7 +86,8 @@ async function doFlush() {
          dirty, and still in the mirror. */
       held.forEach(p => rec.dirty.add(p));
       if (held.length) waiting = true;
-      await confirmMirror(rec, dirty.filter(p => !held.includes(p)));
+      // A page with nothing to write (gone meanwhile, or a bad name) is let go of too.
+      await confirmMirror(rec, dirty.filter(p => !held.includes(p) && !put.includes(p)));
       tellSiblings(rec, put, gone);
       if (merged.length) { sayMerged(rec, merged); if (rec.name === V.space) render(); }
       V.error = null;
@@ -91,7 +97,7 @@ async function doFlush() {
                "Everything written while it was away has gone up.");
       }
     } catch (e) {
-      dirty.forEach(p => rec.dirty.add(p));
+      dirty.filter(p => !put.includes(p)).forEach(p => rec.dirty.add(p));
       V.error = e;
       /* Kept in this browser, not in the folder: said in so many words, with
          how many, because amber alone does not say "do not close yet" (#337). */
