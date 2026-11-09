@@ -173,6 +173,30 @@ button.tick:hover{box-shadow:inset 0 0 0 1px currentColor}
 .choreroom-p{font-family:var(--mono);font-size:11px;color:var(--fg3);font-variant-numeric:tabular-nums}
 .chorehome-tools{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:400}
 .chorelayout{display:inline-flex;gap:4px}
+.choregroupby{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--fg3)}
+/* Chores on a phone (#343): the words get the width and wrap, the chips go
+   on a line under them, the tools get a row of their own and each room is a
+   full-width row, big enough to read and tap. The bar says how far round a
+   chore is, and its due chip how late, so no bare percentage is shown. */
+@media (max-width:640px){
+  .choresview .task.jrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;column-gap:10px;row-gap:4px;
+    align-items:start;padding:8px 12px}
+  .choresview .jrow>.t-chk{grid-column:1;grid-row:1/span 3}
+  .choresview .jrow>.t-title{grid-column:2;grid-row:1;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;min-width:0}
+  .choresview .jrow>.chip.ctx{grid-column:2;grid-row:2;justify-self:start}
+  .choresview .jrow>.t-meta{grid-column:2/4;grid-row:3;margin:0;flex-wrap:wrap;min-width:0}
+  .choresview .jrow>.t-meta>.t-pills,.choresview .jrow .t-info{flex-wrap:wrap;justify-content:flex-start;margin-left:0}
+  .choresview .jrow>.t-menu{grid-column:3;grid-row:1;margin:0}
+  .choresview .chip.fresh .fresh-n{display:none}
+  .choresview .chip.fresh .freshbar{width:48px}
+  .chorehome-h{flex-wrap:wrap;align-items:center}
+  .chorehome .chorehome-tools{flex-basis:100%;margin-left:0}
+  .chorerooms{display:grid;grid-template-columns:minmax(0,1fr)}
+  .choreroom{min-height:44px;font-size:14px}
+  .choreroom-n{flex:none;max-width:50%;overflow-wrap:anywhere;text-align:left}
+  .choreroom .freshbar{flex:1;width:auto}
+  .choresview .chorehome-tools select{min-height:36px;font-size:14px}
+}
 /* The board (#213): a column per band of freshness, a card per room. */
 .chorecols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
 .chorecol{display:flex;flex-direction:column;gap:6px;min-width:0}

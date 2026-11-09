@@ -2159,6 +2159,47 @@ var GTD_TEST = (() => {
       ok(!fold.open, "closed again after");
     } finally { PREF.set("chores.who", was); dropChores(path); render(); }
   });
+  test("#343 on a phone a chore's words get the width, its chips go under them, and the tools are readable", async () => {
+    const long = "Gi myggmelis plantene i stua og på kjøkkenet";
+    const path = choreProject("chores phone", [chore(long + " [[c/home/kitchen]]", "daily", -10),
+      chore("Scrub the shower [[c/home/bathroom]]", "weekly", -1, {assigned: "Ingrid Solberg"})]);
+    const was = [PREF.get("chores.who", ""), PREF.get("chores.layout", ""), PREF.get("chores.room", "")];
+    const f = document.createElement("iframe");
+    try {
+      PREF.set("chores.who", "all"); PREF.set("chores.layout", ""); PREF.set("chores.room", "");
+      go("chores"); await settle();
+      f.style.cssText = "position:fixed;left:0;top:0;height:800px;border:0;width:390px";
+      const css = [...document.querySelectorAll("style")].map(s => s.textContent).join("\n");
+      f.srcdoc = "<!doctype html><html data-theme=\"" + (document.documentElement.dataset.theme || "") + "\"><style>" + css
+        + "</style><body><main class=\"content\" id=\"content\">" + content().innerHTML;
+      document.body.append(f);
+      await new Promise(r => f.onload = r);
+      const d = f.contentDocument, R = n => n.getBoundingClientRect();
+      const row = [...d.querySelectorAll(".task")].find(n => n.textContent.includes("Gi myggmelis"));
+      ok(row, "the long chore is under Due now");
+      const title = row.querySelector(".t-title"), meta = row.querySelector(".t-meta");
+      ok(title.scrollWidth <= title.clientWidth + 1 && !getComputedStyle(title).textOverflow.includes("ellipsis"),
+        "the words are cut off");
+      ok(R(title).width >= R(row).width * 0.55, "the words are " + Math.round(R(title).width) + "px of a " + Math.round(R(row).width) + "px row");
+      ok(meta && R(meta).top >= R(title).bottom - 0.5, "the chips are on a line under the words");
+      for (const r of d.querySelectorAll(".task")) ok(R(r.querySelector(".t-meta") || r).right <= R(r).right + 0.5, "a row's chips run off its edge");
+      const fresh = row.querySelector(".chip.fresh");
+      ok(fresh && !/%/.test(fresh.innerText), "a bare percentage on a phone: " + (fresh && fresh.innerText));
+      const head = d.querySelector(".chorehome-h > span"), tools = d.querySelector(".chorehome .chorehome-tools");
+      ok(R(tools).top >= R(head).bottom - 0.5 && R(tools).left <= R(head).left + 0.5, "Grid, Board and Sort are on a row of their own");
+      const card = d.querySelector(".chorehome"), rooms = [...d.querySelectorAll(".choreroom")];
+      ok(rooms.length >= 2, "the rooms are shown");
+      for (const b of rooms) {
+        ok(R(b).width >= R(card).width - 40, "a room is " + Math.round(R(b).width) + "px wide");
+        ok(R(b).height >= 40, "a room is " + Math.round(R(b).height) + "px tall");
+      }
+      const styled = d.querySelector(".vhead select"), sb = getComputedStyle(styled).backgroundColor;
+      for (const s of d.querySelectorAll(".chorehome-tools select")) eq(getComputedStyle(s).backgroundColor, sb, "a select in Chores is not styled");
+      const group = d.querySelector("select[aria-label='Group by']");
+      ok(group && group.closest("label") && group.closest("label").textContent.includes("Group by"), "Group by has a visible label");
+      ok(d.documentElement.scrollWidth <= 390, "Chores is wider than the phone");
+    } finally { f.remove(); [PREF.set("chores.who", was[0]), PREF.set("chores.layout", was[1]), PREF.set("chores.room", was[2])]; dropChores(path); render(); }
+  });
   /* ---------- contexts in folders (#201) ---------- */
   test("#201 @home/kitchen typed in the capture box is one context, and @kitchen finds it", () => {
     makeContext("home/kitchen");

@@ -1,5 +1,5 @@
 function viewChores() {
-  const c = el("div", {class: "wrap"});
+  const c = el("div", {class: "wrap choresview"});
   const all = choreRows(), held = allChores().filter(a => a.held), needed = asNeededChores();
   c.append(vhead("Chores", "The home at a glance",
     all.length ? el("button", {class: "textbtn awaybtn", title: "Hold every chore until you are back",
@@ -98,8 +98,9 @@ function viewChores() {
   for (const a of rows) by[choreGroup(a)].push(a);
   /* Group by Room (the sections below) or by Chore (#260); Print follows it. */
   const byChore = PREF.get("chores.group", "") === "chore";
-  c.append(el("div", {class: "chorehome-tools"}, fselect("Group by", byChore ? "chore" : "", [["", "Room"], ["chore", "Chore"]],
-    v => { PREF.set("chores.group", v); render(); })));
+  c.append(el("div", {class: "chorehome-tools"}, el("label", {class: "choregroupby"}, "Group by ",
+    fselect("Group by", byChore ? "chore" : "", [["", "Room"], ["chore", "Chore"]],
+      v => { PREF.set("chores.group", v); render(); }))));
   const opts = {journal: true, nextNow: true};
   if (byChore) {
     c.append(...choreByChore(rows, roomOf).map(g => section(g.name, null, taskCard(g.list, null, opts),

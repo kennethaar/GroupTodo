@@ -1720,6 +1720,7 @@ Grief =>
 Ground =>
 Group by =>
 Group by customer or project. =>
+Group by room or by chore. Print follows it. =>
 GroupToDo file =>
 GroupToDo guesses your context, so Next shows what fits. =>
 GroupToDo is a GTD list in plain files. You write. It sorts. =>

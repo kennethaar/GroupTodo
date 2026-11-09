@@ -12,7 +12,7 @@
 .vseg button{padding:5px 12px;font-size:13px;color:var(--fg3);white-space:nowrap}
 .vseg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
 .vhead select,.fbar select,.fbar input[type=date],.vhead input[type=date],.fbar input[type=search],
-.assign-bar input,.assign-bar select,.picker input,.rel-search input,.rel-search select{border:1px solid var(--border);background:var(--bg2);
+.assign-bar input,.assign-bar select,.chorehome-tools select,.picker input,.rel-search input,.rel-search select{border:1px solid var(--border);background:var(--bg2);
   border-radius:8px;padding:4px 8px;font-size:13px;color:var(--fg2)}
 .vhead select{align-self:center}
 .daynav{display:flex;gap:4px;align-items:center;align-self:center}

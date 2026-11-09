@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.133.1 - 2026-11-09
+
+- Chores: on a phone a chore's words get the width and wrap, and its chips
+  go on a line under them. The bar shows how far round it is, without a bare
+  percentage. Grid, Board and Sort get a row of their own, each room is a
+  full-width row, and Group by is labelled. (#343)
+
 ## 1.133.0 - 2026-11-09
 
 - Vault and sync: Check the folder shows how long the last read of the

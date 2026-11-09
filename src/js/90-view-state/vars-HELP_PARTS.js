@@ -514,6 +514,7 @@ const HELP = {
       ["?.choreroom", "A room and how fresh it is. Click to see only it."],
       ["?.chorelayout", "Grid or Board: the rooms as chips, or in columns."],
       ["?.chorehome-tools select", "Sort the rooms. This device keeps it."],
+      ["?.choregroupby", "Group by room or by chore. Print follows it."],
       ["?.chorecol-h", "A column: red under 25%, yellow to 49%, green from 50%."],
       ["?.chorecard", "A room: what is due, the time it takes, and whose turn it is."],
       ["?.chorecloseup", "The close-up: the stalest, the next one and the last one done."],

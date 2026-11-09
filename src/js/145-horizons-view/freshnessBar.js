@@ -6,5 +6,5 @@ function freshnessBar(a) {
   const cls = f.rounds >= 1.5 ? "late" : f.rounds >= 1 ? "today" : "";
   return el("span", {class: ["chip", "when", "fresh", cls].join(" "),
     title: pct + "% of the way round: repeats every " + f.span + " day(s), and 100% is its day"},
-    el("span", {class: "freshbar"}, el("i", {style: "width:" + Math.min(100, pct) + "%"})), pct + "%");
+    el("span", {class: "freshbar"}, el("i", {style: "width:" + Math.min(100, pct) + "%"})), el("span", {class: "fresh-n"}, pct + "%"));
 }
