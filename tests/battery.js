@@ -5274,6 +5274,72 @@ var GTD_TEST = (() => {
       setEmailOf(whoAmI(), V.space, mail);
     }
   });
+  test("#344 a line's own question and summary go out instead of its wording and notes, with when it was asked and what they last said", async () => {
+    const path = scratchProject("agreement text", [["WAIT", "Background: What is the status? [[p/Lars Haugen]]"],
+      ["WAIT", "Quote from [[p/Lars Haugen]]"], ["WAIT", "Drawings from [[p/Lars Haugen]]"]]);
+    const [block, quiet, fresh] = getPage(path).blocks;
+    block.children = [newBlock({state: null, title: "Description of the need"}), newBlock({state: null, title: "Reported by a customer"})];
+    setBlockProp(block, ASK_Q_PROP, "Is the new text in, and in which release?");
+    setBlockProp(block, ASK_BRIEF_PROP, "New wording for when no agreement is selected.");
+    setBlockProp(block, ASK_WHY_PROP, "Customers misread the cash cost.");
+    setBlockProp(block, ASKED_PROP, "Me 2026-10-20T08:00:00Z");
+    postMessageAs(path, block, "In testing", "Lars Haugen", "2026-11-03T10:00:00Z");
+    setBlockProp(quiet, ASKED_PROP, "Me 2026-10-20T08:00:00Z");
+    const mail = emailOf(whoAmI(), V.space), lang = PREF.get("askLang", "");
+    try {
+      PREF.set("askLang", "en");
+      eq(askFacts(quiet, "Lars Haugen"), "Asked 2026-10-20 · no answer yet");
+      eq(askFacts(fresh, "Lars Haugen"), "", "nothing to say on a first ask");
+      openAskForUpdate("Lars Haugen", block);
+      await settle();
+      ok([...document.querySelectorAll("#modalRoot button")].some(x => x.textContent === "Let AI write the questions"), "no AI button for the request");
+      document.querySelector("#modalRoot input[type=email]").value = "me@example.com";
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Write the email").click();
+      await settle();
+      const note = document.querySelector("#modalRoot textarea").value;
+      has(note, "Is the new text in, and in which release?");
+      has(note, "New wording for when no agreement is selected.");
+      has(note, "Why: Customers misread the cash cost.");
+      has(note, "Asked 2026-10-20 · last heard 2026-11-03: “In testing”");
+      ok(!note.includes("What is the status"), "the note-to-self went out: " + note);
+      ok(!note.includes("Description of the need"), "the notes went out although there is a summary");
+    } finally {
+      closeAll();
+      PREF.set("askLang", lang);
+      setEmailOf(whoAmI(), V.space, mail);
+    }
+  });
+  test("#344 Who are you waiting for asks the question and a summary too, and keeps them on the task", async () => {
+    const path = scratchProject("deck wait", [["TODO", "Get the crane quote"]]);
+    const block = getPage(path).blocks[0];
+    solAskWaiting({space: V.space, path, block});
+    await settle();
+    const field = text => [...document.querySelectorAll("#modalRoot label")].find(l => l.textContent.startsWith(text))?.querySelector("input");
+    document.querySelector("#modalRoot input").value = "Lars Haugen";
+    field("Question to ask").value = "When does the quote come?";
+    field("Short summary").value = "The 40 t crane for March.";
+    [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Save").click();
+    await settle();
+    eq(block.state, "WAIT");
+    eq(blockProp(block, ASK_Q_PROP), "When does the quote come?");
+    eq(blockProp(block, ASK_BRIEF_PROP), "The 40 t crane for March.");
+    closeAll();
+  });
+  test("#344 Let AI write it: the prompt carries each task and its notes, the answer fills each line, Same as leaves one out", () => {
+    const path = scratchProject("ai ask", [["WAIT", "Hva er status på dette [[p/Lars Haugen]]"], ["WAIT", "Background: status? [[p/Lars Haugen]]"]]);
+    const [a, b] = getPage(path).blocks;
+    a.children = [newBlock({state: null, title: "Users need clearer guidance"})];
+    const entries = [a, b].map(block => ({space: V.space, path, block}));
+    const prompt = askAiPrompt(entries, "Lars Haugen");
+    has(prompt, "Hva er status på dette");
+    has(prompt, "Users need clearer guidance");
+    has(prompt, "Same as:");
+    const r = askAiApply(entries, "1.\n**Question:** Is the new text in?\nSummary: New wording.\n- Why: Customers misread it.\n\n2. Same as: 1");
+    eq([blockProp(a, ASK_Q_PROP), blockProp(a, ASK_BRIEF_PROP), blockProp(a, ASK_WHY_PROP)],
+      ["Is the new text in?", "New wording.", "Customers misread it."]);
+    eq(blockProp(b, ASK_Q_PROP) || "", "", "a line the same as another is left alone");
+    eq(r.same, [1]);
+  });
 
   test("#311 A board card's assignee pill offers Open task and Ask for an update, not the card underneath", async () => {
     const path = scratchProject("crane order", [["WAIT", "Snakket med [[p/Lars Haugen]] om arbeidsordre"]]);

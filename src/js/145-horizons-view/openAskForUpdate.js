@@ -1,6 +1,8 @@
 /* only: a line to start with ticked by itself -- the line a name was rested
-   on, or the line menu's -- with the rest of theirs there to add. */
-function openAskForUpdate(name, only = null) {
+   on, or the line menu's -- with the rest of theirs there to add.
+   keep: {picked: [blocks]}, the lines ticked when the dialog was left for
+   the AI, ticked again on the way back (#344). */
+function openAskForUpdate(name, only = null, keep = null) {
   const me = whoAmI();
   if (!me) { notify("Put your name in first - the sheet has to say who is asking.", "warn"); return; }
   /* Two kinds of line go to the same person: what they owe you, and your own
@@ -19,16 +21,20 @@ function openAskForUpdate(name, only = null) {
   /* Each line as it will read to them: a question under what it is about,
      and questions about the same thing next to each other. */
   const aboutOf = new Map(found.map(a => [a, askProjectOf(a)]));
-  const partsOf = new Map(found.map(a => [a, a.mention
-    ? askQuestionParts({title: a.title, project: aboutOf.get(a), context: contextLinesOf(a.block)}, name)
-    : {subject: "", ask: checkinTaskTitle(a.title, name)}]));
+  // The question written on the task (#344), asked in place of its own words.
+  const ownAsk = a => a.mention && a.block ? trim(blockProp(a.block, ASK_Q_PROP) || "") : "";
+  const partOf = a => a.mention
+    ? askQuestionParts({title: a.title, project: aboutOf.get(a), context: contextLinesOf(a.block), ask: ownAsk(a)}, name)
+    : {subject: "", ask: checkinTaskTitle(a.title, name)};
+  const partsOf = new Map(found.map(a => [a, partOf(a)]));
   const firstOf = new Map();
   found.forEach((a, i) => { const k = partsOf.get(a).subject; if (k && !firstOf.has(k)) firstOf.set(k, i); });
   const rank = new Map(found.map((a, i) => [a, partsOf.get(a).subject ? firstOf.get(partsOf.get(a).subject) : i]));
   found.sort((x, y) => rank.get(x) - rank.get(y));
 
   const at = only ? found.findIndex(a => a.block === only) : -1;
-  const pick = new Set(at >= 0 ? [at] : found.map((_, i) => i));
+  const pick = new Set(keep ? found.map((a, i) => keep.picked.includes(a.block) ? i : -1).filter(i => i >= 0)
+    : at >= 0 ? [at] : found.map((_, i) => i));
   const area = found[0].space || Spaces.active || "";
   const saved = emailOf(me, area);
   const email = el("input", {type: "email", placeholder: "you@example.com",
@@ -53,16 +59,55 @@ function openAskForUpdate(name, only = null) {
   };
 
   /* The lines under each task go along by default, since they are usually what
-     makes the question answerable. Each has its own tick, because a note to
-     yourself is not always a note for them. */
-  const contexts = found.map(a => contextLinesOf(a.block));
-  const ctxPick = contexts.map(lines => new Set(lines.map((_, j) => j)));
+     makes the question answerable, unless the task has a summary to send
+     instead (#344). Each has its own tick, because a note to yourself is not
+     always a note for them. */
+  const contexts = found.map(a => askContextOf(a, name));
+  const ticked = lines => new Set(lines.map((l, j) => l.on ? j : -1).filter(j => j >= 0));
+  const ctxPick = contexts.map(ticked);
   const toggle = (on, flip, size = 22) => {
     const box = el("button", {class: "spacetoggle" + (on() ? " on" : ""),
       style: size < 22 ? "width:" + size + "px;height:" + size + "px;font-size:11px;flex:0 0 auto" : "",
       onclick: () => { flip(); box.className = "spacetoggle" + (on() ? " on" : ""); box.replaceChildren(...(on() ? [svgIcon(ICON_CHECK)] : [])); refresh(); }},
       on() ? svgIcon(ICON_CHECK) : null);
     return box;
+  };
+  /* The question and the summary, written on the task here once and asked the
+     same way every time after (#344). Each is saved as you leave its box. */
+  const editing = new Set();
+  const setAsk = (i, key, value) => {
+    const a = found[i];
+    inSpace(a.space, () => {
+      if (trim(value)) setBlockProp(a.block, key, trim(value)); else dropProp(a.block, key);
+      touch(a.path);
+    });
+    partsOf.set(a, partOf(a));
+    contexts[i] = askContextOf(a, name);
+    ctxPick[i] = ticked(contexts[i]);
+    drawCard();
+  };
+  const editorFor = (a, i) => {
+    const box = (label, key, hint) => {
+      const input = el("input", {value: blockProp(a.block, key) || "", placeholder: hint});
+      input.addEventListener("change", () => setAsk(i, key, input.value));
+      return el("label", {style: "display:block;font-size:12.5px;color:var(--fg2);margin-top:6px"}, label, input);
+    };
+    return el("div", {style: "margin:4px 0 2px"},
+      box("Question to ask " + firstNameOf(name), ASK_Q_PROP, "One sentence they can answer"),
+      box("Short summary, sent instead of your notes", ASK_BRIEF_PROP, "What they need to recognise it"),
+      el("button", {class: "btn sm ghost", style: "margin-top:6px", onclick: () => toAi([i])}, "Let AI write it"));
+  };
+  /* Let AI write it (#344): this dialog makes way for the AI's and opens again
+     with the same lines ticked, less any the AI found to be the same as another. */
+  const toAi = idx => {
+    const entries = idx.map(i => found[i]).filter(a => a.block);
+    if (!entries.length) { notify("Tick a line to write the question for.", "warn"); return; }
+    const picked = found.filter((_, i) => pick.has(i)).map(a => a.block);
+    closeModal();
+    openAskAI(name, entries, r => {
+      const same = new Set((r ? r.same : []).map(j => entries[j].block));
+      openAskForUpdate(name, null, {picked: picked.filter(b => !same.has(b))});
+    });
   };
   const pickRowFor = (a, i) => {
     const box = toggle(() => pick.has(i), () => { if (pick.has(i)) pick.delete(i); else pick.add(i); });
@@ -81,24 +126,36 @@ function openAskForUpdate(name, only = null) {
            d != null ? "asked " + d + "d ago" : "never asked",
            lines.length ? "the lines under it go along unless you untick them" : null,
           ].filter(Boolean).join(" · ")),
-        ...lines));
+        ...lines,
+        // A question still in the words you wrote to yourself says so (#344).
+        a.block ? el("button", {class: "textbtn", style: "font-size:12.5px;margin-top:4px",
+          "aria-expanded": String(editing.has(i)),
+          onclick: () => { if (editing.has(i)) editing.delete(i); else editing.add(i); drawCard(); }},
+          blockProp(a.block, ASK_Q_PROP) ? "Edit the question"
+            : a.mention && ask === ASK_NOTE[askLang()].status ? "Add the question: this reads as a note to yourself"
+            : "Add the question") : null,
+        editing.has(i) ? editorFor(a, i) : null));
   };
   const head = text => el("div", {style: "color:var(--fg3);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;margin:12px 0 2px"}, text);
-  for (const [q, label] of [[false, "Waiting for"], [true, "To ask about"]]) {
-    const some = found.map((a, i) => [a, i]).filter(([a]) => !!a.mention === q);
-    if (!some.length) continue;
-    if (mixed) card.append(head(label));
-    // What it is about, named once over the questions about it.
-    let about = null;
-    for (const [a, i] of some) {
-      const {subject, ask} = partsOf.get(a);
-      if (subject && ask && subject !== about)
-        card.append(el("div", {style: "font-weight:600;font-size:13px;margin:12px 0 0"}, subject));
-      about = subject && ask ? subject : null;
-      card.append(pickRowFor(a, i));
+  const drawCard = () => {
+    card.replaceChildren();
+    for (const [q, label] of [[false, "Waiting for"], [true, "To ask about"]]) {
+      const some = found.map((a, i) => [a, i]).filter(([a]) => !!a.mention === q);
+      if (!some.length) continue;
+      if (mixed) card.append(head(label));
+      // What it is about, named once over the questions about it.
+      let about = null;
+      for (const [a, i] of some) {
+        const {subject, ask} = partsOf.get(a);
+        if (subject && ask && subject !== about)
+          card.append(el("div", {style: "font-weight:600;font-size:13px;margin:12px 0 0"}, subject));
+        about = subject && ask ? subject : null;
+        card.append(pickRowFor(a, i));
+      }
     }
-  }
-  refresh();
+    refresh();
+  };
+  drawCard();
 
   /* One email by default: one thing to open, one thing to answer. Two when the
      questions deserve their own subject line, or should not wait on the rest. */
@@ -131,7 +188,8 @@ function openAskForUpdate(name, only = null) {
       return {
         key: [a.space || "", a.path, id].join("\u0001"),
         title: a.title, q: !!a.mention, project: named.on ? aboutOf.get(a) : "",
-        context: (contexts[i] || []).filter((_, j) => ctxPick[i].has(j)),
+        context: (contexts[i] || []).filter((_, j) => ctxPick[i].has(j)).map(({depth, text}) => ({depth, text})),
+        ask: ownAsk(a),
         // How long it has been open, said on the sheet in the sheet's language.
         days: a.mention ? null : d != null && d > 0 ? d : null,
       };
@@ -179,7 +237,11 @@ function openAskForUpdate(name, only = null) {
     body: el("div", {},
       el("div", {class: "field"},
         el("label", {}, "What to ask about"),
-        card, summary),
+        card, summary,
+        el("div", {style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px"},
+          el("button", {class: "btn sm ghost", onclick: () => toAi([...pick])}, "Let AI write the questions"),
+          el("span", {style: "color:var(--fg3);font-size:12px"},
+            "A question and a short summary for each ticked line, for somebody who has not seen your notes."))),
       mixed ? el("div", {class: "field"}, el("label", {}, "Send as"), howBox) : null,
       found.some(a => aboutOf.get(a)) ? el("div", {class: "field"},
         el("div", {style: "display:flex;gap:10px;align-items:center"},

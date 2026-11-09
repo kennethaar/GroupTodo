@@ -6,6 +6,13 @@ function offerAskWording(name, items, lines, edited, then = null) {
   edited.forEach((it, i) => {
     const a = lines[i];
     if (!it.edit || !a) return;
+    // A task with its own question (#344) takes the reworded question there,
+    // and keeps its title.
+    if (it.q && trim(it.ask || "")) {
+      const t = trim(it.edit.t || "");
+      if (t && t !== trim(it.ask)) changes.push({a, was: it.ask, next: t, prop: ASK_Q_PROP, take: true});
+      return;
+    }
     const next = inSpace(a.space, () => askTitleFrom(a.block.title, it, name));
     if (next && trim(next) !== trim(a.block.title)) changes.push({a, was: a.block.title, next, take: true});
   });
@@ -18,7 +25,10 @@ function offerAskWording(name, items, lines, edited, then = null) {
     for (const c of take)
       if (!snaps.some(x => x.space === c.a.space && x.path === c.a.path))
         snaps.push({space: c.a.space, path: c.a.path, page: inSpace(c.a.space, () => structuredClone(getPage(c.a.path)))});
-    for (const c of take) inSpace(c.a.space, () => { c.a.block.title = c.next; touch(c.a.path); });
+    for (const c of take) inSpace(c.a.space, () => {
+      if (c.prop) setBlockProp(c.a.block, c.prop, c.next); else c.a.block.title = c.next;
+      touch(c.a.path);
+    });
     const back = () => {
       for (const x of snaps) inSpace(x.space, () => {
         const p = getPage(x.path);

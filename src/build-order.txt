@@ -1294,6 +1294,8 @@ js/145-horizons-view/mentionRows.js
 js/145-horizons-view/vars-askingAbout.js
 js/145-horizons-view/waitsOn.js
 js/145-horizons-view/contextLinesOf.js
+js/145-horizons-view/askFacts.js
+js/145-horizons-view/askContextOf.js
 js/145-horizons-view/outsidersOwingMe.js
 js/145-horizons-view/updatesWorthAsking.js
 js/145-horizons-view/vars-firstNameOf.js
@@ -1303,6 +1305,10 @@ js/145-horizons-view/emailOf.js
 js/145-horizons-view/setEmailOf.js
 js/145-horizons-view/waitOnAsked.js
 js/145-horizons-view/openAskForUpdate.js
+js/145-horizons-view/vars-ASK_PROMPT_PATH.js
+js/145-horizons-view/askAiPrompt.js
+js/145-horizons-view/askAiApply.js
+js/145-horizons-view/openAskAI.js
 js/145-horizons-view/vars-askKinds.js
 js/145-horizons-view/askOwnPage.js
 js/145-horizons-view/ensureAskOwn.js

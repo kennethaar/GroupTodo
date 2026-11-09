@@ -41,14 +41,18 @@ function askQuestionParts(item, recipient) {
   const words = text.toLowerCase().replace(/[^\p{L}\s']/gu, " ").replace(/'s\b/g, " er").split(/\s+/).filter(Boolean);
   const generic = words.every(w => ASK_GENERIC.has(w));
   const t = ASK_NOTE[askLang()];
+  // The question written on the task (ask::) is asked as it is (#344); the
+  // line's own words then say what it is about, when no project does.
+  const own = trim(item.ask || "");
   let subject = trim(item.project || "");
   if (!subject) {
     // From a day page, the question has no project: what it is about is the
     // sentence before the question, when there is one.
     const m = /^([\s\S]*[.!])\s+([^.!?]+\?)$/.exec(text);
-    if (m) return {subject: tidy(m[1].replace(/[.!]$/, "")), ask: m[2]};
+    if (m) return {subject: tidy(m[1].replace(/[.!]$/, "")), ask: own || m[2]};
     if (generic && item.context && item.context[0]) subject = item.context[0].text;
-    else if (generic) return {subject: "", ask: named ? raw : text || raw};
+    else if (generic) return {subject: "", ask: own || (named ? raw : text || raw)};
+    else if (own) subject = text;
   }
-  return {subject, ask: generic ? t.status : text};
+  return {subject, ask: own || (generic ? t.status : text)};
 }

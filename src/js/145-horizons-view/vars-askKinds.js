@@ -41,6 +41,8 @@ const ASK_NOTE = {
     status: "What is the status?",
     comment: "Comment:", answer: "Answer:",
     reference: "Reference (leave as is):",
+    // The lines under a line in the ask (#344).
+    qW: "Question:", whyW: "Why:", askedW: "asked", heardW: "last heard", noneW: "no answer yet",
   },
   sv: {
     label: "Svenska",
@@ -63,6 +65,8 @@ const ASK_NOTE = {
     status: "Hur går det med det?",
     comment: "Kommentar:", answer: "Svar:",
     reference: "Referens (ändra inte):",
+    // The lines under a line in the ask (#344).
+    qW: "Fråga:", whyW: "Varför:", askedW: "frågade", heardW: "senast hört", noneW: "inget svar än",
   },
   no: {
     label: "Norsk",
@@ -85,6 +89,8 @@ const ASK_NOTE = {
     status: "Hva er status?",
     comment: "Kommentar:", answer: "Svar:",
     reference: "Referanse (ikke endre):",
+    // The lines under a line in the ask (#344).
+    qW: "Spørsmål:", whyW: "Hvorfor:", askedW: "spurt", heardW: "sist hørt", noneW: "ikke svar ennå",
   },
   da: {
     label: "Dansk",
@@ -107,6 +113,8 @@ const ASK_NOTE = {
     status: "Hvad er status?",
     comment: "Kommentar:", answer: "Svar:",
     reference: "Reference (rør ikke):",
+    // The lines under a line in the ask (#344).
+    qW: "Spørgsmål:", whyW: "Hvorfor:", askedW: "spurgt", heardW: "sidst hørt", noneW: "intet svar endnu",
   },
   de: {
     label: "Deutsch",
@@ -129,6 +137,8 @@ const ASK_NOTE = {
     status: "Wie ist der Stand?",
     comment: "Kommentar:", answer: "Antwort:",
     reference: "Referenz (nicht ändern):",
+    // The lines under a line in the ask (#344).
+    qW: "Frage:", whyW: "Warum:", askedW: "gefragt", heardW: "zuletzt gehört", noneW: "noch keine Antwort",
   },
 };
 const askQWords = (t, n) => t.qWords[n === 1 ? 0 : 1];

@@ -23,3 +23,8 @@
 const ASKED_PROP = "asked";
 const askedAt   = b => (trim(blockProp(b, ASKED_PROP) || "").match(/\d{4}-\d{2}-\d{2}/) || [])[0] || null;
 const askedDays = b => { const d = askedAt(b); return d ? dateDiffDays(d, todayISO()) : null; };
+/* What to ask, written once on the task so every reminder says it the same
+   way, to somebody who has never seen your notes (#344). ask:: is the
+   question, brief:: a short summary that goes instead of the lines under the
+   task, why:: why it matters. */
+const ASK_Q_PROP = "ask", ASK_BRIEF_PROP = "brief", ASK_WHY_PROP = "why";

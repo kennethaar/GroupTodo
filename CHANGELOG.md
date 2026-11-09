@@ -5,6 +5,18 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.134.0 - 2026-11-09
+
+- Waiting for › List: Ask for an update reads right to somebody who has
+  not seen your notes. A task can carry the question to ask (ask::), a
+  short summary that goes instead of the lines under it (brief::) and why
+  it matters (why::). Write them once, in Who are you waiting for or with
+  Add the question in the ask, and every reminder after says the same.
+  Each line also says when you last asked and what they last said. Let AI
+  write it copies a prompt with your notes to your own AI, for one task or
+  the whole ask, and its answer fills the question and summary and leaves
+  out lines that are the same topic. (#344)
+
 ## 1.133.1 - 2026-11-09
 
 - Chores: on a phone a chore's words get the width and wrap, and its chips
