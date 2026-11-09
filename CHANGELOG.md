@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.132.0 - 2026-11-09
+
+- Vault and sync: the line at the bottom of the sidebar says when it is safe
+  to close: All saved to disk and the time, 1 line being typed - not saved
+  yet, Saving 2 of 3 files..., or NOT on disk with how many files wait in
+  this browser. Ctrl+S writes the line you are in and saves every open area
+  now, and closing the tab warns for a line still being typed (#337).
+
 ## 1.131.3 - 2026-11-09
 
 - Links and aliases: a link whose text is the page's own name is saved

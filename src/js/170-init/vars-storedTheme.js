@@ -42,6 +42,7 @@ document.addEventListener("keydown", onConvertKey, true);
 window.addEventListener("pointerdown", rememberItemContext, true);
 window.addEventListener("focusin", rememberItemContext, true);
 window.addEventListener("keydown", onSpaceKey, true);
+window.addEventListener("keydown", onSaveKey, true);
 window.addEventListener("keydown", onRefileKey, true);
 window.addEventListener("keydown", onBranchCutKey, true);
 window.addEventListener("cut", onBranchCut, true);

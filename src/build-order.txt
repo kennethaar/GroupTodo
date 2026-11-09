@@ -112,7 +112,9 @@ js/15-storage/newRecord.js
 js/15-storage/bindActive.js
 js/15-storage/inSpace.js
 js/15-storage/vars-FOLDER_READING.js
+js/15-storage/vars-SYNC_SHOWN.js
 js/15-storage/setSync.js
+js/15-storage/drawSync.js
 js/15-storage/getPage.js
 js/15-storage/putPage.js
 js/15-storage/vars-nowStamp.js
@@ -137,6 +139,8 @@ js/15-storage/vars-flushTimer.js
 js/15-storage/scheduleFlush.js
 js/15-storage/vars-retryWait.js
 js/15-storage/saveNow.js
+js/15-storage/saveEverythingNow.js
+js/15-storage/onSaveKey.js
 js/15-storage/retryFlush.js
 js/15-storage/vars-MERGED_KINDS.js
 js/15-storage/lineMatches.js

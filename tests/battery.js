@@ -4078,6 +4078,59 @@ var GTD_TEST = (() => {
     }
   });
 
+  /* ---------- safe to close (#337) ---------- */
+  {
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    const asDisk = async fn => {
+      await flush();
+      const be = V.backend, kind = be.kind, write = be.write;
+      be.kind = "fs";
+      try { await fn(be); }
+      finally { be.kind = kind; be.write = write; forgetLineDraft(); await saveNow(); setSync("ok", be.label); go("today"); }
+    };
+    test("#337 the sync line says in words that all is saved to disk, with the time", () => asDisk(async () => {
+      setSync("ok", "Folder337");
+      const t = $("#syncTxt");
+      ok(/^All saved to disk · \d\d:\d\d$/.test(t.textContent), "not said in words: " + t.textContent);
+      has($("#syncLine").title, "Folder337", "the folder name is in the tooltip");
+      ok($("#syncDot").classList.contains("ok"), "not green");
+    }));
+    test("#337 a line being typed is not saved yet; leaving and Ctrl+S write it", () => asDisk(async () => {
+      const path = scratchProject("ctrl s 337", [["TODO", "Ring the bank"]]);
+      openPage(path); await settle(); await flush();
+      const b = getPage(path).blocks[0];
+      const typeIn = async words => {
+        focusBlock(b.id); await frame();
+        const txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
+        txt.textContent = words;
+        txt.dispatchEvent(new Event("input", {bubbles: true}));
+        return txt;
+      };
+      await typeIn("Ring the bank about rates");
+      eq($("#syncTxt").textContent, "1 line being typed - not saved yet");
+      ok($("#syncDot").classList.contains("warn"), "a line being typed shows green");
+      const leave = new Event("beforeunload", {cancelable: true});
+      window.dispatchEvent(leave);
+      ok(leave.defaultPrevented, "closing did not warn about the line being typed");
+      eq(b.title, "Ring the bank about rates", "closing did not write the line to its page");
+      const txt = await typeIn("Ring the bank about the loan");
+      const key = new KeyboardEvent("keydown", {key: "s", code: "KeyS", ctrlKey: true, bubbles: true, cancelable: true});
+      txt.dispatchEvent(key);
+      ok(key.defaultPrevented, "Ctrl+S went to the browser");
+      eq(b.title, "Ring the bank about the loan", "Ctrl+S did not write the line");
+      eq(readLineDraft(), null, "the line still counts as being typed");
+      await flushChain; await frame();
+      ok(/^All saved to disk/.test($("#syncTxt").textContent), "after Ctrl+S: " + $("#syncTxt").textContent);
+    }));
+    test("#337 files that did not reach the folder say NOT on disk, and how many", () => asDisk(async be => {
+      be.write = async () => { throw new Error("The folder is gone"); };
+      scratchProject("not on disk 337", [["TODO", "Pack the car"]]);
+      await flush();
+      ok(/^NOT on disk - \d+ files? kept in this browser until the folder is back$/.test($("#syncTxt").textContent),
+         "said: " + $("#syncTxt").textContent);
+    }));
+  }
+
   test("#164 a folder area opened without its folder shows the reconnect panel, not browser storage", async () => {
     const view = state.view;
     PENDING_GRANT.set(V.space, {name: "Vault folder", kind: "directory"});

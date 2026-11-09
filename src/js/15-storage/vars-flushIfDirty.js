@@ -1,7 +1,11 @@
 window.addEventListener("beforeunload", e => {
   if (WIPING) return;
+  /* A line being typed is not in its page until it is left (#337): leave it
+     now, so it is saved with the rest, and warn for it like any other change. */
+  const typing = readLineDraft();
+  if (typing) document.activeElement?.blur?.();
   // Every area, not only the one on screen: the review changes projects in all of them.
-  if ([...LOADED.values()].some(r => r.dirty.size || r.removed.size) || V.dirty.size) {
+  if ([...LOADED.values()].some(r => r.dirty.size || r.removed.size) || V.dirty.size || typing) {
     flush(); e.preventDefault(); e.returnValue = "";
   }
 });

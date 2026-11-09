@@ -5,6 +5,10 @@ async function doFlush() {
   let sent = 0;
   const toSend = [...LOADED.values()].reduce((n, r) =>
     n + (r.hold || !r.backend ? 0 : r.dirty.size + r.removed.size), 0);
+  /* "Saving 2 of 3 files..." while it writes: a dot that pulses says
+     nothing about how much is left (#337). */
+  const saving = () => { jobsSaving(sent, toSend); if (sent < toSend || !sent) setSync("sync",
+    toSend > 1 ? "Saving " + Math.min(sent + 1, toSend) + " of " + toSend + " files..." : "Saving..."); };
   if (toSend) jobsSaving(0, toSend);
   for (const rec of Array.from(LOADED.values())) {
     if (rec.hold) continue;          // its folder looks emptied: see looksEmptied()
@@ -21,7 +25,7 @@ async function doFlush() {
     }
     wrote = true;
     V.syncing = true;
-    setSync("sync", "saving...");
+    saving();
     const merged = [], held = [], put = [];
     // The mirror goes first: after this line the work cannot be lost, whatever
     // the real backend does next.
@@ -57,7 +61,7 @@ async function doFlush() {
                    "Renaming it fixes it.", "warn");
           }
         }
-        jobsSaving(++sent, toSend);
+        sent++; saving();
       }
       /* A file that will not go is not a detail: when a move's old file stays,
          the project is back on its old shelf at the next load. So a delete
@@ -67,7 +71,7 @@ async function doFlush() {
       for (const p of gone) {
         try { await rec.backend.remove(p); rec.base?.delete(p); }
         catch (e) { if (!/NotFound/i.test((e && (e.name + " " + e.message)) || "")) stuck.push([p, e]); }
-        jobsSaving(++sent, toSend);
+        sent++; saving();
       }
       if (stuck.length) {
         stuck.forEach(([p]) => rec.removed.add(p));
@@ -89,7 +93,11 @@ async function doFlush() {
     } catch (e) {
       dirty.forEach(p => rec.dirty.add(p));
       V.error = e;
-      setSync("warn", "saved on device");
+      /* Kept in this browser, not in the folder: said in so many words, with
+         how many, because amber alone does not say "do not close yet" (#337). */
+      const left = [...LOADED.values()].reduce((n, r) => n + (r.backend ? r.dirty.size + r.removed.size : 0), 0);
+      setSync("warn", "NOT on disk - " + left + (left === 1 ? " file" : " files") + " kept in this browser until the " +
+              (rec.backend.kind === "http" ? "server" : "folder") + " is back");
       reportStorageTrouble(rec, e);
       V.syncing = false;
       jobsSaved("Done here, and kept on this device - the files go up when the folder is back.", "warn");

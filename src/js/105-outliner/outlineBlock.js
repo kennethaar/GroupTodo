@@ -72,6 +72,17 @@ function outlineBlock(path, page, b, opts = {}) {
     keepLineDraft(node.dataset.space, path, b, lineText(txt));
     paintHeadLine(line, lineText(txt), b.state);
   });
+  /* Ctrl+S writes the line being typed without leaving it (#337). The words
+     stay raw under the caret, as they are while the line is being edited. */
+  txt.addEventListener("gtd:commit", () => {
+    if (commitLine(txt, path, b)) renderNav();
+    dropLineDraft(b.id);
+    if (lineText(txt) !== b.title) {
+      txt.textContent = b.title;
+      const r = document.createRange(); r.selectNodeContents(txt); r.collapse(false);
+      getSelection().removeAllRanges(); getSelection().addRange(r);
+    }
+  });
   txt.addEventListener("blur", () => {
     if (FLY && FLY.txt === txt) flyHide();
     const had = b.state ? assigneeOf(b) : "";
