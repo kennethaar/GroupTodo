@@ -464,7 +464,7 @@ const HELP = {
 
   horizons: {part: "views", title: "Horizons", view: "horizons", gtd: "reflect", shot: 1,
     what: "Purpose down to areas and goals. Why you do it.",
-    steps: ["Define each horizon in a few lines.", "Open an area to edit its own horizons.", "Write responsibilities as pages under a/."],
+    steps: ["Define each horizon in a few lines.", "Open an area to edit its own horizons.", "Write responsibilities as pages under a/.", ["Drag one onto another area to move it there. Its projects come too, unless you untick them.", ".arow-resp .chip"]],
     legend: [[".section", "A horizon: its height and what it asks."], ["?.arow", "An area, with its projects."]],
     more: ["Purpose and vision live in your home area. Goals add up across areas.",
       "Horizon 2 is your areas of focus. Each is a folder."],

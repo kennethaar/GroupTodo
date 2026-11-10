@@ -31,7 +31,7 @@ function horizonsLadder() {
   const acard = el("div", {class: "card"});
   for (const sp of Spaces.list) {
     const s = areaSummary(sp.name);
-    const row = el("div", {class: "arow"},
+    const row = el("div", {class: "arow", "data-space": sp.name},
       el("div", {class: "arow-top"},
         s && s.face ? s.face : el("span", {class: "arow-dot", style: "background:" + spaceColor(sp.name)}),
         el("button", {class: "nm", onclick: () => openAreaHorizons(sp.name)}, sp.name),
@@ -42,12 +42,22 @@ function horizonsLadder() {
     if (s) {
       const chips = el("div", {class: "arow-resp"});
       if (!s.resp.length) chips.append(el("span", {class: "sub"}, "No responsibilities written down yet"));
-      for (const r of s.resp.slice(0, 12))
-        chips.append(el("button", {class: "chip b", onclick: () => openPageIn(sp.name, r.path)}, r.title));
+      for (const r of s.resp.slice(0, 12)) {
+        const chip = el("button", {class: "chip b", draggable: "true",
+          title: "Open, or drag onto another area to move it there with its projects",
+          onclick: () => openPageIn(sp.name, r.path)}, r.title);
+        chip.addEventListener("dragstart", e => {
+          DRAGGED = {kind: "dirpage", items: [{page: {path: r.path, space: sp.name}}]};
+          try { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", r.title); } catch (_) {}
+        });
+        chip.addEventListener("dragend", () => { DRAGGED = null; });
+        chips.append(chip);
+      }
       if (s.resp.length > 12) chips.append(el("button", {class: "textbtn", onclick: () => openAreaHorizons(sp.name)},
         "+" + (s.resp.length - 12) + " more"));
       row.append(chips);
     }
+    respDropTarget(row, sp.name);
     acard.append(row);
   }
   c.append(horizonRow(ah, acard,

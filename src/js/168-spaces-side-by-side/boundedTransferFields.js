@@ -11,6 +11,20 @@ function boundedTransferFields(plan, target, opts, key = "bounded") {
                 "Whole journal pages are never moved."),
     el("div", {class: "space-transfer-list"},
       plan.branches.map(b => el("div", {}, b.path + " : " + plainTitle(b.title)))));
+  /* A responsibility's projects belong with it, so they come along unless
+     you untick them. */
+  if (plan.projects?.length) {
+    body.append(el("p", {}, "Projects under this responsibility. Untick any that should stay."));
+    for (const path of plan.projects) {
+      const exists = LOADED.get(target)?.pages.has(path);
+      if (!exists) selected.add(path);
+      const box = el("input", {type: "checkbox", disabled: exists,
+        onchange: e => { if (e.target.checked) selected.add(path); else selected.delete(path); }});
+      box.checked = !exists;
+      body.append(el("label", {class: "space-transfer-choice"}, box,
+        " " + inSpace(plan.space, () => pageTitle(path)) + (exists ? " (already in the target area, left as it is)" : "")));
+    }
+  }
   if (plan.files.length) {
     body.append(el("p", {}, "Pages the main file links to directly. None comes along unless you tick it, " +
                             "and their own links are not followed."));

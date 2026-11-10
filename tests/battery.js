@@ -2433,6 +2433,48 @@ var GTD_TEST = (() => {
       PREF.set("sub.contexts", "cards"); go("contexts"); clearMemo();
     }
   });
+  test("#349 Horizons: a responsibility dragged onto another area moves there, its projects offered ticked", async () => {
+    const other = "Test349 Other", here = V.space;
+    const until = async cond => { for (let i = 0; i < 200 && !cond(); i++) await new Promise(r => setTimeout(r, 10)); };
+    LOADED.set(other, newRecord(other, Backends.memory(other)));
+    Spaces.list.push({name: other, kind: "memory"});
+    const area = createArea("Test349 Garden");
+    const mine = scratchProject("349 hedge"), stranger = scratchProject("349 unrelated");
+    setAreaOfProject(mine, "Test349 Garden");
+    try {
+      eq(boundedTransferPlan(area, here).projects, [mine], "only the responsibility's own projects are offered");
+      go("horizons", {horizonArea: null}); await settle();
+      const chip = [...content().querySelectorAll(".arow-resp .chip")].find(b => b.textContent === "Test349 Garden");
+      ok(chip && chip.draggable, "the responsibility chip can be dragged");
+      const row = content().querySelector('.arow[data-space="' + other + '"]');
+      ok(row, "the other area's row is a drop target");
+      chip.dispatchEvent(new DragEvent("dragstart", {bubbles: true}));
+      row.dispatchEvent(new DragEvent("dragover", {bubbles: true, cancelable: true}));
+      row.dispatchEvent(new DragEvent("drop", {bubbles: true, cancelable: true}));
+      await until(() => document.querySelector("#modalRoot .modal"));
+      const dlg = document.querySelector("#modalRoot .modal");
+      const named = p => [...dlg.querySelectorAll("label")].find(l => l.textContent.includes(pageTitle(p)));
+      const box = named(mine)?.querySelector("input");
+      ok(box && box.checked, "the responsibility's project is offered, ticked");
+      ok(!named(stranger), "an unrelated project is not offered");
+      ok([...dlg.querySelectorAll("label")].find(l => l.textContent.trim() === "Move")?.querySelector("input").checked, "a drag moves");
+      [...dlg.querySelectorAll("button")].find(b => b.textContent === "Continue").click();
+      await until(() => !getPage(area));
+      ok(!getPage(area) && !getPage(mine), "the responsibility and its project left");
+      ok(getPage(stranger), "the unrelated project stayed");
+      inSpace(other, () => {
+        ok(getPage(area), "the responsibility arrived");
+        eq(areaOfProject(mine), "Test349 Garden", "its project arrived, still under it");
+      });
+    } finally {
+      closeModals();
+      for (const p of [area, mine, stranger]) { removePage(p); inSpace(other, () => removePage(p)); }
+      LOADED.delete(other);
+      Spaces.list = Spaces.list.filter(s => s.name !== other);
+      document.querySelectorAll("#toasts .toast").forEach(x => x.remove());
+      clearMemo();
+    }
+  });
   /* ---------- context names and look-alikes (#203) ---------- */
   test("#203 a new context starts with a capital, and one already there keeps its spelling", () => {
     eq(makeContext("testcap"), "Testcap");

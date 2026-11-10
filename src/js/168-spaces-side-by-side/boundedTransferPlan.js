@@ -4,8 +4,11 @@
 function boundedTransferPlan(path, space) {
   return inSpace(space, () => {
     const page = getPage(path);
-    if (!page) return {path, space, files: [], branches: []};
-    const files = [...pageReferenceTargets(page)].filter(p => p !== path && !isJournalPath(p));
+    if (!page) return {path, space, files: [], projects: [], branches: []};
+    /* A responsibility's projects point at it, not it at them, so they are
+       found the other way round and offered on their own. */
+    const projects = pageKind(path) === "area" ? projectsInArea(baseName(path)) : [];
+    const files = [...pageReferenceTargets(page)].filter(p => p !== path && !isJournalPath(p) && !projects.includes(p));
     const branches = [];
     for (const [journal, p] of V.pages) {
       if (!isJournalPath(journal)) continue;
@@ -19,6 +22,6 @@ function boundedTransferPlan(path, space) {
       };
       scan(p.blocks);
     }
-    return {path, space, files, branches};
+    return {path, space, files, projects, branches};
   });
 }

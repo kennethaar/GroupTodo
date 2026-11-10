@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.138.0 - 2026-11-10
+
+- Horizons: drag a responsibility onto another area to move it there. The
+  move asks first and offers the projects under that responsibility, ticked,
+  so they come along unless you untick them. Moving a responsibility page with
+  Alt+S offers them the same way. (#349)
+
 ## 1.137.0 - 2026-11-10
 
 - Keys on a line: lines read Obsidian's formatting: **bold** and __bold__,

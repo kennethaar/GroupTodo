@@ -1005,6 +1005,7 @@ js/145-horizons-view/editHorizonText.js
 js/145-horizons-view/vars-homeArea.js
 js/145-horizons-view/openAreaHorizons.js
 js/145-horizons-view/areaSummary.js
+js/145-horizons-view/respDropTarget.js
 js/145-horizons-view/horizonsLadder.js
 js/145-horizons-view/horizonsOfArea.js
 js/145-horizons-view/vars-HORIZON_SINGLE_SPACE.js
