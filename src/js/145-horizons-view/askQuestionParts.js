@@ -2,6 +2,10 @@ function askQuestionParts(item, recipient) {
   const raw = askUntagged(item.title);
   let text = raw;
   const full = trim(recipient || ""), first = full.split(/\s+/)[0];
+  /* "[[p/Ola]]: the question" only says who it goes to, so that name goes
+     first, whoever else the question names (#347). */
+  for (const n of new Set([full, first].filter(Boolean)))
+    text = text.replace(new RegExp("^\\s*" + askEsc(n) + "(?![\\p{L}\\p{N}])\\s*[:,\\-–—]\\s*", "iu"), "");
   /* A line that names somebody else as well, "ask Johan and Jenny about X",
      goes as you wrote it: taking one name out leaves the others making no
      sense, and who else is in it is part of the question. */

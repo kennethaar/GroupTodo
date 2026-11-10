@@ -5372,14 +5372,29 @@ var GTD_TEST = (() => {
     closeAll();
   });
   test("#347 the first waiting task shows, once, how to write one: [[p/Person]]: the question", async () => {
-    // The shape it recommends is the one the ask strips to the bare question:
-    // a waiting line goes out as a task line (q false), name first or last.
+    // A line that only waits on them, with no link in it, loses their name at either end.
     const line = (title, who) => askLineTitle({title, q: false}, who);
-    eq(line("[[p/Ola Nordmann]]: Trenger dere et møte med oss om dette?", "Ola Nordmann"), "Trenger dere et møte med oss om dette?");
-    eq(line("[[p/Ola]]: Trenger dere et møte?", "Ola Nordmann"), "Trenger dere et møte?");
-    eq(line("[[p/Øyvind Ås]] - Når kommer tilbudet?", "Øyvind Ås"), "Når kommer tilbudet?");
-    eq(line("Send the quote - [[p/Ola Nordmann]]", "Ola Nordmann"), "Send the quote");
+    eq(line("Ola: Trenger dere et møte?", "Ola Nordmann"), "Trenger dere et møte?");
+    eq(line("Øyvind Ås - Når kommer tilbudet?", "Øyvind Ås"), "Når kommer tilbudet?");
+    eq(line("Send the quote - Ola Nordmann", "Ola Nordmann"), "Send the quote");
     eq(line("Olaf: book the hall", "Ola"), "Olaf: book the hall");
+    // The shape the tip recommends, through the real mail: the name in front goes,
+    // even when the question names other people, and theirs read as plain names.
+    const mailPath = scratchProject("dev meeting", [["WAIT",
+      "[[p/Mujammal Ali]]: Trenger dere et møte med meg og våre utviklere ([[p/Tina Reinebo]] og [[p/Hans-Åke Lilja]])"]]);
+    const asked = getPage(mailPath).blocks[0];
+    assignBlock(mailPath, asked, "Mujammal Ali", true);
+    const mail = emailOf(whoAmI(), V.space);
+    try {
+      openAskForUpdate("Mujammal Ali", asked);
+      await settle();
+      document.querySelector("#modalRoot input[type=email]").value = "me@example.com";
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Write the email").click();
+      await settle();
+      const note = document.querySelector("#modalRoot textarea").value;
+      has(note, "Trenger dere et møte med meg og våre utviklere (Tina Reinebo og Hans-Åke Lilja)");
+      ok(!/Mujammal Ali\s*:/.test(note), "the name in front is still in the question: " + JSON.stringify(note));
+    } finally { closeAll(); setEmailOf(whoAmI(), V.space, mail); }
     const was = PREF.get(WAIT_TIP_PREF, "");
     const tipIn = root => (root?.textContent || "").includes("[[p/Person]]: Trenger dere et møte med oss om dette?");
     try {

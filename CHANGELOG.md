@@ -12,7 +12,8 @@ that breaks existing vaults. Newest first.
   dette?`. The link files it under that person, and Ask for an update sends
   only the question. The tip shows once; it is also under More in this help
   topic. The name at the start of a waiting task is now taken out of the ask,
-  as one at the end already was. (#347)
+  as one at the end already was, also when the question names other people.
+  (#347)
 
 ## 1.135.5 - 2026-11-10
 
