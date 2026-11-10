@@ -359,6 +359,7 @@ js/35-templates/instantiateTemplate.js
 js/40-verbs/vars-VERB_LOOKUP.js
 js/40-verbs/scanVerbs.js
 js/40-verbs/scanVerbPage.js
+js/40-verbs/withoutMarks.js
 js/40-verbs/startsWithVerb.js
 js/40-verbs/verbList.js
 js/45-org-import/orgToPage.js

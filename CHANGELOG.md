@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.137.0 - 2026-11-10
+
+- Keys on a line: lines read Obsidian's formatting: **bold** and __bold__,
+  *italics* and _italics_, ==highlight== and ~~strike~~. The marks * _ ` " and
+  ' come in pairs in front of a word, as brackets do; == and ~~ pair from the
+  second mark. Picked words get the marks around them. Ctrl+B, Ctrl+I and
+  Ctrl+Shift+H bold, italicise and highlight, and take it off again. Undo
+  takes back just the pair. The verb check and plain text look past the
+  marks. (#348)
+
 ## 1.136.1 - 2026-11-10
 
 - Waiting for › List: Ask for an update fills in their address for Send in

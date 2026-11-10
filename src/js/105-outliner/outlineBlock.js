@@ -64,6 +64,13 @@ function outlineBlock(path, page, b, opts = {}) {
     const set = from === to ? typeSet(lineText(txt), from, style) : null;
     if (set) setHostText(txt, set.text, set.caret);
   });
+  /* ` and ~ are dead keys on many layouts, and a phone's keyboard names no
+     key at all: their keydown says nothing, so the mark is paired here, as it
+     goes in (#348). What keydown already paired never gets this far. */
+  txt.addEventListener("beforeinput", e => {
+    if (e.gtPair || e.isComposing || e.inputType !== "insertText" || !e.data || e.data.length !== 1) return;
+    autoPairKey({key: e.data, preventDefault: () => e.preventDefault()}, txt, !style);
+  });
   txt.addEventListener("input", () => {
     /* "· " in front of a note is written out as TODO, which the state words
        below then make a to do there and then (#185). */
@@ -314,7 +321,7 @@ function outlineBlock(path, page, b, opts = {}) {
     // The menu under the line, then the suggestion list, own their keys first.
     if (flyKey(e)) return;
     if (suggestKey(e)) return;
-    if (autoPairKey(e, txt)) return;
+    if (autoPairKey(e, txt, !style)) return;
     // In a table row Enter makes the next row and Tab goes to the next cell (#269).
     if (tableTab(e, path, b, -1, txt)) return;
     if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && tableEnter(path, b, -1, txt)) { e.preventDefault(); return; }

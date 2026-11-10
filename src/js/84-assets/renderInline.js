@@ -113,9 +113,26 @@ function renderInline(text) {
   });
   h = h.replace(/(^|\s)#([\p{L}\p{N}_\-/]+)/gu, (all, sp, t) =>
     `${sp}<span class="tag" data-link="${esc(t)}">#${esc(t)}</span>`);
-  h = h.replace(/`([^`]+)`/g, "<code>$1</code>");
+  /* Code, \* and a bare address are set aside before the marks, so a mark in
+     them stays a character: `**x**` is code, \* a star, and the _ in an
+     address is part of it (#348). A mark at the end of an address closes
+     the formatting round it. */
+  h = h.replace(/`([^`]+)`/g, (all, c) => hold("<code>" + c + "</code>"));
+  h = h.replace(/\\([*_=~`])/g, (all, c) => hold(c));
+  h = h.replace(/\bhttps?:\/\/[^\s<]+/g, all => {
+    const tail = (/[*=~]+$/.exec(all) || [""])[0], u = tail ? all.slice(0, -tail.length) : all;
+    return hold(`<a href="${u}" target="_blank" rel="noopener">${u}</a>`) + tail;
+  });
+  /* Obsidian's marks (#348). What is between them cannot run into a tag or an
+     attribute, and _ and __ are not read inside a word, so file_name_v2 stays
+     as written. One ~ or = is not a mark: ~5 min, a tracker's =12. */
+  const span = m => `([^${m}\\s<>"](?:[^${m}<>"]*[^${m}\\s<>"])?)`;
+  h = h.replace(new RegExp("\\*\\*\\*" + span("*") + "\\*\\*\\*", "g"), "<b><i>$1</i></b>");
   h = h.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+  h = h.replace(new RegExp("(^|[^\\p{L}\\p{N}_])__" + span("_") + "__(?![\\p{L}\\p{N}_])", "gu"), "$1<b>$2</b>");
   h = h.replace(/(^|[\s(])\*([^*\s][^*]*)\*/g, "$1<i>$2</i>");
-  h = h.replace(/\bhttps?:\/\/[^\s<]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+  h = h.replace(new RegExp("(^|[^\\p{L}\\p{N}_/])_" + span("_") + "_(?![\\p{L}\\p{N}_])", "gu"), "$1<i>$2</i>");
+  h = h.replace(new RegExp("==" + span("=") + "==", "g"), "<mark>$1</mark>");
+  h = h.replace(new RegExp("~~" + span("~") + "~~", "g"), "<s>$1</s>");
   return h.replace(/\u0000(\d+)\u0000/g, (all, i) => held[i]);
 }

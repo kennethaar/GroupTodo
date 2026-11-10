@@ -1,1 +1,1 @@
-function plainTitle(title) { return linkWords(titleForRow(title)); }
+function plainTitle(title) { return withoutMarks(linkWords(titleForRow(title))); }

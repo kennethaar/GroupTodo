@@ -3524,6 +3524,70 @@ var GTD_TEST = (() => {
       eq(lineText(txt), "Call ", "Backspace did not take the pair");
     } finally { go("today"); }
   });
+  test("#348 a line reads Obsidian's bold, italics, ==highlight== and ~~strike~~, and plain text leaves the marks out", () => {
+    const html = renderInline("**b1** __b2__ *i1* _i2_ ***bi*** ==hl== ~~gone~~ `**code**` \\*star\\*");
+    for (const want of ["<b>b1</b>", "<b>b2</b>", "<i>i1</i>", "<i>i2</i>", "<b><i>bi</i></b>", "<mark>hl</mark>", "<s>gone</s>", "<code>**code**</code>", " *star*"])
+      has(html, want);
+    // Not formatting: marks inside a name, a lone ~ or =, a link to a horizon.
+    const plain = renderInline("file_name_v2.pdf ~5 min =12 5 * 3 [[_/Purpose]]");
+    ok(!/<(i|s|mark|b)>/.test(plain), "read as formatting: " + plain);
+    has(renderInline("see https://x.com/_a_b_"), 'href="https://x.com/_a_b_"');
+    ok(startsWithVerb("**Call** the plumber"), "the verb behind ** was not seen");
+    eq(plainTitle("==Call== ~~Bob~~ about *the* __quote__"), "Call Bob about the quote");
+  });
+  test("#348 formatting marks and quotes come in pairs, wrap a selection, and Ctrl+B / Ctrl+I / Ctrl+Shift+H toggle them", async () => {
+    const path = scratchProject("mark pair", [["TODO", "Call Anna"]]);
+    openPage(path);
+    await settle();
+    const b = getPage(path).blocks[0];
+    try {
+      focusBlock(b.id);
+      const txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
+      txt.focus();
+      // A key nobody took goes in as typed, as a real keyboard's would.
+      const key = (k, o = {}) => {
+        const free = txt.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true, ...o}));
+        if (!free || k.length !== 1 || o.ctrlKey) return;
+        const t = lineText(txt), [a, z] = caretOffsets(txt);
+        setHostText(txt, t.slice(0, a) + k + t.slice(z), a + 1);
+      };
+      const type =(text, at, ...keys) => { setHostText(txt, text, at); for (const k of keys) key(k); return lineText(txt) + "|" + caretOffsets(txt).join(); };
+      eq(type("Call ", 5, "*"), "Call **|6,6", "* did not pair");
+      eq(type("Call ", 5, "*", "*"), "Call ****|7,7", "a second * did not make bold");
+      eq(type("Call ", 5, "=", "="), "Call ====|7,7", "== did not pair");
+      eq(type("Call ", 5, "="), "Call =|6,6", "a single = (a tracker's =12) paired");
+      eq(type("Call ", 5, "\""), "Call \"\"|6,6", "\" did not pair");
+      eq(type("don", 3, "'"), "don'|4,4", "an apostrophe paired");
+      eq(type("Call ", 5, "*", "x", "*"), "Call *x*|8,8", "the closing * was not stepped over");
+      eq(type("Call ", 5, "*", "Backspace"), "Call |5,5", "Backspace did not take the empty pair");
+      eq(type("5 ", 2, "*", " "), "5 * |4,4", "a space after the mark did not drop its pair");
+      setHostText(txt, "Call Anna", 5); setHostSelection(txt, 5, 9);
+      key("*"); key("*");
+      eq(lineText(txt) + "|" + caretOffsets(txt).join(), "Call **Anna**|7,11", "the selection was not wrapped twice and kept");
+      setHostText(txt, "say don't", 4); setHostSelection(txt, 4, 9);
+      key("'");
+      eq(lineText(txt), "say 'don't'", "the selection with an apostrophe was not wrapped");
+      // Keyboards that send ` and ~ as dead keys, and phones, are seen in beforeinput.
+      setHostText(txt, "Call ", 5);
+      txt.dispatchEvent(new InputEvent("beforeinput", {inputType: "insertText", data: "`", bubbles: true, cancelable: true}));
+      eq(lineText(txt), "Call ``", "a dead-key ` did not pair");
+      // Ctrl+Z takes back the pair and no more.
+      setHostText(txt, "Call Anna ", 10);
+      key("*");
+      key("z", {ctrlKey: true});
+      eq(lineText(txt), "Call Anna ", "undo did not stop at the line before the pair");
+      setHostText(txt, "Call Anna", 6);
+      key("b", {ctrlKey: true});
+      eq(lineText(txt), "Call **Anna**", "Ctrl+B did not bold the word");
+      key("b", {ctrlKey: true});
+      eq(lineText(txt), "Call Anna", "Ctrl+B again did not take it off");
+      setHostText(txt, "Call Anna", 5); setHostSelection(txt, 5, 9);
+      key("i", {ctrlKey: true});
+      key("H", {ctrlKey: true, shiftKey: true});
+      const both = renderInline(lineText(txt));
+      ok(/<i>.*Anna.*<\/i>/.test(both) && /<mark>.*Anna.*<\/mark>/.test(both), "Ctrl+I and Ctrl+Shift+H did not wrap the selection: " + lineText(txt));
+    } finally { go("today"); }
+  });
   test("#269 |a|b| and Enter makes a Markdown table with a new row", async () => {
     const path = scratchProject("md table", [[null, ""]]);
     openPage(path);
