@@ -5372,9 +5372,14 @@ var GTD_TEST = (() => {
     closeAll();
   });
   test("#347 the first waiting task shows, once, how to write one: [[p/Person]]: the question", async () => {
-    // The shape it recommends is the one the ask strips to the bare question.
-    eq(askQuestionParts({title: "[[p/Ola Nordmann]]: Trenger dere et møte med oss om dette?"}, "Ola Nordmann").ask,
-      "Trenger dere et møte med oss om dette?");
+    // The shape it recommends is the one the ask strips to the bare question:
+    // a waiting line goes out as a task line (q false), name first or last.
+    const line = (title, who) => askLineTitle({title, q: false}, who);
+    eq(line("[[p/Ola Nordmann]]: Trenger dere et møte med oss om dette?", "Ola Nordmann"), "Trenger dere et møte med oss om dette?");
+    eq(line("[[p/Ola]]: Trenger dere et møte?", "Ola Nordmann"), "Trenger dere et møte?");
+    eq(line("[[p/Øyvind Ås]] - Når kommer tilbudet?", "Øyvind Ås"), "Når kommer tilbudet?");
+    eq(line("Send the quote - [[p/Ola Nordmann]]", "Ola Nordmann"), "Send the quote");
+    eq(line("Olaf: book the hall", "Ola"), "Olaf: book the hall");
     const was = PREF.get(WAIT_TIP_PREF, "");
     const tipIn = root => (root?.textContent || "").includes("[[p/Person]]: Trenger dere et møte med oss om dette?");
     try {

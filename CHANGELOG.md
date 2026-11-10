@@ -11,7 +11,8 @@ that breaks existing vaults. Newest first.
   shows how to write it: `[[p/Person]]: Trenger dere et møte med oss om
   dette?`. The link files it under that person, and Ask for an update sends
   only the question. The tip shows once; it is also under More in this help
-  topic. (#347)
+  topic. The name at the start of a waiting task is now taken out of the ask,
+  as one at the end already was. (#347)
 
 ## 1.135.5 - 2026-11-10
 
