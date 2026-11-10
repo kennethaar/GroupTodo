@@ -52,7 +52,7 @@ function solAskWaiting(r, after = null) {
           if (!name) { notify("Put in who you are waiting for first.", "warn"); input.focus(); return; }
           save(name);
           openAskAI(name, [{space: r.space, path: r.path, block: r.block}]);
-        }}, "Let AI write it")] : [])),
+        }}, "Let AI write it"), waitTip()] : [])),
     onClose: finish,
     foot: [el("button", {class: "btn ghost", onclick: () => { closeModal(); finish(); }}, "Skip"),
            el("button", {class: "btn primary", onclick: () => save(input.value)}, "Save")],

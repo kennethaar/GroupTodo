@@ -5371,6 +5371,36 @@ var GTD_TEST = (() => {
     eq(blockProp(block, ASK_BRIEF_PROP), "The 40 t crane for March.");
     closeAll();
   });
+  test("#347 the first waiting task shows, once, how to write one: [[p/Person]]: the question", async () => {
+    // The shape it recommends is the one the ask strips to the bare question.
+    eq(askQuestionParts({title: "[[p/Ola Nordmann]]: Trenger dere et møte med oss om dette?"}, "Ola Nordmann").ask,
+      "Trenger dere et møte med oss om dette?");
+    const was = PREF.get(WAIT_TIP_PREF, "");
+    const tipIn = root => (root?.textContent || "").includes("[[p/Person]]: Trenger dere et møte med oss om dette?");
+    try {
+      PREF.set(WAIT_TIP_PREF, "");
+      const path = scratchProject("wait tip", [["TODO", "Book the hall"], ["TODO", "Order chairs"], ["TODO", "Ask about catering"]]);
+      const [a, b, c] = getPage(path).blocks;
+      solAskWaiting({space: V.space, path, block: a});
+      await settle();
+      ok(tipIn(document.querySelector("#modalRoot")), "the first Who are you waiting for has no tip");
+      has(document.querySelector("#modalRoot").textContent, "only the question");
+      closeAll();
+      askWaitingOn({path, block: b, state: b.state, title: b.title, space: V.space}, true);
+      await settle();
+      ok(!tipIn(document.querySelector("#modalRoot")), "the tip came twice");
+      closeAll();
+      // Turned waiting with no dialog, the tip comes as a message instead.
+      PREF.set(WAIT_TIP_PREF, "");
+      setBlockState(path, c, "WAIT");
+      await settle();
+      ok(tipIn(document.querySelector("#toasts")), "no tip when a task turns waiting without the dialog");
+    } finally {
+      closeAll();
+      document.querySelectorAll("#toasts .toast").forEach(t => t.remove());
+      PREF.set(WAIT_TIP_PREF, was);
+    }
+  });
   test("#344 Let AI write it: the prompt carries each task and its notes, the answer fills each line, Same as leaves one out", () => {
     const path = scratchProject("ai ask", [["WAIT", "Hva er status på dette [[p/Lars Haugen]]"], ["WAIT", "Background: status? [[p/Lars Haugen]]"],
       ["TODO", "Draft the new wording"]]);

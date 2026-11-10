@@ -33,6 +33,7 @@ function setBlockState(path, block, state, opts = {}) {
   if (prev !== state) {
     if (state === "DOING") { if (clockOnDoing()) clockIn(block); }
     else if (prev === "DOING") clockOut(block);
+    if (state === "WAIT") waitTipLater();
   }
   touch(path);
 

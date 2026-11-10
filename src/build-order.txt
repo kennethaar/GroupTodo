@@ -380,6 +380,9 @@ js/55-journal-lifecycle/ensureWeek.js
 js/55-journal-lifecycle/pourDayTemplates.js
 js/55-journal-lifecycle/backfillDayFields.js
 js/60-state-machine/setBlockState.js
+js/60-state-machine/vars-WAIT_TIP_PREF.js
+js/60-state-machine/waitTip.js
+js/60-state-machine/waitTipLater.js
 js/60-state-machine/vars-CLOCK_RE.js
 js/60-state-machine/clockIn.js
 js/60-state-machine/clockOut.js

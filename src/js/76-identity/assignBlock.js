@@ -9,7 +9,7 @@ function assignBlock(path, block, name, quiet) {
     setBlockProp(block, "assigned_at", nowStamp());
     if (kind === "outside") {
       // Nobody here can act on it, so for this vault it is a waiting-for.
-      if (OPEN_STATES[block.state]) block.state = "WAIT";
+      if (OPEN_STATES[block.state] && block.state !== "WAIT") { block.state = "WAIT"; waitTipLater(); }
     } else if (block.state === "WAIT") {
       block.state = "TODO";                 // a member, or the household, can actually do it
     }

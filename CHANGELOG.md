@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.136.0 - 2026-11-10
+
+- Waiting for › List: the first time you turn a task to waiting, a short tip
+  shows how to write it: `[[p/Person]]: Trenger dere et møte med oss om
+  dette?`. The link files it under that person, and Ask for an update sends
+  only the question. The tip shows once; it is also under More in this help
+  topic. (#347)
+
 ## 1.135.5 - 2026-11-10
 
 - Waiting for › List: the mail that asks for an update now looks clickable only

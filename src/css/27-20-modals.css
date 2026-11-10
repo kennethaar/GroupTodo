@@ -261,3 +261,6 @@ button.coach-dot{background:none;padding:0;font:inherit;color:transparent}
 .pictureview-wrap{display:flex;justify-content:center}
 .pictureview{display:block;max-width:100%;max-height:70dvh;object-fit:contain;border-radius:8px;cursor:zoom-out}
 .modal:has(.pictureview){width:min(1000px,100%)}
+/* The once-only tip on how a waiting task reads best (#347): quiet, not an alert. */
+.waittip{margin:10px 0 0;padding:8px 10px;border-radius:6px;background:var(--accent-soft);color:var(--fg);font-size:12.5px;line-height:1.45}
+.waittip code{font-size:12px;overflow-wrap:anywhere}
