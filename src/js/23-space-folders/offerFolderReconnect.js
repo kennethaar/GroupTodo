@@ -29,9 +29,7 @@ function offerFolderReconnect(name) {
     foot: [
       el("button", {class: "btn primary", onclick: async () => {
         closeModal();
-        const ok = await grantSpaceFolder(name);
-        const next = Array.from(PENDING_GRANT.keys())[0];
-        if (ok && next) offerFolderReconnect(next);
+        if (await grantSpaceFolder(name)) offerNextFolder();
       }}, "Allow access to " + where),
       el("button", {class: "btn ghost", onclick: () => {
         closeModal();

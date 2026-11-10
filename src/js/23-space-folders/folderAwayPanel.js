@@ -6,6 +6,7 @@ function folderAwayPanel(name) {
   const back = pending
     ? el("button", {class: "btn primary", onclick: async () => {
         if (!await grantSpaceFolder(name)) render();
+        else offerNextFolder();
       }}, "Allow access to " + where)
     : CAP.dirPicker
       ? el("button", {class: "btn primary", onclick: async () => {

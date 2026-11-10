@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.135.4 - 2026-11-10
+
+- Phone and PC: after a reload, Allow access on the open area now asks for
+  the next area's folder too. Before, the other area quietly stayed on
+  browser storage, so its day pages differed from the PC's.
+
 ## 1.135.3 - 2026-11-10
 
 - Waiting for › List: Let AI write it shows the AI the exact shape of the

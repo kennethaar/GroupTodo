@@ -4304,6 +4304,30 @@ var GTD_TEST = (() => {
     }
   });
 
+  test("#346 after Allow access on the open area, the next area waiting for its folder is asked for", async () => {
+    const view = state.view, other = "Other346";
+    PENDING_GRANT.set(V.space, {name: "Vault folder", kind: "directory", requestPermission: async () => "granted"});
+    PENDING_GRANT.set(other, {name: "Folder346", kind: "directory"});
+    try {
+      go("today");
+      await settle();
+      const panel = content().querySelector(".folderaway");
+      ok(panel, "no reconnect panel in place of the pages");
+      [...panel.querySelectorAll("button")].find(b => b.textContent === "Allow access to Vault folder").click();
+      for (let i = 0; i < 50 && !document.querySelector("#modalRoot .modal"); i++) await new Promise(r => setTimeout(r, 20));
+      const m = document.querySelector("#modalRoot .modal");
+      ok(m, "the other area was never asked for");
+      has(m.textContent, "Reconnect " + other);
+      ok([...m.querySelectorAll("button")].some(b => b.textContent === "Allow access to Folder346"), "no Allow access for the other folder");
+    } finally {
+      closeModal();
+      PENDING_GRANT.delete(V.space); PENDING_GRANT.delete(other);
+      AWAY_OK.delete(V.space);
+      await filesLoaded();
+      go(view);
+    }
+  });
+
   /* ---------- the key that takes a suggestion (#190) ---------- */
   {
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
