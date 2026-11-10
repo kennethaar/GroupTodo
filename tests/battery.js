@@ -4994,8 +4994,8 @@ var GTD_TEST = (() => {
       items: [{ref: "Work-aaaa1111", t: "Quote for the depot", word: "In progress", color: MAIL_COLOR.DOING, comment: "Board on 12 Nov",
                context: [{depth: 0, text: "two options"}]},
               {ref: "Work-bbbb2222", t: "Old badges", word: "Cancelled", color: MAIL_COLOR.CANCELLED, struck: true}]});
-    has(m.html, "1.</span> Quote for the depot");
-    has(m.html, "2.</span> Old badges");
+    ok(/1\.<\/span> <a href="mailto:[^"]+"[^>]*>Quote for the depot<\/a>/.test(m.html), "line 1, its title a link to ask about it");
+    ok(/2\.<\/span> <a [^>]*>Old badges<\/a>/.test(m.html), "line 2");
     has(m.html, REF_LINE(["Work-aaaa1111", "Work-bbbb2222"]));
     has(m.html, "Board on 12 Nov");
     has(m.html, "two options");
@@ -5011,16 +5011,32 @@ var GTD_TEST = (() => {
     has(got, "\r\n--\r\nGot it\r\n");
     has(m.text, "1. Quote for the depot");
   }));
-  test("#159 asking, each line gets Mark as done and Write about it, a question Answer this", () => inEnglish(() => {
+  test("#159 asking, each line gets Mark as done and Write about it, a question Answer", () => inEnglish(() => {
     const m = updateMail({mode: "ask", them: "Lars Haugen", subject: "Waiting for", replyTo: "me@example.com", greet: "Hi Lars,",
-      items: [{ref: "Work-aaaa1111", kind: "wait", t: "The signed contract", word: "Waiting for", color: MAIL_COLOR.wait},
-              {ref: "Work-bbbb2222", kind: "question", t: "Which week works?", word: "Question", color: MAIL_COLOR.question}]});
+      items: [{ref: "Work-aaaa1111", kind: "wait", t: "The signed contract", word: "Waiting for", color: MAIL_COLOR.wait,
+               about: "Depot move", meta: "open 12 days"},
+              {ref: "Work-bbbb2222", kind: "question", t: "Which week works?", word: "Question", color: MAIL_COLOR.question,
+               about: "Depot move"}]});
     has(m.html, "Mark as done");
     has(m.html, "Write about this");
-    has(m.html, "Answer this");
     ok(!m.html.includes("Got it"), "no Got it when asking");
     has(m.html, REF_LINE(["Work-aaaa1111", "Work-bbbb2222?"]), "a question's reference ends in ?");
     has(decodeURIComponent(m.links[0]), "1 done: The signed contract");
+    // Only what can be clicked looks clickable (#159): no bordered label beside the task.
+    ok(!/border:1\.5px|border-radius:10px/.test(m.html), "a label or footer drawn as a button that does nothing");
+    ok(!/>(Question|Waiting for)</.test(m.html), "the kind is said by the intro and the button, not by a label");
+    has(m.html, "About: Depot move · open 12 days", "what a line is about is quiet text");
+    has(m.text, "About: Depot move");
+    const doc = new DOMParser().parseFromString(m.html, "text/html");
+    const a = [...doc.querySelectorAll("a")];
+    const titled = t => a.find(x => x.textContent === t);
+    ok(titled("Which week works?"), "a question's title is a link");
+    eq(titled("Which week works?").getAttribute("href"), titled("Answer").getAttribute("href"), "the title opens the answer");
+    eq(titled("The signed contract").getAttribute("href"), a.find(x => x.textContent.startsWith("Write about")).getAttribute("href"),
+      "a wait's title opens a reply about it");
+    ok(!a.some(x => x.textContent.includes("Answer this")), "the button says Answer");
+    ok(/2a7ae2/i.test(titled("Answer").parentElement.getAttribute("bgcolor") || ""), "Answer is a filled button, its padding on the cell");
+    ok(/2a7ae2/i.test(titled("✓ Mark as done").parentElement.getAttribute("bgcolor") || ""), "Mark as done is the wait's button");
   }));
   test("#159 a reply typed by hand is read by its numbers", () => {
     const d = parseUpdateReply("Hi Kenneth\n\n1 done\n2: week 47, Tuesday\n3: next Friday\n\nLars\n\n> Hi Lars,\n> " +

@@ -24,7 +24,7 @@ const MAIL_COLOR = {DONE: "#1f9255", DOING: "#2a7ae2", WAIT: "#c07a12", TODO: "#
 const MAIL_GOT_IT = "Got it";
 const MAIL_WORDS = {
   en: {
-    askAbout: "Ask about this ›", markDone: "✓ Mark as done", writeAbout: "Write about this ›", answer: "Answer this ›",
+    askAbout: "Ask about this ›", markDone: "✓ Mark as done", writeAbout: "Write about this ›", answer: "Answer", about: "About:",
     gotIt: "✓ Got it, thanks", gotItSaid: "Got it, thanks.",
     waitingFor: "Waiting for", question: "Question", open: n => "open " + n + " days",
     reQuestion: t => 'Question about "' + t + '"', reDone: t => 'Done: "' + t + '"', reAbout: t => 'About "' + t + '"',
@@ -39,7 +39,7 @@ const MAIL_WORDS = {
     paste: "[ Paste the GroupToDo update here: select this line and press Ctrl+V ]",
   },
   sv: {
-    askAbout: "Fråga om detta ›", markDone: "✓ Markera som klar", writeAbout: "Skriv om detta ›", answer: "Svara på detta ›",
+    askAbout: "Fråga om detta ›", markDone: "✓ Markera som klar", writeAbout: "Skriv om detta ›", answer: "Svara", about: "Gäller:",
     gotIt: "✓ Uppfattat, tack", gotItSaid: "Uppfattat, tack.",
     waitingFor: "Väntar på", question: "Fråga", open: n => "öppen " + n + " dagar",
     reQuestion: t => 'Fråga om "' + t + '"', reDone: t => 'Klart: "' + t + '"', reAbout: t => 'Om "' + t + '"',
@@ -54,7 +54,7 @@ const MAIL_WORDS = {
     paste: "[ Klistra in GroupToDo-uppdateringen här: markera raden och tryck Ctrl+V ]",
   },
   no: {
-    askAbout: "Spør om dette ›", markDone: "✓ Merk som ferdig", writeAbout: "Skriv om dette ›", answer: "Svar på dette ›",
+    askAbout: "Spør om dette ›", markDone: "✓ Merk som ferdig", writeAbout: "Skriv om dette ›", answer: "Svar", about: "Gjelder:",
     gotIt: "✓ Mottatt, takk", gotItSaid: "Mottatt, takk.",
     waitingFor: "Venter på", question: "Spørsmål", open: n => "åpen " + n + " dager",
     reQuestion: t => 'Spørsmål om "' + t + '"', reDone: t => 'Ferdig: "' + t + '"', reAbout: t => 'Om "' + t + '"',
@@ -69,7 +69,7 @@ const MAIL_WORDS = {
     paste: "[ Lim inn GroupToDo-oppdateringen her: merk linjen og trykk Ctrl+V ]",
   },
   da: {
-    askAbout: "Spørg om dette ›", markDone: "✓ Markér som færdig", writeAbout: "Skriv om dette ›", answer: "Svar på dette ›",
+    askAbout: "Spørg om dette ›", markDone: "✓ Markér som færdig", writeAbout: "Skriv om dette ›", answer: "Svar", about: "Vedrører:",
     gotIt: "✓ Modtaget, tak", gotItSaid: "Modtaget, tak.",
     waitingFor: "Venter på", question: "Spørgsmål", open: n => "åben " + n + " dage",
     reQuestion: t => 'Spørgsmål om "' + t + '"', reDone: t => 'Færdig: "' + t + '"', reAbout: t => 'Om "' + t + '"',
@@ -84,7 +84,7 @@ const MAIL_WORDS = {
     paste: "[ Indsæt GroupToDo-opdateringen her: markér linjen og tryk Ctrl+V ]",
   },
   de: {
-    askAbout: "Dazu fragen ›", markDone: "✓ Als erledigt melden", writeAbout: "Dazu schreiben ›", answer: "Darauf antworten ›",
+    askAbout: "Dazu fragen ›", markDone: "✓ Als erledigt melden", writeAbout: "Dazu schreiben ›", answer: "Antworten", about: "Betrifft:",
     gotIt: "✓ Erhalten, danke", gotItSaid: "Erhalten, danke.",
     waitingFor: "Warte auf", question: "Frage", open: n => "seit " + n + " Tagen offen",
     reQuestion: t => 'Frage zu "' + t + '"', reDone: t => 'Erledigt: "' + t + '"', reAbout: t => 'Zu "' + t + '"',

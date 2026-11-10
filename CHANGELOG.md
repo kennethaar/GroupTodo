@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.135.5 - 2026-11-10
+
+- Waiting for › List: the mail that asks for an update now looks clickable only
+  where it is. Each line's title is a link, and its main action is a solid
+  button, Answer or Mark as done. The Question and Waiting for labels are gone;
+  a quiet About: line names the project instead. (#159)
+
 ## 1.135.4 - 2026-11-10
 
 - Phone and PC: after a reload, Allow access on the open area now asks for

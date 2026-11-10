@@ -41,13 +41,13 @@ function openAskNote(name, items, file, sheetOf = null, area = Spaces.active || 
         const context = it.edit ? it.edit.c : it.context || [];
         if (it.q) {
           const q = it.edit ? {subject: it.edit.s, ask: it.edit.t} : askQuestionParts(it, name);
-          return {ref, kind: "question", t: q.ask || q.subject, meta: q.ask ? q.subject : "", word: w.question,
+          return {ref, kind: "question", t: q.ask || q.subject, about: q.ask ? q.subject : "", word: w.question,
             color: MAIL_COLOR.question, context};
         }
         const project = trim(it.project || "");
         const t = it.edit ? trim(it.edit.t.replace(new RegExp("\\s*\\(" + askEsc(project) + "\\)\\s*$"), "")) : askLineTitle(it, name);
-        return {ref, kind: "wait", t, word: w.waitingFor, color: MAIL_COLOR.wait, context,
-          meta: [project, it.days ? w.open(it.days) : ""].filter(Boolean).join(" · ")};
+        return {ref, kind: "wait", t, word: w.waitingFor, color: MAIL_COLOR.wait, context, about: project,
+          meta: it.days ? w.open(it.days) : ""};
       })});
   };
 
