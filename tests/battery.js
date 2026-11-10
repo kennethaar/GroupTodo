@@ -5314,6 +5314,36 @@ var GTD_TEST = (() => {
       setEmailOf(whoAmI(), V.space, mail);
     }
   });
+  test("#123 Ask for an update finds their email:: wherever it is written: any case, their context, or their page in another area", async () => {
+    const paths = [personPath("mia lunde"), contextPath("Mia Lunde"), personPath("Per Holm")];
+    const keep = paths.map(p => [p, getPage(p)]);
+    const rec = newRecord("Mail123", Backends.fs(fakeDir("Mail123", {}, [])));
+    LOADED.set(rec.name, rec);
+    const mail = emailOf(whoAmI(), V.space);
+    try {
+      for (const p of paths) if (V.pages.has(p)) removePage(p);
+      putPage(personPath("mia lunde"), parsePage("title:: mia lunde\nemail:: mia@example.com\n"));
+      eq(emailOf("Mia Lunde", V.space), "mia@example.com", "the page's file name in another case");
+      removePage(personPath("mia lunde"));
+      putPage(contextPath("Mia Lunde"), parsePage("title:: Mia Lunde\nemail:: mia@example.com\n"));
+      eq(emailOf("Mia Lunde", V.space), "mia@example.com", "on the context of the same name");
+      inSpace(rec.name, () => putPage(personPath("Per Holm"), parsePage("title:: Per Holm\nemail:: per@example.com\n")));
+      eq(emailOf("Per Holm", V.space), "per@example.com", "on their page in another area");
+      // So Send in Teams has it, with nothing to type.
+      scratchProject("crane order", [["WAIT", "Quote from [[p/Per Holm]]"]]);
+      openAskForUpdate("Per Holm");
+      await settle();
+      document.querySelector("#modalRoot input[type=email]").value = "me@example.com";
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Write the email").click();
+      await settle();
+      eq(document.querySelector("#modalRoot input[type=email]").value, "per@example.com", "the Teams address");
+    } finally {
+      closeAll();
+      LOADED.delete(rec.name);
+      for (const [p, page] of keep) { if (V.pages.has(p)) removePage(p); if (page) putPage(p, page); }
+      setEmailOf(whoAmI(), V.space, mail);
+    }
+  });
   test("#344 a line's own question and summary go out instead of its wording and notes, with when it was asked and what they last said", async () => {
     const path = scratchProject("agreement text", [["WAIT", "Background: What is the status? [[p/Lars Haugen]]"],
       ["WAIT", "Quote from [[p/Lars Haugen]]"], ["WAIT", "Drawings from [[p/Lars Haugen]]"]]);

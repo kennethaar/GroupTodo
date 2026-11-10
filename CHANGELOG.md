@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.136.1 - 2026-11-10
+
+- Waiting for › List: Ask for an update fills in their address for Send in
+  Teams and the email from `email::` wherever you wrote it: their page with the
+  name in another case, a context of their name, or their page in another
+  open area. It no longer asks for an address you already have. (#123)
+
 ## 1.136.0 - 2026-11-10
 
 - Waiting for › List: the first time you turn a task to waiting, a short tip
