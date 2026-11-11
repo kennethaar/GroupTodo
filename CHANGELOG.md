@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.141.1 - 2026-11-11
+
+- Ways to run GroupToDo: serve.py's start box says Server folder, not Vault.
+  It is one folder, not your areas. The line below says how to put an area
+  in it: Vault & sync › Advanced › Sync server.
+
 ## 1.141.0 - 2026-11-11
 
 - Ways to run GroupToDo: serve.py starts with a box that says where to go

@@ -285,7 +285,8 @@ async function serveLogTestRun(name) {
   writeFileSync(log, Array.from({length: 499}, (_, i) => "old line " + i + "\n").join(""));
   const port = 18000 + Math.floor(Math.random() * 2000);
   const py = process.platform === "win32" ? "python" : "python3";
-  const server = spawn(py, [join(ROOT, "serve.py"), "--port", String(port), "--calendars-only", "--log-file", log]);
+  const vault = mkdtempSync(join(tmpdir(), "gtd-vault-"));
+  const server = spawn(py, [join(ROOT, "serve.py"), "--port", String(port), "--vault", vault, "--log-file", log]);
   let out = "";
   server.stdout.on("data", d => out += d.toString("utf-8"));
   server.stderr.on("data", d => out += d.toString("utf-8"));
@@ -305,6 +306,12 @@ async function serveLogTestRun(name) {
     if (!/GroupToDo started/.test(out) || !out.includes(`Go to`) || !out.includes(`http://127.0.0.1:${port}/`) || !out.includes(log))
       return {name, ok: false, error: "the start box lacks the address or the log:\n" + out};
     if (!/[┌╭]/.test(out)) return {name, ok: false, error: "no box:\n" + out};
+    /* serve.py's one folder is not the app's areas: it says so, and how an
+       area is put in it. */
+    if (!out.includes("Server folder") || !out.includes(vault) || /\bVault\s{2,}/.test(out))
+      return {name, ok: false, error: "the folder is not called Server folder:\n" + out};
+    if (!out.includes("Vault & sync › Advanced › Sync server"))
+      return {name, ok: false, error: "the box does not say how to use the folder:\n" + out};
     if (/GET \/api\/ping/.test(out)) return {name, ok: false, error: "request lines still go to the terminal:\n" + out};
     if (!out.split("\n").some(l => l.startsWith("!") && l.includes(short)))
       return {name, ok: false, error: "the failed calendar is not an ! line with the short link:\n" + out};
@@ -316,7 +323,10 @@ async function serveLogTestRun(name) {
     if (readdirSync(dir).length !== 2) return {name, ok: false, error: "more than one old log: " + readdirSync(dir)};
     return {name, ok: true};
   } catch (e) { return {name, ok: false, error: String(e)}; }
-  finally { server.kill(); setTimeout(() => { try { rmSync(dir, {recursive: true, force: true}); } catch {} }, 500); }
+  finally {
+    server.kill();
+    setTimeout(() => { for (const d of [dir, vault]) try { rmSync(d, {recursive: true, force: true}); } catch {} }, 500);
+  }
 }
 
 async function stripBuildTest(name) {

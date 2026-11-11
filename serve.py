@@ -168,7 +168,8 @@ class Log:
 
 def start_box(rows, foot):
     """The terminal's whole start-up message, in a box."""
-    body = ["%-8s %s" % row if row else "" for row in rows]
+    pad = max(len(row[0]) for row in rows if row) + 2
+    body = [row[0].ljust(pad) + row[1] if row else "" for row in rows]
     width = max(len(line) for line in body + [foot, "GroupToDo started"]) + 2
     out = ["┌─ GroupToDo started " + "─" * (width - 19) + "┐"]
     out += ["│ " + line.ljust(width - 2) + " │" for line in body]
@@ -822,10 +823,13 @@ def main():
     else:
         Handler.vault_chosen = bool(args.vault) or os.path.isdir(os.path.expanduser(DEFAULT_VAULT))
         Handler.vault = Vault(args.vault or DEFAULT_VAULT, create=Handler.vault_chosen)
+        # One folder, not the app's areas: those are folders the browser opens
+        # itself, out of sight of this server. Say how an area moves in here.
         if Handler.vault_chosen:
-            rows.append(("Vault", f"{Handler.vault.root}  ({len(Handler.vault.list())} files)"))
+            rows.append(("Server folder", f"{Handler.vault.root}  ({len(Handler.vault.list())} files)"))
+            rows.append(("Use it", "in the app, Vault & sync › Advanced › Sync server"))
         else:
-            rows.append(("Vault", "none given, so the app keeps its areas itself"))
+            rows.append(("Server folder", "none (--vault DIR names one); the app keeps its areas"))
     rows.append(("Access", "password required" if password else "open (localhost only)"))
     if args.open_in_editor:
         rows.append(("Editor", (args.open_with or "the system default") + ", on this machine"))
