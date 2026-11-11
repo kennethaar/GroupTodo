@@ -376,13 +376,15 @@ async function serveFolderTestRun(name) {
   const own = {"X-GroupTodo": "folder"};
   const same = (a, b) => String(a || "").toLowerCase() === String(b || "").toLowerCase();
   try {
+    /* No built-in folder at all: the old OrgMode default is never served,
+       on a PC or on Termux, where it came from. */
     let s = await start("pc");
     let p = (await s.ask("GET", "/api/ping")).json;
-    if (p.vault) return {name, ok: false, error: "a PC serves the old Termux default unasked: " + p.vault};
+    if (p.vault || !p.folderChoosable) return {name, ok: false, error: "a PC serves a folder unasked: " + JSON.stringify(p)};
     s.stop();
     s = await start();
     p = (await s.ask("GET", "/api/ping")).json;
-    if (!same(p.vault, old) || !p.folderChoosable) return {name, ok: false, error: "a vault already at the old default is no longer served on Termux: " + JSON.stringify(p)};
+    if (p.vault) return {name, ok: false, error: "Termux serves the old default unasked: " + p.vault};
     if ((await s.ask("POST", "/api/server-folder")).status !== 403) return {name, ok: false, error: "a request without the app's header changed the folder"};
     const chose = await s.ask("POST", "/api/server-folder", own);
     if (!chose || chose.status !== 200 || !same(chose.json.vault, picked)) return {name, ok: false, error: "choosing answered " + JSON.stringify(chose)};

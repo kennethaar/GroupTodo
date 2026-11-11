@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.142.2 - 2026-11-11
+
+- Areas and sharing: serve.py has no built-in folder any more, on a PC or a
+  phone. It serves a folder only when you choose one in the app or name it
+  with --vault.
+
 ## 1.142.1 - 2026-11-11
 
 - Areas and sharing: at a new address served by serve.py, no area goes into

@@ -22,9 +22,7 @@ calendar. --verbose shows every request line in the terminal as well.
 The server folder is --vault if given. Otherwise the app chooses it, under
 Your areas: serve.py opens this computer's folder picker and remembers the
 choice in %APPDATA%\\GroupToDo\\serve.json (~/.config/grouptodo/serve.json
-elsewhere). Until something is chosen there, Termux on Android uses the vault
-path of the original Neovim config if it exists:
-    ~/storage/shared/Documents/OrgMode
+elsewhere). There is no built-in folder: none is served until one is named.
 
 API
     GET    /api/ping            -> {"ok": true, ...}
@@ -108,7 +106,6 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs, unquote
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_VAULT = os.path.expanduser("~/storage/shared/Documents/OrgMode")
 ALLOWED_EXT = (".md", ".org")
 # Your own stylesheets, laid over the app's look. Only from pages/8/, the
 # folder for the app's own files, so a .css anywhere else stays off limits.
@@ -171,19 +168,12 @@ def save_config(path, changes):
 
 
 def start_folder(flag, config):
-    """--vault wins. Then the folder chosen in the app, or none if it was
-    removed there. Never chosen at all: on Termux, the phone where serve.py
-    began, the old default if it already holds a vault, so that setup keeps
-    working. Anywhere else nothing: a folder of that name on a PC is no
-    reason to serve it."""
+    """--vault wins, then the folder chosen in the app. Nothing else: no
+    folder is served that nobody named."""
     if flag:
         return Vault(flag, create=True)
-    if "vault" in config:
-        chosen = config["vault"]
-        return Vault(chosen, create=False) if chosen and os.path.isdir(chosen) else None
-    if "com.termux" in os.environ.get("PREFIX", "") and os.path.isdir(os.path.expanduser(DEFAULT_VAULT)):
-        return Vault(DEFAULT_VAULT, create=False)
-    return None
+    chosen = config.get("vault")
+    return Vault(chosen, create=False) if chosen and os.path.isdir(chosen) else None
 
 
 # Run apart, in a Python of its own: a Tk window wants its own main thread,
