@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.143.3 - 2026-11-11
+
+- Phone and PC: in Vault & sync, Phone sync is now Use on phone. It says
+  what really happens. Create file… makes one file with your lists. Save
+  it in OneDrive, Dropbox or a folder the phone also sees, then import it
+  on the phone with Import files. Once made, the row shows the file's name
+  and Sync now.
+
 ## 1.143.2 - 2026-11-11
 
 - Getting started: selecting text in a dialog no longer closes it when

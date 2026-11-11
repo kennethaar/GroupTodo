@@ -18,12 +18,18 @@ function openVaultDialog() {
     ? settingsRow("Not stored", CAP.sandboxed ? "Locked preview" : "This browser keeps nothing",
         btn("Save vault file", () => saveBundleAsDownload()), "warn")
     : null;
+  /* The phone row says both halves: this device makes one file to share, and
+     the other device imports it. "Set up" hid that it is a file (#359). */
+  const hinted = (label, hint) => el("span", {}, label, el("span", {class: "shint"}, hint));
   const phoneRow = CAP.savePicker
     ? (linkedKnown
-        ? settingsRow("Phone sync", lastSync ? "Last synced " + formatStamp(lastSync) : "Not synced yet",
-            btn("Sync", syncLinked, "primary"))
-        : settingsRow("Phone sync", "Not set up", btn("Set up", linkVaultFile, "primary")))
-    : settingsRow("Phone sync", "Vault file", btn(canShareFiles() ? "Send" : "Save", () => saveBundleAsDownload(), "primary"));
+        ? settingsRow(hinted("Use on phone", "Kept up to date here. On the phone, import it with Import files."),
+            [LINKED.name, lastSync ? "synced " + formatStamp(lastSync) : "not synced yet"].filter(Boolean).join(" · "),
+            btn("Sync now", syncLinked, "primary"))
+        : settingsRow(hinted("Use on phone", "Makes one file with your lists. Save it in OneDrive, Dropbox or a folder the phone also sees. Then import it on the phone with Import files."),
+            null, btn("Create file…", linkVaultFile, "primary")))
+    : settingsRow(hinted("Use on another device", "Sends one file with your lists. Import it there with Import files."),
+        null, btn(canShareFiles() ? "Send" : "Save", () => saveBundleAsDownload(), "primary"));
   const autoRow = CAP.savePicker && linkedKnown
     ? settingsRow("Sync automatically", null, settingsToggle(autoSyncOn(), "Sync automatically", on => {
         PREF.set("autosync", on ? "1" : "0");

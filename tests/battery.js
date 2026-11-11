@@ -4295,6 +4295,32 @@ var GTD_TEST = (() => {
       syncSendButton();
     }
   });
+  test("#359 Settings says the phone file is made here, shared, and imported on the phone", () => {
+    const save = CAP.savePicker, linked = LINKED;
+    const row = () => [...document.querySelectorAll(".modal .srow")]
+      .find(r => /Use on phone/.test(r.querySelector(".slabel").textContent));
+    try {
+      CAP.savePicker = true;
+      LINKED = null;
+      openVaultDialog();
+      ok(row(), "no Use on phone row");
+      ok(![...document.querySelectorAll(".modal .slabel")].some(l => /Phone sync/.test(l.textContent)), "Phone sync is still a label");
+      const t = row().textContent;
+      ok(/file/i.test(t) && /OneDrive|Dropbox/.test(t), "it does not say it makes a file to share: " + t);
+      ok(/import/i.test(t), "it does not say the phone imports the file: " + t);
+      eq(row().querySelector("button").textContent, "Create file…");
+      closeModal();
+      LINKED = {name: "Home.md"};
+      openVaultDialog();
+      ok(/Home\.md/.test(row().textContent), "the linked file's name is not shown");
+      ok(/import/i.test(row().textContent), "once made, it still says to import it on the phone");
+      eq(row().querySelector("button").textContent, "Sync now");
+      closeModal();
+    } finally {
+      CAP.savePicker = save; LINKED = linked;
+      closeModal();
+    }
+  });
   test("#179 a phone whose folder waits for Allow access has no file to send", () => {
     const mm = window.matchMedia, be = V.backend, linked = LINKED, get = Spaces.get;
     window.matchMedia = q => ({matches: /coarse/.test(q), media: q, addEventListener() {}, removeEventListener() {}});

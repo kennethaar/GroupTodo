@@ -14,7 +14,7 @@ function openAdvancedDialog() {
       else form.style.display = form.style.display === "none" ? "" : "none";
     }}, http ? "Forget" : "Set up"));
   const relink = CAP.savePicker && LINKED
-    ? settingsRow("Phone sync file", "Linked", el("button", {class: "btn sm ghost", onclick: () => linkVaultFile()}, "Link another"))
+    ? settingsRow("Phone file", LINKED.name || "Linked", el("button", {class: "btn sm ghost", onclick: () => linkVaultFile()}, "Link another"))
     : null;
   const check = onFolder
     ? settingsRow("Vault diagnostics", null,
