@@ -199,7 +199,7 @@ const HELP = {
   "waiting-list": {part: "views", title: "Waiting for › List", view: "waiting", sub: "list", gtd: "organise", shot: 1,
     what: "What you handed over, and who owes it back.",
     hint: "This is Waiting for. Chase what is late.",
-    steps: [["Ask for an update. Write the question once, or let AI write it.", "?.group .textbtn"],
+    steps: [["Ask for an update here or in a task's panel. Write the question once, or let AI write it.", "?.group .textbtn"],
       ["Click a person chip to hide or show them. Open Waiting for in the side bar to see one person.", ".ctxdrops"],
       "Tick a task when it comes back.",
       "Paste a reply from mail or Teams, then review each answer and choose an outcome."],

@@ -39,7 +39,8 @@ function openAskForUpdate(name, only = null, keep = null) {
   const saved = emailOf(me, area);
   const email = el("input", {type: "email", placeholder: "you@example.com",
     value: saved});
-  const card = el("div", {style: "max-height:40vh;overflow:auto"});
+  // The dialog body scrolls; a second scroll inside it only hid lines (#353).
+  const card = el("div", {});
   const summary = el("div", {style: "color:var(--fg3);font-size:12.5px;margin-top:8px"});
   const mixed = found.some(a => a.mention) && found.some(a => !a.mention);
   let split = false;
@@ -261,12 +262,12 @@ function openAskForUpdate(name, only = null, keep = null) {
         el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
           saved ? "From email:: on your page in " + area + ". Change it there, or here."
                 : "Not on your page in " + (area || "this area") + " yet. It is saved there as " +
-                  "email:: when you write the email or make the sheet, so you are only asked once.")),
+                  "email:: when you write the message or make the sheet, so you are only asked once.")),
       el("div", {class: "field"},
         el("div", {style: "color:var(--fg3);font-size:12.5px"},
-          "Write the email: each line numbered in the mail itself, with a link on each that opens a short " +
-          "reply to you, so " + name + " answers with a click or a plain reply you paste back. Nothing to " +
-          "open and no account. Make the sheet: the same as one HTML file to attach as well, for a long list."))),
+          "Write the message: send it as an email or in Teams. In an email each line has a link that opens a " +
+          "short reply to you; in Teams " + name + " answers in the chat. Either way, a reply you paste back " +
+          "updates the lines. Make the sheet: the same as one HTML file to attach as well, for a long list."))),
     foot: [
       el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
       el("button", {class: "btn ghost", onclick: () => { closeModal(); importUpdatePasted(); }},
@@ -274,7 +275,7 @@ function openAskForUpdate(name, only = null, keep = null) {
       el("button", {class: "btn ghost", onclick: () => { closeModal(); importUpdateFromFile(); }},
         "Import a file"),
       el("button", {class: "btn ghost", onclick: () => send(true)}, "Make the sheet"),
-      el("button", {class: "btn primary", onclick: () => send(false)}, "Write the email"),
+      el("button", {class: "btn primary", onclick: () => send(false)}, "Write the message"),
     ],
   });
 }

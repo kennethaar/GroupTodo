@@ -142,14 +142,14 @@ function openSendUpdate(to, start = null) {
           el("span", {}, "Name the projects in what they get"))) : null,
       el("div", {class: "field"},
         el("div", {style: "color:var(--fg3);font-size:12.5px"},
-          "Write the email: each line numbered in the mail itself, where it stands and your word on it, " +
-          "with a link to ask about it and one to say Got it. Make the sheet: the same as one HTML page to attach and keep. " +
+          "Write the message: send it as an email or in Teams. Each line says where it stands and your word on it; " +
+          "in an email each also has a link to ask about it and one to say Got it. Make the sheet: the same as one HTML page to attach and keep. " +
           "Either way, once it is sent each line is marked as told, what you wrote goes in its chat or on the " +
           "responsibility's page, and a status you changed here can go to the task."))),
     foot: [
       el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
       el("button", {class: "btn ghost", onclick: () => send(true)}, "Make the sheet"),
-      el("button", {class: "btn primary", onclick: () => send(false)}, "Write the email"),
+      el("button", {class: "btn primary", onclick: () => send(false)}, "Write the message"),
     ],
   });
 }

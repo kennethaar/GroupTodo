@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.140.0 - 2026-11-11
+
+- Waiting for › List: a task's panel has Ask for an update beside Send an
+  update when the line names someone. Both dialogs say Write the message,
+  since it goes by email or Teams, and the Ask dialog has one scroll bar.
+
 ## 1.139.1 - 2026-11-11
 
 - Waiting for › List: a Teams message about one task has no number in front

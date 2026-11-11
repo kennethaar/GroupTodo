@@ -372,6 +372,16 @@ function showTaskDetail(path, block, space) {
         threadPanel(path, block),
         el("div", {style: "margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"},
           el("button", {class: "btn sm ghost", onclick: () => { closeModal(); informFromLine(path, block, space); }}, svgIcon(ICON_MAIL), " Send an update"),
+          // Asking needs someone named on the line; one goes straight there, several are picked from.
+          ...(() => {
+            const ps = inSpace(space, () => linePeople(block));
+            if (!ps.length) return [];
+            return [el("button", {class: "btn sm ghost", onclick: () => {
+              closeModal();
+              if (ps.length === 1) openAskForUpdate(ps[0], block);
+              else chipMenu("Ask who for an update?", null, lettered(ps.map(n => [n, null, () => openAskForUpdate(n, block)])));
+            }}, svgIcon(ICON_MAIL), " Ask for an update")];
+          })(),
           el("span", {style: "color:var(--fg3);font-size:12px"},
             informedAt(block) ? "Last told " + trim(blockProp(block, INFORMED_PROP)).replace(/\s+\S+$/, "") + " on " + informedAt(block) + "."
                               : "Tell whoever it names where it stands. Alt+U on the line."))),

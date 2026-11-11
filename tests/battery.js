@@ -3053,6 +3053,21 @@ var GTD_TEST = (() => {
       ok([...header.querySelectorAll("button")].some(x => x.textContent === "✕"), "close stays in that same header");
     } finally { closeModal(); }
   });
+  test("#353 task panel: Ask for an update sits by Send an update when the line names someone", async () => {
+    const path = scratchProject("ask-from-panel", [["WAIT", "Quote from [[p/Lars Haugen]]"], ["TODO", "Pack for the trip"]]);
+    const [named, bare] = getPage(path).blocks;
+    const askBtn = () => [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent.trim() === "Ask for an update");
+    try {
+      showTaskDetail(path, bare, V.space);
+      ok(!askBtn(), "a line naming nobody has no one to ask");
+      closeModal();
+      showTaskDetail(path, named, V.space);
+      ok(askBtn(), "no Ask for an update on a waiting line naming Lars");
+      askBtn().click();
+      await settle();
+      has(document.querySelector("#modalRoot .modal").textContent, "Ask Lars Haugen for an update");
+    } finally { for (let i = 0; i < 4 && $("#modalRoot").firstChild; i++) closeModal(); }
+  });
   test("#317 task panel shows words, not storage: the title, tags, repeats and an empty time", () => {
     const path = scratchProject("words-not-storage", [["TODO", "Email [[p/Nora Vik]] the draft terms [[c/computer]]"]]);
     const b = getPage(path).blocks[0];
@@ -5280,7 +5295,7 @@ var GTD_TEST = (() => {
       openAskForUpdate("Lars Haugen");
       await settle();
       document.querySelector("#modalRoot input[type=email]").value = "me@example.com";
-      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Write the email").click();
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Write the message").click();
       await settle();
       document.querySelector("#modalRoot input[type=email]").value = "lars@example.com";
       [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Send in Teams").click();
@@ -5432,7 +5447,12 @@ var GTD_TEST = (() => {
     closeAll();
     openSendUpdate({name: "Lars Haugen"});
     await settle();
-    eq(document.querySelector("#modalRoot .btn.primary").textContent, "Write the email");
+    // #353: the next step offers mail and Teams alike, so the button names neither.
+    eq(document.querySelector("#modalRoot .btn.primary").textContent, "Write the message");
+    closeAll();
+    openAskForUpdate("Lars Haugen");
+    await settle();
+    eq(document.querySelector("#modalRoot .btn.primary").textContent, "Write the message");
     closeAll();
   });
 
@@ -5501,7 +5521,7 @@ var GTD_TEST = (() => {
       document.querySelector("#modalRoot input[type=email]").value = "me@example.com";
       row.previousElementSibling.click();
       eq(PREF.get("askNameProjects", "1"), "0", "the choice is remembered");
-      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Write the email").click();
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Write the message").click();
       await settle();
       const note = document.querySelector("#modalRoot textarea").value;
       has(note, "Which crane goes first");
@@ -5532,7 +5552,7 @@ var GTD_TEST = (() => {
       openAskForUpdate("Per Holm");
       await settle();
       document.querySelector("#modalRoot input[type=email]").value = "me@example.com";
-      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Write the email").click();
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Write the message").click();
       await settle();
       eq(document.querySelector("#modalRoot input[type=email]").value, "per@example.com", "the Teams address");
     } finally {
@@ -5568,7 +5588,7 @@ var GTD_TEST = (() => {
       await settle();
       eq(document.querySelector("#modalRoot h2")?.textContent, "Ask Lars Haugen for an update");
       document.querySelector("#modalRoot input[type=email]").value = "me@example.com";
-      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Write the email").click();
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Write the message").click();
       await settle();
       const note = document.querySelector("#modalRoot textarea").value;
       has(note, "Is the new text in, and in which release?");
@@ -5617,7 +5637,7 @@ var GTD_TEST = (() => {
       openAskForUpdate("Mujammal Ali", asked);
       await settle();
       document.querySelector("#modalRoot input[type=email]").value = "me@example.com";
-      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Write the email").click();
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Write the message").click();
       await settle();
       const note = document.querySelector("#modalRoot textarea").value;
       has(note, "Trenger dere et møte med meg og våre utviklere (Tina Reinebo og Hans-Åke Lilja)");
