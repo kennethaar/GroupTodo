@@ -103,7 +103,7 @@ import time
 import urllib.request
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlparse, parse_qs, unquote
+from urllib.parse import urlparse, parse_qs, quote, unquote
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ALLOWED_EXT = (".md", ".org")
@@ -156,9 +156,8 @@ def load_config(path):
         return {}
 
 
-def save_config(path, changes):
-    data = load_config(path)
-    data.update(changes)
+def save_config(path, changes, replace=False):
+    data = changes if replace else {**load_config(path), **changes}
     try:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as fh:
@@ -167,13 +166,90 @@ def save_config(path, changes):
         pass                        # the choice still holds until serve.py stops
 
 
-def start_folder(flag, config):
-    """--vault wins, then the folder chosen in the app. Nothing else: no
-    folder is served that nobody named."""
-    if flag:
-        return Vault(flag, create=True)
-    chosen = config.get("vault")
-    return Vault(chosen, create=False) if chosen and os.path.isdir(chosen) else None
+# Which run of serve.py this is: the app says what serve.py offers once per run.
+STARTED_AT = time.strftime("%Y-%m-%dT%H:%M:%S") + "-%d" % os.getpid()
+
+
+def load_folders(config):
+    """The server folders chosen in the app, in the order they were added. A
+    single folder chosen before there could be several comes along as one.
+    None is built in: no folder is served that nobody named."""
+    entries = config.get("folders")
+    if entries is None and config.get("vault"):
+        entries = [{"path": config["vault"]}]
+    folders = {}
+    for entry in entries or []:
+        path = entry.get("path") if isinstance(entry, dict) else None
+        if path and os.path.isdir(path):
+            add_folder(folders, path, entry.get("name"))
+    return folders
+
+
+def add_folder(folders, path, name=None):
+    """Add a folder under its own name, made unique; the same folder twice is
+    one entry. Returns the name it has."""
+    root = os.path.abspath(os.path.expanduser(path))
+    for have, vault in folders.items():
+        if os.path.normcase(vault.root) == os.path.normcase(root):
+            return have
+    base = re.sub(r"[^\w \-]", "", name or os.path.basename(root.rstrip("\\/"))).strip() or "Folder"
+    name, n = base, 2
+    while name in folders:
+        name, n = "%s %d" % (base, n), n + 1
+    folders[name] = Vault(root, create=False)
+    return name
+
+
+def folder_info(name, vault):
+    return {"name": name, "path": vault.root, "files": len(vault.list()),
+            "base": "f/" + quote(name)}
+
+
+def save_folders(path, folders):
+    data = load_config(path)
+    data.pop("vault", None)                # the single folder of old is in the list now
+    data["folders"] = [{"name": n, "path": v.root} for n, v in folders.items()]
+    save_config(path, data, replace=True)
+
+
+WHY_FOLDER = (
+    "No server folder yet.\n"
+    "A server folder keeps an area's files on this PC, so a phone, a tablet or a\n"
+    "browser that cannot open folders (Firefox, Safari) can use that area too.\n"
+    "Areas in folders your browser opens itself need none.")
+
+
+def ask_for_folders(folders, config_path):
+    """At start-up, in a terminal, with no folder yet: say why one helps and
+    offer to choose. y picks (and offers another), Enter is not now, x stops
+    the asking for good -- the app can still add folders later."""
+    print(WHY_FOLDER, flush=True)
+    prompt = "Choose a server folder now? [y = choose · Enter = not now · x = don't ask again] "
+    while True:
+        try:
+            answer = input(prompt).strip().lower()
+        except EOFError:
+            answer = ""
+        if answer == "x":
+            save_config(config_path, {"ask": False})
+            print("Not asked again. Add server folders in the app, under Your areas.", flush=True)
+            return
+        if answer != "y":
+            return
+        try:
+            path = pick_folder()
+        except Exception:                  # no folder window here (Termux): type it
+            try:
+                path = input("Type the folder's path (Enter to skip): ").strip().strip('"') or None
+            except EOFError:
+                path = None
+        if path and os.path.isdir(path):
+            name = add_folder(folders, path)
+            save_folders(config_path, folders)
+            print("Added %s: %s" % (name, folders[name].root), flush=True)
+        elif path:
+            print("There is no folder at %s." % path, flush=True)
+        prompt = "Another one? [y/N] "
 
 
 # Run apart, in a Python of its own: a Tk window wants its own main thread,
@@ -186,12 +262,19 @@ PICK_SCRIPT = (
     "sys.stdout.write(path or '')\n")
 
 
+_PICKS = [0]
+
+
 def pick_folder(start=None):
     """The folder picker of this computer, opened for whoever sits at it.
     A browser never tells a page the path of a folder, so this is the only way
-    the app can name one. GTD_PICK_FOLDER answers without a window (tests)."""
+    the app can name one. GTD_PICK_FOLDER answers without a window (tests):
+    several paths split by | answer one pick each, the last one after that."""
     if os.environ.get("GTD_PICK_FOLDER"):
-        return os.path.abspath(os.environ["GTD_PICK_FOLDER"])
+        answers = os.environ["GTD_PICK_FOLDER"].split("|")
+        answer = answers[min(_PICKS[0], len(answers) - 1)]
+        _PICKS[0] += 1
+        return os.path.abspath(answer)
     done = subprocess.run([sys.executable, "-c", PICK_SCRIPT, start or ""],
                           capture_output=True, text=True, encoding="utf-8")
     if done.returncode != 0:
@@ -394,7 +477,8 @@ def open_in_editor(full, command=None):
 
 class Handler(BaseHTTPRequestHandler):
     server_version = "GroupToDo/1.0"
-    vault = None           # the server folder: --vault, the app's choice, or none
+    vault = None           # the folder at the root, /api/...: --vault, or none
+    folders = {}           # name -> Vault, each at /f/<name>/api/...: chosen in the app
     calendars_only = False
     folder_locked = False  # --vault given: the command line decides, not the app
     local_only = True      # bound to this computer, so a folder picker opens for its user
@@ -529,7 +613,7 @@ class Handler(BaseHTTPRequestHandler):
 
     # ---------- verbs ----------
     def do_OPTIONS(self):
-        if self.refused():
+        if not self._scope() or self.refused():
             return
         self._send(204)
 
@@ -537,6 +621,8 @@ class Handler(BaseHTTPRequestHandler):
         if not self.authorised():
             return self.demand_password()
         if self.refused():
+            return
+        if not self._scope():
             return
         route = urlparse(self.path).path
         if route == "/api/ping":
@@ -546,7 +632,10 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"ok": True, "vault": vault.root if vault else None,
                                     "vaultChosen": vault is not None,
                                     "files": len(vault.list()) if vault else 0,
+                                    "folders": [folder_info(n, v) for n, v in self.folders.items()],
                                     "folderChoosable": self.folder_choosable(),
+                                    "startedAt": STARTED_AT,
+                                    "logFile": self.log.path,
                                     "open_in_editor": bool(self.allow_open)})
         if self.vault is None and route.startswith("/api/") and route != "/api/calendar":
             return self._send(404, "this helper only fetches calendars" if self.calendars_only
@@ -585,43 +674,61 @@ class Handler(BaseHTTPRequestHandler):
     # The static and API handlers already suppress bodies for HEAD.
     do_HEAD = do_GET
 
-    # ---------- the server folder, chosen in the app ----------
-    # Only for a server on this computer with no password and no --vault: the
-    # folder picker opens on this desktop, so it must be the person at it who
-    # asked, and nobody across a network may point the server somewhere else.
+    # ---------- server folders, chosen in the app ----------
+    # Several folders, one per area, each answering at /f/<name>/ exactly as a
+    # server with that one folder would. Changed only for a server on this
+    # computer with no password and no --vault: the folder picker opens on
+    # this desktop, so it must be the person at it who asked, and nobody
+    # across a network may point the server somewhere else.
+    def _scope(self):
+        """Answer a request to /f/<name>/... from that folder. False when there
+        is no such folder; the 404 is sent."""
+        m = re.match(r"^/f/([^/?]+)(/.*)$", self.path)
+        if not m:
+            return True
+        folder = self.folders.get(unquote(m.group(1)))
+        if folder is None:
+            self._send(404, "no server folder called %s" % unquote(m.group(1)))
+            return False
+        self.vault = folder              # this request only: the class keeps the root's
+        self.path = m.group(2)
+        return True
+
     def folder_choosable(self):
         return (not self.calendars_only and not self.folder_locked
                 and not self.password and self.local_only)
 
     def server_folder(self, remove):
         if not self.folder_choosable():
-            return self._send(403, "The server folder is set where serve.py starts (--vault), "
+            return self._send(403, "Server folders are set where serve.py starts (--vault), "
                                    "or serve.py does not run on this computer.")
         # As /api/open: a header only the app's own fetch sends forces a
         # preflight that another site's page cannot pass.
         if (self.headers.get("X-GroupTodo") or "") != "folder":
             return self._send(403, "This endpoint is for the app itself.")
         if remove:
-            Handler.vault = None
-            save_config(self.config_path, {"vault": None})
-            self.log.write("Server folder removed", show=True)
-            return self._json(200, {"ok": True, "vault": None})
+            name = (parse_qs(urlparse(self.path).query).get("name") or [""])[0]
+            if self.folders.pop(name, None) is None:
+                return self._send(404, "no server folder called %s" % name)
+            save_folders(self.config_path, self.folders)
+            self.log.write("Server folder %s removed" % name, show=True)
+            return self._json(200, {"ok": True})
         try:
-            path = pick_folder(self.vault.root if self.vault else None)
+            path = pick_folder()
         except Exception as exc:
             self.log.write("Folder picker failed: %s" % exc, show=True)
             return self._send(500, "Could not open a folder picker here: %s" % exc)
         if not path:
             return self._json(200, {"ok": True, "cancelled": True})
-        Handler.vault = Vault(path, create=False)
-        save_config(self.config_path, {"vault": Handler.vault.root})
-        self.log.write("Server folder is now %s" % Handler.vault.root, show=True)
-        return self._json(200, {"ok": True, "vault": Handler.vault.root, "files": len(Handler.vault.list())})
+        name = add_folder(self.folders, path)
+        save_folders(self.config_path, self.folders)
+        self.log.write("Server folder %s added: %s" % (name, self.folders[name].root), show=True)
+        return self._json(200, {"ok": True, "folder": folder_info(name, self.folders[name])})
 
     def do_POST(self):
         if not self.authorised():
             return self.demand_password()
-        if self.refused():
+        if not self._scope() or self.refused():
             return
         if urlparse(self.path).path == "/api/server-folder":
             return self.server_folder(remove=False)
@@ -652,7 +759,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_PUT(self):
         if not self.authorised():
             return self.demand_password()
-        if self.refused():
+        if not self._scope() or self.refused():
             return
         route = urlparse(self.path).path
         if self.vault is None or route not in ("/api/file", "/api/asset"):
@@ -673,7 +780,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_DELETE(self):
         if not self.authorised():
             return self.demand_password()
-        if self.refused():
+        if not self._scope() or self.refused():
             return
         if urlparse(self.path).path == "/api/server-folder":
             return self.server_folder(remove=True)
@@ -935,16 +1042,25 @@ def main():
     if args.calendars_only:
         Handler.vault = None
         rows.append(("Mode", "calendars only - fetches calendar links, keeps no files"))
+    elif args.vault:
+        # Named on the command line: served at the root, as it always was.
+        Handler.vault = Vault(args.vault, create=True)
+        rows.append(("Server folder", f"{Handler.vault.root}  ({len(Handler.vault.list())} files)"))
     else:
-        Handler.vault = start_folder(args.vault, load_config(Handler.config_path))
-        # One folder, not the app's areas: those are folders the browser opens
-        # itself, out of sight of this server. Say where it is managed.
-        if Handler.vault:
-            rows.append(("Server folder", f"{Handler.vault.root}  ({len(Handler.vault.list())} files)"))
-        else:
-            rows.append(("Server folder", "none"))
-        if not exposed:
-            rows.append(("Use it", "in the app, Your areas › Use server folder"))
+        config = load_config(Handler.config_path)
+        Handler.folders = load_folders(config)
+        interactive = sys.stdin.isatty() or bool(os.environ.get("GTD_INTERACTIVE"))
+        if not Handler.folders and not exposed and interactive and config.get("ask", True):
+            ask_for_folders(Handler.folders, Handler.config_path)
+        # Folders, not the app's areas: those are folders the browser opens
+        # itself, out of sight of this server. Say where they are managed.
+        first = "Server folders" if len(Handler.folders) > 1 else "Server folder"
+        for i, (name, vault) in enumerate(Handler.folders.items()):
+            rows.append((first if i == 0 else "", f"{name}: {vault.root}  ({len(vault.list())} files)"))
+        if not Handler.folders:
+            rows.append((first, "none"))
+    if not args.calendars_only and not exposed:
+        rows.append(("Use it", "in the app, Your areas › Use server folder"))
     rows.append(("Access", "password required" if password else "open (localhost only)"))
     if args.open_in_editor:
         rows.append(("Editor", (args.open_with or "the system default") + ", on this machine"))

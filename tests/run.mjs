@@ -60,7 +60,7 @@ try {
   if (!only || serveLogTest.toLowerCase().includes(only.toLowerCase())) {
     results.push(await serveLogTestRun(serveLogTest));
   }
-  const serveFolderTest = "#356 serve.py's folder is chosen and removed from the app, and remembered without flags";
+  const serveFolderTest = "#357 serve.py keeps several folders, one per area, asks for one at start-up, and remembers them";
   if (!only || serveFolderTest.toLowerCase().includes(only.toLowerCase())) {
     results.push(await serveFolderTestRun(serveFolderTest));
   }
@@ -339,76 +339,107 @@ async function serveLogTestRun(name) {
   }
 }
 
-/* The app chooses serve.py's folder: serve.py opens the folder picker on this
-   computer (here a fixed answer stands in for it), keeps the choice in its own
-   settings file, and uses it on the next start. Remove forgets it, and the old
-   built-in default does not come back. --vault wins and locks the choice. */
+/* serve.py keeps several folders, one per area, each at its own address
+   (f/<name>/api/...). The app adds them (serve.py opens the folder picker on
+   this computer; here fixed answers stand in for it) and removes them; the
+   list is remembered for the next start. No folder is built in. An old
+   single choice carries over. --vault keeps working and locks the list.
+   With no folder and a real terminal, serve.py asks at start-up and says
+   why; x stops the asking. */
 async function serveFolderTestRun(name) {
   const {spawn} = await import("node:child_process");
-  const {mkdtempSync, mkdirSync, rmSync} = await import("node:fs");
+  const {mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync: rd} = await import("node:fs");
   const {tmpdir} = await import("node:os");
   const {request} = await import("node:http");
   const dir = mkdtempSync(join(tmpdir(), "gtd-folder-"));
-  const home = join(dir, "home"), picked = join(dir, "Notes"), config = join(dir, "cfg", "serve.json");
-  const old = join(home, "storage", "shared", "Documents", "OrgMode");
-  mkdirSync(old, {recursive: true});
-  mkdirSync(picked);
+  const home = join(dir, "home"), notes = join(dir, "Notes"), work = join(dir, "Work"), config = join(dir, "cfg", "serve.json");
+  mkdirSync(join(home, "storage", "shared", "Documents", "OrgMode"), {recursive: true});
+  mkdirSync(notes); mkdirSync(work);
+  writeFileSync(join(work, "w.md"), "- TODO in work\n");
   const py = process.platform === "win32" ? "python" : "python3";
-  const pc = {...process.env, HOME: home, USERPROFILE: home, GTD_CONFIG: config, GTD_PICK_FOLDER: picked};
-  delete pc.GTD_VAULT; delete pc.PREFIX;
-  // Termux on Android, where the old default folder came from.
-  const env = {...pc, PREFIX: "/data/data/com.termux/files/usr"};
+  const env = {...process.env, HOME: home, USERPROFILE: home, GTD_CONFIG: config, GTD_PICK_FOLDER: notes + "|" + work,
+               PREFIX: "/data/data/com.termux/files/usr"};
+  delete env.GTD_VAULT;
   const servers = [];
-  const start = async (...extra) => {
-    const e = extra[0] === "pc" ? (extra.shift(), pc) : env;
+  const start = async (extra = [], {input = null, more = {}} = {}) => {
     const port = 18000 + Math.floor(Math.random() * 2000);
-    const proc = spawn(py, [join(ROOT, "serve.py"), "--port", String(port), "--log-file", join(dir, "x.log"), ...extra], {env: e, stdio: "ignore"});
+    const proc = spawn(py, [join(ROOT, "serve.py"), "--port", String(port), "--log-file", join(dir, "x.log"), ...extra],
+      {env: {...env, ...more}, stdio: [input === null ? "ignore" : "pipe", "pipe", "pipe"]});
     servers.push(proc);
-    const ask = (method, path, headers = {}) => new Promise(ok => {
+    let out = "";
+    proc.stdout.on("data", d => out += d.toString("utf-8"));
+    proc.stderr.on("data", d => out += d.toString("utf-8"));
+    if (input !== null) { proc.stdin.write(input); proc.stdin.end(); }
+    const ask = (method, path, headers = {}, body = null) => new Promise(ok => {
+      if (body) headers = {...headers, "Content-Length": Buffer.byteLength(body)};
       const req = request({host: "127.0.0.1", port, path, method, agent: false, headers}, res => {
-        let s = ""; res.on("data", d => s += d); res.on("end", () => { let j = null; try { j = JSON.parse(s); } catch {} ok({status: res.statusCode, json: j}); });
+        let s = ""; res.on("data", d => s += d); res.on("end", () => { let j = null; try { j = JSON.parse(s); } catch {} ok({status: res.statusCode, json: j, text: s}); });
       });
-      req.on("error", () => ok(null)); req.end();
+      req.on("error", () => ok(null)); if (body) req.write(body); req.end();
     });
-    for (let i = 0; i < 50; i++) { const r = await ask("GET", "/api/ping"); if (r) return {ask, stop: () => proc.kill()}; await new Promise(r => setTimeout(r, 100)); }
-    throw new Error("serve.py did not start");
+    for (let i = 0; i < 50; i++) { const r = await ask("GET", "/api/ping"); if (r) return {ask, out: () => out, stop: () => proc.kill()}; await new Promise(r => setTimeout(r, 100)); }
+    throw new Error("serve.py did not start:\n" + out);
   };
   const own = {"X-GroupTodo": "folder"};
   const same = (a, b) => String(a || "").toLowerCase() === String(b || "").toLowerCase();
+  const fail = error => ({name, ok: false, error});
   try {
-    /* No built-in folder at all: the old OrgMode default is never served,
-       on a PC or on Termux, where it came from. */
-    let s = await start("pc");
+    let s = await start();
     let p = (await s.ask("GET", "/api/ping")).json;
-    if (p.vault || !p.folderChoosable) return {name, ok: false, error: "a PC serves a folder unasked: " + JSON.stringify(p)};
+    if (p.vault || (p.folders || []).length || !p.folderChoosable) return fail("a folder served unasked: " + JSON.stringify(p));
+    if (!p.startedAt) return fail("no startedAt for the app's once-per-start notice");
+    if ((await s.ask("POST", "/api/server-folder")).status !== 403) return fail("a request without the app's header added a folder");
+    const a = await s.ask("POST", "/api/server-folder", own), b = await s.ask("POST", "/api/server-folder", own);
+    if (a?.status !== 200 || !same(a.json.folder.path, notes) || a.json.folder.name !== "Notes") return fail("adding Notes answered " + JSON.stringify(a));
+    if (b?.status !== 200 || !same(b.json.folder.path, work)) return fail("adding Work answered " + JSON.stringify(b));
+    p = (await s.ask("GET", "/api/ping")).json;
+    if (p.folders.map(f => f.name).join() !== "Notes,Work") return fail("folders: " + JSON.stringify(p.folders));
+    if (p.folders[1].base !== "f/Work" || p.folders[1].files !== 1) return fail("Work's address or count: " + JSON.stringify(p.folders[1]));
+    const list = await s.ask("GET", "/f/Work/api/list");
+    if (list?.status !== 200 || list.json.join() !== "w.md") return fail("Work's own list: " + JSON.stringify(list));
+    if ((await s.ask("PUT", "/f/Notes/api/file?path=n.md", {}, "- TODO note\n")).status !== 200) return fail("writing into Notes failed");
+    if (!rd(join(notes, "n.md"), "utf-8").includes("TODO note")) return fail("Notes' file is not in the Notes folder");
+    if ((await s.ask("GET", "/f/Nope/api/list")).status !== 404) return fail("an unknown folder answered");
+    if ((await s.ask("GET", "/api/list")).status === 200) return fail("the root serves a folder without --vault");
     s.stop();
     s = await start();
     p = (await s.ask("GET", "/api/ping")).json;
-    if (p.vault) return {name, ok: false, error: "Termux serves the old default unasked: " + p.vault};
-    if ((await s.ask("POST", "/api/server-folder")).status !== 403) return {name, ok: false, error: "a request without the app's header changed the folder"};
-    const chose = await s.ask("POST", "/api/server-folder", own);
-    if (!chose || chose.status !== 200 || !same(chose.json.vault, picked)) return {name, ok: false, error: "choosing answered " + JSON.stringify(chose)};
+    if (p.folders.map(f => f.name).join() !== "Notes,Work") return fail("not remembered: " + JSON.stringify(p.folders));
+    if ((await s.ask("DELETE", "/api/server-folder?name=Notes", own)).status !== 200) return fail("Remove failed");
     p = (await s.ask("GET", "/api/ping")).json;
-    if (!same(p.vault, picked) || !p.vaultChosen) return {name, ok: false, error: "the chosen folder is not served: " + JSON.stringify(p)};
+    if (p.folders.map(f => f.name).join() !== "Work") return fail("after Remove: " + JSON.stringify(p.folders));
     s.stop();
+    // A single folder chosen before this carries over as one of the list.
+    writeFileSync(config, JSON.stringify({vault: notes}));
     s = await start();
     p = (await s.ask("GET", "/api/ping")).json;
-    if (!same(p.vault, picked)) return {name, ok: false, error: "the choice was not remembered: " + JSON.stringify(p)};
-    if ((await s.ask("DELETE", "/api/server-folder", own)).status !== 200) return {name, ok: false, error: "Remove failed"};
-    p = (await s.ask("GET", "/api/ping")).json;
-    if (p.vault || p.calendarsOnly || !p.folderChoosable) return {name, ok: false, error: "after Remove: " + JSON.stringify(p)};
-    if ((await s.ask("GET", "/api/list")).status === 200) return {name, ok: false, error: "files still served after Remove"};
+    if (p.folders.map(f => f.name).join() !== "Notes") return fail("the old single choice was lost: " + JSON.stringify(p));
     s.stop();
-    s = await start();
+    s = await start(["--vault", work]);
     p = (await s.ask("GET", "/api/ping")).json;
-    if (p.vault) return {name, ok: false, error: "the old default came back after Remove: " + p.vault};
+    if (p.folderChoosable || !same(p.vault, work)) return fail("--vault: " + JSON.stringify(p));
+    if ((await s.ask("GET", "/api/list")).status !== 200) return fail("--vault no longer serves at the root");
+    if ((await s.ask("POST", "/api/server-folder", own)).status !== 403) return fail("--vault was overridden");
     s.stop();
-    s = await start("--vault", picked);
+    // Start-up: no folder and a terminal, so it asks, says why, and y picks one.
+    writeFileSync(config, "{}");
+    const tty = {GTD_INTERACTIVE: "1", GTD_PICK_FOLDER: notes};
+    s = await start([], {input: "y\n\n", more: tty});
+    let out = s.out();
+    if (!/phone/i.test(out) || !/\[y/.test(out)) return fail("the start-up question does not say why:\n" + out);
     p = (await s.ask("GET", "/api/ping")).json;
-    if (p.folderChoosable) return {name, ok: false, error: "--vault left the folder choosable"};
-    if ((await s.ask("POST", "/api/server-folder", own)).status !== 403) return {name, ok: false, error: "--vault was overridden"};
+    if (p.folders.map(f => f.name).join() !== "Notes") return fail("y at start-up added no folder:\n" + out);
+    s.stop();
+    writeFileSync(config, "{}");
+    s = await start([], {input: "x\n", more: tty});
+    s.stop();
+    if (JSON.parse(rd(config, "utf-8")).ask !== false) return fail("x did not stop the asking: " + rd(config, "utf-8"));
+    s = await start([], {input: "y\n", more: tty});
+    out = s.out();
+    s.stop();
+    if (/\[y/.test(out)) return fail("asked again after x:\n" + out);
     return {name, ok: true};
-  } catch (e) { return {name, ok: false, error: String(e && e.stack || e)}; }
+  } catch (e) { return fail(String(e && e.stack || e)); }
   finally {
     servers.forEach(x => x.kill());
     setTimeout(() => { try { rmSync(dir, {recursive: true, force: true}); } catch {} }, 500);

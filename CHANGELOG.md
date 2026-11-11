@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.143.0 - 2026-11-11
+
+- Areas and sharing: serve.py can keep several server folders, one per
+  area. Add or remove them at the bottom of Manage areas, and Use server
+  folder lets an area pick a free one. With no folder yet, serve.py asks at
+  start-up and says why it helps; x stops the asking. Once per start, the
+  app shows the server folders, the area in each, and what else serve.py
+  does.
+
 ## 1.142.2 - 2026-11-11
 
 - Areas and sharing: serve.py has no built-in folder any more, on a PC or a

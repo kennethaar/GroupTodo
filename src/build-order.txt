@@ -276,6 +276,12 @@ js/23-space-folders/serverFolderRow.js
 js/23-space-folders/serverFolderUsers.js
 js/23-space-folders/useServerFolder.js
 js/23-space-folders/firstAreaOnServer.js
+js/23-space-folders/servedAt.js
+js/23-space-folders/serverFolderOptions.js
+js/23-space-folders/serverFilesNote.js
+js/23-space-folders/pickServerFolder.js
+js/23-space-folders/useServerFolderButton.js
+js/23-space-folders/maybeServeNotice.js
 js/23-space-folders/storedVisible.js
 js/23-space-folders/vars-AREA_DRAG.js
 js/23-space-folders/areaDraggable.js

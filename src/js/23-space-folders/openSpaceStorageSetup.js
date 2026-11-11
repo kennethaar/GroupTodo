@@ -12,7 +12,8 @@ function openSpaceStorageSetup({firstRun = false} = {}) {
     for (const sp of Spaces.list) {
       const placed = sp.kind === "fs";
       const where = placed ? "Folder: \u201C" + (sp.label || "folder") + "\u201D"
-                  : sp.kind === "http" ? "In the server folder"
+                  : sp.kind === "http" ? "In the server folder" + ((o => o ? " “" + o.name + "”" : "")(
+                      serverFolderOptions().find(x => x.users.includes(sp))))
                   : "This browser only";
       const i = Spaces.list.indexOf(sp);
       const shift = d => el("button", {class: "afmove", "aria-label": "Move " + sp.name + (d < 0 ? " left" : " right"),
@@ -33,10 +34,8 @@ function openSpaceStorageSetup({firstRun = false} = {}) {
             // The bring-the-pages question replaces this dialog; open it again after.
             onclick: async () => { if (await assignSpaceFolder(sp.name)) list.isConnected ? draw() : again(); }},
             placed ? "Change folder" : "Choose folder") : null,
-          // serve.py's folder, while no area lives there yet (#356).
-          SERVER_BASE && !serverFolderUsers().length ? el("button", {class: "btn sm ghost",
-            onclick: async () => { if (await useServerFolder(sp.name)) list.isConnected ? draw() : again(); }},
-            "Use server folder") : null,
+          // serve.py's folders, while one is free and this area is in none (#357).
+          useServerFolderButton(sp.name, moved => { if (moved) list.isConnected ? draw() : again(); }),
           el("button", {class: "btn sm ghost", onclick: () => openRenameArea(sp.name)}, "Rename"),
           Spaces.list.length > 1
             ? el("button", {class: "btn sm ghost", onclick: () => { closeModal(); openRemoveArea(sp.name, again); }}, "Remove")

@@ -1,13 +1,15 @@
 /* Move one area into serve.py's folder (#356), as assignSpaceFolder moves one
    into a folder the browser opens: what the folder holds wins, the area's
    pages from this browser come along, and folder to folder is asked.
+   join: picked on the welcome screen, where nothing is yours yet, so a
+   folder that already holds a vault gets none of the starter pages.
    Resolves true when the area moved. */
-async function useServerFolder(name) {
-  const sp = Spaces.get(name), base = SERVER_BASE;
+async function useServerFolder(name, base = SERVER_BASE, {join = false} = {}) {
+  const sp = Spaces.get(name);
   if (!sp || !base) return false;
-  const taken = serverFolderUsers().find(x => x.name !== name);
+  const taken = serverFolderUsers(base).find(x => x.name !== name);
   if (taken) {
-    notify("The server folder already holds " + taken.name + ". Give " + name + " a folder of its own.", "error");
+    notify("That server folder already holds " + taken.name + ". Give " + name + " a folder of its own.", "error");
     return false;
   }
   const rec = newRecord(name, Backends.http(base));
@@ -23,8 +25,8 @@ async function useServerFolder(name) {
 
   const wasFolder = sp.kind === "fs" ? (sp.label || "the old folder") : null;
   const loaded = LOADED.get(name);
-  const carry = wasFolder
-    ? await askCarryPages(name, wasFolder, "the server folder", loaded ? loaded.pages.size : 0)
+  const carry = join ? rec.pages.size === 0 && !wasFolder
+    : wasFolder ? await askCarryPages(name, wasFolder, "the server folder", loaded ? loaded.pages.size : 0)
     : true;
   let carried = new Map();
   if (carry) {

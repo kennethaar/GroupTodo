@@ -114,7 +114,10 @@
 .afserver:not(:empty){margin-top:16px;padding-top:12px;border-top:1px solid var(--border)}
 .afserver .afslabel{font-weight:600;font-size:13px}
 .afserver .afspath{font-size:13px;color:var(--fg2);word-break:break-all}
-.afserver .afnote{margin-top:4px}
+.afserver .afsfolder{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;margin-top:8px}
+.afserver .afsfolder .afspath{flex:1 1 100%}
+.afserver .afsnote{color:var(--fg3);font-size:12.5px}
+.afserver .afspath b{color:var(--fg)}
 .afserver .afbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .afdot{width:18px;height:18px;flex:none;border-radius:50%;border:2px solid color-mix(in srgb,var(--fg) 25%,transparent);cursor:pointer;padding:0}
 .afdot:hover,.afdot:focus-visible{outline:2px solid var(--sc);outline-offset:2px}

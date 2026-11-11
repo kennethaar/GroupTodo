@@ -110,6 +110,8 @@
     offerFolderBack(Array.from(PENDING_GRANT.keys())[0] || Array.from(LOST_FOLDER)[0]);
     return;
   }
+  // Last, so it never covers a question above: once per serve.py start (#357).
+  if (CAP.served && SERVER_INFO && !document.querySelector("#modalRoot .modal")) maybeServeNotice(SERVER_INFO);
   afterFirstRun();
   offerLineDraft();
 })();

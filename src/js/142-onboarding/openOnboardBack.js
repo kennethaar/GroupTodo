@@ -9,16 +9,27 @@ function openOnboardBack() {
   const listBox = el("div", {style: "display:flex;flex-direction:column;gap:6px;margin:4px 0 10px"});
   const placed = () => Spaces.list.filter(sp => sp.kind === "fs" || sp.kind === "http");
   const addBtn = el("button", {class: "btn primary"});
-  // serve.py's folder, offered beside your own while no area lives there (#356).
-  const serverBtn = el("button", {class: "btn ghost"}, "Use server folder");
+  // serve.py's folders, offered beside your own while one is free (#356, #357).
+  const serverSlot = el("span", {style: "display:contents"});
+  const where = sp => {
+    if (sp.kind !== "http") return "“" + (sp.label || "folder") + "”";
+    const o = serverFolderOptions().find(x => x.users.includes(sp));
+    return o ? "in the server folder “" + o.name + "”" : "in the server folder";
+  };
   const draw = () => {
     listBox.textContent = "";
     for (const sp of placed()) listBox.append(el("div", {style: "display:flex;gap:8px;align-items:center"},
       spaceBadge(sp.name, true),
-      el("span", {style: "color:var(--fg2);font-size:13px"},
-        sp.kind === "http" ? "in the server folder" : "“" + (sp.label || "folder") + "”")));
+      el("span", {style: "color:var(--fg2);font-size:13px"}, where(sp))));
     addBtn.textContent = placed().length ? "Add another folder" : "Choose a folder";
-    if (serverFolderUsers().length) serverBtn.remove();      // one area per folder
+    serverSlot.textContent = "";
+    const free = serverFolderOptions().filter(o => !o.users.length);
+    if (free.length) serverSlot.append(el("button", {class: "btn ghost", onclick: async () => {
+      const o = await pickServerFolder("this area", free);
+      if (o) await bring(name => useServerFolder(name, o.base, {join: true}));
+      // The list of folders took this dialog's place: bring it back.
+      if (!listBox.isConnected) openOnboardBack();
+    }}, free.length > 1 ? "Use server folder…" : "Use server folder"));
   };
   /* The area the app made on its own takes the first folder; each one after
      gets an area of its own, taken away again if nothing came of it. */
@@ -39,7 +50,6 @@ function openOnboardBack() {
     draw();
   };
   addBtn.onclick = () => bring(name => assignSpaceFolder(name, {join: true, returning: true}));
-  serverBtn.onclick = () => bring(name => useServerFolder(name));
   const enter = async () => {
     who.keep();
     const here = await finishOnboarding({returning: true});
@@ -63,7 +73,7 @@ function openOnboardBack() {
           "Each web address keeps its own copy in the browser, so a new one starts empty. " +
           "Your files are still in their folders. Pick each area's folder, one at a time."),
         listBox,
-        CAP.dirPicker ? el("div", {style: "display:flex;gap:8px;flex-wrap:wrap"}, addBtn, SERVER_BASE ? serverBtn : null)
+        CAP.dirPicker ? el("div", {style: "display:flex;gap:8px;flex-wrap:wrap"}, addBtn, serverSlot)
           : el("div", {style: "color:var(--fg3);font-size:12.5px"},
           "This browser cannot open folders. Open a vault file instead, from Vault & sync, " +
           "or use Chrome or Edge on a computer."))),

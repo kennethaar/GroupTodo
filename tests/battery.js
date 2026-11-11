@@ -4775,35 +4775,51 @@ var GTD_TEST = (() => {
     } finally { CAP.dirPicker = pick; }
   });
   test("#356 I have used GroupToDo before offers the server folder beside a folder, and starts no guide", async () => {
-    const base = SERVER_BASE, f = window.fetch, coach = PREF.get("coach"), onboarded = PREF.get("onboarded");
+    const base = SERVER_BASE, info = SERVER_INFO, f = window.fetch, coach = PREF.get("coach"), onboarded = PREF.get("onboarded");
     const active = Spaces.active, visible = [...visibleSpaces()];
     const until = async cond => { for (let i = 0; i < 200 && !cond(); i++) await new Promise(r => setTimeout(r, 10)); };
     const buttons = () => [...document.querySelectorAll("#modalRoot .modal button")];
     const n = "Test356 back";
     try {
-      SERVER_BASE = "";
+      SERVER_BASE = ""; SERVER_INFO = null;
       closeModals(); openOnboardBack();
       ok(!/server/i.test(document.querySelector("#modalRoot .modal").textContent), "a server offered with none there");
-      SERVER_BASE = "http://srv356.test";
-      window.fetch = async url => /\/api\/list$/.test(new URL(url, location.href).pathname)
-        ? new Response("[]") : new Response(JSON.stringify({ok: true}));
+      /* Two server folders (#357): the pick is a list, and afterwards this
+         screen is back. Work already holds a vault, so it is taken as it is:
+         the area's pages from this browser are not copied into it. */
+      SERVER_INFO = {ok: true, folders: [{name: "Work", path: "D:\\Work", files: 1, base: "f/Work"},
+                                         {name: "Notes", path: "D:\\Notes", files: 0, base: "f/Notes"}]};
+      const written = [];
+      window.fetch = async (url, opts = {}) => {
+        const u = new URL(url, location.href);
+        if ((opts.method || "GET") === "PUT") { written.push(u.searchParams.get("path")); return new Response("{}"); }
+        if (/\/api\/list$/.test(u.pathname)) return new Response(JSON.stringify(["w.md"]));
+        if (/\/api\/file$/.test(u.pathname)) return new Response("- TODO in work\n");
+        return new Response(JSON.stringify({ok: true}));
+      };
       await createSpace(n, "local");
       Spaces.get(n).placeholder = true;
       await openSpace(n);
+      const onlyHere = join(PAGES, "Only in this browser 356.md");
+      putPage(onlyHere, {props: {title: "Only in this browser 356"}, blocks: [newBlock({title: "kept here"})]});
       closeModals(); openOnboardBack();
-      const use = buttons().find(b => b.textContent === "Use server folder");
-      ok(use, "no Use server folder: " + buttons().map(b => b.textContent));
+      const use = buttons().find(b => b.textContent === "Use server folder…");
+      ok(use, "no Use server folder…: " + buttons().map(b => b.textContent));
       use.click();
-      await until(() => Spaces.get(n)?.kind === "http");
+      await until(() => buttons().some(b => b.textContent.startsWith("Work")));
+      buttons().find(b => b.textContent.startsWith("Work")).click();
+      await until(() => Spaces.get(n)?.kind === "http" && /Pick up where/.test(document.querySelector("#modalRoot .modal")?.textContent || ""));
       eq(Spaces.get(n).kind, "http", "the area did not move in");
-      await until(() => !buttons().some(b => b.textContent === "Use server folder"));
-      ok(!buttons().some(b => b.textContent === "Use server folder"), "offered again once used");
+      has(document.querySelector("#modalRoot .modal")?.textContent || "", "Pick up where you left off", "the welcome screen did not come back");
+      has(document.querySelector("#modalRoot .modal").textContent, "in the server folder “Work”");
+      ok(!written.includes(onlyHere), "the browser's pages were copied into a folder that already holds a vault");
+      eq(buttons().filter(b => /^Use server folder/.test(b.textContent)).map(b => b.textContent), ["Use server folder"], "one folder left");
       PREF.set("coach", "");
       buttons().find(b => b.textContent === "Start").click();
       await until(() => !document.querySelector("#modalRoot .modal"));
       ok(PREF.get("coach") !== "1", "coming back started the getting-started guide");
     } finally {
-      closeModals(); window.fetch = f; SERVER_BASE = base;
+      closeModals(); window.fetch = f; SERVER_BASE = base; SERVER_INFO = info;
       PREF.set("coach", coach || ""); PREF.set("onboarded", onboarded || "");
       if (Spaces.active !== active) await openSpace(active);
       setVisibleSpaces(visible);
@@ -4823,52 +4839,85 @@ var GTD_TEST = (() => {
       ok(await detectServer(), "a chosen folder not offered");
     } finally { window.fetch = f; CAP.served = served; SERVER_BASE = base; }
   });
-  /* serve.py's folder is managed in Your areas: shown with Change folder and
-     Remove, or None with Choose folder; Remove hides while an area lives
-     there; every other area can move in with Use server folder. Only when
-     serve.py says the folder may be chosen from here. */
-  test("#356 Your areas shows serve.py's folder, and an area moves into it with Use server folder", async () => {
-    const f = window.fetch, served = CAP.served, base = SERVER_BASE, n = "Test356 card";
-    const until = async cond => { for (let i = 0; i < 200 && !cond(); i++) await new Promise(r => setTimeout(r, 10)); };
-    let ping = {ok: true, vault: "C:\\Users\\me\\Notes", files: 3, vaultChosen: true, folderChoosable: true};
+  /* serve.py's folders are managed in Your areas (#357): each with the area
+     that uses it, Remove while none does, and Add server folder; None when
+     there are none. A card moves in with Use server folder, picking among
+     the free ones when there are several. A folder set with --vault shows
+     with no buttons. */
+  const serveAreas = async (body) => {
+    const f = window.fetch, served = CAP.served, base = SERVER_BASE, info = SERVER_INFO;
+    const ping = {current: null};
     window.fetch = async url => /\/api\/ping$/.test(new URL(url, location.href).pathname)
-      ? new Response(JSON.stringify(ping)) : new Response("[]");
-    const open = async () => {
-      closeModals(); openSpaceStorageSetup();
-      const m = document.querySelector("#modalRoot .modal");
-      await until(() => m.querySelector(".afserver")?.textContent);
-      const row = m.querySelector(".afserver");
-      return {m, row, text: row ? row.textContent : "", buttons: row ? [...row.querySelectorAll("button")].map(b => b.textContent) : []};
-    };
-    const card = m => [...m.querySelectorAll(".afcard")].find(c => c.querySelector(".afname").textContent === n);
-    try {
-      CAP.served = true; SERVER_BASE = null;
-      await createSpace(n, "local");
-      let d = await open();
-      has(d.text, "Server folder"); has(d.text, "C:\\Users\\me\\Notes");
-      eq(d.buttons, ["Change folder", "Remove"], "folder chosen");
-      const use = [...card(d.m).querySelectorAll("button")].find(b => b.textContent === "Use server folder");
-      ok(use, "no Use server folder on a card");
-      use.click();
-      await until(() => Spaces.get(n).kind === "http");
-      eq(Spaces.get(n).kind, "http", "the area did not move in");
-      ok(Spaces.get(n).server, "no server address kept");
-      d = await open();
-      eq(d.buttons, ["Change folder"], "Remove offered while an area lives there");
-      has(d.text, "Used by " + n);
-      ok(![...card(d.m).querySelectorAll("button")].some(b => b.textContent === "Use server folder"), "offered to the area already there");
-      ping = {ok: true, vault: null, vaultChosen: false, folderChoosable: true};
-      d = await open();
-      has(d.text, "None");
-      eq(d.buttons, ["Choose folder"], "no folder");
-      ping = {ok: true, vault: "/srv/notes", files: 3, vaultChosen: true, folderChoosable: false};
-      d = await open();
-      eq(d.buttons, [], "a folder set by --vault offered for change");
-    } finally {
-      closeModals(); window.fetch = f; CAP.served = served; SERVER_BASE = base;
-      if (Spaces.get(n)) await removeArea(n);
-    }
+      ? new Response(JSON.stringify(ping.current)) : new Response("[]");
+    try { CAP.served = true; SERVER_BASE = null; await body(ping); }
+    finally { closeModals(); window.fetch = f; CAP.served = served; SERVER_BASE = base; SERVER_INFO = info; }
+  };
+  const until357 = async cond => { for (let i = 0; i < 200 && !cond(); i++) await new Promise(r => setTimeout(r, 10)); };
+  const folder357 = (name, path, files) => ({name, path, files, base: "f/" + name});
+  test("#357 Your areas lists serve.py's folders, and an area picks one with Use server folder", async () => {
+    const n = "Test357 card";
+    await serveAreas(async ping => {
+      const open = async () => {
+        closeModals(); openSpaceStorageSetup();
+        const m = document.querySelector("#modalRoot .modal");
+        await until357(() => m.querySelector(".afserver")?.textContent);
+        const row = m.querySelector(".afserver");
+        return {m, text: row ? row.textContent : "", buttons: row ? [...row.querySelectorAll("button")].map(b => b.textContent) : []};
+      };
+      const cardButtons = m => [...([...m.querySelectorAll(".afcard")].find(c => c.querySelector(".afname").textContent === n)
+        ?.querySelectorAll("button") || [])];
+      try {
+        ping.current = {ok: true, vault: null, vaultChosen: false, folderChoosable: true, startedAt: "a",
+          folders: [folder357("Notes", "C:\\Users\\me\\Notes", 3), folder357("Work", "D:\\Work", 5)]};
+        await createSpace(n, "local");
+        let d = await open();
+        has(d.text, "Server folders"); has(d.text, "C:\\Users\\me\\Notes"); has(d.text, "D:\\Work");
+        eq(d.buttons, ["Remove", "Remove", "Add server folder"], "two free folders");
+        const use = cardButtons(d.m).find(b => b.textContent === "Use server folder…");
+        ok(use, "two free folders, but no Use server folder… on the card");
+        use.click();
+        await until357(() => [...document.querySelectorAll("#modalRoot .modal button")].some(b => b.textContent.startsWith("Work")));
+        [...document.querySelectorAll("#modalRoot .modal button")].find(b => b.textContent.startsWith("Work")).click();
+        await until357(() => Spaces.get(n).kind === "http");
+        eq(Spaces.get(n).kind, "http", "the area did not move in");
+        ok(/\/f\/Work$/.test(Spaces.get(n).server), "not Work's address: " + Spaces.get(n).server);
+        d = await open();
+        has(d.text, "Used by " + n);
+        eq(d.buttons, ["Remove", "Add server folder"], "Remove offered for the folder an area lives in");
+        ok(!cardButtons(d.m).some(b => /^Use server folder/.test(b.textContent)), "offered to the area already in one");
+        ping.current = {...ping.current, folders: []};
+        d = await open();
+        has(d.text, "None");
+        eq(d.buttons, ["Add server folder"], "no folders");
+        ping.current = {ok: true, vault: "/srv/notes", files: 3, vaultChosen: true, folderChoosable: false, folders: [], startedAt: "a"};
+        d = await open();
+        has(d.text, "/srv/notes");
+        eq(d.buttons, [], "a folder set by --vault offered for change");
+      } finally { if (Spaces.get(n)) await removeArea(n); }
+    });
   });
+  /* Once per serve.py start the app says it runs from serve.py: the folders,
+     which area uses each, and what else serve.py does. */
+  test("#357 the app says once per serve.py start what serve.py offers", async () => {
+    const seen = PREF.get("serveSeen");
+    await serveAreas(async () => {
+      try {
+        PREF.set("serveSeen", "");
+        const info = {ok: true, startedAt: "run1", folderChoosable: true, logFile: "C:\\Users\\me\\Downloads\\grouptodo.log",
+          folders: [folder357("Notes", "C:\\Users\\me\\Notes", 3)]};
+        ok(maybeServeNotice(info), "not shown on a new start");
+        const m = document.querySelector("#modalRoot .modal");
+        has(m.textContent, "Started from serve.py");
+        has(m.textContent, "Notes"); has(m.textContent, "C:\\Users\\me\\Notes"); has(m.textContent, "Not used");
+        has(m.textContent, "calendar"); has(m.textContent, "grouptodo.log");
+        ok([...m.querySelectorAll("button")].some(b => b.textContent === "Manage areas"), "no way to Manage areas");
+        closeModals();
+        ok(!maybeServeNotice(info), "shown twice in one start");
+        ok(maybeServeNotice({...info, startedAt: "run2"}), "not shown after a restart");
+      } finally { PREF.set("serveSeen", seen || ""); }
+    });
+  });
+
 
   /* ============================================================
      Sending an update: the check-in sheet the other way round (#153)
