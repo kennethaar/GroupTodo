@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.138.1 - 2026-11-11
+
+- Waiting for › List: in the mail from Ask for an update and Send an update,
+  a task's title is plain text again. The Answer, Mark as done or Ask about
+  this link below it is the one way to reply, so the title no longer opens the
+  same reply a second time.
+
 ## 1.138.0 - 2026-11-10
 
 - Horizons: drag a responsibility onto another area to move it there. The

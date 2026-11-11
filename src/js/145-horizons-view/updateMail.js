@@ -19,9 +19,9 @@ function updateMail({mode, them, subject, items, ack, replyTo, greet}) {
   });
   const gotIt = mode === "inform" && ack ? reply("Re: " + subject, MAIL_GOT_IT, w.gotItSaid) : null;
   const F = "font-family:Segoe UI,Arial,sans-serif;", ink = "#15202b", grey = "#8190a0";
-  /* Only what can be clicked looks clickable: the title links to the reply
-     about it, asking gives each line one filled button, and the rest is
-     quiet text. A status word is coloured text, not a bordered pill. When
+  /* Only what can be clicked looks clickable, one way to do each thing: the
+     title is plain text (#350), asking gives each line one filled button,
+     and the rest is quiet text. A status word is coloured text, not a bordered pill. When
      asking, the intro and the button already say question or wait, so the
      line says only what it is about. */
   const status = (label, c) => '<td style="' + F + "padding-right:10px;font-size:11.5px;" +
@@ -39,8 +39,7 @@ function updateMail({mode, them, subject, items, ack, replyTo, greet}) {
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #c9d1d9;border-radius:8px;">' +
     '<tr><td style="' + F + "padding:14px 16px 6px;font-size:16px;font-weight:bold;color:" + ink + ";" +
       (it.struck ? "text-decoration:line-through;" : "") + '"><span style="color:' + grey + ';">' + n + ".</span> " +
-      (links.length ? '<a href="' + mailEsc(href(links[links.length - 1][1])) + '" style="color:#2a7ae2;text-decoration:' +
-        (it.struck ? "line-through" : "none") + ';">' + mailEsc(it.t) + "</a>" : mailEsc(it.t)) + "</td></tr>" +
+      mailEsc(it.t) + "</td></tr>" +
     (it.context || []).map(c => '<tr><td style="' + F + "padding:0 16px 4px " + (16 + c.depth * 16) + "px;font-size:13px;color:" + grey + ';">' +
       mailEsc(c.text) + "</td></tr>").join("") +
     ((mode !== "ask" && it.word) || facts(it) ? '<tr><td style="padding:2px 16px 10px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>' +
