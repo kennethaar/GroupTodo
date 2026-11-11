@@ -216,7 +216,7 @@ const HELP = {
       "A question and summary on the task go out in place of your notes. The ask also says when you last asked and what they last said.",
       "Let AI write it hides names in the prompt and puts them back in the answer. Add more names in Hidden names.",
       "A reply closes nothing by itself. Their words become comments, and each stays open until you pick an outcome.",
-      "On a PC, Send in Teams opens the Teams app, so it finds people outside your company too. The first time, let the browser open Teams.",
+      "On a PC, Send in Teams opens the Teams app, so it finds people outside your company too. The first time, let the browser open Teams. If the message is not in the box, press Ctrl+V.",
       "Send in Teams has no links. They reply in the chat. Select your message and their reply, copy them, and use Paste a reply.",
       "If the reply goes back and forth, Paste a reply lists the lines. Untick a line that is not theirs."],
     see: ["waiting-board", "states", "people-list"],

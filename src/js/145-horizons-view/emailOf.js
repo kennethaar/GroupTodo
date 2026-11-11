@@ -8,7 +8,7 @@ function emailOf(name, space) {
   const key = slugPerson(name).toLowerCase();
   const addrOn = path => {
     const props = V.pages.has(path) ? getPage(path).props || {} : {};
-    return trim(props[EMAIL_PROP] || props["e-mail"] || "");
+    return bareAddress(props[EMAIL_PROP] || props["e-mail"]);
   };
   const here = () => {
     const own = addrOn(personPath(name)) || addrOn(contextPath(name));

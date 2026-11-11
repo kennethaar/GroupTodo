@@ -9,7 +9,9 @@ that breaks existing vaults. Newest first.
 
 - Waiting for › List: on a PC, Send in Teams opens the Teams app instead of
   a browser tab, so it finds people outside your company too. The message is
-  ready in the chat. A phone keeps the web link.
+  ready in the chat, and on the clipboard too: if Teams drops it, press
+  Ctrl+V. A phone keeps the web link. An address written as mailto://...
+  works as a plain address.
 
 ## 1.140.0 - 2026-11-11
 

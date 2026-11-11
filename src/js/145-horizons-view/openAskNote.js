@@ -115,7 +115,7 @@ function openAskNote(name, items, file, sheetOf = null, area = Spaces.active || 
         if (!addr) { notify("Put their address in first - Teams needs it to open the chat.", "warn"); return; }
         const said = saveSheet();
         openTeamsChat([addr], mailNow().teams);
-        notify(said + (file ? "Teams opens with the message ready. Drop " + file + " into the same window. " : "Teams opens with the message ready. Press Send. ") +
+        notify(said + (file ? "Teams opens with the message ready. If the box is empty, press Ctrl+V. Drop " + file + " into the same window. " : "Teams opens with the message ready. If the box is empty, press Ctrl+V. Then press Send. ") +
           TEAMS_REPLY_SAID);
         going();
       }}, "Send in Teams"),

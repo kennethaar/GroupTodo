@@ -5302,6 +5302,7 @@ var GTD_TEST = (() => {
       [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Send in Teams").click();
       ok(said.some(m => /reply in Teams/.test(m) && /Paste a reply/.test(m)), said.join(" | "));
       eq(sent.map(s => s[0]), [["lars@example.com"]], "the chat is with them");
+      ok(said.some(m => /Ctrl\+V/.test(m)), "the notice does not say to paste when the message is missing: " + said.join(" | "));
       ok(/^Hi Lars,\n/.test(sent[0][1]), "the message is not ready in the chat: " + sent[0][1]);
     } finally { window.notify = was; window.open = realOpen; window.openTeamsChat = realChat; closeAll(); }
   });
@@ -5310,6 +5311,17 @@ var GTD_TEST = (() => {
       "msteams:/l/chat/0/0?users=kari@client.com,per@client.com&message=Hi%20%26%20bye");
     eq(teamsChatUrl("kari@client.com", "", true), "https://teams.microsoft.com/l/chat/0/0?users=kari@client.com");
     eq(appLinkTarget("teams:kari@client.com"), teamsChatUrl("kari@client.com", ""), "a teams: link in a line");
+    eq(teamsChatUrl("mailto://kari@client.com", "", false), "msteams:/l/chat/0/0?users=kari@client.com", "an address written as a mail link");
+    eq(appLinkTarget("mailto://kari@client.com"), "mailto:kari@client.com");
+    // Teams sometimes drops the typed-in message, so it is on the clipboard too.
+    const went = [], copied = [], realGo = window.openAppUrl, realWrite = navigator.clipboard.writeText;
+    window.openAppUrl = u => { went.push(u); };
+    navigator.clipboard.writeText = t => { copied.push(t); return Promise.resolve(); };
+    try {
+      openTeamsChat(["kari@client.com"], "Hi Kari");
+      eq(went, [teamsChatUrl(["kari@client.com"], "Hi Kari")]);
+      eq(copied, ["Hi Kari"], "the message is not on the clipboard");
+    } finally { window.openAppUrl = realGo; navigator.clipboard.writeText = realWrite; }
   });
   /* Feedback is reviewed one item at a time and handled only by an outcome on
      the project or to-do it is about (#285). */
@@ -5554,6 +5566,8 @@ var GTD_TEST = (() => {
       removePage(personPath("mia lunde"));
       putPage(contextPath("Mia Lunde"), parsePage("title:: Mia Lunde\nemail:: mia@example.com\n"));
       eq(emailOf("Mia Lunde", V.space), "mia@example.com", "on the context of the same name");
+      putPage(contextPath("Mia Lunde"), parsePage("title:: Mia Lunde\nemail:: mailto://mia@example.com\n"));
+      eq(emailOf("Mia Lunde", V.space), "mia@example.com", "written as a mailto: link (#354)");
       inSpace(rec.name, () => putPage(personPath("Per Holm"), parsePage("title:: Per Holm\nemail:: per@example.com\n")));
       eq(emailOf("Per Holm", V.space), "per@example.com", "on their page in another area");
       // So Send in Teams has it, with nothing to type.

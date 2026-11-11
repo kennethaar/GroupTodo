@@ -3,6 +3,7 @@ function appLinkTarget(raw) {
   let scheme = m[1].toLowerCase();
   let rest = m[2];
   if (scheme === "telto") scheme = "tel";
+  if (scheme === "mailto") rest = rest.replace(/^\/\//, "");
   if (scheme === "tel" || scheme === "sms") rest = rest.replace(/^\/\//, "").replace(/[\s\-().]/g, "");
   if (scheme === "mapto") {
     let place = rest.replace(/^\/\//, "");

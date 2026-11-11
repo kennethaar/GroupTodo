@@ -39,7 +39,7 @@ function openDoneNote(space, path) {
         remember();
         openTeamsChat(to(), box.value.split("\n").slice(2).join("\n"));
         closeModal();
-        notify("Teams opens with the message ready. Press Send.");
+        notify("Teams opens with the message ready. If the box is empty, press Ctrl+V. Then press Send.");
       }}, "Send in Teams"),
       el("button", {class: "btn primary", onclick: () => {
         if (!to().length) { notify("Put in at least one address first.", "warn"); return; }

@@ -1,6 +1,7 @@
-// Open a Teams chat with the message ready. The app link leaves the page as it is.
+/* Open a Teams chat with the message ready. Teams sometimes drops a message
+   typed in by the link (a long one, or when it has to start first), so it is
+   on the clipboard too, for Ctrl+V (#354). */
 function openTeamsChat(users, message) {
-  const url = teamsChatUrl(users, message);
-  if (url.startsWith("msteams:")) location.href = url;
-  else window.open(url, "_blank", "noopener");
+  if (message) try { navigator.clipboard.writeText(message).catch(() => {}); } catch (_) {}
+  openAppUrl(teamsChatUrl(users, message));
 }
