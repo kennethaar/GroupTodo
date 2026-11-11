@@ -1347,6 +1347,7 @@ js/145-horizons-view/offerAskWording.js
 js/145-horizons-view/openAskNote.js
 js/145-horizons-view/vars-ACK_PROP.js
 js/145-horizons-view/updateMail.js
+js/145-horizons-view/vars-TEAMS_REPLY_SAID.js
 js/145-horizons-view/copyRich.js
 js/145-horizons-view/copyAndOpenMail.js
 js/145-horizons-view/vars-MAIL_DONE_WORDS.js
@@ -1389,6 +1390,8 @@ js/145-horizons-view/vars-toldWords.js
 js/145-horizons-view/stakeDueCard.js
 js/145-horizons-view/areaStakeholdersSection.js
 js/145-horizons-view/stakeholderLine.js
+js/145-horizons-view/parseTeamsReply.js
+js/145-horizons-view/teamsReplyData.js
 js/145-horizons-view/parseUpdateReply.js
 js/145-horizons-view/splitReplyRef.js
 js/145-horizons-view/resolveReplyItem.js

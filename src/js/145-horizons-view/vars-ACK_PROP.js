@@ -36,6 +36,8 @@ const MAIL_WORDS = {
     help: "Ask about this opens a reply about that task alone. " +
       "Or just reply, with the number of the task: 2: can we go with the cheaper one?",
     helpAsk: "Each link opens a short reply: write a line if you like, and send. Or just reply, with the number: 1 done, or 2: next week.",
+    teamsAsk: n => n === 1 ? "Just reply here." : "Just reply here, and start with the number if you answer more than one: 1 done, or 2: next week.",
+    teamsHelp: "If you have a question, just reply here with the number of the task: 2: can we go with the cheaper one?",
     paste: "[ Paste the GroupToDo update here: select this line and press Ctrl+V ]",
   },
   sv: {
@@ -51,6 +53,8 @@ const MAIL_WORDS = {
     help: "Fråga om detta öppnar ett svar om just den uppgiften. " +
       "Eller svara bara, med uppgiftens nummer: 2: kan vi ta den billigare?",
     helpAsk: "Varje länk öppnar ett kort svar: skriv en rad om du vill, och skicka. Eller svara bara, med numret: 1 klar, eller 2: nästa vecka.",
+    teamsAsk: n => n === 1 ? "Svara bara här." : "Svara bara här, och börja med numret om du svarar på fler än en: 1 klar, eller 2: nästa vecka.",
+    teamsHelp: "Har du en fråga, svara bara här med uppgiftens nummer: 2: kan vi ta den billigare?",
     paste: "[ Klistra in GroupToDo-uppdateringen här: markera raden och tryck Ctrl+V ]",
   },
   no: {
@@ -66,6 +70,8 @@ const MAIL_WORDS = {
     help: "Spør om dette åpner et svar om akkurat den oppgaven. " +
       "Eller bare svar, med nummeret på oppgaven: 2: kan vi ta den billigste?",
     helpAsk: "Hver lenke åpner et kort svar: skriv en linje om du vil, og send. Eller bare svar, med nummeret: 1 ferdig, eller 2: neste uke.",
+    teamsAsk: n => n === 1 ? "Bare svar her." : "Bare svar her, og start med nummeret hvis du svarer på flere enn én: 1 ferdig, eller 2: neste uke.",
+    teamsHelp: "Har du et spørsmål, bare svar her med nummeret på oppgaven: 2: kan vi ta den billigere?",
     paste: "[ Lim inn GroupToDo-oppdateringen her: merk linjen og trykk Ctrl+V ]",
   },
   da: {
@@ -81,6 +87,8 @@ const MAIL_WORDS = {
     help: "Spørg om dette åbner et svar om netop den opgave. " +
       "Eller svar bare, med opgavens nummer: 2: kan vi tage den billigste?",
     helpAsk: "Hvert link åbner et kort svar: skriv en linje, hvis du vil, og send. Eller svar bare, med nummeret: 1 færdig, eller 2: næste uge.",
+    teamsAsk: n => n === 1 ? "Svar bare her." : "Svar bare her, og start med nummeret, hvis du svarer på mere end én: 1 færdig, eller 2: næste uge.",
+    teamsHelp: "Har du et spørgsmål, så svar bare her med opgavens nummer: 2: kan vi tage den billigere?",
     paste: "[ Indsæt GroupToDo-opdateringen her: markér linjen og tryk Ctrl+V ]",
   },
   de: {
@@ -96,6 +104,8 @@ const MAIL_WORDS = {
     help: "Dazu fragen öffnet eine Antwort nur zu dieser Aufgabe. " +
       "Oder antworte einfach, mit der Nummer der Aufgabe: 2: können wir die günstigere nehmen?",
     helpAsk: "Jeder Link öffnet eine kurze Antwort: schreib eine Zeile, wenn du willst, und sende sie. Oder antworte einfach, mit der Nummer: 1 erledigt, oder 2: nächste Woche.",
+    teamsAsk: n => n === 1 ? "Antworte einfach hier." : "Antworte einfach hier und beginne mit der Nummer, wenn du auf mehr als eine antwortest: 1 erledigt, oder 2: nächste Woche.",
+    teamsHelp: "Wenn du eine Frage hast, antworte einfach hier mit der Nummer der Aufgabe: 2: können wir die günstigere nehmen?",
     paste: "[ GroupToDo-Update hier einfügen: Zeile markieren und Strg+V drücken ]",
   },
 };

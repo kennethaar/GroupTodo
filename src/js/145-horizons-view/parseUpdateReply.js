@@ -4,6 +4,9 @@ function parseUpdateReply(text) {
   // A reply to the update mail; the sheet's and the plain note's formats below.
   const numbered = parseNumberedReply(text);
   if (numbered) return numbered;
+  // A reply copied out of Teams, with the message it answers (#352).
+  const teams = parseTeamsReply(text);
+  if (teams) return teamsReplyData(teams);
   /* A reply written in the mail is usually quoted ("> - [x] ..."), so the quote
      marks come off first. Spacing is whatever their fingers did: [ x ], [x  ],
      -[x]Task. Mail programs turn the dash into a bullet, or drop it. An x in

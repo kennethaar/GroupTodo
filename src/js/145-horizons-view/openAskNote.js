@@ -1,6 +1,8 @@
 /* mailto: carries to, subject and body and nothing else, so the file is
    attached by hand either way. Teams takes a chat deep link with the message
-   pre-typed; same bargain, the file goes in the same window.
+   pre-typed; same bargain, the file goes in the same window. The Teams
+   message is the update mail's lines with no links (#352): they reply in
+   the chat, and you bring it back with Paste a reply.
    sheetOf(items): the sheet's HTML for these lines. It is made on the way out,
    from the note as it then reads, and saved again only when the note changed.
    sent(edited, then): marks the lines asked, once, the first time the note
@@ -69,8 +71,9 @@ function openAskNote(name, items, file, sheetOf = null, area = Spaces.active || 
           (file ? "You attach " + file + " yourself: no link of any kind can do that for you. It is made " +
                   "from the note as it reads when you send it. " : "") +
           "Copy and open email puts the update mail on your clipboard, numbered, with a link on each line " +
-          "that opens a short reply to you, and opens a new mail to paste it into. The note here is the plain " +
-          "text, for Copy text, Teams and Plain-text mail. Reword a question or a line and you are asked, " +
+          "that opens a short reply to you, and opens a new mail to paste it into. Send in Teams sends the same " +
+          "lines without links: they reply in the chat. The note here is the plain " +
+          "text, for Copy text and Plain-text mail. Reword a question or a line and you are asked, " +
           "once it is sent, whether the task should say the same."),
         /* Where the file went, and a way to get it back. A browser puts it
            wherever it puts downloads and says so in its own bar, which is gone
@@ -112,8 +115,9 @@ function openAskNote(name, items, file, sheetOf = null, area = Spaces.active || 
         if (!addr) { notify("Put their address in first - Teams needs it to open the chat.", "warn"); return; }
         const said = saveSheet();
         window.open("https://teams.microsoft.com/l/chat/0/0?users=" + encodeURIComponent(addr) +
-          "&message=" + encodeURIComponent(bodyNow()), "_blank", "noopener");
-        notify(said + (file ? "Teams opens with the message ready. Drop " + file + " into the same window." : "Teams opens with the message ready. Press Send."));
+          "&message=" + encodeURIComponent(mailNow().teams), "_blank", "noopener");
+        notify(said + (file ? "Teams opens with the message ready. Drop " + file + " into the same window. " : "Teams opens with the message ready. Press Send. ") +
+          TEAMS_REPLY_SAID);
         going();
       }}, "Send in Teams"),
       el("button", {class: "btn ghost", onclick: () => {

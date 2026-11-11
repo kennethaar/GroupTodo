@@ -32,7 +32,7 @@ function parseNumberedReply(text) {
   }
   /* Greetings, sign-offs and a name on its own are not about any task, and
      the words a Got it link writes in are the Got it itself. */
-  const THANKS = /^(?:ok|okay|got it|got it, thanks|thanks|thank you|takk|tack|tak|danke|cheers|mottatt|uppfattat|modtaget|erhalten)[,.!\s\w]{0,8}$/i;
+  const THANKS = MAIL_THANKS_RE;
   const said = loose.filter(l => !/^(?:hi|hello|dear|hej|hei|hallo)\b/i.test(l) &&
     !/^(?:best|kind regards|regards|br|mvh|med vennlig hilsen|vh|venlig hilsen|hälsningar|viele grüße|gruß|grüße)\b/i.test(l) &&
     !/^[\p{Lu}][\p{L}\-]*\.?$/u.test(l));

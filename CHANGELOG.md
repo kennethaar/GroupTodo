@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.139.0 - 2026-11-11
+
+- Waiting for › List: Send in Teams works as a chat. The message has no mail
+  links; each task ends with its reference, and they reply in the chat. Select
+  your message and their reply, copy them, and use Paste a reply: your own
+  lines are left out and each answer goes to its task, with no questions. When
+  the reply goes back and forth, Paste a reply lists the lines, ticked, and
+  what follows your own name starts unticked.
+
 ## 1.138.1 - 2026-11-11
 
 - Waiting for › List: in the mail from Ask for an update and Send an update,

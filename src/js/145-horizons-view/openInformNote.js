@@ -96,8 +96,9 @@ function openInformNote(to, items, opts) {
         if (!a) { notify("Put their address in first - Teams needs it to open the chat.", "warn"); return; }
         const said = saveSheet();
         window.open("https://teams.microsoft.com/l/chat/0/0?users=" + encodeURIComponent(a) +
-          "&message=" + encodeURIComponent(bodyNow()), "_blank", "noopener");
-        notify(said + (file ? "Teams opens with the message ready. Drop " + file + " into the same window." : "Teams opens with the message ready. Press Send."));
+          "&message=" + encodeURIComponent(mailNow().teams), "_blank", "noopener");
+        notify(said + (file ? "Teams opens with the message ready. Drop " + file + " into the same window. " : "Teams opens with the message ready. Press Send. ") +
+          TEAMS_REPLY_SAID);
         going();
       }}, "Send in Teams"),
       el("button", {class: "btn ghost", onclick: () => {

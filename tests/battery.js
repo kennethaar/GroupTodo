@@ -5196,6 +5196,87 @@ var GTD_TEST = (() => {
     eq(messagesOf(getPage(path).blocks[0]).map(m => m.title), ["Sounds good, but call me first."]);
     closeAll();
   });
+  /* Send in Teams (#352): a chat, not a mail. No links; each line carries its
+     reference, and the reply is copied out of the chat with the message. */
+  const teamsAsk = () => inEnglish(() => updateMail({mode: "ask", them: "Lars Haugen", subject: "Waiting for", replyTo: "me@example.com",
+    greet: "Hi Lars,", items: [
+      {ref: "Work-aaaa1111", kind: "question", t: "When can we sign?", about: "Supplier contract", word: "Question", color: MAIL_COLOR.question},
+      {ref: "Work-bbbb2222", kind: "question", t: "Is the quote final?", about: "Office move", word: "Question", color: MAIL_COLOR.question}]}));
+  test("#352 the Teams message has no links, and each line ends with its reference", () => {
+    const t = teamsAsk().teams;
+    ok(!/mailto:|https?:/.test(t), "a link in the Teams message");
+    has(t, "1. When can we sign?");
+    has(t, "About: Supplier contract (Work-aaaa1111)");
+    has(t, "About: Office move (Work-bbbb2222)");
+    has(t, "start with the number", "it says how to answer more than one");
+    const told = inEnglish(() => updateMail({mode: "inform", them: "Lars Haugen", subject: "Update", replyTo: "me@example.com",
+      greet: "Hi Lars,", ack: true, items: [{ref: "Work-cccc3333", t: "Order the chairs", word: "Done", meta: "Office move"}]})).teams;
+    ok(!/mailto:|https?:/.test(told), "a link in the Teams update");
+    has(told, "(Work-cccc3333)");
+  });
+  test("#352 a Teams paste: your lines are dropped, the rest goes to the task, numbers pick the task", () => {
+    const m = teamsAsk().teams;
+    const one = parseUpdateReply(m.split("\n2. ")[0] + "\nFriday, legal is done.");
+    eq(one.items.map(i => [i.ref, i.done, i.note]), [["Work-aaaa1111", false, "Friday, legal is done."]]);
+    ok(!one.teams.unclear, "one plain answer asks nothing");
+    const two = parseUpdateReply(m + "\n1: Friday\n2 done");
+    eq(two.items.map(i => [i.ref, i.done, i.note]), [["Work-aaaa1111", false, "Friday"], ["Work-bbbb2222", true, ""]]);
+    ok(two.teams.unclear, "several answers are shown to check");
+    eq(parseUpdateReply("Friday, legal is done."), null, "a paste without your message has no reference");
+  });
+  test("#352 back and forth: what follows your own name starts unticked, and an unticked line is left out", () => {
+    const m = teamsAsk().teams.split("\n2. ")[0], me = whoAmI();
+    for (const [mine, theirs] of [[me + " 10:44", "Lars Haugen 10:42"], ["[10:44] " + me, "[10:42] Lars Haugen"], [me + "\n10:44", "Lars Haugen\n10:42"]]) {
+      const d = parseUpdateReply(m + "\n" + theirs + "\nFriday, legal is done.\n" + mine + "\nGreat, I'll book the room.\n" +
+        theirs.replace("42", "45") + "\nBring the signed NDA too.");
+      eq(d.teams.lines.map(l => [l.text, l.on, !!l.mine]),
+        [["Friday, legal is done.", true, false], ["Great, I'll book the room.", false, true], ["Bring the signed NDA too.", true, false]], mine);
+      ok(d.teams.unclear, "a back and forth is shown to check");
+      eq(d.from, "Lars Haugen");
+      eq(d.items.map(i => i.note), ["Friday, legal is done. Bring the signed NDA too."]);
+    }
+    // Without names, every line after the answer is theirs until you untick it.
+    const d = parseUpdateReply(m + "\nFriday.\n\nGreat, I'll book the room.");
+    ok(d.teams.unclear, "lines after the answer are shown to check");
+    d.teams.lines[1].on = false;
+    eq(teamsReplyData(d.teams).items.map(i => i.note), ["Friday."]);
+  });
+  test("#352 Paste a reply lists the lines to untick when unclear, and files only the ticked ones", async () => {
+    const path = scratchProject("teams reply", [["WAIT", "Contract from [[p/Lars Haugen]]"]]);
+    const a = getPage(path).blocks[0];
+    const ref = V.space + "-" + ensureBlockId(path, a);
+    const msg = inEnglish(() => updateMail({mode: "ask", them: "Lars Haugen", subject: "Waiting for", replyTo: "me@example.com",
+      greet: "Hi Lars,", items: [{ref, kind: "wait", t: "Contract", about: "teams reply", word: "Waiting for"}]})).teams;
+    importUpdatePasted();
+    await settle();
+    const box = $("#modalRoot textarea");
+    box.value = msg + "\nSigned today.\n\nGreat, thanks!";
+    box.dispatchEvent(new Event("input"));
+    const ticks = [...document.querySelectorAll("#modalRoot [aria-pressed]")];
+    eq(ticks.map(b => b.getAttribute("aria-pressed")), ["true", "true"], "the lines, ticked");
+    has($("#modalRoot").textContent, "Contract from", "under the task they answer");
+    ticks[1].click();
+    [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Read it").click();
+    await settle();
+    eq(messagesOf(getPage(path).blocks[0]).map(m => m.title), ["Signed today."]);
+    closeAll();
+  });
+  test("#352 after Send in Teams, a line says how to bring the reply back", async () => {
+    scratchProject("teams notice", [["WAIT", "Quote from [[p/Lars Haugen]]"]]);
+    const said = [], was = window.notify, realOpen = window.open;
+    window.notify = m => { said.push(m); };
+    window.open = () => null;
+    try {
+      openAskForUpdate("Lars Haugen");
+      await settle();
+      document.querySelector("#modalRoot input[type=email]").value = "me@example.com";
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Write the email").click();
+      await settle();
+      document.querySelector("#modalRoot input[type=email]").value = "lars@example.com";
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Send in Teams").click();
+      ok(said.some(m => /reply in Teams/.test(m) && /Paste a reply/.test(m)), said.join(" | "));
+    } finally { window.notify = was; window.open = realOpen; closeAll(); }
+  });
   /* Feedback is reviewed one item at a time and handled only by an outcome on
      the project or to-do it is about (#285). */
   const withFeedbackSince = async fn => {
