@@ -5286,11 +5286,12 @@ var GTD_TEST = (() => {
     eq(messagesOf(getPage(path).blocks[0]).map(m => m.title), ["Signed today."]);
     closeAll();
   });
-  test("#352 after Send in Teams, a line says how to bring the reply back", async () => {
+  test("#352 #354 Send in Teams opens the Teams chat with the message, and a line says how to bring the reply back", async () => {
     scratchProject("teams notice", [["WAIT", "Quote from [[p/Lars Haugen]]"]]);
-    const said = [], was = window.notify, realOpen = window.open;
+    const said = [], sent = [], was = window.notify, realOpen = window.open, realChat = window.openTeamsChat;
     window.notify = m => { said.push(m); };
-    window.open = () => null;
+    window.open = () => { throw new Error("Send in Teams opened a browser tab"); };
+    window.openTeamsChat = (users, msg) => { sent.push([users, msg]); };
     try {
       openAskForUpdate("Lars Haugen");
       await settle();
@@ -5300,7 +5301,15 @@ var GTD_TEST = (() => {
       document.querySelector("#modalRoot input[type=email]").value = "lars@example.com";
       [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Send in Teams").click();
       ok(said.some(m => /reply in Teams/.test(m) && /Paste a reply/.test(m)), said.join(" | "));
-    } finally { window.notify = was; window.open = realOpen; closeAll(); }
+      eq(sent.map(s => s[0]), [["lars@example.com"]], "the chat is with them");
+      ok(/^Hi Lars,\n/.test(sent[0][1]), "the message is not ready in the chat: " + sent[0][1]);
+    } finally { window.notify = was; window.open = realOpen; window.openTeamsChat = realChat; closeAll(); }
+  });
+  test("#354 on a PC a Teams chat link opens the Teams app, which finds people outside the organisation; a phone keeps the web link", () => {
+    eq(teamsChatUrl(["kari@client.com", "per@client.com"], "Hi & bye", false),
+      "msteams:/l/chat/0/0?users=kari@client.com,per@client.com&message=Hi%20%26%20bye");
+    eq(teamsChatUrl("kari@client.com", "", true), "https://teams.microsoft.com/l/chat/0/0?users=kari@client.com");
+    eq(appLinkTarget("teams:kari@client.com"), teamsChatUrl("kari@client.com", ""), "a teams: link in a line");
   });
   /* Feedback is reviewed one item at a time and handled only by an outcome on
      the project or to-do it is about (#285). */

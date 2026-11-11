@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.140.1 - 2026-11-11
+
+- Waiting for › List: on a PC, Send in Teams opens the Teams app instead of
+  a browser tab, so it finds people outside your company too. The message is
+  ready in the chat. A phone keeps the web link.
+
 ## 1.140.0 - 2026-11-11
 
 - Waiting for › List: a task's panel has Ask for an update beside Send an

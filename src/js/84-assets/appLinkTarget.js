@@ -11,7 +11,7 @@ function appLinkTarget(raw) {
     return geoToOSM(/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(place) ? place.replace(/\s/g, "") : "0,0?q=" + encodeURIComponent(place));
   }
   if (scheme === "teams")
-    return "https://teams.microsoft.com/l/chat/0/0?users=" + encodeURIComponent(rest.replace(/^\/\//, ""));
+    return teamsChatUrl(rest.replace(/^\/\//, ""), "");
   if (scheme === "geo") return geoToOSM(rest);
   return scheme + ":" + rest;
 }

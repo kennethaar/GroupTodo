@@ -2805,6 +2805,7 @@ Older than 6 months. Still real? Park it in 2/ or kill it in _/. =>
 Oldest first =>
 On =>
 On @Computer: @pc is Computer =>
+On a PC, Send in Teams opens the Teams app, so it finds people outside your company too. The first time, let the browser open Teams. =>
 On a book's page: second in the series =>
 On a chapter page: what happens =>
 On a chapter page: where it is =>

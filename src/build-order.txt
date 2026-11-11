@@ -627,6 +627,8 @@ js/84-assets/vars-LOCAL_PARENT_KEY.js
 js/84-assets/droppedFolders.js
 js/84-assets/linkLocalToBlock.js
 js/84-assets/vars-APP_LINK_RE.js
+js/84-assets/teamsChatUrl.js
+js/84-assets/openTeamsChat.js
 js/84-assets/appLinkTarget.js
 js/84-assets/vars-unesc.js
 js/84-assets/appLinkHTML.js

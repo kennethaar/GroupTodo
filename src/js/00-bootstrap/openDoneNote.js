@@ -37,8 +37,7 @@ function openDoneNote(space, path) {
       el("button", {class: "btn ghost", onclick: () => {
         if (!to().length) { notify("Put in at least one address first - Teams needs it to open the chat.", "warn"); return; }
         remember();
-        window.open("https://teams.microsoft.com/l/chat/0/0?users=" + to().map(encodeURIComponent).join(",") +
-          "&message=" + encodeURIComponent(box.value.split("\n").slice(2).join("\n")), "_blank", "noopener");
+        openTeamsChat(to(), box.value.split("\n").slice(2).join("\n"));
         closeModal();
         notify("Teams opens with the message ready. Press Send.");
       }}, "Send in Teams"),
