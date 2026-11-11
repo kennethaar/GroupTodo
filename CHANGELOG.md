@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.141.2 - 2026-11-11
+
+- Ways to run GroupToDo: serve.py's address is a name now,
+  http://grouptodo.localhost:8777. Your browser keeps areas per address, so
+  the first time there you choose your folders again. 127.0.0.1:8777 still
+  works.
+
 ## 1.141.1 - 2026-11-11
 
 - Ways to run GroupToDo: serve.py's start box says Server folder, not Vault.

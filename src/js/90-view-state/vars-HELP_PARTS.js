@@ -1103,7 +1103,7 @@ const HELP = {
       "Read the best way for you, and how to start it.",
       "The table shows what each way can do. Your way now is marked."],
     more: ["Use the file and want calendars too? Run python serve.py --calendars-only beside it, and leave it running.",
-      "serve.py shows where to go and where its log is. The log is grouptodo.log in Downloads.",
+      "serve.py shows where to go: http://grouptodo.localhost:8777. Its log is grouptodo.log in Downloads.",
       "Moving to another way? Choose I have used GroupToDo before, and pick your folders again.",
       "Your files stay the same in every way. Only the app around them changes."],
     see: ["vault", "phone", "next-calendar"],

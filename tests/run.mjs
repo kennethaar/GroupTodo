@@ -303,8 +303,14 @@ async function serveLogTestRun(name) {
     if (!cal || cal.statusCode !== 400) return {name, ok: false, error: "the calendar answered " + (cal && cal.statusCode)};
     await new Promise(r => setTimeout(r, 400));
     const short = "https://cal.exa…r.ics";
-    if (!/GroupToDo started/.test(out) || !out.includes(`Go to`) || !out.includes(`http://127.0.0.1:${port}/`) || !out.includes(log))
+    /* The address to go to is a name, grouptodo.localhost, and the server
+       answers to it: browsers send any *.localhost to this computer. */
+    if (!/GroupToDo started/.test(out) || !out.includes(`Go to`) || !out.includes(`http://grouptodo.localhost:${port}/`) || !out.includes(log))
       return {name, ok: false, error: "the start box lacks the address or the log:\n" + out};
+    const named = await new Promise(ok => get(`http://127.0.0.1:${port}/api/ping`,
+      {agent: false, headers: {Host: `grouptodo.localhost:${port}`, Origin: `http://grouptodo.localhost:${port}`}},
+      res => { res.resume(); res.on("end", () => ok(res)); }).on("error", () => ok(null)));
+    if (!named || named.statusCode !== 200) return {name, ok: false, error: "grouptodo.localhost answered " + (named && named.statusCode)};
     if (!/[┌╭]/.test(out)) return {name, ok: false, error: "no box:\n" + out};
     /* serve.py's one folder is not the app's areas: it says so, and how an
        area is put in it. */

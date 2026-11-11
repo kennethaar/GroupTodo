@@ -356,7 +356,7 @@ class Handler(BaseHTTPRequestHandler):
         if not origin or origin == "null":
             return True
         u = urlparse(origin)
-        if u.hostname in LOOPBACK:
+        if u.hostname in LOOPBACK or u.hostname == LOCAL_NAME:
             return True
         return u.netloc.lower() == (self.headers.get("Host") or "").lower()
 
@@ -364,7 +364,7 @@ class Handler(BaseHTTPRequestHandler):
         if self.password:
             return True
         host = urlparse("//" + (self.headers.get("Host") or "")).hostname or ""
-        return host in LOOPBACK or host in self.allow_hosts
+        return host in LOOPBACK or host == LOCAL_NAME or host in self.allow_hosts
 
     def refused(self):
         """Send a 403 and return True when this request is not from the app."""
@@ -736,6 +736,10 @@ self.addEventListener("fetch", e => {
 
 
 LOOPBACK = ("127.0.0.1", "localhost", "::1")
+# The address the start box gives. Browsers send every *.localhost name to this
+# computer themselves (RFC 6761), so it needs no setup and no site on the
+# internet can point it anywhere else: as safe to answer as 127.0.0.1.
+LOCAL_NAME = "grouptodo.localhost"
 
 
 def read_password(args):
@@ -816,7 +820,7 @@ def main():
     Handler.allow_hosts = tuple(h.strip().lower() for h in args.allow_host + [args.host])
     log_file = os.path.abspath(os.path.expanduser(args.log_file))
     Handler.log = Log(log_file, echo=args.verbose)
-    rows = [("Go to", f"http://{args.host}:{args.port}/"), None]
+    rows = [("Go to", f"http://{LOCAL_NAME if args.host in LOOPBACK else args.host}:{args.port}/"), None]
     if args.calendars_only:
         Handler.vault = None
         rows.append(("Mode", "calendars only - fetches calendar links, keeps no files"))
