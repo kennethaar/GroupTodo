@@ -13,8 +13,8 @@ function informNote(them, me, items, file, named) {
       ...(file ? [part("sheet", t.sheet(file))] : []),
       "",
       informItemsText(items, named),
-      "",
-      ...(own.bye != null ? [fill(own.bye)] : [t.bye, me]),
+      // Your mail signs it (#353); only an ending you wrote yourself goes in.
+      ...(own.bye ? ["", fill(own.bye)] : []),
     ].join("\n"),
   };
 }

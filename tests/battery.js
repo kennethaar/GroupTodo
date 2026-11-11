@@ -4833,6 +4833,8 @@ var GTD_TEST = (() => {
       has(note.body, "Status: In progress");
       has(note.body, "Waiting on board approval 12 Nov");
       has(note.body, "- two options");
+      // #353: your mail already signs it; the note ends with the lines.
+      ok(!/Thanks,|Kenneth Aar/.test(note.body), "the note signs off: " + note.body);
       ok(!note.body.includes("Secret project"), "project named without being asked to");
       ok(informNote("Lars Haugen", "Kenneth Aar", items, null, true).body.includes("Secret project:"), "project not named when asked to");
       const html = informSheetHtml({to: "Lars Haugen", from: "Kenneth Aar", items, named: false});
