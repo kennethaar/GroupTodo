@@ -1587,6 +1587,63 @@ var GTD_TEST = (() => {
       removeBlockFrom(getPage(t), b); touch(t);
     }
   });
+  test("#351 Not yet billed: a client's unbilled time and priced tasks, marked billed up to a day, and time logged late still shows", async () => {
+    const org = "Test Bill Org " + (++scratchN), orgPath = "pages/o/" + org + ".md";
+    putPage(orgPath, parsePage("rate:: DKK 1.200\npay_days:: 10\n"));
+    const proj = scratchProject("billed site", [["TODO", "Draft the site"], ["DONE", "Book the venue DKK 2.400"]]);
+    const skip = scratchProject("internal admin", [["TODO", "Tidy the files"]]);
+    for (const p of [proj, skip]) { getPage(p).props.org = "[[o/" + org + "]]"; touch(p); }
+    getPage(skip).props.billable = "no"; touch(skip);
+    const clk = (d, h0, h1) => "CLOCK: [" + d + " Mon " + h0 + ":00:00]--[" + d + " Mon " + h1 + ":00:00] =>  0" + (h1 - h0) + ":00:00";
+    const [todo, venue] = getPage(proj).blocks, admin = getPage(skip).blocks[0];
+    todo.drawers = [[":LOGBOOK:", clk("2026-10-05", 9, 11), clk("2026-11-03", 9, 10), ":END:"]];
+    admin.drawers = [[":LOGBOOK:", clk("2026-10-06", 9, 12), ":END:"]];
+    touch(proj); touch(skip); clearMemo();
+    const row = () => unbilledByClient("2026-11-30").find(c => c.name === org);
+    const today = ensureJournal(todayISO()), before = getPage(today).blocks.length;
+    try {
+      let r = row();
+      eq([r.min, r.since], [180, "2026-10-05"], "time on the billable project only, from its oldest day");
+      eq(r.lines.map(l => [l.title, l.min || 0, fmtPrices(l.amount)]),
+        [[pageTitle(proj), 180, "DKK 3.600"], ["Book the venue DKK 2.400", 0, "DKK 2.400"]],
+        "one line per project at the rate, and the priced done task");
+      eq(fmtPrices(r.amount), "DKK 6.000");
+      markBilled(org, "2026-10-31", unbilledByClient("2026-10-31").find(c => c.name === org).lines, {wait: true, no: "2026-014"});
+      eq(blockProp(todo, "billed"), org + " 2026-10-31 2:00", "the todo says up to when and how much is billed");
+      eq(blockProp(venue, "billed"), org + " 2026-10-31 price");
+      eq(blockProp(admin, "billed"), null, "a project that is not billable is left alone");
+      r = row();
+      eq([r.min, r.since, r.lines.length], [60, "2026-11-03", 1], "only November is left");
+      todo.drawers[0].splice(1, 0, clk("2026-10-20", 9, 10)); touch(proj); clearMemo();
+      r = row();
+      eq([r.min, r.since], [120, "2026-10-20"], "a stretch logged late on a billed month is still unbilled");
+      const rec = getPage(today).blocks.slice(before).find(b => b.state === "WAIT");
+      ok(rec, "no payment WAIT on today's journal");
+      ok(rec.title.includes("2026-014") && rec.title.includes("[[o/" + org + "]]"), rec.title);
+      eq(fmtPrices(Object.fromEntries(pricesIn(blockProp(rec, "payment")).map(p => [p.cur, p.amount]))), "DKK 4.800", "October's two hours and the venue");
+      eq(dueDate(rec), shiftISO(todayISO(), 10), "due after the organisation's pay_days::");
+      eq(rec.children.length, 2, "the billed lines under it");
+      ok(unpaidBills().some(w => w.block === rec), "listed as waiting for payment");
+      markBilled(org, "2026-11-30", row().lines, {wait: false});
+      eq(blockProp(todo, "billed"), org + " 2026-11-30 4:00", "billed again: all of it");
+      eq(row(), undefined, "nothing left to bill");
+      go("projects", {sub: "hours", hoursOf: "clients"});
+      await settle();
+      ok(!document.querySelector("#main").textContent.includes(org), "a client with nothing to bill is not listed");
+      admin.drawers = [[":LOGBOOK:", clk("2026-10-06", 9, 12), ":END:"]];
+      delete getPage(skip).props.billable; touch(skip); clearMemo(); render();
+      await settle();
+      const bill = [...document.querySelectorAll("#main button")].find(x => x.textContent === "Bill" && x.closest(".reprow, .billrow")?.textContent.includes(org));
+      ok(bill, "no Bill button on the client's row");
+      bill.click();
+      await settle();
+      const dlg = document.querySelector("#modalRoot .modal");
+      ok(dlg && [...dlg.querySelectorAll("button")].some(x => x.textContent === "Mark billed and copy"), "the Bill dialog");
+      closeModal();
+    } finally {
+      getPage(today).blocks.splice(before); touch(today);
+    }
+  });
   test("#50 hours typed after a start on the clock are the hours", async () => {
     const form = () => document.querySelector("#modalRoot .modal");
     const set = (i, v) => { i.value = v; i.dispatchEvent(new Event("input")); i.dispatchEvent(new Event("change")); };

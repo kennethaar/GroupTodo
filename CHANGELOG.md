@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.144.0 - 2026-11-11
+
+- Projects › Hours: Clients now shows Not yet billed, one row per client
+  with the time and priced done tasks you have not billed. Bill lists them
+  up to a day, priced at rate:: on the project or organisation. Mark
+  billed and copy pastes the lines into your invoice program, and
+  remembers what was billed, so nothing is billed twice or forgotten. The
+  payment becomes a Waiting for, shown under Waiting for payment until
+  you tick it.
+
 ## 1.143.3 - 2026-11-11
 
 - Phone and PC: in Vault & sync, Phone sync is now Use on phone. It says

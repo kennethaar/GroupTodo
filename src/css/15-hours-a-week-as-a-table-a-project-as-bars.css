@@ -42,6 +42,14 @@ button.chip{cursor:pointer;font-family:inherit}
 .reprow .when{flex:0 0 92px;font-size:11px;color:var(--fg3);font-family:var(--mono)}
 .reprow .what{flex:1 1 auto;min-width:0;font-size:13px;color:var(--fg2);overflow-wrap:anywhere}
 .reprow .marks{flex:0 0 auto;display:flex;gap:5px;flex-wrap:wrap}
+/* Not yet billed: a client per row, the name first and Bill its one action. */
+.billrow{cursor:default;align-items:center}
+.billrow:hover{background:none}
+.billrow .when{flex:0 1 180px;font-size:13px;color:var(--fg);font-family:inherit;font-weight:600}
+.billrow .since{margin-left:8px;color:var(--fg3);font-size:12px}
+.billrow .chip.late{margin-left:8px}
+.billtab td:first-child{width:28px}
+.billtab td.num,.billtab th.num{text-align:right;white-space:nowrap}
 @media (max-width:700px){
   .reprow{flex-wrap:wrap;gap:4px}
   .reprow .when{flex:0 0 100%}

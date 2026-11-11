@@ -5,6 +5,8 @@ function viewHours() {
   const c = el("div", {});
   c.append(fbar(fchip("Clients", of === "clients", () => go("projects", {sub: "hours", hoursOf: "clients"})),
     fchip("Time on site", of === "site", () => go("projects", {sub: "hours", hoursOf: "site"}))));
+  const bills = of === "clients" ? billingSection() : null;
+  if (bills) c.append(bills);
   c.append(of === "clients" ? viewSheet(sheetById("clients")) : viewSiteHours());
   return c;
 }

@@ -2228,6 +2228,15 @@ js/110-views/vars-SHEETS.js
 js/110-views/clientEntries.js
 js/110-views/projectClockSection.js
 js/110-views/clientProjects.js
+js/110-views/vars-BILL_OLD_DAYS.js
+js/110-views/billedEntries.js
+js/110-views/setBilledEntry.js
+js/110-views/billLineText.js
+js/110-views/unbilledByClient.js
+js/110-views/unpaidBills.js
+js/110-views/markBilled.js
+js/110-views/billingSection.js
+js/110-views/openBilling.js
 js/110-views/vars-SPAN_RE.js
 js/110-views/clockSpans.js
 js/110-views/vars-fmtClock.js
