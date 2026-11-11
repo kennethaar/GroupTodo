@@ -90,7 +90,7 @@ const ASK_NOTE = {
     comment: "Kommentar:", answer: "Svar:",
     reference: "Referanse (ikke endre):",
     // The lines under a line in the ask (#344).
-    qW: "Spørsmål:", whyW: "Hvorfor:", askedW: "spurt", heardW: "sist hørt", noneW: "ikke svar ennå",
+    qW: "Spørsmål:", whyW: "Hvorfor:", askedW: "spurt", heardW: "sist hørt", noneW: "ikke svart ennå",
   },
   da: {
     label: "Dansk",

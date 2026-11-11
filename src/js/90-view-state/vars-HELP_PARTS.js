@@ -213,7 +213,7 @@ const HELP = {
     more: ["Write a waiting task as [[p/Person]]: the question. The link files it under them, and the ask sends only the question.",
       "A project waits by itself when all its actions wait on someone. It reads Waiting for (auto).",
       "Name someone outside the area and it becomes a plain waiting-for.",
-      "A question and summary on the task go out in place of your notes. The ask also says when you last asked and what they last said.",
+      "A question and summary on the task go out in place of your notes. Tick the Asked line to also say when you last asked and what they last said.",
       "Let AI write it hides names in the prompt and puts them back in the answer. Add more names in Hidden names.",
       "A reply closes nothing by itself. Their words become comments, and each stays open until you pick an outcome.",
       "On a PC, Send in Teams opens the Teams app, so it finds people outside your company too. The first time, let the browser open Teams. If the message is not in the box, press Ctrl+V.",

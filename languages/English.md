@@ -385,7 +385,7 @@ A project's status is the folder its file is in. Moving it moves the file. Links
 A project, context or person on a line counts for the lines under it. A line's own link wins. =>
 A project. =>
 A question and a short summary for each ticked line, for somebody who has not seen your notes. =>
-A question and summary on the task go out in place of your notes. The ask also says when you last asked and what they last said. =>
+A question and summary on the task go out in place of your notes. Tick the Asked line to also say when you last asked and what they last said. =>
 A quick update on where these stand. =>
 A quick update on where this stands. =>
 A recipe page with a number, in grams and litres, for as many as you cook for. =>
@@ -5169,7 +5169,7 @@ how often =>
 how often changed =>
 how the sheet adds up, kept on your own page =>
 icon, colour, chart and notes =>
-ikke svar ennå =>
+ikke svart ennå =>
 in 1 month =>
 in 1 week =>
 in 2 days =>

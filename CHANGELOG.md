@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.140.2 - 2026-11-11
+
+- Waiting for › List: when you last asked and what they last said goes in
+  the ask only when you tick it, so a wrong date does not go out by itself.
+  Norwegian says ikke svart ennå.
+
 ## 1.140.1 - 2026-11-11
 
 - Waiting for › List: on a PC, Send in Teams opens the Teams app instead of

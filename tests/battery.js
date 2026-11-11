@@ -5601,6 +5601,9 @@ var GTD_TEST = (() => {
       PREF.set("askLang", "en");
       eq(askFacts(quiet, "Lars Haugen"), "Asked 2026-10-20 · no answer yet");
       eq(askFacts(fresh, "Lars Haugen"), "", "nothing to say on a first ask");
+      PREF.set("askLang", "no");
+      eq(askFacts(quiet, "Lars Haugen"), "Spurt 2026-10-20 · ikke svart ennå");
+      PREF.set("askLang", "en");
       openAskForUpdate("Lars Haugen", block);
       await settle();
       // Let AI write the questions opens the AI's dialog, and Back returns here.
@@ -5610,6 +5613,11 @@ var GTD_TEST = (() => {
       [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Back").click();
       await settle();
       eq(document.querySelector("#modalRoot h2")?.textContent, "Ask Lars Haugen for an update");
+      // When it was asked goes only when you tick it: the stamp is not always a real ask (#344).
+      const facts = [...document.querySelectorAll("#modalRoot span")].find(s => s.textContent.startsWith("Asked 2026-10-20"));
+      ok(facts, "when it was asked is not offered");
+      ok(!facts.previousElementSibling.classList.contains("on"), "when it was asked is ticked to go before you chose it");
+      facts.previousElementSibling.click();
       document.querySelector("#modalRoot input[type=email]").value = "me@example.com";
       [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Write the message").click();
       await settle();
