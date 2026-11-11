@@ -7,40 +7,41 @@ that breaks existing vaults. Newest first.
 
 ## 1.143.1 - 2026-11-11
 
-- Areas and sharing: serve.py and the app now say what a server folder is
-  for: every device that opens GroupToDo from serve.py finds the area by
-  itself. They no longer say a phone cannot open folders, since Chrome and
-  Edge on a phone can.
+- Areas and sharing: the app now says why a server folder helps. Run
+  serve.py on a PC that is always on. Other phones and PCs then open
+  GroupToDo at that PC's network address and use the same area, with
+  nothing to set up on each one. It no longer says a phone can't open
+  folders. Chrome and Edge on a phone can, but only its own folders.
 
 ## 1.143.0 - 2026-11-11
 
-- Areas and sharing: serve.py can keep several server folders, one per
-  area. Add or remove them at the bottom of Manage areas, and Use server
-  folder lets an area pick a free one. With no folder yet, serve.py asks at
-  start-up and says why it helps; x stops the asking. Once per start, the
-  app shows the server folders, the area in each, and what else serve.py
-  does.
+- Areas and sharing: serve.py can now hold one folder for each area. Add or
+  remove them at the bottom of "Manage areas". Press "Use server folder" to
+  put an area in a free one. If serve.py has no folder yet, it asks for one
+  when it starts and tells you why. Type x to stop it asking. Each time it
+  starts, the app lists the folders, the area in each, and what else
+  serve.py can do.
 
 ## 1.142.2 - 2026-11-11
 
-- Areas and sharing: serve.py has no built-in folder any more, on a PC or a
-  phone. It serves a folder only when you choose one in the app or name it
-  with --vault.
+- Areas and sharing: serve.py no longer picks a folder by itself, on a PC
+  or a phone. It only uses a folder you pick in the app, or one you name
+  with --vault when you start it.
 
 ## 1.142.1 - 2026-11-11
 
-- Areas and sharing: at a new address served by serve.py, no area goes into
-  the server folder until you choose it. I have used GroupToDo before offers
-  Use server folder beside Choose a folder, and starts no getting-started
-  guide. On a PC serve.py no longer serves the old OrgMode folder by itself.
+- Areas and sharing: when you open GroupToDo from serve.py at a new
+  address, no area goes into the server folder until you say so. "I have
+  used GroupToDo before" now shows "Use server folder" next to "Choose a
+  folder", and skips the guide for new users. On a PC, serve.py no longer
+  uses the old OrgMode folder by itself.
 
 ## 1.142.0 - 2026-11-11
 
-- Areas and sharing: when the app runs from serve.py, the bottom of Manage
-  areas shows serve.py's folder. Choose folder or Change folder opens the
-  folder window on this PC, and serve.py remembers the pick, with no
-  start-up flags. Remove forgets it. Each area has Use server folder to move
-  in there.
+- Areas and sharing: when the app runs from serve.py, the bottom of "Manage
+  areas" shows the folder serve.py uses. "Choose folder" or "Change folder"
+  lets you pick it on this PC, and serve.py keeps your pick for next time.
+  "Remove" forgets it. Each area has "Use server folder" to move it there.
 
 ## 1.141.2 - 2026-11-11
 

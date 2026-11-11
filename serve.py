@@ -212,19 +212,30 @@ def save_folders(path, folders):
     save_config(path, data, replace=True)
 
 
-WHY_FOLDER = (
-    "No server folder yet.\n"
-    "A server folder keeps an area's files on this PC. Every phone, tablet and\n"
-    "browser that opens GroupToDo from serve.py then finds that area by itself,\n"
-    "with no folder to pick on each one. Firefox and Safari can use it too.")
+WHY_FOLDER = [
+    "A server folder keeps an area's files on this PC.",
+    "Phones and other PCs that open this PC's network address",
+    "use that area too. You don't set up a folder on each one.",
+    "Firefox and Safari work too.",
+    "Right now, only this PC can open it.",
+    "",
+    "Use it only on a PC that is always on.",
+    "When this PC is off, no one can reach the area.",
+    "",
+    "Choose a server folder now?",
+    "",
+    "  y      choose one",
+    "  Enter  not now",
+    "  x      don't ask again",
+]
 
 
 def ask_for_folders(folders, config_path):
     """At start-up, in a terminal, with no folder yet: say why one helps and
     offer to choose. y picks (and offers another), Enter is not now, x stops
     the asking for good -- the app can still add folders later."""
-    print(WHY_FOLDER, flush=True)
-    prompt = "Choose a server folder now? [y = choose · Enter = not now · x = don't ask again] "
+    print(box("No server folder yet", WHY_FOLDER), flush=True)
+    prompt = "  > "
     while True:
         try:
             answer = input(prompt).strip().lower()
@@ -232,24 +243,25 @@ def ask_for_folders(folders, config_path):
             answer = ""
         if answer == "x":
             save_config(config_path, {"ask": False})
-            print("Not asked again. Add server folders in the app, under Your areas.", flush=True)
+            print("\n  Not asked again. Add server folders in the app, under Your areas.\n", flush=True)
             return
         if answer != "y":
+            print(flush=True)
             return
         try:
             path = pick_folder()
         except Exception:                  # no folder window here (Termux): type it
             try:
-                path = input("Type the folder's path (Enter to skip): ").strip().strip('"') or None
+                path = input("  Type the folder's path (Enter to skip): ").strip().strip('"') or None
             except EOFError:
                 path = None
         if path and os.path.isdir(path):
             name = add_folder(folders, path)
             save_folders(config_path, folders)
-            print("Added %s: %s" % (name, folders[name].root), flush=True)
+            print("\n  Added %s: %s" % (name, folders[name].root), flush=True)
         elif path:
-            print("There is no folder at %s." % path, flush=True)
-        prompt = "Another one? [y/N] "
+            print("\n  There is no folder at %s." % path, flush=True)
+        prompt = "\n  Another one? [y/N] "
 
 
 # Run apart, in a Python of its own: a Tk window wants its own main thread,
@@ -317,15 +329,26 @@ class Log:
 
 
 def start_box(rows, foot):
-    """The terminal's whole start-up message, in a box."""
+    """The terminal's whole start-up message, in a box. A None row is a blank
+    line between groups."""
     pad = max(len(row[0]) for row in rows if row) + 2
-    body = [row[0].ljust(pad) + row[1] if row else "" for row in rows]
-    width = max(len(line) for line in body + [foot, "GroupToDo started"]) + 2
-    out = ["┌─ GroupToDo started " + "─" * (width - 19) + "┐"]
-    out += ["│ " + line.ljust(width - 2) + " │" for line in body]
-    out.append("├" + "─" * width + "┤")
-    out.append("│ " + foot.ljust(width - 2) + " │")
+    return box("GroupToDo started",
+               [row[0].ljust(pad) + row[1] if row else "" for row in rows], foot)
+
+
+def box(title, lines, foot=None):
+    """Lines in a titled box, padded by a blank line at top and bottom, with
+    an optional foot under a divider. Ends with a blank line."""
+    body = [""] + lines + [""]
+    width = max(len(line) for line in body + [foot or "", title]) + 4
+    head = "┌─ %s " % title
+    out = ["", head + "─" * (width + 1 - len(head)) + "┐"]
+    out += ["│  " + line.ljust(width - 4) + "  │" for line in body]
+    if foot:
+        out.append("├" + "─" * width + "┤")
+        out.append("│  " + foot.ljust(width - 4) + "  │")
     out.append("└" + "─" * width + "┘")
+    out.append("")
     return "\n".join(out)
 
 
@@ -1061,6 +1084,7 @@ def main():
             rows.append((first, "none"))
     if not args.calendars_only and not exposed:
         rows.append(("Use it", "in the app, Your areas › Use server folder"))
+    rows.append(None)
     rows.append(("Access", "password required" if password else "open (localhost only)"))
     if args.open_in_editor:
         rows.append(("Editor", (args.open_with or "the system default") + ", on this machine"))
