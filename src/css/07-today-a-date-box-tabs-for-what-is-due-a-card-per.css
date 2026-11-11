@@ -111,6 +111,11 @@
 .afcard .afverb{display:flex;gap:6px;align-items:flex-start;font-size:13px;color:var(--fg2);cursor:pointer}
 .afcard .afbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:4px}
 .afnote{color:var(--fg3);font-size:12.5px;margin-top:14px}
+.afserver:not(:empty){margin-top:16px;padding-top:12px;border-top:1px solid var(--border)}
+.afserver .afslabel{font-weight:600;font-size:13px}
+.afserver .afspath{font-size:13px;color:var(--fg2);word-break:break-all}
+.afserver .afnote{margin-top:4px}
+.afserver .afbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .afdot{width:18px;height:18px;flex:none;border-radius:50%;border:2px solid color-mix(in srgb,var(--fg) 25%,transparent);cursor:pointer;padding:0}
 .afdot:hover,.afdot:focus-visible{outline:2px solid var(--sc);outline-offset:2px}
 @media (min-width:1100px){ .jwide .jgrid{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}

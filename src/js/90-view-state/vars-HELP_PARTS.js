@@ -1093,6 +1093,7 @@ const HELP = {
     more: ["Your day page is yours. Others can read it but not type over it.",
       "A task you hand over is one task, not two copies.",
       "Make private moves a page to another folder.",
+      "Opened from serve.py? Use server folder puts an area in serve.py's folder. Choose or remove that folder at the bottom of Manage areas.",
       "New web address or new PC? Choose I have used GroupToDo before, and pick your folders again."],
     see: ["vault", "horizons", "people-board"],
     words: ["area", "areas", "space", "share", "invite", "team", "folder", "private"]},

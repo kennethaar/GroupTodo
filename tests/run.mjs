@@ -60,6 +60,10 @@ try {
   if (!only || serveLogTest.toLowerCase().includes(only.toLowerCase())) {
     results.push(await serveLogTestRun(serveLogTest));
   }
+  const serveFolderTest = "#356 serve.py's folder is chosen and removed from the app, and remembered without flags";
+  if (!only || serveFolderTest.toLowerCase().includes(only.toLowerCase())) {
+    results.push(await serveFolderTestRun(serveFolderTest));
+  }
 
   const stripTest = "#259 the build takes out comments and indentation and nothing else";
   if (!only || stripTest.toLowerCase().includes(only.toLowerCase())) {
@@ -316,7 +320,7 @@ async function serveLogTestRun(name) {
        area is put in it. */
     if (!out.includes("Server folder") || !out.includes(vault) || /\bVault\s{2,}/.test(out))
       return {name, ok: false, error: "the folder is not called Server folder:\n" + out};
-    if (!out.includes("Vault & sync › Advanced › Sync server"))
+    if (!out.includes("Your areas › Use server folder"))
       return {name, ok: false, error: "the box does not say how to use the folder:\n" + out};
     if (/GET \/api\/ping/.test(out)) return {name, ok: false, error: "request lines still go to the terminal:\n" + out};
     if (!out.split("\n").some(l => l.startsWith("!") && l.includes(short)))
@@ -332,6 +336,73 @@ async function serveLogTestRun(name) {
   finally {
     server.kill();
     setTimeout(() => { for (const d of [dir, vault]) try { rmSync(d, {recursive: true, force: true}); } catch {} }, 500);
+  }
+}
+
+/* The app chooses serve.py's folder: serve.py opens the folder picker on this
+   computer (here a fixed answer stands in for it), keeps the choice in its own
+   settings file, and uses it on the next start. Remove forgets it, and the old
+   built-in default does not come back. --vault wins and locks the choice. */
+async function serveFolderTestRun(name) {
+  const {spawn} = await import("node:child_process");
+  const {mkdtempSync, mkdirSync, rmSync} = await import("node:fs");
+  const {tmpdir} = await import("node:os");
+  const {request} = await import("node:http");
+  const dir = mkdtempSync(join(tmpdir(), "gtd-folder-"));
+  const home = join(dir, "home"), picked = join(dir, "Notes"), config = join(dir, "cfg", "serve.json");
+  const old = join(home, "storage", "shared", "Documents", "OrgMode");
+  mkdirSync(old, {recursive: true});
+  mkdirSync(picked);
+  const py = process.platform === "win32" ? "python" : "python3";
+  const env = {...process.env, HOME: home, USERPROFILE: home, GTD_CONFIG: config, GTD_PICK_FOLDER: picked};
+  delete env.GTD_VAULT;
+  const servers = [];
+  const start = async (...extra) => {
+    const port = 18000 + Math.floor(Math.random() * 2000);
+    const proc = spawn(py, [join(ROOT, "serve.py"), "--port", String(port), "--log-file", join(dir, "x.log"), ...extra], {env, stdio: "ignore"});
+    servers.push(proc);
+    const ask = (method, path, headers = {}) => new Promise(ok => {
+      const req = request({host: "127.0.0.1", port, path, method, agent: false, headers}, res => {
+        let s = ""; res.on("data", d => s += d); res.on("end", () => { let j = null; try { j = JSON.parse(s); } catch {} ok({status: res.statusCode, json: j}); });
+      });
+      req.on("error", () => ok(null)); req.end();
+    });
+    for (let i = 0; i < 50; i++) { const r = await ask("GET", "/api/ping"); if (r) return {ask, stop: () => proc.kill()}; await new Promise(r => setTimeout(r, 100)); }
+    throw new Error("serve.py did not start");
+  };
+  const own = {"X-GroupTodo": "folder"};
+  const same = (a, b) => String(a || "").toLowerCase() === String(b || "").toLowerCase();
+  try {
+    let s = await start();
+    let p = (await s.ask("GET", "/api/ping")).json;
+    if (!same(p.vault, old) || !p.folderChoosable) return {name, ok: false, error: "a vault already at the old default is no longer served: " + JSON.stringify(p)};
+    if ((await s.ask("POST", "/api/server-folder")).status !== 403) return {name, ok: false, error: "a request without the app's header changed the folder"};
+    const chose = await s.ask("POST", "/api/server-folder", own);
+    if (!chose || chose.status !== 200 || !same(chose.json.vault, picked)) return {name, ok: false, error: "choosing answered " + JSON.stringify(chose)};
+    p = (await s.ask("GET", "/api/ping")).json;
+    if (!same(p.vault, picked) || !p.vaultChosen) return {name, ok: false, error: "the chosen folder is not served: " + JSON.stringify(p)};
+    s.stop();
+    s = await start();
+    p = (await s.ask("GET", "/api/ping")).json;
+    if (!same(p.vault, picked)) return {name, ok: false, error: "the choice was not remembered: " + JSON.stringify(p)};
+    if ((await s.ask("DELETE", "/api/server-folder", own)).status !== 200) return {name, ok: false, error: "Remove failed"};
+    p = (await s.ask("GET", "/api/ping")).json;
+    if (p.vault || p.calendarsOnly || !p.folderChoosable) return {name, ok: false, error: "after Remove: " + JSON.stringify(p)};
+    if ((await s.ask("GET", "/api/list")).status === 200) return {name, ok: false, error: "files still served after Remove"};
+    s.stop();
+    s = await start();
+    p = (await s.ask("GET", "/api/ping")).json;
+    if (p.vault) return {name, ok: false, error: "the old default came back after Remove: " + p.vault};
+    s.stop();
+    s = await start("--vault", picked);
+    p = (await s.ask("GET", "/api/ping")).json;
+    if (p.folderChoosable) return {name, ok: false, error: "--vault left the folder choosable"};
+    if ((await s.ask("POST", "/api/server-folder", own)).status !== 403) return {name, ok: false, error: "--vault was overridden"};
+    return {name, ok: true};
+  } catch (e) { return {name, ok: false, error: String(e && e.stack || e)}; }
+  finally {
+    servers.forEach(x => x.kill());
+    setTimeout(() => { try { rmSync(dir, {recursive: true, force: true}); } catch {} }, 500);
   }
 }
 

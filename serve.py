@@ -19,7 +19,11 @@ grouptodo.log in Downloads (--log-file or GTD_LOG to move it), which keeps
 its first 15 and last 5 characters: a calendar link is a password to that
 calendar. --verbose shows every request line in the terminal as well.
 
-Defaults to the vault path used by the original Neovim config:
+The server folder is --vault if given. Otherwise the app chooses it, under
+Your areas: serve.py opens this computer's folder picker and remembers the
+choice in %APPDATA%\\GroupToDo\\serve.json (~/.config/grouptodo/serve.json
+elsewhere). Until something is chosen there, the vault path of the original
+Neovim config is used if it exists:
     ~/storage/shared/Documents/OrgMode
 
 API
@@ -30,6 +34,10 @@ API
     GET    /api/file?path=REL   -> raw file contents
     PUT    /api/file?path=REL   -> writes the body (creates parent dirs)
     DELETE /api/file?path=REL   -> deletes the file
+    POST   /api/server-folder   -> opens the folder picker ON THIS MACHINE and
+                                   makes the pick the server folder
+    DELETE /api/server-folder   -> no server folder (both: localhost, no
+                                   password, no --vault; 403 otherwise)
     POST   /api/open?path=REL   -> opens that file in an editor ON THIS MACHINE,
                                    and only with --open-in-editor; 403 otherwise
     GET    /api/calendar?url=U  -> the iCalendar file at U, fetched by the server
@@ -130,6 +138,73 @@ def default_log_path():
     downloads = os.path.expanduser("~/Downloads")
     return os.path.join(downloads if os.path.isdir(downloads) else os.path.expanduser("~"),
                         "grouptodo.log")
+
+
+def config_file():
+    """Where serve.py keeps the folder chosen in the app: %APPDATA% on Windows,
+    ~/.config elsewhere. GTD_CONFIG names another file."""
+    if os.environ.get("GTD_CONFIG"):
+        return os.path.abspath(os.path.expanduser(os.environ["GTD_CONFIG"]))
+    if os.name == "nt" and os.environ.get("APPDATA"):
+        return os.path.join(os.environ["APPDATA"], "GroupToDo", "serve.json")
+    return os.path.expanduser("~/.config/grouptodo/serve.json")
+
+
+def load_config(path):
+    try:
+        with open(path, encoding="utf-8") as fh:
+            data = json.load(fh)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def save_config(path, changes):
+    data = load_config(path)
+    data.update(changes)
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(data, fh, indent=2)
+    except OSError:
+        pass                        # the choice still holds until serve.py stops
+
+
+def start_folder(flag, config):
+    """--vault wins. Then the folder chosen in the app, or none if it was
+    removed there. Never chosen at all: the old default, if it already holds
+    a vault, so a setup from before the choice keeps working."""
+    if flag:
+        return Vault(flag, create=True)
+    if "vault" in config:
+        chosen = config["vault"]
+        return Vault(chosen, create=False) if chosen and os.path.isdir(chosen) else None
+    if os.path.isdir(os.path.expanduser(DEFAULT_VAULT)):
+        return Vault(DEFAULT_VAULT, create=False)
+    return None
+
+
+# Run apart, in a Python of its own: a Tk window wants its own main thread,
+# and the server's threads should not hold one open.
+PICK_SCRIPT = (
+    "import sys, tkinter, tkinter.filedialog as fd\n"
+    "root = tkinter.Tk(); root.withdraw(); root.attributes('-topmost', True)\n"
+    "path = fd.askdirectory(parent=root, title='Server folder for GroupToDo',"
+    " initialdir=sys.argv[1] or None, mustexist=True)\n"
+    "sys.stdout.write(path or '')\n")
+
+
+def pick_folder(start=None):
+    """The folder picker of this computer, opened for whoever sits at it.
+    A browser never tells a page the path of a folder, so this is the only way
+    the app can name one. GTD_PICK_FOLDER answers without a window (tests)."""
+    if os.environ.get("GTD_PICK_FOLDER"):
+        return os.path.abspath(os.environ["GTD_PICK_FOLDER"])
+    done = subprocess.run([sys.executable, "-c", PICK_SCRIPT, start or ""],
+                          capture_output=True, text=True, encoding="utf-8")
+    if done.returncode != 0:
+        raise RuntimeError((done.stderr.strip().splitlines() or ["no tkinter"])[-1])
+    return os.path.abspath(done.stdout.strip()) if done.stdout.strip() else None
 
 
 class Log:
@@ -327,12 +402,12 @@ def open_in_editor(full, command=None):
 
 class Handler(BaseHTTPRequestHandler):
     server_version = "GroupToDo/1.0"
-    vault = None
-    # A folder somebody named, or the default one already holding a vault. Only
-    # then does the app offer to keep an area here: the default made up on the
-    # spot is a folder nobody chose.
-    vault_chosen = False
-    password = None        # None = open; anything else = HTTP Basic required
+    vault = None           # the server folder: --vault, the app's choice, or none
+    calendars_only = False
+    folder_locked = False  # --vault given: the command line decides, not the app
+    local_only = True      # bound to this computer, so a folder picker opens for its user
+    config_path = None     # where the app's choice of folder is remembered
+    password = None       # None = open; anything else = HTTP Basic required
     realm = "GroupToDo"
     log = Log(None, echo=True)  # main() points this at the log file
     allow_open = False     # --open-in-editor: may launch an editor on this box
@@ -473,14 +548,17 @@ class Handler(BaseHTTPRequestHandler):
             return
         route = urlparse(self.path).path
         if route == "/api/ping":
-            if self.vault is None:
+            if self.calendars_only:
                 return self._json(200, {"ok": True, "calendarsOnly": True})
-            return self._json(200, {"ok": True, "vault": self.vault.root,
-                                    "vaultChosen": bool(self.vault_chosen),
-                                    "files": len(self.vault.list()),
+            vault = self.vault
+            return self._json(200, {"ok": True, "vault": vault.root if vault else None,
+                                    "vaultChosen": vault is not None,
+                                    "files": len(vault.list()) if vault else 0,
+                                    "folderChoosable": self.folder_choosable(),
                                     "open_in_editor": bool(self.allow_open)})
         if self.vault is None and route.startswith("/api/") and route != "/api/calendar":
-            return self._send(404, "this helper only fetches calendars")
+            return self._send(404, "this helper only fetches calendars" if self.calendars_only
+                              else "no server folder: choose one in the app, under Your areas")
         if route == "/api/list":
             return self._json(200, self.vault.list())
         if route == "/api/calendar":
@@ -515,11 +593,46 @@ class Handler(BaseHTTPRequestHandler):
     # The static and API handlers already suppress bodies for HEAD.
     do_HEAD = do_GET
 
+    # ---------- the server folder, chosen in the app ----------
+    # Only for a server on this computer with no password and no --vault: the
+    # folder picker opens on this desktop, so it must be the person at it who
+    # asked, and nobody across a network may point the server somewhere else.
+    def folder_choosable(self):
+        return (not self.calendars_only and not self.folder_locked
+                and not self.password and self.local_only)
+
+    def server_folder(self, remove):
+        if not self.folder_choosable():
+            return self._send(403, "The server folder is set where serve.py starts (--vault), "
+                                   "or serve.py does not run on this computer.")
+        # As /api/open: a header only the app's own fetch sends forces a
+        # preflight that another site's page cannot pass.
+        if (self.headers.get("X-GroupTodo") or "") != "folder":
+            return self._send(403, "This endpoint is for the app itself.")
+        if remove:
+            Handler.vault = None
+            save_config(self.config_path, {"vault": None})
+            self.log.write("Server folder removed", show=True)
+            return self._json(200, {"ok": True, "vault": None})
+        try:
+            path = pick_folder(self.vault.root if self.vault else None)
+        except Exception as exc:
+            self.log.write("Folder picker failed: %s" % exc, show=True)
+            return self._send(500, "Could not open a folder picker here: %s" % exc)
+        if not path:
+            return self._json(200, {"ok": True, "cancelled": True})
+        Handler.vault = Vault(path, create=False)
+        save_config(self.config_path, {"vault": Handler.vault.root})
+        self.log.write("Server folder is now %s" % Handler.vault.root, show=True)
+        return self._json(200, {"ok": True, "vault": Handler.vault.root, "files": len(Handler.vault.list())})
+
     def do_POST(self):
         if not self.authorised():
             return self.demand_password()
         if self.refused():
             return
+        if urlparse(self.path).path == "/api/server-folder":
+            return self.server_folder(remove=False)
         if self.vault is None or urlparse(self.path).path != "/api/open":
             return self._send(404, "not found")
         if not self.allow_open:
@@ -570,6 +683,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.demand_password()
         if self.refused():
             return
+        if urlparse(self.path).path == "/api/server-folder":
+            return self.server_folder(remove=True)
         if self.vault is None or urlparse(self.path).path != "/api/file":
             return self._send(404, "not found")
         try:
@@ -820,20 +935,24 @@ def main():
     Handler.allow_hosts = tuple(h.strip().lower() for h in args.allow_host + [args.host])
     log_file = os.path.abspath(os.path.expanduser(args.log_file))
     Handler.log = Log(log_file, echo=args.verbose)
+    Handler.config_path = config_file()
+    Handler.calendars_only = args.calendars_only
+    Handler.folder_locked = bool(args.vault)
+    Handler.local_only = not exposed
     rows = [("Go to", f"http://{LOCAL_NAME if args.host in LOOPBACK else args.host}:{args.port}/"), None]
     if args.calendars_only:
         Handler.vault = None
         rows.append(("Mode", "calendars only - fetches calendar links, keeps no files"))
     else:
-        Handler.vault_chosen = bool(args.vault) or os.path.isdir(os.path.expanduser(DEFAULT_VAULT))
-        Handler.vault = Vault(args.vault or DEFAULT_VAULT, create=Handler.vault_chosen)
+        Handler.vault = start_folder(args.vault, load_config(Handler.config_path))
         # One folder, not the app's areas: those are folders the browser opens
-        # itself, out of sight of this server. Say how an area moves in here.
-        if Handler.vault_chosen:
+        # itself, out of sight of this server. Say where it is managed.
+        if Handler.vault:
             rows.append(("Server folder", f"{Handler.vault.root}  ({len(Handler.vault.list())} files)"))
-            rows.append(("Use it", "in the app, Vault & sync › Advanced › Sync server"))
         else:
-            rows.append(("Server folder", "none (--vault DIR names one); the app keeps its areas"))
+            rows.append(("Server folder", "none"))
+        if not exposed:
+            rows.append(("Use it", "in the app, Your areas › Use server folder"))
     rows.append(("Access", "password required" if password else "open (localhost only)"))
     if args.open_in_editor:
         rows.append(("Editor", (args.open_with or "the system default") + ", on this machine"))

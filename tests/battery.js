@@ -4760,15 +4760,15 @@ var GTD_TEST = (() => {
       await openSpace(back); await removeArea(n);
     }
   });
-  test("#193 setting up areas offers a folder or this browser, never a server", () => {
+  /* Your areas offers serve.py's folder since #356; the welcome screen still
+     does not. */
+  test("#193 the welcome screen offers a folder or this browser, never a server", () => {
     const base = SERVER_BASE;
     SERVER_BASE = "http://127.0.0.1:8777";          // as if served by serve.py with a folder
     try {
-      for (const open of [() => openSpaceStorageSetup(), () => openOnboardBack()]) {
-        closeModals(); open();
-        const text = document.querySelector("#modalRoot .modal").textContent;
-        ok(!/server|serve\.py/i.test(text), "a server is offered: " + text.slice(0, 200));
-      }
+      closeModals(); openOnboardBack();
+      const text = document.querySelector("#modalRoot .modal").textContent;
+      ok(!/server|serve\.py/i.test(text), "a server is offered: " + text.slice(0, 200));
     } finally { SERVER_BASE = base; closeModals(); }
   });
   test("#193 serve.py's folder is offered only when serve.py was given one", async () => {
@@ -4783,6 +4783,52 @@ var GTD_TEST = (() => {
       ping({ok: true, vault: "/x", vaultChosen: true});
       ok(await detectServer(), "a chosen folder not offered");
     } finally { window.fetch = f; CAP.served = served; SERVER_BASE = base; }
+  });
+  /* serve.py's folder is managed in Your areas: shown with Change folder and
+     Remove, or None with Choose folder; Remove hides while an area lives
+     there; every other area can move in with Use server folder. Only when
+     serve.py says the folder may be chosen from here. */
+  test("#356 Your areas shows serve.py's folder, and an area moves into it with Use server folder", async () => {
+    const f = window.fetch, served = CAP.served, base = SERVER_BASE, n = "Test356 card";
+    const until = async cond => { for (let i = 0; i < 200 && !cond(); i++) await new Promise(r => setTimeout(r, 10)); };
+    let ping = {ok: true, vault: "C:\\Users\\me\\Notes", files: 3, vaultChosen: true, folderChoosable: true};
+    window.fetch = async url => /\/api\/ping$/.test(new URL(url, location.href).pathname)
+      ? new Response(JSON.stringify(ping)) : new Response("[]");
+    const open = async () => {
+      closeModals(); openSpaceStorageSetup();
+      const m = document.querySelector("#modalRoot .modal");
+      await until(() => m.querySelector(".afserver")?.textContent);
+      const row = m.querySelector(".afserver");
+      return {m, row, text: row ? row.textContent : "", buttons: row ? [...row.querySelectorAll("button")].map(b => b.textContent) : []};
+    };
+    const card = m => [...m.querySelectorAll(".afcard")].find(c => c.querySelector(".afname").textContent === n);
+    try {
+      CAP.served = true; SERVER_BASE = null;
+      await createSpace(n, "local");
+      let d = await open();
+      has(d.text, "Server folder"); has(d.text, "C:\\Users\\me\\Notes");
+      eq(d.buttons, ["Change folder", "Remove"], "folder chosen");
+      const use = [...card(d.m).querySelectorAll("button")].find(b => b.textContent === "Use server folder");
+      ok(use, "no Use server folder on a card");
+      use.click();
+      await until(() => Spaces.get(n).kind === "http");
+      eq(Spaces.get(n).kind, "http", "the area did not move in");
+      ok(Spaces.get(n).server, "no server address kept");
+      d = await open();
+      eq(d.buttons, ["Change folder"], "Remove offered while an area lives there");
+      has(d.text, "Used by " + n);
+      ok(![...card(d.m).querySelectorAll("button")].some(b => b.textContent === "Use server folder"), "offered to the area already there");
+      ping = {ok: true, vault: null, vaultChosen: false, folderChoosable: true};
+      d = await open();
+      has(d.text, "None");
+      eq(d.buttons, ["Choose folder"], "no folder");
+      ping = {ok: true, vault: "/srv/notes", files: 3, vaultChosen: true, folderChoosable: false};
+      d = await open();
+      eq(d.buttons, [], "a folder set by --vault offered for change");
+    } finally {
+      closeModals(); window.fetch = f; CAP.served = served; SERVER_BASE = base;
+      if (Spaces.get(n)) await removeArea(n);
+    }
   });
 
   /* ============================================================

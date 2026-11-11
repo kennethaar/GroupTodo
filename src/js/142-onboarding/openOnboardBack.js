@@ -14,7 +14,7 @@ function openOnboardBack() {
     for (const sp of placed()) listBox.append(el("div", {style: "display:flex;gap:8px;align-items:center"},
       spaceBadge(sp.name, true),
       el("span", {style: "color:var(--fg2);font-size:13px"},
-        sp.kind === "http" ? "in serve.py's folder" : "“" + (sp.label || "folder") + "”")));
+        sp.kind === "http" ? "in the server folder" : "“" + (sp.label || "folder") + "”")));
     addBtn.textContent = placed().length ? "Add another folder" : "Choose a folder";
   };
   addBtn.onclick = async () => {

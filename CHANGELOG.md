@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.142.0 - 2026-11-11
+
+- Areas and sharing: when the app runs from serve.py, the bottom of Manage
+  areas shows serve.py's folder. Choose folder or Change folder opens the
+  folder window on this PC, and serve.py remembers the pick, with no
+  start-up flags. Remove forgets it. Each area has Use server folder to move
+  in there.
+
 ## 1.141.2 - 2026-11-11
 
 - Ways to run GroupToDo: serve.py's address is a name now,
