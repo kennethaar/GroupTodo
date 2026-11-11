@@ -5547,6 +5547,8 @@ var GTD_TEST = (() => {
       const note = document.querySelector("#modalRoot textarea").value;
       has(note, "Which crane goes first");
       ok(!note.includes(title), "the project is named: " + note);
+      // #353: your mail already signs it; the note ends with the lines.
+      ok(!/^(Thanks|Takk),$/m.test(note), "the note signs off: " + note);
     } finally {
       closeAll();
       PREF.set("askNameProjects", was);

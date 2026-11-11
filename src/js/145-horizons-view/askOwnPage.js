@@ -3,7 +3,7 @@ function askOwnPage() {
   const text = {greet: [t.greet("%name%")],
     mw: [m.introAsk(2, 0)], mq: [askOneMore(n => m.introAsk(0, n))], mboth: [askOneMore(n => m.introAsk(2, n))], mhelp: [m.helpAsk],
     w: [t.intro({q: 0, w: 2}, "%file%", q)], q: [t.intro({q: 2, w: 0}, "%file%", q)],
-    both: [t.intro({q: 2, w: 2}, "%file%", q)], add: [t.add], bye: [t.bye, "%me%"]};
+    both: [t.intro({q: 2, w: 2}, "%file%", q)], add: [t.add], bye: []};
   return {
     props: {title: "Update note", base, created: todayStamp(),
       help: "Email: is the email, the rest the plain text. " +

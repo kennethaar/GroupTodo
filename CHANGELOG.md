@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.140.3 - 2026-11-11
+
+- Waiting for › List: the Ask for an update note ends with the lines, not
+  Thanks and your name, since your mail adds your signature. An ending you
+  write under Personalize text still goes in.
+
 ## 1.140.2 - 2026-11-11
 
 - Waiting for › List: when you last asked and what they last said goes in

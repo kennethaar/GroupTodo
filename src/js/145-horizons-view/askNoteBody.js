@@ -18,7 +18,7 @@ function askNoteBody(them, me, items, file, k) {
     ...[intro, k.w ? part("add", t.add) : ""].filter(l => trim(l)),
     "",
     items,
-    "",
-    ...(own.bye != null ? [fill(own.bye, k.q)] : [t.bye, me]),
+    // Your mail signs it (#353); only an ending you wrote yourself goes in.
+    ...(own.bye ? ["", fill(own.bye, k.q)] : []),
   ].join("\n");
 }
