@@ -1629,7 +1629,7 @@ var GTD_TEST = (() => {
       eq(row(), undefined, "nothing left to bill");
       go("projects", {sub: "hours", hoursOf: "clients"});
       await settle();
-      ok(!document.querySelector("#main").textContent.includes(org), "a client with nothing to bill is not listed");
+      ok(![...document.querySelectorAll("#main .billrow")].some(x => x.textContent.includes(org)), "a client with nothing to bill is not listed under Not yet billed");
       admin.drawers = [[":LOGBOOK:", clk("2026-10-06", 9, 12), ":END:"]];
       delete getPage(skip).props.billable; touch(skip); clearMemo(); render();
       await settle();
