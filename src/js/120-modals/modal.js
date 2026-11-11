@@ -8,7 +8,12 @@ function modal({title, hint, body, foot, center = false, side = false, onKey = n
       el("button", {class: "iconbtn", onclick: closeModal}, "✕")),
     el("div", {class: "body"}, body),
     foot ? el("div", {class: "foot"}, foot) : null);
-  const scrim = el("div", {class: "scrim" + (center ? " center" : "") + (side ? " side" : ""), onclick: e => { if (e.target === scrim) closeModal(); }}, sheet);
+  // Only a press that starts and ends on the backdrop closes the dialog, so a
+  // text selection dragged past the edge keeps what was typed (#358).
+  let downOnScrim = false;
+  const scrim = el("div", {class: "scrim" + (center ? " center" : "") + (side ? " side" : ""),
+    onpointerdown: e => { downOnScrim = e.target === scrim; },
+    onclick: e => { if (e.target === scrim && downOnScrim) closeModal(); downOnScrim = false; }}, sheet);
   $("#modalRoot").append(scrim);
   resolveAssets(sheet);
   MODAL_KEYS = onKey;

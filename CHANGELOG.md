@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.143.2 - 2026-11-11
+
+- Getting started: selecting text in a dialog no longer closes it when
+  you let go outside the dialog. Only a click on the dim area around it
+  closes it, so typed text is not lost.
+
 ## 1.143.1 - 2026-11-11
 
 - Areas and sharing: the app now says why a server folder helps. Run

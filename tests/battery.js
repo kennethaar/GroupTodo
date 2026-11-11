@@ -5459,6 +5459,23 @@ var GTD_TEST = (() => {
       eq(copied, ["Hi Kari"], "the message is not on the clipboard");
     } finally { window.openAppUrl = realGo; navigator.clipboard.writeText = realWrite; }
   });
+  test("#358 a dialog closes on a backdrop click, not when a text selection drag ends outside it", () => {
+    const press = (down, up) => {
+      down.dispatchEvent(new PointerEvent("pointerdown", {bubbles: true}));
+      up.dispatchEvent(new PointerEvent("pointerup", {bubbles: true}));
+      // The browser sends the click to the nearest common ancestor.
+      const at = down.contains(up) ? down : up.contains(down) ? up : up.closest(".scrim");
+      at.dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    };
+    try {
+      let m = modal({title: "Test drag", body: el("input", {})});
+      const scrim = m.root.parentNode;
+      press(m.root.querySelector("input"), scrim);
+      ok(m.root.isConnected, "a drag from the text to the backdrop closed the dialog");
+      press(scrim, scrim);
+      ok(!m.root.isConnected, "a plain backdrop click left the dialog open");
+    } finally { closeModal(); }
+  });
   /* Feedback is reviewed one item at a time and handled only by an outcome on
      the project or to-do it is about (#285). */
   const withFeedbackSince = async fn => {
