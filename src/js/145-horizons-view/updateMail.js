@@ -94,14 +94,16 @@ function updateMail({mode, them, subject, items, ack, replyTo, greet}) {
   /* Send in Teams (#352): a chat message has no links, since a mailto: would
      take them out of the chat. They reply in the thread, and each line ends
      with its reference, which the paste of the message and the reply brings
-     back, so Paste a reply knows the task. */
+     back, so Paste a reply knows the task. One task needs no number, and
+     so no indent under it. */
+  const solo = cards.length === 1, ind = solo ? "" : ASK_IND;
   const teams = [greet, "", intro + " " + (mode === "inform" ? w.teamsHelp : w.teamsAsk(cards.filter(c => c.it.ref).length)), "",
     ...cards.flatMap(({n, it}, i) => {
-      const out = [n + ". " + it.t,
-        ...(it.context || []).map(c => ASK_IND + "  ".repeat(c.depth) + c.text),
-        ...(mode === "ask" ? (facts(it) ? [ASK_IND + facts(it)] : [])
-          : it.word || it.meta ? [ASK_IND + [it.word, it.meta].filter(Boolean).join(" · ")] : []),
-        ...String(it.comment || "").split(/\r?\n/).filter(l => trim(l)).map(l => ASK_IND + trim(l))];
+      const out = [(solo ? "" : n + ". ") + it.t,
+        ...(it.context || []).map(c => ind + "  ".repeat(c.depth) + c.text),
+        ...(mode === "ask" ? (facts(it) ? [ind + facts(it)] : [])
+          : it.word || it.meta ? [ind + [it.word, it.meta].filter(Boolean).join(" · ")] : []),
+        ...String(it.comment || "").split(/\r?\n/).filter(l => trim(l)).map(l => ind + trim(l))];
       if (it.ref) out[out.length - 1] += " (" + it.ref + ")";
       return i < cards.length - 1 ? [...out, ""] : out;
     })].join("\n");

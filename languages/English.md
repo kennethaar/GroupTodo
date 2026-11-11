@@ -641,6 +641,7 @@ An opening bracket puts in the closing one too. In a word, or on picked words, t
 And more before that: =>
 Andet =>
 Angry =>
+Angående: =>
 Annet =>
 Annoyed =>
 Annulleret =>
@@ -1711,7 +1712,6 @@ Give them one › =>
 Give this to someone else in the area =>
 Give your files a folder, and put your name on your changes - [[go/vault]] =>
 Give your name above first: the projects are sent from your computer. =>
-Gjelder: =>
 Go back a step and brainstorm. =>
 Go further back =>
 Go there =>

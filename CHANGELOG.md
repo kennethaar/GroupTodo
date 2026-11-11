@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.139.1 - 2026-11-11
+
+- Waiting for › List: a Teams message about one task has no number in front
+  of it, and in Norwegian the line under it starts with Angående:.
+
 ## 1.139.0 - 2026-11-11
 
 - Waiting for › List: Send in Teams works as a chat. The message has no mail

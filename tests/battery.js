@@ -5213,6 +5213,16 @@ var GTD_TEST = (() => {
       greet: "Hi Lars,", ack: true, items: [{ref: "Work-cccc3333", t: "Order the chairs", word: "Done", meta: "Office move"}]})).teams;
     ok(!/mailto:|https?:/.test(told), "a link in the Teams update");
     has(told, "(Work-cccc3333)");
+    // One task needs no number, and Norwegian says Angående (#352).
+    const was = PREF.get("askLang", "");
+    PREF.set("askLang", "no");
+    try {
+      const one = updateMail({mode: "ask", them: "Lars Haugen", subject: "Venter på", replyTo: "me@example.com", greet: "Hei Lars,",
+        items: [{ref: "Work-mosbdcfz", kind: "question", t: "Skal vi sette opp et nytt møte?", about: "Førstehjelp for Storebrand", word: "Spørsmål"}]}).teams;
+      has(one, "\nSkal vi sette opp et nytt møte?\n");
+      ok(!/^\d+\. /m.test(one), "a single task is numbered");
+      has(one, "Angående: Førstehjelp for Storebrand (Work-mosbdcfz)");
+    } finally { PREF.set("askLang", was); }
   });
   test("#352 a Teams paste: your lines are dropped, the rest goes to the task, numbers pick the task", () => {
     const m = teamsAsk().teams;

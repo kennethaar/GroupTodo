@@ -58,7 +58,7 @@ const MAIL_WORDS = {
     paste: "[ Klistra in GroupToDo-uppdateringen här: markera raden och tryck Ctrl+V ]",
   },
   no: {
-    askAbout: "Spør om dette ›", markDone: "✓ Merk som ferdig", writeAbout: "Skriv om dette ›", answer: "Svar", about: "Gjelder:",
+    askAbout: "Spør om dette ›", markDone: "✓ Merk som ferdig", writeAbout: "Skriv om dette ›", answer: "Svar", about: "Angående:",
     gotIt: "✓ Mottatt, takk", gotItSaid: "Mottatt, takk.",
     waitingFor: "Venter på", question: "Spørsmål", open: n => "åpen " + n + " dager",
     reQuestion: t => 'Spørsmål om "' + t + '"', reDone: t => 'Ferdig: "' + t + '"', reAbout: t => 'Om "' + t + '"',
