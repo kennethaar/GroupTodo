@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.141.0 - 2026-11-11
+
+- Ways to run GroupToDo: serve.py starts with a box that says where to go
+  and where the log is. Request lines go to grouptodo.log in Downloads,
+  which keeps 500 lines. Errors still show in the window. A calendar link
+  shows only its first 15 and last 5 characters, since it works like a
+  password.
+
 ## 1.140.4 - 2026-11-11
 
 - Waiting for › List: the Send an update note also ends with the lines, not

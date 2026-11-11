@@ -10,7 +10,14 @@ Logseq or Obsidian open.
     python3 serve.py [--vault DIR] [--port 8777] [--host 127.0.0.1]
                      [--password-file FILE] [--insecure]
                      [--open-in-editor [--open-with CMD]] [--allow-host NAME]
+                     [--log-file FILE] [--verbose]
     python3 serve.py --calendars-only      (only fetches calendar links)
+
+The terminal shows a start box and errors only. Request lines go to
+grouptodo.log in Downloads (--log-file or GTD_LOG to move it), which keeps
+500 lines and one older file, grouptodo.log.1. A link in either shows only
+its first 15 and last 5 characters: a calendar link is a password to that
+calendar. --verbose shows every request line in the terminal as well.
 
 Defaults to the vault path used by the original Neovim config:
     ~/storage/shared/Documents/OrgMode
@@ -85,10 +92,12 @@ import shlex
 import socket
 import subprocess
 import sys
+import threading
 import time
 import urllib.request
+from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, unquote
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_VAULT = os.path.expanduser("~/storage/shared/Documents/OrgMode")
@@ -103,6 +112,70 @@ ASSET_DIR = "assets"
 SKIP_DIRS = {".git", ".obsidian", ".trash", "node_modules", "logseq"}
 MAX_BODY = 8 * 1024 * 1024
 MAX_CALENDAR = 8 * 1024 * 1024
+LOG_LINES = 500
+
+# A calendar link is a password to that calendar, so no log shows one in full.
+LINK_RE = re.compile(r"(?:https?|webcal)://[^\s\"'<>]+", re.I)
+ENCODED_LINK_RE = re.compile(r"(?:https?|webcal)%3A%2F%2F[^\s\"&]*", re.I)
+
+
+def redact(text):
+    """Keep the first 15 and last 5 characters of every link in text."""
+    text = ENCODED_LINK_RE.sub(lambda m: unquote(m.group(0)), text)
+    return LINK_RE.sub(lambda m: m.group(0) if len(m.group(0)) <= 20
+                       else m.group(0)[:15] + "…" + m.group(0)[-5:], text)
+
+
+def default_log_path():
+    downloads = os.path.expanduser("~/Downloads")
+    return os.path.join(downloads if os.path.isdir(downloads) else os.path.expanduser("~"),
+                        "grouptodo.log")
+
+
+class Log:
+    """The request lines the terminal no longer shows. At LOG_LINES lines the
+    file becomes <name>.1, replacing the older one, and starts again. A line
+    marked show also goes to the terminal: that is how errors still surface."""
+
+    def __init__(self, path, echo=False):
+        self.path, self.echo = path, echo
+        self.lock = threading.Lock()
+        try:
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                self.lines = sum(1 for _ in fh)
+        except (OSError, TypeError):    # no file yet, or no path at all
+            self.lines = 0
+
+    def write(self, text, show=False):
+        text = redact(text)
+        with self.lock:
+            if show:
+                print("! %s  %s" % (time.strftime("%H:%M"), text), flush=True)
+            elif self.echo:
+                print(text, flush=True)
+            if not self.path:
+                return
+            try:
+                if self.lines >= LOG_LINES:
+                    os.replace(self.path, self.path + ".1")
+                    self.lines = 0
+                with open(self.path, "a", encoding="utf-8") as fh:
+                    fh.write("%s  %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), text))
+                self.lines += 1
+            except OSError:
+                pass                     # a log that cannot be written must not stop the app
+
+
+def start_box(rows, foot):
+    """The terminal's whole start-up message, in a box."""
+    body = ["%-8s %s" % row if row else "" for row in rows]
+    width = max(len(line) for line in body + [foot, "GroupToDo started"]) + 2
+    out = ["┌─ GroupToDo started " + "─" * (width - 19) + "┐"]
+    out += ["│ " + line.ljust(width - 2) + " │" for line in body]
+    out.append("├" + "─" * width + "┤")
+    out.append("│ " + foot.ljust(width - 2) + " │")
+    out.append("└" + "─" * width + "┘")
+    return "\n".join(out)
 
 
 def check_calendar_url(url):
@@ -260,6 +333,7 @@ class Handler(BaseHTTPRequestHandler):
     vault_chosen = False
     password = None        # None = open; anything else = HTTP Basic required
     realm = "GroupToDo"
+    log = Log(None, echo=True)  # main() points this at the log file
     allow_open = False     # --open-in-editor: may launch an editor on this box
     open_with = None       # --open-with: the command to launch, if not the default
     allow_hosts = ()       # --allow-host: names besides localhost this answers to
@@ -370,10 +444,20 @@ class Handler(BaseHTTPRequestHandler):
         if self.command != "HEAD":
             self.wfile.write(body)
 
-    def log_message(self, fmt, *args):
+    def log_request(self, code="-", size="-"):
+        if isinstance(code, HTTPStatus):
+            code = code.value
         if self.path.startswith("/api/file") and self.command == "GET":
             return                      # loading a vault is hundreds of reads; stay quiet
-        super().log_message(fmt, *args)
+        # A failed calendar says so itself; any other server error shows here.
+        show = str(code).startswith("5") and not self.path.startswith("/api/calendar")
+        self.log.write('%s "%s" %s %s' % (self.address_string(), self.requestline, code, size), show)
+
+    def log_error(self, fmt, *args):
+        self.log.write(fmt % args, show=True)
+
+    def log_message(self, fmt, *args):
+        self.log.write("%s %s" % (self.address_string(), fmt % args))
 
     # ---------- verbs ----------
     def do_OPTIONS(self):
@@ -403,8 +487,10 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 return self._send(200, fetch_calendar(url), "text/calendar; charset=utf-8")
             except ValueError as exc:
+                self.log.write("Calendar %s failed: %s" % (url, exc), show=True)
                 return self._send(400, str(exc))
             except Exception as exc:
+                self.log.write("Calendar %s failed: %s" % (url, exc), show=True)
                 return self._send(502, "could not fetch the calendar: %s" % exc)
         if route == "/api/file":
             try:
@@ -687,7 +773,17 @@ def main():
                     help="let the app open a page in an editor on THIS machine")
     ap.add_argument("--open-with", default=os.environ.get("GTD_OPEN_WITH"),
                     help="the command --open-in-editor runs (default: the system's own)")
+    ap.add_argument("--log-file", default=os.environ.get("GTD_LOG") or default_log_path(),
+                    help="where request lines go (default: grouptodo.log in Downloads)")
+    ap.add_argument("--verbose", action="store_true",
+                    help="also show every request line here in the terminal")
     args = ap.parse_args()
+    # A box drawn on a console or pipe that cannot spell it must not crash.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
 
     password = read_password(args)
     exposed = args.host not in LOOPBACK
@@ -717,26 +813,35 @@ def main():
     Handler.open_with = args.open_with
     # The address it was told to bind is a name it answers to, of course.
     Handler.allow_hosts = tuple(h.strip().lower() for h in args.allow_host + [args.host])
+    log_file = os.path.abspath(os.path.expanduser(args.log_file))
+    Handler.log = Log(log_file, echo=args.verbose)
+    rows = [("Go to", f"http://{args.host}:{args.port}/"), None]
     if args.calendars_only:
         Handler.vault = None
-        print("mode  : calendars only - fetches calendar links, keeps no files")
+        rows.append(("Mode", "calendars only - fetches calendar links, keeps no files"))
     else:
         Handler.vault_chosen = bool(args.vault) or os.path.isdir(os.path.expanduser(DEFAULT_VAULT))
         Handler.vault = Vault(args.vault or DEFAULT_VAULT, create=Handler.vault_chosen)
-        if not Handler.vault_chosen:
-            print("note  : no --vault given, so the app keeps its areas itself (a folder or the browser)")
-        count = len(Handler.vault.list())
-        print(f"vault : {Handler.vault.root}  ({count} markdown files)")
-    print(f"open  : http://{args.host}:{args.port}/")
-    print("auth  : " + ("password required" if password else "open (localhost only)"))
+        if Handler.vault_chosen:
+            rows.append(("Vault", f"{Handler.vault.root}  ({len(Handler.vault.list())} files)"))
+        else:
+            rows.append(("Vault", "none given, so the app keeps its areas itself"))
+    rows.append(("Access", "password required" if password else "open (localhost only)"))
     if args.open_in_editor:
-        print("editor: " + (args.open_with or "the system default") +
-              "  -- the app can open pages in it, here on this machine")
+        rows.append(("Editor", (args.open_with or "the system default") + ", on this machine"))
+    rows.append(("Logs", log_file))
     if exposed and password:
-        print("note  : HTTP Basic is only private over HTTPS -- terminate TLS in front of this")
+        rows.append(("Note", "HTTP Basic is only private over HTTPS: put TLS in front"))
     if exposed and not password:
-        print("WARNING: --insecure, no password; anyone who can reach this port owns the vault")
-    ThreadingHTTPServer((args.host, args.port), Handler).serve_forever()
+        rows.append(("WARNING", "--insecure, no password: anyone who can reach this port owns the vault"))
+    server = ThreadingHTTPServer((args.host, args.port), Handler)
+    print(start_box(rows, "Keep this window open. Press Ctrl+C to stop."), flush=True)
+    Handler.log.write("GroupToDo started on %s port %s" % (args.host, args.port))
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        Handler.log.write("GroupToDo stopped")
+        print("GroupToDo stopped.")
 
 
 if __name__ == "__main__":

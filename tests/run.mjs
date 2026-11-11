@@ -56,6 +56,10 @@ try {
   if (!only || serveTest.toLowerCase().includes(only.toLowerCase())) {
     results.push(await serveCacheTest(serveTest));
   }
+  const serveLogTest = "#355 serve.py starts with a box, logs to a file of at most 500 lines, and never shows a calendar link in full";
+  if (!only || serveLogTest.toLowerCase().includes(only.toLowerCase())) {
+    results.push(await serveLogTestRun(serveLogTest));
+  }
 
   const stripTest = "#259 the build takes out comments and indentation and nothing else";
   if (!only || stripTest.toLowerCase().includes(only.toLowerCase())) {
@@ -244,7 +248,9 @@ async function serveCacheTest(name) {
   const {spawn} = await import("node:child_process");
   const port = 18000 + Math.floor(Math.random() * 2000);
   const py = process.platform === "win32" ? "python" : "python3";
-  const server = spawn(py, [join(ROOT, "serve.py"), "--port", String(port), "--calendars-only"], {stdio: "ignore"});
+  const {tmpdir} = await import("node:os");
+  const server = spawn(py, [join(ROOT, "serve.py"), "--port", String(port), "--calendars-only",
+    "--log-file", join(tmpdir(), "gtd-serve-test.log")], {stdio: "ignore"});
   const url = `http://127.0.0.1:${port}/grouptodo.html`;
   try {
     /* Plain http, not fetch: Node 24's fetch can fail an internal assert,
@@ -264,6 +270,53 @@ async function serveCacheTest(name) {
     return {name, ok: true};
   } catch (e) { return {name, ok: false, error: String(e)}; }
   finally { server.kill(); }
+}
+
+/* A calendar link is a password to that calendar: the terminal and the log
+   show its first 15 and last 5 characters only. Request lines go to the log,
+   not the terminal; a failure shows in both. The log keeps 500 lines and one
+   older file. */
+async function serveLogTestRun(name) {
+  const {spawn} = await import("node:child_process");
+  const {mkdtempSync, writeFileSync, rmSync} = await import("node:fs");
+  const {tmpdir} = await import("node:os");
+  const dir = mkdtempSync(join(tmpdir(), "gtd-log-"));
+  const log = join(dir, "grouptodo.log");
+  writeFileSync(log, Array.from({length: 499}, (_, i) => "old line " + i + "\n").join(""));
+  const port = 18000 + Math.floor(Math.random() * 2000);
+  const py = process.platform === "win32" ? "python" : "python3";
+  const server = spawn(py, [join(ROOT, "serve.py"), "--port", String(port), "--calendars-only", "--log-file", log]);
+  let out = "";
+  server.stdout.on("data", d => out += d.toString("utf-8"));
+  server.stderr.on("data", d => out += d.toString("utf-8"));
+  const secret = "https://cal.example.invalid/secret-token-1234567890/calendar.ics";
+  const {get} = await import("node:http");
+  const ask = path => new Promise(ok => get(`http://127.0.0.1:${port}${path}`, {agent: false}, res => {
+    res.resume(); res.on("end", () => ok(res));
+  }).on("error", () => ok(null)));
+  try {
+    let up = null;
+    for (let i = 0; i < 50 && !up; i++) if (!(up = await ask("/api/ping"))) await new Promise(r => setTimeout(r, 100));
+    if (!up) return {name, ok: false, error: "serve.py did not start:\n" + out};
+    const cal = await ask("/api/calendar?url=" + encodeURIComponent(secret));
+    if (!cal || cal.statusCode !== 400) return {name, ok: false, error: "the calendar answered " + (cal && cal.statusCode)};
+    await new Promise(r => setTimeout(r, 400));
+    const short = "https://cal.exa…r.ics";
+    if (!/GroupToDo started/.test(out) || !out.includes(`Go to`) || !out.includes(`http://127.0.0.1:${port}/`) || !out.includes(log))
+      return {name, ok: false, error: "the start box lacks the address or the log:\n" + out};
+    if (!/[┌╭]/.test(out)) return {name, ok: false, error: "no box:\n" + out};
+    if (/GET \/api\/ping/.test(out)) return {name, ok: false, error: "request lines still go to the terminal:\n" + out};
+    if (!out.split("\n").some(l => l.startsWith("!") && l.includes(short)))
+      return {name, ok: false, error: "the failed calendar is not an ! line with the short link:\n" + out};
+    const now = readFileSync(log, "utf-8"), old = existsSync(log + ".1") ? readFileSync(log + ".1", "utf-8") : "";
+    if (/secret-token/.test(out + now + old)) return {name, ok: false, error: "the calendar link shows in full"};
+    if (!old.startsWith("old line 0")) return {name, ok: false, error: "the log did not rotate at 500 lines"};
+    if (old.trimEnd().split("\n").length !== 500) return {name, ok: false, error: "the old log has " + old.trimEnd().split("\n").length + " lines"};
+    if (!now.includes("/api/calendar") || !now.includes(short)) return {name, ok: false, error: "the log lacks the calendar request:\n" + now};
+    if (readdirSync(dir).length !== 2) return {name, ok: false, error: "more than one old log: " + readdirSync(dir)};
+    return {name, ok: true};
+  } catch (e) { return {name, ok: false, error: String(e)}; }
+  finally { server.kill(); setTimeout(() => { try { rmSync(dir, {recursive: true, force: true}); } catch {} }, 500); }
 }
 
 async function stripBuildTest(name) {

@@ -5418,6 +5418,7 @@ section fold asneeded =>
 see Chores =>
 see the whole thing first =>
 senast hört =>
+serve.py shows where to go and where its log is. The log is grouptodo.log in Downloads. =>
 serve.py with your folder =>
 serve.py, folder picked in the browser =>
 set up =>
