@@ -4042,7 +4042,7 @@ placeholder="Add a task. Try: &quot;Call Mia about the VAT @phone tomorrow&quot;
 })();
 
 "use strict";
-const APP_VERSION = "1.142.0";
+const APP_VERSION = "1.142.1";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -7624,6 +7624,11 @@ return false;
 const rec = newRecord(name, Backends.http(base));
 try { await readInto(rec); }
 catch (e) { notify("Server not reachable: " + e.message, "error"); return false; }
+const stored = trim(String(rec.pages.get(SETTINGS_PATH)?.props?.area_name || ""));
+if (sp.placeholder && stored && stored !== name) {
+const renamed = await Spaces.rename(name, stored);
+if (renamed) { name = renamed.name; rec.name = name; sp.nameFrom = "stored"; }
+}
 const wasFolder = sp.kind === "fs" ? (sp.label || "the old folder") : null;
 const loaded = LOADED.get(name);
 const carry = wasFolder
@@ -7662,6 +7667,9 @@ notify(name + " now lives in the server folder" +
 (moved ? ", with " + moved + " page" + (moved === 1 ? "" : "s") + " moved in." : "."));
 render();
 return true;
+}
+function firstAreaOnServer(server) {
+return !!server && !CAP.dirPicker;
 }
 function storedVisible() {
 let names = [];
@@ -8170,13 +8178,12 @@ await detectServer();
 if (Spaces.list.length) return;
 let legacy = null;
 try { legacy = await IDB.get("kv", "dirHandle"); } catch (_) {}
-let server = null;
-server = safeLS.get("gtd.server");
-if (!server) server = SERVER_BASE;
+const asked = safeLS.get("gtd.server");
+const server = asked || SERVER_BASE;
 if (legacy) {
 await IDB.set("kv", "dir:Personal", legacy).catch(() => {});
 await Spaces.add({name: "Personal", kind: "fs", label: legacy.name});
-} else if (server) {
+} else if (asked || firstAreaOnServer(server)) {
 await Spaces.add({name: "Personal", kind: "http", server});
 } else {
 await Spaces.add({name: "Personal", kind: "local", legacyFlat: true, placeholder: true});
@@ -15751,7 +15758,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.142.0 - 2026-11-11\n\n- Areas and sharing: when the app runs from serve.py, the bottom of Manage\n  areas shows serve.py's folder. Choose folder or Change folder opens the\n  folder window on this PC, and serve.py remembers the pick, with no\n  start-up flags. Remove forgets it. Each area has Use server folder to move\n  in there.\n\n## 1.141.2 - 2026-11-11\n\n- Ways to run GroupToDo: serve.py's address is a name now,\n  http://grouptodo.localhost:8777. Your browser keeps areas per address, so\n  the first time there you choose your folders again. 127.0.0.1:8777 still\n  works.\n\n## 1.141.1 - 2026-11-11\n\n- Ways to run GroupToDo: serve.py's start box says Server folder, not Vault.\n  It is one folder, not your areas. The line below says how to put an area\n  in it: Vault & sync › Advanced › Sync server.\n\n## 1.141.0 - 2026-11-11\n\n- Ways to run GroupToDo: serve.py starts with a box that says where to go\n  and where the log is. Request lines go to grouptodo.log in Downloads,\n  which keeps 500 lines. Errors still show in the window. A calendar link\n  shows only its first 15 and last 5 characters, since it works like a\n  password.\n\n## 1.140.4 - 2026-11-11\n\n- Waiting for › List: the Send an update note also ends with the lines, not\n  Thanks and your name. An ending you write under Personalize text still\n  goes in.\n\n## 1.140.3 - 2026-11-11\n\n- Waiting for › List: the Ask for an update note ends with the lines, not\n  Thanks and your name, since your mail adds your signature. An ending you\n  write under Personalize text still goes in.\n\n## 1.140.2 - 2026-11-11\n\n- Waiting for › List: when you last asked and what they last said goes in\n  the ask only when you tick it, so a wrong date does not go out by itself.\n  Norwegian says ikke svart ennå.\n\n## 1.140.1 - 2026-11-11\n\n- Waiting for › List: on a PC, Send in Teams opens the Teams app instead of\n  a browser tab, so it finds people outside your company too. The message is\n  ready in the chat, and on the clipboard too: if Teams drops it, press\n  Ctrl+V. A phone keeps the web link. An address written as mailto://...\n  works as a plain address.\n\n## 1.140.0 - 2026-11-11\n\n- Waiting for › List: a task's panel has Ask for an update beside Send an\n  update when the line names someone. Both dialogs say Write the message,\n  since it goes by email or Teams, and the Ask dialog has one scroll bar.\n\n## 1.139.1 - 2026-11-11\n\n- Waiting for › List: a Teams message about one task has no number in front\n  of it, and in Norwegian the line under it starts with Angående:.\n\n## 1.139.0 - 2026-11-11\n\n- Waiting for › List: Send in Teams works as a chat. The message has no mail\n  links; each task ends with its reference, and they reply in the chat. Select\n  your message and their reply, copy them, and use Paste a reply: your own\n  lines are left out and each answer goes to its task, with no questions. When\n  the reply goes back and forth, Paste a reply lists the lines, ticked, and\n  what follows your own name starts unticked.\n\n## 1.138.1 - 2026-11-11\n\n- Waiting for › List: in the mail from Ask for an update and Send an update,\n  a task's title is plain text again. The Answer, Mark as done or Ask about\n  this link below it is the one way to reply, so the title no longer opens the\n  same reply a second time.\n";
+const HELP_NEWS = "## 1.142.1 - 2026-11-11\n\n- Areas and sharing: at a new address served by serve.py, no area goes into\n  the server folder until you choose it. I have used GroupToDo before offers\n  Use server folder beside Choose a folder, and starts no getting-started\n  guide. On a PC serve.py no longer serves the old OrgMode folder by itself.\n\n## 1.142.0 - 2026-11-11\n\n- Areas and sharing: when the app runs from serve.py, the bottom of Manage\n  areas shows serve.py's folder. Choose folder or Change folder opens the\n  folder window on this PC, and serve.py remembers the pick, with no\n  start-up flags. Remove forgets it. Each area has Use server folder to move\n  in there.\n\n## 1.141.2 - 2026-11-11\n\n- Ways to run GroupToDo: serve.py's address is a name now,\n  http://grouptodo.localhost:8777. Your browser keeps areas per address, so\n  the first time there you choose your folders again. 127.0.0.1:8777 still\n  works.\n\n## 1.141.1 - 2026-11-11\n\n- Ways to run GroupToDo: serve.py's start box says Server folder, not Vault.\n  It is one folder, not your areas. The line below says how to put an area\n  in it: Vault & sync › Advanced › Sync server.\n\n## 1.141.0 - 2026-11-11\n\n- Ways to run GroupToDo: serve.py starts with a box that says where to go\n  and where the log is. Request lines go to grouptodo.log in Downloads,\n  which keeps 500 lines. Errors still show in the window. A calendar link\n  shows only its first 15 and last 5 characters, since it works like a\n  password.\n\n## 1.140.4 - 2026-11-11\n\n- Waiting for › List: the Send an update note also ends with the lines, not\n  Thanks and your name. An ending you write under Personalize text still\n  goes in.\n\n## 1.140.3 - 2026-11-11\n\n- Waiting for › List: the Ask for an update note ends with the lines, not\n  Thanks and your name, since your mail adds your signature. An ending you\n  write under Personalize text still goes in.\n\n## 1.140.2 - 2026-11-11\n\n- Waiting for › List: when you last asked and what they last said goes in\n  the ask only when you tick it, so a wrong date does not go out by itself.\n  Norwegian says ikke svart ennå.\n\n## 1.140.1 - 2026-11-11\n\n- Waiting for › List: on a PC, Send in Teams opens the Teams app instead of\n  a browser tab, so it finds people outside your company too. The message is\n  ready in the chat, and on the clipboard too: if Teams drops it, press\n  Ctrl+V. A phone keeps the web link. An address written as mailto://...\n  works as a plain address.\n\n## 1.140.0 - 2026-11-11\n\n- Waiting for › List: a task's panel has Ask for an update beside Send an\n  update when the line names someone. Both dialogs say Write the message,\n  since it goes by email or Teams, and the Ask dialog has one scroll bar.\n\n## 1.139.1 - 2026-11-11\n\n- Waiting for › List: a Teams message about one task has no number in front\n  of it, and in Norwegian the line under it starts with Angående:.\n\n## 1.139.0 - 2026-11-11\n\n- Waiting for › List: Send in Teams works as a chat. The message has no mail\n  links; each task ends with its reference, and they reply in the chat. Select\n  your message and their reply, copy them, and use Paste a reply: your own\n  lines are left out and each answer goes to its task, with no questions. When\n  the reply goes back and forth, Paste a reply lists the lines, ticked, and\n  what follows your own name starts unticked.\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {
@@ -45505,9 +45512,9 @@ el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px;line-height:1.
 "Full name. Two people called Kenneth is the day you wish you had typed the surname."));
 return {input, keep, field};
 }
-async function finishOnboarding() {
+async function finishOnboarding({returning = false} = {}) {
 PREF.set("onboarded", todayISO());
-PREF.set("coach", "1");
+PREF.set("coach", returning ? "0" : "1");
 const here = Spaces.get(Spaces.active);
 if (here) here.askedStorage = true;
 await Spaces.save();
@@ -45564,6 +45571,7 @@ const who = onboardNameField();
 const listBox = el("div", {style: "display:flex;flex-direction:column;gap:6px;margin:4px 0 10px"});
 const placed = () => Spaces.list.filter(sp => sp.kind === "fs" || sp.kind === "http");
 const addBtn = el("button", {class: "btn primary"});
+const serverBtn = el("button", {class: "btn ghost"}, "Use server folder");
 const draw = () => {
 listBox.textContent = "";
 for (const sp of placed()) listBox.append(el("div", {style: "display:flex;gap:8px;align-items:center"},
@@ -45571,8 +45579,9 @@ spaceBadge(sp.name, true),
 el("span", {style: "color:var(--fg2);font-size:13px"},
 sp.kind === "http" ? "in the server folder" : "“" + (sp.label || "folder") + "”")));
 addBtn.textContent = placed().length ? "Add another folder" : "Choose a folder";
+if (serverFolderUsers().length) serverBtn.remove();
 };
-addBtn.onclick = async () => {
+const bring = async put => {
 who.keep();
 let sp = Spaces.get(Spaces.active);
 let made = null;
@@ -45584,13 +45593,15 @@ if (!made) return;
 made.placeholder = true; await Spaces.save();
 sp = made;
 }
-const got = await assignSpaceFolder(sp.name, {join: true, returning: true});
+const got = await put(sp.name);
 if (!got && made) await Spaces.remove(made.name);
 draw();
 };
+addBtn.onclick = () => bring(name => assignSpaceFolder(name, {join: true, returning: true}));
+serverBtn.onclick = () => bring(name => useServerFolder(name));
 const enter = async () => {
 who.keep();
-const here = await finishOnboarding();
+const here = await finishOnboarding({returning: true});
 const back = placed().map(sp => sp.name);
 if (back.length) { setVisibleSpaces(back); if (!back.includes(Spaces.active)) await openSpace(back[0]); await ensureVisibleLoaded(); }
 closeModal();
@@ -45610,7 +45621,8 @@ el("div", {style: "color:var(--fg3);font-size:12.5px;line-height:1.5;margin-bott
 "Each web address keeps its own copy in the browser, so a new one starts empty. " +
 "Your files are still in their folders. Pick each area's folder, one at a time."),
 listBox,
-CAP.dirPicker ? addBtn : el("div", {style: "color:var(--fg3);font-size:12.5px"},
+CAP.dirPicker ? el("div", {style: "display:flex;gap:8px;flex-wrap:wrap"}, addBtn, SERVER_BASE ? serverBtn : null)
+: el("div", {style: "color:var(--fg3);font-size:12.5px"},
 "This browser cannot open folders. Open a vault file instead, from Vault & sync, " +
 "or use Chrome or Edge on a computer."))),
 foot: [

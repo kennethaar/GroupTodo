@@ -4760,16 +4760,55 @@ var GTD_TEST = (() => {
       await openSpace(back); await removeArea(n);
     }
   });
-  /* Your areas offers serve.py's folder since #356; the welcome screen still
-     does not. */
-  test("#193 the welcome screen offers a folder or this browser, never a server", () => {
-    const base = SERVER_BASE;
-    SERVER_BASE = "http://127.0.0.1:8777";          // as if served by serve.py with a folder
+  /* Coming back at a new address served by serve.py: no area is put in the
+     server folder before you say so, unless this browser cannot pick a folder
+     at all. The server folder is offered beside Choose a folder, only when
+     serve.py has one, and coming back starts no getting-started guide (#356). */
+  test("#356 a new address served by serve.py puts no area in its folder unasked", () => {
+    const pick = CAP.dirPicker;
     try {
+      CAP.dirPicker = true;
+      eq(firstAreaOnServer("http://grouptodo.localhost:8777"), false, "a browser that picks folders");
+      CAP.dirPicker = false;
+      eq(firstAreaOnServer("http://grouptodo.localhost:8777"), true, "a phone");
+      eq(firstAreaOnServer(""), false, "no server folder");
+    } finally { CAP.dirPicker = pick; }
+  });
+  test("#356 I have used GroupToDo before offers the server folder beside a folder, and starts no guide", async () => {
+    const base = SERVER_BASE, f = window.fetch, coach = PREF.get("coach"), onboarded = PREF.get("onboarded");
+    const active = Spaces.active, visible = [...visibleSpaces()];
+    const until = async cond => { for (let i = 0; i < 200 && !cond(); i++) await new Promise(r => setTimeout(r, 10)); };
+    const buttons = () => [...document.querySelectorAll("#modalRoot .modal button")];
+    const n = "Test356 back";
+    try {
+      SERVER_BASE = "";
       closeModals(); openOnboardBack();
-      const text = document.querySelector("#modalRoot .modal").textContent;
-      ok(!/server|serve\.py/i.test(text), "a server is offered: " + text.slice(0, 200));
-    } finally { SERVER_BASE = base; closeModals(); }
+      ok(!/server/i.test(document.querySelector("#modalRoot .modal").textContent), "a server offered with none there");
+      SERVER_BASE = "http://srv356.test";
+      window.fetch = async url => /\/api\/list$/.test(new URL(url, location.href).pathname)
+        ? new Response("[]") : new Response(JSON.stringify({ok: true}));
+      await createSpace(n, "local");
+      Spaces.get(n).placeholder = true;
+      await openSpace(n);
+      closeModals(); openOnboardBack();
+      const use = buttons().find(b => b.textContent === "Use server folder");
+      ok(use, "no Use server folder: " + buttons().map(b => b.textContent));
+      use.click();
+      await until(() => Spaces.get(n)?.kind === "http");
+      eq(Spaces.get(n).kind, "http", "the area did not move in");
+      await until(() => !buttons().some(b => b.textContent === "Use server folder"));
+      ok(!buttons().some(b => b.textContent === "Use server folder"), "offered again once used");
+      PREF.set("coach", "");
+      buttons().find(b => b.textContent === "Start").click();
+      await until(() => !document.querySelector("#modalRoot .modal"));
+      ok(PREF.get("coach") !== "1", "coming back started the getting-started guide");
+    } finally {
+      closeModals(); window.fetch = f; SERVER_BASE = base;
+      PREF.set("coach", coach || ""); PREF.set("onboarded", onboarded || "");
+      if (Spaces.active !== active) await openSpace(active);
+      setVisibleSpaces(visible);
+      if (Spaces.get(n)) await removeArea(n);
+    }
   });
   test("#193 serve.py's folder is offered only when serve.py was given one", async () => {
     const f = window.fetch, served = CAP.served, base = SERVER_BASE;

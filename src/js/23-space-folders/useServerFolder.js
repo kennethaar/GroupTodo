@@ -13,6 +13,13 @@ async function useServerFolder(name) {
   const rec = newRecord(name, Backends.http(base));
   try { await readInto(rec); }
   catch (e) { notify("Server not reachable: " + e.message, "error"); return false; }
+  /* An area nobody named yet, as on the welcome screen, takes the name the
+     folder carries, as assignSpaceFolder does. */
+  const stored = trim(String(rec.pages.get(SETTINGS_PATH)?.props?.area_name || ""));
+  if (sp.placeholder && stored && stored !== name) {
+    const renamed = await Spaces.rename(name, stored);
+    if (renamed) { name = renamed.name; rec.name = name; sp.nameFrom = "stored"; }
+  }
 
   const wasFolder = sp.kind === "fs" ? (sp.label || "the old folder") : null;
   const loaded = LOADED.get(name);

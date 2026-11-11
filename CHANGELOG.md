@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.142.1 - 2026-11-11
+
+- Areas and sharing: at a new address served by serve.py, no area goes into
+  the server folder until you choose it. I have used GroupToDo before offers
+  Use server folder beside Choose a folder, and starts no getting-started
+  guide. On a PC serve.py no longer serves the old OrgMode folder by itself.
+
 ## 1.142.0 - 2026-11-11
 
 - Areas and sharing: when the app runs from serve.py, the bottom of Manage

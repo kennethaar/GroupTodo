@@ -354,12 +354,15 @@ async function serveFolderTestRun(name) {
   mkdirSync(old, {recursive: true});
   mkdirSync(picked);
   const py = process.platform === "win32" ? "python" : "python3";
-  const env = {...process.env, HOME: home, USERPROFILE: home, GTD_CONFIG: config, GTD_PICK_FOLDER: picked};
-  delete env.GTD_VAULT;
+  const pc = {...process.env, HOME: home, USERPROFILE: home, GTD_CONFIG: config, GTD_PICK_FOLDER: picked};
+  delete pc.GTD_VAULT; delete pc.PREFIX;
+  // Termux on Android, where the old default folder came from.
+  const env = {...pc, PREFIX: "/data/data/com.termux/files/usr"};
   const servers = [];
   const start = async (...extra) => {
+    const e = extra[0] === "pc" ? (extra.shift(), pc) : env;
     const port = 18000 + Math.floor(Math.random() * 2000);
-    const proc = spawn(py, [join(ROOT, "serve.py"), "--port", String(port), "--log-file", join(dir, "x.log"), ...extra], {env, stdio: "ignore"});
+    const proc = spawn(py, [join(ROOT, "serve.py"), "--port", String(port), "--log-file", join(dir, "x.log"), ...extra], {env: e, stdio: "ignore"});
     servers.push(proc);
     const ask = (method, path, headers = {}) => new Promise(ok => {
       const req = request({host: "127.0.0.1", port, path, method, agent: false, headers}, res => {
@@ -373,9 +376,13 @@ async function serveFolderTestRun(name) {
   const own = {"X-GroupTodo": "folder"};
   const same = (a, b) => String(a || "").toLowerCase() === String(b || "").toLowerCase();
   try {
-    let s = await start();
+    let s = await start("pc");
     let p = (await s.ask("GET", "/api/ping")).json;
-    if (!same(p.vault, old) || !p.folderChoosable) return {name, ok: false, error: "a vault already at the old default is no longer served: " + JSON.stringify(p)};
+    if (p.vault) return {name, ok: false, error: "a PC serves the old Termux default unasked: " + p.vault};
+    s.stop();
+    s = await start();
+    p = (await s.ask("GET", "/api/ping")).json;
+    if (!same(p.vault, old) || !p.folderChoosable) return {name, ok: false, error: "a vault already at the old default is no longer served on Termux: " + JSON.stringify(p)};
     if ((await s.ask("POST", "/api/server-folder")).status !== 403) return {name, ok: false, error: "a request without the app's header changed the folder"};
     const chose = await s.ask("POST", "/api/server-folder", own);
     if (!chose || chose.status !== 200 || !same(chose.json.vault, picked)) return {name, ok: false, error: "choosing answered " + JSON.stringify(chose)};

@@ -22,8 +22,8 @@ calendar. --verbose shows every request line in the terminal as well.
 The server folder is --vault if given. Otherwise the app chooses it, under
 Your areas: serve.py opens this computer's folder picker and remembers the
 choice in %APPDATA%\\GroupToDo\\serve.json (~/.config/grouptodo/serve.json
-elsewhere). Until something is chosen there, the vault path of the original
-Neovim config is used if it exists:
+elsewhere). Until something is chosen there, Termux on Android uses the vault
+path of the original Neovim config if it exists:
     ~/storage/shared/Documents/OrgMode
 
 API
@@ -172,14 +172,16 @@ def save_config(path, changes):
 
 def start_folder(flag, config):
     """--vault wins. Then the folder chosen in the app, or none if it was
-    removed there. Never chosen at all: the old default, if it already holds
-    a vault, so a setup from before the choice keeps working."""
+    removed there. Never chosen at all: on Termux, the phone where serve.py
+    began, the old default if it already holds a vault, so that setup keeps
+    working. Anywhere else nothing: a folder of that name on a PC is no
+    reason to serve it."""
     if flag:
         return Vault(flag, create=True)
     if "vault" in config:
         chosen = config["vault"]
         return Vault(chosen, create=False) if chosen and os.path.isdir(chosen) else None
-    if os.path.isdir(os.path.expanduser(DEFAULT_VAULT)):
+    if "com.termux" in os.environ.get("PREFIX", "") and os.path.isdir(os.path.expanduser(DEFAULT_VAULT)):
         return Vault(DEFAULT_VAULT, create=False)
     return None
 

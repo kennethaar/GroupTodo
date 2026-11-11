@@ -275,6 +275,7 @@ js/23-space-folders/openSpaceStorageSetup.js
 js/23-space-folders/serverFolderRow.js
 js/23-space-folders/serverFolderUsers.js
 js/23-space-folders/useServerFolder.js
+js/23-space-folders/firstAreaOnServer.js
 js/23-space-folders/storedVisible.js
 js/23-space-folders/vars-AREA_DRAG.js
 js/23-space-folders/areaDraggable.js
