@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.143.1 - 2026-11-11
+
+- Areas and sharing: serve.py and the app now say what a server folder is
+  for: every device that opens GroupToDo from serve.py finds the area by
+  itself. They no longer say a phone cannot open folders, since Chrome and
+  Edge on a phone can.
+
 ## 1.143.0 - 2026-11-11
 
 - Areas and sharing: serve.py can keep several server folders, one per

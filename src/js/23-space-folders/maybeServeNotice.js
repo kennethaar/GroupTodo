@@ -17,7 +17,7 @@ function maybeServeNotice(info) {
     body: el("div", {},
       line(options.length
         ? options.length + (options.length === 1 ? " server folder" : " server folders") + " on this computer:"
-        : "No server folders yet. Add one under Manage areas to reach an area from a phone or another browser."),
+        : "No server folders yet. Add one under Manage areas, and every device that opens GroupToDo from serve.py finds that area by itself."),
       options.length ? folders : el("div", {style: "height:10px"}),
       line("serve.py also fetches your calendar links." +
            (info.open_in_editor ? " It opens pages in your editor on this computer." : ""), true),

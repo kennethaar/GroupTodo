@@ -214,9 +214,9 @@ def save_folders(path, folders):
 
 WHY_FOLDER = (
     "No server folder yet.\n"
-    "A server folder keeps an area's files on this PC, so a phone, a tablet or a\n"
-    "browser that cannot open folders (Firefox, Safari) can use that area too.\n"
-    "Areas in folders your browser opens itself need none.")
+    "A server folder keeps an area's files on this PC. Every phone, tablet and\n"
+    "browser that opens GroupToDo from serve.py then finds that area by itself,\n"
+    "with no folder to pick on each one. Firefox and Safari can use it too.")
 
 
 def ask_for_folders(folders, config_path):
