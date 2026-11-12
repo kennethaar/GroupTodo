@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.155.3 - 2026-11-12
+
+- Keys on a line: paste a sketch right after ``` on a line and it stays
+  under that line, line for line, in the fixed-width font. Before, each of its
+  lines became a bullet. Enter after ``` goes on inside it too (#374).
+
 ## 1.155.2 - 2026-11-12
 
 - Journal: on a computer, Enter on a line at the bottom moves the page just

@@ -4026,6 +4026,50 @@ var GTD_TEST = (() => {
       go("today");
     }
   });
+  test("#374 a mockup pasted right after ``` on a bullet stays under it, line for line, and Enter after ``` stays in the fence", async () => {
+    const path = ensureJournal(todayISO()), pg = getPage(path);
+    const mock = ["+--------+  +--------+", "| Inbox  |  | Next   |", "+--------+  +--------+"];
+    const made = [];
+    const bullet = async title => {
+      const b = newBlock({}, false);
+      b.title = title; pg.blocks.push(b); made.push(b); touch(path);
+      go("today"); await settle();
+      focusBlock(b.id); await settle();
+      const txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
+      const s = getSelection(); s.selectAllChildren(txt); s.collapseToEnd();
+      return [b, txt];
+    };
+    const paste = (node, text) => {
+      const dt = new DataTransfer();
+      dt.setData("text/plain", text);
+      node.dispatchEvent(new ClipboardEvent("paste", {clipboardData: dt, bubbles: true, cancelable: true}));
+    };
+    try {
+      const count = pg.blocks.length;
+      let [b, txt] = await bullet("```");
+      paste(txt, mock.join("\r\n") + "\r\n");
+      await settle();
+      eq(pg.blocks.length, count + 1, "the paste became bullets of its own");
+      eq(JSON.stringify(b.body), JSON.stringify([...mock, "```"]), "the paste is not kept line for line in the fence");
+      [b, txt] = await bullet("Main screen ```");
+      paste(txt, mock.join("\n"));
+      await settle();
+      eq(b.title, "Main screen", "the words before ``` stay on the bullet");
+      eq(JSON.stringify(b.body), JSON.stringify(["```", ...mock, "```"]), "the paste is not fenced under the words");
+      const drawn = document.querySelector('.blk[data-id="' + b.id + '"] > .bodyline[data-bi="2"]');
+      eq(getComputedStyle(drawn).whiteSpace, "pre", "a fenced line does not keep its spaces");
+      [b, txt] = await bullet("```");
+      const n = pg.blocks.length;
+      txt.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true, cancelable: true}));
+      await settle();
+      eq(pg.blocks.length, n, "Enter after ``` made a new bullet");
+      eq(JSON.stringify(b.body), JSON.stringify([""]), "Enter after ``` did not open a line in the fence");
+      eq(document.activeElement, document.querySelector('.blk[data-id="' + b.id + '"] > .bodyline[data-bi="0"]'), "the caret is not on that line");
+    } finally {
+      pg.blocks = pg.blocks.filter(x => !made.includes(x)); touch(path);
+      go("today");
+    }
+  });
   test("#320 a click on a picture opens it in a view with a close button; a click beside it on the line edits the line", async () => {
     const path = scratchProject("picture click", [[null, "Look ![pic](https://example.invalid/p.png) here"]]);
     const b = getPage(path).blocks[0];

@@ -166,6 +166,21 @@ function outlineBlock(path, page, b, opts = {}) {
     const before = whole.slice(0, from), after = whole.slice(to);
 
     const lines = raw.replace(/\r\n?/g, "\n").split("\n").filter(l => trim(l) !== "");
+    /* Pasted right after ``` on the bullet: a mockup that keeps its lines and
+       spaces under it, in the fence, not one bullet per line (#374). */
+    const fence = /^(.*?)\s*```\s*$/.exec(before);
+    if (lines.length > 1 && fence && before.match(/```/g).length % 2 === 1) {
+      const rows = raw.replace(/\r\n?/g, "\n").split("\n").map(l => l.replace(/\s+$/, ""));
+      while (rows.length && rows[0] === "") rows.shift();
+      while (rows.length && rows[rows.length - 1] === "") rows.pop();
+      const words = trim(fence[1]);
+      txt.textContent = (words || "```") + (trim(after) ? " " + trim(after) : "");
+      txt.blur();
+      b.body = [...(words ? ["```"] : []), ...rows, "```", ...(b.body || [])];
+      touch(path); noteTodoTouched(); render();
+      focusBodyLine(b.id, (words ? 1 : 0) + rows.length - 1, false);
+      return;
+    }
     if (lines.length < 2) {
       const one = raw.replace(/[\r\n]+/g, " ");
       setHostText(txt, before + one + after, before.length + one.length);
@@ -328,7 +343,11 @@ function outlineBlock(path, page, b, opts = {}) {
     /* Shift+Enter writes a line under the bullet instead of a new bullet: one
        block, several lines, the way a note under a task belongs to it. What is
        after the caret moves down with you, as Enter does with a new bullet. */
-    if (e.key === "Enter" && e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    /* Enter at the end of a bullet that opens a ``` fence does the same: the
+       next line is in the fence, not a new bullet (#374). */
+    const opensFence = () => !(b.body || []).length && /^\s*```/.test(lineText(txt)) &&
+      caretOffsets(txt)[0] === lineText(txt).length;
+    if (e.key === "Enter" && !e.ctrlKey && !e.metaKey && !e.altKey && (e.shiftKey || opensFence())) {
       e.preventDefault();
       const whole = lineText(txt);
       const [from, to] = caretOffsets(txt);
