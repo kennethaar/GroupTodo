@@ -26,12 +26,19 @@ function viewDayReview() {
     el("button", {class: "textbtn", onclick: () => openBlockAt(V.space, path, b)}, "Open the day page"),
     el("p", {class: "solhow"}, "Keys: the number of an answer, or a letter, aims at it; Enter or the same number again takes it. Backspace undoes.")));
   const kids = (b.children || []).filter(k => trim(plainTitle(k.title || "")) && !isMessage(k));
+  // Meeting notes: the heading and what is under it, notes in one go (#366).
+  const asked = (b.children || []).filter(k => dayCandidate(k) && !clDealt().has(clKey(path, k)));
+  const allNotes = asked.length ? el("button", {class: "btn sm ghost clallnotes",
+    onclick: () => clAnswer(r, {label: "Notes, with the " + asked.length + " under it",
+      run: (p, line) => asked.forEach(k => clDeal(p, k))})},
+    "Leave it and the " + (asked.length === 1 ? "line" : asked.length) + " under it as notes") : null;
   const card = el("div", {class: "clcard"},
     el("div", {class: "cleye"}, dayLong(baseName(path)) +
       (r.trail.length ? " · under “" + r.trail[r.trail.length - 1] + "”" : "")),
     el("h3", {translate: "no", html: renderInline(bujoText(b.title))}),
     kids.length ? el("ul", {class: "clkids", translate: "no"}, ...kids.slice(0, 5).map(k =>
       el("li", {html: renderInline(bujoText(k.title))})), kids.length > 5 ? el("li", {}, "…") : null) : null,
+    allNotes,
     el("div", {class: "solq"}, el("b", {}, "What is it?")));
   let n = 0;
   const groups = el("div", {class: "clgroups"}, ...CL_GROUPS.map((g, gi) => el("section", {class: "clgroup"},

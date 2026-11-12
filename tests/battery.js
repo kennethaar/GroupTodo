@@ -8522,6 +8522,29 @@ var GTD_TEST = (() => {
       ok(!content().querySelector(".cllast"), "nothing left to undo");
     });
   });
+  test("#366 Clarify leaves a line and the lines under it as notes in one go; deeper lines are still asked", async () => {
+    await withDays([[3, "- Meeting with Anna\n  - Prices went up 10 %\n  - New contact: Ola\n    - Call Ola tomorrow\n- Plan the party\n"]], async () => {
+      const d3 = journalPath(shiftISO(T(), -3));
+      let c = await showClarify();
+      const all = () => [...content().querySelectorAll(".clcard button")].find(x => /as notes/.test(x.textContent));
+      ok(all(), "offered on a line with lines under it");
+      has(all().textContent, "the 2 under it", "says how many go with it");
+      all().click();
+      await settle();
+      eq(content().querySelector(".clcard h3").textContent, "Call Ola tomorrow", "the line one level further down is still asked");
+      const [top] = getPage(d3).blocks;
+      eq([top, ...top.children].map(b => b.state || null), [null, null, null], "all left as notes");
+      content().querySelector(".clans").click();
+      c = await showClarify();
+      eq(c.querySelector(".clcard h3").textContent, "Plan the party");
+      ok(!all(), "not offered on a line with nothing under it");
+      [...c.querySelectorAll(".cllast button")].find(x => trim(x.textContent) === "Undo that").click();
+      await settle();
+      [...content().querySelectorAll(".cllast button")].find(x => trim(x.textContent) === "Undo that").click();
+      await settle();
+      eq(content().querySelector(".clcard h3").textContent, "Meeting with Anna", "Undo that takes the notes answer back too");
+    });
+  });
   test("#95 Someday/maybe is Alt+2 on the line: a project on that shelf, linked from it", async () => {
     await withDays([[2, "- Learn to sail\n"]], async () => {
       const day = journalPath(shiftISO(T(), -2)), proj = join(DIRS.someday, slugify("Learn to sail") + ".md");

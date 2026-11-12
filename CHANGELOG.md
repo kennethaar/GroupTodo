@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.147.0 - 2026-11-12
+
+- Weekly review › Clarify: a line with lines under it, such as meeting
+  notes, offers Leave it and the lines under it as notes. One click
+  answers them all. Lines one level further down are still asked about
+  one by one, and Undo that takes it back.
+
 ## 1.146.1 - 2026-11-12
 
 - Weekly review › Clarify: above the line it says what your last answer

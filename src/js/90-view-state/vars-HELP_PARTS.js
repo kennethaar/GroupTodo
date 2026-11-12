@@ -738,7 +738,7 @@ const HELP = {
     steps: ["Read the line.",
       ["Something to do? A to do, a waiting for, or a project.", "?.clgroup:first-child"],
       ["Not now? Someday/maybe, or an idea to explore.", "?.clgroup:nth-child(2)"],
-      ["Nothing to do? Done, or leave it as a note.", "?.clgroup:nth-child(3)"],
+      ["Nothing to do? Done, or a note. Lines under it can be notes with it in one go.", "?.clgroup:nth-child(3)"],
       ["Each answer says what it writes, and the key for it on a page.", "?.clhow"],
       "A day is done when each line on it has an answer."],
     keys: [["1–7", "Aim at an answer"], ["Enter", "Take it"], ["Backspace", "Undo the last answer"]],
