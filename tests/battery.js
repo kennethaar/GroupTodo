@@ -8673,6 +8673,36 @@ var GTD_TEST = (() => {
       has(under.textContent, "Byggmax");
     });
   });
+  test("#376 Clarify shows the day page beside the card, at the line, and follows the next card", async () => {
+    const filler = Array.from({length: 40}, (_, i) => "- o Ate lunch " + i).join("\n");
+    await withDays([[3, filler + "\n- Call the plumber\n" + filler + "\n"], [1, "- Plan the summer party\n"]], async () => {
+      const pane = document.querySelector("#pagePane");
+      const here = () => pane.querySelector(".sidehere");
+      try {
+        let c = await showClarify();
+        ok(!pane.hidden, "the day page is not beside the card");
+        ok(here() && here().textContent.includes("Call the plumber"), "the line is not marked in the day page");
+        const pr = pane.getBoundingClientRect(), hr = here().getBoundingClientRect();
+        ok(hr.top > pr.top + pr.height * 0.2 && hr.bottom < pr.bottom - pr.height * 0.2,
+          "the line is not near the middle of the pane: " + Math.round(hr.top - pr.top) + " of " + Math.round(pr.height));
+        ok(pane.scrollHeight > pane.clientHeight, "the day around it is there to scroll through");
+        c.querySelector(".clans").click();
+        c = await showClarify();
+        ok(here() && here().textContent.includes("Plan the summer party"), "the pane does not follow the next card");
+        pane.querySelector('button[aria-label="Close"]').click();
+        await settle();
+        ok(pane.hidden, "Close does not put it away");
+        render(); await settle();
+        ok(pane.hidden, "closed, it comes back on the next draw");
+        const back = [...content().querySelectorAll("button")].find(b => /beside/i.test(b.textContent));
+        ok(back, "no way to show the day page beside the card again");
+        back.click(); await settle();
+        ok(!pane.hidden && here(), "the way back does not show it");
+        go("today"); await settle();
+        ok(!pane.querySelector(".sidehere"), "the day page stays beside after Clarify is left");
+      } finally { closeSidePage(); }
+    });
+  });
   test("#365 Clarify says what the last answer did, and Undo that steps back more than one line", async () => {
     await withDays([[3, "- Call the plumber\n- Order tiles\n- Plan the party\n"]], async () => {
       const d3 = journalPath(shiftISO(T(), -3));

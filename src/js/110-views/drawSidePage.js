@@ -1,5 +1,7 @@
 function drawSidePage() {
   if (HELP_SIDE) { drawHelpPane(); return; }
+  // Clarify's day page goes with Clarify (#376).
+  if (SIDE_PAGE && SIDE_PAGE.at && !(state.view === "review" && subNow() === "days")) SIDE_PAGE = null;
   if (SIDE_PAGE && (!inSpace(SIDE_PAGE.space, () => V.pages.has(SIDE_PAGE.path)) || onScreen(SIDE_PAGE))) SIDE_PAGE = null;
   const s = SIDE_PAGE || sidePinShown();
   /* Gone, or now the page on screen: one copy of its lines is enough. Today's
@@ -38,4 +40,16 @@ function drawSidePage() {
   document.body.classList.add("pane-open");
   resolveAssets(pane);
   pane.scrollTop = top;
+  /* The line Clarify asks about, marked, the rest dimmed as in Focus. Brought
+     to the middle once per line, so your own scrolling is not undone (#376). */
+  const blk = s.at && pane.querySelector(`.blk[data-id="${s.at}"]`);
+  const here = blk && blk.querySelector(".txt");
+  pane.classList.toggle("ctx", !!here);
+  if (!here) { delete pane.dataset.at; return; }
+  here.classList.add("sidehere");
+  if (pane.dataset.at !== s.at) {
+    pane.dataset.at = s.at;
+    const pr = pane.getBoundingClientRect(), hr = here.getBoundingClientRect();
+    pane.scrollTop += hr.top - pr.top - (pane.clientHeight - hr.height) / 2;
+  }
 }

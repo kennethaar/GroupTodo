@@ -54,3 +54,6 @@ body:not(.pane-open) .panegrip{display:none}
   :root:not([data-width="narrow"]) .wrap.lwide .card:has(> .task + .task) > .showmorerow{column-span:all}
 }
 
+/* Clarify's day page beside the card (#376): the line asked about, marked; the rest quiet, as in Focus. */
+#pagePane.ctx .outline :is(.txt,.bodyline):not(.sidehere),#pagePane.ctx .outline :is(.txt,.bodyline):not(.sidehere) *{color:var(--fg3)}
+#pagePane.ctx .sidehere{background:var(--accent-soft);border-radius:4px;box-shadow:inset 3px 0 0 var(--accent);padding-left:6px}

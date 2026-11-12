@@ -10,6 +10,7 @@ function viewDayReview() {
     el("button", {class: "textbtn", title: "Backspace", onclick: clUndo}, "Undo that")) : null;
   if (!deck.length) {
     CL.shown = null;
+    if (SIDE_PAGE && SIDE_PAGE.at) SIDE_PAGE = null;
     const c = el("div", {class: "wrap"});
     const bigCheck = svgIcon(ICON_CHECK);
     bigCheck.setAttribute("style", "width:34px;height:34px;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round");
@@ -19,11 +20,17 @@ function viewDayReview() {
     return c;
   }
   const r = deck[0], {path, block: b} = r;
+  /* The day around the line, beside the card, the line at the middle of it
+     and the rest to scroll through, so a note reads in its context (#376).
+     Close puts it away until you ask for it again. */
+  const beside = !NARROW.matches;
+  if (beside && !CL.noSide) SIDE_PAGE = {space: V.space, path, at: b.id};
   const c = el("div", {class: "wrap wide solwrap clarify"});
   c.append(el("aside", {class: "solside"}, head,
     el("p", {class: "solhow"}, "One line from your day pages at a time, oldest first. Ask: what is it?"),
     el("button", {class: "textbtn", onclick: () => { CL.skip.add(clKey(path, b)); CL.aim = 0; render(); }}, "Skip this line ›"),
-    el("button", {class: "textbtn", onclick: () => openBlockAt(V.space, path, b)}, "Open the day page"),
+    beside && CL.noSide ? el("button", {class: "textbtn", onclick: () => { CL.noSide = false; render(); }}, "Show the day page beside it")
+      : el("button", {class: "textbtn", onclick: () => openBlockAt(V.space, path, b)}, "Open the day page"),
     el("p", {class: "solhow"}, "Keys: the number of an answer, or a letter, aims at it; Enter or the same number again takes it. Backspace undoes.")));
   const kids = (b.children || []).filter(k => trim(plainTitle(k.title || "")) && !isMessage(k));
   // Meeting notes: the heading and what is under it, notes in one go (#366).

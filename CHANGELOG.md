@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.153.0 - 2026-11-12
+
+- Weekly review › Clarify: the line's day page sits on the right, the line
+  marked in the middle and the rest quiet, as in Focus. Scroll it to see
+  what came before and after. It follows each new line. Close puts it away;
+  Show the day page beside it brings it back (#376).
+
 ## 1.152.1 - 2026-11-12
 
 - Weekly review › Clarify: a markdown table reads as a table, on the card

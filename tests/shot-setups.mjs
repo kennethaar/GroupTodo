@@ -64,7 +64,7 @@ export const SETUP = {
     day(4, "- Supplier meeting with [[p/Lars Haugen]]\\n  - New price list for the cold store before Christmas\\n" +
       "    - They want two quotes, ours and Havbris\\n- Idea: a shared tool shelf at the depot\\n");
     day(2, "- Ring the electrician about the gate\\n- Read up on heat pumps\\n");
-    PREF.set("clarify.dealt", ""); CL = {pending: null, skip: new Set(), undo: null, aim: 0};
+    PREF.set("clarify.dealt", ""); CL = {pending: null, skip: new Set(), undos: [], aim: 0};
     clearMemo(); go("review", {sub: "days"});`,
 };
 /* A book of four chapters at three stages, with scenes, talk and a cast,

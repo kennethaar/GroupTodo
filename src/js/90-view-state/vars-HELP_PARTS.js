@@ -741,7 +741,7 @@ const HELP = {
   "review-days": {part: "views", title: "Weekly review › Clarify", view: "review", sub: "days", gtd: "clarify", shot: 1,
     what: "Loose lines from your day pages, one at a time.",
     hint: "One line at a time. Ask: what is it?",
-    steps: ["Read the line.",
+    steps: ["Read the line. Its day is on the right: scroll it for context.",
       ["Something to do? A to do, a waiting for, or a project.", "?.clgroup:first-child"],
       ["Not now? Someday/maybe, or an idea to explore.", "?.clgroup:nth-child(2)"],
       ["Nothing to do? Done, or a note. Lines under it can be notes with it in one go.", "?.clgroup:nth-child(3)"],
