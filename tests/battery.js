@@ -5611,6 +5611,35 @@ var GTD_TEST = (() => {
     has(blockProp(messagesOf(wait)[0], DECIDED_PROP), "Take it back");
     closeAll();
   }));
+  test("#362 a line indented under a project link belongs to it: a bare link on a day page, any link on a plain page", async () => {
+    const proj = scratchProject("Kitchen 362", [["TODO", "Choose the tiles"]]);
+    const name = pageTitle(proj), who = "Ariol Test362";
+    const day = join(JOURNALS, "2026-01-05.md"), notes = join(PAGES, "Notes 362.md");
+    const onDay = newBlock({state: "WAIT", title: "Drawings from [[p/" + who + "]]"});
+    const onNotes = newBlock({state: "WAIT", title: "Price from [[p/" + who + "]]"});
+    putPage(day, {props: {}, blocks: [newBlock({title: "[[" + name + "]]", children: [onDay]})]});
+    putPage(notes, {props: {}, blocks: [newBlock({title: "[[" + pageRef(proj) + "]]", children: [onNotes]})]});
+    clearMemo();
+    try {
+      for (const [path, b] of [[day, onDay], [notes, onNotes]]) {
+        flattenBlocks(getPage(path).blocks);
+        eq(projectOfBlock(path, b), proj, b.title);
+        const row = waitingOnFrom(who).find(a => a.block === b);
+        ok(row, "waiting on " + who + ": " + b.title);
+        eq(askProjectOf(row), name, "the ask is about the project, not " + baseName(path));
+      }
+      for (const b of [onDay, onNotes]) ok(journalActionsFor(proj).some(a => a.block === b), "and the project counts " + b.title);
+      openAskForUpdate(who);
+      await settle();
+      const text = $("#modalRoot").textContent;
+      eq(text.split(name).length - 1, 1, "one heading names the project over both lines");
+      ok(!text.includes("Notes 362") && !text.includes("2026-01-05"), "the page the line is on is not what it is about");
+    } finally {
+      closeAll();
+      for (const p of [day, notes]) V.pages.delete(p);
+      clearMemo();
+    }
+  });
   test("#285 Continue needs a next action and records it; Close, Cancel and Someday/Maybe move the project", () => withFeedbackSince(() => {
     const path = scratchProject("feedback continue", [["WAIT", "Status from [[p/Lars Haugen]]"]]);
     const wait = getPage(path).blocks[0];

@@ -16,16 +16,17 @@ function leafActionsHere() {
       if (!OPEN_STATES[b.state] || hasOpenDescendant(b)) continue;
       // A line in a conversation is somebody talking, not a task of yours.
       if (isMessage(b)) continue;
-      const linked = journal ? nearestProjectAncestor(b) : null;
+      // Under a line that names a project, on a day page or a plain one (#362).
+      const linked = journal || !statusDir ? nearestProjectAncestor(b) : null;
       const fromList = journal && !linked ? nearestChecklistAncestor(b) : null;
       let group = "JOURNAL", project = null, projectStatusDir = null, projectPath = null;
-      if (!journal && !statusDir) {
+      if (!journal && !statusDir && !linked) {
         // A page that is not a project: it is still where the task lives, so
         // it groups under its own name wherever tasks group by project.
         group = b.state === "WAIT" ? "WAITING" : "PAGE";
         project = pageTitle(path);
         projectPath = path;
-      } else if (!journal) {
+      } else if (statusDir) {
         group = b.state === "WAIT" ? "WAITING" : "PROJECT";
         project = pageTitle(path);
         projectStatusDir = statusDirOf(path);

@@ -212,6 +212,7 @@ const HELP = {
       ["?.duepill", "When it is due. Red is late."]],
     more: ["Write a waiting task as [[p/Person]]: the question. The link files it under them, and the ask sends only the question.",
       "A project waits by itself when all its actions wait on someone. It reads Waiting for (auto).",
+      "A line indented under a project link belongs to that project, on any page. The ask lists lines under their project.",
       "Name someone outside the area and it becomes a plain waiting-for.",
       "A question and summary on the task go out in place of your notes. Tick the Asked line to also say when you last asked and what they last said.",
       "Let AI write it hides names in the prompt and puts them back in the answer. Add more names in Hidden names.",

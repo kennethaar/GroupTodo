@@ -27,9 +27,12 @@ function openAskForUpdate(name, only = null, keep = null) {
     ? askQuestionParts({title: a.title, project: aboutOf.get(a), context: contextLinesOf(a.block), ask: ownAsk(a)}, name)
     : {subject: "", ask: checkinTaskTitle(a.title, name)};
   const partsOf = new Map(found.map(a => [a, partOf(a)]));
+  /* The heading a line goes under (#362): what a question is about, or the
+     project of something they owe you. Lines under one heading sit together. */
+  const headOf = a => { const {subject, ask} = partsOf.get(a); return subject && ask ? subject : !a.mention ? aboutOf.get(a) || "" : ""; };
   const firstOf = new Map();
-  found.forEach((a, i) => { const k = partsOf.get(a).subject; if (k && !firstOf.has(k)) firstOf.set(k, i); });
-  const rank = new Map(found.map((a, i) => [a, partsOf.get(a).subject ? firstOf.get(partsOf.get(a).subject) : i]));
+  found.forEach((a, i) => { const k = headOf(a); if (k && !firstOf.has(k)) firstOf.set(k, i); });
+  const rank = new Map(found.map((a, i) => [a, headOf(a) ? firstOf.get(headOf(a)) : i]));
   found.sort((x, y) => rank.get(x) - rank.get(y));
 
   const at = only ? found.findIndex(a => a.block === only) : -1;
@@ -130,7 +133,7 @@ function openAskForUpdate(name, only = null, keep = null) {
       el("div", {style: "min-width:0;flex:1"},
         el("div", {}, ask || subject),
         el("div", {style: "color:var(--fg3);font-size:12px"},
-          [ask && subject ? null : a.project || baseName(a.path),
+          [headOf(a) ? null : a.project || baseName(a.path),
            a.age != null ? "open " + a.age + "d" : null,
            d != null ? "asked " + d + "d ago" : "never asked",
            lines.length ? "the lines under it go along unless you untick them" : null,
@@ -155,10 +158,10 @@ function openAskForUpdate(name, only = null, keep = null) {
       // What it is about, named once over the questions about it.
       let about = null;
       for (const [a, i] of some) {
-        const {subject, ask} = partsOf.get(a);
-        if (subject && ask && subject !== about)
-          card.append(el("div", {style: "font-weight:600;font-size:13px;margin:12px 0 0"}, subject));
-        about = subject && ask ? subject : null;
+        const h = headOf(a);
+        if (h && h !== about)
+          card.append(el("div", {style: "font-weight:600;font-size:13px;margin:12px 0 0"}, h));
+        about = h || null;
         card.append(pickRowFor(a, i));
       }
     }

@@ -318,6 +318,7 @@ A kind of page. =>
 A line =>
 A line cannot go inside itself. =>
 A line could not be saved. =>
+A line indented under a project link belongs to that project, on any page. The ask lists lines under their project. =>
 A line joins two who share a scene. The more scenes and talk, the thicker. =>
 A line of speech is the speaker's whose name comes first outside the quotes. Without one, the talk goes back and forth. =>
 A line that is only a link to its project shows that project in the side pane instead; it has nothing of its own to show. =>

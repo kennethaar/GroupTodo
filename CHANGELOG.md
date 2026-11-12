@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.145.1 - 2026-11-12
+
+- Waiting for › List: a task or a Waiting for indented under a line that
+  links a project now belongs to that project. This works for a link
+  written as [[Project]] and on any page, not only day pages. The project
+  counts the line, and Ask for an update lists the lines under their
+  project instead of the page they are on.
+
 ## 1.145.0 - 2026-11-12
 
 - Journal: the Feedback review names each outcome by what you want. A
