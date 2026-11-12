@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.149.1 - 2026-11-12
+
+- States and Waiting for: Alt+1 on a line you are editing turns its words
+  into the project link once. A name with a sign a file name cannot hold,
+  such as `Plan: shed`, no longer stays in front of its own link (#369).
+
 ## 1.149.0 - 2026-11-12
 
 - States and Waiting for: when a line becomes a project, by Alt+1, the

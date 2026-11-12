@@ -9892,6 +9892,37 @@ var GTD_TEST = (() => {
     } finally { FLY = null; box.remove(); txt.remove(); removePage(person); removePage(org); removePage(ctx); clearMemo(); }
   });
 
+  test("#369 Alt+1 on a line being edited writes the project name once", async () => {
+    const path = scratchProject("alt one", [["TODO", "Kitchen renovatiq"], [null, "Plan: garden shedq"],
+      [null, "Call Anna about Porch paintq today"]]);
+    const [whole, colon, words] = getPage(path).blocks;
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    const made = [];
+    openPage(path); await settle();
+    const alt1 = async (b, pick) => {
+      focusBlock(b.id); await frame();
+      const host = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
+      if (pick) {
+        const node = host.firstChild, at = node.textContent.indexOf(pick), r = document.createRange();
+        r.setStart(node, at); r.setEnd(node, at + pick.length);
+        getSelection().removeAllRanges(); getSelection().addRange(r);
+      }
+      host.dispatchEvent(new KeyboardEvent("keydown", {key: "1", code: "Digit1", altKey: true, bubbles: true, cancelable: true}));
+      await settle();
+      closeModal();
+      made.push(...linksIn(b.title).map(findExistingPage).filter(Boolean));
+    };
+    try {
+      await alt1(whole);
+      eq(whole.title, "[[1/Kitchen renovatiq]]", "the line's words become the link");
+      await alt1(colon);
+      eq(colon.title, "[[1/Plan- garden shedq][Plan: garden shedq]]",
+        "words the page name cannot hold become the link's text, not words left in front of it");
+      await alt1(words, "Porch paintq");
+      eq(words.title, "Call Anna about [[1/Porch paintq]] today", "picked words: no [text] that repeats the name");
+    } finally { closeModal(); made.forEach(p => removePage(p)); go("today"); }
+  });
+
   test("timer starts and stops", () => {
     timerStart(5, false);
     ok(TIMER_END > Date.now(), "TIMER_END not in the future");

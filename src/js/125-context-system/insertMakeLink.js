@@ -5,10 +5,13 @@
 function insertMakeLink(path, block, ref) {
   const already = linksIn(block.title).some(l => trim(l).toLowerCase() === ref.toLowerCase());
   if (already) { notify("That link is already on this line."); return; }
-  const link = "[[" + ref + "]]";
-  const name = ref.split("/").slice(1).join("/");
+  const name = trim(ref.split("/").slice(1).join("/"));
   const bare = bareLineName(block);
-  const only = bare && bare.toLowerCase() === trim(name).toLowerCase();
+  // The name was made from the line's words, so they are compared the same way:
+  // "Plan: shed" is the page "Plan- shed", and its words become the link's text
+  // rather than staying in front of it (#369).
+  const only = bare && slugify(bare).toLowerCase() === name.toLowerCase();
+  const link = "[[" + ref + (only && bare !== name ? "][" + bare : "") + "]]";
   if (only) {
     /* The whole line becoming a project is the todo turning into one: the
        project carries the status now, so the TODO comes off the line -- the
