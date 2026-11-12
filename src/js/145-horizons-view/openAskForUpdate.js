@@ -4,7 +4,7 @@
    the AI, ticked again on the way back (#344). */
 function openAskForUpdate(name, only = null, keep = null) {
   const me = whoAmI();
-  if (!me) { notify("Put your name in first - the sheet has to say who is asking.", "warn"); return; }
+  if (!me) { notify("Put your name in first - the message has to say who is asking.", "warn"); return; }
   /* Two kinds of line go to the same person: what they owe you, and your own
      tasks that name them -- the questions. Both are in one mail unless you
      would rather keep the questions apart from the chasing. A question once
@@ -59,7 +59,7 @@ function openAskForUpdate(name, only = null, keep = null) {
         "Nothing else about your vault goes with them." +
         (found.some((a, i) => pick.has(i) && a.mention && a.block.state !== "WAIT")
           ? " Your own to-dos among them wait on " + name + " once sent." : "")
-      : "Nothing selected - the sheet would be empty.";
+      : "Nothing selected yet.";
   };
 
   /* The lines under each task go along by default, since they are usually what
@@ -177,13 +177,12 @@ function openAskForUpdate(name, only = null, keep = null) {
       onclick: () => { split = v; drawHow(); refresh(); }}, (split === v ? "✓ " : "") + label)));
   drawHow();
 
-  /* sheet: the HTML file to fill in and send back, attached by hand, which is
-     easier to answer than a long mail or a Teams message. Without it the same
-     lines go in the mail itself, to answer with a plain reply. */
-  const send = sheet => {
+  /* The lines go in the mail itself, each with a link to answer it. The
+     attached sheet this once offered is gone (#363); the mail does its job. */
+  const send = () => {
     const chosen = found.filter((_, i) => pick.has(i));
     if (!chosen.length) { notify("Pick at least one thing to ask about.", "warn"); return; }
-    // The sheet and the links in the mail both reply to you, so both need your address.
+    // The links in the mail reply to you, so they need your address.
     const replyTo = trim(email.value);
     if (!looksLikeEmail(replyTo)) {
       notify("Put in your email for " + (area || "this area") + ", so their answers have somewhere to go.", "warn");
@@ -202,12 +201,11 @@ function openAskForUpdate(name, only = null, keep = null) {
         title: a.title, q: !!a.mention, project: named.on ? aboutOf.get(a) : "",
         context: (contexts[i] || []).filter((_, j) => ctxPick[i].has(j)).map(({depth, text}) => ({depth, text})),
         ask: ownAsk(a),
-        // How long it has been open, said on the sheet in the sheet's language.
+        // How long it has been open, said in the mail's language.
         days: a.mention ? null : d != null && d > 0 ? d : null,
       };
     });
-    /* What owes you first, then the questions, so a sheet with both reads
-       as two short lists rather than one shuffled one. */
+    // What owes you first, then the questions: two short lists, not one shuffled one.
     const owes = chosen.filter(a => !a.mention), qs = chosen.filter(a => a.mention);
     const waits = owes.map(itemOf), asks = qs.map(itemOf);
     const sends = split && waits.length && asks.length ? [[waits, owes, ""], [asks, qs, "_questions"]]
@@ -226,59 +224,55 @@ function openAskForUpdate(name, only = null, keep = null) {
       render();
       offerAskWording(name, items, lines, edited, then);
     };
-    /* The file is made when the note goes, from the note as you left it, so
-       a question you reworded reads the same in both. The date tells this
-       ask from older ones in Downloads. */
-    const made = sends.map(([items, lines, tail]) => sheet
-      ? {items, sent: sentOf(items, lines),
-         file: slugPerson(name).toLowerCase().replace(/[^\w-]+/g, "-") + tail + "_" + fileWhen() + ".html",
-         sheetOf: edited => checkinSheetHtml({to: name, from: me, items: edited, replyTo})}
-      : {items, sent: sentOf(items, lines), file: null, sheetOf: null});
+    const made = sends.map(([items, lines]) => ({items, sent: sentOf(items, lines), file: null, sheetOf: null}));
     closeModal();
     render();
     // Two emails are two notes, one after the other: the second opens when
     // you are done with the first.
     const noteAt = i => openAskNote(name, made[i].items, made[i].file, made[i].sheetOf, area,
-      made[i + 1] ? {label: "Next: the questions", run: () => noteAt(i + 1)} : null, made[i].sent);
+      made[i + 1] ? {label: "Next: the questions", run: () => noteAt(i + 1)} : null, made[i].sent,
+      () => openAskForUpdate(name, null, {picked: chosen.map(a => a.block)}));
     noteAt(0);
   };
 
+  /* One main action, Write the message (#363). What only some asks need folds
+     under More; your email stays out of it until it is known. Receiving a
+     reply is not sending, so it sits apart, above the buttons. */
+  const emailField = el("div", {class: "field"},
+    el("label", {}, "Your email in " + (area || "this area") + ", where their answers come back to"),
+    email,
+    el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
+      saved ? "From email:: on your page in " + area + ". Change it there, or here."
+            : "Saved on your page in " + (area || "this area") + " when you write the message, so you are asked once."));
+  const more = el("details", {class: "field"},
+    el("summary", {}, "More"),
+    el("div", {style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px"},
+      el("button", {class: "btn sm ghost", onclick: () => toAi([...pick])}, "Let AI write the questions"),
+      el("span", {style: "color:var(--fg3);font-size:12px"},
+        "A question and a short summary for each ticked line.")),
+    mixed ? el("div", {class: "field"}, el("label", {}, "Send as"), howBox) : null,
+    found.some(a => aboutOf.get(a)) ? el("div", {class: "field"},
+      el("div", {style: "display:flex;gap:10px;align-items:center"},
+        toggle(() => named.on, () => { named.on = !named.on; PREF.set("askNameProjects", named.on ? "1" : "0"); }),
+        el("span", {}, "Name the projects in what they get"))) : null,
+    saved ? emailField : null);
   modal({
     center: true, title: "Ask " + name + " for an update",
     hint: found.length + " open",
     body: el("div", {},
       el("div", {class: "field"},
         el("label", {}, "What to ask about"),
-        card, summary,
-        el("div", {style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px"},
-          el("button", {class: "btn sm ghost", onclick: () => toAi([...pick])}, "Let AI write the questions"),
-          el("span", {style: "color:var(--fg3);font-size:12px"},
-            "A question and a short summary for each ticked line, for somebody who has not seen your notes."))),
-      mixed ? el("div", {class: "field"}, el("label", {}, "Send as"), howBox) : null,
-      found.some(a => aboutOf.get(a)) ? el("div", {class: "field"},
-        el("div", {style: "display:flex;gap:10px;align-items:center"},
-          toggle(() => named.on, () => { named.on = !named.on; PREF.set("askNameProjects", named.on ? "1" : "0"); }),
-          el("span", {}, "Name the projects in what they get"))) : null,
-      el("div", {class: "field"},
-        el("label", {}, "Your email in " + (area || "this area") + ", where their answers come back to"),
-        email,
-        el("div", {style: "color:var(--fg3);font-size:12px;margin-top:6px"},
-          saved ? "From email:: on your page in " + area + ". Change it there, or here."
-                : "Not on your page in " + (area || "this area") + " yet. It is saved there as " +
-                  "email:: when you write the message or make the sheet, so you are only asked once.")),
-      el("div", {class: "field"},
-        el("div", {style: "color:var(--fg3);font-size:12.5px"},
-          "Write the message: send it as an email or in Teams. In an email each line has a link that opens a " +
-          "short reply to you; in Teams " + name + " answers in the chat. Either way, a reply you paste back " +
-          "updates the lines. Make the sheet: the same as one HTML file to attach as well, for a long list."))),
+        card, summary),
+      saved ? null : emailField,
+      more,
+      el("div", {class: "field", style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px"},
+        el("span", {style: "color:var(--fg2)"}, "Got an answer?"),
+        el("button", {class: "btn sm ghost", onclick: () => { closeModal(); importUpdatePasted(); }}, "Paste a reply"),
+        el("button", {class: "btn sm ghost", onclick: () => { closeModal(); importUpdateFromFile(); }}, "Import a file"))),
     foot: [
       el("button", {class: "btn ghost", onclick: closeModal}, "Cancel"),
-      el("button", {class: "btn ghost", onclick: () => { closeModal(); importUpdatePasted(); }},
-        "Paste a reply"),
-      el("button", {class: "btn ghost", onclick: () => { closeModal(); importUpdateFromFile(); }},
-        "Import a file"),
-      el("button", {class: "btn ghost", onclick: () => send(true)}, "Make the sheet"),
-      el("button", {class: "btn primary", onclick: () => send(false)}, "Write the message"),
+      el("div", {style: "flex:1"}),
+      el("button", {class: "btn primary", onclick: send}, "Write the message"),
     ],
   });
 }

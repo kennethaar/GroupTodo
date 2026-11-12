@@ -73,6 +73,14 @@ button in the switch. *Why:* the review switch read "‹ Projects · … ·
 Projects", one word for two jobs side by side. *Apply:* Weekly review,
 Contexts, and any view opened from another. *Source:* UX-015.
 
+**P17. One main button per dialog, and every step has Back.** The footer
+holds Cancel and the one thing the dialog is for. Options only some people
+need fold under More. Receiving (Paste a reply) sits apart from sending. A
+step that follows another has `◂ Back`, which returns with the choices kept.
+*Why:* Ask for an update ended in five buttons, and its note step had no way
+back to the lines. *Apply:* wizards, reviews and multi-step dialogs.
+*Source:* #363.
+
 ## Phone
 
 **P16. On a phone the words get the width.** A row's title wraps over

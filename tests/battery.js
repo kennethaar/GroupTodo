@@ -5817,6 +5817,35 @@ var GTD_TEST = (() => {
       for (const [p, page] of keep) { if (V.pages.has(p)) removePage(p); if (page) putPage(p, page); }
     }
   });
+  test("#363 Ask for an update: Cancel and Write the message only, Paste a reply apart, options under More, Back from the note", async () => {
+    const path = scratchProject("ask 363", [["WAIT", "Drawings from [[p/Lars Haugen]]"], ["WAIT", "Price from [[p/Lars Haugen]]"]]);
+    const [one, two] = getPage(path).blocks;
+    const mail = emailOf(whoAmI(), V.space);
+    const btns = sel => [...document.querySelectorAll(sel)].map(x => trim(x.textContent));
+    try {
+      setEmailOf(whoAmI(), V.space, "me@example.com");
+      openAskForUpdate("Lars Haugen", one);
+      await settle();
+      eq(btns("#modalRoot .foot button"), ["Cancel", "Write the message"], "one main action");
+      ok(!$("#modalRoot").textContent.includes("sheet"), "no sheet");
+      ok(btns("#modalRoot .body button").includes("Paste a reply"), "Paste a reply is in the dialog, apart from sending");
+      const more = $("#modalRoot details");
+      ok(more && !more.open, "the options fold under More");
+      has(more.textContent, "Name the projects");
+      [...document.querySelectorAll("#modalRoot .foot button")].find(x => trim(x.textContent) === "Write the message").click();
+      await settle();
+      const back = [...document.querySelectorAll("#modalRoot .foot button")].find(x => /Back/.test(x.textContent));
+      ok(back, "the note has Back");
+      back.click();
+      await settle();
+      has($("#modalRoot").textContent, "Ask Lars Haugen for an update");
+      eq([one, two].map(b => !!blockProp(b, ASKED_PROP)), [false, false], "nothing was marked asked");
+      has($("#modalRoot").textContent, "1 line go to Lars Haugen", "the same line is ticked");
+    } finally {
+      closeAll();
+      setEmailOf(whoAmI(), V.space, mail);
+    }
+  });
   test("#161 Ask for an update can leave the projects unnamed", async () => {
     const path = scratchProject("secret depot plan", [["TODO", "Ask [[p/Lars Haugen]] which crane goes first"]]);
     const block = getPage(path).blocks[0], title = pageTitle(path);

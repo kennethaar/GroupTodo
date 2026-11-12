@@ -7,7 +7,7 @@
    from the note as it then reads, and saved again only when the note changed.
    sent(edited, then): marks the lines asked, once, the first time the note
    goes, and offers what you reworded back to the tasks; then() carries on. */
-function openAskNote(name, items, file, sheetOf = null, area = Spaces.active || "", next = null, sent = null) {
+function openAskNote(name, items, file, sheetOf = null, area = Spaces.active || "", next = null, sent = null, back = null) {
   const note = askNote(name, items, file);
   const saved = emailOf(name, area);
   const to = el("input", {type: "email", placeholder: "them@example.com", value: saved});
@@ -93,7 +93,7 @@ function openAskNote(name, items, file, sheetOf = null, area = Spaces.active || 
                 // Personalized text starts from the language you had, until you edit it.
                 if (code === "own" && !askOwn()) PREF.set("askLangBase", askLang());
                 PREF.set("askLang", code);
-                closeModal(); openAskNote(name, items, file, sheetOf, area, next, sent);
+                closeModal(); openAskNote(name, items, file, sheetOf, area, next, sent, back);
               }}, on ? [svgIcon(ICON_CHECK), " " + label] : label);
           })),
         askOwn() ? el("div", {style: "margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"},
@@ -102,8 +102,10 @@ function openAskNote(name, items, file, sheetOf = null, area = Spaces.active || 
           el("span", {style: "color:var(--fg3);font-size:12px"},
             "Update note in Settings" + (V.pages.has(ASK_OWN_PATH) ? "." : ", the standard text until you edit it."))) : null)),
     foot: [
+      // Back to the lines, the same ones ticked (#363).
+      back ? el("button", {class: "btn ghost", onclick: () => { remember(); closeModal(); back(); }}, "◂ Back") : null,
       next ? el("button", {class: "btn ghost", onclick: () => { remember(); closeModal(); next.run(); }}, next.label)
-           : el("button", {class: "btn ghost", onclick: closeModal}, "Close"),
+           : back ? null : el("button", {class: "btn ghost", onclick: closeModal}, "Close"),
       el("button", {class: "btn ghost", onclick: () => {
         const said = saveSheet();
         copyText(box.value, said + "Note copied. Paste it wherever you like.");

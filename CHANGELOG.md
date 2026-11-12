@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.145.2 - 2026-11-12
+
+- Waiting for › List: Ask for an update has one main button, Write the
+  message, beside Cancel. Make the sheet is gone: the mail has a reply link
+  on each line. Let AI write the questions, Send as and Name the projects
+  fold under More. Paste a reply and Import a file sit apart, under Got an
+  answer?. The note has Back, which returns to the lines still ticked.
+
 ## 1.145.1 - 2026-11-12
 
 - Waiting for › List: a task or a Waiting for indented under a line that
