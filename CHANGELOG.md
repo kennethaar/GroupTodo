@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.149.3 - 2026-11-12
+
+- Projects › List: one list, one project per row, on a wide screen too.
+  It no longer flows into columns side by side (#371).
+
 ## 1.149.2 - 2026-11-12
 
 - Waiting for › List: a reply on a task says who wrote it and when, for

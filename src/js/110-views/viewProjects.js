@@ -1,6 +1,7 @@
 function viewProjects() {
   const sub = subNow();
-  const c = el("div", {class: "wrap" + (sub === "list" ? " lwide" : sub === "report" || sub === "hours" ? "" : " wide")});
+  // The list is read top down, one project per row, so it keeps the reading width (#371).
+  const c = el("div", {class: "wrap" + (sub === "list" || sub === "report" || sub === "hours" ? "" : " wide")});
   const org = state.org || "";
   /* Every name against every other, while the names are still coming in from
      the folder, would be paid again at each step of the read: the look-alikes
