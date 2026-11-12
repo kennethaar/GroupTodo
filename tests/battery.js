@@ -3896,6 +3896,44 @@ var GTD_TEST = (() => {
       eq(drawn.textContent, mock[5], "a fenced line is drawn as markup, not as written");
     } finally { go("today"); }
   });
+  test("#374 in the Journal, a ``` fence opened on the bullet and typed on with Shift+Enter is drawn monospace", async () => {
+    const path = ensureJournal(todayISO());
+    const b = newBlock({}, false);
+    b.title = "```";
+    getPage(path).blocks.push(b); touch(path);
+    go("today");
+    await settle();
+    const q = s => document.querySelector('.blk[data-id="' + b.id + '"]' + s);
+    const key = (node, k, o = {}) => node.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true, ...o}));
+    const typeLine = async (i, text) => {
+      const row = q(' > .bodyline[data-bi="' + i + '"]');
+      row.focus(); setHostText(row, text, text.length);
+      key(row, "Enter", {shiftKey: true});
+      await settle();
+    };
+    try {
+      ok(q(" .txt"), "the line is not on today's page");
+      focusBlock(b.id);
+      await settle();
+      key(q(" .txt"), "Enter", {shiftKey: true});
+      await settle();
+      await typeLine(0, "  +----+   +----+");
+      await typeLine(1, "  | a  |   | b  |");
+      const last = q(' > .bodyline[data-bi="2"]');
+      last.focus(); setHostText(last, "```", 3); last.blur();
+      await settle();
+      eq(JSON.stringify(b.body), JSON.stringify(["  +----+   +----+", "  | a  |   | b  |", "```"]), "the lines are not kept as typed");
+      eq(JSON.stringify(parsePage(serializePage(getPage(path))).blocks.find(x => x.title === "```").body), JSON.stringify(b.body), "the file does not read the fence back");
+      for (const i of [0, 1]) {
+        const drawn = q(' > .bodyline[data-bi="' + i + '"]');
+        ok(drawn && /mono/i.test(getComputedStyle(drawn).fontFamily), "fenced line " + i + " is not drawn monospace");
+        eq(getComputedStyle(drawn).whiteSpace, "pre", "fenced line " + i + " does not keep its spaces");
+      }
+    } finally {
+      const pg = getPage(path); pg.blocks.splice(pg.blocks.indexOf(b), 1); touch(path);
+      go("today");
+    }
+  });
   test("#320 a click on a picture opens it in a view with a close button; a click beside it on the line edits the line", async () => {
     const path = scratchProject("picture click", [[null, "Look ![pic](https://example.invalid/p.png) here"]]);
     const b = getPage(path).blocks[0];

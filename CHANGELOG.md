@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.154.1 - 2026-11-12
+
+- Keys on a line: write ``` on a line, then go on with Shift+Enter, and the
+  lines under it are drawn in the fixed-width font, in the Journal too.
+  Before, only a fence that began under the line counted (#374).
+
 ## 1.154.0 - 2026-11-12
 
 - Weekly review › Clarify: the card says plainly what the line is already.
