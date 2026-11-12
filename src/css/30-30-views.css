@@ -238,6 +238,8 @@ body.solview #content{padding-bottom:14px}
 /* The someday pass: two cards side by side, and the ranking they make beside them */
 .sdtable{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:22px;align-items:start}
 .sdduel{display:flex;flex-direction:column;gap:12px;min-width:0}
+.cllast{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;color:var(--fg2);padding:6px 10px;border-radius:8px;background:color-mix(in srgb, var(--accent) 8%, transparent)}
+.cllast svg{width:14px;height:14px;color:var(--accent)}
 .sdhead{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--fg3)}
 .sdprog{height:6px;border-radius:3px;background:var(--border);overflow:hidden}
 .sdprog i{display:block;height:100%;background:var(--accent);transition:width .2s}

@@ -8449,7 +8449,7 @@ var GTD_TEST = (() => {
     try {
       for (const p of others) getPage(p).props.clarified = "test";
       PREF.set("clarify.dealt", "");
-      CL = {pending: null, skip: new Set(), undo: null, aim: 0};
+      CL = {pending: null, skip: new Set(), undos: [], aim: 0};
       await withPages(Object.fromEntries(days.map(([n, text]) => [journalPath(shiftISO(T(), -n)), text])), fn);
     } finally {
       for (const p of others) if (getPage(p)) delete getPage(p).props.clarified;
@@ -8494,6 +8494,32 @@ var GTD_TEST = (() => {
       ok(!getPage(d3).blocks[2].children[0].state, "Backspace takes the answer back");
       ok(!getPage(d3).props.clarified, "and the day is open again");
       eq(content().querySelector(".clcard h3").textContent, "Ask Kari about the budget");
+    });
+  });
+  test("#365 Clarify says what the last answer did, and Undo that steps back more than one line", async () => {
+    await withDays([[3, "- Call the plumber\n- Order tiles\n- Plan the party\n"]], async () => {
+      const d3 = journalPath(shiftISO(T(), -3));
+      let c = await showClarify();
+      ok(!c.querySelector(".cllast"), "nothing answered yet, nothing to undo");
+      c.querySelector(".clans").click();
+      c = await showClarify();
+      c.querySelector(".clans").click();
+      c = await showClarify();
+      eq(c.querySelector(".clcard h3").textContent, "Plan the party");
+      const last = c.querySelector(".cllast");
+      ok(last, "the last answer is said");
+      has(last.textContent, "Order tiles"); has(last.textContent, CL_ANSWERS[0].label);
+      const undo = () => [...content().querySelectorAll(".cllast button")].find(x => trim(x.textContent) === "Undo that");
+      undo().click();
+      await settle();
+      eq(content().querySelector(".clcard h3").textContent, "Order tiles", "the line is dealt again");
+      ok(!getPage(d3).blocks[1].state, "as it was");
+      has(content().querySelector(".cllast").textContent, "Call the plumber", "and the answer before it is next to undo");
+      undo().click();
+      await settle();
+      eq(content().querySelector(".clcard h3").textContent, "Call the plumber", "two steps back");
+      ok(!getPage(d3).blocks[0].state);
+      ok(!content().querySelector(".cllast"), "nothing left to undo");
     });
   });
   test("#95 Someday/maybe is Alt+2 on the line: a project on that shelf, linked from it", async () => {

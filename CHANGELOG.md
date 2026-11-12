@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.146.1 - 2026-11-12
+
+- Weekly review › Clarify: above the line it says what your last answer
+  did, such as Last: “Order tiles” → To do, with Undo that. Undo that, or
+  Backspace, takes answers back one at a time, not only the last one, so
+  a line clarified wrongly a few lines ago can be fixed.
+
 ## 1.146.0 - 2026-11-12
 
 - Vault and sync: copying pages into a folder shows a bar, how many are

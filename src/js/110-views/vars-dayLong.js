@@ -17,7 +17,7 @@ window.addEventListener("keydown", e => {
   } else if (/^Arrow(Up|Down|Left|Right)$/.test(e.key)) {
     stop();
     CL.aim = (CL.aim + (/Down|Right/.test(e.key) ? 1 : -1) + max) % max;
-  } else if (e.key === "Backspace" && CL.undo) {
+  } else if (e.key === "Backspace" && CL.undos.length) {
     stop(); clUndo(); return;
   } else if (e.key.length === 1 && /\p{L}/u.test(e.key)) {
     const ch = e.key.toLocaleLowerCase();
