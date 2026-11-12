@@ -58,13 +58,6 @@ function openVaultDialog() {
     el("span", {style: "display:flex;gap:6px;align-items:center"}, from, el("span", {}, "–"), to));
 
   /* Preferences */
-  const birthdayRow = settingsRow("Past birthday tasks", null,
-    settingsSelect("Past birthday tasks", [["1", "Cancel automatically"], ["0", "Keep"]],
-      birthdayTasksExpire() ? "1" : "0", v => {
-        PREF.set("expire.birthdays", v);
-        notify(v === "1" ? "Birthday tasks go once the birthday has passed." : "Birthday tasks stay until you deal with them.");
-        if (v === "1") expireOverdue();
-      }));
   const clockRow = settingsRow("Track time in Doing", null, settingsToggle(clockOnDoing(), "Track time in Doing", on => {
     PREF.set("clock.doing", on ? "1" : "0");
     notify(on ? "Doing starts a clock." : "Doing starts no clock.");
@@ -156,7 +149,7 @@ function openVaultDialog() {
     body: el("div", {},
       settingsGroup("Vault & sync", [memoryRow, folderRow, phoneRow, autoRow, inviteRow]),
       settingsGroup("You", [profileRow, hoursRow]),
-      settingsGroup("Preferences", [birthdayRow, clockRow, choreRow, linksRow, askRow, senseRow, placesRow]),
+      settingsGroup("Preferences", [clockRow, choreRow, linksRow, askRow, senseRow, placesRow]),
       settingsGroup("Personal", [areaRow]),
       settingsGroup("GroupToDo", [langRow, zoneRow, ...updateRows, newsRow,
         settingsRow("Integrations", null, btn("›", openIntegrationsDialog)),

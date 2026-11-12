@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.155.1 - 2026-11-12
+
+- Hold and until: a task for a birthday is no longer cancelled once the
+  birthday has passed. Only an until:: date cancels a task. The Past birthday
+  tasks setting is gone (#381).
+
 ## 1.155.0 - 2026-11-12
 
 - Next › List: Focus, once one context is picked. Only its first next action

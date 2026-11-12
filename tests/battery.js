@@ -3485,6 +3485,25 @@ var GTD_TEST = (() => {
       eq(row("Send quarterly report").due, late);
     } finally { removePage(path); clearMemo(); }
   });
+  test("#381 only until:: cancels a task; a past birthday does not", () => {
+    const path = scratchProject("expiry"), lars = getPage(personPath("Lars Haugen"));
+    const wasProps = Object.assign({}, lars.props), today = todayISO();
+    const ten = shiftISO(today, -10), past = shiftISO(today, -3);
+    lars.props = Object.assign({}, lars.props, {birthday: past});
+    getPage(path).blocks = parsePage([
+      "- TODO Buy a present for the birthday of [[p/Lars Haugen]]",
+      "- TODO Book the hall",
+    ].join("\n")).blocks;
+    const [gift, hall] = getPage(path).blocks;
+    setBlockProp(gift, "Added", "[[" + ten + "]]");
+    setBlockProp(hall, "until", "[[" + past + "]]");
+    clearMemo();
+    try {
+      expireHere(today);
+      eq(gift.state, "TODO", "a birthday task stays after the birthday");
+      eq(hall.state, "CANCELLED", "a task past its until:: day is cancelled");
+    } finally { lars.props = wasProps; removePage(path); clearMemo(); }
+  });
   test("#263 a step dated after its parent is warned about, once, and kept", () => {
     const path = scratchProject("due conflict");
     const wed = shiftISO(todayISO(), 3), fri = shiftISO(todayISO(), 5), mon = shiftISO(todayISO(), 8);

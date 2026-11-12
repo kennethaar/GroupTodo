@@ -2839,8 +2839,6 @@ js/166-reminders/vars-eventKey.js
 js/166-reminders/reminderToast.js
 js/166-reminders/vars-REMIND_DAY.js
 js/166-reminders/remindTick.js
-js/167-expiry/vars-BIRTHDAY_WORDS.js
-js/167-expiry/birthdayTaskDay.js
 js/167-expiry/expireHere.js
 js/167-expiry/expireOverdue.js
 js/168-phone-and-workday/vars-touchFirst.js

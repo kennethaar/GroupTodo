@@ -4,15 +4,9 @@ function expireOverdue() {
   if (!gone.length) return;
   clearMemo();
   render();
-  const bdays = gone.filter(g => g.why === "birthday").length;
   const msg = gone.length === 1
-    ? "“" + plainTitle(gone[0].block.title) + "” " +
-      (gone[0].why === "until" ? "ran past its until:: date" : "was for a birthday that has passed") +
-      " and is cancelled."
-    : gone.length + " tasks cancelled: " +
-      [bdays ? bdays + " for a birthday that has passed" : null,
-       gone.length - bdays ? (gone.length - bdays) + " past their until:: date" : null]
-        .filter(Boolean).join(", ") + ".";
+    ? "“" + plainTitle(gone[0].block.title) + "” ran past its until:: date and is cancelled."
+    : gone.length + " tasks cancelled: past their until:: date.";
   notify(msg, "info", {label: "Undo", run: () => {
     for (const g of gone) inSpace(g.space, () => {
       g.block.state = g.before.state;

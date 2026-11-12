@@ -983,7 +983,6 @@ const HELP = {
       "Bring it back now is at the bottom of Next."],
     more: ["Holding a line holds the steps under it.",
       "A project on hold leaves the stuck-projects check.",
-      "A birthday task goes once the birthday has passed.",
       "Let go means struck out, not deleted."],
     code: [["hold:: [[2026-11-06]]", "Hidden until that day"], ["hold:: open", "On hold, no date"],
       ["until:: [[2026-11-06]]", "Cancelled after that day"]],
