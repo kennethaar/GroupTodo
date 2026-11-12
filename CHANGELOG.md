@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.149.2 - 2026-11-12
+
+- Waiting for › List: a reply on a task says who wrote it and when, for
+  example `Ariol · Today 14:05`, instead of reading like your own note. The
+  person chip on a waiting task now offers Paste a reply too (#370).
+
 ## 1.149.1 - 2026-11-12
 
 - States and Waiting for: Alt+1 on a line you are editing turns its words

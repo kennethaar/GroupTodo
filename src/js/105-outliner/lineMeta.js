@@ -18,6 +18,9 @@ function lineMeta(b, path = null, readonly = false) {
           openWhoMenu({name: who, path, block: b, space: V.space}, e.currentTarget); } }},
         svgIcon(ICON_ARROW_RIGHT), " " + who)
     : el("span", {class: "chip who"}, svgIcon(ICON_ARROW_RIGHT), " " + who));
+  // A message line, a pasted reply among them, says who said it and when (#370).
+  if (isMessage(b)) out.push(el("span", {class: "chip said", title: "Said by " + msgAuthor(b)},
+    svgIcon(ICON_CHAT), " " + [msgAuthor(b), msgAt(b) ? chatTime(msgAt(b)) : ""].filter(Boolean).join(" · ")));
   const said = messagesOf(b).length;
   if (said) out.push(el("span", {class: "chip msg" + (unreadCount(b) ? " unread" : "")}, svgIcon(ICON_CHAT), " " + said));
   // A meeting says when and with whom as chips of its own.

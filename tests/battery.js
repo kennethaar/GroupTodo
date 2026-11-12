@@ -9923,6 +9923,30 @@ var GTD_TEST = (() => {
     } finally { closeModal(); made.forEach(p => removePage(p)); go("today"); }
   });
 
+  test("#370 a reply filed on a task says on its line who replied and when", async () => {
+    const path = scratchProject("reply who", [["WAIT", "Send the drawings"]]);
+    const b = getPage(path).blocks[0];
+    const at = nowStamp();
+    const m = postMessageAs(path, b, "JAAA", "Ariol Testsen", at);
+    touch(path);
+    openPage(path); await settle();
+    try {
+      const row = document.querySelector('.blk[data-id="' + m.id + '"]');
+      ok(row, "the reply is shown under the task");
+      const chip = row.querySelector(".props .chip.said");
+      ok(chip, "the reply line has a who-and-when chip");
+      has(chip.textContent, "Ariol Testsen", "who replied");
+      has(chip.textContent, chatTime(at), "and when");
+      ok(!/msg::|at::/.test(row.textContent), "not as raw fields");
+
+      openWhoMenu({name: "Ariol Testsen", path, block: b, space: V.space}, row);
+      const paste = [...document.querySelectorAll(".scrim .modal button")].find(x => x.textContent === "Paste a reply");
+      ok(paste, "the task's who menu offers Paste a reply");
+      paste.click();
+      has(document.querySelector(".scrim .modal textarea")?.placeholder || "", "Paste their reply here", "which opens the paste box");
+    } finally { closeModal(); go("today"); }
+  });
+
   test("timer starts and stops", () => {
     timerStart(5, false);
     ok(TIMER_END > Date.now(), "TIMER_END not in the future");

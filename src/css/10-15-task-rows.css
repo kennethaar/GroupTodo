@@ -334,7 +334,7 @@ button.tick:hover{box-shadow:inset 0 0 0 1px currentColor}
 .chatrow.unread .chatrow-last{color:var(--fg)}
 .chatrow-marks{display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex:none}
 @media (max-width:560px){.chatrow-where{display:none}}
-.chip.msg{color:var(--fg3)}
+.chip.msg,.chip.said{color:var(--fg3)}
 .chip.msg.unread{color:var(--accent);background:rgba(106,163,255,.14)}
 .chip.flagged{color:var(--warn);background:rgba(224,176,80,.13)}
 .toast .act{background:none;border:1px solid var(--border2);color:var(--accent);
