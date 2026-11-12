@@ -5,7 +5,8 @@ function handoverData(path, {includeRefs = false, strip = false} = {}) {
   const page = getPage(path), today = todayISO();
   const who = s => strip ? "" : trim(s || "");
   const words = s => plainTitle(s);
-  const prop = k => linkWords(String(page.props?.[k] ?? ""));
+  // key:: none is the weekly review's "nobody", not a name (#377).
+  const prop = k => { const v = String(page.props?.[k] ?? ""); return trim(v).toLowerCase() === NOTHING_FIRST ? "" : linkWords(v); };
   const hold = projectHold(path);
   const status = hold ? "On hold until " + hold : (STATUS_LABEL[effStatus({space: V.space, path})] || "");
 

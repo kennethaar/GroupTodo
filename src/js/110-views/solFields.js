@@ -2,10 +2,10 @@ function solFields() {
   return [
     {k: "orgs", label: "Organisations", type: "multi", none: "None", scoped: true, add: "New organisation",
      opts: r => pageNames(r, "org"), cur: r => projectOrgs(r), rank: r => solRank(r, "o/", projectOrgs),
-     filled: r => projectOrgs(r).length > 0 || !!solAns(r).orgs,
+     filled: r => projectOrgs(r).length > 0 || saidNone(r, "org") || !!solAns(r).orgs,
      toggle: (r, v) => projectOrgs(r).includes(v) ? removeLinkFromProp(r.space, r.path, "org", "o/" + v)
                                                    : inS(r, () => pageLinkPropAdd(r.path, "org", "o/" + v)),
-     clear: r => { for (const o of projectOrgs(r)) removeLinkFromProp(r.space, r.path, "org", "o/" + o); solAns(r).orgs = true; },
+     clear: r => { for (const o of projectOrgs(r)) removeLinkFromProp(r.space, r.path, "org", "o/" + o); solSayNone(r, "org"); solAns(r).orgs = true; },
      make: (r, name) => { inS(r, () => pageLinkPropAdd(r.path, "org", "o/" + slugify(name))); }},
     /* The people of the project's own area, then those only another area
        knows, as "Kari · Work": one of those is moved, copied or synced into
@@ -22,7 +22,7 @@ function solFields() {
        for (const n of inS(r, () => allPeople().map(personName))) if (orgsOnProject(r, n).length)
          m.set(n.toLowerCase(), (m.get(n.toLowerCase()) || 0) + 10000);
        return m; },
-     filled: r => projectPeople(r).length > 0 || !!solAns(r).people,
+     filled: r => projectPeople(r).length > 0 || saidNone(r, "with") || !!solAns(r).people,
      toggle: (r, v) => {
        if (v.startsWith(PERSON_AWAY)) {
          const [, from, name] = v.split(PERSON_AWAY);
@@ -37,7 +37,7 @@ function solFields() {
                                            : inS(r, () => pageLinkPropAdd(r.path, "with", "p/" + v));
      },
      make: (r, name) => { inS(r, () => pageLinkPropAdd(r.path, "with", "p/" + slugify(name))); },
-     clear: r => { for (const n of projectPeople(r)) removeLinkFromProp(r.space, r.path, "with", "p/" + n); solAns(r).people = true; }},
+     clear: r => { for (const n of projectPeople(r)) removeLinkFromProp(r.space, r.path, "with", "p/" + n); solSayNone(r, "with"); solAns(r).people = true; }},
     {k: "area", label: "Responsibility", type: "one", scoped: true, add: "New responsibility",
      opts: r => inS(r, () => areaList().map(p => [baseName(p), pageTitle(p)])),
      rank: r => solRank(r, "a/", p => { const a = inS(r, () => areaOfProject(p.path)); return a ? [a] : []; }),
@@ -55,13 +55,14 @@ function solFields() {
      submit: (r, text) => inS(r, () => setOutcome(r.path, text))},
     {k: "deadline", label: "Deadline", type: "date",
      opts: () => [...SOL_ENDS.map(([k, label]) => [solEndOf(k), label]), ["none", "No deadline"]],
-     cur: r => dateIn(pageProp(r.space, r.path, "deadline")) || (solAns(r).deadline ? "none" : null),
-     val: r => { const d = dateIn(pageProp(r.space, r.path, "deadline")); return d ? humanDate(d) : solAns(r).deadline ? "No deadline" : ""; },
-     filled: r => !!dateIn(pageProp(r.space, r.path, "deadline")) || !!solAns(r).deadline,
+     cur: r => dateIn(pageProp(r.space, r.path, "deadline")) || (saidNone(r, "deadline") || solAns(r).deadline ? "none" : null),
+     val: r => { const d = dateIn(pageProp(r.space, r.path, "deadline")); return d ? humanDate(d) : saidNone(r, "deadline") || solAns(r).deadline ? "No deadline" : ""; },
+     filled: r => !!dateIn(pageProp(r.space, r.path, "deadline")) || saidNone(r, "deadline") || !!solAns(r).deadline,
      pick: (r, v) => {
        inS(r, () => {
          const page = getPage(r.path);
-         if (v === "none") { delete page.props.deadline; solAns(r).deadline = true; }
+         // Written, so next week's review does not ask again (#377).
+         if (v === "none") { page.props.deadline = NOTHING_FIRST; solAns(r).deadline = true; }
          else page.props.deadline = "[[" + v + "]]";
          touch(r.path);
        });

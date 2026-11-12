@@ -7,7 +7,9 @@ function pageLinkPropAdd(path, key, ref, opts = {}) {
   const prev = page.props[key];
   const have = linksIn(prev || "").map(t => trim(String(t).split("][")[0]).toLowerCase());
   if (have.includes(ref.toLowerCase())) return null;
-  page.props[key] = (opts.single || !trim(prev || "")) ? "[[" + ref + "]]"
+  // key:: none said there was nobody; somebody added takes its place (#377).
+  const empty = !trim(prev || "") || trim(prev).toLowerCase() === NOTHING_FIRST;
+  page.props[key] = (opts.single || empty) ? "[[" + ref + "]]"
                                                        : trim(prev) + ", [[" + ref + "]]";
   createLinkedPages("[[" + ref + "]]");
   touch(path);

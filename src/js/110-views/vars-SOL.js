@@ -10,9 +10,9 @@
    Everything a field sets is what the project page would say anyway:
    org:: and with:: links, area::, outcome::, deadline::, depends_on::, and
    the status folder. A card with every field answered is stamped reviewed::.
-   "None" is an answer too; it is held for the week rather than written,
-   because an empty value says the same thing. "Nothing comes first" is the
-   exception: it is written as depends_on:: none, so it is asked only once.
+   "None" is an answer too, and it is written: depends_on:: none, deadline::
+   none, with:: none, org:: none. An empty value means not asked yet, so a
+   None kept only for the week was asked again every week (#377).
    ============================================================ */
 let SOL = {order: null, i: 0, focus: null, more: null};
 /* What this week's review has answered, kept on this device for the week: a

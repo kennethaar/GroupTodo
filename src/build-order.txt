@@ -1957,6 +1957,8 @@ js/110-views/solConnected.js
 js/110-views/solRank.js
 js/110-views/solKin.js
 js/110-views/vars-orgsOnProject.js
+js/110-views/saidNone.js
+js/110-views/solSayNone.js
 js/110-views/solFields.js
 js/110-views/vars-SOL_ENDS.js
 js/110-views/solEndOf.js

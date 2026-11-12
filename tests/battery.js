@@ -7860,6 +7860,25 @@ var GTD_TEST = (() => {
       has(content().textContent, "Protect deep-work energy", "Horizons");
     });
   });
+  test("#377 No deadline, Just me and no organisations are written on the project, so next week's review does not ask again", () => {
+    const path = scratchProject("none answers", [["TODO", "Call the supplier"]]);
+    const r = {space: V.space, path};
+    const F = k => solFields().find(f => f.k === k);
+    try {
+      F("deadline").pick(r, "none");
+      F("people").clear(r);
+      F("orgs").clear(r);
+      const back = () => parsePage(serializePage(getPage(path))).props;
+      eq([back().deadline, back().with, back().org].join(), "none,none,none", "the None answers are not on the page");
+      SOL_ANS.delete(solKey(r));                        // a new week: nothing held on this device
+      for (const k of ["deadline", "people", "orgs"]) ok(F(k).filled(r), k + " is asked again the next week");
+      eq(projectFieldText(r, F("deadline")), "No deadline");
+      eq(projectFieldText(r, F("people")), "Just me");
+      // Someone added later takes the place of none.
+      F("orgs").make(r, "Acme Test377");
+      eq(getPage(path).props.org, "[[o/" + slugify("Acme Test377") + "]]", "none is not replaced by the organisation");
+    } finally { SOL_ANS.delete(solKey(r)); }
+  });
   test("#177 a page opened from the review card follows the next card, until the pane is closed", async () => {
     const pane = document.querySelector("#pagePane");
     const until = async cond => { for (let i = 0; i < 200 && !cond(); i++) await new Promise(r => setTimeout(r, 10)); };

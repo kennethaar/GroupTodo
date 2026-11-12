@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.153.1 - 2026-11-12
+
+- Weekly review › Projects: None, Just me and No deadline are written on the
+  project (org:: none, with:: none, deadline:: none), as Nothing comes first
+  already was. Before, they were kept for the week only, so every project
+  without a deadline or a team was asked again each week. Adding someone
+  later takes the place of none (#377).
+
 ## 1.153.0 - 2026-11-12
 
 - Weekly review › Clarify: the line's day page sits on the right, the line

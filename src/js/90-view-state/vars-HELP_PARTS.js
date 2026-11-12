@@ -767,6 +767,7 @@ const HELP = {
       [".solcard", "The project."], [".solopt", "An answer. Its number picks it."], [".soldecks", "Cards still to sort."]],
     more: ["Each kind of question needs its own kind of thought. Sorting first is fast. The slow passes then cover less.",
       "A project is stamped reviewed once each question is answered.",
+      "Only the status is asked every week. An answer, None and No deadline too, is written on the project, so it is asked once.",
       "Open the page shows the project on the right. The next card then shows there too.",
       "On hold, no date and Someday weigh two at a time. Pick the one you would rather do.",
       "Choices are kept in GTD.md, so next week only new ones need placing.",
