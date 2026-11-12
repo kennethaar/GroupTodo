@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.152.1 - 2026-11-12
+
+- Weekly review › Clarify: a markdown table reads as a table, on the card
+  and in the lines under it, not as raw | rows (#375).
+
 ## 1.152.0 - 2026-11-12
 
 - Keys on a line: a sketch drawn in characters, pasted under a line after

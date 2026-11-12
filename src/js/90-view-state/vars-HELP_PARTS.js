@@ -749,7 +749,7 @@ const HELP = {
       "A day is done when each line on it has an answer."],
     keys: [["1–7", "Aim at an answer"], ["Enter", "Take it"], ["Backspace", "Undo the last answer"]],
     legend: [["?.cllast", "What the last answer did. Undo that takes it back, then the one before."],
-      ["?.clcard", "The line, and the day it is from."],
+      ["?.clcard", "The line, and the day it is from. A table shows as a table."],
       ["?.clkinds", "What the line names. Mark words… makes words on it a person, organisation, context or project."], ["?.clgroups", "The answers, by kind."],
       ["?.clhow", "What the answer does."], [".vseg", "The parts of the review."]],
     more: ["Only the last two weeks. Events, feelings and meetings are not asked about."],

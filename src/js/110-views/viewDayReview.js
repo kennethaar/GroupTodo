@@ -32,13 +32,16 @@ function viewDayReview() {
     onclick: () => clAnswer(r, {label: "Notes, with the " + asked.length + " under it",
       run: (p, line) => asked.forEach(k => clDeal(p, k))})},
     "Leave it and the " + (asked.length === 1 ? "line" : asked.length) + " under it as notes") : null;
-  const h3 = el("h3", {translate: "no", html: renderInline(bujoText(b.title))});
+  // A table reads as the table it is, as on the page (#375).
+  const asLine = k => tableRows(k) ? tableHtml(k) : renderInline(bujoText(k.title));
+  const h3 = tableRows(b) ? el("div", {class: "cltable", translate: "no", role: "heading", "aria-level": "3", html: asLine(b)})
+    : el("h3", {translate: "no", html: asLine(b)});
   const card = el("div", {class: "clcard"},
     el("div", {class: "cleye"}, dayLong(baseName(path)) +
       (r.trail.length ? " · under “" + r.trail[r.trail.length - 1] + "”" : "")),
     h3, ...clKinds(path, b, h3),
     kids.length ? el("ul", {class: "clkids", translate: "no"}, ...kids.slice(0, 5).map(k =>
-      el("li", {html: renderInline(bujoText(k.title))})), kids.length > 5 ? el("li", {}, "…") : null) : null,
+      el("li", {html: asLine(k)})), kids.length > 5 ? el("li", {}, "…") : null) : null,
     allNotes,
     el("div", {class: "solq"}, el("b", {}, "What is it?")));
   let n = 0;

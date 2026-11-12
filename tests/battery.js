@@ -8658,6 +8658,21 @@ var GTD_TEST = (() => {
       eq(content().querySelector(".clcard h3").textContent, "Ask Kari about the budget");
     });
   });
+  test("#375 Clarify draws a markdown table as a table, on the card and under it", async () => {
+    await withDays([[3, "- | Item | Qty |\n  | --- | --- |\n  | Tiles | 12 |\n- Prices from the shop\n  - | Shop | Price |\n    | --- | --- |\n    | Byggmax | 99 |\n"]], async () => {
+      let c = await showClarify();
+      const card = () => content().querySelector(".clcard");
+      ok(card().querySelector("table.mdtable"), "the table line is not drawn as a table");
+      has(card().querySelector("table.mdtable").textContent, "Tiles");
+      ok(!/\|/.test(card().textContent), "raw | rows on the card: " + card().textContent);
+      c.querySelectorAll(".clans")[6].click();
+      c = await showClarify();
+      has(card().textContent, "Prices from the shop");
+      const under = card().querySelector(".clkids table.mdtable");
+      ok(under, "the table under the line is not drawn as a table");
+      has(under.textContent, "Byggmax");
+    });
+  });
   test("#365 Clarify says what the last answer did, and Undo that steps back more than one line", async () => {
     await withDays([[3, "- Call the plumber\n- Order tiles\n- Plan the party\n"]], async () => {
       const d3 = journalPath(shiftISO(T(), -3));
