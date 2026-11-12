@@ -14,7 +14,8 @@
    know wants typeahead; a list of unfamiliar things wants the letters. */
 /* search(item): the words an item is found by when they are more than its
    label -- a person's aliases, say. */
-function listPicker({title, hint, items, label, detail, onPick, footer, typeahead = false, start = 0, search = null}) {
+/* note: shown over the list, such as the notes a line is written among (#368). */
+function listPicker({title, hint, items, label, detail, onPick, footer, typeahead = false, start = 0, search = null, note = null}) {
   const letters = "abcdefghijklmnopqrstuvwxyz";
   let filtered = items.slice();
   // start -1: nothing is chosen until you type or press an arrow.
@@ -27,7 +28,7 @@ function listPicker({title, hint, items, label, detail, onPick, footer, typeahea
     oninput: e => { const q = e.target.value.toLowerCase();
       filtered = items.filter(i => label(i).toLowerCase().includes(q) || words(i).includes(q)); sel = 0; draw(); },
   });
-  body.append(el("div", {class: "filterbox"}, input), list);
+  body.append(...(note ? [note] : []), el("div", {class: "filterbox"}, input), list);
   const plain = it => trim(String(it?.isNew ? it.label : label(it))).toLowerCase().replace(/^@/, "");
   function draw() {
     list.textContent = "";

@@ -2429,6 +2429,7 @@ js/125-context-system/makeTask.js
 js/125-context-system/insertMakeLink.js
 js/125-context-system/vars-LINK_WORD_KINDS.js
 js/125-context-system/linkWordsAs.js
+js/125-context-system/lineNotes.js
 js/125-context-system/openMakeLinkPicker.js
 js/125-context-system/promptNewMake.js
 js/125-context-system/wordBeforeCaret.js

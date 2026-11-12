@@ -8581,6 +8581,27 @@ var GTD_TEST = (() => {
       } finally { for (const p of [ola, cab]) V.pages.delete(p); }
     });
   });
+  test("#368 making a project from a line shows the notes around it, in each step", async () => {
+    await withDays([[2, "- Meeting with Anna\n  - Kitchen368\n    - Tiles from Anna, white\n    - Budget 50k\n"]], async () => {
+      const day = journalPath(shiftISO(T(), -2)), kitchen = getPage(day).blocks[0].children[0];
+      const proj = join(DIRS.active, "Kitchen368.md");
+      const notes = () => document.querySelector("#modalRoot .linenotes");
+      try {
+        makeFromLine(day, kitchen, "project");
+        await settle();
+        ok(notes(), "the picker shows the notes");
+        const t = notes().textContent;
+        has(t, "From your notes"); has(t, "Meeting with Anna"); has(t, "Tiles from Anna, white"); has(t, "Budget 50k");
+        const first = document.querySelector("#modalRoot button.pick");
+        has(first.textContent, "Kitchen368", "the line's words are the first suggestion");
+        first.click();
+        await settle();
+        ok(V.pages.has(proj), "the project is made");
+        ok(notes(), "the next step shows them too");
+        has(notes().textContent, "Budget 50k");
+      } finally { closeModal(); V.pages.delete(proj); }
+    });
+  });
   test("#95 Someday/maybe is Alt+2 on the line: a project on that shelf, linked from it", async () => {
     await withDays([[2, "- Learn to sail\n"]], async () => {
       const day = journalPath(shiftISO(T(), -2)), proj = join(DIRS.someday, slugify("Learn to sail") + ".md");

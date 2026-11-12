@@ -243,6 +243,9 @@ body.solview #content{padding-bottom:14px}
 .clkinds{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 2px}
 .clmark{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}
 .clmark input{flex:1 1 180px;min-width:0}
+.linenotes ul{list-style:none;margin:4px 0 0;padding:8px 10px;border-radius:8px;background:var(--bg2);font-size:13px;color:var(--fg2);max-height:180px;overflow:auto}
+.linenotes li.this{color:var(--fg);font-weight:600}
+.linenotes li.up{color:var(--fg3)}
 .sdhead{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--fg3)}
 .sdprog{height:6px;border-radius:3px;background:var(--border);overflow:hidden}
 .sdprog i{display:block;height:100%;background:var(--accent);transition:width .2s}

@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.149.0 - 2026-11-12
+
+- States and Waiting for: when a line becomes a project, by Alt+1, the
+  line menu or Clarify, each step shows From your notes. That is the
+  lines it is written under, the line, and the lines under it, so the
+  meeting notes are not hidden behind the dialog. The line's own words
+  are still the first name offered.
+
 ## 1.148.0 - 2026-11-12
 
 - Weekly review › Clarify: under the line, chips say what it already

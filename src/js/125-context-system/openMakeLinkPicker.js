@@ -14,7 +14,7 @@ function openMakeLinkPicker(path, block, kindKey) {
     if (it.isNew && kindKey === "project") {
       /* A project is the one of the five that is more than a page: it wants an
          outcome and a next action, and that is createProjectFlow's job. */
-      createProjectFlow(it.label, p => insertMakeLink(path, block, pageRef(p)));
+      createProjectFlow(it.label, p => insertMakeLink(path, block, pageRef(p)), {notes: () => lineNotes(path, block)});
       return;
     }
     insertMakeLink(path, block, it.ref);
@@ -24,6 +24,8 @@ function openMakeLinkPicker(path, block, kindKey) {
     title: spec.label,
     hint: bare ? "“" + bare + "”" : "",
     items, typeahead: true,
+    // A project is named with the notes it comes from in view (#368).
+    note: kindKey === "project" ? lineNotes(path, block) : null,
     label: it => (it.isNew ? "Make " + (spec.noun || "page") + " “" + it.label + "”" : it.label),
     detail: it => (it.isNew ? "from this line" : it.ref),
     onPick: run,
