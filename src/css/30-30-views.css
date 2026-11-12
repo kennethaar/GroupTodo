@@ -240,6 +240,9 @@ body.solview #content{padding-bottom:14px}
 .sdduel{display:flex;flex-direction:column;gap:12px;min-width:0}
 .cllast{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;color:var(--fg2);padding:6px 10px;border-radius:8px;background:color-mix(in srgb, var(--accent) 8%, transparent)}
 .cllast svg{width:14px;height:14px;color:var(--accent)}
+.clkinds{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 2px}
+.clmark{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}
+.clmark input{flex:1 1 180px;min-width:0}
 .sdhead{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--fg3)}
 .sdprog{height:6px;border-radius:3px;background:var(--border);overflow:hidden}
 .sdprog i{display:block;height:100%;background:var(--accent);transition:width .2s}

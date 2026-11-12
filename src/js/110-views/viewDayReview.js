@@ -32,10 +32,11 @@ function viewDayReview() {
     onclick: () => clAnswer(r, {label: "Notes, with the " + asked.length + " under it",
       run: (p, line) => asked.forEach(k => clDeal(p, k))})},
     "Leave it and the " + (asked.length === 1 ? "line" : asked.length) + " under it as notes") : null;
+  const h3 = el("h3", {translate: "no", html: renderInline(bujoText(b.title))});
   const card = el("div", {class: "clcard"},
     el("div", {class: "cleye"}, dayLong(baseName(path)) +
       (r.trail.length ? " · under “" + r.trail[r.trail.length - 1] + "”" : "")),
-    el("h3", {translate: "no", html: renderInline(bujoText(b.title))}),
+    h3, ...clKinds(path, b, h3),
     kids.length ? el("ul", {class: "clkids", translate: "no"}, ...kids.slice(0, 5).map(k =>
       el("li", {html: renderInline(bujoText(k.title))})), kids.length > 5 ? el("li", {}, "…") : null) : null,
     allNotes,

@@ -8545,6 +8545,42 @@ var GTD_TEST = (() => {
       eq(content().querySelector(".clcard h3").textContent, "Meeting with Anna", "Undo that takes the notes answer back too");
     });
   });
+  test("#367 Clarify shows what a line already links, and marks picked or typed words as a person, organisation, context or project", async () => {
+    const ola = join(DIRS.people, "Ola Hansen367.md"), cab = join(DIRS.orgs, "CAB367.md");
+    await withDays([[3, "- Lunch with Ola Hansen367 from CAB367 about [[p/Kari Test367]]\n"]], async () => {
+      const d3 = journalPath(shiftISO(T(), -3)), line = () => getPage(d3).blocks[0];
+      try {
+        let c = await showClarify();
+        const kinds = () => content().querySelector(".clkinds").textContent;
+        has(kinds(), "Person"); has(kinds(), "Kari Test367");
+        const btn = t => [...content().querySelectorAll(".clcard button")].find(x => trim(x.textContent) === t);
+        // Words picked with the pointer...
+        const h3 = c.querySelector(".clcard h3"), node = [...h3.childNodes].find(n => n.nodeType === 3 && n.textContent.includes("Ola"));
+        const at = node.textContent.indexOf("Ola Hansen367"), range = document.createRange();
+        range.setStart(node, at); range.setEnd(node, at + "Ola Hansen367".length);
+        getSelection().removeAllRanges(); getSelection().addRange(range);
+        btn("Mark words…").click();
+        eq(content().querySelector(".clmark input").value, "Ola Hansen367", "the picked words");
+        btn("Person").click();
+        await settle();
+        has(line().title, "[[p/Ola Hansen367]]");
+        eq(content().querySelector(".clcard h3").textContent.includes("Ola Hansen367"), true, "the same line is still on the table");
+        has(kinds(), "Ola Hansen367");
+        // ...or typed, without a pointer.
+        btn("Mark words…").click();
+        content().querySelector(".clmark input").value = "CAB367";
+        btn("Organisation").click();
+        await settle();
+        has(line().title, "[[o/CAB367]]");
+        ok(!line().state, "marking words is not an answer");
+        btn("Mark words…").click();
+        content().querySelector(".clmark input").value = "Nowhere367";
+        btn("Context").click();
+        await settle();
+        ok(!line().title.includes("Nowhere367"), "words not on the line are not linked");
+      } finally { for (const p of [ola, cab]) V.pages.delete(p); }
+    });
+  });
   test("#95 Someday/maybe is Alt+2 on the line: a project on that shelf, linked from it", async () => {
     await withDays([[2, "- Learn to sail\n"]], async () => {
       const day = journalPath(shiftISO(T(), -2)), proj = join(DIRS.someday, slugify("Learn to sail") + ".md");

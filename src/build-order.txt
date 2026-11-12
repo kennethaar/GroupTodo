@@ -1919,6 +1919,8 @@ js/110-views/clAnswer.js
 js/110-views/clUndo.js
 js/110-views/clPaint.js
 js/110-views/viewDayReview.js
+js/110-views/vars-CL_KIND_LABEL.js
+js/110-views/clKinds.js
 js/110-views/vars-dayLong.js
 js/110-views/addIntention.js
 js/110-views/reflectLog.js
@@ -2425,6 +2427,8 @@ js/125-context-system/bareLineName.js
 js/125-context-system/projectLineToTask.js
 js/125-context-system/makeTask.js
 js/125-context-system/insertMakeLink.js
+js/125-context-system/vars-LINK_WORD_KINDS.js
+js/125-context-system/linkWordsAs.js
 js/125-context-system/openMakeLinkPicker.js
 js/125-context-system/promptNewMake.js
 js/125-context-system/wordBeforeCaret.js

@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.148.0 - 2026-11-12
+
+- Weekly review › Clarify: under the line, chips say what it already
+  names, such as Person: Kari or Project: Kitchen. Mark words… turns words
+  on the line into a person, organisation, context or project link where
+  they stand. Select the words first, or type them. The line stays on the
+  table for its answer.
+
 ## 1.147.0 - 2026-11-12
 
 - Weekly review › Clarify: a line with lines under it, such as meeting
