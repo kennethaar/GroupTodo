@@ -1276,6 +1276,44 @@ var GTD_TEST = (() => {
     await s.save();
     ok(!/Paint/.test(s.disk()), "the second delete came back");
   });
+  test("#364 a folder that stops answering opens a dialog and saves the log to Downloads; a copy shows its progress", async () => {
+    const saved = [], real = window.downloadText;
+    window.downloadText = (name, text) => saved.push([name, text]);
+    const rec = {name: V.space, backend: {kind: "fs"}, offline: null};
+    const btn = t => [...document.querySelectorAll("#modalRoot button")].find(x => trim(x.textContent) === t);
+    try {
+      notify("Something the user was told 364.");
+      reportStorageTrouble(rec, Object.assign(new Error("The folder went away"), {name: "NotFoundError"}));
+      await settle();
+      const text = $("#modalRoot").textContent;
+      has(text, "stopped answering");
+      has(text, "Nothing is lost");
+      ok(btn("Try the folder again") && btn("Later"), "two ways on");
+      eq(saved.length, 1, "the log went to Downloads by itself");
+      ok(/^grouptodo-log-.+\.txt$/.test(saved[0][0]), saved[0][0]);
+      has(text, saved[0][0], "the dialog says where the log is");
+      has(saved[0][1], "Something the user was told 364.", "the log has what the user was told");
+      has(saved[0][1], "The folder went away", "and the error");
+      btn("Later").click();
+      reportStorageTrouble(rec, Object.assign(new Error("The folder went away"), {name: "NotFoundError"}));
+      eq(saved.length, 1, "the same trouble is said once");
+      closeAll();
+
+      const job = openCopyProgress("Vault 364", {skipped: 12});
+      jobsSaving(142, 190);
+      has($("#modalRoot").textContent, "142 of 190");
+      has($("#modalRoot").textContent, "12 already in the folder");
+      jobsSaved("Saved.");
+      has($("#modalRoot").textContent, "Done:");
+      ok(btn("Save log") && btn("Done"), "Save log and Done at the end");
+      btn("Save log").click();
+      eq(saved.length, 2, "Save log saves it");
+      ok(!JOBS.has(job), "the job is over");
+    } finally {
+      window.downloadText = real;
+      closeAll();
+    }
+  });
   test("#340 a file that already holds the page is not written, and a save cut off keeps what went", async () => {
     const realIdb = Backends.idb;
     Backends.idb = ns => Backends.memory("Mirror|" + ns);

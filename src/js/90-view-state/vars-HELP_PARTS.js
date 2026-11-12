@@ -1067,6 +1067,8 @@ const HELP = {
     keys: [["Ctrl+S", "Save now"]],
     more: ["Every change is written to disk at once. A line you are typing is saved when you leave it.",
       "NOT on disk means files wait in this browser until the folder is back. Do not close yet.",
+      "If the folder stops answering, a box says so, and a log of what happened is saved to your downloads.",
+      "Copying pages into a folder shows how far it has come, then how many projects and tasks are there.",
       "Chrome on Android opens a folder too. It may ask to be let in again each time.",
       "The vault file also carries the pictures pages link to.",
       "Pages missing, or slow to open? More, then Check the folder, shows what the app cannot read and how long the last read took.",

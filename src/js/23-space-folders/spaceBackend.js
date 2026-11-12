@@ -4,7 +4,7 @@ async function spaceBackend(sp) {
   if (sp.kind !== "fs") LOST_FOLDER.delete(sp.name);   // no folder asked for, none missing
   if (sp.kind === "http" && sp.server) {
     try { const b = Backends.http(sp.server); await b.ping(); return b; }
-    catch (e) { notify(`"${sp.name}" server unreachable, using browser storage.`, "warn"); }
+    catch (e) { appLog("storage: server for " + sp.name + " unreachable: " + (e && e.message || e)); notify(`"${sp.name}" server unreachable, using browser storage.`, "warn"); }
   }
   if (sp.kind === "fs") {
     try {
@@ -27,6 +27,8 @@ async function spaceBackend(sp) {
        folder is not remembered, and browser storage is not it. Without a
        word the area just looks empty, as if its files were gone (#164). */
     if (!PENDING_GRANT.has(sp.name)) LOST_FOLDER.add(sp.name);
+    appLog("storage: " + sp.name + " has a folder but " + (PENDING_GRANT.has(sp.name) ? "needs permission again" : "no folder handle") +
+      "; using browser storage until then");
   }
   const ns = sp.legacyFlat ? "" : sp.name;
   return CAP.idb ? Backends.idb(ns) : CAP.ls ? Backends.ls(ns) : Backends.memory(ns);

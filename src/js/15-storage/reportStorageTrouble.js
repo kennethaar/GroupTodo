@@ -3,6 +3,8 @@ function reportStorageTrouble(rec, e) {
   if (rec.offline === key) return;        // the same trouble, already said once
   rec.offline = key;
   const label = spaceLabel(rec.name);
+  appLog("storage: " + label + " (" + ((rec.backend && rec.backend.kind) || "?") + ") failed: " +
+    ((e && e.name) || "Error") + " " + ((e && e.message) || e));
   if (permissionLapsed(e) && rec.backend && rec.backend.kind === "fs" && rec.backend.handle) {
     PENDING_GRANT.set(rec.name, rec.backend.handle);
     notify(label + " needs permission to its folder again. Nothing is lost - the work is " +
@@ -18,7 +20,5 @@ function reportStorageTrouble(rec, e) {
            "on its old shelf on another device.", "warn");
     return;
   }
-  notify("Cannot reach " + label + "'s storage - " + storageReason(e) + ". Saved on this " +
-         "device and it will go up when the connection is back.", "warn",
-         {label: "Try now", run: saveNow});
+  openStorageTrouble(rec, e);
 }

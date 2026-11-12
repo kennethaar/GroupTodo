@@ -43,6 +43,8 @@ js/00-bootstrap/applyRefocus.js
 js/00-bootstrap/vars-idSel.js
 js/00-bootstrap/notify.js
 js/00-bootstrap/vars-JOBS.js
+js/00-bootstrap/vars-APP_LOG.js
+js/00-bootstrap/appLog.js
 js/00-bootstrap/startJob.js
 js/00-bootstrap/trackSave.js
 js/00-bootstrap/jobsSaving.js
@@ -135,6 +137,8 @@ js/15-storage/vars-spaceLabel.js
 js/15-storage/storageReason.js
 js/15-storage/vars-permissionLapsed.js
 js/15-storage/reportStorageTrouble.js
+js/15-storage/openStorageTrouble.js
+js/15-storage/saveAppLog.js
 js/15-storage/vars-flushTimer.js
 js/15-storage/scheduleFlush.js
 js/15-storage/vars-retryWait.js
@@ -262,6 +266,7 @@ js/23-space-folders/storedHandle.js
 js/23-space-folders/folderConflict.js
 js/23-space-folders/conflictMessage.js
 js/23-space-folders/askCarryPages.js
+js/23-space-folders/openCopyProgress.js
 js/23-space-folders/assignSpaceFolder.js
 js/23-space-folders/vars-areaNameChosen.js
 js/23-space-folders/storeAreaName.js

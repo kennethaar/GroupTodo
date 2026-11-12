@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.146.0 - 2026-11-12
+
+- Vault and sync: copying pages into a folder shows a bar, how many are
+  done, and how many the folder already had and kept. At the end it says
+  how many projects and tasks are there, with Save log. If the folder
+  stops answering, a box says so: your work is in this browser for now
+  and nothing is lost. A log of what happened is saved to your downloads
+  by itself, and Try the folder again tries at once.
+
 ## 1.145.2 - 2026-11-12
 
 - Waiting for › List: Ask for an update has one main button, Write the

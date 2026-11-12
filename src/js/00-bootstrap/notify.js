@@ -1,4 +1,5 @@
 function notify(msg, level="info", action=null) {
+  appLog(level + ": " + msg);
   if (NOTIFY_MUTE && level === "info" && !action) return;
   const t = el("div", {class:"toast " + (level==="warn"?"warn":level==="error"?"err":"")},
     el("span", {}, msg),

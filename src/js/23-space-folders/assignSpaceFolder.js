@@ -43,6 +43,7 @@ async function assignSpaceFolder(name, {join = false, invited = false, returning
   PREF.set("pagecount:" + name, "0");               // a folder chosen on purpose is never "the old one, emptied"
   await readInto(rec);                              // what the folder already has wins
   const existing = rec.pages.size > 0;
+  appLog("folder: " + name + " picked “" + handle.name + "”, " + rec.pages.size + " pages in it" + (join ? " (welcome screen)" : ""));
 
   /* Whatever the space holds in this browser has to come with it, or moving
      a space into a folder would look exactly like losing everything in it.
@@ -96,9 +97,9 @@ async function assignSpaceFolder(name, {join = false, invited = false, returning
   if (join) { if (joined) sp.joined = todayISO(); else delete sp.joined; }
   await Spaces.save();
 
-  let moved = 0;
+  let moved = 0, skipped = 0;
   for (const [path, page] of carried) {
-    if (rec.pages.has(path)) continue;
+    if (rec.pages.has(path)) { skipped++; continue; }
     rec.pages.set(path, page);
     rec.dirty.add(path);
     moved++;
@@ -112,12 +113,16 @@ async function assignSpaceFolder(name, {join = false, invited = false, returning
     scanVerbs();
   }
   storeAreaName(name);
+  appLog("folder: " + name + " copies " + moved + " pages in, " + skipped + " already there");
+  // A copy of more than a few pages shows its progress and what arrived (#364).
+  const copying = moved > 5 ? openCopyProgress(handle.name, {skipped, name}) : null;
   await flush();
+  if (copying && JOBS.has(copying)) copying.finish("Saved.");
   if (joined && existing)
     notify("Opened \u201C" + handle.name + "\u201D as it is: " + rec.pages.size + " pages, nothing of yours added.");
   else if (same)
     notify(name + " is back on \u201C" + handle.name + "\u201D.");
-  else
+  else if (!copying)
     notify(name + " now lives in \u201C" + handle.name + "\u201D" +
            (moved ? ", with " + moved + " page" + (moved === 1 ? "" : "s") + " moved in." : "."));
   render();
