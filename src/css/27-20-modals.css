@@ -27,6 +27,24 @@
 }
 .modal header h2{margin:0;font-size:15px;font-weight:650}
 .modal header .hint{font-size:11.5px;color:var(--fg3);font-family:var(--mono)}
+.modal header .mtitle{min-width:0}
+.modal header .msub{font-size:12.5px;color:var(--fg3);margin-top:2px;overflow-wrap:anywhere}
+.modal header .msub .textbtn{font-size:12.5px;margin-left:6px}
+.modal header select{width:auto;max-width:45%}
+/* The ask note (#372): the message, and under it what goes with it unseen. */
+.asknote .msgrow{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:5px}
+.asknote .msgrow label{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--fg3)}
+.asknote .field>label input{display:block;width:100%;margin-top:5px;color:var(--fg);font-size:13.5px;text-transform:none;letter-spacing:0}
+.asknote .msgrow small{color:var(--fg3);font-size:11.5px}
+.asknote textarea{width:100%;font-size:13px;line-height:1.5;border-bottom-left-radius:0;border-bottom-right-radius:0}
+.asktrack{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:-1px;padding:6px 10px;font-size:12px;color:var(--fg3);
+  border:1px solid var(--border2);border-top-style:dashed;border-radius:0 0 var(--radius-sm) var(--radius-sm);background:var(--bg2)}
+.asktrack svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.asktrack code{font:12px var(--mono);color:var(--fg2);overflow-wrap:anywhere}
+.asktrack .auto{margin-left:auto}
+.askkeep{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--fg2);cursor:pointer}
+.askkeep input{width:auto;margin:0}
+.asktrack .ico{display:inline-flex}
 .modal .body{overflow-y:auto;padding:10px 0;flex:1}
 .qrbox{text-align:center}
 .qrbox .qrwhat{font-weight:600;overflow-wrap:anywhere}

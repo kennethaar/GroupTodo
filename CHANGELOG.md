@@ -5,6 +5,20 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.150.0 - 2026-11-12
+
+- Waiting for › List: one task per row, with how long it has waited. Paste
+  a reply and Export sit by the title. One choice shows All, Overdue, Not
+  asked yet or a stage such as Ordered, each with its count. Each person has
+  a heading with how many, and tasks with nobody named are under Unassigned
+  (#372).
+- Ask for an update: the note reads as the message. Who it goes to is under
+  the title, with Edit. The language is a choice beside it. The subject has
+  its own field. The tracking IDs are kept out of the message and added when
+  it goes. Change the message and you can tick Update the task text with my
+  edits. Copy text, Send in Teams and Open in Email are the three ways to
+  send it (#372).
+
 ## 1.149.3 - 2026-11-12
 
 - Projects › List: one list, one project per row, on a wide screen too.

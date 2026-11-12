@@ -215,14 +215,15 @@ function openAskForUpdate(name, only = null, keep = null) {
        and your own questions wait on them, when the note goes. A note closed
        unsent leaves them as they were. What you reworded in the note can go
        back to the tasks, once you have said yes to it. */
-    const sentOf = (items, lines) => (edited, then) => {
+    // take: the note's Update the task text box was ticked (#372).
+    const sentOf = (items, lines) => (edited, then, take) => {
       for (const a of lines) inSpace(a.space, () => {
         setBlockProp(a.block, ASKED_PROP, me + " " + nowStamp());
         touch(a.path);
       });
       waitOnAsked(lines, name);
+      if (take) offerAskWording(name, items, lines, edited, then, true);
       render();
-      offerAskWording(name, items, lines, edited, then);
     };
     const made = sends.map(([items, lines]) => ({items, sent: sentOf(items, lines), file: null, sheetOf: null}));
     closeModal();

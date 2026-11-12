@@ -1358,6 +1358,8 @@ js/145-horizons-view/vars-askLineTitle.js
 js/145-horizons-view/askItemMarkdown.js
 js/145-horizons-view/askItemsMarkdown.js
 js/145-horizons-view/askNoteLines.js
+js/145-horizons-view/askNoteSplit.js
+js/145-horizons-view/askNoteJoin.js
 js/145-horizons-view/askItemsEdited.js
 js/145-horizons-view/vars-fileWhen.js
 js/145-horizons-view/askNote.js

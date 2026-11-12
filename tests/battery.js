@@ -5884,6 +5884,96 @@ var GTD_TEST = (() => {
       setEmailOf(whoAmI(), V.space, mail);
     }
   });
+  test("#372 Waiting for › List: Paste a reply and Export in the heading, All/Overdue as one choice, one column, Unassigned with a count, and how long each has waited", async () => {
+    const path = scratchProject("wait 372", [["WAIT", "Quote from [[p/Testwait Lund]]"], ["WAIT", "The signed permit 372"]]);
+    const [quote, permit] = getPage(path).blocks;
+    setDue(permit, shiftISO(todayISO(), -3));
+    setBlockProp(quote, "Added", shiftISO(todayISO(), -29));
+    clearMemo();
+    const was = PREF.get("waiting.show", "");
+    const c = () => $("#content");
+    const segs = () => [...c().querySelectorAll(".fbar .seg button")];
+    try {
+      PREF.set("waiting.show", "");
+      go("waiting", {sub: "list", waitWho: null});
+      await settle();
+      ok(!c().querySelector(".wrap").classList.contains("lwide"), "one row per task, one column");
+      const head = [...c().querySelectorAll(".vhead-r button")].map(b => trim(b.textContent));
+      ok(head.includes("Paste a reply") && head.includes("Export"), "the heading: " + head);
+      ok(![...c().querySelectorAll(".fbar button")].some(b => /^(Import a reply|As text|Paste a reply)$/.test(trim(b.textContent))),
+        "the reply and export actions left the filter row");
+      eq(segs().slice(0, 2).map(b => b.firstChild.textContent), ["All", "Overdue"]);
+      eq(segs()[0].getAttribute("aria-pressed"), "true");
+      const groups = [...c().querySelectorAll(".group")].map(g => trim(g.textContent));
+      ok(groups.some(g => /^Unassigned\s*\(\d+\)/.test(g)), "Unassigned, with a count: " + groups);
+      ok(groups.some(g => /^TL\s*Testwait Lund\s*\(1\)/.test(g)), "the person, with a count: " + groups);
+      ok(!c().textContent.includes("Nobody named"), "Nobody named went");
+      const row = t => [...c().querySelectorAll(".task")].find(r => r.textContent.includes(t));
+      eq(row("Quote from")?.querySelector(".t-age")?.textContent, "29d");
+      segs()[1].click();
+      await settle();
+      eq(segs()[1].getAttribute("aria-pressed"), "true");
+      ok(row("The signed permit 372") && !row("Quote from"), "Overdue shows only what is late");
+    } finally {
+      PREF.set("waiting.show", was);
+      go("waiting", {sub: "list", waitWho: null});
+    }
+  });
+  test("#372 Ask note: To with Edit, language in the heading, the subject apart, the tracking ID kept out of the message, and your edits go to the task when ticked", async () => {
+    const path = scratchProject("ask 372", [["WAIT", "Drawings from [[p/Lars Haugen]]"]]);
+    const one = getPage(path).blocks[0];
+    const mail = emailOf(whoAmI(), V.space), lars = emailOf("Lars Haugen", V.space), lang = PREF.get("askLang", "");
+    const btn = (t, sel = "#modalRoot button") => [...document.querySelectorAll(sel)].find(x => trim(x.textContent) === t);
+    const copied = [], realCopy = window.copyText;
+    window.copyText = text => { copied.push(text); };
+    try {
+      PREF.set("askLang", "en");
+      setEmailOf(whoAmI(), V.space, "me@example.com");
+      setEmailOf("Lars Haugen", V.space, "lars@example.com");
+      openAskForUpdate("Lars Haugen", one);
+      await settle();
+      btn("Write the message").click();
+      await settle();
+      const root = $("#modalRoot"), header = root.querySelector("header");
+      eq(header.querySelector("h2").textContent, "Ask Lars Haugen for an update");
+      has(header.textContent, "To: lars@example.com");
+      const to = root.querySelector("input[type=email]");
+      ok(to && to.closest("[hidden]"), "the address is not a field until you press Edit");
+      btn("Edit").click();
+      ok(!to.closest("[hidden]"), "Edit shows the address field");
+      const lang = header.querySelector("select");
+      ok(lang, "the language is a choice in the heading");
+      eq(lang.value, "en");
+      ok([...lang.options].some(o => o.textContent === "Personalize text"), "Personalize text is one of them");
+      const subject = [...root.querySelectorAll("label")].find(l => trim(l.textContent).startsWith("Subject"))?.querySelector("input");
+      ok(subject && trim(subject.value), "the subject is its own field");
+      const box = root.querySelector("textarea");
+      ok(!/Reference/.test(box.value) && !box.value.startsWith(subject.value), "the message is only the message: " + box.value);
+      const ref = V.space + "-" + blockProp(one, "id");
+      has(root.querySelector(".asktrack").textContent, ref, "the tracking ID is shown under the message");
+      eq([...root.querySelectorAll(".foot button")].map(b => trim(b.textContent)),
+        ["◂ Back", "Copy text", "Send in Teams", "Open in Email"]);
+      ok(!/Update the task text/.test(root.textContent), "nothing to update until you edit");
+      box.value = box.value.replace("Drawings", "Final drawings");
+      box.dispatchEvent(new Event("input"));
+      const keep = [...root.querySelectorAll("label")].find(l => /Update the task text with my edits/.test(l.textContent))?.querySelector("input[type=checkbox]");
+      ok(keep && keep.checked, "an edit offers, ticked, to update the task");
+      btn("Copy text").click();
+      await settle();
+      has(copied[0], subject.value, "the subject goes with the copy");
+      has(copied[0], ASK_NOTE.en.reference + " " + ref, "the reference goes with the copy");
+      eq(askNoteJoin(askNoteSplit(copied[0]).text, askNoteSplit(copied[0]).refs), copied[0], "taken out and put back, the same note");
+      has(copied[0], "Final drawings");
+      has(one.title, "Final drawings", "the task took the edit");
+      ok(!/Use your wording in the tasks/.test($("#modalRoot").textContent), "no second dialog to ask again");
+    } finally {
+      window.copyText = realCopy;
+      closeAll();
+      PREF.set("askLang", lang);
+      setEmailOf(whoAmI(), V.space, mail);
+      setEmailOf("Lars Haugen", V.space, lars);
+    }
+  });
   test("#161 Ask for an update can leave the projects unnamed", async () => {
     const path = scratchProject("secret depot plan", [["TODO", "Ask [[p/Lars Haugen]] which crane goes first"]]);
     const block = getPage(path).blocks[0], title = pageTitle(path);

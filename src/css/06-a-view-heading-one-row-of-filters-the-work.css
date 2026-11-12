@@ -26,6 +26,13 @@
   font-size:13px;color:var(--fg3)}
 .fchip:hover{color:var(--fg)}
 .fchip[aria-pressed="true"]{background:var(--fg);border-color:var(--fg);color:var(--bg2)}
+/* One choice of several (#372): the chips joined in one frame, the chosen one raised. */
+.seg{display:inline-flex;flex-wrap:wrap;gap:2px;padding:2px;border:1px solid var(--border);border-radius:10px;background:var(--bg2)}
+.seg .fchip{border:0;border-radius:8px;background:none;padding:3px 10px;min-height:26px}
+.seg .fchip small{margin-left:5px}
+.seg .fchip[aria-pressed="true"]{background:var(--bg);color:var(--fg);box-shadow:0 0 0 1px var(--border)}
+.wsearch{flex:1 1 260px}
+.fbar input[type=search].wsearch{max-width:none}
 /* An on/off setting (#321): a switch, not a chip, so it reads as staying on. */
 .switch{display:inline-flex;align-items:center;gap:7px;border:0;background:none;padding:4px 2px;
   font-size:13px;color:var(--fg2);cursor:pointer}
@@ -164,6 +171,12 @@
 .group .plain,.group .sp{text-transform:none;letter-spacing:0}
 .group .plain{font-weight:400}
 .group .textbtn{text-transform:none;letter-spacing:0;font-weight:600;margin-left:auto}
+/* Waiting for's person heading (#372): the name as a name, a rule under it. */
+.wgroup{margin-top:22px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.wgroup .wname{font-size:14px;font-weight:600;color:var(--fg)}
+.wgroup .avatar.nobody{width:24px;height:24px;background:var(--bg2);border:1px solid var(--border);color:var(--fg2);font-size:12px}
+.wgroup .avatar.nobody::before{content:"\2014"}
+.t-age{font:12px var(--mono);color:var(--fg3);min-width:3ch;text-align:right}
 .sectog{font:inherit;color:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer}
 .sectog svg{width:11px;height:11px;vertical-align:-1px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .secbul{padding:0 2px;font-size:15px;line-height:1;color:var(--fg3);cursor:zoom-in}

@@ -4,7 +4,11 @@ function taskRow(a, opts) {
   // An action shown from another space must be edited IN that space, or the
   // change would be written through the active space's backend.
   const title = el("div", {class: "t-title", html: estHtml(a.title) + renderInline(titleForLine(a.title))});
-  let chips = chipsFor(a, jr ? opts : {}).filter(c => !(c.classList.contains("asg") && pillInTitle(title, c, a.assignee)));
+  /* Waiting for lists the row under who has it, so a chip saying the same
+     again is noise there (#372); how long it has waited is said instead. */
+  const waitUnder = opts && opts.waiting;
+  let chips = chipsFor(a, jr ? opts : {}).filter(c => !(c.classList.contains("asg") &&
+    (pillInTitle(title, c, a.assignee) || (waitUnder && a.assignee && samePerson(a.assignee, waitUnder)))));
   /* The words are shown as written, @context and all, and that says the
      context (#315). A chip is drawn only when the words do not say it -- a
      context from the line above -- and never under a context's own header.
@@ -62,6 +66,8 @@ function taskRow(a, opts) {
     }, () => stateMenu(a)));
   const menu = el("button", {class: "iconbtn t-menu", title: "More: the states, refile, open the page", "aria-label": "More",
     onclick: e => { e.stopPropagation(); taskRowMenu(a); }}, "\u22EF");
+  if (waitUnder && a.age > 0)
+    info.push(el("span", {class: "t-age", title: "Waiting " + a.age + (a.age === 1 ? " day" : " days")}, a.age + "d"));
   const meta = pills.length || info.length ? el("div", {class: "t-meta"},
     el("span", {class: "t-pills"}, ...pills),
     el("span", {class: "t-info"}, ...info)) : null;

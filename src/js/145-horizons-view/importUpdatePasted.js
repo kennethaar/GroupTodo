@@ -71,5 +71,8 @@ function importUpdatePasted() {
       }}, "Read it"),
     ],
   });
+  // A reply that came back as a file, from the page's old Import a reply (#372).
+  said.after(el("button", {class: "textbtn", style: "font-size:12.5px;margin-top:6px",
+    onclick: () => { closeModal(); importUpdateFromFile(); }}, "Import a reply file instead"));
   setTimeout(() => box.focus(), 50);
 }

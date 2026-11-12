@@ -1,7 +1,9 @@
 /* After the note has gone: each reworded line, what the task says and what it
    would say, ticked; nothing is written until you press Update. then() is
    what comes after, the next note when there are two. */
-function offerAskWording(name, items, lines, edited, then = null) {
+/* direct: you already said yes in the note (#372), so every change is made
+   at once, with Undo, and the note stays open for the next way to send it. */
+function offerAskWording(name, items, lines, edited, then = null, direct = false) {
   const changes = [];
   edited.forEach((it, i) => {
     const a = lines[i];
@@ -17,8 +19,8 @@ function offerAskWording(name, items, lines, edited, then = null) {
     if (next && trim(next) !== trim(a.block.title)) changes.push({a, was: a.block.title, next, take: true});
   });
   if (!changes.length) return;
-  const done = () => { closeModal(); if (then) then(); };
-  const go = el("button", {class: "btn primary", onclick: () => {
+  const done = () => { if (direct) return; closeModal(); if (then) then(); };
+  const apply = () => {
     const take = changes.filter(c => c.take);
     if (!take.length) { done(); return; }
     const snaps = [];
@@ -44,7 +46,9 @@ function offerAskWording(name, items, lines, edited, then = null) {
       "info", {label: "Undo", run: back});
     render();
     done();
-  }});
+  };
+  if (direct) { apply(); return; }
+  const go = el("button", {class: "btn primary", onclick: apply});
   const label = () => { const n = changes.filter(c => c.take).length; go.textContent = n ? "Update " + n : "Update none"; };
   const list = el("div", {style: "max-height:46vh;overflow:auto"},
     ...changes.map(c => {

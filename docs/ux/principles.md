@@ -117,6 +117,14 @@ English; a chip beside the link said everything twice. *Apply:* capture,
 the outline and paste. Example text must show input people should really
 type. *Source:* UX-007, revised by the user after v1.112.2.
 
+**P18. What the machine needs stays out of what you edit.** Text you
+write or reword shows only words meant for people. References, ids and
+other text the app reads back are shown read-only next to it, said to be
+added automatically, and put back when it goes. *Why:* the ask note mixed
+`Reference (leave as is): Work-…` lines into the message, where one stray
+edit would cut the reply off from its task. *Apply:* any message, export or
+template that carries ids. *Source:* #372.
+
 **P14. Capture views keep the order you wrote; doing views group.** The
 Journal shows lines as written, in the order written, and never groups
 by context, on any screen. Next is for doing, so it groups by context, one
