@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.154.0 - 2026-11-12
+
+- Weekly review › Clarify: the card says plainly what the line is already.
+  Every link and #tag has its kind, a responsibility, note or plain page
+  too. A line that is only links or tags says it is on file already. A
+  person, organisation or project written without a link is shown with Link
+  it, which links it to the page you have, in any case (#379).
+
 ## 1.153.2 - 2026-11-12
 
 - Weekly review › Projects: a card that got every question answered after it

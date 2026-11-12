@@ -1926,6 +1926,8 @@ js/110-views/clUndo.js
 js/110-views/clPaint.js
 js/110-views/viewDayReview.js
 js/110-views/vars-CL_KIND_LABEL.js
+js/110-views/clKindOf.js
+js/110-views/clLooseNames.js
 js/110-views/clKinds.js
 js/110-views/vars-dayLong.js
 js/110-views/addIntention.js

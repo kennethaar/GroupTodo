@@ -2,7 +2,9 @@
    "Lunch with [[p/Ola Hansen]] from CAB". Words inside a link, or not on the
    line at all, are left alone and false comes back. A context replaces the
    line's other context, as a line has one. */
-function linkWordsAs(path, block, words, kind) {
+/* known: the page's own ref, when the words name a page already there in
+   another case or spelling (#379), so no second page is made for it. */
+function linkWordsAs(path, block, words, kind, known = null) {
   const text = trim(words || ""), pfx = LINK_WORD_KINDS[kind];
   if (!text || !pfx) return false;
   const title = block.title || "";
@@ -15,7 +17,7 @@ function linkWordsAs(path, block, words, kind) {
   if (at < 0) return false;
   const slug = slugify(text);
   const there = findExistingPage(pfx + "/" + slug);
-  const ref = there && linkKindOf(pageRef(there)) === kind ? pageRef(there) : pfx + "/" + slug;
+  const ref = known || (there && linkKindOf(pageRef(there)) === kind ? pageRef(there) : pfx + "/" + slug);
   const link = "[[" + ref + (slug === text || pfx === "c" ? "" : "][" + text) + "]]";
   let t = title.slice(0, at) + "\u0000" + title.slice(at + text.length);
   if (pfx === "c") t = t.replace(/\[\[c\/[^\]]+\]\]/g, "");

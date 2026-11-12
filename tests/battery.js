@@ -8828,6 +8828,33 @@ var GTD_TEST = (() => {
       } finally { for (const p of [ola, cab]) V.pages.delete(p); }
     });
   });
+  test("#379 Clarify says plainly what a line already is: a tag or page too, a line that is only a link, a known name not linked yet", async () => {
+    const ola = join(DIRS.people, "Ola Hansen379.md");
+    await withDays([[3, "- [[p/Kari Test379]]\n- Read about #heatpumps379 in [[Heat pumps379]] with ola hansen379\n"]], async () => {
+      const d3 = journalPath(shiftISO(T(), -3));
+      try {
+        putPage(ola, parsePage(""), {silent: true});
+        clearMemo();
+        let c = await showClarify();
+        const card = () => content().querySelector(".clcard");
+        const already = () => card().querySelector(".clalready");
+        ok(already(), "a line that is only a link does not say it is on file already");
+        has(already().textContent, "person"); has(already().textContent, "Kari Test379");
+        c.querySelectorAll(".clans")[6].click();
+        c = await showClarify();
+        ok(!already(), "a line with words of its own is not only a link");
+        const kinds = card().querySelector(".clkinds").textContent;
+        has(kinds, "Tag: #heatpumps379"); has(kinds, "Page: Heat pumps379");
+        const loose = card().querySelector(".clloose");
+        ok(loose, "a known person written without a link is not pointed out");
+        has(loose.textContent, "ola hansen379");
+        [...loose.querySelectorAll("button")].find(x => trim(x.textContent) === "Link it").click();
+        await settle();
+        ok(/\[\[p\/Ola Hansen379(\]\[ola hansen379)?\]\]/.test(getPage(d3).blocks[1].title), "Link it does not link the words to their page: " + getPage(d3).blocks[1].title);
+        ok(!getPage(d3).blocks[1].state, "linking is not an answer");
+      } finally { V.pages.delete(ola); }
+    });
+  });
   test("#368 making a project from a line shows the notes around it, in each step", async () => {
     await withDays([[2, "- Meeting with Anna\n  - Kitchen368\n    - Tiles from Anna, white\n    - Budget 50k\n"]], async () => {
       const day = journalPath(shiftISO(T(), -2)), kitchen = getPage(day).blocks[0].children[0];
