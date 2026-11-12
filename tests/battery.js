@@ -8250,14 +8250,14 @@ var GTD_TEST = (() => {
       if (wide) ok(wk.getBoundingClientRect().width > 820, "the week is wider than the reading column, got " + wk.getBoundingClientRect().width);
       const txt = content().querySelector(".wkgrid .wktext");
       if (wide && txt) eq(getComputedStyle(txt).webkitLineClamp, "8", "a task in a day wraps rather than ends in ...");
-      for (const [view, sub] of [["waiting", "list"], ["people", "list"], ["orgs", "list"]]) {
+      for (const [view, sub] of [["people", "list"], ["orgs", "list"]]) {
         go(view, {sub});
         await settle();
         ok(content().querySelector(".wrap").classList.contains("lwide"), view + " list spreads on a wide screen");
       }
       // Next is read top down, its most urgent context first (#315), so it keeps one column as pages do.
-      // Projects too: one project per row, one list (#371).
-      for (const view of ["pages", "next", "projects"]) {
+      // Projects too: one project per row, one list (#371). Waiting for: one task per row (#372).
+      for (const view of ["pages", "next", "projects", "waiting"]) {
         go(view, {sub: "list", ctxFilter: null});
         await settle();
         ok(!content().querySelector(".wrap.lwide"), view + " keeps its line length");
