@@ -1,0 +1,5 @@
+/* A ``` fence under a line (#374): a pasted mockup keeps its shape. */
+.outline .blk > .bodyline.codeline{font-family:var(--mono,ui-monospace,monospace);font-size:12.5px;line-height:1.35;
+  white-space:pre;overflow-x:auto;color:var(--fg);background:color-mix(in srgb,var(--fg) 4%,transparent);padding:0 8px}
+.outline .blk > .bodyline.codefence{font-family:var(--mono,ui-monospace,monospace);font-size:11px;color:var(--fg3);
+  white-space:pre;background:color-mix(in srgb,var(--fg) 4%,transparent);padding:0 8px}

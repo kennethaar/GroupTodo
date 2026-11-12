@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.152.0 - 2026-11-12
+
+- Keys on a line: a sketch drawn in characters, pasted under a line after
+  Shift+Enter, keeps its lines and spaces in a fixed-width font. The file
+  holds it between ``` lines, so it reads the same in any editor (#374).
+
 ## 1.151.1 - 2026-11-12
 
 - Waiting for › List: a task's panel has Paste a reply beside Ask for an

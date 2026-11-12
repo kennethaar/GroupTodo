@@ -6,12 +6,26 @@ function parsePage(text) {
   const stack = [root];
   let cur = null, curIndent = 0, seenBullet = false;
   let drawer = null;            // the :LOGBOOK: or other drawer being read, if any
+  let fence = false;            // inside a ``` fence in the body: lines kept as written (#374)
 
   for (const line of lines) {
+    /* In a fence, a dash or a name:: is part of what was pasted, not a bullet
+       or a property. A line out at the bullet's own indent ends it anyway, so
+       a stray ``` in an old page cannot swallow the bullets after it. */
+    if (fence && cur) {
+      const lead = /^\s*/.exec(line)[0].length;
+      if (trim(line) === "" || lead >= curIndent + 2) {
+        cur.body.push(trim(line) === "" ? "" : line.slice(curIndent + 2).replace(/\s+$/, ""));
+        if (/^\s*```/.test(line)) fence = false;
+        continue;
+      }
+      fence = false;
+    }
     const bm = BULLET_RE.exec(line);
     if (bm) {
       seenBullet = true;
       drawer = null;            // a drawer left open ends where the next bullet starts
+      fence = false;
       const level = indentLevel(bm[1]);
       const [state, title] = splitState(bm[2]);
       const blk = newBlock({state, title: trim(title)}, false);
@@ -50,6 +64,11 @@ function parsePage(text) {
       continue;
     }
     if (trim(line) === "") { if (cur.body.length) cur.body.push(""); continue; }
+    if (/^\s*```/.test(line)) {
+      fence = true;
+      cur.body.push(line.slice(Math.min(/^\s*/.exec(line)[0].length, curIndent + 2)).replace(/\s+$/, ""));
+      continue;
+    }
     const pm = PROP_RE.exec(trim(line));
     if (pm) { cur.props[pm[1]] = trim(pm[2]); continue; }
     const lead = /^\s*/.exec(line)[0].length;

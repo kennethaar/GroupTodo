@@ -8,10 +8,14 @@
    Enter keeps you in the body rather than cutting a bullet out of half a
    paragraph, and backspacing an empty one away lands you on the line above. */
 function bodyLineEl(path, b, i) {
+  // In a ``` fence a line is drawn as written, in the monospace font (#374).
+  const code = fenceRows(b)[i] || 0;
+  const draw = () => { if (code) txt.textContent = b.body[i]; else { txt.innerHTML = renderInline(b.body[i]); resolveAssets(txt); } };
   const txt = el("div", {
-    class: "bodyline" + (i < tableRows(b) ? " tblrow" : ""), contenteditable: "true", spellcheck: "false",
-    data: {bi: String(i)}, translate: "no", html: renderInline(b.body[i]),
+    class: "bodyline" + (i < tableRows(b) ? " tblrow" : "") + (code === 1 ? " codefence" : code === 2 ? " codeline" : ""),
+    contenteditable: "true", spellcheck: "false", data: {bi: String(i)}, translate: "no",
   });
+  if (code) txt.textContent = b.body[i]; else txt.innerHTML = renderInline(b.body[i]);
   // Same bargain as a bullet's own line: a click on a [[link]] follows it
   // instead of dropping the caret into the raw text behind it; a picture opens.
   txt.addEventListener("mousedown", e => {
@@ -24,7 +28,7 @@ function bodyLineEl(path, b, i) {
     /* "DEADLINE:: [[2026-10-30]]" written under a task is a property of it, the
        way the file reads it back. Taken as one at once, rather than sitting as
        text until the next load quietly turns it into a date. */
-    const prop = /^\s*([A-Za-z][\w-]*)::\s*(.*)$/.exec(val);
+    const prop = !code && /^\s*([A-Za-z][\w-]*)::\s*(.*)$/.exec(val);
     if (prop && val !== b.body[i] && trim(prop[2])) {
       b.body.splice(i, 1);
       setBlockProp(b, prop[1], trim(prop[2]));
@@ -35,11 +39,34 @@ function bodyLineEl(path, b, i) {
     }
     if (val !== b.body[i]) {
       b.body[i] = val;
-      createLinkedPages(val);
+      if (!code) createLinkedPages(val);
       touch(path); noteTodoTouched();
     }
-    txt.innerHTML = renderInline(b.body[i]);
-    resolveAssets(txt);
+    draw();
+  });
+  /* Several lines pasted here stay several lines, as written (#374). Text that
+     holds its shape by its spaces, a mockup or a table drawn in characters,
+     goes in a ``` fence so the file keeps it and the page draws it monospace. */
+  txt.addEventListener("paste", e => {
+    const raw = e.clipboardData && e.clipboardData.getData("text/plain");
+    if (raw == null) return;
+    const lines = raw.replace(/\r\n?/g, "\n").split("\n").map(l => l.replace(/\s+$/, ""));
+    while (lines.length && lines[0] === "") lines.shift();
+    while (lines.length && lines[lines.length - 1] === "") lines.pop();
+    if (lines.length < 2) return;
+    e.preventDefault();
+    const whole = lineText(txt);
+    const [from, to] = caretOffsets(txt);
+    const before = whole.slice(0, from), after = whole.slice(to);
+    const add = !code && looksPreformatted(lines) ? ["```", ...lines, "```"] : lines;
+    // Blur is what writes the line back, so hand it the half that stays.
+    txt.textContent = before;
+    txt.blur();
+    const rest = [...add, ...(trim(after) ? [after] : [])];
+    const at = trim(before) === "" ? i : i + 1;
+    b.body.splice(at, at === i ? 1 : 0, ...rest);
+    touch(path); noteTodoTouched(); render();
+    focusBodyLine(b.id, at + add.length - 1);
   });
   attachSuggest(txt);
   txt.addEventListener("keydown", e => {

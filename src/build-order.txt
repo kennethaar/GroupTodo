@@ -33,6 +33,7 @@ css/29-burndown.css
 css/30-30-views.css
 css/31-25-responsive.css
 css/32-print-235.css
+css/33-code-fence-374.css
 css/33-markdown-tables-269.css
 css/34-settings-rows.css
 css/35-recipes.css
@@ -93,6 +94,8 @@ js/10-markdown/vars-PROP_RE.js
 js/10-markdown/indentLevel.js
 js/10-markdown/splitState.js
 js/10-markdown/newBlock.js
+js/10-markdown/fenceRows.js
+js/10-markdown/looksPreformatted.js
 js/10-markdown/parsePage.js
 js/10-markdown/parseOutlineText.js
 js/10-markdown/readyPastedBlocks.js

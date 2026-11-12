@@ -3864,6 +3864,38 @@ var GTD_TEST = (() => {
       eq(picked(), bl[0].id, "the drag across body lines did not pick their line");
     } finally { lineSelClear(); go("today"); }
   });
+  test("#374 a mockup pasted under a line keeps its lines and spacing in a fence, drawn monospace, and survives the file", async () => {
+    const path = scratchProject("ascii paste", [["TODO", "Sketch the Waiting for view"]]);
+    const b = getPage(path).blocks[0];
+    b.body = [""];
+    openPage(path);
+    await settle();
+    const mock = [
+      "  +---------------------------------+",
+      "  | Waiting for    [Paste Reply]    |",
+      "  +---------------------------------+",
+      "",
+      "      Amir                [Ask]",
+      "  - Kall inn til møte      [Work]  29d",
+      "  owner:: nobody",
+    ];
+    const line = document.querySelector('.blk[data-id="' + b.id + '"] > .bodyline[data-bi="0"]');
+    try {
+      line.focus();
+      const dt = new DataTransfer();
+      dt.setData("text/plain", mock.join("\r\n") + "\r\n");
+      line.dispatchEvent(new ClipboardEvent("paste", {clipboardData: dt, bubbles: true, cancelable: true}));
+      await settle();
+      eq(JSON.stringify(b.body), JSON.stringify(["```", ...mock, "```"]), "the paste is not kept line for line in a fence");
+      const back = parsePage(serializePage(getPage(path))).blocks[0];
+      eq(JSON.stringify(back.body), JSON.stringify(b.body), "the file does not read the fence back as it was");
+      eq(back.children.length, 0, "a dash line in the fence became a bullet");
+      const drawn = document.querySelector('.blk[data-id="' + b.id + '"] > .bodyline[data-bi="6"]');
+      ok(drawn && /mono/i.test(getComputedStyle(drawn).fontFamily), "a fenced line is not drawn monospace");
+      eq(getComputedStyle(drawn).whiteSpace, "pre", "a fenced line does not keep its spaces");
+      eq(drawn.textContent, mock[5], "a fenced line is drawn as markup, not as written");
+    } finally { go("today"); }
+  });
   test("#320 a click on a picture opens it in a view with a close button; a click beside it on the line edits the line", async () => {
     const path = scratchProject("picture click", [[null, "Look ![pic](https://example.invalid/p.png) here"]]);
     const b = getPage(path).blocks[0];
