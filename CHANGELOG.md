@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.151.1 - 2026-11-12
+
+- Waiting for › List: a task's panel has Paste a reply beside Ask for an
+  update, so their answer comes back where you asked (#370).
+
 ## 1.151.0 - 2026-11-12
 
 - Waiting for › List: Paste a reply now takes a reply with no reference in

@@ -380,7 +380,9 @@ function showTaskDetail(path, block, space) {
               closeModal();
               if (ps.length === 1) openAskForUpdate(ps[0], block);
               else chipMenu("Ask who for an update?", null, lettered(ps.map(n => [n, null, () => openAskForUpdate(n, block)])));
-            }}, svgIcon(ICON_MAIL), " Ask for an update")];
+            }}, svgIcon(ICON_MAIL), " Ask for an update"),
+              // Their answer comes back here too, not only on Waiting for (#370).
+              el("button", {class: "btn sm ghost", onclick: () => { closeModal(); importUpdatePasted(); }}, "Paste a reply")];
           })(),
           el("span", {style: "color:var(--fg3);font-size:12px"},
             informedAt(block) ? "Last told " + trim(blockProp(block, INFORMED_PROP)).replace(/\s+\S+$/, "") + " on " + informedAt(block) + "."

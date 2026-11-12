@@ -3148,13 +3148,21 @@ var GTD_TEST = (() => {
       ok([...header.querySelectorAll("button")].some(x => x.textContent === "✕"), "close stays in that same header");
     } finally { closeModal(); }
   });
-  test("#353 task panel: Ask for an update sits by Send an update when the line names someone", async () => {
+  test("#353 #370 task panel: Ask for an update and Paste a reply sit by Send an update when the line names someone", async () => {
     const path = scratchProject("ask-from-panel", [["WAIT", "Quote from [[p/Lars Haugen]]"], ["TODO", "Pack for the trip"]]);
     const [named, bare] = getPage(path).blocks;
-    const askBtn = () => [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent.trim() === "Ask for an update");
+    const btnOf = t => () => [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent.trim() === t);
+    const askBtn = btnOf("Ask for an update"), pasteBtn = btnOf("Paste a reply");
     try {
       showTaskDetail(path, bare, V.space);
       ok(!askBtn(), "a line naming nobody has no one to ask");
+      ok(!pasteBtn(), "a line naming nobody has no reply to wait for");
+      closeModal();
+      showTaskDetail(path, named, V.space);
+      ok(pasteBtn(), "no Paste a reply on a waiting line naming Lars");
+      pasteBtn().click();
+      await settle();
+      ok(document.querySelector("#modalRoot textarea[placeholder^='Paste their reply']"), "Paste a reply opens its dialog");
       closeModal();
       showTaskDetail(path, named, V.space);
       ok(askBtn(), "no Ask for an update on a waiting line naming Lars");
