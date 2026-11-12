@@ -24,6 +24,15 @@ function viewSolitaire() {
   if (pass === SD_PASS || pass === HD_PASS) return viewSomeday(c, passList);
   // So is the loose actions pass: the card is an action, the answers where it goes.
   if (P.k === "loose") return viewLoose(c, passList);
+  /* A card answered in full since it was dealt, from its page beside the
+     table or anywhere else, has nothing left to ask: it is passed by, not
+     shown with only Next card on it (#378). Not while a card is on its way
+     off the table, nor one gone back to on purpose. */
+  while (!SOL.moving && !SOL.step && !SOL.hold && SOL.i < SOL.order.length && !passed(SOL.order[SOL.i]) &&
+         solSteps().every(f => f.filled(SOL.order[SOL.i]))) {
+    solPassMark(SOL.order[SOL.i], true);
+    SOL.i++;
+  }
   if (SOL.i >= SOL.order.length) {
     const any = solDeckAns().some(a => a["p" + pass]);
     const next = SOL_PASSES[pass + 1];

@@ -7879,6 +7879,27 @@ var GTD_TEST = (() => {
       eq(getPage(path).props.org, "[[o/" + slugify("Acme Test377") + "]]", "none is not replaced by the organisation");
     } finally { SOL_ANS.delete(solKey(r)); }
   });
+  test("#378 a card whose questions all get answered elsewhere is passed by, not shown with only Next card", async () => {
+    const pa = scratchProject("answered elsewhere", [["TODO", "Step one"]]);
+    const pb = scratchProject("still to ask", [["TODO", "Step two"]]);
+    const ra = {space: V.space, path: pa}, rb = {space: V.space, path: pb};
+    const F = k => solFields().find(f => f.k === k);
+    const pass = SOL_PASSES.findIndex(p => p.name === "Outcome");
+    try {
+      go("review", {sub: "projects"}); solGoPass(pass); await settle();
+      SOL.order = [ra, rb]; SOL.i = 0; render(); await settle();
+      has(content().querySelector(".solcard h3").textContent, "answered elsewhere");
+      // Answered from its page, beside the table, not on the card.
+      setOutcome(pa, "The supplier is on contract");
+      F("area").make(ra, "Suppliers Test378");
+      F("deadline").pick(ra, "none");
+      writeDependsOn(pa, []);
+      render(); await settle();
+      ok(!content().querySelector(".solcard.won"), "a card with nothing left to ask is shown");
+      has(content().querySelector(".solcard h3").textContent, "still to ask", "the review does not move on to the next card");
+      ok(solAns(ra)["p" + pass], "the passed card is not counted as done in this pass");
+    } finally { SOL_ANS.delete(solKey(ra)); SOL_ANS.delete(solKey(rb)); solGoPass(0); }
+  });
   test("#177 a page opened from the review card follows the next card, until the pane is closed", async () => {
     const pane = document.querySelector("#pagePane");
     const until = async cond => { for (let i = 0; i < 200 && !cond(); i++) await new Promise(r => setTimeout(r, 10)); };

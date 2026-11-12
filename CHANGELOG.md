@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.153.2 - 2026-11-12
+
+- Weekly review › Projects: a card that got every question answered after it
+  was dealt, on its page for example, is passed by. It no longer waits with
+  only Next card on it (#378).
+
 ## 1.153.1 - 2026-11-12
 
 - Weekly review › Projects: None, Just me and No deadline are written on the

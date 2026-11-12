@@ -1989,6 +1989,7 @@ js/110-views/solChoices.js
 js/110-views/vars-SOL_PASSES.js
 js/110-views/solSteps.js
 js/110-views/solHoldField.js
+js/110-views/solPassMark.js
 js/110-views/solPassDone.js
 js/110-views/solGoPass.js
 js/110-views/solStepNow.js
