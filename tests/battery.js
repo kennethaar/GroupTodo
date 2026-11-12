@@ -8972,7 +8972,9 @@ var GTD_TEST = (() => {
       const d3 = journalPath(shiftISO(T(), -3)), line = () => getPage(d3).blocks[0];
       try {
         let c = await showClarify();
-        const kinds = () => content().querySelector(".clkinds").textContent;
+        // What it links is said in the line: an icon named by its kind before each link.
+        const kinds = () => { const h = content().querySelector(".clcard h3");
+          return [...h.querySelectorAll(".clico")].map(i => i.getAttribute("aria-label")).join(" ") + " | " + h.textContent; };
         has(kinds(), "Person"); has(kinds(), "Kari Test367");
         const btn = t => [...content().querySelectorAll(".clcard button")].find(x => trim(x.textContent) === t);
         // Words picked with the pointer...
@@ -9014,11 +9016,17 @@ var GTD_TEST = (() => {
         const already = () => card().querySelector(".clalready");
         ok(already(), "a line that is only a link does not say it is on file already");
         has(already().textContent, "person"); has(already().textContent, "Kari Test379");
+        // The kind is shown where the link is read, by an icon with a name (#379 follow-up).
+        const icon = kind => card().querySelector("h3 .clico." + kind);
+        ok(icon("person"), "the person in the line has no person icon");
+        eq(icon("person").getAttribute("aria-label"), "Person");
+        ok(icon("person").nextElementSibling?.classList.contains("wikilink"), "the icon is not right before the link");
         c.querySelectorAll(".clans")[6].click();
         c = await showClarify();
         ok(!already(), "a line with words of its own is not only a link");
-        const kinds = card().querySelector(".clkinds").textContent;
-        has(kinds, "Tag: #heatpumps379"); has(kinds, "Page: Heat pumps379");
+        ok(icon("page"), "the page in the line has no page icon");
+        ok(card().querySelector("h3 .tag"), "the tag is not drawn as a tag");
+        ok(!card().querySelector(".clkinds .clkind:not(.clloose)"), "a chip under the line says again what the line shows");
         const loose = card().querySelector(".clloose");
         ok(loose, "a known person written without a link is not pointed out");
         has(loose.textContent, "ola hansen379");

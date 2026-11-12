@@ -7,15 +7,20 @@ function clKinds(path, b, h3) {
   /* Every link and #tag gets its kind, a plain page too, so what is on file
      already is plain to see (#379). */
   const title = b.title || "", chips = [], said = [];
-  const chip = (kind, name, ...more) => {
-    said.push(CL_KIND_A[kind] + ", " + name);
-    chips.push(el("span", {class: "chip clkind " + kind, translate: "no"}, el("b", {}, CL_KIND_LABEL[kind] + ":"), " " + name, ...more));
-  };
   for (const ref of linksIn(title)) {
     const page = findExistingPage(ref.split("][")[0]);
-    chip(clKindOf(ref, page), page ? pageTitle(page) : ref.split("][")[0].split("/").pop());
+    said.push(CL_KIND_A[clKindOf(ref, page)] + ", " + (page ? pageTitle(page) : ref.split("][")[0].split("/").pop()));
   }
-  for (const t of tagsIn(title)) chip("tag", "#" + t);
+  for (const t of tagsIn(title)) said.push(CL_KIND_A.tag + ", #" + t);
+  /* Said where it is read: an icon of its kind in front of each link in the
+     line, so nothing under it repeats the line (P13). A #tag says so itself. */
+  for (const a of h3.querySelectorAll(".wikilink[data-link]")) {
+    const ref = a.dataset.link, kind = clKindOf(ref, findExistingPage(ref));
+    if (!CL_KIND_ICON[kind]) continue;
+    const ico = el("span", {class: "clico " + kind, role: "img", "aria-label": CL_KIND_LABEL[kind], title: CL_KIND_LABEL[kind]});
+    if (CL_KIND_ICON[kind] !== "@") ico.append(svgIcon(CL_KIND_ICON[kind]));
+    a.before(ico);
+  }
   // Nothing on the line but those: it is on file already.
   const rest = title.replace(/\[\[[\s\S]*?\]\]/g, "").replace(/(^|\s)#[\p{L}\p{N}_\-/]+/gu, "").replace(/[\s.,;:·\-–—]+/g, "");
   const already = said.length && !trim(bujoText(rest)) ? el("p", {class: "clalready", role: "note"},

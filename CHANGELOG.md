@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.155.4 - 2026-11-12
+
+- Weekly review › Clarify: an icon in front of each link in the line says
+  what it is, a person, project, page and more, where you read it. The grey
+  chips under the line that said it again are gone (#379).
+
 ## 1.155.3 - 2026-11-12
 
 - Keys on a line: paste a sketch right after ``` on a line and it stays
