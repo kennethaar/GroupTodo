@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.155.2 - 2026-11-12
+
+- Journal: on a computer, Enter on a line at the bottom moves the page just
+  enough to keep the new line in sight. Before, it was left under the line
+  toolbar (#172).
+
 ## 1.155.1 - 2026-11-12
 
 - Hold and until: a task for a birthday is no longer cancelled once the

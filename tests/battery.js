@@ -3723,6 +3723,32 @@ var GTD_TEST = (() => {
       ok(Math.abs(at - mid) < 4, "the new line is at " + Math.round(at) + ", the middle is " + Math.round(mid));
     } finally { window.matchMedia = mm; go("today"); }
   });
+  test("#172 on a computer Enter on the bottom line keeps the new line in sight, above the edit bar", async () => {
+    const path = scratchProject("enter in sight", Array.from({length: 60}, (_, i) => ["TODO", "Row " + i]));
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    openPage(path);
+    await settle();
+    const last = getPage(path).blocks[59];
+    try {
+      focusBlock(last.id);
+      await frame();
+      const c = content(), bar = () => { const e = document.querySelector("#editBar"); return e && !e.hidden ? e.offsetHeight : 0; };
+      const lastTxt = document.querySelector('.blk[data-id="' + last.id + '"] .txt');
+      // The last line sits right at the bottom of what can be seen.
+      c.scrollTop += Math.round(lastTxt.getBoundingClientRect().bottom - (c.getBoundingClientRect().bottom - bar()) + 2);
+      await frame();
+      lastTxt.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true, cancelable: true}));
+      await frame(); await frame();
+      const nb = getPage(path).blocks[60];
+      ok(nb, "Enter made no new line");
+      const node = document.querySelector('.blk[data-id="' + nb.id + '"] .txt');
+      eq(document.activeElement, node, "the caret is not in the new line");
+      const cr = c.getBoundingClientRect(), r = node.getBoundingClientRect();
+      ok(r.top >= cr.top && r.bottom <= cr.bottom - bar(),
+        "the new line is at " + Math.round(r.top) + "-" + Math.round(r.bottom) + ", in sight is " +
+        Math.round(cr.top) + "-" + Math.round(cr.bottom - bar()));
+    } finally { go("today"); }
+  });
   test("#268 brackets come in pairs and wrap the word the caret is in", async () => {
     const path = scratchProject("auto pair", [["TODO", "Call Anna"]]);
     openPage(path);
