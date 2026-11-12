@@ -5974,6 +5974,37 @@ var GTD_TEST = (() => {
       setEmailOf("Lars Haugen", V.space, lars);
     }
   });
+  test("#373 a pasted reply with no reference asks who it is from, offers their waiting-fors and projects, finds anything else by search, and files it there", async () => {
+    const path = scratchProject("reply 373", [["WAIT", "Quote 373 from [[p/Lars Haugen]]"]]);
+    const other = scratchProject("elsewhere 373", [["TODO", "Book the crane 373"]]);
+    const crane = getPage(other).blocks[0];
+    const picks = () => [...document.querySelectorAll("#modalRoot button.pick")];
+    const pick = t => picks().find(b => b.textContent.includes(t));
+    try {
+      importUpdatePasted();
+      await settle();
+      const box = $("#modalRoot textarea");
+      box.value = "Friday works for us.";
+      box.dispatchEvent(new Event("input"));
+      has($("#modalRoot").textContent, "No reference", "it says why it asks");
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Read it").click();
+      await settle();
+      eq($("#modalRoot h2").textContent, "Who is it from?");
+      pick("Lars Haugen").click();
+      await settle();
+      ok(pick("Quote 373"), "their waiting-for is offered");
+      ok(pick(pageTitle(path)), "their project is offered");
+      ok(!pick("Book the crane 373"), "only theirs at first");
+      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Search everything").click();
+      await settle();
+      const q = $("#modalRoot .filterbox input");
+      q.value = "crane 373";
+      q.dispatchEvent(new Event("input"));
+      pick("Book the crane 373").click();
+      await settle();
+      eq(messagesOf(crane).map(m => [m.title, blockProp(m, MSG_PROP)]), [["Friday works for us.", "Lars Haugen"]]);
+    } finally { closeAll(); }
+  });
   test("#161 Ask for an update can leave the projects unnamed", async () => {
     const path = scratchProject("secret depot plan", [["TODO", "Ask [[p/Lars Haugen]] which crane goes first"]]);
     const block = getPage(path).blocks[0], title = pageTitle(path);

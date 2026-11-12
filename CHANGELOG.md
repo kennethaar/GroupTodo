@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.151.0 - 2026-11-12
+
+- Waiting for › List: Paste a reply now takes a reply with no reference in
+  it. You say who it is from, then pick what it answers from their
+  waiting-fors, your questions to them and their projects. Search everything
+  finds any other open task. Every step has Back (#373).
+
 ## 1.150.0 - 2026-11-12
 
 - Waiting for › List: one task per row, with how long it has waited. Paste

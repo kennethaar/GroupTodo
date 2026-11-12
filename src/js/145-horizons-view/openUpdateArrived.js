@@ -25,7 +25,8 @@ function openUpdateArrived(data) {
     if (ack && !said.some(r => r.ack && r.hit.block === hit.block)) said.push({hit, ack: true, note});
     else if (!ack && (note || item.done)) said.push({hit, note: note || "Done."});
   }
-  const who = [...askedOf].sort((x, y) => y[1] - x[1])[0]?.[0] || trim(data.from) || "They";
+  // who: the person you said it is from, when the reply did not say (#373).
+  const who = trim(data.who || "") || [...askedOf].sort((x, y) => y[1] - x[1])[0]?.[0] || trim(data.from) || "They";
   /* Words in the reply with no number on them: yours to place, on one of the
      tasks the mail was about. With only one, they are about that one. */
   const hits = (data.refs || []).map(ref => resolveReplyItem({ref})).filter(Boolean);

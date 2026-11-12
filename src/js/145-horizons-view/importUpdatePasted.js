@@ -6,10 +6,12 @@
    one answer under the message, it is read with nothing to check. When it is
    not, several answers or a back and forth, its lines are listed under the
    task each belongs to, ticked, so you untick one that is not theirs. */
-function importUpdatePasted() {
+/* text: what was pasted, when you come back to it from the next step (#373). */
+function importUpdatePasted(text = "") {
   const box = el("textarea", {rows: 12, placeholder:
     "Paste their reply here. The whole email is fine, extra lines and all. From Teams, copy your message with their reply.",
     style: "font-size:12.5px;font-family:var(--mono)"});
+  box.value = text;
   const said = el("div", {style: "color:var(--fg3);font-size:12.5px;margin-top:6px"});
   const list = el("div", {style: "max-height:36vh;overflow:auto"});
   let data = null, shown = false;
@@ -43,15 +45,16 @@ function importUpdatePasted() {
     said.replaceChildren(!trim(box.value) ? ""
       : t && !t.lines.length ? "That is your own message. Copy their reply under it too."
       : data ? "Found " + n + " answer" + (n === 1 ? "" : "s") + "." + (shown ? " Untick a line that is not theirs." : "")
-      : "No GroupToDo answers in that yet. Paste the whole message, including the " +
-        "lines at the bottom that look like machine noise: that is the part that says " +
-        "which task is which. From Teams, copy your own message with their reply.",
+      // #373: no reference is no dead end; you say who and what instead.
+      : "No reference in this reply. Read it asks who it is from and what it answers. " +
+        "A reply to your own mail or Teams message finds its task by itself: paste it whole, your message included.",
       t && t.lines.length && !shown ? el("button", {class: "textbtn", style: "margin-left:8px;font-size:12.5px",
         onclick: () => { shown = true; drawList(); said.lastChild.remove(); }}, "Check the lines") : "");
     said.style.color = data && n ? "var(--ok)" : "var(--fg3)";
     drawList();
   };
   box.addEventListener("input", check);
+  if (text) check();
 
   modal({
     center: true, title: "Paste a reply",
@@ -65,9 +68,9 @@ function importUpdatePasted() {
       el("button", {class: "btn primary", onclick: () => {
         // The lines as you left them ticked, for a Teams reply.
         const got = data && data.teams ? teamsReplyData(data.teams) : parseUpdateReply(box.value);
-        if (!got) { notify("No GroupToDo answers in that text.", "error"); return; }
+        if (!got && !trim(box.value)) { notify("Paste their reply first.", "warn"); box.focus(); return; }
         closeModal();
-        openUpdateArrived(got);
+        if (got) openUpdateArrived(got); else replyWithoutRef(box.value);
       }}, "Read it"),
     ],
   });

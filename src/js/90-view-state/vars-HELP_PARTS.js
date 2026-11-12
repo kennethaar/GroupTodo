@@ -203,7 +203,7 @@ const HELP = {
       ["Show all, what is late, what you never asked, or one stage such as Ordered.", ".fbar .seg"],
       "Open Waiting for in the side bar to see one person.",
       "Tick a task when it comes back.",
-      "Paste a reply from mail or Teams, here or from the person chip on a task. Choose an outcome for each answer."],
+      "Paste a reply from mail or Teams. With no reference, say who it is from and what it answers. Choose an outcome for each."],
     keys: [["g w", "Waiting for"]],
     legend: [[".vhead h1", "Waiting for: what others owe you."],
       [".vhead-r .btn", "Paste a reply. Export the list as text or for Excel."],

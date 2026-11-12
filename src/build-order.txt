@@ -1418,6 +1418,7 @@ js/145-horizons-view/splitReplyRef.js
 js/145-horizons-view/resolveReplyItem.js
 js/145-horizons-view/postMessageAs.js
 js/145-horizons-view/openUpdateArrived.js
+js/145-horizons-view/replyWithoutRef.js
 js/145-horizons-view/importUpdatePasted.js
 js/145-horizons-view/importUpdateFromFile.js
 js/145-horizons-view/vars-PEOPLE_LOADING.js

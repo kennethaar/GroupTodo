@@ -2,6 +2,8 @@
    carries the area and the id::, which survives a reparse and a move to another
    page; the pages of the area are swept for it, so it needs no file path. */
 function resolveReplyItem(item) {
+  // A reply with no reference was placed by you, on the line you picked (#373).
+  if (item.hit) return item.hit;
   const {space, id} = item.ref ? splitReplyRef(item.ref) : {space: "", id: ""};
   if (!id && item.t) {
     let found = null;
