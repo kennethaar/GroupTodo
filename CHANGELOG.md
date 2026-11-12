@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.145.0 - 2026-11-12
+
+- Journal: the Feedback review names each outcome by what you want. A
+  to-do offers Done, Keep it, Someday/Maybe and Cancelled. Something you
+  wait for offers Keep waiting and Take it back, which makes it your own
+  to-do again. The button under the edit repeats your choice, such as
+  Keep waiting and next.
+
 ## 1.144.0 - 2026-11-11
 
 - Projects › Hours: Clients now shows Not yet billed, one row per client

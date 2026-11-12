@@ -96,7 +96,7 @@ const HELP = {
       "With several areas on, journals stand side by side. Double-click a border to even them out.",
       "History scrolls back through what changed, day by day.",
       "A meeting starts its line with its time. Two at once are marked.",
-      "Since you were last here counts new feedback. Review shows one at a time and asks for an outcome."],
+      "Since you were last here counts new feedback. Review shows one at a time and asks for an outcome, such as Done, Keep waiting, Take it back or Cancelled."],
     see: ["linemenu", "dates", "tracking", "pins"],
     words: ["today", "day", "daily", "diary", "log", "notes"]},
   "journal-week": {part: "views", title: "Journal › Week", view: "today", sub: "week", gtd: "organise", shot: 1,

@@ -33019,8 +33019,9 @@ const lastSeen = () => PREF.get(seenKey(), "");
 const markSeen = () => PREF.set(seenKey(), nowStamp());
 const HANDLED_PROP = "handled", DECIDED_PROP = "decided";
 const isHandled = m => !!trim(blockProp(m, HANDLED_PROP) || "");
-const OUTCOME_LABEL = {continue: "Continue", close: "Close", cancel: "Cancel", someday: "Someday/Maybe",
-keep: "Keep", complete: "Complete"};
+const OUTCOME_LABEL = {continue: "Continue", close: "Close", cancel: "Cancelled", someday: "Someday/Maybe",
+keep: "Keep", complete: "Done", takeback: "Take it back"};
+const OUTCOME_ASK = {close: "Close", cancel: "Cancel", complete: "Finish"};
 function feedbackQueue() {
 if (!whoAmI()) return [];
 return acrossSpaces(() => {
@@ -33040,9 +33041,14 @@ return project ? {kind: "project", project} : {kind: "todo"};
 });
 }
 function feedbackOutcomes(f) {
-return feedbackSubject(f).kind === "project"
-? ["continue", "close", "cancel", "someday"]
-: ["keep", "complete", "cancel", "someday"];
+if (feedbackSubject(f).kind === "project") return ["continue", "close", "cancel", "someday"];
+return f.block.state === "WAIT"
+? ["complete", "keep", "takeback", "someday", "cancel"]
+: ["complete", "keep", "someday", "cancel"];
+}
+function outcomeLabel(f, o) {
+if (o === "keep") return f.block.state === "WAIT" ? "Keep waiting" : "Keep it";
+return OUTCOME_LABEL[o];
 }
 function projectNextAction(path) {
 let next = null;
@@ -33070,9 +33076,10 @@ if (statusDirOf(s.project) !== "1") setProjectStatus(s.project, "1", {ask: false
 said += ": " + plainTitle(text);
 } else if (s.kind === "project") {
 setProjectStatus(s.project, {close: "0", cancel: "-", someday: "2"}[outcome], {ask: false});
-} else if (outcome === "keep") {
+} else if (outcome === "keep" || outcome === "takeback") {
 if (words && words !== f.block.title) { f.block.title = words; said += ": " + plainTitle(words); }
 if (due !== undefined) setDue(f.block, due || null);
+if (outcome === "takeback") setBlockState(f.path, f.block, "TODO");
 touch(f.path);
 } else if (outcome === "someday") clSomeday(f.path, f.block);
 else setBlockState(f.path, f.block, outcome === "complete" ? "DONE" : "CANCELLED");
@@ -33126,20 +33133,21 @@ onward();
 };
 const foot = [];
 let body;
-if (step === "continue" || step === "keep") {
-const text = el("input", {type: "text", value: step === "keep" ? f.block.title : next ? next.title : "",
-placeholder: "Call Anna about the quote", "aria-label": step === "keep" ? "The to-do" : "Next action"});
-const date = el("input", {type: "date", value: step === "keep" ? due : next ? due : "", "aria-label": "Due"});
+if (step === "continue" || step === "keep" || step === "takeback") {
+const own = step !== "continue", said = outcomeLabel(f, step);
+const text = el("input", {type: "text", value: own ? f.block.title : next ? next.title : "",
+placeholder: "Call Anna about the quote", "aria-label": own ? "The to-do" : "Next action"});
+const date = el("input", {type: "date", value: own ? due : next ? due : "", "aria-label": "Due"});
 body = el("div", {},
-el("div", {class: "field"}, el("b", {}, step === "keep" ? "Keep the to-do" : "Continue the project")),
-el("div", {class: "field"}, el("label", {}, step === "keep" ? "To-do" : "Next action"), text),
+el("div", {class: "field"}, el("b", {}, own ? said : "Continue the project")),
+el("div", {class: "field"}, el("label", {}, own ? "To-do" : "Next action"), text),
 el("div", {class: "field"}, el("label", {}, "Due"), date));
 foot.push(el("button", {class: "btn ghost", onclick: () => again(null)}, "Back"),
 el("div", {style: "flex:1"}),
-el("button", {class: "btn primary", onclick: () => decide(step, {next: text.value, due: date.value})}, "Save and next"));
+el("button", {class: "btn primary", onclick: () => decide(step, {next: text.value, due: date.value})}, said + " and next"));
 setTimeout(() => text.focus(), 50);
 } else if (step) {
-const verb = OUTCOME_LABEL[step];
+const verb = OUTCOME_ASK[step] || OUTCOME_LABEL[step];
 body = el("div", {},
 el("div", {class: "field"}, el("b", {}, verb + (project ? " project?" : " to-do?"))),
 el("div", {class: "field"}, title),
@@ -33158,8 +33166,8 @@ notify("Reply posted on the task.");
 again(null);
 }}, "Send")));
 const ask = o => {
-if (o === "continue" || o === "keep") return again(o);
-if (o !== "someday" && openUnder) return again(o);
+if (o === "continue" || o === "keep" || o === "takeback") return again(o);
+if (OUTCOME_ASK[o] && openUnder) return again(o);
 decide(o);
 };
 body = el("div", {},
@@ -33181,7 +33189,7 @@ el("button", {class: "btn ghost sm", onclick: () => { reply.hidden = false; word
 reply,
 el("div", {class: "field"}, el("label", {}, "Outcome"),
 el("div", {class: "fbrow"}, ...feedbackOutcomes(f).map(o =>
-el("button", {class: "btn", onclick: () => ask(o)}, OUTCOME_LABEL[o])))));
+el("button", {class: "btn", onclick: () => ask(o)}, outcomeLabel(f, o))))));
 }
 shown = modal({center: true, title: "Feedback", hint: (at + 1) + " of " + items.length, body, foot: foot.length ? foot : null});
 }

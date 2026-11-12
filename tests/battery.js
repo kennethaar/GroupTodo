@@ -5586,7 +5586,30 @@ var GTD_TEST = (() => {
     const [fw, ft] = feedbackOn(path);
     eq(feedbackOutcomes(fw), ["continue", "close", "cancel", "someday"]);
     eq(feedbackSubject(fw).project, path);
-    eq(feedbackOutcomes(ft), ["keep", "complete", "cancel", "someday"]);
+    eq(feedbackOutcomes(ft), ["complete", "keep", "someday", "cancel"]);
+  }));
+  test("#361 feedback on a waiting to-do: Done, Keep waiting, Take it back, Someday/Maybe, Cancelled", () => withFeedbackSince(async () => {
+    const day = "Notes 361.md";
+    const wait = stampAuthor(newBlock({state: "WAIT", title: "Contract from [[p/Lars Haugen]]"}));
+    putPage(day, {props: {}, blocks: [wait]}); clearMemo();
+    postMessageAs(day, wait, "It is on its way.", "Lars Haugen", nowStamp());
+    const f = feedbackQueue().find(x => x.block === wait);
+    eq(feedbackOutcomes(f), ["complete", "keep", "takeback", "someday", "cancel"]);
+    const btn = t => [...document.querySelectorAll("#modalRoot button")].find(x => trim(x.textContent) === t);
+    openFeedbackReview([f]);
+    eq(["Done", "Keep waiting", "Take it back", "Someday/Maybe", "Cancelled"].filter(t => !btn(t)), [], "the outcomes say what you want");
+    ok(!btn("Keep") && !btn("Cancel"), "no bare Keep or Cancel");
+    btn("Keep waiting").click();
+    has($("#modalRoot").textContent, "Keep waiting");
+    ok(btn("Keep waiting and next"), "the button repeats the choice");
+    btn("Back").click();
+    btn("Take it back").click();
+    $("#modalRoot input[type=text]").value = "Fetch the contract myself";
+    btn("Take it back and next").click();
+    await settle();
+    eq([wait.state, wait.title], ["TODO", "Fetch the contract myself"], "taken back is your own to-do");
+    has(blockProp(messagesOf(wait)[0], DECIDED_PROP), "Take it back");
+    closeAll();
   }));
   test("#285 Continue needs a next action and records it; Close, Cancel and Someday/Maybe move the project", () => withFeedbackSince(() => {
     const path = scratchProject("feedback continue", [["WAIT", "Status from [[p/Lars Haugen]]"]]);
@@ -5641,7 +5664,7 @@ var GTD_TEST = (() => {
       const root = () => $("#modalRoot").textContent;
       has(root(), "1 of 2"); has(root(), "Lars Haugen"); has(root(), "Is this a thing?");
       has(root(), "No next action", "the project's missing next action shows");
-      ok(!btn("Keep") && btn("Continue"), "only the project's outcomes");
+      ok(!btn("Keep it") && btn("Continue"), "only the project's outcomes");
       ok(!btn("Done"), "no vague Done");
       btn("Reply").click();
       $("#modalRoot textarea").value = "From the board meeting.";
@@ -5663,8 +5686,8 @@ var GTD_TEST = (() => {
       btn("Close and next").click();
       await settle();
       has(root(), "2 of 2");
-      ok(btn("Keep") && btn("Complete") && !btn("Continue"), "only the to-do's outcomes");
-      btn("Complete").click();
+      ok(btn("Keep it") && btn("Done") && !btn("Continue") && !btn("Take it back"), "only the to-do's outcomes (#361)");
+      btn("Done").click();
       await settle();
       has(root(), "caught up");
       closeAll();

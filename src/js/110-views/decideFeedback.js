@@ -20,9 +20,11 @@ function decideFeedback(f, outcome, {next, due} = {}) {
       said += ": " + plainTitle(text);
     } else if (s.kind === "project") {
       setProjectStatus(s.project, {close: "0", cancel: "-", someday: "2"}[outcome], {ask: false});
-    } else if (outcome === "keep") {
+    } else if (outcome === "keep" || outcome === "takeback") {
       if (words && words !== f.block.title) { f.block.title = words; said += ": " + plainTitle(words); }
       if (due !== undefined) setDue(f.block, due || null);
+      // Taken back, it is yours to do again, not something you wait for (#361).
+      if (outcome === "takeback") setBlockState(f.path, f.block, "TODO");
       touch(f.path);
     } else if (outcome === "someday") clSomeday(f.path, f.block);
     else setBlockState(f.path, f.block, outcome === "complete" ? "DONE" : "CANCELLED");

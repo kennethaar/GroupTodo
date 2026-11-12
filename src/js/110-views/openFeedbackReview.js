@@ -46,20 +46,21 @@ function openFeedbackReview(items = feedbackQueue(), at = 0, step = null) {
   };
   const foot = [];
   let body;
-  if (step === "continue" || step === "keep") {
-    const text = el("input", {type: "text", value: step === "keep" ? f.block.title : next ? next.title : "",
-      placeholder: "Call Anna about the quote", "aria-label": step === "keep" ? "The to-do" : "Next action"});
-    const date = el("input", {type: "date", value: step === "keep" ? due : next ? due : "", "aria-label": "Due"});
+  if (step === "continue" || step === "keep" || step === "takeback") {
+    const own = step !== "continue", said = outcomeLabel(f, step);
+    const text = el("input", {type: "text", value: own ? f.block.title : next ? next.title : "",
+      placeholder: "Call Anna about the quote", "aria-label": own ? "The to-do" : "Next action"});
+    const date = el("input", {type: "date", value: own ? due : next ? due : "", "aria-label": "Due"});
     body = el("div", {},
-      el("div", {class: "field"}, el("b", {}, step === "keep" ? "Keep the to-do" : "Continue the project")),
-      el("div", {class: "field"}, el("label", {}, step === "keep" ? "To-do" : "Next action"), text),
+      el("div", {class: "field"}, el("b", {}, own ? said : "Continue the project")),
+      el("div", {class: "field"}, el("label", {}, own ? "To-do" : "Next action"), text),
       el("div", {class: "field"}, el("label", {}, "Due"), date));
     foot.push(el("button", {class: "btn ghost", onclick: () => again(null)}, "Back"),
       el("div", {style: "flex:1"}),
-      el("button", {class: "btn primary", onclick: () => decide(step, {next: text.value, due: date.value})}, "Save and next"));
+      el("button", {class: "btn primary", onclick: () => decide(step, {next: text.value, due: date.value})}, said + " and next"));
     setTimeout(() => text.focus(), 50);
   } else if (step) {
-    const verb = OUTCOME_LABEL[step];
+    const verb = OUTCOME_ASK[step] || OUTCOME_LABEL[step];
     body = el("div", {},
       el("div", {class: "field"}, el("b", {}, verb + (project ? " project?" : " to-do?"))),
       el("div", {class: "field"}, title),
@@ -78,8 +79,8 @@ function openFeedbackReview(items = feedbackQueue(), at = 0, step = null) {
       again(null);
     }}, "Send")));
     const ask = o => {
-      if (o === "continue" || o === "keep") return again(o);
-      if (o !== "someday" && openUnder) return again(o);
+      if (o === "continue" || o === "keep" || o === "takeback") return again(o);
+      if (OUTCOME_ASK[o] && openUnder) return again(o);
       decide(o);
     };
     body = el("div", {},
@@ -101,7 +102,7 @@ function openFeedbackReview(items = feedbackQueue(), at = 0, step = null) {
       reply,
       el("div", {class: "field"}, el("label", {}, "Outcome"),
         el("div", {class: "fbrow"}, ...feedbackOutcomes(f).map(o =>
-          el("button", {class: "btn", onclick: () => ask(o)}, OUTCOME_LABEL[o])))));
+          el("button", {class: "btn", onclick: () => ask(o)}, outcomeLabel(f, o))))));
   }
   shown = modal({center: true, title: "Feedback", hint: (at + 1) + " of " + items.length, body, foot: foot.length ? foot : null});
 }
