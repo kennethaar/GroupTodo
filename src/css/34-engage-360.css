@@ -1,0 +1,16 @@
+/* Focus in Next (#360): one next action, in the middle, nothing else. */
+.engage{display:flex;align-items:center;justify-content:center;min-height:70vh}
+.engage-card{width:100%;max-width:560px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.engage-where{font-size:13px;color:var(--fg3)}
+.engage-title{font-size:22px;line-height:1.35;color:var(--fg);overflow-wrap:anywhere}
+.engage-meta{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.engage-btns{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:8px}
+.engage-btns .btn{min-height:44px;padding:0 18px;justify-content:center}
+.engage-btns kbd{color:inherit;border-color:currentColor;opacity:1}
+.engage-end h2{margin:0;font-size:20px}
+.engage-n{margin:0;color:var(--fg2)}
+@media (max-width:640px){
+  .engage-btns{flex-direction:column;width:100%}
+  .engage-btns .btn{width:100%}
+  .engage-btns kbd{display:none}
+}

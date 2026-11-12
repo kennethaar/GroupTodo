@@ -35,6 +35,7 @@ css/31-25-responsive.css
 css/32-print-235.css
 css/33-code-fence-374.css
 css/33-markdown-tables-269.css
+css/34-engage-360.css
 css/34-settings-rows.css
 css/35-recipes.css
 # script 1
@@ -1812,6 +1813,9 @@ js/110-views/nextSide.js
 js/110-views/vars-setNextSide.js
 js/110-views/nextGuessCtx.js
 js/110-views/vars-NEXT_FILTERS_OPEN.js
+js/110-views/vars-ENGAGE.js
+js/110-views/startEngage.js
+js/110-views/engageView.js
 js/110-views/viewNext.js
 js/110-views/viewWaiting.js
 js/110-views/vars-STATUS_CHIPS.js

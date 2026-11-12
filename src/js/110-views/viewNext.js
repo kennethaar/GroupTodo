@@ -126,6 +126,9 @@ function viewNext() {
   if (side) acts = acts.filter(a => isChore(a) === (side === "chores"));
   if (est.plan) acts = planFill(acts, est.plan);
   sortActs(acts);
+  // Focus deals this very list one at a time (#360); another context ends it.
+  if (ENGAGE && (ENGAGE.ctx !== ctx || !document.body.classList.contains("bookfocus"))) ENGAGE = null;
+  if (ENGAGE) return engageView(acts, ctx);
   sortSel.classList.add("right");
   const f = textFilter("next", "Filter next actions", acts, taskHay,
     (hits, q) => (ctx ? taskCard : contextGroupedCard)(hits, noMatch(q, side === "chores" ? "No chores now." :
@@ -158,6 +161,10 @@ function viewNext() {
     onclick: () => { NEXT_FILTERS_OPEN = !NEXT_FILTERS_OPEN; render(); }},
     "Filter" + (filtered ? " · " + filtered : "") + (NEXT_FILTERS_OPEN ? " ▴" : " ▾"));
   c.querySelector(".vhead-r").prepend(fbtn);
+  // Focus once a context is picked: GTD picks where you are first (#360).
+  if (ctx && acts.length) fbtn.before(el("button", {class: "textbtn focusbtn",
+    title: "One action at a time at " + (ctx === CTX_NONE ? "no context" : contextLabel(ctx)) + ": no sidebar, no bar (Esc leaves)",
+    onclick: () => startEngage(ctx)}, "Focus"));
   // One reading column at every width: groups read top down, most urgent first (#315).
   c.classList.add("nextlist");
   if (ctx && side !== "chores") c.classList.add("onectx");

@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.155.0 - 2026-11-12
+
+- Next › List: Focus, once one context is picked. Only its first next action
+  is shown, in the list's own order, and nothing else. Done (Enter) ticks it
+  and brings the next one. Skip (→) leaves it as it is. When none are left,
+  you can go through the skipped ones again. Esc leaves (#360).
+
 ## 1.154.1 - 2026-11-12
 
 - Keys on a line: write ``` on a line, then go on with Shift+Enter, and the

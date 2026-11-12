@@ -2,7 +2,8 @@
    On a computer it is a teleprompter too (#324): the paragraph you were at
    is brought to the middle, and stays where it was on the way out. */
 function setWritingFocus(on) {
-  const box = $("#content"), tp = on && tpWanted();
+  // Focus in Next (#360) is one card, not text to follow.
+  const box = $("#content"), tp = on && tpWanted() && !ENGAGE;
   const a = document.activeElement;
   const mid = box ? box.getBoundingClientRect().top + box.clientHeight / 2 : 0;
   const at = box && (a && a.isContentEditable && box.contains(a) && a.matches(TP_UNITS) ? a
@@ -24,4 +25,6 @@ function setWritingFocus(on) {
     tpLight();
     if (at) at.scrollIntoView({block: "center"});
   }
+  // Leaving Focus in Next brings the whole list back.
+  if (!on && ENGAGE) { ENGAGE = null; render(); }
 }

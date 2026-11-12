@@ -2397,6 +2397,53 @@ var GTD_TEST = (() => {
     closeModal();
     eq(getPage(flat.path).props.children, "[[c/Testflat2/One]], [[c/Testflat2/Two]]");
   });
+  test("#360 Focus in Next deals one action of the context at a time, in the list's order; Skip leaves the file be", async () => {
+    makeContext("Testengage");
+    const path = scratchProject("engage", [["TODO", "Call the dentist [[c/Testengage]]"],
+      ["TODO", "Ask the supplier [[c/Testengage]]"], ["TODO", "Book the hall [[c/Testengage]]"]]);
+    const blocks = getPage(path).blocks;
+    const byTitle = t => blocks.find(b => b.title.startsWith(t));
+    const short = s => s.replace(/\s*@?Testengage\s*/g, "").trim();
+    const card = () => content().querySelector(".engage-card");
+    const press = k => document.body.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true}));
+    try {
+      go("next", {sub: "list", ctxFilter: null}); render();
+      ok(!content().querySelector(".focusbtn"), "Focus is offered with no one context picked");
+      go("next", {sub: "list", ctxFilter: "Testengage"}); render();
+      const order = [...content().querySelectorAll(".task .t-title")].map(t => short(t.textContent));
+      eq(order.length, 3, "the list does not show the three actions");
+      content().querySelector(".focusbtn").click();
+      await settle();
+      ok(document.body.classList.contains("bookfocus"), "the sidebar and the bar are not put away");
+      ok(!content().querySelector(".task"), "the rest of the list is still shown");
+      eq(short(card().querySelector(".engage-title").textContent), order[0], "not the list's first action");
+      has(card().textContent, "1 of 3");
+      card().querySelector(".engage-skip").click();
+      await settle();
+      eq(byTitle(order[0]).state, "TODO", "Skip changed the action");
+      eq(short(card().querySelector(".engage-title").textContent), order[1], "Skip did not bring the next one");
+      press("Enter");
+      await settle();
+      eq(byTitle(order[1]).state, "DONE", "Enter did not tick it done");
+      eq(short(card().querySelector(".engage-title").textContent), order[2], "Done did not bring the next one");
+      has(card().textContent, "3 of 3");
+      press("ArrowRight");
+      await settle();
+      has(card().textContent, "Nothing left at");
+      has(card().textContent, "1 done, 2 skipped");
+      [...card().querySelectorAll("button")].find(b => b.textContent.includes("skipped ones")).click();
+      await settle();
+      eq(short(card().querySelector(".engage-title").textContent), order[0], "the skipped ones are not dealt again");
+      has(card().textContent, "1 of 2");
+      press("Escape");
+      await settle();
+      ok(!document.body.classList.contains("bookfocus"), "Esc did not leave focus");
+      ok(content().querySelector(".task"), "the list is not back after leaving");
+    } finally {
+      if (document.body.classList.contains("bookfocus")) setWritingFocus(false);
+      go("next", {ctxFilter: null}); dropChores(path);
+    }
+  });
   test("#205 a parent context shows what is in the ones inside it, and Contexts inside takes them off", () => {
     makeContext("Testparent"); makeContext("Testparent/Testkid"); makeContext("Testlinked");
     const parent = getPage(contextPath("Testparent"));
