@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.155.9 - 2026-11-13
+
+- Weekly review › Actions: the key number on each answer no longer covers
+  its name. The same goes for Weekly review › Projects (#380).
+
 ## 1.155.8 - 2026-11-13
 
 - Phone and PC: on a phone the cursor stays in sight as you type. When a

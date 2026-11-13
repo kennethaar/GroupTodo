@@ -2181,6 +2181,21 @@ var GTD_TEST = (() => {
       ok(allChores().some(a => a.path !== path && plainTitle(a.title).startsWith("Clean the oven")), "the next round is on the Journal (#212)");
     } finally { PREF.set("review.chores", ""); closeDoneToast(); closeModal(); dropChores(path); }
   });
+  test("#380 Review › Actions and Projects: an answer's key number does not cover its name", async () => {
+    try {
+      for (const sub of ["actions", "projects"]) {
+        go("review", {sub}); await settle();
+        const boxes = [...content().querySelectorAll(".slot.solopt")].filter(b => b.querySelector(".solkey") && b.querySelector(".solopt-t"));
+        ok(boxes.length > 3, sub + ": no answers drawn");
+        for (const b of boxes) {
+          const k = b.querySelector(".solkey").getBoundingClientRect(), t = b.querySelector(".solopt-t").getBoundingClientRect();
+          if (!k.width) continue;                                  // no keys where nothing hovers
+          const apart = k.bottom <= t.top || k.right <= t.left || t.right <= k.left || t.bottom <= k.top;
+          ok(apart, sub + ": key " + b.querySelector(".solkey").textContent + " covers \"" + b.querySelector(".solopt-t").textContent + "\"");
+        }
+      }
+    } finally { go("today"); await settle(); }
+  });
   test("#213 Chores sorts the rooms by freshness, and the board puts them in red, yellow and green", async () => {
     const path = choreProject("chores board", [
       chore("Wipe the counters #30m [[c/home/testred]]", "daily", -2),

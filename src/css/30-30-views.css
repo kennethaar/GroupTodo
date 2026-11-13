@@ -356,6 +356,8 @@ body.solview #content{padding-bottom:14px}
 .slot.solopt{border-style:solid;border-color:var(--border2);cursor:pointer;justify-content:center;align-items:flex-start;gap:4px;padding:14px 14px 12px}
 .slot.solopt:hover{border-color:var(--accent)}
 .slot.solopt .lbl{position:absolute;top:8px;left:10px}
+/* Where the key numbers show, an answer's words start under its key (#380). */
+@media (hover:hover){.slot.solopt:has(>.lbl .solkey){padding-top:32px}}
 .solopt-t{font-size:17px;font-weight:650;line-height:1.25;color:var(--fg);overflow-wrap:anywhere}
 .solopt-t svg{width:15px;height:15px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .solopt-s{font-size:12.5px;color:var(--fg3)}
