@@ -5013,7 +5013,7 @@ var GTD_TEST = (() => {
       ok(document.querySelector(".modal"), "Advanced opens");
       closeModal();
     });
-    test("#291 one click on the Journal's date box or its arrows works; Import calendar shows beside it while the calendar is open", async () => {
+    test("#291 one click on the Journal's date box or its arrows works; Calendar settings shows beside it while the calendar is open", async () => {
       go("today", {todayDay: shiftISO(T(), -1)});
       await settle();
       const q = s => content().querySelector(s);
@@ -5044,13 +5044,14 @@ var GTD_TEST = (() => {
       go("today", {todayDay: null});
       await settle();
     });
-    test("#218 Calendars are in a private area's Settings; the Journal only has an import button by its date box", async () => {
+    test("#218 Calendars are in a private area's Settings; the Journal only has a Calendar settings button by its date box", async () => {
       go("today");
       await settle();
       ok(!content().querySelector(".calchip"), "no Calendars status chip on the Journal");
       ok(!content().querySelector('.todayicon[aria-label="Calendars"], .todayicon[title="Calendars"]'), "no Calendars icon on the Journal");
       const imp = content().querySelector(".daybox .dayimport");
-      ok(imp, "an import-calendar button sits with the date box");
+      ok(imp, "a calendar button sits with the date box");
+      eq(trim(imp.textContent), "Calendar settings", "it says what it opens (#386)");
       imp.click();
       await settle();
       ok(document.querySelector(".modal"), "it opens the Calendars dialog");

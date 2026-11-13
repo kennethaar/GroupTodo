@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.155.10 - 2026-11-13
+
+- Journal: the button by the date box while its calendar is open says
+  Calendar settings, which is what it opens: your calendars, meeting
+  reminders and how to add one. It said Import calendar (#386).
+
 ## 1.155.9 - 2026-11-13
 
 - Weekly review › Actions: the key number on each answer no longer covers

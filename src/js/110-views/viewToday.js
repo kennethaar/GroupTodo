@@ -168,7 +168,7 @@ function viewToday() {
   const head = vhead("Journal", dayName(day),
     who ? null : journalModes(false, day),
     el("div", {class: "dayhold"},
-      /* Import calendar shows only while the calendar is open, and goes when
+      /* Calendar settings shows only while the calendar is open, and goes when
          focus leaves for anything but itself (#291). */
       el("div", {class: "daynav daybox", onfocusout: e => {
         if (!e.relatedTarget?.classList?.contains("dayimport")) e.currentTarget.classList.remove("picking");
@@ -178,8 +178,8 @@ function viewToday() {
         el("label", {class: "daypick"}, dayWords, picker),
         el("button", {class: "dayarrow", title: "The day after", "aria-label": "The day after",
           onclick: () => toDay(shiftISO(day, 1))}, svgIcon(ICON_CHEVRON_RIGHT)),
-        who ? null : el("button", {class: "dayarrow dayimport", title: "Import a calendar into your day pages",
-          onclick: () => openCalendars()}, svgIcon(ICON_DATE), " Import calendar")),
+        who ? null : el("button", {class: "dayarrow dayimport", title: "Your calendars, meeting reminders and how to add one",
+          onclick: () => openCalendars()}, svgIcon(ICON_DATE), " Calendar settings")),
       day !== today ? el("button", {class: "textbtn backtoday", onclick: () => toDay(null)}, "Back to today") : null),
     people.length ? wideOnly(fselect("Whose day page", who, [["", "Your page"], ...people.map(n => [n, firstNameOf(n) + "'s page"])],
       v => go("today", {todayWho: v || null})), !who) : null,
