@@ -1,7 +1,8 @@
 /* The order the rest of a big folder is read in, and so shown in (#181):
    0  yesterday back to a month, and the days ahead
    1  the active projects      2  contexts      3  people      4  organisations
-   5  waiting and someday      6  done and cancelled      7  the older days
+   5  waiting and someday      6  done, cancelled, notes, mail and reviews
+   7  the older days
    Ranks below SHOWN_RANKS are laid in and drawn as each is in; until then
    the projects, contexts, people and organisations are there by file name. */
 function restRank(p, monthAgo) {

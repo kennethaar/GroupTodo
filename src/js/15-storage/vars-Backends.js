@@ -114,6 +114,7 @@ const Backends = {
       return h;
     }
     let fileCache = new Map();            // path -> file handle, from the last names()
+    let unlisted = [];                    // [handle, path] of folders names() left for laterNames()
     const unread = new Map();             // path -> why it could not be read, from the last readMany()
     /* How long the last read took, for Check the folder (#342): the listing,
        then every file read since, opening and reading its text apart. Which
@@ -130,8 +131,12 @@ const Backends = {
          One folder is listed at a time, to the end, before any folder inside
          it. Listed all at once, a phone's folder came back short -- whole
          subfolders of people missing -- with no error to say so (#188). */
-      async names({quiet = false} = {}) {
-        const found = new Map(), began = performance.now();
+      /* With a day (#181), a person's folder of day pages is not listed, nor
+         the folders named in late: years of them made the first draw wait.
+         Today's page is opened by its name, and laterNames() lists the rest
+         once the day is drawn. */
+      async names({quiet = false, today = null, late = []} = {}) {
+        const found = new Map(), later = [], began = performance.now();
         let dirs = 0;
         const walk = async (dir, prefix) => {
           const subs = [];
@@ -142,12 +147,43 @@ const Backends = {
             if (h.kind === "directory") { dirCache.set(p, h); subs.push([h, p]); }
             else if (/\.(md|org)$/i.test(name) || isVaultCssPath(p)) found.set(p, h);
           }
-          for (const [h, p] of subs) await walk(h, p);
+          for (const [h, p] of subs) {
+            if (today && (prefix === JOURNALS || late.includes(p))) { later.push([h, p]); continue; }
+            await walk(h, p);
+          }
         };
         await walk(rootHandle, "");
+        for (const [h, p] of later) {
+          if (!p.startsWith(JOURNALS + "/")) continue;
+          try { found.set(p + "/" + today + ".md", await h.getFileHandle(today + ".md")); }
+          catch (e) { if (!/NotFound|TypeMismatch/i.test((e && e.name) || "")) throw e; }
+        }
         fileCache = found;
         if (!quiet) timing = {at: Date.now(), dirs, listMs: performance.now() - began, files: 0, kb: 0,
                               readMs: 0, openMs: 0, textMs: 0, slowest: [], atOnce: 16};
+        if (today) unlisted = later;      // a full listing (Check the folder) leaves a staged read's folders to it
+        return Array.from(found.keys());
+      },
+      hasLater: () => unlisted.length > 0,
+      /* The folders names() left out, those pick() takes: every file in them.
+         Added to what is known, never swapped in emptied (#188). */
+      async laterNames(pick = () => true) {
+        const dirs = unlisted.filter(([, p]) => pick(p)), found = new Map(), began = performance.now();
+        unlisted = unlisted.filter(([, p]) => !pick(p));
+        const walk = async (dir, prefix) => {
+          const subs = [];
+          if (timing) timing.dirs++;
+          for await (const [name, h] of dir.entries()) {
+            if (name.startsWith(".")) continue;
+            const p = prefix + "/" + name;
+            if (h.kind === "directory") { dirCache.set(p, h); subs.push([h, p]); }
+            else if (/\.(md|org)$/i.test(name)) found.set(p, h);
+          }
+          for (const [h, p] of subs) await walk(h, p);
+        };
+        for (const [h, p] of dirs) await walk(h, p);
+        fileCache = new Map([...fileCache, ...found]);
+        if (timing) timing.listMs += performance.now() - began;
         return Array.from(found.keys());
       },
       /* Opened several at a time: one after another, a year of day pages on a

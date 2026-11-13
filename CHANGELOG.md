@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.155.12 - 2026-11-13
+
+- Vault and sync: today's page opens much sooner in a big folder (#181).
+  The first read no longer takes in notes, mail and reviews. They are there
+  by file name and read behind the day, with the done and cancelled
+  projects. Where the folder has been read in full on this device before,
+  the day folders and the folders of done and cancelled projects, notes,
+  mail and reviews are listed only after today is drawn. Today's page is
+  opened by its name.
+
 ## 1.155.11 - 2026-11-13
 
 - A page: ticking a task done no longer jumps the page up when it has

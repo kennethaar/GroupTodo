@@ -20,6 +20,13 @@ async function readIntoNow(record, edited, files = null) {
   record.hold = null;
   if (seen && (record.backend.kind === "fs" || record.backend.kind === "http"))
     PREF.set("pagecount:" + record.name, String(seen));
+  /* The same without what is listed late (listedLate): what the first read
+     of a big folder is held against (readStaged). */
+  if (seen && record.backend.kind === "fs") {
+    const pages = Array.from(files.keys()).filter(p => !listedLate(p) && !isGuidePath(p) && !isLangPath(p) &&
+      !isPromptPath(p) && /\.md$/i.test(p) && !looksLikeBundle(files.get(p))).length;
+    PREF.set("pagecount-pages:" + record.name, String(pages));
+  }
   for (const path of [...record.dirty, ...record.removed]) edited.add(path);
   /* The page a line is being typed into keeps what is on screen, and is
      merged with its file when the line is written back (#232). */

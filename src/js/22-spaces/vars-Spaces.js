@@ -64,7 +64,7 @@ const Spaces = {
         if (v !== undefined && v !== null) { await IDB.set("kv", key + ":" + clean, v); await IDB.del("kv", key + ":" + from); }
       } catch (_) {}
     }
-    for (const key of ["identity", "pagecount"]) {
+    for (const key of ["identity", "pagecount", "pagecount-pages"]) {
       const v = PREF.get(key + ":" + from, "");
       if (v) PREF.set(key + ":" + clean, v);
     }

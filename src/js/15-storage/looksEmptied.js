@@ -8,10 +8,10 @@
    So the area is put on hold. Nothing is written to that folder until you
    say what happened, and pages already in memory stay on screen. The count
    is per device, the one thing that knows what "last time" looked like. */
-function looksEmptied(record, seen) {
+function looksEmptied(record, seen, key = "pagecount:" + record.name) {
   const kind = record.backend && record.backend.kind;
   if (kind !== "fs" && kind !== "http") return false;
-  const had = Number(PREF.get("pagecount:" + record.name, "0")) || 0;
+  const had = Number(PREF.get(key, "0")) || 0;
   if (had < 3) return false;
   return seen === 0 || (had >= 20 && seen < had / 5);
 }

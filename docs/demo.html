@@ -4365,7 +4365,7 @@ placeholder="Add a task. Try: &quot;Call Mia about the VAT @phone tomorrow&quot;
 })();
 
 "use strict";
-const APP_VERSION = "1.155.11";
+const APP_VERSION = "1.155.12";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -5430,13 +5430,14 @@ dirCache.set(sofar, h);
 return h;
 }
 let fileCache = new Map();
+let unlisted = [];
 const unread = new Map();
 let timing = null;
 return {
 kind: "fs", label: rootHandle.name, writable: true, handle: rootHandle, unread,
 get timing() { return timing; },
-async names({quiet = false} = {}) {
-const found = new Map(), began = performance.now();
+async names({quiet = false, today = null, late = []} = {}) {
+const found = new Map(), later = [], began = performance.now();
 let dirs = 0;
 const walk = async (dir, prefix) => {
 const subs = [];
@@ -5447,12 +5448,41 @@ const p = prefix ? prefix + "/" + name : name;
 if (h.kind === "directory") { dirCache.set(p, h); subs.push([h, p]); }
 else if (/\.(md|org)$/i.test(name) || isVaultCssPath(p)) found.set(p, h);
 }
-for (const [h, p] of subs) await walk(h, p);
+for (const [h, p] of subs) {
+if (today && (prefix === JOURNALS || late.includes(p))) { later.push([h, p]); continue; }
+await walk(h, p);
+}
 };
 await walk(rootHandle, "");
+for (const [h, p] of later) {
+if (!p.startsWith(JOURNALS + "/")) continue;
+try { found.set(p + "/" + today + ".md", await h.getFileHandle(today + ".md")); }
+catch (e) { if (!/NotFound|TypeMismatch/i.test((e && e.name) || "")) throw e; }
+}
 fileCache = found;
 if (!quiet) timing = {at: Date.now(), dirs, listMs: performance.now() - began, files: 0, kb: 0,
 readMs: 0, openMs: 0, textMs: 0, slowest: [], atOnce: 16};
+if (today) unlisted = later;
+return Array.from(found.keys());
+},
+hasLater: () => unlisted.length > 0,
+async laterNames(pick = () => true) {
+const dirs = unlisted.filter(([, p]) => pick(p)), found = new Map(), began = performance.now();
+unlisted = unlisted.filter(([, p]) => !pick(p));
+const walk = async (dir, prefix) => {
+const subs = [];
+if (timing) timing.dirs++;
+for await (const [name, h] of dir.entries()) {
+if (name.startsWith(".")) continue;
+const p = prefix + "/" + name;
+if (h.kind === "directory") { dirCache.set(p, h); subs.push([h, p]); }
+else if (/\.(md|org)$/i.test(name)) found.set(p, h);
+}
+for (const [h, p] of subs) await walk(h, p);
+};
+for (const [h, p] of dirs) await walk(h, p);
+fileCache = new Map([...fileCache, ...found]);
+if (timing) timing.listMs += performance.now() - began;
 return Array.from(found.keys());
 },
 async readMany(paths, onEach = null) {
@@ -6501,10 +6531,12 @@ const p = readIntoNow(record, edited);
 READING.add(p);
 try { return await p; } finally { READING.delete(p); done(); }
 }
-const STUB_DIRS = [DIRS.cancelled, DIRS.completed, DIRS.active, DIRS.someday, DIRS.waiting,
-DIRS.people, DIRS.contexts, DIRS.orgs];
+const FIRST_DIRS = [join(PAGES, "_"), DIRS.lists, DIRS.areas, DIRS.goals, DIRS.verbs, DIRS.templates];
+const LATE_DIRS = [DIRS.completed, DIRS.cancelled, DIRS.zettel, DIRS.mail, DIRS.reviews];
+const listedLate = p => isJournalPath(p) || LATE_DIRS.some(d => p.startsWith(d + "/"));
 const STUB_PAGES = new WeakSet();
-const isStubPath = p => /\.md$/i.test(p) && STUB_DIRS.some(d => p.startsWith(d + "/"));
+const isStubPath = p => /\.md$/i.test(p) && p.startsWith(PAGES + "/") &&
+p.indexOf("/", PAGES.length + 1) !== -1 && !FIRST_DIRS.some(d => p.startsWith(d + "/"));
 const stillLoading = (rec, path) =>
 !!rec.stubs && (rec.stubs.has(path) || STUB_PAGES.has(rec.pages.get(path)));
 const SHOWN_RANKS = 5;
@@ -6545,38 +6577,52 @@ if (lost) notify(lost + " change(s) to " + spaceLabel(record.name) + " made whil
 "could not be kept. Please make them again.", "warn");
 };
 async function readStaged(record, edited, onRest, onSoon) {
+const today = todayISO();
+const pagesKey = "pagecount-pages:" + record.name;
+const defer = !!record.backend.laterNames && Number(PREF.get(pagesKey, "0")) >= 3;
 let paths;
-try { paths = await record.backend.names(); }
+try { paths = await record.backend.names(defer ? {today, late: LATE_DIRS} : undefined); }
 catch (e) {
 if (!/NotFound/i.test((e && e.name) || "")) throw e;
 holdRecord(record, "missing", 0);
 return null;
 }
-const seen = paths.filter(p => !isGuidePath(p) && !isLangPath(p) && !isPromptPath(p) && /\.md$/i.test(p)).length;
-if (looksEmptied(record, seen)) { holdRecord(record, "empty", seen); return null; }
-const today = todayISO();
+const counted = p => !isGuidePath(p) && !isLangPath(p) && !isPromptPath(p) && /\.md$/i.test(p);
+const seen = paths.filter(p => counted(p) && !(defer && listedLate(p))).length;
+const key = defer ? pagesKey : "pagecount:" + record.name;
+if (looksEmptied(record, seen, key)) { holdRecord(record, "empty", seen, key); return null; }
+const unlisted = defer && record.backend.hasLater();
 const later = p => isStubPath(p) ||
 (isJournalPath(p) && (/(\d{4}-\d{2}-\d{2})\.md$/i.exec(p) || [])[1] !== today);
-const rest = restOrder(paths.filter(later));
+const rest = paths.filter(later);
 const first = await record.backend.readMany(paths.filter(p => !later(p)));
-if (!rest.length) { await readIntoNow(record, edited, first); return null; }
+if (!rest.length && !unlisted) { await readIntoNow(record, edited, first); return null; }
 record.hold = null;
 record.stubs = new Set();
 fillRecord(record, first);
-for (const p of rest) {
-if (!isStubPath(p) || isGuidePath(p) || syncCopyOf(p)) continue;
+const standIn = p => {
+if (!isStubPath(p) || isGuidePath(p) || syncCopyOf(p)) return;
+if (record.pages.has(p)) return;
 const page = parsePage("");
 STUB_PAGES.add(page);
 record.pages.set(p, page);
 record.stubs.add(p);
-}
+};
+rest.forEach(standIn);
 applyVaultCss(record);
-const monthAgo = shiftISO(todayISO(), -SHOWN_DAYS);
-const rankOf = new Map(rest.map(p => [p, restRank(p, monthAgo)]));
-const soon = Array.from({length: SHOWN_RANKS}, (_, n) => rest.filter(p => rankOf.get(p) === n));
-const after = rest.filter(p => rankOf.get(p) >= SHOWN_RANKS);
 const tick = loadingTicker(record, rest.length);
+const listLate = async pick => {
+const more = (await record.backend.laterNames(pick)).filter(later);
+if (record.stubs) more.forEach(standIn);
+tick.add(more.length);
+return more;
+};
 return {rest: (async () => {
+if (unlisted) rest.push(...await listLate(isJournalPath));
+const monthAgo = shiftISO(today, -SHOWN_DAYS);
+const ordered = restOrder(rest);
+const rankOf = new Map(ordered.map(p => [p, restRank(p, monthAgo)]));
+const soon = Array.from({length: SHOWN_RANKS}, (_, n) => ordered.filter(p => rankOf.get(p) === n));
 const files = new Map(first);
 for (const group of soon) {
 if (!group.length) continue;
@@ -6584,6 +6630,12 @@ const got = await record.backend.readMany(group, tick);
 for (const [p, t] of got) files.set(p, t);
 if (record.stubs) { layInSoon(record, got, edited); if (onSoon) onSoon(record); }
 }
+if (unlisted) {
+const more = await listLate(() => true);
+if (more.length && onSoon) onSoon(record);
+rest.push(...more);
+}
+const after = restOrder(rest).filter(p => restRank(p, monthAgo) >= SHOWN_RANKS);
 for (const [p, t] of await record.backend.readMany(after, tick)) files.set(p, t);
 await readIntoNow(record, edited, files);
 if (onRest) onRest(record);
@@ -6655,6 +6707,11 @@ return record;
 record.hold = null;
 if (seen && (record.backend.kind === "fs" || record.backend.kind === "http"))
 PREF.set("pagecount:" + record.name, String(seen));
+if (seen && record.backend.kind === "fs") {
+const pages = Array.from(files.keys()).filter(p => !listedLate(p) && !isGuidePath(p) && !isLangPath(p) &&
+!isPromptPath(p) && /\.md$/i.test(p) && !looksLikeBundle(files.get(p))).length;
+PREF.set("pagecount-pages:" + record.name, String(pages));
+}
 for (const path of [...record.dirty, ...record.removed]) edited.add(path);
 const typing = typingPath(record.name);
 if (typing && record.pages.has(typing)) edited.add(typing);
@@ -6729,15 +6786,15 @@ if (!tag) tag = el("style", {id: "vault-css"});
 document.head.append(tag);
 if (tag.textContent !== parts.join("\n\n")) tag.textContent = parts.join("\n\n");
 }
-function looksEmptied(record, seen) {
+function looksEmptied(record, seen, key = "pagecount:" + record.name) {
 const kind = record.backend && record.backend.kind;
 if (kind !== "fs" && kind !== "http") return false;
-const had = Number(PREF.get("pagecount:" + record.name, "0")) || 0;
+const had = Number(PREF.get(key, "0")) || 0;
 if (had < 3) return false;
 return seen === 0 || (had >= 20 && seen < had / 5);
 }
-function holdRecord(record, reason, seen) {
-const had = Number(PREF.get("pagecount:" + record.name, "0")) || 0;
+function holdRecord(record, reason, seen, key = "pagecount:" + record.name) {
+const had = Number(PREF.get(key, "0")) || 0;
 record.hold = {reason, had, seen, at: nowStamp()};
 }
 const heldRecords = () => Array.from(LOADED.values()).filter(r => r.hold);
@@ -6791,6 +6848,7 @@ async function releaseHold(name) {
 const rec = LOADED.get(name);
 if (!rec) return;
 PREF.set("pagecount:" + name, "0");
+PREF.set("pagecount-pages:" + name, "0");
 if (rec.hold && rec.hold.reason === "missing") {
 const sp = Spaces.get(name);
 if (sp) { sp.kind = "local"; delete sp.label; await Spaces.save(); }
@@ -7569,7 +7627,7 @@ const v = await IDB.get("kv", key + ":" + from);
 if (v !== undefined && v !== null) { await IDB.set("kv", key + ":" + clean, v); await IDB.del("kv", key + ":" + from); }
 } catch (_) {}
 }
-for (const key of ["identity", "pagecount"]) {
+for (const key of ["identity", "pagecount", "pagecount-pages"]) {
 const v = PREF.get(key + ":" + from, "");
 if (v) PREF.set(key + ":" + clean, v);
 }
@@ -7743,6 +7801,7 @@ if (!same && LOST_FOLDER.has(name)) same = handle.name === sp.label;
 }
 const rec = newRecord(name, Backends.fs(handle));
 PREF.set("pagecount:" + name, "0");
+PREF.set("pagecount-pages:" + name, "0");
 await readInto(rec);
 const existing = rec.pages.size > 0;
 appLog("folder: " + name + " picked “" + handle.name + "”, " + rec.pages.size + " pages in it" + (join ? " (welcome screen)" : ""));
@@ -7894,7 +7953,7 @@ try { for (const k of await IDB.keys(store)) if (String(k).startsWith(name + "|"
 try { for (const k of LS.all().keys()) if (k.startsWith(name + "|")) LS.del(k); } catch (_) {}
 }
 }
-for (const key of ["identity", "pagecount"]) PREF.set(key + ":" + name, "");
+for (const key of ["identity", "pagecount", "pagecount-pages"]) PREF.set(key + ":" + name, "");
 await Spaces.remove(name);
 clearMemo(); render();
 return true;
@@ -14301,12 +14360,14 @@ function loadingTicker(record, total) {
 const st = {done: 0, total, last: []};
 LOADING.set(record.name, st);
 paintLoading();
-return path => {
+const tick = path => {
 st.done++;
 st.last.unshift(path);
 if (st.last.length > 12) st.last.length = 12;
 paintLoading();
 };
+tick.add = n => { st.total += n; paintLoading(); };
+return tick;
 }
 function loadingDone(record) { LOADING.delete(record.name); paintLoading(); }
 function paintLoading() {
@@ -16325,7 +16386,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.155.11 - 2026-11-13\n\n- A page: ticking a task done no longer jumps the page up when it has\n  pictures on it. A picture keeps its size while the page is drawn again,\n  so the page stays where it was (#382).\n\n## 1.155.10 - 2026-11-13\n\n- Journal: the button by the date box while its calendar is open says\n  Calendar settings, which is what it opens: your calendars, meeting\n  reminders and how to add one. It said Import calendar (#386).\n\n## 1.155.9 - 2026-11-13\n\n- Weekly review › Actions: the key number on each answer no longer covers\n  its name. The same goes for Weekly review › Projects (#380).\n\n## 1.155.8 - 2026-11-13\n\n- Phone and PC: on a phone the cursor stays in sight as you type. When a\n  long line wraps onto a new row, the page moves up just enough. Before,\n  the cursor went under the keyboard or the line toolbar (#389).\n\n## 1.155.7 - 2026-11-13\n\n- Phone and PC: on a phone the list of suggestions as you type shows two\n  at most, so it covers less of the page. Type on to narrow it (#388).\n\n## 1.155.6 - 2026-11-13\n\n- Areas and sharing: with more than one area on, GroupToDo opens on your\n  day page at once. The other areas come in behind it and join the screen\n  when they are read. Before, the day waited for every area (#387).\n\n## 1.155.5 - 2026-11-13\n\n- Vault and sync: a line you type on the day page while GroupToDo still\n  reads the folder is kept. Before, it could be lost when the folder took\n  over from the copy kept in the browser (#232).\n\n## 1.155.4 - 2026-11-12\n\n- Weekly review › Clarify: an icon in front of each link in the line says\n  what it is, a person, project, page and more, where you read it. The grey\n  chips under the line that said it again are gone (#379).\n\n## 1.155.3 - 2026-11-12\n\n- Keys on a line: paste a sketch right after ``` on a line and it stays\n  under that line, line for line, in the fixed-width font. Before, each of its\n  lines became a bullet. Enter after ``` goes on inside it too (#374).\n\n## 1.155.2 - 2026-11-12\n\n- Journal: on a computer, Enter on a line at the bottom moves the page just\n  enough to keep the new line in sight. Before, it was left under the line\n  toolbar (#172).\n\n## 1.155.1 - 2026-11-12\n\n- Hold and until: a task for a birthday is no longer cancelled once the\n  birthday has passed. Only an until:: date cancels a task. The Past birthday\n  tasks setting is gone (#381).\n\n## 1.155.0 - 2026-11-12\n\n- Next › List: Focus, once one context is picked. Only its first next action\n  is shown, in the list's own order, and nothing else. Done (Enter) ticks it\n  and brings the next one. Skip (→) leaves it as it is. When none are left,\n  you can go through the skipped ones again. Esc leaves (#360).\n";
+const HELP_NEWS = "## 1.155.12 - 2026-11-13\n\n- Vault and sync: today's page opens much sooner in a big folder (#181).\n  The first read no longer takes in notes, mail and reviews. They are there\n  by file name and read behind the day, with the done and cancelled\n  projects. Where the folder has been read in full on this device before,\n  the day folders and the folders of done and cancelled projects, notes,\n  mail and reviews are listed only after today is drawn. Today's page is\n  opened by its name.\n\n## 1.155.11 - 2026-11-13\n\n- A page: ticking a task done no longer jumps the page up when it has\n  pictures on it. A picture keeps its size while the page is drawn again,\n  so the page stays where it was (#382).\n\n## 1.155.10 - 2026-11-13\n\n- Journal: the button by the date box while its calendar is open says\n  Calendar settings, which is what it opens: your calendars, meeting\n  reminders and how to add one. It said Import calendar (#386).\n\n## 1.155.9 - 2026-11-13\n\n- Weekly review › Actions: the key number on each answer no longer covers\n  its name. The same goes for Weekly review › Projects (#380).\n\n## 1.155.8 - 2026-11-13\n\n- Phone and PC: on a phone the cursor stays in sight as you type. When a\n  long line wraps onto a new row, the page moves up just enough. Before,\n  the cursor went under the keyboard or the line toolbar (#389).\n\n## 1.155.7 - 2026-11-13\n\n- Phone and PC: on a phone the list of suggestions as you type shows two\n  at most, so it covers less of the page. Type on to narrow it (#388).\n\n## 1.155.6 - 2026-11-13\n\n- Areas and sharing: with more than one area on, GroupToDo opens on your\n  day page at once. The other areas come in behind it and join the screen\n  when they are read. Before, the day waited for every area (#387).\n\n## 1.155.5 - 2026-11-13\n\n- Vault and sync: a line you type on the day page while GroupToDo still\n  reads the folder is kept. Before, it could be lost when the folder took\n  over from the copy kept in the browser (#232).\n\n## 1.155.4 - 2026-11-12\n\n- Weekly review › Clarify: an icon in front of each link in the line says\n  what it is, a person, project, page and more, where you read it. The grey\n  chips under the line that said it again are gone (#379).\n\n## 1.155.3 - 2026-11-12\n\n- Keys on a line: paste a sketch right after ``` on a line and it stays\n  under that line, line for line, in the fixed-width font. Before, each of its\n  lines became a bullet. Enter after ``` goes on inside it too (#374).\n\n## 1.155.2 - 2026-11-12\n\n- Journal: on a computer, Enter on a line at the bottom moves the page just\n  enough to keep the new line in sight. Before, it was left under the line\n  toolbar (#172).\n\n## 1.155.1 - 2026-11-12\n\n- Hold and until: a task for a birthday is no longer cancelled once the\n  birthday has passed. Only an until:: date cancels a task. The Past birthday\n  tasks setting is gone (#381).\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {

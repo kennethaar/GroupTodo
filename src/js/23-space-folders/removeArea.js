@@ -19,7 +19,7 @@ async function removeArea(name) {
       try { for (const k of LS.all().keys()) if (k.startsWith(name + "|")) LS.del(k); } catch (_) {}
     }
   }
-  for (const key of ["identity", "pagecount"]) PREF.set(key + ":" + name, "");
+  for (const key of ["identity", "pagecount", "pagecount-pages"]) PREF.set(key + ":" + name, "");
   await Spaces.remove(name);
   clearMemo(); render();
   return true;

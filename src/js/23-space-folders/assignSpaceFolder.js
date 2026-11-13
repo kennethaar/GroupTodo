@@ -41,6 +41,7 @@ async function assignSpaceFolder(name, {join = false, invited = false, returning
   }
   const rec = newRecord(name, Backends.fs(handle));
   PREF.set("pagecount:" + name, "0");               // a folder chosen on purpose is never "the old one, emptied"
+  PREF.set("pagecount-pages:" + name, "0");
   await readInto(rec);                              // what the folder already has wins
   const existing = rec.pages.size > 0;
   appLog("folder: " + name + " picked “" + handle.name + "”, " + rec.pages.size + " pages in it" + (join ? " (welcome screen)" : ""));

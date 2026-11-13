@@ -687,6 +687,59 @@ var GTD_TEST = (() => {
     ok(!rec.stubs, "no stand-ins left");
     eq(shown, 3, "times shown before the rest");
   });
+  test("#181 a folder read before lists today's page alone, and old projects, notes and mail after the first draw", async () => {
+    const jp = d => join(JOURNALS, "tester", d + ".md");
+    const yest = shiftISO(T(), -1);
+    const tree = {
+      journals: {tester: {[T() + ".md"]: "- today\n", [yest + ".md"]: "- yesterday\n"}},
+      pages: {"GTD.md": "title:: GTD\n", "_": {"Purpose.md": "title:: Purpose\n"},
+        "1": {"Boat.md": "title:: Boat\n\n- TODO Sand the hull\n"},
+        "0": {"Done.md": "title:: Done\n\n- DONE it\n"},
+        z: {"Idea.md": "title:: Idea\n\n- a thought\n"}, m: {"Mail.md": "title:: Mail\n"}},
+    };
+    const done = join(DIRS.completed, "Done.md"), idea = join(DIRS.zettel, "Idea.md"), boat = join(DIRS.active, "Boat.md");
+    const run = async (name, gate = {}) => {
+      const b = Backends.fs(fakeDir(name, tree, [], gate));
+      const firsts = [];
+      const read = b.readMany.bind(b);
+      b.readMany = (paths, onEach) => { firsts.push(paths.slice()); return read(paths, onEach); };
+      const rec = newRecord(name, b);
+      await readInto(rec, {stage: true});
+      return {rec, first: firsts[0]};
+    };
+    const key = "pagecount-pages:Late181";
+    PREF.set(key, "0");
+    try {
+      // Never read in full on this device: everything listed, notes no longer in the first read.
+      let {rec, first} = await run("Late181");
+      ok(first.includes(jp(T())) && first.includes(join(PAGES, "_", "Purpose.md")), "today and the horizons in the first read");
+      ok(!first.includes(idea), "a note in the first read");
+      ok(rec.stubs.has(idea) && rec.stubs.has(done), "a note and a done project there by name");
+      await filesLoaded();
+      eq(PREF.get(key), "3", "pages counted without days, done projects, notes and mail");
+      /* Read in full before: the day folder and the folders read last wait for
+         the first draw. Check the folder lists it all meanwhile. */
+      let release;
+      const held = new Promise(r => { release = r; });
+      ({rec, first} = await run("Late181", {[yest + ".md"]: held}));
+      ok(!rec.pages.has(done) && !rec.pages.has(idea), "a done project or a note listed before the first draw");
+      ok(rec.stubs.has(boat), "an active project is there by name");
+      has(serializePage(rec.pages.get(jp(T()))), "today", "today read first");
+      ok(rec.backend.hasLater(), "nothing left to list");
+      await rec.backend.names({quiet: true});
+      release();
+      await filesLoaded();
+      ok(!rec.stubs, "no stand-ins left");
+      has(serializePage(rec.pages.get(jp(yest))), "yesterday", "yesterday read");
+      has(serializePage(rec.pages.get(done)), "DONE it", "the done project read");
+      has(serializePage(rec.pages.get(idea)), "a thought", "the note read");
+      // A folder emptied since is still held, on the count without the late folders.
+      delete tree.pages["1"]; delete tree.pages["_"]; delete tree.pages["GTD.md"];
+      PREF.set(key, "40");
+      ({rec} = await run("Late181"));
+      eq(rec.hold && rec.hold.reason, "empty", "an emptied folder is not held");
+    } finally { PREF.set(key, ""); PREF.set("pagecount:Late181", ""); }
+  });
   test("#181 a project still a stand-in is a name, not a stuck project", async () => {
     const rec = newRecord("Stuck181", Backends.memory());
     const boat = join(DIRS.active, "Boat.md");
