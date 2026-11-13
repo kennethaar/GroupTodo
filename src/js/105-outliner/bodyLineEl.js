@@ -69,6 +69,7 @@ function bodyLineEl(path, b, i) {
     focusBodyLine(b.id, at + add.length - 1);
   });
   attachSuggest(txt);
+  txt.addEventListener("input", () => keepCaretInSight(txt));
   txt.addEventListener("keydown", e => {
     if (suggestKey(e)) return;
     if (tableTab(e, path, b, i, txt)) return;

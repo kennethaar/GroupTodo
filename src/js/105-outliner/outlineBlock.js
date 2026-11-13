@@ -332,6 +332,7 @@ function outlineBlock(path, page, b, opts = {}) {
     focusBlock(b.id, false);
   });
   txt.addEventListener("input", () => { if (FLY && FLY.txt === txt) { FLY.box.hidden = flyHidden(); flyPlace(); } });
+  txt.addEventListener("input", () => keepCaretInSight(txt));
   txt.addEventListener("keydown", e => {
     // The menu under the line, then the suggestion list, own their keys first.
     if (flyKey(e)) return;

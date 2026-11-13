@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.155.8 - 2026-11-13
+
+- Phone and PC: on a phone the cursor stays in sight as you type. When a
+  long line wraps onto a new row, the page moves up just enough. Before,
+  the cursor went under the keyboard or the line toolbar (#389).
+
 ## 1.155.7 - 2026-11-13
 
 - Phone and PC: on a phone the list of suggestions as you type shows two

@@ -1487,7 +1487,9 @@ js/145-horizons-view/section.js
 js/105-outliner/siblingsOf.js
 js/105-outliner/parentOf.js
 js/105-outliner/focusBodyLine.js
+js/105-outliner/typingBand.js
 js/105-outliner/centerNewLine.js
+js/105-outliner/keepCaretInSight.js
 js/105-outliner/run-5-1.js
 js/105-outliner/focusBlock.js
 js/105-outliner/caretScreenRect.js

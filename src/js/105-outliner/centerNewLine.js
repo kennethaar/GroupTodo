@@ -13,10 +13,7 @@ function centerNewLine(sel) {
   const go = () => {
     const node = $(sel);
     if (!node || document.activeElement !== node) return;
-    const cr = c.getBoundingClientRect(), bar = $("#editBar");
-    const top = Math.max(cr.top, vv ? vv.offsetTop : 0);
-    const bot = Math.min(cr.bottom, (vv ? vv.offsetTop + vv.height : innerHeight) -
-      (bar && !bar.hidden ? bar.offsetHeight : 0));
+    const {top, bot} = typingBand(c);
     const r = node.getBoundingClientRect();
     if (phone) { c.scrollTop += Math.round(r.top + Math.min(r.height, 40) / 2 - (top + bot) / 2); return; }
     const gap = 8;

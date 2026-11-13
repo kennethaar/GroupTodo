@@ -3839,6 +3839,35 @@ var GTD_TEST = (() => {
         Math.round(cr.top) + "-" + Math.round(cr.bottom - bar()));
     } finally { go("today"); }
   });
+  test("#389 on a phone the caret stays in sight when a long line wraps onto a new row", async () => {
+    const path = scratchProject("caret in sight", Array.from({length: 60}, (_, i) => ["TODO", "Row " + i]));
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    const mm = window.matchMedia;
+    window.matchMedia = q => q.replace(/\s/g, "") === "(pointer:coarse)" ? {matches: true} : mm.call(window, q);
+    openPage(path);
+    await settle();
+    const last = getPage(path).blocks[59];
+    try {
+      focusBlock(last.id);
+      await frame();
+      const c = content(), bar = () => { const e = document.querySelector("#editBar"); return e && !e.hidden ? e.offsetHeight : 0; };
+      const txt = document.querySelector('.blk[data-id="' + last.id + '"] .txt');
+      // The line sits right at the bottom of what can be seen.
+      c.scrollTop += Math.round(txt.getBoundingClientRect().bottom - (c.getBoundingClientRect().bottom - bar()) + 2);
+      await frame();
+      // Typed on until it wraps: the caret is now on rows under the bottom.
+      txt.textContent = "Row 59 " + "and a long line typed on a phone ".repeat(12);
+      const range = document.createRange();
+      range.selectNodeContents(txt); range.collapse(false);
+      getSelection().removeAllRanges(); getSelection().addRange(range);
+      txt.dispatchEvent(new InputEvent("input", {bubbles: true}));
+      await frame();
+      const cr = c.getBoundingClientRect(), r = caretScreenRect(txt);
+      ok(r.bottom <= cr.bottom - bar() && r.top >= cr.top,
+        "the caret is at " + Math.round(r.top) + "-" + Math.round(r.bottom) + ", in sight is " +
+        Math.round(cr.top) + "-" + Math.round(cr.bottom - bar()));
+    } finally { window.matchMedia = mm; go("today"); }
+  });
   test("#268 brackets come in pairs and wrap the word the caret is in", async () => {
     const path = scratchProject("auto pair", [["TODO", "Call Anna"]]);
     openPage(path);

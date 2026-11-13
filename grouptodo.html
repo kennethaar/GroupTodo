@@ -4123,7 +4123,7 @@ placeholder="Add a task. Try: &quot;Call Mia about the VAT @phone tomorrow&quot;
 })();
 
 "use strict";
-const APP_VERSION = "1.155.7";
+const APP_VERSION = "1.155.8";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -16071,7 +16071,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.155.7 - 2026-11-13\n\n- Phone and PC: on a phone the list of suggestions as you type shows two\n  at most, so it covers less of the page. Type on to narrow it (#388).\n\n## 1.155.6 - 2026-11-13\n\n- Areas and sharing: with more than one area on, GroupToDo opens on your\n  day page at once. The other areas come in behind it and join the screen\n  when they are read. Before, the day waited for every area (#387).\n\n## 1.155.5 - 2026-11-13\n\n- Vault and sync: a line you type on the day page while GroupToDo still\n  reads the folder is kept. Before, it could be lost when the folder took\n  over from the copy kept in the browser (#232).\n\n## 1.155.4 - 2026-11-12\n\n- Weekly review › Clarify: an icon in front of each link in the line says\n  what it is, a person, project, page and more, where you read it. The grey\n  chips under the line that said it again are gone (#379).\n\n## 1.155.3 - 2026-11-12\n\n- Keys on a line: paste a sketch right after ``` on a line and it stays\n  under that line, line for line, in the fixed-width font. Before, each of its\n  lines became a bullet. Enter after ``` goes on inside it too (#374).\n\n## 1.155.2 - 2026-11-12\n\n- Journal: on a computer, Enter on a line at the bottom moves the page just\n  enough to keep the new line in sight. Before, it was left under the line\n  toolbar (#172).\n\n## 1.155.1 - 2026-11-12\n\n- Hold and until: a task for a birthday is no longer cancelled once the\n  birthday has passed. Only an until:: date cancels a task. The Past birthday\n  tasks setting is gone (#381).\n\n## 1.155.0 - 2026-11-12\n\n- Next › List: Focus, once one context is picked. Only its first next action\n  is shown, in the list's own order, and nothing else. Done (Enter) ticks it\n  and brings the next one. Skip (→) leaves it as it is. When none are left,\n  you can go through the skipped ones again. Esc leaves (#360).\n\n## 1.154.1 - 2026-11-12\n\n- Keys on a line: write ``` on a line, then go on with Shift+Enter, and the\n  lines under it are drawn in the fixed-width font, in the Journal too.\n  Before, only a fence that began under the line counted (#374).\n\n## 1.154.0 - 2026-11-12\n\n- Weekly review › Clarify: the card says plainly what the line is already.\n  Every link and #tag has its kind, a responsibility, note or plain page\n  too. A line that is only links or tags says it is on file already. A\n  person, organisation or project written without a link is shown with Link\n  it, which links it to the page you have, in any case (#379).\n\n## 1.153.2 - 2026-11-12\n\n- Weekly review › Projects: a card that got every question answered after it\n  was dealt, on its page for example, is passed by. It no longer waits with\n  only Next card on it (#378).\n\n## 1.153.1 - 2026-11-12\n\n- Weekly review › Projects: None, Just me and No deadline are written on the\n  project (org:: none, with:: none, deadline:: none), as Nothing comes first\n  already was. Before, they were kept for the week only, so every project\n  without a deadline or a team was asked again each week. Adding someone\n  later takes the place of none (#377).\n";
+const HELP_NEWS = "## 1.155.8 - 2026-11-13\n\n- Phone and PC: on a phone the cursor stays in sight as you type. When a\n  long line wraps onto a new row, the page moves up just enough. Before,\n  the cursor went under the keyboard or the line toolbar (#389).\n\n## 1.155.7 - 2026-11-13\n\n- Phone and PC: on a phone the list of suggestions as you type shows two\n  at most, so it covers less of the page. Type on to narrow it (#388).\n\n## 1.155.6 - 2026-11-13\n\n- Areas and sharing: with more than one area on, GroupToDo opens on your\n  day page at once. The other areas come in behind it and join the screen\n  when they are read. Before, the day waited for every area (#387).\n\n## 1.155.5 - 2026-11-13\n\n- Vault and sync: a line you type on the day page while GroupToDo still\n  reads the folder is kept. Before, it could be lost when the folder took\n  over from the copy kept in the browser (#232).\n\n## 1.155.4 - 2026-11-12\n\n- Weekly review › Clarify: an icon in front of each link in the line says\n  what it is, a person, project, page and more, where you read it. The grey\n  chips under the line that said it again are gone (#379).\n\n## 1.155.3 - 2026-11-12\n\n- Keys on a line: paste a sketch right after ``` on a line and it stays\n  under that line, line for line, in the fixed-width font. Before, each of its\n  lines became a bullet. Enter after ``` goes on inside it too (#374).\n\n## 1.155.2 - 2026-11-12\n\n- Journal: on a computer, Enter on a line at the bottom moves the page just\n  enough to keep the new line in sight. Before, it was left under the line\n  toolbar (#172).\n\n## 1.155.1 - 2026-11-12\n\n- Hold and until: a task for a birthday is no longer cancelled once the\n  birthday has passed. Only an until:: date cancels a task. The Past birthday\n  tasks setting is gone (#381).\n\n## 1.155.0 - 2026-11-12\n\n- Next › List: Focus, once one context is picked. Only its first next action\n  is shown, in the list's own order, and nothing else. Done (Enter) ticks it\n  and brings the next one. Skip (→) leaves it as it is. When none are left,\n  you can go through the skipped ones again. Esc leaves (#360).\n\n## 1.154.1 - 2026-11-12\n\n- Keys on a line: write ``` on a line, then go on with Shift+Enter, and the\n  lines under it are drawn in the fixed-width font, in the Journal too.\n  Before, only a fence that began under the line counted (#374).\n\n## 1.154.0 - 2026-11-12\n\n- Weekly review › Clarify: the card says plainly what the line is already.\n  Every link and #tag has its kind, a responsibility, note or plain page\n  too. A line that is only links or tags says it is on file already. A\n  person, organisation or project written without a link is shown with Link\n  it, which links it to the page you have, in any case (#379).\n\n## 1.153.2 - 2026-11-12\n\n- Weekly review › Projects: a card that got every question answered after it\n  was dealt, on its page for example, is passed by. It no longer waits with\n  only Next card on it (#378).\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {
@@ -28212,6 +28212,13 @@ r.selectNodeContents(node); r.collapse(!atEnd);
 s.removeAllRanges(); s.addRange(r);
 });
 }
+function typingBand(c) {
+const vv = window.visualViewport, cr = c.getBoundingClientRect(), bar = $("#editBar");
+return {
+top: Math.max(cr.top, vv ? vv.offsetTop : 0),
+bot: Math.min(cr.bottom, (vv ? vv.offsetTop + vv.height : innerHeight) - (bar && !bar.hidden ? bar.offsetHeight : 0)),
+};
+}
 function centerNewLine(sel) {
 const c = $("#content"), vv = window.visualViewport;
 if (!c) return;
@@ -28220,10 +28227,7 @@ if (phone) c.classList.add("roomunder");
 const go = () => {
 const node = $(sel);
 if (!node || document.activeElement !== node) return;
-const cr = c.getBoundingClientRect(), bar = $("#editBar");
-const top = Math.max(cr.top, vv ? vv.offsetTop : 0);
-const bot = Math.min(cr.bottom, (vv ? vv.offsetTop + vv.height : innerHeight) -
-(bar && !bar.hidden ? bar.offsetHeight : 0));
+const {top, bot} = typingBand(c);
 const r = node.getBoundingClientRect();
 if (phone) { c.scrollTop += Math.round(r.top + Math.min(r.height, 40) / 2 - (top + bot) / 2); return; }
 const gap = 8;
@@ -28236,6 +28240,13 @@ const again = () => requestAnimationFrame(go);
 vv.addEventListener("resize", again);
 setTimeout(() => vv.removeEventListener("resize", again), 800);
 }
+}
+function keepCaretInSight(host) {
+const c = $("#content");
+if (!c || !touchFirst() || document.activeElement !== host) return;
+const {top, bot} = typingBand(c), r = caretScreenRect(host), gap = 8;
+if (r.bottom > bot - gap) c.scrollTop += Math.ceil(r.bottom - bot + gap);
+else if (r.top < top + gap) c.scrollTop -= Math.ceil(top + gap - r.top);
 }
 document.addEventListener("focusout", () => setTimeout(() => {
 const a = document.activeElement, c = $("#content");
@@ -29315,6 +29326,7 @@ touch(path); noteTodoTouched(); render();
 focusBodyLine(b.id, at + add.length - 1);
 });
 attachSuggest(txt);
+txt.addEventListener("input", () => keepCaretInSight(txt));
 txt.addEventListener("keydown", e => {
 if (suggestKey(e)) return;
 if (tableTab(e, path, b, i, txt)) return;
@@ -29833,6 +29845,7 @@ if (st === "WAIT" && !assigneeOf(b)) FLY_OPEN_AFTER = {id: b.id, k: "who"};
 focusBlock(b.id, false);
 });
 txt.addEventListener("input", () => { if (FLY && FLY.txt === txt) { FLY.box.hidden = flyHidden(); flyPlace(); } });
+txt.addEventListener("input", () => keepCaretInSight(txt));
 txt.addEventListener("keydown", e => {
 if (flyKey(e)) return;
 if (suggestKey(e)) return;
