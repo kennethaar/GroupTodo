@@ -3,7 +3,7 @@
    number for a fix, the middle one for a feature. CHANGELOG.md says what each
    one brought, and it is shown beside the name top left, so whoever is testing
    can see at a glance that they have the newest file open. */
-const APP_VERSION = "1.155.5";
+const APP_VERSION = "1.155.6";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 /* ============================================================
    00_BOOTSTRAP -- utilities

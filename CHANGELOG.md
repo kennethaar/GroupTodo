@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.155.6 - 2026-11-13
+
+- Areas and sharing: with more than one area on, GroupToDo opens on your
+  day page at once. The other areas come in behind it and join the screen
+  when they are read. Before, the day waited for every area (#387).
+
 ## 1.155.5 - 2026-11-13
 
 - Vault and sync: a line you type on the day page while GroupToDo still

@@ -297,6 +297,7 @@ js/23-space-folders/areaDraggable.js
 js/23-space-folders/visibleSpaces.js
 js/23-space-folders/setVisibleSpaces.js
 js/23-space-folders/vars-multiSpace.js
+js/23-space-folders/vars-ensureVisibleLoaded.js
 js/23-space-folders/ensureVisibleLoaded.js
 js/23-space-folders/vars-ACROSS.js
 js/23-space-folders/acrossSpaces.js

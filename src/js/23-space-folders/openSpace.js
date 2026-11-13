@@ -40,7 +40,7 @@ async function openSpace(name, destination = null, {draw = true} = {}) {
   state.pagePath = destination?.pagePath || null;
   if (destination) for (const key of NAV_FIELDS) if (key in destination) state[key]=destination[key];
   if (destination && "branch" in destination) applyBranchSnap(destination.branch);
-  await ensureVisibleLoaded();
+  ensureVisibleLoaded();            // the areas beside it come in behind the journal (#387)
   SPACE_TRANSITION = false;
   if (draw) render();
   navRecord();

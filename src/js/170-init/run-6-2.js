@@ -21,7 +21,7 @@
   scanVerbs();
   topUpTrackerSeries();               // before today's page is made, so it gets them
   if (!folderWaiting(V.space)) ensureJournal(todayISO());
-  await ensureVisibleLoaded();
+  ensureVisibleLoaded();            // the areas beside it come in behind the journal (#387)
   render();
   await collectSharedFile();
   window.addEventListener("hashchange", () => handleHash());

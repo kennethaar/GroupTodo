@@ -1054,6 +1054,45 @@ var GTD_TEST = (() => {
     render();
   });
 
+  test("#387 today's journal is drawn first; another area shown beside it is read behind", async () => {
+    await flush();
+    const name = V.space, other = "Test387 Other", wasVisible = PREF.get("visibleSpaces", "");
+    const realLoad = loadSpaceRecord, realRender = render;
+    let release, drawn = 0;
+    const held = new Promise(r => { release = r; });
+    Spaces.list.push({name: other, kind: "memory"});
+    loadSpaceRecord = async n => {
+      if (n !== other) return realLoad(n);
+      await held;
+      LOADED.set(other, newRecord(other, Backends.memory(other)));
+      return LOADED.get(other);
+    };
+    render = function () { drawn++; return realRender.apply(this, arguments); };
+    try {
+      setVisibleSpaces([name, other]);
+      const got = await Promise.race([openSpace(name).then(() => "open"),
+                                      new Promise(r => setTimeout(() => r("waiting"), 1500))]);
+      eq(got, "open", "the area waited for the other area shown beside it");
+      ok(drawn > 0, "nothing was drawn while the other area was read");
+      ok(!LOADED.has(other), "the other area was read before the journal");
+      const before = drawn;
+      release();
+      for (let i = 0; i < 50 && !LOADED.has(other); i++) await new Promise(r => setTimeout(r, 20));
+      await settle();
+      ok(LOADED.has(other), "the other area was never read");
+      ok(drawn > before, "the screen was not drawn again once the other area was in");
+      const init = [...document.scripts].map(x => x.textContent).find(t => t.includes("(async function init()")) || "";
+      ok(!/await ensureVisibleLoaded\(\);\s*render\(\)/.test(init), "start-up waits for every shown area before it draws");
+    } finally {
+      release();
+      loadSpaceRecord = realLoad; render = realRender;
+      LOADED.delete(other);
+      Spaces.list = Spaces.list.filter(s => s.name !== other);
+      setVisibleSpaces(wasVisible ? JSON.parse(wasVisible) : []);
+      clearMemo(); render();
+    }
+  });
+
   test("#181 a stand-in edited while it loads gives way to its file when the first of the rest is in", () => {
     const rec = newRecord("Lay181", null);
     const path = personPath("Tor Vik");

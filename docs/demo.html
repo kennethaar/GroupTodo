@@ -4364,7 +4364,7 @@ placeholder="Add a task. Try: &quot;Call Mia about the VAT @phone tomorrow&quot;
 })();
 
 "use strict";
-const APP_VERSION = "1.155.5";
+const APP_VERSION = "1.155.6";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -8219,12 +8219,19 @@ function setVisibleSpaces(names) {
 PREF.set("visibleSpaces", JSON.stringify(Array.from(new Set(names))));
 }
 const multiSpace = () => visibleSpaces().length > 1;
-async function ensureVisibleLoaded() {
-let more = false;
-for (const n of visibleSpaces()) {
-if (!LOADED.has(n)) { try { await loadSpaceRecord(n); more = true; } catch (_) {} }
-}
-if (more) scanVerbs();
+const VISIBLE_READING = new Map();
+function ensureVisibleLoaded() {
+const pending = visibleSpaces().filter(n => !LOADED.has(n)).map(n => {
+if (!VISIBLE_READING.has(n))
+VISIBLE_READING.set(n, loadSpaceRecord(n).catch(() => null).finally(() => VISIBLE_READING.delete(n)));
+return VISIBLE_READING.get(n);
+});
+if (!pending.length) return Promise.resolve(false);
+return Promise.all(pending).then(() => {
+scanVerbs(); clearMemo();
+renderUnlessTyping();
+return true;
+});
 }
 let ACROSS = 0;
 function acrossSpaces(fn) {
@@ -8456,7 +8463,7 @@ state.view = destination?.view || startView();
 state.pagePath = destination?.pagePath || null;
 if (destination) for (const key of NAV_FIELDS) if (key in destination) state[key]=destination[key];
 if (destination && "branch" in destination) applyBranchSnap(destination.branch);
-await ensureVisibleLoaded();
+ensureVisibleLoaded();
 SPACE_TRANSITION = false;
 if (draw) render();
 navRecord();
@@ -16305,7 +16312,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.155.5 - 2026-11-13\n\n- Vault and sync: a line you type on the day page while GroupToDo still\n  reads the folder is kept. Before, it could be lost when the folder took\n  over from the copy kept in the browser (#232).\n\n## 1.155.4 - 2026-11-12\n\n- Weekly review › Clarify: an icon in front of each link in the line says\n  what it is, a person, project, page and more, where you read it. The grey\n  chips under the line that said it again are gone (#379).\n\n## 1.155.3 - 2026-11-12\n\n- Keys on a line: paste a sketch right after ``` on a line and it stays\n  under that line, line for line, in the fixed-width font. Before, each of its\n  lines became a bullet. Enter after ``` goes on inside it too (#374).\n\n## 1.155.2 - 2026-11-12\n\n- Journal: on a computer, Enter on a line at the bottom moves the page just\n  enough to keep the new line in sight. Before, it was left under the line\n  toolbar (#172).\n\n## 1.155.1 - 2026-11-12\n\n- Hold and until: a task for a birthday is no longer cancelled once the\n  birthday has passed. Only an until:: date cancels a task. The Past birthday\n  tasks setting is gone (#381).\n\n## 1.155.0 - 2026-11-12\n\n- Next › List: Focus, once one context is picked. Only its first next action\n  is shown, in the list's own order, and nothing else. Done (Enter) ticks it\n  and brings the next one. Skip (→) leaves it as it is. When none are left,\n  you can go through the skipped ones again. Esc leaves (#360).\n\n## 1.154.1 - 2026-11-12\n\n- Keys on a line: write ``` on a line, then go on with Shift+Enter, and the\n  lines under it are drawn in the fixed-width font, in the Journal too.\n  Before, only a fence that began under the line counted (#374).\n\n## 1.154.0 - 2026-11-12\n\n- Weekly review › Clarify: the card says plainly what the line is already.\n  Every link and #tag has its kind, a responsibility, note or plain page\n  too. A line that is only links or tags says it is on file already. A\n  person, organisation or project written without a link is shown with Link\n  it, which links it to the page you have, in any case (#379).\n\n## 1.153.2 - 2026-11-12\n\n- Weekly review › Projects: a card that got every question answered after it\n  was dealt, on its page for example, is passed by. It no longer waits with\n  only Next card on it (#378).\n\n## 1.153.1 - 2026-11-12\n\n- Weekly review › Projects: None, Just me and No deadline are written on the\n  project (org:: none, with:: none, deadline:: none), as Nothing comes first\n  already was. Before, they were kept for the week only, so every project\n  without a deadline or a team was asked again each week. Adding someone\n  later takes the place of none (#377).\n\n## 1.153.0 - 2026-11-12\n\n- Weekly review › Clarify: the line's day page sits on the right, the line\n  marked in the middle and the rest quiet, as in Focus. Scroll it to see\n  what came before and after. It follows each new line. Close puts it away;\n  Show the day page beside it brings it back (#376).\n\n## 1.152.1 - 2026-11-12\n\n- Weekly review › Clarify: a markdown table reads as a table, on the card\n  and in the lines under it, not as raw | rows (#375).\n";
+const HELP_NEWS = "## 1.155.6 - 2026-11-13\n\n- Areas and sharing: with more than one area on, GroupToDo opens on your\n  day page at once. The other areas come in behind it and join the screen\n  when they are read. Before, the day waited for every area (#387).\n\n## 1.155.5 - 2026-11-13\n\n- Vault and sync: a line you type on the day page while GroupToDo still\n  reads the folder is kept. Before, it could be lost when the folder took\n  over from the copy kept in the browser (#232).\n\n## 1.155.4 - 2026-11-12\n\n- Weekly review › Clarify: an icon in front of each link in the line says\n  what it is, a person, project, page and more, where you read it. The grey\n  chips under the line that said it again are gone (#379).\n\n## 1.155.3 - 2026-11-12\n\n- Keys on a line: paste a sketch right after ``` on a line and it stays\n  under that line, line for line, in the fixed-width font. Before, each of its\n  lines became a bullet. Enter after ``` goes on inside it too (#374).\n\n## 1.155.2 - 2026-11-12\n\n- Journal: on a computer, Enter on a line at the bottom moves the page just\n  enough to keep the new line in sight. Before, it was left under the line\n  toolbar (#172).\n\n## 1.155.1 - 2026-11-12\n\n- Hold and until: a task for a birthday is no longer cancelled once the\n  birthday has passed. Only an until:: date cancels a task. The Past birthday\n  tasks setting is gone (#381).\n\n## 1.155.0 - 2026-11-12\n\n- Next › List: Focus, once one context is picked. Only its first next action\n  is shown, in the list's own order, and nothing else. Done (Enter) ticks it\n  and brings the next one. Skip (→) leaves it as it is. When none are left,\n  you can go through the skipped ones again. Esc leaves (#360).\n\n## 1.154.1 - 2026-11-12\n\n- Keys on a line: write ``` on a line, then go on with Shift+Enter, and the\n  lines under it are drawn in the fixed-width font, in the Journal too.\n  Before, only a fence that began under the line counted (#374).\n\n## 1.154.0 - 2026-11-12\n\n- Weekly review › Clarify: the card says plainly what the line is already.\n  Every link and #tag has its kind, a responsibility, note or plain page\n  too. A line that is only links or tags says it is on file already. A\n  person, organisation or project written without a link is shown with Link\n  it, which links it to the page you have, in any case (#379).\n\n## 1.153.2 - 2026-11-12\n\n- Weekly review › Projects: a card that got every question answered after it\n  was dealt, on its page for example, is passed by. It no longer waits with\n  only Next card on it (#378).\n\n## 1.153.1 - 2026-11-12\n\n- Weekly review › Projects: None, Just me and No deadline are written on the\n  project (org:: none, with:: none, deadline:: none), as Nothing comes first\n  already was. Before, they were kept for the week only, so every project\n  without a deadline or a team was asked again each week. Adding someone\n  later takes the place of none (#377).\n\n## 1.153.0 - 2026-11-12\n\n- Weekly review › Clarify: the line's day page sits on the right, the line\n  marked in the middle and the rest quiet, as in Focus. Scroll it to see\n  what came before and after. It follows each new line. Close puts it away;\n  Show the day page beside it brings it back (#376).\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {
@@ -51063,7 +51070,7 @@ GTD_DEMO.seed();
 scanVerbs();
 topUpTrackerSeries();
 if (!folderWaiting(V.space)) ensureJournal(todayISO());
-await ensureVisibleLoaded();
+ensureVisibleLoaded();
 render();
 await collectSharedFile();
 window.addEventListener("hashchange", () => handleHash());
