@@ -1054,6 +1054,20 @@ var GTD_TEST = (() => {
     render();
   });
 
+  test("#388 on a phone the suggestion list offers at most 2", async () => {
+    const input = el("input", {type: "text"});
+    document.body.append(input);
+    const offer = text => { input.value = text; input.focus(); input.setSelectionRange(text.length, text.length); suggestSync(input, {}); return SUGGEST; };
+    try {
+      ok(offer("[[").rows.length > 2, "a computer offers more than 2");
+      suggestClose();
+      Object.defineProperty(PHONE, "matches", {configurable: true, get: () => true});
+      const s = offer("[[");
+      eq(s.rows.length, 2, "rows offered on a phone");
+      eq(s.box.querySelectorAll(".pick").length, 2, "rows drawn on a phone");
+    } finally { delete PHONE.matches; suggestClose(); input.remove(); }
+  });
+
   test("#387 today's journal is drawn first; another area shown beside it is read behind", async () => {
     await flush();
     const name = V.space, other = "Test387 Other", wasVisible = PREF.get("visibleSpaces", "");

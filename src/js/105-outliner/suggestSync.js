@@ -1,6 +1,8 @@
 function suggestSync(host, opts = {}) {
   const found = suggestFor(host, opts);
   if (!found) { if (SUGGEST && SUGGEST.host === host) suggestClose(); return; }
+  // On a phone the keyboard leaves little room: two rows, and typing narrows them (#388).
+  if (PHONE.matches && found.rows.length > 2) found.rows = found.rows.slice(0, 2);
   if (!SUGGEST || SUGGEST.host !== host) {
     suggestClose();
     const box = el("div", {class: "linkpop suggest", role: "listbox"});

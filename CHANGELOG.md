@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.155.7 - 2026-11-13
+
+- Phone and PC: on a phone the list of suggestions as you type shows two
+  at most, so it covers less of the page. Type on to narrow it (#388).
+
 ## 1.155.6 - 2026-11-13
 
 - Areas and sharing: with more than one area on, GroupToDo opens on your
