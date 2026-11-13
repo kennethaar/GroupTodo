@@ -952,6 +952,43 @@ var GTD_TEST = (() => {
     }
   });
 
+  test("#232 a line typed in the browser copy while the folder is read behind is kept when the folder takes over", async () => {
+    await flush();
+    const name = V.space, kept = LOADED.get(name), ns = "Ls232f";
+    const today = journalPath(todayISO());
+    const b = Backends.ls(ns);
+    b.kind = "fs";
+    await b.write(today, "- written in the folder\n");
+    const copy = newRecord(name, Backends.memory("Old232f"));
+    copy.pages.set(today, parsePage("- from the copy\n"));
+    LOADED.set(name, copy); bindActive(name);
+    // The line on screen belongs to the copy's page, and has focus.
+    const line = copy.pages.get(today).blocks[0];
+    const txt = el("div", {contenteditable: "true"}, "from the copy");
+    const host = el("div", {data: {space: name, path: today}}, txt);
+    document.body.append(host);
+    txt.focus();
+    try {
+      await loadFromBackend(b, {quick: true});
+      for (let i = 0; i < 100 && LOADED.get(name) === copy; i++) await new Promise(r => setTimeout(r, 20));
+      ok(LOADED.get(name) !== copy, "the folder never took over");
+      txt.textContent = "from the copy, and typed while the folder was read";
+      commitLine(txt, today, line);
+      txt.blur();
+      await flush();
+      const saved = await b.readText(today);
+      has(saved, "typed while the folder was read", "the line typed during the read was lost");
+      has(saved, "written in the folder", "the folder's own line was dropped");
+    } finally {
+      host.remove();
+      await filesLoaded();
+      FOLDER_READING.delete(name);
+      LOADED.set(name, kept); bindActive(name);
+      await b.remove(today);
+      render();
+    }
+  });
+
   test("#232 while the folder is read behind, the status says so, not browser only", async () => {
     await flush();
     const name = V.space, kept = LOADED.get(name);

@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.155.5 - 2026-11-13
+
+- Vault and sync: a line you type on the day page while GroupToDo still
+  reads the folder is kept. Before, it could be lost when the folder took
+  over from the copy kept in the browser (#232).
+
 ## 1.155.4 - 2026-11-12
 
 - Weekly review › Clarify: an icon in front of each link in the line says

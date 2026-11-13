@@ -16,6 +16,16 @@ function readFolderBehind(held, backend) {
     LOADED.set(name, rec);
     FOLDER_READING.delete(name);
     await mergeMirror(rec);
+    /* The line being typed belongs to the copy's page. Swapped for the
+       folder's, the line was written into a page no longer kept, and lost.
+       So the copy's page stays, and is merged with the file at its next save,
+       once the typing stops (writePageChecked). */
+    const typing = typingPath(name), mine = typing && held.pages.get(typing);
+    if (mine && rec.pages.get(typing) !== mine) {
+      rec.pages.set(typing, mine);
+      rec.base.delete(typing);
+      rec.dirty.add(typing);
+    }
     reconcileSyncedPages(name);
     if (V.space === name) bindActive(name);
     if (rec.hold) { showHoldDialog(name); setSync("warn", "not saving - folder looks empty"); }
