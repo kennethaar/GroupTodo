@@ -3854,6 +3854,33 @@ var GTD_TEST = (() => {
         Math.round(cr.top) + "-" + Math.round(cr.bottom - bar()));
     } finally { go("today"); }
   });
+  test("#382 ticking a task done on a project page keeps the page where it was", async () => {
+    /* Pictures on the page are drawn again with every redraw. Until a picture
+       has loaded it has no height, so the page was too short to stay put. */
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 30)));
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="350"><rect width="400" height="350" fill="teal"/></svg>';
+    ASSET_URLS.set(V.space + "|assets/tall382.svg", "data:image/svg+xml," + encodeURIComponent(svg));
+    const tick = id => document.querySelector('.blk[data-id="' + id + '"] .tick');
+    for (const pics of [false, true]) {
+      const path = scratchProject("tick scroll" + (pics ? " pictures" : ""), Array.from({length: 40}, (_, i) => ["TODO", "Row " + i]));
+      const rows = getPage(path).blocks, row = rows[pics ? 30 : 36];
+      if (pics) for (let i = 0; i < 8; i++) rows.splice(i * 4, 0, newBlock({title: "![p](assets/tall382.svg)"}));
+      openPage(path);
+      try {
+        for (let i = 0; i < 4; i++) await frame();
+        tick(row.id).scrollIntoView({block: "center"});
+        await frame();
+        const c = content(), was = c.scrollTop;
+        ok(was > 200, "the page did not scroll down to the task");
+        tick(row.id).click();
+        eq(row.state, "DONE", "the tick did not tick the task off");
+        eq(c.scrollTop, was, (pics ? "with pictures above, " : "") + "the page moved when the task was ticked");
+        await frame();
+        eq(c.scrollTop, was, (pics ? "with pictures above, " : "") + "the page moved once the redraw had settled");
+      } finally { document.activeElement && document.activeElement.blur(); }
+    }
+    go("today");
+  });
   test("#389 on a phone the caret stays in sight when a long line wraps onto a new row", async () => {
     const path = scratchProject("caret in sight", Array.from({length: 60}, (_, i) => ["TODO", "Row " + i]));
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));

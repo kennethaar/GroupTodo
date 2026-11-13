@@ -8,6 +8,7 @@
    ============================================================ */
 const ASSET_DIR = "assets";
 const ASSET_URLS = new Map();          // space|path -> object URL, for this page's life
+const ASSET_BOX = new Map();           // space|path -> [w, h] a picture was drawn at, kept for the next redraw (#382)
 const ASSET_IMAGE_RE = /\.(png|jpe?g|gif|webp|avif|bmp|svg|ico|heic)$/i;
 const assetMax = () => (V.backend && V.backend.kind === "http" ? 8 : 20) * 1024 * 1024;
 const isAssetPath = path => /^assets\//i.test(String(path || ""));

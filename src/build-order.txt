@@ -640,6 +640,7 @@ js/84-assets/vars-FILE_LINK_RE.js
 js/84-assets/filePathOf.js
 js/84-assets/fileHref.js
 js/84-assets/run-4-1.js
+js/84-assets/holdAssetBox.js
 js/84-assets/resolveAssets.js
 js/84-assets/vars-UPLOAD_SEQ.js
 js/84-assets/attachFilesToBlock.js

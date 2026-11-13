@@ -4124,7 +4124,7 @@ placeholder="Add a task. Try: &quot;Call Mia about the VAT @phone tomorrow&quot;
 })();
 
 "use strict";
-const APP_VERSION = "1.155.10";
+const APP_VERSION = "1.155.11";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -12119,6 +12119,7 @@ return n;
 }
 const ASSET_DIR = "assets";
 const ASSET_URLS = new Map();
+const ASSET_BOX = new Map();
 const ASSET_IMAGE_RE = /\.(png|jpe?g|gif|webp|avif|bmp|svg|ico|heic)$/i;
 const assetMax = () => (V.backend && V.backend.kind === "http" ? 8 : 20) * 1024 * 1024;
 const isAssetPath = path => /^assets\//i.test(String(path || ""));
@@ -12256,11 +12257,22 @@ const href = link.getAttribute("href");
 if (CAP.fromFile) { window.open(href, "_blank"); return; }
 copyText(filePathOf(href), "Path copied. Browsers do not open local files from a web page: paste it into Explorer.", "Local path");
 }, true);
+function holdAssetBox(img, key) {
+const box = ASSET_BOX.get(key);
+if (box) { img.style.width = box[0] + "px"; img.style.height = box[1] + "px"; }
+const done = () => {
+img.style.width = img.style.height = "";
+if (img.isConnected && img.offsetHeight) ASSET_BOX.set(key, [img.offsetWidth, img.offsetHeight]);
+};
+img.addEventListener("load", done, {once: true});
+img.addEventListener("error", () => { img.style.width = img.style.height = ""; }, {once: true});
+}
 function resolveAssets(root) {
 for (const node of $$("[data-asset]", root || document)) {
 if (node.dataset.assetDone) continue;
 node.dataset.assetDone = "1";
 const path = node.dataset.asset;
+if (node.tagName === "IMG") holdAssetBox(node, (V.space || "") + "|" + path);
 assetURL(path).then(url => {
 if (!url) {
 node.replaceWith(el("span", {class: "asset-missing", title: "Not in this folder: " + path},
@@ -16072,7 +16084,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.155.10 - 2026-11-13\n\n- Journal: the button by the date box while its calendar is open says\n  Calendar settings, which is what it opens: your calendars, meeting\n  reminders and how to add one. It said Import calendar (#386).\n\n## 1.155.9 - 2026-11-13\n\n- Weekly review › Actions: the key number on each answer no longer covers\n  its name. The same goes for Weekly review › Projects (#380).\n\n## 1.155.8 - 2026-11-13\n\n- Phone and PC: on a phone the cursor stays in sight as you type. When a\n  long line wraps onto a new row, the page moves up just enough. Before,\n  the cursor went under the keyboard or the line toolbar (#389).\n\n## 1.155.7 - 2026-11-13\n\n- Phone and PC: on a phone the list of suggestions as you type shows two\n  at most, so it covers less of the page. Type on to narrow it (#388).\n\n## 1.155.6 - 2026-11-13\n\n- Areas and sharing: with more than one area on, GroupToDo opens on your\n  day page at once. The other areas come in behind it and join the screen\n  when they are read. Before, the day waited for every area (#387).\n\n## 1.155.5 - 2026-11-13\n\n- Vault and sync: a line you type on the day page while GroupToDo still\n  reads the folder is kept. Before, it could be lost when the folder took\n  over from the copy kept in the browser (#232).\n\n## 1.155.4 - 2026-11-12\n\n- Weekly review › Clarify: an icon in front of each link in the line says\n  what it is, a person, project, page and more, where you read it. The grey\n  chips under the line that said it again are gone (#379).\n\n## 1.155.3 - 2026-11-12\n\n- Keys on a line: paste a sketch right after ``` on a line and it stays\n  under that line, line for line, in the fixed-width font. Before, each of its\n  lines became a bullet. Enter after ``` goes on inside it too (#374).\n\n## 1.155.2 - 2026-11-12\n\n- Journal: on a computer, Enter on a line at the bottom moves the page just\n  enough to keep the new line in sight. Before, it was left under the line\n  toolbar (#172).\n\n## 1.155.1 - 2026-11-12\n\n- Hold and until: a task for a birthday is no longer cancelled once the\n  birthday has passed. Only an until:: date cancels a task. The Past birthday\n  tasks setting is gone (#381).\n\n## 1.155.0 - 2026-11-12\n\n- Next › List: Focus, once one context is picked. Only its first next action\n  is shown, in the list's own order, and nothing else. Done (Enter) ticks it\n  and brings the next one. Skip (→) leaves it as it is. When none are left,\n  you can go through the skipped ones again. Esc leaves (#360).\n\n## 1.154.1 - 2026-11-12\n\n- Keys on a line: write ``` on a line, then go on with Shift+Enter, and the\n  lines under it are drawn in the fixed-width font, in the Journal too.\n  Before, only a fence that began under the line counted (#374).\n";
+const HELP_NEWS = "## 1.155.11 - 2026-11-13\n\n- A page: ticking a task done no longer jumps the page up when it has\n  pictures on it. A picture keeps its size while the page is drawn again,\n  so the page stays where it was (#382).\n\n## 1.155.10 - 2026-11-13\n\n- Journal: the button by the date box while its calendar is open says\n  Calendar settings, which is what it opens: your calendars, meeting\n  reminders and how to add one. It said Import calendar (#386).\n\n## 1.155.9 - 2026-11-13\n\n- Weekly review › Actions: the key number on each answer no longer covers\n  its name. The same goes for Weekly review › Projects (#380).\n\n## 1.155.8 - 2026-11-13\n\n- Phone and PC: on a phone the cursor stays in sight as you type. When a\n  long line wraps onto a new row, the page moves up just enough. Before,\n  the cursor went under the keyboard or the line toolbar (#389).\n\n## 1.155.7 - 2026-11-13\n\n- Phone and PC: on a phone the list of suggestions as you type shows two\n  at most, so it covers less of the page. Type on to narrow it (#388).\n\n## 1.155.6 - 2026-11-13\n\n- Areas and sharing: with more than one area on, GroupToDo opens on your\n  day page at once. The other areas come in behind it and join the screen\n  when they are read. Before, the day waited for every area (#387).\n\n## 1.155.5 - 2026-11-13\n\n- Vault and sync: a line you type on the day page while GroupToDo still\n  reads the folder is kept. Before, it could be lost when the folder took\n  over from the copy kept in the browser (#232).\n\n## 1.155.4 - 2026-11-12\n\n- Weekly review › Clarify: an icon in front of each link in the line says\n  what it is, a person, project, page and more, where you read it. The grey\n  chips under the line that said it again are gone (#379).\n\n## 1.155.3 - 2026-11-12\n\n- Keys on a line: paste a sketch right after ``` on a line and it stays\n  under that line, line for line, in the fixed-width font. Before, each of its\n  lines became a bullet. Enter after ``` goes on inside it too (#374).\n\n## 1.155.2 - 2026-11-12\n\n- Journal: on a computer, Enter on a line at the bottom moves the page just\n  enough to keep the new line in sight. Before, it was left under the line\n  toolbar (#172).\n\n## 1.155.1 - 2026-11-12\n\n- Hold and until: a task for a birthday is no longer cancelled once the\n  birthday has passed. Only an until:: date cancels a task. The Past birthday\n  tasks setting is gone (#381).\n\n## 1.155.0 - 2026-11-12\n\n- Next › List: Focus, once one context is picked. Only its first next action\n  is shown, in the list's own order, and nothing else. Done (Enter) ticks it\n  and brings the next one. Skip (→) leaves it as it is. When none are left,\n  you can go through the skipped ones again. Esc leaves (#360).\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {
@@ -43029,10 +43041,10 @@ if (FOCUS_NODE) node = el("div", {class: "wrap"}, FOCUS_NODE);
 c.append(node);
 document.body.classList.toggle("solview", node.classList.contains("solwrap"));
 if (state.view !== "review") SIDE_FOLLOW = false;
+resolveAssets(c);
 restoreScroll();
 const title = state.view === "page" && state.pagePath ? pageTitle(state.pagePath) : VIEW_TITLE[state.view];
 document.title = (title ? title + " · " : "") + "GroupToDo";
-resolveAssets(c);
 drawSidePage();
 helpHintDraw();
 usageNoteView();

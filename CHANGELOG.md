@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.155.11 - 2026-11-13
+
+- A page: ticking a task done no longer jumps the page up when it has
+  pictures on it. A picture keeps its size while the page is drawn again,
+  so the page stays where it was (#382).
+
 ## 1.155.10 - 2026-11-13
 
 - Journal: the button by the date box while its calendar is open says

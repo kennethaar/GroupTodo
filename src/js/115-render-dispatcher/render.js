@@ -23,10 +23,10 @@ function render() {
   c.append(node);
   document.body.classList.toggle("solview", node.classList.contains("solwrap"));
   if (state.view !== "review") SIDE_FOLLOW = false;
+  resolveAssets(c);          // before the scroll: a picture keeps the room it had (#382)
   restoreScroll();
   const title = state.view === "page" && state.pagePath ? pageTitle(state.pagePath) : VIEW_TITLE[state.view];
   document.title = (title ? title + " · " : "") + "GroupToDo";
-  resolveAssets(c);
   drawSidePage();
   helpHintDraw();
   usageNoteView();

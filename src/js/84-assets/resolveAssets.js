@@ -3,6 +3,7 @@ function resolveAssets(root) {
     if (node.dataset.assetDone) continue;
     node.dataset.assetDone = "1";
     const path = node.dataset.asset;
+    if (node.tagName === "IMG") holdAssetBox(node, (V.space || "") + "|" + path);
     assetURL(path).then(url => {
       if (!url) {
         // The line says what is missing rather than showing a broken picture:
