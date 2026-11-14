@@ -9,3 +9,15 @@
 .srow select{max-width:55%}
 .srow.warn .sval{color:var(--warn)}
 .sgroup.danger{margin-top:8px}
+
+/* Import contacts: the review before anything is written (#383). */
+.vcbox{padding:12px 16px}
+.vcnote{margin:0 0 10px;color:var(--fg2);font-size:13.5px}
+.vclist{display:flex;flex-direction:column;gap:2px;max-height:55vh;overflow:auto}
+.vcrow{display:grid;grid-template-columns:auto 1fr auto;gap:2px 10px;align-items:center;padding:6px 4px;border-radius:6px;cursor:pointer}
+.vcrow:hover{background:var(--hover,color-mix(in srgb,var(--fg) 6%,transparent))}
+.vcname{font-weight:500;min-width:0;overflow-wrap:anywhere}
+.vcstat{font-size:12px;color:var(--fg2)}
+.vcstat.vcnew,.vcstat.vcchanged{color:var(--fg)}
+.vcwhat{grid-column:2 / -1;font-size:12px;color:var(--fg3)}
+.vcwhat:empty{display:none}

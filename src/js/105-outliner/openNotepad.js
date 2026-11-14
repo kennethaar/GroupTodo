@@ -91,7 +91,7 @@ function openNotepad(path, b, at = 0) {
         el("button", {class: "btn sm ghost", onclick: replaceAll}, "Replace all"),
         found),
       pad),
-    foot: [where, el("div", {style: "flex:1"}), el("button", {class: "btn", onclick: () => closeModal()}, "Done")],
+    foot: [where, el("div", {style: "flex:1"}), el("button", {class: "btn primary", onclick: () => closeModal()}, "Done")],
     onClose: save,
   });
   const caret = Math.max(0, Math.min(at, pad.value.length));

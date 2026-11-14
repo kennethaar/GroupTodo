@@ -17,6 +17,7 @@ function openPageMenu(path) {
                    : ["Pin to the sidebar", "as many pages as you like; drag them there to reorder", () => togglePin(path)],
     isSidePinned(space, path) ? ["Unpin from the right", null, unpinSide]
       : ["Pin to the right", "it stays open beside whatever you go to, for notes while you move about", () => pinToSide(space, path)],
+    kind === "person" ? ["Share contact", "a .vcf the phone adds to its contacts", () => shareContact(path)] : null,
     isJournalPath(path) ? null : ["Share", "this page, without the rest of the area", () => openExportPage(path)],
     ["Copy linked references here", "every line that links to this page, copied to its bottom; the originals stay", () => copyLinkedRefs(path)],
     ["Copy path", "for somebody who shares the folder", () => copyPathTo(path)],

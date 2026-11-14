@@ -5,6 +5,17 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.161.0 - 2026-11-14
+
+- People › List: contacts to and from the phone, as vCard (.vcf) files
+  (#383). On a person's page, ⋯ › Share contact hands them to the phone's
+  share sheet, which offers Add contact, or saves the file. Export people
+  saves everyone in the area as one file. Import contacts reads a .vcf and
+  shows each person as New, Changed or Same; nothing is written before
+  Import. Chrome on Android can also pick straight from the phone's
+  contacts. Name, phone, email, organisation and birthday map to phone::,
+  email::, org:: and birthday::.
+
 ## 1.160.0 - 2026-11-14
 
 - Keys on a line: Shift+Enter opens the notepad (#392). It shows the line

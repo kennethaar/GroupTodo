@@ -1308,6 +1308,83 @@ var GTD_TEST = (() => {
     ok(!document.querySelector("#navLoad"), "the bar stays once all is in");
   });
 
+  test("#383 a person's page is a vCard, and a vCard reads back as the same person", async () => {
+    const path = personPath("Contact Round 383");
+    putPage(path, {props: {title: "Contact Round 383", phone: "+47 900 11 222, 22 33 44 55", email: "round@example.com",
+      org: "[[o/Acme; North]]", birthday: "1985-03-14"}, blocks: []});
+    try {
+      const card = personVCard(path);
+      has(card, "BEGIN:VCARD", "no vCard");
+      has(card, "FN:Contact Round 383", "no name");
+      has(card, "TEL", "no phone");
+      has(card, "ORG:Acme\\; North", "the organisation is not escaped");
+      has(card, "BDAY:1985-03-14", "no birthday");
+      ok(/\r\n/.test(card), "vCard lines do not end in CRLF");
+      const [back] = parseVCards(card);
+      eq(back.name, "Contact Round 383");
+      eq(JSON.stringify(back.phone), JSON.stringify(["+47 900 11 222", "22 33 44 55"]), "phones");
+      eq(JSON.stringify(back.email), JSON.stringify(["round@example.com"]), "email");
+      eq(back.org, "Acme; North", "organisation");
+      eq(back.birthday, "1985-03-14", "birthday");
+      // As phones write them: folded lines, types, a year-less birthday, two cards in one file.
+      const phone = "BEGIN:VCARD\r\nVERSION:3.0\r\nN:Berg;Kari;;;\r\nFN:Kari\r\n  Berg\r\nTEL;TYPE=CELL,VOICE:+47 400 00 000\r\n" +
+        "item1.EMAIL;type=INTERNET;type=pref:kari@example.no\r\nBDAY:--07-02\r\nNOTE:line one\\nline two\r\nEND:VCARD\r\n" +
+        "BEGIN:VCARD\nVERSION:4.0\nN:Lie;Ola;;;\nTEL;VALUE=uri;TYPE=cell:tel:+4711223344\nBDAY:19900102\nEND:VCARD\n";
+      const [kari, ola] = parseVCards(phone);
+      eq(kari.name, "Kari Berg", "a folded name");
+      eq(JSON.stringify(kari.phone), JSON.stringify(["+47 400 00 000"]), "a typed phone");
+      eq(JSON.stringify(kari.email), JSON.stringify(["kari@example.no"]), "a grouped email");
+      eq(kari.birthday, "07-02", "a birthday with no year");
+      eq(ola.name, "Ola Lie", "a name from N when there is no FN");
+      eq(JSON.stringify(ola.phone), JSON.stringify(["+4711223344"]), "a tel: uri");
+      eq(ola.birthday, "1990-01-02", "a vCard 4 birthday");
+      // Share contact is on the person's ⋯ menu, and hands the card on as a .vcf.
+      const sent = [], real = sendFileOut;
+      sendFileOut = async (name, text, type) => { sent.push({name, text, type}); return "shared"; };
+      try {
+        await shareContact(path);
+        eq(sent.length, 1, "Share contact sent nothing");
+        eq(sent[0].name, "Contact Round 383.vcf", "file name");
+        eq(sent[0].type, "text/vcard", "file type");
+        await exportPeopleVCards();
+        has(sent[1].text, "FN:Contact Round 383", "Export leaves the person out");
+        eq(sent[1].text.split("BEGIN:VCARD").length - 1, allPages(q => pageKind(q) === "person").length, "Export is not one card per person");
+      } finally { sendFileOut = real; }
+    } finally { V.pages.delete(path); touch(path); }
+  });
+  test("#383 a .vcf is reviewed as New, Changed and Same, and nothing is written before Import", async () => {
+    const same = personPath("Contact Same 383"), changed = personPath("Contact Changed 383"), fresh = personPath("Contact New 383");
+    putPage(same, {props: {title: "Contact Same 383", phone: "111"}, blocks: []});
+    putPage(changed, {props: {title: "Contact Changed 383", phone: "222", email: "keep@example.com"}, blocks: [newBlock({title: "met at the fair"})]});
+    const vcf = ["Same", "Changed", "New"].map((n, i) => "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Contact " + n + " 383\r\nTEL:" +
+      (n === "Changed" ? "333" : String(111 * (i + 1))) + (n === "New" ? "\r\nORG:Acme\r\nBDAY:--12-24" : "") + "\r\nEND:VCARD\r\n").join("");
+    try {
+      openVCardImport(vcf);
+      await settle();
+      const box = document.querySelector(".scrim .modal");
+      ok(box, "no review");
+      const row = n => Array.from(box.querySelectorAll(".vcrow")).find(r => r.textContent.includes("Contact " + n + " 383"));
+      has(row("Same").textContent, "Same"); has(row("Changed").textContent, "Changed"); has(row("New").textContent, "New");
+      ok(!row("Same").querySelector("input").checked, "Same is ticked");
+      ok(row("Changed").querySelector("input").checked && row("New").querySelector("input").checked, "New and Changed are not ticked");
+      ok(!V.pages.has(fresh), "a page was written before Import");
+      eq(getPage(changed).props.phone, "222", "a page changed before Import");
+      const go = Array.from(box.querySelectorAll("button")).find(b => /^Import \d/.test(b.textContent));
+      eq(go && go.textContent, "Import 2", "the button does not count what is ticked");
+      go.click();
+      await settle();
+      ok(V.pages.has(fresh), "the new person has no page");
+      eq(getPage(fresh).props.phone, "333", "the new person's phone");
+      has(getPage(fresh).props.org, "[[o/Acme]]", "the new person's organisation");
+      eq(getPage(fresh).props.birthday, "12-24", "the new person's birthday");
+      eq(getPage(changed).props.phone, "333", "the changed phone was not taken in");
+      eq(getPage(changed).props.email, "keep@example.com", "a value the card does not have was lost");
+      eq(getPage(changed).blocks.length, 1, "the page's lines were touched");
+    } finally {
+      closeModal();
+      for (const p of [same, changed, fresh]) { V.pages.delete(p); touch(p); }
+    }
+  });
   test("#188 one file that will not open is skipped, not the whole read", async () => {
     // Bad.md fails when opened, the way a file the phone will not hand over does.
     const refused = Promise.reject(new DOMException("no", "NotReadableError"));

@@ -31,7 +31,7 @@ function viewPeople() {
   c.append(fbar(f.input, fchip("Everyone", kind === "all", () => { PREF.set("people.kind", "all"); render(); }),
     fchip("In the area", kind === "in", () => { PREF.set("people.kind", "in"); render(); }),
     fchip("Outside it", kind === "out", () => { PREF.set("people.kind", "out"); render(); }),
-    el("span", {class: "right"}, ...replyActions())), f.host);
+    el("span", {class: "right"}, ...peopleContactActions(), ...replyActions())), f.host);
   loadSpacesForPeople();
   return c;
 }

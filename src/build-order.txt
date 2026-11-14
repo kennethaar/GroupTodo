@@ -1860,6 +1860,16 @@ js/110-views/personMentions.js
 js/110-views/openPersonPage.js
 js/110-views/vars-personActionBtn.js
 js/110-views/viewPeople.js
+js/110-views/vars-VCARD_PHONE_KEY.js
+js/110-views/vcardOfPerson.js
+js/110-views/personVCard.js
+js/110-views/parseVCards.js
+js/110-views/shareContact.js
+js/110-views/exportPeopleVCards.js
+js/110-views/openVCardImport.js
+js/110-views/pickVCardFile.js
+js/110-views/pickPhoneContacts.js
+js/110-views/peopleContactActions.js
 js/110-views/personRow.js
 js/110-views/vars-TRAY_DRAG.js
 js/110-views/trayChip.js
