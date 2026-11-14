@@ -1,12 +1,11 @@
-/* Shift+Enter: the line and the lines under it in a monospace box, as in
-   Notepad, with the caret's line and column, and search and replace (#392).
-   Spaces stay as written: a run of lines drawn with spaces or box marks goes
-   in a ``` fence, as a pasted mockup does (#374). at is the caret's offset in
-   the text, the bullet's words first. */
+/* ⤢ on a note box (#392): the line and its note in a big monospace box, as
+   in Notepad, with the caret's line and column, and search and replace. The
+   note is kept in a ``` fence, as the box keeps it. at is the caret's offset
+   in the text, the bullet's words first. */
 function openNotepad(path, b, at = 0) {
   const pad = el("textarea", {class: "notepad", spellcheck: "false", wrap: "off",
-    "aria-label": "The line and the lines under it"});
-  pad.value = [b.title || "", ...(b.body || [])].join("\n");
+    "aria-label": "The line and its note"});
+  pad.value = [b.title || "", ...(b.body || []).filter(l => !/^\s*```/.test(l))].join("\n");
   const where = el("span", {class: "npcaret", "aria-live": "polite"});
   const found = el("span", {class: "npfound", "aria-live": "polite"});
   const find = el("input", {class: "npfind", type: "search", placeholder: "Find", "aria-label": "Find"});
@@ -63,7 +62,8 @@ function openNotepad(path, b, at = 0) {
     const lines = pad.value.replace(/\r\n?/g, "\n").split("\n");
     const title = lines.shift();
     while (lines.length && trim(lines[lines.length - 1]) === "") lines.pop();
-    const body = notepadFence(lines.map(l => l.replace(/\s+$/, "")));
+    while (lines.length && trim(lines[0]) === "") lines.shift();
+    const body = lines.length ? ["```", ...lines.map(l => l.replace(/\s+$/, "")), "```"] : [];
     const was = JSON.stringify([b.title || "", ...(b.body || [])]);
     b.title = title;
     if (body.length) b.body = body; else delete b.body;

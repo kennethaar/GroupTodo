@@ -345,12 +345,10 @@ function outlineBlock(path, page, b, opts = {}) {
        the bullet instead of a new bullet: the next line is in the fence (#374). */
     const opensFence = () => !(b.body || []).length && /^\s*```/.test(lineText(txt)) &&
       caretOffsets(txt)[0] === lineText(txt).length;
-    /* Shift+Enter opens the line in the notepad (#392). */
+    /* Shift+Enter opens a notepad box under the line (#392). */
     if (e.key === "Enter" && e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
-      const at = caretOffsets(txt)[0];
-      txt.blur();   // blur writes the line back first
-      openNotepad(path, b, at);
+      openNoteBox(path, b, txt);
       return;
     }
     if (e.key === "Enter" && !e.ctrlKey && !e.metaKey && !e.altKey && opensFence()) {
@@ -479,7 +477,14 @@ function outlineBlock(path, page, b, opts = {}) {
   // On the line, at its right end, so a line with pills takes one row, not two.
   const meta = lineMeta(b, path, ro);
   if (meta) line.append(meta);
-  (b.body || []).forEach((l, i) => node.append(bodyLineEl(path, b, i)));
+  /* A ``` fence under the line is one notepad box (#392); a fence the bullet
+     itself opens, or one left open, stays line by line (#374). */
+  const body = b.body || [], fence = l => (/^\s*```/).test(l), titleOpens = fence(b.title || "");
+  for (let i = 0; i < body.length; i++) {
+    const end = !titleOpens && fence(body[i]) ? body.findIndex((l, k) => k > i && fence(l)) : -1;
+    if (end > i) { node.append(noteBoxEl(path, b, i, end)); i = end; }
+    else node.append(bodyLineEl(path, b, i));
+  }
   tableWatch(node, txt, b, path);
   const shown = liveMacros(path, b);
   if (shown) node.append(shown);

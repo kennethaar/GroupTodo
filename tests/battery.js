@@ -4527,72 +4527,127 @@ var GTD_TEST = (() => {
       const back = parsePage(serializePage(getPage(path))).blocks[0];
       eq(JSON.stringify(back.body), JSON.stringify(b.body), "the file does not read the fence back as it was");
       eq(back.children.length, 0, "a dash line in the fence became a bullet");
-      const drawn = document.querySelector('.blk[data-id="' + b.id + '"] > .bodyline[data-bi="6"]');
+      // A fence under a line is drawn as the notepad box (#392), as written.
+      const drawn = document.querySelector('.blk[data-id="' + b.id + '"] > .notebox textarea');
       ok(drawn && /mono/i.test(getComputedStyle(drawn).fontFamily), "a fenced line is not drawn monospace");
       eq(getComputedStyle(drawn).whiteSpace, "pre", "a fenced line does not keep its spaces");
-      eq(drawn.textContent, mock[5], "a fenced line is drawn as markup, not as written");
+      eq(drawn.value, mock.join("\n"), "the fence is not drawn as written");
     } finally { go("today"); }
   });
-  test("#392 Shift+Enter opens the line in a monospace notepad with line and column, search and replace", async () => {
+  test("#392 Shift+Enter opens a notepad box under the line; Esc, Shift+Enter or a click away saves it in a fence; ⤢ finds and replaces", async () => {
     const path = ensureJournal(todayISO());
     const b = newBlock({}, false);
     b.title = "Screen plan"; b.body = ["first idea"];
-    getPage(path).blocks.push(b); touch(path);
+    const empty = newBlock({}, false);
+    getPage(path).blocks.push(b, empty); touch(path);
     go("today");
     await settle();
-    const q = s => document.querySelector('.blk[data-id="' + b.id + '"]' + s);
+    const q = (blk, s) => document.querySelector('.blk[data-id="' + blk.id + '"]' + s);
     const key = (node, k, o = {}) => node.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true, ...o}));
     const btn = re => Array.from(document.querySelectorAll(".scrim .modal button")).find(x => re.test(x.textContent));
+    const box = () => q(b, " > .notebox textarea");
     try {
+      // The main line can't be empty: nothing opens, a short message says why.
+      focusBlock(empty.id);
+      await settle();
+      key(q(empty, " .txt"), "Enter", {shiftKey: true});
+      await settle();
+      ok(!q(empty, " > .notebox"), "Shift+Enter on an empty line opened a box");
+      ok(!(empty.body || []).length, "Shift+Enter on an empty line wrote a line under it");
+      has(document.querySelector("#toasts").textContent, "Write the line first", "no message says the line is empty");
+      ok(!document.querySelector(".scrim .modal"), "Shift+Enter opened the notepad dialog");
+
+      // Shift+Enter: a box under the line, holding the lines already there, the caret in it.
       focusBlock(b.id);
       await settle();
-      const txt = q(" .txt");
+      const txt = q(b, " .txt");
       txt.focus();
       setHostText(txt, "Screen plan", 6);
-      // A phone has no Shift: the Notepad button on the foot toolbar does the same.
-      document.querySelector('#editBar [data-k="pad"]').click();
+      key(txt, "Enter", {shiftKey: true});
       await settle();
-      ok(document.querySelector(".scrim .modal textarea.notepad"), "the toolbar's Notepad button did not open the notepad");
-      has(document.querySelector(".scrim .modal").textContent, "Ln 1, Col 7", "the toolbar's notepad lost the caret");
-      closeModal();
-      await settle();
-      focusBlock(b.id);
-      await settle();
-      const txt2 = q(" .txt");
-      txt2.focus();
-      setHostText(txt2, "Screen plan", 6);
-      key(txt2, "Enter", {shiftKey: true});
-      await settle();
-      eq(JSON.stringify(b.body), JSON.stringify(["first idea"]), "Shift+Enter still added a line under the line");
-      const pad = document.querySelector(".scrim .modal textarea.notepad");
-      ok(pad, "Shift+Enter did not open the notepad");
-      eq(pad.value, "Screen plan\nfirst idea", "the notepad does not hold the line and the lines under it");
-      ok(/mono/i.test(getComputedStyle(pad).fontFamily), "the notepad is not monospace");
-      has(document.querySelector(".scrim .modal").textContent, "Ln 1, Col 7", "the caret's line and column are not shown");
-      pad.setSelectionRange(17, 17);
-      pad.dispatchEvent(new Event("select", {bubbles: true}));
-      pad.dispatchEvent(new KeyboardEvent("keyup", {key: "ArrowRight", bubbles: true}));
-      has(document.querySelector(".scrim .modal").textContent, "Ln 2, Col 6", "the line and column do not follow the caret");
+      ok(!document.querySelector(".scrim .modal"), "Shift+Enter opened a dialog, not a box under the line");
+      const pad = box();
+      ok(pad, "Shift+Enter did not open a box under the line");
+      eq(document.activeElement, pad, "the caret is not in the box");
+      eq(pad.value, "first idea", "the box does not hold the lines under the line");
+      eq(b.title, "Screen plan", "the main line changed");
+      ok(/mono/i.test(getComputedStyle(pad).fontFamily), "the box is not monospace");
+      // Enter is a new line in the box, as in Notepad, not a new bullet.
+      const enter = new KeyboardEvent("keydown", {key: "Enter", bubbles: true, cancelable: true});
+      pad.dispatchEvent(enter);
+      ok(!enter.defaultPrevented, "Enter in the box does not make a new line there");
       const mock = ["  +------+   +------+", "  | idea |   | idea |", "  +------+   +------+"];
-      pad.value = "Screen plan\nfirst idea\n" + mock.join("\n");
+      pad.value = "first idea\n" + mock.join("\n");
       pad.dispatchEvent(new Event("input", {bubbles: true}));
+      pad.setSelectionRange(14, 14);
+      pad.dispatchEvent(new KeyboardEvent("keyup", {key: "ArrowRight", bubbles: true}));
+      has(q(b, " > .notebox").textContent, "Ln 2, Col 4", "the box does not show the caret's line and column");
+      ok(!q(b, " > .notebox input.npfind"), "find and replace show before the box is expanded");
+      // Esc leaves: the box is kept in a fence, the caret back at the end of the main line.
+      key(pad, "Escape");
+      await settle();
+      eq(JSON.stringify(b.body), JSON.stringify(["```", "first idea", ...mock, "```"]), "Esc did not keep the box in a fence");
+      ok(document.activeElement && document.activeElement.classList.contains("txt") &&
+         document.activeElement.closest(".blk").dataset.id === b.id, "Esc did not go back to the main line");
+      const back = parsePage(serializePage(getPage(path))).blocks.find(x => x.title === "Screen plan");
+      eq(JSON.stringify(back.body), JSON.stringify(b.body), "the file does not read the box back as it was");
+      // The box stays on the page, framed; a click on it opens it again.
+      ok(box(), "the box is gone after leaving it");
+      eq(box().value, "first idea\n" + mock.join("\n"), "the box does not show what was written");
+
+      // Shift+Enter in the box leaves it too; a click away saves.
+      box().focus();
+      box().value = "first idea";
+      key(box(), "Enter", {shiftKey: true});
+      await settle();
+      eq(JSON.stringify(b.body), JSON.stringify(["```", "first idea", "```"]), "Shift+Enter in the box did not save it");
+      box().focus();
+      box().value = "first plan";
+      box().blur();
+      await settle();
+      eq(JSON.stringify(b.body), JSON.stringify(["```", "first plan", "```"]), "a click away did not save the box");
+
+      // ⤢ grows it to the notepad with find and replace; Done keeps it in a fence.
+      box().focus();
+      q(b, " > .notebox .nbzoom").click();
+      await settle();
+      const big = document.querySelector(".scrim .modal textarea.notepad");
+      ok(big, "⤢ does not open the notepad");
       const find = document.querySelector(".scrim .modal input.npfind"), repl = document.querySelector(".scrim .modal input.nprepl");
-      ok(find && repl, "no search and replace boxes");
-      find.value = "idea"; find.dispatchEvent(new Event("input", {bubbles: true}));
-      repl.value = "plan"; repl.dispatchEvent(new Event("input", {bubbles: true}));
-      has(document.querySelector(".scrim .modal").textContent, "3 found", "the matches are not counted");
+      ok(find && repl, "the notepad has no search and replace");
+      big.value = "Screen plan\nfirst plan\nplan two";
+      find.value = "plan"; find.dispatchEvent(new Event("input", {bubbles: true}));
+      repl.value = "idea";
       btn(/^Replace all$/).click();
-      eq(pad.value.split("idea").length, 1, "Replace all left a match");
       btn(/^Done$/).click();
       await settle();
-      ok(!document.querySelector(".scrim .modal"), "Done does not close the notepad");
-      eq(b.title, "Screen plan", "the first line is not the bullet");
-      const back = parsePage(serializePage(getPage(path))).blocks.find(x => x.id === b.id || x.title === "Screen plan");
-      const lines = back.body.filter(l => l !== "```");
-      eq(JSON.stringify(lines), JSON.stringify(["first plan", ...mock.map(l => l.replace(/idea/g, "plan"))]), "the lines are not kept as written");
+      eq(b.title, "Screen idea", "the notepad's first line is not the main line");
+      eq(JSON.stringify(b.body), JSON.stringify(["```", "first idea", "idea two", "```"]), "the notepad did not keep the box in a fence");
+
+      // An emptied box takes nothing into the file.
+      focusBlock(b.id);
+      await settle();
+      key(q(b, " .txt"), "Enter", {shiftKey: true});
+      await settle();
+      eq(document.activeElement, box(), "Shift+Enter did not go into the box that is there");
+      box().value = "  ";
+      key(box(), "Escape");
+      await settle();
+      ok(!(b.body || []).length, "an empty box was kept");
+      ok(!q(b, " > .notebox"), "an empty box is still drawn");
+
+      // A phone has no Shift: the Notepad button on the foot toolbar does the same.
+      focusBlock(b.id);
+      await settle();
+      document.querySelector('#editBar [data-k="pad"]').click();
+      await settle();
+      ok(box() && document.activeElement === box(), "the toolbar's Notepad button did not open the box");
+      ok(!document.querySelector(".scrim .modal"), "the toolbar's Notepad button opened a dialog");
     } finally {
       closeModal();
-      const pg = getPage(path); pg.blocks.splice(pg.blocks.indexOf(b), 1); touch(path);
+      const pg = getPage(path);
+      for (const x of [b, empty]) if (pg.blocks.includes(x)) pg.blocks.splice(pg.blocks.indexOf(x), 1);
+      touch(path);
       go("today");
     }
   });
@@ -4664,7 +4719,8 @@ var GTD_TEST = (() => {
       await settle();
       eq(b.title, "Main screen", "the words before ``` stay on the bullet");
       eq(JSON.stringify(b.body), JSON.stringify(["```", ...mock, "```"]), "the paste is not fenced under the words");
-      const drawn = document.querySelector('.blk[data-id="' + b.id + '"] > .bodyline[data-bi="2"]');
+      // Drawn as the note box under the line (#392).
+      const drawn = document.querySelector('.blk[data-id="' + b.id + '"] > .notebox textarea');
       eq(getComputedStyle(drawn).whiteSpace, "pre", "a fenced line does not keep its spaces");
       [b, txt] = await bullet("```");
       const n = pg.blocks.length;

@@ -37,7 +37,7 @@ const EDIT_BAR = [
   {k: "out", ic: EB_OUTDENT, label: "Outdent", tip: "Outdent (Shift+Tab)"},
   {k: "in", ic: EB_INDENT, label: "Indent", tip: "Indent (Tab)"},
   // A phone has no Shift, so Shift+Enter's notepad needs a button (#392).
-  {k: "pad", ic: EB_PAD, label: "Notepad", tip: "Write several lines in the notepad (Shift+Enter)"},
+  {k: "pad", ic: EB_PAD, label: "Notepad", tip: "A note box under the line (Shift+Enter)"},
   {k: "kind", ic: EB_TASK, label: "Task", tip: "Make it a task (Alt+T)", group: "type"},
   {k: "mkzet", ic: EB_ZETTEL, label: "Zettel", tip: "Turn into zettel (Alt+Z)", group: "type"},
   {k: "mkproj", ic: EB_PROJECT, label: "Project", tip: "Make it a project (Alt+1)", group: "type"},

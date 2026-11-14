@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.163.0 - 2026-11-14
+
+- Keys on a line: Shift+Enter opens a note box right under the line, not a
+  dialog (#392). Write in it as in Notepad: Enter makes a new line and
+  spaces stay as typed, with no ``` to write. Esc, Shift+Enter or a click
+  away saves it, and the box stays under the line. The line must have
+  words first. Lines already under the line go into the box. ⤢ in its
+  corner makes it big, with find and replace. Notepad on the phone's bar
+  does the same.
+
 ## 1.162.9 - 2026-11-14
 
 - Phone and PC: the folder question reads "Reconnect folder 1 of 2: Work"

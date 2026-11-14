@@ -3,10 +3,8 @@ function editBarAct(k) {
   const {txt, path, page, block: b} = FLY;
   if (k === "photo" || k === "image") { editBarPickImage(path, b, k === "photo"); return; }
   if (k === "pad") {
-    // As Shift+Enter: blur writes the line back, then the notepad opens at the caret.
-    const at = caretOffsets(txt)[0];
-    txt.blur();
-    openNotepad(path, b, at);
+    // As Shift+Enter: a notepad box under the line (#392).
+    openNoteBox(path, b, txt);
     return;
   }
   const top = txt.getBoundingClientRect().top;
