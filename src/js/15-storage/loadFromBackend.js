@@ -29,7 +29,16 @@ async function loadFromBackend(backend, {quick = false} = {}) {
   }
   const rec = LOADED.get(name) || newRecord(name, backend);
   rec.backend = backend;
-  await readInto(rec, {stage: true, onRest: restLoaded, onSoon: soonLoaded});
+  /* At start-up the day is drawn as soon as its page is in, and again with
+     yesterday's, while the folder is still listed and read (#181). */
+  const onDay = INIT_DONE ? null : r => {
+    LOADED.set(name, r);
+    bindActive(name);
+    state.view = startView(); state.pagePath = null;
+    SPACE_TRANSITION = false;
+    renderUnlessTyping();
+  };
+  await readInto(rec, {stage: true, onRest: restLoaded, onSoon: soonLoaded, onDay});
   LOADED.set(name, rec);
   bindActive(name);
   setSync("ok", backend.label);

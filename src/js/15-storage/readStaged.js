@@ -1,12 +1,17 @@
-async function readStaged(record, edited, onRest, onSoon) {
+async function readStaged(record, edited, onRest, onSoon, onDay) {
   const today = todayISO();   // the first read is today alone: the rest of the month follows
+  const who = "“" + record.name + "”: ";
+  /* Today's page first, by name, before anything is listed: the listing of a
+     big folder on a phone took minutes on its own. Then yesterday's, for what
+     was written before midnight. Each is drawn once it is in (onDay); only
+     then is the folder listed and read as below (#181). */
+  const days = record.backend.readDays ? await readDayFirst(record, edited, today, onDay) : null;
   /* The day folders and the folders read last are listed after the first
      draw (listedLate), only where a full read on this device has counted the
      other pages: the empty-folder alarm needs a count to hold the first
      listing against (#181). */
   const pagesKey = "pagecount-pages:" + record.name;
   const defer = !!record.backend.laterNames && Number(PREF.get(pagesKey, "0")) >= 3;   // as looksEmptied needs
-  const who = "“" + record.name + "”: ";
   let t = loadMark(who + "listing the folder" + (defer ? ", today's page by name" : ""));
   let paths;
   try { paths = await record.backend.names(defer ? {today, late: LATE_DIRS} : undefined); }
@@ -23,14 +28,18 @@ async function readStaged(record, edited, onRest, onSoon) {
   const unlisted = defer && record.backend.hasLater();
   const later = p => isStubPath(p) ||
     (isJournalPath(p) && (/(\d{4}-\d{2}-\d{2})\.md$/i.exec(p) || [])[1] !== today);
-  const rest = paths.filter(later);
-  const firstPaths = paths.filter(p => !later(p));
+  const known = p => !!days && days.files.has(p);
+  const rest = paths.filter(p => later(p) && !known(p));
+  const firstPaths = paths.filter(p => !later(p) && !known(p));
   t = performance.now();
   const first = await record.backend.readMany(firstPaths);
-  loadMark(who + "read " + firstPaths.length + " files first (today, the horizons, " + rest.length + " to follow)", t);
+  loadMark(who + "read " + firstPaths.length + " files " + (days ? "next" : "first") +
+           " (" + (days ? "" : "today, ") + "the horizons, " + rest.length + " to follow)", t);
+  if (days) for (const [p, text] of days.files) if (!first.has(p)) first.set(p, text);
   if (!rest.length && !unlisted) {
     t = performance.now();
     await readIntoNow(record, edited, first);
+    record.dayOnly = false;
     loadMark(who + "all " + record.pages.size + " pages in", t);
     return null;
   }
@@ -38,7 +47,17 @@ async function readStaged(record, edited, onRest, onSoon) {
   record.hold = null;
   record.stubs = new Set();
   record.later = later;                // what may still come in: mergeMirror waits for those alone
-  fillRecord(record, first);
+  /* The days drawn already may have been written in meanwhile: what is on
+     screen stays, saved against the file it was read from. */
+  const held = new Map(record.pages), heldBase = record.base || new Map();
+  fillRecord(record, first, held);
+  for (const p of new Set([...edited, ...record.dirty])) {
+    if (!held.has(p)) continue;
+    record.pages.set(p, held.get(p));
+    if (heldBase.has(p)) { record.base.set(p, heldBase.get(p)); first.set(p, heldBase.get(p)); }
+    else record.base.delete(p);
+  }
+  record.dayOnly = false;
   const standIn = p => {
     if (!isStubPath(p) || isGuidePath(p) || syncCopyOf(p)) return;   // a guide or a planning draft is no page to stand in for
     if (record.pages.has(p)) return;   // made here while its folder was not yet listed: merged with its file when saved

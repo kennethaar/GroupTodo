@@ -614,6 +614,40 @@ var GTD_TEST = (() => {
     ok(!rec.dirty.has(boat), "nothing left to send for the stand-in");
   });
 
+  test("#181 today's page is shown before the folder is listed, then yesterday's, then the rest", async () => {
+    const jp = d => join(JOURNALS, "tester", d + ".md");
+    const yest = shiftISO(T(), -1);
+    const tree = {
+      journals: {tester: {[T() + ".md"]: "- TODO today's line\n", [yest + ".md"]: "- TODO late last night\n"}},
+      pages: {"GTD.md": "title:: GTD\n", "1": {"Boat.md": "title:: Boat\n\n- TODO Sand the hull\n"}},
+    };
+    const b = Backends.fs(fakeDir("Day181", tree, []));
+    const steps = [];
+    const names = b.names.bind(b);
+    b.names = o => { steps.push("listed"); return names(o); };
+    const rec = newRecord("Day181", b);
+    const shown = [];
+    await readInto(rec, {stage: true, onDay: r => {
+      shown.push([...r.pages.keys()].sort().join());
+      steps.push("shown");
+      // Typed at once, into the page on screen.
+      if (shown.length === 1) { r.pages.get(jp(T())).blocks.push(newBlock({title: "Captured early"})); r.dirty.add(jp(T())); }
+    }});
+    eq(steps.slice(0, 3).join(), "shown,shown,listed", "today, then yesterday, before the listing");
+    eq(shown[0], [jp(T()), SETTINGS_PATH].sort().join(), "today alone (and the settings) on the first draw");
+    eq(shown[1], [jp(T()), jp(yest), SETTINGS_PATH].sort().join(), "yesterday next");
+    ok(rec.pages.has(join(DIRS.active, "Boat.md")), "the rest follows");
+    await filesLoaded();
+    has(serializePage(rec.pages.get(jp(T()))), "Captured early", "a line captured on the first draw is kept");
+    has(serializePage(rec.pages.get(jp(T()))), "today's line", "and so is the file's");
+    // A new day: no page yet, so its templates come in with it.
+    const fresh = {journals: {tester: {}}, pages: {"GTD.md": "title:: GTD\n", "8": {"journals.md": "title:: journals\n\n- TODO Plan the day\n"}}};
+    const rec2 = newRecord("Day181b", Backends.fs(fakeDir("Day181b", fresh, [])));
+    let had = null;
+    await readInto(rec2, {stage: true, onDay: r => { if (had == null) had = r.pages.has(join(DIRS.lists, "journals.md")); }});
+    ok(had, "the day template is there to make today's page from");
+    await filesLoaded();
+  });
   test("#181 the month, then projects, contexts, people and orgs come in before the rest", async () => {
     const jp = d => join(JOURNALS, d + ".md");
     const old = shiftISO(T(), -40), five = shiftISO(T(), -5), yest = shiftISO(T(), -1);
@@ -637,10 +671,10 @@ var GTD_TEST = (() => {
     try {
       await readInto(rec, {stage: true, onSoon: () => { shown++; }});
       has(serializePage(rec.pages.get(jp(T()))), "today", "today, in the first read");
-      ok(!rec.pages.has(jp(yest)), "yesterday came in with today");
+      has(serializePage(rec.pages.get(jp(yest))), "yesterday", "yesterday, right after today");
+      ok(!rec.pages.has(jp(five)), "a day this month came in with today");
       for (let i = 0; i < 40 && shown < 2; i++) await settle();
       eq(shown, 2, "times shown: the month, then the projects");
-      has(serializePage(rec.pages.get(jp(yest))), "yesterday", "yesterday, before the projects");
       ok(rec.pages.has(jp(five)), "a day this month, before the projects");
       has(serializePage(rec.pages.get(join(DIRS.active, "Boat.md"))), "Sand the hull", "the project, before the contexts");
       ok(rec.stubs.has(join(DIRS.contexts, "phone.md")), "the context is not a stand-in");
@@ -717,8 +751,9 @@ var GTD_TEST = (() => {
     try {
       // Never read in full on this device: everything listed, notes no longer in the first read.
       let {rec, first} = await run("Late181");
-      ok(first.includes(jp(T())) && first.includes(join(PAGES, "_", "Purpose.md")), "today and the horizons in the first read");
-      ok(!first.includes(idea), "a note in the first read");
+      eq(first.slice().sort().join(), [jp(T()), SETTINGS_PATH].sort().join(), "today and the settings alone in the first read");
+      ok(rec.pages.has(jp(yest)) && rec.pages.has(join(PAGES, "_", "Purpose.md")), "yesterday and the horizons read before the first draw");
+      ok(rec.stubs.has(idea), "a note read before the first draw");
       ok(rec.stubs.has(idea) && rec.stubs.has(done), "a note and a done project there by name");
       await filesLoaded();
       eq(PREF.get(key), "3", "pages counted without days, done projects, notes and mail");
@@ -1473,7 +1508,8 @@ var GTD_TEST = (() => {
 
   test("#342 Check the folder says how long the last read took and which files were slowest", async () => {
     const tree = {pages: {"GTD.md": "title:: GTD\n", "Slow.md": "title:: Slow\n"}, journals: {[T() + ".md"]: "- a line\n"}};
-    const gate = {"Slow.md": new Promise(r => setTimeout(r, 80))};
+    // The delay starts when the file is opened, not when the test is set up.
+    const gate = {get "Slow.md"() { return new Promise(r => setTimeout(r, 80)); }};
     const rec = newRecord("Time342", Backends.fs(fakeDir("Time342", tree, [], gate)));
     await readInto(rec, {stage: true});
     await filesLoaded();

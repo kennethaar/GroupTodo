@@ -123,6 +123,7 @@ const Backends = {
        then every file read since, opening and reading its text apart. Which
        of those takes the time on a phone says what would make it quicker. */
     let timing = null;
+    let dayRead = false;                  // readDays() ran since the last names(): its reads count with the listing's
     return {
       kind: "fs", label: rootHandle.name, writable: true, handle: rootHandle, unread,
       get timing() { return timing; },
@@ -161,11 +162,53 @@ const Backends = {
           try { found.set(p + "/" + today + ".md", await h.getFileHandle(today + ".md")); }
           catch (e) { if (!/NotFound|TypeMismatch/i.test((e && e.name) || "")) throw e; }
         }
-        fileCache = found;
-        if (!quiet) timing = {at: Date.now(), dirs, listMs: performance.now() - began, files: 0, kb: 0,
-                              readMs: 0, openMs: 0, textMs: 0, slowest: [], atOnce: 16};
+        fileCache = new Map([...(dayRead ? fileCache : []), ...found]);
+        const listMs = performance.now() - began;
+        // The day pages read before this listing (readDays) count in the same read.
+        if (!quiet && dayRead && timing) Object.assign(timing, {dirs: timing.dirs + dirs, listMs: timing.listMs + listMs});
+        else if (!quiet) timing = {at: Date.now(), dirs, listMs, files: 0, kb: 0,
+                                   readMs: 0, openMs: 0, textMs: 0, slowest: [], atOnce: 16};
+        dayRead = false;
         if (today) unlisted = later;      // a full listing (Check the folder) leaves a staged read's folders to it
         return Array.from(found.keys());
+      },
+      /* The given days' pages, by name, with nothing else listed but the
+         folder of day pages itself (one level: whose folders are in it). Then
+         the files named in files, and the pages straight in each folder of
+         dirs, where they are there. Read before the folder is listed, so the
+         day is on screen in seconds (#181). */
+      async readDays(days, {files = [], dirs = []} = {}) {
+        if (!dayRead) timing = {at: Date.now(), dirs: 0, listMs: 0, files: 0, kb: 0,
+                                readMs: 0, openMs: 0, textMs: 0, slowest: [], atOnce: 16};
+        dayRead = true;
+        const want = new Set(days.map(d => d + ".md")), paths = [];
+        const gone = e => /NotFound|TypeMismatch/i.test((e && e.name) || "");
+        const probe = async (dir, prefix, name) => {
+          try { const h = await dir.getFileHandle(name); const p = prefix ? prefix + "/" + name : name; fileCache.set(p, h); paths.push(p); }
+          catch (e) { if (!gone(e)) throw e; }
+        };
+        const shallow = async (path, each) => {
+          let dir;
+          try { dir = await dirFor(path); } catch (e) { if (gone(e)) return; throw e; }
+          for await (const [name, h] of dir.entries()) if (!name.startsWith(".")) await each(name, h, dir);
+        };
+        if (want.size) await shallow(JOURNALS, async (name, h) => {
+          const p = JOURNALS + "/" + name;
+          if (h.kind === "directory") {
+            dirCache.set(p, h);
+            for (const d of want) await probe(h, p, d);
+          } else if (want.has(name)) { fileCache.set(p, h); paths.push(p); }
+        });
+        for (const f of files) {
+          const cut = f.lastIndexOf("/");
+          let dir;
+          try { dir = await dirFor(f.slice(0, cut)); } catch (e) { if (gone(e)) continue; throw e; }
+          await probe(dir, f.slice(0, cut), f.slice(cut + 1));
+        }
+        for (const d of dirs) await shallow(d, (name, h) => {
+          if (h.kind === "file" && /\.md$/i.test(name)) { fileCache.set(d + "/" + name, h); paths.push(d + "/" + name); }
+        });
+        return this.readMany(paths);
       },
       hasLater: () => unlisted.length > 0,
       /* The folders names() left out, those pick() takes: every file in them.

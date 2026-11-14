@@ -26,7 +26,7 @@
   if (!folderWaiting(V.space)) ensureJournal(todayISO());
   t = loadMark("verbs, trackers and today's page made", t);
   ensureVisibleLoaded();            // the areas beside it come in behind the journal (#387)
-  render();
+  renderUnlessTyping();             // the day may be on screen already, and written in (#181)
   t = performance.now();
   await collectSharedFile();
   window.addEventListener("hashchange", () => handleHash());

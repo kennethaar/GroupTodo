@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.162.3 - 2026-11-14
+
+- Vault and sync: today's page shows in seconds on a big folder (#181).
+  It is opened by its name before the folder is listed, and you can write
+  in it at once. Yesterday's page follows, for what was written before
+  midnight. Only then is the rest of the folder listed and read, as before.
+  A page made in those first seconds is saved once the folder is listed.
+
 ## 1.162.2 - 2026-11-14
 
 - Journal: a phone opens on the Journal, as a wider screen does, not on

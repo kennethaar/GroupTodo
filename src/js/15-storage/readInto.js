@@ -1,4 +1,4 @@
-async function readInto(record, {stage = false, onRest = null, onSoon = null} = {}) {
+async function readInto(record, {stage = false, onRest = null, onSoon = null, onDay = null} = {}) {
   /* Every page edited while this read runs: dirty when it starts or ends, or
      saved in between (doFlush adds those here). The listing can be older than
      any of them. */
@@ -6,7 +6,7 @@ async function readInto(record, {stage = false, onRest = null, onSoon = null} = 
   (record.readers || (record.readers = new Set())).add(edited);
   const done = () => record.readers.delete(edited);
   if (stage && record.backend && record.backend.names && !record.pages.size) {
-    const p = readStaged(record, edited, onRest, onSoon);
+    const p = readStaged(record, edited, onRest, onSoon, onDay);
     READING.add(p);
     let rest = null;
     try { rest = (await p)?.rest; } finally { READING.delete(p); if (!rest) done(); }

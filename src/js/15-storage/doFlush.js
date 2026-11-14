@@ -23,6 +23,15 @@ async function doFlush() {
       gone  = gone.filter(p => !stillLoading(rec, p));
       if (!dirty.length && !gone.length) continue;
     }
+    /* Before the folder is listed only the day pages are known: a page made
+       then may be a file not seen yet, and waits for the listing (#181). */
+    if (rec.dayOnly) {
+      const early = p => isJournalPath(p) || p === SETTINGS_PATH;
+      for (const p of dirty) if (!early(p)) rec.dirty.add(p);
+      for (const p of gone) if (!early(p)) rec.removed.add(p);
+      dirty = dirty.filter(early); gone = gone.filter(early);
+      if (!dirty.length && !gone.length) continue;
+    }
     wrote = true;
     V.syncing = true;
     saving();

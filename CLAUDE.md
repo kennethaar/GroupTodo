@@ -243,4 +243,8 @@ v1.156.0 added timed start-up logging to find the slow step:
 First log (Android, 1203 files): ~2.4 s per file read, listing 29 s. The
 "first" read took 679 files / 127 s because loose pages straight in `pages/`
 were not stand-ins. v1.156.1: `isStubPath` makes them wait (except `GTD.md`
-and old horizon files). Next: a new log; listing (29 s) is the next target.
+and old horizon files). v1.162.3: `readDayFirst` reads today's page (and
+`GTD.md`, day templates on a new day) by name via the fs backend's
+`readDays`, draws it (`onDay`, start-up only), then yesterday's, before
+`names()` lists anything. `rec.dayOnly` holds non-journal saves until the
+listing. Next: a new log from the phone to confirm.

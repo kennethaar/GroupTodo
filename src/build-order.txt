@@ -203,6 +203,7 @@ js/15-storage/restRank.js
 js/15-storage/restOrder.js
 js/15-storage/layInSoon.js
 js/15-storage/vars-lostWhileLoading.js
+js/15-storage/readDayFirst.js
 js/15-storage/readStaged.js
 js/15-storage/vars-PAGE_SRC.js
 js/15-storage/typingPath.js
