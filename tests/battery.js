@@ -1059,6 +1059,47 @@ var GTD_TEST = (() => {
     }
   });
 
+  test("#232 a new day written in the browser copy is kept when the folder, which has no page for it yet, takes over", async () => {
+    // Reported: five lines written in the journal while the folder was read, all gone when it came in.
+    await flush();
+    const name = V.space, kept = LOADED.get(name), ns = "Ls232g", realIdb = Backends.idb;
+    const today = journalPath(todayISO()), old = join(JOURNALS, shiftISO(T(), -10) + ".md");
+    const b = Backends.ls(ns);
+    b.kind = "fs";
+    const files = {[old]: "- old line\n", [join(DIRS.active, "Boat.md")]: "title:: Boat\n\n- TODO Sand the hull\n"};
+    for (const [p, t] of Object.entries(files)) await b.write(p, t);
+    // The rest of the folder comes in after the folder has taken over.
+    let release, calls = 0;
+    const rest = new Promise(r => { release = r; }), read = b.readMany.bind(b);
+    b.readMany = async (paths, onEach) => { if (calls++) await rest; return read(paths, onEach); };
+    Backends.idb = n => Backends.memory("Copy232g|" + n);
+    const copy = newRecord(name, Backends.idb(name));
+    LOADED.set(name, copy); bindActive(name);
+    try {
+      const lines = [1, 2, 3, 4, 5].map(n => "test " + n + " at " + todayISO());
+      copy.pages.set(today, parsePage(lines.map(l => "- " + l).join("\n") + "\n"));
+      touch(today);
+      await flush();                                  // in browser storage, as typed
+      await loadFromBackend(b, {quick: true});
+      for (let i = 0; i < 100 && LOADED.get(name) === copy; i++) await new Promise(r => setTimeout(r, 20));
+      ok(LOADED.get(name) !== copy, "the folder never took over");
+      for (const l of lines) has(serializePage(V.pages.get(today)), l, "a line written in the copy is not on today's page");
+      release();
+      await filesLoaded();
+      await flush();
+      const saved = await b.readText(today);
+      for (const l of lines) has(saved || "", l, "a line written in the copy did not reach the folder");
+    } finally {
+      release();
+      await filesLoaded();
+      FOLDER_READING.delete(name);
+      LOADED.set(name, kept); bindActive(name);
+      Backends.idb = realIdb;
+      for (const p of [today, ...Object.keys(files)]) await b.remove(p);
+      render();
+    }
+  });
+
   test("#232 while the folder is read behind, the status says so, not browser only", async () => {
     await flush();
     const name = V.space, kept = LOADED.get(name);

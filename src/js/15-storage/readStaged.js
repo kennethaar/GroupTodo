@@ -26,6 +26,7 @@ async function readStaged(record, edited, onRest, onSoon) {
 
   record.hold = null;
   record.stubs = new Set();
+  record.later = later;                // what may still come in: mergeMirror waits for those alone
   fillRecord(record, first);
   const standIn = p => {
     if (!isStubPath(p) || isGuidePath(p) || syncCopyOf(p)) return;   // a guide or a planning draft is no page to stand in for

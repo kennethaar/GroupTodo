@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.155.14 - 2026-11-14
+
+- Vault and sync: a new day written while the folder is still being read
+  is no longer lost when the folder comes in (#232). The folder had no page
+  for the day yet, so what was written in this browser's copy was set aside
+  until the whole folder was in. Today was made again, empty, over it, and
+  every line was gone. Now the day written in the copy is taken in at once.
+
 ## 1.155.13 - 2026-11-14
 
 - Vault and sync: lines typed while the folder is still being read are no

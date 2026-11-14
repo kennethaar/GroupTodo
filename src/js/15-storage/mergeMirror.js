@@ -10,8 +10,11 @@ async function mergeMirror(rec) {
       const fromBackend = rec.pages.get(path);
       /* The folder is still being read: a page not in yet is not missing, and
          taken for one the whole browser copy went to the folder again --
-         1642 files on a phone (#340). It is merged once the read is done. */
-      if (rec.stubs && (!fromBackend || stillLoading(rec, path))) continue;
+         1642 files on a phone (#340). It is merged once the read is done.
+         Today's page was read first, so one the folder has not got is new:
+         a day begun in the copy. Left for later, today was made afresh over
+         it and the lines written in the copy were lost (#232). */
+      if (rec.stubs && (stillLoading(rec, path) || (!fromBackend && (!rec.later || rec.later(path))))) continue;
       const local = parsePage(text);
       if (!fromBackend && mode === "full" && !open.has(path)) {
         // The backend answered and does not have this page, and we never failed
