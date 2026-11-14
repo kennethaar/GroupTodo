@@ -4716,6 +4716,29 @@ var GTD_TEST = (() => {
       ok(!input.isConnected, "the picker is left behind");
     } finally { window.matchMedia = mm; go("today"); }
   });
+  test("#390 files dropped on + Click here to write a new line each get a new line linking them", async () => {
+    const path = ensureJournal(todayISO());
+    go("today");
+    await settle();
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    const before = getPage(path).blocks.length;
+    const btn = document.querySelector(".newline");
+    ok(btn, "no new-line button on today's page");
+    const dt = new DataTransfer();
+    dt.items.add(new File([new Uint8Array([137, 80, 78, 71])], "plan390.png", {type: "image/png"}));
+    dt.items.add(new File(["minutes"], "minutes390.txt", {type: "text/plain"}));
+    const over = new DragEvent("dragover", {dataTransfer: dt, bubbles: true, cancelable: true});
+    btn.dispatchEvent(over);
+    ok(over.defaultPrevented, "the button does not take a file drop");
+    btn.dispatchEvent(new DragEvent("drop", {dataTransfer: dt, bubbles: true, cancelable: true}));
+    const added = () => getPage(path).blocks.slice(before);
+    for (let i = 0; i < 80 && !(added().length === 2 && added().every(x => /assets\//.test(x.title))); i++) await frame();
+    eq(added().length, 2, "not one new line per file");
+    has(added()[0].title, "![plan390.png](assets/", "the first line does not link the picture");
+    has(added()[1].title, "minutes390", "the second line does not link the file");
+    has(added()[1].title, "assets/", "the second file is not in assets/");
+    getPage(path).blocks.splice(before); touch(path); render();
+  });
   test("renamePage rewrites the links to it", () => {
     const target = join(DIRS.pages, "Test rename me.md");
     putPage(target, {props: {title: "Test rename me"}, blocks: []});

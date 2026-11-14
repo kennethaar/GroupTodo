@@ -50,7 +50,7 @@
   margin:6px 0;border:1px solid var(--line);border-radius:8px;background:var(--card);cursor:zoom-in}
 .asset-file{display:inline-flex;align-items:center;gap:4px;max-width:100%}
 .asset-missing{color:var(--warn,#b45309);font-size:12px;word-break:break-all}
-.blk .txt.dropping{outline:2px dashed var(--accent,#2563eb);outline-offset:2px;border-radius:4px}
+.blk .txt.dropping,.newline.dropping{outline:2px dashed var(--accent,#2563eb);outline-offset:2px;border-radius:4px}
 .blk .txt[contenteditable]{outline:none}
 .blk .props{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--fg3);margin:2px 0 4px}
 .blk .props .pkv{font-family:var(--mono)}

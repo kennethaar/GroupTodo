@@ -27,15 +27,45 @@ function pageOutline(path, opts = {}) {
      rebuilt, so anything picked in another page's outline is let go of. */
   if (LINE_SEL.ids.length && LINE_SEL.path !== path) lineSelClear(false);
   if (LINE_SEL.ids.length) requestAnimationFrame(paintLineSel);
-  if (!opts.readonly) box.append(el("button", {
-    class: "newline", onclick: () => {
-      const nb = newBlock({title: ""});
-      if (root) { root.children = root.children || []; root.children.push(nb); root.collapsed = false; }
-      else page.blocks.push(nb);
-      touch(path); render(); focusBlock(nb.id);
-    },
-  }, opts.newText ? null : el("span", {class: "bul", "aria-hidden": "true"}, "•"),
-    root ? "New line under this one" : opts.newText || "New line"));
+  const addLine = () => {
+    const nb = newBlock({title: ""});
+    if (root) { root.children = root.children || []; root.children.push(nb); root.collapsed = false; }
+    else page.blocks.push(nb);
+    return nb;
+  };
+  if (!opts.readonly) {
+    const btn = el("button", {
+      class: "newline", onclick: () => { const nb = addLine(); touch(path); render(); focusBlock(nb.id); },
+    }, opts.newText ? null : el("span", {class: "bul", "aria-hidden": "true"}, "•"),
+      root ? "New line under this one" : opts.newText || "New line");
+    /* Files dropped here each get a new line with the link, as a drop on a
+       line does (#390). */
+    btn.addEventListener("dragover", e => {
+      if (!Array.from((e.dataTransfer && e.dataTransfer.types) || []).includes("Files")) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+      btn.classList.add("dropping");
+    });
+    btn.addEventListener("dragleave", () => btn.classList.remove("dropping"));
+    btn.addEventListener("drop", async e => {
+      const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
+      btn.classList.remove("dropping");
+      if (!files.length) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (!canKeepFiles()) { notify("This area has nowhere to keep files.", "warn"); return; }
+      const lines = files.map(() => addLine());
+      touch(path);
+      for (let i = 0; i < files.length; i++) await attachFilesToBlock(path, lines[i], [files[i]], null);
+      const left = lines.filter(nb => !trim(nb.title));
+      if (left.length) {
+        const drop = list => { for (let i = list.length - 1; i >= 0; i--) if (left.includes(list[i])) list.splice(i, 1); };
+        drop(root ? root.children : page.blocks);
+        touch(path); render();
+      }
+    });
+    box.append(btn);
+  }
   if (!trail || opts.branch) return box;
 
   const space = V.space;

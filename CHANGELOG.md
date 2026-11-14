@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.157.0 - 2026-11-14
+
+- A page: files dropped on "+ Click here to write a new line" (or + New
+  line) are kept in assets/, and each gets a new line with its link, as a
+  drop on a line does (#390).
+
 ## 1.156.1 - 2026-11-14
 
 - Vault and sync: loose pages straight in the pages folder no longer hold up

@@ -1363,6 +1363,7 @@ Drop a card on an empty context to give it that one. =>
 Drop a card on another to make it its child. =>
 Drop a context here, from this area or another, to put it at the top =>
 Drop a file onto a line to attach it to it. =>
+Drop files on a line to keep them in assets/ and link them there. Drop them on + New line, and each file gets a line of its own. =>
 Drop here to take it out. =>
 Drop it on a card. =>
 Drop it on a project, an organisation, an area or a task. =>
