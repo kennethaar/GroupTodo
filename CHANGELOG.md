@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.158.1 - 2026-11-14
+
+- The line menu and toolbar: a line refiled from a day page no longer
+  links to the page it lands on (#384). That link becomes a link back to
+  the day it was written on, and the Refiled: note left on the day leaves
+  it out. Other links stay.
+
 ## 1.158.0 - 2026-11-14
 
 - The line menu and toolbar: Delete asset deletes a file the line links to

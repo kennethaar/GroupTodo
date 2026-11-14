@@ -3435,6 +3435,7 @@ Reference (rør ikke): =>
 Referens (ändra inte): =>
 Referenz (nicht ändern): =>
 Refile =>
+Refile from a day page: a link to the page it goes to becomes a link back to the day. =>
 Refile to a project, responsibility or context =>
 Refile to another project =>
 Refiled to =>

@@ -1060,6 +1060,7 @@ const HELP = {
     keys: [["Ctrl+.", "Line menu"], ["Alt+S", "Move to an area"], ["Alt+G", "Refile"], ["Alt+I", "Responsibility"],
       ["Alt+B", "Copy embed"], ["Alt+X", "Copy text"], ["Alt+K", "Insert tracker"], ["Alt+A", "Plan with AI"]],
     more: ["Settings › Help can show the menu under the line you edit.",
+      "Refile from a day page: a link to the page it goes to becomes a link back to the day.",
       "Delete asset is there when the line links a file in assets/. It warns first: every link to the file stops working."],
     see: ["keys-line", "links", "dates"],
     words: ["menu", "toolbar", "actions", "refile", "move", "photo"]},

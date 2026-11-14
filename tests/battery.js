@@ -9430,6 +9430,23 @@ var GTD_TEST = (() => {
       } finally { closeModal(); }
     });
   });
+  test("#384 refiled from a day page, a link to the destination becomes a link back to the day", async () => {
+    const a = join(DIRS.active, "Refile back A.md"), note = join(DIRS.pages, "Refile back notes.md");
+    const day = journalPath(shiftISO(T(), -3));
+    await withPages({[a]: "# Refile back A\n", [note]: "# Refile back notes\n- TODO Order tiles [[1/Refile back A]]\n",
+      [day]: "- TODO Call the plumber [[c/phone]] [[1/Refile back A]]\n- TODO Book the van\n"}, async () => {
+      const [linked, plain] = getPage(day).blocks;
+      refileBlock(day, linked, a);
+      eq(linked.title, "Call the plumber [[c/phone]] [[" + pageRef(day) + "]]", "the destination link is not swapped for the day");
+      const crumbs = getPage(day).blocks.filter(x => x.state === "DONE").map(x => x.title);
+      eq(crumbs[crumbs.length - 1], "Refiled: Call the plumber [[c/phone]] -> [[" + pageRef(a) + "]]", "the breadcrumb repeats the destination link");
+      refileBlock(day, plain, a);
+      eq(plain.title, "Book the van", "a line with no link to the destination changed");
+      const fromNote = getPage(note).blocks.find(x => x.state === "TODO");
+      refileBlock(note, fromNote, a);
+      eq(fromNote.title, "Order tiles [[1/Refile back A]]", "a refile from a page that is no day changed the line");
+    });
+  });
   test("#95 the review's tabs follow its steps, and only the step you are on says what it means", async () => {
     eq(SUBS.review.map(s => s[0]), ["steps", "days", "actions", "projects", "reflect"]);
     eq(SUBS.review[1][1], "Clarify");
