@@ -1182,6 +1182,67 @@ var GTD_TEST = (() => {
     }
   });
 
+  test("#181 #232 Enter on a line of the browser copy lets the folder take over at once, the caret on the new line", async () => {
+    // Reported: the folder's pages waited until the line was left; capture is line after line.
+    await flush();
+    const name = V.space, kept = LOADED.get(name), realIdb = Backends.idb, was = state.view;
+    const today = journalPath(todayISO());
+    const b = Backends.ls("Ls181e");
+    b.kind = "fs";
+    await b.write(today, "- written in the folder\n");
+    await b.write(join(DIRS.active, "Boat.md"), "title:: Boat\n\n- TODO Sand the hull\n");
+    b.readDays = async days => {
+      const out = new Map();
+      for (const d of days) { const t = await b.readText(journalPath(d)); if (t != null) out.set(journalPath(d), t); }
+      return out;
+    };
+    // The listing hangs, as a phone's does: what happens on Enter is before it.
+    let listed;
+    const listing = new Promise(r => { listed = r; }), names = b.names.bind(b);
+    b.names = async o => { await listing; return names(o); };
+    Backends.idb = n => Backends.memory("Copy181e|" + n);
+    const copy = newRecord(name, Backends.idb(name));
+    copy.pages.set(today, parsePage("- from the copy\n"));
+    LOADED.set(name, copy); bindActive(name);
+    try {
+      go("today"); await settle();
+      const line = () => [...$$(".blk .txt")].find(n => n.textContent.includes("from the copy"));
+      const txt = line();
+      ok(txt, "the copy's line is not on screen");
+      txt.focus();
+      await flush();                     // as openSpace does before the folder is read
+      await loadFromBackend(b, {quick: true});
+      for (let i = 0; i < 20; i++) await new Promise(r => setTimeout(r, 10));
+      ok(LOADED.get(name) === copy, "the folder took over in the middle of a line");
+      txt.textContent = "from the copy, captured";
+      const r = document.createRange(); r.selectNodeContents(txt); r.collapse(false);
+      getSelection().removeAllRanges(); getSelection().addRange(r);
+      txt.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true, cancelable: true}));
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const rec = LOADED.get(name);
+      ok(rec !== copy, "the folder did not take over on Enter");
+      ok(V.pages === rec.pages, "the screen is not the folder's");
+      const a = document.activeElement, blk = a && a.closest(".blk");
+      ok(blk && a.classList.contains("txt") && !a.textContent, "the caret is not on the new, empty line");
+      ok(flattenBlocks(rec.pages.get(today).blocks).some(x => x.id === blk.dataset.id), "the new line is not in the folder's page");
+      a.textContent = "typed after the folder took over";
+      a.blur();
+      await flush();
+      const saved = await b.readText(today);
+      has(saved, "from the copy, captured", "the line ended with Enter was lost");
+      has(saved, "typed after the folder took over", "the line typed after the switch was lost");
+      has(saved, "written in the folder", "the folder's own line was dropped");
+    } finally {
+      listed();
+      await filesLoaded();
+      FOLDER_READING.delete(name);
+      LOADED.set(name, kept); bindActive(name);
+      Backends.idb = realIdb;
+      await b.remove(today); await b.remove(join(DIRS.active, "Boat.md"));
+      go(was); await settle();
+    }
+  });
+
   test("#232 a new day written in the browser copy is kept when the folder, which has no page for it yet, takes over", async () => {
     // Reported: five lines written in the journal while the folder was read, all gone when it came in.
     await flush();

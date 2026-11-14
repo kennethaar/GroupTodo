@@ -20,23 +20,55 @@ function readFolderBehind(held, backend) {
      It takes over as soon as today's page is in, by its name, before the
      folder is listed: the listing alone took half a minute on a phone (#181). */
   let taking = null;
+  /* Ending a line with Enter is a moment too (lineDone): the folder takes
+     over at once, before the new line is drawn. The pages on screen, and
+     those the copy has not saved yet, are carried over as they are, so the
+     lines drawn from them stay theirs. Each one that differs from its file
+     is merged with it when saved, nothing of either dropped (#181). */
+  const carryOver = kept => {
+    for (const [p, page] of kept) {
+      const theirs = rec.pages.get(p);
+      const same = theirs && serializePage(theirs) === serializePage(page);
+      rec.pages.set(p, page);
+      if (same) PAGE_SRC.set(page, PAGE_SRC.get(theirs));
+      else { if (rec.base) rec.base.delete(p); rec.dirty.add(p); }
+    }
+  };
+  const swap = carry => {
+    const kept = new Map();
+    if (carry) {
+      const shown = [...document.querySelectorAll("[data-path]")]
+        .filter(n => (n.dataset.space || V.space) === name).map(n => n.dataset.path);
+      for (const p of new Set([...shown, ...held.dirty])) if (held.pages.has(p)) kept.set(p, held.pages.get(p));
+    }
+    LOADED.set(name, rec);
+    FOLDER_READING.delete(name);
+    carryOver(kept);
+    if (V.space === name) bindActive(name);
+    return kept;
+  };
   const takeOver = () => taking || (taking = (async () => {
     // What the swap waited for, said in the log: a start in seconds cannot wait on any of it (#181).
     const span = ms => ms < 1000 ? Math.round(ms) + " ms" : (ms / 1000).toFixed(1) + " s";
     const began = performance.now();
-    await untilTypingStops();
-    const typed = performance.now();
-    if (LOADED.get(name) !== held) { FOLDER_READING.delete(name); return false; }   // opened again or removed meanwhile
-    await flush();                                   // what was done to the copy, into browser storage
+    let kept = await new Promise(done => {
+      LINE_DONE = () => done(LOADED.get(name) === held ? swap(true) : null);
+      untilTypingStops().then(() => { if (LINE_DONE) { LINE_DONE = null; done(false); } });
+    });
+    const typed = performance.now(), entered = !!kept;
+    if (kept === null || (!kept && LOADED.get(name) !== held)) { FOLDER_READING.delete(name); return false; }   // opened again or removed meanwhile
+    if (!kept) {
+      await flush();                                 // what was done to the copy, into browser storage
+      kept = swap(false);
+    }
     const saved = performance.now();
-    LOADED.set(name, rec);
-    FOLDER_READING.delete(name);
     await mergeMirror(rec);
+    carryOver(kept);                                 // the lines on screen stay bound to their pages
     reconcileSyncedPages(name);
     if (V.space === name) bindActive(name);
     loadStep(name, "the folder's pages took over from the browser copy", began,
-      "waited " + span(typed - began) + " for a line being typed, " + span(saved - typed) + " for saves, " +
-      span(performance.now() - saved) + " to merge the copy in");
+      "waited " + span(typed - began) + " for a line being typed" + (entered ? " (ended with Enter)" : "") +
+      ", " + span(saved - typed) + " for saves, " + span(performance.now() - saved) + " to merge the copy in");
     DRAW_NOTE = "the folder's today";
     return true;
   })());

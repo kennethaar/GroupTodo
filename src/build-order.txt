@@ -233,6 +233,7 @@ js/15-storage/rewriteChecklistLinks.js
 js/15-storage/loadSpaceRecord.js
 js/15-storage/restLoaded.js
 js/15-storage/soonLoaded.js
+js/15-storage/lineDone.js
 js/15-storage/readFolderBehind.js
 js/15-storage/loadFromBackend.js
 js/22-spaces/vars-SPACE_COLORS.js

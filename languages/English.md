@@ -19,6 +19,7 @@ code:: en
 (bifoga filen, eller skicka det som det är). =>
 (empty line) =>
 (empty query) =>
+(ended with Enter) =>
 (häng die Datei an, oder schick sie so, wie sie ist). =>
 (legg ved filen, eller send den som den er). =>
 (on now) =>
@@ -221,6 +222,7 @@ code:: en
 :scope > .rel-children > .rel-card-wrap =>
 :scope > .trkw =>
 ; day folders and done, notes and mail later =>
+; journals/: =>
 ; links on =>
 ?.bookch .chsyn =>
 ?.bookch .nm =>
@@ -4189,7 +4191,7 @@ The payment becomes a Waiting for, due after the organisation's pay days (14 wit
 The people of this area are the characters. A page whose type is place or thing is in it too. =>
 The people to drag. =>
 The person, how many, and × to hide. =>
-The phone asks for the folder each time the app starts. Tap Allow access to see your pages. Then it asks for each other area's folder too. =>
+The phone asks for the folder each time the app starts. Tap Allow access to see your pages. Then it asks for each other area's folder too. If you are writing meanwhile, the folder's pages take over at your next Enter. =>
 The phone did not hand over any contacts. =>
 The pile is empty =>
 The place or tool all of them need =>
@@ -5935,7 +5937,6 @@ zuletzt gehört =>
 . Next: {1}, {2} ({3}) =>
 : out of {1} template =>
 : {1} late =>
-; journals/: {1} entries, listed in {2}; finding the files {3}; reading them =>
 ; {1} you wrote under stayed, as plain #meeting lines =>
 === Project page: {1} === =>
 @{1} (from above) =>
@@ -6488,7 +6489,7 @@ the {1} tasks =>
 to raise with {1} =>
 told {1}d ago =>
 untouched for {1} days =>
-waited {1} for a line being typed, {2} for saves, {3} to merge the copy in =>
+waited {1} for a line being typed =>
 with {1} actions. =>
 work hours, {1}–{2} =>
 write failed: {1} =>
@@ -6676,7 +6677,6 @@ your own area, {1}, could not be opened. Open it once from the area menu (a fold
 {1} without a context =>
 {1} without a verb =>
 {1} you have not read =>
-{1} {2} ({3} entries) =>
 {1} {2} · {3} choices remembered =>
 {1} · set {2}: {3} reps =>
 {1} · told after a later scene =>

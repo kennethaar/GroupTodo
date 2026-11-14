@@ -254,5 +254,8 @@ record in from `onDay` too. Log of v1.162.3 (Android, 1203 files): today in
 get under 5 s. v1.162.5: Save log opens with `startupText` per area
 (`loadStep` milestones, `DRAW_NOTE` in render), then `readTimingText` with
 slowest folders, the day files read alone, and unchanged files by date and
-size (`noteFileSigs`, PREF `filesigs:<area>`). Next: read the new log, then
-likely a full browser copy shown at once and only changed files read.
+size (`noteFileSigs`, PREF `filesigs:<area>`). v1.162.6: the takeover no
+longer waits for the line to be left: Enter calls `lineDone()` and
+`readFolderBehind` swaps at once, carrying the copy's shown and unsaved
+pages over (merged with the file at save). User confirms it is fast once the
+swap happens. Next: read the new log; maybe a full browser copy.

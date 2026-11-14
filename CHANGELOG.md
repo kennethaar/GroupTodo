@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.162.6 - 2026-11-14
+
+- Phone and PC: after Allow access, the folder's pages take over when you
+  press Enter at the end of a line (#181). They waited until you left the
+  line, so capturing line after line kept the folder out. The page you
+  write in comes along as it is, with the caret on the new line, and is
+  merged with its file when saved.
+
 ## 1.162.5 - 2026-11-14
 
 - Vault and sync: Save log (#181) now starts with what holds today's page

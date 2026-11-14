@@ -385,7 +385,7 @@ function outlineBlock(path, page, b, opts = {}) {
         const nb = newBlock({state: inherit});
         if (nb.state) { applyTodoTemplate(nb); stampAddedIfMissing(path, nb); }
         sibs.splice(sibs.indexOf(b), 0, nb);
-        touch(path); render(); focusBlock(nb.id);
+        touch(path); lineDone(); render(); focusBlock(nb.id);
         centerNewLine(`.blk[data-id="${nb.id}"] .txt`);
         return;
       }
@@ -397,7 +397,7 @@ function outlineBlock(path, page, b, opts = {}) {
       if (nb.state) { applyTodoTemplate(nb); stampAddedIfMissing(path, nb); }
       if (nb.title) createLinkedPages(nb.title);
       sibs.splice(sibs.indexOf(b) + 1, 0, nb);
-      touch(path); render();
+      touch(path); lineDone(); render();
       // Caret where the cut was, which is the start of what moved down.
       focusBlock(nb.id, false);
       centerNewLine(`.blk[data-id="${nb.id}"] .txt`);
