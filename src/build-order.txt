@@ -48,6 +48,7 @@ js/00-bootstrap/vars-JOBS.js
 js/00-bootstrap/vars-APP_LOG.js
 js/00-bootstrap/appLog.js
 js/00-bootstrap/loadMark.js
+js/00-bootstrap/loadStep.js
 js/00-bootstrap/startJob.js
 js/00-bootstrap/trackSave.js
 js/00-bootstrap/jobsSaving.js
@@ -203,6 +204,7 @@ js/15-storage/restRank.js
 js/15-storage/restOrder.js
 js/15-storage/layInSoon.js
 js/15-storage/vars-lostWhileLoading.js
+js/15-storage/noteFileSigs.js
 js/15-storage/readDayFirst.js
 js/15-storage/readStaged.js
 js/15-storage/vars-PAGE_SRC.js

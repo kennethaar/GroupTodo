@@ -5,6 +5,7 @@ function folderAwayPanel(name) {
   const where = (pending && pending.name) || (sp && sp.label) || "its folder";
   const back = pending
     ? el("button", {class: "btn primary", onclick: async () => {
+        loadStep(name, "Allow access tapped");
         if (!await grantSpaceFolder(name)) render();
         else offerNextFolder();
       }}, "Allow access to " + where)

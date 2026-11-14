@@ -249,4 +249,10 @@ and old horizon files). v1.162.3: `readDayFirst` reads today's page (and
 `names()` lists anything. `rec.dayOnly` holds non-journal saves until the
 listing. v1.162.4: after Allow access, `readFolderBehind` swaps the folder's
 record in from `onDay` too. Log of v1.162.3 (Android, 1203 files): today in
-4.7 s, yesterday 2.4 s, listing 29.5 s, first 94 files 11 s. Next: a new log.
+4.7 s, yesterday 2.4 s, listing 29.5 s, first 94 files 11 s (v1.162.4: same,
+6.4 s for today). ~2 s per file read on that phone, so a full read cannot
+get under 5 s. v1.162.5: Save log opens with `startupText` per area
+(`loadStep` milestones, `DRAW_NOTE` in render), then `readTimingText` with
+slowest folders, the day files read alone, and unchanged files by date and
+size (`noteFileSigs`, PREF `filesigs:<area>`). Next: read the new log, then
+likely a full browser copy shown at once and only changed files read.

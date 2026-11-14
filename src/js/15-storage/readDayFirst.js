@@ -25,7 +25,11 @@ async function readDayFirst(record, edited, today, onDay) {
   const isToday = p => isJournalPath(p) && (/(\d{4}-\d{2}-\d{2})\.md$/i.exec(p) || [])[1] === today;
   record.later = p => !got.has(p) && !isToday(p);
   record.dayOnly = true;
-  loadMark(who + "read " + got.size + " files first (today's page, before the folder is listed)", t);
+  const span = ms => ms < 1000 ? Math.round(ms) + " ms" : (ms / 1000).toFixed(1) + " s";
+  const d = record.backend.timing && record.backend.timing.day;
+  loadStep(record.name, "today's page read from the folder", t, "read " + got.size + " files first, before the folder is listed" +
+    (d ? "; journals/: " + d.entries + (d.entries === 1 ? " entry" : " entries") + ", listed in " + span(d.listMs) + "; finding the files " + span(d.findMs) +
+         "; reading them " + span(d.readMs) : ""));
   if (onDay) onDay(record);
   t = performance.now();
   let y = new Map();
@@ -38,7 +42,7 @@ async function readDayFirst(record, edited, today, onDay) {
     noteBase(record, p, text);
     got.set(p, text);
   }
-  loadMark(who + "read yesterday's page", t);
+  loadStep(record.name, "yesterday's page read", t, y.size ? "" : "none there");
   if (onDay && y.size) onDay(record);
   return {files: got};
 }

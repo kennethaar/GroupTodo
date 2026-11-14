@@ -123,6 +123,12 @@ const Backends = {
        then every file read since, opening and reading its text apart. Which
        of those takes the time on a phone says what would make it quicker. */
     let timing = null;
+    /* The slowest folders to list, the day's read in parts, and each file's
+       date and size: what a start in seconds would have to avoid (#181). */
+    const newTiming = () => ({at: Date.now(), dirs: 0, listMs: 0, files: 0, kb: 0, readMs: 0, openMs: 0, textMs: 0,
+                              slowest: [], atOnce: 16, folders: [], sigs: new Map(), day: null, unchanged: null});
+    const slowFolders = (list, p, ms, n) => { list.push([p || "(top)", ms, n]); list.sort((a, b) => b[1] - a[1]); list.length = Math.min(list.length, 5); };
+    let collect = null;                   // [path, open ms, text ms] of each file while readDays() reads
     let dayRead = false;                  // readDays() ran since the last names(): its reads count with the listing's
     return {
       kind: "fs", label: rootHandle.name, writable: true, handle: rootHandle, unread,
@@ -140,17 +146,20 @@ const Backends = {
          Today's page is opened by its name, and laterNames() lists the rest
          once the day is drawn. */
       async names({quiet = false, today = null, late = []} = {}) {
-        const found = new Map(), later = [], began = performance.now();
+        const found = new Map(), later = [], began = performance.now(), folders = [];
         let dirs = 0;
         const walk = async (dir, prefix) => {
-          const subs = [];
+          const subs = [], t = performance.now();
+          let n = 0;
           dirs++;
           for await (const [name, h] of dir.entries()) {
+            n++;
             if (name.startsWith(".")) continue;
             const p = prefix ? prefix + "/" + name : name;
             if (h.kind === "directory") { dirCache.set(p, h); subs.push([h, p]); }
             else if (/\.(md|org)$/i.test(name) || isVaultCssPath(p)) found.set(p, h);
           }
+          slowFolders(folders, prefix, performance.now() - t, n);
           for (const [h, p] of subs) {
             if (today && (prefix === JOURNALS || late.includes(p))) { later.push([h, p]); continue; }
             await walk(h, p);
@@ -165,9 +174,11 @@ const Backends = {
         fileCache = new Map([...(dayRead ? fileCache : []), ...found]);
         const listMs = performance.now() - began;
         // The day pages read before this listing (readDays) count in the same read.
-        if (!quiet && dayRead && timing) Object.assign(timing, {dirs: timing.dirs + dirs, listMs: timing.listMs + listMs});
-        else if (!quiet) timing = {at: Date.now(), dirs, listMs, files: 0, kb: 0,
-                                   readMs: 0, openMs: 0, textMs: 0, slowest: [], atOnce: 16};
+        if (!quiet) {
+          if (!dayRead || !timing) timing = newTiming();
+          timing.dirs += dirs; timing.listMs += listMs;
+          for (const f of folders) slowFolders(timing.folders, ...f);
+        }
         dayRead = false;
         if (today) unlisted = later;      // a full listing (Check the folder) leaves a staged read's folders to it
         return Array.from(found.keys());
@@ -178,9 +189,10 @@ const Backends = {
          dirs, where they are there. Read before the folder is listed, so the
          day is on screen in seconds (#181). */
       async readDays(days, {files = [], dirs = []} = {}) {
-        if (!dayRead) timing = {at: Date.now(), dirs: 0, listMs: 0, files: 0, kb: 0,
-                                readMs: 0, openMs: 0, textMs: 0, slowest: [], atOnce: 16};
+        if (!dayRead) timing = newTiming();
         dayRead = true;
+        const day = timing.day || (timing.day = {listMs: 0, entries: 0, findMs: 0, readMs: 0, files: []});
+        let t = performance.now();
         const want = new Set(days.map(d => d + ".md")), paths = [];
         const gone = e => /NotFound|TypeMismatch/i.test((e && e.name) || "");
         const probe = async (dir, prefix, name) => {
@@ -192,13 +204,17 @@ const Backends = {
           try { dir = await dirFor(path); } catch (e) { if (gone(e)) return; throw e; }
           for await (const [name, h] of dir.entries()) if (!name.startsWith(".")) await each(name, h, dir);
         };
-        if (want.size) await shallow(JOURNALS, async (name, h) => {
+        // The day folder's own entries first (whose folders, and old day pages straight in it), then today's file in each.
+        const people = [];
+        if (want.size) await shallow(JOURNALS, (name, h) => {
+          day.entries++;
           const p = JOURNALS + "/" + name;
-          if (h.kind === "directory") {
-            dirCache.set(p, h);
-            for (const d of want) await probe(h, p, d);
-          } else if (want.has(name)) { fileCache.set(p, h); paths.push(p); }
+          if (h.kind === "directory") { dirCache.set(p, h); people.push([h, p]); }
+          else if (want.has(name)) { fileCache.set(p, h); paths.push(p); }
         });
+        day.listMs += performance.now() - t;
+        t = performance.now();
+        for (const [h, p] of people) for (const d of want) await probe(h, p, d);
         for (const f of files) {
           const cut = f.lastIndexOf("/");
           let dir;
@@ -208,7 +224,11 @@ const Backends = {
         for (const d of dirs) await shallow(d, (name, h) => {
           if (h.kind === "file" && /\.md$/i.test(name)) { fileCache.set(d + "/" + name, h); paths.push(d + "/" + name); }
         });
-        return this.readMany(paths);
+        day.findMs += performance.now() - t;
+        t = performance.now();
+        collect = day.files;
+        try { return await this.readMany(paths); }
+        finally { collect = null; day.readMs += performance.now() - t; }
       },
       hasLater: () => unlisted.length > 0,
       /* The folders names() left out, those pick() takes: every file in them.
@@ -217,14 +237,17 @@ const Backends = {
         const dirs = unlisted.filter(([, p]) => pick(p)), found = new Map(), began = performance.now();
         unlisted = unlisted.filter(([, p]) => !pick(p));
         const walk = async (dir, prefix) => {
-          const subs = [];
+          const subs = [], t = performance.now();
+          let n = 0;
           if (timing) timing.dirs++;
           for await (const [name, h] of dir.entries()) {
+            n++;
             if (name.startsWith(".")) continue;
             const p = prefix + "/" + name;
             if (h.kind === "directory") { dirCache.set(p, h); subs.push([h, p]); }
             else if (/\.(md|org)$/i.test(name)) found.set(p, h);
           }
+          if (timing) slowFolders(timing.folders, prefix, performance.now() - t, n);
           for (const [h, p] of subs) await walk(h, p);
         };
         for (const [h, p] of dirs) await walk(h, p);
@@ -250,6 +273,7 @@ const Backends = {
             const text = await withTimeout((async () => {
               const file = await h.getFile();
               t1 = performance.now();
+              if (timing) timing.sigs.set(p, file.size + ":" + file.lastModified);
               return file.text();
             })(), FILE_READ_MS, p);
             out.set(p, text);
@@ -260,6 +284,7 @@ const Backends = {
               timing.openMs += t1 - t0; timing.textMs += t2 - t1;
               timing.slowest.push([p, t2 - t0]);
               timing.slowest = timing.slowest.sort((a, b) => b[1] - a[1]).slice(0, 5);
+              if (collect) collect.push([p, t1 - t0, t2 - t1]);
             }
           } catch (e) { unread.set(p, ((e && e.name) || "Error") + ": " + ((e && e.message) || e)); }
         };

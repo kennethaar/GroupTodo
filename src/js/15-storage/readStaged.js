@@ -21,7 +21,9 @@ async function readStaged(record, edited, onRest, onSoon, onDay) {
     return null;
   }
   const counted = p => !isGuidePath(p) && !isLangPath(p) && !isPromptPath(p) && /\.md$/i.test(p);
-  loadMark(who + "listed " + paths.length + " files", t);
+  const tm = record.backend.timing;
+  loadStep(record.name, "folder listed", t, "listed " + paths.length + " files" +
+           (tm ? " in " + tm.dirs + " folders" : "") + (defer ? "; day folders and done, notes and mail later" : ""));
   const seen = paths.filter(p => counted(p) && !(defer && listedLate(p))).length;
   const key = defer ? pagesKey : "pagecount:" + record.name;
   if (looksEmptied(record, seen, key)) { holdRecord(record, "empty", seen, key); return null; }
@@ -33,14 +35,15 @@ async function readStaged(record, edited, onRest, onSoon, onDay) {
   const firstPaths = paths.filter(p => !later(p) && !known(p));
   t = performance.now();
   const first = await record.backend.readMany(firstPaths);
-  loadMark(who + "read " + firstPaths.length + " files " + (days ? "next" : "first") +
-           " (" + (days ? "" : "today, ") + "the horizons, " + rest.length + " to follow)", t);
+  loadStep(record.name, (days ? "" : "today's page, ") + "settings, lists and horizons read", t,
+           "read " + firstPaths.length + " files " + (days ? "next" : "first") + ", " + rest.length + " to follow");
   if (days) for (const [p, text] of days.files) if (!first.has(p)) first.set(p, text);
   if (!rest.length && !unlisted) {
     t = performance.now();
     await readIntoNow(record, edited, first);
     record.dayOnly = false;
-    loadMark(who + "all " + record.pages.size + " pages in", t);
+    loadStep(record.name, "everything in", t, "all " + record.pages.size + " pages in");
+    noteFileSigs(record);
     return null;
   }
 
@@ -91,14 +94,18 @@ async function readStaged(record, edited, onRest, onSoon, onDay) {
     const rankOf = new Map(ordered.map(p => [p, restRank(p, monthAgo)]));
     const soon = Array.from({length: SHOWN_RANKS}, (_, n) => ordered.filter(p => rankOf.get(p) === n));
     const files = new Map(first);
+    const soonAt = performance.now();
+    let soonN = 0;
     for (const group of soon) {
       if (!group.length) continue;
       const t = performance.now();
       const got = await record.backend.readMany(group, tick);
       loadMark(who + "read " + group.length + " files of the week and active work", t);
+      soonN += group.length;
       for (const [p, t] of got) files.set(p, t);
       if (record.stubs) { layInSoon(record, got, edited); if (onSoon) onSoon(record); }
     }
+    loadStep(record.name, "the month, active projects, contexts, people and orgs read", soonAt, soonN + " files");
     // Done and cancelled projects, notes, mail and reviews: listed last, then read.
     if (unlisted) {
       const more = await listLate(() => true);
@@ -108,10 +115,11 @@ async function readStaged(record, edited, onRest, onSoon, onDay) {
     const after = restOrder(rest).filter(p => restRank(p, monthAgo) >= SHOWN_RANKS);
     t = performance.now();
     for (const [p, t] of await record.backend.readMany(after, tick)) files.set(p, t);
-    loadMark(who + "read the other " + after.length + " files", t);
+    loadStep(record.name, "the other files read", t, "read the other " + after.length + " files");
     t = performance.now();
     await readIntoNow(record, edited, files);
-    loadMark(who + "all " + record.pages.size + " pages in", t);
+    loadStep(record.name, "everything in", t, "all " + record.pages.size + " pages in");
+    noteFileSigs(record);
     t = performance.now();
     if (onRest) onRest(record);
     if (onRest) loadMark(who + "brought up to date and drawn again", t);

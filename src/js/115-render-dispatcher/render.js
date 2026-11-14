@@ -36,4 +36,15 @@ function render() {
   applyRefocus();
   const ms = performance.now() - began;
   if (!INIT_DONE || ms > RENDER_SLOW_MS) loadMark("drew " + state.view + (state.pagePath ? " " + state.pagePath : ""), began);
+  /* When a start's screen was first there to write in, and from where (#181). */
+  const away = DRAW_NOTE && V.space && folderAwayShown();
+  if (DRAW_NOTE && V.space && !(away && AWAY_SAID)) {
+    const note = DRAW_NOTE;
+    if (away) AWAY_SAID = true; else DRAW_NOTE = null;   // the panel is not the page: said once, the page waited for
+    const rec = LOADED.get(V.space);
+    loadStep(V.space, away ? "the Allow access panel on screen, " + note + " waits for your tap"
+      : note + " on screen (" + state.view + "), from " + (rec && rec.backend && rec.backend.kind === "fs"
+        ? "the folder" : "the browser copy: " + V.pages.size + " pages, today's page " +
+          (V.pages.has(journalPath(todayISO())) ? "there" : "not there")));
+  }
 }

@@ -570,7 +570,7 @@ var GTD_TEST = (() => {
   });
   const fakeFile = (k, tree, writes, gate) => ({
     kind: "file", name: k,
-    async getFile() { if (gate[k]) await gate[k]; const t = tree[k]; return {text: async () => t}; },
+    async getFile() { if (gate[k]) await gate[k]; const t = tree[k]; return {size: t.length, lastModified: 0, text: async () => t}; },
     async createWritable() {
       return {write: async t => { writes.push(k); tree[k] = t; }, close: async () => {}};
     },
@@ -801,7 +801,37 @@ var GTD_TEST = (() => {
       btn.click();
       eq(saved.length, 1, "Save log saved nothing");
       has(saved[0][1], "listed", "the saved log has no start-up steps");
+      /* What a start under 5 s needs to know, at the top: when today was on
+         screen, each step up to it, and where the folder's time went. */
+      const log = saved[0][1], top = log.slice(0, log.indexOf("Every step"));
+      ok(log.includes("Every step"), "the steps are not under their own heading");
+      has(top, "Start-up of “Log181”", "no start-up summary for the area");
+      ok(/\d+\.\d  today's page read from the folder/.test(top), "the summary does not say when today was read");
+      ok(/\d+\.\d  folder listed/.test(top), "the summary does not say when the folder was listed");
+      ok(/\d+\.\d  everything in/.test(top), "the summary does not say when all was in");
+      ok(/journals\/: \d+ entr/.test(top), "the day read does not say what listing the day folder cost");
+      has(top, "Slowest folders", "the listing is not broken down by folder");
+      has(top, "A file read alone", "a file read on its own is not timed apart");
     } finally { window.downloadText = real; await check; closeAll(); }
+    // Read again: how much a copy kept by date and size would have saved.
+    // Counted among the files the last read saw: the app may add its folder guides meanwhile.
+    let seen = null;
+    const readAgain = async () => {
+      const again = newRecord("Log181", Backends.fs(fakeDir("Log181", tree, [])));
+      await readInto(again, {stage: true});
+      await filesLoaded();
+      const m = /Unchanged since the last read: (\d+) of (\d+) files/.exec(readTimingText(again.backend.timing));
+      ok(m, "unchanged files are not counted");
+      const before = seen, sigs = again.backend.timing.sigs;
+      seen = new Set(sigs.keys());
+      return [Number(m[1]), before ? [...before].filter(p => sigs.has(p)).length : null];
+    };
+    await readAgain();
+    let [same, kept] = await readAgain();
+    eq(same, kept, "files not changed since the last read");
+    tree.pages.z["Idea.md"] = "title:: Idea\n\n- changed\n";
+    [same, kept] = await readAgain();
+    eq(same, kept - 1, "files not changed, with one changed");
   });
   test("#385 a #meeting on a coming day page that links the project keeps it off the stuck list", async () => {
     const P = n => join(DIRS.active, "Meeting stuck " + n + ".md");

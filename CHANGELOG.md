@@ -5,6 +5,17 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.162.5 - 2026-11-14
+
+- Vault and sync: Save log (#181) now starts with what holds today's page
+  back. For each area: when today's page was on screen and from where
+  (the folder or the browser copy), when Allow access was tapped, what the
+  switch to the folder waited for (a line being typed, saves, the merge),
+  and when the folder was listed and read, each with its time. Then the
+  slowest folders to list, a file read on its own against 16 at a time,
+  and how many files were unchanged since the last read. Every step
+  follows, as before.
+
 ## 1.162.4 - 2026-11-14
 
 - Vault and sync: after Allow access on a phone, today's page from the
