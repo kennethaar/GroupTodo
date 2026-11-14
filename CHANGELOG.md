@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.162.8 - 2026-11-14
+
+- Phone and PC: asking for a folder again is down to two lines (#346). The
+  title says "Folder 1 of 2: Work", then one line says the browser asks once
+  per folder and your pages are safe. Not now says it uses browser storage.
+
 ## 1.162.7 - 2026-11-14
 
 - Phone and PC: asking for an area's folder again is shorter, and says

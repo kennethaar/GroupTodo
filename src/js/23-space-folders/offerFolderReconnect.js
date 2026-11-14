@@ -9,24 +9,20 @@ function offerFolderReconnect(name) {
   const step = folderAskStep(name);
   modal({
     center: true,
-    title: "Reconnect " + label + (step ? " \u00B7 " + step : ""),
+    title: step ? "Folder " + step + ": " + label : "Reconnect " + label,
     body: el("div", {},
       el("div", {class: "field"},
         el("div", {style: "font-size:13.5px"},
-          "Your pages are safe in \u201C" + where + "\u201D. The browser asks for each folder " +
-          "again after a fresh start, one area at a time.")),
-      el("div", {class: "field"},
-        el("div", {style: "font-size:13px;color:var(--fg2)"},
-          "Not now uses browser storage. The folder is left as it is."))),
+          "The browser asks once per folder. Your pages are safe in \u201C" + where + "\u201D."))),
     foot: [
       el("button", {class: "btn primary", onclick: async () => {
         closeModal();
         if (await grantSpaceFolder(name)) offerNextFolder();
-      }}, "Allow access to " + where),
+      }}, "Allow access"),
       el("button", {class: "btn ghost", onclick: () => {
         closeModal();
         notify("Reconnect it any time from Vault & sync \u2192 Connect folder.", "warn");
-      }}, "Not now"),
+      }}, "Not now - use browser storage"),
     ],
   });
 }

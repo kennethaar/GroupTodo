@@ -5376,7 +5376,7 @@ var GTD_TEST = (() => {
       ok(panel, "no reconnect panel in place of the pages");
       has(panel.textContent, "Vault folder");
       const btns = [...panel.querySelectorAll("button")];
-      ok(btns.some(b => b.textContent === "Allow access to Vault folder"), "no Allow access button");
+      ok(btns.some(b => b.textContent === "Allow access"), "no Allow access button");
       ok(!content().querySelector(".blk"), "browser storage's lines are shown under it");
       eq(requireTemplate("no such template 164"), null);
       ok(![...document.querySelectorAll(".toast, #toasts *")].some(t => t.textContent.includes("no such template 164")),
@@ -5401,17 +5401,18 @@ var GTD_TEST = (() => {
       const panel = content().querySelector(".folderaway");
       ok(panel, "no reconnect panel in place of the pages");
       // Each folder needs its own click, so both asks say which one this is (#346).
-      has(panel.textContent, "1 of 2");
-      has(panel.textContent, "The browser asks for each folder again");
-      [...panel.querySelectorAll("button")].find(b => b.textContent === "Allow access to Vault folder").click();
+      eq(panel.querySelector("h2").textContent, "Folder 1 of 2: " + V.space);
+      has(panel.textContent, "The browser asks once per folder. Your pages are safe in “Vault folder”.");
+      ok([...panel.querySelectorAll("button")].some(b => b.textContent === "Not now - use browser storage"), "no Not now - use browser storage");
+      [...panel.querySelectorAll("button")].find(b => b.textContent === "Allow access").click();
       for (let i = 0; i < 50 && !document.querySelector("#modalRoot .modal"); i++) await new Promise(r => setTimeout(r, 20));
       const m = document.querySelector("#modalRoot .modal");
       ok(m, "the other area was never asked for");
-      has(m.textContent, "Reconnect " + other);
-      has(m.textContent, "2 of 2");
-      has(m.textContent, "The browser asks for each folder again");
-      ok(m.textContent.split(/\s+/).length < 60, "the dialog is too long: " + m.textContent);
-      ok([...m.querySelectorAll("button")].some(b => b.textContent === "Allow access to Folder346"), "no Allow access for the other folder");
+      has(m.textContent, "Folder 2 of 2: " + other);
+      has(m.textContent, "The browser asks once per folder. Your pages are safe in “Folder346”.");
+      ok(m.textContent.split(/\s+/).length < 30, "the dialog is too long: " + m.textContent);
+      ok([...m.querySelectorAll("button")].some(b => b.textContent === "Allow access"), "no Allow access for the other folder");
+      ok([...m.querySelectorAll("button")].some(b => b.textContent === "Not now - use browser storage"), "no Not now - use browser storage");
     } finally {
       closeModal();
       PENDING_GRANT.delete(V.space); PENDING_GRANT.delete(other);
