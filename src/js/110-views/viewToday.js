@@ -80,10 +80,16 @@ function viewToday() {
      every day, so it is always where it was. The count is what it hides. */
   const hideDone = !who && doneHidden(journalPath(day), "page");
   const closedAll = daySpaces.reduce((n, sp) => n + inSpace(sp, () => closedLineCount(getPage(dayPath(sp)).blocks)), 0);
-  const hideSwitch = () => who ? null : switchBtn("Hide done", hideDone,
+  // Offered once there is something done to hide, and kept while it hides (#395, P4).
+  const hideSwitch = () => who || !(closedAll || hideDone) ? null : switchBtn("Hide done", hideDone,
     () => setDoneHidden(journalPath(day), "page", !hideDone), closedAll || null);
+  /* #395 a list unfolds in place, and one with nothing in it is not offered.
+     Trackers wait until the day has one, or until asked for from View. */
+  const want = PREF.get("today.tab", "due");
 
+  const trkOn = trackers > 0 || want === "facts";
   const sections = [
+    !trkOn ? null :
     byArea ? {id: "facts", title: "Trackers", count: trackers,
      body: () => el("div", {}, areaCols(sp => inSpace(sp, () => {
        const path = dayPath(sp);
@@ -96,16 +102,21 @@ function viewToday() {
     !who && !factSpaces.length ? {id: "facts", title: "Trackers", count: 0,
      body: () => emptyCard("Nothing tracked on " + dayName(day) + " yet. ",
        el("button", {class: "textbtn", onclick: () => { inSpace(Spaces.active, () => ensureJournal(day)); render(); }}, "Track this day"))} : null,
-    !byArea && factSpaces.length ? {id: "facts", title: "Trackers", count: trackers,
+    trkOn && !byArea && factSpaces.length ? {id: "facts", title: "Trackers", count: trackers,
      body: () => el("div", {class: "card"}, ...factSpaces.map(sp => inSpace(sp, () => {
        const path = dayPath(sp);
        return trkNode(sp, path, [factSpaces.length > 1 ? spaceBadge(sp) : null, dayTrackersBlock(path, {add: sp === trkHome})]);
      })), sheetsToday(day))} : null,
-    {id: "due", title: "Due Today & Late", short: "Due", late: now.some(a => a.due < today), count: now.length,
+    now.length || doneNow.length ? {id: "due", title: "Due Today & Late", short: "Due", late: now.some(a => a.due < today), count: now.length,
      done: doneNow.length, lateN: now.filter(a => a.due < today).length,
-     body: () => dueBy("Nothing due. Nothing late.")},
-    {id: "week", title: "Next 7 Days", count: week.length,
-     body: () => tasksBy(week, "Nothing in the next seven days.")},
+     body: () => dueBy("Nothing due. Nothing late.")} : null,
+    week.length ? {id: "week", title: "Next 7 Days", count: week.length,
+     body: () => tasksBy(week, "Nothing in the next seven days.")} : null,
+    // The week this day is in: its page and its seven days, in place (#395).
+    who ? null : {id: "thisweek", title: weekOf(day) === weekOf(today) ? "This week" : "That week",
+     body: () => el("div", {}, weekSection(weekOf(day)),
+       el("button", {class: "textbtn wkopen", onclick: () => go("today", {sub: "week", todayDay: null,
+         todayWeek: weekOf(day) === weekOf(today) ? null : weekOf(day)})}, "Open the whole week ›"))},
     /* Where you said you are: the oldest few open there, drawn fresh each
        time, so one ticked off makes room for the next. */
     !who && state.context ? (() => {
@@ -165,8 +176,27 @@ function viewToday() {
      Another day changes nothing beside the date box, so the box stays where
      it was: the way back hangs under it, and past or ahead goes under the
      weekday (#139). */
-  const head = vhead("Journal", dayName(day),
-    who ? null : journalModes(false, day),
+  /* #395 a wide screen titles the page with the day itself; a phone keeps the
+     page's name, with the day in words in the box beside it. */
+  const longDay = capitalise(pd.toLocaleDateString(undefined, {weekday: "long", month: "short", day: "numeric",
+    year: pd.getFullYear() === new Date().getFullYear() ? undefined : "numeric"}));
+  /* View holds what is changed now and then, so it does not stand beside the
+     day: Focus, History, somebody else's page, and trackers before the first. */
+  const closeMenu = e => e.currentTarget.closest("details")?.removeAttribute("open");
+  const viewItems = [
+    focusButton("day", "textbtn"),
+    el("button", {class: "textbtn", title: "Everything that happened, newest first", onclick: () => openHistory()}, "⏱ History"),
+    !who && !trkOn ? el("button", {class: "textbtn", onclick: () => { PREF.set("today.tab", "facts"); render(); }}, "Track this day") : null,
+    people.length ? fselect("Whose day page", who, [["", "Your page"], ...people.map(n => [n, firstNameOf(n) + "'s page"])],
+      v => go("today", {todayWho: v || null})) : null,
+  ].filter(Boolean);
+  viewItems.forEach(b => b.tagName === "BUTTON" && b.addEventListener("click", closeMenu));
+  const viewMenu = el("details", {class: "viewmenu wideonly",
+    onkeydown: e => { if (e.key === "Escape" && e.currentTarget.open) { e.currentTarget.removeAttribute("open"); e.currentTarget.querySelector("summary").focus(); } },
+    onfocusout: e => { if (!e.currentTarget.contains(e.relatedTarget) && e.relatedTarget) e.currentTarget.removeAttribute("open"); }},
+    el("summary", {class: "textbtn"}, "View", svgIcon(ICON_CARET)),
+    el("div", {class: "vmenu"}, ...viewItems));
+  const head = vhead([el("span", {class: "tlong"}, longDay), el("span", {class: "tshort"}, "Journal")], null,
     el("div", {class: "dayhold"},
       /* Calendar settings shows only while the calendar is open, and goes when
          focus leaves for anything but itself (#291). */
@@ -175,25 +205,23 @@ function viewToday() {
       }},
         el("button", {class: "dayarrow", title: "The day before", "aria-label": "The day before",
           onclick: () => toDay(shiftISO(day, -1))}, svgIcon(ICON_CHEVRON_LEFT)),
-        el("label", {class: "daypick"}, dayWords, picker),
+        el("label", {class: "daypick"}, dayWords, el("span", {class: "dayico", "aria-hidden": "true"}, svgIcon(ICON_DATE)), picker),
         el("button", {class: "dayarrow", title: "The day after", "aria-label": "The day after",
           onclick: () => toDay(shiftISO(day, 1))}, svgIcon(ICON_CHEVRON_RIGHT)),
         who ? null : el("button", {class: "dayarrow dayimport", title: "Your calendars, meeting reminders and how to add one",
           onclick: () => openCalendars()}, svgIcon(ICON_DATE), " Calendar settings")),
       day !== today ? el("button", {class: "textbtn backtoday", onclick: () => toDay(null)}, "Back to today") : null),
-    people.length ? wideOnly(fselect("Whose day page", who, [["", "Your page"], ...people.map(n => [n, firstNameOf(n) + "'s page"])],
-      v => go("today", {todayWho: v || null})), !who) : null,
     wideOnly(hideSwitch()),
-    wideOnly(focusButton("day", "btn ghost")),
-    wideOnly(el("button", {class: "btn ghost", title: "Everything that happened, newest first", onclick: () => openHistory()}, "⏱ History")));
+    viewMenu);
   head.classList.add("todayhead");
+  // The arrows and Back to today stand by the day they move (#395).
+  head.querySelector("h1").after(head.querySelector(".dayhold"));
   /* On a phone the day is the screen, as Next's list is: the heading is one
      row, and Day or Week, the trackers, what is due and History fold behind
      the ⋯ at its end. Late work marks the ⋯, so it is never out of sight. */
-  const phoneBar = el("div", {class: "jfoldbar"}, who ? null : journalModes(false, day),
+  const phoneBar = el("div", {class: "jfoldbar"},
     who ? null : todayIcon("Trackers", "Trackers", () => {
-      PREF.set("today.tab", PREF.get("today.tab", "facts") === "facts" ? "" : "facts"); render(); },
-      PREF.get("today.tab", "facts") === "facts"),
+      PREF.set("today.tab", want === "facts" ? "" : "facts"); render(); }, want === "facts"),
     hideSwitch(),
     todayIcon("History", "Everything that happened, newest first", () => openHistory()),
     people.length && !who ? todayIcon("People", "Somebody else's day page", () => chipMenu("Whose day page", null,
@@ -205,7 +233,7 @@ function viewToday() {
     onclick: () => { JOURNAL_MORE_OPEN = !JOURNAL_MORE_OPEN; render(); }}, "⋯"));
   if (day !== today) {
     head.classList.add("offday");
-    head.querySelector(".sub").append(el("span", {class: "when"}, day < today ? "In the past" : "Ahead"));
+    head.querySelector("h1").after(el("span", {class: "sub"}, el("span", {class: "when"}, day < today ? "In the past" : "Ahead")));
   }
   c.append(head);
   if (!who) { maybeSyncCalendars(); const cal = calendarProblem(); if (cal) c.append(cal); }
@@ -234,15 +262,16 @@ function viewToday() {
     : !s.count ? null
     : s.id === "facts" ? el("span", {class: "tcount"}, String(s.count))
     : el("span", {class: "tratio"}, s.count + " open");
-  const want = PREF.get("today.tab", "facts");
   const openTab = tabs.find(s => s.id === want);
   const fold = el("div", {class: "jfold" + (JOURNAL_MORE_OPEN ? " open" : "")}, phoneBar);
   c.append(fold);
-  fold.append(el("div", {class: "ttabs", role: "tablist"}, ...tabs.map(s => el("button", {
-    class: "ttab ttab-" + s.id + (s === openTab ? " on" : "") + (s.late ? " late" : ""), role: "tab",
-    "aria-selected": String(s === openTab), title: s === openTab ? "Fold away" : "Show",
+  // #395 quiet links whose ▸ and ▾ say they unfold here, not go somewhere.
+  fold.append(el("div", {class: "ttabs"}, ...tabs.map(s => el("button", {
+    class: "ttab ttab-" + s.id + (s === openTab ? " on" : "") + (s.late ? " late" : ""),
+    "aria-expanded": String(s === openTab), title: s === openTab ? "Fold away" : "Show",
     onclick: () => { PREF.set("today.tab", s === openTab ? "" : s.id); render(); },
-  }, s.short ? [el("span", {class: "tlong"}, s.title), el("span", {class: "tshort"}, s.short)] : s.title, tabCount(s)))));
+  }, el("span", {class: "tchev", "aria-hidden": "true"}, s === openTab ? "▾" : "▸"),
+    s.short ? [el("span", {class: "tlong"}, s.title), el("span", {class: "tshort"}, s.short)] : s.title, tabCount(s)))));
   if (openTab) fold.append(el("div", {class: "tpanel"}, openTab.body()));
   /* Side by side on a wide screen, one under the other otherwise. */
   const cols = sections.filter(s => s.space);

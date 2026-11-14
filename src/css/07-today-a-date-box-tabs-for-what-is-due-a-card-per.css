@@ -128,3 +128,51 @@
 .jsplit{display:none;position:absolute;top:0;bottom:0;right:-15px;width:10px;cursor:col-resize;z-index:3;touch-action:none}
 .jsplit::after{content:"";position:absolute;top:0;bottom:0;left:4px;width:2px;border-radius:1px;background:transparent;transition:background .1s}
 .jsplit:hover::after,.jsplit.on::after{background:var(--accent)}
+/* ---------- #395 paper first: the day is the title, lists are quiet links, no cards ---------- */
+.todayhead h1 .tshort{display:none}
+@media (max-width:640px){ .todayhead h1 .tlong{display:none} .todayhead h1 .tshort{display:inline} .todayhead .dayico{display:none} }
+@media (min-width:641px){
+  .todayhead{align-items:center}
+  .todayhead > .dayhold{align-items:center;gap:6px;margin-left:10px}
+  .todayhead.offday{padding-bottom:16px}
+  .todayhead .daybox{border:0;background:none;padding:0}
+  .todayhead .daypick{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:30px;min-height:30px;
+    border-radius:6px;color:var(--fg2)}
+  .todayhead .daypick:hover{background:var(--bg3);color:var(--fg)}
+  .todayhead .daypick input[type=date]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+  .todayhead .daypick:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+  .todayhead .dayhold .backtoday{position:static;margin:0 0 0 6px}
+  .todayhead .sub .when{position:static;margin-left:10px}
+}
+.dayico svg{width:15px;height:15px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+/* View: what is changed now and then, folded into one menu. */
+.viewmenu{position:relative}
+.viewmenu > summary{list-style:none;display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:var(--fg2);padding:6px 8px;border-radius:6px}
+.viewmenu > summary::-webkit-details-marker{display:none}
+.viewmenu > summary:hover,.viewmenu[open] > summary{color:var(--fg);background:var(--bg3)}
+.viewmenu > summary svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.vmenu{position:absolute;right:0;top:calc(100% + 4px);z-index:30;min-width:190px;display:flex;flex-direction:column;align-items:stretch;
+  gap:2px;padding:6px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-sm);box-shadow:var(--shadow)}
+.vmenu > .textbtn{text-align:left;padding:8px 10px;border-radius:6px;color:var(--fg);min-height:36px}
+.vmenu > .textbtn:hover,.vmenu > .textbtn:focus-visible{background:var(--bg3)}
+.vmenu select{margin:4px 6px}
+/* The lists over the day: quiet words with ▸ or ▾, not boxed buttons. */
+.ttabs{gap:24px;margin:0 0 14px}
+.ttab{gap:8px;padding:6px 0;border:0;border-radius:0;background:none;font-size:15px}
+.ttab:hover{color:var(--fg)}
+.ttab.on{background:none;color:var(--fg);font-weight:600}
+.ttab.late{color:var(--late)}
+.tchev{font-size:12px;color:var(--fg3)}
+.ttab.on .tchev,.ttab.late .tchev{color:inherit}
+.ttab .tcount,.ttab.on .tcount{background:none;padding:0;min-width:0;color:var(--fg3);font-weight:400}
+.jview .tpanel{padding-bottom:18px;border-bottom:1px solid var(--border)}
+.jview .tpanel .card{border:0;background:none;box-shadow:none}
+.wkopen{margin-top:6px}
+/* No card around a day page: whitespace, and a hairline between areas. */
+.jview .jcard{background:none;border:0;border-radius:0;box-shadow:none}
+.jview .jhead{border-bottom:0;padding:8px 0 2px}
+@media (min-width:1100px){
+  .jview.jwide .jgrid{column-gap:40px}
+  .jview.jwide .jgrid > .jcard + .jcard::before{content:"";position:absolute;left:-20px;top:0;bottom:20px;border-left:1px solid var(--border)}
+  .jview.jwide .jsplit{right:-25px}
+}

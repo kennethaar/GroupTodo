@@ -7476,6 +7476,67 @@ var GTD_TEST = (() => {
     has(content().querySelector(".ttab-week .tratio").textContent, " open");
     ok(!content().querySelector(".ttab-week .tcount"), "not a bare count");
   });
+  test("#395 the Journal's lists are quiet links that unfold in place, and an empty one is not offered", async () => {
+    // An area with nothing dated in it.
+    const was = new Map([...V.pages].map(([p, page]) => [p, structuredClone(page)]));
+    try {
+      V.pages.clear(); clearMemo();
+      PREF.set("today.tab", "due");
+      go("today", {sub: null, todayDay: null}); await settle();
+      for (const id of ["due", "week", "facts"]) ok(!content().querySelector(".ttab-" + id), "nothing in " + id + ", yet a link to it");
+      ok([...content().querySelectorAll(".viewmenu button")].some(b => /Track this day/.test(b.textContent)), "trackers are asked for from View");
+    } finally {
+      V.pages.clear();
+      for (const [p, page] of was) { V.pages.set(p, page); V.removed.delete(p); }
+      clearMemo();
+    }
+    await journalDue([["TODO", "Send the late thing"]], shiftISO(T(), -1));
+    const tab = content().querySelector(".ttab-due");
+    eq(tab.getAttribute("aria-expanded"), "true", "the open one says so");
+    has(tab.textContent, "▾");
+    const s = getComputedStyle(tab);
+    eq(s.borderTopWidth, "0px", "a link, not a boxed button");
+    eq(s.backgroundColor, "rgba(0, 0, 0, 0)", "no fill");
+    tab.click(); await settle();
+    const closed = content().querySelector(".ttab-due");
+    eq(closed.getAttribute("aria-expanded"), "false");
+    has(closed.textContent, "▸");
+  });
+  test("#395 the week unfolds in the Journal like the other lists, and opens whole from there", async () => {
+    PREF.set("today.tab", "");
+    go("today", {sub: null, todayDay: null}); await settle();
+    const tab = content().querySelector(".ttab-thisweek");
+    ok(tab, "a This week link");
+    tab.click(); await settle();
+    ok(content().querySelector(".tpanel .weeksec"), "the week page and its days, in place");
+    eq(state.sub, null, "still the day");
+    content().querySelector(".tpanel .wkopen").click();
+    eq([state.sub, state.todayWeek], ["week", null], "the whole week");
+    go("today", {sub: null}); PREF.set("today.tab", "");
+  });
+  test("#395 the Journal's heading is the day, its arrows, and one View menu", async () => {
+    go("today", {sub: null, todayDay: null}); await settle();
+    const head = content().querySelector(".todayhead");
+    const wd = parseISO(T()).toLocaleDateString(undefined, {weekday: "long"}).toLowerCase();
+    ok(head.querySelector("h1").textContent.toLowerCase().includes(wd), "the title is the day: " + head.querySelector("h1").textContent);
+    ok(!head.querySelector(".jmode"), "no Day and Week switch: the week is a link under the heading");
+    const menu = head.querySelector("details.viewmenu");
+    ok(menu, "a View menu");
+    has(menu.querySelector("summary").textContent, "View");
+    const words = [...menu.querySelectorAll("button")].map(b => b.textContent).join(" | ");
+    for (const w of ["Focus", "History"]) has(words, w, "in View");
+    for (const w of ["Focus", "History"]) ok(![...head.querySelectorAll(":scope > .vhead-r > button")].some(b => b.textContent.includes(w)), w + " is not on show beside it");
+  });
+  test("#395 the Journal is paper: no card around a day page, a hairline between areas", async () => {
+    go("today", {sub: null, todayDay: null}); await settle();
+    const cards = [...content().querySelectorAll(".jview .jgrid > .jcard:not(.trkcol)")];
+    ok(cards.length, "a day page");
+    for (const c of cards) {
+      const s = getComputedStyle(c);
+      eq(s.borderTopWidth, "0px", "no frame");
+      eq(s.backgroundColor, "rgba(0, 0, 0, 0)", "no fill");
+    }
+  });
   test("#160 a day with no trackers says so, and + tracker waits but is in reach of Tab", () => {
     const path = "journals/2099_01_01.md";
     putPage(path, {props: {}, blocks: [newBlock({title: "Nothing here is tracked"})]});
@@ -8886,7 +8947,7 @@ var GTD_TEST = (() => {
       ok(parseFloat(getComputedStyle(d.querySelector(".todayhead h1")).fontSize) <= 20, "the page name is smaller than the day");
       const h = d.querySelector(".todayhead h1").getBoundingClientRect(), db = d.querySelector(".daybox").getBoundingClientRect();
       ok(db.top < h.bottom && db.bottom > h.top && db.left >= h.right, "the day is beside the page name, on its row");
-      ok(getComputedStyle(d.querySelector(".todayhead .jmode")).display === "none", "Day and Week are not in the heading");
+      ok(!d.querySelector(".todayhead .jmode"), "Day and Week are not in the heading: the week is a link (#395)");
       ok(d.documentElement.scrollWidth <= 390, "nothing wider than the phone");
     } finally { f.remove(); }
   });
@@ -8919,7 +8980,7 @@ var GTD_TEST = (() => {
     ok(content().querySelector(".jfold.open"), "⋯ opens it");
     ({f, d} = await phoneJournal());
     try {
-      for (const sel of [".jfoldbar .jmode", ".ttab-due", ".tpanel"]) ok(d.querySelector(sel).getClientRects().length, sel + " shows when open");
+      for (const sel of [".jfoldbar", ".ttab-thisweek", ".ttab-due", ".tpanel"]) ok(d.querySelector(sel).getClientRects().length, sel + " shows when open");
       ok(d.documentElement.scrollWidth <= 390, "nothing wider than the phone");
     } finally { f.remove(); JOURNAL_MORE_OPEN = false; render(); await settle(); }
   });
@@ -9164,9 +9225,12 @@ var GTD_TEST = (() => {
   });
   test("#192 Day and Week: the week of the day, and back to today or the week's Monday", async () => {
     const past = shiftISO(T(), -21), id = weekOf(past);
+    PREF.set("today.tab", "thisweek");
     go("today", {sub: null, todayDay: past});
     await settle();
-    content().querySelector(".jmode button:nth-child(2)").click();
+    // #395 the Day has no switch: the week unfolds below, and opens whole from there.
+    content().querySelector(".tpanel .wkopen").click();
+    PREF.set("today.tab", "");
     eq([state.sub, state.todayWeek], ["week", id]);
     content().querySelector(".jmode button:first-child").click();
     eq([state.sub, state.todayDay], [null, weekMonday(id)]);

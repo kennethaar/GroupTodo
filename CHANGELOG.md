@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.164.0 - 2026-11-14
+
+- Journal: the day reads like paper, with tools only where you need them
+  (#395). The day is the title, with ‹ › and Back to
+  today beside it. Due Today & Late, Next 7 Days, This week and Trackers
+  are quiet links that open in place with ▸, and a list with nothing in it
+  is not shown. This week shows the week page and its days without leaving
+  the day. Focus, History and Track this day sit in one View menu. No card
+  around a day page; a hairline between areas side by side.
+
 ## 1.163.2 - 2026-11-14
 
 - Sidebar: your GTD lists come first (#395). Journal, Next, Waiting for,
