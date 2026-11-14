@@ -51,24 +51,26 @@ const NAV_ITEMS = [
   // Talking to yourself is not a feature: Chat waits for somebody else to be
   // in one of your spaces, and stays once there are threads.
   {id: "chat",     icon: ICON_CHAT, label: "Chat", when: () => anySpaceShared() || allThreads().length > 0},
-  "sep",
+  // #395 the GTD lists the notes sort themselves into come first, as the
+  // README teaches them; tools and reference wait below the line.
   {id: "projects", icon: ICON.projects, label: "Projects"},
   {id: "people",   icon: ICON.people, label: "People"},
   {id: "orgs",     icon: ICON.orgs, label: "Organisations"},
   // Once any task repeats: the home's chores, room by room.
   {id: "chores",   icon: ICON_REPEAT, label: "Chores", when: () => allChores().length > 0 || asNeededChores().length > 0},
-  {id: "pages",    icon: ICON.pages, label: "Pages"},
+  "sep",
   // Only in an area with a book (#240, #255).
   {id: "book",     icon: ICON_PENCIL, label: "Book", when: () => hasBook()},
-  // Your areas are Horizon 2, so there is always something here to look at.
-  {id: "horizons", icon: ICON.horizons, label: "Horizons", small: true},
-  // The weekly review is a routine itself, so this is never empty.
-  {id: "checklists", icon: ICON_GEAR, label: "Settings", small: true},
   // Only once a day page has a tracker line on it.
   {id: "trackers", icon: ICON_TRENDUP, label: "Trackers", small: true, when: () => trackerList().length > 0},
+  // Your areas are Horizon 2, so there is always something here to look at.
+  {id: "horizons", icon: ICON.horizons, label: "Horizons", small: true},
+  {id: "pages",    icon: ICON.pages, label: "Pages"},
   // The pages you pinned, from the ⋯ beside a page's title. See navPins().
   "pins",
   "grow",
+  // The weekly review is a routine itself, so this is never empty.
+  {id: "checklists", icon: ICON_GEAR, label: "Settings", small: true},
   // Not a view: a countdown you start from the sidebar. See timerNavItem().
   {id: "timer",    icon: ICON_STOPWATCH, label: "Timer", small: true},
 ];

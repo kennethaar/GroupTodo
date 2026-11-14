@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.163.2 - 2026-11-14
+
+- Sidebar: your GTD lists come first (#395). Journal, Next, Waiting for,
+  Projects, People and Organisations sit on top; Trackers, Horizons and
+  Pages below the line; Settings at the foot. An area with its own
+  8/sidebar.md keeps its order.
+
 ## 1.163.1 - 2026-11-14
 
 - Keys on a line: ⤢ on a note box keeps the line as the notepad's header

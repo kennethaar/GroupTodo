@@ -9904,6 +9904,11 @@ var GTD_TEST = (() => {
     eq(navItems().filter(it => it && it.id).map(it => it.id),
       NAV_ITEMS.filter(it => it && it.id).map(it => it.id));
     eq(navItems().filter(it => typeof it === "string"), ["sep", "pins", "grow"]);
+    // #395 the GTD lists come first; tools and reference after the line; Settings at the foot.
+    const groups = navDefaultOrder().join(" ").split(NAV_SEP).map(g => g.trim().split(/\s+/));
+    eq(groups[0].filter(id => !["chat", "chores"].includes(id)), ["today", "next", "waiting", "projects", "people", "orgs"], "the GTD group");
+    eq(groups[1].filter(id => ["trackers", "horizons", "pages"].includes(id)), ["trackers", "horizons", "pages"], "Trackers, Horizons, Pages below the line");
+    ok(groups[groups.length - 1].includes("checklists"), "Settings in the foot group: " + groups.join(" | "));
   }));
   test("#238 8/sidebar.md orders and hides; Settings stays; an unnamed view still shows", () => withSidebarPage(
     "title:: sidebar\nhide:: Waiting for, Settings, contexts\n\n- Next\n- Journal\n- ---\n- Projects\n- Pages\n- People\n- ---\n- Trackers\n- Timer\n",
@@ -9915,7 +9920,9 @@ var GTD_TEST = (() => {
       ok(l.indexOf("Pages") < l.indexOf("People"), "Pages before People: " + l);
       // Organisations is not named: it comes after People, where it sits by default.
       eq(l[l.indexOf("People") + 1], "Organisations");
-      eq(navOrder().slice(-3), [NAV_SEP, "trackers", "timer"], "the foot group");
+      // Trackers and Timer form the foot group; Horizons, not named, joins Trackers, where it sits by default (#395).
+      const o = navOrder();
+      eq(o.slice(o.lastIndexOf(NAV_SEP) + 1).filter(id => id !== "horizons"), ["trackers", "timer"], "the foot group: " + o);
       ok(!checklistPages().includes(SIDEBAR_PATH), "not listed as a checklist");
     }));
   test("#238 the --- lines survive a write and a read", () => {
@@ -9937,11 +9944,10 @@ var GTD_TEST = (() => {
     eq(navOrder()[0], "next", "Next moved to the top");
     eq(navLabels()[0], "Next");
     // Up from the top of the second group crosses the line into the first.
-    const i = navOrder().indexOf("projects");
-    eq(navOrder()[i - 1], NAV_SEP);
-    row("Projects").querySelector('[data-dir="-1"]').click();
+    const top = navOrder()[navOrder().indexOf(NAV_SEP) + 1];
+    row(navEntry(top).label).querySelector('[data-dir="-1"]').click();
     await settle();
-    ok(navOrder().indexOf("projects") < navOrder().indexOf(NAV_SEP), "Projects is in the first group");
+    ok(navOrder().indexOf(top) < navOrder().indexOf(NAV_SEP), navEntry(top).label + " is in the first group");
     content().querySelector(".navset .helpsee .textbtn").click();
     await settle();
     ok(!getPage(SIDEBAR_PATH), "the page is gone");
