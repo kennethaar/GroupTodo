@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.166.0 - 2026-11-14
+
+- Journal: on a computer the page has no top bar, so a line is the one way
+  in (#395). Nothing goes away: the areas and what is on now stand in the
+  day's heading, Search sits at the top of the sidebar, and Help is in
+  View. N brings the bar back to capture, and it stays while the sidebar is
+  hidden. Other screens and phones keep the bar.
+
 ## 1.165.0 - 2026-11-14
 
 - The line menu and toolbar: on a computer the tools sit at the end of the

@@ -63,6 +63,7 @@ async function openSpace(name, destination = null, {draw = true} = {}) {
     const content = $("#content");
     if (content) {
       content.removeAttribute("aria-busy");
+      journalPaper(false);   // the bar's buttons may stand in the Journal's heading (#395)
       content.replaceChildren(
         el("div", {class: "wrap", role: "alert"}, "Could not open the requested area. Please try again."),
       );

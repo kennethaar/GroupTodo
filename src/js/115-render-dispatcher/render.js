@@ -11,6 +11,7 @@ function render() {
   QUIET_CACHE = null;
   TOUR_PATH_CACHE = undefined;
   if (!VIEWS[state.view]) state.view = "today";
+  journalPaper(false);       // the bar's buttons home before the page they may stand in goes (#395)
   renderNav();
   renderSpacesButton();
   renderContextChip();
@@ -23,6 +24,7 @@ function render() {
   if (FOCUS_NODE) node = el("div", {class: "wrap"}, FOCUS_NODE);
   c.append(node);
   document.body.classList.toggle("solview", node.classList.contains("solwrap"));
+  journalPaper();
   if (state.view !== "review") SIDE_FOLLOW = false;
   resolveAssets(c);          // before the scroll: a picture keeps the room it had (#382)
   restoreScroll();

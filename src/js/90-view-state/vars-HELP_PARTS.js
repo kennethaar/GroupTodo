@@ -45,7 +45,7 @@ const HELP = {
     see: ["start", "next-list", "projects-list", "waiting-list", "review-steps", "horizons"],
     words: ["capture", "clarify", "organise", "organize", "reflect", "engage", "method", "allen"]},
   topbar: {part: "start", title: "The top bar", shot: 1,
-    what: "The top bar is the same on every screen. Capture, search and help live here.",
+    what: "The top bar holds capture, search and help. The Journal on a computer hides it: write in a line, or press N to bring it back.",
     steps: ["Type in the box at the top. Enter adds it to today.",
       "Click the area button to pick which areas show.",
       "Press @@ to say where you are now.",

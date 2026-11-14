@@ -44,3 +44,16 @@ kbd{font:11px var(--mono);border:1px solid var(--border);border-radius:4px;paddi
 .sp::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--sc)}
 .sp.lg{font-size:13px;padding:3px 10px 3px 8px}
 
+/* #395 the Journal on a wide screen: no top bar until N asks to capture, or
+   the sidebar is hidden and the bar holds the way back. */
+body.paper:not(.sidebar-hidden):not(.capping) header.top{display:none}
+@media (max-width:640px){ .todayhead .hnow,.todayhead .spacesbtn{display:none} }
+.sidesearch{display:none}
+body.paper .sidesearch{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 12px 10px;
+  padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--fg3);font-size:13px;text-align:left}
+body.paper .sidesearch:hover{color:var(--fg);border-color:var(--fg3)}
+.todayhead .vhead-r{position:relative}
+.todayhead .hnow{display:flex;gap:6px;align-items:center}
+.todayhead .spop{right:0;top:calc(100% + 6px)}
+.todayhead .spacesbtn{border:0;background:none;color:var(--fg2)}
+.todayhead .spacesbtn:hover{background:var(--bg3);color:var(--fg)}

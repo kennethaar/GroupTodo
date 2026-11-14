@@ -1,4 +1,5 @@
 function openSpacesMenu() {
+  if (!$("#spop")) journalPaper(false);   // #395, as in closeSpacesMenu
   const box = $("#spop");
   const shown = new Set(visibleSpaces());
   box.textContent = "";

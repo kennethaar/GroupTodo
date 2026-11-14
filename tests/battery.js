@@ -7569,6 +7569,28 @@ var GTD_TEST = (() => {
     for (const w of ["Focus", "History"]) has(words, w, "in View");
     for (const w of ["Focus", "History"]) ok(![...head.querySelectorAll(":scope > .vhead-r > button")].some(b => b.textContent.includes(w)), w + " is not on show beside it");
   });
+  test("#395 on a wide screen the Journal has no top bar; what it held moves, not goes", async () => {
+    const bar = () => document.querySelector("header.top"), seen = n => !!n && n.getClientRects().length > 0;
+    try {
+      go("today", {sub: null, todayDay: null, jz: null}); await settle();
+      ok(!seen(bar()), "no top bar on the Journal: a line is the way in");
+      const head = content().querySelector(".todayhead");
+      ok(head.contains($("#spacesBtn")) && seen($("#spacesBtn")), "the areas stand in the day's heading");
+      ok(head.contains($(".hnow")), "what is on now too");
+      ok(seen($("#sideSearch")), "Search in the sidebar");
+      ok([...head.querySelectorAll(".viewmenu button")].some(b => /Help/.test(b.textContent)), "Help in View");
+      focusCapture();   // what N does
+      ok(seen(bar()) && document.activeElement === $("#cap"), "N, to capture, brings the bar back with the caret in it");
+      $("#cap").blur();
+      setSidebarHidden(true); render(); await settle();
+      ok(seen(bar()), "with the sidebar hidden the bar stays: it holds the way back");
+      setSidebarHidden(false);
+      go("next"); await settle();
+      ok(seen(bar()), "Next keeps its bar");
+      ok(bar().contains($("#spacesBtn")) && bar().contains($(".hnow")), "with the areas and what is on now back in it");
+      ok(!seen($("#sideSearch")), "and one Search, in the bar");
+    } finally { setSidebarHidden(false); go("today"); await settle(); }
+  });
   test("#395 the Journal is paper: no card around a day page, a hairline between areas", async () => {
     go("today", {sub: null, todayDay: null}); await settle();
     const cards = [...content().querySelectorAll(".jview .jgrid > .jcard:not(.trkcol)")];

@@ -1,4 +1,5 @@
-const focusCapture = () => { tourMarkSeen("capture"); const i = $("#cap"); i.focus(); i.select(); };
+// The Journal hides the bar until it is asked for (#395): show it, then type in it.
+const focusCapture = () => { tourMarkSeen("capture"); document.body.classList.add("capping"); const i = $("#cap"); i.focus(); i.select(); };
 
 /* ============================================================
    113a_EMAIL PASTE

@@ -186,6 +186,8 @@ function viewToday() {
   const viewItems = [
     focusButton("day", "textbtn"),
     el("button", {class: "textbtn", title: "Everything that happened, newest first", onclick: () => openHistory()}, "⏱ History"),
+    // With no top bar on the Journal, Help is here (#395).
+    el("button", {class: "textbtn", title: "Help (?)", onclick: () => setHelp(!helpOpen())}, "? Help"),
     !who && !trkOn ? el("button", {class: "textbtn", onclick: () => { PREF.set("today.tab", "facts"); render(); }}, "Track this day") : null,
     people.length ? fselect("Whose day page", who, [["", "Your page"], ...people.map(n => [n, firstNameOf(n) + "'s page"])],
       v => go("today", {todayWho: v || null})) : null,

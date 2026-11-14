@@ -3,6 +3,8 @@
    ============================================================ */
 langStart();
 $("#btnSearch").onclick  = () => goSearch();
+$("#sideSearch").onclick = () => goSearch();
+$("#cap").addEventListener("blur", () => document.body.classList.remove("capping"));
 $("#btnSend").onclick    = () => sendFromPhone();
 $("#syncLine").onclick   = () => {
   // A save that is waiting out its retry is tried again on the way in.
