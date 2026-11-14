@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.156.1 - 2026-11-14
+
+- Vault and sync: loose pages straight in the pages folder no longer hold up
+  the start (#181). They come in by name first and are read after the day,
+  the week and your projects, like notes. On a phone with 650 of them this
+  took two minutes off opening the folder.
+
 ## 1.156.0 - 2026-11-14
 
 - Vault and sync: a slow start can be traced (#181). Each step of opening

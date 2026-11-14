@@ -19,8 +19,11 @@ const FIRST_DIRS = [join(PAGES, "_"), DIRS.lists, DIRS.areas, DIRS.goals, DIRS.v
 const LATE_DIRS = [DIRS.completed, DIRS.cancelled, DIRS.zettel, DIRS.mail, DIRS.reviews];
 const listedLate = p => isJournalPath(p) || LATE_DIRS.some(d => p.startsWith(d + "/"));
 const STUB_PAGES = new WeakSet();
+/* Loose pages straight in pages/ are notes and wait like them: hundreds of
+   them held a phone's first draw for two minutes. Only the settings and the
+   old horizon pages there are needed first. */
 const isStubPath = p => /\.md$/i.test(p) && p.startsWith(PAGES + "/") &&
-  p.indexOf("/", PAGES.length + 1) !== -1 && !FIRST_DIRS.some(d => p.startsWith(d + "/"));
+  !FIRST_DIRS.some(d => p.startsWith(d + "/")) && p !== SETTINGS_PATH && !HORIZONS_LEGACY.includes(p);
 const stillLoading = (rec, path) =>
   !!rec.stubs && (rec.stubs.has(path) || STUB_PAGES.has(rec.pages.get(path)));
 

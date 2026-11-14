@@ -580,10 +580,12 @@ var GTD_TEST = (() => {
     const old = shiftISO(T(), -10);
     let release;
     const held = new Promise(r => { release = r; });
-    const gate = {[old + ".md"]: held, "Boat.md": held};
+    // Loose notes straight in pages/ wait too: 650 of them held a phone's first draw for two minutes.
+    const gate = {[old + ".md"]: held, "Boat.md": held, "Multitasking.md": held};
     const tree = {
       journals: {tester: {[T() + ".md"]: "- TODO today's line\n", [old + ".md"]: "- old line\n"}},
-      pages: {"GTD.md": "title:: GTD\n", "1": {"Boat.md": "title:: Boat\noutcome:: afloat\n\n- TODO Sand the hull\n"}},
+      pages: {"GTD.md": "title:: GTD\n", "Multitasking.md": "- a loose note\n",
+        "1": {"Boat.md": "title:: Boat\noutcome:: afloat\n\n- TODO Sand the hull\n"}},
     };
     const writes = [];
     const rec = newRecord("Stage181", Backends.fs(fakeDir("Stage181", tree, writes, gate)));
@@ -593,7 +595,9 @@ var GTD_TEST = (() => {
     has(serializePage(rec.pages.get(join(JOURNALS, "tester", T() + ".md"))), "today's line", "today read first");
     ok(!rec.pages.has(join(JOURNALS, "tester", old + ".md")), "an old day waits");
     ok(rec.pages.has(boat) && !rec.pages.get(boat).blocks.length, "project there by name only");
-    ok(rec.pages.has(SETTINGS_PATH), "settings read first");
+    ok(rec.pages.has(SETTINGS_PATH) && !stillLoading(rec, SETTINGS_PATH), "settings read first");
+    const note = join(PAGES, "Multitasking.md");
+    ok(rec.pages.has(note) && stillLoading(rec, note), "a loose note in pages/ waits, there by name");
     // Something marks the stand-in dirty: saving must leave the file alone.
     rec.dirty.add(boat);
     LOADED.set(rec.name, rec);
@@ -606,6 +610,7 @@ var GTD_TEST = (() => {
     ok(!rec.stubs, "no stand-ins left");
     has(serializePage(rec.pages.get(boat)), "Sand the hull", "project read in full");
     ok(rec.pages.has(join(JOURNALS, "tester", old + ".md")), "old day read");
+    has(serializePage(rec.pages.get(note)), "a loose note", "loose note read in full");
     ok(!rec.dirty.has(boat), "nothing left to send for the stand-in");
   });
 

@@ -236,4 +236,7 @@ v1.156.0 added timed start-up logging to find the slow step:
   time, slowest files).
 - Test: `#181 a slow start can be traced`.
 
-Next: get a saved log from the user, find the slowest step, fix it there.
+First log (Android, 1203 files): ~2.4 s per file read, listing 29 s. The
+"first" read took 679 files / 127 s because loose pages straight in `pages/`
+were not stand-ins. v1.156.1: `isStubPath` makes them wait (except `GTD.md`
+and old horizon files). Next: a new log; listing (29 s) is the next target.
