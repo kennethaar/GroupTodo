@@ -126,7 +126,7 @@ const HELP = {
     words: ["week", "weekly", "routine", "plan", "iso"]},
 
   "next-list": {part: "views", title: "Next › List", view: "next", sub: "list", gtd: "engage", shot: 1,
-    what: "Every next action, grouped by context, most urgent first. On a phone the app opens here.",
+    what: "Every next action, grouped by context, most urgent first.",
     hint: "This is Next. Pick a context (where you are or what you have), and GroupTodo shows the actions that fit.",
     steps: [["Tick a task to mark it done. Hold the tick for its menu.", ".tick"],
       "Click a context's name to see only those.",

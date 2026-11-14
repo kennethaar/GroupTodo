@@ -253,13 +253,13 @@ var GTD_TEST = (() => {
       ok(!$("#btnContext").hidden, "the @context chip is gone from Next too");
     } finally { state.context = was; go("today"); await settle(); }
   });
-  test("on a phone the app opens on Next, on a wide screen on the Journal", async () => {
+  test("a phone opens on the Journal, as a wide screen does: capture comes first", async () => {
     const was = state.view;
     try {
       Object.defineProperty(PHONE, "matches", {configurable: true, get: () => true});
-      eq(startView(), "next", "phone");
+      eq(startView(), "today", "phone");
       await openSpace(V.space); await settle();
-      eq(state.view, "next", "a phone opens the area on");
+      eq(state.view, "today", "a phone opens the area on");
       delete PHONE.matches;
       eq(startView(), "today", "wide screen");
       await openSpace(V.space); await settle();

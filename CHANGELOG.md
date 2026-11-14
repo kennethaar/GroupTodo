@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.162.2 - 2026-11-14
+
+- Journal: a phone opens on the Journal, as a wider screen does, not on
+  Next. A phone is mostly for capture; Next is one tap away.
+
 ## 1.162.1 - 2026-11-14
 
 - Keys on a line: the test for brackets that come in pairs (#268) puts the
