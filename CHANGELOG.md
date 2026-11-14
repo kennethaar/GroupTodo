@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.160.0 - 2026-11-14
+
+- Keys on a line: Shift+Enter opens the notepad (#392). It shows the line
+  and the lines under it in a fixed-width box, with the caret's line and
+  column, and Find and Replace. A sketch drawn there keeps its lines and
+  spaces; the file keeps it in a code fence. Done or Ctrl+Enter saves.
+  Shift+Enter no longer adds a line under the line; Enter after ``` still
+  does.
+
 ## 1.159.0 - 2026-11-14
 
 - Weekly review › Steps: a #meeting on a coming day page that links an

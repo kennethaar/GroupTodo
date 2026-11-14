@@ -74,7 +74,14 @@ function bodyLineEl(path, b, i) {
     if (suggestKey(e)) return;
     if (tableTab(e, path, b, i, txt)) return;
     if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && tableEnter(path, b, i, txt)) { e.preventDefault(); return; }
-    // Shift+Enter is another line here too, as it is on the bullet.
+    // Shift+Enter opens the notepad here too, the caret where it was (#392).
+    if (e.key === "Enter" && e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      const at = (b.title || "").length + 1 + b.body.slice(0, i).reduce((n, l) => n + l.length + 1, 0) + caretOffsets(txt)[0];
+      txt.blur();
+      openNotepad(path, b, at);
+      return;
+    }
     if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();
       const whole = lineText(txt);

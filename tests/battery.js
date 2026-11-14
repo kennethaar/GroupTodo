@@ -4310,7 +4310,58 @@ var GTD_TEST = (() => {
       eq(drawn.textContent, mock[5], "a fenced line is drawn as markup, not as written");
     } finally { go("today"); }
   });
-  test("#374 in the Journal, a ``` fence opened on the bullet and typed on with Shift+Enter is drawn monospace", async () => {
+  test("#392 Shift+Enter opens the line in a monospace notepad with line and column, search and replace", async () => {
+    const path = ensureJournal(todayISO());
+    const b = newBlock({}, false);
+    b.title = "Screen plan"; b.body = ["first idea"];
+    getPage(path).blocks.push(b); touch(path);
+    go("today");
+    await settle();
+    const q = s => document.querySelector('.blk[data-id="' + b.id + '"]' + s);
+    const key = (node, k, o = {}) => node.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true, ...o}));
+    const btn = re => Array.from(document.querySelectorAll(".scrim .modal button")).find(x => re.test(x.textContent));
+    try {
+      focusBlock(b.id);
+      await settle();
+      const txt = q(" .txt");
+      txt.focus();
+      setHostText(txt, "Screen plan", 6);
+      key(txt, "Enter", {shiftKey: true});
+      await settle();
+      eq(JSON.stringify(b.body), JSON.stringify(["first idea"]), "Shift+Enter still added a line under the line");
+      const pad = document.querySelector(".scrim .modal textarea.notepad");
+      ok(pad, "Shift+Enter did not open the notepad");
+      eq(pad.value, "Screen plan\nfirst idea", "the notepad does not hold the line and the lines under it");
+      ok(/mono/i.test(getComputedStyle(pad).fontFamily), "the notepad is not monospace");
+      has(document.querySelector(".scrim .modal").textContent, "Ln 1, Col 7", "the caret's line and column are not shown");
+      pad.setSelectionRange(17, 17);
+      pad.dispatchEvent(new Event("select", {bubbles: true}));
+      pad.dispatchEvent(new KeyboardEvent("keyup", {key: "ArrowRight", bubbles: true}));
+      has(document.querySelector(".scrim .modal").textContent, "Ln 2, Col 6", "the line and column do not follow the caret");
+      const mock = ["  +------+   +------+", "  | idea |   | idea |", "  +------+   +------+"];
+      pad.value = "Screen plan\nfirst idea\n" + mock.join("\n");
+      pad.dispatchEvent(new Event("input", {bubbles: true}));
+      const find = document.querySelector(".scrim .modal input.npfind"), repl = document.querySelector(".scrim .modal input.nprepl");
+      ok(find && repl, "no search and replace boxes");
+      find.value = "idea"; find.dispatchEvent(new Event("input", {bubbles: true}));
+      repl.value = "plan"; repl.dispatchEvent(new Event("input", {bubbles: true}));
+      has(document.querySelector(".scrim .modal").textContent, "3 found", "the matches are not counted");
+      btn(/^Replace all$/).click();
+      eq(pad.value.split("idea").length, 1, "Replace all left a match");
+      btn(/^Done$/).click();
+      await settle();
+      ok(!document.querySelector(".scrim .modal"), "Done does not close the notepad");
+      eq(b.title, "Screen plan", "the first line is not the bullet");
+      const back = parsePage(serializePage(getPage(path))).blocks.find(x => x.id === b.id || x.title === "Screen plan");
+      const lines = back.body.filter(l => l !== "```");
+      eq(JSON.stringify(lines), JSON.stringify(["first plan", ...mock.map(l => l.replace(/idea/g, "plan"))]), "the lines are not kept as written");
+    } finally {
+      closeModal();
+      const pg = getPage(path); pg.blocks.splice(pg.blocks.indexOf(b), 1); touch(path);
+      go("today");
+    }
+  });
+  test("#374 in the Journal, a ``` fence opened on the bullet and typed on with Enter is drawn monospace", async () => {
     const path = ensureJournal(todayISO());
     const b = newBlock({}, false);
     b.title = "```";
@@ -4322,14 +4373,14 @@ var GTD_TEST = (() => {
     const typeLine = async (i, text) => {
       const row = q(' > .bodyline[data-bi="' + i + '"]');
       row.focus(); setHostText(row, text, text.length);
-      key(row, "Enter", {shiftKey: true});
+      key(row, "Enter");
       await settle();
     };
     try {
       ok(q(" .txt"), "the line is not on today's page");
       focusBlock(b.id);
       await settle();
-      key(q(" .txt"), "Enter", {shiftKey: true});
+      key(q(" .txt"), "Enter");
       await settle();
       await typeLine(0, "  +----+   +----+");
       await typeLine(1, "  | a  |   | b  |");

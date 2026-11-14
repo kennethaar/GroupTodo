@@ -341,14 +341,19 @@ function outlineBlock(path, page, b, opts = {}) {
     // In a table row Enter makes the next row and Tab goes to the next cell (#269).
     if (tableTab(e, path, b, -1, txt)) return;
     if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && tableEnter(path, b, -1, txt)) { e.preventDefault(); return; }
-    /* Shift+Enter writes a line under the bullet instead of a new bullet: one
-       block, several lines, the way a note under a task belongs to it. What is
-       after the caret moves down with you, as Enter does with a new bullet. */
-    /* Enter at the end of a bullet that opens a ``` fence does the same: the
-       next line is in the fence, not a new bullet (#374). */
+    /* Enter at the end of a bullet that opens a ``` fence writes a line under
+       the bullet instead of a new bullet: the next line is in the fence (#374). */
     const opensFence = () => !(b.body || []).length && /^\s*```/.test(lineText(txt)) &&
       caretOffsets(txt)[0] === lineText(txt).length;
-    if (e.key === "Enter" && !e.ctrlKey && !e.metaKey && !e.altKey && (e.shiftKey || opensFence())) {
+    /* Shift+Enter opens the line in the notepad (#392). */
+    if (e.key === "Enter" && e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      const at = caretOffsets(txt)[0];
+      txt.blur();   // blur writes the line back first
+      openNotepad(path, b, at);
+      return;
+    }
+    if (e.key === "Enter" && !e.ctrlKey && !e.metaKey && !e.altKey && opensFence()) {
       e.preventDefault();
       const whole = lineText(txt);
       const [from, to] = caretOffsets(txt);

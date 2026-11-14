@@ -1562,6 +1562,8 @@ js/105-outliner/tableMenu.js
 js/105-outliner/tableEnter.js
 js/105-outliner/tableTab.js
 js/105-outliner/tableWatch.js
+js/105-outliner/notepadFence.js
+js/105-outliner/openNotepad.js
 js/105-outliner/bodyLineEl.js
 js/105-outliner/attachOutlineUndo.js
 js/105-outliner/vars-BOOKKEEPING.js
