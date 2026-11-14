@@ -5400,11 +5400,17 @@ var GTD_TEST = (() => {
       await settle();
       const panel = content().querySelector(".folderaway");
       ok(panel, "no reconnect panel in place of the pages");
+      // Each folder needs its own click, so both asks say which one this is (#346).
+      has(panel.textContent, "1 of 2");
+      has(panel.textContent, "The browser asks for each folder again");
       [...panel.querySelectorAll("button")].find(b => b.textContent === "Allow access to Vault folder").click();
       for (let i = 0; i < 50 && !document.querySelector("#modalRoot .modal"); i++) await new Promise(r => setTimeout(r, 20));
       const m = document.querySelector("#modalRoot .modal");
       ok(m, "the other area was never asked for");
       has(m.textContent, "Reconnect " + other);
+      has(m.textContent, "2 of 2");
+      has(m.textContent, "The browser asks for each folder again");
+      ok(m.textContent.split(/\s+/).length < 60, "the dialog is too long: " + m.textContent);
       ok([...m.querySelectorAll("button")].some(b => b.textContent === "Allow access to Folder346"), "no Allow access for the other folder");
     } finally {
       closeModal();

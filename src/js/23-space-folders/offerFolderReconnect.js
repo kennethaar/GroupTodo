@@ -6,26 +6,18 @@ function offerFolderReconnect(name) {
   const sp = Spaces.get(name);
   const label = sp ? sp.name : name;
   const where = h.name || (sp && sp.label) || "its folder";
-  const others = Array.from(PENDING_GRANT.keys()).filter(n => n !== name);
+  const step = folderAskStep(name);
   modal({
     center: true,
-    title: "Reconnect " + label,
+    title: "Reconnect " + label + (step ? " \u00B7 " + step : ""),
     body: el("div", {},
       el("div", {class: "field"},
         el("div", {style: "font-size:13.5px"},
-          "The folder " + label + " writes into - \u201C" + where + "\u201D - is still " +
-          "remembered. Opening the app from a fresh download only drops the browser's " +
-          "permission to it, and that comes back with one click: nothing to find, " +
-          "no folder to pick.")),
+          "Your pages are safe in \u201C" + where + "\u201D. The browser asks for each folder " +
+          "again after a fresh start, one area at a time.")),
       el("div", {class: "field"},
         el("div", {style: "font-size:13px;color:var(--fg2)"},
-          "Until then " + label + " reads and writes browser storage, and the .md files in " +
-          where + " are left exactly as they are.")),
-      others.length
-        ? el("div", {class: "field"},
-            el("div", {style: "font-size:12.5px;color:var(--fg3)"},
-              "Waiting the same way: " + others.join(", ") + "."))
-        : null),
+          "Not now uses browser storage. The folder is left as it is."))),
     foot: [
       el("button", {class: "btn primary", onclick: async () => {
         closeModal();

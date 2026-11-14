@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.162.7 - 2026-11-14
+
+- Phone and PC: asking for an area's folder again is shorter, and says
+  1 of 2, then 2 of 2, when more than one area waits (#346). The browser
+  asks for one folder per click, so each area asks on its own. The panel
+  and the dialog now say the same thing.
+
 ## 1.162.6 - 2026-11-14
 
 - Phone and PC: after Allow access, the folder's pages take over when you

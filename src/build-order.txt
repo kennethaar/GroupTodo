@@ -308,6 +308,8 @@ js/23-space-folders/ensureVisibleLoaded.js
 js/23-space-folders/vars-ACROSS.js
 js/23-space-folders/acrossSpaces.js
 js/23-space-folders/vars-PENDING_GRANT.js
+js/23-space-folders/vars-folderAskStep.js
+js/23-space-folders/folderAskStep.js
 js/23-space-folders/folderAwayPanel.js
 js/23-space-folders/grantSpaceFolder.js
 js/23-space-folders/offerFolderReconnect.js

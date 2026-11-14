@@ -6,4 +6,5 @@
 function offerNextFolder() {
   const next = [...PENDING_GRANT.keys(), ...LOST_FOLDER].find(n => n !== Spaces.active);
   if (next) offerFolderBack(next);
+  else FOLDER_ASK.total = 0;   // the round is over: the next one counts from 1
 }
