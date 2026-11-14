@@ -216,6 +216,9 @@ Use one clear control per action.
 
 ## Ongoing work (keep short; update as work moves on)
 
+Every 10th `/clear`, the SessionStart hook `.claude/hooks/clear-count.mjs`
+asks for this section to be compacted: repeats merged, stale items dropped.
+
 Slow start (#181, reopened 2026-11-14): opening today's journal page on a big
 folder still takes 5+ minutes. v1.155.12-14 staged the read (today first, then
 week and active work, then the rest, late folders listed after the first draw).

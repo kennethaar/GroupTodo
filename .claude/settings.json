@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/clear-count.mjs",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
