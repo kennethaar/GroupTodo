@@ -5401,18 +5401,19 @@ var GTD_TEST = (() => {
       const panel = content().querySelector(".folderaway");
       ok(panel, "no reconnect panel in place of the pages");
       // Each folder needs its own click, so both asks say which one this is (#346).
-      eq(panel.querySelector("h2").textContent, "Folder 1 of 2: " + V.space);
-      has(panel.textContent, "The browser asks once per folder. Your pages are safe in “Vault folder”.");
-      ok([...panel.querySelectorAll("button")].some(b => b.textContent === "Not now - use browser storage"), "no Not now - use browser storage");
+      eq(panel.querySelector("h2").textContent, "Reconnect folder 1 of 2: " + V.space);
+      has(panel.textContent, "The browser asks on every refresh once per folder. Reconnect to “Vault folder”?");
+      eq([...panel.querySelectorAll("button")].map(b => b.textContent).join(" | "),
+        "Not now - use browser storage | Allow access", "Allow access goes on the right");
       [...panel.querySelectorAll("button")].find(b => b.textContent === "Allow access").click();
       for (let i = 0; i < 50 && !document.querySelector("#modalRoot .modal"); i++) await new Promise(r => setTimeout(r, 20));
       const m = document.querySelector("#modalRoot .modal");
       ok(m, "the other area was never asked for");
-      has(m.textContent, "Folder 2 of 2: " + other);
-      has(m.textContent, "The browser asks once per folder. Your pages are safe in “Folder346”.");
+      has(m.textContent, "Reconnect folder 2 of 2: " + other);
+      has(m.textContent, "The browser asks on every refresh once per folder. Reconnect to “Folder346”?");
       ok(m.textContent.split(/\s+/).length < 30, "the dialog is too long: " + m.textContent);
-      ok([...m.querySelectorAll("button")].some(b => b.textContent === "Allow access"), "no Allow access for the other folder");
-      ok([...m.querySelectorAll("button")].some(b => b.textContent === "Not now - use browser storage"), "no Not now - use browser storage");
+      eq([...m.querySelectorAll(".foot button")].map(b => b.textContent).join(" | "),
+        "Not now - use browser storage | Allow access", "Allow access goes on the right");
     } finally {
       closeModal();
       PENDING_GRANT.delete(V.space); PENDING_GRANT.delete(other);

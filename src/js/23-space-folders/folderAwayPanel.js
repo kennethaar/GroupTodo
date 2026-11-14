@@ -15,18 +15,16 @@ function folderAwayPanel(name) {
           render();
         }}, "Pick " + where)
       : null;
-  const step = folderAskStep(name);
+  const ask = pending ? reconnectText(name, label, where) : null;
   return el("div", {class: "wrap folderaway", role: "alert"},
-    el("h2", {}, pending
-      ? (step ? "Folder " + step + ": " + label : "Reconnect " + label)
-      : label + " is in \u201C" + where + "\u201D"),
-    el("p", {}, pending
-      ? "The browser asks once per folder. Your pages are safe in \u201C" + where + "\u201D."
+    el("h2", {}, ask ? ask.title : label + " is in \u201C" + where + "\u201D"),
+    el("p", {}, ask
+      ? ask.body
       : CAP.dirPicker
         ? "Your pages are safe in the folder, but this browser has lost it. Pick it again to open them."
         : "Your pages are in the folder, and this browser cannot open folders."),
     el("div", {class: "row"},
-      back,
       el("button", {class: "btn ghost", onclick: () => { AWAY_OK.add(name); render(); }},
-        "Not now - use browser storage")));
+        "Not now - use browser storage"),
+      back));
 }

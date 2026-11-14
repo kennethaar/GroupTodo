@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.162.9 - 2026-11-14
+
+- Phone and PC: the folder question reads "Reconnect folder 1 of 2: Work"
+  and asks "Reconnect to" the folder by name (#346). Allow access is on the
+  right, Not now on the left, in the panel and the dialog alike.
+
 ## 1.162.8 - 2026-11-14
 
 - Phone and PC: asking for a folder again is down to two lines (#346). The
