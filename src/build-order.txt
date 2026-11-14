@@ -47,6 +47,7 @@ js/00-bootstrap/notify.js
 js/00-bootstrap/vars-JOBS.js
 js/00-bootstrap/vars-APP_LOG.js
 js/00-bootstrap/appLog.js
+js/00-bootstrap/loadMark.js
 js/00-bootstrap/startJob.js
 js/00-bootstrap/trackSave.js
 js/00-bootstrap/jobsSaving.js
@@ -2400,6 +2401,7 @@ js/113-natural-planning/npmFocusQ.js
 js/113-natural-planning/run-5-8.js
 js/113-natural-planning/npmQueueList.js
 js/113-natural-planning/npmPanel.js
+js/115-render-dispatcher/vars-RENDER_SLOW_MS.js
 js/115-render-dispatcher/vars-VIEWS.js
 js/115-render-dispatcher/holdRender.js
 js/115-render-dispatcher/vars-VIEW_SCROLL.js

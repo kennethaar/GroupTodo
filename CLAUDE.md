@@ -213,3 +213,24 @@ Use one clear control per action.
 5. Prefer native interactive elements over `tabindex` on non-interactive ones.
 6. Support pointer, keyboard and touch.
 7. Add migration and regression coverage when changing stored data.
+
+## Ongoing work (keep short; update as work moves on)
+
+Slow start (#181, reopened 2026-11-14): opening today's journal page on a big
+folder still takes 5+ minutes. v1.155.12-14 staged the read (today first, then
+week and active work, then the rest, late folders listed after the first draw).
+
+v1.156.0 added timed start-up logging to find the slow step:
+
+- `loadMark(text, since)` (`src/js/00-bootstrap/loadMark.js`) writes
+  `load +N.N s <step> in X` to `APP_LOG` and `console.info`.
+- Marked: `init` (run-6-2), `openSpace`, `readStaged` (listing, first read,
+  each later listing and read group, parse in `readIntoNow`, `onRest`),
+  non-staged `readInto`, and `render` (always before `INIT_DONE`, later only
+  over `RENDER_SLOW_MS` = 300 ms).
+- Save log: Vault & sync, More, Check the folder (footer, usable while it
+  reads). `saveAppLog` also appends `readTimingText` per folder (open vs text
+  time, slowest files).
+- Test: `#181 a slow start can be traced`.
+
+Next: get a saved log from the user, find the slowest step, fix it there.

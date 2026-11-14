@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.156.0 - 2026-11-14
+
+- Vault and sync: a slow start can be traced (#181). Each step of opening
+  an area is logged with its time: listing the folder, today's page, the
+  week and active work, the other files, the pages made from them and each
+  draw. Vault & sync, More, Check the folder now has Save log, which saves
+  those steps, and how long each file took, to your downloads. The steps
+  also show in the browser console as they happen.
+
 ## 1.155.14 - 2026-11-14
 
 - Vault and sync: a new day written while the folder is still being read

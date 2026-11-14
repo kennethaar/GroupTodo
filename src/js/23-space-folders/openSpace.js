@@ -20,9 +20,12 @@ async function openSpace(name, destination = null, {draw = true} = {}) {
   LINKED = null;                                  // the linked vault file is per space
   try { LINKED = (await IDB.get("kv", "bundle:" + name)) || null; } catch (_) {}
 
+  let t = loadMark("“" + name + "”: opening");
   await loadFromBackend(await spaceBackend(sp), {quick: true});
+  t = loadMark("“" + name + "”: first pages in", t);
   V.space = name;
   migrateVault();
+  t = loadMark("“" + name + "”: pages brought up to date", t);
   await seedIfEmpty();             // a brand new space still needs verbs and templates
   storeAreaName(name);             // a name chosen before this was written down reaches the folder now
   scanVerbs();

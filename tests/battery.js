@@ -740,6 +740,29 @@ var GTD_TEST = (() => {
       eq(rec.hold && rec.hold.reason, "empty", "an emptied folder is not held");
     } finally { PREF.set(key, ""); PREF.set("pagecount:Late181", ""); }
   });
+  test("#181 a slow start can be traced: each read step is logged with its time, and Check the folder saves the log", async () => {
+    const tree = {journals: {tester: {[T() + ".md"]: "- today\n"}},
+      pages: {"1": {"Boat.md": "title:: Boat\n"}, z: {"Idea.md": "title:: Idea\n"}}};
+    const rec = newRecord("Log181", Backends.fs(fakeDir("Log181", tree, [])));
+    await readInto(rec, {stage: true});
+    await filesLoaded();
+    const steps = APP_LOG.filter(l => /load \+\d+\.\d s/.test(l) && l.includes("Log181"));
+    ok(steps.some(l => /listed \d+ files/.test(l)), "the listing is not logged: " + steps.join(" | "));
+    ok(steps.some(l => /read 1 files? first/.test(l)), "the first read (today alone) is not logged");
+    ok(steps.some(l => /in \d+ ms|in \d+\.\d s/.test(l)), "a step is logged without how long it took");
+    ok(steps.some(l => /all \d+ pages in/.test(l)), "the end of the read is not logged");
+    const saved = [], real = window.downloadText;
+    window.downloadText = (name, text) => saved.push([name, text]);
+    let check = null;
+    try {
+      check = openFolderCheck();
+      const btn = [...document.querySelectorAll("#modalRoot button")].find(x => trim(x.textContent) === "Save log");
+      ok(btn, "Check the folder offers no Save log while it reads");
+      btn.click();
+      eq(saved.length, 1, "Save log saved nothing");
+      has(saved[0][1], "listed", "the saved log has no start-up steps");
+    } finally { window.downloadText = real; await check; closeAll(); }
+  });
   test("#181 a project still a stand-in is a name, not a stuck project", async () => {
     const rec = newRecord("Stuck181", Backends.memory());
     const boat = join(DIRS.active, "Boat.md");

@@ -1085,7 +1085,7 @@ const HELP = {
       "Copying pages into a folder shows how far it has come, then how many projects and tasks are there.",
       "Chrome on Android opens a folder too. It may ask to be let in again each time.",
       "The vault file also carries the pictures pages link to.",
-      "Pages missing, or slow to open? More, then Check the folder, shows what the app cannot read and how long the last read took.",
+      "Pages missing, or slow to open? More, then Check the folder, shows what the app cannot read and how long the last read took. Save log there keeps each step of opening, timed, in your downloads.",
       "A big folder opens in steps: today, then the month, then projects, contexts, people and organisations. Until a file is read, a page shows its file name. A bar under Pages shows how far it has come. Click it to see each file.",
       "A page changed on another device is merged with yours when it is saved, not written over.",
       "A Syncthing conflict copy is merged into its page, with no line twice, and then deleted.",

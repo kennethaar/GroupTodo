@@ -2,7 +2,8 @@ async function openFolderCheck() {
   const name = V.space;
   const body = el("div", {}, el("div", {class: "field"}, "Reading the folder..."));
   modal({center: true, title: "Check the folder", body,
-    foot: [el("div", {style: "flex:1"}), el("button", {class: "btn ghost", onclick: closeModal}, "Close")]});
+    foot: [el("button", {class: "btn ghost", onclick: () => notify("Log saved to your downloads: " + saveAppLog("Check the folder"))}, "Save log"),
+      el("div", {style: "flex:1"}), el("button", {class: "btn ghost", onclick: closeModal}, "Close")]});
   let r;
   try { r = await folderCheckReport(name); }
   catch (e) { body.replaceChildren(el("div", {class: "field"}, "Could not read the folder: " + storageReason(e) + ".")); return; }

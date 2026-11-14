@@ -13,7 +13,9 @@ async function readInto(record, {stage = false, onRest = null, onSoon = null} = 
     if (rest) { READING.add(rest); rest.finally(() => { READING.delete(rest); done(); }); }
     return record;
   }
+  const t = loadMark("“" + record.name + "”: reading " + ((record.backend && record.backend.kind) || "storage"));
   const p = readIntoNow(record, edited);
   READING.add(p);
-  try { return await p; } finally { READING.delete(p); done(); }
+  try { return await p; }
+  finally { READING.delete(p); done(); loadMark("“" + record.name + "”: " + record.pages.size + " pages read", t); }
 }

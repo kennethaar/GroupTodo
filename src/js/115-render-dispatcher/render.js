@@ -2,6 +2,7 @@ function render() {
   if (RENDER_HOLD) { RENDER_MISSED = true; return; }
   if (!V.loaded) return;
   if (SPACE_TRANSITION) return;
+  const began = performance.now();
   refreshVisiblePageTemplate();
   flyHide();                 // it hangs off a line this redraw is about to replace
   suggestClose();
@@ -33,4 +34,6 @@ function render() {
   syncNavArrows();
   syncSendButton();
   applyRefocus();
+  const ms = performance.now() - began;
+  if (!INIT_DONE || ms > RENDER_SLOW_MS) loadMark("drew " + state.view + (state.pagePath ? " " + state.pagePath : ""), began);
 }

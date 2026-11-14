@@ -9,6 +9,9 @@ function saveAppLog(why = "") {
     (r.dirty.size + r.removed.size) + " not saved yet" + (r.offline ? ", offline (" + r.offline + ")" : ""));
   const head = ["GroupToDo " + APP_VERSION + ", log saved " + now.toString(),
     why ? "Why: " + why : null, navigator.userAgent, "Areas:", ...areas, ""].filter(x => x !== null);
+  // How long each folder's last read took, file by file (#181).
+  for (const r of LOADED.values()) if (r.backend && r.backend.timing)
+    head.push("Last read of “" + r.name + "”:", readTimingText(r.backend.timing), "");
   downloadText(name, head.concat(APP_LOG).join("\n") + "\n", "text/plain");
   return name;
 }

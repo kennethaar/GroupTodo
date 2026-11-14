@@ -1,10 +1,12 @@
 (async function init() {
+  let t = loadMark("GroupToDo " + APP_VERSION + " starting");
   await probeStorage();
   installManifest();
   installServiceWorker();
   installFileHandler();
   installAutoSync();
   await initSpaces();
+  t = loadMark("storage and areas ready", t);
 
   const shown = storedVisible();
   let wanted = PREF.get("activeSpace");
@@ -12,6 +14,7 @@
   const start = (wanted && Spaces.get(wanted)) ? wanted : Spaces.list[0].name;
   try {
     await openSpace(start, null, {draw: false});   // drawn below, once (#231)
+    t = loadMark("opened “" + start + "”", t);
   } catch (e) {
     notify("Could not open area: " + e.message, "warn");
     Spaces.active = start;
@@ -21,11 +24,14 @@
   scanVerbs();
   topUpTrackerSeries();               // before today's page is made, so it gets them
   if (!folderWaiting(V.space)) ensureJournal(todayISO());
+  t = loadMark("verbs, trackers and today's page made", t);
   ensureVisibleLoaded();            // the areas beside it come in behind the journal (#387)
   render();
+  t = performance.now();
   await collectSharedFile();
   window.addEventListener("hashchange", () => handleHash());
   await handleHash();
+  loadMark("start-up done; the rest of the folder follows", t);
 
   /* Set before any of the early returns below, and before the first dialog:
      the folder-reconnect offer in openSpace is gated on it, and somebody who
