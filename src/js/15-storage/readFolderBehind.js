@@ -11,26 +11,25 @@ function readFolderBehind(held, backend) {
   FOLDER_READING.add(name);
   setSync("sync", "reading the folder...");
   readInto(rec, {stage: true, onRest: restLoaded, onSoon: soonLoaded}).then(async () => {
+    /* Not under the cursor. The lines on screen belong to the copy's pages
+       until the screen is drawn again, which waits while you type, from one
+       line on to the next and from page to page. Swapped in sooner, the
+       folder's record had none of what was typed after: lost when the
+       journal came in (#232). So the copy stays until the typing stops; all
+       of it is then saved to browser storage and merged in below. */
+    await untilTypingStops();
     if (LOADED.get(name) !== held) { FOLDER_READING.delete(name); return; }   // opened again or removed meanwhile
     await flush();                                   // what was done to the copy, into browser storage
     LOADED.set(name, rec);
     FOLDER_READING.delete(name);
     await mergeMirror(rec);
-    /* The line being typed belongs to the copy's page. Swapped for the
-       folder's, the line was written into a page no longer kept, and lost.
-       So the copy's page stays, and is merged with the file at its next save,
-       once the typing stops (writePageChecked). */
-    const typing = typingPath(name), mine = typing && held.pages.get(typing);
-    if (mine && rec.pages.get(typing) !== mine) {
-      rec.pages.set(typing, mine);
-      rec.base.delete(typing);
-      rec.dirty.add(typing);
-    }
     reconcileSyncedPages(name);
     if (V.space === name) bindActive(name);
     if (rec.hold) { showHoldDialog(name); setSync("warn", "not saving - folder looks empty"); }
     else {
       inSpace(name, () => { migrateVault(); ensureJournal(todayISO()); });
+      // The whole folder came in while the copy was kept: restLoaded let it be.
+      if (!rec.stubs) inSpace(name, () => scheduleTemplateRefresh());
       if (V.space === name) setSync("ok", backend.label);
     }
     if (rec.dirty.size || rec.removed.size) scheduleFlush();

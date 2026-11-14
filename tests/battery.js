@@ -1005,39 +1005,56 @@ var GTD_TEST = (() => {
     }
   });
 
-  test("#232 a line typed in the browser copy while the folder is read behind is kept when the folder takes over", async () => {
+  test("#232 lines typed in the browser copy while the folder is read behind are kept when the folder takes over", async () => {
+    /* Reported again: typing on a phone while the folder was read, what was
+       written was lost when the journal came in. The lines on screen belong
+       to the copy's pages until the screen is drawn again, and that waits
+       while you type -- from one line on to the next, on any page. */
     await flush();
-    const name = V.space, kept = LOADED.get(name), ns = "Ls232f";
-    const today = journalPath(todayISO());
+    const name = V.space, kept = LOADED.get(name), ns = "Ls232f", realIdb = Backends.idb;
+    const today = journalPath(todayISO()), yday = journalPath(shiftISO(todayISO(), -1));
     const b = Backends.ls(ns);
     b.kind = "fs";
     await b.write(today, "- written in the folder\n");
-    const copy = newRecord(name, Backends.memory("Old232f"));
+    await b.write(yday, "- yesterday's line\n");
+    Backends.idb = n => Backends.memory("Copy232f|" + n);   // the copy's own storage: the demo has no IndexedDB
+    const copy = newRecord(name, Backends.idb(name));
     copy.pages.set(today, parsePage("- from the copy\n"));
+    copy.pages.set(yday, parsePage("- yesterday's line\n"));
     LOADED.set(name, copy); bindActive(name);
-    // The line on screen belongs to the copy's page, and has focus.
-    const line = copy.pages.get(today).blocks[0];
-    const txt = el("div", {contenteditable: "true"}, "from the copy");
-    const host = el("div", {data: {space: name, path: today}}, txt);
-    document.body.append(host);
+    // The lines on screen belong to the copy's pages; today's has focus.
+    const lineOn = (path, text) => {
+      const txt = el("div", {contenteditable: "true"}, text);
+      document.body.append(el("div", {class: "t232f", data: {space: name, path}}, txt));
+      return txt;
+    };
+    const txt = lineOn(today, "from the copy"), ytxt = lineOn(yday, "yesterday's line");
     txt.focus();
     try {
       await loadFromBackend(b, {quick: true});
-      for (let i = 0; i < 100 && LOADED.get(name) === copy; i++) await new Promise(r => setTimeout(r, 20));
-      ok(LOADED.get(name) !== copy, "the folder never took over");
+      await filesLoaded();
+      await new Promise(r => setTimeout(r, 50));
+      ok(LOADED.get(name) === copy, "the folder took over under the lines being typed");
       txt.textContent = "from the copy, and typed while the folder was read";
-      commitLine(txt, today, line);
-      txt.blur();
+      commitLine(txt, today, copy.pages.get(today).blocks[0]);
+      ytxt.focus();                                   // on to a line of another day
+      ytxt.textContent = "yesterday's line, changed while the folder was read";
+      commitLine(ytxt, yday, copy.pages.get(yday).blocks[0]);
+      ytxt.blur();
+      for (let i = 0; i < 100 && LOADED.get(name) === copy; i++) await new Promise(r => setTimeout(r, 20));
+      ok(LOADED.get(name) !== copy, "the folder never took over once the typing stopped");
       await flush();
       const saved = await b.readText(today);
       has(saved, "typed while the folder was read", "the line typed during the read was lost");
       has(saved, "written in the folder", "the folder's own line was dropped");
+      has(await b.readText(yday), "changed while the folder was read", "the line changed on another day was lost");
     } finally {
-      host.remove();
+      document.querySelectorAll(".t232f").forEach(n => n.remove());
       await filesLoaded();
       FOLDER_READING.delete(name);
       LOADED.set(name, kept); bindActive(name);
-      await b.remove(today);
+      Backends.idb = realIdb;
+      await b.remove(today); await b.remove(yday);
       render();
     }
   });

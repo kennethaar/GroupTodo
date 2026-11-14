@@ -207,6 +207,7 @@ js/15-storage/vars-PAGE_SRC.js
 js/15-storage/typingPath.js
 js/15-storage/vars-RENDER_OWED.js
 js/15-storage/renderUnlessTyping.js
+js/15-storage/untilTypingStops.js
 js/15-storage/run-2-2.js
 js/15-storage/fillRecord.js
 js/15-storage/readIntoNow.js

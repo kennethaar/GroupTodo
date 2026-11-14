@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.155.13 - 2026-11-14
+
+- Vault and sync: lines typed while the folder is still being read are no
+  longer lost when it comes in (#232). Until then you write in the copy kept
+  in this browser. The folder took over while you were still typing, and
+  only the page under the cursor was kept: a line written after that on
+  another day or page went nowhere. Now the folder waits until you stop
+  typing, then takes in everything written meanwhile.
+
 ## 1.155.12 - 2026-11-13
 
 - Vault and sync: today's page opens much sooner in a big folder (#181).
