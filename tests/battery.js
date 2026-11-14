@@ -4156,6 +4156,10 @@ var GTD_TEST = (() => {
     try {
       focusBlock(b.id);
       const txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
+      /* focusBlock focuses on the next frame. Focus now, as a real keyboard
+         would have, or the line's focus handler rewrites the text when the
+         caret first goes in and the caret falls back to 0 (#268). */
+      txt.focus();
       const key = k => txt.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true}));
       setHostText(txt, "Call Anna", 7);
       key("[");

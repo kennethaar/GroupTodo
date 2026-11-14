@@ -85,9 +85,13 @@ Run the full battery once before every push, filtered to failures:
     node tests/run.mjs 2>&1 | Select-String "FAIL|passed"
 
 Do not repeat full runs to be sure. If a test fails, rerun only that test.
-#172 (phone Enter scroll) and the trio #267/#268/#269 (Repeats dialog /
-bracket wrap / table Enter) are timing-flaky in the full run; if they pass
-alone, report it and move on.
+
+Known failures (baseline, keep current; checked v1.162.1, 558/566 in the full
+run). Fail only in the full run, pass alone (flaky; report and move on):
+#172 phone Enter scroll, #267 Repeats dialog, #269 table Enter, #220 both
+tests, #221, #233, #346, #190, #291. Fails alone too (real, not yet fixed):
+#374 "a mockup pasted right after ``` on a bullet" (the paste became
+bullets, 6 not 3). Any other failure is new: suspect the current change.
 
 Writing test fixtures:
 
