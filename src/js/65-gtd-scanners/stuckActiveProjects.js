@@ -7,6 +7,25 @@ function stuckActiveProjects() {
   for (const a of leafActions()) {
     if (a.project && isJournalPath(a.path)) linkedFromJournal.add(a.project.toLowerCase());
   }
+  /* A meeting on a day page that links the project, in its own words or a
+     line above it, is what moves the project until its day has passed. Then
+     the notes want processing (#385). Cancelled ones do not count. */
+  const meetSoon = new Set(), meetHeld = new Set(), today = todayISO();
+  for (const [jp, jpage] of V.pages) {
+    if (!isJournalPath(jp)) continue;
+    const day = dateIn(baseName(jp));
+    if (!day) continue;
+    for (const b of flattenBlocks(jpage.blocks)) {
+      if (!isMeeting(b) || /^#meeting Cancelled:/i.test(b.title) || b.state === "CANCELLED") continue;
+      for (let x = b; x; x = x._parent)
+        for (const ref of linksIn(x.title)) {
+          // An attendee is a person, even one whose page is not there yet.
+          if (resolveWikiPath(trim(ref.split("|")[0])).startsWith(DIRS.people + "/")) continue;
+          const to = findExistingPage(ref);
+          if (to) (day >= today ? meetSoon : meetHeld).add(to);
+        }
+    }
+  }
   const stuck = [];
   for (const path of projectsIn("1")) {
     if (projectHold(path)) continue;          // nobody is meant to be doing it yet
@@ -21,8 +40,9 @@ function stuckActiveProjects() {
     }
     const fromJournal = linkedFromJournal.has(pageTitle(path).toLowerCase())
                      || linkedFromJournal.has(baseName(path).toLowerCase());
-    if (!leafTodo && !waiting && !fromJournal) {
-      stuck.push({path, reason: parentTodos ? "Has parent TODOs but no actionable task" : "No next action"});
+    if (!leafTodo && !waiting && !fromJournal && !meetSoon.has(path)) {
+      stuck.push({path, reason: parentTodos ? "Has parent TODOs but no actionable task"
+        : meetHeld.has(path) ? "Meeting held - process the notes" : "No next action"});
     }
   }
   return stuck;

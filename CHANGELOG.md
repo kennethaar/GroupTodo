@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.159.0 - 2026-11-14
+
+- Weekly review › Steps: a #meeting on a coming day page that links an
+  active project, on its own line or a line above it, keeps the project
+  off Stuck active projects (#385). Cancelled meetings and meetings that
+  only name people do not count. Once the day has passed with no new to do
+  or waiting for, the project is stuck again with "Meeting held - process
+  the notes".
+
 ## 1.158.1 - 2026-11-14
 
 - The line menu and toolbar: a line refiled from a day page no longer

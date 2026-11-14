@@ -379,6 +379,7 @@ A project has a finish line - something you tick off once and never think about 
 A project is any outcome that needs more than one step. Each needs one next action. =>
 A project is as urgent as its most urgent open action, or its own deadline and its place in a chain. =>
 A project is stamped reviewed once each question is answered. =>
+A project is stuck with no next action or waiting for. A #meeting on a coming day page that links it counts too. Once the day has passed, it asks you to process the notes. =>
 A project nothing serves is a project nobody misses =>
 A project on hold leaves the stuck-projects check. =>
 A project on the Someday/Maybe shelf. On a page: Alt+2. =>
@@ -2371,6 +2372,7 @@ Me =>
 Media =>
 Medium =>
 Meeting =>
+Meeting held - process the notes =>
 Meeting reminder =>
 Meeting reminders =>
 Meeting reminders: pick a time, or Custom… for any time and more than one. Open a calendar to give it its own. =>

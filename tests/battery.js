@@ -768,6 +768,28 @@ var GTD_TEST = (() => {
       has(saved[0][1], "listed", "the saved log has no start-up steps");
     } finally { window.downloadText = real; await check; closeAll(); }
   });
+  test("#385 a #meeting on a coming day page that links the project keeps it off the stuck list", async () => {
+    const P = n => join(DIRS.active, "Meeting stuck " + n + ".md");
+    const soon = journalPath(shiftISO(T(), 6)), today = journalPath(T()), past = journalPath(shiftISO(T(), -6));
+    await withPages({
+      [P("A")]: "# Meeting stuck A\n", [P("B")]: "# Meeting stuck B\n", [P("C")]: "# Meeting stuck C\n",
+      [P("D")]: "# Meeting stuck D\n", [P("E")]: "# Meeting stuck E\n", [P("F")]: "# Meeting stuck F\n",
+      [soon]: "- #meeting Contract talk [[1/Meeting stuck A]]\n" +
+              "- #meeting Cancelled: Contract talk [[1/Meeting stuck C]]\n" +
+              "- #meeting Lunch with [[p/Meeting stuck D]]\n" +
+              "- [[1/Meeting stuck E]]\n  - #meeting Plan the build\n",
+      [today]: "- #meeting Kick-off [[1/Meeting stuck F]]\n",
+      [past]: "- #meeting Contract talk [[1/Meeting stuck B]]\n",
+    }, async () => {
+      const stuck = new Map(stuckActiveProjects().map(s => [s.path, s.reason]));
+      ok(!stuck.has(P("A")), "a coming meeting that links the project leaves it stuck");
+      ok(!stuck.has(P("E")), "a coming meeting under a line that links the project leaves it stuck");
+      ok(!stuck.has(P("F")), "a meeting today that links the project leaves it stuck");
+      ok(stuck.has(P("C")), "a cancelled meeting moves the project");
+      ok(stuck.has(P("D")), "a meeting that only names a person moves a project of the same name");
+      eq(stuck.get(P("B")), "Meeting held - process the notes", "a held meeting with nothing after it does not say so");
+    });
+  });
   test("#181 a project still a stand-in is a name, not a stuck project", async () => {
     const rec = newRecord("Stuck181", Backends.memory());
     const boat = join(DIRS.active, "Boat.md");
