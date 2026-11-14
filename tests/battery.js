@@ -3956,7 +3956,7 @@ var GTD_TEST = (() => {
       await frame();
       ok(bar() && !bar().hidden, "no toolbar while a line is being written");
       eq([...bar().querySelectorAll(":scope > .ebtn .elb")].map(n => n.textContent),
-        ["Up", "Down", "Outdent", "Indent", "Type", "Tag", "Media", "Side panel"], "the top-level bar is 8 buttons");
+        ["Up", "Down", "Outdent", "Indent", "Notepad", "Type", "Tag", "Media", "Side panel"], "the top-level bar is 9 buttons");
       bar().querySelector('[data-k="more"]').click();
       await frame();
       ok(document.querySelector("#modalRoot .modal"), "Side panel opens the task detail panel directly, not a popover");
@@ -4410,7 +4410,19 @@ var GTD_TEST = (() => {
       const txt = q(" .txt");
       txt.focus();
       setHostText(txt, "Screen plan", 6);
-      key(txt, "Enter", {shiftKey: true});
+      // A phone has no Shift: the Notepad button on the foot toolbar does the same.
+      document.querySelector('#editBar [data-k="pad"]').click();
+      await settle();
+      ok(document.querySelector(".scrim .modal textarea.notepad"), "the toolbar's Notepad button did not open the notepad");
+      has(document.querySelector(".scrim .modal").textContent, "Ln 1, Col 7", "the toolbar's notepad lost the caret");
+      closeModal();
+      await settle();
+      focusBlock(b.id);
+      await settle();
+      const txt2 = q(" .txt");
+      txt2.focus();
+      setHostText(txt2, "Screen plan", 6);
+      key(txt2, "Enter", {shiftKey: true});
       await settle();
       eq(JSON.stringify(b.body), JSON.stringify(["first idea"]), "Shift+Enter still added a line under the line");
       const pad = document.querySelector(".scrim .modal textarea.notepad");

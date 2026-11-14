@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.162.0 - 2026-11-14
+
+- Keys on a line: a phone has no Shift key, so the bar at the foot of the
+  screen while you write now has Notepad (#392). It opens the notepad at
+  the caret, as Shift+Enter does.
+
 ## 1.161.1 - 2026-11-14
 
 - Keys on a line: after lines are picked by dragging the mouse, the next

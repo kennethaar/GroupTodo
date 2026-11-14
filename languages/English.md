@@ -2890,7 +2890,7 @@ On a phone Next shows the context you seem to be in. It learns from what you pic
 On a phone the days stand one under the other. =>
 On a phone with chores, pick To do or Chores. Before and after work, and on days off, it starts on Chores. =>
 On a phone, Send is in the area menu, top right. A dot there means changes to send. =>
-On a phone, the toolbar moves and indents, with Type, Tag and Media grouped under one button each, and Side panel direct. =>
+On a phone, the toolbar moves and indents, opens the notepad, groups Type, Tag and Media, and has Side panel. =>
 On a phone, ⋯ opens the rest: Day or Week, trackers, what is due, History. =>
 On a project: never billed =>
 On a responsibility, + stakeholder names who hears how it goes. =>
@@ -3692,7 +3692,7 @@ Shared =>
 Shared with =>
 Shift+Alt+← / → =>
 Shift+Enter =>
-Shift+Enter opens the notepad: the line and the lines under it in a fixed-width box. It shows the caret's line and column, and can find and replace. Sketches drawn there keep their spaces. Done or Ctrl+Enter saves. =>
+Shift+Enter opens the notepad: the line and the lines under it in a fixed-width box. It shows the caret's line and column, and can find and replace. Sketches drawn there keep their spaces. Done or Ctrl+Enter saves. On a phone, tap Notepad on the bar at the foot. =>
 Shift+Tab =>
 Shift+↑ ↓ =>
 Shift+→ =>
@@ -4992,6 +4992,7 @@ Write notes and tasks as you go. GroupToDo sorts them into projects, people and 
 Write notes and to dos under the week's line. =>
 Write on this day =>
 Write responsibilities as pages under a/. =>
+Write several lines in the notepad (Shift+Enter) =>
 Write the desired outcome =>
 Write the message =>
 Write the message: send it as an email or in Teams. Each line says where it stands and your word on it; in an email each also has a link to ask about it and one to say Got it. Make the sheet: the same as one HTML page to attach and keep. Either way, once it is sent each line is marked as told, what you wrote goes in its chat or on the responsibility's page, and a status you changed here can go to the task. =>

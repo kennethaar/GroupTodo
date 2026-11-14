@@ -5,7 +5,7 @@
    written, a row of buttons for them sits at the foot of the screen, above the
    on-screen keyboard. Pressing one does not take the caret out of the line,
    so the next press acts on the same line, wherever it went.
-   Up, Down, Outdent and Indent stay direct buttons -- a thumb reaches for them
+   Up, Down, Outdent, Indent and Notepad stay direct buttons -- a thumb reaches for them
    constantly, and so does Side panel -- everything rarer than a quick tag or
    an entity change lives there, next to the line's own menu, not behind a
    button of its own. Tagging and turning the line into something still sit
@@ -28,6 +28,7 @@ const EB_ORG     = '<path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-6h6v6"/><path 
 const EB_CAMERA  = '<path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="14" r="3.5"/>';
 const EB_IMAGE   = '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.4"/><path d="M21 16l-5-5-4 4-3-3-6 6"/>';
 const EB_MOVE    = '<path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/>';
+const EB_PAD     = '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>';
 const EB_COPY    = '<rect x="4" y="4" width="12" height="14" rx="2"/><path d="M9 18v1a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-1"/>';
 
 const EDIT_BAR = [
@@ -35,6 +36,8 @@ const EDIT_BAR = [
   {k: "down", ic: EB_DOWN, label: "Down", tip: "Move the line down (Alt+Shift+↓)"},
   {k: "out", ic: EB_OUTDENT, label: "Outdent", tip: "Outdent (Shift+Tab)"},
   {k: "in", ic: EB_INDENT, label: "Indent", tip: "Indent (Tab)"},
+  // A phone has no Shift, so Shift+Enter's notepad needs a button (#392).
+  {k: "pad", ic: EB_PAD, label: "Notepad", tip: "Write several lines in the notepad (Shift+Enter)"},
   {k: "kind", ic: EB_TASK, label: "Task", tip: "Make it a task (Alt+T)", group: "type"},
   {k: "mkzet", ic: EB_ZETTEL, label: "Zettel", tip: "Turn into zettel (Alt+Z)", group: "type"},
   {k: "mkproj", ic: EB_PROJECT, label: "Project", tip: "Make it a project (Alt+1)", group: "type"},
