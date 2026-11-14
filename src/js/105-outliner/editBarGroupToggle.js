@@ -26,7 +26,9 @@ function editBarGroupToggle(g, btn) {
   bar.append(pop);
   const br = btn.getBoundingClientRect(), pr = pop.getBoundingClientRect();
   pop.style.left = Math.max(2, Math.min(br.left, innerWidth - pr.width - 2)) + "px";
-  pop.style.bottom = (innerHeight - br.top + 4) + "px";
+  // On a line the popover drops below it; at the foot it rises above.
+  if (bar.classList.contains("inline")) pop.style.top = (br.bottom + 4) + "px";
+  else pop.style.bottom = (innerHeight - br.top + 4) + "px";
   btn.setAttribute("aria-expanded", "true");
   document.addEventListener("click", editBarGroupOutside, {capture: true});
   document.addEventListener("keydown", editBarGroupEsc, {capture: true});

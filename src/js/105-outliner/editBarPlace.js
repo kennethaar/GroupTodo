@@ -2,7 +2,7 @@
    page, and under the page only, leaving the sidebar's foot alone. */
 function editBarPlace() {
   const bar = $("#editBar"), vv = window.visualViewport, main = $("#main");
-  if (!bar || bar.hidden) return;
+  if (!bar || bar.hidden || bar.classList.contains("inline")) return;
   const keyboardUp = vv && vv.height < innerHeight;
   bar.style.bottom = (vv ? Math.max(0, innerHeight - vv.height - vv.offsetTop) : 0) +
     (keyboardUp ? editBarIOSChromeGap() : 0) + "px";

@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.165.0 - 2026-11-14
+
+- The line menu and toolbar: on a computer the tools sit at the end of the
+  line you write (#395). Type, indent and move are on show; ⋯ there opens
+  Tag, Media, the notepad and Side panel. The words wrap before the tools.
+  A phone keeps the bar at the foot, over the keyboard. In the Journal, a
+  line's own ⋯ shows when you point at it or tab to it.
+
 ## 1.164.0 - 2026-11-14
 
 - Journal: the day reads like paper, with tools only where you need them

@@ -4155,6 +4155,44 @@ var GTD_TEST = (() => {
       ok(icons.every(n => !/[\u{1F300}-\u{1FAFF}☀-➿]/u.test(n.textContent)), "no emoji icon on the bar");
     } finally { window.matchMedia = mm; document.activeElement && document.activeElement.blur(); go("today"); }
   });
+  test("#395 on a computer the line tools sit on the line being written, the rest behind ⋯; a phone keeps them at the foot", async () => {
+    const path = scratchProject("tools on the line", [["TODO", "Buy paint for the long hallway and the two small bedrooms upstairs"], ["TODO", "Call Bob"]]);
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    openPage(path);
+    await settle();
+    const [a, b] = getPage(path).blocks;
+    const bar = () => document.querySelector("#editBar");
+    // Left to right, as they stand on the screen.
+    const shownKeys = () => [...bar().querySelectorAll(":scope > button")].filter(n => n.getClientRects().length)
+      .sort((x, y) => x.getBoundingClientRect().left - y.getBoundingClientRect().left).map(n => n.dataset.k);
+    const mm = window.matchMedia;
+    try {
+      focusBlock(a.id);
+      await frame();
+      ok(bar() && !bar().hidden && bar().closest('.blk[data-id="' + a.id + '"]'), "the tools are on the line being written");
+      const r = bar().getBoundingClientRect(), line = bar().closest(".line").getBoundingClientRect();
+      ok(r.top >= line.top - 1 && r.bottom <= line.bottom + 1, "within the line's row");
+      const words = document.querySelector('.blk[data-id="' + a.id + '"] .txt').getBoundingClientRect();
+      ok(words.right <= r.left + 1, "the words wrap before the tools, not under them");
+      eq(shownKeys()[0], "type", "Type first");
+      for (const k of ["in", "out", "up", "down", "rest"]) ok(shownKeys().includes(k), k + " on show: " + shownKeys());
+      for (const k of ["tag", "media", "pad", "more"]) ok(!shownKeys().includes(k), k + " waits behind ⋯");
+      bar().querySelector('[data-k="rest"]').click();
+      await frame();
+      for (const k of ["tag", "media", "pad", "more"]) ok(shownKeys().includes(k), k + " after ⋯");
+      focusBlock(b.id);
+      await frame();
+      ok(bar().closest('.blk[data-id="' + b.id + '"]'), "the tools follow to the next line");
+      ok(!shownKeys().includes("tag"), "and fold the rest away again");
+      document.activeElement.blur();
+      await frame(); await frame();
+      window.matchMedia = q => q === "(pointer:fine)" ? {matches: false} : mm.call(window, q);
+      focusBlock(a.id);
+      await frame();
+      eq(bar().parentNode, document.body, "a phone keeps the bar at the foot");
+      ok(shownKeys().includes("tag") && !shownKeys().includes("rest"), "with all its buttons");
+    } finally { window.matchMedia = mm; document.activeElement && document.activeElement.blur(); go("today"); }
+  });
   test("#170 a toolbar move keeps the line where it was on the screen, caret in it", async () => {
     const path = scratchProject("edit bar scroll", Array.from({length: 60}, (_, i) => ["TODO", "Row " + i]));
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
@@ -5030,6 +5068,9 @@ var GTD_TEST = (() => {
     await settle();
     const b = getPage(path).blocks[0];
     const bar = () => document.querySelector("#editBar");
+    // A phone: no mouse, so the bar is at the foot (#395).
+    const mm = window.matchMedia;
+    window.matchMedia = q => q === "(pointer:fine)" ? {matches: false} : mm.call(window, q);
     try {
       Object.defineProperty(navigator, "userAgent",
         {configurable: true, get: () => "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15"});
@@ -5046,6 +5087,7 @@ var GTD_TEST = (() => {
       delete window.visualViewport;
       Object.defineProperty(navigator, "userAgent", ua);
       delete navigator.standalone;
+      window.matchMedia = mm;
       document.activeElement && document.activeElement.blur();
       go("today");
     }

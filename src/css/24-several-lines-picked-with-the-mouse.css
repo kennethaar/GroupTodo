@@ -41,3 +41,19 @@ body #content.roomunder{padding-bottom:85vh}
 .blk .bodyline[contenteditable]{outline:none}
 .blk .bodyline:focus{background:var(--bg3);box-shadow:inset 0 0 0 1px var(--border2)}
 
+/* #395 on a computer the tools sit at the end of the line being written:
+   Type and the moves, the rest behind ⋯. The words wrap before them. */
+#editBar .ebrest{display:none}
+#editBar.inline{position:static;order:98;flex:none;align-self:center;display:flex;align-items:center;gap:0;
+  padding:1px 2px;margin-left:6px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);overflow:visible;z-index:auto}
+#editBar.inline .ebtn,#editBar.inline .ebrest{flex-direction:row;align-items:center;gap:4px;min-width:26px;height:24px;padding:0 6px;
+  border:0;border-radius:6px;background:none;color:var(--fg2);font:inherit;cursor:pointer}
+#editBar.inline .ebtn:hover,#editBar.inline .ebrest:hover,#editBar.inline .ebrest[aria-expanded="true"]{background:var(--bg3);color:var(--fg)}
+#editBar.inline .eic,#editBar.inline .eic svg{width:14px;height:14px;font-size:13px}
+#editBar.inline > .ebtn .elb{display:none}
+#editBar.inline > .ebgrp[data-k="type"]{order:-1}
+#editBar.inline > .ebgrp[data-k="type"] .elb{display:inline;font-size:12.5px;color:inherit}
+#editBar.inline > .ebgrp[data-k="type"]::after{content:"▾";font-size:10px}
+#editBar.inline .ebrest{display:flex;order:10;font-size:15px;line-height:1}
+#editBar.inline:not(.all) > :is([data-k="tag"],[data-k="media"],[data-k="pad"],[data-k="more"]){display:none}
+.blk>.line:has(> #editBar.inline:not([hidden])){background:var(--bg3)}

@@ -20,10 +20,31 @@ function editBarSync() {
       "aria-expanded": "false", data: {k: g.g}, onclick: e => editBarGroupToggle(g.g, e.currentTarget),
     }, el("span", {class: "eic"}, svgIcon(g.ic)), el("span", {class: "elb"}, g.label)));
     for (const r of EDIT_BAR.filter(r => r.tail)) bar.append(ebBtn(r));
+    // On a line (#395): Tag, Media, Notepad and Side panel wait behind ⋯.
+    bar.append(el("button", {class: "ebrest", tabindex: "-1", title: "More line tools", "aria-label": "More line tools",
+      "aria-expanded": "false", data: {k: "rest"}, onclick: e => {
+        e.currentTarget.setAttribute("aria-expanded", String(bar.classList.toggle("all")));
+      }}, "⋯"));
+    // A tap on the tools is not a click on the line they sit on.
+    for (const t of ["pointerdown", "click", "dblclick"]) bar.addEventListener(t, e => e.stopPropagation());
     document.body.append(bar);
   }
   editBarGroupClose();
   bar.hidden = false;
+  const line = editBarInline() && FLY.txt.closest(".line");
+  if (line) {
+    if (bar.parentNode !== line) {
+      bar.classList.remove("all");
+      bar.querySelector(".ebrest").setAttribute("aria-expanded", "false");
+      line.append(bar);
+    }
+    bar.classList.add("inline");
+    bar.style.left = bar.style.bottom = "";
+    document.body.classList.remove("editbar-on");
+    return;
+  }
+  if (bar.parentNode !== document.body) document.body.append(bar);
+  bar.classList.remove("inline", "all");
   document.body.classList.add("editbar-on");
   editBarPlace();
 }

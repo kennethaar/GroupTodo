@@ -99,7 +99,8 @@ button.ngroup:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .tpanel .space-journal:hover .trkadd,.tpanel .space-journal:focus-within .trkadd{opacity:1}
 @media (hover:none){.todayhead .upkeep,.jhead .upkeep,.tpanel .trkadd{opacity:1}}
 .tpanel .trknone{color:var(--fg3);font-size:13px;margin-right:8px;line-height:1.9}
-.space-journal .blk>.line>.linemenu{opacity:.7}
+.space-journal .blk>.line>.linemenu:focus-visible{opacity:1}
+@media (hover:none){ .space-journal .blk>.line>.linemenu{opacity:.7} }
 /* The Due tab says what is done beside what is open. */
 .tratio{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--fg3);font-variant-numeric:tabular-nums}
 .ttab.on .tratio{color:var(--fg2)}
