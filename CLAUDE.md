@@ -172,6 +172,9 @@ Create issue and comment payloads with `JSON.stringify()`. Store temporary JSON 
 
 Apply GTD, `Don't Make Me Think`, progressive disclosure, accessibility and management by exception. Do not redesign unrelated parts during a focused change.
 
+Before changing user-facing text or UX, show the user 3 mockups and wait for
+their pick. Build nothing until they approve.
+
 Before any UX change, read `docs/ux/principles.md` and follow it; add a new
 decision there when it applies beyond one screen. The UX audit runs with
 `/ux-audit` (state in `docs/ux/battery.md` and `findings.md`). Check a screen
