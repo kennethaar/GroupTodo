@@ -1051,7 +1051,7 @@ var GTD_TEST = (() => {
     } finally { release(); Backends.idb = realIdb; }
   });
 
-  test("#232 allowed back, the area shows at once and the folder's today takes over when read", async () => {
+  test("#232 #181 allowed back, the area shows at once and the folder's today takes over before the folder is listed", async () => {
     await flush();
     const name = V.space, kept = LOADED.get(name), ns = "Ls232d";
     const today = journalPath(todayISO()), old = join(JOURNALS, shiftISO(T(), -10) + ".md");
@@ -1066,6 +1066,12 @@ var GTD_TEST = (() => {
     const names = b.names.bind(b), read = b.readMany.bind(b);
     b.names = async () => { await listing; return names(); };
     b.readMany = async (paths, onEach) => { if (calls++) await held; return read(paths, onEach); };
+    // As a folder does: the day's page opened by its name, with nothing listed.
+    b.readDays = async days => {
+      const out = new Map();
+      for (const d of days) { const t = await b.readText(journalPath(d)); if (t != null) out.set(journalPath(d), t); }
+      return out;
+    };
     const copy = newRecord(name, Backends.memory("Old232"));
     LOADED.set(name, copy); bindActive(name);
     try {
@@ -1073,13 +1079,15 @@ var GTD_TEST = (() => {
                                        new Promise(r => setTimeout(() => r("waiting"), 1500))]);
       eq(back, "back", "the screen waited for the folder (Opening area... #232)");
       ok(V.pages === copy.pages, "the browser copy is not on screen while the folder is read");
-      ok(folderWaiting(name), "a day page could be made from the browser copy meanwhile");
-      listed();
       for (let i = 0; i < 100 && LOADED.get(name) === copy; i++) await new Promise(r => setTimeout(r, 20));
-      ok(LOADED.get(name) !== copy, "the folder never took over");
+      ok(LOADED.get(name) !== copy, "the folder's today did not take over while the folder was listed");
       has(serializePage(V.pages.get(today)), "written in the folder", "today is not the folder's");
-      ok(LOADED.get(name).stubs, "the whole folder was read before today showed");
-      ok(!folderWaiting(name), "still waiting after the folder was read");
+      ok(!folderWaiting(name), "still waiting once the folder's today is in");
+      ok(!V.pages.has(join(DIRS.active, "Boat.md")), "the folder was listed before today showed");
+      listed();
+      for (let i = 0; i < 100 && LOADED.get(name).dayOnly; i++) await new Promise(r => setTimeout(r, 20));
+      ok(LOADED.get(name).stubs, "the rest is not read behind today");
+      ok(V.pages.has(join(DIRS.active, "Boat.md")), "the project is not there by name once the folder is listed");
     } finally {
       listed(); release();
       await filesLoaded();

@@ -247,4 +247,6 @@ and old horizon files). v1.162.3: `readDayFirst` reads today's page (and
 `GTD.md`, day templates on a new day) by name via the fs backend's
 `readDays`, draws it (`onDay`, start-up only), then yesterday's, before
 `names()` lists anything. `rec.dayOnly` holds non-journal saves until the
-listing. Next: a new log from the phone to confirm.
+listing. v1.162.4: after Allow access, `readFolderBehind` swaps the folder's
+record in from `onDay` too. Log of v1.162.3 (Android, 1203 files): today in
+4.7 s, yesterday 2.4 s, listing 29.5 s, first 94 files 11 s. Next: a new log.

@@ -10,21 +10,38 @@ function readFolderBehind(held, backend) {
   const name = held.name, rec = newRecord(name, backend);
   FOLDER_READING.add(name);
   setSync("sync", "reading the folder...");
-  readInto(rec, {stage: true, onRest: restLoaded, onSoon: soonLoaded}).then(async () => {
-    /* Not under the cursor. The lines on screen belong to the copy's pages
-       until the screen is drawn again, which waits while you type, from one
-       line on to the next and from page to page. Swapped in sooner, the
-       folder's record had none of what was typed after: lost when the
-       journal came in (#232). So the copy stays until the typing stops; all
-       of it is then saved to browser storage and merged in below. */
+  /* Not under the cursor. The lines on screen belong to the copy's pages
+     until the screen is drawn again, which waits while you type, from one
+     line on to the next and from page to page. Swapped in sooner, the
+     folder's record had none of what was typed after: lost when the
+     journal came in (#232). So the copy stays until the typing stops; all
+     of it is then saved to browser storage and merged in below.
+     It takes over as soon as today's page is in, by its name, before the
+     folder is listed: the listing alone took half a minute on a phone (#181). */
+  let taking = null;
+  const takeOver = () => taking || (taking = (async () => {
     await untilTypingStops();
-    if (LOADED.get(name) !== held) { FOLDER_READING.delete(name); return; }   // opened again or removed meanwhile
+    if (LOADED.get(name) !== held) { FOLDER_READING.delete(name); return false; }   // opened again or removed meanwhile
     await flush();                                   // what was done to the copy, into browser storage
     LOADED.set(name, rec);
     FOLDER_READING.delete(name);
     await mergeMirror(rec);
     reconcileSyncedPages(name);
     if (V.space === name) bindActive(name);
+    return true;
+  })());
+  const drawn = () => {
+    if (rec.dirty.size || rec.removed.size) scheduleFlush();
+    clearMemo(); scanVerbs();
+    renderUnlessTyping();
+  };
+  const onDay = () => takeOver().then(ok => {
+    if (!ok || !rec.dayOnly) return;
+    inSpace(name, () => ensureJournal(todayISO()));
+    drawn();
+  }).catch(() => {});
+  readInto(rec, {stage: true, onRest: restLoaded, onSoon: soonLoaded, onDay}).then(async () => {
+    if (!(await takeOver())) return;
     if (rec.hold) { showHoldDialog(name); setSync("warn", "not saving - folder looks empty"); }
     else {
       inSpace(name, () => { migrateVault(); ensureJournal(todayISO()); });
@@ -32,9 +49,7 @@ function readFolderBehind(held, backend) {
       if (!rec.stubs) inSpace(name, () => scheduleTemplateRefresh());
       if (V.space === name) setSync("ok", backend.label);
     }
-    if (rec.dirty.size || rec.removed.size) scheduleFlush();
-    clearMemo(); scanVerbs();
-    renderUnlessTyping();
+    drawn();
   }).catch(e => {
     FOLDER_READING.delete(name);
     reportStorageTrouble(rec, e);

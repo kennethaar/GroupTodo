@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.162.4 - 2026-11-14
+
+- Vault and sync: after Allow access on a phone, today's page from the
+  folder shows within seconds (#181). The copy from browser storage gave
+  way only once the whole folder was listed, half a minute or more, and a
+  new day could not start until then. Now the folder takes over as soon as
+  today's page is in; the rest is listed and read behind it.
+
 ## 1.162.3 - 2026-11-14
 
 - Vault and sync: today's page shows in seconds on a big folder (#181).

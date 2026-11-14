@@ -4381,7 +4381,7 @@ placeholder="Add a task. Try: &quot;Call Mia about the VAT @phone tomorrow&quot;
 })();
 
 "use strict";
-const APP_VERSION = "1.162.3";
+const APP_VERSION = "1.162.4";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -6674,7 +6674,8 @@ if (!got.size) return null;
 fillRecord(record, got);
 record.hold = null;
 record.stubs = new Set();
-record.later = p => !got.has(p);
+const isToday = p => isJournalPath(p) && (/(\d{4}-\d{2}-\d{2})\.md$/i.exec(p) || [])[1] === today;
+record.later = p => !got.has(p) && !isToday(p);
 record.dayOnly = true;
 loadMark(who + "read " + got.size + " files first (today's page, before the folder is listed)", t);
 if (onDay) onDay(record);
@@ -7209,24 +7210,37 @@ function readFolderBehind(held, backend) {
 const name = held.name, rec = newRecord(name, backend);
 FOLDER_READING.add(name);
 setSync("sync", "reading the folder...");
-readInto(rec, {stage: true, onRest: restLoaded, onSoon: soonLoaded}).then(async () => {
+let taking = null;
+const takeOver = () => taking || (taking = (async () => {
 await untilTypingStops();
-if (LOADED.get(name) !== held) { FOLDER_READING.delete(name); return; }
+if (LOADED.get(name) !== held) { FOLDER_READING.delete(name); return false; }
 await flush();
 LOADED.set(name, rec);
 FOLDER_READING.delete(name);
 await mergeMirror(rec);
 reconcileSyncedPages(name);
 if (V.space === name) bindActive(name);
+return true;
+})());
+const drawn = () => {
+if (rec.dirty.size || rec.removed.size) scheduleFlush();
+clearMemo(); scanVerbs();
+renderUnlessTyping();
+};
+const onDay = () => takeOver().then(ok => {
+if (!ok || !rec.dayOnly) return;
+inSpace(name, () => ensureJournal(todayISO()));
+drawn();
+}).catch(() => {});
+readInto(rec, {stage: true, onRest: restLoaded, onSoon: soonLoaded, onDay}).then(async () => {
+if (!(await takeOver())) return;
 if (rec.hold) { showHoldDialog(name); setSync("warn", "not saving - folder looks empty"); }
 else {
 inSpace(name, () => { migrateVault(); ensureJournal(todayISO()); });
 if (!rec.stubs) inSpace(name, () => scheduleTemplateRefresh());
 if (V.space === name) setSync("ok", backend.label);
 }
-if (rec.dirty.size || rec.removed.size) scheduleFlush();
-clearMemo(); scanVerbs();
-renderUnlessTyping();
+drawn();
 }).catch(e => {
 FOLDER_READING.delete(name);
 reportStorageTrouble(rec, e);
@@ -16647,7 +16661,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.162.3 - 2026-11-14\n\n- Vault and sync: today's page shows in seconds on a big folder (#181).\n  It is opened by its name before the folder is listed, and you can write\n  in it at once. Yesterday's page follows, for what was written before\n  midnight. Only then is the rest of the folder listed and read, as before.\n  A page made in those first seconds is saved once the folder is listed.\n\n## 1.162.2 - 2026-11-14\n\n- Journal: a phone opens on the Journal, as a wider screen does, not on\n  Next. A phone is mostly for capture; Next is one tap away.\n\n## 1.162.1 - 2026-11-14\n\n- Keys on a line: the test for brackets that come in pairs (#268) puts the\n  caret in the line first, as typing does. It failed every time before,\n  though brackets worked.\n\n## 1.162.0 - 2026-11-14\n\n- Keys on a line: a phone has no Shift key, so the bar at the foot of the\n  screen while you write now has Notepad (#392). It opens the notepad at\n  the caret, as Shift+Enter does.\n\n## 1.161.1 - 2026-11-14\n\n- Keys on a line: after lines are picked by dragging the mouse, the next\n  click is no longer lost when the button was let go outside the window\n  (#392). The click on a dialog's button, such as the notepad's Replace\n  all, did nothing.\n\n## 1.161.0 - 2026-11-14\n\n- People › List: contacts to and from the phone, as vCard (.vcf) files\n  (#383). On a person's page, ⋯ › Share contact hands them to the phone's\n  share sheet, which offers Add contact, or saves the file. Export people\n  saves everyone in the area as one file. Import contacts reads a .vcf and\n  shows each person as New, Changed or Same; nothing is written before\n  Import. Chrome on Android can also pick straight from the phone's\n  contacts. Name, phone, email, organisation and birthday map to phone::,\n  email::, org:: and birthday::.\n\n## 1.160.0 - 2026-11-14\n\n- Keys on a line: Shift+Enter opens the notepad (#392). It shows the line\n  and the lines under it in a fixed-width box, with the caret's line and\n  column, and Find and Replace. A sketch drawn there keeps its lines and\n  spaces; the file keeps it in a code fence. Done or Ctrl+Enter saves.\n  Shift+Enter no longer adds a line under the line; Enter after ``` still\n  does.\n\n## 1.159.0 - 2026-11-14\n\n- Weekly review › Steps: a #meeting on a coming day page that links an\n  active project, on its own line or a line above it, keeps the project\n  off Stuck active projects (#385). Cancelled meetings and meetings that\n  only name people do not count. Once the day has passed with no new to do\n  or waiting for, the project is stuck again with \"Meeting held - process\n  the notes\".\n\n## 1.158.1 - 2026-11-14\n\n- The line menu and toolbar: a line refiled from a day page no longer\n  links to the page it lands on (#384). That link becomes a link back to\n  the day it was written on, and the Refiled: note left on the day leaves\n  it out. Other links stay.\n\n## 1.158.0 - 2026-11-14\n\n- The line menu and toolbar: Delete asset deletes a file the line links to\n  in assets/ (#391). It warns first that every link to the file stops\n  working and says how many other lines link to it. The link on the line\n  goes with the file.\n\n## 1.157.0 - 2026-11-14\n\n- A page: files dropped on \"+ Click here to write a new line\" (or + New\n  line) are kept in assets/, and each gets a new line with its link, as a\n  drop on a line does (#390).\n\n## 1.156.1 - 2026-11-14\n\n- Vault and sync: loose pages straight in the pages folder no longer hold up\n  the start (#181). They come in by name first and are read after the day,\n  the week and your projects, like notes. On a phone with 650 of them this\n  took two minutes off opening the folder.\n";
+const HELP_NEWS = "## 1.162.4 - 2026-11-14\n\n- Vault and sync: after Allow access on a phone, today's page from the\n  folder shows within seconds (#181). The copy from browser storage gave\n  way only once the whole folder was listed, half a minute or more, and a\n  new day could not start until then. Now the folder takes over as soon as\n  today's page is in; the rest is listed and read behind it.\n\n## 1.162.3 - 2026-11-14\n\n- Vault and sync: today's page shows in seconds on a big folder (#181).\n  It is opened by its name before the folder is listed, and you can write\n  in it at once. Yesterday's page follows, for what was written before\n  midnight. Only then is the rest of the folder listed and read, as before.\n  A page made in those first seconds is saved once the folder is listed.\n\n## 1.162.2 - 2026-11-14\n\n- Journal: a phone opens on the Journal, as a wider screen does, not on\n  Next. A phone is mostly for capture; Next is one tap away.\n\n## 1.162.1 - 2026-11-14\n\n- Keys on a line: the test for brackets that come in pairs (#268) puts the\n  caret in the line first, as typing does. It failed every time before,\n  though brackets worked.\n\n## 1.162.0 - 2026-11-14\n\n- Keys on a line: a phone has no Shift key, so the bar at the foot of the\n  screen while you write now has Notepad (#392). It opens the notepad at\n  the caret, as Shift+Enter does.\n\n## 1.161.1 - 2026-11-14\n\n- Keys on a line: after lines are picked by dragging the mouse, the next\n  click is no longer lost when the button was let go outside the window\n  (#392). The click on a dialog's button, such as the notepad's Replace\n  all, did nothing.\n\n## 1.161.0 - 2026-11-14\n\n- People › List: contacts to and from the phone, as vCard (.vcf) files\n  (#383). On a person's page, ⋯ › Share contact hands them to the phone's\n  share sheet, which offers Add contact, or saves the file. Export people\n  saves everyone in the area as one file. Import contacts reads a .vcf and\n  shows each person as New, Changed or Same; nothing is written before\n  Import. Chrome on Android can also pick straight from the phone's\n  contacts. Name, phone, email, organisation and birthday map to phone::,\n  email::, org:: and birthday::.\n\n## 1.160.0 - 2026-11-14\n\n- Keys on a line: Shift+Enter opens the notepad (#392). It shows the line\n  and the lines under it in a fixed-width box, with the caret's line and\n  column, and Find and Replace. A sketch drawn there keeps its lines and\n  spaces; the file keeps it in a code fence. Done or Ctrl+Enter saves.\n  Shift+Enter no longer adds a line under the line; Enter after ``` still\n  does.\n\n## 1.159.0 - 2026-11-14\n\n- Weekly review › Steps: a #meeting on a coming day page that links an\n  active project, on its own line or a line above it, keeps the project\n  off Stuck active projects (#385). Cancelled meetings and meetings that\n  only name people do not count. Once the day has passed with no new to do\n  or waiting for, the project is stuck again with \"Meeting held - process\n  the notes\".\n\n## 1.158.1 - 2026-11-14\n\n- The line menu and toolbar: a line refiled from a day page no longer\n  links to the page it lands on (#384). That link becomes a link back to\n  the day it was written on, and the Refiled: note left on the day leaves\n  it out. Other links stay.\n\n## 1.158.0 - 2026-11-14\n\n- The line menu and toolbar: Delete asset deletes a file the line links to\n  in assets/ (#391). It warns first that every link to the file stops\n  working and says how many other lines link to it. The link on the line\n  goes with the file.\n\n## 1.157.0 - 2026-11-14\n\n- A page: files dropped on \"+ Click here to write a new line\" (or + New\n  line) are kept in assets/, and each gets a new line with its link, as a\n  drop on a line does (#390).\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {

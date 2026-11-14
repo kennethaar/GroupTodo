@@ -21,7 +21,9 @@ async function readDayFirst(record, edited, today, onDay) {
   fillRecord(record, got);
   record.hold = null;
   record.stubs = new Set();
-  record.later = p => !got.has(p);
+  // Today's page the folder has not got is new: a day begun in the browser copy is taken in (#232).
+  const isToday = p => isJournalPath(p) && (/(\d{4}-\d{2}-\d{2})\.md$/i.exec(p) || [])[1] === today;
+  record.later = p => !got.has(p) && !isToday(p);
   record.dayOnly = true;
   loadMark(who + "read " + got.size + " files first (today's page, before the folder is listed)", t);
   if (onDay) onDay(record);
