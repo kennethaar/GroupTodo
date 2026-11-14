@@ -4615,13 +4615,16 @@ var GTD_TEST = (() => {
       ok(big, "⤢ does not open the notepad");
       const find = document.querySelector(".scrim .modal input.npfind"), repl = document.querySelector(".scrim .modal input.nprepl");
       ok(find && repl, "the notepad has no search and replace");
-      big.value = "Screen plan\nfirst plan\nplan two";
+      // The main line stays the header (#392): the notepad holds only the note.
+      eq(document.querySelector(".scrim .modal header h2").textContent, "Screen plan", "the notepad's header is not the main line");
+      eq(big.value, "first plan", "the notepad shows the main line as its first line");
+      big.value = "first plan\nplan two";
       find.value = "plan"; find.dispatchEvent(new Event("input", {bubbles: true}));
       repl.value = "idea";
       btn(/^Replace all$/).click();
       btn(/^Done$/).click();
       await settle();
-      eq(b.title, "Screen idea", "the notepad's first line is not the main line");
+      eq(b.title, "Screen plan", "the notepad changed the main line");
       eq(JSON.stringify(b.body), JSON.stringify(["```", "first idea", "idea two", "```"]), "the notepad did not keep the box in a fence");
 
       // An emptied box takes nothing into the file.

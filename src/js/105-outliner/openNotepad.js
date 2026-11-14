@@ -1,11 +1,11 @@
-/* ⤢ on a note box (#392): the line and its note in a big monospace box, as
-   in Notepad, with the caret's line and column, and search and replace. The
-   note is kept in a ``` fence, as the box keeps it. at is the caret's offset
-   in the text, the bullet's words first. */
+/* ⤢ on a note box (#392): the note in a big monospace box, as in Notepad,
+   with the caret's line and column, and search and replace. The line's words
+   stay its header. The note is kept in a ``` fence, as the box keeps it. at
+   is the caret's offset in the note. */
 function openNotepad(path, b, at = 0) {
   const pad = el("textarea", {class: "notepad", spellcheck: "false", wrap: "off",
-    "aria-label": "The line and its note"});
-  pad.value = [b.title || "", ...(b.body || []).filter(l => !/^\s*```/.test(l))].join("\n");
+    "aria-label": "Note under the line"});
+  pad.value = [...(b.body || []).filter(l => !/^\s*```/.test(l))].join("\n");
   const where = el("span", {class: "npcaret", "aria-live": "polite"});
   const found = el("span", {class: "npfound", "aria-live": "polite"});
   const find = el("input", {class: "npfind", type: "search", placeholder: "Find", "aria-label": "Find"});
@@ -60,14 +60,12 @@ function openNotepad(path, b, at = 0) {
     if (saved) return;
     saved = true;
     const lines = pad.value.replace(/\r\n?/g, "\n").split("\n");
-    const title = lines.shift();
     while (lines.length && trim(lines[lines.length - 1]) === "") lines.pop();
     while (lines.length && trim(lines[0]) === "") lines.shift();
     const body = lines.length ? ["```", ...lines.map(l => l.replace(/\s+$/, "")), "```"] : [];
-    const was = JSON.stringify([b.title || "", ...(b.body || [])]);
-    b.title = title;
+    const was = JSON.stringify(b.body || []);
     if (body.length) b.body = body; else delete b.body;
-    if (JSON.stringify([b.title, ...(b.body || [])]) !== was) { touch(path); noteTodoTouched(); }
+    if (JSON.stringify(b.body || []) !== was) { touch(path); noteTodoTouched(); }
     render();
     focusBlock(b.id);
   };
@@ -83,7 +81,7 @@ function openNotepad(path, b, at = 0) {
   repl.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); replaceOne(); } });
 
   modal({
-    title: "Notepad", hint: "Ctrl+Enter saves · Ctrl+F finds",
+    title: b.title || "Notepad", hint: "Ctrl+Enter saves · Ctrl+F finds",
     body: el("div", {class: "npbox"},
       el("div", {class: "npsearch"}, find, repl,
         el("button", {class: "btn sm ghost", onclick: findNext}, "Find next"),

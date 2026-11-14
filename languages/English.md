@@ -4137,7 +4137,6 @@ The last 3 months =>
 The last 6 months =>
 The last year =>
 The latest changes, newest first. =>
-The line and its note =>
 The line as they read it =>
 The line is only links or tags: it is on file already. =>
 The line is pinned to the right. =>

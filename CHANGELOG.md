@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.163.1 - 2026-11-14
+
+- Keys on a line: ⤢ on a note box keeps the line as the notepad's header
+  (#392). The big box holds only the note, so the line is no longer its
+  first line.
+
 ## 1.163.0 - 2026-11-14
 
 - Keys on a line: Shift+Enter opens a note box right under the line, not a

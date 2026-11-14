@@ -63,7 +63,7 @@ function noteBoxEl(path, b, from, to) {
     "aria-label": "Expand the note to the notepad",
     onmousedown: e => e.preventDefault(),
     onclick: () => {
-      const at = (b.title || "").length + 1 + pad.selectionStart;
+      const at = pad.selectionStart;
       save();
       gone = true;
       openNotepad(path, b, at);
