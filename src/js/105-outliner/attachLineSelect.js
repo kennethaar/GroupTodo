@@ -59,6 +59,9 @@ function attachLineSelect(outline, path) {
       // and let the picked lines go, so it is swallowed once.
       const eat = ev => { ev.preventDefault(); ev.stopPropagation(); };
       document.addEventListener("click", eat, {capture: true, once: true});
+      /* Only that click: when none comes (the button let go outside the
+         window), the next real click, on a dialog's button, went too. */
+      setTimeout(() => document.removeEventListener("click", eat, {capture: true}), 0);
     };
     document.addEventListener("mousemove", move);
     document.addEventListener("mouseup", up);

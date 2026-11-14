@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.161.1 - 2026-11-14
+
+- Keys on a line: after lines are picked by dragging the mouse, the next
+  click is no longer lost when the button was let go outside the window
+  (#392). The click on a dialog's button, such as the notepad's Replace
+  all, did nothing.
+
 ## 1.161.0 - 2026-11-14
 
 - People › List: contacts to and from the phone, as vCard (.vcf) files

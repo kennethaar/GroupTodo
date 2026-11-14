@@ -4353,6 +4353,13 @@ var GTD_TEST = (() => {
         document.dispatchEvent(new MouseEvent("mouseup", {bubbles: true}));
       } finally { document.elementsFromPoint = real; }
       eq(picked(), bl[0].id, "the drag across body lines did not pick their line");
+      // No click came after that mouseup, so the next real click is not swallowed (#392).
+      await settle();
+      let clicked = false;
+      const probe = el("button", {onclick: () => { clicked = true; }});
+      document.body.append(probe);
+      try { probe.click(); } finally { probe.remove(); }
+      ok(clicked, "a click long after a drag was swallowed");
     } finally { lineSelClear(); go("today"); }
   });
   test("#374 a mockup pasted under a line keeps its lines and spacing in a fence, drawn monospace, and survives the file", async () => {

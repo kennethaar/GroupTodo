@@ -30931,6 +30931,7 @@ document.body.classList.remove("lselecting");
 if (!live) return;
 const eat = ev => { ev.preventDefault(); ev.stopPropagation(); };
 document.addEventListener("click", eat, {capture: true, once: true});
+setTimeout(() => document.removeEventListener("click", eat, {capture: true}), 0);
 };
 document.addEventListener("mousemove", move);
 document.addEventListener("mouseup", up);
