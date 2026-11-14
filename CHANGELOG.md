@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.158.0 - 2026-11-14
+
+- The line menu and toolbar: Delete asset deletes a file the line links to
+  in assets/ (#391). It warns first that every link to the file stops
+  working and says how many other lines link to it. The link on the line
+  goes with the file.
+
 ## 1.157.0 - 2026-11-14
 
 - A page: files dropped on "+ Click here to write a new line" (or + New

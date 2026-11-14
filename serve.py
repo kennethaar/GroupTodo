@@ -28,6 +28,7 @@ API
     GET    /api/ping            -> {"ok": true, ...}
     GET    /api/asset?path=assets/x.png  -> the bytes of a dropped file
     PUT    /api/asset?path=assets/x.png  -> write one (body is the bytes)
+    DELETE /api/asset?path=assets/x.png  -> delete one
     GET    /api/list            -> ["journals/2026-09-17.md", "pages/1/Foo.md", ...]
     GET    /api/file?path=REL   -> raw file contents
     PUT    /api/file?path=REL   -> writes the body (creates parent dirs)
@@ -441,6 +442,11 @@ class Vault:
             fh.write(data)
         os.replace(tmp, full)
 
+    def delete_asset(self, rel):
+        full = self.resolve_asset(rel)
+        if os.path.exists(full):
+            os.remove(full)
+
     def list(self):
         out = []
         for dirpath, dirnames, filenames in os.walk(self.root):
@@ -807,10 +813,14 @@ class Handler(BaseHTTPRequestHandler):
             return
         if urlparse(self.path).path == "/api/server-folder":
             return self.server_folder(remove=True)
-        if self.vault is None or urlparse(self.path).path != "/api/file":
+        route = urlparse(self.path).path
+        if self.vault is None or route not in ("/api/file", "/api/asset"):
             return self._send(404, "not found")
         try:
-            self.vault.delete(self._rel())
+            if route == "/api/asset":
+                self.vault.delete_asset(self._rel())
+            else:
+                self.vault.delete(self._rel())
         except ValueError as exc:
             return self._send(400, str(exc))
         except OSError as exc:

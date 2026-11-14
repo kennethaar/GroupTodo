@@ -39,6 +39,7 @@ const Backends = {
       },
       async putAsset(path, blob) { await IDB.set("assets", pre + path, blob); },
       async getAsset(path)       { return (await IDB.get("assets", pre + path)) || null; },
+      async delAsset(path)       { await IDB.del("assets", pre + path); },
     };
   },
 
@@ -76,6 +77,7 @@ const Backends = {
          a real file like everything else. */
       async putAsset(path, blob) { ASSET_MEM.set(pre + path, blob); },
       async getAsset(path)       { return ASSET_MEM.get(pre + path) || null; },
+      async delAsset(path)       { ASSET_MEM.delete(pre + path); },
     };
   },
 
@@ -95,6 +97,7 @@ const Backends = {
       async remove(path) { MEM.delete(pre + path); },
       async putAsset(path, blob) { ASSET_MEM.set(pre + path, blob); },
       async getAsset(path)       { return ASSET_MEM.get(pre + path) || null; },
+      async delAsset(path)       { ASSET_MEM.delete(pre + path); },
     };
   },
 
@@ -263,6 +266,10 @@ const Backends = {
           return await fh.getFile();
         } catch (_) { return null; }
       },
+      async delAsset(path) {
+        const dir = await dirFor(path.split("/").slice(0, -1).join("/"));
+        await dir.removeEntry(path.split("/").pop());
+      },
     };
   },
 
@@ -331,6 +338,10 @@ const Backends = {
       async getAsset(path) {
         const r = await fetch(u("/api/asset", path));
         return r.ok ? await r.blob() : null;
+      },
+      async delAsset(path) {
+        const r = await fetch(u("/api/asset", path), {method: "DELETE"});
+        if (!r.ok && r.status !== 404) throw new Error("delete failed: " + r.status);
       },
     };
   },

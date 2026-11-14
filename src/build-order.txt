@@ -646,6 +646,8 @@ js/84-assets/holdAssetBox.js
 js/84-assets/resolveAssets.js
 js/84-assets/vars-UPLOAD_SEQ.js
 js/84-assets/attachFilesToBlock.js
+js/84-assets/assetPathsOf.js
+js/84-assets/deleteAssetPrompt.js
 js/84-assets/vars-LOCAL_PARENT_KEY.js
 js/84-assets/droppedFolders.js
 js/84-assets/linkLocalToBlock.js

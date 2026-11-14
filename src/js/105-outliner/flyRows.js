@@ -44,6 +44,8 @@ function flyRows() {
     {k: "refile", ic: FLY_REFILE, label: "Refile", key: "Alt+G", menu: true},
     {k: "trk", ic: FLY_TRACKER, label: "Insert tracker", key: "Alt+K", menu: true},
     {k: "aiplan", ic: FLY_PLAN, label: "Plan with AI", key: "Alt+A", menu: true},
+    // A file kept in assets/ can go from the line that links it (#391).
+    ...(assetPathsOf(block).length ? [{k: "delasset", ic: FLY_TRASH, label: "Delete asset", menu: true}] : []),
   ];
   // Words selected in the line are the name: make it, or the names it likely means (#335).
   const sel = FLY.sel, open = sel && rows.find(r => r.k === FLY.open && TAG_SEL_PREFIX[r.k]);

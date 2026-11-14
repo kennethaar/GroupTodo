@@ -10563,6 +10563,37 @@ var GTD_TEST = (() => {
     } finally { FLY = null; }
   });
 
+  test("#391 Delete asset on the line menu warns, then deletes the file and its link on that line", async () => {
+    const asset = "assets/test-391-plan.png";
+    await V.backend.putAsset(asset, new Blob([new Uint8Array([137, 80, 78, 71])], {type: "image/png"}));
+    const path = scratchProject("delete asset", [["TODO", "Look at ![plan.png](" + asset + ") today"], ["TODO", "Buy paint"]]);
+    const other = scratchProject("delete asset elsewhere", [["", "Also ![plan.png](" + asset + ")"]]);
+    const page = getPage(path), block = page.blocks[0];
+    FLY = {txt: el("textarea"), path, page, block: page.blocks[1], box: el("div"), open: null, hi: 0, q: ""};
+    try {
+      ok(!flyRows().some(r => r.k === "delasset"), "Delete asset shows on a line with no file");
+      FLY.block = block;
+      const row = flyRows().find(r => r.k === "delasset");
+      ok(row && row.menu, "Delete asset is not on the line's own menu");
+      FLY.txt = el("div", {}, block.title);   // the line as it is on screen
+      flyHead("delasset");
+      await settle();
+      const box = document.querySelector(".scrim .modal");
+      ok(box, "no warning before the delete");
+      has(box.textContent, "stop working", "the warning does not say the links stop working");
+      has(box.textContent, "1 other line", "the warning does not count the other links");
+      ok(await V.backend.getAsset(asset), "the file went before it was confirmed");
+      const go = Array.from(box.querySelectorAll("button")).find(x => /^Delete/.test(x.textContent));
+      ok(go, "no Delete button");
+      go.click();
+      for (let i = 0; i < 20 && await V.backend.getAsset(asset); i++) await settle();
+      ok(!(await V.backend.getAsset(asset)), "the file is still there");
+      ok(!block.title.includes(asset), "the line still links the deleted file");
+      has(block.title, "Look at", "the line lost its words");
+      has(getPage(other).blocks[0].title, asset, "a link on another line was rewritten");
+    } finally { FLY = null; closeModal(); }
+  });
+
   test("#310 the line menu holds Repeat, Refile and Insert tracker, not a second Open side panel", () => {
     const path = scratchProject("line menu rows", [["TODO", "Buy paint"]]);
     const page = getPage(path), block = page.blocks[0];

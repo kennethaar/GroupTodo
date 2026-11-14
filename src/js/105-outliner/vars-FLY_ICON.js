@@ -16,4 +16,5 @@ const FLY_TRACKER = '<path d="M7 17L17 7M9 7h8v8"/>';
 const FLY_REFILE  = '<path d="M5 5v14M9 12h11M16 7l4 5-4 5"/>';
 const FLY_PLAN    = '<path d="M12 3l1.8 6.2L20 11l-6.2 1.8L12 19l-1.8-6.2L4 11l6.2-1.8z"/>';
 const FLY_EMBED   = '<rect x="3" y="10" width="11" height="11" rx="2"/><rect x="10" y="3" width="11" height="11" rx="2"/>';
+const FLY_TRASH   = '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>';
 const FLY_PANEL   = '<path d="M4 15v5h5M20 9V4h-5M4 4l6 6M20 20l-6-6"/>';
