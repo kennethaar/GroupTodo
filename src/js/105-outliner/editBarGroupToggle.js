@@ -10,7 +10,7 @@ function editBarGroupToggle(g, btn) {
   const already = bar.querySelector(".ebpop");
   const reopening = already && already.dataset.g === g;
   if (already) already.remove();
-  if (reopening && g === "type" && Date.now() - already.dataset.at < BULLET_DOUBLE_MS) {
+  if (reopening && g === "type" && Date.now() - already.dataset.at < DOUBLE_TAP_MS) {
     editBarGroupClose();
     editBarAct(editBarGroupLeaves(g)[0].k);
     return;

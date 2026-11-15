@@ -4757,14 +4757,15 @@ var GTD_TEST = (() => {
       await new Promise(r => setTimeout(r, 400));
       eq(BRANCH_FOCUS.get(pg), c.id, "one click no longer focuses on the line");
       eq(c.state || "", "", "one click changed the note");
-      // A phone's double tap: two taps of detail 1, about 300 ms apart (#400 reopened).
+      // On a phone a tap zooms in at once, and a double tap zooms, as before #400.
       BRANCH_FOCUS.delete(pg); render(); await settle();
-      click(bullet(c.id), 1);
-      await new Promise(r => setTimeout(r, 300));
-      click(bullet(c.id), 1);
+      const tap = (node, detail) => node.dispatchEvent(new PointerEvent("click", {bubbles: true, cancelable: true, detail, pointerType: "touch"}));
+      tap(bullet(c.id), 1);
+      eq(BRANCH_FOCUS.get(pg), c.id, "a tap on a phone does not zoom in at once");
+      tap(bullet(c.id), 2);
       await new Promise(r => setTimeout(r, 500));
-      eq(c.state, "TODO", "a phone's double tap did not make the note a to do");
-      ok(!BRANCH_FOCUS.get(pg), "a phone's double tap also focused on the line");
+      eq(BRANCH_FOCUS.get(pg), c.id, "a phone's double tap does not zoom in");
+      eq(c.state || "", "", "a phone's double tap changed the note");
     } finally {
       BRANCH_FOCUS.delete(pg);
       for (const x of [b, c]) pg.blocks.splice(pg.blocks.indexOf(x), 1);
