@@ -7654,7 +7654,12 @@ var GTD_TEST = (() => {
       ok(seen(bar()) && document.activeElement === $("#cap"), "N, to capture, brings the bar back with the caret in it");
       $("#cap").blur();
       setSidebarHidden(true); render(); await settle();
-      ok(seen(bar()), "with the sidebar hidden the bar stays: it holds the way back");
+      // #395 folded, the sidebar's way back shows; the capture line still does not.
+      ok(seen($("#burger")), "with the sidebar hidden there is no way back to it");
+      ok(!seen(bar().querySelector(".capture")), "the capture line shows once the sidebar is folded");
+      focusCapture();
+      ok(seen(bar().querySelector(".capture")) && document.activeElement === $("#cap"), "N still brings the capture line");
+      $("#cap").blur();
       setSidebarHidden(false);
       go("next"); await settle();
       ok(seen(bar()), "Next keeps its bar");
