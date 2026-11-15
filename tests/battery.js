@@ -2410,6 +2410,46 @@ var GTD_TEST = (() => {
       PREF.set("done.history", JSON.stringify(doneHistory().filter(x => !/^toast item /.test(x.label))));
     }
   });
+  test("#402 a done task that names someone, or whose project has stakeholders, offers Tell: I finished, the day, a backdate and the share sheet", async () => {
+    closeDoneToast();
+    const proj = scratchProject("tell four-oh-two", [["TODO", "Send the quote to [[p/Emma Dahl]]"], ["TODO", "Tidy the desk"]]);
+    const pg = getPage(proj);
+    pg.props.with = "[[p/Lars Haugen]]";
+    const lone = scratchProject("alone four-oh-two", [["TODO", "Water the plants"]]);
+    const [task, quiet] = pg.blocks;
+    const realShare = navigator.share, shared = [];
+    Object.defineProperty(navigator, "share", {configurable: true, value: async d => { shared.push(d); }});
+    const tell = () => [...document.querySelectorAll("#toasts .toast.done button")].find(b => /^Tell/.test(b.textContent));
+    try {
+      setBlockState(lone, getPage(lone).blocks[0], "DONE"); await settle();
+      ok(!tell(), "Tell offered with nobody to tell");
+      closeDoneToast();
+      setBlockState(proj, task, "DONE"); await settle();
+      ok(tell(), "no Tell on a done task that names Emma, in a project with Lars");
+      tell().click(); await settle();
+      const m = document.querySelector("#modalRoot .modal");
+      has(m.textContent, "Emma Dahl"); has(m.textContent, "Lars Haugen");
+      const box = m.querySelector("textarea");
+      has(box.value, "I finished: Send the quote to Emma Dahl");
+      has(box.value, "Done on " + doneNoteDay(todayISO()) + ".");
+      const day = m.querySelector('input[type="date"]');
+      day.value = shiftISO(todayISO(), -2); day.dispatchEvent(new Event("change")); await settle();
+      has(box.value, "Done on " + doneNoteDay(shiftISO(todayISO(), -2)) + ".");
+      ok(!/Done on (Today|Yesterday)/i.test(box.value), "the day is said as a word they cannot place later");
+      has(blockProp(task, "CLOSED") || "", shiftISO(todayISO(), -2));
+      [...m.querySelectorAll("button")].find(b => /Share/.test(b.textContent)).click(); await settle();
+      eq(shared.length, 1, "Share did not open the share sheet");
+      has(shared[0].text, "I finished: Send the quote to Emma Dahl");
+      closeModal(); closeDoneToast();
+      setBlockState(proj, quiet, "DONE"); await settle();
+      ok(tell(), "a task that names nobody is not offered its project's stakeholders");
+    } finally {
+      closeModal(); closeDoneToast();
+      if (realShare) Object.defineProperty(navigator, "share", {configurable: true, value: realShare});
+      else delete navigator.share;
+      PREF.set("done.history", JSON.stringify(doneHistory().filter(x => !/four-oh-two|Emma Dahl|Tidy the desk|Water the plants/.test(x.label + x.path))));
+    }
+  });
   test("#201 the Chores chip on Next hides and shows the chores", async () => {
     const path = choreProject("chores chip", [chore("Water the plants [[c/home]]", "weekly", 0)]);
     try {

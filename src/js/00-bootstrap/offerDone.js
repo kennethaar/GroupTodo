@@ -34,9 +34,7 @@ function offerDone(e) {
   const name = el("span", {style: "flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"}, "✓ " + e.label);
   const acts = el("span", {style: "display:contents"},
       ...backdateButton(e, day => { name.textContent = "✓ " + e.label + " · " + humanDate(day); }),
-      e.kind === "project" && stakeholdersOf(e.space, e.path).length
-        ? el("button", {class: "btn sm ghost", title: "Email the people and organisations on it that it is done",
-            onclick: () => { closeDoneToast(); openDoneNote(e.space, e.path); }}, "Notify") : null,
+      tellDoneButton(e, closeDoneToast),
       e.credit ? choreCreditPick(e) : null,
       e.change ? doneChangePick(e, code => { e.change(code); drop(); }) : null,
       e.undo ? el("button", {class: "btn sm ghost", onclick: () => { e.undo(); drop(); }}, "Undo") : null);

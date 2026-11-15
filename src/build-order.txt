@@ -70,6 +70,9 @@ js/00-bootstrap/armDoneToast.js
 js/00-bootstrap/closeDoneToast.js
 js/00-bootstrap/stakeholdersOf.js
 js/00-bootstrap/openDoneNote.js
+js/00-bootstrap/vars-doneNoteDay.js
+js/00-bootstrap/doneStakeholders.js
+js/00-bootstrap/tellDoneButton.js
 js/00-bootstrap/openDoneHistory.js
 js/00-bootstrap/vars-pad2.js
 js/00-bootstrap/readClock.js

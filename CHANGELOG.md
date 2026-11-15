@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.166.0 - 2026-11-15
+
+- States and Waiting for: tell them it is done (#402). Tick off a task that
+  names a person or organisation, or sits in a project with people to tell,
+  and the Done toast offers Tell. The note says I finished and the day; an
+  earlier day set there backdates the task. Share opens the share sheet for
+  Teams, chat, mail or messages. Recently done offers Tell too, and a
+  finished project's Notify is now the same Tell.
+
 ## 1.165.0 - 2026-11-15
 
 - Journal: a new task on a day page that is not under a project offers
