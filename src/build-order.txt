@@ -1625,10 +1625,15 @@ js/105-outliner/pageOutline.js
 js/105-outliner/vars-FLY.js
 js/105-outliner/lineProject.js
 js/105-outliner/vars-ASK_PROJECT.js
+js/105-outliner/vars-LINK_TITLE.js
 js/105-outliner/projectActivity.js
 js/105-outliner/projectsByActivity.js
 js/105-outliner/fileUnderProject.js
 js/105-outliner/askProjectButton.js
+js/105-outliner/linkTitleLookup.js
+js/105-outliner/offerLinkTitle.js
+js/105-outliner/dropLinkTitle.js
+js/105-outliner/linkTitleButton.js
 js/105-outliner/askProjectIfNew.js
 js/105-outliner/pickLineProject.js
 js/105-outliner/vars-lineOrg.js

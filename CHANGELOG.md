@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.167.0 - 2026-11-15
+
+- Links and aliases: a pasted YouTube, Vimeo, X, Spotify or SoundCloud link
+  can show its title (#404). Turn it on in Settings > Integrations > Titles
+  for pasted links. After a paste, Use title "…" at the end of the line makes
+  the link read as the video's or post's title. ✕ keeps the bare link. Off by
+  default, since the link is sent to that site to ask for the title.
+
 ## 1.166.5 - 2026-11-15
 
 - Journal: a task made on a phone, with Type in the toolbar or a double tap

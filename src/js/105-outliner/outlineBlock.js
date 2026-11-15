@@ -205,6 +205,7 @@ function outlineBlock(path, page, b, opts = {}) {
       const one = raw.replace(/[\r\n]+/g, " ");
       setHostText(txt, before + one + after, before.length + one.length);
       suggestSync(txt, {dates: true});
+      offerLinkTitle(path, b, raw);
       return;
     }
 
@@ -493,6 +494,8 @@ function outlineBlock(path, page, b, opts = {}) {
   line.append(txt);
   const ask = askProjectButton(path, b);
   if (ask) line.append(ask);
+  const titled = linkTitleButton(path, b);
+  if (titled) line.append(titled);
   /* Pressing it must not take the caret out of the line, or the blur would
      close the very menu it is opening. */
   line.append(el("button", {class: "linemenu", tabindex: "-1", title: "Line menu (Ctrl+.)", "aria-label": "Line menu",

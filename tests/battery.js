@@ -4864,6 +4864,83 @@ var GTD_TEST = (() => {
       touch(path); clearMemo(); go("today");
     }
   });
+  test("#404 a pasted video or post link offers its title; Use makes it [title](url); off by default, quiet for other sites", async () => {
+    const path = ensureJournal(todayISO()), pg = getPage(path);
+    const was = PREF.get("linktitles"), real = window.fetch, asked = [], made = [];
+    window.fetch = async url => {
+      url = String(url); asked.push(url);
+      const body = /youtu/.test(url) ? {title: "Never Gonna Give You Up [Official Video]", author_name: "Rick Astley"}
+        : /x\.com|twitter/.test(url) ? {author_name: "jack", html: "<blockquote><p>just setting up my twttr</p>&mdash; jack</blockquote>"}
+        : {error: "no matching providers found"};
+      return new Response(JSON.stringify(body), {status: 200, headers: {"Content-Type": "application/json"}});
+    };
+    const bullet = async title => {
+      const b = newBlock({}, false);
+      b.title = title; pg.blocks.push(b); made.push(b); touch(path);
+      go("today"); await settle();
+      focusBlock(b.id); await settle();
+      const txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
+      // Focused first, so focusing does not put the caret back at the start.
+      txt.focus(); await settle();
+      const s = getSelection(); s.selectAllChildren(txt); s.collapseToEnd();
+      return [b, txt];
+    };
+    const paste = (node, text) => {
+      const dt = new DataTransfer();
+      dt.setData("text/plain", text);
+      node.dispatchEvent(new ClipboardEvent("paste", {clipboardData: dt, bubbles: true, cancelable: true}));
+    };
+    const chip = b => document.querySelector('.blk[data-id="' + b.id + '"] > .line .linktitle');
+    const until = async cond => { for (let i = 0; i < 100 && !cond(); i++) await new Promise(r => setTimeout(r, 20)); };
+    const yt = "https://youtu.be/dQw4w9WgXcQ";
+    try {
+      PREF.set("linktitles", "");
+      let [b, txt] = await bullet("Watch");
+      paste(txt, " " + yt);
+      await settle(); await until(() => chip(b));
+      eq(asked.length, 0, "the link was sent to the site while the setting is off");
+      ok(!chip(b), "a title was offered while the setting is off");
+
+      PREF.set("linktitles", "1");
+      [b, txt] = await bullet("Watch");
+      paste(txt, " " + yt);
+      await until(() => chip(b));
+      ok(chip(b), "no title offered for a pasted YouTube link");
+      ok(chip(b).textContent.includes("Never Gonna Give You Up"), "the offer does not name the video");
+      ok(lineText(txt).includes(yt), "the link was replaced before Use was pressed");
+      chip(b).querySelector("button.use").click(); await settle();
+      eq(b.title, "Watch [Never Gonna Give You Up (Official Video)](" + yt + ")", "Use did not make the link a titled one");
+      ok(!chip(b), "the offer stays after Use");
+      txt.blur(); await settle();
+      eq(b.title, "Watch [Never Gonna Give You Up (Official Video)](" + yt + ")", "leaving the line undid Use");
+
+      [b, txt] = await bullet("Read");
+      paste(txt, " https://x.com/jack/status/20");
+      await until(() => chip(b));
+      ok(chip(b), "no title offered for a post on X");
+      chip(b).querySelector("button.use").click(); await settle();
+      eq(b.title, "Read [jack: just setting up my twttr](https://x.com/jack/status/20)", "a post's title is not its author and words");
+
+      [b, txt] = await bullet("Later");
+      paste(txt, " " + yt);
+      await until(() => chip(b));
+      chip(b).querySelector("button.x").click(); await settle();
+      ok(!chip(b), "✕ does not take the offer away");
+      txt.blur(); await settle();
+      eq(b.title, "Later " + yt, "✕ changed the link");
+
+      const n = asked.length;
+      [b, txt] = await bullet("See");
+      paste(txt, " https://example.com/some/page");
+      await settle(); await until(() => chip(b));
+      eq(asked.length, n, "a link to an ordinary site was sent for a title");
+      ok(!chip(b), "a title was offered for an ordinary site");
+    } finally {
+      window.fetch = real; PREF.set("linktitles", was || "");
+      pg.blocks = pg.blocks.filter(x => !made.includes(x));
+      touch(path); go("today");
+    }
+  });
   test("#374 a mockup pasted right after ``` on a bullet stays under it, line for line, and Enter after ``` stays in the fence", async () => {
     const path = ensureJournal(todayISO()), pg = getPage(path);
     const mock = ["+--------+  +--------+", "| Inbox  |  | Next   |", "+--------+  +--------+"];
@@ -5777,6 +5854,13 @@ var GTD_TEST = (() => {
         .find(r => r.querySelector(".slabel").textContent === label).querySelector("button").click();
       open("Integrations");
       ok(document.querySelector(".modal").textContent.includes("Planner"), "Planner is under Integrations");
+      // #404: titles for pasted links are asked for only once turned on here.
+      const was = PREF.get("linktitles");
+      PREF.set("linktitles", "");
+      openIntegrationsDialog();
+      open("Titles for pasted links");
+      eq(PREF.get("linktitles"), "1", "Turn on under Integrations does not turn on titles for pasted links");
+      PREF.set("linktitles", was || "");
       closeModal();
       openVaultDialog();
       open("Advanced");
