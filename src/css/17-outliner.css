@@ -18,7 +18,7 @@
 .bl-node>.bl-node::before{content:"";position:absolute;left:-10px;top:0;bottom:0;border-left:1px solid var(--border)}
 .blk>.line{display:flex;align-items:flex-start;gap:7px;padding:2px 0;border-radius:4px}
 .blk>.line:hover{background:var(--bg3)}
-.bullet{
+.bullet{touch-action:manipulation;
   position:absolute;left:4px;top:9px;width:7px;height:7px;border-radius:50%;
   background:var(--fg3);flex:none;cursor:pointer;
 }

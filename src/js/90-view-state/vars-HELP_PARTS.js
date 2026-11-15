@@ -948,7 +948,7 @@ const HELP = {
     steps: ["Click the state to tick it off.",
       "Ctrl+Enter cycles the state.",
       "Waiting asks who you wait on. On hold asks until when.",
-      "Alt+T turns a task into a note and back. A double click on a note's bullet makes it a to do.",
+      "Alt+T turns a task into a note and back. A double click or double tap on a note's bullet makes it a to do.",
       "Your areas can make a day line that starts with a verb a to do."],
     keys: [["Ctrl+Enter", "Next state"], ["Alt+T", "Task or note"], ["Alt+1", "Make it a project"]],
     more: ["Tick off a task that names someone, or one in a project with people to tell, and the toast offers Tell. The note says I finished and the day. Share sends it by Teams, chat or mail. Set an earlier day there to backdate it. Recently done offers Tell too.",

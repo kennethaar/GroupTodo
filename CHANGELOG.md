@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.166.1 - 2026-11-15
+
+- States and Waiting for: a double tap on a note's bullet makes it a to do on
+  a phone too (#400). The taps are timed by the app, and the screen no longer
+  zooms on them.
+
 ## 1.166.0 - 2026-11-15
 
 - States and Waiting for: tell them it is done (#402). Tick off a task that
