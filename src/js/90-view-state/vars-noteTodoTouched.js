@@ -42,7 +42,7 @@ const ICON = {
   orgs:     ICON_ORG,
   people:   ICON_PERSON,
   pages:    ICON_PAGE,
-  horizons: ICON_TELESCOPE,
+  horizons: ICON_HORIZON,
 };
 const NAV_ITEMS = [
   {id: "today",    icon: ICON_SUN, label: "Journal"},

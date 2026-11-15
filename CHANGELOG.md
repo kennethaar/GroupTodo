@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.167.7 - 2026-11-15
+
+- Sidebar: Horizons has a new icon, a sun rising over the horizon, which
+  reads clearly at its small size (#395). Areas use it too.
+
 ## 1.167.6 - 2026-11-15
 
 - Timer: on a computer it floats in the bottom right corner, at hand on

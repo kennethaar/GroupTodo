@@ -6,4 +6,4 @@ const CL_KIND_A = {person: "a person", org: "an organisation", context: "a conte
   area: "a responsibility", page: "a page", tag: "a tag"};
 // The same, as the icon in front of the link in the line (#379 follow-up).
 const CL_KIND_ICON = {person: ICON_PERSON, org: ICON_ORG, context: "@", project: ICON_FLAG, note: ICON_PENCIL,
-  area: ICON_TELESCOPE, page: ICON_PAGE};
+  area: ICON_HORIZON, page: ICON_PAGE};

@@ -12,7 +12,8 @@
 const ICON_PERSON    = '<circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>';
 const ICON_ORG        = '<path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-6h6v6"/><path d="M9 11h.01M9 15h.01M15 11h.01M15 15h.01"/>';
 const ICON_PAGE        = '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6"/>';
-const ICON_TELESCOPE  = '<path d="M4 15l13-6 1.5 3-13 6z"/><circle cx="7.5" cy="13" r="1.3"/><path d="M8 18l-1.5 3M17 12l2 2"/>';
+// #395 a sun on the horizon: reads as Horizons at 16 px, where the telescope blurred.
+const ICON_HORIZON    = '<path d="M3 18h18"/><path d="M7 18a5 5 0 0 1 10 0"/><path d="M12 7v2M5.5 10.5l1.4 1.4M18.5 10.5l-1.4 1.4"/>';
 const ICON_FLAG        = '<path d="M6 3v18"/><path d="M6 4h11l-3 4 3 4H6"/>';
 const ICON_BOLT        = '<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>';
 const ICON_SUN          = '<circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>';
