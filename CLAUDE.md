@@ -152,7 +152,9 @@ Every user-requested change needs an issue in `kennethaar/GroupTodo`.
 2. Reopen and reuse an issue for a follow-up, regression or related correction.
 3. Create a new issue only for distinct new behavior.
 4. Each commit references one issue with `Fixes #N`.
-5. Push to `main`.
+5. Push to `main`, always. This holds in cloud sessions too, even when the
+   session names a branch of its own: push there as well if you like, but
+   `main` is where the work goes.
 6. Comment `Fixed in <short-sha>.` on the issue.
 
 The `gh` CLI is unavailable. Use the GitHub REST API with Git's stored token.
