@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.167.1 - 2026-11-15
+
+- Settings: the list at the top glides the page to a part, eased in and
+  out, and lights the part up only once the page has stopped (#397). Before,
+  the light could come on before the page had moved, and was gone by the
+  time it got there. Calendars in Settings is now the same setup the date
+  box's Calendar settings opens: meeting reminders, your calendars and + Add
+  calendar, in any area.
+
 ## 1.167.0 - 2026-11-15
 
 - Settings: all you set up is in one place, at the very bottom of the

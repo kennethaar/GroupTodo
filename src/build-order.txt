@@ -1735,6 +1735,7 @@ js/105-outliner/drawCalendarSharing.js
 js/105-outliner/drawRemovedCalendars.js
 js/105-outliner/calChip.js
 js/105-outliner/fillCalChip.js
+js/105-outliner/calendarsBody.js
 js/105-outliner/calendarSettingsSection.js
 js/105-outliner/updateCalChips.js
 js/105-outliner/calendarProblem.js

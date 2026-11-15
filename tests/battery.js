@@ -5623,17 +5623,21 @@ var GTD_TEST = (() => {
         ok([...content().querySelectorAll(".srow")].every(r => r.querySelector(".slabel")), "every row has a label");
         for (const label of ["Folder", "Working hours", "Language", "Timezone"])
           ok([...content().querySelectorAll(".srow .slabel")].some(l => l.textContent === label), label + " is not on Settings");
-        // The index scrolls to its part, so the jump is seen, and that part lights up.
-        index().find(b => b.textContent === "GroupToDo").click();
-        const part = content().querySelector("#" + index().find(b => b.textContent === "GroupToDo").dataset.to);
-        ok(!part.classList.contains("setflash"), "it lights up before the page has got there");
-        let lit = 0;
-        for (let t = 0; t < 40 && !part.classList.contains("setflash"); t++) await new Promise(res => setTimeout(res, 50));
-        lit = part.classList.contains("setflash");
-        ok(lit, "the part it leads to is not lit up once there");
-        const r = part.getBoundingClientRect();
-        ok(r.top >= 0 && r.top < innerHeight / 2, "it lit up before the scroll was done, or did not get there: " + Math.round(r.top));
-        ok(!content().querySelector(".setflash:not(#" + part.id + ")"), "another part is lit up too");
+        // The index scrolls to its part, so the jump is seen; the part lights up once the page has come to rest.
+        const jump = async label => {
+          const id = index().find(b => b.textContent === label).dataset.to, part = () => $("#" + id);
+          index().find(b => b.textContent === label).click();
+          ok(!part().classList.contains("setflash"), label + " lights up before the page has got there");
+          for (let t = 0; t < 80 && !part().classList.contains("setflash"); t++) await new Promise(res => setTimeout(res, 50));
+          ok(part().classList.contains("setflash"), label + " is not lit up once there");
+          ok(!content().querySelector(".setflash:not(#" + id + ")"), "another part is lit up beside " + label);
+          const top = Math.round(part().getBoundingClientRect().top);
+          ok(top >= 0 && top < innerHeight / 2, label + " lit before the page got there: " + top);
+          await new Promise(res => setTimeout(res, 300));
+          eq(Math.round(part().getBoundingClientRect().top), top, "the page was still moving when " + label + " lit up");
+        };
+        await jump("GroupToDo");
+        await jump("Help");          // back up the page, to one in the middle
         // Things you use are not setup: routines and lists left Settings for Routines.
         ok(!/The weekly review|Project templates/.test(content().textContent), "routines are still on Settings");
         renderNav();
@@ -5718,12 +5722,22 @@ var GTD_TEST = (() => {
       imp.click();
       await settle();
       ok(document.querySelector(".modal"), "it opens the Calendars dialog");
+      // #397 Settings shows the same setup as that dialog's first screen, in any area.
+      const rows = root => [...root.querySelectorAll(".calrow .calrowt > span:first-child")].map(s => s.textContent);
+      const buttons = root => [...root.querySelectorAll(".textbtn")].map(b => b.textContent).filter(t => /Add calendar/.test(t));
+      const dlg = document.querySelector(".modal"), inDlg = [rows(dlg), buttons(dlg)];
       closeModals();
       go("checklists");
       await settle();
       ok(calAreaShared(Spaces.active), "the demo's area is shared");
-      ok(!content().querySelector(".calset .calchip"), "no way to add a calendar in a shared area's Settings");
-      has(content().querySelector(".calset")?.textContent || "", "private area", "a shared area's Settings says where calendars go");
+      const cal = content().querySelector("#set-calendars");
+      ok(cal, "no Calendars in a shared area's Settings");
+      eq([rows(cal), buttons(cal)], inDlg, "Settings > Calendars is not the dialog's setup");
+      ok(!cal.querySelector(".calchip"), "the old status chip is still there");
+      cal.querySelector(".calrow").click();
+      await settle();
+      ok(document.querySelector(".modal"), "a row does not open its screen");
+      closeModals();
       ok(HELP.settings.words.includes("calendar") && HELP.settings.words.includes("import"), "Settings help is found by calendar and import");
       const n = "Test218 private", back = Spaces.active;
       await createSpace(n, "local");
@@ -5731,7 +5745,7 @@ var GTD_TEST = (() => {
         await openSpace(n);
         go("checklists");
         await settle();
-        ok(content().querySelector(".calset .calchip"), "Calendars in a private area's Settings");
+        ok(content().querySelector("#set-calendars .calrow"), "Calendars in a private area's Settings");
         const was = PREF.get(CAL_HOME_KEY, ""), sp = Spaces.get(back), j = sp.joined, o = sp.onlyMe;
         try {
           PREF.set(CAL_HOME_KEY, back);
