@@ -310,6 +310,7 @@ A day, or its whole week. =>
 A day. Point at it for each value, click to open it. =>
 A desk or a laptop. =>
 A done task counts as spent. =>
+A double tap on the toolbar's Type makes a note a to do, as Alt+T does. =>
 A file from GitHub is one somebody translated and shared. Translating it yourself starts a file with every line in English, to fill in here or with an AI. =>
 A file is made here and goes nowhere. The links open your calendar's own new-event screen, which means the title and date travel in the web address - fine for a meeting, worth a thought for anything private. =>
 A file read alone, as today's page is: =>

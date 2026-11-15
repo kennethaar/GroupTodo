@@ -4232,6 +4232,33 @@ var GTD_TEST = (() => {
       ok(icons.every(n => !/[\u{1F300}-\u{1FAFF}☀-➿]/u.test(n.textContent)), "no emoji icon on the bar");
     } finally { window.matchMedia = mm; document.activeElement && document.activeElement.blur(); go("today"); }
   });
+  test("#403 a double tap on the toolbar's Type makes a note a to do; a slow second tap only closes the menu", async () => {
+    const path = scratchProject("edit bar type", [["", "Call the plumber"]]);
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    openPage(path);
+    await settle();
+    const b = getPage(path).blocks[0];
+    const type = () => document.querySelector('#editBar [data-k="type"]');
+    try {
+      eq(b.state || "", "", "the fixture line is not a note");
+      focusBlock(b.id);
+      await frame();
+      type().click();
+      await frame();
+      ok(document.querySelector("#editBar .ebpop"), "one tap does not open the Type menu at once");
+      await new Promise(r => setTimeout(r, 600));
+      type().click();
+      await frame();
+      ok(!document.querySelector("#editBar .ebpop"), "a slow second tap did not close the menu");
+      eq(b.state || "", "", "a slow second tap changed the line");
+      type().click();
+      await new Promise(r => setTimeout(r, 300));
+      type().click();
+      await frame();
+      eq(b.state, "TODO", "a double tap on Type did not make the note a to do");
+      ok(!document.querySelector("#editBar .ebpop"), "the Type menu stayed open after the double tap");
+    } finally { document.activeElement && document.activeElement.blur(); go("today"); }
+  });
   test("#170 a toolbar move keeps the line where it was on the screen, caret in it", async () => {
     const path = scratchProject("edit bar scroll", Array.from({length: 60}, (_, i) => ["TODO", "Row " + i]));
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));

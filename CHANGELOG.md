@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.166.2 - 2026-11-15
+
+- The line menu and toolbar: a double tap on the toolbar's Type button makes
+  a note a to do (#403), as Alt+T does. One tap still opens the Type menu.
+
 ## 1.166.1 - 2026-11-15
 
 - States and Waiting for: a double tap on a note's bullet makes it a to do on

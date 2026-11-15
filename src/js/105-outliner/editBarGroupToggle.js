@@ -3,17 +3,23 @@
    the body, so a leaf tapped from the popover is still found at
    "#editBar [data-k=…]" the way a direct button always was. One leaf left in
    the group (Media losing Photo on a desktop) skips the popover and just
-   acts, the way a single-item menu never earns its own tap. */
+   acts, the way a single-item menu never earns its own tap. A quick second
+   tap on Type does its first leaf, as Alt+T does: a note becomes a to do (#403). */
 function editBarGroupToggle(g, btn) {
   const bar = $("#editBar");
   const already = bar.querySelector(".ebpop");
   const reopening = already && already.dataset.g === g;
   if (already) already.remove();
-  if (reopening) return;
+  if (reopening && g === "type" && Date.now() - already.dataset.at < BULLET_DOUBLE_MS) {
+    editBarGroupClose();
+    editBarAct(editBarGroupLeaves(g)[0].k);
+    return;
+  }
+  if (reopening) { editBarGroupClose(); return; }
   const leaves = editBarGroupLeaves(g);
   if (leaves.length <= 1) { if (leaves.length) editBarAct(leaves[0].k); return; }
   const {path, block} = FLY;
-  const pop = el("div", {class: "ebpop", data: {g}, role: "menu"});
+  const pop = el("div", {class: "ebpop", data: {g, at: Date.now()}, role: "menu"});
   for (const r of leaves) {
     let label = r.label, tip = r.tip, ic = r.ic;
     if (r.k === "kind" && block.state) { label = "Note"; tip = "Make it a note (Alt+T)"; ic = EB_NOTE; }
