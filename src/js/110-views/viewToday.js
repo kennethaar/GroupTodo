@@ -136,7 +136,7 @@ function viewToday() {
         edit: path ? () => editAllText({space: sp, path, id: null}) : null,
         hint: who ? "you can read it, fold it and focus on a line" : "click a line to write, a bullet to focus",
         body: () => journalColumn(sp, day, who, Object.assign({title: jTitle(sp), parentGo: ["today", {jz: "j:" + sp}],
-          newText: "+ Click here to write a new line…", hideDone: !!path && hideDone}, TODAY_TRAIL))};
+          newText: "+ Click here to capture a new thought…", hideDone: !!path && hideDone}, TODAY_TRAIL))};
     }),
   ].filter(Boolean);
 

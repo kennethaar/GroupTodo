@@ -36,7 +36,7 @@ code:: en
 + Add reminder =>
 + Another time =>
 + Assign =>
-+ Click here to write a new line… =>
++ Click here to capture a new thought… =>
 + Create a private area =>
 + Drop to type =>
 + Due =>

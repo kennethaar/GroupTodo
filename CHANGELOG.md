@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.167.5 - 2026-11-15
+
+- The top bar: the capture line says "Capture… (Enter adds to today)",
+  what it is for and what Enter does, in place of an example task (#395).
+  Under a day page, "+ Click here to capture a new thought…" says the same.
+
 ## 1.167.4 - 2026-11-15
 
 - The top bar: installed as an app on Windows, the window's own buttons no

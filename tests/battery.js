@@ -3491,7 +3491,7 @@ var GTD_TEST = (() => {
     try {
       eq(plain.block.title, "Buy milk for the office", "a plain word became a context");
       eq(placed.block.title.replace(/\[\[c\/phone\]\]/, "@phone"), "Call Mia @phone about the VAT", "the sentence is kept whole, the @ where typed");
-      eq($("#cap").placeholder, "Add a task. Try: \"Call Mia about the VAT @phone tomorrow\"");
+      eq($("#cap").placeholder, "Capture… (Enter adds to today)", "the capture bar says what Enter does (#395)");
     } finally {
       for (const x of [made, plain, placed]) { const s = siblingsOf(getPage(x.path), x.block); s.splice(s.indexOf(x.block), 1); touch(x.path); }
     }
@@ -5125,7 +5125,7 @@ var GTD_TEST = (() => {
       ok(!input.isConnected, "the picker is left behind");
     } finally { window.matchMedia = mm; go("today"); }
   });
-  test("#390 files dropped on + Click here to write a new line each get a new line linking them", async () => {
+  test("#390 files dropped on + Click here to capture a new thought each get a new line linking them", async () => {
     const path = ensureJournal(todayISO());
     go("today");
     await settle();
@@ -5133,6 +5133,7 @@ var GTD_TEST = (() => {
     const before = getPage(path).blocks.length;
     const btn = document.querySelector(".newline");
     ok(btn, "no new-line button on today's page");
+    has(btn.textContent, "Click here to capture a new thought", "it says what a line is for (#395)");
     const dt = new DataTransfer();
     dt.items.add(new File([new Uint8Array([137, 80, 78, 71])], "plan390.png", {type: "image/png"}));
     dt.items.add(new File(["minutes"], "minutes390.txt", {type: "text/plain"}));
