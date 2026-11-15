@@ -1629,6 +1629,7 @@ js/105-outliner/projectActivity.js
 js/105-outliner/projectsByActivity.js
 js/105-outliner/fileUnderProject.js
 js/105-outliner/askProjectButton.js
+js/105-outliner/askProjectIfNew.js
 js/105-outliner/pickLineProject.js
 js/105-outliner/vars-lineOrg.js
 js/105-outliner/linePeople.js

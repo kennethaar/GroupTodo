@@ -4785,6 +4785,7 @@ var GTD_TEST = (() => {
     const proj = scratchProject("Kitchen four-oh-one");
     const path = ensureJournal(todayISO()), pg = getPage(path);
     const a = newBlock({}, false), b = newBlock({}, false);
+    let c = null;
     pg.blocks.push(a, b); touch(path);
     const btn = blk => document.querySelector('.blk[data-id="' + blk.id + '"] > .line .askproj');
     const choose = async (blk, typed) => {
@@ -4814,10 +4815,22 @@ var GTD_TEST = (() => {
       const note = newBlock({}, false); getPage(path).blocks.push(note);
       commitLine(el("div", {}, "a plain note"), path, note); render(); await settle();
       ok(!btn(note), "a note is offered a project");
+      // On a phone the line becomes a task from the toolbar's Type, not typed TODO.
+      const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+      const bar = () => document.querySelector("#editBar");
+      const press = async k => { bar().querySelector('[data-k="' + k + '"]').click(); await frame(); await frame(); };
+      c = newBlock({}, false); getPage(path).blocks.push(c); touch(path); render(); await settle();
+      focusBlock(c.id); await frame();
+      const txt = document.querySelector('.blk[data-id="' + c.id + '"] > .line .txt');
+      txt.textContent = "the tile order"; txt.dispatchEvent(new Event("input", {bubbles: true}));
+      await press("type"); await press("kind");
+      document.activeElement?.blur?.(); render(); await settle();
+      eq(c.state, "TODO", "Type did not make the line a task");
+      ok(btn(c), "a task made with the toolbar's Type has no # Project?");
     } finally {
       closeModal();
       const p = getPage(path);
-      p.blocks = p.blocks.filter(x => ![a, b].includes(x) && !(x.title || "").includes(pageRef(proj)) && x.title !== "a plain note");
+      p.blocks = p.blocks.filter(x => ![a, b, c].includes(x) && !(x.title || "").includes(pageRef(proj)) && x.title !== "a plain note");
       touch(path); go("today");
     }
   });

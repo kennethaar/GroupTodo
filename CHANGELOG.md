@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.166.5 - 2026-11-15
+
+- Journal: a task made on a phone, with Type in the toolbar or a double tap
+  on the bullet, offers # Project? too, as a typed one does (#401).
+
 ## 1.166.4 - 2026-11-15
 
 - Vault and sync: on a big folder your active projects show right after

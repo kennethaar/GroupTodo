@@ -45,7 +45,7 @@ function commitLine(txt, path, b) {
   if (who) assignBlock(path, b, who);
   createLinkedPages(b.title);
   // A new task on a day page with no project above it asks for one (#401).
-  if (b.state && !wasTask && OPEN_STATES[b.state] && isJournalPath(path) && !lineProject(path, b)) ASK_PROJECT.id = b.id;
+  askProjectIfNew(path, b, wasTask);
   touch(path); noteTodoTouched();
   return true;
 }
