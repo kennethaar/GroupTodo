@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.167.3 - 2026-11-15
+
+- Settings: the glide to a part eases out as clearly as it eases in, and
+  takes a little longer, so the page slows into place before the part lights
+  up (#397).
+
 ## 1.167.2 - 2026-11-15
 
 - Journal: with the sidebar folded on a computer there is still no capture

@@ -30,11 +30,12 @@ function settingsShow(part) {
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const span = Math.abs(to - from);
   if (still || span < 4) { box.scrollTo({top: to, behavior: "instant"}); setTimeout(light, 0); return; }
-  /* Eased in and out (a sine curve), a little longer the further it goes.
+  /* Eased in and out, alike at both ends (quartic): it starts slowly and
+     clearly slows into place. A little longer the further it goes.
      Each step waits for the screen's next frame, so it moves with the
      screen; a timer stands in where frames stop. */
-  const ms = Math.min(900, 380 + span / 5), began = performance.now();
-  const ease = t => (1 - Math.cos(Math.PI * t)) / 2;
+  const ms = Math.min(1100, 520 + span / 5), began = performance.now();
+  const ease = t => t < .5 ? 8 * t ** 4 : 1 - (-2 * t + 2) ** 4 / 2;
   const next = () => {
     let done = false;
     const go = () => { if (done) return; done = true; clearTimeout(slow); step(); };

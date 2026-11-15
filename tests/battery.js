@@ -5636,7 +5636,15 @@ var GTD_TEST = (() => {
           await new Promise(res => setTimeout(res, 300));
           eq(Math.round(part().getBoundingClientRect().top), top, "the page was still moving when " + label + " lit up");
         };
-        await jump("GroupToDo");
+        // The glide eases in and out: small steps at both ends, the big ones in the middle.
+        const glide = [], scrollTo = Element.prototype.scrollTo;
+        Element.prototype.scrollTo = function (o) { if (o && typeof o.top === "number") glide.push(o.top); return scrollTo.call(this, o); };
+        try { await jump("GroupToDo"); } finally { Element.prototype.scrollTo = scrollTo; }
+        const moves = glide.slice(1).map((v, i) => Math.abs(v - glide[i])).filter(Boolean);
+        const most = Math.max(...moves);
+        ok(moves.length >= 6, "hardly a glide: " + moves.length + " steps");
+        ok(moves[0] < most / 3, "it does not ease in: " + moves.map(Math.round).join(","));
+        ok(moves[moves.length - 1] < most / 3, "it does not ease out: " + moves.map(Math.round).join(","));
         await jump("Help");          // back up the page, to one in the middle
         // Things you use are not setup: routines and lists left Settings for Routines.
         ok(!/The weekly review|Project templates/.test(content().textContent), "routines are still on Settings");
