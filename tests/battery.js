@@ -581,17 +581,18 @@ var GTD_TEST = (() => {
     let release;
     const held = new Promise(r => { release = r; });
     // Loose notes straight in pages/ wait too: 650 of them held a phone's first draw for two minutes.
-    const gate = {[old + ".md"]: held, "Boat.md": held, "Multitasking.md": held};
+    const gate = {[old + ".md"]: held, "Later.md": held, "Multitasking.md": held};
     const tree = {
       journals: {tester: {[T() + ".md"]: "- TODO today's line\n", [old + ".md"]: "- old line\n"}},
       pages: {"GTD.md": "title:: GTD\n", "Multitasking.md": "- a loose note\n",
-        "1": {"Boat.md": "title:: Boat\noutcome:: afloat\n\n- TODO Sand the hull\n"}},
+        "1": {"Boat.md": "title:: Boat\noutcome:: afloat\n\n- TODO Sand the hull\n"},
+        "2": {"Later.md": "title:: Later\n\n- TODO Paint the shed\n"}},
     };
     const writes = [];
     const rec = newRecord("Stage181", Backends.fs(fakeDir("Stage181", tree, writes, gate)));
     let rested = false;
     await readInto(rec, {stage: true, onRest: () => { rested = true; }});
-    const boat = join(DIRS.active, "Boat.md");
+    const boat = join(DIRS.someday, "Later.md");
     has(serializePage(rec.pages.get(join(JOURNALS, "tester", T() + ".md"))), "today's line", "today read first");
     ok(!rec.pages.has(join(JOURNALS, "tester", old + ".md")), "an old day waits");
     ok(rec.pages.has(boat) && !rec.pages.get(boat).blocks.length, "project there by name only");
@@ -602,41 +603,47 @@ var GTD_TEST = (() => {
     rec.dirty.add(boat);
     LOADED.set(rec.name, rec);
     try { await doFlush(); } finally { LOADED.delete(rec.name); }
-    ok(!writes.includes("Boat.md"), "the stand-in was written over its file");
-    has(tree.pages["1"]["Boat.md"], "Sand the hull", "file intact");
+    ok(!writes.includes("Later.md"), "the stand-in was written over its file");
+    has(tree.pages["2"]["Later.md"], "Paint the shed", "file intact");
     release();
     await filesLoaded();
     ok(rested, "onRest ran");
     ok(!rec.stubs, "no stand-ins left");
-    has(serializePage(rec.pages.get(boat)), "Sand the hull", "project read in full");
+    has(serializePage(rec.pages.get(boat)), "Paint the shed", "project read in full");
     ok(rec.pages.has(join(JOURNALS, "tester", old + ".md")), "old day read");
     has(serializePage(rec.pages.get(note)), "a loose note", "loose note read in full");
     ok(!rec.dirty.has(boat), "nothing left to send for the stand-in");
   });
 
-  test("#181 today's page is shown before the folder is listed, then yesterday's, then the rest", async () => {
+  test("#181 today's page is shown before the folder is listed, then yesterday's, then the active projects by name, then in full", async () => {
     const jp = d => join(JOURNALS, "tester", d + ".md");
     const yest = shiftISO(T(), -1);
+    const boat = join(DIRS.active, "Boat.md"), later = join(DIRS.someday, "Later.md");
     const tree = {
       journals: {tester: {[T() + ".md"]: "- TODO today's line\n", [yest + ".md"]: "- TODO late last night\n"}},
-      pages: {"GTD.md": "title:: GTD\n", "1": {"Boat.md": "title:: Boat\n\n- TODO Sand the hull\n"}},
+      pages: {"GTD.md": "title:: GTD\n", "1": {"Boat.md": "title:: Boat\n\n- TODO Sand the hull\n"},
+        "2": {"Later.md": "title:: Later\n"}},
     };
     const b = Backends.fs(fakeDir("Day181", tree, []));
     const steps = [];
     const names = b.names.bind(b);
     b.names = o => { steps.push("listed"); return names(o); };
     const rec = newRecord("Day181", b);
-    const shown = [];
+    const shown = [], named = [];
     await readInto(rec, {stage: true, onDay: r => {
       shown.push([...r.pages.keys()].sort().join());
+      if (r.pages.has(boat)) named.push(r.pages.get(boat).blocks.length);
       steps.push("shown");
       // Typed at once, into the page on screen.
       if (shown.length === 1) { r.pages.get(jp(T())).blocks.push(newBlock({title: "Captured early"})); r.dirty.add(jp(T())); }
     }});
-    eq(steps.slice(0, 3).join(), "shown,shown,listed", "today, then yesterday, before the listing");
+    eq(steps.slice(0, 5).join(), "shown,shown,shown,shown,listed", "today, yesterday, the projects by name, then in full, before the listing");
     eq(shown[0], [jp(T()), SETTINGS_PATH].sort().join(), "today alone (and the settings) on the first draw");
     eq(shown[1], [jp(T()), jp(yest), SETTINGS_PATH].sort().join(), "yesterday next");
-    ok(rec.pages.has(join(DIRS.active, "Boat.md")), "the rest follows");
+    eq(shown[2], [jp(T()), jp(yest), boat, SETTINGS_PATH].sort().join(), "the active projects next, from pages/1/ alone");
+    ok(rec.pages.has(later), "the rest follows");
+    eq(named.join(), "0,1", "the project shown by its file name first, then its lines");
+    has(serializePage(rec.pages.get(boat)), "Sand the hull", "the active project read before the listing");
     await filesLoaded();
     has(serializePage(rec.pages.get(jp(T()))), "Captured early", "a line captured on the first draw is kept");
     has(serializePage(rec.pages.get(jp(T()))), "today's line", "and so is the file's");
@@ -648,7 +655,7 @@ var GTD_TEST = (() => {
     ok(had, "the day template is there to make today's page from");
     await filesLoaded();
   });
-  test("#181 the month, then projects, contexts, people and orgs come in before the rest", async () => {
+  test("#181 the active projects, then the month, contexts, people and orgs come in before the rest", async () => {
     const jp = d => join(JOURNALS, d + ".md");
     const old = shiftISO(T(), -40), five = shiftISO(T(), -5), yest = shiftISO(T(), -1);
     let release;
@@ -673,9 +680,9 @@ var GTD_TEST = (() => {
       has(serializePage(rec.pages.get(jp(T()))), "today", "today, in the first read");
       has(serializePage(rec.pages.get(jp(yest))), "yesterday", "yesterday, right after today");
       ok(!rec.pages.has(jp(five)), "a day this month came in with today");
-      for (let i = 0; i < 40 && shown < 2; i++) await settle();
-      eq(shown, 2, "times shown: the month, then the projects");
-      ok(rec.pages.has(jp(five)), "a day this month, before the projects");
+      for (let i = 0; i < 40 && shown < 1; i++) await settle();
+      eq(shown, 1, "times shown: the month (the projects came in before the listing)");
+      ok(rec.pages.has(jp(five)), "a day this month, before the contexts");
       has(serializePage(rec.pages.get(join(DIRS.active, "Boat.md"))), "Sand the hull", "the project, before the contexts");
       ok(rec.stubs.has(join(DIRS.contexts, "phone.md")), "the context is not a stand-in");
       ok(rec.stubs.has(personPath("Tor Vik")) && rec.stubs.has(join(DIRS.orgs, "Bakery.md")), "people and orgs came in before the contexts");
@@ -690,7 +697,8 @@ var GTD_TEST = (() => {
     has(serializePage(rec.pages.get(personPath("Tor Vik"))), "met at the fair", "the person, read in full");
     const at = p => order.indexOf(p);
     const dir = (d, n) => join(d, n);
-    ok(at(jp(yest)) < at(dir(DIRS.active, "Boat.md")), "a day before the projects");
+    ok(at(jp(yest)) < at(dir(DIRS.active, "Boat.md")), "yesterday before the projects");
+    ok(at(dir(DIRS.active, "Boat.md")) < at(jp(five)), "the projects before the month");
     ok(at(dir(DIRS.active, "Boat.md")) < at(dir(DIRS.contexts, "phone.md")), "projects before contexts");
     ok(at(dir(DIRS.contexts, "phone.md")) < at(personPath("Tor Vik")), "contexts before people");
     ok(at(personPath("Tor Vik")) < at(dir(DIRS.orgs, "Bakery.md")), "people before orgs");
@@ -698,7 +706,7 @@ var GTD_TEST = (() => {
     ok(at(dir(DIRS.someday, "Later.md")) < at(dir(DIRS.completed, "Done.md")), "someday before done");
     ok(at(dir(DIRS.completed, "Done.md")) < at(jp(old)), "done before an old day");
   });
-  test("#181 the month's days are read and shown on their own, before the projects and the people", async () => {
+  test("#181 the month's days are read and shown on their own, before the people", async () => {
     const jp = d => join(JOURNALS, d + ".md");
     const five = shiftISO(T(), -5);
     let release;
@@ -714,8 +722,8 @@ var GTD_TEST = (() => {
     let shown = 0;
     try {
       await readInto(rec, {stage: true, onSoon: () => { shown++; }});
-      for (let i = 0; i < 40 && shown < 2; i++) await settle();
-      eq(shown, 2, "times shown before the person is in");
+      for (let i = 0; i < 40 && shown < 1; i++) await settle();
+      eq(shown, 1, "times shown before the person is in");
       ok(!rec.stubs.has(boat), "the project is still a stand-in");
       eq(rec.pages.get(boat).props.title, "The boat", "the project's name");
       has(serializePage(rec.pages.get(boat)), "Sand the hull", "the project's next action");
@@ -724,7 +732,7 @@ var GTD_TEST = (() => {
     } finally { release(); }
     await filesLoaded();
     ok(!rec.stubs, "no stand-ins left");
-    eq(shown, 3, "times shown before the rest");
+    eq(shown, 2, "times shown before the rest");
   });
   test("#181 a folder read before lists today's page alone, and old projects, notes and mail after the first draw", async () => {
     const jp = d => join(JOURNALS, "tester", d + ".md");
@@ -763,7 +771,7 @@ var GTD_TEST = (() => {
       const held = new Promise(r => { release = r; });
       ({rec, first} = await run("Late181", {[yest + ".md"]: held}));
       ok(!rec.pages.has(done) && !rec.pages.has(idea), "a done project or a note listed before the first draw");
-      ok(rec.stubs.has(boat), "an active project is there by name");
+      has(serializePage(rec.pages.get(boat)), "Sand the hull", "an active project is read before the listing");
       has(serializePage(rec.pages.get(jp(T()))), "today", "today read first");
       ok(rec.backend.hasLater(), "nothing left to list");
       await rec.backend.names({quiet: true});

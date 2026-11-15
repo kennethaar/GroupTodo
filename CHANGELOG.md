@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.166.4 - 2026-11-15
+
+- Vault and sync: on a big folder your active projects show right after
+  today's page (#181). Only the folder 1 / Active is looked at first, so each
+  project shows by its file name at once, then its lines fill in. The rest of
+  the folder is listed after that.
+
 ## 1.166.3 - 2026-11-15
 
 - States and Waiting for: on a phone a tap on a note's bullet zooms in at

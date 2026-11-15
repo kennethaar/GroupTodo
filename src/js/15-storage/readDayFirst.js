@@ -44,5 +44,6 @@ async function readDayFirst(record, edited, today, onDay) {
   }
   loadStep(record.name, "yesterday's page read", t, y.size ? "" : "none there");
   if (onDay && y.size) onDay(record);
+  if (record.backend.namesIn) await readActiveFirst(record, edited, got, onDay);
   return {files: got};
 }

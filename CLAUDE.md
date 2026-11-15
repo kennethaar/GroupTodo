@@ -235,7 +235,8 @@ Slow start (#181, reopened 2026-11-14): today's journal page on a big folder
   templates on a new day) by name via the fs backend's `readDays`, draws it
   (`onDay`), then yesterday's, before `names()` lists. Then week, active
   work, rest. `isStubPath` makes loose `pages/` files wait. `rec.dayOnly`
-  holds non-journal saves until the listing.
+  holds non-journal saves until the listing. `readActiveFirst` (v1.166.4)
+  then lists `pages/1/` alone (`namesIn`), shows stand-ins, reads them.
 - Takeover: after Allow access, `readFolderBehind` swaps the folder record in;
   Enter calls `lineDone()` so the swap happens at once, carrying shown and
   unsaved pages over (merged at save). User confirms it is fast after the swap.
