@@ -1,6 +1,6 @@
 /* Redraw just the timer, not the whole sidebar, once a second. */
 function timerPaint(drag) {
-  const b = $("#nav .nav-item.timer");
+  const b = $(".nav-item.timer");
   if (!b) return;
   drag ??= b._drag;   // the dial's minutes being set, kept through the ticks
   const left = timerLeft(), dragging = drag != null;

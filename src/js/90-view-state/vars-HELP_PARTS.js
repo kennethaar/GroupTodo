@@ -592,7 +592,7 @@ const HELP = {
       "board", "columns", "sort", "stalest", "freshest", "kanban", "print", "paper", "fridge",
       "log", "laundry", "needed", "unscheduled", "workload"]},
   timer: {part: "views", title: "Timer",
-    what: "A countdown you start from the sidebar.",
+    what: "A countdown, bottom right on a computer, in the sidebar on a phone.",
     steps: ["Click or drag round the dial. Where you point is the minutes.",
       "Inside the ring it is silent. Outside the ring it rings.",
       "Click the middle to start the usual length, or to stop.",

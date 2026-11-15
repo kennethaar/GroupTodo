@@ -7,7 +7,7 @@ function timerFlash() {
     document.title = n % 2 ? TIMER_TITLE : "\u23F0 Time is up";
     if (++n >= 20) { clearInterval(TIMER_FLASH); TIMER_FLASH = null; document.title = TIMER_TITLE; timerPaint(); }
   }, 600);
-  for (const sel of ["#brand", "#nav .nav-item.timer"]) {
+  for (const sel of ["#brand", ".nav-item.timer"]) {
     const t = $(sel);
     if (!t) continue;
     t.classList.remove("timerpulse");

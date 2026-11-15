@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.167.6 - 2026-11-15
+
+- Timer: on a computer it floats in the bottom right corner, at hand on
+  every screen, and Settings is the last thing in the sidebar (#399). On a
+  phone it stays in the sidebar, as that corner is the capture button's.
+
 ## 1.167.5 - 2026-11-15
 
 - The top bar: the capture line says "Capture… (Enter adds to today)",

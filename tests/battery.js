@@ -7676,6 +7676,30 @@ var GTD_TEST = (() => {
       ok(!seen($("#sideSearch")), "and one Search, in the bar");
     } finally { setSidebarHidden(false); go("today"); await settle(); }
   });
+  test("#399 on a computer the Timer floats in the bottom right corner; on a phone it stays in the sidebar", async () => {
+    const mm = window.matchMedia;
+    try {
+      go("today"); renderNav(); await settle();
+      const t = document.querySelector(".nav-item.timer");
+      ok(t, "no Timer");
+      ok(!$("#nav").contains(t), "the Timer is still in the sidebar");
+      eq(document.querySelectorAll(".nav-item.timer").length, 1, "one Timer");
+      const r = t.getBoundingClientRect();
+      eq(getComputedStyle(t.closest("#timerFloat")).position, "fixed", "it does not float");
+      ok(innerWidth - r.right < 40 && innerHeight - r.bottom < 40, "not in the bottom right corner: " + [r.right, r.bottom, innerWidth, innerHeight].map(Math.round));
+      eq($("#nav").lastElementChild.querySelector(".lbl")?.textContent, "Settings", "Settings is not last in the sidebar");
+      // It still works where it floats: Enter starts it and stops it.
+      t.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true}));
+      ok(timerLeft() > 0, "Enter does not start the floating Timer");
+      t.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true}));
+      ok(!(timerLeft() > 0), "Enter does not stop it");
+      // On a phone the corner is the capture button's: the Timer stays in the drawer.
+      window.matchMedia = q => /min-width:\s*641px/.test(q) ? {matches: false, addEventListener() {}, removeEventListener() {}} : mm.call(window, q);
+      renderNav();
+      ok($("#nav").contains(document.querySelector(".nav-item.timer")), "on a phone the Timer leaves the sidebar");
+      ok(!$("#timerFloat").children.length, "and floats as well");
+    } finally { window.matchMedia = mm; timerStop?.(); renderNav(); }
+  });
   test("#398 installed with the title bar in the app, nothing sits under the window's own buttons", () => {
     // The page cannot put itself in that mode, so read what the style sheet says for it.
     const rules = [...document.styleSheets].flatMap(sh => { try { return [...sh.cssRules]; } catch (_) { return []; } })

@@ -9,11 +9,16 @@ function renderNav() {
   const nav = $("#nav");
   const sync = $("#syncLine");     // held: clearing the nav takes it along (#397)
   nav.textContent = "";
+  /* #399 on a computer the Timer floats in the bottom right corner; on a
+     phone that corner is the capture button's, so it stays in the drawer. */
+  const float = $("#timerFloat");
+  if (float) float.textContent = "";
+  const floats = !!float && matchMedia("(min-width:641px)").matches;
   for (const it of navItems()) {
     if (it === "sep") { nav.append(el("div", {class: "nav-sep"})); continue; }
     if (it === "grow") { nav.append(el("div", {class: "nav-grow"})); continue; }
     if (it === "pins") { nav.append(...navPins()); continue; }
-    if (it.id === "timer") { nav.append(timerNavItem(it)); continue; }
+    if (it.id === "timer") { (floats ? float : nav).append(timerNavItem(it)); continue; }
     const here = state.view === it.id || (it.id === "projects" && state.view === "review");
     if (it.when && !here && !it.when()) continue;
     const n = navCount(it.id);

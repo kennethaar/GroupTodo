@@ -2,7 +2,7 @@
    top left when the sidebar is out of sight. */
 function timerRipple() {
   document.querySelector(".timer-ripple")?.remove();
-  const t = $("#nav .nav-item.timer .tdial") || $("#nav .nav-item.timer");
+  const t = $(".nav-item.timer .tdial") || $(".nav-item.timer");
   const r = t?.getBoundingClientRect(), seen = r && r.width > 0;
   const x = seen ? r.left + r.width / 2 : 0, y = seen ? r.top + r.height / 2 : 0;
   const R = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
