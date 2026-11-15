@@ -5338,14 +5338,14 @@ var GTD_TEST = (() => {
   });
   test("#359 Settings says the phone file is made here, shared, and imported on the phone", () => {
     const save = CAP.savePicker, linked = LINKED;
-    const row = () => [...document.querySelectorAll(".modal .srow")]
+    const row = () => [...document.querySelectorAll("#content .srow")]
       .find(r => /Use on phone/.test(r.querySelector(".slabel").textContent));
     try {
       CAP.savePicker = true;
       LINKED = null;
       openVaultDialog();
       ok(row(), "no Use on phone row");
-      ok(![...document.querySelectorAll(".modal .slabel")].some(l => /Phone sync/.test(l.textContent)), "Phone sync is still a label");
+      ok(![...document.querySelectorAll("#content .slabel")].some(l => /Phone sync/.test(l.textContent)), "Phone sync is still a label");
       const t = row().textContent;
       ok(/file/i.test(t) && /OneDrive|Dropbox/.test(t), "it does not say it makes a file to share: " + t);
       ok(/import/i.test(t), "it does not say the phone imports the file: " + t);
@@ -5604,20 +5604,77 @@ var GTD_TEST = (() => {
       seg.children[0].click();
       eq(PREF.get("suggest.accept"), "enter", "picking Enter");
     });
-    test("Settings is grouped rows; Integrations and Advanced open one level down and back", async () => {
-      openVaultDialog();
-      const groups = () => [...document.querySelectorAll(".modal .sgroup h3")].map(h => h.textContent);
-      eq(groups(), ["Vault & sync", "You", "Preferences", "Personal", "GroupToDo"]);
-      ok([...document.querySelectorAll(".modal .srow")].every(r => r.querySelector(".slabel")), "every row has a label");
-      const open = label => [...document.querySelectorAll(".modal .srow")]
-        .find(r => r.querySelector(".slabel").textContent === label).querySelector("button").click();
-      open("Integrations");
-      ok(document.querySelector(".modal").textContent.includes("Planner"), "Planner is under Integrations");
-      closeModal();
-      openVaultDialog();
-      open("Advanced");
-      ok(document.querySelector(".modal"), "Advanced opens");
-      closeModal();
+    test("#397 Settings is the one place for setup: Vault & sync is a part of it, routines have a place of their own", async () => {
+      const closeModals = () => { for (let i = 0; i < 4 && $("#modalRoot").firstChild; i++) closeModal(); };
+      const navLabels = () => [...document.querySelectorAll("#nav > .nav-item:not(.pin) .lbl")].map(n => n.textContent);
+      try {
+        // Every way to Vault & sync opens the Settings page, not a dialog beside it.
+        openVaultDialog();
+        await settle();
+        ok(!document.querySelector("#modalRoot .modal"), "Vault & sync is still a dialog of its own");
+        eq(state.view, "checklists", "it opens Settings");
+        eq(VIEW_TITLE.checklists, "Settings");
+        // One index, in the order people look for things; each name leads to its part.
+        const index = () => [...content().querySelectorAll(".setindex button")];
+        const want = ["Vault & sync", "You", "Styles", "Sidebar", "Writing", "Preferences", "Area", "Book", "Help", "GroupToDo",
+          "Integrations", "Advanced"];
+        eq(index().map(b => b.textContent).filter(t => want.includes(t)), want, "the index");
+        for (const b of index()) ok(content().querySelector("#" + b.dataset.to), "no part for " + b.textContent);
+        ok([...content().querySelectorAll(".srow")].every(r => r.querySelector(".slabel")), "every row has a label");
+        for (const label of ["Folder", "Working hours", "Language", "Timezone"])
+          ok([...content().querySelectorAll(".srow .slabel")].some(l => l.textContent === label), label + " is not on Settings");
+        // The index scrolls to its part, so the jump is seen, and that part lights up.
+        index().find(b => b.textContent === "GroupToDo").click();
+        const part = content().querySelector("#" + index().find(b => b.textContent === "GroupToDo").dataset.to);
+        ok(!part.classList.contains("setflash"), "it lights up before the page has got there");
+        let lit = 0;
+        for (let t = 0; t < 40 && !part.classList.contains("setflash"); t++) await new Promise(res => setTimeout(res, 50));
+        lit = part.classList.contains("setflash");
+        ok(lit, "the part it leads to is not lit up once there");
+        const r = part.getBoundingClientRect();
+        ok(r.top >= 0 && r.top < innerHeight / 2, "it lit up before the scroll was done, or did not get there: " + Math.round(r.top));
+        ok(!content().querySelector(".setflash:not(#" + part.id + ")"), "another part is lit up too");
+        // Things you use are not setup: routines and lists left Settings for Routines.
+        ok(!/The weekly review|Project templates/.test(content().textContent), "routines are still on Settings");
+        renderNav();
+        ok(navLabels().includes("Routines") && navLabels().includes("Settings"), "no Routines beside Settings in the sidebar");
+        // Settings is the very last thing in the sidebar, the sync line just above it.
+        for (let i = 0; i < 2; i++) {
+          const last = $("#sidebar").querySelector(".nav").lastElementChild;
+          eq(last.querySelector(".lbl")?.textContent, "Settings", "Settings is not at the very bottom");
+          eq(last.previousElementSibling?.id, "syncLine", "the sync line is not just above Settings");
+          ok(!$("#nav").nextElementSibling, "something sits below Settings");
+          renderNav();               // and it stays there when the sidebar is drawn again
+        }
+        go("routines");
+        await settle();
+        eq(VIEW_TITLE.routines, "Routines");
+        has(content().textContent, "The weekly review");
+        ok(!content().querySelector(".setindex, .themes"), "setup on Routines");
+        // The area menu and the sub-pages say Settings too (P10).
+        openSpacesMenu();
+        const labels = [...$("#spop").querySelectorAll("button")].map(b => b.textContent);
+        ok(labels.includes("Settings") && !labels.includes("Vault & sync"), "the area menu: " + labels.join(" | "));
+        closeSpacesMenu();
+        // Integrations and Advanced are parts of the page, not hidden one level down.
+        go("checklists");
+        await settle();
+        has($("#set-integrations").textContent, "Microsoft Planner", "Planner is not shown under Integrations");
+        has($("#set-advanced").textContent, "Sync server", "the server is not shown under Advanced");
+        ok(!document.querySelector("#modalRoot .modal"), "a dialog opened");
+        ok(![...content().querySelectorAll(".srow .slabel")].some(l => /^(Integrations|Advanced)$/.test(l.textContent)),
+          "a row still leads to Integrations or Advanced");
+        has($("#set-advanced").textContent, "Start afresh", "Start afresh is not last, under Advanced");
+        // A dialog one level down, the area's, has a way back to Settings.
+        [...$("#set-area").querySelectorAll("button")].find(b => b.textContent === "Manage").click();
+        const back = [...document.querySelectorAll(".modal .foot button")].find(b => b.textContent === "Settings");
+        ok(back, "no way back to Settings");
+        back.click();
+        await settle();
+        ok(!document.querySelector("#modalRoot .modal") && state.view === "checklists", "back is not Settings");
+      } finally {
+        closeModals(); closeSpacesMenu();
+      }
     });
     test("#291 one click on the Journal's date box or its arrows works; Calendar settings shows beside it while the calendar is open", async () => {
       go("today", {todayDay: shiftISO(T(), -1)});
@@ -8325,8 +8382,8 @@ var GTD_TEST = (() => {
       ok(d && d.start === "08:00" && d.end === "16:00", "no 08:00 – 16:00 default");
       eq(d.days.join(), "1,2,3,4,5");
       openVaultDialog();
-      const m = document.querySelector("#modalRoot .modal");
-      eq(m.querySelector("header h2").textContent, "Vault & sync - " + (Spaces.active || "area"));
+      const m = document.querySelector("#content");
+      eq(m.querySelector(".sgroup h3").textContent, "Vault & sync", "Settings opens at Vault & sync (#397)");
       const row = [...m.querySelectorAll(".srow")].find(r => r.querySelector(".slabel").textContent === "Working hours");
       const [from, to] = row.querySelectorAll("input");
       eq([from.value, to.value].join(), "08:00,16:00");

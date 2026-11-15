@@ -60,7 +60,7 @@ function openStartAfreshDialog() {
         el("label", {}, "Type " + PHRASE + " to confirm"),
         input)),
     foot: [
-      el("button", {class: "btn ghost", onclick: () => { closeModal(); openVaultDialog(); }}, "Cancel"),
+      el("button", {class: "btn ghost", onclick: () => { closeModal(); openVaultDialog("advanced"); }}, "Cancel"),
       el("div", {style: "flex:1"}),
       go,
     ],

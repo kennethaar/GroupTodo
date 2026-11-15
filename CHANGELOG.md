@@ -5,6 +5,18 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.167.0 - 2026-11-15
+
+- Settings: all you set up is in one place, at the very bottom of the
+  sidebar (#397). A list at the top leads to each part: Vault & sync, You,
+  Styles, Sidebar, Writing, Preferences, Area, Calendars, Book, Help,
+  GroupToDo, Integrations and Advanced. The page glides there, and once there
+  the part lights up a moment. Integrations and Advanced are shown, not hidden one
+  level down. Vault & sync is a part of the page now, not a dialog beside
+  it; the sync line just above Settings and the area menu open it there.
+  Routines, checklists and templates are things you use, so they have a
+  place of their own: Routines, in the sidebar.
+
 ## 1.166.0 - 2026-11-14
 
 - Journal: on a computer the page has no top bar, so a line is the one way

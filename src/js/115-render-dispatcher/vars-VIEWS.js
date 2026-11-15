@@ -5,13 +5,13 @@ const VIEWS = {
   today: viewToday, next: viewNext, waiting: viewWaiting, chat: viewChat,
   projects: viewProjects, people: viewPeople, orgs: viewOrgs, contexts: viewContexts,
   pages: viewPages, page: viewPage, me: viewMe, review: viewReview, search: viewSearch,
-  horizons: viewHorizons, checklists: viewChecklists, trackers: viewTrackers, help: viewHelp,
+  horizons: viewHorizons, checklists: viewChecklists, routines: viewRoutines, trackers: viewTrackers, help: viewHelp,
   plan: viewPlan, chores: viewChores, book: viewBook,
 };
 const VIEW_TITLE = {
   today: "Journal", next: "Next", waiting: "Waiting for", chat: "Chat", projects: "Projects",
   people: "People", orgs: "Organisations", contexts: "Contexts", pages: "Pages", me: "Your page",
-  review: "Weekly review", search: "Search", horizons: "Horizons", checklists: "Settings",
+  review: "Weekly review", search: "Search", horizons: "Horizons", checklists: "Settings", routines: "Routines",
   trackers: "Trackers", help: "Help", plan: "Natural planning", chores: "Chores", book: "Book",
 };
 

@@ -7,6 +7,7 @@ function renderNav() {
   $("#brand").classList.toggle("active", state.view === "me");
 
   const nav = $("#nav");
+  const sync = $("#syncLine");     // held: clearing the nav takes it along (#397)
   nav.textContent = "";
   for (const it of navItems()) {
     if (it === "sep") { nav.append(el("div", {class: "nav-sep"})); continue; }
@@ -34,7 +35,7 @@ function renderNav() {
     const open = folds && PREF.get(fold.pref, "0") === "1";
     nav.append(el("button", {
       class: "nav-item" + (here ? " active" : "") + (it.small ? " small" : ""),
-      "aria-current": here ? "page" : null,
+      "aria-current": here ? "page" : null, "data-nav": it.id,
       onclick: e => goFromNav(it.id, e.currentTarget),
     },
       el("span", {class: "ic bw"}, it.icon.startsWith("<") ? svgIcon(it.icon) : it.icon),
@@ -47,4 +48,10 @@ function renderNav() {
     if (open) nav.append(...fold.rows());
     if (it.id === "pages") { const load = navLoading(); if (load) nav.append(load); }
   }
+  /* #397 Settings is the very last thing in the sidebar, wherever a sidebar
+     page puts it, with the sync line, which opens it too, just above. */
+  const set = [...nav.children].find(b => b.dataset.nav === NAV_KEEP);
+  if (set) nav.append(set);
+  if (sync && set) set.before(sync);
+  else if (sync) nav.append(sync);
 }

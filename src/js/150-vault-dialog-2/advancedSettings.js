@@ -1,4 +1,5 @@
-function openAdvancedDialog() {
+/* Settings > Advanced, shown on the page (#397). */
+function advancedSettings() {
   const onFolder = V.backend && V.backend.kind === "fs";
   const http = V.backend && V.backend.kind === "http";
   const serverInput = el("input", {
@@ -10,7 +11,7 @@ function openAdvancedDialog() {
       el("button", {class: "btn ghost", onclick: () => connectServer(trim(serverInput.value))}, "Connect")));
   const server = settingsRow("Sync server", http ? "Connected" : "Not connected",
     el("button", {class: "btn sm ghost", onclick: () => {
-      if (http) { safeLS.del("gtd.server"); notify("Server forgotten."); openAdvancedDialog(); }
+      if (http) { safeLS.del("gtd.server"); notify("Server forgotten."); render(); }
       else form.style.display = form.style.display === "none" ? "" : "none";
     }}, http ? "Forget" : "Set up"));
   const relink = CAP.savePicker && LINKED
@@ -18,7 +19,7 @@ function openAdvancedDialog() {
     : null;
   const check = onFolder
     ? settingsRow("Vault diagnostics", null,
-        el("button", {class: "btn sm ghost", onclick: () => { closeModal(); openFolderCheck(); }}, "Check folder"))
+        el("button", {class: "btn sm ghost", onclick: () => openFolderCheck()}, "Check folder"))
     : null;
-  settingsDialog("Advanced", [settingsGroup(null, [server, form, relink, check])], true);
+  return settingsGroup("Advanced", [server, form, relink, check]);
 }

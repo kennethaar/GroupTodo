@@ -66,10 +66,13 @@ const NAV_ITEMS = [
   // Your areas are Horizon 2, so there is always something here to look at.
   {id: "horizons", icon: ICON.horizons, label: "Horizons", small: true},
   {id: "pages",    icon: ICON.pages, label: "Pages"},
+  // Routines, checklists and templates: things you use, so not in Settings (#397).
+  // The weekly review is a routine itself, so this is never empty.
+  {id: "routines", icon: ICON_CHECKLIST, label: "Routines", small: true},
   // The pages you pinned, from the ⋯ beside a page's title. See navPins().
   "pins",
   "grow",
-  // The weekly review is a routine itself, so this is never empty.
+  // All setup, in one place (#397).
   {id: "checklists", icon: ICON_GEAR, label: "Settings", small: true},
   // Not a view: a countdown you start from the sidebar. See timerNavItem().
   {id: "timer",    icon: ICON_STOPWATCH, label: "Timer", small: true},
