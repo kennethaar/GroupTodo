@@ -12,9 +12,8 @@ that breaks existing vaults. Newest first.
 
 ## 1.167.6 - 2026-11-15
 
-- Timer: on a computer it floats in the bottom right corner, at hand on
-  every screen, and Settings is the last thing in the sidebar (#399). On a
-  phone it stays in the sidebar, as that corner is the capture button's.
+- Timer: the Timer has moved to the bottom right corner of the screen, so
+  you can see it on every page (#399). On a phone it is still in the menu.
 
 ## 1.167.5 - 2026-11-15
 
