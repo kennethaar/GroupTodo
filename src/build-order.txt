@@ -1619,6 +1619,12 @@ js/105-outliner/outlineFor.js
 js/105-outliner/pageOutline.js
 js/105-outliner/vars-FLY.js
 js/105-outliner/lineProject.js
+js/105-outliner/vars-ASK_PROJECT.js
+js/105-outliner/projectActivity.js
+js/105-outliner/projectsByActivity.js
+js/105-outliner/fileUnderProject.js
+js/105-outliner/askProjectButton.js
+js/105-outliner/pickLineProject.js
 js/105-outliner/vars-lineOrg.js
 js/105-outliner/linePeople.js
 js/105-outliner/vars-FLY_ICON.js

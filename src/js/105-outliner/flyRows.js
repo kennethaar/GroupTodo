@@ -26,7 +26,7 @@ function flyRows() {
      opts: [[todayISO(), "Today"], [shiftISO(todayISO(), 1), "Tomorrow"], [nextWeekday(1), "Monday"],
             [shiftISO(todayISO(), 7), "In a week"], ["", "No date"]]},
     {k: "proj", ic: "#", label: "Project", val: proj ? proj.title : "None", key: "# · Alt+J", menu: !!proj,
-     opts: [...["1", "3", "2"].flatMap(c => projectsIn(c)).map(p => [p, pageTitle(p)]), ["", "No project"]]},
+     opts: [["\u0002", "Find or make a project…"], ...projectsByActivity().map(p => [p, pageTitle(p)]), ["", "No project"]]},
     {k: "rep", ic: FLY_REPEAT, label: "Repeat", val: repeatOf(block) || "No", key: "Alt+R", menu: true,
      opts: [...REPEAT_CHOICES.map(c => [c, c || "No repeat"]), ["\u0002", "Custom…"]]},
     {k: "ctx", ic: "@", label: "Context", val: contextOf(block.title) ? "@" + contextOf(block.title) : blockContext(block) ? "@" + blockContext(block) + " (from above)" : "None", key: "@ · Alt+C",

@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.165.0 - 2026-11-15
+
+- Journal: a new task on a day page that is not under a project offers
+  # Project? at the end of the line (#401). Type to find a project, the
+  busiest this week on top, or name a new one. The task goes under the
+  project's line, one line per project on the day. Alt+J does the same.
+
 ## 1.164.0 - 2026-11-15
 
 - States and Waiting for: a double click on a note's bullet makes it a to do

@@ -119,6 +119,10 @@ function outlineBlock(path, page, b, opts = {}) {
         else if (old) old.remove();
         else if (fresh) line.append(fresh);
       }
+      if (!line.querySelector(":scope > .askproj")) {
+        const ask = askProjectButton(path, b);
+        if (ask) line.querySelector(":scope > .linemenu").before(ask);
+      }
     }
     dropLineDraft(b.id);
     line.classList.remove("raw");
@@ -485,6 +489,8 @@ function outlineBlock(path, page, b, opts = {}) {
     }
   });
   line.append(txt);
+  const ask = askProjectButton(path, b);
+  if (ask) line.append(ask);
   /* Pressing it must not take the caret out of the line, or the blur would
      close the very menu it is opening. */
   line.append(el("button", {class: "linemenu", tabindex: "-1", title: "Line menu (Ctrl+.)", "aria-label": "Line menu",

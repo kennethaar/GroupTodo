@@ -1,7 +1,7 @@
 function commitLine(txt, path, b) {
   let val = lineText(txt);
   if (val === b.title) return false;
-  const before = b.title;
+  const before = b.title, wasTask = !!b.state;
   // A tracker's line is a key and its numbers; a name in it is not a person.
   if (!parseTracker(val)) val = linkKnownNames(val, before, namesFor(txt));
   if (!b.state) val = val.replace(ACTION_DOT_RE, "TODO ");
@@ -44,6 +44,8 @@ function commitLine(txt, path, b) {
   dropUnlinkedAssignee(b, before);
   if (who) assignBlock(path, b, who);
   createLinkedPages(b.title);
+  // A new task on a day page with no project above it asks for one (#401).
+  if (b.state && !wasTask && OPEN_STATES[b.state] && isJournalPath(path) && !lineProject(path, b)) ASK_PROJECT.id = b.id;
   touch(path); noteTodoTouched();
   return true;
 }

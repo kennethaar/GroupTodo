@@ -32,6 +32,10 @@
 .blk>.line>.linemenu:hover,.blk>.line>.linemenu[aria-expanded="true"]{background:var(--bg4);color:var(--fg)}
 /* With no pointer to hover, the ⋯ is the way into a line: big enough for a thumb. */
 @media (hover:none){ .blk>.line>.linemenu{min-width:40px;min-height:32px;color:var(--fg2);font-size:16px} }
+/* # Project? on a task just added on a day page (#401): quiet, one clear control. */
+.blk>.line>.askproj{order:98;flex:none;align-self:center;margin-left:6px;padding:1px 8px;border:1px dashed var(--line);border-radius:10px;background:none;color:var(--fg3);font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
+.blk>.line>.askproj:hover,.blk>.line>.askproj:focus-visible{color:var(--fg);border-color:var(--fg3)}
+.projpick .pickhead{margin:10px 0 2px;color:var(--fg3);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em}
 /* A meeting on its day starts with its time, the way a day is scanned. */
 .blk>.line>.ltime{flex:none;padding:1px 0;font-size:14px;font-weight:600;color:var(--fg2);font-variant-numeric:tabular-nums}
 .blk>.line>.ltime .lend{font-weight:400;color:var(--fg3)}

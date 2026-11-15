@@ -32,6 +32,8 @@ function flyPick(k, v) {
   if (k === "proj") {
     flyMakeTask(path, block);
     const cur = lineProject(path, block);
+    if (v === "\u0002") { FLY.txt.blur(); pickLineProject(path, block); return; }
+    if (isJournalPath(path) && v) { FLY.txt.blur(); fileUnderProject(path, block, v); ASK_PROJECT.id = null; render(); return; }
     if (isJournalPath(path)) {
       if (cur && cur.ref) block.title = trim(block.title.replace(new RegExp("\\[\\[" + cur.ref.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(\\]\\[[^\\]]*)?\\]\\]", "i"), "").replace(/\s{2,}/g, " "));
       if (v) block.title = trim(block.title) + " [[" + pageRef(v) + "]]";

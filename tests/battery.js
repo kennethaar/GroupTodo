@@ -4697,6 +4697,76 @@ var GTD_TEST = (() => {
       go("today");
     }
   });
+  test("#401 a new day-page task offers # Project?; the pick puts it under the project's line, one line per project", async () => {
+    const proj = scratchProject("Kitchen four-oh-one");
+    const path = ensureJournal(todayISO()), pg = getPage(path);
+    const a = newBlock({}, false), b = newBlock({}, false);
+    pg.blocks.push(a, b); touch(path);
+    const btn = blk => document.querySelector('.blk[data-id="' + blk.id + '"] > .line .askproj');
+    const choose = async (blk, typed) => {
+      btn(blk).click(); await settle();
+      const box = document.querySelector(".modal .projpick input");
+      ok(box, "# Project? did not open the picker");
+      box.value = typed;
+      box.dispatchEvent(new Event("input", {bubbles: true})); await settle();
+      const row = [...document.querySelectorAll(".modal .projpick .pick")].find(r => r.textContent.includes(pageTitle(proj)));
+      ok(row, "typing did not find the project");
+      row.click(); await settle();
+    };
+    try {
+      go("today"); await settle();
+      commitLine(el("div", {}, "TODO Call the plumber"), path, a); render(); await settle();
+      ok(btn(a), "a new task on the day page has no # Project?");
+      await choose(a, "four-oh");
+      const head = parentOf(getPage(path), a);
+      ok(head, "the task was not put under a line");
+      eq(head.title, "[[" + pageRef(proj) + "]]", "the line above is not the project");
+      eq(a.title, "Call the plumber", "the task's own words changed");
+      ok(!btn(a), "# Project? stays after the pick");
+      commitLine(el("div", {}, "TODO Buy tiles"), path, b); render(); await settle();
+      await choose(b, "kitchen");
+      eq(parentOf(getPage(path), b)?.id, head.id, "a second task got a second project line");
+      eq(getPage(path).blocks.filter(x => x.title === head.title).length, 1, "the project line is there twice");
+      const note = newBlock({}, false); getPage(path).blocks.push(note);
+      commitLine(el("div", {}, "a plain note"), path, note); render(); await settle();
+      ok(!btn(note), "a note is offered a project");
+    } finally {
+      closeModal();
+      const p = getPage(path);
+      p.blocks = p.blocks.filter(x => ![a, b].includes(x) && !(x.title || "").includes(pageRef(proj)) && x.title !== "a plain note");
+      touch(path); go("today");
+    }
+  });
+  test("#401 the project picker puts the most active projects first and makes a new one from what you type", async () => {
+    const quiet = scratchProject("Quiet four-oh-one"), busy = scratchProject("Busy four-oh-one");
+    const path = ensureJournal(todayISO()), pg = getPage(path);
+    const head = newBlock({}, false), kid = newBlock({state: "TODO"}, false), t = newBlock({state: "TODO"}, false);
+    head.title = "[[" + pageRef(busy) + "]]"; kid.title = "Order the parts"; head.children = [kid];
+    t.title = "Paint the shed";
+    pg.blocks.push(head, t); touch(path); flattenBlocks(pg.blocks);
+    const made = join(DIRS.active, slugify("Shed four-oh-one") + ".md");
+    try {
+      const order = projectsByActivity();
+      ok(order.indexOf(busy) >= 0 && order.indexOf(busy) < order.indexOf(quiet), "the busy project is not above the quiet one");
+      pickLineProject(path, t); await settle();
+      const first = document.querySelector(".modal .projpick .pick");
+      ok(first && first.textContent.includes(pageTitle(order[0])), "the most active project is not on top");
+      const box = document.querySelector(".modal .projpick input");
+      box.value = "Shed four-oh-one"; box.dispatchEvent(new Event("input", {bubbles: true})); await settle();
+      const fresh = [...document.querySelectorAll(".modal .projpick .pick")].find(r => /New project/.test(r.textContent));
+      ok(fresh, "no + New project for a name that is not there");
+      fresh.click(); await settle();
+      ok(getPage(made), "the new project was not made");
+      eq(statusDirOf(made), "1", "the new project is not Active");
+      eq(parentOf(getPage(path), t).title, "[[" + pageRef(made) + "]]", "the task is not under the new project");
+    } finally {
+      closeModal();
+      if (getPage(made)) V.pages.delete(made);
+      const p = getPage(path);
+      p.blocks = p.blocks.filter(x => x !== head && !(x.title || "").includes("Shed four-oh-one"));
+      touch(path); clearMemo(); go("today");
+    }
+  });
   test("#374 a mockup pasted right after ``` on a bullet stays under it, line for line, and Enter after ``` stays in the fence", async () => {
     const path = ensureJournal(todayISO()), pg = getPage(path);
     const mock = ["+--------+  +--------+", "| Inbox  |  | Next   |", "+--------+  +--------+"];
