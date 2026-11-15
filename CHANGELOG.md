@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.164.0 - 2026-11-15
+
+- States and Waiting for: a double click on a note's bullet makes it a to do
+  (#400), as Alt+T does. One click still focuses on the line, after a short
+  wait for the second click.
+
 ## 1.163.1 - 2026-11-15
 
 - Dates and reminders: Tab on an offered date reads it as Enter does (#396).

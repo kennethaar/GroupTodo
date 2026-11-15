@@ -12,9 +12,23 @@ function outlineBlock(path, page, b, opts = {}) {
     "aria-expanded": String(!b.collapsed), disabled: !kids.length,
     onclick: e => { e.stopPropagation(); if (kids.length) { b.collapsed = !b.collapsed; render(); } },
   }, kids.length ? (b.collapsed ? "\u25B8" : "\u25BE") : ""));
+  /* A note's bullet: one click focuses on it, two make it a to do (#400). The
+     focus waits a moment for the second click; a key press does not wait. */
+  let focusSoon = 0;
+  const asNote = !b.state && !ro;
   line.append(el("button", {
-    class: "bullet", title: "Focus on this line", "aria-label": "Focus on this line",
-    onclick: e => { e.stopPropagation(); setBranchFocus(page, b.id, path); },
+    class: "bullet", title: asNote ? "Focus on this line. Double-click: make it a to do" : "Focus on this line",
+    "aria-label": "Focus on this line",
+    onclick: e => {
+      e.stopPropagation();
+      clearTimeout(focusSoon);
+      if (asNote && e.detail >= 2) {
+        if (!projectLineToTask(path, b)) setBlockState(path, b, "TODO");
+        return;
+      }
+      if (asNote && e.detail === 1) focusSoon = setTimeout(() => setBranchFocus(page, b.id, path), 250);
+      else setBranchFocus(page, b.id, path);
+    },
   }));
   /* The state's square, doing what a task row's tick does: a tap and a hold. The
      menu here also has the way back to a plain note. */

@@ -4671,6 +4671,32 @@ var GTD_TEST = (() => {
       go("today");
     }
   });
+  test("#400 a double click on a note's bullet makes it a to do; one click still focuses on it", async () => {
+    const path = ensureJournal(todayISO()), pg = getPage(path);
+    const b = newBlock({}, false), c = newBlock({}, false);
+    b.title = "Call the plumber"; c.title = "Buy screws";
+    pg.blocks.push(b, c); touch(path);
+    go("today");
+    await settle();
+    const bullet = id => document.querySelector('.blk[data-id="' + id + '"] > .line > .bullet');
+    const click = (node, detail) => node.dispatchEvent(new MouseEvent("click", {bubbles: true, cancelable: true, detail}));
+    try {
+      const n = bullet(b.id);
+      click(n, 1); click(n, 2);
+      await new Promise(r => setTimeout(r, 400));
+      eq(b.state, "TODO", "the note did not become a to do");
+      ok(!BRANCH_FOCUS.get(pg), "the double click also focused on the line");
+      click(bullet(c.id), 1);
+      await new Promise(r => setTimeout(r, 400));
+      eq(BRANCH_FOCUS.get(pg), c.id, "one click no longer focuses on the line");
+      eq(c.state || "", "", "one click changed the note");
+    } finally {
+      BRANCH_FOCUS.delete(pg);
+      for (const x of [b, c]) pg.blocks.splice(pg.blocks.indexOf(x), 1);
+      touch(path);
+      go("today");
+    }
+  });
   test("#374 a mockup pasted right after ``` on a bullet stays under it, line for line, and Enter after ``` stays in the fence", async () => {
     const path = ensureJournal(todayISO()), pg = getPage(path);
     const mock = ["+--------+  +--------+", "| Inbox  |  | Next   |", "+--------+  +--------+"];

@@ -947,7 +947,7 @@ const HELP = {
     steps: ["Click the state to tick it off.",
       "Ctrl+Enter cycles the state.",
       "Waiting asks who you wait on. On hold asks until when.",
-      "Alt+T turns a task into a note and back.",
+      "Alt+T turns a task into a note and back. A double click on a note's bullet makes it a to do.",
       "Your areas can make a day line that starts with a verb a to do."],
     keys: [["Ctrl+Enter", "Next state"], ["Alt+T", "Task or note"], ["Alt+1", "Make it a project"]],
     more: ["Alt+1 makes the line a project. The notes it is written among stay in view while you name it and say what done looks like.",
