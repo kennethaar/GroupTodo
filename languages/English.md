@@ -4592,6 +4592,7 @@ Unread =>
 Unseen =>
 Untick a line that is not theirs. =>
 Untick a view to hide it. =>
+Until =>
 Until this area has a folder it exists in one browser on one machine: no .md files to open in Neovim or Obsidian, nothing to share with anybody, and nothing left if this browser is cleared. Choosing one moves everything already here into it. Asked once your list is worth something, not on the first day. =>
 Until you set your hours, they are 08:00 to 16:00 on weekdays, and the PC does not ask. =>
 Untitled =>

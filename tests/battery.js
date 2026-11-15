@@ -5518,6 +5518,41 @@ var GTD_TEST = (() => {
         has(again.txt.textContent, "[[p/Lars Haugen]]", "Tab took nothing");
       });
     });
+    test("#396 Tab on an offered date reads it as Enter does: on is a start day, no word is Due", async () => {
+      const said = [], was = window.notify;
+      window.notify = (m, l, act) => { said.push(m); };
+      const pick = async text => {
+        const path = scratchProject("tab date", [["TODO", "x"]]);
+        openPage(path);
+        await settle();
+        const b = getPage(path).blocks[0];
+        focusBlock(b.id);
+        await frame();
+        const txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
+        txt.textContent = text;
+        const r = document.createRange(); r.selectNodeContents(txt); r.collapse(false);
+        getSelection().removeAllRanges(); getSelection().addRange(r);
+        txt.dispatchEvent(new Event("input", {bubbles: true}));
+        await frame();
+        ok(SUGGEST && SUGGEST.host === txt && /date/.test(JSON.stringify(SUGGEST.rows?.[0]?.accept)), "no date offered for " + text);
+        said.length = 0;
+        await press(txt, "Tab");
+        return b;
+      };
+      try {
+        await withKeys("tab", async () => {
+          const fri = parseWhen("x by fri").DEADLINE;
+          const a = await pick("Call Mia on fri");
+          eq([a.title, dateIn(blockProp(a, "SCHEDULED")), blockProp(a, "DEADLINE")], ["Call Mia", fri, undefined], "on fri is a start day");
+          ok(said.some(m => /^Starts/.test(m)), "the toast names it a start: " + JSON.stringify(said));
+          const b = await pick("Call Mia weekend");
+          eq([b.title, dateIn(blockProp(b, "DEADLINE")), blockProp(b, "SCHEDULED")], ["Call Mia", parseWhen("x weekend").DEADLINE, undefined], "no word is Due");
+          ok(said.some(m => /^Due/.test(m)), "the toast says Due: " + JSON.stringify(said));
+          const c = await pick("Call Mia eow");
+          eq(dateIn(blockProp(c, "DEADLINE")), fri, "eow is Friday, as on Enter");
+        });
+      } finally { window.notify = was; }
+    });
     test("#262 a name offered while typing follows the chosen key", () => {
       for (const k of ["enter", "tab", "both"]) {
         PREF.set("suggest.accept", k);

@@ -35,11 +35,16 @@ function suggestAccept(n) {
     // The words stay where the hand wrote them in a box that reads them on
     // Enter; on a line they become the line's due date and leave the words.
     if (opts.onDate) {
-      const kept = trim(text.slice(0, at)).replace(/\s+(on|by|due|until)$/i, "");
+      /* The word in front says the kind, as it does on Enter (#396): on or
+         starts a start day, until a hold, none or by a due date. */
+      const MARK = /\s+(on|by|due|until|starts?|from|this)$/i;
+      const lead = /^(\S+)\s/.exec(r.title), tail = MARK.exec(" " + trim(text.slice(0, at)));
+      const word = ((lead && WHEN_KIND[lead[1].toLowerCase()] ? lead[1] : "") || (tail ? tail[1] : "")).toLowerCase();
+      const kept = trim(text.slice(0, at)).replace(MARK, "");
       const rest = after.replace(/^\s+/, "");
       const next = kept + (kept && rest ? " " : "") + rest;
       setHostText(host, next, kept.length);
-      opts.onDate(r.iso, r.title, r);
+      opts.onDate(r.iso, r.title, Object.assign({}, r, {kind: WHEN_KIND[word] || null}));
     } else {
       const insert = r.title + (/^\s/.test(after) ? "" : " ");
       setHostText(host, text.slice(0, at) + insert + after, at + insert.length);

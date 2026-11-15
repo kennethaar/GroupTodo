@@ -304,11 +304,15 @@ function outlineBlock(path, page, b, opts = {}) {
     flyMakeTask(path, b);
     // A time picked after a day goes on that day: "neste onsdag", then "kl 13".
     if (r && r.time && !r.now && dueDate(b)) iso = dueDate(b);
-    setDue(b, iso, r && r.time);
+    const kind = r && r.kind;
+    if (kind === "until") setBlockProp(b, "until", "[[" + iso + "]]");
+    else if (kind === "SCHEDULED") setBlockProp(b, "SCHEDULED", whenValue(iso, r.time));
+    else setDue(b, iso, r && r.time);
     if (r && r.now) setBlockProp(b, "remind", "0");
     touch(path); render(); focusBlock(b.id);
+    const label = kind === "until" ? "Until " : kind === "SCHEDULED" ? "Starts " : "Due ";
     if (!warnDueConflict(path, b))
-      notify("Due " + humanWhen(iso, r && r.time).toLowerCase() + (r && r.now ? ", reminded then." : "."));
+      notify(label + humanWhen(iso, r && r.time).toLowerCase() + (r && r.now ? ", reminded then." : "."));
   },
   /* "tracker-" at the start of a line offers the trackers already in use,
      and the wizard for a new one. */

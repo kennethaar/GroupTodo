@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.163.1 - 2026-11-15
+
+- Dates and reminders: Tab on an offered date reads it as Enter does (#396).
+  on fri or starts fri is a start day, until fri a hold, and a date with no
+  word in front is Due. The note says Starts, Until or Due to match.
+
 ## 1.163.0 - 2026-11-15
 
 - Dates and reminders: one reader for what you type (#396). The outline, the
