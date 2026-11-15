@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.167.4 - 2026-11-15
+
+- The top bar: installed as an app on Windows, the window's own buttons no
+  longer cover the bar (#398). The bar keeps clear of them and its empty
+  space drags the window; where there is no bar, the page starts below them.
+
 ## 1.167.3 - 2026-11-15
 
 - Settings: the glide to a part eases out as clearly as it eases in, and

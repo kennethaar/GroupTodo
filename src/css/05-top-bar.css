@@ -61,3 +61,16 @@ body.paper .sidesearch:hover{color:var(--fg);border-color:var(--fg3)}
 .todayhead .spop{right:0;top:calc(100% + 6px)}
 .todayhead .spacesbtn{border:0;background:none;color:var(--fg2)}
 .todayhead .spacesbtn:hover{background:var(--bg3);color:var(--fg)}
+
+/* #398 Installed, the title bar folds into the app (window-controls-overlay):
+   the window's own buttons sit over the top right. The bar keeps clear of
+   them and its empty space drags the window, as a title bar would; where
+   there is no bar, the page starts below them. */
+@media (display-mode: window-controls-overlay) {
+  header.top{padding-right:calc(22px + 100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw));
+    -webkit-app-region:drag;app-region:drag}
+  header.top button,header.top input,header.top a,header.top select,header.top label,header.top .capture,header.top .spop{
+    -webkit-app-region:no-drag;app-region:no-drag}
+  body.paper:not(.sidebar-hidden):not(.capping) #main{padding-top:env(titlebar-area-height, 0px)}
+  body.paper.sidebar-hidden:not(.capping) #main{padding-top:env(titlebar-area-height, 0px)}
+}

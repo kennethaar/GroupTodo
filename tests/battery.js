@@ -7675,6 +7675,19 @@ var GTD_TEST = (() => {
       ok(!seen($("#sideSearch")), "and one Search, in the bar");
     } finally { setSidebarHidden(false); go("today"); await settle(); }
   });
+  test("#398 installed with the title bar in the app, nothing sits under the window's own buttons", () => {
+    // The page cannot put itself in that mode, so read what the style sheet says for it.
+    const rules = [...document.styleSheets].flatMap(sh => { try { return [...sh.cssRules]; } catch (_) { return []; } })
+      .filter(r => r.media && /window-controls-overlay/.test(r.media.mediaText))
+      .flatMap(r => [...r.cssRules]).map(r => r.cssText);
+    ok(rules.length, "no rules for an installed app's title bar");
+    ok(rules.some(t => /header\.top/.test(t) && /padding-right/.test(t) && /titlebar-area/.test(t)),
+      "the top bar does not keep clear of the window's buttons: " + rules.join(" | "));
+    ok(rules.some(t => /header\.top/.test(t) && /app-region:\s*drag/.test(t)), "the top bar does not drag the window");
+    ok(rules.some(t => /no-drag/.test(t) && /button/.test(t)), "the bar's buttons would drag instead of click");
+    ok(rules.some(t => /body\.paper/.test(t) && /padding-top/.test(t) && /titlebar-area-height/.test(t)),
+      "with no top bar the page does not start below the window's buttons");
+  });
   test("#395 the Journal is paper: no card around a day page, a hairline between areas", async () => {
     go("today", {sub: null, todayDay: null}); await settle();
     const cards = [...content().querySelectorAll(".jview .jgrid > .jcard:not(.trkcol)")];
