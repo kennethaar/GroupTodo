@@ -1,6 +1,7 @@
 const WHEN_KIND = {
   by: "DEADLINE", due: "DEADLINE", before: "DEADLINE", innen: "DEADLINE", frist: "DEADLINE",
-  on: "SCHEDULED", "på": "SCHEDULED", this: "SCHEDULED", denne: "SCHEDULED",
+  on: "SCHEDULED", "på": "SCHEDULED", starts: "SCHEDULED", start: "SCHEDULED", from: "SCHEDULED",
+  this: "DEADLINE", denne: "DEADLINE",
   until: "until",
 };
 

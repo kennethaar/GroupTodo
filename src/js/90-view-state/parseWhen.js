@@ -42,7 +42,7 @@ function parseWhen(text) {
       if (!out.repeat && REPEAT_WORD_RE.test(p) && (parseRepeat(p) || parseRule(p))) { out.repeat = p; hit = raw; break; }
       if (!out.time && !out.SCHEDULED && !out.DEADLINE) {
         const rel = whenFromNow(p);
-        if (rel) { out.time = rel.time; out.SCHEDULED = rel.day; out.remind = out.remind || "0"; hit = raw; break; }
+        if (rel) { out.time = rel.time; out.DEADLINE = rel.day; out.remind = out.remind || "0"; hit = raw; break; }
       }
       if (!out.time) {
         const c = whenClock(p) || whenClock(p.replace(/\.$/, ""));
@@ -53,11 +53,13 @@ function parseWhen(text) {
         const kind = km && WHEN_KIND[km[1]];
         const day = kind ? (whenDay(km[2], today, 1) || whenDay(km[2].replace(/\.$/, ""), today, 1))
                          : (whenDay(p, today) || whenDay(p.replace(/\.$/, ""), today));
-        // "every monday" is a repeat even when the repeat word is not part of this phrase.
+        /* "every monday" is a repeat even when the repeat word is not part of
+           this phrase, and "plan the weekend" is a thing, not a day. */
         const before = whenEnglish((words[words.length - n - 1] || "").toLowerCase());
-        if (day && !/^(every|each|hver)$/.test(before)) {
+        if (day && !/^(every|each|hver|the|a|an|my|our|your|his|her|their)$/.test(before)) {
           if (kind === "until") { if (!out.until) { out.until = day; hit = raw; } }
-          else { out[kind || "SCHEDULED"] = day; hit = raw; }
+          // A day with no word in front is due, as by makes it; on and starts make a start day.
+          else { out[kind || "DEADLINE"] = day; hit = raw; }
         }
       }
     }
@@ -68,7 +70,7 @@ function parseWhen(text) {
 
   // A time with no day is the next time the clock says it.
   if (out.time && !out.SCHEDULED && !out.DEADLINE)
-    out.SCHEDULED = out.time > nowHM() ? today : shiftISO(today, 1);
+    out.DEADLINE = out.time > nowHM() ? today : shiftISO(today, 1);
   if (out.repeat && !out.SCHEDULED && !out.DEADLINE && parseRepeat(out.repeat)?.unit === "weekday")
     out.SCHEDULED = nextRepeatDate(out.repeat, shiftISO(today, -1));
   if (!out.taken.length) return null;

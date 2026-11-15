@@ -2176,21 +2176,58 @@ var GTD_TEST = (() => {
   test("parseWhen: tomorrow, links kept at the end", () => {
     const w = parseWhen("Call Bob tomorrow [[c/phone]]");
     eq(w.title, "Call Bob [[c/phone]]");
-    eq(w.SCHEDULED, shiftISO(T(), 1));
+    eq(w.DEADLINE, shiftISO(T(), 1));
   });
   test("parseWhen: due:, pri:, a clock and a repeat", () => {
     const a = parseWhen("Pay rent due:tomorrow pri:h");
     eq([a.title, a.DEADLINE, a.priority], ["Pay rent", shiftISO(T(), 1), "H"]);
     const b = parseWhen("Dentist tomorrow at 14:30");
-    eq([b.title, b.SCHEDULED, b.time], ["Dentist", shiftISO(T(), 1), "14:30"]);
+    eq([b.title, b.DEADLINE, b.time], ["Dentist", shiftISO(T(), 1), "14:30"]);
     const c = parseWhen("Water plants every week");
     eq([c.title, c.repeat], ["Water plants", "every week"]);
   });
-  test("dateFromWords", () => {
-    eq(dateFromWords("today"), T());
-    eq(dateFromWords("tomorrow"), shiftISO(T(), 1));
-    eq(dateFromWords("day after tomorrow"), shiftISO(T(), 2));
+  test("#396 one reader for typed dates: same words, same day, same kind", () => {
+    const due = t => { const w = parseWhen("Call Mia " + t); return w && !w.SCHEDULED ? w.DEADLINE : "not due: " + JSON.stringify(w); };
+    const fri = due("eow");
+    eq(weekdayOf(fri), 5, "end of week is Friday");
+    eq(due("end of week"), fri, "eow and end of week are one day");
+    eq(due("end of month"), due("eom"));
+    eq(weekdayOf(due("weekend")), 6, "the weekend starts Saturday");
+    eq(due("tonight"), T());
+    eq(due("in two weeks"), shiftISO(T(), 14));
+    eq(due("friday"), due("by friday"), "no marker word is Due, like by");
+    eq(parseWhen("Call Mia on friday").SCHEDULED, due("friday"), "on is a start day");
+    eq(parseWhen("Call Mia starts friday").SCHEDULED, due("friday"), "starts is a start day");
+    eq(parseWhen("Call Mia 3/4"), null, "a bare number stays a number");
+    // The Tab menu reads what the line reads.
+    for (const p of ["eow", "end of week", "weekend", "in 2 years", "next fri"])
+      eq(dateFromWords(p), due(p), "menu and line agree on " + p);
     eq(dateFromWords("gibberish words"), null);
+    // The outline: the same reading, the words offered back every time.
+    const day = journalPath("2020-01-06"), said = [], was = window.notify;
+    const line = text => { const b = newBlock({title: ""}); putPage(day, {props: {}, blocks: [b]}); commitLine(el("div", {}, text), day, b); return b; };
+    window.notify = (m, l, act) => { said.push([m, act && act.label]); };
+    try {
+      const a = line("TODO Call Mia weekend");
+      eq([a.title, dateIn(blockProp(a, "DEADLINE")), blockProp(a, "SCHEDULED")], ["Call Mia", due("weekend"), undefined]);
+      ok(said.some(([, label]) => label === "Keep the words"), "a read date can be taken back: " + JSON.stringify(said));
+      const b = line("TODO Call Mia 3/4");
+      eq([b.title, dueDate(b)], ["Call Mia 3/4", null], "no date guessed from a bare number");
+    } finally { window.notify = was; V.pages.delete(day); clearMemo(); }
+  });
+  test("#396 a task line in the outline reads @ and # as the capture box does", () => {
+    const proj = scratchProject("Kitchen renovation");
+    const projTitle = pageTitle(proj);
+    const day = journalPath("2020-01-06");
+    const line = text => { const b = newBlock({title: ""}); putPage(day, {props: {}, blocks: [b]}); commitLine(el("div", {}, text), day, b); return b; };
+    try {
+      const a = line("TODO Call Mia @phone about tiles");
+      has(a.title.toLowerCase(), "[[c/phone]]", "@phone is the context");
+      has(a.title, "about tiles", "the sentence is kept whole");
+      const b = line("TODO Order tiles #renovation");
+      ok(/\[\[[^\]]*/.test(b.title) && b.title.includes(projTitle + "]]") && !b.title.includes("#"), "#renovation links the project: " + b.title);
+      eq(line("Mail me at mia @home").title, "Mail me at mia @home", "a note is left as written");
+    } finally { V.pages.delete(day); V.pages.delete(proj); clearMemo(); }
   });
   test("parseRepeat", () => {
     eq(parseRepeat("weekly"), {unit: "day", n: 7});

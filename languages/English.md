@@ -255,6 +255,7 @@ code:: en
 @ Context =>
 @ · Alt+C =>
 @ · Alt+P =>
+@phone and #project on a task become links, in the outline as in the box. =>
 A CSV file, which Excel opens =>
 A NEW WEEK =>
 A PC: @computer. A phone: @home. =>
@@ -299,6 +300,7 @@ A copy, not a permission. Once they have the file they keep it, and GroupToDo ca
 A countdown you start from the sidebar. =>
 A dashed line is a tie only their pages name, like sister. =>
 A date at the end of a task is its due date. =>
+A date is Due. Write on fri for a start day instead. =>
 A date works too =>
 A date you sail past teaches you to stop believing your own list, and a list you do not believe stops getting opened. Moving the date on purpose keeps it honest; letting it rot does not. =>
 A day before =>
@@ -350,7 +352,6 @@ A name with a page but no link has Link it. Mark words… links other words. =>
 A near deadline counts most. =>
 A new chapter, at the end. =>
 A new context starts with a capital: phone is @Phone. =>
-A new date is Due. Pick Scheduled to make it a start day. =>
 A new one that looks like one you have is merged into it. Undo splits it out. =>
 A new place or thing starts as 8/place.md or 8/thing.md. Change those to start them your way. =>
 A new private area =>
@@ -2094,7 +2095,7 @@ It learns from what you pick: the hour, the day, the place, wifi, the phone upri
 It links to nothing yet. =>
 It only opens for somebody whose copy of the app sits at the same path. =>
 It opens pages in your editor on this computer. =>
-It reads English and Norwegian, and due:, until: and remind:. =>
+It reads English and Norwegian, and due:, until: and remind:. It also knows tonight, weekend and end of week (Friday). =>
 It stands on its own =>
 It still does not start with a verb the lexicon knows. =>
 It takes =>

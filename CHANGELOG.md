@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.163.0 - 2026-11-15
+
+- Dates and reminders: one reader for what you type (#396). The outline, the
+  box at the top and the Tab date menu read the same words the same way. A
+  date with no word in front is Due, as with by; on or starts makes it a start
+  day. eow and end of week are both Friday, weekend is Saturday, and tonight
+  and in two weeks work everywhere. 3/4 at the end of a line stays a number.
+  Every date read can be taken back with Keep the words. @phone and #project
+  typed on a task in the outline become links, as in the box.
+
 ## 1.162.9 - 2026-11-14
 
 - Phone and PC: the folder question reads "Reconnect folder 1 of 2: Work"

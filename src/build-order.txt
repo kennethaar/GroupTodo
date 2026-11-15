@@ -944,6 +944,7 @@ js/90-view-state/applyWhen.js
 js/90-view-state/whenSays.js
 js/90-view-state/readWhenInto.js
 js/90-view-state/offerKeepWords.js
+js/90-view-state/readMarks.js
 js/90-view-state/captureLine.js
 js/90-view-state/captureFromBox.js
 js/90-view-state/vars-focusCapture.js
@@ -1529,7 +1530,6 @@ js/105-outliner/vars-DATE_WORDS.js
 js/105-outliner/dateSuggestions.js
 js/105-outliner/dayAndClock.js
 js/105-outliner/dateSuggestion.js
-js/105-outliner/trailingDate.js
 js/105-outliner/setDue.js
 js/105-outliner/warnDueConflict.js
 js/105-outliner/linkKnownNames.js
