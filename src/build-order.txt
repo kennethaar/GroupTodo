@@ -2471,6 +2471,7 @@ js/115-render-dispatcher/run-5-9.js
 # script 6
 js/120-modals/vars-MODAL_KEYS.js
 js/120-modals/askAfterModal.js
+js/120-modals/caretBackAfterDialogs.js
 js/120-modals/modal.js
 js/120-modals/closeModal.js
 js/120-modals/pickRow.js

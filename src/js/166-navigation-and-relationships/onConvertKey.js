@@ -26,4 +26,5 @@ function onConvertKey(e) {
     const name = bareLineName(r.block);
     if (name) insertMakeLink(r.path, r.block, kind + "/" + slugify(name));
   });
+  if (host) caretBackAfterDialogs(r.block.id);
 }

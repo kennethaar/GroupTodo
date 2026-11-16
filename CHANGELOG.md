@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.168.5 - 2026-11-16
+
+- States and Waiting for: after Alt+1 makes a line a project, the caret is
+  back in the line, so you can go on typing without a click (#412).
+
 ## 1.168.4 - 2026-11-16
 
 - Vault and sync: serve.py now merges a page two people saved, instead of

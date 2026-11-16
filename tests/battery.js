@@ -11848,7 +11848,7 @@ var GTD_TEST = (() => {
     } finally { FLY = null; box.remove(); txt.remove(); removePage(person); removePage(org); removePage(ctx); clearMemo(); }
   });
 
-  test("#369 Alt+1 on a line being edited writes the project name once", async () => {
+  test("#369 #412 Alt+1 on a line being edited writes the project name once and keeps the caret", async () => {
     const path = scratchProject("alt one", [["TODO", "Kitchen renovatiq"], [null, "Plan: garden shedq"],
       [null, "Call Anna about Porch paintq today"]]);
     const [whole, colon, words] = getPage(path).blocks;
@@ -11866,6 +11866,10 @@ var GTD_TEST = (() => {
       host.dispatchEvent(new KeyboardEvent("keydown", {key: "1", code: "Digit1", altKey: true, bubbles: true, cancelable: true}));
       await settle();
       closeModal();
+      await frame(); await frame();
+      // #412: when the dialogs are gone the caret is back in the line, so typing goes on.
+      const line = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
+      ok(line && document.activeElement === line, "#412 the caret is back in the line after Alt+1");
       made.push(...linksIn(b.title).map(findExistingPage).filter(Boolean));
     };
     try {
