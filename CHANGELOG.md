@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.167.8 - 2026-11-16
+
+- The line menu and toolbar: the tools on the line you write end in ＋
+  Insert, not a second ⋯ (#395). It shows Tag, Media, the notepad and Side
+  panel. The ⋯ after it is the line menu, as on every other line.
+
 ## 1.167.7 - 2026-11-15
 
 - Sidebar: Horizons has a new icon, a sun rising over the horizon, which

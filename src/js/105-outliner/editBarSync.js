@@ -20,11 +20,13 @@ function editBarSync() {
       "aria-expanded": "false", data: {k: g.g}, onclick: e => editBarGroupToggle(g.g, e.currentTarget),
     }, el("span", {class: "eic"}, svgIcon(g.ic)), el("span", {class: "elb"}, g.label)));
     for (const r of EDIT_BAR.filter(r => r.tail)) bar.append(ebBtn(r));
-    // On a line (#395): Tag, Media, Notepad and Side panel wait behind ⋯.
-    bar.append(el("button", {class: "ebrest", tabindex: "-1", title: "More line tools", "aria-label": "More line tools",
+    /* On a line (#395): Tag, Media, Notepad and Side panel wait behind ＋
+       Insert. Not ⋯: the line menu's own ⋯ sits right after the bar, and two
+       alike buttons side by side make you guess which is which. */
+    bar.append(el("button", {class: "ebrest", tabindex: "-1", title: "Insert: tag, media, notepad, side panel", "aria-label": "Insert",
       "aria-expanded": "false", data: {k: "rest"}, onclick: e => {
         e.currentTarget.setAttribute("aria-expanded", String(bar.classList.toggle("all")));
-      }}, "⋯"));
+      }}, "＋"));
     // A tap on the tools is not a click on the line they sit on.
     for (const t of ["pointerdown", "click", "dblclick"]) bar.addEventListener(t, e => e.stopPropagation());
     document.body.append(bar);

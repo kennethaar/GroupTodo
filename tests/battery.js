@@ -4155,7 +4155,7 @@ var GTD_TEST = (() => {
       ok(icons.every(n => !/[\u{1F300}-\u{1FAFF}☀-➿]/u.test(n.textContent)), "no emoji icon on the bar");
     } finally { window.matchMedia = mm; document.activeElement && document.activeElement.blur(); go("today"); }
   });
-  test("#395 on a computer the line tools sit on the line being written, the rest behind ⋯; a phone keeps them at the foot", async () => {
+  test("#395 on a computer the line tools sit on the line being written, the rest behind ＋ Insert; a phone keeps them at the foot", async () => {
     const path = scratchProject("tools on the line", [["TODO", "Buy paint for the long hallway and the two small bedrooms upstairs"], ["TODO", "Call Bob"]]);
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
     openPage(path);
@@ -4176,10 +4176,15 @@ var GTD_TEST = (() => {
       ok(words.right <= r.left + 1, "the words wrap before the tools, not under them");
       eq(shownKeys()[0], "type", "Type first");
       for (const k of ["in", "out", "up", "down", "rest"]) ok(shownKeys().includes(k), k + " on show: " + shownKeys());
-      for (const k of ["tag", "media", "pad", "more"]) ok(!shownKeys().includes(k), k + " waits behind ⋯");
+      for (const k of ["tag", "media", "pad", "more"]) ok(!shownKeys().includes(k), k + " waits behind ＋");
+      // Two buttons, two jobs: the bar's own button is ＋ Insert, so it never
+      // looks like the line menu's ⋯ right after it.
+      const rest = bar().querySelector('[data-k="rest"]');
+      eq(rest.textContent.trim(), "＋", "the bar's button is ＋, not a second ⋯");
+      eq(rest.getAttribute("aria-label"), "Insert", "and it is named Insert");
       bar().querySelector('[data-k="rest"]').click();
       await frame();
-      for (const k of ["tag", "media", "pad", "more"]) ok(shownKeys().includes(k), k + " after ⋯");
+      for (const k of ["tag", "media", "pad", "more"]) ok(shownKeys().includes(k), k + " after ＋");
       focusBlock(b.id);
       await frame();
       ok(bar().closest('.blk[data-id="' + b.id + '"]'), "the tools follow to the next line");
