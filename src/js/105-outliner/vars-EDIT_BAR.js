@@ -29,7 +29,10 @@ const EB_CAMERA  = '<path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="14" 
 const EB_IMAGE   = '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.4"/><path d="M21 16l-5-5-4 4-3-3-6 6"/>';
 const EB_MOVE    = '<path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/>';
 const EB_PAD     = '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>';
-const EB_COPY    = '<rect x="4" y="4" width="12" height="14" rx="2"/><path d="M9 18v1a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-1"/>';
+const EB_QUOTE   = '<path d="M6 5v14M10 8h9M10 12h9M10 16h6"/>';
+const EB_TABLE   = '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M12 4v16"/>';
+const EB_FORMAT  = '<path d="M3 19l5-14 5 14M4.8 14h6.4M14 19v-5.5a3 3 0 0 1 6 0V19M20 15.5h-3.5a2 2 0 0 0 0 3.5H20"/>';
+const EB_COPY    ='<rect x="4" y="4" width="12" height="14" rx="2"/><path d="M9 18v1a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-1"/>';
 
 const EDIT_BAR = [
   {k: "up", ic: EB_UP, label: "Up", tip: "Move the line up (Alt+Shift+↑)"},
@@ -49,6 +52,15 @@ const EDIT_BAR = [
   {k: "proj", ic: "#", label: "Project", tip: "Add a project (Alt+J)", group: "tag"},
   {k: "photo", ic: EB_CAMERA, label: "Photo", tip: "Take a photo for this line", group: "media", pointerFineOff: true},
   {k: "image", ic: EB_IMAGE, label: "Image", tip: "Add an image to this line", group: "media"},
+  // Format (#416): what markdown can do to a line, without knowing markdown.
+  // noteOnly: a task is never a heading, a quote or a table.
+  {k: "h1", ic: "H1", label: "Heading 1", tip: "Heading 1 (# )", group: "format", noteOnly: true},
+  {k: "h2", ic: "H2", label: "Heading 2", tip: "Heading 2 (## )", group: "format", noteOnly: true},
+  {k: "h3", ic: "H3", label: "Heading 3", tip: "Heading 3 (### )", group: "format", noteOnly: true},
+  {k: "bold", ic: "B", label: "Bold", tip: "Bold (Ctrl+B)", group: "format"},
+  {k: "italic", ic: "I", label: "Italic", tip: "Italic (Ctrl+I)", group: "format"},
+  {k: "quote", ic: EB_QUOTE, label: "Quote", tip: "Quote (> )", group: "format", noteOnly: true},
+  {k: "table", ic: EB_TABLE, label: "Table", tip: "Table (| a | b |)", group: "format", noteOnly: true},
   {k: "more", ic: FLY_PANEL, label: "Side panel", tip: "Open in the side panel", tail: true},
 ];
 
@@ -58,10 +70,12 @@ const EDIT_BAR_GROUPS = [
   {g: "type", label: "Type", ic: EB_TASK},
   {g: "tag", label: "Tag", ic: EB_TAG},
   {g: "media", label: "Media", ic: EB_IMAGE},
+  {g: "format", label: "Format", ic: EB_FORMAT},
 ];
 
 /* The leaves a group shows right now -- Photo drops out where there is no
    camera to speak of, so a group left with one leaf can act on it directly
    instead of opening a one-item menu. */
 const editBarGroupLeaves = g => EDIT_BAR.filter(r => r.group === g &&
-  !(r.pointerFineOff && matchMedia("(pointer:fine)").matches));
+  !(r.pointerFineOff && matchMedia("(pointer:fine)").matches) &&
+  !(r.noteOnly && FLY && FLY.block && FLY.block.state));

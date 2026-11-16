@@ -55,7 +55,7 @@ body #content.roomunder{padding-bottom:85vh}
 #editBar.inline > .ebgrp[data-k="type"] .elb{display:inline;font-size:12.5px;color:inherit}
 #editBar.inline > .ebgrp[data-k="type"]::after{content:"▾";font-size:10px}
 #editBar.inline .ebrest{display:flex;order:10;font-size:15px;line-height:1}
-#editBar.inline:not(.all) > :is([data-k="tag"],[data-k="media"],[data-k="pad"],[data-k="more"]){display:none}
+#editBar.inline:not(.all) > :is([data-k="tag"],[data-k="media"],[data-k="format"],[data-k="pad"],[data-k="more"]){display:none}
 .blk>.line:has(> #editBar.inline:not([hidden])){background:var(--bg3)}
 /* The words flow around the tools: only the first row makes room for them
    (a float as wide as the bar), the rows below use the whole line. --ebw is

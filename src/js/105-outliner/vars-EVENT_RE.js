@@ -21,4 +21,8 @@ const ACTION_DOT_RE = /^·[ \t ]+/;
    marks stay in the file and show while you type in the line; a task is
    never a heading. */
 const HEAD_RE = /^(#{1,6})[ \t]+(?=\S)/;
+/* "> " in front of a note makes it a quote, the markdown way (#416); like a
+   heading's #, the > stays in the file and shows while you type. */
+const QUOTE_RE = /^>[ \t]+(?=\S)/;
+const isQuoteLine = (title, isTask) => !isTask && QUOTE_RE.test(title || "");
 const headLevel = (title, isTask) => isTask ? 0 : ((HEAD_RE.exec(title || "") || [])[1] || "").length;

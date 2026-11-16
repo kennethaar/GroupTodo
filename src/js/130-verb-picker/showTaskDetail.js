@@ -387,7 +387,7 @@ function showTaskDetail(path, block, space) {
           el("span", {style: "color:var(--fg3);font-size:12px"},
             informedAt(block) ? "Last told " + trim(blockProp(block, INFORMED_PROP)).replace(/\s+\S+$/, "") + " on " + informedAt(block) + "."
                               : "Tell whoever it names where it stands. Alt+U on the line."))),
-      el("div", {class: "field"}, el("label", {}, "Notes"), notes),
+      el("div", {class: "field"}, el("div", {class: "fmthead"}, el("label", {}, "Notes"), formatBar(notes)), notes),
       el("div", {class: "field"}, trail)),
     onKey: e => {
       /* Escape hands the panel over to the grid rather than closing it. Once

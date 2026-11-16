@@ -7,5 +7,6 @@ function lineHtml(b) {
   if (bujoKind(b.title, b.state)) return renderInline(bujoText(b.title));
   return b.state && estBand(b.title)
     ? estHtml(b.title) + renderInline(withoutEst(b.title))
-    : renderInline(headLevel(b.title, b.state) ? b.title.replace(HEAD_RE, "") : b.title);
+    : renderInline(headLevel(b.title, b.state) ? b.title.replace(HEAD_RE, "")
+      : isQuoteLine(b.title, b.state) ? b.title.replace(QUOTE_RE, "") : b.title);
 }

@@ -2,6 +2,7 @@ function editBarAct(k) {
   if (!FLY) return;
   const {txt, path, page, block: b} = FLY;
   if (k === "photo" || k === "image") { editBarPickImage(path, b, k === "photo"); return; }
+  if (EDIT_BAR.some(r => r.k === k && r.group === "format")) { editBarFormat(k); return; }
   if (k === "pad") {
     // As Shift+Enter: a notepad box under the line (#392).
     openNoteBox(path, b, txt);

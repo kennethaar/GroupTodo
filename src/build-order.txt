@@ -1657,6 +1657,7 @@ js/105-outliner/flyShow.js
 js/105-outliner/flyHide.js
 js/105-outliner/vars-EDIT_BAR.js
 js/105-outliner/editBarAct.js
+js/105-outliner/editBarFormat.js
 js/105-outliner/editBarRefocus.js
 js/105-outliner/editBarPickImage.js
 js/105-outliner/editBarGroupClose.js
@@ -2563,6 +2564,7 @@ js/130-verb-picker/surroundingsGrid.js
 js/130-verb-picker/projectGrid.js
 js/130-verb-picker/bareProjectLink.js
 js/130-verb-picker/openTaskDetail.js
+js/130-verb-picker/formatBar.js
 js/130-verb-picker/showTaskDetail.js
 js/130-verb-picker/focusTaskDetailDate.js
 js/130-verb-picker/arrangeTaskDetail.js

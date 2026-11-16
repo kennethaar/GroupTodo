@@ -605,6 +605,8 @@ body.solview #content{padding-bottom:14px}
 .line.hd1 .txt{font-size:20px;font-weight:650;line-height:1.3}
 .line.hd2 .txt{font-size:17px;font-weight:650;line-height:1.35}
 .line.hd3 .txt{font-size:15px;font-weight:650}
+/* A quote (#416): a bar at its left and quieter words, as markdown draws one. */
+.line.quote .txt{border-left:3px solid var(--border2);padding-left:10px;color:var(--fg2);font-style:italic}
 .line.hd4 .txt,.line.hd5 .txt,.line.hd6 .txt{font-weight:650}
 .line.hd1>.bullet{top:12px}
 .line.hd2>.bullet{top:11px}
@@ -662,3 +664,9 @@ body.solview #content{padding-bottom:14px}
 .outline.readonly .txt{cursor:default}
 .space-journal .card{margin:0}
 
+/* Format for a notes box (#416): small, quiet, on the Notes label's row. */
+.fmthead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fmtbar{display:flex;gap:2px;margin-left:auto}
+.fmtbar .iconbtn{min-width:26px;height:24px;padding:0 4px;font-size:12px;font-weight:650;color:var(--fg2)}
+.fmtbar .iconbtn svg{width:14px;height:14px}
+.fmtbar .iconbtn:hover,.fmtbar .iconbtn:focus-visible{color:var(--fg);background:var(--bg3)}

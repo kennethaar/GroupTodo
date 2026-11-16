@@ -4234,7 +4234,7 @@ var GTD_TEST = (() => {
       await frame();
       ok(bar() && !bar().hidden, "no toolbar while a line is being written");
       eq([...bar().querySelectorAll(":scope > .ebtn .elb")].map(n => n.textContent),
-        ["Up", "Down", "Outdent", "Indent", "Notepad", "Type", "Tag", "Media", "Side panel"], "the top-level bar is 9 buttons");
+        ["Up", "Down", "Outdent", "Indent", "Notepad", "Type", "Tag", "Media", "Format", "Side panel"], "the top-level bar is 10 buttons (Format, #416)");
       bar().querySelector('[data-k="more"]').click();
       await frame();
       ok(document.querySelector("#modalRoot .modal"), "Side panel opens the task detail panel directly, not a popover");
@@ -4427,6 +4427,77 @@ var GTD_TEST = (() => {
       eq(b.state, "TODO", "a double tap on Type did not make the note a to do");
       ok(!document.querySelector("#editBar .ebpop"), "the Type menu stayed open after the double tap");
     } finally { document.activeElement && document.activeElement.blur(); go("today"); }
+  });
+  test("#416 Format on the line tools: headings, bold, italic, quote and table, only what the line can take", async () => {
+    const path = scratchProject("format menu", [["", "Kitchen plan"], ["TODO", "Call Bob"], ["", ""]]);
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    const wasTools = PREF.get("linetools");
+    PREF.set("linetools", "all");
+    openPage(path);
+    await settle();
+    const [note, task, empty] = getPage(path).blocks;
+    const row = b => document.querySelector('.blk[data-id="' + b.id + '"] > .line');
+    const txt = b => row(b).querySelector(".txt");
+    const keys = () => [...document.querySelectorAll("#editBar .ebpop [data-k]")].map(n => n.dataset.k);
+    const pick = async k => {
+      if (!document.querySelector('#editBar .ebpop[data-g="format"]')) document.querySelector('#editBar [data-k="format"]').click();
+      await frame();
+      document.querySelector('#editBar .ebpop [data-k="' + k + '"]').click();
+      await frame();
+    };
+    try {
+      focusBlock(note.id); await frame();
+      const btn = document.querySelector('#editBar [data-k="format"]');
+      ok(btn, "no Format button among the line tools");
+      btn.click(); await frame();
+      eq(keys().join(" "), "h1 h2 h3 bold italic quote table", "a note's Format menu");
+      document.querySelector('#editBar [data-k="format"]').click(); await frame();
+
+      await pick("h2");
+      eq(lineText(txt(note)), "## Kitchen plan", "H2 makes the note a heading");
+      ok(row(note).classList.contains("hd2"), "drawn as a heading at once");
+      await pick("h1");
+      eq(lineText(txt(note)), "# Kitchen plan", "another level replaces the one there");
+      await pick("h1");
+      eq(lineText(txt(note)), "Kitchen plan", "the same level again takes it off");
+
+      setHostSelection(txt(note), 8, 12);
+      await pick("bold");
+      eq(lineText(txt(note)), "Kitchen **plan**", "Bold wraps the picked words");
+      await pick("quote");
+      eq(lineText(txt(note)), "> Kitchen **plan**", "Quote marks the line");
+      txt(note).blur(); await settle();
+      eq(note.title, "> Kitchen **plan**", "kept in the file as markdown");
+      ok(row(note).classList.contains("quote"), "a quote is drawn as one");
+      ok(!/^>/.test(txt(note).textContent.trim()), "and its > is not shown when not editing");
+
+      focusBlock(task.id); await frame();
+      document.querySelector('#editBar [data-k="format"]').click(); await frame();
+      eq(keys().join(" "), "bold italic", "a task is never a heading, quote or table, so those are not offered");
+      document.querySelector('#editBar [data-k="format"]').click(); await frame();
+
+      focusBlock(empty.id); await frame();
+      await pick("table");
+      await settle();
+      ok(tableRows(empty) >= 2, "Table on an empty note makes a table: " + JSON.stringify([empty.title, empty.body]));
+      document.activeElement && document.activeElement.blur(); await settle();
+
+      // The task side panel offers the same choices for its notes.
+      openTaskDetail(path, task, V.space); await settle();
+      const ta = document.querySelector(".modal .fmtbar").closest(".field").querySelector("textarea");
+      const fbtn = k => document.querySelector('.modal .fmtbar [data-k="' + k + '"]');
+      ok(fbtn("h2") && fbtn("bold") && fbtn("italic") && fbtn("quote") && fbtn("table"), "the side panel's notes have no Format choices");
+      ta.focus(); ta.value = "Ask about\nthe price"; ta.setSelectionRange(12, 12);
+      fbtn("h2").dispatchEvent(new MouseEvent("mousedown", {bubbles: true, cancelable: true})); fbtn("h2").click();
+      eq(ta.value, "Ask about\n## the price", "H2 marks the line the caret is on");
+      ta.setSelectionRange(0, 3);
+      fbtn("bold").click();
+      eq(ta.value, "**Ask** about\n## the price", "Bold wraps the picked words");
+      eq(document.activeElement, ta, "the caret stays in the notes");
+      ta.blur(); await settle();
+      eq(task.body.join("\n"), "**Ask** about\n## the price", "kept in the task's notes");
+      closeModal();
+    } finally { closeModal(); PREF.set("linetools", wasTools || ""); document.activeElement && document.activeElement.blur(); go("today"); }
   });
   test("#170 a toolbar move keeps the line where it was on the screen, caret in it", async () => {
     const path = scratchProject("edit bar scroll", Array.from({length: 60}, (_, i) => ["TODO", "Row " + i]));

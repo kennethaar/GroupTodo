@@ -5,6 +5,7 @@ function paintHeadLine(line, title, isTask) {
   line.classList.toggle("blank", !isTask && !trim(title));
   const n = headLevel(title, isTask);
   if (n) line.classList.add("hd" + n);
+  line.classList.toggle("quote", isQuoteLine(title, isTask));
   const k = bujoKind(title, isTask);
   line.classList.toggle("ev", k === "ev");
   line.classList.toggle("feel", k === "feel");
