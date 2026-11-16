@@ -1077,7 +1077,7 @@ const HELP = {
     words: ["recipe", "cook", "cooking", "food", "dinner", "servings", "portions", "guests", "scale", "metric", "ingredients", "kitchen"]},
   linemenu: {part: "write", title: "The line menu and toolbar", gtd: "clarify",
     what: "One menu for all you can do to a line.",
-    steps: ["⋯ at the end of a line opens it. Ctrl+. opens it from the keyboard.",
+    steps: ["Point at a line: ☰ opens its menu, 🔍 zooms in. Or press Ctrl+.",
       "Shows state, due date, project and repeat; pick one to change it.",
       "Also copy, refile, insert a tracker or plan it with an AI.",
       ["The line you write has its tools at its end: Type, indent and move. ＋ there shows Tag, Media, the notepad and Side panel.", "?#editBar.inline"],

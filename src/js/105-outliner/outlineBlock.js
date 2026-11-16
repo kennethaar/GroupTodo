@@ -495,11 +495,16 @@ function outlineBlock(path, page, b, opts = {}) {
   const titled = linkTitleButton(path, b);
   if (titled) line.append(titled);
   /* Pressing it must not take the caret out of the line, or the blur would
-     close the very menu it is opening. */
+     close the very menu it is opening. With a mouse, the ☰ and a 🔍 sit in the
+     gutter left of the fold arrow and show on the line pointed at (#395); the
+     zoom does what a click on the bullet does, as a hint that it can. */
   line.append(el("button", {class: "linemenu", tabindex: "-1", title: "Line menu (Ctrl+.)", "aria-label": "Line menu",
     "aria-haspopup": "menu", "aria-expanded": "false",
     onmousedown: e => e.preventDefault(),
-    onclick: e => { e.stopPropagation(); flySummon(txt); }}, "⋯"));
+    onclick: e => { e.stopPropagation(); flySummon(txt); }, html: SVG("icon-menu")}));
+  line.append(el("button", {class: "linezoom", tabindex: "-1", title: "Focus on this line", "aria-label": "Focus on this line",
+    onmousedown: e => e.preventDefault(),
+    onclick: e => { e.stopPropagation(); setBranchFocus(page, b.id, path); }, html: SVG("icon-zoom")}));
   paintTrackerLine(line, txt, path, b);
   node.append(line);
 

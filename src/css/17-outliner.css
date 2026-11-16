@@ -30,7 +30,21 @@
   font-size:14px;line-height:18px;opacity:0;transition:opacity .1s}
 .blk>.line:hover>.linemenu,.blk>.line.raw>.linemenu{opacity:1}
 .blk>.line>.linemenu:hover,.blk>.line>.linemenu[aria-expanded="true"]{background:var(--bg4);color:var(--fg)}
-/* With no pointer to hover, the ⋯ is the way into a line: big enough for a thumb. */
+.blk>.line>.linemenu svg,.blk>.line>.linezoom svg{width:16px;height:16px;display:block;margin:auto}
+.blk>.line>.linezoom{display:none}
+/* With a mouse, Dynalist's way: ☰ and 🔍 in the gutter left of the fold
+   arrow, on the line pointed at or being written (#395). */
+@media (hover:hover){
+  .blk>.line>.linemenu,.blk>.line>.linezoom{position:absolute;top:2px;width:18px;height:22px;padding:0;border:0;
+    background:transparent;color:var(--fg3);cursor:pointer;opacity:0;transition:opacity .1s}
+  .blk>.line>.linemenu{left:-38px}
+  .blk>.line>.linezoom{display:block;left:-19px}
+  .blk>.line:hover>.linezoom,.blk>.line.raw>.linezoom,.blk>.line>.linezoom:focus-visible{opacity:1}
+  .blk>.line>.linezoom:hover{background:var(--bg4);color:var(--fg);border-radius:4px}
+  /* The card still clips, but leaves the gutter room, so no text moves. */
+  .card:has(.outline){overflow:clip;overflow-clip-margin:40px}
+}
+/* With no pointer to hover, the ☰ stays at the line's end, the way into a line: big enough for a thumb. */
 @media (hover:none){ .blk>.line>.linemenu{min-width:40px;min-height:32px;color:var(--fg2);font-size:16px} }
 /* # Project? on a task just added on a day page (#401): quiet, one clear control. */
 .blk>.line>.askproj{order:98;flex:none;align-self:center;margin-left:6px;padding:1px 8px;border:1px dashed var(--line);border-radius:10px;background:none;color:var(--fg3);font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}

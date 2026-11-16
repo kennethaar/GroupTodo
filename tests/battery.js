@@ -4240,6 +4240,31 @@ var GTD_TEST = (() => {
       ok(icons.every(n => !/[\u{1F300}-\u{1FAFF}☀-➿]/u.test(n.textContent)), "no emoji icon on the bar");
     } finally { window.matchMedia = mm; document.activeElement && document.activeElement.blur(); go("today"); }
   });
+  test("#395 the line menu ☰ and a zoom 🔍 sit in the gutter left of the fold arrow, shown only on the line pointed at", async () => {
+    const path = scratchProject("gutter menu", [["TODO", "Paint the hall"], ["TODO", "Call Bob"]]);
+    openPage(path);
+    await settle();
+    const [a] = getPage(path).blocks;
+    const line = document.querySelector('.blk[data-id="' + a.id + '"] > .line');
+    const menu = line.querySelector(":scope > .linemenu"), zoom = line.querySelector(":scope > .linezoom");
+    const fold = line.querySelector(":scope > .branch-toggle");
+    ok(menu && zoom, "a menu and a zoom button on the line");
+    ok(menu.querySelector("svg") && zoom.querySelector("svg"), "both are drawn icons, not a ⋯");
+    eq(zoom.getAttribute("aria-label"), "Focus on this line", "the zoom says what it does");
+    const m = menu.getBoundingClientRect(), z = zoom.getBoundingClientRect(), f = fold.getBoundingClientRect(), t = line.querySelector(".txt").getBoundingClientRect();
+    ok(m.right <= z.left + 1 && z.right <= f.left + 1, "☰ then 🔍 then the fold arrow, left to right: " + [m.left, z.left, f.left].map(Math.round));
+    ok(Math.abs((m.top + m.bottom) / 2 - (t.top + 10)) <= 6, "level with the first row of words");
+    const hit = document.elementFromPoint(m.left + m.width / 2, m.top + m.height / 2);
+    ok(hit && menu.contains(hit), "the ☰ is on screen and not cut off at the outline's edge: " + (hit && hit.className));
+    eq(getComputedStyle(menu).opacity, "0", "hidden while the mouse is elsewhere");
+    eq(getComputedStyle(zoom).opacity, "0", "the zoom too");
+    const css = [...document.querySelectorAll("style")].map(s => s.textContent).join("\n");
+    ok(/\.blk>\.line:hover>\.linezoom/.test(css), "the zoom shows when the mouse is on the line");
+    zoom.click();
+    await settle();
+    eq(BRANCH_FOCUS.get(getPage(path)), a.id, "the zoom focuses on the line, as the bullet does");
+    setBranchFocus(getPage(path), null, path);
+  });
   test("#395 on a computer the line tools sit on the line being written, the rest behind ＋ Insert; a phone keeps them at the foot", async () => {
     const path = scratchProject("tools on the line", [["TODO", "Buy paint for the long hallway and the two small bedrooms upstairs, then the kitchen ceiling, the porch railing and the garden shed door before the autumn rain sets in for good this year"], ["TODO", "Call Bob"]]);
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
@@ -4264,9 +4289,6 @@ var GTD_TEST = (() => {
       const lh = parseFloat(getComputedStyle(txtEl).lineHeight) || 20;
       ok(words.height > lh * 1.5, "the long line wraps (" + words.height + " vs " + lh + ")");
       ok(Math.abs((r.top + r.bottom) / 2 - (words.top + lh / 2)) <= 4, "the tools sit level with the first row (bar " + r.top + "-" + r.bottom + ", text from " + words.top + ")");
-      // The line menu's ⋯ after the bar sits level with it, not lower down.
-      const lm = bar().closest(".line").querySelector(":scope > .linemenu").getBoundingClientRect();
-      ok(Math.abs((lm.top + lm.bottom) / 2 - (r.top + r.bottom) / 2) <= 2, "the ⋯ sits level with the tools (⋯ " + lm.top + "-" + lm.bottom + ", bar " + r.top + "-" + r.bottom + ")");
       // The words flow around the tools: none under them, and the rows below
       // the first use the whole width, so the line keeps its shape (#395).
       const rg = document.createRange();
