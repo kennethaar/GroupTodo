@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.169.4 - 2026-11-16
+
+- Ways to run GroupToDo: a new app icon, a G of folded blue ribbon standing
+  on a flat base, lighter at every fold.
+
 ## 1.169.3 - 2026-11-16
 
 - Links and aliases: the Use title offer for a pasted link sits on its own row
