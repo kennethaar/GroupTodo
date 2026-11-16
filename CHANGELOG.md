@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.169.3 - 2026-11-16
+
+- Links and aliases: the Use title offer for a pasted link sits on its own row
+  under the words, instead of over a long line's words (#415).
+
 ## 1.169.2 - 2026-11-16
 
 - States and Waiting for: Alt+T makes a line a task and Alt+N makes it a note.

@@ -5234,8 +5234,22 @@ var GTD_TEST = (() => {
       eq(asked.length, 0, "the link was sent to the site while the setting is off");
       ok(!chip(b), "a title was offered while the setting is off");
 
-      // #415: on by default, and the offer is where it can be seen and clicked.
+      // #415: on by default, and the offer is where it can be seen and clicked,
+      // never over the words of the line being written, however long it is.
       PREF.set("linktitles", "");
+      [b, txt] = await bullet("Watch this one later tonight when everybody else in the house has gone to bed and it is quiet");
+      paste(txt, " " + yt);
+      await until(() => chip(b));
+      ok(chip(b), "#415 no title offered on a long line");
+      {
+        const cr = chip(b).getBoundingClientRect(), rg = document.createRange();
+        rg.selectNodeContents(txt);
+        const rows = [...rg.getClientRects()].filter(q => q.width > 1);
+        const over = rows.filter(q => q.left < cr.right && q.right > cr.left && q.top < cr.bottom && q.bottom > cr.top);
+        ok(Math.abs(cr.left - txt.getBoundingClientRect().left) <= 2, "#415 the offer does not start under the words: " + Math.round(cr.left) + " vs " + Math.round(txt.getBoundingClientRect().left));
+        ok(!over.length, "#415 the title offer covers the words: offer " + [cr.left, cr.top, cr.right, cr.bottom].map(Math.round) +
+          " words " + over.map(q => [q.left, q.top, q.right, q.bottom].map(Math.round).join(",")).join(" | "));
+      }
       [b, txt] = await bullet("Watch");
       paste(txt, " " + yt);
       await until(() => chip(b));
