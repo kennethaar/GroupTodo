@@ -501,7 +501,7 @@ function outlineBlock(path, page, b, opts = {}) {
   line.append(el("button", {class: "linemenu", tabindex: "-1", title: "Line menu (Ctrl+.)", "aria-label": "Line menu",
     "aria-haspopup": "menu", "aria-expanded": "false",
     onmousedown: e => e.preventDefault(),
-    onclick: e => { e.stopPropagation(); flySummon(txt); }, html: SVG("icon-menu")}));
+    onclick: e => { e.stopPropagation(); flySummon(txt, e.currentTarget); }, html: SVG("icon-menu")}));
   line.append(el("button", {class: "linezoom", tabindex: "-1", title: "Focus on this line", "aria-label": "Focus on this line",
     onmousedown: e => e.preventDefault(),
     onclick: e => { e.stopPropagation(); setBranchFocus(page, b.id, path); }, html: SVG("icon-zoom")}));

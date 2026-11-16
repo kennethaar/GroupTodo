@@ -20,6 +20,18 @@ function flyPlace() {
   const w = box.offsetWidth, h = box.offsetHeight;
   const clampX = x => Math.min(Math.max(M, x), Math.max(M, vw - w - M));
   let top, maxH = null;
+  /* Opened from the ☰ in the gutter (#413): beside it, to its left, level with
+     it; with no room there, just under it, starting at the ☰. */
+  const from = FLY.from && FLY.from.isConnected ? FLY.from.getBoundingClientRect() : null;
+  if (from) {
+    const room = from.left - GAP - M >= w;
+    const fx = room ? from.left - GAP - w : clampX(from.left);
+    const fy = room ? from.top : from.bottom + GAP;
+    const fmax = vh - M - fy;
+    box.style.maxHeight = h > fmax ? Math.max(80, fmax) + "px" : "";
+    box.style.left = Math.min(fx, from.left) + "px"; box.style.top = Math.max(top0 + M, Math.min(fy, vh - M - 80)) + "px";
+    return;
+  }
   const left = clampX(end);
   const below = vh - M - (t.bottom + GAP), above = t.top - GAP - M - top0;
   if (h <= below || below >= above) {
