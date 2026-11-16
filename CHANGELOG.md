@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.167.1 - 2026-11-16
+
+- Settings: routines, checklists and templates are one list, Checklists (#405).
+  A routine is a checklist with a rhythm, and a template one that makes a new
+  project. Its chip says which: as needed, weekly, or new project. Task types
+  and word lists sit apart under Line vocabularies, since you open them rather
+  than run them. Nothing in your folder changes.
+
 ## 1.167.0 - 2026-11-15
 
 - Links and aliases: a pasted YouTube, Vimeo, X, Spotify or SoundCloud link

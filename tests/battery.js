@@ -5932,6 +5932,51 @@ var GTD_TEST = (() => {
       } finally { await openSpace(back); await removeArea(n); go("today"); }
     });
   }
+  test("#405 Settings keeps lists in two families: Checklists you run, and Line vocabularies", async () => {
+    const P = {
+      plain: join(DIRS.lists, "Test405 pack.md"), routine: join(DIRS.lists, "Test405 accounts.md"),
+      tpl: join(DIRS.lists, "Test405 onboard.md"), states: join(DIRS.lists, "Test405 purchase.md"),
+      words: join(DIRS.lists, "Test405 places.md"),
+    };
+    putPage(P.plain, parsePage("- Passport\n"));
+    putPage(P.routine, parsePage("cadence:: weekly\n\n- Count the till\n"));
+    putPage(P.tpl, parsePage("kind:: project\n\n- Call %name%\n"));
+    putPage(P.states, parsePage("kind:: states\n\n- Ordered\n- Delivered\n"));
+    putPage(P.words, parsePage("kind:: words\nlines:: !\n\n- Home\n"));
+    clearMemo();
+    try {
+      go("checklists");
+      await settle();
+      const secs = [...content().querySelectorAll(".section")];
+      const titles = secs.map(s => s.querySelector("h3").firstChild.textContent);
+      for (const old of ["Routines", "Project templates", "Task types", "Word lists", "Routines and lists"])
+        ok(!titles.includes(old), "no group of its own: " + old);
+      const sec = t => secs.find(s => s.querySelector("h3").firstChild.textContent === t);
+      const row = (s, name) => [...(s?.querySelectorAll(".prow") || [])].find(r => r.querySelector(".nm").textContent === name);
+      const run = sec("Checklists"), voc = sec("Line vocabularies");
+      ok(run && voc, "both families are there: " + JSON.stringify(titles));
+      ok(titles.indexOf("Checklists") < titles.indexOf("Line vocabularies"), "the lists you run come first");
+      has(run.textContent, "give it a rhythm", "the blurb says a rhythm makes it come back");
+      const btn = r => r.querySelector(".btn.primary")?.textContent;
+      for (const [name, cta] of [["Test405 pack", "Run"], ["Test405 accounts", "Run"], ["Test405 onboard", "New project"]]) {
+        ok(row(run, name), name + " is a checklist");
+        eq(btn(row(run, name)), cta, name + " runs with " + cta);
+      }
+      has(row(run, "Test405 pack").textContent, "as needed", "a checklist with no rhythm says so");
+      has(row(run, "Test405 onboard").textContent, "new project", "a template says what its run makes");
+      for (const name of ["Test405 purchase", "Test405 places"]) {
+        ok(row(voc, name), name + " is a vocabulary");
+        ok(!row(run, name), name + " is not run");
+        eq(btn(row(voc, name)), "Open");
+      }
+      // The dialog for a new one uses the same words, not the three-way slogan.
+      newChecklistPrompt();
+      await settle();
+      const dlg = document.querySelector(".modal").textContent;
+      ok(!/A routine comes back|Which of the three/.test(dlg), "the old slogan is gone: " + dlg.slice(0, 200));
+      closeModals();
+    } finally { closeModals(); for (const p of Object.values(P)) V.pages.delete(p); clearMemo(); go("today"); }
+  });
 
   test("Calendars: reminder presets save at once, Custom… holds any times and several, a calendar can have its own (#292); a calendar row says who sees it", async () => {
     const was = PREF.get(MEET_REMIND_KEY, "10"), feeds = PREF.get(CAL_FEEDS_KEY, "[]");

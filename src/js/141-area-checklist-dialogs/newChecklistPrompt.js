@@ -5,9 +5,9 @@ function newChecklistPrompt() {
       "Write %name% wherever the thing you are onboarding should appear - " +
       "\"Call %name% to welcome them\". You are asked for it on every run."));
   const hints = {
-    routine: "comes back and never finishes - run it when it is due",
+    routine: "a checklist with a rhythm: it comes back on the days it falls on",
     plain: "steps you would rather not think through twice; run them into today or a project",
-    project: "every run spins up a whole new project with these steps",
+    project: "a checklist that makes a new project each time you run it",
   };
   let kind = "plain";
   const seg = el("div", {class: "seg"});
@@ -25,12 +25,12 @@ function newChecklistPrompt() {
     seg.append(btn);
   }
   modal({
-    center: true, title: "Something you do again",
+    center: true, title: "New checklist",
     body: el("div", {},
       el("div", {class: "field"},
-        el("div", {style: "color:var(--fg2);font-size:13px"}, "A project finishes. A routine comes back. A template makes projects.")),
+        el("div", {style: "color:var(--fg2);font-size:13px"}, "Steps you run: when you need them, on a rhythm, or as a new project.")),
       el("div", {class: "field"}, el("label", {}, "Name"), nameInput),
-      el("div", {class: "field"}, el("label", {}, "Which of the three"), seg,
+      el("div", {class: "field"}, el("label", {}, "Kind"), seg,
         el("div", {id: "ckHint", style: "color:var(--fg3);font-size:12px;margin-top:6px"}, hints.plain)),
       tplNote),
     foot: [

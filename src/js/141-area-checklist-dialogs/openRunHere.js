@@ -5,11 +5,12 @@ function openRunHere(path, b) {
   const items = checklistPages()
     .filter(pth => !isStateList(pth) && !isWordList(pth) && !kindTpls.has(pth) && pth !== REVIEW_LIST_PATH && pth !== ASK_OWN_PATH && pth !== INFORM_OWN_PATH)
     .sort((x, y) => group(x) - group(y) || pageTitle(x).localeCompare(pageTitle(y)));
-  if (!items.length) { notify("No routines or lists yet. Make one in Settings."); return; }
+  if (!items.length) { notify("No checklists yet. Make one in Settings."); return; }
   listPicker({
-    title: "Run which routine or list here?", typeahead: true, items,
+    title: "Run which checklist here?", typeahead: true, items,
     label: pth => pageTitle(pth),
-    detail: pth => RUN_GROUPS[group(pth)][0],
+    // The same chip as in Settings: its rhythm, or what its run makes.
+    detail: pth => isProjectTemplate(pth) ? "new project" : routineSummary(pth),
     onPick: pth => {
       if (!isProjectTemplate(pth)) { runListUnder(path, b, pth); return; }
       runTemplateAsProject(pth, made => {

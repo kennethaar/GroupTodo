@@ -20,7 +20,7 @@ const SLASH_COMMANDS = [
   {id: "out",       title: "Check out",       detail: "somebody left: the time out",          kw: ["out", "leave", "checkout", "ut", "gikk", "dro"]},
   {id: "query",     title: "Live list",       detail: "lines that match, kept up to date", kw: ["query", "list", "filter", "spørring", "liste", "filter"]},
   {id: "embed",     title: "Show a page here", detail: "another page, live",   kw: ["embed", "include", "show", "vis", "bygg"]},
-  {id: "run",       title: "Run a routine or list", detail: "its steps under this line", kw: ["run", "routine", "checklist", "template", "kjør", "rutine", "sjekkliste", "mal"]},
+  {id: "run",       title: "Run a checklist", detail: "its steps under this line", kw: ["run", "routine", "checklist", "template", "kjør", "rutine", "sjekkliste", "mal"]},
   {id: "inform",    title: "Send an update",  detail: "tell somebody where it stands", kw: ["inform", "update", "tell", "report", "oppdater", "orienter", "informer"]},
   {id: "more",      title: "Open in the side panel", detail: "dates, chat, history", kw: ["open", "side", "more", "details", "panel", "mer", "åpne"]},
   {id: "ttype",     title: "Task type",       detail: "stages of its own",     kw: ["type", "kind", "stages", "slag"]},
