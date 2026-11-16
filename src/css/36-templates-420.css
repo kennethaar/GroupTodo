@@ -13,3 +13,11 @@
 .tplchips{display:flex;flex-wrap:wrap;gap:5px}
 .tplimport{margin:12px 12px 2px}
 @media (max-width:600px){.tplsplit{grid-template-columns:1fr}}
+/* A page's views as tabs (#420), under its title. */
+.pviews{display:inline-flex;margin:4px 0 12px}
+.pviews .pvadd{min-width:32px;font-weight:600}
+.partsum{display:flex;align-items:center;gap:10px;padding:10px 14px;margin-bottom:10px}
+.partsum .pbar{flex:1;max-width:240px}
+.partrow .wc{margin-left:auto;font-variant-numeric:tabular-nums}
+.partrow .n{color:var(--fg3);font-size:13px;min-width:18px;font-variant-numeric:tabular-nums}
+.partrow .nm{flex:1;min-width:0;text-align:left;color:var(--fg)}

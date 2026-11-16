@@ -2186,6 +2186,13 @@ js/110-views/projectToAreaAs.js
 js/110-views/mergeProjectIntoArea.js
 js/110-views/personPanel.js
 js/110-views/personWorksAt.js
+js/110-views/pageParts.js
+js/110-views/vars-PAGE_VIEWS.js
+js/110-views/setPageViews.js
+js/110-views/openAddPageView.js
+js/110-views/pageViewTabs.js
+js/110-views/viewPageParts.js
+js/110-views/viewPageRead.js
 js/110-views/viewPage.js
 js/110-views/vars-SEARCH_FILTERS.js
 js/110-views/searchFilterForNow.js

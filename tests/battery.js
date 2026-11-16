@@ -10489,6 +10489,58 @@ var GTD_TEST = (() => {
     const t = "title:: book\ntarget:: 80000\nstages:: [[8/Chapter]]\n\n- [[The storm]]\n- [[Harbour]]\n  - the one set at sea\n";
     eq(serializePage(parsePage(t)), t);
   });
+  test("#420 a page's linked pages as Parts and Read: tabs once a view is added, + offers only what works", () => withBookVault({
+    [join(PAGES, "Kitchen420.md")]: "- [[Strip out420]]\n- [[Wiring420]]\n- A note, not a part\n- TODO [[Wiring420]] a task, not a part\n- [[Not made420]]\n",
+    [join(PAGES, "Strip out420.md")]: "stage:: Done\n\n- Old units out, walls bare.\n- DONE Book the skip\n",
+    [join(PAGES, "Wiring420.md")]: "- TODO Call the electrician\n- DONE Pick sockets\n",
+  }, async () => {
+    const hub = join(PAGES, "Kitchen420.md"), strip = join(PAGES, "Strip out420.md"), wiring = join(PAGES, "Wiring420.md");
+    eq(pageParts(hub).map(p => p.path), [strip, wiring], "a line that is only a link to a page made");
+    eq(pageViewsThatWork(hub), ["parts", "read"]);
+    eq(pageViewsThatWork(strip), [], "nothing to show another way");
+    openPage(hub);
+    await settle();
+    ok(!content().querySelector(".pviews"), "no tabs until a view is added");
+    const pick = label => [...$("#modalRoot").querySelectorAll(".pick")].find(b => b.children[1].textContent.startsWith(label)).click();
+    openPageMenu(hub);
+    await settle();
+    pick("Add a view");
+    await settle();
+    eq([...$("#modalRoot").querySelectorAll(".pick")].map(b => b.children[1].textContent), ["Parts", "Read"], "only the views that work");
+    pick("Parts");
+    await settle();
+    eq(getPage(hub).props.views, "parts");
+    ok(!pageFacts(hub).some(f => f.prop === "views"), "the tabs show it, not a line of values");
+    const tabs = () => [...content().querySelectorAll(".pviews button")];
+    eq(tabs().map(b => b.textContent), ["Outline", "Parts", "+"]);
+    eq(tabs()[0].getAttribute("aria-pressed"), "true", "the outline until a tab is picked");
+    tabs()[1].click();
+    await settle();
+    eq([...content().querySelectorAll(".partrow .nm")].map(n => n.textContent), ["Strip out420", "Wiring420"]);
+    has(content().querySelector(".partrow").textContent, "Done", "its stage");
+    has(content().querySelectorAll(".partrow")[1].textContent, "1/2", "its tasks done");
+    has(content().querySelector(".partsum").textContent, "2 parts");
+    ok(!content().querySelector(".outline"), "the view in the outline's place");
+    tabs()[2].click();
+    await settle();
+    eq([...$("#modalRoot").querySelectorAll(".pick")].map(b => b.children[1].textContent), ["Parts ✓", "Read"], "the ones shown are marked");
+    pick("Read");
+    await settle();
+    eq(getPage(hub).props.views, "parts, read");
+    tabs()[2].click();
+    await settle();
+    eq(content().querySelectorAll(".readch").length, 2, "each part under its name");
+    has(content().textContent, "Old units out, walls bare.");
+    tabs()[3].click();
+    await settle();
+    pick("Read ✓");
+    await settle();
+    eq(getPage(hub).props.views, "parts", "picked again, it comes off");
+    eq(tabs()[0].getAttribute("aria-pressed"), "true", "and the outline is shown");
+    tabs()[2].click(); await settle(); pick("Parts ✓"); await settle();
+    ok(!("views" in getPage(hub).props), "the last one off takes the line off");
+    ok(!content().querySelector(".pviews"), "and the tabs");
+  }));
   test("#420 Write a book, from a template, sets up; Edit picks, moves and goes back to the default", () => withBookVault({
     [join(PAGES, "The storm.md")]: "- Rain\n", [join(PAGES, "Harbour.md")]: "- Boats\n",
   }, async () => {

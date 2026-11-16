@@ -13,6 +13,9 @@ function openPageMenu(path) {
     isEmailPage(path) ? ["Plan it with an AI", "a prompt for your AI; its answer becomes a project", () => openPlanWithAI(planSourceOfEmail(path))] : null,
     kind === "checklist" && !isStateList(path) && !isWordList(path) ? [isProjectTemplate(path) ? "New project from this" : "Add this to a page", null, () => openRunChecklist(path)] : null,
     canSchedule(path) ? ["When it comes round", routineSummary(path), () => openRoutineSchedule(path)] : null,
+    // Another way to see it (#420), once its tabs are not there to offer it.
+    !pageViews(path).length && pageViewsThatWork(path).length
+      ? ["Add a view", "see the pages it links to as parts, or read them as one text", () => openAddPageView(path)] : null,
     isPinned(path) ? ["Unpin from the sidebar", null, () => togglePin(path)]
                    : ["Pin to the sidebar", "as many pages as you like; drag them there to reorder", () => togglePin(path)],
     isSidePinned(space, path) ? ["Unpin from the right", null, unpinSide]

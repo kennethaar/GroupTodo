@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.169.0 - 2026-11-16
+
+- Templates: any page that links to pages can show them another way (#420).
+  ⋯, then Add a view: Parts lists them in order with their stage, tasks done
+  and words, and Read shows them as one text. Each view is a tab over the
+  page, and + on the tabs adds another or takes one off. Only the views that
+  can work with the page are offered.
+
 ## 1.168.0 - 2026-11-16
 
 - Templates: + From a template, in Projects and Pages, starts something from

@@ -141,6 +141,16 @@ capture or for doing. *Source:* UX-007 follow-up, 2026-11-07.
 definition, not a parallel system. *Why:* one mechanism to learn; reusable
 logic (#12). *Source:* #12.
 
+**P19. A feature for one kind of work is a template.** The core stays
+plain. What only some people need (writing a book, a renovation, a thesis)
+comes in from + From a template, or a file, and stays out of Settings and
+the sidebar until picked. Its views are general ones any page can add as
+tabs, offered only when they can work. *Why:* the user wants a minimal app
+that people shape to their own workflow, a little like Notion; Book had
+grown into a part of Settings that most people never use. *Apply:* before
+adding a view or a setting for one workflow, ask whether it can be a
+template or a general view. *Source:* #420.
+
 **P9. Judge layout in the real app.** Verify UI changes in `docs/demo.html`
 (`node tests/ux-shot.mjs <topic>`), never in a mock page. *Why:* a mock missed
 a global `.big` class and the same bug shipped twice. *Source:* 2026-10-29.

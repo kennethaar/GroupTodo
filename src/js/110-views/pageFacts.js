@@ -32,6 +32,8 @@ function pageFacts(path) {
     if (k === PLANNER_ID_PROP) continue;
     // Which Hide done switches are on: the switches show it.
     if (k === HIDE_DONE_PROP) continue;
+    // Which views a page has (#420): its tabs show it.
+    if (k === PAGE_VIEWS_PROP) continue;
     if (area && STAKE_PROPS.includes(k.toLowerCase())) continue;
     if (tracker && TRACKER_PAGE_KEYS.includes(k.toLowerCase())) continue;
     const own = FACT_OWN.includes(k.toLowerCase());

@@ -60,6 +60,14 @@ function viewPage() {
         onclick: () => openPutBack(path)}, "Put back") : null,
       el("button", {class: "btn sm ghost", title: "More", "aria-label": "More", onclick: () => openPageMenu(path)}, "⋯"))));
 
+  /* Its views (#420): tabs once one is added. A view is drawn in the
+     outline's place; the page's own sections stay with the outline. */
+  const tabs = SIDE_DRAWING ? null : pageViewTabs(path);
+  if (tabs) {
+    c.append(tabs);
+    const shown = PAGE_VIEWS.find(v => v.id === pageViewNow(path));
+    if (shown) { shown.draw(c, path); return c; }
+  }
   if (tracker) c.append(trackerPageLine(tracker));
   if (isTemplatePath(path)) c.append(templateHelp());
   // The tour explains itself on its own page and nowhere else.
