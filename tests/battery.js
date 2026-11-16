@@ -4264,6 +4264,9 @@ var GTD_TEST = (() => {
       const lh = parseFloat(getComputedStyle(txtEl).lineHeight) || 20;
       ok(words.height > lh * 1.5, "the long line wraps (" + words.height + " vs " + lh + ")");
       ok(Math.abs((r.top + r.bottom) / 2 - (words.top + lh / 2)) <= 4, "the tools sit level with the first row (bar " + r.top + "-" + r.bottom + ", text from " + words.top + ")");
+      // The line menu's ⋯ after the bar sits level with it, not lower down.
+      const lm = bar().closest(".line").querySelector(":scope > .linemenu").getBoundingClientRect();
+      ok(Math.abs((lm.top + lm.bottom) / 2 - (r.top + r.bottom) / 2) <= 2, "the ⋯ sits level with the tools (⋯ " + lm.top + "-" + lm.bottom + ", bar " + r.top + "-" + r.bottom + ")");
       // The words flow around the tools: none under them, and the rows below
       // the first use the whole width, so the line keeps its shape (#395).
       const rg = document.createRange();

@@ -63,3 +63,5 @@ body #content.roomunder{padding-bottom:85vh}
 #editBar.inline{position:relative;z-index:1}
 .blk>.line:has(> #editBar.inline:not([hidden]))>.txt{margin-right:calc(-1 * var(--ebw,0px))}
 .blk>.line:has(> #editBar.inline:not([hidden]))>.txt::before{content:"";float:right;width:var(--ebw,0px);height:1lh}
+/* The line menu's ⋯ right after the bar sits level with it, on the first row. */
+.blk>.line:has(> #editBar.inline:not([hidden]))>.linemenu{align-self:flex-start;line-height:24px}
