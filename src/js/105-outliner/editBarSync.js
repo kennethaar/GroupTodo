@@ -24,9 +24,7 @@ function editBarSync() {
        Insert. Not ⋯: the line menu's own ⋯ sits right after the bar, and two
        alike buttons side by side make you guess which is which. */
     bar.append(el("button", {class: "ebrest", tabindex: "-1", title: "Insert: tag, media, notepad, side panel", "aria-label": "Insert",
-      "aria-expanded": "false", data: {k: "rest"}, onclick: e => {
-        e.currentTarget.setAttribute("aria-expanded", String(bar.classList.toggle("all")));
-      }}, "＋"));
+      "aria-expanded": "false", data: {k: "rest"}, onclick: () => editBarRestShow(bar, !bar.classList.contains("all"))}, "＋"));
     // A tap on the tools is not a click on the line they sit on.
     for (const t of ["pointerdown", "click", "dblclick"]) bar.addEventListener(t, e => e.stopPropagation());
     // On a line, its first row makes room as wide as the bar (+ its margin);
@@ -42,8 +40,7 @@ function editBarSync() {
   const line = editBarInline() && FLY.txt.closest(".line");
   if (line) {
     if (bar.parentNode !== line) {
-      bar.classList.remove("all");
-      bar.querySelector(".ebrest").setAttribute("aria-expanded", "false");
+      editBarRestShow(bar, false);
       if (bar.parentNode && bar.parentNode.style) bar.parentNode.style.removeProperty("--ebw");
       line.append(bar);
     }

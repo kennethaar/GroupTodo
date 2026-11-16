@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.168.7 - 2026-11-16
+
+- The line menu and toolbar: while the line tools are open, ＋ shows −, so
+  you can see a second click folds them away (#410).
+
 ## 1.168.6 - 2026-11-16
 
 - The top bar: installed on Windows, the empty strip above the Journal

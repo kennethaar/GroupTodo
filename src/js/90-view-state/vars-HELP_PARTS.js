@@ -1081,7 +1081,7 @@ const HELP = {
     steps: ["Point at a line: ☰ opens its menu, 🔍 zooms in. Or press Ctrl+.",
       "Shows state, due date, project and repeat; pick one to change it.",
       "Also copy, refile, insert a tracker or plan it with an AI.",
-      ["The line you write has its tools at its end: Type, indent and move. ＋ there shows Tag, Media, the notepad and Side panel.", "?#editBar.inline"],
+      ["The line you write has its tools at its end: Type, indent and move. ＋ there shows Tag, Media, the notepad and Side panel; − folds them away.", "?#editBar.inline"],
       "On a phone, the same tools sit on a bar at the foot."],
     keys: [["Ctrl+.", "Line menu"], ["Alt+S", "Move to an area"], ["Alt+G", "Refile"], ["Alt+I", "Responsibility"],
       ["Alt+B", "Copy embed"], ["Alt+X", "Copy text"], ["Alt+K", "Insert tracker"], ["Alt+A", "Plan with AI"]],

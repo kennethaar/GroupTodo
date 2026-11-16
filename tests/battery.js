@@ -4365,10 +4365,20 @@ var GTD_TEST = (() => {
       bar().querySelector('[data-k="rest"]').click();
       await frame();
       for (const k of ["tag", "media", "pad", "more"]) ok(shownKeys().includes(k), k + " after ＋");
+      // #410: open, it shows − so a second click plainly closes it.
+      eq(rest.textContent.trim(), "−", "#410 open, the button is −");
+      eq(rest.getAttribute("aria-expanded"), "true", "and says it is open");
+      rest.click();
+      await frame();
+      eq(rest.textContent.trim(), "＋", "#410 − closes them and turns back to ＋");
+      ok(!shownKeys().includes("tag"), "the tools are folded away");
+      rest.click();
+      await frame();
       focusBlock(b.id);
       await frame();
       ok(bar().closest('.blk[data-id="' + b.id + '"]'), "the tools follow to the next line");
       ok(!shownKeys().includes("tag"), "and fold the rest away again");
+      eq(rest.textContent.trim(), "＋", "#410 folded on the next line, the button is ＋ again");
       document.activeElement.blur();
       await frame(); await frame();
       window.matchMedia = q => q === "(pointer:fine)" ? {matches: false} : mm.call(window, q);
