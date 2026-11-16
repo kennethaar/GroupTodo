@@ -14,11 +14,11 @@ function integrationsSettings() {
       render();
     }}, usageOn() ? "Turn off" : "Turn on"));
   /* #404: a pasted video or post link goes to its site for a title only when
-     this is on, so it is off until asked for. */
-  const titles = PREF.get("linktitles") === "1";
+     this is on. On until turned off (#415); "0" is off. */
+  const titles = PREF.get("linktitles") !== "0";
   const linkTitles = settingsRow("Titles for pasted links", titles ? "On · YouTube, Vimeo, X, Spotify, SoundCloud" : "Off",
     el("button", {class: "btn sm ghost", onclick: () => {
-      PREF.set("linktitles", titles ? "" : "1");
+      PREF.set("linktitles", titles ? "0" : "1");
       notify(titles ? "Pasted links stay as they are." : "A pasted video or post link offers its title. The link is sent to that site to ask.");
       render();
     }}, titles ? "Turn off" : "Turn on"));

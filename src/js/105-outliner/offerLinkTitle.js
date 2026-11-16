@@ -3,7 +3,7 @@
    link goes to that site; the line keeps the link either way. */
 function offerLinkTitle(path, b, raw) {
   const url = trim(raw || "");
-  if (PREF.get("linktitles") !== "1" || !/^https?:\/\/\S+$/.test(url)) return;
+  if (PREF.get("linktitles") === "0" ||!/^https?:\/\/\S+$/.test(url)) return;
   if (!LINK_TITLE_SITES.some(([re]) => re.test(url))) return;
   dropLinkTitle();
   const seq = LINK_TITLE.seq;

@@ -923,7 +923,7 @@ const HELP = {
       "A context's alias is that context, not a new one.",
       "An alias that is another page's name asks to merge the two.",
       "Paste a file path in quotes, as Copy as path gives it. It shows only the file name. Click it to open the file. Edit the line to see the whole path.",
-      "Paste a YouTube, Vimeo, X, Spotify or SoundCloud link, and Use title shows it by its title. ✕ keeps the bare link. Turn it on in Settings > Integrations > Titles for pasted links. The link is sent to that site to ask."],
+      "Paste a YouTube, Vimeo, X, Spotify or SoundCloud link, and Use title shows it by its title. ✕ keeps the bare link. Turn it off in Settings > Integrations > Titles for pasted links. The link is sent to that site to ask."],
     see: ["pins", "people-list"],
     words: ["link", "wikilink", "alias", "mention", "tag", "backlink", "autocomplete", "parent", "inherit", "file", "path", "folder", "explorer", "youtube", "video", "tweet", "url", "title"]},
   chapter: {part: "write", title: "Writing a chapter", gtd: "engage",

@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.168.10 - 2026-11-16
+
+- Links and aliases: a pasted YouTube, Vimeo, X, Spotify or SoundCloud link
+  offers its title again. The page was not allowed to ask those sites; now
+  it is, and titles for pasted links are on until you turn them off (#415).
+
 ## 1.168.9 - 2026-11-16
 
 - The line menu and toolbar: ＋/− on the line is a toggle that is kept. Open

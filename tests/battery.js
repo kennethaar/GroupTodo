@@ -5083,7 +5083,16 @@ var GTD_TEST = (() => {
       touch(path); clearMemo(); go("today");
     }
   });
-  test("#404 a pasted video or post link offers its title; Use makes it [title](url); off by default, quiet for other sites", async () => {
+  test("#404 a pasted video or post link offers its title; Use makes it [title](url); on by default, quiet for other sites", async () => {
+    // #415: the page's own security policy lets it ask every one of those sites
+    // (a stand-in fetch below would not notice if it did not).
+    const csp = (document.querySelector('meta[http-equiv="Content-Security-Policy"]') || {}).content || "";
+    const connect = (/connect-src([^;]*)/.exec(csp) || [, ""])[1].trim().split(/\s+/);
+    for (const [, ask] of LINK_TITLE_SITES) {
+      const origin = new URL(ask("https://example.com/x")).origin;
+      ok(connect.includes(origin), "#415 the page may not ask " + origin + " for a title: connect-src " + connect.join(" "));
+    }
+    ok(connect.includes(new URL(NOEMBED("https://example.com/x")).origin), "#415 the page may not ask noembed.com");
     const path = ensureJournal(todayISO()), pg = getPage(path);
     const was = PREF.get("linktitles"), real = window.fetch, asked = [], made = [];
     window.fetch = async url => {
@@ -5113,18 +5122,22 @@ var GTD_TEST = (() => {
     const until = async cond => { for (let i = 0; i < 100 && !cond(); i++) await new Promise(r => setTimeout(r, 20)); };
     const yt = "https://youtu.be/dQw4w9WgXcQ";
     try {
-      PREF.set("linktitles", "");
+      PREF.set("linktitles", "0");
       let [b, txt] = await bullet("Watch");
       paste(txt, " " + yt);
       await settle(); await until(() => chip(b));
       eq(asked.length, 0, "the link was sent to the site while the setting is off");
       ok(!chip(b), "a title was offered while the setting is off");
 
-      PREF.set("linktitles", "1");
+      // #415: on by default, and the offer is where it can be seen and clicked.
+      PREF.set("linktitles", "");
       [b, txt] = await bullet("Watch");
       paste(txt, " " + yt);
       await until(() => chip(b));
-      ok(chip(b), "no title offered for a pasted YouTube link");
+      ok(chip(b), "#415 no title offered for a pasted YouTube link with the setting untouched");
+      const cr = chip(b).getBoundingClientRect();
+      const hit = cr.width && document.elementFromPoint(cr.left + cr.width / 2, cr.top + cr.height / 2);
+      ok(hit && chip(b).contains(hit), "#415 the title offer is hidden or covered: " + [cr.left, cr.top, cr.width, cr.height].map(Math.round) + " hit " + (hit && hit.className));
       ok(chip(b).textContent.includes("Never Gonna Give You Up"), "the offer does not name the video");
       ok(lineText(txt).includes(yt), "the link was replaced before Use was pressed");
       chip(b).querySelector("button.use").click(); await settle();
@@ -6143,9 +6156,14 @@ var GTD_TEST = (() => {
         ok(![...content().querySelectorAll(".srow .slabel")].some(l => /^(Integrations|Advanced)$/.test(l.textContent)),
           "a row still leads to Integrations or Advanced");
         has($("#set-advanced").textContent, "Start afresh", "Start afresh is not last, under Advanced");
-        // #404: titles for pasted links are asked for only once turned on under Integrations.
+        // #404 #415: titles for pasted links are on until turned off under Integrations.
         const was = PREF.get("linktitles");
         PREF.set("linktitles", "");
+        render();
+        await settle();
+        has([...$("#set-integrations").querySelectorAll(".srow")].find(r => r.querySelector(".slabel").textContent === "Titles for pasted links").textContent,
+          "Turn off", "#415 titles for pasted links are not on by default");
+        PREF.set("linktitles", "0");
         render();
         await settle();
         [...$("#set-integrations").querySelectorAll(".srow")].find(r => r.querySelector(".slabel").textContent === "Titles for pasted links")
