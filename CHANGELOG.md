@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.168.4 - 2026-11-16
+
+- Vault and sync: serve.py now merges a page two people saved, instead of
+  keeping only the last save (#406).
+- Routines: routines, checklists and templates are one list, Checklists (#405).
+  A routine is a checklist with a rhythm, and a template one that makes a new
+  project. Its chip says which: as needed, weekly, or new project. Task types
+  and word lists sit apart under Line vocabularies, since you open them rather
+  than run them. Nothing in your folder changes.
+
 ## 1.168.3 - 2026-11-16
 
 - The line menu and toolbar: point at a line and ☰ and 🔍 show left of it,

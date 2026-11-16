@@ -86,7 +86,7 @@ Run the full battery once before every push, filtered to failures:
 
 Do not repeat full runs to be sure. If a test fails, rerun only that test.
 
-Known failures (baseline, keep current; checked v1.167.0, 569/576 in the full
+Known failures (baseline, keep current; checked v1.167.1, 569/577 in the full
 run). Fail only in the full run, pass alone (flaky; report and move on):
 #172 phone Enter scroll, #267 Repeats dialog, #269 table Enter, #220 both
 tests, #221, #233, #346, #190, #291. Fails alone too (real, not yet fixed):

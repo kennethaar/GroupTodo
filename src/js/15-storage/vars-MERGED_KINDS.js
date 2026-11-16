@@ -12,7 +12,8 @@
 /* Browser storage is shared the same way: the installed app and a tab open on
    the same site are two windows on one store, and the one left open with an
    old copy put it over what the other had just saved (#233). */
-const MERGED_KINDS = new Set(["fs", "idb", "ls"]);
+/* And serve.py is shared by several people at once (#406). */
+const MERGED_KINDS = new Set(["fs", "idb", "ls", "http"]);
 const noteBase = (rec, path, text) => {
   if (rec && rec.backend && MERGED_KINDS.has(rec.backend.kind)) (rec.base || (rec.base = new Map())).set(path, text);
 };

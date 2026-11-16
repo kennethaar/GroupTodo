@@ -1881,6 +1881,47 @@ var GTD_TEST = (() => {
     has(s.disk(), "Fit the mast", "their line");
     has(s.disk(), "Buy 20 m rope", "our edit");
   });
+  /* #406: several people share one serve.py. A save says which version of the
+     file it started from (If-Match), and the server takes it only if the file
+     is still that one; otherwise 412, and the app merges and saves again. */
+  test("#406 two people saving one page through serve.py keep both edits", async () => {
+    const path = join(DIRS.active, "Boat.md");
+    const files = {"pages/GTD.md": "title:: GTD\n", [path]: BOAT};
+    const tag = t => '"' + [...t].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, t.length) + '"';
+    let during = null;
+    const real = window.fetch;
+    window.fetch = async (url, opts = {}) => {
+      const u = new URL(url, location.href), p = u.searchParams.get("path"), m = opts.method || "GET";
+      if (/\/api\/ping$/.test(u.pathname)) return new Response('{"ok":true}');
+      if (/\/api\/list$/.test(u.pathname)) return new Response(JSON.stringify(Object.keys(files)));
+      if (m === "PUT") {
+        if (during && p === path) { const f = during; during = null; f(); }
+        const h = new Headers(opts.headers || {}), want = h.get("If-Match");
+        if (want && (!(p in files) || want !== tag(files[p]))) return new Response("changed", {status: 412});
+        files[p] = opts.body;
+        return new Response('{"ok":true}', {headers: {ETag: tag(opts.body)}});
+      }
+      if (m === "DELETE") { delete files[p]; return new Response('{"ok":true}'); }
+      return p in files ? new Response(files[p], {headers: {ETag: tag(files[p])}}) : new Response("not found", {status: 404});
+    };
+    const rec = newRecord("Srv406", Backends.http("http://srv.test"));
+    try {
+      await readInto(rec);
+      await filesLoaded();
+      files[path] = BOAT.replace("TODO Sand", "DONE Sand");          // Anna saved before us
+      rec.pages.get(path).blocks[2].title = "Buy 20 m rope";          // our edit, on the old copy
+      during = () => { files[path] += "- TODO Fit the mast\n"; };     // Ola saves while ours is on its way
+      rec.dirty.add(path);
+      LOADED.set(rec.name, rec);
+      await doFlush();
+      const d = files[path];
+      has(d, "DONE Sand the hull", "Anna's tick");
+      has(d, "Fit the mast", "Ola's line, saved while ours went up");
+      has(d, "TODO Buy 20 m rope", "our edit");
+      ok(!/Buy rope/.test(d), "our old line came back");
+      ok(!rec.dirty.has(path), "the page is still waiting to be saved");
+    } finally { LOADED.delete(rec.name); window.fetch = real; }
+  });
   /* #233: the installed app and a tab share one browser storage (localStorage
      here, as the demo has no IndexedDB; both take the same path). The window
      left open with an old copy must not put it over the other's save. */
@@ -6157,6 +6198,52 @@ var GTD_TEST = (() => {
       } finally { await openSpace(back); await removeArea(n); go("today"); }
     });
   }
+  // The lists live in Routines on this branch (#397), not in Settings.
+  test("#405 Routines keeps lists in two families: Checklists you run, and Line vocabularies", async () => {
+    const P = {
+      plain: join(DIRS.lists, "Test405 pack.md"), routine: join(DIRS.lists, "Test405 accounts.md"),
+      tpl: join(DIRS.lists, "Test405 onboard.md"), states: join(DIRS.lists, "Test405 purchase.md"),
+      words: join(DIRS.lists, "Test405 places.md"),
+    };
+    putPage(P.plain, parsePage("- Passport\n"));
+    putPage(P.routine, parsePage("cadence:: weekly\n\n- Count the till\n"));
+    putPage(P.tpl, parsePage("kind:: project\n\n- Call %name%\n"));
+    putPage(P.states, parsePage("kind:: states\n\n- Ordered\n- Delivered\n"));
+    putPage(P.words, parsePage("kind:: words\nlines:: !\n\n- Home\n"));
+    clearMemo();
+    try {
+      go("routines");
+      await settle();
+      const secs = [...content().querySelectorAll(".section")];
+      const titles = secs.map(s => s.querySelector("h3").firstChild.textContent);
+      for (const old of ["Routines", "Project templates", "Task types", "Word lists", "Routines and lists"])
+        ok(!titles.includes(old), "no group of its own: " + old);
+      const sec = t => secs.find(s => s.querySelector("h3").firstChild.textContent === t);
+      const row = (s, name) => [...(s?.querySelectorAll(".prow") || [])].find(r => r.querySelector(".nm").textContent === name);
+      const run = sec("Checklists"), voc = sec("Line vocabularies");
+      ok(run && voc, "both families are there: " + JSON.stringify(titles));
+      ok(titles.indexOf("Checklists") < titles.indexOf("Line vocabularies"), "the lists you run come first");
+      has(run.textContent, "give it a rhythm", "the blurb says a rhythm makes it come back");
+      const btn = r => r.querySelector(".btn.primary")?.textContent;
+      for (const [name, cta] of [["Test405 pack", "Run"], ["Test405 accounts", "Run"], ["Test405 onboard", "New project"]]) {
+        ok(row(run, name), name + " is a checklist");
+        eq(btn(row(run, name)), cta, name + " runs with " + cta);
+      }
+      has(row(run, "Test405 pack").textContent, "as needed", "a checklist with no rhythm says so");
+      has(row(run, "Test405 onboard").textContent, "new project", "a template says what its run makes");
+      for (const name of ["Test405 purchase", "Test405 places"]) {
+        ok(row(voc, name), name + " is a vocabulary");
+        ok(!row(run, name), name + " is not run");
+        eq(btn(row(voc, name)), "Open");
+      }
+      // The dialog for a new one uses the same words, not the three-way slogan.
+      newChecklistPrompt();
+      await settle();
+      const dlg = document.querySelector(".modal").textContent;
+      ok(!/A routine comes back|Which of the three/.test(dlg), "the old slogan is gone: " + dlg.slice(0, 200));
+      closeModals();
+    } finally { closeModals(); for (const p of Object.values(P)) V.pages.delete(p); clearMemo(); go("today"); }
+  });
 
   test("Calendars: reminder presets save at once, Custom… holds any times and several, a calendar can have its own (#292); a calendar row says who sees it", async () => {
     const was = PREF.get(MEET_REMIND_KEY, "10"), feeds = PREF.get(CAL_FEEDS_KEY, "[]");

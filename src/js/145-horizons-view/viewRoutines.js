@@ -1,35 +1,26 @@
-/* Kept in three named groups rather than one undifferentiated pile, because the
-   difference between them is the one piece of filing that actually earns its
-   keep: a routine sitting in the project list makes the project list look
-   permanently unfinished. */
+/* Lists you keep, apart from the projects: a routine sitting in the project
+   list makes the project list look permanently unfinished. */
 function viewRoutines() {
   const c = el("div", {class: "wrap"});
   // Things you use, not setup: they left Settings for a place of their own (#397).
-  c.append(vhead("Routines", "Routines, checklists and templates you keep.",
-    newBtn("routine or list", () => newChecklistPrompt())));
+  c.append(vhead("Routines", "Checklists you run, and the words your lines use.",
+    newBtn("checklist", () => newChecklistPrompt())));
   const lists = checklistPages();
+  /* Two families (#405). A routine is a checklist with a rhythm and a template a
+     checklist whose run makes a project, so they share one list, told apart by
+     the chip. Task types and word lists are never run: they set what a line can
+     hold, so they sit apart. */
+  const isVocab = pth => isStateList(pth) || isWordList(pth);
   const GROUPS = [
-    {label: "Task types", icon: "\u2630", cta: "Open", run: pth => openPage(pth),
-     test: pth => isStateList(pth),
-     blurb: "The stages one task goes through - a purchase is ordered, awaited, delivered. " +
-            "Give a task a type from its line menu, and Ctrl+Enter walks it through them."},
-    {label: "Word lists", icon: "\u2261", cta: "Open", run: pth => openPage(pth),
-     test: pth => isWordList(pth),
-     blurb: "Words to pick from on lines that start with the mark in lines::. " +
-            "A broad word first, and the closer ones under it."},
-    {label: "Routines", icon: "\u21bb", cta: "Run",
-     test: pth => isRoutine(pth) && !isProjectTemplate(pth) && !isStateList(pth) && !isWordList(pth),
-     blurb: "Comes back and never finishes - the weekly accounts, the monthly report, " +
-            "everything you pack before a trip. Not a project, because there is nothing to tick off."},
-    {label: "Checklists", icon: "\u2611", cta: "Run",
-     test: pth => !isRoutine(pth) && !isProjectTemplate(pth) && !isStateList(pth) && !isWordList(pth),
-     blurb: "Steps you would rather not think through twice. Run one into today, or into a " +
-            "project you already have."},
-    {label: "Project templates", icon: "\u221e", cta: "New project",
-     test: pth => isProjectTemplate(pth),
-     blurb: "Every run spins up a whole new project - \"Onboard new insurance customer\", " +
-            "once per customer, the same steps each time."},
+    {label: "Checklists", test: pth => !isVocab(pth),
+     blurb: "Steps you run. Run one when you need it, or give it a rhythm and it comes back. " +
+            "A template makes a new project each time."},
+    {label: "Line vocabularies", test: isVocab,
+     blurb: "What a line can hold. A task type is the stages a task moves through - ordered, awaited, delivered; " +
+            "Ctrl+Enter moves it on. A word list is the words offered on lines that start with its mark."},
   ];
+  const iconOf = pth => isProjectTemplate(pth) ? "\u221e" : isStateList(pth) ? "\u2630" : isWordList(pth) ? "\u2261"
+    : isRoutine(pth) ? "\u21bb" : "\u2611";
   /* The weekly review is a routine like the others, and the one everybody has,
      so it is always here -- as the built-in steps until you edit it. */
   const steps = reviewSteps().reduce((k, g) => k + g.steps.length, 0);
@@ -74,32 +65,33 @@ function viewRoutines() {
   if (!lists.length) {
     const card = el("div", {class: "card"});
     card.append(el("div", {class: "empty", style: "text-align:left"},
-      el("div", {style: "font-size:13.5px;color:var(--fg2);margin-bottom:10px"}, "A project finishes. A routine comes back. A template makes projects."),
       ...GROUPS.map(g => el("div", {style: "margin:8px 0"},
-        el("div", {}, g.icon + "  " + g.label),
+        el("div", {}, g.label),
         el("div", {style: "color:var(--fg3);font-size:12.5px;line-height:1.5"}, g.blurb)))));
-    c.append(section("Routines and lists", null, card));
+    c.append(section("Checklists and vocabularies", null, card));
     return c;
   }
 
-  const f = textFilter("checklists", "Filter routines and lists", lists, pth => pageTitle(pth) + " " + pth, (hits, q) => {
+  const f = textFilter("checklists", "Filter checklists and vocabularies", lists, pth => pageTitle(pth) + " " + pth, (hits, q) => {
     const out = [];
     for (const g of GROUPS) {
-      const mine = hits.filter(g.test);
+      const mine = hits.filter(g.test).sort((x, y) => isProjectTemplate(x) - isProjectTemplate(y));
       if (!mine.length) continue;
       const card = el("div", {class: "card"});
       card.append(el("div", {class: "listblurb"}, g.blurb));
       for (const pth of mine) {
         const items = flattenBlocks(getPage(pth).blocks).length;
+        const cta = isVocab(pth) ? "Open" : isProjectTemplate(pth) ? "New project" : "Run";
         card.append(el("div", {class: "prow"},
-          el("span", {class: "st " + (isProjectTemplate(pth) ? "st-1" : "st-2")}, g.icon),
+          el("span", {class: "st " + (isProjectTemplate(pth) ? "st-1" : "st-2")}, iconOf(pth)),
           el("button", {class: "nm", style: "text-align:left", onclick: () => openPage(pth)}, pageTitle(pth)),
           canSchedule(pth) ? el("button", {class: "chip", title: "When it comes round", onclick: () => openRoutineSchedule(pth)}, routineSummary(pth))
+            : isProjectTemplate(pth) ? el("span", {class: "chip"}, "new project")
             : isRoutine(pth) && !isStateList(pth) ? el("span", {class: "chip"}, cadenceOf(pth)) : null,
           el("span", {class: "sub"}, isStateList(pth) ? stagesOf(pth).map(s => s.name).join(" → ")
             : isWordList(pth) ? "on " + (trim(getPage(pth).props.lines || "") || "no") + " lines"
             : items + (items === 1 ? " step" : " steps")),
-          el("button", {class: "btn sm primary", onclick: () => g.run ? g.run(pth) : openRunChecklist(pth)}, g.cta)));
+          el("button", {class: "btn sm primary", onclick: () => isVocab(pth) ? openPage(pth) : openRunChecklist(pth)}, cta)));
       }
       out.push(section(g.label, mine.length, card));
     }
