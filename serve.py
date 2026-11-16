@@ -89,6 +89,7 @@ import argparse
 import base64
 import email.utils
 import gzip
+import hashlib
 import hmac
 import ipaddress
 import json
@@ -117,6 +118,14 @@ CSS_DIR = "pages/8/"
 ASSET_DIR = "assets"
 SKIP_DIRS = {".git", ".obsidian", ".trash", "node_modules", "logseq"}
 MAX_BODY = 8 * 1024 * 1024
+# One page save at a time, so a save's version check and its write cannot be
+# split by another person's save to the same file (#406).
+WRITE_LOCK = threading.Lock()
+
+
+def etag(text):
+    """A file's version: changes whenever its text does."""
+    return '"%s"' % hashlib.sha256(text.encode("utf-8")).hexdigest()[:32]
 MAX_CALENDAR = 8 * 1024 * 1024
 LOG_LINES = 500
 
@@ -561,12 +570,14 @@ class Handler(BaseHTTPRequestHandler):
         return False
 
     # ---------- helpers ----------
-    def _send(self, code, body=b"", ctype="text/plain; charset=utf-8"):
+    def _send(self, code, body=b"", ctype="text/plain; charset=utf-8", tag=None):
         if isinstance(body, str):
             body = body.encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
+        if tag:
+            self.send_header("ETag", tag)
         origin = self.headers.get("Origin")
         if not self.password and origin and self._origin_allowed(origin):
             # Only an unprotected local server invites other origins in, and
@@ -574,7 +585,8 @@ class Handler(BaseHTTPRequestHandler):
             # port. Once a password is set the app is served from this origin.
             self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-            self.send_header("Access-Control-Allow-Headers", "Content-Type")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, If-Match")
+            self.send_header("Access-Control-Expose-Headers", "ETag")
         self.send_header("Vary", "Origin")
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
@@ -683,7 +695,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(502, "could not fetch the calendar: %s" % exc)
         if route == "/api/file":
             try:
-                return self._send(200, self.vault.read(self._rel()), "text/markdown; charset=utf-8")
+                text = self.vault.read(self._rel())
+                return self._send(200, text, "text/markdown; charset=utf-8", tag=etag(text))
             except (ValueError, KeyError) as exc:
                 return self._send(400, str(exc))
             except FileNotFoundError:
@@ -800,11 +813,26 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if route == "/api/asset":
                 self.vault.write_asset(self._rel(), raw)
-            else:
-                self.vault.write(self._rel(), raw.decode("utf-8"))
+                return self._json(200, {"ok": True})
+            text = raw.decode("utf-8")
+            # A save says which version it started from (If-Match). If somebody
+            # saved the file since, it is refused, and the app merges and sends
+            # it again (#406). A save that says nothing, from an older app, is
+            # written as before.
+            want = self.headers.get("If-Match")
+            with WRITE_LOCK:
+                if want:
+                    try:
+                        now = etag(self.vault.read(self._rel()))
+                    except FileNotFoundError:
+                        now = None
+                    if want != now:
+                        return self._send(412, "saved by someone else first")
+                self.vault.write(self._rel(), text)
         except ValueError as exc:
             return self._send(400, str(exc))
-        return self._json(200, {"ok": True})
+        body = json.dumps({"ok": True})
+        return self._send(200, body, "application/json; charset=utf-8", tag=etag(text))
 
     def do_DELETE(self):
         if not self.authorised():

@@ -1881,6 +1881,47 @@ var GTD_TEST = (() => {
     has(s.disk(), "Fit the mast", "their line");
     has(s.disk(), "Buy 20 m rope", "our edit");
   });
+  /* #406: several people share one serve.py. A save says which version of the
+     file it started from (If-Match), and the server takes it only if the file
+     is still that one; otherwise 412, and the app merges and saves again. */
+  test("#406 two people saving one page through serve.py keep both edits", async () => {
+    const path = join(DIRS.active, "Boat.md");
+    const files = {"pages/GTD.md": "title:: GTD\n", [path]: BOAT};
+    const tag = t => '"' + [...t].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, t.length) + '"';
+    let during = null;
+    const real = window.fetch;
+    window.fetch = async (url, opts = {}) => {
+      const u = new URL(url, location.href), p = u.searchParams.get("path"), m = opts.method || "GET";
+      if (/\/api\/ping$/.test(u.pathname)) return new Response('{"ok":true}');
+      if (/\/api\/list$/.test(u.pathname)) return new Response(JSON.stringify(Object.keys(files)));
+      if (m === "PUT") {
+        if (during && p === path) { const f = during; during = null; f(); }
+        const h = new Headers(opts.headers || {}), want = h.get("If-Match");
+        if (want && (!(p in files) || want !== tag(files[p]))) return new Response("changed", {status: 412});
+        files[p] = opts.body;
+        return new Response('{"ok":true}', {headers: {ETag: tag(opts.body)}});
+      }
+      if (m === "DELETE") { delete files[p]; return new Response('{"ok":true}'); }
+      return p in files ? new Response(files[p], {headers: {ETag: tag(files[p])}}) : new Response("not found", {status: 404});
+    };
+    const rec = newRecord("Srv406", Backends.http("http://srv.test"));
+    try {
+      await readInto(rec);
+      await filesLoaded();
+      files[path] = BOAT.replace("TODO Sand", "DONE Sand");          // Anna saved before us
+      rec.pages.get(path).blocks[2].title = "Buy 20 m rope";          // our edit, on the old copy
+      during = () => { files[path] += "- TODO Fit the mast\n"; };     // Ola saves while ours is on its way
+      rec.dirty.add(path);
+      LOADED.set(rec.name, rec);
+      await doFlush();
+      const d = files[path];
+      has(d, "DONE Sand the hull", "Anna's tick");
+      has(d, "Fit the mast", "Ola's line, saved while ours went up");
+      has(d, "TODO Buy 20 m rope", "our edit");
+      ok(!/Buy rope/.test(d), "our old line came back");
+      ok(!rec.dirty.has(path), "the page is still waiting to be saved");
+    } finally { LOADED.delete(rec.name); window.fetch = real; }
+  });
   /* #233: the installed app and a tab share one browser storage (localStorage
      here, as the demo has no IndexedDB; both take the same path). The window
      left open with an old copy must not put it over the other's save. */

@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.167.2 - 2026-11-16
+
+- Vault and sync: serve.py now merges a page two people saved, instead of
+  keeping only the last save (#406).
+
 ## 1.167.1 - 2026-11-16
 
 - Settings: routines, checklists and templates are one list, Checklists (#405).
