@@ -10316,16 +10316,75 @@ var GTD_TEST = (() => {
       "- TODO Check the tide tables\n  - not counted either\n",
     [join(PAGES, "Harbour.md")]: "stage:: done\n\n- Two words\n",
   };
-  test("#240 without 8/book.md there is no Book view and Settings only offers to set one up", () => withBookVault({}, async () => {
+  // A book's settings are on its own page, under Edit (#420).
+  const openBookSettings = async () => {
+    go("book");
+    await settle();
+    content().querySelector(".bookedit").click();
+    await settle();
+  };
+  test("#420 without a book there is no Book view, and Settings has no Book either", () => withBookVault({}, async () => {
+    go("today"); renderNav();
     ok(!navLabels().includes("Book"), "no Book in the sidebar");
     eq(bookChapters(), []);
     go("checklists");
     await settle();
-    const card = content().querySelector(".bookset");
-    eq([...card.querySelectorAll("button")].map(b => b.textContent), ["Set up for writing a book"]);
+    ok(!content().querySelector(".bookset"), "nothing about books in Settings");
     go("book");
     await settle();
     has(content().textContent, "No book in this area yet.");
+  }));
+  test("#420 a book made before templates works as it was, and nothing in its files changes", () => withBookVault(BOOK_PAGES, async () => {
+    const files = () => Object.keys(BOOK_PAGES).map(p => serializePage(getPage(p)));
+    const before = files();
+    renderNav(); ok(navLabels().includes("Book"), "Book is in the sidebar");
+    await openBookSettings();
+    ok(content().querySelector(".bookset"), "its settings open from Edit on its page");
+    eq(content().querySelector(".bookedit").getAttribute("aria-expanded"), "true");
+    go("checklists");
+    await settle();
+    ok(!content().querySelector(".bookset"), "not in Settings");
+    eq(files(), before);
+  }));
+  test("#420 New from a template: the built-ins, your project templates, and a file to import", () => withBookVault({}, async () => {
+    const own = createChecklist("Onboard client", "project");
+    getPage(own).blocks = [newBlock({title: "Call %name%"}, false)];
+    clearMemo();
+    for (const view of ["projects", "pages"]) {
+      go(view);
+      await settle();
+      ok(content().querySelector(".tplbtn"), "offered in " + view);
+    }
+    content().querySelector(".tplbtn").click();
+    await settle();
+    const items = () => [...$("#modalRoot").querySelectorAll(".tplpick button")];
+    const names = () => items().map(b => b.querySelector(".nm").textContent);
+    eq(names().slice(0, 1), ["Write a book"], "the built-in first");
+    ok(names().includes("Onboard client"), "your own project template");
+    ok(!names().includes("Chapter"), "a task type is not a template");
+    eq(items()[0].getAttribute("aria-pressed"), "true", "the first is picked");
+    items()[names().indexOf("Onboard client")].click();
+    await settle();
+    has($("#modalRoot .tplmore").textContent, "1 step");
+    [...$("#modalRoot").querySelectorAll(".foot button")].find(b => b.textContent === "Make the project").click();
+    await settle();
+    has($("#modalRoot h2").textContent, "New project from Onboard client");
+    closeModal();
+    // A file: a project template stays one, anything else is a checklist. A name taken gets a number.
+    const made = importTemplateText("Packing list.md", "kind:: project\n\n- Passport\n- Charger\n  - and the cable\n");
+    eq(made, join(DIRS.lists, "Packing list.md"));
+    ok(isProjectTemplate(made), "kind:: project is kept");
+    eq(getPage(made).blocks.map(b => b.title), ["Passport", "Charger"]);
+    eq(getPage(made).blocks[1].children.map(b => b.title), ["and the cable"]);
+    const again = importTemplateText("Packing list.md", "- Socks\n");
+    eq(again, join(DIRS.lists, "Packing list 2.md"), "the first is kept");
+    ok(checklistPages().includes(again), "a plain list is a checklist");
+    eq(importTemplateText("Empty.md", "title:: Nothing\n"), null, "a file with no lines is no template");
+    ok(!getPage(join(DIRS.lists, "Empty.md")));
+    clearMemo();
+    openTemplatePicker();
+    await settle();
+    ok(names().includes("Packing list"), "an imported template is offered");
   }));
   test("#240 8/book.md orders the chapters, reads their stages and counts their words", () => withBookVault(BOOK_PAGES, async () => {
     renderNav(); ok(navLabels().includes("Book"), "Book is in the sidebar");
@@ -10372,12 +10431,12 @@ var GTD_TEST = (() => {
     const t = "title:: book\ntarget:: 80000\nstages:: [[8/Chapter]]\n\n- [[The storm]]\n- [[Harbour]]\n  - the one set at sea\n";
     eq(serializePage(parsePage(t)), t);
   });
-  test("#240 Settings > Book sets up, picks, moves and goes back to the default", () => withBookVault({
+  test("#420 Write a book, from a template, sets up; Edit picks, moves and goes back to the default", () => withBookVault({
     [join(PAGES, "The storm.md")]: "- Rain\n", [join(PAGES, "Harbour.md")]: "- Boats\n",
   }, async () => {
-    go("checklists");
+    openTemplatePicker();
     await settle();
-    content().querySelector(".bookset .btn").click();
+    [...$("#modalRoot").querySelectorAll(".foot button")].find(b => b.textContent === "Make the book").click();
     await settle();
     ok(!hasBook(), "nothing is made before it has a name");
     const dlg = $("#modalRoot");
@@ -10392,6 +10451,7 @@ var GTD_TEST = (() => {
     eq(bookStages().map(s => s.name), BOOK_STAGES, "the Chapter type has the built-in stages");
     ok(pageHasTracker(getPage(join(DIRS.lists, todayISO().slice(0, 4) + ".md")), "words"), "a Words tracker on every day");
     renderNav(); ok(navLabels().includes("Book"), "Book is in the sidebar");
+    await openBookSettings();
     const seg = label => [...content().querySelectorAll(".bookset .seg button")].find(b => b.textContent === label);
     seg((100000).toLocaleString()).click();
     await settle();
@@ -10418,7 +10478,7 @@ var GTD_TEST = (() => {
     back[back.length - 1].click();
     await settle();
     ok(!getPage(made), "the page is gone");
-    renderNav(); ok(!navLabels().includes("Book"), "and Book with it");
+    go("today"); renderNav(); ok(!navLabels().includes("Book"), "and Book with it");
     ok(getPage(join(DIRS.lists, "Chapter.md")), "the Chapter type stays");
   }));
 
@@ -10449,6 +10509,8 @@ var GTD_TEST = (() => {
     eq(after[at + 2].textContent, "Two sisters cross the hills.", "then the synopsis");
     ok(bookManuscript().startsWith("# The long road\n\nA novel\n\n## Harbour"), bookManuscript());
     content().querySelector(".bookedit").click();
+    await settle();
+    content().querySelector(".bookrename").click();
     await settle();
     const dlg = $("#modalRoot"), inputs = dlg.querySelectorAll("input");
     eq(inputs[0].value, "The long road");
@@ -10575,8 +10637,7 @@ var GTD_TEST = (() => {
     openPage(join(PAGES, "Harbour.md"));
     await settle();
     eq(bookPath(), BOOK_PATH, "writing in a chapter shows its book");
-    go("checklists");
-    await settle();
+    await openBookSettings();
     const seg = (cls, label) => [...content().querySelectorAll(".bookset ." + cls + " .seg button")].find(b => b.textContent === label);
     seg("bookorder", "2").click();
     await settle();
@@ -10837,8 +10898,7 @@ var GTD_TEST = (() => {
     } finally { window.matchMedia = mm; setWritingFocus(false); document.activeElement && document.activeElement.blur(); }
   }));
   test("#244 Settings > Book picks the words a day", () => withBookVault({[BOOK_PATH]: "title:: book\n\n- [[Harbour]]\n"}, async () => {
-    go("checklists");
-    await settle();
+    await openBookSettings();
     [...content().querySelectorAll(".bookdaily .seg button")].find(b => b.textContent === fmtWords(1000)).click();
     await settle();
     eq(getPage(BOOK_PATH).props.daily, "1000");
@@ -10890,8 +10950,7 @@ var GTD_TEST = (() => {
     setDialogueStyle("english");
     eq(await typeInto(harbour, "Say \""), "Say “");
     eq(await typeInto(join(PAGES, "Elsewhere.md"), "Say \""), "Say \"", "only in a chapter");
-    closeModal(); go("checklists");
-    await settle();
+    closeModal(); await openBookSettings();
     [...content().querySelectorAll(".bookdialogue .seg button")].find(b => b.textContent === DIALOGUE.guillemets.label).click();
     await settle();
     eq(getPage(BOOK_PATH).props.dialogue, "guillemets");

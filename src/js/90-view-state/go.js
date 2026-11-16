@@ -6,6 +6,7 @@ function go(view, opts = {}) {
     state.jz = null;
     state.todayDay = null;
     state.todayWeek = null;
+    state.bookEdit = false;
     if (!("sub" in opts)) state.sub = defaultSub(view);
   }
   /* ---------- arriving at the mind map ----------

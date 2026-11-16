@@ -8,3 +8,5 @@ const newBtn = (what, onclick) => el("button", {class: "textbtn newbtn", onclick
    and what was typed is kept per view for as long as the app is open.
    draw(hits, query) returns what goes under the filter row. */
 const LIST_Q = new Map();
+// New from a template (#420), beside the + New of the views where things start.
+const tplBtn = () => el("button", {class: "textbtn newbtn tplbtn", onclick: () => openTemplatePicker()}, "+ From a template");

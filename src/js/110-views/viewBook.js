@@ -5,7 +5,7 @@ function viewBook() {
   if (!hasBook()) {
     c.append(vhead("Book", "Chapters, their stages and a word goal"),
       el("div", {class: "card", style: "padding:16px"}, el("p", {}, "No book in this area yet."),
-        el("button", {class: "btn primary", onclick: () => openBookInfo({create: true})}, "Set up for writing a book")));
+        el("button", {class: "btn primary", onclick: () => openBookInfo({create: true})}, "Write a book")));
     return c;
   }
   const sub = subNow();
@@ -21,13 +21,16 @@ function viewBook() {
   const info = bookInfo();
   c.append(vhead(bookName(), null,
     newBtn("chapter", newChapterPrompt),
-    el("button", {class: "textbtn bookedit", title: "Name, subtitle and synopsis", onclick: () => openBookInfo()}, "Edit"),
+    // Its settings are on its own page (#420): Edit shows them under the name.
+    el("button", {class: "textbtn bookedit", title: "Name, goal, stages and chapters", "aria-expanded": String(!!state.bookEdit),
+      onclick: () => { state.bookEdit = !state.bookEdit; render(); }}, "Edit"),
     rows.length ? el("button", {class: "textbtn bookexport", title: "The whole book as one markdown file", onclick: exportBook}, "Export") : null,
     darlings().length ? el("button", {class: "textbtn bookdarlings", title: "What you cut, kept to put back", onclick: () => openPutBack(DARLINGS_PATH)},
       "Darlings " + darlings().length) : null,
     viewSeg("book")));
   if (info.subtitle) c.append(el("div", {class: "booksub"}, info.subtitle));
   if (info.synopsis) c.append(el("p", {class: "booksyn"}, info.synopsis));
+  if (state.bookEdit) c.append(bookSettingsSection());
   if (!rows.length) {
     c.append(el("div", {class: "card", style: "padding:16px"}, el("p", {}, "No chapters yet."),
       el("button", {class: "btn primary", onclick: openAddChapter}, "+ Add a chapter")));

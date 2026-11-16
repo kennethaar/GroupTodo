@@ -9,7 +9,6 @@ function viewChecklists() {
   // How the app looks first; the lists, which only grow, below.
   c.append(styleSection());
   c.append(sidebarSettingsSection());
-  c.append(bookSettingsSection());
   c.append(writingSettingsSection());
   c.append(helpSettingsSection());
   const cal = calendarSettingsSection();

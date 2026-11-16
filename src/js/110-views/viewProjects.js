@@ -12,7 +12,7 @@ function viewProjects() {
     twins ? el("button", {class: "textbtn twinbtn", title: "Projects with the same or nearly the same name",
       onclick: () => openTwins()}, svgIcon(ICON_WARN), " " + twins + " look alike") : null,
     csvBtn(allTasks, "all-tasks", "Export all tasks"),
-    newBtn("project", () => newProjectPrompt()), viewSeg("projects"));
+    newBtn("project", () => newProjectPrompt()), tplBtn(), viewSeg("projects"));
   head.classList.add("projhead");
   if (!org) head.classList.add("tagline");
   c.append(head);

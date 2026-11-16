@@ -1,17 +1,12 @@
-/* ---------- Settings > Book (#240) ----------
-   Before there is a book, one button sets the area up for it. After, the goal
-   and the stages are picked, the chapters move with ↑ ↓ and leave with ×.
-   Written to the book's page in 8/, so it goes with the area. With more than
-   one book, which one, and its place in the series. Focus stays on the
-   button pressed, or the one that took its place. */
+/* ---------- a book's settings (#240, #420) ----------
+   Under Edit on the book's own page: the goal and the stages are picked, the
+   chapters move with ↑ ↓ and leave with ×. Written to the book's page in 8/,
+   so it goes with the area. With more than one book, which one, and its place
+   in the series. Focus stays on the button pressed, or the one that took its
+   place. A book is made from the Write a book template, not here. */
 function bookSettingsSection() {
   const card = el("div", {class: "card bookset"},
-    el("div", {class: "listblurb"}, "Chapters in order, the stages they go through and a word goal. For everyone in this area, in " +
-      bookPath().replace(PAGES + "/", "") + "."));
-  if (!hasBook()) {
-    card.append(el("div", {class: "helpsee"}, el("button", {class: "btn sm", onclick: () => openBookInfo({create: true})}, "Set up for writing a book")));
-    return section("Book", null, card);
-  }
+    el("div", {class: "listblurb"}, "Saved with the book, for everyone in this area."));
   const head = t => el("div", {class: "bookset-h"}, t);
   const books = bookPaths(), cur = bookPath();
   if (books.length > 1) {
@@ -75,5 +70,5 @@ function bookSettingsSection() {
     el("button", {class: "textbtn bookadd", onclick: openAddChapter}, "+ Add a chapter"),
     el("button", {class: "textbtn", title: "In this area, sharing its people, places and things, or in another", onclick: () => openBookInfo({create: true})}, "+ New book"),
     el("button", {class: "textbtn", onclick: bookDefault}, "Back to the default")));
-  return section("Book", null, card);
+  return section("Settings", null, card);
 }
