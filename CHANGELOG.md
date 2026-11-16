@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.168.9 - 2026-11-16
+
+- The line menu and toolbar: ＋/− on the line is a toggle that is kept. Open
+  it once and every line shows all its tools until you fold them again (#410).
+
 ## 1.168.8 - 2026-11-16
 
 - The line menu and toolbar: a click on the ☰ left of a line opens its menu

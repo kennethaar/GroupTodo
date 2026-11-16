@@ -4344,7 +4344,8 @@ var GTD_TEST = (() => {
     // Left to right, as they stand on the screen.
     const shownKeys = () => [...bar().querySelectorAll(":scope > button")].filter(n => n.getClientRects().length)
       .sort((x, y) => x.getBoundingClientRect().left - y.getBoundingClientRect().left).map(n => n.dataset.k);
-    const mm = window.matchMedia;
+    const mm = window.matchMedia, wasTools = PREF.get("linetools");
+    PREF.set("linetools", "");
     try {
       focusBlock(a.id);
       await frame();
@@ -4367,29 +4368,30 @@ var GTD_TEST = (() => {
       ok(rows.some(q => q.top > r.bottom - 4 && q.right > r.left + 20), "the rows below the first stop short of the tools instead of using the whole line");
       eq(shownKeys()[0], "type", "Type first");
       for (const k of ["in", "out", "up", "down", "rest"]) ok(shownKeys().includes(k), k + " on show: " + shownKeys());
+      // By default the rest waits behind ＋ (#395). ＋/− is a toggle that is
+      // remembered from line to line and next time, for those who want all (#410).
       for (const k of ["tag", "media", "pad", "more"]) ok(!shownKeys().includes(k), k + " waits behind ＋");
       // Two buttons, two jobs: the bar's own button is ＋ Insert, so it never
-      // looks like the line menu's ⋯ right after it.
+      // looks like the line menu's ⋯.
       const rest = bar().querySelector('[data-k="rest"]');
       eq(rest.textContent.trim(), "＋", "the bar's button is ＋, not a second ⋯");
       eq(rest.getAttribute("aria-label"), "Insert", "and it is named Insert");
-      bar().querySelector('[data-k="rest"]').click();
+      rest.click();
       await frame();
       for (const k of ["tag", "media", "pad", "more"]) ok(shownKeys().includes(k), k + " after ＋");
-      // #410: open, it shows − so a second click plainly closes it.
       eq(rest.textContent.trim(), "−", "#410 open, the button is −");
       eq(rest.getAttribute("aria-expanded"), "true", "and says it is open");
-      rest.click();
-      await frame();
-      eq(rest.textContent.trim(), "＋", "#410 − closes them and turns back to ＋");
-      ok(!shownKeys().includes("tag"), "the tools are folded away");
-      rest.click();
-      await frame();
       focusBlock(b.id);
       await frame();
       ok(bar().closest('.blk[data-id="' + b.id + '"]'), "the tools follow to the next line");
-      ok(!shownKeys().includes("tag"), "and fold the rest away again");
-      eq(rest.textContent.trim(), "＋", "#410 folded on the next line, the button is ＋ again");
+      ok(shownKeys().includes("tag"), "#410 open is remembered on the next line");
+      eq(rest.textContent.trim(), "−", "and the button is − there");
+      eq(PREF.get("linetools"), "all", "#410 and kept for next time");
+      rest.click();
+      await frame();
+      eq(rest.textContent.trim(), "＋", "#410 − folds them and turns back to ＋");
+      ok(!shownKeys().includes("tag"), "the tools are folded away");
+      ok(PREF.get("linetools") !== "all", "and that is kept too");
       document.activeElement.blur();
       await frame(); await frame();
       window.matchMedia = q => q === "(pointer:fine)" ? {matches: false} : mm.call(window, q);
@@ -4397,7 +4399,7 @@ var GTD_TEST = (() => {
       await frame();
       eq(bar().parentNode, document.body, "a phone keeps the bar at the foot");
       ok(shownKeys().includes("tag") && !shownKeys().includes("rest"), "with all its buttons");
-    } finally { window.matchMedia = mm; document.activeElement && document.activeElement.blur(); go("today"); }
+    } finally { PREF.set("linetools", wasTools || ""); window.matchMedia = mm; document.activeElement && document.activeElement.blur(); go("today"); }
   });
   test("#403 a double tap on the toolbar's Type makes a note a to do; a slow second tap only closes the menu", async () => {
     const path = scratchProject("edit bar type", [["", "Call the plumber"]]);
