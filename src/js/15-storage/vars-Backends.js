@@ -357,6 +357,11 @@ const Backends = {
   /* ---------- HTTP sync server (serve.py) ---------- */
   http(base) {
     const u = (p, q) => base.replace(/\/$/, "") + p + (q ? "?path=" + encodeURIComponent(q) : "");
+    /* The version (ETag) of each file as last read or written here. A save
+       sends it back, and the server refuses the save if somebody else has
+       written the file since (#406): the page is merged and saved again. */
+    const tags = new Map();
+    const keep = (path, r) => { const t = r.headers.get("ETag"); if (t) tags.set(path, t); else tags.delete(path); };
     return {
       kind: "http", label: base.replace(/^https?:\/\//, "") || "server", writable: true,
       /* Is the server there? A few bytes, not the vault: this used to be a
@@ -382,7 +387,7 @@ const Backends = {
           while (queue.length) {
             const p = queue.shift();
             const f = await fetchWithin(u("/api/file", p), {cache: "no-store"}, 20000);
-            if (f.ok) out.set(p, await f.text());
+            if (f.ok) { keep(p, f); out.set(p, await f.text()); }
             if (onEach) onEach(p);
           }
         };
@@ -390,13 +395,27 @@ const Backends = {
         return out;
       },
       async list() { return this.readMany(await this.names()); },
+      /* The file as it is now, null when there is none. */
+      async readText(path) {
+        const r = await fetchWithin(u("/api/file", path), {cache: "no-store"}, 20000);
+        if (r.status === 404) { tags.delete(path); return null; }
+        if (!r.ok) throw new Error("read failed: " + r.status);
+        keep(path, r);
+        return await r.text();
+      },
       async write(path, text) {
-        const r = await fetch(u("/api/file", path), {
-          method: "PUT", headers: {"Content-Type": "text/plain; charset=utf-8"}, body: text,
-        });
+        const headers = {"Content-Type": "text/plain; charset=utf-8"};
+        if (tags.has(path)) headers["If-Match"] = tags.get(path);
+        const r = await fetch(u("/api/file", path), {method: "PUT", headers, body: text});
+        if (r.status === 412) {
+          tags.delete(path);
+          throw Object.assign(new Error("Someone else saved " + path + " first."), {changed: true});
+        }
         if (!r.ok) throw new Error("write failed: " + r.status);
+        keep(path, r);
       },
       async remove(path) {
+        tags.delete(path);
         const r = await fetch(u("/api/file", path), {method: "DELETE"});
         if (!r.ok && r.status !== 404) throw new Error("remove failed: " + r.status + " " + (await r.text().catch(() => "")));
       },

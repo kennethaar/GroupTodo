@@ -1112,6 +1112,7 @@ const HELP = {
       "Pages missing, or slow to open? More, then Check the folder, shows what the app cannot read and how long the last read took. Save log there saves to your downloads when today's page was on screen, what it waited for and which folders and files were slow, then each step, timed.",
       "A big folder opens in steps. Today's page shows first, before the rest of the folder is even looked at, so you can write at once. Then yesterday's, then the month, then projects, contexts, people and organisations. Until a file is read, a page shows its file name. A bar under Pages shows how far it has come. Click it to see each file.",
       "A page changed on another device is merged with yours when it is saved, not written over.",
+      "On serve.py, a page someone else saved while you worked is merged too. If you both changed one line, both versions are kept.",
       "A Syncthing conflict copy is merged into its page, with no line twice, and then deleted.",
       "More, then Updates: look for a new version once a day, or check now.",
       "Working hours, under You, are 08:00 to 16:00 on weekdays until you set your own."],

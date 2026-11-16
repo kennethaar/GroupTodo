@@ -10,6 +10,8 @@ function applyTodoTemplate(block) {
     const key=Object.keys(block.props).find(x=>x.toLowerCase()===k.toLowerCase()) || k;
     if (block.props[key]==null || String(block.props[key]).trim()==="") block.props[key]=v;
   }
+  // Its lines have had the template: a walk that comes on them next leaves them (#406).
+  walkBlocks(tpl.blocks,b=>{ TEMPLATE_APPLIED.add(b); });
   if (tpl.blocks.length) block.children=(block.children || []).concat(tpl.blocks);
   runTemplateRules(block,"status",block.state);
   return block;

@@ -14,6 +14,12 @@ that breaks existing vaults. Newest first.
   a Markdown list. A book you already have works as before, and nothing in
   its files changes. Its settings are under Edit on the book.
 
+## 1.167.2 - 2026-11-16
+
+- Vault and sync: serve.py now merges a page two people saved, instead of
+  keeping only the last save (#406). A TODO template with a to do line in
+  it no longer stops an area from opening.
+
 ## 1.167.1 - 2026-11-16
 
 - Settings: routines, checklists and templates are one list, Checklists (#405).
