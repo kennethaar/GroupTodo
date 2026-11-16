@@ -29,6 +29,12 @@ function editBarSync() {
       }}, "＋"));
     // A tap on the tools is not a click on the line they sit on.
     for (const t of ["pointerdown", "click", "dblclick"]) bar.addEventListener(t, e => e.stopPropagation());
+    // On a line, its first row makes room as wide as the bar (+ its margin);
+    // the rows below run under it. Kept as the bar grows (＋) or shrinks.
+    if (window.ResizeObserver) new ResizeObserver(() => {
+      const line = bar.parentNode;
+      if (line && line.classList && line.classList.contains("line")) line.style.setProperty("--ebw", bar.offsetWidth + 6 + "px");
+    }).observe(bar);
     document.body.append(bar);
   }
   editBarGroupClose();
@@ -38,9 +44,11 @@ function editBarSync() {
     if (bar.parentNode !== line) {
       bar.classList.remove("all");
       bar.querySelector(".ebrest").setAttribute("aria-expanded", "false");
+      if (bar.parentNode && bar.parentNode.style) bar.parentNode.style.removeProperty("--ebw");
       line.append(bar);
     }
     bar.classList.add("inline");
+    line.style.setProperty("--ebw", bar.offsetWidth + 6 + "px");
     bar.style.left = bar.style.bottom = "";
     document.body.classList.remove("editbar-on");
     return;

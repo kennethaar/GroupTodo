@@ -45,8 +45,8 @@ body #content.roomunder{padding-bottom:85vh}
    Type and the moves, the rest behind ⋯. The words wrap before them. */
 #editBar .ebrest{display:none}
 #editBar.inline{position:static;order:98;flex:none;align-self:flex-start;display:flex;align-items:center;gap:0;
-  padding:1px 2px;margin-left:6px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);overflow:visible;z-index:auto}
-#editBar.inline .ebtn,#editBar.inline .ebrest{flex-direction:row;align-items:center;gap:4px;min-width:26px;height:24px;padding:0 6px;
+  padding:0 2px;margin-left:6px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);overflow:visible;z-index:auto}
+#editBar.inline .ebtn,#editBar.inline .ebrest{flex-direction:row;align-items:center;gap:4px;min-width:26px;height:22px;padding:0 6px;
   border:0;border-radius:6px;background:none;color:var(--fg2);font:inherit;cursor:pointer}
 #editBar.inline .ebtn:hover,#editBar.inline .ebrest:hover,#editBar.inline .ebrest[aria-expanded="true"]{background:var(--bg3);color:var(--fg)}
 #editBar.inline .eic,#editBar.inline .eic svg{width:14px;height:14px;font-size:13px}
@@ -57,3 +57,9 @@ body #content.roomunder{padding-bottom:85vh}
 #editBar.inline .ebrest{display:flex;order:10;font-size:15px;line-height:1}
 #editBar.inline:not(.all) > :is([data-k="tag"],[data-k="media"],[data-k="pad"],[data-k="more"]){display:none}
 .blk>.line:has(> #editBar.inline:not([hidden])){background:var(--bg3)}
+/* The words flow around the tools: only the first row makes room for them
+   (a float as wide as the bar), the rows below use the whole line. --ebw is
+   the bar's width, kept by editBarSync. */
+#editBar.inline{position:relative;z-index:1}
+.blk>.line:has(> #editBar.inline:not([hidden]))>.txt{margin-right:calc(-1 * var(--ebw,0px))}
+.blk>.line:has(> #editBar.inline:not([hidden]))>.txt::before{content:"";float:right;width:var(--ebw,0px);height:1lh}
