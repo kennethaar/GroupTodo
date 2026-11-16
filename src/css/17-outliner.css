@@ -82,14 +82,12 @@
   .blk>.line>.props{order:100;max-width:none;flex-basis:100%;justify-content:flex-start}
 }
 /* Use title "…" for a pasted video or post link (#404): as quiet as # Project?. */
-.blk>.line>.linktitle{order:98;flex:none;display:inline-flex;align-items:center;align-self:center;max-width:min(26em,60%);margin-left:6px;border:1px dashed var(--line);border-radius:10px;font-size:12px}
-/* #415 the offer gets a row of its own under the words: beside them it sat
-   over the words of a long line, which run under the line tools. */
-.blk>.line:has(>.linktitle){flex-wrap:wrap}
-.blk>.line:has(>.linktitle)::after{content:"";order:97;flex-basis:100%;height:0}
-.blk>.line:has(>.linktitle)>.linktitle{margin-left:0}
-.blk>.line>.linktitle>button{min-width:0;padding:1px 8px;border:none;background:none;color:var(--fg3);font:inherit;cursor:pointer;white-space:nowrap}
-.blk>.line>.linktitle>.use{overflow:hidden;text-overflow:ellipsis}
-.blk>.line>.linktitle>.x{padding:1px 6px 1px 2px}
-.blk>.line>.linktitle>button:hover,.blk>.line>.linktitle>button:focus-visible{color:var(--fg)}
-.blk>.line>.linktitle:hover{border-color:var(--fg3)}
+/* #415 the offer sits under the line, not in it: in the line it took room
+   from the words, which run under the line tools. offerLinkTitle lines it up
+   with the words. */
+.blk>.linktitle{display:flex;width:max-content;align-items:center;max-width:min(26em,90%);margin:2px 0 4px;border:1px dashed var(--line);border-radius:10px;font-size:12px}
+.blk>.linktitle>button{min-width:0;padding:1px 8px;border:none;background:none;color:var(--fg3);font:inherit;cursor:pointer;white-space:nowrap}
+.blk>.linktitle>.use{overflow:hidden;text-overflow:ellipsis}
+.blk>.linktitle>.x{padding:1px 6px 1px 2px}
+.blk>.linktitle>button:hover,.blk>.linktitle>button:focus-visible{color:var(--fg)}
+.blk>.linktitle:hover{border-color:var(--fg3)}

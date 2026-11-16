@@ -5238,7 +5238,7 @@ var GTD_TEST = (() => {
       dt.setData("text/plain", text);
       node.dispatchEvent(new ClipboardEvent("paste", {clipboardData: dt, bubbles: true, cancelable: true}));
     };
-    const chip = b => document.querySelector('.blk[data-id="' + b.id + '"] > .line .linktitle');
+    const chip = b => document.querySelector('.blk[data-id="' + b.id + '"] > .linktitle');
     const until = async cond => { for (let i = 0; i < 100 && !cond(); i++) await new Promise(r => setTimeout(r, 20)); };
     const yt = "https://youtu.be/dQw4w9WgXcQ";
     try {
@@ -5274,6 +5274,23 @@ var GTD_TEST = (() => {
         ok(Math.abs(cr.left - txt.getBoundingClientRect().left) <= 2, "#415 the offer does not start under the words: " + Math.round(cr.left) + " vs " + Math.round(txt.getBoundingClientRect().left));
         ok(!over.length, "#415 the title offer covers the words: offer " + [cr.left, cr.top, cr.right, cr.bottom].map(Math.round) +
           " words " + over.map(q => [q.left, q.top, q.right, q.bottom].map(Math.round).join(",")).join(" | "));
+      }
+      // The user's case: every line tool on show and the link alone on the line.
+      // The words keep the line's width; they are not squeezed to a column.
+      {
+        const wasTools = PREF.get("linetools");
+        PREF.set("linetools", "all");
+        try {
+          [b, txt] = await bullet("");
+          paste(txt, "https://www.youtube.com/watch?v=0YJgefgYjwA");
+          await until(() => chip(b));
+          ok(chip(b), "#415 no title offered with all the line tools open");
+          const lw = txt.closest(".line").getBoundingClientRect().width, tw = txt.getBoundingClientRect().width;
+          ok(tw > lw / 2, "#415 the words are squeezed to " + Math.round(tw) + " of " + Math.round(lw) + " px");
+          const cr = chip(b).getBoundingClientRect();
+          ok(Math.abs(cr.left - txt.getBoundingClientRect().left) <= 2 && cr.top >= txt.getBoundingClientRect().bottom - 1,
+            "#415 the offer is not right under the words: " + [cr.left, cr.top].map(Math.round) + " words end " + Math.round(txt.getBoundingClientRect().bottom));
+        } finally { PREF.set("linetools", wasTools || ""); }
       }
       [b, txt] = await bullet("Watch");
       paste(txt, " " + yt);

@@ -1874,15 +1874,12 @@ padding-top:1px}
 .blk>.line:has(>.props){flex-wrap:wrap}
 .blk>.line>.props{order:100;max-width:none;flex-basis:100%;justify-content:flex-start}
 }
-.blk>.line>.linktitle{order:98;flex:none;display:inline-flex;align-items:center;align-self:center;max-width:min(26em,60%);margin-left:6px;border:1px dashed var(--line);border-radius:10px;font-size:12px}
-.blk>.line:has(>.linktitle){flex-wrap:wrap}
-.blk>.line:has(>.linktitle)::after{content:"";order:97;flex-basis:100%;height:0}
-.blk>.line:has(>.linktitle)>.linktitle{margin-left:0}
-.blk>.line>.linktitle>button{min-width:0;padding:1px 8px;border:none;background:none;color:var(--fg3);font:inherit;cursor:pointer;white-space:nowrap}
-.blk>.line>.linktitle>.use{overflow:hidden;text-overflow:ellipsis}
-.blk>.line>.linktitle>.x{padding:1px 6px 1px 2px}
-.blk>.line>.linktitle>button:hover,.blk>.line>.linktitle>button:focus-visible{color:var(--fg)}
-.blk>.line>.linktitle:hover{border-color:var(--fg3)}
+.blk>.linktitle{display:flex;width:max-content;align-items:center;max-width:min(26em,90%);margin:2px 0 4px;border:1px dashed var(--line);border-radius:10px;font-size:12px}
+.blk>.linktitle>button{min-width:0;padding:1px 8px;border:none;background:none;color:var(--fg3);font:inherit;cursor:pointer;white-space:nowrap}
+.blk>.linktitle>.use{overflow:hidden;text-overflow:ellipsis}
+.blk>.linktitle>.x{padding:1px 6px 1px 2px}
+.blk>.linktitle>button:hover,.blk>.linktitle>button:focus-visible{color:var(--fg)}
+.blk>.linktitle:hover{border-color:var(--fg3)}
 .blk .bodyline{margin-left:0}
 .line.trkline:not(.raw)>.txt{flex:none}
 .line.trkline.raw>.trkw{display:none}
@@ -4307,7 +4304,7 @@ placeholder="Capture… (Enter adds to today)">
 })();
 
 "use strict";
-const APP_VERSION = "1.169.5";
+const APP_VERSION = "1.169.6";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -16850,7 +16847,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.169.5 - 2026-11-16\n\n- The line menu and toolbar: Side panel has a clearer icon, a page with a\n  panel strip at its right and > sending the line into it (#409).\n\n## 1.169.4 - 2026-11-16\n\n- Ways to run GroupToDo: a new app icon, a G of folded blue ribbon standing\n  on a flat base, lighter at every fold.\n\n## 1.169.3 - 2026-11-16\n\n- Links and aliases: the Use title offer for a pasted link sits on its own row\n  under the words, instead of over a long line's words (#415).\n\n## 1.169.2 - 2026-11-16\n\n- States and Waiting for: Alt+T makes a line a task and Alt+N makes it a note.\n  Pressed twice, neither turns the line back. The toolbar's Type still\n  switches (#411).\n\n## 1.169.1 - 2026-11-16\n\n- The line menu and toolbar: the ☰ menu of a line low on the screen moves up\n  to show whole, instead of scrolling (#413).\n\n## 1.169.0 - 2026-11-16\n\n- The line menu and toolbar: Format, behind ＋ on the line, makes a note a\n  heading (H1 to H3), a quote or a table, and picked words bold or italic,\n  without knowing markdown. A task offers only Bold and Italic. The task side\n  panel has the same choices over its notes (#416).\n\n## 1.168.10 - 2026-11-16\n\n- Links and aliases: a pasted YouTube, Vimeo, X, Spotify or SoundCloud link\n  offers its title again. The page was not allowed to ask those sites; now\n  it is, and titles for pasted links are on until you turn them off (#415).\n\n## 1.168.9 - 2026-11-16\n\n- The line menu and toolbar: ＋/− on the line is a toggle that is kept. Open\n  it once and every line shows all its tools until you fold them again (#410).\n\n## 1.168.8 - 2026-11-16\n\n- The line menu and toolbar: a click on the ☰ left of a line opens its menu\n  beside the ☰, to its left where there is room, not out at the end of the\n  words (#413).\n\n## 1.168.7 - 2026-11-16\n\n- The line menu and toolbar: while the line tools are open, ＋ shows −, so\n  you can see a second click folds them away (#410).\n\n## 1.168.6 - 2026-11-16\n\n- The top bar: installed on Windows, the empty strip above the Journal\n  drags the window, and a page opened at the side and toasts start below\n  the window's own buttons, so its ✕ is in reach (#398).\n\n## 1.168.5 - 2026-11-16\n\n- States and Waiting for: after Alt+1 makes a line a project, the caret is\n  back in the line, so you can go on typing without a click (#412).\n";
+const HELP_NEWS = "## 1.169.6 - 2026-11-16\n\n- Links and aliases: the Use title offer sits under the line, lined up with\n  its words. With all the line tools open it no longer squeezes a pasted\n  link into a narrow column (#415).\n\n## 1.169.5 - 2026-11-16\n\n- The line menu and toolbar: Side panel has a clearer icon, a page with a\n  panel strip at its right and > sending the line into it (#409).\n\n## 1.169.4 - 2026-11-16\n\n- Ways to run GroupToDo: a new app icon, a G of folded blue ribbon standing\n  on a flat base, lighter at every fold.\n\n## 1.169.3 - 2026-11-16\n\n- Links and aliases: the Use title offer for a pasted link sits on its own row\n  under the words, instead of over a long line's words (#415).\n\n## 1.169.2 - 2026-11-16\n\n- States and Waiting for: Alt+T makes a line a task and Alt+N makes it a note.\n  Pressed twice, neither turns the line back. The toolbar's Type still\n  switches (#411).\n\n## 1.169.1 - 2026-11-16\n\n- The line menu and toolbar: the ☰ menu of a line low on the screen moves up\n  to show whole, instead of scrolling (#413).\n\n## 1.169.0 - 2026-11-16\n\n- The line menu and toolbar: Format, behind ＋ on the line, makes a note a\n  heading (H1 to H3), a quote or a table, and picked words bold or italic,\n  without knowing markdown. A task offers only Bold and Italic. The task side\n  panel has the same choices over its notes (#416).\n\n## 1.168.10 - 2026-11-16\n\n- Links and aliases: a pasted YouTube, Vimeo, X, Spotify or SoundCloud link\n  offers its title again. The page was not allowed to ask those sites; now\n  it is, and titles for pasted links are on until you turn them off (#415).\n\n## 1.168.9 - 2026-11-16\n\n- The line menu and toolbar: ＋/− on the line is a toggle that is kept. Open\n  it once and every line shows all its tools until you fold them again (#410).\n\n## 1.168.8 - 2026-11-16\n\n- The line menu and toolbar: a click on the ☰ left of a line opens its menu\n  beside the ☰, to its left where there is room, not out at the end of the\n  words (#413).\n\n## 1.168.7 - 2026-11-16\n\n- The line menu and toolbar: while the line tools are open, ＋ shows −, so\n  you can see a second click folds them away (#410).\n\n## 1.168.6 - 2026-11-16\n\n- The top bar: installed on Windows, the empty strip above the Journal\n  drags the window, and a page opened at the side and toasts start below\n  the window's own buttons, so its ✕ is in reach (#398).\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {
@@ -31674,8 +31671,12 @@ linkTitleLookup(url).then(label => {
 if (!label || seq !== LINK_TITLE.seq) return;
 Object.assign(LINK_TITLE, {id: b.id, url, label});
 const line = document.querySelector('.blk[data-id="' + b.id + '"] > .line');
-const chip = line && !line.querySelector(":scope > .linktitle") && linkTitleButton(path, b);
-if (chip) line.querySelector(":scope > .linemenu").before(chip);
+const chip = line && !line.parentNode.querySelector(":scope > .linktitle") && linkTitleButton(path, b);
+if (chip) {
+line.after(chip);
+const words = line.querySelector(".txt");
+if (words) chip.style.marginLeft = (words.getBoundingClientRect().left - chip.getBoundingClientRect().left) + "px";
+}
 LINK_TITLE.timer = setTimeout(dropLinkTitle, LINK_TITLE_WAIT);
 });
 }

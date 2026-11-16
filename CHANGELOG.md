@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.169.6 - 2026-11-16
+
+- Links and aliases: the Use title offer sits under the line, lined up with
+  its words. With all the line tools open it no longer squeezes a pasted
+  link into a narrow column (#415).
+
 ## 1.169.5 - 2026-11-16
 
 - The line menu and toolbar: Side panel has a clearer icon, a page with a
