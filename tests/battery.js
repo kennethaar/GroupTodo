@@ -4513,6 +4513,21 @@ var GTD_TEST = (() => {
       closeModal();
     } finally { closeModal(); PREF.set("linetools", wasTools || ""); document.activeElement && document.activeElement.blur(); go("today"); }
   });
+  test("#409 Open in the side panel shows a panel: a box, a strip at its right, and > pointing into the strip", () => {
+    const icon = el("span", {}, svgIcon(EDIT_BAR.find(r => r.k === "more").ic));
+    document.body.append(icon);
+    try {
+      const svg = icon.querySelector("svg");
+      ok(svg.querySelector("rect"), "no box");
+      const parts = [...svg.querySelectorAll("path,line,polyline")].map(p => p.getBBox());
+      const strip = parts.find(b => b.width < 1 && b.height >= 12 && b.x > 13);
+      ok(strip, "no upright divider near the right: " + JSON.stringify(parts));
+      const chev = parts.find(b => b.width >= 2 && b.width < 5 && b.height >= 4 && b.x + b.width < strip.x);
+      ok(chev, "no chevron left of the strip: " + JSON.stringify(parts));
+      const d = svg.querySelector("path:last-of-type").getAttribute("d") || "";
+      ok(/^M\s*(\d+(\.\d+)?)\s+\d+(\.\d+)?\s*l\s*3\s+3\s*-3\s+3/i.test(d), "the chevron does not point right, into the strip: " + d);
+    } finally { icon.remove(); }
+  });
   test("#411 Alt+T makes the line a task and Alt+N a note; pressed again, neither turns it back", async () => {
     const path = scratchProject("alt t n", [["", "Call the plumber"]]);
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
@@ -5237,12 +5252,22 @@ var GTD_TEST = (() => {
       // #415: on by default, and the offer is where it can be seen and clicked,
       // never over the words of the line being written, however long it is.
       PREF.set("linktitles", "");
+      {
+        // A line under it, as there nearly always is.
+        const below = newBlock({}, false);
+        below.title = "Then bed"; pg.blocks.push(below); made.push(below); touch(path);
+      }
       [b, txt] = await bullet("Watch this one later tonight when everybody else in the house has gone to bed and it is quiet");
+      { const i = pg.blocks.indexOf(b); pg.blocks.splice(i, 1); pg.blocks.splice(i - 1, 0, b); touch(path); render(); await settle();
+        focusBlock(b.id); await settle(); txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt'); txt.focus(); await settle();
+        const s = getSelection(); s.selectAllChildren(txt); s.collapseToEnd(); }
       paste(txt, " " + yt);
       await until(() => chip(b));
       ok(chip(b), "#415 no title offered on a long line");
       {
         const cr = chip(b).getBoundingClientRect(), rg = document.createRange();
+        const hit = document.elementFromPoint(cr.left + 10, cr.top + cr.height / 2);
+        ok(hit && chip(b).contains(hit), "#415 with a line below, the offer is covered by " + (hit && (hit.className || hit.tagName)));
         rg.selectNodeContents(txt);
         const rows = [...rg.getClientRects()].filter(q => q.width > 1);
         const over = rows.filter(q => q.left < cr.right && q.right > cr.left && q.top < cr.bottom && q.bottom > cr.top);
