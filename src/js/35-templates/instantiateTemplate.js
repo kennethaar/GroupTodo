@@ -17,5 +17,9 @@ function instantiateTemplate(tplPath, vars) {
     clone.blocks=copy(src.blocks);
     clone.props.template_source=tplPath;
     return clone;
-  } finally { TEMPLATE_COPYING=previous; if (!previous) walkBlocks(clone.blocks,b=>{ if (b.state) applyTodoTemplate(b); }); }
+  } finally {
+    TEMPLATE_COPYING=previous;
+    // The TODO template's own to do lines are not given it again: that never ends (#406).
+    if (!previous && tplPath !== readTemplate("todo")) walkBlocks(clone.blocks,b=>{ if (b.state) applyTodoTemplate(b); });
+  }
 }

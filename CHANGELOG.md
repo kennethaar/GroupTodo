@@ -8,7 +8,8 @@ that breaks existing vaults. Newest first.
 ## 1.168.4 - 2026-11-16
 
 - Vault and sync: serve.py now merges a page two people saved, instead of
-  keeping only the last save (#406).
+  keeping only the last save (#406). A TODO template with a to do line in
+  it no longer stops an area from opening.
 - Routines: routines, checklists and templates are one list, Checklists (#405).
   A routine is a checklist with a rhythm, and a template one that makes a new
   project. Its chip says which: as needed, weekly, or new project. Task types
@@ -17,9 +18,9 @@ that breaks existing vaults. Newest first.
 
 ## 1.168.3 - 2026-11-16
 
-- The line menu and toolbar: point at a line and ☰ and 🔍 show left of it,
-  as in Dynalist. ☰ opens the line menu, 🔍 zooms in on the line. The ⋯ at
-  the line's end is gone; a phone keeps ☰ there (#395).
+- The line menu and toolbar: point at a line and ☰ and 🔍 show to the left
+  of it. ☰ opens the line menu, 🔍 zooms in on the line. The ⋯ at the line's
+  end is gone; a phone keeps ☰ there (#395).
 
 ## 1.168.2 - 2026-11-16
 

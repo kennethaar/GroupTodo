@@ -1922,6 +1922,23 @@ var GTD_TEST = (() => {
       ok(!rec.dirty.has(path), "the page is still waiting to be saved");
     } finally { LOADED.delete(rec.name); window.fetch = real; }
   });
+  /* #406: a to do line in the TODO template is itself a to do. Applying the
+     template to it again, and to that line's copy, never ended: the area
+     failed to open with "Maximum call stack size exceeded". */
+  test("#406 a TODO template with a to do line in it is applied once", () => {
+    const path = join(DIRS.lists, "todo.md"), had = V.pages.get(path), other = join(DIRS.lists, "Test406 move.md");
+    try {
+      putPage(path, parsePage("- TODO Check %title%\n"));
+      const b = newBlock({state: "TODO", title: "Call Bo"});
+      applyTodoTemplate(b);
+      eq((b.children || []).map(c => [c.title, (c.children || []).length]), [["Check Call Bo", 0]]);
+      // A to do in another template gets the TODO template once, too.
+      putPage(other, parsePage("kind:: project\n\n- TODO Pack\n"));
+      const made = instantiateTemplate(other, {title: "Move"});
+      eq(made.blocks.map(x => [x.title, (x.children || []).map(c => [c.title, (c.children || []).length])]),
+         [["Pack", [["Check Pack", 0]]]]);
+    } finally { if (had) V.pages.set(path, had); else V.pages.delete(path); V.pages.delete(other); }
+  });
   /* #233: the installed app and a tab share one browser storage (localStorage
      here, as the demo has no IndexedDB; both take the same path). The window
      left open with an old copy must not put it over the other's save. */

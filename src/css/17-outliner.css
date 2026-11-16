@@ -32,7 +32,7 @@
 .blk>.line>.linemenu:hover,.blk>.line>.linemenu[aria-expanded="true"]{background:var(--bg4);color:var(--fg)}
 .blk>.line>.linemenu svg,.blk>.line>.linezoom svg{width:16px;height:16px;display:block;margin:auto}
 .blk>.line>.linezoom{display:none}
-/* With a mouse, Dynalist's way: ☰ and 🔍 in the gutter left of the fold
+/* With a mouse, ☰ and 🔍 in the gutter left of the fold
    arrow, on the line pointed at or being written (#395). */
 @media (hover:hover){
   .blk>.line>.linemenu,.blk>.line>.linezoom{position:absolute;top:2px;width:18px;height:22px;padding:0;border:0;
