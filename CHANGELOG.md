@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.169.2 - 2026-11-16
+
+- States and Waiting for: Alt+T makes a line a task and Alt+N makes it a note.
+  Pressed twice, neither turns the line back. The toolbar's Type still
+  switches (#411).
+
 ## 1.169.1 - 2026-11-16
 
 - The line menu and toolbar: the ☰ menu of a line low on the screen moves up

@@ -4513,6 +4513,26 @@ var GTD_TEST = (() => {
       closeModal();
     } finally { closeModal(); PREF.set("linetools", wasTools || ""); document.activeElement && document.activeElement.blur(); go("today"); }
   });
+  test("#411 Alt+T makes the line a task and Alt+N a note; pressed again, neither turns it back", async () => {
+    const path = scratchProject("alt t n", [["", "Call the plumber"]]);
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    openPage(path);
+    await settle();
+    const b = getPage(path).blocks[0];
+    const press = async code => {
+      focusBlock(b.id); await frame();
+      const txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
+      txt.dispatchEvent(new KeyboardEvent("keydown", {code, key: code.slice(3).toLowerCase(), altKey: true, bubbles: true, cancelable: true}));
+      await settle();
+    };
+    try {
+      await press("KeyT"); eq(b.state, "TODO", "Alt+T makes a note a task");
+      await press("KeyT"); eq(b.state, "TODO", "Alt+T on a task keeps it a task");
+      await press("KeyN"); eq(b.state || null, null, "Alt+N makes a task a note");
+      await press("KeyN"); eq(b.state || null, null, "Alt+N on a note keeps it a note");
+      eq(b.title, "Call the plumber", "the words are kept");
+    } finally { document.activeElement && document.activeElement.blur(); go("today"); }
+  });
   test("#170 a toolbar move keeps the line where it was on the screen, caret in it", async () => {
     const path = scratchProject("edit bar scroll", Array.from({length: 60}, (_, i) => ["TODO", "Row " + i]));
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));

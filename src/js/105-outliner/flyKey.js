@@ -6,7 +6,7 @@ function flyKey(e) {
     const k = FLY_KEYS[e.code];
     // Alt+R goes straight to the Repeats dialog.
     if (k === "rep") { flyPick("rep", "\u0002"); return true; }
-    if (k !== "kind") { FLY_LIT = {id: FLY.block.id, k}; }
+    if (!["kind", "task", "note"].includes(k)) { FLY_LIT = {id: FLY.block.id, k}; }
     flyHead(k);
     if (FLY) flyDraw();
     return true;

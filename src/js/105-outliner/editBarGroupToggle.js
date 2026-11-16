@@ -22,7 +22,7 @@ function editBarGroupToggle(g, btn) {
   const pop = el("div", {class: "ebpop", data: {g, at: Date.now()}, role: "menu"});
   for (const r of leaves) {
     let label = r.label, tip = r.tip, ic = r.ic;
-    if (r.k === "kind" && block.state) { label = "Note"; tip = "Make it a note (Alt+T)"; ic = EB_NOTE; }
+    if (r.k === "kind" && block.state) { label = "Note"; tip = "Make it a note (Alt+N)"; ic = EB_NOTE; }
     if (r.k === "mkarea" && statusDirOf(path) && !isJournalPath(path)) tip = "Turn the project into a responsibility (Alt+I)";
     pop.append(el("button", {
       class: "ebtn", tabindex: "-1", role: "menuitem", data: {k: r.k}, title: tip, "aria-label": tip,

@@ -3,6 +3,14 @@ function flyHead(k) {
   const {path, block} = FLY;
   /* Off the line first: losing focus writes the line's words back, and a
      [[1/…]] written back over a project made into a task brings its page back. */
+  /* Alt+T makes a task, Alt+N a note (#411): one key each, so pressing one
+     twice never turns the line back. The toolbar's Type button still flips. */
+  if (k === "task" || k === "note") {
+    flyCommit(); const b = block; FLY.txt.blur();
+    if (k === "task" && !b.state) { if (!projectLineToTask(path, b)) setBlockState(path, b, "TODO"); }
+    else if (k === "note" && b.state) setBlockState(path, b, null);
+    focusBlock(b.id); return;
+  }
   if (k === "kind") { flyCommit(); const b = block; FLY.txt.blur(); if (!projectLineToTask(path, b)) setBlockState(path, b, b.state ? null : "TODO"); focusBlock(b.id); return; }
   if (k === "mkproj") { flyCommit(); const b = block; FLY.txt.blur(); makeFromLine(path, b, "project"); return; }
   if (k === "mkzet") { flyCommit(); const b = block; FLY.txt.blur(); makeFromLine(path, b, "zettel"); return; }
