@@ -44,7 +44,7 @@ body #content.roomunder{padding-bottom:85vh}
 /* #395 on a computer the tools sit at the end of the line being written:
    Type and the moves, the rest behind ⋯. The words wrap before them. */
 #editBar .ebrest{display:none}
-#editBar.inline{position:static;order:98;flex:none;align-self:center;display:flex;align-items:center;gap:0;
+#editBar.inline{position:static;order:98;flex:none;align-self:flex-start;display:flex;align-items:center;gap:0;
   padding:1px 2px;margin-left:6px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);overflow:visible;z-index:auto}
 #editBar.inline .ebtn,#editBar.inline .ebrest{flex-direction:row;align-items:center;gap:4px;min-width:26px;height:24px;padding:0 6px;
   border:0;border-radius:6px;background:none;color:var(--fg2);font:inherit;cursor:pointer}

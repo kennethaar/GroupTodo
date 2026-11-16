@@ -4156,7 +4156,7 @@ var GTD_TEST = (() => {
     } finally { window.matchMedia = mm; document.activeElement && document.activeElement.blur(); go("today"); }
   });
   test("#395 on a computer the line tools sit on the line being written, the rest behind ＋ Insert; a phone keeps them at the foot", async () => {
-    const path = scratchProject("tools on the line", [["TODO", "Buy paint for the long hallway and the two small bedrooms upstairs"], ["TODO", "Call Bob"]]);
+    const path = scratchProject("tools on the line", [["TODO", "Buy paint for the long hallway and the two small bedrooms upstairs, then the kitchen ceiling, the porch railing and the garden shed door before the autumn rain sets in for good this year"], ["TODO", "Call Bob"]]);
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
     openPage(path);
     await settle();
@@ -4174,6 +4174,12 @@ var GTD_TEST = (() => {
       ok(r.top >= line.top - 1 && r.bottom <= line.bottom + 1, "within the line's row");
       const words = document.querySelector('.blk[data-id="' + a.id + '"] .txt').getBoundingClientRect();
       ok(words.right <= r.left + 1, "the words wrap before the tools, not under them");
+      // A line long enough to wrap keeps the tools on its first row, not
+      // centred down the middle of the paragraph.
+      const txtEl = document.querySelector('.blk[data-id="' + a.id + '"] .txt');
+      const lh = parseFloat(getComputedStyle(txtEl).lineHeight) || 20;
+      ok(words.height > lh * 1.5, "the long line wraps (" + words.height + " vs " + lh + ")");
+      ok(Math.abs((r.top + r.bottom) / 2 - (words.top + lh / 2)) <= 4, "the tools sit level with the first row (bar " + r.top + "-" + r.bottom + ", text from " + words.top + ")");
       eq(shownKeys()[0], "type", "Type first");
       for (const k of ["in", "out", "up", "down", "rest"]) ok(shownKeys().includes(k), k + " on show: " + shownKeys());
       for (const k of ["tag", "media", "pad", "more"]) ok(!shownKeys().includes(k), k + " waits behind ＋");

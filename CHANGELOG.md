@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.167.9 - 2026-11-16
+
+- The line menu and toolbar: on a line so long it wraps, the tools sit level
+  with its first row, not halfway down the paragraph (#395).
+
 ## 1.167.8 - 2026-11-16
 
 - The line menu and toolbar: the tools on the line you write end in ＋
