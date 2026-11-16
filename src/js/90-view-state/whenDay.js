@@ -6,7 +6,7 @@ function whenDay(p, today, loose = 0) {
   // Short forms that are also words -- Tom, the sun, sat down -- count only
   // where nothing else could have been meant.
   if (loose < 1 && WHEN_LOOSE_ONLY.has(p)) return null;
-  if (/^(today|tod|i ?dag|eod)$/.test(p)) return today;
+  if (/^(today|tod|tonight|i ?dag|i ?kveld|eod)$/.test(p)) return today;
   if (/^(tomorrow|tmrw|tom|i ?morgen)$/.test(p)) return shiftISO(today, 1);
   if (/^((the )?day after tomorrow|(i )?overmorgen)$/.test(p)) return shiftISO(today, 2);
   if (p in WHEN_WEEKDAYS) return nextWeekdayISO(WHEN_WEEKDAYS[p], today);
@@ -14,11 +14,13 @@ function whenDay(p, today, loose = 0) {
     return shiftISO(mondayAfterISO(today), (WHEN_WEEKDAYS[m[1]] + 6) % 7);
   if (/^(next week|neste uke)$/.test(p)) return mondayAfterISO(today);
   if (/^(next month|neste måned)$/.test(p)) return addMonths(today.slice(0, 8) + "01", 1);
-  if (/^eow$/.test(p)) return shiftISO(today, (7 - weekdayOf(today)) % 7);
-  if (/^eom$/.test(p)) return shiftISO(addMonths(today.slice(0, 8) + "01", 1), -1);
+  // The working week ends on Friday; a Friday's own end of week is that day.
+  if (/^(eow|end of (the )?week)$/.test(p)) return shiftISO(today, (5 - weekdayOf(today) + 7) % 7);
+  if (/^((this |the )?weekend|(i )?helgen?)$/.test(p)) return shiftISO(today, (6 - weekdayOf(today) + 7) % 7);
+  if (/^(eom|end of (the )?month)$/.test(p)) return shiftISO(addMonths(today.slice(0, 8) + "01", 1), -1);
   if (/^eoy$/.test(p)) return today.slice(0, 4) + "-12-31";
-  if ((m = /^(?:in|om)\s+(an?|one|en|ett|\d{1,3})\s+(days?|dager?|weeks?|uker?|uke|months?|måneder?|måned|years?|år)$/.exec(p))) {
-    const n = /^\d/.test(m[1]) ? Number(m[1]) : 1;
+  if ((m = /^(?:in|om)\s+(an?|one|two|three|four|en|ett|to|tre|fire|\d{1,3})\s+(days?|dager?|weeks?|uker?|uke|months?|måneder?|måned|years?|år)$/.exec(p))) {
+    const n = /^\d/.test(m[1]) ? Number(m[1]) : {two: 2, to: 2, three: 3, tre: 3, four: 4, fire: 4}[m[1]] || 1;
     const u = m[2][0];
     return u === "d" ? shiftISO(today, n) : (u === "w" || u === "u") ? shiftISO(today, 7 * n)
          : (u === "y" || u === "å") ? addMonths(today, 12 * n) : addMonths(today, n);

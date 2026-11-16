@@ -70,6 +70,9 @@ js/00-bootstrap/armDoneToast.js
 js/00-bootstrap/closeDoneToast.js
 js/00-bootstrap/stakeholdersOf.js
 js/00-bootstrap/openDoneNote.js
+js/00-bootstrap/vars-doneNoteDay.js
+js/00-bootstrap/doneStakeholders.js
+js/00-bootstrap/tellDoneButton.js
 js/00-bootstrap/openDoneHistory.js
 js/00-bootstrap/vars-pad2.js
 js/00-bootstrap/readClock.js
@@ -206,6 +209,7 @@ js/15-storage/layInSoon.js
 js/15-storage/vars-lostWhileLoading.js
 js/15-storage/noteFileSigs.js
 js/15-storage/readDayFirst.js
+js/15-storage/readActiveFirst.js
 js/15-storage/readStaged.js
 js/15-storage/vars-PAGE_SRC.js
 js/15-storage/typingPath.js
@@ -944,6 +948,7 @@ js/90-view-state/applyWhen.js
 js/90-view-state/whenSays.js
 js/90-view-state/readWhenInto.js
 js/90-view-state/offerKeepWords.js
+js/90-view-state/readMarks.js
 js/90-view-state/captureLine.js
 js/90-view-state/captureFromBox.js
 js/90-view-state/vars-focusCapture.js
@@ -1531,7 +1536,6 @@ js/105-outliner/vars-DATE_WORDS.js
 js/105-outliner/dateSuggestions.js
 js/105-outliner/dayAndClock.js
 js/105-outliner/dateSuggestion.js
-js/105-outliner/trailingDate.js
 js/105-outliner/setDue.js
 js/105-outliner/warnDueConflict.js
 js/105-outliner/linkKnownNames.js
@@ -1587,6 +1591,7 @@ js/105-outliner/lineHtml.js
 js/105-outliner/vars-EVENT_RE.js
 js/105-outliner/verbTaskLine.js
 js/105-outliner/paintHeadLine.js
+js/105-outliner/vars-DOUBLE_TAP_MS.js
 js/105-outliner/outlineBlock.js
 js/105-outliner/vars-LINE_SEL.js
 js/105-outliner/lineSelFrom.js
@@ -1622,6 +1627,18 @@ js/105-outliner/outlineFor.js
 js/105-outliner/pageOutline.js
 js/105-outliner/vars-FLY.js
 js/105-outliner/lineProject.js
+js/105-outliner/vars-ASK_PROJECT.js
+js/105-outliner/vars-LINK_TITLE.js
+js/105-outliner/projectActivity.js
+js/105-outliner/projectsByActivity.js
+js/105-outliner/fileUnderProject.js
+js/105-outliner/askProjectButton.js
+js/105-outliner/linkTitleLookup.js
+js/105-outliner/offerLinkTitle.js
+js/105-outliner/dropLinkTitle.js
+js/105-outliner/linkTitleButton.js
+js/105-outliner/askProjectIfNew.js
+js/105-outliner/pickLineProject.js
 js/105-outliner/vars-lineOrg.js
 js/105-outliner/linePeople.js
 js/105-outliner/vars-FLY_ICON.js

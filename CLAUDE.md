@@ -86,7 +86,7 @@ Run the full battery once before every push, filtered to failures:
 
 Do not repeat full runs to be sure. If a test fails, rerun only that test.
 
-Known failures (baseline, keep current; checked v1.166.0, 568/574 in the full
+Known failures (baseline, keep current; checked v1.167.0, 569/576 in the full
 run). Fail only in the full run, pass alone (flaky; report and move on):
 #172 phone Enter scroll, #267 Repeats dialog, #269 table Enter, #220 both
 tests, #221, #233, #346, #190, #291. Fails alone too (real, not yet fixed):
@@ -152,7 +152,9 @@ Every user-requested change needs an issue in `kennethaar/GroupTodo`.
 2. Reopen and reuse an issue for a follow-up, regression or related correction.
 3. Create a new issue only for distinct new behavior.
 4. Each commit references one issue with `Fixes #N`.
-5. Push to `main`.
+5. Push to `main`, always. This holds in cloud sessions too, even when the
+   session names a branch of its own: push there as well if you like, but
+   `main` is where the work goes.
 6. Comment `Fixed in <short-sha>.` on the issue.
 
 The `gh` CLI is unavailable. Use the GitHub REST API with Git's stored token.
@@ -226,39 +228,22 @@ Use one clear control per action.
 Every 10th `/clear`, the SessionStart hook `.claude/hooks/clear-count.mjs`
 asks for this section to be compacted: repeats merged, stale items dropped.
 
-Slow start (#181, reopened 2026-11-14): opening today's journal page on a big
-folder still takes 5+ minutes. v1.155.12-14 staged the read (today first, then
-week and active work, then the rest, late folders listed after the first draw).
+Slow start (#181, reopened 2026-11-14): today's journal page on a big folder
+(Android, 1203 files, ~2 s per file read, listing ~29 s) was slow.
 
-v1.156.0 added timed start-up logging to find the slow step:
-
-- `loadMark(text, since)` (`src/js/00-bootstrap/loadMark.js`) writes
-  `load +N.N s <step> in X` to `APP_LOG` and `console.info`.
-- Marked: `init` (run-6-2), `openSpace`, `readStaged` (listing, first read,
-  each later listing and read group, parse in `readIntoNow`, `onRest`),
-  non-staged `readInto`, and `render` (always before `INIT_DONE`, later only
-  over `RENDER_SLOW_MS` = 300 ms).
-- Save log: Vault & sync, More, Check the folder (footer, usable while it
-  reads). `saveAppLog` also appends `readTimingText` per folder (open vs text
-  time, slowest files).
-- Test: `#181 a slow start can be traced`.
-
-First log (Android, 1203 files): ~2.4 s per file read, listing 29 s. The
-"first" read took 679 files / 127 s because loose pages straight in `pages/`
-were not stand-ins. v1.156.1: `isStubPath` makes them wait (except `GTD.md`
-and old horizon files). v1.162.3: `readDayFirst` reads today's page (and
-`GTD.md`, day templates on a new day) by name via the fs backend's
-`readDays`, draws it (`onDay`, start-up only), then yesterday's, before
-`names()` lists anything. `rec.dayOnly` holds non-journal saves until the
-listing. v1.162.4: after Allow access, `readFolderBehind` swaps the folder's
-record in from `onDay` too. Log of v1.162.3 (Android, 1203 files): today in
-4.7 s, yesterday 2.4 s, listing 29.5 s, first 94 files 11 s (v1.162.4: same,
-6.4 s for today). ~2 s per file read on that phone, so a full read cannot
-get under 5 s. v1.162.5: Save log opens with `startupText` per area
-(`loadStep` milestones, `DRAW_NOTE` in render), then `readTimingText` with
-slowest folders, the day files read alone, and unchanged files by date and
-size (`noteFileSigs`, PREF `filesigs:<area>`). v1.162.6: the takeover no
-longer waits for the line to be left: Enter calls `lineDone()` and
-`readFolderBehind` swaps at once, carrying the copy's shown and unsaved
-pages over (merged with the file at save). User confirms it is fast once the
-swap happens. Next: read the new log; maybe a full browser copy.
+- Staged read: `readDayFirst` reads today's page (plus `GTD.md`, day
+  templates on a new day) by name via the fs backend's `readDays`, draws it
+  (`onDay`), then yesterday's, before `names()` lists. Then week, active
+  work, rest. `isStubPath` makes loose `pages/` files wait. `rec.dayOnly`
+  holds non-journal saves until the listing. `readActiveFirst` (v1.166.4)
+  then lists `pages/1/` alone (`namesIn`), shows stand-ins, reads them.
+- Takeover: after Allow access, `readFolderBehind` swaps the folder record in;
+  Enter calls `lineDone()` so the swap happens at once, carrying shown and
+  unsaved pages over (merged at save). User confirms it is fast after the swap.
+- Logging: `loadMark(text, since)` (`src/js/00-bootstrap/loadMark.js`) writes
+  `load +N.N s <step>` to `APP_LOG`; `startupText` (`loadStep`, `DRAW_NOTE`)
+  and `readTimingText` (slowest folders, day files, `noteFileSigs` with PREF
+  `filesigs:<area>`) go into Save log (Vault & sync, More, Check the folder).
+  Test: `#181 a slow start can be traced`.
+- Last log (v1.162.4): today 6.4 s, listing 29.5 s. Next: read the new log;
+  maybe a full browser copy.

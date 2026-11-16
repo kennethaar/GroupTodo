@@ -12,9 +12,25 @@ function outlineBlock(path, page, b, opts = {}) {
     "aria-expanded": String(!b.collapsed), disabled: !kids.length,
     onclick: e => { e.stopPropagation(); if (kids.length) { b.collapsed = !b.collapsed; render(); } },
   }, kids.length ? (b.collapsed ? "\u25B8" : "\u25BE") : ""));
+  /* A note's bullet: one click focuses on it, two make it a to do (#400). The
+     focus waits a moment for the second click; a key press does not wait. A
+     tap on a phone zooms in at once, and a double tap only zooms. */
+  let focusSoon = 0;
+  const asNote = !b.state && !ro;
   line.append(el("button", {
-    class: "bullet", title: "Focus on this line", "aria-label": "Focus on this line",
-    onclick: e => { e.stopPropagation(); setBranchFocus(page, b.id, path); },
+    class: "bullet", title: asNote ? "Focus on this line. Double-click: make it a to do" : "Focus on this line",
+    "aria-label": "Focus on this line",
+    onclick: e => {
+      e.stopPropagation();
+      clearTimeout(focusSoon);
+      const mouse = asNote && e.pointerType !== "touch";
+      if (mouse && e.detail >= 2) {
+        if (!projectLineToTask(path, b)) setBlockState(path, b, "TODO");
+        return;
+      }
+      if (mouse && e.detail === 1) focusSoon = setTimeout(() => setBranchFocus(page, b.id, path), 250);
+      else setBranchFocus(page, b.id, path);
+    },
   }));
   /* The state's square, doing what a task row's tick does: a tap and a hold. The
      menu here also has the way back to a plain note. */
@@ -105,6 +121,10 @@ function outlineBlock(path, page, b, opts = {}) {
         else if (old) old.remove();
         else if (fresh) line.append(fresh);
       }
+      if (!line.querySelector(":scope > .askproj")) {
+        const ask = askProjectButton(path, b);
+        if (ask) line.querySelector(":scope > .linemenu").before(ask);
+      }
     }
     dropLineDraft(b.id);
     line.classList.remove("raw");
@@ -185,6 +205,7 @@ function outlineBlock(path, page, b, opts = {}) {
       const one = raw.replace(/[\r\n]+/g, " ");
       setHostText(txt, before + one + after, before.length + one.length);
       suggestSync(txt, {dates: true});
+      offerLinkTitle(path, b, raw);
       return;
     }
 
@@ -304,11 +325,15 @@ function outlineBlock(path, page, b, opts = {}) {
     flyMakeTask(path, b);
     // A time picked after a day goes on that day: "neste onsdag", then "kl 13".
     if (r && r.time && !r.now && dueDate(b)) iso = dueDate(b);
-    setDue(b, iso, r && r.time);
+    const kind = r && r.kind;
+    if (kind === "until") setBlockProp(b, "until", "[[" + iso + "]]");
+    else if (kind === "SCHEDULED") setBlockProp(b, "SCHEDULED", whenValue(iso, r.time));
+    else setDue(b, iso, r && r.time);
     if (r && r.now) setBlockProp(b, "remind", "0");
     touch(path); render(); focusBlock(b.id);
+    const label = kind === "until" ? "Until " : kind === "SCHEDULED" ? "Starts " : "Due ";
     if (!warnDueConflict(path, b))
-      notify("Due " + humanWhen(iso, r && r.time).toLowerCase() + (r && r.now ? ", reminded then." : "."));
+      notify(label + humanWhen(iso, r && r.time).toLowerCase() + (r && r.now ? ", reminded then." : "."));
   },
   /* "tracker-" at the start of a line offers the trackers already in use,
      and the wizard for a new one. */
@@ -465,6 +490,10 @@ function outlineBlock(path, page, b, opts = {}) {
     }
   });
   line.append(txt);
+  const ask = askProjectButton(path, b);
+  if (ask) line.append(ask);
+  const titled = linkTitleButton(path, b);
+  if (titled) line.append(titled);
   /* Pressing it must not take the caret out of the line, or the blur would
      close the very menu it is opening. */
   line.append(el("button", {class: "linemenu", tabindex: "-1", title: "Line menu (Ctrl+.)", "aria-label": "Line menu",

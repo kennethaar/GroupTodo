@@ -5,6 +5,51 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.168.0 - 2026-11-16
+
+- Links and aliases: a pasted YouTube, Vimeo, X, Spotify or SoundCloud link
+  can show its title (#404). Turn it on in Settings > Integrations > Titles
+  for pasted links. After a paste, Use title "…" at the end of the line makes
+  the link read as the video's or post's title. ✕ keeps the bare link. Off by
+  default, since the link is sent to that site to ask for the title.
+- Journal: a task made on a phone, with Type in the toolbar or a double tap
+  on the bullet, offers # Project? too, as a typed one does (#401).
+- Vault and sync: on a big folder your active projects show right after
+  today's page (#181). Only the folder 1 / Active is looked at first, so each
+  project shows by its file name at once, then its lines fill in. The rest of
+  the folder is listed after that.
+- States and Waiting for: on a phone a tap on a note's bullet zooms in at
+  once again, and a double tap zooms too (#400). It no longer makes the note
+  a to do; the toolbar's Type does that. A double click with a mouse still does.
+- The line menu and toolbar: a double tap on the toolbar's Type button makes
+  a note a to do (#403), as Alt+T does. One tap still opens the Type menu.
+- States and Waiting for: a double tap on a note's bullet makes it a to do on
+  a phone too (#400). The taps are timed by the app, and the screen no longer
+  zooms on them.
+- States and Waiting for: tell them it is done (#402). Tick off a task that
+  names a person or organisation, or sits in a project with people to tell,
+  and the Done toast offers Tell. The note says I finished and the day; an
+  earlier day set there backdates the task. Share opens the share sheet for
+  Teams, chat, mail or messages. Recently done offers Tell too, and a
+  finished project's Notify is now the same Tell.
+- Journal: a new task on a day page that is not under a project offers
+  # Project? at the end of the line (#401). Type to find a project, the
+  busiest this week on top, or name a new one. The task goes under the
+  project's line, one line per project on the day. Alt+J does the same.
+- States and Waiting for: a double click on a note's bullet makes it a to do
+  (#400), as Alt+T does. One click still focuses on the line, after a short
+  wait for the second click.
+- Dates and reminders: Tab on an offered date reads it as Enter does (#396).
+  on fri or starts fri is a start day, until fri a hold, and a date with no
+  word in front is Due. The note says Starts, Until or Due to match.
+- Dates and reminders: one reader for what you type (#396). The outline, the
+  box at the top and the Tab date menu read the same words the same way. A
+  date with no word in front is Due, as with by; on or starts makes it a start
+  day. eow and end of week are both Friday, weekend is Saturday, and tonight
+  and in two weeks work everywhere. 3/4 at the end of a line stays a number.
+  Every date read can be taken back with Keep the words. @phone and #project
+  typed on a task in the outline become links, as in the box.
+
 ## 1.167.9 - 2026-11-16
 
 - The line menu and toolbar: on a line so long it wraps, the tools sit level

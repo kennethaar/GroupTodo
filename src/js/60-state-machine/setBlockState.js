@@ -25,6 +25,7 @@ function setBlockState(path, block, state, opts = {}) {
     if (!prev) applyTodoTemplate(block);
     if (prev !== state) runTemplateRules(block,"status",state);
     stampAddedIfMissing(path, block);
+    askProjectIfNew(path, block, prev);
   }
   // Ticked off for somebody who takes turns: the credit is theirs (#236).
   if (state === "DONE" && prev !== "DONE" && choreDoer(block)) setDoneBy(block, choreDoer(block));

@@ -581,17 +581,18 @@ var GTD_TEST = (() => {
     let release;
     const held = new Promise(r => { release = r; });
     // Loose notes straight in pages/ wait too: 650 of them held a phone's first draw for two minutes.
-    const gate = {[old + ".md"]: held, "Boat.md": held, "Multitasking.md": held};
+    const gate = {[old + ".md"]: held, "Later.md": held, "Multitasking.md": held};
     const tree = {
       journals: {tester: {[T() + ".md"]: "- TODO today's line\n", [old + ".md"]: "- old line\n"}},
       pages: {"GTD.md": "title:: GTD\n", "Multitasking.md": "- a loose note\n",
-        "1": {"Boat.md": "title:: Boat\noutcome:: afloat\n\n- TODO Sand the hull\n"}},
+        "1": {"Boat.md": "title:: Boat\noutcome:: afloat\n\n- TODO Sand the hull\n"},
+        "2": {"Later.md": "title:: Later\n\n- TODO Paint the shed\n"}},
     };
     const writes = [];
     const rec = newRecord("Stage181", Backends.fs(fakeDir("Stage181", tree, writes, gate)));
     let rested = false;
     await readInto(rec, {stage: true, onRest: () => { rested = true; }});
-    const boat = join(DIRS.active, "Boat.md");
+    const boat = join(DIRS.someday, "Later.md");
     has(serializePage(rec.pages.get(join(JOURNALS, "tester", T() + ".md"))), "today's line", "today read first");
     ok(!rec.pages.has(join(JOURNALS, "tester", old + ".md")), "an old day waits");
     ok(rec.pages.has(boat) && !rec.pages.get(boat).blocks.length, "project there by name only");
@@ -602,41 +603,47 @@ var GTD_TEST = (() => {
     rec.dirty.add(boat);
     LOADED.set(rec.name, rec);
     try { await doFlush(); } finally { LOADED.delete(rec.name); }
-    ok(!writes.includes("Boat.md"), "the stand-in was written over its file");
-    has(tree.pages["1"]["Boat.md"], "Sand the hull", "file intact");
+    ok(!writes.includes("Later.md"), "the stand-in was written over its file");
+    has(tree.pages["2"]["Later.md"], "Paint the shed", "file intact");
     release();
     await filesLoaded();
     ok(rested, "onRest ran");
     ok(!rec.stubs, "no stand-ins left");
-    has(serializePage(rec.pages.get(boat)), "Sand the hull", "project read in full");
+    has(serializePage(rec.pages.get(boat)), "Paint the shed", "project read in full");
     ok(rec.pages.has(join(JOURNALS, "tester", old + ".md")), "old day read");
     has(serializePage(rec.pages.get(note)), "a loose note", "loose note read in full");
     ok(!rec.dirty.has(boat), "nothing left to send for the stand-in");
   });
 
-  test("#181 today's page is shown before the folder is listed, then yesterday's, then the rest", async () => {
+  test("#181 today's page is shown before the folder is listed, then yesterday's, then the active projects by name, then in full", async () => {
     const jp = d => join(JOURNALS, "tester", d + ".md");
     const yest = shiftISO(T(), -1);
+    const boat = join(DIRS.active, "Boat.md"), later = join(DIRS.someday, "Later.md");
     const tree = {
       journals: {tester: {[T() + ".md"]: "- TODO today's line\n", [yest + ".md"]: "- TODO late last night\n"}},
-      pages: {"GTD.md": "title:: GTD\n", "1": {"Boat.md": "title:: Boat\n\n- TODO Sand the hull\n"}},
+      pages: {"GTD.md": "title:: GTD\n", "1": {"Boat.md": "title:: Boat\n\n- TODO Sand the hull\n"},
+        "2": {"Later.md": "title:: Later\n"}},
     };
     const b = Backends.fs(fakeDir("Day181", tree, []));
     const steps = [];
     const names = b.names.bind(b);
     b.names = o => { steps.push("listed"); return names(o); };
     const rec = newRecord("Day181", b);
-    const shown = [];
+    const shown = [], named = [];
     await readInto(rec, {stage: true, onDay: r => {
       shown.push([...r.pages.keys()].sort().join());
+      if (r.pages.has(boat)) named.push(r.pages.get(boat).blocks.length);
       steps.push("shown");
       // Typed at once, into the page on screen.
       if (shown.length === 1) { r.pages.get(jp(T())).blocks.push(newBlock({title: "Captured early"})); r.dirty.add(jp(T())); }
     }});
-    eq(steps.slice(0, 3).join(), "shown,shown,listed", "today, then yesterday, before the listing");
+    eq(steps.slice(0, 5).join(), "shown,shown,shown,shown,listed", "today, yesterday, the projects by name, then in full, before the listing");
     eq(shown[0], [jp(T()), SETTINGS_PATH].sort().join(), "today alone (and the settings) on the first draw");
     eq(shown[1], [jp(T()), jp(yest), SETTINGS_PATH].sort().join(), "yesterday next");
-    ok(rec.pages.has(join(DIRS.active, "Boat.md")), "the rest follows");
+    eq(shown[2], [jp(T()), jp(yest), boat, SETTINGS_PATH].sort().join(), "the active projects next, from pages/1/ alone");
+    ok(rec.pages.has(later), "the rest follows");
+    eq(named.join(), "0,1", "the project shown by its file name first, then its lines");
+    has(serializePage(rec.pages.get(boat)), "Sand the hull", "the active project read before the listing");
     await filesLoaded();
     has(serializePage(rec.pages.get(jp(T()))), "Captured early", "a line captured on the first draw is kept");
     has(serializePage(rec.pages.get(jp(T()))), "today's line", "and so is the file's");
@@ -648,7 +655,7 @@ var GTD_TEST = (() => {
     ok(had, "the day template is there to make today's page from");
     await filesLoaded();
   });
-  test("#181 the month, then projects, contexts, people and orgs come in before the rest", async () => {
+  test("#181 the active projects, then the month, contexts, people and orgs come in before the rest", async () => {
     const jp = d => join(JOURNALS, d + ".md");
     const old = shiftISO(T(), -40), five = shiftISO(T(), -5), yest = shiftISO(T(), -1);
     let release;
@@ -673,9 +680,9 @@ var GTD_TEST = (() => {
       has(serializePage(rec.pages.get(jp(T()))), "today", "today, in the first read");
       has(serializePage(rec.pages.get(jp(yest))), "yesterday", "yesterday, right after today");
       ok(!rec.pages.has(jp(five)), "a day this month came in with today");
-      for (let i = 0; i < 40 && shown < 2; i++) await settle();
-      eq(shown, 2, "times shown: the month, then the projects");
-      ok(rec.pages.has(jp(five)), "a day this month, before the projects");
+      for (let i = 0; i < 40 && shown < 1; i++) await settle();
+      eq(shown, 1, "times shown: the month (the projects came in before the listing)");
+      ok(rec.pages.has(jp(five)), "a day this month, before the contexts");
       has(serializePage(rec.pages.get(join(DIRS.active, "Boat.md"))), "Sand the hull", "the project, before the contexts");
       ok(rec.stubs.has(join(DIRS.contexts, "phone.md")), "the context is not a stand-in");
       ok(rec.stubs.has(personPath("Tor Vik")) && rec.stubs.has(join(DIRS.orgs, "Bakery.md")), "people and orgs came in before the contexts");
@@ -690,7 +697,8 @@ var GTD_TEST = (() => {
     has(serializePage(rec.pages.get(personPath("Tor Vik"))), "met at the fair", "the person, read in full");
     const at = p => order.indexOf(p);
     const dir = (d, n) => join(d, n);
-    ok(at(jp(yest)) < at(dir(DIRS.active, "Boat.md")), "a day before the projects");
+    ok(at(jp(yest)) < at(dir(DIRS.active, "Boat.md")), "yesterday before the projects");
+    ok(at(dir(DIRS.active, "Boat.md")) < at(jp(five)), "the projects before the month");
     ok(at(dir(DIRS.active, "Boat.md")) < at(dir(DIRS.contexts, "phone.md")), "projects before contexts");
     ok(at(dir(DIRS.contexts, "phone.md")) < at(personPath("Tor Vik")), "contexts before people");
     ok(at(personPath("Tor Vik")) < at(dir(DIRS.orgs, "Bakery.md")), "people before orgs");
@@ -698,7 +706,7 @@ var GTD_TEST = (() => {
     ok(at(dir(DIRS.someday, "Later.md")) < at(dir(DIRS.completed, "Done.md")), "someday before done");
     ok(at(dir(DIRS.completed, "Done.md")) < at(jp(old)), "done before an old day");
   });
-  test("#181 the month's days are read and shown on their own, before the projects and the people", async () => {
+  test("#181 the month's days are read and shown on their own, before the people", async () => {
     const jp = d => join(JOURNALS, d + ".md");
     const five = shiftISO(T(), -5);
     let release;
@@ -714,8 +722,8 @@ var GTD_TEST = (() => {
     let shown = 0;
     try {
       await readInto(rec, {stage: true, onSoon: () => { shown++; }});
-      for (let i = 0; i < 40 && shown < 2; i++) await settle();
-      eq(shown, 2, "times shown before the person is in");
+      for (let i = 0; i < 40 && shown < 1; i++) await settle();
+      eq(shown, 1, "times shown before the person is in");
       ok(!rec.stubs.has(boat), "the project is still a stand-in");
       eq(rec.pages.get(boat).props.title, "The boat", "the project's name");
       has(serializePage(rec.pages.get(boat)), "Sand the hull", "the project's next action");
@@ -724,7 +732,7 @@ var GTD_TEST = (() => {
     } finally { release(); }
     await filesLoaded();
     ok(!rec.stubs, "no stand-ins left");
-    eq(shown, 3, "times shown before the rest");
+    eq(shown, 2, "times shown before the rest");
   });
   test("#181 a folder read before lists today's page alone, and old projects, notes and mail after the first draw", async () => {
     const jp = d => join(JOURNALS, "tester", d + ".md");
@@ -763,7 +771,7 @@ var GTD_TEST = (() => {
       const held = new Promise(r => { release = r; });
       ({rec, first} = await run("Late181", {[yest + ".md"]: held}));
       ok(!rec.pages.has(done) && !rec.pages.has(idea), "a done project or a note listed before the first draw");
-      ok(rec.stubs.has(boat), "an active project is there by name");
+      has(serializePage(rec.pages.get(boat)), "Sand the hull", "an active project is read before the listing");
       has(serializePage(rec.pages.get(jp(T()))), "today", "today read first");
       ok(rec.backend.hasLater(), "nothing left to list");
       await rec.backend.names({quiet: true});
@@ -2176,21 +2184,58 @@ var GTD_TEST = (() => {
   test("parseWhen: tomorrow, links kept at the end", () => {
     const w = parseWhen("Call Bob tomorrow [[c/phone]]");
     eq(w.title, "Call Bob [[c/phone]]");
-    eq(w.SCHEDULED, shiftISO(T(), 1));
+    eq(w.DEADLINE, shiftISO(T(), 1));
   });
   test("parseWhen: due:, pri:, a clock and a repeat", () => {
     const a = parseWhen("Pay rent due:tomorrow pri:h");
     eq([a.title, a.DEADLINE, a.priority], ["Pay rent", shiftISO(T(), 1), "H"]);
     const b = parseWhen("Dentist tomorrow at 14:30");
-    eq([b.title, b.SCHEDULED, b.time], ["Dentist", shiftISO(T(), 1), "14:30"]);
+    eq([b.title, b.DEADLINE, b.time], ["Dentist", shiftISO(T(), 1), "14:30"]);
     const c = parseWhen("Water plants every week");
     eq([c.title, c.repeat], ["Water plants", "every week"]);
   });
-  test("dateFromWords", () => {
-    eq(dateFromWords("today"), T());
-    eq(dateFromWords("tomorrow"), shiftISO(T(), 1));
-    eq(dateFromWords("day after tomorrow"), shiftISO(T(), 2));
+  test("#396 one reader for typed dates: same words, same day, same kind", () => {
+    const due = t => { const w = parseWhen("Call Mia " + t); return w && !w.SCHEDULED ? w.DEADLINE : "not due: " + JSON.stringify(w); };
+    const fri = due("eow");
+    eq(weekdayOf(fri), 5, "end of week is Friday");
+    eq(due("end of week"), fri, "eow and end of week are one day");
+    eq(due("end of month"), due("eom"));
+    eq(weekdayOf(due("weekend")), 6, "the weekend starts Saturday");
+    eq(due("tonight"), T());
+    eq(due("in two weeks"), shiftISO(T(), 14));
+    eq(due("friday"), due("by friday"), "no marker word is Due, like by");
+    eq(parseWhen("Call Mia on friday").SCHEDULED, due("friday"), "on is a start day");
+    eq(parseWhen("Call Mia starts friday").SCHEDULED, due("friday"), "starts is a start day");
+    eq(parseWhen("Call Mia 3/4"), null, "a bare number stays a number");
+    // The Tab menu reads what the line reads.
+    for (const p of ["eow", "end of week", "weekend", "in 2 years", "next fri"])
+      eq(dateFromWords(p), due(p), "menu and line agree on " + p);
     eq(dateFromWords("gibberish words"), null);
+    // The outline: the same reading, the words offered back every time.
+    const day = journalPath("2020-01-06"), said = [], was = window.notify;
+    const line = text => { const b = newBlock({title: ""}); putPage(day, {props: {}, blocks: [b]}); commitLine(el("div", {}, text), day, b); return b; };
+    window.notify = (m, l, act) => { said.push([m, act && act.label]); };
+    try {
+      const a = line("TODO Call Mia weekend");
+      eq([a.title, dateIn(blockProp(a, "DEADLINE")), blockProp(a, "SCHEDULED")], ["Call Mia", due("weekend"), undefined]);
+      ok(said.some(([, label]) => label === "Keep the words"), "a read date can be taken back: " + JSON.stringify(said));
+      const b = line("TODO Call Mia 3/4");
+      eq([b.title, dueDate(b)], ["Call Mia 3/4", null], "no date guessed from a bare number");
+    } finally { window.notify = was; V.pages.delete(day); clearMemo(); }
+  });
+  test("#396 a task line in the outline reads @ and # as the capture box does", () => {
+    const proj = scratchProject("Kitchen renovation");
+    const projTitle = pageTitle(proj);
+    const day = journalPath("2020-01-06");
+    const line = text => { const b = newBlock({title: ""}); putPage(day, {props: {}, blocks: [b]}); commitLine(el("div", {}, text), day, b); return b; };
+    try {
+      const a = line("TODO Call Mia @phone about tiles");
+      has(a.title.toLowerCase(), "[[c/phone]]", "@phone is the context");
+      has(a.title, "about tiles", "the sentence is kept whole");
+      const b = line("TODO Order tiles #renovation");
+      ok(/\[\[[^\]]*/.test(b.title) && b.title.includes(projTitle + "]]") && !b.title.includes("#"), "#renovation links the project: " + b.title);
+      eq(line("Mail me at mia @home").title, "Mail me at mia @home", "a note is left as written");
+    } finally { V.pages.delete(day); V.pages.delete(proj); clearMemo(); }
   });
   test("parseRepeat", () => {
     eq(parseRepeat("weekly"), {unit: "day", n: 7});
@@ -2371,6 +2416,46 @@ var GTD_TEST = (() => {
     } finally {
       closeDoneToast();
       PREF.set("done.history", JSON.stringify(doneHistory().filter(x => !/^toast item /.test(x.label))));
+    }
+  });
+  test("#402 a done task that names someone, or whose project has stakeholders, offers Tell: I finished, the day, a backdate and the share sheet", async () => {
+    closeDoneToast();
+    const proj = scratchProject("tell four-oh-two", [["TODO", "Send the quote to [[p/Emma Dahl]]"], ["TODO", "Tidy the desk"]]);
+    const pg = getPage(proj);
+    pg.props.with = "[[p/Lars Haugen]]";
+    const lone = scratchProject("alone four-oh-two", [["TODO", "Water the plants"]]);
+    const [task, quiet] = pg.blocks;
+    const realShare = navigator.share, shared = [];
+    Object.defineProperty(navigator, "share", {configurable: true, value: async d => { shared.push(d); }});
+    const tell = () => [...document.querySelectorAll("#toasts .toast.done button")].find(b => /^Tell/.test(b.textContent));
+    try {
+      setBlockState(lone, getPage(lone).blocks[0], "DONE"); await settle();
+      ok(!tell(), "Tell offered with nobody to tell");
+      closeDoneToast();
+      setBlockState(proj, task, "DONE"); await settle();
+      ok(tell(), "no Tell on a done task that names Emma, in a project with Lars");
+      tell().click(); await settle();
+      const m = document.querySelector("#modalRoot .modal");
+      has(m.textContent, "Emma Dahl"); has(m.textContent, "Lars Haugen");
+      const box = m.querySelector("textarea");
+      has(box.value, "I finished: Send the quote to Emma Dahl");
+      has(box.value, "Done on " + doneNoteDay(todayISO()) + ".");
+      const day = m.querySelector('input[type="date"]');
+      day.value = shiftISO(todayISO(), -2); day.dispatchEvent(new Event("change")); await settle();
+      has(box.value, "Done on " + doneNoteDay(shiftISO(todayISO(), -2)) + ".");
+      ok(!/Done on (Today|Yesterday)/i.test(box.value), "the day is said as a word they cannot place later");
+      has(blockProp(task, "CLOSED") || "", shiftISO(todayISO(), -2));
+      [...m.querySelectorAll("button")].find(b => /Share/.test(b.textContent)).click(); await settle();
+      eq(shared.length, 1, "Share did not open the share sheet");
+      has(shared[0].text, "I finished: Send the quote to Emma Dahl");
+      closeModal(); closeDoneToast();
+      setBlockState(proj, quiet, "DONE"); await settle();
+      ok(tell(), "a task that names nobody is not offered its project's stakeholders");
+    } finally {
+      closeModal(); closeDoneToast();
+      if (realShare) Object.defineProperty(navigator, "share", {configurable: true, value: realShare});
+      else delete navigator.share;
+      PREF.set("done.history", JSON.stringify(doneHistory().filter(x => !/four-oh-two|Emma Dahl|Tidy the desk|Water the plants/.test(x.label + x.path))));
     }
   });
   test("#201 the Chores chip on Next hides and shows the chores", async () => {
@@ -4204,6 +4289,33 @@ var GTD_TEST = (() => {
       ok(shownKeys().includes("tag") && !shownKeys().includes("rest"), "with all its buttons");
     } finally { window.matchMedia = mm; document.activeElement && document.activeElement.blur(); go("today"); }
   });
+  test("#403 a double tap on the toolbar's Type makes a note a to do; a slow second tap only closes the menu", async () => {
+    const path = scratchProject("edit bar type", [["", "Call the plumber"]]);
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    openPage(path);
+    await settle();
+    const b = getPage(path).blocks[0];
+    const type = () => document.querySelector('#editBar [data-k="type"]');
+    try {
+      eq(b.state || "", "", "the fixture line is not a note");
+      focusBlock(b.id);
+      await frame();
+      type().click();
+      await frame();
+      ok(document.querySelector("#editBar .ebpop"), "one tap does not open the Type menu at once");
+      await new Promise(r => setTimeout(r, 600));
+      type().click();
+      await frame();
+      ok(!document.querySelector("#editBar .ebpop"), "a slow second tap did not close the menu");
+      eq(b.state || "", "", "a slow second tap changed the line");
+      type().click();
+      await new Promise(r => setTimeout(r, 300));
+      type().click();
+      await frame();
+      eq(b.state, "TODO", "a double tap on Type did not make the note a to do");
+      ok(!document.querySelector("#editBar .ebpop"), "the Type menu stayed open after the double tap");
+    } finally { document.activeElement && document.activeElement.blur(); go("today"); }
+  });
   test("#170 a toolbar move keeps the line where it was on the screen, caret in it", async () => {
     const path = scratchProject("edit bar scroll", Array.from({length: 60}, (_, i) => ["TODO", "Row " + i]));
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
@@ -4739,6 +4851,201 @@ var GTD_TEST = (() => {
     } finally {
       const pg = getPage(path); pg.blocks.splice(pg.blocks.indexOf(b), 1); touch(path);
       go("today");
+    }
+  });
+  test("#400 a double click on a note's bullet makes it a to do; one click still focuses on it", async () => {
+    const path = ensureJournal(todayISO()), pg = getPage(path);
+    const b = newBlock({}, false), c = newBlock({}, false);
+    b.title = "Call the plumber"; c.title = "Buy screws";
+    pg.blocks.push(b, c); touch(path);
+    go("today");
+    await settle();
+    const bullet = id => document.querySelector('.blk[data-id="' + id + '"] > .line > .bullet');
+    const click = (node, detail) => node.dispatchEvent(new MouseEvent("click", {bubbles: true, cancelable: true, detail}));
+    try {
+      const n = bullet(b.id);
+      click(n, 1); click(n, 2);
+      await new Promise(r => setTimeout(r, 400));
+      eq(b.state, "TODO", "the note did not become a to do");
+      ok(!BRANCH_FOCUS.get(pg), "the double click also focused on the line");
+      click(bullet(c.id), 1);
+      await new Promise(r => setTimeout(r, 400));
+      eq(BRANCH_FOCUS.get(pg), c.id, "one click no longer focuses on the line");
+      eq(c.state || "", "", "one click changed the note");
+      // On a phone a tap zooms in at once, and a double tap zooms, as before #400.
+      BRANCH_FOCUS.delete(pg); render(); await settle();
+      const tap = (node, detail) => node.dispatchEvent(new PointerEvent("click", {bubbles: true, cancelable: true, detail, pointerType: "touch"}));
+      tap(bullet(c.id), 1);
+      eq(BRANCH_FOCUS.get(pg), c.id, "a tap on a phone does not zoom in at once");
+      tap(bullet(c.id), 2);
+      await new Promise(r => setTimeout(r, 500));
+      eq(BRANCH_FOCUS.get(pg), c.id, "a phone's double tap does not zoom in");
+      eq(c.state || "", "", "a phone's double tap changed the note");
+    } finally {
+      BRANCH_FOCUS.delete(pg);
+      for (const x of [b, c]) pg.blocks.splice(pg.blocks.indexOf(x), 1);
+      touch(path);
+      go("today");
+    }
+  });
+  test("#401 a new day-page task offers # Project?; the pick puts it under the project's line, one line per project", async () => {
+    const proj = scratchProject("Kitchen four-oh-one");
+    const path = ensureJournal(todayISO()), pg = getPage(path);
+    const a = newBlock({}, false), b = newBlock({}, false);
+    let c = null;
+    pg.blocks.push(a, b); touch(path);
+    const btn = blk => document.querySelector('.blk[data-id="' + blk.id + '"] > .line .askproj');
+    const choose = async (blk, typed) => {
+      btn(blk).click(); await settle();
+      const box = document.querySelector(".modal .projpick input");
+      ok(box, "# Project? did not open the picker");
+      box.value = typed;
+      box.dispatchEvent(new Event("input", {bubbles: true})); await settle();
+      const row = [...document.querySelectorAll(".modal .projpick .pick")].find(r => r.textContent.includes(pageTitle(proj)));
+      ok(row, "typing did not find the project");
+      row.click(); await settle();
+    };
+    try {
+      go("today"); await settle();
+      commitLine(el("div", {}, "TODO Call the plumber"), path, a); render(); await settle();
+      ok(btn(a), "a new task on the day page has no # Project?");
+      await choose(a, "four-oh");
+      const head = parentOf(getPage(path), a);
+      ok(head, "the task was not put under a line");
+      eq(head.title, "[[" + pageRef(proj) + "]]", "the line above is not the project");
+      eq(a.title, "Call the plumber", "the task's own words changed");
+      ok(!btn(a), "# Project? stays after the pick");
+      commitLine(el("div", {}, "TODO Buy tiles"), path, b); render(); await settle();
+      await choose(b, "kitchen");
+      eq(parentOf(getPage(path), b)?.id, head.id, "a second task got a second project line");
+      eq(getPage(path).blocks.filter(x => x.title === head.title).length, 1, "the project line is there twice");
+      const note = newBlock({}, false); getPage(path).blocks.push(note);
+      commitLine(el("div", {}, "a plain note"), path, note); render(); await settle();
+      ok(!btn(note), "a note is offered a project");
+      // On a phone the line becomes a task from the toolbar's Type, not typed TODO.
+      const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+      const bar = () => document.querySelector("#editBar");
+      const press = async k => { bar().querySelector('[data-k="' + k + '"]').click(); await frame(); await frame(); };
+      c = newBlock({}, false); getPage(path).blocks.push(c); touch(path); render(); await settle();
+      focusBlock(c.id); await frame();
+      const txt = document.querySelector('.blk[data-id="' + c.id + '"] > .line .txt');
+      txt.textContent = "the tile order"; txt.dispatchEvent(new Event("input", {bubbles: true}));
+      await press("type"); await press("kind");
+      document.activeElement?.blur?.(); render(); await settle();
+      eq(c.state, "TODO", "Type did not make the line a task");
+      ok(btn(c), "a task made with the toolbar's Type has no # Project?");
+    } finally {
+      closeModal();
+      const p = getPage(path);
+      p.blocks = p.blocks.filter(x => ![a, b, c].includes(x) && !(x.title || "").includes(pageRef(proj)) && x.title !== "a plain note");
+      touch(path); go("today");
+    }
+  });
+  test("#401 the project picker puts the most active projects first and makes a new one from what you type", async () => {
+    const quiet = scratchProject("Quiet four-oh-one"), busy = scratchProject("Busy four-oh-one");
+    const path = ensureJournal(todayISO()), pg = getPage(path);
+    const head = newBlock({}, false), kid = newBlock({state: "TODO"}, false), t = newBlock({state: "TODO"}, false);
+    head.title = "[[" + pageRef(busy) + "]]"; kid.title = "Order the parts"; head.children = [kid];
+    t.title = "Paint the shed";
+    pg.blocks.push(head, t); touch(path); flattenBlocks(pg.blocks);
+    const made = join(DIRS.active, slugify("Shed four-oh-one") + ".md");
+    try {
+      const order = projectsByActivity();
+      ok(order.indexOf(busy) >= 0 && order.indexOf(busy) < order.indexOf(quiet), "the busy project is not above the quiet one");
+      pickLineProject(path, t); await settle();
+      const first = document.querySelector(".modal .projpick .pick");
+      ok(first && first.textContent.includes(pageTitle(order[0])), "the most active project is not on top");
+      const box = document.querySelector(".modal .projpick input");
+      box.value = "Shed four-oh-one"; box.dispatchEvent(new Event("input", {bubbles: true})); await settle();
+      const fresh = [...document.querySelectorAll(".modal .projpick .pick")].find(r => /New project/.test(r.textContent));
+      ok(fresh, "no + New project for a name that is not there");
+      fresh.click(); await settle();
+      ok(getPage(made), "the new project was not made");
+      eq(statusDirOf(made), "1", "the new project is not Active");
+      eq(parentOf(getPage(path), t).title, "[[" + pageRef(made) + "]]", "the task is not under the new project");
+    } finally {
+      closeModal();
+      if (getPage(made)) V.pages.delete(made);
+      const p = getPage(path);
+      p.blocks = p.blocks.filter(x => x !== head && !(x.title || "").includes("Shed four-oh-one"));
+      touch(path); clearMemo(); go("today");
+    }
+  });
+  test("#404 a pasted video or post link offers its title; Use makes it [title](url); off by default, quiet for other sites", async () => {
+    const path = ensureJournal(todayISO()), pg = getPage(path);
+    const was = PREF.get("linktitles"), real = window.fetch, asked = [], made = [];
+    window.fetch = async url => {
+      url = String(url); asked.push(url);
+      const body = /youtu/.test(url) ? {title: "Never Gonna Give You Up [Official Video]", author_name: "Rick Astley"}
+        : /x\.com|twitter/.test(url) ? {author_name: "jack", html: "<blockquote><p>just setting up my twttr</p>&mdash; jack</blockquote>"}
+        : {error: "no matching providers found"};
+      return new Response(JSON.stringify(body), {status: 200, headers: {"Content-Type": "application/json"}});
+    };
+    const bullet = async title => {
+      const b = newBlock({}, false);
+      b.title = title; pg.blocks.push(b); made.push(b); touch(path);
+      go("today"); await settle();
+      focusBlock(b.id); await settle();
+      const txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
+      // Focused first, so focusing does not put the caret back at the start.
+      txt.focus(); await settle();
+      const s = getSelection(); s.selectAllChildren(txt); s.collapseToEnd();
+      return [b, txt];
+    };
+    const paste = (node, text) => {
+      const dt = new DataTransfer();
+      dt.setData("text/plain", text);
+      node.dispatchEvent(new ClipboardEvent("paste", {clipboardData: dt, bubbles: true, cancelable: true}));
+    };
+    const chip = b => document.querySelector('.blk[data-id="' + b.id + '"] > .line .linktitle');
+    const until = async cond => { for (let i = 0; i < 100 && !cond(); i++) await new Promise(r => setTimeout(r, 20)); };
+    const yt = "https://youtu.be/dQw4w9WgXcQ";
+    try {
+      PREF.set("linktitles", "");
+      let [b, txt] = await bullet("Watch");
+      paste(txt, " " + yt);
+      await settle(); await until(() => chip(b));
+      eq(asked.length, 0, "the link was sent to the site while the setting is off");
+      ok(!chip(b), "a title was offered while the setting is off");
+
+      PREF.set("linktitles", "1");
+      [b, txt] = await bullet("Watch");
+      paste(txt, " " + yt);
+      await until(() => chip(b));
+      ok(chip(b), "no title offered for a pasted YouTube link");
+      ok(chip(b).textContent.includes("Never Gonna Give You Up"), "the offer does not name the video");
+      ok(lineText(txt).includes(yt), "the link was replaced before Use was pressed");
+      chip(b).querySelector("button.use").click(); await settle();
+      eq(b.title, "Watch [Never Gonna Give You Up (Official Video)](" + yt + ")", "Use did not make the link a titled one");
+      ok(!chip(b), "the offer stays after Use");
+      txt.blur(); await settle();
+      eq(b.title, "Watch [Never Gonna Give You Up (Official Video)](" + yt + ")", "leaving the line undid Use");
+
+      [b, txt] = await bullet("Read");
+      paste(txt, " https://x.com/jack/status/20");
+      await until(() => chip(b));
+      ok(chip(b), "no title offered for a post on X");
+      chip(b).querySelector("button.use").click(); await settle();
+      eq(b.title, "Read [jack: just setting up my twttr](https://x.com/jack/status/20)", "a post's title is not its author and words");
+
+      [b, txt] = await bullet("Later");
+      paste(txt, " " + yt);
+      await until(() => chip(b));
+      chip(b).querySelector("button.x").click(); await settle();
+      ok(!chip(b), "✕ does not take the offer away");
+      txt.blur(); await settle();
+      eq(b.title, "Later " + yt, "✕ changed the link");
+
+      const n = asked.length;
+      [b, txt] = await bullet("See");
+      paste(txt, " https://example.com/some/page");
+      await settle(); await until(() => chip(b));
+      eq(asked.length, n, "a link to an ordinary site was sent for a title");
+      ok(!chip(b), "a title was offered for an ordinary site");
+    } finally {
+      window.fetch = real; PREF.set("linktitles", was || "");
+      pg.blocks = pg.blocks.filter(x => !made.includes(x));
+      touch(path); go("today");
     }
   });
   test("#374 a mockup pasted right after ``` on a bullet stays under it, line for line, and Enter after ``` stays in the fence", async () => {
@@ -5594,6 +5901,41 @@ var GTD_TEST = (() => {
         has(again.txt.textContent, "[[p/Lars Haugen]]", "Tab took nothing");
       });
     });
+    test("#396 Tab on an offered date reads it as Enter does: on is a start day, no word is Due", async () => {
+      const said = [], was = window.notify;
+      window.notify = (m, l, act) => { said.push(m); };
+      const pick = async text => {
+        const path = scratchProject("tab date", [["TODO", "x"]]);
+        openPage(path);
+        await settle();
+        const b = getPage(path).blocks[0];
+        focusBlock(b.id);
+        await frame();
+        const txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
+        txt.textContent = text;
+        const r = document.createRange(); r.selectNodeContents(txt); r.collapse(false);
+        getSelection().removeAllRanges(); getSelection().addRange(r);
+        txt.dispatchEvent(new Event("input", {bubbles: true}));
+        await frame();
+        ok(SUGGEST && SUGGEST.host === txt && /date/.test(JSON.stringify(SUGGEST.rows?.[0]?.accept)), "no date offered for " + text);
+        said.length = 0;
+        await press(txt, "Tab");
+        return b;
+      };
+      try {
+        await withKeys("tab", async () => {
+          const fri = parseWhen("x by fri").DEADLINE;
+          const a = await pick("Call Mia on fri");
+          eq([a.title, dateIn(blockProp(a, "SCHEDULED")), blockProp(a, "DEADLINE")], ["Call Mia", fri, undefined], "on fri is a start day");
+          ok(said.some(m => /^Starts/.test(m)), "the toast names it a start: " + JSON.stringify(said));
+          const b = await pick("Call Mia weekend");
+          eq([b.title, dateIn(blockProp(b, "DEADLINE")), blockProp(b, "SCHEDULED")], ["Call Mia", parseWhen("x weekend").DEADLINE, undefined], "no word is Due");
+          ok(said.some(m => /^Due/.test(m)), "the toast says Due: " + JSON.stringify(said));
+          const c = await pick("Call Mia eow");
+          eq(dateIn(blockProp(c, "DEADLINE")), fri, "eow is Friday, as on Enter");
+        });
+      } finally { window.notify = was; }
+    });
     test("#262 a name offered while typing follows the chosen key", () => {
       for (const k of ["enter", "tab", "both"]) {
         PREF.set("suggest.accept", k);
@@ -5689,6 +6031,15 @@ var GTD_TEST = (() => {
         ok(![...content().querySelectorAll(".srow .slabel")].some(l => /^(Integrations|Advanced)$/.test(l.textContent)),
           "a row still leads to Integrations or Advanced");
         has($("#set-advanced").textContent, "Start afresh", "Start afresh is not last, under Advanced");
+        // #404: titles for pasted links are asked for only once turned on under Integrations.
+        const was = PREF.get("linktitles");
+        PREF.set("linktitles", "");
+        render();
+        await settle();
+        [...$("#set-integrations").querySelectorAll(".srow")].find(r => r.querySelector(".slabel").textContent === "Titles for pasted links")
+          .querySelector("button").click();
+        eq(PREF.get("linktitles"), "1", "Turn on under Integrations does not turn on titles for pasted links");
+        PREF.set("linktitles", was || "");
         // A dialog one level down, the area's, has a way back to Settings.
         [...$("#set-area").querySelectorAll("button")].find(b => b.textContent === "Manage").click();
         const back = [...document.querySelectorAll(".modal .foot button")].find(b => b.textContent === "Settings");

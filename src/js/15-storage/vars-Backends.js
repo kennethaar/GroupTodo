@@ -230,6 +230,19 @@ const Backends = {
         try { return await this.readMany(paths); }
         finally { collect = null; day.readMs += performance.now() - t; }
       },
+      /* The pages straight in one folder, by name, nothing read: the active
+         projects, shown by file name before the whole folder is listed (#181). */
+      async namesIn(path) {
+        const out = [];
+        let dir;
+        try { dir = await dirFor(path); } catch (e) { if (/NotFound|TypeMismatch/i.test((e && e.name) || "")) return out; throw e; }
+        for await (const [name, h] of dir.entries()) {
+          if (name.startsWith(".") || h.kind !== "file" || !/\.md$/i.test(name)) continue;
+          fileCache.set(path + "/" + name, h);
+          out.push(path + "/" + name);
+        }
+        return out;
+      },
       hasLater: () => unlisted.length > 0,
       /* The folders names() left out, those pick() takes: every file in them.
          Added to what is known, never swapped in emptied (#188). */

@@ -2,6 +2,6 @@
 function dayAndClock(p) {
   const m = /^(.+?)\s+((?:at|kl\.?|klokka|klokken)\s+\S+|\S+)$/.exec(p);
   const time = m && whenClock(m[2]);
-  const day = time && (dateFromWords(m[1]) || whenDay(m[1], todayISO()));
+  const day = time && (dateFromWords(m[1]));
   return day ? {day, time} : null;
 }

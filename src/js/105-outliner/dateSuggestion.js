@@ -8,5 +8,5 @@ function dateSuggestion(w) {
   const time = whenClock(w);
   if (time) return {kind: "date", title: w, iso: time > nowHM() ? todayISO() : shiftISO(todayISO(), 1), time};
   // The words the capture box reads too: "neste onsdag", "i morgen".
-  return {kind: "date", title: w, iso: dateFromWords(w) || whenDay(w, todayISO())};
+  return {kind: "date", title: w, iso: dateFromWords(w)};
 }
