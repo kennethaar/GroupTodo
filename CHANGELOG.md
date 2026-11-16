@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.169.1 - 2026-11-16
+
+- The line menu and toolbar: the ☰ menu of a line low on the screen moves up
+  to show whole, instead of scrolling (#413).
+
 ## 1.169.0 - 2026-11-16
 
 - The line menu and toolbar: Format, behind ＋ on the line, makes a note a

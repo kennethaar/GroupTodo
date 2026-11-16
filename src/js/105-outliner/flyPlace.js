@@ -26,10 +26,12 @@ function flyPlace() {
   if (from) {
     const room = from.left - GAP - M >= w;
     const fx = room ? from.left - GAP - w : clampX(from.left);
-    const fy = room ? from.top : from.bottom + GAP;
-    const fmax = vh - M - fy;
-    box.style.maxHeight = h > fmax ? Math.max(80, fmax) + "px" : "";
-    box.style.left = Math.min(fx, from.left) + "px"; box.style.top = Math.max(top0 + M, Math.min(fy, vh - M - 80)) + "px";
+    // Low on the screen it moves up to fit whole; it scrolls only when the
+    // window itself is shorter than the menu.
+    const avail = vh - M - (top0 + M);
+    const fy = Math.max(top0 + M, Math.min(room ? from.top : from.bottom + GAP, vh - M - h));
+    box.style.maxHeight = h > avail ? avail + "px" : "";
+    box.style.left = Math.min(fx, from.left) + "px"; box.style.top = fy + "px";
     return;
   }
   const left = clampX(end);

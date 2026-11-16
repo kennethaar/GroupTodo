@@ -4328,7 +4328,21 @@ var GTD_TEST = (() => {
     ok(bx.left <= mm.left + 1, "#413 the menu starts at or left of the ☰, not at " + Math.round(bx.left) + " (☰ at " + Math.round(mm.left) + ")");
     if (mm.left - 12 >= bx.width) ok(bx.right <= mm.left + 1, "#413 with room it opens left of the ☰");
     ok(Math.abs(bx.top - mm.top) <= 4 || bx.top >= mm.bottom - 1, "#413 level with the ☰ or just under it");
+    ok(FLY.box.scrollHeight <= FLY.box.clientHeight + 1, "#413 the menu has a scroll of its own");
     if (FLY && FLY.summoned) flySummon(FLY.txt);
+    // Near the foot of the window it moves up to fit whole, rather than scroll.
+    const pad = content().style.paddingTop;
+    content().style.paddingTop = (innerHeight - 140) + "px";
+    try {
+      const low = document.querySelector('.blk[data-id="' + a.id + '"] > .line > .linemenu');
+      low.click();
+      await settle();
+      FLY.box.getAnimations().forEach(x => x.finish());
+      const lb = FLY.box.getBoundingClientRect();
+      ok(FLY.box.scrollHeight <= FLY.box.clientHeight + 1, "#413 low on the screen the menu scrolls instead of moving up");
+      ok(lb.bottom <= innerHeight, "and it is all on screen");
+      if (FLY && FLY.summoned) flySummon(FLY.txt);
+    } finally { content().style.paddingTop = pad; }
     zoom.click();
     await settle();
     eq(BRANCH_FOCUS.get(getPage(path)), a.id, "the zoom focuses on the line, as the bullet does");
