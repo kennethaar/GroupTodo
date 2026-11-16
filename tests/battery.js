@@ -8209,6 +8209,14 @@ var GTD_TEST = (() => {
     ok(rules.some(t => /no-drag/.test(t) && /button/.test(t)), "the bar's buttons would drag instead of click");
     ok(rules.some(t => /body\.paper/.test(t) && /padding-top/.test(t) && /titlebar-area-height/.test(t)),
       "with no top bar the page does not start below the window's buttons");
+    // Follow-ups on PC: where there is no top bar, an empty strip still drags the window,
+    // a page opened at the side keeps its ✕ in reach, and toasts start below the buttons.
+    ok(rules.some(t => /body\.paper/.test(t) && /#main::before/.test(t) && /app-region:\s*drag/.test(t)),
+      "with no top bar there is nothing to drag the window by");
+    ok(rules.some(t => /\.scrim\.side/.test(t) && /padding-top/.test(t) && /titlebar-area-height/.test(t)),
+      "a page opened at the side has its close button under the window's buttons");
+    ok(rules.some(t => /#toasts/.test(t) && /top/.test(t) && /titlebar-area-height/.test(t)),
+      "a toast can sit under the window's buttons");
   });
   test("#395 the Journal is paper: no card around a day page, a hairline between areas", async () => {
     go("today", {sub: null, todayDay: null}); await settle();

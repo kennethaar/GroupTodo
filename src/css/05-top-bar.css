@@ -73,4 +73,11 @@ body.paper .sidesearch:hover{color:var(--fg);border-color:var(--fg3)}
     -webkit-app-region:no-drag;app-region:no-drag}
   body.paper:not(.sidebar-hidden):not(.capping) #main{padding-top:env(titlebar-area-height, 0px)}
   body.paper.sidebar-hidden:not(.capping) #main{padding-top:env(titlebar-area-height, 0px)}
+  /* With no top bar, that empty strip is the title bar: it drags the window. */
+  body.paper:not(.capping) #main::before{content:"";position:absolute;top:0;left:0;right:0;
+    height:env(titlebar-area-height, 0px);-webkit-app-region:drag;app-region:drag}
+  #main button,#main a,#main input{-webkit-app-region:no-drag;app-region:no-drag}
+  /* A page opened at the side and the toasts start below the window's buttons. */
+  .scrim.side{padding-top:env(titlebar-area-height, 0px)}
+  html body #toasts:has(> .toast.done){top:calc(env(titlebar-area-height, 0px) + 6px)}
 }
