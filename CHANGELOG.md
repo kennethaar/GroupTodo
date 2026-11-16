@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.169.7 - 2026-11-16
+
+- Vault and sync: choosing a folder writes every step to Save log: what the
+  browser gave back, how long it took, and where it stopped. A folder that
+  cannot be read now says so, instead of leaving the area "browser only"
+  without a word (#419).
+
 ## 1.169.6 - 2026-11-16
 
 - Links and aliases: the Use title offer sits under the line, lined up with

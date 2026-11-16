@@ -281,6 +281,7 @@ js/23-space-folders/folderConflict.js
 js/23-space-folders/conflictMessage.js
 js/23-space-folders/askCarryPages.js
 js/23-space-folders/openCopyProgress.js
+js/23-space-folders/takeSpaceFolder.js
 js/23-space-folders/assignSpaceFolder.js
 js/23-space-folders/vars-areaNameChosen.js
 js/23-space-folders/storeAreaName.js

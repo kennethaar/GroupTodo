@@ -6019,6 +6019,39 @@ var GTD_TEST = (() => {
     }
   });
 
+  /* Choosing a folder that ends without one left no trace: the area stayed
+     "browser only" and the log stopped at "Pick the folder" (#419). Every
+     step is logged, and a failure after the pick is said, not swallowed. */
+  test("#419 choosing a folder logs what the browser gave and where it stopped", async () => {
+    const n = "Test419", picker = window.showDirectoryPicker, dir = CAP.dirPicker;
+    const logged = since => APP_LOG.slice(since).join("\n");
+    try {
+      await createSpace(n, "local");
+      CAP.dirPicker = true;
+      window.showDirectoryPicker = async () => { throw new DOMException("The user aborted a request.", "AbortError"); };
+      let at = APP_LOG.length;
+      eq(await assignSpaceFolder(n), false, "a cancelled pick");
+      has(logged(at), "folder: " + n + " asks the browser for a folder");
+      has(logged(at), "the browser gave no folder");
+      has(logged(at), "AbortError");
+      // A folder given, then reading it fails: logged, said, and the area is unchanged.
+      const broken = {kind: "directory", name: "Broken419",
+        async *values() { throw new TypeError("read went wrong"); },
+        async *entries() { throw new TypeError("read went wrong"); },
+        async isSameEntry() { return false; }, async resolve() { return null; }};
+      window.showDirectoryPicker = async () => broken;
+      at = APP_LOG.length;
+      eq(await assignSpaceFolder(n), false, "a folder that cannot be read");
+      has(logged(at), "the browser gave “Broken419”");
+      has(logged(at), "read went wrong");
+      has(logged(at), "Could not open that folder");
+      eq(Spaces.get(n).kind, "local", "the area moved to a folder it could not read");
+    } finally {
+      window.showDirectoryPicker = picker; CAP.dirPicker = dir;
+      LOADED.delete(n); await Spaces.remove(n);
+    }
+  });
+
   /* ---------- safe to close (#337) ---------- */
   {
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
