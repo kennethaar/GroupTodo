@@ -5262,48 +5262,52 @@ var GTD_TEST = (() => {
       touch(path); go("today");
     }
   });
-  test("#430 a todo added straight to a project shows on today's Journal as a live reference, once", async () => {
+  test("#430 a todo added on another page shows under Linked References on its day's Journal, nothing written there", async () => {
     const proj = scratchProject("Garage four-three-oh");
     const day = ensureJournal(todayISO());
-    const refsTo = blk => getPage(day).blocks.filter(x => (x.title || "").includes("{{embed ((" + blk.props.id + "))}}"));
-    const a = newBlock({}, false), note = newBlock({}, false);
-    getPage(proj).blocks.push(a, note); touch(proj);
-    let b = null, c = null, d = null;
+    const listed = blk => backlinksTo(day).some(h => h.block === blk);
+    const a = newBlock({}, false), note = newBlock({}, false), old = newBlock({state: "DONE", title: "Old shelf"}, false);
+    setBlockProp(old, "Added", "[[" + shiftISO(todayISO(), -7) + "]] - [[" + todayISO() + "]]");
+    getPage(proj).blocks.push(a, note, old); touch(proj);
+    const lines = getPage(day).blocks.length;
+    // An embed line v1.171 wrote on a day: gone at load, its task keeps the day it was added on.
+    const was = scratchProject("Shed four-three-oh", [["TODO", "Paint the door"]]), wasTask = getPage(was).blocks[0];
+    setBlockProp(wasTask, "id", "6a1f0430-0000-4000-8000-000000000430");
+    const emb = newBlock({title: "{{embed ((6a1f0430-0000-4000-8000-000000000430))}}"}, false);
+    const kept = newBlock({title: "{{embed ((6a1f0430-0000-4000-8000-000000000430))}}"}, false);
+    kept.children = [newBlock({title: "my own words under it"}, false)];
+    getPage(day).blocks.push(emb, kept); flattenBlocks(getPage(day).blocks); touch(day); touch(was);
     try {
       commitLine(el("div", {}, "TODO Sort the screws"), proj, a);
-      ok(a.props.id, "the task has no id:: to point at");
-      eq(refsTo(a).length, 1, "today's Journal has no live reference to the task");
+      ok(listed(a), "the task is not under today's Linked References");
       ok(getPage(proj).blocks.includes(a), "the task left the project page");
-      commitLine(el("div", {}, "TODO Sort the screws by size"), proj, a);
-      eq(refsTo(a).length, 1, "editing the task added it to the Journal again");
       // Enter on a task line opens an empty task below; its first words make it a new task too.
-      c = newBlock({state: "TODO"}, false); getPage(proj).blocks.push(c); touch(proj);
+      const c = newBlock({state: "TODO"}, false); getPage(proj).blocks.push(c); touch(proj);
       commitLine(el("div", {}, "TODO Oil the chain"), proj, c);
-      eq(c.props.id && refsTo(c).length, 1, "a task begun with Enter on a task line is not on the Journal");
-      // Typing "TODO " at the start of a line makes it a task as you type, before the line is left.
+      ok(listed(c), "a task begun with Enter on a task line is not listed");
+      // Typing "TODO " at the start of a line makes it a task as you type.
       const live = newBlock({title: "Fix the bike"}, false); getPage(proj).blocks.push(live); touch(proj);
       setBlockState(proj, live, "TODO");
-      eq(live.props.id && refsTo(live).length, 1, "a line made a task as it is typed is not on the Journal");
-      const empty = newBlock({}, false); getPage(proj).blocks.push(empty); touch(proj);
-      setBlockState(proj, empty, "TODO");
-      ok(!empty.props.id, "an empty task line, with no words yet, went to the Journal");
-      getPage(proj).blocks = getPage(proj).blocks.filter(x => x !== live && x !== empty); touch(proj);
-      d = live;
-      const before = getPage(day).blocks.length;
+      ok(listed(live), "a line made a task as it is typed is not listed");
       commitLine(el("div", {}, "a plain note"), proj, note);
-      eq(getPage(day).blocks.length, before, "a note on the project went to the Journal");
+      ok(!listed(note), "a note on the project is listed");
       // + Add next action on a project card is the other way straight in.
-      b = addNextActionTo(proj, "Hang the bike hooks");
-      eq(b && refsTo(b).length, 1, "a next action added from the card is not on the Journal");
-      // Ticked on the Journal, the task in the project file is ticked.
+      const b = addNextActionTo(proj, "Hang the bike hooks");
+      ok(b && listed(b), "a next action added from the card is not listed");
+      ok(!listed(old), "a task added a week ago and done today is listed as added today");
+      eq(getPage(day).blocks.length, lines + 2, "a line was written on today's page");
+      migrateVault();
+      ok(!getPage(day).blocks.includes(emb), "the embed line v1.171 wrote is still on the day");
+      ok(getPage(day).blocks.includes(kept), "an embed with your own words under it was taken away");
+      eq(addedDate(wasTask), todayISO(), "the embedded task lost the day it was added");
+      ok(listed(wasTask), "the embedded task is not listed instead");
+      // Drawn at the foot of the Journal, the way every page shows what links to it.
       go("today"); await settle();
-      const tick = [...content().querySelectorAll(".embedbox .eline")].find(l => l.textContent.includes("Sort the screws"))?.querySelector(".tick");
-      ok(tick, "the reference on the Journal has no tick");
-      tick.click(); await settle();
-      ok(!OPEN_STATES[a.state], "ticking on the Journal did not tick the task: " + a.state);
+      ok([...content().querySelectorAll(".backlink-entry")].some(e => e.textContent.includes("Sort the screws")),
+        "the Journal's Linked References do not show the task");
     } finally {
       const p = getPage(day);
-      p.blocks = p.blocks.filter(x => !/\{\{embed \(\(/.test(x.title || "") || ![a, b, c, d].some(t => t && t.props.id && x.title.includes(t.props.id)));
+      p.blocks = p.blocks.filter(x => x !== emb && x !== kept);
       touch(day); go("today");
     }
   });

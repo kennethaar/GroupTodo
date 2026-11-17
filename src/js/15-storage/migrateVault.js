@@ -22,5 +22,6 @@ function migrateVault() {
   migrateJournals();
   migrateTemplates();
   dropOldCalSkips();
+  dropJournalEmbeds();
   return moved;
 }

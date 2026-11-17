@@ -46,9 +46,6 @@ function commitLine(txt, path, b) {
   createLinkedPages(b.title);
   // A new task on a day page with no project above it asks for one (#401).
   askProjectIfNew(path, b, wasTask);
-  /* A new task straight on a project shows on today's Journal (#430): one
-     that just became a task, or an empty task line, as Enter on a task opens. */
-  if (!wasTask || !trim(before)) referInJournal(path, b);
   touch(path); noteTodoTouched();
   return true;
 }

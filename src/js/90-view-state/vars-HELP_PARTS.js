@@ -96,7 +96,7 @@ const HELP = {
       ["?.chip.who", "Who has it. Click for the task, an update, or to hand it on."],
       [".linemenu", "The line menu: dates, people, state and more."]],
     more: ["Pin a journal to the right with 📌.",
-      "A task you add straight to a project also shows on today's page, as a live copy. Tick it there and it is ticked in the project.",
+      "A task you add on another page, such as a project, is listed under Linked References at the foot of that day's page. Nothing is written on the day itself.",
       "Click # Project? and type to find a project, the busiest this week on top, or makes a new one. The task goes under the project's line.",
       "Each due task is one line: state, context, words, project, then dates. On a phone they are grouped by context.",
       "With several areas on, journals stand side by side. Double-click a border to even them out.",

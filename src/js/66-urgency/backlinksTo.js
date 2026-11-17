@@ -16,7 +16,7 @@ function backlinksTo(path) {
       continue;
     }
     // A line that links here counts once, with what is under it.
-    if (r.trail.some(b => hit.has(b))) continue;
+    if (hit.has(r.block) || r.trail.some(b => hit.has(b))) continue;
     hit.add(r.block);
     hits.push({path: r.path, block: r.block, trail: r.trail});
   }

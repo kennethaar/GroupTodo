@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.171.4 - 2026-11-17
+
+- Journal: a task you add on another page, such as a project, is now
+  listed under Linked References at the foot of the day's page, as on
+  every other page. The live copies 1.171.0 put on today's page are taken
+  away again; their tasks stay listed. (#430)
+
 ## 1.171.3 - 2026-11-17
 
 - Keys on a line: while you write in a table, the | --- | line under the

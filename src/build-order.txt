@@ -1640,7 +1640,7 @@ js/105-outliner/offerLinkTitle.js
 js/105-outliner/dropLinkTitle.js
 js/105-outliner/linkTitleButton.js
 js/105-outliner/askProjectIfNew.js
-js/105-outliner/referInJournal.js
+js/169-embeds-queries-namespaces-and-meetings/dropJournalEmbeds.js
 js/105-outliner/pickLineProject.js
 js/105-outliner/vars-lineOrg.js
 js/105-outliner/linePeople.js

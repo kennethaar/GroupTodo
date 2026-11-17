@@ -4,8 +4,8 @@ function flyCommit() {
   const val = lineText(txt);
   if (val === block.title) return;
   const [st, rest] = splitState(val);
-  if (st) { const prev = block.state, was = block.title; block.state = st; block.title = rest; if (!prev) applyTodoTemplate(block); askProjectIfNew(path, block, prev);
-    if (!prev || !trim(was)) referInJournal(path, block); }   // #430
+  if (st) { const prev = block.state; block.state = st; block.title = rest; if (!prev) applyTodoTemplate(block); askProjectIfNew(path, block, prev);
+    stampAddedIfMissing(path, block); }   // listed on its day's Journal (#430)
   else block.title = val;
   touch(path);
 }

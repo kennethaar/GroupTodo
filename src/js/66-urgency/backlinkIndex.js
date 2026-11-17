@@ -29,6 +29,14 @@ function backlinkIndex() {
       const scan = (blocks, trail) => {
         for (const b of blocks || []) {
           file({path: p, block: b, trail}, [b.title, ...(b.body || [])].join("\n"));
+          /* A task's Added:: day lists it on that day's Journal (#430), the
+             first date only: the second is the day it was done. */
+          const added = !isJournalPath(p) && b.state && addedDate(b);
+          if (added) {
+            const i = recs.push({path: p, block: b, trail}) - 1;
+            if (!by.has(added)) by.set(added, []);
+            by.get(added).push(i);
+          }
           scan(b.children || [], [...trail, b]);
         }
       };
