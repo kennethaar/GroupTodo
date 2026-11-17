@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.174.0 - 2026-11-17
+
+- A page: lines under Linked References are the real lines, written in place,
+  in the side panel too. While the caret is in one, a red box and
+  "Editing on <page>" say which page you are changing. The page's name opens
+  that page at the line, not at the top. Somebody else's day page stays
+  read-only. (#425)
+
 ## 1.173.0 - 2026-11-17
 
 - The line menu and toolbar: drag a line's bullet to move it. The edge of

@@ -5789,7 +5789,8 @@ var GTD_TEST = (() => {
       eq((content().textContent.match(/Book the plumber/g) || []).length, 1, "a day-page task does not show exactly once on the page");
       has(text, "Book the plumber", "the day-page task is not in Linked References");
       has(text, "Order the pipes", "a step under a line that names the project is not in Linked References");
-      const line = [...box.querySelectorAll(".bl-line")].find(l => /Book the plumber/.test(l.textContent));
+      // The day page's own line, written in place there (#425).
+      const line = [...box.querySelectorAll(".blk > .line")].find(l => /Book the plumber/.test(l.textContent));
       const tick = line?.querySelector("button.tick");
       ok(tick, "the day-page task has no tick to press in Linked References");
       tick.click(); await settle();
@@ -5797,6 +5798,46 @@ var GTD_TEST = (() => {
       eq(getPage(day).blocks[0].state, "DONE", "pressing the tick did not mark the day-page task done");
     } finally {
       PREF.set("backlinks.open", wasRefs == null ? "0" : wasRefs);
+      putPage(day, parsePage("")); clearMemo(); go("today");
+    }
+  });
+  test("#425 a line in Linked References is written in place, says which page while the caret is in it, and its page name opens that page at the line", async () => {
+    const path = scratchProject("live refs", [["TODO", "Draw the plan"]]);
+    const ref = pageRef(path), day = journalPath("2026-06-06");
+    putPage(day, parsePage(["- Breakfast", "- Call Anna about [[" + ref + "]]"].join("\n")));
+    clearMemo();
+    const hit = getPage(day).blocks[1];
+    const wasRefs = PREF.get("backlinks.open");
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    const refs = async () => { await settle(); for (let i = 0; i < 40 && !content().querySelector(".deferred-backlinks details"); i++) await new Promise(r => setTimeout(r, 50)); return content().querySelector(".deferred-backlinks"); };
+    const shownText = n => n.innerText.toLowerCase();
+    try {
+      PREF.set("backlinks.open", "1");
+      openPage(path);
+      let box = await refs();
+      const txt = box.querySelector('.blk[data-id="' + hit.id + '"] .txt');
+      ok(txt && txt.isContentEditable, "the linked line is not a line to write in");
+      const entry = txt.closest(".backlink-entry"), src = entry.querySelector(".bl-src");
+      ok(!/editing/.test(shownText(entry)), "the warning shows before the caret is in the line");
+      const calm = getComputedStyle(entry).borderTopColor;
+      focusBlock(hit.id); await frame();
+      ok(entry.contains(document.activeElement), "the caret did not go into the linked line");
+      has(shownText(entry), "editing on", "no warning while the caret is in the linked line");
+      has(shownText(entry), pageTitle(day).toLowerCase(), "the warning does not name the page being changed");
+      has(shownText(entry), "open", "the warning has no Open page");
+      ok(getComputedStyle(entry).borderTopColor !== calm, "the line being changed is not boxed");
+      txt.textContent = "Call Anna about [[" + ref + "]] after lunch";
+      txt.blur(); await settle();
+      eq(getPage(day).blocks[1].title, "Call Anna about [[" + ref + "]] after lunch", "the change was not written to the day page");
+      eq(state.pagePath, path, "writing in Linked References left the page");
+      box = await refs();
+      box.querySelector('.blk[data-id="' + hit.id + '"]').closest(".backlink-entry").querySelector(".bl-src").click();
+      await settle(); await frame(); await frame();
+      eq(state.pagePath, day, "the page name did not open the day page");
+      eq(document.activeElement?.closest(".blk")?.dataset.id, hit.id, "the day page did not open at the linked line");
+    } finally {
+      PREF.set("backlinks.open", wasRefs == null ? "0" : wasRefs);
+      document.activeElement && document.activeElement.blur();
       putPage(day, parsePage("")); clearMemo(); go("today");
     }
   });

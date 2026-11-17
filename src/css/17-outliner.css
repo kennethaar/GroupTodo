@@ -9,11 +9,17 @@
 .bl-txt{flex:1;min-width:0;overflow-wrap:anywhere}
 .bl-trail>.bl-line{color:var(--fg3);font-size:12px}
 .bl-body{white-space:pre-wrap;color:var(--fg3);overflow-wrap:anywhere}
-.backlink-entry{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer}
-.backlink-entry:last-child{border-bottom:none}
-.backlink-entry:hover,.backlink-entry:focus-visible{background:var(--bg3)}
+.backlink-entry{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border:1px solid transparent;border-bottom-color:var(--border)}
+.backlink-entry:last-child{border-bottom-color:transparent}
+/* A linked line is written in place (#425): while the caret is in it, the
+   entry is boxed in red and its eyebrow says which page is being changed. */
+.bl-warn,.bl-open{display:none}
+.backlink-subtree .outline{padding:0 0 0 28px}   /* room for the ☰ and 🔍 inside the box */
+.backlink-entry:has(.txt:focus){border-color:var(--danger);border-radius:var(--radius-sm)}
+.backlink-entry:has(.txt:focus) .bl-src{color:var(--danger)}
+.backlink-entry:has(.txt:focus) :is(.bl-warn,.bl-open){display:inline}
 .bl-src{align-self:flex-start;max-width:100%;text-align:left;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--fg3);overflow-wrap:anywhere}
-.backlink-entry:hover .bl-src,.bl-src:focus-visible{color:var(--accent)}
+.bl-src:hover,.bl-src:focus-visible{color:var(--accent)}
 .backlink-subtree{min-width:0;font-size:13px;color:var(--fg2);line-height:1.4}
 .bl-node>.bl-node::before{content:"";position:absolute;left:-10px;top:0;bottom:0;border-left:1px solid var(--border)}
 .blk>.line{display:flex;align-items:flex-start;gap:7px;padding:2px 0;border-radius:4px}

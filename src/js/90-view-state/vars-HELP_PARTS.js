@@ -864,7 +864,7 @@ const HELP = {
 
   page: {part: "views", title: "A page", view: "page", gtd: "organise",
     what: "One page: a project, a person, a note or a day.",
-    steps: ["Click a line to write. Focus, top right, hides all but the page. Leave focus or Esc brings it back.", "⋯ beside the title: pin, make private, tidy.", "The values at the top fold away.", "Hide done is a switch: only what is left. The page remembers it.", "Linked references show what points here, day-page tasks too. Tick them there. They have their own Hide done."],
+    steps: ["Click a line to write. Focus, top right, hides all but the page. Leave focus or Esc brings it back.", "⋯ beside the title: pin, make private, tidy.", "The values at the top fold away.", "Hide done is a switch: only what is left. The page remembers it.", "Linked references are the lines that point here. Write in them: a red box names the page you change. Its name opens it at the line. Own Hide done."],
     keys: [["Ctrl+.", "Line menu"], ["Alt+T", "Task"], ["Alt+N", "Note"]],
     legend: [[".vhead h1, .ptitle, h1", "The page title."], ["?.outline", "The lines. Click one to write."], ["?.fbar .switch", "Hide done: done and cancelled lines go. Saved on the page."],
       ["?.pagehead .focusbtn", "Focus: only the page. On a computer, what you write stays in the middle."],

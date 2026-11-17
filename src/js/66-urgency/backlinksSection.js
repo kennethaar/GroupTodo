@@ -10,19 +10,15 @@ function backlinksSection(path) {
   const space = V.space;
   const card = el("div", {class: "card"});
   for (const h of hits) {
-    const openSource = e => {
-      if (e.target.closest("[data-link]")) return;
-      e.preventDefault(); e.stopPropagation();
-      if ((e.ctrlKey || e.metaKey) && h.block?.id) jumpToSourceNode(h.path, h.block);
-      else openPage(h.path);
-    };
-    /* The page the link sits on is the container, so it is a quiet eyebrow
-       over the lines, which get the card's whole width on any screen. */
-    card.append(el("div", {
-      class: "backlink-entry", tabindex: "0", onclick: openSource,
-      onkeydown: e => { if (e.key === "Enter" || e.key === " ") openSource(e); }
-    },
-      el("button", {class: "bl-src", tabindex: "-1", onclick: openSource}, pageTitle(h.path)),
+    /* The lines are the page's own lines, written in here as there (#425).
+       The page the link sits on is a quiet eyebrow over them, which opens
+       that page at the line; while the caret is in a line, it turns into a
+       warning that says which page is being changed. */
+    const title = pageTitle(h.path);
+    const open = e => { e.preventDefault(); e.stopPropagation(); jumpToSourceNode(h.path, h.block); };
+    card.append(el("div", {class: "backlink-entry"},
+      el("button", {class: "bl-src", title: "Open " + title + " at this line", onclick: open},
+        el("span", {class: "bl-warn"}, "⚠ Editing on "), title, el("span", {class: "bl-open"}, " · Open ↗")),
       el("div", {class: "backlink-subtree"}, backlinkWithTrail(h, hideDone))
     ));
   }
