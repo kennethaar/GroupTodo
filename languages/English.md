@@ -128,6 +128,7 @@ code:: en
 - from the line above. Go there, or give this line its own =>
 - go there, change it, take it off =>
 - not set =>
+- this can also be a folder the browser refused, e.g. company protection on OneDrive =>
 - too close to the page behind it to read =>
 - you use this now. =>
 - yours =>
@@ -2667,6 +2668,7 @@ No estimate =>
 No events or feelings on your day pages this week. Start a line with o and a space for what happened, = and a space for how it felt. =>
 No folder question at each start =>
 No folder to pick. Calendar links. Any browser. A phone reaches it through Tailscale. =>
+No folder. Picked one? The browser may block it. =>
 No ideas to sort =>
 No ideas yet =>
 No ideas? Skip on to the next actions. =>
@@ -3288,6 +3290,7 @@ Pick up where you left off =>
 Pick what a name is dragged to. =>
 Pick what to drag it to. =>
 Pick your next action =>
+Picked a folder, but it says No folder? The browser refused it. Edge on a work PC may block company OneDrive folders. Try a folder outside OneDrive, or another browser. =>
 Picture =>
 Picture it done. Then say it in one line. =>
 Picture it done. What do you see? =>

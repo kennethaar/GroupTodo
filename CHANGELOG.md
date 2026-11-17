@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.169.8 - 2026-11-17
+
+- Vault and sync: a folder pick that brings no folder back now says "No
+  folder. Picked one? The browser may block it." Edge on a work PC can refuse
+  a company OneDrive folder after you pick it, and that looked exactly like
+  Cancel. Save log explains it, and Help says what to try.
+
 ## 1.169.7 - 2026-11-16
 
 - Vault and sync: choosing a folder writes every step to Save log: what the

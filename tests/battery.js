@@ -6034,6 +6034,11 @@ var GTD_TEST = (() => {
       has(logged(at), "folder: " + n + " asks the browser for a folder");
       has(logged(at), "the browser gave no folder");
       has(logged(at), "AbortError");
+      /* A browser that refuses the folder after the pick (Edge under company
+         protection) answers exactly like Cancel, so no folder back is said,
+         with the why in the log -- in any browser. */
+      has(logged(at), "warn: No folder. Picked one? The browser may block it.");
+      has(logged(at), "also be a folder the browser refused");
       // A folder given, then reading it fails: logged, said, and the area is unchanged.
       const broken = {kind: "directory", name: "Broken419",
         async *values() { throw new TypeError("read went wrong"); },

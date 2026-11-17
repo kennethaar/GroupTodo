@@ -32,9 +32,13 @@ async function assignSpaceFolder(name, {join = false, invited = false, returning
     handle = await window.showDirectoryPicker(opts);
   } catch (e) {
     // A cancel, a folder the browser refuses, and a declined "edit files?" all look alike here.
+    const abort = e && e.name === "AbortError";
     appLog("folder: " + name + ": the browser gave no folder after " + took() + " (" +
-           ((e && e.name) || "Error") + ": " + ((e && e.message) || e) + ")");
-    if (e.name !== "AbortError") notify("Could not open that folder: " + e.message, "error");
+           ((e && e.name) || "Error") + ": " + ((e && e.message) || e) + ")" +
+           (abort ? " - this can also be a folder the browser refused, e.g. company protection on OneDrive" : ""));
+    // Edge under company protection refuses a picked folder as if it were a Cancel.
+    if (abort) notify("No folder. Picked one? The browser may block it.", "warn");
+    else notify("Could not open that folder: " + e.message, "error");
     return false;
   }
   appLog("folder: " + name + ": the browser gave “" + handle.name + "” after " + took());

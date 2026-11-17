@@ -1115,6 +1115,7 @@ const HELP = {
       "If the folder stops answering, a box says so, and a log of what happened is saved to your downloads.",
       "Copying pages into a folder shows how far it has come, then how many projects and tasks are there.",
       "Chrome on Android opens a folder too. It may ask to be let in again each time.",
+      "Picked a folder, but it says No folder? The browser refused it. Edge on a work PC may block company OneDrive folders. Try a folder outside OneDrive, or another browser.",
       "The vault file also carries the pictures pages link to.",
       "Pages missing, or slow to open? More, then Check the folder, shows what the app cannot read and how long the last read took. Save log there saves to your downloads when today's page was on screen, what it waited for and which folders and files were slow, then each step, timed.",
       "A big folder opens in steps. Today's page shows first, before the rest of the folder is even looked at, so you can write at once. Then yesterday's, then the month, then projects, contexts, people and organisations. Until a file is read, a page shows its file name. A bar under Pages shows how far it has come. Click it to see each file.",
