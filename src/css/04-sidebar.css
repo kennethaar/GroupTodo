@@ -194,10 +194,12 @@
   border-radius:12px;box-shadow:0 6px 20px color-mix(in srgb,#000 18%,transparent);padding-top:8px;padding-bottom:8px}
 .timerfloat .nav-item.timer:hover{background:var(--bg3)}
 .timerfloat .nav-item.timer.dial.grown{width:220px}
-@media (max-width:640px){.timerfloat{display:none}}
+/* #421 on a phone the corner floats only in Focus, to hold Help. */
+@media (max-width:640px){body:not(.bookfocus) .timerfloat{display:none}}
 /* #323 Help under the Timer, where the Journal has no top bar. */
 .timerfloat{gap:6px}
 .timerfloat .floathelp{display:none;align-self:flex-end;font-size:12px;color:var(--fg2);background:var(--bg2);
   border:1px solid var(--border);border-radius:999px;padding:4px 12px}
 .timerfloat .floathelp:hover,.timerfloat .floathelp:focus-visible{color:var(--fg);background:var(--bg3)}
-body.paper:not(.capping):not(.bookfocus) .timerfloat .floathelp{display:inline-block}
+/* #421 Focus hides the top bar, so its Help stays in sight here. */
+body.paper:not(.capping) .timerfloat .floathelp,body.bookfocus .timerfloat .floathelp{display:inline-block}

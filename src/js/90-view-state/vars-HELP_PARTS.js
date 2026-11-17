@@ -77,7 +77,7 @@ const HELP = {
     keys: [["T", "Journal"], ["Enter", "New line"], ["Tab", "Indent"], ["Shift+Tab", "Outdent"]],
     legend: [[".todayhead h1", "The day you are on."],
       ["?.viewmenu", "View: what you change now and then."],
-      [".todayhead .focusbtn", "Focus: only the area you write in. Leave focus, top right, or Esc, brings the rest back."],
+      [".todayhead .focusbtn", "Focus: only the area you write in. Leave focus, top right, or Esc, brings the rest back. Help stays bottom right."],
       ["#sideHistory", "History: everything that happened, newest first."],
       ["?#floatHelp", "Help, under the Timer."],
       ["?.ttab-thisweek", "This week: its page and its days, in place."],

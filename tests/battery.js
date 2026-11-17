@@ -8603,8 +8603,37 @@ var GTD_TEST = (() => {
       window.matchMedia = q => /min-width:\s*641px/.test(q) ? {matches: false, addEventListener() {}, removeEventListener() {}} : mm.call(window, q);
       renderNav();
       ok($("#nav").contains(document.querySelector(".nav-item.timer")), "on a phone the Timer leaves the sidebar");
-      ok(!$("#timerFloat").children.length, "and floats as well");
+      ok(!$("#timerFloat .nav-item.timer"), "and floats as well");   // #421 Help may wait there for Focus
     } finally { window.matchMedia = mm; timerStop?.(); renderNav(); }
+  });
+  test("#421 Help is always in sight, in Focus and on a phone too", async () => {
+    const shown = n => !!n && n.getClientRects().length > 0;
+    const help = () => [$("#btnHelp"), $("#floatHelp")].filter(shown);
+    const mm = window.matchMedia;
+    try {
+      for (const [name, set] of [
+        ["the Journal", () => go("today")],
+        ["the Journal with the sidebar folded", () => { setSidebarHidden(true); go("today"); }],
+        ["Next", () => { setSidebarHidden(false); go("next"); }],
+        ["the Journal in Focus", () => go("today")],
+        ["Next in Focus", () => go("next")],
+      ]) {
+        setWritingFocus(false); set(); await settle();
+        if (name.endsWith("Focus")) { setWritingFocus(true); await settle(); }
+        eq(help().length, 1, "one Help in sight in " + name);
+        const b = help()[0]; b.click();
+        ok(helpOpen(), "Help opens from " + name); setHelp(false);
+      }
+      // A phone: the floating Help is there for Focus, and its corner is not hidden in Focus.
+      window.matchMedia = q => /min-width:\s*641px/.test(q) ? {matches: false, addEventListener() {}, removeEventListener() {}} : mm.call(window, q);
+      renderNav();
+      ok($("#timerFloat #floatHelp"), "a phone has no floating Help for Focus");
+      const rules = [...document.styleSheets].flatMap(sh => { try { return [...sh.cssRules]; } catch (_) { return []; } })
+        .filter(r => r.media && /max-width:\s*640px/.test(r.media.mediaText)).flatMap(r => [...r.cssRules]);
+      const hides = rules.filter(r => /\.timerfloat/.test(r.selectorText) && r.style.display === "none");
+      ok(hides.length && hides.every(r => /:not\(\.bookfocus\)/.test(r.selectorText)),
+        "on a phone the floating corner hides in Focus too: " + hides.map(r => r.selectorText));
+    } finally { window.matchMedia = mm; setWritingFocus(false); setSidebarHidden(false); setHelp(false); renderNav(); go("today"); await settle(); }
   });
   test("#398 installed with the title bar in the app, nothing sits under the window's own buttons", () => {
     // The page cannot put itself in that mode, so read what the style sheet says for it.

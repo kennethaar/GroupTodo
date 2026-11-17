@@ -5,6 +5,10 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.172.2 - 2026-11-17
+
+- Journal: Help stays in sight in Focus, bottom right, on a phone too (#421).
+
 ## 1.172.1 - 2026-11-17
 
 - Keys on a line: Copy text (Alt+X) also copies the note box under the line,

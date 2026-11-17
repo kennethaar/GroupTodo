@@ -14,8 +14,9 @@ function renderNav() {
   const float = $("#timerFloat");
   if (float) float.textContent = "";
   const floats = !!float && matchMedia("(min-width:641px)").matches;
-  /* #323 where the Journal has no top bar, Help waits under the Timer. */
-  if (floats) float.append(el("button", {class: "floathelp", id: "floatHelp", title: "Help (?)",
+  /* #323 where the Journal has no top bar, Help waits under the Timer;
+     #421 in Focus too, on a phone as well. */
+  if (float) float.append(el("button", {class: "floathelp", id: "floatHelp", title: "Help (?)",
     onclick: () => setHelp(!helpOpen())}, el("span", {"aria-hidden": "true"}, "? "), "Help"));
   for (const it of navItems()) {
     if (it === "sep") { nav.append(el("div", {class: "nav-sep"})); continue; }
