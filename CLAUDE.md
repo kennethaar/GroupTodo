@@ -228,22 +228,18 @@ Use one clear control per action.
 Every 10th `/clear`, the SessionStart hook `.claude/hooks/clear-count.mjs`
 asks for this section to be compacted: repeats merged, stale items dropped.
 
-Slow start (#181, reopened 2026-11-14): today's journal page on a big folder
-(Android, 1203 files, ~2 s per file read, listing ~29 s) was slow.
+Branch `simplified-view` (#395 Journal redesign, v1.166.0 to v1.169.x) is
+not merged to `main`. #418's app icon stays off `main` until the user says.
+
+Slow start (#181, reopened 2026-11-14): big Android folder (1203 files,
+~2 s per read, listing ~29 s).
 
 - Staged read: `readDayFirst` reads today's page (plus `GTD.md`, day
-  templates on a new day) by name via the fs backend's `readDays`, draws it
-  (`onDay`), then yesterday's, before `names()` lists. Then week, active
-  work, rest. `isStubPath` makes loose `pages/` files wait. `rec.dayOnly`
-  holds non-journal saves until the listing. `readActiveFirst` (v1.166.4)
-  then lists `pages/1/` alone (`namesIn`), shows stand-ins, reads them.
-- Takeover: after Allow access, `readFolderBehind` swaps the folder record in;
-  Enter calls `lineDone()` so the swap happens at once, carrying shown and
-  unsaved pages over (merged at save). User confirms it is fast after the swap.
-- Logging: `loadMark(text, since)` (`src/js/00-bootstrap/loadMark.js`) writes
-  `load +N.N s <step>` to `APP_LOG`; `startupText` (`loadStep`, `DRAW_NOTE`)
-  and `readTimingText` (slowest folders, day files, `noteFileSigs` with PREF
-  `filesigs:<area>`) go into Save log (Vault & sync, More, Check the folder).
-  Test: `#181 a slow start can be traced`.
-- Last log (v1.162.4): today 6.4 s, listing 29.5 s. Next: read the new log;
-  maybe a full browser copy.
+  templates) by name via `readDays`, draws it (`onDay`), then yesterday,
+  before `names()`. `readActiveFirst` then lists `pages/1/` (`namesIn`).
+  `isStubPath` defers loose `pages/` files; `rec.dayOnly` holds other saves.
+- Takeover: `readFolderBehind` swaps the folder in at Enter (`lineDone()`),
+  merging shown and unsaved pages. User confirms it is fast after the swap.
+- Logging: `loadMark` (`src/js/00-bootstrap/loadMark.js`), `startupText`,
+  `readTimingText` go into Save log. Test `#181 a slow start can be traced`.
+- Last log (v1.162.4): today 6.4 s, listing 29.5 s. Next: read a new log.
