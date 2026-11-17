@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.170.2 - 2026-11-17
+
+- Projects › List: a line on a project card, such as the organisation, the
+  next action, the outcome or a date, opens its field only when you click its
+  words. Click beside them and the project opens in the sidebar, as anywhere
+  else on the card (#429).
+
 ## 1.170.1 - 2026-11-17
 
 - Journal: Focus has its own button, beside the saved line at the bottom of

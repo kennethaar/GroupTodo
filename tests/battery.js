@@ -394,6 +394,16 @@ var GTD_TEST = (() => {
     ok([...card.querySelectorAll(".pfoot button")].some(b => b.textContent === "View tasks"), "no View tasks button");
     const miss = card.querySelector(".pfield.miss");
     ok(miss && getComputedStyle(miss).display === "none", "empty fields show before the card is reached for");
+    // #429: a field line takes the click only on its words; beside them the click opens the card.
+    const tooWide = () => [...card.querySelectorAll(".pfields.lines .pfield:not(.miss)")].find(f => {
+      const r = document.createRange(); r.selectNodeContents(f);
+      return f.getBoundingClientRect().width > r.getBoundingClientRect().width + 4;
+    })?.title;
+    eq(tooWide(), undefined, "a field line is wider than its words");
+    card.querySelector(".pfoot button").focus();
+    ok(getComputedStyle(miss).display !== "none", "empty fields stay hidden when the card is reached for");
+    eq(tooWide(), undefined, "a field line is wider than its words when the card is reached for");
+    card.querySelector(".pfoot button").blur();
   });
   test("every kind of demo page opens", async () => {
     const seen = new Set();
