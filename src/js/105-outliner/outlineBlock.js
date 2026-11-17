@@ -12,26 +12,21 @@ function outlineBlock(path, page, b, opts = {}) {
     "aria-expanded": String(!b.collapsed), disabled: !kids.length,
     onclick: e => { e.stopPropagation(); if (kids.length) { b.collapsed = !b.collapsed; render(); } },
   }, kids.length ? (b.collapsed ? "\u25B8" : "\u25BE") : ""));
-  /* A note's bullet: one click focuses on it, two make it a to do (#400). The
-     focus waits a moment for the second click; a key press does not wait. A
-     tap on a phone zooms in at once, and a double tap only zooms. */
-  let focusSoon = 0;
+  /* The bullet is the line's handle (#423): drag it to move the line. The zoom
+     is the 🔍 beside it and Focus on this line in the ☰ menu. A double click
+     on a note's bullet makes it a to do (#400). Alt+Shift+↑/↓ moves by key. */
   const asNote = !b.state && !ro;
-  line.append(el("button", {
-    class: "bullet", title: asNote ? "Focus on this line. Double-click: make it a to do" : "Focus on this line",
-    "aria-label": "Focus on this line",
+  const handle = el("button", {
+    class: "bullet", tabindex: "-1",
+    title: ro ? "" : asNote ? "Drag to move this line. Double-click: make it a to do" : "Drag to move this line",
+    "aria-label": "Move this line",
     onclick: e => {
       e.stopPropagation();
-      clearTimeout(focusSoon);
-      const mouse = asNote && e.pointerType !== "touch";
-      if (mouse && e.detail >= 2) {
-        if (!projectLineToTask(path, b)) setBlockState(path, b, "TODO");
-        return;
-      }
-      if (mouse && e.detail === 1) focusSoon = setTimeout(() => setBranchFocus(page, b.id, path), 250);
-      else setBranchFocus(page, b.id, path);
+      if (asNote && e.pointerType !== "touch" && e.detail >= 2 && !projectLineToTask(path, b)) setBlockState(path, b, "TODO");
     },
-  }));
+  });
+  if (!ro) bulletDrag(handle, path, b);
+  line.append(handle);
   /* The state's square, doing what a task row's tick does: a tap and a hold. The
      menu here also has the way back to a plain note. */
   if (b.state) {
@@ -497,7 +492,7 @@ function outlineBlock(path, page, b, opts = {}) {
   /* Pressing it must not take the caret out of the line, or the blur would
      close the very menu it is opening. With a mouse, the ☰ and a 🔍 sit in the
      gutter left of the fold arrow and show on the line pointed at (#395); the
-     zoom does what a click on the bullet does, as a hint that it can. */
+     zoom focuses on the line; the bullet beside it is a handle (#423). */
   line.append(el("button", {class: "linemenu", tabindex: "-1", title: "Line menu (Ctrl+.)", "aria-label": "Line menu",
     "aria-haspopup": "menu", "aria-expanded": "false",
     onmousedown: e => e.preventDefault(),

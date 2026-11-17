@@ -23,6 +23,12 @@ function flyHead(k) {
   if (k === "aiplan") { flyCommit(); const b = block; FLY.txt.blur(); openPlanWithAI(planSourceOfLines(path, [b])); return; }
   if (k === "embedref") { flyCommit(); const b = block; FLY.txt.blur(); copyEmbedOf(path, b); return; }
   if (k === "delasset") { flyCommit(); const b = block; FLY.txt.blur(); deleteAssetPrompt(path, b); return; }
+  if (k === "zoom") {
+    flyCommit(); const b = block, inPane = $("#pagePane").contains(FLY.txt); FLY.txt.blur();
+    if (inPane && SIDE_SHOWN) focusSide(b);
+    else setBranchFocus(getPage(path), b.id, path);
+    return;
+  }
   if (k === "plaincopy") { flyCommit(); const b = block; FLY.txt.blur(); copyPlainOf(b); return; }
   if (k === "tell") { flyCommit(); const b = block; FLY.txt.blur(); informFromLine(path, b); return; }
   if (k === "ask") {

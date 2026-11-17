@@ -39,7 +39,9 @@ function flyRows() {
     // One person on the line goes straight to the ask; several are picked from.
     ...(onLine.length ? [{k: "ask", ic: FLY_MAIL, label: "Ask for an update", val: onLine.join(", "), key: "Alt+E",
      opts: onLine.map(n => [n, n])}] : []),
-    {k: "embedref", ic: FLY_EMBED, label: "Copy embed", key: "Alt+B", menu: true, div: true},
+    // The bullet no longer zooms (#423), and a phone has no 🔍: the menu does.
+    {k: "zoom", ic: FLY_ZOOM, label: "Focus on this line", menu: true, div: true},
+    {k: "embedref", ic: FLY_EMBED, label: "Copy embed", key: "Alt+B", menu: true},
     {k: "plaincopy", ic: EB_COPY, label: "Copy text", key: "Alt+X", menu: true},
     {k: "refile", ic: FLY_REFILE, label: "Refile", key: "Alt+G", menu: true},
     {k: "trk", ic: FLY_TRACKER, label: "Insert tracker", key: "Alt+K", menu: true},

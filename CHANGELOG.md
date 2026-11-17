@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.173.0 - 2026-11-17
+
+- The line menu and toolbar: drag a line's bullet to move it. The edge of
+  another line drops it before or after that line; the middle puts it under
+  it. A phone holds the bullet first. A click on the bullet no longer zooms:
+  🔍, or ☰ › Focus on this line, does (#423).
+
 ## 1.172.2 - 2026-11-17
 
 - Journal: Help stays in sight in Focus, bottom right, on a phone too (#421).

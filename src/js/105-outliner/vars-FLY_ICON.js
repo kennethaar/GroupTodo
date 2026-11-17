@@ -17,6 +17,8 @@ const FLY_REFILE  = '<path d="M5 5v14M9 12h11M16 7l4 5-4 5"/>';
 const FLY_PLAN    = '<path d="M12 3l1.8 6.2L20 11l-6.2 1.8L12 19l-1.8-6.2L4 11l6.2-1.8z"/>';
 const FLY_EMBED   = '<rect x="3" y="10" width="11" height="11" rx="2"/><rect x="10" y="3" width="11" height="11" rx="2"/>';
 const FLY_TRASH   = '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>';
+// Focus on this line (#423): the 🔍 of the line's gutter.
+const FLY_ZOOM    = '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l4.5 4.5M10.5 8v5M8 10.5h5"/>';
 /* Open in the side panel (#409): the page, a panel strip at its right, and >
    sending the line into it. */
 const FLY_PANEL   = '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 4v16"/><path d="M8 9l3 3-3 3"/>';

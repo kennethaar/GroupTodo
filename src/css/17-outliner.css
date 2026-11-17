@@ -24,6 +24,15 @@
 }
 .blk.has-kids>.bullet{box-shadow:0 0 0 3.5px var(--bg4)}
 .blk.collapsed>.bullet{box-shadow:0 0 0 3.5px var(--bg4)}
+/* #423 The bullet is the line's handle: grab it, hold it on a phone (so it
+   takes the touch, not the page's scroll), and it has room round it to hit. */
+.blk>.line>.bullet{cursor:grab;touch-action:none;-webkit-touch-callout:none;user-select:none}
+.blk>.line>.bullet::before{content:"";position:absolute;inset:-8px}
+body.linedrag,body.linedrag *{cursor:grabbing!important;user-select:none}
+.blk.dragging>.line{opacity:.45}
+.blk.dragheld>.line>.bullet{background:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 30%,transparent)}
+.blk.dropinto>.line{background:color-mix(in srgb,var(--accent) 16%,transparent);outline:2px solid var(--accent);outline-offset:-1px}
+.dropbar{position:fixed;height:3px;margin-top:-1px;border-radius:2px;background:var(--accent);pointer-events:none;z-index:900}
 /* The line menu is asked for, never pushed: a quiet ⋯ at the end of the line
    you are on or pointing at, and Ctrl+. from the keyboard. */
 .blk>.line>.linemenu{order:99;flex:none;align-self:center;padding:0 6px;border-radius:4px;color:var(--fg3);

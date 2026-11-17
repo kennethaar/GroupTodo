@@ -5196,37 +5196,77 @@ var GTD_TEST = (() => {
       go("today");
     }
   });
-  test("#400 a double click on a note's bullet makes it a to do; one click still focuses on it", async () => {
+  test("#400 #423 the bullet is a handle: a click does not zoom, a double click makes a note a to do, a drag moves the line", async () => {
     const path = ensureJournal(todayISO()), pg = getPage(path);
-    const b = newBlock({}, false), c = newBlock({}, false);
-    b.title = "Call the plumber"; c.title = "Buy screws";
-    pg.blocks.push(b, c); touch(path);
+    const mk = t => { const x = newBlock({}, false); x.title = t; return x; };
+    const b = mk("Call the plumber"), c = mk("Buy screws"), d = mk("Paint the door"), e = mk("Oil the hinges");
+    pg.blocks.push(b, c, d, e); touch(path);
     go("today");
     await settle();
     const bullet = id => document.querySelector('.blk[data-id="' + id + '"] > .line > .bullet');
+    const lineOf = id => document.querySelector('.blk[data-id="' + id + '"] > .line');
     const click = (node, detail) => node.dispatchEvent(new MouseEvent("click", {bubbles: true, cancelable: true, detail}));
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const ptr = (type, node, x, y, kind = "mouse") => node.dispatchEvent(new PointerEvent(type,
+      {bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: 7, pointerType: kind, isPrimary: true, button: 0, buttons: type === "pointerup" ? 0 : 1}));
+    // Drag the bullet of `id` to a point on the line of `onto`: "top", "mid" or "bottom".
+    const drag = async (id, onto, where, kind = "mouse", hold = 0) => {
+      const from = bullet(id), fr = from.getBoundingClientRect();
+      const x0 = fr.left + fr.width / 2, y0 = fr.top + fr.height / 2;
+      ptr("pointerdown", from, x0, y0, kind);
+      if (hold) await wait(hold);
+      const r = lineOf(onto).getBoundingClientRect();
+      const x = r.left + 60, y = where === "top" ? r.top + 2 : where === "bottom" ? r.bottom - 2 : r.top + r.height / 2;
+      ptr("pointermove", document, x0, y0 + 8, kind);
+      ptr("pointermove", document, x, y, kind);
+      const shown = where === "mid" ? !!document.querySelector(".blk.dropinto") : !!document.querySelector(".dropbar");
+      ptr("pointerup", document, x, y, kind);
+      await settle();
+      return shown;
+    };
+    const order = () => pg.blocks.filter(x => [b, c, d, e].includes(x)).map(x => x.title);
     try {
-      const n = bullet(b.id);
-      click(n, 1); click(n, 2);
-      await new Promise(r => setTimeout(r, 400));
+      // #400 kept: a double click makes a note a to do; it never zooms.
+      click(bullet(b.id), 1); click(bullet(b.id), 2);
+      await wait(400);
       eq(b.state, "TODO", "the note did not become a to do");
-      ok(!BRANCH_FOCUS.get(pg), "the double click also focused on the line");
+      ok(!BRANCH_FOCUS.get(pg), "the double click focused on the line");
+      // #423 one click, or a tap on a phone, no longer zooms in.
       click(bullet(c.id), 1);
-      await new Promise(r => setTimeout(r, 400));
-      eq(BRANCH_FOCUS.get(pg), c.id, "one click no longer focuses on the line");
+      await wait(400);
+      ok(!BRANCH_FOCUS.get(pg), "one click on the bullet still zooms in");
+      bullet(c.id).dispatchEvent(new PointerEvent("click", {bubbles: true, cancelable: true, detail: 1, pointerType: "touch"}));
+      await wait(400);
+      ok(!BRANCH_FOCUS.get(pg), "a tap on the bullet still zooms in");
       eq(c.state || "", "", "one click changed the note");
-      // On a phone a tap zooms in at once, and a double tap zooms, as before #400.
-      BRANCH_FOCUS.delete(pg); render(); await settle();
-      const tap = (node, detail) => node.dispatchEvent(new PointerEvent("click", {bubbles: true, cancelable: true, detail, pointerType: "touch"}));
-      tap(bullet(c.id), 1);
-      eq(BRANCH_FOCUS.get(pg), c.id, "a tap on a phone does not zoom in at once");
-      tap(bullet(c.id), 2);
-      await new Promise(r => setTimeout(r, 500));
-      eq(BRANCH_FOCUS.get(pg), c.id, "a phone's double tap does not zoom in");
-      eq(c.state || "", "", "a phone's double tap changed the note");
+      // The top edge of a line drops before it, the bottom edge after it.
+      ok(await drag(e.id, b.id, "top"), "no bar showed at the top edge");
+      eq(order().join("|"), "Oil the hinges|Call the plumber|Buy screws|Paint the door", "the top edge did not drop before the line");
+      ok(await drag(e.id, c.id, "bottom"), "no bar showed at the bottom edge");
+      eq(order().join("|"), "Call the plumber|Buy screws|Oil the hinges|Paint the door", "the bottom edge did not drop after the line");
+      // The middle of a line takes it in, as its last line.
+      ok(await drag(e.id, d.id, "mid"), "the middle of the line was not marked");
+      ok(d.children.includes(e) && !pg.blocks.includes(e), "the middle did not drop the line under it");
+      ok(await drag(c.id, d.id, "mid"), "the second drop was not marked");
+      eq(d.children.map(x => x.title).join("|"), "Oil the hinges|Buy screws", "a line dropped in is not the last line under it");
+      // A line never goes inside itself.
+      await drag(d.id, e.id, "mid");
+      ok(pg.blocks.includes(d) && d.children.includes(e), "a line went inside its own branch");
+      // A phone holds the bullet before it drags; a quick swipe moves nothing.
+      await drag(d.id, b.id, "top", "touch");
+      eq(order().join("|"), "Call the plumber|Paint the door", "a swipe without a hold moved the line");
+      await drag(d.id, b.id, "top", "touch", 500);
+      eq(order().join("|"), "Paint the door|Call the plumber", "a held bullet did not drag on a phone");
+      // The zoom moved to the ☰ line menu, which a phone has too.
+      focusBlock(b.id);
+      await settle();
+      ok(flyRows().some(r => r.k === "zoom" && r.label === "Focus on this line"), "the line menu has no Focus on this line");
+      flyHead("zoom");
+      await settle();
+      eq(BRANCH_FOCUS.get(pg), b.id, "Focus on this line in the menu did not zoom in");
     } finally {
       BRANCH_FOCUS.delete(pg);
-      for (const x of [b, c]) pg.blocks.splice(pg.blocks.indexOf(x), 1);
+      for (const x of [b, c, d, e]) removeBlockFrom(pg, x);
       touch(path);
       go("today");
     }

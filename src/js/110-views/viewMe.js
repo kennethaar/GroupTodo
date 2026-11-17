@@ -47,7 +47,7 @@ function viewMe() {
             delete page.props[AVATAR_PROP];
             putPage(path, page);
           }); render(); }}, "Remove") : null)))),
-    el("div", {class: "group"}, "Notes", el("span", {class: "plain"}, "· click a line to write, a bullet to focus")),
+    el("div", {class: "group"}, "Notes", el("span", {class: "plain"}, "· click a line to write, drag a bullet to move it")),
     inSpace(r.space, () => {
       const node = el("div", {class: "space-journal", data: {space: r.space, path: r.path}},
         pageOutline(r.path, {root: "Your page", rootGo: ["me", {}], title: "Your notes in " + r.space}));

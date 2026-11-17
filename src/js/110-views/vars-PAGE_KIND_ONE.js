@@ -1,9 +1,9 @@
 // Every edit in the pane is written to the area its page lives in.
 for (const ev of ["pointerdown", "focusin"])
   $("#pagePane").addEventListener(ev, () => { if (SIDE_SHOWN) activateJournalSpace(SIDE_SHOWN.space); }, true);
-// A bullet in the pane focuses the pane, not the view beside it.
+// The 🔍 in the pane focuses the pane, not the view beside it (#423: not the bullet).
 $("#pagePane").addEventListener("click", e => {
-  const bullet = e.target.closest(".bullet"), blk = bullet && bullet.closest(".blk");
+  const zoom = e.target.closest(".linezoom"), blk = zoom && zoom.closest(".blk");
   if (!blk || !SIDE_SHOWN) return;
   e.stopPropagation();
   const b = inSpace(SIDE_SHOWN.space, () => sideBranch(getPage(SIDE_SHOWN.path), blk.dataset.id));

@@ -134,7 +134,7 @@ function viewToday() {
         // The area's badge stands beside it, so the title does not say the area again (#160).
         label: (who ? firstNameOf(who) + "'s journal" : "Journal"),
         edit: path ? () => editAllText({space: sp, path, id: null}) : null,
-        hint: who ? "you can read it, fold it and focus on a line" : "click a line to write, a bullet to focus",
+        hint: who ? "you can read it, fold it and focus on a line" : "click a line to write, drag a bullet to move it",
         body: () => journalColumn(sp, day, who, Object.assign({title: jTitle(sp), parentGo: ["today", {jz: "j:" + sp}],
           newText: "+ Click here to capture a new thought…", hideDone: !!path && hideDone}, TODAY_TRAIL))};
     }),
