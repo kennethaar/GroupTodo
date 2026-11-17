@@ -4878,6 +4878,9 @@ var GTD_TEST = (() => {
       const row = q(' > .bodyline[data-bi="1"]');
       eq(document.activeElement, row, "the caret is not in the new row");
       eq(caretOffsets(row).join(), "2,2", "the caret is not in the first cell");
+      // #280: the | --- | line only confuses while writing; alignment is in the Table menu.
+      ok(!q(' > .bodyline[data-bi="0"]').offsetParent, "#280 the | --- | line shows while the table is open");
+      ok(row.offsetParent, "the row being written is hidden");
       setHostText(row, "| Anna |  |", 6);
       key(row, "Tab");
       eq(caretOffsets(row).join(), "9,9", "Tab did not go to the next cell");

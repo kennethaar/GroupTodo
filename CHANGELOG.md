@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.171.3 - 2026-11-17
+
+- Keys on a line: while you write in a table, the | --- | line under the
+  header is hidden. The file keeps it; set alignment from the Table menu.
+  (#280)
+
 ## 1.171.2 - 2026-11-17
 
 - A page: a click in a long line that wraps now puts the caret where you
