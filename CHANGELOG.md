@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.171.1 - 2026-11-17
+
+- Journal: a task typed on a project page now shows on today's page too.
+  Before, only a line that was a note first got there; a line made a task
+  as you type "TODO ", or opened with Enter under a task, did not. (#430)
+
 ## 1.171.0 - 2026-11-17
 
 - Journal: a task you add straight to a project, on its page or with Add

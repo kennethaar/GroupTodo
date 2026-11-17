@@ -3,7 +3,8 @@
    the task in the project file. The task stays where it was written, and a
    day page gets the reference once. */
 function referInJournal(path, b) {
-  if (!b || !b.state || !OPEN_STATES[b.state] || pageKind(path) !== "project") return;
+  // A line with no words yet waits: its first words commit it (commitLine).
+  if (!b || !b.state || !OPEN_STATES[b.state] || !trim(b.title) || pageKind(path) !== "project") return;
   const id = ensureBlockId(path, b);
   const day = ensureJournal(todayISO()), page = getPage(day);
   const line = "{{embed ((" + id + "))}}";

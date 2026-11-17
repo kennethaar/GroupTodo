@@ -4344,7 +4344,7 @@ placeholder="Capture… (Enter adds to today)">
 })();
 
 "use strict";
-const APP_VERSION = "1.171.0";
+const APP_VERSION = "1.171.1";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -9965,6 +9965,7 @@ if (!prev) applyTodoTemplate(block);
 if (prev !== state) runTemplateRules(block,"status",state);
 stampAddedIfMissing(path, block);
 askProjectIfNew(path, block, prev);
+if (!prev) referInJournal(path, block);
 }
 if (state === "DONE" && prev !== "DONE" && choreDoer(block)) setDoneBy(block, choreDoer(block));
 if (prev !== state) {
@@ -16928,7 +16929,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.171.0 - 2026-11-17\n\n- Journal: a task you add straight to a project, on its page or with Add\n  next action on its card, also shows on today's page as a live copy. Tick\n  it there and it is ticked in the project. The task stays in the project,\n  and the day page gets it once. (#430)\n\n## 1.170.3 - 2026-11-17\n\n- Journal: History has the button beside the saved line at the bottom of\n  the sidebar. Focus stands in the top right corner of the Journal and of a\n  page, and Leave focus takes the same corner. On a computer, Help waits in\n  the bottom right corner, under the Timer. (#323)\n\n## 1.170.2 - 2026-11-17\n\n- Projects › List: a line on a project card, such as the organisation, the\n  next action, the outcome or a date, opens its field only when you click its\n  words. Click beside them and the project opens in the sidebar, as anywhere\n  else on the card (#429).\n\n## 1.170.1 - 2026-11-17\n\n- Journal: Focus has its own button, beside the saved line at the bottom of\n  the sidebar. In Focus the same corner shows Leave focus, plain to see, so\n  Esc is no longer the only way out. In the Journal, Focus keeps only the\n  area you write in, in the middle of the screen. (#323)\n\n## 1.170.0 - 2026-11-17\n\n- Journal: the example in the day page tip now plays as it would be typed.\n  You see the app offer Ada after two letters, Ctrl+Enter go from TODO to\n  WAIT, and Tab indent a step, with the key named in a strip under it. It\n  plays once a session, ↻ Replay plays it again, and with animations turned\n  off in the system you see the finished example only (#427).\n\n## 1.169.10 - 2026-11-17\n\n- Journal: the tip on today's page is shorter. It is titled \"Capture\n  everything as it happens\", lists its four keys one per row, shows one\n  example and closes with Got it (#424).\n\n## 1.169.9 - 2026-11-17\n\n- The line menu and toolbar: on the line being written, the words keep the\n  first row beside the line tools. Status, running time, due date and other\n  chips go to the row below instead of pushing the words down (#414).\n\n## 1.169.8 - 2026-11-17\n\n- Vault and sync: a folder pick that brings no folder back now says \"No\n  folder. Picked one? The browser may block it.\" Edge on a work PC can refuse\n  a company OneDrive folder after you pick it, and that looked exactly like\n  Cancel. Save log explains it, and Help says what to try.\n\n## 1.169.7 - 2026-11-16\n\n- Vault and sync: choosing a folder writes every step to Save log: what the\n  browser gave back, how long it took, and where it stopped. A folder that\n  cannot be read now says so, instead of leaving the area \"browser only\"\n  without a word (#419).\n\n## 1.169.6 - 2026-11-16\n\n- Links and aliases: the Use title offer sits under the line, lined up with\n  its words. With all the line tools open it no longer squeezes a pasted\n  link into a narrow column (#415).\n\n## 1.169.5 - 2026-11-16\n\n- The line menu and toolbar: Side panel has a clearer icon, a page with a\n  panel strip at its right and > sending the line into it (#409).\n\n## 1.169.4 - 2026-11-16\n\n- Ways to run GroupToDo: a new app icon, a G of folded blue ribbon standing\n  on a flat base, lighter at every fold.\n";
+const HELP_NEWS = "## 1.171.1 - 2026-11-17\n\n- Journal: a task typed on a project page now shows on today's page too.\n  Before, only a line that was a note first got there; a line made a task\n  as you type \"TODO \", or opened with Enter under a task, did not. (#430)\n\n## 1.171.0 - 2026-11-17\n\n- Journal: a task you add straight to a project, on its page or with Add\n  next action on its card, also shows on today's page as a live copy. Tick\n  it there and it is ticked in the project. The task stays in the project,\n  and the day page gets it once. (#430)\n\n## 1.170.3 - 2026-11-17\n\n- Journal: History has the button beside the saved line at the bottom of\n  the sidebar. Focus stands in the top right corner of the Journal and of a\n  page, and Leave focus takes the same corner. On a computer, Help waits in\n  the bottom right corner, under the Timer. (#323)\n\n## 1.170.2 - 2026-11-17\n\n- Projects › List: a line on a project card, such as the organisation, the\n  next action, the outcome or a date, opens its field only when you click its\n  words. Click beside them and the project opens in the sidebar, as anywhere\n  else on the card (#429).\n\n## 1.170.1 - 2026-11-17\n\n- Journal: Focus has its own button, beside the saved line at the bottom of\n  the sidebar. In Focus the same corner shows Leave focus, plain to see, so\n  Esc is no longer the only way out. In the Journal, Focus keeps only the\n  area you write in, in the middle of the screen. (#323)\n\n## 1.170.0 - 2026-11-17\n\n- Journal: the example in the day page tip now plays as it would be typed.\n  You see the app offer Ada after two letters, Ctrl+Enter go from TODO to\n  WAIT, and Tab indent a step, with the key named in a strip under it. It\n  plays once a session, ↻ Replay plays it again, and with animations turned\n  off in the system you see the finished example only (#427).\n\n## 1.169.10 - 2026-11-17\n\n- Journal: the tip on today's page is shorter. It is titled \"Capture\n  everything as it happens\", lists its four keys one per row, shows one\n  example and closes with Got it (#424).\n\n## 1.169.9 - 2026-11-17\n\n- The line menu and toolbar: on the line being written, the words keep the\n  first row beside the line tools. Status, running time, due date and other\n  chips go to the row below instead of pushing the words down (#414).\n\n## 1.169.8 - 2026-11-17\n\n- Vault and sync: a folder pick that brings no folder back now says \"No\n  folder. Picked one? The browser may block it.\" Edge on a work PC can refuse\n  a company OneDrive folder after you pick it, and that looked exactly like\n  Cancel. Save log explains it, and Help says what to try.\n\n## 1.169.7 - 2026-11-16\n\n- Vault and sync: choosing a folder writes every step to Save log: what the\n  browser gave back, how long it took, and where it stopped. A folder that\n  cannot be read now says so, instead of leaving the area \"browser only\"\n  without a word (#419).\n\n## 1.169.6 - 2026-11-16\n\n- Links and aliases: the Use title offer sits under the line, lined up with\n  its words. With all the line tools open it no longer squeezes a pasted\n  link into a narrow column (#415).\n\n## 1.169.5 - 2026-11-16\n\n- The line menu and toolbar: Side panel has a clearer icon, a page with a\n  panel strip at its right and > sending the line into it (#409).\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {
@@ -30577,7 +30578,7 @@ dropUnlinkedAssignee(b, before);
 if (who) assignBlock(path, b, who);
 createLinkedPages(b.title);
 askProjectIfNew(path, b, wasTask);
-if (!wasTask) referInJournal(path, b);
+if (!wasTask || !trim(before)) referInJournal(path, b);
 touch(path); noteTodoTouched();
 return true;
 }
@@ -31800,7 +31801,7 @@ function askProjectIfNew(path, b, prev) {
 if (!prev && b.state && OPEN_STATES[b.state] && isJournalPath(path) && !lineProject(path, b)) ASK_PROJECT.id = b.id;
 }
 function referInJournal(path, b) {
-if (!b || !b.state || !OPEN_STATES[b.state] || pageKind(path) !== "project") return;
+if (!b || !b.state || !OPEN_STATES[b.state] || !trim(b.title) || pageKind(path) !== "project") return;
 const id = ensureBlockId(path, b);
 const day = ensureJournal(todayISO()), page = getPage(day);
 const line = "{{embed ((" + id + "))}}";
@@ -32372,7 +32373,8 @@ const {txt, path, block} = FLY;
 const val = lineText(txt);
 if (val === block.title) return;
 const [st, rest] = splitState(val);
-if (st) { const prev = block.state; block.state = st; block.title = rest; if (!prev) applyTodoTemplate(block); askProjectIfNew(path, block, prev); }
+if (st) { const prev = block.state, was = block.title; block.state = st; block.title = rest; if (!prev) applyTodoTemplate(block); askProjectIfNew(path, block, prev);
+if (!prev || !trim(was)) referInJournal(path, block); }
 else block.title = val;
 touch(path);
 }

@@ -5265,7 +5265,7 @@ var GTD_TEST = (() => {
     const refsTo = blk => getPage(day).blocks.filter(x => (x.title || "").includes("{{embed ((" + blk.props.id + "))}}"));
     const a = newBlock({}, false), note = newBlock({}, false);
     getPage(proj).blocks.push(a, note); touch(proj);
-    let b = null;
+    let b = null, c = null, d = null;
     try {
       commitLine(el("div", {}, "TODO Sort the screws"), proj, a);
       ok(a.props.id, "the task has no id:: to point at");
@@ -5273,6 +5273,19 @@ var GTD_TEST = (() => {
       ok(getPage(proj).blocks.includes(a), "the task left the project page");
       commitLine(el("div", {}, "TODO Sort the screws by size"), proj, a);
       eq(refsTo(a).length, 1, "editing the task added it to the Journal again");
+      // Enter on a task line opens an empty task below; its first words make it a new task too.
+      c = newBlock({state: "TODO"}, false); getPage(proj).blocks.push(c); touch(proj);
+      commitLine(el("div", {}, "TODO Oil the chain"), proj, c);
+      eq(c.props.id && refsTo(c).length, 1, "a task begun with Enter on a task line is not on the Journal");
+      // Typing "TODO " at the start of a line makes it a task as you type, before the line is left.
+      const live = newBlock({title: "Fix the bike"}, false); getPage(proj).blocks.push(live); touch(proj);
+      setBlockState(proj, live, "TODO");
+      eq(live.props.id && refsTo(live).length, 1, "a line made a task as it is typed is not on the Journal");
+      const empty = newBlock({}, false); getPage(proj).blocks.push(empty); touch(proj);
+      setBlockState(proj, empty, "TODO");
+      ok(!empty.props.id, "an empty task line, with no words yet, went to the Journal");
+      getPage(proj).blocks = getPage(proj).blocks.filter(x => x !== live && x !== empty); touch(proj);
+      d = live;
       const before = getPage(day).blocks.length;
       commitLine(el("div", {}, "a plain note"), proj, note);
       eq(getPage(day).blocks.length, before, "a note on the project went to the Journal");
@@ -5287,7 +5300,7 @@ var GTD_TEST = (() => {
       ok(!OPEN_STATES[a.state], "ticking on the Journal did not tick the task: " + a.state);
     } finally {
       const p = getPage(day);
-      p.blocks = p.blocks.filter(x => !/\{\{embed \(\(/.test(x.title || "") || ![a, b].some(t => t && t.props.id && x.title.includes(t.props.id)));
+      p.blocks = p.blocks.filter(x => !/\{\{embed \(\(/.test(x.title || "") || ![a, b, c, d].some(t => t && t.props.id && x.title.includes(t.props.id)));
       touch(day); go("today");
     }
   });

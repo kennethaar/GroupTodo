@@ -26,6 +26,8 @@ function setBlockState(path, block, state, opts = {}) {
     if (prev !== state) runTemplateRules(block,"status",state);
     stampAddedIfMissing(path, block);
     askProjectIfNew(path, block, prev);
+    // A line that became a task on a project shows on today's Journal (#430).
+    if (!prev) referInJournal(path, block);
   }
   // Ticked off for somebody who takes turns: the credit is theirs (#236).
   if (state === "DONE" && prev !== "DONE" && choreDoer(block)) setDoneBy(block, choreDoer(block));
