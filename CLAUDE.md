@@ -228,8 +228,8 @@ Use one clear control per action.
 Every 10th `/clear`, the SessionStart hook `.claude/hooks/clear-count.mjs`
 asks for this section to be compacted: repeats merged, stale items dropped.
 
-Branch `simplified-view` (#395 Journal redesign, v1.166.0 to v1.169.x) is
-not merged to `main`. #418's app icon stays off `main` until the user says.
+Branch `simplified-view` (#395 Journal redesign, #418 app icon) was merged
+into `main` at v1.172.0 (2026-11-17).
 
 Slow start (#181, reopened 2026-11-14): big Android folder (1203 files,
 ~2 s per read, listing ~29 s).
