@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.170.0 - 2026-11-17
+
+- Journal: the example in the day page tip now plays as it would be typed.
+  You see the app offer Ada after two letters, Ctrl+Enter go from TODO to
+  WAIT, and Tab indent a step, with the key named in a strip under it. It
+  plays once a session, ↻ Replay plays it again, and with animations turned
+  off in the system you see the finished example only (#427).
+
 ## 1.169.10 - 2026-11-17
 
 - Journal: the tip on today's page is shorter. It is titled "Capture

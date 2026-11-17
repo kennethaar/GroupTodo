@@ -4454,6 +4454,43 @@ var GTD_TEST = (() => {
       eq([...c.querySelectorAll("button")].pop().textContent, "Got it", "Got it button");
     } finally { PREF.set("tip.off.meeting", was || ""); }
   });
+  test("#427 the day page tip plays its example: typed, the app's popup, each key named under it; Replay; still with reduced motion", async () => {
+    const was = PREF.get("tip.off.meeting"), mm = window.matchMedia;
+    PREF.set("tip.off.meeting", "");
+    // What the example ends as, written the way it is written in a day page.
+    const FINAL = [
+      "Weekly sync · product",
+      "  Relaunch the website [[1/Relaunch the website]]",
+      "    DOING Draft new pricing copy [[c/computer]]",
+      "    WAIT Get vector logo files from [[p/Ada]]",
+      "      out until Thursday",
+      "  The 3rd-floor printer is jamming again",
+      "    TODO Order a replacement roller kit [[c/online]]",
+    ].join("\n");
+    try {
+      const c = meetingNotesCard(journalPath(todayISO()));
+      const ex = c.querySelector(".coach-ex");
+      const seen = [], pops = [];
+      await meetingTipDemo(ex, {delay: 0, onStep: s => { seen.push(s.caption); if (s.popup) pops.push(s.popup.join(",")); }});
+      ok(seen.some(t => /^Ctrl\+Enter/.test(t)), "a caption names Ctrl+Enter: " + seen.join(" | "));
+      ok(seen.some(t => /^Tab\b/.test(t)) && seen.some(t => /^Shift\+Tab/.test(t)), "and Tab and Shift+Tab");
+      ok(pops.some(p => /^Ada,/.test(p)), "typing Ad offers Ada from the people the app knows: " + pops.join(" | "));
+      ok(pops.some(p => /1\/Relaunch the website/.test(p)), "and [[1/ offers the project");
+      eq(ex.textContent, FINAL, "it stops on the finished example");
+      const cap = c.querySelector(".coach-cap");
+      ok(cap && cap.textContent, "the caption strip shows under the example");
+      const replay = [...c.querySelectorAll("button")].find(b => /Replay/.test(b.textContent));
+      ok(replay, "a Replay button");
+      // Shown again (a redraw), the tip does not play again by itself.
+      const again = meetingNotesCard(journalPath(todayISO()));
+      eq(again.querySelector(".coach-ex").textContent, FINAL, "a redraw shows the finished example");
+      // Animations turned off: only the finished example, no strip, no Replay.
+      window.matchMedia = q => /reduced-motion/.test(q) ? {matches: true} : mm.call(window, q);
+      const still = meetingNotesCard(journalPath(todayISO()));
+      eq(still.querySelector(".coach-ex").textContent, FINAL, "reduced motion: the finished example");
+      ok(!still.querySelector(".coach-cap") && ![...still.querySelectorAll("button")].some(b => /Replay/.test(b.textContent)), "and nothing that plays");
+    } finally { PREF.set("tip.off.meeting", was || ""); window.matchMedia = mm; }
+  });
   test("#403 a double tap on the toolbar's Type makes a note a to do; a slow second tap only closes the menu", async () => {
     const path = scratchProject("edit bar type", [["", "Call the plumber"]]);
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));

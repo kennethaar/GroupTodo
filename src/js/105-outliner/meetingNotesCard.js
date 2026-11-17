@@ -21,19 +21,26 @@ function meetingNotesCard(path) {
     key([code("[[1/Project Name]]")], "Turn a line into a project"),
     key([code("/"), " or ", code("Ctrl+.")], "Open the command menu (", code("/todo"), ", ", code("/project"), ", ", code("/meeting"), ")")));
 
+  /* The example plays as it would be typed, once a session (#427); a redraw
+     carries a run on, and reduced motion shows only the finished example. */
   box.append(el("div", {class: "coach-exlab"}, el("b", {}, "Example:")));
-  box.append(el("div", {class: "coach-ex"}, [
-    "Weekly sync · product",
-    "  Relaunch the website [[1/Relaunch the website]]",
-    "    TODO Write the new pricing copy [[c/computer]]",
-    "    TODO Ask Ada for the logo files",
-    "      she is out until Thursday",
-    "  The printer on 3 is dead again",
-  ].join("\n")));
+  const ex = el("div", {class: "coach-ex", translate: "no"});
+  const wrap = el("div", {class: "coach-demo"}, ex);
+  box.append(wrap);
+  const still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!still) wrap.append(el("div", {class: "coach-cap", "aria-live": "polite"}));
+  if (still) meetingTipDraw(ex, meetingTipFinal());
+  else if (MEETING_DEMO_RUN) { MEETING_DEMO_RUN.host = ex; meetingTipDraw(ex, MEETING_DEMO_RUN.s); }
+  else if (!MEETING_DEMO_PLAYED) {
+    meetingTipDraw(ex, {lines: [], caption: "", n: 0, popup: null});
+    setTimeout(() => { if (ex.isConnected && !MEETING_DEMO_RUN && !MEETING_DEMO_PLAYED) meetingTipDemo(ex); }, 600);
+  } else meetingTipDraw(ex, meetingTipFinal());
+
   box.append(text("Indented tasks automatically appear on the project’s page and in your task lists. " +
     "Plain indented lines stay attached as notes.", ";margin-top:8px"));
 
-  box.append(el("div", {style: "display:flex;gap:8px;margin-top:11px;flex-wrap:wrap"},
+  box.append(el("div", {style: "display:flex;gap:8px;margin-top:11px;flex-wrap:wrap;justify-content:flex-end"},
+    still ? null : el("button", {class: "btn sm ghost", title: "Play the example again", onclick: () => meetingTipDemo(ex)}, "↻ Replay"),
     el("button", {class: "btn sm ghost", onclick: off}, "Got it")));
   return box;
 }

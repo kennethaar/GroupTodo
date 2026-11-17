@@ -1680,6 +1680,11 @@ js/105-outliner/vars-FLY_OPEN_AFTER.js
 js/105-outliner/setOrDropProp.js
 js/105-outliner/openMeetingForm.js
 js/105-outliner/vars-meetingTipOff.js
+js/105-outliner/vars-MEETING_DEMO.js
+js/105-outliner/meetingTipApply.js
+js/105-outliner/meetingTipFinal.js
+js/105-outliner/meetingTipDraw.js
+js/105-outliner/meetingTipDemo.js
 js/105-outliner/meetingNotesCard.js
 js/105-outliner/vars-TIMELOG_RE.js
 js/105-outliner/clockMin.js
