@@ -8,11 +8,18 @@ function setWritingFocus(on) {
   const mid = box ? box.getBoundingClientRect().top + box.clientHeight / 2 : 0;
   const at = box && (a && a.isContentEditable && box.contains(a) && a.matches(TP_UNITS) ? a
     : box.querySelector(".tp-lit") || tpNearest(box, mid).node);
+  /* The Journal keeps one column (#323): the area the caret is in, else the first. */
+  const cards = box ? [...box.querySelectorAll(".jview .jgrid > .jcard:not(.trkcol)")] : [];
+  const card = on && cards.length ? (a && a.closest && a.closest(".jcard")) || cards[0] : null;
+  FOCUS_COL.space = card ? card.dataset.space || null : null;
+  for (const c of cards) c.classList.toggle("focuscol", c === card);
   document.body.classList.toggle("bookfocus", on);
   document.body.classList.toggle("teleprompt", tp);
   $("#focusLeave")?.remove();
-  if (on) document.body.append(el("button", {id: "focusLeave", class: "btn sm ghost", title: "Back to the sidebar and the bar (Esc)",
-    onclick: () => setWritingFocus(false)}, "Leave focus"));
+  // The way out sits where the way in was, at full strength, naming its key (#323).
+  if (on) document.body.append(el("button", {id: "focusLeave", class: "btn sm", title: "Back to the sidebar and the bar (Esc)",
+    onmousedown: e => e.preventDefault(), onclick: () => setWritingFocus(false)},
+    el("span", {"aria-hidden": "true"}, "✕ "), "Leave focus ", el("kbd", {}, "Esc")));
   TELEPROMPT.obs?.disconnect();
   TELEPROMPT.obs = null;
   if (tp && box) {

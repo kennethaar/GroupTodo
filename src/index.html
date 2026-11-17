@@ -46,7 +46,11 @@
     <!-- #395 where the Journal has no top bar, Search waits here. -->
     <button class="sidesearch" id="sideSearch" title="Search (/)"><span>Search…</span><kbd>/</kbd></button>
     <nav class="nav" id="nav"></nav>
-    <button class="sync" id="syncLine" title="Where this is saved, and how it syncs"><span class="dot" id="syncDot"></span><span id="syncTxt">local only</span></button>
+    <!-- #323 Focus has its own button by the saved line; in Focus the way out takes its spot. -->
+    <div class="syncrow" id="syncRow">
+      <button class="sync" id="syncLine" title="Where this is saved, and how it syncs"><span class="dot" id="syncDot"></span><span id="syncTxt">local only</span></button>
+      <button class="sidefocus" id="sideFocus" title="Only what you write: no sidebar, no bar (Esc leaves)"><span aria-hidden="true">&#9678;</span> Focus</button>
+    </div>
   </aside>
 
   <div id="main">

@@ -181,10 +181,10 @@ function viewToday() {
   const longDay = capitalise(pd.toLocaleDateString(undefined, {weekday: "long", month: "short", day: "numeric",
     year: pd.getFullYear() === new Date().getFullYear() ? undefined : "numeric"}));
   /* View holds what is changed now and then, so it does not stand beside the
-     day: Focus, History, somebody else's page, and trackers before the first. */
+     day: History, somebody else's page, and trackers before the first.
+     Focus has its own button by the saved line (#323). */
   const closeMenu = e => e.currentTarget.closest("details")?.removeAttribute("open");
   const viewItems = [
-    focusButton("day", "textbtn"),
     el("button", {class: "textbtn", title: "Everything that happened, newest first", onclick: () => openHistory()}, "⏱ History"),
     // With no top bar on the Journal, Help is here (#395).
     el("button", {class: "textbtn", title: "Help (?)", onclick: () => setHelp(!helpOpen())}, "? Help"),
@@ -290,7 +290,7 @@ function viewToday() {
     b.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); focus(); } });
     return b;
   };
-  c.append(journalWidths(el("div", {class: "jgrid"}, ...cols.map(s => el("section", {class: "jcard" + (solo ? " solo" : "")},
+  c.append(journalWidths(el("div", {class: "jgrid"}, ...cols.map(s => el("section", {class: "jcard" + (solo ? " solo" : "") + (s.space === FOCUS_COL.space ? " focuscol" : ""), "data-space": s.space},
     el("header", {class: "jhead"}, focusBadge(s),
       el("button", {class: "jtitle", title: "Focus on " + s.title, onclick: () => go("today", {jz: s.id})}, s.label),
       el("div", {style: "flex:1"}),

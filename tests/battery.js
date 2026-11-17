@@ -6408,7 +6408,7 @@ var GTD_TEST = (() => {
         for (let i = 0; i < 2; i++) {
           const last = $("#sidebar").querySelector(".nav").lastElementChild;
           eq(last.querySelector(".lbl")?.textContent, "Settings", "Settings is not at the very bottom");
-          eq(last.previousElementSibling?.id, "syncLine", "the sync line is not just above Settings");
+          ok(last.previousElementSibling?.querySelector("#syncLine"), "the sync line is not just above Settings");
           ok(!$("#nav").nextElementSibling, "something sits below Settings");
           renderNav();               // and it stays there when the sidebar is drawn again
         }
@@ -11487,26 +11487,80 @@ var GTD_TEST = (() => {
     [join(PAGES, "Notes.md")]: "- Ask about [[Garden]]\n",
   }, async () => {
     const shown = n => !!n && n.getClientRects().length > 0;   // hidden by itself or by what holds it
+    const other = "Test323 Other", wasVisible = PREF.get("visibleSpaces", "");
     try {
       openPage(join(PAGES, "Harbour.md")); await settle();
       eq(content().querySelectorAll(".focusbtn").length, 1, "a chapter keeps its one Focus, in the chapter bar");
       openPage(join(PAGES, "Garden.md")); await settle();
-      const btn = content().querySelector(".pagehead .focusbtn");
-      ok(btn, "a plain page has Focus in its head");
+      // Reopened: Focus has its own button, down by the saved line, and the way out sits in the same spot.
+      ok(!content().querySelector(".pagehead .focusbtn"), "a plain page needs no Focus of its own in its head");
+      const btn = $("#sideFocus");
+      ok(btn && btn.previousElementSibling === $("#syncLine") || btn && btn.nextElementSibling === $("#syncLine"),
+        "Focus is beside the saved line in the sidebar");
+      ok(shown(btn), "and it shows");
       btn.click(); await settle();
       ok(document.body.classList.contains("bookfocus"), "Focus on a page");
       ok(!shown(content().querySelector(".pagehead .acts")), "the page's buttons go");
       ok(!shown(content().querySelector(".deferred-backlinks")), "Linked References go");
-      setWritingFocus(false);
+      const out = $("#focusLeave"), r = out.getBoundingClientRect();
+      ok(shown(out) && r.left < 80 && innerHeight - r.bottom < 80, "the way out sits where Focus was, bottom left");
+      has(out.textContent, "Esc", "it names its key");
+      const colorOf = v => { const p = el("span", {style: "color:" + v}); document.body.append(p);
+        const c = getComputedStyle(p).color; p.remove(); return c; };
+      eq(getComputedStyle(out).color, colorOf("var(--fg)"), "and it is not faint");
+      out.click(); await settle();
+      ok(!document.body.classList.contains("bookfocus"), "it leaves Focus");
       go("today"); await settle();
-      const jbtn = content().querySelector(".todayhead .focusbtn");
-      ok(jbtn, "the Journal has Focus beside History");
-      jbtn.click(); await settle();
+      ok(!content().querySelector(".todayhead .focusbtn"), "the Journal's View menu no longer holds Focus");
+      // Two areas side by side: Focus keeps the one you write in, and only that one.
+      const cards = () => [...content().querySelectorAll(".jview .jgrid > .jcard:not(.trkcol)")];
+      LOADED.set(other, newRecord(other, Backends.memory(other)));
+      Spaces.list.push({name: other, kind: "memory"});
+      setVisibleSpaces([V.space, other]);
+      for (const sp of [V.space, other]) inSpace(sp, () => getPage(ensureJournal(todayISO())).blocks.push(newBlock({title: "Plant the bulbs"})));
+      clearMemo(); render(); await settle();
+      eq(cards().length, 2, "two areas on the day");
+      const second = cards()[1], line = second.querySelector(".outline .txt");
+      ok(line, "a line in the second area");
+      line.focus();
+      $("#sideFocus").click(); await settle();
       ok(document.body.classList.contains("bookfocus"), "Focus in the Journal");
       ok(!shown(content().querySelector(".jfold")), "the tabs and trackers go");
-      ok(!shown(jbtn), "and the head's buttons");
-      ok(shown(content().querySelector(".jgrid")), "the day page stays");
-    } finally { setWritingFocus(false); }
+      ok(!shown(content().querySelector(".todayhead .vhead-r details")), "and the head's buttons");
+      eq(cards().filter(shown).length, 1, "only one column stays");
+      ok(shown(cards()[1]), "the one you were writing in");
+      const cr = cards()[1].getBoundingClientRect(), br = $("#content").getBoundingClientRect();
+      ok(Math.abs((cr.left + cr.right) / 2 - (br.left + br.right) / 2) < 40, "in the middle");
+      setWritingFocus(false); await settle();
+      eq(cards().filter(shown).length, 2, "leaving brings both back");
+    } finally {
+      setWritingFocus(false);
+      LOADED.delete(other);
+      Spaces.list = Spaces.list.filter(s => s.name !== other);
+      setVisibleSpaces(wasVisible ? JSON.parse(wasVisible) : []);
+    }
+  }));
+  test("#323 Arrow Up in Focus goes to the line above, as Arrow Down goes to the one below", () => withBookVault({
+    [join(PAGES, "Steps.md")]: Array.from({length: 12}, (_, i) => "- Step " + (i + 1) + " of the plan").join("\n") + "\n",
+  }, async () => {
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    const units = () => [...content().querySelectorAll(".outline .blk > .line > .txt")];
+    const key = (k) => document.activeElement.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true}));
+    const at = (n, off) => { n.focus(); const r = document.createRange(); r.setStart(n.firstChild, off); r.collapse(true);
+      getSelection().removeAllRanges(); getSelection().addRange(r); document.dispatchEvent(new Event("selectionchange")); };
+    try {
+      openPage(join(PAGES, "Steps.md")); await settle();
+      setWritingFocus(true); await frame();
+      at(units()[6], 2);
+      await new Promise(r => setTimeout(r, 700)); await frame();
+      key("ArrowUp"); await frame();
+      eq(document.activeElement, units()[5], "Up from the start of step 7 lands in step 6");
+      await new Promise(r => setTimeout(r, 700)); await frame();
+      key("ArrowUp"); await frame();
+      eq(document.activeElement, units()[4], "and again in step 5");
+      key("ArrowDown"); await frame();
+      eq(document.activeElement, units()[5], "Down goes back to step 6");
+    } finally { setWritingFocus(false); document.activeElement && document.activeElement.blur(); }
   }));
   test("#324 Focus is a teleprompter on a computer: the line you write at the middle, scrolling lights the middle one", () => withBookVault({
     [join(PAGES, "Long.md")]: Array.from({length: 60}, (_, i) => "- Paragraph " + (i + 1) + " of the long page.").join("\n") + "\n",

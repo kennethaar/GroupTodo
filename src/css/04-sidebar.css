@@ -173,6 +173,12 @@
 .sync{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--fg3);padding:8px 10px;
   border-radius:8px;width:100%;text-align:left}
 .sync:hover{background:var(--bg3);color:var(--fg2)}
+/* #323 Focus sits on the saved line's right. */
+.syncrow{display:flex;align-items:center;gap:2px}
+.syncrow .sync{flex:1;min-width:0}
+.syncrow #syncTxt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sidefocus{flex:none;font-size:12px;color:var(--fg3);padding:8px 10px;border-radius:8px;white-space:nowrap}
+.sidefocus:hover,.sidefocus:focus-visible{background:var(--bg3);color:var(--fg)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--fg3);flex:none}
 .dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.err{background:var(--danger)}
 .dot.sync{background:var(--accent);animation:pulse 1s infinite}

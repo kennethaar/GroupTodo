@@ -7,7 +7,7 @@ function renderNav() {
   $("#brand").classList.toggle("active", state.view === "me");
 
   const nav = $("#nav");
-  const sync = $("#syncLine");     // held: clearing the nav takes it along (#397)
+  const sync = $("#syncRow");      // held: clearing the nav takes it along (#397); Focus beside it (#323)
   nav.textContent = "";
   /* #399 on a computer the Timer floats in the bottom right corner; on a
      phone that corner is the capture button's, so it stays in the drawer. */

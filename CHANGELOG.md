@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.170.1 - 2026-11-17
+
+- Journal: Focus has its own button, beside the saved line at the bottom of
+  the sidebar. In Focus the same corner shows Leave focus, plain to see, so
+  Esc is no longer the only way out. In the Journal, Focus keeps only the
+  area you write in, in the middle of the screen. (#323)
+
 ## 1.170.0 - 2026-11-17
 
 - Journal: the example in the day page tip now plays as it would be typed.

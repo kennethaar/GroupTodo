@@ -13,6 +13,9 @@ $("#syncLine").onclick   = () => {
   if (held.length) { showHoldDialog(held[0].name); return; }
   openVaultDialog();
 };
+// The click must not take the caret out of the line: Focus keeps the column it is in (#323).
+$("#sideFocus").onmousedown = e => e.preventDefault();
+$("#sideFocus").onclick  = () => { document.body.classList.remove("nav-open"); setWritingFocus(true); };
 $("#brand").onclick      = () => go("me");
 $("#appUpdate").onclick  = () => UPDATE && whatsNewDialog(UPDATE.entries, {update: UPDATE});
 $("#hideSide").onclick   = () => isNarrow() ? document.body.classList.remove("nav-open") : setSidebarHidden(true);
