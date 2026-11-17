@@ -8587,8 +8587,11 @@ var GTD_TEST = (() => {
       ok(t, "no Timer");
       ok(!$("#nav").contains(t), "the Timer is still in the sidebar");
       eq(document.querySelectorAll(".nav-item.timer").length, 1, "one Timer");
-      const r = t.getBoundingClientRect();
-      eq(getComputedStyle(t.closest("#timerFloat")).position, "fixed", "it does not float");
+      // #323 Help may sit under the Timer: the floating group holds the corner.
+      const box = t.closest("#timerFloat");
+      ok(box, "the Timer is not in the floating group");
+      eq(getComputedStyle(box).position, "fixed", "it does not float");
+      const r = box.getBoundingClientRect();
       ok(innerWidth - r.right < 40 && innerHeight - r.bottom < 40, "not in the bottom right corner: " + [r.right, r.bottom, innerWidth, innerHeight].map(Math.round));
       eq($("#nav").lastElementChild.querySelector(".lbl")?.textContent, "Settings", "Settings is not last in the sidebar");
       // It still works where it floats: Enter starts it and stops it.
