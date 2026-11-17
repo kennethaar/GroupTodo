@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.172.1 - 2026-11-17
+
+- Keys on a line: Copy text (Alt+X) also copies the note box under the line,
+  without its fence lines (#392).
+
 ## 1.172.0 - 2026-11-17
 
 - Templates: + From a template, in Projects and Pages, starts something from

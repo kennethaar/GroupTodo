@@ -12276,6 +12276,9 @@ var GTD_TEST = (() => {
       children: [newBlock({state: "TODO", title: "See e-mail"})]});
     eq(plainLineText(b), "WAIT New date for meeting Håkon Moe 2026-11-03");
     eq(plainLineText(newBlock({title: "A note [[Some page]]"})), "A note Some page");
+    // #392: the Shift+Enter box under the line comes along, as written, without its ``` fence.
+    eq(plainLineText(newBlock({title: "Order [[Paint]]", body: ["```", "2 l white", "  1 brush", "```"]})),
+      "Order Paint\n2 l white\n  1 brush");
     const path = scratchProject("plain copy on the menu", [["TODO", "Buy paint"]]);
     const page = getPage(path), block = page.blocks[0];
     FLY = {txt: el("textarea"), path, page, block, box: el("div"), open: null, hi: 0, q: ""};
