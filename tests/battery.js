@@ -11628,6 +11628,48 @@ var GTD_TEST = (() => {
       eq(document.activeElement, units()[5], "Down goes back to step 6");
     } finally { setWritingFocus(false); document.activeElement && document.activeElement.blur(); }
   }));
+  test("#138 a click puts the caret where it was clicked, after a drawn link and when the line's tools open under the pointer", () => withBookVault({
+    [join(PAGES, "Clicks.md")]: "- Short line\n- Print it at the [[c/office]] for Ann\n" +
+      "- A long line that keeps going and going so that it wraps onto a second row of the page with more words after the wrap point, then more words to be sure\n",
+  }, async () => {
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    const units = () => [...content().querySelectorAll(".outline .blk > .line > .txt")];
+    const pointAt = (host, word, k) => {
+      const w = document.createTreeWalker(host, NodeFilter.SHOW_TEXT);
+      for (let t = w.nextNode(); t; t = w.nextNode()) {
+        const j = t.data.indexOf(word);
+        if (j < 0) continue;
+        const r = document.createRange(); r.setStart(t, j + k); r.setEnd(t, j + k + 1);
+        const b = r.getClientRects()[0];
+        return {clientX: b.left + 1, clientY: b.top + b.height / 2};
+      }
+      throw new Error("no " + word + " in " + host.textContent);
+    };
+    const caretAt = host => { const s = getSelection(), p = document.createRange();
+      p.selectNodeContents(host); p.setEnd(s.anchorNode, s.anchorOffset); return p.toString().length; };
+    // The mouse goes down on the line, which takes focus, and comes up on whatever is
+    // under the pointer by then: the line, or a tool the focused line put there.
+    const click = async (host, word, k, upOn) => {
+      const at = pointAt(host, word, k);
+      host.dispatchEvent(new MouseEvent("mousedown", {...at, button: 0, bubbles: true, cancelable: true}));
+      host.focus(); await frame();
+      (upOn ? upOn() : host).dispatchEvent(new MouseEvent("mouseup", {...at, button: 0, bubbles: true, cancelable: true}));
+      await frame();
+    };
+    try {
+      openPage(join(PAGES, "Clicks.md")); await settle();
+      let line = units()[1];
+      await click(line, "Ann", 1);
+      eq(document.activeElement.textContent.slice(0, caretAt(document.activeElement)), "Print it at the [[c/office]] for A",
+        "a click in a word after a drawn link lands in that word of the raw text");
+      document.activeElement.blur(); await frame();
+      line = units()[2];
+      await click(line, "the wrap", 4, () => document.body);
+      eq(document.activeElement, units()[2], "the long line has the focus");
+      eq(caretAt(document.activeElement), line.textContent.indexOf("the wrap") + 4,
+        "the mouse coming up on something else still leaves the caret where it went down");
+    } finally { document.activeElement && document.activeElement.blur(); }
+  }));
   test("#324 Focus is a teleprompter on a computer: the line you write at the middle, scrolling lights the middle one", () => withBookVault({
     [join(PAGES, "Long.md")]: Array.from({length: 60}, (_, i) => "- Paragraph " + (i + 1) + " of the long page.").join("\n") + "\n",
   }, async () => {
