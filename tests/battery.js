@@ -4415,6 +4415,29 @@ var GTD_TEST = (() => {
       ok(shownKeys().includes("tag") && !shownKeys().includes("rest"), "with all its buttons");
     } finally { PREF.set("linetools", wasTools || ""); window.matchMedia = mm; document.activeElement && document.activeElement.blur(); go("today"); }
   });
+  test("#414 on the line being written the words keep the first row; its chips go to the row below", async () => {
+    const path = scratchProject("chips under the line", [["DOING", "Paint the hallway and both bedrooms upstairs"], ["TODO", "Call Bob"]]);
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    const [a] = getPage(path).blocks;
+    setDue(a, todayISO());
+    a.props = Object.assign(a.props || {}, {effort: "2h", where: "upstairs hallway and bedrooms"});
+    openPage(path);
+    await settle();
+    const wasTools = PREF.get("linetools");
+    PREF.set("linetools", "all");
+    try {
+      const blk = () => document.querySelector('.blk[data-id="' + a.id + '"]');
+      ok(blk().querySelector(":scope > .line > .props"), "the line has chips");
+      focusBlock(a.id);
+      await frame();
+      const bar = document.querySelector("#editBar");
+      ok(bar && !bar.hidden && blk().contains(bar), "the tools are on the line");
+      const words = blk().querySelector(".txt").getBoundingClientRect(), br = bar.getBoundingClientRect();
+      const chips = blk().querySelector(":scope > .line > .props").getBoundingClientRect();
+      ok(Math.abs(words.top - br.top) <= 6, "the words start on the tools' row (words " + words.top + ", tools " + br.top + ")");
+      ok(chips.top >= words.bottom - 2 && chips.top >= br.bottom - 2, "the chips sit under the words and tools (chips " + chips.top + ", words end " + words.bottom + ")");
+    } finally { PREF.set("linetools", wasTools || ""); document.activeElement && document.activeElement.blur(); go("today"); }
+  });
   test("#403 a double tap on the toolbar's Type makes a note a to do; a slow second tap only closes the menu", async () => {
     const path = scratchProject("edit bar type", [["", "Call the plumber"]]);
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));

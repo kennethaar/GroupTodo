@@ -81,6 +81,10 @@
   .blk>.line:has(>.props){flex-wrap:wrap}
   .blk>.line>.props{order:100;max-width:none;flex-basis:100%;justify-content:flex-start}
 }
+/* The line being written has its tools on the first row, so the words keep
+   that row and the chips go under them (#414). */
+.blk>.line:has(>.props):has(> #editBar.inline:not([hidden])){flex-wrap:wrap}
+.blk>.line:has(> #editBar.inline:not([hidden]))>.props{order:100;max-width:none;flex-basis:100%;justify-content:flex-start}
 /* Use title "…" for a pasted video or post link (#404): as quiet as # Project?. */
 /* #415 the offer sits under the line, not in it: in the line it took room
    from the words, which run under the line tools. offerLinkTitle lines it up

@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.169.9 - 2026-11-17
+
+- The line menu and toolbar: on the line being written, the words keep the
+  first row beside the line tools. Status, running time, due date and other
+  chips go to the row below instead of pushing the words down (#414).
+
 ## 1.169.8 - 2026-11-17
 
 - Vault and sync: a folder pick that brings no folder back now says "No
