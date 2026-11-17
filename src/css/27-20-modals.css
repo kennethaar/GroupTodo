@@ -201,6 +201,9 @@ button.coach-dot{background:none;padding:0;font:inherit;color:transparent}
 }
 .coach-ex b{color:var(--fg);font-weight:600}
 .coach-exlab{color:var(--fg3);font-size:12px;margin-top:9px}
+.coach-keys{margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.6;color:var(--fg2)}
+.coach-keys b{font-weight:600;color:var(--fg)}
+.coach-keys code,.coach.tip code{font-family:var(--mono);font-size:12px}
 .listblurb{color:var(--fg3);font-size:12.5px;line-height:1.5;padding:10px 16px 2px}
 /* Styles: the four looks side by side, each drawn in its own colours. */
 .themes{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;padding:12px 16px 14px}

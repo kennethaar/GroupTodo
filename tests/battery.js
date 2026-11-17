@@ -4438,6 +4438,22 @@ var GTD_TEST = (() => {
       ok(chips.top >= words.bottom - 2 && chips.top >= br.bottom - 2, "the chips sit under the words and tools (chips " + chips.top + ", words end " + words.bottom + ")");
     } finally { PREF.set("linetools", wasTools || ""); document.activeElement && document.activeElement.blur(); go("today"); }
   });
+  test("#424 the day page tip: short, its keys as a list, one example, Got it", async () => {
+    const was = PREF.get("tip.off.meeting");
+    PREF.set("tip.off.meeting", "");
+    try {
+      const c = meetingNotesCard(journalPath(todayISO()));
+      ok(c, "the tip shows on today's page");
+      eq(c.querySelector(".coach-head b").textContent, "Capture everything as it happens", "title");
+      const keys = [...c.querySelectorAll("ul li")].map(li => li.textContent);
+      eq(keys.length, 4, "four keys as a list: " + keys.join(" | "));
+      ok(/^Ctrl\+Enter — Cycle task status \(TODO → DOING → WAIT → DONE\)$/.test(keys[0]), keys[0]);
+      ok(/^\/ or Ctrl\+\. — Open the command menu \(\/todo, \/project, \/meeting\)$/.test(keys[3]), keys[3]);
+      eq(c.querySelectorAll(".coach-ex").length, 1, "one example");
+      ok(!/Deep Work/.test(c.textContent), "the book example is gone");
+      eq([...c.querySelectorAll("button")].pop().textContent, "Got it", "Got it button");
+    } finally { PREF.set("tip.off.meeting", was || ""); }
+  });
   test("#403 a double tap on the toolbar's Type makes a note a to do; a slow second tap only closes the menu", async () => {
     const path = scratchProject("edit bar type", [["", "Call the plumber"]]);
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));

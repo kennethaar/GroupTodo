@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.169.10 - 2026-11-17
+
+- Journal: the tip on today's page is shorter. It is titled "Capture
+  everything as it happens", lists its four keys one per row, shows one
+  example and closes with Got it (#424).
+
 ## 1.169.9 - 2026-11-17
 
 - The line menu and toolbar: on the line being written, the words keep the
