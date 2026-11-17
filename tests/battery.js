@@ -5259,6 +5259,38 @@ var GTD_TEST = (() => {
       touch(path); go("today");
     }
   });
+  test("#430 a todo added straight to a project shows on today's Journal as a live reference, once", async () => {
+    const proj = scratchProject("Garage four-three-oh");
+    const day = ensureJournal(todayISO());
+    const refsTo = blk => getPage(day).blocks.filter(x => (x.title || "").includes("{{embed ((" + blk.props.id + "))}}"));
+    const a = newBlock({}, false), note = newBlock({}, false);
+    getPage(proj).blocks.push(a, note); touch(proj);
+    let b = null;
+    try {
+      commitLine(el("div", {}, "TODO Sort the screws"), proj, a);
+      ok(a.props.id, "the task has no id:: to point at");
+      eq(refsTo(a).length, 1, "today's Journal has no live reference to the task");
+      ok(getPage(proj).blocks.includes(a), "the task left the project page");
+      commitLine(el("div", {}, "TODO Sort the screws by size"), proj, a);
+      eq(refsTo(a).length, 1, "editing the task added it to the Journal again");
+      const before = getPage(day).blocks.length;
+      commitLine(el("div", {}, "a plain note"), proj, note);
+      eq(getPage(day).blocks.length, before, "a note on the project went to the Journal");
+      // + Add next action on a project card is the other way straight in.
+      b = addNextActionTo(proj, "Hang the bike hooks");
+      eq(b && refsTo(b).length, 1, "a next action added from the card is not on the Journal");
+      // Ticked on the Journal, the task in the project file is ticked.
+      go("today"); await settle();
+      const tick = [...content().querySelectorAll(".embedbox .eline")].find(l => l.textContent.includes("Sort the screws"))?.querySelector(".tick");
+      ok(tick, "the reference on the Journal has no tick");
+      tick.click(); await settle();
+      ok(!OPEN_STATES[a.state], "ticking on the Journal did not tick the task: " + a.state);
+    } finally {
+      const p = getPage(day);
+      p.blocks = p.blocks.filter(x => !/\{\{embed \(\(/.test(x.title || "") || ![a, b].some(t => t && t.props.id && x.title.includes(t.props.id)));
+      touch(day); go("today");
+    }
+  });
   test("#401 the project picker puts the most active projects first and makes a new one from what you type", async () => {
     const quiet = scratchProject("Quiet four-oh-one"), busy = scratchProject("Busy four-oh-one");
     const path = ensureJournal(todayISO()), pg = getPage(path);

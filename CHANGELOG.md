@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.171.0 - 2026-11-17
+
+- Journal: a task you add straight to a project, on its page or with Add
+  next action on its card, also shows on today's page as a live copy. Tick
+  it there and it is ticked in the project. The task stays in the project,
+  and the day page gets it once. (#430)
+
 ## 1.170.3 - 2026-11-17
 
 - Journal: History has the button beside the saved line at the bottom of

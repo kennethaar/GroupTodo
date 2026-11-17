@@ -4,5 +4,6 @@ function addNextActionTo(path, text) {
   createLinkedPages(blk.title);
   page.blocks.push(blk);
   touch(path);
+  referInJournal(path, blk);   // and on today's Journal (#430)
   return blk;
 }

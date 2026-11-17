@@ -455,6 +455,7 @@ A task is one move. A project is the moves that finish something, plus a line sa
 A task that comes back, and steps that run on a rule. =>
 A task with no home survives a day and rots over a month: nothing brings it back to you at the moment it would have mattered. =>
 A task with no words is not a task. =>
+A task you add straight to a project also shows on today's page, as a live copy. Tick it there and it is ticked in the project. =>
 A task you hand over is one task, not two copies. =>
 A task's panel =>
 A template makes a new project each time you run it. =>
