@@ -33,6 +33,9 @@ const ICON_WARN        = '<path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/
 const ICON_MAIL        = '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M4 7l8 6 8-6"/>';
 const ICON_CARET        = '<path d="M5 9l7 7 7-7"/>';
 const ICON_CHEVRON_UP    = '<path d="M5 15l7-7 7 7"/>';
+const ICON_ALIGN_LEFT   = '<path d="M4 6h16M4 10h10M4 14h16M4 18h10"/>';
+const ICON_ALIGN_CENTER = '<path d="M4 6h16M7 10h10M4 14h16M7 18h10"/>';
+const ICON_ALIGN_RIGHT  = '<path d="M4 6h16M10 10h10M4 14h16M10 18h10"/>';
 const ICON_CHEVRON_LEFT  = '<path d="M15 5l-7 7 7 7"/>';
 const ICON_CHEVRON_RIGHT = '<path d="M9 5l7 7-7 7"/>';
 const ICON_ARROW_UP      = '<path d="M12 19V5M5 11l7-7 7 7"/>';

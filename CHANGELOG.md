@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.171.5 - 2026-11-17
+
+- Keys on a line: a table you write in has Row and Column buttons that list
+  their commands at once, and three alignment toggles for the caret's
+  column, the one it has pressed. The Table button and its extra step are
+  gone. (#281)
+
 ## 1.171.4 - 2026-11-17
 
 - Journal: a task you add on another page, such as a project, is now

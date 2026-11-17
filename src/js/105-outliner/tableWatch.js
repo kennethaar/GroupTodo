@@ -13,11 +13,12 @@ function tableWatch(node, txt, b, path) {
   if (!tableRows(b)) return;
   node.classList.add("mdtbl");
   // Asked for, never pushed: only while a row is open, and it keeps the caret where it is.
-  txt.after(el("button", {class: "tablemenu", tabindex: "-1", title: "Table", "aria-label": "Table",
-    "aria-haspopup": "menu", onmousedown: e => e.preventDefault(),
-    onclick: e => { e.stopPropagation(); tableMenu(path, b, txt); }}, "Table ", svgIcon(ICON_CARET)));
+  txt.after(tableBar(path, b, txt));
   if (TABLE_OPEN === b.id) { node.classList.add("tbl-open"); txt.textContent = b.title; }
-  node.addEventListener("focusin", e => { if (own(e.target) && tableRows(b)) open(true); });
+  const sync = () => tableBarSync(node, b, txt);
+  node.addEventListener("focusin", e => { if (own(e.target) && tableRows(b)) { open(true); sync(); } });
+  node.addEventListener("keyup", sync);
+  node.addEventListener("mouseup", sync);
   node.addEventListener("focusout", e => { if (own(e.target) && !own(e.relatedTarget)) open(false); });
   txt.addEventListener("mousedown", e => {
     const c = e.target.closest("td[data-bi], th[data-bi]");

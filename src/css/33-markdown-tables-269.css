@@ -1,14 +1,20 @@
 /* Markdown tables (#269): drawn as a table, written as rows while open. */
 .blk.mdtbl:not(.tbl-open) > .bodyline.tblrow{display:none}
-/* The | --- | line only confuses while writing; alignment is in the Table menu (#280). */
+/* The | --- | line only confuses while writing; alignment has its own toggles (#280, #281). */
 .blk.mdtbl.tbl-open > .bodyline.tblrow[data-bi="0"]{display:none}
 .blk.mdtbl.tbl-open > .bodyline.tblrow{font-family:var(--mono,ui-monospace,monospace);font-size:12.5px;white-space:pre}
 .mdtable{border-collapse:collapse;margin:2px 0;font-size:inherit;max-width:100%;display:block;overflow-x:auto}
 .mdtable th,.mdtable td{border:1px solid var(--border);padding:4px 10px;text-align:left;vertical-align:top}
 .mdtable th{font-weight:600;background:color-mix(in srgb,var(--fg) 5%,transparent)}
 .mdtable td{cursor:text}
-/* The Table menu button: only while a row of the table is open for writing. */
-.blk>.line>.tablemenu{display:none;order:98;flex:none;align-self:center;padding:0 6px;border-radius:4px;color:var(--fg2);font-size:12px;line-height:18px}
-.blk.tbl-open>.line>.tablemenu{display:block}
-.blk>.line>.tablemenu:hover{background:var(--bg4);color:var(--fg)}
-@media (hover:none){ .blk>.line>.tablemenu{min-height:32px} }
+/* Row, Column and the alignment toggles: only while a row of the table is open for writing (#281). */
+.blk>.line>.tablebar{display:none;order:98;flex:none;align-self:center;align-items:center;gap:2px}
+.blk.tbl-open>.line>.tablebar{display:flex}
+.tablebar button{display:inline-flex;align-items:center;gap:2px;padding:0 6px;border-radius:4px;color:var(--fg2);font-size:12px;line-height:18px}
+.tablebar button:hover{background:var(--bg4);color:var(--fg)}
+.tablebar .tbaligns{display:inline-flex;margin-left:4px}
+.tablebar .tbalign{padding:0 3px}
+.tablebar svg{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.tablebar .tbalign svg{width:16px;height:16px;stroke-width:2}
+.tablebar .tbalign[aria-pressed="true"]{background:color-mix(in srgb,var(--fg) 12%,transparent);color:var(--fg)}
+@media (hover:none){ .tablebar button{min-height:32px;min-width:32px;justify-content:center} }

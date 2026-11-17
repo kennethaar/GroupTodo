@@ -1573,7 +1573,10 @@ js/105-outliner/tableCan.js
 js/105-outliner/tableCellAt.js
 js/105-outliner/tableEdit.js
 js/105-outliner/tableRun.js
+js/105-outliner/tableAt.js
 js/105-outliner/tableMenu.js
+js/105-outliner/tableBar.js
+js/105-outliner/tableBarSync.js
 js/105-outliner/tableEnter.js
 js/105-outliner/tableTab.js
 js/105-outliner/tableWatch.js

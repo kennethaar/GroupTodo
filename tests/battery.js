@@ -4901,7 +4901,7 @@ var GTD_TEST = (() => {
       ok(serializeBlockLines([b], 0).join("\n").includes("  | --- | --- |"), "the file has no Markdown table");
     } finally { go("today"); }
   });
-  test("#280 #281 the Table menu edits rows, columns and alignment, one Undo each", async () => {
+  test("#280 #281 the table's Row, Column and alignment buttons edit it, one Undo each", async () => {
     const path = scratchProject("md table menu", [[null, "| Item | Qty | Note |"]]);
     const b = getPage(path).blocks[0];
     b.body = ["|------|----:|:----:|", "| A | 1 | x |", "| B | 2 | y |"];
@@ -4913,6 +4913,28 @@ var GTD_TEST = (() => {
       ok(!tableCan(b, -1, 0).includes("row-del") && !tableCan(b, -1, 0).includes("row-up"), "the header can move or go");
       ok(!tableCan(b, 1, 0).includes("row-up") && !tableCan(b, 2, 0).includes("row-down"), "a row moves past the ends");
       ok(!tableCan(b, 1, 1).includes("al-right") && tableCan(b, 1, 1).includes("al-left"), "the alignment it has is offered");
+      // #281 one level shallower: Row and Column open their commands, alignment is three toggles.
+      const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+      const node = document.querySelector('.blk[data-id="' + b.id + '"]');
+      node.querySelector("td[data-bi=\"1\"]").dispatchEvent(new MouseEvent("mousedown", {bubbles: true, cancelable: true, button: 0}));
+      await frame();
+      tableFocusRow(b, 1, 6);
+      await frame();
+      node.dispatchEvent(new KeyboardEvent("keyup", {bubbles: true}));
+      const btn = name => [...node.querySelectorAll(".tablebar button")].find(x => x.getAttribute("aria-label") === name);
+      ok(btn("Row") && btn("Column") && !btn("Table"), "no Row and Column buttons on the table");
+      eq(btn("Align right").getAttribute("aria-pressed"), "true", "the Qty column's alignment is not shown pressed");
+      eq(btn("Align left").getAttribute("aria-pressed"), "false");
+      btn("Column").click();
+      const rows = [...document.querySelectorAll("#modalRoot .pick")].map(x => trim(x.textContent).replace(/^\w/, ""));
+      ok(rows.includes("Insert left") && rows.includes("Move right"), "Column does not list its commands at once: " + rows.join(", "));
+      closeModal();
+      tableFocusRow(b, 1, 6);
+      await frame();
+      btn("Align center").click();
+      eq(b.body[0], "| --- | :---: | :---: |", "the align toggle did not set the column");
+      undoLast();
+      eq(b.body[0], "|------|----:|:----:|");
       run("col-mvright", 1, 1);
       eq(lines(), ["| Item | Note | Qty |", "| --- | :---: | ---: |", "| A | x | 1 |", "| B | y | 2 |"].join("\n"), "the column did not take its alignment along");
       undoLast();
