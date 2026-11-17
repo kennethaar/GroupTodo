@@ -241,14 +241,12 @@ body.teleprompt #content .outline :is(.txt,.bodyline).tp-near{transform:scale(va
 body.teleprompt #content .card:has(.outline){overflow:visible}
 @media (prefers-reduced-motion:reduce){body.teleprompt #content .outline :is(.txt,.bodyline),
 body.teleprompt #content .outline :is(.txt,.bodyline) *{transition:none}}
-/* #323 the way out sits where Focus was: bottom left, plain to see. */
-#focusLeave{position:fixed;left:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:30;color:var(--fg);
+/* #323 the way out sits where Focus was: top right, plain to see. */
+#focusLeave{position:fixed;right:14px;top:calc(10px + env(safe-area-inset-top,0px));z-index:30;color:var(--fg);
   display:inline-flex;align-items:center;gap:4px}
 #focusLeave kbd{font-size:11px;color:var(--fg2)}
 body.bookfocus #helpHint{display:none}
 #focusLeave:hover,#focusLeave:focus-visible{border-color:var(--border2)}
-/* On a phone the bottom is the keyboard's, so the way out goes to the top. */
-@media (max-width:640px){#focusLeave{bottom:auto;top:calc(10px + env(safe-area-inset-top,0px))}}
 /* The Journal in Focus keeps one column, in the middle (#323). */
 body.bookfocus .jgrid:has(>.jcard.focuscol){display:block}
 body.bookfocus .jgrid:has(>.jcard.focuscol)>:not(.jcard.focuscol){display:none}

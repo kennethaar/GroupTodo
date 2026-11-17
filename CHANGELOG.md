@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.170.3 - 2026-11-17
+
+- Journal: History has the button beside the saved line at the bottom of
+  the sidebar. Focus stands in the top right corner of the Journal and of a
+  page, and Leave focus takes the same corner. On a computer, Help waits in
+  the bottom right corner, under the Timer. (#323)
+
 ## 1.170.2 - 2026-11-17
 
 - Projects › List: a line on a project card, such as the organisation, the

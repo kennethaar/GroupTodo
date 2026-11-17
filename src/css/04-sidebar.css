@@ -173,7 +173,7 @@
 .sync{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--fg3);padding:8px 10px;
   border-radius:8px;width:100%;text-align:left}
 .sync:hover{background:var(--bg3);color:var(--fg2)}
-/* #323 Focus sits on the saved line's right. */
+/* #323 History sits on the saved line's right. */
 .syncrow{display:flex;align-items:center;gap:2px}
 .syncrow .sync{flex:1;min-width:0}
 .syncrow #syncTxt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -195,3 +195,9 @@
 .timerfloat .nav-item.timer:hover{background:var(--bg3)}
 .timerfloat .nav-item.timer.dial.grown{width:220px}
 @media (max-width:640px){.timerfloat{display:none}}
+/* #323 Help under the Timer, where the Journal has no top bar. */
+.timerfloat{gap:6px}
+.timerfloat .floathelp{display:none;align-self:flex-end;font-size:12px;color:var(--fg2);background:var(--bg2);
+  border:1px solid var(--border);border-radius:999px;padding:4px 12px}
+.timerfloat .floathelp:hover,.timerfloat .floathelp:focus-visible{color:var(--fg);background:var(--bg3)}
+body.paper:not(.capping):not(.bookfocus) .timerfloat .floathelp{display:inline-block}

@@ -181,23 +181,20 @@ function viewToday() {
   const longDay = capitalise(pd.toLocaleDateString(undefined, {weekday: "long", month: "short", day: "numeric",
     year: pd.getFullYear() === new Date().getFullYear() ? undefined : "numeric"}));
   /* View holds what is changed now and then, so it does not stand beside the
-     day: History, somebody else's page, and trackers before the first.
-     Focus has its own button by the saved line (#323). */
+     day: somebody else's page, and trackers before the first. Focus stands
+     top right, History by the saved line, Help under the Timer (#323). */
   const closeMenu = e => e.currentTarget.closest("details")?.removeAttribute("open");
   const viewItems = [
-    el("button", {class: "textbtn", title: "Everything that happened, newest first", onclick: () => openHistory()}, "⏱ History"),
-    // With no top bar on the Journal, Help is here (#395).
-    el("button", {class: "textbtn", title: "Help (?)", onclick: () => setHelp(!helpOpen())}, "? Help"),
     !who && !trkOn ? el("button", {class: "textbtn", onclick: () => { PREF.set("today.tab", "facts"); render(); }}, "Track this day") : null,
     people.length ? fselect("Whose day page", who, [["", "Your page"], ...people.map(n => [n, firstNameOf(n) + "'s page"])],
       v => go("today", {todayWho: v || null})) : null,
   ].filter(Boolean);
   viewItems.forEach(b => b.tagName === "BUTTON" && b.addEventListener("click", closeMenu));
-  const viewMenu = el("details", {class: "viewmenu wideonly",
+  const viewMenu = viewItems.length ? el("details", {class: "viewmenu wideonly",
     onkeydown: e => { if (e.key === "Escape" && e.currentTarget.open) { e.currentTarget.removeAttribute("open"); e.currentTarget.querySelector("summary").focus(); } },
     onfocusout: e => { if (!e.currentTarget.contains(e.relatedTarget) && e.relatedTarget) e.currentTarget.removeAttribute("open"); }},
     el("summary", {class: "textbtn"}, "View", svgIcon(ICON_CARET)),
-    el("div", {class: "vmenu"}, ...viewItems));
+    el("div", {class: "vmenu"}, ...viewItems)) : null;
   const head = vhead([el("span", {class: "tlong"}, longDay), el("span", {class: "tshort"}, "Journal")], null,
     el("div", {class: "dayhold"},
       /* Calendar settings shows only while the calendar is open, and goes when
@@ -233,6 +230,8 @@ function viewToday() {
     "aria-expanded": String(JOURNAL_MORE_OPEN), "aria-label": "Day or week, trackers, what is due, history" + (lateN ? ": " + lateN + " late" : ""),
     title: lateN ? lateN + " late" : "Day or week, trackers, what is due, history",
     onclick: () => { JOURNAL_MORE_OPEN = !JOURNAL_MORE_OPEN; render(); }}, "⋯"));
+  // Focus stands last, in the top right corner (#323).
+  if (!who) head.querySelector(".vhead-r").append(wideOnly(focusButton("day")));
   if (day !== today) {
     head.classList.add("offday");
     head.querySelector("h1").after(el("span", {class: "sub"}, el("span", {class: "when"}, day < today ? "In the past" : "Ahead")));

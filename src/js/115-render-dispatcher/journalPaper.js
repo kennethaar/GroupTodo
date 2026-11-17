@@ -1,7 +1,7 @@
 /* #395 the Journal is paper first. On a wide screen it has no top bar: a
    line is the one way in. What the bar holds and is still wanted moves, it
    does not go: what is on now and the areas stand in the day's heading,
-   Search in the sidebar, Help in View. N brings the bar back to capture, and
+   Search in the sidebar, Help under the Timer. N brings the bar back to capture, and
    so does a hidden sidebar, whose way back is in it. Other views keep it.
    With place false it parks them back in the bar: render() does so before it
    clears the page. It holds on to the three itself, so one that something

@@ -8469,8 +8469,10 @@ var GTD_TEST = (() => {
     ok(menu, "a View menu");
     has(menu.querySelector("summary").textContent, "View");
     const words = [...menu.querySelectorAll("button")].map(b => b.textContent).join(" | ");
-    for (const w of ["Focus", "History"]) has(words, w, "in View");
-    for (const w of ["Focus", "History"]) ok(![...head.querySelectorAll(":scope > .vhead-r > button")].some(b => b.textContent.includes(w)), w + " is not on show beside it");
+    // #323 Focus stands in the top right corner; History is by the saved line, Help under the Timer.
+    for (const w of ["Focus", "History", "Help"]) ok(!words.includes(w), w + " is not in View: " + words);
+    const right = head.querySelector(":scope > .vhead-r").lastElementChild;
+    ok(right && right.classList.contains("focusbtn"), "Focus is the last thing in the heading, top right");
   });
   test("#395 on a wide screen the Journal has no top bar; what it held moves, not goes", async () => {
     const bar = () => document.querySelector("header.top"), seen = n => !!n && n.getClientRects().length > 0;
@@ -8481,7 +8483,11 @@ var GTD_TEST = (() => {
       ok(head.contains($("#spacesBtn")) && seen($("#spacesBtn")), "the areas stand in the day's heading");
       ok(head.contains($(".hnow")), "what is on now too");
       ok(seen($("#sideSearch")), "Search in the sidebar");
-      ok([...head.querySelectorAll(".viewmenu button")].some(b => /Help/.test(b.textContent)), "Help in View");
+      // #323 Help floats in the bottom right corner, under the Timer.
+      const help = $("#floatHelp"), timer = $("#timerFloat .nav-item.timer");
+      ok(seen(help), "Help shows in the bottom right corner");
+      ok(innerWidth - help.getBoundingClientRect().right < 40 && innerHeight - help.getBoundingClientRect().bottom < 40, "in the corner");
+      ok(!timer || timer.getBoundingClientRect().bottom <= help.getBoundingClientRect().top + 1, "under the Timer");
       focusCapture();   // what N does
       ok(seen(bar()) && document.activeElement === $("#cap"), "N, to capture, brings the bar back with the caret in it");
       $("#cap").blur();
@@ -11502,18 +11508,23 @@ var GTD_TEST = (() => {
       openPage(join(PAGES, "Harbour.md")); await settle();
       eq(content().querySelectorAll(".focusbtn").length, 1, "a chapter keeps its one Focus, in the chapter bar");
       openPage(join(PAGES, "Garden.md")); await settle();
-      // Reopened: Focus has its own button, down by the saved line, and the way out sits in the same spot.
-      ok(!content().querySelector(".pagehead .focusbtn"), "a plain page needs no Focus of its own in its head");
-      const btn = $("#sideFocus");
-      ok(btn && btn.previousElementSibling === $("#syncLine") || btn && btn.nextElementSibling === $("#syncLine"),
-        "Focus is beside the saved line in the sidebar");
-      ok(shown(btn), "and it shows");
+      // Reopened: Focus stands in the top right corner, and the way out sits in the same spot.
+      // History, not Focus, is beside the saved line.
+      const hist = $("#sideHistory");
+      ok(hist && (hist.previousElementSibling === $("#syncLine") || hist.nextElementSibling === $("#syncLine")),
+        "History is beside the saved line in the sidebar");
+      has(hist.textContent, "History");
+      ok(!$("#sideFocus"), "Focus is not down by the saved line");
+      const btn = content().querySelector(".pagehead .focusbtn");
+      ok(shown(btn), "a page has Focus in its head");
+      const br0 = btn.getBoundingClientRect(), h1r = content().querySelector(".pagehead h1").getBoundingClientRect();
+      ok(btn === btn.parentNode.lastElementChild && br0.top < h1r.bottom, "top right: the last of the page's buttons, on the title's row");
       btn.click(); await settle();
       ok(document.body.classList.contains("bookfocus"), "Focus on a page");
       ok(!shown(content().querySelector(".pagehead .acts")), "the page's buttons go");
       ok(!shown(content().querySelector(".deferred-backlinks")), "Linked References go");
       const out = $("#focusLeave"), r = out.getBoundingClientRect();
-      ok(shown(out) && r.left < 80 && innerHeight - r.bottom < 80, "the way out sits where Focus was, bottom left");
+      ok(shown(out) && innerWidth - r.right < 80 && r.top < 80, "the way out sits where Focus was, top right");
       has(out.textContent, "Esc", "it names its key");
       const colorOf = v => { const p = el("span", {style: "color:" + v}); document.body.append(p);
         const c = getComputedStyle(p).color; p.remove(); return c; };
@@ -11521,7 +11532,7 @@ var GTD_TEST = (() => {
       out.click(); await settle();
       ok(!document.body.classList.contains("bookfocus"), "it leaves Focus");
       go("today"); await settle();
-      ok(!content().querySelector(".todayhead .focusbtn"), "the Journal's View menu no longer holds Focus");
+      ok(!content().querySelector(".todayhead .viewmenu .focusbtn"), "the Journal's View menu does not hold Focus");
       // Two areas side by side: Focus keeps the one you write in, and only that one.
       const cards = () => [...content().querySelectorAll(".jview .jgrid > .jcard:not(.trkcol)")];
       LOADED.set(other, newRecord(other, Backends.memory(other)));
@@ -11533,7 +11544,7 @@ var GTD_TEST = (() => {
       const second = cards()[1], line = second.querySelector(".outline .txt");
       ok(line, "a line in the second area");
       line.focus();
-      $("#sideFocus").click(); await settle();
+      content().querySelector(".todayhead .focusbtn").click(); await settle();
       ok(document.body.classList.contains("bookfocus"), "Focus in the Journal");
       ok(!shown(content().querySelector(".jfold")), "the tabs and trackers go");
       ok(!shown(content().querySelector(".todayhead .vhead-r details")), "and the head's buttons");

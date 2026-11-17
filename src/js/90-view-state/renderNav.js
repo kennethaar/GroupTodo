@@ -14,11 +14,14 @@ function renderNav() {
   const float = $("#timerFloat");
   if (float) float.textContent = "";
   const floats = !!float && matchMedia("(min-width:641px)").matches;
+  /* #323 where the Journal has no top bar, Help waits under the Timer. */
+  if (floats) float.append(el("button", {class: "floathelp", id: "floatHelp", title: "Help (?)",
+    onclick: () => setHelp(!helpOpen())}, el("span", {"aria-hidden": "true"}, "? "), "Help"));
   for (const it of navItems()) {
     if (it === "sep") { nav.append(el("div", {class: "nav-sep"})); continue; }
     if (it === "grow") { nav.append(el("div", {class: "nav-grow"})); continue; }
     if (it === "pins") { nav.append(...navPins()); continue; }
-    if (it.id === "timer") { (floats ? float : nav).append(timerNavItem(it)); continue; }
+    if (it.id === "timer") { if (floats) float.prepend(timerNavItem(it)); else nav.append(timerNavItem(it)); continue; }
     const here = state.view === it.id || (it.id === "projects" && state.view === "review");
     if (it.when && !here && !it.when()) continue;
     const n = navCount(it.id);
