@@ -38,6 +38,7 @@ css/33-markdown-tables-269.css
 css/34-engage-360.css
 css/34-settings-rows.css
 css/35-recipes.css
+css/36-templates-420.css
 # script 1
 js/00-bootstrap/vars-APP_VERSION.js
 js/00-bootstrap/keepFocus.js
@@ -2663,6 +2664,11 @@ js/141-area-checklist-dialogs/newChecklistPrompt.js
 js/141-area-checklist-dialogs/vars-STATE_LIST_STARTERS.js
 js/141-area-checklist-dialogs/newStateListPrompt.js
 js/141-area-checklist-dialogs/runTemplateAsProject.js
+js/141-area-checklist-dialogs/vars-BUILTIN_TEMPLATES.js
+js/141-area-checklist-dialogs/templateChoices.js
+js/141-area-checklist-dialogs/importTemplateText.js
+js/141-area-checklist-dialogs/importTemplateFile.js
+js/141-area-checklist-dialogs/openTemplatePicker.js
 js/141-area-checklist-dialogs/openRunChecklist.js
 js/141-area-checklist-dialogs/vars-RUN_GROUPS.js
 js/141-area-checklist-dialogs/openRunHere.js

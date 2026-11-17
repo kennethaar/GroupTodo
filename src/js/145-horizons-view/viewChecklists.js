@@ -15,7 +15,6 @@ function viewChecklists() {
     ["prefs", "Preferences", v.prefs],
     ["area", "Area", v.area],
     cal ? ["calendars", "Calendars", cal] : null,
-    ["book", "Book", bookSettingsSection()],
     ["help", "Help", helpSettingsSection()],
     ["app", "GroupToDo", v.app],
     // Shown, not one level down: setup you cannot see is setup you search for.

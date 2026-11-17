@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.172.0 - 2026-11-17
+
+- Templates: + From a template, in Projects and Pages, starts something from
+  a template (#420). Write a book is the first: Book is no longer in Settings,
+  so the app stays plain until you want it. Your own project templates are
+  there too, and Import a file… brings in a checklist or template written as
+  a Markdown list. A book you already have works as before, and nothing in
+  its files changes. Its settings are under Edit on the book.
+
 ## 1.171.5 - 2026-11-17
 
 - Keys on a line: a table you write in has Row and Column buttons that list
