@@ -3,7 +3,7 @@ function applyVaultCss(loading) {
   // The area being read is not in LOADED until its read is done.
   for (const rec of new Set([...LOADED.values(), loading].filter(Boolean))) {
     for (const [path, text] of [...(rec.css || new Map())].sort(([a], [b]) => a.localeCompare(b))) {
-      if (seen.has(text)) continue;        // the same file kept in two areas
+      if (seen.has(text) || isSlidesCssPath(path)) continue;   // same file in two areas; slides.css is for the slides only (#431)
       seen.add(text);
       parts.push("/* " + (rec.name || "") + ": " + path + " */\n" + text);
     }

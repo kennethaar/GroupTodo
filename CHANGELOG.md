@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.175.0 - 2026-11-18
+
+- Present a page: ▶ Present beside Focus shows a page as slides, for a
+  quick talk (#431). Each top line is a slide and its lines come one at a
+  time; the one before steps back. →, Space or a clicker walks the outline in
+  order, down into a line's lines and back up. Notepad text is your notes, a
+  picture there the cover. P opens a presenter window with notes, what comes
+  next, a timer and all slides. White on black, or your own slides.css. On a
+  phone the buttons under a page's title wrap onto a second row.
+
 ## 1.174.0 - 2026-11-17
 
 - A page: lines under Linked References are the real lines, written in place,

@@ -39,6 +39,7 @@ css/34-engage-360.css
 css/34-settings-rows.css
 css/35-recipes.css
 css/36-templates-420.css
+css/37-present-431.css
 # script 1
 js/00-bootstrap/vars-APP_VERSION.js
 js/00-bootstrap/keepFocus.js
@@ -750,6 +751,22 @@ js/90-view-state/tpGlide.js
 js/90-view-state/tpCentre.js
 js/90-view-state/setWritingFocus.js
 js/90-view-state/focusButton.js
+js/91-present/vars-DECK.js
+js/91-present/vars-PRESENTER_CSS.js
+js/91-present/isSlidesCssPath.js
+js/91-present/slideWords.js
+js/91-present/slideNotes.js
+js/91-present/deckSteps.js
+js/91-present/slideFit.js
+js/91-present/slideBullets.js
+js/91-present/presenterTick.js
+js/91-present/presenterDraw.js
+js/91-present/presenterOpen.js
+js/91-present/presentGo.js
+js/91-present/presentStop.js
+js/91-present/presentKey.js
+js/91-present/presentStart.js
+js/91-present/presentButton.js
 js/90-view-state/vars-DIALOGUE.js
 js/90-view-state/setDialogueStyle.js
 js/90-view-state/vars-OPENS_AFTER.js

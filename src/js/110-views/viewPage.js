@@ -58,6 +58,7 @@ function viewPage() {
         onclick: () => openPutBack(path)}, "Put back") : null,
       el("button", {class: "btn sm ghost", title: "More", "aria-label": "More", onclick: () => openPageMenu(path)}, "⋯"),
       // Focus stands in the top right corner (#323); a chapter has it in its own bar.
+      SIDE_DRAWING ? null : presentButton(path),
       SIDE_DRAWING || isChapterPage(path) ? null : focusButton("page", "btn sm ghost"))));
 
   if (tracker) c.append(trackerPageLine(tracker));

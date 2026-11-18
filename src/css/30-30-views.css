@@ -615,7 +615,7 @@ body.solview #content{padding-bottom:14px}
 .ptitle{margin:0;font-size:26px;flex:1;min-width:200px;outline:none;border-radius:var(--radius-sm);cursor:text}
 .ptitle:focus{box-shadow:0 0 0 3px var(--accent-soft)}
 .picon{font-size:26px;line-height:1.2}
-.pagehead .acts{display:flex;gap:6px;align-self:center}
+.pagehead .acts{display:flex;flex-wrap:wrap;gap:6px;align-self:center}
 
 /* The side drawer: a preview, a task, the history */
 .scrim.side{justify-content:flex-end;align-items:stretch;background:rgba(0,0,0,.25);backdrop-filter:none}

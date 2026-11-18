@@ -1,0 +1,47 @@
+/* Present a page as slides (#431). Your own slides.css in an area's 8/
+   changes these: --slide-bg, --slide-ink, --dim, and .slide, .stitle,
+   .bullet.now, .bullet.past, .cover. */
+#deck{--slide-bg:#000;--slide-ink:#fff;--dim:.4;--slide-font:system-ui,"Segoe UI",sans-serif;
+  position:fixed;inset:0;z-index:10000;overflow:hidden;background:var(--slide-bg);color:var(--slide-ink);
+  font-family:var(--slide-font);outline:none}
+#deck .slide{position:absolute;inset:0;display:grid;grid-template-columns:1fr}
+#deck .slide.hascover{grid-template-columns:33.333% 1fr}
+#deck .cover{overflow:hidden;min-height:0}
+#deck .cover img{width:100%;height:100%;object-fit:cover;display:block}
+#deck .cover .asset-missing{display:block;padding:2vh;opacity:.6}
+#deck .stext{--fit:1;display:flex;flex-direction:column;justify-content:center;padding:6vh 7vw;min-height:0;overflow:hidden;
+  font-size:calc(5vh * var(--fit))}
+#deck .titleslide .stext{align-items:center;text-align:center}
+#deck .stitle{color:inherit;font-size:1.7em;line-height:1.15;margin:0 0 .6em;font-weight:700}
+#deck .titleslide .stitle{font-size:2.3em;margin:0}
+#deck .sbullets{margin:0;padding:0 0 0 1.1em;line-height:1.3}
+/* .bullet is also the outliner's dot: undone here. */
+#deck .bullet{position:static;width:auto;height:auto;border-radius:0;background:none;cursor:auto;margin:.35em 0;transition:opacity .3s ease}
+#deck .bullet.past{opacity:var(--dim)}
+#deck .bullet.fresh{animation:deckFade .2s ease-out}
+#deck.blank .slide{visibility:hidden}
+@keyframes deckFade{from{opacity:0}to{opacity:1}}
+/* Sideways at the same level, down into a line's lines, up out of them. */
+#deck .slide.cur,#deck .slide.out{animation-duration:.3s;animation-timing-function:ease-in-out;animation-fill-mode:both}
+#deck .slide.out{pointer-events:none}
+#deck[data-move=side][data-dir=on] .slide.cur{animation-name:deckInR}
+#deck[data-move=side][data-dir=on] .slide.out{animation-name:deckOutL}
+#deck[data-move=side][data-dir=back] .slide.cur{animation-name:deckInL}
+#deck[data-move=side][data-dir=back] .slide.out{animation-name:deckOutR}
+#deck[data-move=down] .slide.cur{animation-name:deckInB}
+#deck[data-move=down] .slide.out{animation-name:deckOutT}
+#deck[data-move=up] .slide.cur{animation-name:deckInT}
+#deck[data-move=up] .slide.out{animation-name:deckOutB}
+@keyframes deckInR{from{transform:translateX(100%)}}
+@keyframes deckInL{from{transform:translateX(-100%)}}
+@keyframes deckOutL{to{transform:translateX(-100%)}}
+@keyframes deckOutR{to{transform:translateX(100%)}}
+@keyframes deckInB{from{transform:translateY(100%)}}
+@keyframes deckInT{from{transform:translateY(-100%)}}
+@keyframes deckOutT{to{transform:translateY(-100%)}}
+@keyframes deckOutB{to{transform:translateY(100%)}}
+@media (prefers-reduced-motion:reduce){
+  #deck .slide.cur{animation-name:deckFade!important}
+  #deck .slide.out{animation-name:deckGone!important}
+  @keyframes deckGone{to{opacity:0}}
+}

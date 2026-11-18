@@ -12638,6 +12638,175 @@ var GTD_TEST = (() => {
   });
 
   /* ============================================================
+     Present a page as slides (#431)
+     ============================================================ */
+  const TALK = join(PAGES, "Talk.md");
+  const TALK_PAGE = {[TALK]: [
+    "- TODO Why we move [[c/office]]",
+    "  owner:: Ann",
+    "  Say it plainly.",
+    "  ![cover](assets/cover.png)",
+    "  - Rent is **up**",
+    "    The landlord wrote.",
+    "  - The roof leaks",
+    "    - Kitchen",
+    "    - Bathroom",
+    "  - Staff want it",
+    "- Where to",
+    "  - North side",
+  ].join("\n") + "\n"};
+  const deckKey = (k, o = {}, doc = document) =>
+    doc.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true, ...o}));
+  const deckNow = () => {
+    const s = $("#deck .slide.cur");
+    return {title: s?.querySelector(".stitle")?.textContent || "",
+      bullets: [...(s?.querySelectorAll(".bullet") || [])].map(b => b.textContent),
+      now: s?.querySelector(".bullet.now")?.textContent || "",
+      past: [...(s?.querySelectorAll(".bullet.past") || [])].map(b => b.textContent),
+      move: $("#deck")?.dataset.move || ""};
+  };
+  const startTalk = async () => {
+    openPage(TALK); await settle();
+    const btn = content().querySelector(".pagehead .presentbtn");
+    ok(btn, "a page has Present beside Focus");
+    ok(content().querySelector(".pagehead .focusbtn"), "and Focus stays one click");
+    btn.click(); await settle();
+    ok($("#deck"), "Present fills the screen with the deck");
+  };
+  test("#431 on a phone ▶ Present and Focus are on screen beside a page's title", () => withPages(TALK_PAGE, async () => {
+    openPage(TALK); await settle();
+    // The window is wide, so the page head is laid out again in a phone-wide frame with the app's styles.
+    const f = document.createElement("iframe");
+    f.style.cssText = "position:fixed;left:0;top:0;height:400px;border:0;width:390px";
+    const css = [...document.querySelectorAll("style")].map(s => s.textContent).join("\n");
+    f.srcdoc = "<!doctype html><html><style>" + css + "</style><body><main id=\"content\">"
+      + content().querySelector(".pagehead").outerHTML + "</main>";
+    document.body.append(f);
+    try {
+      await new Promise(r => f.onload = r);
+      const d = f.contentDocument;
+      for (const sel of [".presentbtn", ".focusbtn"]) {
+        const r = d.querySelector(".pagehead " + sel).getBoundingClientRect();
+        ok(r.left >= 0 && r.right <= 390, sel + " is inside the phone's width, at " + Math.round(r.left) + "–" + Math.round(r.right));
+      }
+    } finally { f.remove(); }
+  }));
+  test("#431 Present walks the outline: a bullet at a time, into a bullet's lines and back out", () => withPages(TALK_PAGE, async () => {
+    try {
+      await startTalk();
+      eq(deckNow().title, "Talk", "the page's title is the first slide");
+      deckKey("ArrowRight");
+      let d = deckNow();
+      eq(d.title, "Why we move", "the next is a top line, with no GTD marks on it");
+      eq(d.bullets.length, 0, "a slide starts with its title alone");
+      eq(d.move, "side", "from one top line to the next slides sideways");
+      const deck = $("#deck");
+      ok(!/owner|Ann|Say it plainly|landlord/.test(deck.textContent), "values and notes are never shown to the audience");
+      const cover = deck.querySelector(".slide.cur .cover");
+      ok(cover, "a picture in the line's notes is the slide's cover");
+      await new Promise(r => setTimeout(r, 450));   // measured once it has slid in
+      const third = cover.getBoundingClientRect().width / deck.getBoundingClientRect().width;
+      ok(third > 0.28 && third < 0.38, "on the left third: " + third.toFixed(2));
+      ok(cover.getBoundingClientRect().left - deck.getBoundingClientRect().left < 2, "at the left");
+      deckKey(" ");
+      d = deckNow();
+      eq(d.bullets, ["Rent is up"], "Space shows the first bullet, without its marks");
+      const fresh = $("#deck .bullet.now");
+      const fade = parseFloat(getComputedStyle(fresh).animationDuration);
+      ok(fade > 0.1 && fade <= 0.3, "a bullet fades in quickly: " + fade + " s");
+      deckKey("PageDown");
+      d = deckNow();
+      eq([d.now, d.past], ["The roof leaks", ["Rent is up"]], "the next bullet is lit, the one before steps back");
+      await new Promise(r => setTimeout(r, 450));
+      const dim = parseFloat(getComputedStyle($("#deck .bullet.past")).opacity);
+      ok(dim > 0.3 && dim < 0.5, "an earlier bullet is dimmed to about 40%: " + dim);
+      deckKey("ArrowRight");
+      d = deckNow();
+      eq([d.title, d.bullets.length, d.move], ["The roof leaks", 0, "down"], "a bullet with lines of its own leads down into them");
+      deckKey("ArrowRight"); deckKey("ArrowRight");
+      eq(deckNow().bullets, ["Kitchen", "Bathroom"]);
+      deckKey("ArrowRight");
+      d = deckNow();
+      eq([d.title, d.now, d.past, d.move], ["Why we move", "Staff want it", ["Rent is up", "The roof leaks"], "up"],
+        "after the last line it comes back up and shows the next bullet");
+      await new Promise(r => setTimeout(r, 450));
+      eq(getComputedStyle($("#deck .bullet.now")).opacity, "1", "the last bullet is never dimmed");
+      deckKey("ArrowLeft");
+      d = deckNow();
+      eq([d.title, d.bullets], ["The roof leaks", ["Kitchen", "Bathroom"]], "← goes back one step");
+      deckKey("Escape");
+      d = deckNow();
+      eq([d.title, d.now, d.move], ["Why we move", "The roof leaks", "up"], "Esc goes up to the bullet it came from");
+      deckKey("ArrowRight", {shiftKey: true});
+      d = deckNow();
+      eq([d.title, d.bullets.length, d.move], ["Where to", 0, "side"], "Shift+→ skips the rest of the slide");
+      deckKey("Home");
+      eq(deckNow().title, "Talk", "Home goes to the first slide");
+      deckKey("Enter");
+      eq(deckNow().title, "Why we move", "Enter on a title goes on");
+      deckKey("ArrowRight"); deckKey("ArrowRight");
+      deckKey("Enter");
+      eq(deckNow().title, "The roof leaks", "Enter goes into the lit bullet's lines");
+      deckKey("4"); deckKey("Enter");
+      eq(deckNow().title, "Where to", "a number and Enter jumps to that slide");
+      deckKey("b");
+      ok($("#deck").classList.contains("blank"), "B blanks the screen");
+      deckKey("b");
+      ok(!$("#deck").classList.contains("blank"), "and brings it back");
+      deckKey("Escape");
+      ok(!$("#deck"), "Esc on a top slide leaves");
+      eq(state.pagePath, TALK, "back on the page");
+    } finally { presentStop(); }
+  }));
+  test("#431 the presenter window: notes for the bullet, what comes next, timer and an overview", () => withPages(TALK_PAGE, async () => {
+    const f = document.createElement("iframe");
+    document.body.append(f);
+    const open = window.open;
+    window.open = () => f.contentWindow;
+    try {
+      await startTalk();
+      deckKey("p");
+      const pd = f.contentDocument, q = s => pd.querySelector(s);
+      ok(q(".pnow") && q(".pnext") && q(".pnotes"), "now, next and notes");
+      deckKey("ArrowRight");
+      eq(q(".pnotes").textContent.trim(), "Say it plainly.", "the slide's notes, without its picture");
+      eq(q(".pcount").textContent, "2 / 4", "which slide of how many");
+      ok(/\d+:\d\d/.test(q(".ptimer").textContent) && /\d+:\d\d/.test(q(".pclock").textContent), "a timer and the clock");
+      deckKey("ArrowRight", {}, pd);
+      eq(deckNow().now, "Rent is up", "keys in the presenter window drive the slides");
+      eq(q(".pnotes").textContent.trim(), "The landlord wrote.", "the lit bullet's own notes");
+      ok(q(".pnext").textContent.includes("The roof leaks"), "what comes next");
+      const size = parseFloat(getComputedStyle(q(".pnotes")).fontSize);
+      q(".pbigger").click();
+      ok(parseFloat(getComputedStyle(q(".pnotes")).fontSize) > size, "A+ makes the notes larger");
+      q(".poverview").click();
+      const thumbs = pd.querySelectorAll(".pgrid .pthumb");
+      eq([...thumbs].map(t => t.textContent.trim()), ["Talk", "Why we move", "The roof leaks", "Where to"], "the overview shows every slide");
+      thumbs[3].click();
+      eq(deckNow().title, "Where to", "a click jumps there");
+      ok(!q(".pgrid"), "and closes the overview");
+    } finally { presentStop(); window.open = open; f.remove(); }
+  }));
+  test("#431 an area's slides.css styles its slides only; without one, white on black", () => withPages(TALK_PAGE, async () => {
+    // The area the page is shown in; an earlier test may have left it without a record.
+    const made = !LOADED.has(V.space);
+    if (made) LOADED.set(V.space, {name: V.space, pages: new Map(), css: new Map()});
+    const rec = LOADED.get(V.space);
+    const had = rec.css;
+    try {
+      await startTalk();
+      eq(getComputedStyle($("#deck")).backgroundColor, "rgb(0, 0, 0)", "black by default");
+      eq(getComputedStyle($("#deck .slide.cur .stitle")).color, "rgb(255, 255, 255)", "white letters");
+      presentStop();
+      rec.css = new Map([[DIRS.lists + "/slides.css", "#deck{--slide-bg:rgb(0, 0, 128)}"]]);
+      applyVaultCss();
+      ok(!($("#vault-css")?.textContent || "").includes("rgb(0, 0, 128)"), "slides.css is not laid over the app");
+      await startTalk();
+      eq(getComputedStyle($("#deck")).backgroundColor, "rgb(0, 0, 128)", "but over the area's slides");
+    } finally { presentStop(); rec.css = had; if (made) LOADED.delete(V.space); applyVaultCss(); }
+  }));
+
+  /* ============================================================
      The runner
      ============================================================ */
   async function run(only = "") {
