@@ -2,7 +2,7 @@
 
 ## Write naturally. Stay organised.
 
-Write notes and tasks in your daily journal. GroupToDo connects them to the right projects, people, contexts, dates, and meetings.
+Write notes and tasks in your daily journal. GroupToDo connects them to the right projects, people, organisations, contexts, dates, and meetings.
 
 No filing first. Write now; smart suggestions and a weekly review help you organize later.
 
