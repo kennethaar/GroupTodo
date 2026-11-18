@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.177.2 - 2026-11-18
+
+- Present a page: groundwork for slide layouts (#433). A slide can now be
+  read as steps, a timeline, a cycle, a pyramid, a hub, a curve, versus, a
+  2×2, a scorecard, a quote or a grid, from a mark at the front of its
+  lines, a word in its title or numbers on every line. Nothing is drawn
+  differently yet; slides look as before.
+
 ## 1.177.1 - 2026-11-18
 
 - Present a page: a line with lines of its own is no longer shown as a

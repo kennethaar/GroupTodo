@@ -756,6 +756,12 @@ js/91-present/vars-PRESENTER_CSS.js
 js/91-present/isSlidesCssPath.js
 js/91-present/slideWords.js
 js/91-present/slideNotes.js
+js/91-present/vars-SLIDE_LAYOUTS.js
+js/91-present/slideMark.js
+js/91-present/slideTitleTokens.js
+js/91-present/slideKpi.js
+js/91-present/slideLayout.js
+js/91-present/slidePages.js
 js/91-present/deckSteps.js
 js/91-present/slideFit.js
 js/91-present/slideLay.js

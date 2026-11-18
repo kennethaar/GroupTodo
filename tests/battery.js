@@ -12917,6 +12917,78 @@ var GTD_TEST = (() => {
     } finally { presentStop(); rec.css = had; if (made) LOADED.delete(V.space); applyVaultCss(); }
   }));
 
+  /* Slide layouts (#433): a mark at the front of a slide's lines, a token in
+     its title, or numbers on every line pick how the slide is drawn. */
+  const lines = (title, ...kids) => ({title, children: kids.map(k => typeof k === "string" ? {title: k, children: []} : k)});
+  test("#433 a mark at the front of a line names its layout and is not shown", () => {
+    const cases = [
+      ["1. Plan", "process", "Plan"], ["12. Ship", "process", "Ship"], ["Step 2: Build", "process", "Build"],
+      ["-> Q1: Private beta", "timeline", "Q1: Private beta"], [">> Q2", "timeline", "Q2"],
+      ["(o) Acquire users", "cycle", "Acquire users"],
+      ["^ Safety", "pyramid", "Safety"], ["/\\ Safety", "pyramid", "Safety"], ["🔺 Safety", "pyramid", "Safety"],
+      [". Core sync", "hub", "Core sync"], ["~ Reminder 1", "curve", "Reminder 1"],
+      ["| Build", "split", "Build"], ["$ ARR", "kpi", "ARR"], ["% Churn", "kpi", "Churn"],
+      ["> Less is more", "hero", "Less is more"], ["\"Less is more\"", "hero", "Less is more"],
+      ["“Less is more”", "hero", "Less is more"],
+    ];
+    for (const [text, layout, words] of cases) eq(slideMark(text), {layout, words}, text);
+    // Never marks: a context, a Markdown bullet, plain words, a bare number, strike-through.
+    for (const text of ["@home Call Ann", "+ item", "(*) item", "🎯 Goal", "Call 3 people", "2025 plan", "~~old~~ new", "Q1: Private beta"])
+      eq(slideMark(text), {layout: null, words: text}, text);
+  });
+  test("#433 a title token picks the layout; (Y / X) is read as axes only on a curve", () => {
+    eq(slideTitleTokens("Pros vs cons").layout, "split", "vs as a word");
+    eq(slideTitleTokens("Canvas").layout, null, "vs inside a word is not one");
+    for (const [title, layout, words] of [["Options [+]", "quadrant", "Options"], ["📈 Retention", "curve", "Retention"],
+      ["Retention ::curve", "curve", "Retention"], ["Team ::grid", "grid", "Team"], ["Team ::grid-1d", "grid", "Team"]])
+      eq([slideTitleTokens(title).layout, slideTitleTokens(title).words], [layout, words], title);
+    eq(slideTitleTokens("Team ::grid-1d").oneD, true, "::grid-1d forces one row of cards");
+    eq(slideLayout(lines("Results (2025 / 2026)", "Up", "Down")).title, "Results (2025 / 2026)", "an ordinary title keeps its brackets");
+    const curve = slideLayout(lines("Quality rises (Quality / Time)", "~ Learn", "~ Reminder", "~ Stuck"));
+    eq([curve.layout, curve.title, curve.axes], ["curve", "Quality rises", {y: "Quality", x: "Time"}], "a curve slide's axes");
+    eq(slideLayout(lines("📈 Recall (Memory / Days)", "Learn", "Forget")).axes, {y: "Memory", x: "Days"}, "a 📈 title reads axes too");
+  });
+  test("#433 a line with an amount or a percent is a metric and its label", () => {
+    eq(slideKpi("ARR: $2M"), {metric: "$2M", label: "ARR"});
+    eq(slideKpi("ARR: USD 2M"), {metric: "USD 2M", label: "ARR"});
+    eq(slideKpi("Churn: 3 %"), {metric: "3 %", label: "Churn"});
+    eq(slideKpi("Margin -3,5 %"), {metric: "-3,5 %", label: "Margin"});
+    eq(slideKpi("Budget left: NOK 40 000"), {metric: "NOK 40 000", label: "Budget left"});
+    eq(slideKpi("Pipeline: NOK 40k"), {metric: "NOK 40k", label: "Pipeline"});
+    eq(slideKpi("Fees 349,95 NOK"), {metric: "349,95 NOK", label: "Fees"});
+    for (const text of ["Q1: Private beta", "Step 2", "Call 3 people", "nok is enough"]) eq(slideKpi(text), null, text);
+    eq(slideLayout(lines("Q3 numbers", "ARR: USD 2M", "Churn: 3 %", "Budget left: NOK 40 000")).layout, "kpi", "every line has a metric");
+    eq(slideLayout(lines("Q3 numbers", "ARR: USD 2M", "Churn: 3 %", "Hire a CFO")).layout, "list", "one plain line among them");
+    eq(slideLayout(lines("Q3", "$ ARR", "$ Hire a CFO")).layout, "kpi", "$ marks make a scorecard without metrics");
+  });
+  test("#433 the most used mark picks the layout; too few lines or a stray > stay a plain list", () => {
+    const pick = (...kids) => slideLayout(lines("Title", ...kids));
+    eq(pick("-> Q1", "-> Q2", "-> Q3").layout, "timeline");
+    eq(pick("-> Q1", "-> Q2", "(o) Q3").layout, "timeline", "most lines win");
+    eq(pick("(o) A", "-> B", "(o) C", "-> D").layout, "cycle", "a tie goes to the first line's mark");
+    eq(pick("> a", "> b").layout, "list", "> on two lines is not a timeline nor a quote");
+    eq(pick("> Less is more").layout, "hero", "> on one line is a quote");
+    eq(pick("(o) A", "(o) B").layout, "list", "a cycle needs three");
+    eq(pick("| Build", "| Buy").layout, "split");
+    eq(pick("| A", "| B", "| C", "| D").layout, "quadrant");
+    eq(pick("| A", "| B", "| C").layout, "list", "| on three lines");
+    eq(pick("@home Call", "@work Mail", "@home Fix").layout, "list", "contexts are not a cycle");
+    eq(pick("Rent is up", "Roof leaks").layout, "list", "no marks: today's slide");
+    eq(pick("Rent is up", "Roof leaks").max, Infinity, "a plain list is never cut");
+    eq([pick("1. A", "2. B").mode, pick("| A", "| B").mode], ["1d", "2d"]);
+    eq(slideLayout(lines("Team ::grid", lines("Ann", "Design"), "Bob")).mode, "2d", "a grid with lines under a card");
+    eq(slideLayout(lines("Team ::grid-1d", lines("Ann", "Design"), "Bob")).mode, "1d");
+  });
+  test("#433 a layout with too many lines goes on more slides, with no line lost", () => {
+    const n = k => Array.from({length: k}, (_, i) => "-> " + (i + 1));
+    eq(slideLayout(lines("Plan", ...n(7))).max, 5);
+    eq(slidePages(n(7), 5), [n(7).slice(0, 5), n(7).slice(5)], "7 on a timeline → 5 and 2");
+    eq(slideLayout(lines("Team ::grid", ...n(7))).max, 6);
+    eq(slidePages(n(7), 6).map(p => p.length), [6, 1], "7 on a grid → 6 and 1");
+    eq(slidePages(n(3), 5), [n(3)], "few enough: one slide");
+    eq(slidePages(n(3), Infinity), [n(3)], "a plain list is one slide");
+  });
+
   /* ============================================================
      The runner
      ============================================================ */

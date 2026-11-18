@@ -4673,7 +4673,7 @@ placeholder="Capture… (Enter adds to today)">
 })();
 
 "use strict";
-const APP_VERSION = "1.177.1";
+const APP_VERSION = "1.177.2";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -14615,6 +14615,98 @@ if (rest) notes.push(rest);
 }
 return {cover, notes: trim(notes.join("\n"))};
 }
+const SLIDE_LAYOUTS = {
+list:     {min: 0, max: Infinity, mode: "1d", name: "List"},
+hero:     {min: 1, max: 5, mode: "2d", name: "Quote"},
+process:  {min: 2, max: 5, mode: "1d", name: "Steps"},
+timeline: {min: 2, max: 5, mode: "1d", name: "Timeline"},
+cycle:    {min: 3, max: 5, mode: "1d", name: "Cycle"},
+pyramid:  {min: 3, max: 5, mode: "1d", name: "Pyramid"},
+hub:      {min: 3, max: 5, mode: "1d", name: "Hub"},
+curve:    {min: 2, max: 5, mode: "1d", name: "Curve"},
+split:    {min: 2, max: 5, mode: "2d", name: "Versus"},
+quadrant: {min: 4, max: 5, mode: "2d", name: "2×2"},
+kpi:      {min: 1, max: 5, mode: "2d", name: "Scorecard"},
+grid:     {min: 2, max: 6, mode: "2d", name: "Grid"},
+};
+const SLIDE_MARKS = [
+[/^\d+\.\s+/, "process"],
+[/^step\s+\d+\s*:\s*/i, "process"],
+[/^(?:->|>>)\s+/, "timeline"],
+[/^>\s+/, "hero"],
+[/^["“”]([^"“”]+)["“”]$/, "hero"],
+[/^\(o\)\s+/, "cycle"],
+[/^(?:\^|\/\\)\s+/, "pyramid"],
+[/^🔺\s*/u, "pyramid"],
+[/^\.\s+/, "hub"],
+[/^~\s+/, "curve"],
+[/^\|\s+/, "split"],
+[/^[$%]\s+/, "kpi"],
+];
+const SLIDE_AXES_RE = /\s*\(([^()\/]+)\/([^()\/]+)\)\s*$/;
+const KPI_NUM = `(?:${PRICE_SIGNED})(?:bn|k|K|M|B)?`;
+const KPI_RE = new RegExp(`(?<![\\p{L}\\p{N}])(?:[-\\u2212+]?\\d+(?:[.,]\\d+)?[ \\u00A0]?%`
++ `|(?:${PRICE_CUR})[ \\u00A0]?${KPI_NUM}|${KPI_NUM}[ \\u00A0]?(?:${PRICE_CUR}))(?:,-)?(?![\\p{L}\\p{N}])`, "u");
+function slideMark(text) {
+const t = String(text || "");
+for (const [re, layout] of SLIDE_MARKS) {
+const m = re.exec(t);
+if (!m) continue;
+let words = trim(m[1] ?? t.slice(m[0].length));
+if (layout === "hero") words = words.replace(/^["“”]([^"“”]+)["“”]$/, "$1");
+return {layout, words};
+}
+return {layout: null, words: t};
+}
+function slideTitleTokens(title) {
+let words = String(title || ""), layout = null, oneD = false;
+for (const [re, id] of [[/::grid-1d\b/, "grid-1d"], [/::grid\b/, "grid"], [/::curve\b/, "curve"],
+[/📈/u, "curve"], [/\[\+\]/, "quadrant"]]) {
+if (!re.test(words)) continue;
+words = words.replace(re, " ");
+if (id === "grid-1d") oneD = true;
+layout ||= id === "grid-1d" ? "grid" : id;
+}
+if (!layout && /(?:^|\s)vs\.?(?=\s|$)/i.test(words)) layout = "split";
+const m = SLIDE_AXES_RE.exec(words);
+const axes = m ? {y: trim(m[1]), x: trim(m[2])} : null;
+if (axes && layout === "curve") words = words.replace(SLIDE_AXES_RE, "");
+return {layout, words: trim(words.replace(/\s{2,}/g, " ")), axes, oneD};
+}
+function slideKpi(text) {
+const t = String(text || "");
+const m = KPI_RE.exec(t);
+if (!m) return null;
+const label = trim((t.slice(0, m.index) + " " + t.slice(m.index + m[0].length)).replace(/\s{2,}/g, " "));
+return {metric: m[0], label: trim(label.replace(/:\s*$/, ""))};
+}
+function slideLayout(block, kids = block?.children || []) {
+const tok = slideTitleTokens(block?.title || "");
+const n = kids.length;
+let layout = tok.layout;
+if (!layout) {
+const marks = kids.map(k => slideMark(k.title).layout), count = {};
+for (const m of marks) if (m) count[m] = (count[m] || 0) + 1;
+const top = Math.max(0, ...Object.values(count));
+if (top) layout = marks.find(m => m && count[m] === top);
+if (layout === "split" && n === 4) layout = "quadrant";
+}
+if (!layout && n && kids.every(k => slideKpi(slideWords(k)))) layout = "kpi";
+if ((layout === "split" && n !== 2) || (layout === "quadrant" && n !== 4) || (layout === "hero" && n !== 1)
+|| !SLIDE_LAYOUTS[layout] || n < SLIDE_LAYOUTS[layout].min) layout = "list";
+const spec = SLIDE_LAYOUTS[layout];
+const mode = layout !== "grid" ? spec.mode
+: !tok.oneD && kids.some(k => (k.children || []).length) ? "2d" : "1d";
+const curve = layout === "curve";
+return {layout, mode, max: spec.max, axes: curve ? tok.axes : null,
+title: curve ? trim(tok.words.replace(SLIDE_AXES_RE, "")) : tok.words};
+}
+function slidePages(kids, max) {
+if (!(kids.length > max)) return [kids];
+const pages = [];
+for (let i = 0; i < kids.length; i += max) pages.push(kids.slice(i, i + max));
+return pages;
+}
 function deckSteps(path, root = null) {
 const page = getPage(path);
 const steps = [], slides = [];
@@ -17582,7 +17674,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.177.1 - 2026-11-18\n\n- Present a page: a line with lines of its own is no longer shown as a\n  bullet first and then slid in from the right. → takes you straight into\n  it: the line grows from its place into the title of its slide, like a\n  page's title. After its last line the title shrinks back into its place,\n  now done, and the next bullet comes (#431).\n\n## 1.177.0 - 2026-11-18\n\n- Present a page: focus on a line and ▶ Present ▾ in its trail shows just\n  that line as slides (#431). The first bullet fades in once the title has\n  moved to the top. Every move and fade is eased in and out and takes twice\n  as long, so it is calm to watch.\n\n## 1.176.0 - 2026-11-18\n\n- Present a page: a slide now opens with its title alone, over its picture\n  on the whole screen. With the first line the picture moves to the left 30%\n  and the title, smaller, to the top; every line already has its place and\n  comes out of the black, so nothing jumps (#431). The next slide comes up\n  from below; a line's own lines come in from the side. ▶ Present ▾ is on a\n  Journal day too, and ▾ or ☰ › Present from here open the presenter window.\n\n## 1.175.0 - 2026-11-18\n\n- Present a page: ▶ Present beside Focus shows a page as slides, for a\n  quick talk (#431). Each top line is a slide and its lines come one at a\n  time; the one before steps back. →, Space or a clicker walks the outline in\n  order, down into a line's lines and back up. Notepad text is your notes, a\n  picture there the cover. P opens a presenter window with notes, what comes\n  next, a timer and all slides. White on black, or your own slides.css. On a\n  phone the buttons under a page's title wrap onto a second row.\n\n## 1.174.0 - 2026-11-17\n\n- A page: lines under Linked References are the real lines, written in place,\n  in the side panel too. While the caret is in one, a red box and\n  \"Editing on <page>\" say which page you are changing. The page's name opens\n  that page at the line, not at the top. Somebody else's day page stays\n  read-only. (#425)\n\n## 1.173.0 - 2026-11-17\n\n- The line menu and toolbar: drag a line's bullet to move it. The edge of\n  another line drops it before or after that line; the middle puts it under\n  it. A phone holds the bullet first. A click on the bullet no longer zooms:\n  🔍, or ☰ › Focus on this line, does (#423).\n\n## 1.172.2 - 2026-11-17\n\n- Journal: Help stays in sight in Focus, bottom right, on a phone too (#421).\n\n## 1.172.1 - 2026-11-17\n\n- Keys on a line: Copy text (Alt+X) also copies the note box under the line,\n  without its fence lines (#392).\n\n## 1.172.0 - 2026-11-17\n\n- Templates: + From a template, in Projects and Pages, starts something from\n  a template (#420). Write a book is the first: Book is no longer in Settings,\n  so the app stays plain until you want it. Your own project templates are\n  there too, and Import a file… brings in a checklist or template written as\n  a Markdown list. A book you already have works as before, and nothing in\n  its files changes. Its settings are under Edit on the book.\n\n## 1.171.5 - 2026-11-17\n\n- Keys on a line: a table you write in has Row and Column buttons that list\n  their commands at once, and three alignment toggles for the caret's\n  column, the one it has pressed. The Table button and its extra step are\n  gone. (#281)\n\n## 1.171.4 - 2026-11-17\n\n- Journal: a task you add on another page, such as a project, is now\n  listed under Linked References at the foot of the day's page, as on\n  every other page. The live copies 1.171.0 put on today's page are taken\n  away again; their tasks stay listed. (#430)\n\n## 1.171.3 - 2026-11-17\n\n- Keys on a line: while you write in a table, the | --- | line under the\n  header is hidden. The file keeps it; set alignment from the Table menu.\n  (#280)\n";
+const HELP_NEWS = "## 1.177.2 - 2026-11-18\n\n- Present a page: groundwork for slide layouts (#433). A slide can now be\n  read as steps, a timeline, a cycle, a pyramid, a hub, a curve, versus, a\n  2×2, a scorecard, a quote or a grid, from a mark at the front of its\n  lines, a word in its title or numbers on every line. Nothing is drawn\n  differently yet; slides look as before.\n\n## 1.177.1 - 2026-11-18\n\n- Present a page: a line with lines of its own is no longer shown as a\n  bullet first and then slid in from the right. → takes you straight into\n  it: the line grows from its place into the title of its slide, like a\n  page's title. After its last line the title shrinks back into its place,\n  now done, and the next bullet comes (#431).\n\n## 1.177.0 - 2026-11-18\n\n- Present a page: focus on a line and ▶ Present ▾ in its trail shows just\n  that line as slides (#431). The first bullet fades in once the title has\n  moved to the top. Every move and fade is eased in and out and takes twice\n  as long, so it is calm to watch.\n\n## 1.176.0 - 2026-11-18\n\n- Present a page: a slide now opens with its title alone, over its picture\n  on the whole screen. With the first line the picture moves to the left 30%\n  and the title, smaller, to the top; every line already has its place and\n  comes out of the black, so nothing jumps (#431). The next slide comes up\n  from below; a line's own lines come in from the side. ▶ Present ▾ is on a\n  Journal day too, and ▾ or ☰ › Present from here open the presenter window.\n\n## 1.175.0 - 2026-11-18\n\n- Present a page: ▶ Present beside Focus shows a page as slides, for a\n  quick talk (#431). Each top line is a slide and its lines come one at a\n  time; the one before steps back. →, Space or a clicker walks the outline in\n  order, down into a line's lines and back up. Notepad text is your notes, a\n  picture there the cover. P opens a presenter window with notes, what comes\n  next, a timer and all slides. White on black, or your own slides.css. On a\n  phone the buttons under a page's title wrap onto a second row.\n\n## 1.174.0 - 2026-11-17\n\n- A page: lines under Linked References are the real lines, written in place,\n  in the side panel too. While the caret is in one, a red box and\n  \"Editing on <page>\" say which page you are changing. The page's name opens\n  that page at the line, not at the top. Somebody else's day page stays\n  read-only. (#425)\n\n## 1.173.0 - 2026-11-17\n\n- The line menu and toolbar: drag a line's bullet to move it. The edge of\n  another line drops it before or after that line; the middle puts it under\n  it. A phone holds the bullet first. A click on the bullet no longer zooms:\n  🔍, or ☰ › Focus on this line, does (#423).\n\n## 1.172.2 - 2026-11-17\n\n- Journal: Help stays in sight in Focus, bottom right, on a phone too (#421).\n\n## 1.172.1 - 2026-11-17\n\n- Keys on a line: Copy text (Alt+X) also copies the note box under the line,\n  without its fence lines (#392).\n\n## 1.172.0 - 2026-11-17\n\n- Templates: + From a template, in Projects and Pages, starts something from\n  a template (#420). Write a book is the first: Book is no longer in Settings,\n  so the app stays plain until you want it. Your own project templates are\n  there too, and Import a file… brings in a checklist or template written as\n  a Markdown list. A book you already have works as before, and nothing in\n  its files changes. Its settings are under Edit on the book.\n\n## 1.171.5 - 2026-11-17\n\n- Keys on a line: a table you write in has Row and Column buttons that list\n  their commands at once, and three alignment toggles for the caret's\n  column, the one it has pressed. The Table button and its extra step are\n  gone. (#281)\n\n## 1.171.4 - 2026-11-17\n\n- Journal: a task you add on another page, such as a project, is now\n  listed under Linked References at the foot of the day's page, as on\n  every other page. The live copies 1.171.0 put on today's page are taken\n  away again; their tasks stay listed. (#430)\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {
