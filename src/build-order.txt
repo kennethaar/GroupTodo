@@ -1713,8 +1713,11 @@ js/105-outliner/editBarPickImage.js
 js/105-outliner/editBarGroupClose.js
 js/105-outliner/editBarGroupToggle.js
 js/105-outliner/editBarSlideLines.js
+js/105-outliner/slideMenuPop.js
+js/105-outliner/slideLayoutPick.js
 js/105-outliner/editBarSlideMenu.js
 js/105-outliner/editBarSlideLayout.js
+js/105-outliner/lineSelSlideMenu.js
 js/105-outliner/editBarInline.js
 js/105-outliner/editBarRestShow.js
 js/105-outliner/editBarSync.js

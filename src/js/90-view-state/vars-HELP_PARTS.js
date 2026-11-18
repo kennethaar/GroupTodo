@@ -894,6 +894,7 @@ const HELP = {
     more: ["Put the presenter window on your own screen and the slides on the big one.",
       "Lines with no lines of their own share one slide under the page's title.",
       "Slide layout puts a mark in front of each line, such as 1. for steps or ~ for a curve. The menu shows each mark, and you can type it too. Pick it again, or Auto, to take it off.",
+      "With lines picked, Slide layout ▾ on the bar below marks just those lines.",
       "With no mark, lines with amounts or percents become a scorecard. Others stay a list.",
       "A layout shows up to five lines a slide; more go on the next. Words in the title: vs makes versus, [+] a 2×2. (Y / X) names a curve's axes.",
       "With the first line the picture moves to the left 30% and the title to the top. Every line already has its place, so nothing jumps.",

@@ -4,16 +4,8 @@
 function editBarSlideMenu(btn) {
   const bar = $("#editBar"), open = bar.querySelector(".ebsub");
   if (open) { open.remove(); btn.setAttribute("aria-expanded", "false"); return; }
-  const now = slideMarkOf(editBarSlideLines(FLY.block)) || "auto";
-  const pop = el("div", {class: "ebpop ebsub", role: "menu", "aria-label": "Slide layout"});
-  for (const [lay, name, mark] of SLIDE_MENU) {
-    const on = lay === now || (lay === "split" && now === "quadrant");
-    pop.append(el("button", {
-      class: "ebtn", tabindex: "-1", role: "menuitemradio", "aria-checked": String(on), data: {lay},
-      onclick: () => { editBarGroupClose(); editBarSlideLayout(lay); },
-    }, el("span", {class: "ebcheck", "aria-hidden": "true"}, on ? "✓" : ""), el("span", {class: "elb"}, name),
-      el("span", {class: "ebmark", "aria-hidden": "true"}, mark)));
-  }
+  const pop = slideMenuPop(slideMarkOf(editBarSlideLines(FLY.block)),
+    lay => { editBarGroupClose(); editBarSlideLayout(lay); });
   bar.append(pop);
   btn.setAttribute("aria-expanded", "true");
   const br = btn.getBoundingClientRect(), pr = pop.getBoundingClientRect();

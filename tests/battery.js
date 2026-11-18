@@ -13102,7 +13102,7 @@ var GTD_TEST = (() => {
     } finally { presentStop(); }
   }));
 
-  test("#433 Format › Slide layout marks a line's lines; the same pick again, or Auto, takes the marks off; one Ctrl+Z", async () => {
+  test("#433 Format › Slide layout marks a line's lines; the same pick again, or Auto, takes the marks off; one Ctrl+Z; picked lines too", async () => {
     const path = scratchProject("slide layout", [["", "Launch plan"], ["", "Stray line"]]);
     const [head, stray] = getPage(path).blocks;
     head.children = ["Q1 beta", "Q2 release", "Q3 enterprise"].map(t => newBlock({title: t}));
@@ -13157,7 +13157,27 @@ var GTD_TEST = (() => {
       focusBlock(stray.id); await frame();
       await pick("cycle");
       eq(now(stray).title, "(o) Stray line", "a line with no lines of its own is marked itself");
-    } finally { editBarGroupClose(); PREF.set("linetools", wasTools || ""); document.activeElement && document.activeElement.blur(); go("today"); }
+
+      // Several lines picked: the bar under them has Slide layout ▾, and the
+      // picked lines themselves get the marks.
+      document.activeElement.blur(); await frame();
+      LINE_SEL.path = path; LINE_SEL.ids = now(head).children.slice(0, 2).map(k => k.id); paintLineSel();
+      const hudMenu = async () => {
+        document.querySelector('#lselHud [data-k="slide"]').click(); await frame();
+        return [...document.querySelectorAll("#lselHud .ebsub [data-lay]")];
+      };
+      eq((await hudMenu()).filter(n => n.getAttribute("aria-checked") === "true").map(n => n.dataset.lay), ["auto"],
+        "the picked lines' layout is ticked");
+      document.querySelector('#lselHud .ebsub [data-lay="process"]').click(); await settle();
+      eq(kids(), ["1. Q1 beta", "2. Q2 release", "Q3 enterprise"], "only the picked lines are marked, numbered in order");
+      eq(LINE_SEL.ids.length, 2, "the lines stay picked");
+      ok(document.querySelector("#lselHud") && !document.querySelector("#lselHud .ebsub"), "the menu closes after a pick");
+      document.dispatchEvent(new KeyboardEvent("keydown", {key: "z", ctrlKey: true, bubbles: true, cancelable: true})); await settle();
+      eq(kids(), ["Q1 beta", "Q2 release", "Q3 enterprise"], "one Ctrl+Z takes it back");
+      LINE_SEL.path = path; LINE_SEL.ids = [head.id]; paintLineSel();
+      (await hudMenu()).find(n => n.dataset.lay === "hub").click(); await settle();
+      eq(kids(), [". Q1 beta", ". Q2 release", ". Q3 enterprise"], "one picked line with lines marks its lines, as the line tools do");
+    } finally { lineSelClear(); editBarGroupClose(); PREF.set("linetools", wasTools || ""); document.activeElement && document.activeElement.blur(); go("today"); }
   });
 
   /* ============================================================

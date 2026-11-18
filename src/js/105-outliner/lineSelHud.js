@@ -9,6 +9,9 @@ function lineSelHud() {
   hud.append(el("button", {class: "btn sm ghost", onclick: () => lineSelCut()}, "Cut"));
   hud.append(el("button", {class: "btn sm ghost", onclick: () => lineSelDelete()}, "Delete"));
   hud.append(el("button", {class: "btn sm ghost", onclick: () => lineSelContext()}, "@ Context"));
+  // How the picked lines look as a slide (#433).
+  hud.append(el("button", {class: "btn sm ghost", data: {k: "slide"}, "aria-haspopup": "menu", "aria-expanded": "false",
+    onclick: e => lineSelSlideMenu(e.currentTarget)}, "Slide layout ▾"));
   if (Spaces.list.length > 1) hud.append(el("button", {class: "btn sm ghost", onclick: () => {
     const got = lineSelBlocks();
     if (!got) return;

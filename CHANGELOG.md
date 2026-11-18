@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.178.2 - 2026-11-18
+
+- Present a page: with several lines picked, the bar under them has Slide
+  layout ▾ (#433). The pick marks the picked lines, Steps numbering them in
+  order; a picked line with lines under it marks those, as the line tools do.
+  The lines stay picked, and one Ctrl+Z takes the pick back.
+
 ## 1.178.1 - 2026-11-18
 
 - Present a page: Format › Slide layout picks how a slide draws its lines
