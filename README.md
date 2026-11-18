@@ -2,24 +2,28 @@
 
 ## Write naturally. Stay organised.
 
-Write notes and tasks in your daily journal. GroupToDo connects them to the right projects, people, contexts, dates, and conversations.
+Write notes and tasks in your daily journal. GroupToDo connects them to the right projects, people, organisations, contexts, dates, and meetings.
 
-No filing first. No system to maintain. Just write.
+No filing first. Write now; smart suggestions and a weekly review help you organize later.
 
-* See today's notes, tasks, meetings, and deadlines together
-* Track projects as you work
-* Find every note linked to a person, project, or context
-* Turn notes into tasks without copying them
-* Review what is next, late, delegated, or stuck
-* Share work without moving it to a SaaS platform
+See today's notes, tasks, meetings, and deadlines together
+
+Track projects as you work
+
+Find every note linked to a person, project, or organisation
+
+Turn notes into tasks without copying them
+
+Process unfiled notes and review what is next, late, delegated, or stuck
+
+Share work without moving it to a SaaS platform
 
 Your data stays in plain Markdown files on your device.
-
 **[Try GroupToDo](https://kennethaar.github.io/GroupTodo)** in Chrome or Edge, or download `grouptodo.html` and double-click it.
 
 ---
 
-## Write first. Organise automatically.
+## Write naturally. Stay organised.
 
 Start in today's journal:
 
