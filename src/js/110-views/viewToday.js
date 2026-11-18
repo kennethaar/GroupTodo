@@ -230,7 +230,9 @@ function viewToday() {
     "aria-expanded": String(JOURNAL_MORE_OPEN), "aria-label": "Day or week, trackers, what is due, history" + (lateN ? ": " + lateN + " late" : ""),
     title: lateN ? lateN + " late" : "Day or week, trackers, what is due, history",
     onclick: () => { JOURNAL_MORE_OPEN = !JOURNAL_MORE_OPEN; render(); }}, "⋯"));
-  // Focus stands last, in the top right corner (#323).
+  /* ▶ Present ▾ the day of the area you are in, beside Focus as on a page
+     (#431); Focus stands last, in the top right corner (#323). */
+  if (!who && daySpaces.includes(V.space)) head.querySelector(".vhead-r").append(wideOnly(presentButton(dayPath(V.space))));
   if (!who) head.querySelector(".vhead-r").append(wideOnly(focusButton("day")));
   if (day !== today) {
     head.classList.add("offday");

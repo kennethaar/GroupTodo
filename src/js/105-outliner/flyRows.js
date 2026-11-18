@@ -41,6 +41,9 @@ function flyRows() {
      opts: onLine.map(n => [n, n])}] : []),
     // The bullet no longer zooms (#423), and a phone has no 🔍: the menu does.
     {k: "zoom", ic: FLY_ZOOM, label: "Focus on this line", menu: true, div: true},
+    // This bullet and its lines as slides, on a page or a day (#431).
+    {k: "present", ic: FLY_PRESENT, label: "Present from here", menu: true,
+     opts: [["", "Present"], ["p", "With presenter window"]]},
     {k: "embedref", ic: FLY_EMBED, label: "Copy embed", key: "Alt+B", menu: true},
     {k: "plaincopy", ic: EB_COPY, label: "Copy text", key: "Alt+X", menu: true},
     {k: "refile", ic: FLY_REFILE, label: "Refile", key: "Alt+G", menu: true},

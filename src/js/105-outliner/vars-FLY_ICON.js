@@ -22,3 +22,5 @@ const FLY_ZOOM    = '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l4.5 4.5M
 /* Open in the side panel (#409): the page, a panel strip at its right, and >
    sending the line into it. */
 const FLY_PANEL   = '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 4v16"/><path d="M8 9l3 3-3 3"/>';
+// Present from here (#431): a play triangle, as on ▶ Present.
+const FLY_PRESENT = '<path d="M8 5.5v13l10-6.5z"/>';

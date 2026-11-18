@@ -1,37 +1,46 @@
 /* Present a page as slides (#431). Your own slides.css in an area's 8/
-   changes these: --slide-bg, --slide-ink, --dim, and .slide, .stitle,
-   .bullet.now, .bullet.past, .cover. */
+   changes these: --slide-bg, --slide-ink, --dim, and .slide, .slide.intro
+   (the title alone, before the first bullet), .stitle, .bullet.now,
+   .bullet.past, .cover. */
 #deck{--slide-bg:#000;--slide-ink:#fff;--dim:.4;--slide-font:system-ui,"Segoe UI",sans-serif;
   position:fixed;inset:0;z-index:10000;overflow:hidden;background:var(--slide-bg);color:var(--slide-ink);
   font-family:var(--slide-font);outline:none}
-#deck .slide{position:absolute;inset:0;display:grid;grid-template-columns:1fr}
-#deck .slide.hascover{grid-template-columns:33.333% 1fr}
-#deck .cover{overflow:hidden;min-height:0}
+#deck .slide{position:absolute;inset:0;overflow:hidden}
+/* The picture: behind the title on the whole screen, then the left 30%. */
+#deck .cover{position:absolute;left:0;top:0;bottom:0;width:30%;overflow:hidden;transition:width .5s ease-in-out}
+#deck .slide.intro .cover{width:100%}
 #deck .cover img{width:100%;height:100%;object-fit:cover;display:block}
+#deck .cover::after{content:"";position:absolute;inset:0;background:var(--slide-bg);opacity:0;transition:opacity .5s ease-in-out}
+#deck .slide.intro .cover::after{opacity:.5}
 #deck .cover .asset-missing{display:block;padding:2vh;opacity:.6}
-#deck .stext{--fit:1;display:flex;flex-direction:column;justify-content:center;padding:6vh 7vw;min-height:0;overflow:hidden;
-  font-size:calc(5vh * var(--fit))}
-#deck .titleslide .stext{align-items:center;text-align:center}
-#deck .stitle{color:inherit;font-size:1.7em;line-height:1.15;margin:0 0 .6em;font-weight:700}
-#deck .titleslide .stitle{font-size:2.3em;margin:0}
+#deck .stext{--fit:1;position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-start;
+  padding:8vh 7vw 6vh;min-height:0;overflow:hidden;font-size:calc(5vh * var(--fit))}
+#deck .hascover:not(.intro) .stext{left:30%;padding-left:5vw}
+#deck .slide.intro .stext{justify-content:center;align-items:center;text-align:center}
+#deck .stitle{color:inherit;font-size:1.7em;line-height:1.15;margin:0 0 .6em;font-weight:700;width:fit-content;max-width:100%}
+#deck .slide.intro .stitle{font-size:2.3em;margin:0}
+#deck .hascover.intro .stitle{text-shadow:0 .05em .3em var(--slide-bg)}
+#deck .slide.intro .sbullets{display:none}
 #deck .sbullets{margin:0;padding:0 0 0 1.1em;line-height:1.3}
 /* .bullet is also the outliner's dot: undone here. */
 #deck .bullet{position:static;width:auto;height:auto;border-radius:0;background:none;cursor:auto;margin:.35em 0;transition:opacity .3s ease}
 #deck .bullet.past{opacity:var(--dim)}
+#deck .bullet.later{opacity:0}
 #deck .bullet.fresh{animation:deckFade .2s ease-out}
 #deck.blank .slide{visibility:hidden}
 @keyframes deckFade{from{opacity:0}to{opacity:1}}
-/* Sideways at the same level, down into a line's lines, up out of them. */
+/* The next slide comes up from below; a detour into a bullet's lines comes
+   in from the right and goes back out to the left. */
 #deck .slide.cur,#deck .slide.out{animation-duration:.3s;animation-timing-function:ease-in-out;animation-fill-mode:both}
 #deck .slide.out{pointer-events:none}
-#deck[data-move=side][data-dir=on] .slide.cur{animation-name:deckInR}
-#deck[data-move=side][data-dir=on] .slide.out{animation-name:deckOutL}
-#deck[data-move=side][data-dir=back] .slide.cur{animation-name:deckInL}
-#deck[data-move=side][data-dir=back] .slide.out{animation-name:deckOutR}
 #deck[data-move=down] .slide.cur{animation-name:deckInB}
 #deck[data-move=down] .slide.out{animation-name:deckOutT}
 #deck[data-move=up] .slide.cur{animation-name:deckInT}
 #deck[data-move=up] .slide.out{animation-name:deckOutB}
+#deck[data-move=in] .slide.cur{animation-name:deckInR}
+#deck[data-move=in] .slide.out{animation-name:deckOutL}
+#deck[data-move=out] .slide.cur{animation-name:deckInL}
+#deck[data-move=out] .slide.out{animation-name:deckOutR}
 @keyframes deckInR{from{transform:translateX(100%)}}
 @keyframes deckInL{from{transform:translateX(-100%)}}
 @keyframes deckOutL{to{transform:translateX(-100%)}}
@@ -43,5 +52,11 @@
 @media (prefers-reduced-motion:reduce){
   #deck .slide.cur{animation-name:deckFade!important}
   #deck .slide.out{animation-name:deckGone!important}
+  #deck .cover,#deck .cover::after{transition:none}
   @keyframes deckGone{to{opacity:0}}
 }
+/* ▶ Present ▾ on a page: one control in two parts, kept together when the head wraps. */
+.presentsplit{display:inline-flex;white-space:nowrap}
+.presentsplit .presentbtn{border-top-right-radius:0;border-bottom-right-radius:0}
+.presentsplit .presentmore{border-top-left-radius:0;border-bottom-left-radius:0;padding-inline:6px;
+  border-left:1px solid color-mix(in srgb,currentColor 20%,transparent)}

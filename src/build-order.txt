@@ -758,6 +758,7 @@ js/91-present/slideWords.js
 js/91-present/slideNotes.js
 js/91-present/deckSteps.js
 js/91-present/slideFit.js
+js/91-present/slideLay.js
 js/91-present/slideBullets.js
 js/91-present/presenterTick.js
 js/91-present/presenterDraw.js
@@ -767,6 +768,7 @@ js/91-present/presentStop.js
 js/91-present/presentKey.js
 js/91-present/presentStart.js
 js/91-present/presentButton.js
+js/91-present/presentMenu.js
 js/90-view-state/vars-DIALOGUE.js
 js/90-view-state/setDialogueStyle.js
 js/90-view-state/vars-OPENS_AFTER.js

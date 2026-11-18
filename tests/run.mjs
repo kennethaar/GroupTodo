@@ -112,9 +112,13 @@ try {
   console.log(`\nGroupToDo v${version} - ${results.length} tests\n`);
   let failed = 0;
   for (const r of results) {
-    if (r.ok) console.log("  ok    " + r.name);
+    if (r.skipped) console.log("  skip  " + r.name + "  (slow: run it by name)");
+    else if (r.ok) console.log("  ok    " + r.name);
     else { failed++; console.log("  FAIL  " + r.name + "\n          " + String(r.error).replace(/\n/g, "\n          ")); }
   }
+  // The slowest tests, to mark as SLOW in tests/battery.js when they hold up the run.
+  const slow = results.filter(r => r.ms >= 5000).sort((a, b) => b.ms - a.ms);
+  if (slow.length) console.log("\n  slow (5 s or more):\n" + slow.map(r => "    " + (r.ms / 1000).toFixed(1) + " s  " + r.name).join("\n"));
   for (const [when, list] of [["while starting", bootErrors], ["during the tests", pageErrors]]) {
     if (!list.length) continue;
     failed++;

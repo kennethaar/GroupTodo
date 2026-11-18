@@ -1,15 +1,17 @@
 /* The page as one walk (#431): the title first, then each top line as a
    slide. A slide shows its title, then its lines one step at a time; a line
    with lines of its own leads down into a slide of them before the next
-   bullet. So → is always just "next", in the order the outline is written. */
-function deckSteps(path) {
+   bullet. So → is always just "next", in the order the outline is written.
+   From one bullet (☰ › Present from here), that bullet is the title slide and
+   its lines are the top slides, so a day page shows that talk and no more. */
+function deckSteps(path, root = null) {
   const page = getPage(path);
   const steps = [], slides = [];
   const shown = b => !!(slideWords(b) || (b.children || []).some(shown));
-  const slide = (block, title, depth) => {
+  const slide = (block, title, depth, notes) => {
     const kids = block ? (block.children || []).filter(shown) : [];
     const s = {n: slides.length + 1, block, title, depth, kids, first: steps.length,
-      ...(block ? slideNotes(block) : {cover: "", notes: ""})};
+      ...(notes || (block ? slideNotes(block) : {cover: "", notes: ""}))};
     slides.push(s);
     steps.push({s, k: 0});
     kids.forEach((kid, i) => {
@@ -18,7 +20,7 @@ function deckSteps(path) {
     });
     s.end = steps.length;
   };
-  slide(null, pageTitle(path), 0);
-  for (const b of (page?.blocks || []).filter(shown)) slide(b, slideWords(b), 0);
+  slide(null, root ? slideWords(root) : pageTitle(path), 0, root ? slideNotes(root) : null);
+  for (const b of ((root ? root.children : page?.blocks) || []).filter(shown)) slide(b, slideWords(b), 0);
   return {steps, slides};
 }

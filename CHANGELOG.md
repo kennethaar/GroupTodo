@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.176.0 - 2026-11-18
+
+- Present a page: a slide now opens with its title alone, over its picture
+  on the whole screen. With the first line the picture moves to the left 30%
+  and the title, smaller, to the top; every line already has its place and
+  comes out of the black, so nothing jumps (#431). The next slide comes up
+  from below; a line's own lines come in from the side. ▶ Present ▾ is on a
+  Journal day too, and ▾ or ☰ › Present from here open the presenter window.
+
 ## 1.175.0 - 2026-11-18
 
 - Present a page: ▶ Present beside Focus shows a page as slides, for a

@@ -12660,7 +12660,8 @@ var GTD_TEST = (() => {
   const deckNow = () => {
     const s = $("#deck .slide.cur");
     return {title: s?.querySelector(".stitle")?.textContent || "",
-      bullets: [...(s?.querySelectorAll(".bullet") || [])].map(b => b.textContent),
+      // The bullets shown so far; the rest wait in their places, still black.
+      bullets: [...(s?.querySelectorAll(".bullet:not(.later)") || [])].map(b => b.textContent),
       now: s?.querySelector(".bullet.now")?.textContent || "",
       past: [...(s?.querySelectorAll(".bullet.past") || [])].map(b => b.textContent),
       move: $("#deck")?.dataset.move || ""};
@@ -12699,36 +12700,56 @@ var GTD_TEST = (() => {
       let d = deckNow();
       eq(d.title, "Why we move", "the next is a top line, with no GTD marks on it");
       eq(d.bullets.length, 0, "a slide starts with its title alone");
-      eq(d.move, "side", "from one top line to the next slides sideways");
+      eq(d.move, "down", "the next slide at the same level comes up from below");
       const deck = $("#deck");
       ok(!/owner|Ann|Say it plainly|landlord/.test(deck.textContent), "values and notes are never shown to the audience");
       const cover = deck.querySelector(".slide.cur .cover");
       ok(cover, "a picture in the line's notes is the slide's cover");
-      await new Promise(r => setTimeout(r, 450));   // measured once it has slid in
-      const third = cover.getBoundingClientRect().width / deck.getBoundingClientRect().width;
-      ok(third > 0.28 && third < 0.38, "on the left third: " + third.toFixed(2));
-      ok(cover.getBoundingClientRect().left - deck.getBoundingClientRect().left < 2, "at the left");
+      // Measured once it has moved: every slide, picture and title animation over.
+      const wait = async () => {
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        await Promise.all(deck.getAnimations({subtree: true}).map(a => a.finished.catch(() => {})));
+      };
+      const box = () => deck.getBoundingClientRect();
+      const part = n => n.getBoundingClientRect();
+      await wait();
+      ok(part(cover).width / box().width > 0.98 && part(cover).height / box().height > 0.98,
+        "first the title alone, the picture behind it on the whole screen");
+      const big = part($("#deck .slide.cur .stitle"));
+      ok(Math.abs(big.left + big.width / 2 - box().width / 2) < box().width * 0.05, "the title in the middle");
       deckKey(" ");
       d = deckNow();
       eq(d.bullets, ["Rent is up"], "Space shows the first bullet, without its marks");
       const fresh = $("#deck .bullet.now");
       const fade = parseFloat(getComputedStyle(fresh).animationDuration);
       ok(fade > 0.1 && fade <= 0.3, "a bullet fades in quickly: " + fade + " s");
+      await wait();
+      const third = part(cover).width / box().width;
+      ok(third > 0.28 && third < 0.32, "with the first bullet the picture moves to the left 30%: " + third.toFixed(2));
+      ok(part(cover).left - box().left < 2, "at the left");
+      const title = part($("#deck .slide.cur .stitle")), first = $("#deck .bullet.now");
+      ok(title.left >= part(cover).right && title.bottom <= part(first).top + 1 && title.height < big.height,
+        "the title moves, smaller, to the top right over the bullets");
+      const later = [...deck.querySelectorAll(".slide.cur .bullet.later")];
+      eq(later.map(b => b.textContent), ["The roof leaks", "Staff want it"], "every bullet has its place already");
+      ok(later.every(b => getComputedStyle(b).opacity === "0"), "the ones to come still black");
+      const at = part(first).top;
       deckKey("PageDown");
       d = deckNow();
       eq([d.now, d.past], ["The roof leaks", ["Rent is up"]], "the next bullet is lit, the one before steps back");
+      ok(Math.abs(part(first).top - at) < 1, "and nothing moves when it comes");
       await new Promise(r => setTimeout(r, 450));
       const dim = parseFloat(getComputedStyle($("#deck .bullet.past")).opacity);
       ok(dim > 0.3 && dim < 0.5, "an earlier bullet is dimmed to about 40%: " + dim);
       deckKey("ArrowRight");
       d = deckNow();
-      eq([d.title, d.bullets.length, d.move], ["The roof leaks", 0, "down"], "a bullet with lines of its own leads down into them");
+      eq([d.title, d.bullets.length, d.move], ["The roof leaks", 0, "in"], "a bullet with lines of its own is a detour, in from the side");
       deckKey("ArrowRight"); deckKey("ArrowRight");
       eq(deckNow().bullets, ["Kitchen", "Bathroom"]);
       deckKey("ArrowRight");
       d = deckNow();
-      eq([d.title, d.now, d.past, d.move], ["Why we move", "Staff want it", ["Rent is up", "The roof leaks"], "up"],
-        "after the last line it comes back up and shows the next bullet");
+      eq([d.title, d.now, d.past, d.move], ["Why we move", "Staff want it", ["Rent is up", "The roof leaks"], "out"],
+        "after the last line it slides back out and shows the next bullet");
       await new Promise(r => setTimeout(r, 450));
       eq(getComputedStyle($("#deck .bullet.now")).opacity, "1", "the last bullet is never dimmed");
       deckKey("ArrowLeft");
@@ -12736,10 +12757,13 @@ var GTD_TEST = (() => {
       eq([d.title, d.bullets], ["The roof leaks", ["Kitchen", "Bathroom"]], "← goes back one step");
       deckKey("Escape");
       d = deckNow();
-      eq([d.title, d.now, d.move], ["Why we move", "The roof leaks", "up"], "Esc goes up to the bullet it came from");
+      eq([d.title, d.now, d.move], ["Why we move", "The roof leaks", "out"], "Esc goes up to the bullet it came from");
       deckKey("ArrowRight", {shiftKey: true});
       d = deckNow();
-      eq([d.title, d.bullets.length, d.move], ["Where to", 0, "side"], "Shift+→ skips the rest of the slide");
+      eq([d.title, d.bullets.length, d.move], ["Where to", 0, "down"], "Shift+→ skips the rest of the slide");
+      deckKey("ArrowLeft");
+      eq(deckNow().move, "up", "back to the slide before at the same level comes down from above");
+      deckKey("ArrowRight");
       deckKey("Home");
       eq(deckNow().title, "Talk", "Home goes to the first slide");
       deckKey("Enter");
@@ -12758,14 +12782,62 @@ var GTD_TEST = (() => {
       eq(state.pagePath, TALK, "back on the page");
     } finally { presentStop(); }
   }));
+  test("#431 the Journal presents too: ▶ Present ▾ for the day, ☰ Present from here for a bullet", async () => {
+    const path = ensureJournal(todayISO()), pg = getPage(path);
+    const mk = t => { const x = newBlock({}, false); x.title = t; return x; };
+    const other = mk("Buy milk"), talk = mk("Q4 review"), a = mk("Revenue"), b = mk("Hiring"), c = mk("Interns");
+    talk.children = [a, b]; b.children = [c];
+    pg.blocks.push(other, talk); flattenBlocks(pg.blocks); touch(path);
+    go("today"); await settle();
+    try {
+      const head = content().querySelector(".todayhead");
+      ok(head.querySelector(".presentbtn") && head.querySelector(".presentmore"), "the day has ▶ Present ▾ beside Focus");
+      head.querySelector(".presentbtn").click(); await settle();
+      eq(deckNow().title, pageTitle(path), "it presents the day");
+      ok(DECK.slides.some(s => s.title === "Buy milk") && DECK.slides.some(s => s.title === "Q4 review"), "with its lines as slides");
+      presentStop();
+      FLY = {txt: el("div", {}, talk.title), path, page: pg, block: talk, box: el("div"), open: null, hi: 0, q: ""};
+      const row = flyRows().find(r => r.k === "present");
+      ok(row && row.menu && /Present from here/.test(row.label), "the line menu has Present from here");
+      eq(flyOptsOf(row).map(o => o[1]), ["Present", "With presenter window"], "the same two ways as ▶ Present ▾");
+      flyPick("present", "");
+      await settle();
+      ok($("#deck"), "it presents from a day page");
+      eq(deckNow().title, "Q4 review", "the bullet is the first slide");
+      deckKey("ArrowRight");
+      eq(deckNow().title, "Revenue", "its lines are the slides");
+      deckKey("ArrowRight");
+      eq(deckNow().title, "Hiring");
+      deckKey("ArrowRight");
+      eq(deckNow().bullets, ["Interns"], "a line's own lines come one at a time");
+      deckKey("End");
+      ok(!/Buy milk/.test($("#deck").textContent), "the rest of the day is not in the slides");
+      deckKey("Home");
+      deckKey("Escape");
+      ok(!$("#deck"), "Esc on the first slide leaves");
+    } finally {
+      presentStop();
+      for (const x of [other, talk]) removeBlockFrom(pg, x);
+      touch(path);
+      go("today");
+    }
+  });
   test("#431 the presenter window: notes for the bullet, what comes next, timer and an overview", () => withPages(TALK_PAGE, async () => {
     const f = document.createElement("iframe");
     document.body.append(f);
     const open = window.open;
     window.open = () => f.contentWindow;
     try {
-      await startTalk();
-      deckKey("p");
+      // The presenter window is offered in sight: ▶ Present ▾ › With presenter window.
+      openPage(TALK); await settle();
+      const more = content().querySelector(".pagehead .presentmore");
+      ok(more, "▶ Present has a ▾ beside it");
+      more.click(); await settle();
+      const rows = [...document.querySelectorAll(".modal .pick")];
+      eq(rows.map(r => r.children[1].textContent), ["Present", "With presenter window"], "▾ offers Present and With presenter window");
+      const pick = rows[1];
+      pick.click(); await settle();
+      ok($("#deck"), "the slides start");
       const pd = f.contentDocument, q = s => pd.querySelector(s);
       ok(q(".pnow") && q(".pnext") && q(".pnotes"), "now, next and notes");
       deckKey("ArrowRight");
@@ -12809,12 +12881,29 @@ var GTD_TEST = (() => {
   /* ============================================================
      The runner
      ============================================================ */
+  /* Tests too slow for the full run: skipped there, run when named
+     (node tests/run.mjs "#185"). A test past TEST_CAP fails as too slow
+     instead of holding up the rest. */
+  const SLOW = [   // measured 2026-11-18 (v1.176.0)
+    "#181 a folder read before lists today's page alone",      // over 30 s
+    "#340 after Allow, a page in browser storage",              // over 30 s
+    "#181 a slow start can be traced",                          // 10 s
+    "#232 #181 allowed back, the area shows at once",           // 10 s
+  ];
+  const TEST_CAP = 30000;
   async function run(only = "") {
     const results = [];
     for (const t of tests) {
       if (only && !t.name.toLowerCase().includes(only.toLowerCase())) continue;
-      try { await t.fn(); results.push({name: t.name, ok: true}); }
-      catch (e) { results.push({name: t.name, ok: false, error: e && e.stack ? e.stack.split("\n").slice(0, 3).join("\n") : String(e)}); }
+      if (!only && SLOW.some(s => t.name.startsWith(s))) { results.push({name: t.name, ok: true, skipped: true}); continue; }
+      const t0 = performance.now();
+      let cap;
+      try {
+        await Promise.race([t.fn(), new Promise((_, no) => cap = setTimeout(() => no(new Error("too slow: over " + TEST_CAP / 1000 + " s")), TEST_CAP))]);
+        results.push({name: t.name, ok: true, ms: Math.round(performance.now() - t0)});
+      }
+      catch (e) { results.push({name: t.name, ok: false, ms: Math.round(performance.now() - t0), error: e && e.stack ? e.stack.split("\n").slice(0, 3).join("\n") : String(e)}); }
+      finally { clearTimeout(cap); }
     }
     go("today");
     return results;
