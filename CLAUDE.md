@@ -228,7 +228,11 @@ Use one clear control per action.
 Every 10th `/clear`, the SessionStart hook `.claude/hooks/clear-count.mjs`
 asks for this section to be compacted: repeats merged, stale items dropped.
 
-Work happens on `main` (`simplified-view` merged at v1.172.0, 2026-11-17).
+Work happens on `main`.
+
+Present (v1.175.0-v1.177.1): slides with a presenter window; the title comes
+first, bullets arrive in place, a focused line is presented from its trail.
+Newest area, so look here first for regressions.
 
 Slow start (#181, reopened 2026-11-14): big Android folder (1203 files,
 ~2 s per read, listing ~29 s).
@@ -241,4 +245,5 @@ Slow start (#181, reopened 2026-11-14): big Android folder (1203 files,
   merging shown and unsaved pages. User confirms it is fast after the swap.
 - Logging: `loadMark` (`src/js/00-bootstrap/loadMark.js`), `startupText`,
   `readTimingText` go into Save log. Test `#181 a slow start can be traced`.
+  Its folder-read test and #340 run over 10 s, so both are skipped alone.
 - Last log (v1.162.4): today 6.4 s, listing 29.5 s. Next: read a new log.
