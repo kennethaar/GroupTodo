@@ -12881,16 +12881,14 @@ var GTD_TEST = (() => {
   /* ============================================================
      The runner
      ============================================================ */
-  /* Tests too slow for the full run: skipped there, run when named
-     (node tests/run.mjs "#185"). A test past TEST_CAP fails as too slow
-     instead of holding up the rest. */
-  const SLOW = [   // measured 2026-11-18 (v1.176.0)
-    "#181 a folder read before lists today's page alone",      // over 30 s
-    "#340 after Allow, a page in browser storage",              // over 30 s
-    "#181 a slow start can be traced",                          // 10 s
-    "#232 #181 allowed back, the area shows at once",           // 10 s
+  /* Tests over 10 s even alone: skipped in the full run and tested by hand.
+     Run one by name to try it (node tests/run.mjs "#340"). A test past
+     TEST_CAP fails as too slow instead of holding up the rest. */
+  const SLOW = [   // over 10 s alone, 2026-11-18 (v1.176.0)
+    "#181 a folder read before lists today's page alone",
+    "#340 after Allow, a page in browser storage",
   ];
-  const TEST_CAP = 30000;
+  const TEST_CAP = 10000;
   async function run(only = "") {
     const results = [];
     for (const t of tests) {
