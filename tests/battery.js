@@ -12739,33 +12739,50 @@ var GTD_TEST = (() => {
       const later = [...deck.querySelectorAll(".slide.cur .bullet.later")];
       eq(later.map(b => b.textContent), ["The roof leaks", "Staff want it"], "every bullet has its place already");
       ok(later.every(b => getComputedStyle(b).opacity === "0"), "the ones to come still black");
-      const at = part(first).top;
-      deckKey("PageDown");
-      d = deckNow();
-      eq([d.now, d.past], ["The roof leaks", ["Rent is up"]], "the next bullet is lit, the one before steps back");
-      ok(Math.abs(part(first).top - at) < 1, "and nothing moves when it comes");
-      await new Promise(r => setTimeout(r, 700));
-      const dim = parseFloat(getComputedStyle($("#deck .bullet.past")).opacity);
-      ok(dim > 0.3 && dim < 0.5, "an earlier bullet is dimmed to about 40%: " + dim);
-      deckKey("ArrowRight");
-      d = deckNow();
-      eq([d.title, d.bullets.length, d.move], ["The roof leaks", 0, "in"], "a bullet with lines of its own is a detour, in from the side");
       const sl = getComputedStyle($("#deck .slide.cur"));
       eq([sl.animationDuration, sl.animationTimingFunction], ["0.6s", "ease-in-out"], "a slide moves in 0.6 s, eased in and out");
-      deckKey("ArrowRight"); deckKey("ArrowRight");
+      // A bullet with lines of its own is not shown first: → zooms into it (#431).
+      const slot = () => [...deck.querySelectorAll(".slide.cur .bullet")].find(b => b.textContent === "The roof leaks");
+      const spot = part(slot());
+      deckKey("PageDown");
+      d = deckNow();
+      eq([d.title, d.bullets.length, d.move], ["The roof leaks", 0, "zoomin"],
+        "→ goes straight into a bullet with lines of its own, its title alone");
+      ok(!/deckIn/.test(getComputedStyle($("#deck .slide.cur")).animationName), "it does not come in from the side");
+      const grow = $("#deck .slide.cur .stitle").getAnimations()[0];
+      eq([grow?.effect.getTiming().duration, grow?.effect.getTiming().easing], [1000, "ease-in-out"], "the line grows into the title in 1 s, eased");
+      grow.pause(); grow.currentTime = 0;
+      const seed = part($("#deck .slide.cur .stitle"));
+      ok(Math.abs(seed.left - spot.left) < 4 && Math.abs(seed.top - spot.top) < 4 && seed.height < spot.height * 1.5,
+        "it starts as the line, in its place on the slide before");
+      grow.play();
+      await wait();
+      deckKey("ArrowRight");
+      await wait();
+      const kitchen = $("#deck .slide.cur .bullet.now"), at = part(kitchen).top;
+      deckKey("ArrowRight");
       eq(deckNow().bullets, ["Kitchen", "Bathroom"]);
+      ok(Math.abs(part(kitchen).top - at) < 1, "nothing moves when the next bullet comes");
       deckKey("ArrowRight");
       d = deckNow();
-      eq([d.title, d.now, d.past, d.move], ["Why we move", "Staff want it", ["Rent is up", "The roof leaks"], "out"],
-        "after the last line it slides back out and shows the next bullet");
-      await new Promise(r => setTimeout(r, 700));
+      eq([d.title, d.now, d.past, d.move], ["Why we move", "Staff want it", ["Rent is up", "The roof leaks"], "zoomout"],
+        "after its last line the title shrinks back into its line, and the next bullet comes");
+      const shrink = $("#deck .slide.out .stitle")?.getAnimations()[0];
+      ok(shrink, "the title on its way back");
+      shrink.pause(); shrink.currentTime = 1000;
+      const home = part($("#deck .slide.out .stitle")), there = part(slot());
+      ok(Math.abs(home.left - there.left) < 4 && Math.abs(home.top - there.top) < 4, "it lands on its line");
+      shrink.play();
+      await wait();
+      const dim = parseFloat(getComputedStyle(slot()).opacity);
+      ok(dim > 0.3 && dim < 0.5, "an earlier bullet is dimmed to about 40%: " + dim);
       eq(getComputedStyle($("#deck .bullet.now")).opacity, "1", "the last bullet is never dimmed");
       deckKey("ArrowLeft");
       d = deckNow();
-      eq([d.title, d.bullets], ["The roof leaks", ["Kitchen", "Bathroom"]], "← goes back one step");
+      eq([d.title, d.bullets, d.move], ["The roof leaks", ["Kitchen", "Bathroom"], "zoomin"], "← goes back one step, into the line again");
       deckKey("Escape");
       d = deckNow();
-      eq([d.title, d.now, d.move], ["Why we move", "The roof leaks", "out"], "Esc goes up to the bullet it came from");
+      eq([d.title, d.now, d.move], ["Why we move", "Rent is up", "zoomout"], "Esc goes up to the slide it came from");
       deckKey("ArrowRight", {shiftKey: true});
       d = deckNow();
       eq([d.title, d.bullets.length, d.move], ["Where to", 0, "down"], "Shift+→ skips the rest of the slide");
@@ -12776,9 +12793,6 @@ var GTD_TEST = (() => {
       eq(deckNow().title, "Talk", "Home goes to the first slide");
       deckKey("Enter");
       eq(deckNow().title, "Why we move", "Enter on a title goes on");
-      deckKey("ArrowRight"); deckKey("ArrowRight");
-      deckKey("Enter");
-      eq(deckNow().title, "The roof leaks", "Enter goes into the lit bullet's lines");
       deckKey("4"); deckKey("Enter");
       eq(deckNow().title, "Where to", "a number and Enter jumps to that slide");
       deckKey("b");

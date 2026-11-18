@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.177.1 - 2026-11-18
+
+- Present a page: a line with lines of its own is no longer shown as a
+  bullet first and then slid in from the right. → takes you straight into
+  it: the line grows from its place into the title of its slide, like a
+  page's title. After its last line the title shrinks back into its place,
+  now done, and the next bullet comes (#431).
+
 ## 1.177.0 - 2026-11-18
 
 - Present a page: focus on a line and ▶ Present ▾ in its trail shows just

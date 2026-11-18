@@ -1,7 +1,8 @@
 /* The page as one walk (#431): the title first, then each top line as a
    slide. A slide shows its title, then its lines one step at a time; a line
-   with lines of its own leads down into a slide of them before the next
-   bullet. So → is always just "next", in the order the outline is written.
+   with lines of its own is not shown as a bullet first: → goes straight into
+   its slide, and after it the bullet is in its place, done. So → is always
+   just "next", in the order the outline is written.
    From one bullet (☰ › Present from here), that bullet is the title slide and
    its lines are the top slides, so a day page shows that talk and no more. */
 function deckSteps(path, root = null) {
@@ -15,8 +16,8 @@ function deckSteps(path, root = null) {
     slides.push(s);
     steps.push({s, k: 0});
     kids.forEach((kid, i) => {
-      steps.push({s, k: i + 1});
       if ((kid.children || []).some(shown)) slide(kid, slideWords(kid), depth + 1);
+      else steps.push({s, k: i + 1});
     });
     s.end = steps.length;
   };

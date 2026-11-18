@@ -760,6 +760,7 @@ js/91-present/deckSteps.js
 js/91-present/slideFit.js
 js/91-present/slideLay.js
 js/91-present/slideBullets.js
+js/91-present/slideZoom.js
 js/91-present/presenterTick.js
 js/91-present/presenterDraw.js
 js/91-present/presenterOpen.js

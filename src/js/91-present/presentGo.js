@@ -1,7 +1,8 @@
 /* Show step i. On the same slide only the bullets change: the new one fades
    in and the ones before it step back. Another slide moves in: the next one
-   at the same level comes up from below (down the talk), a bullet's own
-   lines are a detour in from the side, and back out the other way. */
+   comes up from below (down the talk), the one before from above. Into a
+   bullet's own lines the bullet grows from its place into the title, and on
+   the way back out the title shrinks into it again. */
 function presentGo(i) {
   if (!DECK) return;
   const {steps, deck} = DECK;
@@ -13,11 +14,15 @@ function presentGo(i) {
   if (from && from.s === to.s && old) {
     slideBullets(old, to, fwd && to.k === from.k + 1);
   } else {
-    deck.dataset.move = !from ? "" : to.s.depth > from.s.depth ? "in" : to.s.depth < from.s.depth ? "out" : fwd ? "down" : "up";
+    const into = from && from.s.kids.indexOf(to.s.block), outOf = from && to.s.kids.indexOf(from.s.block);
+    const move = !from ? "" : into >= 0 ? "zoomin" : outOf >= 0 ? "zoomout" : fwd ? "down" : "up";
+    deck.dataset.move = move;
     for (const gone of deck.querySelectorAll(".slide.out")) gone.remove();
+    // The line on the slide before, where the title grows from.
+    const slot = move === "zoomin" && old?.querySelectorAll(".sbullets > .bullet")[into];
     if (old) {
       old.classList.replace("cur", "out");
-      setTimeout(() => old.remove(), 800);
+      setTimeout(() => old.remove(), 1100);
     }
     const s = to.s;
     const slide = el("section", {class: "slide cur" + (s.cover ? " hascover" : "") + (s.block ? "" : " titleslide")});
@@ -30,6 +35,8 @@ function presentGo(i) {
     deck.append(slide);
     resolveAssets(slide);
     slideBullets(slide, to, false);
+    if (move === "zoomin" && slot) slideZoom(slide.querySelector(".stitle"), slot, true);
+    if (move === "zoomout" && old) slideZoom(old.querySelector(".stitle"), slide.querySelectorAll(".sbullets > .bullet")[outOf], false);
   }
   presenterDraw();
 }

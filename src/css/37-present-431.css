@@ -31,22 +31,18 @@
 #deck .bullet.fresh.aftertitle{animation-delay:1s}
 #deck.blank .slide{visibility:hidden}
 @keyframes deckFade{from{opacity:0}to{opacity:1}}
-/* The next slide comes up from below; a detour into a bullet's lines comes
-   in from the right and goes back out to the left. */
+/* The next slide comes up from below. Into a bullet's lines the slide stays
+   put: the bullet grows into the title (slideZoom) while the rest fades, and
+   back out the title shrinks into its bullet. */
 #deck .slide.cur,#deck .slide.out{animation-duration:.6s;animation-timing-function:ease-in-out;animation-fill-mode:both}
 #deck .slide.out{pointer-events:none}
 #deck[data-move=down] .slide.cur{animation-name:deckInB}
 #deck[data-move=down] .slide.out{animation-name:deckOutT}
 #deck[data-move=up] .slide.cur{animation-name:deckInT}
 #deck[data-move=up] .slide.out{animation-name:deckOutB}
-#deck[data-move=in] .slide.cur{animation-name:deckInR}
-#deck[data-move=in] .slide.out{animation-name:deckOutL}
-#deck[data-move=out] .slide.cur{animation-name:deckInL}
-#deck[data-move=out] .slide.out{animation-name:deckOutR}
-@keyframes deckInR{from{transform:translateX(100%)}}
-@keyframes deckInL{from{transform:translateX(-100%)}}
-@keyframes deckOutL{to{transform:translateX(-100%)}}
-@keyframes deckOutR{to{transform:translateX(100%)}}
+#deck[data-move=zoomin] .slide.out,#deck[data-move=zoomout] .slide.out :is(.cover,.sbullets){animation:deckGone .6s ease-in-out both}
+#deck:is([data-move=zoomin],[data-move=zoomout]) .slide.cur .cover{animation:deckFade .6s ease-in-out both}
+@keyframes deckGone{to{opacity:0}}
 @keyframes deckInB{from{transform:translateY(100%)}}
 @keyframes deckInT{from{transform:translateY(-100%)}}
 @keyframes deckOutT{to{transform:translateY(-100%)}}
@@ -55,7 +51,6 @@
   #deck .slide.cur{animation-name:deckFade!important}
   #deck .slide.out{animation-name:deckGone!important}
   #deck .cover,#deck .cover::after{transition:none}
-  @keyframes deckGone{to{opacity:0}}
 }
 /* ▶ Present ▾ on a page: one control in two parts, kept together when the head wraps. */
 .presentsplit{display:inline-flex;white-space:nowrap}
