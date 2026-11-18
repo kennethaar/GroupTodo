@@ -14,29 +14,30 @@ function presentGo(i) {
   if (from && from.s === to.s && old) {
     slideBullets(old, to, fwd && to.k === from.k + 1);
   } else {
-    const into = from && from.s.kids.indexOf(to.s.block), outOf = from && to.s.kids.indexOf(from.s.block);
-    const move = !from ? "" : into >= 0 ? "zoomin" : outOf >= 0 ? "zoomout" : fwd ? "down" : "up";
+    const move = !from ? "" : to.s.up === from.s ? "zoomin" : from.s.up === to.s ? "zoomout" : fwd ? "down" : "up";
     deck.dataset.move = move;
     for (const gone of deck.querySelectorAll(".slide.out")) gone.remove();
+    // A line's place on a slide: a bullet, or its spot in a drawing (#433).
+    const spot = (on, b) => b && on?.querySelector(`[data-bid="${CSS.escape(String(b.id))}"]`);
     // The line on the slide before, where the title grows from.
-    const slot = move === "zoomin" && old?.querySelectorAll(".sbullets > .bullet")[into];
+    const slot = move === "zoomin" && spot(old, to.s.block);
     if (old) {
       old.classList.replace("cur", "out");
       setTimeout(() => old.remove(), 1100);
     }
     const s = to.s;
-    const slide = el("section", {class: "slide cur" + (s.cover ? " hascover" : "") + (s.block ? "" : " titleslide")});
+    const slide = el("section", {class: "slide cur lay-" + s.layout + (s.cover ? " hascover" : "") + (s.block ? "" : " titleslide")});
     if (s.cover) {
       const img = /^(https?|data|blob):/.test(s.cover) ? el("img", {src: s.cover, alt: ""}) : el("img", {"data-asset": s.cover, alt: ""});
       slide.append(el("div", {class: "cover"}, img));
     }
-    slide.append(el("div", {class: "stext"}, el("h1", {class: "stitle"}, s.title),
-      el("ul", {class: "sbullets"}, ...s.kids.map(b => el("li", {class: "bullet later"}, slideWords(b))))));
+    slide.append(el("div", {class: "stext"}, s.breadcrumb ? el("div", {class: "scrumb"}, s.breadcrumb) : null,
+      el("h1", {class: "stitle"}, s.title), slideBody(s)));
     deck.append(slide);
     resolveAssets(slide);
     slideBullets(slide, to, false);
     if (move === "zoomin" && slot) slideZoom(slide.querySelector(".stitle"), slot, true);
-    if (move === "zoomout" && old) slideZoom(old.querySelector(".stitle"), slide.querySelectorAll(".sbullets > .bullet")[outOf], false);
+    if (move === "zoomout" && old) slideZoom(old.querySelector(".stitle"), spot(slide, from.s.block), false);
   }
   presenterDraw();
 }

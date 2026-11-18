@@ -12833,7 +12833,8 @@ var GTD_TEST = (() => {
       ok(head.querySelector(".presentbtn") && head.querySelector(".presentmore"), "the day has ▶ Present ▾ beside Focus");
       head.querySelector(".presentbtn").click(); await settle();
       eq(deckNow().title, pageTitle(path), "it presents the day");
-      ok(DECK.slides.some(s => s.title === "Buy milk") && DECK.slides.some(s => s.title === "Q4 review"), "with its lines as slides");
+      // A line with no lines of its own is a bullet on the day's slide (#433).
+      ok(DECK.slides[0].kids.includes(other) && DECK.slides.some(s => s.title === "Q4 review"), "with its lines as bullets and slides");
       presentStop();
       FLY = {txt: el("div", {}, talk.title), path, page: pg, block: talk, box: el("div"), open: null, hi: 0, q: ""};
       const row = flyRows().find(r => r.k === "present");
@@ -12844,7 +12845,7 @@ var GTD_TEST = (() => {
       ok($("#deck"), "it presents from a day page");
       eq(deckNow().title, "Q4 review", "the bullet is the first slide");
       deckKey("ArrowRight");
-      eq(deckNow().title, "Revenue", "its lines are the slides");
+      eq(deckNow().bullets, ["Revenue"], "its plain lines are its bullets (#433)");
       deckKey("ArrowRight");
       eq(deckNow().title, "Hiring");
       deckKey("ArrowRight");
@@ -12988,6 +12989,118 @@ var GTD_TEST = (() => {
     eq(slidePages(n(3), 5), [n(3)], "few enough: one slide");
     eq(slidePages(n(3), Infinity), [n(3)], "a plain list is one slide");
   });
+
+  // The issue's example talk (#433): one slide of every layout.
+  const SHOW = join(PAGES, "Show.md");
+  const SHOW_PAGE = {[SHOW]: [
+    "- Fast feedback raises quality (Quality / Time)",
+    "  - ~ Learn something", "  - ~ Reminder 1", "  - ~ Reminder 2", "  - ~ Learning stuck",
+    "- Vision statement",
+    "  - > \"Simplicity is about subtracting the obvious and adding the meaningful.\"",
+    "    - John Maeda", "    - Focus on zero-friction defaults",
+    "- Launch steps", "  - 1. Plan", "  - 2. Build", "  - 3. Ship",
+    "- Product launch plan", "  - -> Q1: Private beta", "  - -> Q2: Public release", "  - -> Q3: Enterprise tier",
+    "- Growth flywheel", "  - (o) Acquire users via free outliner", "  - (o) Convert notes into live presentations",
+    "  - (o) Audience sees tool and signs up",
+    "- Maslow's hierarchy", "  - ^ Physiological needs", "  - ^ Safety needs", "  - ^ Belonging and love",
+    "  - ^ Esteem and self-actualisation",
+    "- Platform architecture", "  - . Core sync engine", "  - . Web presenter UI", "  - . Mobile capture app",
+    "- Build vs buy", "  - | Build", "    - Full control", "    - Slower start", "  - | Buy", "    - Ready now", "    - Licence cost",
+    "- Q3 numbers", "  - ARR: USD 2M", "  - Churn: 3 %", "  - Budget left: NOK 40 000",
+    "- Team ::grid", "  - Ann", "    - Design", "  - Bob", "    - Code",
+  ].join("\n") + "\n"};
+  test("#433 the deck: a layout per slide, 2D lines drawn in their box, no slide for them", () => withPages(SHOW_PAGE, async () => {
+    const {slides} = deckSteps(SHOW);
+    eq(slides.map(s => [s.title, s.layout]), [["Show", "list"],
+      ["Fast feedback raises quality", "curve"], ["Vision statement", "hero"], ["Launch steps", "process"],
+      ["Product launch plan", "timeline"], ["Growth flywheel", "cycle"], ["Maslow's hierarchy", "pyramid"],
+      ["Platform architecture", "hub"], ["Build vs buy", "split"], ["Q3 numbers", "kpi"], ["Team", "grid"]],
+      "every top line its layout; a 2D line's own lines get no slide");
+    eq(slides[1].axes, {y: "Quality", x: "Time"}, "the curve's axes");
+    eq(slides[2].parts.length, 2, "a quote: one step for the quote, one per takeaway");
+  }));
+  test("#433 a flat page is one slide; too many lines go on; a slide says where it is from", () => withPages({
+    [SHOW]: ["- -> Q1", "- -> Q2", "- -> Q3", "- Roadmap", ...[1, 2, 3, 4, 5, 6, 7].map(i => "  - -> M" + i),
+      "    - Detail", "- Build vs buy", "  - | Build", "    - Full control", "      - Hire two", "  - | Buy", "    - Ready"].join("\n") + "\n"}, async () => {
+    const {slides, steps} = deckSteps(SHOW);
+    eq(slides.map(s => s.title), ["Show", "Roadmap (1/2)", "Roadmap (2/2)", "M7", "Build vs buy", "Full control"]);
+    eq([slides[0].layout, slides[0].kids.map(slideWords)], ["timeline", ["Q1", "Q2", "Q3"]],
+      "lines with no lines of their own gather on one slide headed with the page's title");
+    eq([slides[1].kids.length, slides[2].kids.length], [5, 2], "5, then the rest; no line lost");
+    eq(slides[3].breadcrumb, "Roadmap", "a 1D line's own slide names the slide it is from");
+    eq(slides[5].breadcrumb, "Build vs buy > Build", "a 2D line's own slide names the slide and the box");
+    const at = steps.findIndex(t => t.s === slides[5]);
+    eq([steps[at - 1].s, steps[at - 1].k], [slides[4], 1], "it comes right after its box lights");
+    const vs = deckSteps(SHOW, getPage(SHOW).blocks[4]).slides;
+    eq([vs[0].title, vs[0].layout, vs.length], ["Build vs buy", "split", 2], "Present from here on a versus line: that slide");
+  }));
+  const deckParts = () => [...$$("#deck .slide.cur .part")];
+  test("#433 a 1D layout is drawn whole and faint; each → lights one part; marks are not shown", () => withPages(SHOW_PAGE, async () => {
+    try {
+      openPage(SHOW); await settle();
+      content().querySelector(".pagehead .presentbtn").click(); await settle();
+      const to = title => presentGo(DECK.slides.find(s => s.title === title).first);
+      for (const [title, id, n] of [["Fast feedback raises quality", "curve", 4], ["Launch steps", "process", 3],
+        ["Product launch plan", "timeline", 3], ["Growth flywheel", "cycle", 3], ["Maslow's hierarchy", "pyramid", 4],
+        ["Platform architecture", "hub", 3]]) {
+        to(title);
+        deckKey("ArrowRight");
+        const slide = $("#deck .slide.cur");
+        ok(slide.classList.contains("lay-" + id), title + " is drawn as " + id + ": " + slide.className);
+        eq(deckParts().length, n, title + ": a part per line");
+        ok(!/(^|\s)(->|\(o\)|\^|~|\d\.)\s/.test(slide.textContent), title + " shows its marks: " + slide.textContent);
+        eq(deckParts().map(p => p.classList.contains("now")), deckParts().map((p, i) => i === 0), title + ": the first part lit");
+        ok(deckParts().slice(1).every(p => p.classList.contains("later") && +getComputedStyle(p).opacity > 0),
+          title + ": the parts to come are there, faint");
+      }
+      to("Product launch plan");
+      deckKey("ArrowRight");
+      ok(/Q1: Private beta/.test(deckParts()[0].textContent), "a timeline point without its arrow");
+      const where = deckParts().map(p => p.getBoundingClientRect().top);
+      ok(where[0] !== where[1], "points alternate above and below the axis");
+      deckKey("ArrowRight");
+      eq(deckParts().map(p => p.className.match(/now|past|later/)[0]), ["past", "now", "later"], "→ lights the next part");
+      eq(deckParts().map(p => p.getBoundingClientRect().top), where, "nothing moves when a part lights");
+      to("Maslow's hierarchy");
+      deckKey("ArrowRight");
+      const tiers = deckParts().map(p => p.getBoundingClientRect().top);
+      ok(tiers[0] > tiers[3], "the first line is the foundation, at the bottom");
+      to("Fast feedback raises quality");
+      deckKey("ArrowRight");
+      ok(/Quality/.test($("#deck .slide.cur .sbody").textContent) && /Time/.test($("#deck .slide.cur .sbody").textContent), "the axes are named");
+      deckKey("Escape");
+      ok(!$("#deck"), "Esc gives the page back");
+    } finally { presentStop(); }
+  }));
+  test("#433 a 2D layout lights a box at a time with its lines in it; a quote, then its takeaways", () => withPages(SHOW_PAGE, async () => {
+    try {
+      openPage(SHOW); await settle();
+      content().querySelector(".pagehead .presentbtn").click(); await settle();
+      const to = title => { presentGo(DECK.slides.find(s => s.title === title).first); deckKey("ArrowRight"); };
+      to("Build vs buy");
+      ok($("#deck .slide.cur").classList.contains("lay-split"), "versus");
+      eq(deckParts().map(p => p.querySelector(".phead").textContent), ["Build", "Buy"], "the heads without |");
+      ok(/Full control/.test(deckParts()[0].textContent) && /Ready now/.test(deckParts()[1].textContent), "each box holds its lines");
+      deckKey("ArrowRight");
+      eq(deckNow().title, "Build vs buy", "→ lights the next box, no slide for a box's lines");
+      eq(deckParts().map(p => p.className.match(/now|past|later/)[0]), ["past", "now"]);
+      to("Q3 numbers");
+      ok($("#deck .slide.cur").classList.contains("lay-kpi"), "a scorecard");
+      eq(deckParts().map(p => [p.querySelector(".pmetric").textContent, p.querySelector(".plabel").textContent]),
+        [["USD 2M", "ARR"], ["3 %", "Churn"], ["NOK 40 000", "Budget left"]], "a big metric over its label");
+      to("Team");
+      ok($("#deck .slide.cur").classList.contains("lay-grid"), "cards");
+      ok(/Design/.test(deckParts()[0].textContent), "a card holds its lines");
+      to("Vision statement");
+      ok($("#deck .slide.cur").classList.contains("lay-hero"), "a quote");
+      const q = deckParts()[0];
+      ok(/^Simplicity is about/.test(q.querySelector(".pquote").textContent), "the quote, its marks gone: " + q.textContent);
+      eq(q.querySelector(".pauthor").textContent, "John Maeda", "its first line is the author");
+      eq(deckParts().map(p => p.className.match(/now|past|later/)[0]), ["now", "later"]);
+      deckKey("ArrowRight");
+      ok(/Focus on zero-friction defaults/.test($("#deck .slide.cur .part.now").textContent), "then each takeaway");
+    } finally { presentStop(); }
+  }));
 
   /* ============================================================
      The runner

@@ -17,5 +17,6 @@ button:hover,button:focus-visible{background:#444;outline:2px solid #9cf}
 .pthumb{aspect-ratio:16/9;text-align:left;vertical-align:top;display:flex;align-items:flex-start;padding:10px;background:#000;color:#fff;font-size:1.05em;counter-increment:s;position:relative}
 .pthumb::after{content:counter(s);position:absolute;right:8px;bottom:6px;color:#888;font-size:.8em}
 .pthumb.here{outline:3px solid #9cf}.pthumb.sub{margin-left:16px;background:#0b0b0b}
+.playout{color:#aab;white-space:pre}
 .pend{padding:24px}
 `;

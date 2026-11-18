@@ -17,7 +17,7 @@ function slideZoom(title, slot, grow) {
   title.animate([still, at], {...time, fill: "forwards"});
   // The bullet itself, and the one after it, wait for the title to land.
   const slide = slot.closest(".slide");
-  for (const li of [slot, slide?.querySelector(".sbullets > .bullet.now")]) {
+  for (const li of [slot, slide?.querySelector(".sbullets > .bullet.now, .part.now")]) {
     if (!li || li.classList.contains("later")) continue;
     const to = getComputedStyle(li).opacity;
     li.animate([{opacity: 0}, {opacity: 0, offset: 0.9}, {opacity: to}], {duration: 1100});

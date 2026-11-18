@@ -229,6 +229,25 @@ window.GTD_DEMO = {
       with: ["Sofia Berg"],
       tasks: [task("CANCELLED", "Book the stand")]});
 
+    /* ---------- a talk with a slide of every layout: ▶ Present on it (#433) ---------- */
+    putPage(join(PAGES, "Slide layouts.md"), parsePage([
+      "- Fast feedback raises quality (Quality / Time)",
+      "  - ~ Learn something", "  - ~ Reminder 1", "  - ~ Reminder 2", "  - ~ Learning stuck",
+      "- Vision statement",
+      "  - > \"Simplicity is about subtracting the obvious and adding the meaningful.\"",
+      "    - John Maeda", "    - Focus on zero-friction defaults",
+      "- Launch steps", "  - 1. Plan", "  - 2. Build", "  - 3. Ship",
+      "- Product launch plan", "  - -> Q1: Private beta", "  - -> Q2: Public release", "  - -> Q3: Enterprise tier",
+      "- Growth flywheel", "  - (o) Acquire users via free outliner", "  - (o) Convert notes into live presentations",
+      "  - (o) Audience sees tool and signs up",
+      "- Maslow's hierarchy", "  - ^ Physiological needs", "  - ^ Safety needs", "  - ^ Belonging and love",
+      "  - ^ Esteem and self-actualisation",
+      "- Platform architecture", "  - . Core sync engine", "  - . Web presenter UI", "  - . Mobile capture app",
+      "- Build vs buy", "  - | Build", "    - Full control", "    - Slower start", "  - | Buy", "    - Ready now", "    - Licence cost",
+      "- Q3 numbers", "  - ARR: USD 2M", "  - Churn: 3 %", "  - Budget left: NOK 40 000",
+      "- Team ::grid", "  - Ann", "    - Design", "  - Bob", "    - Code",
+    ].join("\n") + "\n"));
+
     /* ---------- today's page, so the day is not blank ---------- */
     const jp = ensureJournal(T);
     const jpage = getPage(jp);
@@ -245,7 +264,6 @@ window.GTD_DEMO = {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-
 <meta http-equiv="Content-Security-Policy" content="
 default-src 'none';
 script-src 'unsafe-inline';
@@ -3659,6 +3677,68 @@ padding:8vh 7vw 6vh;min-height:0;overflow:hidden;font-size:calc(5vh * var(--fit)
 .presentsplit .presentbtn{border-top-right-radius:0;border-bottom-right-radius:0}
 .presentsplit .presentmore{border-top-left-radius:0;border-bottom-left-radius:0;padding-inline:6px;
 border-left:1px solid color-mix(in srgb,currentColor 20%,transparent)}
+#deck{--slide-accent:#2f6bc4;--on-accent:#fff;--faint:.15}
+#deck .scrumb{font-size:.55em;opacity:.65;margin:0 0 .3em}
+#deck .sbody{flex:1;min-height:0;position:relative;font-size:.72em;line-height:1.25}
+#deck .slide.intro .sbody{display:none}
+#deck .part{transition:opacity .6s ease-in-out}
+#deck .part.later{opacity:var(--faint)}
+#deck .part.past{opacity:var(--dim)}
+#deck .sbody:has(.part.aftertitle){animation:deckFade .6s ease-in-out 1s both}
+#deck .steps{display:flex;height:100%;align-items:center;gap:.15em}
+#deck .chev{flex:1;min-width:0;min-height:5em;display:flex;align-items:center;justify-content:center;text-align:center;
+padding:.5em 1.5em;background:var(--slide-accent);color:var(--on-accent);overflow-wrap:anywhere;
+clip-path:polygon(0 0,calc(100% - 1em) 0,100% 50%,calc(100% - 1em) 100%,0 100%,1em 50%)}
+#deck .chev:first-child{clip-path:polygon(0 0,calc(100% - 1em) 0,100% 50%,calc(100% - 1em) 100%,0 100%)}
+#deck .timeline{display:flex;height:100%;position:relative}
+#deck .timeline::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:.12em solid currentColor;opacity:.5}
+#deck .timeline .part{flex:1;min-width:0;height:50%;position:relative;display:flex;flex-direction:column;text-align:center;padding:0 .3em}
+#deck .timeline .up{align-self:flex-start;justify-content:flex-end;padding-bottom:1.3em}
+#deck .timeline .down{align-self:flex-end;justify-content:flex-start;padding-top:1.3em}
+#deck .tdot{position:absolute;left:50%;width:.9em;height:.9em;margin-left:-.45em;border-radius:50%;background:var(--slide-accent)}
+#deck .up .tdot{bottom:-.45em}
+#deck .down .tdot{top:-.45em}
+#deck .ring{position:relative;height:100%;aspect-ratio:1;max-width:100%;margin:0 auto}
+#deck :is(.ring,.curve) .part{position:absolute;inset:0}
+#deck :is(.ring,.curve) svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+#deck .sline{fill:none;stroke:var(--slide-accent);stroke-width:1.6}
+#deck .shead{fill:var(--slide-accent)}
+#deck .ntext{position:absolute;transform:translate(-50%,-50%);width:max-content;max-width:40%;text-align:center;
+padding:.3em .6em;border-radius:.6em;background:var(--slide-bg);border:.1em solid var(--slide-accent)}
+#deck .hubcore{position:absolute;left:50%;top:50%;width:30%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
+display:grid;place-items:center;text-align:center;padding:.4em;background:var(--slide-accent);color:var(--on-accent);
+font-weight:700;font-size:.85em;overflow-wrap:anywhere}
+#deck .pyramid{display:flex;flex-direction:column-reverse;height:100%;gap:.12em}
+#deck .tier{flex:1;min-height:0;display:grid;grid-template-columns:45% 1fr;align-items:center;gap:1em}
+#deck .tshape{height:100%;background:var(--slide-accent)}
+#deck .curve{position:relative;height:100%;margin:0 1em 1.4em 2em}
+#deck .curve .axes{position:absolute;inset:0;width:100%;height:100%}
+#deck .curve .axes path{fill:none;stroke:currentColor;stroke-width:1.5;opacity:.6}
+#deck .curve .sline{stroke-width:3}
+#deck .curve .ntext{transform:translateX(-50%);max-width:22%;margin-bottom:.4em;padding:0;border:0;background:none}
+#deck .yaxis{position:absolute;left:0;top:50%;transform:translate(-100%,-50%) rotate(180deg);writing-mode:vertical-rl;font-size:.8em;opacity:.8}
+#deck .xaxis{position:absolute;right:0;top:100%;font-size:.8em;opacity:.8}
+#deck .cards{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:.8em;height:100%;align-content:center}
+#deck .lay-split .cards{grid-auto-rows:minmax(50%,auto)}
+#deck .lay-quadrant .cards{grid-auto-rows:1fr;align-content:stretch}
+#deck .card{min-width:0;padding:.6em .8em;border-radius:.4em;overflow-wrap:anywhere;
+border:.08em solid color-mix(in srgb,var(--slide-ink) 35%,transparent);border-top:.25em solid var(--slide-accent)}
+#deck .phead{font-weight:700;margin-bottom:.3em}
+#deck .card ul{margin:0;padding-left:1.1em}
+#deck .card li{margin:.2em 0}
+#deck .lay-kpi .card{text-align:center}
+#deck .pmetric{font-size:calc(1.6em * min(1, 3 / var(--cols)));font-weight:800;line-height:1.1;white-space:nowrap}
+#deck .plabel{opacity:.8}
+#deck .lay-kpi .card ul{text-align:left;margin-top:.4em;font-size:.85em}
+#deck .hero{height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.5em}
+#deck .pquote{margin:0;font-size:1.6em;font-weight:600;line-height:1.2;max-width:28ch}
+#deck .pquote::before{content:"“"}
+#deck .pquote::after{content:"”"}
+#deck .pauthor{margin-top:.6em;opacity:.75}
+#deck .pauthor::before{content:"— "}
+#deck .ptake{font-size:.9em}
+#deck .pq{margin-bottom:.6em}
+#deck .lay-hero .pq.past{opacity:1}
 /* Space */
 .sfspace{position:fixed;inset:0;z-index:60;background:var(--space);opacity:0;transition:opacity .9s ease;color:var(--space-fg)}
 .sfspace.on{opacity:1}
@@ -3727,20 +3807,16 @@ border-left:1px solid color-mix(in srgb,currentColor 20%,transparent)}
 <button class="appupdate" id="appUpdate" hidden></button>
 <button class="hideside" id="hideSide" title="Hide the sidebar (\)" aria-label="Hide the sidebar">&#8676;</button>
 </div>
-
 <button class="sidesearch" id="sideSearch" title="Search (/)"><span>Search…</span><kbd>/</kbd></button>
 <nav class="nav" id="nav"></nav>
-
 <div class="syncrow" id="syncRow">
 <button class="sync" id="syncLine" title="Where this is saved, and how it syncs"><span class="dot" id="syncDot"></span><span id="syncTxt">local only</span></button>
 <button class="sidefocus" id="sideHistory" title="Everything that happened, newest first"><span aria-hidden="true">&#9201;</span> History</button>
 </div>
 </aside>
-
 <div id="main">
 <header class="top">
 <button class="tbtn burger" id="burger" title="Show the sidebar (\)" aria-label="Show the sidebar">&#9776;</button>
-
 <div class="h-hist">
 <button class="tbtn" id="btnBack" title="Back (alt+←)" aria-label="Back" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
 <button class="tbtn" id="btnFwd" title="Forward (alt+→)" aria-label="Forward" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
@@ -3752,7 +3828,6 @@ placeholder="Capture… (Enter adds to today)">
 <span class="where" id="capWhere"></span>
 <kbd>N</kbd>
 </label>
-
 <div class="hnow">
 <button class="nextmeet" id="nextMeet" hidden></button>
 <button class="ctxnow" id="btnContext" hidden></button>
@@ -3769,11 +3844,8 @@ placeholder="Capture… (Enter adds to today)">
 <aside id="pagePane" aria-label="Page beside the view" hidden></aside>
 </div>
 </div>
-
 <div class="timerfloat" id="timerFloat"></div>
 </div>
-
-
 <div id="toasts"></div>
 <div id="modalRoot"></div>
 <div class="sfspace" id="sf-space" hidden>
@@ -4673,7 +4745,7 @@ placeholder="Capture… (Enter adds to today)">
 })();
 
 "use strict";
-const APP_VERSION = "1.177.2";
+const APP_VERSION = "1.178.0";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -14595,11 +14667,12 @@ button:hover,button:focus-visible{background:#444;outline:2px solid #9cf}
 .pthumb{aspect-ratio:16/9;text-align:left;vertical-align:top;display:flex;align-items:flex-start;padding:10px;background:#000;color:#fff;font-size:1.05em;counter-increment:s;position:relative}
 .pthumb::after{content:counter(s);position:absolute;right:8px;bottom:6px;color:#888;font-size:.8em}
 .pthumb.here{outline:3px solid #9cf}.pthumb.sub{margin-left:16px;background:#0b0b0b}
+.playout{color:#aab;white-space:pre}
 .pend{padding:24px}
 `;
 function isSlidesCssPath(p) { return isVaultCssPath(p) && /(^|\/)slides\.css$/i.test(p); }
 function slideWords(b) {
-return plainTitle(b.title || "");
+return plainTitle(slideMark(b.title || "").words);
 }
 function slideNotes(b) {
 let cover = "";
@@ -14707,25 +14780,151 @@ const pages = [];
 for (let i = 0; i < kids.length; i += max) pages.push(kids.slice(i, i + max));
 return pages;
 }
+function slideHero(b) {
+const lines = (b.children || []).filter(k => slideWords(k));
+let quote = slideWords(b), author = "";
+const m = /\s+(?:--|—)\s*([^"“”]+)$/.exec(quote);
+if (m) { author = trim(m[1]); quote = trim(quote.slice(0, m.index)); }
+quote = quote.replace(/^["“”]([^"“”]+)["“”]$/, "$1");
+const takeaways = author ? lines : lines.slice(1);
+if (!author && lines[0]) author = slideWords(lines[0]);
+return {quote, author, takeaways};
+}
 function deckSteps(path, root = null) {
 const page = getPage(path);
 const steps = [], slides = [];
 const shown = b => !!(slideWords(b) || (b.children || []).some(shown));
-const slide = (block, title, depth, notes) => {
-const kids = block ? (block.children || []).filter(shown) : [];
-const s = {n: slides.length + 1, block, title, depth, kids, first: steps.length,
+const kidsOf = b => (b.children || []).filter(shown);
+const has = b => kidsOf(b).length > 0;
+const slide = (block, head, kids, depth, up, breadcrumb, notes) => {
+const lay = slideLayout({title: head}, kids);
+const pages = slidePages(kids, lay.max);
+pages.forEach((chunk, p) => {
+const hero = lay.layout === "hero" ? slideHero(chunk[0]) : null;
+const s = {n: slides.length + 1, block, depth, up, breadcrumb, kids: chunk,
+title: lay.title + (pages.length > 1 ? ` (${p + 1}/${pages.length})` : ""),
+layout: lay.layout, mode: lay.mode, axes: lay.axes, hero,
+parts: hero ? [chunk[0], ...hero.takeaways] : chunk, first: steps.length,
 ...(notes || (block ? slideNotes(block) : {cover: "", notes: ""}))};
 slides.push(s);
 steps.push({s, k: 0});
-kids.forEach((kid, i) => {
-if ((kid.children || []).some(shown)) slide(kid, slideWords(kid), depth + 1);
-else steps.push({s, k: i + 1});
+s.parts.forEach((part, i) => {
+if (lay.mode === "1d" && has(part)) return slide(part, slideWords(part), kidsOf(part), depth + 1, s, lay.title);
+steps.push({s, k: i + 1});
+if (lay.mode === "1d") return;
+const crumb = lay.title + " > " + slideWords(hero ? chunk[0] : part);
+for (const l2 of hero ? (i ? [part] : []) : kidsOf(part))
+if (has(l2)) slide(l2, slideWords(l2), kidsOf(l2), depth + 1, s, crumb);
 });
 s.end = steps.length;
+});
 };
-slide(null, root ? slideWords(root) : pageTitle(path), 0, root ? slideNotes(root) : null);
-for (const b of ((root ? root.children : page?.blocks) || []).filter(shown)) slide(b, slideWords(b), 0);
+const head = root ? slideWords(root) : pageTitle(path);
+const top = ((root ? root.children : page?.blocks) || []).filter(shown);
+const whole = slideLayout({title: head}, top).mode === "2d";
+const notes = root ? slideNotes(root) : null;
+slide(null, head, whole ? top : top.filter(b => !has(b)), 0, null, "", notes);
+if (!whole) for (const b of top.filter(has)) slide(b, slideWords(b), kidsOf(b), 0, null, "");
 return {steps, slides};
+}
+function slideSvg(tag, attrs = {}, ...kids) {
+const n = document.createElementNS("http://www.w3.org/2000/svg", tag);
+for (const [k, v] of Object.entries(attrs)) if (v != null) n.setAttribute(k, v);
+n.append(...kids);
+return n;
+}
+function slidePart(b, cls, ...kids) {
+return el("div", {class: "part later " + cls, "data-bid": b.id}, ...kids);
+}
+function drawSteps(s) {
+return el("div", {class: "steps"}, ...s.kids.map(b => slidePart(b, "chev", el("span", {}, slideWords(b)))));
+}
+function drawTimeline(s) {
+return el("div", {class: "timeline"}, ...s.kids.map((b, i) =>
+slidePart(b, i % 2 ? "down" : "up", el("span", {class: "tdot"}), el("span", {class: "ttext"}, slideWords(b)))));
+}
+function drawCycle(s) {
+const n = s.kids.length, r = 36, gap = Math.min(0.5, Math.PI / n * 0.5);
+const at = i => i / n * 2 * Math.PI - Math.PI / 2;
+const pt = a => [50 + r * Math.cos(a), 50 + r * Math.sin(a)];
+return el("div", {class: "ring"}, ...s.kids.map((b, i) => {
+const a0 = at(i) + gap, a1 = at(i + 1) - gap, [x0, y0] = pt(a0), [x1, y1] = pt(a1);
+const along = [-Math.sin(a1), Math.cos(a1)], out = [Math.cos(a1), Math.sin(a1)];
+const head = `M${x1 + along[0] * 3},${y1 + along[1] * 3} L${x1 + out[0] * 2},${y1 + out[1] * 2} L${x1 - out[0] * 2},${y1 - out[1] * 2}Z`;
+const [lx, ly] = pt(at(i));
+return slidePart(b, "node",
+slideSvg("svg", {viewBox: "0 0 100 100", "aria-hidden": "true"},
+slideSvg("path", {d: `M${x0},${y0} A${r},${r} 0 0 1 ${x1},${y1}`, class: "sline"}),
+slideSvg("path", {d: head, class: "shead"})),
+el("span", {class: "ntext", style: `left:${lx}%;top:${ly}%`}, slideWords(b)));
+}));
+}
+function drawPyramid(s) {
+const n = s.kids.length, side = w => [(1 - w) * 50, (1 + w) * 50];
+return el("div", {class: "pyramid"}, ...s.kids.map((b, i) => {
+const [bl, br] = side(1 - i / n), [tl, tr] = side(1 - (i + 1) / n);
+return slidePart(b, "tier",
+el("span", {class: "tshape", style: `clip-path:polygon(${tl}% 0,${tr}% 0,${br}% 100%,${bl}% 100%)`}),
+el("span", {class: "ttext"}, slideWords(b)));
+}));
+}
+function drawHub(s) {
+const n = s.kids.length, r = 36;
+return el("div", {class: "ring hub"}, el("div", {class: "hubcore"}, s.title), ...s.kids.map((b, i) => {
+const a = i / n * 2 * Math.PI - Math.PI / 2, c = Math.cos(a), sn = Math.sin(a);
+return slidePart(b, "node",
+slideSvg("svg", {viewBox: "0 0 100 100", "aria-hidden": "true"},
+slideSvg("line", {x1: 50 + 15 * c, y1: 50 + 15 * sn, x2: 50 + r * c, y2: 50 + r * sn, class: "sline"})),
+el("span", {class: "ntext", style: `left:${50 + r * c}%;top:${50 + r * sn}%`}, slideWords(b)));
+}));
+}
+function drawCurve(s) {
+const n = s.kids.length, X = i => 6 + i * 88 / n, Y = v => 94 - v * 76;
+let from = 0;
+const parts = s.kids.map((b, i) => {
+const x0 = X(i), x1 = i < n - 1 ? X(i + 1) : 96, last = i === n - 1;
+const floor = 0.1 + 0.6 * i / n, tau = 3 * (i + 1) ** 1.6;
+const v = t => last ? 1 - 0.05 * t / (x1 - x0) : floor + (1 - floor) * Math.exp(-t / tau);
+let d = `M${x0},${Y(from)} L${x0},${Y(1)}`;
+for (let k = 1; k <= 16; k++) { const t = (x1 - x0) * k / 16; d += ` L${x0 + t},${Y(v(t))}`; }
+from = v(x1 - x0);
+return slidePart(b, "peak",
+slideSvg("svg", {viewBox: "0 0 100 100", preserveAspectRatio: "none", "aria-hidden": "true"},
+slideSvg("path", {d, class: "sline", "vector-effect": "non-scaling-stroke"})),
+el("span", {class: "ntext", style: `left:${x0}%;bottom:${100 - Y(1)}%`}, slideWords(b)));
+});
+return el("div", {class: "curve"},
+slideSvg("svg", {class: "axes", viewBox: "0 0 100 100", preserveAspectRatio: "none", "aria-hidden": "true"},
+slideSvg("path", {d: "M3,2 L3,97 L99,97", "vector-effect": "non-scaling-stroke"})),
+s.axes ? el("span", {class: "yaxis"}, s.axes.y) : null,
+s.axes ? el("span", {class: "xaxis"}, s.axes.x) : null,
+...parts);
+}
+function drawCards(s) {
+const n = s.kids.length, kpi = s.layout === "kpi";
+const cols = s.layout === "split" || s.layout === "quadrant" ? 2
+: kpi || s.mode === "1d" || n <= 3 ? n : Math.ceil(n / 2);
+return el("div", {class: "cards", style: `--cols:${cols}`}, ...s.kids.map(b => {
+const words = slideWords(b), m = kpi ? slideKpi(words) : null;
+const head = kpi ? [el("div", {class: "pmetric"}, m ? m.metric : ""), el("div", {class: "plabel"}, m ? m.label : words)]
+: [el("div", {class: "phead"}, words)];
+const lines = (b.children || []).filter(k => slideWords(k));
+return slidePart(b, "card", ...head,
+lines.length ? el("ul", {}, ...lines.map(k => el("li", {"data-bid": k.id}, slideWords(k)))) : null);
+}));
+}
+function drawQuote(s) {
+const {quote, author, takeaways} = s.hero;
+return el("div", {class: "hero"},
+slidePart(s.kids[0], "pq", el("blockquote", {class: "pquote"}, quote), author ? el("div", {class: "pauthor"}, author) : null),
+...takeaways.map(b => slidePart(b, "ptake", slideWords(b))));
+}
+function slideBody(s) {
+if (s.layout === "list")
+return el("ul", {class: "sbullets"}, ...s.kids.map(b => el("li", {class: "bullet later", "data-bid": b.id}, slideWords(b))));
+const draw = {process: drawSteps, timeline: drawTimeline, cycle: drawCycle, pyramid: drawPyramid,
+hub: drawHub, curve: drawCurve, hero: drawQuote}[s.layout] || drawCards;
+return el("div", {class: "sbody"}, draw(s));
 }
 function slideFit(slide) {
 const box = slide.querySelector(".stext");
@@ -14755,7 +14954,7 @@ return true;
 }
 function slideBullets(slide, step, fresh) {
 const moved = slideLay(slide, step.k > 0);
-[...slide.querySelectorAll(".sbullets > .bullet")].forEach((li, n) => {
+[...slide.querySelectorAll(".sbullets > .bullet, .part")].forEach((li, n) => {
 li.classList.toggle("now", n === step.k - 1);
 li.classList.toggle("past", n < step.k - 1);
 li.classList.toggle("later", n >= step.k);
@@ -14776,7 +14975,7 @@ const time = {duration: 1000, easing: "ease-in-out"};
 if (grow) { title.animate([at, still], time); return; }
 title.animate([still, at], {...time, fill: "forwards"});
 const slide = slot.closest(".slide");
-for (const li of [slot, slide?.querySelector(".sbullets > .bullet.now")]) {
+for (const li of [slot, slide?.querySelector(".sbullets > .bullet.now, .part.now")]) {
 if (!li || li.classList.contains("later")) continue;
 const to = getComputedStyle(li).opacity;
 li.animate([{opacity: 0}, {opacity: 0, offset: 0.9}, {opacity: to}], {duration: 1100});
@@ -14796,9 +14995,9 @@ function presenterDraw() {
 const pw = DECK?.pw;
 if (!pw || pw.closed || !DECK.steps[DECK.i]) return;
 const d = pw.document, {steps, slides, i} = DECK, here = steps[i], s = here.s;
-const lit = here.k ? s.kids[here.k - 1] : null;
+const lit = here.k ? s.parts[here.k - 1] : null;
 const next = steps[i + 1];
-const nextText = !next ? "The end" : next.s === s ? "› " + slideWords(s.kids[next.k - 1]) : "Slide: " + next.s.title;
+const nextText = !next ? "The end" : next.s === s ? "› " + slideWords(s.parts[next.k - 1]) : "Slide: " + next.s.title;
 const size = +PREF.get("present.notes", 22) || 22;
 const resize = by => { PREF.set("present.notes", Math.max(12, Math.min(48, size + by))); presenterDraw(); };
 const bar = el("div", {class: "pbar"},
@@ -14811,7 +15010,7 @@ onclick: () => { DECK.grid = !DECK.grid; presenterDraw(); }}, "Overview"),
 el("button", {class: "psmaller", title: "Smaller notes", "aria-label": "Smaller notes", onclick: () => resize(-2)}, "A−"),
 el("button", {class: "pbigger", title: "Larger notes", "aria-label": "Larger notes", onclick: () => resize(2)}, "A+"));
 bar.querySelector(".ptimer").onclick = () => { if (DECK) { DECK.t0 = Date.now(); presenterTick(); } };
-const list = el("ul", {}, ...s.kids.map((b, n) =>
+const list = el("ul", {}, ...s.parts.map((b, n) =>
 el("li", {class: n < here.k - 1 ? "past" : n === here.k - 1 ? "now" : "later"}, slideWords(b))));
 const main = el("div", {class: "pmain"},
 el("div", {class: "pnow"}, el("div", {class: "plabel"}, "Now"), el("h2", {}, s.title), list),
@@ -14820,7 +15019,8 @@ const notes = el("div", {class: "pnotes", style: "font-size:" + size + "px"}, li
 const parts = [bar, main, notes];
 if (DECK.grid) parts.push(el("div", {class: "pgrid", role: "list", "aria-label": "All slides"},
 ...slides.map(t => el("button", {class: "pthumb" + (t === s ? " here" : "") + (t.depth ? " sub" : ""), role: "listitem",
-onclick: () => { DECK.grid = false; presentGo(t.first); }}, t.title))));
+onclick: () => { DECK.grid = false; presentGo(t.first); }}, t.title,
+t.layout !== "list" ? el("span", {class: "playout"}, " · " + SLIDE_LAYOUTS[t.layout].name) : null))));
 d.body.replaceChildren(...parts.map(n => d.adoptNode(n)));
 presenterTick();
 }
@@ -14848,28 +15048,28 @@ const old = deck.querySelector(".slide.cur");
 if (from && from.s === to.s && old) {
 slideBullets(old, to, fwd && to.k === from.k + 1);
 } else {
-const into = from && from.s.kids.indexOf(to.s.block), outOf = from && to.s.kids.indexOf(from.s.block);
-const move = !from ? "" : into >= 0 ? "zoomin" : outOf >= 0 ? "zoomout" : fwd ? "down" : "up";
+const move = !from ? "" : to.s.up === from.s ? "zoomin" : from.s.up === to.s ? "zoomout" : fwd ? "down" : "up";
 deck.dataset.move = move;
 for (const gone of deck.querySelectorAll(".slide.out")) gone.remove();
-const slot = move === "zoomin" && old?.querySelectorAll(".sbullets > .bullet")[into];
+const spot = (on, b) => b && on?.querySelector(`[data-bid="${CSS.escape(String(b.id))}"]`);
+const slot = move === "zoomin" && spot(old, to.s.block);
 if (old) {
 old.classList.replace("cur", "out");
 setTimeout(() => old.remove(), 1100);
 }
 const s = to.s;
-const slide = el("section", {class: "slide cur" + (s.cover ? " hascover" : "") + (s.block ? "" : " titleslide")});
+const slide = el("section", {class: "slide cur lay-" + s.layout + (s.cover ? " hascover" : "") + (s.block ? "" : " titleslide")});
 if (s.cover) {
 const img = /^(https?|data|blob):/.test(s.cover) ? el("img", {src: s.cover, alt: ""}) : el("img", {"data-asset": s.cover, alt: ""});
 slide.append(el("div", {class: "cover"}, img));
 }
-slide.append(el("div", {class: "stext"}, el("h1", {class: "stitle"}, s.title),
-el("ul", {class: "sbullets"}, ...s.kids.map(b => el("li", {class: "bullet later"}, slideWords(b))))));
+slide.append(el("div", {class: "stext"}, s.breadcrumb ? el("div", {class: "scrumb"}, s.breadcrumb) : null,
+el("h1", {class: "stitle"}, s.title), slideBody(s)));
 deck.append(slide);
 resolveAssets(slide);
 slideBullets(slide, to, false);
 if (move === "zoomin" && slot) slideZoom(slide.querySelector(".stitle"), slot, true);
-if (move === "zoomout" && old) slideZoom(old.querySelector(".stitle"), slide.querySelectorAll(".sbullets > .bullet")[outOf], false);
+if (move === "zoomout" && old) slideZoom(old.querySelector(".stitle"), spot(slide, from.s.block), false);
 }
 presenterDraw();
 }
@@ -14918,7 +15118,7 @@ const back = document.activeElement;
 const id = back && back.closest && back.closest(".blk")?.dataset.id;
 let at = 0;
 if (id) {
-const i = steps.findIndex(({s, k}) => (k ? s.kids[k - 1] : s.block)?.id === id);
+const i = steps.findIndex(({s, k}) => (k ? s.parts[k - 1] : s.block)?.id === id);
 if (i >= 0) at = i;
 }
 if (back && back.blur) back.blur();
@@ -17674,7 +17874,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.177.2 - 2026-11-18\n\n- Present a page: groundwork for slide layouts (#433). A slide can now be\n  read as steps, a timeline, a cycle, a pyramid, a hub, a curve, versus, a\n  2×2, a scorecard, a quote or a grid, from a mark at the front of its\n  lines, a word in its title or numbers on every line. Nothing is drawn\n  differently yet; slides look as before.\n\n## 1.177.1 - 2026-11-18\n\n- Present a page: a line with lines of its own is no longer shown as a\n  bullet first and then slid in from the right. → takes you straight into\n  it: the line grows from its place into the title of its slide, like a\n  page's title. After its last line the title shrinks back into its place,\n  now done, and the next bullet comes (#431).\n\n## 1.177.0 - 2026-11-18\n\n- Present a page: focus on a line and ▶ Present ▾ in its trail shows just\n  that line as slides (#431). The first bullet fades in once the title has\n  moved to the top. Every move and fade is eased in and out and takes twice\n  as long, so it is calm to watch.\n\n## 1.176.0 - 2026-11-18\n\n- Present a page: a slide now opens with its title alone, over its picture\n  on the whole screen. With the first line the picture moves to the left 30%\n  and the title, smaller, to the top; every line already has its place and\n  comes out of the black, so nothing jumps (#431). The next slide comes up\n  from below; a line's own lines come in from the side. ▶ Present ▾ is on a\n  Journal day too, and ▾ or ☰ › Present from here open the presenter window.\n\n## 1.175.0 - 2026-11-18\n\n- Present a page: ▶ Present beside Focus shows a page as slides, for a\n  quick talk (#431). Each top line is a slide and its lines come one at a\n  time; the one before steps back. →, Space or a clicker walks the outline in\n  order, down into a line's lines and back up. Notepad text is your notes, a\n  picture there the cover. P opens a presenter window with notes, what comes\n  next, a timer and all slides. White on black, or your own slides.css. On a\n  phone the buttons under a page's title wrap onto a second row.\n\n## 1.174.0 - 2026-11-17\n\n- A page: lines under Linked References are the real lines, written in place,\n  in the side panel too. While the caret is in one, a red box and\n  \"Editing on <page>\" say which page you are changing. The page's name opens\n  that page at the line, not at the top. Somebody else's day page stays\n  read-only. (#425)\n\n## 1.173.0 - 2026-11-17\n\n- The line menu and toolbar: drag a line's bullet to move it. The edge of\n  another line drops it before or after that line; the middle puts it under\n  it. A phone holds the bullet first. A click on the bullet no longer zooms:\n  🔍, or ☰ › Focus on this line, does (#423).\n\n## 1.172.2 - 2026-11-17\n\n- Journal: Help stays in sight in Focus, bottom right, on a phone too (#421).\n\n## 1.172.1 - 2026-11-17\n\n- Keys on a line: Copy text (Alt+X) also copies the note box under the line,\n  without its fence lines (#392).\n\n## 1.172.0 - 2026-11-17\n\n- Templates: + From a template, in Projects and Pages, starts something from\n  a template (#420). Write a book is the first: Book is no longer in Settings,\n  so the app stays plain until you want it. Your own project templates are\n  there too, and Import a file… brings in a checklist or template written as\n  a Markdown list. A book you already have works as before, and nothing in\n  its files changes. Its settings are under Edit on the book.\n\n## 1.171.5 - 2026-11-17\n\n- Keys on a line: a table you write in has Row and Column buttons that list\n  their commands at once, and three alignment toggles for the caret's\n  column, the one it has pressed. The Table button and its extra step are\n  gone. (#281)\n\n## 1.171.4 - 2026-11-17\n\n- Journal: a task you add on another page, such as a project, is now\n  listed under Linked References at the foot of the day's page, as on\n  every other page. The live copies 1.171.0 put on today's page are taken\n  away again; their tasks stay listed. (#430)\n";
+const HELP_NEWS = "## 1.178.0 - 2026-11-18\n\n- Present a page: slides are drawn by their marks (#433). Lines starting\n  `1.` are steps, `->` a timeline, `(o)` a cycle, `^` a pyramid, `.` a hub,\n  `~` a curve, and `|` versus or a 2×2. Lines with amounts or percents\n  are a scorecard, one `>` quote a large quote with its author, and\n  `::grid` in the title makes cards. The whole shape shows faintly and\n  each → lights the next part. The marks are no longer shown as text.\n  Top lines with nothing under them are bullets on the first slide, and\n  more than five parts go on to a next slide. Lines without marks look\n  as before. The demo has a Slide layouts page to try it on.\n\n## 1.177.2 - 2026-11-18\n\n- Present a page: groundwork for slide layouts (#433). A slide can now be\n  read as steps, a timeline, a cycle, a pyramid, a hub, a curve, versus, a\n  2×2, a scorecard, a quote or a grid, from a mark at the front of its\n  lines, a word in its title or numbers on every line. Nothing is drawn\n  differently yet; slides look as before.\n\n## 1.177.1 - 2026-11-18\n\n- Present a page: a line with lines of its own is no longer shown as a\n  bullet first and then slid in from the right. → takes you straight into\n  it: the line grows from its place into the title of its slide, like a\n  page's title. After its last line the title shrinks back into its place,\n  now done, and the next bullet comes (#431).\n\n## 1.177.0 - 2026-11-18\n\n- Present a page: focus on a line and ▶ Present ▾ in its trail shows just\n  that line as slides (#431). The first bullet fades in once the title has\n  moved to the top. Every move and fade is eased in and out and takes twice\n  as long, so it is calm to watch.\n\n## 1.176.0 - 2026-11-18\n\n- Present a page: a slide now opens with its title alone, over its picture\n  on the whole screen. With the first line the picture moves to the left 30%\n  and the title, smaller, to the top; every line already has its place and\n  comes out of the black, so nothing jumps (#431). The next slide comes up\n  from below; a line's own lines come in from the side. ▶ Present ▾ is on a\n  Journal day too, and ▾ or ☰ › Present from here open the presenter window.\n\n## 1.175.0 - 2026-11-18\n\n- Present a page: ▶ Present beside Focus shows a page as slides, for a\n  quick talk (#431). Each top line is a slide and its lines come one at a\n  time; the one before steps back. →, Space or a clicker walks the outline in\n  order, down into a line's lines and back up. Notepad text is your notes, a\n  picture there the cover. P opens a presenter window with notes, what comes\n  next, a timer and all slides. White on black, or your own slides.css. On a\n  phone the buttons under a page's title wrap onto a second row.\n\n## 1.174.0 - 2026-11-17\n\n- A page: lines under Linked References are the real lines, written in place,\n  in the side panel too. While the caret is in one, a red box and\n  \"Editing on <page>\" say which page you are changing. The page's name opens\n  that page at the line, not at the top. Somebody else's day page stays\n  read-only. (#425)\n\n## 1.173.0 - 2026-11-17\n\n- The line menu and toolbar: drag a line's bullet to move it. The edge of\n  another line drops it before or after that line; the middle puts it under\n  it. A phone holds the bullet first. A click on the bullet no longer zooms:\n  🔍, or ☰ › Focus on this line, does (#423).\n\n## 1.172.2 - 2026-11-17\n\n- Journal: Help stays in sight in Focus, bottom right, on a phone too (#421).\n\n## 1.172.1 - 2026-11-17\n\n- Keys on a line: Copy text (Alt+X) also copies the note box under the line,\n  without its fence lines (#392).\n\n## 1.172.0 - 2026-11-17\n\n- Templates: + From a template, in Projects and Pages, starts something from\n  a template (#420). Write a book is the first: Book is no longer in Settings,\n  so the app stays plain until you want it. Your own project templates are\n  there too, and Import a file… brings in a checklist or template written as\n  a Markdown list. A book you already have works as before, and nothing in\n  its files changes. Its settings are under Edit on the book.\n\n## 1.171.5 - 2026-11-17\n\n- Keys on a line: a table you write in has Row and Column buttons that list\n  their commands at once, and three alignment toggles for the caret's\n  column, the one it has pressed. The Table button and its extra step are\n  gone. (#281)\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {
@@ -53705,7 +53905,5 @@ afterFirstRun();
 offerLineDraft();
 })();
 </script>
-
-
 </body>
 </html>

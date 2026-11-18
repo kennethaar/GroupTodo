@@ -225,6 +225,25 @@ window.GTD_DEMO = {
       with: ["Sofia Berg"],
       tasks: [task("CANCELLED", "Book the stand")]});
 
+    /* ---------- a talk with a slide of every layout: ▶ Present on it (#433) ---------- */
+    putPage(join(PAGES, "Slide layouts.md"), parsePage([
+      "- Fast feedback raises quality (Quality / Time)",
+      "  - ~ Learn something", "  - ~ Reminder 1", "  - ~ Reminder 2", "  - ~ Learning stuck",
+      "- Vision statement",
+      "  - > \"Simplicity is about subtracting the obvious and adding the meaningful.\"",
+      "    - John Maeda", "    - Focus on zero-friction defaults",
+      "- Launch steps", "  - 1. Plan", "  - 2. Build", "  - 3. Ship",
+      "- Product launch plan", "  - -> Q1: Private beta", "  - -> Q2: Public release", "  - -> Q3: Enterprise tier",
+      "- Growth flywheel", "  - (o) Acquire users via free outliner", "  - (o) Convert notes into live presentations",
+      "  - (o) Audience sees tool and signs up",
+      "- Maslow's hierarchy", "  - ^ Physiological needs", "  - ^ Safety needs", "  - ^ Belonging and love",
+      "  - ^ Esteem and self-actualisation",
+      "- Platform architecture", "  - . Core sync engine", "  - . Web presenter UI", "  - . Mobile capture app",
+      "- Build vs buy", "  - | Build", "    - Full control", "    - Slower start", "  - | Buy", "    - Ready now", "    - Licence cost",
+      "- Q3 numbers", "  - ARR: USD 2M", "  - Churn: 3 %", "  - Budget left: NOK 40 000",
+      "- Team ::grid", "  - Ann", "    - Design", "  - Bob", "    - Code",
+    ].join("\n") + "\n"));
+
     /* ---------- today's page, so the day is not blank ---------- */
     const jp = ensureJournal(T);
     const jpage = getPage(jp);

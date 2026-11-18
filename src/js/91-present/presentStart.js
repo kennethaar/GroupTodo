@@ -10,7 +10,7 @@ function presentStart(path, {root = null, presenter = false} = {}) {
   const id = back && back.closest && back.closest(".blk")?.dataset.id;
   let at = 0;
   if (id) {
-    const i = steps.findIndex(({s, k}) => (k ? s.kids[k - 1] : s.block)?.id === id);
+    const i = steps.findIndex(({s, k}) => (k ? s.parts[k - 1] : s.block)?.id === id);
     if (i >= 0) at = i;
   }
   if (back && back.blur) back.blur();

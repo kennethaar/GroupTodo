@@ -40,6 +40,7 @@ css/34-settings-rows.css
 css/35-recipes.css
 css/36-templates-420.css
 css/37-present-431.css
+css/38-present-layouts-433.css
 # script 1
 js/00-bootstrap/vars-APP_VERSION.js
 js/00-bootstrap/keepFocus.js
@@ -762,7 +763,19 @@ js/91-present/slideTitleTokens.js
 js/91-present/slideKpi.js
 js/91-present/slideLayout.js
 js/91-present/slidePages.js
+js/91-present/slideHero.js
 js/91-present/deckSteps.js
+js/91-present/slideSvg.js
+js/91-present/slidePart.js
+js/91-present/drawSteps.js
+js/91-present/drawTimeline.js
+js/91-present/drawCycle.js
+js/91-present/drawPyramid.js
+js/91-present/drawHub.js
+js/91-present/drawCurve.js
+js/91-present/drawCards.js
+js/91-present/drawQuote.js
+js/91-present/slideBody.js
 js/91-present/slideFit.js
 js/91-present/slideLay.js
 js/91-present/slideBullets.js

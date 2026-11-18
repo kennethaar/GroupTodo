@@ -5,7 +5,8 @@
    first one fades in once the title has moved to the top. */
 function slideBullets(slide, step, fresh) {
   const moved = slideLay(slide, step.k > 0);
-  [...slide.querySelectorAll(".sbullets > .bullet")].forEach((li, n) => {
+  // A drawn layout's parts light the same way, all of them faint until then (#433).
+  [...slide.querySelectorAll(".sbullets > .bullet, .part")].forEach((li, n) => {
     li.classList.toggle("now", n === step.k - 1);
     li.classList.toggle("past", n < step.k - 1);
     li.classList.toggle("later", n >= step.k);

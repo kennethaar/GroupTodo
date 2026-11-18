@@ -4,24 +4,48 @@
    its slide, and after it the bullet is in its place, done. So → is always
    just "next", in the order the outline is written.
    From one bullet (☰ › Present from here), that bullet is the title slide and
-   its lines are the top slides, so a day page shows that talk and no more. */
+   its lines are the top slides, so a day page shows that talk and no more.
+   Slide layouts (#433): each slide is drawn as slideLayout says. Top lines
+   with no lines of their own are bullets on the title slide. A layout with
+   more lines than fit goes on as "Title (2/2)". In a 2D layout (versus,
+   2×2, scorecard, cards, quote) a line's own lines are drawn in its box, so
+   only their own lines get a slide; `breadcrumb` says where a slide is from.
+   `parts` are what → lights, one each: the lines, or a quote's takeaways. */
 function deckSteps(path, root = null) {
   const page = getPage(path);
   const steps = [], slides = [];
   const shown = b => !!(slideWords(b) || (b.children || []).some(shown));
-  const slide = (block, title, depth, notes) => {
-    const kids = block ? (block.children || []).filter(shown) : [];
-    const s = {n: slides.length + 1, block, title, depth, kids, first: steps.length,
-      ...(notes || (block ? slideNotes(block) : {cover: "", notes: ""}))};
-    slides.push(s);
-    steps.push({s, k: 0});
-    kids.forEach((kid, i) => {
-      if ((kid.children || []).some(shown)) slide(kid, slideWords(kid), depth + 1);
-      else steps.push({s, k: i + 1});
+  const kidsOf = b => (b.children || []).filter(shown);
+  const has = b => kidsOf(b).length > 0;
+  const slide = (block, head, kids, depth, up, breadcrumb, notes) => {
+    const lay = slideLayout({title: head}, kids);
+    const pages = slidePages(kids, lay.max);
+    pages.forEach((chunk, p) => {
+      const hero = lay.layout === "hero" ? slideHero(chunk[0]) : null;
+      const s = {n: slides.length + 1, block, depth, up, breadcrumb, kids: chunk,
+        title: lay.title + (pages.length > 1 ? ` (${p + 1}/${pages.length})` : ""),
+        layout: lay.layout, mode: lay.mode, axes: lay.axes, hero,
+        parts: hero ? [chunk[0], ...hero.takeaways] : chunk, first: steps.length,
+        ...(notes || (block ? slideNotes(block) : {cover: "", notes: ""}))};
+      slides.push(s);
+      steps.push({s, k: 0});
+      s.parts.forEach((part, i) => {
+        if (lay.mode === "1d" && has(part)) return slide(part, slideWords(part), kidsOf(part), depth + 1, s, lay.title);
+        steps.push({s, k: i + 1});
+        if (lay.mode === "1d") return;
+        const crumb = lay.title + " > " + slideWords(hero ? chunk[0] : part);
+        for (const l2 of hero ? (i ? [part] : []) : kidsOf(part))
+          if (has(l2)) slide(l2, slideWords(l2), kidsOf(l2), depth + 1, s, crumb);
+      });
+      s.end = steps.length;
     });
-    s.end = steps.length;
   };
-  slide(null, root ? slideWords(root) : pageTitle(path), 0, root ? slideNotes(root) : null);
-  for (const b of ((root ? root.children : page?.blocks) || []).filter(shown)) slide(b, slideWords(b), 0);
+  const head = root ? slideWords(root) : pageTitle(path);
+  const top = ((root ? root.children : page?.blocks) || []).filter(shown);
+  // A top that is one 2D slide (versus, 2×2…) stays whole; else its plain lines head the talk.
+  const whole = slideLayout({title: head}, top).mode === "2d";
+  const notes = root ? slideNotes(root) : null;
+  slide(null, head, whole ? top : top.filter(b => !has(b)), 0, null, "", notes);
+  if (!whole) for (const b of top.filter(has)) slide(b, slideWords(b), kidsOf(b), 0, null, "");
   return {steps, slides};
 }

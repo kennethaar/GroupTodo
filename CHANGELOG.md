@@ -5,6 +5,18 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.178.0 - 2026-11-18
+
+- Present a page: slides are drawn by their marks (#433). Lines starting
+  `1.` are steps, `->` a timeline, `(o)` a cycle, `^` a pyramid, `.` a hub,
+  `~` a curve, and `|` versus or a 2×2. Lines with amounts or percents
+  are a scorecard, one `>` quote a large quote with its author, and
+  `::grid` in the title makes cards. The whole shape shows faintly and
+  each → lights the next part. The marks are no longer shown as text.
+  Top lines with nothing under them are bullets on the first slide, and
+  more than five parts go on to a next slide. Lines without marks look
+  as before. The demo has a Slide layouts page to try it on.
+
 ## 1.177.2 - 2026-11-18
 
 - Present a page: groundwork for slide layouts (#433). A slide can now be
