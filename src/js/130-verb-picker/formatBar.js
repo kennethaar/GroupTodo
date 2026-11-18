@@ -31,7 +31,8 @@ function formatBar(ta) {
     ta.setSelectionRange(s, e);
     ta.dispatchEvent(new Event("input", {bubbles: true}));
   };
-  const rows = EDIT_BAR.filter(r => r.group === "format");
+  // Slide layout marks outline lines; a notes box has none.
+  const rows = EDIT_BAR.filter(r => r.group === "format" && !r.sub);
   return el("div", {class: "fmtbar", role: "toolbar", "aria-label": "Format"}, ...rows.map(r =>
     el("button", {type: "button", class: "iconbtn", data: {k: r.k}, title: r.tip, "aria-label": r.label,
       onmousedown: ev => ev.preventDefault(), onclick: () => act(r.k)},

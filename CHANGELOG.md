@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.178.1 - 2026-11-18
+
+- Present a page: Format › Slide layout picks how a slide draws its lines
+  (#433): Auto, Steps, Timeline, Cycle, Pyramid, Hub, Curve, Versus or
+  2×2, and Scorecard. On a line with lines under it, the pick marks those
+  lines; the menu shows each mark and ticks the one in use. The same pick
+  again, or Auto, takes the marks off, and Ctrl+Z takes a pick back.
+
 ## 1.178.0 - 2026-11-18
 
 - Present a page: slides are drawn by their marks (#433). Lines starting

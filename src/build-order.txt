@@ -759,6 +759,8 @@ js/91-present/slideWords.js
 js/91-present/slideNotes.js
 js/91-present/vars-SLIDE_LAYOUTS.js
 js/91-present/slideMark.js
+js/91-present/slideMarkOf.js
+js/91-present/slideMarkSet.js
 js/91-present/slideTitleTokens.js
 js/91-present/slideKpi.js
 js/91-present/slideLayout.js
@@ -1710,6 +1712,9 @@ js/105-outliner/editBarRefocus.js
 js/105-outliner/editBarPickImage.js
 js/105-outliner/editBarGroupClose.js
 js/105-outliner/editBarGroupToggle.js
+js/105-outliner/editBarSlideLines.js
+js/105-outliner/editBarSlideMenu.js
+js/105-outliner/editBarSlideLayout.js
 js/105-outliner/editBarInline.js
 js/105-outliner/editBarRestShow.js
 js/105-outliner/editBarSync.js

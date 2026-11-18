@@ -61,6 +61,8 @@ const EDIT_BAR = [
   {k: "italic", ic: "I", label: "Italic", tip: "Italic (Ctrl+I)", group: "format"},
   {k: "quote", ic: EB_QUOTE, label: "Quote", tip: "Quote (> )", group: "format", noteOnly: true},
   {k: "table", ic: EB_TABLE, label: "Table", tip: "Table (| a | b |)", group: "format", noteOnly: true},
+  // How a line's lines are drawn when presented (#433): a menu of its own.
+  {k: "slide", ic: FLY_PRESENT, label: "Slide layout", tip: "Slide layout: how the lines look as a slide", group: "format", sub: true},
   {k: "more", ic: FLY_PANEL, label: "Side panel", tip: "Open in the side panel", tail: true},
 ];
 

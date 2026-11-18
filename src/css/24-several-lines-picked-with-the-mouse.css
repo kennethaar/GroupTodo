@@ -31,6 +31,10 @@ body #content.roomunder{padding-bottom:85vh}
   border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.35);padding:4px;z-index:61}
 #editBar .ebpop .ebtn{flex-direction:row;justify-content:flex-start;gap:8px;min-width:140px;padding:7px 10px}
 #editBar .ebpop .elb{font-size:12.5px}
+/* Format › Slide layout ▸ (#433): a tick, the name, the mark it writes. */
+#editBar .ebpop .ebsubarrow{margin-left:auto;color:var(--fg2)}
+#editBar .ebsub .ebcheck{width:1em;text-align:center}
+#editBar .ebsub .ebmark{margin-left:auto;padding-left:14px;font-family:var(--mono);font-size:12px;color:var(--fg2)}
 /* More buttons than fit a phone's width scroll sideways rather than shrinking
    below a size a thumb can reliably hit. */
 @media (max-width:560px){#editBar{justify-content:flex-start;gap:0;

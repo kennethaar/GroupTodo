@@ -7,7 +7,7 @@
    tap on Type does its first leaf, as Alt+T does: a note becomes a to do (#403). */
 function editBarGroupToggle(g, btn) {
   const bar = $("#editBar");
-  const already = bar.querySelector(".ebpop");
+  const already = bar.querySelector(".ebpop:not(.ebsub)");
   const reopening = already && already.dataset.g === g;
   if (already) already.remove();
   if (reopening && g === "type" && Date.now() - already.dataset.at < DOUBLE_TAP_MS) {
@@ -26,8 +26,10 @@ function editBarGroupToggle(g, btn) {
     if (r.k === "mkarea" && statusDirOf(path) && !isJournalPath(path)) tip = "Turn the project into a responsibility (Alt+I)";
     pop.append(el("button", {
       class: "ebtn", tabindex: "-1", role: "menuitem", data: {k: r.k}, title: tip, "aria-label": tip,
-      onclick: () => { editBarGroupClose(); editBarAct(r.k); },
-    }, el("span", {class: "eic"}, ic.startsWith("<") ? svgIcon(ic) : ic), el("span", {class: "elb"}, label)));
+      ...(r.sub ? {"aria-haspopup": "menu", "aria-expanded": "false"} : {}),
+      onclick: r.sub ? e => editBarSlideMenu(e.currentTarget) : () => { editBarGroupClose(); editBarAct(r.k); },
+    }, el("span", {class: "eic"}, ic.startsWith("<") ? svgIcon(ic) : ic), el("span", {class: "elb"}, label),
+      ...(r.sub ? [el("span", {class: "ebsubarrow", "aria-hidden": "true"}, "▸")] : [])));
   }
   bar.append(pop);
   const br = btn.getBoundingClientRect(), pr = pop.getBoundingClientRect();
@@ -40,8 +42,8 @@ function editBarGroupToggle(g, btn) {
   document.addEventListener("keydown", editBarGroupEsc, {capture: true});
 }
 function editBarGroupOutside(e) {
-  const pop = $("#editBar .ebpop");
-  if (pop && !pop.contains(e.target) && !e.target.closest(".ebgrp")) editBarGroupClose();
+  const pops = $$("#editBar .ebpop");
+  if (pops.length && !pops.some(p => p.contains(e.target)) && !e.target.closest(".ebgrp")) editBarGroupClose();
 }
 function editBarGroupEsc(e) {
   if (e.key === "Escape") editBarGroupClose();

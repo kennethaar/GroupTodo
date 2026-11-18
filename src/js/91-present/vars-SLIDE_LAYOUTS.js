@@ -40,3 +40,17 @@ const SLIDE_AXES_RE = /\s*\(([^()\/]+)\/([^()\/]+)\)\s*$/;
 const KPI_NUM = `(?:${PRICE_SIGNED})(?:bn|k|K|M|B)?`;
 const KPI_RE = new RegExp(`(?<![\\p{L}\\p{N}])(?:[-\\u2212+]?\\d+(?:[.,]\\d+)?[ \\u00A0]?%`
   + `|(?:${PRICE_CUR})[ \\u00A0]?${KPI_NUM}|${KPI_NUM}[ \\u00A0]?(?:${PRICE_CUR}))(?:,-)?(?![\\p{L}\\p{N}])`, "u");
+/* Format › Slide layout (#433): the layouts a pick can write, each with the
+   mark it puts in front of a line. Auto takes the marks off. Steps numbers
+   the lines; "| " is versus on 2 lines and a 2×2 on 4. */
+const SLIDE_MENU = [
+  ["auto", "Auto", ""],
+  ["process", "Steps", "1."],
+  ["timeline", "Timeline", "->"],
+  ["cycle", "Cycle", "(o)"],
+  ["pyramid", "Pyramid", "^"],
+  ["hub", "Hub", "."],
+  ["curve", "Curve", "~"],
+  ["split", "Versus / 2×2", "|"],
+  ["kpi", "Scorecard", "$"],
+];

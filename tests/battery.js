@@ -4550,7 +4550,7 @@ var GTD_TEST = (() => {
       const btn = document.querySelector('#editBar [data-k="format"]');
       ok(btn, "no Format button among the line tools");
       btn.click(); await frame();
-      eq(keys().join(" "), "h1 h2 h3 bold italic quote table", "a note's Format menu");
+      eq(keys().join(" "), "h1 h2 h3 bold italic quote table slide", "a note's Format menu");
       document.querySelector('#editBar [data-k="format"]').click(); await frame();
 
       await pick("h2");
@@ -4573,7 +4573,7 @@ var GTD_TEST = (() => {
 
       focusBlock(task.id); await frame();
       document.querySelector('#editBar [data-k="format"]').click(); await frame();
-      eq(keys().join(" "), "bold italic", "a task is never a heading, quote or table, so those are not offered");
+      eq(keys().join(" "), "bold italic slide", "a task is never a heading, quote or table, so those are not offered");
       document.querySelector('#editBar [data-k="format"]').click(); await frame();
 
       focusBlock(empty.id); await frame();
@@ -13101,6 +13101,64 @@ var GTD_TEST = (() => {
       ok(/Focus on zero-friction defaults/.test($("#deck .slide.cur .part.now").textContent), "then each takeaway");
     } finally { presentStop(); }
   }));
+
+  test("#433 Format › Slide layout marks a line's lines; the same pick again, or Auto, takes the marks off; one Ctrl+Z", async () => {
+    const path = scratchProject("slide layout", [["", "Launch plan"], ["", "Stray line"]]);
+    const [head, stray] = getPage(path).blocks;
+    head.children = ["Q1 beta", "Q2 release", "Q3 enterprise"].map(t => newBlock({title: t}));
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    const wasTools = PREF.get("linetools");
+    PREF.set("linetools", "all");
+    openPage(path);
+    await settle();
+    const txt = b => document.querySelector('.blk[data-id="' + b.id + '"] > .line .txt');
+    // Undo puts back a copy of the page: look the lines up again each time.
+    const now = b => { let hit = null; walkBlocks(getPage(path).blocks, x => { if (x.id === b.id) hit = x; }); return hit; };
+    const kids = () => now(head).children.map(k => k.title);
+    const menu = async () => {
+      if (!document.querySelector('#editBar .ebpop[data-g="format"]')) document.querySelector('#editBar [data-k="format"]').click();
+      await frame();
+      document.querySelector('#editBar .ebpop [data-k="slide"]').click();
+      await frame();
+      return [...document.querySelectorAll("#editBar .ebsub [data-lay]")];
+    };
+    const pick = async lay => { (await menu()).find(n => n.dataset.lay === lay).click(); await settle(); };
+    const ticked = async () => {
+      const on = (await menu()).filter(n => n.getAttribute("aria-checked") === "true").map(n => n.dataset.lay);
+      editBarGroupClose(); await frame();
+      return on;
+    };
+    try {
+      focusBlock(head.id); await frame();
+      const items = await menu();
+      eq(items.map(n => n.dataset.lay), ["auto", "process", "timeline", "cycle", "pyramid", "hub", "curve", "split", "kpi"],
+        "the known layouts, Auto first");
+      ok(/->/.test(items.find(n => n.dataset.lay === "timeline").textContent), "each shows the mark it writes");
+      editBarGroupClose(); await frame();
+      eq(await ticked(), ["auto"], "no marks: Auto is ticked");
+
+      await pick("timeline");
+      eq(kids(), ["-> Q1 beta", "-> Q2 release", "-> Q3 enterprise"], "on a line with lines, its lines get the mark");
+      eq(now(head).title, "Launch plan", "the title line is left as it is");
+      eq(document.activeElement, txt(head), "the caret stays in the line");
+      eq(await ticked(), ["timeline"], "the tick follows the marks");
+
+      await pick("process");
+      eq(kids(), ["1. Q1 beta", "2. Q2 release", "3. Q3 enterprise"], "Steps numbers them, in place of the arrows");
+      await pick("process");
+      eq(kids(), ["Q1 beta", "Q2 release", "Q3 enterprise"], "the same pick again takes the marks off");
+      txt(head).dispatchEvent(new KeyboardEvent("keydown", {key: "z", ctrlKey: true, bubbles: true, cancelable: true})); await settle();
+      eq(kids(), ["1. Q1 beta", "2. Q2 release", "3. Q3 enterprise"], "one Ctrl+Z takes the whole pick back");
+
+      focusBlock(head.id); await frame();
+      await pick("auto");
+      eq(kids(), ["Q1 beta", "Q2 release", "Q3 enterprise"], "Auto takes the marks off");
+
+      focusBlock(stray.id); await frame();
+      await pick("cycle");
+      eq(now(stray).title, "(o) Stray line", "a line with no lines of its own is marked itself");
+    } finally { editBarGroupClose(); PREF.set("linetools", wasTools || ""); document.activeElement && document.activeElement.blur(); go("today"); }
+  });
 
   /* ============================================================
      The runner

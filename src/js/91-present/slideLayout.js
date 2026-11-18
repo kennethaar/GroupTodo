@@ -8,10 +8,7 @@ function slideLayout(block, kids = block?.children || []) {
   const n = kids.length;
   let layout = tok.layout;
   if (!layout) {
-    const marks = kids.map(k => slideMark(k.title).layout), count = {};
-    for (const m of marks) if (m) count[m] = (count[m] || 0) + 1;
-    const top = Math.max(0, ...Object.values(count));
-    if (top) layout = marks.find(m => m && count[m] === top);
+    layout = slideMarkOf(kids);
     if (layout === "split" && n === 4) layout = "quadrant";
   }
   if (!layout && n && kids.every(k => slideKpi(slideWords(k)))) layout = "kpi";
