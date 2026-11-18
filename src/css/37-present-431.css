@@ -7,10 +7,10 @@
   font-family:var(--slide-font);outline:none}
 #deck .slide{position:absolute;inset:0;overflow:hidden}
 /* The picture: behind the title on the whole screen, then the left 30%. */
-#deck .cover{position:absolute;left:0;top:0;bottom:0;width:30%;overflow:hidden;transition:width .5s ease-in-out}
+#deck .cover{position:absolute;left:0;top:0;bottom:0;width:30%;overflow:hidden;transition:width 1s ease-in-out}
 #deck .slide.intro .cover{width:100%}
 #deck .cover img{width:100%;height:100%;object-fit:cover;display:block}
-#deck .cover::after{content:"";position:absolute;inset:0;background:var(--slide-bg);opacity:0;transition:opacity .5s ease-in-out}
+#deck .cover::after{content:"";position:absolute;inset:0;background:var(--slide-bg);opacity:0;transition:opacity 1s ease-in-out}
 #deck .slide.intro .cover::after{opacity:.5}
 #deck .cover .asset-missing{display:block;padding:2vh;opacity:.6}
 #deck .stext{--fit:1;position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-start;
@@ -23,15 +23,17 @@
 #deck .slide.intro .sbullets{display:none}
 #deck .sbullets{margin:0;padding:0 0 0 1.1em;line-height:1.3}
 /* .bullet is also the outliner's dot: undone here. */
-#deck .bullet{position:static;width:auto;height:auto;border-radius:0;background:none;cursor:auto;margin:.35em 0;transition:opacity .3s ease}
+#deck .bullet{position:static;width:auto;height:auto;border-radius:0;background:none;cursor:auto;margin:.35em 0;transition:opacity .6s ease-in-out}
 #deck .bullet.past{opacity:var(--dim)}
 #deck .bullet.later{opacity:0}
-#deck .bullet.fresh{animation:deckFade .2s ease-out}
+#deck .bullet.fresh{animation:deckFade .4s ease-in-out both}
+/* The first bullet waits for the title to reach the top. */
+#deck .bullet.fresh.aftertitle{animation-delay:1s}
 #deck.blank .slide{visibility:hidden}
 @keyframes deckFade{from{opacity:0}to{opacity:1}}
 /* The next slide comes up from below; a detour into a bullet's lines comes
    in from the right and goes back out to the left. */
-#deck .slide.cur,#deck .slide.out{animation-duration:.3s;animation-timing-function:ease-in-out;animation-fill-mode:both}
+#deck .slide.cur,#deck .slide.out{animation-duration:.6s;animation-timing-function:ease-in-out;animation-fill-mode:both}
 #deck .slide.out{pointer-events:none}
 #deck[data-move=down] .slide.cur{animation-name:deckInB}
 #deck[data-move=down] .slide.out{animation-name:deckOutT}

@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.177.0 - 2026-11-18
+
+- Present a page: focus on a line and ▶ Present ▾ in its trail shows just
+  that line as slides (#431). The first bullet fades in once the title has
+  moved to the top. Every move and fade is eased in and out and takes twice
+  as long, so it is calm to watch.
+
 ## 1.176.0 - 2026-11-18
 
 - Present a page: a slide now opens with its title alone, over its picture

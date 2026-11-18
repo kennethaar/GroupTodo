@@ -882,7 +882,7 @@ const HELP = {
     words: ["page", "note", "document", "project", "person"]},
   present: {part: "views", title: "Present a page", gtd: "engage",
     what: "A page as slides, for a quick talk.",
-    steps: ["▶ Present shows a page or day as slides; ☰ › Present from here, one line.",
+    steps: ["▶ Present shows the page, day or focused line as slides; ☰ › Present from here, one line.",
       "Each top line is a slide: its title first, then its lines one at a time.",
       "→, Space or a clicker goes on, ← back. A line's own lines are a side trip.",
       "Esc goes up a level, or leaves.",

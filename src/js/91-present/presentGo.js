@@ -17,7 +17,7 @@ function presentGo(i) {
     for (const gone of deck.querySelectorAll(".slide.out")) gone.remove();
     if (old) {
       old.classList.replace("cur", "out");
-      setTimeout(() => old.remove(), 400);
+      setTimeout(() => old.remove(), 800);
     }
     const s = to.s;
     const slide = el("section", {class: "slide cur" + (s.cover ? " hascover" : "") + (s.block ? "" : " titleslide")});

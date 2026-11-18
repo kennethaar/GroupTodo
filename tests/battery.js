@@ -12720,9 +12720,15 @@ var GTD_TEST = (() => {
       deckKey(" ");
       d = deckNow();
       eq(d.bullets, ["Rent is up"], "Space shows the first bullet, without its marks");
-      const fresh = $("#deck .bullet.now");
-      const fade = parseFloat(getComputedStyle(fresh).animationDuration);
-      ok(fade > 0.1 && fade <= 0.3, "a bullet fades in quickly: " + fade + " s");
+      const fresh = $("#deck .bullet.now"), fs = getComputedStyle(fresh);
+      const fade = parseFloat(fs.animationDuration);
+      ok(fade >= 0.35 && fade <= 0.45, "a bullet fades in, in 0.4 s: " + fade + " s");
+      eq(fs.animationTimingFunction, "ease-in-out", "eased in and out");
+      const glide = $("#deck .slide.cur .stitle").getAnimations()[0];
+      const move = glide?.effect.getTiming();
+      eq([move?.duration, move?.easing], [1000, "ease-in-out"], "the title glides to the top in 1 s, eased in and out");
+      ok(parseFloat(fs.animationDelay) * 1000 >= move.duration, "the first bullet fades in once the title has moved: " + fs.animationDelay);
+      ok(parseFloat(getComputedStyle(cover).transitionDuration) === 1, "the picture moves in 1 s too");
       await wait();
       const third = part(cover).width / box().width;
       ok(third > 0.28 && third < 0.32, "with the first bullet the picture moves to the left 30%: " + third.toFixed(2));
@@ -12738,19 +12744,21 @@ var GTD_TEST = (() => {
       d = deckNow();
       eq([d.now, d.past], ["The roof leaks", ["Rent is up"]], "the next bullet is lit, the one before steps back");
       ok(Math.abs(part(first).top - at) < 1, "and nothing moves when it comes");
-      await new Promise(r => setTimeout(r, 450));
+      await new Promise(r => setTimeout(r, 700));
       const dim = parseFloat(getComputedStyle($("#deck .bullet.past")).opacity);
       ok(dim > 0.3 && dim < 0.5, "an earlier bullet is dimmed to about 40%: " + dim);
       deckKey("ArrowRight");
       d = deckNow();
       eq([d.title, d.bullets.length, d.move], ["The roof leaks", 0, "in"], "a bullet with lines of its own is a detour, in from the side");
+      const sl = getComputedStyle($("#deck .slide.cur"));
+      eq([sl.animationDuration, sl.animationTimingFunction], ["0.6s", "ease-in-out"], "a slide moves in 0.6 s, eased in and out");
       deckKey("ArrowRight"); deckKey("ArrowRight");
       eq(deckNow().bullets, ["Kitchen", "Bathroom"]);
       deckKey("ArrowRight");
       d = deckNow();
       eq([d.title, d.now, d.past, d.move], ["Why we move", "Staff want it", ["Rent is up", "The roof leaks"], "out"],
         "after the last line it slides back out and shows the next bullet");
-      await new Promise(r => setTimeout(r, 450));
+      await new Promise(r => setTimeout(r, 700));
       eq(getComputedStyle($("#deck .bullet.now")).opacity, "1", "the last bullet is never dimmed");
       deckKey("ArrowLeft");
       d = deckNow();
@@ -12781,6 +12789,23 @@ var GTD_TEST = (() => {
       ok(!$("#deck"), "Esc on a top slide leaves");
       eq(state.pagePath, TALK, "back on the page");
     } finally { presentStop(); }
+  }));
+  test("#431 ▶ Present on a line you focus on presents that line", () => withPages(TALK_PAGE, async () => {
+    openPage(TALK); await settle();
+    const page = getPage(TALK);
+    const roof = page.blocks[0].children.find(b => /roof/.test(b.title));
+    try {
+      setBranchFocus(page, roof.id, TALK); await settle();
+      content().querySelector(".presentbtn").click(); await settle();
+      eq(deckNow().title, "The roof leaks", "the focused line is the first slide");
+      deckKey("End");
+      ok(!/Where to|Staff want it/.test($("#deck").textContent), "the rest of the page is not in the slides");
+      presentStop();
+      content().querySelector(".presentmore").click(); await settle();
+      [...document.querySelectorAll(".modal .pick")].find(r => r.children[1]?.textContent === "Present")?.click();
+      await settle();
+      ok(DECK?.root === roof, "▾ presents the focused line too");
+    } finally { presentStop(); setBranchFocus(page, null, TALK); }
   }));
   test("#431 the Journal presents too: ▶ Present ▾ for the day, ☰ Present from here for a bullet", async () => {
     const path = ensureJournal(todayISO()), pg = getPage(path);
