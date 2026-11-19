@@ -76,6 +76,8 @@ const HELP = {
       "On a phone, ⋯ opens the lists, trackers and History."],
     keys: [["T", "Journal"], ["Enter", "New line"], ["Tab", "Indent"], ["Shift+Tab", "Outdent"]],
     legend: [[".todayhead h1", "The day you are on."],
+      [".todayhead .h-hist", "Back and forward through what you opened."],
+      [".todayhead #btnTheme", "Light or dark."],
       ["?.viewmenu", "View: what you change now and then."],
       [".todayhead .focusbtn", "Focus: only the area you write in. Leave focus, top right, or Esc, brings the rest back. Help stays bottom right."],
       ["#sideHistory", "History: everything that happened, newest first."],

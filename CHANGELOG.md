@@ -10,6 +10,17 @@ that breaks existing vaults. Newest first.
 - The line menu and toolbar: To area is on the line menu too, as on the bar
   under picked lines. It moves the line to another area (#443).
 
+## 1.182.2 - 2026-11-19
+
+- Journal: Back, Forward and Light or dark are back on a wide screen. They
+  went with the top bar; now Back and Forward stand at the left of the
+  day's heading, Light or dark at its right (#445).
+
+## 1.182.1 - 2026-11-19
+
+- The line menu and toolbar: To area is on the line menu too, as on the bar
+  under picked lines. It moves the line to another area (#443).
+
 ## 1.182.0 - 2026-11-19
 
 - A page: drag a page pinned in the sidebar onto a line in the Journal or

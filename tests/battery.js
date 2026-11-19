@@ -8804,6 +8804,10 @@ var GTD_TEST = (() => {
       const head = content().querySelector(".todayhead");
       ok(head.contains($("#spacesBtn")) && seen($("#spacesBtn")), "the areas stand in the day's heading");
       ok(head.contains($(".hnow")), "what is on now too");
+      // #445 Back, Forward and Light or dark were lost with the bar.
+      ok(head.contains($("#btnBack")) && seen($("#btnBack")) && seen($("#btnFwd")), "Back and Forward stand in the day's heading (#445)");
+      ok(head.firstElementChild.contains($("#btnBack")), "at its left end (#445)");
+      ok(head.contains($("#btnTheme")) && seen($("#btnTheme")), "Light or dark stands in the day's heading (#445)");
       ok(seen($("#sideSearch")), "Search in the sidebar");
       // #323 Help floats in the bottom right corner, under the Timer.
       const help = $("#floatHelp"), timer = $("#timerFloat .nav-item.timer");
@@ -8824,6 +8828,7 @@ var GTD_TEST = (() => {
       go("next"); await settle();
       ok(seen(bar()), "Next keeps its bar");
       ok(bar().contains($("#spacesBtn")) && bar().contains($(".hnow")), "with the areas and what is on now back in it");
+      ok(bar().contains($("#btnBack")) && bar().contains($("#btnTheme")), "Back, Forward and Light or dark back in it too (#445)");
       ok(!seen($("#sideSearch")), "and one Search, in the bar");
     } finally { setSidebarHidden(false); go("today"); await settle(); }
   });
