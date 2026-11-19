@@ -1046,6 +1046,7 @@ const HELP = {
       "Bring it back now is at the bottom of Next."],
     more: ["Holding a line holds the steps under it.",
       "A project on hold leaves the stuck-projects check.",
+      "Projects, All shows held projects with their day. The On hold chip puts them away.",
       "Let go means struck out, not deleted."],
     code: [["hold:: [[2026-11-06]]", "Hidden until that day"], ["hold:: open", "On hold, no date"],
       ["until:: [[2026-11-06]]", "Cancelled after that day"]],

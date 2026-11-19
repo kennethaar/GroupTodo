@@ -11,7 +11,7 @@ function viewProjectBoard() {
   // The list's Sort menu, so a column reads in the order the list does.
   const {sel: sortSel, apply: sortProjects} = projectSort();
   c.append(fbar(boardSpaceTabs(), boardFilterBar("projects", everyProject), sortSel, boardSelHost()));
-  const shelf = hiddenColsBar("projects.status", k => STATUS_LABEL[k] || k);
+  const shelf = hiddenColsBar("projects.status", k => k === HOLD_CHIP ? null : STATUS_LABEL[k] || k);
   if (shelf) c.append(shelf);
   const putAway = hiddenCols("projects.status");
   const shownCols = orderedCols("projects.status", BOARD_STATUS_COLUMNS).filter(code => !putAway.has(code));

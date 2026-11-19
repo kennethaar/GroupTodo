@@ -17,6 +17,8 @@ function projectRow(r) {
   const stats = [
     // In All, which folder it sits in is no longer said by the chip on top.
     r._all ? el("span", {class: "chip"}, STATUS_LABEL[effStatus(r)]) : null,
+    r._held ? el("button", {class: "chip b", title: "Change the day, or bring it back now",
+      onclick: e => { e.stopPropagation(); inSpace(r.space, () => openProjectHold(r.path)); }}, holdArrow(r._held)) : null,
     info.area ? el("span", {class: "chip", title: "Responsibility"}, info.area) : null,
     el("span", {}, open.length + " open"),
     tally.done ? el("span", {}, tally.done + " done") : null,

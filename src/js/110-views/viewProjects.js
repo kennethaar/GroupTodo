@@ -48,15 +48,22 @@ function viewProjects() {
   const inCode = r => code === "all" || effStatus(r) === code;
   const rows = every.filter(inOrg).filter(area.keep);
   const heldOf = r => inSpace(r.space, () => projectHold(r.path));
-  const held = rows.filter(r => inCode(r) && heldOf(r)).sort((x, y) => heldOf(x).localeCompare(heldOf(y)));
+  /* All is every project, held ones too, each marked with its hold (#444).
+     A single status keeps them in the folded On hold group under the list. */
+  const held = code === "all" ? [] : rows.filter(r => inCode(r) && heldOf(r)).sort((x, y) => heldOf(x).localeCompare(heldOf(y)));
   /* All leaves out the statuses put away on the board, with a chip each to
-     bring them back, so the list and the board agree. */
+     bring them back, so the list and the board agree. A hold is not a status
+     but a hold:: field, so it has a key of its own among them. */
   const putAway = hiddenCols("projects.status");
+  const nHeld = rows.filter(heldOf).length;
   const statusChips = code === "all" ? shownChips("projects.status", "Statuses shown",
-    STATUS_CHIPS.filter(k => putAway.has(k) || rows.some(r => effStatus(r) === k)),
-    k => STATUS_LABEL[k], k => rows.filter(r => effStatus(r) === k && !heldOf(r)).length) : null;
-  const shown = rows.filter(r => inCode(r) && !heldOf(r) && (code !== "all" || !putAway.has(effStatus(r))));
-  shown.forEach(r => { r._all = code === "all"; });
+    [...STATUS_CHIPS.filter(k => putAway.has(k) || rows.some(r => effStatus(r) === k && !heldOf(r))),
+      ...(nHeld || putAway.has(HOLD_CHIP) ? [HOLD_CHIP] : [])],
+    k => k === HOLD_CHIP ? "On hold" : STATUS_LABEL[k],
+    k => k === HOLD_CHIP ? nHeld : rows.filter(r => effStatus(r) === k && !heldOf(r)).length) : null;
+  const shown = rows.filter(r => inCode(r) && (code !== "all" ? !heldOf(r)
+    : !putAway.has(heldOf(r) ? HOLD_CHIP : effStatus(r))));
+  shown.forEach(r => { r._all = code === "all"; r._held = code === "all" ? heldOf(r) : null; });
   const psort = projectSort();
   psort.apply(shown);
   const f = textFilter("projects", "Filter projects", shown,

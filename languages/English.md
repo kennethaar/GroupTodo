@@ -3484,6 +3484,7 @@ Projects › Hours =>
 Projects › List =>
 Projects › Report =>
 Projects › Timeline =>
+Projects, All shows held projects with their day. The On hold chip puts them away. =>
 Projects, the likeliest ten =>
 Projects: what you have committed to finish. =>
 Prompt copied. Paste it into your AI, then paste its answer here. =>

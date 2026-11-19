@@ -1911,6 +1911,7 @@ js/110-views/vars-orderedCols.js
 js/110-views/colDraggable.js
 js/110-views/vars-byTaskName.js
 js/110-views/taskSort.js
+js/110-views/vars-HOLD_CHIP.js
 js/110-views/shownChips.js
 js/110-views/vars-NEXT_TWINS_KEPT.js
 js/110-views/nextTwins.js

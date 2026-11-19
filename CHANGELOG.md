@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.185.3 - 2026-11-19
+
+- Hold and until: Projects, All lists projects on hold too, each with its
+  day or "no date". Statuses shown has an On hold chip to put them away (#444).
+
 ## 1.185.2 - 2026-11-19
 
 - Templates: a project made from a template is a copy of it. Headings and

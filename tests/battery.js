@@ -310,6 +310,39 @@ var GTD_TEST = (() => {
       eq(content().querySelector(".projbar .sheetbtn small")?.textContent, "1", "badge");
     } finally { closeModal(); go("projects", {org: null}); await settle(); }
   });
+  test("#444 Projects, All: held projects are in the list with their hold, and Statuses shown has an On hold chip", async () => {
+    const two = visibleProjects("1").slice(0, 2);
+    const was = two.map(r => getPage(r.path).props.hold);
+    const hid = PREF.get(hiddenColsKey("projects.status"), "[]");
+    try {
+      PREF.set(hiddenColsKey("projects.status"), "[]");
+      getPage(two[0].path).props.hold = "[[2099-03-01]]";
+      getPage(two[1].path).props.hold = HOLD_OPEN;
+      clearMemo();
+      go("projects", {sub: "list", statusCode: "all", org: null});
+      await settle();
+      const rowOf = r => [...content().querySelectorAll(".pcard")].find(x => x.querySelector(".t-title b")?.textContent === pageTitle(r.path));
+      for (const r of two) ok(rowOf(r), pageTitle(r.path) + " is in All");
+      has(rowOf(two[0]).textContent, "on hold → " + humanDate("2099-03-01"));
+      has(rowOf(two[1]).textContent, "on hold, no date");
+      ok(!content().querySelector("details.fold"), "no second On hold group under All");
+      const shownRow = content().querySelector(".ctxdrops");
+      const chip = [...shownRow.querySelectorAll(".fchip")].find(b => /On hold/.test(b.textContent));
+      ok(chip, "an On hold chip: " + shownRow.textContent);
+      has(chip.textContent, "2");
+      chip.click();
+      await settle();
+      for (const r of two) ok(!rowOf(r), pageTitle(r.path) + " is put away with the chip");
+      // A single status still keeps them folded away under the list.
+      go("projects", {sub: "list", statusCode: "1"});
+      await settle();
+      for (const r of two) ok(!rowOf(r), "not among Active");
+      has(content().querySelector("details.fold summary").textContent, "On hold");
+    } finally {
+      two.forEach((r, i) => { if (was[i] == null) delete getPage(r.path).props.hold; else getPage(r.path).props.hold = was[i]; });
+      PREF.set(hiddenColsKey("projects.status"), hid); clearMemo(); go("projects", {statusCode: "1"}); await settle();
+    }
+  });
   test("#166 the sort sheet sets the order", async () => {
     const was = PREF.get("projects.sort", "urgency");
     try {
