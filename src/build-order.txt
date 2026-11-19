@@ -975,6 +975,9 @@ js/90-view-state/helpSettingsSection.js
 js/90-view-state/spaceBadge.js
 js/90-view-state/vars-spaceTag.js
 js/90-view-state/renderSpacesButton.js
+js/90-view-state/showArea.js
+js/90-view-state/renderAreaBar.js
+js/90-view-state/openAreaLands.js
 js/90-view-state/closeSpacesMenu.js
 js/90-view-state/openSpacesMenu.js
 js/90-view-state/vars-WHEN_MONTHS.js

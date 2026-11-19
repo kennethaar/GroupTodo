@@ -15,7 +15,7 @@ async function syncCalendars({quiet = true, only = ""} = {}) {
   try {
     await filesLoaded();
     if (!home) failed.push("there is no area of your own to bring calendars into. Make one in Calendars");
-    else if (!await open(home)) failed.push("your own area, " + home + ", could not be opened. Open it once from the area menu (a folder may need your permission again), then try again");
+    else if (!await open(home)) failed.push("your own area, " + home + ", could not be opened. Show it once at the top (a folder may need your permission again), then try again");
     else if (calAreaShared(home)) failed.push(calSharedWhy(home));
     else for (const f of feeds) {
       const name = f.label || calHost(f.url), feed = calFeedId(f.url);

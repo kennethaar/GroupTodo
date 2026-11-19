@@ -62,6 +62,37 @@ body.paper .sidesearch:hover{color:var(--fg);border-color:var(--fg3)}
 .todayhead .spacesbtn{border:0;background:none;color:var(--fg2)}
 .todayhead .spacesbtn:hover{background:var(--bg3);color:var(--fg)}
 
+/* #436 every area a chip; its box shows or hides it. A class's display
+   beats the user agent's [hidden], so both say it again. */
+.spacesbtn[hidden],.areabar[hidden]{display:none}
+.areabar{display:flex;align-items:center;gap:6px;flex:none;position:relative;flex-wrap:wrap}
+.areachip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px 0 8px;border:1px solid var(--border);
+  border-radius:999px;background:var(--bg2);font-size:13px;color:var(--fg);cursor:pointer;white-space:nowrap}
+.areachip:hover{background:var(--bg3)}
+.areachip:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+.areachip input{width:16px;height:16px;margin:0;accent-color:var(--accent);cursor:pointer}
+.areachip input:disabled{cursor:default}
+.areachip.off{color:var(--fg3);background:none;border-style:dashed}
+.areachip.off .adot{opacity:.4}
+.areachip.dragging{opacity:.45}
+.areachip.over{box-shadow:inset 2px 0 0 var(--accent)}
+.adot{width:10px;height:10px;border-radius:50%;flex:none;display:inline-block}
+.alands{display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 8px;border:0;background:none;
+  border-radius:8px;font-size:13px;color:var(--fg2);white-space:nowrap}
+.alands:hover,.alands[aria-expanded="true"]{background:var(--bg3);color:var(--fg)}
+.alands b{color:var(--fg);font-weight:600}
+.alands svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.alandsmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:50;display:flex;flex-direction:column;min-width:180px;
+  padding:6px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow)}
+.alandsmenu button{display:flex;align-items:center;gap:8px;min-height:36px;padding:0 10px;border:0;background:none;
+  border-radius:6px;text-align:left;color:var(--fg);font-size:13px}
+.alandsmenu button:hover,.alandsmenu button:focus-visible{background:var(--bg3)}
+.alandsmenu button.cur{font-weight:600}
+.alandsmenu button.cur::after{content:"\2713";margin-left:auto;color:var(--accent)}
+.areacolours,.areasetup{display:flex;flex-wrap:wrap;gap:6px}
+.areacolours .btn{display:inline-flex;align-items:center;gap:8px}
+.areacolours small{color:var(--fg3)}
+
 /* #398 Installed, the title bar folds into the app (window-controls-overlay):
    the window's own buttons sit over the top right. The bar keeps clear of
    them and its empty space drags the window, as a title bar would; where

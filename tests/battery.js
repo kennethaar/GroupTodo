@@ -1466,6 +1466,65 @@ var GTD_TEST = (() => {
     }
   });
 
+  test("#436 every area is a chip in the top bar: a click shows or hides it, a picker says where new things go", async () => {
+    await flush();
+    const name = V.space, other = "Test436 Other", wasVisible = PREF.get("visibleSpaces", "");
+    Spaces.list.push({name: other, kind: "memory"});
+    LOADED.set(other, newRecord(other, Backends.memory(other)));
+    const chip = n => [...$$("#areaBar .areachip")].find(c => c.textContent.includes(n));
+    const seen = n => !!n && n.getClientRects().length > 0;
+    try {
+      setVisibleSpaces([name]); clearMemo(); render(); await settle();
+      const bar = $("#areaBar");
+      ok(bar && seen(bar), "no area chips in the top bar on a wide screen");
+      ok(!seen($("#spacesBtn")), "the area menu button still stands beside the chips");
+      eq($$("#areaBar .areachip").length, Spaces.list.length, "one chip per area");
+      const box = n => chip(n).querySelector("input[type=checkbox]");
+      ok(box(name).checked && !box(other).checked, "the boxes do not say which areas are shown");
+      ok(chip(other).classList.contains("off"), "a hidden area's chip is not greyed");
+      ok(box(name).disabled && chip(name).title, "the last shown area can be hidden, or says nothing about why not");
+      ok(!$("#areaBar .alands"), "a landing picker with only one area shown");
+      // One click shows it.
+      box(other).click(); await settle();
+      ok(visibleSpaces().includes(other), "a click on the chip did not show the area");
+      ok(!box(name).disabled && !chip(other).classList.contains("off"), "the chips did not follow");
+      const pick = $("#areaBar .alands");
+      ok(pick && seen(pick), "no 'New things go to' picker with two areas shown");
+      has(pick.textContent, "New things go to");
+      has(pick.textContent, Spaces.active);
+      pick.click();
+      const opts = [...document.querySelectorAll(".alandsmenu button")];
+      eq(opts.map(b => b.textContent.trim()).sort(), [name, other].sort(), "the picker lists the shown areas");
+      opts.find(b => b.textContent.includes(other)).click(); await settle();
+      eq(Spaces.active, other, "the pick did not make new things land there");
+      has($("#areaBar .alands").textContent, other);
+      // One click hides it again; new things go back to an area still shown.
+      box(other).click(); await settle();
+      ok(!visibleSpaces().includes(other) && Spaces.active === name, "hiding did not hand landing back");
+      // Settings > Area: every area with its colour, and the setup buttons from the old menu.
+      openAreaSettings();
+      const dlg = $("#modalRoot .modal");
+      for (const n of [name, other]) ok([...dlg.querySelectorAll("button")].some(b => b.textContent.includes(n) && /colou?r/i.test(b.title || b.textContent)),
+        "Settings › Area has no colour for " + n);
+      for (const l of ["+ New area", "Manage areas", "Invite somebody"]) ok([...dlg.querySelectorAll("button")].some(b => b.textContent === l), "Settings › Area lacks " + l);
+      closeModal();
+      // A phone keeps the menu, now without a Settings button; one area keeps the button.
+      Object.defineProperty(PHONE, "matches", {configurable: true, get: () => true}); render(); await settle();
+      ok(!seen($("#areaBar")) && seen($("#spacesBtn")), "a phone did not keep the area menu");
+      openSpacesMenu();
+      ok(![...$("#spop .foot").querySelectorAll("button")].some(b => b.textContent === "Settings"), "the menu still has Settings");
+      closeSpacesMenu();
+    } finally {
+      delete PHONE.matches;
+      if (Spaces.active === other) await openSpace(name);
+      LOADED.delete(other);
+      Spaces.list = Spaces.list.filter(s => s.name !== other);
+      setVisibleSpaces(wasVisible ? JSON.parse(wasVisible) : []);
+      clearMemo(); render();
+    }
+    if (Spaces.list.length === 1) { await settle(); ok(!seen($("#areaBar")) && seen($("#spacesBtn")), "one area still gets chips"); }
+  });
+
   test("#181 a stand-in edited while it loads gives way to its file when the first of the rest is in", () => {
     const rec = newRecord("Lay181", null);
     const path = personPath("Tor Vik");
@@ -6782,10 +6841,10 @@ var GTD_TEST = (() => {
         eq(VIEW_TITLE.routines, "Routines");
         has(content().textContent, "The weekly review");
         ok(!content().querySelector(".setindex, .themes"), "setup on Routines");
-        // The area menu and the sub-pages say Settings too (P10).
+        // The area menu never says Vault & sync (P10); its Settings went with #436.
         openSpacesMenu();
         const labels = [...$("#spop").querySelectorAll("button")].map(b => b.textContent);
-        ok(labels.includes("Settings") && !labels.includes("Vault & sync"), "the area menu: " + labels.join(" | "));
+        ok(!labels.includes("Vault & sync"), "the area menu: " + labels.join(" | "));
         closeSpacesMenu();
         // Integrations and Advanced are parts of the page, not hidden one level down.
         go("checklists");

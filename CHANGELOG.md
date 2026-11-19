@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.187.0 - 2026-11-19
+
+- Areas and sharing: on a computer every area is a chip in the top bar.
+  One click shows or hides it, and New things go to picks where new tasks
+  land. Settings, Area now holds each area's colour, New area, Manage areas
+  and Invite somebody. A phone keeps the area menu (#436).
+
 ## 1.186.3 - 2026-11-19
 
 - Vault and sync: serve.py no longer prints tracebacks when the browser

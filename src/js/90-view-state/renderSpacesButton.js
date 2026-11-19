@@ -10,5 +10,7 @@ function renderSpacesButton() {
       style: "background:" + spaceColor(n) + ";color:" + inkOn(spaceColor(n))}, n[0].toUpperCase()))),
     el("span", {class: "lab"}, on.length === 1 ? on[0] : on.length + " areas"),
     el("span", {"aria-hidden": "true"}, svgIcon(ICON_CARET)));
-  $("#capWhere").textContent = multiSpace() && Spaces.active ? "→ " + Spaces.active : "";
+  renderAreaBar();
+  // "New things go to" says it beside the chips (#436): once is enough (P2).
+  $("#capWhere").textContent = multiSpace() && Spaces.active && $("#areaBar").hidden ? "→ " + Spaces.active : "";
 }

@@ -53,7 +53,7 @@ function openJoinedSummary(space, then) {
         line("• A task somebody hands you shows up with your own. Tick it off once and it is done for both of you."),
         line("• A task on a project with nobody named is open to anybody in the area. Your day pages are " +
              "filed under your name, but the others can read them too."),
-        line("• Anything just for you belongs in an area of your own: + New area in the area menu, top right, " +
+        line("• Anything just for you belongs in an area of your own: + New area under Settings, Area, " +
              "in a folder nobody else has."),
         line("• N adds a task, / searches, ? shows every key."))),
     foot: [el("div", {style: "flex:1"}),

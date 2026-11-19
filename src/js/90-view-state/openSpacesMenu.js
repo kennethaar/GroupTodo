@@ -17,15 +17,8 @@ function openSpacesMenu() {
     const tick = el("input", {type: "checkbox", "aria-label": "Show " + sp.name});
     tick.checked = on;
     tick.addEventListener("change", async () => {
-      const next = new Set(visibleSpaces());
-      if (tick.checked) next.add(sp.name);
-      else if (next.size === 1) { tick.checked = true; notify("At least one area has to stay on."); return; }
-      else next.delete(sp.name);
-      setVisibleSpaces(Array.from(next));
-      await ensureVisibleLoaded();
-      // Hiding the space new things land in hands that job to one still showing.
-      if (!next.has(Spaces.active)) await openSpace(Array.from(next)[0]);
-      render(); openSpacesMenu();
+      if (!await showArea(sp.name, tick.checked)) { tick.checked = true; return; }
+      openSpacesMenu();
     });
     const meta = el("small", {}, sp.kind === "fs" ? (sp.label || "folder") : sp.kind === "http" ? "server" : "this browser");
     const row = el("div", {class: "sprow", title: "Drag to change the order areas sit in, top here is left on screen"},
@@ -45,8 +38,7 @@ function openSpacesMenu() {
   box.append(el("div", {class: "foot"},
     el("button", {class: "btn sm ghost", onclick: () => { closeSpacesMenu(); newSpacePrompt(); }}, "+ New area"),
     el("button", {class: "btn sm ghost", onclick: () => { closeSpacesMenu(); openSpaceStorageSetup(); }}, "Manage areas"),
-    el("button", {class: "btn sm ghost", onclick: () => { closeSpacesMenu(); openShareSpaceInvite(); }}, "Invite somebody"),
-    el("button", {class: "btn sm ghost", onclick: () => { closeSpacesMenu(); openVaultDialog(); }}, "Settings")));
+    el("button", {class: "btn sm ghost", onclick: () => { closeSpacesMenu(); openShareSpaceInvite(); }}, "Invite somebody")));
   box.hidden = false;
   $("#spacesBtn").setAttribute("aria-expanded", "true");
 }

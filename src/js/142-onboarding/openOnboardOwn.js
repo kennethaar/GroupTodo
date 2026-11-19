@@ -16,7 +16,7 @@ function openOnboardOwn() {
     whereLine.textContent = placed
       ? (sp.joined
           ? "“" + (sp.label || sp.name) + "” already holds somebody's list, so you are joining it rather than starting one."
-          : "Writing into “" + (sp.label || sp.name) + "”. Invite people later from the area menu, top right.")
+          : "Writing into “" + (sp.label || sp.name) + "”. Invite people later from Settings, Area.")
       : CAP.dirPicker
         ? "A folder of your own - on OneDrive, Dropbox or a network drive if you want it on every computer. " +
           "Your browser will ask “where this site can save changes”: that is this folder. " +
