@@ -254,7 +254,7 @@ function outlineBlock(path, page, b, opts = {}) {
       const line = newBlock({state: inherit, title: link});
       if (line.state) { applyTodoTemplate(line); stampAddedIfMissing(path, line); }
       return line;
-    }), () => openPlanWithAI(planSourceOfLines(path, roots)));
+    }), () => openPlanWithAI(planSourceOfLines(path, roots)), roots[roots.length - 1].id);
     focusBlock((tail || roots[roots.length - 1]).id);
   });
   /* Names and dates as you type. A date taken from the list is the line's
@@ -528,5 +528,7 @@ function outlineBlock(path, page, b, opts = {}) {
   node.append(...pdfViews(b));
 
   if (!b.collapsed) for (const k of shownLines(kids, opts)) node.append(outlineBlock(path, page, k, opts));
+  // A long paste's offer stays under the pasted lines through a redraw (#449).
+  if (PASTE_OFFER.id === b.id && PASTE_OFFER.el) node.append(PASTE_OFFER.el);
   return node;
 }

@@ -1016,6 +1016,7 @@ js/90-view-state/saveReviewPage.js
 js/90-view-state/findOnPage.js
 js/90-view-state/pasteSwapper.js
 js/90-view-state/linesAsText.js
+js/90-view-state/vars-PASTE_OFFER.js
 js/90-view-state/offerPasteAs.js
 js/90-view-state/emailPageMail.js
 js/90-view-state/openMailNote.js

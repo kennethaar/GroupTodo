@@ -12800,13 +12800,13 @@ var GTD_TEST = (() => {
     }
   });
 
-  test("#449 a long paste offers Plan it with an AI, with the pasted lines in the prompt", async () => {
+  test("#449 a long paste offers Plan it with an AI under the pasted lines, with them in the prompt", async () => {
     const path = scratchProject("paste to plan", [[null, ""]]);
     const b = getPage(path).blocks[0];
     openPage(path); await settle();
     const thread = ["Nora Vik: Can you get the quote for the kitchen panels before Friday?",
       "Me: Yes, I will ask the shop.", "Nora Vik: Joe measures on Monday.", "Me: Then I order Tuesday."];
-    const toastBtn = re => [...document.querySelectorAll("#toasts .toast.pasteas button")].find(n => re.test(n.textContent));
+    const toastBtn = re => [...document.querySelectorAll(".toast.pasteas button")].find(n => re.test(n.textContent));
     try {
       focusBlock(b.id); await settle();
       const txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
@@ -12814,6 +12814,13 @@ var GTD_TEST = (() => {
       dt.setData("text/plain", thread.join("\n"));
       txt.dispatchEvent(new ClipboardEvent("paste", {clipboardData: dt, bubbles: true, cancelable: true}));
       await settle();
+      // The offer stands under the last pasted line, where the eyes are, not in the corner.
+      const last = getPage(path).blocks.find(x => /Then I order Tuesday/.test(x.title));
+      const under = () => document.querySelector('.blk[data-id="' + last.id + '"] > .toast.pasteas');
+      ok(under(), "the paste offer is not under the pasted lines");
+      ok(!document.querySelector("#toasts .toast.pasteas"), "the paste offer is still in the corner");
+      render(); await settle();
+      ok(under(), "the paste offer went with a redraw");
       const plan = toastBtn(/^Plan it with an AI$/);
       ok(plan, "a long paste does not offer Plan it with an AI");
       plan.click(); await settle();
@@ -12821,9 +12828,10 @@ var GTD_TEST = (() => {
         "the button did not open Plan it with an AI");
       has(document.querySelector(".scrim .modal textarea[readonly]")?.value || "", "Joe measures on Monday",
         "the pasted lines are not in the prompt");
-      ok(!document.querySelector("#toasts .toast.pasteas"), "the paste offer stays open behind the dialog");
+      ok(!document.querySelector(".toast.pasteas"), "the paste offer stays open behind the dialog");
     } finally {
-      document.querySelectorAll("#toasts .toast.pasteas").forEach(t => t.remove());
+      document.querySelectorAll(".toast.pasteas").forEach(t => t.remove());
+      PASTE_OFFER.id = null;
       closeModal(); go("today");
     }
   });

@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.184.1 - 2026-11-19
+
+- The line menu and toolbar: what a long paste can become is offered right
+  under the pasted lines, in the page, not in the corner. It pushes the
+  lines below down rather than covering them, and stays through a redraw
+  (#449).
+
 ## 1.184.0 - 2026-11-19
 
 - The line menu and toolbar: paste an email or a chat of 4 lines or more,

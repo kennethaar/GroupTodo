@@ -1137,7 +1137,7 @@ const HELP = {
       "A double tap on the toolbar's Type makes a note a to do, as Alt+T does.",
       "Settings › Help can show the menu under the line you edit.",
       "Refile from a day page: a link to the page it goes to becomes a link back to the day.",
-      "Paste an email or a chat of 4 lines or more, and Plan it with an AI is offered at once. Its answer makes a project with one next action.",
+      "Paste an email or a chat of 4 lines or more, and Plan it with an AI is offered under the lines. Its answer makes a project with one next action.",
       "Delete asset is there when the line links a file in assets/. It warns first: every link to the file stops working."],
     see: ["keys-line", "links", "dates"],
     words: ["menu", "toolbar", "actions", "refile", "move", "photo"]},
