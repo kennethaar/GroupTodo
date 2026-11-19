@@ -46,6 +46,19 @@ async function doFlush() {
          outage: every retry fails the same way, and it used to stop the files
          after it from going up too. So it is said once, by name, and the rest
          carry on. The page stays in the mirror on this device. */
+      /* A move that changes only the case of a name, O/ to o/ (#434), is one
+         file on a disk that ignores case, as on Windows and Android. Removed
+         after the write, the old file took the new one with it. So it goes
+         first, with the folder it leaves empty, and o/ is made afresh. The
+         page is in the mirror already, above. */
+      const twins = gone.filter(p => dirty.some(q => q !== p && q.toLowerCase() === p.toLowerCase()));
+      for (const p of twins) {
+        try { await rec.backend.remove(p); rec.base?.delete(p); }
+        catch (e) { if (!/NotFound/i.test((e && (e.name + " " + e.message)) || "")) { twins.forEach(t => rec.removed.add(t)); throw e; } }
+        try { await rec.backend.pruneFolderOf?.(p); } catch (_) {}
+        sent++; saving();
+      }
+      gone = gone.filter(p => !twins.includes(p));
       for (const p of dirty) {
         const page = rec.pages.get(p);
         if (!page) continue;

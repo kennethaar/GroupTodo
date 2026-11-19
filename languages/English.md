@@ -6322,6 +6322,7 @@ Moved {1} cancelled project(s) to pages/-/. =>
 Moved {1} cards. =>
 Moved {1} checklist(s) to pages/8/. =>
 Moved {1} journal day(s) into your own folder. =>
+Moved {1} organisation(s) from pages/O/ to pages/o/. =>
 Moved {1} template(s) into pages/8/, with the lists. =>
 Moved {1} {2} day =>
 Moving {1} to {2} =>

@@ -19,6 +19,7 @@ function migrateVault() {
   }
   migrateHorizons();
   migrateCancelled();
+  migrateOrgFolder();
   migrateJournals();
   migrateTemplates();
   dropOldCalSkips();

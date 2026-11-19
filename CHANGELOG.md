@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.179.1 - 2026-11-19
+
+- Organisations › List: pages in a folder called O/, with a capital letter,
+  now move to o/ when the area opens, and every [[O/...]] link becomes
+  [[o/...]] (#434). So their names are offered again while you type. On
+  Windows and Android, where O/ and o/ are one folder, the move no longer
+  deletes the page it moved.
+
 ## 1.179.0 - 2026-11-19
 
 - Present a page: a drawn slide (steps, pyramid, cycle, curve and the rest)

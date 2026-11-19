@@ -481,10 +481,26 @@ class Vault:
             fh.write(text)
         os.replace(tmp, full)          # atomic: never leaves a half-written page
 
-    def delete(self, rel):
+    def delete(self, rel, prune=False):
         full = self.resolve(rel)
         if os.path.exists(full):
             os.remove(full)
+        if prune:
+            self.prune_folder(os.path.dirname(full))
+
+    def prune_folder(self, folder):
+        """Remove a folder its last page has left, O/ when its pages moved to
+        o/ (#434). On a disk that ignores case, o/ is then made afresh rather
+        than written into O/. The app's guide file goes with it and is written
+        again at the next load; a folder with anything else in it stays."""
+        if folder == self.root or not folder.startswith(self.root + os.sep) or not os.path.isdir(folder):
+            return
+        names = os.listdir(folder)
+        if any(not (n.startswith("_") and "_for " in n and n.endswith(".md")) for n in names):
+            return
+        for n in names:
+            os.remove(os.path.join(folder, n))
+        os.rmdir(folder)
 
 
 def open_in_editor(full, command=None):
@@ -848,7 +864,8 @@ class Handler(BaseHTTPRequestHandler):
             if route == "/api/asset":
                 self.vault.delete_asset(self._rel())
             else:
-                self.vault.delete(self._rel())
+                prune = (parse_qs(urlparse(self.path).query).get("prune") or [""])[0] == "1"
+                self.vault.delete(self._rel(), prune=prune)
         except ValueError as exc:
             return self._send(400, str(exc))
         except OSError as exc:

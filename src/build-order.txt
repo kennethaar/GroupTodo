@@ -236,7 +236,9 @@ js/15-storage/migrateVault.js
 js/15-storage/migrateTemplates.js
 js/15-storage/migrateCancelled.js
 js/15-storage/rewriteCancelledLinks.js
+js/15-storage/rewriteLinkFolder.js
 js/15-storage/rewriteChecklistLinks.js
+js/15-storage/migrateOrgFolder.js
 js/15-storage/loadSpaceRecord.js
 js/15-storage/restLoaded.js
 js/15-storage/soonLoaded.js

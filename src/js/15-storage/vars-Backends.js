@@ -322,6 +322,26 @@ const Backends = {
         const dir = await dirFor(path.split("/").slice(0, -1).join("/"));
         await dir.removeEntry(path.split("/").pop());
       },
+      /* A folder its last page has left, O/ when its pages moved to o/ (#434).
+         Its handles are forgotten whatever the case, so the next write makes
+         the folder afresh, as named. Nothing is removed while a page is in it;
+         the folder's guide goes with it, and is written again at the next load. */
+      async pruneFolderOf(file) {
+        const path = file.slice(0, file.lastIndexOf("/"));
+        const low = path.toLowerCase(), cut = path.lastIndexOf("/");
+        const under = k => k.toLowerCase() === low || k.toLowerCase().startsWith(low + "/");
+        for (const k of [...dirCache.keys()]) if (under(k)) dirCache.delete(k);
+        for (const k of [...fileCache.keys()]) if (under(k)) fileCache.delete(k);
+        const parent = await dirFor(path.slice(0, cut)), name = path.slice(cut + 1);
+        const dir = await parent.getDirectoryHandle(name), guides = [];
+        for await (const [k, h] of dir.entries()) {
+          if (h.kind !== "file" || !isGuidePath(k)) return false;
+          guides.push(k);
+        }
+        for (const k of guides) await dir.removeEntry(k);
+        await parent.removeEntry(name);
+        return true;
+      },
       /* One file that list() leaves out because it is not markdown -- the
          Planner flow's answer, planner/state.json. Null when it is not there. */
       async readText(path) {
@@ -418,6 +438,10 @@ const Backends = {
         tags.delete(path);
         const r = await fetch(u("/api/file", path), {method: "DELETE"});
         if (!r.ok && r.status !== 404) throw new Error("remove failed: " + r.status + " " + (await r.text().catch(() => "")));
+      },
+      // As the folder's (#434): the server removes the folder the file was in, if nothing but its guide is left.
+      async pruneFolderOf(file) {
+        await fetch(u("/api/file", file) + "&prune=1", {method: "DELETE"});
       },
       /* Ask the server to open the markdown in the editor on its own machine.
          Refused unless serve.py was started with --open-in-editor, and it says

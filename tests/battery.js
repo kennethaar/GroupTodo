@@ -3450,6 +3450,61 @@ var GTD_TEST = (() => {
       eq(at("Rake the leaves testoutsi").rows.find(r => r.ref === "c/Testabode2/Testoutside").accept, "link", "picked, it is a link");
     } finally { removePage(org); clearMemo(); }
   });
+  test("#434 organisations in O/ move to o/, their links follow, and the name is offered", async () => {
+    const old = join(PAGES, "O", "Testkvarne AS.md"), moved = join(DIRS.orgs, "Testkvarne AS.md");
+    putPage(old, {props: {}, blocks: [{id: "k434", title: "Our supplier", state: "", children: []}]});
+    const path = scratchProject("org link 434", [["TODO", "Call [[O/Testkvarne AS]] about the order"]]);
+    getPage(path).props.org = "[[O/Testkvarne AS]]"; touch(path); clearMemo();
+    try {
+      migrateVault(); clearMemo();
+      ok(!V.pages.has(old), "still in O/");
+      eq(pageKind(moved), "org");
+      has(serializePage(getPage(moved)), "Our supplier", "the page's lines moved with it");
+      has(getPage(path).blocks[0].title, "[[o/Testkvarne AS]]");
+      eq(getPage(path).props.org, "[[o/Testkvarne AS]]");
+      const refs = (suggestFor({value: "Call testkvarne", selectionStart: 15}, {})?.rows || []).map(r => r.ref);
+      ok(refs.includes("o/Testkvarne AS"), "not offered while typing: " + refs);
+    } finally { removePage(old); removePage(moved); clearMemo(); }
+    // On a disk that ignores case, O/ and o/ are one folder: the save must not delete the page it moved.
+    const tree = {pages: {O: {"Acme.md": "- Old line\n"}}}, writes = [];
+    const find = (t, k) => Object.keys(t).find(x => x.toLowerCase() === k.toLowerCase());
+    const ciDir = (name, t) => ({
+      kind: "directory", name,
+      async *entries() { for (const [k, v] of Object.entries(t)) yield [k, typeof v === "string" ? ciFile(k, t) : ciDir(k, v)]; },
+      async getDirectoryHandle(k, {create} = {}) {
+        const f = find(t, k);
+        if (f == null) { if (!create) throw new DOMException("no", "NotFoundError"); t[k] = {}; return ciDir(k, t[k]); }
+        return ciDir(f, t[f]);
+      },
+      async getFileHandle(k, {create} = {}) {
+        const f = find(t, k);
+        if (f == null) { if (!create) throw new DOMException("no", "NotFoundError"); t[k] = ""; return ciFile(k, t); }
+        return ciFile(f, t);
+      },
+      async removeEntry(k) {
+        const f = find(t, k);
+        if (f == null) throw new DOMException("no", "NotFoundError");
+        if (typeof t[f] !== "string" && Object.keys(t[f]).length) throw new DOMException("not empty", "InvalidModificationError");
+        writes.push("rm " + f); delete t[f];
+      },
+    });
+    const ciFile = (k, t) => ({kind: "file", name: k,
+      async getFile() { const s = t[k]; return {size: s.length, lastModified: 0, text: async () => s}; },
+      async createWritable() { return {write: async s => { writes.push(k); t[k] = s; }, close: async () => {}}; }});
+    const rec = newRecord("Case434", Backends.fs(ciDir("Case434", tree)));
+    const realIdb = Backends.idb;
+    Backends.idb = ns => Backends.memory("Mirror434|" + ns);
+    try {
+      await readInto(rec, {});
+      const from = join(PAGES, "O", "Acme.md"), to = join(DIRS.orgs, "Acme.md");
+      rec.pages.set(to, rec.pages.get(from)); rec.pages.delete(from);
+      rec.dirty.add(to); rec.removed.add(from);
+      LOADED.set(rec.name, rec);
+      try { await doFlush(); } finally { LOADED.delete(rec.name); }
+      ok(!Object.keys(tree.pages).includes("O"), "the O folder is still on disk: " + Object.keys(tree.pages));
+      has(tree.pages.o?.["Acme.md"] || "", "Old line", "the moved page was deleted from the disk");
+    } finally { Backends.idb = realIdb; }
+  });
   /* ---------- aliases on every page (#207) ---------- */
   test("#207 a context's alias is that context, typed, captured or picked", () => {
     makeContext("Testcomputer");
