@@ -78,5 +78,57 @@ class History(unittest.TestCase):
         self.assertEqual(left[-1], "x", "the newest stays")
 
 
+class ClientGone(unittest.TestCase):
+    """#451 a browser that hangs up before the answer leaves no traceback,
+    and is not logged as a calendar that failed."""
+
+    def test_451_a_calendar_asked_for_and_left_is_quiet(self):
+        import contextlib
+        import io
+        import socket
+        import struct
+        import threading
+        lines = []
+
+        class Log:
+            path = None
+            def write(self, text, show=False):
+                lines.append(text)
+
+        fetch, log = serve.fetch_calendar, serve.Handler.log
+        fetching, gone, answered = threading.Event(), threading.Event(), threading.Event()
+
+        def slow(url):
+            fetching.set()
+            gone.wait(5)
+            time.sleep(0.2)
+            return "BEGIN:VCALENDAR\n" + "X" * 200000
+
+        class Done(serve.Server):
+            def process_request_thread(self, request, address):
+                super().process_request_thread(request, address)
+                answered.set()
+
+        serve.fetch_calendar, serve.Handler.log = slow, Log()
+        err = io.StringIO()
+        try:
+            with contextlib.redirect_stderr(err):
+                server = Done(("127.0.0.1", 0), serve.Handler)
+                threading.Thread(target=server.handle_request).start()
+                s = socket.create_connection(server.server_address)
+                s.sendall(b"GET /api/calendar?url=https://example.com/a.ics HTTP/1.1\r\nHost: localhost\r\n\r\n")
+                self.assertTrue(fetching.wait(5), "the calendar is being fetched")
+                # Hang up hard, the way a closed tab does (WinError 10053 / reset).
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
+                s.close()
+                gone.set()
+                self.assertTrue(answered.wait(5), "the server is done with it")
+                server.server_close()
+        finally:
+            serve.fetch_calendar, serve.Handler.log = fetch, log
+        self.assertNotIn("Traceback", err.getvalue())
+        self.assertEqual([x for x in lines if "failed" in x], [], "not a calendar that failed")
+
+
 if __name__ == "__main__":
     unittest.main()

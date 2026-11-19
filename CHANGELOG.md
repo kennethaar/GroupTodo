@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.186.3 - 2026-11-19
+
+- Vault and sync: serve.py no longer prints tracebacks when the browser
+  closes or reloads before an answer, and such a calendar is no longer
+  reported as failed (#451).
+
 ## 1.186.2 - 2026-11-19
 
 - Vault and sync: serve.py keeps an earlier version at most every ten

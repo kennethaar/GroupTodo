@@ -578,6 +578,15 @@ def open_in_editor(full, command=None):
     return "the default editor"
 
 
+class Server(ThreadingHTTPServer):
+    def handle_error(self, request, client_address):
+        """A browser that hangs up -- a tab closed or reloaded, a phone gone
+        to sleep -- is not an error worth a traceback (#451)."""
+        if isinstance(sys.exc_info()[1], ConnectionError):
+            return
+        super().handle_error(request, client_address)
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "GroupToDo/1.0"
     vault = None           # the folder at the root, /api/...: --vault, or none
@@ -654,9 +663,14 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Access-Control-Expose-Headers", "ETag")
         self.send_header("Vary", "Origin")
         self.send_header("Cache-Control", "no-store")
-        self.end_headers()
-        if self.command != "HEAD":
-            self.wfile.write(body)
+        try:
+            self.end_headers()
+            if self.command != "HEAD":
+                self.wfile.write(body)
+        except ConnectionError:
+            # The browser left before the answer (#451): nobody to tell.
+            self.close_connection = True
+            self.log.write('%s "%s" left before the answer' % (self.address_string(), self.requestline))
 
     def _json(self, code, obj):
         self._send(code, json.dumps(obj), "application/json; charset=utf-8")
@@ -750,14 +764,17 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, self.vault.list())
         if route == "/api/calendar":
             url = (parse_qs(urlparse(self.path).query).get("url") or [""])[0]
+            # Fetched first, answered after: a browser that hangs up while it
+            # waits is not a calendar that failed (#451).
             try:
-                return self._send(200, fetch_calendar(url), "text/calendar; charset=utf-8")
+                text = fetch_calendar(url)
             except ValueError as exc:
                 self.log.write("Calendar %s failed: %s" % (url, exc), show=True)
                 return self._send(400, str(exc))
             except Exception as exc:
                 self.log.write("Calendar %s failed: %s" % (url, exc), show=True)
                 return self._send(502, "could not fetch the calendar: %s" % exc)
+            return self._send(200, text, "text/calendar; charset=utf-8")
         if route == "/api/file":
             try:
                 text = self.vault.read(self._rel())
@@ -1197,7 +1214,7 @@ def main():
         rows.append(("Note", "HTTP Basic is only private over HTTPS: put TLS in front"))
     if exposed and not password:
         rows.append(("WARNING", "--insecure, no password: anyone who can reach this port owns the vault"))
-    server = ThreadingHTTPServer((args.host, args.port), Handler)
+    server = Server((args.host, args.port), Handler)
     print(start_box(rows, "Keep this window open. Press Ctrl+C to stop."), flush=True)
     Handler.log.write("GroupToDo started on %s port %s" % (args.host, args.port))
     try:
