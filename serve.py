@@ -53,6 +53,10 @@ itself and only needs something on this computer to fetch calendar links.
 
 Every path is confined to the vault; traversal outside it is refused.
 
+Before a page is overwritten or deleted, the old file is copied to
+.history/<path>/<time>.md in the vault (#407): one copy per ten minutes of
+saves, always one before a delete, the last 20 per page, up to 30 days old.
+
 --open-in-editor lets the app ask for a page to be opened in an editor -- the
 "open file" button beside "copy path". The editor runs here, on the machine with
 the vault on it, so it is off by default and the flag is the whole consent: with
@@ -121,6 +125,15 @@ MAX_BODY = 8 * 1024 * 1024
 # One page save at a time, so a save's version check and its write cannot be
 # split by another person's save to the same file (#406).
 WRITE_LOCK = threading.Lock()
+# Earlier versions (#407): before a page is overwritten or deleted, the old
+# file is copied to .history/<path>/<time>.md. The app saves a moment after
+# each pause in typing, so an overwrite is kept only when the last version is
+# older than HISTORY_GAP; a delete is always kept. Per page, at most
+# HISTORY_KEEP versions stay, none older than HISTORY_DAYS.
+HISTORY_DIR = ".history"
+HISTORY_GAP = 10 * 60
+HISTORY_KEEP = 20
+HISTORY_DAYS = 30
 
 
 def etag(text):
@@ -473,8 +486,41 @@ class Vault:
         with open(self.resolve(rel), "r", encoding="utf-8") as fh:
             return fh.read()
 
+    def keep_version(self, full, always=False):
+        """Copy the page at full into .history before it is replaced or
+        deleted (#407), then drop versions past the limits."""
+        if not os.path.isfile(full):
+            return
+        rel = os.path.relpath(full, self.root)
+        folder = os.path.join(self.root, HISTORY_DIR, rel)
+        try:
+            os.makedirs(folder, exist_ok=True)
+            entries = lambda: sorted((os.path.join(folder, n) for n in os.listdir(folder)), key=os.path.getmtime)
+            had = entries()
+            if not always and had and time.time() - os.path.getmtime(had[-1]) < HISTORY_GAP:
+                return
+            with open(full, "rb") as fh:
+                data = fh.read()
+            if had and not always:
+                with open(had[-1], "rb") as fh:
+                    if fh.read() == data:
+                        return
+            now = time.time()
+            stamp = time.strftime("%Y-%m-%d %H%M%S", time.localtime(now)) + ("%.6f" % (now % 1))[1:]
+            with open(os.path.join(folder, stamp + os.path.splitext(full)[1]), "wb") as fh:
+                fh.write(data)
+            versions = entries()
+            cutoff = now - HISTORY_DAYS * 86400
+            for i, p in enumerate(versions):
+                if i < len(versions) - HISTORY_KEEP or os.path.getmtime(p) < cutoff:
+                    os.remove(p)
+        except OSError as exc:
+            # A safety net that fails must not stop the save itself.
+            print("history: %s: %s" % (rel, exc), file=sys.stderr)
+
     def write(self, rel, text):
         full = self.resolve(rel)
+        self.keep_version(full)
         os.makedirs(os.path.dirname(full), exist_ok=True)
         tmp = full + ".tmp"
         with open(tmp, "w", encoding="utf-8") as fh:
@@ -484,6 +530,7 @@ class Vault:
     def delete(self, rel, prune=False):
         full = self.resolve(rel)
         if os.path.exists(full):
+            self.keep_version(full, always=True)
             os.remove(full)
         if prune:
             self.prune_folder(os.path.dirname(full))

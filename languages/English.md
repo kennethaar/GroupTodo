@@ -5781,6 +5781,7 @@ see Chores =>
 see the whole thing first =>
 senast hört =>
 serve.py also fetches your calendar links. =>
+serve.py keeps earlier versions of each page in the .history folder: one every ten minutes, and always one before a page is deleted. The last 20 stay, for up to 30 days. =>
 serve.py shows where to go: http://grouptodo.localhost:8777. With no server folder yet it asks for one, and says why. Its log is grouptodo.log in Downloads. =>
 serve.py with your folder =>
 serve.py, folder picked in the browser =>
