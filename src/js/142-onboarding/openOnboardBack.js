@@ -73,10 +73,14 @@ function openOnboardBack() {
           "Each web address keeps its own copy in the browser, so a new one starts empty. " +
           "Your files are still in their folders. Pick each area's folder, one at a time."),
         listBox,
+        /* A browser with no folder picker still has serve.py's folders, so the
+           server folder is offered here too (#432). */
         CAP.dirPicker ? el("div", {style: "display:flex;gap:8px;flex-wrap:wrap"}, addBtn, serverSlot)
-          : el("div", {style: "color:var(--fg3);font-size:12.5px"},
-          "This browser cannot open folders. Open a vault file instead, from Vault & sync, " +
-          "or use Chrome or Edge on a computer."))),
+          : el("div", {style: "display:flex;flex-direction:column;gap:8px"},
+          el("div", {style: "color:var(--fg3);font-size:12.5px"},
+            "This browser cannot open folders. Open a vault file instead, from Vault & sync, " +
+            "or use Chrome or Edge on a computer."),
+          el("div", {style: "display:flex;gap:8px;flex-wrap:wrap"}, serverSlot)))),
     foot: [
       el("button", {class: "btn ghost", onclick: () => { who.keep(); closeModal(); openOnboarding(); }}, "Back"),
       el("div", {style: "flex:1"}),

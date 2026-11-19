@@ -7115,6 +7115,14 @@ var GTD_TEST = (() => {
       has(document.querySelector("#modalRoot .modal").textContent, "in the server folder “Work”");
       ok(!written.includes(onlyHere), "the browser's pages were copied into a folder that already holds a vault");
       eq(buttons().filter(b => /^Use server folder/.test(b.textContent)).map(b => b.textContent), ["Use server folder"], "one folder left");
+      /* A browser that cannot open folders still has serve.py's (#432). */
+      const pick = CAP.dirPicker;
+      try {
+        CAP.dirPicker = false;
+        closeModals(); openOnboardBack();
+        ok(buttons().some(b => /^Use server folder/.test(b.textContent)),
+           "no server folder where the browser cannot open one: " + buttons().map(b => b.textContent));
+      } finally { CAP.dirPicker = pick; closeModals(); openOnboardBack(); }
       PREF.set("coach", "");
       buttons().find(b => b.textContent === "Start").click();
       await until(() => !document.querySelector("#modalRoot .modal"));
@@ -7185,7 +7193,17 @@ var GTD_TEST = (() => {
         d = await open();
         has(d.text, "Used by " + n);
         eq(d.buttons, ["Remove", "Add server folder"], "Remove offered for the folder an area lives in");
-        ok(!cardButtons(d.m).some(b => /^Use server folder/.test(b.textContent)), "offered to the area already in one");
+        /* A folder that turns out to be the wrong one must be swappable: the
+           area already in one is offered the other free folder, and its own
+           folder button says Change, not Choose. */
+        const pick = CAP.dirPicker;
+        try {
+          CAP.dirPicker = true;
+          d = await open();
+          const names = cardButtons(d.m).map(b => b.textContent);
+          ok(names.includes("Use server folder"), "the other free folder not offered to an area already in one: " + names);
+          ok(names.includes("Change folder"), "an area in a server folder is told to Choose one: " + names);
+        } finally { CAP.dirPicker = pick; }
         ping.current = {...ping.current, folders: []};
         d = await open();
         has(d.text, "None");
@@ -7195,6 +7213,82 @@ var GTD_TEST = (() => {
         has(d.text, "/srv/notes");
         eq(d.buttons, [], "a folder set by --vault offered for change");
       } finally { if (Spaces.get(n)) await removeArea(n); }
+    });
+  });
+  /* A new area is told where it is stored, and serve.py's free folders belong
+     in that choice: the browser's own picker is the one thing that can fail
+     here (a company blocks it, #419), and without this the only way into the
+     second server folder was to create the area in the browser and find Use
+     server folder afterwards. */
+  test("New area offers a free server folder and puts the area in it", async () => {
+    const n = "Test432 new", active = Spaces.active;
+    await serveAreas(async ping => {
+      try {
+        ping.current = {ok: true, vault: null, vaultChosen: false, folderChoosable: true, startedAt: "a",
+          folders: [folder357("Prosjekter", "D:\\Prosjekter", 0)]};
+        await detectServer();
+        closeModals(); newSpacePrompt();
+        const m = () => document.querySelector("#modalRoot .modal");
+        const segs = () => [...m().querySelectorAll(".seg button")];
+        const server = segs().find(b => b.dataset.k === "server");
+        ok(server, "no Server folder choice under Stored in: " + segs().map(b => b.textContent));
+        m().querySelector("input").value = n;
+        server.click();
+        has(m().textContent, "Prosjekter", "the folder it would use is not named");
+        [...m().querySelectorAll("button")].find(b => b.textContent === "Create").click();
+        await until357(() => Spaces.get(n)?.kind === "http");
+        eq(Spaces.get(n).kind, "http", "the new area did not land in the server folder");
+        ok(/\/f\/Prosjekter$/.test(Spaces.get(n).server), "not the folder's address: " + Spaces.get(n).server);
+      } finally {
+        closeModals();
+        if (Spaces.active !== active) await openSpace(active);
+        if (Spaces.get(n)) await removeArea(n);
+      }
+    });
+  });
+  /* A browser area moving into a server folder that already holds files is a
+     move between two places that both have pages, so it asks, exactly as
+     folder to folder does. Copying unasked wrote one area's starter pages
+     into another's vault, which read as the folder being imported twice. */
+  test("moving a browser area into a server folder that holds files asks before copying", async () => {
+    const n = "Test432 carry", active = Spaces.active;
+    await serveAreas(async ping => {
+      const onlyHere = join(PAGES, "Only in this browser 432.md");
+      try {
+        ping.current = {ok: true, vault: null, vaultChosen: false, folderChoosable: true, startedAt: "a",
+          folders: [folder357("Held", "D:\\Held", 1)]};
+        const written = [];
+        window.fetch = async (url, opts = {}) => {
+          const u = new URL(url, location.href);
+          if (/\/api\/ping$/.test(u.pathname)) return new Response(JSON.stringify(ping.current));
+          if ((opts.method || "GET") === "PUT") { written.push(u.searchParams.get("path")); return new Response("{}"); }
+          if (/\/api\/list$/.test(u.pathname)) return new Response(JSON.stringify(["held.md"]));
+          if (/\/api\/file$/.test(u.pathname)) return new Response("- TODO held\n");
+          return new Response(JSON.stringify({ok: true}));
+        };
+        await createSpace(n, "local");
+        await openSpace(n);
+        putPage(onlyHere, {props: {title: "Only in this browser 432"}, blocks: [newBlock({title: "kept here"})]});
+        closeModals(); openSpaceStorageSetup();
+        const m = () => document.querySelector("#modalRoot .modal");
+        await until357(() => m()?.querySelector(".afserver")?.textContent);
+        const use = [...([...m().querySelectorAll(".afcard")].find(c => c.querySelector(".afname").textContent === n)
+          ?.querySelectorAll("button") || [])].find(b => /^Use server folder/.test(b.textContent));
+        ok(use, "no Use server folder on the card");
+        use.click();
+        await until357(() => /Bring the pages along/.test(m()?.textContent || ""));
+        has(m()?.textContent || "", "Bring the pages along?", "the pages were copied in without asking");
+        has(m().textContent, "Held", "the ask does not name the folder it moves into");
+        [...m().querySelectorAll("button")].find(b => b.textContent === "Leave them").click();
+        await until357(() => Spaces.get(n)?.kind === "http");
+        eq(Spaces.get(n).kind, "http", "the area did not move in");
+        ok(!written.includes(onlyHere), "the page was copied in although they were left behind");
+      } finally {
+        closeModals();
+        removePage(onlyHere);
+        if (Spaces.active !== active) await openSpace(active);
+        if (Spaces.get(n)) await removeArea(n);
+      }
     });
   });
   /* Once per serve.py start the app says it runs from serve.py: the folders,

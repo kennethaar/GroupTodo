@@ -11,6 +11,8 @@ function openSpaceStorageSetup({firstRun = false} = {}) {
     list.textContent = "";
     for (const sp of Spaces.list) {
       const placed = sp.kind === "fs";
+      // An area in a server folder has a folder too: it changes one, never chooses a first.
+      const inFolder = placed || sp.kind === "http";
       const where = placed ? "Folder: \u201C" + (sp.label || "folder") + "\u201D"
                   : sp.kind === "http" ? "In the server folder" + ((o => o ? " “" + o.name + "”" : "")(
                       serverFolderOptions().find(x => x.users.includes(sp))))
@@ -30,10 +32,10 @@ function openSpaceStorageSetup({firstRun = false} = {}) {
         el("div", {class: "afwhere" + (placed || sp.kind === "http" ? "" : " off")}, where),
         verbTasksToggle(sp.name),
         el("div", {class: "afbtns"},
-          CAP.dirPicker ? el("button", {class: "btn sm " + (placed ? "ghost" : "primary"),
+          CAP.dirPicker ? el("button", {class: "btn sm " + (inFolder ? "ghost" : "primary"),
             // The bring-the-pages question replaces this dialog; open it again after.
             onclick: async () => { if (await assignSpaceFolder(sp.name)) list.isConnected ? draw() : again(); }},
-            placed ? "Change folder" : "Choose folder") : null,
+            inFolder ? "Change folder" : "Choose folder") : null,
           // serve.py's folders, while one is free and this area is in none (#357).
           useServerFolderButton(sp.name, moved => { if (moved) list.isConnected ? draw() : again(); }),
           el("button", {class: "btn sm ghost", onclick: () => openRenameArea(sp.name)}, "Rename"),

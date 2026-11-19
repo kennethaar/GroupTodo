@@ -23,18 +23,24 @@ async function useServerFolder(name, base = SERVER_BASE, {join = false} = {}) {
     if (renamed) { name = renamed.name; rec.name = name; sp.nameFrom = "stored"; }
   }
 
-  const wasFolder = sp.kind === "fs" ? (sp.label || "the old folder") : null;
-  const loaded = LOADED.get(name);
+  const here = serverFolderOptions();
+  const sameBase = a => String(a || "").replace(/\/$/, "") === String(base).replace(/\/$/, "");
+  const toLabel = (here.find(o => sameBase(o.base)) || {}).name || "the server folder";
+  const wasFolder = sp.kind === "fs" ? (sp.label || "the old folder")
+                  : sp.kind === "http" ? (here.find(o => o.users.includes(sp)) || {}).name || "the old server folder"
+                  : null;
+  let prev = LOADED.get(name);
+  if (!prev) { try { prev = await loadSpaceRecord(name); } catch (_) { prev = null; } }
+  const mine = prev ? prev.pages.size : 0;
+  /* Both places hold pages, so copying is a choice and not the default, as it
+     is folder to folder: a browser area moved in unasked wrote its starter
+     pages into a vault that was already there, which read as the folder being
+     imported twice (#432). */
   const carry = join ? rec.pages.size === 0 && !wasFolder
-    : wasFolder ? await askCarryPages(name, wasFolder, "the server folder", loaded ? loaded.pages.size : 0)
+    : mine && (wasFolder || rec.pages.size)
+      ? await askCarryPages(name, wasFolder || "this browser", toLabel, mine)
     : true;
-  let carried = new Map();
-  if (carry) {
-    try {
-      const prev = loaded || await loadSpaceRecord(name);
-      if (prev) carried = new Map(prev.pages);
-    } catch (_) {}
-  }
+  const carried = carry && prev ? new Map(prev.pages) : new Map();
 
   sp.kind = "http"; sp.server = base;
   delete sp.label; delete sp.legacyFlat;
@@ -59,7 +65,8 @@ async function useServerFolder(name, base = SERVER_BASE, {join = false} = {}) {
   }
   storeAreaName(name);
   await flush();
-  notify(name + " now lives in the server folder" +
+  notify(name + " now lives in " +
+         (toLabel === "the server folder" ? toLabel : "the server folder “" + toLabel + "”") +
          (moved ? ", with " + moved + " page" + (moved === 1 ? "" : "s") + " moved in." : "."));
   render();
   return true;

@@ -5,10 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
-## 1.182.1 - 2026-11-19
+## 1.183.0 - 2026-11-19
 
-- The line menu and toolbar: To area is on the line menu too, as on the bar
-  under picked lines. It moves the line to another area (#443).
+- Areas and sharing: a new area can go straight into a free serve.py
+  folder, as Server folder under Stored in. An area already in a server
+  folder can move to another free one. A browser area moving into a folder
+  that already holds pages asks first whether to bring its pages along. A
+  browser that cannot open folders is offered the server folder at the start
+  too (#432).
 
 ## 1.182.2 - 2026-11-19
 
