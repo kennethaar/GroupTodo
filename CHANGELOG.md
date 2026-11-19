@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.185.0 - 2026-11-19
+
+- Weekly review › Steps: Weekly review has its own item in the sidebar,
+  under Projects. It shows a number when the review is due. Hide it in
+  Settings › Sidebar if you do not want it (#450).
+
 ## 1.184.2 - 2026-11-19
 
 - Your page: the GroupToDo logo now sits level with your picture at the

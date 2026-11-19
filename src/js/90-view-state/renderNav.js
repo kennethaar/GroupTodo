@@ -19,16 +19,20 @@ function renderNav() {
      #421 in Focus too, on a phone as well. */
   if (float) float.append(el("button", {class: "floathelp", id: "floatHelp", title: "Help (?)",
     onclick: () => setHelp(!helpOpen())}, el("span", {"aria-hidden": "true"}, "? "), "Help"));
-  for (const it of navItems()) {
+  const items = navItems();
+  // #450 with Weekly review hidden, Projects lights up for the review.
+  const reviewShown = items.some(it => it && it.id === "review");
+  for (const it of items) {
     if (it === "sep") { nav.append(el("div", {class: "nav-sep"})); continue; }
     if (it === "grow") { nav.append(el("div", {class: "nav-grow"})); continue; }
     if (it === "pins") { nav.append(...navPins()); continue; }
     if (it.id === "timer") { if (floats) float.prepend(timerNavItem(it)); else nav.append(timerNavItem(it)); continue; }
-    const here = state.view === it.id || (it.id === "projects" && state.view === "review");
+    const here = state.view === it.id || (it.id === "projects" && state.view === "review" && !reviewShown);
     if (it.when && !here && !it.when()) continue;
-    const n = navCount(it.id);
-    const hot = (it.id === "today" && dueNow().some(a => a.due < todayISO())) ||
-                (it.id === "projects" && reviewDue());
+    const due = (it.id === "projects" || it.id === "review") && reviewDue();
+    // The review is marked only when it is due: what needs attention, or a dot.
+    const n = it.id === "review" ? (due ? navCount("review") || "•" : null) : navCount(it.id);
+    const hot = (it.id === "today" && dueNow().some(a => a.due < todayISO())) || due;
     /* Next unfolds into its contexts, Waiting for into the people you are
        waiting on, Chores into its rooms, Projects into its areas once any
        active project has one; each remembers whether it was left open. */

@@ -11485,7 +11485,7 @@ var GTD_TEST = (() => {
     eq(navItems().filter(it => typeof it === "string"), ["sep", "pins", "grow"]);
     // #395 the GTD lists come first; tools and reference after the line; Settings at the foot.
     const groups = navDefaultOrder().join(" ").split(NAV_SEP).map(g => g.trim().split(/\s+/));
-    eq(groups[0].filter(id => !["chat", "chores"].includes(id)), ["today", "next", "waiting", "projects", "people", "orgs"], "the GTD group");
+    eq(groups[0].filter(id => !["chat", "chores"].includes(id)), ["today", "next", "waiting", "projects", "review", "people", "orgs"], "the GTD group");
     eq(groups[1].filter(id => ["trackers", "horizons", "pages"].includes(id)), ["trackers", "horizons", "pages"], "Trackers, Horizons, Pages below the line");
     ok(groups[groups.length - 1].includes("checklists"), "Settings in the foot group: " + groups.join(" | "));
   }));
@@ -11532,6 +11532,31 @@ var GTD_TEST = (() => {
     ok(!getPage(SIDEBAR_PATH), "the page is gone");
     eq(navOrder(), navDefaultOrder());
   }));
+  test("#450 Weekly review sits under Projects, lights up as its own item and can be hidden", () => withSidebarPage(
+    "title:: sidebar\n\n- Journal\n- Projects\n- People\n- ---\n- Pages\n- ---\n- Settings\n", async () => {
+      // A sidebar page written before #450 does not name it: it still comes right after Projects.
+      const l = navLabels();
+      eq(l[l.indexOf("Projects") + 1], "Weekly review", "under Projects: " + l);
+      const item = id => document.querySelector('#nav > .nav-item[data-nav="' + id + '"]');
+      item("review").click();
+      // goFromNav paints the loading screen first and goes a frame later.
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await settle();
+      eq(state.view, "review");
+      ok(item("review").classList.contains("active"), "Weekly review is the active item");
+      ok(!item("projects").classList.contains("active"), "Projects is not lit as well");
+      eq(!!item("review").querySelector(".cnt.hot"), reviewDue(), "the mark shows only when the review is due");
+      // Hidden in Settings > Sidebar, the review is still reached through Projects, which lights up.
+      go("checklists");
+      await settle();
+      const box = [...content().querySelectorAll(".navset .prow")].find(r => r.textContent.includes("Weekly review")).querySelector("input");
+      box.checked = false; box.dispatchEvent(new Event("change"));
+      await settle();
+      ok(!navLabels().includes("Weekly review"), "gone from the sidebar");
+      go("review");
+      await settle();
+      ok(item("projects").classList.contains("active"), "Projects stands for the review again");
+    }));
 
   /* ============================================================
      A book, as a page in 8/ (#240)

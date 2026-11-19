@@ -3115,6 +3115,7 @@ Open in new tab ↗ =>
 Open in the full help =>
 Open in the side panel =>
 Open it =>
+Open it from Weekly review in the sidebar, under Projects. A number shows there when it is due. Hide it in Settings › Sidebar. =>
 Open it from ⋯ on a task. =>
 Open it on your phone =>
 Open it, to edit it there =>
