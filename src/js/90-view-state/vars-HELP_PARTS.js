@@ -877,6 +877,7 @@ const HELP = {
       "Click a picture to see it full size; ✕ or Esc closes it. Click beside it to write.",
       "A PDF has a caret beside it: it shows the PDF under the line. Written ![name](file.pdf), it shows from the start.",
       "Drop files on a line to keep them in assets/ and link them there. Drop them on + New line, and each file gets a line of its own.",
+      "Drag a page pinned in the sidebar onto a line, and a link to it goes in below. On + New line, it goes last.",
       "A page in a family, like Work/Clients/Acme, lists the rest of it at the bottom.",
       "Remove duplicate lines is in ⋯ beside the title.",
       "On a responsibility, + stakeholder names who hears how it goes.",

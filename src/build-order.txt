@@ -1552,6 +1552,7 @@ js/145-horizons-view/pagedCard.js
 js/145-horizons-view/section.js
 # script 5
 js/105-outliner/siblingsOf.js
+js/105-outliner/pinDropTarget.js
 js/105-outliner/parentOf.js
 js/105-outliner/focusBodyLine.js
 js/105-outliner/typingBand.js

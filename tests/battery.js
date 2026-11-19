@@ -6104,6 +6104,39 @@ var GTD_TEST = (() => {
       ok(!input.isConnected, "the picker is left behind");
     } finally { window.matchMedia = mm; go("today"); }
   });
+  test("#448 a pinned page dragged onto a line becomes a link line below it; onto New line, the last line", async () => {
+    const target = scratchProject("Kitchen 448");
+    const path = ensureJournal(todayISO());
+    const page = getPage(path), before = page.blocks.length;
+    const a = newBlock({title: "Call Anna 448"}), b = newBlock({title: "Buy milk 448"});
+    page.blocks.push(a, b); touch(path);
+    const kept = pins();
+    setPins([{space: V.space || "", path: target}]);
+    go("today"); await settle();
+    const link = "[[" + pageRef(target) + "]]";
+    const pin = () => document.querySelector("#nav .nav-item.pin");
+    const drag = async to => {
+      pin().dispatchEvent(new DragEvent("dragstart", {bubbles: true, dataTransfer: new DataTransfer()}));
+      const over = new DragEvent("dragover", {bubbles: true, cancelable: true, dataTransfer: new DataTransfer()});
+      to.dispatchEvent(over);
+      to.dispatchEvent(new DragEvent("drop", {bubbles: true, cancelable: true, dataTransfer: new DataTransfer()}));
+      pin()?.dispatchEvent(new DragEvent("dragend", {bubbles: true}));
+      await settle();
+      return over;
+    };
+    try {
+      ok(pin(), "the page is pinned in the sidebar");
+      const over = await drag(document.querySelector('.blk[data-id="' + a.id + '"] .txt'));
+      ok(over.defaultPrevented, "the line takes the pinned page");
+      const titles = () => getPage(path).blocks.slice(before).map(x => x.title);
+      eq(titles().join(" | "), ["Call Anna 448", link, "Buy milk 448"].join(" | "), "the link goes in below the line it was dropped on");
+      await drag(document.querySelector(".newline"));
+      eq(titles().pop(), link, "dropped on New line, it goes at the end");
+    } finally {
+      getPage(path).blocks.splice(before); touch(path);
+      setPins(kept); go("today");
+    }
+  });
   test("#390 files dropped on + Click here to capture a new thought each get a new line linking them", async () => {
     const path = ensureJournal(todayISO());
     go("today");

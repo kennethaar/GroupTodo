@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.182.0 - 2026-11-19
+
+- A page: drag a page pinned in the sidebar onto a line in the Journal or
+  on the page you are on, and a line linking it goes in below (#448). A bar
+  shows where it lands. Dropped on + New line, it goes last.
+
 ## 1.181.0 - 2026-11-19
 
 - Your page: your picture now sits at the right of the sidebar's head, as

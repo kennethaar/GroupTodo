@@ -24,7 +24,7 @@ function navPins() {
     node.draggable = true;
     node.addEventListener("dragstart", e => {
       PIN_DRAG = pin; node.classList.add("dragging");
-      try { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", title); } catch (_) {}
+      try { e.dataTransfer.effectAllowed = "linkMove"; e.dataTransfer.setData("text/plain", title); } catch (_) {}
     });
     node.addEventListener("dragend", () => { PIN_DRAG = null; node.classList.remove("dragging"); });
     node.addEventListener("dragover", e => {

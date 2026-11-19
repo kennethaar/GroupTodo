@@ -1396,6 +1396,7 @@ Drag a name onto a next action to hand it over. It lands in your Waiting for; dr
 Drag a name onto a project to involve them. =>
 Drag a name onto an area to move, copy or sync the person there. =>
 Drag a name onto the organisation they work at. =>
+Drag a page pinned in the sidebar onto a line, and a link to it goes in below. On + New line, it goes last. =>
 Drag a person onto work to involve them. =>
 Drag a person to: =>
 Drag an organisation onto a project, an area or a person. =>

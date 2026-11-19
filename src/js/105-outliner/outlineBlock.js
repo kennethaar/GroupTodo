@@ -166,6 +166,10 @@ function outlineBlock(path, page, b, opts = {}) {
     }
     attachFilesToBlock(path, b, files, txt);
   });
+  if (!ro) pinDropTarget(txt, path, "pindrop", nb => {
+    const list = siblingsOf(page, b);
+    list.splice(list.indexOf(b) + 1, 0, nb);
+  });
   txt.addEventListener("paste", e => {
     /* A screenshot in the clipboard arrives as a file, not as text. Words win
        when there are words: a copy out of a spreadsheet carries a picture of

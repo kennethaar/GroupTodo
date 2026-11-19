@@ -27,8 +27,7 @@ function pageOutline(path, opts = {}) {
      rebuilt, so anything picked in another page's outline is let go of. */
   if (LINE_SEL.ids.length && LINE_SEL.path !== path) lineSelClear(false);
   if (LINE_SEL.ids.length) requestAnimationFrame(paintLineSel);
-  const addLine = () => {
-    const nb = newBlock({title: ""});
+  const addLine = (nb = newBlock({title: ""})) => {
     if (root) { root.children = root.children || []; root.children.push(nb); root.collapsed = false; }
     else page.blocks.push(nb);
     return nb;
@@ -47,6 +46,7 @@ function pageOutline(path, opts = {}) {
       btn.classList.add("dropping");
     });
     btn.addEventListener("dragleave", () => btn.classList.remove("dropping"));
+    pinDropTarget(btn, path, "dropping", addLine);     // #448
     btn.addEventListener("drop", async e => {
       const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
       btn.classList.remove("dropping");
