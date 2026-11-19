@@ -5,16 +5,20 @@
    nothing more is to be offered; null to leave the line to names and dates. */
 function wordSuggest(before) {
   for (const mark of wordListMarks()) {
-    const m = new RegExp("^" + mark.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[ \\t\\u00A0]+").exec(before);
+    const m = new RegExp("^" + mark.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[ \\t\\u00A0]*").exec(before);
     if (!m) continue;
     const q = trim(before.slice(m[0].length).replace(/ /g, " ")).toLowerCase();
     if (q.length < 2 || q === SUGGEST_DISMISSED) return null;
     const all = [];
     const walk = (ts, path) => ts.forEach(t => { all.push({t, path}); walk(t.kids, path.concat(t.name)); });
     walk(wordsForLines(mark), []);
+    /* "=fru" with no space is a feeling being typed too: the pick replaces
+       the whole start and writes the space, so the line reads as one. */
+    const spaced = m[0].length > mark.length;
     const row = x => ({accept: "word", title: x.t.name, mark: x.t.kids.length ? "›" : "·",
+      insert: spaced ? x.t.name : mark + " " + x.t.name,
       detail: x.path.length ? x.path.join(" › ") : mark === "=" ? "core feeling" : "broad word"});
-    const at = m[0].length;
+    const at = spaced ? m[0].length : 0;
     const whole = all.find(x => x.t.name.toLowerCase() === q);
     if (whole) {
       if (!whole.t.kids.length) return {stop: true};

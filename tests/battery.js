@@ -8887,8 +8887,12 @@ var GTD_TEST = (() => {
     const words = [...menu.querySelectorAll("button")].map(b => b.textContent).join(" | ");
     // #323 Focus stands in the top right corner; History is by the saved line, Help under the Timer.
     for (const w of ["Focus", "History", "Help"]) ok(!words.includes(w), w + " is not in View: " + words);
-    const right = head.querySelector(":scope > .vhead-r").lastElementChild;
-    ok(right && right.classList.contains("focusbtn"), "Focus is the last thing in the heading, top right");
+    // #445 Light or dark stands at the far right on a wide screen, Focus just before it.
+    const r = head.querySelector(":scope > .vhead-r");
+    const theme = r.lastElementChild?.id === "btnTheme";
+    const right = theme ? r.lastElementChild.previousElementSibling : r.lastElementChild;
+    ok(right && right.classList.contains("focusbtn"), "Focus is the last thing in the heading, top right, before Light or dark");
+    eq(theme, document.body.classList.contains("paper"), "Light or dark is at the far right exactly when the Journal is paper");
   });
   test("#395 on a wide screen the Journal has no top bar; what it held moves, not goes", async () => {
     const bar = () => document.querySelector("header.top"), seen = n => !!n && n.getClientRects().length > 0;
@@ -10032,6 +10036,17 @@ var GTD_TEST = (() => {
       eq(input.value, "= Annoyed");
       suggestSync(input, {});
       ok(!SUGGEST, "the box stays open after an outer word");
+      // Without the space too; a pick writes it, so the line is a feeling.
+      eq(words(at("=fru")), ["Frustrated", "Infuriated", "Annoyed"], "=fru, no space");
+      eq(words(at("=Angry")).length, 8, "=Angry offers its ring");
+      eq(words(at("=a")), [], "nothing for one letter without the space either");
+      input.value = "=fru"; input.focus(); input.setSelectionRange(4, 4);
+      suggestSync(input, {});
+      suggestAccept(0);
+      eq(input.value, "= Frustrated", "the pick writes the space");
+      suggestSync(input, {});
+      eq(SUGGEST && SUGGEST.rows.map(r => r.title), ["Infuriated", "Annoyed"], "and the next ring follows");
+      suggestClose();
       // The list is a page of your own once you edit it, and replaces the built-in one.
       const p = ensureFeelings();
       eq(p, FEELINGS_PATH);
@@ -10050,6 +10065,26 @@ var GTD_TEST = (() => {
     } finally {
       suggestClose(); input.remove(); V.pages.delete(bang);
       if (own) putPage(FEELINGS_PATH, own); else V.pages.delete(FEELINGS_PATH);
+      clearMemo();
+    }
+  });
+  test("#214 typing = and a feeling on a page's line opens the Feelings Wheel there", async () => {
+    const path = join(PAGES, "Test wheel line.md");
+    const own = V.pages.has(FEELINGS_PATH) ? structuredClone(getPage(FEELINGS_PATH)) : null;
+    putPage(path, parsePage("- \n"));
+    V.pages.delete(FEELINGS_PATH); clearMemo();
+    try {
+      openPage(path); await settle();
+      const txt = content().querySelector(".blk .txt");
+      txt.focus();
+      setHostText(txt, "= fru", 5);
+      txt.dispatchEvent(new InputEvent("input", {inputType: "insertText", data: "u", bubbles: true}));
+      await settle();
+      eq(SUGGEST && SUGGEST.mode, "words", "the wheel's words are offered");
+      eq(SUGGEST.rows.map(r => r.title), ["Frustrated", "Infuriated", "Annoyed"]);
+    } finally {
+      suggestClose(); V.pages.delete(path);
+      if (own) putPage(FEELINGS_PATH, own);
       clearMemo();
     }
   });
@@ -10368,10 +10403,13 @@ var GTD_TEST = (() => {
     clearMemo();
     try {
       const sec = backlinksSection(personPath("Lars Haugen"));
-      ok(sec && sec.querySelector(".bl-line.ev"), "the event among the linked references");
-      const feel = sec.querySelector(".bl-line.feel");
+      // Since #425 the hit is the page's own line, drawn by the outliner.
+      const ev = sec && sec.querySelector(".blk > .line.ev");
+      ok(ev, "the event among the linked references");
+      has(ev.textContent, "Lunch with");
+      const feel = ev.closest(".blk").querySelector(".blk > .line.feel");
       ok(feel, "its feeling under it");
-      eq(feel.querySelector(".bl-txt").textContent, "Glad we talked");
+      has(feel.textContent, "Glad we talked");
     } finally { V.pages.delete(path); clearMemo(); }
   });
 

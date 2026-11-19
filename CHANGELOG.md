@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.185.1 - 2026-11-19
+
+- Events and feelings: the Feelings Wheel opens without the space too.
+  Type =fru and pick Frustrated: the line reads = Frustrated (#214).
+
 ## 1.185.0 - 2026-11-19
 
 - Weekly review › Steps: Weekly review has its own item in the sidebar,

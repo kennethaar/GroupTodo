@@ -27,7 +27,8 @@ function suggestAccept(n) {
   }
   if (r.accept === "word") {
     // The word takes the place of what was typed; input then offers the next ring.
-    setHostText(host, text.slice(0, at) + r.title + after, at + r.title.length);
+    const word = r.insert || r.title;
+    setHostText(host, text.slice(0, at) + word + after, at + word.length);
     host.dispatchEvent(new Event("input", {bubbles: true}));
     return;
   }

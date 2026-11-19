@@ -1015,7 +1015,7 @@ const HELP = {
     what: "Log what happened, and how it felt.",
     steps: ["Start a line with o and a space: an event.",
       "Start it with = and a space: a feeling.",
-      "Type a few letters of it, and pick a word. Then pick a closer one.",
+      "Type a few letters of it, even right after the =, and pick a word. Then pick a closer one.",
       "Put a feeling under the line it is about.",
       "Type · and a space for a to do."],
     more: ["Events and feelings are never to dos. They show on the pages they link to.",

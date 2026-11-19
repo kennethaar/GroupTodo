@@ -4708,7 +4708,7 @@ Type /query. The builder writes it. =>
 Type /run on a line to run a list by hand. =>
 Type @ for a context, # for a project, [[ for a page. =>
 Type YES to confirm =>
-Type a few letters of it, and pick a word. Then pick a closer one. =>
+Type a few letters of it, even right after the =, and pick a word. Then pick a closer one. =>
 Type a line and press Enter =>
 Type an idea and press Enter =>
 Type as it happens. Every line is saved. =>
