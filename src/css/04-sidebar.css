@@ -1,10 +1,12 @@
 /* ---------- sidebar ---------- */
 .sidehead{display:flex;flex-wrap:wrap;align-items:flex-start;gap:4px;margin-bottom:8px}
-.brand{display:flex;align-items:center;gap:8px;padding:6px 8px;font-weight:700;border-radius:8px;
+.brand{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;font-weight:700;border-radius:8px;
   text-align:left;flex:1;min-width:0}
 .brand:hover{background:var(--bg3)}
 .brand.active{background:var(--accent-soft)}
-.brand .logo{width:24px;height:24px;flex:none;display:grid;place-items:center}
+/* The logo sits level with your picture at the right (centres at 21px), not
+   in the middle of the three lines of text. */
+.brand .logo{width:24px;height:24px;flex:none;display:grid;place-items:center;margin-top:3px}
 .brand .logo img{width:100%;height:100%}
 .brand .appver{display:block;font-weight:400;font-size:11px;color:var(--fg3)}
 /* #447 your picture is a button of its own, at the right of the head */

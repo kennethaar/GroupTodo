@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.184.2 - 2026-11-19
+
+- Your page: the GroupToDo logo now sits level with your picture at the
+  top of the sidebar, not lower down beside the text (#447).
+
 ## 1.184.1 - 2026-11-19
 
 - The line menu and toolbar: what a long paste can become is offered right
