@@ -20,7 +20,7 @@ function actFields() {
      sub: (r, v) => v === "done" && isChore(r) ? "Tick it off; the next round is put in" : STILL[v] || holdSay(v),
      cur: () => null,
      filled: r => !!actAnsNow(r).still,
-     text: r => ({keep: "still to do", done: "done", wait: "waiting", cancel: "let go", note: "a note", hold: "on hold", often: "how often changed"})[actAnsNow(r).still],
+     text: r => ({keep: "still to do", done: "done", wait: "waiting", cancel: "let go", note: "a note", project: "a project", area: "for a responsibility", hold: "on hold", often: "how often changed"})[actAnsNow(r).still],
      pick: (r, v) => {
        const st = {done: "DONE", cancel: "CANCELLED", note: null};
        if (v === "keep") { solAns(r).still = "keep"; return; }
@@ -43,12 +43,25 @@ function actFields() {
          }), 0);
          return;
        }
+       if (v === "note") {
+         /* Not an action says what it is instead (#439): a project, a note,
+            or a note for a responsibility. The answer is kept when it is made. */
+         const done = what => { solAns(r).still = what; solAfter(r, "still"); };
+         const toNote = () => holdRender(() => inS(r, () => { if (r.block.state) setBlockState(r.path, r.block, null); }));
+         setTimeout(() => chipMenu("Not an action: what is it?", null, [
+           ["a", "A project", "more than one step", () => inS(r, () => makeFromLine(r.path, r.block, "project", null, () => done("project")))],
+           ["b", "A note", "keep the line, as a note", () => { toNote(); done("note"); }],
+           ["c", "For a responsibility", "a note, filed under one", () => inS(r, () => pickAreaFor(r.path, r.block, () => { toNote(); done("area"); }))],
+         ]), 0);
+         return;
+       }
        solAns(r).still = v in st ? v : "hold";
        holdRender(() => inS(r, () => {
          // A chore ticked off here puts its next round in, as ticked on the Chores page.
          if (v in st) setBlockState(r.path, r.block, st[v], {nextNow: v === "done" && isChore(r)});
          else { setBlockProp(r.block, "hold", "[[" + v + "]]"); touch(r.path); }
        }));
+       if (v === "done") actConfetti();
      }},
     {k: "verb", label: "Verb", type: "one", add: "Reword the line", addVal: r => r.block.title,
      opts: () => verbList().filter(v => v.lang === verbLang()).map(v => [v.canonical, capitalise(v.canonical)]),

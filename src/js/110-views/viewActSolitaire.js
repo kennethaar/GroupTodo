@@ -1,5 +1,9 @@
 function viewActSolitaire() {
   solUse("a");
+  /* A new day starts again at Still to do (#441): a review left in the
+     Context pass yesterday is not where you pick it up today. */
+  if (SOL.day && SOL.day !== todayISO()) { SOL = {order: null, i: 0, focus: null, more: null, pass: 0, deck: "a"}; SOL_KB = null; }
+  SOL.day = todayISO();
   const c = el("div", {class: "wrap wide"});
   const head = vhead("Review actions", null, viewSeg("review"));
   const vis = visibleSpaces().join("|");

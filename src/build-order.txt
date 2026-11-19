@@ -2040,6 +2040,7 @@ js/110-views/clarifyDeck.js
 js/110-views/clStampIfDone.js
 js/110-views/clSettle.js
 js/110-views/clSomeday.js
+js/110-views/clUnderArea.js
 js/110-views/vars-CL_GROUPS.js
 js/110-views/clAnswer.js
 js/110-views/clUndo.js
@@ -2191,6 +2192,8 @@ js/110-views/vars-actVerbOf.js
 js/110-views/actVerbRank.js
 js/110-views/vars-actFirstWord.js
 js/110-views/actCtxRank.js
+js/110-views/confetti.js
+js/110-views/actConfetti.js
 js/110-views/actFields.js
 js/110-views/actGoPass.js
 js/110-views/actFace.js
@@ -2251,12 +2254,15 @@ js/110-views/vars-areaWords.js
 js/110-views/nameDistance.js
 js/110-views/areaLikeness.js
 js/110-views/rankedAreas.js
+js/110-views/pickAreaFor.js
 js/110-views/lineToArea.js
 js/110-views/projectToArea.js
 js/110-views/projectToAreaAs.js
 js/110-views/mergeProjectIntoArea.js
 js/110-views/personPanel.js
 js/110-views/personWorksAt.js
+js/110-views/projectsOnDay.js
+js/110-views/dayProjectsSection.js
 js/110-views/viewPage.js
 js/110-views/vars-SEARCH_FILTERS.js
 js/110-views/searchFilterForNow.js

@@ -2707,6 +2707,72 @@ var GTD_TEST = (() => {
       ok(allChores().some(a => a.path !== path && plainTitle(a.title).startsWith("Clean the oven")), "the next round is on the Journal (#212)");
     } finally { PREF.set("review.chores", ""); closeDoneToast(); closeModal(); dropChores(path); }
   });
+  test("#439 Review actions: Not an action asks what it is: a project, a note, or for a responsibility", async () => {
+    const path = scratchProject("439 home", [["TODO", "Sort the photos"], ["TODO", "Garden tidy"], ["TODO", "Car papers"]]);
+    const target = scratchProject("439 target"), area = createArea("Test439 Car");
+    const still = actFields().find(f => f.k === "still");
+    const [photos, garden, car] = getPage(path).blocks;
+    const rs = [photos, garden, car].map(b => actDeck().find(a => a.block === b));
+    const pickIn = async text => {
+      const row = [...document.querySelectorAll("#modalRoot .modal .pick")].find(n => n.textContent.includes(text));
+      ok(row, "not offered: " + text);
+      row.click(); await settle();
+    };
+    const choose = async (r, label) => { still.pick(r, "note"); await settle(); await pickIn(label); };
+    try {
+      go("review", {sub: "actions"}); await settle();
+      await choose(rs[0], "A note");
+      ok(!photos.state, "a note: the to do comes off");
+      eq(actAnsNow(rs[0]).still, "note");
+      await choose(rs[1], "A project");
+      await pickIn(pageTitle(target));
+      has(garden.title, "[[" + pageRef(target), "a project: the line links it");
+      eq(actAnsNow(rs[1]).still, "project");
+      await choose(rs[2], "For a responsibility");
+      await pickIn("Test439 Car");
+      has(car.title, "[[" + pageRef(area), "for a responsibility: the line links it");
+      ok(!car.state, "and is a note under it");
+      eq(actAnsNow(rs[2]).still, "area");
+    } finally {
+      closeModal(); for (const r of rs) if (r) SOL_ANS.delete(solKey(r));
+      for (const p of [path, target, area]) removePage(p); clearMemo(); go("today"); await settle();
+    }
+  });
+  test("#441 Review actions starts again at Still to do on a new day", async () => {
+    try {
+      go("review", {sub: "actions"}); await settle();
+      actGoPass(2); await settle();
+      go("today"); await settle(); go("review", {sub: "actions"}); await settle();
+      eq(solPassNo(), 2, "the same day: where you left it");
+      SOL.day = shiftISO(T(), -1);
+      go("today"); await settle(); go("review", {sub: "actions"}); await settle();
+      eq(solPassNo(), 0, "the next day: Still to do again");
+    } finally { actGoPass(0); go("today"); await settle(); }
+  });
+  test("#442 Review actions: Done already throws confetti, and every 10th done a big burst", async () => {
+    const path = scratchProject("442", Array.from({length: 11}, (_, i) => ["TODO", "Finish step " + i]));
+    const still = actFields().find(f => f.k === "still");
+    const was = [...SOL_ANS], cel = PREF.get("review.celebrate", "");
+    const bursts = () => [...document.querySelectorAll(".confetti")];
+    const rs = getPage(path).blocks.map(b => actDeck().find(a => a.block === b));
+    try {
+      SOL_ANS.clear(); PREF.set("review.celebrate", "on");
+      go("review", {sub: "actions"}); await settle();
+      still.pick(rs[0], "done"); await settle();
+      ok(bursts().length && !bursts().some(n => n.classList.contains("big")), "Done already: a small burst");
+      for (let i = 1; i < 9; i++) { still.pick(rs[i], "done"); await settle(); }
+      ok(!bursts().some(n => n.classList.contains("big")), "a big burst before the 10th");
+      still.pick(rs[9], "done"); await settle();
+      ok(bursts().some(n => n.classList.contains("big")), "no big burst at the 10th done");
+      bursts().forEach(n => n.remove());
+      PREF.set("review.celebrate", "off");
+      still.pick(rs[10], "done"); await settle();
+      eq(bursts().length, 0, "celebrations off: no confetti");
+    } finally {
+      PREF.set("review.celebrate", cel); SOL_ANS.clear(); for (const [k, a] of was) SOL_ANS.set(k, a); solSaveAns();
+      bursts().forEach(n => n.remove()); closeDoneToast(); removePage(path); clearMemo(); go("today"); await settle();
+    }
+  });
   test("#380 Review › Actions and Projects: an answer's key number does not cover its name", async () => {
     try {
       for (const sub of ["actions", "projects"]) {
@@ -10899,6 +10965,45 @@ var GTD_TEST = (() => {
       ok(!getPage(d3).props.clarified, "and the day is open again");
       eq(content().querySelector(".clcard h3").textContent, "Ask Kari about the budget");
     });
+  });
+  test("#437 #438 Clarify: To do says it is sorted next; a note is filed under a responsibility", async () => {
+    const area = createArea("Test437 Teeth");
+    try {
+      await withDays([[3, "- Notes from the dentist\n- Floss more [[" + pageRef(area) + "]]\n"]], async () => {
+        const d3 = journalPath(shiftISO(T(), -3));
+        let c = await showClarify();
+        has(c.querySelector(".clans small").textContent, "Review actions", "To do says where it is sorted (#438)");
+        const under = () => [...content().querySelectorAll(".clans")].find(n => n.querySelector("b").textContent === "Note for a responsibility");
+        ok(under(), "no Note for a responsibility answer");
+        under().click(); await settle();
+        const row = [...document.querySelectorAll("#modalRoot .modal .pick")].find(n => n.textContent.includes("Test437 Teeth"));
+        ok(row, "the responsibility is not offered");
+        row.click(); await settle();
+        const b = getPage(d3).blocks[0];
+        has(b.title, "[[" + pageRef(area), "the line links the responsibility");
+        ok(!b.state, "and stays a note");
+        c = await showClarify();
+        has(c.querySelector(".clcard h3").textContent, "Floss more", "on to the next line");
+        under().click(); await settle();
+        ok(!document.querySelector("#modalRoot .modal"), "a line under one already is not asked again");
+        ok(getPage(d3).props.clarified, "it is dealt, and the day is done");
+      });
+    } finally { closeModal(); removePage(area); clearMemo(); }
+  });
+  test("#440 a day page shows the projects with its ISO date in their title, or on a line that links them", async () => {
+    const day = T();
+    const titled = scratchProject("Board meeting " + day), linked = scratchProject("440 offsite"), other = scratchProject("440 unrelated");
+    try {
+      await withPages({[journalPath(day)]: "- Book the room for [[" + pageRef(linked) + "]] " + day + "\n- Plan [[" + pageRef(other) + "]]\n"}, async () => {
+        eq(projectsOnDay(day).sort(), [titled, linked].sort());
+        go("today"); await settle();
+        const sec = content().querySelector(".dayprojects");
+        ok(sec, "no Projects on this day on the day page");
+        has(sec.textContent, pageTitle(titled)); has(sec.textContent, pageTitle(linked));
+        ok(!sec.textContent.includes(pageTitle(other)), "a project without the date is shown");
+        ok(!getPage(journalPath(day)).blocks.some(b => b.title.includes(pageTitle(titled))), "it is written on the day page");
+      });
+    } finally { for (const p of [titled, linked, other]) removePage(p); clearMemo(); }
   });
   test("#375 Clarify draws a markdown table as a table, on the card and under it", async () => {
     await withDays([[3, "- | Item | Qty |\n  | --- | --- |\n  | Tiles | 12 |\n- Prices from the shop\n  - | Shop | Price |\n    | --- | --- |\n    | Byggmax | 99 |\n"]], async () => {

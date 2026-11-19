@@ -3,7 +3,7 @@
    on a page, so the review teaches the keys as it goes. */
 const CL_GROUPS = ["Something to do", "Not now", "Nothing to do"];
 const CL_ANSWERS = [
-  {g: 0, label: "To do", say: "one step you can do", how: "A to do on the day page. On a page: · and a space, or Ctrl+Enter.",
+  {g: 0, label: "To do", say: "one step · you sort it next, in Review actions", how: "A to do on the day page. On a page: · and a space, or Ctrl+Enter.",
     run: (path, b) => setBlockState(path, b, "TODO")},
   {g: 0, label: "Waiting for", say: "somebody else does it", box: true, how: "A to do that waits on someone. On a page: Ctrl+Enter until WAIT.",
     run: (path, b) => askWaitingOn({path, block: b, state: b.state, title: b.title, space: V.space}, true)},
@@ -17,4 +17,7 @@ const CL_ANSWERS = [
     run: (path, b) => setBlockState(path, b, "DONE")},
   {g: 2, label: "Leave it as a note", say: "a thought, or reference", how: "Stays on the day page as it is.",
     run: () => {}},
+  {g: 2, label: "Note for a responsibility", say: "filed under one", box: true,
+    how: "Stays a note, linked to the responsibility it is for. On a page: Alt+I.",
+    run: clUnderArea},
 ];

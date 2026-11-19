@@ -670,3 +670,8 @@ body.solview #content{padding-bottom:14px}
 .fmtbar .iconbtn{min-width:26px;height:24px;padding:0 4px;font-size:12px;font-weight:650;color:var(--fg2)}
 .fmtbar .iconbtn svg{width:14px;height:14px}
 .fmtbar .iconbtn:hover,.fmtbar .iconbtn:focus-visible{color:var(--fg);background:var(--bg3)}
+/* Confetti over everything, taking no clicks (#442). */
+.confetti{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:9999}
+/* Projects dated this day, over the day's Linked References (#440). */
+.dayprojects .dayproj-list{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
+.dayprojects .dayproj-list .textbtn{text-align:left}

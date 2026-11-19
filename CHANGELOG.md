@@ -5,6 +5,21 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.180.0 - 2026-11-19
+
+- Weekly review › Clarify: a new answer, Note for a responsibility, keeps
+  the line as a note and links the responsibility it is for (#437). A line
+  under one already is dealt at once. The To do answer now says you sort it
+  next, in Review actions (#438).
+- Weekly review › Actions: Not an action asks what it is instead: a
+  project, a note, or a note for a responsibility (#439). On a new day the
+  review starts again at Still to do, not in the pass you left it (#441).
+  Done already throws confetti, and every tenth one this week a big burst;
+  Celebration: off keeps it quiet (#442).
+- Journal: a day page lists the projects with its date in their title, or
+  on a line that links them, under Projects on this day (#440). Nothing is
+  written on the day.
+
 ## 1.179.1 - 2026-11-19
 
 - Organisations › List: pages in a folder called O/, with a capital letter,

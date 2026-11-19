@@ -137,6 +137,9 @@ function viewPage() {
   // The other pages in its namespace, when it has one: Work, Work/Clients, Work/Clients/Acme.
   const ns = namespaceSection(path);
   if (ns) c.append(ns);
+  // A day page: the projects dated that day (#440).
+  const dayProjects = dayProjectsSection(path);
+  if (dayProjects) c.append(dayProjects);
   const linkedReferences = el("div", {class: "deferred-backlinks"});
   c.append(linkedReferences);
   deferPageSection(linkedReferences, () => backlinksSection(path));

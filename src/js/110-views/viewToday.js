@@ -301,6 +301,7 @@ function viewToday() {
         "aria-label": "Pin to the right", onclick: () => pinToSide(s.space, dayPath(s.space))}, svgIcon(ICON_PIN)) : null),
     s.body(),
     // The lines elsewhere that name this day, as any page shows what links to it.
+    who ? null : inSpace(s.space, () => dayProjectsSection(journalPath(day))),
     who ? null : inSpace(s.space, () => backlinksSection(journalPath(day)))))), cols.map(s => s.space)));
   return c;
 }

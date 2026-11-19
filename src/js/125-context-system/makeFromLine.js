@@ -2,8 +2,8 @@
    apart. Contexts keep their own picker: a context is phone or errand, never
    the sentence somebody just typed, so offering the line as a name would be
    offering a mistake. */
-function makeFromLine(path, block, kindKey, at) {
+function makeFromLine(path, block, kindKey, at, then = null) {
   if (kindKey === "task") { makeTask(path, block); return; }
   if (kindKey === "context") { makeContextFromLine(path, block, at); return; }
-  openMakeLinkPicker(path, block, kindKey);
+  openMakeLinkPicker(path, block, kindKey, then);
 }
