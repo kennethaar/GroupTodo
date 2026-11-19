@@ -54,9 +54,9 @@ itself and only needs something on this computer to fetch calendar links.
 Every path is confined to the vault; traversal outside it is refused.
 
 Before a page is overwritten or deleted, the old file is copied to
-.history/<path>/<time>.md in the vault (#407): on each save that changes more
-than spaces or capitals, always before a delete, the last 20 per page, up to
-30 days old.
+.history/<path>/<time>.md in the vault (#407): at most one per ten minutes,
+only for a save that changes more than spaces or capitals, always one before a
+delete, the last 20 per page, up to 30 days old.
 
 --open-in-editor lets the app ask for a page to be opened in an editor -- the
 "open file" button beside "copy path". The editor runs here, on the machine with
@@ -127,11 +127,12 @@ MAX_BODY = 8 * 1024 * 1024
 # split by another person's save to the same file (#406).
 WRITE_LOCK = threading.Lock()
 # Earlier versions (#407): before a page is overwritten or deleted, the old
-# file is copied to .history/<path>/<time>.md. The app saves a line when it
-# is left; the page before is kept when the save changes more than spaces or
-# capitals. A delete is always kept. Per page, at most HISTORY_KEEP versions
-# stay, none older than HISTORY_DAYS.
+# file is copied to .history/<path>/<time>.md: at most one every HISTORY_GAP,
+# and only for a save that changes more than spaces or capitals. A delete is
+# always kept. Per page, at most HISTORY_KEEP versions stay, none older than
+# HISTORY_DAYS.
 HISTORY_DIR = ".history"
+HISTORY_GAP = 10 * 60
 HISTORY_KEEP = 20
 HISTORY_DAYS = 30
 
@@ -489,7 +490,8 @@ class Vault:
     def keep_version(self, full, new_text=None):
         """Copy the page at full into .history before it is replaced or
         deleted (#407), then drop versions past the limits. A save (new_text)
-        that only changes spaces or capitals keeps nothing."""
+        keeps one at most every HISTORY_GAP, and only when it changes more
+        than spaces or capitals. A delete always keeps one."""
         if not os.path.isfile(full):
             return
         rel = os.path.relpath(full, self.root)
@@ -503,6 +505,9 @@ class Vault:
             os.makedirs(folder, exist_ok=True)
             entries = lambda: sorted((os.path.join(folder, n) for n in os.listdir(folder)), key=os.path.getmtime)
             now = time.time()
+            had = entries()
+            if new_text is not None and had and now - os.path.getmtime(had[-1]) < HISTORY_GAP:
+                return
             stamp = time.strftime("%Y-%m-%d %H%M%S", time.localtime(now)) + ("%.6f" % (now % 1))[1:]
             with open(os.path.join(folder, stamp + os.path.splitext(full)[1]), "wb") as fh:
                 fh.write(data)

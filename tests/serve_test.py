@@ -36,13 +36,24 @@ class History(unittest.TestCase):
         self.assertEqual(self.kept(), ["first"])
         self.assertNotIn(".history/pages/Kitchen.md", " ".join(self.vault.list()), "history is not a page")
 
-    def test_407_only_a_change_beyond_spaces_and_capitals_keeps_a_version(self):
+    def age_versions(self, minutes):
+        for n in os.listdir(self.hist):
+            p = os.path.join(self.hist, n)
+            t = os.path.getmtime(p) - minutes * 60
+            os.utime(p, (t, t))
+
+    def test_407_one_version_per_ten_minutes_and_only_for_more_than_spaces_and_capitals(self):
         self.vault.write("pages/Kitchen.md", "- Call Anna")
         self.vault.write("pages/Kitchen.md", "- call  anna ")
         self.assertEqual(self.kept(), [], "spaces and capitals only: nothing kept")
         self.vault.write("pages/Kitchen.md", "- Call Anna today")
         self.vault.write("pages/Kitchen.md", "- Call Anna today\n- Buy tiles")
-        self.assertEqual(self.kept(), ["- call  anna ", "- Call Anna today"], "every real change keeps the page before it")
+        self.assertEqual(self.kept(), ["- call  anna "], "within ten minutes of a version: nothing more")
+        self.age_versions(11)
+        self.vault.write("pages/Kitchen.md", "- CALL ANNA TODAY\n- buy  tiles")
+        self.assertEqual(len(self.kept()), 1, "ten minutes on, but spaces and capitals only")
+        self.vault.write("pages/Kitchen.md", "- Call Anna today\n- Buy tiles\n- Paint")
+        self.assertEqual(self.kept()[-1], "- CALL ANNA TODAY\n- buy  tiles", "ten minutes on and a real change")
 
     def test_407_a_delete_always_keeps_the_page(self):
         self.vault.write("pages/Kitchen.md", "a")
