@@ -26,6 +26,9 @@ function outlineBlock(path, page, b, opts = {}) {
     },
   });
   if (!ro) bulletDrag(handle, path, b);
+  // Past the 5th bullet on one slide of a talk: red, and why (#433).
+  const crowd = ro ? "" : slideCrowd(path).get(b.id) || "";
+  if (crowd) { handle.classList.add("crowded"); handle.title = crowd + "\n" + handle.title; }
   line.append(handle);
   /* The state's square, doing what a task row's tick does: a tap and a hold. The
      menu here also has the way back to a plain note. */
@@ -46,6 +49,7 @@ function outlineBlock(path, page, b, opts = {}) {
     class: "txt", contenteditable: ro ? "false" : "true", spellcheck: "false",
     html: lineHtml(b),
   });
+  if (crowd) txt.setAttribute("aria-description", crowd);
   if (ro) {
     line.append(txt);
     node.append(line);

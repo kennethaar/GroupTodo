@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.179.0 - 2026-11-19
+
+- Present a page: a drawn slide (steps, pyramid, cycle, curve and the rest)
+  no longer shows its parts before they come (#433). Each part comes in on
+  its turn and stays, dimmed. A layout holds up to nine lines a slide, and
+  more are shared out evenly: ten is five and five, not nine and one. On a
+  page you have presented, or one with slide marks, the outline gives a red
+  bullet to each line past the fifth on a slide; pointing at it says why.
+
 ## 1.178.2 - 2026-11-18
 
 - Present a page: with several lines picked, the bar under them has Slide

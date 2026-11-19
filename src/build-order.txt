@@ -791,6 +791,8 @@ js/91-present/presentKey.js
 js/91-present/presentStart.js
 js/91-present/presentButton.js
 js/91-present/presentMenu.js
+js/91-present/slidePresented.js
+js/91-present/slideCrowd.js
 js/90-view-state/vars-DIALOGUE.js
 js/90-view-state/setDialogueStyle.js
 js/90-view-state/vars-OPENS_AFTER.js

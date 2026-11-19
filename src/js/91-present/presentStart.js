@@ -5,6 +5,7 @@
    window at once (▾ › With presenter window). */
 function presentStart(path, {root = null, presenter = false} = {}) {
   presentStop();
+  slidePresented(path, true);
   const {steps, slides} = deckSteps(path, root);
   const back = document.activeElement;
   const id = back && back.closest && back.closest(".blk")?.dataset.id;

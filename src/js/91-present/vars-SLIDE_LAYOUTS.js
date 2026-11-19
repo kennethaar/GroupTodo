@@ -4,18 +4,20 @@
    "list" is today's title and bullets: never cut, slideFit shrinks it. */
 const SLIDE_LAYOUTS = {
   list:     {min: 0, max: Infinity, mode: "1d", name: "List"},
-  hero:     {min: 1, max: 5, mode: "2d", name: "Quote"},
-  process:  {min: 2, max: 5, mode: "1d", name: "Steps"},
-  timeline: {min: 2, max: 5, mode: "1d", name: "Timeline"},
-  cycle:    {min: 3, max: 5, mode: "1d", name: "Cycle"},
-  pyramid:  {min: 3, max: 5, mode: "1d", name: "Pyramid"},
-  hub:      {min: 3, max: 5, mode: "1d", name: "Hub"},
-  curve:    {min: 2, max: 5, mode: "1d", name: "Curve"},
-  split:    {min: 2, max: 5, mode: "2d", name: "Versus"},
-  quadrant: {min: 4, max: 5, mode: "2d", name: "2×2"},
-  kpi:      {min: 1, max: 5, mode: "2d", name: "Scorecard"},
-  grid:     {min: 2, max: 6, mode: "2d", name: "Grid"},
+  hero:     {min: 1, max: 9, mode: "2d", name: "Quote"},
+  process:  {min: 2, max: 9, mode: "1d", name: "Steps"},
+  timeline: {min: 2, max: 9, mode: "1d", name: "Timeline"},
+  cycle:    {min: 3, max: 9, mode: "1d", name: "Cycle"},
+  pyramid:  {min: 3, max: 9, mode: "1d", name: "Pyramid"},
+  hub:      {min: 3, max: 9, mode: "1d", name: "Hub"},
+  curve:    {min: 2, max: 9, mode: "1d", name: "Curve"},
+  split:    {min: 2, max: 9, mode: "2d", name: "Versus"},
+  quadrant: {min: 4, max: 9, mode: "2d", name: "2×2"},
+  kpi:      {min: 1, max: 9, mode: "2d", name: "Scorecard"},
+  grid:     {min: 2, max: 9, mode: "2d", name: "Grid"},
 };
+// More bullets than this on one slide are marked red in the outline (#433).
+const SLIDE_CALM = 5;
 /* The marks at the front of a line, plain text in the .md file. Never marks:
    "@ " (a context), "+ " (a Markdown bullet), "(*) ", 🎯 and a bare number.
    "> " is a quote only; "| " is split or 2×2 by the number of lines. */

@@ -1,8 +1,10 @@
-/* Slide layouts (#433): a slide drawn under its title. The whole drawing is
-   there, faint, from the first step; each → lights one part, and nothing
-   moves. slides.css can change --slide-accent (the shapes), --on-accent (words
-   on them) and --faint (the parts still to come). */
-#deck{--slide-accent:#2f6bc4;--on-accent:#fff;--faint:.15}
+/* Slide layouts (#433): a slide drawn under its title. Each → brings in one
+   part in its place, so nothing moves; the parts before it stay, dimmed.
+   slides.css can change --slide-accent (the shapes), --on-accent (words on
+   them) and --faint (the parts still to come: hidden unless set above 0). */
+#deck{--slide-accent:#2f6bc4;--on-accent:#fff;--faint:0}
+/* In the outline: a bullet past the 5th on one slide of a talk. */
+.blk>.line>.bullet.crowded{background:var(--danger);box-shadow:0 0 0 3px color-mix(in srgb,var(--danger) 30%,transparent)}
 #deck .scrumb{font-size:.55em;opacity:.65;margin:0 0 .3em}
 #deck .sbody{flex:1;min-height:0;position:relative;font-size:.72em;line-height:1.25}
 #deck .slide.intro .sbody{display:none}

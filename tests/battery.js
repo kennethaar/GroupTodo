@@ -12982,11 +12982,12 @@ var GTD_TEST = (() => {
   });
   test("#433 a layout with too many lines goes on more slides, with no line lost", () => {
     const n = k => Array.from({length: k}, (_, i) => "-> " + (i + 1));
-    eq(slideLayout(lines("Plan", ...n(7))).max, 5);
-    eq(slidePages(n(7), 5), [n(7).slice(0, 5), n(7).slice(5)], "7 on a timeline → 5 and 2");
-    eq(slideLayout(lines("Team ::grid", ...n(7))).max, 6);
-    eq(slidePages(n(7), 6).map(p => p.length), [6, 1], "7 on a grid → 6 and 1");
-    eq(slidePages(n(3), 5), [n(3)], "few enough: one slide");
+    eq(slideLayout(lines("Plan", ...n(9))).max, 9, "up to 9 lines on a slide");
+    eq(slideLayout(lines("Team ::grid", ...n(9))).max, 9);
+    eq(slidePages(n(9), 9), [n(9)], "9 fit on one slide");
+    eq(slidePages(n(10), 9), [n(10).slice(0, 5), n(10).slice(5)], "10 → 5 and 5, not 9 and 1");
+    eq(slidePages(n(19), 9).map(p => p.length), [7, 6, 6], "cut into near equal parts, the larger first");
+    eq(slidePages(n(19), 9).flat(), n(19), "in order, no line lost");
     eq(slidePages(n(3), Infinity), [n(3)], "a plain list is one slide");
   });
 
@@ -13020,13 +13021,13 @@ var GTD_TEST = (() => {
     eq(slides[2].parts.length, 2, "a quote: one step for the quote, one per takeaway");
   }));
   test("#433 a flat page is one slide; too many lines go on; a slide says where it is from", () => withPages({
-    [SHOW]: ["- -> Q1", "- -> Q2", "- -> Q3", "- Roadmap", ...[1, 2, 3, 4, 5, 6, 7].map(i => "  - -> M" + i),
+    [SHOW]: ["- -> Q1", "- -> Q2", "- -> Q3", "- Roadmap", ...Array.from({length: 11}, (_, i) => "  - -> M" + (i + 1)),
       "    - Detail", "- Build vs buy", "  - | Build", "    - Full control", "      - Hire two", "  - | Buy", "    - Ready"].join("\n") + "\n"}, async () => {
     const {slides, steps} = deckSteps(SHOW);
-    eq(slides.map(s => s.title), ["Show", "Roadmap (1/2)", "Roadmap (2/2)", "M7", "Build vs buy", "Full control"]);
+    eq(slides.map(s => s.title), ["Show", "Roadmap (1/2)", "Roadmap (2/2)", "M11", "Build vs buy", "Full control"]);
     eq([slides[0].layout, slides[0].kids.map(slideWords)], ["timeline", ["Q1", "Q2", "Q3"]],
       "lines with no lines of their own gather on one slide headed with the page's title");
-    eq([slides[1].kids.length, slides[2].kids.length], [5, 2], "5, then the rest; no line lost");
+    eq([slides[1].kids.length, slides[2].kids.length], [6, 5], "11 → 6 and 5; no line lost");
     eq(slides[3].breadcrumb, "Roadmap", "a 1D line's own slide names the slide it is from");
     eq(slides[5].breadcrumb, "Build vs buy > Build", "a 2D line's own slide names the slide and the box");
     const at = steps.findIndex(t => t.s === slides[5]);
@@ -13035,7 +13036,7 @@ var GTD_TEST = (() => {
     eq([vs[0].title, vs[0].layout, vs.length], ["Build vs buy", "split", 2], "Present from here on a versus line: that slide");
   }));
   const deckParts = () => [...$$("#deck .slide.cur .part")];
-  test("#433 a 1D layout is drawn whole and faint; each → lights one part; marks are not shown", () => withPages(SHOW_PAGE, async () => {
+  test("#433 a 1D layout's parts are hidden until → brings each in; marks are not shown", () => withPages(SHOW_PAGE, async () => {
     try {
       openPage(SHOW); await settle();
       content().querySelector(".pagehead .presentbtn").click(); await settle();
@@ -13050,8 +13051,8 @@ var GTD_TEST = (() => {
         eq(deckParts().length, n, title + ": a part per line");
         ok(!/(^|\s)(->|\(o\)|\^|~|\d\.)\s/.test(slide.textContent), title + " shows its marks: " + slide.textContent);
         eq(deckParts().map(p => p.classList.contains("now")), deckParts().map((p, i) => i === 0), title + ": the first part lit");
-        ok(deckParts().slice(1).every(p => p.classList.contains("later") && +getComputedStyle(p).opacity > 0),
-          title + ": the parts to come are there, faint");
+        ok(deckParts().slice(1).every(p => p.classList.contains("later") && +getComputedStyle(p).opacity === 0),
+          title + ": the parts to come are not shown yet: " + deckParts().map(p => getComputedStyle(p).opacity));
       }
       to("Product launch plan");
       deckKey("ArrowRight");
@@ -13060,6 +13061,9 @@ var GTD_TEST = (() => {
       ok(where[0] !== where[1], "points alternate above and below the axis");
       deckKey("ArrowRight");
       eq(deckParts().map(p => p.className.match(/now|past|later/)[0]), ["past", "now", "later"], "→ lights the next part");
+      deckParts().forEach(p => p.getAnimations().forEach(a => a.finish()));
+      const seen = deckParts().map(p => +getComputedStyle(p).opacity);
+      ok(seen[0] > 0 && seen[0] < 1 && seen[1] === 1 && seen[2] === 0, "the part before stays, dimmed; the next is still hidden: " + seen);
       eq(deckParts().map(p => p.getBoundingClientRect().top), where, "nothing moves when a part lights");
       to("Maslow's hierarchy");
       deckKey("ArrowRight");
@@ -13101,7 +13105,28 @@ var GTD_TEST = (() => {
       ok(/Focus on zero-friction defaults/.test($("#deck .slide.cur .part.now").textContent), "then each takeaway");
     } finally { presentStop(); }
   }));
-
+  test("#433 the outline marks a slide's bullets past 5 red and says why, on a slide page only", () => {
+    const ERR = join(PAGES, "Errands.md");
+    const seven = (mark, word) => Array.from({length: 7}, (_, i) => "  - " + mark + word + (i + 1));
+    return withPages({[SHOW]: ["- Plan", ...seven("-> ", "Step "), "- Notes", "  - One"].join("\n") + "\n",
+      [ERR]: ["- Shop", ...seven("", "Item ")].join("\n") + "\n"}, async () => {
+      PREF.set("present.pages", "[]");
+      const bullet = b => content().querySelector(`.blk[data-id="${CSS.escape(String(b.id))}"] > .line > .bullet`);
+      const red = path => getPage(path).blocks[0].children.map(b => bullet(b).classList.contains("crowded"));
+      try {
+        openPage(SHOW); await settle();
+        eq(red(SHOW), [false, false, false, false, false, true, true], "the 6th and 7th bullets on one slide");
+        const sixth = getPage(SHOW).blocks[0].children[5];
+        ok(/6 of 7 bullets on one slide\. Keep a slide to 5/.test(bullet(sixth).title), "the hover says why: " + bullet(sixth).title);
+        ok(/6 of 7 bullets/.test(content().querySelector(`.blk[data-id="${CSS.escape(String(sixth.id))}"] > .line > .txt`).getAttribute("aria-description") || ""),
+          "and so does the line itself, for the keyboard");
+        openPage(ERR); await settle();
+        eq(red(ERR).some(Boolean), false, "a page with no slide marks, never presented, is a plain list");
+        presentStart(ERR); presentStop(); render(); await settle();
+        eq(red(ERR), [false, false, false, false, false, true, true], "once presented it is a talk");
+      } finally { presentStop(); PREF.set("present.pages", "[]"); }
+    });
+  });
   test("#433 Format › Slide layout marks a line's lines; the same pick again, or Auto, takes the marks off; one Ctrl+Z; picked lines too", async () => {
     const path = scratchProject("slide layout", [["", "Launch plan"], ["", "Stray line"]]);
     const [head, stray] = getPage(path).blocks;
