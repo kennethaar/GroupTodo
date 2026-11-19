@@ -12604,6 +12604,22 @@ var GTD_TEST = (() => {
     } finally { FLY = null; }
   });
 
+  test("#443 To area is on the line menu when there is another area, and opens the area picker for that line", () => {
+    const path = scratchProject("to area on the menu", [["TODO", "Paint the shed"]]);
+    const page = getPage(path), block = page.blocks[0];
+    const other = "Test448 Other", had = Spaces.list.length;
+    FLY = {txt: el("textarea"), path, page, block, box: el("div"), open: null, hi: 0, q: ""};
+    try {
+      if (had === 1) ok(!flyRows().some(r => r.k === "toarea"), "To area shows with only one area");
+      Spaces.list.push({name: other, kind: "memory"});
+      const row = flyRows().find(r => r.k === "toarea");
+      ok(row && row.menu && row.label === "To area", "To area is not on the line's own menu");
+      flyHead("toarea");
+      const box = document.querySelector("#modalRoot")?.textContent || "";
+      has(box, "Move to another area"); has(box, other);
+    } finally { FLY = null; Spaces.list.splice(Spaces.list.findIndex(s => s.name === other), 1); closeModal(); }
+  });
+
   test("#391 Delete asset on the line menu warns, then deletes the file and its link on that line", async () => {
     const asset = "assets/test-391-plan.png";
     await V.backend.putAsset(asset, new Blob([new Uint8Array([137, 80, 78, 71])], {type: "image/png"}));

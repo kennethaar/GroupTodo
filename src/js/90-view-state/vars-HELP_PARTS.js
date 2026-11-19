@@ -1125,7 +1125,7 @@ const HELP = {
     what: "One menu for all you can do to a line.",
     steps: ["Point at a line: ☰ opens its menu, 🔍 zooms in. Or press Ctrl+.",
       "Shows state, due date, project and repeat; pick one to change it.",
-      "Also copy, refile, insert a tracker or plan it with an AI.",
+      "Also copy, refile, move to another area, insert a tracker or plan it with an AI.",
       ["The line you write has its tools at its end: Type, indent and move. ＋ shows the rest, − hides it, and it stays so.", "?#editBar.inline"],
       "On a phone, the same tools sit on a bar at the foot."],
     keys: [["Ctrl+.", "Line menu"], ["Alt+S", "Move to an area"], ["Alt+G", "Refile"], ["Alt+I", "Responsibility"],

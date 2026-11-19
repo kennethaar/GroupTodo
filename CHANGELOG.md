@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.182.1 - 2026-11-19
+
+- The line menu and toolbar: To area is on the line menu too, as on the bar
+  under picked lines. It moves the line to another area (#443).
+
 ## 1.182.0 - 2026-11-19
 
 - A page: drag a page pinned in the sidebar onto a line in the Journal or

@@ -47,6 +47,8 @@ function flyRows() {
     {k: "embedref", ic: FLY_EMBED, label: "Copy embed", key: "Alt+B", menu: true},
     {k: "plaincopy", ic: EB_COPY, label: "Copy text", key: "Alt+X", menu: true},
     {k: "refile", ic: FLY_REFILE, label: "Refile", key: "Alt+G", menu: true},
+    // As on the bar under picked lines: only when there is an area to go to.
+    ...(Spaces.list.length > 1 ? [{k: "toarea", ic: FLY_AREA, label: "To area", key: "Alt+S", menu: true}] : []),
     {k: "trk", ic: FLY_TRACKER, label: "Insert tracker", key: "Alt+K", menu: true},
     {k: "aiplan", ic: FLY_PLAN, label: "Plan with AI", key: "Alt+A", menu: true},
     // A file kept in assets/ can go from the line that links it (#391).
