@@ -1,11 +1,12 @@
 function suggestAccept(n) {
   if (!SUGGEST) return;
-  const {host, at, rows, opts} = SUGGEST;
+  const {host, at, end, rows, opts} = SUGGEST;
   const r = rows[n == null ? SUGGEST.i : n];
   if (!r) { suggestClose(); return; }
   const text = hostText(host);
   const before = textBeforeCaret(host) || "";
-  const after = text.slice(before.length);
+  // A whole word is replaced when the list knows where it ends (#428).
+  const after = text.slice(end != null ? end : before.length);
   suggestClose();
   SUGGEST_DISMISSED = "";
   if (r.accept === "wizard") { if (opts.onTrackerWizard) opts.onTrackerWizard(); return; }

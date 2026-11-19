@@ -1592,7 +1592,12 @@ js/105-outliner/dayAndClock.js
 js/105-outliner/dateSuggestion.js
 js/105-outliner/setDue.js
 js/105-outliner/warnDueConflict.js
+js/105-outliner/vars-PLAIN_SKIP_RE.js
 js/105-outliner/linkKnownNames.js
+js/105-outliner/unlinkedNames.js
+js/105-outliner/squiggleRanges.js
+js/105-outliner/squigglePaint.js
+js/105-outliner/vars-SQUIGGLE_HOVER.js
 js/105-outliner/vars-sentenceStart.js
 js/105-outliner/openLinkAt.js
 js/105-outliner/vars-insideLink.js

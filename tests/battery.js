@@ -10160,6 +10160,42 @@ var GTD_TEST = (() => {
       clearMemo();
     }
   });
+  test("#428 a known name not linked yet is squiggled on the caret or hovered line, and Enter on it links it", async () => {
+    const names = t => unlinkedNames(t).map(s => t.slice(s.at, s.end) + "=" + s.rows.map(r => r.ref).join("|"));
+    eq(names("Call Oskar about Havbris Seafood at the office"), ["Oskar=p/Oskar Nilsen", "Havbris Seafood=o/Havbris Seafood"]);
+    eq(names("Oskar called"), ["Oskar=p/Oskar Nilsen"], "a person at the start of a sentence");
+    eq(names("call oskar, then the computer"), [], "ordinary words are underlined");
+    eq(names("Call [[p/Oskar Nilsen]] and Oskar"), [], "a name the line already links");
+    eq(names("Mail `Oskar` at https://x.no/Oskar"), [], "code and addresses");
+    const path = join(PAGES, "Test428 squiggles.md");
+    putPage(path, parsePage("- Call Oskar about the fair\n- Ask Havbris Seafood\n"));
+    clearMemo();
+    const marked = () => [...(CSS.highlights.get("unlinked") || [])].map(r => r.toString());
+    try {
+      openPage(path); await settle();
+      const [one, two] = content().querySelectorAll(".blk .txt");
+      eq(marked(), [], "squiggles before any line is touched");
+      two.dispatchEvent(new MouseEvent("mouseover", {bubbles: true}));
+      await settle();
+      eq(marked(), ["Havbris Seafood"], "the hovered line is not squiggled");
+      one.focus();
+      setHostText(one, one.textContent, 7);                    // Call Os|kar
+      one.dispatchEvent(new MouseEvent("click", {bubbles: true}));
+      await settle();
+      ok(marked().includes("Oskar"), "the caret line is not squiggled: " + marked());
+      eq(SUGGEST && SUGGEST.mode, "unlinked", "no bubble on the squiggled word");
+      eq(SUGGEST.rows[0].ref, "p/Oskar Nilsen");
+      suggestKey(new KeyboardEvent("keydown", {key: "Enter"})) || suggestAccept();
+      eq(lineText(one), "Call [[p/Oskar Nilsen][Oskar]] about the fair", "Enter did not link the whole word");
+      // Typing on leaves the word alone.
+      setHostText(one, "Call Oskar about the fair", 10);
+      one.dispatchEvent(new InputEvent("input", {inputType: "insertText", data: "r", bubbles: true}));
+      await settle();
+      ok(!SUGGEST || SUGGEST.mode !== "unlinked", "typing kept the bubble");
+    } finally {
+      suggestClose(); document.activeElement?.blur?.(); V.pages.delete(path); clearMemo();
+    }
+  });
   test("#214 typing = and a feeling on a page's line opens the Feelings Wheel there", async () => {
     const path = join(PAGES, "Test wheel line.md");
     const own = V.pages.has(FEELINGS_PATH) ? structuredClone(getPage(FEELINGS_PATH)) : null;

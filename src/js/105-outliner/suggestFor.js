@@ -40,7 +40,11 @@ function suggestFor(host, opts) {
       rows.push({kind, title: q, ref: "c/" + slugify(q), accept: "link", isNew: true});
     return rows.length ? {mode: "trigger", at: before.length - trig[2].length - trig[3].length, rows} : null;
   }
-  if (opts.typed === false) return null;
+  if (opts.typed === false) {
+    // #428 a click or a key put the caret in a known name not linked yet.
+    const at = before.length, hit = unlinkedNames(hostText(host), null, names()).find(s => s.at <= at && at <= s.end);
+    return hit ? {mode: "unlinked", at: hit.at, end: hit.end, rows: hit.rows} : null;
+  }
   // On a = line, the Feelings Wheel's words before any name (#214).
   const wl = wordSuggest(before);
   if (wl) return wl.stop ? null : wl;

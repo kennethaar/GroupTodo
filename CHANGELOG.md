@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.188.0 - 2026-11-19
+
+- Links and aliases: a known name that is not linked yet, such as a first
+  name or an alias, gets a quiet wavy line on the line you are in or point
+  at. Click it, or move to it with the arrow keys, and Enter links it
+  (#428).
+
 ## 1.187.0 - 2026-11-19
 
 - Areas and sharing: on a computer every area is a chip in the top bar.

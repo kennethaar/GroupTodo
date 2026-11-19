@@ -23,9 +23,8 @@ function linkKnownNames(text, before = "", pool = nameIndex()) {
   const plainBefore = String(before || "").replace(/\[\[[^\]]*(?:\]\[[^\]]*)?\]\]/g, " ");
   const wants = names.map(n => ({word: n.title, ref: n.ref, label: null}));
   wants.sort((a, b) => b.word.length - a.word.length);
-  // Only plain words are touched: not what is already a link, code, an address
-  // or a quoted Windows path ("C:\...\Nordic Lights\..." is a folder, #333).
-  const parts = src.split(/(\[\[[^\]]*(?:\]\[[^\]]*)?\]\]|`[^`]*`|["\u201C](?:[A-Za-z]:|\\\\[^\\\s"\u201D]+)\\[^"\u201D\n]*["\u201D]|https?:\/\/\S+|file:\S+|(?:tel|telto|sms):(?:\/\/)?\+?\d[\d\s\-.()]*\d|mapto:[^|;\[\]#\n]+|(?:mailto|tel|telto|sms|geo|msteams|teams):\S+|\]\])/i);
+  // Only plain words are touched (PLAIN_SKIP_RE).
+  const parts = src.split(PLAIN_SKIP_RE);
   const linked = new Set(linksIn(src).map(l => trim(l.split("][")[0]).toLowerCase()));
   for (let i = 0; i < parts.length; i += 2) {
     let seg = parts[i];

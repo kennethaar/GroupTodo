@@ -9,4 +9,5 @@ const SUGGEST_KEYS = {
   both:  {label: "Tab or Enter", blurb: "Either key takes it. Esc closes the list."},
 };
 const suggestKeys = () => { const k = PREF.get("suggest.accept", "enter"); return SUGGEST_KEYS[k] ? k : "enter"; };
-const suggestTakes = (key, mode) => key === "Tab" ? suggestKeys() !== "enter" : suggestKeys() !== "tab";
+// A squiggled name's bubble is not something you were typing: Enter links it (#428).
+const suggestTakes = (key, mode) => key === "Tab" ? suggestKeys() !== "enter" : mode === "unlinked" || suggestKeys() !== "tab";
