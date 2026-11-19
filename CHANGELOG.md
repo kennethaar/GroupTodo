@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.185.2 - 2026-11-19
+
+- Templates: a project made from a template is a copy of it. Headings and
+  notes stay as they are, a note box comes along, and only tasks become
+  steps, with their state kept. A template of plain lines still makes them
+  tasks (#435).
+
 ## 1.185.1 - 2026-11-19
 
 - Events and feelings: the Feelings Wheel opens without the space too.

@@ -2,7 +2,7 @@
    onMade, when given, is told instead of the project being opened. */
 function runTemplateAsProject(listPath, onMade) {
   const tpl = getPage(listPath);
-  const steps = flattenBlocks(tpl.blocks).length;
+  const steps = projectTemplateSteps(listPath);
   const nameInput = el("input", {placeholder: "Acme Ltd"});
   const outcomeInput = el("input", {});
   const sync = () => {

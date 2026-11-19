@@ -15,14 +15,18 @@ function runChecklistAsProject(listPath, name, opts = {}) {
   const page = getPage(projectPath);
   page.props.from = "[[8/" + baseName(listPath) + "]]";
   const ctx = opts.context || state.context;
+  const stateOf = projectStepState(list);
   let n = 0;
   const copy = blocks => (blocks || []).map(b => {
-    n++;
     const title = expandVars(b.title, vars);
+    const st = stateOf(b);
+    if (st) n++;
     return stampAuthor(newBlock({
-      state: "TODO",
-      title: title + (ctx && !hasContextLink(title) ? " [[c/" + ctx + "]]" : ""),
+      state: st,
+      // A context belongs on something you are going to do, not on a heading.
+      title: title + (st && ctx && !hasContextLink(title) ? " [[c/" + ctx + "]]" : ""),
       props: {},
+      body: (b.body || []).map(l => expandVars(l, vars)),
       children: copy(b.children),
     }));
   });

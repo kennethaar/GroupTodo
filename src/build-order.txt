@@ -551,6 +551,7 @@ js/72-areas/vars-unassignedProjects.js
 js/73-checklists/checklistTemplate.js
 js/73-checklists/vars-isProjectTemplate.js
 js/73-checklists/setChecklistKind.js
+js/73-checklists/projectStepState.js
 js/73-checklists/runChecklistAsProject.js
 js/73-checklists/createChecklist.js
 js/73-checklists/vars-checklistPages.js

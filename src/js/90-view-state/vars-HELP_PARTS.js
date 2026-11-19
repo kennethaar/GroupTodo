@@ -1059,6 +1059,7 @@ const HELP = {
       "Import a file… brings a list in from a Markdown file."],
     more: ["Write a book comes with the app. It adds the Book view: Chapters, Read, Plot, Timeline, Cast, Relations and Revise.",
       "A checklist that makes a new project is a template too. Make one in Routines.",
+      "The new project is a copy of it. Headings and notes stay as they are. Only tasks are steps.",
       "In a file, each line that starts with - is a step. With the kind line below at the top, it makes projects. Without it, it is a checklist.",
       "A name you already use gets a number, so nothing is replaced."],
     code: [["kind:: project", "At the top of a file: a project template"]],

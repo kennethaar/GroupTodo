@@ -11659,6 +11659,42 @@ var GTD_TEST = (() => {
     ok(!content().querySelector(".bookset"), "not in Settings");
     eq(files(), before);
   }));
+  test("#435 a project template is copied as written: headings, notes and their boxes stay, only tasks are steps", () => withBookVault({}, async () => {
+    const tpl = join(DIRS.lists, "Test435 client.md");
+    putPage(tpl, parsePage([
+      "kind:: project", "",
+      "- # Ref",
+      "  - Contract and drawings go here",
+      "    the box under %name%",
+      "- # Actions",
+      "  - TODO Call %name% about the scope",
+      "  - DONE Agree the fee", ""].join("\n")));
+    const plain = join(DIRS.lists, "Test435 plain.md");
+    putPage(plain, parsePage("kind:: project\n\n- # Prep\n- Call %name%\n"));
+    const made = [];
+    try {
+      clearMemo();
+      has(templateChoices().find(c => c.path === tpl).blurb, "2 steps", "only the task lines are steps");
+      const r = runChecklistAsProject(tpl, "Acme", {context: "office"});
+      made.push(r.path);
+      eq(r.steps, 2, "the run counts the tasks");
+      const [ref, act] = getPage(r.path).blocks;
+      eq([ref.state, ref.title], [null, "# Ref"], "a heading stays a heading");
+      ok(headLevel(ref.title, false) === 1);
+      const note = ref.children[0];
+      eq([note.state, note.title], [null, "Contract and drawings go here"], "a note stays a note, no context");
+      eq(note.body, ["the box under Acme"], "its box comes along, %name% filled in");
+      eq(act.children.map(b => [b.state, b.title]),
+        [["TODO", "Call Acme about the scope [[c/office]]"], ["DONE", "Agree the fee [[c/office]]"]],
+        "a task keeps its state and gets the context");
+      // A template written with plain lines only still makes them tasks, but never a heading.
+      const p = runChecklistAsProject(plain, "Beta", {context: "office"});
+      made.push(p.path);
+      eq(getPage(p.path).blocks.map(b => [b.state, b.title]),
+        [[null, "# Prep"], ["TODO", "Call Beta [[c/office]]"]]);
+      eq(p.steps, 1);
+    } finally { for (const x of [tpl, plain, ...made]) V.pages.delete(x); clearMemo(); }
+  }));
   test("#420 New from a template: the built-ins, your project templates, and a file to import", () => withBookVault({}, async () => {
     const own = createChecklist("Onboard client", "project");
     getPage(own).blocks = [newBlock({title: "Call %name%"}, false)];

@@ -4,7 +4,7 @@ function templateChoices() {
   const own = checklistPages().filter(isProjectTemplate)
     .sort((a, b) => pageTitle(a).localeCompare(pageTitle(b)))
     .map(path => {
-      const n = flattenBlocks(getPage(path).blocks).length;
+      const n = projectTemplateSteps(path);
       const outcome = trim(getPage(path).props?.outcome || "");
       return {path, name: pageTitle(path), kind: "Project",
         blurb: n + (n === 1 ? " step" : " steps") + ". Makes a new project each time you use it." +

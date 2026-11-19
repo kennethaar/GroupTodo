@@ -4325,6 +4325,7 @@ The middle stops it =>
 The minutes above are what a click on the timer starts, 1 to the max. =>
 The month. Each action stands on its due day. =>
 The names are back. The words go on the task =>
+The new project is a copy of it. Headings and notes stay as they are. Only tasks are steps. =>
 The next action =>
 The next meeting today: its time, then a countdown in the last hour. =>
 The next one goes on the Journal, not the room page. Daily and day-bound ones go on their day. =>
