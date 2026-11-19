@@ -36,11 +36,13 @@ class History(unittest.TestCase):
         self.assertEqual(self.kept(), ["first"])
         self.assertNotIn(".history/pages/Kitchen.md", " ".join(self.vault.list()), "history is not a page")
 
-    def test_407_saves_close_together_keep_one_version(self):
-        self.vault.write("pages/Kitchen.md", "a")
-        self.vault.write("pages/Kitchen.md", "ab")
-        self.vault.write("pages/Kitchen.md", "abc")
-        self.assertEqual(self.kept(), ["a"], "typing saves every second; the version from before it is kept")
+    def test_407_only_a_change_beyond_spaces_and_capitals_keeps_a_version(self):
+        self.vault.write("pages/Kitchen.md", "- Call Anna")
+        self.vault.write("pages/Kitchen.md", "- call  anna ")
+        self.assertEqual(self.kept(), [], "spaces and capitals only: nothing kept")
+        self.vault.write("pages/Kitchen.md", "- Call Anna today")
+        self.vault.write("pages/Kitchen.md", "- Call Anna today\n- Buy tiles")
+        self.assertEqual(self.kept(), ["- call  anna ", "- Call Anna today"], "every real change keeps the page before it")
 
     def test_407_a_delete_always_keeps_the_page(self):
         self.vault.write("pages/Kitchen.md", "a")
