@@ -4,10 +4,12 @@
   text-align:left;flex:1;min-width:0}
 .brand:hover{background:var(--bg3)}
 .brand.active{background:var(--accent-soft)}
-.brand .logo{width:22px;height:22px;border-radius:6px;background:var(--fg);color:var(--bg2);
-  display:grid;place-items:center;font-size:12px;flex:none;overflow:hidden}
-.brand .logo img{width:100%;height:100%;object-fit:cover}
-.brand .appver{font-weight:400;font-size:11px;color:var(--fg3);margin-left:5px}
+.brand .logo{width:24px;height:24px;flex:none;display:grid;place-items:center}
+.brand .logo img{width:100%;height:100%}
+.brand .appver{display:block;font-weight:400;font-size:11px;color:var(--fg3)}
+/* #447 your picture is a button of its own, at the right of the head */
+.brandme{flex:none;border-radius:50%;padding:2px;margin-top:6px;line-height:0}
+.brandme:hover,.brandme.active{background:var(--accent-soft)}
 .brand small{display:block;font-weight:400;font-size:12px;color:var(--fg3);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hideside{color:var(--fg3);border-radius:6px;width:28px;height:28px;margin-top:6px;flex:none}

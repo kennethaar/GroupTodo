@@ -1,10 +1,11 @@
 function renderNav() {
   const me = whoAmI();
   $("#brandName").textContent = me || "Set your name";
-  const logo = $("#brandLogo"), face = me ? avatarOf(me) : "";
-  logo.textContent = "";
-  if (face) logo.append(el("img", {src: face, alt: ""})); else logo.textContent = "G";
-  $("#brand").classList.toggle("active", state.view === "me");
+  // #447 the logo stays GroupToDo's; your picture is its own button at the right.
+  const mine = $("#brandMe");
+  mine.textContent = "";
+  mine.append(avatarNode(me || "?", 26));
+  mine.classList.toggle("active", state.view === "me");
 
   const nav = $("#nav");
   const sync = $("#syncRow");      // held: clearing the nav takes it along (#397); Focus beside it (#323)

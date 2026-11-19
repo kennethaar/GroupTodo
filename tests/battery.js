@@ -43,10 +43,23 @@ var GTD_TEST = (() => {
   /* ============================================================
      Version
      ============================================================ */
-  test("version is MAJOR.MINOR.PATCH and shown beside the name, top left", () => {
+  test("#447 the head: logo left, version between GroupToDo and you, your picture right", async () => {
     ok(/^\d+\.\d+\.\d+$/.test(APP_VERSION), "APP_VERSION is " + APP_VERSION);
+    renderNav();
+    const brand = document.querySelector("#brand"), me = document.querySelector("#brandMe");
     eq(document.querySelector("#appVersion").textContent, "v" + APP_VERSION);
-    has(document.querySelector("#brand").textContent, "GroupToDo");
+    const words = brand.textContent, name = document.querySelector("#brandName").textContent;
+    ok(words.indexOf("GroupToDo") < words.indexOf("v" + APP_VERSION) && words.indexOf("v" + APP_VERSION) < words.indexOf(name),
+      "GroupToDo, then the version, then the name: " + words);
+    ok(document.querySelector("#brandLogo svg, #brandLogo img"), "the GroupToDo logo is drawn");
+    ok(!brand.querySelector(".avatar"), "no picture of you in the logo's place");
+    ok(me && me.tagName === "BUTTON" && me.querySelector(".avatar"), "your picture is a button of its own");
+    ok(brand.compareDocumentPosition(me) & Node.DOCUMENT_POSITION_FOLLOWING, "your picture comes after, on the right");
+    me.click(); await settle();
+    eq(state.view, "me", "your picture opens Your page");
+    brand.click(); await settle();
+    eq(state.view + " " + state.helpTopic, "help news", "GroupToDo opens What's new");
+    go("journal"); await settle();
   });
 
   /* ============================================================

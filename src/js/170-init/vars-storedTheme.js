@@ -15,7 +15,8 @@ $("#syncLine").onclick   = () => {
 };
 // History waits by the saved line (#323).
 $("#sideHistory").onclick = () => { document.body.classList.remove("nav-open"); openHistory(); };
-$("#brand").onclick      = () => go("me");
+$("#brand").onclick      = () => openHelp("news");
+$("#brandMe").onclick    = () => go("me");
 $("#appUpdate").onclick  = () => UPDATE && whatsNewDialog(UPDATE.entries, {update: UPDATE});
 $("#hideSide").onclick   = () => isNarrow() ? document.body.classList.remove("nav-open") : setSidebarHidden(true);
 $("#burger").onclick     = () => toggleSidebar();
@@ -28,7 +29,7 @@ document.addEventListener("mousedown", e => {
   if (!$("#spop").hidden && !e.target.closest("#spop, #spacesBtn")) closeSpacesMenu();
 });
 // Tapping a place on a phone puts the drawer away again.
-$("#sidebar").addEventListener("click", e => { if (e.target.closest(".nav-item, .brand, #syncLine")) document.body.classList.remove("nav-open"); });
+$("#sidebar").addEventListener("click", e => { if (e.target.closest(".nav-item, .brand, .brandme, #syncLine")) document.body.classList.remove("nav-open"); });
 const storedTheme = safeLS.get("gtd.theme");
 if (storedTheme) document.documentElement.dataset.theme = storedTheme;
 applyStyles();
