@@ -230,20 +230,20 @@ asks for this section to be compacted: repeats merged, stale items dropped.
 
 Work happens on `main`.
 
-Present (v1.175.0-v1.177.1): slides with a presenter window; the title comes
-first, bullets arrive in place, a focused line is presented from its trail.
-Newest area, so look here first for regressions.
+Present (v1.175.0-v1.179.0, `src/js/91-present/`): slides with a presenter
+window; title first, bullets arrive in place, a focused line is presented
+from its trail. Slide layouts (#433) are read from marks and picked with
+Format › Slide layout. Newest area, so look here first for regressions.
 
-Slow start (#181, reopened 2026-11-14): big Android folder (1203 files,
-~2 s per read, listing ~29 s).
+Slow start (#181, open): big Android folder (1203 files, ~2 s per read,
+listing ~29 s).
 
-- Staged read: `readDayFirst` reads today's page (plus `GTD.md`, day
-  templates) by name via `readDays`, draws it (`onDay`), then yesterday,
-  before `names()`. `readActiveFirst` then lists `pages/1/` (`namesIn`).
-  `isStubPath` defers loose `pages/` files; `rec.dayOnly` holds other saves.
+- Staged read: `readDayFirst` reads today's page, `GTD.md` and day templates
+  by name (`readDays`, draws via `onDay`), then yesterday, before `names()`.
+  `readActiveFirst` lists `pages/1/` (`namesIn`). `isStubPath` defers loose
+  `pages/` files; `rec.dayOnly` holds other saves.
 - Takeover: `readFolderBehind` swaps the folder in at Enter (`lineDone()`),
-  merging shown and unsaved pages. User confirms it is fast after the swap.
-- Logging: `loadMark` (`src/js/00-bootstrap/loadMark.js`), `startupText`,
-  `readTimingText` go into Save log. Test `#181 a slow start can be traced`.
-  Its folder-read test and #340 run over 10 s, so both are skipped alone.
+  merging shown and unsaved pages.
+- Logging: `loadMark`, `startupText`, `readTimingText` feed the Save log
+  (test `#181 a slow start can be traced`; it and #340 skip alone, over 10 s).
 - Last log (v1.162.4): today 6.4 s, listing 29.5 s. Next: read a new log.
