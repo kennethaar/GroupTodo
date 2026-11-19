@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.184.0 - 2026-11-19
+
+- The line menu and toolbar: paste an email or a chat of 4 lines or more,
+  and the offer that appears has Plan it with an AI too. It opens the same
+  dialog as the line menu, with the pasted lines in the prompt, so a thread
+  becomes a project with one next action without picking the lines first
+  (#449).
+
 ## 1.183.0 - 2026-11-19
 
 - Areas and sharing: a new area can go straight into a free serve.py

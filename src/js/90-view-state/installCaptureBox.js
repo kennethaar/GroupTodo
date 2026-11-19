@@ -23,6 +23,6 @@ function installCaptureBox() {
       let title = "Follow up " + link;
       if (state.context) title += " [[c/" + state.context + "]]";
       return stampAuthor(newBlock({state: "TODO", title, props: {}}));
-    }));
+    }), () => openPlanWithAI(planSourceOfLines(put.path, put.roots)));
   });
 }

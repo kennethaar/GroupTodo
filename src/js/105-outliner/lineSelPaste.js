@@ -21,7 +21,8 @@ function lineSelPaste(raw) {
   const said = n + (n === 1 ? " line pasted" : " lines pasted") + " over " + spots.length +
     (spots.length === 1 ? " line." : " lines.");
   if (n < PASTE_AS_LINES) notify(said);
-  else offerPasteAs(raw, said + " Make a page of them instead:", pasteSwapper(path, roots, (kind, link) => newBlock({title: link}, false)));
+  else offerPasteAs(raw, said + " Make a page of them instead:", pasteSwapper(path, roots, (kind, link) => newBlock({title: link}, false)),
+    () => openPlanWithAI(planSourceOfLines(path, roots)));
   pushUndo({run: () => {
     roots.forEach(r => { const i = sibs.indexOf(r); if (i >= 0) sibs.splice(i, 1); });
     spots.forEach(s => { if (s.i >= 0) s.list.splice(s.i, 0, s.b); });

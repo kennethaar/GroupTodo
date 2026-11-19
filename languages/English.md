@@ -3257,6 +3257,7 @@ Paste a reply =>
 Paste a reply from mail or Teams, here or in a task's panel. With no reference, say who and what it answers. =>
 Paste a reply. Export the list as text or for Excel. =>
 Paste a translation =>
+Paste an email or a chat of 4 lines or more, and Plan it with an AI is offered at once. Its answer makes a project with one next action. =>
 Paste from clipboard =>
 Paste it anywhere - chat, email, a document. =>
 Paste the AI's answer =>

@@ -254,7 +254,7 @@ function outlineBlock(path, page, b, opts = {}) {
       const line = newBlock({state: inherit, title: link});
       if (line.state) { applyTodoTemplate(line); stampAddedIfMissing(path, line); }
       return line;
-    }));
+    }), () => openPlanWithAI(planSourceOfLines(path, roots)));
     focusBlock((tail || roots[roots.length - 1]).id);
   });
   /* Names and dates as you type. A date taken from the list is the line's

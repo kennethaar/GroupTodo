@@ -1,4 +1,7 @@
-function offerPasteAs(raw, ask, swap) {
+/* After a long paste: make a page of the lines instead, or keep them. plan,
+   when given, opens Plan it with an AI on the pasted lines (#449): an email
+   or a chat thread is often a project waiting to be clarified. */
+function offerPasteAs(raw, ask, swap, plan) {
   const mail = parseEmailText(raw);
   const t = el("div", {class: "toast pasteas"});
   let timer = 0;
@@ -35,7 +38,9 @@ function offerPasteAs(raw, ask, swap) {
   ];
   const first = mail ? "email" : "note";
   choices.sort((a, b) => (b[0] === first) - (a[0] === first));
-  row(ask, choices.map(([, label, run]) => [label, run]));
+  const buttons = choices.map(([, label, run]) => [label, run]);
+  if (plan) buttons.push(["Plan it with an AI", () => { close(); plan(); }]);
+  row(ask, buttons);
   $("#toasts").append(t);
   wait();
 }

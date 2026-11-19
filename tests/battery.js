@@ -12800,6 +12800,34 @@ var GTD_TEST = (() => {
     }
   });
 
+  test("#449 a long paste offers Plan it with an AI, with the pasted lines in the prompt", async () => {
+    const path = scratchProject("paste to plan", [[null, ""]]);
+    const b = getPage(path).blocks[0];
+    openPage(path); await settle();
+    const thread = ["Nora Vik: Can you get the quote for the kitchen panels before Friday?",
+      "Me: Yes, I will ask the shop.", "Nora Vik: Joe measures on Monday.", "Me: Then I order Tuesday."];
+    const toastBtn = re => [...document.querySelectorAll("#toasts .toast.pasteas button")].find(n => re.test(n.textContent));
+    try {
+      focusBlock(b.id); await settle();
+      const txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
+      const dt = new DataTransfer();
+      dt.setData("text/plain", thread.join("\n"));
+      txt.dispatchEvent(new ClipboardEvent("paste", {clipboardData: dt, bubbles: true, cancelable: true}));
+      await settle();
+      const plan = toastBtn(/^Plan it with an AI$/);
+      ok(plan, "a long paste does not offer Plan it with an AI");
+      plan.click(); await settle();
+      has(document.querySelector(".scrim .modal h2, .scrim .modal .mhead")?.textContent || "", "Plan it with an AI",
+        "the button did not open Plan it with an AI");
+      has(document.querySelector(".scrim .modal textarea[readonly]")?.value || "", "Joe measures on Monday",
+        "the pasted lines are not in the prompt");
+      ok(!document.querySelector("#toasts .toast.pasteas"), "the paste offer stays open behind the dialog");
+    } finally {
+      document.querySelectorAll("#toasts .toast.pasteas").forEach(t => t.remove());
+      closeModal(); go("today");
+    }
+  });
+
   test("#297 the mobile line toolbar can add a context, person or organisation", () => {
     const path = scratchProject("editbar tag", [["TODO", "Buy paint"]]);
     const page = getPage(path), block = page.blocks[0];
