@@ -17,7 +17,8 @@ import {stripJs, stripCss, stripHtml} from "./strip.mjs";
 
 export const ROOT = dirname(fileURLToPath(import.meta.url));
 const SRC = join(ROOT, "src");
-const read = rel => readFileSync(join(SRC, rel), "utf-8");
+// LF only: OneDrive turns sources CRLF on disk, and the built files must not follow.
+const read = rel => readFileSync(join(SRC, rel), "utf-8").replace(/\r\n/g, "\n");
 
 /* src/assets/<name>.svg is the picture as a designer would open it. In the
    code, SVG("name") becomes that markup as a string, and SVG_URI("name") a

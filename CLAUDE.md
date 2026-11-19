@@ -170,6 +170,18 @@ mkdir -p "$SCRATCH"
 
 Create issue and comment payloads with `JSON.stringify()`. Store temporary JSON only in `$SCRATCH`, never in the repository.
 
+Normalise line endings before every commit. The tree sits in OneDrive and
+files turn CRLF while HEAD is LF (`core.autocrlf=false`). Strip CR from each
+changed text file whose HEAD copy is LF, then check that `git diff --stat`
+shows only real changes:
+
+```bash
+for f in $(git diff --name-only); do case "$f" in *.jpg|*.png) continue;; esac
+  git show HEAD:"$f" | grep -q $'\r' || sed -i 's/\r$//' "$f"; done
+```
+
+Never commit OneDrive conflict copies (`*-LG2375JTB.*`, `*-HY-*.*`).
+
 ## Product and design rules
 
 Apply GTD, `Don't Make Me Think`, progressive disclosure, accessibility and management by exception. Do not redesign unrelated parts during a focused change.
