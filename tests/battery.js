@@ -6860,7 +6860,8 @@ var GTD_TEST = (() => {
           eq([b.title, dateIn(blockProp(b, "DEADLINE")), blockProp(b, "SCHEDULED")], ["Call Mia", parseWhen("x weekend").DEADLINE, undefined], "no word is Due");
           ok(said.some(m => /^Due/.test(m)), "the toast says Due: " + JSON.stringify(said));
           const c = await pick("Call Mia eow");
-          eq(dateIn(blockProp(c, "DEADLINE")), fri, "eow is Friday, as on Enter");
+          // On a Friday, eow is that day while fri is next week's: compare with Enter's reading.
+          eq(dateIn(blockProp(c, "DEADLINE")), parseWhen("x eow").DEADLINE, "eow is Friday, as on Enter");
         });
       } finally { window.notify = was; }
     });
