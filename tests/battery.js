@@ -9126,7 +9126,8 @@ var GTD_TEST = (() => {
     } finally { window.matchMedia = mm; timerStop?.(); renderNav(); }
   });
   test("#421 Help is always in sight, in Focus and on a phone too", async () => {
-    const shown = n => !!n && n.getClientRects().length > 0;
+    // In sight: laid out and not hidden (#446 keeps the Journal's bar laid out, unseen).
+    const shown = n => !!n && n.checkVisibility({visibilityProperty: true, opacityProperty: true});
     const help = () => [$("#btnHelp"), $("#floatHelp")].filter(shown);
     const mm = window.matchMedia;
     try {
