@@ -843,8 +843,7 @@ display:flex;flex-direction:column;gap:8px;max-width:640px}
 .clcard .cleye{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);font-weight:600}
 .clcard h3{margin:0;font-size:19px;line-height:1.35;overflow-wrap:anywhere}
 .clcard .clkids{margin:0;padding-left:18px;color:var(--fg2);font-size:13px;line-height:1.5}
-.clcard .solq{padding-top:8px;border-top:1px solid var(--border)}
-.clcard .solq b{font-size:17px;color:var(--accent)}
+.clarify .solq b{font-size:17px;color:var(--accent)}
 .clgroups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:820px}
 .clgroup{display:flex;flex-direction:column;gap:6px;min-width:0}
 .clgroup h4{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);font-weight:600}
@@ -4827,7 +4826,7 @@ placeholder="Capture… (Enter adds to today)">
 })();
 
 "use strict";
-const APP_VERSION = "1.191.3";
+const APP_VERSION = "1.191.4";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -18217,7 +18216,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.191.3 - 2026-11-20\n\n- Journal: Back and Forward stand top left, at exactly the same spot as on\n  every other page, so one click takes you back to where you were (#446).\n\n## 1.191.2 - 2026-11-20\n\n- A page: a click on a line in Linked references opens the page it is on, at\n  that line. While you write in one, the label reads `Editing: \"Page name\" ·\n  Open`, and Open opens that page.\n\n## 1.191.1 - 2026-11-20\n\n- Weekly review › Clarify: the line you are asked about shows again in the\n  day page beside the card. The new list of who else is here had hidden it.\n\n## 1.191.0 - 2026-11-20\n\n- A page: pages pinned to the sidebar are kept on your own person page, as\n  `pins::`, so they follow you to every device and stay after a reload, an\n  area rename or a page rename. Pins this browser held move there once (#33).\n\n## 1.190.0 - 2026-11-20\n\n- Keys on a line: ▾ at the top left of a Shift+Enter note box folds it to\n  one quiet line, \"▸ 3 lines\". ▸ or Shift+Enter opens it again. The file\n  keeps it folded, and Copy text leaves a folded box out (#392).\n\n## 1.189.4 - 2026-11-20\n\n- Areas and sharing: on a phone, who else is in the area no longer takes a\n  row of its own under the bar. ☰ shows how many, and the sidebar lists\n  them at the top; tap one to open their page (#408).\n\n## 1.189.3 - 2026-11-20\n\n- Present a page: ▾ beside ▶ Present drops down under itself with just\n  With presenter window, not a box in the middle of the screen.\n  ☰ › Present from here goes on through the lines after it (#431).\n\n## 1.189.2 - 2026-11-20\n\n- Present a page: on a curve, a long first line no longer runs across the\n  y axis. Its words start at its peak and run right (#433).\n\n## 1.189.1 - 2026-11-20\n\n- Present a page: every step's arrow is as big as the biggest, and so is\n  every bubble round a hub, each with its spoke in sight. A curve's last\n  line stays flat (#433).\n\n## 1.189.0 - 2026-11-20\n\n- Areas and sharing: see who else is in the area. Their initials sit top\n  right; a click lists who is on which page and opens it, and a page\n  someone else has open says so under its title. serve.py hears a beat\n  every ten seconds; a plain folder keeps one small file per person in\n  .here/ (#408).\n\n## 1.188.0 - 2026-11-19\n\n- Links and aliases: a known name that is not linked yet, such as a first\n  name or an alias, gets a quiet wavy line on the line you are in or point\n  at. Click it, or move to it with the arrow keys, and Enter links it\n  (#428).\n\n## 1.187.0 - 2026-11-19\n\n- Areas and sharing: on a computer every area is a chip in the top bar.\n  One click shows or hides it, and New things go to picks where new tasks\n  land. Settings, Area now holds each area's colour, New area, Manage areas\n  and Invite somebody. A phone keeps the area menu (#436).\n";
+const HELP_NEWS = "## 1.191.4 - 2026-11-20\n\n- Weekly review › Clarify: the answers stand above the line's card, at one\n  spot. The card changes height from line to line, so the buttons no longer\n  move under your finger (#461).\n\n## 1.191.3 - 2026-11-20\n\n- Journal: Back and Forward stand top left, at exactly the same spot as on\n  every other page, so one click takes you back to where you were (#446).\n\n## 1.191.2 - 2026-11-20\n\n- A page: a click on a line in Linked references opens the page it is on, at\n  that line. While you write in one, the label reads `Editing: \"Page name\" ·\n  Open`, and Open opens that page.\n\n## 1.191.1 - 2026-11-20\n\n- Weekly review › Clarify: the line you are asked about shows again in the\n  day page beside the card. The new list of who else is here had hidden it.\n\n## 1.191.0 - 2026-11-20\n\n- A page: pages pinned to the sidebar are kept on your own person page, as\n  `pins::`, so they follow you to every device and stay after a reload, an\n  area rename or a page rename. Pins this browser held move there once (#33).\n\n## 1.190.0 - 2026-11-20\n\n- Keys on a line: ▾ at the top left of a Shift+Enter note box folds it to\n  one quiet line, \"▸ 3 lines\". ▸ or Shift+Enter opens it again. The file\n  keeps it folded, and Copy text leaves a folded box out (#392).\n\n## 1.189.4 - 2026-11-20\n\n- Areas and sharing: on a phone, who else is in the area no longer takes a\n  row of its own under the bar. ☰ shows how many, and the sidebar lists\n  them at the top; tap one to open their page (#408).\n\n## 1.189.3 - 2026-11-20\n\n- Present a page: ▾ beside ▶ Present drops down under itself with just\n  With presenter window, not a box in the middle of the screen.\n  ☰ › Present from here goes on through the lines after it (#431).\n\n## 1.189.2 - 2026-11-20\n\n- Present a page: on a curve, a long first line no longer runs across the\n  y axis. Its words start at its peak and run right (#433).\n\n## 1.189.1 - 2026-11-20\n\n- Present a page: every step's arrow is as big as the biggest, and so is\n  every bubble round a hub, each with its spoke in sight. A curve's last\n  line stays flat (#433).\n\n## 1.189.0 - 2026-11-20\n\n- Areas and sharing: see who else is in the area. Their initials sit top\n  right; a click lists who is on which page and opens it, and a page\n  someone else has open says so under its title. serve.py hears a beat\n  every ten seconds; a plain folder keeps one small file per person in\n  .here/ (#408).\n\n## 1.188.0 - 2026-11-19\n\n- Links and aliases: a known name that is not linked yet, such as a first\n  name or an alias, gets a quiet wavy line on the line you are in or point\n  at. Click it, or move to it with the arrow keys, and Enter links it\n  (#428).\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {
@@ -39237,8 +39236,7 @@ el("div", {class: "cleye"}, dayLong(baseName(path)) +
 h3, ...clKinds(path, b, h3),
 kids.length ? el("ul", {class: "clkids", translate: "no"}, ...kids.slice(0, 5).map(k =>
 el("li", {html: asLine(k)})), kids.length > 5 ? el("li", {}, "…") : null) : null,
-allNotes,
-el("div", {class: "solq"}, el("b", {}, "What is it?")));
+allNotes);
 let n = 0;
 const groups = el("div", {class: "clgroups"}, ...CL_GROUPS.map((g, gi) => el("section", {class: "clgroup"},
 el("h4", {}, g),
@@ -39250,8 +39248,8 @@ onclick: () => clAnswer(r, a)},
 el("span", {class: "n"}, String(i + 1)),
 el("span", {class: "lbl"}, el("b", {}, a.label), el("small", {}, a.say)));
 }))));
-c.append(el("div", {class: "sdduel"}, undo, card, groups,
-el("p", {class: "clhow"}, CL_ANSWERS[CL.aim].label + ": " + CL_ANSWERS[CL.aim].how)));
+c.append(el("div", {class: "sdduel"}, el("div", {class: "solq"}, el("b", {}, "What is it?")), groups,
+el("p", {class: "clhow"}, CL_ANSWERS[CL.aim].label + ": " + CL_ANSWERS[CL.aim].how), undo, card));
 CL.shown = r;
 return c;
 }

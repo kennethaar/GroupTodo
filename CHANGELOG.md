@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.191.4 - 2026-11-20
+
+- Weekly review › Clarify: the answers stand above the line's card, at one
+  spot. The card changes height from line to line, so the buttons no longer
+  move under your finger (#461).
+
 ## 1.191.3 - 2026-11-20
 
 - Journal: Back and Forward stand top left, at exactly the same spot as on

@@ -11439,6 +11439,20 @@ var GTD_TEST = (() => {
       } finally { closeSidePage(); }
     });
   });
+  test("#461 Clarify answers stay at one spot, above the card, whatever the line or the last answer", async () => {
+    await withDays([[3, "- Call the plumber\n- Meeting with Anna\n  - Prices went up 10 %\n  - New contact: Ola\n  - Lunch was late\n- Plan the party\n"]], async () => {
+      let c = await showClarify();
+      const at = c => Math.round(c.querySelector(".clans").getBoundingClientRect().top - c.getBoundingClientRect().top);
+      const first = at(c);
+      ok(c.querySelector(".clans").compareDocumentPosition(c.querySelector(".clcard")) & Node.DOCUMENT_POSITION_FOLLOWING,
+        "the answers are not above the card");
+      c.querySelector(".clans").click();
+      c = await showClarify();
+      eq(c.querySelector(".clcard h3").textContent, "Meeting with Anna");
+      ok(c.querySelector(".cllast") && c.querySelector(".clkids"), "the second card has lines under it and an undo");
+      eq(at(c), first, "the answers moved");
+    });
+  });
   test("#365 Clarify says what the last answer did, and Undo that steps back more than one line", async () => {
     await withDays([[3, "- Call the plumber\n- Order tiles\n- Plan the party\n"]], async () => {
       const d3 = journalPath(shiftISO(T(), -3));

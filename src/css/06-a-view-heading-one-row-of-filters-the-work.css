@@ -147,8 +147,7 @@
 .clcard .cleye{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);font-weight:600}
 .clcard h3{margin:0;font-size:19px;line-height:1.35;overflow-wrap:anywhere}
 .clcard .clkids{margin:0;padding-left:18px;color:var(--fg2);font-size:13px;line-height:1.5}
-.clcard .solq{padding-top:8px;border-top:1px solid var(--border)}
-.clcard .solq b{font-size:17px;color:var(--accent)}
+.clarify .solq b{font-size:17px;color:var(--accent)}
 .clgroups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:820px}
 .clgroup{display:flex;flex-direction:column;gap:6px;min-width:0}
 .clgroup h4{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);font-weight:600}

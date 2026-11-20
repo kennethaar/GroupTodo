@@ -49,8 +49,7 @@ function viewDayReview() {
     h3, ...clKinds(path, b, h3),
     kids.length ? el("ul", {class: "clkids", translate: "no"}, ...kids.slice(0, 5).map(k =>
       el("li", {html: asLine(k)})), kids.length > 5 ? el("li", {}, "…") : null) : null,
-    allNotes,
-    el("div", {class: "solq"}, el("b", {}, "What is it?")));
+    allNotes);
   let n = 0;
   const groups = el("div", {class: "clgroups"}, ...CL_GROUPS.map((g, gi) => el("section", {class: "clgroup"},
     el("h4", {}, g),
@@ -62,8 +61,11 @@ function viewDayReview() {
         el("span", {class: "n"}, String(i + 1)),
         el("span", {class: "lbl"}, el("b", {}, a.label), el("small", {}, a.say)));
     }))));
-  c.append(el("div", {class: "sdduel"}, undo, card, groups,
-    el("p", {class: "clhow"}, CL_ANSWERS[CL.aim].label + ": " + CL_ANSWERS[CL.aim].how)));
+  /* The answers first, at one spot: the card under them changes height with
+     each line, and the undo comes and goes, so above they would move and a
+     press would land on the wrong one (#461). */
+  c.append(el("div", {class: "sdduel"}, el("div", {class: "solq"}, el("b", {}, "What is it?")), groups,
+    el("p", {class: "clhow"}, CL_ANSWERS[CL.aim].label + ": " + CL_ANSWERS[CL.aim].how), undo, card));
   CL.shown = r;
   return c;
 }
