@@ -21,17 +21,22 @@ function flyPlace() {
   const clampX = x => Math.min(Math.max(M, x), Math.max(M, vw - w - M));
   let top, maxH = null;
   /* Opened from the ☰ in the gutter (#413): beside it, to its left, level with
-     it; with no room there, just under it, starting at the ☰. */
+     it; with no room there, just under it, starting at the ☰. It stays inside
+     the outline's box (#413 reopened), not over the sidebar or out of a card,
+     unless the box is narrower than the menu. */
   const from = FLY.from && FLY.from.isConnected ? FLY.from.getBoundingClientRect() : null;
   if (from) {
-    const room = from.left - GAP - M >= w;
-    const fx = room ? from.left - GAP - w : clampX(from.left);
+    const ol = FLY.from.closest(".outline"), ob = ol && ol.getBoundingClientRect();
+    let lo = M, hi = vw - M;
+    if (ob && Math.min(hi, ob.right) - Math.max(lo, ob.left) >= w) { lo = Math.max(lo, ob.left); hi = Math.min(hi, ob.right); }
+    const room = from.left - GAP - lo >= w;
+    const fx = room ? from.left - GAP - w : Math.min(Math.max(lo, from.left), Math.max(lo, hi - w));
     // Low on the screen it moves up to fit whole; it scrolls only when the
     // window itself is shorter than the menu.
     const avail = vh - M - (top0 + M);
     const fy = Math.max(top0 + M, Math.min(room ? from.top : from.bottom + GAP, vh - M - h));
     box.style.maxHeight = h > avail ? avail + "px" : "";
-    box.style.left = Math.min(fx, from.left) + "px"; box.style.top = fy + "px";
+    box.style.left = fx + "px"; box.style.top = fy + "px";
     return;
   }
   const left = clampX(end);

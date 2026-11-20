@@ -4615,8 +4615,13 @@ var GTD_TEST = (() => {
     ok(FLY && !FLY.box.hidden, "the ☰ opens the line menu");
     FLY.box.getAnimations().forEach(a => a.finish());   // measured where it rests, not mid fade-in
     const bx = FLY.box.getBoundingClientRect(), mm = menu.getBoundingClientRect();
-    ok(bx.left <= mm.left + 1, "#413 the menu starts at or left of the ☰, not at " + Math.round(bx.left) + " (☰ at " + Math.round(mm.left) + ")");
-    if (mm.left - 12 >= bx.width) ok(bx.right <= mm.left + 1, "#413 with room it opens left of the ☰");
+    const ob = line.closest(".outline").getBoundingClientRect();
+    // #413 reopened: it stays inside the outline's box, never over the sidebar;
+    // the ☰ sits in the gutter just outside it, so the menu starts at the box's edge.
+    ok(bx.left <= Math.max(mm.left, ob.left) + 1, "#413 the menu starts as near the ☰ as the box allows, not at " + Math.round(bx.left) + " (☰ at " + Math.round(mm.left) + ")");
+    ok(bx.left >= ob.left - 1 && bx.right <= ob.right + 1, "#413 the menu stays inside the outline's box: menu " +
+      [bx.left, bx.right].map(Math.round) + ", outline " + [ob.left, ob.right].map(Math.round));
+    if (mm.left - ob.left >= bx.width) ok(bx.right <= mm.left + 1, "#413 with room in the outline it opens left of the ☰");
     ok(Math.abs(bx.top - mm.top) <= 4 || bx.top >= mm.bottom - 1, "#413 level with the ☰ or just under it");
     ok(FLY.box.scrollHeight <= FLY.box.clientHeight + 1, "#413 the menu has a scroll of its own");
     if (FLY && FLY.summoned) flySummon(FLY.txt);

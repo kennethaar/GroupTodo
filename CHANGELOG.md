@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.192.2 - 2026-11-20
+
+- The line menu and toolbar: the ☰ menu stays inside the outline's box, so it
+  no longer spills over the sidebar or out of a card (#413).
+
 ## 1.192.1 - 2026-11-20
 
 - Weekly review › Review actions: a project linked in a task shows its name
