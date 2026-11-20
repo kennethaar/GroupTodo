@@ -57,8 +57,9 @@
 #deck .curve .axes path{fill:none;stroke:currentColor;stroke-width:1.5;opacity:.6}
 #deck .curve .sline{stroke-width:3}
 #deck .curve .ntext{transform:translateX(-50%);max-width:22%;margin-bottom:.4em;padding:0;border:0;background:none}
-/* The y axis is named over its top end; the line stops a gap before the word. */
-#deck .yaxis{position:absolute;left:3%;bottom:100%;transform:translateX(-50%);margin-bottom:.3em;font-size:.8em;opacity:.8;white-space:nowrap}
+/* The first peak sits by the y axis: its words start there and run right, never across the axis. */
+#deck .curve .ntext.first{transform:none;text-align:left}
+#deck .yaxis{position:absolute;left:0;top:50%;transform:translate(-100%,-50%) rotate(180deg);writing-mode:vertical-rl;font-size:.8em;opacity:.8}
 #deck .xaxis{position:absolute;right:0;top:100%;font-size:.8em;opacity:.8}
 
 /* Boxes: versus, 2×2, scorecard and cards, each box's lines in it. */

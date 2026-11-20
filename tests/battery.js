@@ -13709,7 +13709,7 @@ var GTD_TEST = (() => {
     "  - 3. Brain-dump", "  - 4. Run your first Weekly Review",
     "- Platform", "  - . Core", "  - . A web presenter with a long name for its bubble, longer than the rest", "  - . Mobile capture app",
     "  - . Sync", "  - . API", "  - . Search",
-    "- Recall (Memory / Days)", "  - ~ Learn", "  - ~ Review", "  - ~ Stuck"].join("\n") + "\n"}, async () => {
+    "- Recall (Memory / Days)", "  - ~ Learn something new, in a sentence that runs long", "  - ~ Review", "  - ~ Stuck"].join("\n") + "\n"}, async () => {
     try {
       openPage(EVEN); await settle();
       content().querySelector(".pagehead .presentbtn").click(); await settle();
@@ -13733,7 +13733,10 @@ var GTD_TEST = (() => {
         }
         ok(shown >= 3, "bubble " + (i + 1) + "'s spoke is hidden");
       }
-      const peaks = [...(await to("Recall")).querySelectorAll(".curve .peak path")];
+      const recall = await to("Recall");
+      const axes = recall.querySelector(".curve .axes").getBoundingClientRect(), first = recall.querySelector(".curve .ntext").getBoundingClientRect();
+      ok(first.left > axes.left + axes.width * 0.03 + 2, "a long first line crosses the y axis");
+      const peaks = [...recall.querySelectorAll(".curve .peak path")];
       const ys = peaks.at(-1).getAttribute("d").split(/[ML]/).filter(Boolean).slice(2).map(pt => +pt.split(",")[1]);
       eq(new Set(ys).size, 1, "the last line dips: " + ys.join(" "));
     } finally { presentStop(); }

@@ -3776,7 +3776,8 @@ font-weight:700;font-size:.85em;overflow-wrap:anywhere}
 #deck .curve .axes path{fill:none;stroke:currentColor;stroke-width:1.5;opacity:.6}
 #deck .curve .sline{stroke-width:3}
 #deck .curve .ntext{transform:translateX(-50%);max-width:22%;margin-bottom:.4em;padding:0;border:0;background:none}
-#deck .yaxis{position:absolute;left:3%;bottom:100%;transform:translateX(-50%);margin-bottom:.3em;font-size:.8em;opacity:.8;white-space:nowrap}
+#deck .curve .ntext.first{transform:none;text-align:left}
+#deck .yaxis{position:absolute;left:0;top:50%;transform:translate(-100%,-50%) rotate(180deg);writing-mode:vertical-rl;font-size:.8em;opacity:.8}
 #deck .xaxis{position:absolute;right:0;top:100%;font-size:.8em;opacity:.8}
 #deck .cards{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:.8em;height:100%;align-content:center}
 #deck .lay-split .cards{grid-auto-rows:minmax(50%,auto)}
@@ -15070,7 +15071,7 @@ from = v(x1 - x0);
 return slidePart(b, "peak",
 slideSvg("svg", {viewBox: "0 0 100 100", preserveAspectRatio: "none", "aria-hidden": "true"},
 slideSvg("path", {d, class: "sline", "vector-effect": "non-scaling-stroke"})),
-el("span", {class: "ntext", style: `left:${x0}%;bottom:${100 - Y(1)}%`}, slideWords(b)));
+el("span", {class: "ntext" + (i ? "" : " first"), style: `left:${x0}%;bottom:${100 - Y(1)}%`}, slideWords(b)));
 });
 return el("div", {class: "curve"},
 slideSvg("svg", {class: "axes", viewBox: "0 0 100 100", preserveAspectRatio: "none", "aria-hidden": "true"},

@@ -5,12 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.189.2 - 2026-11-20
+
+- Present a page: on a curve, a long first line no longer runs across the
+  y axis. Its words start at its peak and run right (#433).
+
 ## 1.189.1 - 2026-11-20
 
 - Present a page: every step's arrow is as big as the biggest, and so is
   every bubble round a hub, each with its spoke in sight. A curve's last
-  line stays flat, and its y axis is named over its top end, the line
-  stopping before the word (#433).
+  line stays flat (#433).
 
 ## 1.189.0 - 2026-11-20
 
