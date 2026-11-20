@@ -4,9 +4,8 @@ function slideNotes(b) {
   let cover = "";
   const notes = [];
   for (const line of b.body || []) {
-    const m = DECK_IMAGE_RE.exec(line);
-    const src = m && m[1];
-    if (src && (/^(https?|data|blob):/.test(src) || (isAssetPath(src) && ASSET_IMAGE_RE.test(src)))) {
+    const src = slidePicture(line);
+    if (src) {
       if (!cover) cover = src;
       const rest = trim(line.replace(DECK_IMAGE_RE, ""));
       if (rest) notes.push(rest);

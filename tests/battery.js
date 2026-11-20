@@ -13538,7 +13538,44 @@ var GTD_TEST = (() => {
     btn.click(); await settle();
     ok($("#deck"), "Present fills the screen with the deck");
   };
-  test("#431 on a phone ▶ Present and Focus are on screen beside a page's title", () => withPages(TALK_PAGE, async () => {
+  test("#464 Present: a picture under a bullet takes the place of the slide's picture while that bullet is lit", () => withPages({[TALK]: [
+    "- Results",
+    "  ![cover](assets/cover.png)",
+    "  - Revenue up",
+    "    - ![chart](assets/chart.png)",
+    "  - New market",
+    "    - ![oslo](assets/oslo.png)",
+    "  - Hiring paused",
+    "- Plans",
+    "  - Office",
+    "    - ![plan](assets/plan.png)",
+    "  - Budget",
+  ].join("\n") + "\n"}, async () => {
+    try {
+      await startTalk();
+      // The picture on show: one of the slide's pictures, in the one place.
+      const pic = () => [...document.querySelectorAll("#deck .slide.cur .cover .pic.on")].map(p => p.dataset.pic);
+      deckKey("ArrowRight");
+      eq([deckNow().title, pic()], ["Results", ["assets/cover.png"]], "before a bullet, the slide's own picture");
+      deckKey("ArrowRight");
+      eq([deckNow().title, deckNow().now, pic()], ["Results", "Revenue up", ["assets/chart.png"]],
+        "a bullet with a picture under it is a bullet, not a slide, and its picture takes the place");
+      ok(!/!\[|chart\]/.test($("#deck .slide.cur .stext").textContent), "the picture's line is not a bullet");
+      deckKey("ArrowRight");
+      eq([deckNow().now, pic()], ["New market", ["assets/oslo.png"]], "the next bullet's picture swaps in");
+      deckKey("ArrowRight");
+      eq([deckNow().now, pic()], ["Hiring paused", ["assets/cover.png"]], "a bullet with none gives the slide's picture back");
+      eq(deckNow().bullets, ["Revenue up", "New market", "Hiring paused"]);
+      deckKey("ArrowLeft");
+      eq(pic(), ["assets/oslo.png"], "back again, back to that bullet's picture");
+      deckKey("ArrowRight"); deckKey("ArrowRight");
+      ok($("#deck .slide.cur.hascover"), "a slide with no picture of its own still has the place for its bullets' pictures");
+      eq([deckNow().title, pic()], ["Plans", ["assets/plan.png"]], "and before a bullet shows the first one");
+      deckKey("ArrowRight"); deckKey("ArrowRight");
+      eq([deckNow().now, pic()], ["Budget", ["assets/plan.png"]], "a bullet with none keeps the last picture, so nothing jumps");
+    } finally { presentStop(); }
+  }));
+  test("#431 on a phone ▶ Present and Focus are on screen beside a page's title",() => withPages(TALK_PAGE, async () => {
     openPage(TALK); await settle();
     // The window is wide, so the page head is laid out again in a phone-wide frame with the app's styles.
     const f = document.createElement("iframe");

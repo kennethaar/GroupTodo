@@ -10,6 +10,9 @@
 #deck .cover{position:absolute;left:0;top:0;bottom:0;width:30%;overflow:hidden;transition:width 1s ease-in-out}
 #deck .slide.intro .cover{width:100%}
 #deck .cover img{width:100%;height:100%;object-fit:cover;display:block}
+/* A lit bullet's own picture fades into the picture's place (#464). */
+#deck .cover .pic{position:absolute;inset:0;opacity:0;transition:opacity .6s ease-in-out}
+#deck .cover .pic.on{opacity:1}
 #deck .cover::after{content:"";position:absolute;inset:0;background:var(--slide-bg);opacity:0;transition:opacity 1s ease-in-out}
 #deck .slide.intro .cover::after{opacity:.5}
 #deck .cover .asset-missing{display:block;padding:2vh;opacity:.6}
@@ -50,7 +53,7 @@
 @media (prefers-reduced-motion:reduce){
   #deck .slide.cur{animation-name:deckFade!important}
   #deck .slide.out{animation-name:deckGone!important}
-  #deck .cover,#deck .cover::after{transition:none}
+  #deck .cover,#deck .cover::after,#deck .cover .pic{transition:none}
 }
 /* ▶ Present ▾ on a page: one control in two parts, kept together when the head wraps. */
 .presentsplit{display:inline-flex;white-space:nowrap;position:relative}

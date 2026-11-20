@@ -13,13 +13,15 @@
    only their own lines get a slide; `breadcrumb` says where a slide is from.
    `parts` are what → lights, one each: the lines, or a quote's takeaways.
    A task line or a "_ " line is left out with its lines (#467); `hidden`
-   counts them for the presenter. The bullet you present from always shows. */
+   counts them for the presenter. The bullet you present from always shows.
+   A line that is only a picture is not a line on a slide (#464): it is the
+   picture of the line above it, in `pics`. */
 function deckSteps(path, root = null, on = false) {
   const page = getPage(path);
   const steps = [], slides = [], left = new Set();
   const words = b => !!(slideWords(b) || (b.children || []).some(words));
   const shown = b => {
-    if (!words(b)) return false;
+    if (slidePictureLine(b) || !words(b)) return false;
     if (slideHidden(b)) { left.add(b); return false; }
     return true;
   };
@@ -35,6 +37,8 @@ function deckSteps(path, root = null, on = false) {
         layout: lay.layout, mode: lay.mode, axes: lay.axes, hero,
         parts: hero ? [chunk[0], ...hero.takeaways] : chunk, first: steps.length,
         ...(notes || (block ? slideNotes(block) : {cover: "", notes: ""}))};
+      // A picture line under a part is shown in the cover's place while that part is lit (#464).
+      s.pics = s.parts.map(p => (p?.children || []).map(slidePictureLine).find(Boolean) || "");
       slides.push(s);
       steps.push({s, k: 0});
       s.parts.forEach((part, i) => {
