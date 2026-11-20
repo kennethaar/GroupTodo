@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.191.2 - 2026-11-20
+
+- A page: a click on a line in Linked references opens the page it is on, at
+  that line. While you write in one, the label reads `Editing: "Page name" ·
+  Open`, and Open opens that page.
+
 ## 1.191.1 - 2026-11-20
 
 - Weekly review › Clarify: the line you are asked about shows again in the

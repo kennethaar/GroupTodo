@@ -6099,7 +6099,7 @@ var GTD_TEST = (() => {
       putPage(day, parsePage("")); clearMemo(); go("today");
     }
   });
-  test("#425 a line in Linked References is written in place, says which page while the caret is in it, and its page name opens that page at the line", async () => {
+  test("#425 #453 a line in Linked References is written in place from the keyboard, says which page while the caret is in it, and a click on it or Open opens that page at the line", async () => {
     const path = scratchProject("live refs", [["TODO", "Draw the plan"]]);
     const ref = pageRef(path), day = journalPath("2026-06-06");
     putPage(day, parsePage(["- Breakfast", "- Call Anna about [[" + ref + "]]"].join("\n")));
@@ -6120,19 +6120,28 @@ var GTD_TEST = (() => {
       const calm = getComputedStyle(entry).borderTopColor;
       focusBlock(hit.id); await frame();
       ok(entry.contains(document.activeElement), "the caret did not go into the linked line");
-      has(shownText(entry), "editing on", "no warning while the caret is in the linked line");
-      has(shownText(entry), pageTitle(day).toLowerCase(), "the warning does not name the page being changed");
-      has(shownText(entry), "open", "the warning has no Open page");
+      has(shownText(entry), 'editing: "' + pageTitle(day).toLowerCase() + '" · open', "the warning does not read Editing: \"Page name\" · Open (#453)");
       ok(getComputedStyle(entry).borderTopColor !== calm, "the line being changed is not boxed");
       txt.textContent = "Call Anna about [[" + ref + "]] after lunch";
-      txt.blur(); await settle();
-      eq(getPage(day).blocks[1].title, "Call Anna about [[" + ref + "]] after lunch", "the change was not written to the day page");
-      eq(state.pagePath, path, "writing in Linked References left the page");
-      box = await refs();
-      box.querySelector('.blk[data-id="' + hit.id + '"]').closest(".backlink-entry").querySelector(".bl-src").click();
+      // #453: Open, pressed with the mouse while the caret is in the line,
+      // opens that page; the press must not just end the editing. A mouse
+      // press the page lets through takes focus from the line, as it really does.
+      const mouse = (n, type) => n.dispatchEvent(new MouseEvent(type, {bubbles: true, cancelable: true, button: 0}));
+      if (mouse(src, "mousedown")) { txt.blur(); await settle(); }
+      if (src.isConnected) mouse(src, "click");
       await settle(); await frame(); await frame();
-      eq(state.pagePath, day, "the page name did not open the day page");
+      eq(getPage(day).blocks[1].title, "Call Anna about [[" + ref + "]] after lunch", "the change was not written to the day page");
+      eq(state.pagePath, day, "Open did not open the day page (#453)");
       eq(document.activeElement?.closest(".blk")?.dataset.id, hit.id, "the day page did not open at the linked line");
+      // #453: a mouse click anywhere on the line, not on a link word, opens
+      // the page the line is on, at the line, instead of writing in it here.
+      openPage(path); box = await refs();
+      const txt2 = box.querySelector('.blk[data-id="' + hit.id + '"] .txt');
+      if (mouse(txt2, "mousedown")) txt2.focus();
+      if (txt2.isConnected) mouse(txt2, "click");
+      await settle(); await frame(); await frame();
+      eq(state.pagePath, day, "a click on the line did not open the page it is on (#453)");
+      eq(document.activeElement?.closest(".blk")?.dataset.id, hit.id, "the click did not open the day page at the line");
     } finally {
       PREF.set("backlinks.open", wasRefs == null ? "0" : wasRefs);
       document.activeElement && document.activeElement.blur();
