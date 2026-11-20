@@ -156,6 +156,8 @@ need a deterministic `SETUP` entry in `tests/screenshots.mjs`.
 Every user-requested change needs an issue in `kennethaar/GroupTodo`.
 
 1. Search existing issues first.
+   Before creating an issue or adding to one, show the user its title and
+   body and wait for their OK, so they can see the request was understood.
 2. Reopen and reuse an issue for a follow-up, regression or related correction.
 3. Create a new issue only for distinct new behavior.
 4. Each commit references one issue with `Fixes #N`.
