@@ -13852,6 +13852,13 @@ var GTD_TEST = (() => {
     const vs = deckSteps(SHOW, getPage(SHOW).blocks[4]).slides;
     eq([vs[0].title, vs[0].layout, vs.length], ["Build vs buy", "split", 2], "Present from here on a versus line: that slide");
   }));
+  test("#454 a line with links keeps the linked words as plain text on a slide", () => withPages({
+    [SHOW]: ["- Plan [[2/Office move]] with [[p/Anna]]", "  - Ask [[Kitchen renovation]] about [[1/Budget|money]] [[c/phone]]"].join("\n") + "\n"}, async () => {
+    const s = deckSteps(SHOW).slides.at(-1);
+    eq([s.title, s.kids.map(slideWords)],
+      ["Plan Office move with Anna", ["Ask Kitchen renovation about money"]],
+      "every linked word stays; a context is a tag, not words");
+  }));
   const deckParts = () => [...$$("#deck .slide.cur .part")];
   test("#433 a 1D layout's parts are hidden until → brings each in; marks are not shown", () => withPages(SHOW_PAGE, async () => {
     try {

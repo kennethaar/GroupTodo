@@ -8,6 +8,7 @@
 function linkWords(text) {
   return trim(String(text || "").replace(/\[\[([^\]]+(?:\]\[[^\]]*)?)\]\]/g, (all, t) => {
     if (t.includes("][")) return trim(t.split("][")[1]);
+    if (t.includes("|")) return trim(t.slice(t.indexOf("|") + 1));
     const raw = trim(t);
     const pfx = (/^([^/]+)\//.exec(raw) || [])[1];
     if (pfx === "go") return tourLabel(raw.slice(3));

@@ -4568,7 +4568,7 @@ placeholder="Capture… (Enter adds to today)">
 })();
 
 "use strict";
-const APP_VERSION = "1.192.4";
+const APP_VERSION = "1.192.5";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -14598,7 +14598,8 @@ button:hover,button:focus-visible{background:#444;outline:2px solid #9cf}
 `;
 function isSlidesCssPath(p) { return isVaultCssPath(p) && /(^|\/)slides\.css$/i.test(p); }
 function slideWords(b) {
-return plainTitle(slideMark(b.title || "").words);
+const words = withoutEst(slideMark(b.title || "").words).replace(/\[\[c\/[^\]]+\]\]/g, "");
+return withoutMarks(linkWords(words));
 }
 function slideNotes(b) {
 let cover = "";
@@ -17959,7 +17960,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.192.4 - 2026-11-20\n\n- States and Waiting for: with several lines picked, Alt+T makes them all tasks\n  and Alt+N makes them all notes (#411).\n\n## 1.192.3 - 2026-11-20\n\n- The line menu and toolbar: with two areas side by side in the Journal, a\n  line's ☰ and 🔍 sit in its own lane, right of the line between the areas (#413).\n\n## 1.192.2 - 2026-11-20\n\n- The line menu and toolbar: the ☰ menu stays inside the outline's box, so it\n  no longer spills over the sidebar or out of a card (#413).\n\n## 1.192.1 - 2026-11-20\n\n- Weekly review › Review actions: a project linked in a task shows its name\n  on the card, no longer an empty gap (#463).\n\n## 1.192.0 - 2026-11-20\n\n- Weekly review › Clarify: drag over lines in the day page beside the card\n  to give them all one answer, such as To do or Leave it as a note. Project\n  makes one project: the first line names it, and the others become its\n  steps. Undo that takes the whole group back (#460).\n\n## 1.191.5 - 2026-11-20\n\n- Weekly review › Clarify: a line under a folded line is unfolded to in the\n  day page beside the card, marked and scrolled into view (#376).\n\n## 1.191.4 - 2026-11-20\n\n- Weekly review › Clarify: the answers stand above the line's card, at one\n  spot. The card changes height from line to line, so the buttons no longer\n  move under your finger (#461).\n\n## 1.191.3 - 2026-11-20\n\n- Journal: Back and Forward stand top left, at exactly the same spot as on\n  every other page, so one click takes you back to where you were (#446).\n\n## 1.191.2 - 2026-11-20\n\n- A page: a click on a line in Linked references opens the page it is on, at\n  that line. While you write in one, the label reads `Editing: \"Page name\" ·\n  Open`, and Open opens that page.\n\n## 1.191.1 - 2026-11-20\n\n- Weekly review › Clarify: the line you are asked about shows again in the\n  day page beside the card. The new list of who else is here had hidden it.\n\n## 1.191.0 - 2026-11-20\n\n- A page: pages pinned to the sidebar are kept on your own person page, as\n  `pins::`, so they follow you to every device and stay after a reload, an\n  area rename or a page rename. Pins this browser held move there once (#33).\n\n## 1.190.0 - 2026-11-20\n\n- Keys on a line: ▾ at the top left of a Shift+Enter note box folds it to\n  one quiet line, \"▸ 3 lines\". ▸ or Shift+Enter opens it again. The file\n  keeps it folded, and Copy text leaves a folded box out (#392).\n";
+const HELP_NEWS = "## 1.192.5 - 2026-11-20\n\n- Present a page: a line with links keeps the linked words. A project, person\n  or [[page|label]] link shows as plain words on the slide (#454).\n\n## 1.192.4 - 2026-11-20\n\n- States and Waiting for: with several lines picked, Alt+T makes them all tasks\n  and Alt+N makes them all notes (#411).\n\n## 1.192.3 - 2026-11-20\n\n- The line menu and toolbar: with two areas side by side in the Journal, a\n  line's ☰ and 🔍 sit in its own lane, right of the line between the areas (#413).\n\n## 1.192.2 - 2026-11-20\n\n- The line menu and toolbar: the ☰ menu stays inside the outline's box, so it\n  no longer spills over the sidebar or out of a card (#413).\n\n## 1.192.1 - 2026-11-20\n\n- Weekly review › Review actions: a project linked in a task shows its name\n  on the card, no longer an empty gap (#463).\n\n## 1.192.0 - 2026-11-20\n\n- Weekly review › Clarify: drag over lines in the day page beside the card\n  to give them all one answer, such as To do or Leave it as a note. Project\n  makes one project: the first line names it, and the others become its\n  steps. Undo that takes the whole group back (#460).\n\n## 1.191.5 - 2026-11-20\n\n- Weekly review › Clarify: a line under a folded line is unfolded to in the\n  day page beside the card, marked and scrolled into view (#376).\n\n## 1.191.4 - 2026-11-20\n\n- Weekly review › Clarify: the answers stand above the line's card, at one\n  spot. The card changes height from line to line, so the buttons no longer\n  move under your finger (#461).\n\n## 1.191.3 - 2026-11-20\n\n- Journal: Back and Forward stand top left, at exactly the same spot as on\n  every other page, so one click takes you back to where you were (#446).\n\n## 1.191.2 - 2026-11-20\n\n- A page: a click on a line in Linked references opens the page it is on, at\n  that line. While you write in one, the label reads `Editing: \"Page name\" ·\n  Open`, and Open opens that page.\n\n## 1.191.1 - 2026-11-20\n\n- Weekly review › Clarify: the line you are asked about shows again in the\n  day page beside the card. The new list of who else is here had hidden it.\n\n## 1.191.0 - 2026-11-20\n\n- A page: pages pinned to the sidebar are kept on your own person page, as\n  `pins::`, so they follow you to every device and stay after a reload, an\n  area rename or a page rename. Pins this browser held move there once (#33).\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {
@@ -29889,6 +29890,7 @@ return trim(withoutEst(title)
 function linkWords(text) {
 return trim(String(text || "").replace(/\[\[([^\]]+(?:\]\[[^\]]*)?)\]\]/g, (all, t) => {
 if (t.includes("][")) return trim(t.split("][")[1]);
+if (t.includes("|")) return trim(t.slice(t.indexOf("|") + 1));
 const raw = trim(t);
 const pfx = (/^([^/]+)\//.exec(raw) || [])[1];
 if (pfx === "go") return tourLabel(raw.slice(3));

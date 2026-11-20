@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.192.5 - 2026-11-20
+
+- Present a page: a line with links keeps the linked words. A project, person
+  or [[page|label]] link shows as plain words on the slide (#454).
+
 ## 1.192.4 - 2026-11-20
 
 - States and Waiting for: with several lines picked, Alt+T makes them all tasks
