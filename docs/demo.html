@@ -41600,7 +41600,8 @@ r.age && !isChore(r) ? el("span", {class: "chip"}, r.age === 1 ? "1 day old" : r
 const fr = isChore(r) ? inS(r, () => freshnessOf(r)) : null;
 if (fr) meta.append(el("span", {class: "chip", translate: "no"}, "repeat:: " + repeatOf(r.block)), inS(r, () => freshnessBar(r)),
 el("span", {class: "chip late actstale"}, Math.floor(fr.rounds) + " rounds missed"));
-const title = el("h3", {translate: "no"}, plainTitle(r.block.title));
+const title = el("h3", {translate: "no"},
+withoutMarks(linkWords(trim(withoutEst(r.block.title).replace(/\[\[c\/[^\]]+\]\]/g, "")))));
 if (!f) return el("div", {class: "solcard won"}, title, meta,
 el("div", {class: "t-meta"}, el("span", {class: "chip ok"}, "Answered")),
 el("button", {class: "btn primary", onclick: () => solPassDone(r)}, "Next card ›"));

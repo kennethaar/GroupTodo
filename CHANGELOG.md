@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.192.1 - 2026-11-20
+
+- Weekly review › Review actions: a project linked in a task shows its name
+  on the card, no longer an empty gap (#463).
+
 ## 1.192.0 - 2026-11-20
 
 - Weekly review › Clarify: drag over lines in the day page beside the card

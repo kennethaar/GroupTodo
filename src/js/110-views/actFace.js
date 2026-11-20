@@ -12,7 +12,10 @@ function actFace(r, f) {
   const fr = isChore(r) ? inS(r, () => freshnessOf(r)) : null;
   if (fr) meta.append(el("span", {class: "chip", translate: "no"}, "repeat:: " + repeatOf(r.block)), inS(r, () => freshnessBar(r)),
     el("span", {class: "chip late actstale"}, Math.floor(fr.rounds) + " rounds missed"));
-  const title = el("h3", {translate: "no"}, plainTitle(r.block.title));
+  // The card has a chip for the context only, so a project linked in the
+  // line is read out as its name, not taken away (#463).
+  const title = el("h3", {translate: "no"},
+    withoutMarks(linkWords(trim(withoutEst(r.block.title).replace(/\[\[c\/[^\]]+\]\]/g, "")))));
   if (!f) return el("div", {class: "solcard won"}, title, meta,
     el("div", {class: "t-meta"}, el("span", {class: "chip ok"}, "Answered")),
     el("button", {class: "btn primary", onclick: () => solPassDone(r)}, "Next card ›"));

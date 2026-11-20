@@ -2924,6 +2924,17 @@ var GTD_TEST = (() => {
       for (const p of [path, target, area]) removePage(p); clearMemo(); go("today"); await settle();
     }
   });
+  test("#463 Review actions: a project linked in a task reads as its name on the card", () => {
+    const target = scratchProject("463 Kitchen");
+    const path = scratchProject("463 home", [["TODO", "Ring Anna about [[" + pageRef(target) + "]] and @phone"]]);
+    try {
+      const r = actDeck().find(a => a.block === getPage(path).blocks[0]);
+      ok(r, "the task is not dealt");
+      const t = actFace(r, null).querySelector("h3").textContent;
+      has(t, "Ring Anna about " + pageTitle(target), "the project's name is gone from the card");
+      ok(!/\[|\]/.test(t), "brackets left on the card: " + t);
+    } finally { for (const p of [path, target]) removePage(p); clearMemo(); }
+  });
   test("#441 Review actions starts again at Still to do on a new day", async () => {
     try {
       go("review", {sub: "actions"}); await settle();
