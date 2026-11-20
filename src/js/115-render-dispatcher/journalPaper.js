@@ -11,18 +11,18 @@ function journalPaper(place = true) {
   const top = $("header.top"), cap = top && top.querySelector(".capture");
   if (!cap) return;
   if (!JOURNAL_PAPER_TOOLS) {
-    const now = $(".hnow"), hb = $("#hereBar"), ab = $("#areaBar"), sb = $("#spacesBtn"), sp = $("#spop"), hist = $(".h-hist"), theme = $("#btnTheme");
-    if (!now || !hb || !ab || !sb || !sp || !hist || !theme) return;
-    JOURNAL_PAPER_TOOLS = {now, hb, ab, sb, sp, hist, theme};
+    const now = $(".hnow"), hb = $("#hereBar"), ab = $("#areaBar"), sb = $("#spacesBtn"), sp = $("#spop"), theme = $("#btnTheme");
+    if (!now || !hb || !ab || !sb || !sp || !theme) return;
+    JOURNAL_PAPER_TOOLS = {now, hb, ab, sb, sp, theme};
   }
-  const {now, hb, ab, sb, sp, hist, theme} = JOURNAL_PAPER_TOOLS;
+  const {now, hb, ab, sb, sp, theme} = JOURNAL_PAPER_TOOLS;
   const head = place && $("#content .todayhead:not(.weekhead) > .vhead-r");
   const on = !!head && matchMedia("(min-width:641px)").matches;
   if (place) document.body.classList.toggle("paper", on);
-  // Back and Forward at the heading's left end, Light or dark at its right (#445).
-  if (on) { head.prepend(now, ab, sb, sp, hb); head.append(theme); head.parentNode.prepend(hist); }
-  else if (sb.parentNode !== top || ab.parentNode !== top || hb.parentNode !== top || !sp.isConnected || !now.isConnected || hist.parentNode !== top || theme.parentNode !== top) {
-    cap.before(hist);
+  // Light or dark at the heading's right (#445). Back and Forward stay in the
+  // bar, which keeps its shape unseen, so they do not move (#446).
+  if (on) { head.prepend(now, ab, sb, sp, hb); head.append(theme); }
+  else if (sb.parentNode !== top || ab.parentNode !== top || hb.parentNode !== top || !sp.isConnected || !now.isConnected || theme.parentNode !== top) {
     cap.after(now);
     top.append(ab, sb, sp, hb);
     $("#btnSearch").after(theme);

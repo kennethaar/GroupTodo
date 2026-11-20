@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.191.3 - 2026-11-20
+
+- Journal: Back and Forward stand top left, at exactly the same spot as on
+  every other page, so one click takes you back to where you were (#446).
+
 ## 1.191.2 - 2026-11-20
 
 - A page: a click on a line in Linked references opens the page it is on, at

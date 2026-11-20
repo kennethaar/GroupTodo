@@ -44,13 +44,11 @@ kbd{font:11px var(--mono);border:1px solid var(--border);border-radius:4px;paddi
 .sp::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--sc)}
 .sp.lg{font-size:13px;padding:3px 10px 3px 8px}
 
-/* #395 the Journal on a wide screen: no top bar until N asks to capture, or
-   the sidebar is hidden and the bar holds the way back. */
-body.paper:not(.sidebar-hidden):not(.capping) header.top{display:none}
-/* #395 with the sidebar folded there is still no capture line: only the
-   way back, floating top left, until N asks for the bar. */
-body.paper.sidebar-hidden:not(.capping) header.top{position:fixed;top:12px;left:12px;z-index:30;padding:0;border:0;background:none}
-body.paper.sidebar-hidden:not(.capping) header.top > :not(.burger){display:none}
+/* #395 the Journal on a wide screen: no capture line until N asks for it.
+   #446 the bar keeps its shape, unseen, so the way back to the sidebar and
+   Back and Forward stand exactly where they stand on every other page. */
+body.paper:not(.capping) header.top{background:none;border-bottom-color:transparent}
+body.paper:not(.capping) header.top > :not(.burger):not(.h-hist){visibility:hidden}
 @media (max-width:640px){ .todayhead .hnow,.todayhead .spacesbtn{display:none} }
 .sidesearch{display:none}
 body.paper .sidesearch{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 12px 10px;
@@ -119,11 +117,6 @@ header.top .heremenu{right:22px;top:58px}
     -webkit-app-region:drag;app-region:drag}
   header.top button,header.top input,header.top a,header.top select,header.top label,header.top .capture,header.top .spop{
     -webkit-app-region:no-drag;app-region:no-drag}
-  body.paper:not(.sidebar-hidden):not(.capping) #main{padding-top:env(titlebar-area-height, 0px)}
-  body.paper.sidebar-hidden:not(.capping) #main{padding-top:env(titlebar-area-height, 0px)}
-  /* With no top bar, that empty strip is the title bar: it drags the window. */
-  body.paper:not(.capping) #main::before{content:"";position:absolute;top:0;left:0;right:0;
-    height:env(titlebar-area-height, 0px);-webkit-app-region:drag;app-region:drag}
   #main button,#main a,#main input{-webkit-app-region:no-drag;app-region:no-drag}
   /* A page opened at the side and the toasts start below the window's buttons. */
   .scrim.side{padding-top:env(titlebar-area-height, 0px)}

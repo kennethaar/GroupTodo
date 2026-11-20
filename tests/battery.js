@@ -9055,17 +9055,24 @@ var GTD_TEST = (() => {
     eq(theme, document.body.classList.contains("paper"), "Light or dark is at the far right exactly when the Journal is paper");
   });
   test("#395 on a wide screen the Journal has no top bar; what it held moves, not goes", async () => {
-    const bar = () => document.querySelector("header.top"), seen = n => !!n && n.getClientRects().length > 0;
-    try {
+    const bar = () => document.querySelector("header.top"), seen = n => !!n && n.getClientRects().length > 0 && getComputedStyle(n).visibility !== "hidden";
+    // #446 Back and Forward stand exactly where they stand on every other page.
+    const spots = () => ["#burger", "#btnBack", "#btnFwd"].map(s => { const n = $(s);
+      if (!seen(n)) return s + " hidden"; const r = n.getBoundingClientRect(); return s + " " + Math.round(r.left) + "," + Math.round(r.top); }).join(" | ");
+    const sameSpot = async (label) => {
+      go("next"); await settle(); const there = spots();
       go("today", {sub: null, todayDay: null, jz: null}); await settle();
-      ok(!seen(bar()), "no top bar on the Journal: a line is the way in");
+      eq(spots(), there, "Back and Forward in the Journal at the same spot as on Next, " + label + " (#446)");
+    };
+    try {
+      await sameSpot("sidebar shown");
+      ok(!seen(bar().querySelector(".capture")), "no capture line on the Journal: a line is the way in");
       const head = content().querySelector(".todayhead");
       ok(head.contains($("#spacesBtn")) && seen($("#spacesBtn")), "the areas stand in the day's heading");
       ok(head.contains($(".hnow")), "what is on now too");
-      // #445 Back, Forward and Light or dark were lost with the bar.
-      ok(head.contains($("#btnBack")) && seen($("#btnBack")) && seen($("#btnFwd")), "Back and Forward stand in the day's heading (#445)");
-      ok(head.firstElementChild.contains($("#btnBack")), "at its left end (#445)");
+      // #445 Light or dark was lost with the bar.
       ok(head.contains($("#btnTheme")) && seen($("#btnTheme")), "Light or dark stands in the day's heading (#445)");
+      ok(head.getBoundingClientRect().top >= $("#btnBack").getBoundingClientRect().bottom, "the heading starts below Back and Forward (#446)");
       ok(seen($("#sideSearch")), "Search in the sidebar");
       // #323 Help floats in the bottom right corner, under the Timer.
       const help = $("#floatHelp"), timer = $("#timerFloat .nav-item.timer");
@@ -9076,6 +9083,7 @@ var GTD_TEST = (() => {
       ok(seen(bar()) && document.activeElement === $("#cap"), "N, to capture, brings the bar back with the caret in it");
       $("#cap").blur();
       setSidebarHidden(true); render(); await settle();
+      await sameSpot("sidebar folded");
       // #395 folded, the sidebar's way back shows; the capture line still does not.
       ok(seen($("#burger")), "with the sidebar hidden there is no way back to it");
       ok(!seen(bar().querySelector(".capture")), "the capture line shows once the sidebar is folded");
@@ -9156,12 +9164,8 @@ var GTD_TEST = (() => {
       "the top bar does not keep clear of the window's buttons: " + rules.join(" | "));
     ok(rules.some(t => /header\.top/.test(t) && /app-region:\s*drag/.test(t)), "the top bar does not drag the window");
     ok(rules.some(t => /no-drag/.test(t) && /button/.test(t)), "the bar's buttons would drag instead of click");
-    ok(rules.some(t => /body\.paper/.test(t) && /padding-top/.test(t) && /titlebar-area-height/.test(t)),
-      "with no top bar the page does not start below the window's buttons");
-    // Follow-ups on PC: where there is no top bar, an empty strip still drags the window,
-    // a page opened at the side keeps its ✕ in reach, and toasts start below the buttons.
-    ok(rules.some(t => /body\.paper/.test(t) && /#main::before/.test(t) && /app-region:\s*drag/.test(t)),
-      "with no top bar there is nothing to drag the window by");
+    // #446 the Journal keeps the bar too, unseen, so the bar's own rules cover it.
+    // Follow-ups on PC: a page opened at the side keeps its ✕ in reach, and toasts start below the buttons.
     ok(rules.some(t => /\.scrim\.side/.test(t) && /padding-top/.test(t) && /titlebar-area-height/.test(t)),
       "a page opened at the side has its close button under the window's buttons");
     ok(rules.some(t => /#toasts/.test(t) && /top/.test(t) && /titlebar-area-height/.test(t)),
