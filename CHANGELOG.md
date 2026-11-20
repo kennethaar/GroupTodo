@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.189.3 - 2026-11-20
+
+- Present a page: ▾ beside ▶ Present drops down under itself with just
+  With presenter window, not a box in the middle of the screen.
+  ☰ › Present from here goes on through the lines after it (#431).
+
 ## 1.189.2 - 2026-11-20
 
 - Present a page: on a curve, a long first line no longer runs across the

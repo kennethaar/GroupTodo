@@ -13442,18 +13442,27 @@ var GTD_TEST = (() => {
       deckKey("End");
       ok(!/Where to|Staff want it/.test($("#deck").textContent), "the rest of the page is not in the slides");
       presentStop();
-      content().querySelector(".presentmore").click(); await settle();
-      [...document.querySelectorAll(".modal .pick")].find(r => r.children[1]?.textContent === "Present")?.click();
+      // ▾ drops down under itself with only the other way: no dialog (#431).
+      const more = content().querySelector(".presentmore");
+      more.click(); await settle();
+      ok(!$(".modal"), "▾ opens no dialog");
+      const pop = more.closest(".presentsplit").querySelector(".presentpop");
+      ok(pop, "▾ drops a menu down under itself");
+      eq([...pop.querySelectorAll("[role=menuitem]")].map(b => b.textContent), ["With presenter window"],
+        "it offers only the presenter window; ▶ Present is beside it");
+      eq(more.getAttribute("aria-expanded"), "true", "▾ says it is open");
+      document.activeElement.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
       await settle();
-      ok(DECK?.root === roof, "▾ presents the focused line too");
-    } finally { presentStop(); setBranchFocus(page, null, TALK); }
+      ok(!content().querySelector(".presentpop") && document.activeElement === more, "Esc closes it and gives ▾ the focus");
+    } finally { presentStop(); setBranchFocus(page, null, TALK); content().querySelector(".presentpop")?.remove(); }
   }));
   test("#431 the Journal presents too: ▶ Present ▾ for the day, ☰ Present from here for a bullet", async () => {
     const path = ensureJournal(todayISO()), pg = getPage(path);
     const mk = t => { const x = newBlock({}, false); x.title = t; return x; };
     const other = mk("Buy milk"), talk = mk("Q4 review"), a = mk("Revenue"), b = mk("Hiring"), c = mk("Interns");
-    talk.children = [a, b]; b.children = [c];
-    pg.blocks.push(other, talk); flattenBlocks(pg.blocks); touch(path);
+    const next = mk("Next steps"), ship = mk("Ship it"), thanks = mk("Thanks");
+    talk.children = [a, b]; b.children = [c]; next.children = [ship];
+    pg.blocks.push(other, talk, next, thanks); flattenBlocks(pg.blocks); touch(path);
     go("today"); await settle();
     try {
       const head = content().querySelector(".todayhead");
@@ -13477,14 +13486,20 @@ var GTD_TEST = (() => {
       eq(deckNow().title, "Hiring");
       deckKey("ArrowRight");
       eq(deckNow().bullets, ["Interns"], "a line's own lines come one at a time");
-      deckKey("End");
-      ok(!/Buy milk/.test($("#deck").textContent), "the rest of the day is not in the slides");
+      // From here goes on through the lines after it, as the page does.
+      deckKey("ArrowRight");
+      eq(deckNow().title, "Next steps", "then the next line at its level");
+      deckKey("ArrowRight");
+      eq(deckNow().bullets, ["Ship it"], "with its own lines");
+      deckKey("ArrowRight");
+      eq(deckNow().title, "Thanks", "and on to the last line at its level");
+      ok(!/Buy milk/.test($("#deck").textContent), "a line before it is not in the slides");
       deckKey("Home");
       deckKey("Escape");
       ok(!$("#deck"), "Esc on the first slide leaves");
     } finally {
       presentStop();
-      for (const x of [other, talk]) removeBlockFrom(pg, x);
+      for (const x of [other, talk, next, thanks]) removeBlockFrom(pg, x);
       touch(path);
       go("today");
     }
@@ -13500,10 +13515,10 @@ var GTD_TEST = (() => {
       const more = content().querySelector(".pagehead .presentmore");
       ok(more, "▶ Present has a ▾ beside it");
       more.click(); await settle();
-      const rows = [...document.querySelectorAll(".modal .pick")];
-      eq(rows.map(r => r.children[1].textContent), ["Present", "With presenter window"], "▾ offers Present and With presenter window");
-      const pick = rows[1];
+      const pick = more.closest(".presentsplit").querySelector(".presentpop [role=menuitem]");
+      eq(pick?.textContent, "With presenter window", "▾ offers With presenter window");
       pick.click(); await settle();
+      ok(!content().querySelector(".presentpop"), "the menu closes as the slides start");
       ok($("#deck"), "the slides start");
       const pd = f.contentDocument, q = s => pd.querySelector(s);
       ok(q(".pnow") && q(".pnext") && q(".pnotes"), "now, next and notes");

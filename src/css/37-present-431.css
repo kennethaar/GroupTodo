@@ -53,7 +53,13 @@
   #deck .cover,#deck .cover::after{transition:none}
 }
 /* ▶ Present ▾ on a page: one control in two parts, kept together when the head wraps. */
-.presentsplit{display:inline-flex;white-space:nowrap}
+.presentsplit{display:inline-flex;white-space:nowrap;position:relative}
+/* ▾ drops down under itself (#431). */
+.presentpop{position:absolute;right:0;top:calc(100% + 4px);z-index:50;display:flex;flex-direction:column;
+  padding:4px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow)}
+.presentpop button{min-height:40px;padding:0 12px;border:0;border-radius:6px;background:none;color:var(--fg);
+  font:inherit;text-align:left;cursor:pointer;white-space:nowrap}
+.presentpop button:hover,.presentpop button:focus-visible{background:var(--bg3)}
 .presentsplit .presentbtn{border-top-right-radius:0;border-bottom-right-radius:0}
 .presentsplit .presentmore{border-top-left-radius:0;border-bottom-left-radius:0;padding-inline:6px;
   border-left:1px solid color-mix(in srgb,currentColor 20%,transparent)}

@@ -1,12 +1,13 @@
 /* ▶ Present (#431): the page full screen as slides. It starts at the line
    you are in, or at the title, and Esc at the top gives the page back with
-   the caret where it was. `root` presents one bullet and its lines (☰ ›
+   the caret where it was. `root` presents one bullet and its lines (▶ Present
+   on a focused line); with `on` it goes on through the bullets after it (☰ ›
    Present from here, on any page or day); `presenter` opens the presenter
    window at once (▾ › With presenter window). */
-function presentStart(path, {root = null, presenter = false} = {}) {
+function presentStart(path, {root = null, on = false, presenter = false} = {}) {
   presentStop();
   slidePresented(path, true);
-  const {steps, slides} = deckSteps(path, root);
+  const {steps, slides} = deckSteps(path, root, on);
   const back = document.activeElement;
   const id = back && back.closest && back.closest(".blk")?.dataset.id;
   let at = 0;

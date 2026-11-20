@@ -3,7 +3,7 @@ function flyPick(k, v) {
   flyCommit();
   const {path, block} = FLY;
   if (v && FLY.sel && FLY.open === k && TAG_SEL_PREFIX[k] && flyLinkSel(k, v)) return flyAfter(k);
-  if (k === "present") { presentStart(path, {root: block, presenter: v === "p"}); return; }
+  if (k === "present") { presentStart(path, {root: block, on: true, presenter: v === "p"}); return; }
   if (k === "state" && v && v[0] === "\u0001") {
     const ts = taskStage(block);
     if (ts) setTaskStage(path, block, ts.list, v.slice(1));

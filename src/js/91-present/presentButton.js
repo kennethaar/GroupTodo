@@ -7,5 +7,5 @@ function presentButton(path, root = null) {
     el("button", {class: "btn sm ghost presentbtn", title: (root ? "Show this line" : "Show the page") + " as slides, full screen (Esc leaves)",
       onclick: () => presentStart(path, {root})}, "▶ Present"),
     el("button", {class: "btn sm ghost presentmore", title: "More ways to present", "aria-label": "More ways to present",
-      "aria-haspopup": "dialog", onclick: () => presentMenu(path, root)}, "▾"));
+      "aria-haspopup": "menu", "aria-expanded": "false", onclick: e => presentMenu(path, root, e.currentTarget)}, "▾"));
 }

@@ -4,14 +4,15 @@
    its slide, and after it the bullet is in its place, done. So → is always
    just "next", in the order the outline is written.
    From one bullet (☰ › Present from here), that bullet is the title slide and
-   its lines are the top slides, so a day page shows that talk and no more.
+   its lines are the top slides. With `on`, each bullet after it at its level
+   follows as a slide of its own; the ones before it stay out.
    Slide layouts (#433): each slide is drawn as slideLayout says. Top lines
    with no lines of their own are bullets on the title slide. A layout with
    more lines than fit goes on as "Title (2/2)". In a 2D layout (versus,
    2×2, scorecard, cards, quote) a line's own lines are drawn in its box, so
    only their own lines get a slide; `breadcrumb` says where a slide is from.
    `parts` are what → lights, one each: the lines, or a quote's takeaways. */
-function deckSteps(path, root = null) {
+function deckSteps(path, root = null, on = false) {
   const page = getPage(path);
   const steps = [], slides = [];
   const shown = b => !!(slideWords(b) || (b.children || []).some(shown));
@@ -47,5 +48,9 @@ function deckSteps(path, root = null) {
   const notes = root ? slideNotes(root) : null;
   slide(null, head, whole ? top : top.filter(b => !has(b)), 0, null, "", notes);
   if (!whole) for (const b of top.filter(has)) slide(b, slideWords(b), kidsOf(b), 0, null, "");
+  if (root && on) {
+    const sibs = root._parent ? root._parent.children : page?.blocks || [];
+    for (const b of sibs.slice(sibs.indexOf(root) + 1).filter(shown)) slide(b, slideWords(b), kidsOf(b), 0, null, "");
+  }
   return {steps, slides};
 }
