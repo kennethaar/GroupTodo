@@ -10,7 +10,8 @@ document.addEventListener("keydown", e => {
      line itself: the line the drag started in can still hold the focus, and
      letting go of the pick there copied that one line instead of the lot. */
   const typing = /^(INPUT|TEXTAREA)$/.test(e.target.tagName) || e.target.isContentEditable;
-  if (typing && !(e.target.isContentEditable && mod && /^([cxv]|Enter)$/i.test(e.key) && lineSelOwnsClipboard())) {
+  const kind = e.altKey && !mod && !e.shiftKey && (e.code === "KeyT" || e.code === "KeyN");
+  if (typing && !(e.target.isContentEditable && (kind || mod && /^([cxv]|Enter)$/i.test(e.key)) && lineSelOwnsClipboard())) {
     lineSelClear();
     return;
   }
@@ -47,6 +48,7 @@ document.addEventListener("keydown", e => {
   if (e.key === "Delete" || e.key === "Backspace") { stop(); lineSelDelete(); return; }
   if (e.key === "." && !mod && !e.altKey) { stop(); lineSelEst(); return; }
   if (e.key === "Enter" && mod && !e.altKey) { stop(); lineSelCycle(); return; }
+  if (kind) { stop(); lineSelKind(e.code === "KeyT"); return; }
   if (mod && (e.key === "v" || e.key === "V")) return;  // the paste event does it
   if (mod && (e.key === "z" || e.key === "Z")) { lineSelClear(); return; }
   // Anything else means the handful was not what you were after.

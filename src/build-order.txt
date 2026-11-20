@@ -1667,6 +1667,7 @@ js/105-outliner/lineSelFrom.js
 js/105-outliner/vars-EST_KEYS.js
 js/105-outliner/lineSelEst.js
 js/105-outliner/lineSelCycle.js
+js/105-outliner/lineSelKind.js
 js/105-outliner/lineSelContext.js
 js/105-outliner/vars-EST_HINTED.js
 js/105-outliner/estHint.js

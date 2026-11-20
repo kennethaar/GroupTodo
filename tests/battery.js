@@ -4917,7 +4917,25 @@ var GTD_TEST = (() => {
       await press("KeyN"); eq(b.state || null, null, "Alt+N makes a task a note");
       await press("KeyN"); eq(b.state || null, null, "Alt+N on a note keeps it a note");
       eq(b.title, "Call the plumber", "the words are kept");
-    } finally { document.activeElement && document.activeElement.blur(); go("today"); }
+      /* Reopened: with several lines picked, every one of them changes, and
+         the pick stays so the other key can follow. Focus can still sit in
+         the line the drag started in. */
+      const more = scratchProject("alt t n many", [["", "Buy paint"], ["TODO", "Sand the door"], ["", "Hang the door"]]);
+      openPage(more); await settle();
+      const bs = getPage(more).blocks;
+      document.querySelector('.blk[data-id="' + bs[0].id + '"] .txt').focus(); await frame();
+      LINE_SEL.path = more; LINE_SEL.ids = bs.map(x => x.id); LINE_SEL.anchor = bs[0].id; LINE_SEL.head = bs[2].id; paintLineSel();
+      const many = async code => {
+        (document.activeElement || document).dispatchEvent(new KeyboardEvent("keydown", {code, key: code.slice(3).toLowerCase(), altKey: true, bubbles: true, cancelable: true}));
+        await settle();
+      };
+      await many("KeyT");
+      eq(bs.map(x => x.state || null).join(), "TODO,TODO,TODO", "Alt+T makes every picked line a task");
+      eq(LINE_SEL.ids.length, 3, "the lines stay picked");
+      await many("KeyN");
+      eq(bs.map(x => x.state || null).join(), ",,", "Alt+N makes every picked line a note");
+      eq(bs.map(x => x.title).join("|"), "Buy paint|Sand the door|Hang the door", "the words are kept");
+    } finally { lineSelClear(); document.activeElement && document.activeElement.blur(); go("today"); }
   });
   test("#170 a toolbar move keeps the line where it was on the screen, caret in it", async () => {
     const path = scratchProject("edit bar scroll", Array.from({length: 60}, (_, i) => ["TODO", "Row " + i]));

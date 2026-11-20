@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.192.4 - 2026-11-20
+
+- States and Waiting for: with several lines picked, Alt+T makes them all tasks
+  and Alt+N makes them all notes (#411).
+
 ## 1.192.3 - 2026-11-20
 
 - The line menu and toolbar: with two areas side by side in the Journal, a
