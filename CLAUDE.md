@@ -253,8 +253,9 @@ Work happens on `main`.
 
 Newest areas, look here first for regressions: Present (`src/js/91-present/`,
 #431, layouts #433), areas in the top bar and who else is here (#436, #408),
-serve.py page history (#407), unlinked-name squiggles (#428), notepad (#392).
-#431 stays open for the soft-break reflow follow-up.
+serve.py page history (#407), unlinked-name squiggles (#428), Clarify from
+the day page (#460, #461, #376), multi-line Alt+T/Alt+N (`lineSelKind`, #411),
+☰ menu lanes (#413). #431 stays open for the soft-break reflow follow-up.
 
 Slow start (#181, closed): staged read via `readDayFirst`, `readActiveFirst`,
 `isStubPath`; folder takeover in `readFolderBehind`; timing in the Save log
