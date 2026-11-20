@@ -93,6 +93,13 @@ tests, #221, #233, #346, #190, #291. Fails alone too (real, not yet fixed):
 #374 "a mockup pasted right after ``` on a bullet" (the paste became
 bullets, 6 not 3). Any other failure is new: suspect the current change.
 
+Every test or shot run makes a throwaway Edge profile, `%TEMP%\gtd-tests-*`
+(13-265 MB). `tests/browser.mjs` deletes it on close and sweeps any over an
+hour old at each start (`sweepProfiles`). Keep both. They once filled C:, which
+showed as slow commands, then `ENOSPC` on every edit. If that happens, check
+free space (`df -h /c`) before anything else. Never create browser profiles
+outside `openDemo()`.
+
 Writing test fixtures:
 
 - Set dates with `setDue(block, date)`. `SCHEDULED:` lines in fixture text are

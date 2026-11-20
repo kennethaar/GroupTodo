@@ -8,7 +8,7 @@
    Needs Node 22+ (built-in fetch and WebSocket) and Python for the builds. */
 import {spawn, spawnSync} from "node:child_process";
 import {get} from "node:http";
-import {existsSync, mkdtempSync, readdirSync, rmSync} from "node:fs";
+import {existsSync, mkdtempSync, readdirSync, rmSync, statSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {dirname, join, resolve} from "node:path";
 import {fileURLToPath, pathToFileURL} from "node:url";
@@ -64,13 +64,47 @@ const BROWSERS = [
   ...playwrightChromium(),
 ].filter(Boolean);
 
+/* ---------- throwaway profiles ----------
+   Each run's profile is deleted on close. On Windows, killing Edge used to
+   end only its first process: the rest lived on, headless, holding and
+   writing to the profile. 1130 of them and 850 profiles (13-265 MB each)
+   once filled the disk. So close() ends the whole tree, and every start
+   sweeps what is over an hour old: test browsers still running, then their
+   profiles, by when they were made. A run going on now, here or in another
+   window, is never that old. */
+const PROFILE_PREFIX = "gtd-tests-", PROFILE_MAX_AGE_MS = 60 * 60 * 1000;
+function killTree(pid) {
+  if (process.platform === "win32") spawnSync("taskkill", ["/PID", String(pid), "/T", "/F"], {stdio: "ignore"});
+  else try { process.kill(pid, "SIGKILL"); } catch { /* already gone */ }
+}
+function sweepProfiles() {
+  if (process.platform === "win32") {
+    // Only a headless browser on one of our profiles, started over an hour ago.
+    const ps = `$cut=(Get-Date).AddMilliseconds(-${PROFILE_MAX_AGE_MS});` +
+      `Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match '--headless' -and ` +
+      `$_.CommandLine -match '--user-data-dir=\\S*${PROFILE_PREFIX}' -and $_.CreationDate -lt $cut } | ` +
+      `ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`;
+    spawnSync("powershell", ["-NoProfile", "-NonInteractive", "-Command", ps], {stdio: "ignore", timeout: 60000});
+  }
+  let names;
+  try { names = readdirSync(tmpdir()).filter(n => n.startsWith(PROFILE_PREFIX)); } catch { return; }
+  for (const n of names) {
+    const p = join(tmpdir(), n);
+    try {
+      const s = statSync(p);
+      if (Date.now() - (s.birthtimeMs || s.ctimeMs) > PROFILE_MAX_AGE_MS) rmSync(p, {recursive: true, force: true});
+    } catch { /* still held: the next start tries again */ }
+  }
+}
+
 /* The demo open and started. Returns {evaluate, cdp, pageErrors, close}. */
 export async function openDemo({width = 1400, height = 900} = {}) {
+  sweepProfiles();
   const demo = buildDemo();
   const exe = BROWSERS.find(p => existsSync(p));
   if (!exe) { console.error("No Edge or Chrome found. Set GTD_BROWSER to its path."); process.exit(1); }
 
-  const profile = mkdtempSync(join(tmpdir(), "gtd-tests-"));
+  const profile = mkdtempSync(join(tmpdir(), PROFILE_PREFIX));
   const port = 9300 + Math.floor(Math.random() * 500);
   const browser = spawn(exe, [
     "--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
@@ -87,9 +121,12 @@ export async function openDemo({width = 1400, height = 900} = {}) {
   let ws = null;
   const close = async () => {
     try { ws && ws.close(); } catch { /* already gone */ }
-    browser.kill();
-    await sleep(300);
-    try { rmSync(profile, {recursive: true, force: true}); } catch { /* Edge may still hold it */ }
+    killTree(browser.pid);
+    // Edge lets go of its profile a moment after it is killed: try a few times.
+    for (let i = 0; i < 5; i++) {
+      await sleep(300 * (i + 1));
+      try { rmSync(profile, {recursive: true, force: true}); break; } catch { /* still held; sweepProfiles gets it later */ }
+    }
   };
   try {
     let target;
