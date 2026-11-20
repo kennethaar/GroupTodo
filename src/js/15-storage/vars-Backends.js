@@ -351,6 +351,16 @@ const Backends = {
           return await (await fh.getFile()).text();
         } catch (_) { return null; }
       },
+      /* The files in one folder, by name: who is here, .here/ (#408). Empty
+         when there is no such folder. */
+      async readDir(path) {
+        const out = new Map();
+        let dir;
+        try { dir = await dirFor(path); } catch (_) { return out; }
+        for await (const [name, h] of dir.entries())
+          if (h.kind === "file") try { out.set(name, await (await h.getFile()).text()); } catch (_) { /* gone meanwhile */ }
+        return out;
+      },
       /* A picture is a file in the folder, next to the markdown that mentions
          it, so the folder you share carries the whole note and not just its
          words. */
@@ -446,6 +456,13 @@ const Backends = {
       /* Ask the server to open the markdown in the editor on its own machine.
          Refused unless serve.py was started with --open-in-editor, and it says
          so in words meant to be shown to somebody. */
+      /* A beat to serve.py (#408): where I am; it answers with the others. */
+      async here(body) {
+        const r = await fetchWithin(u("/api/here"), {method: "POST", cache: "no-store",
+          headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)}, 4000);
+        if (!r.ok) throw new Error("here failed: " + r.status);
+        return await r.json();
+      },
       async openFile(path) {
         const r = await fetch(u("/api/open", path),
           {method: "POST", headers: {"X-GroupTodo": "open"}});

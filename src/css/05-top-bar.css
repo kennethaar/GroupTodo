@@ -89,6 +89,23 @@ body.paper .sidesearch:hover{color:var(--fg);border-color:var(--fg3)}
 .alandsmenu button:hover,.alandsmenu button:focus-visible{background:var(--bg3)}
 .alandsmenu button.cur{font-weight:600}
 .alandsmenu button.cur::after{content:"\2713";margin-left:auto;color:var(--accent)}
+/* #408 who else is here: initials, top right; one button lists them. */
+.herebar[hidden]{display:none}
+.herebar{display:flex;align-items:center;flex:none;height:36px;padding:0 4px;border:0;background:none;border-radius:999px;position:relative}
+.herebar:hover,.herebar[aria-expanded="true"]{background:var(--bg3)}
+.herebar .avatar{margin-left:-6px;border:2px solid var(--bg2);box-sizing:content-box}
+.herebar .avatar:first-child{margin-left:0}
+.herebar .heremore{margin-left:4px;font-size:12px;color:var(--fg2)}
+.heremenu{position:absolute;right:0;top:calc(100% + 6px);z-index:50;display:flex;flex-direction:column;min-width:220px;max-width:320px;
+  padding:6px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow)}
+header.top .heremenu{right:22px;top:58px}
+.heremenu button,.heremenu .hererow{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 10px;border:0;background:none;
+  border-radius:6px;text-align:left;color:var(--fg);font-size:13px}
+.heremenu .hererow{color:var(--fg2)}
+.heremenu button:hover,.heremenu button:focus-visible{background:var(--bg3)}
+.heremenu span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.herenote{font-size:13px;color:var(--fg3);margin:-6px 0 10px}
+.herenote:empty{display:none}
 .areacolours,.areasetup{display:flex;flex-wrap:wrap;gap:6px}
 .areacolours .btn{display:inline-flex;align-items:center;gap:8px}
 .areacolours small{color:var(--fg3)}

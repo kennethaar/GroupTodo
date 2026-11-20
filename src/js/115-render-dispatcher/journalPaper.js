@@ -11,20 +11,20 @@ function journalPaper(place = true) {
   const top = $("header.top"), cap = top && top.querySelector(".capture");
   if (!cap) return;
   if (!JOURNAL_PAPER_TOOLS) {
-    const now = $(".hnow"), ab = $("#areaBar"), sb = $("#spacesBtn"), sp = $("#spop"), hist = $(".h-hist"), theme = $("#btnTheme");
-    if (!now || !ab || !sb || !sp || !hist || !theme) return;
-    JOURNAL_PAPER_TOOLS = {now, ab, sb, sp, hist, theme};
+    const now = $(".hnow"), hb = $("#hereBar"), ab = $("#areaBar"), sb = $("#spacesBtn"), sp = $("#spop"), hist = $(".h-hist"), theme = $("#btnTheme");
+    if (!now || !hb || !ab || !sb || !sp || !hist || !theme) return;
+    JOURNAL_PAPER_TOOLS = {now, hb, ab, sb, sp, hist, theme};
   }
-  const {now, ab, sb, sp, hist, theme} = JOURNAL_PAPER_TOOLS;
+  const {now, hb, ab, sb, sp, hist, theme} = JOURNAL_PAPER_TOOLS;
   const head = place && $("#content .todayhead:not(.weekhead) > .vhead-r");
   const on = !!head && matchMedia("(min-width:641px)").matches;
   if (place) document.body.classList.toggle("paper", on);
   // Back and Forward at the heading's left end, Light or dark at its right (#445).
-  if (on) { head.prepend(now, ab, sb, sp); head.append(theme); head.parentNode.prepend(hist); }
-  else if (sb.parentNode !== top || ab.parentNode !== top || !sp.isConnected || !now.isConnected || hist.parentNode !== top || theme.parentNode !== top) {
+  if (on) { head.prepend(now, ab, sb, sp, hb); head.append(theme); head.parentNode.prepend(hist); }
+  else if (sb.parentNode !== top || ab.parentNode !== top || hb.parentNode !== top || !sp.isConnected || !now.isConnected || hist.parentNode !== top || theme.parentNode !== top) {
     cap.before(hist);
     cap.after(now);
-    top.append(ab, sb, sp);
+    top.append(ab, sb, sp, hb);
     $("#btnSearch").after(theme);
   }
 }

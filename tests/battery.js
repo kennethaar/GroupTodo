@@ -1525,6 +1525,49 @@ var GTD_TEST = (() => {
     if (Spaces.list.length === 1) { await settle(); ok(!seen($("#areaBar")) && seen($("#spacesBtn")), "one area still gets chips"); }
   });
 
+  test("#408 others in the area show top right, and a page says who else has it open", async () => {
+    await flush();
+    const path = join(PAGES, "Test408 Kitchen.md"), key = "identity:" + V.space, wasName = PREF.get(key, "");
+    putPage(path, parsePage("- Tiles\n")); clearMemo();
+    const be = LOADED.get(V.space).backend, wasRead = be.readDir, wasHere = be.here, wasWrite = be.write;
+    const seen = n => !!n && n.getClientRects().length > 0, stamp = ago => new Date(Date.now() - ago).toISOString();
+    const files = new Map([
+      ["anna.md", "name:: Anna Berg\npage:: " + path + "\ntitle:: Test408 Kitchen\nat:: " + stamp(20000)],
+      ["old.md", "name:: Old Olsen\npage::\ntitle:: Journal\nat:: " + stamp(10 * 60000)],
+      [hereId() + ".md", "name:: Kim Elsewhere\npage::\ntitle:: Next\nat:: " + stamp(1000)]]);
+    const written = [];
+    delete be.here;
+    be.readDir = async dir => dir === ".here" ? files : new Map();
+    be.write = async (p, t) => p.startsWith(".here/") ? written.push([p, t]) : wasWrite.call(be, p, t);
+    try {
+      PREF.set(key, "Kim Test");
+      openPage(path); await settle();
+      await hereRound();
+      ok(written.some(([p, t]) => p === ".here/" + hereId() + ".md" && t.includes("name:: Kim Test") && t.includes("page:: " + path)),
+        "my own file in .here was not written: " + JSON.stringify(written));
+      const bar = $("#hereBar");
+      ok(seen(bar), "nobody shown top right");
+      const said = bar.getAttribute("aria-label") || "";
+      has(said, "Anna Berg");
+      ok(!said.includes("Old Olsen"), "someone silent for ten minutes is shown");
+      ok(!said.includes("Kim"), "I am shown to myself");
+      has(bar.textContent, "AB", "no initials");
+      has($("#content .herenote")?.textContent || "", "Anna Berg is also here");
+      go("today"); await settle();
+      ok(!$("#content .herenote") || !$("#content .herenote").textContent, "a note on a page nobody else has open");
+      $("#hereBar").click();
+      const row = [...document.querySelectorAll(".heremenu button")].find(b => b.textContent.includes("Anna Berg"));
+      ok(row, "the list does not name Anna");
+      has(row.textContent, "Test408 Kitchen");
+      row.click(); await settle();
+      eq(state.view === "page" && state.pagePath, path, "the row did not open Anna's page");
+    } finally {
+      be.readDir = wasRead; be.write = wasWrite; if (wasHere) be.here = wasHere;
+      PREF.set(key, wasName); HERE.others.clear(); hereDraw();
+      V.pages.delete(path); clearMemo(); go("today");
+    }
+  });
+
   test("#181 a stand-in edited while it loads gives way to its file when the first of the rest is in", () => {
     const rec = newRecord("Lay181", null);
     const path = personPath("Tor Vik");

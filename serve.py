@@ -194,6 +194,31 @@ def save_config(path, changes, replace=False):
 STARTED_AT = time.strftime("%Y-%m-%dT%H:%M:%S") + "-%d" % os.getpid()
 
 
+class Presence:
+    """#408 Who else has a folder open, and on which page. Each app sends a
+    beat every few seconds; one silent for SILENT seconds is gone. Kept in
+    memory only: nothing is written, and a restart forgets everyone."""
+    SILENT = 30
+
+    def __init__(self):
+        self.seen = {}               # folder root -> {id: {name, page, title, at}}
+        self.lock = threading.Lock()
+
+    def beat(self, root, who, name, page, title, now=None):
+        now = time.time() if now is None else now
+        with self.lock:
+            here = self.seen.setdefault(root, {})
+            for k in [k for k, v in here.items() if now - v["at"] > self.SILENT]:
+                del here[k]
+            here[str(who)[:64]] = {"name": str(name)[:80], "page": str(page)[:400],
+                                   "title": str(title)[:120], "at": now}
+            return [{"name": v["name"], "page": v["page"], "title": v["title"]}
+                    for k, v in here.items() if k != str(who)[:64]]
+
+
+PRESENCE = Presence()
+
+
 def load_folders(config):
     """The server folders chosen in the app, in the order they were added. A
     single folder chosen before there could be several comes along as one.
@@ -721,6 +746,8 @@ class Handler(BaseHTTPRequestHandler):
             code = code.value
         if self.path.startswith("/api/file") and self.command == "GET":
             return                      # loading a vault is hundreds of reads; stay quiet
+        if self.path.startswith("/api/here") and str(code) == "200":
+            return                      # a beat every ten seconds from everyone (#408)
         # A failed calendar says so itself; any other server error shows here.
         show = str(code).startswith("5") and not self.path.startswith("/api/calendar")
         self.log.write('%s "%s" %s %s' % (self.address_string(), self.requestline, code, size), show)
@@ -849,6 +876,25 @@ class Handler(BaseHTTPRequestHandler):
         self.log.write("Server folder %s added: %s" % (name, self.folders[name].root), show=True)
         return self._json(200, {"ok": True, "folder": folder_info(name, self.folders[name])})
 
+    def here(self):
+        """#408 A beat from the app: who, and which page. Answers with the
+        others who have this folder open."""
+        # No header of its own, unlike /api/open: a team's app may sit at another
+        # address than its server. refused() has checked the Origin already.
+        if self.vault is None:
+            return self._send(404, "no server folder")
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+            if n > 4096:
+                return self._send(413, "too long")
+            body = json.loads(self.rfile.read(n) or b"{}")
+            if not isinstance(body, dict):
+                raise ValueError("not an object")
+        except (ValueError, OSError):
+            return self._send(400, "not JSON")
+        return self._json(200, PRESENCE.beat(self.vault.root, body.get("id", ""), body.get("name", ""),
+                                             body.get("page", ""), body.get("title", "")))
+
     def do_POST(self):
         if not self.authorised():
             return self.demand_password()
@@ -856,6 +902,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         if urlparse(self.path).path == "/api/server-folder":
             return self.server_folder(remove=False)
+        if urlparse(self.path).path == "/api/here":
+            return self.here()
         if self.vault is None or urlparse(self.path).path != "/api/open":
             return self._send(404, "not found")
         if not self.allow_open:

@@ -25,6 +25,7 @@ function render() {
   c.append(node);
   document.body.classList.toggle("solview", node.classList.contains("solwrap"));
   journalPaper();
+  hereDraw();                // who else is here, and on this page (#408)
   if (state.view !== "review") SIDE_FOLLOW = false;
   resolveAssets(c);          // before the scroll: a picture keeps the room it had (#382)
   restoreScroll();

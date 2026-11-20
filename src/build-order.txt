@@ -2993,6 +2993,12 @@ js/168-phone-and-workday/carriedBySync.js
 js/168-phone-and-workday/vars-markImported.js
 js/168-phone-and-workday/sendFromPhone.js
 js/168-phone-and-workday/syncSendButton.js
+js/168-phone-and-workday/vars-HERE.js
+js/168-phone-and-workday/herePlace.js
+js/168-phone-and-workday/hereRound.js
+js/168-phone-and-workday/hereDraw.js
+js/168-phone-and-workday/openHereMenu.js
+js/168-phone-and-workday/installHere.js
 js/168-phone-and-workday/sendInAreaMenu.js
 js/168-phone-and-workday/vars-WORK_DAYS.js
 js/168-phone-and-workday/workHours.js

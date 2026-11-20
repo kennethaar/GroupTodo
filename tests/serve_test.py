@@ -130,5 +130,23 @@ class ClientGone(unittest.TestCase):
         self.assertEqual([x for x in lines if "failed" in x], [], "not a calendar that failed")
 
 
+class Here(unittest.TestCase):
+    """#408 who else is in the area: a heartbeat, kept in memory only."""
+
+    def test_408_others_in_the_same_folder_until_thirty_seconds_of_silence(self):
+        h = serve.Presence()
+        seen = lambda out: [(o["name"], o["page"], o["title"]) for o in out]
+        self.assertEqual(h.beat("/v", "a", "Anna", "pages/Kitchen.md", "Kitchen", now=100), [], "alone")
+        self.assertEqual(seen(h.beat("/v", "b", "Bjorn", "", "Journal", now=110)),
+                         [("Anna", "pages/Kitchen.md", "Kitchen")])
+        self.assertEqual(h.beat("/w", "c", "Cato", "", "", now=110), [], "another folder is another area")
+        self.assertEqual(seen(h.beat("/v", "a", "Anna", "pages/Kitchen.md", "Kitchen", now=125)),
+                         [("Bjorn", "", "Journal")], "you are not shown to yourself")
+        self.assertEqual(h.beat("/v", "b", "Bjorn", "", "Journal", now=160), [], "Anna was silent for 35 s")
+        long = h.beat("/v", "d", "D" * 500, "p" * 900, "t" * 500, now=161)
+        self.assertEqual(seen(long), [("Bjorn", "", "Journal")])
+        self.assertLessEqual(len(h.beat("/v", "b", "Bjorn", "", "", now=162)[0]["name"]), 80, "a name is kept short")
+
+
 if __name__ == "__main__":
     unittest.main()

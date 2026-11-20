@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.189.0 - 2026-11-20
+
+- Areas and sharing: see who else is in the area. Their initials sit top
+  right; a click lists who is on which page and opens it, and a page
+  someone else has open says so under its title. serve.py hears a beat
+  every ten seconds; a plain folder keeps one small file per person in
+  .here/ (#408).
+
 ## 1.188.0 - 2026-11-19
 
 - Links and aliases: a known name that is not linked yet, such as a first

@@ -60,6 +60,8 @@ function viewPage() {
       // Focus stands in the top right corner (#323); a chapter has it in its own bar.
       SIDE_DRAWING ? null : presentButton(path),
       SIDE_DRAWING || isChapterPage(path) ? null : focusButton("page", "btn sm ghost"))));
+  // Who else has this page open, quietly; hereDraw fills it in (#408).
+  if (!SIDE_DRAWING) c.append(el("div", {class: "herenote", "aria-live": "polite", data: {space: V.space, path}}));
 
   if (tracker) c.append(trackerPageLine(tracker));
   if (isTemplatePath(path)) c.append(templateHelp());
