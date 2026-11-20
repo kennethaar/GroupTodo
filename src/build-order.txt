@@ -2217,6 +2217,14 @@ js/110-views/confetti.js
 js/110-views/actConfetti.js
 js/110-views/actFields.js
 js/110-views/actGoPass.js
+js/110-views/actSortRoots.js
+js/110-views/actSortDue.js
+js/110-views/actSortNow.js
+js/110-views/actSortEnd.js
+js/110-views/actSortTake.js
+js/110-views/actSortUndo.js
+js/110-views/actSortTable.js
+js/110-views/actMoreSteps.js
 js/110-views/actFace.js
 js/110-views/actChoresNote.js
 js/110-views/viewActSolitaire.js

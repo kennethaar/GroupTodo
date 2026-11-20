@@ -3,6 +3,17 @@ window.addEventListener("keydown", e => {
   if (state.view !== "review" || !["projects", "actions"].includes(subNow())) return;
   if ($("#modalRoot").firstChild || e.ctrlKey || e.metaKey || e.altKey) return;
   if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+  // The sorting card (#462): a number is the box, Backspace takes the last answer back.
+  const sortR = document.querySelector(".actsort") && SOL.order && SOL.order[SOL.i];
+  if (sortR && !e.shiftKey) {
+    const m = /^(?:Numpad|Digit)([1-46-9])$/.exec(e.code), b = m && document.querySelector('.actsort .solopt[data-key="' + m[1] + '"]');
+    if (b || (e.key === "Backspace" && ACT_SORT && ACT_SORT.past.length)) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (e.repeat) return;
+      if (b) b.click(); else actSortUndo(sortR);
+      return;
+    }
+  }
   // Backspace deals the last card again, also from the end of the pass.
   if (e.key === "Backspace" && !e.shiftKey && SOL.past && SOL.past.length && solSteps().length) {
     e.preventDefault(); e.stopImmediatePropagation(); SOL_KB = null; solUnpaint(); solBack(); return;

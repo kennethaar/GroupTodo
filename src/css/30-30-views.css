@@ -506,6 +506,8 @@ body.solview #content{padding-bottom:14px}
 .npmact{display:flex;gap:8px;align-items:center}
 .npmact .chip.ctx{flex:none}
 .npmsol{margin:0}
+.actsortcol{display:flex;flex-direction:column;gap:8px;flex:1;min-width:0}
+.actsortcol .solhow{margin:0;max-width:60ch}
 .npmsol .slot.solopt{font:inherit;text-align:left;color:var(--fg)}
 .npmsol .slot.solopt:disabled{opacity:.5;cursor:default}
 .npmsol .solcard.npmidea{cursor:default;justify-content:safe center}

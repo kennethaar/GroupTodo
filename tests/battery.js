@@ -2935,6 +2935,60 @@ var GTD_TEST = (() => {
       ok(!/\[|\]/.test(t), "brackets left on the card: " + t);
     } finally { for (const p of [path, target]) removePage(p); clearMemo(); }
   });
+  test("#462 Review actions: a project with 3 or more steps that can go now is sorted into sequences first", async () => {
+    const path = scratchProject("462 Kitchen", [["TODO", "Measure the room"], ["TODO", "Order the tiles"],
+      ["TODO", "Lay the tiles"], ["TODO", "Paint the walls"]]);
+    const both = scratchProject("462 Garden", [["TODO", "Rake the leaves"], ["TODO", "Cut the hedge"], ["TODO", "Mow the lawn"]]);
+    const was = [...SOL_ANS];
+    const row = (p, t) => actDeck().find(a => a.path === p && a.block.title === t);
+    const deal = async r => { SOL = {order: [r], i: 0, pass: 0, deck: "a", vis: visibleSpaces().join("|"), day: todayISO()}; render(); await settle(); };
+    const card = () => content().querySelector(".actsort .solcard h3")?.textContent || "";
+    const box = t => [...content().querySelectorAll(".actsort .solopt")].find(b => b.textContent.includes(t));
+    const key = async n => { window.dispatchEvent(new KeyboardEvent("keydown", {key: n, code: n === "Backspace" ? n : "Digit" + n, bubbles: true})); await settle(); };
+    try {
+      SOL_ANS.clear();
+      go("review", {sub: "actions"}); await settle();
+      await deal(row(path, "Measure the room"));
+      ok(content().querySelector(".actsort"), "four steps that all go now: the sorting card is dealt first");
+      has(content().querySelector(".actsort").textContent, "Does it wait for another step?");
+      eq(card(), "Measure the room");
+      ok(box("Order the tiles") && box("Lay the tiles") && box("Paint the walls") && box("No, it can go now"), "the other steps and No are the answers");
+      await key("6");                                             // Measure goes now
+      eq(card(), "Order the tiles");
+      await key("6");                                             // Order goes now
+      eq(card(), "Lay the tiles");
+      box("Order the tiles").click(); await settle();             // Lay waits for Order
+      eq(getPage(path).blocks.find(b => b.title === "Lay the tiles").children.map(b => b.title), ["Order the tiles"], "the step it waits for goes under it (#275)");
+      await key("Backspace");
+      ok(getPage(path).blocks.some(b => b.title === "Order the tiles"), "Backspace takes the last answer back");
+      eq(card(), "Lay the tiles");
+      box("Order the tiles").click(); await settle();
+      eq(card(), "Paint the walls");
+      box("Measure the room").click(); await settle();           // Paint waits for Measure
+      ok(!content().querySelector(".actsort"), "all sorted: the action's own card");
+      eq(getPage(path).props.parallel, undefined, "two sequences are not written as parallel");
+      clearMemo();
+      eq(actDeck().filter(a => a.path === path).map(a => a.block.title).sort(), ["Measure the room", "Order the tiles"], "only the next action of each sequence is dealt");
+      ok(!actOrder(1).some(a => a.path === path && /Lay|Paint/.test(a.block.title)), "a step that waits is not asked for a verb");
+      // The card ends with the steps that wait, and a click deals them in this pass.
+      await deal(row(path, "Order the tiles"));
+      const more = [...content().querySelectorAll(".solcard button")].find(b => /\+ 2 more steps in/.test(b.textContent));
+      ok(more, "no + 2 more steps on the card");
+      more.click(); await settle();
+      ok(SOL.order.some(r => r.block.title === "Lay the tiles") && SOL.order.some(r => r.block.title === "Paint the walls"), "the waiting steps are dealt too");
+      // They can all go at once: written down, and not asked again.
+      await deal(row(both, "Rake the leaves"));
+      ok(content().querySelector(".actsort"), "three steps that all go now: sorting card");
+      [...content().querySelectorAll(".actsort button")].find(b => b.textContent.includes("They can all go at once")).click(); await settle();
+      eq(getPage(both).props.parallel, "yes", "written on the project");
+      ok(!content().querySelector(".actsort"), "the action's own card");
+      await deal(row(both, "Cut the hedge"));
+      ok(!content().querySelector(".actsort"), "the same project is not asked again");
+    } finally {
+      SOL_ANS.clear(); for (const [k, a] of was) SOL_ANS.set(k, a); solSaveAns();
+      actGoPass(0); for (const p of [path, both]) removePage(p); clearMemo(); go("today"); await settle();
+    }
+  });
   test("#441 Review actions starts again at Still to do on a new day", async () => {
     try {
       go("review", {sub: "actions"}); await settle();

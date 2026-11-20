@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.193.0 - 2026-11-20
+
+- Weekly review › Actions: a project with three or more steps that can all go
+  now is sorted first. One card asks, step by step, "Does it wait for another
+  step?", and the step that comes first goes under the one that waits. Only the
+  next step of each sequence is dealt, and only those are asked for a verb and
+  a context. "They can all go at once" writes parallel:: yes, so the project is
+  not asked again. A card ends with "+ N more steps", which deals the waiting
+  ones too (#462).
+
 ## 1.192.5 - 2026-11-20
 
 - Present a page: a line with links keeps the linked words. A project, person

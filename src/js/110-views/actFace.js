@@ -24,5 +24,6 @@ function actFace(r, f) {
     el("div", {class: "t-meta"},
       el("button", {class: "textbtn", onclick: () => inS(r, () => openTaskDetail(r.path, r.block, r.space))}, "Open the line"),
       el("button", {class: "textbtn", onclick: () => previewPage(r.space, r.path, true)}, "Open the page")),
-    el("div", {class: "solq"}, el("b", {}, ACT_ASK[f.k])));
+    el("div", {class: "solq"}, el("b", {}, ACT_ASK[f.k])),
+    actMoreSteps(r));
 }

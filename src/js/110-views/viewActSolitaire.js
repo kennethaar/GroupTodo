@@ -52,6 +52,7 @@ function viewActSolitaire() {
     el("p", {class: "solhow"}, f && f.k === "home"
       ? "Keys: ↑ ↓ go down a column, ← → across to the other, a letter to the name starting with it, Enter files the action there."
       : "Keys: the number on a box aims at it (numpad or number row); the same number again, or Enter, takes it. Arrows go from box to box, a letter to the answer starting with it. 5 goes back to the action, 5 twice skips it.")));
+  if (actSortDue(r)) return actSortTable(c, r);
   if (f && f.k === "home") return actHomeTable(c, r, f);
   return solTable(c, pass, r, steps, f, done, actFace(r, f));
 }
