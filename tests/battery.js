@@ -11411,7 +11411,7 @@ var GTD_TEST = (() => {
   });
   test("#376 Clarify shows the day page beside the card, at the line, and follows the next card", async () => {
     const filler = Array.from({length: 40}, (_, i) => "- o Ate lunch " + i).join("\n");
-    await withDays([[3, filler + "\n- Call the plumber\n" + filler + "\n"], [1, "- Plan the summer party\n"]], async () => {
+    await withDays([[3, filler + "\n- Call the plumber\n" + filler + "\n"], [1, "- Plan the summer party\n- DONE Met Anna\n  - Call Ola tomorrow\n"]], async () => {
       const pane = document.querySelector("#pagePane");
       const here = () => pane.querySelector(".sidehere");
       try {
@@ -11425,6 +11425,15 @@ var GTD_TEST = (() => {
         c.querySelector(".clans").click();
         c = await showClarify();
         ok(here() && here().textContent.includes("Plan the summer party"), "the pane does not follow the next card");
+        // A line under a folded one is unfolded to, marked and brought in view.
+        const met = getPage(journalPath(shiftISO(T(), -1))).blocks[1];
+        met.collapsed = true;
+        c.querySelector(".clans").click();
+        c = await showClarify();
+        eq(c.querySelector(".clcard h3").textContent, "Call Ola tomorrow");
+        ok(here() && here().textContent.includes("Call Ola tomorrow"), "a line under a folded line is not shown in the day page");
+        const pr2 = pane.getBoundingClientRect(), hr2 = here().getBoundingClientRect();
+        ok(hr2.top >= pr2.top && hr2.bottom <= pr2.bottom, "the line under a folded line is not in view");
         pane.querySelector('button[aria-label="Close"]').click();
         await settle();
         ok(pane.hidden, "Close does not put it away");

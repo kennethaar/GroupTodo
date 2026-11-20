@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.191.5 - 2026-11-20
+
+- Weekly review › Clarify: a line under a folded line is unfolded to in the
+  day page beside the card, marked and scrolled into view (#376).
+
 ## 1.191.4 - 2026-11-20
 
 - Weekly review › Clarify: the answers stand above the line's card, at one

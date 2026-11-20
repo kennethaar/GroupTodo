@@ -24,7 +24,11 @@ function viewDayReview() {
      and the rest to scroll through, so a note reads in its context (#376).
      Close puts it away until you ask for it again. */
   const beside = !NARROW.matches;
-  if (beside && !CL.noSide) SIDE_PAGE = {space: V.space, path, at: b.id};
+  if (beside && !CL.noSide) {
+    SIDE_PAGE = {space: V.space, path, at: b.id};
+    // Under a folded line it would not be drawn there: unfold the way to it.
+    for (const up of (branchTrail(getPage(path).blocks, b.id) || []).slice(0, -1)) up.collapsed = false;
+  }
   const c = el("div", {class: "wrap wide solwrap clarify"});
   c.append(el("aside", {class: "solside"}, head,
     el("p", {class: "solhow"}, "One line from your day pages at a time, oldest first. Ask: what is it?"),
