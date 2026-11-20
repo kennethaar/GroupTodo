@@ -1246,7 +1246,7 @@ const HELP = {
       ["* _ = ~ \" '", "Marks in pairs"], ["Ctrl+B", "Bold"], ["Ctrl+I", "Italics"], ["Ctrl+Shift+H", "Highlight"],
       ["|a|b| Enter", "Start a table"], ["Shift+Enter", "Note box under the line"]],
     more: ["Write three backticks on a line, then paste a sketch drawn in characters, or draw one with Enter. It keeps its lines and spaces, in a fixed-width font. The file keeps it in a code fence.",
-      "Shift+Enter opens a note box under the line, as in Notepad: Enter makes a new line, and spaces stay as typed. The line must have words first. Esc, Shift+Enter or a click away saves it. ⤢ makes the box big, to find and replace. On a phone, tap Notepad on the bar at the foot.",
+      "Shift+Enter opens a note box under the line, as in Notepad: Enter makes a new line, and spaces stay as typed. The line must have words first. Esc, Shift+Enter or a click away saves it. ⤢ makes the box big, to find and replace. ▾ folds the box to one line, and Copy text leaves it out. On a phone, tap Notepad on the bar at the foot.",
 "No Alt key on a phone? The bar at the foot of the screen while you write also has Context, Person and Organisation.",
       "Copy as plain text in the line menu, or Copy text on the bar, copies the words only: no links, tags or properties. The note box under the line comes along.",
       "To area on the bar moves the picked lines, or the line you are on, to another area. Pages they link to come along. A page other pages also link to is mirrored, not moved.",

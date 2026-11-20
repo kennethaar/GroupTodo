@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.190.0 - 2026-11-20
+
+- Keys on a line: ▾ at the top left of a Shift+Enter note box folds it to
+  one quiet line, "▸ 3 lines". ▸ or Shift+Enter opens it again. The file
+  keeps it folded, and Copy text leaves a folded box out (#392).
+
 ## 1.189.4 - 2026-11-20
 
 - Areas and sharing: on a phone, who else is in the area no longer takes a

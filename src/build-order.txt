@@ -1638,6 +1638,7 @@ js/105-outliner/tableBarSync.js
 js/105-outliner/tableEnter.js
 js/105-outliner/tableTab.js
 js/105-outliner/tableWatch.js
+js/105-outliner/fenceFolded.js
 js/105-outliner/noteBoxEl.js
 js/105-outliner/openNoteBox.js
 js/105-outliner/openNotepad.js

@@ -11,6 +11,8 @@ function openNoteBox(path, b, txt = null) {
   const fence = l => (/^\s*```/).test(l);   // in brackets: the language catalog reads a regex after ( only
   const one = body.length >= 2 && fence(body[0]) && fence(body[body.length - 1]) &&
     !body.slice(1, -1).some(fence);
+  // A folded box opens, to write in it.
+  if (one && fenceFolded(body[0])) { body[0] = fenceFold(body[0], false); touch(path); noteTodoTouched(); }
   if (!one) {
     const lines = body.filter(l => !fence(l));
     b.body = ["```", ...lines, "```"];

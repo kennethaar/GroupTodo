@@ -3,8 +3,25 @@
    Shift+Enter goes back to the end of the main line; a click away saves too.
    The caret's line and column sit quietly in the foot; ⤢ grows the box into
    the notepad, with find and replace. An emptied box leaves the file.
+   ▾ at its top left folds it to one line; Copy text leaves a folded box out.
    from and to are the fence lines in b.body. */
 function noteBoxEl(path, b, from, to) {
+  // ▾ folds the box to one line, ▸ opens it; the fence keeps which (fenceFolded).
+  const setFold = on => {
+    if (!b.body || !b.body[from]) return;
+    b.body[from] = fenceFold(b.body[from], on);
+    touch(path); noteTodoTouched();
+    render();
+    requestAnimationFrame(() => $(`.blk[data-id="${b.id}"] > .notebox[data-bi="${from}"] .nbfold`)?.focus());
+  };
+  if (fenceFolded(b.body[from])) {
+    const n = to - from - 1;
+    return el("div", {class: "notebox folded", data: {bi: String(from)}},
+      el("button", {class: "nbfold", type: "button", "aria-expanded": "false",
+        title: "Show the note", onclick: () => setFold(false)},
+        el("span", {class: "nbarrow", "aria-hidden": "true"}, "▸"),
+        el("span", {}, "┄ " + n + (n === 1 ? " line" : " lines") + " ┄")));
+  }
   const pad = el("textarea", {class: "nbtext", spellcheck: "false", wrap: "off",
     "aria-label": "Note under the line"});
   pad.value = b.body.slice(from + 1, to).join("\n");
@@ -68,7 +85,12 @@ function noteBoxEl(path, b, from, to) {
       gone = true;
       openNotepad(path, b, at);
     }}, "⤢");
+  const fold = el("button", {class: "nbfold", type: "button", "aria-expanded": "true",
+    title: "Fold the note: Copy text leaves it out", "aria-label": "Fold the note",
+    onmousedown: e => e.preventDefault(),
+    onclick: () => { save(); if (gone) { render(); return; } gone = true; setFold(true); }},
+    el("span", {class: "nbarrow", "aria-hidden": "true"}, "▾"));
   const box = el("div", {class: "notebox", data: {bi: String(from)}},
-    pad, zoom, el("div", {class: "nbfoot"}, where));
+    fold, pad, zoom, el("div", {class: "nbfoot"}, where));
   return box;
 }

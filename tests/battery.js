@@ -5347,6 +5347,35 @@ var GTD_TEST = (() => {
       eq(drawn.value, mock.join("\n"), "the fence is not drawn as written");
     } finally { go("today"); }
   });
+  test("#392 the note box folds to one line with ▾, opens with ▸ or Shift+Enter, and the file keeps it folded", async () => {
+    const path = scratchProject("fold the note box", [["TODO", "Plan the kitchen"]]);
+    const b = getPage(path).blocks[0];
+    b.body = ["```", "sink", "oven", "fridge", "```"]; touch(path);
+    openPage(path); await settle();
+    const q = s => document.querySelector('.blk[data-id="' + b.id + '"] > .notebox' + s);
+    try {
+      const fold = q(" button.nbfold");
+      ok(fold, "the box has no fold button");
+      eq(fold.getAttribute("aria-expanded"), "true", "the fold button does not say the box is open");
+      fold.click(); await settle();
+      eq(b.body[0], "```folded", "the fold is not kept in the fence");
+      ok(!q(" textarea"), "a folded box still shows its lines");
+      const open = q(" button.nbfold");
+      ok(open && open.getClientRects().length, "a folded box has no button to open it");
+      eq(open.getAttribute("aria-expanded"), "false", "the button does not say the box is folded");
+      has(q("").textContent, "3 lines", "the folded box does not say how many lines it holds");
+      const back = parsePage(serializePage(getPage(path))).blocks[0];
+      eq(JSON.stringify(back.body), JSON.stringify(b.body), "the file does not read the folded box back");
+      open.click(); await settle();
+      eq(b.body[0], "```", "opening it again leaves the fold in the file");
+      eq(q(" textarea")?.value, "sink\noven\nfridge", "the opened box lost its lines");
+      // Shift+Enter on the line opens a folded box, to write in it.
+      q(" button.nbfold").click(); await settle();
+      openNoteBox(path, b); await settle(); await new Promise(r => requestAnimationFrame(r));
+      eq(b.body[0], "```", "Shift+Enter left the box folded");
+      eq(document.activeElement, q(" textarea"), "Shift+Enter did not put the caret in the box");
+    } finally { go("today"); }
+  });
   test("#392 Shift+Enter opens a notepad box under the line; Esc, Shift+Enter or a click away saves it in a fence; ⤢ finds and replaces", async () => {
     const path = ensureJournal(todayISO());
     const b = newBlock({}, false);
@@ -13004,6 +13033,8 @@ var GTD_TEST = (() => {
     // #392: the Shift+Enter box under the line comes along, as written, without its ``` fence.
     eq(plainLineText(newBlock({title: "Order [[Paint]]", body: ["```", "2 l white", "  1 brush", "```"]})),
       "Order Paint\n2 l white\n  1 brush");
+    // A folded box is left out (#392).
+    eq(plainLineText(newBlock({title: "Order [[Paint]]", body: ["```folded", "2 l white", "```"]})), "Order Paint");
     const path = scratchProject("plain copy on the menu", [["TODO", "Buy paint"]]);
     const page = getPage(path), block = page.blocks[0];
     FLY = {txt: el("textarea"), path, page, block, box: el("div"), open: null, hi: 0, q: ""};
