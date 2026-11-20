@@ -13538,17 +13538,18 @@ var GTD_TEST = (() => {
     btn.click(); await settle();
     ok($("#deck"), "Present fills the screen with the deck");
   };
-  test("#464 Present: a picture under a bullet takes the place of the slide's picture while that bullet is lit", () => withPages({[TALK]: [
+  test("#464 Present: a picture in a bullet's notepad takes the place of the slide's picture while that bullet is lit", () => withPages({[TALK]: [
     "- Results",
     "  ![cover](assets/cover.png)",
     "  - Revenue up",
-    "    - ![chart](assets/chart.png)",
+    "    ![chart](assets/chart.png)",
     "  - New market",
-    "    - ![oslo](assets/oslo.png)",
+    "    Say Oslo first.",
+    "    ![oslo](assets/oslo.png)",
     "  - Hiring paused",
     "- Plans",
     "  - Office",
-    "    - ![plan](assets/plan.png)",
+    "    ![plan](assets/plan.png)",
     "  - Budget",
   ].join("\n") + "\n"}, async () => {
     try {
@@ -13559,8 +13560,8 @@ var GTD_TEST = (() => {
       eq([deckNow().title, pic()], ["Results", ["assets/cover.png"]], "before a bullet, the slide's own picture");
       deckKey("ArrowRight");
       eq([deckNow().title, deckNow().now, pic()], ["Results", "Revenue up", ["assets/chart.png"]],
-        "a bullet with a picture under it is a bullet, not a slide, and its picture takes the place");
-      ok(!/!\[|chart\]/.test($("#deck .slide.cur .stext").textContent), "the picture's line is not a bullet");
+        "a bullet with a picture in its notepad: its picture takes the place");
+      ok(!/!\[|Say Oslo/.test($("#deck .slide.cur .stext").textContent), "the notepad stays off the slide");
       deckKey("ArrowRight");
       eq([deckNow().now, pic()], ["New market", ["assets/oslo.png"]], "the next bullet's picture swaps in");
       deckKey("ArrowRight");

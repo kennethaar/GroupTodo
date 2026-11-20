@@ -7,11 +7,9 @@ that breaks existing vaults. Newest first.
 
 ## 1.195.0 - 2026-11-20
 
-- Present a page: a line that is just a picture, under a line on a slide, is
-  that line's picture. While the line is lit, its picture takes the slide's
-  picture place, on the left third; a line with none gives the slide's own
-  picture back. The picture line is no longer a bullet, and no slide of its
-  own. (#464)
+- Present a page: a bullet with a picture in its notepad shows that picture
+  on the left third while it is lit, in place of the slide's own picture. A
+  bullet with none gives the slide's picture back. (#464)
 
 ## 1.194.0 - 2026-11-20
 

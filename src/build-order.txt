@@ -760,7 +760,6 @@ js/91-present/vars-PRESENTER_CSS.js
 js/91-present/isSlidesCssPath.js
 js/91-present/slideWords.js
 js/91-present/slidePicture.js
-js/91-present/slidePictureLine.js
 js/91-present/slideNotes.js
 js/91-present/vars-SLIDE_LAYOUTS.js
 js/91-present/slideMark.js
