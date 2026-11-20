@@ -251,20 +251,12 @@ asks for this section to be compacted: repeats merged, stale items dropped.
 
 Work happens on `main`.
 
-Present (v1.175.0-v1.179.0, `src/js/91-present/`): slides with a presenter
-window; title first, bullets arrive in place, a focused line is presented
-from its trail. Slide layouts (#433) are read from marks and picked with
-Format › Slide layout. Newest area, so look here first for regressions.
+Newest areas, look here first for regressions: Present (`src/js/91-present/`,
+#431, layouts #433), areas in the top bar and who else is here (#436, #408),
+serve.py page history (#407), unlinked-name squiggles (#428), notepad (#392).
+Shipped but issues still open: #452 #451 #444 #436 #435 #431 #428 #408 #407
+#392 (need "Fixed in" comment and close).
 
-Slow start (#181, open): big Android folder (1203 files, ~2 s per read,
-listing ~29 s).
-
-- Staged read: `readDayFirst` reads today's page, `GTD.md` and day templates
-  by name (`readDays`, draws via `onDay`), then yesterday, before `names()`.
-  `readActiveFirst` lists `pages/1/` (`namesIn`). `isStubPath` defers loose
-  `pages/` files; `rec.dayOnly` holds other saves.
-- Takeover: `readFolderBehind` swaps the folder in at Enter (`lineDone()`),
-  merging shown and unsaved pages.
-- Logging: `loadMark`, `startupText`, `readTimingText` feed the Save log
-  (test `#181 a slow start can be traced`; it and #340 skip alone, over 10 s).
-- Last log (v1.162.4): today 6.4 s, listing 29.5 s. Next: read a new log.
+Slow start (#181, closed): staged read via `readDayFirst`, `readActiveFirst`,
+`isStubPath`; folder takeover in `readFolderBehind`; timing in the Save log
+(`loadMark`, `startupText`, `readTimingText`). Reopen if a new log is slow.
