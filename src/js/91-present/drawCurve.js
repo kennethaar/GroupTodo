@@ -7,7 +7,7 @@ function drawCurve(s) {
   const parts = s.kids.map((b, i) => {
     const x0 = X(i), x1 = i < n - 1 ? X(i + 1) : 96, last = i === n - 1;
     const floor = 0.1 + 0.6 * i / n, tau = 3 * (i + 1) ** 1.6;
-    const v = t => last ? 1 - 0.05 * t / (x1 - x0) : floor + (1 - floor) * Math.exp(-t / tau);
+    const v = t => last ? 1 : floor + (1 - floor) * Math.exp(-t / tau);
     let d = `M${x0},${Y(from)} L${x0},${Y(1)}`;
     for (let k = 1; k <= 16; k++) { const t = (x1 - x0) * k / 16; d += ` L${x0 + t},${Y(v(t))}`; }
     from = v(x1 - x0);

@@ -13703,6 +13703,41 @@ var GTD_TEST = (() => {
       ok(!$("#deck"), "Esc gives the page back");
     } finally { presentStop(); }
   }));
+  const EVEN = join(PAGES, "Even.md");
+  test("#433 steps are one size, hub bubbles one size with each spoke in sight, the curve ends flat", () => withPages({[EVEN]: [
+    "- Get started", "  - 1. Download and open grouptodo.html in your browser", "  - 2. Point an Area to a local or cloud-synced folder",
+    "  - 3. Brain-dump", "  - 4. Run your first Weekly Review",
+    "- Platform", "  - . Core", "  - . A web presenter with a long name for its bubble, longer than the rest", "  - . Mobile capture app",
+    "  - . Sync", "  - . API", "  - . Search",
+    "- Recall (Memory / Days)", "  - ~ Learn", "  - ~ Review", "  - ~ Stuck"].join("\n") + "\n"}, async () => {
+    try {
+      openPage(EVEN); await settle();
+      content().querySelector(".pagehead .presentbtn").click(); await settle();
+      const to = async t => { presentGo(DECK.slides.find(s => s.title === t).first); deckKey("ArrowRight"); await settle(); return $("#deck .slide.cur"); };
+      const sizes = ns => ns.map(n => { const r = n.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; });
+      const same = (s, what) => ok(s.every(([w, h]) => Math.abs(w - s[0][0]) <= 1 && Math.abs(h - s[0][1]) <= 1), what + " differ in size: " + JSON.stringify(s));
+      same(sizes([...(await to("Get started")).querySelectorAll(".chev")]), "the steps");
+      const hub = await to("Platform");
+      const bubbles = [...hub.querySelectorAll(".hub .ntext")];
+      same(sizes(bubbles), "the bubbles");
+      // A spoke shows when some of it lies outside the core and every bubble.
+      const ring = hub.querySelector(".hub").getBoundingClientRect(), core = hub.querySelector(".hubcore").getBoundingClientRect();
+      const inside = (x, y, r) => x > r.left && x < r.right && y > r.top && y < r.bottom;
+      const rects = bubbles.map(b => b.getBoundingClientRect());
+      for (const [i, line] of [...hub.querySelectorAll(".hub .sline")].entries()) {
+        const p = k => +line.getAttribute(k) / 100;
+        let shown = 0;
+        for (let t = 0; t <= 1; t += 0.02) {
+          const x = ring.left + ring.width * (p("x1") + (p("x2") - p("x1")) * t), y = ring.top + ring.height * (p("y1") + (p("y2") - p("y1")) * t);
+          if (Math.hypot(x - (core.left + core.width / 2), y - (core.top + core.height / 2)) > core.width / 2 && !rects.some(r => inside(x, y, r))) shown++;
+        }
+        ok(shown >= 3, "bubble " + (i + 1) + "'s spoke is hidden");
+      }
+      const peaks = [...(await to("Recall")).querySelectorAll(".curve .peak path")];
+      const ys = peaks.at(-1).getAttribute("d").split(/[ML]/).filter(Boolean).slice(2).map(pt => +pt.split(",")[1]);
+      eq(new Set(ys).size, 1, "the last line dips: " + ys.join(" "));
+    } finally { presentStop(); }
+  }));
   test("#433 a 2D layout lights a box at a time with its lines in it; a quote, then its takeaways", () => withPages(SHOW_PAGE, async () => {
     try {
       openPage(SHOW); await settle();

@@ -12,6 +12,7 @@ function slideLay(slide, laid) {
   slide.classList.toggle("intro", !laid);
   slide.dataset.lay = "1";
   slideFit(slide);
+  slideEven(slide);
   if (first || matchMedia("(prefers-reduced-motion: reduce)").matches || !title.animate) return false;
   const now = title.getBoundingClientRect(), small = parseFloat(getComputedStyle(title).fontSize);
   if (!now.width || !small) return false;

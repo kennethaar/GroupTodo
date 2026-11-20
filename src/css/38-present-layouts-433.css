@@ -14,9 +14,10 @@
 /* With the first part the drawing comes once the title has reached the top. */
 #deck .sbody:has(.part.aftertitle){animation:deckFade .6s ease-in-out 1s both}
 
-/* Steps: chevrons from left to right. */
-#deck .steps{display:flex;height:100%;align-items:center;gap:.15em}
-#deck .chev{flex:1;min-width:0;min-height:5em;display:flex;align-items:center;justify-content:center;text-align:center;
+/* Steps: chevrons from left to right, every one as big as the biggest:
+   one grid row, as tall as its tallest, its columns all one width. */
+#deck .steps{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;align-content:center;height:100%;gap:.15em}
+#deck .chev{min-width:0;min-height:5em;display:flex;align-items:center;justify-content:center;text-align:center;
   padding:.5em 1.5em;background:var(--slide-accent);color:var(--on-accent);overflow-wrap:anywhere;
   clip-path:polygon(0 0,calc(100% - 1em) 0,100% 50%,calc(100% - 1em) 100%,0 100%,1em 50%)}
 #deck .chev:first-child{clip-path:polygon(0 0,calc(100% - 1em) 0,100% 50%,calc(100% - 1em) 100%,0 100%)}
@@ -42,6 +43,8 @@
 #deck .hubcore{position:absolute;left:50%;top:50%;width:30%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
   display:grid;place-items:center;text-align:center;padding:.4em;background:var(--slide-accent);color:var(--on-accent);
   font-weight:700;font-size:.85em;overflow-wrap:anywhere}
+/* Every bubble as big as the biggest (slideEven sets the size), its words in the middle. */
+#deck .hub .ntext{display:grid;place-items:center;font-size:calc(1em * var(--hubfit, 1))}
 
 /* Pyramid: the first line the foundation at the bottom, the words beside. */
 #deck .pyramid{display:flex;flex-direction:column-reverse;height:100%;gap:.12em}
@@ -54,7 +57,8 @@
 #deck .curve .axes path{fill:none;stroke:currentColor;stroke-width:1.5;opacity:.6}
 #deck .curve .sline{stroke-width:3}
 #deck .curve .ntext{transform:translateX(-50%);max-width:22%;margin-bottom:.4em;padding:0;border:0;background:none}
-#deck .yaxis{position:absolute;left:0;top:50%;transform:translate(-100%,-50%) rotate(180deg);writing-mode:vertical-rl;font-size:.8em;opacity:.8}
+/* The y axis is named over its top end; the line stops a gap before the word. */
+#deck .yaxis{position:absolute;left:3%;bottom:100%;transform:translateX(-50%);margin-bottom:.3em;font-size:.8em;opacity:.8;white-space:nowrap}
 #deck .xaxis{position:absolute;right:0;top:100%;font-size:.8em;opacity:.8}
 
 /* Boxes: versus, 2×2, scorecard and cards, each box's lines in it. */

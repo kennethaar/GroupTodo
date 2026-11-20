@@ -6,6 +6,6 @@ function drawHub(s) {
     return slidePart(b, "node",
       slideSvg("svg", {viewBox: "0 0 100 100", "aria-hidden": "true"},
         slideSvg("line", {x1: 50 + 15 * c, y1: 50 + 15 * sn, x2: 50 + r * c, y2: 50 + r * sn, class: "sline"})),
-      el("span", {class: "ntext", style: `left:${50 + r * c}%;top:${50 + r * sn}%`}, slideWords(b)));
+      el("span", {class: "ntext", data: {c, s: sn}, style: `left:${50 + r * c}%;top:${50 + r * sn}%`}, slideWords(b)));
   }));
 }

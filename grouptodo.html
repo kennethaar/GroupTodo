@@ -3484,8 +3484,8 @@ border-left:1px solid color-mix(in srgb,currentColor 20%,transparent)}
 #deck .part.later{opacity:var(--faint)}
 #deck .part.past{opacity:var(--dim)}
 #deck .sbody:has(.part.aftertitle){animation:deckFade .6s ease-in-out 1s both}
-#deck .steps{display:flex;height:100%;align-items:center;gap:.15em}
-#deck .chev{flex:1;min-width:0;min-height:5em;display:flex;align-items:center;justify-content:center;text-align:center;
+#deck .steps{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;align-content:center;height:100%;gap:.15em}
+#deck .chev{min-width:0;min-height:5em;display:flex;align-items:center;justify-content:center;text-align:center;
 padding:.5em 1.5em;background:var(--slide-accent);color:var(--on-accent);overflow-wrap:anywhere;
 clip-path:polygon(0 0,calc(100% - 1em) 0,100% 50%,calc(100% - 1em) 100%,0 100%,1em 50%)}
 #deck .chev:first-child{clip-path:polygon(0 0,calc(100% - 1em) 0,100% 50%,calc(100% - 1em) 100%,0 100%)}
@@ -3507,6 +3507,7 @@ padding:.3em .6em;border-radius:.6em;background:var(--slide-bg);border:.1em soli
 #deck .hubcore{position:absolute;left:50%;top:50%;width:30%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
 display:grid;place-items:center;text-align:center;padding:.4em;background:var(--slide-accent);color:var(--on-accent);
 font-weight:700;font-size:.85em;overflow-wrap:anywhere}
+#deck .hub .ntext{display:grid;place-items:center;font-size:calc(1em * var(--hubfit, 1))}
 #deck .pyramid{display:flex;flex-direction:column-reverse;height:100%;gap:.12em}
 #deck .tier{flex:1;min-height:0;display:grid;grid-template-columns:45% 1fr;align-items:center;gap:1em}
 #deck .tshape{height:100%;background:var(--slide-accent)}
@@ -3515,7 +3516,7 @@ font-weight:700;font-size:.85em;overflow-wrap:anywhere}
 #deck .curve .axes path{fill:none;stroke:currentColor;stroke-width:1.5;opacity:.6}
 #deck .curve .sline{stroke-width:3}
 #deck .curve .ntext{transform:translateX(-50%);max-width:22%;margin-bottom:.4em;padding:0;border:0;background:none}
-#deck .yaxis{position:absolute;left:0;top:50%;transform:translate(-100%,-50%) rotate(180deg);writing-mode:vertical-rl;font-size:.8em;opacity:.8}
+#deck .yaxis{position:absolute;left:3%;bottom:100%;transform:translateX(-50%);margin-bottom:.3em;font-size:.8em;opacity:.8;white-space:nowrap}
 #deck .xaxis{position:absolute;right:0;top:100%;font-size:.8em;opacity:.8}
 #deck .cards{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:.8em;height:100%;align-content:center}
 #deck .lay-split .cards{grid-auto-rows:minmax(50%,auto)}
@@ -4547,7 +4548,7 @@ placeholder="Capture… (Enter adds to today)">
 })();
 
 "use strict";
-const APP_VERSION = "1.189.0";
+const APP_VERSION = "1.189.1";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -14793,7 +14794,7 @@ const a = i / n * 2 * Math.PI - Math.PI / 2, c = Math.cos(a), sn = Math.sin(a);
 return slidePart(b, "node",
 slideSvg("svg", {viewBox: "0 0 100 100", "aria-hidden": "true"},
 slideSvg("line", {x1: 50 + 15 * c, y1: 50 + 15 * sn, x2: 50 + r * c, y2: 50 + r * sn, class: "sline"})),
-el("span", {class: "ntext", style: `left:${50 + r * c}%;top:${50 + r * sn}%`}, slideWords(b)));
+el("span", {class: "ntext", data: {c, s: sn}, style: `left:${50 + r * c}%;top:${50 + r * sn}%`}, slideWords(b)));
 }));
 }
 function drawCurve(s) {
@@ -14802,7 +14803,7 @@ let from = 0;
 const parts = s.kids.map((b, i) => {
 const x0 = X(i), x1 = i < n - 1 ? X(i + 1) : 96, last = i === n - 1;
 const floor = 0.1 + 0.6 * i / n, tau = 3 * (i + 1) ** 1.6;
-const v = t => last ? 1 - 0.05 * t / (x1 - x0) : floor + (1 - floor) * Math.exp(-t / tau);
+const v = t => last ? 1 : floor + (1 - floor) * Math.exp(-t / tau);
 let d = `M${x0},${Y(from)} L${x0},${Y(1)}`;
 for (let k = 1; k <= 16; k++) { const t = (x1 - x0) * k / 16; d += ` L${x0 + t},${Y(v(t))}`; }
 from = v(x1 - x0);
@@ -14853,6 +14854,28 @@ fit = Math.round((fit - 0.1) * 10) / 10;
 box.style.setProperty("--fit", fit);
 }
 }
+function slideEven(slide) {
+const ring = slide.querySelector(".hub"), core = ring && ring.querySelector(".hubcore");
+if (!ring || !ring.offsetWidth) return;
+const R = ring.offsetWidth, bubbles = [...ring.querySelectorAll(".ntext")], lines = [...ring.querySelectorAll(".sline")];
+const inner = core.offsetWidth / 2 / R * 100, SHOWN = 6;
+let W, H, r;
+for (let fit = 1; fit >= 0.5; fit = Math.round((fit - 0.1) * 10) / 10) {
+ring.style.setProperty("--hubfit", fit);
+for (const b of bubbles) { b.style.width = ""; b.style.height = ""; }
+W = Math.max(...bubbles.map(b => b.offsetWidth)) / R * 100;
+H = Math.max(...bubbles.map(b => b.offsetHeight)) / R * 100;
+const edge = b => Math.min(Math.abs(+b.dataset.c) > 1e-6 ? W / 2 / Math.abs(+b.dataset.c) : Infinity,
+Math.abs(+b.dataset.s) > 1e-6 ? H / 2 / Math.abs(+b.dataset.s) : Infinity);
+r = Math.max(36, ...bubbles.map(b => inner + SHOWN + edge(b)));
+if (bubbles.every(b => r * Math.abs(+b.dataset.s) + H / 2 <= 50)) break;
+}
+bubbles.forEach((b, i) => {
+const c = +b.dataset.c, s = +b.dataset.s;
+Object.assign(b.style, {width: W + "%", height: H + "%", left: 50 + r * c + "%", top: 50 + r * s + "%"});
+if (lines[i]) { lines[i].setAttribute("x2", 50 + r * c); lines[i].setAttribute("y2", 50 + r * s); }
+});
+}
 function slideLay(slide, laid) {
 const title = slide.querySelector(".stitle");
 const first = !slide.dataset.lay;
@@ -14862,6 +14885,7 @@ const big = first ? 0 : parseFloat(getComputedStyle(title).fontSize);
 slide.classList.toggle("intro", !laid);
 slide.dataset.lay = "1";
 slideFit(slide);
+slideEven(slide);
 if (first || matchMedia("(prefers-reduced-motion: reduce)").matches || !title.animate) return false;
 const now = title.getBoundingClientRect(), small = parseFloat(getComputedStyle(title).fontSize);
 if (!now.width || !small) return false;
@@ -17836,7 +17860,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.189.0 - 2026-11-20\n\n- Areas and sharing: see who else is in the area. Their initials sit top\n  right; a click lists who is on which page and opens it, and a page\n  someone else has open says so under its title. serve.py hears a beat\n  every ten seconds; a plain folder keeps one small file per person in\n  .here/ (#408).\n\n## 1.188.0 - 2026-11-19\n\n- Links and aliases: a known name that is not linked yet, such as a first\n  name or an alias, gets a quiet wavy line on the line you are in or point\n  at. Click it, or move to it with the arrow keys, and Enter links it\n  (#428).\n\n## 1.187.0 - 2026-11-19\n\n- Areas and sharing: on a computer every area is a chip in the top bar.\n  One click shows or hides it, and New things go to picks where new tasks\n  land. Settings, Area now holds each area's colour, New area, Manage areas\n  and Invite somebody. A phone keeps the area menu (#436).\n\n## 1.186.3 - 2026-11-19\n\n- Vault and sync: serve.py no longer prints tracebacks when the browser\n  closes or reloads before an answer, and such a calendar is no longer\n  reported as failed (#451).\n\n## 1.186.2 - 2026-11-19\n\n- Vault and sync: serve.py keeps an earlier version at most every ten\n  minutes, and only when more than spaces or capitals changed (#407).\n\n## 1.186.1 - 2026-11-19\n\n- Vault and sync: serve.py keeps an earlier version each time you leave a\n  line you changed by more than spaces or capitals, instead of one every ten\n  minutes (#407).\n\n## 1.186.0 - 2026-11-19\n\n- Vault and sync: serve.py keeps earlier versions of each page in the\n  .history folder, one every ten minutes and always one before a page is\n  deleted. The last 20 per page stay, for up to 30 days (#407).\n\n## 1.185.3 - 2026-11-19\n\n- Hold and until: Projects, All lists projects on hold too, each with its\n  day or \"no date\". Statuses shown has an On hold chip to put them away (#444).\n\n## 1.185.2 - 2026-11-19\n\n- Templates: a project made from a template is a copy of it. Headings and\n  notes stay as they are, a note box comes along, and only tasks become\n  steps, with their state kept. A template of plain lines still makes them\n  tasks (#435).\n\n## 1.185.1 - 2026-11-19\n\n- Events and feelings: the Feelings Wheel opens without the space too.\n  Type =fru and pick Frustrated: the line reads = Frustrated (#214).\n\n## 1.185.0 - 2026-11-19\n\n- Weekly review › Steps: Weekly review has its own item in the sidebar,\n  under Projects. It shows a number when the review is due. Hide it in\n  Settings › Sidebar if you do not want it (#450).\n\n## 1.184.2 - 2026-11-19\n\n- Your page: the GroupToDo logo now sits level with your picture at the\n  top of the sidebar, not lower down beside the text (#447).\n";
+const HELP_NEWS = "## 1.189.1 - 2026-11-20\n\n- Present a page: every step's arrow is as big as the biggest, and so is\n  every bubble round a hub, each with its spoke in sight. A curve's last\n  line stays flat, and its y axis is named over its top end, the line\n  stopping before the word (#433).\n\n## 1.189.0 - 2026-11-20\n\n- Areas and sharing: see who else is in the area. Their initials sit top\n  right; a click lists who is on which page and opens it, and a page\n  someone else has open says so under its title. serve.py hears a beat\n  every ten seconds; a plain folder keeps one small file per person in\n  .here/ (#408).\n\n## 1.188.0 - 2026-11-19\n\n- Links and aliases: a known name that is not linked yet, such as a first\n  name or an alias, gets a quiet wavy line on the line you are in or point\n  at. Click it, or move to it with the arrow keys, and Enter links it\n  (#428).\n\n## 1.187.0 - 2026-11-19\n\n- Areas and sharing: on a computer every area is a chip in the top bar.\n  One click shows or hides it, and New things go to picks where new tasks\n  land. Settings, Area now holds each area's colour, New area, Manage areas\n  and Invite somebody. A phone keeps the area menu (#436).\n\n## 1.186.3 - 2026-11-19\n\n- Vault and sync: serve.py no longer prints tracebacks when the browser\n  closes or reloads before an answer, and such a calendar is no longer\n  reported as failed (#451).\n\n## 1.186.2 - 2026-11-19\n\n- Vault and sync: serve.py keeps an earlier version at most every ten\n  minutes, and only when more than spaces or capitals changed (#407).\n\n## 1.186.1 - 2026-11-19\n\n- Vault and sync: serve.py keeps an earlier version each time you leave a\n  line you changed by more than spaces or capitals, instead of one every ten\n  minutes (#407).\n\n## 1.186.0 - 2026-11-19\n\n- Vault and sync: serve.py keeps earlier versions of each page in the\n  .history folder, one every ten minutes and always one before a page is\n  deleted. The last 20 per page stay, for up to 30 days (#407).\n\n## 1.185.3 - 2026-11-19\n\n- Hold and until: Projects, All lists projects on hold too, each with its\n  day or \"no date\". Statuses shown has an On hold chip to put them away (#444).\n\n## 1.185.2 - 2026-11-19\n\n- Templates: a project made from a template is a copy of it. Headings and\n  notes stay as they are, a note box comes along, and only tasks become\n  steps, with their state kept. A template of plain lines still makes them\n  tasks (#435).\n\n## 1.185.1 - 2026-11-19\n\n- Events and feelings: the Feelings Wheel opens without the space too.\n  Type =fru and pick Frustrated: the line reads = Frustrated (#214).\n\n## 1.185.0 - 2026-11-19\n\n- Weekly review › Steps: Weekly review has its own item in the sidebar,\n  under Projects. It shows a number when the review is due. Hide it in\n  Settings › Sidebar if you do not want it (#450).\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {
