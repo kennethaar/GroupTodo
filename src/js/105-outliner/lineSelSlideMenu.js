@@ -16,6 +16,15 @@ function lineSelSlideMenu(btn) {
     slideLayoutPick(path, lines, lay);
     paintLineSel();                    // the lines stay picked; the bar is drawn anew
   });
+  // Hide in Present / Show in Present for all the picked lines at once (#467).
+  const own = outer.filter(b => !b.state);
+  if (own.length) {
+    const show = own.every(b => /^_\s/.test(b.title || ""));
+    pop.append(el("hr", {class: "ebsep", "aria-hidden": "true"}),
+      el("button", {class: "ebtn", tabindex: "-1", role: "menuitem", data: {hide: show ? "show" : "hide"},
+        onclick: () => { slideHideSet(path, outer); paintLineSel(); }},
+        el("span", {class: "ebcheck", "aria-hidden": "true"}), el("span", {class: "elb"}, show ? "Show in Present" : "Hide in Present")));
+  }
   hud.append(pop);
   btn.setAttribute("aria-expanded", "true");
   // Above the bar, its left edge under the button, inside the window.

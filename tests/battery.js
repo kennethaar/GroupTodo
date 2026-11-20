@@ -13505,7 +13505,8 @@ var GTD_TEST = (() => {
      ============================================================ */
   const TALK = join(PAGES, "Talk.md");
   const TALK_PAGE = {[TALK]: [
-    "- TODO Why we move [[c/office]]",
+    // A task line stays off the slides (#467): this one is a plain line with a context.
+    "- Why we move [[c/office]]",
     "  owner:: Ann",
     "  Say it plainly.",
     "  ![cover](assets/cover.png)",
@@ -13919,6 +13920,56 @@ var GTD_TEST = (() => {
     eq([s.title, s.kids.map(slideWords)],
       ["Plan Office move with Anna", ["Ask Kitchen renovation about money"]],
       "every linked word stays; a context is a tag, not words");
+  }));
+  test("#467 task lines and lines starting with _ stay off the slides; Hide in Present; the presenter says how many", () => withPages({
+    [SHOW]: ["- Agenda", "  - TODO Book the room", "    - Ask Ann", "  - Budget", "  - _ Draft numbers", "    - Old guess",
+      "  - DONE Send invite", "- _ Parked slide", "  - Idea", "- Roadmap", "  - -> Q1", "  - _ -> Q2", "  - -> Q3"].join("\n") + "\n"}, async () => {
+    const f = document.createElement("iframe");
+    document.body.append(f);
+    const open = window.open;
+    window.open = () => f.contentWindow;
+    const [agenda, parked, road] = getPage(SHOW).blocks;
+    const [room, budget] = agenda.children;
+    const q2 = road.children[1];
+    try {
+      const {slides, hidden} = deckSteps(SHOW);
+      eq(slides.map(s => [s.title, s.kids.map(slideWords)]), [["Show", []], ["Agenda", ["Budget"]], ["Roadmap", ["Q1", "Q3"]]],
+        "a task line in any state, and a _ line, are left out with the lines under them");
+      eq(slides[2].layout, "timeline", "_ in front of a layout mark hides that point; the rest keep the layout");
+      eq(hidden, 5, "it counts what it left out");
+      const from = deckSteps(SHOW, parked, true).slides;
+      eq(from.map(s => s.title), ["Parked slide", "Roadmap"], "Present from here on a hidden line presents it, as you picked it");
+      eq(slideMarkSet(q2.title, "hub"), "_ . Q2", "a new layout mark goes after the _");
+      // The line menu: Hide in Present, and Show in Present on a hidden line.
+      openPage(SHOW); await settle();
+      const fly = b => { FLY = {txt: el("div", {}, b.title), path: SHOW, page: getPage(SHOW), block: b, box: el("div"), open: null, hi: 0, q: ""};
+        return flyRows().find(r => r.k === "presenthide"); };
+      ok(!fly(room), "a task line is off the slides already: no Hide in Present");
+      eq(fly(budget)?.label, "Hide in Present", "the line menu offers Hide in Present");
+      ok(fly(budget).menu, "in the line's own menu");
+      flyHead("presenthide"); await settle();
+      eq(budget.title, "_ Budget", "it puts _ in front");
+      eq(fly(q2)?.label, "Show in Present", "on a hidden line it says Show in Present");
+      flyHead("presenthide"); await settle();
+      eq(q2.title, "-> Q2", "and takes the _ off, keeping the mark");
+      // Several lines picked: Slide layout ▾ hides or shows them all at once.
+      document.activeElement?.blur();
+      LINE_SEL.path = SHOW; LINE_SEL.ids = [budget.id, q2.id]; paintLineSel();
+      const hide = async () => { document.querySelector('#lselHud [data-k="slide"]').click(); await settle();
+        return document.querySelector("#lselHud .ebsub [data-hide]"); };
+      eq((await hide())?.textContent, "Hide in Present", "one is shown: Hide in Present hides them all");
+      document.querySelector("#lselHud .ebsub [data-hide]").click(); await settle();
+      eq([budget.title, q2.title], ["_ Budget", "_ -> Q2"], "both hidden");
+      eq((await hide())?.textContent, "Show in Present", "all hidden: Show in Present");
+      document.querySelector("#lselHud .ebsub [data-hide]").click(); await settle();
+      eq([budget.title, q2.title], ["Budget", "-> Q2"], "both shown again");
+      document.dispatchEvent(new KeyboardEvent("keydown", {key: "z", ctrlKey: true, bubbles: true, cancelable: true})); await settle();
+      eq(getPage(SHOW).blocks[0].children[1].title, "_ Budget", "one Ctrl+Z takes the whole pick back");
+      lineSelClear();
+      // The presenter window says how many are hidden, so nothing goes without a trace.
+      presentStart(SHOW, {presenter: true}); await settle();
+      eq(f.contentDocument.querySelector(".pcount")?.textContent, "1 / 2 · 6 hidden", "the presenter shows N hidden");
+    } finally { presentStop(); lineSelClear(); window.open = open; f.remove(); }
   }));
   const deckParts = () => [...$$("#deck .slide.cur .part")];
   test("#433 a 1D layout's parts are hidden until → brings each in; marks are not shown", () => withPages(SHOW_PAGE, async () => {

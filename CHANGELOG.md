@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.194.0 - 2026-11-20
+
+- Present a page: task lines, and lines that start with `_ `, stay off the
+  slides with the lines under them. ☰ › Hide in Present adds the `_ `; Show in
+  Present takes it off. With lines picked, Slide layout ▾ hides or shows them
+  all. The presenter window says how many are hidden (#467).
+
 ## 1.193.2 - 2026-11-20
 
 - Weekly review › Actions: a step with open steps under it is not dealt, even

@@ -44,6 +44,10 @@ function flyRows() {
     // This bullet and its lines as slides, on a page or a day (#431).
     {k: "present", ic: FLY_PRESENT, label: "Present from here", menu: true,
      opts: [["", "Present"], ["p", "With presenter window"]]},
+    // A "_ " in front keeps the line off the slides (#467); a task line is off already.
+    ...(t ? [] : /^_\s/.test(block.title || "")
+      ? [{k: "presenthide", ic: FLY_SHOW, label: "Show in Present", menu: true}]
+      : [{k: "presenthide", ic: FLY_HIDE, label: "Hide in Present", menu: true}]),
     {k: "embedref", ic: FLY_EMBED, label: "Copy embed", key: "Alt+B", menu: true},
     {k: "plaincopy", ic: EB_COPY, label: "Copy text", key: "Alt+X", menu: true},
     {k: "refile", ic: FLY_REFILE, label: "Refile", key: "Alt+G", menu: true},

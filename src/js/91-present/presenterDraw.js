@@ -9,7 +9,8 @@ function presenterDraw() {
   const size = +PREF.get("present.notes", 22) || 22;
   const resize = by => { PREF.set("present.notes", Math.max(12, Math.min(48, size + by))); presenterDraw(); };
   const bar = el("div", {class: "pbar"},
-    el("span", {class: "pcount"}, s.n + " / " + slides.length),
+    // Lines left off the slides (#467) are counted, so none goes without a trace.
+    el("span", {class: "pcount"}, s.n + " / " + slides.length + (DECK.hidden ? " · " + DECK.hidden + " hidden" : "")),
     el("button", {class: "ptimer", title: "Time since you started. Click to start again"}, ""),
     el("span", {class: "pclock"}, ""),
     el("span", {class: "pgap"}),

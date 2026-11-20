@@ -36,6 +36,8 @@ body #content.roomunder{padding-bottom:85vh}
 #lselHud .ebpop{position:absolute;bottom:calc(100% + 6px);top:auto}
 :is(#editBar,#lselHud) .ebpop .ebsubarrow{margin-left:auto;color:var(--fg2)}
 :is(#editBar,#lselHud) .ebsub .ebcheck{width:1em;text-align:center}
+/* Hide in Present under the layouts (#467), set off by a hairline. */
+:is(#editBar,#lselHud) .ebsub .ebsep{border:0;border-top:1px solid var(--border);margin:3px 6px;width:auto}
 :is(#editBar,#lselHud) .ebsub .ebmark{margin-left:auto;padding-left:14px;font-family:var(--mono);font-size:12px;color:var(--fg2)}
 /* More buttons than fit a phone's width scroll sideways rather than shrinking
    below a size a thumb can reliably hit. */

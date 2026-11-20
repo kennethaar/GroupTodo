@@ -11,11 +11,18 @@
    more lines than fit goes on as "Title (2/2)". In a 2D layout (versus,
    2×2, scorecard, cards, quote) a line's own lines are drawn in its box, so
    only their own lines get a slide; `breadcrumb` says where a slide is from.
-   `parts` are what → lights, one each: the lines, or a quote's takeaways. */
+   `parts` are what → lights, one each: the lines, or a quote's takeaways.
+   A task line or a "_ " line is left out with its lines (#467); `hidden`
+   counts them for the presenter. The bullet you present from always shows. */
 function deckSteps(path, root = null, on = false) {
   const page = getPage(path);
-  const steps = [], slides = [];
-  const shown = b => !!(slideWords(b) || (b.children || []).some(shown));
+  const steps = [], slides = [], left = new Set();
+  const words = b => !!(slideWords(b) || (b.children || []).some(words));
+  const shown = b => {
+    if (!words(b)) return false;
+    if (slideHidden(b)) { left.add(b); return false; }
+    return true;
+  };
   const kidsOf = b => (b.children || []).filter(shown);
   const has = b => kidsOf(b).length > 0;
   const slide = (block, head, kids, depth, up, breadcrumb, notes) => {
@@ -52,5 +59,5 @@ function deckSteps(path, root = null, on = false) {
     const sibs = root._parent ? root._parent.children : page?.blocks || [];
     for (const b of sibs.slice(sibs.indexOf(root) + 1).filter(shown)) slide(b, slideWords(b), kidsOf(b), 0, null, "");
   }
-  return {steps, slides};
+  return {steps, slides, hidden: left.size};
 }

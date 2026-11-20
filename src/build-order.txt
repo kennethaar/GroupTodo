@@ -763,6 +763,8 @@ js/91-present/slideNotes.js
 js/91-present/vars-SLIDE_LAYOUTS.js
 js/91-present/slideMark.js
 js/91-present/slideMarkOf.js
+js/91-present/slideHidden.js
+js/91-present/slideHideSet.js
 js/91-present/slideMarkSet.js
 js/91-present/slideTitleTokens.js
 js/91-present/slideKpi.js

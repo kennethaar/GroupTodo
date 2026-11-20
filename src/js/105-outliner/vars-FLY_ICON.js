@@ -26,3 +26,6 @@ const FLY_ZOOM    = '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l4.5 4.5M
 const FLY_PANEL   = '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 4v16"/><path d="M8 9l3 3-3 3"/>';
 // Present from here (#431): a play triangle, as on ▶ Present.
 const FLY_PRESENT = '<path d="M8 5.5v13l10-6.5z"/>';
+// Hide in Present (#467): an eye struck through; Show in Present: the eye.
+const FLY_HIDE    = '<path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="2.5"/><path d="M4 20L20 4"/>';
+const FLY_SHOW    = '<path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="2.5"/>';
