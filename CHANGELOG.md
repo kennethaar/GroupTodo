@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.191.1 - 2026-11-20
+
+- Weekly review › Clarify: the line you are asked about shows again in the
+  day page beside the card. The new list of who else is here had hidden it.
+
 ## 1.191.0 - 2026-11-20
 
 - A page: pages pinned to the sidebar are kept on your own person page, as

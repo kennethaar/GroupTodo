@@ -25,7 +25,7 @@ function hereDraw() {
   if (side) {
     side.hidden = !all.length;
     side.textContent = "";
-    if (all.length) side.append(el("div", {class: "sidehere-h"}, "Also here"),
+    if (all.length) side.append(el("div", {class: "herelist-h"}, "Also here"),
       ...all.map(o => hereRow(o.space, o, () => document.body.classList.remove("nav-open"))));
   }
   for (const note of $$("#content .herenote")) {
