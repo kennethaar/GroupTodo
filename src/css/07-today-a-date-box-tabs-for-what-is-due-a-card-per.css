@@ -172,7 +172,9 @@
 .jview .jcard{background:none;border:0;border-radius:0;box-shadow:none}
 .jview .jhead{border-bottom:0;padding:8px 0 2px}
 @media (min-width:1100px){
-  .jview.jwide .jgrid{column-gap:40px}
-  .jview.jwide .jgrid > .jcard + .jcard::before{content:"";position:absolute;left:-20px;top:0;bottom:20px;border-left:1px solid var(--border)}
-  .jview.jwide .jsplit{right:-25px}
+  /* Wide enough that a lane's ☰ and 🔍, which hang 38px left of its lines,
+     sit right of the hairline, in their own lane (#413). */
+  .jview.jwide .jgrid{column-gap:72px}
+  .jview.jwide .jgrid > .jcard + .jcard::before{content:"";position:absolute;left:-36px;top:0;bottom:20px;border-left:1px solid var(--border)}
+  .jview.jwide .jsplit{right:-41px}
 }

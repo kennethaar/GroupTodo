@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.192.3 - 2026-11-20
+
+- The line menu and toolbar: with two areas side by side in the Journal, a
+  line's ☰ and 🔍 sit in its own lane, right of the line between the areas (#413).
+
 ## 1.192.2 - 2026-11-20
 
 - The line menu and toolbar: the ☰ menu stays inside the outline's box, so it

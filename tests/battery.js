@@ -9198,6 +9198,38 @@ var GTD_TEST = (() => {
       eq(s.backgroundColor, "rgba(0, 0, 0, 0)", "no fill");
     }
   });
+  test("#413 two areas side by side: a line's ☰, 🔍 and its menu stay in its own lane, right of the hairline", async () => {
+    const other = "Test413 Other", wasVisible = PREF.get("visibleSpaces", "");
+    try {
+      LOADED.set(other, newRecord(other, Backends.memory(other)));
+      Spaces.list.push({name: other, kind: "memory"});
+      setVisibleSpaces([V.space, other]);
+      for (const sp of [V.space, other]) inSpace(sp, () => getPage(ensureJournal(todayISO())).blocks.push(newBlock({title: "Plant the bulbs"})));
+      clearMemo(); go("today", {sub: null, todayDay: null}); render(); await settle();
+      const cards = [...content().querySelectorAll(".jview .jgrid > .jcard:not(.trkcol)")];
+      eq(cards.length, 2, "two areas on the day");
+      const [a, b] = cards.map(c => c.getBoundingClientRect());
+      ok(b.top < a.bottom && b.left >= a.right, "side by side (the window is wide enough)");
+      const hair = (a.right + b.left) / 2;
+      const line = cards[1].querySelector(".outline .blk > .line");
+      const menu = line.querySelector(":scope > .linemenu"), zoom = line.querySelector(":scope > .linezoom");
+      for (const [n, what] of [[menu, "☰"], [zoom, "🔍"]]) {
+        const r = n.getBoundingClientRect();
+        ok(r.left > hair + 2, what + " sits right of the hairline at " + Math.round(hair) + ", not at " + Math.round(r.left));
+      }
+      menu.click(); await settle();
+      ok(FLY && !FLY.box.hidden, "the ☰ opens the line menu");
+      FLY.box.getAnimations().forEach(x => x.finish());
+      const bx = FLY.box.getBoundingClientRect();
+      ok(bx.left > hair, "the menu opens in the lane too, at " + Math.round(bx.left) + " (hairline " + Math.round(hair) + ")");
+      if (FLY && FLY.summoned) flySummon(FLY.txt);
+    } finally {
+      LOADED.delete(other);
+      Spaces.list = Spaces.list.filter(s => s.name !== other);
+      setVisibleSpaces(wasVisible ? JSON.parse(wasVisible) : []);
+      clearMemo(); render();
+    }
+  });
   test("#160 a day with no trackers says so, and + tracker waits but is in reach of Tab", () => {
     const path = "journals/2099_01_01.md";
     putPage(path, {props: {}, blocks: [newBlock({title: "Nothing here is tracked"})]});
