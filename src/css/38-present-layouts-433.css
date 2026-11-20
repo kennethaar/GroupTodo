@@ -45,6 +45,12 @@
   font-weight:700;font-size:.85em;overflow-wrap:anywhere}
 /* Every bubble as big as the biggest (slideEven sets the size), its words in the middle. */
 #deck .hub .ntext{display:grid;place-items:center;font-size:calc(1em * var(--hubfit, 1))}
+/* A spoke's own lines: one card right of the hub, the lit spoke's (#433). */
+#deck .hubwrap{display:flex;gap:1.5em;height:100%;min-width:0}
+#deck .hubwrap .ring{flex:none;margin:0}
+#deck .hubcards{flex:1;min-width:0;display:grid;align-items:center}
+#deck .hubcard{grid-area:1/1;visibility:hidden}
+#deck .hubcard.on{visibility:visible}
 
 /* Pyramid: the first line the foundation at the bottom, the words beside. */
 #deck .pyramid{display:flex;flex-direction:column-reverse;height:100%;gap:.12em}

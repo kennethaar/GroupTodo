@@ -14088,6 +14088,33 @@ var GTD_TEST = (() => {
       eq(new Set(ys).size, 1, "the last line dips: " + ys.join(" "));
     } finally { presentStop(); }
   }));
+  test("#433 a hub spoke's own lines are a card to the right of the hub, shown only while that spoke is lit", () => withPages({[EVEN]: [
+    "- Platform", "  - . Core sync", "    - Offline first", "    - Conflict free", "  - . Web presenter",
+    "  - . Mobile app", "    - Quick capture", "      - Share sheet",
+    "- Plain hub", "  - . A", "  - . B", "  - . C"].join("\n") + "\n"}, async () => {
+    const {slides} = deckSteps(EVEN);
+    eq(slides.map(s => [s.title, s.breadcrumb]), [["Even", ""], ["Platform", ""], ["Quick capture", "Platform > Mobile app"], ["Plain hub", ""]],
+      "a spoke with lines gets no slide; only a line of its own with lines does");
+    try {
+      openPage(EVEN); await settle();
+      content().querySelector(".pagehead .presentbtn").click(); await settle();
+      const shown = () => [...$$("#deck .slide.cur .hubcard")].filter(c => getComputedStyle(c).visibility !== "hidden");
+      presentGo(DECK.slides.find(s => s.title === "Platform").first);
+      deckKey("ArrowRight"); await settle();
+      eq(shown().map(c => c.textContent), ["Core syncOffline firstConflict free"], "the lit spoke's card, its lines in it");
+      const ring = $("#deck .slide.cur .hub").getBoundingClientRect(), card = shown()[0].getBoundingClientRect();
+      ok(card.left >= ring.right - 1, "the card is right of the hub: " + card.left + " < " + ring.right);
+      ok(card.right <= $("#deck .slide.cur").getBoundingClientRect().right + 1, "the card stays on the slide");
+      deckKey("ArrowRight"); await settle();
+      eq(shown().length, 0, "a spoke with no lines: no card");
+      eq(deckParts().length, 3, "still a part per spoke");
+      deckKey("ArrowRight"); await settle();
+      eq(shown().map(c => c.textContent), ["Mobile appQuick capture"], "the card swaps to the lit spoke's");
+      presentGo(DECK.slides.find(s => s.title === "Plain hub").first);
+      deckKey("ArrowRight"); await settle();
+      eq($$("#deck .slide.cur .hubcards").length, 0, "no spoke with lines: the hub alone, in the middle");
+    } finally { presentStop(); }
+  }));
   test("#433 a 2D layout lights a box at a time with its lines in it; a quote, then its takeaways", () => withPages(SHOW_PAGE, async () => {
     try {
       openPage(SHOW); await settle();

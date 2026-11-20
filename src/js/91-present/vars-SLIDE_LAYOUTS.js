@@ -9,7 +9,7 @@ const SLIDE_LAYOUTS = {
   timeline: {min: 2, max: 9, mode: "1d", name: "Timeline"},
   cycle:    {min: 3, max: 9, mode: "1d", name: "Cycle"},
   pyramid:  {min: 3, max: 9, mode: "1d", name: "Pyramid"},
-  hub:      {min: 3, max: 9, mode: "1d", name: "Hub"},
+  hub:      {min: 3, max: 9, mode: "2d", name: "Hub"},
   curve:    {min: 2, max: 9, mode: "1d", name: "Curve"},
   split:    {min: 2, max: 9, mode: "2d", name: "Versus"},
   quadrant: {min: 4, max: 9, mode: "2d", name: "2×2"},

@@ -8,7 +8,7 @@
    follows as a slide of its own; the ones before it stay out.
    Slide layouts (#433): each slide is drawn as slideLayout says. Top lines
    with no lines of their own are bullets on the title slide. A layout with
-   more lines than fit goes on as "Title (2/2)". In a 2D layout (versus,
+   more lines than fit goes on as "Title (2/2)". In a 2D layout (versus, hub,
    2×2, scorecard, cards, quote) a line's own lines are drawn in its box, so
    only their own lines get a slide; `breadcrumb` says where a slide is from.
    `parts` are what → lights, one each: the lines, or a quote's takeaways.

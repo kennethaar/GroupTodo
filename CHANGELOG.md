@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.195.1 - 2026-11-20
+
+- Present a page: on a hub slide, a spoke with lines under it shows them in
+  a card to the right of the hub while that spoke is lit. The next spoke
+  swaps the card. The spoke no longer gets a slide of its own. (#433)
+
 ## 1.195.0 - 2026-11-20
 
 - Present a page: a bullet with a picture in its notepad shows that picture

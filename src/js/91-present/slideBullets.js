@@ -13,6 +13,9 @@ function slideBullets(slide, step, fresh) {
     li.classList.toggle("fresh", !!fresh && n === step.k - 1);
     li.classList.toggle("aftertitle", !!fresh && moved && n === step.k - 1);
   });
+  // A hub's card for the lit spoke, the others hidden (#433).
+  const lit = slide.querySelector(".part.now")?.dataset.bid;
+  for (const c of slide.querySelectorAll(".hubcard")) c.classList.toggle("on", c.dataset.bid === lit);
   // The lit part's picture in the picture's place (#464).
   const pic = slidePicNow(step.s, step.k);
   for (const p of slide.querySelectorAll(".cover .pic")) p.classList.toggle("on", p.dataset.pic === pic);
