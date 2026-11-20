@@ -41,6 +41,7 @@ function viewActSolitaire() {
   if (!f) { SOL.hold = null; SOL.step = null; }
   sideFollow(r.space, r.path);
   c.classList.add("solwrap");
+  const sorting = actSortDue(r);
   c.append(el("aside", {class: "solside"}, head, passList,
     el("p", {class: "solhow"}, P.say),
     solDecks(pass),
@@ -49,10 +50,11 @@ function viewActSolitaire() {
     el("button", {class: "textbtn", onclick: () => solOp(r, "skip")}, "Skip this action ›"),
     SOL.past && SOL.past.length ? el("button", {class: "textbtn", title: "Backspace", onclick: () => solBack()}, "‹ Back to the last card") : null,
     el("p", {class: "solhow"}, "Drag the card onto an answer, or click one. Everything is written on the line itself."),
-    el("p", {class: "solhow"}, f && f.k === "home"
+    el("p", {class: "solhow"}, sorting ? "Keys: a box's number answers at once. Backspace takes it back. 5 twice skips the action."
+      : f && f.k === "home"
       ? "Keys: ↑ ↓ go down a column, ← → across to the other, a letter to the name starting with it, Enter files the action there."
       : "Keys: the number on a box aims at it (numpad or number row); the same number again, or Enter, takes it. Arrows go from box to box, a letter to the answer starting with it. 5 goes back to the action, 5 twice skips it.")));
-  if (actSortDue(r)) return actSortTable(c, r);
+  if (sorting) return actSortTable(c, r);
   if (f && f.k === "home") return actHomeTable(c, r, f);
   return solTable(c, pass, r, steps, f, done, actFace(r, f));
 }

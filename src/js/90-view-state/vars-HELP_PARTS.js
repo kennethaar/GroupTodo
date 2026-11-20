@@ -822,7 +822,7 @@ const HELP = {
     keys: [["7–9", "Aim at a box"], ["Enter", "Take it"]],
     legend: [[".solpasses", "The passes and how many each has."], [".solcard", "The action."], [".solopt", "An answer."]],
     more: ["A chore that comes up: change how often, or let it go.",
-      "The step that comes first goes under the one that waits for it. They can all go at once is written on the project page, so it is not asked again. + N more steps deals the waiting ones too, in Still to do only.",
+      "The step that comes first goes under the one that waits for it. They can all go at once is written on the project page, so it is not asked again. + N more steps deals the waiting ones too, in Still to do only. A step set to Doing is always dealt.",
       "Done already throws confetti. Every tenth one this week is a big burst. With Celebration: off on the review page, it is quiet.",
       "On a new day the review starts again at Still to do."],
     see: ["keys-review", "review-projects"],
