@@ -14,6 +14,20 @@ function hereDraw() {
     bar.append(...names.slice(0, 3).map(n => avatarNode(n, 26)),
       names.length > 3 ? el("span", {class: "heremore"}, "+" + (names.length - 3)) : "");
   }
+  /* On a phone the bar has no room for them: a count on ☰ and a list at
+     the top of the sidebar instead. CSS shows these only there. */
+  const count = $("#hereCount"), side = $("#sideHere");
+  if (count) {
+    count.hidden = !all.length;
+    count.textContent = all.length ? String(all.length) : "";
+    $("#burger")?.setAttribute("aria-label", "Show the sidebar" + (all.length ? " · " + all.length + " also here" : ""));
+  }
+  if (side) {
+    side.hidden = !all.length;
+    side.textContent = "";
+    if (all.length) side.append(el("div", {class: "sidehere-h"}, "Also here"),
+      ...all.map(o => hereRow(o.space, o, () => document.body.classList.remove("nav-open"))));
+  }
   for (const note of $$("#content .herenote")) {
     const who = (HERE.others.get(note.dataset.space) || []).filter(o => o.page === note.dataset.path).map(o => o.name);
     note.textContent = who.length ? "· " + who.join(", ") + (who.length > 1 ? " are" : " is") + " also here" : "";

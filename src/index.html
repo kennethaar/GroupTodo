@@ -44,6 +44,8 @@
       <button class="appupdate" id="appUpdate" hidden></button>
       <button class="hideside" id="hideSide" title="Hide the sidebar (\)" aria-label="Hide the sidebar">&#8676;</button>
     </div>
+    <!-- #408 on a phone, who else is in the area: the bar has no room. -->
+    <div class="sidehere" id="sideHere" hidden></div>
     <!-- #395 where the Journal has no top bar, Search waits here. -->
     <button class="sidesearch" id="sideSearch" title="Search (/)"><span>Search…</span><kbd>/</kbd></button>
     <nav class="nav" id="nav"></nav>
@@ -56,7 +58,7 @@
 
   <div id="main">
     <header class="top">
-      <button class="tbtn burger" id="burger" title="Show the sidebar (\)" aria-label="Show the sidebar">&#9776;</button>
+      <button class="tbtn burger" id="burger" title="Show the sidebar (\)" aria-label="Show the sidebar">&#9776;<span class="herecount" id="hereCount" aria-hidden="true" hidden></span></button>
       <!-- Installed as an app there is no browser chrome, so the two arrows
            everybody reaches for first have to live here. -->
       <div class="h-hist">

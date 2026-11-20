@@ -129,3 +129,17 @@ header.top .heremenu{right:22px;top:58px}
   .scrim.side{padding-top:env(titlebar-area-height, 0px)}
   html body #toasts:has(> .toast.done){top:calc(env(titlebar-area-height, 0px) + 6px)}
 }
+/* #408 On a phone the bar has no room for the others: a count on ☰ and a
+   list at the top of the sidebar. A wide screen keeps the initials. */
+header.top .burger{position:relative}
+.herecount{position:absolute;top:-5px;right:-5px;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;
+  border-radius:999px;background:var(--accent);color:var(--accent-fg);font-size:11px;font-weight:700;line-height:16px;text-align:center}
+.herecount[hidden],.sidehere{display:none}
+.sidehere-h{font-size:12px;color:var(--fg3);padding:0 8px 2px}
+.sidehere button,.sidehere .hererow{display:flex;align-items:center;gap:8px;width:100%;min-height:40px;padding:0 8px;border:0;
+  background:none;border-radius:8px;text-align:left;color:var(--fg);font:inherit;font-size:13px}
+.sidehere .hererow{color:var(--fg2)}
+.sidehere button:hover,.sidehere button:focus-visible{background:var(--bg3)}
+.sidehere span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (min-width:561px){.herecount{display:none}}
+@media (max-width:560px){.sidehere:not([hidden]){display:block;margin-bottom:8px}}

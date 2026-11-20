@@ -1204,7 +1204,7 @@ const HELP = {
       "Manage areas sets each area's folder and name. Remove an area there; its folder keeps the files.",
       "On a phone, the area menu at the top right does the same."],
     keys: [["Alt+S", "Move to an area"]],
-    more: ["Others in the area show as initials, top right. Click them to see who is on which page, and open it. A page someone else has open says so under its title.",
+    more: ["Others in the area show as initials, top right. Click them to see who is on which page, and open it. On a phone, ☰ shows how many, and the sidebar lists them. A page someone else has open says so under its title.",
       "Your day page is yours. Others can read it but not type over it.",
       "A task you hand over is one task, not two copies.",
       "Make private moves a page to another folder.",

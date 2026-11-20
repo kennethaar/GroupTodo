@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.189.4 - 2026-11-20
+
+- Areas and sharing: on a phone, who else is in the area no longer takes a
+  row of its own under the bar. ☰ shows how many, and the sidebar lists
+  them at the top; tap one to open their page (#408).
+
 ## 1.189.3 - 2026-11-20
 
 - Present a page: ▾ beside ▶ Present drops down under itself with just

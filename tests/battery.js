@@ -189,7 +189,10 @@ var GTD_TEST = (() => {
     const f = document.createElement("iframe");
     f.style.cssText = "position:fixed;left:0;top:0;height:300px;border:0;width:" + width + "px";
     const css = [...document.querySelectorAll("style")].map(s => s.textContent).join("\n");
+    // On the Journal the bar's tools stand in the day's heading (#395): park them back first.
+    journalPaper(false);
     const bar = document.querySelector("header.top").cloneNode(true);
+    journalPaper();
     const mt = bar.querySelector("#nextMeet"), cx = bar.querySelector("#btnContext");
     mt.hidden = !meeting; cx.hidden = !context;
     mt.className = "nextmeet now";
@@ -1564,6 +1567,43 @@ var GTD_TEST = (() => {
     } finally {
       be.readDir = wasRead; be.write = wasWrite; if (wasHere) be.here = wasHere;
       PREF.set(key, wasName); HERE.others.clear(); hereDraw();
+      V.pages.delete(path); clearMemo(); go("today");
+    }
+  });
+
+  test("#408 on a phone the others are on ☰ and in the sidebar, not on a row of their own", async () => {
+    await flush();
+    const path = join(PAGES, "Test408b Hall.md");
+    putPage(path, parsePage("- Paint\n")); clearMemo();
+    const seen = n => !!n && n.getClientRects().length > 0;
+    try {
+      HERE.others.set(V.space, [{name: "Anna Berg", page: path, title: "Test408b Hall"}, {name: "Bo Lund", page: "", title: "Next"}]);
+      hereDraw();
+      ok(seen($("#hereBar")), "a wide screen lost the initials top right");
+      ok(!seen($("#hereCount")), "a wide screen shows a count on ☰");
+      ok(!seen($("#sideHere")), "a wide screen lists the others in the sidebar too");
+      const {f, d} = await phoneBar(390, null, null);
+      try {
+        d.body.append(document.querySelector("#sideHere").cloneNode(true));
+        eq(getComputedStyle(d.querySelector("#hereBar")).display, "none", "the initials are in the phone's bar");
+        ok(d.querySelector("header.top").getBoundingClientRect().height < 70, "the others take a row of their own");
+        const n = d.querySelector("#hereCount");
+        ok(seen(n), "no count on ☰");
+        eq(n.textContent, "2", "the count on ☰");
+        ok(seen(d.querySelector("#sideHere")), "the sidebar does not list the others on a phone");
+      } finally { f.remove(); }
+      const list = $("#sideHere");
+      has(list.textContent, "Also here");
+      has(list.textContent, "Bo Lund");
+      const row = [...list.querySelectorAll("button")].find(b => b.textContent.includes("Anna Berg"));
+      ok(row, "Anna has no row to tap");
+      has(row.textContent, "Test408b Hall");
+      row.click(); await settle();
+      eq(state.view === "page" && state.pagePath, path, "the row did not open Anna's page");
+      HERE.others.clear(); hereDraw();
+      ok($("#hereCount").hidden && $("#sideHere").hidden, "a count or list with nobody else here");
+    } finally {
+      HERE.others.clear(); hereDraw();
       V.pages.delete(path); clearMemo(); go("today");
     }
   });

@@ -2997,6 +2997,7 @@ js/168-phone-and-workday/syncSendButton.js
 js/168-phone-and-workday/vars-HERE.js
 js/168-phone-and-workday/herePlace.js
 js/168-phone-and-workday/hereRound.js
+js/168-phone-and-workday/hereRow.js
 js/168-phone-and-workday/hereDraw.js
 js/168-phone-and-workday/openHereMenu.js
 js/168-phone-and-workday/installHere.js

@@ -381,12 +381,10 @@ button.tick:hover{box-shadow:inset 0 0 0 1px currentColor}
   header.top::before{content:"";order:1;flex-basis:100%;height:0}
   header.top:not(:has(.hnow > :not([hidden])))::before{display:none}
   .hnow{display:flex;order:2;flex:1 1 0;gap:6px;min-width:0}
-  /* Others here (#408) go at the end of that row too, beside the area button;
-     with them shown the row is there even with nothing on now. */
-  header.top .spacesbtn,header.top .herebar{order:3}
-  header.top:has(#hereBar:not([hidden]))::before{display:block}
+  /* Others here (#408) are on ☰ and in the sidebar, not on a row of their own. */
+  header.top .spacesbtn{order:3}
+  header.top .herebar{display:none}
   header.top .spacesbtn{margin-left:auto}
-  header.top .heremenu{top:calc(100% + 4px);right:14px}
   .hnow:not(:has(> :not([hidden]))){display:none}
   .hnow .nextmeet{max-width:none;flex:0 1 auto}
   .hnow .ctxnow{flex:none}
