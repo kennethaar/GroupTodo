@@ -1,5 +1,7 @@
 function lineSelHud() {
   const n = LINE_SEL.ids.length;
+  // Clarify sends its answer to lines picked in its day page (#460).
+  if (CL.shown) clPaint();
   let hud = $("#lselHud");
   if (!n) { if (hud) hud.remove(); return; }
   if (!hud) { hud = el("div", {id: "lselHud"}); document.body.append(hud); }

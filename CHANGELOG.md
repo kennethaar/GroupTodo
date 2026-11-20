@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.192.0 - 2026-11-20
+
+- Weekly review › Clarify: drag over lines in the day page beside the card
+  to give them all one answer, such as To do or Leave it as a note. Project
+  makes one project: the first line names it, and the others become its
+  steps. Undo that takes the whole group back (#460).
+
 ## 1.191.5 - 2026-11-20
 
 - Weekly review › Clarify: a line under a folded line is unfolded to in the

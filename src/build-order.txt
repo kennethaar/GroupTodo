@@ -2059,6 +2059,9 @@ js/110-views/clSettle.js
 js/110-views/clSomeday.js
 js/110-views/clUnderArea.js
 js/110-views/vars-CL_GROUPS.js
+js/110-views/clPicked.js
+js/110-views/clProjectOfLines.js
+js/110-views/clAnswerMany.js
 js/110-views/clAnswer.js
 js/110-views/clUndo.js
 js/110-views/clPaint.js

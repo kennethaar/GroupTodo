@@ -11462,6 +11462,54 @@ var GTD_TEST = (() => {
       eq(at(c), first, "the answers moved");
     });
   });
+  test("#460 Clarify gives one answer to lines dragged in the day page beside it; Project makes one project with them as steps", async () => {
+    await withDays([[3, "- Call the plumber\n- Order tiles\n- Buy paint\n- Kitchen redo\n- Fix the fence\n"]], async () => {
+      const d3 = journalPath(shiftISO(T(), -3)), pane = document.querySelector("#pagePane");
+      const line = t => getPage(d3).blocks.find(b => b.title.includes(t)) || null;
+      const ans = label => [...content().querySelectorAll(".clans")].find(x => x.textContent.includes(label));
+      let made = null;
+      try {
+        let c = await showClarify();
+        // The drag itself, from one line in the day page onto the next.
+        const txt = t => [...pane.querySelectorAll(".blk .txt")].find(n => n.textContent.includes(t));
+        const a = txt("Order tiles").getBoundingClientRect(), z = txt("Buy paint").getBoundingClientRect();
+        txt("Order tiles").dispatchEvent(new MouseEvent("mousedown", {bubbles: true, button: 0, clientX: a.left + 4, clientY: a.top + 3}));
+        document.dispatchEvent(new MouseEvent("mousemove", {bubbles: true, clientX: z.left + 4, clientY: z.top + z.height / 2}));
+        document.dispatchEvent(new MouseEvent("mouseup", {bubbles: true}));
+        await settle();
+        eq(LINE_SEL.ids.length, 2, "the drag in the day page does not pick the two lines");
+        has(content().textContent, "2 lines picked", "Clarify does not say the answer goes to the picked lines");
+        ok(ans("Waiting for").disabled, "an answer for one line at a time is offered for two");
+        ans("To do").click();
+        c = await showClarify();
+        eq(line("Order tiles").state, "TODO"); eq(line("Buy paint").state, "TODO");
+        ok(!line("Call the plumber").state, "the asked line got the answer too");
+        eq(c.querySelector(".clcard h3").textContent, "Call the plumber", "the asked line is not still asked");
+        ok(!LINE_SEL.ids.length, "the lines stay picked after the answer");
+        [...c.querySelectorAll(".cllast button")].find(x => trim(x.textContent) === "Undo that").click();
+        await settle();
+        ok(!line("Order tiles").state && !line("Buy paint").state, "Undo that does not take back the whole group");
+        // Project: one project, named from the first line, the others its steps.
+        LINE_SEL.path = d3; LINE_SEL.ids = [line("Kitchen redo").id, line("Fix the fence").id]; paintLineSel();
+        PREF.set("npm.ask:" + V.space, "1");
+        ans("Project").click();
+        await settle();
+        [...document.querySelectorAll("#modalRoot button, #modalRoot [role=button]")].find(x => x.textContent.includes("Kitchen redo")).click();
+        await settle();
+        closeModal(); await settle();
+        made = findExistingPage("1/Kitchen redo");
+        ok(made && pageKind(made) === "project", "no project made");
+        const head = line("Kitchen redo");
+        ok(head && head.title.includes("[["), "the first line does not link the project");
+        ok(!line("Fix the fence"), "the other line is not moved under it");
+        const step = head.children.find(k => k.title.includes("Fix the fence"));
+        ok(step && step.state === "TODO", "the other line is not a step of it");
+        eq(projectOfBlock(d3, step), made, "the step does not belong to the project");
+        go("review", {sub: "days"}); await settle();
+        ok(!content().textContent.includes("Fix the fence"), "a step is still asked");
+      } finally { lineSelClear(); closeModal(); closeSidePage(); if (made) removePage(made); }
+    });
+  });
   test("#365 Clarify says what the last answer did, and Undo that steps back more than one line", async () => {
     await withDays([[3, "- Call the plumber\n- Order tiles\n- Plan the party\n"]], async () => {
       const d3 = journalPath(shiftISO(T(), -3));

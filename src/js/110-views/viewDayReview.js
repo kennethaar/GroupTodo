@@ -69,7 +69,11 @@ function viewDayReview() {
      each line, and the undo comes and goes, so above they would move and a
      press would land on the wrong one (#461). */
   c.append(el("div", {class: "sdduel"}, el("div", {class: "solq"}, el("b", {}, "What is it?")), groups,
-    el("p", {class: "clhow"}, CL_ANSWERS[CL.aim].label + ": " + CL_ANSWERS[CL.aim].how), undo, card));
+    el("p", {class: "clhow"}, CL_ANSWERS[CL.aim].label + ": " + CL_ANSWERS[CL.aim].how),
+    // Lines dragged in the day page take the answer instead (#460).
+    el("p", {class: "clpicked", role: "status", hidden: true}, el("span"),
+      el("button", {class: "textbtn", onclick: () => lineSelClear()}, "Let go")), undo, card));
   CL.shown = r;
+  clPaint(c);
   return c;
 }
