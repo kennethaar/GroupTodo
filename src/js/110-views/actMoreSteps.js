@@ -6,8 +6,7 @@ function actMoreSteps(r) {
   if (solPassNo() !== 0 || isJournalPath(r.path) || r.projectPath !== r.path || !SOL.order) return null;
   const dealt = new Set(SOL.order.map(x => x.block)), wait = [];
   for (const root of actSortRoots(r)) walkBlocks([root], b => {
-    // A Doing step is dealt as a next action already, so it does not wait.
-    if (b.state === "TODO" && hasOpenDescendant(b) && !dealt.has(b)) wait.push(b);
+    if ((b.state === "TODO" || b.state === "DOING") && hasOpenDescendant(b) && !dealt.has(b)) wait.push(b);
   });
   if (!wait.length) return null;
   const project = inS(r, () => pageTitle(r.path));

@@ -10,7 +10,7 @@ function actSortEnd(r) {
   clearMemo();
   if (SOL.order) {
     const at = SOL.order[SOL.i];
-    SOL.order = SOL.order.filter(x => x.path !== r.path || x.space !== r.space || x.block.state === "DOING" || !hasOpenDescendant(x.block));
+    SOL.order = SOL.order.filter(x => x.path !== r.path || x.space !== r.space || !hasOpenDescendant(x.block));
     const i = SOL.order.indexOf(at);
     if (i >= 0) SOL.i = i;
   }

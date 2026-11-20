@@ -2971,11 +2971,11 @@ var GTD_TEST = (() => {
       clearMemo();
       eq(actDeck().filter(a => a.path === path).map(a => a.block.title).sort(), ["Measure the room", "Order the tiles"], "only the next action of each sequence is dealt");
       ok(!actOrder(1).some(a => a.path === path && /Lay|Paint/.test(a.block.title)), "a step that waits is not asked for a verb");
-      // A step set to Doing is dealt too, even with a step under it.
+      // A step with open steps under it waits, even set to Doing: only the step under it is dealt.
       const lay = getPage(path).blocks.find(b => b.title === "Lay the tiles");
       lay.state = "DOING"; touch(path); clearMemo();
-      ok(row(path, "Lay the tiles"), "a Doing step with a step under it is dealt");
-      ok(row(path, "Order the tiles"), "and so is the step under it");
+      ok(!row(path, "Lay the tiles"), "a Doing step with an open step under it is not dealt");
+      ok(row(path, "Order the tiles"), "the step under it is");
       lay.state = "TODO"; touch(path); clearMemo();
       // The card ends with the steps that wait, and a click deals them in this pass.
       await deal(row(path, "Order the tiles"));

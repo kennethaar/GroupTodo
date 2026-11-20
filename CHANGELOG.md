@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.193.2 - 2026-11-20
+
+- Weekly review › Actions: a step with open steps under it is not dealt, even
+  when it is set to Doing. Only the step under it is (#462).
+
 ## 1.193.1 - 2026-11-20
 
 - Weekly review › Actions: a step set to Doing is dealt even with steps still
