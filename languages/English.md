@@ -3250,6 +3250,7 @@ Pages in columns, one per kind. =>
 Pages missing, or slow to open? More, then Check the folder, shows what the app cannot read and how long the last read took. Save log there saves to your downloads when today's page was on screen, what it waited for and which folders and files were slow, then each step, timed. =>
 Pages the main file links to directly. None comes along unless you tick it, and their own links are not followed. =>
 Pages this one links to =>
+Pages you pin to the sidebar are kept on your own person page, in its pins line. So they follow you to every device. Unpin with ✕ beside the name. =>
 Pages › + New recipe. Paste a link or the recipe. =>
 Pages › Board =>
 Pages › Graph =>

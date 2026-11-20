@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.191.0 - 2026-11-20
+
+- A page: pages pinned to the sidebar are kept on your own person page, as
+  `pins::`, so they follow you to every device and stay after a reload, an
+  area rename or a page rename. Pins this browser held move there once (#33).
+
 ## 1.190.0 - 2026-11-20
 
 - Keys on a line: ▾ at the top left of a Shift+Enter note box folds it to

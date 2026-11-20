@@ -85,6 +85,12 @@ const Spaces = {
     let shown = [];
     try { shown = JSON.parse(PREF.get("visibleSpaces") || "[]"); } catch (_) {}
     if (shown.includes(from)) setVisibleSpaces(shown.map(n => n === from ? clean : n));
+    // Pins name their area: renamed, they were left behind under the old name (#33).
+    try {
+      const kept = JSON.parse(PREF.get("pins", "[]"));
+      if (Array.isArray(kept)) PREF.set("pins", JSON.stringify(kept.map(p => p.space === from ? {...p, space: clean} : p)));
+    } catch (_) {}
+    if (PREF.get("pinsMoved:" + from)) PREF.set("pinsMoved:" + clean, "1");
     await Spaces.save();
     clearMemo();
     return sp;

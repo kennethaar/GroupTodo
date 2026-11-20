@@ -6341,6 +6341,43 @@ var GTD_TEST = (() => {
       setPins(kept); go("today");
     }
   });
+  test("#33 pins live on your person page: they survive losing this browser's storage, follow a rename, and old local pins move there", async () => {
+    const a = scratchProject("Kitchen 33"), b = scratchProject("Garden 33"), c = scratchProject("Garage 33");
+    const me = personPath(whoAmI());
+    const kept = PREF.get("pins", "[]"), keptProp = getPage(me)?.props?.pins;
+    // Everything this browser holds about pins, as on another device or address.
+    const forget = () => {
+      const keys = []; for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
+      for (const k of keys) if (k.startsWith("gtd.pref.pins")) localStorage.removeItem(k);
+    };
+    const shown = () => [...document.querySelectorAll("#nav .nav-item.pin .lbl")].map(n => n.textContent);
+    try {
+      setPins([]);
+      state.view = "page"; state.pagePath = a; togglePin(a);
+      state.pagePath = b; togglePin(b);
+      has(getPage(me).props.pins || "", "[[" + linkRefTo(a) + "]]", "the pin is not on your person page");
+      ok(getPage(me).props.pins.indexOf(linkRefTo(a)) < getPage(me).props.pins.indexOf(linkRefTo(b)), "pins keep their order on the page");
+      // Another device, another address, or a cleared browser: nothing local.
+      forget();
+      go("today"); await settle();
+      eq(shown().filter(t => / 33$/.test(t)), [pageTitle(a), pageTitle(b)], "pins are lost with the browser's storage");
+      const moved = renamePage(a, "Kitchen move 33");
+      ok(pins().some(p => p.path === moved), "a renamed page loses its pin");
+      togglePin(b);
+      ok(!/Garden 33/.test(getPage(me).props.pins || ""), "unpinning leaves the pin on your person page");
+      // Pins kept only in this browser by an earlier version move to the page once.
+      forget();
+      PREF.set("pins", JSON.stringify([{space: V.space || "", path: c}]));
+      ok(pins().some(p => p.path === c), "an old local pin is dropped");
+      has(getPage(me).props.pins || "", "[[" + linkRefTo(c) + "]]", "an old local pin is not moved to your person page");
+      ok(pins().some(p => p.path === moved), "moving old local pins drops the ones already on the page");
+    } finally {
+      PREF.set("pins", kept);
+      const pg = getPage(me);
+      if (pg) { if (keptProp) pg.props.pins = keptProp; else delete pg.props.pins; touch(me); }
+      go("today");
+    }
+  });
   test("#390 files dropped on + Click here to capture a new thought each get a new line linking them", async () => {
     const path = ensureJournal(todayISO());
     go("today");
