@@ -2437,12 +2437,10 @@ var GTD_TEST = (() => {
     eq(addMonths("2024-01-31", 1), "2024-02-29");
     ok(String(isoWeek("2026-10-29")).includes("44"), "2026-10-29 is week 44, got " + isoWeek("2026-10-29"));
   });
-  test("parseWhen: tomorrow, links kept at the end", () => {
+  test("parseWhen: tomorrow with links kept at the end, due:, pri:, a clock and a repeat", () => {
     const w = parseWhen("Call Bob tomorrow [[c/phone]]");
     eq(w.title, "Call Bob [[c/phone]]");
     eq(w.DEADLINE, shiftISO(T(), 1));
-  });
-  test("parseWhen: due:, pri:, a clock and a repeat", () => {
     const a = parseWhen("Pay rent due:tomorrow pri:h");
     eq([a.title, a.DEADLINE, a.priority], ["Pay rent", shiftISO(T(), 1), "H"]);
     const b = parseWhen("Dentist tomorrow at 14:30");
@@ -4119,12 +4117,13 @@ var GTD_TEST = (() => {
     resumeHeldTasks();
     eq(getPage(path).blocks[0].state, "HOLD", "no date means no day to resume on");
   });
-  test("#308 task detail panel: one header, no duplicate tab bar", () => {
-    const path = scratchProject("one-header", [["TODO", "Pack for the trip"]]);
+  test("#308 task detail panel layout: one header, Project/Parent/Tags, + pills in one row, no labels the controls speak for (#459)", () => {
+    const path = scratchProject("panel-layout", [["TODO", "the garage"]]);
     const b = getPage(path).blocks[0];
     try {
       openTaskDetail(path, b, V.space);
       const m = document.querySelector("#modalRoot .modal");
+      // One header, no tab bar.
       eq(m.querySelectorAll("header").length, 1, "a single header bar, not a stacked pair");
       ok(!m.querySelector(".detail-tools"), "the icon-only tab bar is gone");
       ok(!m.querySelector(".detail-pane"), "nothing is hidden behind a tab anymore");
@@ -4133,6 +4132,27 @@ var GTD_TEST = (() => {
       has(header.textContent, placeName(path), "the page's name lives in the one remaining header");
       ok(!/\.md|\//.test(header.textContent), "a file path in the header: " + header.textContent);
       ok([...header.querySelectorAll("button")].some(x => x.textContent === "✕"), "close stays in that same header");
+      // WHERE IT SITS: only Project, Parent and Tags.
+      const cells = [...m.querySelectorAll(".acell")].map(c => [...c.classList].find(cl => cl.startsWith("a-")));
+      eq(cells.sort(), ["a-parent", "a-project", "a-tags"], "This todo, Siblings and Children boxes are gone");
+      // The unset fields are + pills in one flex-wrap row, in this order.
+      const row = m.querySelector(".pillrow");
+      ok(row, "Scheduled/Deadline/Assign/Priority share a pillrow container");
+      eq([...row.querySelectorAll(".fpill")].map(x => x.textContent), ["+ Starts", "+ Due", "+ Assign", "+ Priority"]);
+      ok(![...m.querySelectorAll(".fpill")].some(x => x.textContent === "+ Add subtask"),
+        "no separate + Add subtask pill beside the children:: picker");
+      // No labels the controls speak for, and no GTD hygiene row.
+      const labels = [...m.querySelectorAll("label")].map(x => x.textContent);
+      ok(!labels.includes("Title"), "Title label is gone, the textarea speaks for itself");
+      ok(!labels.includes("State"), "State label is gone, the segmented control speaks for itself");
+      ok(!labels.includes("GTD hygiene"), "the standalone GTD hygiene row is gone");
+      // The verb nudge sits inline on the title instead.
+      const nudge = [...m.querySelectorAll(".achip.want")].find(x => x.textContent === "! add a verb");
+      ok(nudge && nudge.style.display !== "none", "a verb-less title shows the inline nudge");
+      const title = m.querySelector(".titlebox");
+      title.textContent = "Clean the garage";
+      title.dispatchEvent(new Event("blur"));
+      eq(nudge.style.display, "none", "the nudge hides once the title starts with a verb");
     } finally { closeModal(); }
   });
   test("#353 #370 task panel: Ask for an update and Paste a reply sit by Send an update when the line names someone", async () => {
@@ -4191,16 +4211,6 @@ var GTD_TEST = (() => {
     // An empty time field says what goes there, never a time that looks set (P11).
     eq(clockInput("").placeholder, "Time");
   });
-  test("#308 task detail panel: WHERE IT SITS trimmed to Project/Parent/Tags", () => {
-    const path = scratchProject("trim-sits", [["TODO", "Mow the lawn"]]);
-    const b = getPage(path).blocks[0];
-    try {
-      showTaskDetail(path, b, V.space);
-      const m = document.querySelector("#modalRoot .modal");
-      const cells = [...m.querySelectorAll(".acell")].map(c => [...c.classList].find(cl => cl.startsWith("a-")));
-      eq(cells.sort(), ["a-parent", "a-project", "a-tags"], "This todo, Siblings and Children boxes are gone");
-    } finally { closeModal(); }
-  });
   test("#308 task detail panel: one Subtasks section, checklist of actual children", () => {
     const path = scratchProject("subtasks", [["TODO", "Plan the trip"]]);
     const b = getPage(path).blocks[0];
@@ -4218,46 +4228,6 @@ var GTD_TEST = (() => {
       cb.checked = true;
       cb.dispatchEvent(new Event("change"));
       eq(kid.state, "DONE", "checking it off marks the subtask done");
-    } finally { closeModal(); }
-  });
-  test("#308 task detail panel: unset +pills share one flex-wrap row", () => {
-    const path = scratchProject("pillrow", [["TODO", "Renew the passport"]]);
-    const b = getPage(path).blocks[0];
-    try {
-      showTaskDetail(path, b, V.space);
-      const m = document.querySelector("#modalRoot .modal");
-      const row = m.querySelector(".pillrow");
-      ok(row, "Scheduled/Deadline/Assign/Priority share a pillrow container");
-      const texts = [...row.querySelectorAll(".fpill")].map(x => x.textContent);
-      eq(texts, ["+ Starts", "+ Due", "+ Assign", "+ Priority"]);
-    } finally { closeModal(); }
-  });
-  test("#308 task detail panel: no Title or State labels", () => {
-    const path = scratchProject("no-labels", [["TODO", "Clean the garage"]]);
-    const b = getPage(path).blocks[0];
-    try {
-      showTaskDetail(path, b, V.space);
-      const m = document.querySelector("#modalRoot .modal");
-      const labels = [...m.querySelectorAll("label")].map(x => x.textContent);
-      ok(!labels.includes("Title"), "Title label is gone, the textarea speaks for itself");
-      ok(!labels.includes("State"), "State label is gone, the segmented control speaks for itself");
-    } finally { closeModal(); }
-  });
-  test("#308 task detail panel: no standalone GTD hygiene row; verb nudge inline on Title", () => {
-    const path = scratchProject("verb-nudge", [["TODO", "the garage"]]);
-    const b = getPage(path).blocks[0];
-    try {
-      showTaskDetail(path, b, V.space);
-      const m = document.querySelector("#modalRoot .modal");
-      ok(![...m.querySelectorAll("label")].some(x => x.textContent === "GTD hygiene"),
-        "the standalone GTD hygiene row is gone");
-      const nudge = [...m.querySelectorAll(".achip.want")].find(x => x.textContent === "! add a verb");
-      ok(nudge && nudge.style.display !== "none", "a verb-less title shows the inline nudge");
-
-      const title = m.querySelector(".titlebox");
-      title.textContent = "Clean the garage";
-      title.dispatchEvent(new Event("blur"));
-      eq(nudge.style.display, "none", "the nudge hides once the title starts with a verb");
     } finally { closeModal(); }
   });
   test("#308 task detail panel: Project cell nudges a refile when the task is unfiled", () => {
@@ -4296,16 +4266,6 @@ var GTD_TEST = (() => {
     try {
       openTaskDetail(day, b, V.space);
       ok(document.querySelector("#modalRoot .modal"), "a task with words of its own still opens the panel");
-    } finally { closeModal(); }
-  });
-  test("#308 task detail panel: Subtasks has one add/link control, not two", () => {
-    const path = scratchProject("one-subtask-control", [["TODO", "Ship the release"]]);
-    const b = getPage(path).blocks[0];
-    try {
-      showTaskDetail(path, b, V.space);
-      const m = document.querySelector("#modalRoot .modal");
-      ok(![...m.querySelectorAll(".fpill")].some(x => x.textContent === "+ Add subtask"),
-        "no separate + Add subtask pill beside the children:: picker");
     } finally { closeModal(); }
   });
   test("#308 task detail panel: Auto-cancel after lives in the Deadline row; Add to calendar in Scheduled", () => {
@@ -6844,7 +6804,8 @@ var GTD_TEST = (() => {
       PREF.set("suggest.accept", k);
       try { await fn(); } finally { PREF.set("suggest.accept", "enter"); suggestClose(); go("today"); }
     };
-    test("#190 Enter takes a suggestion by default", async () => {
+    // The choice itself is #262's; this checks the keys in a line reach it.
+    test("#190 Enter takes a suggestion by default and Tab closes the list; with Tab chosen, the other way round (#459)", async () => {
       eq(suggestKeys(), "enter", "the default");
       await withKeys("enter", async () => {
         const {path, txt} = await typeLink("enter takes");
@@ -6852,17 +6813,11 @@ var GTD_TEST = (() => {
         await press(txt, "Enter");
         has(txt.textContent, "[[p/Lars Haugen]]", "the link went in");
         eq(getPage(path).blocks.length, 1, "Enter also made a new line");
-      });
-    });
-    test("#190 with Enter chosen, Tab closes the list and does not take the suggestion", async () => {
-      await withKeys("enter", async () => {
-        const {txt} = await typeLink("tab indents");
-        await press(txt, "Tab");
-        ok(!txt.textContent.includes("Lars Haugen]]"), "Tab took the suggestion");
+        const tab = await typeLink("tab indents");
+        await press(tab.txt, "Tab");
+        ok(!tab.txt.textContent.includes("Lars Haugen]]"), "with Enter chosen, Tab took the suggestion");
         ok(!SUGGEST, "the list stayed open");
       });
-    });
-    test("#190 with Tab chosen, Enter ends the line and Tab takes it", async () => {
       await withKeys("tab", async () => {
         const {path, txt} = await typeLink("tab takes");
         has(SUGGEST.box.textContent, "Tab takes it", "the hint");
@@ -6941,6 +6896,7 @@ var GTD_TEST = (() => {
         ok(!document.querySelector("#modalRoot .modal"), "Vault & sync is still a dialog of its own");
         eq(state.view, "checklists", "it opens Settings");
         eq(VIEW_TITLE.checklists, "Settings");
+        eq(content().querySelector(".sgroup h3").textContent, "Vault & sync", "#314 Settings opens at a part titled Vault & sync");
         // One index, in the order people look for things; each name leads to its part.
         const index = () => [...content().querySelectorAll(".setindex button")];
         const want = ["Vault & sync", "You", "Styles", "Sidebar", "Writing", "Preferences", "Area", "Help", "GroupToDo",
@@ -8780,108 +8736,66 @@ var GTD_TEST = (() => {
     }
   });
 
-  test("#311 A board card's assignee pill offers Open task and Ask for an update, not the card underneath", async () => {
-    const path = scratchProject("crane order", [["WAIT", "Snakket med [[p/Lars Haugen]] om arbeidsordre"]]);
-    const block = getPage(path).blocks[0];
-    const card = boardCard({path, space: V.space, block, state: block.state, title: block.title, assignee: assigneeOf(block)});
-    document.body.append(card);
-    try {
-      card.querySelector(".chip.who").click();
+  test("#311 a board card's assignee pill: Ask for an update, Open task, Take it back and Change person, not the card underneath (#459)", async () => {
+    const h2 = () => document.querySelector("#modalRoot h2")?.textContent;
+    const btn = t => [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === t);
+    // Each step on a card of its own, as each one changes the task.
+    const onPill = async (name, fn) => {
+      const path = scratchProject(name, [["WAIT", "Snakket med [[p/Lars Haugen]] om arbeidsordre"]]);
+      const block = getPage(path).blocks[0];
+      const card = boardCard({path, space: V.space, block, state: block.state, title: block.title, assignee: assigneeOf(block)});
+      document.body.append(card);
+      try {
+        card.querySelector(".chip.who").click();
+        await settle();
+        await fn(block);
+      } finally { closeAll(); card.remove(); }
+    };
+    await onPill("crane order", async () => {
+      eq(h2(), "Lars Haugen", "the pill's own menu, not the card");
+      btn("Ask for an update").click();
       await settle();
-      eq(document.querySelector("#modalRoot h2")?.textContent, "Lars Haugen");
-      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Ask for an update").click();
+      eq(h2(), "Ask Lars Haugen for an update");
+    });
+    await onPill("crane order 1b", async () => {
+      btn("Open task").click();
       await settle();
-      eq(document.querySelector("#modalRoot h2")?.textContent, "Ask Lars Haugen for an update");
-    } finally {
-      closeAll();
-      card.remove();
-    }
-  });
-
-  test("#311 The same pill's Open task opens the task", async () => {
-    const path = scratchProject("crane order 1b", [["WAIT", "Snakket med [[p/Lars Haugen]] om arbeidsordre"]]);
-    const block = getPage(path).blocks[0];
-    const card = boardCard({path, space: V.space, block, state: block.state, title: block.title, assignee: assigneeOf(block)});
-    document.body.append(card);
-    try {
-      card.querySelector(".chip.who").click();
-      await settle();
-      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Open task").click();
-      await settle();
-      has(document.querySelector("#modalRoot .tdbody .titlebox")?.textContent, "arbeidsordre");
-    } finally {
-      closeAll();
-      card.remove();
-    }
-  });
-
-  test("#311 Take it back on the pill's menu clears the assignee", async () => {
-    const path = scratchProject("crane order 1c", [["WAIT", "Snakket med [[p/Lars Haugen]] om arbeidsordre"]]);
-    const block = getPage(path).blocks[0];
-    const card = boardCard({path, space: V.space, block, state: block.state, title: block.title, assignee: assigneeOf(block)});
-    document.body.append(card);
-    try {
-      card.querySelector(".chip.who").click();
-      await settle();
-      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Take it back").click();
+      has(document.querySelector("#modalRoot .tdbody .titlebox")?.textContent, "arbeidsordre", "Open task opens the task");
+    });
+    await onPill("crane order 1c", async block => {
+      btn("Take it back").click();
       await settle();
       eq(block.state, "TODO", "back to a task of your own");
       ok(!assigneeOf(block), "no longer waiting on anybody");
-    } finally {
-      closeAll();
-      card.remove();
-    }
-  });
-
-  test("#311 Change person on the pill's menu hands it to somebody else", async () => {
-    const path = scratchProject("crane order 1d", [["WAIT", "Snakket med [[p/Lars Haugen]] om arbeidsordre"]]);
-    const block = getPage(path).blocks[0];
-    const card = boardCard({path, space: V.space, block, state: block.state, title: block.title, assignee: assigneeOf(block)});
-    document.body.append(card);
-    try {
-      card.querySelector(".chip.who").click();
+    });
+    await onPill("crane order 1d", async block => {
+      btn("Change person").click();
       await settle();
-      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Change person").click();
+      eq(h2(), "Change person");
+      btn("someone else…").click();
       await settle();
-      eq(document.querySelector("#modalRoot h2")?.textContent, "Change person");
-      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "someone else…").click();
-      await settle();
-      eq(document.querySelector("#modalRoot h2")?.textContent, "Waiting on somebody");
+      eq(h2(), "Waiting on somebody");
       document.querySelector("#modalRoot input").value = "Nora Testerson";
-      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Waiting on them").click();
+      btn("Waiting on them").click();
       await settle();
-      eq(assigneeOf(block), "Nora Testerson");
-    } finally {
-      closeAll();
-      card.remove();
-    }
-  });
-
-  test("#311 Change person leads with a shared name and can be filtered", async () => {
+      eq(assigneeOf(block), "Nora Testerson", "handed to somebody typed in");
+    });
     const tomas = householder("Tomas Haugen"), anna = householder("Anna Olsen");
-    const path = scratchProject("crane order 1e", [["WAIT", "Snakket med [[p/Lars Haugen]] om arbeidsordre"]]);
-    const block = getPage(path).blocks[0];
-    const card = boardCard({path, space: V.space, block, state: block.state, title: block.title, assignee: assigneeOf(block)});
-    document.body.append(card);
     try {
-      card.querySelector(".chip.who").click();
-      await settle();
-      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Change person").click();
-      await settle();
-      const names = () => [...document.querySelectorAll("#modalRoot button")].map(x => x.textContent);
-      ok(names().indexOf("Tomas Haugen") < names().indexOf("Anna Olsen"), "the shared surname leads, ahead of the alphabet");
-      const filterIn = document.querySelector("#modalRoot input");
-      filterIn.value = "Olsen";
-      filterIn.dispatchEvent(new Event("input"));
-      ok(names().includes("Anna Olsen") && !names().includes("Tomas Haugen"), "filtered down to the match");
-      [...document.querySelectorAll("#modalRoot button")].find(x => x.textContent === "Anna Olsen").click();
-      await settle();
-      eq(assigneeOf(block), "Anna Olsen");
-    } finally {
-      closeAll();
-      card.remove();
-      removePage(tomas); removePage(anna); clearMemo();
-    }
+      await onPill("crane order 1e", async block => {
+        btn("Change person").click();
+        await settle();
+        const names = () => [...document.querySelectorAll("#modalRoot button")].map(x => x.textContent);
+        ok(names().indexOf("Tomas Haugen") < names().indexOf("Anna Olsen"), "the shared surname leads, ahead of the alphabet");
+        const filterIn = document.querySelector("#modalRoot input");
+        filterIn.value = "Olsen";
+        filterIn.dispatchEvent(new Event("input"));
+        ok(names().includes("Anna Olsen") && !names().includes("Tomas Haugen"), "filtered down to the match");
+        btn("Anna Olsen").click();
+        await settle();
+        eq(assigneeOf(block), "Anna Olsen");
+      });
+    } finally { removePage(tomas); removePage(anna); clearMemo(); }
   });
 
   test("#311 A Waiting for chip on an outliner line offers the same menu", async () => {
@@ -9036,11 +8950,9 @@ var GTD_TEST = (() => {
     LIST_Q.delete("next");
     go("next", {sub: "list", ctxFilter: null});
   });
-  test("#160 a late row says Due yesterday", async () => {
-    const {blocks, row} = await journalDue([["TODO", "Send the late figures"]], shiftISO(T(), -1));
-    has(row(blocks[0]).querySelector(".duepill").textContent, "Due yesterday");
-  });
-  test("#336 a task days late says only how late; the date is on hover", async () => {
+  test("#160 #336 a row a day late says Due yesterday; days late, only how late, the date on hover", async () => {
+    const y = await journalDue([["TODO", "Send the late figures"]], shiftISO(T(), -1));
+    has(y.row(y.blocks[0]).querySelector(".duepill").textContent, "Due yesterday");
     const day = shiftISO(T(), -6);
     const {path, blocks, row} = await journalDue([["TODO", "Send the old figures"]], day);
     setBlockProp(blocks[0], "added", "[[" + shiftISO(T(), -10) + "]]"); touch(path); render(); await settle();
@@ -9058,20 +8970,17 @@ var GTD_TEST = (() => {
     openPage(path); await settle();
     check(content().querySelector(".props .duepill"), "on the page");
   });
-  test("#160 the Due tab counts what is done today beside what is open", async () => {
+  test("#160 the Due tab pairs open with done, before and after a tick, and lists what is done today (#459)", async () => {
     const {path, blocks} = await journalDue([["TODO", "Finish the first thing"], ["TODO", "Finish the second thing"]]);
+    const tab = () => content().querySelector(".ttab-due");
+    ok(/\d+ open · \d+ done/.test(tab().querySelector(".tratio").textContent), "open beside done before any tick: " + tab().textContent);
+    ok(tab().querySelector(".tratio .pbar"), "with its bar");
+    ok(!tab().querySelector(".tcount"), "not a bare count");
     setBlockState(path, blocks[0], "DONE");
     go("today");
     await settle();
-    has(content().querySelector(".ttab-due .tratio").textContent, "done");
+    has(tab().querySelector(".tratio").textContent, "done");
     ok(content().querySelector(".donetoday"), "the done today row under the list");
-  });
-  test("#160 the Due tab pairs open with done before anything is done", async () => {
-    await journalDue([["TODO", "Start the first thing"]]);
-    const tab = content().querySelector(".ttab-due");
-    ok(/\d+ open · \d+ done/.test(tab.querySelector(".tratio").textContent), "open beside done: " + tab.textContent);
-    ok(tab.querySelector(".tratio .pbar"), "with its bar");
-    ok(!tab.querySelector(".tcount"), "not a bare count");
   });
   test("#160 Next 7 days says how many are open in words", async () => {
     await journalDue([["TODO", "Plan the thing next week"]], shiftISO(T(), 2));
@@ -9971,7 +9880,7 @@ var GTD_TEST = (() => {
       go("today");
     }
   });
-  test("#314 Vault & sync is titled so, and Working hours start at 08:00 – 16:00 with From and To", async () => {
+  test("#314 Working hours start at 08:00 – 16:00 with From and To, and the first-run area step does not repeat itself", async () => {
     const wh = PREF.get("work_hours", ""), me = whoAmI(), page = me && getPage(personPath(me));
     const own = page && page.props.work_hours;
     if (page) delete page.props.work_hours;
@@ -9983,7 +9892,6 @@ var GTD_TEST = (() => {
       eq(d.days.join(), "1,2,3,4,5");
       openVaultDialog();
       const m = document.querySelector("#content");
-      eq(m.querySelector(".sgroup h3").textContent, "Vault & sync", "Settings opens at Vault & sync (#397)");
       const row = [...m.querySelectorAll(".srow")].find(r => r.querySelector(".slabel").textContent === "Working hours");
       const [from, to] = row.querySelectorAll("input");
       eq([from.value, to.value].join(), "08:00,16:00");
@@ -10822,23 +10730,30 @@ var GTD_TEST = (() => {
     document.body.append(probe);
     try { eq(cs.color, getComputedStyle(probe).color, "muted"); } finally { probe.remove(); }
   });
-  test("#222 one area on a phone: the card does not say Journal again, and its area is the way to focus", async () => {
-    go("today");
-    await settle();
-    const card = content().querySelector(".jcard:not(.trkcol)");
-    if (!card.classList.contains("solo")) return;   // several areas on: each card keeps its title
-    const sp = card.querySelector(".jhead .sp");
-    eq(sp.getAttribute("role"), "button");
-    eq(sp.tabIndex, 0);
-    const {f, d} = await phoneJournal();
+  test("#222 one area on a phone: the card does not say Journal again, and its area is the way to focus (#459)", async () => {
+    // Set up one area shown, so the test never passes by finding several (#459).
+    const was = PREF.get("visibleSpaces", "");
+    PREF.set("visibleSpaces", JSON.stringify([V.space]));
     try {
-      eq(getComputedStyle(d.querySelector(".jcard.solo .jtitle")).display, "none", "the title goes on a phone");
-    } finally { f.remove(); }
-    sp.click();
-    await settle();
-    ok(content().querySelector(".crumbz"), "focused on the journal");
-    go("today", {jz: null});
-    await settle();
+      go("today", {todayWho: null, jz: null});
+      await settle();
+      const card = content().querySelector(".jcard:not(.trkcol)");
+      ok(card.classList.contains("solo"), "one area shown, but its card is not solo");
+      const sp = card.querySelector(".jhead .sp");
+      eq(sp.getAttribute("role"), "button");
+      eq(sp.tabIndex, 0);
+      const {f, d} = await phoneJournal();
+      try {
+        eq(getComputedStyle(d.querySelector(".jcard.solo .jtitle")).display, "none", "the title goes on a phone");
+      } finally { f.remove(); }
+      sp.click();
+      await settle();
+      ok(content().querySelector(".crumbz"), "focused on the journal");
+    } finally {
+      PREF.set("visibleSpaces", was);
+      go("today", {jz: null});
+      await settle();
+    }
   });
   test("#222 a meeting on its day starts with its time, and two at once are marked", async () => {
     const day = "journals/2099_02_03.md";
