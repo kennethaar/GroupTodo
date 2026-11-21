@@ -6,5 +6,6 @@ async function loadSpaceRecord(name) {
   await readInto(rec, {stage: true, onRest: restLoaded, onSoon: soonLoaded});
   LOADED.set(name, rec);
   reconcileSyncedPages(name);
+  stampOnboarded(name);
   return rec;
 }

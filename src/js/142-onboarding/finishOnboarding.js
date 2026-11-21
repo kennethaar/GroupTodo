@@ -9,6 +9,7 @@ async function finishOnboarding({returning = false} = {}) {
   PREF.set("coach", returning ? "0" : "1");
   const here = Spaces.get(Spaces.active);
   if (here) here.askedStorage = true;
+  for (const name of new Set([Spaces.active, ...LOADED.keys()])) stampOnboarded(name);
   await Spaces.save();
   return here;
 }

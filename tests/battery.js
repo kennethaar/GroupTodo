@@ -7294,6 +7294,36 @@ var GTD_TEST = (() => {
       has(document.querySelector("#modalRoot .modal").textContent, "I have used GroupToDo before");
     } finally { closeModals(); }
   });
+  /* Onboarding done is kept in each area's folder, so another browser that
+     opens the same folder does not ask again (#457). */
+  test("#457 onboarding done is written in every area's folder, and a folder with it skips the welcome", async () => {
+    const onboarded = PREF.get("onboarded"), coach = PREF.get("coach"), active = Spaces.active, n = "Test457 other";
+    const asked = Spaces.get(active)?.askedStorage, was = inSpace(active, () => settingsPage().props.onboarded);
+    const stamp = name => inSpace(name, () => V.pages.get(SETTINGS_PATH)?.props?.onboarded || "");
+    const wipe = () => { for (const s of [active, n]) inSpace(s, () => { delete settingsPage().props.onboarded; }); };
+    await createSpace(n, "local");
+    await openSpace(active);
+    try {
+      wipe(); PREF.set("onboarded", "");
+      await finishOnboarding();
+      eq(stamp(active), todayISO(), "the open area's folder");
+      eq(stamp(n), todayISO(), "the other area's folder");
+      PREF.set("onboarded", "");
+      ok(onboardedInFolder(), "a folder marked done still asks");
+      eq(PREF.get("onboarded"), todayISO(), "the folder's date is not remembered here");
+      wipe(); PREF.set("onboarded", "");
+      ok(!onboardedInFolder(), "a folder never onboarded skips the welcome");
+      PREF.set("onboarded", "2031-01-02");
+      await openSpace(n);
+      eq(stamp(n), "2031-01-02", "an area opened after onboarding is not marked");
+    } finally {
+      PREF.set("coach", coach || ""); PREF.set("onboarded", onboarded || "");
+      if (Spaces.get(active)) Spaces.get(active).askedStorage = asked;
+      if (Spaces.active !== active) await openSpace(active);
+      inSpace(active, () => { if (was) settingsPage().props.onboarded = was; else delete settingsPage().props.onboarded; });
+      await removeArea(n);
+    }
+  });
   test("#193 Your areas holds every area's colour, Remove, New area and Invite", () => {
     const n = "Test193 dialog";
     return (async () => {

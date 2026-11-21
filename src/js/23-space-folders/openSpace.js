@@ -28,6 +28,7 @@ async function openSpace(name, destination = null, {draw = true} = {}) {
   t = loadMark("“" + name + "”: pages brought up to date", t);
   await seedIfEmpty();             // a brand new space still needs verbs and templates
   storeAreaName(name);             // a name chosen before this was written down reaches the folder now
+  stampOnboarded(name);            // onboarding done reaches every area's folder (#457)
   scanVerbs();
   if (!folderWaiting(name)) ensureJournal(todayISO());
   state.context = getSetting("current_context") || null;

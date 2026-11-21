@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.197.3 - 2026-11-21
+
+- Areas and sharing: Once you have been through the welcome screen, every
+  area's folder remembers it. Open the same folder in another browser and
+  GroupToDo starts straight away, without asking again.
+
 ## 1.197.2 - 2026-11-21
 
 - Present a page: The talk now follows your outline, line by line. The

@@ -2780,6 +2780,8 @@ js/141-area-checklist-dialogs/openRunHere.js
 js/141-area-checklist-dialogs/runListUnder.js
 js/142-onboarding/openOnboarding.js
 js/142-onboarding/onboardNameField.js
+js/142-onboarding/stampOnboarded.js
+js/142-onboarding/onboardedInFolder.js
 js/142-onboarding/finishOnboarding.js
 js/142-onboarding/openOnboardJoin.js
 js/142-onboarding/openOnboardBack.js

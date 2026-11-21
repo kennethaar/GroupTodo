@@ -98,7 +98,7 @@
      screen are both still waiting. */
   if (await useBakedInvite()) { PREF.set("onboarded", todayISO()); return; }
 
-  if (!PREF.get("onboarded")) { openOnboarding(); return; }
+  if (!PREF.get("onboarded") && !onboardedInFolder()) { openOnboarding(); return; }
 
   if (spacesNeedingStorage().length) { openSpaceStorageSetup({firstRun: false}); return; }
   // A folder that came back empty comes before everything else that could write to it.
