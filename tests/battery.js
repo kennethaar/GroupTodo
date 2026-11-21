@@ -13625,6 +13625,31 @@ var GTD_TEST = (() => {
       $$(".slidepeek .peekpick").find(c => c.textContent === TOP).dispatchEvent(new PointerEvent("pointerenter", {pointerType: "mouse"}));
       eq([peek().on, peek().title], [TOP, "Talk"], "pointing at a choice shows it");
       btn().blur();
+      const pick = label => $$(".slidepeek .peekpick").find(c => c.textContent === label)
+        .dispatchEvent(new PointerEvent("pointerenter", {pointerType: "mouse"}));
+      // A line off the slides (a task, a "_ " line) shows the slide it would be on: its nearest shown line's.
+      const page = getPage(TALK), roof = page.blocks[0].children.find(b => /roof/.test(b.title)), kitchen = roof.children[0];
+      kitchen.title = "_ Kitchen";
+      focusBlock(kitchen.id); await settle();
+      btn().focus();
+      eq(peek().choices, [LAST, TOP, WHOLE, FROM], "a line off the slides still has its place in the whole talk");
+      pick(WHOLE);
+      eq([peek().title, peek().now], ["The roof leaks", ""], "the slide of the line it is under");
+      btn().blur();
+      kitchen.title = "Kitchen";
+      // Focused on a line (🔍), ▶ Present presents that line; from the top is still the whole page.
+      setBranchFocus(page, roof.id, TALK); await settle();
+      focusBlock(kitchen.id); await settle();
+      const fb = content().querySelector(".presentbtn");
+      fb.focus();
+      eq([peek().choices, peek().on, peek().title, peek().now], [[TOP, WHOLE, FROM], WHOLE, "The roof leaks", "Kitchen"],
+        "focused: the line you are in, lit where ▶ Present starts");
+      pick(TOP);
+      eq(peek().title, "Talk", "from the top is the page's talk, not just the focused line's");
+      pick(FROM);
+      eq(peek().title, "Kitchen", "and the talk from the line you are in");
+      fb.blur();
+      setBranchFocus(page, null, TALK); await settle();
       // Touch has no hover: a tap opens Present as before.
       btn().dispatchEvent(new PointerEvent("pointerdown", {pointerType: "touch", bubbles: true}));
       btn().focus();

@@ -10,7 +10,9 @@ that breaks existing vaults. Newest first.
 - Present a page: point at ▶ Present, or Tab to it, and a small picture
   shows a slide. A list under it picks which: last time's, the talk from
   the top, the line you were in where it comes in the whole talk, and the
-  talk from that line. ↑ ↓ or pointing switches. ☰ › Present from here does
+  talk from that line. A task or _ line shows the slide it would be on.
+  Focused on a line (🔍), from the top is still the whole page. ↑ ↓ or
+  pointing switches. ☰ › Present from here does
   the same for its line, with ← →. On a phone a tap just starts the
   slides. (#465)
 
