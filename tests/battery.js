@@ -12053,6 +12053,40 @@ var GTD_TEST = (() => {
   }));
   test("#450 Weekly review sits under Projects, lights up as its own item and can be hidden", () => withSidebarPage(
     "title:: sidebar\n\n- Journal\n- Projects\n- People\n- ---\n- Pages\n- ---\n- Settings\n", async () => {
+      /* #450 reopened: in the sidebar only when the last review is 7 or more
+         days old, or more than 30 actions are left to sort. Projects' own
+         switch always offers it. */
+      const every = CFG.reviewEveryDays, ans = [...SOL_ANS];
+      let sortPath = null;
+      const redraw = () => { clearMemo(); renderNav(); };
+      const withActions = n => {
+        if (sortPath) removePage(sortPath);
+        sortPath = scratchProject("450 sort", Array.from({length: n}, (_, i) => ["TODO", "Call supplier " + (i + 1)]));
+        getPage(sortPath).props.parallel = "yes";
+        redraw();
+      };
+      try {
+        CFG.reviewEveryDays = 1e6;
+        redraw();
+        // Everything there is now was reviewed this week.
+        for (const r of actDeck()) SOL_ANS.set(solKey(r), {p0: true, p1: true, p2: true, p3: true});
+        withActions(30);
+        ok(!navLabels().includes("Weekly review"), "not due, 30 to sort: not in the sidebar: " + navLabels());
+        go("projects"); await settle();
+        ok([...content().querySelectorAll(".vseg button")].some(b => b.textContent.startsWith("Weekly review")),
+          "Projects still offers the review");
+        go("today"); await settle();
+        withActions(31);
+        ok(navLabels().includes("Weekly review"), "31 to sort: in the sidebar");
+        removePage(sortPath); sortPath = null;
+        CFG.reviewEveryDays = 0; redraw();
+        ok(navLabels().includes("Weekly review"), "due: in the sidebar");
+      } finally {
+        CFG.reviewEveryDays = every; if (sortPath) removePage(sortPath);
+        SOL_ANS.clear(); for (const [k, a] of ans) SOL_ANS.set(k, a);
+      }
+      CFG.reviewEveryDays = 0; redraw();
+      try {
       // A sidebar page written before #450 does not name it: it still comes right after Projects.
       const l = navLabels();
       eq(l[l.indexOf("Projects") + 1], "Weekly review", "under Projects: " + l);
@@ -12075,6 +12109,7 @@ var GTD_TEST = (() => {
       go("review");
       await settle();
       ok(item("projects").classList.contains("active"), "Projects stands for the review again");
+      } finally { CFG.reviewEveryDays = every; }
     }));
 
   /* ============================================================

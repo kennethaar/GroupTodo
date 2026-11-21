@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.198.1 - 2026-11-21
+
+- Weekly review › Steps: Weekly review shows in the sidebar only when it is
+  due, after a week, or when more than 30 of your actions wait to be sorted.
+  Projects always has it. (#450)
+
 ## 1.198.0 - 2026-11-21
 
 - Getting started: Outlines are the heart of GroupToDo, so the welcome now

@@ -2224,6 +2224,7 @@ js/110-views/vars-ACT_PASSES.js
 js/110-views/actDeck.js
 js/110-views/vars-actChoresOut.js
 js/110-views/actOrder.js
+js/110-views/actToSort.js
 js/110-views/actHere.js
 js/110-views/actRekey.js
 js/110-views/actStillTally.js
