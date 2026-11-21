@@ -15,6 +15,8 @@ const SLIDE_LAYOUTS = {
   quadrant: {min: 4, max: 9, mode: "2d", name: "2×2"},
   kpi:      {min: 1, max: 9, mode: "2d", name: "Scorecard"},
   grid:     {min: 2, max: 9, mode: "2d", name: "Grid"},
+  // A Markdown table (#469), a slide of its own: a row, or a column, per step.
+  table:    {min: 1, max: 1, mode: "1d", name: "Table"},
 };
 // More bullets than this on one slide are marked red in the outline (#433).
 const SLIDE_CALM = 5;

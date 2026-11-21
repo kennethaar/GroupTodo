@@ -4,7 +4,14 @@
    step is a slide. Before the first bullet the slide is its title alone; the
    first one fades in once the title has moved to the top. */
 function slideBullets(slide, step, fresh) {
-  const moved = slideLay(slide, step.k > 0);
+  // A table's header (or first column) shows with the title, so it is laid out from the start (#469).
+  const moved = slideLay(slide, step.k > 0 || step.s.layout === "table");
+  for (const c of slide.querySelectorAll("[data-tpart]")) {
+    const n = +c.dataset.tpart;
+    c.classList.toggle("now", n === step.k - 1);
+    c.classList.toggle("past", n < step.k - 1);
+    c.classList.toggle("later", n >= step.k);
+  }
   // A drawn layout's parts light the same way, all of them faint until then (#433).
   [...slide.querySelectorAll(".sbullets > .bullet, .part")].forEach((li, n) => {
     li.classList.toggle("now", n === step.k - 1);

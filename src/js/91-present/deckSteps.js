@@ -34,7 +34,7 @@ function deckSteps(path, root = null, on = false) {
       const s = {n: slides.length + 1, block, depth, up, breadcrumb, kids: chunk,
         title: lay.title + (pages.length > 1 ? ` (${p + 1}/${pages.length})` : ""),
         layout: lay.layout, mode: lay.mode, axes: lay.axes, hero,
-        parts: hero ? [chunk[0], ...hero.takeaways] : chunk, first: steps.length,
+        parts: hero ? [chunk[0], ...hero.takeaways] : lay.layout === "table" ? slideTableParts(chunk[0]) : chunk, first: steps.length,
         ...(notes || (block ? slideNotes(block) : {cover: "", notes: ""}))};
       // A part's own notepad picture is shown in the cover's place while that part is lit (#464).
       s.pics = s.parts.map(p => p && typeof p === "object" ? slideNotes(p).cover : "");
@@ -42,6 +42,8 @@ function deckSteps(path, root = null, on = false) {
       steps.push({s, k: 0});
       s.parts.forEach((part, i) => {
         if (lay.mode === "1d" && has(part)) return slide(part, slideWords(part), kidsOf(part), depth + 1, s, lay.title);
+        // A table among a slide's lines comes as a slide of its own in its turn (#469).
+        if (lay.mode === "1d" && lay.layout !== "table" && tableRows(part)) return slide(part, lay.title, [part], depth + 1, s, "");
         steps.push({s, k: i + 1});
         if (lay.mode === "1d") return;
         const crumb = lay.title + " > " + slideWords(hero ? chunk[0] : part);
@@ -65,7 +67,8 @@ function deckSteps(path, root = null, on = false) {
   if (root || slideTitleTokens(head).layout || slideLayout({title: head}, top).mode === "2d") {
     slide(null, head, top, 0, null, "", notes);
   } else {
-    const kind = b => slideMark(b.title).layout ? "mark" : has(b) ? "own" : "flat";
+    // A top line that is a table is drawn alone, under the page's title (#469).
+    const kind = b => slideMark(b.title).layout ? "mark" : has(b) || tableRows(b) ? "own" : "flat";
     const runs = [];
     for (const b of top) {
       const run = runs.at(-1);
@@ -76,7 +79,7 @@ function deckSteps(path, root = null, on = false) {
     slide(null, head, first ? runs[0] : [], 0, null, "", notes);
     for (const run of runs.slice(first ? 1 : 0)) {
       if (drawn(run)) slide(null, head, run, 0, null, "");
-      else for (const b of run) slide(b, slideWords(b), kidsOf(b), 0, null, "");
+      else for (const b of run) tableRows(b) ? slide(b, head, [b], 0, null, "") : slide(b, slideWords(b), kidsOf(b), 0, null, "");
     }
   }
   if (root && on) {

@@ -94,3 +94,10 @@
 :is(#deck,#deckpeek) .pq{margin-bottom:.6em}
 /* The quote stays at full strength while its takeaways come. */
 :is(#deck,#deckpeek) .lay-hero .pq.past{opacity:1}
+/* A table slide (#469): the header (or first column) at once, then a row or a column per step. */
+:is(#deck,#deckpeek) .lay-table .sbody{display:flex;align-items:flex-start;overflow:auto}
+:is(#deck,#deckpeek) .stable{border-collapse:collapse;margin:0 auto 0 0;font-size:.9em;line-height:1.25}
+:is(#deck,#deckpeek) .stable :is(th,td){padding:.3em .8em;border-bottom:1px solid color-mix(in srgb,currentColor 25%,transparent);transition:opacity .6s ease-in-out,background .6s ease-in-out}
+:is(#deck,#deckpeek) .stable th{font-weight:700;border-bottom:2px solid currentColor}
+:is(#deck,#deckpeek) .stable [data-tpart].later{opacity:0}
+:is(#deck,#deckpeek) .stable [data-tpart].now{background:color-mix(in srgb,var(--slide-accent) 22%,transparent)}

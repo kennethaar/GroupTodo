@@ -12,6 +12,12 @@ function tableBar(path, b, txt) {
       const at = tableAt(b, txt);
       if (at && tableCan(b, at.bi, at.col).includes("al-" + a)) tableRun(path, b, "al-" + a, at.bi, at.col);
     }}, svgIcon(icon));
+  // How Present brings the table in (#469): a row per step, or a column.
+  const reveal = (cols, label) => btn({"aria-pressed": String(slideTableCols(b) === cols),
+    title: "In Present, " + (cols ? "a column" : "a row") + " at a time",
+    onclick: e => { e.stopPropagation(); tableReveal(path, b, cols); }}, label);
   return el("span", {class: "tablebar"}, menu("Row"), menu("Column"),
-    el("span", {class: "tbaligns", role: "group", "aria-label": "Alignment"}, ...TABLE_ALIGNS.map(align)));
+    el("span", {class: "tbaligns", role: "group", "aria-label": "Alignment"}, ...TABLE_ALIGNS.map(align)),
+    el("span", {class: "tbreveal", role: "group", "aria-label": "Reveal in Present"},
+      el("span", {class: "tblabel"}, "Reveal"), reveal(false, "Rows"), reveal(true, "Columns")));
 }

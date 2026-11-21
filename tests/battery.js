@@ -14306,6 +14306,86 @@ var GTD_TEST = (() => {
       eq(f.contentDocument.querySelector(".pcount")?.textContent, "1 / 3 · 6 hidden", "the presenter shows N hidden");
     } finally { presentStop(); lineSelClear(); window.open = open; f.remove(); }
   }));
+  test("#469 a pasted table becomes a Markdown table; Keep as text undoes it", async () => {
+    // What counts as a table, first fit wins; anything else is not one.
+    const T = (html, text) => JSON.stringify(pastedTable(html, text));
+    eq(T("<table><tr><th>City</th><th>Note</th></tr><tr><td>Oslo,  Norway</td><td>a|b</td></tr><tr><td>Bergen</td></tr></table>", "x"),
+      JSON.stringify([["City", "Note"], ["Oslo, Norway", "a|b"], ["Bergen", ""]]), "an HTML table, short rows padded");
+    eq(T("", "City\tQ1\r\nOslo\t120\r\nBergen\r\n"), JSON.stringify([["City", "Q1"], ["Oslo", "120"], ["Bergen", ""]]), "tab-separated");
+    eq(T("", 'City,Note\n"Oslo, Norway",big\nBergen,"say ""hi"""'), JSON.stringify([["City", "Note"], ["Oslo, Norway", "big"], ["Bergen", 'say "hi"']]),
+      "comma-separated, quoted cells kept whole");
+    eq(T("", "a;b;c\n1;2;3"), JSON.stringify([["a", "b", "c"], ["1", "2", "3"]]), "semicolon-separated");
+    eq(T("", "Name | Qty\nApple | 3"), JSON.stringify([["Name", "Qty"], ["Apple", "3"]]), "pipe-separated");
+    eq(T("", "Name     Qty  Price\nApple    3    10\nPear     12   8"), JSON.stringify([["Name", "Qty", "Price"], ["Apple", "3", "10"], ["Pear", "12", "8"]]),
+      "columns lined up with spaces");
+    eq(T("", "Hello, world.\nSee you soon."), "null", "a sentence with a comma is not a table");
+    eq(T("", "One, two, three\nfour"), "null", "uneven separators are not a table");
+    eq(T("", "| a | b |\n| --- | --- |\n| 1 | 2 |"), "null", "a Markdown table already is one");
+    eq(T("", "City\tQ1"), "null", "one line is not a table");
+    // Pasted into an empty bullet: one line holds the table, the file a plain Markdown table.
+    const path = scratchProject("paste a table", [[null, "Before"], [null, ""]]);
+    openPage(path); await settle();
+    const b = getPage(path).blocks[1];
+    try {
+      const txt = document.querySelector('.blk[data-id="' + b.id + '"] .txt');
+      txt.focus();
+      const dt = new DataTransfer();
+      dt.setData("text/html", "<table><tr><td>City</td><td>Note</td></tr><tr><td>Oslo</td><td>a|b</td></tr></table>");
+      dt.setData("text/plain", "City\tNote\nOslo\ta|b\n");
+      txt.dispatchEvent(new ClipboardEvent("paste", {clipboardData: dt, bubbles: true, cancelable: true}));
+      await settle();
+      const page = getPage(path);
+      eq(page.blocks.length, 2, "the table is not one line");
+      const t = page.blocks[1];
+      eq([t.title, ...t.body].join("\n"), "| City | Note |\n| --- | --- |\n| Oslo | a\\|b |", "not a Markdown table, | escaped");
+      eq(tableRows(t), 2, "the app does not read it as a table");
+      const keep = [...$$("#toasts .toast button.act")].find(x => x.textContent === "Keep as text");
+      ok(keep, "no Keep as text in the toast");
+      keep.click(); await settle();
+      eq(getPage(path).blocks.slice(1).map(x => x.title).join(" / "), "City\tNote / Oslo\ta|b", "Keep as text does not paste it as lines");
+    } finally { go("today"); }
+  });
+  test("#469 a table in Present: header first, then a row (or a column) per step; Reveal Rows | Columns on the table bar", () => withPages({
+    [SHOW]: ["- Sales by city", "  - | City | Q1 | Q2 |", "    | --- | ---: | ---: |", "    | Oslo | 1 | 2 |", "    | Bergen | 3 | 4 |",
+      "    | Molde | 5 | 6 |", "    reveal:: columns", "- Next"].join("\n") + "\n"}, async () => {
+    const [sales] = getPage(SHOW).blocks, [tbl] = sales.children;
+    eq(blockProp(tbl, "reveal"), "columns", "reveal:: after the rows is not read as the table's");
+    eq(tableRows(tbl), 4, "reveal:: after the rows breaks the table");
+    ok(serializeBlockLines([tbl]).join("\n").includes("| Molde | 5 | 6 |\n  reveal:: columns"),
+      "the file does not keep reveal:: after the rows, where the Markdown table stays whole");
+    const steps = () => deckSteps(SHOW).slides.find(s => s.title === "Sales by city");
+    let s = steps();
+    eq(s.layout, "table", "a table is not a slide of its own");
+    eq(s.parts.length, 2, "columns: the first shows at once, a step per column after it");
+    const cells = (slide, cls) => [...slide.querySelectorAll("th, td")].filter(c => c.classList.contains(cls)).map(c => c.textContent);
+    try {
+      presentStart(SHOW); await settle();
+      presentGo(s.first); await settle();
+      const cur = () => $("#deck .slide.cur");
+      eq(cells(cur(), "later").join(), "Q1,Q2,1,2,3,4,5,6", "columns: only the first column shows at first");
+      deckKey("ArrowRight"); await settle();
+      eq(cells(cur(), "now").join(), "Q1,1,3,5", "→ adds the next column");
+      presentStop();
+      // Rows, the default: Reveal on the table bar, one step that Undo takes back.
+      openPage(SHOW); await settle();
+      const node = document.querySelector('.blk[data-id="' + tbl.id + '"]');
+      const btn = name => [...node.querySelectorAll(".tablebar .tbreveal button")].find(x => x.textContent === name);
+      ok(btn("Rows") && btn("Columns"), "no Reveal Rows | Columns on the table bar");
+      eq(btn("Columns").getAttribute("aria-pressed"), "true", "the table's choice is not shown pressed");
+      btn("Rows").click(); await settle();
+      eq(blockProp(tbl, "reveal") ?? null, null, "Rows, the default, still writes reveal::");
+      s = steps();
+      eq(s.parts.length, 3, "rows: the header shows at once, a step per row");
+      presentStart(SHOW); await settle();
+      presentGo(s.first); await settle();
+      eq(cells(cur(), "later").join(), "Oslo,1,2,Bergen,3,4,Molde,5,6", "rows: only the header shows at first");
+      deckKey("ArrowRight"); await settle();
+      eq(cells(cur(), "now").join(), "Oslo,1,2", "→ adds the next row");
+      presentStop();
+      undoLast(); await settle();
+      eq(blockProp(tbl, "reveal"), "columns", "Undo does not take the choice back");
+    } finally { presentStop(); go("today"); }
+  }));
   test("#466 double-click a line on a slide edits it in place, tags and links shown; Enter or Save writes it, Esc cancels", () => withPages({
     [SHOW]: ["- Plan with [[p/Anna]]", "  - Ask [[Kitchen renovation]] [[c/phone]]", "  - Budget"].join("\n") + "\n"}, async () => {
     const [plan] = getPage(SHOW).blocks, [ask, budget] = plan.children;

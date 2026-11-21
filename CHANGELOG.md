@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.199.0 - 2026-11-21
+
+- Present a page: paste a table from Excel, Word, a web page, or text in
+  columns (tabs, commas, semicolons, | or spaces), and it becomes a Markdown
+  table. Keep as text in the message pastes it as lines instead. In Present
+  a table is a slide of its own: the header first, then a row per →. Reveal
+  Rows | Columns on the table bar brings it in a column at a time instead,
+  and the table remembers it. (#469)
+
 ## 1.198.2 - 2026-11-21
 
 - Weekly review › Steps: once Weekly review shows in the sidebar, it stays

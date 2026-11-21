@@ -6,7 +6,8 @@
 function slideLayout(block, kids = block?.children || []) {
   const tok = slideTitleTokens(block?.title || "");
   const n = kids.length;
-  let layout = tok.layout;
+  // One line that is a Markdown table is the slide's table (#469).
+  let layout = tok.layout || (n === 1 && tableRows(kids[0]) ? "table" : null);
   if (!layout) {
     layout = slideMarkOf(kids);
     if (layout === "split" && n === 4) layout = "quadrant";

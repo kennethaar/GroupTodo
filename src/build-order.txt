@@ -786,6 +786,9 @@ js/91-present/drawHub.js
 js/91-present/drawCurve.js
 js/91-present/drawCards.js
 js/91-present/drawQuote.js
+js/91-present/slideTableCols.js
+js/91-present/slideTableParts.js
+js/91-present/drawTable.js
 js/91-present/slideBody.js
 js/91-present/slideFit.js
 js/91-present/slideEven.js
@@ -1643,6 +1646,13 @@ js/105-outliner/pullUpLine.js
 js/105-outliner/vars-tableCells.js
 js/105-outliner/tableCells.js
 js/105-outliner/tableRowText.js
+js/105-outliner/splitQuoted.js
+js/105-outliner/tableFromHtml.js
+js/105-outliner/tableFromText.js
+js/105-outliner/pastedTable.js
+js/105-outliner/tableBlockOf.js
+js/105-outliner/tableKeepText.js
+js/105-outliner/tableReveal.js
 js/105-outliner/tableRows.js
 js/105-outliner/tableHtml.js
 js/105-outliner/tableFocusRow.js

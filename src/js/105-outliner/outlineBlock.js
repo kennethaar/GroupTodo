@@ -212,10 +212,12 @@ function outlineBlock(path, page, b, opts = {}) {
       return;
     }
 
-    const roots = parseOutlineText(raw);
+    // A table from a spreadsheet, a document or a web page is one line holding it (#469).
+    const grid = pastedTable(e.clipboardData.getData("text/html"), raw);
+    const roots = grid ? [tableBlockOf(grid)] : parseOutlineText(raw);
     if (!roots.length) return;
     const inherit = b.state && OPEN_STATES[b.state] ? "TODO" : null;
-    const n = readyPastedBlocks(roots, {defaultState: inherit});
+    const n = grid ? 1 : readyPastedBlocks(roots, {defaultState: inherit});
 
     const sibs = siblingsOf(page, b);
     let tail = null;
@@ -249,7 +251,8 @@ function outlineBlock(path, page, b, opts = {}) {
     /* A long paste -- an email, notes from a book -- can be a page of its
        own instead: the lines then make way for one line that links it. */
     const said = n + " lines pasted, one block each.";
-    if (lines.length < PASTE_AS_LINES) notify(said);
+    if (grid) notify("Pasted as a table.", "info", {label: "Keep as text", run: () => tableKeepText(path, roots[0], raw, inherit)});
+    else if (lines.length < PASTE_AS_LINES) notify(said);
     else offerPasteAs(raw, said + " Make a page of them instead:", pasteSwapper(path, roots, (kind, link) => {
       const line = newBlock({state: inherit, title: link});
       if (line.state) { applyTodoTemplate(line); stampAddedIfMissing(path, line); }

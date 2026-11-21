@@ -12,7 +12,9 @@ function slideEdit(e) {
   const onPresenter = spot && DECK.pw && !DECK.pw.closed && spot.ownerDocument === DECK.pw.document && spot.closest(".pnow");
   if (!onDeck && !onPresenter) return;
   let b = null;
+  // A table's own slide is titled by the slide it is on, not by its header row (#469).
   if (spot.matches(".stitle")) b = DECK.steps[DECK.i]?.s.block;
+  if (b && tableRows(b)) b = null;
   else walkBlocks(getPage(DECK.path)?.blocks || [], x => { if (String(x.id) === spot.dataset.bid) b = x; });
   if (!b) return;
   e.preventDefault();
