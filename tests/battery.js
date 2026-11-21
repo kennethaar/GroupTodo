@@ -13927,7 +13927,7 @@ var GTD_TEST = (() => {
       let d = deckNow();
       eq(d.title, "Why we move", "the next is a top line, with no GTD marks on it");
       eq(d.bullets.length, 0, "a slide starts with its title alone");
-      eq(d.move, "down", "the next slide at the same level comes up from below");
+      eq(d.move, "rise", "from the page's title the title rises; the slide does not push it out");
       const deck = $("#deck");
       ok(!/owner|Ann|Say it plainly|landlord/.test(deck.textContent), "values and notes are never shown to the audience");
       const cover = deck.querySelector(".slide.cur .cover");
@@ -14029,6 +14029,48 @@ var GTD_TEST = (() => {
       deckKey("Escape");
       ok(!$("#deck"), "Esc on a top slide leaves");
       eq(state.pagePath, TALK, "back on the page");
+    } finally { presentStop(); }
+  }));
+  test("#431 follow-up: the page title glides up to the top and goes, and no title is cut on its way", () => withPages({
+    [join(PAGES, "Quarterly kickoff for the whole team.md")]:
+      ["- Kitchen renovation plan for the whole house", "  - Measure the room", "  - Pick the tiles", "- Budget", "  - Ask the bank"].join("\n") + "\n"}, async () => {
+    const path = join(PAGES, "Quarterly kickoff for the whole team.md");
+    const deckBox = () => $("#deck").getBoundingClientRect();
+    // Every title-like text on screen, at a moment of every animation running.
+    const cut = at => {
+      const anims = $("#deck").getAnimations({subtree: true});
+      for (const a of anims) { a.pause(); a.currentTime = at; }
+      const box = deckBox(), out = [];
+      for (const t of $("#deck").querySelectorAll(".stitle, .sghost")) {
+        if (parseFloat(getComputedStyle(t).opacity) < 0.05) continue;
+        const r = t.getBoundingClientRect();
+        if (r.width && (r.left < box.left - 1 || r.right > box.right + 1 || r.top < box.top - 1))
+          out.push(t.textContent.slice(0, 20) + " at " + at + " ms: " + [r.left, r.top, r.right].map(Math.round));
+      }
+      for (const a of anims) a.play();
+      return out;
+    };
+    const done = () => Promise.all($("#deck").getAnimations({subtree: true}).map(a => a.finished.catch(() => {})));
+    try {
+      presentStart(path, {step: 0}); await settle(); await done();
+      const big = $("#deck .slide.cur .stitle").getBoundingClientRect();
+      presentGo(1);
+      eq($("#deck").dataset.move, "rise", "the page title does not slide out with its slide");
+      const ghost = $("#deck .sghost");
+      ok(ghost && /Quarterly kickoff/.test(ghost.textContent), "the page title glides on its way up");
+      eq(cut(0).concat(cut(400), cut(800)), [], "a title is cut on its way up");
+      const glide = ghost.getAnimations()[0];
+      glide.pause(); glide.currentTime = glide.effect.getTiming().duration;
+      const top = ghost.getBoundingClientRect();
+      ok(top.top < deckBox().height * 0.2 && top.height < big.height, "the page title ends at the top, smaller: " + Math.round(top.top));
+      eq(getComputedStyle(ghost).opacity, "0", "and is gone there, not left over the next title");
+      glide.play();
+      const delay = parseFloat(getComputedStyle($("#deck .slide.cur")).animationDelay);
+      ok(delay >= 0.4, "the next slide comes once the page title is on its way: " + delay + " s");
+      await done();
+      ok(!$("#deck .sghost"), "the glide leaves its copy behind");
+      presentGo(2);
+      eq(cut(0).concat(cut(300), cut(600), cut(900)), [], "a long title is cut while it moves to the top");
     } finally { presentStop(); }
   }));
   test("#431 reopened: the talk keeps the outline's order; the page title is a slide alone, each top line its own slide", () => withPages({

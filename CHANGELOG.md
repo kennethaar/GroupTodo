@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.200.1 - 2026-11-22
+
+- Present a page: from the page title to the first slide, the title now
+  glides up to the top and fades there, and the next slide comes in under
+  it. It no longer slides away past the new heading. A long title that
+  moves to the top keeps its line breaks on the way, so it is never cut
+  off at the edge. (#431)
+
 ## 1.200.0 - 2026-11-22
 
 - Links and aliases: a line that opens with a known person and a colon,

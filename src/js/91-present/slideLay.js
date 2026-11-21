@@ -7,17 +7,13 @@ function slideLay(slide, laid) {
   const title = slide.querySelector(".stitle");
   const first = !slide.dataset.lay;
   if (!first && slide.classList.contains("intro") === !laid) return false;
-  const was = first ? null : title.getBoundingClientRect();
-  const big = first ? 0 : parseFloat(getComputedStyle(title).fontSize);
+  const was = first ? null : slideTitleNow(title);
   slide.classList.toggle("intro", !laid);
   slide.dataset.lay = "1";
   slideFit(slide);
   slideEven(slide);
   if (first || matchMedia("(prefers-reduced-motion: reduce)").matches || !title.animate) return false;
-  const now = title.getBoundingClientRect(), small = parseFloat(getComputedStyle(title).fontSize);
-  if (!now.width || !small) return false;
-  title.animate([
-    {transformOrigin: "0 0", transform: `translate(${was.left - now.left}px, ${was.top - now.top}px) scale(${big / small})`},
-    {transformOrigin: "0 0", transform: "none"}], {duration: 1000, easing: "ease-in-out"});
-  return true;
+  // A copy keeps the big title's line breaks on the way, so none is cut (#431).
+  const deck = slide.closest("#deck, #deckpeek") || slide;
+  return !!slideGhost(deck, was, slideTitleNow(title), title);
 }

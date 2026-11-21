@@ -16,7 +16,10 @@ function presentGo(i) {
   if (from && from.s === to.s && old) {
     slideBullets(old, to, fwd && to.k === from.k + 1);
   } else {
-    const move = !from ? "" : to.s.up === from.s ? "zoomin" : from.s.up === to.s ? "zoomout" : fwd ? "down" : "up";
+    /* From the page's title alone, the title rises to the top and goes,
+       and the next slide comes in under it (#431 follow-up). */
+    const rise = !!(old && from && !from.s.block && !from.k && fwd && old.classList.contains("intro"));
+    const move = !from ? "" : to.s.up === from.s ? "zoomin" : from.s.up === to.s ? "zoomout" : rise ? "rise" : fwd ? "down" : "up";
     deck.dataset.move = move;
     for (const gone of deck.querySelectorAll(".slide.out")) gone.remove();
     // A line's place on a slide: a bullet, or its spot in a drawing (#433).
@@ -31,6 +34,17 @@ function presentGo(i) {
     deck.append(slide);
     resolveAssets(slide);
     slideBullets(slide, to, false);
+    if (move === "rise" && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const title = old.querySelector(".stitle");
+      // The title's place at the top, measured on an unseen copy of its slide laid out.
+      const probe = slideSection(from.s);
+      probe.className = "slide";
+      probe.style.visibility = "hidden";
+      deck.append(probe);
+      const top = slideTitleNow(probe.querySelector(".stitle"));
+      probe.remove();
+      if (slideGhost(deck, slideTitleNow(title), top)) title.style.visibility = "hidden";
+    }
     if (move === "zoomin" && slot) slideZoom(slide.querySelector(".stitle"), slot, true);
     if (move === "zoomout" && old) slideZoom(old.querySelector(".stitle"), spot(slide, from.s.block), false);
   }

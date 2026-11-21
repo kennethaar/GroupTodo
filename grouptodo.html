@@ -3493,6 +3493,10 @@ padding:8vh 7vw 6vh;min-height:0;overflow:hidden;font-size:calc(5vh * var(--fit)
 :is(#deck,#deckpeek)[data-move=up] .slide.out{animation-name:deckOutB}
 :is(#deck,#deckpeek)[data-move=zoomin] .slide.out,:is(#deck,#deckpeek)[data-move=zoomout] .slide.out :is(.cover,.sbullets){animation:deckGone .6s ease-in-out both}
 :is(#deck,#deckpeek):is([data-move=zoomin],[data-move=zoomout]) .slide.cur .cover{animation:deckFade .6s ease-in-out both}
+:is(#deck,#deckpeek)[data-move=rise] .slide.out{animation-name:deckGone}
+:is(#deck,#deckpeek)[data-move=rise] .slide.cur{animation-name:deckFade;animation-delay:.5s}
+:is(#deck,#deckpeek) .sghost{position:absolute;margin:0;font-weight:700;line-height:1.15;color:var(--slide-ink);
+transform-origin:0 0;pointer-events:none;z-index:2}
 @keyframes deckGone{to{opacity:0}}
 @keyframes deckInB{from{transform:translateY(100%)}}
 @keyframes deckInT{from{transform:translateY(-100%)}}
@@ -4658,7 +4662,7 @@ placeholder="Capture… (Enter adds to today)">
 })();
 
 "use strict";
-const APP_VERSION = "1.200.0";
+const APP_VERSION = "1.200.1";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -15088,19 +15092,38 @@ function slideLay(slide, laid) {
 const title = slide.querySelector(".stitle");
 const first = !slide.dataset.lay;
 if (!first && slide.classList.contains("intro") === !laid) return false;
-const was = first ? null : title.getBoundingClientRect();
-const big = first ? 0 : parseFloat(getComputedStyle(title).fontSize);
+const was = first ? null : slideTitleNow(title);
 slide.classList.toggle("intro", !laid);
 slide.dataset.lay = "1";
 slideFit(slide);
 slideEven(slide);
 if (first || matchMedia("(prefers-reduced-motion: reduce)").matches || !title.animate) return false;
-const now = title.getBoundingClientRect(), small = parseFloat(getComputedStyle(title).fontSize);
-if (!now.width || !small) return false;
-title.animate([
-{transformOrigin: "0 0", transform: `translate(${was.left - now.left}px, ${was.top - now.top}px) scale(${big / small})`},
-{transformOrigin: "0 0", transform: "none"}], {duration: 1000, easing: "ease-in-out"});
-return true;
+const deck = slide.closest("#deck, #deckpeek") || slide;
+return !!slideGhost(deck, was, slideTitleNow(title), title);
+}
+function slideTitleNow(title) {
+const r = title.getBoundingClientRect(), cs = getComputedStyle(title);
+return {rect: r, left: r.left, top: r.top, width: r.width, html: title.innerHTML,
+size: parseFloat(cs.fontSize), align: cs.textAlign};
+}
+function slideGhost(deck, from, to, title = null) {
+const {rect, html, size, align} = from;
+if (!rect.width || !to.width || !deck.animate) return null;
+const host = deck.getBoundingClientRect();
+const ghost = el("div", {class: "sghost", "aria-hidden": "true",
+style: `left:${rect.left - host.left}px;top:${rect.top - host.top}px;width:${rect.width + 1}px;font-size:${size}px;text-align:${align}`});
+ghost.innerHTML = html;
+deck.append(ghost);
+const scale = to.size / size;
+const time = {duration: 1000, easing: "ease-in-out"};
+const glide = ghost.animate([
+{transform: "none", opacity: 1},
+{opacity: 1, offset: 0.7},
+{transform: `translate(${to.left - rect.left}px, ${to.top - rect.top}px) scale(${scale})`, opacity: 0}],
+{...time, fill: "forwards"});
+glide.finished.then(() => ghost.remove(), () => ghost.remove());
+if (title) title.animate([{opacity: 0}, {opacity: 0, offset: 0.7}, {opacity: 1}], time);
+return glide;
 }
 function slidePicNow(s, k) {
 const pics = s.pics || [];
@@ -15226,7 +15249,8 @@ const old = deck.querySelector(".slide.cur");
 if (from && from.s === to.s && old) {
 slideBullets(old, to, fwd && to.k === from.k + 1);
 } else {
-const move = !from ? "" : to.s.up === from.s ? "zoomin" : from.s.up === to.s ? "zoomout" : fwd ? "down" : "up";
+const rise = !!(old && from && !from.s.block && !from.k && fwd && old.classList.contains("intro"));
+const move = !from ? "" : to.s.up === from.s ? "zoomin" : from.s.up === to.s ? "zoomout" : rise ? "rise" : fwd ? "down" : "up";
 deck.dataset.move = move;
 for (const gone of deck.querySelectorAll(".slide.out")) gone.remove();
 const spot = (on, b) => b && on?.querySelector(`[data-bid="${CSS.escape(String(b.id))}"]`);
@@ -15239,6 +15263,16 @@ const slide = slideSection(to.s);
 deck.append(slide);
 resolveAssets(slide);
 slideBullets(slide, to, false);
+if (move === "rise" && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+const title = old.querySelector(".stitle");
+const probe = slideSection(from.s);
+probe.className = "slide";
+probe.style.visibility = "hidden";
+deck.append(probe);
+const top = slideTitleNow(probe.querySelector(".stitle"));
+probe.remove();
+if (slideGhost(deck, slideTitleNow(title), top)) title.style.visibility = "hidden";
+}
 if (move === "zoomin" && slot) slideZoom(slide.querySelector(".stitle"), slot, true);
 if (move === "zoomout" && old) slideZoom(old.querySelector(".stitle"), spot(slide, from.s.block), false);
 }
@@ -18374,7 +18408,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.200.0 - 2026-11-22\n\n- Links and aliases: a line that opens with a known person and a colon,\n  such as `Anna: send the budget`, offers Add wait and link Anna on the\n  wavy line under the name. Take it, and the name is linked and the line\n  waits on Anna. Ignore it, and nothing changes. (#455)\n\n## 1.199.1 - 2026-11-21\n\n- Keys on a line: while you write in a table, its Row, Column, alignment and\n  Reveal buttons have their own row under the header, so they no longer\n  cover the words beside the line tools. (#469)\n\n## 1.199.0 - 2026-11-21\n\n- Present a page: paste a table from Excel, Word, a web page, or text in\n  columns (tabs, commas, semicolons, | or spaces), and it becomes a Markdown\n  table. Keep as text in the message pastes it as lines instead. In Present\n  a table is a slide of its own: the header first, then a row per →. Reveal\n  Rows | Columns on the table bar brings it in a column at a time instead,\n  and the table remembers it. (#469)\n\n## 1.198.2 - 2026-11-21\n\n- Weekly review › Steps: once Weekly review shows in the sidebar, it stays\n  until you mark a review done. Then the end screen says it leaves the\n  sidebar, and it slides out when you leave the review. (#450)\n\n## 1.198.1 - 2026-11-21\n\n- Weekly review › Steps: Weekly review shows in the sidebar only when it is\n  due, after a week, or when more than 30 of your actions wait to be sorted.\n  Projects always has it. (#450)\n\n## 1.198.0 - 2026-11-21\n\n- Getting started: Outlines are the heart of GroupToDo, so the welcome now\n  shows how they work. Lines inside lines plays four short rules on a small\n  outline: Tab puts a line under another, a line gets the project and date\n  of the line above, the top line gathers every to-do under it, and Next\n  shows the deepest step first. It comes right after you start your own area\n  or join one.\n\n## 1.197.3 - 2026-11-21\n\n- Areas and sharing: Once you have been through the welcome screen, every\n  area's folder remembers it. Open the same folder in another browser and\n  GroupToDo starts straight away, without asking again.\n\n## 1.197.2 - 2026-11-21\n\n- Present a page: The talk now follows your outline, line by line. The\n  page title is a slide of its own, and each top line comes after it in its\n  place. A line with nothing under it shows big and centered. A timeline or\n  other drawing stays one slide. (#431)\n\n## 1.197.1 - 2026-11-21\n\n- Present a page: Double-click works in the presenter window too, and no\n  caret blinks on the slides any more. It shows only in a line you are\n  editing. (#466)\n\n## 1.197.0 - 2026-11-21\n\n- Present a page: Fix a typo without leaving the talk. Double-click a line\n  on a slide to edit it, with its links and tags. Enter or Save puts it on\n  the page, Esc leaves it as it was. Keys type while you edit, so the talk\n  stays on that slide. (#466)\n\n## 1.196.0 - 2026-11-21\n\n- Present a page: Give a talk straight from your notes, without making slides.\n  Point at ▶ Present to see a small preview, and pick where to start: last\n  time, the top, or your own line. Click a choice to open the talk there.\n  Pictures in a bullet's notepad show beside it while you speak. A hub's\n  spokes show their lines in a card. Task lines and lines that start with\n  `_ ` stay off the slides, so you can add notes for improvement and hide\n  unfinished points; ☰ › Hide in Present does this for you. Links show as\n  plain words. (#465)\n- Weekly review › Review actions: A project with many steps that can start\n  now gets put in order first, so you only deal with what truly comes next.\n  One card asks \"Does it wait for another step?\" for each step. \"They can all\n  go at once\" remembers your answer. A linked project shows its name on the\n  card. (#462)\n- States and Waiting for: Change many lines at once. Pick them, then press\n  Alt+T for tasks or Alt+N for notes. (#411)\n- The line menu and toolbar: The ☰ menu stays where you can use it. It no\n  longer spills over the sidebar, and in the Journal it sits in its own\n  lane. (#413)\n\n## 1.192.0 - 2026-11-20\n\n- Weekly review › Clarify: drag over lines in the day page beside the card\n  to give them all one answer, such as To do or Leave it as a note. Project\n  makes one project: the first line names it, and the others become its\n  steps. Undo that takes the whole group back (#460).\n";
+const HELP_NEWS = "## 1.200.1 - 2026-11-22\n\n- Present a page: from the page title to the first slide, the title now\n  glides up to the top and fades there, and the next slide comes in under\n  it. It no longer slides away past the new heading. A long title that\n  moves to the top keeps its line breaks on the way, so it is never cut\n  off at the edge. (#431)\n\n## 1.200.0 - 2026-11-22\n\n- Links and aliases: a line that opens with a known person and a colon,\n  such as `Anna: send the budget`, offers Add wait and link Anna on the\n  wavy line under the name. Take it, and the name is linked and the line\n  waits on Anna. Ignore it, and nothing changes. (#455)\n\n## 1.199.1 - 2026-11-21\n\n- Keys on a line: while you write in a table, its Row, Column, alignment and\n  Reveal buttons have their own row under the header, so they no longer\n  cover the words beside the line tools. (#469)\n\n## 1.199.0 - 2026-11-21\n\n- Present a page: paste a table from Excel, Word, a web page, or text in\n  columns (tabs, commas, semicolons, | or spaces), and it becomes a Markdown\n  table. Keep as text in the message pastes it as lines instead. In Present\n  a table is a slide of its own: the header first, then a row per →. Reveal\n  Rows | Columns on the table bar brings it in a column at a time instead,\n  and the table remembers it. (#469)\n\n## 1.198.2 - 2026-11-21\n\n- Weekly review › Steps: once Weekly review shows in the sidebar, it stays\n  until you mark a review done. Then the end screen says it leaves the\n  sidebar, and it slides out when you leave the review. (#450)\n\n## 1.198.1 - 2026-11-21\n\n- Weekly review › Steps: Weekly review shows in the sidebar only when it is\n  due, after a week, or when more than 30 of your actions wait to be sorted.\n  Projects always has it. (#450)\n\n## 1.198.0 - 2026-11-21\n\n- Getting started: Outlines are the heart of GroupToDo, so the welcome now\n  shows how they work. Lines inside lines plays four short rules on a small\n  outline: Tab puts a line under another, a line gets the project and date\n  of the line above, the top line gathers every to-do under it, and Next\n  shows the deepest step first. It comes right after you start your own area\n  or join one.\n\n## 1.197.3 - 2026-11-21\n\n- Areas and sharing: Once you have been through the welcome screen, every\n  area's folder remembers it. Open the same folder in another browser and\n  GroupToDo starts straight away, without asking again.\n\n## 1.197.2 - 2026-11-21\n\n- Present a page: The talk now follows your outline, line by line. The\n  page title is a slide of its own, and each top line comes after it in its\n  place. A line with nothing under it shows big and centered. A timeline or\n  other drawing stays one slide. (#431)\n\n## 1.197.1 - 2026-11-21\n\n- Present a page: Double-click works in the presenter window too, and no\n  caret blinks on the slides any more. It shows only in a line you are\n  editing. (#466)\n\n## 1.197.0 - 2026-11-21\n\n- Present a page: Fix a typo without leaving the talk. Double-click a line\n  on a slide to edit it, with its links and tags. Enter or Save puts it on\n  the page, Esc leaves it as it was. Keys type while you edit, so the talk\n  stays on that slide. (#466)\n\n## 1.196.0 - 2026-11-21\n\n- Present a page: Give a talk straight from your notes, without making slides.\n  Point at ▶ Present to see a small preview, and pick where to start: last\n  time, the top, or your own line. Click a choice to open the talk there.\n  Pictures in a bullet's notepad show beside it while you speak. A hub's\n  spokes show their lines in a card. Task lines and lines that start with\n  `_ ` stay off the slides, so you can add notes for improvement and hide\n  unfinished points; ☰ › Hide in Present does this for you. Links show as\n  plain words. (#465)\n- Weekly review › Review actions: A project with many steps that can start\n  now gets put in order first, so you only deal with what truly comes next.\n  One card asks \"Does it wait for another step?\" for each step. \"They can all\n  go at once\" remembers your answer. A linked project shows its name on the\n  card. (#462)\n- States and Waiting for: Change many lines at once. Pick them, then press\n  Alt+T for tasks or Alt+N for notes. (#411)\n- The line menu and toolbar: The ☰ menu stays where you can use it. It no\n  longer spills over the sidebar, and in the Journal it sits in its own\n  lane. (#413)\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {

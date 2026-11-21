@@ -793,6 +793,8 @@ js/91-present/slideBody.js
 js/91-present/slideFit.js
 js/91-present/slideEven.js
 js/91-present/slideLay.js
+js/91-present/slideTitleNow.js
+js/91-present/slideGhost.js
 js/91-present/slidePicNow.js
 js/91-present/slideBullets.js
 js/91-present/slideZoom.js
