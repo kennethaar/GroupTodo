@@ -81,6 +81,14 @@ step that follows another has `◂ Back`, which returns with the choices kept.
 back to the lines. *Apply:* wizards, reviews and multi-step dialogs.
 *Source:* #363.
 
+**P19. What shows up for attention stays until it is dealt with.** An item
+that appears because something needs you stays put until you have done that
+thing, even if a count drops below its trigger on its own. When it goes, say
+where it went, and let it leave visibly (slide out; fade with reduced
+motion). *Why:* an item that vanishes while you use it, and moves the ones
+below, makes the sidebar hard to predict. *Apply:* any sidebar item, badge or
+banner shown on a condition. *Source:* #450 follow-up.
+
 ## Phone
 
 **P16. On a phone the words get the width.** A row's title wraps over

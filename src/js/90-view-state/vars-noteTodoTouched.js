@@ -55,8 +55,9 @@ const NAV_ITEMS = [
   // README teaches them; tools and reference wait below the line.
   {id: "projects", icon: ICON.projects, label: "Projects"},
   /* #450 the review of Projects, one click away; hidden, Projects stands for it.
-     Only once it is due, or more than 30 actions wait to be sorted. */
-  {id: "review",   icon: ICON_DATE, label: "Weekly review", when: () => reviewDue() || actToSort() > 30},
+     Only once it is due, or more than 30 actions wait to be sorted; then until
+     a review is done (reviewInNav). */
+  {id: "review",   icon: ICON_DATE, label: "Weekly review", when: () => reviewInNav()},
   {id: "people",   icon: ICON.people, label: "People"},
   {id: "orgs",     icon: ICON.orgs, label: "Organisations"},
   // Once any task repeats: the home's chores, room by room.

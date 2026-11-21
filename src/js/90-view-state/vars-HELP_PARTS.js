@@ -768,7 +768,7 @@ const HELP = {
       [".rphase > summary", "A part of the review. Click to open it."],
       [".rgroup > summary", "A headline. Click to open or fold it."],
       ["?.rstep", "A step. Tick it when done."], ["?.attn", "Worth a look: late, loose or stuck."]],
-    more: ["Open it from Projects at any time. Weekly review shows in the sidebar, under Projects, once a week has gone by or more than 30 actions wait to be sorted. Hide it in Settings › Sidebar.",
+    more: ["Open it from Projects at any time. Weekly review shows in the sidebar, under Projects, once a week has gone by or more than 30 actions wait to be sorted. It stays there until you mark a review done. Hide it in Settings › Sidebar.",
       "The list of what is left shows only when there is some.",
       "The Calendar step brings you back to the weeks.", "A headline you open stays open.", "Broken links and repeated lines are under Housekeeping.", "Edit the steps in Routines.",
       "A project is stuck with no next action or waiting for. A #meeting on a coming day page that links it counts too. Once the day has passed, it asks you to process the notes."],

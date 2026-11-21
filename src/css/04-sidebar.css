@@ -43,6 +43,17 @@
   justify-content:center;border-radius:4px;color:var(--fg3);font-size:11px}
 .nav-item .fold:hover{background:var(--bg2);color:var(--fg)}
 .nav-item.nav-sub{padding-left:24px}
+/* #450 Weekly review leaving the sidebar: a word on where it goes, then it
+   slides out and the items below close up; with less motion it fades. */
+.navsay{margin:2px 6px 6px 34px;padding:6px 9px;border-radius:8px;font-size:12px;line-height:1.4;
+  background:var(--bg3);color:var(--fg2)}
+.nav-item.leaving{pointer-events:none;overflow:hidden;animation:navLeave .45s ease forwards}
+@keyframes navLeave{
+  0%{transform:none;opacity:1;max-height:40px}
+  55%{transform:translateX(-100%);opacity:0;max-height:40px;padding-block:7px}
+  100%{transform:translateX(-100%);opacity:0;max-height:0;padding-block:0}}
+@media (prefers-reduced-motion:reduce){.nav-item.leaving{animation:navFade .3s ease forwards}}
+@keyframes navFade{to{opacity:0}}
 /* Pinned pages: the ✕ that unpins shows on hover. */
 .nav-item.pin .unpin{opacity:0;color:var(--fg3);font-size:11px;padding:0 2px;flex:none}
 .nav-item.pin:hover .unpin,.nav-item.pin .unpin:focus{opacity:1}

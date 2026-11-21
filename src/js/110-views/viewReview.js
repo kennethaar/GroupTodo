@@ -96,7 +96,11 @@ function viewReview() {
     el("button", {class: "btn primary", onclick: () => {
       setSetting("last_review", todayStamp());
       notify("Weekly review logged for " + humanDate(todayISO()) + ".");
-      if (!celebrateReview()) render();
+      // #450 nothing calls for it now: Weekly review leaves the sidebar, and says so.
+      const leaves = navItems().some(it => it && it.id === "review") && !reviewInNav();
+      REVIEW_NAV.leaving = leaves;
+      renderNav();
+      if (!celebrateReview(leaves)) render();
     }}, done === all.length && all.length ? "All done - mark the review done" : "Mark the review done"),
     el("button", {class: "textbtn", title: "The steps are the routine Weekly review in Settings", onclick: editReviewSteps}, "Edit the steps"),
     // Off is the whole celebration; quiet is the starfield without sound.

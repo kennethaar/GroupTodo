@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.198.2 - 2026-11-21
+
+- Weekly review › Steps: once Weekly review shows in the sidebar, it stays
+  until you mark a review done. Then the end screen says it leaves the
+  sidebar, and it slides out when you leave the review. (#450)
+
 ## 1.198.1 - 2026-11-21
 
 - Weekly review › Steps: Weekly review shows in the sidebar only when it is

@@ -1,8 +1,8 @@
 /* The starfield after "Mark the review done" (#223): the projects reviewed
    this week, or every active one, as cards to fly past. review.celebrate is
    on, quiet (no sound) or off. last_review is saved before this runs; the
-   celebration is only visual. */
-function celebrateReview() {
+   celebration is only visual. leaves: Weekly review leaves the sidebar (#450). */
+function celebrateReview(leaves) {
   const mode = PREF.get("review.celebrate", "on");
   if (mode === "off" || typeof window.starfieldPlay !== "function") return false;
   const rows = ["1", "3"].flatMap(code => projectsInVisible(code));
@@ -18,7 +18,8 @@ function celebrateReview() {
   const nextOn = shiftISO(todayISO(), CFG.reviewEveryDays);
   window.starfieldPlay(cards, {
     title: "Weekly review done",
-    sub: cards.length + (cards.length === 1 ? " project" : " projects") + " reviewed · next review " + humanDate(nextOn),
+    sub: cards.length + (cards.length === 1 ? " project" : " projects") + " reviewed · next review " + humanDate(nextOn) +
+      (leaves ? ". Weekly review leaves the sidebar until then. It is always under Projects." : ""),
     sound: mode === "on",
     onEnd: () => render(),
   });

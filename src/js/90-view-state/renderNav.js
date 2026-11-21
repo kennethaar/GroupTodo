@@ -60,6 +60,20 @@ function renderNav() {
         svgIcon(open ? ICON_CARET : ICON_CHEVRON_RIGHT)) : null,
       n ? el("span", {class: "cnt" + (hot ? " hot" : "")}, String(n)) : null));
     if (open) nav.append(...fold.rows());
+    /* #450 the review just marked done and Weekly review going: said on it
+       while you are on the review, then it slides out (fades, with less motion). */
+    if (it.id === "review" && REVIEW_NAV.leaving) {
+      const b = nav.lastElementChild;
+      if (state.view === "review") nav.append(el("div", {class: "navsay", role: "status"},
+        "Leaves the sidebar until your next review. Always under Projects."));
+      else {
+        REVIEW_NAV.leaving = false;
+        b.classList.add("leaving");
+        b.setAttribute("aria-hidden", "true");
+        b.addEventListener("animationend", () => b.remove());
+        setTimeout(() => b.remove(), 700);
+      }
+    }
     if (it.id === "pages") { const load = navLoading(); if (load) nav.append(load); }
   }
   /* #397 Settings is the very last thing in the sidebar, wherever a sidebar

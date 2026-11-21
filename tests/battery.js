@@ -12078,6 +12078,43 @@ var GTD_TEST = (() => {
         go("today"); await settle();
         withActions(31);
         ok(navLabels().includes("Weekly review"), "31 to sort: in the sidebar");
+        /* #450 follow-up: once shown it stays until a review is finished, though
+           the count drops by itself; then it hides till the next trigger, and
+           the end screen and the item itself say where it went. */
+        withActions(29);
+        ok(navLabels().includes("Weekly review"), "29 left after sorting: still in the sidebar");
+        const lastWas = getSetting("last_review"), cel = PREF.get("review.celebrate", "on"), play = window.starfieldPlay;
+        const item = () => document.querySelector('#nav > .nav-item[data-nav="review"]');
+        const say = () => document.querySelector("#nav .navsay");
+        let shown = null;
+        const markDone = async () => {
+          shown = null;
+          go("review"); await settle();
+          [...content().querySelectorAll(".btn.primary")].find(b => /mark the review done/i.test(b.textContent)).click();
+          await settle();
+        };
+        try {
+          PREF.set("review.celebrate", "on");
+          window.starfieldPlay = (cards, o) => { shown = o; };
+          await markDone();
+          ok(/Weekly review leaves the sidebar until then\. It is always under Projects\./.test(shown?.sub || ""),
+            "the end screen says where it goes: " + shown?.sub);
+          ok(item(), "still in the sidebar while on the review");
+          ok(/under Projects/.test(say()?.textContent || ""), "a bubble on it says where it goes");
+          go("today"); await settle();
+          for (let i = 0; i < 60 && item(); i++) await new Promise(r => setTimeout(r, 20));
+          ok(!item(), "gone once you leave the review");
+          ok(!say(), "the bubble went with it");
+          withActions(31);
+          ok(navLabels().includes("Weekly review"), "the next trigger brings it back");
+          // Finished while still called for: it stays, and nothing says it goes.
+          await markDone();
+          ok(shown && !/leaves the sidebar/.test(shown.sub), "no note when it stays: " + shown?.sub);
+          ok(item() && !say(), "no bubble when it stays");
+        } finally {
+          setSetting("last_review", lastWas); PREF.set("review.celebrate", cel); window.starfieldPlay = play;
+          go("today"); await settle();
+        }
         removePage(sortPath); sortPath = null;
         CFG.reviewEveryDays = 0; redraw();
         ok(navLabels().includes("Weekly review"), "due: in the sidebar");
