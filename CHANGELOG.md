@@ -7,80 +7,24 @@ that breaks existing vaults. Newest first.
 
 ## 1.196.0 - 2026-11-21
 
-- Present a page: point at ▶ Present, or Tab to it, and a small picture
-  shows a slide. A list under it picks which: last time's, the talk from
-  the top, the line you were in where it comes in the whole talk, and the
-  talk from that line. A task or _ line shows the slide it would be on.
-  Focused on a line (🔍), from the top is still the whole page. ↑ ↓ or
-  pointing switches. A click on a choice opens the talk at that slide, as
-  does Enter after ↑ ↓. ☰ › Present from here does
-  the same for its line, with ← →. On a phone a tap just starts the
-  slides. (#465)
-
-## 1.195.1 - 2026-11-20
-
-- Present a page: on a hub slide, a spoke with lines under it shows them in
-  a card to the right of the hub while that spoke is lit. The next spoke
-  swaps the card. The spoke no longer gets a slide of its own. (#433)
-
-## 1.195.0 - 2026-11-20
-
-- Present a page: a bullet with a picture in its notepad shows that picture
-  on the left third while it is lit, in place of the slide's own picture. A
-  bullet with none gives the slide's picture back. (#464)
-
-## 1.194.0 - 2026-11-20
-
-- Present a page: task lines, and lines that start with `_ `, stay off the
-  slides with the lines under them. ☰ › Hide in Present adds the `_ `; Show in
-  Present takes it off. With lines picked, Slide layout ▾ hides or shows them
-  all. The presenter window says how many are hidden (#467).
-
-## 1.193.2 - 2026-11-20
-
-- Weekly review › Actions: a step with open steps under it is not dealt, even
-  when it is set to Doing. Only the step under it is (#462).
-
-## 1.193.1 - 2026-11-20
-
-- Weekly review › Actions: a step set to Doing is dealt even with steps still
-  open under it. On the sorting card, the keys line says a box's number
-  answers at once (#462).
-
-## 1.193.0 - 2026-11-20
-
-- Weekly review › Actions: a project with three or more steps that can all go
-  now is sorted first. One card asks, step by step, "Does it wait for another
-  step?", and the step that comes first goes under the one that waits. Only the
-  next step of each sequence is dealt, and only those are asked for a verb and
-  a context. "They can all go at once" writes parallel:: yes, so the project is
-  not asked again. A card ends with "+ N more steps", which deals the waiting
-  ones too (#462).
-
-## 1.192.5 - 2026-11-20
-
-- Present a page: a line with links keeps the linked words. A project, person
-  or [[page|label]] link shows as plain words on the slide (#454).
-
-## 1.192.4 - 2026-11-20
-
-- States and Waiting for: with several lines picked, Alt+T makes them all tasks
-  and Alt+N makes them all notes (#411).
-
-## 1.192.3 - 2026-11-20
-
-- The line menu and toolbar: with two areas side by side in the Journal, a
-  line's ☰ and 🔍 sit in its own lane, right of the line between the areas (#413).
-
-## 1.192.2 - 2026-11-20
-
-- The line menu and toolbar: the ☰ menu stays inside the outline's box, so it
-  no longer spills over the sidebar or out of a card (#413).
-
-## 1.192.1 - 2026-11-20
-
-- Weekly review › Review actions: a project linked in a task shows its name
-  on the card, no longer an empty gap (#463).
+- Present a page: Give a talk straight from your notes, without making slides.
+  Point at ▶ Present to see a small preview, and pick where to start: last
+  time, the top, or your own line. Click a choice to open the talk there.
+  Pictures in a bullet's notepad show beside it while you speak. A hub's
+  spokes show their lines in a card. Task lines and lines that start with
+  `_ ` stay off the slides, so you can add notes for improvement and hide
+  unfinished points; ☰ › Hide in Present does this for you. Links show as
+  plain words. (#465)
+- Weekly review › Review actions: A project with many steps that can start
+  now gets put in order first, so you only deal with what truly comes next.
+  One card asks "Does it wait for another step?" for each step. "They can all
+  go at once" remembers your answer. A linked project shows its name on the
+  card. (#462)
+- States and Waiting for: Change many lines at once. Pick them, then press
+  Alt+T for tasks or Alt+N for notes. (#411)
+- The line menu and toolbar: The ☰ menu stays where you can use it. It no
+  longer spills over the sidebar, and in the Journal it sits in its own
+  lane. (#413)
 
 ## 1.192.0 - 2026-11-20
 
