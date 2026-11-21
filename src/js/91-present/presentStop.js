@@ -1,8 +1,10 @@
 /* Leave the slides: the page again, with the caret back in its line. */
 function presentStop() {
   if (!DECK) return;
-  const {deck, back, timer, pw} = DECK;
+  const {deck, back, timer, pw, path, root, i} = DECK;
   DECK = null;
+  // Where you left it, for the preview on ▶ Present (#465).
+  if (i >= 0) slideLast(path, root, i);
   clearInterval(timer);
   window.removeEventListener("keydown", presentKey, true);
   try { navigator.keyboard?.unlock?.(); } catch (e) {}

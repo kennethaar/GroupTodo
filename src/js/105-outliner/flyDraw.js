@@ -7,6 +7,9 @@ function flyDraw() {
   const all = flyRows();
   const rows = FLY.summoned ? all.filter(r => r.menu) : FLY.open ? all.filter(r => r.k === FLY.open) : [];
   box.textContent = "";
+  // Present from here, picked with the arrows or open: the slide you were last on (#465).
+  let peekAt = null;
+  const peek = row => slidePeek(row, FLY.path, block, true, true);
   rows.forEach((r, i) => {
     const open = FLY.open === r.k;
     const lit = FLY_LIT && FLY_LIT.id === block.id && FLY_LIT.k === r.k;
@@ -16,6 +19,11 @@ function flyDraw() {
       el("button", {class: "fhead", tabindex: "-1", onclick: () => flyHead(r.k)},
         el("span", {class: "fic bw"}, r.ic.startsWith("<") ? svgIcon(r.ic) : r.ic), el("span", {class: "fl"}, r.label),
         el("span", {class: "fv"}, r.val || ""), r.key ? el("kbd", {}, r.key) : null));
+    if (r.k === "present") {
+      if (hi || open) peekAt = row;
+      row.addEventListener("pointerenter", e => { if (e.pointerType !== "touch") peek(row); });
+      row.addEventListener("pointerleave", () => { if (peekAt !== row) slidePeekHide(); });
+    }
     if (open && r.opts) {
       const os = flyOptsOf(r), hi = Math.min(FLY.hi || 0, os.length - 1);
       const chip = ([v, l], i, text) => el("button", {class: "fchip" + (i === hi ? " hi" : ""), tabindex: "-1",
@@ -52,4 +60,6 @@ function flyDraw() {
   const handle = FLY.txt.closest(".line")?.querySelector(":scope > .linemenu");
   if (handle) handle.setAttribute("aria-expanded", String(!box.hidden));
   flyPlace();
+  if (peekAt && !box.hidden) peek(peekAt);
+  else if ($(".slidepeek")?._anchor?.classList.contains("frow")) slidePeekHide();
 }

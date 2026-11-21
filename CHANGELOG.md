@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.196.0 - 2026-11-21
+
+- Present a page: point at ▶ Present, or Tab to it, and a small picture
+  shows the slide you were on last time, with its line lit. A page never
+  shown gives its first slide. ☰ › Present from here does the same. On a
+  phone a tap just starts the slides. (#465)
+
 ## 1.195.1 - 2026-11-20
 
 - Present a page: on a hub slide, a spoke with lines under it shows them in

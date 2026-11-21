@@ -2,58 +2,58 @@
    changes these: --slide-bg, --slide-ink, --dim, and .slide, .slide.intro
    (the title alone, before the first bullet), .stitle, .bullet.now,
    .bullet.past, .cover. */
-#deck{--slide-bg:#000;--slide-ink:#fff;--dim:.4;--slide-font:system-ui,"Segoe UI",sans-serif;
+:is(#deck,#deckpeek){--slide-bg:#000;--slide-ink:#fff;--dim:.4;--slide-font:system-ui,"Segoe UI",sans-serif;
   position:fixed;inset:0;z-index:10000;overflow:hidden;background:var(--slide-bg);color:var(--slide-ink);
   font-family:var(--slide-font);outline:none}
-#deck .slide{position:absolute;inset:0;overflow:hidden}
+:is(#deck,#deckpeek) .slide{position:absolute;inset:0;overflow:hidden}
 /* The picture: behind the title on the whole screen, then the left 30%. */
-#deck .cover{position:absolute;left:0;top:0;bottom:0;width:30%;overflow:hidden;transition:width 1s ease-in-out}
-#deck .slide.intro .cover{width:100%}
-#deck .cover img{width:100%;height:100%;object-fit:cover;display:block}
+:is(#deck,#deckpeek) .cover{position:absolute;left:0;top:0;bottom:0;width:30%;overflow:hidden;transition:width 1s ease-in-out}
+:is(#deck,#deckpeek) .slide.intro .cover{width:100%}
+:is(#deck,#deckpeek) .cover img{width:100%;height:100%;object-fit:cover;display:block}
 /* A lit bullet's own picture fades into the picture's place (#464). */
-#deck .cover .pic{position:absolute;inset:0;opacity:0;transition:opacity .6s ease-in-out}
-#deck .cover .pic.on{opacity:1}
-#deck .cover::after{content:"";position:absolute;inset:0;background:var(--slide-bg);opacity:0;transition:opacity 1s ease-in-out}
-#deck .slide.intro .cover::after{opacity:.5}
-#deck .cover .asset-missing{display:block;padding:2vh;opacity:.6}
-#deck .stext{--fit:1;position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-start;
+:is(#deck,#deckpeek) .cover .pic{position:absolute;inset:0;opacity:0;transition:opacity .6s ease-in-out}
+:is(#deck,#deckpeek) .cover .pic.on{opacity:1}
+:is(#deck,#deckpeek) .cover::after{content:"";position:absolute;inset:0;background:var(--slide-bg);opacity:0;transition:opacity 1s ease-in-out}
+:is(#deck,#deckpeek) .slide.intro .cover::after{opacity:.5}
+:is(#deck,#deckpeek) .cover .asset-missing{display:block;padding:2vh;opacity:.6}
+:is(#deck,#deckpeek) .stext{--fit:1;position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-start;
   padding:8vh 7vw 6vh;min-height:0;overflow:hidden;font-size:calc(5vh * var(--fit))}
-#deck .hascover:not(.intro) .stext{left:30%;padding-left:5vw}
-#deck .slide.intro .stext{justify-content:center;align-items:center;text-align:center}
-#deck .stitle{color:inherit;font-size:1.7em;line-height:1.15;margin:0 0 .6em;font-weight:700;width:fit-content;max-width:100%}
-#deck .slide.intro .stitle{font-size:2.3em;margin:0}
-#deck .hascover.intro .stitle{text-shadow:0 .05em .3em var(--slide-bg)}
-#deck .slide.intro .sbullets{display:none}
-#deck .sbullets{margin:0;padding:0 0 0 1.1em;line-height:1.3}
+:is(#deck,#deckpeek) .hascover:not(.intro) .stext{left:30%;padding-left:5vw}
+:is(#deck,#deckpeek) .slide.intro .stext{justify-content:center;align-items:center;text-align:center}
+:is(#deck,#deckpeek) .stitle{color:inherit;font-size:1.7em;line-height:1.15;margin:0 0 .6em;font-weight:700;width:fit-content;max-width:100%}
+:is(#deck,#deckpeek) .slide.intro .stitle{font-size:2.3em;margin:0}
+:is(#deck,#deckpeek) .hascover.intro .stitle{text-shadow:0 .05em .3em var(--slide-bg)}
+:is(#deck,#deckpeek) .slide.intro .sbullets{display:none}
+:is(#deck,#deckpeek) .sbullets{margin:0;padding:0 0 0 1.1em;line-height:1.3}
 /* .bullet is also the outliner's dot: undone here. */
-#deck .bullet{position:static;width:auto;height:auto;border-radius:0;background:none;cursor:auto;margin:.35em 0;transition:opacity .6s ease-in-out}
-#deck .bullet.past{opacity:var(--dim)}
-#deck .bullet.later{opacity:0}
-#deck .bullet.fresh{animation:deckFade .4s ease-in-out both}
+:is(#deck,#deckpeek) .bullet{position:static;width:auto;height:auto;border-radius:0;background:none;cursor:auto;margin:.35em 0;transition:opacity .6s ease-in-out}
+:is(#deck,#deckpeek) .bullet.past{opacity:var(--dim)}
+:is(#deck,#deckpeek) .bullet.later{opacity:0}
+:is(#deck,#deckpeek) .bullet.fresh{animation:deckFade .4s ease-in-out both}
 /* The first bullet waits for the title to reach the top. */
-#deck .bullet.fresh.aftertitle{animation-delay:1s}
-#deck.blank .slide{visibility:hidden}
+:is(#deck,#deckpeek) .bullet.fresh.aftertitle{animation-delay:1s}
+:is(#deck,#deckpeek).blank .slide{visibility:hidden}
 @keyframes deckFade{from{opacity:0}to{opacity:1}}
 /* The next slide comes up from below. Into a bullet's lines the slide stays
    put: the bullet grows into the title (slideZoom) while the rest fades, and
    back out the title shrinks into its bullet. */
-#deck .slide.cur,#deck .slide.out{animation-duration:.6s;animation-timing-function:ease-in-out;animation-fill-mode:both}
-#deck .slide.out{pointer-events:none}
-#deck[data-move=down] .slide.cur{animation-name:deckInB}
-#deck[data-move=down] .slide.out{animation-name:deckOutT}
-#deck[data-move=up] .slide.cur{animation-name:deckInT}
-#deck[data-move=up] .slide.out{animation-name:deckOutB}
-#deck[data-move=zoomin] .slide.out,#deck[data-move=zoomout] .slide.out :is(.cover,.sbullets){animation:deckGone .6s ease-in-out both}
-#deck:is([data-move=zoomin],[data-move=zoomout]) .slide.cur .cover{animation:deckFade .6s ease-in-out both}
+:is(#deck,#deckpeek) .slide.cur,:is(#deck,#deckpeek) .slide.out{animation-duration:.6s;animation-timing-function:ease-in-out;animation-fill-mode:both}
+:is(#deck,#deckpeek) .slide.out{pointer-events:none}
+:is(#deck,#deckpeek)[data-move=down] .slide.cur{animation-name:deckInB}
+:is(#deck,#deckpeek)[data-move=down] .slide.out{animation-name:deckOutT}
+:is(#deck,#deckpeek)[data-move=up] .slide.cur{animation-name:deckInT}
+:is(#deck,#deckpeek)[data-move=up] .slide.out{animation-name:deckOutB}
+:is(#deck,#deckpeek)[data-move=zoomin] .slide.out,:is(#deck,#deckpeek)[data-move=zoomout] .slide.out :is(.cover,.sbullets){animation:deckGone .6s ease-in-out both}
+:is(#deck,#deckpeek):is([data-move=zoomin],[data-move=zoomout]) .slide.cur .cover{animation:deckFade .6s ease-in-out both}
 @keyframes deckGone{to{opacity:0}}
 @keyframes deckInB{from{transform:translateY(100%)}}
 @keyframes deckInT{from{transform:translateY(-100%)}}
 @keyframes deckOutT{to{transform:translateY(-100%)}}
 @keyframes deckOutB{to{transform:translateY(100%)}}
 @media (prefers-reduced-motion:reduce){
-  #deck .slide.cur{animation-name:deckFade!important}
-  #deck .slide.out{animation-name:deckGone!important}
-  #deck .cover,#deck .cover::after,#deck .cover .pic{transition:none}
+  :is(#deck,#deckpeek) .slide.cur{animation-name:deckFade!important}
+  :is(#deck,#deckpeek) .slide.out{animation-name:deckGone!important}
+  :is(#deck,#deckpeek) .cover,:is(#deck,#deckpeek) .cover::after,:is(#deck,#deckpeek) .cover .pic{transition:none}
 }
 /* ▶ Present ▾ on a page: one control in two parts, kept together when the head wraps. */
 .presentsplit{display:inline-flex;white-space:nowrap;position:relative}

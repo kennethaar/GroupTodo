@@ -41,6 +41,7 @@ css/35-recipes.css
 css/36-templates-420.css
 css/37-present-431.css
 css/38-present-layouts-433.css
+css/39-present-peek-465.css
 # script 1
 js/00-bootstrap/vars-APP_VERSION.js
 js/00-bootstrap/keepFocus.js
@@ -793,10 +794,14 @@ js/91-present/slideZoom.js
 js/91-present/presenterTick.js
 js/91-present/presenterDraw.js
 js/91-present/presenterOpen.js
+js/91-present/slideSection.js
 js/91-present/presentGo.js
+js/91-present/slideLast.js
 js/91-present/presentStop.js
 js/91-present/presentKey.js
 js/91-present/presentStart.js
+js/91-present/slidePeekHide.js
+js/91-present/slidePeek.js
 js/91-present/presentButton.js
 js/91-present/presentMenu.js
 js/91-present/slidePresented.js

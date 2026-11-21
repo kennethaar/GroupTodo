@@ -13576,6 +13576,56 @@ var GTD_TEST = (() => {
       eq([deckNow().now, pic()], ["Budget", ["assets/plan.png"]], "a bullet with none keeps the last picture, so nothing jumps");
     } finally { presentStop(); }
   }));
+  test("#465 hovering or focusing ▶ Present, or Present from here in ☰, previews the slide you were last on", () => withPages(TALK_PAGE, async () => {
+    const peek = () => {
+      const p = $(".slidepeek");
+      return p && {title: p.querySelector(".slide .stitle")?.textContent || "",
+        now: p.querySelector(".bullet.now")?.textContent || "", says: p.querySelector(".peeksays")?.textContent || ""};
+    };
+    const key = (txt, k) => txt.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true}));
+    PREF.set("present.last", "{}");
+    try {
+      openPage(TALK); await settle();
+      const btn = () => content().querySelector(".pagehead .presentbtn");
+      btn().dispatchEvent(new PointerEvent("pointerenter", {pointerType: "mouse"}));
+      eq(peek(), {title: "Talk", now: "", says: "Starts here"}, "never shown: the slide it starts on");
+      const r = $(".slidepeek").getBoundingClientRect();
+      ok(r.width <= 300 && r.left >= 0 && r.right <= innerWidth && r.bottom <= innerHeight, "small, and on screen");
+      btn().dispatchEvent(new PointerEvent("pointerleave", {pointerType: "mouse"}));
+      ok(!$(".slidepeek"), "gone when the pointer leaves");
+      btn().click(); await settle();
+      ok(!$(".slidepeek"), "Present takes the preview away");
+      deckKey("ArrowRight"); deckKey("ArrowRight");
+      const at = deckNow();
+      presentStop(); render(); await settle();
+      btn().focus();
+      eq(peek(), {title: at.title, now: at.now, says: "Last time: slide 2 of " + deckSteps(TALK).slides.length},
+        "focus shows it too: the slide you left, with its lit line");
+      btn().blur();
+      ok(!$(".slidepeek"), "gone when focus moves on");
+      // Touch has no hover: a tap opens Present as before.
+      btn().dispatchEvent(new PointerEvent("pointerdown", {pointerType: "touch", bubbles: true}));
+      btn().focus();
+      ok(!$(".slidepeek"), "a tap shows no preview");
+      btn().blur();
+      // ☰ › Present from here: that bullet's talk.
+      const where = getPage(TALK).blocks[1];
+      focusBlock(where.id); await settle();
+      const txt = content().querySelector(`.blk[data-id="${where.id}"] .txt`);
+      flySummon(txt); await settle();
+      const n = flyRows().filter(x => x.menu).findIndex(x => x.k === "present");
+      for (let i = 0; i < n; i++) key(txt, "ArrowDown");
+      await settle();
+      eq(peek(), {title: "Where to", now: "", says: "Starts here"}, "the menu row picked with the arrows previews from that bullet");
+      key(txt, "ArrowDown"); await settle();
+      ok(!$(".slidepeek"), "the next row has none");
+      key(txt, "ArrowUp"); key(txt, "Enter"); await settle();
+      ok(peek(), "the row open on its two ways keeps it");
+      key(txt, "Enter"); await settle();
+      ok($("#deck") && !$(".slidepeek"), "Present from the menu takes it away too");
+      eq(deckNow().title, "Where to");
+    } finally { presentStop(); PREF.set("present.last", "{}"); }
+  }));
   test("#431 on a phone ▶ Present and Focus are on screen beside a page's title",() => withPages(TALK_PAGE, async () => {
     openPage(TALK); await settle();
     // The window is wide, so the page head is laid out again in a phone-wide frame with the app's styles.

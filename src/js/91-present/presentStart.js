@@ -6,6 +6,7 @@
    window at once (▾ › With presenter window). */
 function presentStart(path, {root = null, on = false, presenter = false} = {}) {
   presentStop();
+  slidePeekHide();
   slidePresented(path, true);
   const {steps, slides, hidden} = deckSteps(path, root, on);
   const back = document.activeElement;

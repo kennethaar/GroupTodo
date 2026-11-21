@@ -2,95 +2,95 @@
    part in its place, so nothing moves; the parts before it stay, dimmed.
    slides.css can change --slide-accent (the shapes), --on-accent (words on
    them) and --faint (the parts still to come: hidden unless set above 0). */
-#deck{--slide-accent:#2f6bc4;--on-accent:#fff;--faint:0}
+:is(#deck,#deckpeek){--slide-accent:#2f6bc4;--on-accent:#fff;--faint:0}
 /* In the outline: a bullet past the 5th on one slide of a talk. */
 .blk>.line>.bullet.crowded{background:var(--danger);box-shadow:0 0 0 3px color-mix(in srgb,var(--danger) 30%,transparent)}
-#deck .scrumb{font-size:.55em;opacity:.65;margin:0 0 .3em}
-#deck .sbody{flex:1;min-height:0;position:relative;font-size:.72em;line-height:1.25}
-#deck .slide.intro .sbody{display:none}
-#deck .part{transition:opacity .6s ease-in-out}
-#deck .part.later{opacity:var(--faint)}
-#deck .part.past{opacity:var(--dim)}
+:is(#deck,#deckpeek) .scrumb{font-size:.55em;opacity:.65;margin:0 0 .3em}
+:is(#deck,#deckpeek) .sbody{flex:1;min-height:0;position:relative;font-size:.72em;line-height:1.25}
+:is(#deck,#deckpeek) .slide.intro .sbody{display:none}
+:is(#deck,#deckpeek) .part{transition:opacity .6s ease-in-out}
+:is(#deck,#deckpeek) .part.later{opacity:var(--faint)}
+:is(#deck,#deckpeek) .part.past{opacity:var(--dim)}
 /* With the first part the drawing comes once the title has reached the top. */
-#deck .sbody:has(.part.aftertitle){animation:deckFade .6s ease-in-out 1s both}
+:is(#deck,#deckpeek) .sbody:has(.part.aftertitle){animation:deckFade .6s ease-in-out 1s both}
 
 /* Steps: chevrons from left to right, every one as big as the biggest:
    one grid row, as tall as its tallest, its columns all one width. */
-#deck .steps{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;align-content:center;height:100%;gap:.15em}
-#deck .chev{min-width:0;min-height:5em;display:flex;align-items:center;justify-content:center;text-align:center;
+:is(#deck,#deckpeek) .steps{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;align-content:center;height:100%;gap:.15em}
+:is(#deck,#deckpeek) .chev{min-width:0;min-height:5em;display:flex;align-items:center;justify-content:center;text-align:center;
   padding:.5em 1.5em;background:var(--slide-accent);color:var(--on-accent);overflow-wrap:anywhere;
   clip-path:polygon(0 0,calc(100% - 1em) 0,100% 50%,calc(100% - 1em) 100%,0 100%,1em 50%)}
-#deck .chev:first-child{clip-path:polygon(0 0,calc(100% - 1em) 0,100% 50%,calc(100% - 1em) 100%,0 100%)}
+:is(#deck,#deckpeek) .chev:first-child{clip-path:polygon(0 0,calc(100% - 1em) 0,100% 50%,calc(100% - 1em) 100%,0 100%)}
 
 /* Timeline: one axis across the middle, the words above and below by turns. */
-#deck .timeline{display:flex;height:100%;position:relative}
-#deck .timeline::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:.12em solid currentColor;opacity:.5}
-#deck .timeline .part{flex:1;min-width:0;height:50%;position:relative;display:flex;flex-direction:column;text-align:center;padding:0 .3em}
-#deck .timeline .up{align-self:flex-start;justify-content:flex-end;padding-bottom:1.3em}
-#deck .timeline .down{align-self:flex-end;justify-content:flex-start;padding-top:1.3em}
-#deck .tdot{position:absolute;left:50%;width:.9em;height:.9em;margin-left:-.45em;border-radius:50%;background:var(--slide-accent)}
-#deck .up .tdot{bottom:-.45em}
-#deck .down .tdot{top:-.45em}
+:is(#deck,#deckpeek) .timeline{display:flex;height:100%;position:relative}
+:is(#deck,#deckpeek) .timeline::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:.12em solid currentColor;opacity:.5}
+:is(#deck,#deckpeek) .timeline .part{flex:1;min-width:0;height:50%;position:relative;display:flex;flex-direction:column;text-align:center;padding:0 .3em}
+:is(#deck,#deckpeek) .timeline .up{align-self:flex-start;justify-content:flex-end;padding-bottom:1.3em}
+:is(#deck,#deckpeek) .timeline .down{align-self:flex-end;justify-content:flex-start;padding-top:1.3em}
+:is(#deck,#deckpeek) .tdot{position:absolute;left:50%;width:.9em;height:.9em;margin-left:-.45em;border-radius:50%;background:var(--slide-accent)}
+:is(#deck,#deckpeek) .up .tdot{bottom:-.45em}
+:is(#deck,#deckpeek) .down .tdot{top:-.45em}
 
 /* Cycle and hub: the lines round a circle. */
-#deck .ring{position:relative;height:100%;aspect-ratio:1;max-width:100%;margin:0 auto}
-#deck :is(.ring,.curve) .part{position:absolute;inset:0}
-#deck :is(.ring,.curve) svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-#deck .sline{fill:none;stroke:var(--slide-accent);stroke-width:1.6}
-#deck .shead{fill:var(--slide-accent)}
-#deck .ntext{position:absolute;transform:translate(-50%,-50%);width:max-content;max-width:40%;text-align:center;
+:is(#deck,#deckpeek) .ring{position:relative;height:100%;aspect-ratio:1;max-width:100%;margin:0 auto}
+:is(#deck,#deckpeek) :is(.ring,.curve) .part{position:absolute;inset:0}
+:is(#deck,#deckpeek) :is(.ring,.curve) svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+:is(#deck,#deckpeek) .sline{fill:none;stroke:var(--slide-accent);stroke-width:1.6}
+:is(#deck,#deckpeek) .shead{fill:var(--slide-accent)}
+:is(#deck,#deckpeek) .ntext{position:absolute;transform:translate(-50%,-50%);width:max-content;max-width:40%;text-align:center;
   padding:.3em .6em;border-radius:.6em;background:var(--slide-bg);border:.1em solid var(--slide-accent)}
-#deck .hubcore{position:absolute;left:50%;top:50%;width:30%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
+:is(#deck,#deckpeek) .hubcore{position:absolute;left:50%;top:50%;width:30%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
   display:grid;place-items:center;text-align:center;padding:.4em;background:var(--slide-accent);color:var(--on-accent);
   font-weight:700;font-size:.85em;overflow-wrap:anywhere}
 /* Every bubble as big as the biggest (slideEven sets the size), its words in the middle. */
-#deck .hub .ntext{display:grid;place-items:center;font-size:calc(1em * var(--hubfit, 1))}
+:is(#deck,#deckpeek) .hub .ntext{display:grid;place-items:center;font-size:calc(1em * var(--hubfit, 1))}
 /* A spoke's own lines: one card right of the hub, the lit spoke's (#433). */
-#deck .hubwrap{display:flex;gap:1.5em;height:100%;min-width:0}
-#deck .hubwrap .ring{flex:none;margin:0}
-#deck .hubcards{flex:1;min-width:0;display:grid;align-items:center}
-#deck .hubcard{grid-area:1/1;visibility:hidden}
-#deck .hubcard.on{visibility:visible}
+:is(#deck,#deckpeek) .hubwrap{display:flex;gap:1.5em;height:100%;min-width:0}
+:is(#deck,#deckpeek) .hubwrap .ring{flex:none;margin:0}
+:is(#deck,#deckpeek) .hubcards{flex:1;min-width:0;display:grid;align-items:center}
+:is(#deck,#deckpeek) .hubcard{grid-area:1/1;visibility:hidden}
+:is(#deck,#deckpeek) .hubcard.on{visibility:visible}
 
 /* Pyramid: the first line the foundation at the bottom, the words beside. */
-#deck .pyramid{display:flex;flex-direction:column-reverse;height:100%;gap:.12em}
-#deck .tier{flex:1;min-height:0;display:grid;grid-template-columns:45% 1fr;align-items:center;gap:1em}
-#deck .tshape{height:100%;background:var(--slide-accent)}
+:is(#deck,#deckpeek) .pyramid{display:flex;flex-direction:column-reverse;height:100%;gap:.12em}
+:is(#deck,#deckpeek) .tier{flex:1;min-height:0;display:grid;grid-template-columns:45% 1fr;align-items:center;gap:1em}
+:is(#deck,#deckpeek) .tshape{height:100%;background:var(--slide-accent)}
 
 /* Curve: peaks over the axes, the axes named at their ends. */
-#deck .curve{position:relative;height:100%;margin:0 1em 1.4em 2em}
-#deck .curve .axes{position:absolute;inset:0;width:100%;height:100%}
-#deck .curve .axes path{fill:none;stroke:currentColor;stroke-width:1.5;opacity:.6}
-#deck .curve .sline{stroke-width:3}
-#deck .curve .ntext{transform:translateX(-50%);max-width:22%;margin-bottom:.4em;padding:0;border:0;background:none}
+:is(#deck,#deckpeek) .curve{position:relative;height:100%;margin:0 1em 1.4em 2em}
+:is(#deck,#deckpeek) .curve .axes{position:absolute;inset:0;width:100%;height:100%}
+:is(#deck,#deckpeek) .curve .axes path{fill:none;stroke:currentColor;stroke-width:1.5;opacity:.6}
+:is(#deck,#deckpeek) .curve .sline{stroke-width:3}
+:is(#deck,#deckpeek) .curve .ntext{transform:translateX(-50%);max-width:22%;margin-bottom:.4em;padding:0;border:0;background:none}
 /* The first peak sits by the y axis: its words start there and run right, never across the axis. */
-#deck .curve .ntext.first{transform:none;text-align:left}
-#deck .yaxis{position:absolute;left:0;top:50%;transform:translate(-100%,-50%) rotate(180deg);writing-mode:vertical-rl;font-size:.8em;opacity:.8}
-#deck .xaxis{position:absolute;right:0;top:100%;font-size:.8em;opacity:.8}
+:is(#deck,#deckpeek) .curve .ntext.first{transform:none;text-align:left}
+:is(#deck,#deckpeek) .yaxis{position:absolute;left:0;top:50%;transform:translate(-100%,-50%) rotate(180deg);writing-mode:vertical-rl;font-size:.8em;opacity:.8}
+:is(#deck,#deckpeek) .xaxis{position:absolute;right:0;top:100%;font-size:.8em;opacity:.8}
 
 /* Boxes: versus, 2×2, scorecard and cards, each box's lines in it. */
-#deck .cards{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:.8em;height:100%;align-content:center}
-#deck .lay-split .cards{grid-auto-rows:minmax(50%,auto)}
-#deck .lay-quadrant .cards{grid-auto-rows:1fr;align-content:stretch}
-#deck .card{min-width:0;padding:.6em .8em;border-radius:.4em;overflow-wrap:anywhere;
+:is(#deck,#deckpeek) .cards{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:.8em;height:100%;align-content:center}
+:is(#deck,#deckpeek) .lay-split .cards{grid-auto-rows:minmax(50%,auto)}
+:is(#deck,#deckpeek) .lay-quadrant .cards{grid-auto-rows:1fr;align-content:stretch}
+:is(#deck,#deckpeek) .card{min-width:0;padding:.6em .8em;border-radius:.4em;overflow-wrap:anywhere;
   border:.08em solid color-mix(in srgb,var(--slide-ink) 35%,transparent);border-top:.25em solid var(--slide-accent)}
-#deck .phead{font-weight:700;margin-bottom:.3em}
-#deck .card ul{margin:0;padding-left:1.1em}
-#deck .card li{margin:.2em 0}
-#deck .lay-kpi .card{text-align:center}
+:is(#deck,#deckpeek) .phead{font-weight:700;margin-bottom:.3em}
+:is(#deck,#deckpeek) .card ul{margin:0;padding-left:1.1em}
+:is(#deck,#deckpeek) .card li{margin:.2em 0}
+:is(#deck,#deckpeek) .lay-kpi .card{text-align:center}
 /* A metric on one row: smaller as the cards get more. */
-#deck .pmetric{font-size:calc(1.6em * min(1, 3 / var(--cols)));font-weight:800;line-height:1.1;white-space:nowrap}
-#deck .plabel{opacity:.8}
-#deck .lay-kpi .card ul{text-align:left;margin-top:.4em;font-size:.85em}
+:is(#deck,#deckpeek) .pmetric{font-size:calc(1.6em * min(1, 3 / var(--cols)));font-weight:800;line-height:1.1;white-space:nowrap}
+:is(#deck,#deckpeek) .plabel{opacity:.8}
+:is(#deck,#deckpeek) .lay-kpi .card ul{text-align:left;margin-top:.4em;font-size:.85em}
 
 /* Quote: large in the middle, who said it under it, then the takeaways. */
-#deck .hero{height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.5em}
-#deck .pquote{margin:0;font-size:1.6em;font-weight:600;line-height:1.2;max-width:28ch}
-#deck .pquote::before{content:"“"}
-#deck .pquote::after{content:"”"}
-#deck .pauthor{margin-top:.6em;opacity:.75}
-#deck .pauthor::before{content:"— "}
-#deck .ptake{font-size:.9em}
-#deck .pq{margin-bottom:.6em}
+:is(#deck,#deckpeek) .hero{height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.5em}
+:is(#deck,#deckpeek) .pquote{margin:0;font-size:1.6em;font-weight:600;line-height:1.2;max-width:28ch}
+:is(#deck,#deckpeek) .pquote::before{content:"“"}
+:is(#deck,#deckpeek) .pquote::after{content:"”"}
+:is(#deck,#deckpeek) .pauthor{margin-top:.6em;opacity:.75}
+:is(#deck,#deckpeek) .pauthor::before{content:"— "}
+:is(#deck,#deckpeek) .ptake{font-size:.9em}
+:is(#deck,#deckpeek) .pq{margin-bottom:.6em}
 /* The quote stays at full strength while its takeaways come. */
-#deck .lay-hero .pq.past{opacity:1}
+:is(#deck,#deckpeek) .lay-hero .pq.past{opacity:1}
