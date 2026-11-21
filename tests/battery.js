@@ -7324,6 +7324,46 @@ var GTD_TEST = (() => {
       await removeArea(n);
     }
   });
+  /* Starting your own ends on a short lesson in outlining: four rules, one at
+     a time, each played on the same small outline. Coming back skips it (#468). */
+  test("#468 starting your own teaches outlining in four rules, then goes to the day", async () => {
+    const onboarded = PREF.get("onboarded"), coach = PREF.get("coach"), active = Spaces.active;
+    const asked = Spaces.get(active)?.askedStorage, was = inSpace(active, () => settingsPage().props.onboarded);
+    const until = async cond => { for (let i = 0; i < 300 && !cond(); i++) await new Promise(r => setTimeout(r, 10)); };
+    const m = () => document.querySelector("#modalRoot .modal");
+    const btn = t => [...(m()?.querySelectorAll("button") || [])].find(b => b.textContent === t);
+    const head = () => m()?.querySelector(".olhead")?.textContent || "";
+    try {
+      closeModals(); openOnboardOwn();
+      btn("Start").click();
+      await until(() => /Lines inside lines/.test(m()?.textContent || ""));
+      has(m()?.textContent || "", "Lines inside lines", "no lesson after Start");
+      eq(m().querySelectorAll(".oldot").length, 4, "one dot per rule");
+      const seen = [head()];
+      for (let i = 0; i < 3; i++) { btn("Next").click(); seen.push(head()); }
+      eq(seen, ["Tab puts a line under the one above", "A line under another gets what it has",
+                "The top line gathers every to-do under it", "The deepest step comes first"], "the four rules in order");
+      ok(btn("Got it") && !btn("Next"), "the last rule does not end on Got it");
+      btn("Back").click();
+      eq(head(), "The top line gathers every to-do under it", "Back did not go back");
+      m().querySelectorAll(".oldot")[3].click();
+      eq(head(), "The deepest step comes first", "a dot did not open its rule");
+      btn("Got it").click();
+      await until(() => !m());
+      ok(!m(), "Got it left a dialog open");
+      eq(state.view, "today", "Got it did not leave you on the day");
+      closeModals(); openOnboardBack();
+      ok(btn("Start"), "no Start when coming back");
+      btn("Start").click();
+      await until(() => !/Pick up where/.test(m()?.textContent || ""));
+      ok(!/Lines inside lines/.test(m()?.textContent || ""), "coming back showed the lesson");
+    } finally {
+      closeModals();
+      PREF.set("coach", coach || ""); PREF.set("onboarded", onboarded || "");
+      if (Spaces.get(active)) Spaces.get(active).askedStorage = asked;
+      inSpace(active, () => { if (was) settingsPage().props.onboarded = was; else delete settingsPage().props.onboarded; });
+    }
+  });
   test("#193 Your areas holds every area's colour, Remove, New area and Invite", () => {
     const n = "Test193 dialog";
     return (async () => {

@@ -46,9 +46,12 @@ function openOnboardOwn() {
     const here = await finishOnboarding();
     closeModal();
     go("today");
-    if (after) after();
-    else if (here?.joined) openJoinedSummary(here.name, () => requestAnimationFrame(() => focusCapture()));
-    else requestAnimationFrame(() => focusCapture());
+    // How lines inside lines work, before the first line is written (#468).
+    openOutlineLesson(() => {
+      if (after) after();
+      else if (here?.joined) openJoinedSummary(here.name, () => requestAnimationFrame(() => focusCapture()));
+      else requestAnimationFrame(() => focusCapture());
+    });
   };
   modal({
     center: true, title: "Start writing",

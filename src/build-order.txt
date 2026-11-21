@@ -43,6 +43,7 @@ css/37-present-431.css
 css/38-present-layouts-433.css
 css/39-present-peek-465.css
 css/40-present-edit-466.css
+css/41-outline-lesson-468.css
 # script 1
 js/00-bootstrap/vars-APP_VERSION.js
 js/00-bootstrap/keepFocus.js
@@ -2785,6 +2786,9 @@ js/142-onboarding/onboardedInFolder.js
 js/142-onboarding/finishOnboarding.js
 js/142-onboarding/openOnboardJoin.js
 js/142-onboarding/openOnboardBack.js
+js/142-onboarding/vars-OUTLINE_LESSON.js
+js/142-onboarding/outlineLessonPlay.js
+js/142-onboarding/openOutlineLesson.js
 js/142-onboarding/openOnboardOwn.js
 js/148-planner/vars-PLANNER_FORMAT.js
 js/148-planner/setPlannerSender.js

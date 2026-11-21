@@ -7,7 +7,7 @@ function openOnboardJoin() {
     const here = await finishOnboarding();
     closeModal();
     go("today");
-    openJoinedSummary(here.name, () => requestAnimationFrame(() => focusCapture()));
+    openOutlineLesson(() => openJoinedSummary(here.name, () => requestAnimationFrame(() => focusCapture())));   // #468
   };
   modal({
     center: true, title: "Join an area you were invited to",

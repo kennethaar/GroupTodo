@@ -1,0 +1,37 @@
+/* Lines inside lines: the outlining lesson at the end of onboarding (#468). */
+.ollesson { min-width: min(460px, 78vw); padding: 8px 16px; }
+.olhead { font-size: 15.5px; font-weight: 600; margin: 0 0 10px; min-height: 1.4em; text-wrap: balance; }
+.olbox-outline { font-size: 14.5px; min-height: 150px; }
+.olrow { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; min-width: 0; border-radius: 5px;
+  padding: 4px 4px 4px calc(var(--d, 0) * 26px + 4px); transition: opacity .4s, background .4s; }
+.olbul { width: 6px; height: 6px; border-radius: 50%; background: var(--fg3); flex: none; }
+.olbox { width: 14px; height: 14px; border: 1.5px solid var(--fg3); border-radius: 3px; flex: none;
+  display: grid; place-items: center; font-size: 11px; line-height: 1; color: var(--accent-fg); transition: background .3s, border-color .3s; }
+.olrow.oldone .olbox { background: var(--done); border-color: var(--done); }
+.olrow.oldone .oltxt { text-decoration: line-through; color: var(--fg3); }
+.olrow.oldim { opacity: .3; }
+.olrow.olnext { background: var(--accent-soft); }
+.oltxt { white-space: pre-wrap; }
+.oltxt.olcaret::after { content: ""; display: inline-block; width: 1.5px; height: 1.05em; background: var(--accent);
+  vertical-align: -2px; margin-left: 1px; animation: olblink 1s steps(1) infinite; }
+@keyframes olblink { 50% { opacity: 0; } }
+.olchips { display: contents; }
+.olchip { font-size: 11.5px; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--border2); color: var(--fg2);
+  white-space: nowrap; transition: opacity .5s, transform .5s; }
+.olchip.own { border-color: color-mix(in srgb, var(--accent) 50%, var(--border2)); color: var(--accent); }
+.olchip.inh { border-style: dashed; color: var(--fg3); }
+.olchip.tag { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 600; }
+.olchip.olhide { opacity: 0; transform: translateY(-10px); }
+.olbadge { font-size: 11.5px; color: var(--fg2); font-variant-numeric: tabular-nums; }
+.olkey { font-family: var(--mono, ui-monospace, Consolas, monospace); font-size: 11.5px; border: 1px solid var(--border2);
+  border-bottom-width: 2px; border-radius: 4px; padding: 0 6px; color: var(--fg2); background: var(--bg2); transition: opacity .3s; }
+.olkey.olhide { opacity: 0; }
+.oldots { display: flex; gap: 6px; align-items: center; margin-right: auto; }
+.oldot { width: 10px; height: 10px; border-radius: 50%; border: none; padding: 0; cursor: pointer;
+  background: var(--border2); }
+.oldot.on { background: var(--accent); }
+.oldot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .olrow, .olchip, .olkey { transition: none; }
+  .oltxt.olcaret::after { animation: none; }
+}

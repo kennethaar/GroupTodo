@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.198.0 - 2026-11-21
+
+- Getting started: Outlines are the heart of GroupToDo, so the welcome now
+  shows how they work. Lines inside lines plays four short rules on a small
+  outline: Tab puts a line under another, a line gets the project and date
+  of the line above, the top line gathers every to-do under it, and Next
+  shows the deepest step first. It comes right after you start your own area
+  or join one.
+
 ## 1.197.3 - 2026-11-21
 
 - Areas and sharing: Once you have been through the welcome screen, every
