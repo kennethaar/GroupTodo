@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.199.1 - 2026-11-21
+
+- Keys on a line: while you write in a table, its Row, Column, alignment and
+  Reveal buttons have their own row under the header, so they no longer
+  cover the words beside the line tools. (#469)
+
 ## 1.199.0 - 2026-11-21
 
 - Present a page: paste a table from Excel, Word, a web page, or text in

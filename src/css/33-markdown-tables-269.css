@@ -10,6 +10,13 @@
 /* Row, Column and the alignment toggles: only while a row of the table is open for writing (#281). */
 .blk>.line>.tablebar{display:none;order:98;flex:none;align-self:center;align-items:center;gap:2px}
 .blk.tbl-open>.line>.tablebar{display:flex}
+/* #469 the bar has its own row under the header, so the words being written
+   keep theirs beside the line tools and nothing is drawn over them. */
+.blk.tbl-open>.line{flex-wrap:wrap}
+.blk.tbl-open>.line>.tablebar{order:100;flex-basis:100%;flex-wrap:wrap;row-gap:2px}
+.tablebar .tbreveal{display:inline-flex;align-items:center;margin-left:8px;padding-left:8px;border-left:1px solid var(--border)}
+.tablebar .tblabel{font-size:12px;color:var(--fg3);margin-right:2px}
+.tablebar .tbreveal button[aria-pressed="true"]{background:color-mix(in srgb,var(--fg) 12%,transparent);color:var(--fg)}
 .tablebar button{display:inline-flex;align-items:center;gap:2px;padding:0 6px;border-radius:4px;color:var(--fg2);font-size:12px;line-height:18px}
 .tablebar button:hover{background:var(--bg4);color:var(--fg)}
 .tablebar .tbaligns{display:inline-flex;margin-left:4px}

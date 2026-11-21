@@ -5287,6 +5287,21 @@ var GTD_TEST = (() => {
       node.dispatchEvent(new KeyboardEvent("keyup", {bubbles: true}));
       const btn = name => [...node.querySelectorAll(".tablebar button")].find(x => x.getAttribute("aria-label") === name);
       ok(btn("Row") && btn("Column") && !btn("Table"), "no Row and Column buttons on the table");
+      // #469 on a narrow line the bar, Reveal and all, does not cover the header being written.
+      node.style.width = "420px";
+      tableFocusRow(b, -1, 3);
+      await frame();
+      node.dispatchEvent(new KeyboardEvent("keyup", {bubbles: true}));
+      await frame();
+      ok(node.querySelector(".line > #editBar.inline:not([hidden])"), "#469 the header being written has no line tools beside it");
+      const barBox = node.querySelector(".tablebar").getBoundingClientRect(), headBox = node.querySelector(".line > .txt").getBoundingClientRect();
+      node.style.width = "";
+      ok(barBox.top >= headBox.bottom - 1 || barBox.left >= headBox.right - 1,
+        `#469 the table bar covers the header: bar ${Math.round(barBox.left)},${Math.round(barBox.top)} header ends ${Math.round(headBox.right)},${Math.round(headBox.bottom)}`);
+      ok(barBox.right <= node.getBoundingClientRect().left + 421, "#469 the table bar runs past the line");
+      tableFocusRow(b, 1, 6);
+      await frame();
+      node.dispatchEvent(new KeyboardEvent("keyup", {bubbles: true}));
       eq(btn("Align right").getAttribute("aria-pressed"), "true", "the Qty column's alignment is not shown pressed");
       eq(btn("Align left").getAttribute("aria-pressed"), "false");
       btn("Column").click();
