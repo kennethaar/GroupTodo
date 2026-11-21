@@ -16,6 +16,12 @@ function flyKey(e) {
     flySummon(FLY.txt);
     return true;
   }
+  // ← → switch the slide preview beside Present from here (#465); ↑ ↓ move between rows.
+  if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && FLY.summoned && SLIDE_PEEK?.anchor.classList.contains("frow")) {
+    e.preventDefault();
+    slidePeekPick(SLIDE_PEEK.on + (e.key === "ArrowLeft" ? -1 : 1));
+    return true;
+  }
   /* Asked for, the menu's rows take the arrows until one is opened. */
   if (FLY.summoned && !FLY.open) {
     const rows = flyRows().filter(r => r.menu);

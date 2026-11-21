@@ -9,7 +9,7 @@ function flyDraw() {
   box.textContent = "";
   // Present from here, picked with the arrows or open: the slide you were last on (#465).
   let peekAt = null;
-  const peek = row => slidePeek(row, FLY.path, block, true, true);
+  const peek = row => slidePeek(row, FLY.path, null, block);
   rows.forEach((r, i) => {
     const open = FLY.open === r.k;
     const lit = FLY_LIT && FLY_LIT.id === block.id && FLY_LIT.k === r.k;
@@ -22,7 +22,7 @@ function flyDraw() {
     if (r.k === "present") {
       if (hi || open) peekAt = row;
       row.addEventListener("pointerenter", e => { if (e.pointerType !== "touch") peek(row); });
-      row.addEventListener("pointerleave", () => { if (peekAt !== row) slidePeekHide(); });
+      row.addEventListener("pointerleave", () => slidePeekLeave(peekAt === row));
     }
     if (open && r.opts) {
       const os = flyOptsOf(r), hi = Math.min(FLY.hi || 0, os.length - 1);
@@ -61,5 +61,5 @@ function flyDraw() {
   if (handle) handle.setAttribute("aria-expanded", String(!box.hidden));
   flyPlace();
   if (peekAt && !box.hidden) peek(peekAt);
-  else if ($(".slidepeek")?._anchor?.classList.contains("frow")) slidePeekHide();
+  else if (SLIDE_PEEK?.anchor.classList.contains("frow")) slidePeekHide();
 }

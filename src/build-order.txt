@@ -800,6 +800,10 @@ js/91-present/slideLast.js
 js/91-present/presentStop.js
 js/91-present/presentKey.js
 js/91-present/presentStart.js
+js/91-present/vars-SLIDE_PEEK.js
+js/91-present/slidePeekChoices.js
+js/91-present/slidePeekPick.js
+js/91-present/slidePeekLeave.js
 js/91-present/slidePeekHide.js
 js/91-present/slidePeek.js
 js/91-present/presentButton.js

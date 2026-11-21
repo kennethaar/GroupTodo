@@ -1,14 +1,21 @@
 /* ▶ Present ▾ beside Focus on a page (#431): Focus stays one click. ▶ starts
    the slides; ▾ offers them with the presenter window too, so it is in sight
    and not only behind the P key. With `root`, in the trail of a focused line,
-   it presents that line. Hovered or focused, ▶ shows the slide you were last
-   on (#465); a tap has no hover, so it just starts. */
+   it presents that line. Hovered or focused, ▶ shows a slide (#465): last
+   time's, the top, or the line you were in; ↑ ↓ switch. A tap has no hover,
+   so it just starts. */
 function presentButton(path, root = null) {
   const peek = e => slidePeek(e.currentTarget, path, root);
   return el("span", {class: "presentsplit"},
     el("button", {class: "btn sm ghost presentbtn", title: (root ? "Show this line" : "Show the page") + " as slides, full screen (Esc leaves)",
       onpointerenter: e => { if (e.pointerType !== "touch") peek(e); },
-      onpointerleave: e => { if (document.activeElement !== e.currentTarget) slidePeekHide(); },
+      onpointerleave: () => slidePeekLeave(),
+      onkeydown: e => {
+        if ((e.key === "ArrowDown" || e.key === "ArrowUp") && SLIDE_PEEK?.anchor === e.currentTarget) {
+          e.preventDefault();
+          slidePeekPick(SLIDE_PEEK.on + (e.key === "ArrowUp" ? -1 : 1));
+        }
+      },
       onpointerdown: e => { if (e.pointerType === "touch") e.currentTarget.dataset.tap = "1"; },
       onfocus: e => { if (e.currentTarget.dataset.tap) delete e.currentTarget.dataset.tap; else peek(e); },
       onblur: () => slidePeekHide(),

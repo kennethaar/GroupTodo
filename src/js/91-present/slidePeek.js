@@ -1,38 +1,33 @@
-/* The slide you were last on, small, beside a Present button while it is
-   hovered or focused (#465): ▶ Present at the top, or ☰ › Present from here
-   (`side`: beside the menu row, not under it). Never shown: the slide it
-   starts on. It is drawn as the deck draws it, scaled down. */
-function slidePeek(anchor, path, root = null, on = false, side = false) {
+/* A slide, small, beside a Present button while it is hovered or focused
+   (#465): ▶ Present at the top, or ☰ › Present from here (`menuLine`, and
+   beside the menu row, not under it). One slide at a time; the list under
+   it (slidePeekChoices) says which, and ↑ ↓ on the button, ← → in the menu,
+   or pointing at a choice switches. The slide is drawn as the deck draws it,
+   scaled down. */
+function slidePeek(anchor, path, root = null, menuLine = null) {
   if (DECK || !anchor || !anchor.isConnected) return;
-  const from = slideLast(path, root);
-  const {steps, slides} = deckSteps(path, root, on);
-  if (!steps.length) return;
-  const old = $(".slidepeek");
-  const at = Math.max(0, Math.min(steps.length - 1, from));
-  if (old && old._anchor === anchor && old.dataset.at === path + "\u0000" + at) return;
+  if (SLIDE_PEEK && SLIDE_PEEK.anchor === anchor) { clearTimeout(SLIDE_PEEK.timer); return; }
+  const {choices, on} = slidePeekChoices(path, root, menuLine);
+  if (!choices.length) return;
   slidePeekHide();
-  const step = steps[at];
-  const stage = el("div", {id: "deckpeek", "aria-hidden": "true"});
-  const rec = LOADED.get(V.space);
-  const own = [...(rec?.css || new Map())].filter(([p]) => isSlidesCssPath(p)).map(([, t]) => t).join("\n");
-  if (own) stage.append(el("style", {class: "deckcss"}, own));
   const W = 240, k = W / innerWidth;
-  stage.style.transform = `scale(${k})`;
-  const peek = el("div", {class: "slidepeek", id: "slidepeek", role: "tooltip"},
-    el("div", {class: "peekstage", style: `width:${W}px;height:${Math.round(innerHeight * k)}px`}, stage),
-    el("div", {class: "peeksays"}, from < 0 ? "Starts here" : `Last time: slide ${step.s.n} of ${slides.length}`));
+  const stage = el("div", {class: "peekstage", "aria-hidden": "true", style: `width:${W}px;height:${Math.round(innerHeight * k)}px`});
+  const list = el("div", {class: "peeklist"}, ...choices.map((c, i) => el("button", {class: "peekpick", tabindex: "-1", "aria-pressed": "false",
+    onpointerenter: e => { if (e.pointerType !== "touch") slidePeekPick(i); }, onclick: () => slidePeekPick(i)}, c.label)));
+  const peek = el("div", {class: "slidepeek", id: "slidepeek", role: "group", "aria-label": "Slide preview",
+    onpointerenter: () => clearTimeout(SLIDE_PEEK?.timer), onpointerleave: () => slidePeekLeave(),
+    // A click on a choice keeps the focus where it is, so the preview stays.
+    onmousedown: e => e.preventDefault()}, stage, list);
   peek._anchor = anchor;
-  peek.dataset.at = path + "\u0000" + at;
   document.body.append(peek);
-  const slide = slideSection(step.s);
-  stage.append(slide);
-  resolveAssets(slide);
-  slideBullets(slide, step, false);
+  SLIDE_PEEK = {anchor, peek, stage, choices, on: -1, timer: 0, own: [...(LOADED.get(V.space)?.css || new Map())]
+    .filter(([p]) => isSlidesCssPath(p)).map(([, t]) => t).join("\n"), scale: k};
+  slidePeekPick(on);
   anchor.setAttribute("aria-describedby", "slidepeek");
   // Under the button, or above it with no room; beside a menu row.
   const a = anchor.getBoundingClientRect(), p = peek.getBoundingClientRect(), m = 8;
   let x, y;
-  if (side) {
+  if (menuLine) {
     x = a.right + m + p.width <= innerWidth ? a.right + m : a.left - m - p.width;
     y = a.top;
   } else {

@@ -13576,33 +13576,55 @@ var GTD_TEST = (() => {
       eq([deckNow().now, pic()], ["Budget", ["assets/plan.png"]], "a bullet with none keeps the last picture, so nothing jumps");
     } finally { presentStop(); }
   }));
-  test("#465 hovering or focusing ▶ Present, or Present from here in ☰, previews the slide you were last on", () => withPages(TALK_PAGE, async () => {
+  test("#465 hovering or focusing ▶ Present, or Present from here in ☰, previews the slide: last time, from the top, the line in the whole talk, from the line", () => withPages(TALK_PAGE, async () => {
+    // One slide shown at a time; the list under it says which, and switches.
     const peek = () => {
       const p = $(".slidepeek");
       return p && {title: p.querySelector(".slide .stitle")?.textContent || "",
-        now: p.querySelector(".bullet.now")?.textContent || "", says: p.querySelector(".peeksays")?.textContent || ""};
+        now: p.querySelector(".bullet.now")?.textContent || "",
+        choices: [...p.querySelectorAll(".peekpick")].map(c => c.textContent),
+        on: p.querySelector(".peekpick[aria-pressed=true]")?.textContent || ""};
     };
-    const key = (txt, k) => txt.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true}));
+    const key = (node, k) => node.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true}));
+    const TOP = "From the top", WHOLE = "This line, in the whole talk", FROM = "From this line";
     PREF.set("present.last", "{}");
     try {
       openPage(TALK); await settle();
       const btn = () => content().querySelector(".pagehead .presentbtn");
       btn().dispatchEvent(new PointerEvent("pointerenter", {pointerType: "mouse"}));
-      eq(peek(), {title: "Talk", now: "", says: "Starts here"}, "never shown: the slide it starts on");
+      eq(peek(), {title: "Talk", now: "", choices: [TOP], on: TOP}, "never shown and no line in use: the talk from the top");
       const r = $(".slidepeek").getBoundingClientRect();
       ok(r.width <= 300 && r.left >= 0 && r.right <= innerWidth && r.bottom <= innerHeight, "small, and on screen");
       btn().dispatchEvent(new PointerEvent("pointerleave", {pointerType: "mouse"}));
+      await new Promise(res => setTimeout(res, 400));
       ok(!$(".slidepeek"), "gone when the pointer leaves");
       btn().click(); await settle();
       ok(!$(".slidepeek"), "Present takes the preview away");
       deckKey("ArrowRight"); deckKey("ArrowRight");
       const at = deckNow();
       presentStop(); render(); await settle();
+      const LAST = "Last time: slide 2 of " + deckSteps(TALK).slides.length;
       btn().focus();
-      eq(peek(), {title: at.title, now: at.now, says: "Last time: slide 2 of " + deckSteps(TALK).slides.length},
-        "focus shows it too: the slide you left, with its lit line");
+      eq(peek(), {title: at.title, now: at.now, choices: [LAST, TOP], on: LAST},
+        "focus shows it too: the slide you left, with its lit line, first");
+      key(btn(), "ArrowDown");
+      eq([peek().on, peek().title, peek().now], [TOP, "Talk", ""], "↓ picks the next one");
       btn().blur();
       ok(!$(".slidepeek"), "gone when focus moves on");
+      // The line you were in: where it is in the whole talk, and the talk from it.
+      const staff = getPage(TALK).blocks[0].children.find(b => b.title === "Staff want it");
+      focusBlock(staff.id); await settle();
+      btn().focus();
+      eq(peek().choices, [LAST, TOP, WHOLE, FROM], "with a line in use, all four");
+      key(btn(), "ArrowDown"); key(btn(), "ArrowDown");
+      eq([peek().on, peek().title, peek().now], [WHOLE, "Why we move", "Staff want it"], "the line lit on its slide in the whole talk");
+      key(btn(), "ArrowDown");
+      eq([peek().on, peek().title], [FROM, "Staff want it"], "the talk from that line starts with it");
+      key(btn(), "ArrowUp");
+      eq(peek().on, WHOLE, "↑ goes back");
+      $$(".slidepeek .peekpick").find(c => c.textContent === TOP).dispatchEvent(new PointerEvent("pointerenter", {pointerType: "mouse"}));
+      eq([peek().on, peek().title], [TOP, "Talk"], "pointing at a choice shows it");
+      btn().blur();
       // Touch has no hover: a tap opens Present as before.
       btn().dispatchEvent(new PointerEvent("pointerdown", {pointerType: "touch", bubbles: true}));
       btn().focus();
@@ -13616,7 +13638,12 @@ var GTD_TEST = (() => {
       const n = flyRows().filter(x => x.menu).findIndex(x => x.k === "present");
       for (let i = 0; i < n; i++) key(txt, "ArrowDown");
       await settle();
-      eq(peek(), {title: "Where to", now: "", says: "Starts here"}, "the menu row picked with the arrows previews from that bullet");
+      eq(peek(), {title: "Where to", now: "", choices: [TOP, WHOLE, FROM], on: FROM},
+        "the menu row picked with the arrows: the menu's line, from that line first, as the row presents");
+      key(txt, "ArrowLeft"); await settle();
+      eq(peek().on, WHOLE, "← and → switch in the menu, where ↑ and ↓ move between rows");
+      key(txt, "ArrowLeft"); await settle();
+      eq([peek().on, peek().title], [TOP, "Talk"]);
       key(txt, "ArrowDown"); await settle();
       ok(!$(".slidepeek"), "the next row has none");
       key(txt, "ArrowUp"); key(txt, "Enter"); await settle();

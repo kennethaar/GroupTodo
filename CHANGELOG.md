@@ -8,9 +8,11 @@ that breaks existing vaults. Newest first.
 ## 1.196.0 - 2026-11-21
 
 - Present a page: point at ▶ Present, or Tab to it, and a small picture
-  shows the slide you were on last time, with its line lit. A page never
-  shown gives its first slide. ☰ › Present from here does the same. On a
-  phone a tap just starts the slides. (#465)
+  shows a slide. A list under it picks which: last time's, the talk from
+  the top, the line you were in where it comes in the whole talk, and the
+  talk from that line. ↑ ↓ or pointing switches. ☰ › Present from here does
+  the same for its line, with ← →. On a phone a tap just starts the
+  slides. (#465)
 
 ## 1.195.1 - 2026-11-20
 
