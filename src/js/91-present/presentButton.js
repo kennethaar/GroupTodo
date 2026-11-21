@@ -11,9 +11,15 @@ function presentButton(path, root = null) {
       onpointerenter: e => { if (e.pointerType !== "touch") peek(e); },
       onpointerleave: () => slidePeekLeave(),
       onkeydown: e => {
-        if ((e.key === "ArrowDown" || e.key === "ArrowUp") && SLIDE_PEEK?.anchor === e.currentTarget) {
+        if (SLIDE_PEEK?.anchor !== e.currentTarget) return;
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
           e.preventDefault();
+          SLIDE_PEEK.keyed = true;
           slidePeekPick(SLIDE_PEEK.on + (e.key === "ArrowUp" ? -1 : 1));
+        } else if ((e.key === "Enter" || e.key === " ") && SLIDE_PEEK.keyed) {
+          // Picked with the arrows: the talk opens there.
+          e.preventDefault();
+          slidePeekGo();
         }
       },
       onpointerdown: e => { if (e.pointerType === "touch") e.currentTarget.dataset.tap = "1"; },

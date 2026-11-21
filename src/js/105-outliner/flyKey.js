@@ -17,10 +17,15 @@ function flyKey(e) {
     return true;
   }
   // ← → switch the slide preview beside Present from here (#465); ↑ ↓ move between rows.
-  if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && FLY.summoned && SLIDE_PEEK?.anchor.classList.contains("frow")) {
-    e.preventDefault();
-    slidePeekPick(SLIDE_PEEK.on + (e.key === "ArrowLeft" ? -1 : 1));
-    return true;
+  // Enter after them opens the talk at the slide shown.
+  if (FLY.summoned && SLIDE_PEEK?.anchor.classList.contains("frow")) {
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.preventDefault();
+      SLIDE_PEEK.keyed = true;
+      slidePeekPick(SLIDE_PEEK.on + (e.key === "ArrowLeft" ? -1 : 1));
+      return true;
+    }
+    if (e.key === "Enter" && SLIDE_PEEK.keyed) { e.preventDefault(); slidePeekGo(); return true; }
   }
   /* Asked for, the menu's rows take the arrows until one is opened. */
   if (FLY.summoned && !FLY.open) {

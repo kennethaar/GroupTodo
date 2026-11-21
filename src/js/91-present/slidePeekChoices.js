@@ -21,14 +21,15 @@ function slidePeekChoices(path, root = null, menuLine = null) {
   const choices = [];
   const last = slideLast(path, menuLine || root);
   if (last >= 0 && own.steps.length) choices.push({label: `Last time: slide ${own.steps[Math.min(last, own.steps.length - 1)].s.n} of ${own.slides.length}`,
-    deck: own, at: Math.min(last, own.steps.length - 1), kind: "last"});
-  if (top.steps.length) choices.push({label: "From the top", deck: top, at: 0, kind: "top"});
+    deck: own, at: Math.min(last, own.steps.length - 1), kind: "last",
+    start: menuLine ? {root: menuLine, on: true} : {root}});
+  if (top.steps.length) choices.push({label: "From the top", deck: top, at: 0, kind: "top", start: {}});
   if (line) {
     let i = -1;
     for (let b = line, up = 0; b && i < 0 && up < 50; b = b._parent, up++)
       i = top.steps.findIndex(({s, k}) => (k ? s.parts[k - 1] : s.block)?.id === b.id);
-    if (top.steps.length) choices.push({label: "This line, in the whole talk", deck: top, at: Math.max(0, i), kind: "whole"});
-    if (from.steps.length) choices.push({label: "From this line", deck: from, at: 0, kind: "from"});
+    if (top.steps.length) choices.push({label: "This line, in the whole talk", deck: top, at: Math.max(0, i), kind: "whole", start: {}});
+    if (from.steps.length) choices.push({label: "From this line", deck: from, at: 0, kind: "from", start: {root: line, on: true}});
   }
   // ▶ Present starts at the line you are in; on the focused line itself, that is its own talk.
   const starts = menuLine || (root && line === root) ? "from" : line ? "whole" : "top";

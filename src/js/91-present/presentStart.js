@@ -3,8 +3,9 @@
    the caret where it was. `root` presents one bullet and its lines (▶ Present
    on a focused line); with `on` it goes on through the bullets after it (☰ ›
    Present from here, on any page or day); `presenter` opens the presenter
-   window at once (▾ › With presenter window). */
-function presentStart(path, {root = null, on = false, presenter = false} = {}) {
+   window at once (▾ › With presenter window). `step` opens it at that step,
+   as a choice in the slide preview does (#465). */
+function presentStart(path, {root = null, on = false, presenter = false, step = null} = {}) {
   presentStop();
   slidePeekHide();
   slidePresented(path, true);
@@ -12,7 +13,8 @@ function presentStart(path, {root = null, on = false, presenter = false} = {}) {
   const back = document.activeElement;
   const id = back && back.closest && back.closest(".blk")?.dataset.id;
   let at = 0;
-  if (id) {
+  if (step != null) at = Math.max(0, Math.min(steps.length - 1, step));
+  else if (id) {
     const i = steps.findIndex(({s, k}) => (k ? s.parts[k - 1] : s.block)?.id === id);
     if (i >= 0) at = i;
   }

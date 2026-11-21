@@ -903,7 +903,7 @@ const HELP = {
     keys: [["→ Space", "Next, as a clicker does"], ["←", "Back"], ["Esc", "Up a level, or leave"], ["Shift+→", "Skip the rest of the slide"],
       ["B", "Black screen"], ["P", "Presenter window"], ["O", "All slides"], ["4 Enter", "Go to slide 4"], ["Home", "First slide"]],
     legend: [["?.pagehead .presentbtn", "Present: the page as slides."]],
-    more: ["Point at ▶ Present, or Tab to it, and a small picture shows a slide. The list under it picks which: last time's, from the top, your line where it comes in the whole talk, or the talk from your line. A task or _ line shows the slide it would be on. Focused on a line, from the top is still the whole page. ↑ ↓ or pointing switches. ☰ › Present from here does the same for its line, with ← →. On a phone a tap just starts.",
+    more: ["Point at ▶ Present, or Tab to it, and a small picture shows a slide. The list under it picks which: last time's, from the top, your line where it comes in the whole talk, or the talk from your line. A task or _ line shows the slide it would be on. Focused on a line, from the top is still the whole page. ↑ ↓ or pointing switches; a click or Enter opens the talk there. ☰ › Present from here does the same for its line, with ← → and Enter. On a phone a tap just starts.",
       "Put the presenter window on your own screen and the slides on the big one.",
       "Present from here goes on through the lines after it at its level.",
       "Lines with no lines of their own share one slide under the page's title.",

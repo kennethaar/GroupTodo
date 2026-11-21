@@ -805,6 +805,7 @@ js/91-present/slidePeekChoices.js
 js/91-present/slidePeekPick.js
 js/91-present/slidePeekLeave.js
 js/91-present/slidePeekHide.js
+js/91-present/slidePeekGo.js
 js/91-present/slidePeek.js
 js/91-present/presentButton.js
 js/91-present/presentMenu.js

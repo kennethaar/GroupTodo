@@ -13,14 +13,15 @@ function slidePeek(anchor, path, root = null, menuLine = null) {
   const W = 240, k = W / innerWidth;
   const stage = el("div", {class: "peekstage", "aria-hidden": "true", style: `width:${W}px;height:${Math.round(innerHeight * k)}px`});
   const list = el("div", {class: "peeklist"}, ...choices.map((c, i) => el("button", {class: "peekpick", tabindex: "-1", "aria-pressed": "false",
-    onpointerenter: e => { if (e.pointerType !== "touch") slidePeekPick(i); }, onclick: () => slidePeekPick(i)}, c.label)));
+    onpointerenter: e => { if (e.pointerType !== "touch") slidePeekPick(i); },
+    onclick: () => { slidePeekPick(i); slidePeekGo(); }}, c.label)));
   const peek = el("div", {class: "slidepeek", id: "slidepeek", role: "group", "aria-label": "Slide preview",
     onpointerenter: () => clearTimeout(SLIDE_PEEK?.timer), onpointerleave: () => slidePeekLeave(),
     // A click on a choice keeps the focus where it is, so the preview stays.
     onmousedown: e => e.preventDefault()}, stage, list);
   peek._anchor = anchor;
   document.body.append(peek);
-  SLIDE_PEEK = {anchor, peek, stage, choices, on: -1, timer: 0, own: [...(LOADED.get(V.space)?.css || new Map())]
+  SLIDE_PEEK = {anchor, path, peek, stage, choices, on: -1, keyed: false, timer: 0, own: [...(LOADED.get(V.space)?.css || new Map())]
     .filter(([p]) => isSlidesCssPath(p)).map(([, t]) => t).join("\n"), scale: k};
   slidePeekPick(on);
   anchor.setAttribute("aria-describedby", "slidepeek");

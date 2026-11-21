@@ -13587,6 +13587,8 @@ var GTD_TEST = (() => {
     };
     const key = (node, k) => node.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true}));
     const TOP = "From the top", WHOLE = "This line, in the whole talk", FROM = "From this line";
+    // focusBlock puts the caret in a frame from now; settle can come back first.
+    const inLine = async id => { focusBlock(id); await settle(); await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0))); };
     PREF.set("present.last", "{}");
     try {
       openPage(TALK); await settle();
@@ -13613,7 +13615,7 @@ var GTD_TEST = (() => {
       ok(!$(".slidepeek"), "gone when focus moves on");
       // The line you were in: where it is in the whole talk, and the talk from it.
       const staff = getPage(TALK).blocks[0].children.find(b => b.title === "Staff want it");
-      focusBlock(staff.id); await settle();
+      await inLine(staff.id);
       btn().focus();
       eq(peek().choices, [LAST, TOP, WHOLE, FROM], "with a line in use, all four");
       key(btn(), "ArrowDown"); key(btn(), "ArrowDown");
@@ -13625,12 +13627,27 @@ var GTD_TEST = (() => {
       $$(".slidepeek .peekpick").find(c => c.textContent === TOP).dispatchEvent(new PointerEvent("pointerenter", {pointerType: "mouse"}));
       eq([peek().on, peek().title], [TOP, "Talk"], "pointing at a choice shows it");
       btn().blur();
+      // A click on a choice opens the talk there; so does Enter after ↑ ↓. Last time stays as it was for what follows.
+      const kept = PREF.get("present.last", "{}");
+      btn().focus();
+      $$(".slidepeek .peekpick").find(c => c.textContent === WHOLE).click(); await settle();
+      eq([deckNow().title, deckNow().now], ["Why we move", "Staff want it"], "a click on a choice opens the talk at that slide");
+      ok(!$(".slidepeek"), "and the preview goes");
+      presentStop(); render(); await settle();
+      btn().focus();
+      key(btn(), "ArrowDown"); key(btn(), "ArrowDown"); key(btn(), "ArrowDown");
+      eq(peek().on, FROM);
+      key(btn(), "Enter"); await settle();
+      eq(deckNow().title, "Staff want it", "Enter after ↑ ↓ opens the talk from the picked choice");
+      presentStop(); render(); await settle();
+      PREF.set("present.last", kept);
+      btn().blur();
       const pick = label => $$(".slidepeek .peekpick").find(c => c.textContent === label)
         .dispatchEvent(new PointerEvent("pointerenter", {pointerType: "mouse"}));
       // A line off the slides (a task, a "_ " line) shows the slide it would be on: its nearest shown line's.
       const page = getPage(TALK), roof = page.blocks[0].children.find(b => /roof/.test(b.title)), kitchen = roof.children[0];
       kitchen.title = "_ Kitchen";
-      focusBlock(kitchen.id); await settle();
+      await inLine(kitchen.id);
       btn().focus();
       eq(peek().choices, [LAST, TOP, WHOLE, FROM], "a line off the slides still has its place in the whole talk");
       pick(WHOLE);
@@ -13639,7 +13656,7 @@ var GTD_TEST = (() => {
       kitchen.title = "Kitchen";
       // Focused on a line (🔍), ▶ Present presents that line; from the top is still the whole page.
       setBranchFocus(page, roof.id, TALK); await settle();
-      focusBlock(kitchen.id); await settle();
+      await inLine(kitchen.id);
       const fb = content().querySelector(".presentbtn");
       fb.focus();
       eq([peek().choices, peek().on, peek().title, peek().now], [[TOP, WHOLE, FROM], WHOLE, "The roof leaks", "Kitchen"],
@@ -13657,7 +13674,7 @@ var GTD_TEST = (() => {
       btn().blur();
       // ☰ › Present from here: that bullet's talk.
       const where = getPage(TALK).blocks[1];
-      focusBlock(where.id); await settle();
+      await inLine(where.id);
       const txt = content().querySelector(`.blk[data-id="${where.id}"] .txt`);
       flySummon(txt); await settle();
       const n = flyRows().filter(x => x.menu).findIndex(x => x.k === "present");
@@ -13676,6 +13693,16 @@ var GTD_TEST = (() => {
       key(txt, "Enter"); await settle();
       ok($("#deck") && !$(".slidepeek"), "Present from the menu takes it away too");
       eq(deckNow().title, "Where to");
+      presentStop(); render(); await settle();
+      await inLine(where.id);
+      const txt2 = content().querySelector(`.blk[data-id="${where.id}"] .txt`);
+      flySummon(txt2); await settle();
+      for (let i = 0; i < n; i++) key(txt2, "ArrowDown");
+      await settle();
+      eq(peek().on, "Last time: slide 1 of 1", "presented from the menu: last time first");
+      key(txt2, "ArrowRight"); await settle();
+      key(txt2, "Enter"); await settle();
+      eq(deckNow().title, "Talk", "in the menu, Enter after ← → opens the talk from the picked choice");
     } finally { presentStop(); PREF.set("present.last", "{}"); }
   }));
   test("#431 on a phone ▶ Present and Focus are on screen beside a page's title",() => withPages(TALK_PAGE, async () => {
