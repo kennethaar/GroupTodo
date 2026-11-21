@@ -3,11 +3,14 @@
    own title is not). The field holds the line as written, its links and
    tags too, where the words stood. Enter or Save writes it to the page, Esc
    or Cancel puts it back. While it is open, keys type in it and do not move
-   the talk (presentKey lets them through). */
+   the talk (presentKey lets them through). The presenter window's Now list
+   is edited the same way, in that window. */
 function slideEdit(e) {
   if (!DECK || DECK.edit) return;
-  const spot = e.target.closest?.(".slide.cur [data-bid], .slide.cur .stitle");
-  if (!spot || !DECK.deck.contains(spot)) return;
+  const spot = e.target.closest?.("[data-bid], .stitle");
+  const onDeck = spot && DECK.deck.contains(spot) && spot.closest(".slide.cur");
+  const onPresenter = spot && DECK.pw && !DECK.pw.closed && spot.ownerDocument === DECK.pw.document && spot.closest(".pnow");
+  if (!onDeck && !onPresenter) return;
   let b = null;
   if (spot.matches(".stitle")) b = DECK.steps[DECK.i]?.s.block;
   else walkBlocks(getPage(DECK.path)?.blocks || [], x => { if (String(x.id) === spot.dataset.bid) b = x; });

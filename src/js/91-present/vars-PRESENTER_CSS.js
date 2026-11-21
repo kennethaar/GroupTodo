@@ -19,4 +19,8 @@ button:hover,button:focus-visible{background:#444;outline:2px solid #9cf}
 .pthumb.here{outline:3px solid #9cf}.pthumb.sub{margin-left:16px;background:#0b0b0b}
 .playout{color:#aab;white-space:pre}
 .pend{padding:24px}
+/* No caret on the words, only in a line opened by a double-click (#466). */
+body{caret-color:transparent}.pnow{user-select:none}
+.sedit{caret-color:auto;user-select:text;font:inherit;color:#fff;background:#222;border:2px solid #9cf;border-radius:4px;padding:2px 6px;width:100%;box-sizing:border-box}
+.seditbar{display:flex;gap:8px;margin:6px 0;font-weight:400}.seditbar kbd{font:inherit;opacity:.7;margin-left:4px}
 `;

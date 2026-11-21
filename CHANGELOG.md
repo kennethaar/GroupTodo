@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.197.1 - 2026-11-21
+
+- Present a page: Double-click works in the presenter window too, and no
+  caret blinks on the slides any more. It shows only in a line you are
+  editing. (#466)
+
 ## 1.197.0 - 2026-11-21
 
 - Present a page: Fix a typo without leaving the talk. Double-click a line

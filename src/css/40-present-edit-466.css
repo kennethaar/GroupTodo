@@ -10,3 +10,7 @@
   border-radius:6px;background:var(--slide-bg);color:var(--slide-ink);font:inherit;cursor:pointer}
 #deck .seditbar .seditsave{background:var(--slide-ink);color:var(--slide-bg);border-color:var(--slide-ink)}
 #deck .seditbar kbd{font:inherit;opacity:.7;margin-left:.3em}
+/* No caret blinks on the slides' words and a double-click selects none:
+   only the open field has a caret. */
+#deck{caret-color:transparent;user-select:none}
+#deck .sedit{caret-color:auto;user-select:text}

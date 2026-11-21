@@ -905,7 +905,7 @@ const HELP = {
       ["Double-click", "Edit a line there; Enter saves, Esc cancels"]],
     legend: [["?.pagehead .presentbtn", "Present: the page as slides."]],
     more: ["Point at ▶ Present, or Tab to it, and a small picture shows a slide. The list under it picks which: last time's, from the top, your line where it comes in the whole talk, or the talk from your line. A task or _ line shows the slide it would be on. Focused on a line, from the top is still the whole page. ↑ ↓ or pointing switches; a click or Enter opens the talk there. ☰ › Present from here does the same for its line, with ← → and Enter. On a phone a tap just starts.",
-      "Spot a typo while you talk? Double-click the line on the slide. It opens as written, with its links and tags. Enter or Save puts it on the page, Esc leaves it. The talk stays on that slide.",
+      "Spot a typo while you talk? Double-click the line on the slide, or in the presenter window. It opens as written, with its links and tags. Enter or Save puts it on the page, Esc leaves it. The talk stays on that slide.",
       "Put the presenter window on your own screen and the slides on the big one.",
       "Present from here goes on through the lines after it at its level.",
       "Lines with no lines of their own share one slide under the page's title.",

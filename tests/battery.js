@@ -14172,7 +14172,31 @@ var GTD_TEST = (() => {
       field().value = "Budget for Q1";
       [...$$("#deck .seditbar button")].find(b => /Save/.test(b.textContent)).click(); await settle();
       eq(budget.title, "Budget for Q1", "the Save button writes it too");
+      // No caret blinks on a slide's words; only the open field has one (reopened #466).
+      const caret = n => getComputedStyle(n).caretColor;
+      eq(caret($("#deck .slide.cur .stitle")), "rgba(0, 0, 0, 0)", "no caret on the slide's words");
+      dbl(li(budget)); await settle();
+      ok(caret(field()) !== "rgba(0, 0, 0, 0)", "the open field shows its caret");
+      key(field(), "Escape"); await settle();
     } finally { presentStop(); }
+    // The presenter window: double-click a line in its Now list (reopened #466).
+    const f = document.createElement("iframe");
+    document.body.append(f);
+    const open = window.open;
+    window.open = () => f.contentWindow;
+    try {
+      presentStart(SHOW, {presenter: true}); presentGo(2); await settle();
+      const d = f.contentDocument, pli = d.querySelector(`.pnow [data-bid="${ask.id}"]`);
+      ok(pli, "the presenter's Now list knows its lines");
+      eq(d.defaultView.getComputedStyle(pli).caretColor, "rgba(0, 0, 0, 0)", "no caret on the presenter's words");
+      dbl(pli); await settle();
+      const pf = d.querySelector(".sedit");
+      eq(pf?.value, ask.title, "it opens there, as written");
+      pf.value = "Ask about money";
+      key(pf, "Enter"); await settle();
+      eq([ask.title, DECK.i], ["Ask about money", 2], "Enter writes it, on the same step");
+      eq($(`#deck .slide.cur [data-bid="${ask.id}"]`)?.textContent, "Ask about money", "and the big screen shows it");
+    } finally { presentStop(); window.open = open; f.remove(); }
   }));
   const deckParts = () => [...$$("#deck .slide.cur .part")];
   test("#433 a 1D layout's parts are hidden until → brings each in; marks are not shown", () => withPages(SHOW_PAGE, async () => {

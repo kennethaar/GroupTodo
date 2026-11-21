@@ -20,9 +20,9 @@ function presenterDraw() {
     el("button", {class: "pbigger", title: "Larger notes", "aria-label": "Larger notes", onclick: () => resize(2)}, "A+"));
   bar.querySelector(".ptimer").onclick = () => { if (DECK) { DECK.t0 = Date.now(); presenterTick(); } };
   const list = el("ul", {}, ...s.parts.map((b, n) =>
-    el("li", {class: n < here.k - 1 ? "past" : n === here.k - 1 ? "now" : "later"}, slideWords(b))));
+    el("li", {class: n < here.k - 1 ? "past" : n === here.k - 1 ? "now" : "later", "data-bid": b.id}, slideWords(b))));
   const main = el("div", {class: "pmain"},
-    el("div", {class: "pnow"}, el("div", {class: "plabel"}, "Now"), el("h2", {}, s.title), list),
+    el("div", {class: "pnow"}, el("div", {class: "plabel"}, "Now"), el("h2", {class: "stitle"}, s.title), list),
     el("div", {class: "pnext"}, el("div", {class: "plabel"}, "Next"), el("div", {class: "pwhat"}, nextText)));
   const notes = el("div", {class: "pnotes", style: "font-size:" + size + "px"}, lit ? slideNotes(lit).notes : s.notes);
   const parts = [bar, main, notes];

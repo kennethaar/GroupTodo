@@ -9,7 +9,7 @@ function slideEditEnd(save) {
   if (!save || !val || val === (ed.b.title || "")) {
     ed.at.replaceChildren(...ed.was);
     ed.at.classList.remove("editing");
-    DECK.deck.focus({preventScroll: true});
+    if (DECK.deck.contains(ed.at)) DECK.deck.focus({preventScroll: true});
     return;
   }
   const path = DECK.path, space = V.space, snapshot = structuredClone(getPage(path));
@@ -27,5 +27,6 @@ function slideEditEnd(save) {
   DECK.i = -1;
   DECK.deck.querySelector(".slide.cur")?.remove();
   presentGo(i);
-  DECK.deck.focus({preventScroll: true});
+  // Edited in the presenter window, the keys stay there.
+  if (!DECK.pw || DECK.pw.closed || !DECK.pw.document.hasFocus()) DECK.deck.focus({preventScroll: true});
 }
