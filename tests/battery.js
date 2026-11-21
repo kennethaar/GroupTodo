@@ -7329,6 +7329,7 @@ var GTD_TEST = (() => {
   test("#468 starting your own teaches outlining in four rules, then goes to the day", async () => {
     const onboarded = PREF.get("onboarded"), coach = PREF.get("coach"), active = Spaces.active;
     const asked = Spaces.get(active)?.askedStorage, was = inSpace(active, () => settingsPage().props.onboarded);
+    const visible = [...visibleSpaces()], view = state.view;
     const until = async cond => { for (let i = 0; i < 300 && !cond(); i++) await new Promise(r => setTimeout(r, 10)); };
     const m = () => document.querySelector("#modalRoot .modal");
     const btn = t => [...(m()?.querySelectorAll("button") || [])].find(b => b.textContent === t);
@@ -7362,6 +7363,11 @@ var GTD_TEST = (() => {
       PREF.set("coach", coach || ""); PREF.set("onboarded", onboarded || "");
       if (Spaces.get(active)) Spaces.get(active).askedStorage = asked;
       inSpace(active, () => { if (was) settingsPage().props.onboarded = was; else delete settingsPage().props.onboarded; });
+      await new Promise(r => requestAnimationFrame(r));     // the focus Start hands to the capture box
+      document.activeElement?.blur?.();
+      if (Spaces.active !== active) await openSpace(active);
+      setVisibleSpaces(visible);
+      if (state.view !== view) go(view);
     }
   });
   test("#193 Your areas holds every area's colour, Remove, New area and Invite", () => {

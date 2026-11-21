@@ -7946,7 +7946,6 @@ rec.backend = await spaceBackend(sp);
 await readInto(rec, {stage: true, onRest: restLoaded, onSoon: soonLoaded});
 LOADED.set(name, rec);
 reconcileSyncedPages(name);
-stampOnboarded(name);
 return rec;
 }
 function restLoaded(rec) {
@@ -9538,7 +9537,6 @@ migrateVault();
 t = loadMark("“" + name + "”: pages brought up to date", t);
 await seedIfEmpty();
 storeAreaName(name);
-stampOnboarded(name);
 scanVerbs();
 if (!folderWaiting(name)) ensureJournal(todayISO());
 state.context = getSetting("current_context") || null;
