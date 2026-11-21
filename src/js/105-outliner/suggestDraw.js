@@ -1,9 +1,10 @@
 function suggestDraw() {
-  const {box, rows, i, mode, head} = SUGGEST;
+  const {box, rows, i, mode, head, plain} = SUGGEST;
   box.textContent = "";
   // The ring being offered says what it is under: Angry › Let down ›
   if (mode === "words" && head) box.append(el("div", {class: "suggest-head", translate: "no"}, head + " ›"));
-  if (mode === "unlinked") box.append(el("div", {class: "suggest-head"}, "Link to"));
+  // Rows that say what they do themselves (#455) need no head.
+  if (mode === "unlinked" && !plain) box.append(el("div", {class: "suggest-head"}, "Link to"));
   rows.forEach((r, n) => {
     const detail = r.detail != null ? r.detail
       : r.accept === "date" ? humanWhen(r.iso, r.time)
@@ -32,7 +33,7 @@ function suggestDraw() {
     mode === "word" ? keys + " takes it · keep typing to ignore"
     : mode === "words" ? keys + " takes it" + (rows.some(r => r.mark === "›") ? ", then a closer word" : "") +
       " · Esc keeps " + (head ? head.split(" › ").pop() : "what you typed")
-    : mode === "unlinked" ? "Enter links it · Esc leaves the word"
+    : mode === "unlinked" ? (plain ? "Enter takes it" : "Enter links it") + " · Esc leaves the word"
     : keys + (mode === "slash" ? " runs it" : " takes it") + " · Esc closes"));
   const cur = box.querySelectorAll(".pick")[i];
   if (cur) cur.scrollIntoView({block: "nearest"});

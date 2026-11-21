@@ -42,8 +42,21 @@ function suggestFor(host, opts) {
   }
   if (opts.typed === false) {
     // #428 a click or a key put the caret in a known name not linked yet.
-    const at = before.length, hit = unlinkedNames(hostText(host), null, names()).find(s => s.at <= at && at <= s.end);
-    return hit ? {mode: "unlinked", at: hit.at, end: hit.end, rows: hit.rows} : null;
+    const text = hostText(host);
+    const at = before.length, hit = unlinkedNames(text, null, names()).find(s => s.at <= at && at <= s.end);
+    if (!hit) return null;
+    /* #455 "Anna: send the budget" is the shape of a waiting-for, so a
+       known person opening a line with a colon is offered as one too. Only
+       on a line of a page, which can turn waiting, and not one already so. */
+    const word = text.slice(hit.at, hit.end), who = hit.rows.filter(r => r.kind === "person");
+    const line = opts.commands && host.closest(".blk");
+    const opens = line && who.length === 1 && !trim(text.slice(0, hit.at)) && /^\s*:/.test(text.slice(hit.end));
+    const b = opens && findBlock(line.dataset.id)?.block;
+    if (b && b.state !== "WAIT" && !isMe(who[0].title))
+      return {mode: "unlinked", at: hit.at, end: hit.end, plain: true, rows: [
+        Object.assign({}, who[0], {accept: "wait", title: "Add wait and link " + word, mark: "⏳", detail: ""}),
+        Object.assign({}, who[0], {title: "Link " + word, detail: ""})]};
+    return {mode: "unlinked", at: hit.at, end: hit.end, rows: hit.rows};
   }
   // On a = line, the Feelings Wheel's words before any name (#214).
   const wl = wordSuggest(before);

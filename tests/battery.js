@@ -10486,6 +10486,39 @@ var GTD_TEST = (() => {
       suggestClose(); document.activeElement?.blur?.(); V.pages.delete(path); clearMemo();
     }
   });
+  test("#455 a known person and a colon opening a line offers Add wait and link, which makes it waiting on them", async () => {
+    const path = join(PAGES, "Test455 wait.md");
+    putPage(path, parsePage("- Oskar: send the budget\n- Call Oskar: today\n- WAIT Oskar: the report\n"));
+    clearMemo();
+    const offer = async (host, at = 2) => {
+      host.focus();
+      setHostText(host, host.textContent, at);
+      host.dispatchEvent(new MouseEvent("click", {bubbles: true}));
+      await settle();
+      return SUGGEST && SUGGEST.mode === "unlinked" ? SUGGEST.rows.map(r => r.title) : [];
+    };
+    try {
+      openPage(path); await settle();
+      const [one, two, three] = content().querySelectorAll(".blk .txt");
+      eq(await offer(one), ["Add wait and link Oskar", "Link Oskar"], "the rows on a line that opens with Oskar:");
+      suggestClose();
+      eq(await offer(two, 7), ["Oskar Nilsen"], "a name inside the line is only linked");
+      suggestClose();
+      await offer(three);
+      ok(!SUGGEST || !SUGGEST.rows.some(r => r.accept === "wait"), "offered wait on a line already waiting");
+      suggestClose();
+      await offer(one);
+      suggestAccept(0);
+      await settle();
+      const b = getPage(path).blocks[0];
+      eq(b.state, "WAIT", "the line is not waiting");
+      eq(b.title, "[[p/Oskar Nilsen][Oskar]]: send the budget");
+      eq(assigneeOf(b), "Oskar Nilsen", "it does not wait on Oskar");
+      ok(!document.querySelector("#modalRoot .modal"), "Who are you waiting for was asked, though the line names Oskar");
+    } finally {
+      suggestClose(); closeModal?.(); document.activeElement?.blur?.(); V.pages.delete(path); clearMemo();
+    }
+  });
   test("#214 typing = and a feeling on a page's line opens the Feelings Wheel there", async () => {
     const path = join(PAGES, "Test wheel line.md");
     const own = V.pages.has(FEELINGS_PATH) ? structuredClone(getPage(FEELINGS_PATH)) : null;

@@ -9,7 +9,7 @@ function suggestSync(host, opts = {}) {
     document.body.append(box);
     SUGGEST = {host, box, i: 0, opts};
   }
-  Object.assign(SUGGEST, {end: null, head: null}, found, {opts});
+  Object.assign(SUGGEST, {end: null, head: null, plain: false}, found, {opts});
   if (SUGGEST.i >= found.rows.length) SUGGEST.i = 0;
   suggestDraw();
   const r = caretScreenRect(host), box = SUGGEST.box;

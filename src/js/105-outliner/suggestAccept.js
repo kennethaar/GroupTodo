@@ -60,4 +60,6 @@ function suggestAccept(n) {
     (/^\s/.test(after) || SUGGEST_MODE_KEEP_TIGHT(after) ? "" : space);
   setHostText(host, text.slice(0, at) + insert + after, at + insert.length);
   host.dispatchEvent(new Event("input", {bubbles: true}));
+  // #455 Add wait and link: linked, the line then waits on who it names.
+  if (r.accept === "wait" && opts.onCommand) opts.onCommand("WAIT");
 }

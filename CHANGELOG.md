@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.200.0 - 2026-11-22
+
+- Links and aliases: a line that opens with a known person and a colon,
+  such as `Anna: send the budget`, offers Add wait and link Anna on the
+  wavy line under the name. Take it, and the name is linked and the line
+  waits on Anna. Ignore it, and nothing changes. (#455)
+
 ## 1.199.1 - 2026-11-21
 
 - Keys on a line: while you write in a table, its Row, Column, alignment and
