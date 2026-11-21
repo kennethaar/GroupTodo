@@ -1,0 +1,12 @@
+/* A line edited in place on a slide (#466): the field takes the words' spot,
+   size and font, with a thin ring; Save and Cancel sit small under it. */
+#deck .editing{opacity:1!important}
+#deck .sedit{display:block;width:100%;min-width:12em;box-sizing:border-box;margin:0;padding:.05em .25em;
+  font:inherit;color:inherit;background:color-mix(in srgb,var(--slide-ink) 8%,var(--slide-bg));
+  border:2px solid color-mix(in srgb,var(--slide-ink) 55%,transparent);border-radius:.2em;outline:none}
+#deck .sedit:focus-visible{border-color:var(--slide-ink)}
+#deck .seditbar{display:flex;gap:.5em;margin-top:.3em;font-size:max(14px,.4em);font-weight:400;line-height:1}
+#deck .seditbar button{min-height:32px;padding:0 .8em;border:1px solid color-mix(in srgb,var(--slide-ink) 45%,transparent);
+  border-radius:6px;background:var(--slide-bg);color:var(--slide-ink);font:inherit;cursor:pointer}
+#deck .seditbar .seditsave{background:var(--slide-ink);color:var(--slide-bg);border-color:var(--slide-ink)}
+#deck .seditbar kbd{font:inherit;opacity:.7;margin-left:.3em}

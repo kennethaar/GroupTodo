@@ -24,8 +24,9 @@ function presentStart(path, {root = null, on = false, presenter = false, step = 
   const own = [...(rec?.css || new Map())].filter(([p]) => isSlidesCssPath(p)).map(([, t]) => t).join("\n");
   if (own) deck.append(el("style", {class: "deckcss"}, own));
   document.body.append(deck);
-  DECK = {path, root, steps, slides, hidden, i: -1, deck, back, digits: "", pw: null, t0: Date.now(), timer: 0, grid: false};
+  DECK = {path, root, on, steps, slides, hidden, i: -1, deck, back, digits: "", pw: null, t0: Date.now(), timer: 0, grid: false, edit: null};
   window.addEventListener("keydown", presentKey, true);
+  deck.addEventListener("dblclick", slideEdit);
   DECK.timer = setInterval(presenterTick, 1000);
   // The presenter window first: a pop-up is only allowed straight from the click.
   if (presenter) presenterOpen();

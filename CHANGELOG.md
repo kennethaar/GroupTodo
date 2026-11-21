@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.197.0 - 2026-11-21
+
+- Present a page: Fix a typo without leaving the talk. Double-click a line
+  on a slide to edit it, with its links and tags. Enter or Save puts it on
+  the page, Esc leaves it as it was. Keys type while you edit, so the talk
+  stays on that slide. (#466)
+
 ## 1.196.0 - 2026-11-21
 
 - Present a page: Give a talk straight from your notes, without making slides.

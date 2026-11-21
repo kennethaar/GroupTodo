@@ -14138,6 +14138,42 @@ var GTD_TEST = (() => {
       eq(f.contentDocument.querySelector(".pcount")?.textContent, "1 / 2 · 6 hidden", "the presenter shows N hidden");
     } finally { presentStop(); lineSelClear(); window.open = open; f.remove(); }
   }));
+  test("#466 double-click a line on a slide edits it in place, tags and links shown; Enter or Save writes it, Esc cancels", () => withPages({
+    [SHOW]: ["- Plan with [[p/Anna]]", "  - Ask [[Kitchen renovation]] [[c/phone]]", "  - Budget"].join("\n") + "\n"}, async () => {
+    const [plan] = getPage(SHOW).blocks, [ask, budget] = plan.children;
+    const dbl = n => n.dispatchEvent(new MouseEvent("dblclick", {bubbles: true, cancelable: true}));
+    const key = (n, k) => { const e = new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true}); n.dispatchEvent(e); return e; };
+    const field = () => $("#deck .slide.cur .sedit");
+    const li = b => $(`#deck .slide.cur [data-bid="${b.id}"]`);
+    try {
+      presentStart(SHOW); await settle();
+      dbl($("#deck .slide.cur .stitle")); await settle();
+      ok(!field(), "the page's own title slide is not a line: nothing to edit");
+      presentGo(2); await settle();
+      dbl(li(ask)); await settle();
+      eq(field()?.value, "Ask [[Kitchen renovation]] [[c/phone]]", "the line as written, with its links and tags");
+      ok(document.activeElement === field(), "the caret is in it");
+      const right = key(field(), "ArrowRight");
+      eq(DECK.i, 2, "→ while editing does not go to the next slide");
+      ok(!right.defaultPrevented, "it moves the caret in the field instead");
+      field().value = "Ask [[Kitchen renovation]] about money [[c/phone]]";
+      key(field(), "Enter"); await settle();
+      eq(ask.title, "Ask [[Kitchen renovation]] about money [[c/phone]]", "Enter writes it to the page");
+      ok(!field(), "and the field closes");
+      eq([li(ask)?.textContent, DECK.i], ["Ask Kitchen renovation about money", 2], "the slide shows the new words, on the same step");
+      dbl($("#deck .slide.cur .stitle")); await settle();
+      eq(field()?.value, "Plan with [[p/Anna]]", "the slide's title is a line too");
+      field().value = "Plan it";
+      key(field(), "Escape"); await settle();
+      eq(plan.title, "Plan with [[p/Anna]]", "Esc cancels");
+      ok(DECK && !field(), "and leaves the talk open");
+      eq($("#deck .slide.cur .stitle")?.textContent, "Plan with Anna", "the title is back as it was");
+      dbl(li(budget)); await settle();
+      field().value = "Budget for Q1";
+      [...$$("#deck .seditbar button")].find(b => /Save/.test(b.textContent)).click(); await settle();
+      eq(budget.title, "Budget for Q1", "the Save button writes it too");
+    } finally { presentStop(); }
+  }));
   const deckParts = () => [...$$("#deck .slide.cur .part")];
   test("#433 a 1D layout's parts are hidden until → brings each in; marks are not shown", () => withPages(SHOW_PAGE, async () => {
     try {

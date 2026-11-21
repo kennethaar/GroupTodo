@@ -3,7 +3,8 @@
    skips the rest of the slide. A number and Enter jumps to that slide. Every
    other key is kept from the page under it, so nothing gets typed there. */
 function presentKey(e) {
-  if (!DECK || e.ctrlKey || e.metaKey || e.altKey || /^F\d+$/.test(e.key)) return;
+  // A line being edited on the slide (#466) gets its keys; its field handles Enter and Esc.
+  if (!DECK || DECK.edit || e.ctrlKey || e.metaKey || e.altKey || /^F\d+$/.test(e.key)) return;
   e.preventDefault(); e.stopImmediatePropagation();
   const {steps, slides} = DECK, here = steps[DECK.i], k = e.key;
   if (/^\d$/.test(k)) { DECK.digits = (DECK.digits + k).slice(-3); return; }

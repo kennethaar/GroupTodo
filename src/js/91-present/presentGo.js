@@ -5,6 +5,8 @@
    the way back out the title shrinks into it again. */
 function presentGo(i) {
   if (!DECK) return;
+  // Moved on from the presenter window while a line was being edited (#466): the edit is dropped.
+  if (DECK.edit) slideEditEnd(false);
   const {steps, deck} = DECK;
   i = Math.max(0, Math.min(steps.length - 1, i));
   const from = steps[DECK.i], to = steps[i];
