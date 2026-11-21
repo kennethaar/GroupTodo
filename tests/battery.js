@@ -14642,6 +14642,31 @@ var GTD_TEST = (() => {
       eq($$("#deck .slide.cur .hubcards").length, 0, "no spoke with lines: the hub alone, in the middle");
     } finally { presentStop(); }
   }));
+  test("#433 follow-up: the hub is a circle with 5 px round its words, and the card covers no spoke", () => withPages({[EVEN]: [
+    "- Platform strategy and roadmap for next year everywhere", "  - . Core sync engine", "    - Offline first", "    - Conflict free merges for everyone",
+    "  - . Web presenter with a long name", "  - . Mobile capture app", "  - . Search", "  - . API for partners"].join("\n") + "\n"}, async () => {
+    try {
+      openPage(EVEN); await settle();
+      content().querySelector(".pagehead .presentbtn").click(); await settle();
+      presentGo(DECK.slides.find(s => /^Platform/.test(s.title)).first + 1); await settle();
+      await Promise.all($("#deck").getAnimations({subtree: true}).map(a => a.finished.catch(() => {})));
+      const core = $("#deck .slide.cur .hubcore"), c = core.getBoundingClientRect();
+      ok(Math.abs(c.width - c.height) <= 1, "the hub is not round: " + Math.round(c.width) + "×" + Math.round(c.height));
+      const R = c.width / 2, cx = c.left + R, cy = c.top + R;
+      const range = document.createRange(); range.selectNodeContents(core);
+      const far = [...range.getClientRects()].flatMap(r => [[r.left, r.top], [r.right, r.top], [r.left, r.bottom], [r.right, r.bottom]])
+        .map(([x, y]) => R - Math.hypot(x - cx, y - cy));
+      ok(far.length && Math.min(...far) >= 5, "a word comes closer than 5 px to the hub's edge: " + Math.min(...far).toFixed(1));
+      const card = [...$$("#deck .slide.cur .hubcard")].find(k => getComputedStyle(k).visibility !== "hidden");
+      ok(card, "the lit spoke's card shows");
+      const k = card.getBoundingClientRect();
+      const hit = [...$$("#deck .slide.cur .hub .ntext")].filter(b => {
+        const r = b.getBoundingClientRect();
+        return r.left < k.right && r.right > k.left && r.top < k.bottom && r.bottom > k.top;
+      });
+      eq(hit.map(b => b.textContent), [], "the card covers a spoke");
+    } finally { presentStop(); }
+  }));
   test("#433 a 2D layout lights a box at a time with its lines in it; a quote, then its takeaways", () => withPages(SHOW_PAGE, async () => {
     try {
       openPage(SHOW); await settle();

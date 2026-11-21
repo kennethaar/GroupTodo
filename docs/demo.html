@@ -3806,8 +3806,10 @@ clip-path:polygon(0 0,calc(100% - 1em) 0,100% 50%,calc(100% - 1em) 100%,0 100%,1
 :is(#deck,#deckpeek) .ntext{position:absolute;transform:translate(-50%,-50%);width:max-content;max-width:40%;text-align:center;
 padding:.3em .6em;border-radius:.6em;background:var(--slide-bg);border:.1em solid var(--slide-accent)}
 :is(#deck,#deckpeek) .hubcore{position:absolute;left:50%;top:50%;width:30%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
-display:grid;place-items:center;text-align:center;padding:.4em;background:var(--slide-accent);color:var(--on-accent);
-font-weight:700;font-size:.85em;overflow-wrap:anywhere}
+display:grid;place-items:center;text-align:center;background:var(--slide-accent);color:var(--on-accent);
+font-weight:700;font-size:calc(.85em * var(--corefit, 1));
+box-sizing:border-box;min-height:0;overflow:hidden;padding:calc(4.4% + 5px)}
+:is(#deck,#deckpeek) .hubcore.wrapany{overflow-wrap:anywhere}
 :is(#deck,#deckpeek) .hub .ntext{display:grid;place-items:center;font-size:calc(1em * var(--hubfit, 1))}
 :is(#deck,#deckpeek) .hubwrap{display:flex;gap:1.5em;height:100%;min-width:0}
 :is(#deck,#deckpeek) .hubwrap .ring{flex:none;margin:0}
@@ -4922,7 +4924,7 @@ placeholder="Capture… (Enter adds to today)">
 })();
 
 "use strict";
-const APP_VERSION = "1.200.1";
+const APP_VERSION = "1.200.2";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -15329,6 +15331,12 @@ box.style.setProperty("--fit", fit);
 function slideEven(slide) {
 const ring = slide.querySelector(".hub"), core = ring && ring.querySelector(".hubcore");
 if (!ring || !ring.offsetWidth) return;
+core.classList.remove("wrapany");
+for (let fit = 1; ; fit = Math.round((fit - 0.05) * 100) / 100) {
+ring.style.setProperty("--corefit", fit);
+if (core.scrollHeight <= core.clientHeight + 1 && core.scrollWidth <= core.clientWidth + 1) break;
+if (fit <= 0.4) { core.classList.add("wrapany"); break; }
+}
 const R = ring.offsetWidth, bubbles = [...ring.querySelectorAll(".ntext")], lines = [...ring.querySelectorAll(".sline")];
 const inner = core.offsetWidth / 2 / R * 100, SHOWN = 6;
 let W, H, r;
@@ -15347,6 +15355,12 @@ const c = +b.dataset.c, s = +b.dataset.s;
 Object.assign(b.style, {width: W + "%", height: H + "%", left: 50 + r * c + "%", top: 50 + r * s + "%"});
 if (lines[i]) { lines[i].setAttribute("x2", 50 + r * c); lines[i].setAttribute("y2", 50 + r * s); }
 });
+if (ring.parentElement?.classList.contains("hubwrap")) {
+ring.style.marginLeft = ring.style.marginRight = "";
+const box = ring.getBoundingClientRect(), rs = bubbles.map(b => b.getBoundingClientRect());
+ring.style.marginLeft = Math.max(0, box.left - Math.min(...rs.map(x => x.left))) + "px";
+ring.style.marginRight = Math.max(0, Math.max(...rs.map(x => x.right)) - box.right) + "px";
+}
 }
 function slideLay(slide, laid) {
 const title = slide.querySelector(".stitle");
@@ -18668,7 +18682,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.200.1 - 2026-11-22\n\n- Present a page: from the page title to the first slide, the title now\n  glides up to the top and fades there, and the next slide comes in under\n  it. It no longer slides away past the new heading. A long title that\n  moves to the top keeps its line breaks on the way, so it is never cut\n  off at the edge. (#431)\n\n## 1.200.0 - 2026-11-22\n\n- Links and aliases: a line that opens with a known person and a colon,\n  such as `Anna: send the budget`, offers Add wait and link Anna on the\n  wavy line under the name. Take it, and the name is linked and the line\n  waits on Anna. Ignore it, and nothing changes. (#455)\n\n## 1.199.1 - 2026-11-21\n\n- Keys on a line: while you write in a table, its Row, Column, alignment and\n  Reveal buttons have their own row under the header, so they no longer\n  cover the words beside the line tools. (#469)\n\n## 1.199.0 - 2026-11-21\n\n- Present a page: paste a table from Excel, Word, a web page, or text in\n  columns (tabs, commas, semicolons, | or spaces), and it becomes a Markdown\n  table. Keep as text in the message pastes it as lines instead. In Present\n  a table is a slide of its own: the header first, then a row per →. Reveal\n  Rows | Columns on the table bar brings it in a column at a time instead,\n  and the table remembers it. (#469)\n\n## 1.198.2 - 2026-11-21\n\n- Weekly review › Steps: once Weekly review shows in the sidebar, it stays\n  until you mark a review done. Then the end screen says it leaves the\n  sidebar, and it slides out when you leave the review. (#450)\n\n## 1.198.1 - 2026-11-21\n\n- Weekly review › Steps: Weekly review shows in the sidebar only when it is\n  due, after a week, or when more than 30 of your actions wait to be sorted.\n  Projects always has it. (#450)\n\n## 1.198.0 - 2026-11-21\n\n- Getting started: Outlines are the heart of GroupToDo, so the welcome now\n  shows how they work. Lines inside lines plays four short rules on a small\n  outline: Tab puts a line under another, a line gets the project and date\n  of the line above, the top line gathers every to-do under it, and Next\n  shows the deepest step first. It comes right after you start your own area\n  or join one.\n\n## 1.197.3 - 2026-11-21\n\n- Areas and sharing: Once you have been through the welcome screen, every\n  area's folder remembers it. Open the same folder in another browser and\n  GroupToDo starts straight away, without asking again.\n\n## 1.197.2 - 2026-11-21\n\n- Present a page: The talk now follows your outline, line by line. The\n  page title is a slide of its own, and each top line comes after it in its\n  place. A line with nothing under it shows big and centered. A timeline or\n  other drawing stays one slide. (#431)\n\n## 1.197.1 - 2026-11-21\n\n- Present a page: Double-click works in the presenter window too, and no\n  caret blinks on the slides any more. It shows only in a line you are\n  editing. (#466)\n\n## 1.197.0 - 2026-11-21\n\n- Present a page: Fix a typo without leaving the talk. Double-click a line\n  on a slide to edit it, with its links and tags. Enter or Save puts it on\n  the page, Esc leaves it as it was. Keys type while you edit, so the talk\n  stays on that slide. (#466)\n\n## 1.196.0 - 2026-11-21\n\n- Present a page: Give a talk straight from your notes, without making slides.\n  Point at ▶ Present to see a small preview, and pick where to start: last\n  time, the top, or your own line. Click a choice to open the talk there.\n  Pictures in a bullet's notepad show beside it while you speak. A hub's\n  spokes show their lines in a card. Task lines and lines that start with\n  `_ ` stay off the slides, so you can add notes for improvement and hide\n  unfinished points; ☰ › Hide in Present does this for you. Links show as\n  plain words. (#465)\n- Weekly review › Review actions: A project with many steps that can start\n  now gets put in order first, so you only deal with what truly comes next.\n  One card asks \"Does it wait for another step?\" for each step. \"They can all\n  go at once\" remembers your answer. A linked project shows its name on the\n  card. (#462)\n- States and Waiting for: Change many lines at once. Pick them, then press\n  Alt+T for tasks or Alt+N for notes. (#411)\n- The line menu and toolbar: The ☰ menu stays where you can use it. It no\n  longer spills over the sidebar, and in the Journal it sits in its own\n  lane. (#413)\n";
+const HELP_NEWS = "## 1.200.2 - 2026-11-22\n\n- Present a page: the hub in a hub-and-spoke slide is always a circle, with\n  at least 5 px between its words and the edge. A long title gets smaller\n  to fit. The card for a spoke's lines no longer covers the spokes beside\n  the hub. (#433)\n\n## 1.200.1 - 2026-11-22\n\n- Present a page: from the page title to the first slide, the title now\n  glides up to the top and fades there, and the next slide comes in under\n  it. It no longer slides away past the new heading. A long title that\n  moves to the top keeps its line breaks on the way, so it is never cut\n  off at the edge. (#431)\n\n## 1.200.0 - 2026-11-22\n\n- Links and aliases: a line that opens with a known person and a colon,\n  such as `Anna: send the budget`, offers Add wait and link Anna on the\n  wavy line under the name. Take it, and the name is linked and the line\n  waits on Anna. Ignore it, and nothing changes. (#455)\n\n## 1.199.1 - 2026-11-21\n\n- Keys on a line: while you write in a table, its Row, Column, alignment and\n  Reveal buttons have their own row under the header, so they no longer\n  cover the words beside the line tools. (#469)\n\n## 1.199.0 - 2026-11-21\n\n- Present a page: paste a table from Excel, Word, a web page, or text in\n  columns (tabs, commas, semicolons, | or spaces), and it becomes a Markdown\n  table. Keep as text in the message pastes it as lines instead. In Present\n  a table is a slide of its own: the header first, then a row per →. Reveal\n  Rows | Columns on the table bar brings it in a column at a time instead,\n  and the table remembers it. (#469)\n\n## 1.198.2 - 2026-11-21\n\n- Weekly review › Steps: once Weekly review shows in the sidebar, it stays\n  until you mark a review done. Then the end screen says it leaves the\n  sidebar, and it slides out when you leave the review. (#450)\n\n## 1.198.1 - 2026-11-21\n\n- Weekly review › Steps: Weekly review shows in the sidebar only when it is\n  due, after a week, or when more than 30 of your actions wait to be sorted.\n  Projects always has it. (#450)\n\n## 1.198.0 - 2026-11-21\n\n- Getting started: Outlines are the heart of GroupToDo, so the welcome now\n  shows how they work. Lines inside lines plays four short rules on a small\n  outline: Tab puts a line under another, a line gets the project and date\n  of the line above, the top line gathers every to-do under it, and Next\n  shows the deepest step first. It comes right after you start your own area\n  or join one.\n\n## 1.197.3 - 2026-11-21\n\n- Areas and sharing: Once you have been through the welcome screen, every\n  area's folder remembers it. Open the same folder in another browser and\n  GroupToDo starts straight away, without asking again.\n\n## 1.197.2 - 2026-11-21\n\n- Present a page: The talk now follows your outline, line by line. The\n  page title is a slide of its own, and each top line comes after it in its\n  place. A line with nothing under it shows big and centered. A timeline or\n  other drawing stays one slide. (#431)\n\n## 1.197.1 - 2026-11-21\n\n- Present a page: Double-click works in the presenter window too, and no\n  caret blinks on the slides any more. It shows only in a line you are\n  editing. (#466)\n\n## 1.197.0 - 2026-11-21\n\n- Present a page: Fix a typo without leaving the talk. Double-click a line\n  on a slide to edit it, with its links and tags. Enter or Save puts it on\n  the page, Esc leaves it as it was. Keys type while you edit, so the talk\n  stays on that slide. (#466)\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {

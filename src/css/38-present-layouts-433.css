@@ -41,8 +41,13 @@
 :is(#deck,#deckpeek) .ntext{position:absolute;transform:translate(-50%,-50%);width:max-content;max-width:40%;text-align:center;
   padding:.3em .6em;border-radius:.6em;background:var(--slide-bg);border:.1em solid var(--slide-accent)}
 :is(#deck,#deckpeek) .hubcore{position:absolute;left:50%;top:50%;width:30%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
-  display:grid;place-items:center;text-align:center;padding:.4em;background:var(--slide-accent);color:var(--on-accent);
-  font-weight:700;font-size:.85em;overflow-wrap:anywhere}
+  display:grid;place-items:center;text-align:center;background:var(--slide-accent);color:var(--on-accent);
+  font-weight:700;font-size:calc(.85em * var(--corefit, 1));
+  /* Always a circle, its words in the square inside it and 5 px clear of
+     the edge (4.4% of the ring is that square's margin); slideEven makes
+     long words smaller to fit. */
+  box-sizing:border-box;min-height:0;overflow:hidden;padding:calc(4.4% + 5px)}
+:is(#deck,#deckpeek) .hubcore.wrapany{overflow-wrap:anywhere}
 /* Every bubble as big as the biggest (slideEven sets the size), its words in the middle. */
 :is(#deck,#deckpeek) .hub .ntext{display:grid;place-items:center;font-size:calc(1em * var(--hubfit, 1))}
 /* A spoke's own lines: one card right of the hub, the lit spoke's (#433). */

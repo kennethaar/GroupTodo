@@ -6,6 +6,13 @@
 function slideEven(slide) {
   const ring = slide.querySelector(".hub"), core = ring && ring.querySelector(".hubcore");
   if (!ring || !ring.offsetWidth) return;
+  // The title in the hub gets smaller until it fits the circle whole (#433 follow-up).
+  core.classList.remove("wrapany");
+  for (let fit = 1; ; fit = Math.round((fit - 0.05) * 100) / 100) {
+    ring.style.setProperty("--corefit", fit);
+    if (core.scrollHeight <= core.clientHeight + 1 && core.scrollWidth <= core.clientWidth + 1) break;
+    if (fit <= 0.4) { core.classList.add("wrapany"); break; }
+  }
   const R = ring.offsetWidth, bubbles = [...ring.querySelectorAll(".ntext")], lines = [...ring.querySelectorAll(".sline")];
   const inner = core.offsetWidth / 2 / R * 100, SHOWN = 6;
   let W, H, r;
@@ -26,4 +33,12 @@ function slideEven(slide) {
     Object.assign(b.style, {width: W + "%", height: H + "%", left: 50 + r * c + "%", top: 50 + r * s + "%"});
     if (lines[i]) { lines[i].setAttribute("x2", 50 + r * c); lines[i].setAttribute("y2", 50 + r * s); }
   });
+  /* Bubbles at the sides can reach past the ring. Beside a card the ring
+     makes room for them, so the card covers none (#433 follow-up). */
+  if (ring.parentElement?.classList.contains("hubwrap")) {
+    ring.style.marginLeft = ring.style.marginRight = "";
+    const box = ring.getBoundingClientRect(), rs = bubbles.map(b => b.getBoundingClientRect());
+    ring.style.marginLeft = Math.max(0, box.left - Math.min(...rs.map(x => x.left))) + "px";
+    ring.style.marginRight = Math.max(0, Math.max(...rs.map(x => x.right)) - box.right) + "px";
+  }
 }

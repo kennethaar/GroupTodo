@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.200.2 - 2026-11-22
+
+- Present a page: the hub in a hub-and-spoke slide is always a circle, with
+  at least 5 px between its words and the edge. A long title gets smaller
+  to fit. The card for a spoke's lines no longer covers the spokes beside
+  the hub. (#433)
+
 ## 1.200.1 - 2026-11-22
 
 - Present a page: from the page title to the first slide, the title now
