@@ -44,6 +44,7 @@ css/38-present-layouts-433.css
 css/39-present-peek-465.css
 css/40-present-edit-466.css
 css/41-outline-lesson-468.css
+css/42-news-anim-471.css
 # script 1
 js/00-bootstrap/vars-APP_VERSION.js
 js/00-bootstrap/keepFocus.js
@@ -959,6 +960,11 @@ js/90-view-state/vars-helpKeys.js
 js/90-view-state/helpTopicNode.js
 js/90-view-state/vars-HELP_NEWS.js
 js/90-view-state/newsEntries.js
+js/90-view-state/vars-NEWS_ANIM.js
+js/90-view-state/newsAnimKey.js
+js/90-view-state/newsSteps.js
+js/90-view-state/newsPlay.js
+js/90-view-state/newsStage.js
 js/90-view-state/helpNews.js
 js/90-view-state/vars-RUN_WAYS.js
 js/90-view-state/runWayPick.js

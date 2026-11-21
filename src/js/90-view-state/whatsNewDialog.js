@@ -9,7 +9,7 @@ function whatsNewDialog(entries, {update = null, since = null} = {}) {
     body.append(el("h3", {}, "v" + e.version, e.date ? el("span", {class: "quiet"}, " · " + e.date) : null));
     body.append(el("ul", {}, ...e.items.map(x => {
       const topic = update ? null : newsTopic(x);
-      return el("li", {},
+      return el("li", {"data-news": newsAnimKey(e, x)},
         el("strong", {}, x.lead), x.rest ? " " + x.rest : "",
         el("span", {class: "newsacts"},
           topic ? el("button", {class: "textbtn", title: HELP[topic].title,
@@ -18,6 +18,8 @@ function whatsNewDialog(entries, {update = null, since = null} = {}) {
             "#" + x.issue) : null));
     })));
   }
+  const stage = newsStage(entries, body);
+  if (stage) body.firstChild.after(stage);
   if (gap) body.append(el("p", {class: "quiet"}, "And more before that: ",
     el("a", {href: REPO_URL + "/blob/main/CHANGELOG.md", target: "_blank", rel: "noopener"}, "the full list on GitHub"), "."));
   body.append(feedbackBox());

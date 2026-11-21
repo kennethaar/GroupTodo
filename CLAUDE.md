@@ -144,6 +144,11 @@ grows, merge steps instead of adding one. Then run:
 
     python docs/build-language-catalog.py
 
+A change that brings new GUI also gets a What's new animation: a text script
+in `vars-NEWS_ANIM.js`, keyed `version#issue` (format in `newsSteps.js`), drawn
+by the app, never video. Keep only the newest 30; delete older ones. Test #471
+fails if a key's version has left `HELP_NEWS`.
+
 If a topic marked `shot: 1` changes visually, update its screenshot:
 
     node tests/screenshots.mjs <id>

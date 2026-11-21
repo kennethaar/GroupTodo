@@ -153,6 +153,57 @@ var GTD_TEST = (() => {
     has(decodeURIComponent(idea.href), "GroupToDo v" + APP_VERSION);
     closeModal();
   });
+  /* #471: one stage on top of What's new plays each new thing in turn, drawn by
+     the app (no video). Only the newest 30 are kept, all of them for news the
+     app still carries. */
+  test("#471 what's new plays each new thing on one stage, in turn", async () => {
+    const until = async cond => { for (let i = 0; i < 400 && !cond(); i++) await new Promise(r => setTimeout(r, 10)); };
+    const all = newsEntries(HELP_NEWS);
+    const keys = Object.keys(NEWS_ANIM);
+    ok(keys.length >= 20 && keys.length <= 30, "between 20 and the newest 30 kept, not " + keys.length);
+    const carried = new Set(all.flatMap(e => e.items.map(it => newsAnimKey(e, it))));
+    for (const k of keys) ok(carried.has(k), k + " is for news the app still carries");
+    ok(!/<video|\.mp4|\.gif|\.webm/i.test(JSON.stringify(NEWS_ANIM)), "drawn by the app, no film files");
+    for (const k of keys) ok(typeof NEWS_ANIM[k] === "string" && newsSteps(NEWS_ANIM[k]).length > 3, k + " is a text script");
+    eq(newsSteps("+ m menu > a | Add wait | link\nk Alt+T\nk"), [["+", "m", "menu", "Add wait | link", "a"], ["k", "Alt+T"], ["k", null]],
+      "a script line reads as one step, words after the first | kept whole");
+    // Two short made-up ones, so the turn to the next comes soon.
+    const log = fakeLog("9.0.0"), saved = {...NEWS_ANIM};
+    NEWS_ANIM["9.0.0#999"] = "+ a ln | It shines\nw 50";
+    NEWS_ANIM["9.0.0"] = "# a note\n+ b ln | It also does\nw 50";
+    try {
+      whatsNewDialog(newsEntries(log).slice(0, 1));
+      const m = document.querySelector(".modal .whatsnew"), st = m.querySelector(".newsstage");
+      ok(st, "a stage");
+      ok(st.compareDocumentPosition(m.querySelector("h3")) & Node.DOCUMENT_POSITION_FOLLOWING, "on top, above the list");
+      eq(st.querySelectorAll(".newsdots button").length, 2, "a dot per new thing that has one");
+      has(st.querySelector(".newscap").textContent, "It shines.");
+      eq(m.querySelector("li.newsnow strong").textContent, "It shines.", "the item shown is marked in the list");
+      await until(() => st.querySelector(".newsplay").textContent.includes("It shines"));
+      has(st.querySelector(".newsplay").textContent, "It shines", "it plays");
+      await until(() => st.querySelector(".newscap").textContent.includes("It also does"));
+      has(st.querySelector(".newscap").textContent, "It also does", "after a round it turns to the next");
+      eq(m.querySelector("li.newsnow strong").textContent, "It also does.");
+      st.querySelector(".newsprev").click();
+      has(st.querySelector(".newscap").textContent, "It shines.", "‹ goes back");
+      st.querySelectorAll(".newsdots button")[1].click();
+      eq(st.querySelectorAll(".newsdots [aria-current]").length, 1);
+      ok(st.querySelectorAll(".newsdots button")[1].hasAttribute("aria-current"), "a dot picks one");
+      closeModal();
+      // Reduced motion: the last frame, still, and no turning on.
+      const box = el("div");
+      document.body.append(box);
+      newsPlay(box, "+ a ln\nty a | Typed\nc a +lit\nw 5000", {still: true});
+      await until(() => box.textContent === "Typed");
+      eq(box.textContent, "Typed", "drawn at its end at once");
+      ok(box.querySelector(".n-lit"), "with its last look");
+      box.remove();
+    } finally {
+      for (const k of Object.keys(NEWS_ANIM)) if (!(k in saved)) delete NEWS_ANIM[k];
+      closeModal();
+    }
+    ok(helpNews().querySelector(".newsstage"), "the help's What's new has the stage too");
+  });
 
   /* ============================================================
      Start-up and the demo vault

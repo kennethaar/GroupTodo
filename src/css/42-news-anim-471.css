@@ -1,0 +1,99 @@
+/* What's new: one stage on top that plays each new thing in turn (#471).
+   The scenes are drawn from the n-* parts below, by newsPlay. */
+.newsstage { margin: 10px 0 6px; }
+.newsplay { position: relative; height: 190px; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); padding: 12px 14px; font-size: 13px; line-height: 1.4; color: var(--fg); }
+.newscap { margin: 6px 0 2px; font-size: 13px; min-height: 2.8em; }
+.newsnav { display: flex; align-items: center; gap: 6px; }
+.newsnav > button { border: 1px solid var(--border2); background: var(--bg2); color: var(--fg2); border-radius: 6px;
+  min-width: 28px; height: 26px; cursor: pointer; font-size: 14px; line-height: 1; }
+.newsnav > button:hover, .newsnav > button:focus-visible { border-color: var(--accent); color: var(--accent); }
+.newsdots { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; flex: 1; justify-content: center; }
+.newsdots button { width: 10px; height: 10px; border-radius: 50%; border: none; padding: 0; cursor: pointer;
+  background: var(--border2); }
+.newsdots button[aria-current] { background: var(--accent); transform: scale(1.25); }
+.newsdots button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+li.newsnow > strong, .helpnews li.newsnow { text-decoration: underline; text-decoration-color: var(--accent);
+  text-decoration-thickness: 2px; text-underline-offset: 3px; }
+
+.newsplay [class^="n-"], .newsplay [class*=" n-"] { transition: opacity .45s, transform .6s, background .35s,
+  top .6s, left .6s, font-size .6s, color .35s, border-color .35s; }
+.newsplay .n-abs { position: absolute; }
+.newsplay .n-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.newsplay .n-col { display: flex; flex-direction: column; gap: 3px; }
+.newsplay .n-quiet { color: var(--fg3); font-size: 11.5px; }
+.newsplay .n-h { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+
+/* lines of an outline */
+.newsplay .n-ln { display: flex; align-items: center; gap: 6px; padding: 2px 4px; border-radius: 4px; min-height: 1.5em; white-space: pre; }
+.newsplay .n-ln::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--fg3); flex: none; margin: 0 4px; }
+.newsplay .n-ln.n-task::before { width: 11px; height: 11px; border-radius: 3px; background: none; border: 1.5px solid var(--fg3); margin: 0 1px;
+  font-size: 9px; line-height: 11px; text-align: center; color: var(--accent-fg); }
+.newsplay .n-ln.n-done::before { content: "✓"; background: var(--done); border-color: var(--done); }
+.newsplay .n-ln.n-done { color: var(--fg3); text-decoration: line-through; }
+.newsplay .n-ln.n-fold::before, .newsplay .n-ln.n-open::before { content: "▸"; width: auto; height: auto; background: none;
+  color: var(--fg3); font-size: 10px; margin: 0 2px; }
+.newsplay .n-ln.n-open::before { content: "▾"; }
+.newsplay .n-d1 { margin-left: 20px; }
+.newsplay .n-d2 { margin-left: 40px; }
+.newsplay .n-lit { background: var(--accent-soft); }
+.newsplay .n-sel { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+.newsplay .n-dim { opacity: .3; }
+.newsplay .n-link { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.newsplay .n-wavy { text-decoration: underline wavy var(--late); text-underline-offset: 3px; }
+.newsplay .n-caret::after { content: ""; display: inline-block; width: 1.5px; height: 1.05em; background: var(--accent);
+  vertical-align: -2px; margin-left: 1px; animation: olblink 1s steps(1) infinite; }
+.newsplay .n-chip { font-size: 11px; padding: 0 7px; border-radius: 10px; border: 1px solid var(--border2); color: var(--fg2);
+  white-space: nowrap; }
+.newsplay .n-ctx { color: var(--ctx); border-color: color-mix(in srgb, var(--ctx) 50%, var(--border2)); }
+.newsplay .n-wait { color: var(--wait); border-color: color-mix(in srgb, var(--wait) 50%, var(--border2)); background: var(--wait-soft); }
+.newsplay .n-acc { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, var(--border2)); }
+
+/* boxes: menus, cards, buttons, fields, windows, a sidebar */
+.newsplay .n-menu { position: absolute; z-index: 3; background: var(--bg2); border: 1px solid var(--border2); border-radius: 8px;
+  box-shadow: var(--shadow); padding: 4px; font-size: 12px; min-width: 150px; }
+.newsplay .n-item { padding: 3px 8px; border-radius: 5px; white-space: nowrap; }
+.newsplay .n-on { background: var(--accent); color: var(--accent-fg); }
+.newsplay .n-card { background: var(--bg2); border: 1px solid var(--border2); border-radius: 8px; padding: 8px 10px; }
+.newsplay .n-btn { display: inline-block; border: 1px solid var(--border2); background: var(--bg2); border-radius: 6px;
+  padding: 1px 9px; font-size: 12px; white-space: nowrap; align-self: flex-start; }
+.newsplay .n-btn.n-on, .newsplay .n-pri { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.newsplay .n-field { border: 1.5px solid var(--accent); border-radius: 4px; padding: 0 4px; background: var(--bg2); }
+.newsplay .n-win { background: var(--bg2); border: 1px solid var(--border2); border-radius: 6px; overflow: hidden; }
+.newsplay .n-bar { display: flex; gap: 6px; align-items: center; padding: 3px 8px; background: var(--bg3);
+  border-bottom: 1px solid var(--border); font-size: 11.5px; color: var(--fg2); min-height: 22px; }
+.newsplay .n-side { position: absolute; left: 0; top: 0; bottom: 0; width: 30%; background: var(--bg3);
+  border-right: 1px solid var(--border); padding: 10px 8px; display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
+.newsplay .n-nav { padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
+.newsplay .n-main { position: absolute; left: 33%; right: 10px; top: 10px; bottom: 10px; }
+.newsplay .n-badge { margin-left: 4px; font-size: 10px; padding: 0 5px; border-radius: 8px; background: var(--accent); color: var(--accent-fg); }
+
+/* a slide */
+.newsplay .n-slide { position: absolute; inset: 0; background: #16181d; color: #f2f2ef;
+  display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; padding: 10px 16px; overflow: hidden; }
+.newsplay .n-slide .n-ln::before { background: #c9c9c4; }
+.newsplay .n-big { font-size: 20px; font-weight: 700; text-align: center; }
+.newsplay .n-top { position: absolute; top: 8px; left: 14px; font-size: 13px; font-weight: 700; }
+.newsplay .n-glow { color: #ffd46b; }
+.newsplay .n-hub { position: absolute; border-radius: 50%; border: 2px solid #ffd46b; display: grid; place-items: center;
+  text-align: center; font-weight: 700; font-size: 11px; padding: 5px; }
+.newsplay .n-spoke { position: absolute; font-size: 11px; padding: 1px 7px; border-radius: 10px; border: 1px solid #c9c9c4; white-space: nowrap; }
+.newsplay .n-scard { position: absolute; font-size: 10.5px; background: #2a2d35; border-radius: 6px; padding: 4px 8px; }
+
+/* a table */
+.newsplay .n-tbl { display: grid; grid-template-columns: repeat(3, auto); width: max-content; font-size: 12px; }
+.newsplay .n-td { padding: 1px 10px; border-bottom: 1px solid var(--border); }
+.newsplay .n-th { font-weight: 600; border-bottom: 1.5px solid var(--fg3); }
+
+/* the key and the pointer */
+.newsplay .n-key { position: absolute; right: 10px; bottom: 8px; z-index: 5; font-family: var(--mono); font-size: 11.5px;
+  border: 1px solid var(--border2); border-bottom-width: 2px; border-radius: 4px; padding: 0 6px; color: var(--fg2); background: var(--bg2); }
+.newsplay .n-hand { position: absolute; z-index: 6; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%;
+  border: 2px solid var(--fg); background: color-mix(in srgb, var(--fg) 15%, transparent); pointer-events: none; }
+.newsplay .n-hand.n-click { animation: nclick .35s ease-out; }
+@keyframes nclick { 50% { transform: scale(.6); background: color-mix(in srgb, var(--accent) 60%, transparent); } }
+/* last, so they win over a part's own display */
+.newsplay .n-fade, .newsplay .n-out { opacity: 0; }
+.newsplay .n-out { transform: translateX(-40px); }
+.newsplay .n-gone.n-gone { display: none; }
+@media (prefers-reduced-motion: reduce) { .newsplay [class^="n-"], .newsplay [class*=" n-"] { transition: none; } }

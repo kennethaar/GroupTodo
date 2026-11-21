@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.201.0 - 2026-11-22
+
+- What's new: each new thing now plays a short animation on top, drawn by
+  the app itself, one after the other. Use ‹ › or a dot to pick one, and ⏸
+  to stop it. The thing shown is underlined in the list below. With reduced
+  motion, each shows still. (#471)
+
 ## 1.200.2 - 2026-11-22
 
 - Present a page: the hub in a hub-and-spoke slide is always a circle, with
