@@ -13835,6 +13835,24 @@ var GTD_TEST = (() => {
       eq(state.pagePath, TALK, "back on the page");
     } finally { presentStop(); }
   }));
+  test("#431 reopened: the talk keeps the outline's order; the page title is a slide alone, each top line its own slide", () => withPages({
+    [TALK]: ["- Intro line", "- Q1 plan", "  - Hire", "- Plain middle", "- Last plain"].join("\n") + "\n"}, async () => {
+    const walk = p => deckSteps(p).steps.map(({s, k}) => k ? s.title + " > " + slideWords(s.parts[k - 1]) : s.title);
+    eq(walk(TALK), ["Talk", "Intro line", "Q1 plan", "Q1 plan > Hire", "Plain middle", "Last plain"],
+      "in outline order: the title alone, then each top line; plain lines are no bullets under the title");
+    const {slides} = deckSteps(TALK);
+    eq(slides.map(s => s.kids.length), [0, 0, 1, 0, 0], "a plain top line is a slide with no bullets: big and centered");
+    // A drawn top (timeline marks) is still one slide, in the outline's order.
+    await withPages({[TALK]: ["- -> Jan", "- -> Mar", "  - Launch", "  - Party", "- -> Jun"].join("\n") + "\n"}, async () => {
+      eq(walk(TALK), ["Talk", "Talk > Jan", "Mar", "Mar > Launch", "Mar > Party", "Talk > Jun"],
+        "a timeline page stays one slide; a point with lines goes into them in its turn");
+    });
+    await withPages({[TALK]: ["- -> Jan", "- -> Mar", "- Plain note", "- Agenda", "  - a", "  - b", "    - b1", "  - c"].join("\n") + "\n"}, async () => {
+      eq(walk(TALK).slice(0, 4), ["Talk", "Talk > Jan", "Talk > Mar", "Plain note"], "marked lines side by side are one drawing; a plain line after it is its own slide");
+      const from = deckSteps(TALK, getPage(TALK).blocks[3]).steps.map(({s, k}) => k ? s.title + " > " + slideWords(s.parts[k - 1]) : s.title);
+      eq(from, ["Agenda", "Agenda > a", "b", "b > b1", "Agenda > c"], "Present from here: its lines are bullets, in order; b goes into its lines in its turn");
+    });
+  }));
   test("#431 ▶ Present on a line you focus on presents that line", () => withPages(TALK_PAGE, async () => {
     openPage(TALK); await settle();
     const page = getPage(TALK);
@@ -13873,8 +13891,10 @@ var GTD_TEST = (() => {
       ok(head.querySelector(".presentbtn") && head.querySelector(".presentmore"), "the day has ▶ Present ▾ beside Focus");
       head.querySelector(".presentbtn").click(); await settle();
       eq(deckNow().title, pageTitle(path), "it presents the day");
-      // A line with no lines of its own is a bullet on the day's slide (#433).
-      ok(DECK.slides[0].kids.includes(other) && DECK.slides.some(s => s.title === "Q4 review"), "with its lines as bullets and slides");
+      // The day's title is a slide alone; each line follows in order, one with no lines too (reopened #431).
+      const at = t => DECK.slides.findIndex(s => s.title === t);
+      eq([DECK.slides[0].kids.length, at("Buy milk") > 0, at("Q4 review") - at("Buy milk"), DECK.slides[at("Q4 review")]?.kids.length],
+        [0, true, 1, 2], "its lines as slides, in the day's order");
       presentStop();
       FLY = {txt: el("div", {}, talk.title), path, page: pg, block: talk, box: el("div"), open: null, hi: 0, q: ""};
       const row = flyRows().find(r => r.k === "present");
@@ -14135,7 +14155,7 @@ var GTD_TEST = (() => {
       lineSelClear();
       // The presenter window says how many are hidden, so nothing goes without a trace.
       presentStart(SHOW, {presenter: true}); await settle();
-      eq(f.contentDocument.querySelector(".pcount")?.textContent, "1 / 2 · 6 hidden", "the presenter shows N hidden");
+      eq(f.contentDocument.querySelector(".pcount")?.textContent, "1 / 3 · 6 hidden", "the presenter shows N hidden");
     } finally { presentStop(); lineSelClear(); window.open = open; f.remove(); }
   }));
   test("#466 double-click a line on a slide edits it in place, tags and links shown; Enter or Save writes it, Esc cancels", () => withPages({

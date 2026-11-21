@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.197.2 - 2026-11-21
+
+- Present a page: The talk now follows your outline, line by line. The
+  page title is a slide of its own, and each top line comes after it in its
+  place. A line with nothing under it shows big and centered. A timeline or
+  other drawing stays one slide. (#431)
+
 ## 1.197.1 - 2026-11-21
 
 - Present a page: Double-click works in the presenter window too, and no
