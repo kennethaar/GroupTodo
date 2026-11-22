@@ -1282,6 +1282,26 @@ var GTD_TEST = (() => {
       eq(state.view === "page" && state.pagePath, note, "the linked page did not open before the folder was listed");
       const line = getPage(note).blocks[0];
       eq(state.selected, line && line.id, "the linked line is not the one picked");
+      await new Promise(r => setTimeout(r, 200));   // the line's panel opens just after the page
+      closeModal();
+      /* Reported again: "Opening area...", then today's Journal, no message.
+         A page that comes in only with the rest of the folder: the link waits
+         for it, opens it, and stays there when the screen is drawn again. */
+      const garden = join(PAGES, "Garden.md");
+      await b.write(garden, "- TODO Prune the apple tree\n  id:: lnk474cd\n");
+      files[garden] = "";
+      const at = APP_LOG.length;
+      history.replaceState(null, "", "#" + LINK_TAG + "&p=" + encodeURIComponent(garden) + "&b=lnk474cd");
+      const following = handleHash();
+      await new Promise(r => setTimeout(r, 300));
+      listed(); release();
+      await filesLoaded();
+      await following;
+      render();
+      eq(state.view === "page" && state.pagePath, garden, "a page that came in with the rest of the folder did not open, or did not stay open");
+      const pruned = getPage(garden).blocks[0];
+      eq(state.selected, pruned && pruned.id, "the line on the page that came in later is not the one picked");
+      has(APP_LOG.slice(at).join("\n"), "Garden.md", "following the link left nothing in the Save log");
     } finally {
       await new Promise(r => setTimeout(r, 200));   // the line's panel opens just after the page
       closeModal();

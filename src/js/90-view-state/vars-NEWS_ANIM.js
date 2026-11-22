@@ -4,6 +4,22 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.201.3#474": `
+    # A link tapped in a chat opens the app in a new tab, at the line.
+    + pg col abs
+    s pg | left:12px;top:12px;right:12px
+    + h h > pg | Chat · Anna
+    + m ln > pg | Here it is → grouptodo.html#gt…
+    w 800
+    p m
+    t m | Opening area...
+    c m +dim
+    w 900
+    c m -dim
+    t h | Kitchen renovation
+    t m | Measure the window
+    c m +lit
+    w 1500`,
   "1.200.2#433": `
     + sl slide
     + h hub > sl | Kitchen renovation
@@ -419,27 +435,5 @@ const NEWS_ANIM = {
     w 800
     p b1
     + q quiet > cd | The answers stay in one spot.
-    w 1300`,
-  "1.191.3#446": `
-    + bf row abs
-    s bf | left:12px;top:10px
-    + bk btn > bf | ←
-    + fw btn > bf | →
-    + pg col abs
-    s pg | left:12px;top:44px;right:12px
-    + h h > pg | Journal · Sunday
-    + l ln > pg | Ask [[Anna]] for the catalog
-    w 800
-    p l
-    t h | Anna
-    t l | Phone 555 0101
-    w 900
-    p bk
-    t h | Journal · Sunday
-    t l | Ask [[Anna]] for the catalog
-    w 600
-    p fw
-    t h | Anna
-    t l | Phone 555 0101
     w 1300`,
 };

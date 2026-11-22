@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.201.3 - 2026-11-22
+
+- Links and aliases: a link to a page or a line no longer ends on today's
+  Journal while the area is still coming in. It waits for its page, then
+  opens it at the line, or says the page is not there. Each step goes into
+  the Save log. (#474)
+
 ## 1.201.2 - 2026-11-22
 
 - Links and aliases: a link to a page or a line (Copy link) now opens even

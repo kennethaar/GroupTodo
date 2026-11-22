@@ -1167,7 +1167,8 @@ js/145-horizons-view/vars-LINK_TAG.js
 js/145-horizons-view/ensureBlockId.js
 js/145-horizons-view/deepLink.js
 js/145-horizons-view/parseDeepLink.js
-js/145-horizons-view/untilFolderTakesOver.js
+js/145-horizons-view/linkedBlock.js
+js/145-horizons-view/untilLinkReady.js
 js/145-horizons-view/followDeepLink.js
 js/145-horizons-view/copyOneLine.js
 js/145-horizons-view/copyLinkTo.js
