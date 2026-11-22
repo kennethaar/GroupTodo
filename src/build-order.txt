@@ -334,6 +334,7 @@ js/23-space-folders/offerFolderBack.js
 js/23-space-folders/offerNextFolder.js
 js/23-space-folders/spaceBackend.js
 js/23-space-folders/startView.js
+js/23-space-folders/startPlace.js
 js/23-space-folders/openSpace.js
 js/23-space-folders/createSpace.js
 js/23-space-folders/colorPicker.js
@@ -1169,6 +1170,8 @@ js/145-horizons-view/deepLink.js
 js/145-horizons-view/parseDeepLink.js
 js/145-horizons-view/vars-LINK_OPENING.js
 js/145-horizons-view/linkedBlock.js
+js/145-horizons-view/linkReadyNow.js
+js/145-horizons-view/linkArrive.js
 js/145-horizons-view/linkOpeningLabel.js
 js/145-horizons-view/linkOpeningNode.js
 js/145-horizons-view/untilLinkReady.js

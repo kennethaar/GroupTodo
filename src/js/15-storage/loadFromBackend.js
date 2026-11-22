@@ -34,7 +34,7 @@ async function loadFromBackend(backend, {quick = false} = {}) {
   const onDay = INIT_DONE ? null : r => {
     LOADED.set(name, r);
     bindActive(name);
-    state.view = startView(); state.pagePath = null;
+    ({view: state.view, pagePath: state.pagePath} = startPlace());   // a link's page, once it is in (#474)
     SPACE_TRANSITION = false;
     renderUnlessTyping();
   };

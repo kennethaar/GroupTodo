@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.201.5 - 2026-11-22
+
+- Links and aliases: a link opens its page in seconds, as soon as that page
+  is read, not after a big folder has been listed, which took minutes on a
+  phone. (#474)
+
 ## 1.201.4 - 2026-11-22
 
 - Links and aliases: a link opens straight at its page. Until the page is

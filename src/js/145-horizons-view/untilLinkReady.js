@@ -6,9 +6,8 @@
    and it is not, or after ms. */
 async function untilLinkReady(link, ms = 180000) {
   for (const end = performance.now() + ms; ;) {
+    if (link.arrived || linkReadyNow(link)) return true;
     const rec = LOADED.get(V.space);
-    const page = V.pages.has(link.path) && !(rec && stillLoading(rec, link.path));
-    if (page && (!link.block || linkedBlock(link))) return true;
     const loading = SPACE_TRANSITION || folderWaiting(V.space) || (!!rec && (!!rec.dayOnly || !!rec.stubs));
     if (!loading || performance.now() > end) return false;
     const said = $("#content > .linkopening"), label = LINK_OPENING && linkOpeningLabel(LINK_OPENING);

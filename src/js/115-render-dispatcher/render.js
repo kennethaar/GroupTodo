@@ -20,9 +20,14 @@ function render() {
   c.textContent = "";
   c.removeAttribute("aria-busy");
   FOCUS_NODE = null;
-  // A link on its way stands in the page's place until its page is in (#474).
-  let node = folderAwayShown() ? folderAwayPanel(V.space) : LINK_OPENING ? linkOpeningNode() : VIEWS[state.view]();
-  if (LINK_OPENING && !folderAwayShown()) c.setAttribute("aria-busy", "true");
+  /* A link on its way stands in the page's place until its page is in; then
+     the page is drawn and its line picked, once (#474). */
+  const link = LINK_OPENING && !LINK_OPENING.arrived ? LINK_OPENING : null;
+  const linkHere = link && state.view === "page" && state.pagePath === link.path && linkReadyNow(link);
+  if (linkHere) linkArrive(link);
+  const linkWait = link && !linkHere && !folderAwayShown();
+  let node = folderAwayShown() ? folderAwayPanel(V.space) : linkWait ? linkOpeningNode() : VIEWS[state.view]();
+  if (linkWait) c.setAttribute("aria-busy", "true");
   if (FOCUS_NODE) node = el("div", {class: "wrap"}, FOCUS_NODE);
   c.append(node);
   document.body.classList.toggle("solview", node.classList.contains("solwrap"));

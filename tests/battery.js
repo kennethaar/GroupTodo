@@ -1327,6 +1327,55 @@ var GTD_TEST = (() => {
     }
   });
 
+  test("#474 opened by a link, the page shows as soon as it is read, not after the folder is listed", async () => {
+    /* Reported: it works, but takes minutes. At start-up the first screens are
+       drawn as today's page comes in; the link was followed only once the
+       whole folder was listed. */
+    await flush();
+    const name = V.space, kept = LOADED.get(name), was = {view: state.view, pagePath: state.pagePath, selected: state.selected};
+    const today = journalPath(todayISO()), note = join(PAGES, "Kitchen renovation.md");
+    const b = Backends.ls("Ls474s");
+    b.kind = "fs";
+    const files = {[today]: "- written in the folder\n", [note]: "- TODO Measure the window\n  id:: lnk474ef\n"};
+    for (const [p, t] of Object.entries(files)) await b.write(p, t);
+    let listed;
+    const listing = new Promise(r => { listed = r; }), names = b.names.bind(b);
+    b.names = async o => { await listing; return names(o); };
+    b.readDays = async (days, {files: named = []} = {}) => {
+      const out = new Map();
+      for (const p of [...days.map(d => journalPath(d)), ...named]) { const t = await b.readText(p); if (t != null) out.set(p, t); }
+      return out;
+    };
+    const hash = location.hash;
+    history.replaceState(null, "", "#" + LINK_TAG + "&p=" + encodeURIComponent(note) + "&b=lnk474ef");
+    LOADED.delete(name);
+    INIT_DONE = false;                         // as at start-up
+    LINK_OPENING = parseDeepLink(location.hash);
+    let loading;
+    try {
+      loading = loadFromBackend(b);
+      for (let i = 0; i < 100 && !(V.pages.has(note) && state.view === "page"); i++) await new Promise(r => setTimeout(r, 20));
+      eq(state.view === "page" && state.pagePath, note, "the linked page waited for the folder to be listed");
+      ok($("#content .blk"), "the linked page is not drawn while the folder is listed");
+      const line = getPage(note).blocks[0];
+      eq(state.selected, line && line.id, "the linked line is not the one picked");
+    } finally {
+      INIT_DONE = true;
+      listed();
+      await loading;
+      await filesLoaded();
+      LINK_OPENING = null;
+      await new Promise(r => setTimeout(r, 200));
+      closeModal();
+      history.replaceState(null, "", location.pathname + location.search + hash);
+      LAST_HASH = location.hash;
+      LOADED.set(name, kept); bindActive(name);
+      for (const p of Object.keys(files)) await b.remove(p);
+      state.selected = was.selected;
+      go(was.view, was.pagePath ? {pagePath: was.pagePath} : {});
+    }
+  });
+
   test("#232 lines typed in the browser copy while the folder is read behind are kept when the folder takes over", async () => {
     /* Reported again: typing on a phone while the folder was read, what was
        written was lost when the journal came in. The lines on screen belong

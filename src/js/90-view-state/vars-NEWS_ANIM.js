@@ -4,6 +4,22 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.201.5#474": `
+    # The linked page opens in seconds; the rest of the folder comes in behind it.
+    + pg col abs
+    s pg | left:12px;top:12px;right:12px
+    + h h > pg | Opening Kitchen renovation…
+    + m ln > pg |
+    + q quiet > pg | Folder: 12 of 1203 files
+    w 700
+    t h | Kitchen renovation
+    t m | Measure the window
+    c m +lit
+    w 600
+    t q | Folder: 400 of 1203 files
+    w 700
+    t q | Folder: 1203 of 1203 files
+    w 1300`,
   "1.201.4#474": `
     # The new tab says where the link goes until the page is in.
     + pg col abs
@@ -416,21 +432,4 @@ const NEWS_ANIM = {
     c l3 -sel +task +d1
     + pc chip acc > l1 | Project
     w 1600`,
-  "1.191.5#376": `
-    + cd card abs
-    s cd | left:10px;top:12px;width:38%
-    + q h > cd | Clarify
-    + t > cd | Ask Anna for the catalog
-    + pg col abs
-    s pg | left:48%;top:12px;right:10px
-    + ph quiet > pg | Sunday
-    + f ln fold > pg | Kitchen renovation
-    + g ln > pg | Call Bo
-    w 1000
-    c f -fold +open
-    + u1 ln d1 > pg | Choose tiles
-    + u2 ln d1 lit > pg | Ask Anna for the catalog
-    s g | order:9
-    s pg | display:flex;flex-direction:column
-    w 1700`,
 };

@@ -40,8 +40,9 @@ async function openSpace(name, destination = null, {draw = true} = {}) {
     PENDING_PROFILE.delete(name);
     if (!getSetting("horizon_profile") && HORIZON_PROFILES[want]) setSetting("horizon_profile", want);
   }
-  state.view = destination?.view || startView();
-  state.pagePath = destination?.pagePath || null;
+  const start = startPlace();   // a link's page, once it is in (#474)
+  state.view = destination?.view || start.view;
+  state.pagePath = destination ? destination.pagePath || null : start.pagePath;
   if (destination) for (const key of NAV_FIELDS) if (key in destination) state[key]=destination[key];
   if (destination && "branch" in destination) applyBranchSnap(destination.branch);
   ensureVisibleLoaded();            // the areas beside it come in behind the journal (#387)

@@ -1,6 +1,11 @@
-async function followDeepLink(link) {
+async function followDeepLink(next) {
+  // At start-up the first screens may have opened it already (startPlace, linkArrive).
+  const same = LINK_OPENING && LINK_OPENING.path === next.path && LINK_OPENING.block === next.block &&
+               LINK_OPENING.space === next.space;
+  const link = same ? LINK_OPENING : next;
   const say = text => loadMark("link to " + link.path + (link.block ? ", line " + link.block : "") + ": " + text);
-  let t = say("followed");
+  let t = say(link.arrived ? "followed, already open" : "followed");
+  if (link.arrived) { LINK_OPENING = null; return true; }
   LINK_OPENING = link;
   if (!SPACE_TRANSITION) render();             // where it goes, in the page's place
   let opened = false;
@@ -15,25 +20,16 @@ async function followDeepLink(link) {
     }
     const ready = await untilLinkReady(link);
     say(ready ? "page in" : "not found once the area was in", t);
+    if (link.arrived) { opened = true; return true; }
     LINK_OPENING = null;
     if (!V.pages.has(link.path)) {
       notify("That link points at a page this vault does not have: " + link.path, "warn");
       return false;
     }
     opened = true;
-    if (link.block) {
-      const found = linkedBlock(link);
-      if (found) {
-        openPage(link.path);
-        state.selected = found.id;
-        setTimeout(() => openTaskDetail(link.path, found), 120);
-        say("opened at the line");
-        return true;
-      }
-      notify("The page is here, but that particular item has gone.", "warn");
-    }
+    if (link.block && !linkedBlock(link)) notify("The page is here, but that particular item has gone.", "warn");
+    else linkArrive(link);
     openPage(link.path);
-    say("opened");
     return true;
   } finally {
     LINK_OPENING = null;
