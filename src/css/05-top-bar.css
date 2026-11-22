@@ -49,6 +49,13 @@ kbd{font:11px var(--mono);border:1px solid var(--border);border-radius:4px;paddi
    Back and Forward stand exactly where they stand on every other page. */
 body.paper:not(.capping) header.top{background:none;border-bottom-color:transparent}
 body.paper:not(.capping) header.top > :not(.burger):not(.h-hist){visibility:hidden}
+/* The unseen bar takes no room and no click, so the day's name stands on the
+   line of Back and Forward, beside them (journalHeadClear keeps it clear). */
+body.paper:not(.capping) header.top{position:absolute;top:0;left:0;right:0;z-index:20;pointer-events:none}
+body.paper:not(.capping) header.top > .burger,body.paper:not(.capping) header.top > .h-hist{pointer-events:auto}
+body.paper:not(.capping) #content .todayhead:not(.weekhead){margin-top:10px}
+/* The day's name keeps the width of the widest one, so ‹ date › never move. */
+@media (min-width:641px){ .todayhead:not(.weekhead) h1{min-width:var(--daywide,0)} }
 @media (max-width:640px){ .todayhead .hnow,.todayhead .spacesbtn{display:none} }
 .sidesearch{display:none}
 body.paper .sidesearch{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 12px 10px;

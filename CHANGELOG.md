@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.201.1 - 2026-11-22
+
+- Journal: the day's name now stands on the line of Back and Forward, not
+  below them. The ‹ and › for the day before and after, and the date box
+  between them, stay at one spot from day to day, so a click lands where
+  you aimed. In the past or Ahead now comes after them. (#473)
+
 ## 1.201.0 - 2026-11-22
 
 - What's new: each new thing now plays a short animation on top, drawn by

@@ -2593,6 +2593,7 @@ js/115-render-dispatcher/viewScrollKey.js
 js/115-render-dispatcher/captureScroll.js
 js/115-render-dispatcher/restoreScroll.js
 js/115-render-dispatcher/vars-FOCUS_NODE.js
+js/115-render-dispatcher/journalHeadClear.js
 js/115-render-dispatcher/journalPaper.js
 js/115-render-dispatcher/render.js
 js/115-render-dispatcher/linkKindOf.js

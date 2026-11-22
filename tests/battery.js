@@ -9309,7 +9309,13 @@ var GTD_TEST = (() => {
       ok(head.contains($(".hnow")), "what is on now too");
       // #445 Light or dark was lost with the bar.
       ok(head.contains($("#btnTheme")) && seen($("#btnTheme")), "Light or dark stands in the day's heading (#445)");
-      ok(head.getBoundingClientRect().top >= $("#btnBack").getBoundingClientRect().bottom, "the heading starts below Back and Forward (#446)");
+      // #473 the day's name stands on the line of Back and Forward, beside them, not below.
+      const mid = r => (r.top + r.bottom) / 2, h1 = head.querySelector("h1").getBoundingClientRect();
+      ok(Math.abs(mid(h1) - mid($("#btnBack").getBoundingClientRect())) <= 4,
+        "the day's name on the line of Back and Forward: " + Math.round(mid(h1)) + " vs " + Math.round(mid($("#btnBack").getBoundingClientRect())) + " (#473)");
+      ok(h1.left >= $("#btnFwd").getBoundingClientRect().right, "beside them, not under them (#473)");
+      ok(document.elementFromPoint(head.querySelector(".presentbtn").getBoundingClientRect().left + 5,
+        mid(head.querySelector(".presentbtn").getBoundingClientRect()))?.closest(".presentbtn"), "the unseen bar takes no click from the heading (#473)");
       ok(seen($("#sideSearch")), "Search in the sidebar");
       // #323 Help floats in the bottom right corner, under the Timer.
       const help = $("#floatHelp"), timer = $("#timerFloat .nav-item.timer");
@@ -9318,6 +9324,8 @@ var GTD_TEST = (() => {
       ok(!timer || timer.getBoundingClientRect().bottom <= help.getBoundingClientRect().top + 1, "under the Timer");
       focusCapture();   // what N does
       ok(seen(bar()) && document.activeElement === $("#cap"), "N, to capture, brings the bar back with the caret in it");
+      ok(content().querySelector(".todayhead").getBoundingClientRect().top >= bar().getBoundingClientRect().bottom - 1,
+        "and the bar covers no heading (#473)");
       $("#cap").blur();
       setSidebarHidden(true); render(); await settle();
       await sameSpot("sidebar folded");
@@ -9334,6 +9342,20 @@ var GTD_TEST = (() => {
       ok(bar().contains($("#btnBack")) && bar().contains($("#btnTheme")), "Back, Forward and Light or dark back in it too (#445)");
       ok(!seen($("#sideSearch")), "and one Search, in the bar");
     } finally { setSidebarHidden(false); go("today"); await settle(); }
+  });
+  test("#473 the day's arrows and date box stay put whatever the day's name, so a click hits what it aimed at", async () => {
+    const spot = () => [...content().querySelectorAll(".todayhead .daybox > button.dayarrow:not(.dayimport), .todayhead .daypick")]
+      .map(b => Math.round(b.getBoundingClientRect().left)).join(",");
+    try {
+      // A week of names, a long month and a short one, and today.
+      const days = [0, 1, 2, 3, 4, 5, 6].map(n => shiftISO("2026-09-21", n)).concat(["2026-05-03", T()]);
+      go("today", {todayDay: days[0]}); await settle();
+      const there = spot();
+      for (const d of days) {
+        go("today", {todayDay: d}); await settle();
+        eq(spot(), there, "the ‹ 📅 › on " + d);
+      }
+    } finally { go("today", {todayDay: null}); await settle(); }
   });
   test("#399 on a computer the Timer floats in the bottom right corner; on a phone it stays in the sidebar", async () => {
     const mm = window.matchMedia;

@@ -14,6 +14,7 @@ function journalPaper(place = true) {
     const now = $(".hnow"), hb = $("#hereBar"), ab = $("#areaBar"), sb = $("#spacesBtn"), sp = $("#spop"), theme = $("#btnTheme");
     if (!now || !hb || !ab || !sb || !sp || !theme) return;
     JOURNAL_PAPER_TOOLS = {now, hb, ab, sb, sp, theme};
+    addEventListener("resize", () => journalHeadClear($("#content .todayhead:not(.weekhead)")));
   }
   const {now, hb, ab, sb, sp, theme} = JOURNAL_PAPER_TOOLS;
   const head = place && $("#content .todayhead:not(.weekhead) > .vhead-r");
@@ -27,4 +28,5 @@ function journalPaper(place = true) {
     top.append(ab, sb, sp, hb);
     $("#btnSearch").after(theme);
   }
+  if (head) journalHeadClear(head.parentNode);
 }
