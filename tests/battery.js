@@ -6784,6 +6784,53 @@ var GTD_TEST = (() => {
     has(added()[1].title, "assets/", "the second file is not in assets/");
     getPage(path).blocks.splice(before); touch(path); render();
   });
+  test("#476 a picture dropped on a line can become its slide picture: from the toast, the line menu or the picture opened", () => withPages({
+    [TALK]: ["- Kitchen tiles", "- Budget", "- Plumber ![van](https://example.com/van.png)"].join("\n") + "\n"}, async () => {
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    const offer = () => [...document.querySelectorAll("#toasts .toast .act")].find(b => b.textContent === "Use as slide picture");
+    for (const t of document.querySelectorAll("#toasts .toast")) t.remove();
+    openPage(TALK); await settle();
+    const [tiles, budget, plumber] = getPage(TALK).blocks;
+    const drop = async (b, file) => {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      document.querySelector('.blk[data-id="' + b.id + '"] .txt').dispatchEvent(new DragEvent("drop", {dataTransfer: dt, bubbles: true, cancelable: true}));
+      for (let i = 0; i < 80 && !/assets\//.test(b.title); i++) await frame();
+    };
+    try {
+      await drop(budget, new File(["minutes"], "minutes476.txt", {type: "text/plain"}));
+      ok(!offer(), "a file that is no picture is not offered for the slide");
+      await drop(tiles, new File([new Uint8Array([137, 80, 78, 71])], "tiles476.png", {type: "image/png"}));
+      has(tiles.title, "![tiles476.png](assets/", "the picture lands on the line, as before");
+      ok(offer(), "the toast offers Use as slide picture");
+      offer().click(); await settle();
+      eq(tiles.title, "Kitchen tiles", "the picture leaves the line");
+      has(tiles.body[0] || "", "![tiles476.png](assets/", "and goes first in the line's notepad");
+      has(slideNotes(tiles).cover, "assets/", "where Present takes it as the slide's picture");
+      document.dispatchEvent(new KeyboardEvent("keydown", {key: "z", ctrlKey: true, bubbles: true, cancelable: true})); await settle();
+      has(getPage(TALK).blocks[0].title, "![tiles476.png](assets/", "Ctrl+Z puts it back on the line");
+      // The line menu, on a line with a picture in it.
+      const fly = b => { FLY = {txt: el("div", {}, b.title), path: TALK, page: getPage(TALK), block: b, box: el("div"), open: null, hi: 0, q: ""};
+        return flyRows().find(r => r.k === "slidepic"); };
+      ok(!fly(getPage(TALK).blocks[1]), "a line with only a file link, no picture, has no Use picture on the slide");
+      eq(fly(plumber)?.label, "Use picture on the slide", "the line menu offers it");
+      ok(fly(plumber).menu, "in the line's own menu");
+      flyHead("slidepic"); await settle();
+      eq([plumber.title, plumber.body[0]], ["Plumber", "![van](https://example.com/van.png)"], "the picture moves to the notepad");
+      // The picture opened full size, from a line.
+      const t2 = getPage(TALK).blocks[0];
+      render(); await settle();
+      const img = document.querySelector('.blk[data-id="' + t2.id + '"] img.asset');
+      ok(img, "the dropped picture shows in the line");
+      img.click(); await settle();
+      const use = [...document.querySelectorAll(".modal .btn")].find(b => b.textContent === "Use on the slide");
+      ok(use, "the opened picture offers Use on the slide");
+      use.click(); await settle();
+      eq(t2.title, "Kitchen tiles", "it leaves the line");
+      has(t2.body[0] || "", "![tiles476.png](assets/", "and goes to the notepad");
+      ok(!document.querySelector(".modal .pictureview"), "the picture view closes");
+    } finally { closeModal(); for (const t of document.querySelectorAll("#toasts .toast")) t.remove(); }
+  }));
   test("renamePage rewrites the links to it", () => {
     const target = join(DIRS.pages, "Test rename me.md");
     putPage(target, {props: {title: "Test rename me"}, blocks: []});

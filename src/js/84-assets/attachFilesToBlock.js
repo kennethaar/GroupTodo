@@ -95,6 +95,9 @@ async function attachFilesToBlock(path, b, files, txt) {
   const where = V.backend.kind === "fs" || V.backend.kind === "http"
     ? "saved in " + ASSET_DIR + "/"
     : "kept in this browser only - choose a folder to make them real files";
-  notify(marks.length + (marks.length === 1 ? " file " : " files ") + where + ".");
+  // A picture can go on the slide instead, in the line's notepad (#476).
+  const pic = marks.find(m => slidePicture(m));
+  notify(marks.length + (marks.length === 1 ? " file " : " files ") + where + ".", "info",
+    pic ? {label: "Use as slide picture", run: () => slidePicMove(path, b, DECK_IMAGE_RE.exec(pic)[1])} : null);
   return true;
 }

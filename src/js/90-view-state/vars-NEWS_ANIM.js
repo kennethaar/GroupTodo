@@ -4,6 +4,27 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.203.0#476": `
+    cap | A dropped picture can be the slide's picture
+    say | You drop a picture on a line.
+    # A picture dropped on a line; the note offers to make it the slide's picture.
+    + pg col
+    + l ln > pg | Kitchen tiles
+    w 700
+    t l | Kitchen tiles · tiles.png
+    + ts chip fade > pg | 1 file saved · Use as slide picture
+    w 50
+    c ts -fade
+    say | The note offers Use as slide picture.
+    w 900
+    p ts
+    t l | Kitchen tiles
+    c ts +fade
+    + n quiet fade > pg | Notepad: tiles.png, the slide's picture
+    w 50
+    c n -fade
+    say | The picture moves to the line's notepad, for Present.
+    w 1500`,
   "1.202.6#431": `
     cap | A title moves up letter by letter
     say | A long title stands big on its own slide.
@@ -181,54 +202,5 @@ const NEWS_ANIM = {
     c n -fade
     w 300
     c l -fade
-    w 1500`,
-  "1.200.0#455": `
-    cap | A name and a colon: waiting for
-    say | You start a line with a person's name and a colon.
-    w 1200
-    + a ln task
-    ty a | Anna: send the budget
-    w 300
-    t a | ~Anna~: send the budget
-    w 600
-    say | The name gets a wavy line. Tap it.
-    p a
-    + m menu
-    s m | left:34px;top:38px
-    + m1 item > m | Add wait and link Anna
-    + m2 item > m | Link Anna
-    w 500
-    c m1 +on
-    say | Add wait and link Anna.
-    p m1
-    - m
-    t a | [[Anna]]: send the budget
-    say | The line now waits for Anna.
-    + w1 chip wait > a | Waiting for Anna
-    w 1600`,
-  "1.199.1#469": `
-    cap | Tables you can edit
-    say | A table has a bar while you write in it.
-    w 1200
-    + tb tbl
-    + h1 td th > tb | Item
-    + h2 td th > tb | Cost
-    + h3 td th > tb | Who
-    + bar bar gone fade > tb | Row ＋  Column ＋  ⇤ ⇥  Reveal Rows | Columns
-    s bar | grid-column:1/-1
-    + r1 td > tb | Floor
-    + r2 td > tb | € 900
-    + r3 td > tb | Anna
-    + r4 td > tb | Plumber
-    + r5 td > tb | € 400
-    + r6 td > tb | Bo
-    w 700
-    say | Tap a cell and type.
-    p r1
-    c r1 +field
-    c bar -gone
-    w 50
-    c bar -fade
-    ty r1 |  tiles
     w 1500`,
 };

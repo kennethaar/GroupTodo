@@ -5,14 +5,20 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.203.0 - 2026-11-22
+
+- Present a page: a picture dropped on a line can be the slide's picture.
+  The note after the drop has Use as slide picture; the line's ☰ menu has
+  Use picture on the slide; a picture you open has Use on the slide. Each
+  moves the picture into the line's notepad, where Present shows it.
+  Ctrl+Z puts it back. (#476)
+
 ## 1.202.6 - 2026-11-22
 
 - Present a page: when a title moves to the top and its line breaks
   change, each letter now slides on its own to its new place, the way text
   reflows when you widen or narrow the editor. No jump and no fade: the
   title is whole when the letters land. (#431)
-
-## 1.201.2 - 2026-11-22
 
 ## 1.202.5 - 2026-11-22
 

@@ -776,6 +776,7 @@ js/91-present/slideMark.js
 js/91-present/slideMarkOf.js
 js/91-present/slideHidden.js
 js/91-present/slideHideSet.js
+js/91-present/slidePicMove.js
 js/91-present/slideMarkSet.js
 js/91-present/slideTitleTokens.js
 js/91-present/slideKpi.js
