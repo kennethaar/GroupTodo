@@ -119,6 +119,7 @@ js/10-markdown/vars-serializeBlocks.js
 js/10-markdown/walkBlocks.js
 js/10-markdown/flattenBlocks.js
 # script 2
+js/15-storage/vars-WIDGET_DIR.js
 js/15-storage/vars-safeLS.js
 js/15-storage/probeStorage.js
 js/15-storage/vars-LS.js
@@ -3081,6 +3082,13 @@ js/168-phone-and-workday/vars-WORKDAY_SAID.js
 js/168-phone-and-workday/workdayNudge.js
 js/168-phone-and-workday/vars-SEND_SAID.js
 js/168-phone-and-workday/sendNudge.js
+js/168-phone-and-workday/widgetName.js
+js/168-phone-and-workday/widgetLine.js
+js/168-phone-and-workday/widgetFiles.js
+js/168-phone-and-workday/applyWidgetTicks.js
+js/168-phone-and-workday/syncWidgets.js
+js/168-phone-and-workday/scheduleWidgets.js
+js/168-phone-and-workday/installWidgets.js
 js/169-project-hold/projectHold.js
 js/169-project-hold/setProjectHold.js
 js/169-project-hold/openProjectHold.js

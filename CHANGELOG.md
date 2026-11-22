@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.202.0 - 2026-11-22
+
+- Contexts: every context now has a widget file for your phone's home
+  screen, with nothing to set up. GroupToDo keeps a Widgets folder in your
+  folder with one file per context, such as @Home.md and @Home - Kitchen.md,
+  each holding what you can do there, overdue first. Add the ones you want in
+  a widget app such as Obsidian Widget. Tick a line there, and it is done in
+  GroupToDo too the next time it opens. (#474)
+
 ## 1.201.7 - 2026-11-22
 
 - Sense where I am: at start-up it waits until all of the area's pages are

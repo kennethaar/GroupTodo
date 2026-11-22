@@ -4,6 +4,24 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.202.0#474": `
+    # Each context has a widget file; a tick there is done in GroupToDo too.
+    + pg col abs
+    s pg | left:12px;top:12px;right:12px
+    + h h > pg | Widgets/@Home.md
+    + a ln > pg | ☐ Pay the bill
+    + b ln > pg | ☐ Water the plants
+    + c ln > pg | ☐ Fix the tap (Kitchen)
+    w 900
+    p b
+    t b | ☑ Water the plants
+    c b +dim
+    w 900
+    t h | GroupToDo · @Home
+    t b | DONE Water the plants
+    c b -dim
+    c b +lit
+    w 1500`,
   "1.201.6#474": `
     # The linked page is read alone and drawn first; today's page follows.
     + pg col abs
@@ -313,23 +331,6 @@ const NEWS_ANIM = {
     k Enter
     c l2 -field
     w 300
-    k
-    w 1500`,
-  "1.197.0#466": `
-    + sl slide
-    + t h > sl | Budget
-    + a ln > sl | Tiles € 900
-    + b ln > sl | Plumber € 40
-    w 900
-    p b
-    p b
-    c b +field
-    s b | color:var(--fg)
-    ty b | 0
-    k Enter
-    w 300
-    c b -field
-    s b | color:inherit
     k
     w 1500`,
 };

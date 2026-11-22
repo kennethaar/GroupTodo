@@ -155,6 +155,7 @@ const Backends = {
           for await (const [name, h] of dir.entries()) {
             n++;
             if (name.startsWith(".")) continue;
+            if (!prefix && name === WIDGET_DIR) continue;   // the widgets' files, written from the pages (#474)
             const p = prefix ? prefix + "/" + name : name;
             if (h.kind === "directory") { dirCache.set(p, h); subs.push([h, p]); }
             else if (/\.(md|org)$/i.test(name) || isVaultCssPath(p)) found.set(p, h);

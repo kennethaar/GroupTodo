@@ -1389,6 +1389,59 @@ var GTD_TEST = (() => {
     }
   });
 
+  test("#474 every context gets a widget file of its next actions, and a tick there marks the line done", async () => {
+    /* Widgets: no setup in GroupToDo. Every context, parent and sub context,
+       gets a file in Widgets/ that a widget app shows; a tick there comes
+       back as done. */
+    makeContext("Testwh"); makeContext("Testwh/Kitchen");
+    const path = scratchProject("474 widget", [
+      ["TODO", "Water the plants [[c/Testwh]]"],
+      ["TODO", "Fix the tap [[c/Testwh/Kitchen]]"],
+      ["WAIT", "Hear from the plumber [[c/Testwh]]"],
+      ["TODO", "Pay the bill [[c/Testwh]]"],
+    ]);
+    const page = getPage(path), [water, tap, , bill] = page.blocks;
+    setDue(bill, shiftISO(T(), -1));            // overdue: first
+    for (let i = 0; i < 25; i++) page.blocks.push(stampAuthor(newBlock({state: "TODO", title: "Chore " + i + " [[c/Testwh/Kitchen]]"})));
+    touch(path); clearMemo();
+    const files = new Map(), writes = [];
+    const backend = {kind: "fs", async readText(p) { return files.has(p) ? files.get(p) : null; },
+      async write(p, t) { writes.push(p); files.set(p, t); }, async remove(p) { files.delete(p); }};
+    const rec = LOADED.get(V.space);
+    try {
+      await syncWidgets(rec, {read: true, backend});
+      const home = files.get(join(WIDGET_DIR, "@Testwh.md")), kitchen = files.get(join(WIDGET_DIR, "@Testwh - Kitchen.md"));
+      ok(home && kitchen, "a parent context or its sub context has no widget file: " + [...files.keys()].join(", "));
+      const lines = t => t.split("\n").filter(l => /^- \[ \] /.test(l));
+      has(home, "# @Testwh", "the file does not name its context");
+      eq(lines(home)[0], "- [ ] Pay the bill", "overdue does not come first, or the context link is left in the line");
+      ok(lines(home).includes("- [ ] Water the plants"), "the context's own action is missing");
+      ok(lines(home).includes("- [ ] Fix the tap (Kitchen)"), "the sub context's action is missing from its parent, or not marked");
+      ok(!home.includes("plumber"), "a waiting-for is on the widget");
+      eq(lines(kitchen).length, WIDGET_MAX, "not at most " + WIDGET_MAX + " lines");
+      eq(lines(kitchen)[0], "- [ ] Fix the tap", "the sub context's own file");
+      const probe = newRecord("W474b", Backends.memory("W474b"));
+      fillRecord(probe, new Map([[join(WIDGET_DIR, "@X.md"), "- [ ] a\n"]]));
+      ok(!probe.pages.size, "a widget file was read as a page");
+      // Ticked in the widget app: done in the page, and gone from the widget.
+      files.set(join(WIDGET_DIR, "@Testwh.md"), home.replace("- [ ] Water the plants", "- [x] Water the plants"));
+      writes.length = 0;
+      await syncWidgets(rec, {read: true, backend});
+      eq(water.state, "DONE", "a tick in the widget did not mark the line done");
+      eq(tap.state, "TODO", "a line not ticked was marked done");
+      ok(!files.get(join(WIDGET_DIR, "@Testwh.md")).includes("Water the plants"), "the done line is still on the widget");
+      writes.length = 0;
+      await syncWidgets(rec, {backend});
+      eq(writes, [], "files were written again with nothing changed");
+    } finally {
+      closeModal();
+      document.querySelectorAll("#toasts .toast").forEach(t => t.remove());
+      removePage(path);
+      for (const c of ["Testwh/Kitchen", "Testwh"]) if (V.pages.has(contextPath(c))) removePage(contextPath(c));
+      clearMemo();
+    }
+  });
+
   test("#232 lines typed in the browser copy while the folder is read behind are kept when the folder takes over", async () => {
     /* Reported again: typing on a phone while the folder was read, what was
        written was lost when the journal came in. The lines on screen belong

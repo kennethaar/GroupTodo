@@ -13,6 +13,7 @@ function fillRecord(record, files, held = null) {
   for (const [path, text] of files) {
     if (isNpmDraftPath(path)) { record.drafts.set(path, text); continue; }   // a plan not yet written, not a page
     if (isGuidePath(path)) continue;          // a folder's guide, not a page
+    if (isWidgetPath(path)) continue;         // a widget's file, written from the pages (#474)
     if (isVaultCssPath(path)) { record.css.set(path, text); continue; }   // your own look, not a page
     if (isLangPath(path)) { record.langs.set(path, text); continue; }   // the app's words, not a page
     if (isPromptPath(path)) { record.prompts.set(path, text); continue; }   // a prompt for an AI, not a page

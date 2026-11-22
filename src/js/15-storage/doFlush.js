@@ -138,6 +138,7 @@ async function doFlush() {
   if (heldRecords().length) setSync("warn", "not saving - folder looks empty");
   else if (V.backend) setSync("ok", V.backend.label);
   if (wrote) Spaces.writeSummary().catch(() => {});
+  if (wrote) scheduleWidgets();        // the widgets follow the pages (#474)
   for (const rec of LOADED.values())
     if (!rec.hold && (rec.dirty.size || rec.removed.size)) { scheduleFlush(); break; }
   // A page waiting for a merge is looked at again in a while, not every 450 ms.

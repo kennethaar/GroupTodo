@@ -93,6 +93,7 @@
   setInterval(remindTick, 30000);
   if (updatesPossible()) { maybeShowWhatsNew(); installUpdateCheck(); }
   installHere();
+  installWidgets();
 
   /* A file somebody baked for you answers every question onboarding would ask --
      but only once they have said yes. Turned down, the invite and the welcome

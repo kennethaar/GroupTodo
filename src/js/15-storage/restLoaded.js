@@ -13,4 +13,5 @@ function restLoaded(rec) {
   scanVerbs();
   if (rec.dirty.size || rec.removed.size) scheduleFlush();
   renderUnlessTyping();
+  scheduleWidgets(true);   // all in now: ticks can be found and the files written (#474)
 }
