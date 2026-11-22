@@ -4755,7 +4755,7 @@ placeholder="Capture… (Enter adds to today)">
 })();
 
 "use strict";
-const APP_VERSION = "1.201.6";
+const APP_VERSION = "1.201.7";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -7226,6 +7226,10 @@ record.dayOnly = true;
 loadStep(record.name, "linked page read first", t, [...got.keys()].join(", "));
 onDay(record);
 return got;
+}
+function areaComingIn(name) {
+const rec = LOADED.get(name);
+return folderWaiting(name) || (!!rec && (!!rec.dayOnly || !!rec.stubs));
 }
 async function readDayFirst(record, edited, today, onDay) {
 const who = "“" + record.name + "”: ";
@@ -10013,6 +10017,7 @@ if (path) { MISSING_TEMPLATE_NOTICES.delete((V.space || "") + ":" + name); retur
 const key = (V.space || "") + ":" + name;
 if (LOADED.get(V.space)?.hold) return null;
 if (folderMissing(V.space)) return null;
+if (areaComingIn(V.space)) return null;
 if (!MISSING_TEMPLATE_NOTICES.has(key)) {
 MISSING_TEMPLATE_NOTICES.add(key);
 const space = V.space;
@@ -18555,7 +18560,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.201.6 - 2026-11-22\n\n- Links and aliases: a link opens its page in about 3 seconds on a phone.\n  The page is read alone, first, and drawn; today's page, the settings and\n  the projects follow behind it. (#474)\n\n## 1.201.5 - 2026-11-22\n\n- Links and aliases: a link opens its page in seconds, as soon as that page\n  is read, not after a big folder has been listed, which took minutes on a\n  phone. (#474)\n\n## 1.201.4 - 2026-11-22\n\n- Links and aliases: a link opens straight at its page. Until the page is\n  in, the screen says where it goes, \"Opening Kitchen renovation at\n  “Measure the window”…\", and never shows the Journal in between. (#474)\n\n## 1.201.3 - 2026-11-22\n\n- Links and aliases: a link to a page or a line no longer ends on today's\n  Journal while the area is still coming in. It waits for its page, then\n  opens it at the line, or says the page is not there. Each step goes into\n  the Save log. (#474)\n\n## 1.201.2 - 2026-11-22\n\n- Links and aliases: a link to a page or a line (Copy link) now opens even\n  when it starts the app in a new tab, as on a phone. The linked page is read\n  first, with today's, so it no longer waits for a big folder to be listed\n  and said the page was not there. (#474)\n\n## 1.201.1 - 2026-11-22\n\n- Journal: the day's name now stands on the line of Back and Forward, not\n  below them. The ‹ and › for the day before and after, and the date box\n  between them, stay at one spot from day to day, so a click lands where\n  you aimed. In the past or Ahead now comes after them. (#473)\n\n## 1.201.0 - 2026-11-22\n\n- What's new: each new thing now plays a short animation on top, drawn by\n  the app itself, one after the other. Use ‹ › or a dot to pick one, and ⏸\n  to stop it. The thing shown is underlined in the list below. With reduced\n  motion, each shows still. (#471)\n\n## 1.200.2 - 2026-11-22\n\n- Present a page: the hub in a hub-and-spoke slide is always a circle, with\n  at least 5 px between its words and the edge. A long title gets smaller\n  to fit. The card for a spoke's lines no longer covers the spokes beside\n  the hub. (#433)\n\n## 1.200.1 - 2026-11-22\n\n- Present a page: from the page title to the first slide, the title now\n  glides up to the top and fades there, and the next slide comes in under\n  it. It no longer slides away past the new heading. A long title that\n  moves to the top keeps its line breaks on the way, so it is never cut\n  off at the edge. (#431)\n\n## 1.200.0 - 2026-11-22\n\n- Links and aliases: a line that opens with a known person and a colon,\n  such as `Anna: send the budget`, offers Add wait and link Anna on the\n  wavy line under the name. Take it, and the name is linked and the line\n  waits on Anna. Ignore it, and nothing changes. (#455)\n\n## 1.199.1 - 2026-11-21\n\n- Keys on a line: while you write in a table, its Row, Column, alignment and\n  Reveal buttons have their own row under the header, so they no longer\n  cover the words beside the line tools. (#469)\n\n## 1.199.0 - 2026-11-21\n\n- Present a page: paste a table from Excel, Word, a web page, or text in\n  columns (tabs, commas, semicolons, | or spaces), and it becomes a Markdown\n  table. Keep as text in the message pastes it as lines instead. In Present\n  a table is a slide of its own: the header first, then a row per →. Reveal\n  Rows | Columns on the table bar brings it in a column at a time instead,\n  and the table remembers it. (#469)\n\n## 1.198.2 - 2026-11-21\n\n- Weekly review › Steps: once Weekly review shows in the sidebar, it stays\n  until you mark a review done. Then the end screen says it leaves the\n  sidebar, and it slides out when you leave the review. (#450)\n\n## 1.198.1 - 2026-11-21\n\n- Weekly review › Steps: Weekly review shows in the sidebar only when it is\n  due, after a week, or when more than 30 of your actions wait to be sorted.\n  Projects always has it. (#450)\n\n## 1.198.0 - 2026-11-21\n\n- Getting started: Outlines are the heart of GroupToDo, so the welcome now\n  shows how they work. Lines inside lines plays four short rules on a small\n  outline: Tab puts a line under another, a line gets the project and date\n  of the line above, the top line gathers every to-do under it, and Next\n  shows the deepest step first. It comes right after you start your own area\n  or join one.\n\n## 1.197.3 - 2026-11-21\n\n- Areas and sharing: Once you have been through the welcome screen, every\n  area's folder remembers it. Open the same folder in another browser and\n  GroupToDo starts straight away, without asking again.\n\n## 1.197.2 - 2026-11-21\n\n- Present a page: The talk now follows your outline, line by line. The\n  page title is a slide of its own, and each top line comes after it in its\n  place. A line with nothing under it shows big and centered. A timeline or\n  other drawing stays one slide. (#431)\n\n## 1.197.1 - 2026-11-21\n\n- Present a page: Double-click works in the presenter window too, and no\n  caret blinks on the slides any more. It shows only in a line you are\n  editing. (#466)\n\n## 1.197.0 - 2026-11-21\n\n- Present a page: Fix a typo without leaving the talk. Double-click a line\n  on a slide to edit it, with its links and tags. Enter or Save puts it on\n  the page, Esc leaves it as it was. Keys type while you edit, so the talk\n  stays on that slide. (#466)\n\n## 1.196.0 - 2026-11-21\n\n- Present a page: Give a talk straight from your notes, without making slides.\n  Point at ▶ Present to see a small preview, and pick where to start: last\n  time, the top, or your own line. Click a choice to open the talk there.\n  Pictures in a bullet's notepad show beside it while you speak. A hub's\n  spokes show their lines in a card. Task lines and lines that start with\n  `_ ` stay off the slides, so you can add notes for improvement and hide\n  unfinished points; ☰ › Hide in Present does this for you. Links show as\n  plain words. (#465)\n- Weekly review › Review actions: A project with many steps that can start\n  now gets put in order first, so you only deal with what truly comes next.\n  One card asks \"Does it wait for another step?\" for each step. \"They can all\n  go at once\" remembers your answer. A linked project shows its name on the\n  card. (#462)\n- States and Waiting for: Change many lines at once. Pick them, then press\n  Alt+T for tasks or Alt+N for notes. (#411)\n- The line menu and toolbar: The ☰ menu stays where you can use it. It no\n  longer spills over the sidebar, and in the Journal it sits in its own\n  lane. (#413)\n";
+const HELP_NEWS = "## 1.201.7 - 2026-11-22\n\n- Sense where I am: at start-up it waits until all of the area's pages are\n  in. On a phone it guessed the place before the contexts and templates were\n  read, made a context page from nothing and said \"Missing 8/c.md\", though\n  the folder has it. (#475)\n\n## 1.201.6 - 2026-11-22\n\n- Links and aliases: a link opens its page in about 3 seconds on a phone.\n  The page is read alone, first, and drawn; today's page, the settings and\n  the projects follow behind it. (#474)\n\n## 1.201.5 - 2026-11-22\n\n- Links and aliases: a link opens its page in seconds, as soon as that page\n  is read, not after a big folder has been listed, which took minutes on a\n  phone. (#474)\n\n## 1.201.4 - 2026-11-22\n\n- Links and aliases: a link opens straight at its page. Until the page is\n  in, the screen says where it goes, \"Opening Kitchen renovation at\n  “Measure the window”…\", and never shows the Journal in between. (#474)\n\n## 1.201.3 - 2026-11-22\n\n- Links and aliases: a link to a page or a line no longer ends on today's\n  Journal while the area is still coming in. It waits for its page, then\n  opens it at the line, or says the page is not there. Each step goes into\n  the Save log. (#474)\n\n## 1.201.2 - 2026-11-22\n\n- Links and aliases: a link to a page or a line (Copy link) now opens even\n  when it starts the app in a new tab, as on a phone. The linked page is read\n  first, with today's, so it no longer waits for a big folder to be listed\n  and said the page was not there. (#474)\n\n## 1.201.1 - 2026-11-22\n\n- Journal: the day's name now stands on the line of Back and Forward, not\n  below them. The ‹ and › for the day before and after, and the date box\n  between them, stay at one spot from day to day, so a click lands where\n  you aimed. In the past or Ahead now comes after them. (#473)\n\n## 1.201.0 - 2026-11-22\n\n- What's new: each new thing now plays a short animation on top, drawn by\n  the app itself, one after the other. Use ‹ › or a dot to pick one, and ⏸\n  to stop it. The thing shown is underlined in the list below. With reduced\n  motion, each shows still. (#471)\n\n## 1.200.2 - 2026-11-22\n\n- Present a page: the hub in a hub-and-spoke slide is always a circle, with\n  at least 5 px between its words and the edge. A long title gets smaller\n  to fit. The card for a spoke's lines no longer covers the spokes beside\n  the hub. (#433)\n\n## 1.200.1 - 2026-11-22\n\n- Present a page: from the page title to the first slide, the title now\n  glides up to the top and fades there, and the next slide comes in under\n  it. It no longer slides away past the new heading. A long title that\n  moves to the top keeps its line breaks on the way, so it is never cut\n  off at the edge. (#431)\n\n## 1.200.0 - 2026-11-22\n\n- Links and aliases: a line that opens with a known person and a colon,\n  such as `Anna: send the budget`, offers Add wait and link Anna on the\n  wavy line under the name. Take it, and the name is linked and the line\n  waits on Anna. Ignore it, and nothing changes. (#455)\n\n## 1.199.1 - 2026-11-21\n\n- Keys on a line: while you write in a table, its Row, Column, alignment and\n  Reveal buttons have their own row under the header, so they no longer\n  cover the words beside the line tools. (#469)\n\n## 1.199.0 - 2026-11-21\n\n- Present a page: paste a table from Excel, Word, a web page, or text in\n  columns (tabs, commas, semicolons, | or spaces), and it becomes a Markdown\n  table. Keep as text in the message pastes it as lines instead. In Present\n  a table is a slide of its own: the header first, then a row per →. Reveal\n  Rows | Columns on the table bar brings it in a column at a time instead,\n  and the table remembers it. (#469)\n\n## 1.198.2 - 2026-11-21\n\n- Weekly review › Steps: once Weekly review shows in the sidebar, it stays\n  until you mark a review done. Then the end screen says it leaves the\n  sidebar, and it slides out when you leave the review. (#450)\n\n## 1.198.1 - 2026-11-21\n\n- Weekly review › Steps: Weekly review shows in the sidebar only when it is\n  due, after a week, or when more than 30 of your actions wait to be sorted.\n  Projects always has it. (#450)\n\n## 1.198.0 - 2026-11-21\n\n- Getting started: Outlines are the heart of GroupToDo, so the welcome now\n  shows how they work. Lines inside lines plays four short rules on a small\n  outline: Tab puts a line under another, a line gets the project and date\n  of the line above, the top line gathers every to-do under it, and Next\n  shows the deepest step first. It comes right after you start your own area\n  or join one.\n\n## 1.197.3 - 2026-11-21\n\n- Areas and sharing: Once you have been through the welcome screen, every\n  area's folder remembers it. Open the same folder in another browser and\n  GroupToDo starts straight away, without asking again.\n\n## 1.197.2 - 2026-11-21\n\n- Present a page: The talk now follows your outline, line by line. The\n  page title is a slide of its own, and each top line comes after it in its\n  place. A line with nothing under it shows big and centered. A timeline or\n  other drawing stays one slide. (#431)\n\n## 1.197.1 - 2026-11-21\n\n- Present a page: Double-click works in the presenter window too, and no\n  caret blinks on the slides any more. It shows only in a line you are\n  editing. (#466)\n\n## 1.197.0 - 2026-11-21\n\n- Present a page: Fix a typo without leaving the talk. Double-click a line\n  on a slide to edit it, with its links and tags. Enter or Save puts it on\n  the page, Esc leaves it as it was. Keys type while you edit, so the talk\n  stays on that slide. (#466)\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {
@@ -18906,95 +18911,6 @@ const NEWS_ANIM = {
     s b | color:inherit
     k
     w 1500`,
-"1.196.0#465": `
-    + bt btn abs | ▶ Present
-    s bt | right:14px;top:12px
-    + a h | Kitchen renovation
-    + b ln | Why now
-    + c ln | Budget
-    w 700
-    p bt
-    + pk menu
-    s pk | right:14px;top:40px;width:200px
-    + ps > pk | Budget
-    s ps | background:#16181d;color:#f2f2ef;height:44px;display:grid;place-items:center;border-radius:5px;margin-bottom:4px;font-weight:700
-    + i1 item on > pk | Last time
-    + i2 item > pk | From the top
-    + i3 item > pk | This line, in the whole talk
-    w 1200
-    k ↓
-    c i1 -on
-    c i2 +on
-    t ps | Kitchen renovation
-    w 1000
-    k
-    p i2
-    - pk
-    + f slide
-    + ft big > f | Kitchen renovation
-    w 1500`,
-"1.196.0#462": `
-    + h h | Review actions · Kitchen renovation
-    + cd card
-    + q > cd | Does it wait for another step?
-    + s ln task lit > cd | Choose tiles
-    + r row > cd
-    + y btn > r | Yes, it waits
-    + n btn > r | No, it can start
-    + al btn > r | They can all go at once
-    w 900
-    p y
-    c y +on
-    w 300
-    c y -on
-    t s | Book the plumber
-    w 700
-    p n
-    c n +on
-    w 300
-    + dn quiet > cd | Next: Book the plumber. Choose tiles waits.
-    w 1500`,
-"1.196.0#411": `
-    + a ln | Call Bo about tiles
-    + b ln | Order grout
-    + c ln | Book the plumber
-    w 600
-    p a
-    c a +sel
-    w 250
-    c b +sel
-    w 250
-    c c +sel
-    w 400
-    k Alt+T
-    c a +task
-    c b +task
-    c c +task
-    w 900
-    c a -sel
-    c b -sel
-    c c -sel
-    k
-    w 1400`,
-"1.196.0#413": `
-    + sd side
-    + n1 nav > sd | Journal
-    + n2 nav > sd | Next
-    + mn main
-    + a ln > mn | Kitchen renovation
-    + b ln lit > mn | Order grout
-    + hb btn abs > mn | ☰
-    s hb | right:0;top:24px
-    w 600
-    p hb
-    + m menu > mn
-    s m | left:-90px;top:52px;opacity:.5
-    + m1 item > m | Make it a to-do
-    + m2 item > m | Hide in Present
-    + m3 item > m | Move to …
-    w 300
-    s m | left:30px;opacity:1
-    w 1800`,
 };
 function newsAnimKey(entry, item) {
 return entry.version + (item.issue ? "#" + item.issue : "");
@@ -48836,8 +48752,13 @@ return;
 surfaceContext(makeContext(g.ctx), g.why);
 }
 let SENSE_AT = 0;
+let SENSE_LATER = 0;
 async function senseQuietly() {
 if (!senseOn() || !V.loaded || Date.now() - SENSE_AT < 15 * 60000) return;
+if (areaComingIn(V.space)) {
+if (!SENSE_LATER) SENSE_LATER = setTimeout(() => { SENSE_LATER = 0; senseQuietly(); }, 1000);
+return;
+}
 SENSE_AT = Date.now();
 const g = await senseGuess(false);
 if (!g || g.ctx === state.context) return;

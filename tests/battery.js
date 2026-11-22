@@ -10533,6 +10533,27 @@ var GTD_TEST = (() => {
       state.context = null;
       go("projects", {sub: "list"});
       if (document.activeElement) document.activeElement.blur();
+      /* #475: while the area's pages are still coming in, its contexts and
+         the c template are not read yet: a context page was made from
+         nothing, with "Missing 8/c.md". Sensing waits, then runs by itself. */
+      const rec = LOADED.get(V.space), here = join(DIRS.contexts, "Benchnew.md");
+      const tplPath = join(DIRS.lists, "c.md"), tpl = V.pages.get(tplPath);
+      const missing = () => [...document.querySelectorAll("#toasts .toast")].some(t => /Missing 8\//.test(t.textContent));
+      document.querySelectorAll("#toasts .toast").forEach(t => t.remove());
+      PREF.set("sense.here", "Benchnew");
+      rec.dayOnly = true;
+      V.pages.delete(tplPath);                     // not read yet
+      SENSE_AT = 0;
+      await senseQuietly();
+      ok(!V.pages.has(here), "a context page was made while the area's pages were still coming in");
+      ok(!missing(), "a template the folder has not delivered yet was reported missing");
+      eq(state.context, null, "the context was switched while the area's pages were still coming in");
+      if (tpl) V.pages.set(tplPath, tpl);
+      rec.dayOnly = false;
+      for (let i = 0; i < 100 && state.context !== "Benchnew"; i++) await new Promise(r => setTimeout(r, 50));
+      eq(state.context, "Benchnew", "sensing did not run once the area was in");
+      if (V.pages.has(here)) removePage(here);
+      PREF.set("sense.here", "computer");
       SENSE_AT = 0;
       await senseQuietly();
       eq(state.context, "computer");

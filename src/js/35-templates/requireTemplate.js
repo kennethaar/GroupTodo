@@ -6,6 +6,8 @@ function requireTemplate(name) {
   if (LOADED.get(V.space)?.hold) return null;
   // Nor is browser storage standing in for a folder short of one: the template is in the folder.
   if (folderMissing(V.space)) return null;
+  // Nor one the folder has not delivered yet (#475).
+  if (areaComingIn(V.space)) return null;
   if (!MISSING_TEMPLATE_NOTICES.has(key)) {
     MISSING_TEMPLATE_NOTICES.add(key);
     const space = V.space;

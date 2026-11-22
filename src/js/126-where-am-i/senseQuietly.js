@@ -1,5 +1,12 @@
 async function senseQuietly() {
   if (!senseOn() || !V.loaded || Date.now() - SENSE_AT < 15 * 60000) return;
+  /* Not while the area's pages are still coming in: its contexts and the c
+     template are not read yet, and a context page was made from nothing,
+     with "Missing 8/c.md" (#475). Tried again once they are in. */
+  if (areaComingIn(V.space)) {
+    if (!SENSE_LATER) SENSE_LATER = setTimeout(() => { SENSE_LATER = 0; senseQuietly(); }, 1000);
+    return;
+  }
   SENSE_AT = Date.now();
   const g = await senseGuess(false);
   if (!g || g.ctx === state.context) return;

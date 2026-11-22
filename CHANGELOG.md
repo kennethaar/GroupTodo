@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.201.7 - 2026-11-22
+
+- Sense where I am: at start-up it waits until all of the area's pages are
+  in. On a phone it guessed the place before the contexts and templates were
+  read, made a context page from nothing and said "Missing 8/c.md", though
+  the folder has it. (#475)
+
 ## 1.201.6 - 2026-11-22
 
 - Links and aliases: a link opens its page in about 3 seconds on a phone.
