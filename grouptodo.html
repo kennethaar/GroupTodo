@@ -3501,8 +3501,8 @@ padding:8vh 7vw 6vh;min-height:0;overflow:hidden;font-size:calc(5vh * var(--fit)
 :is(#deck,#deckpeek):is([data-move=zoomin],[data-move=zoomout]) .slide.cur .cover{animation:deckFade .6s ease-in-out both}
 :is(#deck,#deckpeek)[data-move=rise] .slide.out{animation-name:deckGone}
 :is(#deck,#deckpeek)[data-move=rise] .slide.cur{animation-name:deckFade;animation-delay:.5s}
-:is(#deck,#deckpeek) .sghost{position:absolute;margin:0;font-weight:700;line-height:1.15;color:var(--slide-ink);
-transform-origin:0 0;pointer-events:none;z-index:2}
+:is(#deck,#deckpeek) .sghost{position:absolute;inset:0;margin:0;pointer-events:none;z-index:2}
+:is(#deck,#deckpeek) .sghost>span{position:absolute;white-space:pre;transform-origin:0 0;will-change:transform}
 @keyframes deckGone{to{opacity:0}}
 @keyframes deckInB{from{transform:translateY(100%)}}
 @keyframes deckInT{from{transform:translateY(-100%)}}
@@ -4756,7 +4756,7 @@ placeholder="Capture… (Enter adds to today)">
 })();
 
 "use strict";
-const APP_VERSION = "1.202.5";
+const APP_VERSION = "1.202.6";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -15275,27 +15275,46 @@ return !!slideGhost(deck, was, slideTitleNow(title), title);
 }
 function slideTitleNow(title) {
 const r = title.getBoundingClientRect(), cs = getComputedStyle(title);
+const letters = [], walk = document.createTreeWalker(title, NodeFilter.SHOW_TEXT);
+for (let n; (n = walk.nextNode());) {
+const fs = getComputedStyle(n.parentElement);
+for (let i = 0; i < n.data.length; i++) {
+if (/\s/.test(n.data[i])) continue;
+const range = document.createRange();
+range.setStart(n, i); range.setEnd(n, i + 1);
+letters.push({ch: n.data[i], rect: range.getBoundingClientRect(), size: parseFloat(fs.fontSize),
+font: fs.font, color: fs.color});
+}
+}
 return {rect: r, left: r.left, top: r.top, width: r.width, html: title.innerHTML,
-size: parseFloat(cs.fontSize), align: cs.textAlign};
+size: parseFloat(cs.fontSize), align: cs.textAlign, letters};
 }
 function slideGhost(deck, from, to, title = null) {
-const {rect, html, size, align} = from;
-if (!rect.width || !to.width || !deck.animate) return null;
+const a = from.letters || [], b = to.letters || [];
+if (!from.rect.width || !to.width || !deck.animate || !a.length) return null;
 const host = deck.getBoundingClientRect();
-const ghost = el("div", {class: "sghost", "aria-hidden": "true",
-style: `left:${rect.left - host.left}px;top:${rect.top - host.top}px;width:${rect.width + 1}px;font-size:${size}px;text-align:${align}`});
-ghost.innerHTML = html;
+const ghost = el("div", {class: "sghost", "aria-hidden": "true"});
+const n = Math.min(a.length, b.length);
+const step = n > 1 ? Math.min(10, 300 / (n - 1)) : 0, run = 1000 - (n - 1) * step;
+const out = title ? [{opacity: 1}, {opacity: 1}] : [{opacity: 1}, {opacity: 1, offset: 0.7}, {opacity: 0}];
+const glides = [];
+for (let i = 0; i < n; i++) {
+const {ch, rect, size, font, color} = a[i], end = b[i];
+const span = el("span", {style: `left:${rect.left - host.left}px;top:${rect.top - host.top}px;` +
+`font:${font};font-size:${size}px;line-height:${rect.height}px;color:${color}`});
+span.textContent = ch;
+ghost.append(span);
+const move = `translate(${end.rect.left - rect.left}px, ${end.rect.top - rect.top}px) scale(${end.size / size})`;
+const keys = out.map((k, j) => ({...k, transform: j ? (j === out.length - 1 ? move : null) : "none"}));
+for (const k of keys) if (k.transform === null) delete k.transform;
+glides.push({span, keys, delay: i * step});
+}
 deck.append(ghost);
-const scale = to.size / size;
-const time = {duration: 1000, easing: "ease-in-out"};
-const glide = ghost.animate([
-{transform: "none", opacity: 1},
-{opacity: 1, offset: 0.7},
-{transform: `translate(${to.left - rect.left}px, ${to.top - rect.top}px) scale(${scale})`, opacity: 0}],
-{...time, fill: "forwards"});
-glide.finished.then(() => ghost.remove(), () => ghost.remove());
-if (title) title.animate([{opacity: 0}, {opacity: 0, offset: 0.7}, {opacity: 1}], time);
-return glide;
+const anims = glides.map(({span, keys, delay}) =>
+span.animate(keys, {duration: run, delay, easing: "ease-in-out", fill: "both"}));
+Promise.all(anims.map(x => x.finished)).then(() => ghost.remove(), () => ghost.remove());
+if (title) title.animate([{opacity: 0}, {opacity: 0, offset: 0.99}, {opacity: 1}], {duration: 1000, easing: "ease-in-out"});
+return anims[anims.length - 1];
 }
 function slidePicNow(s, k) {
 const pics = s.pics || [];
@@ -18582,7 +18601,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.202.5 - 2026-11-22\n\n- Weekly review › Clarify: a line or to-do with no words, only spaces or\n  one letter is left out of Clarify, Review actions and Next actions. It is\n  not an action yet, so it takes no card and no row. It stays on its page.\n  A lone digit, such as `5`, still shows.\n\n## 1.202.4 - 2026-11-22\n\n- What's new: above each animation it now says what it shows, and under\n  that each step as it plays. The first line, before anything moves, is a\n  short intro. (#471)\n\n## 1.202.3 - 2026-11-22\n\n- Contexts: the widget files no longer wait for the whole folder, which took\n  many minutes on a phone. They are written as soon as the active projects\n  are in, and brought up to date as the rest comes in. Until it is all in, no\n  widget file is taken away, and a tick whose page is not read yet waits for\n  it. (#474)\n\n## 1.202.2 - 2026-11-22\n\n- Vault and sync: the last read of a big folder on a phone no longer goes on\n  for many minutes. Files that did not answer in time were tried again one\n  at a time, and a file that could not even be found could hold the read for\n  good. Now they are tried again four at a time, and finding a file has a\n  time limit too. The Save log says how many were tried again. (#181)\n\n## 1.202.1 - 2026-11-22\n\n- Contexts: the widget files are written as soon as the area's pages are all\n  in. Asked for at start-up, while the folder was still being read, they\n  waited for a save that might not come, so no Widgets folder showed up. Each\n  widget step is now in the Save log. (#474)\n\n## 1.202.0 - 2026-11-22\n\n- Contexts: every context now has a widget file for your phone's home\n  screen, with nothing to set up. GroupToDo keeps a Widgets folder in your\n  folder with one file per context, such as @Home.md and @Home - Kitchen.md,\n  each holding what you can do there, overdue first. Add the ones you want in\n  a widget app such as Obsidian Widget. Tick a line there, and it is done in\n  GroupToDo too the next time it opens. (#474)\n\n## 1.201.7 - 2026-11-22\n\n- Sense where I am: at start-up it waits until all of the area's pages are\n  in. On a phone it guessed the place before the contexts and templates were\n  read, made a context page from nothing and said \"Missing 8/c.md\", though\n  the folder has it. (#475)\n\n## 1.201.6 - 2026-11-22\n\n- Links and aliases: a link opens its page in about 3 seconds on a phone.\n  The page is read alone, first, and drawn; today's page, the settings and\n  the projects follow behind it. (#474)\n\n## 1.201.5 - 2026-11-22\n\n- Links and aliases: a link opens its page in seconds, as soon as that page\n  is read, not after a big folder has been listed, which took minutes on a\n  phone. (#474)\n\n## 1.201.4 - 2026-11-22\n\n- Links and aliases: a link opens straight at its page. Until the page is\n  in, the screen says where it goes, \"Opening Kitchen renovation at\n  “Measure the window”…\", and never shows the Journal in between. (#474)\n\n## 1.201.3 - 2026-11-22\n\n- Links and aliases: a link to a page or a line no longer ends on today's\n  Journal while the area is still coming in. It waits for its page, then\n  opens it at the line, or says the page is not there. Each step goes into\n  the Save log. (#474)\n\n## 1.201.2 - 2026-11-22\n\n- Links and aliases: a link to a page or a line (Copy link) now opens even\n  when it starts the app in a new tab, as on a phone. The linked page is read\n  first, with today's, so it no longer waits for a big folder to be listed\n  and said the page was not there. (#474)\n\n## 1.201.1 - 2026-11-22\n\n- Journal: the day's name now stands on the line of Back and Forward, not\n  below them. The ‹ and › for the day before and after, and the date box\n  between them, stay at one spot from day to day, so a click lands where\n  you aimed. In the past or Ahead now comes after them. (#473)\n\n## 1.201.0 - 2026-11-22\n\n- What's new: each new thing now plays a short animation on top, drawn by\n  the app itself, one after the other. Use ‹ › or a dot to pick one, and ⏸\n  to stop it. The thing shown is underlined in the list below. With reduced\n  motion, each shows still. (#471)\n\n## 1.200.2 - 2026-11-22\n\n- Present a page: the hub in a hub-and-spoke slide is always a circle, with\n  at least 5 px between its words and the edge. A long title gets smaller\n  to fit. The card for a spoke's lines no longer covers the spokes beside\n  the hub. (#433)\n\n## 1.200.1 - 2026-11-22\n\n- Present a page: from the page title to the first slide, the title now\n  glides up to the top and fades there, and the next slide comes in under\n  it. It no longer slides away past the new heading. A long title that\n  moves to the top keeps its line breaks on the way, so it is never cut\n  off at the edge. (#431)\n\n## 1.200.0 - 2026-11-22\n\n- Links and aliases: a line that opens with a known person and a colon,\n  such as `Anna: send the budget`, offers Add wait and link Anna on the\n  wavy line under the name. Take it, and the name is linked and the line\n  waits on Anna. Ignore it, and nothing changes. (#455)\n\n## 1.199.1 - 2026-11-21\n\n- Keys on a line: while you write in a table, its Row, Column, alignment and\n  Reveal buttons have their own row under the header, so they no longer\n  cover the words beside the line tools. (#469)\n\n## 1.199.0 - 2026-11-21\n\n- Present a page: paste a table from Excel, Word, a web page, or text in\n  columns (tabs, commas, semicolons, | or spaces), and it becomes a Markdown\n  table. Keep as text in the message pastes it as lines instead. In Present\n  a table is a slide of its own: the header first, then a row per →. Reveal\n  Rows | Columns on the table bar brings it in a column at a time instead,\n  and the table remembers it. (#469)\n\n## 1.198.2 - 2026-11-21\n\n- Weekly review › Steps: once Weekly review shows in the sidebar, it stays\n  until you mark a review done. Then the end screen says it leaves the\n  sidebar, and it slides out when you leave the review. (#450)\n";
+const HELP_NEWS = "## 1.202.6 - 2026-11-22\n\n- Present a page: when a title moves to the top and its line breaks\n  change, each letter now slides on its own to its new place, the way text\n  reflows when you widen or narrow the editor. No jump and no fade: the\n  title is whole when the letters land. (#431)\n\n## 1.201.2 - 2026-11-22\n\n## 1.202.5 - 2026-11-22\n\n- Weekly review › Clarify: a line or to-do with no words, only spaces or\n  one letter is left out of Clarify, Review actions and Next actions. It is\n  not an action yet, so it takes no card and no row. It stays on its page.\n  A lone digit, such as `5`, still shows.\n\n## 1.202.4 - 2026-11-22\n\n- What's new: above each animation it now says what it shows, and under\n  that each step as it plays. The first line, before anything moves, is a\n  short intro. (#471)\n\n## 1.202.3 - 2026-11-22\n\n- Contexts: the widget files no longer wait for the whole folder, which took\n  many minutes on a phone. They are written as soon as the active projects\n  are in, and brought up to date as the rest comes in. Until it is all in, no\n  widget file is taken away, and a tick whose page is not read yet waits for\n  it. (#474)\n\n## 1.202.2 - 2026-11-22\n\n- Vault and sync: the last read of a big folder on a phone no longer goes on\n  for many minutes. Files that did not answer in time were tried again one\n  at a time, and a file that could not even be found could hold the read for\n  good. Now they are tried again four at a time, and finding a file has a\n  time limit too. The Save log says how many were tried again. (#181)\n\n## 1.202.1 - 2026-11-22\n\n- Contexts: the widget files are written as soon as the area's pages are all\n  in. Asked for at start-up, while the folder was still being read, they\n  waited for a save that might not come, so no Widgets folder showed up. Each\n  widget step is now in the Save log. (#474)\n\n## 1.202.0 - 2026-11-22\n\n- Contexts: every context now has a widget file for your phone's home\n  screen, with nothing to set up. GroupToDo keeps a Widgets folder in your\n  folder with one file per context, such as @Home.md and @Home - Kitchen.md,\n  each holding what you can do there, overdue first. Add the ones you want in\n  a widget app such as Obsidian Widget. Tick a line there, and it is done in\n  GroupToDo too the next time it opens. (#474)\n\n## 1.201.7 - 2026-11-22\n\n- Sense where I am: at start-up it waits until all of the area's pages are\n  in. On a phone it guessed the place before the contexts and templates were\n  read, made a context page from nothing and said \"Missing 8/c.md\", though\n  the folder has it. (#475)\n\n## 1.201.6 - 2026-11-22\n\n- Links and aliases: a link opens its page in about 3 seconds on a phone.\n  The page is read alone, first, and drawn; today's page, the settings and\n  the projects follow behind it. (#474)\n\n## 1.201.5 - 2026-11-22\n\n- Links and aliases: a link opens its page in seconds, as soon as that page\n  is read, not after a big folder has been listed, which took minutes on a\n  phone. (#474)\n\n## 1.201.4 - 2026-11-22\n\n- Links and aliases: a link opens straight at its page. Until the page is\n  in, the screen says where it goes, \"Opening Kitchen renovation at\n  “Measure the window”…\", and never shows the Journal in between. (#474)\n\n## 1.201.3 - 2026-11-22\n\n- Links and aliases: a link to a page or a line no longer ends on today's\n  Journal while the area is still coming in. It waits for its page, then\n  opens it at the line, or says the page is not there. Each step goes into\n  the Save log. (#474)\n\n## 1.201.2 - 2026-11-22\n\n- Links and aliases: a link to a page or a line (Copy link) now opens even\n  when it starts the app in a new tab, as on a phone. The linked page is read\n  first, with today's, so it no longer waits for a big folder to be listed\n  and said the page was not there. (#474)\n\n## 1.201.1 - 2026-11-22\n\n- Journal: the day's name now stands on the line of Back and Forward, not\n  below them. The ‹ and › for the day before and after, and the date box\n  between them, stay at one spot from day to day, so a click lands where\n  you aimed. In the past or Ahead now comes after them. (#473)\n\n## 1.201.0 - 2026-11-22\n\n- What's new: each new thing now plays a short animation on top, drawn by\n  the app itself, one after the other. Use ‹ › or a dot to pick one, and ⏸\n  to stop it. The thing shown is underlined in the list below. With reduced\n  motion, each shows still. (#471)\n\n## 1.200.2 - 2026-11-22\n\n- Present a page: the hub in a hub-and-spoke slide is always a circle, with\n  at least 5 px between its words and the edge. A long title gets smaller\n  to fit. The card for a spoke's lines no longer covers the spokes beside\n  the hub. (#433)\n\n## 1.200.1 - 2026-11-22\n\n- Present a page: from the page title to the first slide, the title now\n  glides up to the top and fades there, and the next slide comes in under\n  it. It no longer slides away past the new heading. A long title that\n  moves to the top keeps its line breaks on the way, so it is never cut\n  off at the edge. (#431)\n\n## 1.200.0 - 2026-11-22\n\n- Links and aliases: a line that opens with a known person and a colon,\n  such as `Anna: send the budget`, offers Add wait and link Anna on the\n  wavy line under the name. Take it, and the name is linked and the line\n  waits on Anna. Ignore it, and nothing changes. (#455)\n\n## 1.199.1 - 2026-11-21\n\n- Keys on a line: while you write in a table, its Row, Column, alignment and\n  Reveal buttons have their own row under the header, so they no longer\n  cover the words beside the line tools. (#469)\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {
@@ -18605,6 +18624,30 @@ return out;
 }
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+"1.202.6#431": `
+    cap | A title moves up letter by letter
+    say | A long title stands big on its own slide.
+    # A big title in two lines reflows into one line at the top, piece by piece.
+    + sl slide
+    + a h abs > sl | Kitchen
+    s a | left:8%;top:8%;transform:translate(60px,70px) scale(1.6)
+    + b h abs > sl | renovation
+    s b | left:30%;top:8%;transform:translate(-20px,105px) scale(1.6)
+    + c h abs > sl | plan
+    s c | left:62%;top:8%;transform:translate(-50px,140px) scale(1.6)
+    w 1200
+    say | With the first line it moves up; each piece slides to its new place.
+    s a | transform:none
+    w 80
+    s b | transform:none
+    w 80
+    s c | transform:none
+    w 700
+    + l ln fade > sl | Measure the room
+    s l | margin-top:48px
+    w 50
+    c l -fade
+    w 1500`,
 "1.202.0#474": `
     cap | Widgets for your phone, one per context
     say | Each context has its own file in Widgets/, for a widget app.
@@ -18808,102 +18851,6 @@ const NEWS_ANIM = {
     c bar -fade
     ty r1 |  tiles
     w 1500`,
-"1.199.0#469": `
-    cap | Paste a table
-    say | You copy a table from Excel.
-    w 1200
-    + q quiet | Copied from Excel: Item ⇥ Cost ⇥ Who …
-    + a ln caret
-    w 700
-    say | Paste it on a line.
-    k Ctrl+V
-    w 400
-    k
-    - a
-    say | It becomes a Markdown table.
-    + tb tbl
-    + 1 td th > tb | Item
-    + 2 td th > tb | Cost
-    + 3 td th > tb | Who
-    + 4 td > tb | Tiles
-    + 5 td > tb | € 900
-    + 6 td > tb | Anna
-    w 1200
-    say | In Present, it shows row by row.
-    + sl slide fade
-    + st tbl > sl
-    + 7 td th > st | Item
-    + 8 td th > st | Cost
-    + 9 td th > st | Who
-    w 50
-    c sl -fade
-    w 800
-    k →
-    + 10 td > st | Tiles
-    + 11 td > st | € 900
-    + 12 td > st | Anna
-    w 600
-    k →
-    + 13 td > st | Plumber
-    + 14 td > st | € 400
-    + 15 td > st | Bo
-    k
-    w 1400`,
-"1.198.2#450": `
-    cap | Weekly review in the sidebar
-    say | Weekly review sits in the sidebar while it is due.
-    w 1200
-    + sd side
-    + n1 nav > sd | Journal
-    + n2 nav > sd | Next
-    + n3 nav > sd | Projects
-    + n4 nav lit > sd | Weekly review
-    + mn main
-    + h h > mn | Weekly review
-    + s1 ln task done > mn | Clarify
-    + s2 ln task done > mn | Review actions
-    + s3 ln task > mn | Look ahead
-    w 800
-    say | You work through its steps.
-    p s3
-    c s3 +done
-    + b btn pri > mn | Mark review done
-    w 400
-    say | Then mark the review done.
-    p b
-    c b +gone
-    t h | Review done
-    say | It leaves the sidebar until next time.
-    + q quiet > mn | Weekly review leaves the sidebar until it is due.
-    w 1000
-    p n1
-    c n1 +lit
-    c n4 -lit +out
-    w 1500`,
-"1.198.1#450": `
-    cap | Weekly review when it is due
-    say | Weekly review is part of Projects.
-    w 1200
-    + sd side
-    + n1 nav > sd | Journal
-    + n2 nav > sd | Next
-    + n3 nav lit > sd | Projects
-    + mn main
-    + h h > mn | Projects
-    + sw row > mn
-    + b1 btn on > sw | Active
-    + b2 btn > sw | Someday
-    + b3 btn > sw | Weekly review
-    w 1200
-    say | A week passes.
-    + q quiet > mn | A week later …
-    w 700
-    say | It shows in the sidebar, marked due.
-    + n4 nav fade > sd | Weekly review
-    w 50
-    c n4 -fade
-    + bd badge > n4 | due
-    w 1800`,
 };
 function newsAnimKey(entry, item) {
 return entry.version + (item.issue ? "#" + item.issue : "");

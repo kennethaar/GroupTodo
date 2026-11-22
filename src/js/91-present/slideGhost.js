@@ -1,24 +1,33 @@
-/* A title on its way to the top (#431 follow-up): a copy of it as it stood,
-   big and with its own line breaks, glides and shrinks to `to` in 1 s and
-   fades there. Scaled, the real title would keep its new line breaks and
-   run off the screen. `title` (the real one, now in its place) fades in as
-   the copy lands; without one the copy just goes. */
+/* A title on its way to a new place (#431): its line breaks change, so each
+   letter slides on its own from where it stood to where it will stand, the
+   way text reflows when the editor is resized. One copy per letter, set off
+   a little after the one before it; all land in 1 s. `title` (the real one,
+   now in its place) shows as they land, so nothing fades; without one the
+   letters fade at the end and go. Returns the last letter's glide. */
 function slideGhost(deck, from, to, title = null) {
-  const {rect, html, size, align} = from;
-  if (!rect.width || !to.width || !deck.animate) return null;
+  const a = from.letters || [], b = to.letters || [];
+  if (!from.rect.width || !to.width || !deck.animate || !a.length) return null;
   const host = deck.getBoundingClientRect();
-  const ghost = el("div", {class: "sghost", "aria-hidden": "true",
-    style: `left:${rect.left - host.left}px;top:${rect.top - host.top}px;width:${rect.width + 1}px;font-size:${size}px;text-align:${align}`});
-  ghost.innerHTML = html;
+  const ghost = el("div", {class: "sghost", "aria-hidden": "true"});
+  const n = Math.min(a.length, b.length);
+  const step = n > 1 ? Math.min(10, 300 / (n - 1)) : 0, run = 1000 - (n - 1) * step;
+  const out = title ? [{opacity: 1}, {opacity: 1}] : [{opacity: 1}, {opacity: 1, offset: 0.7}, {opacity: 0}];
+  const glides = [];
+  for (let i = 0; i < n; i++) {
+    const {ch, rect, size, font, color} = a[i], end = b[i];
+    const span = el("span", {style: `left:${rect.left - host.left}px;top:${rect.top - host.top}px;` +
+      `font:${font};font-size:${size}px;line-height:${rect.height}px;color:${color}`});
+    span.textContent = ch;
+    ghost.append(span);
+    const move = `translate(${end.rect.left - rect.left}px, ${end.rect.top - rect.top}px) scale(${end.size / size})`;
+    const keys = out.map((k, j) => ({...k, transform: j ? (j === out.length - 1 ? move : null) : "none"}));
+    for (const k of keys) if (k.transform === null) delete k.transform;
+    glides.push({span, keys, delay: i * step});
+  }
   deck.append(ghost);
-  const scale = to.size / size;
-  const time = {duration: 1000, easing: "ease-in-out"};
-  const glide = ghost.animate([
-    {transform: "none", opacity: 1},
-    {opacity: 1, offset: 0.7},
-    {transform: `translate(${to.left - rect.left}px, ${to.top - rect.top}px) scale(${scale})`, opacity: 0}],
-    {...time, fill: "forwards"});
-  glide.finished.then(() => ghost.remove(), () => ghost.remove());
-  if (title) title.animate([{opacity: 0}, {opacity: 0, offset: 0.7}, {opacity: 1}], time);
-  return glide;
+  const anims = glides.map(({span, keys, delay}) =>
+    span.animate(keys, {duration: run, delay, easing: "ease-in-out", fill: "both"}));
+  Promise.all(anims.map(x => x.finished)).then(() => ghost.remove(), () => ghost.remove());
+  if (title) title.animate([{opacity: 0}, {opacity: 0, offset: 0.99}, {opacity: 1}], {duration: 1000, easing: "ease-in-out"});
+  return anims[anims.length - 1];
 }

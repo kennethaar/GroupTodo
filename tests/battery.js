@@ -14399,7 +14399,7 @@ var GTD_TEST = (() => {
       const anims = $("#deck").getAnimations({subtree: true});
       for (const a of anims) { a.pause(); a.currentTime = at; }
       const box = deckBox(), out = [];
-      for (const t of $("#deck").querySelectorAll(".stitle, .sghost")) {
+      for (const t of $("#deck").querySelectorAll(".stitle, .sghost > span")) {
         if (parseFloat(getComputedStyle(t).opacity) < 0.05) continue;
         const r = t.getBoundingClientRect();
         if (r.width && (r.left < box.left - 1 || r.right > box.right + 1 || r.top < box.top - 1))
@@ -14415,20 +14415,52 @@ var GTD_TEST = (() => {
       presentGo(1);
       eq($("#deck").dataset.move, "rise", "the page title does not slide out with its slide");
       const ghost = $("#deck .sghost");
-      ok(ghost && /Quarterly kickoff/.test(ghost.textContent), "the page title glides on its way up");
+      ok(ghost && /Quarterlykickoff/.test(ghost.textContent), "the page title glides on its way up");
       eq(cut(0).concat(cut(400), cut(800)), [], "a title is cut on its way up");
-      const glide = ghost.getAnimations()[0];
-      glide.pause(); glide.currentTime = glide.effect.getTiming().duration;
-      const top = ghost.getBoundingClientRect();
+      // Soft-break reflow (#431): every letter slides on its own, like text reflowing.
+      const letters = () => [...$("#deck").querySelectorAll(".sghost > span")];
+      const at = t => { for (const a of $("#deck").getAnimations({subtree: true})) { a.pause(); a.currentTime = t; } };
+      const go = () => { for (const a of $("#deck").getAnimations({subtree: true})) a.play(); };
+      eq(letters().map(s => s.textContent).join(""), "Quarterlykickoffforthewholeteam", "the page title goes up letter by letter");
+      ok(letters().every(s => s.getAnimations().length === 1), "each letter has its own glide");
+      at(1000);
+      const rs = letters().map(s => s.getBoundingClientRect());
+      const top = {top: Math.min(...rs.map(r => r.top)), height: Math.max(...rs.map(r => r.bottom)) - Math.min(...rs.map(r => r.top))};
       ok(top.top < deckBox().height * 0.2 && top.height < big.height, "the page title ends at the top, smaller: " + Math.round(top.top));
-      eq(getComputedStyle(ghost).opacity, "0", "and is gone there, not left over the next title");
-      glide.play();
+      ok(letters().every(s => getComputedStyle(s).opacity === "0"), "and is gone there, not left over the next title");
+      go();
       const delay = parseFloat(getComputedStyle($("#deck .slide.cur")).animationDelay);
       ok(delay >= 0.4, "the next slide comes once the page title is on its way: " + delay + " s");
       await done();
       ok(!$("#deck .sghost"), "the glide leaves its copy behind");
+      // Where each letter of a title stands, as the browser wrapped it.
+      const marks = t => {
+        const out = [], walk = document.createTreeWalker(t, NodeFilter.SHOW_TEXT);
+        for (let n; (n = walk.nextNode());)
+          for (let i = 0; i < n.data.length; i++) {
+            if (/\s/.test(n.data[i])) continue;
+            const r = document.createRange(); r.setStart(n, i); r.setEnd(n, i + 1);
+            out.push(r.getBoundingClientRect());
+          }
+        return out;
+      };
+      const intro = marks($("#deck .slide.cur .stitle"));
       presentGo(2);
+      const title = $("#deck .slide.cur .stitle");
+      eq(letters().length, intro.length, "the title moving to the top is drawn as one copy per letter");
+      const near = (a, b) => Math.abs(a.left - b.left) < 3 && Math.abs(a.top - b.top) < 3;
+      at(0);
+      ok(letters().every((s, i) => near(s.getBoundingClientRect(), intro[i])), "each letter starts where it stood in the big title");
+      at(1000);
+      const laid = marks(title);
+      ok(letters().every((s, i) => near(s.getBoundingClientRect(), laid[i])), "and lands on its place in the title at the top");
+      ok(laid.some((r, i) => i && Math.abs((r.top - laid[0].top) - (intro[i].top - intro[0].top)) > 5),
+        "the line breaks differ, so letters change lines on the way");
+      ok(letters().every(s => getComputedStyle(s).opacity === "1"), "no letter fades: the title is whole when they land");
+      go();
       eq(cut(0).concat(cut(300), cut(600), cut(900)), [], "a long title is cut while it moves to the top");
+      await done();
+      ok(!$("#deck .sghost") && getComputedStyle(title).opacity === "1", "then the title itself stands there");
     } finally { presentStop(); }
   }));
   test("#431 reopened: the talk keeps the outline's order; the page title is a slide alone, each top line its own slide", () => withPages({
