@@ -449,6 +449,7 @@ js/65-gtd-scanners/vars-GROUPS.js
 js/65-gtd-scanners/nearestProjectAncestor.js
 js/65-gtd-scanners/nearestAreaAncestor.js
 js/65-gtd-scanners/looseActions.js
+js/65-gtd-scanners/noWords.js
 js/65-gtd-scanners/nearestChecklistAncestor.js
 js/65-gtd-scanners/journalActionsIndex.js
 js/65-gtd-scanners/journalActionsFor.js

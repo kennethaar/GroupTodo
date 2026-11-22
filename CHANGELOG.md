@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.202.5 - 2026-11-22
+
+- Weekly review › Clarify: a line or to-do with no words, only spaces or
+  one letter is left out of Clarify, Review actions and Next actions. It is
+  not an action yet, so it takes no card and no row. It stays on its page.
+  A lone digit, such as `5`, still shows.
+
 ## 1.202.4 - 2026-11-22
 
 - What's new: above each animation it now says what it shows, and under

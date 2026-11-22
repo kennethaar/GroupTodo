@@ -11918,6 +11918,18 @@ var GTD_TEST = (() => {
   };
   const showClarify = async () => { go("review", {sub: "days"}); await settle(); return content(); };
   const press = k => document.body.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true}));
+  test("#472 an empty, spaces-only or one-letter line is left out of Weekly review and Next, quietly", async () => {
+    await withDays([[2, "- TODO\n- TODO    \n- TODO x\n- TODO 5\n- TODO Call the plumber\n- y\n- 7\n- Plan the party\n"]], async () => {
+      const path = journalPath(shiftISO(T(), -2));
+      const where = b => [nextActions().some(a => a.block === b) && "next", actDeck().some(a => a.block === b) && "act",
+        looseDeck().some(a => a.block === b) && "loose", clarifyDeck().some(r => r.block === b) && "clarify"]
+        .filter(Boolean).join(",");
+      eq(getPage(path).blocks.map(b => b.title + ":" + where(b)),
+        [":", ":", "x:", "5:next,act,loose", "Call the plumber:next,act,loose", "y:", "7:clarify", "Plan the party:clarify"],
+        "only letters count: a lone digit stays");
+      eq(getPage(path).blocks.length, 8, "nothing is deleted from the page");
+    });
+  });
   test("#95 Clarify deals one loose line at a time, oldest day first, and says what each answer writes", async () => {
     await withDays([[3, "- Call the plumber\n- o Ran 5 km\n- Meeting notes\n  - Ask Kari about the budget\n"],
       [1, "- TODO Already a task\n- Plan the summer party\n"]], async () => {
