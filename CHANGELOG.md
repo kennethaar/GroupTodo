@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.201.2 - 2026-11-22
+
+- Links and aliases: a link to a page or a line (Copy link) now opens even
+  when it starts the app in a new tab, as on a phone. The linked page is read
+  first, with today's, so it no longer waits for a big folder to be listed
+  and said the page was not there. (#474)
+
 ## 1.201.1 - 2026-11-22
 
 - Journal: the day's name now stands on the line of Back and Forward, not

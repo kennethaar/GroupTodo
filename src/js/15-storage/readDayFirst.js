@@ -4,13 +4,14 @@
    written before midnight. The settings come with today's page, and on a new
    day, with no page of yours yet, so do the day templates it is made from.
    Nothing else is known yet: a page made now waits for the listing before it
-   is saved (doFlush), as the folder may have it. Null when there is nothing
+   is saved (doFlush), as the folder may have it. A page a link opens at comes
+   with today's (#474). Null when there is nothing
    to show yet: then the folder is listed and read as before. */
 async function readDayFirst(record, edited, today, onDay) {
   const who = "“" + record.name + "”: ";
   let t = loadMark(who + "reading today's page by name");
   let got;
-  try { got = await record.backend.readDays([today], {files: [SETTINGS_PATH]}); }
+  try { got = await record.backend.readDays([today], {files: [SETTINGS_PATH, ...linkedPageFirst(record)]}); }
   catch (_) { return null; }
   const mine = new Set(["", slugPerson(whoAmI()), ...myNames().map(slugPerson)]);
   if (![...got.keys()].some(p => isJournalPath(p) && mine.has(journalOwnerOf(p)))) {

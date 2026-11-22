@@ -3,6 +3,7 @@ async function followDeepLink(link) {
     if (Spaces.get(link.space)) await openSpace(link.space);
     else { notify("That link is for an area called \u201C" + link.space + "\u201D, which is not on this device.", "warn"); return false; }
   }
+  if (FOLDER_READING.has(V.space)) await untilFolderTakesOver(V.space);
   if (!V.pages.has(link.path)) {
     notify("That link points at a page this vault does not have: " + link.path, "warn");
     return false;

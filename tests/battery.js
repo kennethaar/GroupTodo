@@ -1246,6 +1246,57 @@ var GTD_TEST = (() => {
     }
   });
 
+  test("#474 a link to a page and line opens while a big folder is still being listed", async () => {
+    /* Reported on Android: a link tapped elsewhere opens a new tab, the folder
+       is not asked for again, but the page does not open. The listing of a big
+       folder takes half a minute; the link is followed long before it ends. */
+    await flush();
+    const name = V.space, kept = LOADED.get(name), ns = "Ls474", was = {view: state.view, pagePath: state.pagePath, selected: state.selected};
+    const today = journalPath(todayISO()), note = join(PAGES, "Kitchen renovation.md");
+    const b = Backends.ls(ns);
+    b.kind = "fs";
+    const files = {[today]: "- written in the folder\n",
+                   [note]: "- TODO Measure the window\n  id:: lnk474ab\n"};
+    for (const [p, t] of Object.entries(files)) await b.write(p, t);
+    let listed, release, calls = 0;
+    const listing = new Promise(r => { listed = r; }), held = new Promise(r => { release = r; });
+    const names = b.names.bind(b), read = b.readMany.bind(b);
+    b.names = async o => { await listing; return names(o); };
+    b.readMany = async (paths, onEach) => { if (calls++) await held; return read(paths, onEach); };
+    // As a folder does: the given days and files opened by name, nothing listed.
+    b.readDays = async (days, {files: named = []} = {}) => {
+      const out = new Map();
+      for (const p of [...days.map(d => journalPath(d)), ...named]) { const t = await b.readText(p); if (t != null) out.set(p, t); }
+      return out;
+    };
+    const copy = newRecord(name, Backends.memory("Old474"));
+    LOADED.set(name, copy); bindActive(name);
+    const hash = location.hash;
+    history.replaceState(null, "", "#" + LINK_TAG + "&p=" + encodeURIComponent(note) + "&b=lnk474ab");
+    try {
+      // As at start-up: the link is followed while the browser copy is still on screen.
+      await loadFromBackend(b, {quick: true});
+      LAST_HASH = "";
+      await handleHash();
+      ok(LOADED.get(name) !== copy, "the folder's today did not take over while the folder was listed");
+      eq(state.view === "page" && state.pagePath, note, "the linked page did not open before the folder was listed");
+      const line = getPage(note).blocks[0];
+      eq(state.selected, line && line.id, "the linked line is not the one picked");
+    } finally {
+      await new Promise(r => setTimeout(r, 200));   // the line's panel opens just after the page
+      closeModal();
+      history.replaceState(null, "", location.pathname + location.search + hash);
+      LAST_HASH = location.hash;
+      listed(); release();
+      await filesLoaded();
+      FOLDER_READING.delete(name);
+      LOADED.set(name, kept); bindActive(name);
+      for (const p of Object.keys(files)) await b.remove(p);
+      state.selected = was.selected;
+      go(was.view, was.pagePath ? {pagePath: was.pagePath} : {});
+    }
+  });
+
   test("#232 lines typed in the browser copy while the folder is read behind are kept when the folder takes over", async () => {
     /* Reported again: typing on a phone while the folder was read, what was
        written was lost when the journal came in. The lines on screen belong

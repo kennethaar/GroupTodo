@@ -215,6 +215,7 @@ js/15-storage/restOrder.js
 js/15-storage/layInSoon.js
 js/15-storage/vars-lostWhileLoading.js
 js/15-storage/noteFileSigs.js
+js/15-storage/linkedPageFirst.js
 js/15-storage/readDayFirst.js
 js/15-storage/readActiveFirst.js
 js/15-storage/readStaged.js
@@ -1166,6 +1167,7 @@ js/145-horizons-view/vars-LINK_TAG.js
 js/145-horizons-view/ensureBlockId.js
 js/145-horizons-view/deepLink.js
 js/145-horizons-view/parseDeepLink.js
+js/145-horizons-view/untilFolderTakesOver.js
 js/145-horizons-view/followDeepLink.js
 js/145-horizons-view/copyOneLine.js
 js/145-horizons-view/copyLinkTo.js
