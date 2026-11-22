@@ -1287,7 +1287,7 @@ const HELP = {
     steps: ["Click GroupToDo top left to read it. Once a day the app looks for a new version.",
       "One is out? A note in the corner says what it brings. Click Download now, or Update now on the web.",
       "The first time a new version starts, it shows what is new since yours.",
-      "Each new thing plays on top, in turn. How it works opens its help.",
+      "Each new thing plays on top, told step by step. How it works opens its help.",
       "Missing something? Suggest a feature, or report a bug, on GitHub."],
     more: ["‹ › or a dot picks a new thing to play. ⏸ stops it.",
       "New vN under the name, top left, means a new version is out. Click it.",

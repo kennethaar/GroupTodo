@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.202.4 - 2026-11-22
+
+- What's new: above each animation it now says what it shows, and under
+  that each step as it plays. The first line, before anything moves, is a
+  short intro. (#471)
+
 ## 1.202.3 - 2026-11-22
 
 - Contexts: the widget files no longer wait for the whole folder, which took

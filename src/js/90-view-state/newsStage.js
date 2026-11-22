@@ -2,7 +2,10 @@
    a round, a pause on its last frame, then the next. ‹ › and the dots pick
    one, ⏸ stops it. The item shown is marked in the list below
    ([data-news] in list). Nothing when no new thing has an animation. With
-   reduced motion each is drawn still and nothing turns on by itself. */
+   reduced motion each is drawn still and nothing turns on by itself.
+   Above it, what it shows (its cap, or its news), and under that the step
+   playing now, told as it goes; the first one, before anything moves, is
+   its intro. */
 function newsStage(entries, listBox) {
   const list = [];
   for (const e of entries) for (const it of e.items) {
@@ -12,7 +15,8 @@ function newsStage(entries, listBox) {
   if (!list.length) return null;
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const play = el("div", {class: "newsplay", "aria-hidden": "true"});
-  const cap = el("p", {class: "newscap", "aria-live": "polite"});
+  const head = el("p", {class: "newshead"});
+  const step = el("p", {class: "newsstep", "aria-live": "polite"});
   const dots = el("span", {class: "newsdots"}, ...list.map((x, i) =>
     el("button", {type: "button", "aria-label": x.it.lead, title: x.it.lead, onclick: () => show(i)})));
   const pause = el("button", {type: "button", class: "newspause", "aria-label": "Pause", title: "Pause",
@@ -23,7 +27,7 @@ function newsStage(entries, listBox) {
       pause.title = pause.getAttribute("aria-label");
     }}, "⏸");
   const stage = el("div", {class: "newsstage", role: "group", "aria-label": "What's new, shown"},
-    play, cap,
+    head, step, play,
     el("div", {class: "newsnav"},
       el("button", {type: "button", class: "newsprev", "aria-label": "Previous", onclick: () => show(at - 1)}, "‹"),
       dots,
@@ -33,12 +37,19 @@ function newsStage(entries, listBox) {
   const show = i => {
     at = (i + list.length) % list.length;
     const x = list[at];
-    cap.textContent = "";
-    cap.append(el("strong", {}, x.it.lead), el("span", {class: "quiet"}, " · v" + x.e.version));
+    const named = text => {
+      head.textContent = "";
+      head.append(el("strong", {}, text), el("span", {class: "quiet"}, " · v" + x.e.version));
+    };
+    // What it shows and its intro, at once: read from the script before it plays.
+    const steps = newsSteps(NEWS_ANIM[x.k]), first = o => (steps.find(s => s[0] === o) || [])[2];
+    named(first("cap") || x.it.lead);
+    step.textContent = first("say") || "";
     [...dots.children].forEach((d, j) => j === at ? d.setAttribute("aria-current", "true") : d.removeAttribute("aria-current"));
     listBox.querySelectorAll("[data-news]").forEach(li => li.classList.toggle("newsnow", li.dataset.news === x.k));
     const me = at;
-    newsPlay(play, NEWS_ANIM[x.k], {still})
+    newsPlay(play, steps, {still, onCap: t => { if (at === me) named(t); },
+      onSay: t => { if (at === me) step.textContent = t; }})
       .then(() => new Promise((res, rej) => {
         let left = NEWS_HOLD;
         const tick = () => !play.isConnected ? rej("stop") : at !== me ? rej("stop")

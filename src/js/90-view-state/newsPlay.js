@@ -2,8 +2,10 @@
    script, or the steps newsSteps reads from it, which says what each does.
    Classes get an "n-" prefix, so no app style leaks in.
    Words may hold [[a link]] and ~a wavy line~. still draws the last frame at
-   once. A new play in box, or box leaving the page, stops this one. */
-function newsPlay(box, steps, {still = false} = {}) {
+   once. A new play in box, or box leaving the page, stops this one.
+   "cap | ..." says what it shows, "say | ..." tells the step now playing; both
+   go to whoever drew the box (onCap, onSay), above it. */
+function newsPlay(box, steps, {still = false, onCap = () => {}, onSay = () => {}} = {}) {
   if (typeof steps === "string") steps = newsSteps(steps);
   const me = (box._nRun = (box._nRun || 0) + 1);
   const live = () => box._nRun === me && (box.isConnected || still);
@@ -59,6 +61,8 @@ function newsPlay(box, steps, {still = false} = {}) {
       await wait(250);
     },
     w: ms => wait(ms),
+    cap: (_, text) => onCap(text || ""),
+    say: (_, text) => onSay(text || ""),
   };
   return (async () => {
     for (const [op, ...args] of steps) {

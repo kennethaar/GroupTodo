@@ -3,7 +3,8 @@
 .newsstage { margin: 10px 0 6px; }
 .newsplay { position: relative; height: 190px; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-sm);
   background: var(--bg); padding: 12px 14px; font-size: 13px; line-height: 1.4; color: var(--fg); }
-.newscap { margin: 6px 0 2px; font-size: 13px; min-height: 2.8em; }
+.newshead { margin: 0 0 2px; font-size: 13.5px; }
+.newsstep { margin: 0 0 6px; font-size: 13px; color: var(--fg2); min-height: 2.8em; }
 .newsnav { display: flex; align-items: center; gap: 6px; }
 .newsnav > button { border: 1px solid var(--border2); background: var(--bg2); color: var(--fg2); border-radius: 6px;
   min-width: 28px; height: 26px; cursor: pointer; font-size: 14px; line-height: 1; }

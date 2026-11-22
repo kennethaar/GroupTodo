@@ -166,11 +166,19 @@ var GTD_TEST = (() => {
     for (const k of keys) ok(carried.has(k), k + " is for news the app still carries");
     ok(!/<video|\.mp4|\.gif|\.webm/i.test(JSON.stringify(NEWS_ANIM)), "drawn by the app, no film files");
     for (const k of keys) ok(typeof NEWS_ANIM[k] === "string" && newsSteps(NEWS_ANIM[k]).length > 3, k + " is a text script");
+    /* Each says what it shows, above it, and tells it step by step as it
+       plays; the first step line comes before anything moves: the intro. */
+    for (const k of keys) {
+      const s = newsSteps(NEWS_ANIM[k]), op = o => s.findIndex(x => x[0] === o);
+      ok(op("cap") >= 0, k + " does not say what it shows (cap)");
+      ok(s.filter(x => x[0] === "say").length >= 2, k + " is not told step by step (say)");
+      ok(op("say") >= 0 && op("say") < op("+"), k + " has no intro before it starts");
+    }
     eq(newsSteps("+ m menu > a | Add wait | link\nk Alt+T\nk"), [["+", "m", "menu", "Add wait | link", "a"], ["k", "Alt+T"], ["k", null]],
       "a script line reads as one step, words after the first | kept whole");
     // Two short made-up ones, so the turn to the next comes soon.
     const log = fakeLog("9.0.0"), saved = {...NEWS_ANIM};
-    NEWS_ANIM["9.0.0#999"] = "+ a ln | It shines\nw 50";
+    NEWS_ANIM["9.0.0#999"] = "cap | A thing that shines\nsay | First the intro\n+ a ln | It shines\nw 300\nsay | Then it shines\nw 50";
     NEWS_ANIM["9.0.0"] = "# a note\n+ b ln | It also does\nw 50";
     try {
       whatsNewDialog(newsEntries(log).slice(0, 1));
@@ -178,15 +186,20 @@ var GTD_TEST = (() => {
       ok(st, "a stage");
       ok(st.compareDocumentPosition(m.querySelector("h3")) & Node.DOCUMENT_POSITION_FOLLOWING, "on top, above the list");
       eq(st.querySelectorAll(".newsdots button").length, 2, "a dot per new thing that has one");
-      has(st.querySelector(".newscap").textContent, "It shines.");
+      const head = () => st.querySelector(".newshead").textContent, step = () => st.querySelector(".newsstep").textContent;
+      has(head(), "A thing that shines", "what it shows is not said");
+      ok(st.querySelector(".newshead").compareDocumentPosition(st.querySelector(".newsplay")) & Node.DOCUMENT_POSITION_FOLLOWING,
+         "what it shows is not above it");
+      eq(step(), "First the intro", "the intro does not come first");
       eq(m.querySelector("li.newsnow strong").textContent, "It shines.", "the item shown is marked in the list");
-      await until(() => st.querySelector(".newsplay").textContent.includes("It shines"));
+      await until(() => step() === "Then it shines");
+      eq(step(), "Then it shines", "the step line does not follow the animation");
       has(st.querySelector(".newsplay").textContent, "It shines", "it plays");
-      await until(() => st.querySelector(".newscap").textContent.includes("It also does"));
-      has(st.querySelector(".newscap").textContent, "It also does", "after a round it turns to the next");
+      await until(() => head().includes("It also does"));
+      has(head(), "It also does", "after a round it turns to the next, named by its news when it says nothing itself");
       eq(m.querySelector("li.newsnow strong").textContent, "It also does.");
       st.querySelector(".newsprev").click();
-      has(st.querySelector(".newscap").textContent, "It shines.", "‹ goes back");
+      has(head(), "A thing that shines", "‹ goes back");
       st.querySelectorAll(".newsdots button")[1].click();
       eq(st.querySelectorAll(".newsdots [aria-current]").length, 1);
       ok(st.querySelectorAll(".newsdots button")[1].hasAttribute("aria-current"), "a dot picks one");
