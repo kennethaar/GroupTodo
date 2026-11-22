@@ -19061,6 +19061,50 @@ const NEWS_ANIM = {
     c n4 -fade
     + bd badge > n4 | due
     w 1800`,
+"1.198.0": `
+    + h h | Lines inside lines
+    + a ln
+    ty a | Kitchen renovation
+    + c1 chip acc > a | Project
+    + b ln task
+    k Tab
+    c b +d1
+    ty b | Choose tiles
+    + c ln task d1
+    c c -d1 +d2
+    ty c | Ask Anna for the catalog
+    k
+    + i chip > c | ↳ Kitchen renovation
+    w 600
+    c c +lit
+    + nx chip pri > c | Next
+    w 1700`,
+"1.197.3": `
+    + w1 win abs
+    s w1 | left:10px;top:10px;width:46%;height:168px
+    + b1 bar > w1 | Edge · Home folder
+    + p1 col > w1
+    s p1 | padding:8px
+    + x1 h > p1 | Welcome
+    + s1 btn pri > p1 | Start
+    w 500
+    p s1
+    c s1 +gone
+    t x1 | Today
+    + l1 ln task > p1 | Book the plumber
+    w 800
+    + w2 win abs fade
+    s w2 | right:10px;top:10px;width:46%;height:168px
+    + b2 bar > w2 | Chrome · same folder
+    + p2 col > w2
+    s p2 | padding:8px
+    w 50
+    c w2 -fade
+    w 600
+    + x2 h > p2 | Today
+    + l2 ln task > p2 | Book the plumber
+    + q quiet > p2 | No welcome again
+    w 1700`,
 "1.197.2#431": `
     + o col abs
     s o | left:10px;top:12px;width:44%
