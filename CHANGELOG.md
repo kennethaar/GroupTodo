@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.202.1 - 2026-11-22
+
+- Contexts: the widget files are written as soon as the area's pages are all
+  in. Asked for at start-up, while the folder was still being read, they
+  waited for a save that might not come, so no Widgets folder showed up. Each
+  widget step is now in the Save log. (#474)
+
 ## 1.202.0 - 2026-11-22
 
 - Contexts: every context now has a widget file for your phone's home

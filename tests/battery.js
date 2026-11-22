@@ -1404,14 +1404,15 @@ var GTD_TEST = (() => {
     setDue(bill, shiftISO(T(), -1));            // overdue: first
     for (let i = 0; i < 25; i++) page.blocks.push(stampAuthor(newBlock({state: "TODO", title: "Chore " + i + " [[c/Testwh/Kitchen]]"})));
     touch(path); clearMemo();
-    const files = new Map(), writes = [];
-    const backend = {kind: "fs", async readText(p) { return files.has(p) ? files.get(p) : null; },
-      async write(p, t) { writes.push(p); files.set(p, t); }, async remove(p) { files.delete(p); }};
+    // Reported: no widgets on the phone. Through the folder backend itself, as there.
+    const tree = {}, writes = [];
+    const backend = Backends.fs(fakeDir("Vault474", tree, writes));
+    const widget = name => (tree[WIDGET_DIR] || {})[name];
     const rec = LOADED.get(V.space);
     try {
       await syncWidgets(rec, {read: true, backend});
-      const home = files.get(join(WIDGET_DIR, "@Testwh.md")), kitchen = files.get(join(WIDGET_DIR, "@Testwh - Kitchen.md"));
-      ok(home && kitchen, "a parent context or its sub context has no widget file: " + [...files.keys()].join(", "));
+      const home = widget("@Testwh.md"), kitchen = widget("@Testwh - Kitchen.md");
+      ok(home && kitchen, "a parent context or its sub context has no widget file: " + Object.keys(tree[WIDGET_DIR] || {}).join(", "));
       const lines = t => t.split("\n").filter(l => /^- \[ \] /.test(l));
       has(home, "# @Testwh", "the file does not name its context");
       eq(lines(home)[0], "- [ ] Pay the bill", "overdue does not come first, or the context link is left in the line");
@@ -1424,15 +1425,30 @@ var GTD_TEST = (() => {
       fillRecord(probe, new Map([[join(WIDGET_DIR, "@X.md"), "- [ ] a\n"]]));
       ok(!probe.pages.size, "a widget file was read as a page");
       // Ticked in the widget app: done in the page, and gone from the widget.
-      files.set(join(WIDGET_DIR, "@Testwh.md"), home.replace("- [ ] Water the plants", "- [x] Water the plants"));
+      tree[WIDGET_DIR]["@Testwh.md"] = home.replace("- [ ] Water the plants", "- [x] Water the plants");
       writes.length = 0;
       await syncWidgets(rec, {read: true, backend});
       eq(water.state, "DONE", "a tick in the widget did not mark the line done");
       eq(tap.state, "TODO", "a line not ticked was marked done");
-      ok(!files.get(join(WIDGET_DIR, "@Testwh.md")).includes("Water the plants"), "the done line is still on the widget");
+      ok(!widget("@Testwh.md").includes("Water the plants"), "the done line is still on the widget");
       writes.length = 0;
       await syncWidgets(rec, {backend});
       eq(writes, [], "files were written again with nothing changed");
+      /* Reported: no Widgets folder on the phone. Asked for while the area was
+         still coming in, the files waited for a save that might not come.
+         They are written once it is in, by themselves, and the log says so. */
+      const tree2 = {}, kept = rec.backend, at = APP_LOG.length;
+      rec.backend = Backends.fs(fakeDir("Vault474b", tree2, []));
+      rec.dayOnly = true;
+      try {
+        scheduleWidgets(true);
+        await new Promise(r => setTimeout(r, 2000));
+        ok(!tree2[WIDGET_DIR], "widget files were written while the area's pages were still coming in");
+        rec.dayOnly = false;
+        for (let i = 0; i < 100 && !tree2[WIDGET_DIR]; i++) await new Promise(r => setTimeout(r, 100));
+        ok(tree2[WIDGET_DIR] && tree2[WIDGET_DIR]["@Testwh.md"], "the widget files were not written once the area was in");
+        has(APP_LOG.slice(at).join("\n"), "widget", "the Save log says nothing about the widgets");
+      } finally { rec.dayOnly = false; rec.backend = kept; }
     } finally {
       closeModal();
       document.querySelectorAll("#toasts .toast").forEach(t => t.remove());

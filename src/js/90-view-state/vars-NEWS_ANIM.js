@@ -315,22 +315,4 @@ const NEWS_ANIM = {
     c st -h +big
     k
     w 1400`,
-  "1.197.1#466": `
-    + w win
-    + b bar > w | Presenter window · Now
-    + c col > w
-    s c | padding:8px
-    + l1 ln dim > c | Why now
-    + l2 ln lit > c | The tap leaks under the
-    + l3 ln > c | Budget
-    w 700
-    p l2
-    p l2
-    c l2 +field
-    ty l2 |  sink
-    k Enter
-    c l2 -field
-    w 300
-    k
-    w 1500`,
 };
