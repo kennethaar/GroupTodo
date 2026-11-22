@@ -147,7 +147,8 @@ grows, merge steps instead of adding one. Then run:
 A change that brings new GUI also gets a What's new animation: a text script
 in `vars-NEWS_ANIM.js`, keyed `version#issue` (format in `newsSteps.js`), drawn
 by the app, never video. Keep only the newest 30; delete older ones. Test #471
-fails if a key's version has left `HELP_NEWS`.
+fails if a key's version has left `HELP_NEWS`: delete that animation. Only
+new things get one. Never add an animation for a fix, or to make up a count.
 
 If a topic marked `shot: 1` changes visually, update its screenshot:
 

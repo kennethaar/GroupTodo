@@ -155,12 +155,13 @@ var GTD_TEST = (() => {
   });
   /* #471: one stage on top of What's new plays each new thing in turn, drawn by
      the app (no video). Only the newest 30 are kept, all of them for news the
-     app still carries. */
+     app still carries. The first 30 were made once; since then only new
+     things get one, so there is no least number. */
   test("#471 what's new plays each new thing on one stage, in turn", async () => {
     const until = async cond => { for (let i = 0; i < 400 && !cond(); i++) await new Promise(r => setTimeout(r, 10)); };
     const all = newsEntries(HELP_NEWS);
     const keys = Object.keys(NEWS_ANIM);
-    ok(keys.length >= 20 && keys.length <= 30, "between 20 and the newest 30 kept, not " + keys.length);
+    ok(keys.length >= 1 && keys.length <= 30, "at most the newest 30 kept, not " + keys.length);
     const carried = new Set(all.flatMap(e => e.items.map(it => newsAnimKey(e, it))));
     for (const k of keys) ok(carried.has(k), k + " is for news the app still carries");
     ok(!/<video|\.mp4|\.gif|\.webm/i.test(JSON.stringify(NEWS_ANIM)), "drawn by the app, no film files");
