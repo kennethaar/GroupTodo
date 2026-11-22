@@ -11,6 +11,8 @@ async function untilLinkReady(link, ms = 180000) {
     if (page && (!link.block || linkedBlock(link))) return true;
     const loading = SPACE_TRANSITION || folderWaiting(V.space) || (!!rec && (!!rec.dayOnly || !!rec.stubs));
     if (!loading || performance.now() > end) return false;
+    const said = $("#content > .linkopening"), label = LINK_OPENING && linkOpeningLabel(LINK_OPENING);
+    if (said && label && said.textContent !== label) said.textContent = label;
     await new Promise(r => setTimeout(r, 150));
   }
 }

@@ -1294,6 +1294,16 @@ var GTD_TEST = (() => {
       history.replaceState(null, "", "#" + LINK_TAG + "&p=" + encodeURIComponent(garden) + "&b=lnk474cd");
       const following = handleHash();
       await new Promise(r => setTimeout(r, 300));
+      // Until it is in, the screen says where the link goes: never the Journal in between.
+      render();
+      has($("#content").textContent, "Opening Garden", "while the page comes in, the screen does not say which page is opening");
+      ok(!$("#content .blk"), "the Journal, or another page, is drawn while the link waits");
+      // Once the page is in, the line is named too.
+      history.replaceState(null, "", "#" + LINK_TAG + "&p=" + encodeURIComponent(note) + "&b=lnk474ab");
+      eq(linkOpeningLabel(parseDeepLink(location.hash)), "Opening Kitchen renovation at “Measure the window”…",
+         "the opening words do not name the page and the line");
+      history.replaceState(null, "", "#" + LINK_TAG + "&p=" + encodeURIComponent(garden) + "&b=lnk474cd");
+      LAST_HASH = location.hash;
       listed(); release();
       await filesLoaded();
       await following;

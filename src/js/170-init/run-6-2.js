@@ -12,6 +12,7 @@
   let wanted = PREF.get("activeSpace");
   if (shown.length && (!wanted || !shown.includes(wanted))) wanted = shown[0];
   const start = (wanted && Spaces.get(wanted)) ? wanted : Spaces.list[0].name;
+  LINK_OPENING = parseDeepLink(location.hash);   // opened by a link: say where it goes from the first screen (#474)
   try {
     await openSpace(start, null, {draw: false});   // drawn below, once (#231)
     t = loadMark("opened “" + start + "”", t);

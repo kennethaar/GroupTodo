@@ -20,7 +20,9 @@ function render() {
   c.textContent = "";
   c.removeAttribute("aria-busy");
   FOCUS_NODE = null;
-  let node = folderAwayShown() ? folderAwayPanel(V.space) : VIEWS[state.view]();
+  // A link on its way stands in the page's place until its page is in (#474).
+  let node = folderAwayShown() ? folderAwayPanel(V.space) : LINK_OPENING ? linkOpeningNode() : VIEWS[state.view]();
+  if (LINK_OPENING && !folderAwayShown()) c.setAttribute("aria-busy", "true");
   if (FOCUS_NODE) node = el("div", {class: "wrap"}, FOCUS_NODE);
   c.append(node);
   document.body.classList.toggle("solview", node.classList.contains("solwrap"));

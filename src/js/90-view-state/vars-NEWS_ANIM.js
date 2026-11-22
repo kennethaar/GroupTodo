@@ -4,6 +4,22 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.201.4#474": `
+    # The new tab says where the link goes until the page is in.
+    + pg col abs
+    s pg | left:12px;top:12px;right:12px
+    + h h > pg | Chat · Anna
+    + m ln > pg | Here it is → grouptodo.html#gt…
+    w 800
+    p m
+    t m | Opening Kitchen renovation at “Measure the window”…
+    c m +dim
+    w 900
+    c m -dim
+    t h | Kitchen renovation
+    t m | Measure the window
+    c m +lit
+    w 1500`,
   "1.201.3#474": `
     # A link tapped in a chat opens the app in a new tab, at the line.
     + pg col abs
@@ -417,23 +433,4 @@ const NEWS_ANIM = {
     s g | order:9
     s pg | display:flex;flex-direction:column
     w 1700`,
-  "1.191.4#461": `
-    + r row
-    + b1 btn > r | To do
-    + b2 btn > r | Project
-    + b3 btn > r | Note
-    + b4 btn > r | Trash
-    + cd card
-    s cd | margin-top:8px
-    + t > cd | Call Bo about tiles
-    w 700
-    p b1
-    t t | Kitchen renovation: choose tiles, ask Anna for the catalog, book the plumber and check the budget with Bo before Friday
-    w 800
-    p b1
-    t t | Order grout
-    w 800
-    p b1
-    + q quiet > cd | The answers stay in one spot.
-    w 1300`,
 };

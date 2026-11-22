@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.201.4 - 2026-11-22
+
+- Links and aliases: a link opens straight at its page. Until the page is
+  in, the screen says where it goes, "Opening Kitchen renovation at
+  “Measure the window”…", and never shows the Journal in between. (#474)
+
 ## 1.201.3 - 2026-11-22
 
 - Links and aliases: a link to a page or a line no longer ends on today's

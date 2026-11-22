@@ -4,7 +4,7 @@ async function openSpace(name, destination = null, {draw = true} = {}) {
   const editor=document.activeElement;
   if (editor?.isContentEditable || /^(INPUT|TEXTAREA)$/.test(editor?.tagName || '')) editor.blur();
   SPACE_TRANSITION = true;
-  showNavigationLoading(destination?.pagePath ? 'Opening page...' : 'Opening area...');
+  showNavigationLoading(LINK_OPENING ? linkOpeningLabel(LINK_OPENING) : destination?.pagePath ? 'Opening page...' : 'Opening area...');
   try {
   if (Spaces.active) await flush();     // drain before the backend changes underneath
   await Spaces.writeSummary().catch(() => {});
