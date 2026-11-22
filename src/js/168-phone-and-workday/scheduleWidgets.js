@@ -8,11 +8,16 @@ function scheduleWidgets(read = false, wait = 1500) {
   WIDGET_TIMER = setTimeout(async () => {
     const r = WIDGET_READ;
     WIDGET_READ = false;
-    let later = false;
+    let again = 0, unread = false;
     for (const rec of [...LOADED.values()]) {
-      try { if ((await syncWidgets(rec, {read: r})) === "later") later = true; }
-      catch (e) { appLog("widgets of " + rec.name + ": " + ((e && e.message) || e)); }
+      try {
+        const how = await syncWidgets(rec, {read: r});
+        if (how === "wait") { again = again ? Math.min(again, 2000) : 2000; unread = true; }   // the active projects are near
+        if (how === "later") again = again || 4000;                         // the rest of the folder is not
+      } catch (e) { appLog("widgets of " + rec.name + ": " + ((e && e.message) || e)); }
     }
-    if (later) scheduleWidgets(r, 3000);
+    /* Ticks are read once, when the area can take them; one still waiting for
+       its page is read again by itself (widgetTicksWait). */
+    if (again) scheduleWidgets(r && unread, again);
   }, wait);
 }

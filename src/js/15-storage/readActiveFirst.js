@@ -8,7 +8,7 @@ async function readActiveFirst(record, edited, got, onDay) {
   let paths = [];
   try { paths = (await record.backend.namesIn(DIRS.active)).filter(p => !got.has(p) && !record.pages.has(p)); }
   catch (_) { return; }
-  if (!paths.length) return;
+  if (!paths.length) { record.activeIn = true; return; }   // enough for the widgets (#474)
   for (const p of paths) {
     const page = parsePage("");
     STUB_PAGES.add(page);
@@ -37,6 +37,7 @@ async function readActiveFirst(record, edited, got, onDay) {
     got.set(p, text);
   }
   lostWhileLoading(record, lost);
+  record.activeIn = true;       // enough for the widgets, long before the whole folder (#474)
   loadStep(record.name, "active projects read", t, "read " + files.size + " of " + paths.length);
   if (onDay) onDay(record);
 }

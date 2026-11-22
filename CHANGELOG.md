@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.202.3 - 2026-11-22
+
+- Contexts: the widget files no longer wait for the whole folder, which took
+  many minutes on a phone. They are written as soon as the active projects
+  are in, and brought up to date as the rest comes in. Until it is all in, no
+  widget file is taken away, and a tick whose page is not read yet waits for
+  it. (#474)
+
 ## 1.202.2 - 2026-11-22
 
 - Vault and sync: the last read of a big folder on a phone no longer goes on

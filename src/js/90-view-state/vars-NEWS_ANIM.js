@@ -258,30 +258,4 @@ const NEWS_ANIM = {
     c c +lit
     + nx chip pri > c | Next
     w 1700`,
-  "1.197.3": `
-    + w1 win abs
-    s w1 | left:10px;top:10px;width:46%;height:168px
-    + b1 bar > w1 | Edge · Home folder
-    + p1 col > w1
-    s p1 | padding:8px
-    + x1 h > p1 | Welcome
-    + s1 btn pri > p1 | Start
-    w 500
-    p s1
-    c s1 +gone
-    t x1 | Today
-    + l1 ln task > p1 | Book the plumber
-    w 800
-    + w2 win abs fade
-    s w2 | right:10px;top:10px;width:46%;height:168px
-    + b2 bar > w2 | Chrome · same folder
-    + p2 col > w2
-    s p2 | padding:8px
-    w 50
-    c w2 -fade
-    w 600
-    + x2 h > p2 | Today
-    + l2 ln task > p2 | Book the plumber
-    + q quiet > p2 | No welcome again
-    w 1700`,
 };

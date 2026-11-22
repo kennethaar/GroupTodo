@@ -1434,21 +1434,32 @@ var GTD_TEST = (() => {
       writes.length = 0;
       await syncWidgets(rec, {backend});
       eq(writes, [], "files were written again with nothing changed");
-      /* Reported: no Widgets folder on the phone. Asked for while the area was
-         still coming in, the files waited for a save that might not come.
-         They are written once it is in, by themselves, and the log says so. */
-      const tree2 = {}, kept = rec.backend, at = APP_LOG.length;
+      /* Reported: no Widgets folder on the phone. The files waited for the
+         whole folder, and on a phone its last read took many minutes, or
+         never ended. They are written once the active projects are in, by
+         themselves, and the log says so. Until the whole folder is in, no
+         file is taken away, and a tick whose page is not read yet stays. */
+      const ticked = "# @Testwh\n\n- [x] Sand the boat\n";
+      const tree2 = {[WIDGET_DIR]: {"@Gone.md": "# @Gone\n", "@Testwh.md": ticked,
+        ".ids.json": JSON.stringify({[join(WIDGET_DIR, "@Gone.md")]: [],
+          [join(WIDGET_DIR, "@Testwh.md")]: [{t: "Sand the boat", p: join(DIRS.someday, "Boat474.md"), k: "Sand the boat"}]})}};
+      const kept = rec.backend, at = APP_LOG.length;
       rec.backend = Backends.fs(fakeDir("Vault474b", tree2, []));
-      rec.dayOnly = true;
+      rec.dayOnly = true; rec.activeIn = false;      // only today's page in
       try {
         scheduleWidgets(true);
-        await new Promise(r => setTimeout(r, 2000));
-        ok(!tree2[WIDGET_DIR], "widget files were written while the area's pages were still coming in");
-        rec.dayOnly = false;
-        for (let i = 0; i < 100 && !tree2[WIDGET_DIR]; i++) await new Promise(r => setTimeout(r, 100));
-        ok(tree2[WIDGET_DIR] && tree2[WIDGET_DIR]["@Testwh.md"], "the widget files were not written once the area was in");
+        await new Promise(r => setTimeout(r, 1700));
+        ok(!tree2[WIDGET_DIR]["@Testwh - Kitchen.md"], "widget files were written with only today's page in");
+        rec.activeIn = true;                         // the active projects are in; the folder is still listed
+        for (let i = 0; i < 40 && !tree2[WIDGET_DIR]["@Testwh - Kitchen.md"]; i++) await new Promise(r => setTimeout(r, 100));
+        ok(tree2[WIDGET_DIR]["@Testwh - Kitchen.md"], "the widget files waited for the whole folder");
+        ok(tree2[WIDGET_DIR]["@Gone.md"], "a widget file was taken away before the whole folder was in");
+        eq(tree2[WIDGET_DIR]["@Testwh.md"], ticked, "a tick whose page was not read yet was written over");
         has(APP_LOG.slice(at).join("\n"), "widget", "the Save log says nothing about the widgets");
-      } finally { rec.dayOnly = false; rec.backend = kept; }
+        rec.dayOnly = false;                         // all in
+        for (let i = 0; i < 40 && tree2[WIDGET_DIR]["@Gone.md"]; i++) await new Promise(r => setTimeout(r, 100));
+        ok(!tree2[WIDGET_DIR]["@Gone.md"], "the file of a context that is gone stayed once the whole folder was in");
+      } finally { rec.dayOnly = false; rec.activeIn = false; rec.backend = kept; }
     } finally {
       closeModal();
       document.querySelectorAll("#toasts .toast").forEach(t => t.remove());
@@ -1655,17 +1666,6 @@ var GTD_TEST = (() => {
       eq(got.get("fine.md"), "- fine\n");
       ok(!got.has("stuck.md"), "a file that never answered was read");
       has(b.unread.get("stuck.md") || "", "TimeoutError", "the stuck file is not marked unread");
-    } finally { FILE_READ_MS = was; }
-  });
-
-  test("#231 start-up draws the first screen once, not twice", async () => {
-    const real = render;
-    const drawn = [];
-    render = function () { drawn.push(new Error().stack.split("\n").slice(2, 5).join(" < ")); return real.apply(this, arguments); };
-    // As at start-up: nothing read in yet. (An area already in memory is read
-    // again behind your back, and that read draws when it is done, rightly.)
-    await flush();
-    const name = V.space, kept = LOADED.get(name);
       /* #181 again: on a phone the last read of a big folder never ended. A
          file not listed with a handle, whose lookup never answers, held it;
          and every file that ran out of time in the crowd was tried again one
@@ -1682,6 +1682,17 @@ var GTD_TEST = (() => {
       ok(got2, "a file whose lookup never answers held the read");
       ok(performance.now() - t0 < 6 * FILE_READ_MS, "the files that ran out of time were tried again one at a time: " +
          Math.round(performance.now() - t0) + " ms for 12");
+    } finally { FILE_READ_MS = was; }
+  });
+
+  test("#231 start-up draws the first screen once, not twice", async () => {
+    const real = render;
+    const drawn = [];
+    render = function () { drawn.push(new Error().stack.split("\n").slice(2, 5).join(" < ")); return real.apply(this, arguments); };
+    // As at start-up: nothing read in yet. (An area already in memory is read
+    // again behind your back, and that read draws when it is done, rightly.)
+    await flush();
+    const name = V.space, kept = LOADED.get(name);
     LOADED.delete(name);
     try { await openSpace(name, null, {draw: false}); }
     catch (e) { LOADED.set(name, kept); throw e; }
