@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.202.2 - 2026-11-22
+
+- Vault and sync: the last read of a big folder on a phone no longer goes on
+  for many minutes. Files that did not answer in time were tried again one
+  at a time, and a file that could not even be found could hold the read for
+  good. Now they are tried again four at a time, and finding a file has a
+  time limit too. The Save log says how many were tried again. (#181)
+
 ## 1.202.1 - 2026-11-22
 
 - Contexts: the widget files are written as soon as the area's pages are all

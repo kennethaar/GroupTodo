@@ -1666,6 +1666,22 @@ var GTD_TEST = (() => {
     // again behind your back, and that read draws when it is done, rightly.)
     await flush();
     const name = V.space, kept = LOADED.get(name);
+      /* #181 again: on a phone the last read of a big folder never ended. A
+         file not listed with a handle, whose lookup never answers, held it;
+         and every file that ran out of time in the crowd was tried again one
+         at a time, each with the whole wait. */
+      const never = () => new Promise(() => {});
+      const lost = {kind: "directory", name: "t181",
+        async *entries() {},
+        getDirectoryHandle: async () => ({kind: "directory", getFileHandle: never}),
+        getFileHandle: never};
+      const b2 = Backends.fs(lost);
+      const many = Array.from({length: 12}, (_, i) => "notes/n" + i + ".md");
+      const t0 = performance.now();
+      const got2 = await Promise.race([b2.readMany(many), new Promise(r => setTimeout(() => r(null), 2000))]);
+      ok(got2, "a file whose lookup never answers held the read");
+      ok(performance.now() - t0 < 6 * FILE_READ_MS, "the files that ran out of time were tried again one at a time: " +
+         Math.round(performance.now() - t0) + " ms for 12");
     LOADED.delete(name);
     try { await openSpace(name, null, {draw: false}); }
     catch (e) { LOADED.set(name, kept); throw e; }

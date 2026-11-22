@@ -279,12 +279,13 @@ const Backends = {
         const readOne = async p => {
           try {
             const t0 = performance.now();
-            const h = fileCache.get(p) ||
-              await (await dirFor(p.split("/").slice(0, -1).join("/"))).getFileHandle(p.split("/").pop());
             /* A file a sync app has not brought down can leave getFile()
-               hanging for good, and the read of the whole folder with it. */
+               hanging for good, and the read of the whole folder with it --
+               and so can finding it, when it was not listed with a handle (#181). */
             let t1 = t0;
             const text = await withTimeout((async () => {
+              const h = fileCache.get(p) ||
+                await (await dirFor(p.split("/").slice(0, -1).join("/"))).getFileHandle(p.split("/").pop());
               const file = await h.getFile();
               t1 = performance.now();
               if (timing) timing.sigs.set(p, file.size + ":" + file.lastModified);
@@ -307,8 +308,15 @@ const Backends = {
           while (queue.length) { const p = queue.shift(); await readOne(p); if (onEach) onEach(p); }
         };
         await Promise.all(Array.from({length: Math.min(16, queue.length)}, worker));
-        // What would not open in the crowd gets one more try on its own.
-        for (const p of paths) if (!out.has(p) && unread.has(p)) await readOne(p);
+        /* What would not open in the crowd gets one more try, in a smaller
+           crowd: one at a time, hundreds of slow files on a phone held the
+           folder for many minutes (#181). */
+        const again = paths.filter(p => !out.has(p) && unread.has(p));
+        if (again.length) {
+          appLog("folder: " + again.length + " files did not answer in time; trying them again, 4 at a time");
+          const tryAgain = async () => { while (again.length) await readOne(again.shift()); };
+          await Promise.all(Array.from({length: Math.min(4, again.length)}, tryAgain));
+        }
         if (timing) timing.readMs += performance.now() - began;
         return out;
       },

@@ -284,35 +284,4 @@ const NEWS_ANIM = {
     + l2 ln task > p2 | Book the plumber
     + q quiet > p2 | No welcome again
     w 1700`,
-  "1.197.2#431": `
-    + o col abs
-    s o | left:10px;top:12px;width:44%
-    + o0 h lit > o | Kitchen renovation
-    + o1 ln > o | Why now
-    + o2 ln d1 > o | The tap leaks
-    + o3 ln > o | Budget
-    + sl slide
-    s sl | inset:14px 10px 14px 52%
-    + st big > sl | Kitchen renovation
-    w 1100
-    k →
-    c o0 -lit
-    c o1 +lit
-    t st | Why now
-    c st -big +h
-    + sb ln dim > sl | The tap leaks
-    w 1000
-    k →
-    c o2 +lit
-    c sb -dim +glow
-    w 1000
-    k →
-    c o1 -lit
-    c o2 -lit
-    c o3 +lit
-    - sb
-    t st | Budget
-    c st -h +big
-    k
-    w 1400`,
 };
