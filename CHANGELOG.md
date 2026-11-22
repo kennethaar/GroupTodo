@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.201.6 - 2026-11-22
+
+- Links and aliases: a link opens its page in about 3 seconds on a phone.
+  The page is read alone, first, and drawn; today's page, the settings and
+  the projects follow behind it. (#474)
+
 ## 1.201.5 - 2026-11-22
 
 - Links and aliases: a link opens its page in seconds, as soon as that page

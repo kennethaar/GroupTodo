@@ -1327,10 +1327,11 @@ var GTD_TEST = (() => {
     }
   });
 
-  test("#474 opened by a link, the page shows as soon as it is read, not after the folder is listed", async () => {
+  test("#474 opened by a link, the page shows as soon as it is read, before today's page and the folder", async () => {
     /* Reported: it works, but takes minutes. At start-up the first screens are
        drawn as today's page comes in; the link was followed only once the
-       whole folder was listed. */
+       whole folder was listed. Then: 12 s, where finding today's file and the
+       settings took 6 of them. The linked page alone is read first. */
     await flush();
     const name = V.space, kept = LOADED.get(name), was = {view: state.view, pagePath: state.pagePath, selected: state.selected};
     const today = journalPath(todayISO()), note = join(PAGES, "Kitchen renovation.md");
@@ -1338,10 +1339,12 @@ var GTD_TEST = (() => {
     b.kind = "fs";
     const files = {[today]: "- written in the folder\n", [note]: "- TODO Measure the window\n  id:: lnk474ef\n"};
     for (const [p, t] of Object.entries(files)) await b.write(p, t);
-    let listed;
+    let listed, dayRead;
     const listing = new Promise(r => { listed = r; }), names = b.names.bind(b);
+    const dayHeld = new Promise(r => { dayRead = r; });
     b.names = async o => { await listing; return names(o); };
     b.readDays = async (days, {files: named = []} = {}) => {
+      if (days.length) await dayHeld;          // finding today's file is slow on a phone
       const out = new Map();
       for (const p of [...days.map(d => journalPath(d)), ...named]) { const t = await b.readText(p); if (t != null) out.set(p, t); }
       return out;
@@ -1355,12 +1358,21 @@ var GTD_TEST = (() => {
     try {
       loading = loadFromBackend(b);
       for (let i = 0; i < 100 && !(V.pages.has(note) && state.view === "page"); i++) await new Promise(r => setTimeout(r, 20));
-      eq(state.view === "page" && state.pagePath, note, "the linked page waited for the folder to be listed");
-      ok($("#content .blk"), "the linked page is not drawn while the folder is listed");
+      eq(state.view === "page" && state.pagePath, note, "the linked page waited for today's page or the folder");
+      ok($("#content .blk"), "the linked page is not drawn while today's page is read");
       const line = getPage(note).blocks[0];
       eq(state.selected, line && line.id, "the linked line is not the one picked");
+      // Written in before today's page is in: kept when it comes.
+      line.title = "Measure the window twice";
+      touch(note);
+      dayRead();
+      for (let i = 0; i < 100 && !V.pages.has(today); i++) await new Promise(r => setTimeout(r, 20));
+      has(serializePage(V.pages.get(today) || parsePage("")), "written in the folder", "today's page did not come in after the linked page");
+      has(serializePage(getPage(note)), "Measure the window twice", "what was written on the linked page was lost when today's page came in");
+      eq(state.view === "page" && state.pagePath, note, "today's page took the screen from the linked page");
     } finally {
       INIT_DONE = true;
+      dayRead();
       listed();
       await loading;
       await filesLoaded();

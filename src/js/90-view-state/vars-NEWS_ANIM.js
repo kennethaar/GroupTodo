@@ -4,6 +4,23 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.201.6#474": `
+    # The linked page is read alone and drawn first; today's page follows.
+    + pg col abs
+    s pg | left:12px;top:12px;right:12px
+    + h h > pg | Opening Kontantoppgjør…
+    + m ln > pg |
+    + q quiet > pg | 0.0 s
+    w 500
+    t q | 1.5 s
+    w 500
+    t q | 2.9 s
+    t h | Kontantoppgjør
+    t m | Check the receipts
+    c m +lit
+    w 700
+    t q | Today's page and projects come in behind
+    w 1500`,
   "1.201.5#474": `
     # The linked page opens in seconds; the rest of the folder comes in behind it.
     + pg col abs
@@ -404,32 +421,4 @@ const NEWS_ANIM = {
     w 300
     s m | left:30px;opacity:1
     w 1800`,
-  "1.192.0#460": `
-    + cd card abs
-    s cd | left:10px;top:12px;width:38%
-    + q h > cd | What is it?
-    + bt btn > cd | To do
-    + bp btn > cd | Project
-    + bn btn > cd | Leave it as a note
-    + pg col abs
-    s pg | left:48%;top:12px;right:10px
-    + ph quiet > pg | Sunday
-    + l1 ln > pg | Kitchen renovation
-    + l2 ln > pg | Choose tiles
-    + l3 ln > pg | Book the plumber
-    w 600
-    p l1
-    c l1 +sel
-    w 250
-    c l2 +sel
-    w 250
-    c l3 +sel
-    w 300
-    p bp
-    c bp +on
-    c l1 -sel
-    c l2 -sel +task +d1
-    c l3 -sel +task +d1
-    + pc chip acc > l1 | Project
-    w 1600`,
 };

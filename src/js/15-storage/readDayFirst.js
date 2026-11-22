@@ -9,17 +9,30 @@
    to show yet: then the folder is listed and read as before. */
 async function readDayFirst(record, edited, today, onDay) {
   const who = "“" + record.name + "”: ";
+  const linked = linkedPageFirst(record);
+  const first = record.behindCopy ? new Map() : await readLinkedFirst(record, linked, onDay);
   let t = loadMark(who + "reading today's page by name");
   let got;
-  try { got = await record.backend.readDays([today], {files: [SETTINGS_PATH, ...linkedPageFirst(record)]}); }
-  catch (_) { return null; }
+  try { got = await record.backend.readDays([today], {files: [SETTINGS_PATH, ...linked.filter(p => !first.has(p))]}); }
+  catch (_) { if (!first.size) return null; got = new Map(); }
+  for (const [p, text] of first) if (!got.has(p)) got.set(p, text);
   const mine = new Set(["", slugPerson(whoAmI()), ...myNames().map(slugPerson)]);
   if (![...got.keys()].some(p => isJournalPath(p) && mine.has(journalOwnerOf(p)))) {
     try { for (const [p, text] of await record.backend.readDays([], {dirs: [DIRS.lists]})) got.set(p, text); }
     catch (_) {}
   }
   if (!got.size) return null;
-  fillRecord(record, got);
+  /* The linked page, on screen already, may have been written in meanwhile:
+     what is there stays. A page made meanwhile that the folder has after all,
+     today's from its templates, gives way to the folder's. */
+  const held = new Map(record.pages), heldBase = record.base || new Map();
+  fillRecord(record, got, held);
+  for (const p of new Set([...edited, ...record.dirty])) {
+    if (!held.has(p)) continue;
+    if (got.has(p) && !first.has(p)) { record.dirty.delete(p); edited.delete(p); continue; }
+    record.pages.set(p, held.get(p));
+    if (heldBase.has(p)) record.base.set(p, heldBase.get(p)); else record.base.delete(p);
+  }
   record.hold = null;
   record.stubs = new Set();
   // Today's page the folder has not got is new: a day begun in the browser copy is taken in (#232).

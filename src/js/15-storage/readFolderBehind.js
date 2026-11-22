@@ -8,6 +8,7 @@
    is merged into the folder's pages, line by line (mergeMirror). */
 function readFolderBehind(held, backend) {
   const name = held.name, rec = newRecord(name, backend);
+  rec.behindCopy = true;   // the copy is on screen already: no page is read ahead of today's (readLinkedFirst)
   FOLDER_READING.add(name);
   setSync("sync", "reading the folder...");
   loadStep(name, "reading the folder behind the browser copy", null, held.pages.size + " pages in the copy");
