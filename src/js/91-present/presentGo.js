@@ -31,6 +31,7 @@ function presentGo(i) {
       old.classList.replace("cur", "out");
       setTimeout(() => old.remove(), 1100);
     }
+    SLIDE_ARR_PICK = null;            // a pick is for the slide it was made on (#487)
     const slide = slideSection(to.s);
     deck.append(slide);
     resolveAssets(slide);

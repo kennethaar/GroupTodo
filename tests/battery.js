@@ -15674,6 +15674,65 @@ var GTD_TEST = (() => {
     } finally { closeModal(); go("today"); }
   }));
 
+  /* #487 Alt+drag on a slide: a line or the title moves from where the
+     layout puts it, the picture pans in its frame; kept on the lines. */
+  test("#487 Alt+drag moves a slide's line, title and picture crop; kept on the lines; Reset slide clears them; one Ctrl+Z", () => withPages({
+    [SHOW]: ["- Om CAB", "  ![](data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="3000" height="600"><rect width="3000" height="600" fill="#888"/></svg>') + ")",
+      "  - Grunnlagt 1946", "  - Eiere: IF og Folksam", "- Next", "  - A"].join("\n") + "\n"}, async () => {
+    const [om, next] = getPage(SHOW).blocks, [first] = om.children;
+    const xy = v => String(v || "").split(",").map(Number);
+    const key = (key, up = false, o = {}) => document.dispatchEvent(new KeyboardEvent(up ? "keyup" : "keydown", {key, altKey: !up || key !== "Alt", bubbles: true, cancelable: true, ...o}));
+    const drag = async (node, dx, dy) => {
+      const r = node.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+      const ev = (t, cx, cy, n = node) => n.dispatchEvent(new PointerEvent(t, {bubbles: true, cancelable: true, altKey: true, button: 0, pointerId: 1, clientX: cx, clientY: cy}));
+      ev("pointerdown", x, y); ev("pointermove", x + dx / 2, y + dy / 2, document); ev("pointermove", x + dx, y + dy, document); ev("pointerup", x + dx, y + dy, document);
+      await settle();
+    };
+    const open = async () => {
+      presentStart(SHOW); await settle();
+      const s = DECK.slides.find(x => x.title === "Om CAB");
+      presentGo(s.end - 1); await settle();
+    };
+    try {
+      openPage(SHOW); await settle();
+      await open();
+      const deck = $("#deck"), W = deck.getBoundingClientRect().width, H = deck.getBoundingClientRect().height;
+      const line = () => $(`#deck .slide.cur [data-bid="${CSS.escape(String(first.id))}"]`);
+      ok(!line().style.translate, "a slide with no moves draws as before");
+      key("Alt"); await settle();
+      ok(deck.classList.contains("arranging"), "holding Alt outlines what can move");
+      ok($("#deck .arrreset"), "and offers Reset slide");
+      key("Alt", true); await settle();
+      ok(!deck.classList.contains("arranging") && !$("#deck .arrreset"), "letting go of Alt takes them away");
+      await drag(line(), W * 0.1, H * 0.05);
+      const [ax, ay] = xy(blockProp(first, "at"));
+      ok(Math.abs(ax - 10) <= 2 && Math.abs(ay - 5) <= 2, "the line's place is kept on it as at:: " + blockProp(first, "at"));
+      await drag($("#deck .slide.cur .stitle"), -W * 0.05, 0);
+      ok(xy(blockProp(om, "title-at"))[0] < -3, "the title's place is kept on the slide's line: " + blockProp(om, "title-at"));
+      await drag($("#deck .slide.cur .cover .pic img"), -W * 0.1, 0);
+      const fx = xy(blockProp(om, "focus"))[0];
+      ok(fx > 50, "dragging the picture left shows more of its right: focus:: " + blockProp(om, "focus"));
+      presentStop(); await open();
+      has(line().style.translate, "cqw", "next time the line is drawn where it was put");
+      has($("#deck .slide.cur .cover .pic img").style.objectPosition, fx + "%", "and the picture keeps its crop");
+      const before = xy(blockProp(om, "title-at"))[0];
+      const title = $("#deck .slide.cur .stitle");
+      for (const t of ["pointerdown", "pointerup"]) title.dispatchEvent(new PointerEvent(t, {bubbles: true, cancelable: true, altKey: true, button: 0, pointerId: 1,
+        clientX: title.getBoundingClientRect().left + 5, clientY: title.getBoundingClientRect().top + 5}));
+      key("ArrowRight"); await settle();
+      ok(Math.abs(xy(blockProp(om, "title-at"))[0] - (before + 1)) < 0.01, "Alt+click picks it, Alt+→ nudges it 1%");
+      eq(DECK.slides[DECK.steps[DECK.i].s.n - 1].title, "Om CAB", "and the talk stays on the slide");
+      key("Alt"); await settle();
+      $("#deck .arrreset").click(); await settle();
+      eq([blockProp(first, "at"), blockProp(om, "title-at"), blockProp(om, "focus")].map(v => v || null), [null, null, null], "Reset slide takes every move off");
+      ok(!line().style.translate, "and the slide is drawn as the layout puts it");
+      key("Alt", true);
+      document.dispatchEvent(new KeyboardEvent("keydown", {key: "z", ctrlKey: true, bubbles: true, cancelable: true})); await settle();
+      ok(blockProp(first, "at") && blockProp(om, "title-at") && blockProp(om, "focus"), "one Ctrl+Z puts them back");
+      eq(blockProp(next.children[0], "at"), null, "another slide's lines are untouched");
+    } finally { presentStop(); go("today"); }
+  }));
+
   /* #486 A waiting screen before the talk: the lines under "(waiting)" as
      slides on repeat, and a countdown band to the page's starts:: time. */
   test("#486 the waiting screen counts down to starts::, cycles the (waiting) lines with a QR for a link; → starts the talk", () => withPages({

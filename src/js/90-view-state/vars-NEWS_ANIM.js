@@ -4,6 +4,24 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.209.0#487": `
+    cap | Place a line just so
+    say | Hold Alt on a slide: what can move gets an edge.
+    + pg col
+    + t ln > pg | Om CAB
+    + a ln > pg | • Grunnlagt 1946
+    + r chip > pg | ↺ Reset slide
+    s t | outline:1px dashed currentColor
+    s a | outline:1px dashed currentColor
+    w 1200
+    say | Alt+drag it. It snaps to the middle.
+    p a
+    s a | outline:1px dashed currentColor;margin-left:60px;transition:margin .8s
+    w 1500
+    say | The place is kept. Reset slide takes it off.
+    p r
+    s a | margin-left:0;transition:margin .8s
+    w 1500`,
   "1.208.0#486": `
     cap | A countdown before the talk starts
     say | ▶ Present ▾ › Count down to the start…

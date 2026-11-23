@@ -28,6 +28,10 @@ function presentStart(path, {root = null, on = false, presenter = false, step = 
   DECK = {path, root, on, steps, slides, hidden, i: -1, deck, back, digits: "", pw: null, t0: Date.now(), timer: 0, grid: false, edit: null};
   window.addEventListener("keydown", presentKey, true);
   deck.addEventListener("dblclick", slideEdit);
+  // Alt+drag places a line, the title or the picture's crop (#487).
+  deck.addEventListener("pointerdown", slideArrDown, true);
+  window.addEventListener("keyup", slideArrKey, true);
+  SLIDE_ARR_PICK = null;
   DECK.timer = setInterval(presenterTick, 1000);
   // The presenter window first: a pop-up is only allowed straight from the click.
   if (presenter) presenterOpen();

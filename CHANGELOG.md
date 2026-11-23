@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.209.0 - 2026-11-23
+
+- Present a page: hold Alt on a slide to place its parts. Alt+drag a
+  line or the title, and it snaps to the middle and the thirds. Alt+drag
+  the picture to choose what its crop shows. Alt+click and Alt+arrows
+  nudge. The places are kept on the lines, and ↺ Reset slide takes them
+  off again. (#487)
+
 ## 1.208.1 - 2026-11-23
 
 - Present a page: a picture in a line's notepad, such as its slide

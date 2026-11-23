@@ -36,7 +36,8 @@ function deckSteps(path, root = null, on = false) {
     const pages = slidePages(kids, lay.max);
     pages.forEach((chunk, p) => {
       const hero = lay.layout === "hero" ? slideHero(chunk[0]) : null;
-      const s = {n: slides.length + 1, block, depth, up, breadcrumb, kids: chunk,
+      // `home` keeps the slide's own places (#487): its line, the bullet presented from, or the page.
+      const s = {n: slides.length + 1, block, depth, up, breadcrumb, kids: chunk, path, home: block || root || null,
         title: lay.title + (pages.length > 1 ? ` (${p + 1}/${pages.length})` : ""),
         layout: lay.layout, mode: lay.mode, axes: lay.axes, guess: lay.guess, hero,
         parts: hero ? [chunk[0], ...hero.takeaways] : lay.layout === "table" ? slideTableParts(chunk[0])

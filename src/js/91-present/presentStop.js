@@ -8,6 +8,8 @@ function presentStop() {
   if (i >= 0) slideLast(path, root, i);
   clearInterval(timer);
   window.removeEventListener("keydown", presentKey, true);
+  window.removeEventListener("keyup", slideArrKey, true);
+  SLIDE_ARR_PICK = null;
   try { navigator.keyboard?.unlock?.(); } catch (e) {}
   if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
   deck.remove();
