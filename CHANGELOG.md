@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.210.2 - 2026-11-23
+
+- Present a page: a top line's slide no longer shows the page's title
+  above its own. The page title rises from the first slide and fades.
+  A slide inside another still says where it is from. (#431)
+
 ## 1.210.1 - 2026-11-23
 
 - Present a page: Alt+drag on a slide's picture crops it again. The

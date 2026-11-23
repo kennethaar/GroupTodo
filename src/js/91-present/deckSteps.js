@@ -91,8 +91,8 @@ function deckSteps(path, root = null, on = false) {
     slide(null, head, first ? runs[0] : [], 0, null, "", notes);
     for (const run of runs.slice(first ? 1 : 0)) {
       if (drawn(run)) slide(null, head, run, 0, null, "");
-      // A top line's slide names the page as its breadcrumb; the page title rises into it (#431).
-      else for (const b of run) tableRows(b) ? slide(b, head, [b], 0, null, "") : slide(b, slideWords(b), kidsOf(b), 0, null, head);
+      // A top line's slide has no breadcrumb: the page's title says nothing new there (#431 reopened).
+      else for (const b of run) tableRows(b) ? slide(b, head, [b], 0, null, "") : slide(b, slideWords(b), kidsOf(b), 0, null, "");
     }
   }
   if (root && on) {
