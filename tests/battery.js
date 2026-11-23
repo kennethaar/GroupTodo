@@ -14456,9 +14456,11 @@ var GTD_TEST = (() => {
       return out;
     };
     const done = () => Promise.all($("#deck").getAnimations({subtree: true}).map(a => a.finished.catch(() => {})));
-    // An area's slide stylesheet may color the title slide apart from the rest (#431).
+    // An area's slide stylesheet may color each kind of slide apart (#431): here a
+    // light title on the title slide and on a big line title, dark once laid out.
     const sheet = document.head.appendChild(document.createElement("style"));
-    sheet.textContent = "#deck .slide.titleslide .stitle{color:rgb(200, 0, 0)} #deck .scrumb{color:rgb(0, 0, 200)}";
+    sheet.textContent = "#deck .slide.titleslide .stitle{color:rgb(200, 0, 0)} #deck .scrumb{color:rgb(0, 0, 200)}" +
+      " #deck .slide.intro:not(.titleslide) .stitle{color:rgb(0, 200, 0)} #deck .slide:not(.intro) .stitle{color:rgb(0, 0, 100)}";
     try {
       presentStart(path, {step: 0}); await settle(); await done();
       const big = $("#deck .slide.cur .stitle").getBoundingClientRect();
@@ -14473,11 +14475,15 @@ var GTD_TEST = (() => {
       const go = () => { for (const a of $("#deck").getAnimations({subtree: true})) a.play(); };
       eq(letters().map(s => s.textContent).join(""), "Quarterlykickoffforthewholeteam", "the page title goes up letter by letter");
       ok(letters().every(s => s.getAnimations().length === 1), "each letter has its own glide");
-      at(0);
-      ok(letters().every(s => getComputedStyle(s).color === "rgb(200, 0, 0)"), "each letter starts in the title's color");
+      // The letters keep the title's color until the next slide is in; the deck's own
+      // background never shows between the two slides (the user's slides.css hid them so).
+      for (const t of [0, 500, 999]) {
+        at(t);
+        ok(letters().every(s => getComputedStyle(s).color === "rgb(200, 0, 0)"), "at " + t + " ms each letter is still in the title's color");
+        eq(getComputedStyle($("#deck .slide.out")).opacity, "1", "at " + t + " ms the title slide still stands under the next one");
+      }
       at(1000);
-      ok(letters().every(s => getComputedStyle(s).color === "rgb(0, 0, 200)"),
-        "and ends in the breadcrumb's, so a slide colored like the title cannot hide it: " + getComputedStyle(letters()[0]).color);
+      eq(getComputedStyle($("#deck .slide.cur")).opacity, "1", "the next slide is in when the letters land");
       const rs = letters().map(s => s.getBoundingClientRect());
       const top = {top: Math.min(...rs.map(r => r.top)), height: Math.max(...rs.map(r => r.bottom)) - Math.min(...rs.map(r => r.top))};
       ok(top.top < deckBox().height * 0.2 && top.height < big.height, "the page title ends at the top, smaller: " + Math.round(top.top));
@@ -14516,6 +14522,8 @@ var GTD_TEST = (() => {
       const near = (a, b) => Math.abs(a.left - b.left) < 3 && Math.abs(a.top - b.top) < 3;
       at(0);
       ok(letters().every((s, i) => near(s.getBoundingClientRect(), intro[i])), "each letter starts where it stood in the big title");
+      ok(letters().every(s => getComputedStyle(s).color === "rgb(0, 0, 100)"),
+        "the slide's look changes at once, so the letters wear the laid-out title's color from the start: " + getComputedStyle(letters()[0]).color);
       at(1000);
       const laid = marks(title);
       ok(letters().every((s, i) => near(s.getBoundingClientRect(), laid[i])), "and lands on its place in the title at the top");

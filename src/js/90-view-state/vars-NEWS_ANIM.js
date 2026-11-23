@@ -184,23 +184,4 @@ const NEWS_ANIM = {
     c b +glow
     t cd | Book the plumber · Fri
     w 1500`,
-  "1.200.1#431": `
-    cap | Present a page
-    say | Any page can become slides.
-    w 1200
-    + sl slide
-    say | The title comes first.
-    + t big > sl | Kitchen renovation
-    w 1200
-    s t | transform:translateY(-60px) scale(.6)
-    w 650
-    c t +fade
-    say | Then each heading and its lines.
-    + n h fade > sl | Why now
-    + l ln fade > sl | The tap leaks under the sink
-    w 50
-    c n -fade
-    w 300
-    c l -fade
-    w 1500`,
 };

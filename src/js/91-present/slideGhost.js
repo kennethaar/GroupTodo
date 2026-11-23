@@ -4,8 +4,12 @@
    a little after the one before it; all land in 1 s. `title` (the real one,
    now in its place) shows as they land, so nothing fades (they end as
    faint as it is, so a quiet breadcrumb does not jump); without one the
-   letters fade at the end and go. Returns the last letter's glide. */
-function slideGhost(deck, from, to, title = null) {
+   letters fade at the end and go. Returns the last letter's glide.
+   The letters wear one color the whole way, never a blend: the title's
+   own (`ink` "from") while the slide it stood on is still behind them, or
+   the new place's ("to") when the slide's look changes at once. A slide
+   stylesheet may color the next slide like the title (#431). */
+function slideGhost(deck, from, to, title = null, ink = "from") {
   const a = from.letters || [], b = to.letters || [];
   if (!from.rect.width || !to.width || !deck.animate || !a.length) return null;
   const host = deck.getBoundingClientRect();
@@ -16,7 +20,8 @@ function slideGhost(deck, from, to, title = null) {
   const out = title ? [{opacity: 1}, {opacity: keep}] : [{opacity: 1}, {opacity: 1, offset: 0.7}, {opacity: 0}];
   const glides = [];
   for (let i = 0; i < n; i++) {
-    const {ch, rect, size, font, color} = a[i], end = b[i];
+    const {ch, rect, size, font} = a[i], end = b[i];
+    const color = ink === "to" ? end.color : a[i].color;
     const span = el("span", {style: `left:${rect.left - host.left}px;top:${rect.top - host.top}px;` +
       `font:${font};font-size:${size}px;line-height:${rect.height}px;color:${color}`});
     span.textContent = ch;
@@ -24,10 +29,6 @@ function slideGhost(deck, from, to, title = null) {
     const move = `translate(${end.rect.left - rect.left}px, ${end.rect.top - rect.top}px) scale(${end.size / size})`;
     const keys = out.map((k, j) => ({...k, transform: j ? (j === out.length - 1 ? move : null) : "none"}));
     for (const k of keys) if (k.transform === null) delete k.transform;
-    // Its color blends into the color of the place it lands, so a slide
-    // stylesheet that colors the next slide like this title cannot hide it.
-    keys[0].color = color;
-    keys[keys.length - 1].color = end.color;
     glides.push({span, keys, delay: i * step});
   }
   deck.append(ghost);

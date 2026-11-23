@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.203.3 - 2026-11-23
+
+- Present a page: the page title keeps its own color all the way up, and
+  the title slide stays behind until the next slide is in, so no slide
+  stylesheet can make it vanish on the way. When a slide's title moves up
+  for its first line, it takes the new color at once. (#431)
+
 ## 1.203.2 - 2026-11-23
 
 - Present a page: a title on its way to a new place takes on the color of
