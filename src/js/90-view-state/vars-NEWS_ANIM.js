@@ -4,18 +4,37 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.211.0#489": `
+    cap | Run the talk from the presenter window
+    say | The Next box is a button. ‹ Back is beside it.
+    + pg col
+    + b chip > pg | ‹ Back
+    + n ln > pg | Next › The roof leaks
+    s n | border:1px solid currentColor;padding:12px;border-radius:8px
+    w 900
+    p n
+    w 1200
+    say | ⏱ Count down… starts the waiting screen from here.
+    + t chip > pg | ⏱ Count down…
+    p t
+    + k ln > pg | Starts at 13:00 · 4:59
+    w 1500
+    say | Start the talk when you are ready.
+    + g chip > pg | Start the talk
+    p g
+    w 1500`,
   "1.210.0#488": `
     cap | Pins on a map, a card about you
     say | (map) puts the line's picture behind the slide.
     + pg col
-    + l ln > pg | (map) Om meg 🗺
-    + c ln > pg | 🖼 Kenneth Aar · Account manager
+    + l ln > pg | (map) About me 🗺
+    + c ln > pg | 🖼 Sam Lee · Account manager
     s c | margin-left:24px
-    + p ln > pg | 📍 Trondheim
+    + p ln > pg | 📍 Lisbon
     s p | margin-left:24px
     w 1500
     say | A line that starts with 📍 is a pin. Alt+drag puts it in place.
-    + q ln > pg | 📍 Hamburg
+    + q ln > pg | 📍 Porto
     s q | margin-left:24px
     w 900
     say | Pins in a row: one pin that moves on each click.
@@ -25,8 +44,8 @@ const NEWS_ANIM = {
     cap | Place a line just so
     say | Hold Alt on a slide: what can move gets an edge.
     + pg col
-    + t ln > pg | Om CAB
-    + a ln > pg | • Grunnlagt 1946
+    + t ln > pg | About us
+    + a ln > pg | • Founded 1946
     + r chip > pg | ↺ Reset slide
     s t | outline:1px dashed currentColor
     s a | outline:1px dashed currentColor
@@ -176,29 +195,5 @@ const NEWS_ANIM = {
     w 50
     c n -fade
     say | The picture moves to the line's notepad, for Present.
-    w 1500`,
-  "1.202.6#431": `
-    cap | A title moves up letter by letter
-    say | A long title stands big on its own slide.
-    # A big title in two lines reflows into one line at the top, piece by piece.
-    + sl slide
-    + a h abs > sl | Kitchen
-    s a | left:8%;top:8%;transform:translate(60px,70px) scale(1.6)
-    + b h abs > sl | renovation
-    s b | left:30%;top:8%;transform:translate(-20px,105px) scale(1.6)
-    + c h abs > sl | plan
-    s c | left:62%;top:8%;transform:translate(-50px,140px) scale(1.6)
-    w 1200
-    say | With the first line it moves up; each piece slides to its new place.
-    s a | transform:none
-    w 80
-    s b | transform:none
-    w 80
-    s c | transform:none
-    w 700
-    + l ln fade > sl | Measure the room
-    s l | margin-top:48px
-    w 50
-    c l -fade
     w 1500`,
 };

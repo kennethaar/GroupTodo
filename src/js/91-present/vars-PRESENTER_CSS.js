@@ -11,6 +11,19 @@ button:hover,button:focus-visible{background:#444;outline:2px solid #9cf}
 .pnow h2{margin:0 0 8px;font-size:1.4em}.pnow li.past{opacity:.5}.pnow li.now{font-weight:600;color:#fff}
 .pnow li.later{color:#888}.plabel{color:#aaa;font-size:.85em;text-transform:uppercase;letter-spacing:.05em}
 .pnext .pwhat{font-size:1.3em;margin-top:4px}
+/* The Next box is the button that goes on, ‹ Back small beside it (#489). */
+.pside{display:grid;grid-template-columns:auto 1fr;gap:8px;min-height:0}
+.pnext{display:block;text-align:left;vertical-align:top;background:#1a1a1a;border:1px solid #444;border-radius:8px;padding:12px;overflow:auto;min-height:0}
+.pnext:hover,.pnext:focus-visible{background:#262626}
+.pback{align-self:stretch;padding:0 14px}
+button:disabled{opacity:.4;cursor:default;background:#222}
+.pwaitbtn[aria-expanded=true]{background:#444}
+body:has(.ptimes){grid-template-rows:auto auto 1fr auto}
+.ptimes{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid #333;background:#181818}
+.ptimes input{font:inherit;background:#222;color:#eee;border:1px solid #666;border-radius:6px;padding:4px 8px;min-height:28px;color-scheme:dark}
+body:has(.pwait){grid-template-rows:1fr auto}
+.pwait{font:600 2.2em/1.3 system-ui,sans-serif;align-self:center;text-align:center}
+.pgo{margin:12px;font-size:1.2em;text-align:center}
 .pnotes{padding:12px 16px;border-top:1px solid #333;white-space:pre-wrap;max-height:40vh;overflow:auto}
 .pnotes:empty::before{content:"No notes";color:#888}
 .pgrid{position:fixed;inset:0;background:#111;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;padding:16px;align-content:start;counter-reset:s}

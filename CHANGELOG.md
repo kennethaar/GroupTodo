@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.211.0 - 2026-11-23
+
+- Present a page: the presenter window runs the talk by mouse or touch.
+  Its Next box is a button that goes on, with a small ‹ Back beside it.
+  ⏱ Count down… in its bar starts the waiting screen without leaving the
+  slides, and while it counts down, Start the talk begins. (#489)
+
 ## 1.210.2 - 2026-11-23
 
 - Present a page: a top line's slide no longer shows the page's title

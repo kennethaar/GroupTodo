@@ -16,6 +16,6 @@ function slideWaitTick() {
   }
   const pw = DECK.pw;
   const own = pw && !pw.closed && pw.document.querySelector(".pwait");
-  if (own) own.textContent = left ? "Starts at " + w.text + " · " + clock : "Starting now: → starts the talk";
+  if (own) own.textContent = left ? "Starts at " + w.text + " · " + clock : "Starting now";
   if (w.slides.length > 1 && Date.now() - w.shown >= SLIDE_WAIT_EVERY) slideWaitNext();
 }

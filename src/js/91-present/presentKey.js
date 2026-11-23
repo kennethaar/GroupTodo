@@ -7,6 +7,8 @@ function presentKey(e) {
   if (slideArrKey(e)) return;
   // A line being edited on the slide (#466) gets its keys; its field handles Enter and Esc.
   if (!DECK || DECK.edit || e.ctrlKey || e.metaKey || e.altKey || /^F\d+$/.test(e.key)) return;
+  // The presenter window's time list (#489) keeps its keys: a time is typed there.
+  if (e.target?.closest?.(".ptimes")) { if (e.key === "Escape") { DECK.pwTimes = false; presenterDraw(); } return; }
   e.preventDefault(); e.stopImmediatePropagation();
   // The waiting screen (#486): → or Space starts the talk, Esc leaves, P opens the presenter window.
   if (DECK.wait) {

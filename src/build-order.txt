@@ -865,6 +865,9 @@ js/91-present/slideWaitTick.js
 js/91-present/slideWaitEnd.js
 js/91-present/presentWaitSet.js
 js/91-present/openPresentWait.js
+js/91-present/presentWaitTimes.js
+js/91-present/slideWaitBegin.js
+js/91-present/presenterTimes.js
 js/91-present/vars-SLIDE_ARRANGE.js
 js/91-present/slideXY.js
 js/91-present/slideArrOwner.js

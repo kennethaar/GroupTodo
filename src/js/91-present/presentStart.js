@@ -37,13 +37,5 @@ function presentStart(path, {root = null, on = false, presenter = false, step = 
   if (presenter) presenterOpen();
   try { deck.requestFullscreen?.().then(() => navigator.keyboard?.lock?.(["Escape"])).catch(() => {}); } catch (e) {}
   deck.focus({preventScroll: true});
-  const when = wait ? slideWaitAt(path) : null;
-  if (!when) { presentGo(at); return; }
-  DECK.wait = {...when, n: 0, shown: 0, slides: slideWaitSlides(path), tick: setInterval(slideWaitTick, 1000)};
-  deck.classList.add("waiting");
-  deck.append(el("div", {class: "waitdots", "aria-hidden": "true"}, ...DECK.wait.slides.map(() => el("span", {}))),
-    el("div", {class: "waitband", role: "timer"}, el("span", {class: "waitwhen"}), el("span", {class: "waitclock"})));
-  slideWaitShow(0);
-  slideWaitTick();
-  presenterDraw();
+  if (!(wait && slideWaitBegin())) presentGo(at);
 }
