@@ -15890,7 +15890,8 @@ var GTD_TEST = (() => {
      window's Camera strip sets this slide's mode; the next slide is automatic
      again. The presenter window shows you mirrored, the notes right under. */
   test("#485 the camera: Shift+C turns it on, the mode follows the slide, C or the presenter strip picks this slide's mode", () => withPages({
-    [SHOW]: ["- Welcome", "- Results", "  ![cover](assets/cover.png)", "  - Revenue up", "- Plain", "  - A", "  - B"].join("\n") + "\n"}, async () => {
+    [SHOW]: ["- Welcome", "- Results", "  ![cover](assets/cover.png)", "  - Revenue up", "- Plain", "  - A", "  - B",
+      "- (map) Offices", "  ![map](assets/map.png)", "  - 📍 Oslo"].join("\n") + "\n"}, async () => {
     const f = document.createElement("iframe");
     document.body.append(f);
     const open = window.open, md = navigator.mediaDevices, waitPref = PREF.get("present.campic");
@@ -15941,6 +15942,13 @@ var GTD_TEST = (() => {
       key("b");
       eq(getComputedStyle($("#deck video.cam")).visibility, "hidden", "B hides the camera too");
       key("b");
+      // #485 bug: a picture over the whole slide, as on a (map) slide, faded out and you never came in.
+      $("#deck video.cam").style.transition = "none";     // its final place, not on the way
+      key("ArrowRight"); key("ArrowRight"); key("ArrowRight"); await wait();
+      ok($("#deck .slide.cur.lay-map"), "a (map) slide");
+      const cv = $("#deck video.cam").getBoundingClientRect(), dk = $("#deck").getBoundingClientRect();
+      eq([cam(), Math.round(cv.width), Math.round(cv.height)], ["side", Math.round(dk.width), Math.round(dk.height)],
+        "a picture over the whole slide: you come in over the whole slide");
       eq(asked, 1, "the camera opened once for the whole talk");
       const tracks = stream.getTracks();
       key("C", {shiftKey: true}); await wait();

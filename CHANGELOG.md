@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.212.1 - 2026-11-23
+
+- Present a page: on a slide whose picture fills it, such as a (map)
+  slide, your camera now comes in over the whole slide after the picture.
+  It sat in the left strip, under the words, so the picture faded to
+  nothing. (#485)
+
 ## 1.212.0 - 2026-11-23
 
 - Present a page: your camera can be one layer through the talk. Shift+C,

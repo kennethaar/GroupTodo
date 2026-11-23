@@ -21,7 +21,8 @@ function slideCamShow() {
   }
   c.mode = mode;
   deck.dataset.cam = mode;
-  deck.classList.toggle("camwide", !!slide?.classList.contains("intro"));
+  // The picture's place is the whole slide on a title alone, and always on a (map) slide.
+  deck.classList.toggle("camwide", !!slide?.matches(".intro, .lay-map"));
   // Beside a slide with no picture place, its words make room.
   for (const n of deck.querySelectorAll(".slide")) n.classList.toggle("camside", n === slide && mode === "side" && !pics.length);
 }
