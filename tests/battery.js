@@ -15158,7 +15158,7 @@ var GTD_TEST = (() => {
     } finally { presentStop(); }
   }));
   const CYCLE = join(PAGES, "Cycle479.md");
-  test("#479 a cycle's boxes may touch, but none lies over another's words: the ring widens first, then the words get smaller", () => withPages({[CYCLE]: [
+  test("#479 a cycle's boxes keep at least 1em of air between them and no arrow runs under a box: the ring widens first, then the words get smaller", () => withPages({[CYCLE]: [
     "- Six areas", "  - (o) Bring AI to the functionality of our products", "  - (o) AI to ensure stable and secure products",
     "  - (o) Redesign processes, capabilities and roles.", "  - (o) Ensure data quality, structure, access and ownership.",
     "  - (o) Govern AI risk, ethics, security and compliance.", "  - (o) Build competence and leadership to support."].join("\n") + "\n"}, async () => {
@@ -15170,13 +15170,20 @@ var GTD_TEST = (() => {
       const slide = $("#deck .slide.cur");
       slide.getAnimations({subtree: true}).forEach(a => a.finish());
       ok(slide.classList.contains("lay-cycle"), slide.className);
-      const boxes = [...slide.querySelectorAll(".ntext")];
-      const words = b => { const r = b.getBoundingClientRect(), c = getComputedStyle(b), px = k => parseFloat(c[k]) || 0;
-        return {left: r.left + px("paddingLeft") + px("borderLeftWidth"), right: r.right - px("paddingRight") - px("borderRightWidth"),
-          top: r.top + px("paddingTop") + px("borderTopWidth"), bottom: r.bottom - px("paddingBottom") - px("borderBottomWidth")}; };
-      const meet = (a, b) => a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
-      for (const [i, a] of boxes.entries()) for (const [j, b] of boxes.entries())
-        if (i !== j) ok(!meet(words(a), b.getBoundingClientRect()), `box ${j + 1} lies over the words of box ${i + 1}`);
+      const boxes = [...slide.querySelectorAll(".ntext")], rects = boxes.map(b => b.getBoundingClientRect());
+      const em = parseFloat(getComputedStyle(boxes[0]).fontSize);
+      const meet = (a, b, d) => a.left - d < b.right && b.left - d < a.right && a.top - d < b.bottom && b.top - d < a.bottom;
+      for (const [i, a] of rects.entries()) for (const [j, b] of rects.entries())
+        if (i < j) ok(!meet(a, b, em - 1), `boxes ${i + 1} and ${j + 1} have less than 1em of air between them`);
+      const inside = (x, y) => rects.findIndex(r => x > r.left + 1 && x < r.right - 1 && y > r.top + 1 && y < r.bottom - 1);
+      for (const [i, p] of [...slide.querySelectorAll(".ring.cycle path")].entries()) {
+        const m = p.getScreenCTM(), len = p.getTotalLength();
+        for (let s = 0; s <= 40; s++) {
+          const q = p.getPointAtLength(len * s / 40), x = m.a * q.x + m.c * q.y + m.e, y = m.b * q.x + m.d * q.y + m.f;
+          const hit = inside(x, y);
+          if (hit >= 0) { ok(false, `arrow path ${i + 1} runs under box ${hit + 1}`); break; }
+        }
+      }
       const ring = slide.querySelector(".ring").getBoundingClientRect();
       ok(ring.width > ring.height * 1.1, "the ring widened first: " + [ring.width, ring.height]);
     } finally { presentStop(); }
