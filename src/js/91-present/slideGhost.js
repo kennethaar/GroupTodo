@@ -24,6 +24,10 @@ function slideGhost(deck, from, to, title = null) {
     const move = `translate(${end.rect.left - rect.left}px, ${end.rect.top - rect.top}px) scale(${end.size / size})`;
     const keys = out.map((k, j) => ({...k, transform: j ? (j === out.length - 1 ? move : null) : "none"}));
     for (const k of keys) if (k.transform === null) delete k.transform;
+    // Its color blends into the color of the place it lands, so a slide
+    // stylesheet that colors the next slide like this title cannot hide it.
+    keys[0].color = color;
+    keys[keys.length - 1].color = end.color;
     glides.push({span, keys, delay: i * step});
   }
   deck.append(ghost);

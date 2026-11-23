@@ -14456,6 +14456,9 @@ var GTD_TEST = (() => {
       return out;
     };
     const done = () => Promise.all($("#deck").getAnimations({subtree: true}).map(a => a.finished.catch(() => {})));
+    // An area's slide stylesheet may color the title slide apart from the rest (#431).
+    const sheet = document.head.appendChild(document.createElement("style"));
+    sheet.textContent = "#deck .slide.titleslide .stitle{color:rgb(200, 0, 0)} #deck .scrumb{color:rgb(0, 0, 200)}";
     try {
       presentStart(path, {step: 0}); await settle(); await done();
       const big = $("#deck .slide.cur .stitle").getBoundingClientRect();
@@ -14470,7 +14473,11 @@ var GTD_TEST = (() => {
       const go = () => { for (const a of $("#deck").getAnimations({subtree: true})) a.play(); };
       eq(letters().map(s => s.textContent).join(""), "Quarterlykickoffforthewholeteam", "the page title goes up letter by letter");
       ok(letters().every(s => s.getAnimations().length === 1), "each letter has its own glide");
+      at(0);
+      ok(letters().every(s => getComputedStyle(s).color === "rgb(200, 0, 0)"), "each letter starts in the title's color");
       at(1000);
+      ok(letters().every(s => getComputedStyle(s).color === "rgb(0, 0, 200)"),
+        "and ends in the breadcrumb's, so a slide colored like the title cannot hide it: " + getComputedStyle(letters()[0]).color);
       const rs = letters().map(s => s.getBoundingClientRect());
       const top = {top: Math.min(...rs.map(r => r.top)), height: Math.max(...rs.map(r => r.bottom)) - Math.min(...rs.map(r => r.top))};
       ok(top.top < deckBox().height * 0.2 && top.height < big.height, "the page title ends at the top, smaller: " + Math.round(top.top));
@@ -14519,7 +14526,7 @@ var GTD_TEST = (() => {
       eq(cut(0).concat(cut(300), cut(600), cut(900)), [], "a long title is cut while it moves to the top");
       await done();
       ok(!$("#deck .sghost") && getComputedStyle(title).opacity === "1", "then the title itself stands there");
-    } finally { presentStop(); }
+    } finally { presentStop(); sheet.remove(); }
   }));
   test("#431 reopened: the talk keeps the outline's order; the page title is a slide alone, each top line its own slide", () => withPages({
     [TALK]: ["- Intro line", "- Q1 plan", "  - Hire", "- Plain middle", "- Last plain"].join("\n") + "\n"}, async () => {

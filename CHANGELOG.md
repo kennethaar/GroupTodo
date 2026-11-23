@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.203.2 - 2026-11-23
+
+- Present a page: a title on its way to a new place takes on the color of
+  the place it lands, so an area's slide stylesheet that colors the next
+  slide like the title no longer hides it on the way. (#431)
+
 ## 1.203.1 - 2026-11-23
 
 - Present a page: from the title slide, the page title now moves up letter
