@@ -1,10 +1,12 @@
 /* Where a cycle's n lines and arrows go (#433), round an oval k times as wide
    as it is tall (#479): k = 1 is the round ring. In a viewBox 100k wide and
-   100 high; each line's place is in % of the ring. ends(i, pt, tip) may give
-   the angles an arrow runs between, so it stays in the air between boxes. */
-function cycleShape(n, k = 1, ends) {
+   100 high; each line's place is in % of the ring. angles may place each line
+   round the oval (radians, clockwise from the top), so the air between boxes
+   is even; ends(i, at, pt, tip) may give the angles an arrow runs between, so
+   it stays in that air. */
+function cycleShape(n, k = 1, angles, ends) {
   const W = 100 * k, cx = W / 2, rx = cx - 14, ry = 36, gap = Math.min(0.5, Math.PI / n * 0.5);
-  const at = i => i / n * 2 * Math.PI - Math.PI / 2;
+  const at = i => angles ? angles[i % n] + Math.floor(i / n) * 2 * Math.PI : i / n * 2 * Math.PI - Math.PI / 2;
   const pt = a => [cx + rx * Math.cos(a), 50 + ry * Math.sin(a)];
   const unit = (x, y) => { const l = Math.hypot(x, y) || 1; return [x / l, y / l]; };
   const along = a => unit(-rx * Math.sin(a), ry * Math.cos(a));

@@ -15158,7 +15158,7 @@ var GTD_TEST = (() => {
     } finally { presentStop(); }
   }));
   const CYCLE = join(PAGES, "Cycle479.md");
-  test("#479 a cycle's boxes keep at least 1em of air between them and no arrow runs under a box: the ring widens first, then the words get smaller", () => withPages({[CYCLE]: [
+  test("#479 a cycle's boxes keep at least 1em of air, the same between each box and the next, and no arrow runs under a box: the ring widens first, then the words get smaller", () => withPages({[CYCLE]: [
     "- Six areas", "  - (o) Bring AI to the functionality of our products", "  - (o) AI to ensure stable and secure products",
     "  - (o) Redesign processes, capabilities and roles.", "  - (o) Ensure data quality, structure, access and ownership.",
     "  - (o) Govern AI risk, ethics, security and compliance.", "  - (o) Build competence and leadership to support."].join("\n") + "\n"}, async () => {
@@ -15175,6 +15175,10 @@ var GTD_TEST = (() => {
       const meet = (a, b, d) => a.left - d < b.right && b.left - d < a.right && a.top - d < b.bottom && b.top - d < a.bottom;
       for (const [i, a] of rects.entries()) for (const [j, b] of rects.entries())
         if (i < j) ok(!meet(a, b, em - 1), `boxes ${i + 1} and ${j + 1} have less than 1em of air between them`);
+      const apart = (a, b) => { const dx = Math.max(a.left - b.right, b.left - a.right), dy = Math.max(a.top - b.bottom, b.top - a.bottom);
+        return dx > 0 && dy > 0 ? Math.hypot(dx, dy) : Math.max(dx, dy); };
+      const gaps = rects.map((a, i) => Math.round(apart(a, rects[(i + 1) % rects.length])));
+      ok(Math.max(...gaps) <= Math.min(...gaps) * 1.25 + 4, "the air between each box and the next is not even: " + gaps);
       const inside = (x, y) => rects.findIndex(r => x > r.left + 1 && x < r.right - 1 && y > r.top + 1 && y < r.bottom - 1);
       for (const [i, p] of [...slide.querySelectorAll(".ring.cycle path")].entries()) {
         const m = p.getScreenCTM(), len = p.getTotalLength();

@@ -7,10 +7,10 @@ that breaks existing vaults. Newest first.
 
 ## 1.204.1 - 2026-11-23
 
-- Present: a cycle keeps clear air between its boxes, and each arrow runs
-  in that air from one box to the next, never under a box's words. The
-  ring widens first; only if that is not enough do the words get smaller.
-  (#479)
+- Present: a cycle keeps clear air between its boxes, the same between
+  each box and the next, and each arrow runs in that air, never under a
+  box's words. The ring widens only as much as it needs; if that is not
+  enough, the words get smaller. (#479)
 
 ## 1.204.0 - 2026-11-23
 
