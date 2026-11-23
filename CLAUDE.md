@@ -258,11 +258,10 @@ asks for this section to be compacted: repeats merged, stale items dropped.
 Work happens on `main`.
 
 Newest areas, look here first for regressions: Present (`src/js/91-present/`,
-#431, layouts #433, in-place slide edit), onboarding done per area folder and
-Getting started lessons (#468), areas in the top bar and who else is here (#436, #408),
-serve.py page history (#407), unlinked-name squiggles (#428), Clarify from
-the day page (#460, #461, #376), multi-line Alt+T/Alt+N (`lineSelKind`, #411),
-☰ menu lanes (#413). #431 stays open for the soft-break reflow follow-up.
+#431 open for soft-break reflow, layouts #433, slide pictures, rising title),
+context widget files (v1.202), big-folder reads, onboarding lessons (#468),
+areas in the top bar (#436, #408), page history (#407), squiggles (#428),
+Clarify from the day page (#460, #461), Alt+T/Alt+N (`lineSelKind`, #411).
 
 Slow start (#181, closed): staged read via `readDayFirst`, `readActiveFirst`,
 `isStubPath`; folder takeover in `readFolderBehind`; timing in the Save log
