@@ -123,16 +123,6 @@ function renderInline(text) {
     const tail = (/[*=~]+$/.exec(all) || [""])[0], u = tail ? all.slice(0, -tail.length) : all;
     return hold(`<a href="${u}" target="_blank" rel="noopener">${u}</a>`) + tail;
   });
-  /* Obsidian's marks (#348). What is between them cannot run into a tag or an
-     attribute, and _ and __ are not read inside a word, so file_name_v2 stays
-     as written. One ~ or = is not a mark: ~5 min, a tracker's =12. */
-  const span = m => `([^${m}\\s<>"](?:[^${m}<>"]*[^${m}\\s<>"])?)`;
-  h = h.replace(new RegExp("\\*\\*\\*" + span("*") + "\\*\\*\\*", "g"), "<b><i>$1</i></b>");
-  h = h.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
-  h = h.replace(new RegExp("(^|[^\\p{L}\\p{N}_])__" + span("_") + "__(?![\\p{L}\\p{N}_])", "gu"), "$1<b>$2</b>");
-  h = h.replace(/(^|[\s(])\*([^*\s][^*]*)\*/g, "$1<i>$2</i>");
-  h = h.replace(new RegExp("(^|[^\\p{L}\\p{N}_/])_" + span("_") + "_(?![\\p{L}\\p{N}_])", "gu"), "$1<i>$2</i>");
-  h = h.replace(new RegExp("==" + span("=") + "==", "g"), "<mark>$1</mark>");
-  h = h.replace(new RegExp("~~" + span("~") + "~~", "g"), "<s>$1</s>");
+  h = inlineMarks(h);
   return h.replace(/\u0000(\d+)\u0000/g, (all, i) => held[i]);
 }

@@ -712,6 +712,7 @@ js/84-assets/pdfViews.js
 js/84-assets/openPdf.js
 js/84-assets/openPdfTab.js
 js/84-assets/run-pdfFold.js
+js/84-assets/inlineMarks.js
 js/84-assets/renderInline.js
 js/90-view-state/vars-state.js
 js/90-view-state/vars-WAIT_NOBODY.js
@@ -769,6 +770,7 @@ js/91-present/vars-DECK.js
 js/91-present/vars-PRESENTER_CSS.js
 js/91-present/isSlidesCssPath.js
 js/91-present/slideWords.js
+js/91-present/slideText.js
 js/91-present/slidePicture.js
 js/91-present/slideNotes.js
 js/91-present/vars-SLIDE_LAYOUTS.js

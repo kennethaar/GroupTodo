@@ -5017,7 +5017,7 @@ placeholder="Capture… (Enter adds to today)">
 })();
 
 "use strict";
-const APP_VERSION = "1.203.4";
+const APP_VERSION = "1.203.5";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -14446,6 +14446,17 @@ const path = btn.dataset.pdf;
 PREF.set(pdfFoldKey(path), pdfOpen(path, btn.dataset.bang === "1") ? "0" : "1");
 render();
 }, true);
+function inlineMarks(h) {
+const span = m => `([^${m}\\s<>"](?:[^${m}<>"]*[^${m}\\s<>"])?)`;
+return h
+.replace(new RegExp("\\*\\*\\*" + span("*") + "\\*\\*\\*", "g"), "<b><i>$1</i></b>")
+.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+.replace(new RegExp("(^|[^\\p{L}\\p{N}_])__" + span("_") + "__(?![\\p{L}\\p{N}_])", "gu"), "$1<b>$2</b>")
+.replace(/(^|[\s(])\*([^*\s][^*]*)\*/g, "$1<i>$2</i>")
+.replace(new RegExp("(^|[^\\p{L}\\p{N}_/])_" + span("_") + "_(?![\\p{L}\\p{N}_])", "gu"), "$1<i>$2</i>")
+.replace(new RegExp("==" + span("=") + "==", "g"), "<mark>$1</mark>")
+.replace(new RegExp("~~" + span("~") + "~~", "g"), "<s>$1</s>");
+}
 function renderInline(text) {
 let h = esc(text || "");
 const held = [];
@@ -14531,14 +14542,7 @@ h = h.replace(/\bhttps?:\/\/[^\s<]+/g, all => {
 const tail = (/[*=~]+$/.exec(all) || [""])[0], u = tail ? all.slice(0, -tail.length) : all;
 return hold(`<a href="${u}" target="_blank" rel="noopener">${u}</a>`) + tail;
 });
-const span = m => `([^${m}\\s<>"](?:[^${m}<>"]*[^${m}\\s<>"])?)`;
-h = h.replace(new RegExp("\\*\\*\\*" + span("*") + "\\*\\*\\*", "g"), "<b><i>$1</i></b>");
-h = h.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
-h = h.replace(new RegExp("(^|[^\\p{L}\\p{N}_])__" + span("_") + "__(?![\\p{L}\\p{N}_])", "gu"), "$1<b>$2</b>");
-h = h.replace(/(^|[\s(])\*([^*\s][^*]*)\*/g, "$1<i>$2</i>");
-h = h.replace(new RegExp("(^|[^\\p{L}\\p{N}_/])_" + span("_") + "_(?![\\p{L}\\p{N}_])", "gu"), "$1<i>$2</i>");
-h = h.replace(new RegExp("==" + span("=") + "==", "g"), "<mark>$1</mark>");
-h = h.replace(new RegExp("~~" + span("~") + "~~", "g"), "<s>$1</s>");
+h = inlineMarks(h);
 return h.replace(/\u0000(\d+)\u0000/g, (all, i) => held[i]);
 }
 const state = {
@@ -15126,9 +15130,14 @@ body{caret-color:transparent}.pnow{user-select:none}
 .seditbar{display:flex;gap:8px;margin:6px 0;font-weight:400}.seditbar kbd{font:inherit;opacity:.7;margin-left:4px}
 `;
 function isSlidesCssPath(p) { return isVaultCssPath(p) && /(^|\/)slides\.css$/i.test(p); }
-function slideWords(b) {
+function slideWords(b, keepMarks = false) {
 const words = withoutEst(slideMark(b.title || "").words).replace(/\[\[c\/[^\]]+\]\]/g, "");
-return withoutMarks(linkWords(words));
+return keepMarks ? linkWords(words) : withoutMarks(linkWords(words));
+}
+function slideText(b) {
+const t = document.createElement("template");
+t.innerHTML = inlineMarks(esc(slideWords(b, true)).replace(/\\([*_=~`])/g, (all, c) => "&#" + c.charCodeAt(0) + ";"));
+return t.content;
 }
 function slidePicture(line) {
 const src = (DECK_IMAGE_RE.exec(line || "") || [])[1];
@@ -15385,11 +15394,11 @@ function slidePart(b, cls, ...kids) {
 return el("div", {class: "part later " + cls, "data-bid": b.id}, ...kids);
 }
 function drawSteps(s) {
-return el("div", {class: "steps"}, ...s.kids.map(b => slidePart(b, "chev", el("span", {}, slideWords(b)))));
+return el("div", {class: "steps"}, ...s.kids.map(b => slidePart(b, "chev", el("span", {}, slideText(b)))));
 }
 function drawTimeline(s) {
 return el("div", {class: "timeline"}, ...s.kids.map((b, i) =>
-slidePart(b, i % 2 ? "down" : "up", el("span", {class: "tdot"}), el("span", {class: "ttext"}, slideWords(b)))));
+slidePart(b, i % 2 ? "down" : "up", el("span", {class: "tdot"}), el("span", {class: "ttext"}, slideText(b)))));
 }
 function drawCycle(s) {
 const n = s.kids.length, r = 36, gap = Math.min(0.5, Math.PI / n * 0.5);
@@ -15404,7 +15413,7 @@ return slidePart(b, "node",
 slideSvg("svg", {viewBox: "0 0 100 100", "aria-hidden": "true"},
 slideSvg("path", {d: `M${x0},${y0} A${r},${r} 0 0 1 ${x1},${y1}`, class: "sline"}),
 slideSvg("path", {d: head, class: "shead"})),
-el("span", {class: "ntext", style: `left:${lx}%;top:${ly}%`}, slideWords(b)));
+el("span", {class: "ntext", style: `left:${lx}%;top:${ly}%`}, slideText(b)));
 }));
 }
 function drawPyramid(s) {
@@ -15413,7 +15422,7 @@ return el("div", {class: "pyramid"}, ...s.kids.map((b, i) => {
 const [bl, br] = side(1 - i / n), [tl, tr] = side(1 - (i + 1) / n);
 return slidePart(b, "tier",
 el("span", {class: "tshape", style: `clip-path:polygon(${tl}% 0,${tr}% 0,${br}% 100%,${bl}% 100%)`}),
-el("span", {class: "ttext"}, slideWords(b)));
+el("span", {class: "ttext"}, slideText(b)));
 }));
 }
 function drawHub(s) {
@@ -15423,11 +15432,11 @@ const a = i / n * 2 * Math.PI - Math.PI / 2, c = Math.cos(a), sn = Math.sin(a);
 return slidePart(b, "node",
 slideSvg("svg", {viewBox: "0 0 100 100", "aria-hidden": "true"},
 slideSvg("line", {x1: 50 + 15 * c, y1: 50 + 15 * sn, x2: 50 + r * c, y2: 50 + r * sn, class: "sline"})),
-el("span", {class: "ntext", data: {c, s: sn}, style: `left:${50 + r * c}%;top:${50 + r * sn}%`}, slideWords(b)));
+el("span", {class: "ntext", data: {c, s: sn}, style: `left:${50 + r * c}%;top:${50 + r * sn}%`}, slideText(b)));
 }));
 const own = b => (b.children || []).filter(k => slideWords(k) && !slideHidden(k));
 const cards = s.kids.filter(b => own(b).length).map(b => el("div", {class: "card hubcard", "data-bid": b.id},
-el("div", {class: "phead"}, slideWords(b)), el("ul", {}, ...own(b).map(k => el("li", {"data-bid": k.id}, slideWords(k))))));
+el("div", {class: "phead"}, slideText(b)), el("ul", {}, ...own(b).map(k => el("li", {"data-bid": k.id}, slideText(k))))));
 return cards.length ? el("div", {class: "hubwrap"}, ring, el("div", {class: "hubcards"}, ...cards)) : ring;
 }
 function drawCurve(s) {
@@ -15443,7 +15452,7 @@ from = v(x1 - x0);
 return slidePart(b, "peak",
 slideSvg("svg", {viewBox: "0 0 100 100", preserveAspectRatio: "none", "aria-hidden": "true"},
 slideSvg("path", {d, class: "sline", "vector-effect": "non-scaling-stroke"})),
-el("span", {class: "ntext" + (i ? "" : " first"), style: `left:${x0}%;bottom:${100 - Y(1)}%`}, slideWords(b)));
+el("span", {class: "ntext" + (i ? "" : " first"), style: `left:${x0}%;bottom:${100 - Y(1)}%`}, slideText(b)));
 });
 return el("div", {class: "curve"},
 slideSvg("svg", {class: "axes", viewBox: "0 0 100 100", preserveAspectRatio: "none", "aria-hidden": "true"},
@@ -15459,17 +15468,17 @@ const cols = s.layout === "split" || s.layout === "quadrant" ? 2
 return el("div", {class: "cards", style: `--cols:${cols}`}, ...s.kids.map(b => {
 const words = slideWords(b), m = kpi ? slideKpi(words) : null;
 const head = kpi ? [el("div", {class: "pmetric"}, m ? m.metric : ""), el("div", {class: "plabel"}, m ? m.label : words)]
-: [el("div", {class: "phead"}, words)];
+: [el("div", {class: "phead"}, slideText(b))];
 const lines = (b.children || []).filter(k => slideWords(k));
 return slidePart(b, "card", ...head,
-lines.length ? el("ul", {}, ...lines.map(k => el("li", {"data-bid": k.id}, slideWords(k)))) : null);
+lines.length ? el("ul", {}, ...lines.map(k => el("li", {"data-bid": k.id}, slideText(k)))) : null);
 }));
 }
 function drawQuote(s) {
 const {quote, author, takeaways} = s.hero;
 return el("div", {class: "hero"},
 slidePart(s.kids[0], "pq", el("blockquote", {class: "pquote"}, quote), author ? el("div", {class: "pauthor"}, author) : null),
-...takeaways.map(b => slidePart(b, "ptake", slideWords(b))));
+...takeaways.map(b => slidePart(b, "ptake", slideText(b))));
 }
 function slideTableCols(t) {
 return /^columns?$/i.test(trim(blockProp(t, "reveal") || ""));
@@ -15484,7 +15493,7 @@ function drawTable(s) {
 const t = s.kids[0], n = tableRows(t), cols = slideTableCols(t);
 const al = tableCells(t.body[0]).map(tableAlign);
 const cell = (tag, words, r, c) => el(tag, {style: "text-align:" + (al[c] || "left"),
-...(cols ? (c ? {"data-tpart": c - 1} : {}) : r >= 0 ? {"data-tpart": r} : {})}, slideWords({title: words}));
+...(cols ? (c ? {"data-tpart": c - 1} : {}) : r >= 0 ? {"data-tpart": r} : {})}, slideText({title: words}));
 const row = (cells, tag, r) => el("tr", {}, ...cells.map((w, c) => cell(tag, w, r, c)));
 const w = tableCells(t.title).length;
 const pad = cells => [...cells, ...Array(Math.max(0, w - cells.length)).fill("")].slice(0, w);
@@ -15495,7 +15504,7 @@ el("tbody", {}, ...t.body.slice(1, n).map((r, i) => row(pad(tableCells(r)), "td"
 function slideBody(s) {
 if (s.layout === "list")
 return el("ul", {class: "sbullets"}, ...s.kids.map(b => el("li", {class: "bullet later", "data-bid": b.id},
-tableRows(b) ? tableCells(b.title).join(" · ") : slideWords(b))));
+tableRows(b) ? tableCells(b.title).join(" · ") : slideText(b))));
 const draw = {process: drawSteps, timeline: drawTimeline, cycle: drawCycle, pyramid: drawPyramid,
 hub: drawHub, curve: drawCurve, hero: drawQuote, table: drawTable}[s.layout] || drawCards;
 return el("div", {class: "sbody"}, draw(s));
@@ -15677,7 +15686,7 @@ el("button", {class: "psmaller", title: "Smaller notes", "aria-label": "Smaller 
 el("button", {class: "pbigger", title: "Larger notes", "aria-label": "Larger notes", onclick: () => resize(2)}, "A+"));
 bar.querySelector(".ptimer").onclick = () => { if (DECK) { DECK.t0 = Date.now(); presenterTick(); } };
 const list = el("ul", {}, ...s.parts.map((b, n) =>
-el("li", {class: n < here.k - 1 ? "past" : n === here.k - 1 ? "now" : "later", "data-bid": b.id}, slideWords(b))));
+el("li", {class: n < here.k - 1 ? "past" : n === here.k - 1 ? "now" : "later", "data-bid": b.id}, slideText(b))));
 const main = el("div", {class: "pmain"},
 el("div", {class: "pnow"}, el("div", {class: "plabel"}, "Now"), el("h2", {class: "stitle"}, s.title), list),
 el("div", {class: "pnext"}, el("div", {class: "plabel"}, "Next"), el("div", {class: "pwhat"}, nextText)));
@@ -18894,7 +18903,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.203.4 - 2026-11-23\n\n- Settings: a calendar meeting moved from your own area to another area\n  stays there. It used to vanish after a reload or two, as the next sync\n  took it for a meeting gone from the calendar. It now keeps up with the\n  calendar where you put it: a new time, a cancel, or its end.\n\n## 1.203.3 - 2026-11-23\n\n- Present a page: the page title keeps its own color all the way up, and\n  the title slide stays behind until the next slide is in, so no slide\n  stylesheet can make it vanish on the way. When a slide's title moves up\n  for its first line, it takes the new color at once. (#431)\n\n## 1.203.2 - 2026-11-23\n\n- Present a page: a title on its way to a new place takes on the color of\n  the place it lands, so an area's slide stylesheet that colors the next\n  slide like the title no longer hides it on the way. (#431)\n\n## 1.203.1 - 2026-11-23\n\n- Present a page: from the title slide, the page title now moves up letter\n  by letter into a small line at the top of the next slide, and stays there,\n  instead of fading out. Each top line's slide shows the page's name there.\n  (#431)\n\n## 1.203.0 - 2026-11-22\n\n- Present a page: a picture dropped on a line can be the slide's picture.\n  The note after the drop has Use as slide picture; the line's ☰ menu has\n  Use picture on the slide; a picture you open has Use on the slide. Each\n  moves the picture into the line's notepad, where Present shows it.\n  Ctrl+Z puts it back. (#476)\n\n## 1.202.6 - 2026-11-22\n\n- Present a page: when a title moves to the top and its line breaks\n  change, each letter now slides on its own to its new place, the way text\n  reflows when you widen or narrow the editor. No jump and no fade: the\n  title is whole when the letters land. (#431)\n\n## 1.202.5 - 2026-11-22\n\n- Weekly review › Clarify: a line or to-do with no words, only spaces or\n  one letter is left out of Clarify, Review actions and Next actions. It is\n  not an action yet, so it takes no card and no row. It stays on its page.\n  A lone digit, such as `5`, still shows.\n\n## 1.202.4 - 2026-11-22\n\n- What's new: above each animation it now says what it shows, and under\n  that each step as it plays. The first line, before anything moves, is a\n  short intro. (#471)\n\n## 1.202.3 - 2026-11-22\n\n- Contexts: the widget files no longer wait for the whole folder, which took\n  many minutes on a phone. They are written as soon as the active projects\n  are in, and brought up to date as the rest comes in. Until it is all in, no\n  widget file is taken away, and a tick whose page is not read yet waits for\n  it. (#474)\n\n## 1.202.2 - 2026-11-22\n\n- Vault and sync: the last read of a big folder on a phone no longer goes on\n  for many minutes. Files that did not answer in time were tried again one\n  at a time, and a file that could not even be found could hold the read for\n  good. Now they are tried again four at a time, and finding a file has a\n  time limit too. The Save log says how many were tried again. (#181)\n\n## 1.202.1 - 2026-11-22\n\n- Contexts: the widget files are written as soon as the area's pages are all\n  in. Asked for at start-up, while the folder was still being read, they\n  waited for a save that might not come, so no Widgets folder showed up. Each\n  widget step is now in the Save log. (#474)\n\n## 1.202.0 - 2026-11-22\n\n- Contexts: every context now has a widget file for your phone's home\n  screen, with nothing to set up. GroupToDo keeps a Widgets folder in your\n  folder with one file per context, such as @Home.md and @Home - Kitchen.md,\n  each holding what you can do there, overdue first. Add the ones you want in\n  a widget app such as Obsidian Widget. Tick a line there, and it is done in\n  GroupToDo too the next time it opens. (#474)\n\n## 1.201.7 - 2026-11-22\n\n- Sense where I am: at start-up it waits until all of the area's pages are\n  in. On a phone it guessed the place before the contexts and templates were\n  read, made a context page from nothing and said \"Missing 8/c.md\", though\n  the folder has it. (#475)\n\n## 1.201.6 - 2026-11-22\n\n- Links and aliases: a link opens its page in about 3 seconds on a phone.\n  The page is read alone, first, and drawn; today's page, the settings and\n  the projects follow behind it. (#474)\n\n## 1.201.5 - 2026-11-22\n\n- Links and aliases: a link opens its page in seconds, as soon as that page\n  is read, not after a big folder has been listed, which took minutes on a\n  phone. (#474)\n\n## 1.201.4 - 2026-11-22\n\n- Links and aliases: a link opens straight at its page. Until the page is\n  in, the screen says where it goes, \"Opening Kitchen renovation at\n  “Measure the window”…\", and never shows the Journal in between. (#474)\n\n## 1.201.3 - 2026-11-22\n\n- Links and aliases: a link to a page or a line no longer ends on today's\n  Journal while the area is still coming in. It waits for its page, then\n  opens it at the line, or says the page is not there. Each step goes into\n  the Save log. (#474)\n\n## 1.201.2 - 2026-11-22\n\n- Links and aliases: a link to a page or a line (Copy link) now opens even\n  when it starts the app in a new tab, as on a phone. The linked page is read\n  first, with today's, so it no longer waits for a big folder to be listed\n  and said the page was not there. (#474)\n\n## 1.201.1 - 2026-11-22\n\n- Journal: the day's name now stands on the line of Back and Forward, not\n  below them. The ‹ and › for the day before and after, and the date box\n  between them, stay at one spot from day to day, so a click lands where\n  you aimed. In the past or Ahead now comes after them. (#473)\n\n## 1.201.0 - 2026-11-22\n\n- What's new: each new thing now plays a short animation on top, drawn by\n  the app itself, one after the other. Use ‹ › or a dot to pick one, and ⏸\n  to stop it. The thing shown is underlined in the list below. With reduced\n  motion, each shows still. (#471)\n";
+const HELP_NEWS = "## 1.203.5 - 2026-11-23\n\n- Present a page: **bold**, *italics*, ==highlight== and ~~strike~~ on a\n  line show on the slide as they do in the outline, in every layout and in\n  the presenter view. The marks themselves still stay out of sight.\n\n## 1.203.4 - 2026-11-23\n\n- Settings: a calendar meeting moved from your own area to another area\n  stays there. It used to vanish after a reload or two, as the next sync\n  took it for a meeting gone from the calendar. It now keeps up with the\n  calendar where you put it: a new time, a cancel, or its end.\n\n## 1.203.3 - 2026-11-23\n\n- Present a page: the page title keeps its own color all the way up, and\n  the title slide stays behind until the next slide is in, so no slide\n  stylesheet can make it vanish on the way. When a slide's title moves up\n  for its first line, it takes the new color at once. (#431)\n\n## 1.203.2 - 2026-11-23\n\n- Present a page: a title on its way to a new place takes on the color of\n  the place it lands, so an area's slide stylesheet that colors the next\n  slide like the title no longer hides it on the way. (#431)\n\n## 1.203.1 - 2026-11-23\n\n- Present a page: from the title slide, the page title now moves up letter\n  by letter into a small line at the top of the next slide, and stays there,\n  instead of fading out. Each top line's slide shows the page's name there.\n  (#431)\n\n## 1.203.0 - 2026-11-22\n\n- Present a page: a picture dropped on a line can be the slide's picture.\n  The note after the drop has Use as slide picture; the line's ☰ menu has\n  Use picture on the slide; a picture you open has Use on the slide. Each\n  moves the picture into the line's notepad, where Present shows it.\n  Ctrl+Z puts it back. (#476)\n\n## 1.202.6 - 2026-11-22\n\n- Present a page: when a title moves to the top and its line breaks\n  change, each letter now slides on its own to its new place, the way text\n  reflows when you widen or narrow the editor. No jump and no fade: the\n  title is whole when the letters land. (#431)\n\n## 1.202.5 - 2026-11-22\n\n- Weekly review › Clarify: a line or to-do with no words, only spaces or\n  one letter is left out of Clarify, Review actions and Next actions. It is\n  not an action yet, so it takes no card and no row. It stays on its page.\n  A lone digit, such as `5`, still shows.\n\n## 1.202.4 - 2026-11-22\n\n- What's new: above each animation it now says what it shows, and under\n  that each step as it plays. The first line, before anything moves, is a\n  short intro. (#471)\n\n## 1.202.3 - 2026-11-22\n\n- Contexts: the widget files no longer wait for the whole folder, which took\n  many minutes on a phone. They are written as soon as the active projects\n  are in, and brought up to date as the rest comes in. Until it is all in, no\n  widget file is taken away, and a tick whose page is not read yet waits for\n  it. (#474)\n\n## 1.202.2 - 2026-11-22\n\n- Vault and sync: the last read of a big folder on a phone no longer goes on\n  for many minutes. Files that did not answer in time were tried again one\n  at a time, and a file that could not even be found could hold the read for\n  good. Now they are tried again four at a time, and finding a file has a\n  time limit too. The Save log says how many were tried again. (#181)\n\n## 1.202.1 - 2026-11-22\n\n- Contexts: the widget files are written as soon as the area's pages are all\n  in. Asked for at start-up, while the folder was still being read, they\n  waited for a save that might not come, so no Widgets folder showed up. Each\n  widget step is now in the Save log. (#474)\n\n## 1.202.0 - 2026-11-22\n\n- Contexts: every context now has a widget file for your phone's home\n  screen, with nothing to set up. GroupToDo keeps a Widgets folder in your\n  folder with one file per context, such as @Home.md and @Home - Kitchen.md,\n  each holding what you can do there, overdue first. Add the ones you want in\n  a widget app such as Obsidian Widget. Tick a line there, and it is done in\n  GroupToDo too the next time it opens. (#474)\n\n## 1.201.7 - 2026-11-22\n\n- Sense where I am: at start-up it waits until all of the area's pages are\n  in. On a phone it guessed the place before the contexts and templates were\n  read, made a context page from nothing and said \"Missing 8/c.md\", though\n  the folder has it. (#475)\n\n## 1.201.6 - 2026-11-22\n\n- Links and aliases: a link opens its page in about 3 seconds on a phone.\n  The page is read alone, first, and drawn; today's page, the settings and\n  the projects follow behind it. (#474)\n\n## 1.201.5 - 2026-11-22\n\n- Links and aliases: a link opens its page in seconds, as soon as that page\n  is read, not after a big folder has been listed, which took minutes on a\n  phone. (#474)\n\n## 1.201.4 - 2026-11-22\n\n- Links and aliases: a link opens straight at its page. Until the page is\n  in, the screen says where it goes, \"Opening Kitchen renovation at\n  “Measure the window”…\", and never shows the Journal in between. (#474)\n\n## 1.201.3 - 2026-11-22\n\n- Links and aliases: a link to a page or a line no longer ends on today's\n  Journal while the area is still coming in. It waits for its page, then\n  opens it at the line, or says the page is not there. Each step goes into\n  the Save log. (#474)\n\n## 1.201.2 - 2026-11-22\n\n- Links and aliases: a link to a page or a line (Copy link) now opens even\n  when it starts the app in a new tab, as on a phone. The linked page is read\n  first, with today's, so it no longer waits for a big folder to be listed\n  and said the page was not there. (#474)\n\n## 1.201.1 - 2026-11-22\n\n- Journal: the day's name now stands on the line of Back and Forward, not\n  below them. The ‹ and › for the day before and after, and the date box\n  between them, stay at one spot from day to day, so a click lands where\n  you aimed. In the past or Ahead now comes after them. (#473)\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {

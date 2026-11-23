@@ -13,6 +13,6 @@ function drawCycle(s) {
       slideSvg("svg", {viewBox: "0 0 100 100", "aria-hidden": "true"},
         slideSvg("path", {d: `M${x0},${y0} A${r},${r} 0 0 1 ${x1},${y1}`, class: "sline"}),
         slideSvg("path", {d: head, class: "shead"})),
-      el("span", {class: "ntext", style: `left:${lx}%;top:${ly}%`}, slideWords(b)));
+      el("span", {class: "ntext", style: `left:${lx}%;top:${ly}%`}, slideText(b)));
   }));
 }

@@ -6,6 +6,6 @@ function drawPyramid(s) {
     const [bl, br] = side(1 - i / n), [tl, tr] = side(1 - (i + 1) / n);
     return slidePart(b, "tier",
       el("span", {class: "tshape", style: `clip-path:polygon(${tl}% 0,${tr}% 0,${br}% 100%,${bl}% 100%)`}),
-      el("span", {class: "ttext"}, slideWords(b)));
+      el("span", {class: "ttext"}, slideText(b)));
   }));
 }

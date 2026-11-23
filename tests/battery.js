@@ -14828,6 +14828,17 @@ var GTD_TEST = (() => {
     eq(slides[1].axes, {y: "Quality", x: "Time"}, "the curve's axes");
     eq(slides[2].parts.length, 2, "a quote: one step for the quote, one per takeaway");
   }));
+  test("#477 Present shows bold, italics, highlight and strike as they look in the outline, without the marks", () => {
+    const kids = [{id: "a477", title: "Ship the **beta** by *Friday*"}, {id: "b477", title: "==Now== ~~later~~ \\*star\\* <b>x</b>"}];
+    for (const layout of ["list", "cycle", "process"]) {
+      const body = slideBody({layout, kids});
+      const html = body.innerHTML;
+      for (const want of ["<b>beta</b>", "<i>Friday</i>", "<mark>Now</mark>", "<s>later</s>"]) has(html, want, layout);
+      has(body.textContent, "Ship the beta by Friday", layout + ": the marks are gone");
+      has(body.textContent, "*star*", layout + ": an escaped star is a plain star");
+      has(body.textContent, "<b>x</b>", layout + ": written tags stay text");
+    }
+  });
   test("#433 a flat page is one slide; too many lines go on; a slide says where it is from", () => withPages({
     [SHOW]: ["- -> Q1", "- -> Q2", "- -> Q3", "- Roadmap", ...Array.from({length: 11}, (_, i) => "  - -> M" + (i + 1)),
       "    - Detail", "- Build vs buy", "  - | Build", "    - Full control", "      - Hire two", "  - | Buy", "    - Ready"].join("\n") + "\n"}, async () => {

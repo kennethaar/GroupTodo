@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.203.5 - 2026-11-23
+
+- Present a page: **bold**, *italics*, ==highlight== and ~~strike~~ on a
+  line show on the slide as they do in the outline, in every layout and in
+  the presenter view. The marks themselves still stay out of sight.
+
 ## 1.203.4 - 2026-11-23
 
 - Settings: a calendar meeting moved from your own area to another area

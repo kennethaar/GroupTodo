@@ -5,7 +5,7 @@ function drawTable(s) {
   const t = s.kids[0], n = tableRows(t), cols = slideTableCols(t);
   const al = tableCells(t.body[0]).map(tableAlign);
   const cell = (tag, words, r, c) => el(tag, {style: "text-align:" + (al[c] || "left"),
-    ...(cols ? (c ? {"data-tpart": c - 1} : {}) : r >= 0 ? {"data-tpart": r} : {})}, slideWords({title: words}));
+    ...(cols ? (c ? {"data-tpart": c - 1} : {}) : r >= 0 ? {"data-tpart": r} : {})}, slideText({title: words}));
   const row = (cells, tag, r) => el("tr", {}, ...cells.map((w, c) => cell(tag, w, r, c)));
   const w = tableCells(t.title).length;
   const pad = cells => [...cells, ...Array(Math.max(0, w - cells.length)).fill("")].slice(0, w);
