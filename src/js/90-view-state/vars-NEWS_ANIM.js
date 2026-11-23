@@ -4,6 +4,31 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.207.0#483": `
+    cap | Your AI makes slides of your text
+    say | ☰ › Copy for AI › Slides copies a prompt.
+    + pg col
+    + l ln > pg | Harbour talk: we moved the boats, then learned…
+    + m chip fade > pg | Copy for AI › Plan · Slides
+    w 50
+    c m -fade
+    w 900
+    p m
+    t m | Prompt copied, with 42 pictures. Paste it into your AI.
+    w 1500
+    say | Paste its answer back: Make the slides.
+    - m
+    + a ln > pg | ↻ How we work
+    s a | margin-left:24px
+    + b ln > pg | ▲ What creates value
+    s b | margin-left:24px
+    w 900
+    say | Pictures come from assets/slides, picked by name.
+    + c chip fade > pg | 🖼 Harbour 2.jpg
+    s c | margin-left:48px
+    w 50
+    c c -fade
+    w 1800`,
   "1.206.0#482": `
     cap | Numbers on lines become a chart
     say | Lines that end in a number, under a line.

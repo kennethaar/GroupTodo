@@ -13975,7 +13975,7 @@ var GTD_TEST = (() => {
     } finally { FLY = null; }
   });
 
-  test("#310 Alt+A, Alt+B, Alt+K and Alt+X reach Plan with AI, Copy embed, Insert tracker and Copy text", async () => {
+  test("#310 #483 Alt+A, Alt+B, Alt+K and Alt+X reach Copy for AI (Plan, Slides), Copy embed, Insert tracker and Copy text", async () => {
     const path = scratchProject("line menu shortcuts", [["TODO", "Buy paint"]]);
     const b = getPage(path).blocks[0];
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
@@ -13996,7 +13996,17 @@ var GTD_TEST = (() => {
 
       focusBlock(b.id); await frame();
       press("KeyA"); await settle();
-      has(title(), "Plan it with an AI", "Alt+A did not open Plan with AI");
+      // #483: Alt+A opens Copy for AI, with Plan and Slides to pick from.
+      const chips = () => [...document.querySelectorAll(".fly .frow.open .fchip")];
+      eq(chips().map(c => c.textContent), ["Plan", "Slides"], "Alt+A did not open Copy for AI ▸ Plan, Slides");
+      chips()[0].click(); await settle();
+      has(title(), "Plan it with an AI", "Copy for AI ▸ Plan did not open Plan with AI");
+      closeModal();
+
+      focusBlock(b.id); await frame();
+      press("KeyA"); await settle();
+      chips()[1].click(); await settle();
+      has(title(), "Make slides with an AI", "Copy for AI ▸ Slides did not open its dialog");
       closeModal();
 
       focusBlock(b.id); await frame();
@@ -15572,6 +15582,81 @@ var GTD_TEST = (() => {
     document.dispatchEvent(new KeyboardEvent("keydown", {key: "z", ctrlKey: true, bubbles: true, cancelable: true})); await settle();
     eq(titles(), before, "one Ctrl+Z takes it all back");
     go("today");
+  }));
+
+  /* #483 Copy for AI ▸ Slides: a prompt that turns text into a talk, with
+     pictures picked by name from the area's assets/slides/. */
+  const SLIDE_PICS = ["Harbour 2.jpg", "Harbour 3.jpg", "Boat at sea.jpg", "IMG_0042.jpg", "PrintP1230617.jpg", "7.png", "Team at work.png"];
+  const putSlidePics = async () => {
+    for (const n of SLIDE_PICS) await V.backend.putAsset("assets/slides/" + n, new Blob([new Uint8Array([137, 80, 78, 71])], {type: "image/png"}));
+  };
+  test("#483 the slides prompt names every layout word and the pictures, shuffled, used ones last; unreadable names are found", () => withPages({
+    [SHOW]: "- Harbour talk\n  - We moved the boats.\n",
+    [join(PAGES, "Old talk.md")]: "- Old\n  ![](assets/slides/Boat at sea.jpg)\n  - A\n"}, async () => {
+    await putSlidePics();
+    const pics = await slideAiPics(SHOW);
+    eq(pics.names.slice().sort(), SLIDE_PICS.slice().sort(), "every picture in assets/slides");
+    eq([...pics.used], ["Boat at sea.jpg"], "a picture on another page of the area is used");
+    eq(pics.unreadable.slice().sort(), ["7.png", "IMG_0042.jpg", "PrintP1230617.jpg"],
+      "only numbers or a camera code say nothing; names that differ only in numbers are fine");
+    const firsts = new Set();
+    for (let i = 0; i < 30; i++) {
+      const order = slideAiOrder(pics.names, pics.used);
+      eq(order[order.length - 1], "Boat at sea.jpg", "a used picture comes last");
+      eq(order.slice().sort(), SLIDE_PICS.slice().sort(), "each picture once");
+      firsts.add(order[0]);
+    }
+    ok(firsts.size > 1, "shuffled each time");
+    const prompt = slideAiPrompt("- Harbour talk\n  - We moved the boats.", ["Harbour 2.jpg", "Team at work.png"]);
+    for (const [word] of SLIDE_WORDS) ok(prompt.includes("(" + word + ")"), "the prompt names the layout word (" + word + ")");
+    for (const [lay, name] of SLIDE_MENU) if (lay !== "auto")
+      ok(SLIDE_WORDS.some(([w, l]) => l === lay && prompt.includes("(" + w + ")")), "every Slide layout is in the prompt: " + name);
+    ok(prompt.includes("We moved the boats."), "the text to turn into slides is in it");
+    ok(prompt.indexOf("Harbour 2.jpg") < prompt.indexOf("Team at work.png") && prompt.includes("![](assets/slides/"), "the pictures, in the order given");
+    ok(!slideAiPrompt("- A", []).includes("assets/slides"), "no pictures: that part is left out");
+  }));
+  test("#483 Copy for AI ▸ Slides: the dialog counts the pictures; Use it turns the answer into slides under the line; broken rules get a red bullet; one Ctrl+Z", () => withPages({
+    [SHOW]: "- Harbour talk\n  We moved the boats.\n- After\n"}, async () => {
+    await putSlidePics();
+    openPage(SHOW); await settle();
+    const [talk] = getPage(SHOW).blocks;
+    const answer = ["Here are your slides:", "```markdown",
+      "- (cycle) How we work", "  ![](assets/slides/Harbour 2.jpg)", "  - Plan", "  - Build", "  - Learn",
+      "- (2x2) Options", "  - A", "  - B", "  - C",
+      "- (cycle) Two only", "  - Up", "  - Down",
+      "- (pyramid) Value", "  ![](assets/slides/Nope.jpg)", "  - Base", "  - Middle", "  - Top",
+      "- Thanks", "  Say thanks to the team.", "```"].join("\n");
+    const bul = b => content().querySelector(`.blk[data-id="${CSS.escape(String(b.id))}"] > .line > .bullet`);
+    try {
+      await openSlidesWithAI(planSourceOfLines(SHOW, [talk]), talk.id); await settle();
+      const modal = document.querySelector(".scrim .modal");
+      has(modal.textContent, "Make slides with an AI");
+      has(modal.textContent, "Pictures: 7");
+      has(modal.textContent, "3 names say nothing about the picture");
+      for (const n of ["IMG_0042.jpg", "PrintP1230617.jpg", "7.png"]) has(modal.textContent, n);
+      modal.querySelector("textarea[aria-label=\"The AI's answer\"]").value = answer;
+      [...modal.querySelectorAll("button")].find(b => b.textContent === "Make the slides").click(); await settle();
+      ok(!document.querySelector(".scrim .modal"), "the dialog closes");
+      const kids = getPage(SHOW).blocks[0].children;
+      eq(kids.map(b => b.title), ["(cycle) How we work", "(2x2) Options", "(cycle) Two only", "(pyramid) Value", "Thanks"],
+        "the answer, fences and chat words gone, is the line's lines");
+      eq([kids[0].body[0], kids[4].body[0]], ["![](assets/slides/Harbour%202.jpg)", "Say thanks to the team."],
+        "pictures (a space written %20, as a link must be) and speaker notes go in the notepad");
+      ok(await assetURL(slidePicture(kids[0].body[0])), "and the picture is found in the folder");
+      eq(getPage(SHOW).blocks.map(b => b.title), ["Harbour talk", "After"], "nothing else moves");
+      const lay = t => deckSteps(SHOW).slides.find(s => s.title === t)?.layout;
+      eq([lay("How we work"), lay("Value")], ["cycle", "pyramid"], "each slide gets its layout");
+      await settle();
+      const red = b => bul(b).classList.contains("crowded");
+      eq(kids.map(red), [false, true, true, true, false], "a 2×2 without 4, a cycle with 2 and a missing picture are red");
+      has(bul(kids[1]).title, "4", "and say why: " + bul(kids[1]).title);
+      has(bul(kids[3]).title, "Nope.jpg", "the missing picture is named: " + bul(kids[3]).title);
+      document.dispatchEvent(new KeyboardEvent("keydown", {key: "z", ctrlKey: true, bubbles: true, cancelable: true})); await settle();
+      eq((getPage(SHOW).blocks[0].children || []).length, 0, "one Ctrl+Z takes the slides out");
+      openPageMenu(SHOW); await settle();
+      has(document.querySelector(".modal")?.textContent || "", "Copy for AI", "the page's ☰ menu offers it for the whole page");
+      closeModal();
+    } finally { closeModal(); go("today"); }
   }));
 
   /* ============================================================

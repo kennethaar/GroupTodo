@@ -21,7 +21,6 @@ function flyHead(k) {
   if (k === "trk") { flyCommit(); const b = block; FLY.txt.blur(); openTrackerPicker((title, when) => insertTracker(path, b, title, when), path, {path, block: b}); return; }
   if (k === "refile") { flyCommit(); const b = block; FLY.txt.blur(); openRefile(path, b); return; }
   if (k === "toarea") { flyCommit(); const b = block; FLY.txt.blur(); openItemSpacePicker({space: V.space, path, id: b.id}); return; }
-  if (k === "aiplan") { flyCommit(); const b = block; FLY.txt.blur(); openPlanWithAI(planSourceOfLines(path, [b])); return; }
   if (k === "embedref") { flyCommit(); const b = block; FLY.txt.blur(); copyEmbedOf(path, b); return; }
   if (k === "delasset") { flyCommit(); const b = block; FLY.txt.blur(); deleteAssetPrompt(path, b); return; }
   if (k === "zoom") {

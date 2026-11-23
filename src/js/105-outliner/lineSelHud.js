@@ -24,13 +24,9 @@ function lineSelHud() {
     lineSelClear();
     openMoveLinesToArea(items);
   }}, "To area"));
-  hud.append(el("button", {class: "btn sm ghost", onclick: () => {
-    const got = lineSelBlocks();
-    if (!got) return;
-    const src = planSourceOfLines(LINE_SEL.path, got.blocks);
-    lineSelClear();
-    openPlanWithAI(src);
-  }}, "Plan with AI"));
+  // Plan or Slides, from the picked lines (#483).
+  hud.append(el("button", {class: "btn sm ghost", data: {k: "ai"}, "aria-haspopup": "menu", "aria-expanded": "false",
+    onclick: e => lineSelAiMenu(e.currentTarget)}, "Copy for AI ▾"));
   // Lines already in the page can become a page of their own, as a paste can.
   hud.append(el("button", {class: "btn sm ghost", onclick: () => {
     const got = lineSelBlocks();

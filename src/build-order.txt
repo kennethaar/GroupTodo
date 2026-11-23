@@ -127,6 +127,7 @@ js/15-storage/vars-LS.js
 js/15-storage/fetchWithin.js
 js/15-storage/vars-FILE_READ_MS.js
 js/15-storage/withTimeout.js
+js/15-storage/namesInDir.js
 js/15-storage/vars-Backends.js
 js/15-storage/newRecord.js
 js/15-storage/bindActive.js
@@ -844,6 +845,14 @@ js/91-present/slidePeek.js
 js/91-present/presentButton.js
 js/91-present/presentMenu.js
 js/91-present/slidePresented.js
+js/91-present/vars-SLIDE_AI.js
+js/91-present/slideAiName.js
+js/91-present/slideAiUnreadable.js
+js/91-present/slideAiOrder.js
+js/91-present/slideAiPics.js
+js/91-present/slideAiPrompt.js
+js/91-present/slideAiApply.js
+js/91-present/openSlidesWithAI.js
 js/91-present/slideCrowd.js
 js/90-view-state/vars-DIALOGUE.js
 js/90-view-state/setDialogueStyle.js
@@ -1812,6 +1821,7 @@ js/105-outliner/paintSlideBullet.js
 js/105-outliner/editBarSlideMenu.js
 js/105-outliner/editBarSlideLayout.js
 js/105-outliner/lineSelSlideMenu.js
+js/105-outliner/lineSelAiMenu.js
 js/105-outliner/editBarInline.js
 js/105-outliner/editBarRestShow.js
 js/105-outliner/editBarSync.js
@@ -2353,6 +2363,7 @@ js/110-views/vars-HIDDEN_OPEN.js
 js/110-views/factFoldPrefs.js
 js/110-views/dayTrackersBlock.js
 js/110-views/openPageMenu.js
+js/110-views/openPageAiMenu.js
 js/110-views/projectToTodo.js
 js/110-views/projectToTodoAs.js
 js/110-views/vars-areaWords.js

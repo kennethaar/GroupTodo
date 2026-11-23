@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.207.0 - 2026-11-23
+
+- Present a page: Copy for AI › Slides copies a prompt that tells your
+  AI how slides are written here. Paste its answer back and Make the
+  slides puts them under the line. Pictures in the area's assets/slides
+  folder are picked by their names, and names that say nothing are
+  listed to rename. A cycle with too few lines, a 2×2 without four or a
+  missing picture gets a red bullet. Plan with AI (Alt+A) is now Copy
+  for AI › Plan. (#483)
+
 ## 1.206.0 - 2026-11-23
 
 - Present a page: lines that end in a number, like 2024 2600, become a
