@@ -7166,6 +7166,37 @@ var GTD_TEST = (() => {
     }
   });
 
+  test("#490 on a phone Allow access sits where the browser's own Allow appears: right, just below the middle", async () => {
+    const view = state.view;
+    PENDING_GRANT.set(V.space, {name: "Vault folder", kind: "directory"});
+    const f = document.createElement("iframe");
+    try {
+      go("today");
+      await settle();
+      ok(content().querySelector(".folderaway"), "no reconnect panel in place of the pages");
+      f.style.cssText = "position:fixed;left:0;top:0;height:800px;border:0;width:390px";
+      const css = [...document.querySelectorAll("style")].map(s => s.textContent).join("\n");
+      f.srcdoc = "<!doctype html><html data-theme=\"" + (document.documentElement.dataset.theme || "") + "\"><style>" + css
+        + "</style><body><div style=\"height:130px\"></div><main class=\"content\" id=\"content\">" + content().innerHTML;
+      document.body.append(f);
+      await new Promise(r => f.onload = r);
+      const d = f.contentDocument, R = n => n.getBoundingClientRect();
+      const btns = [...d.querySelectorAll(".folderaway button")];
+      const allow = btns.find(b => b.textContent === "Allow access"), later = btns.find(b => b.textContent.startsWith("Not now"));
+      const a = R(allow), mid = (a.top + a.bottom) / 2;
+      // The browser centres its dialog and puts Allow on the right, about 75px below the middle.
+      ok(mid > 400 + 40 && mid < 400 + 120, "Allow access is at " + Math.round(mid) + "px of an 800px phone, not just below the middle");
+      ok(390 - a.right <= 40, "Allow access is not at the right edge: " + Math.round(a.right));
+      ok(a.height >= 44, "Allow access is " + Math.round(a.height) + "px tall");
+      ok(Math.abs(R(later).top - a.top) < 2 && R(later).right <= a.left, "Not now is not left of Allow access on the same row");
+      ok(R(d.querySelector(".folderaway p")).bottom <= R(later).top, "the text runs under the buttons");
+    } finally {
+      f.remove();
+      PENDING_GRANT.delete(V.space);
+      go(view);
+    }
+  });
+
   test("#346 after Allow access on the open area, the next area waiting for its folder is asked for", async () => {
     const view = state.view, other = "Other346";
     PENDING_GRANT.set(V.space, {name: "Vault folder", kind: "directory", requestPermission: async () => "granted"});
@@ -7187,6 +7218,7 @@ var GTD_TEST = (() => {
       has(m.textContent, "Reconnect folder 2 of 2: " + other);
       has(m.textContent, "The browser asks on every refresh once per folder. Reconnect to “Folder346”?");
       ok(m.textContent.split(/\s+/).length < 30, "the dialog is too long: " + m.textContent);
+      ok(m.closest(".scrim.center"), "the dialog is not in the middle, where the browser asks next (#490)");
       eq([...m.querySelectorAll(".foot button")].map(b => b.textContent).join(" | "),
         "Not now - use browser storage | Allow access", "Allow access goes on the right");
     } finally {

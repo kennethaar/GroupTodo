@@ -98,6 +98,12 @@ at least 44px. Show a bar, not a bare number. *Why:* Chores on a phone
 showed "Gi m…" beside a "1000%" chip that ran off the edge. *Apply:* any
 list read on a phone. Check at 390px. *Source:* #343.
 
+**P20. A tap that brings up the browser's own ask sits where that ask's
+answer will be.** The browser centres its dialog with Allow on the right,
+just below the middle, so our button goes there too. *Why:* reconnecting
+two folders on a phone meant four taps in two places. *Apply:* any button
+that opens a browser permission prompt on a phone. *Source:* #490.
+
 ## Keyboard
 
 **P6. Letters search, arrows move.** Letters jump to the option whose name

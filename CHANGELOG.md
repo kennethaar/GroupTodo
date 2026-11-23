@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.202.5 - 2026-11-23
+
+- Phone and PC: on a phone, Allow access now sits on the right, just below
+  the middle, where the browser's own Allow comes up next. Reconnecting a
+  folder is two taps in the same place. (#490)
+
 ## 1.202.4 - 2026-11-22
 
 - What's new: above each animation it now says what it shows, and under
