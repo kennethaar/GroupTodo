@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.205.0 - 2026-11-23
+
+- Present a page: one word in front of a line sets how its lines are
+  drawn, such as (pyramid) What creates value. Type ( at the start of a
+  line to pick it from a list; letters narrow it. Off the line, the
+  bullet shows the layout's icon. Format › Slide layout writes the word
+  too. Old marks on each line still work, and Tidy slide marks in ⋯
+  beside the title turns them into words. (#481)
+
 ## 1.204.1 - 2026-11-23
 
 - Present: a cycle keeps clear air between its boxes, the same between

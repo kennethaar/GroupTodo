@@ -6,6 +6,14 @@ function suggestFor(host, opts) {
     const rows = sm ? slashRows(sm[2]) : [];
     if (rows.length) return {mode: "slash", at: before.length - sm[2].length - 1, rows};
   }
+  // "(" at the start of a page's line: the slide layouts, narrowed by letters (#481).
+  const lm = opts.commands && /^\(([\p{L}\p{N}×]*)$/u.exec(before);
+  if (lm) {
+    const q = lm[1].toLowerCase();
+    const rows = SLIDE_WORDS.filter(([w, lay]) => w.startsWith(q) || SLIDE_LAYOUTS[lay].name.toLowerCase().startsWith(q))
+      .map(([word, lay, icon, hint]) => ({accept: "layout", word, title: SLIDE_LAYOUTS[lay].name, mark: icon, detail: hint}));
+    if (rows.length) return {mode: "layout", at: 0, rows};
+  }
   if (opts.trackers) {
     const tm = /^tracker-([\p{L}\p{N}_-]*)$/iu.exec(before);
     if (tm) return {mode: "tracker", at: 0, rows: trackerSuggestRows(tm[1])};

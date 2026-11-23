@@ -12,7 +12,7 @@ function lineSelSlideMenu(btn) {
   const outer = got.blocks.filter(b => !inner.has(b));
   const lines = outer.length === 1 ? editBarSlideLines(outer[0]) : outer;
   const path = LINE_SEL.path;
-  const pop = slideMenuPop(slideMarkOf(lines), lay => {
+  const pop = slideMenuPop(slideLayoutNow(path, lines), lay => {
     slideLayoutPick(path, lines, lay);
     paintLineSel();                    // the lines stay picked; the bar is drawn anew
   });

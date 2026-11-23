@@ -37,6 +37,25 @@ const SLIDE_MARKS = [
   [/^\|\s+/, "split"],
   [/^[$%]\s+/, "kpi"],
 ];
+/* The layout words (#481): "(pyramid) What creates value" at the front of a
+   line says how its lines are drawn. Each: the word, the layout, the icon
+   its bullet shows, and what its lines become. In the order "(" lists them;
+   2×2 is also written 2x2. */
+const SLIDE_WORDS = [
+  ["list", "list", "≡", "a title and bullets"],
+  ["steps", "process", "→", "one after another"],
+  ["timeline", "timeline", "↦", "points in time"],
+  ["cycle", "cycle", "↻", "goes round"],
+  ["pyramid", "pyramid", "▲", "base to top"],
+  ["hub", "hub", "✳", "around a center"],
+  ["curve", "curve", "∿", "a line that rises or falls"],
+  ["versus", "split", "◫", "two side by side"],
+  ["2x2", "quadrant", "⊞", "four boxes"],
+  ["scorecard", "kpi", "%", "the numbers that matter"],
+  ["quote", "hero", "❝", "one quote, big"],
+  ["grid", "grid", "▦", "cards"],
+];
+const SLIDE_WORD_RE = /^\(([\p{L}\p{N}×]+)\)(?:\s+|$)/u;
 // A trailing (Y / X) on a curve slide's title names its axes.
 const SLIDE_AXES_RE = /\s*\(([^()\/]+)\/([^()\/]+)\)\s*$/;
 /* A metric on a scorecard: a percent, or an amount read as expenses read it

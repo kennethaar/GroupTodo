@@ -107,3 +107,10 @@
 :is(#deck,#deckpeek) .stable th{font-weight:700;border-bottom:2px solid currentColor}
 :is(#deck,#deckpeek) .stable [data-tpart].later{opacity:0}
 :is(#deck,#deckpeek) .stable [data-tpart].now{background:color-mix(in srgb,var(--slide-accent) 22%,transparent)}
+/* #481 A line with a slide layout word: off the line its bullet is the
+   layout's icon, centred where the dot is; on the line, the dot again. */
+.blk>.line:not(.raw)>.bullet.slidelay{width:13px;height:13px;margin:-3px 0 0 -3px;border-radius:3px;
+  background:transparent;box-shadow:none;color:var(--fg2);font:600 11px/13px var(--sans);text-align:center}
+.blk.collapsed>.line:not(.raw)>.bullet.slidelay{color:var(--accent);background:var(--bg4)}
+.blk>.line.raw>.bullet.slidelay{font-size:0}
+.linkpop.suggest[data-mode="layout"] .pick .k{font-size:14px;font-weight:600}

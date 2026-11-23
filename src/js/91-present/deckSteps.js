@@ -26,8 +26,11 @@ function deckSteps(path, root = null, on = false) {
   };
   const kidsOf = b => (b.children || []).filter(shown);
   const has = b => kidsOf(b).length > 0;
-  const slide = (block, head, kids, depth, up, breadcrumb, notes) => {
-    const lay = slideLayout({title: head}, kids);
+  /* The layout word on the slide's own line (#481); not on a table's slide,
+     whose one line is the table. `word` given: the bullet presented from. */
+  const slide = (block, head, kids, depth, up, breadcrumb, notes, word) => {
+    if (word === undefined) word = block && !(kids.length === 1 && kids[0] === block) ? slideWord(block.title).layout : null;
+    const lay = slideLayout({title: head, word}, kids);
     const pages = slidePages(kids, lay.max);
     pages.forEach((chunk, p) => {
       const hero = lay.layout === "hero" ? slideHero(chunk[0]) : null;
@@ -65,7 +68,7 @@ function deckSteps(path, root = null, on = false) {
      timeline, steps…), as do plain lines a scorecard draws; the first drawing
      is the title slide's own, so the title is not shown twice. */
   if (root || slideTitleTokens(head).layout || slideLayout({title: head}, top).mode === "2d") {
-    slide(null, head, top, 0, null, "", notes);
+    slide(null, head, top, 0, null, "", notes, root ? slideWord(root.title).layout : null);
   } else {
     // A top line that is a table is drawn alone, under the page's title (#469).
     const kind = b => slideMark(b.title).layout ? "mark" : has(b) || tableRows(b) ? "own" : "flat";

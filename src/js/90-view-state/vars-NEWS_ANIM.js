@@ -4,6 +4,33 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.205.0#481": `
+    cap | One word sets how a slide is drawn
+    say | Type ( at the start of a line that has lines.
+    # "(" opens the layouts, "py" leaves Pyramid, Enter writes it; off the line the bullet is ▲.
+    + pg col
+    + l ln > pg | (
+    + a ln > pg | Purpose
+    s a | margin-left:24px
+    + b ln > pg | Strategy
+    s b | margin-left:24px
+    w 700
+    + m chip fade > pg | ≡ List · → Steps · ↻ Cycle · ▲ Pyramid · …
+    w 50
+    c m -fade
+    w 900
+    say | Letters narrow the list. Enter writes the word.
+    ty l | py
+    t m | ▲ Pyramid · base to top
+    w 900
+    k Enter
+    t l | (pyramid) What creates value
+    c m +fade
+    w 700
+    k
+    say | Off the line, its bullet shows the layout. The slide is a pyramid.
+    t l | ▲ What creates value
+    w 1800`,
   "1.204.0#480": `
     cap | Join a meeting from its line
     say | A meeting from your calendar keeps its Teams link.
@@ -116,47 +143,5 @@ const NEWS_ANIM = {
     w 700
     say | The rest comes in behind it.
     t q | Today's page and projects come in behind
-    w 1500`,
-  "1.201.5#474": `
-    cap | A link opens in seconds
-    say | A big folder takes minutes to read on a phone.
-    w 1200
-    # The linked page opens in seconds; the rest of the folder comes in behind it.
-    + pg col abs
-    s pg | left:12px;top:12px;right:12px
-    + h h > pg | Opening Kitchen renovation…
-    + m ln > pg |
-    + q quiet > pg | Folder: 12 of 1203 files
-    w 700
-    say | The linked page opens as soon as it is read.
-    t h | Kitchen renovation
-    t m | Measure the window
-    c m +lit
-    w 600
-    say | The rest of the folder keeps coming in.
-    t q | Folder: 400 of 1203 files
-    w 700
-    t q | Folder: 1203 of 1203 files
-    w 1300`,
-  "1.201.4#474": `
-    cap | Where a link goes, while it opens
-    say | You tap a link to a line in a chat.
-    w 1200
-    # The new tab says where the link goes until the page is in.
-    + pg col abs
-    s pg | left:12px;top:12px;right:12px
-    + h h > pg | Chat · Anna
-    + m ln > pg | Here it is → grouptodo.html#gt…
-    w 800
-    p m
-    say | The new tab says where it goes.
-    t m | Opening Kitchen renovation at “Measure the window”…
-    c m +dim
-    w 900
-    c m -dim
-    say | Then the page opens at the line.
-    t h | Kitchen renovation
-    t m | Measure the window
-    c m +lit
     w 1500`,
 };

@@ -19,6 +19,7 @@ function openPageMenu(path) {
       : ["Pin to the right", "it stays open beside whatever you go to, for notes while you move about", () => pinToSide(space, path)],
     kind === "person" ? ["Share contact", "a .vcf the phone adds to its contacts", () => shareContact(path)] : null,
     isJournalPath(path) ? null : ["Share", "this page, without the rest of the area", () => openExportPage(path)],
+    slideTidyCount(path) ? ["Tidy slide marks", "one layout word on each slide's line, in place of the marks on its lines", () => slideTidy(path)] : null,
     ["Copy linked references here", "every line that links to this page, copied to its bottom; the originals stay", () => copyLinkedRefs(path)],
     ["Copy path", "for somebody who shares the folder", () => copyPathTo(path)],
     ["Show in Explorer", "a line for Win+R that opens the folder with this file selected", () => revealInExplorer(path)],

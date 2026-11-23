@@ -4,7 +4,7 @@
 function editBarSlideMenu(btn) {
   const bar = $("#editBar"), open = bar.querySelector(".ebsub");
   if (open) { open.remove(); btn.setAttribute("aria-expanded", "false"); return; }
-  const pop = slideMenuPop(slideMarkOf(editBarSlideLines(FLY.block)),
+  const pop = slideMenuPop(slideLayoutNow(FLY.path, editBarSlideLines(FLY.block)),
     lay => { editBarGroupClose(); editBarSlideLayout(lay); });
   bar.append(pop);
   btn.setAttribute("aria-expanded", "true");

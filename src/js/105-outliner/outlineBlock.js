@@ -50,6 +50,7 @@ function outlineBlock(path, page, b, opts = {}) {
     html: lineHtml(b),
   });
   if (crowd) txt.setAttribute("aria-description", crowd);
+  paintSlideBullet(handle, txt, b.title);
   if (ro) {
     line.append(txt);
     node.append(line);
@@ -128,6 +129,7 @@ function outlineBlock(path, page, b, opts = {}) {
     dropLineDraft(b.id);
     line.classList.remove("raw");
     paintHeadLine(line, b.title, b.state);
+    paintSlideBullet(handle, txt, b.title);
     if (paintTrackerLine(line, txt, path, b)) return;
     /* A line with a dropped picture in it comes back as a path, not a URL, so
        the same pass the redraw runs has to run over the line it just rebuilt --

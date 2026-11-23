@@ -15333,7 +15333,7 @@ var GTD_TEST = (() => {
       } finally { presentStop(); PREF.set("present.pages", "[]"); }
     });
   });
-  test("#433 Format › Slide layout marks a line's lines; the same pick again, or Auto, takes the marks off; one Ctrl+Z; picked lines too", async () => {
+  test("#433 #481 Format › Slide layout writes the word on a line with lines; the same pick again, or Auto, takes it off; one Ctrl+Z; picked lines too", async () => {
     const path = scratchProject("slide layout", [["", "Launch plan"], ["", "Stray line"]]);
     const [head, stray] = getPage(path).blocks;
     head.children = ["Q1 beta", "Q2 release", "Q3 enterprise"].map(t => newBlock({title: t}));
@@ -15368,22 +15368,31 @@ var GTD_TEST = (() => {
       editBarGroupClose(); await frame();
       eq(await ticked(), ["auto"], "no marks: Auto is ticked");
 
+      // #481: on a line with lines, the layout is one word on that line; its lines are left as they are.
+      const plain = ["Q1 beta", "Q2 release", "Q3 enterprise"];
       await pick("timeline");
-      eq(kids(), ["-> Q1 beta", "-> Q2 release", "-> Q3 enterprise"], "on a line with lines, its lines get the mark");
-      eq(now(head).title, "Launch plan", "the title line is left as it is");
+      eq(now(head).title, "(timeline) Launch plan", "the line with lines gets the word");
+      eq(kids(), plain, "its lines get no marks");
       eq(document.activeElement, txt(head), "the caret stays in the line");
-      eq(await ticked(), ["timeline"], "the tick follows the marks");
+      eq(await ticked(), ["timeline"], "the tick follows the word");
 
       await pick("process");
-      eq(kids(), ["1. Q1 beta", "2. Q2 release", "3. Q3 enterprise"], "Steps numbers them, in place of the arrows");
+      eq(now(head).title, "(steps) Launch plan", "Steps in place of Timeline");
       await pick("process");
-      eq(kids(), ["Q1 beta", "Q2 release", "Q3 enterprise"], "the same pick again takes the marks off");
+      eq(now(head).title, "Launch plan", "the same pick again takes the word off");
       txt(head).dispatchEvent(new KeyboardEvent("keydown", {key: "z", ctrlKey: true, bubbles: true, cancelable: true})); await settle();
-      eq(kids(), ["1. Q1 beta", "2. Q2 release", "3. Q3 enterprise"], "one Ctrl+Z takes the whole pick back");
+      eq(now(head).title, "(steps) Launch plan", "one Ctrl+Z takes the whole pick back");
 
       focusBlock(head.id); await frame();
       await pick("auto");
-      eq(kids(), ["Q1 beta", "Q2 release", "Q3 enterprise"], "Auto takes the marks off");
+      eq([now(head).title, kids()], ["Launch plan", plain], "Auto takes the word off");
+      // Old marks on the lines go when a word is picked: one way to say it.
+      now(head).children.forEach(k => { k.title = "-> " + k.title; });
+      focusBlock(head.id); await frame();
+      eq(await ticked(), ["timeline"], "old marks are still read");
+      await pick("cycle");
+      eq([now(head).title, kids()], ["(cycle) Launch plan", plain], "a pick moves the layout onto the line");
+      await pick("auto");
 
       focusBlock(stray.id); await frame();
       await pick("cycle");
@@ -15407,9 +15416,100 @@ var GTD_TEST = (() => {
       eq(kids(), ["Q1 beta", "Q2 release", "Q3 enterprise"], "one Ctrl+Z takes it back");
       LINE_SEL.path = path; LINE_SEL.ids = [head.id]; paintLineSel();
       (await hudMenu()).find(n => n.dataset.lay === "hub").click(); await settle();
-      eq(kids(), [". Q1 beta", ". Q2 release", ". Q3 enterprise"], "one picked line with lines marks its lines, as the line tools do");
+      eq([now(head).title, kids()], ["(hub) Launch plan", plain], "one picked line with lines gets the word, as the line tools do");
     } finally { lineSelClear(); editBarGroupClose(); PREF.set("linetools", wasTools || ""); document.activeElement && document.activeElement.blur(); go("today"); }
   });
+
+  /* #481 One layout word in brackets at the front of a line says how its
+     lines are drawn: "(pyramid) What creates value". */
+  test("#481 a (word) on a line picks its slide's layout and is not shown on the slide", () => withPages({
+    [SHOW]: ["- (pyramid) What creates value", "  - Purpose", "  - Strategy", "  - Daily work",
+      "- (draft) Plan", "  - A", "  - B", "  - C", "- (VERSUS) Build or buy", "  - Build", "  - Buy",
+      "- (2x2) Options", "  - A", "  - B", "  - C", "  - D", "- (cycle) Too few", "  - A", "  - B",
+      "- Roadmap", "  - -> Q1", "  - -> Q2"].join("\n") + "\n"}, async () => {
+    for (const [text, layout, words] of [["(pyramid) What creates value", "pyramid", "What creates value"],
+      ["(Steps) Launch", "process", "Launch"], ["(versus) A", "split", "A"], ["(2x2) A", "quadrant", "A"], ["(2×2) A", "quadrant", "A"],
+      ["(scorecard) Q3", "kpi", "Q3"], ["(quote) Motto", "hero", "Motto"], ["(list) Notes", "list", "Notes"], ["(grid) Team", "grid", "Team"],
+      ["(timeline) A", "timeline", "A"], ["(hub) A", "hub", "A"], ["(curve) A", "curve", "A"], ["(cycle) A", "cycle", "A"]])
+      eq([slideWord(text).layout, slideWords({title: text})], [layout, words], text);
+    for (const text of ["(draft) Plan", "(pyramid)Plan", "Plan (pyramid)", "(o) Acquire", "(a line with no words)"])
+      eq(slideWord(text).layout, null, "not a layout word: " + text);
+    eq(slideWords({title: "_ (cycle) Hidden"}), "Hidden", "behind a hidden line's _ too");
+    const {slides} = deckSteps(SHOW);
+    const of = t => slides.find(s => s.title === t);
+    eq([of("What creates value").layout, of("What creates value").kids.map(slideWords)], ["pyramid", ["Purpose", "Strategy", "Daily work"]],
+      "the word on the line draws its lines, and the title has no word");
+    eq(of("(draft) Plan").layout, "list", "a word that is no layout stays text");
+    eq([of("Build or buy").layout, of("Options").layout], ["split", "quadrant"], "in any case; 2x2");
+    eq(of("Too few").layout, "list", "a layout with too few lines is a list");
+    eq(of("Roadmap").layout, "timeline", "old marks on the lines are still read");
+  }));
+  test("#481 off the line its bullet is the layout's icon, named; on the line the word shows as written", () => withPages({
+    [SHOW]: ["- (pyramid) What creates value", "  - Purpose", "  - Strategy", "  - Daily work", "- Plain"].join("\n") + "\n"}, async () => {
+    openPage(SHOW); await settle();
+    const [pyr, flat] = getPage(SHOW).blocks;
+    const line = b => content().querySelector(`.blk[data-id="${CSS.escape(String(b.id))}"] > .line`);
+    try {
+      const bul = line(pyr).querySelector(".bullet"), txt = line(pyr).querySelector(".txt");
+      eq(txt.textContent, "What creates value", "the word is not shown off the line");
+      eq(bul.textContent, "▲", "the bullet is the layout's icon");
+      ok(bul.classList.contains("slidelay"), "and drawn as an icon, not a dot");
+      ok(/Pyramid/.test(bul.getAttribute("aria-label")) && /Slide layout: Pyramid/.test(bul.title), "named for screen readers and on hover: " + bul.title);
+      ok(/Slide layout: Pyramid/.test(txt.getAttribute("aria-description") || ""), "and on the line, for the keyboard");
+      eq([line(flat).querySelector(".bullet").textContent, line(flat).querySelector(".bullet").classList.contains("slidelay")], ["", false], "a plain line keeps its dot");
+      txt.focus(); await settle();
+      eq(txt.textContent, "(pyramid) What creates value", "on the line, the word shows as written");
+    } finally { document.activeElement && document.activeElement.blur(); go("today"); }
+  }));
+  test("#481 ( at the start of a line offers the layouts; letters narrow them; a pick writes the word", () => {
+    const at = (text, caret = text.length) => suggestFor({value: text, selectionStart: caret}, {commands: true});
+    const all = at("(");
+    eq(all && all.mode, "layout", "( offers the layouts");
+    eq(all.rows.map(r => r.title), ["List", "Steps", "Timeline", "Cycle", "Pyramid", "Hub", "Curve", "Versus", "2×2", "Scorecard", "Quote", "Grid"],
+      "every layout, by name");
+    const pyr = all.rows.find(r => r.title === "Pyramid");
+    eq([pyr.mark, pyr.detail], ["▲", "base to top"], "each with its icon and what its lines become");
+    eq(at("(py").rows.map(r => r.title), ["Pyramid"], "letters narrow the list");
+    eq(at("(xyz"), null, "no layout starts so: no list");
+    eq(at("Plan (", 6)?.mode === "layout", false, "only at the start of the line");
+    eq(suggestFor({value: "(", selectionStart: 1}, {})?.mode === "layout", false, "only on a page's line");
+    const input = el("input", {});
+    document.body.append(input);
+    try {
+      for (const [value, caret, want] of [["()", 1, "(pyramid) "], ["(py)", 3, "(pyramid) "],
+        ["()What creates value", 1, "(pyramid) What creates value"], ["(What creates value", 1, "(pyramid) What creates value"]]) {
+        input.value = value; input.focus(); input.setSelectionRange(caret, caret);
+        suggestSync(input, {commands: true});
+        suggestAccept(SUGGEST.rows.findIndex(r => r.title === "Pyramid"));
+        eq(input.value, want, "a pick on " + JSON.stringify(value));
+      }
+    } finally { suggestClose(); input.remove(); }
+  });
+  test("#481 ☰ Tidy slide marks puts each slide's old marks into one word on its line, only when asked; one Ctrl+Z", () => withPages({
+    [SHOW]: ["- Roadmap", "  - -> Q1", "  - -> Q2", "- Plan", "  - 1. Ask", "  - 2. Build", "- Motto", "  - > Less is more",
+      "- Options", "  - | A", "  - | B", "  - | C", "  - | D", "- -> Top line", "- Plain", "  - One"].join("\n") + "\n",
+    [join(PAGES, "Errands.md")]: "- Shop\n  - Milk\n"}, async () => {
+    const titles = () => { const out = []; walkBlocks(getPage(SHOW).blocks, b => { out.push(b.title); }); return out; };
+    const before = titles();
+    eq(slideTidyCount(join(PAGES, "Errands.md")), 0, "a page with no old marks has nothing to tidy");
+    eq(slideTidyCount(SHOW), 4, "four slides carry old marks");
+    openPageMenu(join(PAGES, "Errands.md")); await settle();
+    ok(!/Tidy slide marks/.test(document.querySelector(".modal")?.textContent || ""), "not offered where there is nothing to tidy");
+    closeModal();
+    openPage(SHOW); await settle();
+    openPageMenu(SHOW); await settle();
+    ok(/Tidy slide marks/.test(document.querySelector(".modal")?.textContent || ""), "offered on the page's ☰ menu");
+    closeModal();
+    eq(titles(), before, "nothing changes until it is asked");
+    slideTidy(SHOW); await settle();
+    eq(titles(), ["(timeline) Roadmap", "Q1", "Q2", "(steps) Plan", "Ask", "Build", "(quote) Motto", "Less is more",
+      "(2x2) Options", "A", "B", "C", "D", "-> Top line", "Plain", "One"],
+      "each slide's word goes on its line and the marks come off; a top line has no line above to take it");
+    eq(deckSteps(SHOW).slides.find(s => s.title === "Options").layout, "quadrant", "the slides are drawn as before");
+    document.dispatchEvent(new KeyboardEvent("keydown", {key: "z", ctrlKey: true, bubbles: true, cancelable: true})); await settle();
+    eq(titles(), before, "one Ctrl+Z takes it all back");
+    go("today");
+  }));
 
   /* ============================================================
      The runner

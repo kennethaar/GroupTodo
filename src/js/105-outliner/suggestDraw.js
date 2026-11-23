@@ -1,6 +1,7 @@
 function suggestDraw() {
   const {box, rows, i, mode, head, plain} = SUGGEST;
   box.textContent = "";
+  box.dataset.mode = mode;               // the slide layouts' icons are drawn bigger (#481)
   // The ring being offered says what it is under: Angry › Let down ›
   if (mode === "words" && head) box.append(el("div", {class: "suggest-head", translate: "no"}, head + " ›"));
   // Rows that say what they do themselves (#455) need no head.

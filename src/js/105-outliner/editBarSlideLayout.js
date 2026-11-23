@@ -1,5 +1,6 @@
-/* A Slide layout pick from the line tools (#433): it marks the line's lines,
-   or the line itself (editBarSlideLines). The caret stays in the line. */
+/* A Slide layout pick from the line tools (#433): a line with lines gets
+   the layout word (#481); a line with none is marked itself
+   (editBarSlideLines). The caret stays in the line. */
 function editBarSlideLayout(lay) {
   if (!FLY) return;
   const {txt, path, block: b} = FLY;
