@@ -14567,7 +14567,7 @@ var GTD_TEST = (() => {
       eq(state.pagePath, TALK, "back on the page");
     } finally { presentStop(); }
   }));
-  test("#431 follow-up: the page title glides up into the next slide's breadcrumb and stays there, and no title is cut on its way", () => withPages({
+  test("#431 follow-up: the page title glides up and fades, with no breadcrumb to land on, and no title is cut on its way", () => withPages({
     [join(PAGES, "Quarterly kickoff for the whole team.md")]:
       ["- Kitchen renovation plan for the whole house", "  - Measure the room", "  - Pick the tiles", "- Budget", "  - Ask the bank"].join("\n") + "\n"}, async () => {
     const path = join(PAGES, "Quarterly kickoff for the whole team.md");
@@ -14618,23 +14618,14 @@ var GTD_TEST = (() => {
       const rs = letters().map(s => s.getBoundingClientRect());
       const top = {top: Math.min(...rs.map(r => r.top)), height: Math.max(...rs.map(r => r.bottom)) - Math.min(...rs.map(r => r.top))};
       ok(top.top < deckBox().height * 0.2 && top.height < big.height, "the page title ends at the top, smaller: " + Math.round(top.top));
-      // Option A (#431, 2026-11-23): it moves like a child slide's title, onto the breadcrumb, and stays.
-      const crumb = $("#deck .slide.cur .scrumb");
-      eq(crumb && crumb.textContent, "Quarterly kickoff for the whole team", "a top line's slide names the page it is from");
-      const spots = (() => { const out = [], walk = document.createTreeWalker(crumb, NodeFilter.SHOW_TEXT);
-        for (let n; (n = walk.nextNode());) for (let i = 0; i < n.data.length; i++) {
-          if (/\s/.test(n.data[i])) continue;
-          const r = document.createRange(); r.setStart(n, i); r.setEnd(n, i + 1); out.push(r.getBoundingClientRect()); }
-        return out; })();
-      ok(rs.every((r, i) => Math.abs(r.left - spots[i].left) < 3 && Math.abs(r.top - spots[i].top) < 3), "each letter lands on its place in the breadcrumb");
-      const quiet = getComputedStyle(crumb).opacity;
-      ok(+quiet > 0.4 && letters().every(s => getComputedStyle(s).opacity === quiet), "no letter fades out: each looks as the breadcrumb does: " + quiet);
+      // #431 reopened 2026-11-23: no page title as breadcrumb; the rising title fades out at the top.
+      ok(!$("#deck .slide.cur .scrumb"), "a top line's slide does not name the page it is from");
+      ok(letters().every(s => +getComputedStyle(s).opacity < 0.05), "the page title has faded out when it reaches the top");
       go();
       const delay = parseFloat(getComputedStyle($("#deck .slide.cur")).animationDelay);
       ok(delay >= 0.4, "the next slide comes once the page title is on its way: " + delay + " s");
       await done();
       ok(!$("#deck .sghost"), "the glide leaves its copy behind");
-      ok(getComputedStyle($("#deck .slide.cur .scrumb")).opacity === quiet && !$("#deck .slide.cur .scrumb").getAnimations().length, "and the breadcrumb itself stands there");
       // Where each letter of a title stands, as the browser wrapped it.
       const marks = t => {
         const out = [], walk = document.createTreeWalker(t, NodeFilter.SHOW_TEXT);
@@ -15260,7 +15251,7 @@ var GTD_TEST = (() => {
     "  - . Mobile app", "    - Quick capture", "      - Share sheet",
     "- Plain hub", "  - . A", "  - . B", "  - . C"].join("\n") + "\n"}, async () => {
     const {slides} = deckSteps(EVEN);
-    eq(slides.map(s => [s.title, s.breadcrumb]), [["Even", ""], ["Platform", "Even"], ["Quick capture", "Platform > Mobile app"], ["Plain hub", "Even"]],
+    eq(slides.map(s => [s.title, s.breadcrumb]), [["Even", ""], ["Platform", ""], ["Quick capture", "Platform > Mobile app"], ["Plain hub", ""]],
       "a spoke with lines gets no slide; only a line of its own with lines does");
     try {
       openPage(EVEN); await settle();
@@ -15709,7 +15700,8 @@ var GTD_TEST = (() => {
       ok(Math.abs(ax - 10) <= 2 && Math.abs(ay - 5) <= 2, "the line's place is kept on it as at:: " + blockProp(first, "at"));
       await drag($("#deck .slide.cur .stitle"), -W * 0.05, 0);
       ok(xy(blockProp(om, "title-at"))[0] < -3, "the title's place is kept on the slide's line: " + blockProp(om, "title-at"));
-      await drag($("#deck .slide.cur .cover .pic img"), -W * 0.1, 0);
+      // A real press on the picture lands on its shade, .cover (#487 bug): that drags the picture too.
+      await drag($("#deck .slide.cur .cover"), -W * 0.1, 0);
       const fx = xy(blockProp(om, "focus"))[0];
       ok(fx > 50, "dragging the picture left shows more of its right: focus:: " + blockProp(om, "focus"));
       presentStop(); await open();

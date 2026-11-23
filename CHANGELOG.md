@@ -5,6 +5,11 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.210.1 - 2026-11-23
+
+- Present a page: Alt+drag on a slide's picture crops it again. The
+  picture's shade lay over it and caught the press. (#487)
+
 ## 1.210.0 - 2026-11-23
 
 - Present a page: (map) puts a line's picture behind the whole slide,
