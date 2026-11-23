@@ -34,7 +34,13 @@ function presentKey(e) {
   if (k === "Home") return presentGo(0);
   if (k === "End") return presentGo(steps.length - 1);
   const low = k.toLowerCase();
-  if (low === "b" || k === ".") DECK.deck.classList.toggle("blank");
+  // Your camera (#485): Shift+C on or off; C the next mode for this slide.
+  if (low === "c" && e.shiftKey) slideCamToggle();
+  else if (low === "c" && DECK.cam) {
+    const at = SLIDE_CAM_MODES.indexOf(DECK.cam.mode === "pic" ? "side" : DECK.cam.mode);
+    slideCamPick(SLIDE_CAM_MODES[(at + 1) % SLIDE_CAM_MODES.length]);
+  }
+  else if (low === "b" || k === ".") DECK.deck.classList.toggle("blank");
   else if (low === "p") presenterOpen();
   else if (low === "o") { if (!DECK.pw || DECK.pw.closed) presenterOpen(); DECK.grid = !DECK.grid; presenterDraw(); }
 }

@@ -1,0 +1,18 @@
+/* Your camera, one layer through the talk (#485). It lies first in the deck,
+   so the slides' words are always over it, and glides between its places:
+   the whole slide (big), the picture's place (side), a corner (bubble).
+   While a picture shows first it waits, unseen, in the picture's place.
+   Not mirrored: the room sees you as you are. slides.css can style .cam. */
+#deck>.cam{position:absolute;z-index:0;left:0;top:0;width:100%;height:100%;object-fit:cover;border-radius:0;opacity:1;
+  transition:left .8s ease-in-out,top .8s ease-in-out,width .8s ease-in-out,height .8s ease-in-out,border-radius .8s ease-in-out,opacity .8s ease-in-out,filter .8s ease-in-out}
+/* Big: the title over you, so you are dimmed a little to keep it readable. */
+#deck[data-cam=big]>.cam{filter:brightness(.55)}
+#deck:is([data-cam=side],[data-cam=pic]):not(.camwide)>.cam{width:30%}
+#deck:is([data-cam=pic],[data-cam=off])>.cam{opacity:0}
+#deck[data-cam=bubble]>.cam{left:calc(100% - 22vmin);top:calc(100% - 22vmin);width:18vmin;height:18vmin;border-radius:50%}
+/* Side: the picture fades out and you show in its place. */
+#deck[data-cam=side] .slide.cur .cover .pic{opacity:0}
+/* Side on a slide with no picture place: the words make room. */
+#deck .slide.camside:not(.intro) .stext{left:30%;padding-left:5vw}
+#deck.blank>.cam{visibility:hidden}
+@media (prefers-reduced-motion:reduce){#deck>.cam{transition:opacity .3s}}

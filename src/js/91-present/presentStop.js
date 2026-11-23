@@ -3,6 +3,7 @@ function presentStop() {
   if (!DECK) return;
   const {deck, back, timer, pw, path, root, i, wait} = DECK;
   if (wait) clearInterval(wait.tick);
+  slideCamOff();       // the camera's light goes out with the talk (#485)
   DECK = null;
   // Where you left it, for the preview on ▶ Present (#465).
   if (i >= 0) slideLast(path, root, i);

@@ -26,6 +26,9 @@ function presenterDraw() {
     // The countdown, started from here too (#489).
     el("button", {class: "pwaitbtn", "aria-expanded": String(!!DECK.pwTimes), title: "Count down to the start, with the waiting slides",
       onclick: () => { DECK.pwTimes = !DECK.pwTimes; presenterDraw(); }}, "⏱ Count down…"),
+    // Your camera over the talk (#485).
+    el("button", {class: "pcambtn", "aria-pressed": String(!!DECK.cam), title: "Your camera over the talk (Shift+C)",
+      onclick: slideCamToggle}, "◉ Camera"),
     el("button", {class: "poverview", "aria-pressed": String(DECK.grid), title: "All slides (O)",
       onclick: () => { DECK.grid = !DECK.grid; presenterDraw(); }}, "Overview"),
     el("button", {class: "psmaller", title: "Smaller notes", "aria-label": "Smaller notes", onclick: () => resize(-2)}, "A−"),
@@ -41,12 +44,24 @@ function presenterDraw() {
       el("button", {class: "pnext", disabled: next ? null : "", onclick: () => presentGo(DECK.i + 1)},
         el("div", {class: "plabel"}, "Next"), el("div", {class: "pwhat"}, nextText))));
   const notes = el("div", {class: "pnotes", style: "font-size:" + size + "px"}, lit ? slideNotes(lit).notes : s.notes);
-  const parts = DECK.pwTimes ? [bar, presenterTimes(), main, notes] : [bar, main, notes];
+  // With the camera on, you and your notes come first, near the lens (#485).
+  const parts = [bar, DECK.pwTimes ? presenterTimes() : null, ...(DECK.cam ? [presenterCam(), notes, main] : [main, notes])].filter(Boolean);
   if (DECK.grid) parts.push(el("div", {class: "pgrid", role: "list", "aria-label": "All slides"},
     ...slides.map(t => el("button", {class: "pthumb" + (t === s ? " here" : "") + (t.depth ? " sub" : ""), role: "listitem",
       onclick: () => { DECK.grid = false; presentGo(t.first); }}, t.title,
       // A drawn slide says how it is drawn (#433); a plain list says nothing.
       t.layout !== "list" ? el("span", {class: "playout"}, " · " + SLIDE_LAYOUTS[t.layout].name) : null))));
   d.body.replaceChildren(...parts.map(n => d.adoptNode(n)));
+  // The preview is made once in that window and kept, so it does not flicker on each step.
+  const c = DECK.cam, box = d.querySelector(".pcam");
+  if (c && box) {
+    if (!c.pv || c.pv.ownerDocument !== d) {
+      c.pv = d.createElement("video");
+      Object.assign(c.pv, {className: "pcamview", muted: true, autoplay: true, playsInline: true, srcObject: c.stream});
+      c.pv.setAttribute("aria-label", "You, as the camera sees you");
+    }
+    box.prepend(c.pv);
+    c.pv.play?.()?.catch?.(() => {});
+  }
   presenterTick();
 }

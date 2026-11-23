@@ -32,6 +32,16 @@ body:has(.pwait){grid-template-rows:1fr auto}
 .pthumb.here{outline:3px solid #9cf}.pthumb.sub{margin-left:16px;background:#0b0b0b}
 .playout{color:#aab;white-space:pre}
 .pend{padding:24px}
+/* Your camera (#485): you mirrored at the top, the notes right under it. */
+body:has(.pcam){grid-template-rows:auto auto auto 1fr}
+body:has(.pcam):has(.ptimes){grid-template-rows:auto auto auto auto 1fr}
+.pcam{display:flex;gap:12px;align-items:flex-start;padding:8px 12px;border-bottom:1px solid #333;flex-wrap:wrap}
+.pcamview{width:240px;max-width:40vw;aspect-ratio:16/9;object-fit:cover;transform:scaleX(-1);border-radius:6px;background:#000}
+.pcamside{display:grid;gap:8px;flex:1;min-width:240px}
+.ponair{color:#ff8a80;font-weight:600}
+.pcamstrip,.pcamwait{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.pcamstrip .plabel,.pcamwait .plabel{min-width:7em}
+.pcam button[aria-pressed=true],.pcambtn[aria-pressed=true]{background:#2d4a66;border-color:#9cf}
 /* No caret on the words, only in a line opened by a double-click (#466). */
 body{caret-color:transparent}.pnow{user-select:none}
 .sedit{caret-color:auto;user-select:text;font:inherit;color:#fff;background:#222;border:2px solid #9cf;border-radius:4px;padding:2px 6px;width:100%;box-sizing:border-box}

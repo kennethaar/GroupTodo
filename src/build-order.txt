@@ -49,6 +49,7 @@ css/43-present-charts-482.css
 css/44-present-wait-486.css
 css/45-present-arrange-487.css
 css/46-present-map-488.css
+css/47-present-camera-485.css
 # script 1
 js/00-bootstrap/vars-APP_VERSION.js
 js/00-bootstrap/keepFocus.js
@@ -885,6 +886,12 @@ js/91-present/drawMap.js
 js/91-present/drawMapPins.js
 js/91-present/slideMapPins.js
 js/91-present/slideCrowd.js
+js/91-present/vars-SLIDE_CAM.js
+js/91-present/slideCamShow.js
+js/91-present/slideCamPick.js
+js/91-present/slideCamOff.js
+js/91-present/slideCamToggle.js
+js/91-present/presenterCam.js
 js/90-view-state/vars-DIALOGUE.js
 js/90-view-state/setDialogueStyle.js
 js/90-view-state/vars-OPENS_AFTER.js

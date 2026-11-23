@@ -4,6 +4,22 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.212.0#485": `
+    cap | Your camera in the talk
+    say | Shift+C puts you on the slides. The slide picks where.
+    + pg col
+    + t ln > pg | Roadmap 2027
+    + v chip > pg | ● You, big behind the title
+    w 1500
+    say | A plain slide: you in a round bubble in the corner.
+    + b chip > pg | ◯ Bubble
+    s b | border-radius:999px
+    w 1500
+    say | The presenter window: Auto, or pick one for this slide.
+    + a chip > pg | Auto (Bubble)
+    + g chip > pg | Big
+    p g
+    w 1500`,
   "1.211.0#489": `
     cap | Run the talk from the presenter window
     say | The Next box is a button. ‹ Back is beside it.
@@ -174,26 +190,5 @@ const NEWS_ANIM = {
     w 900
     p j
     say | The reminder has Join too.
-    w 1500`,
-  "1.203.0#476": `
-    cap | A dropped picture can be the slide's picture
-    say | You drop a picture on a line.
-    # A picture dropped on a line; the note offers to make it the slide's picture.
-    + pg col
-    + l ln > pg | Kitchen tiles
-    w 700
-    t l | Kitchen tiles · tiles.png
-    + ts chip fade > pg | 1 file saved · Use as slide picture
-    w 50
-    c ts -fade
-    say | The note offers Use as slide picture.
-    w 900
-    p ts
-    t l | Kitchen tiles
-    c ts +fade
-    + n quiet fade > pg | Notepad: tiles.png, the slide's picture
-    w 50
-    c n -fade
-    say | The picture moves to the line's notepad, for Present.
     w 1500`,
 };

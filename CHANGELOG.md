@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.212.0 - 2026-11-23
+
+- Present a page: your camera can be one layer through the talk. Shift+C,
+  or Camera in the presenter window, turns it on; it is off by default.
+  The slide picks where you are: big behind a title alone, in the
+  picture's place after the picture has shown, a bubble in the corner on
+  other slides. C, or the Camera strip in the presenter window, picks
+  Big, Side, Bubble or Off for this slide. The presenter window shows you
+  mirrored, with your notes right under. (#485)
+
 ## 1.211.0 - 2026-11-23
 
 - Present a page: the presenter window runs the talk by mouse or touch.

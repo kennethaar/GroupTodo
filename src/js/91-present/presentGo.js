@@ -56,5 +56,6 @@ function presentGo(i) {
     if (move === "zoomin" && slot) slideZoom(slide.querySelector(".stitle"), slot, true);
     if (move === "zoomout" && old) slideZoom(old.querySelector(".stitle"), spot(slide, from.s.block), false);
   }
+  slideCamShow();      // the camera follows the slide (#485)
   presenterDraw();
 }

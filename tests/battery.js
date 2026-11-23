@@ -15884,6 +15884,78 @@ var GTD_TEST = (() => {
     } finally { presentStop(); window.open = open; f.remove(); go("today"); }
   }));
 
+  /* #485 Your camera is one layer through the talk: off until Shift+C, then
+     its mode follows the slide (title alone: big; a picture: the picture
+     first, then you in its place; others: a bubble). C or the presenter
+     window's Camera strip sets this slide's mode; the next slide is automatic
+     again. The presenter window shows you mirrored, the notes right under. */
+  test("#485 the camera: Shift+C turns it on, the mode follows the slide, C or the presenter strip picks this slide's mode", () => withPages({
+    [SHOW]: ["- Welcome", "- Results", "  ![cover](assets/cover.png)", "  - Revenue up", "- Plain", "  - A", "  - B"].join("\n") + "\n"}, async () => {
+    const f = document.createElement("iframe");
+    document.body.append(f);
+    const open = window.open, md = navigator.mediaDevices, waitPref = PREF.get("present.campic");
+    window.open = () => f.contentWindow;
+    let asked = 0, stream = null;
+    const fake = {getUserMedia: async () => { asked++; const c = document.createElement("canvas"); c.getContext("2d").fillRect(0, 0, 4, 4); return stream = c.captureStream(); }};
+    Object.defineProperty(navigator, "mediaDevices", {value: fake, configurable: true});
+    PREF.set("present.campic", 10);
+    const key = (k, o = {}) => document.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true, ...o}));
+    const cam = () => $("#deck")?.dataset.cam || "";
+    const wait = () => new Promise(r => setTimeout(r, 30));
+    try {
+      presentStart(SHOW, {presenter: true}); await settle();
+      const pd = f.contentDocument, q = s => pd.querySelector(s);
+      ok(!$("#deck video.cam") && !asked && !q(".pcam"), "the camera is off by default");
+      key("C", {shiftKey: true}); await wait();
+      eq(asked, 1, "Shift+C opens the camera");
+      ok($("#deck > video.cam"), "one camera layer on the deck, not on a slide");
+      eq(cam(), "big", "the page title alone: you fill the slide");
+      eq(getComputedStyle($("#deck video.cam")).transform, "none", "the slides are not mirrored");
+      const view = q(".pcam video");
+      ok(view && /scaleX\(-1\)|matrix\(-1/.test(getComputedStyle(view).transform), "the presenter window shows you mirrored");
+      has(q(".pcam").textContent, "On air");
+      ok(q(".pcam").nextElementSibling?.classList.contains("pnotes"), "the notes right under the camera");
+      key("ArrowRight"); await wait();
+      eq(cam(), "big", "a top line alone is big too");
+      key("ArrowRight"); await wait();
+      ok($("#deck .slide.cur.hascover"), "a slide with a picture");
+      eq(cam(), "pic", "its picture shows first");
+      has(q(".pcamauto").textContent, "Side", "Auto says what it picked");
+      [...pd.querySelectorAll(".pcamwait button")].find(b => b.textContent === "At once").click(); await wait();
+      eq(+PREF.get("present.campic"), 0, "the picture time is kept");
+      eq(cam(), "side", "then you, in the picture's place");
+      key("c"); await wait();
+      eq(cam(), "bubble", "C: the next mode, for this slide");
+      eq(q(".pcammode[aria-pressed=true]")?.textContent, "Bubble", "the strip marks it");
+      key("ArrowRight"); await wait();
+      eq(cam(), "bubble", "the slide keeps its mode to its end");
+      key("ArrowRight"); await wait();
+      eq(cam(), "bubble", "the next slide is automatic again: a plain slide is a bubble");
+      ok(q(".pcamauto[aria-pressed=true]"), "Auto is marked again");
+      [...pd.querySelectorAll(".pcammode")].find(b => b.textContent === "Big").click(); await wait();
+      eq(cam(), "big", "a click in the strip sets this slide's mode");
+      [...pd.querySelectorAll(".pcammode")].find(b => b.textContent === "Off").click(); await wait();
+      eq(cam(), "off");
+      q(".pcamauto").click(); await wait();
+      eq(cam(), "bubble", "Auto gives the slide back to automatic");
+      key("b");
+      eq(getComputedStyle($("#deck video.cam")).visibility, "hidden", "B hides the camera too");
+      key("b");
+      eq(asked, 1, "the camera opened once for the whole talk");
+      const tracks = stream.getTracks();
+      key("C", {shiftKey: true}); await wait();
+      ok(!$("#deck video.cam") && tracks.every(t => t.readyState === "ended") && !q(".pcam"), "Shift+C again turns it off");
+      key("C", {shiftKey: true}); await wait();
+      const again = stream.getTracks();
+      presentStop();
+      ok(again.every(t => t.readyState === "ended"), "leaving the talk turns the camera off");
+    } finally {
+      presentStop(); window.open = open; f.remove(); go("today");
+      Object.defineProperty(navigator, "mediaDevices", {value: md, configurable: true});
+      PREF.set("present.campic", waitPref ?? 10);
+    }
+  }));
+
   /* ============================================================
      The runner
      ============================================================ */
