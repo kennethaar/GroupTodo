@@ -4,6 +4,30 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.206.0#482": `
+    cap | Numbers on lines become a chart
+    say | Lines that end in a number, under a line.
+    # Year lines under Visitors; the bullet guesses a line chart, (bar) changes it.
+    + pg col
+    + l ln > pg | Visitors
+    + a ln > pg | 2023 1850
+    s a | margin-left:24px
+    + b ln > pg | 2024 2600
+    s b | margin-left:24px
+    w 900
+    say | They become a line chart. The faint icon says it is a guess.
+    t l | ⌁ Visitors
+    + c chip fade > pg | 1850 → 2600, a point per click
+    w 50
+    c c -fade
+    w 1500
+    say | Write (bar) or (pie) to change it.
+    p l
+    t l | (bar) Visitors
+    w 900
+    t l | ▮ Visitors
+    t c | ▮ 1850  ▮ 2600, a bar per click
+    w 1800`,
   "1.205.0#481": `
     cap | One word sets how a slide is drawn
     say | Type ( at the start of a line that has lines.
@@ -120,28 +144,5 @@ const NEWS_ANIM = {
     t b | DONE Water the plants
     c b -dim
     c b +lit
-    w 1500`,
-  "1.201.6#474": `
-    cap | A link opens its page first
-    say | A link opens GroupToDo on a phone.
-    w 1200
-    # The linked page is read alone and drawn first; today's page follows.
-    + pg col abs
-    s pg | left:12px;top:12px;right:12px
-    + h h > pg | Opening Kontantoppgjør…
-    + m ln > pg |
-    + q quiet > pg | 0.0 s
-    w 500
-    say | Only the linked page is read.
-    t q | 1.5 s
-    w 500
-    t q | 2.9 s
-    say | It is on screen in about 3 seconds.
-    t h | Kontantoppgjør
-    t m | Check the receipts
-    c m +lit
-    w 700
-    say | The rest comes in behind it.
-    t q | Today's page and projects come in behind
     w 1500`,
 };

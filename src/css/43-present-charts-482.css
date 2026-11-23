@@ -1,0 +1,46 @@
+/* #482 Charts on a slide: labels on the chart, no 3D. Series and slices
+   tell apart by the slide's accent and its ink, so an area's slides.css
+   colours them too. */
+:is(#deck,#deckpeek) .chart{--c0:var(--slide-accent);--c1:color-mix(in srgb,var(--slide-accent) 45%,currentColor);
+  --c2:color-mix(in srgb,currentColor 60%,transparent);--c3:color-mix(in srgb,var(--slide-accent) 55%,transparent);
+  --c4:currentColor;--c5:color-mix(in srgb,currentColor 30%,transparent);position:relative;height:100%}
+:is(#deck,#deckpeek) .chart .c0{--c:var(--c0)} :is(#deck,#deckpeek) .chart .c1{--c:var(--c1)}
+:is(#deck,#deckpeek) .chart .c2{--c:var(--c2)} :is(#deck,#deckpeek) .chart .c3{--c:var(--c3)}
+:is(#deck,#deckpeek) .chart .c4{--c:var(--c4)} :is(#deck,#deckpeek) .chart .c5{--c:var(--c5)}
+/* What a chart has shown stays whole: the shape is the point. */
+:is(#deck,#deckpeek) .chart .part.past{opacity:1}
+:is(#deck,#deckpeek) .chart .cval{font-size:.75em;font-weight:700;white-space:nowrap}
+:is(#deck,#deckpeek) .chart .ccat{font-size:.75em;white-space:nowrap}
+
+/* Line: points over a 0 line, the category under the chart. */
+:is(#deck,#deckpeek) .cline{margin:0 2.5em 1.6em 1.5em}
+:is(#deck,#deckpeek) :is(.cline,.cpiebox) .part{position:absolute;inset:0}
+:is(#deck,#deckpeek) :is(.cline,.cpiebox) svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+:is(#deck,#deckpeek) .cline .axes path{fill:none;stroke:currentColor;stroke-width:1.5;opacity:.6}
+:is(#deck,#deckpeek) .cline .sline{stroke:var(--c);stroke-width:3}
+:is(#deck,#deckpeek) .cline :is(.cdot,.cval,.cser,.ccat){position:absolute}
+:is(#deck,#deckpeek) .cline .cdot{width:.45em;height:.45em;border-radius:50%;background:var(--c);transform:translate(-50%,-50%)}
+:is(#deck,#deckpeek) .cline .cval{transform:translate(-50%,-140%)}
+:is(#deck,#deckpeek) .cline .cser{transform:translate(.6em,-50%);font-size:.75em;font-weight:700;color:var(--c)}
+:is(#deck,#deckpeek) .cline .ccat{transform:translate(-50%,.4em)}
+
+/* Bar: a row per category, bars from 0, the number just past the bar. */
+:is(#deck,#deckpeek) .cbar{display:flex;flex-direction:column;justify-content:center;gap:.35em}
+:is(#deck,#deckpeek) .crow{display:flex;align-items:center;gap:.6em;min-height:0;flex:0 1 2.2em}
+:is(#deck,#deckpeek) .crow>.ccat{flex:0 0 var(--catw);overflow:hidden;text-overflow:ellipsis;text-align:right}
+:is(#deck,#deckpeek) .cbars{flex:1;display:flex;flex-direction:column;justify-content:center;gap:.15em;height:100%;margin-right:5em}
+:is(#deck,#deckpeek) .cbarw{position:relative;flex:1;min-height:.5em;max-height:1.6em}
+:is(#deck,#deckpeek) .cbarfill{position:absolute;top:0;bottom:0;background:var(--c)}
+:is(#deck,#deckpeek) .cbarw>.cval{position:absolute;top:50%;transform:translate(.4em,-50%)}
+
+/* Pie: a square in the middle, each slice's name and share outside it. */
+:is(#deck,#deckpeek) .cpie{display:flex;justify-content:center}
+:is(#deck,#deckpeek) .cpiebox{position:relative;height:100%;aspect-ratio:1;max-width:100%}
+:is(#deck,#deckpeek) .cslice{fill:var(--c);stroke:var(--slide-bg);stroke-width:.6}
+:is(#deck,#deckpeek) .cpiebox .cval{position:absolute;transform:translate(-50%,-50%);font-weight:400}
+:is(#deck,#deckpeek) .cpiebox .cval.right{transform:translate(0,-50%)}
+:is(#deck,#deckpeek) .cpiebox .cval.left{transform:translate(-100%,-50%)}
+:is(#deck,#deckpeek) .cpiebox .cval .ccat{font-size:1em;font-weight:700}
+
+/* #482 A chart guessed from the numbers: its bullet's icon is faint until a word is written. */
+.blk>.line:not(.raw)>.bullet.slidelay.guess{color:var(--fg3);font-weight:400}

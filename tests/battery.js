@@ -15465,7 +15465,7 @@ var GTD_TEST = (() => {
     const at = (text, caret = text.length) => suggestFor({value: text, selectionStart: caret}, {commands: true});
     const all = at("(");
     eq(all && all.mode, "layout", "( offers the layouts");
-    eq(all.rows.map(r => r.title), ["List", "Steps", "Timeline", "Cycle", "Pyramid", "Hub", "Curve", "Versus", "2×2", "Scorecard", "Quote", "Grid"],
+    eq(all.rows.map(r => r.title), ["List", "Steps", "Timeline", "Cycle", "Pyramid", "Hub", "Curve", "Versus", "2×2", "Scorecard", "Line", "Bar", "Pie", "Quote", "Grid"],
       "every layout, by name");
     const pyr = all.rows.find(r => r.title === "Pyramid");
     eq([pyr.mark, pyr.detail], ["▲", "base to top"], "each with its icon and what its lines become");
@@ -15485,6 +15485,69 @@ var GTD_TEST = (() => {
       }
     } finally { suggestClose(); input.remove(); }
   });
+  /* #482 Charts: "Label number" lines, or a table under a chart word.
+     With no word, lines with numbers are a line chart; 1-4 metrics stay a scorecard. */
+  test("#482 lines that end in a number are a line chart unless a word says bar or pie", () => {
+    eq(slideChartPoint("North 42"), {label: "North", value: 42, shown: "42"});
+    eq(slideChartPoint("2023: 1850"), {label: "2023", value: 1850, shown: "1850"});
+    eq(slideChartPoint("Margin -3,5 %"), {label: "Margin", value: -3.5, shown: "-3,5 %"});
+    eq(slideChartPoint("Pipeline NOK 40k"), {label: "Pipeline", value: 40000, shown: "NOK 40k"});
+    for (const text of ["Call 3 people", "2022", "Q1: Private beta", "Meet at 3pm"]) eq(slideChartPoint(text), null, text);
+    const lay = (...a) => slideLayout(lines(...a)).layout;
+    eq(lay("Visitors", "2022 1200", "2023 1850", "2024 2600"), "line", "no word: a line chart");
+    eq(lay("Q3", "ARR: USD 2M", "Churn: 3 %"), "kpi", "1-4 metrics stay a scorecard");
+    eq(lay("Q3", "ARR 2 %", "Churn 3 %", "NPS 4 %", "CAC 5 %", "LTV 6 %"), "line", "5 metrics or more are a chart");
+    eq(lay("Steps", "Call 3 people", "Buy 2 tickets"), "list", "a number inside a line is no chart");
+    eq(lay("One", "North 42"), "list", "one line is no chart");
+    eq(lay("Shop", "Item 1", "Item 2", "Item 3"), "list", "numbers that only count the lines are numbering, no chart");
+    eq(slideLayout(lines("Rooms", {title: "Room 12", children: [{title: "Big", children: []}]}, "Room 14")).layout, "list",
+      "lines with lines of their own are no chart");
+    eq(lay("(bar) Sales", "North 42", "South 31"), "bar");
+    eq(lay("(pie) Share", "A 40", "B 35", "C 25"), "pie");
+    eq(lay("(line) Sales", "North 42", "South 31"), "line");
+    eq(lay("(pie) Share", "A 1", "B 1", "C 1", "D 1", "E 1", "F 1", "G 1"), "bar", "a pie has at most 6 slices; more is a bar chart");
+    const table = {title: "| Year | Sales | Costs |", body: ["| --- | --- | --- |", "| 2023 | 10 | 8 |", "| 2024 | 14 | 9 |"], children: []};
+    eq(slideLayout(lines("(bar) Money", table)).layout, "bar", "a table under a chart word");
+    eq(slideLayout(lines("Money", table)).layout, "table", "a table with no word stays a table");
+    eq(slideChartData([table]), {cats: ["2023", "2024"], series: [{name: "Sales", values: [10, 14]}, {name: "Costs", values: [8, 9]}]},
+      "the first column gives the categories, each column of numbers a series");
+  });
+  test("#482 a chart slide draws its labels on the chart and lights one point or bar per click", () => withPages({
+    [SHOW]: ["- Visitors", "  - 2022 1200", "  - 2023 1850", "  - 2024 2600", "- (bar) Sales", "  - North 42", "  - South 31",
+      "- (pie) Share", "  - A 40", "  - B 60", "- (bar) Money", "  - | Year | Sales | Costs |", "    | --- | --- | --- |",
+      "    | 2023 | 10 | 8 |", "    | 2024 | 14 | 9 |"].join("\n") + "\n"}, async () => {
+    try {
+      openPage(SHOW); await settle();
+      content().querySelector(".pagehead .presentbtn").click(); await settle();
+      const to = title => { presentGo(DECK.slides.find(s => s.title === title).first); deckKey("ArrowRight"); };
+      const state = () => deckParts().map(p => p.className.match(/now|past|later/)[0]);
+      for (const [title, lay, n, words] of [["Visitors", "line", 3, ["2022", "1200", "2024", "2600"]],
+        ["Sales", "bar", 2, ["North", "42", "South", "31"]], ["Share", "pie", 2, ["A", "40 %", "B", "60 %"]],
+        ["Money", "bar", 2, ["2023", "2024", "Sales", "Costs", "14"]]]) {
+        to(title);
+        ok($("#deck .slide.cur").classList.contains("lay-" + lay), title + " is a " + lay + " chart");
+        eq(deckParts().length, n, title + ": one part per point, bar or row");
+        eq(state(), ["now", ...Array(n - 1).fill("later")], title + ": the first lit, the rest to come");
+        const text = $("#deck .slide.cur .sbody").textContent;
+        for (const w of words) ok(text.includes(w), title + ": labelled on the chart: " + w);
+        deckKey("ArrowRight");
+        eq([deckNow().title, state()[1]], [title, "now"], title + ": → lights the next one");
+      }
+    } finally { presentStop(); go("today"); }
+  }));
+  test("#482 a guessed chart's bullet is a faint line icon; a written word a full one", () => withPages({
+    [SHOW]: ["- Visitors", "  - 2022 1200", "  - 2023 1850", "- (bar) Sales", "  - North 42", "  - South 31"].join("\n") + "\n"}, async () => {
+    openPage(SHOW); await settle();
+    const [vis, sales] = getPage(SHOW).blocks;
+    const bul = b => content().querySelector(`.blk[data-id="${CSS.escape(String(b.id))}"] > .line > .bullet`);
+    try {
+      eq(bul(vis).textContent, "⌁", "a line-chart icon");
+      ok(bul(vis).classList.contains("slidelay") && bul(vis).classList.contains("guess"), "drawn faint, as a guess");
+      ok(/Slide layout: Line \(guessed\)/.test(bul(vis).title) && /Line \(guessed\)/.test(bul(vis).getAttribute("aria-label")), "named a guess: " + bul(vis).title);
+      eq(getPage(SHOW).blocks[0].title, "Visitors", "nothing written into the line");
+      eq([bul(sales).textContent, bul(sales).classList.contains("guess")], ["▮", false], "a written (bar) is the full icon");
+    } finally { go("today"); }
+  }));
   test("#481 ☰ Tidy slide marks puts each slide's old marks into one word on its line, only when asked; one Ctrl+Z", () => withPages({
     [SHOW]: ["- Roadmap", "  - -> Q1", "  - -> Q2", "- Plan", "  - 1. Ask", "  - 2. Build", "- Motto", "  - > Less is more",
       "- Options", "  - | A", "  - | B", "  - | C", "  - | D", "- -> Top line", "- Plain", "  - One"].join("\n") + "\n",

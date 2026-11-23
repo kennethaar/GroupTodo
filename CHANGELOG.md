@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.206.0 - 2026-11-23
+
+- Present a page: lines that end in a number, like 2024 2600, become a
+  line chart on their slide, with the numbers on it. Each → adds a
+  point. The bullet above them shows a faint chart icon, since it is a
+  guess. Write (bar) or (pie) to change it. The same words on the line
+  above a table draw the table as a chart. One to four amounts or
+  percents stay a scorecard. (#482)
+
 ## 1.205.0 - 2026-11-23
 
 - Present a page: one word in front of a line sets how its lines are

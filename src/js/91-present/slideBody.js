@@ -6,6 +6,7 @@ function slideBody(s) {
       // A table among the bullets is named by its header; its own slide follows (#469).
       tableRows(b) ? tableCells(b.title).join(" · ") : slideText(b))));
   const draw = {process: drawSteps, timeline: drawTimeline, cycle: drawCycle, pyramid: drawPyramid,
-    hub: drawHub, curve: drawCurve, hero: drawQuote, table: drawTable}[s.layout] || drawCards;
+    hub: drawHub, curve: drawCurve, hero: drawQuote, table: drawTable,
+    line: drawChartLine, bar: drawChartBar, pie: drawChartPie}[s.layout] || drawCards;
   return el("div", {class: "sbody"}, draw(s));
 }

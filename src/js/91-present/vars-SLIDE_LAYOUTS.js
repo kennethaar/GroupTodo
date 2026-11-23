@@ -17,7 +17,21 @@ const SLIDE_LAYOUTS = {
   grid:     {min: 2, max: 9, mode: "2d", name: "Grid"},
   // A Markdown table (#469), a slide of its own: a row, or a column, per step.
   table:    {min: 1, max: 1, mode: "1d", name: "Table"},
+  /* Charts (#482): lines that end in a number, or one table, a point, bar
+     or slice per step. A pie has at most CHART_PIE_MAX slices. */
+  line:     {min: 1, max: 24, mode: "1d", name: "Line"},
+  bar:      {min: 1, max: 16, mode: "1d", name: "Bar"},
+  pie:      {min: 1, max: 6, mode: "1d", name: "Pie"},
 };
+const CHART_PIE_MAX = 6;
+const SLIDE_CHARTS = ["line", "bar", "pie"];
+/* A chart's number (#482): maybe a currency before it, then the number
+   (thousands may be spaced: 40 000), maybe k, M, B or bn, then maybe a
+   percent or a currency. A chart line is words, maybe ":", then that. */
+const CHART_NUM_SRC = `(?:(?:${PRICE_CUR})[ \\u00A0]?)?([-\\u2212+]?(?:\\d{1,3}(?:[ \\u00A0]\\d{3})+|\\d+)(?:[.,]\\d+)?)`
+  + `[ \\u00A0]?(bn|k|K|M|B)?[ \\u00A0]?(?:%|${PRICE_CUR})?(?:,-)?`;
+const CHART_NUM_RE = new RegExp(`^${CHART_NUM_SRC}$`, "u");
+const CHART_POINT_RE = new RegExp(`^(.*?\\S)\\s*:?\\s+(${CHART_NUM_SRC})$`, "u");
 // More bullets than this on one slide are marked red in the outline (#433).
 const SLIDE_CALM = 5;
 /* The marks at the front of a line, plain text in the .md file. Never marks:
@@ -52,6 +66,9 @@ const SLIDE_WORDS = [
   ["versus", "split", "◫", "two side by side"],
   ["2x2", "quadrant", "⊞", "four boxes"],
   ["scorecard", "kpi", "%", "the numbers that matter"],
+  ["line", "line", "⌁", "numbers over time"],
+  ["bar", "bar", "▮", "numbers side by side"],
+  ["pie", "pie", "◔", "parts of a whole"],
   ["quote", "hero", "❝", "one quote, big"],
   ["grid", "grid", "▦", "cards"],
 ];

@@ -45,6 +45,7 @@ css/39-present-peek-465.css
 css/40-present-edit-466.css
 css/41-outline-lesson-468.css
 css/42-news-anim-471.css
+css/43-present-charts-482.css
 # script 1
 js/00-bootstrap/vars-APP_VERSION.js
 js/00-bootstrap/keepFocus.js
@@ -804,6 +805,13 @@ js/91-present/drawCards.js
 js/91-present/drawQuote.js
 js/91-present/slideTableCols.js
 js/91-present/slideTableParts.js
+js/91-present/slideChartNum.js
+js/91-present/slideChartPoint.js
+js/91-present/slideChartData.js
+js/91-present/slideChartFmt.js
+js/91-present/drawChartLine.js
+js/91-present/drawChartBar.js
+js/91-present/drawChartPie.js
 js/91-present/drawTable.js
 js/91-present/slideBody.js
 js/91-present/slideFit.js
