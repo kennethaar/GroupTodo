@@ -16031,6 +16031,47 @@ var GTD_TEST = (() => {
     }
   }));
 
+  /* #492 Where you were is kept in the area's folder (GTD.md last::), so any
+     device that opens it can go on there. At start the Journal opens as
+     before, with ▸ Continue: <place> on top; one click opens the page at the
+     line. Nothing is kept while it is offered, so landing on the Journal
+     does not overwrite the place; going anywhere takes it away. */
+  test("#492 open where I left off: the place is kept in the folder; the Journal offers Continue, which opens the page at the line", () => {
+    const note = join(PAGES, "Leftoff room.md");
+    return withPages({[note]: "- Paint the walls\n- Order tiles\n"}, async () => {
+      const was = getSetting("last");
+      try {
+        const [, tiles] = getPage(note).blocks;
+        openPage(note); await settle();
+        $(`#content .blk[data-id="${tiles.id}"] .txt`).focus();
+        lastPlaceSave(true);
+        const kept = getSetting("last");
+        ok(kept, "the place is kept in GTD.md");
+        eq(parsePage(serializePage(settingsPage())).props.last, kept, "and reads back the same from the file");
+        has(String(kept), tiles.id, "with the line you were on");
+        // Another start: the Journal, with the place on offer.
+        go("today"); await settle();
+        lastPlaceStart();
+        render(); await settle();
+        const bar = $("#content .lastplace");
+        ok(bar, "the Journal offers where you left off");
+        has(bar.textContent, "Continue: Leftoff room");
+        lastPlaceSave(true);
+        eq(getSetting("last"), kept, "landing on the Journal does not overwrite the place");
+        bar.querySelector("button").click(); await settle(); await new Promise(r => setTimeout(r, 50));
+        eq([state.view, state.pagePath], ["page", note], "Continue opens the page");
+        eq(document.activeElement?.closest(".blk")?.dataset.id, tiles.id, "at the line you were on");
+        go("today"); await settle();
+        ok(!$("#content .lastplace"), "after going somewhere it is not offered again");
+        // Today's Journal is no place to continue to.
+        lastPlaceSave(true);
+        lastPlaceStart();
+        render(); await settle();
+        ok(!$("#content .lastplace"), "no offer when you left off on today's Journal");
+      } finally { LAST_PLACE_OFFER = null; if (was) setSetting("last", was); else delete settingsPage().props.last; go("today"); }
+    });
+  });
+
   /* ============================================================
      The runner
      ============================================================ */

@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.215.0 - 2026-11-23
+
+- Journal: where you left off is kept in the area's folder, so it is the
+  same on every device that opens it. The Journal still opens first, with
+  ▸ Continue on top, saying which device and when. One click opens that
+  page at your line. It goes once you go somewhere. (#492)
+
 ## 1.214.0 - 2026-11-23
 
 - Present a page: holding Alt on a slide also shows the time since you

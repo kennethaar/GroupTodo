@@ -1,0 +1,6 @@
+/* Where you left off (#492): a quiet line on top of the Journal; the
+   button says where, the note says which device kept it and when. */
+#content>.lastplace{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;max-width:var(--readw,46rem);margin:8px auto 0;padding:0 16px;color:var(--fg2)}
+#content>.lastplace .lastgo{min-height:36px;padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--bg2);color:var(--fg);font:inherit;font-weight:600;cursor:pointer}
+#content>.lastplace .lastgo:hover,#content>.lastplace .lastgo:focus-visible{background:var(--bg3)}
+#content>.lastplace .lastfrom{font-size:.9em}

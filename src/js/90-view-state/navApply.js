@@ -7,6 +7,8 @@ function navApply(snap) {
     render();
     NAV_JUMPING = false;
     syncNavArrows();
+    LAST_PLACE_OFFER = null;          // Back or Forward is going somewhere too (#492)
+    lastPlaceSave();
   };
   if (snap.space && Spaces.active && snap.space !== Spaces.active) {
     openSpace(snap.space, snap).then(land, () => { NAV_JUMPING = false; syncNavArrows(); });

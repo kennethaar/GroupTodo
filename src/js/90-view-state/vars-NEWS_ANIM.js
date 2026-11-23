@@ -4,6 +4,17 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.215.0#492": `
+    cap | Go on where you left off
+    say | The Journal opens as always.
+    + pg col
+    + t ln > pg | Journal · Mon 23 Nov
+    w 900
+    say | On top: Continue, from any of your devices.
+    + c chip > pg | ▸ Continue: Kitchen renovation (Windows, 14:02)
+    w 1200
+    p c
+    w 1500`,
   "1.214.0#485": `
     cap | Hold Alt for the time and your camera
     say | Hold Alt on a slide: the time shows top-left.

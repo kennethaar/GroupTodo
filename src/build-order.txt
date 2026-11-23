@@ -51,6 +51,7 @@ css/45-present-arrange-487.css
 css/46-present-map-488.css
 css/47-present-camera-485.css
 css/48-present-picbullet-491.css
+css/49-last-place-492.css
 # script 1
 js/00-bootstrap/vars-APP_VERSION.js
 js/00-bootstrap/keepFocus.js
@@ -731,6 +732,13 @@ js/90-view-state/vars-navSame.js
 js/90-view-state/navRecord.js
 js/90-view-state/applyBranchSnap.js
 js/90-view-state/navApply.js
+js/90-view-state/vars-LAST_PLACE.js
+js/90-view-state/deviceKind.js
+js/90-view-state/lastPlaceSave.js
+js/90-view-state/lastPlaceStart.js
+js/90-view-state/lastPlaceBest.js
+js/90-view-state/lastPlaceBar.js
+js/90-view-state/lastPlaceGo.js
 js/90-view-state/navGo.js
 js/90-view-state/syncNavArrows.js
 js/90-view-state/navWhere.js
