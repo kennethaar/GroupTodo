@@ -790,6 +790,7 @@ js/91-present/slideSvg.js
 js/91-present/slidePart.js
 js/91-present/drawSteps.js
 js/91-present/drawTimeline.js
+js/91-present/cycleShape.js
 js/91-present/drawCycle.js
 js/91-present/drawPyramid.js
 js/91-present/drawHub.js
@@ -802,6 +803,7 @@ js/91-present/drawTable.js
 js/91-present/slideBody.js
 js/91-present/slideFit.js
 js/91-present/slideEven.js
+js/91-present/slideCycleFit.js
 js/91-present/slideLay.js
 js/91-present/slideTitleNow.js
 js/91-present/slideGhost.js

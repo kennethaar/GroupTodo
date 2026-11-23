@@ -40,6 +40,7 @@
 :is(#deck,#deckpeek) .shead{fill:var(--slide-accent)}
 :is(#deck,#deckpeek) .ntext{position:absolute;transform:translate(-50%,-50%);width:max-content;max-width:40%;text-align:center;
   padding:.3em .6em;border-radius:.6em;background:var(--slide-bg);border:.1em solid var(--slide-accent)}
+:is(#deck,#deckpeek) .ring.cycle .ntext{max-width:calc(40% / var(--k, 1));font-size:calc(1em * var(--cyclefit, 1))}   /* #479 */
 :is(#deck,#deckpeek) .hubcore{position:absolute;left:50%;top:50%;width:30%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
   display:grid;place-items:center;text-align:center;background:var(--slide-accent);color:var(--on-accent);
   font-weight:700;font-size:calc(.85em * var(--corefit, 1));

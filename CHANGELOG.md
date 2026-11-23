@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.203.7 - 2026-11-23
+
+- Present a page: in a cycle, boxes may touch, but no box lies over
+  another box’s words. When long lines would, the ring first grows wider,
+  up to the slide’s width; only if that is not enough do the words get
+  smaller.
+
 ## 1.203.6 - 2026-11-23
 
 - Journal: an Overlaps pill with a long meeting name is cut with … in its

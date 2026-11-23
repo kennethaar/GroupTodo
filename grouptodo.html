@@ -3554,6 +3554,7 @@ clip-path:polygon(0 0,calc(100% - 1em) 0,100% 50%,calc(100% - 1em) 100%,0 100%,1
 :is(#deck,#deckpeek) .shead{fill:var(--slide-accent)}
 :is(#deck,#deckpeek) .ntext{position:absolute;transform:translate(-50%,-50%);width:max-content;max-width:40%;text-align:center;
 padding:.3em .6em;border-radius:.6em;background:var(--slide-bg);border:.1em solid var(--slide-accent)}
+:is(#deck,#deckpeek) .ring.cycle .ntext{max-width:calc(40% / var(--k, 1));font-size:calc(1em * var(--cyclefit, 1))}
 :is(#deck,#deckpeek) .hubcore{position:absolute;left:50%;top:50%;width:30%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
 display:grid;place-items:center;text-align:center;background:var(--slide-accent);color:var(--on-accent);
 font-weight:700;font-size:calc(.85em * var(--corefit, 1));
@@ -4759,7 +4760,7 @@ placeholder="Capture… (Enter adds to today)">
 })();
 
 "use strict";
-const APP_VERSION = "1.203.6";
+const APP_VERSION = "1.203.7";
 document.getElementById("appVersion").textContent = "v" + APP_VERSION;
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -15142,21 +15143,28 @@ function drawTimeline(s) {
 return el("div", {class: "timeline"}, ...s.kids.map((b, i) =>
 slidePart(b, i % 2 ? "down" : "up", el("span", {class: "tdot"}), el("span", {class: "ttext"}, slideText(b)))));
 }
-function drawCycle(s) {
-const n = s.kids.length, r = 36, gap = Math.min(0.5, Math.PI / n * 0.5);
+function cycleShape(n, k = 1) {
+const W = 100 * k, cx = W / 2, rx = cx - 14, ry = 36, gap = Math.min(0.5, Math.PI / n * 0.5);
 const at = i => i / n * 2 * Math.PI - Math.PI / 2;
-const pt = a => [50 + r * Math.cos(a), 50 + r * Math.sin(a)];
-return el("div", {class: "ring"}, ...s.kids.map((b, i) => {
+const pt = a => [cx + rx * Math.cos(a), 50 + ry * Math.sin(a)];
+const unit = (x, y) => { const l = Math.hypot(x, y) || 1; return [x / l, y / l]; };
+return Array.from({length: n}, (_, i) => {
 const a0 = at(i) + gap, a1 = at(i + 1) - gap, [x0, y0] = pt(a0), [x1, y1] = pt(a1);
-const along = [-Math.sin(a1), Math.cos(a1)], out = [Math.cos(a1), Math.sin(a1)];
-const head = `M${x1 + along[0] * 3},${y1 + along[1] * 3} L${x1 + out[0] * 2},${y1 + out[1] * 2} L${x1 - out[0] * 2},${y1 - out[1] * 2}Z`;
+const along = unit(-rx * Math.sin(a1), ry * Math.cos(a1)), out = unit(ry * Math.cos(a1), rx * Math.sin(a1));
 const [lx, ly] = pt(at(i));
-return slidePart(b, "node",
+return {
+arc: `M${x0},${y0} A${rx},${ry} 0 0 1 ${x1},${y1}`,
+head: `M${x1 + along[0] * 3},${y1 + along[1] * 3} L${x1 + out[0] * 2},${y1 + out[1] * 2} L${x1 - out[0] * 2},${y1 - out[1] * 2}Z`,
+left: lx / W * 100, top: ly};
+});
+}
+function drawCycle(s) {
+const shape = cycleShape(s.kids.length);
+return el("div", {class: "ring cycle"}, ...s.kids.map((b, i) => slidePart(b, "node",
 slideSvg("svg", {viewBox: "0 0 100 100", "aria-hidden": "true"},
-slideSvg("path", {d: `M${x0},${y0} A${r},${r} 0 0 1 ${x1},${y1}`, class: "sline"}),
-slideSvg("path", {d: head, class: "shead"})),
-el("span", {class: "ntext", style: `left:${lx}%;top:${ly}%`}, slideText(b)));
-}));
+slideSvg("path", {d: shape[i].arc, class: "sline"}),
+slideSvg("path", {d: shape[i].head, class: "shead"})),
+el("span", {class: "ntext", style: `left:${shape[i].left}%;top:${shape[i].top}%`}, slideText(b)))));
 }
 function drawPyramid(s) {
 const n = s.kids.length, side = w => [(1 - w) * 50, (1 + w) * 50];
@@ -15294,6 +15302,38 @@ ring.style.marginLeft = Math.max(0, box.left - Math.min(...rs.map(x => x.left)))
 ring.style.marginRight = Math.max(0, Math.max(...rs.map(x => x.right)) - box.right) + "px";
 }
 }
+function slideCycleFit(slide) {
+const ring = slide.querySelector(".ring.cycle");
+if (!ring || !ring.offsetHeight) return;
+const parts = [...ring.children], texts = parts.map(p => p.querySelector(".ntext"));
+const place = k => {
+ring.style.aspectRatio = String(k);
+ring.style.setProperty("--k", k);
+cycleShape(parts.length, k).forEach((g, i) => {
+const svg = parts[i].querySelector("svg"), [line, head] = svg.querySelectorAll("path");
+svg.setAttribute("viewBox", `0 0 ${100 * k} 100`);
+line.setAttribute("d", g.arc); head.setAttribute("d", g.head);
+Object.assign(texts[i].style, {left: g.left + "%", top: g.top + "%"});
+});
+};
+const words = t => {
+const r = t.getBoundingClientRect(), c = getComputedStyle(t), px = k => parseFloat(c[k]) || 0;
+return {left: r.left + px("paddingLeft") + px("borderLeftWidth"), right: r.right - px("paddingRight") - px("borderRightWidth"),
+top: r.top + px("paddingTop") + px("borderTopWidth"), bottom: r.bottom - px("paddingBottom") - px("borderBottomWidth")};
+};
+const meet = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+const clear = () => {
+const boxes = texts.map(t => t.getBoundingClientRect());
+return texts.every((t, i) => { const w = words(t); return boxes.every((b, j) => i === j || !meet(w, b)); });
+};
+const most = Math.max(1, (ring.parentElement?.clientWidth || 0) / ring.offsetHeight);
+ring.style.setProperty("--cyclefit", 1);
+let k = 1;
+place(k);
+while (!clear() && k < most) place(k = Math.min(most, Math.round((k + 0.1) * 100) / 100));
+for (let fit = 0.95; !clear() && fit >= 0.5; fit = Math.round((fit - 0.05) * 100) / 100)
+ring.style.setProperty("--cyclefit", fit);
+}
 function slideLay(slide, laid) {
 const title = slide.querySelector(".stitle");
 const first = !slide.dataset.lay;
@@ -15303,6 +15343,7 @@ slide.classList.toggle("intro", !laid);
 slide.dataset.lay = "1";
 slideFit(slide);
 slideEven(slide);
+slideCycleFit(slide);
 if (first || matchMedia("(prefers-reduced-motion: reduce)").matches || !title.animate) return false;
 const deck = slide.closest("#deck, #deckpeek") || slide;
 return !!slideGhost(deck, was, slideTitleNow(title), title, "to");
@@ -18645,7 +18686,7 @@ here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full 
 onclick: () => helpGoShow(id, null)}, "Go there") : null));
 return box;
 }
-const HELP_NEWS = "## 1.203.6 - 2026-11-23\n\n- Journal: an Overlaps pill with a long meeting name is cut with … in its\n  own half of the line, so it never lies over the meeting’s words. The\n  whole name shows on hover.\n\n## 1.203.5 - 2026-11-23\n\n- Present a page: **bold**, *italics*, ==highlight== and ~~strike~~ on a\n  line show on the slide as they do in the outline, in every layout and in\n  the presenter view. The marks themselves still stay out of sight.\n\n## 1.203.4 - 2026-11-23\n\n- Settings: a calendar meeting moved from your own area to another area\n  stays there. It used to vanish after a reload or two, as the next sync\n  took it for a meeting gone from the calendar. It now keeps up with the\n  calendar where you put it: a new time, a cancel, or its end.\n\n## 1.203.3 - 2026-11-23\n\n- Present a page: the page title keeps its own color all the way up, and\n  the title slide stays behind until the next slide is in, so no slide\n  stylesheet can make it vanish on the way. When a slide's title moves up\n  for its first line, it takes the new color at once. (#431)\n\n## 1.203.2 - 2026-11-23\n\n- Present a page: a title on its way to a new place takes on the color of\n  the place it lands, so an area's slide stylesheet that colors the next\n  slide like the title no longer hides it on the way. (#431)\n\n## 1.203.1 - 2026-11-23\n\n- Present a page: from the title slide, the page title now moves up letter\n  by letter into a small line at the top of the next slide, and stays there,\n  instead of fading out. Each top line's slide shows the page's name there.\n  (#431)\n\n## 1.203.0 - 2026-11-22\n\n- Present a page: a picture dropped on a line can be the slide's picture.\n  The note after the drop has Use as slide picture; the line's ☰ menu has\n  Use picture on the slide; a picture you open has Use on the slide. Each\n  moves the picture into the line's notepad, where Present shows it.\n  Ctrl+Z puts it back. (#476)\n\n## 1.202.6 - 2026-11-22\n\n- Present a page: when a title moves to the top and its line breaks\n  change, each letter now slides on its own to its new place, the way text\n  reflows when you widen or narrow the editor. No jump and no fade: the\n  title is whole when the letters land. (#431)\n\n## 1.202.5 - 2026-11-22\n\n- Weekly review › Clarify: a line or to-do with no words, only spaces or\n  one letter is left out of Clarify, Review actions and Next actions. It is\n  not an action yet, so it takes no card and no row. It stays on its page.\n  A lone digit, such as `5`, still shows.\n\n## 1.202.4 - 2026-11-22\n\n- What's new: above each animation it now says what it shows, and under\n  that each step as it plays. The first line, before anything moves, is a\n  short intro. (#471)\n\n## 1.202.3 - 2026-11-22\n\n- Contexts: the widget files no longer wait for the whole folder, which took\n  many minutes on a phone. They are written as soon as the active projects\n  are in, and brought up to date as the rest comes in. Until it is all in, no\n  widget file is taken away, and a tick whose page is not read yet waits for\n  it. (#474)\n\n## 1.202.2 - 2026-11-22\n\n- Vault and sync: the last read of a big folder on a phone no longer goes on\n  for many minutes. Files that did not answer in time were tried again one\n  at a time, and a file that could not even be found could hold the read for\n  good. Now they are tried again four at a time, and finding a file has a\n  time limit too. The Save log says how many were tried again. (#181)\n\n## 1.202.1 - 2026-11-22\n\n- Contexts: the widget files are written as soon as the area's pages are all\n  in. Asked for at start-up, while the folder was still being read, they\n  waited for a save that might not come, so no Widgets folder showed up. Each\n  widget step is now in the Save log. (#474)\n\n## 1.202.0 - 2026-11-22\n\n- Contexts: every context now has a widget file for your phone's home\n  screen, with nothing to set up. GroupToDo keeps a Widgets folder in your\n  folder with one file per context, such as @Home.md and @Home - Kitchen.md,\n  each holding what you can do there, overdue first. Add the ones you want in\n  a widget app such as Obsidian Widget. Tick a line there, and it is done in\n  GroupToDo too the next time it opens. (#474)\n\n## 1.201.7 - 2026-11-22\n\n- Sense where I am: at start-up it waits until all of the area's pages are\n  in. On a phone it guessed the place before the contexts and templates were\n  read, made a context page from nothing and said \"Missing 8/c.md\", though\n  the folder has it. (#475)\n\n## 1.201.6 - 2026-11-22\n\n- Links and aliases: a link opens its page in about 3 seconds on a phone.\n  The page is read alone, first, and drawn; today's page, the settings and\n  the projects follow behind it. (#474)\n\n## 1.201.5 - 2026-11-22\n\n- Links and aliases: a link opens its page in seconds, as soon as that page\n  is read, not after a big folder has been listed, which took minutes on a\n  phone. (#474)\n\n## 1.201.4 - 2026-11-22\n\n- Links and aliases: a link opens straight at its page. Until the page is\n  in, the screen says where it goes, \"Opening Kitchen renovation at\n  “Measure the window”…\", and never shows the Journal in between. (#474)\n\n## 1.201.3 - 2026-11-22\n\n- Links and aliases: a link to a page or a line no longer ends on today's\n  Journal while the area is still coming in. It waits for its page, then\n  opens it at the line, or says the page is not there. Each step goes into\n  the Save log. (#474)\n\n## 1.201.2 - 2026-11-22\n\n- Links and aliases: a link to a page or a line (Copy link) now opens even\n  when it starts the app in a new tab, as on a phone. The linked page is read\n  first, with today's, so it no longer waits for a big folder to be listed\n  and said the page was not there. (#474)\n";
+const HELP_NEWS = "## 1.203.7 - 2026-11-23\n\n- Present a page: in a cycle, boxes may touch, but no box lies over\n  another box’s words. When long lines would, the ring first grows wider,\n  up to the slide’s width; only if that is not enough do the words get\n  smaller.\n\n## 1.203.6 - 2026-11-23\n\n- Journal: an Overlaps pill with a long meeting name is cut with … in its\n  own half of the line, so it never lies over the meeting’s words. The\n  whole name shows on hover.\n\n## 1.203.5 - 2026-11-23\n\n- Present a page: **bold**, *italics*, ==highlight== and ~~strike~~ on a\n  line show on the slide as they do in the outline, in every layout and in\n  the presenter view. The marks themselves still stay out of sight.\n\n## 1.203.4 - 2026-11-23\n\n- Settings: a calendar meeting moved from your own area to another area\n  stays there. It used to vanish after a reload or two, as the next sync\n  took it for a meeting gone from the calendar. It now keeps up with the\n  calendar where you put it: a new time, a cancel, or its end.\n\n## 1.203.3 - 2026-11-23\n\n- Present a page: the page title keeps its own color all the way up, and\n  the title slide stays behind until the next slide is in, so no slide\n  stylesheet can make it vanish on the way. When a slide's title moves up\n  for its first line, it takes the new color at once. (#431)\n\n## 1.203.2 - 2026-11-23\n\n- Present a page: a title on its way to a new place takes on the color of\n  the place it lands, so an area's slide stylesheet that colors the next\n  slide like the title no longer hides it on the way. (#431)\n\n## 1.203.1 - 2026-11-23\n\n- Present a page: from the title slide, the page title now moves up letter\n  by letter into a small line at the top of the next slide, and stays there,\n  instead of fading out. Each top line's slide shows the page's name there.\n  (#431)\n\n## 1.203.0 - 2026-11-22\n\n- Present a page: a picture dropped on a line can be the slide's picture.\n  The note after the drop has Use as slide picture; the line's ☰ menu has\n  Use picture on the slide; a picture you open has Use on the slide. Each\n  moves the picture into the line's notepad, where Present shows it.\n  Ctrl+Z puts it back. (#476)\n\n## 1.202.6 - 2026-11-22\n\n- Present a page: when a title moves to the top and its line breaks\n  change, each letter now slides on its own to its new place, the way text\n  reflows when you widen or narrow the editor. No jump and no fade: the\n  title is whole when the letters land. (#431)\n\n## 1.202.5 - 2026-11-22\n\n- Weekly review › Clarify: a line or to-do with no words, only spaces or\n  one letter is left out of Clarify, Review actions and Next actions. It is\n  not an action yet, so it takes no card and no row. It stays on its page.\n  A lone digit, such as `5`, still shows.\n\n## 1.202.4 - 2026-11-22\n\n- What's new: above each animation it now says what it shows, and under\n  that each step as it plays. The first line, before anything moves, is a\n  short intro. (#471)\n\n## 1.202.3 - 2026-11-22\n\n- Contexts: the widget files no longer wait for the whole folder, which took\n  many minutes on a phone. They are written as soon as the active projects\n  are in, and brought up to date as the rest comes in. Until it is all in, no\n  widget file is taken away, and a tick whose page is not read yet waits for\n  it. (#474)\n\n## 1.202.2 - 2026-11-22\n\n- Vault and sync: the last read of a big folder on a phone no longer goes on\n  for many minutes. Files that did not answer in time were tried again one\n  at a time, and a file that could not even be found could hold the read for\n  good. Now they are tried again four at a time, and finding a file has a\n  time limit too. The Save log says how many were tried again. (#181)\n\n## 1.202.1 - 2026-11-22\n\n- Contexts: the widget files are written as soon as the area's pages are all\n  in. Asked for at start-up, while the folder was still being read, they\n  waited for a save that might not come, so no Widgets folder showed up. Each\n  widget step is now in the Save log. (#474)\n\n## 1.202.0 - 2026-11-22\n\n- Contexts: every context now has a widget file for your phone's home\n  screen, with nothing to set up. GroupToDo keeps a Widgets folder in your\n  folder with one file per context, such as @Home.md and @Home - Kitchen.md,\n  each holding what you can do there, overdue first. Add the ones you want in\n  a widget app such as Obsidian Widget. Tick a line there, and it is done in\n  GroupToDo too the next time it opens. (#474)\n\n## 1.201.7 - 2026-11-22\n\n- Sense where I am: at start-up it waits until all of the area's pages are\n  in. On a phone it guessed the place before the contexts and templates were\n  read, made a context page from nothing and said \"Missing 8/c.md\", though\n  the folder has it. (#475)\n\n## 1.201.6 - 2026-11-22\n\n- Links and aliases: a link opens its page in about 3 seconds on a phone.\n  The page is read alone, first, and drawn; today's page, the settings and\n  the projects follow behind it. (#474)\n\n## 1.201.5 - 2026-11-22\n\n- Links and aliases: a link opens its page in seconds, as soon as that page\n  is read, not after a big folder has been listed, which took minutes on a\n  phone. (#474)\n\n## 1.201.4 - 2026-11-22\n\n- Links and aliases: a link opens straight at its page. Until the page is\n  in, the screen says where it goes, \"Opening Kitchen renovation at\n  “Measure the window”…\", and never shows the Journal in between. (#474)\n\n## 1.201.3 - 2026-11-22\n\n- Links and aliases: a link to a page or a line no longer ends on today's\n  Journal while the area is still coming in. It waits for its page, then\n  opens it at the line, or says the page is not there. Each step goes into\n  the Save log. (#474)\n";
 function newsEntries(text) {
 const out = [];
 for (const e of String(text || "").split(/^## /m).slice(1)) {

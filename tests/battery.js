@@ -15098,6 +15098,30 @@ var GTD_TEST = (() => {
       ok(!$("#deck"), "Esc gives the page back");
     } finally { presentStop(); }
   }));
+  const CYCLE = join(PAGES, "Cycle479.md");
+  test("#479 a cycle's boxes may touch, but none lies over another's words: the ring widens first, then the words get smaller", () => withPages({[CYCLE]: [
+    "- Six areas", "  - (o) Bring AI to the functionality of our products", "  - (o) AI to ensure stable and secure products",
+    "  - (o) Redesign processes, capabilities and roles.", "  - (o) Ensure data quality, structure, access and ownership.",
+    "  - (o) Govern AI risk, ethics, security and compliance.", "  - (o) Build competence and leadership to support."].join("\n") + "\n"}, async () => {
+    try {
+      openPage(CYCLE); await settle();
+      content().querySelector(".pagehead .presentbtn").click(); await settle();
+      presentGo(DECK.slides.find(s => s.title === "Six areas").first);
+      deckKey("ArrowRight"); await settle();
+      const slide = $("#deck .slide.cur");
+      slide.getAnimations({subtree: true}).forEach(a => a.finish());
+      ok(slide.classList.contains("lay-cycle"), slide.className);
+      const boxes = [...slide.querySelectorAll(".ntext")];
+      const words = b => { const r = b.getBoundingClientRect(), c = getComputedStyle(b), px = k => parseFloat(c[k]) || 0;
+        return {left: r.left + px("paddingLeft") + px("borderLeftWidth"), right: r.right - px("paddingRight") - px("borderRightWidth"),
+          top: r.top + px("paddingTop") + px("borderTopWidth"), bottom: r.bottom - px("paddingBottom") - px("borderBottomWidth")}; };
+      const meet = (a, b) => a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
+      for (const [i, a] of boxes.entries()) for (const [j, b] of boxes.entries())
+        if (i !== j) ok(!meet(words(a), b.getBoundingClientRect()), `box ${j + 1} lies over the words of box ${i + 1}`);
+      const ring = slide.querySelector(".ring").getBoundingClientRect();
+      ok(ring.width > ring.height * 1.1, "the ring widened first: " + [ring.width, ring.height]);
+    } finally { presentStop(); }
+  }));
   const EVEN = join(PAGES, "Even.md");
   test("#433 steps are one size, hub bubbles one size with each spoke in sight, the curve ends flat", () => withPages({[EVEN]: [
     "- Get started", "  - 1. Download and open grouptodo.html in your browser", "  - 2. Point an Area to a local or cloud-synced folder",
