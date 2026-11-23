@@ -32,7 +32,7 @@ function lineMeta(b, path = null, readonly = false) {
     if (when) out.push(el("span", {class: "chip"}, svgIcon(ICON_CLOCK), " " + when));
     const clash = meetLeads(b) && path ? meetClashes(b, getPage(path)) : [];
     if (clash.length) out.push(el("span", {class: "chip clash", title: "At the same time as " + clash.join(", ")},
-      svgIcon(ICON_WARN), " Overlaps " + clash[0] + (clash.length > 1 ? " +" + (clash.length - 1) : "")));
+      svgIcon(ICON_WARN), el("span", {class: "ctext"}, "Overlaps " + clash[0] + (clash.length > 1 ? " +" + (clash.length - 1) : ""))));
     if (blockProp(b, "attendees")) out.push(el("span", {class: "chip who"}, svgIcon(ICON_MEETING), " " + linkWords(blockProp(b, "attendees"))));
   }
   // A visit says its clock and its hours as one chip, which opens it again.

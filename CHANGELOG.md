@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.203.6 - 2026-11-23
+
+- Journal: an Overlaps pill with a long meeting name is cut with … in its
+  own half of the line, so it never lies over the meeting’s words. The
+  whole name shows on hover.
+
 ## 1.203.5 - 2026-11-23
 
 - Present a page: **bold**, *italics*, ==highlight== and ~~strike~~ on a

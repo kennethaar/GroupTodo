@@ -93,6 +93,9 @@ body.linedrag,body.linedrag *{cursor:grabbing!important;user-select:none}
    half; on a phone there is no room beside the words, and they go under. */
 .blk>.line>.props{order:98;flex:0 1 auto;max-width:50%;margin:0;align-self:center;justify-content:flex-end;
   padding-top:1px}
+/* A pill longer than its half is cut with …, never spilling over the words (#478). */
+.blk>.line>.props>*{min-width:0;max-width:100%}
+.blk>.line>.props .chip .ctext{min-width:0;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:600px){
   .blk>.line:has(>.props){flex-wrap:wrap}
   .blk>.line>.props{order:100;max-width:none;flex-basis:100%;justify-content:flex-start}

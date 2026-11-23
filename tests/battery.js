@@ -11455,11 +11455,11 @@ var GTD_TEST = (() => {
       await settle();
     }
   });
-  test("#222 a meeting on its day starts with its time, and two at once are marked", async () => {
+  test("#222 a meeting on its day starts with its time, and two at once are marked, the mark never over the words (#478)", async () => {
     const day = "journals/2099_02_03.md";
-    await withPages({[day]: "- #meeting Ring the doorbell man\n  time:: 12:00–13:00\n- #meeting Order the food\n  time:: 12:30\n" +
+    await withPages({[day]: "- #meeting Ring the doorbell man\n  time:: 12:00–13:00\n- #meeting Order the food for the whole team and check every allergy twice\n  time:: 12:30\n" +
       "- #meeting Later on\n  time:: 15:00\n- #meeting Elsewhere\n  date:: [[2099-02-04]]\n  time:: 12:00\n"}, async () => {
-      const box = el("div", {}, pageOutline(day, {leadCtx: true}));
+      const box = el("div", {style: "width:520px"}, pageOutline(day, {leadCtx: true}));
       document.body.append(box);
       try {
         const line = t => [...box.querySelectorAll(".blk>.line")].find(n => n.querySelector(".txt").textContent.includes(t));
@@ -11471,6 +11471,12 @@ var GTD_TEST = (() => {
         has(first.querySelector(".chip.clash").textContent, "Order the food");
         has(line("Order the food").querySelector(".chip.clash").textContent, "doorbell");
         ok(!line("Later on").querySelector(".chip.clash"), "no clash at 15:00");
+        // A long name is cut with … in the pill's own half, never over the words (#478).
+        const words = first.querySelector(".txt").getBoundingClientRect(), pill = first.querySelector(".chip.clash");
+        const at = pill.getBoundingClientRect(), half = first.querySelector(".props").getBoundingClientRect();
+        ok(at.left >= words.right - 1 || at.top >= words.bottom - 1, "the mark is over the words: " + [at.left, words.right]);
+        ok(at.left >= half.left - 1 && at.right <= half.right + 1, "the mark spills out of its place");
+        has(pill.title, "Order the food for the whole team and check every allergy twice", "the whole name on hover");
         ok(!line("Elsewhere").querySelector(".ltime"), "a meeting dated elsewhere keeps its date chip");
         has(line("Elsewhere").querySelector(".props").textContent, "12:00");
       } finally { box.remove(); }
