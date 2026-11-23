@@ -49,9 +49,9 @@
    fades in once it is on its way (#431 follow-up). */
 :is(#deck,#deckpeek)[data-move=rise] .slide.out{animation-name:deckGone}
 :is(#deck,#deckpeek)[data-move=rise] .slide.cur{animation-name:deckFade;animation-delay:.5s}
-/* A title's copy on its way to the top, with its own line breaks. */
-:is(#deck,#deckpeek) .sghost{position:absolute;margin:0;font-weight:700;line-height:1.15;color:var(--slide-ink);
-  transform-origin:0 0;pointer-events:none;z-index:2}
+/* A title on its way to a new place, one copy per letter (#431 reflow). */
+:is(#deck,#deckpeek) .sghost{position:absolute;inset:0;margin:0;pointer-events:none;z-index:2}
+:is(#deck,#deckpeek) .sghost>span{position:absolute;white-space:pre;transform-origin:0 0;will-change:transform}
 @keyframes deckGone{to{opacity:0}}
 @keyframes deckInB{from{transform:translateY(100%)}}
 @keyframes deckInT{from{transform:translateY(-100%)}}

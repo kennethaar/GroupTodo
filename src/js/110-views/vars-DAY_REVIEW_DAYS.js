@@ -15,4 +15,4 @@
 const DAY_REVIEW_DAYS = 14;
 // An event or a feeling is something that happened, never a to do (#185).
 const dayCandidate = b => !b.state && !isMessage(b) && !isMeeting(b) && !bujoKind(b.title) &&
-  !!trim(plainTitle(b.title || "")) && !/^\s*[\w-]+::/.test(b.title || "");
+  !noWords(b) && !/^\s*[\w-]+::/.test(b.title || "");

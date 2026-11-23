@@ -5,11 +5,33 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
-## 1.202.5 - 2026-11-23
+## 1.203.1 - 2026-11-23
 
 - Phone and PC: on a phone, Allow access now sits on the right, just below
   the middle, where the browser's own Allow comes up next. Reconnecting a
   folder is two taps in the same place. (#490)
+
+## 1.203.0 - 2026-11-22
+
+- Present a page: a picture dropped on a line can be the slide's picture.
+  The note after the drop has Use as slide picture; the line's ☰ menu has
+  Use picture on the slide; a picture you open has Use on the slide. Each
+  moves the picture into the line's notepad, where Present shows it.
+  Ctrl+Z puts it back. (#476)
+
+## 1.202.6 - 2026-11-22
+
+- Present a page: when a title moves to the top and its line breaks
+  change, each letter now slides on its own to its new place, the way text
+  reflows when you widen or narrow the editor. No jump and no fade: the
+  title is whole when the letters land. (#431)
+
+## 1.202.5 - 2026-11-22
+
+- Weekly review › Clarify: a line or to-do with no words, only spaces or
+  one letter is left out of Clarify, Review actions and Next actions. It is
+  not an action yet, so it takes no card and no row. It stays on its page.
+  A lone digit, such as `5`, still shows.
 
 ## 1.202.4 - 2026-11-22
 

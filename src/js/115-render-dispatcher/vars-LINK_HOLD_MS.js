@@ -7,7 +7,13 @@ document.addEventListener("click", e => {
   // A dropped picture opens full size over the app (openPicture), and clicking it
   // must not drop the caret into the line behind it.
   const img = e.target.closest("img.asset");
-  if (img && img.src) { e.preventDefault(); e.stopPropagation(); openPicture(img.src, img.alt); return; }
+  if (img && img.src) {
+    e.preventDefault(); e.stopPropagation();
+    // From a line it can go on the slide (#476): which line, and the source as written.
+    const id = img.closest(".blk")?.dataset.id, at = id && findBlock(id);
+    openPicture(img.src, img.alt, at && {path: at.path, block: at.block, mark: img.dataset.asset || img.getAttribute("src")});
+    return;
+  }
   const link = e.target.closest("[data-link]");
   if (!link) return;
   /* Taken on the way down and kept: a pill sitting inside a row that opens

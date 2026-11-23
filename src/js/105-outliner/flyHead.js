@@ -32,6 +32,7 @@ function flyHead(k) {
   }
   // Hide in Present / Show in Present (#467): the "_ " on or off; the caret stays.
   if (k === "presenthide") { flyCommit(); const b = block; FLY.txt.blur(); slideHideSet(path, [b]); focusBlock(b.id); return; }
+  if (k === "slidepic") { flyCommit(); const b = block; FLY.txt.blur(); slidePicMove(path, b); focusBlock(b.id); return; }
   if (k === "plaincopy") { flyCommit(); const b = block; FLY.txt.blur(); copyPlainOf(b); return; }
   if (k === "tell") { flyCommit(); const b = block; FLY.txt.blur(); informFromLine(path, b); return; }
   if (k === "ask") {

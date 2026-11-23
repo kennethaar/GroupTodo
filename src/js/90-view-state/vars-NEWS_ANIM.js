@@ -4,6 +4,51 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.203.0#476": `
+    cap | A dropped picture can be the slide's picture
+    say | You drop a picture on a line.
+    # A picture dropped on a line; the note offers to make it the slide's picture.
+    + pg col
+    + l ln > pg | Kitchen tiles
+    w 700
+    t l | Kitchen tiles · tiles.png
+    + ts chip fade > pg | 1 file saved · Use as slide picture
+    w 50
+    c ts -fade
+    say | The note offers Use as slide picture.
+    w 900
+    p ts
+    t l | Kitchen tiles
+    c ts +fade
+    + n quiet fade > pg | Notepad: tiles.png, the slide's picture
+    w 50
+    c n -fade
+    say | The picture moves to the line's notepad, for Present.
+    w 1500`,
+  "1.202.6#431": `
+    cap | A title moves up letter by letter
+    say | A long title stands big on its own slide.
+    # A big title in two lines reflows into one line at the top, piece by piece.
+    + sl slide
+    + a h abs > sl | Kitchen
+    s a | left:8%;top:8%;transform:translate(60px,70px) scale(1.6)
+    + b h abs > sl | renovation
+    s b | left:30%;top:8%;transform:translate(-20px,105px) scale(1.6)
+    + c h abs > sl | plan
+    s c | left:62%;top:8%;transform:translate(-50px,140px) scale(1.6)
+    w 1200
+    say | With the first line it moves up; each piece slides to its new place.
+    s a | transform:none
+    w 80
+    s b | transform:none
+    w 80
+    s c | transform:none
+    w 700
+    + l ln fade > sl | Measure the room
+    s l | margin-top:48px
+    w 50
+    c l -fade
+    w 1500`,
   "1.202.0#474": `
     cap | Widgets for your phone, one per context
     say | Each context has its own file in Widgets/, for a widget app.
@@ -158,149 +203,4 @@ const NEWS_ANIM = {
     w 300
     c l -fade
     w 1500`,
-  "1.200.0#455": `
-    cap | A name and a colon: waiting for
-    say | You start a line with a person's name and a colon.
-    w 1200
-    + a ln task
-    ty a | Anna: send the budget
-    w 300
-    t a | ~Anna~: send the budget
-    w 600
-    say | The name gets a wavy line. Tap it.
-    p a
-    + m menu
-    s m | left:34px;top:38px
-    + m1 item > m | Add wait and link Anna
-    + m2 item > m | Link Anna
-    w 500
-    c m1 +on
-    say | Add wait and link Anna.
-    p m1
-    - m
-    t a | [[Anna]]: send the budget
-    say | The line now waits for Anna.
-    + w1 chip wait > a | Waiting for Anna
-    w 1600`,
-  "1.199.1#469": `
-    cap | Tables you can edit
-    say | A table has a bar while you write in it.
-    w 1200
-    + tb tbl
-    + h1 td th > tb | Item
-    + h2 td th > tb | Cost
-    + h3 td th > tb | Who
-    + bar bar gone fade > tb | Row ＋  Column ＋  ⇤ ⇥  Reveal Rows | Columns
-    s bar | grid-column:1/-1
-    + r1 td > tb | Floor
-    + r2 td > tb | € 900
-    + r3 td > tb | Anna
-    + r4 td > tb | Plumber
-    + r5 td > tb | € 400
-    + r6 td > tb | Bo
-    w 700
-    say | Tap a cell and type.
-    p r1
-    c r1 +field
-    c bar -gone
-    w 50
-    c bar -fade
-    ty r1 |  tiles
-    w 1500`,
-  "1.199.0#469": `
-    cap | Paste a table
-    say | You copy a table from Excel.
-    w 1200
-    + q quiet | Copied from Excel: Item ⇥ Cost ⇥ Who …
-    + a ln caret
-    w 700
-    say | Paste it on a line.
-    k Ctrl+V
-    w 400
-    k
-    - a
-    say | It becomes a Markdown table.
-    + tb tbl
-    + 1 td th > tb | Item
-    + 2 td th > tb | Cost
-    + 3 td th > tb | Who
-    + 4 td > tb | Tiles
-    + 5 td > tb | € 900
-    + 6 td > tb | Anna
-    w 1200
-    say | In Present, it shows row by row.
-    + sl slide fade
-    + st tbl > sl
-    + 7 td th > st | Item
-    + 8 td th > st | Cost
-    + 9 td th > st | Who
-    w 50
-    c sl -fade
-    w 800
-    k →
-    + 10 td > st | Tiles
-    + 11 td > st | € 900
-    + 12 td > st | Anna
-    w 600
-    k →
-    + 13 td > st | Plumber
-    + 14 td > st | € 400
-    + 15 td > st | Bo
-    k
-    w 1400`,
-  "1.198.2#450": `
-    cap | Weekly review in the sidebar
-    say | Weekly review sits in the sidebar while it is due.
-    w 1200
-    + sd side
-    + n1 nav > sd | Journal
-    + n2 nav > sd | Next
-    + n3 nav > sd | Projects
-    + n4 nav lit > sd | Weekly review
-    + mn main
-    + h h > mn | Weekly review
-    + s1 ln task done > mn | Clarify
-    + s2 ln task done > mn | Review actions
-    + s3 ln task > mn | Look ahead
-    w 800
-    say | You work through its steps.
-    p s3
-    c s3 +done
-    + b btn pri > mn | Mark review done
-    w 400
-    say | Then mark the review done.
-    p b
-    c b +gone
-    t h | Review done
-    say | It leaves the sidebar until next time.
-    + q quiet > mn | Weekly review leaves the sidebar until it is due.
-    w 1000
-    p n1
-    c n1 +lit
-    c n4 -lit +out
-    w 1500`,
-  "1.198.1#450": `
-    cap | Weekly review when it is due
-    say | Weekly review is part of Projects.
-    w 1200
-    + sd side
-    + n1 nav > sd | Journal
-    + n2 nav > sd | Next
-    + n3 nav lit > sd | Projects
-    + mn main
-    + h h > mn | Projects
-    + sw row > mn
-    + b1 btn on > sw | Active
-    + b2 btn > sw | Someday
-    + b3 btn > sw | Weekly review
-    w 1200
-    say | A week passes.
-    + q quiet > mn | A week later …
-    w 700
-    say | It shows in the sidebar, marked due.
-    + n4 nav fade > sd | Weekly review
-    w 50
-    c n4 -fade
-    + bd badge > n4 | due
-    w 1800`,
 };

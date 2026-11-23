@@ -6784,6 +6784,53 @@ var GTD_TEST = (() => {
     has(added()[1].title, "assets/", "the second file is not in assets/");
     getPage(path).blocks.splice(before); touch(path); render();
   });
+  test("#476 a picture dropped on a line can become its slide picture: from the toast, the line menu or the picture opened", () => withPages({
+    [TALK]: ["- Kitchen tiles", "- Budget", "- Plumber ![van](https://example.com/van.png)"].join("\n") + "\n"}, async () => {
+    const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    const offer = () => [...document.querySelectorAll("#toasts .toast .act")].find(b => b.textContent === "Use as slide picture");
+    for (const t of document.querySelectorAll("#toasts .toast")) t.remove();
+    openPage(TALK); await settle();
+    const [tiles, budget, plumber] = getPage(TALK).blocks;
+    const drop = async (b, file) => {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      document.querySelector('.blk[data-id="' + b.id + '"] .txt').dispatchEvent(new DragEvent("drop", {dataTransfer: dt, bubbles: true, cancelable: true}));
+      for (let i = 0; i < 80 && !/assets\//.test(b.title); i++) await frame();
+    };
+    try {
+      await drop(budget, new File(["minutes"], "minutes476.txt", {type: "text/plain"}));
+      ok(!offer(), "a file that is no picture is not offered for the slide");
+      await drop(tiles, new File([new Uint8Array([137, 80, 78, 71])], "tiles476.png", {type: "image/png"}));
+      has(tiles.title, "![tiles476.png](assets/", "the picture lands on the line, as before");
+      ok(offer(), "the toast offers Use as slide picture");
+      offer().click(); await settle();
+      eq(tiles.title, "Kitchen tiles", "the picture leaves the line");
+      has(tiles.body[0] || "", "![tiles476.png](assets/", "and goes first in the line's notepad");
+      has(slideNotes(tiles).cover, "assets/", "where Present takes it as the slide's picture");
+      document.dispatchEvent(new KeyboardEvent("keydown", {key: "z", ctrlKey: true, bubbles: true, cancelable: true})); await settle();
+      has(getPage(TALK).blocks[0].title, "![tiles476.png](assets/", "Ctrl+Z puts it back on the line");
+      // The line menu, on a line with a picture in it.
+      const fly = b => { FLY = {txt: el("div", {}, b.title), path: TALK, page: getPage(TALK), block: b, box: el("div"), open: null, hi: 0, q: ""};
+        return flyRows().find(r => r.k === "slidepic"); };
+      ok(!fly(getPage(TALK).blocks[1]), "a line with only a file link, no picture, has no Use picture on the slide");
+      eq(fly(plumber)?.label, "Use picture on the slide", "the line menu offers it");
+      ok(fly(plumber).menu, "in the line's own menu");
+      flyHead("slidepic"); await settle();
+      eq([plumber.title, plumber.body[0]], ["Plumber", "![van](https://example.com/van.png)"], "the picture moves to the notepad");
+      // The picture opened full size, from a line.
+      const t2 = getPage(TALK).blocks[0];
+      render(); await settle();
+      const img = document.querySelector('.blk[data-id="' + t2.id + '"] img.asset');
+      ok(img, "the dropped picture shows in the line");
+      img.click(); await settle();
+      const use = [...document.querySelectorAll(".modal .btn")].find(b => b.textContent === "Use on the slide");
+      ok(use, "the opened picture offers Use on the slide");
+      use.click(); await settle();
+      eq(t2.title, "Kitchen tiles", "it leaves the line");
+      has(t2.body[0] || "", "![tiles476.png](assets/", "and goes to the notepad");
+      ok(!document.querySelector(".modal .pictureview"), "the picture view closes");
+    } finally { closeModal(); for (const t of document.querySelectorAll("#toasts .toast")) t.remove(); }
+  }));
   test("renamePage rewrites the links to it", () => {
     const target = join(DIRS.pages, "Test rename me.md");
     putPage(target, {props: {title: "Test rename me"}, blocks: []});
@@ -11950,6 +11997,18 @@ var GTD_TEST = (() => {
   };
   const showClarify = async () => { go("review", {sub: "days"}); await settle(); return content(); };
   const press = k => document.body.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true}));
+  test("#472 an empty, spaces-only or one-letter line is left out of Weekly review and Next, quietly", async () => {
+    await withDays([[2, "- TODO\n- TODO    \n- TODO x\n- TODO 5\n- TODO Call the plumber\n- y\n- 7\n- Plan the party\n"]], async () => {
+      const path = journalPath(shiftISO(T(), -2));
+      const where = b => [nextActions().some(a => a.block === b) && "next", actDeck().some(a => a.block === b) && "act",
+        looseDeck().some(a => a.block === b) && "loose", clarifyDeck().some(r => r.block === b) && "clarify"]
+        .filter(Boolean).join(",");
+      eq(getPage(path).blocks.map(b => b.title + ":" + where(b)),
+        [":", ":", "x:", "5:next,act,loose", "Call the plumber:next,act,loose", "y:", "7:clarify", "Plan the party:clarify"],
+        "only letters count: a lone digit stays");
+      eq(getPage(path).blocks.length, 8, "nothing is deleted from the page");
+    });
+  });
   test("#95 Clarify deals one loose line at a time, oldest day first, and says what each answer writes", async () => {
     await withDays([[3, "- Call the plumber\n- o Ran 5 km\n- Meeting notes\n  - Ask Kari about the budget\n"],
       [1, "- TODO Already a task\n- Plan the summer party\n"]], async () => {
@@ -14419,7 +14478,7 @@ var GTD_TEST = (() => {
       const anims = $("#deck").getAnimations({subtree: true});
       for (const a of anims) { a.pause(); a.currentTime = at; }
       const box = deckBox(), out = [];
-      for (const t of $("#deck").querySelectorAll(".stitle, .sghost")) {
+      for (const t of $("#deck").querySelectorAll(".stitle, .sghost > span")) {
         if (parseFloat(getComputedStyle(t).opacity) < 0.05) continue;
         const r = t.getBoundingClientRect();
         if (r.width && (r.left < box.left - 1 || r.right > box.right + 1 || r.top < box.top - 1))
@@ -14435,20 +14494,52 @@ var GTD_TEST = (() => {
       presentGo(1);
       eq($("#deck").dataset.move, "rise", "the page title does not slide out with its slide");
       const ghost = $("#deck .sghost");
-      ok(ghost && /Quarterly kickoff/.test(ghost.textContent), "the page title glides on its way up");
+      ok(ghost && /Quarterlykickoff/.test(ghost.textContent), "the page title glides on its way up");
       eq(cut(0).concat(cut(400), cut(800)), [], "a title is cut on its way up");
-      const glide = ghost.getAnimations()[0];
-      glide.pause(); glide.currentTime = glide.effect.getTiming().duration;
-      const top = ghost.getBoundingClientRect();
+      // Soft-break reflow (#431): every letter slides on its own, like text reflowing.
+      const letters = () => [...$("#deck").querySelectorAll(".sghost > span")];
+      const at = t => { for (const a of $("#deck").getAnimations({subtree: true})) { a.pause(); a.currentTime = t; } };
+      const go = () => { for (const a of $("#deck").getAnimations({subtree: true})) a.play(); };
+      eq(letters().map(s => s.textContent).join(""), "Quarterlykickoffforthewholeteam", "the page title goes up letter by letter");
+      ok(letters().every(s => s.getAnimations().length === 1), "each letter has its own glide");
+      at(1000);
+      const rs = letters().map(s => s.getBoundingClientRect());
+      const top = {top: Math.min(...rs.map(r => r.top)), height: Math.max(...rs.map(r => r.bottom)) - Math.min(...rs.map(r => r.top))};
       ok(top.top < deckBox().height * 0.2 && top.height < big.height, "the page title ends at the top, smaller: " + Math.round(top.top));
-      eq(getComputedStyle(ghost).opacity, "0", "and is gone there, not left over the next title");
-      glide.play();
+      ok(letters().every(s => getComputedStyle(s).opacity === "0"), "and is gone there, not left over the next title");
+      go();
       const delay = parseFloat(getComputedStyle($("#deck .slide.cur")).animationDelay);
       ok(delay >= 0.4, "the next slide comes once the page title is on its way: " + delay + " s");
       await done();
       ok(!$("#deck .sghost"), "the glide leaves its copy behind");
+      // Where each letter of a title stands, as the browser wrapped it.
+      const marks = t => {
+        const out = [], walk = document.createTreeWalker(t, NodeFilter.SHOW_TEXT);
+        for (let n; (n = walk.nextNode());)
+          for (let i = 0; i < n.data.length; i++) {
+            if (/\s/.test(n.data[i])) continue;
+            const r = document.createRange(); r.setStart(n, i); r.setEnd(n, i + 1);
+            out.push(r.getBoundingClientRect());
+          }
+        return out;
+      };
+      const intro = marks($("#deck .slide.cur .stitle"));
       presentGo(2);
+      const title = $("#deck .slide.cur .stitle");
+      eq(letters().length, intro.length, "the title moving to the top is drawn as one copy per letter");
+      const near = (a, b) => Math.abs(a.left - b.left) < 3 && Math.abs(a.top - b.top) < 3;
+      at(0);
+      ok(letters().every((s, i) => near(s.getBoundingClientRect(), intro[i])), "each letter starts where it stood in the big title");
+      at(1000);
+      const laid = marks(title);
+      ok(letters().every((s, i) => near(s.getBoundingClientRect(), laid[i])), "and lands on its place in the title at the top");
+      ok(laid.some((r, i) => i && Math.abs((r.top - laid[0].top) - (intro[i].top - intro[0].top)) > 5),
+        "the line breaks differ, so letters change lines on the way");
+      ok(letters().every(s => getComputedStyle(s).opacity === "1"), "no letter fades: the title is whole when they land");
+      go();
       eq(cut(0).concat(cut(300), cut(600), cut(900)), [], "a long title is cut while it moves to the top");
+      await done();
+      ok(!$("#deck .sghost") && getComputedStyle(title).opacity === "1", "then the title itself stands there");
     } finally { presentStop(); }
   }));
   test("#431 reopened: the talk keeps the outline's order; the page title is a slide alone, each top line its own slide", () => withPages({
