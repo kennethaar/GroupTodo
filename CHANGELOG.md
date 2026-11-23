@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.204.0 - 2026-11-23
+
+- Journal: a meeting from your calendar keeps its Teams, Zoom or Meet
+  link. Its line has Join, which stands out from 5 minutes before the
+  meeting until it ends; before that it shows on hover or focus. The
+  meeting reminder has Join too. (#480)
+
 ## 1.203.7 - 2026-11-23
 
 - Present a page: in a cycle, boxes may touch, but no box lies over

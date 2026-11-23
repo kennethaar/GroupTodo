@@ -4,6 +4,28 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.204.0#480": `
+    cap | Join a meeting from its line
+    say | A meeting from your calendar keeps its Teams link.
+    # A calendar meeting; Join is quiet, then stands out 5 minutes before.
+    + pg col
+    + m ln > pg | 11:15–12:00  #meeting Harbour Lane kickoff
+    + j chip fade > m | ▶ Join
+    w 900
+    say | Before the meeting, Join shows when you point at the line.
+    p m
+    c j -fade
+    w 1200
+    c j +fade
+    w 600
+    say | From 5 minutes before, Join stands out.
+    + k quiet > pg | Now 11:10
+    c j -fade
+    c j +lit
+    w 900
+    p j
+    say | The reminder has Join too.
+    w 1500`,
   "1.203.0#476": `
     cap | A dropped picture can be the slide's picture
     say | You drop a picture on a line.
@@ -136,52 +158,5 @@ const NEWS_ANIM = {
     t h | Kitchen renovation
     t m | Measure the window
     c m +lit
-    w 1500`,
-  "1.201.3#474": `
-    cap | A link opens at its line
-    say | You tap a link to a line in a chat.
-    w 1200
-    # A link tapped in a chat opens the app in a new tab, at the line.
-    + pg col abs
-    s pg | left:12px;top:12px;right:12px
-    + h h > pg | Chat · Anna
-    + m ln > pg | Here it is → grouptodo.html#gt…
-    w 800
-    p m
-    say | GroupToDo opens in a new tab.
-    t m | Opening area...
-    c m +dim
-    w 900
-    c m -dim
-    say | It waits for the page, then opens it at the line.
-    t h | Kitchen renovation
-    t m | Measure the window
-    c m +lit
-    w 1500`,
-  "1.200.2#433": `
-    cap | A hub slide
-    say | A slide can put a project in the middle.
-    w 1200
-    + sl slide
-    + h hub > sl | Kitchen renovation
-    s h | left:40%;top:28%;width:78px;height:78px
-    say | Its parts sit around it.
-    + a spoke > sl | Tiles
-    s a | left:6%;top:14%
-    + b spoke > sl | Plumber
-    s b | left:6%;top:72%
-    + c spoke > sl | Budget
-    s c | left:74%;top:14%
-    w 800
-    c a +glow
-    say | Each part shows its next step in turn.
-    + cd scard fade > sl | Choose tiles · Ask Anna
-    s cd | left:64%;top:66%
-    w 50
-    c cd -fade
-    w 1500
-    c a -glow
-    c b +glow
-    t cd | Book the plumber · Fri
     w 1500`,
 };

@@ -7650,6 +7650,65 @@ var GTD_TEST = (() => {
       clearMemo();
     }
   });
+  /* A calendar meeting keeps its online meeting link. Join is on the line only
+     from 5 minutes before until the end; at other times on hover or focus.
+     The reminder offers Join too (#480). */
+  test("#480 an imported meeting keeps its Teams link; Join shows near its time and in the reminder", async () => {
+    const feed = "test480feed";
+    const ev = (uid, extra) => "BEGIN:VEVENT\nUID:" + uid + "\nDTSTART:20261110T090000Z\nDTEND:20261110T093000Z\nSUMMARY:Test480 " + uid + "\n" + extra + "END:VEVENT\n";
+    const ics = desc => "BEGIN:VCALENDAR\n" +
+      ev("a", "DESCRIPTION:Agenda point\\n________________\\nMicrosoft Teams meeting\\nJoin: " + desc + "\\nMeeting ID: 366 304\\nPasscode: abc\n") +
+      ev("b", "X-MICROSOFT-SKYPETEAMSMEETINGURL:https://teams.microsoft.com/l/meetup-join/xyz\nDESCRIPTION:See https://example.com/doc\n") +
+      ev("c", "LOCATION:https://zoom.us/j/123\n") +
+      ev("d", "DESCRIPTION:Bring https://example.com/slides\n") + "END:VCALENDAR";
+    const from = Date.parse("2026-11-09T00:00:00Z"), to = Date.parse("2026-11-12T00:00:00Z");
+    const find = uid => { let hit = null; inSpace(calHome(), () => { for (const p of allPages(isJournalPath))
+      walkBlocks(getPage(p).blocks, b => { if (b.title.endsWith("Test480 " + uid)) hit = b; }); }); return hit; };
+    const before = new Set(inSpace(calHome(), () => allPages(isJournalPath)));
+    const today = journalPath(todayISO());
+    let mine = null;
+    try {
+      importCalendarText(ics("https://teams.microsoft.com/meet/366?p=x1"), calHome(), feed, from, to);
+      eq(blockProp(find("a"), "join"), "https://teams.microsoft.com/meet/366?p=x1", "the Join link in the description");
+      eq(find("a").children.map(c => c.title), ["Agenda point"], "the ID and passcode are not copied");
+      eq(blockProp(find("b"), "join"), "https://teams.microsoft.com/l/meetup-join/xyz", "Outlook's own Teams field comes first");
+      eq(blockProp(find("c"), "join"), "https://zoom.us/j/123", "a Zoom link in the location");
+      eq(blockProp(find("d"), "join") || "", "", "an ordinary link is not a meeting link");
+      importCalendarText(ics("https://teams.microsoft.com/meet/366?p=x2"), calHome(), feed, from, to);
+      eq(blockProp(find("a"), "join"), "https://teams.microsoft.com/meet/366?p=x2", "a changed link reaches the meeting");
+
+      // On the line: not the raw join::, and Join stands out only around its time.
+      const hm = ms => { const d = new Date(ms); return pad2(d.getHours()) + ":" + pad2(d.getMinutes()); };
+      const at = (s, e) => hm(Date.now() + s * 6e4) + "–" + hm(Date.now() + e * 6e4);
+      ensureJournal(todayISO());
+      mine = newBlock({title: "#meeting Test480 now"}, false);
+      mine.props = {time: at(3, 30), join: "https://teams.microsoft.com/meet/1"};
+      getPage(today).blocks.push(mine);
+      let meta = lineMeta(mine, today);
+      const chip = meta.querySelector("a.chip.join");
+      ok(chip, "a Join chip");
+      eq(chip.getAttribute("href"), "https://teams.microsoft.com/meet/1");
+      ok(chip.classList.contains("soon"), "3 minutes before: Join stands out");
+      ok(!/join::/.test(meta.textContent), "join:: is not shown as a raw value");
+      if (new Date(Date.now() + 120 * 6e4).getDate() === new Date().getDate()) {
+        mine.props.time = at(60, 90);
+        ok(!lineMeta(mine, today).querySelector("a.chip.join").classList.contains("soon"), "an hour before: quiet");
+      }
+      // The reminder.
+      remindMeeting({space: Spaces.active, path: today, block: mine, title: "Test480 now",
+        start: Date.now() + 3 * 6e4, end: Date.now() + 30 * 6e4, key: "test480"});
+      const t = [...document.querySelectorAll("#toasts .meetrem")].pop();
+      const join = [...t.querySelectorAll("a,button")].find(x => /Join/.test(x.textContent));
+      ok(join, "the reminder offers Join");
+      eq(join.getAttribute("href"), "https://teams.microsoft.com/meet/1");
+      t.remove();
+    } finally {
+      if (mine) removeBlockFrom(getPage(today), mine);
+      inSpace(calHome(), () => { for (const p of allPages(isJournalPath)) if (!before.has(p)) V.pages.delete(p);
+        else walkBlocks(getPage(p).blocks, b => { if (blockProp(b, "cal_feed") === feed) removeBlockFrom(getPage(p), b); }); });
+      clearMemo();
+    }
+  });
   /* A meeting moved out of your own area lives in the area it went to: the
      next syncs neither bring it back home nor take it away there, and the
      calendar's changes still reach it (#61). */

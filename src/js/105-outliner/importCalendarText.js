@@ -72,12 +72,14 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
         b.props = {cal_uid: o.key, cal_feed: feed};
         if (time) b.props.time = time;
         if (att) b.props.attendees = att;
+        if (o.join) b.props.join = o.join;
         getPage(path).blocks.push(b);
         touch(path); added++;
         continue;
       }
       at(where, () => {
-        const b = hit.b, was = [b.title, blockProp(b, "time"), blockProp(b, "attendees")].join("\n");
+        const look = () => [b.title, blockProp(b, "time"), blockProp(b, "attendees"), blockProp(b, "join")].join("\n");
+        const b = hit.b, was = look();
         // Moved to another day in the calendar; one you moved yourself stays where you put it.
         if (hit.path !== path && !skips.get(where).has(o.key)) {
           removeBlockFrom(getPage(hit.path), b);
@@ -85,7 +87,8 @@ function importCalendarText(text, space, feed, fromMs, toMs) {
           touch(hit.path); touch(path); changed++;
         }
         b.title = title; setOrDropProp(b, "time", time); setOrDropProp(b, "attendees", att);
-        if ([b.title, blockProp(b, "time"), blockProp(b, "attendees")].join("\n") !== was) { touch(path); touch(hit.path); changed++; }
+        setOrDropProp(b, "join", o.join);
+        if (look() !== was) { touch(path); touch(hit.path); changed++; }
       });
     }
     for (const [key, hit] of have) {

@@ -69,6 +69,10 @@ body.linedrag,body.linedrag *{cursor:grabbing!important;user-select:none}
 .blk>.line>.ltime{flex:none;padding:1px 0;font-size:14px;font-weight:600;color:var(--fg2);font-variant-numeric:tabular-nums}
 .blk>.line>.ltime .lend{font-weight:400;color:var(--fg3)}
 .chip.clash{color:var(--warn);background:color-mix(in srgb,var(--warn) 12%,transparent);border-color:color-mix(in srgb,var(--warn) 40%,transparent)}
+/* Join (#480): quiet until 5 minutes before its meeting; on hover or focus before that. */
+.chip.join{text-decoration:none;color:var(--accent);opacity:0;pointer-events:none;transition:opacity .15s}
+.line:hover>.props .chip.join,.line:focus-within>.props .chip.join,.chip.join:focus-visible{opacity:1;pointer-events:auto}
+.chip.join.soon{opacity:1;pointer-events:auto;background:var(--accent);color:var(--accent-fg);font-weight:550}
 .blk .txt{flex:1;min-width:0;word-wrap:break-word;overflow-wrap:anywhere;font-size:14px;padding:1px 0}
 /* A task's words go on under its state, not under its own first word: the
    words start back at the badge's left edge and only their first line steps
