@@ -1,7 +1,10 @@
 // The presenter window drawn again for the step shown on the big screen.
 function presenterDraw() {
   const pw = DECK?.pw;
-  if (!pw || pw.closed || !DECK.steps[DECK.i]) return;   // drawn once the first slide is up
+  if (!pw || pw.closed) return;
+  // Waiting for the start (#486): the countdown, and what → does.
+  if (DECK.wait) { pw.document.body.replaceChildren(el("p", {class: "pend pwait"}, "")); slideWaitTick(); return; }
+  if (!DECK.steps[DECK.i]) return;   // drawn once the first slide is up
   const d = pw.document, {steps, slides, i} = DECK, here = steps[i], s = here.s;
   const lit = here.k ? s.parts[here.k - 1] : null;
   const next = steps[i + 1];

@@ -14687,8 +14687,8 @@ var GTD_TEST = (() => {
       ok(!$(".modal"), "▾ opens no dialog");
       const pop = more.closest(".presentsplit").querySelector(".presentpop");
       ok(pop, "▾ drops a menu down under itself");
-      eq([...pop.querySelectorAll("[role=menuitem]")].map(b => b.textContent), ["With presenter window"],
-        "it offers only the presenter window; ▶ Present is beside it");
+      eq([...pop.querySelectorAll("[role=menuitem]")].map(b => b.textContent), ["With presenter window", "Count down to the start…"],
+        "it offers the presenter window and the countdown (#486); ▶ Present is beside it");
       eq(more.getAttribute("aria-expanded"), "true", "▾ says it is open");
       document.activeElement.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
       await settle();
@@ -15657,6 +15657,47 @@ var GTD_TEST = (() => {
       has(document.querySelector(".modal")?.textContent || "", "Copy for AI", "the page's ☰ menu offers it for the whole page");
       closeModal();
     } finally { closeModal(); go("today"); }
+  }));
+
+  /* #486 A waiting screen before the talk: the lines under "(waiting)" as
+     slides on repeat, and a countdown band to the page's starts:: time. */
+  test("#486 the waiting screen counts down to starts::, cycles the (waiting) lines with a QR for a link; → starts the talk", () => withPages({
+    [SHOW]: ["- (waiting) Before we start", "  - Next course: Lean in practice", "    - 12 March, 3 days",
+      "    - Sign up at https://example.com/lean", "  - Coffee is in the hall", "- First point", "  - A", "  - B"].join("\n") + "\n"}, async () => {
+    const two = n => String(n).padStart(2, "0");
+    const soon = new Date(Date.now() + 30 * 60000), hhmm = soon.getHours() + ":" + two(soon.getMinutes());
+    const band = () => $("#deck .waitband")?.textContent || "", cur = () => $("#deck .slide.cur")?.textContent || "";
+    eq(deckSteps(SHOW).slides.some(s => /waiting|Lean|Coffee/.test(s.title + s.kids.map(slideWords).join())), false,
+      "the (waiting) lines are not in the talk");
+    try {
+      openPage(SHOW); await settle();
+      content().querySelector(".presentmore").click(); await settle();
+      [...document.querySelectorAll(".presentpop [role=menuitem]")].find(b => /Count down/.test(b.textContent)).click(); await settle();
+      const modal = document.querySelector(".scrim .modal");
+      has(modal.textContent, "Another time");
+      presentWaitSet(SHOW, hhmm); await settle();
+      eq(getPage(SHOW).props.starts, hhmm, "the start time is kept on the page");
+      ok($("#deck") && $("#deck").classList.contains("waiting"), "the waiting screen opens");
+      has(band(), "Starts at " + hhmm);
+      ok(/^(29|30):\d\d$/.test($("#deck .waitclock").textContent), "it counts down: " + $("#deck .waitclock").textContent);
+      has(cur(), "Next course: Lean in practice");
+      has(cur(), "12 March, 3 days", "the slide shows all its lines at once");
+      ok($("#deck .slide.cur .waitqr svg"), "a link on a waiting slide shows as a QR code");
+      eq($("#deck").querySelectorAll(".waitdots > *").length, 2, "a dot per waiting slide");
+      slideWaitNext(); await settle();
+      has(cur(), "Coffee is in the hall", "the next waiting slide");
+      slideWaitNext(); await settle();
+      has(cur(), "Next course", "and round again");
+      DECK.wait.at = Date.now() - 1000; slideWaitTick(); await settle();
+      has(band(), "Starting now", "at the time, it says so");
+      ok(DECK.wait, "and waits for you: the talk never starts on its own");
+      deckKey("ArrowRight"); await settle();
+      ok(!DECK.wait && !$("#deck").classList.contains("waiting") && !$("#deck .waitband"), "→ ends the waiting");
+      eq(DECK.i, 0, "and the talk opens at its start");
+      presentStop();
+      presentStart(SHOW, {wait: true}); await settle();
+      has(band(), "Starts at " + hhmm, "the next time counts to the same start");
+    } finally { presentStop(); closeModal(); go("today"); }
   }));
 
   /* ============================================================

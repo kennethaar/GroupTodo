@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.208.0 - 2026-11-23
+
+- Present a page: ▶ Present ▾ › Count down to the start… opens a
+  waiting screen. A broad band counts down to the time you pick. Above
+  it, the lines under a (waiting) line show in turn, such as an ad for
+  your next course, with a QR code for its link. → starts the talk.
+  (#486)
+
 ## 1.207.0 - 2026-11-23
 
 - Present a page: Copy for AI › Slides copies a prompt that tells your

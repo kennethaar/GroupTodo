@@ -46,6 +46,7 @@ css/40-present-edit-466.css
 css/41-outline-lesson-468.css
 css/42-news-anim-471.css
 css/43-present-charts-482.css
+css/44-present-wait-486.css
 # script 1
 js/00-bootstrap/vars-APP_VERSION.js
 js/00-bootstrap/keepFocus.js
@@ -853,6 +854,15 @@ js/91-present/slideAiPics.js
 js/91-present/slideAiPrompt.js
 js/91-present/slideAiApply.js
 js/91-present/openSlidesWithAI.js
+js/91-present/vars-SLIDE_WAIT.js
+js/91-present/slideWaitAt.js
+js/91-present/slideWaitSlides.js
+js/91-present/slideWaitShow.js
+js/91-present/slideWaitNext.js
+js/91-present/slideWaitTick.js
+js/91-present/slideWaitEnd.js
+js/91-present/presentWaitSet.js
+js/91-present/openPresentWait.js
 js/91-present/slideCrowd.js
 js/90-view-state/vars-DIALOGUE.js
 js/90-view-state/setDialogueStyle.js

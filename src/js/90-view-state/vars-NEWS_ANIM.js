@@ -4,6 +4,25 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.208.0#486": `
+    cap | A countdown before the talk starts
+    say | ▶ Present ▾ › Count down to the start…
+    + pg col
+    + s ln > pg | Next course: Lean in practice
+    + q chip > pg | ▦ QR: sign up
+    w 900
+    + b chip fade > pg | Starts at 13:00    12:47
+    w 50
+    c b -fade
+    w 1200
+    say | Lines under (waiting) show in turn.
+    t s | Coffee is in the hall
+    - q
+    t b | Starts at 13:00    12:37
+    w 1500
+    say | → starts the talk when you are ready.
+    t b | Starting now
+    w 1500`,
   "1.207.0#483": `
     cap | Your AI makes slides of your text
     say | ☰ › Copy for AI › Slides copies a prompt.
@@ -146,28 +165,5 @@ const NEWS_ANIM = {
     s l | margin-top:48px
     w 50
     c l -fade
-    w 1500`,
-  "1.202.0#474": `
-    cap | Widgets for your phone, one per context
-    say | Each context has its own file in Widgets/, for a widget app.
-    w 1200
-    # Each context has a widget file; a tick there is done in GroupToDo too.
-    + pg col abs
-    s pg | left:12px;top:12px;right:12px
-    + h h > pg | Widgets/@Home.md
-    + a ln > pg | ☐ Pay the bill
-    + b ln > pg | ☐ Water the plants
-    + c ln > pg | ☐ Fix the tap (Kitchen)
-    w 900
-    say | You tick a line in the widget.
-    p b
-    t b | ☑ Water the plants
-    c b +dim
-    w 900
-    say | GroupToDo marks it done in its page.
-    t h | GroupToDo · @Home
-    t b | DONE Water the plants
-    c b -dim
-    c b +lit
     w 1500`,
 };

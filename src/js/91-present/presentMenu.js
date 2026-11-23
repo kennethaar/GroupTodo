@@ -15,6 +15,11 @@ function presentMenu(path, root = null, anchor = null) {
     onclick: () => { close(); presentStart(path, {root, presenter: true}); },
     onkeydown: e => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); anchor.focus(); } }},
     "With presenter window"));
+  // A waiting screen with a countdown to the start (#486).
+  menu.append(el("button", {role: "menuitem", title: "Slides on repeat and a countdown until the talk starts",
+    onclick: () => { close(); openPresentWait(path); },
+    onkeydown: e => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); anchor.focus(); } }},
+    "Count down to the start…"));
   wrap.append(menu);
   anchor.setAttribute("aria-expanded", "true");
   document.addEventListener("click", away, true);

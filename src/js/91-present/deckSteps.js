@@ -20,6 +20,8 @@ function deckSteps(path, root = null, on = false) {
   const steps = [], slides = [], left = new Set();
   const words = b => !!(slideWords(b) || (b.children || []).some(words));
   const shown = b => {
+    // The waiting screen's slides are not in the talk (#486).
+    if (SLIDE_WAIT_RE.test(b.title || "")) return false;
     if (!words(b)) return false;
     if (slideHidden(b)) { left.add(b); return false; }
     return true;

@@ -4,8 +4,9 @@
    on a focused line); with `on` it goes on through the bullets after it (☰ ›
    Present from here, on any page or day); `presenter` opens the presenter
    window at once (▾ › With presenter window). `step` opens it at that step,
-   as a choice in the slide preview does (#465). */
-function presentStart(path, {root = null, on = false, presenter = false, step = null} = {}) {
+   as a choice in the slide preview does (#465). With `wait` it opens on the
+   waiting screen, counting down to the page's starts:: (#486). */
+function presentStart(path, {root = null, on = false, presenter = false, step = null, wait = false} = {}) {
   presentStop();
   slidePeekHide();
   slidePresented(path, true);
@@ -32,5 +33,13 @@ function presentStart(path, {root = null, on = false, presenter = false, step = 
   if (presenter) presenterOpen();
   try { deck.requestFullscreen?.().then(() => navigator.keyboard?.lock?.(["Escape"])).catch(() => {}); } catch (e) {}
   deck.focus({preventScroll: true});
-  presentGo(at);
+  const when = wait ? slideWaitAt(path) : null;
+  if (!when) { presentGo(at); return; }
+  DECK.wait = {...when, n: 0, shown: 0, slides: slideWaitSlides(path), tick: setInterval(slideWaitTick, 1000)};
+  deck.classList.add("waiting");
+  deck.append(el("div", {class: "waitdots", "aria-hidden": "true"}, ...DECK.wait.slides.map(() => el("span", {}))),
+    el("div", {class: "waitband", role: "timer"}, el("span", {class: "waitwhen"}), el("span", {class: "waitclock"})));
+  slideWaitShow(0);
+  slideWaitTick();
+  presenterDraw();
 }
