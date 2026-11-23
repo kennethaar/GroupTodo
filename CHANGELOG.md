@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.214.0 - 2026-11-23
+
+- Present a page: holding Alt on a slide also shows the time since you
+  started and ◉ Camera, top-left. One click turns your camera on or off,
+  with no presenter window needed. A click on the time starts it
+  again. (#485)
+
 ## 1.213.0 - 2026-11-23
 
 - Present a page: a line with no words, only a picture in its notepad or

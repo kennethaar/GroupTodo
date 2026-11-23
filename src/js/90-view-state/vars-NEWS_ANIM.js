@@ -4,6 +4,16 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.214.0#485": `
+    cap | Hold Alt for the time and your camera
+    say | Hold Alt on a slide: the time shows top-left.
+    + pg col
+    + t chip > pg | ⏱ 12:34
+    + c chip > pg | ◉ Camera off
+    w 1200
+    say | One click turns your camera on or off.
+    p c
+    w 1500`,
   "1.213.0#491": `
     cap | A picture as a bullet
     say | A line with only a picture comes in its turn, like any bullet.

@@ -16008,8 +16008,21 @@ var GTD_TEST = (() => {
       ok(!$("#deck video.cam") && tracks.every(t => t.readyState === "ended") && !q(".pcam"), "Shift+C again turns it off");
       key("C", {shiftKey: true}); await wait();
       const again = stream.getTracks();
+      // Holding Alt on a slide shows the talk's time and the camera's switch, so no presenter window is needed.
+      const alt = up => document.dispatchEvent(new KeyboardEvent(up ? "keyup" : "keydown", {key: "Alt", altKey: !up, bubbles: true, cancelable: true}));
+      alt(); await settle();
+      ok(/^⏱ \d+:\d\d$/.test($("#deck .arrtools .arrtime")?.textContent || ""), "Alt shows the talk's time: " + $("#deck .arrtools")?.textContent);
+      eq($("#deck .arrtools .arrcam")?.getAttribute("aria-pressed"), "true", "and the camera's switch, on");
+      $("#deck .arrtools .arrcam").click(); await wait();
+      ok(!$("#deck video.cam") && again.every(t => t.readyState === "ended"), "one click turns the camera off");
+      eq($("#deck .arrtools .arrcam")?.getAttribute("aria-pressed"), "false", "and the switch says so");
+      $("#deck .arrtools .arrcam").click(); await wait();
+      ok($("#deck video.cam"), "a click turns it on again");
+      alt(true); await settle();
+      ok(!$("#deck .arrtools"), "letting go of Alt takes them away");
+      const last = stream.getTracks();
       presentStop();
-      ok(again.every(t => t.readyState === "ended"), "leaving the talk turns the camera off");
+      ok(last.every(t => t.readyState === "ended"), "leaving the talk turns the camera off");
     } finally {
       presentStop(); window.open = open; f.remove(); go("today");
       document.querySelectorAll("style").forEach(s => /#c24,#e85/.test(s.textContent) && s.remove());

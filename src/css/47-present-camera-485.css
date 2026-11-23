@@ -22,3 +22,11 @@
 #deck .slide.camside:not(.intro) .stext{left:30%;padding-left:5vw}
 #deck.blank>.cam{visibility:hidden}
 @media (prefers-reduced-motion:reduce){#deck>.cam{transition:opacity .3s}}
+/* Alt held: the talk's time and the camera's switch, top-left, in the look
+   of ↺ Reset slide top-right (#485). */
+#deck .arrtools{position:absolute;top:2vh;left:2vw;z-index:5;display:flex;gap:8px}
+#deck .arrtools button{font:600 15px/1 var(--slide-font);padding:8px 12px;border-radius:999px;
+  border:1px solid var(--slide-ink);background:var(--slide-bg);color:var(--slide-ink);cursor:pointer}
+#deck .arrtools .arrtime{font-variant-numeric:tabular-nums}
+#deck .arrtools .arrcam[aria-pressed=true]{background:var(--slide-ink);color:var(--slide-bg)}
+#deck .arrtools button:focus-visible{outline:2px solid var(--slide-ink);outline-offset:2px}

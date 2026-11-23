@@ -894,6 +894,7 @@ js/91-present/slideCamOff.js
 js/91-present/slideCamToggle.js
 js/91-present/presenterCam.js
 js/91-present/slideBulletPic.js
+js/91-present/slideTalkTime.js
 js/90-view-state/vars-DIALOGUE.js
 js/90-view-state/setDialogueStyle.js
 js/90-view-state/vars-OPENS_AFTER.js
