@@ -929,6 +929,7 @@ const HELP = {
       "With the first line the picture moves to the left 30% and the title to the top. Every line already has its place, so nothing jumps.",
       "A picture on a line can go on its slide. Drop it on the line, then Use as slide picture on the note that shows. Or use ☰ › Use picture on the slide, or Use on the slide where the picture opens. It moves to the line's notepad; Ctrl+Z puts it back.",
       "A bullet with a picture in its notepad shows it on the left while it is lit. A bullet with none gives the slide's own picture back.",
+      "A line with no words, only a picture in its notepad or on the line, is a bullet of its own. The picture comes in its turn, in its place in the list, and stays.",
       "The next slide comes up from below. A line with lines of its own is not shown first: it grows from its place into the title, and shrinks back into it after its last line.",
       "A table is a slide of its own. Its header shows first, then → adds a row. Reveal Columns on the table's bar adds a column instead.",
       "Dates, contexts and values are left off the slides.",

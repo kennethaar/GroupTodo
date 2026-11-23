@@ -14,7 +14,7 @@ function presenterDraw() {
   const d = pw.document, {steps, slides, i} = DECK, here = steps[i], s = here.s;
   const lit = here.k ? s.parts[here.k - 1] : null;
   const next = steps[i + 1];
-  const nextText = !next ? "The end" : next.s === s ? "› " + slideWords(s.parts[next.k - 1]) : "Slide: " + next.s.title;
+  const nextText = !next ? "The end" : next.s === s ? "› " + (slideWords(s.parts[next.k - 1]) || (slideBulletPic(s.parts[next.k - 1]) ? "🖼 Picture" : "")) : "Slide: " + next.s.title;
   const size = +PREF.get("present.notes", 22) || 22;
   const resize = by => { PREF.set("present.notes", Math.max(12, Math.min(48, size + by))); presenterDraw(); };
   const bar = el("div", {class: "pbar"},
@@ -35,7 +35,7 @@ function presenterDraw() {
     el("button", {class: "pbigger", title: "Larger notes", "aria-label": "Larger notes", onclick: () => resize(2)}, "A+"));
   bar.querySelector(".ptimer").onclick = () => { if (DECK) { DECK.t0 = Date.now(); presenterTick(); } };
   const list = el("ul", {}, ...s.parts.map((b, n) =>
-    el("li", {class: n < here.k - 1 ? "past" : n === here.k - 1 ? "now" : "later", "data-bid": b.id}, slideText(b))));
+    el("li", {class: n < here.k - 1 ? "past" : n === here.k - 1 ? "now" : "later", "data-bid": b.id}, slideBulletPic(b) ? "🖼 Picture" : slideText(b))));   // a picture bullet (#491)
   const main = el("div", {class: "pmain"},
     el("div", {class: "pnow"}, el("div", {class: "plabel"}, "Now"), el("h2", {class: "stitle"}, s.title), list),
     // The Next box is the button that goes on; ‹ Back beside it (#489), for a mouse or a touch screen.

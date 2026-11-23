@@ -4,6 +4,19 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.213.0#491": `
+    cap | A picture as a bullet
+    say | A line with only a picture comes in its turn, like any bullet.
+    + pg col
+    + t ln > pg | About us
+    + a ln > pg | ▢ picture
+    s a | opacity:.2
+    w 1200
+    s a | opacity:1
+    w 1200
+    say | It stays bright when the next line comes.
+    + b ln > pg | • Founded in 1946
+    w 1500`,
   "1.212.0#485": `
     cap | Your camera in the talk
     say | Shift+C puts you on the slides. The slide picks where.

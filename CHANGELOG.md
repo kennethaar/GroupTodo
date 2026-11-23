@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.213.0 - 2026-11-23
+
+- Present a page: a line with no words, only a picture in its notepad or
+  on the line, is a bullet of its own. The picture comes in on its turn,
+  in its place in the list, with no marker, and is not dimmed after. It
+  was left out of the talk. (#491)
+
 ## 1.212.3 - 2026-11-23
 
 - Present a page: an area's slides.css that gives slides a background,

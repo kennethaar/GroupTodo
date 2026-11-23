@@ -14308,6 +14308,40 @@ var GTD_TEST = (() => {
       eq([deckNow().now, pic()], ["Budget", ["assets/plan.png"]], "a bullet with none keeps the last picture, so nothing jumps");
     } finally { presentStop(); }
   }));
+
+  /* #491 A bullet that is only a picture (no words, the picture in its
+     notepad, or ![](…) as the line) comes on → like any other bullet: the
+     picture in its place in the list, no marker, not dimmed once past. */
+  test("#491 Present: a bullet that is only a picture shows it in its turn, in its place in the list", () => withPages({[TALK]: [
+    "- About us",
+    "  -",
+    "    ![logo](assets/logo.png)",
+    "    Say the name slowly.",
+    "  - Founded in 1946",
+    "  - ![team](assets/team.png)",
+  ].join("\n") + "\n"}, async () => {
+    try {
+      await startTalk();
+      deckKey("ArrowRight");
+      eq(deckNow().title, "About us");
+      const items = () => [...document.querySelectorAll("#deck .slide.cur .sbullets .bullet")];
+      eq(items().length, 3, "the picture lines are bullets of the slide");
+      const [logo, , team] = items();
+      ok(logo.classList.contains("picbullet") && logo.querySelector("img"), "a picture in the notepad of a line with no words is the bullet");
+      ok(!/Say the name/.test(logo.closest(".slide").textContent), "its other notepad text stays notes");
+      ok(team.classList.contains("picbullet") && team.querySelector("img"), "so is a line that is only a picture");
+      ok(!$("#deck .slide.cur .cover"), "the picture is not swapped into the slide's picture place");
+      ok(logo.classList.contains("later"), "it waits for its turn");
+      deckKey("ArrowRight");
+      ok(logo.classList.contains("now"), "→ brings it in, as any bullet");
+      eq([getComputedStyle(logo).listStyleType, getComputedStyle(logo, "::before").content], ["none", "none"], "no bullet marker beside a picture");
+      deckKey("ArrowRight");
+      eq(deckNow().now, "Founded in 1946");
+      ok(logo.classList.contains("past"), "past");
+      logo.style.transition = "none";
+      eq(getComputedStyle(logo).opacity, "1", "a past picture is not dimmed");
+    } finally { presentStop(); }
+  }));
   test("#465 hovering or focusing ▶ Present, or Present from here in ☰, previews the slide: last time, from the top, the line in the whole talk, from the line", () => withPages(TALK_PAGE, async () => {
     // One slide shown at a time; the list under it says which, and switches.
     const peek = () => {

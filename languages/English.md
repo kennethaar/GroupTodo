@@ -364,6 +364,7 @@ A line joins two who share a scene. The more scenes and talk, the thicker. =>
 A line of speech is the speaker's whose name comes first outside the quotes. Without one, the talk goes back and forth. =>
 A line that is only a link to its project shows that project in the side pane instead; it has nothing of its own to show. =>
 A line under another gets what it has =>
+A line with no words, only a picture in its notepad or on the line, is a bullet of its own. The picture comes in its turn, in its place in the list, and stays. =>
 A line you were typing was not saved =>
 A link that reads JS =>
 A link you can paste into chat or email =>
@@ -6299,6 +6300,7 @@ zuletzt gehört =>
 📅 Pick a date =>
 📌 pins it. It stays, even after a reload. =>
 🔔 on a pill means a reminder is set. 🔕 means it is off. =>
+🖼 Picture =>
 
 # Sentences with a value in them
 ! {1}d late =>
