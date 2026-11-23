@@ -15907,10 +15907,14 @@ var GTD_TEST = (() => {
       presentStart(SHOW, {presenter: true}); await settle();
       const pd = f.contentDocument, q = s => pd.querySelector(s);
       ok(!$("#deck video.cam") && !asked && !q(".pcam"), "the camera is off by default");
+      // #485 bug: an area's slides.css gave slides a background, and it hid the camera.
+      const own = document.head.appendChild(el("style", {}, "#deck .slide{background:linear-gradient(45deg,#c24,#e85)}#deck>.cam{transition:none!important}"));
       key("C", {shiftKey: true}); await wait();
       eq(asked, 1, "Shift+C opens the camera");
       ok($("#deck > video.cam"), "one camera layer on the deck, not on a slide");
       eq(cam(), "big", "the page title alone: you fill the slide");
+      const bg = getComputedStyle($("#deck .slide.cur"));
+      eq([bg.backgroundImage, bg.backgroundColor], ["none", "rgba(0, 0, 0, 0)"], "a slide's own background gives way to you");
       eq(getComputedStyle($("#deck video.cam")).transform, "none", "the slides are not mirrored");
       const view = q(".pcam video");
       ok(view && /scaleX\(-1\)|matrix\(-1/.test(getComputedStyle(view).transform), "the presenter window shows you mirrored");
@@ -15944,6 +15948,9 @@ var GTD_TEST = (() => {
       eq(cam(), "bubble", "the slide keeps its mode to its end");
       key("ArrowRight"); await wait();
       eq(cam(), "bubble", "the next slide is automatic again: a plain slide is a bubble");
+      const bub = $("#deck video.cam").getBoundingClientRect();
+      eq(document.elementFromPoint(bub.x + bub.width / 2, bub.y + bub.height / 2), $("#deck video.cam"), "no slide background hides the bubble");
+      ok(getComputedStyle($("#deck .slide.cur")).backgroundImage !== "none", "and the slide keeps its own look");
       ok(q(".pcamauto[aria-pressed=true]"), "Auto is marked again");
       [...pd.querySelectorAll(".pcammode")].find(b => b.textContent === "Big").click(); await wait();
       eq(cam(), "big", "a click in the strip sets this slide's mode");
@@ -15971,6 +15978,7 @@ var GTD_TEST = (() => {
       ok(again.every(t => t.readyState === "ended"), "leaving the talk turns the camera off");
     } finally {
       presentStop(); window.open = open; f.remove(); go("today");
+      document.querySelectorAll("style").forEach(s => /#c24,#e85/.test(s.textContent) && s.remove());
       Object.defineProperty(navigator, "mediaDevices", {value: md, configurable: true});
       PREF.set("present.campic", waitPref ?? 10);
     }

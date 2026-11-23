@@ -937,7 +937,7 @@ const HELP = {
       "Copy for AI › Slides copies a prompt that tells your AI how slides are written here: layout words, charts, tables, bold words and notes. Paste it into your AI with your text, then paste its answer back. Make the slides puts them under the line.",
       "Put pictures in the area's assets/slides folder. The AI picks one for a slide by its name, so name each by what it shows. The list is shuffled each time, and pictures used on other pages come last. A name with only numbers or a camera code, like IMG_0042, is listed so you can rename it.",
       "A red bullet also shows a cycle with too few lines, a 2×2 without four, or a picture that is not in assets/slides.",
-      "The look is white on black. slides.css in an area's 8/ folder sets that area's look. Set --slide-bg, --slide-ink and --dim on #deck, or style .slide, .slide.intro, .stitle, .bullet.now, .bullet.past and .cover."],
+      "The look is white on black. slides.css in an area's 8/ folder sets that area's look. Set --slide-bg, --slide-ink and --dim on #deck, or style .slide, .slide.intro, .stitle, .bullet.now, .bullet.past, .cover and .cam, your camera. While your camera is big or beside the words, the slide's own background gives way to it."],
     see: ["page"],
     words: ["present", "presentation", "slides", "slide", "talk", "presenter", "deck", "speaker", "chart", "graph"]},
   me: {part: "views", title: "Your page", view: "me",

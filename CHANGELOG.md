@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.212.3 - 2026-11-23
+
+- Present a page: an area's slides.css that gives slides a background,
+  such as a coloured title slide, no longer hides your camera. While you
+  are big or beside the words the slide's background gives way, and the
+  bubble sits over the slide. (#485)
+
 ## 1.212.2 - 2026-11-23
 
 - Present a page: Big on a slide with a picture now shows you, not the
