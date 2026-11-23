@@ -7,7 +7,7 @@ function unrouteCalendar(feed, space) {
     for (const p of allPages(isJournalPath)) {
       if (!dayOfPath(p)) continue;
       const page = getPage(p), hits = [];
-      walkBlocks(page.blocks, b => { if (blockProp(b, "cal_feed") === feed && !calTargets(b, []).includes(space)) hits.push(b); });
+      walkBlocks(page.blocks, b => { if (blockProp(b, "cal_feed") === feed && !blockProp(b, "cal_moved") && !calTargets(b, []).includes(space)) hits.push(b); });
       for (const b of hits) {
         if (calKept(b)) for (const k of ["cal_feed", "cal_uid", "cal_share", "branch_sync_id"]) setOrDropProp(b, k, "");
         else { removeBlockFrom(page, b); n++; }

@@ -2576,6 +2576,7 @@ Mountain Standard Time =>
 Move =>
 Move a chapter =>
 Move a day =>
+Move a meeting to another area, and it stays there and keeps up with the calendar. =>
 Move a week =>
 Move down =>
 Move it =>

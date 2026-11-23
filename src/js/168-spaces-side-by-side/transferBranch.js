@@ -30,6 +30,13 @@ async function transferBranch(ctx, target, choice, destination = null) {
     const id = hit.block.props.branch_sync_id || uid();
     hit.block.props.branch_sync_id = moved.props.branch_sync_id = id;
   } else walkBlocks([moved], b => { delete b.props.branch_sync_id; });
+  /* Moved out of your own area, a meeting lives where it went: the import keeps
+     it up to date there and does not bring it home (#61). Back home, it is an
+     ordinary import again. */
+  if (feed && choice.mode === "move") {
+    if (ctx.space === calHome() && target !== ctx.space) moved.props.cal_moved = "yes";
+    else if (target === calHome()) delete moved.props.cal_moved;
+  }
   inSpace(target, () => {
     const page = getPage(targetPath) || putPage(targetPath, {props: {}, blocks: []});
     const anchor = destination?.id ? findBlock(destination.id) : null;

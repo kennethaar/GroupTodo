@@ -523,6 +523,7 @@ const HELP = {
       "In Outlook or Google, copy the secret iCal address. It ends in .ics or starts with webcal://. Paste it under Add a calendar link and press Save and import.",
       "Or import a downloaded .ics file into your own area.",
       "Meetings come in as #meeting lines on your day pages.",
+      "Move a meeting to another area, and it stays there and keeps up with the calendar.",
       "Meeting reminders: pick a time, or Custom… for any time and more than one. Open a calendar to give it its own.",
       "The sync line at the foot of the sidebar opens Settings at Vault & sync.",
       "Routines, checklists and templates are things you use, so they live in Routines, not here."],

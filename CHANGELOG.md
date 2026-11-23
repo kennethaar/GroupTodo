@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.203.4 - 2026-11-23
+
+- Settings: a calendar meeting moved from your own area to another area
+  stays there. It used to vanish after a reload or two, as the next sync
+  took it for a meeting gone from the calendar. It now keeps up with the
+  calendar where you put it: a new time, a cancel, or its end.
+
 ## 1.203.3 - 2026-11-23
 
 - Present a page: the page title keeps its own color all the way up, and

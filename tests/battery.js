@@ -7650,6 +7650,47 @@ var GTD_TEST = (() => {
       clearMemo();
     }
   });
+  /* A meeting moved out of your own area lives in the area it went to: the
+     next syncs neither bring it back home nor take it away there, and the
+     calendar's changes still reach it (#61). */
+  test("#61 a calendar meeting moved to another area stays there and follows the calendar", async () => {
+    // Your own area is a private one, here a new one; the demo's shared area is where it goes.
+    const n = "Test61 private", feed = "test61feed", work = Spaces.active;
+    const ics = (s, e) => "BEGIN:VCALENDAR\nBEGIN:VEVENT\nUID:test61\nDTSTART:" + s + "\nDTEND:" + e +
+      "\nSUMMARY:Test61 standup\nEND:VEVENT\nEND:VCALENDAR";
+    const from = Date.parse("2026-11-09T00:00:00Z"), to = Date.parse("2026-11-12T00:00:00Z");
+    let home = "";
+    const sync = text => { importCalendarText(text, home, feed, from, to); routeCalendarMeetings(home, feed, [], from, to); };
+    const find = space => { let hit = null; inSpace(space, () => { for (const p of allPages(isJournalPath))
+      walkBlocks(getPage(p).blocks, b => { if (/Test61 standup/.test(b.title)) hit = {b, path: p}; }); }); return hit; };
+    const hm = s => { const d = new Date(s); return pad2(d.getHours()) + ":" + pad2(d.getMinutes()); };
+    const kept = new Map(inSpace(work, () => allPages(isJournalPath).map(p => [p, serializePage(getPage(p))])));
+    await createSpace(n, "local");
+    try {
+      if (!LOADED.has(n)) await loadSpaceRecord(n);
+      home = calHome();
+      eq(home, n, "the private area is your own");
+      sync(ics("20261110T090000Z", "20261110T093000Z"));
+      const m = find(home);
+      ok(m, "the meeting came in at home");
+      ok(await transferBranch({space: home, path: m.path, id: m.b.id}, work, {mode: "move", references: false, inner: true}), "moved");
+      for (let i = 0; i < 3; i++) sync(ics("20261110T090000Z", "20261110T093000Z"));
+      ok(!find(home), "not brought back home");
+      ok(find(work), "still in the area it was moved to after the next syncs");
+      sync(ics("20261110T100000Z", "20261110T103000Z"));
+      eq(blockProp(find(work)?.b || {props: {}}, "time"), hm("2026-11-10T10:00:00Z") + "–" + hm("2026-11-10T10:30:00Z"), "a new time reaches it");
+      ok(!find(home), "a change does not bring it home either");
+      unrouteCalendar(feed, work);
+      ok(find(work), "taking the area off the calendar's Also show in leaves a moved meeting");
+      sync("BEGIN:VCALENDAR\nEND:VCALENDAR");
+      ok(!find(work), "a meeting the calendar no longer has goes from where it was moved");
+    } finally {
+      inSpace(work, () => { for (const p of allPages(isJournalPath))
+        if (!kept.has(p)) V.pages.delete(p); else putPage(p, parsePage(kept.get(p))); });
+      clearMemo();
+      await removeArea(n);
+    }
+  });
 
   /* ---------- areas: one place, removing, onboarding (#193) ---------- */
   const closeModals = () => { for (let i = 0; i < 4 && $("#modalRoot").firstChild; i++) closeModal(); };

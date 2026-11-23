@@ -28,6 +28,8 @@ function icsMeetings(text, fromMs, toMs) {
       if (rid == null && moved.has(uid + "@" + o.start)) continue;
       out.push(Object.assign(o, {
         key: calHash(uid + "@" + (rid ?? o.start)),
+        // A one-time meeting moved to a new time is still this one (#61).
+        series: calHash(uid), repeats: !!ev.RRULE || rid != null,
         summary: val(ev, "SUMMARY") || "Meeting",
         cancelled: /^CANCELLED$/i.test(val(ev, "STATUS")) || /^cancel(l)?ed:/i.test(val(ev, "SUMMARY")),
         people: people.slice(0, 15), agenda,
