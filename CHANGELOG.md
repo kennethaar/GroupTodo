@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.212.2 - 2026-11-23
+
+- Present a page: Big on a slide with a picture now shows you, not the
+  picture, and you are dimmed once behind the title, not twice. A real
+  camera came out nearly black there. (#485)
+
 ## 1.212.1 - 2026-11-23
 
 - Present a page: on a slide whose picture fills it, such as a (map)

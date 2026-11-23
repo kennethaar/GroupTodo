@@ -10,8 +10,10 @@
 #deck:is([data-cam=side],[data-cam=pic]):not(.camwide)>.cam{width:30%}
 #deck:is([data-cam=pic],[data-cam=off])>.cam{opacity:0}
 #deck[data-cam=bubble]>.cam{left:calc(100% - 22vmin);top:calc(100% - 22vmin);width:18vmin;height:18vmin;border-radius:50%}
-/* Side: the picture fades out and you show in its place. */
-#deck[data-cam=side] .slide.cur .cover .pic{opacity:0}
+/* Big and side: the picture fades out and you show in its place. Dimmed
+   once: big dims you itself, so the slide's shade for its title goes. */
+#deck:is([data-cam=side],[data-cam=big]) .slide.cur .cover .pic{opacity:0}
+#deck[data-cam=big] .slide.cur .cover::after{opacity:0}
 /* Side on a slide with no picture place: the words make room. */
 #deck .slide.camside:not(.intro) .stext{left:30%;padding-left:5vw}
 #deck.blank>.cam{visibility:hidden}

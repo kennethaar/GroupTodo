@@ -15925,6 +15925,18 @@ var GTD_TEST = (() => {
       [...pd.querySelectorAll(".pcamwait button")].find(b => b.textContent === "At once").click(); await wait();
       eq(+PREF.get("present.campic"), 0, "the picture time is kept");
       eq(cam(), "side", "then you, in the picture's place");
+      // #485 bug: over the whole slide the camera stayed dark or behind the picture.
+      const still = document.head.appendChild(el("style", {}, "#deck *,#deck *::after{transition:none!important}"));
+      const look = () => [getComputedStyle($("#deck .slide.cur .cover .pic.on")).opacity,
+        getComputedStyle($("#deck .slide.cur .cover"), "::after").opacity, getComputedStyle($("#deck video.cam")).filter];
+      const [, shade, dim] = look();
+      ok(+shade === 0 || dim === "none", "you behind the title are dimmed once, not twice: " + look());
+      [...pd.querySelectorAll(".pcammode")].find(b => b.textContent === "Big").click(); await wait();
+      const [picBig, shadeBig, dimBig] = look();
+      eq(+picBig, 0, "Big on a picture slide: the picture gives way to you");
+      ok(+shadeBig === 0 || dimBig === "none", "and you are dimmed once: " + look());
+      still.remove();
+      q(".pcamauto").click(); await wait();
       key("c"); await wait();
       eq(cam(), "bubble", "C: the next mode, for this slide");
       eq(q(".pcammode[aria-pressed=true]")?.textContent, "Bubble", "the strip marks it");
