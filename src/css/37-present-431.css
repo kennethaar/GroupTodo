@@ -24,6 +24,8 @@
 :is(#deck,#deckpeek) .slide.intro .stitle{font-size:2.3em;margin:0}
 :is(#deck,#deckpeek) .hascover.intro .stitle{text-shadow:0 .05em .3em var(--slide-bg)}
 :is(#deck,#deckpeek) .slide.intro .sbullets{display:none}
+/* The breadcrumb keeps its place at the top while the title stands big (#431). */
+:is(#deck,#deckpeek) .slide.intro .scrumb{position:absolute;top:8vh;left:7vw;right:7vw;text-align:left}
 :is(#deck,#deckpeek) .sbullets{margin:0;padding:0 0 0 1.1em;line-height:1.3}
 /* .bullet is also the outliner's dot: undone here. */
 :is(#deck,#deckpeek) .bullet{position:static;width:auto;height:auto;border-radius:0;background:none;cursor:auto;margin:.35em 0;transition:opacity .6s ease-in-out}

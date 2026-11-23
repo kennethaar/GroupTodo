@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.203.1 - 2026-11-23
+
+- Present a page: from the title slide, the page title now moves up letter
+  by letter into a small line at the top of the next slide, and stays there,
+  instead of fading out. Each top line's slide shows the page's name there.
+  (#431)
+
 ## 1.203.0 - 2026-11-22
 
 - Present a page: a picture dropped on a line can be the slide's picture.

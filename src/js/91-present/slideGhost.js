@@ -2,7 +2,8 @@
    letter slides on its own from where it stood to where it will stand, the
    way text reflows when the editor is resized. One copy per letter, set off
    a little after the one before it; all land in 1 s. `title` (the real one,
-   now in its place) shows as they land, so nothing fades; without one the
+   now in its place) shows as they land, so nothing fades (they end as
+   faint as it is, so a quiet breadcrumb does not jump); without one the
    letters fade at the end and go. Returns the last letter's glide. */
 function slideGhost(deck, from, to, title = null) {
   const a = from.letters || [], b = to.letters || [];
@@ -11,7 +12,8 @@ function slideGhost(deck, from, to, title = null) {
   const ghost = el("div", {class: "sghost", "aria-hidden": "true"});
   const n = Math.min(a.length, b.length);
   const step = n > 1 ? Math.min(10, 300 / (n - 1)) : 0, run = 1000 - (n - 1) * step;
-  const out = title ? [{opacity: 1}, {opacity: 1}] : [{opacity: 1}, {opacity: 1, offset: 0.7}, {opacity: 0}];
+  const keep = title ? parseFloat(getComputedStyle(title).opacity) : 1;
+  const out = title ? [{opacity: 1}, {opacity: keep}] : [{opacity: 1}, {opacity: 1, offset: 0.7}, {opacity: 0}];
   const glides = [];
   for (let i = 0; i < n; i++) {
     const {ch, rect, size, font, color} = a[i], end = b[i];
@@ -28,6 +30,6 @@ function slideGhost(deck, from, to, title = null) {
   const anims = glides.map(({span, keys, delay}) =>
     span.animate(keys, {duration: run, delay, easing: "ease-in-out", fill: "both"}));
   Promise.all(anims.map(x => x.finished)).then(() => ghost.remove(), () => ghost.remove());
-  if (title) title.animate([{opacity: 0}, {opacity: 0, offset: 0.99}, {opacity: 1}], {duration: 1000, easing: "ease-in-out"});
+  if (title) title.animate([{opacity: 0}, {opacity: 0, offset: 0.99}, {opacity: keep}], {duration: 1000, easing: "ease-in-out"});
   return anims[anims.length - 1];
 }
