@@ -4,6 +4,23 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.210.0#488": `
+    cap | Pins on a map, a card about you
+    say | (map) puts the line's picture behind the slide.
+    + pg col
+    + l ln > pg | (map) Om meg 🗺
+    + c ln > pg | 🖼 Kenneth Aar · Account manager
+    s c | margin-left:24px
+    + p ln > pg | 📍 Trondheim
+    s p | margin-left:24px
+    w 1500
+    say | A line that starts with 📍 is a pin. Alt+drag puts it in place.
+    + q ln > pg | 📍 Hamburg
+    s q | margin-left:24px
+    w 900
+    say | Pins in a row: one pin that moves on each click.
+    c p +dim
+    w 1800`,
   "1.209.0#487": `
     cap | Place a line just so
     say | Hold Alt on a slide: what can move gets an edge.

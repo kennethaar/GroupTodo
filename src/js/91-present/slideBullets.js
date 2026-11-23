@@ -5,7 +5,8 @@
    first one fades in once the title has moved to the top. */
 function slideBullets(slide, step, fresh) {
   // A table's header (or first column) shows with the title, so it is laid out from the start (#469).
-  const moved = slideLay(slide, step.k > 0 || step.s.layout === "table");
+  // A map's title stays at the top over its picture from the start (#488).
+  const moved = slideLay(slide, step.k > 0 || step.s.layout === "table" || step.s.layout === "map");
   for (const c of slide.querySelectorAll("[data-tpart]")) {
     const n = +c.dataset.tpart;
     c.classList.toggle("now", n === step.k - 1);
@@ -26,4 +27,6 @@ function slideBullets(slide, step, fresh) {
   // The lit part's picture in the picture's place (#464).
   const pic = slidePicNow(step.s, step.k);
   for (const p of slide.querySelectorAll(".cover .pic")) p.classList.toggle("on", p.dataset.pic === pic);
+  // A map's pins light with the card, badge or step they belong to (#488).
+  if (step.s.layout === "map") slideMapPins(slide, step);
 }

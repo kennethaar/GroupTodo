@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.210.0 - 2026-11-23
+
+- Present a page: (map) puts a line's picture behind the whole slide,
+  such as a map. A picture line under it is a card about a person, a
+  logo with a name is a badge, and a line that starts with an emoji,
+  like 📍 Oslo, is a pin. Pins come with their card or badge and stay;
+  pin lines in a row are one pin that moves on each click. Alt+drag
+  puts each pin in place. (#488)
+
 ## 1.209.0 - 2026-11-23
 
 - Present a page: hold Alt on a slide to place its parts. Alt+drag a

@@ -18,7 +18,8 @@
 function deckSteps(path, root = null, on = false) {
   const page = getPage(path);
   const steps = [], slides = [], left = new Set();
-  const words = b => !!(slideWords(b) || (b.children || []).some(words));
+  // A line that is only a picture has something to show too: a map's card (#488).
+  const words = b => !!(slideWords(b) || slidePicture(b.title || "") || (b.children || []).some(words));
   const shown = b => {
     // The waiting screen's slides are not in the talk (#486).
     if (SLIDE_WAIT_RE.test(b.title || "")) return false;
@@ -38,14 +39,17 @@ function deckSteps(path, root = null, on = false) {
       const hero = lay.layout === "hero" ? slideHero(chunk[0]) : null;
       // `home` keeps the slide's own places (#487): its line, the bullet presented from, or the page.
       const s = {n: slides.length + 1, block, depth, up, breadcrumb, kids: chunk, path, home: block || root || null,
-        title: lay.title + (pages.length > 1 ? ` (${p + 1}/${pages.length})` : ""),
+        // A map's title has its picture in it (#488): the picture goes behind, the words stay.
+        title: (lay.layout === "map" ? trim(lay.title.replace(/![[^]]*]([^)]*)/g, "")) : lay.title) + (pages.length > 1 ? ` (${p + 1}/${pages.length})` : ""),
         layout: lay.layout, mode: lay.mode, axes: lay.axes, guess: lay.guess, hero,
-        parts: hero ? [chunk[0], ...hero.takeaways] : lay.layout === "table" ? slideTableParts(chunk[0])
+        parts: lay.layout === "map" ? slideMapItems(chunk).map(i => i.block) : hero ? [chunk[0], ...hero.takeaways] : lay.layout === "table" ? slideTableParts(chunk[0])
           // A chart of a table lights a row at a time (#482).
           : SLIDE_CHARTS.includes(lay.layout) && tableRows(chunk[0]) ? slideTableParts(chunk[0], true) : chunk, first: steps.length,
         ...(notes || (block ? slideNotes(block) : {cover: "", notes: ""}))};
       // A part's own notepad picture is shown in the cover's place while that part is lit (#464).
       s.pics = s.parts.map(p => p && typeof p === "object" ? slideNotes(p).cover : "");
+      // A map's own picture is behind the whole slide (#488); its cards' pictures are their own.
+      if (lay.layout === "map") { s.cover = slidePicture(block?.title || "") || slidePicture(head) || s.cover; s.pics = []; s.map = slideMapItems(chunk); }
       slides.push(s);
       steps.push({s, k: 0});
       s.parts.forEach((part, i) => {

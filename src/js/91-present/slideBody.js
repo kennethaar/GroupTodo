@@ -7,6 +7,6 @@ function slideBody(s) {
       tableRows(b) ? tableCells(b.title).join(" · ") : slideText(b))));
   const draw = {process: drawSteps, timeline: drawTimeline, cycle: drawCycle, pyramid: drawPyramid,
     hub: drawHub, curve: drawCurve, hero: drawQuote, table: drawTable,
-    line: drawChartLine, bar: drawChartBar, pie: drawChartPie}[s.layout] || drawCards;
+    line: drawChartLine, bar: drawChartBar, pie: drawChartPie, map: drawMap}[s.layout] || drawCards;
   return el("div", {class: "sbody"}, draw(s));
 }

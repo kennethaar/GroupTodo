@@ -8,6 +8,8 @@ function slideSection(s) {
     /^(https?|data|blob):/.test(src) ? el("img", {src, alt: ""}) : el("img", {"data-asset": src, alt: ""})))));
   slide.append(el("div", {class: "stext"}, s.breadcrumb ? el("div", {class: "scrumb"}, s.breadcrumb) : null,
     el("h1", {class: "stitle"}, s.title), slideBody(s)));
+  // A map's pins stand on the slide itself (#488).
+  if (s.layout === "map") slide.append(drawMapPins(s));
   // Places set with Alt+drag (#487).
   slideArrApply(slide, s);
   return slide;

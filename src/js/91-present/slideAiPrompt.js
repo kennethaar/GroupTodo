@@ -18,6 +18,7 @@ function slideAiPrompt(text, pics = []) {
     ...SLIDE_WORDS.map(w => `  (${w[0]}) ${w[3]}${need(w)}`),
     "- Points that end in a number, as in \"2024 2600\" or \"North 42\", are drawn as a chart: (line), (bar) or (pie) says which.",
     "- A Markdown table under a title is drawn as a table, or as a chart under (line), (bar) or (pie).",
+    "- (map) puts the picture on its title line behind the whole slide. Under it, a line that is only a picture is a card (its own lines under it: name, role); a picture with words is a logo badge; a line that starts with an emoji, as in \"📍 Oslo\", is a pin. Pins under a card or badge come with it.",
     "- Put **bold** round the key term of a point, at most one per point.",
     "- Speaker notes are plain lines with no \"- \", right under a title and indented like its points. They are not shown on the slide.",
     "- Write in the language of my text. Keep my facts; add none.",

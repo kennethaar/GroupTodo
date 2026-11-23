@@ -5,6 +5,8 @@
    (#454): a slide has no chips, so a project or person link is part of what
    the line says. A context is a tag and goes. */
 function slideWords(b, keepMarks = false) {
-  const words = withoutEst(slideMark(slideWord(b.title).rest).words).replace(/\[\[c\/[^\]]+\]\]/g, "");
+  // A picture is not words (#488): it is drawn, as a slide's or a card's picture.
+  const words = withoutEst(slideMark(slideWord(b.title).rest).words).replace(/\[\[c\/[^\]]+\]\]/g, "")
+    .replace(/\s*!\[[^\]]*\]\([^)\s]*\)\s*/g, " ").trim();
   return keepMarks ? linkWords(words) : withoutMarks(linkWords(words));
 }

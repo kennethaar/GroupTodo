@@ -22,6 +22,8 @@ const SLIDE_LAYOUTS = {
   line:     {min: 1, max: 24, mode: "1d", name: "Line"},
   bar:      {min: 1, max: 16, mode: "1d", name: "Bar"},
   pie:      {min: 1, max: 6, mode: "1d", name: "Pie"},
+  // A picture behind the slide, with cards, badges and pins on it (#488): one slide, however many lines.
+  map:      {min: 1, max: Infinity, mode: "2d", name: "Map"},
 };
 const CHART_PIE_MAX = 6;
 const SLIDE_CHARTS = ["line", "bar", "pie"];
@@ -71,6 +73,7 @@ const SLIDE_WORDS = [
   ["pie", "pie", "◔", "parts of a whole"],
   ["quote", "hero", "❝", "one quote, big"],
   ["grid", "grid", "▦", "cards"],
+  ["map", "map", "⌖", "pins on a picture"],
 ];
 const SLIDE_WORD_RE = /^\(([\p{L}\p{N}×]+)\)(?:\s+|$)/u;
 // A trailing (Y / X) on a curve slide's title names its axes.

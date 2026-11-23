@@ -15490,7 +15490,7 @@ var GTD_TEST = (() => {
     const at = (text, caret = text.length) => suggestFor({value: text, selectionStart: caret}, {commands: true});
     const all = at("(");
     eq(all && all.mode, "layout", "( offers the layouts");
-    eq(all.rows.map(r => r.title), ["List", "Steps", "Timeline", "Cycle", "Pyramid", "Hub", "Curve", "Versus", "2×2", "Scorecard", "Line", "Bar", "Pie", "Quote", "Grid"],
+    eq(all.rows.map(r => r.title), ["List", "Steps", "Timeline", "Cycle", "Pyramid", "Hub", "Curve", "Versus", "2×2", "Scorecard", "Line", "Bar", "Pie", "Quote", "Grid", "Map"],
       "every layout, by name");
     const pyr = all.rows.find(r => r.title === "Pyramid");
     eq([pyr.mark, pyr.detail], ["▲", "base to top"], "each with its icon and what its lines become");
@@ -15732,6 +15732,84 @@ var GTD_TEST = (() => {
       eq(blockProp(next.children[0], "at"), null, "another slide's lines are untouched");
     } finally { presentStop(); go("today"); }
   }));
+
+  /* #488 A (map) slide: its line's picture behind the whole slide, cards,
+     logo badges and pins (a line that starts with an emoji). */
+  test("#488 a (map) slide: a picture behind, cards and badges that bring their pins, pins that stay or travel; at:: places a pin", () => {
+    const svg = (w, h, c) => "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" fill="${c}"/></svg>`);
+    const MAP = svg(1600, 900, "#ccc"), LOGO = svg(100, 100, "#123"), FACE = svg(300, 400, "#a87");
+    return withPages({[SHOW]: [
+      "- (map) CAB Group ![](" + MAP + ")", "  - Grunnlagt i 1946",
+      "  - ![](" + LOGO + ") CABAS", "    - 🔵 Oslo", "    - 🔵 Stockholm", "  - ![](" + LOGO + ") MEPS", "    - 🟠 Trondheim",
+      "- (map) Teamet ![](" + MAP + ")",
+      "  - ![](" + FACE + ")", "    - **Kenneth Aar**", "    - Account manager", "    - 📍 Trondheim",
+      "  - ![](" + FACE + ")", "    - **Anna Berg**", "    - 📍 Stockholm",
+      "  - ![](" + FACE + ")", "    - **Ola Nord**", "    - 📍 Trondheim",
+      "- (map) Om meg ![](" + MAP + ")",
+      "  - ![](" + FACE + ")", "  - **Kenneth Aar**", "  - Account manager", "  - 📍 Trondheim", "  - 📍 Hamburg"].join("\n") + "\n"}, async () => {
+      const [cab, team, me] = getPage(SHOW).blocks;
+      const pinOf = (card, i = 0) => card.children.filter(c => /^📍|^🔵|^🟠/u.test(c.title))[i];
+      setBlockProp(pinOf(team.children[0]), "at", "40,40");
+      setBlockProp(pinOf(team.children[1]), "at", "70,30");
+      setBlockProp(pinOf(team.children[2]), "at", "40,40");
+      setBlockProp(me.children[3], "at", "50,30");
+      setBlockProp(me.children[4], "at", "60,70");
+      touch(SHOW);
+      eq(slideWord("(map) CAB Group").layout, "map", "(map) is a layout word");
+      const {slides} = deckSteps(SHOW), of = t => slides.find(s => s.title === t);
+      ok(of("CAB Group"), "the title has no picture in it: " + slides.map(s => s.title).join(" | "));
+      eq([of("CAB Group").layout, of("CAB Group").parts.length], ["map", 3], "a line, then a badge a click");
+      eq(of("Teamet").parts.length, 3, "a card a click");
+      eq(of("Om meg").parts.length, 3, "a flat card is one click, then a click per travelling pin");
+      const pins = () => [...$("#deck .slide.cur").querySelectorAll(".mpin")];
+      const state = p => (p.className.match(/\b(now|past|later)\b/) || [])[1];
+      const at = p => [parseFloat(p.style.left), parseFloat(p.style.top)];
+      try {
+        presentStart(SHOW); await settle();
+        presentGo(of("CAB Group").first); await settle();
+        const bg = $("#deck .slide.cur .cover img");
+        ok(bg && bg.getAttribute("src") === MAP && $("#deck .slide.cur").classList.contains("lay-map"), "the (map) picture is behind the slide");
+        deckKey("ArrowRight"); deckKey("ArrowRight"); await settle();
+        const cabas = $("#deck .slide.cur .mbadge.now");
+        ok(cabas && /CABAS/.test(cabas.textContent) && cabas.querySelector("img"), "a logo line is a badge, lit on its click");
+        eq(pins().filter(p => state(p) === "now").map(p => p.textContent), ["🔵", "🔵"], "its pins come with it, drawn as their emoji");
+        eq(pins().filter(p => state(p) === "later").length, 1, "the next badge's pin is still to come");
+        deckKey("ArrowRight"); await settle();
+        eq(pins().map(state).sort(), ["now", "past", "past"], "the badge before stays, its pins dimmed");
+
+        presentGo(of("Teamet").first + 1); await settle();
+        const card = $("#deck .slide.cur .mcard.now");
+        ok(card && card.querySelector("img") && /Kenneth Aar/.test(card.querySelector(".mname").textContent) && /Account manager/.test(card.textContent),
+          "a picture line is a card: the picture, then its lines, the first as the name");
+        ok(!/Trondheim/.test(card.textContent), "its pin is on the map, not in the card");
+        eq(pins().length, 2, "two pins at the same place are one pin");
+        const both = pins().find(p => /Kenneth/.test(p.title));
+        ok(/Ola Nord/.test(both.title), "named for both: " + both.title);
+        eq([state(both), at(both)], ["now", [40, 40]], "at:: is where the pin stands");
+        deckKey("ArrowRight"); await settle();
+        eq([state(both), state(pins().find(p => p !== both))], ["past", "now"], "the next card brings its pin; the first stays, dimmed");
+        deckKey("ArrowRight"); await settle();
+        eq(state(both), "now", "a card that joins a pin lights it again");
+
+        presentGo(of("Om meg").first + 1); await settle();
+        ok(/Kenneth Aar/.test($("#deck .slide.cur .mcard").textContent) && /Account manager/.test($("#deck .slide.cur .mcard").textContent),
+          "one card may be written flat: the lines after its picture");
+        eq(pins().length, 1, "pin lines in a row are one pin");
+        ok(state(pins()[0]) === "later", "not shown before its click");
+        deckKey("ArrowRight"); await settle();
+        eq([state(pins()[0]), at(pins()[0])], ["now", [50, 30]], "on Trondheim");
+        deckKey("ArrowRight"); await settle();
+        eq([pins().length, at(pins()[0])], [1, [60, 70]], "the same pin moves on to Hamburg");
+        const p = pins()[0], r = p.getBoundingClientRect(), W = $("#deck").getBoundingClientRect().width;
+        const ev = (t, x, n = p) => n.dispatchEvent(new PointerEvent(t, {bubbles: true, cancelable: true, altKey: true, button: 0, pointerId: 1, clientX: x, clientY: r.top + r.height / 2}));
+        ev("pointerdown", r.left + r.width / 2); ev("pointermove", r.left + r.width / 2 + W * 0.05, document); ev("pointermove", r.left + r.width / 2 + W * 0.1, document);
+        ev("pointerup", r.left + r.width / 2 + W * 0.1, document); await settle();
+        const [hx, hy] = slideXY(blockProp(me.children[4], "at"));
+        ok(Math.abs(hx - 70) < 1.5 && Math.abs(hy - 70) < 1.5, "Alt+drag places the pin: at:: " + blockProp(me.children[4], "at"));
+        eq(slideCrowd(SHOW).size, 0, "a map's many lines are not a crowded slide");
+      } finally { presentStop(); go("today"); }
+    });
+  });
 
   /* #486 A waiting screen before the talk: the lines under "(waiting)" as
      slides on repeat, and a countdown band to the page's starts:: time. */

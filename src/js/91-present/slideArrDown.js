@@ -10,7 +10,9 @@ function slideArrDown(e) {
   e.preventDefault(); e.stopPropagation();
   const box = DECK.deck.querySelector(".slide.cur").getBoundingClientRect();
   const pic = hit.kind === "pic";
-  const from = slideXY(owner.get()) || (pic ? [50, 50] : [0, 0]);
+  // A map's pin (#488): at:: is where it stands, not a shift.
+  const stand = hit.node.classList.contains("mpin");
+  const from = slideXY(owner.get()) || (pic ? [50, 50] : stand ? [parseFloat(hit.node.style.left), parseFloat(hit.node.style.top)] : [0, 0]);
   const r = hit.node.getBoundingClientRect();
   // The element's centre with no move, in % of the slide, for the snap.
   const mid = [((r.left + r.width / 2 - box.left) / box.width) * 100 - from[0], ((r.top + r.height / 2 - box.top) / box.height) * 100 - from[1]];
@@ -25,12 +27,14 @@ function slideArrDown(e) {
     if (pic) return [0, 1].map(i => Math.max(0, Math.min(100, from[i] - (over[i] > 0 ? ([dx, dy][i] / over[i]) * 100 : 0))));
     return [0, 1].map(i => {
       const v = from[i] + ([dx, dy][i] / [box.width, box.height][i]) * 100;
+      if (stand) return Math.max(0, Math.min(100, v));
       const near = SLIDE_SNAP.find(c => Math.abs(mid[i] + v - c) < SLIDE_SNAP_NEAR);
       return near == null ? v : near - mid[i];
     });
   };
   const draw = v => {
     if (pic) hit.node.style.objectPosition = `${v[0]}% ${v[1]}%`;
+    else if (stand) { hit.node.style.left = v[0] + "%"; hit.node.style.top = v[1] + "%"; }
     else hit.node.style.translate = `${v[0]}cqw ${v[1]}cqh`;
   };
   let moved = false, last = from;
@@ -49,7 +53,7 @@ function slideArrDown(e) {
     const round = v => Math.round(v * 10) / 10;
     const v = last.map(round);
     SLIDE_ARR_PICK = {kind: hit.kind, id: hit.id};
-    slideArrSave([[owner, !pic && !v[0] && !v[1] ? null : v.join(",")]], "Placed · Ctrl+Z puts it back.");
+    slideArrSave([[owner, !pic && !stand && !v[0] && !v[1] ? null : v.join(",")]], "Placed · Ctrl+Z puts it back.");
   };
   SLIDE_ARR = {hit};
   document.addEventListener("pointermove", move, true);

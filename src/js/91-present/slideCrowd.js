@@ -23,7 +23,7 @@ function slideCrowd(path) {
     const {slides} = deckSteps(path);
     // A chart guessed from numbers alone makes no talk; a chart's points are no bullets (#482).
     if (!slidePresented(path) && slides.every(s => s.layout === "list" || s.guess)) return out;
-    for (const s of slides) if (!SLIDE_CHARTS.includes(s.layout)) s.kids.forEach((b, i) => {
+    for (const s of slides) if (!SLIDE_CHARTS.includes(s.layout) && s.layout !== "map") s.kids.forEach((b, i) => {
       if (i >= SLIDE_CALM) out.set(b.id, `${i + 1} of ${s.kids.length} bullets on one slide. Keep a slide to ${SLIDE_CALM}.`);
     });
     return out;

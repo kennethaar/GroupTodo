@@ -1,0 +1,28 @@
+/* A (map) slide (#488): its picture behind the whole slide, the title and a
+   column of lines, cards and badges on the left on a soft panel, and pins
+   standing on the picture, their tip at their place. */
+:is(#deck,#deckpeek) .lay-map .cover{width:100%}
+:is(#deck,#deckpeek) .lay-map .cover::after{opacity:0!important}
+:is(#deck,#deckpeek) .slide.lay-map.hascover .stext{left:0;right:auto;width:44%;padding-left:4vw;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--slide-bg) 85%,transparent) 70%,transparent)}
+:is(#deck,#deckpeek) .lay-map .mapitems{display:flex;flex-direction:column;align-items:flex-start;gap:2.2cqh}
+:is(#deck,#deckpeek) .lay-map .part{transition:opacity .5s ease-in-out}
+:is(#deck,#deckpeek) .lay-map .part.later{opacity:0}
+:is(#deck,#deckpeek) .lay-map .part.past{opacity:1}
+:is(#deck,#deckpeek) .lay-map .mstep{display:none}
+:is(#deck,#deckpeek) .lay-map .mtext{font-size:3.4cqh;padding-left:1.2em;position:relative}
+:is(#deck,#deckpeek) .lay-map .mtext::before{content:"•";position:absolute;left:0}
+:is(#deck,#deckpeek) .lay-map .mcard{display:flex;flex-direction:column;width:min(22cqw,36cqh);background:var(--slide-ink);color:var(--slide-bg);
+  box-shadow:0 .6cqh 2cqh rgb(0 0 0 / .25)}
+:is(#deck,#deckpeek) .lay-map .mcard img{width:100%;aspect-ratio:8/9;object-fit:cover;display:block}
+:is(#deck,#deckpeek) .lay-map .mlines{padding:2.4cqh 1.6cqw;font-size:3cqh;line-height:1.4}
+:is(#deck,#deckpeek) .lay-map .mname{font-weight:800;font-size:3.4cqh}
+:is(#deck,#deckpeek) .lay-map .mbadge{display:flex;align-items:center;gap:1.4cqw;font-size:3.6cqh;font-weight:600;letter-spacing:.08em}
+:is(#deck,#deckpeek) .lay-map .mbadge img{width:12cqh;height:12cqh;border-radius:50%;object-fit:cover}
+:is(#deck,#deckpeek) .lay-map .mpins{position:absolute;inset:0;pointer-events:none;z-index:2}
+:is(#deck,#deckpeek) .lay-map .mpin{position:absolute;transform:translate(-50%,-100%);font-size:5.5cqh;line-height:1;pointer-events:auto;
+  transition:left .9s ease-in-out,top .9s ease-in-out,opacity .5s ease-in-out;filter:drop-shadow(0 .3cqh .4cqh rgb(0 0 0 / .35))}
+:is(#deck,#deckpeek) .lay-map .mpin.later{opacity:0}
+:is(#deck,#deckpeek) .lay-map .mpin.past{opacity:.5}
+#deck.arranging .slide.cur .mpin{outline:1px dashed color-mix(in srgb,var(--slide-ink) 60%,transparent);outline-offset:2px;cursor:move}
+@media (prefers-reduced-motion:reduce){:is(#deck,#deckpeek) .lay-map .mpin{transition:opacity .3s}}

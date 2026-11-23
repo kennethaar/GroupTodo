@@ -9,7 +9,8 @@ function slideArrApply(slide, s) {
   };
   const title = slide.querySelector(".stitle");
   if (title) shift(title, slideArrOwner(s, "title")?.get());
-  for (const node of slide.querySelectorAll("[data-bid]")) shift(node, slideArrOwner(s, "line", node.dataset.bid)?.get());
+  // A map's pin stands at its at:: itself (#488); it is not shifted.
+  for (const node of slide.querySelectorAll("[data-bid]:not(.mpin)")) shift(node, slideArrOwner(s, "line", node.dataset.bid)?.get());
   for (const pic of slide.querySelectorAll(".cover .pic")) {
     const f = slideXY(slideArrOwner(s, "pic", pic.dataset.pic)?.get()), img = pic.querySelector("img");
     if (img) img.style.objectPosition = f ? `${f[0]}% ${f[1]}%` : "";
