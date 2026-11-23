@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.208.1 - 2026-11-23
+
+- Present a page: a picture in a line's notepad, such as its slide
+  picture, shows as a small thumbnail inside the page instead of full
+  size. A click opens it whole. (#476)
+
 ## 1.208.0 - 2026-11-23
 
 - Present a page: ▶ Present ▾ › Count down to the start… opens a
