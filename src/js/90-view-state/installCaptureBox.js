@@ -11,6 +11,8 @@ function installCaptureBox() {
   input.addEventListener("paste", e => {
     const raw = e.clipboardData && e.clipboardData.getData("text/plain");
     if (raw == null) return;
+    // An update on your tasks is offered to apply, as on any line (#373).
+    offerPastedUpdate(raw);
     const lines = raw.replace(/\r\n?/g, "\n").split("\n").filter(l => trim(l) !== "");
     if (lines.length < 2) return;
     e.preventDefault();

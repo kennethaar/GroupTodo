@@ -9137,6 +9137,50 @@ var GTD_TEST = (() => {
       eq(messagesOf(crane).map(m => [m.title, blockProp(m, MSG_PROP)]), [["Friday works for us.", "Lars Haugen"]]);
     } finally { closeAll(); }
   });
+  /* #373 reopened: an update pasted anywhere, not only in Paste a reply, is
+     recognised. The paste stays as text; a toast names the task and what
+     would change. Apply updates the task (state, due date, their words as a
+     note), and Undo puts it all back. Keep as text changes nothing. */
+  test("#373 an update pasted on any line names its tasks and changes; Apply updates them, Undo takes it back, Keep as text leaves them", async () => {
+    const path = scratchProject("paste update 373", [["WAIT", "Contract from [[p/Lars Haugen]]"], ["DOING", "Quote for [[p/Lars Haugen]]"]]);
+    const [w, q] = getPage(path).blocks;
+    const reply = "1 done\n2: delivered by Friday\n\nLars\n\n> " + REF_LINE([V.space + "-" + ensureBlockId(path, w), V.space + "-" + ensureBlockId(path, q)]);
+    const notes = scratchProject("notes 373", [["TODO", "Call about the depot"]]);
+    const toast = () => $("#toasts .toast.pupdate");
+    const button = t => [...toast().querySelectorAll("button")].find(b => b.textContent === t);
+    const paste = async text => {
+      openPage(notes); await settle();
+      const txt = $(`#content .blk[data-id="${getPage(notes).blocks[0].id}"] .txt`);
+      txt.focus(); const s = getSelection(); s.selectAllChildren(txt); s.collapseToEnd();
+      const dt = new DataTransfer();
+      dt.setData("text/plain", text);
+      txt.dispatchEvent(new ClipboardEvent("paste", {clipboardData: dt, bubbles: true, cancelable: true}));
+      await settle();
+    };
+    try {
+      await paste("Buy paint\nSand the door");
+      ok(!toast(), "plain lines are no update");
+      document.querySelectorAll("#toasts > *").forEach(n => n.remove());
+      await paste(reply);
+      ok(toast(), "a pasted update is recognised on any line");
+      has(serializePage(getPage(notes)), "1 done", "the paste stays as text");
+      for (const t of ["Contract from", "Lars Haugen", "Done", "Quote for", "Due", "note"]) has(toast().textContent, t, "the toast says " + t);
+      button("Keep as text").click(); await settle();
+      ok(!toast(), "Keep as text closes it");
+      eq([getPage(path).blocks[0].state, messagesOf(getPage(path).blocks[1]).length], ["WAIT", 0], "and changes nothing");
+      await paste(reply);
+      button("Apply").click(); await settle();
+      const [w2, q2] = getPage(path).blocks;
+      eq(w2.state, "DONE", "Apply sets the state they gave");
+      eq(dueDate(q2), dateFromWords("friday"), "a date they gave is the task's due date");
+      eq(messagesOf(q2).map(m => [m.title, blockProp(m, MSG_PROP)]), [["delivered by Friday", "Lars Haugen"]], "their words are a note on it, in their name");
+      const undo = [...$$("#toasts .toast button")].find(b => b.textContent === "Undo");
+      ok(undo, "with Undo");
+      undo.click(); await settle();
+      const [w3, q3] = getPage(path).blocks;
+      eq([w3.state, dueDate(q3) || null, messagesOf(q3).length], ["WAIT", null, 0], "Undo puts it all back");
+    } finally { closeAll(); document.querySelectorAll("#toasts > *").forEach(n => n.remove()); }
+  });
   test("#161 Ask for an update can leave the projects unnamed", async () => {
     const path = scratchProject("secret depot plan", [["TODO", "Ask [[p/Lars Haugen]] which crane goes first"]]);
     const block = getPage(path).blocks[0], title = pageTitle(path);

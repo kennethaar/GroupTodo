@@ -1624,6 +1624,10 @@ js/145-horizons-view/splitReplyRef.js
 js/145-horizons-view/resolveReplyItem.js
 js/145-horizons-view/postMessageAs.js
 js/145-horizons-view/openUpdateArrived.js
+js/145-horizons-view/vars-PASTED_UPDATE_BY_RE.js
+js/145-horizons-view/pastedUpdate.js
+js/145-horizons-view/applyPastedUpdate.js
+js/145-horizons-view/offerPastedUpdate.js
 js/145-horizons-view/replyWithoutRef.js
 js/145-horizons-view/importUpdatePasted.js
 js/145-horizons-view/importUpdateFromFile.js

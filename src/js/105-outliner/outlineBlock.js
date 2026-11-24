@@ -189,6 +189,8 @@ function outlineBlock(path, page, b, opts = {}) {
     }
     if (raw == null) return;
     e.preventDefault();
+    // An update on your tasks is offered to apply; the paste goes in as text either way (#373).
+    offerPastedUpdate(raw);
     if (SUGGEST && SUGGEST.host === txt) suggestClose();
     const whole = lineText(txt);
     const [from, to] = caretOffsets(txt);

@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.218.0 - 2026-11-24
+
+- Waiting for › List: paste their reply on any line, or in Capture, and it
+  is found there too. It goes in as text, and a note names the tasks and
+  what would change: done, a due date they gave, their words as a note.
+  Apply makes the changes; Undo takes them all back. Keep as text changes
+  nothing. (#373)
+
 ## 1.217.0 - 2026-11-24
 
 - Getting started: bring your notes from Obsidian, Dynalist, Logseq or

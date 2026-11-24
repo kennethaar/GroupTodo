@@ -4,6 +4,18 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.218.0#373": `
+    cap | Paste a reply anywhere
+    say | Paste their reply on any line.
+    + pg col
+    + t ln > pg | 1 done · 2: delivered by Friday
+    w 900
+    say | A note names the tasks and what would change.
+    + c chip > pg | Update from Lars: Done · Due Fri · note added   Apply | Keep as text
+    w 1200
+    p c
+    say | Apply makes the changes. Undo takes them back.
+    w 1500`,
   "1.217.0#458": `
     cap | Bring your notes from another app
     say | Start your own, and the first Journal asks.
@@ -198,32 +210,5 @@ const NEWS_ANIM = {
     w 900
     t l | ▮ Visitors
     t c | ▮ 1850  ▮ 2600, a bar per click
-    w 1800`,
-  "1.205.0#481": `
-    cap | One word sets how a slide is drawn
-    say | Type ( at the start of a line that has lines.
-    # "(" opens the layouts, "py" leaves Pyramid, Enter writes it; off the line the bullet is ▲.
-    + pg col
-    + l ln > pg | (
-    + a ln > pg | Purpose
-    s a | margin-left:24px
-    + b ln > pg | Strategy
-    s b | margin-left:24px
-    w 700
-    + m chip fade > pg | ≡ List · → Steps · ↻ Cycle · ▲ Pyramid · …
-    w 50
-    c m -fade
-    w 900
-    say | Letters narrow the list. Enter writes the word.
-    ty l | py
-    t m | ▲ Pyramid · base to top
-    w 900
-    k Enter
-    t l | (pyramid) What creates value
-    c m +fade
-    w 700
-    k
-    say | Off the line, its bullet shows the layout. The slide is a pyramid.
-    t l | ▲ What creates value
     w 1800`,
 };
