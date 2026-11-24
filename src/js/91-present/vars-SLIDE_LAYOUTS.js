@@ -38,7 +38,8 @@ const CHART_POINT_RE = new RegExp(`^(.*?\\S)\\s*:?\\s+(${CHART_NUM_SRC})$`, "u")
 const SLIDE_CALM = 5;
 /* The marks at the front of a line, plain text in the .md file. Never marks:
    "@ " (a context), "+ " (a Markdown bullet), "(*) ", 🎯 and a bare number.
-   "> " is a quote only; "| " is split or 2×2 by the number of lines. */
+   "> " is a quote only; "| " is split or 2×2 by the number of lines, but
+   not on a line that also ends in "|": that is a table's row (#469). */
 const SLIDE_MARKS = [
   [/^\d+\.\s+/, "process"],
   [/^step\s+\d+\s*:\s*/i, "process"],
@@ -50,7 +51,7 @@ const SLIDE_MARKS = [
   [/^🔺\s*/u, "pyramid"],
   [/^\.\s+/, "hub"],
   [/^~\s+/, "curve"],
-  [/^\|\s+/, "split"],
+  [/^\|\s+(?!.*\|\s*$)/, "split"],
   [/^[$%]\s+/, "kpi"],
 ];
 /* The layout words (#481): "(pyramid) What creates value" at the front of a

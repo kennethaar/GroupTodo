@@ -15284,7 +15284,14 @@ var GTD_TEST = (() => {
   });
   test("#469 a table in Present: header first, then a row (or a column) per step; Reveal Rows | Columns on the table bar", () => withPages({
     [SHOW]: ["- Sales by city", "  - | City | Q1 | Q2 |", "    | --- | ---: | ---: |", "    | Oslo | 1 | 2 |", "    | Bergen | 3 | 4 |",
-      "    | Molde | 5 | 6 |", "    reveal:: columns", "- Next"].join("\n") + "\n"}, async () => {
+      "    | Molde | 5 | 6 |", "    reveal:: columns", "- Next"].join("\n") + "\n",
+    // Reopened #469: beside one other line, the table's "| " read as a versus mark.
+    "Two lines.md": ["- Costs", "  - Intro", "  - | Item | Sum |", "    | --- | ---: |", "    | Rent | 10 |", "    | Food | 5 |",
+      "- Intro", "- | Item | Sum |", "  | --- | ---: |", "  | Rent | 10 |"].join("\n") + "\n"}, async () => {
+    const two = deckSteps("Two lines.md").slides;
+    eq(two.map(x => x.layout).join(), "list,list,table,list,table",
+      "a table beside one other line is drawn as a versus, not as its own table slide");
+    eq(two[2].parts.length, 2, "the table beside one line does not light a row per step");
     const [sales] = getPage(SHOW).blocks, [tbl] = sales.children;
     eq(blockProp(tbl, "reveal"), "columns", "reveal:: after the rows is not read as the table's");
     eq(tableRows(tbl), 4, "reveal:: after the rows breaks the table");
