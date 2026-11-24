@@ -11,9 +11,12 @@ function editBarSync() {
     // Movement first, then the Type/Tag/Media groups, then whatever is
     // marked to trail them (Side panel) -- the order the foot toolbar reads
     // left to right, not the order rows happen to sit in EDIT_BAR.
+    // A row with a menu of its own (Slide layout) opens it like a group does.
     const ebBtn = r => el("button", {
-      class: "ebtn", tabindex: "-1", title: r.tip, "aria-label": r.tip, data: {k: r.k}, onclick: () => editBarAct(r.k),
-    }, el("span", {class: "eic"}, r.ic.startsWith("<") ? svgIcon(r.ic) : r.ic), el("span", {class: "elb"}, r.label));
+      class: r.sub ? "ebtn ebgrp" : "ebtn", tabindex: "-1", title: r.tip, "aria-label": r.tip, data: {k: r.k},
+      ...(r.sub ? {"aria-haspopup": "menu", "aria-expanded": "false", onclick: e => editBarSlideMenu(e.currentTarget)}
+        : {onclick: () => editBarAct(r.k)}),
+    },el("span", {class: "eic"}, r.ic.startsWith("<") ? svgIcon(r.ic) : r.ic), el("span", {class: "elb"}, r.label));
     for (const r of EDIT_BAR.filter(r => !r.group && !r.tail)) bar.append(ebBtn(r));
     for (const g of EDIT_BAR_GROUPS) bar.append(el("button", {
       class: "ebtn ebgrp", tabindex: "-1", title: g.label, "aria-label": g.label, "aria-haspopup": "menu",
@@ -32,12 +35,6 @@ function editBarSync() {
       }}, "＋"));
     // A tap on the tools is not a click on the line they sit on.
     for (const t of ["pointerdown", "click", "dblclick"]) bar.addEventListener(t, e => e.stopPropagation());
-    // On a line, its first row makes room as wide as the bar (+ its margin);
-    // the rows below run under it. Kept as the bar grows (＋) or shrinks.
-    if (window.ResizeObserver) new ResizeObserver(() => {
-      const line = bar.parentNode;
-      if (line && line.classList && line.classList.contains("line")) line.style.setProperty("--ebw", bar.offsetWidth + 6 + "px");
-    }).observe(bar);
     document.body.append(bar);
   }
   editBarGroupClose();
@@ -46,17 +43,23 @@ function editBarSync() {
   if (line) {
     if (bar.parentNode !== line) {
       editBarRestShow(bar, PREF.get("linetools") === "all");
-      if (bar.parentNode && bar.parentNode.style) bar.parentNode.style.removeProperty("--ebw");
       line.append(bar);
     }
     bar.classList.add("inline");
-    line.style.setProperty("--ebw", bar.offsetWidth + 6 + "px");
-    bar.style.left = bar.style.bottom = "";
+    bar.style.bottom = "";
+    editBarPlaceInline(bar, line);
+    if (window.ResizeObserver) {
+      bar._ro = bar._ro || new ResizeObserver(() => { const l = bar.parentNode; if (l && bar.classList.contains("inline")) editBarPlaceInline(bar, l); });
+      bar._ro.disconnect();
+      bar._ro.observe(line);
+    }
     document.body.classList.remove("editbar-on");
     return;
   }
   if (bar.parentNode !== document.body) document.body.append(bar);
-  bar.classList.remove("inline", "all");
+  bar.classList.remove("inline", "all", "below");
+  bar.style.top = "";
+  if (bar._ro) bar._ro.disconnect();
   document.body.classList.add("editbar-on");
   editBarPlace();
 }

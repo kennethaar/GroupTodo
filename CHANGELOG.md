@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.218.2 - 2026-11-24
+
+- The line menu and toolbar: on a computer, the tools for the line you
+  write float just above it, so the words keep the whole width. They sat at
+  the end of the line and left room for one word per row. Slide layout has
+  its own button now, and its list drops straight down from it; Format holds
+  only text. (#395)
+
 ## 1.218.1 - 2026-11-24
 
 - Present a page: an embedded page, {{embed [[Page]]}}, such as one made

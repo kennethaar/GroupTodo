@@ -1886,6 +1886,7 @@ js/105-outliner/editBarInline.js
 js/105-outliner/editBarRestShow.js
 js/105-outliner/editBarSync.js
 js/105-outliner/editBarPlace.js
+js/105-outliner/editBarPlaceInline.js
 js/105-outliner/vars-flyOn.js
 js/105-outliner/flyPlace.js
 js/105-outliner/run-5-3.js

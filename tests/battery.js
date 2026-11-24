@@ -4888,7 +4888,7 @@ var GTD_TEST = (() => {
       await frame();
       ok(bar() && !bar().hidden, "no toolbar while a line is being written");
       eq([...bar().querySelectorAll(":scope > .ebtn .elb")].map(n => n.textContent),
-        ["Up", "Down", "Outdent", "Indent", "Notepad", "Type", "Tag", "Media", "Format", "Side panel"], "the top-level bar is 10 buttons (Format, #416)");
+        ["Up", "Down", "Outdent", "Indent", "Notepad", "Type", "Tag", "Media", "Format", "Slide layout", "Side panel"], "the top-level bar is 11 buttons (Format, #416; Slide layout, #395)");
       bar().querySelector('[data-k="more"]').click();
       await frame();
       ok(document.querySelector("#modalRoot .modal"), "Side panel opens the task detail panel directly, not a popover");
@@ -5007,12 +5007,12 @@ var GTD_TEST = (() => {
     eq(BRANCH_FOCUS.get(getPage(path)), a.id, "the zoom focuses on the line, as the bullet does");
     setBranchFocus(getPage(path), null, path);
   });
-  test("#395 on a computer the line tools sit on the line being written, the rest behind ＋ Insert; a phone keeps them at the foot", async () => {
-    const path = scratchProject("tools on the line", [["TODO", "Buy paint for the long hallway and the two small bedrooms upstairs, then the kitchen ceiling, the porch railing and the garden shed door before the autumn rain sets in for good this year"], ["TODO", "Call Bob"]]);
+  test("#395 on a computer the line tools float above the line being written, which keeps its width; the rest behind ＋ Insert; a phone keeps them at the foot", async () => {
+    const path = scratchProject("tools on the line", [["TODO", "Call Bob"], ["TODO", "Buy paint for the long hallway and the two small bedrooms upstairs, then the kitchen ceiling, the porch railing and the garden shed door before the autumn rain sets in for good this year"]]);
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
     openPage(path);
     await settle();
-    const [a, b] = getPage(path).blocks;
+    const [b, a] = getPage(path).blocks;
     const bar = () => document.querySelector("#editBar");
     // Left to right, as they stand on the screen.
     const shownKeys = () => [...bar().querySelectorAll(":scope > button")].filter(n => n.getClientRects().length)
@@ -5023,27 +5023,39 @@ var GTD_TEST = (() => {
       focusBlock(a.id);
       await frame();
       ok(bar() && !bar().hidden && bar().closest('.blk[data-id="' + a.id + '"]'), "the tools are on the line being written");
-      const r = bar().getBoundingClientRect(), line = bar().closest(".line").getBoundingClientRect();
-      ok(r.top >= line.top - 1 && r.bottom <= line.bottom + 1, "within the line's row");
-      const words = document.querySelector('.blk[data-id="' + a.id + '"] .txt').getBoundingClientRect();
-      // A line long enough to wrap keeps the tools on its first row, not
-      // centred down the middle of the paragraph.
+      // #395 reopened: beside the words, the tools left room for one word
+      // per row. Now they float just above the line, from where its words
+      // start, and the words get the line's whole width.
+      const r = bar().getBoundingClientRect();
       const txtEl = document.querySelector('.blk[data-id="' + a.id + '"] .txt');
+      const words = txtEl.getBoundingClientRect();
       const lh = parseFloat(getComputedStyle(txtEl).lineHeight) || 20;
       ok(words.height > lh * 1.5, "the long line wraps (" + words.height + " vs " + lh + ")");
-      ok(Math.abs((r.top + r.bottom) / 2 - (words.top + lh / 2)) <= 4, "the tools sit level with the first row (bar " + r.top + "-" + r.bottom + ", text from " + words.top + ")");
-      // The words flow around the tools: none under them, and the rows below
-      // the first use the whole width, so the line keeps its shape (#395).
+      ok(r.bottom <= words.top + 1 && r.bottom >= words.top - 12, "the tools sit just above the words (bar " + r.top + "-" + r.bottom + ", text from " + words.top + ")");
+      ok(Math.abs(r.left - words.left) <= 4, "lined up with where the words start (" + r.left + " vs " + words.left + ")");
       const rg = document.createRange();
       rg.selectNodeContents(txtEl);
       const rows = [...rg.getClientRects()].filter(q => q.width > 1);
-      ok(rows.every(q => q.right <= r.left + 1 || q.top >= r.bottom - 4 || q.bottom <= r.top + 1), "a word sits under the tools: bar " + [r.left, r.top, r.right, r.bottom].map(Math.round) + " rows " + rows.map(q => [q.left, q.top, q.right, q.bottom].map(Math.round).join(",")).join(" | "));
-      ok(rows.some(q => q.top > r.bottom - 4 && q.right > r.left + 20), "the rows below the first stop short of the tools instead of using the whole line");
+      const fullRight = Math.max(...rows.map(q => q.right));
+      ok(rows[0].right >= fullRight - 80, "the first row uses the line's width, not one word: rows " + rows.map(q => Math.round(q.right)).join(","));
+      const blur = document.activeElement;
+      // Nothing below moves: the line is as tall with the tools as without.
+      const tall = txtEl.closest(".line").offsetHeight;
+      blur && blur.blur && blur.blur();
+      await frame(); await frame();
+      eq(document.querySelector('.blk[data-id="' + a.id + '"] > .line').offsetHeight, tall, "the line keeps its height when the tools go");
+      // A page's first line has no room above: there the tools sit below it.
+      focusBlock(b.id);
+      await frame();
+      const rb = bar().getBoundingClientRect(), wb = document.querySelector('.blk[data-id="' + b.id + '"] .txt').getBoundingClientRect();
+      ok(rb.top >= wb.bottom - 1, "on the first line the tools sit below it (bar " + rb.top + ", words end " + wb.bottom + ")");
+      focusBlock(a.id);
+      await frame();
       eq(shownKeys()[0], "type", "Type first");
       for (const k of ["in", "out", "up", "down", "rest"]) ok(shownKeys().includes(k), k + " on show: " + shownKeys());
       // By default the rest waits behind ＋ (#395). ＋/− is a toggle that is
       // remembered from line to line and next time, for those who want all (#410).
-      for (const k of ["tag", "media", "pad", "more"]) ok(!shownKeys().includes(k), k + " waits behind ＋");
+      for (const k of ["tag", "media", "pad", "slide", "more"]) ok(!shownKeys().includes(k), k + " waits behind ＋");
       // Two buttons, two jobs: the bar's own button is ＋ Insert, so it never
       // looks like the line menu's ⋯.
       const rest = bar().querySelector('[data-k="rest"]');
@@ -5051,7 +5063,7 @@ var GTD_TEST = (() => {
       eq(rest.getAttribute("aria-label"), "Insert", "and it is named Insert");
       rest.click();
       await frame();
-      for (const k of ["tag", "media", "pad", "more"]) ok(shownKeys().includes(k), k + " after ＋");
+      for (const k of ["tag", "media", "pad", "slide", "more"]) ok(shownKeys().includes(k), k + " after ＋");
       eq(rest.textContent.trim(), "−", "#410 open, the button is −");
       eq(rest.getAttribute("aria-expanded"), "true", "and says it is open");
       focusBlock(b.id);
@@ -5093,8 +5105,10 @@ var GTD_TEST = (() => {
       ok(bar && !bar.hidden && blk().contains(bar), "the tools are on the line");
       const words = blk().querySelector(".txt").getBoundingClientRect(), br = bar.getBoundingClientRect();
       const chips = blk().querySelector(":scope > .line > .props").getBoundingClientRect();
-      ok(Math.abs(words.top - br.top) <= 6, "the words start on the tools' row (words " + words.top + ", tools " + br.top + ")");
-      ok(chips.top >= words.bottom - 2 && chips.top >= br.bottom - 2, "the chips sit under the words and tools (chips " + chips.top + ", words end " + words.bottom + ")");
+      // #395 reopened: the tools float above the line, so only words and chips share it.
+      const line = blk().querySelector(":scope > .line").getBoundingClientRect();
+      ok(Math.abs(words.top - line.top) <= 6 && (br.bottom <= line.top + 1 || br.top >= line.bottom - 1), "the words start the line's first row, the tools off it (words " + words.top + ", line " + [line.top, line.bottom] + ", tools " + [br.top, br.bottom] + ")");
+      ok(chips.top >= words.bottom - 2, "the chips sit under the words (chips " + chips.top + ", words end " + words.bottom + ")");
     } finally { PREF.set("linetools", wasTools || ""); document.activeElement && document.activeElement.blur(); go("today"); }
   });
   test("#424 the day page tip: short, its keys as a list, one example, Got it", async () => {
@@ -5199,7 +5213,7 @@ var GTD_TEST = (() => {
       const btn = document.querySelector('#editBar [data-k="format"]');
       ok(btn, "no Format button among the line tools");
       btn.click(); await frame();
-      eq(keys().join(" "), "h1 h2 h3 bold italic quote table slide", "a note's Format menu");
+      eq(keys().join(" "), "h1 h2 h3 bold italic quote table", "a note's Format menu (Slide layout has its own button, #395)");
       document.querySelector('#editBar [data-k="format"]').click(); await frame();
 
       await pick("h2");
@@ -5222,7 +5236,7 @@ var GTD_TEST = (() => {
 
       focusBlock(task.id); await frame();
       document.querySelector('#editBar [data-k="format"]').click(); await frame();
-      eq(keys().join(" "), "bold italic slide", "a task is never a heading, quote or table, so those are not offered");
+      eq(keys().join(" "), "bold italic", "a task is never a heading, quote or table, so those are not offered");
       document.querySelector('#editBar [data-k="format"]').click(); await frame();
 
       focusBlock(empty.id); await frame();
@@ -15570,7 +15584,7 @@ var GTD_TEST = (() => {
       } finally { presentStop(); PREF.set("present.pages", "[]"); }
     });
   });
-  test("#433 #481 Format › Slide layout writes the word on a line with lines; the same pick again, or Auto, takes it off; one Ctrl+Z; picked lines too", async () => {
+  test("#433 #481 #395 Slide layout, a button of its own, writes the word on a line with lines; the same pick again, or Auto, takes it off; one Ctrl+Z; picked lines too", async () => {
     const path = scratchProject("slide layout", [["", "Launch plan"], ["", "Stray line"]]);
     const [head, stray] = getPage(path).blocks;
     head.children = ["Q1 beta", "Q2 release", "Q3 enterprise"].map(t => newBlock({title: t}));
@@ -15583,12 +15597,15 @@ var GTD_TEST = (() => {
     // Undo puts back a copy of the page: look the lines up again each time.
     const now = b => { let hit = null; walkBlocks(getPage(path).blocks, x => { if (x.id === b.id) hit = x; }); return hit; };
     const kids = () => now(head).children.map(k => k.title);
+    // #395 reopened: Slide layout is a bar button of its own, not a row in
+    // Format, and its list drops straight down from it.
     const menu = async () => {
-      if (!document.querySelector('#editBar .ebpop[data-g="format"]')) document.querySelector('#editBar [data-k="format"]').click();
+      const btn = document.querySelector('#editBar > [data-k="slide"]');
+      if (!document.querySelector("#editBar .ebsub")) btn.click();
       await frame();
-      document.querySelector('#editBar .ebpop [data-k="slide"]').click();
-      await frame();
-      return [...document.querySelectorAll("#editBar .ebsub [data-lay]")];
+      const pop = document.querySelector("#editBar .ebsub"), br = btn.getBoundingClientRect(), pr = pop.getBoundingClientRect();
+      ok(pr.top >= br.bottom - 1 && pr.top <= br.bottom + 12 && (Math.abs(pr.left - br.left) <= 4 || pr.right >= innerWidth - 4), "the list drops from its button: button " + [br.left, br.bottom] + " list " + [pr.left, pr.top]);
+      return [...pop.querySelectorAll("[data-lay]")];
     };
     const pick = async lay => { (await menu()).find(n => n.dataset.lay === lay).click(); await settle(); };
     const ticked = async () => {
@@ -15598,6 +15615,9 @@ var GTD_TEST = (() => {
     };
     try {
       focusBlock(head.id); await frame();
+      document.querySelector('#editBar [data-k="format"]').click(); await frame();
+      ok(document.querySelector('#editBar .ebpop[data-g="format"]') && !document.querySelector('#editBar .ebpop [data-k="slide"]'), "Format holds text only, no Slide layout");
+      editBarGroupClose(); await frame();
       const items = await menu();
       eq(items.map(n => n.dataset.lay), ["auto", "process", "timeline", "cycle", "pyramid", "hub", "curve", "split", "kpi"],
         "the known layouts, Auto first");
