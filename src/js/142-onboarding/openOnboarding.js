@@ -30,7 +30,8 @@ function openOnboarding() {
           "you go.") : null),
       el("div", {class: "field", style: "margin-bottom:4px"},
         el("label", {}, "How are you starting?")),
-      pick("1", "Somebody invited me",
+      // "Invited" alone reads as "somebody told me about GroupToDo" (#458).
+      pick("1", "Someone invited me to a GroupToDo folder",
         "A colleague shared a folder with you, or sent you an invite or a vault file.",
         () => { closeModal(); openOnboardJoin(); }),
       pick("2", "I am starting my own",

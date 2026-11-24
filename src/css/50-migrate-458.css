@@ -1,0 +1,12 @@
+/* Coming from another app? (#458): a quiet card on top of the first Journal,
+   one button per app, ✕ to close it for good. */
+#content>.migrate{max-width:var(--readw,46rem);margin:8px auto 0;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg2);color:var(--fg)}
+#content>.migrate .mighead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#content>.migrate .migclose{min-width:36px;min-height:36px;border:0;border-radius:8px;background:none;color:var(--fg2);font:inherit;cursor:pointer}
+#content>.migrate .migclose:hover,#content>.migrate .migclose:focus-visible{background:var(--bg3);color:var(--fg)}
+#content>.migrate .migapps{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:6px}
+#content>.migrate .migapp{min-height:36px;padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--bg);color:var(--fg);font:inherit;cursor:pointer}
+#content>.migrate .migapp:hover,#content>.migrate .migapp:focus-visible{background:var(--bg3)}
+#content>.migrate .migsay{color:var(--fg2);font-size:.9em}
+.migsteps ol{margin:0 0 14px;padding-left:22px;line-height:1.6}
+.migsteps a.btn{display:inline-flex;text-decoration:none}

@@ -31,6 +31,7 @@ const HELP = {
     keys: [["N", "Capture"], ["?", "This page"], ["/", "Search"], ["\\", "Sidebar"]],
     more: ["The tour is a project of its own: Find your way round GroupToDo. Each step opens the place it is about.",
       "Starting your own ends with Lines inside lines: four short rules, played on a small outline.",
+      "Coming from Obsidian, Dynalist, Logseq or WorkFlowy? The first Journal asks. Pick your app to see the steps and download the importer. It copies your notes into a new folder, to add as an area. ✕ closes the card.",
       "Each file is Markdown. It opens in Notepad, so your list outlives the app."],
     see: ["gtd", "topbar", "journal", "next-list", "review-steps"],
     words: ["intro", "tour", "begin", "basics", "new", "onboarding", "first"]},

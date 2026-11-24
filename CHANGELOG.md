@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.217.0 - 2026-11-24
+
+- Getting started: bring your notes from Obsidian, Dynalist, Logseq or
+  WorkFlowy. When you start your own, the first Journal asks "Coming from
+  another app?". Pick yours to see the steps and download the importer.
+  The Welcome screen now says "Someone invited me to a GroupToDo folder",
+  so it is not read as being told about the app. (#458)
+
 ## 1.216.0 - 2026-11-24
 
 - Present a page: learn Present by presenting it. Its help is now four

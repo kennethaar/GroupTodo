@@ -4,6 +4,17 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.217.0#458": `
+    cap | Bring your notes from another app
+    say | Start your own, and the first Journal asks.
+    + pg col
+    + t ln > pg | Coming from another app?
+    + c chip > pg | Obsidian · Dynalist · Logseq · WorkFlowy
+    w 1200
+    say | Pick your app for its steps and the importer.
+    p c
+    + d ln > pg | Download the importer
+    w 1500`,
   "1.216.0#484": `
     cap | Learn Present by presenting
     say | Present's help is four short topics now.

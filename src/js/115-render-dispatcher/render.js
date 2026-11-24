@@ -32,6 +32,9 @@ function render() {
   c.append(node);
   // Where you left off, on any device, on top of the Journal (#492).
   const left = !linkWait && lastPlaceBar();
+  // Coming from another app? on the first Journal (#458), under Continue.
+  const mig = !linkWait && migrateCard();
+  if (mig) c.prepend(mig);
   if (left) c.prepend(left);
   document.body.classList.toggle("solview", node.classList.contains("solwrap"));
   journalPaper();

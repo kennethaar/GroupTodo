@@ -52,6 +52,7 @@ css/46-present-map-488.css
 css/47-present-camera-485.css
 css/48-present-picbullet-491.css
 css/49-last-place-492.css
+css/50-migrate-458.css
 # script 1
 js/00-bootstrap/vars-APP_VERSION.js
 js/00-bootstrap/keepFocus.js
@@ -2904,6 +2905,9 @@ js/141-area-checklist-dialogs/openRunChecklist.js
 js/141-area-checklist-dialogs/vars-RUN_GROUPS.js
 js/141-area-checklist-dialogs/openRunHere.js
 js/141-area-checklist-dialogs/runListUnder.js
+js/142-onboarding/vars-MIGRATE_APPS.js
+js/142-onboarding/openMigrateSteps.js
+js/142-onboarding/migrateCard.js
 js/142-onboarding/openOnboarding.js
 js/142-onboarding/onboardNameField.js
 js/142-onboarding/stampOnboarded.js

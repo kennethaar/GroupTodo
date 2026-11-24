@@ -15014,6 +15014,38 @@ var GTD_TEST = (() => {
       } finally { presentStop(); window.open = open; f.remove(); }
     });
   });
+  /* #458 Starting your own, the first Journal asks "Coming from another app?"
+     with Obsidian, Dynalist, Logseq and WorkFlowy. Each opens its steps and a
+     way to download the importer; ✕ closes the card for good. The Welcome
+     screen says plainly that an invite is to a GroupToDo folder. */
+  test("#458 the first Journal offers to bring notes from Obsidian, Dynalist, Logseq or WorkFlowy; Welcome says invited to a folder", async () => {
+    const was = PREF.get("migrate.card", "");
+    try {
+      openOnboarding();
+      has($(".modal .pick")?.textContent, "Someone invited me to a GroupToDo folder", "the invite choice says it is to a folder");
+      closeModal();
+      PREF.set("migrate.card", "");
+      go("today"); await settle();
+      ok(!$("#content .migrate"), "nobody who did not just start their own is asked");
+      PREF.set("migrate.card", "1");
+      render(); await settle();
+      const card = $("#content .migrate");
+      ok(card, "the first Journal shows the card");
+      eq([...card.querySelectorAll(".migapp")].map(b => b.textContent), ["Obsidian", "Dynalist", "Logseq", "WorkFlowy"], "one button per app");
+      [...card.querySelectorAll(".migapp")].find(b => b.textContent === "Dynalist").click(); await settle();
+      has($(".modal")?.textContent, "Bring your notes from Dynalist", "an app opens its steps");
+      has($(".modal")?.textContent, "OPML", "Dynalist's steps start from its OPML export");
+      ok($('.modal a[download][href="GroupToDo-Importer.html"]'), "with the importer to download");
+      closeModal();
+      [...card.querySelectorAll(".migapp")].find(b => b.textContent === "Obsidian").click(); await settle();
+      has($(".modal")?.textContent, "vault folder", "Obsidian's steps start from its vault folder");
+      closeModal();
+      card.querySelector(".migclose").click(); await settle();
+      ok(!$("#content .migrate"), "✕ closes it");
+      go("next"); go("today"); await settle();
+      ok(!$("#content .migrate"), "and it stays closed");
+    } finally { closeModal(); PREF.set("migrate.card", was); go("today"); }
+  });
   /* #484 Present's help is four topics, each with its picture, and each can
      open the Present tutorial: a normal page in the area, where each slide
      shows one thing and its notes say how that slide is written. */
