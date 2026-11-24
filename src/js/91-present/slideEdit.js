@@ -14,7 +14,8 @@ function slideEdit(e) {
   let b = null;
   // A table's own slide is titled by the slide it is on, not by its header row (#469).
   if (spot.matches(".stitle")) b = DECK.steps[DECK.i]?.s.block;
-  if (b && tableRows(b)) b = null;
+  // Nor is an embedded page's title (#470): that is the page's name.
+  if (b && (tableRows(b) || b.embedPage)) b = null;
   else {
     // On the page, or brought in by an embed from another page (#470).
     const brought = DECK.slides.flatMap(s => [s.block, ...s.parts]).filter(x => x && typeof x === "object" && x.id != null);

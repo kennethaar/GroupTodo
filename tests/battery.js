@@ -15028,7 +15028,9 @@ var GTD_TEST = (() => {
     const SRC = join(PAGES, "Hall source.md");
     return withPages({
       [SHOW]: ["- Plan", "  - Ask ((ref-one-0470)) today", "  - {{embed ((emb-two-0470))}}", "  - Gone ((gone-0470)) too",
-        "  - {{embed ((gone-0470))}}", "  - {{embed ((self-0470))}}"].join("\n") + "\n",
+        "  - {{embed ((gone-0470))}}", "  - {{embed ((self-0470))}}",
+        // #470 a page embed is the page, its top lines as its lines; a missing page or the talk's own shows nothing
+        "  - {{embed [[Hall source]]}}", "  - {{embed [[No such page 0470]]}}", "  - {{embed [[Show]]}}"].join("\n") + "\n",
       [SRC]: ["- Book the hall", "- Budget lines", "  - Rent", "  - _ Secret"].join("\n") + "\n"}, async () => {
       const [hall, budget] = getPage(SRC).blocks, [plan] = getPage(SHOW).blocks;
       setBlockProp(hall, "id", "ref-one-0470"); setBlockProp(budget, "id", "emb-two-0470");
@@ -15041,11 +15043,12 @@ var GTD_TEST = (() => {
       try {
         const {slides, broken} = deckSteps(SHOW);
         eq(slides.map(s => [s.title, s.kids.map(slideWords)]),
-          [["Show", []], ["Plan", ["Ask Book the hall today", "Budget lines", "Gone too"]], ["Budget lines", ["Rent"]]],
-          "a reference reads as its line's words; an embed is its line with its own lines, hidden ones kept out");
-        eq(broken, 2, "a reference and an embed whose line is gone show nothing, and are counted");
+          [["Show", []], ["Plan", ["Ask Book the hall today", "Budget lines", "Gone too", "Hall source"]], ["Budget lines", ["Rent"]],
+            ["Hall source", ["Book the hall", "Budget lines"]], ["Budget lines", ["Rent"]]],
+          "a reference reads as its line's words; an embed is its line with its own lines, hidden ones kept out; a page embed is the page");
+        eq(broken, 3, "a reference, an embed and a page embed whose line or page is gone show nothing, and are counted");
         presentStart(SHOW, {presenter: true}); await settle();
-        has(f.contentDocument.querySelector(".pcount")?.textContent, "2 point to a line that is gone", "the presenter notes them");
+        has(f.contentDocument.querySelector(".pcount")?.textContent, "3 point to a line that is gone", "the presenter notes them");
         const dbl = n => n.dispatchEvent(new MouseEvent("dblclick", {bubbles: true, cancelable: true}));
         const rent = budget.children[0];
         presentGo(DECK.steps.findIndex(({s, k}) => s.parts[k - 1] === rent)); await settle();

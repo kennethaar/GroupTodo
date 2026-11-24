@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.218.1 - 2026-11-24
+
+- Present a page: an embedded page, {{embed [[Page]]}}, such as one made
+  with /embed, now shows on its slide as that page: its title, with its
+  lines under it. It showed as the words "{{embed Page}}". (#470)
+
 ## 1.218.0 - 2026-11-24
 
 - Waiting for › List: paste their reply on any line, or in Capture, and it

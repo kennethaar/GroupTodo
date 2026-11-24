@@ -24,7 +24,8 @@ function deckSteps(path, root = null, on = false) {
      whose line is gone is left out, and counted for the presenter. */
   const lines = list => (list || []).map(b => {
     const to = slideEmbed(b, embeds);
-    if (!to && blockById(SLIDE_EMBED_RE.exec(b.title)[1]) == null) gone.add(b);
+    const m = to ? null : SLIDE_EMBED_RE.exec(b.title);
+    if (m && (m[1] ? blockById(m[1]) == null : !findExistingPage(m[2]))) gone.add(b);
     return to;
   }).filter(Boolean);
   // A line that is only a picture has something to show too: a map's card (#488).
