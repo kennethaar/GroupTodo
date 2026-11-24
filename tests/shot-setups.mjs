@@ -142,3 +142,21 @@ AFTER.book = AFTER["book-cast"] = AFTER["book-relations"] = AFTER["book-timeline
 AFTER["journal-week"] = AFTER["review-steps"] = `for (const [p, page] of WEEK_SHOT) if (page) putPage(p, page, {silent: true}); else V.pages.delete(p);
     clearMemo(); render();`;
 AFTER["review-steps"] = `PREF.set("review.open", OPEN_SHOT); ` + AFTER["review-steps"];
+// Present (#484): its four topics, shown on the Present tutorial page it makes.
+// The presenter window opens in a frame over the page, so the picture can hold it.
+const TUT_AT = (test) => `const p = openPresentTutorial(); presentStart(p);
+    presentGo(Math.max(0, DECK.steps.findIndex(({s, k}) => ${test})));
+    // The picture is of the slide, not of the title on its way up.
+    setTimeout(() => document.getAnimations().forEach(a => a.finish()), 200);`;
+const TUT_PW = (test) => `window.TUT_FRAME = document.createElement("iframe");
+    TUT_FRAME.style.cssText = "position:fixed;inset:0;width:100vw;height:100vh;border:0;z-index:99999;background:#fff";
+    document.body.append(TUT_FRAME); window.TUT_OPEN = window.open; window.open = () => TUT_FRAME.contentWindow;
+    const p = openPresentTutorial(); presentStart(p, {presenter: true});
+    presentGo(Math.max(0, DECK.steps.findIndex(({s, k}) => ${test})));`;
+SETUP.present = `openPresentTutorial();`;
+SETUP["present-layouts"] = TUT_AT(`s.layout === "pyramid" && k === s.parts.length`);
+SETUP["present-notes"] = TUT_PW(`s.layout === "process" && k === 0`);
+SETUP["present-presenter"] = TUT_PW(`s.layout === "bar" && k === 0`);
+AFTER.present = AFTER["present-layouts"] = AFTER["present-notes"] = AFTER["present-presenter"] = `presentStop();
+    if (window.TUT_FRAME) { TUT_FRAME.remove(); window.open = TUT_OPEN; window.TUT_FRAME = null; }
+    V.pages.delete(resolveWikiPath(PRESENT_TUTORIAL_TITLE)); clearMemo(); go("today");`;

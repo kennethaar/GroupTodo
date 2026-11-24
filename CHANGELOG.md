@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.216.0 - 2026-11-24
+
+- Present a page: learn Present by presenting it. Its help is now four
+  short topics with pictures: the basics, layouts and charts, notes and
+  pictures, and the presenter window. Each has Open the Present tutorial,
+  which makes a page in the area. Each slide on it shows one layout, a
+  chart, a table or a quote, and its notes say how it is written. (#484)
+
 ## 1.215.1 - 2026-11-24
 
 - Present a page: a reference to a line reads as that line's words on the

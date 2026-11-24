@@ -30,6 +30,8 @@ function helpTopicNode(id, {here = false, read = openHelp} = {}) {
   if (id === "run") box.append(helpRun());
   const see = (t.see || []).filter(s => HELP[s]);
   box.append(el("h3", {}, here ? "Learn more" : "See also"), el("div", {class: "helpsee"},
+    // A page to learn on by doing it, such as the Present tutorial (#484).
+    t.tutorial ? el("button", {class: "textbtn", type: "button", onclick: openPresentTutorial}, "Open the Present tutorial") : null,
     ...see.map(s => helpLink(s, read)),
     here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full help") : null,
     !here && t.view && t.view !== "help" && t.view !== "page" ? el("button", {class: "textbtn",

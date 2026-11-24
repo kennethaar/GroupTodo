@@ -789,6 +789,8 @@ js/91-present/slideRefs.js
 js/91-present/slideWords.js
 js/91-present/slideEmbed.js
 js/91-present/slideHomePath.js
+js/91-present/vars-PRESENT_TUTORIAL.js
+js/91-present/openPresentTutorial.js
 js/91-present/slideText.js
 js/91-present/slidePicture.js
 js/91-present/slideNotes.js

@@ -15014,6 +15014,44 @@ var GTD_TEST = (() => {
       } finally { presentStop(); window.open = open; f.remove(); }
     });
   });
+  /* #484 Present's help is four topics, each with its picture, and each can
+     open the Present tutorial: a normal page in the area, where each slide
+     shows one thing and its notes say how that slide is written. */
+  test("#484 Present help is four topics with pictures; Open the Present tutorial makes a page that teaches each layout", async () => {
+    const ids = ["present", "present-layouts", "present-notes", "present-presenter"];
+    for (const id of ids) {
+      ok(HELP[id]?.shot, id + " is a topic with its own picture");
+      for (const o of ids) if (o !== id) ok(HELP[id].see.includes(o), id + " links to " + o);
+      ok([...helpTopicNode(id).querySelectorAll("button")].some(b => b.textContent === "Open the Present tutorial"),
+        id + " offers the tutorial");
+    }
+    ok(HELP.present.more.length < 12, "no topic holds all of Present any more");
+    const path = resolveWikiPath("Present tutorial");
+    const was = getPage(path) || null;
+    V.pages.delete(path); clearMemo();
+    try {
+      [...helpTopicNode("present-layouts").querySelectorAll("button")].find(b => b.textContent === "Open the Present tutorial").click();
+      await settle();
+      eq([state.view, state.pagePath], ["page", path], "it makes the Present tutorial page in this area and opens it");
+      const {slides} = deckSteps(path);
+      const lays = new Set(slides.map(s => s.layout));
+      for (const l of ["process", "timeline", "cycle", "pyramid", "hub", "split", "quadrant", "kpi", "bar", "pie", "table", "hero"])
+        ok(lays.has(l), "a slide shows the " + l + " layout");
+      const own = slides.filter(s => s.block && s.depth === 0);
+      ok(own.length >= 12, "a slide per thing to learn");
+      for (const s of own) ok(s.notes, "the notes of " + s.title + " tell how it is written");
+      for (const s of own) {
+        const w = slideWord(s.block.title).word;
+        if (w) has(s.notes, "(" + w + ")", "the notes of " + s.title + " name its word");
+      }
+      ok(slides.every(s => !/[[\]{}]{2}|\(\(/.test(s.title)), "no raw code on a slide");
+      getPage(path).blocks[0].title = "My own first line"; touch(path);
+      go("today");
+      [...helpTopicNode("present").querySelectorAll("button")].find(b => b.textContent === "Open the Present tutorial").click();
+      await settle();
+      eq([state.pagePath, getPage(path).blocks[0].title], [path, "My own first line"], "opened again, it is the same page, as you left it");
+    } finally { if (was) putPage(path, was, {silent: true}); else V.pages.delete(path); clearMemo(); go("today"); }
+  });
   test("#467 task lines and lines starting with _ stay off the slides; Hide in Present; the presenter says how many", () => withPages({
     [SHOW]: ["- Agenda", "  - TODO Book the room", "    - Ask Ann", "  - Budget", "  - _ Draft numbers", "    - Old guess",
       "  - DONE Send invite", "- _ Parked slide", "  - Idea", "- Roadmap", "  - -> Q1", "  - _ -> Q2", "  - -> Q3"].join("\n") + "\n"}, async () => {

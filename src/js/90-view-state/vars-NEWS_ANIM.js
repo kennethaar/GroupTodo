@@ -4,6 +4,18 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.216.0#484": `
+    cap | Learn Present by presenting
+    say | Present's help is four short topics now.
+    + pg col
+    + t ln > pg | Present a page · Layouts · Notes · Presenter
+    w 900
+    say | Open the Present tutorial makes a page to present.
+    + c chip > pg | Open the Present tutorial
+    w 1200
+    p c
+    + u ln > pg | (pyramid) What makes a regular
+    w 1500`,
   "1.215.0#492": `
     cap | Go on where you left off
     say | The Journal opens as always.
@@ -203,26 +215,4 @@ const NEWS_ANIM = {
     say | Off the line, its bullet shows the layout. The slide is a pyramid.
     t l | ▲ What creates value
     w 1800`,
-  "1.204.0#480": `
-    cap | Join a meeting from its line
-    say | A meeting from your calendar keeps its Teams link.
-    # A calendar meeting; Join is quiet, then stands out 5 minutes before.
-    + pg col
-    + m ln > pg | 11:15–12:00  #meeting Harbour Lane kickoff
-    + j chip fade > m | ▶ Join
-    w 900
-    say | Before the meeting, Join shows when you point at the line.
-    p m
-    c j -fade
-    w 1200
-    c j +fade
-    w 600
-    say | From 5 minutes before, Join stands out.
-    + k quiet > pg | Now 11:10
-    c j -fade
-    c j +lit
-    w 900
-    p j
-    say | The reminder has Join too.
-    w 1500`,
 };
