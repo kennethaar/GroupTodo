@@ -4541,7 +4541,7 @@ The payment becomes a Waiting for, due after the organisation's pay days (14 wit
 The people of this area are the characters. A page whose type is place or thing is in it too. =>
 The people to drag. =>
 The person, how many, and × to hide. =>
-The phone asks for the folder each time the app starts. Tap Allow access to see your pages. Then it asks for each other area's folder too, one at a time: 1 of 2, then 2 of 2. If you are writing meanwhile, the folder's pages take over at your next Enter. =>
+The phone asks for the folder each time the app starts. Tap Allow access to see your pages. The browser's Allow comes up in the same place, so tap there twice. Then it asks for each other area's folder too, one at a time: 1 of 2, then 2 of 2. If you are writing meanwhile, the folder's pages take over at your next Enter. =>
 The phone did not hand over any contacts. =>
 The pile is empty =>
 The place or tool all of them need =>

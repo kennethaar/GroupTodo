@@ -36,6 +36,15 @@ body:not(.pane-open) .panegrip{display:none}
 .folderaway p{color:var(--fg2);line-height:1.5;margin:0 0 16px}
 .folderaway .row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
 .folderaway .quiet{color:var(--fg3);font-size:12.5px}
+/* On a phone "Allow access" opens the browser's own ask, centred with Allow on
+   the right just below the middle. Put ours there, so both taps land in one
+   place (#490): the panel ends 96px below the middle. Only on a phone tall
+   enough for the text above it. */
+@media (max-width:700px) and (min-height:560px){
+  .folderaway{position:fixed;left:0;right:0;bottom:calc(50dvh - 96px);padding:0 16px;max-height:calc(50dvh - 40px);overflow:auto}
+  .folderaway .row{justify-content:flex-end;margin:0}
+  .folderaway .row .btn{min-height:44px}
+}
 @media (min-width:1100px){ .wrap.jwide{max-width:1600px} }
 /* Content width (Styles, #211). Wide, the default: the week's seven days share
    the window and the lists of cards flow into columns, as the boards do. Full

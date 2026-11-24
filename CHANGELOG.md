@@ -11,6 +11,10 @@ that breaks existing vaults. Newest first.
   with /embed, now shows on its slide as that page: its title, with its
   lines under it. It showed as the words "{{embed Page}}". (#470)
 
+- Phone and PC: on a phone, Allow access now sits on the right, just below
+  the middle, where the browser's own Allow comes up next. Reconnecting a
+  folder is two taps in the same place. (#490)
+
 ## 1.218.0 - 2026-11-24
 
 - Waiting for › List: paste their reply on any line, or in Capture, and it
