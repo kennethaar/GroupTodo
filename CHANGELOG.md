@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.215.1 - 2026-11-24
+
+- Present a page: a reference to a line reads as that line's words on the
+  slide, and an embed brings its line and the lines under it into the talk.
+  An edit on the slide changes the line where it is written. One whose line
+  is gone shows nothing, and the presenter window says so. (#470)
+
 ## 1.215.0 - 2026-11-23
 
 - Journal: where you left off is kept in the area's folder, so it is the

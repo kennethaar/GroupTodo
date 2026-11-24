@@ -6,7 +6,8 @@
    the line says. A context is a tag and goes. */
 function slideWords(b, keepMarks = false) {
   // A picture is not words (#488): it is drawn, as a slide's or a card's picture.
-  const words = withoutEst(slideMark(slideWord(b.title).rest).words).replace(/\[\[c\/[^\]]+\]\]/g, "")
+  // A reference or an embed reads as the line it points to (#470).
+  const words = withoutEst(slideMark(slideWord(slideRefs(b.title)).rest).words).replace(/\[\[c\/[^\]]+\]\]/g, "")
     .replace(/\s*!\[[^\]]*\]\([^)\s]*\)\s*/g, " ").trim();
   return keepMarks ? linkWords(words) : withoutMarks(linkWords(words));
 }

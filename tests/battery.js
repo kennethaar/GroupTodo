@@ -14976,6 +14976,44 @@ var GTD_TEST = (() => {
       ["Plan Office move with Anna", ["Ask Kitchen renovation about money"]],
       "every linked word stays; a context is a tag, not words");
   }));
+  /* #470 A ((id)) on a slide reads as the line it points to; a line that is
+     {{embed ((id))}} brings that line and its lines into the talk as if they
+     were written there. One whose line is gone shows nothing, and the
+     presenter says so. An edit on the slide changes the original line. */
+  test("#470 references and embeds show the line they point to on a slide; gone ones show nothing; editing one changes the original", () => {
+    const SRC = join(PAGES, "Hall source.md");
+    return withPages({
+      [SHOW]: ["- Plan", "  - Ask ((ref-one-0470)) today", "  - {{embed ((emb-two-0470))}}", "  - Gone ((gone-0470)) too",
+        "  - {{embed ((gone-0470))}}", "  - {{embed ((self-0470))}}"].join("\n") + "\n",
+      [SRC]: ["- Book the hall", "- Budget lines", "  - Rent", "  - _ Secret"].join("\n") + "\n"}, async () => {
+      const [hall, budget] = getPage(SRC).blocks, [plan] = getPage(SHOW).blocks;
+      setBlockProp(hall, "id", "ref-one-0470"); setBlockProp(budget, "id", "emb-two-0470");
+      setBlockProp(plan, "id", "self-0470");              // a slide that embeds itself must not go round for ever
+      touch(SRC); touch(SHOW);
+      const f = document.createElement("iframe");
+      document.body.append(f);
+      const open = window.open;
+      window.open = () => f.contentWindow;
+      try {
+        const {slides, broken} = deckSteps(SHOW);
+        eq(slides.map(s => [s.title, s.kids.map(slideWords)]),
+          [["Show", []], ["Plan", ["Ask Book the hall today", "Budget lines", "Gone too"]], ["Budget lines", ["Rent"]]],
+          "a reference reads as its line's words; an embed is its line with its own lines, hidden ones kept out");
+        eq(broken, 2, "a reference and an embed whose line is gone show nothing, and are counted");
+        presentStart(SHOW, {presenter: true}); await settle();
+        has(f.contentDocument.querySelector(".pcount")?.textContent, "2 point to a line that is gone", "the presenter notes them");
+        const dbl = n => n.dispatchEvent(new MouseEvent("dblclick", {bubbles: true, cancelable: true}));
+        const rent = budget.children[0];
+        presentGo(DECK.steps.findIndex(({s, k}) => s.parts[k - 1] === rent)); await settle();
+        dbl($(`#deck .slide.cur [data-bid="${rent.id}"]`)); await settle();
+        const field = $("#deck .slide.cur .sedit");
+        field.value = "Rent for May";
+        field.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true, cancelable: true})); await settle();
+        eq(rent.title, "Rent for May", "editing an embedded line on the slide changes the original line");
+        has(serializePage(getPage(SRC)), "Rent for May", "on its own page");
+      } finally { presentStop(); window.open = open; f.remove(); }
+    });
+  });
   test("#467 task lines and lines starting with _ stay off the slides; Hide in Present; the presenter says how many", () => withPages({
     [SHOW]: ["- Agenda", "  - TODO Book the room", "    - Ask Ann", "  - Budget", "  - _ Draft numbers", "    - Old guess",
       "  - DONE Send invite", "- _ Parked slide", "  - Idea", "- Roadmap", "  - -> Q1", "  - _ -> Q2", "  - -> Q3"].join("\n") + "\n"}, async () => {

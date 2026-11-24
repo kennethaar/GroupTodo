@@ -15,7 +15,12 @@ function slideEdit(e) {
   // A table's own slide is titled by the slide it is on, not by its header row (#469).
   if (spot.matches(".stitle")) b = DECK.steps[DECK.i]?.s.block;
   if (b && tableRows(b)) b = null;
-  else walkBlocks(getPage(DECK.path)?.blocks || [], x => { if (String(x.id) === spot.dataset.bid) b = x; });
+  else {
+    // On the page, or brought in by an embed from another page (#470).
+    const brought = DECK.slides.flatMap(s => [s.block, ...s.parts]).filter(x => x && typeof x === "object" && x.id != null);
+    for (const list of [getPage(DECK.path)?.blocks || [], brought])
+      walkBlocks(list, x => { if (!b && String(x.id) === spot.dataset.bid) b = x; });
+  }
   if (!b) return;
   e.preventDefault();
   // Where the words stand: in a drawing that is one box of the part, not its own lines.

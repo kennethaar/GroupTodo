@@ -12,7 +12,8 @@ function slideEditEnd(save) {
     if (DECK.deck.contains(ed.at)) DECK.deck.focus({preventScroll: true});
     return;
   }
-  const path = DECK.path, space = V.space, snapshot = structuredClone(getPage(path));
+  // An embedded line is written on its own page (#470).
+  const path = slideHomePath(ed.b, DECK.path), space = V.space, snapshot = structuredClone(getPage(path));
   pushUndo({run: () => {
     if (V.space !== space || !getPage(path)) return false;
     Object.assign(getPage(path), structuredClone(snapshot));
@@ -22,7 +23,7 @@ function slideEditEnd(save) {
   ed.b.title = val;
   createLinkedPages(val);
   touch(path); render();
-  Object.assign(DECK, deckSteps(path, DECK.root, DECK.on));
+  Object.assign(DECK, deckSteps(DECK.path, DECK.root, DECK.on));
   const i = DECK.i;
   DECK.i = -1;
   DECK.deck.querySelector(".slide.cur")?.remove();

@@ -10,7 +10,7 @@ function presentStart(path, {root = null, on = false, presenter = false, step = 
   presentStop();
   slidePeekHide();
   slidePresented(path, true);
-  const {steps, slides, hidden} = deckSteps(path, root, on);
+  const {steps, slides, hidden, broken} = deckSteps(path, root, on);
   const back = document.activeElement;
   const id = back && back.closest && back.closest(".blk")?.dataset.id;
   let at = 0;
@@ -25,7 +25,7 @@ function presentStart(path, {root = null, on = false, presenter = false, step = 
   const own = [...(rec?.css || new Map())].filter(([p]) => isSlidesCssPath(p)).map(([, t]) => t).join("\n");
   if (own) deck.append(el("style", {class: "deckcss"}, own));
   document.body.append(deck);
-  DECK = {path, root, on, steps, slides, hidden, i: -1, deck, back, digits: "", pw: null, t0: Date.now(), timer: 0, grid: false, edit: null};
+  DECK = {path, root, on, steps, slides, hidden, broken, i: -1, deck, back, digits: "", pw: null, t0: Date.now(), timer: 0, grid: false, edit: null};
   window.addEventListener("keydown", presentKey, true);
   deck.addEventListener("dblclick", slideEdit);
   // Alt+drag places a line, the title or the picture's crop (#487).

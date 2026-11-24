@@ -935,6 +935,7 @@ const HELP = {
       "A table is a slide of its own. Its header shows first, then → adds a row. Reveal Columns on the table's bar adds a column instead.",
       "Dates, contexts and values are left off the slides.",
       "☰ › Hide in Present adds the _ for you. Present from here on a hidden line still shows it. The presenter window says how many lines are hidden. With lines picked, Slide layout ▾ hides or shows them all.",
+      "A reference to a line reads on the slide as that line's words. An embed brings its line and the lines under it into the talk, as if written there; an edit on the slide changes the line where it is written. If the line is gone, the slide shows nothing, and the presenter window says so.",
       "Keep a slide to five lines. On a page you have presented, or one with slide marks, a line past the fifth on a slide gets a red bullet. Point at it to see why.",
       "Copy for AI › Slides copies a prompt that tells your AI how slides are written here: layout words, charts, tables, bold words and notes. Paste it into your AI with your text, then paste its answer back. Make the slides puts them under the line.",
       "Put pictures in the area's assets/slides folder. The AI picks one for a slide by its name, so name each by what it shows. The list is shuffled each time, and pictures used on other pages come last. A name with only numbers or a camera code, like IMG_0042, is listed so you can rename it.",

@@ -784,7 +784,11 @@ js/90-view-state/focusButton.js
 js/91-present/vars-DECK.js
 js/91-present/vars-PRESENTER_CSS.js
 js/91-present/isSlidesCssPath.js
+js/91-present/vars-SLIDE_REF_RE.js
+js/91-present/slideRefs.js
 js/91-present/slideWords.js
+js/91-present/slideEmbed.js
+js/91-present/slideHomePath.js
 js/91-present/slideText.js
 js/91-present/slidePicture.js
 js/91-present/slideNotes.js
