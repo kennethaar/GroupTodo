@@ -10727,7 +10727,7 @@ var GTD_TEST = (() => {
       const o = document.querySelector("#modalRoot .modal");
       has(o.textContent, "Anybody you invite sees this name.");
       ok(!o.textContent.includes("Skip this if"), "the area note repeats its field");
-      ok([...o.querySelectorAll(".field")].some(f => f.textContent.includes("Obsidian or Logseq")), "the importer note sits outside a field");
+      // Coming from another app moved to the first Journal; #458 tests it there.
     } finally {
       shut();
       PREF.set("work_hours", wh);
