@@ -5007,8 +5007,9 @@ var GTD_TEST = (() => {
     eq(BRANCH_FOCUS.get(getPage(path)), a.id, "the zoom focuses on the line, as the bullet does");
     setBranchFocus(getPage(path), null, path);
   });
-  test("#395 on a computer the line tools float above the line being written, which keeps its width; the rest behind ＋ Insert; a phone keeps them at the foot", async () => {
-    const path = scratchProject("tools on the line", [["TODO", "Call Bob"], ["TODO", "Buy paint for the long hallway and the two small bedrooms upstairs, then the kitchen ceiling, the porch railing and the garden shed door before the autumn rain sets in for good this year"]]);
+  test("#395 on a computer the line tools get a row above the line being written, cover no words, and the line holds still; the rest behind ＋ Insert; a phone keeps them at the foot", async () => {
+    const path = scratchProject("tools on the line", [["TODO", "Call Bob"], ["TODO", "Buy paint for the long hallway and the two small bedrooms upstairs, then the kitchen ceiling, the porch railing and the garden shed door before the autumn rain sets in for good this year"],
+      ...Array.from({length: 40}, (_, i) => ["", "Filler line " + (i + 1)])]);
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
     openPage(path);
     await settle();
@@ -5019,13 +5020,29 @@ var GTD_TEST = (() => {
       .sort((x, y) => x.getBoundingClientRect().left - y.getBoundingClientRect().left).map(n => n.dataset.k);
     const mm = window.matchMedia, wasTools = PREF.get("linetools");
     PREF.set("linetools", "");
+    // No word on the page sits under the tools.
+    const covers = () => { const r = bar().getBoundingClientRect();
+      return [...document.querySelectorAll("#main :is(.txt, h1, h2)")].filter(t => { const q = t.getBoundingClientRect();
+        return q.width && q.left < r.right - 1 && q.right > r.left + 1 && q.top < r.bottom - 1 && q.bottom > r.top + 1; })
+        .map(t => t.textContent.slice(0, 20)); };
+    const topOf = blk => document.querySelector('.blk[data-id="' + blk.id + '"] .txt').getBoundingClientRect().top;
     try {
+      document.querySelector('.blk[data-id="' + a.id + '"]').scrollIntoView({block: "center"});
+      await frame();
+      const before = topOf(a);
       focusBlock(a.id);
       await frame();
       ok(bar() && !bar().hidden && bar().closest('.blk[data-id="' + a.id + '"]'), "the tools are on the line being written");
-      // #395 reopened: beside the words, the tools left room for one word
-      // per row. Now they float just above the line, from where its words
-      // start, and the words get the line's whole width.
+      // #395 reopened twice: beside the words, the tools left room for one
+      // word per row; floating above, they hid the line before. Now they get
+      // a row of their own above the line, and the page scrolls by that row
+      // so the line stays under the pointer.
+      ok(Math.abs(topOf(a) - before) <= 1, "the line holds still as the tools open (" + before + " → " + topOf(a) + ")");
+      eq(covers().join(" | "), "", "the tools cover no words");
+      // The line's ☰ moves down with it, level with its first row.
+      const menuBtn = document.querySelector('.blk[data-id="' + a.id + '"] > .line > .linemenu');
+      const mr = menuBtn && menuBtn.getBoundingClientRect();
+      ok(mr && mr.height && Math.abs(mr.top - topOf(a)) <= 6, "☰ is level with the words (☰ " + (mr && mr.top) + ", words " + topOf(a) + ")");
       const r = bar().getBoundingClientRect();
       const txtEl = document.querySelector('.blk[data-id="' + a.id + '"] .txt');
       const words = txtEl.getBoundingClientRect();
@@ -5038,17 +5055,16 @@ var GTD_TEST = (() => {
       const rows = [...rg.getClientRects()].filter(q => q.width > 1);
       const fullRight = Math.max(...rows.map(q => q.right));
       ok(rows[0].right >= fullRight - 80, "the first row uses the line's width, not one word: rows " + rows.map(q => Math.round(q.right)).join(","));
-      const blur = document.activeElement;
-      // Nothing below moves: the line is as tall with the tools as without.
-      const tall = txtEl.closest(".line").offsetHeight;
-      blur && blur.blur && blur.blur();
+      const held = topOf(a);
+      document.activeElement.blur();
       await frame(); await frame();
-      eq(document.querySelector('.blk[data-id="' + a.id + '"] > .line').offsetHeight, tall, "the line keeps its height when the tools go");
-      // A page's first line has no room above: there the tools sit below it.
+      ok(Math.abs(topOf(a) - held) <= 1, "and holds still as they go (" + held + " → " + topOf(a) + ")");
+      // The page's first line gets its row above too, under the title.
       focusBlock(b.id);
       await frame();
-      const rb = bar().getBoundingClientRect(), wb = document.querySelector('.blk[data-id="' + b.id + '"] .txt').getBoundingClientRect();
-      ok(rb.top >= wb.bottom - 1, "on the first line the tools sit below it (bar " + rb.top + ", words end " + wb.bottom + ")");
+      const rb = bar().getBoundingClientRect();
+      ok(rb.bottom <= topOf(b) + 1, "on the first line the tools sit above it too (bar ends " + rb.bottom + ", words from " + topOf(b) + ")");
+      eq(covers().join(" | "), "", "and cover no words there either");
       focusBlock(a.id);
       await frame();
       eq(shownKeys()[0], "type", "Type first");

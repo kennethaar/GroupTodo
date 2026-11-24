@@ -2,7 +2,12 @@ function editBarSync() {
   let bar = $("#editBar");
   if (!FLY) {
     // Wait a frame: a move redraws the page and puts the caret straight back.
-    if (bar) requestAnimationFrame(() => { if (!FLY) { bar.hidden = true; document.body.classList.remove("editbar-on"); } });
+    // On a line, its row above goes too, and the line holds still (#395).
+    if (bar) requestAnimationFrame(() => { if (!FLY) {
+      const on = bar.classList.contains("inline") && !bar.hidden && bar.parentNode;
+      editBarHold(on && on.querySelector && on.querySelector(".txt"), () => { bar.hidden = true; });
+      document.body.classList.remove("editbar-on");
+    } });
     return;
   }
   if (!bar) {
@@ -38,16 +43,19 @@ function editBarSync() {
     document.body.append(bar);
   }
   editBarGroupClose();
-  bar.hidden = false;
   const line = editBarInline() && FLY.txt.closest(".line");
   if (line) {
-    if (bar.parentNode !== line) {
-      editBarRestShow(bar, PREF.get("linetools") === "all");
-      line.append(bar);
-    }
-    bar.classList.add("inline");
-    bar.style.bottom = "";
-    editBarPlaceInline(bar, line);
+    // The line makes room above itself; the page scrolls so it holds still.
+    editBarHold(FLY.txt, () => {
+      bar.hidden = false;
+      if (bar.parentNode !== line) {
+        editBarRestShow(bar, PREF.get("linetools") === "all");
+        line.append(bar);
+      }
+      bar.classList.add("inline");
+      bar.style.bottom = "";
+      editBarPlaceInline(bar, line);
+    });
     if (window.ResizeObserver) {
       bar._ro = bar._ro || new ResizeObserver(() => { const l = bar.parentNode; if (l && bar.classList.contains("inline")) editBarPlaceInline(bar, l); });
       bar._ro.disconnect();
@@ -56,8 +64,9 @@ function editBarSync() {
     document.body.classList.remove("editbar-on");
     return;
   }
+  bar.hidden = false;
   if (bar.parentNode !== document.body) document.body.append(bar);
-  bar.classList.remove("inline", "all", "below");
+  bar.classList.remove("inline", "all");
   bar.style.top = "";
   if (bar._ro) bar._ro.disconnect();
   document.body.classList.add("editbar-on");

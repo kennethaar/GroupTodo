@@ -8,8 +8,10 @@ that breaks existing vaults. Newest first.
 ## 1.218.2 - 2026-11-24
 
 - The line menu and toolbar: on a computer, the tools for the line you
-  write float just above it, so the words keep the whole width. They sat at
-  the end of the line and left room for one word per row. Slide layout has
+  write get a row of their own just above it, so the words keep the whole
+  width and no words sit under the tools. The page scrolls by that row, so
+  the line stays where you clicked. The tools sat at the end of the line and
+  left room for one word per row. Slide layout has
   its own button now, and its list drops straight down from it; Format holds
   only text. (#395)
 
