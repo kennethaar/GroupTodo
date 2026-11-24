@@ -257,12 +257,16 @@ asks for this section to be compacted: repeats merged, stale items dropped.
 
 Work happens on `main`.
 
-Newest areas, look here first for regressions: Present (`src/js/91-present/`,
-#431 open for soft-break reflow, layouts #433, slide pictures, rising title),
-context widget files (v1.202), big-folder reads, onboarding lessons (#468),
-areas in the top bar (#436, #408), page history (#407), squiggles (#428),
-Clarify from the day page (#460, #461), Alt+T/Alt+N (`lineSelKind`, #411).
+Newest areas, look here first for regressions: Present (`src/js/91-present/`):
+camera layer (`slideCam*`, #485), Alt+drag arrange (`slideArr*`, #487),
+(map) slides (#488), waiting screen (`slideWait*`, #486), charts (#482),
+Copy for AI › Slides (`slideAi*`, #483), refs and embeds (#470), presenter
+window (#489). Also: Continue where you left off (`lastPlace*`, #492), pasted
+updates (`pastedUpdate`, #373), importer on first start (#458).
+
+Open: #456 (parked, do not start). Unfiled: pinned page dragged from the
+sidebar onto a line fails before the first click after reload (would reopen
+#448; not reproduced in the demo).
 
 Slow start (#181, closed): staged read via `readDayFirst`, `readActiveFirst`,
-`isStubPath`; folder takeover in `readFolderBehind`; timing in the Save log
-(`loadMark`, `startupText`, `readTimingText`). Reopen if a new log is slow.
+`readFolderBehind`; timing in the Save log. Reopen if a new log is slow.
