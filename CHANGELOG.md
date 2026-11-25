@@ -5,6 +5,14 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.222.0 - 2026-11-25
+
+- Present a page: on a map, a picture used on more than one line is a pin.
+  It stands on the map and glides to each new line's place on its click,
+  as an emoji pin does. The line's words are a label beside it that moves
+  with it; Alt+drag the label to place it apart. A picture used once is
+  still a card or a badge. (#488)
+
 ## 1.221.1 - 2026-11-25
 
 - Present a page: on a Hub slide, a long word no longer runs out past its

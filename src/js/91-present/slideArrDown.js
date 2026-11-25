@@ -30,6 +30,8 @@ function slideArrDown(e) {
     return [0, 1].map(i => {
       const v = from[i] + ([dx, dy][i] / [box.width, box.height][i]) * 100;
       if (stand) return Math.max(0, Math.min(100, v));
+      // A pin's label sits by its picture, wherever that goes: no snap (#488).
+      if (hit.kind === "label") return v;
       const near = SLIDE_SNAP.find(c => Math.abs(mid[i] + v - c) < SLIDE_SNAP_NEAR);
       return near == null ? v : near - mid[i];
     });

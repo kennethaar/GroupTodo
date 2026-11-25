@@ -148,6 +148,20 @@ const NEWS_ANIM = {
     + g chip > pg | Start the talk
     p g
     w 1500`,
+  "1.222.0#488": `
+    cap | A picture pin that travels
+    say | The same picture on two lines is one pin on the map.
+    + pg col
+    + l ln > pg | (map) Our route 🗺
+    + a ln > pg | 🖼 Oslo
+    s a | margin-left:24px
+    w 1200
+    + b ln > pg | 🖼 Bergen
+    s b | margin-left:24px
+    w 900
+    say | Its words are a label that moves with it. Alt+drag the label to place it apart.
+    c a +dim
+    w 1800`,
   "1.210.0#488": `
     cap | Pins on a map, a card about you
     say | (map) puts the line's picture behind the slide.

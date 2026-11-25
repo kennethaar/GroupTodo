@@ -15,7 +15,7 @@ function slideArrKey(e) {
   e.preventDefault(); e.stopImmediatePropagation();
   const pic = SLIDE_ARR_PICK.kind === "pic", step = e.shiftKey ? 5 : 1;
   // A map's pin (#488) moves from where it stands.
-  const pin = DECK.deck.querySelector(`.slide.cur .mpin[data-bid="${CSS.escape(String(SLIDE_ARR_PICK.id))}"]`);
+  const pin = SLIDE_ARR_PICK.kind === "line" && DECK.deck.querySelector(`.slide.cur .mpin[data-bid="${CSS.escape(String(SLIDE_ARR_PICK.id))}"]`);
   const v = slideXY(o.get()) || (pic ? [50, 50] : pin ? [parseFloat(pin.style.left), parseFloat(pin.style.top)] : [0, 0]);
   const next = v.map((x, i) => {
     const n = Math.round((x + dir[i] * step) * 10) / 10;

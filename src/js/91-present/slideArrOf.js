@@ -3,6 +3,9 @@
 function slideArrOf(target) {
   const cur = DECK?.deck.querySelector(".slide.cur");
   if (!cur || !target || !cur.contains(target)) return null;
+  // A picture pin's label is placed apart from its picture (#488).
+  const label = target.closest(".mlabel");
+  if (label && cur.contains(label)) return {node: label, kind: "label", id: label.dataset.lbid};
   const line = target.closest("[data-bid]");
   if (line && cur.contains(line)) return {node: line, kind: "line", id: line.dataset.bid};
   const title = target.closest(".stitle");

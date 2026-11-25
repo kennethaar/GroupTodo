@@ -16153,17 +16153,21 @@ var GTD_TEST = (() => {
       } finally { presentStop(); go("today"); }
     });
   });
+  /* #488 follow-up: a picture used more than once on a map is a pin that
+     travels, its line's words a label beside it that Alt+drag places apart
+     (label-at::). A picture used once stays a card or a badge. */
   test("#488 Map is in the Slide layout menu; on a map the same emoji, picture or words is one thing that moves to each new place", () => {
     const svg = (w, h, c) => "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" fill="${c}"/></svg>`);
-    const MAP = svg(1600, 900, "#ccc"), PHOTO = svg(300, 200, "#a87");
+    const MAP = svg(1600, 900, "#ccc"), PHOTO = svg(300, 200, "#a87"), LOGO = svg(100, 100, "#123");
     return withPages({[SHOW]: [
       "- Trip", "  - Oslo", "  - Bergen",
       "- (map) Road trip ![](" + MAP + ")",
       "  - 🚗 Oslo", "  - 🚲 Bike rental", "  - 🚗 Bergen",
-      "  - ![](" + PHOTO + ")", "    - Day one",
+      "  - ![](" + PHOTO + ") Day one",
       "  - Lunch break",
-      "  - ![](" + PHOTO + ")", "    - Day two",
-      "  - Lunch break"].join("\n") + "\n"}, async () => {
+      "  - ![](" + PHOTO + ") Day two",
+      "  - Lunch break",
+      "  - ![](" + LOGO + ") Product A"].join("\n") + "\n"}, async () => {
       const [trip, road] = getPage(SHOW).blocks;
       // The menu: Map is one of the layouts, and picking it writes (map) on the line the slide is.
       let picked = null;
@@ -16175,34 +16179,53 @@ var GTD_TEST = (() => {
       slideLayoutPick(SHOW, trip.children, "map");
       eq(getPage(SHOW).blocks[0].title, "(map) Trip", "picking Map does not write (map) on the slide's line");
       eq(slideLayoutNow(SHOW, getPage(SHOW).blocks[0].children), "map", "the menu does not tick Map on a map");
-      const [car1, , car2, card1, text1, card2, text2] = road.children;
+      const [car1, , car2, pic1, text1, pic2, text2] = road.children;
       setBlockProp(car1, "at", "20,20"); setBlockProp(car2, "at", "60,60");
-      setBlockProp(card2, "at", "10,5"); setBlockProp(text2, "at", "30,0");
+      setBlockProp(pic1, "at", "10,5"); setBlockProp(pic2, "at", "30,40"); setBlockProp(pic1, "label-at", "4,-2");
+      setBlockProp(text2, "at", "30,0");
       touch(SHOW);
       const {slides} = deckSteps(SHOW), s = slides.find(x => x.title === "Road trip");
-      eq(s.parts.length, 7, "each line is still a click of its own");
+      eq(s.parts.length, 8, "each line is still a click of its own");
       const cur = () => $("#deck .slide.cur");
       const state = p => (p.className.match(/\b(now|past|later)\b/) || [])[1];
       try {
         presentStart(SHOW); await settle();
         presentGo(s.first); await settle();
         const pins = [...cur().querySelectorAll(".mpin")];
-        eq(pins.map(p => p.textContent).sort(), ["🚗", "🚲"].sort(), "a different emoji is a pin of its own; the same emoji is one pin");
+        eq(pins.filter(p => !p.querySelector("img")).map(p => p.textContent).sort(), ["🚗", "🚲"].sort(), "a different emoji is a pin of its own; the same emoji is one pin");
         const car = pins.find(p => p.textContent === "🚗");
         for (let i = 0; i < 3; i++) deckKey("ArrowRight");
         await settle();
         eq([state(car), parseFloat(car.style.left), parseFloat(car.style.top)], ["now", 60, 60], "the 🚗 did not move on to Bergen");
-        eq(cur().querySelectorAll(".mcard").length, 1, "the same picture twice is two cards");
+        const photo = pins.find(p => p.querySelector("img"));
+        ok(photo && photo.querySelector("img").getAttribute("src") === PHOTO, "the same picture twice is no pin on the map, drawn as the picture");
+        eq(cur().querySelectorAll(".mcard").length, 0, "a picture used twice is still a card in the column");
+        ok(cur().querySelector(".mbadge img"), "a picture used once is no longer a badge");
         eq(cur().querySelectorAll(".mtext").length, 1, "the same words twice are two lines");
-        const card = cur().querySelector(".mcard"), text = cur().querySelector(".mtext");
-        deckKey("ArrowRight"); deckKey("ArrowRight"); await settle();
-        eq([state(card), state(text)], ["past", "now"], "the card and the words come in on their clicks");
+        const text = cur().querySelector(".mtext"), label = () => photo.querySelector(".mlabel");
+        eq(state(photo), "later", "the picture pin shows before its click");
         deckKey("ArrowRight"); await settle();
-        eq([state(card), card.style.translate], ["now", "10cqw 5cqh"], "the card does not move to its second place");
-        has(card.textContent, "Day two", "the card does not show the lines of its second place");
-        eq(card.dataset.bid, card2.id, "Alt+drag would place the card's first line, not where it is now");
+        eq([state(photo), parseFloat(photo.style.left), parseFloat(photo.style.top)], ["now", 10, 5], "the picture pin does not stand at its at::");
+        ok(label() && /Day one/.test(label().textContent), "the line's words are no label by the picture");
+        eq(label().style.translate, "4cqw -2cqh", "label-at:: does not place the label apart from the picture");
         deckKey("ArrowRight"); await settle();
-        eq([state(text), text.style.translate], ["now", "30cqw 0cqh"], "the words do not move to their second place");
+        eq([state(photo), state(text)], ["past", "now"], "the words come in on their click");
+        deckKey("ArrowRight"); await settle();
+        eq([state(photo), parseFloat(photo.style.left), parseFloat(photo.style.top)], ["now", 30, 40], "the picture pin does not move on to its second place");
+        ok(/Day two/.test(label().textContent) && !/Day one/.test(label().textContent), "the label does not show the second line's words");
+        eq(label().style.translate, "4cqw -2cqh", "the label does not keep its place beside the travelling picture");
+        // Alt+drag on the label moves the label, saved on the line it is on now; the picture stays.
+        const r = label().getBoundingClientRect(), W = $("#deck").getBoundingClientRect().width;
+        const ev = (t, x, n = label()) => n.dispatchEvent(new PointerEvent(t, {bubbles: true, cancelable: true, altKey: true, button: 0, pointerId: 1, clientX: x, clientY: r.top + r.height / 2}));
+        const x0 = r.left + r.width / 2;
+        ev("pointerdown", x0); ev("pointermove", x0 + W * 0.05, document); ev("pointermove", x0 + W * 0.1, document);
+        ev("pointerup", x0 + W * 0.1, document); await settle();
+        const [lx, ly] = slideXY(blockProp(pic2, "label-at")) || [NaN, NaN];
+        ok(Math.abs(lx - 14) < 1.5 && Math.abs(ly + 2) < 1.5, "Alt+drag does not place the label on its line: label-at:: " + blockProp(pic2, "label-at"));
+        eq([blockProp(pic2, "at"), blockProp(pic1, "label-at")], ["30,40", "4,-2"], "dragging the label moved the picture or the first line's label");
+        deckKey("ArrowRight"); await settle();
+        // "30cqw 0cqh" and "30cqw" are the same place.
+        eq([state(text), text.style.translate.replace(/ 0cqh$/, "")], ["now", "30cqw"], "the words do not move to their second place");
       } finally { presentStop(); go("today"); }
     });
   });

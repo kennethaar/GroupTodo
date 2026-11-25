@@ -3,7 +3,9 @@
    travelling pin stands at the place of the latest click of its own, and
    glides there (CSS) when that changes. A card, badge or words that come
    again do the same (#488 follow-up): shifted to the latest place given,
-   showing that line's words, and Alt+drag places the line it is on now. */
+   showing that line's words, and Alt+drag places the line it is on now.
+   A picture pin's label shows the words of the line it is on, apart from the
+   picture by the latest label-at:: given. */
 function slideMapPins(slide, step) {
   const at = step.k - 1;
   const set = (p, st) => { for (const c of ["now", "past", "later"]) p.classList.toggle(c, c === st); };
@@ -15,6 +17,14 @@ function slideMapPins(slide, step) {
       p.style.left = stop.at[0] + "%"; p.style.top = stop.at[1] + "%";
       p.dataset.bid = stop.id;
       p.title = stop.name; p.setAttribute("aria-label", stop.name || "Pin");
+      const label = p.querySelector(".mlabel"), it = (step.s.map || [])[stop.i];
+      if (label && it) {
+        if (label.dataset.lbid !== stop.id || !label.firstChild) label.replaceChildren(slideText(it.label));
+        label.dataset.lbid = stop.id;
+        let off = null;
+        for (const x of stops) off = slideXY(slideArrOwner(step.s, "label", x.id)?.get()) || off;
+        label.style.translate = off ? `${off[0]}cqw ${off[1]}cqh` : "";
+      }
       set(p, stop.i === at ? "now" : "past");
       continue;
     }

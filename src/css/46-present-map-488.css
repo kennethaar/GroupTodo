@@ -24,5 +24,9 @@
   transition:left .9s ease-in-out,top .9s ease-in-out,opacity .5s ease-in-out;filter:drop-shadow(0 .3cqh .4cqh rgb(0 0 0 / .35))}
 :is(#deck,#deckpeek) .lay-map .mpin.later{opacity:0}
 :is(#deck,#deckpeek) .lay-map .mpin.past{opacity:.5}
+:is(#deck,#deckpeek) .lay-map .mpin.mpic img{width:7cqh;height:7cqh;object-fit:contain;display:block}
+:is(#deck,#deckpeek) .lay-map .mlabel{position:absolute;left:100%;top:50%;margin-top:-.6em;padding:.2em .5em;white-space:nowrap;font-size:3cqh;font-weight:600;
+  background:color-mix(in srgb,var(--slide-bg) 85%,transparent);color:var(--slide-ink);border-radius:.3em}
+#deck.arranging .slide.cur .mlabel{outline:1px dashed color-mix(in srgb,var(--slide-ink) 60%,transparent);cursor:move}
 #deck.arranging .slide.cur .mpin{outline:1px dashed color-mix(in srgb,var(--slide-ink) 60%,transparent);outline-offset:2px;cursor:move}
 @media (prefers-reduced-motion:reduce){:is(#deck,#deckpeek) .lay-map .mpin{transition:opacity .3s}}

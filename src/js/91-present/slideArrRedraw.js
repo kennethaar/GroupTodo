@@ -5,5 +5,6 @@ function slideArrRedraw() {
   slideArrApply(cur, here.s);
   // A map's pins stand anew at their places (#488).
   const pins = cur.querySelector(".mpins");
-  if (pins) { pins.replaceWith(drawMapPins(here.s)); slideMapPins(cur, here); }
+  // A picture pin's picture from the folder is loaded again.
+  if (pins) { pins.replaceWith(drawMapPins(here.s)); slideMapPins(cur, here); resolveAssets(cur.querySelector(".mpins")); }
 }

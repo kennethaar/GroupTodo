@@ -1,6 +1,8 @@
 /* What a (map) slide's lines are (#488), each a click, in order:
    {kind: "text" | "card" | "badge" | "pin", block, lines, pins, name, run, key, lead}.
    - A line that starts with an emoji is a pin.
+   - A picture used on more than one line is a pin too, drawn as that
+     picture, its words (or its first line's) a label beside it (#488).
    - A line that is only a picture is a card: the picture, then its own
      lines; with none, the plain lines right after it.
    - A picture with words is a badge: a logo and its name.
@@ -14,7 +16,8 @@ function slideMapItems(kids) {
   const pinOf = b => SLIDE_PIN_RE.exec(trim(slideWords(b)));
   const picOf = b => slidePicture(b.title || "");
   const words = b => trim(String(b.title || "").replace(/!\[[^\]]*\]\([^)]*\)/g, ""));
-  const firsts = new Map(), runs = new Map();
+  const firsts = new Map(), runs = new Map(), uses = new Map();
+  for (const b of kids) { const p = !pinOf(b) && picOf(b); if (p) uses.set(p, (uses.get(p) || 0) + 1); }
   const keyed = it => {
     if (!firsts.has(it.key)) firsts.set(it.key, items.length);
     it.lead = firsts.get(it.key);
@@ -31,6 +34,13 @@ function slideMapItems(kids) {
       continue;
     }
     const pic = picOf(b), own = (b.children || []).filter(c => !slideHidden(c));
+    if (pic && uses.get(pic) > 1) {
+      const key = "pic " + pic, first = own.find(c => !pinOf(c));
+      if (!runs.has(key)) runs.set(key, runs.size + 1);
+      const name = words(b) ? {title: words(b)} : first || {title: ""};
+      keyed({kind: "pin", block: b, lines: [], pins: [b], name: withoutMarks(slideWords(name)), label: name, pic, run: runs.get(key), key});
+      continue;
+    }
     const mine = {block: b, lines: own.filter(c => !pinOf(c)), pins: own.filter(c => pinOf(c)), run: 0};
     if (pic && !words(b)) {
       // A card written flat: the plain lines after its picture are its own.
