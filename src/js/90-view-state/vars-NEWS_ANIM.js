@@ -6,22 +6,22 @@ const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
   "1.224.0#516": `
     cap | Catch up with an AI
-    say | In the Weekly review, Get current › Catch up with an AI.
+    say | In the Weekly review, Get clear › Catch up with an AI.
     + pg col
-    + h ln > pg | Get current
+    + h ln > pg | Get clear
     + b chip > h | Catch up with an AI
     p b
     w 900
     say | Copy the prompt to an AI that reads your mail and meetings. Paste its answer back.
     + l ln > pg | Project A
-    + x ln > pg | ☑ Done: Send the draft
-    + y ln > pg | ☑ + Waiting for Person X: the contract
-    + z ln > pg | ☐ New project: Product A launch
+    + x ln > pg | [Done ▾] Send the draft
+    + y ln > pg | [Next ▾] Call the supplier  @calls
+    + z ln > pg | [Skip ▾] New project: Product A launch
     s x | margin-left:16px
     s y | margin-left:16px
     s z | margin-left:16px
     w 1500
-    say | Untick what is wrong. Apply makes the rest; Undo takes it all back.
+    say | Each change has its GTD choice: Next, Do now, Delegate, Someday or Skip.
     + a chip > pg | Apply 2 changes
     p a
     w 1500`,

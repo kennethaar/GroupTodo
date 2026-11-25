@@ -65,8 +65,8 @@ function viewReview() {
     const mine = lists.filter(s => s.phase === k).map(listFold);
     if (k === "current") mine.splice(lists.filter(s => s.phase === k && s.kind === "actions").length, 0, reviewWeeks());
     if (!steps.length && !mine.length) continue;
-    // #516: what changed in your mail and meetings, read by an AI, is part of getting current.
-    const catchUp = k === "current" ? [el("button", {class: "textbtn",
+    // #516: what changed in your mail and meetings, read by an AI, is collection: part of getting clear.
+    const catchUp = k === "clear" ? [el("button", {class: "textbtn",
       onclick: e => { e.preventDefault(); openCatchUp(); }}, "Catch up with an AI")] : [];
     c.append(reviewFold("phase:" + k, {class: "rgroup rphase"}, [label, ...(steps.length ? progress(steps) : []), ...catchUp],
       steps.length ? stepsCard(steps) : null, ...mine));

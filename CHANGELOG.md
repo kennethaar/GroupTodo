@@ -7,15 +7,16 @@ that breaks existing vaults. Newest first.
 
 ## 1.224.0 - 2026-11-25
 
-- Weekly review › Steps: Get current has Catch up with an AI. Copy its
-  prompt, with your active and waiting projects and their open tasks, to an
-  AI that reads your mail, chats and meetings. Paste its answer back: you get
-  one list of changes, grouped by project. Tasks done, new dates, notes, new
-  next actions and waiting-fors are ticked; a new project is not. Apply makes
-  the ticked ones, and one Undo takes them all back. A change the AI
-  found in an email, chat or document links to it, ↗ Email, so you can
-  check it before you tick; the link stays on the task as its source.
-  (#516)
+- Weekly review › Steps: Get clear has Catch up with an AI. Pick how far
+  to look back, since your last review by default, and copy its prompt to
+  an AI that reads your mail, chats and meetings. Paste its answer back: you
+  get one list of changes, grouped by project, each with its GTD choice set
+  to the likely one. A new next action is Next, Do now, Delegate, Someday or
+  Skip, with its context; a date is a Deadline or a Start date; a new project
+  is Skip until you make it Active or Someday, counted against 5. A project
+  left with no next action says so, with + Add next action. ↗ Email, Chat or
+  Document opens where it was found, and stays on the task as its source.
+  One Undo takes it all back. (#516)
 
 ## 1.223.0 - 2026-11-25
 

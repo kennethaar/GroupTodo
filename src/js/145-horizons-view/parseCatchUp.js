@@ -1,8 +1,10 @@
 /* The AI's catch-up answer (#516), read past its bullets, numbers, bold and
    code fences, as rows of changes: {kind, ref, path, block, proj, text, who,
-   date, outcome, next, on}. A reference the prompt did not give, a task that is
+   date, outcome, next, ctx, url, choice}. A reference the prompt did not give, a task that is
    no longer open, or a new project with the name of one you have, is left out.
-   Every row starts ticked but a new project: that is a new commitment. */
+   Each row starts on the likely GTD choice (CATCHUP_CHOICES): a new next
+   action as Next, a date as a Deadline, a new project as Skip, since that is a
+   new commitment; the rest as Keep. */
 function parseCatchUp(raw, refs) {
   const rows = [];
   const LINE = /^(DONE|DUE|NOTE|NEXT|WAIT|PROJECT)\b\s*:?\s*(.*)$/i;
@@ -35,14 +37,15 @@ function parseCatchUp(raw, refs) {
       const slug = slugify(title);
       if (["-", "0", "1", "2", "3"].some(c => V.pages.has(join(STATUS_DIRS[c], slug + ".md")))) continue;
       named.add(title.toLowerCase());
-      rows.push({kind, text: title, outcome, next, url, on: false});
+      rows.push({kind, text: title, outcome, next, url, choice: "skip"});
       continue;
     }
     const rm = REF.exec(rest);
     const ref = rm && refs.get(rm[1].toUpperCase());
     if (!ref || !live(ref)) continue;
     rest = trim(rm[2]);
-    const row = {kind, ref: rm[1].toUpperCase(), path: ref.path, block: ref.block || null, proj: ref.proj, url, on: true};
+    const row = {kind, ref: rm[1].toUpperCase(), path: ref.path, block: ref.block || null, proj: ref.proj, url,
+      choice: CATCHUP_CHOICES[kind][0][0]};
     if (kind === "done") {
       if (!row.block || !OPEN_STATES[row.block.state]) continue;
     } else if (kind === "due") {
@@ -52,6 +55,15 @@ function parseCatchUp(raw, refs) {
       if (!row.block || !rest) continue;
       row.text = rest;
     } else if (kind === "next") {
+      // Its context, @ and the name of one of yours, wherever the AI put it.
+      row.ctx = "";
+      for (const c of contextList().slice().sort((x, y) => y.length - x.length)) {
+        const at = rest.toLowerCase().indexOf("@" + c.toLowerCase());
+        if (at < 0 || /[p{L}p{N}]/u.test(rest[at + c.length + 1] || "")) continue;
+        row.ctx = c;
+        rest = trim(rest.slice(0, at) + rest.slice(at + c.length + 1)).replace(/s{2,}/g, " ");
+        break;
+      }
       if (!rest) continue;
       row.text = rest;
     } else if (kind === "wait") {

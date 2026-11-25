@@ -9274,75 +9274,120 @@ var GTD_TEST = (() => {
       eq([w3.state, dueDate(q3) || null, messagesOf(q3).length], ["WAIT", null, 0], "Undo puts it all back");
     } finally { closeAll(); document.querySelectorAll("#toasts > *").forEach(n => n.remove()); }
   });
-  /* #516: Catch up, from Get current in the Weekly review. The prompt names
-     your projects and their open tasks with short references; the AI's answer
-     (read past its bullets and bold) becomes one list of changes, grouped by
-     project, ticked except a new project. Apply makes the ticked ones, and one
-     Undo takes them all back. A reference the prompt did not give is left out. */
-  test("#516 Catch up: the prompt lists the projects; the answer is a ticked list, a new project unticked; Apply and one Undo", async () => {
+  /* #516: Catch up with an AI, from Get clear in the Weekly review: mail and
+     meetings are collection. Look back is picked (since the last review, 7, 14
+     or 30 days), remembered, and named in the prompt. The prompt names your
+     projects, their open tasks and your contexts with short references; the
+     answer (bullets, bold, or run together on one line; a link at a line's end)
+     becomes one list grouped by project. Each change gets the GTD choice for
+     its kind, set to the likely one, so Apply works with no clicks: a next
+     action is Next, Do now, Delegate, Someday or Skip, with its context; a date
+     is a Deadline or a Start date; a new project is Skip until you make it
+     Active (counted against 5) or Someday. A done that leaves a project with no
+     next action says so, and + Add next action adds one. One Undo takes all
+     of it back. A reference the prompt did not give is left out. */
+  test("#516 Catch up: look back picked; each change a GTD choice set to the likely one; a stuck project offers a next action; one Undo", async () => {
     const path = scratchProject("catch up 516", [["TODO", "Send the draft"], ["TODO", "Book the room"]]);
-    const title = pageTitle(path);
+    const other = scratchProject("tiles 516", [["TODO", "Order the tiles"]]);
+    const title = pageTitle(path), ctx = contextList()[0];
+    ok(ctx, "the demo has a context");
     const btn = t => [...$$("#modalRoot button")].find(b => (t instanceof RegExp ? t.test(b.textContent) : b.textContent === t));
     const made = () => [...V.pages.keys()].find(p => statusDirOf(p) === "1" && pageTitle(p) === "Product A launch");
-    try {
+    const was = PREF.get("catchup.back:" + (V.space || ""), "");
+    const open = async () => {
       go("review"); await settle();
-      const open = [...$$("#content button")].find(b => b.textContent === "Catch up with an AI");
-      ok(open, "Get current offers Catch up with an AI");
-      open.click(); await settle();
+      const b = [...$$("#content button")].find(x => x.textContent === "Catch up with an AI");
+      ok(b, "the Weekly review offers Catch up with an AI");
+      ok(/clear/i.test(b.closest(".rphase").querySelector("summary").textContent), "under Get clear: mail and meetings are collection");
+      b.click(); await settle();
+    };
+    const set = (n, v) => { n.value = v; n.dispatchEvent(new Event(n.tagName === "INPUT" ? "input" : "change", {bubbles: true})); };
+    const rowOf = t => [...$$("#modalRoot .cu-row")].find(r => r.textContent.includes(t));
+    try {
+      await open();
+      const back = $("#modalRoot select.cu-back");
+      ok(back, "a Look back choice");
+      for (const o of ["7 days", "14 days", "30 days", "From a date…"]) ok([...back.options].some(x => x.textContent === o), "offers " + o);
+      set(back, "14"); await settle();
+      const fortnight = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10);
+      has($("#modalRoot textarea").value, fortnight, "the prompt names the day it looks back to");
+      closeAll(); await open();
+      eq($("#modalRoot select.cu-back").value, "14", "the choice is remembered");
       const prompt = $("#modalRoot textarea").value;
       has(prompt, title, "the prompt names the project");
-      const ref = t => (new RegExp("\\b([TP]\\d+)\\b[^\\n]*" + t).exec(prompt) || [])[1];
-      const [send, room, proj] = [ref("Send the draft"), ref("Book the room"), ref(title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))];
-      ok(send && room && proj, "each task and the project has a reference: " + [send, room, proj]);
-      has(prompt, "code block", "the prompt asks for the lines in a code block, which keeps them apart when copied");
+      has(prompt, "@" + ctx, "and the contexts to pick from");
+      has(prompt, "code block", "it asks for a code block, which keeps the lines apart when copied");
+      has(prompt, "link to the", "and for a link to each source");
+      const ref = t => (new RegExp("\\b([TP]\\d+)\\b[^\\n]*" + t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).exec(prompt) || [])[1];
+      const [send, room, proj, tiles] = [ref("Send the draft"), ref("Book the room"), ref(title), ref("Order the tiles")];
+      ok(send && room && proj && tiles, "each task and project has a reference: " + [send, room, proj, tiles]);
       let answer = [...$$("#modalRoot textarea")].pop();
       // Copied out of a chat, the lines can come run together on one line.
-      answer.value = "DONE " + send + " DUE " + room + " 2026-11-28 NOTE " + send + " Sent for testing. NEXT " + proj +
-        " Call the supplier WAIT " + proj + " Person X | the signed contract | 2026-12-02 PROJECT Product A launch | Launched to all users | Draft the plan";
-      answer.dispatchEvent(new Event("input"));
+      set(answer, "DONE " + send + " DUE " + room + " 2026-11-28 NOTE " + send + " Sent for testing. NEXT " + proj +
+        " Call the supplier WAIT " + proj + " Person X | the signed contract | 2026-12-02 PROJECT Product A launch | Launched to all users | Draft the plan");
       btn("Read it").click(); await settle();
-      eq($$("#modalRoot input[type=checkbox]").length, 6, "an answer run together on one line is read change by change");
+      eq($$("#modalRoot .cu-row").length, 6, "an answer run together on one line is read change by change");
       btn(/Back/).click(); await settle();
       answer = [...$$("#modalRoot textarea")].pop();
-      // A line may end with a link to where it was found, bare or as a Markdown link.
       const chat = "https://teams.microsoft.com/l/message/19:abc/1700000000000", doc = "https://example.sharepoint.com/sites/a/Plan.docx";
-      answer.value = "Here is what changed:\n\n- **DONE " + send + "** | " + chat + "\n- DUE " + room + " 2026-11-28\n" +
-        "- NEXT " + proj + " Call the supplier | [1](" + doc + ")\n- WAIT " + proj + " Person X | the signed contract | 2026-12-02\n" +
-        "- DONE T999\n- PROJECT Product A launch | Launched to all users | Draft the plan\n";
-      answer.dispatchEvent(new Event("input"));
+      set(answer, "Here is what changed:\n\n- **DONE " + send + "** | " + chat + "\n- DONE " + tiles + "\n- DUE " + room + " 2026-11-28\n" +
+        "- NEXT " + proj + " Call the supplier @" + ctx + " | [1](" + doc + ")\n- NEXT " + proj + " Ask Person Y for the file\n" +
+        "- NEXT " + proj + " Reply to the invite\n- WAIT " + proj + " Person X | the signed contract | 2026-12-02\n" +
+        "- NOTE " + send + " Sent for testing.\n- DONE T999\n- PROJECT Product A launch | Launched to all users | Draft the plan\n");
       btn("Read it").click(); await settle();
-      has(prompt, "link to the", "the prompt asks for a link to each source");
-      const rows = [...$$("#modalRoot input[type=checkbox]")];
-      eq(rows.length, 5, "one row per change; the unknown reference is left out");
+      eq($$("#modalRoot .cu-row").length, 9, "one row per change; the unknown reference is left out");
       eq([...$$("#modalRoot a[href]")].map(a => [a.textContent, a.getAttribute("href")]), [["↗ Chat", chat], ["↗ Document", doc]],
         "a source shows at the end of its row, named by its kind");
-      has($("#modalRoot").textContent, title, "grouped under the project");
-      eq(rows.map(r => r.checked), [true, true, true, true, false], "changes ticked, the new project not");
-      ok(btn("Apply 4 changes"), "the button counts the ticked changes");
-      ok(btn(/Back/), "with Back");
-      rows[1].click(); rows[4].click();
-      ok(btn("Apply 4 changes"), "the count follows the ticks");
-      rows[1].click(); await settle();
-      btn("Apply 5 changes").click(); await settle();
-      const [a, b] = getPage(path).blocks;
-      eq([a.state, dueDate(b)], ["DONE", "2026-11-28"], "done and due as given");
-      const added = getPage(path).blocks.slice(2);
-      eq(added.map(x => x.state), ["TODO", "WAIT"], "a next action and a waiting-for on the project");
-      eq(trim(added[0].title), "Call the supplier", "the link is not in the words");
-      has(blockProp(added[0], "source") || "", doc, "the new next action keeps its source");
-      has(blockProp(a, "source") || "", chat, "so does the task marked done");
-      eq([waitingPersonOf(added[1], getPage(path)), dueDate(added[1])], ["Person X", "2026-12-02"], "waiting on whom, by when");
-      ok(made(), "the ticked new project is in Active");
+      const choice = t => rowOf(t).querySelector("select.cu-do");
+      eq(["Send the draft", "Book the room", "Call the supplier", "Ask Person Y", "Reply to the invite", "the signed contract", "Sent for testing", "Product A launch"]
+        .map(t => choice(t).value), ["keep", "deadline", "next", "next", "next", "keep", "keep", "skip"], "each set to the likely choice, a new project to Skip");
+      eq([...choice("Call the supplier").options].map(o => o.value), ["next", "now", "delegate", "someday", "skip"], "a next action: Next, Do now, Delegate, Someday, Skip");
+      eq([...choice("Book the room").options].map(o => o.value), ["deadline", "start", "skip"], "a date: Deadline or Start date");
+      eq([...choice("Product A launch").options].map(o => o.value), ["active", "someday", "skip"], "a project: Active or Someday");
+      has(rowOf("Product A launch").textContent, "of 5", "Active is counted against the limit");
+      eq(rowOf("Call the supplier").querySelector("select.cu-ctx").value, ctx, "the context the AI gave is picked");
+      has(rowOf("Ask Person Y").textContent, "No context", "a next action without one says so");
+      ok(btn("Apply 8 changes"), "the button counts what is not skipped");
+      const stuck = [...$$("#modalRoot .cu-group")].find(g => g.textContent.includes(pageTitle(other)));
+      has(stuck.textContent, "No next action left", "a project left with no next action says so");
+      ok(![...$$("#modalRoot .cu-group")].find(g => g.textContent.includes(title)).textContent.includes("No next action left"),
+        "not one that still has one");
+      set(choice("Book the room"), "start");
+      set(choice("Ask Person Y"), "delegate"); await settle();
+      set(rowOf("Ask Person Y").querySelector("input.cu-who"), "Person Y");
+      set(choice("Reply to the invite"), "now");
+      set(choice("Product A launch"), "active");
+      [...stuck.querySelectorAll("button")].find(b => b.textContent === "+ Add next action").click(); await settle();
+      const add = $("#modalRoot input.cu-add");
+      set(add, "Measure the floor");
+      add.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true})); await settle();
+      ok(rowOf("Measure the floor"), "+ Add next action adds a row");
+      ok(![...$$("#modalRoot .cu-group")].find(g => g.textContent.includes(pageTitle(other))).textContent.includes("No next action left"),
+        "and the project is no longer stuck");
+      btn("Apply 10 changes").click(); await settle();
+      const [a, b, ...added] = getPage(path).blocks;
+      eq([a.state, blockProp(b, "SCHEDULED") ? dueDate(b) : null, blockProp(b, "DEADLINE") || null], ["DONE", "2026-11-28", null],
+        "done, and a start date rather than a deadline");
+      has(blockProp(a, "source") || "", chat, "the task marked done keeps its source");
+      eq(added.map(x => x.state), ["TODO", "WAIT", "DONE", "WAIT"], "Next, Delegate as a waiting-for, Do now as done, Waiting for");
+      has(added[0].title, "[[c/" + ctx + "]]", "the next action has its context");
+      has(blockProp(added[0], "source") || "", doc, "and its source");
+      eq(waitingPersonOf(added[1], getPage(path)), "Person Y", "delegated to whom");
+      eq([waitingPersonOf(added[3], getPage(path)), dueDate(added[3])], ["Person X", "2026-12-02"], "waiting on whom, by when");
+      eq(messagesOf(a).map(m => m.title), ["Sent for testing."], "the note is on its task");
+      eq(getPage(other).blocks.map(x => [x.state, trim(x.title)]), [["DONE", "Order the tiles"], ["TODO", "Measure the floor"]], "the stuck project got its next action");
+      ok(made(), "the new project made Active is in Active");
       eq(getPage(made()).props.outcome, "Launched to all users", "with its outcome");
       has(serializePage(getPage(made())), "Draft the plan", "and its first next action");
       const undo = [...$$("#toasts .toast button")].find(x => x.textContent === "Undo");
       ok(undo, "with Undo");
       undo.click(); await settle();
-      eq([getPage(path).blocks.length, getPage(path).blocks[0].state, dueDate(getPage(path).blocks[1]) || null, !!made()],
-        [2, "TODO", null, false], "one Undo takes it all back");
+      eq([getPage(path).blocks.length, getPage(path).blocks[0].state, dueDate(getPage(path).blocks[1]) || null,
+        getPage(other).blocks.length, !!made()], [2, "TODO", null, 1, false], "one Undo takes it all back");
     } finally {
       closeAll(); document.querySelectorAll("#toasts > *").forEach(n => n.remove());
       if (made()) removePage(made());
+      PREF.set("catchup.back:" + (V.space || ""), was);
     }
   });
   test("#161 Ask for an update can leave the projects unnamed", async () => {
