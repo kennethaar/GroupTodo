@@ -33,7 +33,6 @@ function helpTopicNode(id, {here = false, read = openHelp} = {}) {
     // A page to learn on by doing it, such as the Present tutorial (#484).
     t.tutorial ? el("button", {class: "textbtn", type: "button", onclick: openPresentTutorial}, "Open the Present tutorial") : null,
     ...see.map(s => helpLink(s, read)),
-    here ? el("button", {class: "textbtn", onclick: () => openHelp(id)}, "Open full help") : null,
     !here && t.view && t.view !== "help" && t.view !== "page" ? el("button", {class: "textbtn",
       onclick: () => helpGoShow(id, null)}, "Go there") : null));
   return box;

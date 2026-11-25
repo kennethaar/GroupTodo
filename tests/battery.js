@@ -9951,6 +9951,14 @@ var GTD_TEST = (() => {
         const b = help()[0]; b.click();
         ok(helpOpen(), "Help opens from " + name); setHelp(false);
       }
+      // #512 the pane says in words how to reach the full help, first in its bar: no bare ⤢.
+      setHelp(true); await settle();
+      const all = $("#pagePane .panebar > button");
+      eq(all && all.textContent.trim(), "All help", "the pane's first button is not All help");
+      ok(![...$$("#pagePane .panebar button")].some(x => x.textContent.trim() === "⤢"), "the bare ⤢ is still there");
+      all.click(); await settle();
+      eq(V.view, "help", "All help does not open the full help");
+      ok(content().querySelector(".helpq"), "the full help has no search");
       // A phone: the floating Help is there for Focus, and its corner is not hidden in Focus.
       window.matchMedia = q => /min-width:\s*641px/.test(q) ? {matches: false, addEventListener() {}, removeEventListener() {}} : mm.call(window, q);
       renderNav();

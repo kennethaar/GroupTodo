@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.218.5 - 2026-11-25
+
+- Help: the help beside a page has an All help button at its top, which
+  opens the search and the contents. On a phone the way there was a small
+  ⤢ that was easy to miss. (#512)
+
 ## 1.218.4 - 2026-11-25
 
 - Journal: Enter on an empty task line now ends the run of tasks, the way
