@@ -9294,7 +9294,16 @@ var GTD_TEST = (() => {
       const ref = t => (new RegExp("\\b([TP]\\d+)\\b[^\\n]*" + t).exec(prompt) || [])[1];
       const [send, room, proj] = [ref("Send the draft"), ref("Book the room"), ref(title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))];
       ok(send && room && proj, "each task and the project has a reference: " + [send, room, proj]);
-      const answer = [...$$("#modalRoot textarea")].pop();
+      has(prompt, "code block", "the prompt asks for the lines in a code block, which keeps them apart when copied");
+      let answer = [...$$("#modalRoot textarea")].pop();
+      // Copied out of a chat, the lines can come run together on one line.
+      answer.value = "DONE " + send + " DUE " + room + " 2026-11-28 NOTE " + send + " Sent for testing. NEXT " + proj +
+        " Call the supplier WAIT " + proj + " Person X | the signed contract | 2026-12-02 PROJECT Product A launch | Launched to all users | Draft the plan";
+      answer.dispatchEvent(new Event("input"));
+      btn("Read it").click(); await settle();
+      eq($$("#modalRoot input[type=checkbox]").length, 6, "an answer run together on one line is read change by change");
+      btn(/Back/).click(); await settle();
+      answer = [...$$("#modalRoot textarea")].pop();
       answer.value = "Here is what changed:\n\n- **DONE " + send + "**\n- DUE " + room + " 2026-11-28\n" +
         "- NEXT " + proj + " Call the supplier\n- WAIT " + proj + " Person X | the signed contract | 2026-12-02\n" +
         "- DONE T999\n- PROJECT Product A launch | Launched to all users | Draft the plan\n";

@@ -42,7 +42,7 @@ function catchUpSource() {
     "You help me keep my GTD project lists current. Look through my email, chats, meetings and calendar " +
       "from the last " + CATCHUP_DAYS + " days. Compare them with my projects below and tell me what changed.",
     "",
-    "Answer with one line per change and nothing else, in these forms:",
+    "Answer in one code block, one line per change and nothing else, in these forms:",
     "DONE <task ref>                         a task that is finished",
     "DUE <task ref> <YYYY-MM-DD>             a task's date that changed",
     "NOTE <task ref> <news>                  news on a task, in one sentence",

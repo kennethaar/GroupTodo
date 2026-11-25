@@ -15,7 +15,11 @@ function parseCatchUp(raw, refs) {
     return found;
   };
   const named = new Set();
-  for (let line of String(raw || "").split(/\r?\n/)) {
+  /* Copied out of a chat, the lines can come run together on one line. A
+     change begins at its word in capitals: with a reference after it, or
+     PROJECT, so "done" or "Project" in a sentence stays in that sentence. */
+  const text = String(raw || "").replace(/\s+(?=(?:DONE|DUE|NOTE|NEXT|WAIT)\s+\[?[TP]\d+\b|PROJECT\s)/g, "\n");
+  for (let line of text.split(/\r?\n/)) {
     line = trim(line.replace(/\*\*|__|`/g, "").replace(/^\s*(?:>\s*)*(?:[-*•·]|\d+[.)])?\s*/, ""));
     const m = LINE.exec(line);
     if (!m) continue;
