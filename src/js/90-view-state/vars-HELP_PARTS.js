@@ -777,7 +777,7 @@ const HELP = {
       ["?.rstep", "A step. Tick it when done."], ["?.attn", "Worth a look: late, loose or stuck."]],
     more: ["Open it from Projects at any time. Weekly review shows in the sidebar, under Projects, once a week has gone by or more than 30 actions wait to be sorted. It stays there until you mark a review done. Hide it in Settings › Sidebar.",
       "The list of what is left shows only when there is some.",
-      "Catch up with an AI: copy the prompt to an AI that can read your mail, chats and meetings, such as the one at work. Paste its answer. You get a list of changes to your projects, all ticked but a new project. Untick what is wrong, then Apply. One Undo takes it all back.",
+      "Catch up with an AI: copy the prompt to an AI that can read your mail, chats and meetings, such as the one at work. Paste its answer. You get a list of changes to your projects, all ticked but a new project. A change with ↗ Email, Chat or Document links to where it was found: open it to check. Untick what is wrong, then Apply. The link stays on the task as its source. One Undo takes it all back.",
       "The Calendar step brings you back to the weeks.", "A headline you open stays open.", "Broken links and repeated lines are under Housekeeping.", "Edit the steps in Routines.",
       "A project is stuck with no next action or waiting for. A #meeting on a coming day page that links it counts too. Once the day has passed, it asks you to process the notes."],
     see: ["review-projects", "review-actions", "settings"],

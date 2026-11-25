@@ -9304,13 +9304,18 @@ var GTD_TEST = (() => {
       eq($$("#modalRoot input[type=checkbox]").length, 6, "an answer run together on one line is read change by change");
       btn(/Back/).click(); await settle();
       answer = [...$$("#modalRoot textarea")].pop();
-      answer.value = "Here is what changed:\n\n- **DONE " + send + "**\n- DUE " + room + " 2026-11-28\n" +
-        "- NEXT " + proj + " Call the supplier\n- WAIT " + proj + " Person X | the signed contract | 2026-12-02\n" +
+      // A line may end with a link to where it was found, bare or as a Markdown link.
+      const chat = "https://teams.microsoft.com/l/message/19:abc/1700000000000", doc = "https://example.sharepoint.com/sites/a/Plan.docx";
+      answer.value = "Here is what changed:\n\n- **DONE " + send + "** | " + chat + "\n- DUE " + room + " 2026-11-28\n" +
+        "- NEXT " + proj + " Call the supplier | [1](" + doc + ")\n- WAIT " + proj + " Person X | the signed contract | 2026-12-02\n" +
         "- DONE T999\n- PROJECT Product A launch | Launched to all users | Draft the plan\n";
       answer.dispatchEvent(new Event("input"));
       btn("Read it").click(); await settle();
+      has(prompt, "link to the", "the prompt asks for a link to each source");
       const rows = [...$$("#modalRoot input[type=checkbox]")];
       eq(rows.length, 5, "one row per change; the unknown reference is left out");
+      eq([...$$("#modalRoot a[href]")].map(a => [a.textContent, a.getAttribute("href")]), [["↗ Chat", chat], ["↗ Document", doc]],
+        "a source shows at the end of its row, named by its kind");
       has($("#modalRoot").textContent, title, "grouped under the project");
       eq(rows.map(r => r.checked), [true, true, true, true, false], "changes ticked, the new project not");
       ok(btn("Apply 4 changes"), "the button counts the ticked changes");
@@ -9323,7 +9328,9 @@ var GTD_TEST = (() => {
       eq([a.state, dueDate(b)], ["DONE", "2026-11-28"], "done and due as given");
       const added = getPage(path).blocks.slice(2);
       eq(added.map(x => x.state), ["TODO", "WAIT"], "a next action and a waiting-for on the project");
-      has(added[0].title, "Call the supplier");
+      eq(trim(added[0].title), "Call the supplier", "the link is not in the words");
+      has(blockProp(added[0], "source") || "", doc, "the new next action keeps its source");
+      has(blockProp(a, "source") || "", chat, "so does the task marked done");
       eq([waitingPersonOf(added[1], getPage(path)), dueDate(added[1])], ["Person X", "2026-12-02"], "waiting on whom, by when");
       ok(made(), "the ticked new project is in Active");
       eq(getPage(made()).props.outcome, "Launched to all users", "with its outcome");

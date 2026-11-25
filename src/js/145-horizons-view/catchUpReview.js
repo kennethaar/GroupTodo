@@ -32,7 +32,10 @@ function catchUpReview(rows) {
       box.checked = r.on;
       box.addEventListener("change", () => { r.on = box.checked; count(); });
       return el("label", {style: "display:flex;gap:8px;align-items:flex-start;margin:4px 0 0 4px;text-transform:none;" +
-        "letter-spacing:normal;font-size:13px;color:var(--fg);cursor:pointer"}, box, el("span", {style: "min-width:0"}, what(r)));
+        "letter-spacing:normal;font-size:13px;color:var(--fg);cursor:pointer"}, box, el("span", {style: "min-width:0;flex:1"}, what(r)),
+        // Where the AI found it, to check before you tick (#516).
+        r.url ? el("a", {href: r.url, target: "_blank", rel: "noopener noreferrer", style: "flex:none;white-space:nowrap",
+          onclick: e => e.stopPropagation()}, "↗ " + catchUpLinkKind(r.url)) : null);
     }),
   ]));
   count();

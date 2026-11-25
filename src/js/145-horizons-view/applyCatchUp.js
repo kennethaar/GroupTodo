@@ -6,26 +6,31 @@ function applyCatchUp(rows) {
   const before = new Map(), made = [];
   const keep = p => { if (p && !before.has(p) && getPage(p)) before.set(p, structuredClone(getPage(p))); };
   const at = nowStamp(), me = whoAmI() || "Me";
+  const source = url => "[" + catchUpLinkKind(url) + "](" + url + ")";
   const person = name => allPeople().map(personName).find(n => samePerson(n, name)) || name;
   for (const r of rows) {
     if (r.kind === "project") {
       const next = trim(r.next || "");
       const path = createProjectPage(r.text, next ? [stampAuthor(newBlock({state: "TODO", title: next, props: {}}))] : []);
       if (r.outcome) getPage(path).props.outcome = r.outcome;
+      if (r.url) getPage(path).props.source = source(r.url);
       made.push(path);
       if (next) made.push(...createLinkedPages(next));
       touch(path);
       continue;
     }
     keep(r.path);
-    if (r.kind === "done") setBlockState(r.path, r.block, "DONE");
-    else if (r.kind === "due") setDue(r.block, r.date);
-    else if (r.kind === "note") postMessageAs(r.path, r.block, r.text, me, at);
+    // Where it was found stays on what it changed or made, as source:: (#516).
+    const mark = b => { if (b && r.url) setBlockProp(b, "source", source(r.url)); };
+    if (r.kind === "done") { setBlockState(r.path, r.block, "DONE"); mark(r.block); }
+    else if (r.kind === "due") { setDue(r.block, r.date); mark(r.block); }
+    else if (r.kind === "note") mark(postMessageAs(r.path, r.block, r.text, me, at));
     else if (r.kind === "next" || r.kind === "wait") {
       keep(r.proj);
       const title = r.kind === "next" ? r.text : r.text + " from [[p/" + person(r.who) + "]]";
       const b = stampAuthor(newBlock({state: r.kind === "next" ? "TODO" : "WAIT", title, props: {}}));
       if (r.date) setDue(b, r.date);
+      mark(b);
       made.push(...createLinkedPages(title));
       getPage(r.proj).blocks.push(b);
       stampAddedIfMissing(r.proj, b);

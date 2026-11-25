@@ -12,7 +12,10 @@ that breaks existing vaults. Newest first.
   AI that reads your mail, chats and meetings. Paste its answer back: you get
   one list of changes, grouped by project. Tasks done, new dates, notes, new
   next actions and waiting-fors are ticked; a new project is not. Apply makes
-  the ticked ones, and one Undo takes them all back. (#516)
+  the ticked ones, and one Undo takes them all back. A change the AI
+  found in an email, chat or document links to it, ↗ Email, so you can
+  check it before you tick; the link stays on the task as its source.
+  (#516)
 
 ## 1.223.0 - 2026-11-25
 

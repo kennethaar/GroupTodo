@@ -21,6 +21,10 @@ function parseCatchUp(raw, refs) {
   const text = String(raw || "").replace(/\s+(?=(?:DONE|DUE|NOTE|NEXT|WAIT)\s+\[?[TP]\d+\b|PROJECT\s)/g, "\n");
   for (let line of text.split(/\r?\n/)) {
     line = trim(line.replace(/\*\*|__|`/g, "").replace(/^\s*(?:>\s*)*(?:[-*•·]|\d+[.)])?\s*/, ""));
+    // Where it was found: a link at the end, bare, in <>, or as [label](link); a bare [1] is let go.
+    let url = null;
+    line = trim(line.replace(/\s*\|?\s*(?:\[[^\]]*\]\((https?:\/\/[^\s)]+)\)|<?(https?:\/\/[^\s<>]+)>?)\s*$/,
+      (_, a, b) => { url = a || b; return ""; }).replace(/(?:\s*\[\d+\])+\s*$/, "").replace(/\s*\|\s*$/, ""));
     const m = LINE.exec(line);
     if (!m) continue;
     const kind = m[1].toLowerCase();
@@ -31,14 +35,14 @@ function parseCatchUp(raw, refs) {
       const slug = slugify(title);
       if (["-", "0", "1", "2", "3"].some(c => V.pages.has(join(STATUS_DIRS[c], slug + ".md")))) continue;
       named.add(title.toLowerCase());
-      rows.push({kind, text: title, outcome, next, on: false});
+      rows.push({kind, text: title, outcome, next, url, on: false});
       continue;
     }
     const rm = REF.exec(rest);
     const ref = rm && refs.get(rm[1].toUpperCase());
     if (!ref || !live(ref)) continue;
     rest = trim(rm[2]);
-    const row = {kind, ref: rm[1].toUpperCase(), path: ref.path, block: ref.block || null, proj: ref.proj, on: true};
+    const row = {kind, ref: rm[1].toUpperCase(), path: ref.path, block: ref.block || null, proj: ref.proj, url, on: true};
     if (kind === "done") {
       if (!row.block || !OPEN_STATES[row.block.state]) continue;
     } else if (kind === "due") {

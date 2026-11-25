@@ -50,6 +50,7 @@ function catchUpSource() {
     "WAIT <project ref> <person> | <what> | <YYYY-MM-DD>   something I now wait for from someone, and by when",
     "PROJECT <title> | <outcome> | <first next action>     a new commitment of mine that is in none of my projects",
     "",
+    "End a line with | and a link to the email, chat, document or meeting it comes from, when you have one.",
     "Use only the references below. Leave out anything you are not sure of. Today is " + todayISO() + ".",
     ...lines,
   ].join("\n");
