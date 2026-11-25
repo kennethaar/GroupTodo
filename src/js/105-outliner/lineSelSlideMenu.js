@@ -15,7 +15,7 @@ function lineSelSlideMenu(btn) {
   const pop = slideMenuPop(slideLayoutNow(path, lines), lay => {
     slideLayoutPick(path, lines, lay);
     paintLineSel();                    // the lines stay picked; the bar is drawn anew
-  });
+  }, !!slideOwner(path, lines));
   // Hide in Present / Show in Present for all the picked lines at once (#467).
   const own = outer.filter(b => !b.state);
   if (own.length) {

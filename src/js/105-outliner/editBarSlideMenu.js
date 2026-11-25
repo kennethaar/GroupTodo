@@ -5,8 +5,9 @@ function editBarSlideMenu(btn) {
   const bar = $("#editBar"), open = bar.querySelector(".ebsub");
   editBarGroupClose();
   if (open) return;
-  const pop = slideMenuPop(slideLayoutNow(FLY.path, editBarSlideLines(FLY.block)),
-    lay => { editBarGroupClose(); editBarSlideLayout(lay); });
+  const lines = editBarSlideLines(FLY.block);
+  const pop = slideMenuPop(slideLayoutNow(FLY.path, lines),
+    lay => { editBarGroupClose(); editBarSlideLayout(lay); }, !!slideOwner(FLY.path, lines));
   bar.append(pop);
   btn.setAttribute("aria-expanded", "true");
   const br = btn.getBoundingClientRect(), pr = pop.getBoundingClientRect();

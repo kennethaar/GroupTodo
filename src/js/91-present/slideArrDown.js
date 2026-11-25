@@ -12,7 +12,9 @@ function slideArrDown(e) {
   const pic = hit.kind === "pic";
   // A map's pin (#488): at:: is where it stands, not a shift.
   const stand = hit.node.classList.contains("mpin");
-  const from = slideXY(owner.get()) || (pic ? [50, 50] : stand ? [parseFloat(hit.node.style.left), parseFloat(hit.node.style.top)] : [0, 0]);
+  // A line with no place of its own starts where it stands: a map's item that moved on keeps its last place (#488).
+  const shifted = (hit.node.style.translate.match(/-?[\d.]+/g) || [0, 0]).slice(0, 2).map(Number);
+  const from = slideXY(owner.get()) || (pic ? [50, 50] : stand ? [parseFloat(hit.node.style.left), parseFloat(hit.node.style.top)] : [shifted[0] || 0, shifted[1] || 0]);
   const r = hit.node.getBoundingClientRect();
   // The element's centre with no move, in % of the slide, for the snap.
   const mid = [((r.left + r.width / 2 - box.left) / box.width) * 100 - from[0], ((r.top + r.height / 2 - box.top) / box.height) * 100 - from[1]];

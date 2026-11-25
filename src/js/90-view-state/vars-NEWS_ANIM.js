@@ -4,6 +4,18 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.221.0#488": `
+    cap | Move things around a map
+    say | On a Map slide, write the same emoji twice.
+    + pg col
+    + a ln > pg | 🚗 Oslo
+    + b ln > pg | 🚗 Bergen
+    w 900
+    say | On its click the 🚗 moves on to its new place.
+    p b
+    w 1200
+    say | The same picture or words move the same way.
+    w 1500`,
   "1.220.0#467": `
     cap | See which lines stay off the slides
     say | Hide in Present keeps a line off the slides.

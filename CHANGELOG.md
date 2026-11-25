@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.221.0 - 2026-11-25
+
+- Present a page: Map is in the Slide layout menu, and writes (map) on
+  the slide's line. On a map, the same emoji, picture or words on a later
+  line is the same thing: on that line's click it moves to its new place,
+  as a 📍 pin did. Alt+drag places each one. (#488)
+
 ## 1.220.1 - 2026-11-25
 
 - A page: a picture on an outline line now shows small, the size of a

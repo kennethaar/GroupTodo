@@ -24,7 +24,7 @@ code:: en
 (häng die Datei an, oder schick sie so, wie sie ist). =>
 (legg ved filen, eller send den som den er). =>
 (line), (bar) or (pie) on the line above a table draws the table as a chart. The first column runs along it; each column of numbers is a line or a bar. Each → adds a point, bar or slice, with its number on it. =>
-(map) puts the picture on its line behind the whole slide, such as a map. Under it, a line that is only a picture is a card, with its lines under it: name, role. A picture with words is a badge, such as a logo and its name. A line that starts with an emoji, like 📍 Oslo or 🔵 Oslo, is a pin; Alt+drag puts it in place. Pins under a card or badge come with it and stay. Pin lines one after another are one pin that moves on each click. =>
+(map) puts the picture on its line behind the whole slide, such as a map. Under it, a line that is only a picture is a card, with its lines under it: name, role. A picture with words is a badge, such as a logo and its name. A line that starts with an emoji, like 📍 Oslo or 🔵 Oslo, is a pin; Alt+drag puts it in place. Pins under a card or badge come with it and stay. The same emoji, picture or words again is the same thing: on its click it moves to that line's place. Alt+drag places each one. Slide layout ▾ › Map writes (map) for you. =>
 (more as the folder comes in) =>
 (on now) =>
 (orientation: portrait) =>

@@ -9,6 +9,8 @@ function slideLayoutPick(path, lines, lay, back) {
   if (!page || !lines.length) return;
   const owner = slideOwner(path, lines), now = slideLayoutNow(path, lines);
   const want = lay === "auto" || lay === now || (lay === "split" && now === "quadrant") ? null : lay;
+  // A layout word such as (map) needs the slide's own line (#488): never one per line.
+  if (!owner && want && !SLIDE_MENU.some(([k, , m]) => k === want && !/^\(/.test(m))) return;
   const snapshot = structuredClone(page), space = V.space;
   if (owner) {
     owner.title = slideWordSet(owner.title, want);

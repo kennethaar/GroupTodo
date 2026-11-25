@@ -97,4 +97,6 @@ const SLIDE_MENU = [
   ["curve", "Curve", "~"],
   ["split", "Versus / 2×2", "|"],
   ["kpi", "Scorecard", "$"],
+  // A word on the slide's own line, not a mark on its lines (#488).
+  ["map", "Map", "(map)"],
 ];

@@ -16060,14 +16060,16 @@ var GTD_TEST = (() => {
      logo badges and pins (a line that starts with an emoji). */
   test("#488 a (map) slide: a picture behind, cards and badges that bring their pins, pins that stay or travel; at:: places a pin", () => {
     const svg = (w, h, c) => "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" fill="${c}"/></svg>`);
-    const MAP = svg(1600, 900, "#ccc"), LOGO = svg(100, 100, "#123"), FACE = svg(300, 400, "#a87");
+    // Each person their own picture: the same picture twice is one card that travels (#488 follow-up).
+    const MAP = svg(1600, 900, "#ccc"), LOGO = svg(100, 100, "#123"), LOGO2 = svg(100, 100, "#321"), FACE = svg(300, 400, "#a87");
+    const FACE2 = svg(300, 400, "#7a8"), FACE3 = svg(300, 400, "#87a");
     return withPages({[SHOW]: [
       "- (map) Acme Group ![](" + MAP + ")", "  - Founded in 1946",
-      "  - ![](" + LOGO + ") Product A", "    - 🔵 Oslo", "    - 🔵 Stockholm", "  - ![](" + LOGO + ") Product B", "    - 🟠 Lisbon",
+      "  - ![](" + LOGO + ") Product A", "    - 🔵 Oslo", "    - 🔵 Stockholm", "  - ![](" + LOGO2 + ") Product B", "    - 🟠 Lisbon",
       "- (map) Teamet ![](" + MAP + ")",
       "  - ![](" + FACE + ")", "    - **Sam Lee**", "    - Account manager", "    - 📍 Lisbon",
-      "  - ![](" + FACE + ")", "    - **Anna Berg**", "    - 📍 Stockholm",
-      "  - ![](" + FACE + ")", "    - **Kim Berg**", "    - 📍 Lisbon",
+      "  - ![](" + FACE2 + ")", "    - **Anna Berg**", "    - 📍 Stockholm",
+      "  - ![](" + FACE3 + ")", "    - **Kim Berg**", "    - 📍 Lisbon",
       "- (map) About me ![](" + MAP + ")",
       "  - ![](" + FACE + ")", "  - **Sam Lee**", "  - Account manager", "  - 📍 Lisbon", "  - 📍 Porto"].join("\n") + "\n"}, async () => {
       const [cab, team, me] = getPage(SHOW).blocks;
@@ -16130,6 +16132,59 @@ var GTD_TEST = (() => {
         const [hx, hy] = slideXY(blockProp(me.children[4], "at"));
         ok(Math.abs(hx - 70) < 1.5 && Math.abs(hy - 70) < 1.5, "Alt+drag places the pin: at:: " + blockProp(me.children[4], "at"));
         eq(slideCrowd(SHOW).size, 0, "a map's many lines are not a crowded slide");
+      } finally { presentStop(); go("today"); }
+    });
+  });
+  test("#488 Map is in the Slide layout menu; on a map the same emoji, picture or words is one thing that moves to each new place", () => {
+    const svg = (w, h, c) => "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" fill="${c}"/></svg>`);
+    const MAP = svg(1600, 900, "#ccc"), PHOTO = svg(300, 200, "#a87");
+    return withPages({[SHOW]: [
+      "- Trip", "  - Oslo", "  - Bergen",
+      "- (map) Road trip ![](" + MAP + ")",
+      "  - 🚗 Oslo", "  - 🚲 Bike rental", "  - 🚗 Bergen",
+      "  - ![](" + PHOTO + ")", "    - Day one",
+      "  - Lunch break",
+      "  - ![](" + PHOTO + ")", "    - Day two",
+      "  - Lunch break"].join("\n") + "\n"}, async () => {
+      const [trip, road] = getPage(SHOW).blocks;
+      // The menu: Map is one of the layouts, and picking it writes (map) on the line the slide is.
+      let picked = null;
+      const pop = slideMenuPop(null, lay => { picked = lay; });
+      const mapBtn = pop.querySelector('[data-lay="map"]');
+      ok(mapBtn && /Map/.test(mapBtn.textContent), "the Slide layout menu has no Map");
+      mapBtn.click();
+      eq(picked, "map", "Map does not pick the map layout");
+      slideLayoutPick(SHOW, trip.children, "map");
+      eq(getPage(SHOW).blocks[0].title, "(map) Trip", "picking Map does not write (map) on the slide's line");
+      eq(slideLayoutNow(SHOW, getPage(SHOW).blocks[0].children), "map", "the menu does not tick Map on a map");
+      const [car1, , car2, card1, text1, card2, text2] = road.children;
+      setBlockProp(car1, "at", "20,20"); setBlockProp(car2, "at", "60,60");
+      setBlockProp(card2, "at", "10,5"); setBlockProp(text2, "at", "30,0");
+      touch(SHOW);
+      const {slides} = deckSteps(SHOW), s = slides.find(x => x.title === "Road trip");
+      eq(s.parts.length, 7, "each line is still a click of its own");
+      const cur = () => $("#deck .slide.cur");
+      const state = p => (p.className.match(/\b(now|past|later)\b/) || [])[1];
+      try {
+        presentStart(SHOW); await settle();
+        presentGo(s.first); await settle();
+        const pins = [...cur().querySelectorAll(".mpin")];
+        eq(pins.map(p => p.textContent).sort(), ["🚗", "🚲"].sort(), "a different emoji is a pin of its own; the same emoji is one pin");
+        const car = pins.find(p => p.textContent === "🚗");
+        for (let i = 0; i < 3; i++) deckKey("ArrowRight");
+        await settle();
+        eq([state(car), parseFloat(car.style.left), parseFloat(car.style.top)], ["now", 60, 60], "the 🚗 did not move on to Bergen");
+        eq(cur().querySelectorAll(".mcard").length, 1, "the same picture twice is two cards");
+        eq(cur().querySelectorAll(".mtext").length, 1, "the same words twice are two lines");
+        const card = cur().querySelector(".mcard"), text = cur().querySelector(".mtext");
+        deckKey("ArrowRight"); deckKey("ArrowRight"); await settle();
+        eq([state(card), state(text)], ["past", "now"], "the card and the words come in on their clicks");
+        deckKey("ArrowRight"); await settle();
+        eq([state(card), card.style.translate], ["now", "10cqw 5cqh"], "the card does not move to its second place");
+        has(card.textContent, "Day two", "the card does not show the lines of its second place");
+        eq(card.dataset.bid, card2.id, "Alt+drag would place the card's first line, not where it is now");
+        deckKey("ArrowRight"); await settle();
+        eq([state(text), text.style.translate], ["now", "30cqw 0cqh"], "the words do not move to their second place");
       } finally { presentStop(); go("today"); }
     });
   });
