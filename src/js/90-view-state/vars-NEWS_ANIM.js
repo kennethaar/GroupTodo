@@ -4,6 +4,27 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.224.0#516": `
+    cap | Catch up with an AI
+    say | In the Weekly review, Get current › Catch up with an AI.
+    + pg col
+    + h ln > pg | Get current
+    + b chip > h | Catch up with an AI
+    p b
+    w 900
+    say | Copy the prompt to an AI that reads your mail and meetings. Paste its answer back.
+    + l ln > pg | Project A
+    + x ln > pg | ☑ Done: Send the draft
+    + y ln > pg | ☑ + Waiting for Person X: the contract
+    + z ln > pg | ☐ New project: Product A launch
+    s x | margin-left:16px
+    s y | margin-left:16px
+    s z | margin-left:16px
+    w 1500
+    say | Untick what is wrong. Apply makes the rest; Undo takes it all back.
+    + a chip > pg | Apply 2 changes
+    p a
+    w 1500`,
   "1.223.0#515": `
     cap | Slides in a window of their own
     say | ▶ Present opens the slides beside the page.
@@ -118,16 +139,6 @@ const NEWS_ANIM = {
     say | On top: Continue, from any of your devices.
     + c chip > pg | ▸ Continue: Kitchen renovation (Windows, 14:02)
     w 1200
-    p c
-    w 1500`,
-  "1.214.0#485": `
-    cap | Hold Alt for the time and your camera
-    say | Hold Alt on a slide: the time shows top-left.
-    + pg col
-    + t chip > pg | ⏱ 12:34
-    + c chip > pg | ◉ Camera off
-    w 1200
-    say | One click turns your camera on or off.
     p c
     w 1500`
 };

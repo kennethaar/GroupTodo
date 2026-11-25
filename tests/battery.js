@@ -9274,6 +9274,61 @@ var GTD_TEST = (() => {
       eq([w3.state, dueDate(q3) || null, messagesOf(q3).length], ["WAIT", null, 0], "Undo puts it all back");
     } finally { closeAll(); document.querySelectorAll("#toasts > *").forEach(n => n.remove()); }
   });
+  /* #516: Catch up, from Get current in the Weekly review. The prompt names
+     your projects and their open tasks with short references; the AI's answer
+     (read past its bullets and bold) becomes one list of changes, grouped by
+     project, ticked except a new project. Apply makes the ticked ones, and one
+     Undo takes them all back. A reference the prompt did not give is left out. */
+  test("#516 Catch up: the prompt lists the projects; the answer is a ticked list, a new project unticked; Apply and one Undo", async () => {
+    const path = scratchProject("catch up 516", [["TODO", "Send the draft"], ["TODO", "Book the room"]]);
+    const title = pageTitle(path);
+    const btn = t => [...$$("#modalRoot button")].find(b => (t instanceof RegExp ? t.test(b.textContent) : b.textContent === t));
+    const made = () => [...V.pages.keys()].find(p => statusDirOf(p) === "1" && pageTitle(p) === "Product A launch");
+    try {
+      go("review"); await settle();
+      const open = [...$$("#content button")].find(b => b.textContent === "Catch up with an AI");
+      ok(open, "Get current offers Catch up with an AI");
+      open.click(); await settle();
+      const prompt = $("#modalRoot textarea").value;
+      has(prompt, title, "the prompt names the project");
+      const ref = t => (new RegExp("\\b([TP]\\d+)\\b[^\\n]*" + t).exec(prompt) || [])[1];
+      const [send, room, proj] = [ref("Send the draft"), ref("Book the room"), ref(title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))];
+      ok(send && room && proj, "each task and the project has a reference: " + [send, room, proj]);
+      const answer = [...$$("#modalRoot textarea")].pop();
+      answer.value = "Here is what changed:\n\n- **DONE " + send + "**\n- DUE " + room + " 2026-11-28\n" +
+        "- NEXT " + proj + " Call the supplier\n- WAIT " + proj + " Person X | the signed contract | 2026-12-02\n" +
+        "- DONE T999\n- PROJECT Product A launch | Launched to all users | Draft the plan\n";
+      answer.dispatchEvent(new Event("input"));
+      btn("Read it").click(); await settle();
+      const rows = [...$$("#modalRoot input[type=checkbox]")];
+      eq(rows.length, 5, "one row per change; the unknown reference is left out");
+      has($("#modalRoot").textContent, title, "grouped under the project");
+      eq(rows.map(r => r.checked), [true, true, true, true, false], "changes ticked, the new project not");
+      ok(btn("Apply 4 changes"), "the button counts the ticked changes");
+      ok(btn(/Back/), "with Back");
+      rows[1].click(); rows[4].click();
+      ok(btn("Apply 4 changes"), "the count follows the ticks");
+      rows[1].click(); await settle();
+      btn("Apply 5 changes").click(); await settle();
+      const [a, b] = getPage(path).blocks;
+      eq([a.state, dueDate(b)], ["DONE", "2026-11-28"], "done and due as given");
+      const added = getPage(path).blocks.slice(2);
+      eq(added.map(x => x.state), ["TODO", "WAIT"], "a next action and a waiting-for on the project");
+      has(added[0].title, "Call the supplier");
+      eq([waitingPersonOf(added[1], getPage(path)), dueDate(added[1])], ["Person X", "2026-12-02"], "waiting on whom, by when");
+      ok(made(), "the ticked new project is in Active");
+      eq(getPage(made()).props.outcome, "Launched to all users", "with its outcome");
+      has(serializePage(getPage(made())), "Draft the plan", "and its first next action");
+      const undo = [...$$("#toasts .toast button")].find(x => x.textContent === "Undo");
+      ok(undo, "with Undo");
+      undo.click(); await settle();
+      eq([getPage(path).blocks.length, getPage(path).blocks[0].state, dueDate(getPage(path).blocks[1]) || null, !!made()],
+        [2, "TODO", null, false], "one Undo takes it all back");
+    } finally {
+      closeAll(); document.querySelectorAll("#toasts > *").forEach(n => n.remove());
+      if (made()) removePage(made());
+    }
+  });
   test("#161 Ask for an update can leave the projects unnamed", async () => {
     const path = scratchProject("secret depot plan", [["TODO", "Ask [[p/Lars Haugen]] which crane goes first"]]);
     const block = getPage(path).blocks[0], title = pageTitle(path);

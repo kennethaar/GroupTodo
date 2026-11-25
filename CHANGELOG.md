@@ -5,6 +5,15 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.224.0 - 2026-11-25
+
+- Weekly review › Steps: Get current has Catch up with an AI. Copy its
+  prompt, with your active and waiting projects and their open tasks, to an
+  AI that reads your mail, chats and meetings. Paste its answer back: you get
+  one list of changes, grouped by project. Tasks done, new dates, notes, new
+  next actions and waiting-fors are ticked; a new project is not. Apply makes
+  the ticked ones, and one Undo takes them all back. (#516)
+
 ## 1.223.0 - 2026-11-25
 
 - Present a page: ▶ Present opens the slides in a window of their own,

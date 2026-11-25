@@ -1639,6 +1639,12 @@ js/145-horizons-view/vars-PASTED_UPDATE_BY_RE.js
 js/145-horizons-view/pastedUpdate.js
 js/145-horizons-view/applyPastedUpdate.js
 js/145-horizons-view/offerPastedUpdate.js
+js/145-horizons-view/vars-CATCHUP_DRAFT.js
+js/145-horizons-view/catchUpSource.js
+js/145-horizons-view/parseCatchUp.js
+js/145-horizons-view/applyCatchUp.js
+js/145-horizons-view/catchUpReview.js
+js/145-horizons-view/openCatchUp.js
 js/145-horizons-view/replyWithoutRef.js
 js/145-horizons-view/importUpdatePasted.js
 js/145-horizons-view/importUpdateFromFile.js
