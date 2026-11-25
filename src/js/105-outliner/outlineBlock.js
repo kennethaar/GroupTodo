@@ -43,6 +43,18 @@ function outlineBlock(path, page, b, opts = {}) {
     }, () => lineStateMenu(path, b, node.dataset.space, true)));
   }
 
+  /* Off the slides (#467): a closed eye says so where the "_ " would be, named
+     for hover, focus and screen readers. A tap puts the line back, and the
+     note that says so has Undo, for a touch screen with no hover. */
+  if (!b.state && /^_\s/.test(b.title || "")) {
+    const tip = "Hidden from slides. Show in Present";
+    line.append(el("button", {class: "slidehidebtn", type: "button", title: tip, "aria-label": tip, disabled: ro,
+      onclick: e => {
+        e.stopPropagation();
+        slideHideSet(path, [b]);
+        notify("Back on the slides.", "info", {label: "Undo", run: undoLast});
+      }}, svgIcon(FLY_HIDE)));
+  }
   const lead = meetLead(b);
   if (lead) line.append(lead);
   const txt = el("div", {

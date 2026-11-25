@@ -4,6 +4,23 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.220.0#467": `
+    cap | See which lines stay off the slides
+    say | Hide in Present keeps a line off the slides.
+    + pg col
+    + a ln > pg | Opening
+    + b ln > pg | Backup numbers
+    + c ln > pg | Next steps
+    w 900
+    c b +dim
+    t b | ⊘ Backup numbers
+    say | It shows faded, with a closed eye in front.
+    w 1200
+    p b
+    c b -dim
+    t b | Backup numbers
+    say | Tap the eye to put it back on the slides.
+    w 1500`,
   "1.219.0#513": `
     cap | Feedback from any help topic
     say | Open help on any page.

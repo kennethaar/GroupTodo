@@ -15288,6 +15288,20 @@ var GTD_TEST = (() => {
       document.dispatchEvent(new KeyboardEvent("keydown", {key: "z", ctrlKey: true, bubbles: true, cancelable: true})); await settle();
       eq(getPage(SHOW).blocks[0].children[1].title, "_ Budget", "one Ctrl+Z takes the whole pick back");
       lineSelClear();
+      // The outline shows what is hidden: faded with the lines under it, a named closed eye, no "_ " in the words.
+      const lineOf = id => document.querySelector('.blk[data-id="' + id + '"] > .line');
+      const pl = lineOf(parked.id), eye = pl.querySelector(".slidehidebtn"), plain = lineOf(road.id).querySelector(".txt");
+      const color = n => getComputedStyle(n).color;
+      ok(eye && /^Hidden from slides/.test(eye.getAttribute("aria-label")) && eye.title, "a hidden line has no named closed eye");
+      ok(!pl.querySelector(".txt").textContent.startsWith("_"), "the _ shows in the words");
+      ok(color(pl.querySelector(".txt")) !== color(plain), "a hidden line is not faded");
+      ok(color(lineOf(parked.children[0].id).querySelector(".txt")) !== color(plain), "the lines under a hidden line are not faded");
+      ok(!lineOf(road.id).querySelector(".slidehidebtn") && !lineOf(room.id).querySelector(".slidehidebtn"), "a shown line or a task line has an eye");
+      eye.click(); await settle();
+      eq(getPage(SHOW).blocks[1].title, "Parked slide", "the eye does not put the line back on the slides");
+      ok(!lineOf(parked.id).querySelector(".slidehidebtn"), "the eye stays on a shown line");
+      undoLast(); await settle();
+      eq(getPage(SHOW).blocks[1].title, "_ Parked slide", "Undo does not hide it again");
       // The presenter window says how many are hidden, so nothing goes without a trace.
       presentStart(SHOW, {presenter: true}); await settle();
       eq(f.contentDocument.querySelector(".pcount")?.textContent, "1 / 3 · 6 hidden", "the presenter shows N hidden");

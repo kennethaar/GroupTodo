@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.220.0 - 2026-11-25
+
+- Present a page: a line kept off the slides shows faded in the outline,
+  with the lines under it, and a closed eye in front instead of the "_ ".
+  Tap the eye to put it back on the slides; Undo hides it again. (#467)
+
 ## 1.219.0 - 2026-11-25
 
 - Help: every help topic ends with Suggest a feature and Report a bug,

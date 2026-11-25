@@ -78,6 +78,14 @@ body.linedrag,body.linedrag *{cursor:grabbing!important;user-select:none}
    words start back at the badge's left edge and only their first line steps
    past it (58px badge + the line's 7px gap). The badge sits above them so the
    first line's indent is still the badge to a click. */
+/* Off the slides (#467): the line and the lines under it in the quiet text
+   colour (AA in every theme), a closed eye in front where the "_ " was. */
+.blk>.line.slidehide>.txt,.blk:has(>.line.slidehide) .blk>.line>.txt{color:var(--fg3)}
+.slidehidebtn{flex:none;display:grid;place-items:center;width:24px;height:24px;margin:-1px -3px 0 -2px;padding:0;
+  border:0;border-radius:4px;background:transparent;color:var(--fg3);cursor:pointer}
+.slidehidebtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.slidehidebtn:hover,.slidehidebtn:focus-visible{background:var(--bg3);color:var(--fg)}
+.slidehidebtn:disabled{cursor:default;background:transparent;color:var(--fg3)}
 .blk>.line>.tick{position:relative;z-index:1}
 .blk>.line>.tick~.txt{margin-left:-65px;text-indent:65px}
 .blk>.line>.tick~.txt *{text-indent:0}

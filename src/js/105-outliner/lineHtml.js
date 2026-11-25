@@ -5,7 +5,8 @@
    layout word is not shown: the bullet is its icon (#481). */
 function lineHtml(b) {
   if (tableRows(b)) return tableHtml(b);
-  const t = slideWord(b.title).rest;
+  // A hidden line's "_ " is storage (P12): the closed eye in front says it (#467).
+  const t = b.state ? slideWord(b.title).rest : slideWord(b.title).rest.replace(/^_\s+/, "");
   if (bujoKind(t, b.state)) return renderInline(bujoText(t));
   return b.state && estBand(t)
     ? estHtml(t) + renderInline(withoutEst(t))
