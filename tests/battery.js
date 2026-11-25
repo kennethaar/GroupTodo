@@ -15623,6 +15623,24 @@ var GTD_TEST = (() => {
       eq(hit.map(b => b.textContent), [], "the card covers a spoke");
     } finally { presentStop(); }
   }));
+  test("#433 follow-up: a hub box holds its longest word whole, inside its border", () => withPages({[EVEN]: [
+    "- Total cost", "  - . Direct work", "  - . Indirect work", "  - . Materialsupplychainmanagement and transport",
+    "  - . Contractortransportationlogistics"].join("\n") + "\n"}, async () => {
+    try {
+      openPage(EVEN); await settle();
+      content().querySelector(".pagehead .presentbtn").click(); await settle();
+      presentGo(DECK.slides.find(s => s.title === "Total cost").first + 1); await settle();
+      await Promise.all($("#deck").getAnimations({subtree: true}).map(a => a.finished.catch(() => {})));
+      const slide = $("#deck .slide.cur").getBoundingClientRect();
+      for (const b of $$("#deck .slide.cur .hub .ntext")) {
+        const box = b.getBoundingClientRect(), range = document.createRange(); range.selectNodeContents(b);
+        const words = [...range.getClientRects()];
+        ok(words.every(r => r.left >= box.left - 1 && r.right <= box.right + 1),
+          "\"" + b.textContent + "\" runs past its box: " + words.map(r => Math.round(r.right - box.right)).join(", "));
+        ok(box.left >= slide.left - 1 && box.right <= slide.right + 1, "\"" + b.textContent + "\" is not on the slide");
+      }
+    } finally { presentStop(); }
+  }));
   test("#433 a 2D layout lights a box at a time with its lines in it; a quote, then its takeaways", () => withPages(SHOW_PAGE, async () => {
     try {
       openPage(SHOW); await settle();

@@ -16,7 +16,11 @@ function slideEven(slide) {
   const R = ring.offsetWidth, bubbles = [...ring.querySelectorAll(".ntext")], lines = [...ring.querySelectorAll(".sline")];
   const inner = core.offsetWidth / 2 / R * 100, SHOWN = 6;
   let W, H, r;
-  for (let fit = 1; fit >= 0.5; fit = Math.round((fit - 0.1) * 10) / 10) {
+  /* A word longer than a bubble may be runs out past its border, since a
+     word is never cut (#433 follow-up): the words get smaller until each
+     bubble holds its longest one. */
+  const wide = () => bubbles.some(b => b.scrollWidth > b.clientWidth + 1);
+  for (let fit = 1; fit >= 0.3; fit = Math.round((fit - 0.1) * 10) / 10) {
     ring.style.setProperty("--hubfit", fit);
     for (const b of bubbles) { b.style.width = ""; b.style.height = ""; }
     W = Math.max(...bubbles.map(b => b.offsetWidth)) / R * 100;
@@ -26,7 +30,8 @@ function slideEven(slide) {
                                Math.abs(+b.dataset.s) > 1e-6 ? H / 2 / Math.abs(+b.dataset.s) : Infinity);
     r = Math.max(36, ...bubbles.map(b => inner + SHOWN + edge(b)));
     // Above and below, the ring's edge is the limit: the title is over it.
-    if (bubbles.every(b => r * Math.abs(+b.dataset.s) + H / 2 <= 50)) break;
+    // Below half size only a word too long for its bubble makes them smaller still.
+    if (!wide() && (fit <= 0.5 || bubbles.every(b => r * Math.abs(+b.dataset.s) + H / 2 <= 50))) break;
   }
   bubbles.forEach((b, i) => {
     const c = +b.dataset.c, s = +b.dataset.s;

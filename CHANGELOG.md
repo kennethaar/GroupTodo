@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.221.1 - 2026-11-25
+
+- Present a page: on a Hub slide, a long word no longer runs out past its
+  box. The words get smaller until each box holds its longest word whole.
+  (#433)
+
 ## 1.221.0 - 2026-11-25
 
 - Present a page: Map is in the Slide layout menu, and writes (map) on
