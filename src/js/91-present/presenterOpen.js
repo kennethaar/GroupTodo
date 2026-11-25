@@ -4,9 +4,12 @@
 function presenterOpen() {
   if (!DECK) return;
   if (DECK.pw && !DECK.pw.closed) { DECK.pw.focus?.(); return; }
-  const pw = window.open("", "gtd-presenter", "popup,width=960,height=640");
+  // One still open from the last talk is used again (#515). Opened from the
+  // slides window when the key was pressed there: a pop-up needs a key or click in its opener.
+  const from = DECK.win && !DECK.win.closed ? DECK.win : window;
+  const pw = PRESENTER_WIN && !PRESENTER_WIN.closed ? PRESENTER_WIN : from.open("", "gtd-presenter", "popup,width=960,height=640");
   if (!pw) { notify("Allow pop-ups for this page to open the presenter window.", "warn"); return; }
-  DECK.pw = pw;
+  DECK.pw = PRESENTER_WIN = pw;
   const d = pw.document;
   d.title = "Presenter · " + pageTitle(DECK.path);
   d.head.replaceChildren(el("style", {}, PRESENTER_CSS));

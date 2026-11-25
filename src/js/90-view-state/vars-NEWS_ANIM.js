@@ -4,6 +4,22 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.223.0#515": `
+    cap | Slides in a window of their own
+    say | ▶ Present opens the slides beside the page.
+    + pg col
+    + l ln > pg | Our plan
+    + a ln > pg | • First step
+    w 1200
+    say | Change a line on the page: the slide shows it.
+    s a | font-weight:700
+    + b ln > pg | • First step, done by Friday
+    c a +dim
+    w 1500
+    say | F or ⛶ makes the slides full screen.
+    + f chip > pg | ⛶ Full screen (F)
+    p f
+    w 1500`,
   "1.222.0#488": `
     cap | A picture pin that travels
     say | The same picture on two lines is one pin on the map.
@@ -113,18 +129,5 @@ const NEWS_ANIM = {
     w 1200
     say | One click turns your camera on or off.
     p c
-    w 1500`,
-  "1.213.0#491": `
-    cap | A picture as a bullet
-    say | A line with only a picture comes in its turn, like any bullet.
-    + pg col
-    + t ln > pg | About us
-    + a ln > pg | ▢ picture
-    s a | opacity:.2
-    w 1200
-    s a | opacity:1
-    w 1200
-    say | It stays bright when the next line comes.
-    + b ln > pg | • Founded in 1946
     w 1500`
 };

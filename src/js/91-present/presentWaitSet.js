@@ -8,5 +8,5 @@ function presentWaitSet(path, hhmm) {
   page.props = page.props || {};
   if (page.props.starts !== hhmm) { page.props.starts = hhmm; touch(path); }
   if (DECK && DECK.path === path) { DECK.pwTimes = false; slideWaitBegin(); }
-  else presentStart(path, {wait: true});
+  else presentStart(path, {wait: true, win: true});
 }

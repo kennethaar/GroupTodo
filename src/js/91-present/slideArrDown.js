@@ -49,8 +49,8 @@ function slideArrDown(e) {
     draw(last);
   };
   const up = ev => {
-    document.removeEventListener("pointermove", move, true);
-    document.removeEventListener("pointerup", up, true);
+    doc.removeEventListener("pointermove", move, true);
+    doc.removeEventListener("pointerup", up, true);
     SLIDE_ARR = null;
     if (!moved) { SLIDE_ARR_PICK = {kind: hit.kind, id: hit.id}; return; }
     last = at(ev);
@@ -59,7 +59,9 @@ function slideArrDown(e) {
     SLIDE_ARR_PICK = {kind: hit.kind, id: hit.id};
     slideArrSave([[owner, !pic && !stand && !v[0] && !v[1] ? null : v.join(",")]], "Placed · Ctrl+Z puts it back.");
   };
+  // The slides may be in a window of their own (#515).
+  const doc = DECK.deck.ownerDocument;
   SLIDE_ARR = {hit};
-  document.addEventListener("pointermove", move, true);
-  document.addEventListener("pointerup", up, true);
+  doc.addEventListener("pointermove", move, true);
+  doc.addEventListener("pointerup", up, true);
 }

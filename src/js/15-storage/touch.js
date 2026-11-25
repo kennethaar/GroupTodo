@@ -5,4 +5,6 @@ function touch(path) {
   touchHere(path);
   syncPageCopies(path, V.space);
   if (typeof noteLocalEdit === "function") noteLocalEdit(path);
+  // The slides in their own window show the edit (#515).
+  presentSoon();
 }

@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.223.0 - 2026-11-25
+
+- Present a page: ▶ Present opens the slides in a window of their own,
+  beside the page, so you can edit and see the talk at the same time. An
+  edit on the page shows on the slide a moment later. The window opens at
+  1920×1080 where the screen has room; F or ⛶ Full screen fills the
+  screen. ▾ › Full screen in this tab keeps the old way, for one screen.
+  When the talk ends, Show in page takes you to the line it ended at. A
+  slides or presenter window still open shows the next talk. (#515)
+
 ## 1.222.2 - 2026-11-25
 
 - Present a page: Cycle is back in the Slide layout menu for a line with

@@ -14886,8 +14886,8 @@ var GTD_TEST = (() => {
       ok(!$(".modal"), "▾ opens no dialog");
       const pop = more.closest(".presentsplit").querySelector(".presentpop");
       ok(pop, "▾ drops a menu down under itself");
-      eq([...pop.querySelectorAll("[role=menuitem]")].map(b => b.textContent), ["With presenter window", "Count down to the start…"],
-        "it offers the presenter window and the countdown (#486); ▶ Present is beside it");
+      eq([...pop.querySelectorAll("[role=menuitem]")].map(b => b.textContent), ["With presenter window", "Full screen in this tab", "Count down to the start…"],
+        "it offers the presenter window, the slides over this tab (#515) and the countdown (#486); ▶ Present is beside it");
       eq(more.getAttribute("aria-expanded"), "true", "▾ says it is open");
       document.activeElement.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
       await settle();
@@ -14948,7 +14948,8 @@ var GTD_TEST = (() => {
     const f = document.createElement("iframe");
     document.body.append(f);
     const open = window.open;
-    window.open = () => f.contentWindow;
+    // Only the presenter window opens; the slides' own window (#515) is blocked, so they show in this tab.
+    window.open = (u, name) => name === "gtd-presenter" ? f.contentWindow : null;
     try {
       // The presenter window is offered in sight: ▶ Present ▾ › With presenter window.
       openPage(TALK); await settle();
@@ -16329,6 +16330,65 @@ var GTD_TEST = (() => {
       q(".ptimes .ptimeset").click(); await settle();
       eq(getPage(SHOW).props.starts, "13:05", "another time counts down too");
     } finally { presentStop(); window.open = open; f.remove(); go("today"); }
+  }));
+
+  /* #515 ▶ Present opens the slides in a window of their own, so the page
+     stays open to edit beside them; an edit shows on the slide. A slides or
+     presenter window still open after the talk picks up the next one. ▾ ›
+     Full screen in this tab keeps the old way. */
+  test("#515 ▶ Present opens the slides in their own window beside the page; edits show; both windows pick up the next talk", () => withPages({
+    [SHOW]: ["- First point", "  - A", "  - B", "- Second point", "  - C"].join("\n") + "\n"}, async () => {
+    const fs = document.createElement("iframe"), fp = document.createElement("iframe");
+    document.body.append(fs, fp);
+    const open = window.open, opened = [];
+    window.open = (u, name) => { opened.push(name); return name === "gtd-presenter" ? fp.contentWindow : fs.contentWindow; };
+    // A key in the slides window opens the presenter window from there.
+    fs.contentWindow.open = window.open;
+    const sd = () => fs.contentDocument, btn = () => content().querySelector(".pagehead .presentbtn");
+    const key = k => fs.contentWindow.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true}));
+    try {
+      openPage(SHOW); await settle();
+      btn().click(); await settle();
+      ok(DECK && !document.querySelector("#deck"), "the slides cover the page instead of a window of their own");
+      ok(sd().querySelector("#deck .slide.cur"), "the slides are not in their own window");
+      ok(btn() && btn().isConnected, "the page is not open beside the slides");
+      ok(/Full screen/.test(sd().querySelector("#deck .deckfull")?.textContent || ""), "the slides window has no Full screen hint");
+      key("ArrowRight"); await settle();
+      eq(DECK.i, 1, "a key in the slides window does not run the talk");
+      // An edit on the page shows on the slide in a moment.
+      const a = getPage(SHOW).blocks[0].children[0];
+      a.title = "A changed"; touch(SHOW); render();
+      await new Promise(r => setTimeout(r, 700)); await settle();
+      has(sd().querySelector("#deck .slide.cur").textContent, "A changed", "an edit on the page does not show on the slide");
+      eq(DECK.i, 1, "the edit moved the talk off its step");
+      key("p"); await settle();
+      ok(fp.contentDocument.querySelector(".pnext"), "P opens the presenter window");
+      key("Escape"); key("Escape"); await settle();
+      ok(!DECK && !sd().querySelector("#deck"), "Esc at the top does not end the talk");
+      ok(!fp.contentDocument.querySelector(".pnext"), "the presenter window still shows the ended talk");
+      // The page offers the line the talk ended at.
+      const toast = [...document.querySelectorAll("#toasts .toast")].find(t => /Ended at/.test(t.textContent));
+      // The talk was on the First point slide (step 1) when Esc took it up to the title and out.
+      ok(toast && /First point/.test(toast.textContent), "no offer to show the line the talk ended at: " + (toast?.textContent || "none"));
+      toast.querySelector(".act").click(); await settle();
+      await new Promise(r => setTimeout(r, 100));
+      eq(document.activeElement?.closest(".blk")?.dataset.id, String(getPage(SHOW).blocks[0].id), "Show in page does not put the caret in that line");
+      // Start again: both windows still open pick it up; none is opened anew.
+      const before = opened.length;
+      btn().click(); await settle();
+      ok(sd().querySelector("#deck .slide.cur"), "the slides window does not pick up the next talk");
+      ok(DECK.pw === fp.contentWindow && fp.contentDocument.querySelector(".pnext"), "the presenter window does not pick up the next talk");
+      eq(opened.length, before, "a window was opened anew: " + opened.slice(before).join(", "));
+      // Closing the slides window ends the talk.
+      fs.contentWindow.dispatchEvent(new Event("pagehide")); await settle();
+      ok(!DECK, "closing the slides window does not end the talk");
+      // ▾ › Full screen in this tab: the old way.
+      content().querySelector(".pagehead .presentmore").click(); await settle();
+      const item = [...document.querySelectorAll(".presentpop [role=menuitem]")].find(b => /Full screen in this tab/.test(b.textContent));
+      ok(item, "▾ has no Full screen in this tab");
+      item.click(); await settle();
+      ok(document.querySelector("#deck") && !sd().querySelector("#deck"), "Full screen in this tab does not show the slides in this tab");
+    } finally { presentStop(); window.open = open; fs.remove(); fp.remove(); go("today"); }
   }));
 
   /* #485 Your camera is one layer through the talk: off until Shift+C, then

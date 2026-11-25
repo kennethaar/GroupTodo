@@ -12,9 +12,14 @@ function presentMenu(path, root = null, anchor = null) {
   };
   const away = e => { if (!menu.contains(e.target) && !anchor.contains(e.target)) close(); };
   menu.append(el("button", {role: "menuitem", title: "Notes, what comes next and a timer on your own screen (P)",
-    onclick: () => { close(); presentStart(path, {root, presenter: true}); },
+    onclick: () => { close(); presentStart(path, {root, presenter: true, win: true}); },
     onkeydown: e => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); anchor.focus(); } }},
     "With presenter window"));
+  // The old way, for one screen: the slides over this tab (#515).
+  menu.append(el("button", {role: "menuitem", title: "The slides over this page, for a single screen",
+    onclick: () => { close(); presentStart(path, {root}); },
+    onkeydown: e => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); anchor.focus(); } }},
+    "Full screen in this tab"));
   // A waiting screen with a countdown to the start (#486).
   menu.append(el("button", {role: "menuitem", title: "Slides on repeat and a countdown until the talk starts",
     onclick: () => { close(); openPresentWait(path); },

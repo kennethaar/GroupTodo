@@ -12,6 +12,8 @@ function presentGo(i) {
   const from = steps[DECK.i], to = steps[i];
   const fwd = !from || i >= DECK.i;
   DECK.i = i;
+  // The last line shown, for the offer when the talk ends (#515); a title slide of the page has none.
+  if (DECK.steps[i]?.k || DECK.steps[i]?.s.block) DECK.seen = DECK.steps[i];
   const old = deck.querySelector(".slide.cur");
   if (from && from.s === to.s && old) {
     slideBullets(old, to, fwd && to.k === from.k + 1);

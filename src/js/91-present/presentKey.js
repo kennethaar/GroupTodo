@@ -42,5 +42,6 @@ function presentKey(e) {
   }
   else if (low === "b" || k === ".") DECK.deck.classList.toggle("blank");
   else if (low === "p") presenterOpen();
+  else if (low === "f") slideFull();      // full screen, in the slides window (#515)
   else if (low === "o") { if (!DECK.pw || DECK.pw.closed) presenterOpen(); DECK.grid = !DECK.grid; presenterDraw(); }
 }
