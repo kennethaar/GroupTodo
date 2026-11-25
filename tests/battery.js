@@ -15727,8 +15727,8 @@ var GTD_TEST = (() => {
       ok(document.querySelector('#editBar .ebpop[data-g="format"]') && !document.querySelector('#editBar .ebpop [data-k="slide"]'), "Format holds text only, no Slide layout");
       editBarGroupClose(); await frame();
       const items = await menu();
-      eq(items.map(n => n.dataset.lay), ["auto", "process", "timeline", "cycle", "pyramid", "hub", "curve", "split", "kpi"],
-        "the known layouts, Auto first");
+      eq(items.map(n => n.dataset.lay), ["auto", "process", "timeline", "cycle", "pyramid", "hub", "curve", "split", "kpi", "map"],
+        "the known layouts, Auto first; Map last (#488)");
       ok(/->/.test(items.find(n => n.dataset.lay === "timeline").textContent), "each shows the mark it writes");
       editBarGroupClose(); await frame();
       eq(await ticked(), ["auto"], "no marks: Auto is ticked");

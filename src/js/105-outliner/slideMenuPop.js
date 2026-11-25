@@ -6,7 +6,8 @@ function slideMenuPop(now, onPick, owned = true) {
   const pop = el("div", {class: "ebpop ebsub", role: "menu", "aria-label": "Slide layout"});
   for (const [lay, name, mark] of SLIDE_MENU) {
     // A layout word (Map) goes on the slide's own line: only offered when there is one (#488).
-    if (!owned && /^\(\p{L}+\)$/u.test(mark)) continue;
+    // A word, not a one-letter mark such as Cycle's (o).
+    if (!owned && /^\(\p{L}{2,}\)$/u.test(mark)) continue;
     const on = lay === now || (lay === "split" && now === "quadrant");
     pop.append(el("button", {
       class: "ebtn", tabindex: "-1", role: "menuitemradio", "aria-checked": String(on), data: {lay},

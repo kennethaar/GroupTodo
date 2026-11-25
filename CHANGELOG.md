@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.222.2 - 2026-11-25
+
+- Present a page: Cycle is back in the Slide layout menu for a line with
+  no lines under it, and picking it marks the line again. Hiding Map there
+  had hidden Cycle too. (#488)
+
 ## 1.222.1 - 2026-11-25
 
 - Present a page: the dashed boxes that show what Alt+drag can move no
