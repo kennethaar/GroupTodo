@@ -12,6 +12,8 @@ function presenterOpen() {
   d.head.replaceChildren(el("style", {}, PRESENTER_CSS));
   d.documentElement.lang = document.documentElement.lang || "en";
   d.addEventListener("keydown", presentKey);
+  // Alt held there shows the boxes on the slides; let go there, they go (#487).
+  d.addEventListener("keyup", slideArrKey);
   d.addEventListener("dblclick", slideEdit);    // a line in the Now list is edited there (#466)
   presenterDraw();
 }

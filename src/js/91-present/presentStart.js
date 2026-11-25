@@ -31,6 +31,9 @@ function presentStart(path, {root = null, on = false, presenter = false, step = 
   // Alt+drag places a line, the title or the picture's crop (#487).
   deck.addEventListener("pointerdown", slideArrDown, true);
   window.addEventListener("keyup", slideArrKey, true);
+  // The boxes of Alt held go with Alt (#487).
+  window.addEventListener("blur", slideArrLost);
+  window.addEventListener("pointermove", slideArrLost, true);
   SLIDE_ARR_PICK = null;
   DECK.timer = setInterval(presenterTick, 1000);
   // The presenter window first: a pop-up is only allowed straight from the click.

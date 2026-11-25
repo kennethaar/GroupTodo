@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.222.1 - 2026-11-25
+
+- Present a page: the dashed boxes that show what Alt+drag can move no
+  longer stay on the slides after Alt+Tab to the presenter window. They go
+  as soon as Alt is let go, in either window. (#487)
+
 ## 1.222.0 - 2026-11-25
 
 - Present a page: on a map, a picture used on more than one line is a pin.

@@ -4,6 +4,20 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.222.0#488": `
+    cap | A picture pin that travels
+    say | The same picture on two lines is one pin on the map.
+    + pg col
+    + l ln > pg | (map) Our route 🗺
+    + a ln > pg | 🖼 Oslo
+    s a | margin-left:24px
+    w 1200
+    + b ln > pg | 🖼 Bergen
+    s b | margin-left:24px
+    w 900
+    say | Its words are a label that moves with it. Alt+drag the label to place it apart.
+    c a +dim
+    w 1800`,
   "1.221.0#488": `
     cap | Move things around a map
     say | On a Map slide, write the same emoji twice.
@@ -112,89 +126,5 @@ const NEWS_ANIM = {
     w 1200
     say | It stays bright when the next line comes.
     + b ln > pg | • Founded in 1946
-    w 1500`,
-  "1.212.0#485": `
-    cap | Your camera in the talk
-    say | Shift+C puts you on the slides. The slide picks where.
-    + pg col
-    + t ln > pg | Roadmap 2027
-    + v chip > pg | ● You, big behind the title
-    w 1500
-    say | A plain slide: you in a round bubble in the corner.
-    + b chip > pg | ◯ Bubble
-    s b | border-radius:999px
-    w 1500
-    say | The presenter window: Auto, or pick one for this slide.
-    + a chip > pg | Auto (Bubble)
-    + g chip > pg | Big
-    p g
-    w 1500`,
-  "1.211.0#489": `
-    cap | Run the talk from the presenter window
-    say | The Next box is a button. ‹ Back is beside it.
-    + pg col
-    + b chip > pg | ‹ Back
-    + n ln > pg | Next › The roof leaks
-    s n | border:1px solid currentColor;padding:12px;border-radius:8px
-    w 900
-    p n
-    w 1200
-    say | ⏱ Count down… starts the waiting screen from here.
-    + t chip > pg | ⏱ Count down…
-    p t
-    + k ln > pg | Starts at 13:00 · 4:59
-    w 1500
-    say | Start the talk when you are ready.
-    + g chip > pg | Start the talk
-    p g
-    w 1500`,
-  "1.222.0#488": `
-    cap | A picture pin that travels
-    say | The same picture on two lines is one pin on the map.
-    + pg col
-    + l ln > pg | (map) Our route 🗺
-    + a ln > pg | 🖼 Oslo
-    s a | margin-left:24px
-    w 1200
-    + b ln > pg | 🖼 Bergen
-    s b | margin-left:24px
-    w 900
-    say | Its words are a label that moves with it. Alt+drag the label to place it apart.
-    c a +dim
-    w 1800`,
-  "1.210.0#488": `
-    cap | Pins on a map, a card about you
-    say | (map) puts the line's picture behind the slide.
-    + pg col
-    + l ln > pg | (map) About me 🗺
-    + c ln > pg | 🖼 Sam Lee · Account manager
-    s c | margin-left:24px
-    + p ln > pg | 📍 Lisbon
-    s p | margin-left:24px
-    w 1500
-    say | A line that starts with 📍 is a pin. Alt+drag puts it in place.
-    + q ln > pg | 📍 Porto
-    s q | margin-left:24px
-    w 900
-    say | Pins in a row: one pin that moves on each click.
-    c p +dim
-    w 1800`,
-  "1.209.0#487": `
-    cap | Place a line just so
-    say | Hold Alt on a slide: what can move gets an edge.
-    + pg col
-    + t ln > pg | About us
-    + a ln > pg | • Founded 1946
-    + r chip > pg | ↺ Reset slide
-    s t | outline:1px dashed currentColor
-    s a | outline:1px dashed currentColor
-    w 1200
-    say | Alt+drag it. It snaps to the middle.
-    p a
-    s a | outline:1px dashed currentColor;margin-left:60px;transition:margin .8s
-    w 1500
-    say | The place is kept. Reset slide takes it off.
-    p r
-    s a | margin-left:0;transition:margin .8s
-    w 1500`,
+    w 1500`
 };

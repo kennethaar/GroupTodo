@@ -10,6 +10,8 @@ function presentStop() {
   clearInterval(timer);
   window.removeEventListener("keydown", presentKey, true);
   window.removeEventListener("keyup", slideArrKey, true);
+  window.removeEventListener("blur", slideArrLost);
+  window.removeEventListener("pointermove", slideArrLost, true);
   SLIDE_ARR_PICK = null;
   try { navigator.keyboard?.unlock?.(); } catch (e) {}
   if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});

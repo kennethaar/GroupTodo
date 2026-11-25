@@ -894,6 +894,7 @@ js/91-present/slideArrRedraw.js
 js/91-present/slideArrSave.js
 js/91-present/slideArrReset.js
 js/91-present/slideArrShow.js
+js/91-present/slideArrLost.js
 js/91-present/slideArrDown.js
 js/91-present/slideArrKey.js
 js/91-present/vars-SLIDE_MAP.js

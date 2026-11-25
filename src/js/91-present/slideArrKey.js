@@ -8,6 +8,7 @@ function slideArrKey(e) {
     return false;
   }
   if (e.key === "Alt") { if (!e.repeat) slideArrShow(true); e.preventDefault(); return true; }
+  slideArrLost(e);
   const dir = {ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1]}[e.key];
   if (!e.altKey || !dir || !SLIDE_ARR_PICK) return false;
   const s = DECK.steps[DECK.i]?.s, o = s && slideArrOwner(s, SLIDE_ARR_PICK.kind, SLIDE_ARR_PICK.id);

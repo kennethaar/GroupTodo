@@ -16044,6 +16044,26 @@ var GTD_TEST = (() => {
       ok($("#deck .arrreset"), "and offers Reset slide");
       key("Alt", true); await settle();
       ok(!deck.classList.contains("arranging") && !$("#deck .arrreset"), "letting go of Alt takes them away");
+      // #487 regression: Alt+Tab to the presenter window never lets go of Alt here; the boxes stayed.
+      key("Alt"); await settle();
+      window.dispatchEvent(new Event("blur")); await settle();
+      ok(!deck.classList.contains("arranging"), "the boxes stay when the slides window loses focus");
+      key("Alt"); await settle();
+      document.dispatchEvent(new PointerEvent("pointermove", {bubbles: true, altKey: false, clientX: 5, clientY: 5})); await settle();
+      ok(!deck.classList.contains("arranging"), "the boxes stay on a move made without Alt");
+      key("Alt"); await settle();
+      key("Shift", false, {altKey: false}); await settle();
+      ok(!deck.classList.contains("arranging"), "the boxes stay on a key pressed without Alt");
+      const f = document.createElement("iframe"), wopen = window.open;
+      document.body.append(f);
+      window.open = () => f.contentWindow;
+      try {
+        presenterOpen(); await settle();
+        const pkey = (t, o) => f.contentDocument.dispatchEvent(new KeyboardEvent(t, {key: "Alt", bubbles: true, cancelable: true, ...o}));
+        pkey("keydown", {altKey: true}); await settle();
+        pkey("keyup", {altKey: false}); await settle();
+        ok(!deck.classList.contains("arranging"), "Alt let go in the presenter window leaves the boxes on");
+      } finally { window.open = wopen; f.remove(); }
       await drag(line(), W * 0.1, H * 0.05);
       const [ax, ay] = xy(blockProp(first, "at"));
       ok(Math.abs(ax - 10) <= 2 && Math.abs(ay - 5) <= 2, "the line's place is kept on it as at:: " + blockProp(first, "at"));
