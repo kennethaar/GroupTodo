@@ -415,6 +415,13 @@ function outlineBlock(path, page, b, opts = {}) {
       const [from, to] = caretOffsets(txt);
       const before = whole.slice(0, from), after = whole.slice(to);
       const inherit = b.state && OPEN_STATES[b.state] ? "TODO" : null;
+      /* Enter on an empty task line ends the run of tasks, as a list ends in a
+         word processor: the line turns plain and no line is added (#511). */
+      if (inherit && !trim(whole) && !(b.children || []).length) {
+        txt.blur();
+        endTaskRun(path, b);
+        return;
+      }
       if (from === 0 && to === 0 && trim(whole) !== "") {
         // At the very start: open a line above and leave this one as it is,
         // rather than emptying it and carrying its words down.

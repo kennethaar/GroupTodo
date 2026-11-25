@@ -6320,6 +6320,34 @@ var GTD_TEST = (() => {
       go("today");
     }
   });
+  test("#511 Enter on an empty task line ends the run of tasks: the line becomes a plain line, and no line is added", async () => {
+    const path = scratchProject("Paint the fence five-eleven", [["TODO", "Buy paint"]]), pg = getPage(path);
+    const enterAtEnd = async id => {
+      const txt = document.querySelector('.blk[data-id="' + id + '"] .txt');
+      txt.focus();
+      const s = getSelection(); s.selectAllChildren(txt); s.collapseToEnd();
+      txt.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true, cancelable: true}));
+      await settle();
+    };
+    try {
+      openPage(path); await settle();
+      await enterAtEnd(pg.blocks[0].id);
+      eq(pg.blocks.length, 2, "Enter on a task line with words did not open a new line");
+      const nb = pg.blocks[1];
+      eq(nb.state, "TODO", "the line under a task is not a task");
+      await enterAtEnd(nb.id);
+      eq(pg.blocks.length, 2, "Enter on the empty task line added another line");
+      eq(nb.state, null, "the empty task line is still a task");
+      ok(!blockProp(nb, "Added"), "the plain line kept the task's Added date");
+      const a = document.activeElement;
+      ok(a && a.classList.contains("txt") && a.closest(".blk")?.dataset.id === nb.id, "the caret left the line");
+      ok(!a.closest(".line").querySelector(".tick"), "the plain line still shows a tick");
+      undoLast(); await settle();
+      eq(pg.blocks[1].state, "TODO", "undo did not bring the task back");
+    } finally {
+      go("today");
+    }
+  });
   test("#320 a click on a picture opens it in a view with a close button; a click beside it on the line edits the line", async () => {
     const path = scratchProject("picture click", [[null, "Look ![pic](https://example.invalid/p.png) here"]]);
     const b = getPage(path).blocks[0];

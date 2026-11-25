@@ -1800,6 +1800,7 @@ js/105-outliner/paintHeadLine.js
 js/105-outliner/vars-DOUBLE_TAP_MS.js
 js/105-outliner/dropLine.js
 js/105-outliner/bulletDrag.js
+js/105-outliner/endTaskRun.js
 js/105-outliner/outlineBlock.js
 js/105-outliner/vars-LINE_SEL.js
 js/105-outliner/lineSelFrom.js

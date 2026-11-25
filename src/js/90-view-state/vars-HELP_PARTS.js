@@ -72,7 +72,7 @@ const HELP = {
   journal: {part: "views", title: "Journal", view: "today", gtd: "engage", shot: 1,
     what: "Today: what is due, then your day page per area.",
     hint: "This is your Journal. Due tasks are on top. Write your day below.",
-    steps: ["Click a line to write. Enter adds a line. New tasks offer # Project?.",
+    steps: ["Click a line to write. Enter adds a line. Enter on an empty task ends the tasks. New tasks offer # Project?.",
       ["Drag a bullet to move its line.", ".bullet"],
       ["Use ‹ and › to step through the days. The calendar picks one.", ".daynav"],
       ["Click a list with ▸ to open it in place.", ".ttabs"],
