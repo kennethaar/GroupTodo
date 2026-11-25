@@ -161,6 +161,10 @@ need a deterministic `SETUP` entry in `tests/screenshots.mjs`.
 
 Every user-requested change needs an issue in `kennethaar/GroupTodo`.
 
+0. Write issues and comments in generic text: no real names, people,
+   employers, products, places or words copied from the user's own data
+   or screenshots. Use neutral stand-ins such as "a long word" or
+   "Product A".
 1. Search existing issues first.
    Before creating an issue or adding to one, show the user its title and
    body and wait for their OK, so they can see the request was understood.
