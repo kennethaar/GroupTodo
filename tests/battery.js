@@ -6889,19 +6889,22 @@ var GTD_TEST = (() => {
       ok(!document.querySelector(".modal .pictureview"), "the picture view closes");
     } finally { closeModal(); for (const t of document.querySelectorAll("#toasts .toast")) t.remove(); }
   }));
-  test("#476 a picture in a line's notepad is a small thumbnail inside the page box, not full size", () => withPages({
+  test("#476 #514 a picture in a line's notepad, or on the line itself, is a small thumbnail inside the page box", () => withPages({
     [TALK]: "- Webinar\n- After\n"}, async () => {
     const big = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="1500"><rect width="2000" height="1500" fill="#888"/></svg>');
-    getPage(TALK).blocks[0].body = ["![slide](" + big + ")"]; touch(TALK);
+    getPage(TALK).blocks[0].body = ["![slide](" + big + ")"];
+    getPage(TALK).blocks[1].title = "After ![photo](" + big + ")"; touch(TALK);
     openPage(TALK); await settle();
-    const img = content().querySelector(".blk > .bodyline img.asset");
-    ok(img, "the notepad picture is drawn");
-    if (!img.complete) await new Promise(r => { img.onload = r; img.onerror = r; });
-    await settle();
-    const r = img.getBoundingClientRect(), box = img.closest(".outline, .pagebody, #content").getBoundingClientRect();
-    ok(r.width <= 160 && r.height <= 100, "a thumbnail, at most 160 × 100: " + Math.round(r.width) + " × " + Math.round(r.height));
-    ok(r.width > 20, "but still seen: " + Math.round(r.width));
-    ok(r.right <= box.right, "inside the box");
+    for (const [where, sel] of [["notepad", ".blk > .bodyline img.asset"], ["line", ".blk > .line .txt img.asset"]]) {
+      const img = content().querySelector(sel);
+      ok(img, "the " + where + " picture is drawn");
+      if (!img.complete) await new Promise(r => { img.onload = r; img.onerror = r; });
+      await settle();
+      const r = img.getBoundingClientRect(), box = img.closest(".outline, .pagebody, #content").getBoundingClientRect();
+      ok(r.width <= 160 && r.height <= 100, "the " + where + " picture is not a thumbnail of at most 160 × 100: " + Math.round(r.width) + " × " + Math.round(r.height));
+      ok(r.width > 20, "but still seen: " + Math.round(r.width));
+      ok(r.right <= box.right, "inside the box");
+    }
     go("today");
   }));
   test("renamePage rewrites the links to it", () => {

@@ -890,7 +890,7 @@ const HELP = {
       ["?.pagehead .presentbtn", "Present: the page as slides, full screen."],
       ["?.stakein", "On a person: the responsibilities they hear about."]],
     more: ["On a computer, Focus is a teleprompter. The line you write in stays in the middle of the screen. Scroll, and the paragraph in the middle lights up.",
-      "Click a picture to see it full size; ✕ or Esc closes it. Click beside it to write.",
+      "A picture shows small. Click it to see it full size; ✕ or Esc closes it. Click beside it to write.",
       "A PDF has a caret beside it: it shows the PDF under the line. Written ![name](file.pdf), it shows from the start.",
       "Drop files on a line to keep them in assets/ and link them there. Drop them on + New line, and each file gets a line of its own.",
       "Pages you pin to the sidebar are kept on your own person page, in its pins line. So they follow you to every device. Unpin with ✕ beside the name.",

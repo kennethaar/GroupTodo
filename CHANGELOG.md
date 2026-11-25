@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.220.1 - 2026-11-25
+
+- A page: a picture on an outline line now shows small, the size of a
+  picture in the notepad, so the lines stay close together. Click it to see
+  it full size. (#514)
+
 ## 1.220.0 - 2026-11-25
 
 - Present a page: a line kept off the slides shows faded in the outline,
