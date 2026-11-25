@@ -100,15 +100,7 @@ showed as slow commands, then `ENOSPC` on every edit. If that happens, check
 free space (`df -h /c`) before anything else. Never create browser profiles
 outside `openDemo()`.
 
-Writing test fixtures:
-
-- Set dates with `setDue(block, date)`. `SCHEDULED:` lines in fixture text are
-  not parsed as dates.
-- A task with an open child is not a leaf action. Keep leaf steps childless.
-- A page's file name is its title as written (`slugify` keeps case and
-  spaces), so `[[Kitchen renovation]]` finds `Kitchen renovation.md`, not
-  `kitchen-renovation.md`.
-- Edit `tests/battery.js` with Edit, not with ad hoc Node rewrite scripts.
+Rules for writing test fixtures are in `tests/CLAUDE.md`.
 
 Test first. For every behavioral change, write or update the test before
 the code, from the requirement or the bug report, never from the
@@ -204,6 +196,28 @@ Never commit OneDrive conflict copies (`*-LG2375JTB.*`, `*-HY-*.*`).
 ## Product and design rules
 
 Apply GTD, `Don't Make Me Think`, progressive disclosure, accessibility and management by exception. Do not redesign unrelated parts during a focused change.
+
+Steve Krug's `Don't Make Me Think` rules for every screen:
+
+- Self-evident first: a user should know what a thing is and does without
+  thinking. If it needs an explanation, fix the design before adding text.
+- Users scan, they don't read. Use clear visual hierarchy, obvious clickable
+  things and short labels in the user's words.
+- Users satisfice: they click the first reasonable option. Make the right one
+  the most obvious one.
+- Every click should be a mindless, unambiguous choice. Number of clicks
+  matters less than doubt per click.
+- Cut words in half, then cut half of what's left. No happy talk or
+  instructions nobody reads.
+- Follow conventions users already know unless a new way is clearly better.
+- Always show where the user is and how to get back.
+- Keep the user's goodwill: no hidden needed info, no forced format, easy
+  recovery from mistakes.
+
+Always suggest UI and UX best practices, for new features and when a task
+touches or revisits an existing one. List the problems you see and the fix
+you recommend, briefly. Suggestions outside the task stay suggestions:
+build them only after the user agrees.
 
 Before changing user-facing text or UX, show the user 3 mockups and wait for
 their pick. Build nothing until they approve.
