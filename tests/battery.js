@@ -10821,6 +10821,20 @@ var GTD_TEST = (() => {
       ok(d.documentElement.scrollWidth <= 390, "nothing is wider than the phone");
     } finally { f.remove(); }
   });
+  test("#513 every help topic ends with Suggest a feature and Report a bug, in the pane and the full help", async () => {
+    const asks = root => [...root.querySelectorAll(".helpfeedback a[href*='/issues/new']")];
+    try {
+      for (const id of ["start", "help", "news"]) {
+        openHelp(id); await settle();
+        eq(asks(content()).length, 2, "the full help's " + id + " does not end with the two ways to give feedback");
+        eq(content().querySelectorAll(".helpfeedback").length, 1, id + " offers feedback more than once");
+      }
+      ok(asks(content()).some(a => decodeURIComponent(a.href).includes("GroupToDo v" + APP_VERSION)), "the report does not say the version");
+      go("today"); await settle();
+      setHelp(true); await settle();
+      eq(asks($("#pagePane")).length, 2, "the help beside the page has no way to give feedback");
+    } finally { setHelp(false); go("today"); await settle(); }
+  });
   test("#290 Ways to run: what you tick picks the way, and a limit rules a way out", async () => {
     const best = (needs, limits) => runWayPick(needs, limits)[0];
     eq(best([], []).id, "pages", "with nothing ticked, the web address: nothing to install");

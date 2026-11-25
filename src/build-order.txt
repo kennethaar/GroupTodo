@@ -1073,6 +1073,7 @@ js/90-view-state/newsTopic.js
 js/90-view-state/whatsNewDialog.js
 js/90-view-state/issueUrl.js
 js/90-view-state/feedbackBox.js
+js/90-view-state/helpFeedback.js
 js/90-view-state/vars-HELP_Q.js
 js/90-view-state/openHelp.js
 js/90-view-state/viewHelp.js

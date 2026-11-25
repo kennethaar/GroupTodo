@@ -985,7 +985,7 @@ const HELP = {
     see: ["pages-list"], words: ["find", "lookup", "search"]},
   help: {part: "views", title: "Help", view: "help",
     what: "This help. Search it, or pick a topic.",
-    steps: ["Type in the search box to filter topics.", "Read beside opens a topic at the right.", "Back and forward move between topics."],
+    steps: ["? opens help for this page. All help, at its top, opens this help.", "Type in the search box to filter topics.", "Read beside opens a topic at the right.", "Back and forward move between topics.", "Missing something, or broken? The foot of every topic has Suggest a feature and Report a bug."],
     keys: [["?", "This page"], ["s", "Show me"], ["g ?", "Full help"]],
     see: ["start", "keys"], words: ["help", "manual", "guide", "docs"]},
 
@@ -1334,7 +1334,7 @@ const HELP = {
       "One is out? A note in the corner says what it brings. Click Download now, or Update now on the web.",
       "The first time a new version starts, it shows what is new since yours.",
       "Each new thing plays on top, told step by step. How it works opens its help.",
-      "Missing something? Suggest a feature, or report a bug, on GitHub."],
+      "Missing something? The foot of every help topic has Suggest a feature and Report a bug."],
     more: ["‹ › or a dot picks a new thing to play. ⏸ stops it.",
       "New vN under the name, top left, means a new version is out. Click it.",
       "Settings, under GroupToDo, turns the daily check off, or checks now.",

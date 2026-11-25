@@ -35,5 +35,7 @@ function helpTopicNode(id, {here = false, read = openHelp} = {}) {
     ...see.map(s => helpLink(s, read)),
     !here && t.view && t.view !== "help" && t.view !== "page" ? el("button", {class: "textbtn",
       onclick: () => helpGoShow(id, null)}, "Go there") : null));
+  // Where people look when something is missing or broken: the foot of every topic (#513).
+  box.append(helpFeedback());
   return box;
 }

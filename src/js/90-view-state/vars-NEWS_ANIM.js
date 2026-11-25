@@ -4,6 +4,17 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.219.0#513": `
+    cap | Feedback from any help topic
+    say | Open help on any page.
+    + pg col
+    + t ln > pg | Journal
+    + d ln > pg | Missing something, or broken?
+    + c chip > pg | Suggest a feature   Report a bug
+    w 1200
+    say | Suggest a feature or report a bug at the foot.
+    p c
+    w 1500`,
   "1.218.0#373": `
     cap | Paste a reply anywhere
     say | Paste their reply on any line.

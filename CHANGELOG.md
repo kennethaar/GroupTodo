@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.219.0 - 2026-11-25
+
+- Help: every help topic ends with Suggest a feature and Report a bug,
+  in the help beside a page and in the full help. They were only in
+  What's new. (#513)
+
 ## 1.218.5 - 2026-11-25
 
 - Help: the help beside a page has an All help button at its top, which
