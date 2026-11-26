@@ -15,7 +15,11 @@ that breaks existing vaults. Newest first.
   Skip, with its context; a date is a Deadline or a Start date. It also
   asks for new to-dos and projects to capture, only what you promised or
   were asked to do. They come last, under To capture, with a tick only, and
-  go on today's page; the review's Clarify takes them the same day. A
+  go on today's page; the review's Clarify takes them the same day. The
+  prompt reads sent mail and meeting transcripts and says what counts as
+  evidence. Progress with no task is a note on its project; a task someone
+  else now does becomes a waiting-for. Also look for adds your own lines to
+  the prompt, kept per area. A
   project left with no next action says so, with + Add next action. ↗ Email, Chat or
   Document opens where it was found, and stays on the task as its source.
   One Undo takes it all back. (#516)

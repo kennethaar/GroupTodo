@@ -37,6 +37,8 @@ function parseCatchUp(raw, refs) {
     line = trim(line.replace(/\*\*|__|`/g, "").replace(/^\s*(?:>\s*)*(?:[-*•·]|\d+[.)])?\s*/, ""));
     // A citation mark an assistant adds, such as 【13-0d56c5】 or [^1], is no part of the change.
     line = trim(line.replace(/\s*(?:【[^】]*】|\[\^\d+\])/g, ""));
+    // NO-DATE, where the prompt asks for it, is no date.
+    line = trim(line.replace(/\s*\|\s*NO[- ]?DATE\b/gi, ""));
     /* Where it was found: a | part that is only a link, wherever it stands, or
        a link at the end; bare, in <>, or as [label](link). A bare [1] is let go. */
     let url = null;
@@ -86,12 +88,20 @@ function parseCatchUp(raw, refs) {
       row.date = dateIn(rest);
       if (!row.block || !row.date || row.date === dueDate(row.block)) continue;
     } else if (kind === "note") {
-      if (!row.block || !rest) continue;
+      // On a task, news on it; on a project, progress that has no task of its own.
+      if (!rest) continue;
       row.text = rest;
     } else if (kind === "next") {
       rest = withContext(row, rest);
       if (!rest) continue;
       row.text = rest;
+    } else if (kind === "wait" && row.block) {
+      // A task of yours that someone else now does: it waits on them.
+      const [who = "", when = ""] = rest.split("|").map(s => trim(s));
+      if (!who || !OPEN_STATES[row.block.state] || row.block.state === "WAIT") continue;
+      row.who = who.replace(/^\[\[(?:p\/)?|\]\]$/g, "");
+      row.text = plainTitle(row.block.title);
+      row.date = when ? dateIn(when) : null;
     } else if (kind === "wait") {
       const [who = "", what = "", when = ""] = rest.split("|").map(s => trim(s));
       if (!who || !what) continue;

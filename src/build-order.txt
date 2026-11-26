@@ -1641,6 +1641,7 @@ js/145-horizons-view/applyPastedUpdate.js
 js/145-horizons-view/offerPastedUpdate.js
 js/145-horizons-view/vars-CATCHUP_DRAFT.js
 js/145-horizons-view/catchUpCaptured.js
+js/145-horizons-view/catchUpAlso.js
 js/145-horizons-view/catchUpSince.js
 js/145-horizons-view/catchUpLinkKind.js
 js/145-horizons-view/catchUpSource.js

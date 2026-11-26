@@ -28,6 +28,16 @@ function openCatchUp() {
     PREF.set(pref, back.value);
     openCatchUp();
   });
+  // Also look for: your own lines in the prompt, folded until you use it, then shown open.
+  const alsoBox = el("textarea", {class: "cu-also", rows: 3, "aria-label": "Also look for",
+    placeholder: "One per line, such as: Webinars I gave", style: "width:100%;font-size:12.5px"});
+  alsoBox.value = catchUpAlso();
+  const alsoSave = () => { catchUpAlso(alsoBox.value); promptBox.value = catchUpSource().text; };
+  alsoBox.addEventListener("input", alsoSave);
+  alsoBox.addEventListener("change", alsoSave);
+  const alsoFold = el("details", {class: "field", style: "margin-top:-6px"},
+    el("summary", {class: "hint", style: "cursor:pointer"}, "Also look for…"), alsoBox);
+  alsoFold.open = !!trim(alsoBox.value);
   const {select: ai, button: copyBtn} = aiPicker(V.space, promptBox, openCatchUp);
   copyBtn.addEventListener("click", () => { refs = src.refs; CATCHUP_DRAFT = {space: V.space, answer: answer.value, refs}; });
   modal({
@@ -36,6 +46,7 @@ function openCatchUp() {
       el("div", {class: "field"}, el("div", {style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px"},
         el("label", {style: "margin:0"}, "1. Copy this to an AI that reads your mail and meetings"),
         el("span", {class: "hint"}, "Look back:"), back, from), promptBox),
+      alsoFold,
       el("div", {class: "field", style: "display:flex;gap:8px;align-items:center;margin-top:-6px;flex-wrap:wrap"},
         el("span", {class: "hint"}, "Your AI in this area:"), ai, copyBtn),
       el("div", {class: "field"}, el("label", {}, "2. Paste its answer here"), answer)),

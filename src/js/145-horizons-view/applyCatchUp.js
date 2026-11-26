@@ -56,8 +56,22 @@ function applyCatchUp(rows) {
       if (r.choice === "start") setBlockProp(r.block, "SCHEDULED", whenValue(r.date));
       else setDue(r.block, r.date);
       mark(r.block);
-    } else if (r.kind === "note") mark(postMessageAs(r.path, r.block, r.text, me, at));
-    else if (r.kind === "next" || r.kind === "wait") {
+    } else if (r.kind === "note" && r.block) mark(postMessageAs(r.path, r.block, r.text, me, at));
+    else if (r.kind === "note") {
+      // Progress with no task of its own: a note line on the project's page.
+      const b = stampAuthor(newBlock({title: linkKnownNames(r.text), props: {}}));
+      mark(b);
+      getPage(r.path).blocks.push(b);
+      stampAddedIfMissing(r.path, b);
+    } else if (r.kind === "wait" && r.block) {
+      // A task that someone else now does waits on them.
+      const who = person(trim(r.who || ""));
+      setBlockState(r.path, r.block, "WAIT");
+      r.block.title = trim(r.block.title) + " from [[p/" + who + "]]";
+      made.push(...createLinkedPages(r.block.title));
+      if (r.date) setDue(r.block, r.date);
+      mark(r.block);
+    } else if (r.kind === "next" || r.kind === "wait") {
       keep(r.proj);
       const who = r.kind === "wait" || r.choice === "delegate" ? person(trim(r.who || "")) : "";
       const title = r.text + (r.kind === "next" && r.ctx ? " [[c/" + r.ctx + "]]" : "") + (who ? " from [[p/" + who + "]]" : "");

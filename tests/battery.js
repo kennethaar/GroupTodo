@@ -9290,10 +9290,15 @@ var GTD_TEST = (() => {
      capture with a tick only, go on today's page as plain lines, and the
      review's Clarify takes them today; the rest of today waits. A name as a
      link reads as the name, a citation mark goes, and the source is found
-     wherever it stands. */
+     wherever it stands. Only GTD's lines: NOTE may name a project (progress
+     with no task), WAIT may name a task (now someone else's), NO-DATE is no
+     date. The prompt says where to look and what counts as evidence, and
+     Also look for adds your own lines, remembered per area. */
   test("#516 Catch up: look back picked; each change a GTD choice set to the likely one; new things captured for Clarify; one Undo", async () => {
     const path = scratchProject("catch up 516", [["TODO", "Send the draft"], ["TODO", "Book the room"]]);
     const other = scratchProject("tiles 516", [["TODO", "Order the tiles"]]);
+    const third = scratchProject("badges 516", [["TODO", "Order the badges"], ["TODO", "Print the list"]]);
+    const alsoWas = PREF.get("catchup.also:" + (V.space || ""), "");
     const title = pageTitle(path), ctx = contextList()[0];
     ok(ctx, "the demo has a context");
     const btn = t => [...$$("#modalRoot button")].find(b => (t instanceof RegExp ? t.test(b.textContent) : b.textContent === t));
@@ -9330,9 +9335,19 @@ var GTD_TEST = (() => {
       ok(!/at most \d+/.test(prompt), "what to capture is not cut off at a number: capture it all");
       has(prompt, "promised", "only what is mine to do");
       has(prompt, "plain text", "names as plain text, not links");
+      for (const w of ["sent", "transcripts", "calendar", "latest"]) has(prompt, w, "where to look and what counts as evidence: " + w);
+      ok(!/not sure of/.test(prompt) && /unsure/.test(prompt), "what may be mine is included, for Clarify to decide");
+      ok(!/\b(?:REVIEW|REMOVE)\b|DONE NEW/.test(prompt), "only GTD's lines, no new categories");
+      const also = $("#modalRoot textarea.cu-also");
+      ok(also && also.closest("details") && !also.closest("details").open, "Also look for, folded");
+      set(also, "Webinars I gave");
+      has($("#modalRoot textarea").value, "Also look for:\n- Webinars I gave", "your own lines go in the prompt");
+      closeAll(); await open();
+      has($("#modalRoot textarea").value, "- Webinars I gave", "and are remembered");
+      ok($("#modalRoot textarea.cu-also").closest("details").open, "shown open while in use");
       const ref = t => (new RegExp("\\b([TP]\\d+)\\b[^\\n]*" + t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).exec(prompt) || [])[1];
-      const [send, room, proj, tiles] = [ref("Send the draft"), ref("Book the room"), ref(title), ref("Order the tiles")];
-      ok(send && room && proj && tiles, "each task and project has a reference: " + [send, room, proj, tiles]);
+      const [send, room, proj, tiles, badges] = [ref("Send the draft"), ref("Book the room"), ref(title), ref("Order the tiles"), ref("Order the badges")];
+      ok(send && room && proj && tiles && badges, "each task and project has a reference: " + [send, room, proj, tiles, badges]);
       let answer = [...$$("#modalRoot textarea")].pop();
       // Copied out of a chat, the lines can come run together on one line.
       set(answer, "DONE " + send + " DUE " + room + " 2026-11-28 NOTE " + send + " Sent for testing. NEXT " + proj +
@@ -9347,12 +9362,17 @@ var GTD_TEST = (() => {
         "- NEXT " + proj + " Call the supplier @" + ctx + " | [1](" + doc + ")\n- NEXT " + proj + " Ask Person Y for the file\n" +
         "- NEXT " + proj + " Reply to the invite\n- WAIT " + proj + " Person X | the signed contract | 2026-12-02\n" +
         "- NOTE " + send + " Sent for testing.\n- DONE T999\n- PROJECT Product A launch | Launched to all users | Draft the plan\n" +
-        "- TODO Reply to the budget question @" + ctx + " | 2026-12-05\n- TODO Water the plants @" + ctx + "x\n" +
+        "- TODO Reply to the budget question @" + ctx + " | 2026-12-05\n- TODO Water the plants @" + ctx + "x | NO-DATE\n" +
+        "- NOTE " + proj + " Pilot went live for team 2\n- WAIT " + badges + " Person Z | NO-DATE\n" +
         // As an assistant at work writes it: a name as a search link, the date between bars, a citation mark last.
         "- TODO Bring up [Person Q](https://www.office.com/search?q=Person+Q&id=f9e4) idea at the next meeting | 2026-12-08 | " +
         "[Re: a post](" + mail + ") 【13-0d56c5】\n");
       btn("Read it").click(); await settle();
-      eq($$("#modalRoot .cu-row").length, 12, "one row per change; the unknown reference is left out");
+      eq($$("#modalRoot .cu-row").length, 14, "one row per change; the unknown reference is left out");
+      ok([...$$("#modalRoot .cu-group")].find(g => g.textContent.startsWith(title)).contains(rowOf("Pilot went live")),
+        "progress on a project is a note under it");
+      has(rowOf("Order the badges").textContent, "Person Z", "a task that is now someone else's: waiting for them");
+      ok(!/NO-DATE/.test(rowOf("Water the plants").textContent + rowOf("Order the badges").textContent), "NO-DATE is no date");
       const last = [...$$("#modalRoot .cu-group")].pop();
       ok(/^To capture/.test(last.textContent), "new to-dos and projects come last, under To capture: " + last.textContent.slice(0, 40));
       const taken = t => rowOf(t).querySelector("input.cu-take[type=checkbox]");
@@ -9371,13 +9391,13 @@ var GTD_TEST = (() => {
       eq([...choice("Book the room").options].map(o => o.value), ["deadline", "start", "skip"], "a date: Deadline or Start date");
       eq(rowOf("Call the supplier").querySelector("select.cu-ctx").value, ctx, "the context the AI gave is picked");
       has(rowOf("Ask Person Y").textContent, "No context", "a next action without one says so");
-      ok(btn("Apply 12 changes"), "the button counts what is not skipped");
+      ok(btn("Apply 14 changes"), "the button counts what is not skipped");
       const all = last.querySelector("input.cu-all[type=checkbox]");
       ok(all && all.checked, "To capture has one tick for all");
       all.click(); await settle();
-      ok(btn("Apply 8 changes") && !taken("budget question").checked, "which takes them all off");
+      ok(btn("Apply 10 changes") && !taken("budget question").checked, "which takes them all off");
       [...$$("#modalRoot .cu-group")].pop().querySelector("input.cu-all").click(); await settle();
-      ok(btn("Apply 12 changes"), "and puts them back");
+      ok(btn("Apply 14 changes"), "and puts them back");
       const stuck = [...$$("#modalRoot .cu-group")].find(g => g.textContent.includes(pageTitle(other)));
       has(stuck.textContent, "No next action left", "a project left with no next action says so");
       ok(![...$$("#modalRoot .cu-group")].find(g => g.textContent.includes(title)).textContent.includes("No next action left"),
@@ -9393,8 +9413,8 @@ var GTD_TEST = (() => {
       ok(rowOf("Measure the floor"), "+ Add next action adds a row");
       ok(![...$$("#modalRoot .cu-group")].find(g => g.textContent.includes(pageTitle(other))).textContent.includes("No next action left"),
         "and the project is no longer stuck");
-      btn("Apply 13 changes").click(); await settle();
-      const [a, b, ...added] = getPage(path).blocks;
+      btn("Apply 15 changes").click(); await settle();
+      const [a, b, ...rest] = getPage(path).blocks, added = rest.filter(x => x.state);
       eq([a.state, blockProp(b, "SCHEDULED") ? dueDate(b) : null, blockProp(b, "DEADLINE") || null], ["DONE", "2026-11-28", null],
         "done, and a start date rather than a deadline");
       has(blockProp(a, "source") || "", chat, "the task marked done keeps its source");
@@ -9404,13 +9424,16 @@ var GTD_TEST = (() => {
       eq(waitingPersonOf(added[1], getPage(path)), "Person Y", "delegated to whom");
       eq([waitingPersonOf(added[3], getPage(path)), dueDate(added[3])], ["Person X", "2026-12-02"], "waiting on whom, by when");
       eq(messagesOf(a).map(m => m.title), ["Sent for testing."], "the note is on its task");
+      ok(rest.some(x => !x.state && x.title.includes("Pilot went live for team 2")), "the progress is a note on the project's page");
+      const bd = getPage(third).blocks[0];
+      eq([bd.state, waitingPersonOf(bd, getPage(third)), dueDate(bd) || null], ["WAIT", "Person Z", null], "the task now waits on whom; NO-DATE is no date");
       eq(getPage(other).blocks.map(x => [x.state, trim(x.title)]), [["DONE", "Order the tiles"], ["TODO", "Measure the floor"]], "the stuck project got its next action");
       ok(![...V.pages.keys()].some(p => pageTitle(p) === "Product A launch"), "no project is made: Clarify decides that");
       const [todo, water, launch, bring] = ["budget question", "Water the plants", "Product A launch", "Bring up"].map(line);
       ok(todo && water && launch && bring, "the new things are on today's page");
       eq([todo, water, launch, bring].map(x => x.state || ""), ["", "", "", ""], "as plain lines, not yet to dos");
       eq([todo.title.includes("[[c/" + ctx + "]]"), dueDate(todo)], [true, "2026-12-05"], "with the context and date the AI gave");
-      ok(!water.title.includes("[[c/"), "a context is read only as a whole word");
+      ok(!water.title.includes("[[c/") && !/NO-DATE/.test(water.title) && !dueDate(water), "a context is read only as a whole word; NO-DATE is no date");
       ok(!/https?:|【/.test(bring.title) && dueDate(bring) === "2026-12-08", "no link or mark in the words: " + bring.title);
       has(blockProp(bring, "source") || "", mail, "the link to the mail is its source");
       eq([blockProp(launch, "outcome"), (launch.children || []).map(k => [k.state || "", trim(k.title)])],
@@ -9422,9 +9445,11 @@ var GTD_TEST = (() => {
       ok(undo, "with Undo");
       undo.click(); await settle();
       eq([getPage(path).blocks.length, getPage(path).blocks[0].state, dueDate(getPage(path).blocks[1]) || null,
-        getPage(other).blocks.length, !!line("budget question"), !!line("A loose thought 516")], [2, "TODO", null, 1, false, true], "one Undo takes it all back");
+        getPage(other).blocks.length, getPage(third).blocks[0].state, !!line("budget question"), !!line("A loose thought 516")],
+        [2, "TODO", null, 1, "TODO", false, true], "one Undo takes it all back");
     } finally {
       closeAll(); document.querySelectorAll("#toasts > *").forEach(n => n.remove());
+      PREF.set("catchup.also:" + (V.space || ""), alsoWas);
       const pg = getPage(day);
       if (pg) { pg.blocks = pg.blocks.filter(x => x.title !== "A loose thought 516"); touch(day); }
       PREF.set("catchup.back:" + (V.space || ""), was);

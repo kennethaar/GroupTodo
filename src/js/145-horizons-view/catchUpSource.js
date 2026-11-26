@@ -39,26 +39,38 @@ function catchUpSource(from = catchUpSince()) {
   });
   if (done.length) lines.push("", "DONE SINCE " + since + " (do not offer these again)",
     ...done.map(path => "- " + pageTitle(path)));
+  const also = catchUpAlso().split(/\r?\n/).map(s => trim(s.replace(/^[-*•]\s*/, ""))).filter(Boolean);
   const text = [
-    "You help me keep my GTD project lists current. Look through my email, chats, meetings and calendar " +
-      "from " + from + " to today, " + todayISO() + ". Compare them with my projects below and tell me what changed.",
+    "You help me keep my GTD project lists current. Search my email (sent and received), chats, meetings, " +
+      "meeting transcripts and calendar from " + from + " to today, " + todayISO() + ". Search broadly and read all " +
+      "the results before you answer. Compare them with my projects below and tell me what changed.",
+    "",
+    "WHAT COUNTS",
+    "- Mail I sent shows what I did or promised. Mail I got shows what I was asked and what changed.",
+    "- A transcript shows what was decided and who takes what. A calendar entry shows a meeting was held, not its outcome.",
+    "- When sources disagree, the latest wins. Merge what came up more than once. Leave out what no source supports.",
+    "- Leave out FYI, newsletters, notifications and what clearly belongs to others. When you are unsure it is mine, include it: I decide.",
     "",
     "Answer in one code block, one line per change and nothing else, in these forms:",
     "DONE <task ref>                         a task that is finished",
     "DUE <task ref> <YYYY-MM-DD>             a task's date that changed",
-    "NOTE <task ref> <news>                  news on a task, in one sentence",
+    "NOTE <task or project ref> <news>       news or progress, in one sentence, also work done with no task for it",
     "NEXT <project ref> <action> @<context>  a new next action, a physical step that starts with a verb, and where it is done",
     "WAIT <project ref> <person> | <what> | <YYYY-MM-DD>   something I now wait for from someone, and by when",
-    "TODO <action> @<context> | <YYYY-MM-DD>  a single action of mine that belongs to none of my projects; the date only if it has one",
+    "WAIT <task ref> <person> | <YYYY-MM-DD>               a task of mine that someone else now does",
+    "TODO <action> @<context> | <YYYY-MM-DD>  a single action of mine that belongs to none of my projects",
     "PROJECT <title> | <outcome> | <first next action>     a new commitment of mine, more than one step, that is in none of my projects",
-    "",
-    "NEXT, TODO and PROJECT are what I still need to capture. Give only what I promised or was asked to do myself. " +
-      "Leave out FYI, newsletters, notifications and what others will do. One line per commitment, however often it came up.",
+    "Write NO-DATE where there is no date.",
     "",
     "Write names of people as plain text, not as links. End a line with | and one bare link to the email, chat, " +
       "document or meeting it comes from, when you have one, and nothing after it.",
     ...(contextList().length ? ["My contexts: " + contextList().map(c => "@" + c).join(", ") + "."] : []),
-    "Use only the references below. Leave out anything you are not sure of. Today is " + todayISO() + ".",
+    "",
+    "Before you answer, check that you looked for: work done with no task for it, promises made in chats and meetings, " +
+      "what I wait for from others, dates that moved, new projects, and projects whose state changed.",
+    ...(also.length ? ["", "Also look for:", ...also.map(s => "- " + s)] : []),
+    "",
+    "Use only the references below. Today is " + todayISO() + ".",
     ...lines,
   ].join("\n");
   return {text, refs};

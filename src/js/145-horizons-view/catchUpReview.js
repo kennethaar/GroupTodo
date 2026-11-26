@@ -11,10 +11,10 @@ function catchUpReview(rows) {
   const what = r => ({
     done: () => task(r),
     due: () => day(r.date) + ": " + task(r),
-    note: () => task(r) + ": “" + r.text + "”",
+    note: () => (r.block ? task(r) : "Project") + ": “" + r.text + "”",
     next: () => r.text,
     todo: () => r.text + (r.ctx ? " @" + r.ctx : "") + (r.date ? " · " + day(r.date) : ""),
-    wait: () => r.who + ": " + r.text + (r.date ? " · by " + day(r.date) : ""),
+    wait: () => (r.block ? task(r) + " — " + r.who : r.who + ": " + r.text) + (r.date ? " · by " + day(r.date) : ""),
     project: () => "Project: " + r.text + (r.outcome ? " — " + r.outcome : "") + (r.next ? " · first: " + r.next : ""),
   })[r.kind]();
   const contexts = contextList();
