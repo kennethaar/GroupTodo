@@ -25,7 +25,7 @@ function applyCatchUp(rows) {
   for (const r of [...rows].sort((x, y) => order(x) - order(y))) {
     // Where it was found stays on what it changed or made, as source::.
     const mark = b => { if (b && r.url) setBlockProp(b, "source", source(r.url)); };
-    if (r.kind === "project" || (r.kind === "next" && r.choice === "someday")) {
+    if (r.kind === "project" || ((r.kind === "next" || r.kind === "todo") && r.choice === "someday")) {
       const first = trim(r.kind === "project" ? r.next || "" : "");
       const path = newProject(r.text, r.choice === "active" ? "1" : "2",
         first ? [stampAuthor(newBlock({state: "TODO", title: first, props: {}}))] : []);
@@ -36,6 +36,12 @@ function applyCatchUp(rows) {
       touch(path);
       continue;
     }
+    // A to-do in no project goes on today's page, as the capture box puts it.
+    if (r.kind === "todo") {
+      const day = journalPath(todayISO()), fresh = !V.pages.has(day);
+      r.path = r.proj = ensureJournal(todayISO());
+      if (fresh) made.push(r.path);
+    }
     keep(r.path);
     if (r.kind === "done") { setBlockState(r.path, r.block, "DONE"); mark(r.block); }
     else if (r.kind === "due") {
@@ -43,10 +49,10 @@ function applyCatchUp(rows) {
       else setDue(r.block, r.date);
       mark(r.block);
     } else if (r.kind === "note") mark(postMessageAs(r.path, r.block, r.text, me, at));
-    else if (r.kind === "next" || r.kind === "wait") {
+    else if (r.kind === "next" || r.kind === "todo" || r.kind === "wait") {
       keep(r.proj);
       const who = r.kind === "wait" || r.choice === "delegate" ? person(trim(r.who || "")) : "";
-      const title = r.text + (r.kind === "next" && r.ctx ? " [[c/" + r.ctx + "]]" : "") + (who ? " from [[p/" + who + "]]" : "");
+      const title = r.text + (r.kind !== "wait" && r.ctx ? " [[c/" + r.ctx + "]]" : "") + (who ? " from [[p/" + who + "]]" : "");
       const b = stampAuthor(newBlock({state: who ? "WAIT" : "TODO", title, props: {}}));
       if (r.date) setDue(b, r.date);
       mark(b);

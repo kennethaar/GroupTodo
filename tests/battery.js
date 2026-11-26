@@ -9285,7 +9285,10 @@ var GTD_TEST = (() => {
      is a Deadline or a Start date; a new project is Skip until you make it
      Active (counted against 5) or Someday. A done that leaves a project with no
      next action says so, and + Add next action adds one. One Undo takes all
-     of it back. A reference the prompt did not give is left out. */
+     of it back. A reference the prompt did not give is left out. It also asks
+     for what to capture, at most 10 and only what is yours: a to-do in no
+     project (TODO) lands on today's page; new to-dos and projects show
+     together under To capture, at the end. */
   test("#516 Catch up: look back picked; each change a GTD choice set to the likely one; a stuck project offers a next action; one Undo", async () => {
     const path = scratchProject("catch up 516", [["TODO", "Send the draft"], ["TODO", "Book the room"]]);
     const other = scratchProject("tiles 516", [["TODO", "Order the tiles"]]);
@@ -9318,6 +9321,9 @@ var GTD_TEST = (() => {
       has(prompt, "@" + ctx, "and the contexts to pick from");
       has(prompt, "code block", "it asks for a code block, which keeps the lines apart when copied");
       has(prompt, "link to the", "and for a link to each source");
+      has(prompt, "TODO <action>", "it asks for to-dos in no project");
+      has(prompt, "at most 10", "a short list: what to capture is capped");
+      has(prompt, "promised", "only what is mine to do");
       const ref = t => (new RegExp("\\b([TP]\\d+)\\b[^\\n]*" + t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).exec(prompt) || [])[1];
       const [send, room, proj, tiles] = [ref("Send the draft"), ref("Book the room"), ref(title), ref("Order the tiles")];
       ok(send && room && proj && tiles, "each task and project has a reference: " + [send, room, proj, tiles]);
@@ -9333,21 +9339,28 @@ var GTD_TEST = (() => {
       set(answer, "Here is what changed:\n\n- **DONE " + send + "** | " + chat + "\n- DONE " + tiles + "\n- DUE " + room + " 2026-11-28\n" +
         "- NEXT " + proj + " Call the supplier @" + ctx + " | [1](" + doc + ")\n- NEXT " + proj + " Ask Person Y for the file\n" +
         "- NEXT " + proj + " Reply to the invite\n- WAIT " + proj + " Person X | the signed contract | 2026-12-02\n" +
-        "- NOTE " + send + " Sent for testing.\n- DONE T999\n- PROJECT Product A launch | Launched to all users | Draft the plan\n");
+        "- NOTE " + send + " Sent for testing.\n- DONE T999\n- PROJECT Product A launch | Launched to all users | Draft the plan\n" +
+        "- TODO Reply to the budget question @" + ctx + " | 2026-12-05\n- TODO Water the plants @" + ctx + "x\n");
       btn("Read it").click(); await settle();
-      eq($$("#modalRoot .cu-row").length, 9, "one row per change; the unknown reference is left out");
+      eq($$("#modalRoot .cu-row").length, 11, "one row per change; the unknown reference is left out");
+      const last = [...$$("#modalRoot .cu-group")].pop();
+      ok(/^To capture/.test(last.textContent), "new to-dos and projects come last, under To capture: " + last.textContent.slice(0, 40));
+      ok(["budget question", "Water the plants", "Product A launch"].every(t => last.contains(rowOf(t))), "all three in it");
+      eq(rowOf("budget question").querySelector("select.cu-ctx").value, ctx, "a to-do has its context");
+      has(rowOf("Water the plants").textContent, "No context", "a context is read only as a whole word");
       eq([...$$("#modalRoot a[href]")].map(a => [a.textContent, a.getAttribute("href")]), [["↗ Chat", chat], ["↗ Document", doc]],
         "a source shows at the end of its row, named by its kind");
       const choice = t => rowOf(t).querySelector("select.cu-do");
-      eq(["Send the draft", "Book the room", "Call the supplier", "Ask Person Y", "Reply to the invite", "the signed contract", "Sent for testing", "Product A launch"]
-        .map(t => choice(t).value), ["keep", "deadline", "next", "next", "next", "keep", "keep", "skip"], "each set to the likely choice, a new project to Skip");
+      eq(["Send the draft", "Book the room", "Call the supplier", "Ask Person Y", "Reply to the invite", "the signed contract", "Sent for testing", "Product A launch", "budget question"]
+        .map(t => choice(t).value), ["keep", "deadline", "next", "next", "next", "keep", "keep", "skip", "next"], "each set to the likely choice, a new project to Skip");
       eq([...choice("Call the supplier").options].map(o => o.value), ["next", "now", "delegate", "someday", "skip"], "a next action: Next, Do now, Delegate, Someday, Skip");
       eq([...choice("Book the room").options].map(o => o.value), ["deadline", "start", "skip"], "a date: Deadline or Start date");
       eq([...choice("Product A launch").options].map(o => o.value), ["active", "someday", "skip"], "a project: Active or Someday");
       has(rowOf("Product A launch").textContent, "of 5", "Active is counted against the limit");
       eq(rowOf("Call the supplier").querySelector("select.cu-ctx").value, ctx, "the context the AI gave is picked");
       has(rowOf("Ask Person Y").textContent, "No context", "a next action without one says so");
-      ok(btn("Apply 8 changes"), "the button counts what is not skipped");
+      ok(btn("Apply 10 changes"), "the button counts what is not skipped");
+      eq([...choice("budget question").options].map(o => o.value), ["next", "now", "delegate", "someday", "skip"], "a to-do gets the same choices");
       const stuck = [...$$("#modalRoot .cu-group")].find(g => g.textContent.includes(pageTitle(other)));
       has(stuck.textContent, "No next action left", "a project left with no next action says so");
       ok(![...$$("#modalRoot .cu-group")].find(g => g.textContent.includes(title)).textContent.includes("No next action left"),
@@ -9357,6 +9370,7 @@ var GTD_TEST = (() => {
       set(rowOf("Ask Person Y").querySelector("input.cu-who"), "Person Y");
       set(choice("Reply to the invite"), "now");
       set(choice("Product A launch"), "active");
+      set(choice("Water the plants"), "skip");
       [...stuck.querySelectorAll("button")].find(b => b.textContent === "+ Add next action").click(); await settle();
       const add = $("#modalRoot input.cu-add");
       set(add, "Measure the floor");
@@ -9364,7 +9378,8 @@ var GTD_TEST = (() => {
       ok(rowOf("Measure the floor"), "+ Add next action adds a row");
       ok(![...$$("#modalRoot .cu-group")].find(g => g.textContent.includes(pageTitle(other))).textContent.includes("No next action left"),
         "and the project is no longer stuck");
-      btn("Apply 10 changes").click(); await settle();
+      const today = () => (getPage(ensureJournal(todayISO())).blocks || []).find(x => /budget question/.test(x.title));
+      btn("Apply 11 changes").click(); await settle();
       const [a, b, ...added] = getPage(path).blocks;
       eq([a.state, blockProp(b, "SCHEDULED") ? dueDate(b) : null, blockProp(b, "DEADLINE") || null], ["DONE", "2026-11-28", null],
         "done, and a start date rather than a deadline");
@@ -9379,11 +9394,14 @@ var GTD_TEST = (() => {
       ok(made(), "the new project made Active is in Active");
       eq(getPage(made()).props.outcome, "Launched to all users", "with its outcome");
       has(serializePage(getPage(made())), "Draft the plan", "and its first next action");
+      const todo = today();
+      ok(todo, "the to-do is on today's page");
+      eq([todo.state, todo.title.includes("[[c/" + ctx + "]]"), dueDate(todo)], ["TODO", true, "2026-12-05"], "with its context and date");
       const undo = [...$$("#toasts .toast button")].find(x => x.textContent === "Undo");
       ok(undo, "with Undo");
       undo.click(); await settle();
       eq([getPage(path).blocks.length, getPage(path).blocks[0].state, dueDate(getPage(path).blocks[1]) || null,
-        getPage(other).blocks.length, !!made()], [2, "TODO", null, 1, false], "one Undo takes it all back");
+        getPage(other).blocks.length, !!made(), !!today()], [2, "TODO", null, 1, false, false], "one Undo takes it all back");
     } finally {
       closeAll(); document.querySelectorAll("#toasts > *").forEach(n => n.remove());
       if (made()) removePage(made());

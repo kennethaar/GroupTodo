@@ -1,7 +1,8 @@
 /* The catch-up's changes (#516), one list grouped by project. Each row has
    the GTD choice for its kind, set to the likely one, so Apply needs no click;
    only what needs you stands out: a next action with no context, a project
-   left with no next action, a new project past the limit. Back returns to the
+   left with no next action, a new project past the limit. New to-dos and
+   projects come last, together, under To capture. Back returns to the
    prompt and answer, which are kept. */
 function catchUpReview(rows) {
   const day = iso => new Date(iso + "T12:00:00").toLocaleDateString([], {weekday: "short", day: "numeric", month: "short"});
@@ -11,6 +12,7 @@ function catchUpReview(rows) {
     due: () => day(r.date) + ": " + task(r),
     note: () => task(r) + ": “" + r.text + "”",
     next: () => r.text,
+    todo: () => r.text + (r.date ? " · " + day(r.date) : ""),
     wait: () => r.who + ": " + r.text + (r.date ? " · by " + day(r.date) : ""),
     project: () => r.text + (r.outcome ? " — " + r.outcome : "") + (r.next ? " · first: " + r.next : ""),
   })[r.kind]();
@@ -44,14 +46,14 @@ function catchUpReview(rows) {
   const draw = () => {
     const groups = new Map();
     for (const r of rows) {
-      const k = r.kind === "project" ? "\u0001new" : r.proj;
+      const k = r.kind === "project" || r.kind === "todo" ?"\u0001new" : r.proj;
       if (!groups.has(k)) groups.set(k, []);
       groups.get(k).push(r);
     }
     const keys = [...groups.keys()].sort((a, b) => (a === "\u0001new") - (b === "\u0001new"));
     list.replaceChildren(people, ...keys.map(k => {
       const g = el("div", {class: "cu-group"},
-        el("div", {style: "font-weight:600;font-size:13px;margin:12px 0 4px"}, k === "\u0001new" ? "New project" : pageTitle(k)),
+        el("div", {style: "font-weight:600;font-size:13px;margin:12px 0 4px"}, k === "\u0001new" ? "To capture" : pageTitle(k)),
         ...groups.get(k).map(r => {
           let opts = CATCHUP_CHOICES[r.kind];
           if (r.kind === "project") {
@@ -63,11 +65,12 @@ function catchUpReview(rows) {
             pick("cu-do", "What to do", opts, r.choice, v => { r.choice = v; draw(); }),
             el("span", {style: "min-width:0;flex:1 1 12em"}, what(r)));
           // Only a next action that waits on a list needs a place to be done; one done now or deferred does not.
-          if (r.kind === "next" && r.choice === "next")
+          const action = r.kind === "next" || r.kind === "todo";
+          if (action && r.choice === "next")
             // Said once, in the choice itself, and in the warning colour while it is empty.
             row.append(Object.assign(pick("cu-ctx", "Context", [["", "⚠ No context"], ...contexts.map(c => [c, "@" + c])], r.ctx || "",
               v => { r.ctx = v; draw(); }), r.ctx ? {} : {style: "width:auto;flex:none;font-size:12.5px;padding:2px 4px;color:var(--warn);border-color:var(--warn)"}));
-          if (r.kind === "next" && r.choice === "delegate") {
+          if (action && r.choice === "delegate") {
             const who = el("input", {class: "cu-who", list: "cu-people", placeholder: "Who", "aria-label": "Delegated to",
               style: "width:10em;flex:none;font-size:12.5px;padding:2px 6px"});
             who.value = r.who || "";

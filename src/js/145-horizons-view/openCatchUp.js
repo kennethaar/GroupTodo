@@ -44,7 +44,7 @@ function openCatchUp() {
       el("button", {class: "btn primary", onclick: () => {
         const rows = parseCatchUp(answer.value, refs);
         if (!rows.length) {
-          notify(trim(answer.value) ? "No changes in that. Paste the AI's lines that start with DONE, DUE, NOTE, NEXT, WAIT or PROJECT."
+          notify(trim(answer.value) ? "No changes in that. Paste the AI's lines that start with DONE, DUE, NOTE, NEXT, WAIT, TODO or PROJECT."
             : "Paste the AI's answer first.", "warn");
           answer.focus();
           return;
