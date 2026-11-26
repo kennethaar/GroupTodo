@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.224.1 - 2026-11-26
+
+- Projects › List: in the box for one field of a project, such as Done
+  when, Add is now the main button. The button below says Cancel and
+  saves nothing; a box you pick from says Close.
+
 ## 1.224.0 - 2026-11-25
 
 - Weekly review › Steps: Get clear has Catch up with an AI. Pick how far

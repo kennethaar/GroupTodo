@@ -10635,6 +10635,28 @@ var GTD_TEST = (() => {
     eq(NPM_STEPS[NPM.step].k, "brainstorm");
     npmReset();
   });
+  test("#517 one field of a project: the main button saves, Cancel closes without saving", async () => {
+    const path = scratchProject("Field buttons");
+    const btns = () => [...document.querySelectorAll("#modalRoot button")];
+    const btn = t => btns().find(x => trim(x.textContent) === t);
+    openProjectField({space: V.space, path}, "outcome");
+    ok(btn("Add") && btn("Add").classList.contains("primary"), "Add is the main button");
+    eq(btns().filter(x => x.classList.contains("primary")).map(x => trim(x.textContent)), ["Add"], "one main button");
+    ok(btn("Cancel") && !btn("Done"), "the bottom button says Cancel");
+    $("#modalRoot .slotform input").value = "Not kept";
+    btn("Cancel").click();
+    await settle();
+    ok(getPage(path).props.outcome !== "Not kept", "Cancel did not save");
+    openProjectField({space: V.space, path}, "outcome");
+    $("#modalRoot .slotform input").value = "The fields are clear";
+    btn("Add").click();
+    await settle();
+    eq(getPage(path).props.outcome, "The fields are clear", "Add saved");
+    // A field you pick from has nothing to lose: a quiet Close.
+    openProjectField({space: V.space, path}, "deadline");
+    ok(btn("Close") && !btn("Close").classList.contains("primary") && !btn("Done"), "a pick field closes quietly");
+    closeAll();
+  });
   test("#189 the outcome box says when a line reads like a topic", async () => {
     npmReset();
     const path = scratchProject("Garden");

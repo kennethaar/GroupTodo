@@ -43580,7 +43580,7 @@ SOL_EDIT = null; closeModal(); render();
 },
 };
 modal({center: true, title: f.label + " · " + inS(r, () => pageTitle(r.path)), body,
-foot: [el("button", {class: "btn primary", onclick: () => closeModal()}, "Done")],
+foot: [el("button", {class: "btn", onclick: () => closeModal()}, f.type === "text" ? "Cancel" : "Close")],
 onClose: () => { SOL_EDIT = null; SOL.more = null; render(); }});
 SOL_EDIT.redraw();
 requestAnimationFrame(() => body.querySelector("input:not([type=date]):not(.newopt)")?.focus());
@@ -43770,7 +43770,7 @@ if (f.k === "outcome") input.value = f.val(r);
 attachSuggest(input);
 const send = () => { const v = trim(input.value); if (!v) return; f.submit(r, v); solAfter(r, f.k); };
 input.addEventListener("keydown", e => { if (suggestKey(e)) return; if (e.key === "Enter") { e.preventDefault(); send(); } });
-slot.append(el("div", {class: "slotform"}, input, el("button", {class: "btn sm", onclick: send}, f.k === "outcome" && filled ? "Save" : "Add")));
+slot.append(el("div", {class: "slotform"}, input, el("button", {class: "btn sm primary", onclick: send}, f.k === "outcome" && filled ? "Save" : "Add")));
 const name = f.k === "outcome" ? inS(r, () => pageTitle(r.path)) : "";
 if (name && trim(input.value) !== name)
 slot.append(el("div", {class: "slotsuggest"},
