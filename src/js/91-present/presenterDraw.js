@@ -2,11 +2,13 @@
 function presenterDraw() {
   const pw = DECK?.pw;
   if (!pw || pw.closed) return;
+  // The slides not up yet, their window blocked (#515): one click here opens it.
+  const start = DECK.later ? el("button", {class: "pstart", onclick: presentShowSlides}, "▶ Start presentation") : null;
   // Waiting for the start (#486): the countdown, and a button that starts the talk (#489).
   if (DECK.wait) {
     const go = el("button", {class: "pnext pgo", onclick: slideWaitEnd},
       el("div", {class: "plabel"}, "Next"), el("div", {class: "pwhat"}, "Start the talk"));
-    pw.document.body.replaceChildren(...[el("p", {class: "pend pwait", role: "timer"}, ""), go].map(n => pw.document.adoptNode(n)));
+    pw.document.body.replaceChildren(...[start, el("p", {class: "pend pwait", role: "timer"}, ""), go].filter(Boolean).map(n => pw.document.adoptNode(n)));
     slideWaitTick();
     return;
   }
@@ -17,7 +19,7 @@ function presenterDraw() {
   const nextText = !next ? "The end" : next.s === s ? "› " + (slideWords(s.parts[next.k - 1]) || (slideBulletPic(s.parts[next.k - 1]) ? "🖼 Picture" : "")) : "Slide: " + next.s.title;
   const size = +PREF.get("present.notes", 22) || 22;
   const resize = by => { PREF.set("present.notes", Math.max(12, Math.min(48, size + by))); presenterDraw(); };
-  const bar = el("div", {class: "pbar"},
+  const bar = el("div", {class: "pbar"}, start,
     // Lines left off the slides (#467) are counted, so none goes without a trace.
     el("span", {class: "pcount"}, s.n + " / " + slides.length + (DECK.hidden ? " · " + DECK.hidden + " hidden" : "")
       // References and embeds whose line is gone show nothing on the slides (#470).

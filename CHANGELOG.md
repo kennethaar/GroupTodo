@@ -8,8 +8,9 @@ that breaks existing vaults. Newest first.
 ## 1.227.1 - 2026-11-26
 
 - Presenter window and AI: With presenter window opens the presenter window
-  again. It opens first; the slides get a window of their own when pop-ups
-  are allowed, else they show in this tab. (#515)
+  again. A browser opens one window per click, so it opens first, and
+  ▶ Start presentation in it opens the slides in their own window. Your
+  page stays as it is. With pop-ups allowed, both open at once. (#515)
 
 ## 1.227.0 - 2026-11-26
 

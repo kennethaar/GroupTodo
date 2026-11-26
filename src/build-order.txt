@@ -863,6 +863,8 @@ js/91-present/slideFull.js
 js/91-present/presentSoon.js
 js/91-present/presentRefresh.js
 js/91-present/presentEndOffer.js
+js/91-present/presentHost.js
+js/91-present/presentShowSlides.js
 js/91-present/presentStart.js
 js/91-present/vars-SLIDE_PEEK.js
 js/91-present/slidePeekChoices.js

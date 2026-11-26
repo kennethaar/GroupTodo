@@ -24,6 +24,8 @@ body:has(.ptimes){grid-template-rows:auto auto 1fr auto}
 body:has(.pwait){grid-template-rows:1fr auto}
 .pwait{font:600 2.2em/1.3 system-ui,sans-serif;align-self:center;text-align:center}
 .pgo{margin:12px;font-size:1.2em;text-align:center}
+.pstart{background:#2f6fde;border-color:#2f6fde;color:#fff;font-weight:600}
+.pstart:hover,.pstart:focus-visible{background:#3d7cf0}
 .pnotes{padding:12px 16px;border-top:1px solid #333;white-space:pre-wrap;max-height:40vh;overflow:auto}
 .pnotes:empty::before{content:"No notes";color:#888}
 .pgrid{position:fixed;inset:0;background:#111;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;padding:16px;align-content:start;counter-reset:s}

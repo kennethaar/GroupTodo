@@ -14735,7 +14735,8 @@ var GTD_TEST = (() => {
   const deckKey = (k, o = {}, doc = document) =>
     doc.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true, ...o}));
   const deckNow = () => {
-    const s = $("#deck .slide.cur");
+    // Wherever the slides are: this tab or a window of their own (#515).
+    const s = DECK?.deck.querySelector(".slide.cur") || $("#deck .slide.cur");
     return {title: s?.querySelector(".stitle")?.textContent || "",
       // The bullets shown so far; the rest wait in their places, still black.
       bullets: [...(s?.querySelectorAll(".bullet:not(.later)") || [])].map(b => b.textContent),
@@ -15267,11 +15268,12 @@ var GTD_TEST = (() => {
     }
   });
   test("#431 the presenter window: notes for the bullet, what comes next, timer and an overview", () => withPages(TALK_PAGE, async () => {
-    const f = document.createElement("iframe");
-    document.body.append(f);
+    const f = document.createElement("iframe"), sw = document.createElement("iframe");
+    document.body.append(f, sw);
     const open = window.open;
-    // Only the presenter window opens; the slides' own window (#515) is blocked, so they show in this tab.
+    // One pop-up per click: the presenter window; Start presentation there opens the slides (#515).
     window.open = (u, name) => name === "gtd-presenter" ? f.contentWindow : null;
+    f.contentWindow.open = (u, name) => name === "gtd-slides" ? sw.contentWindow : null;
     try {
       // The presenter window is offered in sight: ▶ Present ▾ › With presenter window.
       openPage(TALK); await settle();
@@ -15282,10 +15284,12 @@ var GTD_TEST = (() => {
       eq(pick?.textContent, "With presenter window", "▾ offers With presenter window");
       pick.click(); await settle();
       ok(!content().querySelector(".presentpop"), "the menu closes as the slides start");
-      ok($("#deck"), "the slides start");
+      ok(!$("#deck"), "the slides cover the page");
       const pd = f.contentDocument, q = s => pd.querySelector(s);
+      [...pd.querySelectorAll("button")].find(b => /Start presentation/.test(b.textContent)).click(); await settle();
+      ok(sw.contentDocument.querySelector("#deck"), "the slides start");
       ok(q(".pnow") && q(".pnext") && q(".pnotes"), "now, next and notes");
-      deckKey("ArrowRight");
+      deckKey("ArrowRight", {}, sw.contentDocument);
       eq(q(".pnotes").textContent.trim(), "Say it plainly.", "the slide's notes, without its picture");
       eq(q(".pcount").textContent, "2 / 4", "which slide of how many");
       ok(/\d+:\d\d/.test(q(".ptimer").textContent) && /\d+:\d\d/.test(q(".pclock").textContent), "a timer and the clock");
@@ -15302,7 +15306,7 @@ var GTD_TEST = (() => {
       thumbs[3].click();
       eq(deckNow().title, "Where to", "a click jumps there");
       ok(!q(".pgrid"), "and closes the overview");
-    } finally { presentStop(); window.open = open; f.remove(); }
+    } finally { presentStop(); window.open = open; f.remove(); sw.remove(); SLIDES_WIN = null; }
   }));
   test("#431 an area's slides.css styles its slides only; without one, white on black", () => withPages(TALK_PAGE, async () => {
     // The area the page is shown in; an earlier test may have left it without a record.
@@ -16657,20 +16661,32 @@ var GTD_TEST = (() => {
   /* #515 regression: With presenter window opened two pop-ups from one click,
      the slides first. A browser lets one through per click, so the presenter
      window, the one the speaker needs, was the one blocked. */
-  test("#515 With presenter window: the presenter window opens when the browser lets one pop-up through per click", () => withPages({
-    [SHOW]: ["- First point", "  - A"].join("\n") + "\n"}, async () => {
-    const fp = document.createElement("iframe");
-    document.body.append(fp);
-    const open = window.open, wasP = PRESENTER_WIN, wasS = SLIDES_WIN;
+  test("#515 With presenter window: three windows with one pop-up per click; Start presentation in the presenter window opens the slides", () => withPages({
+    [SHOW]: ["- First point", "  - A", "- Second point"].join("\n") + "\n"}, async () => {
+    const fp = document.createElement("iframe"), fs = document.createElement("iframe");
+    document.body.append(fp, fs);
+    const open = window.open, wasP = PRESENTER_WIN, wasS = SLIDES_WIN, last = PREF.get("present.last", "");
     let left = 1;
     window.open = (u, name) => left-- > 0 ? (name === "gtd-presenter" ? fp.contentWindow : null) : null;
+    // A click in the presenter window lets that window open one.
+    fp.contentWindow.open = (u, name) => name === "gtd-slides" ? fs.contentWindow : null;
+    const start = () => [...fp.contentDocument.querySelectorAll("button")].find(b => /Start presentation/.test(b.textContent));
     try {
       PRESENTER_WIN = null; SLIDES_WIN = null;
       openPage(SHOW); await settle();
       presentStart(SHOW, {presenter: true, win: true}); await settle();
       ok(fp.contentDocument.querySelector(".pnext"), "the presenter window is not shown");
-      ok(DECK && document.querySelector("#deck"), "the slides do not show in this tab when their window is blocked");
-    } finally { presentStop(); window.open = open; PRESENTER_WIN = wasP; SLIDES_WIN = wasS; fp.remove(); go("today"); }
+      ok(!document.querySelector("#deck"), "the slides cover the page");
+      ok(start(), "the presenter window has no Start presentation");
+      fp.contentDocument.querySelector(".pnext").click(); await settle();
+      const at = DECK.i;
+      start().click(); await settle();
+      ok(fs.contentDocument.querySelector("#deck .slide.cur"), "Start presentation does not show the slides in their window");
+      eq(DECK.i, at, "the slides do not start where the presenter window is");
+      ok(!start(), "Start presentation stays once the slides are up");
+      fs.contentWindow.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowRight", bubbles: true, cancelable: true})); await settle();
+      eq(DECK.i, at + 1, "a key in the slides window does not run the talk");
+    } finally { presentStop(true); PREF.set("present.last", last); window.open = open; PRESENTER_WIN = wasP; SLIDES_WIN = wasS; fp.remove(); fs.remove(); go("today"); }
   }));
 
   /* #515 ▶ Present opens the slides in a window of their own, so the page

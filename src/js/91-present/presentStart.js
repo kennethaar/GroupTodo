@@ -27,29 +27,23 @@ function presentStart(path, {root = null, on = false, presenter = false, step = 
   if (own) deck.append(el("style", {class: "deckcss"}, own));
   /* With presenter window, that one opens first, straight from the click: a
      browser lets one pop-up through per click, and the speaker needs this one.
-     The slides then take a window of their own if allowed, else this tab. */
+     The slides then take a window of their own if allowed. If not, the page
+     stays as it is and Start presentation in the presenter window opens them. */
   if (presenter && !(PRESENTER_WIN && !PRESENTER_WIN.closed))
     PRESENTER_WIN = window.open("", "gtd-presenter", "popup,width=960,height=640") || null;
-  // A window of its own (#515), or this tab when pop-ups are blocked.
-  const host = win ? slidesWinOpen(path) : null, w = host || window;
-  (host ? host.document : document).body.append(deck);
-  DECK = {path, root, on, steps, slides, hidden, broken, i: -1, deck, back, digits: "", pw: null, t0: Date.now(), timer: 0, grid: false, edit: null, win: host};
-  w.addEventListener("keydown", presentKey, true);
+  const host = win ? slidesWinOpen(path, {quiet: presenter && !!PRESENTER_WIN}) : null;
+  const later = !host && win && presenter && !!PRESENTER_WIN;
+  DECK = {path, root, on, steps, slides, hidden, broken, i: -1, deck, back, digits: "", pw: null, t0: Date.now(), timer: 0, grid: false, edit: null, win: null, later};
   deck.addEventListener("dblclick", slideEdit);
   // Alt+drag places a line, the title or the picture's crop (#487).
   deck.addEventListener("pointerdown", slideArrDown, true);
-  w.addEventListener("keyup", slideArrKey, true);
-  // The boxes of Alt held go with Alt (#487).
-  w.addEventListener("blur", slideArrLost);
-  w.addEventListener("pointermove", slideArrLost, true);
-  host?.addEventListener("pagehide", slidesWinGone);
+  // A window of its own (#515), or this tab when pop-ups are blocked.
+  if (!later) presentHost(host);
   SLIDE_ARR_PICK = null;
   DECK.timer = setInterval(presenterTick, 1000);
-  // The presenter window first: a pop-up is only allowed straight from the click.
   // One still open from the last talk picks this one up (#515).
   if (presenter || (PRESENTER_WIN && !PRESENTER_WIN.closed)) presenterOpen();
-  if (host) deck.append(el("button", {class: "deckfull", type: "button", title: "Full screen (F)", onclick: slideFull}, "⛶ Full screen (F)"));
-  else try { deck.requestFullscreen?.().then(() => navigator.keyboard?.lock?.(["Escape"])).catch(() => {}); } catch (e) {}
+  if (!host && !later) try { deck.requestFullscreen?.().then(() => navigator.keyboard?.lock?.(["Escape"])).catch(() => {}); } catch (e) {}
   deck.focus({preventScroll: true});
   if (!(wait && slideWaitBegin())) presentGo(at);
 }
