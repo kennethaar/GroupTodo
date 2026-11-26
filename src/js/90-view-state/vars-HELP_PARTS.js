@@ -829,7 +829,7 @@ const HELP = {
       "Chores on track are left out. One missed for 2 rounds comes up.",
       "Verb and Context: a verb first, and a context.",
       "Project: file loose actions.",
-      "Open the page shows each card's page on the right."],
+      "Open the page shows each card's page on the right, at its line."],
     keys: [["7–9", "Aim at a box"], ["Enter", "Take it"]],
     legend: [[".solpasses", "The passes and how many each has."], [".solcard", "The action."], [".solopt", "An answer."]],
     more: ["A chore that comes up: change how often, or let it go.",

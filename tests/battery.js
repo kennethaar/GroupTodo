@@ -3297,6 +3297,31 @@ var GTD_TEST = (() => {
       ok(/^blob:/.test(img.src), "the picture is not loaded: " + img.src);
     } finally { removePage(path); clearMemo(); }
   });
+  test("#522 Review actions: the page on the right is at the card's line, marked, as in Clarify", async () => {
+    const lines = Array.from({length: 40}, (_, i) => ["TODO", "Call supplier " + i]);
+    const path = scratchProject("side line", lines);
+    getPage(path).props.parallel = "yes"; touch(path); clearMemo();   // no sorting card first (#462)
+    const was = [...SOL_ANS];
+    const row = t => actDeck().find(a => a.path === path && a.block.title === t);
+    const deal = async r => { SOL = {order: [r], i: 0, pass: 0, deck: "a", vis: visibleSpaces().join("|"), day: todayISO()}; render(); await settle(); };
+    const marked = () => $("#pagePane .sidehere")?.closest(".blk")?.dataset.id;
+    try {
+      SOL_ANS.clear();
+      go("review", {sub: "actions"}); await settle();
+      const far = row("Call supplier 30"), near = row("Call supplier 2");
+      ok(far && near, "the tasks are not dealt");
+      await deal(far);
+      [...content().querySelectorAll(".solcard button")].find(b => b.textContent === "Open the page").click(); await settle();
+      eq(marked(), String(far.block.id), "the card's line is not marked on the page");
+      const pane = $("#pagePane"), at = $("#pagePane .sidehere").getBoundingClientRect(), pr = pane.getBoundingClientRect();
+      ok(at.top >= pr.top && at.bottom <= pr.bottom, "the card's line is not scrolled into view");
+      await deal(near);
+      eq(marked(), String(near.block.id), "the next card's line on the same page is not marked");
+    } finally {
+      closeSidePage(); SOL_ANS.clear(); for (const [k, a] of was) SOL_ANS.set(k, a); solSaveAns();
+      removePage(path); clearMemo(); go("today"); await settle();
+    }
+  });
   test("#462 Review actions: a project with 3 or more steps that can go now is sorted into sequences first", async () => {
     const path = scratchProject("462 Kitchen", [["TODO", "Measure the room"], ["TODO", "Order the tiles"],
       ["TODO", "Lay the tiles"], ["TODO", "Paint the walls"]]);

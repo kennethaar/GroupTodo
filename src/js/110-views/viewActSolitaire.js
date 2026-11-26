@@ -39,7 +39,7 @@ function viewActSolitaire() {
   const done = steps.filter(f => f.filled(r)).length;
   const f = solStepNow(r, steps);
   if (!f) { SOL.hold = null; SOL.step = null; }
-  sideFollow(r.space, r.path);
+  sideFollow(r.space, r.path, r.block.id);
   c.classList.add("solwrap");
   const sorting = actSortDue(r);
   c.append(el("aside", {class: "solside"}, head, passList,

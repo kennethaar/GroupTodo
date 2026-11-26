@@ -2041,6 +2041,7 @@ js/110-views/unpinSide.js
 js/110-views/previewPage.js
 js/110-views/hideSidePane.js
 js/110-views/sideFollow.js
+js/110-views/sideUnfoldTo.js
 js/110-views/closeSidePage.js
 js/110-views/sidePinShown.js
 js/110-views/vars-onScreen.js
