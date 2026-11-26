@@ -55,7 +55,8 @@ function catchUpSource(from = catchUpSince()) {
     "NEXT, TODO and PROJECT are what I still need to capture. Give only what I promised or was asked to do myself. " +
       "Leave out FYI, newsletters, notifications and what others will do. One line per commitment, however often it came up.",
     "",
-    "End a line with | and a link to the email, chat, document or meeting it comes from, when you have one.",
+    "Write names of people as plain text, not as links. End a line with | and one bare link to the email, chat, " +
+      "document or meeting it comes from, when you have one, and nothing after it.",
     ...(contextList().length ? ["My contexts: " + contextList().map(c => "@" + c).join(", ") + "."] : []),
     "Use only the references below. Leave out anything you are not sure of. Today is " + todayISO() + ".",
     ...lines,

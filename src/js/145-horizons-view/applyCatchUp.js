@@ -2,12 +2,15 @@
    action goes on as Next (with its context), Do now (done, with its source to
    open), Delegate (a waiting-for on whom you gave it to) or Someday (a page of
    its own in Someday/Maybe). New lines go on before tasks are marked done, so
-   a project is never left without a next action in between. One Undo, on the
+   a project is never left without a next action in between. A new to-do or
+   project is captured, not clarified: a plain line on today's page, with its
+   context, date, outcome and source, a new project's first next action under
+   it, and noted so the review's Clarify takes it today. One Undo, on the
    toast or Ctrl+Z, puts every page back and takes away a page it made. */
 function applyCatchUp(rows) {
   rows = rows.filter(r => r.choice !== "skip");
   if (!rows.length) return 0;
-  const before = new Map(), made = [];
+  const before = new Map(), made = [], captured = [], wasCaptured = PREF.get(CATCHUP_CAPTURED, "");
   const keep = p => { if (p && !before.has(p) && getPage(p)) before.set(p, structuredClone(getPage(p))); };
   const at = nowStamp(), me = whoAmI() || "Me";
   const source = url => "[" + catchUpLinkKind(url) + "](" + url + ")";
@@ -25,22 +28,27 @@ function applyCatchUp(rows) {
   for (const r of [...rows].sort((x, y) => order(x) - order(y))) {
     // Where it was found stays on what it changed or made, as source::.
     const mark = b => { if (b && r.url) setBlockProp(b, "source", source(r.url)); };
-    if (r.kind === "project" || ((r.kind === "next" || r.kind === "todo") && r.choice === "someday")) {
-      const first = trim(r.kind === "project" ? r.next || "" : "");
-      const path = newProject(r.text, r.choice === "active" ? "1" : "2",
-        first ? [stampAuthor(newBlock({state: "TODO", title: first, props: {}}))] : []);
-      if (r.outcome) getPage(path).props.outcome = r.outcome;
+    if (r.kind === "next" && r.choice === "someday") {
+      const path = newProject(r.text, "2", []);
       if (r.url) getPage(path).props.source = source(r.url);
       made.push(path);
-      if (first) made.push(...createLinkedPages(first));
       touch(path);
       continue;
     }
-    // A to-do in no project goes on today's page, as the capture box puts it.
-    if (r.kind === "todo") {
-      const day = journalPath(todayISO()), fresh = !V.pages.has(day);
-      r.path = r.proj = ensureJournal(todayISO());
-      if (fresh) made.push(r.path);
+    if (r.kind === "todo" || r.kind === "project") {
+      const fresh = !V.pages.has(journalPath(todayISO())), path = ensureJournal(todayISO());
+      if (fresh) made.push(path); else keep(path);
+      const title = linkKnownNames(r.text + (r.ctx ? " [[c/" + r.ctx + "]]" : ""));
+      const b = stampAuthor(newBlock({title, props: {}}));
+      if (r.date) setDue(b, r.date);
+      if (r.outcome) setBlockProp(b, "outcome", r.outcome);
+      mark(b);
+      if (trim(r.next || "")) b.children = [stampAuthor(newBlock({title: linkKnownNames(trim(r.next)), props: {}}))];
+      for (const x of [b, ...(b.children || [])]) { made.push(...createLinkedPages(x.title)); captured.push(clKey(path, x)); }
+      getPage(path).blocks.push(b);
+      stampAddedIfMissing(path, b);
+      touch(path);
+      continue;
     }
     keep(r.path);
     if (r.kind === "done") { setBlockState(r.path, r.block, "DONE"); mark(r.block); }
@@ -49,10 +57,10 @@ function applyCatchUp(rows) {
       else setDue(r.block, r.date);
       mark(r.block);
     } else if (r.kind === "note") mark(postMessageAs(r.path, r.block, r.text, me, at));
-    else if (r.kind === "next" || r.kind === "todo" || r.kind === "wait") {
+    else if (r.kind === "next" || r.kind === "wait") {
       keep(r.proj);
       const who = r.kind === "wait" || r.choice === "delegate" ? person(trim(r.who || "")) : "";
-      const title = r.text + (r.kind !== "wait" && r.ctx ? " [[c/" + r.ctx + "]]" : "") + (who ? " from [[p/" + who + "]]" : "");
+      const title = r.text + (r.kind === "next" && r.ctx ? " [[c/" + r.ctx + "]]" : "") + (who ? " from [[p/" + who + "]]" : "");
       const b = stampAuthor(newBlock({state: who ? "WAIT" : "TODO", title, props: {}}));
       if (r.date) setDue(b, r.date);
       mark(b);
@@ -64,10 +72,15 @@ function applyCatchUp(rows) {
     }
     touch(r.path);
   }
+  if (captured.length) {
+    const prev = catchUpCaptured();
+    PREF.set(CATCHUP_CAPTURED, JSON.stringify({day: todayISO(), keys: [...prev, ...captured]}));
+  }
   noteTodoTouched();
   const back = () => {
     for (const [p, snap] of before) { const pg = getPage(p); if (pg) { Object.assign(pg, structuredClone(snap)); touch(p); } }
     for (const p of made) if (getPage(p)) removePage(p);
+    PREF.set(CATCHUP_CAPTURED, wasCaptured);
     render();
     return true;
   };

@@ -9282,20 +9282,25 @@ var GTD_TEST = (() => {
      becomes one list grouped by project. Each change gets the GTD choice for
      its kind, set to the likely one, so Apply works with no clicks: a next
      action is Next, Do now, Delegate, Someday or Skip, with its context; a date
-     is a Deadline or a Start date; a new project is Skip until you make it
-     Active (counted against 5) or Someday. A done that leaves a project with no
+     is a Deadline or a Start date. A done that leaves a project with no
      next action says so, and + Add next action adds one. One Undo takes all
      of it back. A reference the prompt did not give is left out. It also asks
-     for what to capture, all of it but only what is yours: a to-do in no
-     project (TODO) lands on today's page; new to-dos and projects show
-     together under To capture, at the end. */
-  test("#516 Catch up: look back picked; each change a GTD choice set to the likely one; a stuck project offers a next action; one Undo", async () => {
+     for what to capture, all of it but only what is yours. Catch up captures,
+     Clarify clarifies: new to-dos (TODO) and projects come last under To
+     capture with a tick only, go on today's page as plain lines, and the
+     review's Clarify takes them today; the rest of today waits. A name as a
+     link reads as the name, a citation mark goes, and the source is found
+     wherever it stands. */
+  test("#516 Catch up: look back picked; each change a GTD choice set to the likely one; new things captured for Clarify; one Undo", async () => {
     const path = scratchProject("catch up 516", [["TODO", "Send the draft"], ["TODO", "Book the room"]]);
     const other = scratchProject("tiles 516", [["TODO", "Order the tiles"]]);
     const title = pageTitle(path), ctx = contextList()[0];
     ok(ctx, "the demo has a context");
     const btn = t => [...$$("#modalRoot button")].find(b => (t instanceof RegExp ? t.test(b.textContent) : b.textContent === t));
-    const made = () => [...V.pages.keys()].find(p => statusDirOf(p) === "1" && pageTitle(p) === "Product A launch");
+    const day = ensureJournal(todayISO());
+    const line = t => (getPage(day).blocks || []).find(x => x.title.includes(t));
+    const loose = stampAuthor(newBlock({title: "A loose thought 516", props: {}}));
+    getPage(day).blocks.push(loose);
     const was = PREF.get("catchup.back:" + (V.space || ""), "");
     const open = async () => {
       go("review"); await settle();
@@ -9324,6 +9329,7 @@ var GTD_TEST = (() => {
       has(prompt, "TODO <action>", "it asks for to-dos in no project");
       ok(!/at most \d+/.test(prompt), "what to capture is not cut off at a number: capture it all");
       has(prompt, "promised", "only what is mine to do");
+      has(prompt, "plain text", "names as plain text, not links");
       const ref = t => (new RegExp("\\b([TP]\\d+)\\b[^\\n]*" + t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).exec(prompt) || [])[1];
       const [send, room, proj, tiles] = [ref("Send the draft"), ref("Book the room"), ref(title), ref("Order the tiles")];
       ok(send && room && proj && tiles, "each task and project has a reference: " + [send, room, proj, tiles]);
@@ -9335,32 +9341,43 @@ var GTD_TEST = (() => {
       eq($$("#modalRoot .cu-row").length, 6, "an answer run together on one line is read change by change");
       btn(/Back/).click(); await settle();
       answer = [...$$("#modalRoot textarea")].pop();
-      const chat = "https://teams.microsoft.com/l/message/19:abc/1700000000000", doc = "https://example.sharepoint.com/sites/a/Plan.docx";
+      const chat = "https://teams.microsoft.com/l/message/19:abc/1700000000000", doc = "https://example.sharepoint.com/sites/a/Plan.docx",
+        mail = "https://outlook.office.com/mail/inbox/id/AAk%3D?ds=me%40example.com";
       set(answer, "Here is what changed:\n\n- **DONE " + send + "** | " + chat + "\n- DONE " + tiles + "\n- DUE " + room + " 2026-11-28\n" +
         "- NEXT " + proj + " Call the supplier @" + ctx + " | [1](" + doc + ")\n- NEXT " + proj + " Ask Person Y for the file\n" +
         "- NEXT " + proj + " Reply to the invite\n- WAIT " + proj + " Person X | the signed contract | 2026-12-02\n" +
         "- NOTE " + send + " Sent for testing.\n- DONE T999\n- PROJECT Product A launch | Launched to all users | Draft the plan\n" +
-        "- TODO Reply to the budget question @" + ctx + " | 2026-12-05\n- TODO Water the plants @" + ctx + "x\n");
+        "- TODO Reply to the budget question @" + ctx + " | 2026-12-05\n- TODO Water the plants @" + ctx + "x\n" +
+        // As an assistant at work writes it: a name as a search link, the date between bars, a citation mark last.
+        "- TODO Bring up [Person Q](https://www.office.com/search?q=Person+Q&id=f9e4) idea at the next meeting | 2026-12-08 | " +
+        "[Re: a post](" + mail + ") 【13-0d56c5】\n");
       btn("Read it").click(); await settle();
-      eq($$("#modalRoot .cu-row").length, 11, "one row per change; the unknown reference is left out");
+      eq($$("#modalRoot .cu-row").length, 12, "one row per change; the unknown reference is left out");
       const last = [...$$("#modalRoot .cu-group")].pop();
       ok(/^To capture/.test(last.textContent), "new to-dos and projects come last, under To capture: " + last.textContent.slice(0, 40));
-      ok(["budget question", "Water the plants", "Product A launch"].every(t => last.contains(rowOf(t))), "all three in it");
-      eq(rowOf("budget question").querySelector("select.cu-ctx").value, ctx, "a to-do has its context");
-      has(rowOf("Water the plants").textContent, "No context", "a context is read only as a whole word");
-      eq([...$$("#modalRoot a[href]")].map(a => [a.textContent, a.getAttribute("href")]), [["↗ Chat", chat], ["↗ Document", doc]],
+      const taken = t => rowOf(t).querySelector("input.cu-take[type=checkbox]");
+      ok(["budget question", "Water the plants", "Product A launch", "Bring up"].every(t => last.contains(rowOf(t)) && taken(t).checked &&
+        !rowOf(t).querySelector("select")), "each with a tick only, ticked: Clarify decides what it is");
+      has(rowOf("budget question").textContent, "@" + ctx, "a to-do shows its context");
+      eq(rowOf("Bring up").textContent.replace(/↗.*$/, "").trim(), "Bring up Person Q idea at the next meeting · " +
+        new Date("2026-12-08T12:00:00").toLocaleDateString([], {weekday: "short", day: "numeric", month: "short"}),
+        "a name as a link reads as the name; the date is found between the bars; the citation mark goes");
+      eq([...$$("#modalRoot a[href]")].map(a => [a.textContent, a.getAttribute("href")]), [["↗ Chat", chat], ["↗ Document", doc], ["↗ Email", mail]],
         "a source shows at the end of its row, named by its kind");
       const choice = t => rowOf(t).querySelector("select.cu-do");
-      eq(["Send the draft", "Book the room", "Call the supplier", "Ask Person Y", "Reply to the invite", "the signed contract", "Sent for testing", "Product A launch", "budget question"]
-        .map(t => choice(t).value), ["keep", "deadline", "next", "next", "next", "keep", "keep", "skip", "next"], "each set to the likely choice, a new project to Skip");
+      eq(["Send the draft", "Book the room", "Call the supplier", "Ask Person Y", "Reply to the invite", "the signed contract", "Sent for testing"]
+        .map(t => choice(t).value), ["keep", "deadline", "next", "next", "next", "keep", "keep"], "each set to the likely choice");
       eq([...choice("Call the supplier").options].map(o => o.value), ["next", "now", "delegate", "someday", "skip"], "a next action: Next, Do now, Delegate, Someday, Skip");
       eq([...choice("Book the room").options].map(o => o.value), ["deadline", "start", "skip"], "a date: Deadline or Start date");
-      eq([...choice("Product A launch").options].map(o => o.value), ["active", "someday", "skip"], "a project: Active or Someday");
-      has(rowOf("Product A launch").textContent, "of 5", "Active is counted against the limit");
       eq(rowOf("Call the supplier").querySelector("select.cu-ctx").value, ctx, "the context the AI gave is picked");
       has(rowOf("Ask Person Y").textContent, "No context", "a next action without one says so");
-      ok(btn("Apply 10 changes"), "the button counts what is not skipped");
-      eq([...choice("budget question").options].map(o => o.value), ["next", "now", "delegate", "someday", "skip"], "a to-do gets the same choices");
+      ok(btn("Apply 12 changes"), "the button counts what is not skipped");
+      const all = last.querySelector("input.cu-all[type=checkbox]");
+      ok(all && all.checked, "To capture has one tick for all");
+      all.click(); await settle();
+      ok(btn("Apply 8 changes") && !taken("budget question").checked, "which takes them all off");
+      [...$$("#modalRoot .cu-group")].pop().querySelector("input.cu-all").click(); await settle();
+      ok(btn("Apply 12 changes"), "and puts them back");
       const stuck = [...$$("#modalRoot .cu-group")].find(g => g.textContent.includes(pageTitle(other)));
       has(stuck.textContent, "No next action left", "a project left with no next action says so");
       ok(![...$$("#modalRoot .cu-group")].find(g => g.textContent.includes(title)).textContent.includes("No next action left"),
@@ -9369,8 +9386,6 @@ var GTD_TEST = (() => {
       set(choice("Ask Person Y"), "delegate"); await settle();
       set(rowOf("Ask Person Y").querySelector("input.cu-who"), "Person Y");
       set(choice("Reply to the invite"), "now");
-      set(choice("Product A launch"), "active");
-      set(choice("Water the plants"), "skip");
       [...stuck.querySelectorAll("button")].find(b => b.textContent === "+ Add next action").click(); await settle();
       const add = $("#modalRoot input.cu-add");
       set(add, "Measure the floor");
@@ -9378,8 +9393,7 @@ var GTD_TEST = (() => {
       ok(rowOf("Measure the floor"), "+ Add next action adds a row");
       ok(![...$$("#modalRoot .cu-group")].find(g => g.textContent.includes(pageTitle(other))).textContent.includes("No next action left"),
         "and the project is no longer stuck");
-      const today = () => (getPage(ensureJournal(todayISO())).blocks || []).find(x => /budget question/.test(x.title));
-      btn("Apply 11 changes").click(); await settle();
+      btn("Apply 13 changes").click(); await settle();
       const [a, b, ...added] = getPage(path).blocks;
       eq([a.state, blockProp(b, "SCHEDULED") ? dueDate(b) : null, blockProp(b, "DEADLINE") || null], ["DONE", "2026-11-28", null],
         "done, and a start date rather than a deadline");
@@ -9391,20 +9405,28 @@ var GTD_TEST = (() => {
       eq([waitingPersonOf(added[3], getPage(path)), dueDate(added[3])], ["Person X", "2026-12-02"], "waiting on whom, by when");
       eq(messagesOf(a).map(m => m.title), ["Sent for testing."], "the note is on its task");
       eq(getPage(other).blocks.map(x => [x.state, trim(x.title)]), [["DONE", "Order the tiles"], ["TODO", "Measure the floor"]], "the stuck project got its next action");
-      ok(made(), "the new project made Active is in Active");
-      eq(getPage(made()).props.outcome, "Launched to all users", "with its outcome");
-      has(serializePage(getPage(made())), "Draft the plan", "and its first next action");
-      const todo = today();
-      ok(todo, "the to-do is on today's page");
-      eq([todo.state, todo.title.includes("[[c/" + ctx + "]]"), dueDate(todo)], ["TODO", true, "2026-12-05"], "with its context and date");
+      ok(![...V.pages.keys()].some(p => pageTitle(p) === "Product A launch"), "no project is made: Clarify decides that");
+      const [todo, water, launch, bring] = ["budget question", "Water the plants", "Product A launch", "Bring up"].map(line);
+      ok(todo && water && launch && bring, "the new things are on today's page");
+      eq([todo, water, launch, bring].map(x => x.state || ""), ["", "", "", ""], "as plain lines, not yet to dos");
+      eq([todo.title.includes("[[c/" + ctx + "]]"), dueDate(todo)], [true, "2026-12-05"], "with the context and date the AI gave");
+      ok(!water.title.includes("[[c/"), "a context is read only as a whole word");
+      ok(!/https?:|【/.test(bring.title) && dueDate(bring) === "2026-12-08", "no link or mark in the words: " + bring.title);
+      has(blockProp(bring, "source") || "", mail, "the link to the mail is its source");
+      eq([blockProp(launch, "outcome"), (launch.children || []).map(k => [k.state || "", trim(k.title)])],
+        ["Launched to all users", [["", "Draft the plan"]]], "a new project with its outcome and its first next action under it");
+      const deck = clarifyDeck().map(r => r.block);
+      ok([todo, water, launch, bring].every(x => deck.includes(x)), "the review's Clarify takes them today");
+      ok(!deck.includes(loose), "but not the rest of today's page, which waits for tomorrow");
       const undo = [...$$("#toasts .toast button")].find(x => x.textContent === "Undo");
       ok(undo, "with Undo");
       undo.click(); await settle();
       eq([getPage(path).blocks.length, getPage(path).blocks[0].state, dueDate(getPage(path).blocks[1]) || null,
-        getPage(other).blocks.length, !!made(), !!today()], [2, "TODO", null, 1, false, false], "one Undo takes it all back");
+        getPage(other).blocks.length, !!line("budget question"), !!line("A loose thought 516")], [2, "TODO", null, 1, false, true], "one Undo takes it all back");
     } finally {
       closeAll(); document.querySelectorAll("#toasts > *").forEach(n => n.remove());
-      if (made()) removePage(made());
+      const pg = getPage(day);
+      if (pg) { pg.blocks = pg.blocks.filter(x => x.title !== "A loose thought 516"); touch(day); }
       PREF.set("catchup.back:" + (V.space || ""), was);
     }
   });

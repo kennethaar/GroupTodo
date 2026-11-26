@@ -1,10 +1,11 @@
 /* The AI's catch-up answer (#516), read past its bullets, numbers, bold and
    code fences, as rows of changes: {kind, ref, path, block, proj, text, who,
-   date, outcome, next, ctx, url, choice}; a TODO has no ref. A reference the prompt did not give, a task that is
-   no longer open, or a new project with the name of one you have, is left out.
-   Each row starts on the likely GTD choice (CATCHUP_CHOICES): a new next
-   action as Next, a date as a Deadline, a new project as Skip, since that is a
-   new commitment; the rest as Keep. */
+   date, outcome, next, ctx, url, choice}; a TODO or PROJECT has no ref. A
+   reference the prompt did not give, a task that is no longer open, or a new
+   project with the name of one you have, is left out. Each row starts on the
+   likely GTD choice (CATCHUP_CHOICES): a new next action as Next, a date as a
+   Deadline, the rest as Keep. A new to-do or project is only taken ("take")
+   or not: Clarify decides what it is. */
 function parseCatchUp(raw, refs) {
   const rows = [];
   const LINE = /^(DONE|DUE|NOTE|NEXT|WAIT|TODO|PROJECT)\b\s*:?\s*(.*)$/i;
@@ -34,10 +35,22 @@ function parseCatchUp(raw, refs) {
   const text = String(raw || "").replace(/\s+(?=(?:DONE|DUE|NOTE|NEXT|WAIT)\s+\[?[TP]\d+\b|(?:TODO|PROJECT)\s)/g, "\n");
   for (let line of text.split(/\r?\n/)) {
     line = trim(line.replace(/\*\*|__|`/g, "").replace(/^\s*(?:>\s*)*(?:[-*•·]|\d+[.)])?\s*/, ""));
-    // Where it was found: a link at the end, bare, in <>, or as [label](link); a bare [1] is let go.
+    // A citation mark an assistant adds, such as 【13-0d56c5】 or [^1], is no part of the change.
+    line = trim(line.replace(/\s*(?:【[^】]*】|\[\^\d+\])/g, ""));
+    /* Where it was found: a | part that is only a link, wherever it stands, or
+       a link at the end; bare, in <>, or as [label](link). A bare [1] is let go. */
     let url = null;
-    line = trim(line.replace(/\s*\|?\s*(?:\[[^\]]*\]\((https?:\/\/[^\s)]+)\)|<?(https?:\/\/[^\s<>]+)>?)\s*$/,
-      (_, a, b) => { url = a || b; return ""; }).replace(/(?:\s*\[\d+\])+\s*$/, "").replace(/\s*\|\s*$/, ""));
+    const LINK = /^(?:\[[^\]]*\]\((https?:\/\/[^\s)]+)\)|<?(https?:\/\/[^\s<>|]+)>?)$/;
+    const parts = line.split(/\s+\|\s*|\s*\|\s+/);
+    for (let i = parts.length - 1; i > 0; i--) {
+      const lm = LINK.exec(trim(parts[i]).replace(/(?:\s*\[\d+\])+$/, ""));
+      if (lm) { url = lm[1] || lm[2]; parts.splice(i, 1); break; }
+    }
+    line = parts.join(" | ");
+    if (!url) line = trim(line.replace(/\s*\|?\s*(?:\[[^\]]*\]\((https?:\/\/[^\s)]+)\)|<?(https?:\/\/[^\s<>]+)>?)\s*$/,
+      (_, a, b) => { url = a || b; return ""; }));
+    // A name or a word written as a link, such as a search for a person, reads as its words.
+    line = trim(line.replace(/\[([^\]]+)\]\(https?:\/\/[^\s)]+\)/g, "$1").replace(/(?:\s*\[\d+\])+\s*$/, "").replace(/\s*\|\s*$/, ""));
     const m = LINE.exec(line);
     if (!m) continue;
     const kind = m[1].toLowerCase();
@@ -48,15 +61,16 @@ function parseCatchUp(raw, refs) {
       const slug = slugify(title);
       if (["-", "0", "1", "2", "3"].some(c => V.pages.has(join(STATUS_DIRS[c], slug + ".md")))) continue;
       named.add(title.toLowerCase());
-      rows.push({kind, text: title, outcome, next, url, choice: "skip"});
+      rows.push({kind, text: title, outcome, next, url, choice: "take"});
       continue;
     }
-    // A to-do in none of your projects goes on today's page, with its context and date if it has them.
+    // A to-do in none of your projects, with its context and date, whichever | part holds the date.
     if (kind === "todo") {
-      const bar = rest.lastIndexOf("|"), when = bar < 0 ? null : dateIn(rest.slice(bar + 1));
-      if (when) rest = trim(rest.slice(0, bar));
-      const row = {kind, text: "", date: when, url, choice: CATCHUP_CHOICES.todo[0][0]};
-      row.text = withContext(row, rest);
+      const bits = rest.split("|").map(s => trim(s));
+      let when = null;
+      for (let i = bits.length - 1; i > 0 && !when; i--) if ((when = dateIn(bits[i]))) bits.splice(i, 1);
+      const row = {kind, text: "", date: when, url, choice: "take"};
+      row.text = withContext(row, trim(bits.join(" ")));
       if (row.text && !rows.some(r => r.kind === "todo" && r.text.toLowerCase() === row.text.toLowerCase())) rows.push(row);
       continue;
     }
