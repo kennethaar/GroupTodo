@@ -2398,6 +2398,7 @@ js/110-views/actSortUndo.js
 js/110-views/actSortTable.js
 js/110-views/actMoreSteps.js
 js/110-views/actFace.js
+js/110-views/actPic.js
 js/110-views/actChoresNote.js
 js/110-views/viewActSolitaire.js
 js/110-views/vars-ACT_COL.js

@@ -3273,6 +3273,22 @@ var GTD_TEST = (() => {
       ok(!/\[|\]/.test(t), "brackets left on the card: " + t);
     } finally { for (const p of [path, target]) removePage(p); clearMemo(); }
   });
+  test("#520 Review actions: a picture on the line shows on the card, not its path", async () => {
+    const asset = "assets/test-520-sketch.png";
+    await V.backend.putAsset(asset, new Blob([new Uint8Array([137, 80, 78, 71])], {type: "image/png"}));
+    const path = scratchProject("520 home", [["TODO", "Check the sketch ![](" + asset + ")"]]);
+    try {
+      const r = actDeck().find(a => a.block === getPage(path).blocks[0]);
+      ok(r, "the task is not dealt");
+      const h3 = actFace(r, null).querySelector("h3");
+      ok(!/assets\/|!\[/.test(h3.textContent), "the path is on the card: " + h3.textContent);
+      has(h3.textContent, "Check the sketch");
+      const img = h3.querySelector("img");
+      ok(img, "no picture on the card");
+      for (let i = 0; i < 20 && !/^blob:/.test(img.src); i++) await settle();
+      ok(/^blob:/.test(img.src), "the picture is not loaded: " + img.src);
+    } finally { removePage(path); clearMemo(); }
+  });
   test("#462 Review actions: a project with 3 or more steps that can go now is sorted into sequences first", async () => {
     const path = scratchProject("462 Kitchen", [["TODO", "Measure the room"], ["TODO", "Order the tiles"],
       ["TODO", "Lay the tiles"], ["TODO", "Paint the walls"]]);
