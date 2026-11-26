@@ -9286,7 +9286,7 @@ var GTD_TEST = (() => {
      Active (counted against 5) or Someday. A done that leaves a project with no
      next action says so, and + Add next action adds one. One Undo takes all
      of it back. A reference the prompt did not give is left out. It also asks
-     for what to capture, at most 10 and only what is yours: a to-do in no
+     for what to capture, all of it but only what is yours: a to-do in no
      project (TODO) lands on today's page; new to-dos and projects show
      together under To capture, at the end. */
   test("#516 Catch up: look back picked; each change a GTD choice set to the likely one; a stuck project offers a next action; one Undo", async () => {
@@ -9322,7 +9322,7 @@ var GTD_TEST = (() => {
       has(prompt, "code block", "it asks for a code block, which keeps the lines apart when copied");
       has(prompt, "link to the", "and for a link to each source");
       has(prompt, "TODO <action>", "it asks for to-dos in no project");
-      has(prompt, "at most 10", "a short list: what to capture is capped");
+      ok(!/at most \d+/.test(prompt), "what to capture is not cut off at a number: capture it all");
       has(prompt, "promised", "only what is mine to do");
       const ref = t => (new RegExp("\\b([TP]\\d+)\\b[^\\n]*" + t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).exec(prompt) || [])[1];
       const [send, room, proj, tiles] = [ref("Send the draft"), ref("Book the room"), ref(title), ref("Order the tiles")];

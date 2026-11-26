@@ -14,8 +14,7 @@ that breaks existing vaults. Newest first.
   to the likely one. A new next action is Next, Do now, Delegate, Someday or
   Skip, with its context; a date is a Deadline or a Start date; a new project
   is Skip until you make it Active or Someday, counted against 5. It also
-  asks for at most 10 things to capture, only what you promised or were
-  asked to do: new next actions, to-dos and projects, last in the list under
+  asks for what to capture, only what you promised or were asked to do: new next actions, to-dos and projects, last in the list under
   To capture. A to-do in no project goes on today's page. A project
   left with no next action says so, with + Add next action. ↗ Email, Chat or
   Document opens where it was found, and stays on the task as its source.

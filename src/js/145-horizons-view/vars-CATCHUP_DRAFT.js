@@ -7,8 +7,6 @@ let CATCHUP_DRAFT = {space: null, answer: "", refs: null};
 const CATCHUP_DONE_DAYS = 30;
 // The 3 to 5 active projects GTD aims at: a new one past 5 says so.
 const CATCHUP_WIP = 5;
-// What to capture (NEXT, TODO, PROJECT) is asked for at most this many times: a short list gets read.
-const CATCHUP_NEW_MAX = 10;
 /* The GTD choice each kind of change gets in the list, the likely one first:
    clarify (do it, delegate it, defer it, or let it go) rather than yes or no. */
 const CATCHUP_CHOICES = {

@@ -53,8 +53,7 @@ function catchUpSource(from = catchUpSince()) {
     "PROJECT <title> | <outcome> | <first next action>     a new commitment of mine, more than one step, that is in none of my projects",
     "",
     "NEXT, TODO and PROJECT are what I still need to capture. Give only what I promised or was asked to do myself. " +
-      "Leave out FYI, newsletters, notifications and what others will do. One line per commitment, however often it came up. " +
-      "Give at most " + CATCHUP_NEW_MAX + " of these, the most important first.",
+      "Leave out FYI, newsletters, notifications and what others will do. One line per commitment, however often it came up.",
     "",
     "End a line with | and a link to the email, chat, document or meeting it comes from, when you have one.",
     ...(contextList().length ? ["My contexts: " + contextList().map(c => "@" + c).join(", ") + "."] : []),
