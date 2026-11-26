@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.227.1 - 2026-11-26
+
+- Presenter window and AI: With presenter window opens the presenter window
+  again. It opens first; the slides get a window of their own when pop-ups
+  are allowed, else they show in this tab. (#515)
+
 ## 1.227.0 - 2026-11-26
 
 - Areas and sharing: Settings › Area shows a card per area right there,

@@ -16654,6 +16654,25 @@ var GTD_TEST = (() => {
     } finally { presentStop(); window.open = open; f.remove(); go("today"); }
   }));
 
+  /* #515 regression: With presenter window opened two pop-ups from one click,
+     the slides first. A browser lets one through per click, so the presenter
+     window, the one the speaker needs, was the one blocked. */
+  test("#515 With presenter window: the presenter window opens when the browser lets one pop-up through per click", () => withPages({
+    [SHOW]: ["- First point", "  - A"].join("\n") + "\n"}, async () => {
+    const fp = document.createElement("iframe");
+    document.body.append(fp);
+    const open = window.open, wasP = PRESENTER_WIN, wasS = SLIDES_WIN;
+    let left = 1;
+    window.open = (u, name) => left-- > 0 ? (name === "gtd-presenter" ? fp.contentWindow : null) : null;
+    try {
+      PRESENTER_WIN = null; SLIDES_WIN = null;
+      openPage(SHOW); await settle();
+      presentStart(SHOW, {presenter: true, win: true}); await settle();
+      ok(fp.contentDocument.querySelector(".pnext"), "the presenter window is not shown");
+      ok(DECK && document.querySelector("#deck"), "the slides do not show in this tab when their window is blocked");
+    } finally { presentStop(); window.open = open; PRESENTER_WIN = wasP; SLIDES_WIN = wasS; fp.remove(); go("today"); }
+  }));
+
   /* #515 ▶ Present opens the slides in a window of their own, so the page
      stays open to edit beside them; an edit shows on the slide. A slides or
      presenter window still open after the talk picks up the next one. ▾ ›

@@ -25,6 +25,11 @@ function presentStart(path, {root = null, on = false, presenter = false, step = 
   const rec = LOADED.get(V.space);
   const own = [...(rec?.css || new Map())].filter(([p]) => isSlidesCssPath(p)).map(([, t]) => t).join("\n");
   if (own) deck.append(el("style", {class: "deckcss"}, own));
+  /* With presenter window, that one opens first, straight from the click: a
+     browser lets one pop-up through per click, and the speaker needs this one.
+     The slides then take a window of their own if allowed, else this tab. */
+  if (presenter && !(PRESENTER_WIN && !PRESENTER_WIN.closed))
+    PRESENTER_WIN = window.open("", "gtd-presenter", "popup,width=960,height=640") || null;
   // A window of its own (#515), or this tab when pop-ups are blocked.
   const host = win ? slidesWinOpen(path) : null, w = host || window;
   (host ? host.document : document).body.append(deck);
