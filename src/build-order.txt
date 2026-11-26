@@ -478,6 +478,7 @@ js/65-gtd-scanners/leafActionsHere.js
 js/65-gtd-scanners/resumeHeldHere.js
 js/65-gtd-scanners/resumeHeldTasks.js
 js/65-gtd-scanners/stuckActiveProjects.js
+js/65-gtd-scanners/isStuckProject.js
 js/65-gtd-scanners/stalestActiveProjects.js
 js/65-gtd-scanners/oldestTodosForContext.js
 js/65-gtd-scanners/contextList.js

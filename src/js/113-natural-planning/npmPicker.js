@@ -2,7 +2,7 @@
 function npmPicker() {
   const rows = visibleSpaces().flatMap(sp => inSpace(sp, () => projectsIn("1").map(path => {
     const r = {space: sp, path};
-    return {space: sp, path, title: pageTitle(path), noOut: !outcomeOf(path), noNext: !openOf(projectActions(r)).length,
+    return {space: sp, path, title: pageTitle(path), noOut: !outcomeOf(path), noNext: isStuckProject(path, sp),
       planned: !!getPage(path)?.props?.planned};
   }))).sort((a, b) => (b.noOut - a.noOut) || (b.noNext - a.noNext) || (a.planned - b.planned) || a.title.localeCompare(b.title));
   const head = el("div", {class: "npmq"}, el("div", {class: "eyebrow"}, "Natural planning"),

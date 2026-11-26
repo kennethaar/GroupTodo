@@ -48,7 +48,9 @@ function solFields() {
     {k: "next", label: "Next action", type: "text", ph: "Add the very next thing to do",
      val: r => { const a = projectActions(r).find(x => OPEN_STATES[x.state]);
        return a ? plainTitle(a.title) + (a.assignee && !a.mine ? " (waiting on " + firstNameOf(a.assignee) + ")" : "") : ""; },
-     filled: r => projectActions(r).some(a => OPEN_STATES[a.state]),
+     // #23 a task on a day page that links it, or a coming meeting, answers it too.
+     filled: r => projectActions(r).some(a => OPEN_STATES[a.state])
+       || (inS(r, () => projectsIn("1").includes(r.path)) && !isStuckProject(r.path, r.space)),
      submit: (r, text) => inS(r, () => addNextActionTo(r.path, linkKnownNames(text)))},
     {k: "outcome", label: "Done when", type: "text", ph: "What does done look like?",
      val: r => inS(r, () => outcomeOf(r.path)) || "", filled: r => !!inS(r, () => outcomeOf(r.path)),

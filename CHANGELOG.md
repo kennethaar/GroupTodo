@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.227.3 - 2026-11-26
+
+- Weekly review: a project whose next action is on a day page that links
+  it, or that has a coming meeting, no longer counts as having no next
+  action in the review count, Natural planning or Weeding, and Review
+  projects no longer asks for one. (#23)
+
 ## 1.227.2 - 2026-11-26
 
 - Weekly review › Actions: Open the page shows the card's page on the right

@@ -13,7 +13,7 @@ function reviewDoorCount(id) {
         tell ? tell + (tell === 1 ? " stakeholder" : " stakeholders") + " due an update" : ""].filter(Boolean).join(", ");
     }
     case "solitaire": {
-      const none = visibleProjects("1").filter(r => !projectActions(r).some(a => OPEN_STATES[a.state])).length;
+      const none = visibleProjects("1").filter(r => isStuckProject(r.path, r.space)).length;
       return none ? none + (none === 1 ? " project has" : " projects have") + " no next action" : "";
     }
     case "weeks": { const n = unfinishedPast().length; return n ? n + " left from past weeks" : ""; }

@@ -16,7 +16,9 @@ function stalestActiveProjects(n = CFG.weedCount) {
       todos.push({path, block: b, state: b.state, title: b.title,
                   context: ctx, missingContext: !ctx, missingVerb});
     }
-    const createdDate = dateIn(page.props?.created);
+    // #23 a day page that links it, or a coming meeting, moves it along too.
+    if (!anyTodo) anyTodo = !isStuckProject(path);
+    const createdDate =dateIn(page.props?.created);
     const reviewedDate = dateIn(page.props?.reviewed);
     const ageDays = createdDate ? dateDiffDays(createdDate, todayISO()) : null;
     const idleDays = reviewedDate ? dateDiffDays(reviewedDate, todayISO())

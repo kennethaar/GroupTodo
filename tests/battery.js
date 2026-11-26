@@ -987,6 +987,32 @@ var GTD_TEST = (() => {
       eq(stuck.get(P("B")), "Meeting held - process the notes", "a held meeting with nothing after it does not say so");
     });
   });
+  test("#23 a project moved along from a day page has a next action everywhere, not only on the stuck list", async () => {
+    const P = n => join(DIRS.active, "Moved along " + n + ".md");
+    const page = () => "outcome:: The thing works well\n\n- Notes\n";
+    const doorN = () => Number(/^(\d+)/.exec(reviewDoorCount("solitaire"))?.[1] || 0);
+    const before = doorN();
+    await withPages({
+      [P("Wait")]: page("Wait"), [P("Meet")]: page("Meet"), [P("None")]: page("None"),
+      [journalPath(T())]: "- WAIT Hear back about the plan [[1/Moved along Wait]]\n",
+      [journalPath(shiftISO(T(), 3))]: "- #meeting Go through the plan [[1/Moved along Meet]]\n",
+    }, async () => {
+      const stuck = new Set(stuckActiveProjects().map(s => s.path));
+      ok(!stuck.has(P("Wait")) && !stuck.has(P("Meet")) && stuck.has(P("None")), "the stuck list is the rule the others follow");
+      eq(doorN(), before + 1, "Weekly review counts only the project with nothing moving it");
+      const say = t => [...el("div", {}, ...npmPicker()).querySelectorAll(".npmpick li")]
+        .find(li => li.textContent.includes("Moved along " + t))?.querySelector(".d")?.textContent;
+      eq(say("Wait"), "", "Natural planning says a project waiting from a day page has no next action");
+      eq(say("Meet"), "", "Natural planning says a project with a coming meeting has no next action");
+      eq(say("None"), "no next action", "Natural planning no longer flags a project with nothing moving it");
+      const weed = new Map(stalestActiveProjects(999).map(r => [r.path, r]));
+      ok(weed.get(P("Wait")).anyTodo && weed.get(P("Meet")).anyTodo, "Weeding flags a project moved along from a day page");
+      ok(!weed.get(P("None")).anyTodo, "Weeding no longer flags a project with nothing moving it");
+      const next = solFields().find(f => f.k === "next"), card = t => ({space: V.space, path: P(t)});
+      ok(next.filled(card("Wait")) && next.filled(card("Meet")), "Review projects asks for a next action the project already has");
+      ok(!next.filled(card("None")), "Review projects no longer asks a project with nothing moving it");
+    });
+  });
   test("#181 a project still a stand-in is a name, not a stuck project", async () => {
     const rec = newRecord("Stuck181", Backends.memory());
     const boat = join(DIRS.active, "Boat.md");
