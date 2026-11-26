@@ -1807,13 +1807,21 @@ var GTD_TEST = (() => {
       // One click hides it again; new things go back to an area still shown.
       box(other).click(); await settle();
       ok(!visibleSpaces().includes(other) && Spaces.active === name, "hiding did not hand landing back");
-      // Settings > Area: every area with its colour, and the setup buttons from the old menu.
-      openAreaSettings();
-      const dlg = $("#modalRoot .modal");
-      for (const n of [name, other]) ok([...dlg.querySelectorAll("button")].some(b => b.textContent.includes(n) && /colou?r/i.test(b.title || b.textContent)),
-        "Settings › Area has no colour for " + n);
-      for (const l of ["+ New area", "Manage areas", "Invite somebody"]) ok([...dlg.querySelectorAll("button")].some(b => b.textContent === l), "Settings › Area lacks " + l);
-      closeModal();
+      // Settings › Areas (#521): a card per area in the section itself, each with its colour and its own type.
+      go("checklists"); await settle();
+      const sec = $("#set-area");
+      for (const n of [name, other]) ok([...sec.querySelectorAll(".afcard .afdot")].some(b => b.getAttribute("aria-label") === "Colour for " + n),
+        "Settings › Areas has no card for " + n);
+      ok(![...sec.querySelectorAll("button")].some(b => /^Manage/.test(b.textContent)), "the areas are still a dialog away");
+      ok([...sec.querySelectorAll("button")].some(b => b.textContent === "+ New area"), "Settings › Areas lacks + New area");
+      has($("#set-sync").textContent, "Invite somebody", "Invite somebody is gone from Settings");
+      const typeSel = n => [...sec.querySelectorAll(".afcard")].find(c => c.querySelector(".afname").textContent === n)?.querySelector("select[aria-label^='Type']");
+      const mine = horizonProfile().key, pickKey = Object.values(HORIZON_PROFILES).find(p => p.key !== inSpace(other, () => horizonProfile().key)).key;
+      ok(typeSel(name) && typeSel(other), "a card has no type");
+      typeSel(other).value = pickKey; typeSel(other).dispatchEvent(new Event("change")); await settle();
+      eq(inSpace(other, () => horizonProfile().key), pickKey, "the type was not set for that area");
+      eq(horizonProfile().key, mine, "the type changed the open area");
+      go("today"); await settle();
       // A phone keeps the menu, now without a Settings button; one area keeps the button.
       Object.defineProperty(PHONE, "matches", {configurable: true, get: () => true}); render(); await settle();
       ok(!seen($("#areaBar")) && seen($("#spacesBtn")), "a phone did not keep the area menu");
@@ -7603,8 +7611,8 @@ var GTD_TEST = (() => {
           .querySelector("button").click();
         eq(PREF.get("linktitles"), "1", "Turn on under Integrations does not turn on titles for pasted links");
         PREF.set("linktitles", was || "");
-        // A dialog one level down, the area's, has a way back to Settings.
-        [...$("#set-area").querySelectorAll("button")].find(b => b.textContent === "Manage").click();
+        // A dialog one level down, the profile's, has a way back to Settings.
+        [...$("#set-you").querySelectorAll("button")].find(b => /^(Edit|Add)$/.test(b.textContent)).click();
         const back = [...document.querySelectorAll(".modal .foot button")].find(b => b.textContent === "Settings");
         ok(back, "no way back to Settings");
         back.click();

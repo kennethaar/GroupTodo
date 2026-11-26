@@ -4,6 +4,17 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.227.0#521": `
+    cap | Your areas, right in Settings
+    say | Settings › Area shows a card per area. No dialogs to open first.
+    + pg col
+    + h ln > pg | Area
+    + a chip > pg | ● Area A   ·   Type: Personal ▾   ·   Change folder · Rename
+    + b chip > pg | ● Area B   ·   Type: Work ▾   ·   Change folder · Rename
+    w 1500
+    say | Each card sets its own area's type.
+    p b
+    w 1500`,
   "1.226.0#519": `
     cap | Any word can be the verb
     say | Review actions › Verb › All shows the line's own words.
@@ -125,28 +136,5 @@ const NEWS_ANIM = {
     w 1200
     say | Suggest a feature or report a bug at the foot.
     p c
-    w 1500`,
-  "1.218.0#373": `
-    cap | Paste a reply anywhere
-    say | Paste their reply on any line.
-    + pg col
-    + t ln > pg | 1 done · 2: delivered by Friday
-    w 900
-    say | A note names the tasks and what would change.
-    + c chip > pg | Update from Lars: Done · Due Fri · note added   Apply | Keep as text
-    w 1200
-    p c
-    say | Apply makes the changes. Undo takes them back.
-    w 1500`,
-  "1.217.0#458": `
-    cap | Bring your notes from another app
-    say | Start your own, and the first Journal asks.
-    + pg col
-    + t ln > pg | Coming from another app?
-    + c chip > pg | Obsidian · Dynalist · Logseq · WorkFlowy
-    w 1200
-    say | Pick your app for its steps and the importer.
-    p c
-    + d ln > pg | Download the importer
     w 1500`
 };

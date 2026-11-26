@@ -108,6 +108,9 @@
 .afmove:disabled{opacity:.35;cursor:default}
 .afcard .afwhere{font-size:13px;color:var(--fg2);word-break:break-word}
 .afcard .afwhere.off{color:var(--warn)}
+.afcard .aftype{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--fg2)}
+.afcard .aftype select{flex:1;min-width:0}
+.setareas{margin:4px 0 10px}
 .afcard .afverb{display:flex;gap:6px;align-items:flex-start;font-size:13px;color:var(--fg2);cursor:pointer}
 .afcard .afbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:4px}
 .afnote{color:var(--fg3);font-size:12.5px;margin-top:14px}

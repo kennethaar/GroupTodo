@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.227.0 - 2026-11-26
+
+- Areas and sharing: Settings › Area shows a card per area right there,
+  not two dialogs down: colour, type, folder, name, order and remove, with
+  + New area under them. Each card sets its own area's type. (#521)
+
 ## 1.226.1 - 2026-11-26
 
 - Weekly review › Actions: a picture on the line shows on the card, not

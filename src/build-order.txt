@@ -314,6 +314,7 @@ js/23-space-folders/spacesNeedingStorage.js
 js/23-space-folders/removeArea.js
 js/23-space-folders/openRemoveArea.js
 js/23-space-folders/verbTasksToggle.js
+js/23-space-folders/areaCard.js
 js/23-space-folders/openSpaceStorageSetup.js
 js/23-space-folders/serverFolderRow.js
 js/23-space-folders/serverFolderUsers.js
@@ -3007,7 +3008,7 @@ js/150-vault-dialog-2/settingsToggle.js
 js/150-vault-dialog-2/settingsSelect.js
 js/150-vault-dialog-2/settingsDialog.js
 js/150-vault-dialog-2/openProfileDialog.js
-js/150-vault-dialog-2/openAreaSettings.js
+js/150-vault-dialog-2/areaSettingsSection.js
 js/150-vault-dialog-2/integrationsSettings.js
 js/150-vault-dialog-2/openIntegrationsDialog.js
 js/150-vault-dialog-2/openPlannerDialog.js
