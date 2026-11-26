@@ -15,6 +15,7 @@ function clAnswerMany(r, picks, ans) {
     clStampIfDone(path);
     render();
   };
+  if (ans.cheer) cheer();
   if (ans.many) { ans.many(path, picks, done); return; }
   for (const k of picks) ans.run(path, k);
   done();

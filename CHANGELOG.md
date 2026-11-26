@@ -5,6 +5,17 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.225.0 - 2026-11-26
+
+- Weekly review › Clarify: the answers are numbered like a numpad, as in
+  Review actions. The line sits in the middle as 5; press 5 again to skip
+  it. Arrows move on the grid. (#518)
+- Weekly review › Clarify: notes from a meeting go in one press. Answer 0,
+  under the grid, leaves the line and every line under it as notes, at
+  every level, with one undo. Lines with a tick are kept as they are.
+- Weekly review › Clarify: Done already throws confetti, as it does in
+  Review actions. (#442)
+
 ## 1.224.1 - 2026-11-26
 
 - Projects › List: in the box for one field of a project, such as Done

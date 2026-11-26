@@ -12600,6 +12600,13 @@ var GTD_TEST = (() => {
       eq(c.querySelector(".clcard h3").textContent, "Meeting with Anna");
       ok(c.querySelector(".cllast") && c.querySelector(".clkids"), "the second card has lines under it and an undo");
       eq(at(c), first, "the answers moved");
+      // The line sits among them (#518): the bottom row stays put too, however long it is.
+      const low = c => Math.round([...c.querySelectorAll(".clans:not(.clall)")].pop().getBoundingClientRect().top - c.getBoundingClientRect().top);
+      const lowFirst = low(c);
+      c.querySelector(".clans.clall").click();
+      c = await showClarify();
+      eq(c.querySelector(".clcard h3").textContent, "Plan the party");
+      eq(low(c), lowFirst, "the bottom row moved with the line");
     });
   });
   test("#460 Clarify gives one answer to lines dragged in the day page beside it; Project makes one project with them as steps", async () => {
@@ -12676,27 +12683,80 @@ var GTD_TEST = (() => {
       ok(!content().querySelector(".cllast"), "nothing left to undo");
     });
   });
-  test("#366 Clarify leaves a line and the lines under it as notes in one go; deeper lines are still asked", async () => {
-    await withDays([[3, "- Meeting with Anna\n  - Prices went up 10 %\n  - New contact: Ola\n    - Call Ola tomorrow\n- Plan the party\n"]], async () => {
+  test("#366 #518 Clarify: answer 0 leaves a line and its whole branch as notes in one go and one undo", async () => {
+    await withDays([[3, "- Meeting with Anna\n  - Prices went up 10 %\n  - TODO Send the minutes\n  - New contact: Ola\n    - Call Ola tomorrow\n- Plan the party\n"]], async () => {
       const d3 = journalPath(shiftISO(T(), -3));
       let c = await showClarify();
-      const all = () => [...content().querySelectorAll(".clcard button")].find(x => /as notes/.test(x.textContent));
-      ok(all(), "offered on a line with lines under it");
-      has(all().textContent, "the 2 under it", "says how many go with it");
-      all().click();
+      const all = () => content().querySelector(".clans.clall");
+      ok(all(), "an answer of its own on a line with lines under it");
+      ok(!c.querySelector(".clcard").contains(all()), "not tucked into the card");
+      const last = [...c.querySelectorAll(".clans:not(.clall)")].pop();
+      ok(all().getBoundingClientRect().top >= last.getBoundingClientRect().bottom, "it sits under the answers");
+      eq(trim(all().querySelector(".n").textContent), "0", "it is 0, under the grid as on a numpad");
+      has(all().textContent, "the 3 under it", "counts every level; a ticked line is not a note");
+      press("0");
+      ok(all().classList.contains("on"), "0 aims at it");
+      press("0");
       await settle();
-      eq(content().querySelector(".clcard h3").textContent, "Call Ola tomorrow", "the line one level further down is still asked");
+      eq(content().querySelector(".clcard h3").textContent, "Plan the party", "the line one level further down is not asked");
       const [top] = getPage(d3).blocks;
-      eq([top, ...top.children].map(b => b.state || null), [null, null, null], "all left as notes");
-      content().querySelector(".clans").click();
-      c = await showClarify();
-      eq(c.querySelector(".clcard h3").textContent, "Plan the party");
+      eq([top, ...top.children, top.children[2].children[0]].map(b => b.state || null), [null, null, "TODO", null, null], "all left as notes, the to do kept");
       ok(!all(), "not offered on a line with nothing under it");
-      [...c.querySelectorAll(".cllast button")].find(x => trim(x.textContent) === "Undo that").click();
-      await settle();
       [...content().querySelectorAll(".cllast button")].find(x => trim(x.textContent) === "Undo that").click();
       await settle();
-      eq(content().querySelector(".clcard h3").textContent, "Meeting with Anna", "Undo that takes the notes answer back too");
+      eq(content().querySelector(".clcard h3").textContent, "Meeting with Anna", "one undo takes the whole branch back");
+      eq(clarifyDeck().length, 5, "every line of it is asked again");
+    });
+  });
+  test("#518 Clarify answers sit on a numpad, as in Review actions: the line is 5", async () => {
+    await withDays([[3, "- Call the plumber\n- Order tiles\n- Plan the party\n"]], async () => {
+      const d3 = journalPath(shiftISO(T(), -3));
+      let c = await showClarify();
+      const box = n => n === 5 ? content().querySelector(".clcard")
+        : [...content().querySelectorAll(".clans:not(.clall)")].find(x => trim(x.querySelector(".n").textContent) === String(n));
+      eq(Object.fromEntries([7, 4, 1, 8, 2, 9, 6, 3].map(n => [n, box(n).querySelector("b").textContent])),
+        {7: "To do", 4: "Waiting for", 1: "Project", 8: "Someday/maybe", 2: "Idea to explore",
+         9: "Done already", 6: "Leave it as a note", 3: "Note for a responsibility"}, "each answer has its numpad key");
+      eq(trim(box(5).querySelector(".n").textContent), "5", "the line is 5");
+      const r = n => box(n).getBoundingClientRect(), mid = n => r(n).top + r(n).height / 2;
+      for (const row of [[7, 8, 9], [4, 5, 6], [1, 2, 3]])
+        ok(r(row[0]).right <= r(row[1]).left && r(row[1]).right <= r(row[2]).left, "row " + row + " is not left to right");
+      for (const col of [[7, 4, 1], [8, 5, 2], [9, 6, 3]])
+        ok(r(col[0]).bottom <= r(col[1]).top && r(col[1]).bottom <= r(col[2]).top, "column " + col + " is not top to bottom");
+      ok(mid(4) > r(5).top && mid(4) < r(5).bottom, "4 is not beside the line");
+      press("9");
+      ok(box(9).classList.contains("on"), "9 aims at Done already");
+      press("ArrowLeft");
+      ok(box(8).classList.contains("on"), "an arrow moves on the grid");
+      press("ArrowDown");
+      ok(box(5).classList.contains("on"), "down from 8 is the line");
+      press("5");
+      await settle();
+      eq(content().querySelector(".clcard h3").textContent, "Order tiles", "5 again skips the line");
+      press("9"); press("9");
+      await settle();
+      eq(getPage(d3).blocks[1].state, "DONE", "9 twice: done already");
+    });
+  });
+  test("#442 Clarify: Done already throws confetti too, once a click", async () => {
+    await withDays([[3, "- Call the plumber\n- Order tiles\n"]], async () => {
+      const cel = PREF.get("review.celebrate", "");
+      const bursts = () => [...document.querySelectorAll(".confetti")];
+      const done = () => [...content().querySelectorAll(".clans")].find(x => x.querySelector("b").textContent === "Done already");
+      try {
+        PREF.set("review.celebrate", "on");
+        await showClarify();
+        bursts().forEach(n => n.remove());
+        content().querySelector(".clans").click(); await settle();
+        eq(bursts().length, 0, "confetti on To do");
+        done().click(); await settle();
+        eq(bursts().length, 1, "Done already: one burst");
+        bursts().forEach(n => n.remove());
+        [...content().querySelectorAll(".cllast button")].find(x => trim(x.textContent) === "Undo that").click(); await settle();
+        PREF.set("review.celebrate", "off");
+        done().click(); await settle();
+        eq(bursts().length, 0, "celebrations off: no confetti");
+      } finally { PREF.set("review.celebrate", cel); bursts().forEach(n => n.remove()); }
     });
   });
   test("#367 Clarify shows what a line already links, and marks picked or typed words as a person, organisation, context or project", async () => {

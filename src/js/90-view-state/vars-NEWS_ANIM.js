@@ -4,6 +4,21 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.225.0#518": `
+    cap | Clarify on a numpad
+    say | Clarify numbers its answers like a numpad, as Review actions does.
+    + pg col
+    + t ln > pg | 7 To do   ·   8 Someday   ·   9 Done already
+    + m ln > pg | 4 Waiting   ·   5 Meeting with Team A   ·   6 A note
+    + u ln > pg | 1 Project   ·   2 Idea   ·   3 Note for a responsibility
+    w 1500
+    say | 5 is the line. 5 again skips it.
+    s m | font-weight:700
+    w 1500
+    say | Notes from a meeting? 0 leaves the line and every line under it as notes.
+    + z chip > pg | 0 Leave it and the 12 under it as notes
+    p z
+    w 1800`,
   "1.224.0#516": `
     cap | Catch up with an AI
     say | In the Weekly review, Get clear › Catch up with an AI.
@@ -129,16 +144,5 @@ const NEWS_ANIM = {
     w 1200
     p c
     + u ln > pg | (pyramid) What makes a regular
-    w 1500`,
-  "1.215.0#492": `
-    cap | Go on where you left off
-    say | The Journal opens as always.
-    + pg col
-    + t ln > pg | Journal · Mon 23 Nov
-    w 900
-    say | On top: Continue, from any of your devices.
-    + c chip > pg | ▸ Continue: Kitchen renovation (Windows, 14:02)
-    w 1200
-    p c
     w 1500`
 };

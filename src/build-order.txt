@@ -2233,6 +2233,7 @@ js/110-views/clAnswerMany.js
 js/110-views/clAnswer.js
 js/110-views/clUndo.js
 js/110-views/clPaint.js
+js/110-views/clSkip.js
 js/110-views/viewDayReview.js
 js/110-views/vars-CL_KIND_LABEL.js
 js/110-views/clKindOf.js
@@ -2384,6 +2385,7 @@ js/110-views/actVerbRank.js
 js/110-views/vars-actFirstWord.js
 js/110-views/actCtxRank.js
 js/110-views/confetti.js
+js/110-views/cheer.js
 js/110-views/actConfetti.js
 js/110-views/actFields.js
 js/110-views/actGoPass.js
