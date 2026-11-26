@@ -3227,6 +3227,41 @@ var GTD_TEST = (() => {
       for (const p of [path, target, area]) removePage(p); clearMemo(); go("today"); await settle();
     }
   });
+  test("#519 Review actions › Verb: All offers the line's own words, and + Add a word no verb matches", async () => {
+    if (!startsWithVerb("Call Bob")) seedVerbs();
+    const lang = verbLang(), known = verbList().find(v => v.lang === lang).canonical;
+    const path = scratchProject("519", [["TODO", "Quarterly report fettle"], ["TODO", "Budget sheet"]]);
+    const verb = actFields().find(f => f.k === "verb");
+    const [mid, plain] = getPage(path).blocks;
+    const [r1, r2] = [mid, plain].map(b => actDeck().find(a => a.block === b));
+    const wrap = () => document.querySelector("#modalRoot .solmorewrap");
+    const btn = re => [...wrap().querySelectorAll("button")].find(b => re.test(b.textContent));
+    const search = async q => { const s = wrap().querySelector("input[type=search]"); s.value = q; s.dispatchEvent(new Event("input")); await settle(); };
+    try {
+      go("review", {sub: "actions"}); await settle();
+      solMoreOf(r1, verb); await settle();
+      ok(wrap(), "the verb's All box has no search");
+      const word = btn(/^fettle$/i);
+      ok(word, "a word further in the line is not offered in All");
+      word.click(); await settle();
+      ok(VERB_LOOKUP.fettle, "the word is taught");
+      eq(mid.title, "Quarterly report fettle", "the line is not rewritten");
+      solMoreOf(r2, verb); await settle();
+      await search("Wrangle");
+      const add = btn(/Add “Wrangle” as a verb/);
+      ok(add && !add.hidden, "no + Add for a word no verb matches");
+      await search(known);
+      ok(!btn(/Add “.*” as a verb/) || btn(/Add “.*” as a verb/).hidden, "+ Add shown for a verb the list has");
+      await search("Wrangle");
+      btn(/Add “Wrangle” as a verb/).click(); await settle();
+      ok(VERB_LOOKUP.wrangle, "the typed word is taught");
+      ok(/^wrangle /i.test(plain.title) && startsWithVerb(plain.title), "the line starts with it: " + plain.title);
+    } finally {
+      closeModal(); for (const r of [r1, r2]) if (r) SOL_ANS.delete(solKey(r));
+      for (const w of ["fettle", "wrangle"]) removePage(join(DIRS.verbs, lang, w + ".md"));
+      scanVerbs(); removePage(path); clearMemo(); go("today"); await settle();
+    }
+  });
   test("#463 Review actions: a project linked in a task reads as its name on the card", () => {
     const target = scratchProject("463 Kitchen");
     const path = scratchProject("463 home", [["TODO", "Ring Anna about [[" + pageRef(target) + "]] and @phone"]]);

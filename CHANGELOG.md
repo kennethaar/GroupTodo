@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.226.0 - 2026-11-26
+
+- Weekly review › Actions: Verb › All shows the line's own words. Press
+  one, even a word further in, and it counts as a verb from now on. Type a
+  verb the list does not have, and + Add puts it first in the line. (#519)
+
 ## 1.225.0 - 2026-11-26
 
 - Weekly review › Clarify: the answers are numbered like a numpad, as in

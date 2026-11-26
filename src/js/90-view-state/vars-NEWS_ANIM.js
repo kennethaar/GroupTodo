@@ -4,6 +4,22 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.226.0#519": `
+    cap | Any word can be the verb
+    say | Review actions › Verb › All shows the line's own words.
+    + pg col
+    + q ln > pg | Quarterly report check
+    + w ln > pg | A word in the line is the verb:
+    + a chip > w | Quarterly
+    + b chip > w | report
+    + c chip > w | check
+    p c
+    w 1500
+    say | Type a verb the list does not have, and add it.
+    + s ln > pg | Search: wrangle
+    + n chip > pg | ＋ Add “Wrangle” as a verb
+    p n
+    w 1800`,
   "1.225.0#518": `
     cap | Clarify on a numpad
     say | Clarify numbers its answers like a numpad, as Review actions does.
@@ -132,17 +148,5 @@ const NEWS_ANIM = {
     say | Pick your app for its steps and the importer.
     p c
     + d ln > pg | Download the importer
-    w 1500`,
-  "1.216.0#484": `
-    cap | Learn Present by presenting
-    say | Present's help is four short topics now.
-    + pg col
-    + t ln > pg | Present a page · Layouts · Notes · Presenter
-    w 900
-    say | Open the Present tutorial makes a page to present.
-    + c chip > pg | Open the Present tutorial
-    w 1200
-    p c
-    + u ln > pg | (pyramid) What makes a regular
     w 1500`
 };

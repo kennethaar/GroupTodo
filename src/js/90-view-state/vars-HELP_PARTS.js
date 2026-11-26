@@ -833,6 +833,7 @@ const HELP = {
     keys: [["7–9", "Aim at a box"], ["Enter", "Take it"]],
     legend: [[".solpasses", "The passes and how many each has."], [".solcard", "The action."], [".solopt", "An answer."]],
     more: ["A chore that comes up: change how often, or let it go.",
+      "Verb › All shows the line's own words. Press one, and it counts as a verb from now on. Type a verb the list does not have, and + Add puts it first in the line.",
       "The step that comes first goes under the one that waits for it. They can all go at once is written on the project page, so it is not asked again. + N more steps deals the waiting ones too, in Still to do only. A step with open steps under it waits, even set to Doing.",
       "Done already throws confetti. Every tenth one this week is a big burst. With Celebration: off on the review page, it is quiet.",
       "On a new day the review starts again at Still to do."],

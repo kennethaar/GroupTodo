@@ -13,6 +13,9 @@ function solChoices(r, f, host, list, isOn, chip) {
   }
   const box = el("div", {class: "solmore"});
   const empty = el("div", {class: "say", hidden: true}, "Nothing matches.");
+  // A word typed that nothing in the list is can be added as one (#519).
+  const addNew = f.addNew ? el("button", {class: "fchip addnew", hidden: true,
+    onclick: e => { e.stopPropagation(); solApply(r, f, addNew.dataset.v); }}) : null;
   const search = el("input", {type: "search", placeholder: "Search " + ranked.length + " " + f.label.toLowerCase(),
     "aria-label": "Search " + f.label.toLowerCase(),
     oninput: () => {
@@ -20,13 +23,26 @@ function solChoices(r, f, host, list, isOn, chip) {
       let shown = 0;
       for (const b of box.children) { const hit = !q || b.textContent.toLowerCase().includes(q); b.hidden = !hit; shown += hit; }
       empty.hidden = shown > 0;
+      if (addNew) {
+        const typed = trim(search.value);
+        addNew.hidden = !/^[\p{L}\p{M}\-]+$/u.test(typed) || ranked.some(([v]) => String(v).toLowerCase() === q);
+        if (!addNew.hidden) { const [v, label] = f.addNew(typed); addNew.dataset.v = v; addNew.textContent = label; empty.hidden = true; }
+      }
     },
     onkeydown: e => {
       if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); SOL.more = null; solRedraw(); }
-      else if (e.key === "Enter") { e.preventDefault(); const b = [...box.children].find(x => !x.hidden); if (b) b.click(); }
+      else if (e.key === "Enter") {
+        e.preventDefault();
+        const b = [...box.children].find(x => !x.hidden) || (addNew && !addNew.hidden ? addNew : null);
+        if (b) b.click();
+      }
     }});
   for (const [v, label] of ranked) box.append(chip(v, label));
-  host.append(el("div", {class: "solmorewrap"}, search, box, empty,
+  const words = f.words ? f.words(r) : [];
+  const own = words.length
+    ? el("div", {class: "solwords"}, el("span", {class: "say"}, f.wordsSay), ...words.map(([v, label]) => chip(v, label)))
+    : null;
+  host.append(el("div", {class: "solmorewrap"}, own, search, box, addNew, empty,
     el("button", {class: "textbtn", onclick: e => { e.stopPropagation(); SOL.more = null; solRedraw(); }}, "Show fewer")));
   requestAnimationFrame(() => { if (search.isConnected) search.focus({preventScroll: true}); });
 }

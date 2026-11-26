@@ -540,6 +540,7 @@ A week away is not a week of dust. It counts from the day you are back. =>
 A week page is a file: journals, your name, 2026-W44.md. Link to it as [[2026-W44]]. =>
 A weekend =>
 A widget on your phone: each context has a file in Widgets/ in your folder, @Home.md and @Home - Kitchen.md. It holds what you can do there. Add it in a widget app such as Obsidian Widget. A tick there is done here too, the next time GroupToDo opens. =>
+A word in the line is the verb: =>
 A word in this task is the action =>
 A year =>
 A7sus =>
@@ -5081,6 +5082,7 @@ Venter: =>
 Verb =>
 Verb and Context: a verb first, and a context. =>
 Verb pages =>
+Verb › All shows the line's own words. Press one, and it counts as a verb from now on. Type a verb the list does not have, and + Add puts it first in the line. =>
 Verbs =>
 Versus =>
 Versus / 2×2 =>
@@ -7349,6 +7351,7 @@ your own area, {1}, could not be opened. Show it once at the top (a folder may n
 “{1}”: {2} pages read =>
 ▸ Continue: {1} =>
 ◷ Add the next {1} days to your calendar ({2}) =>
+＋ Add “{1}” as a verb =>
 
 # Words for dates and times, read in what you write: "neste onsdag kl 13".
 # Several words after => are separated by commas:   when: tomorrow => i morgen, imorgen
