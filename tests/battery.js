@@ -10225,7 +10225,7 @@ var GTD_TEST = (() => {
       eq(all && all.textContent.trim(), "All help", "the pane's first button is not All help");
       ok(![...$$("#pagePane .panebar button")].some(x => x.textContent.trim() === "⤢"), "the bare ⤢ is still there");
       all.click(); await settle();
-      eq(V.view, "help", "All help does not open the full help");
+      eq(state.view, "help", "All help does not open the full help");
       ok(content().querySelector(".helpq"), "the full help has no search");
       // A phone: the floating Help is there for Focus, and its corner is not hidden in Focus.
       window.matchMedia = q => /min-width:\s*641px/.test(q) ? {matches: false, addEventListener() {}, removeEventListener() {}} : mm.call(window, q);
