@@ -45,6 +45,7 @@ css/39-present-peek-465.css
 css/40-present-edit-466.css
 css/41-outline-lesson-468.css
 css/42-news-anim-471.css
+css/43-quick-clarify-523.css
 # script 1
 js/00-bootstrap/vars-APP_VERSION.js
 js/00-bootstrap/keepFocus.js
@@ -2116,6 +2117,11 @@ js/110-views/clAnswerMany.js
 js/110-views/clAnswer.js
 js/110-views/clUndo.js
 js/110-views/clPaint.js
+js/110-views/clMode.js
+js/110-views/qcEdit.js
+js/110-views/qcOutline.js
+js/110-views/qcTake.js
+js/110-views/viewQuickClarify.js
 js/110-views/viewDayReview.js
 js/110-views/vars-CL_KIND_LABEL.js
 js/110-views/clKindOf.js

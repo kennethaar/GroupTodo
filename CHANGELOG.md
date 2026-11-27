@@ -5,6 +5,16 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.204.0 - 2026-11-27
+
+- Weekly review › Clarify: a new Quick way, switched at the top (All
+  answers | Quick) and remembered. It shows one loose line at a time, lit
+  up in its day's outline, its parent above it and its lines below, in a
+  box that scrolls. It asks one thing: something to do, or just a note?
+  Press T or → for a to do, N or ← for a note, Space to skip and E or a
+  click to edit the words. A to do is sorted next, in Review actions.
+  (#523)
+
 ## 1.203.1 - 2026-11-23
 
 - Phone and PC: on a phone, Allow access now sits on the right, just below

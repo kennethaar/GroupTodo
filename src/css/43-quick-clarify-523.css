@@ -1,0 +1,49 @@
+/* Clarify, Quick (#523): the day's outline in a box that scrolls, with a
+   scrollbar that stays in sight, and two big answers under it. */
+.clquick{max-width:760px}
+.clmode.vseg{display:flex;margin:8px 0 10px;width:max-content}
+.solside .clmode.vseg{margin:0;align-self:flex-start;transform:none}
+.clquick .qcbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 12px}
+.clquick .qcbar .solhow{margin:0}
+.qcout{position:relative;max-height:min(48vh,480px);overflow-y:auto;scrollbar-gutter:stable;
+  background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:12px 14px 14px 8px;margin:8px 0 12px;
+  scrollbar-width:auto;scrollbar-color:var(--border2) var(--bg3)}
+.qcout::-webkit-scrollbar{width:12px}
+.qcout::-webkit-scrollbar-track{background:var(--bg3);border-radius:0 14px 14px 0}
+.qcout::-webkit-scrollbar-thumb{background:var(--border2);border-radius:6px;border:3px solid var(--bg3)}
+.qcout::-webkit-scrollbar-thumb:hover{background:var(--fg3)}
+.qcout .qcday{margin:0 0 6px 8px;font-size:15px}
+.qcout ul{list-style:none;margin:0;padding-left:20px}
+.qcout>ul{padding-left:6px}
+.qcout li{position:relative;padding:2px 0 2px 14px;color:var(--fg3);overflow-wrap:anywhere}
+.qcout li::before{content:"";position:absolute;left:2px;top:.8em;width:5px;height:5px;border-radius:50%;background:var(--border2)}
+.qcout li.on{color:var(--fg)}
+.qcout li.on::before{display:none}
+.qcout li.on>ul{color:var(--fg2)}
+.qcout li.on>ul li{color:var(--fg2)}
+.qcout .st-done,.qcout .st-cancel{text-decoration:line-through;opacity:.7}
+.qcwrap{display:flex;align-items:flex-start;gap:6px;margin:2px 0 2px -8px;padding:6px 8px;border-radius:8px;
+  background:var(--accent-soft);outline:2px solid var(--accent)}
+.qchere{flex:1;font-weight:600;font-size:17px;line-height:1.35;cursor:text}
+.qcpen{flex:none;width:28px;height:28px;display:grid;place-items:center;border-radius:6px;color:var(--fg3)}
+.qcpen:hover,.qcpen:focus-visible{color:var(--accent);background:var(--bg2)}
+.qcpen svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.qcedit{display:block;width:100%;font:inherit;font-weight:600;font-size:17px;padding:6px 8px;margin:2px 0 2px -8px;
+  border:2px solid var(--accent);border-radius:8px;background:var(--bg2);color:var(--fg)}
+.qcdock{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.qcbig{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 8px;min-height:76px;border-radius:14px;
+  border:2px solid var(--border2);background:var(--bg2);color:var(--fg);font:inherit;cursor:pointer;text-align:center}
+.qcbig svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.qcbig b{font-size:15.5px}
+.qcbig small{font-size:12px;color:var(--fg3)}
+.qcbig kbd{font:inherit;font-size:11px;color:var(--fg3);border:1px solid var(--border2);border-radius:4px;padding:0 5px;margin-top:2px}
+.qcbig:hover,.qcbig:focus-visible{border-color:var(--fg3)}
+.qcbig.qcdo{border-color:var(--todo);background:var(--accent-soft)}
+.qcbig.qcdo svg{color:var(--todo)}
+.qcbig.qcdo:hover,.qcbig.qcdo:focus-visible{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.clquick .cllast{margin-top:12px}
+.qcmore{margin:10px 0 0;font-size:13px;color:var(--fg3)}
+@media (max-width:640px){
+  .qcout{max-height:50vh}
+  .qcbig kbd{display:none}
+}

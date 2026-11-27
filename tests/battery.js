@@ -12199,6 +12199,57 @@ var GTD_TEST = (() => {
       } finally { lineSelClear(); closeModal(); closeSidePage(); if (made) removePage(made); }
     });
   });
+  test("#523 Clarify Quick asks only to do or note, shows the line in its day's outline, and edits it in place", async () => {
+    const was = PREF.get("clarify.quick", "");
+    try {
+      await withDays([[3, "- Supplier meeting\n  - New price list\n    - Two quotes\n- Plan the party\n"]], async () => {
+        const d3 = journalPath(shiftISO(T(), -3)), meet = getPage(d3).blocks[0];
+        PREF.set("clarify.quick", "");
+        let c = await showClarify();
+        const mode = label => [...content().querySelectorAll(".clmode button")].find(n => trim(n.textContent) === label);
+        ok(mode("Quick") && mode("All answers"), "Clarify has the switch All answers | Quick");
+        mode("Quick").click(); await settle();
+        c = content();
+        ok(c.querySelector(".clquick"), "Quick is shown");
+        eq(PREF.get("clarify.quick", ""), "1", "and remembered");
+        eq(c.querySelectorAll(".clans").length, 0, "not the eight answers");
+        const todo = c.querySelector(".qcdo"), note = c.querySelector(".qcnote");
+        ok(todo && note, "two answers: something to do, or a note");
+        ok(todo.querySelector("svg") && note.querySelector("svg"), "each with an icon");
+        const out = c.querySelector(".qcout");
+        eq(getComputedStyle(out).overflowY, "auto", "the outline scrolls");
+        has(out.textContent, dayLong(baseName(d3)), "the day is named above");
+        eq(trim(out.querySelector(".qchere").textContent), "Supplier meeting");
+        note.click(); await settle();
+        ok(!meet.state, "a note stays as it was");
+        c = content();
+        const here = () => trim(content().querySelector(".qchere").textContent);
+        eq(here(), "New price list", "on to the line under it");
+        const lines = [...c.querySelectorAll(".qcout .qcline")].map(n => trim(n.textContent));
+        ok(lines.indexOf("Supplier meeting") < lines.indexOf("New price list")
+          && lines.indexOf("New price list") < lines.indexOf("Two quotes"), "its parent above, its child below");
+        press("t"); await settle();
+        eq(meet.children[0].state, "TODO", "T makes it a to do");
+        eq(here(), "Two quotes");
+        content().querySelector(".qchere").click(); await settle();
+        const input = content().querySelector(".qcedit");
+        ok(input, "a click on the line edits it");
+        input.value = "Two quotes from Havbris";
+        input.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true})); await settle();
+        eq(meet.children[0].children[0].title, "Two quotes from Havbris", "Enter keeps the new words");
+        eq(here(), "Two quotes from Havbris", "the line is still asked");
+        press(" "); await settle();
+        eq(here(), "Plan the party", "Space skips");
+        press("ArrowRight"); await settle();
+        eq(getPage(d3).blocks[1].state, "TODO", "→ is something to do");
+        press("Backspace"); await settle();
+        ok(!getPage(d3).blocks[1].state, "Backspace undoes");
+        mode("All answers").click(); await settle();
+        ok(content().querySelector(".clans"), "All answers is back");
+        eq(PREF.get("clarify.quick", ""), "", "and remembered");
+      });
+    } finally { PREF.set("clarify.quick", was); }
+  });
   test("#365 Clarify says what the last answer did, and Undo that steps back more than one line", async () => {
     await withDays([[3, "- Call the plumber\n- Order tiles\n- Plan the party\n"]], async () => {
       const d3 = journalPath(shiftISO(T(), -3));

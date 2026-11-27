@@ -1,10 +1,21 @@
 /* Numbers and letters only aim, the way the solitaire's do; Enter, or the
    same number again, takes the answer. */
 window.addEventListener("keydown", e => {
-  if (state.view !== "review" || subNow() !== "days" || !document.querySelector(".clarify") || !CL.shown) return;
+  if (state.view !== "review" || subNow() !== "days" || !CL.shown) return;
+  const quick = !!document.querySelector(".clquick");
+  if (!quick && !document.querySelector(".clarify")) return;
   if ($("#modalRoot").firstChild || e.ctrlKey || e.metaKey || e.altKey) return;
   if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
   const stop = () => { e.preventDefault(); e.stopImmediatePropagation(); };
+  // Quick (#523): T or → something to do, N or ← a note, Space skips, E edits.
+  if (quick) {
+    const k = e.key.length === 1 ? e.key.toLocaleLowerCase() : e.key;
+    const act = {t: "todo", ArrowRight: "todo", n: "note", ArrowLeft: "note", " ": "skip"}[k];
+    if (act) { stop(); if (!e.repeat) qcTake(act); }
+    else if (k === "e") { stop(); CL.editing = CL.shown.block.id; render(); }
+    else if (k === "Backspace" && CL.undos.length) { stop(); clUndo(); }
+    return;
+  }
   const max = CL_ANSWERS.length;
   if (/^[1-9]$/.test(e.key) && +e.key <= max) {
     stop();
