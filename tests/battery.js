@@ -3296,6 +3296,26 @@ var GTD_TEST = (() => {
       scanVerbs(); removePage(path); clearMemo(); go("today"); await settle();
     }
   });
+  test("#526 a line waiting on a named person needs no context; one waiting on nobody, or your own, still does", () => {
+    const path = scratchProject("526", [["WAIT", "Quote from the printer"], ["TODO", "Send the draft"],
+      ["WAIT", "Reply on the offer"], ["TODO", "Book the room"]]);
+    const [waitNamed, handed, waitBare, own] = getPage(path).blocks;
+    waitNamed.props = Object.assign(waitNamed.props || {}, {waiting_for: "Person A"});
+    handed.props = Object.assign(handed.props || {}, {[ASSIGN_PROP]: "Person B"});
+    clearMemo();
+    try {
+      const row = b => leafActions().find(a => a.block === b);
+      const weed = b => (stalestActiveProjects(999).find(p => p.path === path)?.todos || []).find(t => t.block === b);
+      for (const [b, name] of [[waitNamed, "a waiting-for naming somebody"], [handed, "a to-do handed to somebody"]]) {
+        eq(row(b).missingContext, false, name + " is not missing a context");
+        eq(weed(b).missingContext, false, name + " is not missing a context in Weeding");
+        ok(!chipsFor(row(b)).some(c => /no context/.test(c.textContent)), name + " has no “no context” chip");
+      }
+      eq(row(waitBare).missingContext, true, "a waiting-for naming nobody still lacks a context");
+      eq(row(own).missingContext, true, "your own to-do still lacks a context");
+      eq(weed(own).missingContext, true, "and Weeding still asks for it");
+    } finally { removePage(path); clearMemo(); }
+  });
   test("#463 Review actions: a project linked in a task reads as its name on the card", () => {
     const target = scratchProject("463 Kitchen");
     const path = scratchProject("463 home", [["TODO", "Ring Anna about [[" + pageRef(target) + "]] and @phone"]]);

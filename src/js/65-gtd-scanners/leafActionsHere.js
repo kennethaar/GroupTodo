@@ -77,7 +77,7 @@ function leafActionsHere() {
         tourStep, checklist: fromList ? fromList.title : null,
         area: journal && !linked ? (nearestAreaAncestor(b) || {}).title || null : null,
         context: blockContext(b),
-        missingContext: !authored && !blockContext(b),
+        missingContext: !authored && needsContext(b, page),
         missingVerb: !authored && !startsWithVerb(b.title),
         // Journal items carry no Added:: stamp (the filename is the date),
         // so fall back to the journal's own date to keep "oldest first" honest.

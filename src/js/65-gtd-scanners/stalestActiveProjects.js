@@ -11,10 +11,11 @@ function stalestActiveProjects(n = CFG.weedCount) {
       anyTodo = true;
       const ctx = blockContext(b);
       const missingVerb = !startsWithVerb(b.title);
-      if (!ctx) noContext = true;
+      const missingContext = needsContext(b, page);
+      if (missingContext) noContext = true;
       if (missingVerb) noVerb = true;
       todos.push({path, block: b, state: b.state, title: b.title,
-                  context: ctx, missingContext: !ctx, missingVerb});
+                  context: ctx, missingContext, missingVerb});
     }
     // #23 a day page that links it, or a coming meeting, moves it along too.
     if (!anyTodo) anyTodo = !isStuckProject(path);

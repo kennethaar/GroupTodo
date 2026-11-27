@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.228.2 - 2026-11-27
+
+- Waiting for › List: a line waiting on a named person, or handed to
+  somebody, is no longer missing a context: no "no context" chip, no
+  count in the review, no "+ context" in Weeding. One waiting on nobody,
+  and your own to-dos, still ask. (#526)
+
 ## 1.228.1 - 2026-11-27
 
 - Weekly review › Clarify: the capture bar is back on the review's card

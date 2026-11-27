@@ -26,7 +26,7 @@ function journalActionsIndex() {
                      assignee: assigneeOf(b), by: blockProp(b, "by"),
                      owner: journalOwnerOf(path) || null,
                      missingVerb: !startsWithVerb(b.title),
-                     missingContext: !blockContext(b)};
+                     missingContext: needsContext(b, page)};
         add(link.ref.toLowerCase(), row);
         add(link.title.toLowerCase(), row);
       }
