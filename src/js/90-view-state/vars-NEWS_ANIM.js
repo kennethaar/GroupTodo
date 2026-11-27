@@ -2,8 +2,87 @@
    keyed by newsAnimKey (version, and "#issue" when it has one). Each is a
    text script, one step a line, read by newsSteps. Keep only the newest 30: new users never saw the old
    look, so an older one is deleted when a new one comes. */
-const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.230.0#516": `
+    cap | Catch up with an AI: a short review after
+    say | Apply puts the AI's new lines on today's page.
+    # One spotlight from the first callout to the end: it moves from part to
+    # part, never back to everything. A part first, to read it, then its words,
+    # 1.5 s + 0.3 s a word (callout and part). After a click it moves to the result.
+    + pg col
+    + h h > pg | Friday 27 November
+    + hd ln > pg | ✦ Catch-up from AI · 14:05
+    + a ln d1 > pg | Call the printer [[Product A launch]]
+    + b ln d1 > pg | Client liked the draft [[Website refresh]]
+    + c ln d1 > pg | Renew the parking permit
+    w 2500
+    o o hd right
+    w 1500
+    o o hd right | One heading: the AI wrote these
+    w 4800
+    o o a right
+    w 1500
+    o o a right | Linked to its project
+    w 4500
+    say | Then Quick asks about each line: something to do, or a note?
+    o o a right
+    c a +lit
+    + ai chip acc > a | ✦ Written by AI
+    + r row > pg
+    + n btn > r | ✎ Just a note
+    + t btn pri > r | ⚡ Something to do
+    w 1500
+    o o ai below | Says who wrote it
+    w 3900
+    o o t+a right
+    w 1000
+    o o t+a right | Makes this line a to-do
+    w 5000
+    p t
+    - ai
+    c a -lit +task
+    o o a right
+    w 1200
+    c b +lit
+    o o n+b right
+    w 1000
+    o o n+b right | Keeps this line as a note
+    w 5000
+    p n
+    c b -lit
+    o o b right
+    w 1200
+    c c +lit
+    o o t+c right
+    w 1200
+    p t
+    c c -lit +task
+    o o c right
+    w 1200
+    say | Then each to-do gets only what it still lacks, such as a context.
+    - r
+    c c +lit
+    + q col > pg
+    + qq quiet > q | Where, or with what, can you do it?
+    + r2 row > q
+    + x chip ctx > r2 | @Phone
+    + y chip ctx > r2 | @Errands
+    o o q right
+    w 1500
+    o o q right | Only what is missing is asked
+    w 4500
+    p y
+    + cc chip ctx > c | @Errands
+    c c -lit
+    o o c right
+    w 1500
+    say | It ends with what became of them.
+    - q
+    + s card > pg | 3 lines sorted: 2 to-dos, 1 note
+    o o s above
+    w 1500
+    o o s above | A summary of what you sorted
+    w 5100`,
   "1.228.0#523": `
     cap | Clarify, Quick: to do or note
     say | Quick shows each loose line in its day, lit up.
@@ -106,59 +185,5 @@ const NEWS_ANIM = {
     say | F or ⛶ makes the slides full screen.
     + f chip > pg | ⛶ Full screen (F)
     p f
-    w 1500`,
-  "1.222.0#488": `
-    cap | A picture pin that travels
-    say | The same picture on two lines is one pin on the map.
-    + pg col
-    + l ln > pg | (map) Our route 🗺
-    + a ln > pg | 🖼 Oslo
-    s a | margin-left:24px
-    w 1200
-    + b ln > pg | 🖼 Bergen
-    s b | margin-left:24px
-    w 900
-    say | Its words are a label that moves with it. Alt+drag the label to place it apart.
-    c a +dim
-    w 1800`,
-  "1.221.0#488": `
-    cap | Move things around a map
-    say | On a Map slide, write the same emoji twice.
-    + pg col
-    + a ln > pg | 🚗 Oslo
-    + b ln > pg | 🚗 Bergen
-    w 900
-    say | On its click the 🚗 moves on to its new place.
-    p b
-    w 1200
-    say | The same picture or words move the same way.
-    w 1500`,
-  "1.220.0#467": `
-    cap | See which lines stay off the slides
-    say | Hide in Present keeps a line off the slides.
-    + pg col
-    + a ln > pg | Opening
-    + b ln > pg | Backup numbers
-    + c ln > pg | Next steps
-    w 900
-    c b +dim
-    t b | ⊘ Backup numbers
-    say | It shows faded, with a closed eye in front.
-    w 1200
-    p b
-    c b -dim
-    t b | Backup numbers
-    say | Tap the eye to put it back on the slides.
-    w 1500`,
-  "1.219.0#513": `
-    cap | Feedback from any help topic
-    say | Open help on any page.
-    + pg col
-    + t ln > pg | Journal
-    + d ln > pg | Missing something, or broken?
-    + c chip > pg | Suggest a feature   Report a bug
-    w 1200
-    say | Suggest a feature or report a bug at the foot.
-    p c
     w 1500`
 };

@@ -1,7 +1,11 @@
 function viewDayReview() {
   clSettle();
-  const deck = clarifyDeck();
-  const head = vhead("Weekly review", deck.length ? deck.length + (deck.length === 1 ? " line" : " lines") + " to clarify" : "Clarify", viewSeg("review"));
+  // The catch-up's mini review asks only about the lines the AI wrote (#516 follow-up).
+  const run = CU_RUN && CU_RUN.phase === "clarify";
+  const deck = run ? clarifyDeck().filter(r => CU_RUN.ids.has(r.block.id)) : clarifyDeck();
+  if (run && !deck.length) { cuToSort(); return viewActSolitaire(); }
+  const head = run ? cuRunHead("Step 1 of 2: something to do, or a note? " + deck.length + " of " + CU_RUN.total + " left")
+    : vhead("Weekly review", deck.length ? deck.length + (deck.length === 1 ? " line" : " lines") + " to clarify" : "Clarify", viewSeg("review"));
   /* What the last answer did, said where you look, with the one way to take
      it back. Pressed again, it goes on to the answer before (#365). */
   const u = CL.undos[CL.undos.length - 1];
@@ -19,7 +23,7 @@ function viewDayReview() {
       el("button", {class: "btn primary", onclick: () => go("review", {sub: "actions"})}, "On to the next actions ›"), undo));
     return c;
   }
-  if (PREF.get("clarify.quick", "")) return viewQuickClarify(deck[0], head, undo);
+  if (run || PREF.get("clarify.quick", "")) return viewQuickClarify(deck[0], head, undo, run);
   const r = deck[0], {path, block: b} = r;
   /* The day around the line, beside the card, the line at the middle of it
      and the rest to scroll through, so a note reads in its context (#376).

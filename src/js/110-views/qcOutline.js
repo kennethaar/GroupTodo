@@ -19,6 +19,8 @@ function qcOutline(path, b) {
     return el("span", {class: "qcwrap"},
       el("span", {class: "qcline qchere", translate: "no", html: renderInline(bujoText(b.title || "")),
         onclick: e => { if (!e.target.closest("a")) edit(); }}),
+      // Words the AI wrote say so where they are asked about (#516 follow-up).
+      cuByAI(path, b) ? el("span", {class: "qcai"}, CU_MARK + " Written by AI") : null,
       el("button", {class: "qcpen", title: "Edit the words (E)", "aria-label": "Edit the words", onclick: edit}, svgIcon(ICON_PENCIL)));
   };
   const list = blocks => el("ul", {},

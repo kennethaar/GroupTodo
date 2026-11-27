@@ -195,8 +195,20 @@ var GTD_TEST = (() => {
       await until(() => step() === "Then it shines");
       eq(step(), "Then it shines", "the step line does not follow the animation");
       has(st.querySelector(".newsplay").textContent, "It shines", "it plays");
-      await until(() => head().includes("It also does"));
-      has(head(), "It also does", "after a round it turns to the next, named by its news when it says nothing itself");
+      // One round, then it stops and asks: play it again, or the next new thing (#516 follow-up).
+      const end = () => st.querySelector(".newsend:not([hidden])");
+      const endBtn = re => [...end().querySelectorAll("button")].find(b => re.test(b.textContent));
+      await until(end);
+      ok(end(), "after one round it stops and offers what next");
+      has(head(), "A thing that shines", "it does not turn to the next by itself");
+      ok(endBtn(/Play again/) && endBtn(/^Next/), "Play again, and Next");
+      has(endBtn(/^Next/).textContent, "It also does", "Next names the next new thing");
+      endBtn(/Play again/).click();
+      eq(step(), "First the intro", "Play again starts it over");
+      ok(!end(), "the offer goes while it plays");
+      await until(end);
+      endBtn(/^Next/).click();
+      has(head(), "It also does", "Next turns to it, named by its news when it says nothing itself");
       eq(m.querySelector("li.newsnow strong").textContent, "It also does.");
       st.querySelector(".newsprev").click();
       has(head(), "A thing that shines", "‹ goes back");
@@ -204,6 +216,20 @@ var GTD_TEST = (() => {
       eq(st.querySelectorAll(".newsdots [aria-current]").length, 1);
       ok(st.querySelectorAll(".newsdots button")[1].hasAttribute("aria-current"), "a dot picks one");
       closeModal();
+      // First use (#516 follow-up): a toast says it is new, only once, and can show how it works.
+      const firstWas = PREF.get("news.firstuse:9.0.0#999", "");
+      PREF.set("news.firstuse:9.0.0#999", "");
+      const shineToast = () => [...document.querySelectorAll("#toasts .toast")].find(t => t.textContent.includes("New: it shines"));
+      newsFirstUse("9.0.0#999", "New: it shines");
+      ok(shineToast() && /See how it works/.test(shineToast().textContent) && shineToast().querySelector(".x"), "a toast that offers to show how it works, and can be closed");
+      shineToast().querySelector(".act").click();
+      const shown = document.querySelector(".modal .newsstage");
+      ok(shown, "See how it works plays its animation");
+      has(shown.querySelector(".newshead").textContent, "A thing that shines", "named by what it shows");
+      closeModal();
+      newsFirstUse("9.0.0#999", "New: it shines");
+      ok(!shineToast(), "only the first time");
+      PREF.set("news.firstuse:9.0.0#999", firstWas);
       // Reduced motion: the last frame, still, and no turning on.
       const box = el("div");
       document.body.append(box);
@@ -212,6 +238,42 @@ var GTD_TEST = (() => {
       eq(box.textContent, "Typed", "drawn at its end at once");
       ok(box.querySelector(".n-lit"), "with its last look");
       box.remove();
+      // The pointer fades out after its click, and in again before it moves on (#516 follow-up).
+      const hb = el("div", {class: "newsplay"});
+      document.body.append(hb);
+      newsPlay(hb, "+ a ln | A\n+ b ln | B\np a\nw 1500\np b\nw 3000").catch(() => {});
+      const hand = () => hb.querySelector(".n-hand");
+      await until(() => hand().classList.contains("n-click"));
+      await until(() => hand().classList.contains("n-fade"));
+      ok(hand().classList.contains("n-fade"), "the pointer is gone after its click, while the play goes on");
+      await until(() => !hand().classList.contains("n-fade"));
+      ok(!hand().classList.contains("n-fade"), "and back before the next click");
+      hb.remove();
+      // A callout (#516 follow-up): words in a bubble that points at a part and rings it; - takes both away.
+      eq(newsSteps("o n a right | Look here\no m a | There"), [["o", "n", "a", "right", "Look here"], ["o", "m", "a", "below", "There"]],
+        "a callout names the part it points at, and where it sits, below if not said");
+      const cb = el("div", {class: "newsplay"});
+      cb.style.cssText = "width:420px;height:190px";
+      document.body.append(cb);
+      await newsPlay(cb, "+ g col\n+ a ln > g | Point at me\n+ b ln > g | Not me\n+ c ln | Nor me\no n a below | Look here\nw 5000", {still: true});
+      const call = cb.querySelector(".n-callout"), part = [...cb.querySelectorAll(".n-ln")].find(x => x.textContent === "Point at me");
+      ok(call && call.textContent === "Look here" && call.classList.contains("n-below"), "a bubble with its words, below");
+      ok(part && part.classList.contains("n-ring"), "the part it points at is ringed");
+      ok(call.getBoundingClientRect().top >= part.getBoundingClientRect().bottom, "and it sits below that part");
+      eq([...cb.querySelectorAll(".n-faded")].map(x => x.textContent), ["Not me", "Nor me"], "what it is not about fades, at every level; the part itself does not");
+      // The same callout again moves the spotlight straight on, with no lighting up in between; with no words it only spotlights.
+      await newsPlay(cb, "+ a ln | One\n+ b ln | Two\no n a | First\no n b right\nw 5000", {still: true});
+      const ringed = () => [...cb.querySelectorAll(".n-ring")].map(x => x.textContent);
+      eq([ringed(), [...cb.querySelectorAll(".n-faded")].map(x => x.textContent)], [["Two"], ["One"]], "the spotlight moved on: one part ringed, the other faded");
+      eq([...cb.querySelectorAll(".n-callout")].filter(x => getComputedStyle(x).display !== "none").length, 0, "with no words, no bubble");
+      // A button and the line it acts on, spotlit together, so you see what the click is for.
+      await newsPlay(cb, "+ a ln | Line\n+ r row\n+ t btn > r | Do\n+ u btn > r | Other\n+ c ln | Else\no n t+a right | It does\nw 5000", {still: true});
+      eq([ringed(), [...cb.querySelectorAll(".n-faded")].map(x => x.textContent)], [["Line", "Do"], ["Other", "Else"]], "several parts can share the spotlight");
+      await newsPlay(cb, "+ a ln | One\no n a\n+ b ln | Added\n+ k chip > a | In it\nw 5000", {still: true});
+      eq([...cb.querySelectorAll(".n-faded")].map(x => x.textContent), ["Added"], "a part added under a spotlight starts faded, unless it is in the spotlit part");
+      await newsPlay(cb, "+ a ln | Point at me\n+ b ln | Not me\no n a below | Look here\n- n\nw 5000", {still: true});
+      ok(cb.textContent === "Point at meNot me" && !cb.querySelector(".n-callout, .n-ring, .n-faded"), "- takes the callout, its ring and the fading away");
+      cb.remove();
     } finally {
       for (const k of Object.keys(NEWS_ANIM)) if (!(k in saved)) delete NEWS_ANIM[k];
       closeModal();
@@ -9456,16 +9518,19 @@ var GTD_TEST = (() => {
      or 30 days), remembered, and named in the prompt. The prompt names your
      projects, their open tasks and your contexts with short references; the
      answer (bullets, bold, or run together on one line; a link at a line's end)
-     becomes one list grouped by project. Each change gets the GTD choice for
-     its kind, set to the likely one, so Apply works with no clicks: a next
-     action is Next, Do now, Delegate, Someday or Skip, with its context; a date
-     is a Deadline or a Start date. A done that leaves a project with no
-     next action says so, and + Add next action adds one. One Undo takes all
-     of it back. A reference the prompt did not give is left out. It also asks
-     for what to capture, all of it but only what is yours. Catch up captures,
-     Clarify clarifies: new to-dos (TODO) and projects come last under To
-     capture with a tick only, go on today's page as plain lines, and the
-     review's Clarify takes them today; the rest of today waits. A name as a
+     becomes one list grouped by project. Each change to what you have gets the
+     GTD choice for its kind, set to the likely one, so Apply works with no
+     clicks: a date is a Deadline or a Start date. A done that leaves a project
+     with no next action says so, and + Add next action adds one. One Undo
+     takes all of it back. A reference the prompt did not give is left out. It
+     also asks for what to capture, all of it but only what is yours. Catch up
+     captures, Clarify clarifies: every new line (next action, to-do, project,
+     a project's progress) comes last under New lines with a tick only, and
+     goes on today's page under one heading marked as the AI's, linked to its
+     project. Apply starts a mini review of those lines only: Quick asks to do
+     or note for each, then Review actions sorts the to-dos, only the steps
+     they still need, and a summary goes back to where you were (#516
+     follow-up); the rest of today waits. A name as a
      link reads as the name, a citation mark goes, and the source is found
      wherever it stands. Only GTD's lines: NOTE may name a project (progress
      with no task), WAIT may name a task (now someone else's), NO-DATE is no
@@ -9546,15 +9611,15 @@ var GTD_TEST = (() => {
         "[Re: a post](" + mail + ") 【13-0d56c5】\n");
       btn("Read it").click(); await settle();
       eq($$("#modalRoot .cu-row").length, 14, "one row per change; the unknown reference is left out");
-      ok([...$$("#modalRoot .cu-group")].find(g => g.textContent.startsWith(title)).contains(rowOf("Pilot went live")),
-        "progress on a project is a note under it");
       has(rowOf("Order the badges").textContent, "Person Z", "a task that is now someone else's: waiting for them");
       ok(!/NO-DATE/.test(rowOf("Water the plants").textContent + rowOf("Order the badges").textContent), "NO-DATE is no date");
       const last = [...$$("#modalRoot .cu-group")].pop();
-      ok(/^To capture/.test(last.textContent), "new to-dos and projects come last, under To capture: " + last.textContent.slice(0, 40));
+      ok(/^New lines/.test(last.textContent), "every new line comes last, under New lines: " + last.textContent.slice(0, 40));
       const taken = t => rowOf(t).querySelector("input.cu-take[type=checkbox]");
-      ok(["budget question", "Water the plants", "Product A launch", "Bring up"].every(t => last.contains(rowOf(t)) && taken(t).checked &&
-        !rowOf(t).querySelector("select")), "each with a tick only, ticked: Clarify decides what it is");
+      const fresh = ["Call the supplier", "Ask Person Y", "Reply to the invite", "Pilot went live", "budget question", "Water the plants", "Product A launch", "Bring up"];
+      ok(fresh.every(t => last.contains(rowOf(t)) && taken(t).checked && !rowOf(t).querySelector("select")),
+        "each new line, a next action and a project's progress too, has a tick only, ticked: the mini review asks what it is (#516 follow-up)");
+      has(rowOf("Call the supplier").textContent, title, "a new line names its project");
       has(rowOf("budget question").textContent, "@" + ctx, "a to-do shows its context");
       eq(rowOf("Bring up").textContent.replace(/↗.*$/, "").trim(), "Bring up Person Q idea at the next meeting · " +
         new Date("2026-12-08T12:00:00").toLocaleDateString([], {weekday: "short", day: "numeric", month: "short"}),
@@ -9562,67 +9627,99 @@ var GTD_TEST = (() => {
       eq([...$$("#modalRoot a[href]")].map(a => [a.textContent, a.getAttribute("href")]), [["↗ Chat", chat], ["↗ Document", doc], ["↗ Email", mail]],
         "a source shows at the end of its row, named by its kind");
       const choice = t => rowOf(t).querySelector("select.cu-do");
-      eq(["Send the draft", "Book the room", "Call the supplier", "Ask Person Y", "Reply to the invite", "the signed contract", "Sent for testing"]
-        .map(t => choice(t).value), ["keep", "deadline", "next", "next", "next", "keep", "keep"], "each set to the likely choice");
-      eq([...choice("Call the supplier").options].map(o => o.value), ["next", "now", "delegate", "someday", "skip"], "a next action: Next, Do now, Delegate, Someday, Skip");
+      eq(["Send the draft", "Book the room", "the signed contract", "Sent for testing"]
+        .map(t => choice(t).value), ["keep", "deadline", "keep", "keep"], "a change to what you have is set to the likely choice");
       eq([...choice("Book the room").options].map(o => o.value), ["deadline", "start", "skip"], "a date: Deadline or Start date");
-      eq(rowOf("Call the supplier").querySelector("select.cu-ctx").value, ctx, "the context the AI gave is picked");
-      has(rowOf("Ask Person Y").textContent, "No context", "a next action without one says so");
-      ok(btn("Apply 14 changes"), "the button counts what is not skipped");
+      ok(btn("Apply 6, sort 8 new ›"), "the button counts the changes and the new lines apart");
       const all = last.querySelector("input.cu-all[type=checkbox]");
-      ok(all && all.checked, "To capture has one tick for all");
+      ok(all && all.checked, "New lines has one tick for all");
       all.click(); await settle();
-      ok(btn("Apply 10 changes") && !taken("budget question").checked, "which takes them all off");
+      ok(btn("Apply 6 changes") && !taken("budget question").checked, "which takes them all off");
       [...$$("#modalRoot .cu-group")].pop().querySelector("input.cu-all").click(); await settle();
-      ok(btn("Apply 14 changes"), "and puts them back");
+      ok(btn("Apply 6, sort 8 new ›"), "and puts them back");
       const stuck = [...$$("#modalRoot .cu-group")].find(g => g.textContent.includes(pageTitle(other)));
       has(stuck.textContent, "No next action left", "a project left with no next action says so");
       ok(![...$$("#modalRoot .cu-group")].find(g => g.textContent.includes(title)).textContent.includes("No next action left"),
         "not one that still has one");
       set(choice("Book the room"), "start");
-      set(choice("Ask Person Y"), "delegate"); await settle();
-      set(rowOf("Ask Person Y").querySelector("input.cu-who"), "Person Y");
-      set(choice("Reply to the invite"), "now");
       [...stuck.querySelectorAll("button")].find(b => b.textContent === "+ Add next action").click(); await settle();
       const add = $("#modalRoot input.cu-add");
       set(add, "Measure the floor");
       add.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true})); await settle();
-      ok(rowOf("Measure the floor"), "+ Add next action adds a row");
+      ok(rowOf("Measure the floor") && [...$$("#modalRoot .cu-group")].pop().contains(rowOf("Measure the floor")), "+ Add next action adds a new line");
       ok(![...$$("#modalRoot .cu-group")].find(g => g.textContent.includes(pageTitle(other))).textContent.includes("No next action left"),
         "and the project is no longer stuck");
-      btn("Apply 15 changes").click(); await settle();
+      const from = [state.view, state.sub];
+      PREF.set("news.firstuse:" + CU_NEWS, "");
+      btn("Apply 6, sort 9 new ›").click(); await settle();
+      const undo = [...$$("#toasts .toast button")].find(x => x.textContent === "Undo");
+      ok(undo, "with Undo");
+      ok([...$$("#toasts .toast")].some(t => /See how it works/.test(t.textContent)),
+        "the first time, a toast offers to show how the mini review works");
       const [a, b, ...rest] = getPage(path).blocks, added = rest.filter(x => x.state);
       eq([a.state, blockProp(b, "SCHEDULED") ? dueDate(b) : null, blockProp(b, "DEADLINE") || null], ["DONE", "2026-11-28", null],
         "done, and a start date rather than a deadline");
       has(blockProp(a, "source") || "", chat, "the task marked done keeps its source");
-      eq(added.map(x => x.state), ["TODO", "WAIT", "DONE", "WAIT"], "Next, Delegate as a waiting-for, Do now as done, Waiting for");
-      has(added[0].title, "[[c/" + ctx + "]]", "the next action has its context");
-      has(blockProp(added[0], "source") || "", doc, "and its source");
-      eq(waitingPersonOf(added[1], getPage(path)), "Person Y", "delegated to whom");
-      eq([waitingPersonOf(added[3], getPage(path)), dueDate(added[3])], ["Person X", "2026-12-02"], "waiting on whom, by when");
+      eq(added.map(x => x.state), ["WAIT"], "a waiting-for goes on the project; its new lines do not");
+      eq([waitingPersonOf(added[0], getPage(path)), dueDate(added[0])], ["Person X", "2026-12-02"], "waiting on whom, by when");
       eq(messagesOf(a).map(m => m.title), ["Sent for testing."], "the note is on its task");
-      ok(rest.some(x => !x.state && x.title.includes("Pilot went live for team 2")), "the progress is a note on the project's page");
+      ok(!rest.some(x => x.title.includes("Pilot went live")), "a project's progress is a new line, not put on the project's page");
       const bd = getPage(third).blocks[0];
       eq([bd.state, waitingPersonOf(bd, getPage(third)), dueDate(bd) || null], ["WAIT", "Person Z", null], "the task now waits on whom; NO-DATE is no date");
-      eq(getPage(other).blocks.map(x => [x.state, trim(x.title)]), [["DONE", "Order the tiles"], ["TODO", "Measure the floor"]], "the stuck project got its next action");
+      eq(getPage(other).blocks.map(x => [x.state, trim(x.title)]), [["DONE", "Order the tiles"]], "the stuck project's next action is a new line");
       ok(![...V.pages.keys()].some(p => pageTitle(p) === "Product A launch"), "no project is made: Clarify decides that");
-      const [todo, water, launch, bring] = ["budget question", "Water the plants", "Product A launch", "Bring up"].map(line);
-      ok(todo && water && launch && bring, "the new things are on today's page");
-      eq([todo, water, launch, bring].map(x => x.state || ""), ["", "", "", ""], "as plain lines, not yet to dos");
+      // Every new line is on today's page, under one heading that says the AI wrote them.
+      const head = line("Catch-up from AI");
+      ok(head && blockProp(head, "by") === "AI" && /^✦/.test(head.title), "one heading on today's page, marked as written by AI: " + (head && head.title));
+      const kid = t => (head.children || []).find(x => x.title.includes(t));
+      const [supplier, floor, pilot, todo, water, launch, bring] =
+        ["Call the supplier", "Measure the floor", "Pilot went live", "budget question", "Water the plants", "Product A launch", "Bring up"].map(kid);
+      ok(supplier && floor && pilot && todo && water && launch && bring && kid("Ask Person Y") && kid("Reply to the invite"), "the new lines are under it");
+      eq(head.children.length, 9, "one line each");
+      eq(head.children.map(x => x.state || ""), Array(9).fill(""), "as plain lines: the mini review asks what each is");
+      ok(supplier.title.includes("[[c/" + ctx + "]]") && supplier.title.includes("[[" + title + "]]"), "a next action keeps its context and links its project: " + supplier.title);
+      has(blockProp(supplier, "source") || "", doc, "and its source");
+      ok(floor.title.includes("[[" + pageTitle(other) + "]]") && pilot.title.includes("[[" + title + "]]"), "an added next action and a project's progress link their project");
       eq([todo.title.includes("[[c/" + ctx + "]]"), dueDate(todo)], [true, "2026-12-05"], "with the context and date the AI gave");
       ok(!water.title.includes("[[c/") && !/NO-DATE/.test(water.title) && !dueDate(water), "a context is read only as a whole word; NO-DATE is no date");
       ok(!/https?:|【/.test(bring.title) && dueDate(bring) === "2026-12-08", "no link or mark in the words: " + bring.title);
       has(blockProp(bring, "source") || "", mail, "the link to the mail is its source");
       eq([blockProp(launch, "outcome"), (launch.children || []).map(k => [k.state || "", trim(k.title)])],
         ["Launched to all users", [["", "Draft the plan"]]], "a new project with its outcome and its first next action under it");
-      const deck = clarifyDeck().map(r => r.block);
-      ok([todo, water, launch, bring].every(x => deck.includes(x)), "the review's Clarify takes them today");
-      ok(!deck.includes(loose), "but not the rest of today's page, which waits for tomorrow");
-      const undo = [...$$("#toasts .toast button")].find(x => x.textContent === "Undo");
-      ok(undo, "with Undo");
+      ok(!clarifyDeck().some(r => r.block === head), "the heading itself is never asked about");
+      // Apply starts the mini review: Quick, on the AI's lines only.
+      eq([state.view, state.sub], ["review", "days"], "Apply opens Clarify");
+      ok(content().querySelector(".clquick"), "in Quick");
+      has(content().textContent, "Catch-up from AI", "it says it is the catch-up's review");
+      const asked = [];
+      for (let n = 0; n < 12 && content().querySelector(".clquick .qchere"); n++) {
+        const here = content().querySelector(".qcwrap");
+        has(here.textContent, "Written by AI", "the line asked about says the AI wrote it");
+        const words = here.querySelector(".qchere").textContent;
+        asked.push(words);
+        content().querySelector(/Call the supplier|Measure the floor/.test(words) ? ".qcbig.qcdo" : ".qcbig.qcnote").click(); await settle();
+      }
+      eq(asked.length, 10, "every line the AI wrote is asked, the project's first step too: " + asked.join(" / "));
+      ok(!asked.some(t => t.includes("A loose thought 516") || t.includes("Catch-up from AI")), "and nothing else on the day");
+      // Then the to-dos are sorted, in the same run, and only the steps they still need.
+      eq(state.sub, "actions", "the to-dos go on to Review actions");
+      has(content().textContent, "Catch-up from AI", "still the catch-up's review");
+      eq([SOL.pass, SOL.order.map(r => trim(r.block.title))], [2, ["Measure the floor [[" + pageTitle(other) + "]]"]],
+        "only the to-do that has no context, in the Context pass; one with its verb, context and project is not dealt");
+      [...content().querySelectorAll(".solopt")].find(x => x.textContent.includes("@" + ctx)).click(); await settle();
+      has(floor.title, "[[c/" + ctx + "]]", "the context picked goes on the line");
+      // The card goes off the table first.
+      for (let n = 0; n < 40 && !content().querySelector(".cusum"); n++) await new Promise(r => setTimeout(r, 50));
+      const sum = content().querySelector(".cusum");
+      ok(sum, "the run ends with a summary: " + content().textContent.slice(0, 200));
+      has(sum.textContent, "10 lines sorted: 2 to-dos, 8 notes", "saying what became of the lines");
+      clearMemo();
+      ok(!actOrder(0).some(r => r.block === supplier || r.block === floor), "the to-dos are not dealt again in the weekly review's Still to do");
+      [...sum.querySelectorAll("button")].find(x => /Back to Weekly review/.test(x.textContent)).click(); await settle();
+      eq([state.view, state.sub], from, "and goes back to where you were");
       undo.click(); await settle();
       eq([getPage(path).blocks.length, getPage(path).blocks[0].state, dueDate(getPage(path).blocks[1]) || null,
-        getPage(other).blocks.length, getPage(third).blocks[0].state, !!line("budget question"), !!line("A loose thought 516")],
+        getPage(other).blocks.length, getPage(third).blocks[0].state, !!line("Catch-up from AI"), !!line("A loose thought 516")],
         [2, "TODO", null, 1, "TODO", false, true], "one Undo takes it all back");
     } finally {
       closeAll(); document.querySelectorAll("#toasts > *").forEach(n => n.remove());
@@ -9630,6 +9727,7 @@ var GTD_TEST = (() => {
       const pg = getPage(day);
       if (pg) { pg.blocks = pg.blocks.filter(x => x.title !== "A loose thought 516"); touch(day); }
       PREF.set("catchup.back:" + (V.space || ""), was);
+      PREF.set("news.firstuse:" + CU_NEWS, "1");
     }
   });
   test("#161 Ask for an update can leave the projects unnamed", async () => {

@@ -3,9 +3,9 @@
    date, outcome, next, ctx, url, choice}; a TODO or PROJECT has no ref. A
    reference the prompt did not give, a task that is no longer open, or a new
    project with the name of one you have, is left out. Each row starts on the
-   likely GTD choice (CATCHUP_CHOICES): a new next action as Next, a date as a
-   Deadline, the rest as Keep. A new to-do or project is only taken ("take")
-   or not: Clarify decides what it is. */
+   likely GTD choice (CATCHUP_CHOICES): a date as a Deadline, the rest as Keep.
+   A new line (next action, to-do, project, a project's progress) is only
+   taken ("take") or not: the mini review decides what it is. */
 function parseCatchUp(raw, refs) {
   const rows = [];
   const LINE = /^(DONE|DUE|NOTE|NEXT|WAIT|TODO|PROJECT)\b\s*:?\s*(.*)$/i;
@@ -88,9 +88,10 @@ function parseCatchUp(raw, refs) {
       row.date = dateIn(rest);
       if (!row.block || !row.date || row.date === dueDate(row.block)) continue;
     } else if (kind === "note") {
-      // On a task, news on it; on a project, progress that has no task of its own.
+      // On a task, news on it; on a project, progress that has no task of its own: a new line.
       if (!rest) continue;
       row.text = rest;
+      if (!row.block) row.choice = "take";
     } else if (kind === "next") {
       rest = withContext(row, rest);
       if (!rest) continue;

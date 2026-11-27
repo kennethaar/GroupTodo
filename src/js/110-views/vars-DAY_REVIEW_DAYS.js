@@ -14,5 +14,5 @@
    not asked about (what is written under them is). */
 const DAY_REVIEW_DAYS = 14;
 // An event or a feeling is something that happened, never a to do (#185).
-const dayCandidate = b => !b.state && !isMessage(b) && !isMeeting(b) && !bujoKind(b.title) &&
+const dayCandidate = b => !b.state && !isMessage(b) && !isMeeting(b) && !bujoKind(b.title) && !isCatchUpHead(b) &&
   !noWords(b) && !/^\s*[\w-]+::/.test(b.title || "");

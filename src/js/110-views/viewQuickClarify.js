@@ -1,18 +1,19 @@
 /* Clarify, Quick (#523): one line at a time in its day, and one question,
    something to do or a note. The other answers wait: a to do is sorted next,
-   in Review actions, and All answers has every one. */
-function viewQuickClarify(r, head, undo) {
+   in Review actions, and All answers has every one. In the catch-up's mini
+   review (#516 follow-up) it is Quick only, and the to-dos are sorted next. */
+function viewQuickClarify(r, head, undo, run = false) {
   if (SIDE_PAGE && SIDE_PAGE.at) SIDE_PAGE = null;
   const {path, block: b} = r;
   const out = qcOutline(path, b);
   const c = el("div", {class: "wrap clquick"}, head,
-    el("div", {class: "qcbar"}, el("p", {class: "solhow"}, "One line at a time. Something to do, or just a note?"), clMode()),
+    el("div", {class: "qcbar"}, el("p", {class: "solhow"}, "One line at a time. Something to do, or just a note?"), run ? null : clMode()),
     out,
     el("div", {class: "qcdock"},
       el("button", {class: "qcbig qcnote", "aria-keyshortcuts": "N ArrowLeft", onclick: () => qcTake("note")},
         svgIcon(ICON_PENCIL), el("b", {}, "Just a note"), el("small", {}, "stays on the day"), el("kbd", {}, "N")),
       el("button", {class: "qcbig qcdo", "aria-keyshortcuts": "T ArrowRight", onclick: () => qcTake("todo")},
-        svgIcon(ICON_BOLT), el("b", {}, "Something to do"), el("small", {}, "sorted next, in Review actions"), el("kbd", {}, "T"))),
+        svgIcon(ICON_BOLT), el("b", {}, "Something to do"), el("small", {}, run ? "sorted next, here" : "sorted next, in Review actions"), el("kbd", {}, "T"))),
     undo,
     el("p", {class: "qcmore"},
       el("button", {class: "textbtn", title: "Space", onclick: () => qcTake("skip")}, "Skip this line ›"), " · ",

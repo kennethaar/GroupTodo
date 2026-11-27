@@ -47,3 +47,7 @@
   .qcout{max-height:50vh}
   .qcbig kbd{display:none}
 }
+/* The catch-up's mini review (#516 follow-up): the line the AI wrote says so. */
+.qcai{flex:none;align-self:center;font-size:12px;font-weight:600;white-space:nowrap;color:var(--zet);
+  background:color-mix(in srgb,var(--zet) 12%,transparent);border:1px solid color-mix(in srgb,var(--zet) 35%,transparent);
+  border-radius:99px;padding:0 8px}

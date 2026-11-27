@@ -1071,6 +1071,8 @@ js/90-view-state/newsAnimKey.js
 js/90-view-state/newsSteps.js
 js/90-view-state/newsPlay.js
 js/90-view-state/newsStage.js
+js/90-view-state/newsFirstUse.js
+js/90-view-state/newsShowOne.js
 js/90-view-state/helpNews.js
 js/90-view-state/vars-RUN_WAYS.js
 js/90-view-state/runWayPick.js
@@ -1654,6 +1656,13 @@ js/145-horizons-view/catchUpLinkKind.js
 js/145-horizons-view/catchUpSource.js
 js/145-horizons-view/parseCatchUp.js
 js/145-horizons-view/applyCatchUp.js
+js/145-horizons-view/cuByAI.js
+js/145-horizons-view/cuFromName.js
+js/145-horizons-view/cuRunEnd.js
+js/145-horizons-view/cuRunHead.js
+js/145-horizons-view/cuRunStart.js
+js/145-horizons-view/cuSummary.js
+js/145-horizons-view/cuToSort.js
 js/145-horizons-view/catchUpReview.js
 js/145-horizons-view/openCatchUp.js
 js/145-horizons-view/replyWithoutRef.js

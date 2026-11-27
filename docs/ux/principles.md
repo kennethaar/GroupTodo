@@ -139,6 +139,24 @@ added automatically, and put back when it goes. *Why:* the ask note mixed
 edit would cut the reply off from its task. *Apply:* any message, export or
 template that carries ids. *Source:* #372.
 
+**P21. What an AI wrote says so, once, and you decide what it is.** Lines
+from an AI go under one marked heading (`✦`, `by:: AI`), linked to where
+they belong, and are asked about like any captured line: to do or note,
+then what they still lack. The mark is on the heading, not on every line;
+where one line is asked about alone, it says "Written by AI". *Why:* a
+catch-up line set as a to-do could not become a note, and the AI's words
+mixed with yours with no sign of who wrote them. *Apply:* any feature that
+pastes or imports text an AI wrote. *Source:* #516 follow-up.
+
+**P22. Show how, at the user's pace.** An animation plays once and stops
+with Play again and Next; it never turns on by itself. A callout spotlights
+one part at a time: the part first, to read it, then its words, with the
+rest faded, and it moves straight on to the next part. The first time a new
+thing is used, a note that can be passed by offers See how it works
+(`newsFirstUse`). *Why:* the catch-up animation was too fast to read, and
+lit everything up again between callouts. *Apply:* every What's new
+animation and every new feature that has one. *Source:* #516 follow-up.
+
 **P14. Capture views keep the order you wrote; doing views group.** The
 Journal shows lines as written, in the order written, and never groups
 by context, on any screen. Next is for doing, so it groups by context, one

@@ -98,3 +98,19 @@ li.newsnow > strong, .helpnews li.newsnow { text-decoration: underline; text-dec
 .newsplay .n-out { transform: translateX(-40px); }
 .newsplay .n-gone.n-gone { display: none; }
 @media (prefers-reduced-motion: reduce) { .newsplay [class^="n-"], .newsplay [class*=" n-"] { transition: none; } }
+/* A callout (#516 follow-up): words in a bubble, its arrow on the part it is about, and that part ringed. */
+.newsplay .n-callout { position: absolute; z-index: 4; max-width: 62%; padding: 3px 9px; border-radius: 7px;
+  background: var(--callout); color: var(--callout-fg); font-size: 11.5px; font-weight: 600; line-height: 1.3;
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--fg) 22%, transparent); white-space: normal; }
+.newsplay .n-callout::after { content: ""; position: absolute; width: 8px; height: 8px; background: inherit; transform: rotate(45deg); }
+.newsplay .n-callout.n-below::after { top: -4px; left: var(--ax, 12px); }
+.newsplay .n-callout.n-above::after { bottom: -4px; left: var(--ax, 12px); }
+.newsplay .n-callout.n-right::after { left: -4px; top: calc(50% - 4px); }
+.newsplay .n-callout.n-left::after { right: -4px; top: calc(50% - 4px); }
+.newsplay .n-ring { outline: 2px solid var(--callout); outline-offset: 1px; border-radius: 4px; width: fit-content; }
+/* While a callout shows, what it is not about fades back; a part already hidden stays hidden. */
+.newsplay .n-faded:not(.n-fade):not(.n-out) { opacity: .3; }
+/* After one round: Play again, or Next with its name (#516 follow-up). */
+.newsend { display: flex; gap: 8px; justify-content: flex-end; margin: 8px 0 2px; }
+.newsend[hidden] { display: none; }
+.newsend .newsgo { max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

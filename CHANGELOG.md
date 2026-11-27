@@ -5,6 +5,20 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.230.0 - 2026-11-27
+
+- Weekly review › Steps: Catch up with an AI puts every new line it finds,
+  a next action, a to-do, a project or news on a project, on today's page
+  under one heading, ✦ Catch-up from AI, each linked to its project. Apply
+  then starts a short review of only those lines: Quick asks to do or note
+  for each, then the to-dos get what they still lack, such as a context, and
+  a summary takes you back. Before, a line from the AI set as a to-do could
+  not be made a note. (#516)
+- What's new: each new thing plays once and stops, with Play again and
+  Next, so you read at your own pace. Callouts point at what each step is
+  about and fade the rest. The first time you use a new thing, a note
+  offers See how it works. (#516)
+
 ## 1.229.1 - 2026-11-27
 
 - Weekly review › Projects: once you pick a person or an organisation,

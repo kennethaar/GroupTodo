@@ -5,7 +5,9 @@ function viewActSolitaire() {
   if (SOL.day && SOL.day !== todayISO()) { SOL = {order: null, i: 0, focus: null, more: null, pass: 0, deck: "a"}; SOL_KB = null; }
   SOL.day = todayISO();
   const c = el("div", {class: "wrap wide"});
-  const head = vhead("Review actions", null, viewSeg("review"));
+  // The catch-up's mini review: its head, and the passes it still needs, then its summary (#516 follow-up).
+  if (CU_RUN && CU_RUN.phase === "done") return cuSummary();
+  const head = CU_RUN ? cuRunHead("Step 2 of 2: sort the to-dos") : vhead("Review actions", null, viewSeg("review"));
   const vis = visibleSpaces().join("|");
   const pass = solPassNo(), P = ACT_PASSES[pass];
   if (!SOL.order || SOL.vis !== vis || !SOL.order.length) { SOL.order = actOrder(pass); SOL.i = 0; SOL.vis = vis; }
@@ -18,6 +20,13 @@ function viewActSolitaire() {
       "aria-current": n === pass ? "step" : null, title: p.say, onclick: () => { if (n !== pass) actGoPass(n); }},
       el("span", {class: "n"}, n < pass && !left[n] ? svgIcon(ICON_CHECK) : String(n + 1)),
       el("span", {class: "q"}, p.name + (left[n] ? " · " + left[n] : ""))))));
+  if (SOL.i >= SOL.order.length && CU_RUN) {
+    const n = ACT_PASSES.findIndex((p, k) => k > pass && actOrder(k).length);
+    if (n < 0) return cuSummary();
+    SOL = {order: null, i: 0, focus: null, more: null, pass: n, deck: "a", day: todayISO()};
+    SOL_KB = null;
+    return viewActSolitaire();
+  }
   if (SOL.i >= SOL.order.length) {
     const any = solDeckAns().some(a => a["p" + pass]);
     const next = ACT_PASSES[pass + 1];

@@ -1,5 +1,7 @@
 function go(view, opts = {}) {
   navRecord();
+  // Leaving the catch-up's mini review stops it; what it did not sort stays marked (#516 follow-up).
+  if (CU_RUN && (view !== "review" || !["days", "actions"].includes(opts.sub || state.sub))) CU_RUN = null;
   /* Arriving from somewhere else opens a view at the reading last picked for
      it, or at its first, the list, which is also the quickest to draw. */
   if (view !== state.view) {

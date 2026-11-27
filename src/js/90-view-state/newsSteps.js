@@ -6,6 +6,12 @@
      s id | css      - id             add style, take it away
      p id            w 300            point and click, wait (ms)
      k Alt+T         k                show a key, hide it
+     o id part below | words          a callout: words in a bubble that points
+                                      (part+part spotlights several)
+                                      at a part, rings it and fades the rest; below, above,
+                                      left or right of it (below if not said);
+                                      with no words it only spotlights; the
+                                      same id again moves on; - id ends it
    Lines starting with # are notes. */
 function newsSteps(text) {
   const out = [];
@@ -18,7 +24,8 @@ function newsSteps(text) {
     if (op === "+") {
       const at = rest.indexOf(">");
       out.push(["+", id, (at < 0 ? rest : rest.slice(0, at)).join(" "), words || "", at < 0 ? undefined : rest[at + 1]]);
-    } else if (op === "c") out.push(["c", id, rest.join(" ")]);
+    } else if (op === "o") out.push(["o", id, rest[0], rest[1] || "below", words || ""]);
+    else if (op === "c") out.push(["c", id, rest.join(" ")]);
     else if (op === "w") out.push(["w", +id]);
     else if (op === "k") out.push(["k", id || null]);
     else out.push(words === null ? [op, id] : [op, id, words]);

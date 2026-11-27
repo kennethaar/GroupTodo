@@ -13,6 +13,8 @@
   --late:#c4402f; --today:#a8710f; --ok:#2e8a57; --warn:#a8710f; --danger:#c4402f;
   --late-soft:#fbeae7; --wait-soft:#fbf1dc; --ok-soft:#e3f3ea;
   --ctx:#187365; --proj:#c25b1e; --zet:#8b5cd6;
+  /* A callout in a What's new animation: the complement of the accent, so it never reads as a button. */
+  --callout:#b4530a; --callout-fg:#ffffff;
   --radius:12px; --radius-sm:8px;
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
@@ -30,6 +32,7 @@
     --late:#ec7a68; --today:#e0aa45; --ok:#5fc08a; --warn:#e0aa45; --danger:#ec7a68;
     --late-soft:#3a201c; --wait-soft:#3a2f18; --ok-soft:#1b3326;
     --ctx:#5ecfc0; --proj:#ff9f6b; --zet:#c792ea;
+    --callout:#f0a24a; --callout-fg:#1a1206;
     --shadow:0 8px 30px rgba(0,0,0,.5);
     color-scheme:dark;
   }
@@ -43,6 +46,7 @@
   --late:#ec7a68; --today:#e0aa45; --ok:#5fc08a; --warn:#e0aa45; --danger:#ec7a68;
   --late-soft:#3a201c; --wait-soft:#3a2f18; --ok-soft:#1b3326;
   --ctx:#5ecfc0; --proj:#ff9f6b; --zet:#c792ea;
+  --callout:#f0a24a; --callout-fg:#1a1206;
   --shadow:0 8px 30px rgba(0,0,0,.5);
   color-scheme:dark;
 }
@@ -54,6 +58,7 @@
   --border:#e3dacb; --border2:#d2c6b2;
   --accent:#a34e24; --accent2:#87401d; --accent-fg:#ffffff; --accent-soft:#f3e2d6;
   --todo:#a34e24;
+  --callout:#1d6a86; --callout-fg:#ffffff;
 }
 @media (prefers-color-scheme: light){
   :root[data-light="linen"]:not([data-theme="dark"]){
@@ -62,6 +67,7 @@
     --border:#e3dacb; --border2:#d2c6b2;
     --accent:#a34e24; --accent2:#87401d; --accent-fg:#ffffff; --accent-soft:#f3e2d6;
     --todo:#a34e24;
+    --callout:#1d6a86; --callout-fg:#ffffff;
   }
 }
 :root[data-dark="night"][data-theme="dark"]{
@@ -70,6 +76,7 @@
   --border:#263045; --border2:#364158;
   --accent:#7aa2ff; --accent2:#9ab8ff; --accent-fg:#0b1220; --accent-soft:#1c2a4a;
   --todo:#7aa2ff;
+  --callout:#f5b04a; --callout-fg:#1a1206;
 }
 @media (prefers-color-scheme: dark){
   :root[data-dark="night"]:not([data-theme="light"]){
@@ -78,6 +85,7 @@
     --border:#263045; --border2:#364158;
     --accent:#7aa2ff; --accent2:#9ab8ff; --accent-fg:#0b1220; --accent-soft:#1c2a4a;
     --todo:#7aa2ff;
+    --callout:#f5b04a; --callout-fg:#1a1206;
   }
 }
 *{box-sizing:border-box}
