@@ -141,6 +141,11 @@ in `vars-NEWS_ANIM.js`, keyed `version#issue` (format in `newsSteps.js`), drawn
 by the app, never video. Keep only the newest 30; delete older ones. Test #471
 fails if a key's version has left `HELP_NEWS`: delete that animation. Only
 new things get one. Never add an animation for a fix, or to make up a count.
+Before adding one, show it to the user as an HTML file that plays it, and
+wait for their OK. A script pasted in the reply is not enough. Serve that
+file, and every HTML mockup, with `node docs/ux/mockup-serve.mjs <file>`:
+the user comments on any part, and the comments land in
+`<file>.comments.json` for you to read.
 
 If a topic marked `shot: 1` changes visually, update its screenshot:
 
