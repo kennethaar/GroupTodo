@@ -362,6 +362,9 @@ body.solview #content{padding-bottom:14px}
 .slot.solopt.on{border-color:var(--ok);background:var(--ok-soft)}
 .slot.solopt.on .solopt-t::before{content:"\2713\a0";color:var(--ok)}
 .slot.solopt.now .solopt-s{color:var(--accent)}
+/* #528 the way on, once something is picked: the one box that stands out */
+.slot.solopt.go{border:2px solid var(--accent);background:var(--accent-soft)}
+.slot.solopt.go .solopt-t{color:var(--accent);font-weight:700}
 .slot.solopt.more{border-style:dashed}
 .slot.solopt.more .solopt-t{color:var(--accent)}
 .slot.solopt.write{cursor:text;justify-content:flex-end}

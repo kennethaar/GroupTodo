@@ -48,7 +48,8 @@ function solDeal(r, f) {
   const list = f.opts(r);
   const first = [], last = [];
   if (f.type === "multi") {
-    if (cur.length) first.push({label: "That's all", sub: cur.join(", "), word: "Done", take: () => solAfter(r, f.k)});
+    // Once somebody is picked, the way on is the one box that stands out (#528).
+    if (cur.length) first.push({label: "That's all", sub: cur.join(", "), word: "Done", go: true, take: () => solAfter(r, f.k)});
     else first.push({label: f.none, word: f.none, on: !!solAns(r)[f.k], take: pick("none")});
   }
   for (const [v, label] of list.filter(([v]) => v === "none"))

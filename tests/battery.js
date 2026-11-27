@@ -11863,6 +11863,24 @@ var GTD_TEST = (() => {
       eq(getPage(path).props.org, "[[o/" + slugify("Acme Test377") + "]]", "none is not replaced by the organisation");
     } finally { SOL_ANS.delete(solKey(r)); }
   });
+  test("#528 Review projects: once somebody is picked, That's all is the highlighted box and has the focus", async () => {
+    const path = scratchProject("528 picks", [["TODO", "Call the supplier"]]);
+    const r = {space: V.space, path};
+    const F = k => solFields().find(f => f.k === k);
+    const pass = SOL_PASSES.findIndex(p => p.steps.includes("people"));
+    const done = () => content().querySelector(".sol .slot.solopt.go");
+    try {
+      go("review", {sub: "projects"}); solGoPass(pass); await settle();
+      SOL.order = [r]; SOL.i = 0; render(); await settle();
+      eq(content().querySelector(".sol").dataset.step, "people", "the card asks who else is in it");
+      ok(!done(), "nothing picked: no box stands out as the way on");
+      solApply(r, F("people"), "Person Test528"); await settle(); await settle();
+      eq(content().querySelector(".sol").dataset.step, "people", "a pick stays on the question, as more can be picked");
+      ok(done(), "That's all is the highlighted box");
+      has(done()?.textContent || "", "That's all");
+      eq(document.activeElement, done(), "and it has the focus, so Enter goes on");
+    } finally { SOL_ANS.delete(solKey(r)); removePage(path); solGoPass(0); go("today"); await settle(); }
+  });
   test("#378 a card whose questions all get answered elsewhere is passed by, not shown with only Next card", async () => {
     const pa = scratchProject("answered elsewhere", [["TODO", "Step one"]]);
     const pb = scratchProject("still to ask", [["TODO", "Step two"]]);

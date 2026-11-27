@@ -11,6 +11,11 @@ function solActBox(r, a) {
     el("div", {class: "solopt-t"}, a.label),
     a.sub ? el("div", {class: "solopt-s"}, a.sub) : null,
     stack ? el("div", {class: "solpilen"}, a.pile ? a.pile + " " + (r.block ? (a.pile === 1 ? "action" : "actions") : a.pile === 1 ? "project" : "projects") : "none yet") : null);
+  // The way on takes the focus once it is drawn, so Enter goes on (#528).
+  if (a.go) {
+    box.classList.add("go");
+    requestAnimationFrame(() => { if (box.isConnected && !document.activeElement?.closest("input,textarea")) box.focus({preventScroll: true}); });
+  }
   if (a.input && a.send) box.append(el("div", {class: "slotform"}, a.input, el("button", {class: "btn sm", onclick: a.send}, "Add")));
   else if (a.input || a.date) box.append(a.input || a.date);
   return box;

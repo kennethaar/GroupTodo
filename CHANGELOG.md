@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.229.1 - 2026-11-27
+
+- Weekly review › Projects: once you pick a person or an organisation,
+  That's all is the highlighted box and has the focus, so Enter goes on.
+  Before, it looked like every other box, and a pick seemed to do
+  nothing. (#528)
+
 ## 1.229.0 - 2026-11-27
 
 - Waiting for › List: a waiting-for that names nobody shows + who, on its
