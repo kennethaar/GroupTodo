@@ -19,11 +19,11 @@ function actFields() {
          [nextWeek, "Not this week"], [nextMonth, "Not before " + monthName], ["cancel", "Let it go"], ["note", "Not an action"]],
      sub: (r, v) => v === "done" && isChore(r) ? "Tick it off; the next round is put in" : STILL[v] || holdSay(v),
      cur: () => null,
-     filled: r => !!actAnsNow(r).still,
+     filled: r => !!actAnsNow(r).still || actReviewedThisWeek(r),
      text: r => ({keep: "still to do", done: "done", wait: "waiting", cancel: "let go", note: "a note", project: "a project", area: "for a responsibility", hold: "on hold", often: "how often changed"})[actAnsNow(r).still],
      pick: (r, v) => {
        const st = {done: "DONE", cancel: "CANCELLED", note: null};
-       if (v === "keep") { solAns(r).still = "keep"; return; }
+       if (v === "keep") { solAns(r).still = "keep"; actStampReviewed(r); return; }
        if (v === "often") {
          setTimeout(() => openRecurrenceDialog({title: "How often?", spec: repeatOf(r.block), onSave: ({spec}) => {
            inS(r, () => {
@@ -31,6 +31,7 @@ function actFields() {
              else for (const key of Object.keys(r.block.props)) if (key.toLowerCase() === REPEAT_PROP) delete r.block.props[key];
              touch(r.path);
            });
+           actStampReviewed(r);
            solAns(r).still = "often"; solAfter(r, "still");
          }}), 0);
          return;
@@ -39,6 +40,7 @@ function actFields() {
          // After the box the answer was taken from has closed, as the projects ask it.
          setTimeout(() => solAskWaiting(r, () => {
            if (r.block.state !== "WAIT") { render(); return; }
+           actStampReviewed(r);
            solAns(r).still = "wait"; solAfter(r, "still");
          }), 0);
          return;
@@ -59,7 +61,7 @@ function actFields() {
        holdRender(() => inS(r, () => {
          // A chore ticked off here puts its next round in, as ticked on the Chores page.
          if (v in st) setBlockState(r.path, r.block, st[v], {nextNow: v === "done" && isChore(r)});
-         else { setBlockProp(r.block, "hold", "[[" + v + "]]"); touch(r.path); }
+         else { setBlockProp(r.block, "hold", "[[" + v + "]]"); setBlockProp(r.block, "reviewed", todayStamp()); touch(r.path); }
        }));
        if (v === "done") actConfetti();
      }},

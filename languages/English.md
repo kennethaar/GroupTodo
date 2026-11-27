@@ -4271,6 +4271,7 @@ Still running. Give it an end to stop it =>
 Still the right status? =>
 Still there. Click to check out =>
 Still to do =>
+Still to do writes the day it was reviewed on the line, so it is not asked again that week, on any device. =>
 Still to do: keep, done, waiting, later or drop. Not an action? A project, a note or a responsibility. =>
 Still yours to do? =>
 Stock =>

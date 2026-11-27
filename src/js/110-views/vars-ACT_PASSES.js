@@ -16,8 +16,8 @@
 
    Every answer is written on the line the way the line menu would write it:
    a verb at the start, [[c/...]], waiting_for::, hold::, a state, or the line
-   refiled. Only "still to do" leaves nothing on the line, so it is kept on
-   this device for the week, like the projects' answers.
+   refiled. A line that stays open is also stamped reviewed:: (#524), so
+   "still to do" is on the line too, and is not asked again that week.
    ============================================================ */
 const ACT_PASSES = [
   {name: "Still to do", say: "Every next action of yours: still to do, done already, waiting on someone, later, or let go.", steps: ["still"]},
@@ -30,6 +30,10 @@ const ACT_ASK = {still: "Still yours to do?", verb: "What do you physically do f
 // The answers to "still to do" that are stacks the sorted actions lie on; a hold is a day, not a stack.
 const ACT_STACKS = ["keep", "done", "wait", "cancel", "note"];
 const actAnsNow = r => SOL_ANS.get(solKey(r)) || {};    // read only: asking makes no entry
+/* "Still to do" is written on the line as reviewed:: (#524), so a review
+   finished on another device, or in another browser, is not dealt again. */
+const actReviewedThisWeek = r => (dateIn(blockProp(r.block, "reviewed") || "") || "") >= solWeek();
+const actStampReviewed = r => inS(r, () => { setBlockProp(r.block, "reviewed", todayStamp()); touch(r.path); });
 
 /* Your own open actions you could do: not waiting, not somebody else's, not a
    tour step or a step of a routine you ran, which were worded once in their list.

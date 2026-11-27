@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.227.4 - 2026-11-27
+
+- Weekly review › Actions: Still to do is written on the line as
+  reviewed::, so a review picked up the next day, on another device or in
+  another browser, no longer deals every action again. (#524)
+
 ## 1.227.3 - 2026-11-26
 
 - Weekly review: a project whose next action is on a day page that links

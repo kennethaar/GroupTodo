@@ -836,7 +836,7 @@ const HELP = {
       "Verb › All shows the line's own words. Press one, and it counts as a verb from now on. Type a verb the list does not have, and + Add puts it first in the line.",
       "The step that comes first goes under the one that waits for it. They can all go at once is written on the project page, so it is not asked again. + N more steps deals the waiting ones too, in Still to do only. A step with open steps under it waits, even set to Doing.",
       "Done already throws confetti. Every tenth one this week is a big burst. With Celebration: off on the review page, it is quiet.",
-      "On a new day the review starts again at Still to do."],
+      "On a new day the review starts again at Still to do.", "Still to do writes the day it was reviewed on the line, so it is not asked again that week, on any device."],
     see: ["keys-review", "review-projects"],
     words: ["solitaire", "cards", "verbs", "tidy", "confetti"]},
   "review-reflect": {part: "views", title: "Weekly review › Reflect", view: "review", sub: "reflect", gtd: "reflect", shot: 1,

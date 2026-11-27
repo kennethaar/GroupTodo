@@ -3420,6 +3420,24 @@ var GTD_TEST = (() => {
       eq(solPassNo(), 0, "the next day: Still to do again");
     } finally { actGoPass(0); go("today"); await settle(); }
   });
+  test("#524 Review actions: Still to do is written on the line, so another device does not ask again this week", async () => {
+    const path = scratchProject("524", [["TODO", "Phone the plumber"], ["TODO", "Paint the fence"]]);
+    const still = actFields().find(f => f.k === "still");
+    const [r1, r2] = getPage(path).blocks.map(b => actDeck().find(a => a.block === b));
+    try {
+      go("review", {sub: "actions"}); await settle();
+      still.pick(r1, "keep");
+      const line = parsePage(serializePage(getPage(path))).blocks[0];
+      eq(dateIn(blockProp(line, "reviewed") || ""), todayISO(), "the line does not say when it was last reviewed");
+      SOL_ANS.delete(solKey(r1));                       // another device: nothing held in this browser
+      ok(still.filled(r1), "Still to do is asked again on another device");
+      ok(!actOrder(0).some(r => r.block === r1.block), "the line is dealt again in Still to do");
+      ok(!(lineMeta(r1.block, path)?.textContent || "").includes("reviewed"), "reviewed:: shows under the line");
+      // Reviewed before this week: asked again.
+      setBlockProp(r2.block, "reviewed", "[[" + shiftISO(solWeek(), -1) + "]]");
+      ok(!still.filled(r2), "a line reviewed last week is not asked again");
+    } finally { for (const r of [r1, r2]) SOL_ANS.delete(solKey(r)); solSaveAns(); removePage(path); clearMemo(); go("today"); await settle(); }
+  });
   test("#442 Review actions: Done already throws confetti, and every 10th done a big burst", async () => {
     const path = scratchProject("442", Array.from({length: 11}, (_, i) => ["TODO", "Finish step " + i]));
     const still = actFields().find(f => f.k === "still");
