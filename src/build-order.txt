@@ -477,6 +477,7 @@ js/65-gtd-scanners/vars-hasRepeatUnder.js
 js/65-gtd-scanners/releaseTaskHold.js
 js/65-gtd-scanners/leafActionsHere.js
 js/65-gtd-scanners/needsContext.js
+js/65-gtd-scanners/needsWho.js
 js/65-gtd-scanners/resumeHeldHere.js
 js/65-gtd-scanners/resumeHeldTasks.js
 js/65-gtd-scanners/stuckActiveProjects.js
@@ -1683,6 +1684,7 @@ js/145-horizons-view/remindRearm.js
 js/145-horizons-view/whenFromBox.js
 js/145-horizons-view/openDueChipMenu.js
 js/145-horizons-view/anchorModal.js
+js/145-horizons-view/openPersonPick.js
 js/145-horizons-view/openWhoMenu.js
 js/145-horizons-view/vars-dueWords.js
 js/145-horizons-view/chipsFor.js

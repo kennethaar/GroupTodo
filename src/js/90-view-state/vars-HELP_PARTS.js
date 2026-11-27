@@ -231,6 +231,7 @@ const HELP = {
       ["?.t-age", "How long it has waited."],
       ["?.ctxdrops", "People hidden on the board. Click one to show them."],
       ["?.chip.who", "Who it waits on."],
+      ["?.chip.miss", "+ who: it names nobody yet. Click to say who."],
       ["?.chip.said", "A reply: who said it, and when."],
       ["?.duepill", "When it is due. Red is late."]],
     more: [

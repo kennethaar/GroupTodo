@@ -3296,7 +3296,7 @@ var GTD_TEST = (() => {
       scanVerbs(); removePage(path); clearMemo(); go("today"); await settle();
     }
   });
-  test("#526 a line waiting on a named person needs no context; one waiting on nobody, or your own, still does", () => {
+  test("#526 a line waiting on a named person needs no context; your own to-do still does", () => {
     const path = scratchProject("526", [["WAIT", "Quote from the printer"], ["TODO", "Send the draft"],
       ["WAIT", "Reply on the offer"], ["TODO", "Book the room"]]);
     const [waitNamed, handed, waitBare, own] = getPage(path).blocks;
@@ -3311,10 +3311,39 @@ var GTD_TEST = (() => {
         eq(weed(b).missingContext, false, name + " is not missing a context in Weeding");
         ok(!chipsFor(row(b)).some(c => /no context/.test(c.textContent)), name + " has no “no context” chip");
       }
-      eq(row(waitBare).missingContext, true, "a waiting-for naming nobody still lacks a context");
+      // A waiting-for naming nobody is asked who, not where (#527).
+      eq(row(waitBare).missingContext, false, "a waiting-for naming nobody is not asked where");
       eq(row(own).missingContext, true, "your own to-do still lacks a context");
       eq(weed(own).missingContext, true, "and Weeding still asks for it");
     } finally { removePage(path); clearMemo(); }
+  });
+  test("#527 a waiting-for naming nobody shows + who, which names the person on the line", async () => {
+    const path = scratchProject("WHO", [["WAIT", "Reply on the offer"], ["WAIT", "Quote from the printer"]]);
+    const [bare, named] = getPage(path).blocks;
+    named.props = Object.assign(named.props || {}, {waiting_for: "Person A"});
+    clearMemo();
+    const row = b => leafActions().find(a => a.block === b);
+    const whoChip = b => chipsFor(row(b)).find(c => /\+ who/.test(c.textContent));
+    const weedWho = b => (stalestActiveProjects(999).find(p => p.path === path)?.todos || []).find(t => t.block === b).missingWho;
+    try {
+      ok(whoChip(bare), "a waiting-for naming nobody has a + who chip");
+      eq(weedWho(bare), true, "and Weeding asks who");
+      ok(!whoChip(named), "one naming somebody has none");
+      eq(weedWho(named), false, "nor in Weeding");
+      const chip = whoChip(bare);
+      document.body.append(chip); chip.click(); await settle();
+      const pop = document.querySelector("#modalRoot");
+      has(pop.textContent, "Waiting on whom?", "+ who opens the person picker");
+      ok(pop.querySelector("input[placeholder='Filter people']"), "with a filter, as Change person has");
+      const someone = [...pop.querySelectorAll("button")].find(x => /someone else/.test(x.textContent));
+      ok(someone, "and someone else… for a name not in the list");
+      const person = [...pop.querySelectorAll(".whenpop > div button")][0];
+      if (person) {
+        const name = person.textContent;
+        person.click(); await settle(); clearMemo();
+        ok(samePerson(row(bare)?.assignee || assigneeOf(bare, getPage(path)), name), "the choice names the person on the line");
+      }
+    } finally { closeModal(); document.querySelectorAll("body > .chip").forEach(n => n.remove()); removePage(path); clearMemo(); }
   });
   test("#463 Review actions: a project linked in a task reads as its name on the card", () => {
     const target = scratchProject("463 Kitchen");

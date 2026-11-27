@@ -54,5 +54,10 @@ function chipsFor(a, opts = {}) {
   if (a.missingContext && a.state !== "WAIT" && !quietChips)
     out.push(el("span", {class: tidy, title: "Where would you do this? Click to say.",
       onclick: e => {e.stopPropagation(); promptAndInsertContext(a.path, a.block);}}, "no context"));
+  // Waiting on nobody named: nobody to ask, so it asks who (#527).
+  if (a.missingWho && !quietChips)
+    out.push(el("button", {type: "button", class: tidy, title: "Who are you waiting on? Click to say.",
+      onclick: e => {e.stopPropagation(); openPersonPick({path: a.path, block: a.block, space: a.space || V.space,
+        title: "Waiting on whom?"}, e.currentTarget);}}, "+ who"));
   return out;
 }

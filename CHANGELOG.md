@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.229.0 - 2026-11-27
+
+- Waiting for › List: a waiting-for that names nobody shows + who, on its
+  row and in Weeding. It opens the person picker, and the one you pick is
+  named on the line. Such a line is no longer asked for a context. (#527)
+
 ## 1.228.2 - 2026-11-27
 
 - Waiting for › List: a line waiting on a named person, or handed to

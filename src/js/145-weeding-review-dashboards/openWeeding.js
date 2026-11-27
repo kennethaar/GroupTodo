@@ -47,6 +47,8 @@ function openWeeding(next) {
           translate: "no", html: renderInline(t.title), onclick: open}),
         t.missingContext ? el("button", {class: "chip miss", title: "Where can this be done?",
           onclick: () => fixThen(() => promptAndInsertContext(p.path, t.block))}, "+ context") : null,
+        t.missingWho ? el("button", {class: "chip miss", title: "Who are you waiting on?",
+          onclick: () => fixThen(() => openPersonPick({path: p.path, block: t.block, space: V.space, title: "Waiting on whom?"}))}, "+ who") : null,
         t.missingVerb ? el("button", {class: "chip miss", title: "What would a camera see?",
           onclick: () => fixThen(() => openVerbPicker(p.path, t.block))}, "+ verb") : null));
     }
