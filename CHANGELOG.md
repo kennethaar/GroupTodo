@@ -5,6 +5,12 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.230.1 - 2026-11-27
+
+- What's new: + who on a waiting-for that names nobody gets its own
+  animation. The spotlight moves from the chip to the person picker and on
+  to the line that now names the person. (#529)
+
 ## 1.230.0 - 2026-11-27
 
 - Weekly review › Steps: Catch up with an AI puts every new line it finds,

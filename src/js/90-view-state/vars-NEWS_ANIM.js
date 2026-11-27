@@ -83,6 +83,40 @@ const NEWS_ANIM = {
     w 1500
     o o s above | A summary of what you sorted
     w 5100`,
+  "1.229.0#527": `
+    cap | Waiting for: + who
+    say | A waiting-for that names nobody shows + who.
+    + pg col
+    + h h > pg | Waiting for
+    + a ln task > pg | Quote from the printer
+    + aw chip wait > a | Person A · 3 days
+    + b ln task > pg | Reply on the offer
+    + bw chip acc > b | + who
+    w 2500
+    o o b right
+    w 1500
+    o o bw+b right | Nobody is named: who owes it?
+    w 4500
+    p bw
+    + m menu > pg | Waiting on whom?
+    s m | top:54px;left:150px
+    + mf field > m | Filter people
+    + m1 item > m | Person A
+    + m2 item > m | Person B
+    + m3 item quiet > m | someone else…
+    o o m right
+    w 1500
+    o o m right | Pick from your people, or type a name
+    w 4800
+    p m2
+    - m
+    - bw
+    + bp chip wait > b | Person B
+    say | The line names Person B and asks for no context.
+    o o b right
+    w 1200
+    o o b right | Named on the line
+    w 4000`,
   "1.228.0#523": `
     cap | Clarify, Quick: to do or note
     say | Quick shows each loose line in its day, lit up.
