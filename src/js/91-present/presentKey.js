@@ -3,9 +3,20 @@
    skips the rest of the slide. A number and Enter jumps to that slide. Every
    other key is kept from the page under it, so nothing gets typed there. */
 function presentKey(e) {
+  // Alt shows what can be placed; Alt+arrows nudge what Alt+click picked (#487).
+  if (slideArrKey(e)) return;
   // A line being edited on the slide (#466) gets its keys; its field handles Enter and Esc.
   if (!DECK || DECK.edit || e.ctrlKey || e.metaKey || e.altKey || /^F\d+$/.test(e.key)) return;
+  // The presenter window's time list (#489) keeps its keys: a time is typed there.
+  if (e.target?.closest?.(".ptimes")) { if (e.key === "Escape") { DECK.pwTimes = false; presenterDraw(); } return; }
   e.preventDefault(); e.stopImmediatePropagation();
+  // The waiting screen (#486): → or Space starts the talk, Esc leaves, P opens the presenter window.
+  if (DECK.wait) {
+    if (["ArrowRight", "ArrowDown", "PageDown", " ", "Enter", "n"].includes(e.key)) slideWaitEnd();
+    else if (e.key === "Escape") presentStop();
+    else if (e.key.toLowerCase() === "p") presenterOpen();
+    return;
+  }
   const {steps, slides} = DECK, here = steps[DECK.i], k = e.key;
   if (/^\d$/.test(k)) { DECK.digits = (DECK.digits + k).slice(-3); return; }
   const digits = DECK.digits;
@@ -23,7 +34,14 @@ function presentKey(e) {
   if (k === "Home") return presentGo(0);
   if (k === "End") return presentGo(steps.length - 1);
   const low = k.toLowerCase();
-  if (low === "b" || k === ".") DECK.deck.classList.toggle("blank");
+  // Your camera (#485): Shift+C on or off; C the next mode for this slide.
+  if (low === "c" && e.shiftKey) slideCamToggle();
+  else if (low === "c" && DECK.cam) {
+    const at = SLIDE_CAM_MODES.indexOf(DECK.cam.mode === "pic" ? "side" : DECK.cam.mode);
+    slideCamPick(SLIDE_CAM_MODES[(at + 1) % SLIDE_CAM_MODES.length]);
+  }
+  else if (low === "b" || k === ".") DECK.deck.classList.toggle("blank");
   else if (low === "p") presenterOpen();
+  else if (low === "f") slideFull();      // full screen, in the slides window (#515)
   else if (low === "o") { if (!DECK.pw || DECK.pw.closed) presenterOpen(); DECK.grid = !DECK.grid; presenterDraw(); }
 }

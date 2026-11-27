@@ -12,7 +12,7 @@ function solSlot(r, f) {
     attachSuggest(input);
     const send = () => { const v = trim(input.value); if (!v) return; f.submit(r, v); solAfter(r, f.k); };
     input.addEventListener("keydown", e => { if (suggestKey(e)) return; if (e.key === "Enter") { e.preventDefault(); send(); } });
-    slot.append(el("div", {class: "slotform"}, input, el("button", {class: "btn sm", onclick: send}, f.k === "outcome" && filled ? "Save" : "Add")));
+    slot.append(el("div", {class: "slotform"}, input, el("button", {class: "btn sm primary", onclick: send}, f.k === "outcome" && filled ? "Save" : "Add")));
     /* A project's name is often already its outcome ("Website relaunched"),
        so it is offered from the start, three ways: accept it as it is, edit
        it in the box first, or write your own in the box. */

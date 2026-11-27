@@ -1807,13 +1807,21 @@ var GTD_TEST = (() => {
       // One click hides it again; new things go back to an area still shown.
       box(other).click(); await settle();
       ok(!visibleSpaces().includes(other) && Spaces.active === name, "hiding did not hand landing back");
-      // Settings > Area: every area with its colour, and the setup buttons from the old menu.
-      openAreaSettings();
-      const dlg = $("#modalRoot .modal");
-      for (const n of [name, other]) ok([...dlg.querySelectorAll("button")].some(b => b.textContent.includes(n) && /colou?r/i.test(b.title || b.textContent)),
-        "Settings › Area has no colour for " + n);
-      for (const l of ["+ New area", "Manage areas", "Invite somebody"]) ok([...dlg.querySelectorAll("button")].some(b => b.textContent === l), "Settings › Area lacks " + l);
-      closeModal();
+      // Settings › Areas (#521): a card per area in the section itself, each with its colour and its own type.
+      go("checklists"); await settle();
+      const sec = $("#set-area");
+      for (const n of [name, other]) ok([...sec.querySelectorAll(".afcard .afdot")].some(b => b.getAttribute("aria-label") === "Colour for " + n),
+        "Settings › Areas has no card for " + n);
+      ok(![...sec.querySelectorAll("button")].some(b => /^Manage/.test(b.textContent)), "the areas are still a dialog away");
+      ok([...sec.querySelectorAll("button")].some(b => b.textContent === "+ New area"), "Settings › Areas lacks + New area");
+      has($("#set-sync").textContent, "Invite somebody", "Invite somebody is gone from Settings");
+      const typeSel = n => [...sec.querySelectorAll(".afcard")].find(c => c.querySelector(".afname").textContent === n)?.querySelector("select[aria-label^='Type']");
+      const mine = horizonProfile().key, pickKey = Object.values(HORIZON_PROFILES).find(p => p.key !== inSpace(other, () => horizonProfile().key)).key;
+      ok(typeSel(name) && typeSel(other), "a card has no type");
+      typeSel(other).value = pickKey; typeSel(other).dispatchEvent(new Event("change")); await settle();
+      eq(inSpace(other, () => horizonProfile().key), pickKey, "the type was not set for that area");
+      eq(horizonProfile().key, mine, "the type changed the open area");
+      go("today"); await settle();
       // A phone keeps the menu, now without a Settings button; one area keeps the button.
       Object.defineProperty(PHONE, "matches", {configurable: true, get: () => true}); render(); await settle();
       ok(!seen($("#areaBar")) && seen($("#spacesBtn")), "a phone did not keep the area menu");
@@ -3227,6 +3235,41 @@ var GTD_TEST = (() => {
       for (const p of [path, target, area]) removePage(p); clearMemo(); go("today"); await settle();
     }
   });
+  test("#519 Review actions › Verb: All offers the line's own words, and + Add a word no verb matches", async () => {
+    if (!startsWithVerb("Call Bob")) seedVerbs();
+    const lang = verbLang(), known = verbList().find(v => v.lang === lang).canonical;
+    const path = scratchProject("519", [["TODO", "Quarterly report fettle"], ["TODO", "Budget sheet"]]);
+    const verb = actFields().find(f => f.k === "verb");
+    const [mid, plain] = getPage(path).blocks;
+    const [r1, r2] = [mid, plain].map(b => actDeck().find(a => a.block === b));
+    const wrap = () => document.querySelector("#modalRoot .solmorewrap");
+    const btn = re => [...wrap().querySelectorAll("button")].find(b => re.test(b.textContent));
+    const search = async q => { const s = wrap().querySelector("input[type=search]"); s.value = q; s.dispatchEvent(new Event("input")); await settle(); };
+    try {
+      go("review", {sub: "actions"}); await settle();
+      solMoreOf(r1, verb); await settle();
+      ok(wrap(), "the verb's All box has no search");
+      const word = btn(/^fettle$/i);
+      ok(word, "a word further in the line is not offered in All");
+      word.click(); await settle();
+      ok(VERB_LOOKUP.fettle, "the word is taught");
+      eq(mid.title, "Quarterly report fettle", "the line is not rewritten");
+      solMoreOf(r2, verb); await settle();
+      await search("Wrangle");
+      const add = btn(/Add “Wrangle” as a verb/);
+      ok(add && !add.hidden, "no + Add for a word no verb matches");
+      await search(known);
+      ok(!btn(/Add “.*” as a verb/) || btn(/Add “.*” as a verb/).hidden, "+ Add shown for a verb the list has");
+      await search("Wrangle");
+      btn(/Add “Wrangle” as a verb/).click(); await settle();
+      ok(VERB_LOOKUP.wrangle, "the typed word is taught");
+      ok(/^wrangle /i.test(plain.title) && startsWithVerb(plain.title), "the line starts with it: " + plain.title);
+    } finally {
+      closeModal(); for (const r of [r1, r2]) if (r) SOL_ANS.delete(solKey(r));
+      for (const w of ["fettle", "wrangle"]) removePage(join(DIRS.verbs, lang, w + ".md"));
+      scanVerbs(); removePage(path); clearMemo(); go("today"); await settle();
+    }
+  });
   test("#463 Review actions: a project linked in a task reads as its name on the card", () => {
     const target = scratchProject("463 Kitchen");
     const path = scratchProject("463 home", [["TODO", "Ring Anna about [[" + pageRef(target) + "]] and @phone"]]);
@@ -3237,6 +3280,47 @@ var GTD_TEST = (() => {
       has(t, "Ring Anna about " + pageTitle(target), "the project's name is gone from the card");
       ok(!/\[|\]/.test(t), "brackets left on the card: " + t);
     } finally { for (const p of [path, target]) removePage(p); clearMemo(); }
+  });
+  test("#520 Review actions: a picture on the line shows on the card, not its path", async () => {
+    const asset = "assets/test-520-sketch.png";
+    await V.backend.putAsset(asset, new Blob([new Uint8Array([137, 80, 78, 71])], {type: "image/png"}));
+    const path = scratchProject("520 home", [["TODO", "Check the sketch ![](" + asset + ")"]]);
+    try {
+      const r = actDeck().find(a => a.block === getPage(path).blocks[0]);
+      ok(r, "the task is not dealt");
+      const h3 = actFace(r, null).querySelector("h3");
+      ok(!/assets\/|!\[/.test(h3.textContent), "the path is on the card: " + h3.textContent);
+      has(h3.textContent, "Check the sketch");
+      const img = h3.querySelector("img");
+      ok(img, "no picture on the card");
+      for (let i = 0; i < 20 && !/^blob:/.test(img.src); i++) await settle();
+      ok(/^blob:/.test(img.src), "the picture is not loaded: " + img.src);
+    } finally { removePage(path); clearMemo(); }
+  });
+  test("#522 Review actions: the page on the right is at the card's line, marked, as in Clarify", async () => {
+    const lines = Array.from({length: 40}, (_, i) => ["TODO", "Call supplier " + i]);
+    const path = scratchProject("side line", lines);
+    getPage(path).props.parallel = "yes"; touch(path); clearMemo();   // no sorting card first (#462)
+    const was = [...SOL_ANS];
+    const row = t => actDeck().find(a => a.path === path && a.block.title === t);
+    const deal = async r => { SOL = {order: [r], i: 0, pass: 0, deck: "a", vis: visibleSpaces().join("|"), day: todayISO()}; render(); await settle(); };
+    const marked = () => $("#pagePane .sidehere")?.closest(".blk")?.dataset.id;
+    try {
+      SOL_ANS.clear();
+      go("review", {sub: "actions"}); await settle();
+      const far = row("Call supplier 30"), near = row("Call supplier 2");
+      ok(far && near, "the tasks are not dealt");
+      await deal(far);
+      [...content().querySelectorAll(".solcard button")].find(b => b.textContent === "Open the page").click(); await settle();
+      eq(marked(), String(far.block.id), "the card's line is not marked on the page");
+      const pane = $("#pagePane"), at = $("#pagePane .sidehere").getBoundingClientRect(), pr = pane.getBoundingClientRect();
+      ok(at.top >= pr.top && at.bottom <= pr.bottom, "the card's line is not scrolled into view");
+      await deal(near);
+      eq(marked(), String(near.block.id), "the next card's line on the same page is not marked");
+    } finally {
+      closeSidePage(); SOL_ANS.clear(); for (const [k, a] of was) SOL_ANS.set(k, a); solSaveAns();
+      removePage(path); clearMemo(); go("today"); await settle();
+    }
   });
   test("#462 Review actions: a project with 3 or more steps that can go now is sorted into sequences first", async () => {
     const path = scratchProject("462 Kitchen", [["TODO", "Measure the room"], ["TODO", "Order the tiles"],
@@ -4888,7 +4972,7 @@ var GTD_TEST = (() => {
       await frame();
       ok(bar() && !bar().hidden, "no toolbar while a line is being written");
       eq([...bar().querySelectorAll(":scope > .ebtn .elb")].map(n => n.textContent),
-        ["Up", "Down", "Outdent", "Indent", "Notepad", "Type", "Tag", "Media", "Format", "Side panel"], "the top-level bar is 10 buttons (Format, #416)");
+        ["Up", "Down", "Outdent", "Indent", "Notepad", "Type", "Tag", "Media", "Format", "Slide layout", "Side panel"], "the top-level bar is 11 buttons (Format, #416; Slide layout, #395)");
       bar().querySelector('[data-k="more"]').click();
       await frame();
       ok(document.querySelector("#modalRoot .modal"), "Side panel opens the task detail panel directly, not a popover");
@@ -5007,43 +5091,71 @@ var GTD_TEST = (() => {
     eq(BRANCH_FOCUS.get(getPage(path)), a.id, "the zoom focuses on the line, as the bullet does");
     setBranchFocus(getPage(path), null, path);
   });
-  test("#395 on a computer the line tools sit on the line being written, the rest behind ＋ Insert; a phone keeps them at the foot", async () => {
-    const path = scratchProject("tools on the line", [["TODO", "Buy paint for the long hallway and the two small bedrooms upstairs, then the kitchen ceiling, the porch railing and the garden shed door before the autumn rain sets in for good this year"], ["TODO", "Call Bob"]]);
+  test("#395 on a computer the line tools get a row above the line being written, cover no words, and the line holds still; the rest behind ＋ Insert; a phone keeps them at the foot", async () => {
+    const path = scratchProject("tools on the line", [["TODO", "Call Bob"], ["TODO", "Buy paint for the long hallway and the two small bedrooms upstairs, then the kitchen ceiling, the porch railing and the garden shed door before the autumn rain sets in for good this year"],
+      ...Array.from({length: 40}, (_, i) => ["", "Filler line " + (i + 1)])]);
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
     openPage(path);
     await settle();
-    const [a, b] = getPage(path).blocks;
+    const [b, a] = getPage(path).blocks;
     const bar = () => document.querySelector("#editBar");
     // Left to right, as they stand on the screen.
     const shownKeys = () => [...bar().querySelectorAll(":scope > button")].filter(n => n.getClientRects().length)
       .sort((x, y) => x.getBoundingClientRect().left - y.getBoundingClientRect().left).map(n => n.dataset.k);
     const mm = window.matchMedia, wasTools = PREF.get("linetools");
     PREF.set("linetools", "");
+    // No word on the page sits under the tools.
+    const covers = () => { const r = bar().getBoundingClientRect();
+      return [...document.querySelectorAll("#main :is(.txt, h1, h2)")].filter(t => { const q = t.getBoundingClientRect();
+        return q.width && q.left < r.right - 1 && q.right > r.left + 1 && q.top < r.bottom - 1 && q.bottom > r.top + 1; })
+        .map(t => t.textContent.slice(0, 20)); };
+    const topOf = blk => document.querySelector('.blk[data-id="' + blk.id + '"] .txt').getBoundingClientRect().top;
     try {
+      document.querySelector('.blk[data-id="' + a.id + '"]').scrollIntoView({block: "center"});
+      await frame();
+      const before = topOf(a);
       focusBlock(a.id);
       await frame();
       ok(bar() && !bar().hidden && bar().closest('.blk[data-id="' + a.id + '"]'), "the tools are on the line being written");
-      const r = bar().getBoundingClientRect(), line = bar().closest(".line").getBoundingClientRect();
-      ok(r.top >= line.top - 1 && r.bottom <= line.bottom + 1, "within the line's row");
-      const words = document.querySelector('.blk[data-id="' + a.id + '"] .txt').getBoundingClientRect();
-      // A line long enough to wrap keeps the tools on its first row, not
-      // centred down the middle of the paragraph.
+      // #395 reopened twice: beside the words, the tools left room for one
+      // word per row; floating above, they hid the line before. Now they get
+      // a row of their own above the line, and the page scrolls by that row
+      // so the line stays under the pointer.
+      ok(Math.abs(topOf(a) - before) <= 1, "the line holds still as the tools open (" + before + " → " + topOf(a) + ")");
+      eq(covers().join(" | "), "", "the tools cover no words");
+      // The line's ☰ moves down with it, level with its first row.
+      const menuBtn = document.querySelector('.blk[data-id="' + a.id + '"] > .line > .linemenu');
+      const mr = menuBtn && menuBtn.getBoundingClientRect();
+      ok(mr && mr.height && Math.abs(mr.top - topOf(a)) <= 6, "☰ is level with the words (☰ " + (mr && mr.top) + ", words " + topOf(a) + ")");
+      const r = bar().getBoundingClientRect();
       const txtEl = document.querySelector('.blk[data-id="' + a.id + '"] .txt');
+      const words = txtEl.getBoundingClientRect();
       const lh = parseFloat(getComputedStyle(txtEl).lineHeight) || 20;
       ok(words.height > lh * 1.5, "the long line wraps (" + words.height + " vs " + lh + ")");
-      ok(Math.abs((r.top + r.bottom) / 2 - (words.top + lh / 2)) <= 4, "the tools sit level with the first row (bar " + r.top + "-" + r.bottom + ", text from " + words.top + ")");
-      // The words flow around the tools: none under them, and the rows below
-      // the first use the whole width, so the line keeps its shape (#395).
+      ok(r.bottom <= words.top + 1 && r.bottom >= words.top - 12, "the tools sit just above the words (bar " + r.top + "-" + r.bottom + ", text from " + words.top + ")");
+      ok(Math.abs(r.left - words.left) <= 4, "lined up with where the words start (" + r.left + " vs " + words.left + ")");
       const rg = document.createRange();
       rg.selectNodeContents(txtEl);
       const rows = [...rg.getClientRects()].filter(q => q.width > 1);
-      ok(rows.every(q => q.right <= r.left + 1 || q.top >= r.bottom - 4 || q.bottom <= r.top + 1), "a word sits under the tools: bar " + [r.left, r.top, r.right, r.bottom].map(Math.round) + " rows " + rows.map(q => [q.left, q.top, q.right, q.bottom].map(Math.round).join(",")).join(" | "));
-      ok(rows.some(q => q.top > r.bottom - 4 && q.right > r.left + 20), "the rows below the first stop short of the tools instead of using the whole line");
+      const fullRight = Math.max(...rows.map(q => q.right));
+      ok(rows[0].right >= fullRight - 80, "the first row uses the line's width, not one word: rows " + rows.map(q => Math.round(q.right)).join(","));
+      const held = topOf(a);
+      document.activeElement.blur();
+      await frame(); await frame();
+      ok(Math.abs(topOf(a) - held) <= 1, "and holds still as they go (" + held + " → " + topOf(a) + ")");
+      // The page's first line gets its row above too, under the title.
+      focusBlock(b.id);
+      await frame();
+      const rb = bar().getBoundingClientRect();
+      ok(rb.bottom <= topOf(b) + 1, "on the first line the tools sit above it too (bar ends " + rb.bottom + ", words from " + topOf(b) + ")");
+      eq(covers().join(" | "), "", "and cover no words there either");
+      focusBlock(a.id);
+      await frame();
       eq(shownKeys()[0], "type", "Type first");
       for (const k of ["in", "out", "up", "down", "rest"]) ok(shownKeys().includes(k), k + " on show: " + shownKeys());
       // By default the rest waits behind ＋ (#395). ＋/− is a toggle that is
       // remembered from line to line and next time, for those who want all (#410).
-      for (const k of ["tag", "media", "pad", "more"]) ok(!shownKeys().includes(k), k + " waits behind ＋");
+      for (const k of ["tag", "media", "pad", "slide", "more"]) ok(!shownKeys().includes(k), k + " waits behind ＋");
       // Two buttons, two jobs: the bar's own button is ＋ Insert, so it never
       // looks like the line menu's ⋯.
       const rest = bar().querySelector('[data-k="rest"]');
@@ -5051,7 +5163,7 @@ var GTD_TEST = (() => {
       eq(rest.getAttribute("aria-label"), "Insert", "and it is named Insert");
       rest.click();
       await frame();
-      for (const k of ["tag", "media", "pad", "more"]) ok(shownKeys().includes(k), k + " after ＋");
+      for (const k of ["tag", "media", "pad", "slide", "more"]) ok(shownKeys().includes(k), k + " after ＋");
       eq(rest.textContent.trim(), "−", "#410 open, the button is −");
       eq(rest.getAttribute("aria-expanded"), "true", "and says it is open");
       focusBlock(b.id);
@@ -5093,8 +5205,10 @@ var GTD_TEST = (() => {
       ok(bar && !bar.hidden && blk().contains(bar), "the tools are on the line");
       const words = blk().querySelector(".txt").getBoundingClientRect(), br = bar.getBoundingClientRect();
       const chips = blk().querySelector(":scope > .line > .props").getBoundingClientRect();
-      ok(Math.abs(words.top - br.top) <= 6, "the words start on the tools' row (words " + words.top + ", tools " + br.top + ")");
-      ok(chips.top >= words.bottom - 2 && chips.top >= br.bottom - 2, "the chips sit under the words and tools (chips " + chips.top + ", words end " + words.bottom + ")");
+      // #395 reopened: the tools float above the line, so only words and chips share it.
+      const line = blk().querySelector(":scope > .line").getBoundingClientRect();
+      ok(Math.abs(words.top - line.top) <= 6 && (br.bottom <= line.top + 1 || br.top >= line.bottom - 1), "the words start the line's first row, the tools off it (words " + words.top + ", line " + [line.top, line.bottom] + ", tools " + [br.top, br.bottom] + ")");
+      ok(chips.top >= words.bottom - 2, "the chips sit under the words (chips " + chips.top + ", words end " + words.bottom + ")");
     } finally { PREF.set("linetools", wasTools || ""); document.activeElement && document.activeElement.blur(); go("today"); }
   });
   test("#424 the day page tip: short, its keys as a list, one example, Got it", async () => {
@@ -5199,7 +5313,7 @@ var GTD_TEST = (() => {
       const btn = document.querySelector('#editBar [data-k="format"]');
       ok(btn, "no Format button among the line tools");
       btn.click(); await frame();
-      eq(keys().join(" "), "h1 h2 h3 bold italic quote table slide", "a note's Format menu");
+      eq(keys().join(" "), "h1 h2 h3 bold italic quote table", "a note's Format menu (Slide layout has its own button, #395)");
       document.querySelector('#editBar [data-k="format"]').click(); await frame();
 
       await pick("h2");
@@ -5222,7 +5336,7 @@ var GTD_TEST = (() => {
 
       focusBlock(task.id); await frame();
       document.querySelector('#editBar [data-k="format"]').click(); await frame();
-      eq(keys().join(" "), "bold italic slide", "a task is never a heading, quote or table, so those are not offered");
+      eq(keys().join(" "), "bold italic", "a task is never a heading, quote or table, so those are not offered");
       document.querySelector('#editBar [data-k="format"]').click(); await frame();
 
       focusBlock(empty.id); await frame();
@@ -6290,6 +6404,34 @@ var GTD_TEST = (() => {
       go("today");
     }
   });
+  test("#511 Enter on an empty task line ends the run of tasks: the line becomes a plain line, and no line is added", async () => {
+    const path = scratchProject("Paint the fence five-eleven", [["TODO", "Buy paint"]]), pg = getPage(path);
+    const enterAtEnd = async id => {
+      const txt = document.querySelector('.blk[data-id="' + id + '"] .txt');
+      txt.focus();
+      const s = getSelection(); s.selectAllChildren(txt); s.collapseToEnd();
+      txt.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true, cancelable: true}));
+      await settle();
+    };
+    try {
+      openPage(path); await settle();
+      await enterAtEnd(pg.blocks[0].id);
+      eq(pg.blocks.length, 2, "Enter on a task line with words did not open a new line");
+      const nb = pg.blocks[1];
+      eq(nb.state, "TODO", "the line under a task is not a task");
+      await enterAtEnd(nb.id);
+      eq(pg.blocks.length, 2, "Enter on the empty task line added another line");
+      eq(nb.state, null, "the empty task line is still a task");
+      ok(!blockProp(nb, "Added"), "the plain line kept the task's Added date");
+      const a = document.activeElement;
+      ok(a && a.classList.contains("txt") && a.closest(".blk")?.dataset.id === nb.id, "the caret left the line");
+      ok(!a.closest(".line").querySelector(".tick"), "the plain line still shows a tick");
+      undoLast(); await settle();
+      eq(pg.blocks[1].state, "TODO", "undo did not bring the task back");
+    } finally {
+      go("today");
+    }
+  });
   test("#320 a click on a picture opens it in a view with a close button; a click beside it on the line edits the line", async () => {
     const path = scratchProject("picture click", [[null, "Look ![pic](https://example.invalid/p.png) here"]]);
     const b = getPage(path).blocks[0];
@@ -6830,6 +6972,24 @@ var GTD_TEST = (() => {
       has(t2.body[0] || "", "![tiles476.png](assets/", "and goes to the notepad");
       ok(!document.querySelector(".modal .pictureview"), "the picture view closes");
     } finally { closeModal(); for (const t of document.querySelectorAll("#toasts .toast")) t.remove(); }
+  }));
+  test("#476 #514 a picture in a line's notepad, or on the line itself, is a small thumbnail inside the page box", () => withPages({
+    [TALK]: "- Webinar\n- After\n"}, async () => {
+    const big = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="1500"><rect width="2000" height="1500" fill="#888"/></svg>');
+    getPage(TALK).blocks[0].body = ["![slide](" + big + ")"];
+    getPage(TALK).blocks[1].title = "After ![photo](" + big + ")"; touch(TALK);
+    openPage(TALK); await settle();
+    for (const [where, sel] of [["notepad", ".blk > .bodyline img.asset"], ["line", ".blk > .line .txt img.asset"]]) {
+      const img = content().querySelector(sel);
+      ok(img, "the " + where + " picture is drawn");
+      if (!img.complete) await new Promise(r => { img.onload = r; img.onerror = r; });
+      await settle();
+      const r = img.getBoundingClientRect(), box = img.closest(".outline, .pagebody, #content").getBoundingClientRect();
+      ok(r.width <= 160 && r.height <= 100, "the " + where + " picture is not a thumbnail of at most 160 × 100: " + Math.round(r.width) + " × " + Math.round(r.height));
+      ok(r.width > 20, "but still seen: " + Math.round(r.width));
+      ok(r.right <= box.right, "inside the box");
+    }
+    go("today");
   }));
   test("renamePage rewrites the links to it", () => {
     const target = join(DIRS.pages, "Test rename me.md");
@@ -7476,8 +7636,8 @@ var GTD_TEST = (() => {
           .querySelector("button").click();
         eq(PREF.get("linktitles"), "1", "Turn on under Integrations does not turn on titles for pasted links");
         PREF.set("linktitles", was || "");
-        // A dialog one level down, the area's, has a way back to Settings.
-        [...$("#set-area").querySelectorAll("button")].find(b => b.textContent === "Manage").click();
+        // A dialog one level down, the profile's, has a way back to Settings.
+        [...$("#set-you").querySelectorAll("button")].find(b => /^(Edit|Add)$/.test(b.textContent)).click();
         const back = [...document.querySelectorAll(".modal .foot button")].find(b => b.textContent === "Settings");
         ok(back, "no way back to Settings");
         back.click();
@@ -7680,6 +7840,106 @@ var GTD_TEST = (() => {
       inSpace(calHome(), () => { for (const p of allPages(isJournalPath)) if (!before.has(p)) V.pages.delete(p);
         else walkBlocks(getPage(p).blocks, b => { if (blockProp(b, "cal_feed") === "test294feed") removeBlockFrom(getPage(p), b); }); });
       clearMemo();
+    }
+  });
+  /* A calendar meeting keeps its online meeting link. Join is on the line only
+     from 5 minutes before until the end; at other times on hover or focus.
+     The reminder offers Join too (#480). */
+  test("#480 an imported meeting keeps its Teams link; Join shows near its time and in the reminder", async () => {
+    const feed = "test480feed";
+    const ev = (uid, extra) => "BEGIN:VEVENT\nUID:" + uid + "\nDTSTART:20261110T090000Z\nDTEND:20261110T093000Z\nSUMMARY:Test480 " + uid + "\n" + extra + "END:VEVENT\n";
+    const ics = desc => "BEGIN:VCALENDAR\n" +
+      ev("a", "DESCRIPTION:Agenda point\\n________________\\nMicrosoft Teams meeting\\nJoin: " + desc + "\\nMeeting ID: 366 304\\nPasscode: abc\n") +
+      ev("b", "X-MICROSOFT-SKYPETEAMSMEETINGURL:https://teams.microsoft.com/l/meetup-join/xyz\nDESCRIPTION:See https://example.com/doc\n") +
+      ev("c", "LOCATION:https://zoom.us/j/123\n") +
+      ev("d", "DESCRIPTION:Bring https://example.com/slides\n") + "END:VCALENDAR";
+    const from = Date.parse("2026-11-09T00:00:00Z"), to = Date.parse("2026-11-12T00:00:00Z");
+    const find = uid => { let hit = null; inSpace(calHome(), () => { for (const p of allPages(isJournalPath))
+      walkBlocks(getPage(p).blocks, b => { if (b.title.endsWith("Test480 " + uid)) hit = b; }); }); return hit; };
+    const before = new Set(inSpace(calHome(), () => allPages(isJournalPath)));
+    const today = journalPath(todayISO());
+    let mine = null;
+    try {
+      importCalendarText(ics("https://teams.microsoft.com/meet/366?p=x1"), calHome(), feed, from, to);
+      eq(blockProp(find("a"), "join"), "https://teams.microsoft.com/meet/366?p=x1", "the Join link in the description");
+      eq(find("a").children.map(c => c.title), ["Agenda point"], "the ID and passcode are not copied");
+      eq(blockProp(find("b"), "join"), "https://teams.microsoft.com/l/meetup-join/xyz", "Outlook's own Teams field comes first");
+      eq(blockProp(find("c"), "join"), "https://zoom.us/j/123", "a Zoom link in the location");
+      eq(blockProp(find("d"), "join") || "", "", "an ordinary link is not a meeting link");
+      importCalendarText(ics("https://teams.microsoft.com/meet/366?p=x2"), calHome(), feed, from, to);
+      eq(blockProp(find("a"), "join"), "https://teams.microsoft.com/meet/366?p=x2", "a changed link reaches the meeting");
+
+      // On the line: not the raw join::, and Join stands out only around its time.
+      const hm = ms => { const d = new Date(ms); return pad2(d.getHours()) + ":" + pad2(d.getMinutes()); };
+      const at = (s, e) => hm(Date.now() + s * 6e4) + "–" + hm(Date.now() + e * 6e4);
+      ensureJournal(todayISO());
+      mine = newBlock({title: "#meeting Test480 now"}, false);
+      mine.props = {time: at(3, 30), join: "https://teams.microsoft.com/meet/1"};
+      getPage(today).blocks.push(mine);
+      let meta = lineMeta(mine, today);
+      const chip = meta.querySelector("a.chip.join");
+      ok(chip, "a Join chip");
+      eq(chip.getAttribute("href"), "https://teams.microsoft.com/meet/1");
+      ok(chip.classList.contains("soon"), "3 minutes before: Join stands out");
+      ok(!/join::/.test(meta.textContent), "join:: is not shown as a raw value");
+      if (new Date(Date.now() + 120 * 6e4).getDate() === new Date().getDate()) {
+        mine.props.time = at(60, 90);
+        ok(!lineMeta(mine, today).querySelector("a.chip.join").classList.contains("soon"), "an hour before: quiet");
+      }
+      // The reminder.
+      remindMeeting({space: Spaces.active, path: today, block: mine, title: "Test480 now",
+        start: Date.now() + 3 * 6e4, end: Date.now() + 30 * 6e4, key: "test480"});
+      const t = [...document.querySelectorAll("#toasts .meetrem")].pop();
+      const join = [...t.querySelectorAll("a,button")].find(x => /Join/.test(x.textContent));
+      ok(join, "the reminder offers Join");
+      eq(join.getAttribute("href"), "https://teams.microsoft.com/meet/1");
+      t.remove();
+    } finally {
+      if (mine) removeBlockFrom(getPage(today), mine);
+      inSpace(calHome(), () => { for (const p of allPages(isJournalPath)) if (!before.has(p)) V.pages.delete(p);
+        else walkBlocks(getPage(p).blocks, b => { if (blockProp(b, "cal_feed") === feed) removeBlockFrom(getPage(p), b); }); });
+      clearMemo();
+    }
+  });
+  /* A meeting moved out of your own area lives in the area it went to: the
+     next syncs neither bring it back home nor take it away there, and the
+     calendar's changes still reach it (#61). */
+  test("#61 a calendar meeting moved to another area stays there and follows the calendar", async () => {
+    // Your own area is a private one, here a new one; the demo's shared area is where it goes.
+    const n = "Test61 private", feed = "test61feed", work = Spaces.active;
+    const ics = (s, e) => "BEGIN:VCALENDAR\nBEGIN:VEVENT\nUID:test61\nDTSTART:" + s + "\nDTEND:" + e +
+      "\nSUMMARY:Test61 standup\nEND:VEVENT\nEND:VCALENDAR";
+    const from = Date.parse("2026-11-09T00:00:00Z"), to = Date.parse("2026-11-12T00:00:00Z");
+    let home = "";
+    const sync = text => { importCalendarText(text, home, feed, from, to); routeCalendarMeetings(home, feed, [], from, to); };
+    const find = space => { let hit = null; inSpace(space, () => { for (const p of allPages(isJournalPath))
+      walkBlocks(getPage(p).blocks, b => { if (/Test61 standup/.test(b.title)) hit = {b, path: p}; }); }); return hit; };
+    const hm = s => { const d = new Date(s); return pad2(d.getHours()) + ":" + pad2(d.getMinutes()); };
+    const kept = new Map(inSpace(work, () => allPages(isJournalPath).map(p => [p, serializePage(getPage(p))])));
+    await createSpace(n, "local");
+    try {
+      if (!LOADED.has(n)) await loadSpaceRecord(n);
+      home = calHome();
+      eq(home, n, "the private area is your own");
+      sync(ics("20261110T090000Z", "20261110T093000Z"));
+      const m = find(home);
+      ok(m, "the meeting came in at home");
+      ok(await transferBranch({space: home, path: m.path, id: m.b.id}, work, {mode: "move", references: false, inner: true}), "moved");
+      for (let i = 0; i < 3; i++) sync(ics("20261110T090000Z", "20261110T093000Z"));
+      ok(!find(home), "not brought back home");
+      ok(find(work), "still in the area it was moved to after the next syncs");
+      sync(ics("20261110T100000Z", "20261110T103000Z"));
+      eq(blockProp(find(work)?.b || {props: {}}, "time"), hm("2026-11-10T10:00:00Z") + "–" + hm("2026-11-10T10:30:00Z"), "a new time reaches it");
+      ok(!find(home), "a change does not bring it home either");
+      unrouteCalendar(feed, work);
+      ok(find(work), "taking the area off the calendar's Also show in leaves a moved meeting");
+      sync("BEGIN:VCALENDAR\nEND:VCALENDAR");
+      ok(!find(work), "a meeting the calendar no longer has goes from where it was moved");
+    } finally {
+      inSpace(work, () => { for (const p of allPages(isJournalPath))
+        if (!kept.has(p)) V.pages.delete(p); else putPage(p, parsePage(kept.get(p))); });
+      clearMemo();
+      await removeArea(n);
     }
   });
 
@@ -9054,6 +9314,231 @@ var GTD_TEST = (() => {
       eq(messagesOf(crane).map(m => [m.title, blockProp(m, MSG_PROP)]), [["Friday works for us.", "Lars Haugen"]]);
     } finally { closeAll(); }
   });
+  /* #373 reopened: an update pasted anywhere, not only in Paste a reply, is
+     recognised. The paste stays as text; a toast names the task and what
+     would change. Apply updates the task (state, due date, their words as a
+     note), and Undo puts it all back. Keep as text changes nothing. */
+  test("#373 an update pasted on any line names its tasks and changes; Apply updates them, Undo takes it back, Keep as text leaves them", async () => {
+    const path = scratchProject("paste update 373", [["WAIT", "Contract from [[p/Lars Haugen]]"], ["DOING", "Quote for [[p/Lars Haugen]]"]]);
+    const [w, q] = getPage(path).blocks;
+    const reply = "1 done\n2: delivered by Friday\n\nLars\n\n> " + REF_LINE([V.space + "-" + ensureBlockId(path, w), V.space + "-" + ensureBlockId(path, q)]);
+    const notes = scratchProject("notes 373", [["TODO", "Call about the depot"]]);
+    const toast = () => $("#toasts .toast.pupdate");
+    const button = t => [...toast().querySelectorAll("button")].find(b => b.textContent === t);
+    const paste = async text => {
+      openPage(notes); await settle();
+      const txt = $(`#content .blk[data-id="${getPage(notes).blocks[0].id}"] .txt`);
+      txt.focus(); const s = getSelection(); s.selectAllChildren(txt); s.collapseToEnd();
+      const dt = new DataTransfer();
+      dt.setData("text/plain", text);
+      txt.dispatchEvent(new ClipboardEvent("paste", {clipboardData: dt, bubbles: true, cancelable: true}));
+      await settle();
+    };
+    try {
+      await paste("Buy paint\nSand the door");
+      ok(!toast(), "plain lines are no update");
+      document.querySelectorAll("#toasts > *").forEach(n => n.remove());
+      await paste(reply);
+      ok(toast(), "a pasted update is recognised on any line");
+      has(serializePage(getPage(notes)), "1 done", "the paste stays as text");
+      for (const t of ["Contract from", "Lars Haugen", "Done", "Quote for", "Due", "note"]) has(toast().textContent, t, "the toast says " + t);
+      button("Keep as text").click(); await settle();
+      ok(!toast(), "Keep as text closes it");
+      eq([getPage(path).blocks[0].state, messagesOf(getPage(path).blocks[1]).length], ["WAIT", 0], "and changes nothing");
+      await paste(reply);
+      button("Apply").click(); await settle();
+      const [w2, q2] = getPage(path).blocks;
+      eq(w2.state, "DONE", "Apply sets the state they gave");
+      eq(dueDate(q2), dateFromWords("friday"), "a date they gave is the task's due date");
+      eq(messagesOf(q2).map(m => [m.title, blockProp(m, MSG_PROP)]), [["delivered by Friday", "Lars Haugen"]], "their words are a note on it, in their name");
+      const undo = [...$$("#toasts .toast button")].find(b => b.textContent === "Undo");
+      ok(undo, "with Undo");
+      undo.click(); await settle();
+      const [w3, q3] = getPage(path).blocks;
+      eq([w3.state, dueDate(q3) || null, messagesOf(q3).length], ["WAIT", null, 0], "Undo puts it all back");
+    } finally { closeAll(); document.querySelectorAll("#toasts > *").forEach(n => n.remove()); }
+  });
+  /* #516: Catch up with an AI, from Get clear in the Weekly review: mail and
+     meetings are collection. Look back is picked (since the last review, 7, 14
+     or 30 days), remembered, and named in the prompt. The prompt names your
+     projects, their open tasks and your contexts with short references; the
+     answer (bullets, bold, or run together on one line; a link at a line's end)
+     becomes one list grouped by project. Each change gets the GTD choice for
+     its kind, set to the likely one, so Apply works with no clicks: a next
+     action is Next, Do now, Delegate, Someday or Skip, with its context; a date
+     is a Deadline or a Start date. A done that leaves a project with no
+     next action says so, and + Add next action adds one. One Undo takes all
+     of it back. A reference the prompt did not give is left out. It also asks
+     for what to capture, all of it but only what is yours. Catch up captures,
+     Clarify clarifies: new to-dos (TODO) and projects come last under To
+     capture with a tick only, go on today's page as plain lines, and the
+     review's Clarify takes them today; the rest of today waits. A name as a
+     link reads as the name, a citation mark goes, and the source is found
+     wherever it stands. Only GTD's lines: NOTE may name a project (progress
+     with no task), WAIT may name a task (now someone else's), NO-DATE is no
+     date. The prompt says where to look and what counts as evidence, and
+     Also look for adds your own lines, remembered per area. */
+  test("#516 Catch up: look back picked; each change a GTD choice set to the likely one; new things captured for Clarify; one Undo", async () => {
+    const path = scratchProject("catch up 516", [["TODO", "Send the draft"], ["TODO", "Book the room"]]);
+    const other = scratchProject("tiles 516", [["TODO", "Order the tiles"]]);
+    const third = scratchProject("badges 516", [["TODO", "Order the badges"], ["TODO", "Print the list"]]);
+    const alsoWas = PREF.get("catchup.also:" + (V.space || ""), "");
+    const title = pageTitle(path), ctx = contextList()[0];
+    ok(ctx, "the demo has a context");
+    const btn = t => [...$$("#modalRoot button")].find(b => (t instanceof RegExp ? t.test(b.textContent) : b.textContent === t));
+    const day = ensureJournal(todayISO());
+    const line = t => (getPage(day).blocks || []).find(x => x.title.includes(t));
+    const loose = stampAuthor(newBlock({title: "A loose thought 516", props: {}}));
+    getPage(day).blocks.push(loose);
+    const was = PREF.get("catchup.back:" + (V.space || ""), "");
+    const open = async () => {
+      go("review"); await settle();
+      const b = [...$$("#content button")].find(x => x.textContent === "Catch up with an AI");
+      ok(b, "the Weekly review offers Catch up with an AI");
+      ok(/clear/i.test(b.closest(".rphase").querySelector("summary").textContent), "under Get clear: mail and meetings are collection");
+      b.click(); await settle();
+    };
+    const set = (n, v) => { n.value = v; n.dispatchEvent(new Event(n.tagName === "INPUT" ? "input" : "change", {bubbles: true})); };
+    const rowOf = t => [...$$("#modalRoot .cu-row")].find(r => r.textContent.includes(t));
+    try {
+      await open();
+      const back = $("#modalRoot select.cu-back");
+      ok(back, "a Look back choice");
+      for (const o of ["7 days", "14 days", "30 days", "From a date…"]) ok([...back.options].some(x => x.textContent === o), "offers " + o);
+      set(back, "14"); await settle();
+      const fortnight = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10);
+      has($("#modalRoot textarea").value, fortnight, "the prompt names the day it looks back to");
+      closeAll(); await open();
+      eq($("#modalRoot select.cu-back").value, "14", "the choice is remembered");
+      const prompt = $("#modalRoot textarea").value;
+      has(prompt, title, "the prompt names the project");
+      has(prompt, "@" + ctx, "and the contexts to pick from");
+      has(prompt, "code block", "it asks for a code block, which keeps the lines apart when copied");
+      has(prompt, "link to the", "and for a link to each source");
+      has(prompt, "TODO <action>", "it asks for to-dos in no project");
+      ok(!/at most \d+/.test(prompt), "what to capture is not cut off at a number: capture it all");
+      has(prompt, "promised", "only what is mine to do");
+      has(prompt, "plain text", "names as plain text, not links");
+      for (const w of ["sent", "transcripts", "calendar", "latest"]) has(prompt, w, "where to look and what counts as evidence: " + w);
+      ok(!/not sure of/.test(prompt) && /unsure/.test(prompt), "what may be mine is included, for Clarify to decide");
+      ok(!/\b(?:REVIEW|REMOVE)\b|DONE NEW/.test(prompt), "only GTD's lines, no new categories");
+      const also = $("#modalRoot textarea.cu-also");
+      ok(also && also.closest("details") && !also.closest("details").open, "Also look for, folded");
+      set(also, "Webinars I gave");
+      has($("#modalRoot textarea").value, "Also look for:\n- Webinars I gave", "your own lines go in the prompt");
+      closeAll(); await open();
+      has($("#modalRoot textarea").value, "- Webinars I gave", "and are remembered");
+      ok($("#modalRoot textarea.cu-also").closest("details").open, "shown open while in use");
+      const ref = t => (new RegExp("\\b([TP]\\d+)\\b[^\\n]*" + t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).exec(prompt) || [])[1];
+      const [send, room, proj, tiles, badges] = [ref("Send the draft"), ref("Book the room"), ref(title), ref("Order the tiles"), ref("Order the badges")];
+      ok(send && room && proj && tiles && badges, "each task and project has a reference: " + [send, room, proj, tiles, badges]);
+      let answer = [...$$("#modalRoot textarea")].pop();
+      // Copied out of a chat, the lines can come run together on one line.
+      set(answer, "DONE " + send + " DUE " + room + " 2026-11-28 NOTE " + send + " Sent for testing. NEXT " + proj +
+        " Call the supplier WAIT " + proj + " Person X | the signed contract | 2026-12-02 PROJECT Product A launch | Launched to all users | Draft the plan");
+      btn("Read it").click(); await settle();
+      eq($$("#modalRoot .cu-row").length, 6, "an answer run together on one line is read change by change");
+      btn(/Back/).click(); await settle();
+      answer = [...$$("#modalRoot textarea")].pop();
+      const chat = "https://teams.microsoft.com/l/message/19:abc/1700000000000", doc = "https://example.sharepoint.com/sites/a/Plan.docx",
+        mail = "https://outlook.office.com/mail/inbox/id/AAk%3D?ds=me%40example.com";
+      set(answer, "Here is what changed:\n\n- **DONE " + send + "** | " + chat + "\n- DONE " + tiles + "\n- DUE " + room + " 2026-11-28\n" +
+        "- NEXT " + proj + " Call the supplier @" + ctx + " | [1](" + doc + ")\n- NEXT " + proj + " Ask Person Y for the file\n" +
+        "- NEXT " + proj + " Reply to the invite\n- WAIT " + proj + " Person X | the signed contract | 2026-12-02\n" +
+        "- NOTE " + send + " Sent for testing.\n- DONE T999\n- PROJECT Product A launch | Launched to all users | Draft the plan\n" +
+        "- TODO Reply to the budget question @" + ctx + " | 2026-12-05\n- TODO Water the plants @" + ctx + "x | NO-DATE\n" +
+        "- NOTE " + proj + " Pilot went live for team 2\n- WAIT " + badges + " Person Z | NO-DATE\n" +
+        // As an assistant at work writes it: a name as a search link, the date between bars, a citation mark last.
+        "- TODO Bring up [Person Q](https://www.office.com/search?q=Person+Q&id=f9e4) idea at the next meeting | 2026-12-08 | " +
+        "[Re: a post](" + mail + ") 【13-0d56c5】\n");
+      btn("Read it").click(); await settle();
+      eq($$("#modalRoot .cu-row").length, 14, "one row per change; the unknown reference is left out");
+      ok([...$$("#modalRoot .cu-group")].find(g => g.textContent.startsWith(title)).contains(rowOf("Pilot went live")),
+        "progress on a project is a note under it");
+      has(rowOf("Order the badges").textContent, "Person Z", "a task that is now someone else's: waiting for them");
+      ok(!/NO-DATE/.test(rowOf("Water the plants").textContent + rowOf("Order the badges").textContent), "NO-DATE is no date");
+      const last = [...$$("#modalRoot .cu-group")].pop();
+      ok(/^To capture/.test(last.textContent), "new to-dos and projects come last, under To capture: " + last.textContent.slice(0, 40));
+      const taken = t => rowOf(t).querySelector("input.cu-take[type=checkbox]");
+      ok(["budget question", "Water the plants", "Product A launch", "Bring up"].every(t => last.contains(rowOf(t)) && taken(t).checked &&
+        !rowOf(t).querySelector("select")), "each with a tick only, ticked: Clarify decides what it is");
+      has(rowOf("budget question").textContent, "@" + ctx, "a to-do shows its context");
+      eq(rowOf("Bring up").textContent.replace(/↗.*$/, "").trim(), "Bring up Person Q idea at the next meeting · " +
+        new Date("2026-12-08T12:00:00").toLocaleDateString([], {weekday: "short", day: "numeric", month: "short"}),
+        "a name as a link reads as the name; the date is found between the bars; the citation mark goes");
+      eq([...$$("#modalRoot a[href]")].map(a => [a.textContent, a.getAttribute("href")]), [["↗ Chat", chat], ["↗ Document", doc], ["↗ Email", mail]],
+        "a source shows at the end of its row, named by its kind");
+      const choice = t => rowOf(t).querySelector("select.cu-do");
+      eq(["Send the draft", "Book the room", "Call the supplier", "Ask Person Y", "Reply to the invite", "the signed contract", "Sent for testing"]
+        .map(t => choice(t).value), ["keep", "deadline", "next", "next", "next", "keep", "keep"], "each set to the likely choice");
+      eq([...choice("Call the supplier").options].map(o => o.value), ["next", "now", "delegate", "someday", "skip"], "a next action: Next, Do now, Delegate, Someday, Skip");
+      eq([...choice("Book the room").options].map(o => o.value), ["deadline", "start", "skip"], "a date: Deadline or Start date");
+      eq(rowOf("Call the supplier").querySelector("select.cu-ctx").value, ctx, "the context the AI gave is picked");
+      has(rowOf("Ask Person Y").textContent, "No context", "a next action without one says so");
+      ok(btn("Apply 14 changes"), "the button counts what is not skipped");
+      const all = last.querySelector("input.cu-all[type=checkbox]");
+      ok(all && all.checked, "To capture has one tick for all");
+      all.click(); await settle();
+      ok(btn("Apply 10 changes") && !taken("budget question").checked, "which takes them all off");
+      [...$$("#modalRoot .cu-group")].pop().querySelector("input.cu-all").click(); await settle();
+      ok(btn("Apply 14 changes"), "and puts them back");
+      const stuck = [...$$("#modalRoot .cu-group")].find(g => g.textContent.includes(pageTitle(other)));
+      has(stuck.textContent, "No next action left", "a project left with no next action says so");
+      ok(![...$$("#modalRoot .cu-group")].find(g => g.textContent.includes(title)).textContent.includes("No next action left"),
+        "not one that still has one");
+      set(choice("Book the room"), "start");
+      set(choice("Ask Person Y"), "delegate"); await settle();
+      set(rowOf("Ask Person Y").querySelector("input.cu-who"), "Person Y");
+      set(choice("Reply to the invite"), "now");
+      [...stuck.querySelectorAll("button")].find(b => b.textContent === "+ Add next action").click(); await settle();
+      const add = $("#modalRoot input.cu-add");
+      set(add, "Measure the floor");
+      add.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true})); await settle();
+      ok(rowOf("Measure the floor"), "+ Add next action adds a row");
+      ok(![...$$("#modalRoot .cu-group")].find(g => g.textContent.includes(pageTitle(other))).textContent.includes("No next action left"),
+        "and the project is no longer stuck");
+      btn("Apply 15 changes").click(); await settle();
+      const [a, b, ...rest] = getPage(path).blocks, added = rest.filter(x => x.state);
+      eq([a.state, blockProp(b, "SCHEDULED") ? dueDate(b) : null, blockProp(b, "DEADLINE") || null], ["DONE", "2026-11-28", null],
+        "done, and a start date rather than a deadline");
+      has(blockProp(a, "source") || "", chat, "the task marked done keeps its source");
+      eq(added.map(x => x.state), ["TODO", "WAIT", "DONE", "WAIT"], "Next, Delegate as a waiting-for, Do now as done, Waiting for");
+      has(added[0].title, "[[c/" + ctx + "]]", "the next action has its context");
+      has(blockProp(added[0], "source") || "", doc, "and its source");
+      eq(waitingPersonOf(added[1], getPage(path)), "Person Y", "delegated to whom");
+      eq([waitingPersonOf(added[3], getPage(path)), dueDate(added[3])], ["Person X", "2026-12-02"], "waiting on whom, by when");
+      eq(messagesOf(a).map(m => m.title), ["Sent for testing."], "the note is on its task");
+      ok(rest.some(x => !x.state && x.title.includes("Pilot went live for team 2")), "the progress is a note on the project's page");
+      const bd = getPage(third).blocks[0];
+      eq([bd.state, waitingPersonOf(bd, getPage(third)), dueDate(bd) || null], ["WAIT", "Person Z", null], "the task now waits on whom; NO-DATE is no date");
+      eq(getPage(other).blocks.map(x => [x.state, trim(x.title)]), [["DONE", "Order the tiles"], ["TODO", "Measure the floor"]], "the stuck project got its next action");
+      ok(![...V.pages.keys()].some(p => pageTitle(p) === "Product A launch"), "no project is made: Clarify decides that");
+      const [todo, water, launch, bring] = ["budget question", "Water the plants", "Product A launch", "Bring up"].map(line);
+      ok(todo && water && launch && bring, "the new things are on today's page");
+      eq([todo, water, launch, bring].map(x => x.state || ""), ["", "", "", ""], "as plain lines, not yet to dos");
+      eq([todo.title.includes("[[c/" + ctx + "]]"), dueDate(todo)], [true, "2026-12-05"], "with the context and date the AI gave");
+      ok(!water.title.includes("[[c/") && !/NO-DATE/.test(water.title) && !dueDate(water), "a context is read only as a whole word; NO-DATE is no date");
+      ok(!/https?:|【/.test(bring.title) && dueDate(bring) === "2026-12-08", "no link or mark in the words: " + bring.title);
+      has(blockProp(bring, "source") || "", mail, "the link to the mail is its source");
+      eq([blockProp(launch, "outcome"), (launch.children || []).map(k => [k.state || "", trim(k.title)])],
+        ["Launched to all users", [["", "Draft the plan"]]], "a new project with its outcome and its first next action under it");
+      const deck = clarifyDeck().map(r => r.block);
+      ok([todo, water, launch, bring].every(x => deck.includes(x)), "the review's Clarify takes them today");
+      ok(!deck.includes(loose), "but not the rest of today's page, which waits for tomorrow");
+      const undo = [...$$("#toasts .toast button")].find(x => x.textContent === "Undo");
+      ok(undo, "with Undo");
+      undo.click(); await settle();
+      eq([getPage(path).blocks.length, getPage(path).blocks[0].state, dueDate(getPage(path).blocks[1]) || null,
+        getPage(other).blocks.length, getPage(third).blocks[0].state, !!line("budget question"), !!line("A loose thought 516")],
+        [2, "TODO", null, 1, "TODO", false, true], "one Undo takes it all back");
+    } finally {
+      closeAll(); document.querySelectorAll("#toasts > *").forEach(n => n.remove());
+      PREF.set("catchup.also:" + (V.space || ""), alsoWas);
+      const pg = getPage(day);
+      if (pg) { pg.blocks = pg.blocks.filter(x => x.title !== "A loose thought 516"); touch(day); }
+      PREF.set("catchup.back:" + (V.space || ""), was);
+    }
+  });
   test("#161 Ask for an update can leave the projects unnamed", async () => {
     const path = scratchProject("secret depot plan", [["TODO", "Ask [[p/Lars Haugen]] which crane goes first"]]);
     const block = getPage(path).blocks[0], title = pageTitle(path);
@@ -9734,6 +10219,14 @@ var GTD_TEST = (() => {
         const b = help()[0]; b.click();
         ok(helpOpen(), "Help opens from " + name); setHelp(false);
       }
+      // #512 the pane says in words how to reach the full help, first in its bar: no bare ⤢.
+      setHelp(true); await settle();
+      const all = $("#pagePane .panebar > button");
+      eq(all && all.textContent.trim(), "All help", "the pane's first button is not All help");
+      ok(![...$$("#pagePane .panebar button")].some(x => x.textContent.trim() === "⤢"), "the bare ⤢ is still there");
+      all.click(); await settle();
+      eq(state.view, "help", "All help does not open the full help");
+      ok(content().querySelector(".helpq"), "the full help has no search");
       // A phone: the floating Help is there for Focus, and its corner is not hidden in Focus.
       window.matchMedia = q => /min-width:\s*641px/.test(q) ? {matches: false, addEventListener() {}, removeEventListener() {}} : mm.call(window, q);
       renderNav();
@@ -10226,6 +10719,28 @@ var GTD_TEST = (() => {
     eq(NPM_STEPS[NPM.step].k, "brainstorm");
     npmReset();
   });
+  test("#517 one field of a project: the main button saves, Cancel closes without saving", async () => {
+    const path = scratchProject("Field buttons");
+    const btns = () => [...document.querySelectorAll("#modalRoot button")];
+    const btn = t => btns().find(x => trim(x.textContent) === t);
+    openProjectField({space: V.space, path}, "outcome");
+    ok(btn("Add") && btn("Add").classList.contains("primary"), "Add is the main button");
+    eq(btns().filter(x => x.classList.contains("primary")).map(x => trim(x.textContent)), ["Add"], "one main button");
+    ok(btn("Cancel") && !btn("Done"), "the bottom button says Cancel");
+    $("#modalRoot .slotform input").value = "Not kept";
+    btn("Cancel").click();
+    await settle();
+    ok(getPage(path).props.outcome !== "Not kept", "Cancel did not save");
+    openProjectField({space: V.space, path}, "outcome");
+    $("#modalRoot .slotform input").value = "The fields are clear";
+    btn("Add").click();
+    await settle();
+    eq(getPage(path).props.outcome, "The fields are clear", "Add saved");
+    // A field you pick from has nothing to lose: a quiet Close.
+    openProjectField({space: V.space, path}, "deadline");
+    ok(btn("Close") && !btn("Close").classList.contains("primary") && !btn("Done"), "a pick field closes quietly");
+    closeAll();
+  });
   test("#189 the outcome box says when a line reads like a topic", async () => {
     npmReset();
     const path = scratchProject("Garden");
@@ -10538,7 +11053,7 @@ var GTD_TEST = (() => {
       const o = document.querySelector("#modalRoot .modal");
       has(o.textContent, "Anybody you invite sees this name.");
       ok(!o.textContent.includes("Skip this if"), "the area note repeats its field");
-      ok([...o.querySelectorAll(".field")].some(f => f.textContent.includes("Obsidian or Logseq")), "the importer note sits outside a field");
+      // Coming from another app moved to the first Journal; #458 tests it there.
     } finally {
       shut();
       PREF.set("work_hours", wh);
@@ -10595,6 +11110,20 @@ var GTD_TEST = (() => {
       ok(getComputedStyle(d.querySelector(".helpcontents")).display !== "none", "the Contents button shows");
       ok(d.documentElement.scrollWidth <= 390, "nothing is wider than the phone");
     } finally { f.remove(); }
+  });
+  test("#513 every help topic ends with Suggest a feature and Report a bug, in the pane and the full help", async () => {
+    const asks = root => [...root.querySelectorAll(".helpfeedback a[href*='/issues/new']")];
+    try {
+      for (const id of ["start", "help", "news"]) {
+        openHelp(id); await settle();
+        eq(asks(content()).length, 2, "the full help's " + id + " does not end with the two ways to give feedback");
+        eq(content().querySelectorAll(".helpfeedback").length, 1, id + " offers feedback more than once");
+      }
+      ok(asks(content()).some(a => decodeURIComponent(a.href).includes("GroupToDo v" + APP_VERSION)), "the report does not say the version");
+      go("today"); await settle();
+      setHelp(true); await settle();
+      eq(asks($("#pagePane")).length, 2, "the help beside the page has no way to give feedback");
+    } finally { setHelp(false); go("today"); await settle(); }
   });
   test("#290 Ways to run: what you tick picks the way, and a limit rules a way out", async () => {
     const best = (needs, limits) => runWayPick(needs, limits)[0];
@@ -11446,11 +11975,11 @@ var GTD_TEST = (() => {
       await settle();
     }
   });
-  test("#222 a meeting on its day starts with its time, and two at once are marked", async () => {
+  test("#222 a meeting on its day starts with its time, and two at once are marked, the mark never over the words (#478)", async () => {
     const day = "journals/2099_02_03.md";
-    await withPages({[day]: "- #meeting Ring the doorbell man\n  time:: 12:00–13:00\n- #meeting Order the food\n  time:: 12:30\n" +
+    await withPages({[day]: "- #meeting Ring the doorbell man\n  time:: 12:00–13:00\n- #meeting Order the food for the whole team and check every allergy twice\n  time:: 12:30\n" +
       "- #meeting Later on\n  time:: 15:00\n- #meeting Elsewhere\n  date:: [[2099-02-04]]\n  time:: 12:00\n"}, async () => {
-      const box = el("div", {}, pageOutline(day, {leadCtx: true}));
+      const box = el("div", {style: "width:520px"}, pageOutline(day, {leadCtx: true}));
       document.body.append(box);
       try {
         const line = t => [...box.querySelectorAll(".blk>.line")].find(n => n.querySelector(".txt").textContent.includes(t));
@@ -11462,6 +11991,12 @@ var GTD_TEST = (() => {
         has(first.querySelector(".chip.clash").textContent, "Order the food");
         has(line("Order the food").querySelector(".chip.clash").textContent, "doorbell");
         ok(!line("Later on").querySelector(".chip.clash"), "no clash at 15:00");
+        // A long name is cut with … in the pill's own half, never over the words (#478).
+        const words = first.querySelector(".txt").getBoundingClientRect(), pill = first.querySelector(".chip.clash");
+        const at = pill.getBoundingClientRect(), half = first.querySelector(".props").getBoundingClientRect();
+        ok(at.left >= words.right - 1 || at.top >= words.bottom - 1, "the mark is over the words: " + [at.left, words.right]);
+        ok(at.left >= half.left - 1 && at.right <= half.right + 1, "the mark spills out of its place");
+        has(pill.title, "Order the food for the whole team and check every allergy twice", "the whole name on hover");
         ok(!line("Elsewhere").querySelector(".ltime"), "a meeting dated elsewhere keeps its date chip");
         has(line("Elsewhere").querySelector(".props").textContent, "12:00");
       } finally { box.remove(); }
@@ -12149,6 +12684,13 @@ var GTD_TEST = (() => {
       eq(c.querySelector(".clcard h3").textContent, "Meeting with Anna");
       ok(c.querySelector(".cllast") && c.querySelector(".clkids"), "the second card has lines under it and an undo");
       eq(at(c), first, "the answers moved");
+      // The line sits among them (#518): the bottom row stays put too, however long it is.
+      const low = c => Math.round([...c.querySelectorAll(".clans:not(.clall)")].pop().getBoundingClientRect().top - c.getBoundingClientRect().top);
+      const lowFirst = low(c);
+      c.querySelector(".clans.clall").click();
+      c = await showClarify();
+      eq(c.querySelector(".clcard h3").textContent, "Plan the party");
+      eq(low(c), lowFirst, "the bottom row moved with the line");
     });
   });
   test("#460 Clarify gives one answer to lines dragged in the day page beside it; Project makes one project with them as steps", async () => {
@@ -12276,27 +12818,80 @@ var GTD_TEST = (() => {
       ok(!content().querySelector(".cllast"), "nothing left to undo");
     });
   });
-  test("#366 Clarify leaves a line and the lines under it as notes in one go; deeper lines are still asked", async () => {
-    await withDays([[3, "- Meeting with Anna\n  - Prices went up 10 %\n  - New contact: Ola\n    - Call Ola tomorrow\n- Plan the party\n"]], async () => {
+  test("#366 #518 Clarify: answer 0 leaves a line and its whole branch as notes in one go and one undo", async () => {
+    await withDays([[3, "- Meeting with Anna\n  - Prices went up 10 %\n  - TODO Send the minutes\n  - New contact: Ola\n    - Call Ola tomorrow\n- Plan the party\n"]], async () => {
       const d3 = journalPath(shiftISO(T(), -3));
       let c = await showClarify();
-      const all = () => [...content().querySelectorAll(".clcard button")].find(x => /as notes/.test(x.textContent));
-      ok(all(), "offered on a line with lines under it");
-      has(all().textContent, "the 2 under it", "says how many go with it");
-      all().click();
+      const all = () => content().querySelector(".clans.clall");
+      ok(all(), "an answer of its own on a line with lines under it");
+      ok(!c.querySelector(".clcard").contains(all()), "not tucked into the card");
+      const last = [...c.querySelectorAll(".clans:not(.clall)")].pop();
+      ok(all().getBoundingClientRect().top >= last.getBoundingClientRect().bottom, "it sits under the answers");
+      eq(trim(all().querySelector(".n").textContent), "0", "it is 0, under the grid as on a numpad");
+      has(all().textContent, "the 3 under it", "counts every level; a ticked line is not a note");
+      press("0");
+      ok(all().classList.contains("on"), "0 aims at it");
+      press("0");
       await settle();
-      eq(content().querySelector(".clcard h3").textContent, "Call Ola tomorrow", "the line one level further down is still asked");
+      eq(content().querySelector(".clcard h3").textContent, "Plan the party", "the line one level further down is not asked");
       const [top] = getPage(d3).blocks;
-      eq([top, ...top.children].map(b => b.state || null), [null, null, null], "all left as notes");
-      content().querySelector(".clans").click();
-      c = await showClarify();
-      eq(c.querySelector(".clcard h3").textContent, "Plan the party");
+      eq([top, ...top.children, top.children[2].children[0]].map(b => b.state || null), [null, null, "TODO", null, null], "all left as notes, the to do kept");
       ok(!all(), "not offered on a line with nothing under it");
-      [...c.querySelectorAll(".cllast button")].find(x => trim(x.textContent) === "Undo that").click();
-      await settle();
       [...content().querySelectorAll(".cllast button")].find(x => trim(x.textContent) === "Undo that").click();
       await settle();
-      eq(content().querySelector(".clcard h3").textContent, "Meeting with Anna", "Undo that takes the notes answer back too");
+      eq(content().querySelector(".clcard h3").textContent, "Meeting with Anna", "one undo takes the whole branch back");
+      eq(clarifyDeck().length, 5, "every line of it is asked again");
+    });
+  });
+  test("#518 Clarify answers sit on a numpad, as in Review actions: the line is 5", async () => {
+    await withDays([[3, "- Call the plumber\n- Order tiles\n- Plan the party\n"]], async () => {
+      const d3 = journalPath(shiftISO(T(), -3));
+      let c = await showClarify();
+      const box = n => n === 5 ? content().querySelector(".clcard")
+        : [...content().querySelectorAll(".clans:not(.clall)")].find(x => trim(x.querySelector(".n").textContent) === String(n));
+      eq(Object.fromEntries([7, 4, 1, 8, 2, 9, 6, 3].map(n => [n, box(n).querySelector("b").textContent])),
+        {7: "To do", 4: "Waiting for", 1: "Project", 8: "Someday/maybe", 2: "Idea to explore",
+         9: "Done already", 6: "Leave it as a note", 3: "Note for a responsibility"}, "each answer has its numpad key");
+      eq(trim(box(5).querySelector(".n").textContent), "5", "the line is 5");
+      const r = n => box(n).getBoundingClientRect(), mid = n => r(n).top + r(n).height / 2;
+      for (const row of [[7, 8, 9], [4, 5, 6], [1, 2, 3]])
+        ok(r(row[0]).right <= r(row[1]).left && r(row[1]).right <= r(row[2]).left, "row " + row + " is not left to right");
+      for (const col of [[7, 4, 1], [8, 5, 2], [9, 6, 3]])
+        ok(r(col[0]).bottom <= r(col[1]).top && r(col[1]).bottom <= r(col[2]).top, "column " + col + " is not top to bottom");
+      ok(mid(4) > r(5).top && mid(4) < r(5).bottom, "4 is not beside the line");
+      press("9");
+      ok(box(9).classList.contains("on"), "9 aims at Done already");
+      press("ArrowLeft");
+      ok(box(8).classList.contains("on"), "an arrow moves on the grid");
+      press("ArrowDown");
+      ok(box(5).classList.contains("on"), "down from 8 is the line");
+      press("5");
+      await settle();
+      eq(content().querySelector(".clcard h3").textContent, "Order tiles", "5 again skips the line");
+      press("9"); press("9");
+      await settle();
+      eq(getPage(d3).blocks[1].state, "DONE", "9 twice: done already");
+    });
+  });
+  test("#442 Clarify: Done already throws confetti too, once a click", async () => {
+    await withDays([[3, "- Call the plumber\n- Order tiles\n"]], async () => {
+      const cel = PREF.get("review.celebrate", "");
+      const bursts = () => [...document.querySelectorAll(".confetti")];
+      const done = () => [...content().querySelectorAll(".clans")].find(x => x.querySelector("b").textContent === "Done already");
+      try {
+        PREF.set("review.celebrate", "on");
+        await showClarify();
+        bursts().forEach(n => n.remove());
+        content().querySelector(".clans").click(); await settle();
+        eq(bursts().length, 0, "confetti on To do");
+        done().click(); await settle();
+        eq(bursts().length, 1, "Done already: one burst");
+        bursts().forEach(n => n.remove());
+        [...content().querySelectorAll(".cllast button")].find(x => trim(x.textContent) === "Undo that").click(); await settle();
+        PREF.set("review.celebrate", "off");
+        done().click(); await settle();
+        eq(bursts().length, 0, "celebrations off: no confetti");
+      } finally { PREF.set("review.celebrate", cel); bursts().forEach(n => n.remove()); }
     });
   });
   test("#367 Clarify shows what a line already links, and marks picked or typed words as a person, organisation, context or project", async () => {
@@ -13952,7 +14547,7 @@ var GTD_TEST = (() => {
     } finally { FLY = null; }
   });
 
-  test("#310 Alt+A, Alt+B, Alt+K and Alt+X reach Plan with AI, Copy embed, Insert tracker and Copy text", async () => {
+  test("#310 #483 Alt+A, Alt+B, Alt+K and Alt+X reach Copy for AI (Plan, Slides), Copy embed, Insert tracker and Copy text", async () => {
     const path = scratchProject("line menu shortcuts", [["TODO", "Buy paint"]]);
     const b = getPage(path).blocks[0];
     const frame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
@@ -13973,7 +14568,17 @@ var GTD_TEST = (() => {
 
       focusBlock(b.id); await frame();
       press("KeyA"); await settle();
-      has(title(), "Plan it with an AI", "Alt+A did not open Plan with AI");
+      // #483: Alt+A opens Copy for AI, with Plan and Slides to pick from.
+      const chips = () => [...document.querySelectorAll(".fly .frow.open .fchip")];
+      eq(chips().map(c => c.textContent), ["Plan", "Slides"], "Alt+A did not open Copy for AI ▸ Plan, Slides");
+      chips()[0].click(); await settle();
+      has(title(), "Plan it with an AI", "Copy for AI ▸ Plan did not open Plan with AI");
+      closeModal();
+
+      focusBlock(b.id); await frame();
+      press("KeyA"); await settle();
+      chips()[1].click(); await settle();
+      has(title(), "Make slides with an AI", "Copy for AI ▸ Slides did not open its dialog");
       closeModal();
 
       focusBlock(b.id); await frame();
@@ -14206,7 +14811,8 @@ var GTD_TEST = (() => {
   const deckKey = (k, o = {}, doc = document) =>
     doc.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true, ...o}));
   const deckNow = () => {
-    const s = $("#deck .slide.cur");
+    // Wherever the slides are: this tab or a window of their own (#515).
+    const s = DECK?.deck.querySelector(".slide.cur") || $("#deck .slide.cur");
     return {title: s?.querySelector(".stitle")?.textContent || "",
       // The bullets shown so far; the rest wait in their places, still black.
       bullets: [...(s?.querySelectorAll(".bullet:not(.later)") || [])].map(b => b.textContent),
@@ -14258,6 +14864,40 @@ var GTD_TEST = (() => {
       eq([deckNow().title, pic()], ["Plans", ["assets/plan.png"]], "and before a bullet shows the first one");
       deckKey("ArrowRight"); deckKey("ArrowRight");
       eq([deckNow().now, pic()], ["Budget", ["assets/plan.png"]], "a bullet with none keeps the last picture, so nothing jumps");
+    } finally { presentStop(); }
+  }));
+
+  /* #491 A bullet that is only a picture (no words, the picture in its
+     notepad, or ![](…) as the line) comes on → like any other bullet: the
+     picture in its place in the list, no marker, not dimmed once past. */
+  test("#491 Present: a bullet that is only a picture shows it in its turn, in its place in the list", () => withPages({[TALK]: [
+    "- About us",
+    "  -",
+    "    ![logo](assets/logo.png)",
+    "    Say the name slowly.",
+    "  - Founded in 1946",
+    "  - ![team](assets/team.png)",
+  ].join("\n") + "\n"}, async () => {
+    try {
+      await startTalk();
+      deckKey("ArrowRight");
+      eq(deckNow().title, "About us");
+      const items = () => [...document.querySelectorAll("#deck .slide.cur .sbullets .bullet")];
+      eq(items().length, 3, "the picture lines are bullets of the slide");
+      const [logo, , team] = items();
+      ok(logo.classList.contains("picbullet") && logo.querySelector("img"), "a picture in the notepad of a line with no words is the bullet");
+      ok(!/Say the name/.test(logo.closest(".slide").textContent), "its other notepad text stays notes");
+      ok(team.classList.contains("picbullet") && team.querySelector("img"), "so is a line that is only a picture");
+      ok(!$("#deck .slide.cur .cover"), "the picture is not swapped into the slide's picture place");
+      ok(logo.classList.contains("later"), "it waits for its turn");
+      deckKey("ArrowRight");
+      ok(logo.classList.contains("now"), "→ brings it in, as any bullet");
+      eq([getComputedStyle(logo).listStyleType, getComputedStyle(logo, "::before").content], ["none", "none"], "no bullet marker beside a picture");
+      deckKey("ArrowRight");
+      eq(deckNow().now, "Founded in 1946");
+      ok(logo.classList.contains("past"), "past");
+      logo.style.transition = "none";
+      eq(getComputedStyle(logo).opacity, "1", "a past picture is not dimmed");
     } finally { presentStop(); }
   }));
   test("#465 hovering or focusing ▶ Present, or Present from here in ☰, previews the slide: last time, from the top, the line in the whole talk, from the line", () => withPages(TALK_PAGE, async () => {
@@ -14519,7 +15159,7 @@ var GTD_TEST = (() => {
       eq(state.pagePath, TALK, "back on the page");
     } finally { presentStop(); }
   }));
-  test("#431 follow-up: the page title glides up to the top and goes, and no title is cut on its way", () => withPages({
+  test("#431 follow-up: the page title glides up and fades, with no breadcrumb to land on, and no title is cut on its way", () => withPages({
     [join(PAGES, "Quarterly kickoff for the whole team.md")]:
       ["- Kitchen renovation plan for the whole house", "  - Measure the room", "  - Pick the tiles", "- Budget", "  - Ask the bank"].join("\n") + "\n"}, async () => {
     const path = join(PAGES, "Quarterly kickoff for the whole team.md");
@@ -14539,6 +15179,11 @@ var GTD_TEST = (() => {
       return out;
     };
     const done = () => Promise.all($("#deck").getAnimations({subtree: true}).map(a => a.finished.catch(() => {})));
+    // An area's slide stylesheet may color each kind of slide apart (#431): here a
+    // light title on the title slide and on a big line title, dark once laid out.
+    const sheet = document.head.appendChild(document.createElement("style"));
+    sheet.textContent = "#deck .slide.titleslide .stitle{color:rgb(200, 0, 0)} #deck .scrumb{color:rgb(0, 0, 200)}" +
+      " #deck .slide.intro:not(.titleslide) .stitle{color:rgb(0, 200, 0)} #deck .slide:not(.intro) .stitle{color:rgb(0, 0, 100)}";
     try {
       presentStart(path, {step: 0}); await settle(); await done();
       const big = $("#deck .slide.cur .stitle").getBoundingClientRect();
@@ -14553,11 +15198,21 @@ var GTD_TEST = (() => {
       const go = () => { for (const a of $("#deck").getAnimations({subtree: true})) a.play(); };
       eq(letters().map(s => s.textContent).join(""), "Quarterlykickoffforthewholeteam", "the page title goes up letter by letter");
       ok(letters().every(s => s.getAnimations().length === 1), "each letter has its own glide");
+      // The letters keep the title's color until the next slide is in; the deck's own
+      // background never shows between the two slides (the user's slides.css hid them so).
+      for (const t of [0, 500, 999]) {
+        at(t);
+        ok(letters().every(s => getComputedStyle(s).color === "rgb(200, 0, 0)"), "at " + t + " ms each letter is still in the title's color");
+        eq(getComputedStyle($("#deck .slide.out")).opacity, "1", "at " + t + " ms the title slide still stands under the next one");
+      }
       at(1000);
+      eq(getComputedStyle($("#deck .slide.cur")).opacity, "1", "the next slide is in when the letters land");
       const rs = letters().map(s => s.getBoundingClientRect());
       const top = {top: Math.min(...rs.map(r => r.top)), height: Math.max(...rs.map(r => r.bottom)) - Math.min(...rs.map(r => r.top))};
       ok(top.top < deckBox().height * 0.2 && top.height < big.height, "the page title ends at the top, smaller: " + Math.round(top.top));
-      ok(letters().every(s => getComputedStyle(s).opacity === "0"), "and is gone there, not left over the next title");
+      // #431 reopened 2026-11-23: no page title as breadcrumb; the rising title fades out at the top.
+      ok(!$("#deck .slide.cur .scrumb"), "a top line's slide does not name the page it is from");
+      ok(letters().every(s => +getComputedStyle(s).opacity < 0.05), "the page title has faded out when it reaches the top");
       go();
       const delay = parseFloat(getComputedStyle($("#deck .slide.cur")).animationDelay);
       ok(delay >= 0.4, "the next slide comes once the page title is on its way: " + delay + " s");
@@ -14581,6 +15236,8 @@ var GTD_TEST = (() => {
       const near = (a, b) => Math.abs(a.left - b.left) < 3 && Math.abs(a.top - b.top) < 3;
       at(0);
       ok(letters().every((s, i) => near(s.getBoundingClientRect(), intro[i])), "each letter starts where it stood in the big title");
+      ok(letters().every(s => getComputedStyle(s).color === "rgb(0, 0, 100)"),
+        "the slide's look changes at once, so the letters wear the laid-out title's color from the start: " + getComputedStyle(letters()[0]).color);
       at(1000);
       const laid = marks(title);
       ok(letters().every((s, i) => near(s.getBoundingClientRect(), laid[i])), "and lands on its place in the title at the top");
@@ -14591,7 +15248,7 @@ var GTD_TEST = (() => {
       eq(cut(0).concat(cut(300), cut(600), cut(900)), [], "a long title is cut while it moves to the top");
       await done();
       ok(!$("#deck .sghost") && getComputedStyle(title).opacity === "1", "then the title itself stands there");
-    } finally { presentStop(); }
+    } finally { presentStop(); sheet.remove(); }
   }));
   test("#431 reopened: the talk keeps the outline's order; the page title is a slide alone, each top line its own slide", () => withPages({
     [TALK]: ["- Intro line", "- Q1 plan", "  - Hire", "- Plain middle", "- Last plain"].join("\n") + "\n"}, async () => {
@@ -14628,8 +15285,8 @@ var GTD_TEST = (() => {
       ok(!$(".modal"), "▾ opens no dialog");
       const pop = more.closest(".presentsplit").querySelector(".presentpop");
       ok(pop, "▾ drops a menu down under itself");
-      eq([...pop.querySelectorAll("[role=menuitem]")].map(b => b.textContent), ["With presenter window"],
-        "it offers only the presenter window; ▶ Present is beside it");
+      eq([...pop.querySelectorAll("[role=menuitem]")].map(b => b.textContent), ["With presenter window", "Full screen in this tab", "Count down to the start…"],
+        "it offers the presenter window, the slides over this tab (#515) and the countdown (#486); ▶ Present is beside it");
       eq(more.getAttribute("aria-expanded"), "true", "▾ says it is open");
       document.activeElement.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
       await settle();
@@ -14687,10 +15344,12 @@ var GTD_TEST = (() => {
     }
   });
   test("#431 the presenter window: notes for the bullet, what comes next, timer and an overview", () => withPages(TALK_PAGE, async () => {
-    const f = document.createElement("iframe");
-    document.body.append(f);
+    const f = document.createElement("iframe"), sw = document.createElement("iframe");
+    document.body.append(f, sw);
     const open = window.open;
-    window.open = () => f.contentWindow;
+    // One pop-up per click: the presenter window; Start presentation there opens the slides (#515).
+    window.open = (u, name) => name === "gtd-presenter" ? f.contentWindow : null;
+    f.contentWindow.open = (u, name) => name === "gtd-slides" ? sw.contentWindow : null;
     try {
       // The presenter window is offered in sight: ▶ Present ▾ › With presenter window.
       openPage(TALK); await settle();
@@ -14701,10 +15360,12 @@ var GTD_TEST = (() => {
       eq(pick?.textContent, "With presenter window", "▾ offers With presenter window");
       pick.click(); await settle();
       ok(!content().querySelector(".presentpop"), "the menu closes as the slides start");
-      ok($("#deck"), "the slides start");
+      ok(!$("#deck"), "the slides cover the page");
       const pd = f.contentDocument, q = s => pd.querySelector(s);
+      [...pd.querySelectorAll("button")].find(b => /Start presentation/.test(b.textContent)).click(); await settle();
+      ok(sw.contentDocument.querySelector("#deck"), "the slides start");
       ok(q(".pnow") && q(".pnext") && q(".pnotes"), "now, next and notes");
-      deckKey("ArrowRight");
+      deckKey("ArrowRight", {}, sw.contentDocument);
       eq(q(".pnotes").textContent.trim(), "Say it plainly.", "the slide's notes, without its picture");
       eq(q(".pcount").textContent, "2 / 4", "which slide of how many");
       ok(/\d+:\d\d/.test(q(".ptimer").textContent) && /\d+:\d\d/.test(q(".pclock").textContent), "a timer and the clock");
@@ -14721,7 +15382,7 @@ var GTD_TEST = (() => {
       thumbs[3].click();
       eq(deckNow().title, "Where to", "a click jumps there");
       ok(!q(".pgrid"), "and closes the overview");
-    } finally { presentStop(); window.open = open; f.remove(); }
+    } finally { presentStop(); window.open = open; f.remove(); sw.remove(); SLIDES_WIN = null; }
   }));
   test("#431 an area's slides.css styles its slides only; without one, white on black", () => withPages(TALK_PAGE, async () => {
     // The area the page is shown in; an earlier test may have left it without a record.
@@ -14844,6 +15505,17 @@ var GTD_TEST = (() => {
     eq(slides[1].axes, {y: "Quality", x: "Time"}, "the curve's axes");
     eq(slides[2].parts.length, 2, "a quote: one step for the quote, one per takeaway");
   }));
+  test("#477 Present shows bold, italics, highlight and strike as they look in the outline, without the marks", () => {
+    const kids = [{id: "a477", title: "Ship the **beta** by *Friday*"}, {id: "b477", title: "==Now== ~~later~~ \\*star\\* <b>x</b>"}];
+    for (const layout of ["list", "cycle", "process"]) {
+      const body = slideBody({layout, kids});
+      const html = body.innerHTML;
+      for (const want of ["<b>beta</b>", "<i>Friday</i>", "<mark>Now</mark>", "<s>later</s>"]) has(html, want, layout);
+      has(body.textContent, "Ship the beta by Friday", layout + ": the marks are gone");
+      has(body.textContent, "*star*", layout + ": an escaped star is a plain star");
+      has(body.textContent, "<b>x</b>", layout + ": written tags stay text");
+    }
+  });
   test("#433 a flat page is one slide; too many lines go on; a slide says where it is from", () => withPages({
     [SHOW]: ["- -> Q1", "- -> Q2", "- -> Q3", "- Roadmap", ...Array.from({length: 11}, (_, i) => "  - -> M" + (i + 1)),
       "    - Detail", "- Build vs buy", "  - | Build", "    - Full control", "      - Hire two", "  - | Buy", "    - Ready"].join("\n") + "\n"}, async () => {
@@ -14866,6 +15538,117 @@ var GTD_TEST = (() => {
       ["Plan Office move with Anna", ["Ask Kitchen renovation about money"]],
       "every linked word stays; a context is a tag, not words");
   }));
+  /* #470 A ((id)) on a slide reads as the line it points to; a line that is
+     {{embed ((id))}} brings that line and its lines into the talk as if they
+     were written there. One whose line is gone shows nothing, and the
+     presenter says so. An edit on the slide changes the original line. */
+  test("#470 references and embeds show the line they point to on a slide; gone ones show nothing; editing one changes the original", () => {
+    const SRC = join(PAGES, "Hall source.md");
+    return withPages({
+      [SHOW]: ["- Plan", "  - Ask ((ref-one-0470)) today", "  - {{embed ((emb-two-0470))}}", "  - Gone ((gone-0470)) too",
+        "  - {{embed ((gone-0470))}}", "  - {{embed ((self-0470))}}",
+        // #470 a page embed is the page, its top lines as its lines; a missing page or the talk's own shows nothing
+        "  - {{embed [[Hall source]]}}", "  - {{embed [[No such page 0470]]}}", "  - {{embed [[Show]]}}"].join("\n") + "\n",
+      [SRC]: ["- Book the hall", "- Budget lines", "  - Rent", "  - _ Secret"].join("\n") + "\n"}, async () => {
+      const [hall, budget] = getPage(SRC).blocks, [plan] = getPage(SHOW).blocks;
+      setBlockProp(hall, "id", "ref-one-0470"); setBlockProp(budget, "id", "emb-two-0470");
+      setBlockProp(plan, "id", "self-0470");              // a slide that embeds itself must not go round for ever
+      touch(SRC); touch(SHOW);
+      const f = document.createElement("iframe");
+      document.body.append(f);
+      const open = window.open;
+      window.open = () => f.contentWindow;
+      try {
+        const {slides, broken} = deckSteps(SHOW);
+        eq(slides.map(s => [s.title, s.kids.map(slideWords)]),
+          [["Show", []], ["Plan", ["Ask Book the hall today", "Budget lines", "Gone too", "Hall source"]], ["Budget lines", ["Rent"]],
+            ["Hall source", ["Book the hall", "Budget lines"]], ["Budget lines", ["Rent"]]],
+          "a reference reads as its line's words; an embed is its line with its own lines, hidden ones kept out; a page embed is the page");
+        eq(broken, 3, "a reference, an embed and a page embed whose line or page is gone show nothing, and are counted");
+        presentStart(SHOW, {presenter: true}); await settle();
+        has(f.contentDocument.querySelector(".pcount")?.textContent, "3 point to a line that is gone", "the presenter notes them");
+        const dbl = n => n.dispatchEvent(new MouseEvent("dblclick", {bubbles: true, cancelable: true}));
+        const rent = budget.children[0];
+        presentGo(DECK.steps.findIndex(({s, k}) => s.parts[k - 1] === rent)); await settle();
+        dbl($(`#deck .slide.cur [data-bid="${rent.id}"]`)); await settle();
+        const field = $("#deck .slide.cur .sedit");
+        field.value = "Rent for May";
+        field.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true, cancelable: true})); await settle();
+        eq(rent.title, "Rent for May", "editing an embedded line on the slide changes the original line");
+        has(serializePage(getPage(SRC)), "Rent for May", "on its own page");
+      } finally { presentStop(); window.open = open; f.remove(); }
+    });
+  });
+  /* #458 Starting your own, the first Journal asks "Coming from another app?"
+     with Obsidian, Dynalist, Logseq and WorkFlowy. Each opens its steps and a
+     way to download the importer; ✕ closes the card for good. The Welcome
+     screen says plainly that an invite is to a GroupToDo folder. */
+  test("#458 the first Journal offers to bring notes from Obsidian, Dynalist, Logseq or WorkFlowy; Welcome says invited to a folder", async () => {
+    const was = PREF.get("migrate.card", "");
+    try {
+      openOnboarding();
+      has($(".modal .pick")?.textContent, "Someone invited me to a GroupToDo folder", "the invite choice says it is to a folder");
+      closeModal();
+      PREF.set("migrate.card", "");
+      go("today"); await settle();
+      ok(!$("#content .migrate"), "nobody who did not just start their own is asked");
+      PREF.set("migrate.card", "1");
+      render(); await settle();
+      const card = $("#content .migrate");
+      ok(card, "the first Journal shows the card");
+      eq([...card.querySelectorAll(".migapp")].map(b => b.textContent), ["Obsidian", "Dynalist", "Logseq", "WorkFlowy"], "one button per app");
+      [...card.querySelectorAll(".migapp")].find(b => b.textContent === "Dynalist").click(); await settle();
+      has($(".modal")?.textContent, "Bring your notes from Dynalist", "an app opens its steps");
+      has($(".modal")?.textContent, "OPML", "Dynalist's steps start from its OPML export");
+      ok($('.modal a[download][href="GroupToDo-Importer.html"]'), "with the importer to download");
+      closeModal();
+      [...card.querySelectorAll(".migapp")].find(b => b.textContent === "Obsidian").click(); await settle();
+      has($(".modal")?.textContent, "vault folder", "Obsidian's steps start from its vault folder");
+      closeModal();
+      card.querySelector(".migclose").click(); await settle();
+      ok(!$("#content .migrate"), "✕ closes it");
+      go("next"); go("today"); await settle();
+      ok(!$("#content .migrate"), "and it stays closed");
+    } finally { closeModal(); PREF.set("migrate.card", was); go("today"); }
+  });
+  /* #484 Present's help is four topics, each with its picture, and each can
+     open the Present tutorial: a normal page in the area, where each slide
+     shows one thing and its notes say how that slide is written. */
+  test("#484 Present help is four topics with pictures; Open the Present tutorial makes a page that teaches each layout", async () => {
+    const ids = ["present", "present-layouts", "present-notes", "present-presenter"];
+    for (const id of ids) {
+      ok(HELP[id]?.shot, id + " is a topic with its own picture");
+      for (const o of ids) if (o !== id) ok(HELP[id].see.includes(o), id + " links to " + o);
+      ok([...helpTopicNode(id).querySelectorAll("button")].some(b => b.textContent === "Open the Present tutorial"),
+        id + " offers the tutorial");
+    }
+    ok(HELP.present.more.length < 12, "no topic holds all of Present any more");
+    const path = resolveWikiPath("Present tutorial");
+    const was = getPage(path) || null;
+    V.pages.delete(path); clearMemo();
+    try {
+      [...helpTopicNode("present-layouts").querySelectorAll("button")].find(b => b.textContent === "Open the Present tutorial").click();
+      await settle();
+      eq([state.view, state.pagePath], ["page", path], "it makes the Present tutorial page in this area and opens it");
+      const {slides} = deckSteps(path);
+      const lays = new Set(slides.map(s => s.layout));
+      for (const l of ["process", "timeline", "cycle", "pyramid", "hub", "split", "quadrant", "kpi", "bar", "pie", "table", "hero"])
+        ok(lays.has(l), "a slide shows the " + l + " layout");
+      const own = slides.filter(s => s.block && s.depth === 0);
+      ok(own.length >= 12, "a slide per thing to learn");
+      for (const s of own) ok(s.notes, "the notes of " + s.title + " tell how it is written");
+      for (const s of own) {
+        const w = slideWord(s.block.title).word;
+        if (w) has(s.notes, "(" + w + ")", "the notes of " + s.title + " name its word");
+      }
+      ok(slides.every(s => !/[[\]{}]{2}|\(\(/.test(s.title)), "no raw code on a slide");
+      getPage(path).blocks[0].title = "My own first line"; touch(path);
+      go("today");
+      [...helpTopicNode("present").querySelectorAll("button")].find(b => b.textContent === "Open the Present tutorial").click();
+      await settle();
+      eq([state.pagePath, getPage(path).blocks[0].title], [path, "My own first line"], "opened again, it is the same page, as you left it");
+    } finally { if (was) putPage(path, was, {silent: true}); else V.pages.delete(path); clearMemo(); go("today"); }
+  });
   test("#467 task lines and lines starting with _ stay off the slides; Hide in Present; the presenter says how many", () => withPages({
     [SHOW]: ["- Agenda", "  - TODO Book the room", "    - Ask Ann", "  - Budget", "  - _ Draft numbers", "    - Old guess",
       "  - DONE Send invite", "- _ Parked slide", "  - Idea", "- Roadmap", "  - -> Q1", "  - _ -> Q2", "  - -> Q3"].join("\n") + "\n"}, async () => {
@@ -14911,6 +15694,20 @@ var GTD_TEST = (() => {
       document.dispatchEvent(new KeyboardEvent("keydown", {key: "z", ctrlKey: true, bubbles: true, cancelable: true})); await settle();
       eq(getPage(SHOW).blocks[0].children[1].title, "_ Budget", "one Ctrl+Z takes the whole pick back");
       lineSelClear();
+      // The outline shows what is hidden: faded with the lines under it, a named closed eye, no "_ " in the words.
+      const lineOf = id => document.querySelector('.blk[data-id="' + id + '"] > .line');
+      const pl = lineOf(parked.id), eye = pl.querySelector(".slidehidebtn"), plain = lineOf(road.id).querySelector(".txt");
+      const color = n => getComputedStyle(n).color;
+      ok(eye && /^Hidden from slides/.test(eye.getAttribute("aria-label")) && eye.title, "a hidden line has no named closed eye");
+      ok(!pl.querySelector(".txt").textContent.startsWith("_"), "the _ shows in the words");
+      ok(color(pl.querySelector(".txt")) !== color(plain), "a hidden line is not faded");
+      ok(color(lineOf(parked.children[0].id).querySelector(".txt")) !== color(plain), "the lines under a hidden line are not faded");
+      ok(!lineOf(road.id).querySelector(".slidehidebtn") && !lineOf(room.id).querySelector(".slidehidebtn"), "a shown line or a task line has an eye");
+      eye.click(); await settle();
+      eq(getPage(SHOW).blocks[1].title, "Parked slide", "the eye does not put the line back on the slides");
+      ok(!lineOf(parked.id).querySelector(".slidehidebtn"), "the eye stays on a shown line");
+      undoLast(); await settle();
+      eq(getPage(SHOW).blocks[1].title, "_ Parked slide", "Undo does not hide it again");
       // The presenter window says how many are hidden, so nothing goes without a trace.
       presentStart(SHOW, {presenter: true}); await settle();
       eq(f.contentDocument.querySelector(".pcount")?.textContent, "1 / 3 · 6 hidden", "the presenter shows N hidden");
@@ -14957,7 +15754,14 @@ var GTD_TEST = (() => {
   });
   test("#469 a table in Present: header first, then a row (or a column) per step; Reveal Rows | Columns on the table bar", () => withPages({
     [SHOW]: ["- Sales by city", "  - | City | Q1 | Q2 |", "    | --- | ---: | ---: |", "    | Oslo | 1 | 2 |", "    | Bergen | 3 | 4 |",
-      "    | Molde | 5 | 6 |", "    reveal:: columns", "- Next"].join("\n") + "\n"}, async () => {
+      "    | Molde | 5 | 6 |", "    reveal:: columns", "- Next"].join("\n") + "\n",
+    // Reopened #469: beside one other line, the table's "| " read as a versus mark.
+    "Two lines.md": ["- Costs", "  - Intro", "  - | Item | Sum |", "    | --- | ---: |", "    | Rent | 10 |", "    | Food | 5 |",
+      "- Intro", "- | Item | Sum |", "  | --- | ---: |", "  | Rent | 10 |"].join("\n") + "\n"}, async () => {
+    const two = deckSteps("Two lines.md").slides;
+    eq(two.map(x => x.layout).join(), "list,list,table,list,table",
+      "a table beside one other line is drawn as a versus, not as its own table slide");
+    eq(two[2].parts.length, 2, "the table beside one line does not light a row per step");
     const [sales] = getPage(SHOW).blocks, [tbl] = sales.children;
     eq(blockProp(tbl, "reveal"), "columns", "reveal:: after the rows is not read as the table's");
     eq(tableRows(tbl), 4, "reveal:: after the rows breaks the table");
@@ -15097,6 +15901,41 @@ var GTD_TEST = (() => {
       ok(!$("#deck"), "Esc gives the page back");
     } finally { presentStop(); }
   }));
+  const CYCLE = join(PAGES, "Cycle479.md");
+  test("#479 a cycle's boxes keep at least 1em of air, the same between each box and the next, and no arrow runs under a box: the ring widens first, then the words get smaller", () => withPages({[CYCLE]: [
+    "- Six areas", "  - (o) Bring AI to the functionality of our products", "  - (o) AI to ensure stable and secure products",
+    "  - (o) Redesign processes, capabilities and roles.", "  - (o) Ensure data quality, structure, access and ownership.",
+    "  - (o) Govern AI risk, ethics, security and compliance.", "  - (o) Build competence and leadership to support."].join("\n") + "\n"}, async () => {
+    try {
+      openPage(CYCLE); await settle();
+      content().querySelector(".pagehead .presentbtn").click(); await settle();
+      presentGo(DECK.slides.find(s => s.title === "Six areas").first);
+      deckKey("ArrowRight"); await settle();
+      const slide = $("#deck .slide.cur");
+      slide.getAnimations({subtree: true}).forEach(a => a.finish());
+      ok(slide.classList.contains("lay-cycle"), slide.className);
+      const boxes = [...slide.querySelectorAll(".ntext")], rects = boxes.map(b => b.getBoundingClientRect());
+      const em = parseFloat(getComputedStyle(boxes[0]).fontSize);
+      const meet = (a, b, d) => a.left - d < b.right && b.left - d < a.right && a.top - d < b.bottom && b.top - d < a.bottom;
+      for (const [i, a] of rects.entries()) for (const [j, b] of rects.entries())
+        if (i < j) ok(!meet(a, b, em - 1), `boxes ${i + 1} and ${j + 1} have less than 1em of air between them`);
+      const apart = (a, b) => { const dx = Math.max(a.left - b.right, b.left - a.right), dy = Math.max(a.top - b.bottom, b.top - a.bottom);
+        return dx > 0 && dy > 0 ? Math.hypot(dx, dy) : Math.max(dx, dy); };
+      const gaps = rects.map((a, i) => Math.round(apart(a, rects[(i + 1) % rects.length])));
+      ok(Math.max(...gaps) <= Math.min(...gaps) * 1.25 + 4, "the air between each box and the next is not even: " + gaps);
+      const inside = (x, y) => rects.findIndex(r => x > r.left + 1 && x < r.right - 1 && y > r.top + 1 && y < r.bottom - 1);
+      for (const [i, p] of [...slide.querySelectorAll(".ring.cycle path")].entries()) {
+        const m = p.getScreenCTM(), len = p.getTotalLength();
+        for (let s = 0; s <= 40; s++) {
+          const q = p.getPointAtLength(len * s / 40), x = m.a * q.x + m.c * q.y + m.e, y = m.b * q.x + m.d * q.y + m.f;
+          const hit = inside(x, y);
+          if (hit >= 0) { ok(false, `arrow path ${i + 1} runs under box ${hit + 1}`); break; }
+        }
+      }
+      const ring = slide.querySelector(".ring").getBoundingClientRect();
+      ok(ring.width > ring.height * 1.1, "the ring widened first: " + [ring.width, ring.height]);
+    } finally { presentStop(); }
+  }));
   const EVEN = join(PAGES, "Even.md");
   test("#433 steps are one size, hub bubbles one size with each spoke in sight, the curve ends flat", () => withPages({[EVEN]: [
     "- Get started", "  - 1. Download and open grouptodo.html in your browser", "  - 2. Point an Area to a local or cloud-synced folder",
@@ -15187,6 +16026,24 @@ var GTD_TEST = (() => {
       eq(hit.map(b => b.textContent), [], "the card covers a spoke");
     } finally { presentStop(); }
   }));
+  test("#433 follow-up: a hub box holds its longest word whole, inside its border", () => withPages({[EVEN]: [
+    "- Total cost", "  - . Direct work", "  - . Indirect work", "  - . Materialsupplychainmanagement and transport",
+    "  - . Contractortransportationlogistics"].join("\n") + "\n"}, async () => {
+    try {
+      openPage(EVEN); await settle();
+      content().querySelector(".pagehead .presentbtn").click(); await settle();
+      presentGo(DECK.slides.find(s => s.title === "Total cost").first + 1); await settle();
+      await Promise.all($("#deck").getAnimations({subtree: true}).map(a => a.finished.catch(() => {})));
+      const slide = $("#deck .slide.cur").getBoundingClientRect();
+      for (const b of $$("#deck .slide.cur .hub .ntext")) {
+        const box = b.getBoundingClientRect(), range = document.createRange(); range.selectNodeContents(b);
+        const words = [...range.getClientRects()];
+        ok(words.every(r => r.left >= box.left - 1 && r.right <= box.right + 1),
+          "\"" + b.textContent + "\" runs past its box: " + words.map(r => Math.round(r.right - box.right)).join(", "));
+        ok(box.left >= slide.left - 1 && box.right <= slide.right + 1, "\"" + b.textContent + "\" is not on the slide");
+      }
+    } finally { presentStop(); }
+  }));
   test("#433 a 2D layout lights a box at a time with its lines in it; a quote, then its takeaways", () => withPages(SHOW_PAGE, async () => {
     try {
       openPage(SHOW); await settle();
@@ -15238,7 +16095,7 @@ var GTD_TEST = (() => {
       } finally { presentStop(); PREF.set("present.pages", "[]"); }
     });
   });
-  test("#433 Format › Slide layout marks a line's lines; the same pick again, or Auto, takes the marks off; one Ctrl+Z; picked lines too", async () => {
+  test("#433 #481 #395 Slide layout, a button of its own, writes the word on a line with lines; the same pick again, or Auto, takes it off; one Ctrl+Z; picked lines too", async () => {
     const path = scratchProject("slide layout", [["", "Launch plan"], ["", "Stray line"]]);
     const [head, stray] = getPage(path).blocks;
     head.children = ["Q1 beta", "Q2 release", "Q3 enterprise"].map(t => newBlock({title: t}));
@@ -15251,12 +16108,15 @@ var GTD_TEST = (() => {
     // Undo puts back a copy of the page: look the lines up again each time.
     const now = b => { let hit = null; walkBlocks(getPage(path).blocks, x => { if (x.id === b.id) hit = x; }); return hit; };
     const kids = () => now(head).children.map(k => k.title);
+    // #395 reopened: Slide layout is a bar button of its own, not a row in
+    // Format, and its list drops straight down from it.
     const menu = async () => {
-      if (!document.querySelector('#editBar .ebpop[data-g="format"]')) document.querySelector('#editBar [data-k="format"]').click();
+      const btn = document.querySelector('#editBar > [data-k="slide"]');
+      if (!document.querySelector("#editBar .ebsub")) btn.click();
       await frame();
-      document.querySelector('#editBar .ebpop [data-k="slide"]').click();
-      await frame();
-      return [...document.querySelectorAll("#editBar .ebsub [data-lay]")];
+      const pop = document.querySelector("#editBar .ebsub"), br = btn.getBoundingClientRect(), pr = pop.getBoundingClientRect();
+      ok(pr.top >= br.bottom - 1 && pr.top <= br.bottom + 12 && (Math.abs(pr.left - br.left) <= 4 || pr.right >= innerWidth - 4), "the list drops from its button: button " + [br.left, br.bottom] + " list " + [pr.left, pr.top]);
+      return [...pop.querySelectorAll("[data-lay]")];
     };
     const pick = async lay => { (await menu()).find(n => n.dataset.lay === lay).click(); await settle(); };
     const ticked = async () => {
@@ -15266,29 +16126,41 @@ var GTD_TEST = (() => {
     };
     try {
       focusBlock(head.id); await frame();
+      document.querySelector('#editBar [data-k="format"]').click(); await frame();
+      ok(document.querySelector('#editBar .ebpop[data-g="format"]') && !document.querySelector('#editBar .ebpop [data-k="slide"]'), "Format holds text only, no Slide layout");
+      editBarGroupClose(); await frame();
       const items = await menu();
-      eq(items.map(n => n.dataset.lay), ["auto", "process", "timeline", "cycle", "pyramid", "hub", "curve", "split", "kpi"],
-        "the known layouts, Auto first");
+      eq(items.map(n => n.dataset.lay), ["auto", "process", "timeline", "cycle", "pyramid", "hub", "curve", "split", "kpi", "map"],
+        "the known layouts, Auto first; Map last (#488)");
       ok(/->/.test(items.find(n => n.dataset.lay === "timeline").textContent), "each shows the mark it writes");
       editBarGroupClose(); await frame();
       eq(await ticked(), ["auto"], "no marks: Auto is ticked");
 
+      // #481: on a line with lines, the layout is one word on that line; its lines are left as they are.
+      const plain = ["Q1 beta", "Q2 release", "Q3 enterprise"];
       await pick("timeline");
-      eq(kids(), ["-> Q1 beta", "-> Q2 release", "-> Q3 enterprise"], "on a line with lines, its lines get the mark");
-      eq(now(head).title, "Launch plan", "the title line is left as it is");
+      eq(now(head).title, "(timeline) Launch plan", "the line with lines gets the word");
+      eq(kids(), plain, "its lines get no marks");
       eq(document.activeElement, txt(head), "the caret stays in the line");
-      eq(await ticked(), ["timeline"], "the tick follows the marks");
+      eq(await ticked(), ["timeline"], "the tick follows the word");
 
       await pick("process");
-      eq(kids(), ["1. Q1 beta", "2. Q2 release", "3. Q3 enterprise"], "Steps numbers them, in place of the arrows");
+      eq(now(head).title, "(steps) Launch plan", "Steps in place of Timeline");
       await pick("process");
-      eq(kids(), ["Q1 beta", "Q2 release", "Q3 enterprise"], "the same pick again takes the marks off");
+      eq(now(head).title, "Launch plan", "the same pick again takes the word off");
       txt(head).dispatchEvent(new KeyboardEvent("keydown", {key: "z", ctrlKey: true, bubbles: true, cancelable: true})); await settle();
-      eq(kids(), ["1. Q1 beta", "2. Q2 release", "3. Q3 enterprise"], "one Ctrl+Z takes the whole pick back");
+      eq(now(head).title, "(steps) Launch plan", "one Ctrl+Z takes the whole pick back");
 
       focusBlock(head.id); await frame();
       await pick("auto");
-      eq(kids(), ["Q1 beta", "Q2 release", "Q3 enterprise"], "Auto takes the marks off");
+      eq([now(head).title, kids()], ["Launch plan", plain], "Auto takes the word off");
+      // Old marks on the lines go when a word is picked: one way to say it.
+      now(head).children.forEach(k => { k.title = "-> " + k.title; });
+      focusBlock(head.id); await frame();
+      eq(await ticked(), ["timeline"], "old marks are still read");
+      await pick("cycle");
+      eq([now(head).title, kids()], ["(cycle) Launch plan", plain], "a pick moves the layout onto the line");
+      await pick("auto");
 
       focusBlock(stray.id); await frame();
       await pick("cycle");
@@ -15312,8 +16184,798 @@ var GTD_TEST = (() => {
       eq(kids(), ["Q1 beta", "Q2 release", "Q3 enterprise"], "one Ctrl+Z takes it back");
       LINE_SEL.path = path; LINE_SEL.ids = [head.id]; paintLineSel();
       (await hudMenu()).find(n => n.dataset.lay === "hub").click(); await settle();
-      eq(kids(), [". Q1 beta", ". Q2 release", ". Q3 enterprise"], "one picked line with lines marks its lines, as the line tools do");
+      eq([now(head).title, kids()], ["(hub) Launch plan", plain], "one picked line with lines gets the word, as the line tools do");
     } finally { lineSelClear(); editBarGroupClose(); PREF.set("linetools", wasTools || ""); document.activeElement && document.activeElement.blur(); go("today"); }
+  });
+
+  /* #481 One layout word in brackets at the front of a line says how its
+     lines are drawn: "(pyramid) What creates value". */
+  test("#481 a (word) on a line picks its slide's layout and is not shown on the slide", () => withPages({
+    [SHOW]: ["- (pyramid) What creates value", "  - Purpose", "  - Strategy", "  - Daily work",
+      "- (draft) Plan", "  - A", "  - B", "  - C", "- (VERSUS) Build or buy", "  - Build", "  - Buy",
+      "- (2x2) Options", "  - A", "  - B", "  - C", "  - D", "- (cycle) Too few", "  - A", "  - B",
+      "- Roadmap", "  - -> Q1", "  - -> Q2"].join("\n") + "\n"}, async () => {
+    for (const [text, layout, words] of [["(pyramid) What creates value", "pyramid", "What creates value"],
+      ["(Steps) Launch", "process", "Launch"], ["(versus) A", "split", "A"], ["(2x2) A", "quadrant", "A"], ["(2×2) A", "quadrant", "A"],
+      ["(scorecard) Q3", "kpi", "Q3"], ["(quote) Motto", "hero", "Motto"], ["(list) Notes", "list", "Notes"], ["(grid) Team", "grid", "Team"],
+      ["(timeline) A", "timeline", "A"], ["(hub) A", "hub", "A"], ["(curve) A", "curve", "A"], ["(cycle) A", "cycle", "A"]])
+      eq([slideWord(text).layout, slideWords({title: text})], [layout, words], text);
+    for (const text of ["(draft) Plan", "(pyramid)Plan", "Plan (pyramid)", "(o) Acquire", "(a line with no words)"])
+      eq(slideWord(text).layout, null, "not a layout word: " + text);
+    eq(slideWords({title: "_ (cycle) Hidden"}), "Hidden", "behind a hidden line's _ too");
+    const {slides} = deckSteps(SHOW);
+    const of = t => slides.find(s => s.title === t);
+    eq([of("What creates value").layout, of("What creates value").kids.map(slideWords)], ["pyramid", ["Purpose", "Strategy", "Daily work"]],
+      "the word on the line draws its lines, and the title has no word");
+    eq(of("(draft) Plan").layout, "list", "a word that is no layout stays text");
+    eq([of("Build or buy").layout, of("Options").layout], ["split", "quadrant"], "in any case; 2x2");
+    eq(of("Too few").layout, "list", "a layout with too few lines is a list");
+    eq(of("Roadmap").layout, "timeline", "old marks on the lines are still read");
+  }));
+  test("#481 off the line its bullet is the layout's icon, named; on the line the word shows as written", () => withPages({
+    [SHOW]: ["- (pyramid) What creates value", "  - Purpose", "  - Strategy", "  - Daily work", "- Plain"].join("\n") + "\n"}, async () => {
+    openPage(SHOW); await settle();
+    const [pyr, flat] = getPage(SHOW).blocks;
+    const line = b => content().querySelector(`.blk[data-id="${CSS.escape(String(b.id))}"] > .line`);
+    try {
+      const bul = line(pyr).querySelector(".bullet"), txt = line(pyr).querySelector(".txt");
+      eq(txt.textContent, "What creates value", "the word is not shown off the line");
+      eq(bul.textContent, "▲", "the bullet is the layout's icon");
+      ok(bul.classList.contains("slidelay"), "and drawn as an icon, not a dot");
+      ok(/Pyramid/.test(bul.getAttribute("aria-label")) && /Slide layout: Pyramid/.test(bul.title), "named for screen readers and on hover: " + bul.title);
+      ok(/Slide layout: Pyramid/.test(txt.getAttribute("aria-description") || ""), "and on the line, for the keyboard");
+      eq([line(flat).querySelector(".bullet").textContent, line(flat).querySelector(".bullet").classList.contains("slidelay")], ["", false], "a plain line keeps its dot");
+      txt.focus(); await settle();
+      eq(txt.textContent, "(pyramid) What creates value", "on the line, the word shows as written");
+    } finally { document.activeElement && document.activeElement.blur(); go("today"); }
+  }));
+  test("#481 ( at the start of a line offers the layouts; letters narrow them; a pick writes the word", () => {
+    const at = (text, caret = text.length) => suggestFor({value: text, selectionStart: caret}, {commands: true});
+    const all = at("(");
+    eq(all && all.mode, "layout", "( offers the layouts");
+    eq(all.rows.map(r => r.title), ["List", "Steps", "Timeline", "Cycle", "Pyramid", "Hub", "Curve", "Versus", "2×2", "Scorecard", "Line", "Bar", "Pie", "Quote", "Grid", "Map"],
+      "every layout, by name");
+    const pyr = all.rows.find(r => r.title === "Pyramid");
+    eq([pyr.mark, pyr.detail], ["▲", "base to top"], "each with its icon and what its lines become");
+    eq(at("(py").rows.map(r => r.title), ["Pyramid"], "letters narrow the list");
+    eq(at("(xyz"), null, "no layout starts so: no list");
+    eq(at("Plan (", 6)?.mode === "layout", false, "only at the start of the line");
+    eq(suggestFor({value: "(", selectionStart: 1}, {})?.mode === "layout", false, "only on a page's line");
+    const input = el("input", {});
+    document.body.append(input);
+    try {
+      for (const [value, caret, want] of [["()", 1, "(pyramid) "], ["(py)", 3, "(pyramid) "],
+        ["()What creates value", 1, "(pyramid) What creates value"], ["(What creates value", 1, "(pyramid) What creates value"]]) {
+        input.value = value; input.focus(); input.setSelectionRange(caret, caret);
+        suggestSync(input, {commands: true});
+        suggestAccept(SUGGEST.rows.findIndex(r => r.title === "Pyramid"));
+        eq(input.value, want, "a pick on " + JSON.stringify(value));
+      }
+    } finally { suggestClose(); input.remove(); }
+  });
+  /* #482 Charts: "Label number" lines, or a table under a chart word.
+     With no word, lines with numbers are a line chart; 1-4 metrics stay a scorecard. */
+  test("#482 lines that end in a number are a line chart unless a word says bar or pie", () => {
+    eq(slideChartPoint("North 42"), {label: "North", value: 42, shown: "42"});
+    eq(slideChartPoint("2023: 1850"), {label: "2023", value: 1850, shown: "1850"});
+    eq(slideChartPoint("Margin -3,5 %"), {label: "Margin", value: -3.5, shown: "-3,5 %"});
+    eq(slideChartPoint("Pipeline NOK 40k"), {label: "Pipeline", value: 40000, shown: "NOK 40k"});
+    for (const text of ["Call 3 people", "2022", "Q1: Private beta", "Meet at 3pm"]) eq(slideChartPoint(text), null, text);
+    const lay = (...a) => slideLayout(lines(...a)).layout;
+    eq(lay("Visitors", "2022 1200", "2023 1850", "2024 2600"), "line", "no word: a line chart");
+    eq(lay("Q3", "ARR: USD 2M", "Churn: 3 %"), "kpi", "1-4 metrics stay a scorecard");
+    eq(lay("Q3", "ARR 2 %", "Churn 3 %", "NPS 4 %", "CAC 5 %", "LTV 6 %"), "line", "5 metrics or more are a chart");
+    eq(lay("Steps", "Call 3 people", "Buy 2 tickets"), "list", "a number inside a line is no chart");
+    eq(lay("One", "North 42"), "list", "one line is no chart");
+    eq(lay("Shop", "Item 1", "Item 2", "Item 3"), "list", "numbers that only count the lines are numbering, no chart");
+    eq(slideLayout(lines("Rooms", {title: "Room 12", children: [{title: "Big", children: []}]}, "Room 14")).layout, "list",
+      "lines with lines of their own are no chart");
+    eq(lay("(bar) Sales", "North 42", "South 31"), "bar");
+    eq(lay("(pie) Share", "A 40", "B 35", "C 25"), "pie");
+    eq(lay("(line) Sales", "North 42", "South 31"), "line");
+    eq(lay("(pie) Share", "A 1", "B 1", "C 1", "D 1", "E 1", "F 1", "G 1"), "bar", "a pie has at most 6 slices; more is a bar chart");
+    const table = {title: "| Year | Sales | Costs |", body: ["| --- | --- | --- |", "| 2023 | 10 | 8 |", "| 2024 | 14 | 9 |"], children: []};
+    eq(slideLayout(lines("(bar) Money", table)).layout, "bar", "a table under a chart word");
+    eq(slideLayout(lines("Money", table)).layout, "table", "a table with no word stays a table");
+    eq(slideChartData([table]), {cats: ["2023", "2024"], series: [{name: "Sales", values: [10, 14]}, {name: "Costs", values: [8, 9]}]},
+      "the first column gives the categories, each column of numbers a series");
+  });
+  test("#482 a chart slide draws its labels on the chart and lights one point or bar per click", () => withPages({
+    [SHOW]: ["- Visitors", "  - 2022 1200", "  - 2023 1850", "  - 2024 2600", "- (bar) Sales", "  - North 42", "  - South 31",
+      "- (pie) Share", "  - A 40", "  - B 60", "- (bar) Money", "  - | Year | Sales | Costs |", "    | --- | --- | --- |",
+      "    | 2023 | 10 | 8 |", "    | 2024 | 14 | 9 |"].join("\n") + "\n"}, async () => {
+    try {
+      openPage(SHOW); await settle();
+      content().querySelector(".pagehead .presentbtn").click(); await settle();
+      const to = title => { presentGo(DECK.slides.find(s => s.title === title).first); deckKey("ArrowRight"); };
+      const state = () => deckParts().map(p => p.className.match(/now|past|later/)[0]);
+      for (const [title, lay, n, words] of [["Visitors", "line", 3, ["2022", "1200", "2024", "2600"]],
+        ["Sales", "bar", 2, ["North", "42", "South", "31"]], ["Share", "pie", 2, ["A", "40 %", "B", "60 %"]],
+        ["Money", "bar", 2, ["2023", "2024", "Sales", "Costs", "14"]]]) {
+        to(title);
+        ok($("#deck .slide.cur").classList.contains("lay-" + lay), title + " is a " + lay + " chart");
+        eq(deckParts().length, n, title + ": one part per point, bar or row");
+        eq(state(), ["now", ...Array(n - 1).fill("later")], title + ": the first lit, the rest to come");
+        const text = $("#deck .slide.cur .sbody").textContent;
+        for (const w of words) ok(text.includes(w), title + ": labelled on the chart: " + w);
+        deckKey("ArrowRight");
+        eq([deckNow().title, state()[1]], [title, "now"], title + ": → lights the next one");
+      }
+    } finally { presentStop(); go("today"); }
+  }));
+  test("#482 a guessed chart's bullet is a faint line icon; a written word a full one", () => withPages({
+    [SHOW]: ["- Visitors", "  - 2022 1200", "  - 2023 1850", "- (bar) Sales", "  - North 42", "  - South 31"].join("\n") + "\n"}, async () => {
+    openPage(SHOW); await settle();
+    const [vis, sales] = getPage(SHOW).blocks;
+    const bul = b => content().querySelector(`.blk[data-id="${CSS.escape(String(b.id))}"] > .line > .bullet`);
+    try {
+      eq(bul(vis).textContent, "⌁", "a line-chart icon");
+      ok(bul(vis).classList.contains("slidelay") && bul(vis).classList.contains("guess"), "drawn faint, as a guess");
+      ok(/Slide layout: Line \(guessed\)/.test(bul(vis).title) && /Line \(guessed\)/.test(bul(vis).getAttribute("aria-label")), "named a guess: " + bul(vis).title);
+      eq(getPage(SHOW).blocks[0].title, "Visitors", "nothing written into the line");
+      eq([bul(sales).textContent, bul(sales).classList.contains("guess")], ["▮", false], "a written (bar) is the full icon");
+    } finally { go("today"); }
+  }));
+  test("#481 ☰ Tidy slide marks puts each slide's old marks into one word on its line, only when asked; one Ctrl+Z", () => withPages({
+    [SHOW]: ["- Roadmap", "  - -> Q1", "  - -> Q2", "- Plan", "  - 1. Ask", "  - 2. Build", "- Motto", "  - > Less is more",
+      "- Options", "  - | A", "  - | B", "  - | C", "  - | D", "- -> Top line", "- Plain", "  - One"].join("\n") + "\n",
+    [join(PAGES, "Errands.md")]: "- Shop\n  - Milk\n"}, async () => {
+    const titles = () => { const out = []; walkBlocks(getPage(SHOW).blocks, b => { out.push(b.title); }); return out; };
+    const before = titles();
+    eq(slideTidyCount(join(PAGES, "Errands.md")), 0, "a page with no old marks has nothing to tidy");
+    eq(slideTidyCount(SHOW), 4, "four slides carry old marks");
+    openPageMenu(join(PAGES, "Errands.md")); await settle();
+    ok(!/Tidy slide marks/.test(document.querySelector(".modal")?.textContent || ""), "not offered where there is nothing to tidy");
+    closeModal();
+    openPage(SHOW); await settle();
+    openPageMenu(SHOW); await settle();
+    ok(/Tidy slide marks/.test(document.querySelector(".modal")?.textContent || ""), "offered on the page's ☰ menu");
+    closeModal();
+    eq(titles(), before, "nothing changes until it is asked");
+    slideTidy(SHOW); await settle();
+    eq(titles(), ["(timeline) Roadmap", "Q1", "Q2", "(steps) Plan", "Ask", "Build", "(quote) Motto", "Less is more",
+      "(2x2) Options", "A", "B", "C", "D", "-> Top line", "Plain", "One"],
+      "each slide's word goes on its line and the marks come off; a top line has no line above to take it");
+    eq(deckSteps(SHOW).slides.find(s => s.title === "Options").layout, "quadrant", "the slides are drawn as before");
+    document.dispatchEvent(new KeyboardEvent("keydown", {key: "z", ctrlKey: true, bubbles: true, cancelable: true})); await settle();
+    eq(titles(), before, "one Ctrl+Z takes it all back");
+    go("today");
+  }));
+
+  /* #483 Copy for AI ▸ Slides: a prompt that turns text into a talk, with
+     pictures picked by name from the area's assets/slides/. */
+  const SLIDE_PICS = ["Harbour 2.jpg", "Harbour 3.jpg", "Boat at sea.jpg", "IMG_0042.jpg", "PrintP1230617.jpg", "7.png", "Team at work.png"];
+  const putSlidePics = async () => {
+    for (const n of SLIDE_PICS) await V.backend.putAsset("assets/slides/" + n, new Blob([new Uint8Array([137, 80, 78, 71])], {type: "image/png"}));
+  };
+  test("#483 the slides prompt names every layout word and the pictures, shuffled, used ones last; unreadable names are found", () => withPages({
+    [SHOW]: "- Harbour talk\n  - We moved the boats.\n",
+    [join(PAGES, "Old talk.md")]: "- Old\n  ![](assets/slides/Boat at sea.jpg)\n  - A\n"}, async () => {
+    await putSlidePics();
+    const pics = await slideAiPics(SHOW);
+    eq(pics.names.slice().sort(), SLIDE_PICS.slice().sort(), "every picture in assets/slides");
+    eq([...pics.used], ["Boat at sea.jpg"], "a picture on another page of the area is used");
+    eq(pics.unreadable.slice().sort(), ["7.png", "IMG_0042.jpg", "PrintP1230617.jpg"],
+      "only numbers or a camera code say nothing; names that differ only in numbers are fine");
+    const firsts = new Set();
+    for (let i = 0; i < 30; i++) {
+      const order = slideAiOrder(pics.names, pics.used);
+      eq(order[order.length - 1], "Boat at sea.jpg", "a used picture comes last");
+      eq(order.slice().sort(), SLIDE_PICS.slice().sort(), "each picture once");
+      firsts.add(order[0]);
+    }
+    ok(firsts.size > 1, "shuffled each time");
+    const prompt = slideAiPrompt("- Harbour talk\n  - We moved the boats.", ["Harbour 2.jpg", "Team at work.png"]);
+    for (const [word] of SLIDE_WORDS) ok(prompt.includes("(" + word + ")"), "the prompt names the layout word (" + word + ")");
+    for (const [lay, name] of SLIDE_MENU) if (lay !== "auto")
+      ok(SLIDE_WORDS.some(([w, l]) => l === lay && prompt.includes("(" + w + ")")), "every Slide layout is in the prompt: " + name);
+    ok(prompt.includes("We moved the boats."), "the text to turn into slides is in it");
+    ok(prompt.indexOf("Harbour 2.jpg") < prompt.indexOf("Team at work.png") && prompt.includes("![](assets/slides/"), "the pictures, in the order given");
+    ok(!slideAiPrompt("- A", []).includes("assets/slides"), "no pictures: that part is left out");
+  }));
+  test("#483 Copy for AI ▸ Slides: the dialog counts the pictures; Use it turns the answer into slides under the line; broken rules get a red bullet; one Ctrl+Z", () => withPages({
+    [SHOW]: "- Harbour talk\n  We moved the boats.\n- After\n"}, async () => {
+    await putSlidePics();
+    openPage(SHOW); await settle();
+    const [talk] = getPage(SHOW).blocks;
+    const answer = ["Here are your slides:", "```markdown",
+      "- (cycle) How we work", "  ![](assets/slides/Harbour 2.jpg)", "  - Plan", "  - Build", "  - Learn",
+      "- (2x2) Options", "  - A", "  - B", "  - C",
+      "- (cycle) Two only", "  - Up", "  - Down",
+      "- (pyramid) Value", "  ![](assets/slides/Nope.jpg)", "  - Base", "  - Middle", "  - Top",
+      "- Thanks", "  Say thanks to the team.", "```"].join("\n");
+    const bul = b => content().querySelector(`.blk[data-id="${CSS.escape(String(b.id))}"] > .line > .bullet`);
+    try {
+      await openSlidesWithAI(planSourceOfLines(SHOW, [talk]), talk.id); await settle();
+      const modal = document.querySelector(".scrim .modal");
+      has(modal.textContent, "Make slides with an AI");
+      has(modal.textContent, "Pictures: 7");
+      has(modal.textContent, "3 names say nothing about the picture");
+      for (const n of ["IMG_0042.jpg", "PrintP1230617.jpg", "7.png"]) has(modal.textContent, n);
+      modal.querySelector("textarea[aria-label=\"The AI's answer\"]").value = answer;
+      [...modal.querySelectorAll("button")].find(b => b.textContent === "Make the slides").click(); await settle();
+      ok(!document.querySelector(".scrim .modal"), "the dialog closes");
+      const kids = getPage(SHOW).blocks[0].children;
+      eq(kids.map(b => b.title), ["(cycle) How we work", "(2x2) Options", "(cycle) Two only", "(pyramid) Value", "Thanks"],
+        "the answer, fences and chat words gone, is the line's lines");
+      eq([kids[0].body[0], kids[4].body[0]], ["![](assets/slides/Harbour%202.jpg)", "Say thanks to the team."],
+        "pictures (a space written %20, as a link must be) and speaker notes go in the notepad");
+      ok(await assetURL(slidePicture(kids[0].body[0])), "and the picture is found in the folder");
+      eq(getPage(SHOW).blocks.map(b => b.title), ["Harbour talk", "After"], "nothing else moves");
+      const lay = t => deckSteps(SHOW).slides.find(s => s.title === t)?.layout;
+      eq([lay("How we work"), lay("Value")], ["cycle", "pyramid"], "each slide gets its layout");
+      await settle();
+      const red = b => bul(b).classList.contains("crowded");
+      eq(kids.map(red), [false, true, true, true, false], "a 2×2 without 4, a cycle with 2 and a missing picture are red");
+      has(bul(kids[1]).title, "4", "and say why: " + bul(kids[1]).title);
+      has(bul(kids[3]).title, "Nope.jpg", "the missing picture is named: " + bul(kids[3]).title);
+      document.dispatchEvent(new KeyboardEvent("keydown", {key: "z", ctrlKey: true, bubbles: true, cancelable: true})); await settle();
+      eq((getPage(SHOW).blocks[0].children || []).length, 0, "one Ctrl+Z takes the slides out");
+      openPageMenu(SHOW); await settle();
+      has(document.querySelector(".modal")?.textContent || "", "Copy for AI", "the page's ☰ menu offers it for the whole page");
+      closeModal();
+    } finally { closeModal(); go("today"); }
+  }));
+
+  /* #487 Alt+drag on a slide: a line or the title moves from where the
+     layout puts it, the picture pans in its frame; kept on the lines. */
+  test("#487 Alt+drag moves a slide's line, title and picture crop; kept on the lines; Reset slide clears them; one Ctrl+Z", () => withPages({
+    [SHOW]: ["- About us", "  ![](data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="3000" height="600"><rect width="3000" height="600" fill="#888"/></svg>') + ")",
+      "  - Founded 1946", "  - Owned by two insurers", "- Next", "  - A"].join("\n") + "\n"}, async () => {
+    const [om, next] = getPage(SHOW).blocks, [first] = om.children;
+    const xy = v => String(v || "").split(",").map(Number);
+    const key = (key, up = false, o = {}) => document.dispatchEvent(new KeyboardEvent(up ? "keyup" : "keydown", {key, altKey: !up || key !== "Alt", bubbles: true, cancelable: true, ...o}));
+    const drag = async (node, dx, dy) => {
+      const r = node.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+      const ev = (t, cx, cy, n = node) => n.dispatchEvent(new PointerEvent(t, {bubbles: true, cancelable: true, altKey: true, button: 0, pointerId: 1, clientX: cx, clientY: cy}));
+      ev("pointerdown", x, y); ev("pointermove", x + dx / 2, y + dy / 2, document); ev("pointermove", x + dx, y + dy, document); ev("pointerup", x + dx, y + dy, document);
+      await settle();
+    };
+    const open = async () => {
+      presentStart(SHOW); await settle();
+      const s = DECK.slides.find(x => x.title === "About us");
+      presentGo(s.end - 1); await settle();
+    };
+    try {
+      openPage(SHOW); await settle();
+      await open();
+      const deck = $("#deck"), W = deck.getBoundingClientRect().width, H = deck.getBoundingClientRect().height;
+      const line = () => $(`#deck .slide.cur [data-bid="${CSS.escape(String(first.id))}"]`);
+      ok(!line().style.translate, "a slide with no moves draws as before");
+      key("Alt"); await settle();
+      ok(deck.classList.contains("arranging"), "holding Alt outlines what can move");
+      ok($("#deck .arrreset"), "and offers Reset slide");
+      key("Alt", true); await settle();
+      ok(!deck.classList.contains("arranging") && !$("#deck .arrreset"), "letting go of Alt takes them away");
+      // #487 regression: Alt+Tab to the presenter window never lets go of Alt here; the boxes stayed.
+      key("Alt"); await settle();
+      window.dispatchEvent(new Event("blur")); await settle();
+      ok(!deck.classList.contains("arranging"), "the boxes stay when the slides window loses focus");
+      key("Alt"); await settle();
+      document.dispatchEvent(new PointerEvent("pointermove", {bubbles: true, altKey: false, clientX: 5, clientY: 5})); await settle();
+      ok(!deck.classList.contains("arranging"), "the boxes stay on a move made without Alt");
+      key("Alt"); await settle();
+      key("Shift", false, {altKey: false}); await settle();
+      ok(!deck.classList.contains("arranging"), "the boxes stay on a key pressed without Alt");
+      const f = document.createElement("iframe"), wopen = window.open;
+      document.body.append(f);
+      window.open = () => f.contentWindow;
+      try {
+        presenterOpen(); await settle();
+        const pkey = (t, o) => f.contentDocument.dispatchEvent(new KeyboardEvent(t, {key: "Alt", bubbles: true, cancelable: true, ...o}));
+        pkey("keydown", {altKey: true}); await settle();
+        pkey("keyup", {altKey: false}); await settle();
+        ok(!deck.classList.contains("arranging"), "Alt let go in the presenter window leaves the boxes on");
+      } finally { window.open = wopen; f.remove(); }
+      await drag(line(), W * 0.1, H * 0.05);
+      const [ax, ay] = xy(blockProp(first, "at"));
+      ok(Math.abs(ax - 10) <= 2 && Math.abs(ay - 5) <= 2, "the line's place is kept on it as at:: " + blockProp(first, "at"));
+      await drag($("#deck .slide.cur .stitle"), -W * 0.05, 0);
+      ok(xy(blockProp(om, "title-at"))[0] < -3, "the title's place is kept on the slide's line: " + blockProp(om, "title-at"));
+      // A real press on the picture lands on its shade, .cover (#487 bug): that drags the picture too.
+      await drag($("#deck .slide.cur .cover"), -W * 0.1, 0);
+      const fx = xy(blockProp(om, "focus"))[0];
+      ok(fx > 50, "dragging the picture left shows more of its right: focus:: " + blockProp(om, "focus"));
+      presentStop(); await open();
+      has(line().style.translate, "cqw", "next time the line is drawn where it was put");
+      has($("#deck .slide.cur .cover .pic img").style.objectPosition, fx + "%", "and the picture keeps its crop");
+      const before = xy(blockProp(om, "title-at"))[0];
+      const title = $("#deck .slide.cur .stitle");
+      for (const t of ["pointerdown", "pointerup"]) title.dispatchEvent(new PointerEvent(t, {bubbles: true, cancelable: true, altKey: true, button: 0, pointerId: 1,
+        clientX: title.getBoundingClientRect().left + 5, clientY: title.getBoundingClientRect().top + 5}));
+      key("ArrowRight"); await settle();
+      ok(Math.abs(xy(blockProp(om, "title-at"))[0] - (before + 1)) < 0.01, "Alt+click picks it, Alt+→ nudges it 1%");
+      eq(DECK.slides[DECK.steps[DECK.i].s.n - 1].title, "About us", "and the talk stays on the slide");
+      key("Alt"); await settle();
+      $("#deck .arrreset").click(); await settle();
+      eq([blockProp(first, "at"), blockProp(om, "title-at"), blockProp(om, "focus")].map(v => v || null), [null, null, null], "Reset slide takes every move off");
+      ok(!line().style.translate, "and the slide is drawn as the layout puts it");
+      key("Alt", true);
+      document.dispatchEvent(new KeyboardEvent("keydown", {key: "z", ctrlKey: true, bubbles: true, cancelable: true})); await settle();
+      ok(blockProp(first, "at") && blockProp(om, "title-at") && blockProp(om, "focus"), "one Ctrl+Z puts them back");
+      eq(blockProp(next.children[0], "at"), null, "another slide's lines are untouched");
+    } finally { presentStop(); go("today"); }
+  }));
+
+  /* #488 A (map) slide: its line's picture behind the whole slide, cards,
+     logo badges and pins (a line that starts with an emoji). */
+  test("#488 a (map) slide: a picture behind, cards and badges that bring their pins, pins that stay or travel; at:: places a pin", () => {
+    const svg = (w, h, c) => "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" fill="${c}"/></svg>`);
+    // Each person their own picture: the same picture twice is one card that travels (#488 follow-up).
+    const MAP = svg(1600, 900, "#ccc"), LOGO = svg(100, 100, "#123"), LOGO2 = svg(100, 100, "#321"), FACE = svg(300, 400, "#a87");
+    const FACE2 = svg(300, 400, "#7a8"), FACE3 = svg(300, 400, "#87a");
+    return withPages({[SHOW]: [
+      "- (map) Acme Group ![](" + MAP + ")", "  - Founded in 1946",
+      "  - ![](" + LOGO + ") Product A", "    - 🔵 Oslo", "    - 🔵 Stockholm", "  - ![](" + LOGO2 + ") Product B", "    - 🟠 Lisbon",
+      "- (map) Teamet ![](" + MAP + ")",
+      "  - ![](" + FACE + ")", "    - **Sam Lee**", "    - Account manager", "    - 📍 Lisbon",
+      "  - ![](" + FACE2 + ")", "    - **Anna Berg**", "    - 📍 Stockholm",
+      "  - ![](" + FACE3 + ")", "    - **Kim Berg**", "    - 📍 Lisbon",
+      "- (map) About me ![](" + MAP + ")",
+      "  - ![](" + FACE + ")", "  - **Sam Lee**", "  - Account manager", "  - 📍 Lisbon", "  - 📍 Porto"].join("\n") + "\n"}, async () => {
+      const [cab, team, me] = getPage(SHOW).blocks;
+      const pinOf = (card, i = 0) => card.children.filter(c => /^📍|^🔵|^🟠/u.test(c.title))[i];
+      setBlockProp(pinOf(team.children[0]), "at", "40,40");
+      setBlockProp(pinOf(team.children[1]), "at", "70,30");
+      setBlockProp(pinOf(team.children[2]), "at", "40,40");
+      setBlockProp(me.children[3], "at", "50,30");
+      setBlockProp(me.children[4], "at", "60,70");
+      touch(SHOW);
+      eq(slideWord("(map) Acme Group").layout, "map", "(map) is a layout word");
+      const {slides} = deckSteps(SHOW), of = t => slides.find(s => s.title === t);
+      ok(of("Acme Group"), "the title has no picture in it: " + slides.map(s => s.title).join(" | "));
+      eq([of("Acme Group").layout, of("Acme Group").parts.length], ["map", 3], "a line, then a badge a click");
+      eq(of("Teamet").parts.length, 3, "a card a click");
+      eq(of("About me").parts.length, 3, "a flat card is one click, then a click per travelling pin");
+      const pins = () => [...$("#deck .slide.cur").querySelectorAll(".mpin")];
+      const state = p => (p.className.match(/\b(now|past|later)\b/) || [])[1];
+      const at = p => [parseFloat(p.style.left), parseFloat(p.style.top)];
+      try {
+        presentStart(SHOW); await settle();
+        presentGo(of("Acme Group").first); await settle();
+        const bg = $("#deck .slide.cur .cover img");
+        ok(bg && bg.getAttribute("src") === MAP && $("#deck .slide.cur").classList.contains("lay-map"), "the (map) picture is behind the slide");
+        deckKey("ArrowRight"); deckKey("ArrowRight"); await settle();
+        const cabas = $("#deck .slide.cur .mbadge.now");
+        ok(cabas && /Product A/.test(cabas.textContent) && cabas.querySelector("img"), "a logo line is a badge, lit on its click");
+        eq(pins().filter(p => state(p) === "now").map(p => p.textContent), ["🔵", "🔵"], "its pins come with it, drawn as their emoji");
+        eq(pins().filter(p => state(p) === "later").length, 1, "the next badge's pin is still to come");
+        deckKey("ArrowRight"); await settle();
+        eq(pins().map(state).sort(), ["now", "past", "past"], "the badge before stays, its pins dimmed");
+
+        presentGo(of("Teamet").first + 1); await settle();
+        const card = $("#deck .slide.cur .mcard.now");
+        ok(card && card.querySelector("img") && /Sam Lee/.test(card.querySelector(".mname").textContent) && /Account manager/.test(card.textContent),
+          "a picture line is a card: the picture, then its lines, the first as the name");
+        ok(!/Lisbon/.test(card.textContent), "its pin is on the map, not in the card");
+        eq(pins().length, 2, "two pins at the same place are one pin");
+        const both = pins().find(p => /Sam Lee/.test(p.title));
+        ok(/Kim Berg/.test(both.title), "named for both: " + both.title);
+        eq([state(both), at(both)], ["now", [40, 40]], "at:: is where the pin stands");
+        deckKey("ArrowRight"); await settle();
+        eq([state(both), state(pins().find(p => p !== both))], ["past", "now"], "the next card brings its pin; the first stays, dimmed");
+        deckKey("ArrowRight"); await settle();
+        eq(state(both), "now", "a card that joins a pin lights it again");
+
+        presentGo(of("About me").first + 1); await settle();
+        ok(/Sam Lee/.test($("#deck .slide.cur .mcard").textContent) && /Account manager/.test($("#deck .slide.cur .mcard").textContent),
+          "one card may be written flat: the lines after its picture");
+        eq(pins().length, 1, "pin lines in a row are one pin");
+        ok(state(pins()[0]) === "later", "not shown before its click");
+        deckKey("ArrowRight"); await settle();
+        eq([state(pins()[0]), at(pins()[0])], ["now", [50, 30]], "on Lisbon");
+        deckKey("ArrowRight"); await settle();
+        eq([pins().length, at(pins()[0])], [1, [60, 70]], "the same pin moves on to Porto");
+        const p = pins()[0], r = p.getBoundingClientRect(), W = $("#deck").getBoundingClientRect().width;
+        const ev = (t, x, n = p) => n.dispatchEvent(new PointerEvent(t, {bubbles: true, cancelable: true, altKey: true, button: 0, pointerId: 1, clientX: x, clientY: r.top + r.height / 2}));
+        ev("pointerdown", r.left + r.width / 2); ev("pointermove", r.left + r.width / 2 + W * 0.05, document); ev("pointermove", r.left + r.width / 2 + W * 0.1, document);
+        ev("pointerup", r.left + r.width / 2 + W * 0.1, document); await settle();
+        const [hx, hy] = slideXY(blockProp(me.children[4], "at"));
+        ok(Math.abs(hx - 70) < 1.5 && Math.abs(hy - 70) < 1.5, "Alt+drag places the pin: at:: " + blockProp(me.children[4], "at"));
+        eq(slideCrowd(SHOW).size, 0, "a map's many lines are not a crowded slide");
+      } finally { presentStop(); go("today"); }
+    });
+  });
+  /* #488 follow-up: a picture used more than once on a map is a pin that
+     travels, its line's words a label beside it that Alt+drag places apart
+     (label-at::). A picture used once stays a card or a badge. */
+  test("#488 Map is in the Slide layout menu; on a map the same emoji, picture or words is one thing that moves to each new place", () => {
+    const svg = (w, h, c) => "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" fill="${c}"/></svg>`);
+    const MAP = svg(1600, 900, "#ccc"), PHOTO = svg(300, 200, "#a87"), LOGO = svg(100, 100, "#123");
+    return withPages({[SHOW]: [
+      "- Trip", "  - Oslo", "  - Bergen",
+      "- (map) Road trip ![](" + MAP + ")",
+      "  - 🚗 Oslo", "  - 🚲 Bike rental", "  - 🚗 Bergen",
+      "  - ![](" + PHOTO + ") Day one",
+      "  - Lunch break",
+      "  - ![](" + PHOTO + ") Day two",
+      "  - Lunch break",
+      "  - ![](" + LOGO + ") Product A"].join("\n") + "\n"}, async () => {
+      const [trip, road] = getPage(SHOW).blocks;
+      // The menu: Map is one of the layouts, and picking it writes (map) on the line the slide is.
+      let picked = null;
+      const pop = slideMenuPop(null, lay => { picked = lay; });
+      const mapBtn = pop.querySelector('[data-lay="map"]');
+      ok(mapBtn && /Map/.test(mapBtn.textContent), "the Slide layout menu has no Map");
+      mapBtn.click();
+      eq(picked, "map", "Map does not pick the map layout");
+      slideLayoutPick(SHOW, trip.children, "map");
+      eq(getPage(SHOW).blocks[0].title, "(map) Trip", "picking Map does not write (map) on the slide's line");
+      eq(slideLayoutNow(SHOW, getPage(SHOW).blocks[0].children), "map", "the menu does not tick Map on a map");
+      const [car1, , car2, pic1, text1, pic2, text2] = road.children;
+      setBlockProp(car1, "at", "20,20"); setBlockProp(car2, "at", "60,60");
+      setBlockProp(pic1, "at", "10,5"); setBlockProp(pic2, "at", "30,40"); setBlockProp(pic1, "label-at", "4,-2");
+      setBlockProp(text2, "at", "30,0");
+      touch(SHOW);
+      const {slides} = deckSteps(SHOW), s = slides.find(x => x.title === "Road trip");
+      eq(s.parts.length, 8, "each line is still a click of its own");
+      const cur = () => $("#deck .slide.cur");
+      const state = p => (p.className.match(/\b(now|past|later)\b/) || [])[1];
+      try {
+        presentStart(SHOW); await settle();
+        presentGo(s.first); await settle();
+        const pins = [...cur().querySelectorAll(".mpin")];
+        eq(pins.filter(p => !p.querySelector("img")).map(p => p.textContent).sort(), ["🚗", "🚲"].sort(), "a different emoji is a pin of its own; the same emoji is one pin");
+        const car = pins.find(p => p.textContent === "🚗");
+        for (let i = 0; i < 3; i++) deckKey("ArrowRight");
+        await settle();
+        eq([state(car), parseFloat(car.style.left), parseFloat(car.style.top)], ["now", 60, 60], "the 🚗 did not move on to Bergen");
+        const photo = pins.find(p => p.querySelector("img"));
+        ok(photo && photo.querySelector("img").getAttribute("src") === PHOTO, "the same picture twice is no pin on the map, drawn as the picture");
+        eq(cur().querySelectorAll(".mcard").length, 0, "a picture used twice is still a card in the column");
+        ok(cur().querySelector(".mbadge img"), "a picture used once is no longer a badge");
+        eq(cur().querySelectorAll(".mtext").length, 1, "the same words twice are two lines");
+        const text = cur().querySelector(".mtext"), label = () => photo.querySelector(".mlabel");
+        eq(state(photo), "later", "the picture pin shows before its click");
+        deckKey("ArrowRight"); await settle();
+        eq([state(photo), parseFloat(photo.style.left), parseFloat(photo.style.top)], ["now", 10, 5], "the picture pin does not stand at its at::");
+        ok(label() && /Day one/.test(label().textContent), "the line's words are no label by the picture");
+        eq(label().style.translate, "4cqw -2cqh", "label-at:: does not place the label apart from the picture");
+        deckKey("ArrowRight"); await settle();
+        eq([state(photo), state(text)], ["past", "now"], "the words come in on their click");
+        deckKey("ArrowRight"); await settle();
+        eq([state(photo), parseFloat(photo.style.left), parseFloat(photo.style.top)], ["now", 30, 40], "the picture pin does not move on to its second place");
+        ok(/Day two/.test(label().textContent) && !/Day one/.test(label().textContent), "the label does not show the second line's words");
+        eq(label().style.translate, "4cqw -2cqh", "the label does not keep its place beside the travelling picture");
+        // Alt+drag on the label moves the label, saved on the line it is on now; the picture stays.
+        const r = label().getBoundingClientRect(), W = $("#deck").getBoundingClientRect().width;
+        const ev = (t, x, n = label()) => n.dispatchEvent(new PointerEvent(t, {bubbles: true, cancelable: true, altKey: true, button: 0, pointerId: 1, clientX: x, clientY: r.top + r.height / 2}));
+        const x0 = r.left + r.width / 2;
+        ev("pointerdown", x0); ev("pointermove", x0 + W * 0.05, document); ev("pointermove", x0 + W * 0.1, document);
+        ev("pointerup", x0 + W * 0.1, document); await settle();
+        const [lx, ly] = slideXY(blockProp(pic2, "label-at")) || [NaN, NaN];
+        ok(Math.abs(lx - 14) < 1.5 && Math.abs(ly + 2) < 1.5, "Alt+drag does not place the label on its line: label-at:: " + blockProp(pic2, "label-at"));
+        eq([blockProp(pic2, "at"), blockProp(pic1, "label-at")], ["30,40", "4,-2"], "dragging the label moved the picture or the first line's label");
+        deckKey("ArrowRight"); await settle();
+        // "30cqw 0cqh" and "30cqw" are the same place.
+        eq([state(text), text.style.translate.replace(/ 0cqh$/, "")], ["now", "30cqw"], "the words do not move to their second place");
+      } finally { presentStop(); go("today"); }
+    });
+  });
+
+  /* #486 A waiting screen before the talk: the lines under "(waiting)" as
+     slides on repeat, and a countdown band to the page's starts:: time. */
+  test("#486 the waiting screen counts down to starts::, cycles the (waiting) lines with a QR for a link; → starts the talk", () => withPages({
+    [SHOW]: ["- (waiting) Before we start", "  - Next course: Lean in practice", "    - 12 March, 3 days",
+      "    - Sign up at https://example.com/lean", "  - Coffee is in the hall", "- First point", "  - A", "  - B"].join("\n") + "\n"}, async () => {
+    const two = n => String(n).padStart(2, "0");
+    const soon = new Date(Date.now() + 30 * 60000), hhmm = soon.getHours() + ":" + two(soon.getMinutes());
+    const band = () => $("#deck .waitband")?.textContent || "", cur = () => $("#deck .slide.cur")?.textContent || "";
+    eq(deckSteps(SHOW).slides.some(s => /waiting|Lean|Coffee/.test(s.title + s.kids.map(slideWords).join())), false,
+      "the (waiting) lines are not in the talk");
+    try {
+      openPage(SHOW); await settle();
+      content().querySelector(".presentmore").click(); await settle();
+      [...document.querySelectorAll(".presentpop [role=menuitem]")].find(b => /Count down/.test(b.textContent)).click(); await settle();
+      const modal = document.querySelector(".scrim .modal");
+      has(modal.textContent, "Another time");
+      presentWaitSet(SHOW, hhmm); await settle();
+      eq(getPage(SHOW).props.starts, hhmm, "the start time is kept on the page");
+      ok($("#deck") && $("#deck").classList.contains("waiting"), "the waiting screen opens");
+      has(band(), "Starts at " + hhmm);
+      ok(/^(29|30):\d\d$/.test($("#deck .waitclock").textContent), "it counts down: " + $("#deck .waitclock").textContent);
+      has(cur(), "Next course: Lean in practice");
+      has(cur(), "12 March, 3 days", "the slide shows all its lines at once");
+      ok($("#deck .slide.cur .waitqr svg"), "a link on a waiting slide shows as a QR code");
+      eq($("#deck").querySelectorAll(".waitdots > *").length, 2, "a dot per waiting slide");
+      slideWaitNext(); await settle();
+      has(cur(), "Coffee is in the hall", "the next waiting slide");
+      slideWaitNext(); await settle();
+      has(cur(), "Next course", "and round again");
+      DECK.wait.at = Date.now() - 1000; slideWaitTick(); await settle();
+      has(band(), "Starting now", "at the time, it says so");
+      ok(DECK.wait, "and waits for you: the talk never starts on its own");
+      deckKey("ArrowRight"); await settle();
+      ok(!DECK.wait && !$("#deck").classList.contains("waiting") && !$("#deck .waitband"), "→ ends the waiting");
+      eq(DECK.i, 0, "and the talk opens at its start");
+      presentStop();
+      presentStart(SHOW, {wait: true}); await settle();
+      has(band(), "Starts at " + hhmm, "the next time counts to the same start");
+    } finally { presentStop(); closeModal(); go("today"); }
+  }));
+
+  /* #489 The presenter window runs the talk by mouse or touch: its Next box
+     is a button, ‹ Back beside it, and ⏱ Count down… starts the waiting
+     screen without leaving the slides. */
+  test("#489 the presenter window: the Next box and ‹ Back step the talk; ⏱ starts the countdown; Start the talk ends it", () => withPages({
+    [SHOW]: ["- (waiting) Before we start", "  - Coffee is in the hall", "- First point", "  - A", "  - B"].join("\n") + "\n"}, async () => {
+    const f = document.createElement("iframe");
+    document.body.append(f);
+    const open = window.open;
+    window.open = () => f.contentWindow;
+    try {
+      presentStart(SHOW, {presenter: true}); await settle();
+      const pd = f.contentDocument, q = s => pd.querySelector(s);
+      eq([q(".pnext")?.tagName, q(".pback")?.tagName], ["BUTTON", "BUTTON"], "the Next box and ‹ Back are buttons");
+      ok(q(".pback").disabled, "‹ Back is off at the start");
+      q(".pnext").click(); await settle();
+      eq(DECK.i, 1, "a click on the Next box goes one step on");
+      q(".pback").click(); await settle();
+      eq(DECK.i, 0, "‹ Back goes one back");
+      const deck = $("#deck");
+      q(".pwaitbtn").click(); await settle();
+      const times = [...pd.querySelectorAll(".ptimes button.ptime")];
+      ok(times.length >= 3 && q(".ptimes input[type=time]"), "⏱ lists times, and a field for another");
+      const pick = times[0].textContent;
+      times[0].click(); await settle();
+      eq(getPage(SHOW).props.starts, pick, "the time is kept on the page");
+      ok(DECK.wait && $("#deck") === deck && deck.classList.contains("waiting"), "the same slides turn to the waiting screen");
+      ok(DECK.pw === f.contentWindow, "the presenter window stays");
+      has(q(".pwait").textContent, "Starts at " + pick);
+      has(q(".pnext").textContent, "Start the talk");
+      ok(!q(".ptimes"), "the time list closes");
+      q(".pnext").click(); await settle();
+      ok(!DECK.wait && !deck.classList.contains("waiting"), "Start the talk ends the waiting");
+      eq(DECK.i, 0, "at the talk's start");
+      q(".pwaitbtn").click(); await settle();
+      q(".ptimes input[type=time]").value = "13:05";
+      q(".ptimes .ptimeset").click(); await settle();
+      eq(getPage(SHOW).props.starts, "13:05", "another time counts down too");
+    } finally { presentStop(); window.open = open; f.remove(); go("today"); }
+  }));
+
+  /* #515 regression: With presenter window opened two pop-ups from one click,
+     the slides first. A browser lets one through per click, so the presenter
+     window, the one the speaker needs, was the one blocked. */
+  test("#515 With presenter window: three windows with one pop-up per click; Start presentation in the presenter window opens the slides", () => withPages({
+    [SHOW]: ["- First point", "  - A", "- Second point"].join("\n") + "\n"}, async () => {
+    const fp = document.createElement("iframe"), fs = document.createElement("iframe");
+    document.body.append(fp, fs);
+    const open = window.open, wasP = PRESENTER_WIN, wasS = SLIDES_WIN, last = PREF.get("present.last", "");
+    let left = 1;
+    window.open = (u, name) => left-- > 0 ? (name === "gtd-presenter" ? fp.contentWindow : null) : null;
+    // A click in the presenter window lets that window open one.
+    fp.contentWindow.open = (u, name) => name === "gtd-slides" ? fs.contentWindow : null;
+    const start = () => [...fp.contentDocument.querySelectorAll("button")].find(b => /Start presentation/.test(b.textContent));
+    try {
+      PRESENTER_WIN = null; SLIDES_WIN = null;
+      openPage(SHOW); await settle();
+      presentStart(SHOW, {presenter: true, win: true}); await settle();
+      ok(fp.contentDocument.querySelector(".pnext"), "the presenter window is not shown");
+      ok(!document.querySelector("#deck"), "the slides cover the page");
+      ok(start(), "the presenter window has no Start presentation");
+      fp.contentDocument.querySelector(".pnext").click(); await settle();
+      const at = DECK.i;
+      start().click(); await settle();
+      ok(fs.contentDocument.querySelector("#deck .slide.cur"), "Start presentation does not show the slides in their window");
+      eq(DECK.i, at, "the slides do not start where the presenter window is");
+      ok(!start(), "Start presentation stays once the slides are up");
+      fs.contentWindow.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowRight", bubbles: true, cancelable: true})); await settle();
+      eq(DECK.i, at + 1, "a key in the slides window does not run the talk");
+    } finally { presentStop(true); PREF.set("present.last", last); window.open = open; PRESENTER_WIN = wasP; SLIDES_WIN = wasS; fp.remove(); fs.remove(); go("today"); }
+  }));
+
+  /* #515 ▶ Present opens the slides in a window of their own, so the page
+     stays open to edit beside them; an edit shows on the slide. A slides or
+     presenter window still open after the talk picks up the next one. ▾ ›
+     Full screen in this tab keeps the old way. */
+  test("#515 ▶ Present opens the slides in their own window beside the page; edits show; both windows pick up the next talk", () => withPages({
+    [SHOW]: ["- First point", "  - A", "  - B", "- Second point", "  - C"].join("\n") + "\n"}, async () => {
+    const fs = document.createElement("iframe"), fp = document.createElement("iframe");
+    document.body.append(fs, fp);
+    const open = window.open, opened = [];
+    window.open = (u, name) => { opened.push(name); return name === "gtd-presenter" ? fp.contentWindow : fs.contentWindow; };
+    // A key in the slides window opens the presenter window from there.
+    fs.contentWindow.open = window.open;
+    const sd = () => fs.contentDocument, btn = () => content().querySelector(".pagehead .presentbtn");
+    const key = k => fs.contentWindow.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true}));
+    try {
+      openPage(SHOW); await settle();
+      btn().click(); await settle();
+      ok(DECK && !document.querySelector("#deck"), "the slides cover the page instead of a window of their own");
+      ok(sd().querySelector("#deck .slide.cur"), "the slides are not in their own window");
+      ok(btn() && btn().isConnected, "the page is not open beside the slides");
+      ok(/Full screen/.test(sd().querySelector("#deck .deckfull")?.textContent || ""), "the slides window has no Full screen hint");
+      key("ArrowRight"); await settle();
+      eq(DECK.i, 1, "a key in the slides window does not run the talk");
+      // An edit on the page shows on the slide in a moment.
+      const a = getPage(SHOW).blocks[0].children[0];
+      a.title = "A changed"; touch(SHOW); render();
+      await new Promise(r => setTimeout(r, 700)); await settle();
+      has(sd().querySelector("#deck .slide.cur").textContent, "A changed", "an edit on the page does not show on the slide");
+      eq(DECK.i, 1, "the edit moved the talk off its step");
+      key("p"); await settle();
+      ok(fp.contentDocument.querySelector(".pnext"), "P opens the presenter window");
+      key("Escape"); key("Escape"); await settle();
+      ok(!DECK && !sd().querySelector("#deck"), "Esc at the top does not end the talk");
+      ok(!fp.contentDocument.querySelector(".pnext"), "the presenter window still shows the ended talk");
+      // The page offers the line the talk ended at.
+      const toast = [...document.querySelectorAll("#toasts .toast")].find(t => /Ended at/.test(t.textContent));
+      // The talk was on the First point slide (step 1) when Esc took it up to the title and out.
+      ok(toast && /First point/.test(toast.textContent), "no offer to show the line the talk ended at: " + (toast?.textContent || "none"));
+      toast.querySelector(".act").click(); await settle();
+      await new Promise(r => setTimeout(r, 100));
+      eq(document.activeElement?.closest(".blk")?.dataset.id, String(getPage(SHOW).blocks[0].id), "Show in page does not put the caret in that line");
+      // Start again: both windows still open pick it up; none is opened anew.
+      const before = opened.length;
+      btn().click(); await settle();
+      ok(sd().querySelector("#deck .slide.cur"), "the slides window does not pick up the next talk");
+      ok(DECK.pw === fp.contentWindow && fp.contentDocument.querySelector(".pnext"), "the presenter window does not pick up the next talk");
+      eq(opened.length, before, "a window was opened anew: " + opened.slice(before).join(", "));
+      // Closing the slides window ends the talk.
+      fs.contentWindow.dispatchEvent(new Event("pagehide")); await settle();
+      ok(!DECK, "closing the slides window does not end the talk");
+      // ▾ › Full screen in this tab: the old way.
+      content().querySelector(".pagehead .presentmore").click(); await settle();
+      const item = [...document.querySelectorAll(".presentpop [role=menuitem]")].find(b => /Full screen in this tab/.test(b.textContent));
+      ok(item, "▾ has no Full screen in this tab");
+      item.click(); await settle();
+      ok(document.querySelector("#deck") && !sd().querySelector("#deck"), "Full screen in this tab does not show the slides in this tab");
+    } finally { presentStop(); window.open = open; fs.remove(); fp.remove(); go("today"); }
+  }));
+
+  /* #485 Your camera is one layer through the talk: off until Shift+C, then
+     its mode follows the slide (title alone: big; a picture: the picture
+     first, then you in its place; others: a bubble). C or the presenter
+     window's Camera strip sets this slide's mode; the next slide is automatic
+     again. The presenter window shows you mirrored, the notes right under. */
+  test("#485 the camera: Shift+C turns it on, the mode follows the slide, C or the presenter strip picks this slide's mode", () => withPages({
+    [SHOW]: ["- Welcome", "- Results", "  ![cover](assets/cover.png)", "  - Revenue up", "- Plain", "  - A", "  - B",
+      "- (map) Offices", "  ![map](assets/map.png)", "  - 📍 Oslo"].join("\n") + "\n"}, async () => {
+    const f = document.createElement("iframe");
+    document.body.append(f);
+    const open = window.open, md = navigator.mediaDevices, waitPref = PREF.get("present.campic");
+    window.open = () => f.contentWindow;
+    let asked = 0, stream = null;
+    const fake = {getUserMedia: async () => { asked++; const c = document.createElement("canvas"); c.getContext("2d").fillRect(0, 0, 4, 4); return stream = c.captureStream(); }};
+    Object.defineProperty(navigator, "mediaDevices", {value: fake, configurable: true});
+    PREF.set("present.campic", 10);
+    const key = (k, o = {}) => document.dispatchEvent(new KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true, ...o}));
+    const cam = () => $("#deck")?.dataset.cam || "";
+    const wait = () => new Promise(r => setTimeout(r, 30));
+    try {
+      presentStart(SHOW, {presenter: true}); await settle();
+      const pd = f.contentDocument, q = s => pd.querySelector(s);
+      ok(!$("#deck video.cam") && !asked && !q(".pcam"), "the camera is off by default");
+      // #485 bug: an area's slides.css gave slides a background, and it hid the camera.
+      const own = document.head.appendChild(el("style", {}, "#deck .slide{background:linear-gradient(45deg,#c24,#e85)}#deck>.cam{transition:none!important}"));
+      key("C", {shiftKey: true}); await wait();
+      eq(asked, 1, "Shift+C opens the camera");
+      ok($("#deck > video.cam"), "one camera layer on the deck, not on a slide");
+      eq(cam(), "big", "the page title alone: you fill the slide");
+      const bg = getComputedStyle($("#deck .slide.cur"));
+      eq([bg.backgroundImage, bg.backgroundColor], ["none", "rgba(0, 0, 0, 0)"], "a slide's own background gives way to you");
+      eq(getComputedStyle($("#deck video.cam")).transform, "none", "the slides are not mirrored");
+      const view = q(".pcam video");
+      ok(view && /scaleX\(-1\)|matrix\(-1/.test(getComputedStyle(view).transform), "the presenter window shows you mirrored");
+      has(q(".pcam").textContent, "On air");
+      ok(q(".pcam").nextElementSibling?.classList.contains("pnotes"), "the notes right under the camera");
+      key("ArrowRight"); await wait();
+      eq(cam(), "big", "a top line alone is big too");
+      key("ArrowRight"); await wait();
+      ok($("#deck .slide.cur.hascover"), "a slide with a picture");
+      eq(cam(), "pic", "its picture shows first");
+      has(q(".pcamauto").textContent, "Side", "Auto says what it picked");
+      [...pd.querySelectorAll(".pcamwait button")].find(b => b.textContent === "At once").click(); await wait();
+      eq(+PREF.get("present.campic"), 0, "the picture time is kept");
+      eq(cam(), "side", "then you, in the picture's place");
+      // #485 bug: over the whole slide the camera stayed dark or behind the picture.
+      const still = document.head.appendChild(el("style", {}, "#deck *,#deck *::after{transition:none!important}"));
+      const look = () => [getComputedStyle($("#deck .slide.cur .cover .pic.on")).opacity,
+        getComputedStyle($("#deck .slide.cur .cover"), "::after").opacity, getComputedStyle($("#deck video.cam")).filter];
+      const [, shade, dim] = look();
+      ok(+shade === 0 || dim === "none", "you behind the title are dimmed once, not twice: " + look());
+      [...pd.querySelectorAll(".pcammode")].find(b => b.textContent === "Big").click(); await wait();
+      const [picBig, shadeBig, dimBig] = look();
+      eq(+picBig, 0, "Big on a picture slide: the picture gives way to you");
+      ok(+shadeBig === 0 || dimBig === "none", "and you are dimmed once: " + look());
+      still.remove();
+      q(".pcamauto").click(); await wait();
+      key("c"); await wait();
+      eq(cam(), "bubble", "C: the next mode, for this slide");
+      eq(q(".pcammode[aria-pressed=true]")?.textContent, "Bubble", "the strip marks it");
+      key("ArrowRight"); await wait();
+      eq(cam(), "bubble", "the slide keeps its mode to its end");
+      key("ArrowRight"); await wait();
+      eq(cam(), "bubble", "the next slide is automatic again: a plain slide is a bubble");
+      const bub = $("#deck video.cam").getBoundingClientRect();
+      eq(document.elementFromPoint(bub.x + bub.width / 2, bub.y + bub.height / 2), $("#deck video.cam"), "no slide background hides the bubble");
+      ok(getComputedStyle($("#deck .slide.cur")).backgroundImage !== "none", "and the slide keeps its own look");
+      ok(q(".pcamauto[aria-pressed=true]"), "Auto is marked again");
+      [...pd.querySelectorAll(".pcammode")].find(b => b.textContent === "Big").click(); await wait();
+      eq(cam(), "big", "a click in the strip sets this slide's mode");
+      [...pd.querySelectorAll(".pcammode")].find(b => b.textContent === "Off").click(); await wait();
+      eq(cam(), "off");
+      q(".pcamauto").click(); await wait();
+      eq(cam(), "bubble", "Auto gives the slide back to automatic");
+      key("b");
+      eq(getComputedStyle($("#deck video.cam")).visibility, "hidden", "B hides the camera too");
+      key("b");
+      // #485 bug: a picture over the whole slide, as on a (map) slide, faded out and you never came in.
+      $("#deck video.cam").style.transition = "none";     // its final place, not on the way
+      key("ArrowRight"); key("ArrowRight"); key("ArrowRight"); await wait();
+      ok($("#deck .slide.cur.lay-map"), "a (map) slide");
+      const cv = $("#deck video.cam").getBoundingClientRect(), dk = $("#deck").getBoundingClientRect();
+      eq([cam(), Math.round(cv.width), Math.round(cv.height)], ["side", Math.round(dk.width), Math.round(dk.height)],
+        "a picture over the whole slide: you come in over the whole slide");
+      eq(asked, 1, "the camera opened once for the whole talk");
+      const tracks = stream.getTracks();
+      key("C", {shiftKey: true}); await wait();
+      ok(!$("#deck video.cam") && tracks.every(t => t.readyState === "ended") && !q(".pcam"), "Shift+C again turns it off");
+      key("C", {shiftKey: true}); await wait();
+      const again = stream.getTracks();
+      // Holding Alt on a slide shows the talk's time and the camera's switch, so no presenter window is needed.
+      const alt = up => document.dispatchEvent(new KeyboardEvent(up ? "keyup" : "keydown", {key: "Alt", altKey: !up, bubbles: true, cancelable: true}));
+      alt(); await settle();
+      ok(/^⏱ \d+:\d\d$/.test($("#deck .arrtools .arrtime")?.textContent || ""), "Alt shows the talk's time: " + $("#deck .arrtools")?.textContent);
+      eq($("#deck .arrtools .arrcam")?.getAttribute("aria-pressed"), "true", "and the camera's switch, on");
+      $("#deck .arrtools .arrcam").click(); await wait();
+      ok(!$("#deck video.cam") && again.every(t => t.readyState === "ended"), "one click turns the camera off");
+      eq($("#deck .arrtools .arrcam")?.getAttribute("aria-pressed"), "false", "and the switch says so");
+      $("#deck .arrtools .arrcam").click(); await wait();
+      ok($("#deck video.cam"), "a click turns it on again");
+      alt(true); await settle();
+      ok(!$("#deck .arrtools"), "letting go of Alt takes them away");
+      const last = stream.getTracks();
+      presentStop();
+      ok(last.every(t => t.readyState === "ended"), "leaving the talk turns the camera off");
+    } finally {
+      presentStop(); window.open = open; f.remove(); go("today");
+      document.querySelectorAll("style").forEach(s => /#c24,#e85/.test(s.textContent) && s.remove());
+      Object.defineProperty(navigator, "mediaDevices", {value: md, configurable: true});
+      PREF.set("present.campic", waitPref ?? 10);
+    }
+  }));
+
+  /* #492 Where you were is kept in the area's folder (GTD.md last::), so any
+     device that opens it can go on there. At start the Journal opens as
+     before, with ▸ Continue: <place> on top; one click opens the page at the
+     line. Nothing is kept while it is offered, so landing on the Journal
+     does not overwrite the place; going anywhere takes it away. */
+  test("#492 open where I left off: the place is kept in the folder; the Journal offers Continue, which opens the page at the line", () => {
+    const note = join(PAGES, "Leftoff room.md");
+    return withPages({[note]: "- Paint the walls\n- Order tiles\n"}, async () => {
+      const was = getSetting("last");
+      try {
+        const [, tiles] = getPage(note).blocks;
+        openPage(note); await settle();
+        $(`#content .blk[data-id="${tiles.id}"] .txt`).focus();
+        lastPlaceSave(true);
+        const kept = getSetting("last");
+        ok(kept, "the place is kept in GTD.md");
+        eq(parsePage(serializePage(settingsPage())).props.last, kept, "and reads back the same from the file");
+        has(String(kept), tiles.id, "with the line you were on");
+        // Another start: the Journal, with the place on offer.
+        go("today"); await settle();
+        lastPlaceStart();
+        render(); await settle();
+        const bar = $("#content .lastplace");
+        ok(bar, "the Journal offers where you left off");
+        has(bar.textContent, "Continue: Leftoff room");
+        lastPlaceSave(true);
+        eq(getSetting("last"), kept, "landing on the Journal does not overwrite the place");
+        bar.querySelector("button").click(); await settle(); await new Promise(r => setTimeout(r, 50));
+        eq([state.view, state.pagePath], ["page", note], "Continue opens the page");
+        eq(document.activeElement?.closest(".blk")?.dataset.id, tiles.id, "at the line you were on");
+        go("today"); await settle();
+        ok(!$("#content .lastplace"), "after going somewhere it is not offered again");
+        // Today's Journal is no place to continue to.
+        lastPlaceSave(true);
+        lastPlaceStart();
+        render(); await settle();
+        ok(!$("#content .lastplace"), "no offer when you left off on today's Journal");
+      } finally { LAST_PLACE_OFFER = null; if (was) setSetting("last", was); else delete settingsPage().props.last; go("today"); }
+    });
   });
 
   /* ============================================================

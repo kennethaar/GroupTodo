@@ -12,7 +12,10 @@ function openProjectField(r, k) {
     },
   };
   modal({center: true, title: f.label + " · " + inS(r, () => pageTitle(r.path)), body,
-    foot: [el("button", {class: "btn primary", onclick: () => closeModal()}, "Done")],
+    /* Add, by the box, is what saves (#517). Done here only closed it, and
+       took typed text with it: a box you type in says Cancel, one you pick
+       from (each pick saves at once) a quiet Close. */
+    foot: [el("button", {class: "btn", onclick: () => closeModal()}, f.type === "text" ? "Cancel" : "Close")],
     onClose: () => { SOL_EDIT = null; SOL.more = null; render(); }});
   SOL_EDIT.redraw();
   requestAnimationFrame(() => body.querySelector("input:not([type=date]):not(.newopt)")?.focus());

@@ -100,15 +100,7 @@ showed as slow commands, then `ENOSPC` on every edit. If that happens, check
 free space (`df -h /c`) before anything else. Never create browser profiles
 outside `openDemo()`.
 
-Writing test fixtures:
-
-- Set dates with `setDue(block, date)`. `SCHEDULED:` lines in fixture text are
-  not parsed as dates.
-- A task with an open child is not a leaf action. Keep leaf steps childless.
-- A page's file name is its title as written (`slugify` keeps case and
-  spaces), so `[[Kitchen renovation]]` finds `Kitchen renovation.md`, not
-  `kitchen-renovation.md`.
-- Edit `tests/battery.js` with Edit, not with ad hoc Node rewrite scripts.
+Rules for writing test fixtures are in `tests/CLAUDE.md`.
 
 Test first. For every behavioral change, write or update the test before
 the code, from the requirement or the bug report, never from the
@@ -161,6 +153,10 @@ need a deterministic `SETUP` entry in `tests/screenshots.mjs`.
 
 Every user-requested change needs an issue in `kennethaar/GroupTodo`.
 
+0. Write issues and comments in generic text: no real names, people,
+   employers, products, places or words copied from the user's own data
+   or screenshots. Use neutral stand-ins such as "a long word" or
+   "Product A".
 1. Search existing issues first.
    Before creating an issue or adding to one, show the user its title and
    body and wait for their OK, so they can see the request was understood.
@@ -200,6 +196,28 @@ Never commit OneDrive conflict copies (`*-LG2375JTB.*`, `*-HY-*.*`).
 ## Product and design rules
 
 Apply GTD, `Don't Make Me Think`, progressive disclosure, accessibility and management by exception. Do not redesign unrelated parts during a focused change.
+
+Steve Krug's `Don't Make Me Think` rules for every screen:
+
+- Self-evident first: a user should know what a thing is and does without
+  thinking. If it needs an explanation, fix the design before adding text.
+- Users scan, they don't read. Use clear visual hierarchy, obvious clickable
+  things and short labels in the user's words.
+- Users satisfice: they click the first reasonable option. Make the right one
+  the most obvious one.
+- Every click should be a mindless, unambiguous choice. Number of clicks
+  matters less than doubt per click.
+- Cut words in half, then cut half of what's left. No happy talk or
+  instructions nobody reads.
+- Follow conventions users already know unless a new way is clearly better.
+- Always show where the user is and how to get back.
+- Keep the user's goodwill: no hidden needed info, no forced format, easy
+  recovery from mistakes.
+
+Always suggest UI and UX best practices, for new features and when a task
+touches or revisits an existing one. List the problems you see and the fix
+you recommend, briefly. Suggestions outside the task stay suggestions:
+build them only after the user agrees.
 
 Before changing user-facing text or UX, show the user 3 mockups and wait for
 their pick. Build nothing until they approve.
@@ -257,13 +275,14 @@ asks for this section to be compacted: repeats merged, stale items dropped.
 
 Work happens on `main`.
 
-Newest areas, look here first for regressions: Present (`src/js/91-present/`,
-#431, layouts #433, in-place slide edit), onboarding done per area folder and
-Getting started lessons (#468), areas in the top bar and who else is here (#436, #408),
-serve.py page history (#407), unlinked-name squiggles (#428), Clarify from
-the day page (#460, #461, #376), multi-line Alt+T/Alt+N (`lineSelKind`, #411),
-☰ menu lanes (#413). #431 stays open for the soft-break reflow follow-up.
+Newest areas, look here first for regressions: Present (`src/js/91-present/`):
+camera (`slideCam*`, #485), Alt+drag (`slideArr*`, #487), map slides (#488),
+waiting screen (`slideWait*`, #486), charts (#482), Copy for AI › Slides
+(`slideAi*`, #483), refs/embeds (#470), presenter window (#489, v1.223.0).
+Also: Continue where you left off (`lastPlace*`, #492), pasted updates
+(`pastedUpdate`, #373), importer on first start (#458).
 
-Slow start (#181, closed): staged read via `readDayFirst`, `readActiveFirst`,
-`isStubPath`; folder takeover in `readFolderBehind`; timing in the Save log
-(`loadMark`, `startupText`, `readTimingText`). Reopen if a new log is slow.
+Open: #456 (parked, do not start). Unfiled: pinned page dragged from the
+sidebar onto a line fails before the first click after reload (would reopen
+#448; not reproduced in the demo). Slow start (#181, closed): staged read
+(`readDayFirst`, `readActiveFirst`, `readFolderBehind`); reopen if slow.

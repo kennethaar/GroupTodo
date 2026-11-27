@@ -454,7 +454,9 @@ body.solview #content{padding-bottom:14px}
 .solmorewrap input[type=search]{width:100%;font-size:13px;padding:5px 8px}
 .solmore{display:flex;flex-wrap:wrap;gap:5px;align-content:flex-start;max-height:180px;overflow-y:auto;
   padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--bg)}
-.solmore .fchip[hidden],.solmorewrap .say[hidden]{display:none}
+.solmore .fchip[hidden],.solmorewrap .say[hidden],.solmorewrap .addnew[hidden]{display:none}
+.solwords{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.solmorewrap .addnew{align-self:flex-start;border-style:dashed}
 .solmorewrap .textbtn{align-self:flex-start;padding-left:0}
 .fchip.now{border-color:var(--accent);color:var(--accent)}
 .fchip.hi{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
@@ -558,6 +560,7 @@ body.solview #content{padding-bottom:14px}
 .solcard.back{background:repeating-linear-gradient(45deg,var(--accent-soft) 0 8px,var(--bg2) 8px 16px);border-color:var(--accent)}
 .solcard.back>*{visibility:hidden}
 .solcard h3{margin:0;font-size:17px}
+.solcard h3 .actpic{display:block;max-width:100%;max-height:220px;margin-top:8px;border-radius:6px}
 .solcard p{margin:0;font-size:13px;color:var(--fg3)}
 .solcard .textbtn{align-self:flex-start;padding-left:0}
 .solcard .prog{height:6px;border-radius:3px;background:var(--border);overflow:hidden;margin-top:auto}

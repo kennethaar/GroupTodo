@@ -12,8 +12,10 @@ function slideLay(slide, laid) {
   slide.dataset.lay = "1";
   slideFit(slide);
   slideEven(slide);
+  slideCycleFit(slide);
   if (first || matchMedia("(prefers-reduced-motion: reduce)").matches || !title.animate) return false;
   // A copy keeps the big title's line breaks on the way, so none is cut (#431).
   const deck = slide.closest("#deck, #deckpeek") || slide;
-  return !!slideGhost(deck, was, slideTitleNow(title), title);
+  // The slide's look has changed already, so the letters wear the new title's color.
+  return !!slideGhost(deck, was, slideTitleNow(title), title, "to");
 }

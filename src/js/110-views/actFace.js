@@ -14,8 +14,12 @@ function actFace(r, f) {
     el("span", {class: "chip late actstale"}, Math.floor(fr.rounds) + " rounds missed"));
   // The card has a chip for the context only, so a project linked in the
   // line is read out as its name, not taken away (#463).
+  // A picture on the line shows as the picture, not as its path (#520).
+  const pics = [];
+  const words = withoutEst(r.block.title).replace(/\[\[c\/[^\]]+\]\]/g, "")
+    .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (all, alt, src) => { pics.push(actPic(r, alt, src)); return " "; });
   const title = el("h3", {translate: "no"},
-    withoutMarks(linkWords(trim(withoutEst(r.block.title).replace(/\[\[c\/[^\]]+\]\]/g, "")))));
+    withoutMarks(linkWords(trim(words.replace(/\s{2,}/g, " ")))), ...pics);
   if (!f) return el("div", {class: "solcard won"}, title, meta,
     el("div", {class: "t-meta"}, el("span", {class: "chip ok"}, "Answered")),
     el("button", {class: "btn primary", onclick: () => solPassDone(r)}, "Next card ›"));
@@ -23,7 +27,7 @@ function actFace(r, f) {
     title, meta,
     el("div", {class: "t-meta"},
       el("button", {class: "textbtn", onclick: () => inS(r, () => openTaskDetail(r.path, r.block, r.space))}, "Open the line"),
-      el("button", {class: "textbtn", onclick: () => previewPage(r.space, r.path, true)}, "Open the page")),
+      el("button", {class: "textbtn", onclick: () => previewPage(r.space, r.path, true, r.block.id)}, "Open the page")),
     el("div", {class: "solq"}, el("b", {}, ACT_ASK[f.k])),
     actMoreSteps(r));
 }

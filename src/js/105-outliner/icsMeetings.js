@@ -24,13 +24,18 @@ function icsMeetings(text, fromMs, toMs) {
       if (l && l.length < 200) agenda.push(l);
       if (agenda.length >= 8) break;
     }
+    // The online meeting's link: Outlook's own field, then any Teams, Zoom or Meet link (#480).
+    const join = [val(ev, "X-MICROSOFT-SKYPETEAMSMEETINGURL"), val(ev, "X-MICROSOFT-ONLINEMEETINGURL"),
+      val(ev, "URL"), val(ev, "LOCATION"), val(ev, "DESCRIPTION")].map(t => (MEET_LINK_RE.exec(t) || [])[0]).find(Boolean) || "";
     for (const o of icsOccurrences(ev, fromMs, toMs)) {
       if (rid == null && moved.has(uid + "@" + o.start)) continue;
       out.push(Object.assign(o, {
         key: calHash(uid + "@" + (rid ?? o.start)),
+        // A one-time meeting moved to a new time is still this one (#61).
+        series: calHash(uid), repeats: !!ev.RRULE || rid != null,
         summary: val(ev, "SUMMARY") || "Meeting",
         cancelled: /^CANCELLED$/i.test(val(ev, "STATUS")) || /^cancel(l)?ed:/i.test(val(ev, "SUMMARY")),
-        people: people.slice(0, 15), agenda,
+        people: people.slice(0, 15), agenda, join,
       }));
     }
   }

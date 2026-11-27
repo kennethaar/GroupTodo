@@ -56,7 +56,8 @@ function flyRows() {
     // As on the bar under picked lines: only when there is an area to go to.
     ...(Spaces.list.length > 1 ? [{k: "toarea", ic: FLY_AREA, label: "To area", key: "Alt+S", menu: true}] : []),
     {k: "trk", ic: FLY_TRACKER, label: "Insert tracker", key: "Alt+K", menu: true},
-    {k: "aiplan", ic: FLY_PLAN, label: "Plan with AI", key: "Alt+A", menu: true},
+    // A prompt for your own AI (#483): Plan the work, or make Slides of it.
+    {k: "aiplan", ic: FLY_PLAN, label: "Copy for AI", key: "Alt+A", menu: true, opts: AI_COPY_CHOICES},
     // A file kept in assets/ can go from the line that links it (#391).
     ...(assetPathsOf(block).length ? [{k: "delasset", ic: FLY_TRASH, label: "Delete asset", menu: true}] : []),
   ];

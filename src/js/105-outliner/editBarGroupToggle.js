@@ -7,9 +7,10 @@
    tap on Type does its first leaf, as Alt+T does: a note becomes a to do (#403). */
 function editBarGroupToggle(g, btn) {
   const bar = $("#editBar");
-  const already = bar.querySelector(".ebpop:not(.ebsub)");
+  // Any menu open (a group's or Slide layout's) closes; only one shows.
+  const already = bar.querySelector(".ebpop");
   const reopening = already && already.dataset.g === g;
-  if (already) already.remove();
+  if (already) editBarGroupClose();
   if (reopening && g === "type" && Date.now() - already.dataset.at < DOUBLE_TAP_MS) {
     editBarGroupClose();
     editBarAct(editBarGroupLeaves(g)[0].k);
@@ -26,10 +27,8 @@ function editBarGroupToggle(g, btn) {
     if (r.k === "mkarea" && statusDirOf(path) && !isJournalPath(path)) tip = "Turn the project into a responsibility (Alt+I)";
     pop.append(el("button", {
       class: "ebtn", tabindex: "-1", role: "menuitem", data: {k: r.k}, title: tip, "aria-label": tip,
-      ...(r.sub ? {"aria-haspopup": "menu", "aria-expanded": "false"} : {}),
-      onclick: r.sub ? e => editBarSlideMenu(e.currentTarget) : () => { editBarGroupClose(); editBarAct(r.k); },
-    }, el("span", {class: "eic"}, ic.startsWith("<") ? svgIcon(ic) : ic), el("span", {class: "elb"}, label),
-      ...(r.sub ? [el("span", {class: "ebsubarrow", "aria-hidden": "true"}, "▸")] : [])));
+      onclick: () => { editBarGroupClose(); editBarAct(r.k); },
+    }, el("span", {class: "eic"}, ic.startsWith("<") ? svgIcon(ic) : ic), el("span", {class: "elb"}, label)));
   }
   bar.append(pop);
   const br = btn.getBoundingClientRect(), pr = pop.getBoundingClientRect();

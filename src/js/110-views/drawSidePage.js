@@ -1,7 +1,7 @@
 function drawSidePage() {
   if (HELP_SIDE) { drawHelpPane(); return; }
-  // Clarify's day page goes with Clarify (#376).
-  if (SIDE_PAGE && SIDE_PAGE.at && !(state.view === "review" && subNow() === "days")) SIDE_PAGE = null;
+  // Clarify's day page goes with Clarify (#376), Review actions' with Review actions.
+  if (SIDE_PAGE && SIDE_PAGE.at && !(state.view === "review" && ["days", "actions"].includes(subNow()))) SIDE_PAGE = null;
   if (SIDE_PAGE && (!inSpace(SIDE_PAGE.space, () => V.pages.has(SIDE_PAGE.path)) || onScreen(SIDE_PAGE))) SIDE_PAGE = null;
   const s = SIDE_PAGE || sidePinShown();
   /* Gone, or now the page on screen: one copy of its lines is enough. Today's

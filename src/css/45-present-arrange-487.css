@@ -1,0 +1,10 @@
+/* Alt+drag on a slide (#487), mockup A. A slide is a size container, so a
+   kept place in % of the slide (cqw, cqh) is the same full screen and in
+   the small preview. Alt held: what can move is outlined, and Reset slide
+   shows top-right. */
+:is(#deck,#deckpeek) .slide{container-type:size}
+#deck.arranging .slide.cur :is(.stitle,[data-bid],.cover .pic){outline:1px dashed color-mix(in srgb,var(--slide-ink) 60%,transparent);outline-offset:3px;cursor:move}
+#deck.arranging .slide.cur .cover .pic{outline-offset:-4px}
+#deck .arrreset{position:absolute;top:2vh;right:2vw;z-index:5;font:600 15px/1 var(--slide-font);padding:8px 12px;border-radius:999px;
+  border:1px solid var(--slide-ink);background:var(--slide-bg);color:var(--slide-ink);cursor:pointer}
+#deck .arrreset:focus-visible{outline:2px solid var(--slide-ink);outline-offset:2px}

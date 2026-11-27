@@ -2,19 +2,26 @@
    letter slides on its own from where it stood to where it will stand, the
    way text reflows when the editor is resized. One copy per letter, set off
    a little after the one before it; all land in 1 s. `title` (the real one,
-   now in its place) shows as they land, so nothing fades; without one the
-   letters fade at the end and go. Returns the last letter's glide. */
-function slideGhost(deck, from, to, title = null) {
+   now in its place) shows as they land, so nothing fades (they end as
+   faint as it is, so a quiet breadcrumb does not jump); without one the
+   letters fade at the end and go. Returns the last letter's glide.
+   The letters wear one color the whole way, never a blend: the title's
+   own (`ink` "from") while the slide it stood on is still behind them, or
+   the new place's ("to") when the slide's look changes at once. A slide
+   stylesheet may color the next slide like the title (#431). */
+function slideGhost(deck, from, to, title = null, ink = "from") {
   const a = from.letters || [], b = to.letters || [];
   if (!from.rect.width || !to.width || !deck.animate || !a.length) return null;
   const host = deck.getBoundingClientRect();
   const ghost = el("div", {class: "sghost", "aria-hidden": "true"});
   const n = Math.min(a.length, b.length);
   const step = n > 1 ? Math.min(10, 300 / (n - 1)) : 0, run = 1000 - (n - 1) * step;
-  const out = title ? [{opacity: 1}, {opacity: 1}] : [{opacity: 1}, {opacity: 1, offset: 0.7}, {opacity: 0}];
+  const keep = title ? parseFloat(getComputedStyle(title).opacity) : 1;
+  const out = title ? [{opacity: 1}, {opacity: keep}] : [{opacity: 1}, {opacity: 1, offset: 0.7}, {opacity: 0}];
   const glides = [];
   for (let i = 0; i < n; i++) {
-    const {ch, rect, size, font, color} = a[i], end = b[i];
+    const {ch, rect, size, font} = a[i], end = b[i];
+    const color = ink === "to" ? end.color : a[i].color;
     const span = el("span", {style: `left:${rect.left - host.left}px;top:${rect.top - host.top}px;` +
       `font:${font};font-size:${size}px;line-height:${rect.height}px;color:${color}`});
     span.textContent = ch;
@@ -28,6 +35,6 @@ function slideGhost(deck, from, to, title = null) {
   const anims = glides.map(({span, keys, delay}) =>
     span.animate(keys, {duration: run, delay, easing: "ease-in-out", fill: "both"}));
   Promise.all(anims.map(x => x.finished)).then(() => ghost.remove(), () => ghost.remove());
-  if (title) title.animate([{opacity: 0}, {opacity: 0, offset: 0.99}, {opacity: 1}], {duration: 1000, easing: "ease-in-out"});
+  if (title) title.animate([{opacity: 0}, {opacity: 0, offset: 0.99}, {opacity: keep}], {duration: 1000, easing: "ease-in-out"});
   return anims[anims.length - 1];
 }

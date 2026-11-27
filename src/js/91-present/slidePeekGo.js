@@ -4,5 +4,5 @@ function slidePeekGo() {
   const P = SLIDE_PEEK;
   if (!P) return;
   const c = P.choices[P.on];
-  presentStart(P.path, {...c.start, step: c.at});
+  presentStart(P.path, {...c.start, step: c.at, win: true});
 }

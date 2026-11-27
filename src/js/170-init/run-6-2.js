@@ -32,6 +32,8 @@
   await collectSharedFile();
   window.addEventListener("hashchange", () => handleHash());
   await handleHash();
+  lastPlaceStart();                 // the Journal may offer where you left off, on any device (#492)
+  renderUnlessTyping();
   loadMark("start-up done; the rest of the folder follows", t);
 
   /* Set before any of the early returns below, and before the first dialog:

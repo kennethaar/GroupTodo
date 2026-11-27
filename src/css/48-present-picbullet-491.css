@@ -1,0 +1,9 @@
+/* A bullet that is only a picture (#491): the picture in its place in the
+   list, at most a third of the slide high, with no marker. It fades in on its
+   turn like any bullet, and is not dimmed once past: a dimmed picture looks
+   muddy. The selectors are strong enough to win over an area's slides.css
+   that draws its own markers with ::before. */
+:is(#deck,#deckpeek) .sbullets .bullet.picbullet{list-style:none;padding-left:0;margin-left:0}
+:is(#deck,#deckpeek) .sbullets .bullet.picbullet::before{content:none}
+:is(#deck,#deckpeek) .sbullets .bullet.picbullet.past{opacity:1}
+:is(#deck,#deckpeek) .bullet.picbullet img{display:block;max-width:100%;max-height:33cqh;width:auto;height:auto;border-radius:4px}

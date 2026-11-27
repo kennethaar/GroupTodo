@@ -7,43 +7,8 @@ function openSpaceStorageSetup({firstRun = false} = {}) {
   const body = el("div", {});
   const list = el("div", {class: "afolders"});
   const again = () => openSpaceStorageSetup({firstRun});
-  const draw = () => {
-    list.textContent = "";
-    for (const sp of Spaces.list) {
-      const placed = sp.kind === "fs";
-      // An area in a server folder has a folder too: it changes one, never chooses a first.
-      const inFolder = placed || sp.kind === "http";
-      const where = placed ? "Folder: \u201C" + (sp.label || "folder") + "\u201D"
-                  : sp.kind === "http" ? "In the server folder" + ((o => o ? " “" + o.name + "”" : "")(
-                      serverFolderOptions().find(x => x.users.includes(sp))))
-                  : "This browser only";
-      const i = Spaces.list.indexOf(sp);
-      const shift = d => el("button", {class: "afmove", "aria-label": "Move " + sp.name + (d < 0 ? " left" : " right"),
-        title: d < 0 ? "Further left" : "Further right", disabled: !Spaces.list[i + d],
-        onclick: async () => { if (await Spaces.move(sp.name, i + d)) { render(); draw(); } }}, d < 0 ? "\u2039" : "\u203A");
-      list.append(areaDraggable(el("div", {class: "afcard", style: "--sc:" + sp.color,
-        title: "Drag to change where " + sp.name + " sits when it is shown"},
-        el("div", {class: "afhead"},
-          el("button", {class: "afdot", style: "background:" + spaceColor(sp.name),
-            title: "Change " + sp.name + "'s colour", "aria-label": "Colour for " + sp.name,
-            onclick: () => { closeModal(); openSpaceColor(sp.name, again); }}),
-          el("div", {class: "afname"}, sp.name),
-          Spaces.list.length > 1 ? el("span", {class: "afmoves"}, shift(-1), shift(1)) : null),
-        el("div", {class: "afwhere" + (placed || sp.kind === "http" ? "" : " off")}, where),
-        verbTasksToggle(sp.name),
-        el("div", {class: "afbtns"},
-          CAP.dirPicker ? el("button", {class: "btn sm " + (inFolder ? "ghost" : "primary"),
-            // The bring-the-pages question replaces this dialog; open it again after.
-            onclick: async () => { if (await assignSpaceFolder(sp.name)) list.isConnected ? draw() : again(); }},
-            inFolder ? "Change folder" : "Choose folder") : null,
-          // serve.py's folders, while one is free and this area is in none (#357).
-          useServerFolderButton(sp.name, moved => { if (moved) list.isConnected ? draw() : again(); }),
-          el("button", {class: "btn sm ghost", onclick: () => openRenameArea(sp.name)}, "Rename"),
-          Spaces.list.length > 1
-            ? el("button", {class: "btn sm ghost", onclick: () => { closeModal(); openRemoveArea(sp.name, again); }}, "Remove")
-            : null)), sp.name, draw));
-    }
-  };
+  const redraw = () => list.isConnected ? draw() : again();
+  const draw = () => list.replaceChildren(...Spaces.list.map(sp => areaCard(sp, {redraw, again})));
   draw();
   body.append(...[
     CAP.dirPicker ? null : el("div", {class: "afnote", style: "margin:0 0 14px"},

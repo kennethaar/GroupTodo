@@ -44,7 +44,8 @@ function routeCalendarMeetings(home, feed, also, fromMs, toMs, only = null) {
         }
         const all = there.get(k) || [];
         // Ours: this calendar's, here (a synced copy, or from when this was your own area).
-        const copy = all.find(x => blockProp(x.b, "cal_feed") === feed);
+        // One moved here (cal_moved::) is the import's own to keep, not a copy (#61).
+        const copy = all.find(x => blockProp(x.b, "cal_feed") === feed && !blockProp(x.b, "cal_moved"));
         const want = calTargets(m.b, also).includes(space);
         if (want && !copy) {
           if (all.length || skip.has(k) || skip.has(m.d + calLook(m.b.title, blockProp(m.b, "time")))) continue;
@@ -72,7 +73,7 @@ function routeCalendarMeetings(home, feed, also, fromMs, toMs, only = null) {
         } else if (copy && calOwnShare(m.b)) letGo(copy, false);
       }
       for (const [k, list] of there)
-        if (!mine.has(k)) for (const x of list) if (blockProp(x.b, "cal_feed") === feed) letGo(x, true);
+        if (!mine.has(k)) for (const x of list) if (blockProp(x.b, "cal_feed") === feed && !blockProp(x.b, "cal_moved")) letGo(x, true);
       for (const path of days) calSortDay(path);
     }));
   }

@@ -40,6 +40,7 @@ const Backends = {
       async putAsset(path, blob) { await IDB.set("assets", pre + path, blob); },
       async getAsset(path)       { return (await IDB.get("assets", pre + path)) || null; },
       async delAsset(path)       { await IDB.del("assets", pre + path); },
+      async assetsIn(dir)        { return namesInDir((await IDB.keys("assets")) || [], pre + dir); },
     };
   },
 
@@ -78,6 +79,7 @@ const Backends = {
       async putAsset(path, blob) { ASSET_MEM.set(pre + path, blob); },
       async getAsset(path)       { return ASSET_MEM.get(pre + path) || null; },
       async delAsset(path)       { ASSET_MEM.delete(pre + path); },
+      async assetsIn(dir)        { return namesInDir([...ASSET_MEM.keys()], pre + dir); },
     };
   },
 
@@ -98,6 +100,7 @@ const Backends = {
       async putAsset(path, blob) { ASSET_MEM.set(pre + path, blob); },
       async getAsset(path)       { return ASSET_MEM.get(pre + path) || null; },
       async delAsset(path)       { ASSET_MEM.delete(pre + path); },
+      async assetsIn(dir)        { return namesInDir([...ASSET_MEM.keys()], pre + dir); },
     };
   },
 
@@ -390,6 +393,14 @@ const Backends = {
         const dir = await dirFor(path.split("/").slice(0, -1).join("/"));
         await dir.removeEntry(path.split("/").pop());
       },
+      // The file names in one folder of assets (#483): none when it is not there.
+      async assetsIn(path) {
+        const out = [];
+        let dir;
+        try { dir = await dirFor(path); } catch (_) { return out; }
+        for await (const [name, h] of dir.entries()) if (h.kind === "file" && !name.startsWith(".")) out.push(name);
+        return out;
+      },
     };
   },
 
@@ -492,6 +503,11 @@ const Backends = {
       async delAsset(path) {
         const r = await fetch(u("/api/asset", path), {method: "DELETE"});
         if (!r.ok && r.status !== 404) throw new Error("delete failed: " + r.status);
+      },
+      // An older server has no /api/assets: then no names, as for an empty folder.
+      async assetsIn(dir) {
+        try { const r = await fetch(u("/api/assets", dir), {cache: "no-store"}); return r.ok ? await r.json() : []; }
+        catch (_) { return []; }
       },
     };
   },

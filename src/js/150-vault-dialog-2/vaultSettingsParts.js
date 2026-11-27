@@ -6,7 +6,6 @@ function vaultSettingsParts() {
   const lastSync = getSetting("last_sync");
   const linkedKnown = !!LINKED;
   const onFolder = V.backend && V.backend.kind === "fs";
-  const area = Spaces.active || "this area";
   const btn = (text, fn, cls) => el("button", {class: "btn sm " + (cls || "ghost"), onclick: fn}, text);
 
   /* Vault & sync */
@@ -89,10 +88,6 @@ function vaultSettingsParts() {
   }));
   const placesRow = settingsRow("Saved places", null, btn("Manage", () => { closeModal(); openSenseSetup(); }));
 
-  /* Area */
-  const areaRow = settingsRow(area, horizonProfile().label + " · " + paletteName(spaceColor(Spaces.active)),
-    btn("Manage", openAreaSettings));
-
   /* GroupToDo */
   const langs = langNames(), curLang = PREF.get("lang", "") || LANG_BASE;
   const langRow = settingsRow("Language", null,
@@ -148,7 +143,7 @@ function vaultSettingsParts() {
     sync: settingsGroup("Vault & sync", [memoryRow, folderRow, phoneRow, autoRow, inviteRow]),
     you: settingsGroup("You", [profileRow, hoursRow]),
     prefs: settingsGroup("Preferences", [clockRow, choreRow, linksRow, askRow, senseRow, placesRow]),
-    area: settingsGroup("Area", [areaRow]),
+    area: areaSettingsSection(),
     app: settingsGroup("GroupToDo", [langRow, zoneRow, ...updateRows, newsRow, importRow]),
     danger: settingsGroup(null, [settingsRow("Start afresh", null,
       el("button", {class: "btn sm danger", onclick: () => openStartAfreshDialog()}, "Start afresh…"))], "danger"),

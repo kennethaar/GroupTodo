@@ -3,7 +3,14 @@ function flyPick(k, v) {
   flyCommit();
   const {path, block} = FLY;
   if (v && FLY.sel && FLY.open === k && TAG_SEL_PREFIX[k] && flyLinkSel(k, v)) return flyAfter(k);
-  if (k === "present") { presentStart(path, {root: block, on: true, presenter: v === "p"}); return; }
+  if (k === "present") { presentStart(path, {root: block, on: true, presenter: v === "p", win: true}); return; }
+  // Copy for AI ▸ Plan or Slides (#483); a talk's slides go under the line.
+  if (k === "aiplan") {
+    FLY.txt.blur();
+    const src = planSourceOfLines(path, [block]);
+    if (v === "slides") openSlidesWithAI(src, block.id); else openPlanWithAI(src);
+    return;
+  }
   if (k === "state" && v && v[0] === "\u0001") {
     const ts = taskStage(block);
     if (ts) setTaskStage(path, block, ts.list, v.slice(1));

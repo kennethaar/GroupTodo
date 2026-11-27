@@ -68,15 +68,29 @@ function actFields() {
      /* Its own first word as the verb is offered, but never in the first box:
         taken by reflex, it would teach the lexicon "Quarterly". */
      tail: r => actFirstWord(r) ? [["teach:" + actFirstWord(r), "“" + capitalise(actFirstWord(r)) + "” is the verb"]] : [],
+     /* In All (#519): any word of the line can be the verb, and a word no verb
+        matches can be added. */
+     words: r => verbCandidatesIn(r.block.title).map(w => ["teach:" + w, w]),
+     wordsSay: "A word in the line is the verb:",
+     addNew: q => ["teach:" + q, "＋ Add “" + capitalise(q) + "” as a verb"],
      rank: actVerbRank,
      sub: (r, v) => v.startsWith("teach:") ? "Teach the lexicon the word" : capitalise(v) + " " + plainTitle(r.block.title),
      cur: () => null,
      filled: r => startsWithVerb(r.block.title),
      text: r => capitalise((/^\s*([\p{L}\p{M}\-]+)/u.exec(r.block.title) || [, ""])[1]),
-     pick: (r, v) => add(r, () => {
-       if (v.startsWith("teach:")) { teachVerb(v.slice(6), verbLang()); touch(r.path); }
-       else prependVerb(r.path, r.block, v);
-     }),
+     pick: (r, v) => {
+       if (!v.startsWith("teach:")) { add(r, () => prependVerb(r.path, r.block, v)); return; }
+       const w = trim(v.slice(6)).toLowerCase();
+       if (!teachVerb(w, verbLang())) { notify("A verb is one word of letters.", "warn"); return; }
+       /* The first word: nothing to rewrite. Further in: taught, but the line
+          is the person's to reword. Not in the line: it goes in front. */
+       const words = plainTitle(r.block.title).toLowerCase().split(/[^\p{L}\p{M}\-]+/u).filter(Boolean);
+       if (words[0] === w) add(r, () => touch(r.path));
+       else if (words.includes(w)) {
+         add(r, () => touch(r.path));
+         notify("“" + capitalise(w) + "” is a verb now, but this line does not start with it.", "warn");
+       } else add(r, () => prependVerb(r.path, r.block, w));
+     },
      make: (r, text) => {
        add(r, () => { r.block.title = trim(text); touch(r.path); });
        if (!startsWithVerb(r.block.title)) notify("It still does not start with a verb the lexicon knows.", "warn");

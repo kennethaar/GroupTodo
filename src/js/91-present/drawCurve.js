@@ -14,7 +14,7 @@ function drawCurve(s) {
     return slidePart(b, "peak",
       slideSvg("svg", {viewBox: "0 0 100 100", preserveAspectRatio: "none", "aria-hidden": "true"},
         slideSvg("path", {d, class: "sline", "vector-effect": "non-scaling-stroke"})),
-      el("span", {class: "ntext" + (i ? "" : " first"), style: `left:${x0}%;bottom:${100 - Y(1)}%`}, slideWords(b)));
+      el("span", {class: "ntext" + (i ? "" : " first"), style: `left:${x0}%;bottom:${100 - Y(1)}%`}, slideText(b)));
   });
   return el("div", {class: "curve"},
     slideSvg("svg", {class: "axes", viewBox: "0 0 100 100", preserveAspectRatio: "none", "aria-hidden": "true"},

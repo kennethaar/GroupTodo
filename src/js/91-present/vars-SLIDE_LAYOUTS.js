@@ -17,12 +17,29 @@ const SLIDE_LAYOUTS = {
   grid:     {min: 2, max: 9, mode: "2d", name: "Grid"},
   // A Markdown table (#469), a slide of its own: a row, or a column, per step.
   table:    {min: 1, max: 1, mode: "1d", name: "Table"},
+  /* Charts (#482): lines that end in a number, or one table, a point, bar
+     or slice per step. A pie has at most CHART_PIE_MAX slices. */
+  line:     {min: 1, max: 24, mode: "1d", name: "Line"},
+  bar:      {min: 1, max: 16, mode: "1d", name: "Bar"},
+  pie:      {min: 1, max: 6, mode: "1d", name: "Pie"},
+  // A picture behind the slide, with cards, badges and pins on it (#488): one slide, however many lines.
+  map:      {min: 1, max: Infinity, mode: "2d", name: "Map"},
 };
+const CHART_PIE_MAX = 6;
+const SLIDE_CHARTS = ["line", "bar", "pie"];
+/* A chart's number (#482): maybe a currency before it, then the number
+   (thousands may be spaced: 40 000), maybe k, M, B or bn, then maybe a
+   percent or a currency. A chart line is words, maybe ":", then that. */
+const CHART_NUM_SRC = `(?:(?:${PRICE_CUR})[ \\u00A0]?)?([-\\u2212+]?(?:\\d{1,3}(?:[ \\u00A0]\\d{3})+|\\d+)(?:[.,]\\d+)?)`
+  + `[ \\u00A0]?(bn|k|K|M|B)?[ \\u00A0]?(?:%|${PRICE_CUR})?(?:,-)?`;
+const CHART_NUM_RE = new RegExp(`^${CHART_NUM_SRC}$`, "u");
+const CHART_POINT_RE = new RegExp(`^(.*?\\S)\\s*:?\\s+(${CHART_NUM_SRC})$`, "u");
 // More bullets than this on one slide are marked red in the outline (#433).
 const SLIDE_CALM = 5;
 /* The marks at the front of a line, plain text in the .md file. Never marks:
    "@ " (a context), "+ " (a Markdown bullet), "(*) ", 🎯 and a bare number.
-   "> " is a quote only; "| " is split or 2×2 by the number of lines. */
+   "> " is a quote only; "| " is split or 2×2 by the number of lines, but
+   not on a line that also ends in "|": that is a table's row (#469). */
 const SLIDE_MARKS = [
   [/^\d+\.\s+/, "process"],
   [/^step\s+\d+\s*:\s*/i, "process"],
@@ -34,9 +51,32 @@ const SLIDE_MARKS = [
   [/^🔺\s*/u, "pyramid"],
   [/^\.\s+/, "hub"],
   [/^~\s+/, "curve"],
-  [/^\|\s+/, "split"],
+  [/^\|\s+(?!.*\|\s*$)/, "split"],
   [/^[$%]\s+/, "kpi"],
 ];
+/* The layout words (#481): "(pyramid) What creates value" at the front of a
+   line says how its lines are drawn. Each: the word, the layout, the icon
+   its bullet shows, and what its lines become. In the order "(" lists them;
+   2×2 is also written 2x2. */
+const SLIDE_WORDS = [
+  ["list", "list", "≡", "a title and bullets"],
+  ["steps", "process", "→", "one after another"],
+  ["timeline", "timeline", "↦", "points in time"],
+  ["cycle", "cycle", "↻", "goes round"],
+  ["pyramid", "pyramid", "▲", "base to top"],
+  ["hub", "hub", "✳", "around a center"],
+  ["curve", "curve", "∿", "a line that rises or falls"],
+  ["versus", "split", "◫", "two side by side"],
+  ["2x2", "quadrant", "⊞", "four boxes"],
+  ["scorecard", "kpi", "%", "the numbers that matter"],
+  ["line", "line", "⌁", "numbers over time"],
+  ["bar", "bar", "▮", "numbers side by side"],
+  ["pie", "pie", "◔", "parts of a whole"],
+  ["quote", "hero", "❝", "one quote, big"],
+  ["grid", "grid", "▦", "cards"],
+  ["map", "map", "⌖", "pins on a picture"],
+];
+const SLIDE_WORD_RE = /^\(([\p{L}\p{N}×]+)\)(?:\s+|$)/u;
 // A trailing (Y / X) on a curve slide's title names its axes.
 const SLIDE_AXES_RE = /\s*\(([^()\/]+)\/([^()\/]+)\)\s*$/;
 /* A metric on a scorecard: a percent, or an amount read as expenses read it
@@ -57,4 +97,6 @@ const SLIDE_MENU = [
   ["curve", "Curve", "~"],
   ["split", "Versus / 2×2", "|"],
   ["kpi", "Scorecard", "$"],
+  // A word on the slide's own line, not a mark on its lines (#488).
+  ["map", "Map", "(map)"],
 ];

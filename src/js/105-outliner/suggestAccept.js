@@ -20,6 +20,14 @@ function suggestAccept(n) {
     if (opts.onCommand) opts.onCommand(r.id);
     return;
   }
+  /* A slide layout (#481): "(" and the letters become "(pyramid) ". The ")"
+     the bracket brought with it goes; the line's words stay after it. */
+  if (r.accept === "layout") {
+    const insert = "(" + r.word + ") ";
+    setHostText(host, insert + after.replace(/^\)?\s*/, ""), insert.length);
+    host.dispatchEvent(new Event("input", {bubbles: true}));
+    return;
+  }
   if (r.accept === "tracker") {
     const insert = r.key + ":: ";
     setHostText(host, insert + after.replace(/^[\p{L}\p{N}_-]*(::)?\s*/u, ""), insert.length);

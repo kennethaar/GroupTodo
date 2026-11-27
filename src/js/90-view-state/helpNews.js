@@ -5,6 +5,5 @@ function helpNews() {
     box.append(el("h3", {}, e.version + (e.date ? " - " + e.date : "")), el("ul", {}, ...e.items.map(x => el("li", {"data-news": newsAnimKey(e, x)}, x.text))));
   const stage = newsStage(newsEntries(HELP_NEWS), box);
   if (stage) box.firstChild.after(stage);
-  box.append(feedbackBox());
   return box;
 }

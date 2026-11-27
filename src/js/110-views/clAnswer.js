@@ -14,6 +14,7 @@ function clAnswer(r, ans) {
     return;
   }
   ans.run(path, b);
+  if (ans.cheer) cheer();
   if (dayCandidate(b)) clDeal(path, b);
   touch(path);
   clStampIfDone(path);

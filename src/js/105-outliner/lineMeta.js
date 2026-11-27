@@ -32,15 +32,17 @@ function lineMeta(b, path = null, readonly = false) {
     if (when) out.push(el("span", {class: "chip"}, svgIcon(ICON_CLOCK), " " + when));
     const clash = meetLeads(b) && path ? meetClashes(b, getPage(path)) : [];
     if (clash.length) out.push(el("span", {class: "chip clash", title: "At the same time as " + clash.join(", ")},
-      svgIcon(ICON_WARN), " Overlaps " + clash[0] + (clash.length > 1 ? " +" + (clash.length - 1) : "")));
+      svgIcon(ICON_WARN), el("span", {class: "ctext"}, "Overlaps " + clash[0] + (clash.length > 1 ? " +" + (clash.length - 1) : ""))));
     if (blockProp(b, "attendees")) out.push(el("span", {class: "chip who"}, svgIcon(ICON_MEETING), " " + linkWords(blockProp(b, "attendees"))));
+    const join = meetJoinChip(b, path);
+    if (join) out.push(join);
   }
   // A visit says its clock and its hours as one chip, which opens it again.
   const visit = isTimeLog(b);
   if (visit) out.push(timeLogChip(b, path));
   if (b.state) { const ck = clockChip(b, path); if (ck) out.push(ck); }
   const rest = Object.entries(b.props || {}).filter(([k, v]) => !BOOKKEEPING.test(k) && trim(v) && !isMessage(b)
-    && !(meet && /^(date|time|attendees)$/i.test(k)) && !(visit && /^(in|out|hours)$/i.test(k)));
+    && !(meet && /^(date|time|attendees|join)$/i.test(k)) && !(visit && /^(in|out|hours)$/i.test(k)));
   // On a day page each value says, faintly, what you wrote the last time.
   const day = path && dayOfPath(path);
   if (rest.length) out.push(el("span", {class: "pkv"}, ...rest.flatMap(([k, v], i) => [

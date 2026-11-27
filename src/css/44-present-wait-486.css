@@ -1,0 +1,17 @@
+/* The waiting screen before a talk (#486), mockup D: the waiting slide
+   above, whole, and a broad band along the bottom with the countdown. The
+   band grows in the last minute. An area's slides.css can restyle .waitband. */
+#deck.waiting .slide{bottom:18%}
+#deck.waiting .slide.waitall :is(.bullet,.part,[data-tpart]){opacity:1}
+#deck .waitqr{position:absolute;right:4%;bottom:6%;width:min(22vh,22vw);background:#fff;padding:6px;border-radius:6px}
+#deck .waitqr svg{display:block;width:100%;height:auto}
+#deck .waitdots{position:absolute;right:4%;bottom:calc(18% + 12px);display:flex;gap:8px}
+#deck .waitdots>span{width:10px;height:10px;border-radius:50%;border:2px solid var(--slide-ink);opacity:.6}
+#deck .waitdots>span.on{background:var(--slide-ink);opacity:1}
+#deck .waitband{position:absolute;left:0;right:0;bottom:0;height:18%;display:flex;align-items:center;justify-content:space-between;
+  gap:4vw;padding:0 5vw;background:var(--slide-ink);color:var(--slide-bg);font-family:var(--slide-font);transition:height .8s ease-in-out}
+#deck .waitwhen{font-size:min(4.5vh,3.2vw);font-weight:600}
+#deck .waitclock{font-size:min(11vh,8vw);font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+#deck .waitband.soon{height:30%}
+#deck.waiting:has(.waitband.soon) .slide{bottom:30%}
+@media (prefers-reduced-motion:reduce){#deck .waitband{transition:none}}

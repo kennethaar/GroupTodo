@@ -29,6 +29,7 @@ API
     GET    /api/asset?path=assets/x.png  -> the bytes of a dropped file
     PUT    /api/asset?path=assets/x.png  -> write one (body is the bytes)
     DELETE /api/asset?path=assets/x.png  -> delete one
+    GET    /api/assets?path=assets/slides -> ["a.jpg", ...], the files in it
     GET    /api/list            -> ["journals/2026-09-17.md", "pages/1/Foo.md", ...]
     GET    /api/file?path=REL   -> raw file contents
     PUT    /api/file?path=REL   -> writes the body (creates parent dirs)
@@ -478,6 +479,14 @@ class Vault:
             raise ValueError("path escapes the vault")
         return full
 
+    def list_assets(self, rel):
+        """The file names in one folder under assets/ (#483); [] when absent."""
+        full = self.resolve_asset(rel)
+        if not os.path.isdir(full):
+            return []
+        return sorted(n for n in os.listdir(full)
+                      if not n.startswith(".") and os.path.isfile(os.path.join(full, n)))
+
     def read_asset(self, rel):
         with open(self.resolve_asset(rel), "rb") as fh:
             return fh.read()
@@ -810,6 +819,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(400, str(exc))
             except FileNotFoundError:
                 return self._send(404, "not found")
+        if route == "/api/assets":
+            try:
+                return self._json(200, self.vault.list_assets(self._rel()))
+            except (ValueError, KeyError) as exc:
+                return self._send(400, str(exc))
         if route == "/api/asset":
             rel = self._rel()
             try:

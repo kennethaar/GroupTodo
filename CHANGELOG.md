@@ -5,7 +5,7 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
-## 1.204.0 - 2026-11-27
+## 1.228.0 - 2026-11-27
 
 - Weekly review › Clarify: a new Quick way, switched at the top (All
   answers | Quick) and remembered. It shows one loose line at a time, lit
@@ -15,11 +15,389 @@ that breaks existing vaults. Newest first.
   click to edit the words. A to do is sorted next, in Review actions.
   (#523)
 
-## 1.203.1 - 2026-11-23
+## 1.227.2 - 2026-11-26
+
+- Weekly review › Actions: Open the page shows the card's page on the right
+  at the card's line, marked, as in Clarify. The next card moves it to its
+  own line. (#522)
+
+## 1.227.1 - 2026-11-26
+
+- Presenter window and AI: With presenter window opens the presenter window
+  again. A browser opens one window per click, so it opens first, and
+  ▶ Start presentation in it opens the slides in their own window. Your
+  page stays as it is. With pop-ups allowed, both open at once. (#515)
+
+## 1.227.0 - 2026-11-26
+
+- Areas and sharing: Settings › Area shows a card per area right there,
+  not two dialogs down: colour, type, folder, name, order and remove, with
+  + New area under them. Each card sets its own area's type. (#521)
+
+## 1.226.1 - 2026-11-26
+
+- Weekly review › Actions: a picture on the line shows on the card, not
+  its path, also for a line from another area. (#520)
+
+## 1.226.0 - 2026-11-26
+
+- Weekly review › Actions: Verb › All shows the line's own words. Press
+  one, even a word further in, and it counts as a verb from now on. Type a
+  verb the list does not have, and + Add puts it first in the line. (#519)
+
+## 1.225.0 - 2026-11-26
+
+- Weekly review › Clarify: the answers are numbered like a numpad, as in
+  Review actions. The line sits in the middle as 5; press 5 again to skip
+  it. Arrows move on the grid. (#518)
+- Weekly review › Clarify: notes from a meeting go in one press. Answer 0,
+  under the grid, leaves the line and every line under it as notes, at
+  every level, with one undo. Lines with a tick are kept as they are.
+- Weekly review › Clarify: Done already throws confetti, as it does in
+  Review actions. (#442)
+
+## 1.224.1 - 2026-11-26
+
+- Projects › List: in the box for one field of a project, such as Done
+  when, Add is now the main button. The button below says Cancel and
+  saves nothing; a box you pick from says Close.
+
+## 1.224.0 - 2026-11-25
+
+- Weekly review › Steps: Get clear has Catch up with an AI. Pick how far
+  to look back, since your last review by default, and copy its prompt to
+  an AI that reads your mail, chats and meetings. Paste its answer back: you
+  get one list of changes, grouped by project, each with its GTD choice set
+  to the likely one. A new next action is Next, Do now, Delegate, Someday or
+  Skip, with its context; a date is a Deadline or a Start date. It also
+  asks for new to-dos and projects to capture, only what you promised or
+  were asked to do. They come last, under To capture, with a tick only, and
+  go on today's page; the review's Clarify takes them the same day. The
+  prompt reads sent mail and meeting transcripts and says what counts as
+  evidence. Progress with no task is a note on its project; a task someone
+  else now does becomes a waiting-for. Also look for adds your own lines to
+  the prompt, kept per area. A
+  project left with no next action says so, with + Add next action. ↗ Email, Chat or
+  Document opens where it was found, and stays on the task as its source.
+  One Undo takes it all back. (#516)
+
+## 1.223.0 - 2026-11-25
+
+- Present a page: ▶ Present opens the slides in a window of their own,
+  beside the page, so you can edit and see the talk at the same time. An
+  edit on the page shows on the slide a moment later. The window opens at
+  1920×1080 where the screen has room; F or ⛶ Full screen fills the
+  screen. ▾ › Full screen in this tab keeps the old way, for one screen.
+  When the talk ends, Show in page takes you to the line it ended at. A
+  slides or presenter window still open shows the next talk. (#515)
+
+## 1.222.2 - 2026-11-25
+
+- Present a page: Cycle is back in the Slide layout menu for a line with
+  no lines under it, and picking it marks the line again. Hiding Map there
+  had hidden Cycle too. (#488)
+
+## 1.222.1 - 2026-11-25
+
+- Present a page: the dashed boxes that show what Alt+drag can move no
+  longer stay on the slides after Alt+Tab to the presenter window. They go
+  as soon as Alt is let go, in either window. (#487)
+
+## 1.222.0 - 2026-11-25
+
+- Present a page: on a map, a picture used on more than one line is a pin.
+  It stands on the map and glides to each new line's place on its click,
+  as an emoji pin does. The line's words are a label beside it that moves
+  with it; Alt+drag the label to place it apart. A picture used once is
+  still a card or a badge. (#488)
+
+## 1.221.1 - 2026-11-25
+
+- Present a page: on a Hub slide, a long word no longer runs out past its
+  box. The words get smaller until each box holds its longest word whole.
+  (#433)
+
+## 1.221.0 - 2026-11-25
+
+- Present a page: Map is in the Slide layout menu, and writes (map) on
+  the slide's line. On a map, the same emoji, picture or words on a later
+  line is the same thing: on that line's click it moves to its new place,
+  as a 📍 pin did. Alt+drag places each one. (#488)
+
+## 1.220.1 - 2026-11-25
+
+- A page: a picture on an outline line now shows small, the size of a
+  picture in the notepad, so the lines stay close together. Click it to see
+  it full size. (#514)
+
+## 1.220.0 - 2026-11-25
+
+- Present a page: a line kept off the slides shows faded in the outline,
+  with the lines under it, and a closed eye in front instead of the "_ ".
+  Tap the eye to put it back on the slides; Undo hides it again. (#467)
+
+## 1.219.0 - 2026-11-25
+
+- Help: every help topic ends with Suggest a feature and Report a bug,
+  in the help beside a page and in the full help. They were only in
+  What's new. (#513)
+
+## 1.218.5 - 2026-11-25
+
+- Help: the help beside a page has an All help button at its top, which
+  opens the search and the contents. On a phone the way there was a small
+  ⤢ that was easy to miss. (#512)
+
+## 1.218.4 - 2026-11-25
+
+- Journal: Enter on an empty task line now ends the run of tasks, the way
+  a list ends in a word processor. The line turns plain and no new line is
+  added. Enter on a task with words still opens a new task under it. (#511)
+
+## 1.218.3 - 2026-11-24
+
+- Present a page: a table beside one other line is a table slide again,
+  showing a row (or a column) per step. It was drawn as two sides of a
+  versus, with the table as plain text.
+
+## 1.218.2 - 2026-11-24
+
+- The line menu and toolbar: on a computer, the tools for the line you
+  write get a row of their own just above it, so the words keep the whole
+  width and no words sit under the tools. The page scrolls by that row, so
+  the line stays where you clicked. The tools sat at the end of the line and
+  left room for one word per row. Slide layout has
+  its own button now, and its list drops straight down from it; Format holds
+  only text. (#395)
+
+## 1.218.1 - 2026-11-24
+
+- Present a page: an embedded page, {{embed [[Page]]}}, such as one made
+  with /embed, now shows on its slide as that page: its title, with its
+  lines under it. It showed as the words "{{embed Page}}". (#470)
 
 - Phone and PC: on a phone, Allow access now sits on the right, just below
   the middle, where the browser's own Allow comes up next. Reconnecting a
   folder is two taps in the same place. (#490)
+
+## 1.218.0 - 2026-11-24
+
+- Waiting for › List: paste their reply on any line, or in Capture, and it
+  is found there too. It goes in as text, and a note names the tasks and
+  what would change: done, a due date they gave, their words as a note.
+  Apply makes the changes; Undo takes them all back. Keep as text changes
+  nothing. (#373)
+
+## 1.217.0 - 2026-11-24
+
+- Getting started: bring your notes from Obsidian, Dynalist, Logseq or
+  WorkFlowy. When you start your own, the first Journal asks "Coming from
+  another app?". Pick yours to see the steps and download the importer.
+  The Welcome screen now says "Someone invited me to a GroupToDo folder",
+  so it is not read as being told about the app. (#458)
+
+## 1.216.0 - 2026-11-24
+
+- Present a page: learn Present by presenting it. Its help is now four
+  short topics with pictures: the basics, layouts and charts, notes and
+  pictures, and the presenter window. Each has Open the Present tutorial,
+  which makes a page in the area. Each slide on it shows one layout, a
+  chart, a table or a quote, and its notes say how it is written. (#484)
+
+## 1.215.1 - 2026-11-24
+
+- Present a page: a reference to a line reads as that line's words on the
+  slide, and an embed brings its line and the lines under it into the talk.
+  An edit on the slide changes the line where it is written. One whose line
+  is gone shows nothing, and the presenter window says so. (#470)
+
+## 1.215.0 - 2026-11-23
+
+- Journal: where you left off is kept in the area's folder, so it is the
+  same on every device that opens it. The Journal still opens first, with
+  ▸ Continue on top, saying which device and when. One click opens that
+  page at your line. It goes once you go somewhere. (#492)
+
+## 1.214.0 - 2026-11-23
+
+- Present a page: holding Alt on a slide also shows the time since you
+  started and ◉ Camera, top-left. One click turns your camera on or off,
+  with no presenter window needed. A click on the time starts it
+  again. (#485)
+
+## 1.213.0 - 2026-11-23
+
+- Present a page: a line with no words, only a picture in its notepad or
+  on the line, is a bullet of its own. The picture comes in on its turn,
+  in its place in the list, with no marker, and is not dimmed after. It
+  was left out of the talk. (#491)
+
+## 1.212.3 - 2026-11-23
+
+- Present a page: an area's slides.css that gives slides a background,
+  such as a coloured title slide, no longer hides your camera. While you
+  are big or beside the words the slide's background gives way, and the
+  bubble sits over the slide. (#485)
+
+## 1.212.2 - 2026-11-23
+
+- Present a page: Big on a slide with a picture now shows you, not the
+  picture, and you are dimmed once behind the title, not twice. A real
+  camera came out nearly black there. (#485)
+
+## 1.212.1 - 2026-11-23
+
+- Present a page: on a slide whose picture fills it, such as a (map)
+  slide, your camera now comes in over the whole slide after the picture.
+  It sat in the left strip, under the words, so the picture faded to
+  nothing. (#485)
+
+## 1.212.0 - 2026-11-23
+
+- Present a page: your camera can be one layer through the talk. Shift+C,
+  or Camera in the presenter window, turns it on; it is off by default.
+  The slide picks where you are: big behind a title alone, in the
+  picture's place after the picture has shown, a bubble in the corner on
+  other slides. C, or the Camera strip in the presenter window, picks
+  Big, Side, Bubble or Off for this slide. The presenter window shows you
+  mirrored, with your notes right under. (#485)
+
+## 1.211.0 - 2026-11-23
+
+- Present a page: the presenter window runs the talk by mouse or touch.
+  Its Next box is a button that goes on, with a small ‹ Back beside it.
+  ⏱ Count down… in its bar starts the waiting screen without leaving the
+  slides, and while it counts down, Start the talk begins. (#489)
+
+## 1.210.2 - 2026-11-23
+
+- Present a page: a top line's slide no longer shows the page's title
+  above its own. The page title rises from the first slide and fades.
+  A slide inside another still says where it is from. (#431)
+
+## 1.210.1 - 2026-11-23
+
+- Present a page: Alt+drag on a slide's picture crops it again. The
+  picture's shade lay over it and caught the press. (#487)
+
+## 1.210.0 - 2026-11-23
+
+- Present a page: (map) puts a line's picture behind the whole slide,
+  such as a map. A picture line under it is a card about a person, a
+  logo with a name is a badge, and a line that starts with an emoji,
+  like 📍 Oslo, is a pin. Pins come with their card or badge and stay;
+  pin lines in a row are one pin that moves on each click. Alt+drag
+  puts each pin in place. (#488)
+
+## 1.209.0 - 2026-11-23
+
+- Present a page: hold Alt on a slide to place its parts. Alt+drag a
+  line or the title, and it snaps to the middle and the thirds. Alt+drag
+  the picture to choose what its crop shows. Alt+click and Alt+arrows
+  nudge. The places are kept on the lines, and ↺ Reset slide takes them
+  off again. (#487)
+
+## 1.208.1 - 2026-11-23
+
+- Present a page: a picture in a line's notepad, such as its slide
+  picture, shows as a small thumbnail inside the page instead of full
+  size. A click opens it whole. (#476)
+
+## 1.208.0 - 2026-11-23
+
+- Present a page: ▶ Present ▾ › Count down to the start… opens a
+  waiting screen. A broad band counts down to the time you pick. Above
+  it, the lines under a (waiting) line show in turn, such as an ad for
+  your next course, with a QR code for its link. → starts the talk.
+  (#486)
+
+## 1.207.0 - 2026-11-23
+
+- Present a page: Copy for AI › Slides copies a prompt that tells your
+  AI how slides are written here. Paste its answer back and Make the
+  slides puts them under the line. Pictures in the area's assets/slides
+  folder are picked by their names, and names that say nothing are
+  listed to rename. A cycle with too few lines, a 2×2 without four or a
+  missing picture gets a red bullet. Plan with AI (Alt+A) is now Copy
+  for AI › Plan. (#483)
+
+## 1.206.0 - 2026-11-23
+
+- Present a page: lines that end in a number, like 2024 2600, become a
+  line chart on their slide, with the numbers on it. Each → adds a
+  point. The bullet above them shows a faint chart icon, since it is a
+  guess. Write (bar) or (pie) to change it. The same words on the line
+  above a table draw the table as a chart. One to four amounts or
+  percents stay a scorecard. (#482)
+
+## 1.205.0 - 2026-11-23
+
+- Present a page: one word in front of a line sets how its lines are
+  drawn, such as (pyramid) What creates value. Type ( at the start of a
+  line to pick it from a list; letters narrow it. Off the line, the
+  bullet shows the layout's icon. Format › Slide layout writes the word
+  too. Old marks on each line still work, and Tidy slide marks in ⋯
+  beside the title turns them into words. (#481)
+
+## 1.204.1 - 2026-11-23
+
+- Present: a cycle keeps clear air between its boxes, the same between
+  each box and the next, and each arrow runs in that air, never under a
+  box's words. The ring widens only as much as it needs; if that is not
+  enough, the words get smaller. (#479)
+
+## 1.204.0 - 2026-11-23
+
+- Journal: a meeting from your calendar keeps its Teams, Zoom or Meet
+  link. Its line has Join, which stands out from 5 minutes before the
+  meeting until it ends; before that it shows on hover or focus. The
+  meeting reminder has Join too. (#480)
+
+## 1.203.7 - 2026-11-23
+
+- Present a page: in a cycle, boxes may touch, but no box lies over
+  another box’s words. When long lines would, the ring first grows wider,
+  up to the slide’s width; only if that is not enough do the words get
+  smaller.
+
+## 1.203.6 - 2026-11-23
+
+- Journal: an Overlaps pill with a long meeting name is cut with … in its
+  own half of the line, so it never lies over the meeting’s words. The
+  whole name shows on hover.
+
+## 1.203.5 - 2026-11-23
+
+- Present a page: **bold**, *italics*, ==highlight== and ~~strike~~ on a
+  line show on the slide as they do in the outline, in every layout and in
+  the presenter view. The marks themselves still stay out of sight.
+
+## 1.203.4 - 2026-11-23
+
+- Settings: a calendar meeting moved from your own area to another area
+  stays there. It used to vanish after a reload or two, as the next sync
+  took it for a meeting gone from the calendar. It now keeps up with the
+  calendar where you put it: a new time, a cancel, or its end.
+
+## 1.203.3 - 2026-11-23
+
+- Present a page: the page title keeps its own color all the way up, and
+  the title slide stays behind until the next slide is in, so no slide
+  stylesheet can make it vanish on the way. When a slide's title moves up
+  for its first line, it takes the new color at once. (#431)
+
+## 1.203.2 - 2026-11-23
+
+- Present a page: a title on its way to a new place takes on the color of
+  the place it lands, so an area's slide stylesheet that colors the next
+  slide like the title no longer hides it on the way. (#431)
+
+## 1.203.1 - 2026-11-23
+
+- Present a page: from the title slide, the page title now moves up letter
+  by letter into a small line at the top of the next slide, and stays there,
+  instead of fading out. Each top line's slide shows the page's name there.
+  (#431)
 
 ## 1.203.0 - 2026-11-22
 

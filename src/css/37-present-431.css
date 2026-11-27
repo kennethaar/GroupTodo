@@ -24,6 +24,8 @@
 :is(#deck,#deckpeek) .slide.intro .stitle{font-size:2.3em;margin:0}
 :is(#deck,#deckpeek) .hascover.intro .stitle{text-shadow:0 .05em .3em var(--slide-bg)}
 :is(#deck,#deckpeek) .slide.intro .sbullets{display:none}
+/* The breadcrumb keeps its place at the top while the title stands big (#431). */
+:is(#deck,#deckpeek) .slide.intro .scrumb{position:absolute;top:8vh;left:7vw;right:7vw;text-align:left}
 :is(#deck,#deckpeek) .sbullets{margin:0;padding:0 0 0 1.1em;line-height:1.3}
 /* .bullet is also the outliner's dot: undone here. */
 :is(#deck,#deckpeek) .bullet{position:static;width:auto;height:auto;border-radius:0;background:none;cursor:auto;margin:.35em 0;transition:opacity .6s ease-in-out}
@@ -46,9 +48,10 @@
 :is(#deck,#deckpeek)[data-move=zoomin] .slide.out,:is(#deck,#deckpeek)[data-move=zoomout] .slide.out :is(.cover,.sbullets){animation:deckGone .6s ease-in-out both}
 :is(#deck,#deckpeek):is([data-move=zoomin],[data-move=zoomout]) .slide.cur .cover{animation:deckFade .6s ease-in-out both}
 /* From the page's title the title rises (slideGhost) and the next slide
-   fades in once it is on its way (#431 follow-up). */
-:is(#deck,#deckpeek)[data-move=rise] .slide.out{animation-name:deckGone}
-:is(#deck,#deckpeek)[data-move=rise] .slide.cur{animation-name:deckFade;animation-delay:.5s}
+   fades in over the title slide once it is on its way, in by the time the
+   letters land; the deck's own background never shows between (#431). */
+:is(#deck,#deckpeek)[data-move=rise] .slide.out{animation-name:none}
+:is(#deck,#deckpeek)[data-move=rise] .slide.cur{animation-name:deckFade;animation-delay:.4s}
 /* A title on its way to a new place, one copy per letter (#431 reflow). */
 :is(#deck,#deckpeek) .sghost{position:absolute;inset:0;margin:0;pointer-events:none;z-index:2}
 :is(#deck,#deckpeek) .sghost>span{position:absolute;white-space:pre;transform-origin:0 0;will-change:transform}

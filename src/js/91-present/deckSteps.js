@@ -14,30 +14,56 @@
    `parts` are what → lights, one each: the lines, or a quote's takeaways.
    A task line or a "_ " line is left out with its lines (#467); `hidden`
    counts them for the presenter. The bullet you present from always shows.
-   `pics` are the parts' own notepad pictures, shown while each is lit (#464). */
+   `pics` are the parts' own notepad pictures, shown while each is lit (#464).
+   A line that is an {{embed ((id))}} is the line it points to, with its
+   lines (#470); `broken` counts embeds and references whose line is gone. */
 function deckSteps(path, root = null, on = false) {
   const page = getPage(path);
-  const steps = [], slides = [], left = new Set();
-  const words = b => !!(slideWords(b) || (b.children || []).some(words));
+  const steps = [], slides = [], left = new Set(), gone = new Set(), embeds = new Map();
+  /* An embed line is the line it brings in, with its lines (#470); one
+     whose line is gone is left out, and counted for the presenter. */
+  const lines = list => (list || []).map(b => {
+    const to = slideEmbed(b, embeds);
+    const m = to ? null : SLIDE_EMBED_RE.exec(b.title);
+    if (m && (m[1] ? blockById(m[1]) == null : !findExistingPage(m[2]))) gone.add(b);
+    return to;
+  }).filter(Boolean);
+  // A line that is only a picture has something to show too: a map's card (#488).
+  // So is a line with no words and a picture in its notepad: a picture bullet (#491).
+  const words = b => !!(slideWords(b) || slideBulletPic(b) || lines(b.children).some(words));
   const shown = b => {
+    // The waiting screen's slides are not in the talk (#486).
+    if (SLIDE_WAIT_RE.test(b.title || "")) return false;
+    // A reference to a line that is gone shows nothing; the presenter says so (#470).
+    for (const [, id] of String(b.title || "").matchAll(SLIDE_REF_RE)) if (!blockById(id)) gone.add(b);
     if (!words(b)) return false;
     if (slideHidden(b)) { left.add(b); return false; }
     return true;
   };
-  const kidsOf = b => (b.children || []).filter(shown);
+  const kidsOf = b => lines(b.children).filter(shown);
   const has = b => kidsOf(b).length > 0;
-  const slide = (block, head, kids, depth, up, breadcrumb, notes) => {
-    const lay = slideLayout({title: head}, kids);
+  /* The layout word on the slide's own line (#481); not on a table's slide,
+     whose one line is the table. `word` given: the bullet presented from. */
+  const slide = (block, head, kids, depth, up, breadcrumb, notes, word) => {
+    if (word === undefined) word = block && !(kids.length === 1 && kids[0] === block) ? slideWord(block.title).layout : null;
+    const lay = slideLayout({title: head, word}, kids);
     const pages = slidePages(kids, lay.max);
     pages.forEach((chunk, p) => {
       const hero = lay.layout === "hero" ? slideHero(chunk[0]) : null;
-      const s = {n: slides.length + 1, block, depth, up, breadcrumb, kids: chunk,
-        title: lay.title + (pages.length > 1 ? ` (${p + 1}/${pages.length})` : ""),
-        layout: lay.layout, mode: lay.mode, axes: lay.axes, hero,
-        parts: hero ? [chunk[0], ...hero.takeaways] : lay.layout === "table" ? slideTableParts(chunk[0]) : chunk, first: steps.length,
+      // `home` keeps the slide's own places (#487): its line, the bullet presented from, or the page.
+      const s = {n: slides.length + 1, block, depth, up, breadcrumb, kids: chunk, path, home: block || root || null,
+        // A map's title has its picture in it (#488): the picture goes behind, the words stay.
+        title: (lay.layout === "map" ? trim(lay.title.replace(/![[^]]*]([^)]*)/g, "")) : lay.title) + (pages.length > 1 ? ` (${p + 1}/${pages.length})` : ""),
+        layout: lay.layout, mode: lay.mode, axes: lay.axes, guess: lay.guess, hero,
+        parts: lay.layout === "map" ? slideMapItems(chunk).map(i => i.block) : hero ? [chunk[0], ...hero.takeaways] : lay.layout === "table" ? slideTableParts(chunk[0])
+          // A chart of a table lights a row at a time (#482).
+          : SLIDE_CHARTS.includes(lay.layout) && tableRows(chunk[0]) ? slideTableParts(chunk[0], true) : chunk, first: steps.length,
         ...(notes || (block ? slideNotes(block) : {cover: "", notes: ""}))};
       // A part's own notepad picture is shown in the cover's place while that part is lit (#464).
-      s.pics = s.parts.map(p => p && typeof p === "object" ? slideNotes(p).cover : "");
+      // A bullet that is only a picture shows it in the list instead (#491).
+      s.pics = s.parts.map(p => p && typeof p === "object" && !slideBulletPic(p) ? slideNotes(p).cover : "");
+      // A map's own picture is behind the whole slide (#488); its cards' pictures are their own.
+      if (lay.layout === "map") { s.cover = slidePicture(block?.title || "") || slidePicture(head) || s.cover; s.pics = []; s.map = slideMapItems(chunk); }
       slides.push(s);
       steps.push({s, k: 0});
       s.parts.forEach((part, i) => {
@@ -54,7 +80,7 @@ function deckSteps(path, root = null, on = false) {
     });
   };
   const head = root ? slideWords(root) : pageTitle(path);
-  const top = ((root ? root.children : page?.blocks) || []).filter(shown);
+  const top = lines(root ? root.children : page?.blocks).filter(shown);
   const notes = root ? slideNotes(root) : null;
   /* The page keeps the outline's order (reopened #431). A bullet presented
      from here is one slide: its lines come in their turn, and one with lines
@@ -65,7 +91,7 @@ function deckSteps(path, root = null, on = false) {
      timeline, steps…), as do plain lines a scorecard draws; the first drawing
      is the title slide's own, so the title is not shown twice. */
   if (root || slideTitleTokens(head).layout || slideLayout({title: head}, top).mode === "2d") {
-    slide(null, head, top, 0, null, "", notes);
+    slide(null, head, top, 0, null, "", notes, root ? slideWord(root.title).layout : null);
   } else {
     // A top line that is a table is drawn alone, under the page's title (#469).
     const kind = b => slideMark(b.title).layout ? "mark" : has(b) || tableRows(b) ? "own" : "flat";
@@ -79,12 +105,13 @@ function deckSteps(path, root = null, on = false) {
     slide(null, head, first ? runs[0] : [], 0, null, "", notes);
     for (const run of runs.slice(first ? 1 : 0)) {
       if (drawn(run)) slide(null, head, run, 0, null, "");
+      // A top line's slide has no breadcrumb: the page's title says nothing new there (#431 reopened).
       else for (const b of run) tableRows(b) ? slide(b, head, [b], 0, null, "") : slide(b, slideWords(b), kidsOf(b), 0, null, "");
     }
   }
   if (root && on) {
     const sibs = root._parent ? root._parent.children : page?.blocks || [];
-    for (const b of sibs.slice(sibs.indexOf(root) + 1).filter(shown)) slide(b, slideWords(b), kidsOf(b), 0, null, "");
+    for (const b of lines(sibs.slice(sibs.indexOf(root) + 1)).filter(shown)) slide(b, slideWords(b), kidsOf(b), 0, null, "");
   }
-  return {steps, slides, hidden: left.size};
+  return {steps, slides, hidden: left.size, broken: gone.size};
 }

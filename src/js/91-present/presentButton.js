@@ -7,7 +7,7 @@
 function presentButton(path, root = null) {
   const peek = e => slidePeek(e.currentTarget, path, root);
   return el("span", {class: "presentsplit"},
-    el("button", {class: "btn sm ghost presentbtn", title: (root ? "Show this line" : "Show the page") + " as slides, full screen (Esc leaves)",
+    el("button", {class: "btn sm ghost presentbtn", title: (root ? "Show this line" : "Show the page") + " as slides in a window of their own (Esc leaves)",
       onpointerenter: e => { if (e.pointerType !== "touch") peek(e); },
       onpointerleave: () => slidePeekLeave(),
       onkeydown: e => {
@@ -25,7 +25,7 @@ function presentButton(path, root = null) {
       onpointerdown: e => { if (e.pointerType === "touch") e.currentTarget.dataset.tap = "1"; },
       onfocus: e => { if (e.currentTarget.dataset.tap) delete e.currentTarget.dataset.tap; else peek(e); },
       onblur: () => slidePeekHide(),
-      onclick: () => presentStart(path, {root})}, "▶ Present"),
+      onclick: () => presentStart(path, {root, win: true})}, "▶ Present"),
     el("button", {class: "btn sm ghost presentmore", title: "More ways to present", "aria-label": "More ways to present",
       "aria-haspopup": "menu", "aria-expanded": "false", onclick: e => presentMenu(path, root, e.currentTarget)}, "▾"));
 }

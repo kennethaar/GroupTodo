@@ -148,8 +148,22 @@
 .clcard h3{margin:0;font-size:19px;line-height:1.35;overflow-wrap:anywhere}
 .clcard .clkids{margin:0;padding-left:18px;color:var(--fg2);font-size:13px;line-height:1.5}
 .clarify .solq b{font-size:17px;color:var(--accent)}
-.clgroups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:820px}
-.clgroup{display:flex;flex-direction:column;gap:6px;min-width:0}
+/* Laid out like a numpad, as Review actions: the line is 5 in the middle, its
+   row a fixed height so the rows under it stay put (#461, #518); 0 under it all. */
+.clgroups{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) minmax(0,1fr);gap:8px 12px;max-width:820px;
+  grid-template-rows:auto auto 170px auto auto;
+  grid-template-areas:"h0 h1 h2" "k7 k8 k9" "k4 k5 k6" "k1 k2 k3" "k0 k0 k0"}
+.clgroup{display:contents}
+.clgroup:nth-child(1) h4{grid-area:h0} .clgroup:nth-child(2) h4{grid-area:h1} .clgroup:nth-child(3) h4{grid-area:h2}
+.clgroups [data-k="7"]{grid-area:k7} .clgroups [data-k="8"]{grid-area:k8} .clgroups [data-k="9"]{grid-area:k9}
+.clgroups [data-k="4"]{grid-area:k4} .clgroups [data-k="5"]{grid-area:k5} .clgroups [data-k="6"]{grid-area:k6}
+.clgroups [data-k="1"]{grid-area:k1} .clgroups [data-k="2"]{grid-area:k2} .clgroups [data-k="3"]{grid-area:k3}
+.clgroups [data-k="0"]{grid-area:k0}
+.clgroups .clcard{max-width:none;min-height:0;overflow:auto;padding:10px 12px;gap:6px;position:relative;box-shadow:none}
+.clgroups .clcard h3{font-size:16px}
+.clcard > .n{position:absolute;top:6px;right:8px;font-size:11px;color:var(--fg3);font-variant-numeric:tabular-nums}
+.clcard.on{border-color:var(--accent)}
+.clcard.on > .n{color:var(--accent)}
 .clgroup h4{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg3);font-weight:600}
 .clans{display:flex;gap:10px;align-items:center;text-align:left;width:100%;padding:8px 10px;border-radius:10px;
   border:1.5px solid var(--border2);background:var(--bg2);color:var(--fg);font:inherit;cursor:pointer}
@@ -163,10 +177,13 @@
 .clhow{margin:0;font-size:12.5px;color:var(--fg2);max-width:820px}
 .clpicked{margin:0;font-size:13px;padding:6px 10px;border-radius:8px;max-width:820px;background:color-mix(in srgb, var(--accent) 12%, transparent)}
 .clans:disabled{opacity:.45;cursor:not-allowed}
-@media (max-width:640px){ .clgroups{grid-template-columns:1fr} }
+/* A phone: the line first, the answers one under another. */
+@media (max-width:640px){ .clgroups{grid-template-columns:1fr;grid-template-rows:none;grid-template-areas:none}
+  .clgroups [data-k], .clgroups .clgroup h4{grid-area:auto} .clgroups .clcard{order:-1;max-height:40vh} }
 /* With the day page beside it the column is narrow: answers one under another (#376). */
 .clarify .sdduel{container-type:inline-size}
-@container (max-width:600px){ .clgroups{grid-template-columns:1fr} .clgroup{gap:4px} .clans{padding:6px 10px} }
+@container (max-width:600px){ .clgroups{gap:6px 8px} .clans{padding:6px 8px;gap:7px} .clans small{display:none}
+  .clans b{font-size:13.5px} .clans .n{width:19px;height:19px;font-size:11px} }
 
 /* Today's sections, and focus: the trail is all that stays above the work */
 .group{margin:18px 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg3);

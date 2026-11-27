@@ -3,6 +3,6 @@ function qcTake(what) {
   const r = CL.shown;
   if (!r) return;
   CL.editing = null;
-  if (what === "skip") { CL.skip.add(clKey(r.path, r.block)); render(); return; }
+  if (what === "skip") { clSkip(r); return; }
   clAnswer(r, CL_ANSWERS.find(a => a.label === (what === "todo" ? "To do" : "Leave it as a note")));
 }

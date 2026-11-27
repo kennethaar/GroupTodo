@@ -1,15 +1,20 @@
-/* Format › Slide layout ▸ (#433): the layouts beside the Format menu, the
-   one the marks give now ticked. It opens on the side with room; a second
-   tap on Slide layout closes it. */
+/* Slide layout ▾ (#433), a bar button of its own (#395): the layouts drop
+   straight from it, the one the marks give now ticked. A second tap on the
+   button closes it, as a group's does. */
 function editBarSlideMenu(btn) {
   const bar = $("#editBar"), open = bar.querySelector(".ebsub");
-  if (open) { open.remove(); btn.setAttribute("aria-expanded", "false"); return; }
-  const pop = slideMenuPop(slideMarkOf(editBarSlideLines(FLY.block)),
-    lay => { editBarGroupClose(); editBarSlideLayout(lay); });
+  editBarGroupClose();
+  if (open) return;
+  const lines = editBarSlideLines(FLY.block);
+  const pop = slideMenuPop(slideLayoutNow(FLY.path, lines),
+    lay => { editBarGroupClose(); editBarSlideLayout(lay); }, !!slideOwner(FLY.path, lines));
   bar.append(pop);
   btn.setAttribute("aria-expanded", "true");
   const br = btn.getBoundingClientRect(), pr = pop.getBoundingClientRect();
-  const right = br.right + 2 + pr.width <= innerWidth;
-  pop.style.left = Math.max(2, right ? br.right + 2 : br.left - pr.width - 2) + "px";
-  pop.style.top = Math.max(2, Math.min(br.top, innerHeight - pr.height - 2)) + "px";
+  pop.style.left = Math.max(2, Math.min(br.left, innerWidth - pr.width - 2)) + "px";
+  // On a line the menu drops below the button; at the foot it rises above.
+  if (bar.classList.contains("inline")) pop.style.top = (br.bottom + 4) + "px";
+  else pop.style.bottom = (innerHeight - br.top + 4) + "px";
+  document.addEventListener("click", editBarGroupOutside, {capture: true});
+  document.addEventListener("keydown", editBarGroupEsc, {capture: true});
 }

@@ -9,8 +9,12 @@ function remindMeeting(m) {
     el("strong", {}, "\u{1F552} " + m.title + " " + (lead === "now" ? "starts now" : lead)),
     el("p", {}, body));
   const close = () => t.remove();
-  t.append(el("div", {class: "acts"},
-    el("button", {class: "btn sm primary", onclick: () => { close(); openBlockAt(m.space, m.path, m.block); }}, "Open"),
+  // An online meeting is joined from here (#480); Open is then the second choice.
+  const url = trim(blockProp(m.block, "join") || "");
+  const join = /^https:\/\//i.test(url) ? el("a", {class: "btn sm primary", href: url, target: "_blank",
+    rel: "noopener noreferrer", onclick: close}, svgIcon(ICON_PLAY), " Join") : null;
+  t.append(el("div", {class: "acts"}, join,
+    el("button", {class: "btn sm " + (join ? "ghost" : "primary"), onclick: () => { close(); openBlockAt(m.space, m.path, m.block); }}, "Open"),
     el("button", {class: "btn sm ghost", onclick: close}, "OK")));
   $("#toasts").append(t);
   // Gone once the meeting is over, in case nobody was there to see it.

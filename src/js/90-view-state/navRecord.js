@@ -10,4 +10,7 @@ function navRecord() {
   if (NAV_HIST.length > 80) NAV_HIST.shift();
   NAV_AT = NAV_HIST.length - 1;
   syncNavArrows();
+  // Somewhere new: no more Continue on the Journal, and this place is kept (#492).
+  LAST_PLACE_OFFER = null;
+  lastPlaceSave();
 }

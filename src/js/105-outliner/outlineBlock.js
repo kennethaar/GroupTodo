@@ -43,6 +43,18 @@ function outlineBlock(path, page, b, opts = {}) {
     }, () => lineStateMenu(path, b, node.dataset.space, true)));
   }
 
+  /* Off the slides (#467): a closed eye says so where the "_ " would be, named
+     for hover, focus and screen readers. A tap puts the line back, and the
+     note that says so has Undo, for a touch screen with no hover. */
+  if (!b.state && /^_\s/.test(b.title || "")) {
+    const tip = "Hidden from slides. Show in Present";
+    line.append(el("button", {class: "slidehidebtn", type: "button", title: tip, "aria-label": tip, disabled: ro,
+      onclick: e => {
+        e.stopPropagation();
+        slideHideSet(path, [b]);
+        notify("Back on the slides.", "info", {label: "Undo", run: undoLast});
+      }}, svgIcon(FLY_HIDE)));
+  }
   const lead = meetLead(b);
   if (lead) line.append(lead);
   const txt = el("div", {
@@ -50,6 +62,7 @@ function outlineBlock(path, page, b, opts = {}) {
     html: lineHtml(b),
   });
   if (crowd) txt.setAttribute("aria-description", crowd);
+  paintSlideBullet(handle, txt, b.title, b);
   if (ro) {
     line.append(txt);
     node.append(line);
@@ -128,6 +141,11 @@ function outlineBlock(path, page, b, opts = {}) {
     dropLineDraft(b.id);
     line.classList.remove("raw");
     paintHeadLine(line, b.title, b.state);
+    paintSlideBullet(handle, txt, b.title, b);
+    // The numbers on a line may make the line above it a chart, or no longer one (#482).
+    const up = b._parent && node.parentElement?.closest(".blk")?.querySelector(":scope > .line");
+    if (up?.querySelector(":scope > .bullet") && up.querySelector(":scope > .txt"))
+      paintSlideBullet(up.querySelector(":scope > .bullet"), up.querySelector(":scope > .txt"), b._parent.title, b._parent);
     if (paintTrackerLine(line, txt, path, b)) return;
     /* A line with a dropped picture in it comes back as a path, not a URL, so
        the same pass the redraw runs has to run over the line it just rebuilt --
@@ -183,6 +201,8 @@ function outlineBlock(path, page, b, opts = {}) {
     }
     if (raw == null) return;
     e.preventDefault();
+    // An update on your tasks is offered to apply; the paste goes in as text either way (#373).
+    offerPastedUpdate(raw);
     if (SUGGEST && SUGGEST.host === txt) suggestClose();
     const whole = lineText(txt);
     const [from, to] = caretOffsets(txt);
@@ -407,6 +427,13 @@ function outlineBlock(path, page, b, opts = {}) {
       const [from, to] = caretOffsets(txt);
       const before = whole.slice(0, from), after = whole.slice(to);
       const inherit = b.state && OPEN_STATES[b.state] ? "TODO" : null;
+      /* Enter on an empty task line ends the run of tasks, as a list ends in a
+         word processor: the line turns plain and no line is added (#511). */
+      if (inherit && !trim(whole) && !(b.children || []).length) {
+        txt.blur();
+        endTaskRun(path, b);
+        return;
+      }
       if (from === 0 && to === 0 && trim(whole) !== "") {
         // At the very start: open a line above and leave this one as it is,
         // rather than emptying it and carrying its words down.

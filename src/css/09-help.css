@@ -41,6 +41,11 @@
 .helpmore summary{cursor:pointer;color:var(--fg2);font-size:13.5px}
 .helpmore ul{padding-left:18px;margin:6px 0}
 .helpsee{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px}
+/* #513 the foot of every topic: quiet, set off by a rule, never a coloured box. */
+.helpfeedback{margin-top:20px;padding-top:12px;border-top:1px solid var(--border)}
+.helpfeedback p{margin:0 0 8px;color:var(--fg2);font-size:13px}
+.helpfeedback .acts{display:flex;gap:6px;flex-wrap:wrap}
+.helpfeedback .acts a{text-decoration:none;min-height:36px;display:inline-flex;align-items:center}
 .helpnews h3{text-transform:none;letter-spacing:0;font-size:14px;color:var(--fg)}
 .helpnews ul{padding-left:18px}
 #pagePane .helppane{padding-top:4px}

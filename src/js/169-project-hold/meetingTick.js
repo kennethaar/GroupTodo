@@ -1,6 +1,7 @@
 function meetingTick() {
   if (!V.loaded) return;
   paintNextMeeting(todaysMeetings());
+  paintJoinChips();
   // Days ahead the earliest reminder reaches, over all meetings and calendars.
   const reach = Math.max(-1, ...[null, ...calFeeds().map(f => calFeedId(f.url))].map(f => meetRemindLead(f) ?? -1));
   if (reach < 0) return;

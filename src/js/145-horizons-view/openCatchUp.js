@@ -1,0 +1,67 @@
+/* Catch up with an AI (#516), from Get clear in the Weekly review: mail and
+   meetings are collection. 1. Pick how far to look back and copy the prompt to
+   an AI that reads your mail, chats and meetings; 2. paste its answer. Read it
+   lists the changes, each with its GTD choice (catchUpReview). */
+function openCatchUp() {
+  const src = catchUpSource();
+  if (CATCHUP_DRAFT.space !== V.space || !CATCHUP_DRAFT.refs) CATCHUP_DRAFT = {space: V.space, answer: "", refs: null};
+  const promptBox = el("textarea", {rows: 8, "aria-label": "The prompt",
+    style: "width:100%;font-family:var(--mono);font-size:12px"});
+  promptBox.value = src.text;
+  const answer = el("textarea", {rows: 8, placeholder: "Paste the AI's answer here", "aria-label": "The AI's answer",
+    style: "width:100%;font-size:12.5px;line-height:1.5"});
+  answer.value = CATCHUP_DRAFT.answer;
+  // The answer reads by the references of the prompt it was copied with.
+  let refs = CATCHUP_DRAFT.refs || src.refs;
+  answer.addEventListener("input", () => { CATCHUP_DRAFT = {space: V.space, answer: answer.value, refs}; });
+  // Look back: since the last review by default, remembered per area.
+  const pref = "catchup.back:" + (V.space || ""), now = catchUpBack(), last = dateIn(getSetting("last_review"));
+  const back = el("select", {class: "cu-back", "aria-label": "Look back", style: "width:auto;font-size:12.5px"},
+    ...[...(last ? [["last", "Since last review, " + humanDate(last)]] : []), ["7", "7 days"], ["14", "14 days"], ["30", "30 days"],
+      ...(now.startsWith("date:") ? [[now, "From " + humanDate(now.slice(5))]] : []), ["date", "From a date…"]]
+      .map(([v, n]) => el("option", {value: v}, n)));
+  back.value = now;
+  const from = el("input", {type: "date", "aria-label": "From", style: "width:auto;display:none"});
+  from.addEventListener("change", () => { if (from.value) { PREF.set(pref, "date:" + from.value); openCatchUp(); } });
+  back.addEventListener("change", () => {
+    if (back.value === "date") { from.style.display = ""; from.focus(); return; }
+    PREF.set(pref, back.value);
+    openCatchUp();
+  });
+  // Also look for: your own lines in the prompt, folded until you use it, then shown open.
+  const alsoBox = el("textarea", {class: "cu-also", rows: 3, "aria-label": "Also look for",
+    placeholder: "One per line, such as: Webinars I gave", style: "width:100%;font-size:12.5px"});
+  alsoBox.value = catchUpAlso();
+  const alsoSave = () => { catchUpAlso(alsoBox.value); promptBox.value = catchUpSource().text; };
+  alsoBox.addEventListener("input", alsoSave);
+  alsoBox.addEventListener("change", alsoSave);
+  const alsoFold = el("details", {class: "field", style: "margin-top:-6px"},
+    el("summary", {class: "hint", style: "cursor:pointer"}, "Also look for…"), alsoBox);
+  alsoFold.open = !!trim(alsoBox.value);
+  const {select: ai, button: copyBtn} = aiPicker(V.space, promptBox, openCatchUp);
+  copyBtn.addEventListener("click", () => { refs = src.refs; CATCHUP_DRAFT = {space: V.space, answer: answer.value, refs}; });
+  modal({
+    center: true, title: "Catch up with an AI",
+    body: el("div", {},
+      el("div", {class: "field"}, el("div", {style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px"},
+        el("label", {style: "margin:0"}, "1. Copy this to an AI that reads your mail and meetings"),
+        el("span", {class: "hint"}, "Look back:"), back, from), promptBox),
+      alsoFold,
+      el("div", {class: "field", style: "display:flex;gap:8px;align-items:center;margin-top:-6px;flex-wrap:wrap"},
+        el("span", {class: "hint"}, "Your AI in this area:"), ai, copyBtn),
+      el("div", {class: "field"}, el("label", {}, "2. Paste its answer here"), answer)),
+    foot: [
+      el("button", {class: "btn ghost", onclick: closeModal}, "Close"),
+      el("button", {class: "btn primary", onclick: () => {
+        const rows = parseCatchUp(answer.value, refs);
+        if (!rows.length) {
+          notify(trim(answer.value) ? "No changes in that. Paste the AI's lines that start with DONE, DUE, NOTE, NEXT, WAIT, TODO or PROJECT."
+            : "Paste the AI's answer first.", "warn");
+          answer.focus();
+          return;
+        }
+        catchUpReview(rows);
+      }}, "Read it"),
+    ],
+  });
+}
