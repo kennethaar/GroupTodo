@@ -19,6 +19,7 @@ function viewDayReview() {
       el("button", {class: "btn primary", onclick: () => go("review", {sub: "actions"})}, "On to the next actions ›"), undo));
     return c;
   }
+  if (PREF.get("clarify.quick", "")) return viewQuickClarify(deck[0], head, undo);
   const r = deck[0], {path, block: b} = r;
   /* The day around the line, beside the card, the line at the middle of it
      and the rest to scroll through, so a note reads in its context (#376).
@@ -30,7 +31,7 @@ function viewDayReview() {
     for (const up of (branchTrail(getPage(path).blocks, b.id) || []).slice(0, -1)) up.collapsed = false;
   }
   const c = el("div", {class: "wrap wide solwrap clarify"});
-  c.append(el("aside", {class: "solside"}, head,
+  c.append(el("aside", {class: "solside"}, head, clMode(),
     el("p", {class: "solhow"}, "One line from your day pages at a time, oldest first. Ask: what is it?"),
     el("button", {class: "textbtn", onclick: () => clSkip(r)}, "Skip this line ›"),
     beside && CL.noSide ? el("button", {class: "textbtn", onclick: () => { CL.noSide = false; render(); }}, "Show the day page beside it")

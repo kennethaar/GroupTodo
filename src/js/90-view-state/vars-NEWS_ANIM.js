@@ -4,6 +4,30 @@
    look, so an older one is deleted when a new one comes. */
 const NEWS_HOLD = 2500;
 const NEWS_ANIM = {
+  "1.228.0#523": `
+    cap | Clarify, Quick: to do or note
+    say | Quick shows each loose line in its day, lit up.
+    # The day's outline, one line lit; two answers under it.
+    + pg col
+    + h h > pg | Monday 23 November
+    + a ln dim > pg | Supplier meeting with Lars
+    + b ln lit d1 > pg | New price list for the cold store
+    + c ln dim d2 > pg | They want two quotes
+    + r row > pg
+    + n btn > r | ✎ Just a note
+    + t btn pri > r | ⚡ Something to do
+    w 1200
+    say | One question: something to do, or just a note?
+    p t
+    t b | ☐ New price list for the cold store
+    c b -lit
+    c c +lit -dim
+    say | It is a to do now, sorted later. The next line is asked.
+    w 1100
+    say | Click the words to change them.
+    p c
+    ty c | , ours and Havbris
+    w 1500`,
   "1.227.0#521": `
     cap | Your areas, right in Settings
     say | Settings › Area shows a card per area. No dialogs to open first.

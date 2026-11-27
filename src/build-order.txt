@@ -54,6 +54,7 @@ css/48-present-picbullet-491.css
 css/49-last-place-492.css
 css/50-migrate-458.css
 css/51-slides-window-515.css
+css/52-quick-clarify-523.css
 # script 1
 js/00-bootstrap/vars-APP_VERSION.js
 js/00-bootstrap/keepFocus.js
@@ -2239,6 +2240,11 @@ js/110-views/clAnswer.js
 js/110-views/clUndo.js
 js/110-views/clPaint.js
 js/110-views/clSkip.js
+js/110-views/clMode.js
+js/110-views/qcEdit.js
+js/110-views/qcOutline.js
+js/110-views/qcTake.js
+js/110-views/viewQuickClarify.js
 js/110-views/viewDayReview.js
 js/110-views/vars-CL_KIND_LABEL.js
 js/110-views/clKindOf.js
