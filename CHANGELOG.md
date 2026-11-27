@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.227.5 - 2026-11-27
+
+- The top bar: installed on Windows, the Done toast's Backdate, Undo,
+  History and ✕ work again. The toast sat over the bar's drag strip, so a
+  click there moved the window; toasts and dialogs now take their clicks
+  (#398).
+
 ## 1.227.4 - 2026-11-27
 
 - Weekly review › Actions: Still to do is written on the line as

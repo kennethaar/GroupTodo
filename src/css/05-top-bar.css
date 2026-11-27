@@ -125,6 +125,8 @@ header.top .heremenu{right:22px;top:58px}
   header.top button,header.top input,header.top a,header.top select,header.top label,header.top .capture,header.top .spop{
     -webkit-app-region:no-drag;app-region:no-drag}
   #main button,#main a,#main input{-webkit-app-region:no-drag;app-region:no-drag}
+  /* A toast or dialog over the bar takes its clicks; the window does not drag. */
+  #toasts > *,#toasts > * *,#modalRoot .modal,#modalRoot .modal *{-webkit-app-region:no-drag;app-region:no-drag}
   /* A page opened at the side and the toasts start below the window's buttons. */
   .scrim.side{padding-top:env(titlebar-area-height, 0px)}
   html body #toasts:has(> .toast.done){top:calc(env(titlebar-area-height, 0px) + 6px)}

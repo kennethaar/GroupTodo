@@ -10298,6 +10298,24 @@ var GTD_TEST = (() => {
       "a page opened at the side has its close button under the window's buttons");
     ok(rules.some(t => /#toasts/.test(t) && /top/.test(t) && /titlebar-area-height/.test(t)),
       "a toast can sit under the window's buttons");
+    // #398 reopened: the Done toast's top row lay over the bar's drag area, so
+    // Backdate, Undo, History and ✕ dragged the window instead of clicking.
+    const noDrag = [...document.styleSheets].flatMap(sh => { try { return [...sh.cssRules]; } catch (_) { return []; } })
+      .filter(r => r.media && /window-controls-overlay/.test(r.media.mediaText))
+      .flatMap(r => [...r.cssRules]).filter(r => r.selectorText && /app-region:\s*no-drag/.test(r.cssText));
+    const clickable = n => noDrag.some(r => { try { return n.matches(r.selectorText); } catch (_) { return false; } });
+    closeDoneToast();
+    try {
+      offerDone({kind: "todo", label: "drag check", day: todayISO(), at: Date.now(), undo: () => {}});
+      modal({title: "drag check", body: el("button", {}, "a button")});
+      const btns = [...document.querySelectorAll("#toasts .toast.done button, #modalRoot button")];
+      ok(btns.length >= 4, "a toast and a dialog with buttons");
+      const dead = btns.filter(b => !clickable(b)).map(b => b.textContent);
+      eq(dead, [], "these drag the window instead of clicking");
+    } finally {
+      closeDoneToast(); closeModal();
+      PREF.set("done.history", JSON.stringify(doneHistory().filter(x => x.label !== "drag check")));
+    }
   });
   test("#395 the Journal is paper: no card around a day page, a hairline between areas", async () => {
     go("today", {sub: null, todayDay: null}); await settle();
