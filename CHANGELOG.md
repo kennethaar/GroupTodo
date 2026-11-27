@@ -5,6 +5,13 @@ beside the name, top left. Every change that is pushed raises it: the last
 number for a fix, the middle one for a feature, the first one for a change
 that breaks existing vaults. Newest first.
 
+## 1.228.1 - 2026-11-27
+
+- Weekly review › Clarify: the capture bar is back on the review's card
+  screens (Clarify, Actions, Projects, Natural planning). A thought that
+  comes up is captured with Enter and lands on today; the review stays
+  where it was. (#525)
+
 ## 1.228.0 - 2026-11-27
 
 - Weekly review › Clarify: a new Quick way, switched at the top (All

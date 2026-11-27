@@ -207,8 +207,6 @@ button.task{width:100%;text-align:left;border:0;background:none;border-bottom:1p
 .solside .solfilt{display:flex;flex-wrap:wrap;gap:6px}
 .solside .textbtn{padding-left:0}
 .solside .solhow{margin:0;font-size:12px;line-height:1.45}
-/* Nothing is added to the list from here, so the capture bar steps aside */
-body.solview header.top .capture{visibility:hidden}
 body.solview #content{padding-bottom:14px}
 /* Three rows of playing cards fit the window's height, so the table is as
    wide as that allows and no wider. */

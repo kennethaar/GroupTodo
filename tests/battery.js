@@ -10151,6 +10151,29 @@ var GTD_TEST = (() => {
     ok(right && right.classList.contains("focusbtn"), "Focus is the last thing in the heading, top right, before Light or dark");
     eq(theme, document.body.classList.contains("paper"), "Light or dark is at the far right exactly when the Journal is paper");
   });
+  test("#525 the weekly review's card screens keep the capture bar, and Enter adds to today without leaving", async () => {
+    const seen = n => !!n && n.getClientRects().length > 0 && getComputedStyle(n).visibility !== "hidden";
+    const made = [];
+    try {
+      for (const [name, open] of [["Clarify", () => go("review", {sub: "days"})], ["Review actions", () => go("review", {sub: "actions"})],
+        ["Review projects", () => go("review", {sub: "projects"})], ["Natural planning", () => go("plan")]]) {
+        open(); await settle();
+        ok(seen(document.querySelector("header.top .capture")), "the capture bar shows on " + name);
+      }
+      go("review", {sub: "actions"}); await settle();
+      const cap = $("#cap"), text = "Test525 Call the garage";
+      cap.value = text;
+      cap.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true})); await settle();
+      const hit = flattenBlocks(getPage(journalPath(T()))?.blocks || []).find(b => b.title.includes("Test525"));
+      ok(hit, "the line is on today's page");
+      if (hit) made.push(hit);
+      eq([state.view, state.sub], ["review", "actions"], "and the review stays where it was");
+    } finally {
+      const page = getPage(journalPath(T()));
+      for (const b of made) if (page) removeBlockFrom(page, b);
+      closeModal(); go("today"); await settle();
+    }
+  });
   test("#395 on a wide screen the Journal has no top bar; what it held moves, not goes", async () => {
     const bar = () => document.querySelector("header.top"), seen = n => !!n && n.getClientRects().length > 0 && getComputedStyle(n).visibility !== "hidden";
     // #446 Back and Forward stand exactly where they stand on every other page.
